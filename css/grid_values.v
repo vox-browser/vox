@@ -2,37 +2,18 @@ module css
 
 import strings
 
-// Local stub for Layout::AvailableSize until the layout available-space types are translated.
-pub struct AvailableSize {
-pub mut:
-	is_definite_ bool
+// GridTrackSize.h depends only on Layout::AvailableSize::is_definite(). A V
+// interface preserves that cross-module dependency without introducing the
+// CSS -> Layout -> CSS import cycle; layout.AvailableSize satisfies it directly.
+pub interface AvailableSize {
+	is_definite() bool
 }
 
-pub fn AvailableSize.make_definite() AvailableSize {
-	return AvailableSize{
-		is_definite_: true
+fn grid_absolutize_calculated(calculated CalculatedStyleValue, context ComputationContext) CalculatedStyleValue {
+	absolutized := calculated.absolutized(context)
+	if absolutized is CalculatedStyleValue {
+		return absolutized
 	}
-}
-
-pub fn AvailableSize.make_indefinite() AvailableSize {
-	return AvailableSize{}
-}
-
-pub fn (available_size AvailableSize) is_definite() bool {
-	return available_size.is_definite_
-}
-
-// Local stub for CSS::ComputationContext until the full style computation context is translated
-// into the value layer used by this file.
-pub struct GridComputationContext {
-pub mut:
-	length_resolution_context LengthResolutionContext = LengthResolutionContext.default()
-}
-
-// Local grid-context bridge for CalculatedStyleValue::absolutized() until the calculation tree/style-value
-// conversion path is available to grid values.
-fn grid_absolutize_calculated(calculated CalculatedStyleValue, context GridComputationContext) CalculatedStyleValue {
-	_ = context
 	return calculated
 }
 
@@ -200,7 +181,7 @@ pub fn (placement GridTrackPlacement) to_string_with_mode(mode SerializationMode
 	return placement.serialize(mode)
 }
 
-fn absolutize_integer_or_calculated(integer_or_calculated IntegerOrCalculated, context GridComputationContext) IntegerOrCalculated {
+fn absolutize_integer_or_calculated(integer_or_calculated IntegerOrCalculated, context ComputationContext) IntegerOrCalculated {
 	if !integer_or_calculated.is_calculated() {
 		return integer_or_calculated
 	}
@@ -209,7 +190,7 @@ fn absolutize_integer_or_calculated(integer_or_calculated IntegerOrCalculated, c
 	return IntegerOrCalculated.from_calculated(absolutized)
 }
 
-pub fn (placement GridTrackPlacement) absolutized(context GridComputationContext) GridTrackPlacement {
+pub fn (placement GridTrackPlacement) absolutized(context ComputationContext) GridTrackPlacement {
 	value := placement.value_
 	return match value {
 		GridTrackPlacementAuto {
@@ -384,7 +365,7 @@ pub fn (grid_size GridSize) to_string_with_mode(mode SerializationMode) string {
 	return grid_size.serialize(mode)
 }
 
-fn absolutize_length_percentage(length_percentage LengthPercentage, context GridComputationContext) ?LengthPercentage {
+fn absolutize_length_percentage(length_percentage LengthPercentage, context ComputationContext) ?LengthPercentage {
 	if length_percentage.is_length() {
 		if length := length_percentage.length().absolutize(context.length_resolution_context) {
 			return LengthPercentage.from_length(length)
@@ -393,14 +374,13 @@ fn absolutize_length_percentage(length_percentage LengthPercentage, context Grid
 	}
 
 	if length_percentage.is_calculated() {
-		return LengthPercentage.from_calculated(grid_absolutize_calculated(length_percentage.calculated(),
-			context))
+		return LengthPercentage.from_style_value_logic(length_percentage.calculated().absolutized(context))
 	}
 
 	return none
 }
 
-pub fn (grid_size GridSize) absolutized(context GridComputationContext) GridSize {
+pub fn (grid_size GridSize) absolutized(context ComputationContext) GridSize {
 	value := grid_size.value_
 	return match value {
 		Size {
@@ -459,7 +439,7 @@ pub fn (minmax GridMinMax) to_string_with_mode(mode SerializationMode) string {
 	return minmax.serialize(mode)
 }
 
-pub fn (minmax GridMinMax) absolutized(context GridComputationContext) GridMinMax {
+pub fn (minmax GridMinMax) absolutized(context ComputationContext) GridMinMax {
 	return GridMinMax{
 		min_grid_size_: minmax.min_grid_size_.absolutized(context)
 		max_grid_size_: minmax.max_grid_size_.absolutized(context)
@@ -609,7 +589,7 @@ pub fn (track_size_list GridTrackSizeList) to_string_with_mode(mode Serializatio
 	return track_size_list.serialize(mode)
 }
 
-pub fn (track_size_list GridTrackSizeList) absolutized(context GridComputationContext) GridTrackSizeList {
+pub fn (track_size_list GridTrackSizeList) absolutized(context ComputationContext) GridTrackSizeList {
 	mut result := GridTrackSizeList{}
 	for item in track_size_list.list_ {
 		match item {
@@ -700,7 +680,7 @@ pub fn (repeat GridRepeat) to_string_with_mode(mode SerializationMode) string {
 	return repeat.serialize(mode)
 }
 
-pub fn (repeat GridRepeat) absolutized(context GridComputationContext) GridRepeat {
+pub fn (repeat GridRepeat) absolutized(context ComputationContext) GridRepeat {
 	return GridRepeat{
 		type_:                repeat.type_
 		grid_track_size_list: repeat.grid_track_size_list.absolutized(context)
@@ -786,7 +766,7 @@ pub fn (track ExplicitGridTrack) to_string_with_mode(mode SerializationMode) str
 	return track.serialize(mode)
 }
 
-pub fn (track ExplicitGridTrack) absolutized(context GridComputationContext) ExplicitGridTrack {
+pub fn (track ExplicitGridTrack) absolutized(context ComputationContext) ExplicitGridTrack {
 	value := track.value_
 	return match value {
 		GridRepeat { ExplicitGridTrack.from_repeat(value.absolutized(context)) }
@@ -882,7 +862,7 @@ pub fn (style_value GridTrackPlacementStyleValue) to_string() string {
 	return style_value.serialize(.normal)
 }
 
-pub fn (style_value GridTrackPlacementStyleValue) absolutized(context GridComputationContext) GridTrackPlacementStyleValue {
+pub fn (style_value GridTrackPlacementStyleValue) absolutized(context ComputationContext) GridTrackPlacementStyleValue {
 	absolutized_placement := style_value.grid_track_placement_.absolutized(context)
 	if absolutized_placement == style_value.grid_track_placement_ {
 		return style_value
@@ -927,7 +907,7 @@ pub fn (style_value GridTrackSizeListStyleValue) to_string() string {
 	return style_value.serialize(.normal)
 }
 
-pub fn (style_value GridTrackSizeListStyleValue) absolutized(context GridComputationContext) GridTrackSizeListStyleValue {
+pub fn (style_value GridTrackSizeListStyleValue) absolutized(context ComputationContext) GridTrackSizeListStyleValue {
 	absolutized := style_value.grid_track_size_list_.absolutized(context)
 	if absolutized == style_value.grid_track_size_list_ {
 		return style_value

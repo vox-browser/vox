@@ -4,6 +4,46 @@ module fetch
 import dom
 import http
 
+struct CacheTestClient {
+	top_level_origin dom.Origin
+}
+
+fn (client &CacheTestClient) fetch_request_client_api_base_url() dom.URL {
+	return dom.URL{client.top_level_origin.serialize() + '/'}
+}
+
+fn (_ &CacheTestClient) fetch_request_client_is_window() bool {
+	return false
+}
+
+fn (client &CacheTestClient) fetch_request_client_origin() dom.Origin {
+	return client.top_level_origin
+}
+
+fn (_ &CacheTestClient) fetch_request_client_document_url() ?dom.URL {
+	return none
+}
+
+fn (client &CacheTestClient) fetch_request_client_creation_url() dom.URL {
+	return dom.URL{client.top_level_origin.value + '/'}
+}
+
+fn (_ &CacheTestClient) fetch_request_client_embedder_policy_credentialless() bool {
+	return false
+}
+
+fn (client &CacheTestClient) fetch_request_client_top_level_origin() ?dom.Origin {
+	return client.top_level_origin
+}
+
+fn (_ &CacheTestClient) fetch_request_client_top_level_creation_url() ?dom.URL {
+	return none
+}
+
+fn (_ &CacheTestClient) fetch_request_client_cross_origin_isolated_capability() bool {
+	return false
+}
+
 fn body_bytes_as_string(bytes []u8) !string {
 	return bytes.bytestr()
 }
@@ -19,7 +59,7 @@ fn test_upstream_request_accessors_and_pending_responses() {
 	assert request.fetch_request_credentials_mode() == .include
 	assert request.byte_serialize_origin() == 'null'.bytes()
 
-	mut pending := PendingResponse.create(request, none)
+	mut pending := PendingResponse.create(mut request, none)
 	request.add_pending_response(pending)
 	request.add_pending_response(pending)
 	assert request.pending_responses.len == 1
@@ -30,7 +70,7 @@ fn test_upstream_request_accessors_and_pending_responses() {
 fn test_filtered_response_accessors_delegate_to_internal_response() {
 	mut internal := Response.create()
 	internal.status = 201
-	internal.body = 'body'.bytes()
+	internal.set_body_bytes('body'.bytes())
 	internal.header_list.append(http.Header{ name: 'Content-Type', value: 'text/plain' })
 	mut basic := Response.create_basic_filtered_response(internal)
 	basic.set_status(202)
@@ -38,7 +78,7 @@ fn test_filtered_response_accessors_delegate_to_internal_response() {
 	assert internal.status == 202
 	assert internal.timing_allow_passed
 	assert basic.fetch_response_status() == 202
-	assert basic.fetch_response_body()? == 'body'.bytes()
+	assert basic.fetch_response_body()?.bytes() == 'body'.bytes()
 
 	mut opaque := Response.create_opaque_filtered_response(internal)
 	opaque.set_status(204)
@@ -78,19 +118,21 @@ fn test_http_cache_partition_select_store_and_clear() {
 	clear_http_memory_cache()
 	set_http_memory_cache_enabled(true)
 	mut request := Request.create()
-	request.origin = RequestOrigin{
-		is_client: false
-		origin: dom.Origin{'https://top-level.test'}
-	}
+	request.set_client(&CacheTestClient{
+		top_level_origin: dom.Origin{ value: 'https://top-level.test' }
+	})
 	request.url_list = [dom.URL{'https://resource.test/data'}]
 	mut response := Response.create()
 	response.status = 203
-	response.body = 'cached'.bytes()
+	response.set_body_bytes('cached'.bytes())
+	response.header_list.append(http.Header{ name: 'Cache-Control', value: 'max-age=60' })
 	store_response_in_cache(request, response)
+	assert select_response_from_cache(request) == none
+	finalize_response_in_cache(request, response)
 	cached := select_response_from_cache(request)?
 	assert cached != response
 	assert cached.status == 203
-	assert cached.body? == 'cached'.bytes()
+	assert cached.body?.bytes() == 'cached'.bytes()
 	clear_http_memory_cache()
 	assert select_response_from_cache(request) == none
 
@@ -101,8 +143,8 @@ fn test_http_cache_partition_select_store_and_clear() {
 
 fn test_body_entry_points_and_multipart_header_parser() {
 	stream := Body.from_bytes('abc'.bytes(), .bytes)
-	body := Body.create(stream, .bytes, 3)
-	assert body.stream() == body
+	body := Body.create(stream.stream(), .bytes, 3)
+	assert body.stream() == stream.stream()
 	assert body.body_source() == .bytes
 	assert body.body_length()? == 3
 	assert byte_sequence_as_body('xyz'.bytes()).bytes() == 'xyz'.bytes()
@@ -141,9 +183,10 @@ fn test_controller_holder_params_records_and_response_initialization() {
 	assert record.fetch_record_request() == request
 	assert record.fetch_record_fetch_controller()? == controller
 
+	response := Response.create()
 	mut object := &ResponseObject{
-		response_: Response.create()
-		headers_: Headers.from_header_list(http.HeaderList.create(), .none)
+		response_: response
+		headers_: Headers.from_header_list(response.header_list, .none)
 	}
 	object.initialize_response(ResponseInit{
 		status: 201

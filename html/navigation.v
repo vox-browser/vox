@@ -206,7 +206,7 @@ pub fn (navigation &Navigation) has_entries_and_events_disabled() bool {
 		return override
 	}
 	document := navigation.associated_document_ or { return true }
-	return !document.is_fully_active() || document.get_is_initial_about_blank() || document.origin().serialize() == 'opaque'
+	return !document.is_fully_active() || document.get_is_initial_about_blank() || document.origin().is_opaque()
 }
 
 pub fn (navigation &Navigation) get_the_navigation_api_entry_index(session_entry &SessionHistoryEntry) i64 {

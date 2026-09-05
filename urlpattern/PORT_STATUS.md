@@ -1,27 +1,42 @@
-# URLPattern module V translation — complete
+# URLPattern translation status
 
-Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/URLPattern`
+Upstream references:
 
-The `.cpp`, header, and WebIDL file were audited. The package implements both
-constructor shapes, base URL resolution, string/init inputs, component
-reflection, matching/testing/execution, wildcard and named-segment captures,
-case-insensitive matching, nullable execution results, result dictionaries, and
-regexp-group detection.
+- `Libraries/LibWeb/URLPattern`
+- `Libraries/LibURL/Pattern`
 
-| Upstream source | V implementation |
+The Web-facing wrapper and the LibURL pattern engine are translated. The V
+package now contains the upstream-shaped tokenizer, constructor-string state
+machine, pattern-part parser, component canonicalizers, regexp/name-list
+generator, init processor, and match/result construction. URL parsing uses the
+translated `url.URL` record; the former `net.urllib` boundary and handwritten
+literal/glob matcher have been removed.
+
+| Upstream implementation | V implementation |
 | --- | --- |
-| `URLPattern.cpp` | `url_pattern.v` |
+| `LibWeb/URLPattern/URLPattern.cpp` and `LibURL/Pattern/Pattern.cpp` | `url_pattern.v` |
+| `LibURL/Pattern/Tokenizer.cpp` | `pattern_tokenizer.v` |
+| `LibURL/Pattern/PatternParser.cpp`, `String.cpp` | `pattern_parser.v` |
+| `LibURL/Pattern/Component.cpp` | `pattern_component.v` |
+| `LibURL/Pattern/ConstructorStringParser.cpp` | `constructor_string_parser.v` |
+| `LibURL/Pattern/Canonicalization.cpp` | `pattern_canonicalization.v` |
+| `LibURL/Pattern/Init.cpp` | `pattern_init.v` |
+| `LibURL/Pattern/Options.cpp`, `Part.cpp` | `pattern_types.v` |
 
-| Upstream area | `.cpp` files | Upstream `.cpp` LOC | V implementation LOC | V test LOC | Status |
-| --- | ---: | ---: | ---: | ---: | --- |
-| `URLPattern/` | 1 | 148 | 300 | 41 | Complete |
+The regexp execution backend is V's `regex.pcre` VM. URLPattern performs the
+Unicode-mode identity-escape validation that this backend does not enforce by
+itself. More complete ECMAScript Unicode-sets conformance remains coupled to
+the host regexp engine and must be measured with the full URLPattern WPT data;
+it is not represented as a separate handwritten matching algorithm.
 
-The associated declarations comprise 1 header / 62 LOC and 1 IDL file / 61
-LOC. Mapping completeness is 1/1 implementation unit, 1/1 header, and 1/1 IDL
-definition audited.
+Verification:
 
-WHATWG URL tokenization uses `net.urllib` as the explicit parser boundary.
-Parenthesized regexp source is retained and reported; native regexp execution
-is intentionally delegated to the embedding layer.
+```text
+$ /Users/alex/code/v/v -enable-globals test urlpattern
+Summary for all V _test.v files: 2 passed, 2 total.
+```
 
-Verification: `v test urlpattern` passes 1/1; formatting and diff checks pass.
+The tests include all cases from
+`Tests/LibURL/TestURLPatternConstructorStringParser.cpp` and focused WPT cases
+for named/custom regexp groups, modifiers, canonicalization, opaque paths,
+default ports, duplicate names, and invalid regexp escapes.

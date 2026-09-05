@@ -13,15 +13,13 @@ module dom
 import rand
 import strings
 import time as vtime
-import net.urllib
+import httpcookie
+import url as liburl
 
-__global dom_all_navigables = []&Navigable{}
-
-// --- Stub types for untranslated dependencies ---
-
-// Opaque pointer stub for types from other modules.
-// In a full translation these would be proper imports.
-type VoidPtr = voidptr
+__global (
+	dom_all_navigables   = []&Navigable{}
+	dom_url_record_cache = map[string]liburl.URL{}
+)
 
 // Simple color representation
 pub struct Color {
@@ -30,6 +28,37 @@ pub mut:
 	g u8
 	b u8
 	a u8
+}
+
+pub type NodeLoadEventDelayCallback = fn (voidptr) bool
+
+pub struct NodeLoadEventDelayHook {
+pub:
+	target   voidptr
+	callback NodeLoadEventDelayCallback = unsafe { nil }
+}
+
+pub type NodeActiveWindowProxyCallback = fn (voidptr) ?&WindowProxy
+
+pub type ViewportClientDidSetRectCallback = fn (voidptr, Rect)
+
+pub struct ViewportClient {
+pub:
+	target                voidptr
+	did_set_viewport_rect ViewportClientDidSetRectCallback = unsafe { nil }
+}
+
+pub fn (a ViewportClient) ==(b ViewportClient) bool {
+	return a.target == b.target
+}
+
+// HTML owns navigable-container state, while DOM owns the named-property
+// algorithm on Document. This hook exposes precisely the WindowProxy result
+// needed by Document::named_item_value without creating a DOM -> HTML cycle.
+pub struct NodeActiveWindowProxyHook {
+pub:
+	target   voidptr
+	callback NodeActiveWindowProxyCallback = unsafe { nil }
 }
 
 pub const color_transparent = Color{0, 0, 0, 0}
@@ -49,69 +78,65 @@ pub fn url_about_blank() URL {
 }
 
 pub fn (u URL) to_string() string {
-	return u.value
+	return u.serialize()
 }
 
 pub fn (u URL) serialize() string {
-	return u.value
+	parsed := u.parsed() or { return u.value }
+	return parsed.serialize(false)
 }
 
 pub fn dom_url_parse(url string, base_url URL, encoding string) ?URL {
+	// LibURL accepts an encoding for query parsing. The translated parser is
+	// UTF-8 based, which is the forced encoding for non-special URLs and ws/wss;
+	// callers currently pass UTF-8 for browser navigation.
 	_ = encoding
-	reference := urllib.parse(url) or { return none }
-	if reference.is_abs() {
-		return URL{reference.str()}
-	}
-	base := urllib.parse(base_url.value) or { return none }
-	resolved := base.resolve_reference(reference) or { return none }
-	return URL{resolved.str()}
+	base := base_url.parsed() or { return none }
+	parsed := liburl.parse_with_base(url, base) or { return none }
+	serialized := parsed.serialize(false)
+	dom_url_record_cache[serialized] = parsed
+	return URL{ value: serialized }
 }
 
 pub fn (a URL) ==(b URL) bool {
-	return a.value == b.value
+	return a.serialize() == b.serialize()
 }
 
 pub fn (u URL) fragment() ?string {
-	idx := u.value.index_u8(`#`)
-	if idx < 0 {
-		return none
-	}
-	return u.value[idx + 1..]
+	parsed := u.parsed() or { return none }
+	return parsed.fragment
 }
 
 pub fn (mut u URL) set_fragment(fragment ?string) {
-	index := u.value.index_u8(`#`)
-	base := if index >= 0 { u.value[..index] } else { u.value }
-	if value := fragment {
-		u.value = '${base}#${value}'
-	} else {
-		u.value = base
+	parsed := u.parsed() or { return }
+	u = url_from_record(parsed.with_fragment(fragment))
+}
+
+fn url_from_record(record liburl.URL) URL {
+	serialized := record.serialize(false)
+	dom_url_record_cache[serialized] = record
+	return URL{ value: serialized }
+}
+
+// DOM keeps the serialized URL at its module boundary; the cache retains the
+// typed LibURL record so repeated component access does not re-run the parser.
+fn (u URL) parsed() ?liburl.URL {
+	if cached := dom_url_record_cache[u.value] {
+		return cached
 	}
+	parsed := liburl.parse(u.value) or { return none }
+	dom_url_record_cache[u.value] = parsed
+	return parsed
 }
 
-// --- WHATWG-URL component accessors (the "minimal URL record") ---
-//
-// The port stores URLs as their serialized string; these accessors reparse on demand via
-// net.urllib. net.urllib is not a byte-exact WHATWG URL parser, but it is sufficient for the
-// reflected component getters consumed by Location / WorkerLocation / HTMLHyperlinkElementUtils.
-fn (u URL) parsed() ?urllib.URL {
-	return urllib.parse(u.value) or { return none }
-}
-
-// A URL has an opaque path when it is non-hierarchical (e.g. "mailto:x", "about:blank").
-// net.urllib records this in its `opaque` field.
 pub fn (u URL) has_an_opaque_path() bool {
 	parsed := u.parsed() or { return false }
-	return parsed.opaque != ''
+	return parsed.has_an_opaque_path
 }
 
-// WHATWG: a URL cannot have a username/password/port when its host is null or empty, or its
-// scheme is "file". Approximated here from the parsed host and scheme.
 pub fn (u URL) cannot_have_a_username_or_password_or_port() bool {
-	if u.host() == none {
-		return true
-	}
-	return u.scheme() == 'file'
+	parsed := u.parsed() or { return true }
+	return parsed.cannot_have_a_username_or_password_or_port()
 }
 
 // URL's scheme, without the trailing ":".
@@ -122,24 +147,19 @@ pub fn (u URL) scheme() string {
 
 pub fn (u URL) username() string {
 	parsed := u.parsed() or { return '' }
-	if userinfo := parsed.user {
-		return userinfo.username
-	}
-	return ''
+	return parsed.username
 }
 
 pub fn (u URL) password() string {
 	parsed := u.parsed() or { return '' }
-	if userinfo := parsed.user {
-		return userinfo.password
-	}
-	return ''
+	return parsed.password
 }
 
 // URL's host, serialized (host without the port). Empty string when there is no host.
 pub fn (u URL) serialized_host() string {
 	parsed := u.parsed() or { return '' }
-	return parsed.hostname()
+	host := parsed.host or { return '' }
+	return host.serialize()
 }
 
 // URL's host, or none when the URL has no host.
@@ -151,163 +171,200 @@ pub fn (u URL) host() ?string {
 // URL's port, or none when the URL has no explicit port.
 pub fn (u URL) port() ?u16 {
 	parsed := u.parsed() or { return none }
-	port_string := parsed.port()
-	if port_string == '' {
-		return none
-	}
-	return port_string.u16()
+	return parsed.port
 }
 
 // URL path serialized.
 pub fn (u URL) serialize_path() string {
 	parsed := u.parsed() or { return '' }
-	return parsed.path
+	return parsed.serialize_path()
 }
 
 // URL's query, without the leading "?", or none when there is no query.
 pub fn (u URL) query() ?string {
 	parsed := u.parsed() or { return none }
-	return if parsed.raw_query == '' { none } else { parsed.raw_query }
+	return parsed.query
 }
 
 // --- WHATWG-URL component setters ---
-//
-// C++ mutates URLs with URL::Parser::basic_parse(..., state_override). net.urllib has no
-// state-override parser, so these approximate it by mutating the parsed net.urllib.URL and
-// reserializing. They return a new URL (the caller writes it back). If the value does not parse,
-// the URL is returned unchanged.
 
 // scheme start state override: replaces the scheme (a trailing ":" is stripped).
 pub fn (u URL) with_protocol(protocol string) URL {
-	mut parsed := urllib.parse(u.value) or { return u }
-	mut scheme := protocol
-	if scheme.ends_with(':') {
-		scheme = scheme[..scheme.len - 1]
-	}
-	parsed.scheme = scheme
-	return URL{
-		value: parsed.str()
-	}
+	parsed := u.parsed() or { return u }
+	return url_from_record(parsed.with_scheme(protocol))
 }
 
 pub fn (u URL) with_username(username string) URL {
-	mut parsed := urllib.parse(u.value) or { return u }
-	password := u.password()
-	password_set := if info := parsed.user { info.password_set } else { false }
-	parsed.user = urllib.Userinfo{
-		username: username
-		password: password
-		password_set: password_set
-	}
-	return URL{
-		value: parsed.str()
-	}
+	parsed := u.parsed() or { return u }
+	return url_from_record(parsed.with_username(username))
 }
 
 pub fn (u URL) with_password(password string) URL {
-	mut parsed := urllib.parse(u.value) or { return u }
-	parsed.user = urllib.Userinfo{
-		username: u.username()
-		password: password
-		password_set: true
-	}
-	return URL{
-		value: parsed.str()
-	}
+	parsed := u.parsed() or { return u }
+	return url_from_record(parsed.with_password(password))
 }
 
 // host state override: the value may include a port ("host[:port]").
 pub fn (u URL) with_host(host string) URL {
-	mut parsed := urllib.parse(u.value) or { return u }
-	parsed.host = host
-	return URL{
-		value: parsed.str()
-	}
+	parsed := u.parsed() or { return u }
+	return url_from_record(parsed.with_host(host, false))
 }
 
 // hostname state override: replaces only the host, preserving any existing port.
 pub fn (u URL) with_hostname(hostname string) URL {
-	mut parsed := urllib.parse(u.value) or { return u }
-	port_string := parsed.port()
-	parsed.host = if port_string == '' { hostname } else { '${hostname}:${port_string}' }
-	return URL{
-		value: parsed.str()
-	}
+	parsed := u.parsed() or { return u }
+	return url_from_record(parsed.with_host(hostname, true))
 }
 
 // port state override: an empty value clears the port.
 pub fn (u URL) with_port(port string) URL {
-	mut parsed := urllib.parse(u.value) or { return u }
-	hostname := parsed.hostname()
-	parsed.host = if port == '' { hostname } else { '${hostname}:${port}' }
-	return URL{
-		value: parsed.str()
-	}
+	parsed := u.parsed() or { return u }
+	return url_from_record(parsed.with_port(port))
 }
 
 pub fn (u URL) with_pathname(pathname string) URL {
-	mut parsed := urllib.parse(u.value) or { return u }
-	parsed.path = pathname
-	parsed.raw_path = ''
-	return URL{
-		value: parsed.str()
-	}
+	parsed := u.parsed() or { return u }
+	return url_from_record(parsed.with_path(pathname))
 }
 
 // query state override: the value is the query without a leading "?".
 pub fn (u URL) with_query(query ?string) URL {
-	mut parsed := urllib.parse(u.value) or { return u }
-	if q := query {
-		parsed.raw_query = q
-	} else {
-		parsed.raw_query = ''
-		parsed.force_query = false
-	}
-	return URL{
-		value: parsed.str()
-	}
+	parsed := u.parsed() or { return u }
+	return url_from_record(parsed.with_query(query))
 }
 
-// Serialization of the URL's origin (tuple origins only; opaque otherwise).
+// https://url.spec.whatwg.org/#concept-url-origin
 pub fn (u URL) origin() Origin {
 	parsed := u.parsed() or { return origin_create_opaque() }
-	if parsed.host == '' {
-		return origin_create_opaque()
-	}
-	mut serialized := '${parsed.scheme}://${parsed.hostname()}'
-	port_string := parsed.port()
-	if port_string != '' {
-		serialized += ':${port_string}'
-	}
-	return Origin{
-		value: serialized
-	}
+	return origin_from_liburl(parsed.origin())
 }
 
-// Origin stub
+// DOM-facing representation of LibURL::Origin. `value` remains public for the
+// translated serialization boundaries, while `typed` preserves tuple fields
+// and, critically, the nonce identity of opaque origins.
 pub struct Origin {
 pub mut:
 	value string
+mut:
+	typed ?liburl.Origin
 }
 
 pub fn origin_create_opaque() Origin {
-	return Origin{'opaque'}
+	return origin_from_liburl(liburl.Origin.create_opaque(.standard))
 }
 
-pub fn (o Origin) serialize() string {
+pub fn origin_create_opaque_file() Origin {
+	return origin_from_liburl(liburl.Origin.create_opaque(.file))
+}
+
+fn origin_from_liburl(record liburl.Origin) Origin {
+	return Origin{
+		value: if record.is_opaque() { 'opaque' } else { record.serialize() }
+		typed: record
+	}
+}
+
+pub fn origin_from_ipc(value string) Origin {
+	if value.starts_with('opaque:') || value.starts_with('opaque-file:') {
+		prefix := if value.starts_with('opaque-file:') { 'opaque-file:' } else { 'opaque:' }
+		hex := value[prefix.len..]
+		if hex.len == 32 {
+			mut nonce := [16]u8{}
+			mut valid := true
+			for index in 0 .. 16 {
+				high := hex_digit_value(hex[index * 2]) or {
+					valid = false
+					break
+				}
+				low := hex_digit_value(hex[index * 2 + 1]) or {
+					valid = false
+					break
+				}
+				nonce[index] = (high << 4) | low
+			}
+			if valid {
+				return origin_from_liburl(liburl.Origin.opaque(nonce, if prefix == 'opaque-file:' {
+					liburl.OpaqueOriginType.file
+				} else {
+					liburl.OpaqueOriginType.standard
+				}))
+			}
+		}
+	}
+	return Origin{ value: value }
+}
+
+pub fn (o Origin) serialize_for_ipc() string {
+	if typed := o.typed {
+		if opaque := typed.opaque_data() {
+			mut hex := ''
+			for byte in opaque.nonce {
+				hex += '${byte:02x}'
+			}
+			prefix := if opaque.type_ == .file { 'opaque-file:' } else { 'opaque:' }
+			return prefix + hex
+		}
+		return typed.serialize()
+	}
 	return o.value
 }
 
+fn (o Origin) liburl_origin() ?liburl.Origin {
+	if typed := o.typed {
+		return typed
+	}
+	if o.value in ['', 'opaque', 'opaque-file', 'null'] {
+		return none
+	}
+	parsed := liburl.parse(o.value) or { return none }
+	record := parsed.origin()
+	if record.is_opaque() {
+		return none
+	}
+	return record
+}
+
+pub fn (o Origin) is_opaque() bool {
+	if typed := o.typed {
+		return typed.is_opaque()
+	}
+	return o.value in ['', 'opaque', 'opaque-file', 'null']
+}
+
+pub fn (o Origin) is_opaque_file_origin() bool {
+	if typed := o.typed {
+		return typed.is_opaque_file_origin()
+	}
+	return o.value == 'opaque-file'
+}
+
+pub fn (o Origin) serialize() string {
+	if typed := o.typed {
+		return typed.serialize()
+	}
+	return if o.is_opaque() { 'null' } else { o.value }
+}
+
 pub fn (a Origin) is_same_origin(b Origin) bool {
-	return a.value == b.value
+	first := a.liburl_origin() or { return false }
+	second := b.liburl_origin() or { return false }
+	return first.is_same_origin(second)
+}
+
+pub fn (a Origin) is_same_origin_domain(b Origin) bool {
+	first := a.liburl_origin() or { return false }
+	second := b.liburl_origin() or { return false }
+	return first.is_same_origin_domain(second)
 }
 
 pub fn (a Origin) is_same_site(b Origin) bool {
-	return a.value == b.value
+	first := a.liburl_origin() or { return false }
+	second := b.liburl_origin() or { return false }
+	return first.is_same_site(second)
 }
 
 pub fn (a Origin) ==(b Origin) bool {
-	return a.value == b.value
+	return a.is_same_origin(b)
 }
 
 // Stub pointer-like wrapper
@@ -363,9 +420,12 @@ pub mut:
 	event_listener_types      []string
 	assigned_slot_            ?&HTMLSlotElement
 	manual_slot_assignment_   ?&HTMLSlotElement
+	load_event_delay_hook_    ?NodeLoadEventDelayHook
+	active_window_proxy_hook_ ?NodeActiveWindowProxyHook
 }
 
-// Stub for ParentNode
+// Translation of the ParentNode mixin; its algorithms live in
+// collections_ranges.v alongside the collection and selector machinery.
 @[heap]
 pub struct ParentNode {
 	Node
@@ -375,7 +435,7 @@ pub mut:
 
 // Element is defined in element.v
 
-// Stub for various HTML element types
+// Concrete HTML element storage shared with the HTML-side behavioral models.
 @[heap]
 pub struct HTMLHtmlElement {
 	Element
@@ -584,11 +644,47 @@ pub struct HTMLLIElement {
 	HTMLElement
 }
 
+pub type HTMLLinkHasLoadedIconCallback = fn (voidptr) bool
+
+pub type HTMLLinkLoadFaviconCallback = fn (voidptr) bool
+
 @[heap]
 pub struct HTMLLinkElement {
 	HTMLElement
 pub mut:
-	link_element_model_ voidptr = unsafe { nil }
+	link_element_model_            voidptr = unsafe { nil }
+	link_has_loaded_icon_callback_ HTMLLinkHasLoadedIconCallback = unsafe { nil }
+	link_load_favicon_callback_    HTMLLinkLoadFaviconCallback = unsafe { nil }
+}
+
+pub fn (link &HTMLLinkElement) has_loaded_icon() bool {
+	if link.link_element_model_ == unsafe { nil } || link.link_has_loaded_icon_callback_ == unsafe { nil } {
+		return false
+	}
+	return link.link_has_loaded_icon_callback_(link.link_element_model_)
+}
+
+pub fn (link &HTMLLinkElement) load_favicon_and_use_if_window_is_active() bool {
+	if link.link_element_model_ == unsafe { nil } || link.link_load_favicon_callback_ == unsafe { nil } {
+		return false
+	}
+	return link.link_load_favicon_callback_(link.link_element_model_)
+}
+
+fn html_link_element_from_node(node &Node) &HTMLLinkElement {
+	return unsafe { &HTMLLinkElement(node) }
+}
+
+fn collect_loaded_favicon_link_elements(node &Node, mut result []&HTMLLinkElement) {
+	if node.is_html_link_element() {
+		link := html_link_element_from_node(node)
+		if link.has_loaded_icon() {
+			result << link
+		}
+	}
+	for child in node.children_as_vector() {
+		collect_loaded_favicon_link_elements(child, mut result)
+	}
 }
 
 @[heap]
@@ -1115,8 +1211,20 @@ pub mut:
 @[heap]
 pub struct LayoutViewport {
 pub mut:
+	root_node       &LayoutNode = unsafe { nil }
 	scrollbar_width string = 'auto'
 }
+
+pub fn (viewport &LayoutViewport) root_layout_node() ?&LayoutNode {
+	if viewport.root_node == unsafe { nil } {
+		return none
+	}
+	return viewport.root_node
+}
+
+pub type LayoutApplyStyleCallback = fn (voidptr, voidptr)
+
+pub type LayoutSetNeedsLayoutUpdateCallback = fn (voidptr, bool)
 
 @[heap]
 pub struct LayoutNode {
@@ -1133,25 +1241,43 @@ pub mut:
 	has_geometry_                                   bool
 	is_viewport_                                    bool
 	is_positioned_                                  bool
+	is_sticky_position_                             bool
 	is_fixed_position_                              bool
 	is_scroll_container_                            bool
 	establishes_fixed_positioning_containing_block_ bool
+	visibility_                                     CSSVisibility_ = .visible
+	content_visibility_                             CSSContentVisibility_ = .visible
+	needs_layout_update_                            bool
 	rendered_text_                                  string
+	rendered_text_chunks_                           []string
+	paintables_                                     []&Paintable
 	border_box_                                     Rect
 	content_width_                                  f64
 	content_height_                                 f64
+	margin_left_                                    f64
+	margin_right_                                   f64
+	margin_top_                                     f64
+	margin_bottom_                                  f64
 	border_left_                                    f64
+	border_right_                                   f64
 	border_top_                                     f64
+	border_bottom_                                  f64
 	padding_left_                                   f64
 	padding_right_                                  f64
 	padding_top_                                    f64
 	padding_bottom_                                 f64
+	inset_left_                                     f64
+	inset_right_                                    f64
+	inset_top_                                      f64
+	inset_bottom_                                   f64
 	// dom<->layout bridge: opaque handle to the real layout.Node this placeholder mirrors (dom can't
 	// name the layout type). The layout module attaches these via attach_layout_nodes. See layout/dom_layout_bridge.v.
-	layout_handle voidptr = unsafe { nil }
+	layout_handle                    voidptr = unsafe { nil }
+	apply_style_callback             LayoutApplyStyleCallback = unsafe { nil }
+	set_needs_layout_update_callback LayoutSetNeedsLayoutUpdateCallback = unsafe { nil }
 }
 
-pub type SVGRelayoutCallback = fn(&SVGSVGBox)
+pub type SVGRelayoutCallback = fn (&SVGSVGBox)
 
 @[heap]
 pub struct SVGSVGBox {
@@ -1159,12 +1285,54 @@ pub mut:
 	relayout_callback SVGRelayoutCallback = unsafe { nil }
 }
 
-// Painting stubs
+pub type ViewportPaintableBoolCallback = fn (voidptr, bool)
+
+pub type ViewportPaintableVoidCallback = fn (voidptr)
+
+pub type ViewportPaintableRangeCallback = fn (voidptr, &Range)
+
+pub type ViewportPaintableSelectionCallback = fn (voidptr) ?&Selection
+
+pub type ViewportPaintableRecordDisplayListCallback = fn (voidptr) &DisplayList
+
+pub type ViewportPaintableStackingContextCallback = fn (voidptr) &StackingContext
+
+pub type ViewportPaintableHitTestCallback = fn (voidptr, f64, f64, HitTestType) ?HitTestResult
+
+pub type ViewportPaintableHitTestAllCallback = fn (voidptr, f64, f64) []&Element
+
+// Painting is downstream of DOM, so the concrete viewport paintable and
+// display list are retained behind callbacks instead of introducing a module
+// cycle. Layout/Painting installs these callbacks when it commits a layout.
 @[heap]
-pub struct ViewportPaintable {}
+pub struct ViewportPaintable {
+pub:
+	target                                      voidptr = unsafe { nil }
+	set_needs_to_refresh_scroll_state_callback  ViewportPaintableBoolCallback = unsafe { nil }
+	refresh_scroll_state_callback               ViewportPaintableVoidCallback = unsafe { nil }
+	assign_accumulated_visual_contexts_callback ViewportPaintableVoidCallback = unsafe { nil }
+	selection_callback                          ViewportPaintableSelectionCallback = unsafe { nil }
+	recompute_selection_states_callback         ViewportPaintableRangeCallback = unsafe { nil }
+	set_needs_repaint_callback                  ViewportPaintableVoidCallback = unsafe { nil }
+	document_set_needs_repaint_callback         ViewportPaintableVoidCallback = unsafe { nil }
+	invalidate_all_paint_caches_callback        ViewportPaintableVoidCallback = unsafe { nil }
+	record_display_list_callback                ViewportPaintableRecordDisplayListCallback = unsafe { nil }
+	build_stacking_context_tree_callback        ViewportPaintableVoidCallback = unsafe { nil }
+	stacking_context_callback                   ViewportPaintableStackingContextCallback = unsafe { nil }
+	invalidate_stacking_context_callback        ViewportPaintableVoidCallback = unsafe { nil }
+	hit_test_callback                           ViewportPaintableHitTestCallback = unsafe { nil }
+	hit_test_all_callback                       ViewportPaintableHitTestAllCallback = unsafe { nil }
+}
 
 @[heap]
-pub struct DisplayList {}
+pub struct DisplayList {
+
+	// Owned and interpreted by the module which installed the viewport
+	// paintable callbacks.
+pub:
+	concrete_handle voidptr = unsafe { nil }
+	command_count_  int
+}
 
 // CSS stubs
 @[heap]
@@ -1176,6 +1344,11 @@ pub mut:
 	css_handle                                 voidptr = unsafe { nil }
 	invalidation_property_used_in_has_callback StyleComputerInvalidationPropertyUsedInHasCallback = unsafe { nil }
 	invalidation_plan_callback                 StyleComputerInvalidationPlanCallback = unsafe { nil }
+	recompute_style_callback                   StyleComputerRecomputeStyleCallback = unsafe { nil }
+	recompute_inherited_style_callback         StyleComputerRecomputeInheritedStyleCallback = unsafe { nil }
+	update_animated_style_callback             StyleComputerUpdateAnimatedStyleCallback = unsafe { nil }
+	build_registered_properties_cache_callback StyleComputerBuildCacheCallback = unsafe { nil }
+	build_counter_style_cache_callback         StyleComputerBuildCacheCallback = unsafe { nil }
 }
 
 @[heap]
@@ -1204,8 +1377,16 @@ pub mut:
 	disabled              bool
 	media                 string
 	url                   string
+	source_text_          ?string
 	loading_state         CSSStyleSheetLoadingState = .loaded
 	imported_style_sheets []&CSSStyleSheet
+}
+
+// DOM owns pending-import identity while CSS owns the concrete rule behavior.
+@[heap]
+pub struct CSSImportRule {
+pub:
+	handle voidptr
 }
 
 pub fn (sheet &CSSStyleSheet) loading_state_value() CSSStyleSheetLoadingState {
@@ -1218,50 +1399,149 @@ pub struct FontFaceSet {}
 @[heap]
 pub struct VisualViewport {}
 
+pub type MediaQueryListBoolCallback = fn (voidptr) bool
+
+pub type MediaQueryListSetBoolCallback = fn (voidptr, bool)
+
+pub type MediaQueryListDispatchChangeEventCallback = fn (voidptr, bool)
+
 @[heap]
-pub struct MediaQueryList {}
-
-pub type CSSMediaQueryListMatchesCallback = fn(voidptr) bool
-
-pub type CSSMediaQueryListEvaluateCallback = fn(voidptr) bool
-
-pub type CSSMediaQueryListHasChangedStateCallback = fn(voidptr) bool
-
-pub type CSSMediaQueryListSetHasChangedStateCallback = fn(voidptr, bool)
-
-pub type CSSMediaQueryListDispatchChangeEventCallback = fn(voidptr, bool)
-
-pub struct CSSMediaQueryListRegistration {
+pub struct MediaQueryList {
 pub:
-	target                voidptr
-	matches               CSSMediaQueryListMatchesCallback = unsafe { nil }
-	evaluate              CSSMediaQueryListEvaluateCallback = unsafe { nil }
-	has_changed_state     CSSMediaQueryListHasChangedStateCallback = unsafe { nil }
-	set_has_changed_state CSSMediaQueryListSetHasChangedStateCallback = unsafe { nil }
-	dispatch_change_event CSSMediaQueryListDispatchChangeEventCallback = unsafe { nil }
+	target                         voidptr
+	matches_callback               MediaQueryListBoolCallback = unsafe { nil }
+	evaluate_callback              MediaQueryListBoolCallback = unsafe { nil }
+	has_changed_state_callback     MediaQueryListBoolCallback = unsafe { nil }
+	set_has_changed_state_callback MediaQueryListSetBoolCallback = unsafe { nil }
+	dispatch_change_event_callback MediaQueryListDispatchChangeEventCallback = unsafe { nil }
 }
 
 // The DOM can't import css, so Document::update_style() runs the CSS style pass through this registered
 // callback. The css module installs it with `target` = the document pointer; update_style invokes it.
-pub type DocumentStyleUpdateCallback = fn(voidptr)
+pub type DocumentStyleUpdateCallback = fn (voidptr) RequiredInvalidationAfterStyleChange
+
+// Pseudo-class invalidation is implemented by CSS's selector/rule caches. This
+// callback keeps Document's translated algorithm in DOM while crossing the
+// unavoidable dom -> css module boundary without serializing selectors.
+pub type DocumentPseudoClassInvalidationCallback = fn (voidptr, PseudoClass, &Node, ?&Node)
+
+// CSS owns StyleScope and CSSStyleSheet in the V module graph. Keep the
+// translated Document::evaluate_media_rules() entry point in DOM, and cross
+// that module boundary through the document's CSS hook.
+pub type DocumentEvaluateMediaRulesCallback = fn (voidptr)
+
+pub type DocumentGetStyleSheetSourceCallback = fn (voidptr, &StyleSheetIdentifier) ?string
 
 pub struct DocumentStyleUpdateHook {
 pub:
-	target   voidptr = unsafe { nil }
-	callback DocumentStyleUpdateCallback = unsafe { nil }
+	target                      voidptr = unsafe { nil }
+	callback                    DocumentStyleUpdateCallback = unsafe { nil }
+	invalidate_for_pseudo_class DocumentPseudoClassInvalidationCallback = unsafe { nil }
+	evaluate_media_rules        DocumentEvaluateMediaRulesCallback = unsafe { nil }
+	get_style_sheet_source      DocumentGetStyleSheetSourceCallback = unsafe { nil }
 }
 
-pub type StyleComputerInvalidationPropertyUsedInHasCallback = fn(voidptr, InvalidationProperty, &StyleScope) bool
+// Animations imports css, so DOM cannot advance the css-owned default document
+// timeline directly. This hook is the V representation of Document owning one
+// StyleComputer and one default DocumentTimeline.
+pub type DocumentCSSAnimationTimelineUpdateCallback = fn (voidptr, f64)
 
-pub type StyleComputerInvalidationPlanCallback = fn(voidptr, []InvalidationProperty, &StyleScope) InvalidationPlan
+pub struct DocumentCSSAnimationTimelineUpdateHook {
+pub:
+	target   voidptr = unsafe { nil }
+	callback DocumentCSSAnimationTimelineUpdateCallback = unsafe { nil }
+}
 
-pub type StyleScopeMayHaveHasSelectorsCallback = fn(voidptr) bool
+pub type DocumentDispatchCSSAnimationEventCallback = fn (voidptr, &Document, &Animation)
 
-pub type StyleScopeScheduleHasInvalidationCallback = fn(voidptr, &Node)
+pub struct DocumentCSSAnimationEventHook {
+pub:
+	target   voidptr = unsafe { nil }
+	dispatch DocumentDispatchCSSAnimationEventCallback = unsafe { nil }
+}
 
-pub type DocumentThemeColorParseCallback = fn(voidptr, string) ?string
+// CSS creates CSSTransition objects but cannot import HTML's scripting
+// runtime. These callbacks preserve the TemporaryExecutionContext scope used
+// by the C++ constructors without creating a module cycle.
+pub type DocumentTemporaryExecutionContextBeginCallback = fn (voidptr) voidptr
 
-pub type DocumentThemeColorMediaMatchesCallback = fn(voidptr, string) bool
+pub type DocumentTemporaryExecutionContextEndCallback = fn (voidptr, voidptr)
+
+pub struct DocumentTemporaryExecutionContextHook {
+pub:
+	target voidptr = unsafe { nil }
+	begin  DocumentTemporaryExecutionContextBeginCallback = unsafe { nil }
+	end    DocumentTemporaryExecutionContextEndCallback = unsafe { nil }
+}
+
+// Document lifecycle algorithms are owned by DOM, while task queues and
+// environment settings are owned by HTML. C++ crosses that boundary directly;
+// V uses this per-document vtable to avoid a dom -> html import cycle.
+pub type DocumentLifecycleCallback = fn (voidptr, &Document)
+
+pub type DocumentLifecycleObjectCallback = fn (voidptr, &Document) voidptr
+
+pub type DocumentStructuredDeserializeCallback = fn (voidptr, DOMSerializationRecord) ?JSValue
+
+pub type DocumentQueueIntersectionObserverTaskCallback = fn (voidptr, &Document)
+
+pub type DocumentQueueSelectionchangeEventTaskCallback = fn (voidptr, &Document, &Document)
+
+pub struct DocumentLifecycleHook {
+pub:
+	target                           voidptr = unsafe { nil }
+	register_document                DocumentLifecycleCallback = unsafe { nil }
+	unregister_document              DocumentLifecycleCallback = unsafe { nil }
+	remove_tasks_for_document        DocumentLifecycleCallback = unsafe { nil }
+	increment_termination_nesting    DocumentLifecycleCallback = unsafe { nil }
+	decrement_termination_nesting    DocumentLifecycleCallback = unsafe { nil }
+	set_execution_ready              DocumentLifecycleCallback = unsafe { nil }
+	relevant_settings_object         DocumentLifecycleObjectCallback = unsafe { nil }
+	structured_deserialize           DocumentStructuredDeserializeCallback = unsafe { nil }
+	queue_intersection_observer_task DocumentQueueIntersectionObserverTaskCallback = unsafe { nil }
+	queue_selectionchange_event_task DocumentQueueSelectionchangeEventTaskCallback = unsafe { nil }
+	run_unloading_cleanup_steps      DocumentLifecycleCallback = unsafe { nil }
+}
+
+// PageClient owns the cookie jar upstream. DOM cannot import the embedding
+// page module in V, so this hook retains the same typed request/mutation
+// boundary without moving cookie algorithms into Document.
+pub type DocumentCookieVersionCallback = fn (voidptr, int) ?u64
+
+pub type DocumentCookieRequestCallback = fn (voidptr, &liburl.URL, httpcookie.Source) httpcookie.VersionedCookie
+
+pub type DocumentCookieSetCallback = fn (voidptr, &liburl.URL, httpcookie.ParsedCookie, httpcookie.Source)
+
+pub type DocumentCookieVersionIndexRequestCallback = fn (voidptr, UniqueNodeID, string)
+
+pub struct DocumentCookieClientHook {
+pub:
+	target                         voidptr = unsafe { nil }
+	request_document_version       DocumentCookieVersionCallback = unsafe { nil }
+	request_cookie                 DocumentCookieRequestCallback = unsafe { nil }
+	set_cookie                     DocumentCookieSetCallback = unsafe { nil }
+	request_document_version_index DocumentCookieVersionIndexRequestCallback = unsafe { nil }
+}
+
+pub type StyleComputerInvalidationPropertyUsedInHasCallback = fn (voidptr, InvalidationProperty, &StyleScope) bool
+
+pub type StyleComputerInvalidationPlanCallback = fn (voidptr, []InvalidationProperty, &StyleScope) InvalidationPlan
+
+pub type StyleComputerRecomputeStyleCallback = fn (voidptr, &Element) RequiredInvalidationAfterStyleChange
+
+pub type StyleComputerRecomputeInheritedStyleCallback = fn (voidptr, &Element) RequiredInvalidationAfterStyleChange
+
+pub type StyleComputerUpdateAnimatedStyleCallback = fn (voidptr)
+
+pub type StyleComputerBuildCacheCallback = fn (voidptr)
+
+pub type StyleScopeMayHaveHasSelectorsCallback = fn (voidptr) bool
+
+pub type StyleScopeScheduleHasInvalidationCallback = fn (voidptr, &Node)
+
+pub type DocumentThemeColorParseCallback = fn (voidptr, string) ?string
+
+pub type DocumentThemeColorMediaMatchesCallback = fn (voidptr, string) bool
 
 pub struct DocumentThemeColorHook {
 pub:
@@ -1270,9 +1550,9 @@ pub:
 	media_matches DocumentThemeColorMediaMatchesCallback = unsafe { nil }
 }
 
-pub type DocumentLayoutUpdateCallback = fn(voidptr, &Document, f64, f64) voidptr
+pub type DocumentLayoutUpdateCallback = fn (voidptr, &Document, f64, f64, bool) voidptr
 
-pub type DocumentRenderedTextCallback = fn(voidptr, &Document, &Element) string
+pub type DocumentRenderedTextCallback = fn (voidptr, &Document, &Element) string
 
 pub struct DocumentLayoutUpdateHook {
 pub:
@@ -1286,39 +1566,129 @@ pub:
 	callback DocumentRenderedTextCallback = unsafe { nil }
 }
 
+// DOM cannot import ARIA/HTML, so Element::role_or_default() is supplied by
+// the owning document's HTML implementation through this module boundary.
+pub type DocumentElementAllowsNameFromContentCallback = fn (voidptr, &Element, bool) bool
+
+pub type DocumentEmbeddedControlLabelValueCallback = fn (voidptr, &Element) ?string
+
+pub struct DocumentAccessibilityRoleHook {
+pub:
+	target                           voidptr = unsafe { nil }
+	element_allows_name_from_content DocumentElementAllowsNameFromContentCallback = unsafe { nil }
+	embedded_control_label_value     DocumentEmbeddedControlLabelValueCallback = unsafe { nil }
+}
+
+// ContentSecurityPolicy depends on DOM for violation events, so DOM cannot
+// import it back directly. HTML installs this callback on each document and
+// supplies the translated CSP policy engine at the same boundary where C++
+// obtains the document global object's PolicyList.
+pub type DocumentInlineCSPCheckCallback = fn (voidptr, &Element, string, string) bool
+
+pub type DocumentCSPInitializationCallback = fn (voidptr, &Document)
+
+pub struct DocumentCSPHook {
+pub:
+	target       voidptr = unsafe { nil }
+	inline_check DocumentInlineCSPCheckCallback = unsafe { nil }
+	initialize   DocumentCSPInitializationCallback = unsafe { nil }
+}
+
+// TrustedTypes depends on WebIDL and CSP, while DOM owns the injection sinks.
+// The HTML embedding installs the translated TrustedTypes implementation here
+// without introducing a DOM -> TrustedTypes -> WebIDL -> DOM import cycle.
+pub type DocumentTrustedTypesHTMLCallback = fn (voidptr, &Document, string, string) !string
+
+pub type DocumentTrustedTypesAttributeCallback = fn (voidptr, &Element, string, ?string, string) !string
+
+pub struct DocumentTrustedTypesHook {
+pub:
+	target              voidptr = unsafe { nil }
+	compliant_html      DocumentTrustedTypesHTMLCallback = unsafe { nil }
+	compliant_attribute DocumentTrustedTypesAttributeCallback = unsafe { nil }
+}
+
+// HTML owns entry-realm state and session history, while DOM owns
+// Document::open(). The hook keeps the translated algorithms on their upstream
+// sides of that dependency-cycle boundary.
+pub type DocumentEntryAssociatedDocumentCallback = fn (&Document) &Document
+
+pub type DocumentURLAndHistoryUpdateCallback = fn (&Document, URL) !
+
+pub type DocumentWindowOpenCallback = fn (voidptr, string, string, string) ?&WindowProxy
+
+pub type DocumentDeclarativeRefreshNavigateCallback = fn (voidptr, &Document, URL)
+
+pub struct DocumentHTMLNavigationHook {
+pub:
+	target                       voidptr = unsafe { nil }
+	entry_associated_document    DocumentEntryAssociatedDocumentCallback = unsafe { nil }
+	update_url_and_history       DocumentURLAndHistoryUpdateCallback = unsafe { nil }
+	open_window                  DocumentWindowOpenCallback = unsafe { nil }
+	declarative_refresh_navigate DocumentDeclarativeRefreshNavigateCallback = unsafe { nil }
+}
+
+pub type DocumentFullscreenPopoverCallback = fn (voidptr, &Document, &Element)
+
+pub type DocumentFullscreenContainerFlagCallback = fn (voidptr, &Node) bool
+
+pub struct DocumentFullscreenHook {
+pub:
+	target                           voidptr = unsafe { nil }
+	hide_popovers                    DocumentFullscreenPopoverCallback = unsafe { nil }
+	container_iframe_fullscreen_flag DocumentFullscreenContainerFlagCallback = unsafe { nil }
+}
+
 // The DOM module cannot import css, so selector parsing and matching are supplied by the css module
 // through a per-document callback bridge. Keeping this on Document also gives the css side a natural
 // place to retain its parsed-selector cache.
-pub type DocumentSelectorQueryValidateCallback = fn(voidptr, string) bool
+pub type DocumentSelectorQueryValidateCallback = fn (voidptr, string) bool
 
-pub type DocumentSelectorQueryMatchCallback = fn(voidptr, string, &Element, &ParentNode) bool
+pub type DocumentSelectorQueryMatchCallback = fn (voidptr, string, &Element, &ParentNode) bool
+
+pub type DocumentSelectorQueryContainsNamedNamespaceCallback = fn (voidptr, string) bool
 
 pub struct DocumentSelectorQueryHook {
 pub:
-	target   voidptr = unsafe { nil }
-	validate DocumentSelectorQueryValidateCallback = unsafe { nil }
-	matches  DocumentSelectorQueryMatchCallback = unsafe { nil }
+	target                   voidptr = unsafe { nil }
+	validate                 DocumentSelectorQueryValidateCallback = unsafe { nil }
+	matches                  DocumentSelectorQueryMatchCallback = unsafe { nil }
+	contains_named_namespace DocumentSelectorQueryContainsNamedNamespaceCallback = unsafe { nil }
 }
 
-pub type DocumentHTMLFragmentParseCallback = fn(voidptr, &Element, string, AllowDeclarativeShadowRoots) ![]&Node
+pub type DocumentHTMLFragmentParseCallback = fn (voidptr, &Element, string, AllowDeclarativeShadowRoots) ![]&Node
 
-pub type DocumentFragmentScriptPreparationCallback = fn(voidptr, &Node)
+pub type DocumentFragmentScriptPreparationCallback = fn (voidptr, &Node)
 
-pub type DocumentFormControlSelectedTextCallback = fn(&Element) ?string
+pub type DocumentFormControlSelectedTextCallback = fn (&Element) ?string
 
-pub type DocumentHTMLDocumentParseCallback = fn(voidptr, &Document, string)
+// FormAssociatedTextControlElement lives in HTML and implements DOM's
+// InputEventsTarget interface upstream. DOM cannot import HTML in V, so keep
+// the dynamic `as_if<FormAssociatedTextControlElement>` operation at this
+// narrow module boundary.
+pub type DocumentFormControlInputEventsTargetCallback = fn (&Node) ?&InputEventsTarget
 
-pub type DocumentHTMLParserCreateForScriptingCallback = fn(voidptr, &Document) &HTMLParser
+pub type DocumentHTMLDocumentParseCallback = fn (voidptr, &Document, string)
 
-pub type HTMLParserVoidCallback = fn(voidptr)
+pub type DocumentHTMLParserCreateForScriptingCallback = fn (voidptr, &Document) &HTMLParser
 
-pub type HTMLParserFeedCallback = fn(voidptr, string)
+pub type DocumentEncodingSniffCallback = fn (voidptr, &Document, []u8, ?string) string
 
-pub type HTMLParserRunCallback = fn(voidptr, bool)
+pub type DocumentLoadedHTMLParseCallback = fn (voidptr, &Document, []u8, ?string, URL) !
 
-pub type HTMLParserNestingLevelCallback = fn(voidptr) usize
+pub type DocumentLoadedTextParseCallback = fn (voidptr, &Document, []u8, ?string, URL) !string
 
-pub type HTMLParserBoolCallback = fn(voidptr) bool
+pub type DocumentXMLDocumentParseCallback = fn (voidptr, &Document, string) bool
+
+pub type HTMLParserVoidCallback = fn (voidptr)
+
+pub type HTMLParserFeedCallback = fn (voidptr, string)
+
+pub type HTMLParserRunCallback = fn (voidptr, bool)
+
+pub type HTMLParserNestingLevelCallback = fn (voidptr) usize
+
+pub type HTMLParserBoolCallback = fn (voidptr) bool
 
 pub struct DocumentHTMLFragmentParsingHook {
 pub:
@@ -1328,9 +1698,34 @@ pub:
 	prepare_script_descendants  DocumentFragmentScriptPreparationCallback = unsafe { nil }
 	parse_document              DocumentHTMLDocumentParseCallback = unsafe { nil }
 	create_parser_for_scripting DocumentHTMLParserCreateForScriptingCallback = unsafe { nil }
+	sniff_encoding              DocumentEncodingSniffCallback = unsafe { nil }
+	parse_loaded_html           DocumentLoadedHTMLParseCallback = unsafe { nil }
+	parse_loaded_text           DocumentLoadedTextParseCallback = unsafe { nil }
+	parse_xml_document          DocumentXMLDocumentParseCallback = unsafe { nil }
 }
 
-pub struct BackgroundLayerData {}
+// Opaque view of one CSS::BackgroundLayerData entry. CSS owns the typed
+// ComputedProperties object; retaining that address and the coordinated-layer
+// index avoids serializing the value through text at the DOM/CSS cycle boundary.
+pub struct BackgroundLayerData {
+pub:
+	computed_properties_handle voidptr = unsafe { nil }
+	layer_index                int
+}
+
+pub type DocumentBackgroundLayersCallback = fn (voidptr, &Element) ?[]BackgroundLayerData
+
+pub type DocumentBackgroundImageRenderingCallback = fn (voidptr, &Element) ImageRendering
+
+pub type DocumentBackgroundColorCallback = fn (voidptr, &Element) Color
+
+pub struct DocumentBackgroundStyleHook {
+pub:
+	target                     voidptr = unsafe { nil }
+	background_color           DocumentBackgroundColorCallback = unsafe { nil }
+	background_layers          DocumentBackgroundLayersCallback = unsafe { nil }
+	background_image_rendering DocumentBackgroundImageRenderingCallback = unsafe { nil }
+}
 
 pub struct CSSSelector {
 pub mut:
@@ -1339,7 +1734,8 @@ pub mut:
 
 pub struct SelectorList {
 pub mut:
-	selectors []CSSSelector
+	selectors                []CSSSelector
+	contains_named_namespace bool
 }
 
 pub struct StyleScope {
@@ -1381,8 +1777,9 @@ pub struct ComponentValue {}
 
 pub struct StyleSheetIdentifier {
 pub mut:
-	type_ StyleSheetIdentifierType
-	url   ?string
+	type_                 StyleSheetIdentifierType
+	url                   ?string
+	dom_element_unique_id ?UniqueNodeID
 }
 
 pub enum StyleSheetIdentifierType {
@@ -1399,6 +1796,7 @@ pub struct Window {
 	EventTarget
 pub mut:
 	associated_document_      &Document = unsafe { nil }
+	location_                 &Location = unsafe { nil }
 	scroll_x_                 f64
 	scroll_y_                 f64
 	current_event_            &Event = unsafe { nil }
@@ -1407,14 +1805,21 @@ pub mut:
 }
 
 @[heap]
-pub struct CloseWatcherManager {}
+pub struct CloseWatcherManager {
+pub:
+	target                          voidptr = unsafe { nil }
+	notify_user_activation_callback fn (voidptr) = unsafe { nil }
+}
 
 @[heap]
 pub struct BrowsingContext {
 pub mut:
-	window_proxy_    ?&WindowProxy
-	active_document_ ?&Document
-	group_handle     voidptr
+	window_proxy_                      ?&WindowProxy
+	active_document_                   ?&Document
+	group_handle                       voidptr
+	is_top_level_                      bool = true
+	virtual_browsing_context_group_id_ string
+	popup_sandboxing_flag_bits_        u32
 }
 
 // The concrete HTML parser lives in the html module, which imports dom. This
@@ -1439,7 +1844,7 @@ pub struct History {
 pub mut:
 	index  int
 	length int
-	state  voidptr
+	state  JSValue = js_null()
 }
 
 @[heap]
@@ -1451,25 +1856,85 @@ pub struct WindowProxy {}
 @[heap]
 pub struct NavigationParams {
 pub mut:
-	response_mime_type                    string = 'text/html'
-	response_body                         []u8
-	response_url                          URL = url_about_blank()
-	request_current_url                   ?URL
-	browsing_context                      ?&BrowsingContext
-	origin                                Origin = origin_create_opaque()
-	needs_a_browsing_context_group_switch bool
-	would_switch_due_to_report_only       bool
+	response_mime_type                         string = 'text/html'
+	response_body                              []u8
+	response_url                               URL = url_about_blank()
+	request_current_url                        ?URL
+	browsing_context                           ?&BrowsingContext
+	origin                                     Origin = origin_create_opaque()
+	needs_a_browsing_context_group_switch      bool
+	would_switch_due_to_report_only            bool
+	final_sandboxing_flag_bits                 u32
+	opener_policy                              OpenerPolicy
+	create_top_level_browsing_context_target   voidptr = unsafe { nil }
+	create_top_level_browsing_context_callback NavigationParamsCreateTopLevelBrowsingContextCallback = unsafe { nil }
+	html_fragment_parsing_hook                 ?DocumentHTMLFragmentParsingHook
 }
+
+pub type NavigationParamsCreateTopLevelBrowsingContextCallback = fn (voidptr, &NavigationParams, &BrowsingContext) &BrowsingContext
 
 @[heap]
 pub struct SessionHistoryEntry {
 pub mut:
 	url                       URL
-	classic_history_api_state voidptr
+	classic_history_api_state DOMSerializationRecord
+}
+
+pub struct DOMSerializationRecord {
+pub:
+	data []u8
+}
+
+// Dependency-cycle-safe contract shared by CSS image values and the HTML image
+// decoder. HTML's decoded image implementations satisfy this interface
+// structurally, matching the C++ forward-declared DecodedImageData boundary.
+pub interface SharedDecodedImageData {
+	bitmap(frame_index usize) ?&ImmutableBitmap_
+	frame_duration(frame_index usize) int
+	frame_count() usize
+	loop_count() usize
+	is_animated() bool
+	intrinsic_width() ?f64
+	intrinsic_height() ?f64
+	intrinsic_aspect_ratio() ?f64
+}
+
+pub enum SharedResourceRequestState {
+	new_
+	fetching
+	finished
+	failed
+}
+
+pub type SharedResourceRequestCallback = fn ()
+
+pub type SharedResourceFetchCallback = fn (&SharedResourceRequest, URL)
+
+pub type SharedResourceDecodeCallback = fn (URL, string, []u8) !SharedDecodedImageData
+
+pub struct SharedResourceCallbacks {
+	on_finish ?SharedResourceRequestCallback
+	on_fail   ?SharedResourceRequestCallback
+}
+
+pub struct SharedResourceImageData {
+pub:
+	data SharedDecodedImageData
 }
 
 @[heap]
-pub struct SharedResourceRequest {}
+pub struct SharedResourceRequest {
+pub:
+	url      URL
+	document &Document
+mut:
+	state_           SharedResourceRequestState
+	callbacks        []SharedResourceCallbacks
+	image_data_      ?SharedResourceImageData
+	load_event_delay bool
+	fetch_controller voidptr
+	decode_callback  ?SharedResourceDecodeCallback
+}
 
 @[heap]
 pub struct ListOfAvailableImages {}
@@ -1480,8 +1945,11 @@ pub struct PolicyContainer {}
 @[heap]
 pub struct Storage {}
 
-@[heap]
-pub struct SourceSnapshotParams {}
+pub type NavigableViewportScrollCallback = fn (voidptr, CSSPixelPoint_)
+
+pub type NavigablePerformScrollCallback = fn (voidptr, CSSPixelPoint_) &Promise
+
+pub type NavigableIsFocusedCallback = fn (voidptr) bool
 
 @[heap]
 pub struct Navigable {
@@ -1493,13 +1961,33 @@ pub mut:
 	container_                  ?&Node
 	container_document_         ?&Document
 	is_top_level_traversable_   bool
+	html_model_handle_          voidptr = unsafe { nil }
+	viewport_scroll_callback_   NavigableViewportScrollCallback = unsafe { nil }
+	perform_scroll_callback_    NavigablePerformScrollCallback = unsafe { nil }
+	is_focused_callback_        NavigableIsFocusedCallback = unsafe { nil }
+}
+
+pub fn (n &Navigable) perform_scroll_of_viewport_scrolling_box(position CSSPixelPoint_) {
+	if n.html_model_handle_ != unsafe { nil } && n.viewport_scroll_callback_ != unsafe { nil } {
+		n.viewport_scroll_callback_(n.html_model_handle_, position)
+	}
+}
+
+pub fn (n &Navigable) perform_a_scroll_of_the_viewport(position CSSPixelPoint_) &Promise {
+	if n.html_model_handle_ != unsafe { nil } && n.perform_scroll_callback_ != unsafe { nil } {
+		return n.perform_scroll_callback_(n.html_model_handle_, position)
+	}
+	return Promise.resolved(js_undefined())
 }
 
 @[heap]
-pub struct NavigableContainer {}
+pub struct NavigableContainer {
+mut:
+	content_navigable_ ?&Navigable
+}
 
 pub fn (nc &NavigableContainer) content_navigable() ?&Navigable {
-	return none
+	return nc.content_navigable_
 }
 
 // Animation stubs
@@ -1510,7 +1998,38 @@ pub struct AnimationTimeline {}
 pub struct DocumentTimeline {}
 
 @[heap]
-pub struct Animation {}
+pub struct Animation {
+
+	// The concrete Animations::Animation owns this DOM-cycle boundary identity.
+	// Keeping its handle here lets bindings recover the translated object
+	// without fabricating a second animation state machine.
+pub mut:
+	concrete_handle_ voidptr = unsafe { nil }
+	concrete_kind_   ConcreteAnimationKind
+}
+
+pub enum ConcreteAnimationKind {
+	web_animation
+	css_animation
+	css_transition
+}
+
+pub type DocumentCalculateGetAnimationsCallback = fn (voidptr, &Node) ![]&Animation
+
+pub type DocumentUpdateAnimationsCallback = fn (voidptr, &Node, f64)
+
+pub type DocumentRemoveReplacedAnimationsCallback = fn (voidptr, &Node)
+
+pub type DocumentCompareAnimationsCallback = fn (voidptr, &Animation, &Animation) int
+
+pub struct DocumentAnimationsHook {
+pub:
+	target                     voidptr = unsafe { nil }
+	calculate_get_animations   DocumentCalculateGetAnimationsCallback = unsafe { nil }
+	update_animations          DocumentUpdateAnimationsCallback = unsafe { nil }
+	remove_replaced_animations DocumentRemoveReplacedAnimationsCallback = unsafe { nil }
+	compare_animations         DocumentCompareAnimationsCallback = unsafe { nil }
+}
 
 pub struct PaintConfig {}
 
@@ -1528,12 +2047,66 @@ pub enum SelectionDirection {
 	directionless
 }
 
-// Intersection/Resize Observer stubs
-@[heap]
-pub struct IntersectionObserver {}
+// IntersectionObserver is implemented in the intersectionobserver module, which
+// imports DOM. These callbacks are the cycle-breaking equivalent of the typed
+// C++ references kept by Document: the registration still owns exactly one
+// observer identity and forwards every operation to that translated object.
+pub type IntersectionObserverObservationTargetsCallback = fn (voidptr) []&Element
+
+pub type IntersectionObserverObserveCallback = fn (voidptr, &Element)
+
+pub type IntersectionObserverQueueEntryCallback = fn (voidptr, f64, Rect, Rect, Rect, bool, f64, &Element)
+
+pub type IntersectionObserverNotifyCallback = fn (voidptr)
+
+pub type IntersectionObserverRootBoundsCallback = fn (voidptr) Rect
+
+pub type IntersectionObserverRootNodeCallback = fn (voidptr) ?&Node
+
+pub type IntersectionObserverBoolCallback = fn (voidptr) bool
+
+pub type IntersectionObserverThresholdsCallback = fn (voidptr) []f64
+
+pub struct IntersectionObserverMarginValue {
+pub:
+	value         f64
+	is_percentage bool
+}
+
+pub type IntersectionObserverMarginsCallback = fn (voidptr) []IntersectionObserverMarginValue
 
 @[heap]
-pub struct ResizeObserver {}
+pub struct IntersectionObserver {
+pub:
+	target               voidptr = unsafe { nil }
+	observation_targets_ IntersectionObserverObservationTargetsCallback = unsafe { nil }
+	observe_target       IntersectionObserverObserveCallback = unsafe { nil }
+	unobserve_target     IntersectionObserverObserveCallback = unsafe { nil }
+	queue_entry_         IntersectionObserverQueueEntryCallback = unsafe { nil }
+	notify               IntersectionObserverNotifyCallback = unsafe { nil }
+	root_bounds          IntersectionObserverRootBoundsCallback = unsafe { nil }
+	root_node            IntersectionObserverRootNodeCallback = unsafe { nil }
+	is_implicit_root     IntersectionObserverBoolCallback = unsafe { nil }
+	root_is_element      IntersectionObserverBoolCallback = unsafe { nil }
+	thresholds           IntersectionObserverThresholdsCallback = unsafe { nil }
+	scroll_margins       IntersectionObserverMarginsCallback = unsafe { nil }
+}
+
+pub type ResizeObserverGatherAtDepthCallback = fn (voidptr, int)
+
+pub type ResizeObserverBroadcastCallback = fn (voidptr) int
+
+pub type ResizeObserverBoolCallback = fn (voidptr) bool
+
+@[heap]
+pub struct ResizeObserver {
+pub:
+	target          voidptr = unsafe { nil }
+	gather_at_depth ResizeObserverGatherAtDepthCallback = unsafe { nil }
+	broadcast       ResizeObserverBroadcastCallback = unsafe { nil }
+	has_active      ResizeObserverBoolCallback = unsafe { nil }
+	has_skipped     ResizeObserverBoolCallback = unsafe { nil }
+}
 
 // Other stubs
 @[heap]
@@ -1547,8 +2120,8 @@ pub struct HTMLCollection {
 pub mut:
 	root                    &ParentNode = unsafe { nil }
 	scope                   HTMLCollectionScope = .descendants
-	filter                  fn(&Element) bool = always_accept_element
-	sort                    fn(&Element, &Element) bool = never_sort_elements
+	filter                  fn (&Element) bool = always_accept_element
+	sort                    fn (&Element, &Element) bool = never_sort_elements
 	cached_elements         []&Element
 	cached_dom_tree_version u64
 	cache_initialized       bool
@@ -1565,6 +2138,28 @@ pub:
 	collection ?&HTMLCollection
 }
 
+// The three object variants returned by Document's legacy named getter.
+// WebIDL converts each branch to the corresponding JavaScript object.
+pub struct DocumentNamedItemResult {
+pub:
+	element      ?&Element
+	collection   ?&HTMLCollection
+	window_proxy ?&WindowProxy
+}
+
+pub fn (result DocumentNamedItemResult) to_js_value() JSValue {
+	if value := result.window_proxy {
+		return js_object(voidptr(value))
+	}
+	if value := result.element {
+		return js_object(voidptr(value))
+	}
+	if value := result.collection {
+		return js_object(voidptr(value))
+	}
+	return js_undefined()
+}
+
 // Translation of HTML/HTMLAllCollection.{h,cpp}. It lives in dom because the
 // translated Document owns and exposes this platform collection.
 @[heap]
@@ -1572,7 +2167,7 @@ pub struct HTMLAllCollection {
 pub mut:
 	root   &ParentNode = unsafe { nil }
 	scope  HTMLAllCollectionScope = .descendants
-	filter fn(&Element) bool = always_accept_element
+	filter fn (&Element) bool = always_accept_element
 }
 
 @[heap]
@@ -1584,7 +2179,7 @@ pub mut:
 	nodes       []&Node
 	is_live     bool
 	live_scope  LiveNodeListScope = .children
-	live_filter fn(&Node) bool = always_accept_node
+	live_filter fn (&Node) bool = always_accept_node
 }
 
 @[heap]
@@ -1742,12 +2337,12 @@ pub mut:
 pub struct DocumentObserver {
 pub mut:
 	document_                           &Document = unsafe { nil }
-	document_became_active_             ?fn()
-	document_became_inactive_           ?fn()
-	document_completely_loaded_         ?fn()
-	document_readiness_observer_        ?fn(DocumentReadyState)
-	document_visibility_state_observer_ ?fn(VisibilityState)
-	document_page_showing_observer_     ?fn(bool)
+	document_became_active_             ?fn ()
+	document_became_inactive_           ?fn ()
+	document_completely_loaded_         ?fn ()
+	document_readiness_observer_        ?fn (DocumentReadyState)
+	document_visibility_state_observer_ ?fn (VisibilityState)
+	document_page_showing_observer_     ?fn (bool)
 }
 
 @[heap]
@@ -1765,8 +2360,21 @@ pub mut:
 	active_descendant_invalidations []PendingDescendantInvalidation
 }
 
+pub type InputEventsTargetCursorPositionCallback = fn (voidptr) ?&Position
+
 @[heap]
-pub struct InputEventsTarget {}
+pub struct InputEventsTarget {
+pub:
+	target                   voidptr = unsafe { nil }
+	cursor_position_callback InputEventsTargetCursorPositionCallback = unsafe { nil }
+}
+
+pub fn (target &InputEventsTarget) cursor_position() ?&Position {
+	if target.target == unsafe { nil } || target.cursor_position_callback == unsafe { nil } {
+		return none
+	}
+	return target.cursor_position_callback(target.target)
+}
 
 @[heap]
 pub struct Position {
@@ -1778,9 +2386,13 @@ pub mut:
 @[heap]
 pub struct CallbackType {
 pub mut:
-	handle_event      ?fn(&Event, ?&EventTarget) JSValue
-	accept_node       ?fn(&Node) int
-	mutation_callback ?fn([]&MutationRecord, &MutationObserver)
+	handle_event      ?fn (&Event, ?&EventTarget) JSValue
+	accept_node       ?fn (&Node) int
+	mutation_callback ?fn ([]&MutationRecord, &MutationObserver)
+	// The callback object's associated Realm global. DOM cannot import HTML's
+	// WindowOrWorkerGlobalScope mixin, but Window itself is a DOM bridge type and
+	// is sufficient for EventDispatcher's current-event bookkeeping.
+	associated_window ?&Window
 }
 
 @[heap]
@@ -1788,6 +2400,11 @@ pub struct ViewTransition {}
 
 @[heap]
 pub struct Page {
+pub:
+	target                             voidptr = unsafe { nil }
+	did_create_document_callback       fn (voidptr, &Document) = unsafe { nil }
+	did_update_resource_count_callback fn (voidptr, int) = unsafe { nil }
+	did_change_title_callback          fn (voidptr, string) = unsafe { nil }
 mut:
 	last_changed_title_ string
 	title_change_count_ int
@@ -1797,7 +2414,12 @@ mut:
 pub struct ConsoleClient {}
 
 @[heap]
-pub struct FormAssociatedElement {}
+pub struct FormAssociatedElement {
+pub:
+	target                                    voidptr = unsafe { nil }
+	element_id_changed_callback               fn (voidptr) = unsafe { nil }
+	element_with_id_added_or_removed_callback fn (voidptr) = unsafe { nil }
+}
 
 @[heap]
 pub struct ElementByIdMap {
@@ -1916,9 +2538,30 @@ pub fn (mut s Segmenter) set_segmented_text(text string) {
 	s.segmented_text = text
 }
 
-// Stub timer
 @[heap]
-pub struct Timer {}
+pub struct Timer {
+pub:
+	interval_ms int
+	repeating   bool
+pub mut:
+	callback fn () = unsafe { nil }
+	active   bool
+}
+
+pub fn Timer.create_repeating(interval_ms int, callback fn ()) &Timer {
+	return &Timer{
+		interval_ms: interval_ms
+		repeating: true
+		callback: callback
+	}
+}
+
+pub fn Timer.create_single_shot(interval_ms int, callback fn ()) &Timer {
+	return &Timer{
+		interval_ms: interval_ms
+		callback: callback
+	}
+}
 
 // Stub Rect
 pub struct Rect {
@@ -2013,8 +2656,12 @@ pub fn (w &Window) has_sticky_activation() bool {
 	return current_high_resolution_time(w) >= w.last_activation_timestamp
 }
 
-pub fn (w &Window) dispatch_popstate_event(state voidptr) {
-	_ = state
+pub fn (w &Window) dispatch_popstate_event(state JSValue) {
+	mut event := PopStateEvent.create('popstate', PopStateEventInit{
+		state: state
+	})
+	event.set_is_trusted(true)
+	event_target_dispatch_event(unsafe { &EventTarget(w) }, unsafe { &Event(event) })
 }
 
 pub fn (w &Window) current_event() ?&Event {
@@ -2040,7 +2687,9 @@ pub fn (mut w Window) close_watcher_manager() &CloseWatcherManager {
 }
 
 pub fn (manager &CloseWatcherManager) notify_about_user_activation() {
-	_ = manager
+	if manager.target != unsafe { nil } && manager.notify_user_activation_callback != unsafe { nil } {
+		manager.notify_user_activation_callback(manager.target)
+	}
 }
 
 pub fn (w &Window) scroll_x() f64 {
@@ -2062,10 +2711,28 @@ pub fn (n &Navigable) container() ?&Node {
 	return n.container_
 }
 
+pub fn (mut n Node) set_load_event_delay_hook(hook ?NodeLoadEventDelayHook) {
+	n.load_event_delay_hook_ = hook
+}
+
 pub fn (n &Node) currently_delays_the_load_event() bool {
-	_ = n
-	// Stub for HTML navigable container elements' load-event delaying hook.
-	return false
+	hook := n.load_event_delay_hook_ or { return false }
+	if hook.callback == unsafe { nil } {
+		return false
+	}
+	return hook.callback(hook.target)
+}
+
+pub fn (mut n Node) set_active_window_proxy_hook(hook ?NodeActiveWindowProxyHook) {
+	n.active_window_proxy_hook_ = hook
+}
+
+pub fn (n &Node) active_window_proxy() ?&WindowProxy {
+	hook := n.active_window_proxy_hook_ or { return none }
+	if hook.callback == unsafe { nil } {
+		return none
+	}
+	return hook.callback(hook.target)
 }
 
 pub fn (n &Navigable) active_document() ?&Document {
@@ -2117,6 +2784,9 @@ pub fn (n &Navigable) is_traversable() bool {
 }
 
 pub fn (n &Navigable) is_focused() bool {
+	if n.html_model_handle_ != unsafe { nil } && n.is_focused_callback_ != unsafe { nil } {
+		return n.is_focused_callback_(n.html_model_handle_)
+	}
 	return false
 }
 
@@ -2125,13 +2795,13 @@ pub fn (n &Navigable) system_visibility_state() VisibilityState {
 }
 
 // History methods
-pub fn (h &History) set_state(state voidptr) {
-	_ = state
+pub fn (mut h History) set_state(state JSValue) {
+	h.state = state
 }
 
 // SessionHistoryEntry methods/fields
-pub fn (she &SessionHistoryEntry) get_classic_history_api_state() voidptr {
-	return unsafe { nil }
+pub fn (she &SessionHistoryEntry) get_classic_history_api_state() DOMSerializationRecord {
+	return she.classic_history_api_state
 }
 
 // HTMLParser bridge methods. The callbacks are supplied by html when it
@@ -2211,58 +2881,134 @@ pub enum ViewTransitionPhase {
 
 // MediaQueryList methods
 pub fn (mql &MediaQueryList) matches() bool {
-	return false
+	return mql.target != unsafe { nil } && mql.matches_callback != unsafe { nil } && mql.matches_callback(mql.target)
 }
 
 pub fn (mql &MediaQueryList) evaluate() bool {
-	return false
+	return mql.target != unsafe { nil } && mql.evaluate_callback != unsafe { nil } && mql.evaluate_callback(mql.target)
 }
 
 pub fn (mql &MediaQueryList) dispatch_change_event(matches bool) {
-	_ = matches
+	if mql.target != unsafe { nil } && mql.dispatch_change_event_callback != unsafe { nil } {
+		mql.dispatch_change_event_callback(mql.target, matches)
+	}
+}
+
+pub fn (mql &MediaQueryList) has_changed_state() bool {
+	return mql.target != unsafe { nil } && mql.has_changed_state_callback != unsafe { nil } && mql.has_changed_state_callback(mql.target)
+}
+
+pub fn (mql &MediaQueryList) set_has_changed_state(value bool) {
+	if mql.target != unsafe { nil } && mql.set_has_changed_state_callback != unsafe { nil } {
+		mql.set_has_changed_state_callback(mql.target, value)
+	}
 }
 
 // CSSStyleSheet methods
 pub fn (ss &CSSStyleSheet) source_text() ?string {
-	return none
+	return ss.source_text_
 }
 
 // StyleSheetList methods
 pub fn (ssl &StyleSheetList) get_sheets() []&CSSStyleSheet {
-	return []
+	return ssl.sheets.clone()
 }
 
 // ViewportPaintable methods
 pub fn (vp &ViewportPaintable) set_needs_to_refresh_scroll_state(b bool) {
-	_ = b
+	if vp.target != unsafe { nil } && vp.set_needs_to_refresh_scroll_state_callback != unsafe { nil } {
+		vp.set_needs_to_refresh_scroll_state_callback(vp.target, b)
+	}
+}
+
+pub fn (vp &ViewportPaintable) refresh_scroll_state() {
+	if vp.target != unsafe { nil } && vp.refresh_scroll_state_callback != unsafe { nil } {
+		vp.refresh_scroll_state_callback(vp.target)
+	}
+}
+
+pub fn (vp &ViewportPaintable) assign_accumulated_visual_contexts() {
+	if vp.target != unsafe { nil } && vp.assign_accumulated_visual_contexts_callback != unsafe { nil } {
+		vp.assign_accumulated_visual_contexts_callback(vp.target)
+	}
+}
+
+pub fn (vp &ViewportPaintable) selection() ?&Selection {
+	if vp.target != unsafe { nil } && vp.selection_callback != unsafe { nil } {
+		return vp.selection_callback(vp.target)
+	}
+	return none
+}
+
+pub fn (vp &ViewportPaintable) is_viewport_paintable() bool {
+	return true
 }
 
 pub fn (vp &ViewportPaintable) recompute_selection_states(range &Range) {
-	_ = vp
-	_ = range
+	if vp.target != unsafe { nil } && vp.recompute_selection_states_callback != unsafe { nil } {
+		vp.recompute_selection_states_callback(vp.target, range)
+	}
 }
 
 pub fn (vp &ViewportPaintable) set_needs_repaint() {
-	_ = vp
+	if vp.target != unsafe { nil } && vp.set_needs_repaint_callback != unsafe { nil } {
+		vp.set_needs_repaint_callback(vp.target)
+	}
 }
 
-pub fn (vp &ViewportPaintable) invalidate_all_paint_caches() {}
+// Document::set_needs_repaint() invalidates the assembled display list but does
+// not invalidate any PaintableBox command cache. The downstream painting bridge
+// still needs this notification so its next record does not reuse that list.
+fn (vp &ViewportPaintable) document_set_needs_repaint() {
+	if vp.target != unsafe { nil } && vp.document_set_needs_repaint_callback != unsafe { nil } {
+		vp.document_set_needs_repaint_callback(vp.target)
+	}
+}
+
+pub fn (vp &ViewportPaintable) invalidate_all_paint_caches() {
+	if vp.target != unsafe { nil } && vp.invalidate_all_paint_caches_callback != unsafe { nil } {
+		vp.invalidate_all_paint_caches_callback(vp.target)
+	}
+}
 
 pub fn (vp &ViewportPaintable) record_display_list() ?&DisplayList {
+	if vp.target != unsafe { nil } && vp.record_display_list_callback != unsafe { nil } {
+		return vp.record_display_list_callback(vp.target)
+	}
 	return none
 }
 
-pub fn (vp &ViewportPaintable) build_stacking_context_tree_if_needed() {}
+pub fn (vp &ViewportPaintable) build_stacking_context_tree_if_needed() {
+	if vp.target != unsafe { nil } && vp.build_stacking_context_tree_callback != unsafe { nil } {
+		vp.build_stacking_context_tree_callback(vp.target)
+	}
+}
 
 pub fn (vp &ViewportPaintable) stacking_context() ?&StackingContext {
+	if vp.target != unsafe { nil } && vp.stacking_context_callback != unsafe { nil } {
+		return vp.stacking_context_callback(vp.target)
+	}
 	return none
+}
+
+pub fn (vp &ViewportPaintable) invalidate_stacking_context() {
+	if vp.target != unsafe { nil } && vp.invalidate_stacking_context_callback != unsafe { nil } {
+		vp.invalidate_stacking_context_callback(vp.target)
+	}
 }
 
 pub fn (vp &ViewportPaintable) hit_test(x f64, y f64, type_ HitTestType) ?HitTestResult {
+	if vp.target != unsafe { nil } && vp.hit_test_callback != unsafe { nil } {
+		return vp.hit_test_callback(vp.target, x, y, type_)
+	}
 	return none
 }
 
-pub fn (vp &ViewportPaintable) hit_test_all(x f64, y f64, mut results []&Element) {}
+pub fn (vp &ViewportPaintable) hit_test_all(x f64, y f64, mut results []&Element) {
+	if vp.target != unsafe { nil } && vp.hit_test_all_callback != unsafe { nil } {
+		results << vp.hit_test_all_callback(vp.target, x, y)
+	}
+}
 
 pub struct HitTestResult {
 pub:
@@ -2287,66 +3033,69 @@ pub enum HitTestType {
 }
 
 @[heap]
-pub struct StackingContext {}
+pub struct StackingContext {
+pub:
+	concrete_handle voidptr = unsafe { nil }
+	dump_callback   StackingContextDumpCallback = unsafe { nil }
+}
 
 pub fn (sc &StackingContext) dump() string {
+	if sc.concrete_handle != unsafe { nil } && sc.dump_callback != unsafe { nil } {
+		return sc.dump_callback(sc.concrete_handle)
+	}
 	return ''
 }
 
+pub type StackingContextDumpCallback = fn (voidptr) string
+
 // DisplayList methods
+pub fn (dl &DisplayList) command_count() int {
+	return dl.command_count_
+}
+
 pub fn (dl &DisplayList) dump() string {
 	return ''
 }
 
 // IntersectionObserver methods
 pub fn (io &IntersectionObserver) observation_targets() []&Element {
-	return []
+	if io.observation_targets_ == unsafe { nil } {
+		return []
+	}
+	return io.observation_targets_(io.target)
 }
 
 pub fn (io &IntersectionObserver) observe(element &Element) {
-	_ = element
+	if io.observe_target != unsafe { nil } {
+		io.observe_target(io.target, element)
+	}
 }
 
 pub fn (io &IntersectionObserver) unobserve(element &Element) {
-	_ = element
+	if io.unobserve_target != unsafe { nil } {
+		io.unobserve_target(io.target, element)
+	}
 }
 
-// ResizeObserver methods
-pub fn (ro &ResizeObserver) observation_targets() []&ResizeObservation {
-	return []
+pub fn (ro &ResizeObserver) gather_active_observations_at_depth(depth int) {
+	if ro.target != unsafe { nil } && ro.gather_at_depth != unsafe { nil } {
+		ro.gather_at_depth(ro.target, depth)
+	}
 }
 
-pub fn (ro &ResizeObserver) active_targets() []&ResizeObservation {
-	return []
+pub fn (ro &ResizeObserver) broadcast_active_resize_observations() int {
+	if ro.target == unsafe { nil } || ro.broadcast == unsafe { nil } {
+		return max_int
+	}
+	return ro.broadcast(ro.target)
 }
 
-pub fn (ro &ResizeObserver) skipped_targets() []&ResizeObservation {
-	return []
+pub fn (ro &ResizeObserver) has_active_observations() bool {
+	return ro.target != unsafe { nil } && ro.has_active != unsafe { nil } && ro.has_active(ro.target)
 }
 
-pub fn (mut ro ResizeObserver) clear_active_targets() {}
-
-pub fn (mut ro ResizeObserver) clear_skipped_targets() {}
-
-pub fn (mut ro ResizeObserver) add_active_target(obs &ResizeObservation) {
-	_ = obs
-}
-
-pub fn (mut ro ResizeObserver) add_skipped_target(obs &ResizeObservation) {
-	_ = obs
-}
-
-pub fn (mut ro ResizeObserver) invoke_callback() {}
-
-@[heap]
-pub struct ResizeObservation {}
-
-pub fn (ro &ResizeObservation) is_active() bool {
-	return false
-}
-
-pub fn (ro &ResizeObservation) target_depth() int {
-	return 0
+pub fn (ro &ResizeObserver) has_skipped_observations() bool {
+	return ro.target != unsafe { nil } && ro.has_skipped != unsafe { nil } && ro.has_skipped(ro.target)
 }
 
 // AnimationTimeline methods
@@ -2387,14 +3136,44 @@ pub fn (ae &AnimationEffect) target() ?&Element {
 }
 
 // FormAssociatedElement methods
-pub fn (fae &FormAssociatedElement) element_id_changed() {}
+pub fn (fae &FormAssociatedElement) element_id_changed() {
+	if fae.target != unsafe { nil } && fae.element_id_changed_callback != unsafe { nil } {
+		fae.element_id_changed_callback(fae.target)
+	}
+}
 
-pub fn (fae &FormAssociatedElement) element_with_id_was_added_or_removed() {}
+pub fn (fae &FormAssociatedElement) element_with_id_was_added_or_removed() {
+	if fae.target != unsafe { nil } && fae.element_with_id_added_or_removed_callback != unsafe { nil } {
+		fae.element_with_id_added_or_removed_callback(fae.target)
+	}
+}
 
 // Timer methods
-pub fn (t &Timer) start() {}
+pub fn (mut t Timer) start() {
+	t.active = true
+}
 
-pub fn (t &Timer) restart() {}
+pub fn (mut t Timer) restart() {
+	t.active = true
+}
+
+pub fn (mut t Timer) stop() {
+	t.active = false
+}
+
+pub fn (mut t Timer) fire() {
+	if !t.active || t.callback == unsafe { nil } {
+		return
+	}
+	if !t.repeating {
+		t.active = false
+	}
+	t.callback()
+}
+
+pub fn (t &Timer) is_active() bool {
+	return t.active
+}
 
 // NodeList extra fields
 pub fn (nl &NodeList) items() []&Node {
@@ -2405,10 +3184,9 @@ pub fn (nl &NodeList) items() []&Node {
 
 // Origin methods
 pub fn (o &Origin) effective_domain() ?string {
-	if o.value == 'opaque' {
-		return none
-	}
-	return o.value
+	record := o.liburl_origin() or { return none }
+	host := record.effective_domain() or { return none }
+	return host.serialize()
 }
 
 // Document helper methods referenced by implementations
@@ -2421,7 +3199,12 @@ pub fn (d &Document) viewport_rect() Rect {
 }
 
 pub fn (mut d Document) set_viewport_rect(rect Rect) {
+	scroll_offset_changed := d.viewport_rect_.x != rect.x || d.viewport_rect_.y != rect.y
 	d.viewport_rect_ = rect
+	if scroll_offset_changed {
+		d.set_needs_to_refresh_scroll_state(true)
+		d.set_needs_repaint()
+	}
 }
 
 pub fn (d &Document) is_svg_image_document() bool {
@@ -2443,7 +3226,7 @@ pub fn (d &Document) in_quirks_mode() bool {
 	return d.quirks_mode == .yes
 }
 
-pub fn (d &Document) for_each_shadow_including_descendant(callback fn(&Node) TraversalDecision) TraversalDecision {
+pub fn (d &Document) for_each_shadow_including_descendant(callback fn (&Node) TraversalDecision) TraversalDecision {
 	document_node := unsafe { &Node(d) }
 	return document_node.for_each_shadow_including_descendant(callback)
 }
@@ -2508,13 +3291,35 @@ pub fn (mut d Document) notify_each_document_observer_page_showing() {
 	d.document_observers_being_notified.clear()
 }
 
-pub fn (mut d Document) evaluate_media_rules() {}
+pub fn (mut d Document) evaluate_media_rules() {
+	hook := d.style_update_hook_ or { return }
+	if hook.evaluate_media_rules != unsafe { nil } {
+		hook.evaluate_media_rules(hook.target)
+	}
+}
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#unloading-document-cleanup-steps
-pub fn (mut d Document) run_unloading_cleanup_steps() {}
+pub fn (mut d Document) run_unloading_cleanup_steps() {
+	hook := d.lifecycle_hook_ or {
+		d.fully_exit_fullscreen()
+		return
+	}
+	if hook.run_unloading_cleanup_steps != unsafe { nil } {
+		hook.run_unloading_cleanup_steps(hook.target, d)
+	} else {
+		d.fully_exit_fullscreen()
+	}
+}
 
 pub fn (mut d Document) set_needs_repaint() {
+	// Document::set_needs_repaint() defaults to InvalidateDisplayList::Yes
+	// upstream. It does not call PaintableBox::set_needs_repaint(), so retained
+	// phase caches survive and only the assembled display list is discarded.
+	d.invalidate_display_list()
 	d.needs_repaint = true
+	if paintable := d.unsafe_paintable() {
+		paintable.document_set_needs_repaint()
+	}
 }
 
 pub fn (mut d Document) insert_in_potentially_named_elements(element &Element) {
@@ -2580,12 +3385,6 @@ pub fn xpath_evaluate(expression string, context_node &Node, resolver ?&XPathNSR
 	return result or { &XPathResult{} }
 }
 
-// Viewport client stub
-pub fn viewport_client_did_set_viewport_rect(client VoidPtr, viewport Rect) {
-	_ = client
-	_ = viewport
-}
-
 pub const max_int = 2147483647
 
 pub enum TraversalDecision {
@@ -2627,7 +3426,11 @@ fn is_html_frame_set_element(el &HTMLElement) bool {
 
 fn current_high_resolution_time(global_obj &Window) f64 {
 	_ = global_obj
-	return 0.0
+	// The standalone runtime has no per-realm Performance time origin, but all
+	// DOM event and activation timestamps use this same monotonic millisecond
+	// clock. This preserves the upstream ordering and five-second transient
+	// activation window without exposing wall-clock time.
+	return f64(vtime.sys_mono_now()) / 1_000_000.0
 }
 
 fn relevant_global_object_for_doc(doc &Document) &Window {
@@ -2641,89 +3444,20 @@ fn relevant_global_object_for_doc(doc &Document) &Window {
 	return window
 }
 
-fn relevant_agent_for_doc(doc &Document) AgentStub {
-	_ = doc
-	return AgentStub{
-		event_loop: &EventLoopStub{}
-	}
-}
-
-fn relevant_settings_object_for_win(w &Window) &EnvironmentSettingsObjectStub {
-	_ = w
-	return &EnvironmentSettingsObjectStub{}
-}
-
-fn relevant_realm_for_doc(doc &Document) RealmStub {
-	_ = doc
-	return RealmStub{}
-}
-
-fn structured_deserialize_stub(serialized voidptr, realm RealmStub, memory voidptr) ?voidptr {
-	_ = serialized
-	_ = realm
-	_ = memory
-	return none
-}
-
-fn main_thread_event_loop_stub() &EventLoopStub {
-	return &EventLoopStub{}
-}
-
-fn message_port_for_each_stub(callback fn(voidptr)) {
+fn message_port_for_each_stub(callback fn (voidptr)) {
 	_ = callback
 }
 
-fn as_navigable_container_stub(node &Node) ?&NavigableContainer {
-	_ = node
+fn as_navigable_container(node &Node) ?&NavigableContainer {
+	for navigable in dom_all_navigables {
+		container := navigable.container() or { continue }
+		if voidptr(container) == voidptr(node) {
+			return &NavigableContainer{
+				content_navigable_: navigable
+			}
+		}
+	}
 	return none
-}
-
-@[heap]
-struct RealmStub {}
-
-struct EnvironmentSettingsObjectStub {
-mut:
-	execution_ready bool
-}
-
-struct AgentStub {
-mut:
-	event_loop &EventLoopStub = unsafe { nil }
-}
-
-@[heap]
-struct EventLoopStub {
-mut:
-	termination_nesting_level int
-}
-
-fn (mut el EventLoopStub) increment_termination_nesting_level() {
-	el.termination_nesting_level++
-}
-
-fn (mut el EventLoopStub) decrement_termination_nesting_level() {
-	el.termination_nesting_level--
-}
-
-fn (el &EventLoopStub) task_queue() &TaskQueueStub {
-	return &TaskQueueStub{}
-}
-
-@[heap]
-struct TaskQueueStub {}
-
-fn (tq &TaskQueueStub) remove_tasks_matching(predicate fn(&TaskStub) bool) {
-	_ = predicate
-}
-
-@[heap]
-struct TaskStub {
-mut:
-	document_ &Document = unsafe { nil }
-}
-
-fn (t &TaskStub) document() &Document {
-	return t.document_
 }
 
 // css module functions
@@ -2732,14 +3466,26 @@ fn css_invalidate_style(doc &Document, reason CssStyleInvalidationReason) {
 	_ = reason
 }
 
-fn html_entry_global_associated_document_stub(document &Document) &Document {
-	// Stub for the entry global object's associated Document.
-	return document
+fn html_entry_global_associated_document(document &Document) &Document {
+	hook := document.html_navigation_hook_ or { return document }
+	if hook.entry_associated_document == unsafe { nil } {
+		return document
+	}
+	return hook.entry_associated_document(document)
 }
 
-fn html_perform_url_and_history_update_steps_stub(mut document Document, url URL) {
-	// Stub for HTML::perform_url_and_history_update_steps().
-	document.set_url(url)
+fn html_perform_url_and_history_update_steps(document &Document, url URL) ! {
+	hook := document.html_navigation_hook_ or {
+		mut mutable_document := unsafe { &Document(document) }
+		mutable_document.set_url(url)
+		return
+	}
+	if hook.update_url_and_history == unsafe { nil } {
+		mut mutable_document := unsafe { &Document(document) }
+		mutable_document.set_url(url)
+		return
+	}
+	hook.update_url_and_history(document, url)!
 }
 
 fn css_user_agent_style_sheet_source(url string) ?string {
@@ -2809,7 +3555,9 @@ pub enum FocusTrigger {
 pub enum ImageRendering {
 	auto_
 	crisp_edges
+	high_quality
 	pixelated
+	smooth
 }
 
 pub enum PseudoClass {
@@ -2824,14 +3572,28 @@ pub enum PseudoClass {
 }
 
 pub enum PseudoElement {
-	before
 	after
-	first_line
+	backdrop
+	before
+	details_content
+	file_selector_button
 	first_letter
+	first_line
 	marker
+	part
 	placeholder
 	selection
-	backdrop
+	slider_fill
+	slider_thumb
+	slider_track
+	slotted
+	view_transition
+	view_transition_group
+	view_transition_image_pair
+	view_transition_new
+	view_transition_old
+	known_pseudo_element_count
+	unknown_webkit
 }
 
 pub enum InvalidateLayoutTreeReason {
@@ -2915,7 +3677,12 @@ pub enum PolicyControlledFeature as u8 {
 }
 
 pub struct SandboxingFlagSet {
+
+	// SandboxingFlagSet is owned by LibWeb/HTML upstream. DOM cannot import the
+	// html module in V, so retain its wire-compatible bitset at this boundary.
+	// The named fields remain for DOM algorithms which consume individual flags.
 pub mut:
+	bits                      u32
 	sandboxed_document_domain bool
 	sandboxed_forms           bool
 }
@@ -2966,6 +3733,17 @@ pub enum AddLineFeed {
 	yes
 	no
 }
+
+// Cycle-breaking representation of TrustedTypes::TrustedHTML at the DOM API
+// boundary. TrustedTypes depends on DOM through its element/sink algorithms,
+// so DOM cannot import the concrete TrustedHTML class. HTML bindings unwrap
+// that class into this value while retaining its trusted identity.
+pub struct TrustedHTMLValue {
+pub:
+	data string
+}
+
+pub type TrustedHTMLOrString = TrustedHTMLValue | string
 
 // --- Supporting structs ---
 pub struct DocumentLoadTimingInfo {
@@ -3048,7 +3826,6 @@ pub mut:
 	url                        URL = url_about_blank()
 	origin_                    Origin = origin_create_opaque()
 	referrer                   string
-	live_ranges_               []&Range
 	custom_element_definitions []&CustomElementDefinition
 	source                     string
 
@@ -3085,10 +3862,17 @@ pub mut:
 	page_            &Page = unsafe { nil }
 
 	// Style
-	style_computer     &StyleComputer = unsafe { nil }
-	font_computer      &FontComputer = unsafe { nil }
-	style_sheets_      &StyleSheetList = unsafe { nil }
-	style_update_hook_ ?DocumentStyleUpdateHook
+	style_computer                      &StyleComputer = unsafe { nil }
+	font_computer                       &FontComputer = unsafe { nil }
+	style_sheets_                       &StyleSheetList = unsafe { nil }
+	style_update_hook_                  ?DocumentStyleUpdateHook
+	background_style_hook_              ?DocumentBackgroundStyleHook
+	css_animation_timeline_update_hook_ ?DocumentCSSAnimationTimelineUpdateHook
+	css_animation_event_hook_           ?DocumentCSSAnimationEventHook
+	animations_hook_                    ?DocumentAnimationsHook
+	temporary_execution_context_hook_   ?DocumentTemporaryExecutionContextHook
+	lifecycle_hook_                     ?DocumentLifecycleHook
+	event_loop_registered_              bool
 	// dom<->css bridge: opaque handle to the css-side holder of this document's author stylesheets, which
 	// the real StyleComputer's author cascade origin reads. See css/dom_css_bridge.v.
 	author_style_sheets_handle                     voidptr = unsafe { nil }
@@ -3101,6 +3885,11 @@ pub mut:
 	should_invalidate_styles_on_attribute_changes  bool = true
 	layout_update_hook_                            ?DocumentLayoutUpdateHook
 	rendered_text_hook_                            ?DocumentRenderedTextHook
+	accessibility_role_hook_                       ?DocumentAccessibilityRoleHook
+	csp_hook_                                      ?DocumentCSPHook
+	trusted_types_hook_                            ?DocumentTrustedTypesHook
+	html_navigation_hook_                          ?DocumentHTMLNavigationHook
+	fullscreen_hook_                               ?DocumentFullscreenHook
 	layout_engine_handle_                          voidptr = unsafe { nil }
 
 	// Layout
@@ -3262,6 +4051,7 @@ pub mut:
 	cookie_version       int = -1
 	cookie_version_index ?int
 	cookie_cache         string
+	cookie_client_hook_  ?DocumentCookieClientHook
 
 	// Display list cache
 	cached_display_list_ &DisplayList = unsafe { nil }
@@ -3286,7 +4076,7 @@ pub mut:
 	document_observers     []&DocumentObserver
 	intersection_observers []&IntersectionObserver
 	resize_observers       []&ResizeObserver
-	viewport_clients       []VoidPtr
+	viewport_clients       []ViewportClient
 
 	// Form associated elements
 	form_associated_elements_with_form_attribute []&FormAssociatedElement
@@ -3296,7 +4086,7 @@ pub mut:
 	// Render blocking
 	render_blocking_elements        []&Element
 	script_blocking_style_sheet_set []&Element
-	pending_css_import_rules        []VoidPtr
+	pending_css_import_rules        []&CSSImportRule
 
 	// Shadow roots
 	shadow_roots []&ShadowRoot
@@ -3314,11 +4104,12 @@ pub mut:
 	element_shared_css_random_base_value_cache map[string]f64
 
 	// Selector query cache
-	selector_query_cache                 map[string]?SelectorList
-	selector_query_hook_                 ?DocumentSelectorQueryHook
-	html_fragment_parsing_hook_          ?DocumentHTMLFragmentParsingHook
-	form_control_selected_text_callback_ DocumentFormControlSelectedTextCallback = unsafe { nil }
-	theme_color_hook_                    ?DocumentThemeColorHook
+	selector_query_cache                       map[string]?SelectorList
+	selector_query_hook_                       ?DocumentSelectorQueryHook
+	html_fragment_parsing_hook_                ?DocumentHTMLFragmentParsingHook
+	form_control_selected_text_callback_       DocumentFormControlSelectedTextCallback = unsafe { nil }
+	form_control_input_events_target_callback_ DocumentFormControlInputEventsTargetCallback = unsafe { nil }
+	theme_color_hook_                          ?DocumentThemeColorHook
 
 	// SVG roots needing relayout
 	svg_roots_needing_relayout []&SVGSVGBox
@@ -3332,7 +4123,6 @@ pub mut:
 	cached_navigable_                       &Navigable = unsafe { nil }
 	temporary_document_for_fragment_parsing TemporaryDocumentForFragmentParsing = .no
 	media_query_lists                       []&MediaQueryList
-	css_media_query_lists                   []CSSMediaQueryListRegistration
 	document_observers_being_notified       []&DocumentObserver
 	// Extra fields for implementations
 	implementation_            &DOMImplementation = unsafe { nil }
@@ -3351,6 +4141,52 @@ pub mut:
 
 // create_and_initialize corresponds to Document::create_and_initialize
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#initialise-the-document-object
+// https://html.spec.whatwg.org/multipage/origin.html#obtain-browsing-context-navigation
+pub fn obtain_a_browsing_context_to_use_for_a_navigation_response(navigation_params &NavigationParams) &BrowsingContext {
+	// 1. Let browsingContext be navigationParams's navigable's active browsing context.
+	context := navigation_params.browsing_context or { return &BrowsingContext{} }
+
+	// 2. A child browsing context is never replaced by COOP processing.
+	if !context.is_top_level_ {
+		return context
+	}
+
+	// 3-8. The implementation-defined cross-site and single-context options do
+	// not change swapGroup in upstream either; the COOP enforcement result is
+	// therefore authoritative here.
+	if active_document := context.active_document_ {
+		_ = active_document.origin().is_same_site(navigation_params.origin)
+	}
+
+	// 9. Keep the current context when no group switch is required. Report-only
+	// isolation would give it a new virtual group identity. Upstream currently
+	// leaves that substep as a FIXME, so preserve that behavior here.
+	if !navigation_params.needs_a_browsing_context_group_switch {
+		return context
+	}
+
+	// 10. Creating a top-level HTML browsing context is an embedding boundary.
+	// The callback is installed by HTML; the standalone DOM loader retains the
+	// previous active document in a distinct context identity.
+	mut new_context := if navigation_params.create_top_level_browsing_context_target != unsafe { nil } && navigation_params.create_top_level_browsing_context_callback != unsafe { nil } {
+		navigation_params.create_top_level_browsing_context_callback(navigation_params.create_top_level_browsing_context_target, navigation_params, context)
+	} else {
+		&BrowsingContext{
+			active_document_: context.active_document_
+			is_top_level_: true
+		}
+	}
+
+	// 11-14. Propagate the final sandbox flags to the replacement context. The
+	// spec requires an unsafe-none COOP value whenever those flags are nonempty.
+	if navigation_params.final_sandboxing_flag_bits != 0 {
+		assert navigation_params.opener_policy.value == .unsafe_none
+		new_context.popup_sandboxing_flag_bits_ = navigation_params.final_sandboxing_flag_bits
+	}
+
+	return new_context
+}
+
 pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, navigation_params &NavigationParams) !&Document {
 	browsing_context := obtain_a_browsing_context_to_use_for_a_navigation_response(navigation_params)
 	creation_url := navigation_params.request_current_url or { navigation_params.response_url }
@@ -3369,7 +4205,10 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 	doc.window = &Window{
 		associated_document_: doc
 	}
+	doc.html_fragment_parsing_hook_ = navigation_params.html_fragment_parsing_hook
 	doc.initialize()
+	// 11. Run CSP initialization for the newly-created Document.
+	doc.run_csp_initialization()
 	return doc
 }
 
@@ -3581,7 +4420,7 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 pub fn (mut d Document) finalize() {
 	// Base::finalize()
 	// Unregister from the main thread event loop.
-	main_thread_event_loop_stub().unregister_document(d)
+	d.unregister_from_event_loop()
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#the-document-object
@@ -3590,7 +4429,26 @@ pub fn (mut d Document) initialize() {
 	d.selection_ = Selection.create(d)
 	d.editing_host_manager_ = EditingHostManager.create(mut d)
 	d.list_of_available_images = &ListOfAvailableImages{}
-	d.page_.client_page_did_create_new_document(d)
+	document_pointer := voidptr(&d)
+	d.cursor_blink_timer = Timer.create_repeating(500, fn [document_pointer] () {
+		mut document := unsafe { &Document(document_pointer) }
+		position := document.cursor_position() or { return }
+		navigable := document.navigable() or { return }
+		if !navigable.is_focused() {
+			return
+		}
+		node := position.node() or { return }
+		if node.unsafe_paintable() == none {
+			return
+		}
+		document.cursor_blink_state = !document.cursor_blink_state
+		mut mutable_node := unsafe { &Node(node) }
+		mutable_node.set_needs_repaint(.no)
+	})
+	d.cursor_blink_timer.start()
+	if d.page_ != unsafe { nil } {
+		d.page_.client_page_did_create_new_document(d)
+	}
 	d.ensure_cookie_version_index(d.url)
 }
 
@@ -3846,7 +4704,7 @@ pub fn (d &Document) get_selection() ?&Selection {
 // --- Cookie ---
 
 // https://html.spec.whatwg.org/multipage/dom.html#dom-document-cookie
-pub fn (d &Document) cookie() !string {
+pub fn (mut d Document) cookie() !string {
 	// On getting, if the document is a cookie-averse Document, return empty string.
 	if d.is_cookie_averse() {
 		return ''
@@ -3855,9 +4713,28 @@ pub fn (d &Document) cookie() !string {
 	if d.origin_.value == 'opaque' {
 		return error('SecurityError: Document origin is opaque')
 	}
-	// Return the cookie-string for the document's URL.
-	// Use cached version if available.
-	return d.cookie_cache
+	// Return the non-HTTP cookie-string for the document URL, reusing the
+	// cached value only while PageClient's shared version is unchanged.
+	hook := d.cookie_client_hook_ or { return '' }
+	if index := d.cookie_version_index {
+		if hook.request_document_version != unsafe { nil } {
+			if version := hook.request_document_version(hook.target, index) {
+				if d.cookie_version >= 0 && u64(d.cookie_version) == version {
+					return d.cookie_cache
+				}
+			}
+		}
+	}
+	record := d.url.parsed() or { return '' }
+	if hook.request_cookie == unsafe { nil } {
+		return ''
+	}
+	versioned_cookie := hook.request_cookie(hook.target, &record, httpcookie.Source.non_http)
+	if version := versioned_cookie.cookie_version {
+		d.cookie_version = int(version)
+		d.cookie_cache = versioned_cookie.cookie
+	}
+	return versioned_cookie.cookie
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#dom-document-cookie
@@ -3871,8 +4748,12 @@ pub fn (mut d Document) set_cookie(cookie_string string) ! {
 		return error('SecurityError: Document origin is opaque')
 	}
 	// Act as it would when receiving a set-cookie-string via a non-HTTP API.
-	// Stub: in full implementation would parse cookie and send to page client
-	d.cookie_cache = cookie_string
+	record := d.url.parsed() or { return }
+	parsed_cookie := httpcookie.parse_cookie(&record, cookie_string) or { return }
+	hook := d.cookie_client_hook_ or { return }
+	if hook.set_cookie != unsafe { nil } {
+		hook.set_cookie(hook.target, &record, parsed_cookie, httpcookie.Source.non_http)
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#cookie-averse-document-object
@@ -4139,11 +5020,32 @@ pub fn (d &Document) get_page() &Page {
 
 pub fn (mut d Document) set_page(page &Page) {
 	d.page_ = page
+	page.client_page_did_create_new_document(d)
 }
 
 // --- Colors ---
 pub fn (d &Document) background_color() Color {
-	// CSS2: use HTML element background, fallback to body, then transparent
+	hook := d.background_style_hook_ or { return color_transparent }
+	if hook.background_color == unsafe { nil } {
+		return color_transparent
+	}
+	// CSS2 says to use the HTML element's background unless it is
+	// transparent, then the BODY element's background.
+	if html := d.html_element() {
+		element := unsafe { &Element(html) }
+		if element.as_node().unsafe_layout_node() != none {
+			color := hook.background_color(hook.target, element)
+			if color.a != 0 {
+				return color
+			}
+		}
+	}
+	if body := d.body() {
+		element := html_element_as_element(body)
+		if element.as_node().unsafe_layout_node() != none {
+			return hook.background_color(hook.target, element)
+		}
+	}
 	return color_transparent
 }
 
@@ -4387,6 +5289,95 @@ pub fn (mut d Document) set_style_update_hook(hook DocumentStyleUpdateHook) {
 	d.style_update_hook_ = hook
 }
 
+pub fn (mut d Document) set_background_style_hook(hook DocumentBackgroundStyleHook) {
+	d.background_style_hook_ = hook
+}
+
+pub fn (mut d Document) set_css_animation_timeline_update_hook(hook DocumentCSSAnimationTimelineUpdateHook) {
+	d.css_animation_timeline_update_hook_ = hook
+}
+
+pub fn (mut d Document) set_css_animation_event_hook(hook DocumentCSSAnimationEventHook) {
+	d.css_animation_event_hook_ = hook
+}
+
+pub fn (mut d Document) set_animations_hook(hook DocumentAnimationsHook) {
+	d.animations_hook_ = hook
+}
+
+pub fn (mut d Document) set_temporary_execution_context_hook(hook DocumentTemporaryExecutionContextHook) {
+	d.temporary_execution_context_hook_ = hook
+}
+
+pub fn (mut d Document) set_lifecycle_hook(hook DocumentLifecycleHook) {
+	d.lifecycle_hook_ = hook
+	if !d.event_loop_registered_ && hook.register_document != unsafe { nil } {
+		hook.register_document(hook.target, d)
+		d.event_loop_registered_ = true
+	}
+}
+
+pub fn (mut d Document) set_cookie_client_hook(hook DocumentCookieClientHook) {
+	d.cookie_client_hook_ = hook
+}
+
+fn (mut d Document) unregister_from_event_loop() {
+	if !d.event_loop_registered_ {
+		return
+	}
+	hook := d.lifecycle_hook_ or { return }
+	if hook.unregister_document != unsafe { nil } {
+		hook.unregister_document(hook.target, d)
+	}
+	d.event_loop_registered_ = false
+}
+
+fn (d &Document) run_lifecycle_callback(callback DocumentLifecycleCallback) {
+	if callback == unsafe { nil } {
+		return
+	}
+	hook := d.lifecycle_hook_ or { return }
+	callback(hook.target, d)
+}
+
+fn (d &Document) increment_termination_nesting_level() {
+	hook := d.lifecycle_hook_ or { return }
+	d.run_lifecycle_callback(hook.increment_termination_nesting)
+}
+
+fn (d &Document) decrement_termination_nesting_level() {
+	hook := d.lifecycle_hook_ or { return }
+	d.run_lifecycle_callback(hook.decrement_termination_nesting)
+}
+
+fn (d &Document) remove_tasks_for_document() {
+	hook := d.lifecycle_hook_ or { return }
+	d.run_lifecycle_callback(hook.remove_tasks_for_document)
+}
+
+fn (d &Document) set_relevant_settings_object_execution_ready() {
+	hook := d.lifecycle_hook_ or { return }
+	d.run_lifecycle_callback(hook.set_execution_ready)
+}
+
+pub fn (d &Document) begin_temporary_execution_context() voidptr {
+	hook := d.temporary_execution_context_hook_ or { return unsafe { nil } }
+	if hook.begin == unsafe { nil } {
+		return unsafe { nil }
+	}
+	return hook.begin(hook.target)
+}
+
+pub fn (d &Document) end_temporary_execution_context(context voidptr) {
+	if context == unsafe { nil } {
+		return
+	}
+	hook := d.temporary_execution_context_hook_ or { return }
+	if hook.end != unsafe { nil } {
+		hook.end(hook.target, context)
+	}
+}
+
 pub fn (mut d Document) set_selector_query_hook(hook DocumentSelectorQueryHook) {
 	d.selector_query_hook_ = hook
 	// DOM's old cache contains placeholder parses produced without the CSS parser. Do not let those
@@ -4410,6 +5401,10 @@ pub fn (mut d Document) set_form_control_selected_text_callback(callback Documen
 	d.form_control_selected_text_callback_ = callback
 }
 
+pub fn (mut d Document) set_form_control_input_events_target_callback(callback DocumentFormControlInputEventsTargetCallback) {
+	d.form_control_input_events_target_callback_ = callback
+}
+
 pub fn (d &Document) selected_text_for_active_form_control() ?string {
 	active_element := d.active_element() or { return none }
 	if d.form_control_selected_text_callback_ == unsafe { nil } {
@@ -4430,26 +5425,53 @@ fn (d &Document) create_html_parser_for_scripting() !&HTMLParser {
 }
 
 pub fn (mut d Document) update_style() {
-	// In the C++ implementation, this runs style computation recursively through
-	// the DOM tree, updating computed styles for all elements that need it.
-	// It also handles style invalidation, recomputing inherited styles, and
-	// tracking whether the stacking context tree needs to be rebuilt.
+	// A child document's viewport can change as a consequence of laying out its
+	// container, so upstream updates the parent document first.
+	if navigable := d.navigable() {
+		if container := navigable.container() {
+			container_document := container.document()
+			if voidptr(container_document) != voidptr(&d) {
+				mut mutable_container_document := unsafe { &Document(container_document) }
+				mutable_container_document.update_layout(.child_document_style_update)
+			}
+		}
+	}
+
+	if d.browsing_context == unsafe { nil } {
+		return
+	}
+
+	d.update_animated_style_if_needed()
+	d.transition_generation++
+
 	mut document_node := unsafe { &Node(&d) }
 	has_pending_invalidations := d.style_invalidator_ != unsafe { nil } && d.style_invalidator_.has_pending_invalidations()
-	if !has_pending_invalidations && !d.needs_full_style_update && !d.needs_animated_style_update && !document_node.needs_style_update() && !document_node.child_needs_style_update() {
+	if !has_pending_invalidations && !d.needs_full_style_update && !d.needs_invalidation_of_elements_affected_by_has && !document_node.needs_style_update() && !document_node.child_needs_style_update() {
 		return
 	}
 	if d.style_invalidator_ != unsafe { nil } {
 		mut invalidator := unsafe { &StyleInvalidator(d.style_invalidator_) }
 		invalidator.invalidate(mut document_node)
 	}
-	// Run the CSS style pass over the tree through the registered hook (the css module can't be called
-	// directly from dom). FIXME: media-rule evaluation, animated-style updates, and stacking-context
-	// tracking around it still depend on their owning subsystems.
-	if hook := d.style_update_hook_ {
-		if hook.callback != unsafe { nil } {
-			hook.callback(hook.target)
-		}
+
+	// Documents which only host <template> contents do not participate in style.
+	if d.created_for_appropriate_template_contents {
+		return
+	}
+
+	hook := d.style_update_hook_ or { return }
+	if hook.callback == unsafe { nil } {
+		return
+	}
+	invalidation := hook.callback(hook.target)
+	if !invalidation.is_none() {
+		d.invalidate_display_list()
+	}
+	if invalidation.rebuild_accumulated_visual_contexts {
+		d.needs_accumulated_visual_contexts_update = true
+	}
+	if invalidation.rebuild_stacking_context_tree {
+		d.invalidate_stacking_context_tree()
 	}
 	d.needs_full_style_update = false
 }
@@ -4458,55 +5480,118 @@ pub fn (mut d Document) update_animated_style_if_needed() {
 	if !d.needs_animated_style_update {
 		return
 	}
-	// Update computed properties for all animations on all timelines.
-	for tl in d.associated_animation_timelines {
-		// Stub: would iterate timeline's associated_animations and update effects
-		_ = tl
+	if d.style_computer != unsafe { nil } && d.style_computer.update_animated_style_callback != unsafe { nil } {
+		d.style_computer.update_animated_style_callback(d.style_computer.css_handle)
 	}
 	d.needs_animated_style_update = false
 }
 
 pub fn (mut d Document) update_paint_and_hit_testing_properties_if_needed() {
 	// Refresh scroll state on the paintable.
-	if d.paintable_ != unsafe { nil } {
-		// Stub: would call paintable_.refresh_scroll_state()
+	if paintable := d.unsafe_paintable() {
+		paintable.refresh_scroll_state()
 	}
 	if d.needs_accumulated_visual_contexts_update {
 		d.needs_accumulated_visual_contexts_update = false
-		// Stub: would call paintable_.assign_accumulated_visual_contexts()
+		if paintable := d.unsafe_paintable() {
+			paintable.assign_accumulated_visual_contexts()
+		}
 	}
 }
 
 // --- Layout ---
 pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
-	// This is a massive function in C++ (~200 lines) that triggers full layout computation.
-	// Key steps: ensure navigable is active, update parent document layout if nested,
-	// update style, build/update layout tree, perform layout, assign scroll frames,
-	// update paint/hit-testing properties, recompute selection states.
 	_ = reason
 
-	if d.is_running_update_layout {
+	// Document.cpp: Document::update_layout(). Only the active document of a
+	// navigable participates in layout.
+	navigable := d.navigable() or { return }
+	active_document := navigable.active_document() or { return }
+	if voidptr(active_document) != voidptr(&d) {
 		return
 	}
+
+	// Upstream treats re-entering layout as an invariant violation. `defer`
+	// mirrors its ScopeGuard, including every early-return path below.
+	assert !d.is_running_update_layout
 	d.is_running_update_layout = true
-
-	// 1. Update style if needed
-	d.update_style()
-	d.update_animated_style_if_needed()
-
-	// 2-3. Build/update the layout tree and run layout through the registered layout-module bridge.
-	if hook := d.layout_update_hook_ {
-		if hook.callback != unsafe { nil } {
-			viewport := d.viewport_rect()
-			d.layout_engine_handle_ = hook.callback(hook.target, &d, viewport.width, viewport.height)
-		}
+	defer {
+		d.is_running_update_layout = false
 	}
+
+	d.update_style()
+	if d.layout_is_up_to_date() {
+		return
+	}
+
+	// move(m_svg_roots_needing_relayout)
+	svg_roots_to_relayout := d.svg_roots_needing_relayout.clone()
+	d.svg_roots_needing_relayout.clear()
+
+	// Documents which only host <template> contents never get a layout tree.
+	if d.created_for_appropriate_template_contents {
+		return
+	}
+
+	document_node := unsafe { &Node(&d) }
+	needs_layout_tree_rebuild := d.layout_engine_handle_ == unsafe { nil } || document_node.needs_layout_tree_update_() || document_node.child_needs_layout_tree_update_() || d.needs_full_layout_tree_update
+
+	// Current upstream can relayout isolated SVG roots without rebuilding the
+	// document tree. The translated SVG box owns the same narrow callback at
+	// the dom/layout module boundary.
+	root_needs_layout := if layout_node := document_node.unsafe_layout_node() {
+		layout_node.needs_layout_update()
+	} else {
+		false
+	}
+	if !needs_layout_tree_rebuild && svg_roots_to_relayout.len > 0 && !root_needs_layout {
+		for svg_root in svg_roots_to_relayout {
+			relayout_svg_root(svg_root)
+		}
+		d.invalidate_stacking_context_tree()
+		d.invalidate_display_list()
+		d.needs_accumulated_visual_contexts_update = true
+		d.update_paint_and_hit_testing_properties_if_needed()
+		d.set_needs_repaint()
+		return
+	}
+
+	d.invalidate_display_list()
+
+	// Layout::TreeBuilder, formatting-context layout and LayoutState::commit
+	// live in the layout module. This callback returns its retained root/state
+	// handle; no alternate DOM-side layout algorithm is used here.
+	hook := d.layout_update_hook_ or { return }
+	if hook.callback == unsafe { nil } {
+		return
+	}
+	viewport := d.viewport_rect()
+	new_layout := hook.callback(hook.target, &d, viewport.width, viewport.height, needs_layout_tree_rebuild)
+	if new_layout == unsafe { nil } {
+		// Keep every invalidation bit set when the layout boundary cannot
+		// produce a tree, so a later call retries instead of declaring the
+		// document clean.
+		return
+	}
+	d.layout_engine_handle_ = new_layout
+
+	// TreeBuilder consumes these DOM invalidations while rebuilding the tree.
+	document_node.for_each_shadow_including_inclusive_descendant(fn (node &Node) TraversalDecision {
+		mut mutable_node := unsafe { &Node(node) }
+		mutable_node.set_needs_layout_tree_update(false, .style_change)
+		mutable_node.set_child_needs_layout_tree_update(false)
+		return .@continue
+	})
 	d.needs_full_layout_tree_update = false
 
-	// 4. Update paint/hit-testing properties
+	d.set_needs_repaint()
+	d.needs_accumulated_visual_contexts_update = true
 	d.update_paint_and_hit_testing_properties_if_needed()
-
-	d.is_running_update_layout = false
+	if d.selection_ != unsafe { nil } && d.selection_.range_ != unsafe { nil } {
+		if paintable := d.unsafe_paintable() {
+			paintable.recompute_selection_states(d.selection_.range_)
+		}
+	}
 }
 
 pub fn (mut d Document) set_layout_update_hook(hook DocumentLayoutUpdateHook) {
@@ -4515,6 +5600,66 @@ pub fn (mut d Document) set_layout_update_hook(hook DocumentLayoutUpdateHook) {
 
 pub fn (mut d Document) set_rendered_text_hook(hook DocumentRenderedTextHook) {
 	d.rendered_text_hook_ = hook
+}
+
+pub fn (mut d Document) set_accessibility_role_hook(hook DocumentAccessibilityRoleHook) {
+	d.accessibility_role_hook_ = hook
+}
+
+pub fn (mut d Document) set_csp_hook(hook DocumentCSPHook) {
+	d.csp_hook_ = hook
+}
+
+pub fn (mut d Document) set_trusted_types_hook(hook DocumentTrustedTypesHook) {
+	d.trusted_types_hook_ = hook
+}
+
+pub fn (mut d Document) set_html_navigation_hook(hook DocumentHTMLNavigationHook) {
+	d.html_navigation_hook_ = hook
+}
+
+pub fn (mut d Document) set_fullscreen_hook(hook DocumentFullscreenHook) {
+	d.fullscreen_hook_ = hook
+}
+
+pub fn (d &Document) should_block_inline_content(element &Element, inline_type string, source string) bool {
+	hook := d.csp_hook_ or { return false }
+	if hook.inline_check == unsafe { nil } {
+		return false
+	}
+	return hook.inline_check(hook.target, element, inline_type, source)
+}
+
+pub fn (d &Document) trusted_types_compliant_html(input string, sink string) !string {
+	hook := d.trusted_types_hook_ or { return input }
+	if hook.compliant_html == unsafe { nil } {
+		return input
+	}
+	return hook.compliant_html(hook.target, d, input, sink)!
+}
+
+pub fn (d &Document) trusted_types_compliant_attribute_value(element &Element, local_name string, namespace_uri ?string, input string) !string {
+	hook := d.trusted_types_hook_ or { return input }
+	if hook.compliant_attribute == unsafe { nil } {
+		return input
+	}
+	return hook.compliant_attribute(hook.target, element, local_name, namespace_uri, input)!
+}
+
+pub fn (d &Document) element_allows_accessible_name_from_content(element &Element, should_compute_role bool) ?bool {
+	hook := d.accessibility_role_hook_ or { return none }
+	if hook.element_allows_name_from_content == unsafe { nil } {
+		return none
+	}
+	return hook.element_allows_name_from_content(hook.target, element, should_compute_role)
+}
+
+pub fn (d &Document) embedded_control_label_value(element &Element) ?string {
+	hook := d.accessibility_role_hook_ or { return none }
+	if hook.embedded_control_label_value == unsafe { nil } {
+		return none
+	}
+	return hook.embedded_control_label_value(hook.target, element)
 }
 
 pub fn (d &Document) rendered_text(element &Element) ?string {
@@ -4530,7 +5675,21 @@ pub fn (d &Document) layout_engine_handle() voidptr {
 }
 
 pub fn (d &Document) layout_is_up_to_date() bool {
-	return !d.needs_full_style_update && !d.needs_full_layout_tree_update
+	navigable := d.navigable() or { return true }
+	active_document := navigable.active_document() or { return true }
+	if voidptr(active_document) != voidptr(d) {
+		return true
+	}
+	if d.layout_engine_handle_ == unsafe { nil } {
+		return false
+	}
+	document_node := unsafe { &Node(d) }
+	if layout_node := document_node.unsafe_layout_node() {
+		if layout_node.needs_layout_update() {
+			return false
+		}
+	}
+	return !document_node.needs_layout_tree_update_() && !document_node.child_needs_layout_tree_update_() && !d.needs_full_layout_tree_update && d.svg_roots_needing_relayout.len == 0
 }
 
 pub fn (mut d Document) invalidate_layout_tree(reason InvalidateLayoutTreeReason) {
@@ -4539,10 +5698,9 @@ pub fn (mut d Document) invalidate_layout_tree(reason InvalidateLayoutTreeReason
 }
 
 pub fn (mut d Document) invalidate_stacking_context_tree() {
-	// Invalidate the stacking context on the viewport paintable.
-	// Stub: in full implementation would call paintable_box.invalidate_stacking_context()
-	if d.paintable_ != unsafe { nil } {
-		// paintable_.invalidate_stacking_context()
+	// NB: Called during stacking-context invalidation upstream.
+	if paintable := d.unsafe_paintable() {
+		paintable.invalidate_stacking_context()
 	}
 }
 
@@ -4841,6 +5999,35 @@ pub fn (d &Document) focused_area() ?&Node {
 	return d.focused_area
 }
 
+// Translated from Document.cpp's find_common_ancestor(). Pseudo-class state
+// crosses shadow boundaries through parent_or_shadow_host(), just like the
+// selectors whose match result is being invalidated.
+fn find_common_ancestor(a ?&Node, b ?&Node) ?&Node {
+	first := a or { return none }
+	second := b or { return none }
+	if first.is_same_node(second) {
+		return first
+	}
+
+	mut ancestors := map[i64]bool{}
+	mut current := ?&Node(first)
+	for current != none {
+		node := current or { break }
+		ancestors[node.unique_id().value()] = true
+		current = node.parent_or_shadow_host()
+	}
+
+	current = second
+	for current != none {
+		node := current or { break }
+		if ancestors[node.unique_id().value()] {
+			return node
+		}
+		current = node.parent_or_shadow_host()
+	}
+	return none
+}
+
 pub fn (mut d Document) set_focused_area(node ?&Node) {
 	new_focused := node or { unsafe { nil } }
 	if voidptr(d.focused_area) == voidptr(new_focused) {
@@ -4848,16 +6035,53 @@ pub fn (mut d Document) set_focused_area(node ?&Node) {
 	}
 	old_focused := d.focused_area
 
-	// The C++ selector cache narrows this to rules containing :focus/:focus-within/:focus-visible.
-	// Until that cache is bridged, conservatively invalidating the affected roots preserves behavior.
-	if voidptr(old_focused) != unsafe { nil } {
-		d.invalidate_style_for_elements_affected_by_pseudo_class_change(.focus, old_focused.root())
+	if old_focused != unsafe { nil } {
+		if old_focused_element := old_focused.as_element() {
+			mut mutable_old_focused_element := unsafe { &Element(old_focused_element) }
+			mutable_old_focused_element.did_lose_focus()
+		}
 	}
-	if voidptr(new_focused) != unsafe { nil } && (voidptr(old_focused) == unsafe { nil } || !old_focused.root().is_same_node(new_focused.root())) {
-		d.invalidate_style_for_elements_affected_by_pseudo_class_change(.focus, new_focused.root())
+
+	old_focused_option := if old_focused == unsafe { nil } {
+		?&Node(none)
+	} else {
+		?&Node(old_focused)
+	}
+	common_ancestor := find_common_ancestor(old_focused_option, node)
+	old_root := if old_focused == unsafe { nil } {
+		unsafe { nil }
+	} else {
+		old_focused.root()
+	}
+	new_root := if new_focused == unsafe { nil } {
+		unsafe { nil }
+	} else {
+		new_focused.root()
+	}
+	if voidptr(old_root) != voidptr(new_root) {
+		if old_root != unsafe { nil } {
+			for pseudo_class in [PseudoClass.focus, .focus_within, .focus_visible] {
+				d.invalidate_style_for_elements_affected_by_pseudo_class_change(pseudo_class, old_root, node)
+			}
+		}
+		if new_root != unsafe { nil } {
+			for pseudo_class in [PseudoClass.focus, .focus_within, .focus_visible] {
+				d.invalidate_style_for_elements_affected_by_pseudo_class_change(pseudo_class, new_root, node)
+			}
+		}
+	} else if ancestor := common_ancestor {
+		for pseudo_class in [PseudoClass.focus, .focus_within, .focus_visible] {
+			d.invalidate_style_for_elements_affected_by_pseudo_class_change(pseudo_class, ancestor, node)
+		}
 	}
 
 	d.focused_area = new_focused
+	if new_focused != unsafe { nil } {
+		if new_focused_element := new_focused.as_element() {
+			mut mutable_new_focused_element := unsafe { &Element(new_focused_element) }
+			mutable_new_focused_element.did_receive_focus()
+		}
+	}
 	d.reset_cursor_blink_cycle()
 	d.set_needs_repaint()
 	d.update_active_element()
@@ -4895,7 +6119,45 @@ pub fn (d &Document) target_element() ?&Element {
 }
 
 pub fn (mut d Document) set_target_element(element ?&Element) {
-	d.target_element_ = element or { unsafe { nil } }
+	new_target := element or { unsafe { nil } }
+	if voidptr(d.target_element_) == voidptr(new_target) {
+		return
+	}
+	old_target := d.target_element_
+	old_target_node := if old_target == unsafe { nil } {
+		?&Node(none)
+	} else {
+		?&Node(old_target.as_node())
+	}
+	new_target_node := if new_target == unsafe { nil } {
+		?&Node(none)
+	} else {
+		?&Node(new_target.as_node())
+	}
+	common_ancestor := find_common_ancestor(old_target_node, new_target_node)
+	old_root := if old_target == unsafe { nil } {
+		unsafe { nil }
+	} else {
+		old_target.as_node().root()
+	}
+	new_root := if new_target == unsafe { nil } {
+		unsafe { nil }
+	} else {
+		new_target.as_node().root()
+	}
+	new_node := new_target_node
+	if voidptr(old_root) != voidptr(new_root) {
+		if old_root != unsafe { nil } {
+			d.invalidate_style_for_elements_affected_by_pseudo_class_change(.target, old_root, new_node)
+		}
+		if new_root != unsafe { nil } {
+			d.invalidate_style_for_elements_affected_by_pseudo_class_change(.target, new_root, new_node)
+		}
+	} else if ancestor := common_ancestor {
+		d.invalidate_style_for_elements_affected_by_pseudo_class_change(.target, ancestor, new_node)
+	}
+	d.target_element_ = new_target
+	d.set_needs_repaint()
 }
 
 // --- Scroll / fragment ---
@@ -4962,8 +6224,9 @@ pub fn (mut d Document) scroll_to_the_fragment() {
 
 // https://drafts.csswg.org/cssom-view-1/#scroll-to-the-beginning-of-the-document
 pub fn (mut d Document) scroll_to_the_beginning_of_the_document() {
-	// FIXME: Actually implement this algorithm.
-	_ = d.navigable()
+	if navigable := d.navigable() {
+		navigable.perform_scroll_of_viewport_scrolling_box(CSSPixelPoint_{})
+	}
 }
 
 // --- Template ---
@@ -5019,17 +6282,36 @@ pub fn (mut d Document) set_window(w &Window) {
 // --- Dynamic markup insertion ---
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-write
-pub fn (mut d Document) write(text []string) ! {
+pub fn (mut d Document) write(text []TrustedHTMLOrString) ! {
 	// The document.write(...text) method steps are to run the document write steps with this, text, false, and
 	// "Document write".
-	d.run_the_document_write_steps(text, false)!
+	d.run_the_document_write_steps(text, .no, .document_write)!
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-writeln
-pub fn (mut d Document) writeln(text []string) ! {
+pub fn (mut d Document) writeln(text []TrustedHTMLOrString) ! {
 	// The document.writeln(...text) method steps are to run the document write steps with this, text, true, and
 	// "Document writeln".
-	d.run_the_document_write_steps(text, true)!
+	d.run_the_document_write_steps(text, .yes, .document_writeln)!
+}
+
+// Convenience adapters for callers which already know that every WebIDL
+// argument is a string. The normative algorithm above still receives the
+// tagged union and therefore handles mixed TrustedHTML/string vectors.
+pub fn (mut d Document) write_strings(text []string) ! {
+	mut values := []TrustedHTMLOrString{cap: text.len}
+	for value in text {
+		values << TrustedHTMLOrString(value)
+	}
+	d.write(values)!
+}
+
+pub fn (mut d Document) writeln_strings(text []string) ! {
+	mut values := []TrustedHTMLOrString{cap: text.len}
+	for value in text {
+		values << TrustedHTMLOrString(value)
+	}
+	d.writeln(values)!
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-document-open
@@ -5052,7 +6334,7 @@ pub fn (mut d Document) open_document() !&Document {
 	}
 
 	// 3. Let entryDocument be the entry global object's associated Document.
-	entry_document := html_entry_global_associated_document_stub(d)
+	entry_document := html_entry_global_associated_document(d)
 
 	// 4. If document's origin is not same origin to entryDocument's origin, then throw a "SecurityError" DOMException.
 	if d.origin() != entry_document.origin() {
@@ -5091,7 +6373,7 @@ pub fn (mut d Document) open_document() !&Document {
 			new_url.set_fragment(none)
 		}
 		// 3. Run the URL and history update steps with document and newURL.
-		html_perform_url_and_history_update_steps_stub(mut d, new_url)
+		html_perform_url_and_history_update_steps(d, new_url)!
 	}
 
 	// 13. Set is_initial_about_blank to false.
@@ -5119,8 +6401,11 @@ pub fn (mut d Document) open_window(url string, name string, features string) ?&
 		return none
 	}
 	// 2. Return result of running window open steps.
-	// Stub: would call window.window_open_steps(url, name, features)
-	return none
+	hook := d.html_navigation_hook_ or { return none }
+	if hook.open_window == unsafe { nil } {
+		return none
+	}
+	return hook.open_window(hook.target, url, name, features)
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#closing-the-input-stream
@@ -5249,7 +6534,7 @@ pub fn (mut d Document) set_editable(editable bool) {
 
 // --- History ---
 pub fn (mut d Document) history() &History {
-	// Stub: lazy-init
+	// Document::history() creates and retains the History object on first access.
 	if d.history_ == unsafe { nil } {
 		d.history_ = &History{}
 	}
@@ -5408,28 +6693,11 @@ pub fn (mut d Document) evaluate_media_queries_and_report_changes() {
 		}
 		did_match := mql.matches()
 		now_matches := mql.evaluate()
-		if did_match != now_matches {
+		did_change_internally := mql.has_changed_state()
+		mql.set_has_changed_state(false)
+		if did_change_internally || did_match != now_matches {
 			// Fire a change event at the MediaQueryList
 			mql.dispatch_change_event(now_matches)
-		}
-	}
-
-	// Boundary: DOM cannot import css without creating a module cycle, so real
-	// CSS::MediaQueryList objects register opaque callbacks here. This keeps the
-	// C++ Document algorithm in DOM while allowing css/media_queries.v to own the
-	// translated MediaQueryList implementation.
-	for registration in d.css_media_query_lists {
-		if registration.target == unsafe { nil } {
-			continue
-		}
-		did_match := registration.matches(registration.target)
-		now_matches := registration.evaluate(registration.target)
-
-		did_change_internally := registration.has_changed_state(registration.target)
-		registration.set_has_changed_state(registration.target, false)
-
-		if did_change_internally || did_match != now_matches {
-			registration.dispatch_change_event(registration.target, now_matches)
 		}
 	}
 	// Also evaluate @media rules
@@ -5439,11 +6707,6 @@ pub fn (mut d Document) evaluate_media_queries_and_report_changes() {
 pub fn (mut d Document) add_media_query_list(mql &MediaQueryList) {
 	d.needs_media_query_evaluation = true
 	d.media_query_lists << mql
-}
-
-pub fn (mut d Document) add_css_media_query_list(registration CSSMediaQueryListRegistration) {
-	d.needs_media_query_evaluation = true
-	d.css_media_query_lists << registration
 }
 
 // --- Resize / Scroll ---
@@ -5517,7 +6780,7 @@ pub fn (d &Document) has_focus() bool {
 		if focused == unsafe { nil } {
 			return false
 		}
-		nc := as_navigable_container_stub(focused) or { return false }
+		nc := as_navigable_container(focused) or { return false }
 		content_nav := nc.content_navigable() or { return false }
 		candidate = content_nav.active_document() or { return false }
 	}
@@ -5732,17 +6995,17 @@ pub fn (mut d Document) fonts() &FontFaceSet {
 
 // https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-clear
 pub fn (mut d Document) clear() {
-	// Stub: does nothing per spec
+	// This obsolete operation intentionally performs no steps.
 }
 
 // https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-captureevents
 pub fn (d &Document) capture_events() {
-	// Stub: does nothing per spec
+	// This obsolete operation intentionally performs no steps.
 }
 
 // https://html.spec.whatwg.org/multipage/obsolete.html#dom-document-releaseevents
 pub fn (d &Document) release_events() {
-	// Stub: does nothing per spec
+	// This obsolete operation intentionally performs no steps.
 }
 
 // --- Style sheets ---
@@ -5753,7 +7016,7 @@ pub fn (mut d Document) style_sheets() &StyleSheetList {
 	return d.style_sheets_
 }
 
-pub fn (mut d Document) for_each_active_css_style_sheet(callback fn(&CSSStyleSheet)) {
+pub fn (mut d Document) for_each_active_css_style_sheet(callback fn (&CSSStyleSheet)) {
 	if d.style_sheets_ != unsafe { nil } {
 		for style_sheet in d.style_sheets_.sheets {
 			if !(style_sheet.is_alternate && style_sheet.disabled) {
@@ -5861,6 +7124,26 @@ pub fn (mut d Document) set_active_sandboxing_flag_set(flags SandboxingFlagSet) 
 	d.active_sandboxing_flag_set = flags
 }
 
+// Cycle-safe HTML::SandboxingFlagSet representation used by the HTML bridge.
+pub fn (d &Document) active_sandboxing_flag_bits() u32 {
+	mut bits := d.active_sandboxing_flag_set.bits
+	if d.active_sandboxing_flag_set.sandboxed_forms {
+		bits |= u32(64)
+	}
+	if d.active_sandboxing_flag_set.sandboxed_document_domain {
+		bits |= u32(1024)
+	}
+	return bits
+}
+
+pub fn (mut d Document) set_active_sandboxing_flag_bits(bits u32) {
+	d.active_sandboxing_flag_set = SandboxingFlagSet{
+		bits: bits
+		sandboxed_forms: bits & u32(64) != 0
+		sandboxed_document_domain: bits & u32(1024) != 0
+	}
+}
+
 pub fn (d &Document) policy_container() &PolicyContainer {
 	if d.policy_container_ == unsafe { nil } {
 		return &PolicyContainer{}
@@ -5890,7 +7173,7 @@ pub fn (d &Document) descendant_navigables() []&Navigable {
 	navigables_ptr := &navigables
 	// 2-3. For each shadow-including descendant that is a navigable container:
 	d.for_each_shadow_including_descendant(fn [navigables_ptr] (node &Node) TraversalDecision {
-		nc := as_navigable_container_stub(node) or { return .@continue }
+		nc := as_navigable_container(node) or { return .@continue }
 		content_nav := nc.content_navigable() or { return .@continue }
 		active_doc := content_nav.active_document() or { return .@continue }
 		// Extend navigables with active document's inclusive descendant navigables.
@@ -5997,7 +7280,7 @@ pub fn (mut d Document) destroy() {
 	d.run_unloading_cleanup_steps()
 
 	// 7. Remove any tasks whose document is document from any task queue.
-	// Would remove any tasks from the task queue whose document is this document
+	d.remove_tasks_for_document()
 
 	// Mark this document as destroyed.
 	d.has_been_destroyed = true
@@ -6037,11 +7320,8 @@ pub fn (mut d Document) abort() {
 pub fn (mut d Document) unload() {
 	// 5. Let intendToStoreInBfcache be false (simplification).
 
-	// 6. Let eventLoop be document's relevant agent's event loop.
-	mut event_loop := relevant_agent_for_doc(d).event_loop
-
 	// 7. Increase eventLoop's termination nesting level by 1.
-	event_loop.increment_termination_nesting_level()
+	d.increment_termination_nesting_level()
 
 	// 8. Increase document's unload counter by 1.
 	d.unload_counter++
@@ -6073,7 +7353,7 @@ pub fn (mut d Document) unload() {
 	}
 
 	// 14. Decrease eventLoop's termination nesting level by 1.
-	event_loop.decrement_termination_nesting_level()
+	d.decrement_termination_nesting_level()
 
 	// 19. If document's salvageable state is false, then destroy document.
 	if !d.salvageable {
@@ -6105,8 +7385,7 @@ pub fn (mut d Document) make_active() {
 	}
 
 	// 5. Set window's relevant settings object's execution ready flag.
-	mut settings := relevant_settings_object_for_win(w)
-	settings.execution_ready = true
+	d.set_relevant_settings_object_execution_ready()
 
 	d.notify_each_document_observer_became_active()
 }
@@ -6147,6 +7426,14 @@ pub fn (d &Document) unsafe_paintable() ?&ViewportPaintable {
 	return d.paintable_
 }
 
+pub fn (mut d Document) set_viewport_paintable(paintable ?&ViewportPaintable) {
+	d.paintable_ = paintable or { unsafe { nil } }
+}
+
+pub fn (mut d Document) set_layout_viewport(viewport ?&LayoutViewport) {
+	d.layout_root = viewport or { unsafe { nil } }
+}
+
 // --- Inspection ---
 pub fn (mut d Document) set_inspected_node(node ?&Node) {
 	d.inspected_node = node or { unsafe { nil } }
@@ -6177,10 +7464,34 @@ pub fn (mut d Document) set_hovered_node(node ?&Node) {
 		return
 	}
 	old_hovered_node := d.hovered_node
-	d.hovered_node = new_node
+	old_hovered_node_option := if old_hovered_node == unsafe { nil } {
+		?&Node(none)
+	} else {
+		?&Node(old_hovered_node)
+	}
+	common_ancestor := find_common_ancestor(old_hovered_node_option, node)
+	old_root := if old_hovered_node == unsafe { nil } {
+		unsafe { nil }
+	} else {
+		old_hovered_node.root()
+	}
+	new_root := if new_node == unsafe { nil } {
+		unsafe { nil }
+	} else {
+		new_node.root()
+	}
+	if voidptr(old_root) != voidptr(new_root) {
+		if old_root != unsafe { nil } {
+			d.invalidate_style_for_elements_affected_by_pseudo_class_change(.hover, old_root, node)
+		}
+		if new_root != unsafe { nil } {
+			d.invalidate_style_for_elements_affected_by_pseudo_class_change(.hover, new_root, node)
+		}
+	} else if ancestor := common_ancestor {
+		d.invalidate_style_for_elements_affected_by_pseudo_class_change(.hover, ancestor, node)
+	}
 
-	// Invalidate style for :hover affected elements
-	css_invalidate_style(d, .hover_changed)
+	d.hovered_node = new_node
 
 	// Fire pointer/mouse out/leave events on old hovered node
 	if old_hovered_node != unsafe { nil } && voidptr(old_hovered_node) != voidptr(d.hovered_node) {
@@ -6434,34 +7745,138 @@ pub fn (mut d Document) list_of_available_images() &ListOfAvailableImages {
 
 // --- Observers ---
 pub fn (mut d Document) register_intersection_observer(observer &IntersectionObserver) {
+	for registered_observer in d.intersection_observers {
+		assert voidptr(registered_observer) != voidptr(observer)
+	}
 	d.intersection_observers << observer
 }
 
 pub fn (mut d Document) unregister_intersection_observer(observer &IntersectionObserver) {
-	d.intersection_observers = d.intersection_observers.filter(it != observer)
+	for index, registered_observer in d.intersection_observers {
+		if voidptr(registered_observer) == voidptr(observer) {
+			d.intersection_observers.delete(index)
+			return
+		}
+	}
+	assert false, 'IntersectionObserver was not registered with this document'
+}
+
+pub fn (d &Document) registered_intersection_observer_count() int {
+	return d.intersection_observers.len
 }
 
 pub fn (mut d Document) register_resize_observer(observer &ResizeObserver) {
+	for registered_observer in d.resize_observers {
+		assert voidptr(registered_observer) != voidptr(observer)
+	}
 	d.resize_observers << observer
 }
 
 pub fn (mut d Document) unregister_resize_observer(observer &ResizeObserver) {
-	d.resize_observers = d.resize_observers.filter(it != observer)
+	for index, registered_observer in d.resize_observers {
+		if voidptr(registered_observer) == voidptr(observer) {
+			d.resize_observers.delete(index)
+			return
+		}
+	}
+	assert false, 'ResizeObserver was not registered with this document'
 }
 
 // --- Intersection observations ---
+fn intersection_rect(first Rect, second Rect) Rect {
+	left := if first.x > second.x { first.x } else { second.x }
+	top := if first.y > second.y { first.y } else { second.y }
+	right := if first.x + first.width < second.x + second.width {
+		first.x + first.width
+	} else {
+		second.x + second.width
+	}
+	bottom := if first.y + first.height < second.y + second.height {
+		first.y + first.height
+	} else {
+		second.y + second.height
+	}
+	if right <= left || bottom <= top {
+		return Rect{ x: left, y: top }
+	}
+	return Rect{left, top, right - left, bottom - top}
+}
+
+fn edge_adjacent_intersects(first Rect, second Rect) bool {
+	return first.x <= second.x + second.width && first.x + first.width >= second.x && first.y <= second.y + second.height && first.y + first.height >= second.y
+}
+
+fn resolve_intersection_observer_margin(value IntersectionObserverMarginValue, reference f64) f64 {
+	return if value.is_percentage { value.value * reference / 100.0 } else { value.value }
+}
 
 // https://www.w3.org/TR/intersection-observer/#run-the-update-intersection-observations-steps
 pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64) {
-	// For each observer in the list of IntersectionObservers:
-	for observer in d.intersection_observers {
-		// For each target in observer's observation targets:
+	// 1-2. Copy the observer list so callbacks/GC finalizers cannot mutate the
+	// registry while this rendering update walks it.
+	observer_list := d.intersection_observers.clone()
+	for observer in observer_list {
+		if observer.root_bounds == unsafe { nil } || observer.root_node == unsafe { nil } || observer.thresholds == unsafe { nil } {
+			continue
+		}
+		root_bounds := observer.root_bounds(observer.target)
+		root_node := observer.root_node(observer.target) or { continue }
+		is_implicit_root := observer.is_implicit_root != unsafe { nil } && observer.is_implicit_root(observer.target)
+		root_is_element := observer.root_is_element != unsafe { nil } && observer.root_is_element(observer.target)
+		thresholds := observer.thresholds(observer.target)
+
+		// 2. Process targets in the order observe() appended them.
 		for target in observer.observation_targets() {
-			// Compute intersection, check thresholds, queue entries.
-			target_rect := target.get_bounding_client_rect()
-			is_intersecting := target_rect.width > 0 && target_rect.height > 0
-			_ = is_intersecting
-			// Would queue IntersectionObserverEntry if thresholds changed
+			mut threshold_index := usize(0)
+			mut is_intersecting := false
+			mut target_rect := Rect{}
+			mut intersection := Rect{}
+			mut intersection_ratio := 0.0
+
+			target_has_layout := target.el_layout_node() != none
+			same_document := voidptr(target.document()) == voidptr(root_node.document())
+			inside_element_root := !root_is_element || target.as_node().is_descendant_of(root_node)
+			if target_has_layout && (is_implicit_root || same_document) && inside_element_root {
+				target_rect = target.get_bounding_client_rect()
+				intersection = compute_intersection(target, observer, none, root_bounds)
+				target_area := target_rect.width * target_rect.height
+				intersection_area := intersection.width * intersection.height
+				is_intersecting = edge_adjacent_intersects(target_rect, root_bounds)
+				intersection_ratio = if target_area != 0 {
+					intersection_area / target_area
+				} else if is_intersecting {
+					1.0
+				} else {
+					0.0
+				}
+				// upper_bound(thresholds, intersectionRatio)
+				mut lower := 0
+				mut upper := thresholds.len
+				for lower < upper {
+					middle := lower + (upper - lower) / 2
+					if thresholds[middle] > intersection_ratio {
+						upper = middle
+					} else {
+						lower = middle + 1
+					}
+				}
+				threshold_index = usize(lower)
+			}
+
+			mut mutable_target := unsafe { &Element(target) }
+			mut registration := mutable_target.get_intersection_observer_registration(observer.target) or {
+				continue
+			}
+			threshold_changed := if previous := registration.previous_threshold_index {
+				previous != threshold_index
+			} else {
+				true
+			}
+			if threshold_changed || registration.previous_is_intersecting != is_intersecting {
+				d.queue_an_intersection_observer_entry(observer, time, root_bounds, target_rect, intersection, is_intersecting, intersection_ratio, target)
+			}
+			registration.previous_threshold_index = threshold_index
+			registration.previous_is_intersecting = is_intersecting
 		}
 	}
 }
@@ -6490,22 +7905,8 @@ pub fn (mut d Document) stop_intersection_observing_a_lazy_loading_element(eleme
 
 // https://drafts.csswg.org/resize-observer-1/#gather-active-observations-h
 pub fn (mut d Document) gather_active_observations_at_depth(depth int) {
-	// For each observer in [[resizeObservers]]:
-	for mut observer in d.resize_observers {
-		// 1. Clear observer's activeTargets and skippedTargets.
-		observer.clear_active_targets()
-		observer.clear_skipped_targets()
-		// 2. For each observation in observer's observationTargets:
-		for observation in observer.observation_targets() {
-			if observation.is_active() {
-				target_depth := observation.target_depth()
-				if target_depth > depth {
-					observer.add_active_target(observation)
-				} else {
-					observer.add_skipped_target(observation)
-				}
-			}
-		}
+	for observer in d.resize_observers {
+		observer.gather_active_observations_at_depth(depth)
 	}
 }
 
@@ -6514,21 +7915,12 @@ pub fn (mut d Document) broadcast_active_resize_observations() int {
 	// 1. Let shallowestTargetDepth be infinity.
 	mut shallowest_target_depth := max_int
 	// 2. For each observer in document's [[resizeObservers]]:
-	for mut observer in d.resize_observers {
-		if observer.active_targets().len == 0 {
-			continue
+	observers := d.resize_observers.clone()
+	for observer in observers {
+		observer_depth := observer.broadcast_active_resize_observations()
+		if observer_depth < shallowest_target_depth {
+			shallowest_target_depth = observer_depth
 		}
-		// 3. For each observation in activeTargets:
-		for observation in observer.active_targets() {
-			target_depth := observation.target_depth()
-			if target_depth < shallowest_target_depth {
-				shallowest_target_depth = target_depth
-			}
-		}
-		// 4. Invoke observer callback.
-		observer.invoke_callback()
-		// 5. Clear observer's activeTargets.
-		observer.clear_active_targets()
 	}
 	return shallowest_target_depth
 }
@@ -6536,7 +7928,7 @@ pub fn (mut d Document) broadcast_active_resize_observations() int {
 // https://drafts.csswg.org/resize-observer-1/#has-active-observations-h
 pub fn (d &Document) has_active_resize_observations() bool {
 	for observer in d.resize_observers {
-		if observer.active_targets().len > 0 {
+		if observer.has_active_observations() {
 			return true
 		}
 	}
@@ -6546,7 +7938,7 @@ pub fn (d &Document) has_active_resize_observations() bool {
 // https://drafts.csswg.org/resize-observer-1/#has-skipped-observations-h
 pub fn (d &Document) has_skipped_resize_observations() bool {
 	for observer in d.resize_observers {
-		if observer.skipped_targets().len > 0 {
+		if observer.has_skipped_observations() {
 			return true
 		}
 	}
@@ -6554,11 +7946,8 @@ pub fn (d &Document) has_skipped_resize_observations() bool {
 }
 
 // --- Adopted style sheets ---
-pub fn (mut d Document) set_adopted_style_sheets(value VoidPtr) ! {
-	// Clear and repopulate adopted style sheets from the new value.
-	d.adopted_style_sheets.clear()
-	// Would iterate over the JS array value and append each CSSStyleSheet
-	_ = value
+pub fn (mut d Document) set_adopted_style_sheets(value []&CSSStyleSheet) ! {
+	d.adopted_style_sheets = value.clone()
 }
 
 // --- Visual viewport ---
@@ -6569,19 +7958,23 @@ pub fn (mut d Document) visual_viewport() &VisualViewport {
 	return d.visual_viewport_
 }
 
-pub fn (mut d Document) register_viewport_client(client VoidPtr) {
-	d.viewport_clients << client
+pub fn (mut d Document) register_viewport_client(client ViewportClient) {
+	if client.target == unsafe { nil } || client.did_set_viewport_rect == unsafe { nil } {
+		return
+	}
+	if client !in d.viewport_clients {
+		d.viewport_clients << client
+	}
 }
 
-pub fn (mut d Document) unregister_viewport_client(client VoidPtr) {
+pub fn (mut d Document) unregister_viewport_client(client ViewportClient) {
 	d.viewport_clients = d.viewport_clients.filter(it != client)
 }
 
 pub fn (mut d Document) inform_all_viewport_clients_about_the_current_viewport_rect() {
 	viewport := d.viewport_rect()
 	for client in d.viewport_clients {
-		// Notify each viewport client about the current viewport rect.
-		viewport_client_did_set_viewport_rect(client, viewport)
+		client.did_set_viewport_rect(client.target, viewport)
 	}
 }
 
@@ -6589,29 +7982,67 @@ pub fn (mut d Document) inform_all_viewport_clients_about_the_current_viewport_r
 
 // https://html.spec.whatwg.org/multipage/semantics.html#shared-declarative-refresh-steps
 pub fn (mut d Document) shared_declarative_refresh_steps(input string) {
+	d.shared_declarative_refresh_steps_impl(input, false)
+}
+
+// HTMLMetaElement supplies the additional insertion-time and sandbox checks
+// from the shared declarative refresh steps without making DOM depend on HTML.
+pub fn (mut d Document) shared_declarative_refresh_steps_for_meta(input string) {
+	d.shared_declarative_refresh_steps_impl(input, true)
+}
+
+fn declarative_refresh_ascii_whitespace(byte u8) bool {
+	return byte in [` `, `\t`, `\n`, `\r`, 0x0c]
+}
+
+fn declarative_refresh_ascii_case_equal(byte u8, expected u8) bool {
+	return byte == expected || byte == expected + 0x20
+}
+
+fn (mut d Document) shared_declarative_refresh_steps_impl(input string, has_meta_element bool) {
 	// 1. If document's will declaratively refresh is true, then return.
 	if d.will_declaratively_refresh {
 		return
 	}
 
-	// 2-9. Parse the input to extract time and URL.
+	// 2. Let position point at the first code point of input.
 	mut pos := 0
-	// Skip ASCII whitespace
-	for pos < input.len && input[pos] in [` `, `\t`, `\n`, `\r`, 0x0c] {
+
+	// 3. Skip ASCII whitespace.
+	for pos < input.len && declarative_refresh_ascii_whitespace(input[pos]) {
 		pos++
 	}
-	// Collect digits for time
+
+	// 4-5. Collect the integer part of the delay.
 	time_start := pos
 	for pos < input.len && input[pos] >= `0` && input[pos] <= `9` {
 		pos++
 	}
 	time_string := input[time_start..pos]
+
+	// 6. An absent integer part is accepted only when followed by '.'.
 	if time_string.len == 0 && (pos >= input.len || input[pos] != `.`) {
 		return
 	}
-	time := time_string.int()
 
-	// Skip fractional digits and periods
+	// 7. Upstream defaults overflow to zero. Its Core::Timer interval is a
+	// signed int, so reject values whose milliseconds would overflow i32.
+	mut time_seconds := 0
+	mut parsed_time := 0
+	mut time_overflowed := false
+	for byte in time_string.bytes() {
+		digit := int(byte - `0`)
+		if parsed_time > (2_147_483 - digit) / 10 {
+			time_overflowed = true
+			break
+		}
+		parsed_time = parsed_time * 10 + digit
+	}
+	if !time_overflowed {
+		time_seconds = parsed_time
+	}
+
+	// 8. Ignore the fractional part and any additional full stops.
 	for pos < input.len && (input[pos] == `.` || (input[pos] >= `0` && input[pos] <= `9`)) {
 		pos++
 	}
@@ -6619,38 +8050,100 @@ pub fn (mut d Document) shared_declarative_refresh_steps(input string) {
 	// 9. Let urlRecord be document's URL (default).
 	mut url_record := d.url
 
-	// 10-11. Parse URL if present after separator.
+	// 10. Consume the permitted separator and surrounding whitespace.
 	if pos < input.len {
 		c := input[pos]
-		if c != `;` && c != `,` && c != ` ` && c != `\t` && c != `\n` && c != `\r` {
+		if c != `;` && c != `,` && !declarative_refresh_ascii_whitespace(c) {
 			return
 		}
-		// Skip whitespace
-		for pos < input.len && input[pos] in [` `, `\t`, `\n`, `\r`, 0x0c] {
+		for pos < input.len && declarative_refresh_ascii_whitespace(input[pos]) {
 			pos++
 		}
 		if pos < input.len && (input[pos] == `;` || input[pos] == `,`) {
 			pos++
 		}
-		for pos < input.len && input[pos] in [` `, `\t`, `\n`, `\r`, 0x0c] {
+		for pos < input.len && declarative_refresh_ascii_whitespace(input[pos]) {
 			pos++
 		}
+	}
 
-		if pos < input.len {
-			remaining := input[pos..]
-			// Try to parse URL from remaining text
-			if parsed := d.encoding_parse_url(remaining) {
-				url_record = parsed
+	// 11. Parse an optional URL. Preserve the upstream lexer behavior: URL=
+	// is stripped only when the complete token and '=' are present; otherwise
+	// the original remaining substring is parsed verbatim.
+	if pos < input.len {
+		url_start := pos
+		mut strip_url_prefix := false
+		if declarative_refresh_ascii_case_equal(input[pos], `U`) {
+			pos++
+			if pos < input.len && declarative_refresh_ascii_case_equal(input[pos], `R`) {
+				pos++
+				if pos < input.len && declarative_refresh_ascii_case_equal(input[pos], `L`) {
+					pos++
+					for pos < input.len && declarative_refresh_ascii_whitespace(input[pos]) {
+						pos++
+					}
+					if pos < input.len && input[pos] == `=` {
+						pos++
+						for pos < input.len && declarative_refresh_ascii_whitespace(input[pos]) {
+							pos++
+						}
+						strip_url_prefix = true
+					}
+				}
 			}
+		}
+
+		mut url_string := input[url_start..]
+		if strip_url_prefix || !declarative_refresh_ascii_case_equal(input[url_start], `U`) {
+			mut quote := u8(0)
+			if pos < input.len && (input[pos] == `'` || input[pos] == `"`) {
+				quote = input[pos]
+				pos++
+			}
+			url_value_start := pos
+			if quote != 0 {
+				for pos < input.len && input[pos] != quote {
+					pos++
+				}
+			} else {
+				pos = input.len
+			}
+			url_string = input[url_value_start..pos]
+		}
+
+		url_record = d.encoding_parse_url(url_string) or { return }
+		if url_record.scheme() == 'javascript' {
+			return
 		}
 	}
 
 	// 12. Set document's will declaratively refresh to true.
 	d.will_declaratively_refresh = true
 	d.last_declarative_refresh_ = input
-	_ = time
-	_ = url_record
-	// Would set up a timer to navigate after `time` seconds
+
+	// 13. Navigate with replacement history handling once the refresh is due.
+	document_pointer := voidptr(&d)
+	hook := d.html_navigation_hook_
+	d.active_refresh_timer = Timer.create_single_shot(time_seconds * 1000, fn [document_pointer, has_meta_element, hook, url_record] () {
+		mut document := unsafe { &Document(document_pointer) }
+		if has_meta_element && document.active_sandboxing_flag_bits() & u32(512) != 0 {
+			return
+		}
+		if document.navigable() == none || document.has_been_destroyed() {
+			return
+		}
+		if navigation_hook := hook {
+			if navigation_hook.target != unsafe { nil } && navigation_hook.declarative_refresh_navigate != unsafe { nil } {
+				navigation_hook.declarative_refresh_navigate(navigation_hook.target, document, url_record)
+			}
+		}
+	})
+
+	// Header refreshes begin at completely-finished-loading. A meta refresh
+	// inserted after that point begins immediately.
+	if has_meta_element && d.completely_loaded_time {
+		d.active_refresh_timer.start()
+	}
 }
 
 pub fn (d &Document) last_declarative_refresh_input() ?string {
@@ -6682,6 +8175,16 @@ pub fn (mut d Document) append_pending_animation_event(event PendingAnimationEve
 // https://www.w3.org/TR/web-animations-1/#update-animations-and-send-events
 pub fn (mut d Document) update_animations_and_send_events(timestamp f64) {
 	d.last_animation_frame_timestamp = timestamp
+	if hook := d.css_animation_timeline_update_hook_ {
+		if hook.callback != unsafe { nil } {
+			hook.callback(hook.target, timestamp)
+		}
+	}
+	if hook := d.animations_hook_ {
+		if hook.update_animations != unsafe { nil } {
+			hook.update_animations(hook.target, unsafe { &Node(&d) }, timestamp)
+		}
+	}
 	// 1. Update the current time of all timelines associated with doc.
 	for tl in d.associated_animation_timelines {
 		tl.update_current_time(timestamp)
@@ -6693,9 +8196,21 @@ pub fn (mut d Document) update_animations_and_send_events(timestamp f64) {
 	d.remove_replaced_animations()
 
 	// 4. Let events to dispatch be a copy of doc's pending animation event queue.
-	events_to_dispatch := d.pending_animation_event_queue.clone()
+	mut events_to_dispatch := d.pending_animation_event_queue.clone()
 	// 5. Clear doc's pending animation event queue.
 	d.pending_animation_event_queue.clear()
+
+	// 6. Stable-sort by scheduled event time, then by animation composite
+	// order. Unresolved scheduled times sort before resolved times.
+	for index := 1; index < events_to_dispatch.len; index++ {
+		mut position := index
+		for position > 0 && d.pending_animation_event_sorts_before(events_to_dispatch[position], events_to_dispatch[position - 1]) {
+			temporary := events_to_dispatch[position - 1]
+			events_to_dispatch[position - 1] = events_to_dispatch[position]
+			events_to_dispatch[position] = temporary
+			position--
+		}
+	}
 
 	// 7. Dispatch each event.
 	for event in events_to_dispatch {
@@ -6705,34 +8220,53 @@ pub fn (mut d Document) update_animations_and_send_events(timestamp f64) {
 	}
 }
 
+fn (d &Document) pending_animation_event_sorts_before(a PendingAnimationEvent, b PendingAnimationEvent) bool {
+	if b_time := b.scheduled_event_time {
+		a_time := a.scheduled_event_time or { return true }
+		if a_time != b_time {
+			return a_time < b_time
+		}
+	} else if a.scheduled_event_time != none {
+		return false
+	}
+	if hook := d.animations_hook_ {
+		if hook.compare_animations != unsafe { nil } && a.animation != unsafe { nil } && b.animation != unsafe { nil } {
+			return hook.compare_animations(hook.target, a.animation, b.animation) < 0
+		}
+	}
+	return false
+}
+
+pub fn (d &Document) last_animation_frame_timestamp_value() ?f64 {
+	return d.last_animation_frame_timestamp
+}
+
 // https://www.w3.org/TR/web-animations-1/#remove-replaced-animations
 pub fn (mut d Document) remove_replaced_animations() {
-	// For every animation that is replaceable and has replace state of active,
-	// check if there exists a higher-composite-order replaceable animation
-	// that covers all the same target properties.
-	for tl in d.associated_animation_timelines {
-		for anim in tl.associated_animations() {
-			if anim.is_replaceable() && anim.replace_state() == .active {
-				// Would check target properties and set replace state to removed
-				// if all properties are covered by a higher-priority animation
-			}
+	if hook := d.animations_hook_ {
+		if hook.remove_replaced_animations != unsafe { nil } {
+			hook.remove_replaced_animations(hook.target, unsafe { &Node(&d) })
+			return
 		}
 	}
 }
 
-pub fn (d &Document) get_animations() ![]&Animation {
-	mut result := []&Animation{}
-	for tl in d.associated_animation_timelines {
-		for anim in tl.associated_animations() {
-			effect := anim.effect() or { continue }
-			target := effect.target() or { continue }
-			target_doc := target.document()
-			if target_doc == d {
-				result << anim
-			}
-		}
+// Header-template algorithm from DocumentOrShadowRoot.h. The concrete
+// Animatable/KeyframeEffect types live in the animations module and install
+// the callback used here, avoiding a dom -> animations import cycle.
+pub fn calculate_get_animations(root &Node) ![]&Animation {
+	document := root.document()
+	hook := document.animations_hook_ or { return []&Animation{} }
+	if hook.calculate_get_animations == unsafe { nil } {
+		return []&Animation{}
 	}
-	return result
+	return hook.calculate_get_animations(hook.target, root)
+}
+
+pub fn (d &Document) get_animations() ![]&Animation {
+	mut mutable_document := unsafe { &Document(d) }
+	mutable_document.update_style()
+	return calculate_get_animations(unsafe { &Node(d) })
 }
 
 pub fn (d &Document) transition_generation() int {
@@ -6764,7 +8298,9 @@ pub fn (mut d Document) element_with_id_was_added(element &Element) {
 	for fae in d.form_associated_elements_with_form_attribute {
 		fae.element_with_id_was_added_or_removed()
 	}
-	d.insert_in_potentially_named_elements(element)
+	if is_potentially_named_element_by_id(element) {
+		d.insert_in_potentially_named_elements(element)
+	}
 	if id := element.id() {
 		d.add_element_by_id(id, element)
 	}
@@ -6774,7 +8310,9 @@ pub fn (mut d Document) element_with_id_was_removed(element &Element) {
 	for fae in d.form_associated_elements_with_form_attribute {
 		fae.element_with_id_was_added_or_removed()
 	}
-	d.remove_from_potentially_named_elements(element)
+	if is_potentially_named_element_by_id(element) {
+		d.remove_from_potentially_named_elements(element)
+	}
 	if id := element.id() {
 		d.remove_element_by_id(id, element)
 	}
@@ -6789,18 +8327,27 @@ pub fn (mut d Document) element_name_changed(element &Element) {
 }
 
 pub fn (mut d Document) element_with_name_was_added(element &Element) {
-	d.insert_in_potentially_named_elements(element)
+	if is_potentially_named_element(element) {
+		d.insert_in_potentially_named_elements(element)
+	}
 }
 
 pub fn (mut d Document) element_with_name_was_removed(element &Element) {
-	if element.id() != none {
-		return
+	if is_potentially_named_element(element) {
+		if is_potentially_named_element_by_id(element) && element.id() != none {
+			return
+		}
+		d.remove_from_potentially_named_elements(element)
 	}
-	d.remove_from_potentially_named_elements(element)
 }
 
 // --- Form elements ---
 pub fn (mut d Document) add_form_associated_element_with_form_attribute(element &FormAssociatedElement) {
+	for existing in d.form_associated_elements_with_form_attribute {
+		if voidptr(existing) == voidptr(element) {
+			return
+		}
+	}
 	d.form_associated_elements_with_form_attribute << element
 }
 
@@ -6913,20 +8460,102 @@ pub fn (d &Document) scrolling_element() ?&Element {
 
 // --- Named properties ---
 
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-nameditem-filter
+pub fn is_potentially_named_element(element &Element) bool {
+	return element.is_html_element() && element.local_name() in ['embed', 'form', 'iframe', 'img',
+		'object']
+}
+
+// https://html.spec.whatwg.org/multipage/dom.html#dom-document-nameditem-filter
+pub fn is_potentially_named_element_by_id(element &Element) bool {
+	return element.is_html_element() && element.local_name() in ['img', 'object']
+}
+
+pub fn insert_in_tree_order(mut elements []&Element, element &Element) {
+	for existing in elements {
+		if existing == element {
+			return
+		}
+	}
+	for index, existing in elements {
+		if (existing.as_node().compare_document_position(element.as_node()) & document_position_following) != 0 {
+			elements.insert(index, element)
+			return
+		}
+	}
+	elements << element
+}
+
+// This deliberately follows Ladybird's current FIXME-backed implementation:
+// every embed/object reaching this helper is considered exposed.
+pub fn is_exposed(element &Element) bool {
+	return element.is_html_element() && element.local_name() in ['embed', 'object']
+}
+
+pub fn is_named_element_with_name(element &Element, name string) bool {
+	if !element.is_html_element() {
+		return false
+	}
+	local_name := element.local_name()
+	if local_name in ['embed', 'form', 'iframe', 'img', 'object'] && (local_name !in [
+		'embed',
+		'object',
+	] || is_exposed(element)) {
+		if element.get_name() or { '' } == name {
+			return true
+		}
+	}
+	if local_name == 'object' && is_exposed(element) {
+		if element.id() or { '' } == name {
+			return true
+		}
+	}
+	if local_name == 'img' && element.get_name() or { '' } != '' {
+		return element.id() or { '' } == name
+	}
+	return false
+}
+
+pub fn named_elements_with_name(document &Document, name string) []&Element {
+	mut result := []&Element{}
+	for element in document.potentially_named_elements {
+		if is_named_element_with_name(element, name) {
+			result << element
+		}
+	}
+	return result
+}
+
 // https://html.spec.whatwg.org/multipage/dom.html#dom-tree-accessors:supported-property-names
 pub fn (d &Document) supported_property_names() []string {
-	// The supported property names consist of name/id attributes from
-	// exposed embed, form, iframe, img, and exposed object elements.
 	mut names := []string{}
 	for element in d.potentially_named_elements {
-		if n := element.get_name() {
-			if n !in names {
-				names << n
+		if !element.is_html_element() {
+			continue
+		}
+		local_name := element.local_name()
+		if local_name in ['embed', 'form', 'iframe', 'img', 'object'] && (local_name !in [
+			'embed',
+			'object',
+		] || is_exposed(element)) {
+			if name := element.get_name() {
+				if name != '' && name !in names {
+					names << name
+				}
 			}
 		}
-		if id := element.id() {
-			if id !in names {
-				names << id
+		if local_name == 'object' && is_exposed(element) {
+			if id := element.id() {
+				if id != '' && id !in names {
+					names << id
+				}
+			}
+		}
+		if local_name == 'img' && element.get_name() or { '' } != '' {
+			if id := element.id() {
+				if id != '' && id !in names {
+					names << id
+				}
 			}
 		}
 	}
@@ -6937,6 +8566,48 @@ pub fn (d &Document) supported_property_names() []string {
 // accessor keeps the DOM-owned cache encapsulated while preserving tree order.
 pub fn (d &Document) potentially_named_elements() []&Element {
 	return d.potentially_named_elements.clone()
+}
+
+// ElementByIdMap accessors used by Window's named-property algorithms. C++
+// iterates this cache separately from potentially-named elements so every HTML
+// element with an id participates, including ordinary div/span elements.
+pub fn (d &Document) element_ids() []string {
+	return d.element_by_id_map().elements_by_id.keys()
+}
+
+fn collect_elements_with_id(node &Node, id string, mut result []&Element) {
+	if element := node.as_element() {
+		if element.id() or { '' } == id {
+			result << element
+		}
+	}
+	for child in node.children_as_vector() {
+		collect_elements_with_id(child, id, mut result)
+	}
+}
+
+pub fn (d &Document) elements_with_id(id string) []&Element {
+	if id !in d.element_by_id_map().elements_by_id {
+		return []
+	}
+	mut result := []&Element{}
+	collect_elements_with_id(unsafe { &Node(d) }, id, mut result)
+	return result
+}
+
+fn collect_descendant_elements(node &Node, mut result []&Element) {
+	for child in node.children_as_vector() {
+		if element := child.as_element() {
+			result << element
+		}
+		collect_descendant_elements(child, mut result)
+	}
+}
+
+pub fn (d &Document) descendant_elements() []&Element {
+	mut result := []&Element{}
+	collect_descendant_elements(unsafe { &Node(d) }, mut result)
+	return result
 }
 
 // --- Shadow roots ---
@@ -7138,6 +8809,9 @@ pub fn (d &Document) cursor_position() ?&Position {
 			return d.selection_.cursor_position()
 		}
 	}
+	if target := d.active_input_events_target(none) {
+		return target.cursor_position()
+	}
 	return none
 }
 
@@ -7229,21 +8903,20 @@ pub fn (mut d Document) steps_to_fire_beforeunload(unload_prompt_shown bool) Ste
 	d.unload_counter++
 
 	// 3. Increase document's relevant agent's event loop's termination nesting level by 1.
-	mut event_loop := relevant_agent_for_doc(d).event_loop
-	event_loop.increment_termination_nesting_level()
+	d.increment_termination_nesting_level()
 
 	// 4. Let eventFiringResult be the result of firing an event named beforeunload at document's relevant global object,
 	//    using BeforeUnloadEvent, with the cancelable attribute initialized to true.
 	mut event_firing_result := true
 	if d.window != unsafe { nil } {
-		beforeunload_event := Event.create('beforeunload', EventInit{
+		beforeunload_event := BeforeUnloadEvent.create('beforeunload', EventInit{
 			cancelable: true
 		})
-		event_firing_result = EventDispatcher.dispatch(unsafe { &EventTarget(d.window) }, beforeunload_event, false)
+		event_firing_result = EventDispatcher.dispatch(unsafe { &EventTarget(d.window) }, unsafe { &Event(beforeunload_event) }, false)
 	}
 
 	// 5. Decrease document's relevant agent's event loop's termination nesting level by 1.
-	event_loop.decrement_termination_nesting_level()
+	d.decrement_termination_nesting_level()
 
 	// FIXME: 6. If all of the following are true:
 	_ = event_firing_result
@@ -7281,8 +8954,7 @@ pub fn (d &Document) onfullscreenchange() ?&CallbackType {
 }
 
 pub fn (mut d Document) set_onfullscreenchange(value ?&CallbackType) {
-	unsafe { &EventTarget(&d) }
-	.set_event_handler_attribute('fullscreenchange', value)
+	unsafe { &EventTarget(&d) }.set_event_handler_attribute('fullscreenchange', value)
 }
 
 pub fn (d &Document) onfullscreenerror() ?&CallbackType {
@@ -7290,8 +8962,7 @@ pub fn (d &Document) onfullscreenerror() ?&CallbackType {
 }
 
 pub fn (mut d Document) set_onfullscreenerror(value ?&CallbackType) {
-	unsafe { &EventTarget(&d) }
-	.set_event_handler_attribute('fullscreenerror', value)
+	unsafe { &EventTarget(&d) }.set_event_handler_attribute('fullscreenerror', value)
 }
 
 // --- View transitions ---
@@ -7522,11 +9193,11 @@ pub fn (mut d Document) remove_render_blocking_element(element &Element) {
 }
 
 // --- CSS import rules ---
-pub fn (mut d Document) add_pending_css_import_rule(rule VoidPtr) {
+pub fn (mut d Document) add_pending_css_import_rule(rule &CSSImportRule) {
 	d.pending_css_import_rules << rule
 }
 
-pub fn (mut d Document) remove_pending_css_import_rule(rule VoidPtr) {
+pub fn (mut d Document) remove_pending_css_import_rule(rule &CSSImportRule) {
 	d.pending_css_import_rules = d.pending_css_import_rules.filter(it != rule)
 }
 
@@ -7671,10 +9342,11 @@ pub fn (d &Document) active_input_events_target(for_node ?&Node) ?&InputEventsTa
 }
 
 fn form_associated_text_control_input_events_target(node &Node) ?&InputEventsTarget {
-	// C++: as_if<HTML::FormAssociatedTextControlElement>(*focused_area).
-	// The HTML form text-control hierarchy is outside the current DOM file set.
-	_ = node
-	return none
+	document := node.document()
+	if document.form_control_input_events_target_callback_ == unsafe { nil } {
+		return none
+	}
+	return document.form_control_input_events_target_callback_(node)
 }
 
 // --- Pointer lock ---
@@ -7703,6 +9375,112 @@ pub fn (mut d Document) shared_resource_requests() map[string]&SharedResourceReq
 	return d.shared_resource_requests_
 }
 
+pub fn SharedResourceRequest.get_or_create(mut document Document, url URL) &SharedResourceRequest {
+	key := url.to_string()
+	if request := document.shared_resource_requests_[key] {
+		return request
+	}
+	request := &SharedResourceRequest{
+		url: url
+		document: &document
+	}
+	document.shared_resource_requests_[key] = request
+	return request
+}
+
+pub fn (request &SharedResourceRequest) image_data() ?SharedResourceImageData {
+	return request.image_data_
+}
+
+pub fn (request &SharedResourceRequest) fetch_controller() voidptr {
+	return request.fetch_controller
+}
+
+pub fn (mut request SharedResourceRequest) set_fetch_controller(controller voidptr) {
+	request.fetch_controller = controller
+}
+
+pub fn (mut request SharedResourceRequest) set_decode_callback(callback ?SharedResourceDecodeCallback) {
+	request.decode_callback = callback
+}
+
+pub fn (mut request SharedResourceRequest) fetch_resource(fetch SharedResourceFetchCallback) {
+	if request.state_ != .new_ {
+		return
+	}
+	request.state_ = .fetching
+	request.load_event_delay = true
+	fetch(request, request.url)
+}
+
+pub fn (mut request SharedResourceRequest) add_callbacks(on_finish ?SharedResourceRequestCallback, on_fail ?SharedResourceRequestCallback) {
+	if request.state_ == .finished {
+		if callback := on_finish {
+			callback()
+		}
+		return
+	}
+	if request.state_ == .failed {
+		if callback := on_fail {
+			callback()
+		}
+		return
+	}
+	request.callbacks << SharedResourceCallbacks{
+		on_finish: on_finish
+		on_fail: on_fail
+	}
+}
+
+pub fn (mut request SharedResourceRequest) handle_failed_fetch() {
+	request.state_ = .failed
+	request.load_event_delay = false
+	for callbacks in request.callbacks {
+		if callback := callbacks.on_fail {
+			callback()
+		}
+	}
+	request.callbacks.clear()
+}
+
+pub fn (mut request SharedResourceRequest) handle_successful_resource_load(image_data SharedDecodedImageData) {
+	request.image_data_ = SharedResourceImageData{ data: image_data }
+	request.state_ = .finished
+	request.load_event_delay = false
+	mut document := unsafe { &Document(request.document) }
+	document.notify_css_background_image_loaded()
+	for callbacks in request.callbacks {
+		if callback := callbacks.on_finish {
+			callback()
+		}
+	}
+	request.callbacks.clear()
+}
+
+pub fn (mut request SharedResourceRequest) handle_successful_fetch(url URL, mime_type string, data []u8) {
+	decode := request.decode_callback or {
+		request.handle_failed_fetch()
+		return
+	}
+	image_data := decode(url, mime_type, data.clone()) or {
+		request.handle_failed_fetch()
+		return
+	}
+	request.handle_successful_resource_load(image_data)
+}
+
+pub fn (request &SharedResourceRequest) needs_fetching() bool {
+	return request.state_ == .new_
+}
+
+pub fn (request &SharedResourceRequest) is_fetching() bool {
+	return request.state_ == .fetching
+}
+
+pub fn (request &SharedResourceRequest) state() SharedResourceRequestState {
+	return request.state_
+}
+
 // --- History ---
 pub fn (d &Document) get_latest_entry() ?&SessionHistoryEntry {
 	if d.latest_entry == unsafe { nil } {
@@ -7715,18 +9493,28 @@ pub fn (mut d Document) set_latest_entry(e ?&SessionHistoryEntry) {
 	d.latest_entry = e or { unsafe { nil } }
 }
 
+fn (mut d Document) set_history_state(state JSValue) {
+	mut history := d.history()
+	history.set_state(state)
+}
+
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#restore-the-history-object-state
 pub fn (mut d Document) restore_the_history_object_state(entry &SessionHistoryEntry) {
-	// 1. Let targetRealm be document's relevant realm.
-	realm := relevant_realm_for_doc(d)
-
 	// 2. Let state be StructuredDeserialize(entry's classic history API state, targetRealm).
 	// 3. Set document's history object's state to state.
-	state := structured_deserialize_stub(entry.classic_history_api_state, realm, unsafe { nil }) or {
-		d.history().set_state(unsafe { nil })
+	hook := d.lifecycle_hook_ or {
+		d.set_history_state(js_null())
 		return
 	}
-	d.history().set_state(state)
+	if hook.structured_deserialize == unsafe { nil } {
+		d.set_history_state(js_null())
+		return
+	}
+	state := hook.structured_deserialize(hook.target, entry.classic_history_api_state) or {
+		d.set_history_state(js_null())
+		return
+	}
+	d.set_history_state(state)
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#update-document-for-history-step-application
@@ -7765,11 +9553,6 @@ pub fn (mut d Document) update_for_history_step_application(entry &SessionHistor
 		}
 	}
 	_ = do_not_reactivate
-}
-
-// https://html.spec.whatwg.org/multipage/browsing-the-web.html#snapshotting-source-snapshot-params
-pub fn (mut d Document) snapshot_source_snapshot_params() &SourceSnapshotParams {
-	return &SourceSnapshotParams{}
 }
 
 // --- Last modified ---
@@ -7861,6 +9644,11 @@ pub fn (mut d Document) dump_stacking_context_tree() string {
 
 // --- Style scope ---
 pub fn (d &Document) get_style_sheet_source(identifier &StyleSheetIdentifier) ?string {
+	if hook := d.style_update_hook_ {
+		if hook.get_style_sheet_source != unsafe { nil } {
+			return hook.get_style_sheet_source(hook.target, identifier)
+		}
+	}
 	return match identifier.type_ {
 		.style_element {
 			// Would look up the <style> or <svg:style> element by unique ID
@@ -7885,7 +9673,6 @@ pub fn (d &Document) get_style_sheet_source(identifier &StyleSheetIdentifier) ?s
 			css_user_agent_style_sheet_source(url)
 		}
 		.user_style {
-			// Would return page().user_style()
 			none
 		}
 	}
@@ -7974,11 +9761,19 @@ pub fn (d &Document) has_active_favicon() bool {
 }
 
 pub fn (mut d Document) check_favicon_after_loading_link_resource() {
-	// Check for favicon link elements in the head
-	_ = d.head() or { return }
-	// Stub: In a full implementation, would iterate over head's descendants
-	// to find link elements with rel="icon" and use the last one in tree order.
-	// This requires HTMLLinkElement type checks and favicon loading infrastructure.
+	head_element := d.head() or { return }
+	mut favicon_link_elements := []&HTMLLinkElement{}
+	collect_loaded_favicon_link_elements(unsafe { &Node(head_element) }, mut favicon_link_elements)
+	for index := favicon_link_elements.len - 1; index >= 0; index-- {
+		favicon_element := favicon_link_elements[index]
+		if voidptr(favicon_element) == voidptr(d.active_element) {
+			return
+		}
+		if favicon_element.load_favicon_and_use_if_window_is_active() {
+			d.active_favicon = unsafe { &Node(favicon_element) }
+			return
+		}
+	}
 }
 
 // --- lookup_custom_element_definition ---
@@ -8030,11 +9825,11 @@ pub fn (mut d Document) register_custom_element_definition(definition &CustomEle
 // --- SVG root element ---
 
 // https://www.w3.org/TR/SVG2/struct.html#InterfaceDocumentExtensions
-pub fn (d &Document) root_element() ?VoidPtr {
+pub fn (d &Document) root_element() ?&SVGSVGElement {
 	// Returns SVG root element if document element is an SVGSVGElement.
 	doc_el := d.document_element() or { return none }
 	if doc_el.is_svg_svg_element() {
-		return voidptr(doc_el)
+		return unsafe { &SVGSVGElement(doc_el) }
 	}
 	return none
 }
@@ -8129,10 +9924,14 @@ pub fn update_layout_reason_to_string(reason UpdateLayoutReason) string {
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#relevant-settings-object
 // C++: HTML::EnvironmentSettingsObject& Document::relevant_settings_object() const
-pub fn (d &Document) relevant_settings_object() &EnvironmentSettingsObjectStub {
+pub fn (d &Document) relevant_settings_object() voidptr {
 	// The relevant settings object for a platform object o is the environment settings
 	// object of the relevant Realm for o.
-	return &EnvironmentSettingsObjectStub{}
+	hook := d.lifecycle_hook_ or { return unsafe { nil } }
+	if hook.relevant_settings_object == unsafe { nil } {
+		return unsafe { nil }
+	}
+	return hook.relevant_settings_object(hook.target, d)
 }
 
 // C++: Optional<String> Document::navigation_id() const
@@ -8274,24 +10073,37 @@ fn is_valid_name_character(ch u32) bool {
 pub fn (d &Document) background_layers() ?[]BackgroundLayerData {
 	body_el := d.body() or { return none }
 	// NB: Called during painting inside update_layout().
-	layout := body_el.unsafe_layout_node() or { return none }
-	_ = layout
-	// Stub: would return layout.background_layers()
-	return none
+	_ = body_el.unsafe_layout_node() or { return none }
+	hook := d.background_style_hook_ or { return none }
+	if hook.background_layers == unsafe { nil } {
+		return none
+	}
+	return hook.background_layers(hook.target, html_element_as_element(body_el))
 }
 
 // C++: CSS::ImageRendering Document::background_image_rendering() const
 pub fn (d &Document) background_image_rendering() ImageRendering {
 	body_el := d.body() or { return .auto_ }
-	layout := body_el.unsafe_layout_node() or { return .auto_ }
-	_ = layout
-	// Stub: would return layout.computed_values().image_rendering()
-	return .auto_
+	_ = body_el.unsafe_layout_node() or { return .auto_ }
+	hook := d.background_style_hook_ or { return .auto_ }
+	if hook.background_image_rendering == unsafe { nil } {
+		return .auto_
+	}
+	return hook.background_image_rendering(hook.target, html_element_as_element(body_el))
 }
 
 // C++: void Document::mark_svg_root_as_needing_relayout(Layout::SVGSVGBox& svg_root)
 pub fn (mut d Document) mark_svg_root_as_needing_relayout(svg_root &SVGSVGBox) {
 	d.svg_roots_needing_relayout << svg_root
+}
+
+// File-local Document.cpp helper used by Document::update_layout(). Layout
+// supplies the concrete SVGFormattingContext/commit implementation through the
+// cycle-breaking callback retained by SVGSVGBox.
+pub fn relayout_svg_root(svg_root &SVGSVGBox) {
+	if svg_root.relayout_callback != unsafe { nil } {
+		svg_root.relayout_callback(svg_root)
+	}
 }
 
 // C++: void Document::update_layout_if_needed_for_node(Node const& node, UpdateLayoutReason reason)
@@ -8332,13 +10144,28 @@ pub fn (d &Document) element_needs_style_update(element &Element) bool {
 	if element.entire_subtree_needs_style_update() {
 		return true
 	}
+	// Inheritance follows the flat tree (including assigned slots), so a dirty
+	// inheritance ancestor makes this element stale even when its own bit is
+	// clear.
+	mut ancestor := element.element_to_inherit_style_from(none)
+	for ancestor != none {
+		current := ancestor or { break }
+		if current.needs_style_update() || current.entire_subtree_needs_style_update() {
+			return true
+		}
+		ancestor = current.element_to_inherit_style_from(none)
+	}
 	// If the navigable has a container and that container needs a style update, then we need one
 	// as well, since the container's style can affect this element (e.g. via media queries or
 	// viewport units).
 	if nav := d.navigable() {
 		if container := nav.container() {
-			_ = container
-			// Stub: would check container.document().element_needs_style_update(container)
+			if container_element := container.as_element() {
+				container_document := container.document()
+				if container_document != unsafe { nil } && container_document.element_needs_style_update(container_element) {
+					return true
+				}
+			}
 		}
 	}
 	return false
@@ -8353,8 +10180,10 @@ pub fn (d &Document) highlighted_layout_node() ?&LayoutNode {
 	if d.highlighted_pseudo_element == none || d.highlighted_node.node_type != .element_node {
 		return d.highlighted_node.unsafe_layout_node()
 	}
-	// Stub: would call element.get_pseudo_element_node(pseudo_element)
-	return d.highlighted_node.unsafe_layout_node()
+	element := d.highlighted_node.as_element() or { return none }
+	pseudo_element := d.highlighted_pseudo_element or { return none }
+	pseudo_layout := element.get_pseudo_element_node(int(pseudo_element)) or { return none }
+	return pseudo_layout.layout_node_
 }
 
 // C++: void Document::update_active_element()
@@ -8463,24 +10292,41 @@ fn find_anchor_with_name_in_subtree(node &Node, fragment string) ?&Element {
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#document-write-steps
 // C++: WebIDL::ExceptionOr<void> Document::run_the_document_write_steps(...)
-pub fn (mut d Document) run_the_document_write_steps(text []string, add_line_feed bool) ! {
+pub fn (mut d Document) run_the_document_write_steps(text []TrustedHTMLOrString, line_feed AddLineFeed, sink InjectionSink) ! {
 	// 1. Let string be the empty string.
 	mut sb := strings.new_builder(256)
 
 	// 2. Let isTrusted be false if text contains a string; otherwise true.
-	// NOTE: This V binding receives strings directly; TrustedHTML is not ported yet.
+	mut is_trusted := true
+	for value in text {
+		if value is string {
+			is_trusted = false
+			break
+		}
+	}
 
-	// 3. For each value of text: append it to string.
-	for val in text {
-		sb.write_string(val)
+	// 3. For each value of text, append either the TrustedHTML object's
+	// associated data or the string itself.
+	for value in text {
+		match value {
+			TrustedHTMLValue { sb.write_string(value.data) }
+			string { sb.write_string(value) }
+		}
 	}
 
 	// 4. If isTrusted is false, set string to the result of invoking the Get Trusted Type compliant string algorithm
 	//    with TrustedHTML, this's relevant global object, string, sink, and "script".
-	// Stub: Trusted Types is not ported in this DOM translation.
+	if !is_trusted {
+		compliant_string := d.trusted_types_compliant_html(sb.str(), match sink {
+			.document_writeln { 'document-writeln' }
+			.document_write { 'document-write' }
+		})!
+		sb = strings.new_builder(compliant_string.len + 1)
+		sb.write_string(compliant_string)
+	}
 
 	// 5. If lineFeed is true, append U+000A LINE FEED to string.
-	if add_line_feed {
+	if line_feed == .yes {
 		sb.write_u8(0x0A)
 	}
 
@@ -8557,23 +10403,23 @@ pub fn (mut d Document) take_scripts_to_execute_in_order_as_soon_as_possible() [
 // C++: void Document::dispatch_events_for_transition(GC::Ref<CSS::CSSTransition> transition)
 // https://drafts.csswg.org/css-transitions-2/#event-dispatch
 pub fn (mut d Document) dispatch_events_for_transition(transition &Animation) {
-	_ = transition
-	// Stub: In the full implementation, this determines the transition phase
-	// (idle, pending, before, active, after) by comparing the animation's
-	// current time against its effect's timing, then dispatches transitionrun,
-	// transitionstart, transitionend, and transitioncancel events to the
-	// owning element based on phase transitions.
+	hook := d.css_animation_event_hook_ or { return }
+	if hook.dispatch != unsafe { nil } {
+		hook.dispatch(hook.target, &d, transition)
+	}
 }
 
 // https://www.w3.org/TR/css-animations-2/#event-dispatch
 // C++: void Document::dispatch_events_for_animation_if_necessary(GC::Ref<Animations::Animation> animation)
 pub fn (mut d Document) dispatch_events_for_animation_if_necessary(animation &Animation) {
-	_ = animation
-	// Stub: In the full implementation, if the animation is a CSS transition,
-	// delegates to dispatch_events_for_transition. Otherwise, for CSS
-	// animations, compares the previous phase with the current phase and
-	// dispatches animationstart, animationiteration, animationend, and
-	// animationcancel events as appropriate.
+	if animation.concrete_kind_ == .css_transition {
+		d.dispatch_events_for_transition(animation)
+		return
+	}
+	hook := d.css_animation_event_hook_ or { return }
+	if hook.dispatch != unsafe { nil } {
+		hook.dispatch(hook.target, &d, animation)
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#unload-a-document-and-its-descendants
@@ -8662,80 +10508,100 @@ pub fn (mut d Document) queue_intersection_observer_task() {
 
 	// 3. Queue a task on the IntersectionObserver task source associated with
 	//    the document's event loop to notify intersection observers.
-	// Stub: In full implementation, this would:
-	//   - Set IntersectionObserverTaskQueued to false
-	//   - For each IntersectionObserver whose root is in the DOM tree:
-	//     - Take queued entries
-	//     - Invoke callback with queue and observer
+	hook := d.lifecycle_hook_ or {
+		d.intersection_observer_task_queued = false
+		return
+	}
+	if hook.queue_intersection_observer_task == unsafe { nil } {
+		d.intersection_observer_task_queued = false
+		return
+	}
+	hook.queue_intersection_observer_task(hook.target, d)
+}
+
+// https://www.w3.org/TR/intersection-observer/#notify-intersection-observers
+pub fn (mut d Document) notify_intersection_observers() {
+	// 1. Set document's IntersectionObserverTaskQueued flag to false.
+	d.intersection_observer_task_queued = false
+
+	// 2. Let notify list be a list of all IntersectionObservers whose root is
+	// in the DOM tree of document. Construction registers each observer with
+	// precisely that root document, so this registry is the notify list.
+	notify_list := d.intersection_observers.clone()
+
+	// 3. Notify each observer. The translated observer callback copies and
+	// clears [[QueuedEntries]], skips an empty queue, and invokes its Web IDL
+	// callback with (queue, observer).
+	for observer in notify_list {
+		if observer.notify != unsafe { nil } {
+			observer.notify(observer.target)
+		}
+	}
 }
 
 // https://www.w3.org/TR/intersection-observer/#queue-an-intersectionobserverentry
 // C++: void Document::queue_an_intersection_observer_entry(...)
 pub fn (mut d Document) queue_an_intersection_observer_entry(observer &IntersectionObserver, time f64, root_bounds Rect, bounding_client_rect Rect, intersection_rect Rect, is_intersecting bool, intersection_ratio f64, target &Element) {
-	_ = time
-	_ = root_bounds
-	_ = bounding_client_rect
-	_ = intersection_rect
-	_ = is_intersecting
-	_ = intersection_ratio
-	_ = target
 	// 1. Construct an IntersectionObserverEntry, passing in time, rootBounds,
 	//    boundingClientRect, intersectionRect, isIntersecting, and target.
 	// 2. Append it to observer's internal [[QueuedEntries]] slot.
-	observer.queue_entry()
+	observer.queue_entry(time, root_bounds, bounding_client_rect, intersection_rect, is_intersecting, intersection_ratio, target)
 	// 3. Queue an intersection observer task for document.
 	d.queue_intersection_observer_task()
 }
 
 // C++: JS::Value Document::named_item_value(FlyString const& name) const
 // https://html.spec.whatwg.org/multipage/dom.html#dom-document-nameditem
-pub fn (d &Document) named_item_value(name string) ?&Element {
+pub fn (d &Document) named_item_value(name string) DocumentNamedItemResult {
 	// 1. Let elements be the list of named elements with the name name that
 	//    are in a document tree with the Document as their root.
 	// NOTE: There will be at least one such element.
-	mut elements := []&Element{}
-	for element in d.potentially_named_elements {
-		if element.root().is_document() && element.root().document() == d {
-			if element_name := element.get_name() {
-				if element_name == name {
-					elements << element
-					continue
-				}
-			}
-			if element_id := element.id() {
-				if element_id == name {
-					elements << element
-				}
-			}
-		}
-	}
+	elements := named_elements_with_name(d, name)
 
 	// 2. If elements has only one element, and that element is an iframe element,
 	//    and that iframe element's content navigable is not null, then return the
 	//    active WindowProxy of the element's content navigable.
-	// The V binding returns DOM elements, so WindowProxy is not representable here.
+	if elements.len == 1 && elements[0].is_html_element() && elements[0].local_name() == 'iframe' {
+		if proxy := elements[0].as_node().active_window_proxy() {
+			return DocumentNamedItemResult{
+				window_proxy: proxy
+			}
+		}
+	}
 
 	// 3. Otherwise, if elements has only one element, return that element.
 	if elements.len == 1 {
-		return elements[0]
+		return DocumentNamedItemResult{
+			element: elements[0]
+		}
 	}
 
 	// 4. Otherwise return an HTMLCollection rooted at the Document node, whose filter matches only named elements with the name name.
-	// This method's current V signature returns an optional Element, so multiple matches are represented as null until JS values/HTMLCollection returns are ported.
-	return none
+	return DocumentNamedItemResult{
+		collection: HTMLCollection.create(unsafe { &ParentNode(d) }, .descendants, fn [name] (element &Element) bool {
+			return is_named_element_with_name(element, name)
+		}, never_sort_elements)
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsehtmlunsafe
 // C++: WebIDL::ExceptionOr<GC::Root<DOM::Document>> Document::parse_html_unsafe(JS::VM& vm, ...)
-pub fn Document.parse_html_unsafe(html string) !&Document {
+//
+// C++ obtains `associated_document` from the current realm's Window. V keeps
+// that realm boundary explicit so this algorithm still uses the caller's
+// Trusted Types policy, HTML parser, and origin.
+pub fn Document.parse_html_unsafe(associated_document &Document, html string) !&Document {
 	// FIXME: update description once https://github.com/whatwg/html/issues/11778 gets solved
 	// 1. Let compliantHTML to the result of invoking the Get Trusted Type compliant string algorithm with
 	//    TrustedHTML, this's relevant global object, html, "Document parseHTMLUnsafe", and "script".
-	compliant_html := trusted_type_compliant_html_for_document_parse_html_unsafe_stub(html)!
+	compliant_html := associated_document.trusted_types_compliant_html(html, 'document-parse-html-unsafe')!
 
 	// 2. Let document be a new Document, whose content type is "text/html".
 	mut doc := Document.create_for_fragment_parsing()
 	doc.set_content_type('text/html')
+	if hook := associated_document.html_fragment_parsing_hook() {
+		doc.set_html_fragment_parsing_hook(hook)
+	}
 
 	// 3. Set document's allow declarative shadow roots to true.
 	doc.set_allow_declarative_shadow_roots(true)
@@ -8744,26 +10610,14 @@ pub fn Document.parse_html_unsafe(html string) !&Document {
 	doc.parse_html_from_a_string(compliant_html)
 
 	// AD-HOC: Setting the origin to match that of the associated document matches the behavior of existing browsers.
-	if origin := associated_document_origin_for_parse_html_unsafe_stub() {
-		doc.set_origin(origin)
-	}
+	doc.set_origin(associated_document.origin())
 
 	// 5. Return document.
 	return doc
 }
 
-pub fn parse_html_unsafe(html string) !&Document {
-	return Document.parse_html_unsafe(html)
-}
-
-fn trusted_type_compliant_html_for_document_parse_html_unsafe_stub(html string) !string {
-	// Trusted Types are not ported yet; preserve the algorithm boundary explicitly.
-	return html
-}
-
-fn associated_document_origin_for_parse_html_unsafe_stub() ?Origin {
-	// The JS realm/global object model is outside this DOM-only translation for now.
-	return none
+pub fn parse_html_unsafe(associated_document &Document, html string) !&Document {
+	return Document.parse_html_unsafe(associated_document, html)
 }
 
 // C++: GC::Ref<CSS::FontFaceSet> Document::adopted_style_sheets() const
@@ -8774,17 +10628,15 @@ pub fn (d &Document) adopted_style_sheets() []&CSSStyleSheet {
 // https://fullscreen.spec.whatwg.org/#fullscreen-an-element
 // C++: void Document::fullscreen_element_within_doc(GC::Ref<Element> element)
 pub fn (mut d Document) fullscreen_element_within_doc(mut element Element) {
-	// 1. Let hideUntil be the result of running topmost popover ancestor given element.
-	// Stub: would compute hide_until from popover lists
+	// Steps 1-3 are HTML's popover algorithms. The HTML module installs the
+	// callback because DOM cannot import HTMLElement's algorithm implementation.
+	if hook := d.fullscreen_hook_ {
+		if hook.hide_popovers != unsafe { nil } {
+			hook.hide_popovers(hook.target, d, &element)
+		}
+	}
 
-	// 2. If hideUntil is not null, then:
-	//    1. Run hide all popovers until given hideUntil, false, and true.
-	// (Stub: would call hide_all_popovers_until)
-
-	// Popover hiding depends on HTMLElement's popover state machine; there is no visible popover in
-	// this DOM representation unless one has explicitly been added to the document's popover lists.
-
-	// Set the element's fullscreen flag, then move it to the top of the top layer.
+	// 4-6. Set the element's fullscreen flag, then move it to the top of the top layer.
 	element.set_fullscreen_flag(true)
 	d.remove_an_element_from_the_top_layer_immediately(element)
 	d.add_an_element_to_the_top_layer(element)
@@ -8807,16 +10659,19 @@ pub fn (d &Document) collect_documents_to_unfullscreen() []&Document {
 			break
 		}
 
-		// 4. Let container be lastDoc's node navigable's container.
+		// 4-5. Let container be lastDoc's node navigable's container; stop at the top level.
 		nav := last_doc.navigable() or { break }
 		container := nav.container() or { break }
-		_ = container
 
-		// 5. If container is null, then break.
-		// 6. If container's iframe fullscreen flag is set, break.
+		// 6. Stop when an iframe container's iframe fullscreen flag is set.
+		if hook := last_doc.fullscreen_hook_ {
+			if hook.container_iframe_fullscreen_flag != unsafe { nil } && hook.container_iframe_fullscreen_flag(hook.target, container) {
+				break
+			}
+		}
+
 		// 7. Append container's node document to docs.
-		// Stub: would walk up navigable containers
-		break
+		docs << container.document()
 	}
 
 	// 3. Return docs.
@@ -8831,17 +10686,8 @@ pub fn (mut d Document) record_display_list() ?&DisplayList {
 
 	d.update_paint_and_hit_testing_properties_if_needed()
 
-	pb := d.paintable_box() or { return none }
-	_ = pb
-	// Stub: In the full implementation, this would:
-	//   - Create a DisplayList from the paintable's visual context tree
-	//   - Set up a DisplayListRecorder
-	//   - Determine color scheme from html element
-	//   - Fill with canvas color and background color
-	//   - Paint all phases
-	//   - Paint inspector overlay if highlighted
-	//   - Cache the result
-	display_list := &DisplayList{}
+	paintable := d.paintable_box() or { return none }
+	display_list := paintable.record_display_list() or { return none }
 	d.cached_display_list_ = display_list
 	return display_list
 }
@@ -8849,12 +10695,10 @@ pub fn (mut d Document) record_display_list() ?&DisplayList {
 // C++: void Document::run_csp_initialization() const
 // https://w3c.github.io/webappsec-csp/#run-document-csp-initialization
 pub fn (d &Document) run_csp_initialization() {
-	// 1. For each policy of document's policy container's CSP list:
-	//    1. For each directive of policy:
-	//       1. Execute directive's initialization algorithm on document.
-	// Stub: Content Security Policy initialization requires full CSP implementation
-	if d.policy_container_ != unsafe { nil } {
-		// Would iterate CSP list policies and directives
+	// 1. Execute every directive's initialization algorithm on this Document.
+	hook := d.csp_hook_ or { return }
+	if hook.initialize != unsafe { nil } {
+		hook.initialize(hook.target, d)
 	}
 }
 
@@ -8877,14 +10721,18 @@ pub fn (d &Document) element_by_id(id string) ?&Element {
 
 // C++: Optional<Vector<CSS::Parser::ComponentValue>> Document::environment_variable_value(...)
 pub fn (d &Document) environment_variable_value(variable EnvironmentVariable) ?string {
-	// Stub: Returns CSS environment variable values
 	return match variable {
-		.safe_area_inset_top, .safe_area_inset_bottom, .safe_area_inset_left, .safe_area_inset_right {
+		.safe_area_inset_top, .safe_area_inset_bottom, .safe_area_inset_left, .safe_area_inset_right, .safe_area_max_inset_top, .safe_area_max_inset_bottom, .safe_area_max_inset_left, .safe_area_max_inset_right {
+			// Upstream returns a zero CSS-pixel dimension until display-shape safe areas are exposed.
 			'0px'
 		}
 		.preferred_text_scale {
+			// Upstream returns the number 1 until the user preference is exposed.
 			'1'
 		}
+
+		// Viewport segment variables are currently undefined upstream unless the host exposes
+		// multiple viewport segments. `none` keeps them on the substitution failure path.
 		else {
 			none
 		}
@@ -8913,45 +10761,96 @@ pub fn (d &Document) custom_property_initial_value(name string) ?string {
 // C++: void Document::build_registered_properties_cache()
 pub fn (mut d Document) build_registered_properties_cache() {
 	d.cached_registered_properties_from_css_property_rules.clear()
-	d.for_each_active_css_style_sheet(fn [mut d] (sheet &CSSStyleSheet) {
-		// Stub: In the full implementation, this would iterate through
-		// each effective CSS rule in the stylesheet (preorder traversal),
-		// and for each CSSPropertyRule, add its registration to the cache.
-		_ = sheet
-		_ = d
-	})
+	if d.style_computer != unsafe { nil } && d.style_computer.build_registered_properties_cache_callback != unsafe { nil } {
+		d.style_computer.build_registered_properties_cache_callback(d.style_computer.css_handle)
+	}
 }
 
 // C++: void Document::build_counter_style_cache()
 pub fn (mut d Document) build_counter_style_cache() {
 	d.registered_counter_styles.clear()
-	// Stub: In the full implementation, this would:
-	// 1. Define complex predefined counter styles (ethiopic-numeric, CJK styles, etc.)
-	// 2. Walk all active stylesheets for @counter-style rules
-	// 3. Build CounterStyle objects from definitions
+	if d.style_computer != unsafe { nil } && d.style_computer.build_counter_style_cache_callback != unsafe { nil } {
+		d.style_computer.build_counter_style_cache_callback(d.style_computer.css_handle)
+	}
 }
 
 // C++: void Document::ensure_cookie_version_index(URL::URL const& new_url, URL::URL const& old_url)
 pub fn (mut d Document) ensure_cookie_version_index(new_url URL) {
-	// Stub: In the full implementation, this would canonicalize the domain
-	// and request a cookie version index from the page client.
-	_ = new_url
+	record := new_url.parsed() or {
+		d.cookie_version_index = none
+		return
+	}
+	new_domain := httpcookie.canonicalize_domain(&record) or {
+		d.cookie_version_index = none
+		return
+	}
+	if d.cookie_version_index != none {
+		if old_record := d.url.parsed() {
+			if old_domain := httpcookie.canonicalize_domain(&old_record) {
+				if new_domain == old_domain {
+					return
+				}
+			}
+		}
+	}
+	if hook := d.cookie_client_hook_ {
+		if hook.request_document_version_index != unsafe { nil } {
+			hook.request_document_version_index(hook.target, d.unique_id(), new_domain)
+		}
+	}
 	d.cookie_version_index = none
 }
 
-// C++: void Document::invalidate_style_for_elements_affected_by_pseudo_class_change(...)
-pub fn (mut d Document) invalidate_style_for_elements_affected_by_pseudo_class_change(pseudo_class PseudoClass, common_ancestor &Node) {
-	_ = pseudo_class
-	// The rule-cache algorithm in C++ is an optimization: it marks only elements whose matching rule
-	// set changes. Marking every element in the affected subtree is conservative but semantically
-	// equivalent and keeps pseudo-class changes correct before CSS rule-cache metadata is bridged.
-	common_ancestor.for_each_in_inclusive_subtree(fn (node &Node) TraversalDecision {
-		if element := node.as_element() {
-			mut mutable_element := unsafe { &Element(element) }
-			mutable_element.set_needs_style_update(true)
+// These two accessors expose Document.cpp's TemporaryChange target to the CSS
+// bridge. They intentionally bypass invalidation; callers restore the old slot
+// immediately after comparing selector matches under the candidate state.
+pub fn (d &Document) pseudo_class_state_node(pseudo_class PseudoClass) ?&Node {
+	match pseudo_class {
+		.hover {
+			return if d.hovered_node == unsafe { nil } { none } else { d.hovered_node }
 		}
-		return .@continue
-	})
+		.focus, .focus_within, .focus_visible {
+			return if d.focused_area == unsafe { nil } { none } else { d.focused_area }
+		}
+		.target {
+			return if d.target_element_ == unsafe { nil } {
+				none
+			} else {
+				d.target_element_.as_node()
+			}
+		}
+		else {}
+	}
+	return none
+}
+
+pub fn (mut d Document) set_pseudo_class_state_without_invalidation(pseudo_class PseudoClass, node ?&Node) {
+	new_node := node or { unsafe { nil } }
+	match pseudo_class {
+		.hover {
+			d.hovered_node = new_node
+		}
+		.focus, .focus_within, .focus_visible {
+			d.focused_area = new_node
+		}
+		.target {
+			d.target_element_ = if new_node == unsafe { nil } {
+				unsafe { nil }
+			} else {
+				new_node.as_element() or { unsafe { nil } }
+			}
+		}
+		else {}
+	}
+}
+
+// C++: void Document::invalidate_style_for_elements_affected_by_pseudo_class_change(...)
+pub fn (mut d Document) invalidate_style_for_elements_affected_by_pseudo_class_change(pseudo_class PseudoClass, common_ancestor &Node, node ?&Node) {
+	if hook := d.style_update_hook_ {
+		if hook.invalidate_for_pseudo_class != unsafe { nil } {
+			hook.invalidate_for_pseudo_class(hook.target, pseudo_class, common_ancestor, node)
+		}
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#currently-focused-area-of-a-top-level-traversable
@@ -8969,34 +10868,47 @@ struct IndicatedPart {
 	element &Element = unsafe { nil }
 }
 
-// --- Stub methods on supporting types needed by new methods ---
+// --- Supporting methods used by Document algorithms ---
 pub fn (si &StyleInvalidator) has_pending_invalidations() bool {
 	return si.pending_invalidations.len != 0
 }
 
 // Element.needs_style_update and entire_subtree_needs_style_update are in element.v
 pub fn (he &HTMLElement) unsafe_layout_node() ?&LayoutNode {
-	return none
+	return html_element_as_element(he).as_node().unsafe_layout_node()
 }
 
 pub fn (w &Window) location() ?&Location {
-	return none
+	if w.location_ == unsafe { nil } {
+		return none
+	}
+	return w.location_
 }
 
-pub fn (io &IntersectionObserver) queue_entry() {}
+pub fn (io &IntersectionObserver) queue_entry(time f64, root_bounds Rect, bounding_client_rect Rect, intersection_rect Rect, is_intersecting bool, intersection_ratio f64, target &Element) {
+	if io.queue_entry_ != unsafe { nil } {
+		io.queue_entry_(io.target, time, root_bounds, bounding_client_rect, intersection_rect, is_intersecting, intersection_ratio, target)
+	}
+}
 
 pub fn (p &Page) client_page_did_create_new_document(d &Document) {
-	_ = d
+	if p.target != unsafe { nil } && p.did_create_document_callback != unsafe { nil } {
+		p.did_create_document_callback(p.target, d)
+	}
 }
 
 pub fn (p &Page) client_page_did_update_resource_count(count int) {
-	_ = p
-	_ = count
+	if p.target != unsafe { nil } && p.did_update_resource_count_callback != unsafe { nil } {
+		p.did_update_resource_count_callback(p.target, count)
+	}
 }
 
 pub fn (mut p Page) client_page_did_change_title(title string) {
 	p.last_changed_title_ = title
 	p.title_change_count_++
+	if p.target != unsafe { nil } && p.did_change_title_callback != unsafe { nil } {
+		p.did_change_title_callback(p.target, title)
+	}
 }
 
 pub fn (p &Page) last_changed_title() string {
@@ -9005,10 +10917,6 @@ pub fn (p &Page) last_changed_title() string {
 
 pub fn (p &Page) title_change_count() int {
 	return p.title_change_count_
-}
-
-pub fn (el &EventLoopStub) unregister_document(d &Document) {
-	_ = d
 }
 
 pub fn (d &Document) get_element_by_id(id string) ?&Element {
@@ -9049,74 +10957,29 @@ fn hex_digit_value(ch u8) ?u8 {
 
 // --- is_a_registrable_domain_suffix_of_or_is_equal_to (free function) ---
 pub fn is_a_registrable_domain_suffix_of_or_is_equal_to(host_suffix_string string, original_host string) bool {
-	host_suffix := normalize_domain_host(host_suffix_string) or { return false }
-	original := normalize_domain_host(original_host) or { return false }
+	if host_suffix_string == '' {
+		return false
+	}
+	host_suffix := liburl.parse_host(host_suffix_string, false) or { return false }
+	original := liburl.parse_host(original_host, false) or { return false }
 	if host_suffix == original {
 		return true
 	}
-	if host_is_ip_address(host_suffix) || host_is_ip_address(original) {
+	if !host_suffix.is_domain() || !original.is_domain() {
 		return false
 	}
-	if !original.ends_with('.${host_suffix}') {
+	host_suffix_domain := host_suffix as string
+	original_domain := original as string
+	prefixed_host_suffix := '.' + host_suffix_domain
+	if !original_domain.ends_with(prefixed_host_suffix) {
 		return false
 	}
-	public_suffix := approximate_public_suffix(host_suffix)
-	if host_suffix == public_suffix {
+	if host_suffix.public_suffix() or { '' } == host_suffix_domain {
 		return false
 	}
-	original_public_suffix := approximate_public_suffix(original)
-	if original_public_suffix.ends_with('.${host_suffix}') {
+	original_public_suffix := original.public_suffix() or { return false }
+	if original_public_suffix.ends_with(prefixed_host_suffix) {
 		return false
 	}
 	return true
-}
-
-fn normalize_domain_host(input string) ?string {
-	value := input.trim_space().trim_right('.').to_lower()
-	if value.len == 0 || value.contains(':') || value.contains('/') || value.contains('@') {
-		return none
-	}
-	labels := value.split('.')
-	for label in labels {
-		if label.len == 0 || label.len > 63 || label[0] == `-` || label[label.len - 1] == `-` {
-			return none
-		}
-		for ch in label.bytes() {
-			if !(ch.is_alnum() || ch == `-`) {
-				return none
-			}
-		}
-	}
-	return value
-}
-
-fn host_is_ip_address(host string) bool {
-	parts := host.split('.')
-	if parts.len != 4 {
-		return false
-	}
-	for part in parts {
-		if part.len == 0 || part.len > 3 || !part.bytes().all(it.is_digit()) {
-			return false
-		}
-		value := part.int()
-		if value < 0 || value > 255 {
-			return false
-		}
-	}
-	return true
-}
-
-fn approximate_public_suffix(host string) string {
-	labels := host.split('.')
-	if labels.len < 2 {
-		return host
-	}
-	last_two := labels[labels.len - 2..].join('.')
-	common_two_label_suffixes := ['ac.uk', 'co.uk', 'gov.uk', 'org.uk', 'com.au', 'net.au', 'org.au',
-		'co.jp', 'ne.jp', 'co.nz', 'com.br', 'com.cn', 'com.mx', 'co.in', 'co.za']
-	if last_two in common_two_label_suffixes {
-		return last_two
-	}
-	return labels[labels.len - 1]
 }

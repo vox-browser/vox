@@ -1,6 +1,7 @@
 module html
 
 import dom
+import math
 
 fn offscreen_test_png(bitmap &dom.ImmutableBitmap_) ![]u8 {
 	return [u8(bitmap.width), u8(bitmap.height)]
@@ -116,4 +117,22 @@ fn test_offscreen_canvas_paths_transform_winding_and_clip() {
 	context.fill_rect(0, 0, 4, 4)
 	assert (context.get_image_data(1, 1, 1, 1, none) or { panic(err) }).data()[3] == 255
 	assert (context.get_image_data(3, 3, 1, 1, none) or { panic(err) }).data()[3] == 0
+}
+
+fn test_offscreen_canvas_rasterizes_arcs_and_reset_clears_the_current_path() {
+	mut canvas := OffscreenCanvas.create(16, 16) or { panic(err) }
+	mut context := canvas.get_context(.canvas_2d, none) or { panic(err) }
+	context.drawing_state.fill_style = FillOrStrokeStyle.from_color(dom.Color{ r: 255, a: 255 })
+	context.begin_path()
+	context.arc(8, 8, 6, 0, 2 * math.pi, false) or { panic(err) }
+	context.fill('nonzero')
+	assert (context.get_image_data(8, 8, 1, 1, none) or { panic(err) }).data()[3] == 255
+	assert (context.get_image_data(0, 0, 1, 1, none) or { panic(err) }).data()[3] == 0
+
+	context.set_global_alpha(0.25)
+	context.save()
+	context.reset()
+	assert context.global_alpha() == 1.0
+	assert context.drawing_state_stack_depth() == 0
+	assert context.CanvasPath.path().is_empty()
 }

@@ -1,12 +1,14 @@
 module indexeddb
 
 fn cursor_test_database() !(&IDBFactory, &IDBDatabase) {
-	mut factory := IDBFactory.create('https://cursor.test')!
+	storage_key := 'https://cursor.test'
+	DatabaseData.delete_for_key_and_name(storage_key, 'people-db')
+	mut factory := IDBFactory.create(storage_key)!
 	mut open := factory.open('people-db', u64(1))!
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	mut people := connection.create_object_store(mut upgrade, 'people', IDBObjectStoreParameters{
-		key_path:       'id'
+		key_path: 'id'
 		auto_increment: true
 	})!
 	people.create_index('by_name', 'name', IDBIndexParameters{ unique: true })!
@@ -28,8 +30,7 @@ fn test_index_queries_unique_multi_entry_and_rename() {
 	mut upgrade := open.upgrade_transaction
 	if _ := connection.create_object_store(mut upgrade, 'invalid', IDBObjectStoreParameters{
 		key_path: []string{}
-	})
-	{
+	}) {
 		assert false
 	} else {
 		assert err.msg().contains('SyntaxError')
@@ -48,8 +49,8 @@ fn test_index_queries_unique_multi_entry_and_rename() {
 	mut store := write.object_store('books')!
 	store.add(object_value({
 		'author': string_value('Le Guin')
-		'tags':   array_value([string_value('sf'), null_value(),
-			string_value('classic'), string_value('sf')])
+		'tags':   array_value([string_value('sf'), null_value(), string_value('classic'),
+			string_value('sf')])
 	}), number_key(1))!
 	store.add(object_value({
 		'author': string_value('Le Guin')
@@ -90,6 +91,27 @@ fn test_cursor_iteration_advance_update_delete_and_primary_key() {
 	cursor.delete()!
 	assert store.count(none)!.count == 2
 	write.commit()!
+}
+
+fn test_cursor_continuation_reads_the_live_sorted_source() {
+	mut factory := IDBFactory.create('live-cursor-source')!
+	mut open := factory.open('db', u64(1))!
+	mut connection := open.connection
+	mut upgrade := open.upgrade_transaction
+	connection.create_object_store(mut upgrade, 'items', IDBObjectStoreParameters{})!
+	open.finish_upgrade()!
+	mut transaction := connection.transaction(['items'], .readwrite, IDBTransactionOptions{})!
+	mut store := transaction.object_store('items')!
+	store.add(string_value('one'), number_key(1))!
+	store.add(string_value('three'), number_key(3))!
+	request := store.open_cursor(none, .next, false)!
+	mut cursor := request.cursor
+	assert cursor.key()!.number == 1
+	// Cursor state retains positions, not an eager snapshot of every record.
+	store.add(string_value('two'), number_key(2))!
+	assert cursor.continue_to(none)!
+	assert cursor.key()!.number == 2
+	assert cursor.value()!.text == 'two'
 }
 
 fn test_cursor_validation_continue_primary_key_and_key_only_mutations() {

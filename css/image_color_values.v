@@ -37,10 +37,7 @@ pub enum ConcreteColorType {
 }
 
 pub fn ColorStyleValue.create_from_color(color Color, color_syntax ColorSyntax, name ?string) RGBColorStyleValue {
-	return RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(color.red())),
-		StyleValue(NumberStyleValue.create(color.green())),
-		StyleValue(NumberStyleValue.create(color.blue())),
-		StyleValue(NumberStyleValue.create(f64(color.alpha()) / 255.0)), color_syntax, name)
+	return RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(color.red())), StyleValue(NumberStyleValue.create(color.green())), StyleValue(NumberStyleValue.create(color.blue())), StyleValue(NumberStyleValue.create(f64(color.alpha()) / 255.0)), color_syntax, name)
 }
 
 fn image_color_clamp(value f64, min f64, max f64) f64 {
@@ -264,12 +261,12 @@ pub mut:
 
 pub fn RGBColorStyleValue.create(r StyleValue, g StyleValue, b StyleValue, alpha ?StyleValue, color_syntax ColorSyntax, name ?string) RGBColorStyleValue {
 	return RGBColorStyleValue{
-		r_:            r
-		g_:            g
-		b_:            b
-		alpha_:        alpha or { StyleValue(NumberStyleValue.create(1)) }
+		r_: r
+		g_: g
+		b_: b
+		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
 		color_syntax_: color_syntax
-		name_:         name
+		name_: name
 	}
 }
 
@@ -351,9 +348,7 @@ pub fn (style_value RGBColorStyleValue) to_color(color_resolution_context ColorR
 }
 
 pub fn (style_value RGBColorStyleValue) absolutized(context ComputationContext) RGBColorStyleValue {
-	return RGBColorStyleValue.create(style_value.r_.absolutized(context),
-		style_value.g_.absolutized(context), style_value.b_.absolutized(context),
-		style_value.alpha_.absolutized(context), style_value.color_syntax(), none)
+	return RGBColorStyleValue.create(style_value.r_.absolutized(context), style_value.g_.absolutized(context), style_value.b_.absolutized(context), style_value.alpha_.absolutized(context), style_value.color_syntax(), none)
 }
 
 // https://www.w3.org/TR/css-color-4/#serializing-sRGB-values
@@ -395,10 +390,10 @@ pub mut:
 
 pub fn HSLColorStyleValue.create(h StyleValue, s StyleValue, l StyleValue, alpha ?StyleValue, color_syntax ColorSyntax) HSLColorStyleValue {
 	return HSLColorStyleValue{
-		h_:            h
-		s_:            s
-		l_:            l
-		alpha_:        alpha or { StyleValue(NumberStyleValue.create(1)) }
+		h_: h
+		s_: s
+		l_: l
+		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
 		color_syntax_: color_syntax
 	}
 }
@@ -441,10 +436,7 @@ pub fn (style_value HSLColorStyleValue) absolutized(context ComputationContext) 
 	resolved_alpha := resolve_alpha(absolutized_alpha, CalculationResolutionContext{}) or { 1.0 }
 
 	color := Color.from_hsla(resolved_h, resolved_s / 100.0, resolved_l / 100.0, resolved_alpha)
-	return RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(color.red())),
-		StyleValue(NumberStyleValue.create(color.green())),
-		StyleValue(NumberStyleValue.create(color.blue())),
-		StyleValue(NumberStyleValue.create(f64(color.alpha()) / 255.0)), .legacy, none)
+	return RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(color.red())), StyleValue(NumberStyleValue.create(color.green())), StyleValue(NumberStyleValue.create(color.blue())), StyleValue(NumberStyleValue.create(f64(color.alpha()) / 255.0)), .legacy, none)
 }
 
 // https://www.w3.org/TR/css-color-4/#serializing-sRGB-values
@@ -480,10 +472,10 @@ pub mut:
 
 pub fn HWBColorStyleValue.create(h StyleValue, w StyleValue, b StyleValue, alpha ?StyleValue, color_syntax ColorSyntax) HWBColorStyleValue {
 	return HWBColorStyleValue{
-		h_:            h
-		w_:            w
-		b_:            b
-		alpha_:        alpha or { StyleValue(NumberStyleValue.create(1)) }
+		h_: h
+		w_: w
+		b_: b
+		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
 		color_syntax_: color_syntax
 	}
 }
@@ -559,14 +551,10 @@ pub fn (style_value HWBColorStyleValue) absolutized(context ComputationContext) 
 		r := hue_to_rgb(hue, 0.0) * scale + whiteness
 		g := hue_to_rgb(hue, 8.0) * scale + whiteness
 		b := hue_to_rgb(hue, 4.0) * scale + whiteness
-		color = Color.rgba(image_color_round_to_u8(r * 255.0), image_color_round_to_u8(g * 255.0),
-			image_color_round_to_u8(b * 255.0), image_color_round_to_u8(resolved_alpha * 255.0))
+		color = Color.rgba(image_color_round_to_u8(r * 255.0), image_color_round_to_u8(g * 255.0), image_color_round_to_u8(b * 255.0), image_color_round_to_u8(resolved_alpha * 255.0))
 	}
 
-	return RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(color.red())),
-		StyleValue(NumberStyleValue.create(color.green())),
-		StyleValue(NumberStyleValue.create(color.blue())),
-		StyleValue(NumberStyleValue.create(f64(color.alpha()) / 255.0)), .legacy, none)
+	return RGBColorStyleValue.create(StyleValue(NumberStyleValue.create(color.red())), StyleValue(NumberStyleValue.create(color.green())), StyleValue(NumberStyleValue.create(color.blue())), StyleValue(NumberStyleValue.create(f64(color.alpha()) / 255.0)), .legacy, none)
 }
 
 // https://www.w3.org/TR/css-color-4/#serializing-sRGB-values
@@ -609,18 +597,18 @@ pub mut:
 
 pub fn LabColorStyleValue.create(l StyleValue, a StyleValue, b StyleValue, alpha ?StyleValue) LabColorStyleValue {
 	return LabColorStyleValue{
-		l_:     l
-		a_:     a
-		b_:     b
+		l_: l
+		a_: a
+		b_: b
 		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
 	}
 }
 
 pub fn OKLabColorStyleValue.create(l StyleValue, a StyleValue, b StyleValue, alpha ?StyleValue) OKLabColorStyleValue {
 	return OKLabColorStyleValue{
-		l_:     l
-		a_:     a
-		b_:     b
+		l_: l
+		a_: a
+		b_: b
 		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
 	}
 }
@@ -713,18 +701,18 @@ pub mut:
 
 pub fn LCHColorStyleValue.create(l StyleValue, c StyleValue, h StyleValue, alpha ?StyleValue) LCHColorStyleValue {
 	return LCHColorStyleValue{
-		l_:     l
-		c_:     c
-		h_:     h
+		l_: l
+		c_: c
+		h_: h
 		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
 	}
 }
 
 pub fn OKLCHColorStyleValue.create(l StyleValue, c StyleValue, h StyleValue, alpha ?StyleValue) OKLCHColorStyleValue {
 	return OKLCHColorStyleValue{
-		l_:     l
-		c_:     c
-		h_:     h
+		l_: l
+		c_: c
+		h_: h
 		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
 	}
 }
@@ -848,8 +836,8 @@ fn color_space_from_color_type(color_type ConcreteColorType) string {
 pub fn ColorFunctionStyleValue.create(color_space string, c1 StyleValue, c2 StyleValue, c3 StyleValue, alpha ?StyleValue) ColorFunctionStyleValue {
 	return ColorFunctionStyleValue{
 		color_type_: color_type_from_color_space(color_space)
-		channels_:   [c1, c2, c3]
-		alpha_:      alpha or { StyleValue(NumberStyleValue.create(1)) }
+		channels_: [c1, c2, c3]
+		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
 	}
 }
 
@@ -871,7 +859,7 @@ pub fn (style_value ColorFunctionStyleValue) resolve_properties(resolution_conte
 
 	return ColorFunctionStyleValueResolved{
 		channels: [c1, c2, c3]!
-		alpha:    alpha
+		alpha: alpha
 	}
 }
 
@@ -907,8 +895,7 @@ pub fn (style_value ColorFunctionStyleValue) absolutized(context ComputationCont
 	channel2 := style_value.channels_[2].absolutized(context)
 	alpha := style_value.alpha_.absolutized(context)
 
-	return StyleValue(ColorFunctionStyleValue.create(color_space_from_color_type(style_value.color_type_),
-		channel0, channel1, channel2, alpha))
+	return StyleValue(ColorFunctionStyleValue.create(color_space_from_color_type(style_value.color_type_), channel0, channel1, channel2, alpha))
 }
 
 // https://www.w3.org/TR/css-color-4/#serializing-color-function-values
@@ -939,9 +926,9 @@ pub fn (style_value ColorFunctionStyleValue) serialize(mode SerializationMode) s
 }
 
 pub fn (style_value ColorFunctionStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
-	_ = color_resolution_context
-	// Boundary: ColorResolutionContext does not yet carry CalculationResolutionContext in V.
-	properties := style_value.resolve_properties(CalculationResolutionContext{}) or { return none }
+	properties := style_value.resolve_properties(color_resolution_context.calculation_resolution_context) or {
+		return none
+	}
 	c1 := properties.channels[0]
 	c2 := properties.channels[1]
 	c3 := properties.channels[2]
@@ -958,8 +945,7 @@ pub fn (style_value ColorFunctionStyleValue) to_color(color_resolution_context C
 			Color.from_linear_display_p3(c1, c2, c3, alpha_val)
 		}
 		.srgb {
-			Color.rgba(image_color_round_to_u8(255 * c1), image_color_round_to_u8(255 * c2),
-				image_color_round_to_u8(255 * c3), image_color_round_to_u8(255 * alpha_val))
+			Color.rgba(image_color_round_to_u8(255 * c1), image_color_round_to_u8(255 * c2), image_color_round_to_u8(255 * c3), image_color_round_to_u8(255 * alpha_val))
 		}
 		.srgb_linear {
 			Color.from_linear_srgb(c1, c2, c3, alpha_val)
@@ -988,6 +974,7 @@ pub enum RectangularColorSpace {
 	srgb
 	srgb_linear
 	display_p3
+	display_p3_linear
 	a98_rgb
 	prophoto_rgb
 	rec2020
@@ -1030,6 +1017,7 @@ pub fn (space RectangularColorSpace) to_string() string {
 		.srgb { 'srgb' }
 		.srgb_linear { 'srgb-linear' }
 		.display_p3 { 'display-p3' }
+		.display_p3_linear { 'display-p3-linear' }
 		.a98_rgb { 'a98-rgb' }
 		.prophoto_rgb { 'prophoto-rgb' }
 		.rec2020 { 'rec2020' }
@@ -1124,8 +1112,8 @@ pub mut:
 pub fn ColorMixStyleValue.create(color_interpolation_method ?ColorInterpolationMethodStyleValue, first_component ColorMixComponent, second_component ColorMixComponent) ColorMixStyleValue {
 	return ColorMixStyleValue{
 		color_interpolation_method: color_interpolation_method
-		first_component:            first_component
-		second_component:           second_component
+		first_component: first_component
+		second_component: second_component
 	}
 }
 
@@ -1141,12 +1129,10 @@ pub fn (style_value ColorMixStyleValue) serialize(mode SerializationMode) string
 	}
 
 	result += style_value.first_component.color.serialize(mode)
-	result += serialize_first_color_mix_percentage(style_value.first_component.percentage,
-		style_value.second_component.percentage, mode)
+	result += serialize_first_color_mix_percentage(style_value.first_component.percentage, style_value.second_component.percentage, mode)
 	result += ', '
 	result += style_value.second_component.color.serialize(mode)
-	result += serialize_second_color_mix_percentage(style_value.first_component.percentage,
-		style_value.second_component.percentage, mode)
+	result += serialize_second_color_mix_percentage(style_value.first_component.percentage, style_value.second_component.percentage, mode)
 	result += ')'
 	return result
 }
@@ -1247,29 +1233,25 @@ pub fn (style_value ColorMixStyleValue) normalize_percentages() ColorMixPercenta
 	if p1 == none && p2 == none {
 		p1 = Percentage.new(50)
 		p2 = Percentage.new(50)
-	}
-	// 3. Otherwise, if p2 is omitted, it becomes 100% - p1
-	else if p2 == none {
+	} else if p2 == none {
+		// 3. Otherwise, if p2 is omitted, it becomes 100% - p1
 		first := p1 or { Percentage.new(0) }
 		p2 = Percentage.new(100 - first.value())
-	}
-	// 4. Otherwise, if p1 is omitted, it becomes 100% - p2
-	else if p1 == none {
+	} else if p1 == none {
+		// 4. Otherwise, if p1 is omitted, it becomes 100% - p2
 		second := p2 or { Percentage.new(0) }
 		p1 = Percentage.new(100 - second.value())
-	}
-	// 5. Otherwise, if both are provided and add up to greater than 100%, they are scaled accordingly so that they add up to 100%.
-	else {
+	} else {
+		// 5. Otherwise, if both are provided and add up to greater than 100%, they are scaled accordingly so that they add up to 100%.
 		first := p1 or { Percentage.new(0) }
 		second := p2 or { Percentage.new(0) }
 		if first.value() + second.value() > 100 {
 			sum := first.value() + second.value()
 			p1 = Percentage.new((first.value() / sum) * 100)
 			p2 = Percentage.new((second.value() / sum) * 100)
-		}
-		// 6. Otherwise, if both are provided and add up to less than 100%, the sum is saved as an alpha multiplier.
-		//    If the sum is greater than zero, they are then scaled accordingly so that they add up to 100%.
-		else if first.value() + second.value() < 100 {
+		} else if first.value() + second.value() < 100 {
+			// 6. Otherwise, if both are provided and add up to less than 100%, the sum is saved as an alpha multiplier.
+			//    If the sum is greater than zero, they are then scaled accordingly so that they add up to 100%.
 			sum := first.value() + second.value()
 			alpha_multiplier = sum / 100
 			if sum > 0 {
@@ -1280,8 +1262,8 @@ pub fn (style_value ColorMixStyleValue) normalize_percentages() ColorMixPercenta
 	}
 
 	return ColorMixPercentageNormalizationResult{
-		p1:               p1 or { Percentage.new(0) }
-		p2:               p2 or { Percentage.new(0) }
+		p1: p1 or { Percentage.new(0) }
+		p2: p2 or { Percentage.new(0) }
 		alpha_multiplier: alpha_multiplier
 	}
 }
@@ -1291,26 +1273,25 @@ pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorR
 	// FIXME: Take the color space and hue interpolation method into account.
 	// The current implementation only uses oklab interpolation.
 	normalized_percentages := style_value.normalize_percentages()
-	from_color := color_style_value_from_style_value(style_value.first_component.color,
-		color_resolution_context) or { return none }
-	to_color := color_style_value_from_style_value(style_value.second_component.color,
-		color_resolution_context) or { return none }
+	from_color := color_style_value_from_style_value(style_value.first_component.color, color_resolution_context) or { return none }
+	to_color := color_style_value_from_style_value(style_value.second_component.color, color_resolution_context) or { return none }
 	delta := normalized_percentages.p2.value() / 100
 
-	interpolated := interpolate_color(ComputedColor.rgba(from_color.red(), from_color.green(),
-		from_color.blue(), from_color.alpha()), ComputedColor.rgba(to_color.red(),
-		to_color.green(), to_color.blue(), to_color.alpha()), delta, .modern)
-	return Color.rgba(interpolated.red(), interpolated.green(), interpolated.blue(),
-		interpolated.alpha())
+	interpolated := interpolate_color(ComputedColor.rgba(from_color.red(), from_color.green(), from_color.blue(), from_color.alpha()), ComputedColor.rgba(to_color.red(), to_color.green(), to_color.blue(), to_color.alpha()), delta, .modern)
+	return Color.rgba(interpolated.red(), interpolated.green(), interpolated.blue(), interpolated.alpha())
 }
 
 pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) StyleValue {
 	// FIXME: Follow the spec algorithm. https://drafts.csswg.org/css-color-5/#calculate-a-color-mix
 	normalized_percentages := style_value.normalize_percentages()
-	// Boundary: The V ColorResolutionContext does not yet carry Document or a calculation
-	// resolution context. Represent the C++ path with the currently available color-scheme data.
+	mut context_document := ?&dom.Document(none)
+	if abstract_element := context.abstract_element {
+		context_document = ?&dom.Document(abstract_element.document())
+	}
 	color_resolution_context := ColorResolutionContext{
 		color_scheme: context.color_scheme
+		document: context_document
+		calculation_resolution_context: CalculationResolutionContext.from_computation_context(context, none)
 	}
 	absolutized_color_interpolation_method := if method := style_value.color_interpolation_method {
 		?ColorInterpolationMethodStyleValue(method)
@@ -1328,22 +1309,16 @@ pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) 
 		if to := to_color {
 			// FIXME: Interpolation should produce a StyleValue of some kind instead of a Color,
 			// and use the interpolation color space.
-			interpolated_color := interpolate_color(ComputedColor.rgba(from.red(), from.green(),
-				from.blue(), from.alpha()), ComputedColor.rgba(to.red(), to.green(), to.blue(),
-				to.alpha()), delta, .modern)
-			return StyleValue(ColorFunctionStyleValue.create('srgb',
-				StyleValue(NumberStyleValue.create(f64(interpolated_color.red()) / 255.0)),
-				StyleValue(NumberStyleValue.create(f64(interpolated_color.green()) / 255.0)),
-				StyleValue(NumberStyleValue.create(f64(interpolated_color.blue()) / 255.0)),
-				StyleValue(NumberStyleValue.create(f64(interpolated_color.alpha()) / 255.0))))
+			interpolated_color := interpolate_color(ComputedColor.rgba(from.red(), from.green(), from.blue(), from.alpha()), ComputedColor.rgba(to.red(), to.green(), to.blue(), to.alpha()), delta, .modern)
+			return StyleValue(ColorFunctionStyleValue.create('srgb', StyleValue(NumberStyleValue.create(f64(interpolated_color.red()) / 255.0)), StyleValue(NumberStyleValue.create(f64(interpolated_color.green()) / 255.0)), StyleValue(NumberStyleValue.create(f64(interpolated_color.blue()) / 255.0)), StyleValue(NumberStyleValue.create(f64(interpolated_color.alpha()) / 255.0))))
 		}
 	}
 
 	return StyleValue(ColorMixStyleValue.create(absolutized_color_interpolation_method, ColorMixComponent{
-		color:      absolutized_first_color
+		color: absolutized_first_color
 		percentage: ?PercentageOrCalculated(PercentageOrCalculated.from_percentage(normalized_percentages.p1))
 	}, ColorMixComponent{
-		color:      absolutized_second_color
+		color: absolutized_second_color
 		percentage: ?PercentageOrCalculated(PercentageOrCalculated.from_percentage(normalized_percentages.p2))
 	}))
 }
@@ -1359,7 +1334,7 @@ pub mut:
 pub fn LightDarkStyleValue.create(light StyleValue, dark StyleValue) LightDarkStyleValue {
 	return LightDarkStyleValue{
 		light: light
-		dark:  dark
+		dark: dark
 	}
 }
 
@@ -1400,7 +1375,7 @@ pub mut:
 pub fn ColorSchemeStyleValue.create(schemes []string, only bool) ColorSchemeStyleValue {
 	return ColorSchemeStyleValue{
 		schemes_: schemes
-		only_:    only
+		only_: only
 	}
 }
 
@@ -1437,9 +1412,6 @@ pub fn (style_value ColorSchemeStyleValue) serialize(mode SerializationMode) str
 }
 
 // --- AbstractImageStyleValue and image resources ---
-// Boundary: C++ image StyleValues integrate with HTML::DecodedImageData, timers, layout-driven
-// intrinsic sizing, and DisplayList painting. This V port keeps the representable resource
-// metadata, serialization, and absolutization pieces without painting/layout resource APIs.
 
 pub enum GradientRepeating {
 	yes
@@ -1478,9 +1450,9 @@ pub fn (element ColorStopListElement) absolutized(context ComputationContext) Co
 
 	return ColorStopListElement{
 		transition_hint: transition_hint
-		color_stop:      ColorStop{
-			color:           element.color_stop.color.absolutized(context)
-			position:        position
+		color_stop: ColorStop{
+			color: element.color_stop.color.absolutized(context)
+			position: position
 			second_position: second_position
 		}
 	}
@@ -1509,61 +1481,15 @@ pub fn serialize_color_stop_list(color_stop_list []ColorStopListElement, mode Se
 	return parts.join(', ')
 }
 
-pub struct DecodedImageDataStub {
-pub mut:
-	width              CSSPixels
-	height             CSSPixels
-	aspect_ratio       ?CSSPixelFraction
-	frame_count_       int = 1
-	loop_count_        int
-	frame_duration_ms  int
-	single_pixel_color ?Color
-}
-
-pub fn (data DecodedImageDataStub) intrinsic_width() CSSPixels {
-	return data.width
-}
-
-pub fn (data DecodedImageDataStub) intrinsic_height() CSSPixels {
-	return data.height
-}
-
-pub fn (data DecodedImageDataStub) intrinsic_aspect_ratio() ?CSSPixelFraction {
-	if ratio := data.aspect_ratio {
-		return ratio
-	}
-	if data.height.raw_value() != 0 {
-		return CSSPixelFraction.new(data.width, data.height)
-	}
-	return none
-}
-
-pub fn (data DecodedImageDataStub) is_animated() bool {
-	return data.frame_count_ > 1
-}
-
-pub fn (data DecodedImageDataStub) frame_count() int {
-	return data.frame_count_
-}
-
-pub fn (data DecodedImageDataStub) loop_count() int {
-	return data.loop_count_
-}
-
-pub fn (data DecodedImageDataStub) frame_duration(frame_index int) int {
-	_ = frame_index
-	return data.frame_duration_ms
-}
-
 pub struct ImageStyleValue {
 pub mut:
 	resource_request_    ?&dom.SharedResourceRequest
 	style_sheet_         ?&CSSStyleSheet
 	url_                 URL
 	document_            ?&dom.Document
-	current_frame_index_ int
-	loops_completed_     int
-	image_data_          ?DecodedImageDataStub
+	current_frame_index_ usize
+	loops_completed_     usize
+	image_data_          ?dom.SharedDecodedImageData
 	did_request_resource bool
 	clients_             []voidptr
 }
@@ -1586,13 +1512,12 @@ pub fn (mut style_value ImageStyleValue) load_any_resources(mut document dom.Doc
 
 	rule_or_declaration := RuleOrDeclaration{
 		environment_settings_object: CSSFetchEnvironmentSettings.from_document(&document)
-		value:                       RuleOrDeclarationValue(RuleOrDeclarationRule{
+		value: RuleOrDeclarationValue(RuleOrDeclarationRule{
 			parent_style_sheet: style_value.style_sheet_
 		})
 	}
 
-	style_value.resource_request_ = fetch_an_external_image_for_a_stylesheet(StyleResourceURL(style_value.url_),
-		rule_or_declaration, mut document)
+	style_value.resource_request_ = fetch_an_external_image_for_a_stylesheet(StyleResourceURL(style_value.url_), rule_or_declaration, mut document)
 	style_value.did_request_resource = style_value.resource_request_ != none
 	// Boundary: Upstream attaches resource callbacks and animation timers here. Those depend on
 	// GC/timer/image-decoder APIs that are outside this V StyleValue translation.
@@ -1615,7 +1540,7 @@ pub fn (mut style_value ImageStyleValue) animate() {
 }
 
 pub fn (style_value ImageStyleValue) is_paintable() bool {
-	return style_value.image_data_ != none
+	return style_value.image_data() != none
 }
 
 pub fn (style_value ImageStyleValue) serialize(mode SerializationMode) string {
@@ -1625,32 +1550,60 @@ pub fn (style_value ImageStyleValue) serialize(mode SerializationMode) string {
 
 pub fn (style_value ImageStyleValue) natural_width() ?CSSPixels {
 	if image_data := style_value.image_data() {
-		return image_data.intrinsic_width()
+		if width := image_data.intrinsic_width() {
+			return CSSPixels.nearest_value_for(width)
+		}
 	}
 	return none
 }
 
 pub fn (style_value ImageStyleValue) natural_height() ?CSSPixels {
 	if image_data := style_value.image_data() {
-		return image_data.intrinsic_height()
+		if height := image_data.intrinsic_height() {
+			return CSSPixels.nearest_value_for(height)
+		}
 	}
 	return none
 }
 
 pub fn (style_value ImageStyleValue) natural_aspect_ratio() ?CSSPixelFraction {
 	if image_data := style_value.image_data() {
-		return image_data.intrinsic_aspect_ratio()
+		if width := image_data.intrinsic_width() {
+			if height := image_data.intrinsic_height() {
+				if height != 0 {
+					return CSSPixelFraction.new(CSSPixels.nearest_value_for(width), CSSPixels.nearest_value_for(height))
+				}
+			}
+		}
+		if ratio := image_data.intrinsic_aspect_ratio() {
+			return CSSPixelFraction.new(CSSPixels.nearest_value_for(ratio), CSSPixels.new(1))
+		}
 	}
 	return none
 }
 
-pub fn (style_value ImageStyleValue) image_data() ?DecodedImageDataStub {
+pub fn (style_value ImageStyleValue) image_data() ?dom.SharedDecodedImageData {
+	if resource_request := style_value.resource_request_ {
+		if shared_data := resource_request.image_data() {
+			return shared_data.data
+		}
+	}
 	return style_value.image_data_
 }
 
+pub fn (mut style_value ImageStyleValue) set_image_data(image_data dom.SharedDecodedImageData) {
+	style_value.image_data_ = image_data
+}
+
+pub fn (style_value ImageStyleValue) current_frame_bitmap() ?&dom.ImmutableBitmap_ {
+	image_data := style_value.image_data() or { return none }
+	return image_data.bitmap(style_value.current_frame_index_)
+}
+
 pub fn (style_value ImageStyleValue) color_if_single_pixel_bitmap() ?Color {
-	if image_data := style_value.image_data() {
-		return image_data.single_pixel_color
+	bitmap := style_value.current_frame_bitmap() or { return none }
+	if bitmap.width == 1 && bitmap.height == 1 && bitmap.data.len >= 4 {
+		return Color.rgba(bitmap.data[0], bitmap.data[1], bitmap.data[2], bitmap.data[3])
 	}
 	return none
 }
@@ -1724,6 +1677,16 @@ pub fn (style_value CSSImageSourceStyleValue) serialize(mode SerializationMode) 
 		LinearGradientStyleValue { style_value.serialize(mode) }
 		RadialGradientStyleValue { style_value.serialize(mode) }
 		StyleValue { style_value.serialize(mode) }
+	}
+}
+
+pub fn (style_value CSSImageSourceStyleValue) absolutized(context ComputationContext) CSSImageSourceStyleValue {
+	return match style_value {
+		ConicGradientStyleValue { CSSImageSourceStyleValue(style_value.absolutized(context)) }
+		ImageStyleValue { CSSImageSourceStyleValue(style_value.absolutized(context)) }
+		LinearGradientStyleValue { CSSImageSourceStyleValue(style_value.absolutized(context)) }
+		RadialGradientStyleValue { CSSImageSourceStyleValue(style_value.absolutized(context)) }
+		StyleValue { CSSImageSourceStyleValue(style_value.absolutized(context)) }
 	}
 }
 
@@ -1805,14 +1768,33 @@ pub mut:
 	color_syntax_               ColorSyntax
 }
 
+fn gradient_color_syntax(color StyleValue) ColorSyntax {
+	return match color {
+		RGBColorStyleValue { color.color_syntax_ }
+		HSLColorStyleValue { color.color_syntax_ }
+		HWBColorStyleValue { color.color_syntax_ }
+		KeywordStyleValue, ColorStyleValue { .legacy }
+		else { .modern }
+	}
+}
+
+fn gradient_color_stop_list_syntax(color_stop_list []ColorStopListElement) ColorSyntax {
+	for stop in color_stop_list {
+		if gradient_color_syntax(stop.color_stop.color) == .modern {
+			return .modern
+		}
+	}
+	return .legacy
+}
+
 pub fn LinearGradientStyleValue.create(direction LinearGradientDirection, color_stop_list []ColorStopListElement, type_ LinearGradientType, repeating GradientRepeating, color_interpolation_method ?ColorInterpolationMethodStyleValue) LinearGradientStyleValue {
 	return LinearGradientStyleValue{
-		direction_:                  direction
-		color_stop_list_:            color_stop_list
-		gradient_type_:              type_
-		repeating_:                  repeating
+		direction_: direction
+		color_stop_list_: color_stop_list
+		gradient_type_: type_
+		repeating_: repeating
 		color_interpolation_method_: color_interpolation_method
-		color_syntax_:               .legacy
+		color_syntax_: gradient_color_stop_list_syntax(color_stop_list)
 	}
 }
 
@@ -1906,8 +1888,7 @@ pub fn (style_value LinearGradientStyleValue) absolutized(context ComputationCon
 		?ColorInterpolationMethodStyleValue(none)
 	}
 
-	return LinearGradientStyleValue.create(style_value.direction_, absolutized_color_stops,
-		style_value.gradient_type_, style_value.repeating_, absolutized_color_interpolation_method)
+	return LinearGradientStyleValue.create(style_value.direction_, absolutized_color_stops, style_value.gradient_type_, style_value.repeating_, absolutized_color_interpolation_method)
 }
 
 pub fn (style_value LinearGradientStyleValue) angle_degrees(gradient_size CSSPixelSize) f64 {
@@ -1971,13 +1952,13 @@ pub mut:
 
 pub fn RadialGradientStyleValue.create(ending_shape RadialGradientEndingShape, size StyleValue, position PositionStyleValue, color_stop_list []ColorStopListElement, repeating GradientRepeating, color_interpolation_method ?ColorInterpolationMethodStyleValue) RadialGradientStyleValue {
 	return RadialGradientStyleValue{
-		ending_shape_:               ending_shape
-		size_:                       size
-		position_:                   position
-		color_stop_list_:            color_stop_list
-		repeating_:                  repeating
+		ending_shape_: ending_shape
+		size_: size
+		position_: position
+		color_stop_list_: color_stop_list
+		repeating_: repeating
 		color_interpolation_method_: color_interpolation_method
-		color_syntax_:               .legacy
+		color_syntax_: gradient_color_stop_list_syntax(color_stop_list)
 	}
 }
 
@@ -2004,13 +1985,9 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 	}
 	result += 'radial-gradient('
 
-	// AD-HOC: We need to check the serialized size to determine if it should be included.
+	// Upstream checks the serialized radial-size to determine whether it should
+	// be included. EndingShape affects resolution, but is not emitted separately.
 	serialized_size := style_value.size_.serialize(mode)
-
-	// AD-HOC: The port keeps the ending shape separate from the size (unlike upstream,
-	// which folds it into RadialSize), so emit `circle` here. `ellipse` is the default
-	// and is omitted.
-	has_shape := style_value.ending_shape_ == .circle
 	has_size := serialized_size != 'farthest-corner'
 	has_position := !style_value.position_.is_center(mode)
 	has_color_space := if color_interpolation_method := style_value.color_interpolation_method_ {
@@ -2019,19 +1996,12 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 		false
 	}
 
-	if has_shape {
-		result += 'circle'
-	}
-
 	if has_size {
-		if has_shape {
-			result += ' '
-		}
 		result += serialized_size
 	}
 
 	if has_position {
-		if has_shape || has_size {
+		if has_size {
 			result += ' '
 		}
 
@@ -2040,7 +2010,7 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 	}
 
 	if has_color_space {
-		if has_shape || has_size || has_position {
+		if has_size || has_position {
 			result += ' '
 		}
 
@@ -2049,7 +2019,7 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 		}).serialize(mode)
 	}
 
-	if has_shape || has_size || has_position || has_color_space {
+	if has_size || has_position || has_color_space {
 		result += ', '
 	}
 
@@ -2069,10 +2039,7 @@ pub fn (style_value RadialGradientStyleValue) absolutized(context ComputationCon
 		?ColorInterpolationMethodStyleValue(none)
 	}
 
-	return RadialGradientStyleValue.create(style_value.ending_shape_,
-		style_value.size_.absolutized(context),
-		(style_value.position_.absolutized(context) as PositionStyleValue),
-		absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
+	return RadialGradientStyleValue.create(style_value.ending_shape_, style_value.size_.absolutized(context), (style_value.position_.absolutized(context) as PositionStyleValue), absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
 }
 
 // --- ConicGradientStyleValue ---
@@ -2089,12 +2056,12 @@ pub mut:
 
 pub fn ConicGradientStyleValue.create(from_angle ?StyleValue, position PositionStyleValue, color_stop_list []ColorStopListElement, repeating GradientRepeating, color_interpolation_method ?ColorInterpolationMethodStyleValue) ConicGradientStyleValue {
 	return ConicGradientStyleValue{
-		from_angle_:                 from_angle
-		position_:                   position
-		color_stop_list_:            color_stop_list
-		repeating_:                  repeating
+		from_angle_: from_angle
+		position_: position
+		color_stop_list_: color_stop_list
+		repeating_: repeating
 		color_interpolation_method_: color_interpolation_method
-		color_syntax_:               .legacy
+		color_syntax_: gradient_color_stop_list_syntax(color_stop_list)
 	}
 }
 
@@ -2172,9 +2139,7 @@ pub fn (style_value ConicGradientStyleValue) absolutized(context ComputationCont
 		?ColorInterpolationMethodStyleValue(none)
 	}
 
-	return ConicGradientStyleValue.create(absolutized_from_angle,
-		(style_value.position_.absolutized(context) as PositionStyleValue),
-		absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
+	return ConicGradientStyleValue.create(absolutized_from_angle, (style_value.position_.absolutized(context) as PositionStyleValue), absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
 }
 
 pub fn (style_value ConicGradientStyleValue) angle_degrees() f64 {

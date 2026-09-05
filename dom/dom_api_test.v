@@ -325,6 +325,22 @@ fn test_url_resolution_and_fragment_mutation() {
 	assert dom_url_parse('http://[', base, 'UTF-8') == none
 }
 
+fn test_url_origin_preserves_tuple_and_opaque_identity() {
+	first := URL{ value: 'https://a.example.co.uk/path' }.origin()
+	second := URL{ value: 'https://b.example.co.uk/other' }.origin()
+	assert first.serialize() == 'https://a.example.co.uk'
+	assert !first.is_same_origin(second)
+	assert first.is_same_site(second)
+	opaque_a := origin_create_opaque()
+	opaque_a_copy := opaque_a
+	opaque_b := origin_create_opaque()
+	assert opaque_a.serialize() == 'null'
+	assert opaque_a.is_same_origin(opaque_a_copy)
+	assert !opaque_a.is_same_origin(opaque_b)
+	assert origin_from_ipc(opaque_a.serialize_for_ipc()).is_same_origin(opaque_a)
+	assert URL{ value: 'file:///tmp/a' }.origin().is_opaque_file_origin()
+}
+
 fn test_meta_color_scheme_discovery() {
 	mut doc := Document.create(url_about_blank())
 	mut html := doc.create_element_ns(html_ns, 'html') or { panic('${err}') }
@@ -600,4 +616,22 @@ fn test_generic_event_target_dispatch_does_not_probe_node_storage() {
 	assert second_node.data.kind == .node
 	assert first_node.unique_id_.value() != 0
 	assert first_node.unique_id_ != second_node.unique_id_
+}
+
+fn test_document_environment_variables_match_upstream_host_defaults() {
+	document := Document.create(url_about_blank())
+	assert (document.environment_variable_value(.preferred_text_scale) or { '' }) == '1'
+	for variable in [
+		EnvironmentVariable.safe_area_inset_top,
+		.safe_area_inset_right,
+		.safe_area_inset_bottom,
+		.safe_area_inset_left,
+		.safe_area_max_inset_top,
+		.safe_area_max_inset_right,
+		.safe_area_max_inset_bottom,
+		.safe_area_max_inset_left,
+	] {
+		assert (document.environment_variable_value(variable) or { '' }) == '0px'
+	}
+	assert document.environment_variable_value(.viewport_segment_width) == none
 }

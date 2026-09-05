@@ -481,6 +481,7 @@ fn html_frame_element_model(frame &dom.HTMLFrameElement) &HTMLFrameElementModel 
 	mut model := HTMLFrameElementModel.create(element.document().base_url(), element.document().origin())
 	model.container.set_name(element.get_attribute_value('name'))
 	model.container.set_src(element.get_attribute_value('src'))
+	attach_navigable_container_load_event_delay_hook(element, model.container)
 	mut mutable_frame := unsafe { &dom.HTMLFrameElement(frame) }
 	mutable_frame.frame_element_model_ = model
 	return model

@@ -39,7 +39,7 @@ pub fn number_key(value f64) Key {
 		return invalid_key()
 	}
 	return Key{
-		kind:   .number
+		kind: .number
 		number: value
 	}
 }
@@ -49,7 +49,7 @@ pub fn date_key(milliseconds f64) Key {
 		return invalid_key()
 	}
 	return Key{
-		kind:   .date
+		kind: .date
 		number: milliseconds
 	}
 }
@@ -63,7 +63,7 @@ pub fn string_key(value string) Key {
 
 pub fn binary_key(value []u8) Key {
 	return Key{
-		kind:  .binary
+		kind: .binary
 		bytes: value.clone()
 	}
 }
@@ -77,7 +77,7 @@ pub fn array_key(value []Key) Key {
 		copy << key.clone()
 	}
 	return Key{
-		kind:  .array
+		kind: .array
 		items: copy
 	}
 }
@@ -92,11 +92,11 @@ pub fn (key Key) clone() Key {
 		items << child.clone()
 	}
 	return Key{
-		kind:   key.kind
+		kind: key.kind
 		number: key.number
-		text:   key.text
-		bytes:  key.bytes.clone()
-		items:  items
+		text: key.text
+		bytes: key.bytes.clone()
+		items: items
 	}
 }
 
@@ -159,13 +159,9 @@ fn compare_utf16_code_units(a string, b string) int {
 }
 
 fn sort_name_list(mut names []string) {
-	for index in 1 .. names.len {
-		mut position := index
-		for position > 0 && compare_utf16_code_units(names[position], names[position - 1]) < 0 {
-			names[position], names[position - 1] = names[position - 1], names[position]
-			position--
-		}
-	}
+	names.sort_with_compare(fn (a &string, b &string) int {
+		return compare_utf16_code_units(*a, *b)
+	})
 }
 
 fn compare_int(a int, b int) int {

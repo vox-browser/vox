@@ -28,6 +28,8 @@
 
 module dom
 
+import encoding as textencoding
+import mimesniff
 import strings
 
 pub const mutation_type_attributes = 'attributes'
@@ -420,14 +422,16 @@ pub fn (shadow_root &ShadowRoot) inner_html() !string {
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-innerhtml
 pub fn (mut shadow_root ShadowRoot) set_inner_html(value string) ! {
-	// 1. Trusted Types compliance is not translated yet; treat value as the compliant string.
+	// 1. Obtain the TrustedHTML-compliant string for the ShadowRoot innerHTML sink.
+	compliant_string := shadow_root.document().trusted_types_compliant_html(value,
+		'shadow-root-inner-html')!
 	// 2. Let context be this's host.
 	context := shadow_root.host() or { return error('ShadowRoot has no host') }
 
 	// 3. Let fragment be the result of invoking the fragment parsing algorithm steps with context and compliantString.
 	// 4. Replace all with fragment within this.
 	mut node := unsafe { &Node(&shadow_root) }
-	node.unsafely_set_html(context, value)!
+	node.unsafely_set_html(context, compliant_string)!
 
 	// NOTE: We do not have HTMLTemplateElement in the current V DOM yet.
 	node.set_needs_style_update(true)
@@ -453,11 +457,13 @@ pub fn (shadow_root &ShadowRoot) get_html(options GetHTMLOptions) !string {
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-sethtmlunsafe
 pub fn (mut shadow_root ShadowRoot) set_html_unsafe(html string) ! {
-	// 1. Trusted Types compliance is not translated yet; treat html as the compliant HTML.
+	// 1. Obtain the TrustedHTML-compliant value for the unsafe ShadowRoot sink.
+	compliant_html := shadow_root.document().trusted_types_compliant_html(html,
+		'shadow-root-set-html-unsafe')!
 	// 2. Unsafely set HTML given this, this's shadow host, and compliantHTML.
 	context := shadow_root.host() or { return error('ShadowRoot has no host') }
 	mut node := unsafe { &Node(&shadow_root) }
-	node.unsafely_set_html(context, html)!
+	node.unsafely_set_html(context, compliant_html)!
 }
 
 pub fn (shadow_root &ShadowRoot) active_element() ?&Element {
@@ -500,12 +506,8 @@ pub fn (shadow_root &ShadowRoot) adopted_style_sheets() []&CSSStyleSheet {
 	return shadow_root.adopted_style_sheets_.clone()
 }
 
-pub fn (mut shadow_root ShadowRoot) set_adopted_style_sheets(new_value VoidPtr) ! {
-	// In C++ this consumes a JS iterable and appends CSSStyleSheet values into the observable array.
-	// JS iteration is outside this DOM-only port, so callers can use set_adopted_style_sheet_list()
-	// when they already have translated CSSStyleSheet references.
-	_ = new_value
-	shadow_root.adopted_style_sheets_.clear()
+pub fn (mut shadow_root ShadowRoot) set_adopted_style_sheets(new_value []&CSSStyleSheet) ! {
+	shadow_root.adopted_style_sheets_ = new_value.clone()
 }
 
 pub fn (mut shadow_root ShadowRoot) set_adopted_style_sheet_list(sheets []&CSSStyleSheet) {
@@ -549,7 +551,7 @@ pub fn (mut shadow_root ShadowRoot) visit_edges(mut visitor CellVisitor) {
 pub fn (mut shadow_root ShadowRoot) get_animations() ![]&Animation {
 	mut document := unsafe { &Document(shadow_root.document()) }
 	document.update_style()
-	return []
+	return calculate_get_animations(shadow_root_as_node(&shadow_root))
 }
 
 pub fn (shadow_root &ShadowRoot) element_by_id() &ElementByIdMap {
@@ -594,7 +596,7 @@ pub fn (shadow_root &ShadowRoot) calculate_part_element_map() map[string][]Abstr
 			}
 		}
 
-		// FIXME: The rest concerns forwarded part names, which are not implemented yet.
+		// Current upstream stops here as well; its forwarded-part steps remain a FIXME.
 		return .@continue
 	})
 
@@ -1409,7 +1411,8 @@ pub fn (mut base StyleElementBase) update_a_style_block() {
 	mut document := unsafe { &Document(style_element.document()) }
 	mut style_sheet_list := style_element.document_or_shadow_root_style_sheets()
 	style_sheet := &CSSStyleSheet{
-		url: style_element.base_uri()
+		url:          style_element.base_uri()
+		source_text_: style_element.as_node().child_text_content()
 	}
 	style_sheet_list.sheets << style_sheet
 	base.style_sheet_list_ = style_sheet_list
@@ -1421,7 +1424,8 @@ pub fn (mut base StyleElementBase) update_a_style_block() {
 		document.script_blocking_style_sheet_set << style_element
 	}
 
-	// FIXME: 8. Potential render-blocking media matching is not translated yet.
+	// FIXME: 8. If element's media attribute matches the environment and element is potentially
+	// render-blocking, then block rendering on element. This is also still a FIXME upstream.
 
 	// AD-HOC: Check if we have already loaded the sheet's resources.
 	loading_state := style_sheet.loading_state_value()
@@ -1485,10 +1489,7 @@ pub fn (mut base StyleElementBase) visit_style_element_edges(mut visitor CellVis
 }
 
 fn should_elements_inline_style_behavior_be_blocked_by_content_security_policy(element &Element, child_text_content string) bool {
-	_ = element
-	_ = child_text_content
-	// Stub for ContentSecurityPolicy::should_elements_inline_type_behavior_be_blocked_by_content_security_policy(..., Style, ...).
-	return false
+	return element.document().should_block_inline_content(element, 'style', child_text_content)
 }
 
 pub fn (element &Element) document_or_shadow_root_style_sheets() &StyleSheetList {
@@ -2918,9 +2919,7 @@ pub fn create_element(document &Document, local_name string, namespace_ ?string,
 }
 
 fn report_custom_element_upgrade_exception(definition &CustomElementDefinition, message string) {
-	_ = definition
-	_ = message
-	// Stub for reporting the exception for definition's constructor's associated global object.
+	definition.report_constructor_exception(message)
 }
 
 // https://dom.spec.whatwg.org/#create-an-element-internal
@@ -3187,54 +3186,26 @@ pub fn (mut delayer DocumentLoadEventDelayer) finish() {
 pub type ByteBuffer = []u8
 pub type ReadonlyBytes = []u8
 
-pub struct MimeType {
-pub mut:
-	essence_ string
-	type_    string
-}
-
-pub fn (mime MimeType) essence() string {
-	return mime.essence_
-}
-
-pub fn (mime MimeType) type_() string {
-	return mime.type_
-}
-
-pub fn (mime MimeType) is_html() bool {
-	return mime.essence_ == 'text/html' || mime.essence_ == 'application/xhtml+xml'
-}
-
-pub fn (mime MimeType) is_xml() bool {
-	return mime.essence_.ends_with('+xml') || mime.essence_ in ['application/xml', 'text/xml']
-}
-
-pub fn (mime MimeType) is_javascript() bool {
-	return mime.essence_ in ['text/javascript', 'application/javascript', 'application/ecmascript']
-}
-
-pub fn (mime MimeType) is_json() bool {
-	return mime.essence_ == 'application/json' || mime.essence_.ends_with('+json')
-}
-
-pub fn (mime MimeType) is_image() bool {
-	return mime.type_ == 'image'
-}
-
-pub fn (mime MimeType) is_audio_or_video() bool {
-	return mime.type_ == 'audio' || mime.type_ == 'video'
-}
-
-pub fn mime_type_from_essence(essence string) MimeType {
-	typ := if essence.contains('/') { essence.all_before('/') } else { essence }
-	return MimeType{
-		essence_: essence
-		type_:    typ
+pub fn mime_type_from_essence(essence string) mimesniff.MimeType {
+	return mimesniff.MimeType.parse(essence) or {
+		mimesniff.MimeType.create('application', 'octet-stream')
 	}
 }
 
-fn resolve_session_history_processing_signal(signal_to_continue_session_history_processing VoidPtr) {
-	_ = signal_to_continue_session_history_processing
+@[heap]
+pub struct SessionHistoryProcessingSignal {
+pub mut:
+	resolved bool
+}
+
+pub fn (mut signal SessionHistoryProcessingSignal) resolve() {
+	signal.resolved = true
+}
+
+fn resolve_session_history_processing_signal(signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal) {
+	if mut signal := signal_to_continue_session_history_processing {
+		signal.resolve()
+	}
 }
 
 // HTML::run_bom_sniff (Parser/HTMLEncodingDetection.cpp): detect an encoding from a byte-order mark.
@@ -3309,15 +3280,23 @@ fn is_valid_utf8(data []u8) bool {
 
 // https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding
 // HTML::run_encoding_sniffing_algorithm (Parser/HTMLEncodingDetection.cpp).
-fn run_encoding_sniffing_algorithm(document &Document, data ByteBuffer, mime MimeType) string {
-	_ = document
-	_ = mime
+fn run_encoding_sniffing_algorithm(document &Document, data ByteBuffer, mime mimesniff.MimeType) string {
+	if installed_hook := document.html_fragment_parsing_hook() {
+		if installed_hook.sniff_encoding != unsafe { nil } {
+			return installed_hook.sniff_encoding(installed_hook.target, document, data,
+				mime.parameters()['charset'])
+		}
+	}
 	// 1. If the result of BOM sniffing is an encoding, return it.
 	if bom := run_bom_sniff(data) {
 		return bom
 	}
-	// 2-4. FIXME (boundary): user override, waiting for more bytes, and the transport-layer (MIME) encoding
-	//      are not modeled here (MimeType is a placeholder).
+	// 2-4. Standalone DOM fallback: honor a supported transport encoding.
+	if transport := mime.parameters()['charset'] {
+		if standardized := textencoding.get_an_encoding(transport) {
+			return standardized
+		}
+	}
 	// 5. FIXME (boundary): prescan the byte stream for a `<meta charset>` — needs the HTML tokenizer.
 	// 8. Otherwise, if the bytes are not valid UTF-8, assume windows-1252.
 	if !is_valid_utf8(data) {
@@ -3338,30 +3317,28 @@ fn text_decoder_validate(data ByteBuffer, content_encoding ?string) bool {
 }
 
 fn text_decoder_to_utf8(data ByteBuffer, content_encoding ?string) !string {
-	_ = content_encoding
-	// Stub for TextCodec::Decoder::to_utf8().
-	return data.bytestr()
+	label := content_encoding or { 'utf-8' }
+	decoder := textencoding.TextDecoder.construct(label, textencoding.TextDecoderOptions{})!
+	return decoder.decode(data, textencoding.TextDecodeOptions{})!
 }
 
-fn xml_decoder_label(document &Document, data ByteBuffer, mime MimeType, content_encoding ?string) string {
+fn xml_decoder_label(document &Document, data ByteBuffer, mime mimesniff.MimeType, content_encoding ?string) string {
 	if encoding := content_encoding {
 		return encoding
 	}
 	return run_encoding_sniffing_algorithm(document, data, mime)
 }
 
-fn mime_type_parameter(mime MimeType, name string) ?string {
-	_ = mime
-	_ = name
-	// Stub for MimeSniff::MimeType::parameters() until MIME parameters are represented.
-	return none
+fn mime_type_parameter(mime mimesniff.MimeType, name string) ?string {
+	return mime.parameters()[name]
 }
 
 fn parse_xml_document_into(document &Document, source string) bool {
-	_ = document
-	_ = source
-	// Stub for XML::Parser + XMLDocumentBuilder. The DOM-side caller still follows the C++ control flow.
-	return true
+	hook := document.html_fragment_parsing_hook() or { return false }
+	if hook.parse_xml_document == unsafe { nil } {
+		return false
+	}
+	return hook.parse_xml_document(hook.target, document, source)
 }
 
 fn html_parser_the_end(document &Document) {
@@ -3369,32 +3346,45 @@ fn html_parser_the_end(document &Document) {
 	mutable_document.completely_finish_loading()
 }
 
-fn html_parser_run_with_uncertain_encoding(document &Document, data ByteBuffer, mime MimeType, url URL) {
-	_ = mime
-	_ = url
+fn html_parser_run_with_uncertain_encoding(document &Document, data ByteBuffer, mime mimesniff.MimeType, url URL) {
+	if hook := document.html_fragment_parsing_hook() {
+		if hook.parse_loaded_html != unsafe { nil } {
+			hook.parse_loaded_html(hook.target, document, data, mime_type_parameter(mime, 'charset'),
+				url) or {}
+			return
+		}
+	}
 	mut mutable_document := unsafe { &Document(document) }
 	mutable_document.source = data.bytestr()
 	html_parser_the_end(document)
 }
 
-fn html_parser_run_text_document(document &Document, data ByteBuffer, mime MimeType, url URL) string {
+fn html_parser_run_text_document(document &Document, data ByteBuffer, mime mimesniff.MimeType, url URL) string {
+	if hook := document.html_fragment_parsing_hook() {
+		if hook.parse_loaded_text != unsafe { nil } {
+			return hook.parse_loaded_text(hook.target, document, data,
+				mime_type_parameter(mime, 'charset'), url) or {
+				run_encoding_sniffing_algorithm(document, data, mime)
+			}
+		}
+	}
 	encoding := run_encoding_sniffing_algorithm(document, data, mime)
 	mut mutable_document := unsafe { &Document(document) }
-	// Stub for the tokenizer sequence that emits <pre>\n, switches to PLAINTEXT,
-	// inserts the body bytes, inserts EOF, and runs the parser.
 	mutable_document.source = '<pre>\n${data.bytestr()}'
 	_ = url
 	html_parser_the_end(document)
 	return encoding
 }
 
-fn sniff_resource_type(sniff_bytes ReadonlyBytes, supplied_type MimeType) MimeType {
-	_ = sniff_bytes
-	// Stub for MimeSniff::Resource::sniff(..., Browsing, supplied_type).
-	return supplied_type
+fn sniff_resource_type(sniff_bytes ReadonlyBytes, supplied_type mimesniff.MimeType, scheme string) mimesniff.MimeType {
+	return mimesniff.Resource.sniff(sniff_bytes, mimesniff.SniffingConfiguration{
+		sniffing_context: .browsing
+		scheme:           scheme
+		supplied_type:    supplied_type
+	})
 }
 
-fn navigation_response_mime_type(navigation_params &NavigationParams) MimeType {
+fn navigation_response_mime_type(navigation_params &NavigationParams) mimesniff.MimeType {
 	essence := if navigation_params.response_mime_type == '' {
 		'text/html'
 	} else {
@@ -3489,7 +3479,7 @@ pub fn build_xml_document(mut document Document, data ByteBuffer, content_encodi
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#navigate-html
-fn load_html_document(navigation_params &NavigationParams, signal_to_continue_session_history_processing VoidPtr) !&Document {
+fn load_html_document(navigation_params &NavigationParams, signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal) !&Document {
 	// 1. Let document be the result of creating and initializing a Document object given "html", "text/html", and navigationParams.
 	mut document := Document.create_and_initialize(.html, 'text/html', navigation_params)!
 
@@ -3514,7 +3504,7 @@ fn load_html_document(navigation_params &NavigationParams, signal_to_continue_se
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml
-fn load_xml_document(navigation_params &NavigationParams, type_ MimeType, signal_to_continue_session_history_processing VoidPtr) !&Document {
+fn load_xml_document(navigation_params &NavigationParams, type_ mimesniff.MimeType, signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal) !&Document {
 	// When faced with displaying an XML file inline, create and initialize a Document object document,
 	// given "xml", type, and navigationParams, and return that Document.
 	mut document := Document.create_and_initialize(.xml, type_.essence(), navigation_params)!
@@ -3554,7 +3544,7 @@ fn load_xml_document(navigation_params &NavigationParams, type_ MimeType, signal
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#navigate-text
-fn load_text_document(navigation_params &NavigationParams, type_ MimeType, signal_to_continue_session_history_processing VoidPtr) !&Document {
+fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeType, signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal) !&Document {
 	// 1. Let document be the result of creating and initializing a Document object given "html", type, and navigationParams.
 	mut document := Document.create_and_initialize(.html, type_.essence(), navigation_params)!
 
@@ -3581,7 +3571,7 @@ fn load_text_document(navigation_params &NavigationParams, type_ MimeType, signa
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#navigate-media
-fn load_media_document(navigation_params &NavigationParams, type_ MimeType, signal_to_continue_session_history_processing VoidPtr) !&Document {
+fn load_media_document(navigation_params &NavigationParams, type_ mimesniff.MimeType, signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal) !&Document {
 	// 1. Let document be the result of creating and initializing a Document object given "html", type, and navigationParams.
 	mut document := Document.create_and_initialize(.html, type_.essence(), navigation_params)!
 
@@ -3641,7 +3631,7 @@ fn load_media_document(navigation_params &NavigationParams, type_ MimeType, sign
 	return document
 }
 
-pub fn can_load_document_with_type(type_ MimeType) bool {
+pub fn can_load_document_with_type(type_ mimesniff.MimeType) bool {
 	if type_.is_html() || type_.is_xml() {
 		return true
 	}
@@ -3656,10 +3646,12 @@ pub fn can_load_document_with_type(type_ MimeType) bool {
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#loading-a-document
-pub fn load_document(navigation_params &NavigationParams, signal_to_continue_session_history_processing VoidPtr, sniff_bytes ReadonlyBytes) ?&Document {
+pub fn load_document(navigation_params &NavigationParams, signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal, sniff_bytes ReadonlyBytes) ?&Document {
 	// 1. Let type be the computed type of navigationParams's response.
 	supplied_type := navigation_response_mime_type(navigation_params)
-	type_ := sniff_resource_type(sniff_bytes, supplied_type)
+	response_url := navigation_response_url(navigation_params).serialize()
+	scheme := if response_url.contains(':') { response_url.all_before(':').to_lower() } else { '' }
+	type_ := sniff_resource_type(sniff_bytes, supplied_type, scheme)
 
 	// 2. If the user agent has been configured to process resources of the given type using some mechanism other than
 	//    rendering the content in a navigable, then skip this step.
@@ -4080,12 +4072,34 @@ pub struct PseudoElementTreeNode_ {
 pub struct CSSStyleValue_ {
 pub mut:
 	// DOM-to-CSS bridge for custom-property token streams. The css module owns parsing and
-	// substitution; DOM retains the serialized value without importing css.
+	// substitution; DOM retains an opaque pointer to the parsed StyleValue without
+	// importing css, plus the serialization needed by DOM-facing APIs.
 	css_text           string
 	guaranteed_invalid bool
+	css_value_handle   voidptr = unsafe { nil }
 }
 
-pub struct CSSAnimation_ {}
+pub enum CSSAnimationPlayState_ {
+	running
+	paused
+}
+
+pub type CSSAnimationVoidCallback = fn(voidptr)
+
+pub type CSSAnimationLastPlayStateCallback = fn(voidptr) ?CSSAnimationPlayState_
+
+// CSS owns the concrete animation object. Element retains this callback-backed
+// handle so its translated display-change algorithm can operate on element and
+// pseudo-element CSS animations without introducing a DOM -> CSS cycle.
+@[heap]
+pub struct CSSAnimation_ {
+pub:
+	target                   voidptr = unsafe { nil }
+	cancel_callback          CSSAnimationVoidCallback = unsafe { nil }
+	play_callback            CSSAnimationVoidCallback = unsafe { nil }
+	pause_callback           CSSAnimationVoidCallback = unsafe { nil }
+	last_play_state_callback CSSAnimationLastPlayStateCallback = unsafe { nil }
+}
 
 // Either an Element or a PseudoElement.
 pub struct AbstractElement {
@@ -4299,8 +4313,10 @@ pub fn (mut abstract_element AbstractElement) set_counters_set(counters_set ?&CS
 }
 
 pub fn (abstract_element &AbstractElement) css_defined_animations() ?map[string]&CSSAnimation_ {
-	if abstract_element.element_.has_css_defined_animations_flag {
-		return abstract_element.element_.css_defined_animations_
+	key := if pseudo := abstract_element.pseudo_element_ { int(pseudo) } else { -1 }
+	if abstract_element.element_.has_css_defined_animations_flag
+		&& key in abstract_element.element_.css_defined_animations_ {
+		return abstract_element.element_.css_defined_animations_[key] or { return none }
 	}
 	return none
 }
@@ -4308,6 +4324,28 @@ pub fn (abstract_element &AbstractElement) css_defined_animations() ?map[string]
 pub fn (mut abstract_element AbstractElement) set_has_css_defined_animations() {
 	mut element := unsafe { &Element(abstract_element.element_) }
 	element.has_css_defined_animations_flag = true
+}
+
+pub fn (mut abstract_element AbstractElement) set_css_defined_animation(name string, animation &CSSAnimation_) {
+	mut element := unsafe { &Element(abstract_element.element_) }
+	key := if pseudo := abstract_element.pseudo_element_ { int(pseudo) } else { -1 }
+	if key !in element.css_defined_animations_ {
+		element.css_defined_animations_[key] = map[string]&CSSAnimation_{}
+	}
+	element.css_defined_animations_[key][name] = animation
+	element.has_css_defined_animations_flag = true
+}
+
+pub fn (mut abstract_element AbstractElement) remove_css_defined_animation(name string) {
+	mut element := unsafe { &Element(abstract_element.element_) }
+	key := if pseudo := abstract_element.pseudo_element_ { int(pseudo) } else { -1 }
+	mut animations := (element.css_defined_animations_[key] or { return }).clone()
+	animations.delete(name)
+	if animations.len == 0 {
+		element.css_defined_animations_.delete(key)
+	} else {
+		element.css_defined_animations_[key] = animations.clone()
+	}
 }
 
 pub fn (abstract_element &AbstractElement) visit(mut visitor CellVisitor) {
@@ -4341,14 +4379,27 @@ pub fn (d &Document) style_scope() &StyleScope {
 
 pub fn pseudo_element_name(pseudo PseudoElement) string {
 	return match pseudo {
-		.before { 'before' }
 		.after { 'after' }
-		.first_line { 'first-line' }
+		.backdrop { 'backdrop' }
+		.before { 'before' }
+		.details_content { 'details-content' }
+		.file_selector_button { 'file-selector-button' }
 		.first_letter { 'first-letter' }
+		.first_line { 'first-line' }
 		.marker { 'marker' }
+		.part { 'part' }
 		.placeholder { 'placeholder' }
 		.selection { 'selection' }
-		.backdrop { 'backdrop' }
+		.slider_fill { 'slider-fill' }
+		.slider_thumb { 'slider-thumb' }
+		.slider_track { 'slider-track' }
+		.slotted { 'slotted' }
+		.view_transition { 'view-transition' }
+		.view_transition_group { 'view-transition-group' }
+		.view_transition_image_pair { 'view-transition-image-pair' }
+		.view_transition_new { 'view-transition-new' }
+		.view_transition_old { 'view-transition-old' }
+		.known_pseudo_element_count, .unknown_webkit { '' }
 	}
 }
 

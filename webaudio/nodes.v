@@ -83,14 +83,15 @@ pub fn (mut context BaseAudioContext) create_constant_source(value f32, _ AudioN
 	// inherited AudioNodeOptions, leaving the AudioNode defaults intact.
 	context.next_id++
 	node := AudioNode{
-		id:                context.next_id
-		context_id:        context.id
-		kind:              .constant_source
-		number_of_inputs:  0
+		id: context.next_id
+		context_id: context.id
+		kind: .constant_source
+		number_of_inputs: 0
 		number_of_outputs: 1
+		graph: context.graph
 	}
 	return ConstantSourceNode{
-		node:   node
+		node: node
 		offset: context.allocate_param(value, float_lowest, float_highest, .a_rate, false)
 	}
 }
@@ -108,15 +109,14 @@ pub:
 }
 
 pub fn (mut context BaseAudioContext) create_delay(max_delay_time f64, delay_time f64, options AudioNodeOptions) !DelayNode {
-	if max_delay_time <= 0 || max_delay_time >= 180 {
+	if max_delay_time <= 0 || max_delay_time >= 180 || math.is_nan(max_delay_time) {
 		return error('NotSupportedError: Max delay time must be between 0 and 180 seconds exclusive')
 	}
 	node := context.allocate_node(.delay, 1, 1, options, 2, .max, .speakers)!
 	return DelayNode{
-		node:           node
+		node: node
 		max_delay_time: max_delay_time
-		delay_time:     context.allocate_param(f32(delay_time), 0, f32(max_delay_time), .a_rate,
-			false)
+		delay_time: context.allocate_param(f32(delay_time), 0, f32(max_delay_time), .a_rate, false)
 	}
 }
 
@@ -149,12 +149,12 @@ pub:
 pub fn (mut context BaseAudioContext) create_dynamics_compressor(options DynamicsCompressorOptions) !DynamicsCompressorNode {
 	node := context.allocate_node(.compressor, 1, 1, options.node, 2, .clamped_max, .speakers)!
 	mut compressor := DynamicsCompressorNode{
-		node:      node
+		node: node
 		threshold: context.allocate_param(options.threshold, -100, 0, .k_rate, true)
-		knee:      context.allocate_param(options.knee, 0, 40, .k_rate, true)
-		ratio:     context.allocate_param(options.ratio, 1, 20, .k_rate, true)
-		attack:    context.allocate_param(options.attack, 0, 1, .k_rate, true)
-		release:   context.allocate_param(options.release, 0, 1, .k_rate, true)
+		knee: context.allocate_param(options.knee, 0, 40, .k_rate, true)
+		ratio: context.allocate_param(options.ratio, 1, 20, .k_rate, true)
+		attack: context.allocate_param(options.attack, 0, 1, .k_rate, true)
+		release: context.allocate_param(options.release, 0, 1, .k_rate, true)
 	}
 	if count := options.node.channel_count { compressor.set_channel_count(count)! }
 	if mode := options.node.channel_count_mode { compressor.set_channel_count_mode(mode)! }
@@ -169,14 +169,16 @@ pub fn (mut compressor DynamicsCompressorNode) set_channel_count_mode(mode Chann
 }
 
 pub fn (mut compressor DynamicsCompressorNode) set_channel_count(count u32) ! {
-	if count > 2 { return error('NotSupportedError: channel count greater than 2') }
+	if count > 2 {
+		return error('NotSupportedError: channel count greater than 2')
+	}
 	compressor.node.set_channel_count(count)!
 }
 
 pub struct BiquadFilterOptions {
 pub:
 	type_     BiquadFilterType = .lowpass
-	q         f32              = 1
+	q         f32 = 1
 	detune    f32
 	frequency f32 = 350
 	gain      f32
@@ -196,15 +198,12 @@ pub mut:
 pub fn (mut context BaseAudioContext) create_biquad_filter(options BiquadFilterOptions) !BiquadFilterNode {
 	node := context.allocate_node(.biquad, 1, 1, options.node, 2, .max, .speakers)!
 	return BiquadFilterNode{
-		node:      node
-		type_:     options.type_
-		frequency: context.allocate_param(options.frequency, 0, context.nyquist_frequency(),
-			.a_rate, false)
-		detune:    context.allocate_param(options.detune, -detune_limit(), detune_limit(), .a_rate,
-			false)
-		q:         context.allocate_param(options.q, float_lowest, float_highest, .a_rate, false)
-		gain:      context.allocate_param(options.gain, float_lowest, biquad_gain_limit(), .a_rate,
-			false)
+		node: node
+		type_: options.type_
+		frequency: context.allocate_param(options.frequency, 0, context.nyquist_frequency(), .a_rate, false)
+		detune: context.allocate_param(options.detune, -detune_limit(), detune_limit(), .a_rate, false)
+		q: context.allocate_param(options.q, float_lowest, float_highest, .a_rate, false)
+		gain: context.allocate_param(options.gain, float_lowest, biquad_gain_limit(), .a_rate, false)
 	}
 }
 
@@ -222,10 +221,9 @@ pub fn (mut context BaseAudioContext) create_channel_merger(number_of_inputs u32
 	if number_of_inputs < 1 || number_of_inputs > max_number_of_channels {
 		return error('IndexSizeError: Invalid number of inputs')
 	}
-	node := context.allocate_node(.channel_merger, number_of_inputs, 1, options, 1, .explicit,
-		.speakers)!
+	node := context.allocate_node(.channel_merger, number_of_inputs, 1, options, 1, .explicit, .speakers)!
 	mut merger := ChannelMergerNode{
-		node:             node
+		node: node
 		number_of_inputs: number_of_inputs
 	}
 	if count := options.channel_count { merger.set_channel_count(count)! }
@@ -234,12 +232,16 @@ pub fn (mut context BaseAudioContext) create_channel_merger(number_of_inputs u32
 }
 
 pub fn (mut merger ChannelMergerNode) set_channel_count(count u32) ! {
-	if count != 1 { return error('InvalidStateError: Channel count cannot be changed') }
+	if count != 1 {
+		return error('InvalidStateError: Channel count cannot be changed')
+	}
 	merger.node.set_channel_count(count)!
 }
 
 pub fn (mut merger ChannelMergerNode) set_channel_count_mode(mode ChannelCountMode) ! {
-	if mode != .explicit { return error('InvalidStateError: Channel count mode cannot be changed') }
+	if mode != .explicit {
+		return error('InvalidStateError: Channel count mode cannot be changed')
+	}
 	merger.node.channel_count_mode = mode
 }
 
@@ -254,10 +256,9 @@ pub fn (mut context BaseAudioContext) create_channel_splitter(number_of_outputs 
 	if number_of_outputs < 1 || number_of_outputs > max_number_of_channels {
 		return error('IndexSizeError: Invalid number of outputs')
 	}
-	node := context.allocate_node(.channel_splitter, 1, number_of_outputs, options,
-		number_of_outputs, .explicit, .discrete)!
+	node := context.allocate_node(.channel_splitter, 1, number_of_outputs, options, number_of_outputs, .explicit, .discrete)!
 	mut splitter := ChannelSplitterNode{
-		node:              node
+		node: node
 		number_of_outputs: number_of_outputs
 	}
 	if count := options.channel_count { splitter.set_channel_count(count)! }
@@ -276,7 +277,9 @@ pub fn (mut splitter ChannelSplitterNode) set_channel_count(count u32) ! {
 }
 
 pub fn (mut splitter ChannelSplitterNode) set_channel_count_mode(mode ChannelCountMode) ! {
-	if mode != .explicit { return error("InvalidStateError: Channel count mode must be 'explicit'") }
+	if mode != .explicit {
+		return error("InvalidStateError: Channel count mode must be 'explicit'")
+	}
 	splitter.node.channel_count_mode = mode
 }
 
@@ -297,7 +300,7 @@ pub fn (mut context BaseAudioContext) create_stereo_panner(pan f32, options Audi
 	node := context.allocate_node(.stereo_panner, 1, 1, options, 2, .clamped_max, .speakers)!
 	mut panner := StereoPannerNode{
 		node: node
-		pan:  context.allocate_param(pan, -1, 1, .a_rate, false)
+		pan: context.allocate_param(pan, -1, 1, .a_rate, false)
 	}
 	if count := options.channel_count { panner.set_channel_count(count)! }
 	if mode := options.channel_count_mode { panner.set_channel_count_mode(mode)! }
@@ -305,12 +308,16 @@ pub fn (mut context BaseAudioContext) create_stereo_panner(pan f32, options Audi
 }
 
 pub fn (mut panner StereoPannerNode) set_channel_count_mode(mode ChannelCountMode) ! {
-	if mode == .max { return error("NotSupportedError: StereoPannerNode does not support 'max'") }
+	if mode == .max {
+		return error("NotSupportedError: StereoPannerNode does not support 'max'")
+	}
 	panner.node.channel_count_mode = mode
 }
 
 pub fn (mut panner StereoPannerNode) set_channel_count(count u32) ! {
-	if count > 2 { return error('NotSupportedError: channel count greater than 2') }
+	if count > 2 {
+		return error('NotSupportedError: channel count greater than 2')
+	}
 	panner.node.set_channel_count(count)!
 }
 
@@ -353,8 +360,8 @@ pub fn new_periodic_wave(options PeriodicWaveOptions) !PeriodicWave {
 	real[0] = 0
 	imag[0] = 0
 	return PeriodicWave{
-		real:      real.clone()
-		imag:      imag.clone()
+		real: real.clone()
+		imag: imag.clone()
 		normalize: !options.disable_normalization
 	}
 }
@@ -362,7 +369,7 @@ pub fn new_periodic_wave(options PeriodicWaveOptions) !PeriodicWave {
 pub struct OscillatorOptions {
 pub:
 	type_         OscillatorType = .sine
-	frequency     f32            = 440
+	frequency     f32 = 440
 	detune        f32
 	periodic_wave ?PeriodicWave
 	node          AudioNodeOptions
@@ -383,12 +390,10 @@ pub fn (mut context BaseAudioContext) create_oscillator(options OscillatorOption
 	}
 	node := context.allocate_node(.oscillator, 0, 1, options.node, 2, .max, .speakers)!
 	return OscillatorNode{
-		node:          node
-		type_:         options.type_
-		frequency:     context.allocate_param(options.frequency, -context.nyquist_frequency(),
-			context.nyquist_frequency(), .a_rate, false)
-		detune:        context.allocate_param(options.detune, -detune_limit(), detune_limit(),
-			.a_rate, false)
+		node: node
+		type_: options.type_
+		frequency: context.allocate_param(options.frequency, -context.nyquist_frequency(), context.nyquist_frequency(), .a_rate, false)
+		detune: context.allocate_param(options.detune, -detune_limit(), detune_limit(), .a_rate, false)
 		periodic_wave: options.periodic_wave
 	}
 }
@@ -432,15 +437,13 @@ pub mut:
 pub fn (mut context BaseAudioContext) create_buffer_source(options AudioBufferSourceOptions) !AudioBufferSourceNode {
 	node := context.allocate_node(.buffer_source, 0, 1, options.node, 2, .max, .speakers)!
 	return AudioBufferSourceNode{
-		node:          node
-		buffer:        options.buffer
-		playback_rate: context.allocate_param(options.playback_rate, float_lowest, float_highest,
-			.k_rate, true)
-		detune:        context.allocate_param(options.detune, float_lowest, float_highest, .k_rate,
-			true)
-		loop_:         options.loop_
-		loop_start:    options.loop_start
-		loop_end:      options.loop_end
+		node: node
+		buffer: options.buffer
+		playback_rate: context.allocate_param(options.playback_rate, float_lowest, float_highest, .k_rate, true)
+		detune: context.allocate_param(options.detune, float_lowest, float_highest, .k_rate, true)
+		loop_: options.loop_
+		loop_start: options.loop_start
+		loop_end: options.loop_end
 	}
 }
 
@@ -448,7 +451,9 @@ pub fn (mut source AudioBufferSourceNode) set_buffer(buffer ?AudioBuffer) ! {
 	if buffer != none && source.buffer_set {
 		return error('InvalidStateError: Buffer has already been set')
 	}
-	if buffer != none { source.buffer_set = true }
+	if buffer != none {
+		source.buffer_set = true
+	}
 	source.buffer = buffer
 }
 
@@ -457,7 +462,9 @@ pub fn (mut source AudioBufferSourceNode) start(when ?f64, offset ?f64, duration
 		return error('InvalidStateError: AudioBufferSourceNode has already been started')
 	}
 	for value in [when or { 0 }, offset or { 0 }, duration or { 0 }] {
-		if value < 0 { return error('RangeError: start arguments must not be negative') }
+		if value < 0 {
+			return error('RangeError: start arguments must not be negative')
+		}
 	}
 	source.node.source_started = true
 }
@@ -488,19 +495,20 @@ pub fn (mut context BaseAudioContext) create_script_processor(buffer_size i32, i
 	// non-zero channel-count setter.
 	context.next_id++
 	node := AudioNode{
-		id:                     context.next_id
-		context_id:             context.id
-		kind:                   .script_processor
-		number_of_inputs:       1
-		number_of_outputs:      1
-		channel_count:          input_channels
-		channel_count_mode:     .explicit
+		id: context.next_id
+		context_id: context.id
+		kind: .script_processor
+		number_of_inputs: 1
+		number_of_outputs: 1
+		graph: context.graph
+		channel_count: input_channels
+		channel_count_mode: .explicit
 		channel_interpretation: .speakers
 	}
 	return ScriptProcessorNode{
-		node:            node
-		buffer_size:     actual_buffer_size
-		input_channels:  input_channels
+		node: node
+		buffer_size: actual_buffer_size
+		input_channels: input_channels
 		output_channels: output_channels
 	}
 }
@@ -510,7 +518,9 @@ pub fn (_ ScriptProcessorNode) set_channel_count(_ u32) ! {
 }
 
 pub fn (mut processor ScriptProcessorNode) set_channel_count_mode(mode ChannelCountMode) ! {
-	if mode != .explicit { return error("InvalidStateError: channel count mode must be 'explicit'") }
+	if mode != .explicit {
+		return error("InvalidStateError: channel count mode must be 'explicit'")
+	}
 	processor.node.channel_count_mode = mode
 }
 

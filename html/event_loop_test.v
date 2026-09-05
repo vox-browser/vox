@@ -69,6 +69,66 @@ fn test_main_thread_event_loop_is_stable() {
 	assert main_thread_event_loop() == main_thread_event_loop()
 }
 
+fn test_window_document_lifecycle_uses_the_real_main_thread_event_loop() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	window := WindowModel.create_top_level(document, none, 'lifecycle-test') or { panic('${err}') }
+	mut event_loop := main_thread_event_loop()
+	mut is_registered := false
+	for registered in event_loop.documents_ {
+		if voidptr(registered) == voidptr(document) {
+			is_registered = true
+			break
+		}
+	}
+	assert is_registered
+	assert window.environment_settings_ != unsafe { nil }
+	assert !window.environment_settings_.settings.execution_ready()
+
+	document.make_active()
+	assert window.environment_settings_.settings.execution_ready()
+
+	mut queue := event_loop.task_queue()
+	queue.add(Task.create(.dom_manipulation, document, fn () {}))
+	assert queue.tasks.any(fn [document] (task &Task) bool {
+		task_document := task.document() or { return false }
+		return voidptr(task_document) == voidptr(document)
+	})
+	document.destroy()
+	assert !queue.tasks.any(fn [document] (task &Task) bool {
+		task_document := task.document() or { return false }
+		return voidptr(task_document) == voidptr(document)
+	})
+
+	document.finalize()
+	for registered in event_loop.documents_ {
+		assert voidptr(registered) != voidptr(document)
+	}
+}
+
+fn test_dom_history_state_uses_html_structured_deserialization() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	_ = WindowModel.create_top_level(document, none, 'history-state-test') or { panic('${err}') }
+	record := structured_serialize_for_storage(dom.js_string('restored')) or { panic('${err}') }
+	entry := &dom.SessionHistoryEntry{
+		url: dom.URL{ value: 'https://example.test/' }
+		classic_history_api_state: dom.DOMSerializationRecord{
+			data: record.data.clone()
+		}
+	}
+	document.restore_the_history_object_state(entry)
+	assert document.history().state.kind == .string
+	assert document.history().state.string_data == 'restored'
+
+	broken_entry := &dom.SessionHistoryEntry{
+		classic_history_api_state: dom.DOMSerializationRecord{
+			data: [u8(255)]
+		}
+	}
+	document.restore_the_history_object_state(broken_entry)
+	assert document.history().state.kind == .null_
+	document.finalize()
+}
+
 fn test_parallel_queue_exact_create_and_enqueue() {
 	mut calls := &EventLoopTestCalls{}
 	queue := ParallelQueue.create()

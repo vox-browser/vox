@@ -4,6 +4,8 @@
 
 module layout
 
+import css
+
 // FormattingContext::calculate_min_content_width() and
 // calculate_max_content_width(). Intrinsic measurement is a real subtree
 // layout in a throwaway LayoutState; it must not read geometry left behind by
@@ -13,13 +15,11 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 		computed := box.computed_values()
 		width := computed.size_value(.width)
 		if width.is_percentage() {
-			return width.to_px(layout_length_resolution_context(unsafe { &Node(box) }),
-				CSSPixels.new(0))
+			return width.to_px(layout_length_resolution_context(unsafe { &Node(box) }), CSSPixels.new(0))
 		}
 		max_width := computed.size_value(.max_width)
 		if max_width.is_percentage() {
-			return max_width.to_px(layout_length_resolution_context(unsafe { &Node(box) }),
-				CSSPixels.new(0))
+			return max_width.to_px(layout_length_resolution_context(unsafe { &Node(box) }), CSSPixels.new(0))
 		}
 	}
 	if auto_width := box.auto_content_box_size().width {
@@ -147,8 +147,7 @@ fn populate_intrinsic_external_containing_blocks(mut throwaway LayoutState, mut 
 		containing_block = candidate.containing_block()
 	}
 	for child in node.children() {
-		populate_intrinsic_external_containing_blocks(mut throwaway, mut source, subtree_root,
-			child)
+		populate_intrinsic_external_containing_blocks(mut throwaway, mut source, subtree_root, child)
 	}
 }
 
@@ -157,8 +156,7 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 	box_styled := box_node.as_node_with_style() or { return CSSPixels.new(0) }
 	mut throwaway := LayoutState.new_for_subtree(box_styled)
 	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, box_node)
-	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, box_node,
-		box_node)
+	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, box_node, box_node)
 	mut box_state := throwaway.get_mutable(box_styled)
 	box_state.width_constraint = constraint
 	box_state.set_indefinite_content_width()
@@ -179,21 +177,18 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 		} else {
 			CSSPixels.new(0)
 		}
-		return calculate_table_grid_intrinsic_width(mut throwaway, box_node, percentage_basis,
-			constraint)
+		return calculate_table_grid_intrinsic_width(mut throwaway, box_node, percentage_basis, constraint)
 	}
 	if box_node.display().is_flex_inside() {
 		return calculate_intrinsic_flex_width(mut throwaway, box_node, constraint)
 	}
 	if box_node.display().is_grid_inside() {
-		result := layout_inside_independent_formatting_context(mut throwaway, box_node, mut
-			box_state, AvailableSpace.new(available_width, available_height))
+		result := layout_inside_independent_formatting_context(mut throwaway, box_node, mut box_state, AvailableSpace.new(available_width, available_height))
 		return clamp_to_max_dimension_value(result.automatic_content_width)
 	}
 	if box_node.children_are_inline() {
 		if block_container := box_node.as_block_container() {
-			result := run_inline_formatting_context(mut throwaway, block_container, mut box_state,
-				.intrinsic_sizing, AvailableSpace.new(available_width, available_height))
+			result := run_inline_formatting_context(mut throwaway, block_container, mut box_state, .intrinsic_sizing, AvailableSpace.new(available_width, available_height))
 			// InlineFormattingContext asks its parent BFC for automatic width so
 			// floated inline-level children participate. The standalone intrinsic
 			// context has no parent object, so include those children explicitly.
@@ -203,8 +198,7 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 					continue
 				}
 				child_box := child.as_box() or { continue }
-				automatic_width = css_pixels_max(automatic_width, intrinsic_outer_width_contribution(mut throwaway,
-					child_box, constraint))
+				automatic_width = css_pixels_max(automatic_width, intrinsic_outer_width_contribution(mut throwaway, child_box, constraint))
 			}
 			return clamp_to_max_dimension_value(automatic_width)
 		}
@@ -260,6 +254,16 @@ fn intrinsic_outer_width_contribution(mut state LayoutState, box &Box, constrain
 		CSSPixels.new(0)
 	}
 	resolve_box_model_edges(styled.computed_values(), mut values, containing_width.to_double())
+	return intrinsic_outer_width_contribution_with_resolved_box_model(mut state, box, constraint, values, containing_width)
+}
+
+// FormattingContext::intrinsic_width_contribution() consumes box-model metrics
+// already resolved by its formatting context. TableFormattingContext resolves
+// all four cell edges once in compute_cell_measures(), then computes both the
+// min- and max-content measures from that same state.
+fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutState, box &Box, constraint SizeConstraint, values &UsedValues, containing_width CSSPixels) CSSPixels {
+	node := unsafe { &Node(box) }
+	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
 	mut inner := if constraint == .min_content {
 		calculate_min_content_width(mut state, box)
 	} else {
@@ -275,8 +279,7 @@ fn intrinsic_outer_width_contribution(mut state LayoutState, box &Box, constrain
 	} else if preferred.is_max_content() {
 		inner = css_pixels_max(inner, calculate_max_content_width(mut state, box))
 	} else if preferred.is_fit_content() {
-		inner = css_pixels_max(inner, calculate_fit_content_width(mut state, box,
-			AvailableSize.make_definite(containing_width)))
+		inner = css_pixels_max(inner, calculate_fit_content_width(mut state, box, AvailableSize.make_definite(containing_width)))
 	} else if !preferred.contains_percentage() {
 		if resolved := resolve_layout_content_size(node, preferred, containing_width, values, true) {
 			// A definite preferred width determines the box's content width in
@@ -297,11 +300,8 @@ fn intrinsic_outer_width_contribution(mut state LayoutState, box &Box, constrain
 		} else if max_width.is_max_content() {
 			inner = css_pixels_min(inner, calculate_max_content_width(mut state, box))
 		} else if max_width.is_fit_content() {
-			inner = css_pixels_min(inner, calculate_fit_content_width(mut state, box,
-				available_width))
-		} else if maximum := styled.computed_values().length_percentage_to_px(.max_width,
-			containing_width.to_double())
-		{
+			inner = css_pixels_min(inner, calculate_fit_content_width(mut state, box, available_width))
+		} else if maximum := styled.computed_values().length_percentage_to_px(.max_width, containing_width.to_double()) {
 			inner = css_pixels_min(inner, css_px(maximum))
 		}
 	}
@@ -312,12 +312,163 @@ fn intrinsic_outer_width_contribution(mut state LayoutState, box &Box, constrain
 		inner = css_pixels_max(inner, calculate_max_content_width(mut state, box))
 	} else if min_width.is_fit_content() {
 		inner = css_pixels_max(inner, calculate_fit_content_width(mut state, box, available_width))
-	} else if minimum := styled.computed_values().length_percentage_to_px(.min_width,
-		containing_width.to_double())
-	{
+	} else if minimum := styled.computed_values().length_percentage_to_px(.min_width, containing_width.to_double()) {
 		inner = css_pixels_max(inner, css_px(minimum))
 	}
 	return inner.plus(flex_or_grid_item_outer_inline_edges(values))
+}
+
+fn flex_formatting_context_adjust_cross_size_through_aspect_ratio_for_main_size_min_max_constraints(mut state LayoutState, item &Node, item_state &UsedValues, cross_size CSSPixels, row_axis bool, available_main_size ?CSSPixels) CSSPixels {
+	box := item.as_box() or { return cross_size }
+	ratio := box.preferred_aspect_ratio() or { return cross_size }
+	mut main_size := if row_axis {
+		cross_size.times_fraction(ratio)
+	} else {
+		cross_size.divided_by_fraction(ratio)
+	}
+	min_property := if row_axis { css.PropertyID.min_width } else { css.PropertyID.min_height }
+	max_property := if row_axis { css.PropertyID.max_width } else { css.PropertyID.max_height }
+	if minimum := flex_main_size_for_constraint(mut state, item, item.computed_values().size_value(min_property), item_state, row_axis, available_main_size) {
+		main_size = css_pixels_max(main_size, minimum)
+	}
+	if maximum := flex_main_size_for_constraint(mut state, item, item.computed_values().size_value(max_property), item_state, row_axis, available_main_size) {
+		main_size = css_pixels_min(main_size, maximum)
+	}
+	return if row_axis {
+		main_size.divided_by_fraction(ratio)
+	} else {
+		main_size.times_fraction(ratio)
+	}
+}
+
+fn flex_cross_width_behaves_as_auto(item &Node, item_state &UsedValues, constraint SizeConstraint) bool {
+	preferred := item.computed_values().size_value(.width)
+	if preferred.is_auto() {
+		return true
+	}
+	if preferred.contains_percentage() {
+		return constraint == .max_content || !item.is_replaced_box()
+	}
+	box := item.as_box() or { return false }
+	if box.has_preferred_aspect_ratio() && preferred.is_intrinsic_sizing_constraint() {
+		auto_size := box.auto_content_box_size()
+		return auto_size.height == none || item_state.has_definite_height()
+	}
+	return false
+}
+
+fn flex_cross_intrinsic_width_contribution(mut state LayoutState, item &Node, constraint SizeConstraint, resolve_percentage_min_max_sizes bool, percentage_basis CSSPixels, available_main_size ?CSSPixels) CSSPixels {
+	box := item.as_box() or { return CSSPixels.new(0) }
+	styled := item.as_node_with_style() or { return CSSPixels.new(0) }
+	item_state := state.get(styled)
+	cross_size_auto := flex_cross_width_behaves_as_auto(item, item_state, constraint)
+	mut size := if cross_size_auto {
+		if constraint == .min_content {
+			calculate_min_content_width(mut state, box)
+		} else {
+			calculate_max_content_width(mut state, box)
+		}
+	} else {
+		preferred := item.computed_values().size_value(.width)
+		if preferred.is_min_content() {
+			calculate_min_content_width(mut state, box)
+		} else if preferred.is_max_content() {
+			calculate_max_content_width(mut state, box)
+		} else if preferred.is_fit_content() {
+			calculate_fit_content_width(mut state, box, AvailableSize.make_definite(percentage_basis))
+		} else {
+			resolve_layout_content_size(item, preferred, percentage_basis, item_state, true) or {
+				if constraint == .min_content {
+					calculate_min_content_width(mut state, box)
+				} else {
+					calculate_max_content_width(mut state, box)
+				}
+			}
+		}
+	}
+	if cross_size_auto && box.has_preferred_aspect_ratio() {
+		size = flex_formatting_context_adjust_cross_size_through_aspect_ratio_for_main_size_min_max_constraints(mut state, item, item_state, size, false, available_main_size)
+	}
+
+	min_size := item.computed_values().size_value(.min_width)
+	mut minimum := CSSPixels.new(0)
+	if !min_size.is_auto()
+		&& (resolve_percentage_min_max_sizes || !min_size.contains_percentage()) {
+		minimum = flex_main_size_for_constraint(mut state, item, min_size, item_state, true, percentage_basis) or { CSSPixels.new(0) }
+	}
+	max_size := item.computed_values().size_value(.max_width)
+	mut maximum := CSSPixels.max()
+	available_cross_size := if constraint == .min_content {
+		AvailableSize.make_min_content()
+	} else {
+		AvailableSize.make_max_content()
+	}
+	if !should_treat_max_width_as_none(state, item, available_cross_size)
+		&& (resolve_percentage_min_max_sizes || !max_size.contains_percentage()) {
+		maximum = flex_main_size_for_constraint(mut state, item, max_size, item_state, true, percentage_basis) or { CSSPixels.max() }
+	}
+	size = css_pixels_max(minimum, css_pixels_min(size, maximum))
+	return size.plus(flex_or_grid_item_outer_inline_edges(item_state))
+}
+
+fn flex_formatting_context_calculate_cross_min_content_contribution(mut state LayoutState, item &Node, resolve_percentage_min_max_sizes bool, percentage_basis CSSPixels, available_main_size ?CSSPixels) CSSPixels {
+	return flex_cross_intrinsic_width_contribution(mut state, item, .min_content, resolve_percentage_min_max_sizes, percentage_basis, available_main_size)
+}
+
+fn flex_formatting_context_calculate_cross_max_content_contribution(mut state LayoutState, item &Node, resolve_percentage_min_max_sizes bool, percentage_basis CSSPixels, available_main_size ?CSSPixels) CSSPixels {
+	return flex_cross_intrinsic_width_contribution(mut state, item, .max_content, resolve_percentage_min_max_sizes, percentage_basis, available_main_size)
+}
+
+fn calculate_intrinsic_column_flex_width(mut state LayoutState, container &Node, items []&Node, constraint SizeConstraint) CSSPixels {
+	container_styled := container.as_node_with_style() or { return CSSPixels.new(0) }
+	mut container_state := state.get_mutable(container_styled)
+	initial_basis := container_state.content_width()
+	available_main_size := if container_state.has_definite_height() {
+		?CSSPixels(container_state.content_height())
+	} else {
+		?CSSPixels(none)
+	}
+	for item in items {
+		styled := item.as_node_with_style() or { continue }
+		mut item_state := state.get_mutable(styled)
+		item_state.set_containing_block_used_values(container_state)
+		resolve_box_model_edges(styled.computed_values(), mut item_state, initial_basis.to_double())
+	}
+	// A wrapped column's max-content cross size is the sum of the cross sizes
+	// of the lines produced under the definite main size. Use the largest item
+	// contribution as the available cross space while laying those lines out.
+	if constraint == .max_content && container.computed_values().flex_wrap() != .nowrap {
+		mut largest := CSSPixels.new(0)
+		for item in items {
+			largest = css_pixels_max(largest, flex_formatting_context_calculate_cross_max_content_contribution(mut state, item, false, initial_basis, available_main_size))
+		}
+		if main_size := available_main_size {
+			container_state.set_content_width(largest)
+			result := run_wrapping_column_flex_formatting_context(mut state, container, mut container_state, items, largest, main_size, .intrinsic_sizing)
+			return result.automatic_content_width
+		}
+		return largest
+	}
+	mut first_pass := CSSPixels.new(0)
+	for item in items {
+		contribution := if constraint == .min_content {
+			flex_formatting_context_calculate_cross_min_content_contribution(mut state, item, false, initial_basis, available_main_size)
+		} else {
+			flex_formatting_context_calculate_cross_max_content_contribution(mut state, item, false, initial_basis, available_main_size)
+		}
+		first_pass = css_pixels_max(first_pass, contribution)
+	}
+	container_state.set_content_width(first_pass)
+	mut second_pass := CSSPixels.new(0)
+	for item in items {
+		contribution := if constraint == .min_content {
+			flex_formatting_context_calculate_cross_min_content_contribution(mut state, item, true, first_pass, available_main_size)
+		} else {
+			flex_formatting_context_calculate_cross_max_content_contribution(mut state, item, true, first_pass, available_main_size)
+		}
+		second_pass = css_pixels_max(second_pass, contribution)
+	}
+	return second_pass
 }
 
 // CSS Flexbox intrinsic main/cross sizing. This is the main-axis algorithm
@@ -329,20 +480,13 @@ fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constr
 		return CSSPixels.new(0)
 	}
 	if container.computed_values().flex_direction() in [.column, .column_reverse] {
-		mut largest := CSSPixels.new(0)
-		for item in items {
-			box := item.as_box() or { continue }
-			largest = css_pixels_max(largest, intrinsic_outer_width_contribution(mut state, box,
-				constraint))
-		}
-		return largest
+		return calculate_intrinsic_column_flex_width(mut state, container, items, constraint)
 	}
 	if constraint == .min_content && container.computed_values().flex_wrap() != .nowrap {
 		mut largest := CSSPixels.new(0)
 		for item in items {
 			box := item.as_box() or { continue }
-			largest = css_pixels_max(largest, intrinsic_outer_width_contribution(mut state, box,
-				.min_content))
+			largest = css_pixels_max(largest, intrinsic_outer_width_contribution(mut state, box, .min_content))
 		}
 		return largest
 	}
@@ -373,8 +517,7 @@ fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constr
 			&& !property_is_auto(item.computed_values(), .margin_bottom) {
 			inner_cross_size :=
 				container_state.content_height().minus(item_state.margin_top).minus(item_state.margin_bottom).minus(item_state.padding_top).minus(item_state.padding_bottom).minus(item_state.border_top).minus(item_state.border_bottom)
-			stretched_cross_size := clamp_layout_content_size(item, css_pixels_max(CSSPixels.new(0),
-				inner_cross_size), container_state.content_height(), item_state, false)
+			stretched_cross_size := clamp_layout_content_size(item, css_pixels_max(CSSPixels.new(0), inner_cross_size), container_state.content_height(), item_state, false)
 			item_state.set_content_height(stretched_cross_size)
 			item_state.set_has_definite_height(true)
 		}
@@ -387,12 +530,12 @@ fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constr
 		// container has no definite main size.
 		basis_depends_on_indefinite_container :=
 			(!basis_value.is_content && basis_value.size.contains_percentage())
-			|| (basis_value.size.is_auto() && preferred_width.contains_percentage())
+				|| (basis_value.size.is_auto() && preferred_width.contains_percentage())
 		used_basis_is_content := basis_value.is_content
 			|| (basis_value.size.is_auto() && preferred_width.is_auto())
 			|| basis_depends_on_indefinite_container
 		if used_basis_is_content {
-			if transferred := flex_transferred_size_suggestion(item, item_state, true) {
+			if transferred := flex_formatting_context_transferred_size_suggestion(item, item_state, true) {
 				base = transferred
 			} else {
 				base = if constraint == .min_content {
@@ -406,8 +549,7 @@ fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constr
 				calculate_max_content_width(mut state, box)
 			}
 		} else if basis_value.size.is_auto() {
-			base = resolve_layout_size(item, styled.computed_values().size_value(.width),
-				CSSPixels.new(0)) or { calculate_max_content_width(mut state, box) }
+			base = resolve_layout_size(item, styled.computed_values().size_value(.width), CSSPixels.new(0)) or { calculate_max_content_width(mut state, box) }
 		} else {
 			base = calculate_max_content_width(mut state, box)
 		}
@@ -464,7 +606,7 @@ fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constr
 		mut result := bases[index].plus(CSSPixels.nearest_value_for(product))
 		styled := item.as_node_with_style() or { continue }
 		item_state := state.get(styled)
-		minimum := flex_used_main_minimum(mut state, item, item_state, true, none)
+		minimum := flex_used_main_minimum(mut state, item, item_state, true, none, false)
 		maximum := flex_used_main_maximum(mut state, item, item_state, true, none)
 		result = css_pixels_max(minimum, css_pixels_min(result, maximum))
 		total = total.plus(result).plus(edges[index])
@@ -485,8 +627,7 @@ fn calculate_stretch_fit_width(box &Box, available_width AvailableSize) CSSPixel
 	// resolves the authored box-model edges for the fit-content calculation;
 	// that synthetic end margin must not reduce the stretch-fit size.
 	mut measurement := UsedValues{}
-	resolve_box_model_edges(box.computed_values(), mut measurement,
-		available_width.to_px_or_zero().to_double())
+	resolve_box_model_edges(box.computed_values(), mut measurement, available_width.to_px_or_zero().to_double())
 	return available_width.to_px_or_zero().minus(measurement.margin_left).minus(measurement.margin_right).minus(measurement.padding_left).minus(measurement.padding_right).minus(measurement.border_left).minus(measurement.border_right)
 }
 
@@ -569,9 +710,7 @@ fn calculate_content_height_with_constraint(mut source_state LayoutState, box &B
 	} else {
 		AvailableSize.make_max_content()
 	}
-	result := layout_inside_independent_formatting_context_with_mode(mut throwaway, node, mut
-		values, .intrinsic_sizing, AvailableSpace.new(AvailableSize.make_definite(width),
-		available_height))
+	result := layout_inside_independent_formatting_context_with_mode(mut throwaway, node, mut values, .intrinsic_sizing, AvailableSpace.new(AvailableSize.make_definite(width), available_height))
 	return clamp_to_max_dimension_value(result.automatic_content_height)
 }
 
@@ -630,8 +769,7 @@ fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, u
 		} else {
 			AvailableSize.make_indefinite()
 		}
-		return calculate_fit_content_height(mut state, box, used_values.content_width(),
-			available_height).to_double()
+		return calculate_fit_content_height(mut state, box, used_values.content_width(), available_height).to_double()
 	}
 	resolved := resolve_definite_content_height(computed, containing_block_height) or {
 		return none
@@ -653,8 +791,7 @@ fn clamp_content_height_for_node(mut state LayoutState, node &NodeWithStyle, use
 	if !(max_size_for_clamp.contains_percentage() && containing_block_height == none) {
 		if specified_max := computed.length_percentage_to_px(.max_height, containing_block_height or {
 			0
-		})
-		{
+		}) {
 			maximum := css_px(if specified_max > adjustment {
 				specified_max - adjustment
 			} else {
@@ -667,8 +804,7 @@ fn clamp_content_height_for_node(mut state LayoutState, node &NodeWithStyle, use
 	if !(min_size_for_clamp.contains_percentage() && containing_block_height == none) {
 		if specified_min := computed.length_percentage_to_px(.min_height, containing_block_height or {
 			0
-		})
-		{
+		}) {
 			minimum := css_px(if specified_min > adjustment {
 				specified_min - adjustment
 			} else {
@@ -685,25 +821,19 @@ fn clamp_content_height_for_node(mut state LayoutState, node &NodeWithStyle, use
 	}
 	max_size := computed.size_value(.max_height)
 	if max_size.is_min_content() {
-		result = css_pixels_min(result, calculate_min_content_height(mut state, box,
-			used_values.content_width()))
+		result = css_pixels_min(result, calculate_min_content_height(mut state, box, used_values.content_width()))
 	} else if max_size.is_max_content() {
-		result = css_pixels_min(result, calculate_max_content_height(mut state, box,
-			used_values.content_width()))
+		result = css_pixels_min(result, calculate_max_content_height(mut state, box, used_values.content_width()))
 	} else if max_size.is_fit_content() {
-		result = css_pixels_min(result, calculate_fit_content_height(mut state, box,
-			used_values.content_width(), available_height))
+		result = css_pixels_min(result, calculate_fit_content_height(mut state, box, used_values.content_width(), available_height))
 	}
 	min_size := computed.size_value(.min_height)
 	if min_size.is_min_content() {
-		result = css_pixels_max(result, calculate_min_content_height(mut state, box,
-			used_values.content_width()))
+		result = css_pixels_max(result, calculate_min_content_height(mut state, box, used_values.content_width()))
 	} else if min_size.is_max_content() {
-		result = css_pixels_max(result, calculate_max_content_height(mut state, box,
-			used_values.content_width()))
+		result = css_pixels_max(result, calculate_max_content_height(mut state, box, used_values.content_width()))
 	} else if min_size.is_fit_content() {
-		result = css_pixels_max(result, calculate_fit_content_height(mut state, box,
-			used_values.content_width(), available_height))
+		result = css_pixels_max(result, calculate_fit_content_height(mut state, box, used_values.content_width(), available_height))
 	}
 	return result
 }

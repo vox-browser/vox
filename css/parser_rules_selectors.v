@@ -57,6 +57,8 @@ pub mut:
 	tokens              []Token
 	token_stream        ParserTokenStream
 	document            &dom.Document = unsafe { nil }
+	mode                ParsingMode
+	value_context       []ValueParsingContext
 	rule_context        []RuleContext
 	declared_namespaces map[string]bool
 	is_ua_style_sheet   IsUAStyleSheet
@@ -65,30 +67,34 @@ pub mut:
 pub fn RuleSelectorParser.create(params ParsingParams, input string, encoding string) RuleSelectorParser {
 	tokens := Tokenizer.tokenize(input, encoding)
 	return RuleSelectorParser{
-		tokens:              tokens
-		token_stream:        ParserTokenStream.from_tokens(tokens)
-		document:            params.document
-		rule_context:        params.rule_context.clone()
+		tokens: tokens
+		token_stream: ParserTokenStream.from_tokens(tokens)
+		document: params.document
+		mode: params.mode
+		value_context: params.value_context.clone()
+		rule_context: params.rule_context.clone()
 		declared_namespaces: params.declared_namespaces.clone()
-		is_ua_style_sheet:   params.is_ua_style_sheet
+		is_ua_style_sheet: params.is_ua_style_sheet
 	}
 }
 
 pub fn RuleSelectorParser.create_with_namespaces(input string, declared_namespaces map[string]bool) RuleSelectorParser {
 	tokens := Tokenizer.tokenize(input, 'utf-8')
 	return RuleSelectorParser{
-		tokens:              tokens
-		token_stream:        ParserTokenStream.from_tokens(tokens)
+		tokens: tokens
+		token_stream: ParserTokenStream.from_tokens(tokens)
 		declared_namespaces: declared_namespaces.clone()
 	}
 }
 
 fn (parser RuleSelectorParser) parsing_params() ParsingParams {
 	return ParsingParams{
-		document:            parser.document
-		rule_context:        parser.rule_context.clone()
+		document: parser.document
+		mode: parser.mode
+		value_context: parser.value_context.clone()
+		rule_context: parser.rule_context.clone()
 		declared_namespaces: parser.declared_namespaces.clone()
-		is_ua_style_sheet:   parser.is_ua_style_sheet
+		is_ua_style_sheet: parser.is_ua_style_sheet
 	}
 }
 
@@ -525,10 +531,10 @@ fn (mut parser RuleSelectorParser) consume_an_at_rule(mut input ParserTokenStrea
 	// its prelude initially set to an empty list, and no declarations or child rules.
 	name := input.consume_a_token().token().at_keyword()
 	mut rule := AtRule{
-		name:                                  name
-		prelude:                               []ComponentValue{}
+		name: name
+		prelude: []ComponentValue{}
 		child_rules_and_lists_of_declarations: []RuleOrListOfDeclarations{}
-		is_block_rule:                         false
+		is_block_rule: false
 	}
 
 	// Process input:
@@ -588,9 +594,9 @@ fn (mut parser RuleSelectorParser) consume_a_qualified_rule(mut input ParserToke
 	// nested (default false):
 	// Let rule be a new qualified rule with its prelude, declarations, and child rules all initially set to empty lists.
 	mut rule := QualifiedRule{
-		prelude:      []ComponentValue{}
+		prelude: []ComponentValue{}
 		declarations: []Declaration{}
-		child_rules:  []RuleOrListOfDeclarations{}
+		child_rules: []RuleOrListOfDeclarations{}
 	}
 
 	// NOTE: Qualified rules inside @keyframes are a keyframe rule. We'll assume all others are style rules.
@@ -810,6 +816,14 @@ fn (mut parser RuleSelectorParser) consume_a_component_value(mut input ParserTok
 	return input.consume_a_token()
 }
 
+// Parser.cpp: Parser::consume_a_component_value_and_do_nothing<ComponentValue>.
+// The component-value stream has already done all nesting work, so discarding
+// directly avoids copying a value which the recovery path immediately drops.
+fn (mut parser RuleSelectorParser) consume_a_component_value_and_do_nothing(mut input ParserTokenStream) {
+	_ = parser
+	input.discard_a_token()
+}
+
 // https://drafts.csswg.org/css-syntax/#consume-list-of-component-values
 fn (mut parser RuleSelectorParser) consume_a_list_of_component_values(mut input ParserTokenStream, stop_token ?TokenType, nested ParserNested) []ComponentValue {
 	// To consume a list of component values from a token stream input, given an optional token stop token and an optional
@@ -853,7 +867,7 @@ fn (mut parser RuleSelectorParser) consume_a_declaration(mut input ParserTokenSt
 	// To consume a declaration from a token stream input, given an optional bool nested (default false):
 	// Let decl be a new declaration, with an initially empty name and a value set to an empty list.
 	mut declaration := Declaration{
-		name:  ''
+		name: ''
 		value: []ComponentValue{}
 	}
 	start_token_index := input.index
@@ -884,8 +898,7 @@ fn (mut parser RuleSelectorParser) consume_a_declaration(mut input ParserTokenSt
 
 	// 5. Consume a list of component values from input, with nested, and with <semicolon-token> as the stop token, and
 	// set decl's value to the result.
-	declaration.value = parser.consume_a_list_of_component_values(mut input, TokenType.semicolon,
-		nested)
+	declaration.value = parser.consume_a_list_of_component_values(mut input, TokenType.semicolon, nested)
 
 	// 6. If the last two non-<whitespace-token>s in decl's value are a <delim-token> with the value "!" followed by an
 	// <ident-token> with a value that is an ASCII case-insensitive match for "important", remove them from decl's value
@@ -957,7 +970,7 @@ fn (mut parser RuleSelectorParser) consume_the_remnants_of_a_bad_declaration(mut
 		}
 
 		// anything else
-		_ = parser.consume_a_component_value(mut input)
+		parser.consume_a_component_value_and_do_nothing(mut input)
 	}
 }
 
@@ -1015,8 +1028,8 @@ fn parser_consume_a_function(mut input RawTokenStream) Function {
 	// a value set to an empty list.
 	name_token := input.consume_a_token()
 	mut function := Function{
-		name:       name_token.function_name()
-		value:      []ComponentValue{}
+		name: name_token.function_name()
+		value: []ComponentValue{}
 		name_token: name_token
 	}
 
@@ -1094,8 +1107,8 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 		ParserSelectorType.standalone
 	}, .standard) or {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   'style'
-			prelude:     prelude_stream.dump_string()
+			rule_name: 'style'
+			prelude: prelude_stream.dump_string()
 			description: 'Selectors invalid.'
 		}))
 		return none
@@ -1103,8 +1116,8 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 
 	if maybe_selectors.is_empty() {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   'style'
-			prelude:     prelude_stream.dump_string()
+			rule_name: 'style'
+			prelude: prelude_stream.dump_string()
 			description: 'Empty selector.'
 		}))
 		return none
@@ -1144,8 +1157,8 @@ fn (mut parser RuleSelectorParser) convert_to_import_rule(rule AtRule) ?&CSSRule
 	mut tokens := ParserTokenStream.from_values(rule.prelude)
 	if rule.is_block_rule || rule.prelude.len == 0 {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@import'
-			prelude:     tokens.dump_string()
+			rule_name: '@import'
+			prelude: tokens.dump_string()
 			description: if rule.is_block_rule {
 				'Must be a statement, not a block.'
 			} else {
@@ -1158,8 +1171,8 @@ fn (mut parser RuleSelectorParser) convert_to_import_rule(rule AtRule) ?&CSSRule
 	tokens.discard_whitespace()
 	url := parser_parse_url_or_string(mut tokens) or {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@import'
-			prelude:     tokens.dump_string()
+			rule_name: '@import'
+			prelude: tokens.dump_string()
 			description: 'Unable to parse URL.'
 		}))
 		return none
@@ -1214,8 +1227,7 @@ fn (mut parser RuleSelectorParser) convert_to_layer_rule(rule AtRule, nested Par
 		if prelude_tokens.has_next_token() {
 			return none
 		}
-		mut child_rules := parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations,
-			nested)
+		mut child_rules := parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations, nested)
 		return CSSRule.create_layer_block(layer_name, CSSRuleList.create(child_rules))
 	}
 
@@ -1247,8 +1259,7 @@ fn (mut parser RuleSelectorParser) convert_to_media_rule(rule AtRule, nested Par
 	mut media := MediaList.create_empty()
 	mut mutable_media := unsafe { &MediaList(media) }
 	mutable_media.set_media_text(prelude_tokens.dump_string())
-	return CSSRule.create_media(media, CSSRuleList.create(parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations,
-		nested)))
+	return CSSRule.create_media(media, CSSRuleList.create(parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations, nested)))
 }
 
 fn (mut parser RuleSelectorParser) convert_to_namespace_rule(rule AtRule) ?&CSSRule {
@@ -1277,8 +1288,7 @@ fn (mut parser RuleSelectorParser) convert_to_supports_rule(rule AtRule, nested 
 	}
 	condition := supports_tokens.dump_string()
 	supports := parse_css_supports(parser.parsing_params(), condition) or { return none }
-	return CSSRule.create_supports(supports, CSSRuleList.create(parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations,
-		nested)))
+	return CSSRule.create_supports(supports, CSSRuleList.create(parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations, nested)))
 }
 
 fn (mut parser RuleSelectorParser) convert_to_keyframes_rule(rule AtRule) ?&CSSRule {
@@ -1298,8 +1308,8 @@ fn (mut parser RuleSelectorParser) convert_to_keyframes_rule(rule AtRule) ?&CSSR
 		if is_css_wide_keyword_local(name) || equals_ignoring_ascii_case(name, 'none')
 			|| equals_ignoring_ascii_case(name, 'default') {
 			parser_report_error(ParsingError(InvalidRuleError{
-				rule_name:   '@keyframes'
-				prelude:     prelude_stream.dump_string()
+				rule_name: '@keyframes'
+				prelude: prelude_stream.dump_string()
 				description: 'Invalid keyframes name.'
 			}))
 			return none
@@ -1385,8 +1395,8 @@ fn (mut parser RuleSelectorParser) parse_keyframe_selector_list(prelude []Compon
 		tok := child_tokens.consume_a_token()
 		if !tok.is_token() {
 			parser_report_error(ParsingError(InvalidRuleError{
-				rule_name:   'keyframe'
-				prelude:     child_tokens.dump_string()
+				rule_name: 'keyframe'
+				prelude: child_tokens.dump_string()
 				description: 'Invalid selector.'
 			}))
 			child_tokens.reconsume_current_input_token()
@@ -1430,8 +1440,8 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
 	if !rule.is_block_rule {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@property'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@property'
+			prelude: prelude_stream.dump_string()
 			description: 'Must be a block, not a statement.'
 		}))
 		return none
@@ -1439,8 +1449,8 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 
 	if rule.prelude.len == 0 {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@property'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@property'
+			prelude: prelude_stream.dump_string()
 			description: 'Empty prelude.'
 		}))
 		return none
@@ -1450,8 +1460,8 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 	token := prelude_stream.consume_a_token()
 	if !token.is(.ident) {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@property'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@property'
+			prelude: prelude_stream.dump_string()
 			description: 'Name must be an ident.'
 		}))
 		return none
@@ -1461,8 +1471,8 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 	prelude_stream.discard_whitespace()
 	if prelude_stream.has_next_token() {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@property'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@property'
+			prelude: prelude_stream.dump_string()
 			description: 'Trailing tokens after name in prelude.'
 		}))
 		return none
@@ -1470,8 +1480,8 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 
 	if !is_a_custom_property_name_string(name) {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@property'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@property'
+			prelude: prelude_stream.dump_string()
 			description: "Name must be an ident starting with '--'."
 		}))
 		return none
@@ -1533,8 +1543,7 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 		parsed_initial_value_maybe = parsed_initial_value
 	}
 
-	return CSSRule.create_property_rule_with_parsed_initial_value(name, syntax, inherits,
-		initial_value_maybe, parsed_initial_value_maybe)
+	return CSSRule.create_property_rule_with_parsed_initial_value(name, syntax, inherits, initial_value_maybe, parsed_initial_value_maybe)
 }
 
 fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&CSSRule {
@@ -1542,8 +1551,8 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
 	if !rule.is_block_rule {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@counter-style'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@counter-style'
+			prelude: prelude_stream.dump_string()
 			description: 'Must be a block, not a statement.'
 		}))
 		return none
@@ -1551,8 +1560,8 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 
 	if rule.prelude.len == 0 {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@counter-style'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@counter-style'
+			prelude: prelude_stream.dump_string()
 			description: 'Empty prelude.'
 		}))
 		return none
@@ -1560,8 +1569,8 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 
 	name := parser.parse_counter_style_name(mut prelude_stream) or {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@counter-style'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@counter-style'
+			prelude: prelude_stream.dump_string()
 			description: 'Missing counter style name.'
 		}))
 		return none
@@ -1570,8 +1579,8 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 	prelude_stream.discard_whitespace()
 	if prelude_stream.has_next_token() {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@counter-style'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@counter-style'
+			prelude: prelude_stream.dump_string()
 			description: 'Trailing tokens after name in prelude.'
 		}))
 		return none
@@ -1582,8 +1591,8 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 	if css_counter_style_rule_matches_non_overridable_counter_style_name(name)
 		&& parser.is_ua_style_sheet != .yes {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@counter-style'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@counter-style'
+			prelude: prelude_stream.dump_string()
 			description: 'Non-overridable counter style name.'
 		}))
 		return none
@@ -1637,8 +1646,7 @@ fn (mut parser RuleSelectorParser) convert_to_counter_style_rule(rule AtRule) ?&
 		}
 	}
 
-	return CSSRule.create_counter_style_rule(CSSCounterStyleRule.create(name, system, negative,
-		prefix, suffix, range, pad, fallback, symbols, additive_symbols, speak_as))
+	return CSSRule.create_counter_style_rule(CSSCounterStyleRule.create(name, system, negative, prefix, suffix, range, pad, fallback, symbols, additive_symbols, speak_as))
 }
 
 fn (mut parser RuleSelectorParser) convert_to_font_face_rule(rule AtRule) ?&CSSRule {
@@ -1646,8 +1654,8 @@ fn (mut parser RuleSelectorParser) convert_to_font_face_rule(rule AtRule) ?&CSSR
 	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
 	if !rule.is_block_rule {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@font-face'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@font-face'
+			prelude: prelude_stream.dump_string()
 			description: 'Must be a block, not a statement.'
 		}))
 		return none
@@ -1656,23 +1664,21 @@ fn (mut parser RuleSelectorParser) convert_to_font_face_rule(rule AtRule) ?&CSSR
 	prelude_stream.discard_whitespace()
 	if prelude_stream.has_next_token() {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@font-face'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@font-face'
+			prelude: prelude_stream.dump_string()
 			description: 'Prelude is not allowed.'
 		}))
 		return none
 	}
 
 	mut descriptors := []FontFaceDescriptor{}
-	rule.for_each_as_declaration_list(fn [mut descriptors] (declaration Declaration) {
-		id := font_face_descriptor_id_from_property(declaration.name) or { return }
-		value := parser_component_values_to_string(declaration.value).trim_space()
-		parsed := parse_font_face_descriptor_for_rule_parsing(id, value) or { return }
-		append_font_face_descriptor(mut descriptors, FontFaceDescriptor{
-			id:    id
-			value: parsed
-		})
-	})
+	for declaration in declarations_from_at_rule(rule) {
+		id := font_face_descriptor_id_from_property(declaration.name) or { continue }
+		descriptor := parse_font_face_descriptor_for_rule_parsing(id, declaration.value) or {
+			continue
+		}
+		append_font_face_descriptor(mut descriptors, descriptor)
+	}
 
 	return CSSRule.create_font_face_rule(CSSFontFaceRule.create(CSSFontFaceDescriptors.create(descriptors)))
 }
@@ -1683,8 +1689,8 @@ fn (mut parser RuleSelectorParser) parse_comma_separated_family_name_list(mut to
 
 	if comma_separated_families.len == 0 {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@font-feature-values'
-			prelude:     tokens.dump_string()
+			rule_name: '@font-feature-values'
+			prelude: tokens.dump_string()
 			description: 'Empty family name list.'
 		}))
 		return none
@@ -1693,8 +1699,8 @@ fn (mut parser RuleSelectorParser) parse_comma_separated_family_name_list(mut to
 	for family_component_values in comma_separated_families {
 		family_name := parse_font_family_name_for_rule_parsing(family_component_values) or {
 			parser_report_error(ParsingError(InvalidRuleError{
-				rule_name:   '@font-feature-values'
-				prelude:     parser_component_values_to_string(family_component_values)
+				rule_name: '@font-feature-values'
+				prelude: parser_component_values_to_string(family_component_values)
 				description: 'Invalid family name.'
 			}))
 			return none
@@ -1712,8 +1718,8 @@ fn (mut parser RuleSelectorParser) convert_to_font_feature_values_rule(rule AtRu
 	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
 	if !rule.is_block_rule {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@font-feature-values'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@font-feature-values'
+			prelude: prelude_stream.dump_string()
 			description: 'Must be a block, not a statement.'
 		}))
 		return none
@@ -1761,8 +1767,8 @@ fn (mut parser RuleSelectorParser) convert_to_font_feature_values_rule(rule AtRu
 		at_rule.for_each_as_declaration_list(fn [target_map, max_value_count, at_rule] (declaration Declaration) {
 			if declaration.important == .yes {
 				parser_report_error(ParsingError(InvalidRuleError{
-					rule_name:   '@${at_rule.name}'
-					prelude:     parser_component_values_to_string(declaration.value)
+					rule_name: '@${at_rule.name}'
+					prelude: parser_component_values_to_string(declaration.value)
 					description: 'Declarations in @font-feature-values rules cannot be marked !important.'
 				}))
 				return
@@ -1770,8 +1776,8 @@ fn (mut parser RuleSelectorParser) convert_to_font_feature_values_rule(rule AtRu
 
 			values := parse_font_feature_values_declaration_values(declaration.value) or {
 				parser_report_error(ParsingError(InvalidRuleError{
-					rule_name:   '@${at_rule.name}'
-					prelude:     parser_component_values_to_string(declaration.value)
+					rule_name: '@${at_rule.name}'
+					prelude: parser_component_values_to_string(declaration.value)
 					description: 'Feature value entry must be a non-negative integer.'
 				}))
 				return
@@ -1779,8 +1785,8 @@ fn (mut parser RuleSelectorParser) convert_to_font_feature_values_rule(rule AtRu
 
 			if values.len == 0 {
 				parser_report_error(ParsingError(InvalidRuleError{
-					rule_name:   '@${at_rule.name}'
-					prelude:     parser_component_values_to_string(declaration.value)
+					rule_name: '@${at_rule.name}'
+					prelude: parser_component_values_to_string(declaration.value)
 					description: 'Empty feature value.'
 				}))
 				return
@@ -1788,8 +1794,8 @@ fn (mut parser RuleSelectorParser) convert_to_font_feature_values_rule(rule AtRu
 
 			if usize(values.len) > max_value_count {
 				parser_report_error(ParsingError(InvalidRuleError{
-					rule_name:   '@${at_rule.name}'
-					prelude:     parser_component_values_to_string(declaration.value)
+					rule_name: '@${at_rule.name}'
+					prelude: parser_component_values_to_string(declaration.value)
 					description: 'Too many feature values provided (maximum ${max_value_count}).'
 				}))
 				return
@@ -1812,8 +1818,8 @@ fn (mut parser RuleSelectorParser) convert_to_page_rule(page_rule AtRule) ?&CSSR
 	mut tokens := ParserTokenStream.from_values(page_rule.prelude)
 	if !page_rule.is_block_rule {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@page'
-			prelude:     tokens.dump_string()
+			rule_name: '@page'
+			prelude: tokens.dump_string()
 			description: 'Must be a block, not a statement.'
 		}))
 		return none
@@ -1822,33 +1828,49 @@ fn (mut parser RuleSelectorParser) convert_to_page_rule(page_rule AtRule) ?&CSSR
 	page_selectors := parse_page_selector_list_for_rule_parsing(mut tokens) or { return none }
 	mut child_rules := []&CSSRule{}
 	mut descriptors := []Descriptor{}
-	page_rule.for_each_as_declaration_rule_list(fn [mut child_rules, mut parser] (at_rule AtRule) {
-		if converted_rule := parser.convert_to_rule(Rule(at_rule), .no) {
-			if converted_rule.type_ == .margin {
-				child_rules << converted_rule
-			} else {
-				parser_report_error(ParsingError(InvalidRuleLocationError{
-					outer_rule_name: '@page'
-					inner_rule_name: converted_rule.type_.class_name()
-				}))
+	for child in page_rule.child_rules_and_lists_of_declarations {
+		match child {
+			RuleNode {
+				at_rule := match child.rule {
+					AtRule { child.rule }
+					QualifiedRule {
+						report_invalid_rule_location(InvalidRuleLocationError{
+							outer_rule_name: '@page'
+							inner_rule_name: 'qualified-rule'
+						})
+						continue
+					}
+				}
+				if converted_rule := parser.convert_to_rule(Rule(at_rule), .no) {
+					if converted_rule.type_ == .margin {
+						child_rules << converted_rule
+					} else {
+						parser_report_error(ParsingError(InvalidRuleLocationError{
+							outer_rule_name: '@page'
+							inner_rule_name: converted_rule.type_.class_name()
+						}))
+					}
+				}
+			}
+			DeclarationList {
+				for declaration in child.declarations {
+					if descriptor := convert_to_page_descriptor_for_rule_parsing(declaration) {
+						append_descriptor(mut descriptors, descriptor)
+					}
+				}
 			}
 		}
-	}, fn [mut descriptors] (declaration Declaration) {
-		if descriptor := convert_to_page_descriptor_for_rule_parsing(declaration) {
-			append_descriptor(mut descriptors, descriptor)
-		}
-	})
+	}
 
-	return CSSRule.create_page(page_selectors, CSSPageDescriptors.create(descriptors),
-		CSSRuleList.create(child_rules))
+	return CSSRule.create_page(page_selectors, CSSPageDescriptors.create(descriptors), CSSRuleList.create(child_rules))
 }
 
 fn (mut parser RuleSelectorParser) convert_to_margin_rule(rule AtRule) ?&CSSRule {
 	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
 	if !rule.is_block_rule {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@${rule.name}'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@${rule.name}'
+			prelude: prelude_stream.dump_string()
 			description: 'Must be a block, not a statement.'
 		}))
 		return none
@@ -1857,8 +1879,8 @@ fn (mut parser RuleSelectorParser) convert_to_margin_rule(rule AtRule) ?&CSSRule
 	prelude_stream.discard_whitespace()
 	if prelude_stream.has_next_token() {
 		parser_report_error(ParsingError(InvalidRuleError{
-			rule_name:   '@${rule.name}'
-			prelude:     prelude_stream.dump_string()
+			rule_name: '@${rule.name}'
+			prelude: prelude_stream.dump_string()
 			description: 'Prelude is not allowed.'
 		}))
 		return none
@@ -1904,11 +1926,9 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 				value
 			}
 			custom_properties[declaration.name] = StyleProperty{
-				important:   declaration.important
+				important: declaration.important
 				property_id: .color
-				value:       &dom.StyleValue{
-					css_text: value_text
-				}
+				value: parse_custom_property_value(value_text)
 			}
 		} else {
 			property := PropertyNameAndID.from_name(declaration.name) or { continue }
@@ -1917,9 +1937,9 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 				continue
 			}
 			properties << StyleProperty{
-				important:   declaration.important
+				important: declaration.important
 				property_id: property_id
-				value:       parsed_value
+				value: parsed_value
 			}
 		}
 	}
@@ -1946,8 +1966,119 @@ fn append_font_face_descriptor(mut descriptors []FontFaceDescriptor, descriptor 
 	descriptors << descriptor
 }
 
-fn parse_font_face_descriptor_for_rule_parsing(id FontFaceDescriptorID, value string) ?string {
-	return parse_font_face_descriptor(id, value)
+fn parse_font_face_descriptor_for_rule_parsing(id FontFaceDescriptorID, component_values []ComponentValue) ?FontFaceDescriptor {
+	if id == .font_family {
+		font_family := parse_font_family_descriptor_components(component_values) or { return none }
+		return FontFaceDescriptor{
+			id: id
+			value: font_family.serialize(.normal)
+			style_value: font_family
+		}
+	}
+	if id == .font_style {
+		font_style := parse_font_style_descriptor_components(component_values) or { return none }
+		return FontFaceDescriptor{
+			id: id
+			value: font_style.serialize(.normal)
+			style_value: font_style
+		}
+	}
+	if id == .font_weight {
+		font_weight := parse_font_weight_descriptor_components(component_values) or { return none }
+		return FontFaceDescriptor{
+			id: id
+			value: font_weight.serialize(.normal)
+			style_value: font_weight
+		}
+	}
+	if id == .font_width {
+		font_width := parse_font_width_descriptor_components(component_values) or { return none }
+		return FontFaceDescriptor{
+			id: id
+			value: font_width.serialize(.normal)
+			style_value: font_width
+		}
+	}
+	if id in [.font_feature_settings, .font_variation_settings] {
+		property_id := if id == .font_feature_settings {
+			PropertyID.font_feature_settings
+		} else {
+			PropertyID.font_variation_settings
+		}
+		style_value := parse_font_property_descriptor_components(component_values, property_id) or {
+			return none
+		}
+		return FontFaceDescriptor{
+			id: id
+			value: style_value.serialize(.normal)
+			style_value: style_value
+		}
+	}
+	if id in [.ascent_override, .descent_override, .line_gap_override] {
+		style_value := parse_font_metric_override_descriptor_components(component_values) or {
+			return none
+		}
+		return FontFaceDescriptor{
+			id: id
+			value: style_value.serialize(.normal)
+			style_value: style_value
+		}
+	}
+	if id == .font_display {
+		style_value := parse_font_keyword_descriptor_components(component_values, [
+			'auto',
+			'block',
+			'swap',
+			'fallback',
+			'optional',
+		]) or { return none }
+		return FontFaceDescriptor{
+			id: id
+			value: style_value.serialize(.normal)
+			style_value: style_value
+		}
+	}
+	if id in [.font_language_override, .font_named_instance] {
+		keyword := if id == .font_language_override { 'normal' } else { 'auto' }
+		style_value := parse_font_keyword_or_string_descriptor_components(component_values, keyword) or { return none }
+		return FontFaceDescriptor{
+			id: id
+			value: style_value.serialize(.normal)
+			style_value: style_value
+		}
+	}
+	if id == .src {
+		mut value_parser := Parser.from_component_values(component_values)
+		mut tokens := ComponentValueStream.new(component_values)
+		sources := value_parser.parse_font_source_values(mut tokens)
+		if sources.len == 0 {
+			return none
+		}
+		return FontFaceDescriptor{
+			id: id
+			value: sources.map(it.serialize(.normal)).join(', ')
+			font_sources: sources
+		}
+	}
+	if id == .unicode_range {
+		mut value_parser := Parser.from_component_values(component_values)
+		mut tokens := ComponentValueStream.new(component_values)
+		ranges := value_parser.parse_unicode_ranges(mut tokens)
+		if ranges.len == 0 {
+			return none
+		}
+		return FontFaceDescriptor{
+			id: id
+			value: ranges.map(it.to_css_string()).join(', ')
+			unicode_ranges: ranges
+		}
+	}
+	value := parser_component_values_to_string(component_values).trim_space()
+	parsed := parse_font_face_descriptor(id, value) or { return none }
+	return FontFaceDescriptor{
+		id: id
+		value: parsed
+	}
 }
 
 fn parse_font_family_name_for_rule_parsing(values []ComponentValue) ?string {
@@ -2097,7 +2228,8 @@ fn parse_counter_style_system_descriptor_value(value string) ?CounterStyleSystem
 	}
 }
 
-fn parse_counter_style_symbol_value(mut tokens ParserTokenStream) ?StyleValue {
+// ValueParsing.cpp: Parser::parse_symbol_value.
+fn parse_symbol_value(mut tokens ParserTokenStream) ?StyleValue {
 	// https://drafts.csswg.org/css-counter-styles-3/#typedef-symbol
 	// <symbol> = <string> | <image> | <custom-ident>
 	// Note: The <image> syntax in <symbol> is currently at-risk. No implementations have plans to implement it
@@ -2122,7 +2254,7 @@ fn parse_counter_style_symbol_value(mut tokens ParserTokenStream) ?StyleValue {
 
 fn parse_counter_style_symbol_descriptor_value(value string) ?StyleValue {
 	mut tokens := ParserTokenStream.from_values(parse_component_values_for_value_logic(value))
-	symbol := parse_counter_style_symbol_value(mut tokens) or { return none }
+	symbol := parse_symbol_value(mut tokens) or { return none }
 	tokens.discard_whitespace()
 	if tokens.has_next_token() {
 		return none
@@ -2151,7 +2283,7 @@ fn parse_counter_style_symbol_list_descriptor_value(value string) ?CounterStyleS
 	mut symbols := []StyleValue{}
 	tokens.discard_whitespace()
 	for tokens.has_next_token() {
-		symbol := parse_counter_style_symbol_value(mut tokens) or { return none }
+		symbol := parse_symbol_value(mut tokens) or { return none }
 		symbols << symbol
 		tokens.discard_whitespace()
 	}
@@ -2209,7 +2341,7 @@ fn parse_counter_style_range_entry(mut tokens ParserTokenStream) ?CounterStyleRa
 
 	return CounterStyleRangeStyleValueEntry{
 		start: first_value
-		end:   second_value
+		end: second_value
 	}
 }
 
@@ -2244,7 +2376,8 @@ fn parse_counter_style_range_descriptor_value(value string) ?CounterStyleRangeSt
 	return CounterStyleRangeStyleValue.create(entries)
 }
 
-fn parse_counter_style_nonnegative_integer_symbol_pair_value(mut tokens ParserTokenStream) ?CounterStyleAdditiveSymbolTupleStyleValue {
+// ValueParsing.cpp: Parser::parse_nonnegative_integer_symbol_pair_value.
+fn parse_nonnegative_integer_symbol_pair_value(mut tokens ParserTokenStream) ?CounterStyleAdditiveSymbolTupleStyleValue {
 	// [ <integer [0,∞]> && <symbol> ]
 	mut integer := ?StyleValue(none)
 	mut symbol := ?StyleValue(none)
@@ -2261,7 +2394,7 @@ fn parse_counter_style_nonnegative_integer_symbol_pair_value(mut tokens ParserTo
 		}
 		tokens.index = start_index
 
-		if symbol_value := parse_counter_style_symbol_value(mut tokens) {
+		if symbol_value := parse_symbol_value(mut tokens) {
 			if symbol != none {
 				return none
 			}
@@ -2283,7 +2416,7 @@ fn parse_counter_style_nonnegative_integer_symbol_pair_value(mut tokens ParserTo
 
 fn parse_counter_style_pad_descriptor_value(value string) ?CounterStylePadStyleValue {
 	mut tokens := ParserTokenStream.from_values(parse_component_values_for_value_logic(value))
-	pair := parse_counter_style_nonnegative_integer_symbol_pair_value(mut tokens) or { return none }
+	pair := parse_nonnegative_integer_symbol_pair_value(mut tokens) or { return none }
 	tokens.discard_whitespace()
 	if tokens.has_next_token() {
 		return none
@@ -2296,7 +2429,7 @@ fn parse_counter_style_additive_symbols_descriptor_value(value string) ?CounterS
 	mut tuples := []CounterStyleAdditiveSymbolTupleStyleValue{}
 	mut previous_weight := counter_i64_max
 	for {
-		tuple := parse_counter_style_nonnegative_integer_symbol_pair_value(mut tokens) or {
+		tuple := parse_nonnegative_integer_symbol_pair_value(mut tokens) or {
 			return none
 		}
 		weight := tuple.weight.as_integer().integer()
@@ -2337,8 +2470,8 @@ fn convert_to_page_descriptor_for_rule_parsing(declaration Declaration) ?Descrip
 		return none
 	}
 	return Descriptor{
-		descriptor_id:    descriptor_id
-		value:            value.value
+		descriptor_id: descriptor_id
+		value: value.value
 		serialized_value: value.serialized
 	}
 }
@@ -2393,29 +2526,20 @@ fn (mut parser RuleSelectorParser) parse_a_selector_list(mut tokens ParserTokenS
 		selector_text := parser_component_values_to_string(selector_parts).trim_space()
 		if selector_text.len == 0 {
 			if parsing_mode == .forgiving {
-				selectors.selectors << Selector{
-					text: ''
-				}
+				selectors.selectors << selector_from_text('')
 			} else {
 				return none
 			}
-		} else if parser_selector_text_is_syntactically_valid(selector_text, mode,
-			parser.declared_namespaces)
-		{
-			// The current V selector model stores raw selector text and builds a lightweight parsed tree on demand.
+		} else if parser_selector_text_is_syntactically_valid(selector_text, mode, parser.declared_namespaces) {
 			mut parsed := selector_list_from_text(selector_text, mode == .relative)
 			if parsed.selectors.len == 0 {
-				parsed.selectors << Selector{
-					text: selector_text
-				}
+				parsed.selectors << selector_from_text(selector_text)
 			}
 			for selector in parsed.selectors {
 				selectors.selectors << selector
 			}
 		} else if parsing_mode == .forgiving {
-			selectors.selectors << Selector{
-				text: selector_text
-			}
+			selectors.selectors << selector_from_text(selector_text)
 		} else {
 			return none
 		}
@@ -2570,7 +2694,9 @@ fn parser_balanced_selector_text(text string) bool {
 			continue
 		}
 		match ch {
-			`"`, `'` { quote = ch }
+			`"`, `'` {
+				quote = ch
+			}
 			`(` { parens++ }
 			`)` { parens-- }
 			`[` { squares++ }
@@ -2588,9 +2714,7 @@ fn parser_balanced_selector_text(text string) bool {
 
 fn parser_selector_uses_undeclared_namespace(text string, declared_namespaces map[string]bool) bool {
 	for selector_text in split_selector_list_text(text) {
-		if parser_complex_selector_uses_undeclared_namespace(selector_text.trim_space(),
-			declared_namespaces)
-		{
+		if parser_complex_selector_uses_undeclared_namespace(selector_text.trim_space(), declared_namespaces) {
 			return true
 		}
 	}
@@ -2600,9 +2724,7 @@ fn parser_selector_uses_undeclared_namespace(text string, declared_namespaces ma
 fn parser_complex_selector_uses_undeclared_namespace(text string, declared_namespaces map[string]bool) bool {
 	for compound_selector in parse_complex_selector(text) {
 		for simple_selector in compound_selector.simple_selectors {
-			if parser_simple_selector_uses_undeclared_namespace(simple_selector,
-				declared_namespaces)
-			{
+			if parser_simple_selector_uses_undeclared_namespace(simple_selector, declared_namespaces) {
 				return true
 			}
 		}
@@ -2613,28 +2735,37 @@ fn parser_complex_selector_uses_undeclared_namespace(text string, declared_names
 fn parser_simple_selector_uses_undeclared_namespace(simple_selector SimpleSelector, declared_namespaces map[string]bool) bool {
 	match simple_selector.type_ {
 		.tag_name, .universal {
-			return parser_qualified_name_uses_undeclared_namespace(simple_selector.qualified_name,
-				declared_namespaces)
+			return parser_qualified_name_uses_undeclared_namespace(simple_selector.qualified_name, declared_namespaces)
 		}
 		.attribute {
-			return parser_qualified_name_uses_undeclared_namespace(simple_selector.attribute.qualified_name,
-				declared_namespaces)
+			return parser_qualified_name_uses_undeclared_namespace(simple_selector.attribute.qualified_name, declared_namespaces)
 		}
 		.pseudo_class {
 			for selector in simple_selector.pseudo_class.argument_selector_list.selectors {
-				if parser_selector_uses_undeclared_namespace(selector.text, declared_namespaces) {
+				if parser_selector_value_uses_undeclared_namespace(selector, declared_namespaces) {
 					return true
 				}
 			}
 		}
 		.pseudo_element {
 			if selector := simple_selector.pseudo_element.compound_selector {
-				return parser_selector_uses_undeclared_namespace(selector.text, declared_namespaces)
+				return parser_selector_value_uses_undeclared_namespace(selector, declared_namespaces)
 			}
 		}
 		else {}
 	}
 
+	return false
+}
+
+fn parser_selector_value_uses_undeclared_namespace(selector Selector, declared_namespaces map[string]bool) bool {
+	for compound_selector in selector.compound_selectors() {
+		for simple_selector in compound_selector.simple_selectors {
+			if parser_simple_selector_uses_undeclared_namespace(simple_selector, declared_namespaces) {
+				return true
+			}
+		}
+	}
 	return false
 }
 
@@ -2722,8 +2853,7 @@ fn (parser RuleSelectorParser) is_valid_qualified_rule_in_the_current_context(ru
 		.supports_condition {
 			false
 		}
-		.counter_style, .font_face, .font_feature_values, .font_feature_value, .page, .property,
-		.keyframe, .margin {
+		.counter_style, .font_face, .font_feature_values, .font_feature_value, .page, .property, .keyframe, .margin {
 			false
 		}
 	}
@@ -2797,6 +2927,8 @@ fn is_font_feature_value_type_at_keyword_local(name string) bool {
 	])
 }
 
+// The corresponding upstream call is guarded by CSS_PARSER_DEBUG. Keep the
+// production build silent when that diagnostic flag is disabled.
 fn parser_log_parse_error() {}
 
 pub struct UnknownPropertyError {
@@ -2876,6 +3008,72 @@ pub type ParsingError = InvalidPropertyError
 	| UnknownPseudoClassOrElementError
 	| UnknownRuleError
 
+pub struct ParsingErrorMetadata {
+pub:
+	message     string
+	occurrences u32 = 1
+}
+
+@[heap]
+pub struct ErrorReporter {
+mut:
+	errors map[string]ParsingErrorMetadata
+}
+
+__global css_error_reporter = &ErrorReporter{
+	errors: map[string]ParsingErrorMetadata{}
+}
+
+pub fn ErrorReporter.the() &ErrorReporter {
+	return css_error_reporter
+}
+
+// ParsingError is a tagged union of records. Upstream uses the complete record
+// as its HashMap key, including fields that are intentionally omitted from the
+// human-readable message. Build the same collision-free identity here rather
+// than using serialize_parsing_error() as the key.
+fn parsing_error_key_field(value string) string {
+	return '${value.len}:${value}'
+}
+
+fn parsing_error_key(error ParsingError) string {
+	return match error {
+		UnknownPropertyError {
+			'unknown-property:${parsing_error_key_field(error.rule_name)}${parsing_error_key_field(error.property_name)}'
+		}
+		UnknownRuleError {
+			'unknown-rule:${parsing_error_key_field(error.rule_name)}'
+		}
+		UnknownMediaFeatureError {
+			'unknown-media-feature:${parsing_error_key_field(error.media_feature_name)}'
+		}
+		UnknownPseudoClassOrElementError {
+			'unknown-pseudo:${parsing_error_key_field(error.rule_name)}${parsing_error_key_field(error.name)}'
+		}
+		InvalidPropertyError {
+			'invalid-property:${parsing_error_key_field(error.rule_name)}${parsing_error_key_field(error.property_name)}${parsing_error_key_field(error.value_string)}${parsing_error_key_field(error.description)}'
+		}
+		InvalidValueError {
+			'invalid-value:${parsing_error_key_field(error.value_type)}${parsing_error_key_field(error.value_string)}${parsing_error_key_field(error.description)}'
+		}
+		InvalidRuleError {
+			'invalid-rule:${parsing_error_key_field(error.rule_name)}${parsing_error_key_field(error.prelude)}${parsing_error_key_field(error.description)}'
+		}
+		InvalidQueryError {
+			'invalid-query:${parsing_error_key_field(error.query_type)}${parsing_error_key_field(error.value_string)}${parsing_error_key_field(error.description)}'
+		}
+		InvalidSelectorError {
+			'invalid-selector:${parsing_error_key_field(error.rule_name)}${parsing_error_key_field(error.value_string)}${parsing_error_key_field(error.description)}'
+		}
+		InvalidPseudoClassOrElementError {
+			'invalid-pseudo:${parsing_error_key_field(error.name)}${parsing_error_key_field(error.value_string)}${parsing_error_key_field(error.description)}'
+		}
+		InvalidRuleLocationError {
+			'invalid-rule-location:${parsing_error_key_field(error.outer_rule_name)}${parsing_error_key_field(error.inner_rule_name)}'
+		}
+	}
+}
+
 pub fn serialize_parsing_error(error ParsingError) string {
 	return match error {
 		UnknownPropertyError {
@@ -2914,8 +3112,41 @@ pub fn serialize_parsing_error(error ParsingError) string {
 	}
 }
 
+pub fn (mut reporter ErrorReporter) report(error ParsingError) {
+	key := parsing_error_key(error)
+	if existing := reporter.errors[key] {
+		reporter.errors[key] = ParsingErrorMetadata{
+			...existing
+			occurrences: existing.occurrences + 1
+		}
+		return
+	}
+	reporter.errors[key] = ParsingErrorMetadata{
+		message: serialize_parsing_error(error)
+	}
+}
+
+pub fn (reporter &ErrorReporter) occurrences(error ParsingError) u32 {
+	if metadata := reporter.errors[parsing_error_key(error)] {
+		return metadata.occurrences
+	}
+	return 0
+}
+
+pub fn (reporter &ErrorReporter) number_of_errors() int {
+	return reporter.errors.len
+}
+
+pub fn (reporter &ErrorReporter) dump() {
+	eprintln('${reporter.errors.len} CSS errors reported:')
+	for _, metadata in reporter.errors {
+		eprintln('- ${metadata.message} (${metadata.occurrences} occurrences)')
+	}
+}
+
 fn parser_report_error(error ParsingError) {
-	_ = serialize_parsing_error(error)
+	mut reporter := css_error_reporter
+	reporter.report(error)
 }
 
 pub enum SubstitutionDependencyType {
@@ -3054,7 +3285,8 @@ fn arbitrary_substitution_guaranteed_invalid_value() []ComponentValue {
 	return [ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})]
 }
 
-fn parse_arbitrary_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenType) ?[]ComponentValue {
+// ValueParsing.cpp: Parser::parse_declaration_value.
+fn parse_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenType) ?[]ComponentValue {
 	start_index := tokens.index
 	mut declaration_value := []ComponentValue{}
 	for tokens.has_next_token() {
@@ -3092,7 +3324,7 @@ fn parse_arbitrary_declaration_value(mut tokens ParserTokenStream, end_token_typ
 }
 
 fn parse_declaration_value_then_optional_declaration_value(mut tokens ParserTokenStream, separator TokenType) ?DeclarationValueList {
-	first_argument := parse_arbitrary_declaration_value(mut tokens, separator) or { return none }
+	first_argument := parse_declaration_value(mut tokens, separator) or { return none }
 
 	if !tokens.has_next_token() {
 		return DeclarationValueList{
@@ -3105,7 +3337,7 @@ fn parse_declaration_value_then_optional_declaration_value(mut tokens ParserToke
 	}
 
 	tokens.discard_a_token()
-	second_argument := parse_arbitrary_declaration_value(mut tokens, none) or { []ComponentValue{} }
+	second_argument := parse_declaration_value(mut tokens, none) or { []ComponentValue{} }
 	return DeclarationValueList{
 		values: [first_argument, second_argument]
 	}
@@ -3126,12 +3358,11 @@ pub fn parse_according_to_argument_grammar(function ArbitrarySubstitutionFunctio
 		.if_ {
 			mut args := IfArgs{}
 			for tokens.has_next_token() {
-				if_args_branch := parse_declaration_value_then_optional_declaration_value(mut tokens,
-					.colon) or { break }
+				if_args_branch := parse_declaration_value_then_optional_declaration_value(mut tokens, .colon) or { break }
 
 				args.branches << IfArgsBranch{
 					condition: if_args_branch.first()
-					value:     if_args_branch.get(1)
+					value: if_args_branch.get(1)
 				}
 
 				if !tokens.next_token().is(.semicolon) {
@@ -3189,8 +3420,7 @@ fn attr_failure_result(element ?dom.AbstractElement, mut guarded_contexts Guarde
 	}
 
 	// 3. Substitute arbitrary substitution functions in second arg, and return the result.
-	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-		guarded_contexts, second_argument, none)
+	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, second_argument, none)
 }
 
 fn parse_number_from_attr_value(attribute_value string) ?Number {
@@ -3222,8 +3452,7 @@ fn replace_an_attr_function(element ?dom.AbstractElement, mut guarded_contexts G
 	mut attribute_name := ''
 	mut syntax := AttrSyntax{}
 
-	substituted := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-		guarded_contexts, first_argument, none)
+	substituted := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, first_argument, none)
 	mut first_argument_tokens := ParserTokenStream.from_values(substituted)
 
 	// <attr-name> = [ <ident-token>? '|' ]? <ident-token>
@@ -3304,10 +3533,9 @@ fn replace_an_attr_function(element ?dom.AbstractElement, mut guarded_contexts G
 	}
 
 	unsubstituted_values := parse_component_values_for_value_logic(attribute_value)
-	substituted_values := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-		guarded_contexts, unsubstituted_values, SubstitutionContext{
+	substituted_values := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, unsubstituted_values, SubstitutionContext{
 		dependency_type: .attribute
-		first:           attribute_name
+		first: attribute_name
 	})
 	parsed_value := parse_with_a_syntax(substituted_values, syntax_node)
 	if parsed_value.type_() == .guaranteed_invalid {
@@ -3339,8 +3567,7 @@ fn environment_variable_from_string_local(name string) ?dom.EnvironmentVariable 
 
 fn environment_variable_dimension_count_local(variable dom.EnvironmentVariable) int {
 	return match variable {
-		.viewport_segment_bottom, .viewport_segment_height, .viewport_segment_left,
-		.viewport_segment_right, .viewport_segment_top, .viewport_segment_width {
+		.viewport_segment_bottom, .viewport_segment_height, .viewport_segment_left, .viewport_segment_right, .viewport_segment_top, .viewport_segment_width {
 			2
 		}
 		else {
@@ -3368,8 +3595,7 @@ fn replace_an_env_function(element ?dom.AbstractElement, mut guarded_contexts Gu
 	first_argument := declaration_value_list.first()
 	second_argument := declaration_value_list.get(1)
 
-	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-		guarded_contexts, first_argument, none)
+	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, first_argument, none)
 	mut first_argument_tokens := ParserTokenStream.from_values(substituted_first_argument)
 	first_argument_tokens.discard_whitespace()
 	name_token := first_argument_tokens.consume_a_token()
@@ -3408,130 +3634,37 @@ fn replace_an_env_function(element ?dom.AbstractElement, mut guarded_contexts Gu
 	}
 
 	if fallback := second_argument {
-		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-			guarded_contexts, fallback, none)
+		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, fallback, none)
 	}
 
 	return arbitrary_substitution_guaranteed_invalid_value()
 }
 
-fn parse_if_condition_for_arbitrary_substitution(condition []ComponentValue) ?MatchResult {
-	mut else_tokens := SupportsTokenStream.from_values(condition)
+// https://drafts.csswg.org/css-values-5/#typedef-if-condition
+fn (mut parser Parser) parse_if_condition(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	original_tokens := tokens
+	if expression := parser.parse_boolean_expression(mut tokens, .false_, .if_test) {
+		tokens.discard_whitespace()
+		if !tokens.has_next_token() {
+			return expression
+		}
+	}
+
+	// A failed transaction is rewound before attempting the `else` branch.
+	tokens = original_tokens
+	mut else_tokens := tokens
 	else_tokens.discard_whitespace()
 	if token := else_tokens.consume_a_token() {
 		else_tokens.discard_whitespace()
 		if !else_tokens.has_next_token() && token.is_ident('else') {
-			// The else keyword represents a condition that is always true.
-			return .true_
-		}
-	}
-
-	mut tokens := SupportsTokenStream.from_values(condition)
-	expression := parse_if_boolean_expression(mut tokens) or { return none }
-	tokens.discard_whitespace()
-	if tokens.has_next_token() {
-		return none
-	}
-	return expression.evaluate(none)
-}
-
-// https://drafts.csswg.org/css-values-5/#typedef-if-condition
-fn parse_if_boolean_expression(mut tokens SupportsTokenStream) ?&BooleanExpression {
-	return parse_if_boolean_expression_inner(mut tokens, .false_)
-}
-
-fn parse_if_boolean_expression_inner(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
-	mut transaction := tokens
-	transaction.discard_whitespace()
-
-	if peeked_token := transaction.next_token() {
-		if peeked_token.is_ident('not') {
-			transaction.discard_a_token()
-			transaction.discard_whitespace()
-			child := parse_if_boolean_expression_group(mut transaction, result_for_general_enclosed) or {
-				return none
-			}
-			transaction.discard_whitespace()
-			tokens = transaction
-			return BooleanExpression.create_not(child)
-		}
-	}
-
-	mut children := []&BooleanExpression{}
-	mut combinator := ?string(none)
-	for transaction.has_next_token() {
-		if children.len != 0 {
-			token := transaction.consume_a_token() or { return none }
-			if !token.is(.ident) {
-				return none
-			}
-			maybe_combinator := token.token().ident().to_lower()
-			if maybe_combinator != 'and' && maybe_combinator != 'or' {
-				return none
-			}
-			if existing := combinator {
-				if existing != maybe_combinator {
-					return none
-				}
-			} else {
-				combinator = maybe_combinator
-			}
-		}
-
-		transaction.discard_whitespace()
-		child := parse_if_boolean_expression_group(mut transaction, result_for_general_enclosed) or {
-			return none
-		}
-		children << child
-		transaction.discard_whitespace()
-	}
-
-	if children.len == 0 {
-		return none
-	}
-
-	tokens = transaction
-	if children.len == 1 {
-		return children[0]
-	}
-
-	if combinator_value := combinator {
-		if combinator_value == 'and' {
-			return BooleanExpression.create_and(children)
-		}
-		if combinator_value == 'or' {
-			return BooleanExpression.create_or(children)
+			tokens = else_tokens
+			return BooleanExpression.create_constant(.true_)
 		}
 	}
 	return none
 }
 
-fn parse_if_boolean_expression_group(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
-	if first_token := tokens.next_token() {
-		if first_token.is_block() && first_token.block().is_paren() {
-			mut transaction := tokens
-			transaction.discard_a_token()
-			mut child_tokens := SupportsTokenStream.from_values(first_token.block().value)
-			if expression := parse_if_boolean_expression_inner(mut child_tokens,
-				result_for_general_enclosed)
-			{
-				child_tokens.discard_whitespace()
-				if !child_tokens.has_next_token() {
-					tokens = transaction
-					return BooleanExpression.create_in_parens(expression)
-				}
-			}
-		}
-	}
-
-	if test := parse_if_test(mut tokens) {
-		return test
-	}
-
-	return none
-}
-
-fn parse_if_test(mut tokens SupportsTokenStream) ?&BooleanExpression {
+fn (mut parser Parser) parse_if_test(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	mut transaction := tokens
 	transaction.discard_whitespace()
 	maybe_function_token := transaction.consume_a_token() or { return none }
@@ -3544,13 +3677,13 @@ fn parse_if_test(mut tokens SupportsTokenStream) ?&BooleanExpression {
 
 	if function_name == 'supports' {
 		mut declaration_tokens := ParserTokenStream.from_values(function.value)
-		if supports_declaration := parse_supports_declaration_from_parser_tokens(mut declaration_tokens) {
+		if supports_declaration := parser.parse_supports_declaration(mut declaration_tokens) {
 			tokens = transaction
 			return supports_declaration
 		}
 
-		mut condition_tokens := SupportsTokenStream.from_values(function.value)
-		if supports_condition := parse_supports_condition(mut condition_tokens) {
+		mut condition_tokens := SupportsTokenStream.from_values_with_namespaces(function.value, parser.context.declared_namespaces)
+		if supports_condition := parser.parse_supports_condition(mut condition_tokens) {
 			condition_tokens.discard_whitespace()
 			if !condition_tokens.has_next_token() {
 				tokens = transaction
@@ -3562,7 +3695,7 @@ fn parse_if_test(mut tokens SupportsTokenStream) ?&BooleanExpression {
 
 	if function_name == 'media' {
 		mut feature_tokens := SupportsTokenStream.from_values(function.value)
-		if media_feature := parse_media_feature(mut feature_tokens) {
+		if media_feature := parser.parse_media_feature(mut feature_tokens) {
 			feature_tokens.discard_whitespace()
 			if !feature_tokens.has_next_token() {
 				tokens = transaction
@@ -3570,10 +3703,10 @@ fn parse_if_test(mut tokens SupportsTokenStream) ?&BooleanExpression {
 			}
 		}
 
-		mut condition_tokens := SupportsTokenStream.from_values(function.value)
-		if media_condition := parse_media_condition(mut condition_tokens) {
-			condition_tokens.discard_whitespace()
-			if !condition_tokens.has_next_token() {
+		mut condition_tokens := ComponentValueStream.new(function.value)
+		if media_condition := parser.parse_media_condition(mut condition_tokens) {
+			condition_tokens.consume_whitespace()
+			if !condition_tokens.has_more_tokens() {
 				tokens = transaction
 				return media_condition
 			}
@@ -3591,18 +3724,29 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
 
+	// As in C++, construct one parser and reuse it for every branch condition.
+	mut condition_parser := Parser{}
+	mut evaluation_document := ?&dom.Document(none)
+	if abstract_element := element {
+		document := abstract_element.element().document()
+		condition_parser.context = ParsingParams{
+			document: document
+		}
+		evaluation_document = document
+	}
+
 	for branch in if_args.branches {
-		substituted_condition := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-			guarded_contexts, branch.condition, none)
-		condition_result := parse_if_condition_for_arbitrary_substitution(substituted_condition) or {
+		substituted_condition := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, branch.condition, none)
+		mut condition_tokens := SupportsTokenStream.from_values(substituted_condition)
+		condition := condition_parser.parse_if_condition(mut condition_tokens) or {
 			continue
 		}
+		condition_result := condition.evaluate(evaluation_document)
 		if condition_result == .false_ {
 			continue
 		}
 		value := branch.value or { return []ComponentValue{} }
-		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-			guarded_contexts, value, none)
+		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, value, none)
 	}
 
 	return []ComponentValue{}
@@ -3613,22 +3757,28 @@ fn custom_property_tokens_from_element_for_substitution(abstract_element dom.Abs
 	if value.guaranteed_invalid {
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
+	if retained_value := dom_style_value_from_custom_property_bridge(value) {
+		if typed := typed_style_value_logic_from_dom(retained_value) {
+			if typed is UnresolvedStyleValue {
+				return typed.tokens.clone()
+			}
+		}
+	}
 	return parse_component_values_for_value_logic(value.css_text)
 }
 
-fn computed_custom_property_tokens_for_substitution(abstract_element dom.AbstractElement, custom_property_name string) ?[]ComponentValue {
-	if tokens := custom_property_tokens_from_element_for_substitution(abstract_element,
-		custom_property_name)
-	{
-		return tokens
+fn computed_custom_property_tokens_for_substitution(abstract_element dom.AbstractElement, custom_property_name string, mut guarded_contexts GuardedSubstitutionContexts) ?[]ComponentValue {
+	computed_value := compute_value_of_custom_property_with_guarded_contexts(abstract_element, custom_property_name, mut guarded_contexts)
+	typed := typed_style_value_logic_from_dom(computed_value) or {
+		return parse_component_values_for_value_logic(computed_value.css_text)
 	}
-	if initial_value := abstract_element.document().custom_property_initial_value(custom_property_name) {
-		// Mirrors StyleComputer::compute_value_of_custom_property() for the representable no-specified-value case:
-		// registered custom properties fall back to their document initial value, while unregistered properties remain
-		// the guaranteed-invalid initial value and are handled by the caller's fallback path.
-		return parse_component_values_for_value_logic(initial_value)
+	if typed is GuaranteedInvalidStyleValue {
+		return arbitrary_substitution_guaranteed_invalid_value()
 	}
-	return none
+	if typed is UnresolvedStyleValue {
+		return typed.tokens.clone()
+	}
+	return parse_component_values_for_value_logic(typed.serialize(.normal))
 }
 
 fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, arguments ArbitrarySubstitutionFunctionArguments) []ComponentValue {
@@ -3639,8 +3789,7 @@ fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_context
 	first_argument := declaration_value_list.first()
 	second_argument := declaration_value_list.get(1)
 
-	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-		guarded_contexts, first_argument, none)
+	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, first_argument, none)
 	mut first_argument_tokens := ParserTokenStream.from_values(substituted_first_argument)
 	first_argument_tokens.discard_whitespace()
 	name_token := first_argument_tokens.consume_a_token()
@@ -3650,9 +3799,7 @@ fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_context
 		&& !first_argument_tokens.has_next_token() {
 		if el := element {
 			if element_to_inherit_style_from := el.element_to_inherit_style_from() {
-				if inherited_value := custom_property_tokens_from_element_for_substitution(element_to_inherit_style_from,
-					name_token.token().ident())
-				{
+				if inherited_value := custom_property_tokens_from_element_for_substitution(element_to_inherit_style_from, name_token.token().ident()) {
 					if !contains_guaranteed_invalid_value(inherited_value) {
 						return inherited_value
 					}
@@ -3662,8 +3809,7 @@ fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_context
 	}
 
 	if fallback := second_argument {
-		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-			guarded_contexts, fallback, none)
+		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, fallback, none)
 	}
 
 	return arbitrary_substitution_guaranteed_invalid_value()
@@ -3677,8 +3823,7 @@ fn replace_a_var_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 	first_argument := declaration_value_list.first()
 	second_argument := declaration_value_list.get(1)
 
-	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-		guarded_contexts, first_argument, none)
+	substituted_first_argument := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, first_argument, none)
 	mut name_tokens := ParserTokenStream.from_values(substituted_first_argument)
 	name_tokens.discard_whitespace()
 	name_token := name_tokens.consume_a_token()
@@ -3690,7 +3835,7 @@ fn replace_a_var_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 		result = arbitrary_substitution_guaranteed_invalid_value()
 	} else if el := element {
 		custom_property_name := name_token.token().ident()
-		result = computed_custom_property_tokens_for_substitution(el, custom_property_name) or {
+		result = computed_custom_property_tokens_for_substitution(el, custom_property_name, mut guarded_contexts) or {
 			arbitrary_substitution_guaranteed_invalid_value()
 		}
 	} else {
@@ -3700,8 +3845,7 @@ fn replace_a_var_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 	// FIXME: Animation-tainted custom properties.
 	if contains_guaranteed_invalid_value(result) {
 		if fallback := second_argument {
-			result = substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-				guarded_contexts, fallback, none)
+			result = substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, fallback, none)
 		}
 	}
 	return result
@@ -3734,14 +3878,12 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
 					continue
 				}
-				result := replace_an_arbitrary_substitution_function(element, mut guarded_contexts,
-					maybe_function_id, arguments)
+				result := replace_an_arbitrary_substitution_function(element, mut guarded_contexts, maybe_function_id, arguments)
 
 				if contains_guaranteed_invalid_value(result) {
 					dest << ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})
 				} else {
-					result_after_processing := substitute_arbitrary_substitution_functions_step_2(element, mut
-						guarded_contexts, result) or { return none }
+					result_after_processing := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts, result) or { return none }
 
 					// NB: Protect against the billion-laughs attack by limiting to an arbitrary large number of tokens.
 					// https://drafts.csswg.org/css-values-5/#long-substitution
@@ -3753,8 +3895,7 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 				continue
 			}
 
-			function_values := substitute_arbitrary_substitution_functions_step_2(element, mut
-				guarded_contexts, source_function.value) or { return none }
+			function_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts, source_function.value) or { return none }
 			mut function := source_function
 			function.value = function_values
 			dest << ComponentValue.from_function(function)
@@ -3763,8 +3904,7 @@ fn substitute_arbitrary_substitution_functions_step_2(element ?dom.AbstractEleme
 
 		if value.is_block() {
 			source_block := value.block()
-			block_values := substitute_arbitrary_substitution_functions_step_2(element, mut
-				guarded_contexts, source_block.value) or { return none }
+			block_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts, source_block.value) or { return none }
 			mut block := source_block
 			block.value = block_values
 			dest << ComponentValue.from_block(block)
@@ -3788,8 +3928,7 @@ fn substitute_arbitrary_substitution_functions_with_optional_element(element ?do
 		context_to_unguard = context_copy
 	}
 
-	mut new_values := substitute_arbitrary_substitution_functions_step_2(element, mut
-		guarded_contexts, values) or { arbitrary_substitution_guaranteed_invalid_value() }
+	mut new_values := substitute_arbitrary_substitution_functions_step_2(element, mut guarded_contexts, values) or { arbitrary_substitution_guaranteed_invalid_value() }
 
 	if guarded_context := context_to_unguard {
 		if guarded_contexts.is_marked_cyclic(guarded_context) {
@@ -3802,14 +3941,12 @@ fn substitute_arbitrary_substitution_functions_with_optional_element(element ?do
 }
 
 pub fn substitute_arbitrary_substitution_functions_for_element(element dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, values []ComponentValue, context ?SubstitutionContext) []ComponentValue {
-	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut
-		guarded_contexts, values, context)
+	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, values, context)
 }
 
 pub fn substitute_arbitrary_substitution_functions(values []ComponentValue, context ?SubstitutionContext) []ComponentValue {
 	mut guarded_contexts := GuardedSubstitutionContexts{}
-	return substitute_arbitrary_substitution_functions_with_optional_element(none, mut
-		guarded_contexts, values, context)
+	return substitute_arbitrary_substitution_functions_with_optional_element(none, mut guarded_contexts, values, context)
 }
 
 fn has_ignored_vendor_prefix_local(name string) bool {

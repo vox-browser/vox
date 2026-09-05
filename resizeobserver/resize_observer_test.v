@@ -71,6 +71,36 @@ fn test_active_observation_broadcast_updates_last_reported_size() {
 	assert !observer.is_registered()
 }
 
+fn test_document_resize_loop_uses_concrete_observer_registration() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut root := document.create_element('div') or { panic(err) }
+	mut target_element := document.create_element('div') or { panic(err) }
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(target_element.as_node()) or { panic(err) }
+	mut target := ResizeTarget.new(target_element, ResizeTargetMetrics{
+		has_layout_box: true
+		content_width:  25
+		content_height: 10
+	})
+	mut observer := ResizeObserver.new(no_op_resize_callback)
+	observer.observe(target, ResizeObserverOptions{})
+
+	document.gather_active_observations_at_depth(0)
+	assert document.has_active_resize_observations()
+	assert !document.has_skipped_resize_observations()
+	assert document.broadcast_active_resize_observations() == 3
+	assert !document.has_active_resize_observations()
+	assert observer.last_entries().len == 1
+
+	target.metrics.content_width = 30
+	document.gather_active_observations_at_depth(3)
+	assert !document.has_active_resize_observations()
+	assert document.has_skipped_resize_observations()
+	observer.disconnect()
+}
+
 fn test_observe_identity_is_the_underlying_dom_element() {
 	mut observer := ResizeObserver.new(no_op_resize_callback)
 	element := resize_test_element('div')

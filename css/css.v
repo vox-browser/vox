@@ -26,9 +26,48 @@ pub fn invalidate_style(doc &dom.Document, reason StyleInvalidationReason) {
 }
 
 // --- CSS parsing context ---
+pub enum ParsingMode {
+	normal
+	svg_presentation_attribute
+}
+
+// The active value grammar is part of CSS parsing state. This mirrors
+// LibWeb's ValueParsingContext variant: nested properties and functions can
+// tighten what their parent grammar permits, while special parsing entry
+// points (such as media conditions) can disable context-sensitive functions.
+pub struct FunctionContext {
+pub:
+	name string
+}
+
+pub struct DescriptorContext {
+pub:
+	at_rule    AtRuleID
+	descriptor DescriptorID
+}
+
+pub enum SpecialContext {
+	angular_color_stop_list
+	border_radius
+	cubic_bezier_function_x_coordinate
+	dom_matrix_init_string
+	font_style_angle
+	media_condition
+	radial_size_length_percentage
+	random_value_sharing_fixed_value
+	shadow_blur_radius
+	steps_intervals_jump_none
+	steps_intervals_normal
+	translate_z_argument
+}
+
+pub type ValueParsingContext = DescriptorContext | FunctionContext | PropertyID | SpecialContext
+
 pub struct ParsingParams {
 pub:
 	document            &dom.Document = unsafe { nil }
+	mode                ParsingMode
+	value_context       []ValueParsingContext
 	rule_context        []RuleContext
 	declared_namespaces map[string]bool
 	is_ua_style_sheet   IsUAStyleSheet
@@ -436,25 +475,38 @@ pub fn parse_css_value(context ParsingParams, text string, property PropertyID) 
 // --- Color resolution ---
 pub struct ColorResolutionContext {
 pub mut:
-	color_scheme  ?PreferredColorScheme
-	current_color ?Color
-	accent_color  ?Color
+	color_scheme                   ?PreferredColorScheme
+	current_color                  ?Color
+	accent_color                   ?Color
+	document                       ?&dom.Document
+	calculation_resolution_context CalculationResolutionContext
 }
 
 pub fn color_resolution_context_for_layout_node(node &dom.LayoutNode) ColorResolutionContext {
 	computed := computed_properties_for_layout_node(node) or { return ColorResolutionContext{} }
 	dom_node := node.dom_node() or { return ColorResolutionContext{} }
 	document := dom_node.document()
-	return color_resolution_context_for_computed_properties(computed, document)
+	return color_resolution_context_for_computed_properties(computed, document, CalculationResolutionContext{
+		length_resolution_context: LengthResolutionContext.for_layout_node(node)
+	})
 }
 
 pub fn ColorResolutionContext.for_element(element &dom.AbstractElement) ColorResolutionContext {
 	dom_computed := element.computed_properties() or { return ColorResolutionContext{} }
 	computed := computed_properties_from_dom(dom_computed) or { return ColorResolutionContext{} }
-	return color_resolution_context_for_computed_properties(computed, element.document())
+	return color_resolution_context_for_computed_properties(computed, element.document(), CalculationResolutionContext{
+		length_resolution_context: LengthResolutionContext.for_element(element)
+		abstract_element: ?dom.AbstractElement(dom.AbstractElement.new(element.element(), element.pseudo_element()))
+	})
 }
 
-fn color_resolution_context_for_computed_properties(computed &ComputedProperties, document &dom.Document) ColorResolutionContext {
+pub fn ColorResolutionContext.for_computed_properties(computed &ComputedProperties, document &dom.Document) ColorResolutionContext {
+	return color_resolution_context_for_computed_properties(computed, document, CalculationResolutionContext{
+		length_resolution_context: computed.length_resolution_context()
+	})
+}
+
+fn color_resolution_context_for_computed_properties(computed &ComputedProperties, document &dom.Document, calculation_resolution_context CalculationResolutionContext) ColorResolutionContext {
 	// The page preference hook is not exposed by the DOM port yet. `auto` lets
 	// the document/element color-scheme lists select their first supported
 	// scheme, falling back to the CSS initial light scheme.
@@ -465,6 +517,8 @@ fn color_resolution_context_for_computed_properties(computed &ComputedProperties
 		color_scheme: scheme
 		current_color: initial_color
 		accent_color: initial_accent
+		document: document
+		calculation_resolution_context: calculation_resolution_context
 	}
 	resolved_color := computed.color_or_fallback(.color, base_context, ComputedColor.rgba(initial_color.r, initial_color.g, initial_color.b, initial_color.a))
 	resolved_accent := computed.color_or_fallback(.accent_color, base_context, ComputedColor.rgba(initial_accent.r, initial_accent.g, initial_accent.b, initial_accent.a))
@@ -472,6 +526,8 @@ fn color_resolution_context_for_computed_properties(computed &ComputedProperties
 		color_scheme: scheme
 		current_color: Color.rgba(resolved_color.red(), resolved_color.green(), resolved_color.blue(), resolved_color.alpha())
 		accent_color: Color.rgba(resolved_accent.red(), resolved_accent.green(), resolved_accent.blue(), resolved_accent.alpha())
+		document: document
+		calculation_resolution_context: calculation_resolution_context
 	}
 }
 
@@ -524,6 +580,25 @@ pub fn serialize_a_number(value f64) string {
 	// AD-HOC: If the number is small enough that it would not print any digits when rounded, serialize it as 0.
 	if math.abs(value) < 0.0000005 {
 		return '0'
+	}
+
+	// AK's floating-point formatting spells non-finite values without a sign prefix on
+	// infinity; reproduce it so a non-finite dimension serializes as `infpx`, not `+infpx`.
+	//
+	// KNOWN DEVIATION: for |value| outside [5e-7, 1e21) AK's formatter switches to
+	// scientific notation (and overflows into garbage digits around 1e20), which upstream
+	// flags as a bug in this very function ("FIXME: Prevent scientific notation for large
+	// values"). This implementation follows the spec text that FIXME points at and always
+	// prints base-ten digits, so `calc(3e40px + 1em)` serializes its digits in full where
+	// upstream emits `3e+40px`.
+	if math.is_nan(value) {
+		return 'nan'
+	}
+	if math.is_inf(value, 1) {
+		return 'inf'
+	}
+	if math.is_inf(value, -1) {
+		return '-inf'
 	}
 
 	mut serialized := '${value:.6f}'
@@ -1991,13 +2066,14 @@ pub fn (loa LengthOrAuto) to_px_or_zero(context LengthResolutionContext) CSSPixe
 	return CSSPixels{}
 }
 
-// --- Calculated style value stubs ---
+// --- Calculated style values ---
 pub type CalculationPercentageBasis = Angle | Frequency | Length | Number | Time
 
 pub struct CalculationResolutionContext {
 pub mut:
 	percentage_basis          ?CalculationPercentageBasis
 	length_resolution_context LengthResolutionContext
+	abstract_element          ?dom.AbstractElement
 }
 
 pub fn (context CalculationResolutionContext) percentage_basis_angle() ?Angle {
@@ -2059,24 +2135,27 @@ pub fn CalculationResolutionContext.from_computation_context(computation_context
 	return CalculationResolutionContext{
 		percentage_basis: percentage_basis
 		length_resolution_context: computation_context.length_resolution_context
+		abstract_element: computation_context.abstract_element
 	}
 }
 
 pub struct CalculatedStyleValue {
 pub mut:
-	serialization string = 'calc(0px)'
-	numeric_type_ ?NumericType
-	// The parsed calculation tree, when available (0 or 1 element). Values created via
-	// CalculatedStyleValue.create (Typed OM / transforms) leave this empty and fall back to
-	// the serialization-based resolution path.
+	serialization       string = 'calc(0px)'
+	numeric_type_       ?NumericType
+	calculation_context CalculationContext
+	// The typed calculation tree (0 or 1 element for compatibility with V's
+	// recursive sum-type representation).
 	node []CalcNode
 }
 
 pub fn CalculatedStyleValue.create(node CalculationNode, numeric_type NumericType, context CalculationContext) CalculatedStyleValue {
-	_ = context
+	serialization := if node.serialization.len == 0 { 'calc(0px)' } else { node.serialization }
 	return CalculatedStyleValue{
-		serialization: if node.serialization.len == 0 { 'calc(0px)' } else { node.serialization }
+		serialization: serialization
 		numeric_type_: numeric_type
+		node: node.node.clone()
+		calculation_context: context
 	}
 }
 
@@ -2095,8 +2174,18 @@ pub fn (c CalculatedStyleValue) contains_percentage() bool {
 	return c.serialization.contains('%')
 }
 
+// https://drafts.csswg.org/css-values-4/#serialize-a-math-function
 pub fn (c CalculatedStyleValue) serialize(mode SerializationMode) string {
-	_ = mode
+	// 1. If the root of the calculation tree is a numeric value, and the serialization being
+	//    produced is of a computed value or later, clamp the value to the range allowed for
+	//    its context, then serialize the value as normal and return the result. Note that
+	//    this drops the calc() wrapper: `width: calc(50%)` has a resolved value of `50%`.
+	if mode == .resolved_value && c.node.len == 1 {
+		root := c.node[0]
+		if root is CalcNumeric {
+			return root.clamp_and_censor(c.calculation_context).serialize_numeric_value(mode)
+		}
+	}
 	if c.serialization.len == 0 {
 		return 'calc(0px)'
 	}
@@ -2104,12 +2193,43 @@ pub fn (c CalculatedStyleValue) serialize(mode SerializationMode) string {
 }
 
 pub fn (c CalculatedStyleValue) absolutized(computation_context ComputationContext) StyleValue {
-	_ = computation_context
-	// C++ simplifies the calculation tree with computed-value-time information here.
-	// This port stores only serialized calculation text, so the full tree simplification is a boundary until
-	// CalculationNode carries translated children. Keep the calculated value intact instead of inventing a simplified
-	// value.
-	return StyleValue(c)
+	mut calculation_nodes := c.node.clone()
+	if calculation_nodes.len != 1 {
+		mut parser := Parser.from_css_text(c.serialization)
+		mut tokens := ComponentValueStream.new(parser.component_values)
+		if parsed := parser.parse_calculated_value_with_context(mut tokens, c.calculation_context, true) {
+			if parsed is CalculatedStyleValue {
+				calculation_nodes = parsed.node.clone()
+			}
+		}
+	}
+	if calculation_nodes.len != 1 {
+		return StyleValue(c)
+	}
+
+	simplified := simplify_calc_with_resolution(calculation_nodes[0], c.calculation_context, CalculationResolutionContext.from_computation_context(computation_context, none))
+
+	// CSS Values 4 combine-mixed: a percentage/dimension sum whose canonical
+	// dimension component is zero computes to the percentage alone.
+	if simplified is CalcSum && simplified.children.len == 2 {
+		first := simplified.children[0]
+		second := simplified.children[1]
+		if first is CalcNumeric && second is CalcNumeric {
+			if first.kind == .percentage && second.kind != .percentage && second.value == 0 {
+				return StyleValue(PercentageStyleValue.create(Percentage.new(first.value)))
+			}
+			if second.kind == .percentage && first.kind != .percentage && first.value == 0 {
+				return StyleValue(PercentageStyleValue.create(Percentage.new(second.value)))
+			}
+		}
+	}
+
+	return StyleValue(CalculatedStyleValue{
+		serialization: simplified.serialize_top()
+		numeric_type_: c.numeric_type_
+		node: [simplified]
+		calculation_context: c.calculation_context
+	})
 }
 
 fn (c CalculatedStyleValue) inner_calculation_text() string {
@@ -2196,20 +2316,63 @@ pub mut:
 	type_ ?NumericType
 }
 
+fn (c CalculatedStyleValue) accepted_type_range(resolved_type NumericType) ?AcceptedTypeRange {
+	context := c.calculation_context
+	value_type := if resolved_type.matches_number(context.percentages_resolve_as) {
+		if context.resolve_numbers_as_integers { ValueType.integer } else { ValueType.number }
+	} else if resolved_type.matches_angle(context.percentages_resolve_as) {
+		ValueType.angle
+	} else if resolved_type.matches_flex(context.percentages_resolve_as) {
+		ValueType.flex
+	} else if resolved_type.matches_frequency(context.percentages_resolve_as) {
+		ValueType.frequency
+	} else if resolved_type.matches_length(context.percentages_resolve_as) {
+		ValueType.length
+	} else if resolved_type.matches_percentage() {
+		ValueType.percentage
+	} else if resolved_type.matches_resolution(context.percentages_resolve_as) {
+		ValueType.resolution
+	} else if resolved_type.matches_time(context.percentages_resolve_as) {
+		ValueType.time
+	} else {
+		return none
+	}
+	return context.accepted_type_ranges[value_type] or { none }
+}
+
+fn (c CalculatedStyleValue) clamp_top_level_value(raw_value f64, resolved_type NumericType) f64 {
+	// https://drafts.csswg.org/css-values/#calc-ieee
+	// NaN does not escape a top-level calculation; it is censored into a zero value.
+	mut value := if math.is_nan(raw_value) { 0.0 } else { raw_value }
+
+	// https://drafts.csswg.org/css-values/#calc-range
+	// Clamp to the range accepted by the target property. Upstream uses the finite
+	// float range when no narrower property range exists.
+	accepted_range := c.accepted_type_range(resolved_type) or {
+		AcceptedTypeRange{
+			min: -math.max_f32
+			max: math.max_f32
+		}
+	}
+	if value < accepted_range.min {
+		value = accepted_range.min
+	}
+	if value > accepted_range.max {
+		value = accepted_range.max
+	}
+	return value
+}
+
 // https://drafts.csswg.org/css-values-4/#calc-computed-value
 pub fn (c CalculatedStyleValue) resolve_value(resolution_context CalculationResolutionContext) ?CalculatedResolvedValue {
 	// When the parsed calculation tree is available, evaluate it directly with the
 	// resolution context (relative-length resolution, percentage basis, canonical units).
 	if c.node.len == 1 {
-		result := resolve_calc_node(c.node[0], resolution_context) or { return none }
-		mut raw_value := result.value
-		// https://drafts.csswg.org/css-values/#calc-ieee
-		// NaN does not escape a top-level calculation; it's censored into a zero value.
-		if math.is_nan(raw_value) {
-			raw_value = 0
+		result := resolve_calc_node(c.node[0], c.calculation_context, resolution_context) or {
+			return none
 		}
 		return CalculatedResolvedValue{
-			value: raw_value
+			value: c.clamp_top_level_value(result.value, result.type_)
 			type_: result.type_
 		}
 	}
@@ -2223,20 +2386,9 @@ pub fn (c CalculatedStyleValue) resolve_value(resolution_context CalculationReso
 	}
 
 	unit_value := CSSUnitValue.create_from_sum_value_item(sum[0]) or { return none }
-	mut raw_value := unit_value.value()
-
-	// https://drafts.csswg.org/css-values/#calc-ieee
-	// NaN does not escape a top-level calculation; it’s censored into a zero value.
-	if math.is_nan(raw_value) {
-		raw_value = 0
-	}
-
-	// https://drafts.csswg.org/css-values/#calc-range
-	// the value resulting from a top-level calculation must be clamped to the range allowed in the target context.
-	// Boundary: accepted type ranges are not translated into CalculationContext yet.
 	resolved_type := NumericType.create_from_unit(unit_value.unit()) or { return none }
 	return CalculatedResolvedValue{
-		value: raw_value
+		value: c.clamp_top_level_value(unit_value.value(), resolved_type)
 		type_: resolved_type
 	}
 }
@@ -2244,7 +2396,7 @@ pub fn (c CalculatedStyleValue) resolve_value(resolution_context CalculationReso
 pub fn (c CalculatedStyleValue) resolve_length(context CalculationResolutionContext) ?Length {
 	result := c.resolve_value(context) or { return none }
 	resolved_type := result.type_ or { return none }
-	if resolved_type.matches_length(none) {
+	if resolved_type.matches_length(c.calculation_context.percentages_resolve_as) {
 		return Length.make_px(result.value)
 	}
 	if resolved_type.matches_percentage() {

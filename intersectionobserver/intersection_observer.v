@@ -151,9 +151,119 @@ pub struct IntersectionObserver {
 	delay_             i64
 	track_visibility_  bool
 	relevant_document_ ?&dom.Document
+	document_          ?&dom.Document
 mut:
-	queued_entries_      []&IntersectionObserverEntry
-	observation_targets_ []&dom.Element
+	document_registration_ ?&dom.IntersectionObserver
+	queued_entries_        []&IntersectionObserverEntry
+	observation_targets_   []&dom.Element
+}
+
+fn dom_observer_observation_targets(target voidptr) []&dom.Element {
+	observer := unsafe { &IntersectionObserver(target) }
+	return observer.observation_targets()
+}
+
+fn dom_observer_observe(target voidptr, element &dom.Element) {
+	mut observer := unsafe { &IntersectionObserver(target) }
+	observer.observe(element)
+}
+
+fn dom_observer_unobserve(target voidptr, element &dom.Element) {
+	mut observer := unsafe { &IntersectionObserver(target) }
+	observer.unobserve(element)
+}
+
+fn dom_rect_to_geometry_rect(rect dom.Rect) geometry.DOMRectInit {
+	return geometry.DOMRectInit{
+		x: rect.x
+		y: rect.y
+		width: rect.width
+		height: rect.height
+	}
+}
+
+fn dom_observer_queue_entry(target voidptr, time f64, root_bounds dom.Rect, bounding_client_rect dom.Rect, intersection_rect dom.Rect, is_intersecting bool, intersection_ratio f64, element &dom.Element) {
+	mut observer := unsafe { &IntersectionObserver(target) }
+	entry := IntersectionObserverEntry.construct_impl(IntersectionObserverEntryInit{
+		time: time
+		root_bounds: dom_rect_to_geometry_rect(root_bounds)
+		bounding_client_rect: dom_rect_to_geometry_rect(bounding_client_rect)
+		intersection_rect: dom_rect_to_geometry_rect(intersection_rect)
+		is_intersecting: is_intersecting
+		intersection_ratio: intersection_ratio
+		target: element
+	}) or { return }
+	observer.queue_entry(entry)
+}
+
+fn dom_observer_notify(target voidptr) {
+	mut observer := unsafe { &IntersectionObserver(target) }
+	queue := observer.take_records()
+	if queue.len == 0 {
+		return
+	}
+	observer.callback()(queue, observer)
+}
+
+fn geometry_rect_to_dom_rect(rect geometry.DOMRectInit) dom.Rect {
+	return dom.Rect{rect.x, rect.y, rect.width, rect.height}
+}
+
+fn dom_observer_root_bounds(target voidptr) dom.Rect {
+	observer := unsafe { &IntersectionObserver(target) }
+	root := observer.intersection_root()
+	mut base := geometry.DOMRectInit{}
+	mut root_document := ?&dom.Document(none)
+	mut has_layout_box := false
+	if document := root.document {
+		viewport := document.viewport_rect()
+		base = geometry.DOMRectInit{0, 0, viewport.width, viewport.height}
+		root_document = document
+		has_layout_box = unsafe { &dom.Node(document) }.layout_node() != none
+	} else if element := root.element {
+		rect := element.get_bounding_client_rect()
+		base = geometry.DOMRectInit{rect.x, rect.y, rect.width, rect.height}
+		root_document = element.document()
+		has_layout_box = element.el_layout_node() != none
+	}
+	same_origin := if document := observer.document_ {
+		if candidate := root_document {
+			candidate.origin().is_same_origin(document.origin())
+		} else {
+			false
+		}
+	} else {
+		false
+	}
+	return geometry_rect_to_dom_rect(observer.root_intersection_rectangle(RootGeometry{
+		rect: base
+		same_origin: same_origin
+		has_layout_box: has_layout_box
+	}))
+}
+
+fn dom_observer_root_node(target voidptr) ?&dom.Node {
+	return unsafe { &IntersectionObserver(target) }.intersection_root_node()
+}
+
+fn dom_observer_is_implicit_root(target voidptr) bool {
+	return unsafe { &IntersectionObserver(target) }.is_implicit_root()
+}
+
+fn dom_observer_root_is_element(target voidptr) bool {
+	return unsafe { &IntersectionObserver(target) }.intersection_root().kind == .element
+}
+
+fn dom_observer_thresholds(target voidptr) []f64 {
+	return unsafe { &IntersectionObserver(target) }.thresholds()
+}
+
+fn dom_observer_scroll_margins(target voidptr) []dom.IntersectionObserverMarginValue {
+	observer := unsafe { &IntersectionObserver(target) }
+	return observer.scroll_margin_values().map(dom.IntersectionObserverMarginValue{
+		value: it.value
+		is_percentage: it.unit == .percent
+	})
 }
 
 // https://w3c.github.io/IntersectionObserver/#initialize-a-new-intersectionobserver
@@ -181,7 +291,18 @@ pub fn IntersectionObserver.construct_impl(callback IntersectionObserverCallback
 		thresholds << 0.0
 	}
 	delay := if options.track_visibility && options.delay < 100 { i64(100) } else { options.delay }
-	return &IntersectionObserver{
+	document := match options.root.kind {
+		.element {
+			if element := options.root.element {
+				?&dom.Document(element.document())
+			} else {
+				?&dom.Document(none)
+			}
+		}
+		.document { options.root.document }
+		.implicit { options.relevant_document }
+	}
+	mut observer := &IntersectionObserver{
 		callback_: callback
 		root_: options.root
 		root_margin_: root_margin
@@ -190,7 +311,37 @@ pub fn IntersectionObserver.construct_impl(callback IntersectionObserverCallback
 		delay_: delay
 		track_visibility_: options.track_visibility
 		relevant_document_: options.relevant_document
+		document_: document
 	}
+	if mut observer_document := document {
+		registration := &dom.IntersectionObserver{
+			target: voidptr(observer)
+			observation_targets_: dom_observer_observation_targets
+			observe_target: dom_observer_observe
+			unobserve_target: dom_observer_unobserve
+			queue_entry_: dom_observer_queue_entry
+			notify: dom_observer_notify
+			root_bounds: dom_observer_root_bounds
+			root_node: dom_observer_root_node
+			is_implicit_root: dom_observer_is_implicit_root
+			root_is_element: dom_observer_root_is_element
+			thresholds: dom_observer_thresholds
+			scroll_margins: dom_observer_scroll_margins
+		}
+		observer.document_registration_ = registration
+		observer_document.register_intersection_observer(registration)
+	}
+	return observer
+}
+
+// Mirrors IntersectionObserver::finalize(): the document registry must not
+// retain an observer after its platform object is finalized.
+pub fn (mut observer IntersectionObserver) finalize() {
+	registration := observer.document_registration_ or { return }
+	if mut document := observer.document_ {
+		document.unregister_intersection_observer(registration)
+	}
+	observer.document_registration_ = none
 }
 
 pub fn (observer &IntersectionObserver) root() ObserverRoot {

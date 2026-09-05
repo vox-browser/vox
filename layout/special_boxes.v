@@ -8,12 +8,12 @@ import dom
 import encoding.base64
 import html
 import math
-import net.urllib
 import os
 import platform
 import stbi
 import strconv
 import svg
+import url
 
 fn special_box_base(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) Box {
 	return Box{
@@ -25,7 +25,7 @@ fn special_box_base(document &dom.Document, dom_node ?&dom.Node, computed_values
 					has_style_: true
 					is_box_: true
 				}
-				computed_values_: computed_values
+				computed_values_: css.resolve_computed_values_for_document(computed_values, document)
 			}
 		}
 	}
@@ -253,7 +253,7 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 		}
 		payload := serialized[comma + 1..]
 		data := if metadata.ends_with(';base64') {
-			decoded_payload := urllib.path_unescape(payload) or { payload }
+			decoded_payload := url.percent_decode(payload).bytestr()
 			mut compact_payload := []u8{cap: decoded_payload.len}
 			for byte in decoded_payload.bytes() {
 				if byte !in [u8(` `), u8(`\t`), u8(`\n`), u8(`\r`), u8(`\f`)] {
@@ -265,7 +265,7 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 			}
 			base64.decode(compact_payload.bytestr())
 		} else {
-			(urllib.path_unescape(payload) or { return none }).bytes()
+			url.percent_decode(payload)
 		}
 		if data.len == 0 {
 			return none
@@ -277,7 +277,7 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 	}
 	mut path := serialized
 	if serialized.starts_with('file://') {
-		path = urllib.path_unescape(serialized['file://'.len..]) or { return none }
+		path = url.percent_decode(serialized['file://'.len..]).bytestr()
 	} else if serialized.contains('://') {
 		return none
 	}
@@ -318,7 +318,7 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 		data := if metadata.ends_with(';base64') {
 			// Fetch's data: URL processor percent-decodes the body and forgiving-
 			// base64 decoding discards ASCII whitespace.
-			decoded_payload := urllib.path_unescape(payload) or { payload }
+			decoded_payload := url.percent_decode(payload).bytestr()
 			mut compact_payload := []u8{cap: decoded_payload.len}
 			for byte in decoded_payload.bytes() {
 				if byte !in [u8(` `), u8(`\t`), u8(`\n`), u8(`\r`), u8(`\f`)] {
@@ -331,7 +331,7 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 			}
 			base64.decode(compact_payload.bytestr())
 		} else {
-			(urllib.path_unescape(payload) or { return none }).bytes()
+			url.percent_decode(payload)
 		}
 		if data.len == 0 {
 			return none
@@ -356,7 +356,7 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 	}
 	mut path := serialized
 	if serialized.starts_with('file://') {
-		path = urllib.path_unescape(serialized['file://'.len..]) or { return none }
+		path = url.percent_decode(serialized['file://'.len..]).bytestr()
 	} else if serialized.contains('://') {
 		return none
 	}

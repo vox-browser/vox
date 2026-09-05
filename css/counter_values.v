@@ -187,14 +187,14 @@ pub mut:
 
 pub fn CounterStyleDefinition.create(name string, algorithm CounterStyleAlgorithmOrExtends, negative_sign ?CounterStyleNegativeSign, prefix ?string, suffix ?string, range CounterStyleDefinitionRange, fallback ?string, pad ?CounterStylePad) CounterStyleDefinition {
 	return CounterStyleDefinition{
-		name_:          name
-		algorithm_:     algorithm
+		name_: name
+		algorithm_: algorithm
 		negative_sign_: negative_sign
-		prefix_:        prefix
-		suffix_:        suffix
-		range_:         range
-		fallback_:      fallback
-		pad_:           pad
+		prefix_: prefix
+		suffix_: suffix
+		range_: range
+		fallback_: fallback
+		pad_: pad
 	}
 }
 
@@ -239,8 +239,7 @@ pub fn CounterStyleDefinition.from_counter_style_rule(rule CSSCounterStyleRule, 
 		CounterStyleSystemStyleValue.create(.symbolic)
 	}
 
-	maybe_algorithm := CounterStyleDefinition.resolve_algorithm(system_style_value,
-		rule.symbols_style_value(), rule.additive_symbols_style_value(), computation_context) or {
+	maybe_algorithm := CounterStyleDefinition.resolve_algorithm(system_style_value, rule.symbols_style_value(), rule.additive_symbols_style_value(), computation_context) or {
 		return none
 	}
 
@@ -275,8 +274,7 @@ pub fn CounterStyleDefinition.from_counter_style_rule(rule CSSCounterStyleRule, 
 		?CounterStylePad(none)
 	}
 
-	return CounterStyleDefinition.create(rule.name(), maybe_algorithm, negative_sign, prefix,
-		suffix, range, fallback, pad)
+	return CounterStyleDefinition.create(rule.name(), maybe_algorithm, negative_sign, prefix, suffix, range, fallback, pad)
 }
 
 // https://drafts.csswg.org/css-counter-styles-3/#counter-style-system
@@ -297,14 +295,13 @@ pub fn CounterStyleDefinition.resolve_algorithm(system_style_value CounterStyleS
 						return none
 					}
 					CounterStyleAlgorithmOrExtends(CounterStyleAlgorithm(GenericCounterStyleAlgorithm{
-						type_:       value
+						type_: value
 						symbol_list: parsed_symbols
 					}))
 				}
 				.additive {
 					additive_symbols := additive_symbols_style_value or { return none }
-					additive_tuples := CounterStyleDefinition.resolve_additive_symbols(additive_symbols,
-						computation_context)
+					additive_tuples := CounterStyleDefinition.resolve_additive_symbols(additive_symbols, computation_context)
 					if !system_style_value.is_valid_additive_symbol_count(additive_tuples.len) {
 						return none
 					}
@@ -330,7 +327,7 @@ pub fn CounterStyleDefinition.resolve_algorithm(system_style_value CounterStyleS
 
 			CounterStyleAlgorithmOrExtends(CounterStyleAlgorithm(FixedCounterStyleAlgorithm{
 				first_symbol: first_symbol
-				symbol_list:  parsed_symbols
+				symbol_list: parsed_symbols
 			}))
 		}
 		CounterStyleSystemExtends {
@@ -394,10 +391,8 @@ pub fn CounterStyleDefinition.resolve_range(style_value CounterStyleRangeStyleVa
 	mut ranges := []CounterStyleRangeEntry{cap: style_value.entries.len}
 	for entry in style_value.entries {
 		ranges << CounterStyleRangeEntry{
-			start: resolve_counter_style_range_bound(entry.start, counter_i64_min,
-				computation_context)
-			end:   resolve_counter_style_range_bound(entry.end, counter_i64_max,
-				computation_context)
+			start: resolve_counter_style_range_bound(entry.start, counter_i64_min, computation_context)
+			end: resolve_counter_style_range_bound(entry.end, counter_i64_max, computation_context)
 		}
 	}
 	return CounterStyleDefinitionRange(CounterStyleRangeEntries{
@@ -409,7 +404,7 @@ pub fn CounterStyleDefinition.resolve_range(style_value CounterStyleRangeStyleVa
 pub fn CounterStyleDefinition.resolve_pad(style_value CounterStylePadStyleValue, computation_context ComputationContext) CounterStylePad {
 	return CounterStylePad{
 		minimum_length: clamp_i64_to_i32(int_from_style_value(style_value.minimum_length.absolutized(computation_context)))
-		symbol:         string_from_style_value(style_value.symbol)
+		symbol: string_from_style_value(style_value.symbol)
 	}
 }
 
@@ -449,28 +444,28 @@ pub mut:
 // https://drafts.csswg.org/css-counter-styles-3/#decimal
 pub fn CounterStyle.decimal() CounterStyle {
 	return CounterStyle.create('decimal', CounterStyleAlgorithm(GenericCounterStyleAlgorithm{
-		type_:       .numeric
+		type_: .numeric
 		symbol_list: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 	}), CounterStyleNegativeSign{
 		prefix: '-'
 		suffix: ''
 	}, '', '. ', [CounterStyleRangeEntry{counter_i64_min, counter_i64_max}], none, CounterStylePad{
 		minimum_length: 0
-		symbol:         ''
+		symbol: ''
 	})
 }
 
 // https://drafts.csswg.org/css-counter-styles-3/#disc
 pub fn CounterStyle.disc() CounterStyle {
 	return CounterStyle.create('disc', CounterStyleAlgorithm(GenericCounterStyleAlgorithm{
-		type_:       .cyclic
+		type_: .cyclic
 		symbol_list: [counter_symbol_from_code_point(0x2022)]
 	}), CounterStyleNegativeSign{
 		prefix: ''
 		suffix: ' '
 	}, '', ' ', [CounterStyleRangeEntry{counter_i64_min, counter_i64_max}], 'decimal', CounterStylePad{
 		minimum_length: 0
-		symbol:         ''
+		symbol: ''
 	})
 }
 
@@ -507,7 +502,7 @@ pub fn CounterStyle.from_counter_style_definition(definition CounterStyleDefinit
 			}, definition.fallback() or { 'decimal' }, definition.pad() or {
 				CounterStylePad{
 					minimum_length: 0
-					symbol:         ''
+					symbol: ''
 				}
 			})
 		}
@@ -519,14 +514,14 @@ pub fn CounterStyle.create(name string, algorithm CounterStyleAlgorithm, negativ
 	assert fallback != none || name == 'decimal'
 
 	return CounterStyle{
-		name_:          name
-		algorithm_:     algorithm
+		name_: name
+		algorithm_: algorithm
 		negative_sign_: negative_sign
-		prefix_:        prefix
-		suffix_:        suffix
-		range_:         range
-		fallback_:      fallback
-		pad_:           pad
+		prefix_: prefix
+		suffix_: suffix
+		range_: range
+		fallback_: fallback
+		pad_: pad
 	}
 }
 
@@ -640,8 +635,7 @@ fn generate_an_initial_representation_for_extended_cjk_system(input_value i64, t
 				.korean_hangul_formal,
 				.korean_hanja_informal,
 				.korean_hanja_formal,
-			])
-			{
+			]) {
 				should_drop_digit = should_drop_digit || digit_value == 0
 			}
 
@@ -652,8 +646,7 @@ fn generate_an_initial_representation_for_extended_cjk_system(input_value i64, t
 				.simp_chinese_formal,
 				.trad_chinese_informal,
 				.trad_chinese_formal,
-			])
-			{
+			]) {
 				mut is_trailing_zero := true
 				for trailing_zero_index := digit_index; trailing_zero_index >= 0; trailing_zero_index-- {
 					if digits[trailing_zero_index] != 0 {
@@ -688,7 +681,8 @@ fn generate_an_initial_representation_for_extended_cjk_system(input_value i64, t
 		}
 
 		// 8. For the Korean styles, insert a space (" " U+0020) between each group.
-		if extended_cjk_type_is_one_of(type_, [.korean_hangul_formal, .korean_hanja_informal, .korean_hanja_formal])
+		if extended_cjk_type_is_one_of(type_, [.korean_hangul_formal, .korean_hanja_informal,
+			.korean_hanja_formal])
 			&& group_index != 0 {
 			builder += ' '
 		}
@@ -852,8 +846,7 @@ pub fn (counter_style CounterStyle) generate_an_initial_representation_for_the_c
 					// (0-indexed).
 
 					// 1. Let the chosen symbol be symbol( (value - 1) mod N).
-					symbol := algorithm.symbol_list[positive_mod_i64(value - 1,
-						algorithm.symbol_list.len)]
+					symbol := algorithm.symbol_list[positive_mod_i64(value - 1, algorithm.symbol_list.len)]
 
 					// 2. Let the representation length be ceil( value / N ).
 					representation_length := (value + i64(algorithm.symbol_list.len) - 1) / i64(algorithm.symbol_list.len)
@@ -870,6 +863,7 @@ pub fn (counter_style CounterStyle) generate_an_initial_representation_for_the_c
 		}
 		EthiopicNumericCounterStyleAlgorithm {
 			mut value := input_value
+
 			// https://drafts.csswg.org/css-counter-styles-3/#ethiopic-numeric-counter-style
 			// The following algorithm converts decimal digits to ethiopic numbers:
 
@@ -936,10 +930,9 @@ pub fn (counter_style CounterStyle) generate_an_initial_representation_for_the_c
 				//    had a value of zero, append ፻ U+137B.
 				if i % 2 == 1 && group_value != 0 {
 					builder += counter_symbol_from_code_point(0x137b)
-				}
 				// 7. For each group with an even index (as given in the second step), except the group with index
 				//    0, append ፼ U+137C.
-				else if i % 2 == 0 && i != 0 {
+				} else if i % 2 == 0 && i != 0 {
 					builder += counter_symbol_from_code_point(0x137c)
 				}
 			}
@@ -1006,8 +999,7 @@ fn generate_a_counter_representation_impl(counter_style ?CounterStyle, registere
 	// 1. If the counter style is unknown, exit this algorithm and instead generate a counter representation using the
 	//    decimal style and the same counter value.
 	style := counter_style or {
-		return generate_a_counter_representation_impl(CounterStyle.decimal(),
-			registered_counter_styles, value, mut fallback_history)
+		return generate_a_counter_representation_impl(CounterStyle.decimal(), registered_counter_styles, value, mut fallback_history)
 	}
 
 	// 2. If the counter value is outside the range of the counter style, exit this algorithm and instead generate a
@@ -1020,8 +1012,7 @@ fn generate_a_counter_representation_impl(counter_style ?CounterStyle, registere
 		}
 	}
 	if !in_range {
-		return generate_a_counter_representation_using_fallback(style, registered_counter_styles,
-			value, mut fallback_history)
+		return generate_a_counter_representation_using_fallback(style, registered_counter_styles, value, mut fallback_history)
 	}
 
 	value_is_negative_and_uses_negative_sign := value < 0 && style.uses_a_negative_sign()
@@ -1040,8 +1031,7 @@ fn generate_a_counter_representation_impl(counter_style ?CounterStyle, registere
 	// AD-HOC: Algorithms are sometimes unable to produce a representation and require us to use the fallback - we
 	//         represent this by returning an empty Optional.
 	mut representation := maybe_representation or {
-		return generate_a_counter_representation_using_fallback(style, registered_counter_styles,
-			value, mut fallback_history)
+		return generate_a_counter_representation_using_fallback(style, registered_counter_styles, value, mut fallback_history)
 	}
 
 	// 4. Prepend symbols to the representation as specified in the pad descriptor.
@@ -1068,8 +1058,7 @@ fn generate_a_counter_representation_impl(counter_style ?CounterStyle, registere
 	// 5. If the counter value is negative and the counter style uses a negative sign, wrap the representation in the
 	//    counter style’s negative sign as specified in the negative descriptor.
 	if value_is_negative_and_uses_negative_sign {
-		representation = style.negative_sign().prefix + representation +
-			style.negative_sign().suffix
+		representation = style.negative_sign().prefix + representation + style.negative_sign().suffix
 	}
 
 	// 6. Return the representation.
@@ -1087,23 +1076,19 @@ fn generate_a_counter_representation_using_fallback(counter_style CounterStyle, 
 	// can render the given counter value, if a loop in the specified fallbacks is detected, the decimal style must
 	// be used instead.
 	if fallback_name in fallback_history {
-		return generate_a_counter_representation_impl(CounterStyle.decimal(),
-			registered_counter_styles, value, mut fallback_history)
+		return generate_a_counter_representation_impl(CounterStyle.decimal(), registered_counter_styles, value, mut fallback_history)
 	}
 	fallback := registered_counter_styles[fallback_name] or {
-		return generate_a_counter_representation_impl(CounterStyle.decimal(),
-			registered_counter_styles, value, mut fallback_history)
+		return generate_a_counter_representation_impl(CounterStyle.decimal(), registered_counter_styles, value, mut fallback_history)
 	}
 
 	fallback_history[counter_style.name()] = true
-	return generate_a_counter_representation_impl(fallback, registered_counter_styles, value, mut
-		fallback_history)
+	return generate_a_counter_representation_impl(fallback, registered_counter_styles, value, mut fallback_history)
 }
 
 pub fn generate_a_counter_representation(counter_style ?CounterStyle, registered_counter_styles map[string]CounterStyle, value i32) string {
 	mut fallback_history := map[string]bool{}
-	return generate_a_counter_representation_impl(counter_style, registered_counter_styles, value, mut
-		fallback_history)
+	return generate_a_counter_representation_impl(counter_style, registered_counter_styles, value, mut fallback_history)
 }
 
 fn collect_counter_style_definitions_from_sheet(sheet &CSSStyleSheet, context ComputationContext, definitions_ptr &map[string]CounterStyleDefinition) {
@@ -1131,9 +1116,7 @@ fn define_complex_predefined_counter_styles(mut definitions map[string]CounterSt
 	extended_range := CounterStyleDefinitionRange(CounterStyleRangeEntries{
 		entries: [CounterStyleRangeEntry{-9999999999999999, 9999999999999999}]
 	})
-	definitions['ethiopic-numeric'] = CounterStyleDefinition.create('ethiopic-numeric',
-		CounterStyleAlgorithmOrExtends(CounterStyleAlgorithm(EthiopicNumericCounterStyleAlgorithm{})),
-		none, none, '/ ', CounterStyleDefinitionRange(CounterStyleRangeEntries{
+	definitions['ethiopic-numeric'] = CounterStyleDefinition.create('ethiopic-numeric', CounterStyleAlgorithmOrExtends(CounterStyleAlgorithm(EthiopicNumericCounterStyleAlgorithm{})), none, none, '/ ', CounterStyleDefinitionRange(CounterStyleRangeEntries{
 		entries: [CounterStyleRangeEntry{1, counter_i64_max}]
 	}), none, none)
 	for entry in [
@@ -1157,9 +1140,7 @@ fn define_complex_predefined_counter_styles(mut definitions map[string]CounterSt
 	}
 }
 
-// DOM::Document::build_counter_style_cache(). The concrete cache remains on
-// the CSS side of the module boundary.
-pub fn registered_counter_styles_for_document(document &dom.Document) map[string]CounterStyle {
+fn build_registered_counter_styles_for_document(document &dom.Document) map[string]CounterStyle {
 	mut definitions := map[string]CounterStyleDefinition{}
 	definitions_ptr := &definitions
 	context := ComputationContext{
@@ -1185,8 +1166,7 @@ pub fn registered_counter_styles_for_document(document &dom.Document) map[string
 	for _, definition in definitions {
 		algorithm := definition.algorithm()
 		if algorithm is CounterStyleAlgorithm {
-			registered[definition.name()] = CounterStyle.from_counter_style_definition(definition,
-				registered)
+			registered[definition.name()] = CounterStyle.from_counter_style_definition(definition, registered)
 		} else {
 			extending << definition
 		}
@@ -1202,8 +1182,7 @@ pub fn registered_counter_styles_for_document(document &dom.Document) map[string
 				'decimal'
 			}
 			if extends in registered {
-				registered[definition.name()] = CounterStyle.from_counter_style_definition(definition,
-					registered)
+				registered[definition.name()] = CounterStyle.from_counter_style_definition(definition, registered)
 				made_progress = true
 			} else {
 				remaining << definition
@@ -1215,14 +1194,29 @@ pub fn registered_counter_styles_for_document(document &dom.Document) map[string
 				definition.set_algorithm(CounterStyleAlgorithmOrExtends(CounterStyleSystemExtends{
 					name: 'decimal'
 				}))
-				registered[definition.name()] = CounterStyle.from_counter_style_definition(definition,
-					registered)
+				registered[definition.name()] = CounterStyle.from_counter_style_definition(definition, registered)
 			}
 			break
 		}
 		extending = remaining.clone()
 	}
 	return registered
+}
+
+// DOM::Document::build_counter_style_cache(). The concrete cache remains on
+// the CSS side of the module boundary because dom cannot name CounterStyle.
+fn rebuild_registered_counter_styles_for_document(document &dom.Document) {
+	mut style_computer := css_style_computer_for(document)
+	style_computer.registered_counter_styles_ = build_registered_counter_styles_for_document(document)
+	style_computer.has_registered_counter_styles_ = true
+}
+
+pub fn registered_counter_styles_for_document(document &dom.Document) map[string]CounterStyle {
+	mut style_computer := css_style_computer_for(document)
+	if !style_computer.has_registered_counter_styles_ {
+		rebuild_registered_counter_styles_for_document(document)
+	}
+	return style_computer.registered_counter_styles_
 }
 
 // --- CountersSet ---
@@ -1282,10 +1276,10 @@ pub fn (mut counters_set CountersSet) instantiate_a_counter(name string, element
 	// 3. Append a new counter to counters with name name, originating element element,
 	//    reversed being reversed, and initial value value (if given)
 	counter := Counter{
-		name:                name
+		name: name
 		originating_element: element
-		reversed:            reversed
-		value:               value
+		reversed: reversed
+		value: value
 	}
 	counters_set.counters_ << counter
 	return counter
@@ -1313,8 +1307,7 @@ pub fn (mut counters_set CountersSet) increment_a_counter(name string, element C
 			panic('VERIFY_NOT_REACHED')
 		}
 
-		counters_set.counters_[existing_index].value = saturating_add_counter_value(existing_value,
-			amount)
+		counters_set.counters_[existing_index].value = saturating_add_counter_value(existing_value, amount)
 		return
 	}
 
@@ -1326,8 +1319,7 @@ pub fn (mut counters_set CountersSet) increment_a_counter(name string, element C
 		CounterValue(0)
 	}
 
-	counters_set.counters_[counters_set.counters_.len - 1].value = saturating_add_counter_value(current_value,
-		amount)
+	counters_set.counters_[counters_set.counters_.len - 1].value = saturating_add_counter_value(current_value, amount)
 }
 
 pub fn (counters_set CountersSet) last_counter_with_name_index(name string) ?int {
@@ -1425,37 +1417,38 @@ pub mut:
 // publishes their result through DOM::AbstractElement.
 pub fn resolve_counters_for_layout(mut abstract_element dom.AbstractElement, computed &ComputedProperties, origin CounterOriginatingElement, has_parent_element bool, parent_counters ?CountersSet, previous_sibling_counters ?CountersSet, previous_element_counters ?CountersSet) ?CountersSet {
 	mut reset := []CounterOperation{}
-	for counter in computed.counter_data(.counter_reset) {
+	computed_values := unsafe { &ComputedValues(computed) }
+	for counter in computed_values.counter_reset() {
 		reset << CounterOperation{
-			name:        counter.name
+			name: counter.name
 			is_reversed: counter.is_reversed
-			value:       counter.value
+			value: counter.value
 		}
 	}
 	mut increment := []CounterOperation{}
-	for counter in computed.counter_data(.counter_increment) {
+	for counter in computed_values.counter_increment() {
 		increment << CounterOperation{
-			name:  counter.name
+			name: counter.name
 			value: counter.value
 		}
 	}
 	mut set := []CounterOperation{}
-	for counter in computed.counter_data(.counter_set) {
+	for counter in computed_values.counter_set() {
 		set << CounterOperation{
-			name:  counter.name
+			name: counter.name
 			value: counter.value
 		}
 	}
 	resolved := resolve_counters(CounterElement{
-		origin:                         origin
-		generates_box:                  !computed.display().is_none()
-		parent_counters:                parent_counters
+		origin: origin
+		generates_box: !computed.display().is_none()
+		parent_counters: parent_counters
 		previous_sibling_in_tree_order: previous_sibling_counters
 		previous_element_in_tree_order: previous_element_counters
-		counter_reset:                  reset
-		counter_increment:              increment
-		counter_set:                    set
-		has_parent_element:             has_parent_element
+		counter_reset: reset
+		counter_increment: increment
+		counter_set: set
+		has_parent_element: has_parent_element
 	})
 	set_counters_set_for_abstract_element(mut abstract_element, resolved.counters_set)
 	return resolved.counters_set
@@ -1479,6 +1472,7 @@ pub mut:
 // https://drafts.csswg.org/css-lists-3/#auto-numbering
 pub fn resolve_counters(element CounterElement) CounterElement {
 	mut element_reference := element
+
 	// Resolving counter values on a given element is a multi-step process:
 
 	// 1. Existing counters are inherited from previous elements.
@@ -1495,8 +1489,7 @@ pub fn resolve_counters(element CounterElement) CounterElement {
 	// 2. New counters are instantiated (counter-reset).
 	for counter in element_reference.counter_reset {
 		mut counters := element_reference.ensure_counters_set()
-		counters.instantiate_a_counter(counter.name, element_reference.origin, counter.is_reversed,
-			counter.value)
+		counters.instantiate_a_counter(counter.name, element_reference.origin, counter.is_reversed, counter.value)
 		element_reference.counters_set = counters
 	}
 
@@ -1571,9 +1564,7 @@ pub fn inherit_counters(element CounterElement) CounterElement {
 	if previous_counters := element_reference.previous_element_in_tree_order {
 		if mut counters := element_counters {
 			for source_counter in previous_counters.counters() {
-				if existing_index := counters.counter_with_same_name_and_creator_index(source_counter.name,
-					source_counter.originating_element)
-				{
+				if existing_index := counters.counter_with_same_name_and_creator_index(source_counter.name, source_counter.originating_element) {
 					counters.counters_[existing_index].value = source_counter.value
 				}
 			}
@@ -1732,16 +1723,17 @@ pub fn (style_value CounterStyleSystemStyleValue) is_valid_symbol_count(count in
 				// https://drafts.csswg.org/css-counter-styles-3/#cyclic-system
 				// If the system is cyclic, the symbols descriptor must contain at least one counter symbol, otherwise the
 				// rule does not define a counter style (but is still a valid rule)
-				.cyclic,  // https://drafts.csswg.org/css-counter-styles-3/#symbolic-system
+				.cyclic, // https://drafts.csswg.org/css-counter-styles-3/#symbolic-system
 				// If the system is symbolic, the symbols descriptor must contain at least one counter symbol, otherwise the
 				// rule does not define a counter style (but is still a valid rule).
 				.symbolic {
 					count >= 1
 				}
+
 				// https://drafts.csswg.org/css-counter-styles-3/#alphabetic-system
 				// If the system is alphabetic, the symbols descriptor must contain at least two counter symbols, otherwise
 				// the rule does not define a counter style (but is still a valid rule).
-				.alphabetic,  // https://drafts.csswg.org/css-counter-styles-3/#numeric-system
+				.alphabetic, // https://drafts.csswg.org/css-counter-styles-3/#numeric-system
 				// If the system is numeric, the symbols descriptor must contain at least two counter symbols, otherwise the
 				// rule does not define a counter style (but is still a valid rule).
 				.numeric {
@@ -1855,7 +1847,7 @@ pub fn CounterStyleStyleValue.create_named(name string) CounterStyleStyleValue {
 
 pub fn CounterStyleStyleValue.create_symbols(type_ SymbolsType, symbols []string) CounterStyleStyleValue {
 	return CounterStyleStyleValue.create(CounterStyleStyleValueValue(CounterStyleSymbolsFunction{
-		type_:   type_
+		type_: type_
 		symbols: symbols
 	}))
 }
@@ -1915,7 +1907,7 @@ pub fn (style_value CounterStyleStyleValue) resolve_counter_style(registered_cou
 				.fixed {
 					CounterStyleAlgorithm(FixedCounterStyleAlgorithm{
 						first_symbol: 1
-						symbol_list:  value.symbols
+						symbol_list: value.symbols
 					})
 				}
 			}
@@ -1927,12 +1919,12 @@ pub fn (style_value CounterStyleStyleValue) resolve_counter_style(registered_cou
 
 			definition := CounterStyleDefinition.create( // NB: We use empty string instead of no name for simplicity - this doesn't clash with
 			//     <counter-style-name> since that is a <custom-ident> which can't be an empty string.
-			 '', CounterStyleAlgorithmOrExtends(algorithm), CounterStyleNegativeSign{
+			'', CounterStyleAlgorithmOrExtends(algorithm), CounterStyleNegativeSign{
 				prefix: '-'
 				suffix: ''
 			}, '', ' ', CounterStyleDefinitionRange(AutoRange{}), 'decimal', CounterStylePad{
 				minimum_length: 0
-				symbol:         ''
+				symbol: ''
 			})
 
 			// NB: We don't need to pass registered counter styles here since we don't rely on extension.
@@ -1963,18 +1955,18 @@ pub mut:
 
 pub fn CounterStyleValue.create_counter(counter_name string, counter_style CounterStyleStyleValue) CounterStyleValue {
 	return CounterStyleValue{
-		function_:      .counter
-		counter_name_:  counter_name
+		function_: .counter
+		counter_name_: counter_name
 		counter_style_: counter_style
 	}
 }
 
 pub fn CounterStyleValue.create_counters(counter_name string, join_string string, counter_style CounterStyleStyleValue) CounterStyleValue {
 	return CounterStyleValue{
-		function_:      .counters
-		counter_name_:  counter_name
+		function_: .counters
+		counter_name_: counter_name
 		counter_style_: counter_style
-		join_string_:   join_string
+		join_string_: join_string
 	}
 }
 
@@ -2005,8 +1997,7 @@ pub fn (style_value CounterStyleValue) resolve(mut context CounterStyleResolutio
 	// "If no counter named <counter-name> exists on an element where counter() or counters() is used,
 	// one is first instantiated with a starting value of 0."
 	if context.counters_set.last_counter_with_name(style_value.counter_name_) == none {
-		context.counters_set.instantiate_a_counter(style_value.counter_name_,
-			context.originating_element, false, 0)
+		context.counters_set.instantiate_a_counter(style_value.counter_name_, context.originating_element, false, 0)
 	}
 
 	// counter( <counter-name>, <counter-style>? )
@@ -2017,8 +2008,7 @@ pub fn (style_value CounterStyleValue) resolve(mut context CounterStyleResolutio
 		counter := context.counters_set.last_counter_with_name(style_value.counter_name_) or {
 			return ''
 		}
-		return generate_a_counter_representation(style_value.counter_style_.resolve_counter_style(context.registered_counter_styles),
-			context.registered_counter_styles, counter.value or { 0 })
+		return generate_a_counter_representation(style_value.counter_style_.resolve_counter_style(context.registered_counter_styles), context.registered_counter_styles, counter.value or { 0 })
 	}
 
 	// counters( <counter-name>, <string>, <counter-style>? )
@@ -2032,8 +2022,7 @@ pub fn (style_value CounterStyleValue) resolve(mut context CounterStyleResolutio
 			continue
 		}
 
-		counter_string := generate_a_counter_representation(style_value.counter_style_.resolve_counter_style(context.registered_counter_styles),
-			context.registered_counter_styles, counter.value or { 0 })
+		counter_string := generate_a_counter_representation(style_value.counter_style_.resolve_counter_style(context.registered_counter_styles), context.registered_counter_styles, counter.value or { 0 })
 		parts << counter_string
 	}
 	return parts.join(style_value.join_string_)
@@ -2043,9 +2032,12 @@ pub fn (style_value CounterStyleValue) resolve_for_abstract_element(abstract_ele
 	mut counters_set := ensure_counters_set_for_abstract_element(abstract_element)
 	parent := abstract_element.parent_element()
 	origin := CounterOriginatingElement{
-		id:                abstract_element.element().as_node().unique_id().value() * 16 +
-			if pseudo := abstract_element.pseudo_element() { i64(int(pseudo) + 1) } else { 0 }
-		parent_id:         if parent_element := parent {
+		id: abstract_element.element().as_node().unique_id().value() * 16 + if pseudo := abstract_element.pseudo_element() {
+			i64(int(pseudo) + 1)
+		} else {
+			0
+		}
+		parent_id: if parent_element := parent {
 			parent_element.as_node().unique_id().value() * 16
 		} else {
 			none
@@ -2053,9 +2045,9 @@ pub fn (style_value CounterStyleValue) resolve_for_abstract_element(abstract_ele
 		debug_description: abstract_element.debug_description()
 	}
 	mut context := CounterStyleResolutionContext{
-		counters_set:              *counters_set
+		counters_set: *counters_set
 		registered_counter_styles: registered_counter_styles
-		originating_element:       origin
+		originating_element: origin
 	}
 	result := style_value.resolve(mut context)
 	unsafe {
@@ -2075,9 +2067,8 @@ pub fn (style_value CounterStyleValue) serialize(mode SerializationMode) string 
 	// 2. If <counter> has three CSS component values append the string "counters(" to s.
 	if style_value.function_ == .counters {
 		serialized += 'counters('
-	}
 	// 3. If <counter> has two CSS component values append the string "counter(" to s.
-	else if style_value.function_ == .counter {
+	} else if style_value.function_ == .counter {
 		serialized += 'counter('
 	}
 
@@ -2165,9 +2156,9 @@ pub fn (style_value CounterDefinitionsStyleValue) absolutized(computation_contex
 
 	for specified_definition in style_value.counter_definitions_ {
 		mut computed_definition := CounterDefinition{
-			name:        specified_definition.name
+			name: specified_definition.name
 			is_reversed: specified_definition.is_reversed
-			value:       none
+			value: none
 		}
 
 		if value := specified_definition.value {
@@ -2290,7 +2281,7 @@ pub mut:
 pub fn CounterStylePadStyleValue.create(minimum_length StyleValue, symbol StyleValue) CounterStylePadStyleValue {
 	return CounterStylePadStyleValue{
 		minimum_length: minimum_length
-		symbol:         symbol
+		symbol: symbol
 	}
 }
 
@@ -2316,17 +2307,17 @@ pub mut:
 
 pub fn CSSCounterStyleRule.create(name string, system ?CounterStyleSystemStyleValue, negative ?CounterStyleSymbolListStyleValue, prefix ?StyleValue, suffix ?StyleValue, range ?CounterStyleRangeStyleValue, pad ?CounterStylePadStyleValue, fallback ?StyleValue, symbols ?CounterStyleSymbolListStyleValue, additive_symbols ?CounterStyleAdditiveSymbolsStyleValue, speak_as ?StyleValue) CSSCounterStyleRule {
 	return CSSCounterStyleRule{
-		name_:                         name
-		system_style_value_:           system
-		negative_style_value_:         negative
-		prefix_style_value_:           prefix
-		suffix_style_value_:           suffix
-		range_style_value_:            range
-		pad_style_value_:              pad
-		fallback_style_value_:         fallback
-		symbols_style_value_:          symbols
+		name_: name
+		system_style_value_: system
+		negative_style_value_: negative
+		prefix_style_value_: prefix
+		suffix_style_value_: suffix
+		range_style_value_: range
+		pad_style_value_: pad
+		fallback_style_value_: fallback
+		symbols_style_value_: symbols
 		additive_symbols_style_value_: additive_symbols
-		speak_as_style_value_:         speak_as
+		speak_as_style_value_: speak_as
 	}
 }
 
@@ -2667,9 +2658,18 @@ fn generate_extended_cjk_counter_style(value i64, type_ ExtendedCJKCounterStyleA
 		// | Third Group Marker    | 亿 U+4EBF             | 亿 U+4EBF            | 億 U+5104              | 億 U+5104
 		// | Fourth Group Marker   | 万亿 U+4E07 U+4EBF    | 万亿 U+4E07 U+4EBF    | 兆 U+5146             | 兆 U+5146
 		.simp_chinese_informal {
-			generate_an_initial_representation_for_extended_cjk_system(value,
-				.simp_chinese_informal, code_point_symbols([u32(0x96f6), 0x4e00, 0x4e8c, 0x4e09,
-				0x56db, 0x4e94, 0x516d, 0x4e03, 0x516b, 0x4e5d]), code_point_symbols([
+			generate_an_initial_representation_for_extended_cjk_system(value, .simp_chinese_informal, code_point_symbols([
+				u32(0x96f6),
+				0x4e00,
+				0x4e8c,
+				0x4e09,
+				0x56db,
+				0x4e94,
+				0x516d,
+				0x4e03,
+				0x516b,
+				0x4e5d,
+			]), code_point_symbols([
 				u32(0x5341),
 				0x767e,
 				0x5343,
@@ -2698,9 +2698,18 @@ fn generate_extended_cjk_counter_style(value i64, type_ ExtendedCJKCounterStyleA
 			])
 		}
 		.trad_chinese_informal {
-			generate_an_initial_representation_for_extended_cjk_system(value,
-				.trad_chinese_informal, code_point_symbols([u32(0x96f6), 0x4e00, 0x4e8c, 0x4e09,
-				0x56db, 0x4e94, 0x516d, 0x4e03, 0x516b, 0x4e5d]), code_point_symbols([
+			generate_an_initial_representation_for_extended_cjk_system(value, .trad_chinese_informal, code_point_symbols([
+				u32(0x96f6),
+				0x4e00,
+				0x4e8c,
+				0x4e09,
+				0x56db,
+				0x4e94,
+				0x516d,
+				0x4e03,
+				0x516b,
+				0x4e5d,
+			]), code_point_symbols([
 				u32(0x5341),
 				0x767e,
 				0x5343,
@@ -2724,6 +2733,7 @@ fn generate_extended_cjk_counter_style(value i64, type_ ExtendedCJKCounterStyleA
 				0x5146,
 			]))
 		}
+
 		// Values              | Codepoints
 		//                     | japanese-informal | japanese-formal
 		// Digit 0             | 〇 U+3007         | 零 U+96F6
@@ -2778,6 +2788,7 @@ fn generate_extended_cjk_counter_style(value i64, type_ ExtendedCJKCounterStyleA
 				counter_symbol_from_code_point(0x9621),
 			], code_point_symbols([u32(0x842c), 0x5104, 0x5146]))
 		}
+
 		// Values              | Codepoints
 		//                     | korean-hangul-formal | korean-hanja-informal | korean-hanja-formal
 		// Digit 0             | 영 U+C601            |  零 U+96F6            | 零 U+96F6
@@ -2797,18 +2808,36 @@ fn generate_extended_cjk_counter_style(value i64, type_ ExtendedCJKCounterStyleA
 		// Third Group Marker  | 억 U+C5B5            |  億 U+5104            | 億 U+5104
 		// Fourth Group Marker | 조 U+C870            |  兆 U+5146            | 兆 U+5146
 		.korean_hangul_formal {
-			generate_an_initial_representation_for_extended_cjk_system(value,
-				.korean_hangul_formal, code_point_symbols([u32(0xc601), 0xc77c, 0xc774, 0xc0bc,
-				0xc0ac, 0xc624, 0xc721, 0xce60, 0xd314, 0xad6c]), code_point_symbols([
+			generate_an_initial_representation_for_extended_cjk_system(value, .korean_hangul_formal, code_point_symbols([
+				u32(0xc601),
+				0xc77c,
+				0xc774,
+				0xc0bc,
+				0xc0ac,
+				0xc624,
+				0xc721,
+				0xce60,
+				0xd314,
+				0xad6c,
+			]), code_point_symbols([
 				u32(0xc2ed),
 				0xbc31,
 				0xcc9c,
 			]), code_point_symbols([u32(0xb9cc), 0xc5b5, 0xc870]))
 		}
 		.korean_hanja_informal {
-			generate_an_initial_representation_for_extended_cjk_system(value,
-				.korean_hanja_informal, code_point_symbols([u32(0x96f6), 0x4e00, 0x4e8c, 0x4e09,
-				0x56db, 0x4e94, 0x516d, 0x4e03, 0x516b, 0x4e5d]), code_point_symbols([
+			generate_an_initial_representation_for_extended_cjk_system(value, .korean_hanja_informal, code_point_symbols([
+				u32(0x96f6),
+				0x4e00,
+				0x4e8c,
+				0x4e09,
+				0x56db,
+				0x4e94,
+				0x516d,
+				0x4e03,
+				0x516b,
+				0x4e5d,
+			]), code_point_symbols([
 				u32(0x5341),
 				0x767e,
 				0x5343,

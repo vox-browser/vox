@@ -453,8 +453,8 @@ fn test_document_open_write_writeln_and_close_use_live_html_parser() {
 	doc.set_document_type(.html)
 	install_document_fragment_parsing_hook(doc)
 	doc.open_document() or { panic('${err}') }
-	doc.write(['<title>Written</title><main>one']) or { panic('${err}') }
-	doc.writeln([' + two</main>']) or { panic('${err}') }
+	doc.write_strings(['<title>Written</title><main>one']) or { panic('${err}') }
+	doc.writeln_strings([' + two</main>']) or { panic('${err}') }
 
 	// Each write runs only as far as the tokenizer insertion point. Closing the
 	// stream inserts explicit EOF and finishes tree construction.

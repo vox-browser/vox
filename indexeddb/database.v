@@ -18,35 +18,27 @@ pub:
 	name        string
 	storage_key string
 pub mut:
-	version        u64
-	stores         map[string]ObjectStoreData
-	connections    int
-	delete_pending bool
+	version                u64
+	stores                 map[string]&ObjectStoreData
+	connections            int
+	delete_pending         bool
 	associated_connections []&IDBDatabase
-	upgrade_transaction ?&IDBTransaction
-}
-
-fn (database &DatabaseData) clone_stores() map[string]ObjectStoreData {
-	mut stores := map[string]ObjectStoreData{}
-	for name, store in database.stores {
-		stores[name] = store.clone()
-	}
-	return stores
+	upgrade_transaction    ?&IDBTransaction
 }
 
 @[heap]
 pub struct IDBDatabase {
 pub mut:
-	data           &DatabaseData
-	state          ConnectionState = .open
-	upgrade_active bool
-	transactions   []&IDBTransaction
-	events         []string
+	data                 &DatabaseData
+	state                ConnectionState = .open
+	upgrade_active       bool
+	transactions         []&IDBTransaction
+	events               []string
 	object_store_handles map[string]IDBObjectStore
-	onabort_       ?IDBEventHandler
-	onerror_       ?IDBEventHandler
-	onclose_       ?IDBEventHandler
-	onversionchange_ ?IDBEventHandler
+	onabort_             ?IDBEventHandler
+	onerror_             ?IDBEventHandler
+	onclose_             ?IDBEventHandler
+	onversionchange_     ?IDBEventHandler
 }
 
 fn new_connection(data &DatabaseData) &IDBDatabase {
@@ -135,19 +127,23 @@ pub fn (mut database IDBDatabase) create_object_store(mut transaction IDBTransac
 			}
 		}
 	}
-	database.data.stores[name] = ObjectStoreData{
-		name:           name
-		key_path:       parameters.key_path
+	mut object_store := &ObjectStoreData{
+		name: name
+		key_path: parameters.key_path
 		auto_increment: parameters.auto_increment
-		indexes:        map[string]IndexData{}
+		indexes: map[string]&IndexData{}
+		database_: database.data
 	}
+	database.data.stores[name] = object_store
+	transaction.set_up_mutation_log_for_new_store(object_store)
 	if name !in transaction.scope_names {
 		transaction.scope_names << name
 		sort_name_list(mut transaction.scope_names)
 	}
 	return IDBObjectStore{
 		transaction: &transaction
-		name_:       name
+		name_: name
+		store_: object_store
 	}
 }
 
@@ -155,6 +151,14 @@ pub fn (mut database IDBDatabase) delete_object_store(mut transaction IDBTransac
 	transaction.require_versionchange_active()!
 	if name !in database.data.stores {
 		return error('NotFoundError: object store not found')
+	}
+	mut store := database.data.stores[name] or { return error('NotFoundError: object store not found') }
+	if mut log := store.mutation_log_ {
+		log.note_object_store_deleted()
+	}
+	store.deleted = true
+	for _, mut index in store.indexes {
+		index.deleted = true
 	}
 	database.data.stores.delete(name)
 	transaction.scope_names = transaction.scope_names.filter(it != name)

@@ -2,58 +2,46 @@ module css
 
 import dom
 
-// Computed-value resolution for font-size — the first real "specified value -> computed value" step,
-// and the canonical one (it drives em resolution for every other property). Given the minimal
-// cascade (inline + author + UA + inheritance), this resolves an element's font-size to absolute px:
+// Computed-value resolution for the compatibility cascade API. It uses the
+// same typed LengthResolutionContext and font-size mappings as StyleComputer:
 // absolute lengths convert directly; em/% resolve against the parent's computed font-size; rem
 // against the root element's; the absolute-size keywords use the CSS font-size scale.
-//
-// FIXME: no caching (ancestor font-sizes are recomputed), and viewport units (vw/vh/...) and calc()
-// are not resolved (they fall back to the parent's font-size).
 
 const default_font_size_px = 16.0 // the initial value of font-size ('medium')
 
-// The absolute-size keyword scale, relative to medium = 16px (CSS Fonts 'absolute-size').
-fn font_size_keyword_px(keyword Keyword, parent_px f64) f64 {
-	return match keyword {
-		.xx_small { default_font_size_px * 3.0 / 5.0 }
-		.x_small { default_font_size_px * 3.0 / 4.0 }
-		.small { default_font_size_px * 8.0 / 9.0 }
-		.medium { default_font_size_px }
-		.large { default_font_size_px * 6.0 / 5.0 }
-		.x_large { default_font_size_px * 3.0 / 2.0 }
-		.xx_large { default_font_size_px * 2.0 }
-		.xxx_large { default_font_size_px * 3.0 }
-		.larger { parent_px * 1.2 }
-		.smaller { parent_px / 1.2 }
-		else { parent_px }
-	}
-}
-
 // Resolve a specified font-size string to computed px, given the parent's and root's computed px.
-fn resolve_font_size_px(specified string, parent_px f64, root_px f64) f64 {
+fn resolve_font_size_px(specified string, parent_px f64, root_px f64, viewport dom.Rect) f64 {
 	value := parse_css_value_logic(.font_size, specified) or { return parent_px }
-	if value.is_length() {
-		length := value.as_length().length()
-		if length.is_absolute() {
-			return length.absolute_length_to_px().to_double()
+	parent_size := CSSPixels.nearest_value_for(parent_px)
+	root_size := CSSPixels.nearest_value_for(root_px)
+	context := LengthResolutionContext{
+		viewport_rect: CSSPixelRect.new(viewport.x, viewport.y, viewport.width, viewport.height)
+		font_metrics: computed_interpolation_font_metrics_for_size(parent_size)
+		root_font_metrics: computed_interpolation_font_metrics_for_size(root_size)
+	}
+	if value is LengthStyleValue {
+		length := value.length()
+		if length.is_absolute() || length.is_font_relative() || length.is_viewport_relative() {
+			return length.to_px(context).to_double()
 		}
-		raw := length.raw_value()
-		return match length.unit_name() {
-			'em' { raw * parent_px }
-			'rem' { raw * root_px }
-			'ex' { raw * parent_px * 0.5 } // approximation: 1ex ~= 0.5em
-			'ch' { raw * parent_px * 0.5 } // approximation: 1ch ~= 0.5em
-			else { parent_px } // FIXME: viewport units need the viewport size
-		}
 	}
-	if value.is_percentage() {
-		return parent_px * value.as_percentage().percentage().value() / 100.0
+	if value is PercentageStyleValue {
+		return parent_px * value.percentage().as_fraction()
 	}
-	if value.type_() == .keyword {
-		return font_size_keyword_px(value.to_keyword(), parent_px)
+	if value is CalculatedStyleValue {
+		resolved := value.resolve_length(CalculationResolutionContext{
+			percentage_basis: Length.make_css_px(parent_size)
+			length_resolution_context: context
+		}) or { return parent_px }
+		return resolved.to_px(context).to_double()
 	}
-	return parent_px // e.g. calc()/unresolved -> inherit (FIXME)
+	if absolute_size := computed_interpolation_keyword_to_absolute_size(value.to_keyword()) {
+		return StyleComputer.absolute_size_mapping(absolute_size, StyleComputer.default_user_font_size()).to_double()
+	}
+	if relative_size := computed_interpolation_keyword_to_relative_size(value.to_keyword()) {
+		return StyleComputer.relative_size_mapping(relative_size, parent_size).to_double()
+	}
+	return parent_px
 }
 
 // The element's own specified font-size (inline + author + UA, NOT inherited), if any.
@@ -70,13 +58,19 @@ pub fn root_font_size_px(element &dom.Element, author_rules []&CSSRule) f64 {
 		root = parent
 	}
 	own := own_font_size(root, author_rules) or { return default_font_size_px }
-	return resolve_font_size_px(own, default_font_size_px, default_font_size_px)
+	return resolve_font_size_px(own, default_font_size_px, default_font_size_px, root.document().viewport_rect())
 }
 
 // https://drafts.csswg.org/css-fonts/#font-size-prop
 // The computed font-size (px) of `element`: resolve its own specified font-size against its parent's
 // computed font-size; if the element has no own font-size, it inherits the parent's computed value.
 pub fn computed_font_size_px(element &dom.Element, author_rules []&CSSRule) f64 {
+	abstract_element := dom.AbstractElement.new(element, none)
+	if dom_computed := abstract_element.computed_properties() {
+		if computed := computed_properties_from_dom(dom_computed) {
+			return computed.resolved_font_size_px()
+		}
+	}
 	parent_px := if parent := element.as_node().parent_element() {
 		computed_font_size_px(parent, author_rules)
 	} else {
@@ -91,5 +85,5 @@ pub fn computed_font_size_px(element &dom.Element, author_rules []&CSSRule) f64 
 	} else {
 		parent_px
 	}
-	return resolve_font_size_px(own, parent_px, root_px)
+	return resolve_font_size_px(own, parent_px, root_px, element.document().viewport_rect())
 }

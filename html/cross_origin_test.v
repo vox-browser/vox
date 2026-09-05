@@ -21,13 +21,13 @@ fn test_cross_origin_property_tables_fallback_and_proxy_operations() {
 	document := cross_origin_test_document('https://target.test/')
 	window := WindowModel.create_top_level(document, none, 'target')!
 	proxy := window.window()
-	assert cross_origin_get(proxy, dom.Origin{'https://caller.test'}, 'closed')!.kind == .boolean
-	if _ := cross_origin_get(proxy, dom.Origin{'https://caller.test'}, 'secret') {
+	assert cross_origin_get(proxy, dom.Origin{ value: 'https://caller.test' }, 'closed')!.kind == .boolean
+	if _ := cross_origin_get(proxy, dom.Origin{ value: 'https://caller.test' }, 'secret') {
 		assert false
 	} else {
 		assert err.msg().contains('SecurityError')
 	}
-	assert cross_origin_own_property_keys(proxy, dom.Origin{'https://caller.test'}).contains('postMessage')
+	assert cross_origin_own_property_keys(proxy, dom.Origin{ value: 'https://caller.test' }).contains('postMessage')
 }
 
 fn test_cross_origin_reporting_guards_and_relationship() {

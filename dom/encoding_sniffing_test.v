@@ -1,5 +1,7 @@
 module dom
 
+import mimesniff
+
 // run_bom_sniff / is_valid_utf8 / run_encoding_sniffing_algorithm / text_decoder_validate, translated
 // from HTML::HTMLEncodingDetection + TextCodec (replacing the always-UTF-8/true stubs).
 fn test_bom_sniff() {
@@ -29,7 +31,7 @@ fn test_is_valid_utf8() {
 
 fn test_encoding_sniffing() {
 	doc := Document.create(url_about_blank())
-	mime := MimeType{}
+	mime := mimesniff.MimeType.create('text', 'html')
 	assert run_encoding_sniffing_algorithm(doc, 'hello world'.bytes(), mime) == 'UTF-8'
 	// BOM wins.
 	assert run_encoding_sniffing_algorithm(doc, [u8(0xEF), 0xBB, 0xBF, 0x41], mime) == 'UTF-8'

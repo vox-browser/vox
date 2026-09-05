@@ -15,19 +15,23 @@ pub enum AudioContextState {
 	running
 	closed
 }
+
 pub enum ChannelCountMode {
 	max
 	clamped_max
 	explicit
 }
+
 pub enum ChannelInterpretation {
 	speakers
 	discrete
 }
+
 pub enum AutomationRate {
 	a_rate
 	k_rate
 }
+
 pub enum BiquadFilterType {
 	lowpass
 	highpass
@@ -38,6 +42,7 @@ pub enum BiquadFilterType {
 	notch
 	allpass
 }
+
 pub enum OscillatorType {
 	sine
 	square
@@ -45,15 +50,18 @@ pub enum OscillatorType {
 	triangle
 	custom
 }
+
 pub enum PanningModelType {
 	equalpower
 	hrtf
 }
+
 pub enum DistanceModelType {
 	linear
 	inverse
 	exponential
 }
+
 pub enum NodeKind {
 	destination
 	analyser
@@ -95,20 +103,24 @@ pub mut:
 
 pub fn new_audio_param(id u64, context_id u64, default_value f32, min_value f32, max_value f32, rate AutomationRate, fixed bool) AudioParam {
 	return AudioParam{
-		id:              id
-		context_id:      context_id
-		default_value:   default_value
-		min_value:       min_value
-		max_value:       max_value
-		current_value:   default_value
+		id: id
+		context_id: context_id
+		default_value: default_value
+		min_value: min_value
+		max_value: max_value
+		current_value: default_value
 		automation_rate: rate
-		fixed_rate:      fixed
+		fixed_rate: fixed
 	}
 }
 
 pub fn (parameter AudioParam) value() f32 {
-	if parameter.current_value < parameter.min_value { return parameter.min_value }
-	if parameter.current_value > parameter.max_value { return parameter.max_value }
+	if parameter.current_value < parameter.min_value {
+		return parameter.min_value
+	}
+	if parameter.current_value > parameter.max_value {
+		return parameter.max_value
+	}
 	return parameter.current_value
 }
 
@@ -168,6 +180,14 @@ pub:
 	output       u32
 }
 
+@[heap]
+pub struct AudioGraphState {
+pub mut:
+	input_connections  map[u64][]AudioNodeConnection
+	output_connections map[u64][]AudioNodeConnection
+	param_connections  map[u64][]AudioParamConnection
+}
+
 pub struct AudioNode {
 pub:
 	id                u64
@@ -176,14 +196,24 @@ pub:
 	number_of_inputs  u32
 	number_of_outputs u32
 pub mut:
-	channel_count          u32                   = 2
-	channel_count_mode     ChannelCountMode      = .max
+	graph                  &AudioGraphState = &AudioGraphState{}
+	channel_count          u32 = 2
+	channel_count_mode     ChannelCountMode = .max
 	channel_interpretation ChannelInterpretation = .speakers
-	input_connections      []AudioNodeConnection
-	output_connections     []AudioNodeConnection
-	param_connections      []AudioParamConnection
 	source_started         bool
 	onended                bool
+}
+
+pub fn (node AudioNode) input_connection_records() []AudioNodeConnection {
+	return node.graph.input_connections[node.id] or { []AudioNodeConnection{} }
+}
+
+pub fn (node AudioNode) output_connection_records() []AudioNodeConnection {
+	return node.graph.output_connections[node.id] or { []AudioNodeConnection{} }
+}
+
+pub fn (node AudioNode) param_connection_records() []AudioParamConnection {
+	return node.graph.param_connections[node.id] or { []AudioParamConnection{} }
 }
 
 pub fn (mut node AudioNode) set_channel_count(count u32) ! {
@@ -201,12 +231,15 @@ pub fn (mut node AudioNode) initialize_options(options AudioNodeOptions, default
 
 pub fn connect_nodes(mut source AudioNode, mut destination AudioNode, output u32, input u32) ! {
 	connection := AudioNodeConnection{
-		source_id:      source.id
+		source_id: source.id
 		destination_id: destination.id
-		output:         output
-		input:          input
+		output: output
+		input: input
 	}
-	if connection in source.output_connections { return }
+	mut output_connections := source.output_connection_records()
+	if connection in output_connections {
+		return
+	}
 	if source.context_id != destination.context_id {
 		return error('InvalidAccessError: Cannot connect nodes from different AudioContexts')
 	}
@@ -216,37 +249,63 @@ pub fn connect_nodes(mut source AudioNode, mut destination AudioNode, output u32
 	if input >= destination.number_of_inputs {
 		return error('IndexSizeError: Input index exceeds number of inputs')
 	}
-	source.output_connections << connection
-	destination.input_connections << connection
+	output_connections << connection
+	source.graph.output_connections[source.id] = output_connections
+	mut input_connections := destination.input_connection_records()
+	input_connections << connection
+	destination.graph.input_connections[destination.id] = input_connections
 }
 
 pub fn connect_param(mut source AudioNode, parameter AudioParam, output u32) ! {
 	connection := AudioParamConnection{
-		source_id:    source.id
+		source_id: source.id
 		parameter_id: parameter.id
-		output:       output
+		output: output
 	}
-	if connection in source.param_connections { return }
+	mut param_connections := source.param_connection_records()
+	if connection in param_connections {
+		return
+	}
 	if source.context_id != parameter.context_id {
 		return error('InvalidAccessError: Cannot connect parameter from a different AudioContext')
 	}
 	if output >= source.number_of_outputs {
 		return error('IndexSizeError: Output index exceeds number of outputs')
 	}
-	source.param_connections << connection
+	param_connections << connection
+	source.graph.param_connections[source.id] = param_connections
 }
 
 pub fn (mut node AudioNode) disconnect_all() {
-	node.output_connections.clear()
-	node.param_connections.clear()
+	for connection in node.output_connection_records() {
+		mut reverse_connections := node.graph.input_connections[connection.destination_id] or {
+			[]AudioNodeConnection{}
+		}
+		reverse_connections = reverse_connections.filter(it.source_id != node.id)
+		node.graph.input_connections[connection.destination_id] = reverse_connections
+	}
+	node.graph.output_connections[node.id] = []
+	node.graph.param_connections[node.id] = []
 }
 
 pub fn (mut node AudioNode) disconnect_output(output u32) ! {
 	if output >= node.number_of_outputs {
 		return error('IndexSizeError: Output index exceeds number of outputs')
 	}
-	node.output_connections = node.output_connections.filter(it.output != output)
-	node.param_connections = node.param_connections.filter(it.output != output)
+	mut output_connections := node.output_connection_records()
+	for connection in output_connections {
+		if connection.output != output {
+			continue
+		}
+		mut reverse_connections := node.graph.input_connections[connection.destination_id] or {
+			[]AudioNodeConnection{}
+		}
+		reverse_connections = reverse_connections.filter(!(it.source_id == node.id && it.output == output))
+		node.graph.input_connections[connection.destination_id] = reverse_connections
+	}
+	output_connections = output_connections.filter(it.output != output)
+	node.graph.output_connections[node.id] = output_connections
+	node.graph.param_connections[node.id] = node.param_connection_records().filter(it.output != output)
 }
 
 pub fn (mut node AudioNode) disconnect_destination(destination_id u64, output ?u32, input ?u32) ! {
@@ -259,12 +318,21 @@ pub fn (mut node AudioNode) disconnect_destination(destination_id u64, output ?u
 	has_input := input != none
 	output_value := output or { u32(0) }
 	input_value := input or { u32(0) }
-	before := node.output_connections.len
-	node.output_connections = node.output_connections.filter(!(it.destination_id == destination_id
-		&& (!has_output || it.output == output_value) && (!has_input || it.input == input_value)))
-	if before == node.output_connections.len {
+	mut output_connections := node.output_connection_records()
+	before := output_connections.len
+	removed := output_connections.filter(it.destination_id == destination_id && (!has_output || it.output == output_value) && (!has_input || it.input == input_value))
+	output_connections = output_connections.filter(!(it.destination_id == destination_id && (!has_output || it.output == output_value) && (!has_input || it.input == input_value)))
+	if before == output_connections.len {
 		return error('InvalidAccessError: No matching AudioNode connection')
 	}
+	node.graph.output_connections[node.id] = output_connections
+	mut reverse_connections := node.graph.input_connections[destination_id] or {
+		[]AudioNodeConnection{}
+	}
+	for connection in removed {
+		reverse_connections = reverse_connections.filter(!(it.source_id == node.id && it.output == connection.output && it.input == connection.input))
+	}
+	node.graph.input_connections[destination_id] = reverse_connections
 }
 
 // Faithful two-sided form of the AudioNode destination overload. Callers that
@@ -281,20 +349,7 @@ pub fn disconnect_nodes(mut source AudioNode, mut destination AudioNode, output 
 			return error('IndexSizeError: Input index exceeds number of inputs')
 		}
 	}
-	has_output := output != none
-	has_input := input != none
-	output_value := output or { u32(0) }
-	input_value := input or { u32(0) }
-	before := source.output_connections.len
-	source.output_connections = source.output_connections.filter(!(
-		it.destination_id == destination.id && (!has_output || it.output == output_value)
-		&& (!has_input || it.input == input_value)))
-	if before == source.output_connections.len {
-		return error('InvalidAccessError: No matching AudioNode connection')
-	}
-	destination.input_connections = destination.input_connections.filter(!(
-		it.source_id == source.id && (!has_output || it.output == output_value)
-		&& (!has_input || it.input == input_value)))
+	source.disconnect_destination(destination.id, output, input)!
 }
 
 pub fn (mut node AudioNode) disconnect_parameter(parameter_id u64, output ?u32) ! {
@@ -305,19 +360,22 @@ pub fn (mut node AudioNode) disconnect_parameter(parameter_id u64, output ?u32) 
 	}
 	has_output := output != none
 	output_value := output or { u32(0) }
-	before := node.param_connections.len
-	node.param_connections = node.param_connections.filter(!(it.parameter_id == parameter_id
-		&& (!has_output || it.output == output_value)))
-	if before == node.param_connections.len {
+	mut connections := node.param_connection_records()
+	before := connections.len
+	connections = connections.filter(!(it.parameter_id == parameter_id && (!has_output || it.output == output_value)))
+	if before == connections.len {
 		return error('InvalidAccessError: No matching AudioParam connection')
 	}
+	node.graph.param_connections[node.id] = connections
 }
 
 pub fn (mut node AudioNode) start(when f64) ! {
 	if node.source_started {
 		return error('InvalidStateError: AudioScheduledSourceNode has already been started')
 	}
-	if when < 0 { return error('RangeError: when must not be negative') }
+	if when < 0 {
+		return error('RangeError: when must not be negative')
+	}
 	node.source_started = true
 }
 
@@ -325,13 +383,16 @@ pub fn (node AudioNode) stop(when f64) ! {
 	if !node.source_started {
 		return error('InvalidStateError: AudioScheduledSourceNode has not been started')
 	}
-	if when < 0 { return error('RangeError: when must not be negative') }
+	if when < 0 {
+		return error('RangeError: when must not be negative')
+	}
 }
 
 pub enum ControlMessageKind {
 	start_source
 	stop_source
 }
+
 pub struct ControlMessage {
 pub:
 	kind    ControlMessageKind
@@ -359,17 +420,17 @@ pub fn (mut queue ControlMessageQueue) drain() []ControlMessage {
 pub fn start_scheduled_source(mut context BaseAudioContext, mut node AudioNode, when f64) ! {
 	node.start(when)!
 	context.control_messages.enqueue(ControlMessage{
-		kind:    .start_source
+		kind: .start_source
 		node_id: node.id
-		when:    when
+		when: when
 	})
 }
 
 pub fn stop_scheduled_source(mut context BaseAudioContext, node AudioNode, when f64) ! {
 	node.stop(when)!
 	context.control_messages.enqueue(ControlMessage{
-		kind:    .stop_source
+		kind: .stop_source
 		node_id: node.id
-		when:    when
+		when: when
 	})
 }

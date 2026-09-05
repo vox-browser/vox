@@ -33,6 +33,7 @@ pub enum AnimationClass {
 
 @[heap]
 pub struct Animation {
+	dom.Animation
 	dom.EventTarget
 pub mut:
 	id_                          string
@@ -66,6 +67,7 @@ pub fn Animation.create(effect ?&AnimationEffect, timeline ?&AnimationTimeline) 
 	mut animation := &Animation{
 		global_animation_list_order_: order
 	}
+	animation.Animation.concrete_handle_ = voidptr(animation)
 	animation.set_effect(effect)
 	animation.set_timeline(timeline)
 	return animation
@@ -831,5 +833,19 @@ fn (mut animation Animation) emit_playback_event(name string, current ?TimeValue
 		timeline_time: if value := timeline_time { value.as_css_numberish() } else { none }
 	})
 	animation.emitted_events_ << event
+	if document := animation.document_for_timing() {
+		timeline := animation.timeline_ or {
+			animation.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
+			return
+		}
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.append_pending_animation_event(dom.PendingAnimationEvent{
+			event:                unsafe { &dom.Event(event) }
+			animation:            &animation.Animation
+			target:               &animation.EventTarget
+			scheduled_event_time: timeline.convert_a_timeline_time_to_an_origin_relative_time(timeline_time)
+		})
+		return
+	}
 	animation.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
 }

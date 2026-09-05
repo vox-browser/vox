@@ -5,26 +5,26 @@ import dom
 import math
 import strings
 
-// --- Small generated/layout/parser stand-ins used by these value objects ---
+// CursorStyleValue retains the parsed AbstractImageStyleValue, just as the C++
+// implementation does. Keeping the typed value is important here: serializing
+// and reparsing loses resource/style-sheet ownership and delays image loading.
 pub struct CursorImageValue {
 pub mut:
-	serialization string
+	value CSSImageSourceStyleValue
 }
 
-pub fn CursorImageValue.create(serialization string) CursorImageValue {
+pub fn CursorImageValue.create(value CSSImageSourceStyleValue) CursorImageValue {
 	return CursorImageValue{
-		serialization: serialization
+		value: value
 	}
 }
 
 pub fn (image CursorImageValue) serialize(mode SerializationMode) string {
-	_ = mode
-	return image.serialization
+	return image.value.serialize(mode)
 }
 
 pub fn (image CursorImageValue) absolutized(context ComputationContext) CursorImageValue {
-	_ = context
-	return image
+	return CursorImageValue.create(image.value.absolutized(context))
 }
 
 fn serialize_style_value_sequence(values []StyleValue, separator string, mode SerializationMode) string {
@@ -54,16 +54,6 @@ fn serialize_style_value_options(values []?StyleValue, separator string, mode Se
 
 // The shorthands marked `positional-value-list-shorthand` in Properties.json, whose values
 // collapse `{1,4}`/`{1,2}` -> shortest form (upstream serialize_a_positional_value_list).
-fn property_is_positional_value_list_shorthand(shorthand PropertyID) bool {
-	return shorthand in [PropertyID.border_block_color, .border_block_style, .border_block_width,
-		.border_color, .border_inline_color, .border_inline_style, .border_inline_width,
-		.corner_block_end_shape, .corner_block_start_shape, .corner_bottom_shape,
-		.corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape,
-		.corner_shape, .corner_top_shape, .gap, .inset, .inset_block, .inset_inline, .margin,
-		.margin_block, .margin_inline, .overflow, .padding, .padding_block, .padding_inline,
-		.border_style, .border_width]
-}
-
 fn serialize_a_positional_value_list(values []StyleValue, mode SerializationMode) string {
 	if values.len == 2 {
 		first := values[0].serialize(mode)
@@ -439,6 +429,41 @@ pub fn (style_value AnchorSizeStyleValue) to_string() string {
 }
 
 pub fn (style_value AnchorSizeStyleValue) properties_equal(other AnchorSizeStyleValue) bool {
+	return style_value == other
+}
+
+// --- FitContentStyleValue ---
+pub struct FitContentStyleValue {
+pub mut:
+	length_percentage_ ?StyleValue
+}
+
+pub fn FitContentStyleValue.create() FitContentStyleValue {
+	return FitContentStyleValue{}
+}
+
+pub fn FitContentStyleValue.create_with_length_percentage(length_percentage StyleValue) FitContentStyleValue {
+	return FitContentStyleValue{
+		length_percentage_: length_percentage
+	}
+}
+
+pub fn (style_value FitContentStyleValue) length_percentage() ?StyleValue {
+	return style_value.length_percentage_
+}
+
+pub fn (style_value FitContentStyleValue) serialize(mode SerializationMode) string {
+	if length_percentage := style_value.length_percentage_ {
+		return 'fit-content(${length_percentage.serialize(mode)})'
+	}
+	return 'fit-content'
+}
+
+pub fn (style_value FitContentStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value FitContentStyleValue) properties_equal(other FitContentStyleValue) bool {
 	return style_value == other
 }
 
@@ -942,14 +967,14 @@ fn basic_shape_one_hundred_percent_minus(values []StyleValue, context Computatio
 		return percentage_style_value(100.0 - percentage_total)
 	}
 
-	// Calculation integration: CalculationNode/SumCalculationNode are not translated here, so preserve the C++
-	// calculation shape as a serialized calculated value after absolutizing nested values.
+	// Construct the same calc(100% - ...) tree as the C++ implementation. The helper parses the
+	// synthesized expression into a typed CalcNode rather than retaining serialized text.
 	mut serialized := 'calc(100%'
 	for value in absolutized_values {
 		serialized += ' - ${value.serialize(.normal)}'
 	}
 	serialized += ')'
-	return StyleValue(StubStyleValue.create(.calculated, serialized))
+	return calculated_style_value_from_text(serialized)
 }
 
 fn basic_shape_rect_resolve_auto(style_value StyleValue, value_of_auto f64) StyleValue {
@@ -1075,6 +1100,15 @@ pub fn (style_value ContentStyleValue) has_alt_text() bool {
 
 pub fn (style_value ContentStyleValue) alt_text() ?StyleValueList {
 	return style_value.alt_text_
+}
+
+pub fn (mut style_value ContentStyleValue) set_style_sheet(style_sheet ?&CSSStyleSheet) {
+	style_value.content_.set_style_sheet(style_sheet)
+	if alt_text := style_value.alt_text_ {
+		mut mutable_alt_text := alt_text
+		mutable_alt_text.set_style_sheet(style_sheet)
+		style_value.alt_text_ = mutable_alt_text
+	}
 }
 
 pub fn (style_value ContentStyleValue) serialize(mode SerializationMode) string {
@@ -1385,14 +1419,7 @@ pub fn (style_value EdgeStyleValue) with_resolved_keywords() EdgeStyleValue {
 	if edge := style_value.edge_ {
 		if edge == .right || edge == .bottom {
 			if offset := style_value.offset_ {
-				// EdgeStyleValue::with_resolved_keywords() creates a calculated value in
-				// upstream. Keep that value typed here as well: representing it as a
-				// StubStyleValue only worked while computed values were serialized and
-				// reparsed before every use.
-				return EdgeStyleValue.create(none, StyleValue(CalculatedStyleValue{
-					serialization: 'calc(100% - ${offset.serialize(.normal)})'
-					numeric_type_: NumericType.with_type(.length, 1)
-				}))
+				return EdgeStyleValue.create(none, calculated_style_value_from_text('calc(100% - ${offset.serialize(.normal)})'))
 			}
 			return EdgeStyleValue.create(none, StyleValue(PercentageStyleValue.create(Percentage.new(100))))
 		}
@@ -2558,8 +2585,22 @@ fn (style_value ShorthandStyleValue) serialize_background(mode SerializationMode
 	}
 	color := style_value.coordinating_longhand_value(.background_color) or { return none }
 	image := style_value.coordinating_longhand_value(.background_image) or { return none }
-	position_x := style_value.coordinating_longhand_value(.background_position_x) or { return none }
-	position_y := style_value.coordinating_longhand_value(.background_position_y) or { return none }
+	position_x := style_value.coordinating_longhand_value(.background_position_x) or {
+		position := style_value.coordinating_longhand_value(.background_position) or { return none }
+		if position is ShorthandStyleValue {
+			position.longhand(.background_position_x) or { return none }
+		} else {
+			return none
+		}
+	}
+	position_y := style_value.coordinating_longhand_value(.background_position_y) or {
+		position := style_value.coordinating_longhand_value(.background_position) or { return none }
+		if position is ShorthandStyleValue {
+			position.longhand(.background_position_y) or { return none }
+		} else {
+			return none
+		}
+	}
 	size := style_value.coordinating_longhand_value(.background_size) or { return none }
 	repeat := style_value.coordinating_longhand_value(.background_repeat) or { return none }
 	attachment := style_value.coordinating_longhand_value(.background_attachment) or { return none }
@@ -2769,6 +2810,27 @@ fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationM
 		return none
 	}
 	sub := style_value.sub_properties_
+	// `border`, `border-block`, and `border-inline` retain the same nested
+	// width/style/color shorthands as Ladybird. Their remaining nested child
+	// (`border-image` for `border`) is reset-only and must be initial.
+	if style_value.shorthand_ in [PropertyID.border, .border_block, .border_inline]
+		&& sub.len >= 3 && property_is_shorthand(sub[0]) {
+		mut parts := []string{}
+		for i in 0 .. 3 {
+			if !border_family_longhand_is_initial(sub[i], style_value.values_[i], mode) {
+				parts << style_value.values_[i].serialize(mode)
+			}
+		}
+		for i in 3 .. sub.len {
+			if !border_family_longhand_is_initial(sub[i], style_value.values_[i], mode) {
+				return ''
+			}
+		}
+		if parts.len == 0 {
+			parts << style_value.values_[0].serialize(mode)
+		}
+		return parts.join(' ')
+	}
 	// Split the width/style/color longhands (which collapse positionally) from any nested
 	// shorthand longhand (border-image on the `border` shorthand), which must be initial.
 	mut ser := []string{}
@@ -3152,38 +3214,46 @@ fn serialize_border_radius_corners(top_left string, top_right string, bottom_rig
 // the value can't be represented as a `font` shorthand.
 fn (style_value ShorthandStyleValue) serialize_font(mode SerializationMode) ?string {
 	// Index layout must match `font_shorthand_longhands`:
-	// 0 family, 1 size, 2 width, 3 style, 4..10 font-variant-* leaves,
-	// 11 weight, 12 line-height, 13..17 reset-only longhands.
-	if style_value.shorthand_ != .font || style_value.values_.len != 18 {
+	// 0 family, 1 size, 2 width, 3 style, 4 nested font-variant,
+	// 5 weight, 6 line-height, 7..11 reset-only longhands.
+	if style_value.shorthand_ != .font || style_value.values_.len != 12 {
 		return none
 	}
-	mut ser := []string{cap: 18}
+	mut ser := []string{cap: 12}
 	for value in style_value.values_ {
 		ser << value.serialize(mode)
 	}
-	mut init := []string{cap: 18}
-	for id in style_value.sub_properties_ {
-		init << computed_interpolation_property_initial_value(id).css_text
-	}
 	// The reset-only sub-properties must all be at their initial value.
-	for i in 13 .. 18 {
-		if ser[i] != init[i] {
+	for i in 7 .. 12 {
+		if ser[i] != computed_interpolation_property_initial_value(style_value.sub_properties_[i]).css_text {
 			return none
 		}
 	}
-	// <font-variant-css2> = normal | small-caps: only font-variant-caps may differ,
-	// and only to small-caps.
-	for i in [4, 6, 7, 8, 9, 10] {
-		if ser[i] != init[i] {
-			return none
-		}
-	}
-	variant := if ser[5] == init[5] {
-		'normal'
-	} else if ser[5] == 'small-caps' {
-		'small-caps'
-	} else {
+
+	variant_value := style_value.values_[4]
+	if variant_value !is ShorthandStyleValue {
 		return none
+	}
+	variant_shorthand := variant_value as ShorthandStyleValue
+	if variant_shorthand.shorthand_ != .font_variant {
+		return none
+	}
+	// <font-variant-css2> = normal | small-caps: only font-variant-caps may differ.
+	mut variant := 'normal'
+	for id in [PropertyID.font_variant_alternates, .font_variant_caps, .font_variant_east_asian,
+		.font_variant_emoji, .font_variant_ligatures, .font_variant_numeric, .font_variant_position] {
+		value := variant_shorthand.longhand(id) or { return none }
+		serialized := value.serialize(mode)
+		initial := computed_interpolation_property_initial_value(id).css_text
+		if id == .font_variant_caps {
+			if serialized == 'small-caps' {
+				variant = 'small-caps'
+			} else if serialized != initial {
+				return none
+			}
+		} else if serialized != initial {
+			return none
+		}
 	}
 	// <font-width-css3> keyword only (percentages only appear in computed values).
 	if ser[2] !in ['normal', 'ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed',
@@ -3197,15 +3267,15 @@ fn (style_value ShorthandStyleValue) serialize_font(mode SerializationMode) ?str
 	if variant != 'normal' {
 		parts << variant
 	}
-	if ser[11] != 'normal' && ser[11] != '400' {
-		parts << ser[11]
+	if ser[5] != 'normal' && ser[5] != '400' {
+		parts << ser[5]
 	}
 	if ser[2] != 'normal' {
 		parts << ser[2]
 	}
 	parts << ser[1]
-	if ser[12] != 'normal' {
-		parts << '/ ${ser[12]}'
+	if ser[6] != 'normal' {
+		parts << '/ ${ser[6]}'
 	}
 	parts << ser[0]
 	return parts.join(' ')
@@ -3639,6 +3709,13 @@ pub fn (style_value TreeCountingFunctionStyleValue) resolve_for_dom_abstract_ele
 	return style_value.resolve_for_dom_context(tree_counting_function_resolution_context)
 }
 
+pub fn (style_value TreeCountingFunctionStyleValue) resolve_to_calculation_node(calculation_context CalculationContext, calculation_resolution_context CalculationResolutionContext) ?CalculationNode {
+	_ = calculation_context
+	abstract_element := calculation_resolution_context.abstract_element or { return none }
+	value := style_value.resolve_for_dom_abstract_element(&abstract_element)
+	return calculation_node_from_calc(calc_canonical_leaf(.number, f64(value)))
+}
+
 pub fn (style_value TreeCountingFunctionStyleValue) resolve() int {
 	// DOM context integration: C++ resolves this through ComputationContext::abstract_element. Callers with a DOM
 	// element should use resolve_for_dom_abstract_element().
@@ -3826,6 +3903,78 @@ pub fn (style_value ViewFunctionStyleValue) properties_equal(other ViewFunctionS
 pub fn (style_value StyleValue) as_border_radius() ?BorderRadiusStyleValue {
 	value := style_value
 	if value is BorderRadiusStyleValue {
+		return value
+	}
+	return none
+}
+
+pub fn (style_value StyleValue) as_shadow() ?ShadowStyleValue {
+	value := style_value
+	if value is ShadowStyleValue {
+		return value
+	}
+	return none
+}
+
+pub fn (style_value StyleValue) as_value_list() ?StyleValueList {
+	value := style_value
+	if value is StyleValueList {
+		return value
+	}
+	return none
+}
+
+pub fn (style_value StyleValue) as_image() ?ImageStyleValue {
+	value := style_value
+	if value is ImageStyleValue {
+		return value
+	}
+	return none
+}
+
+pub fn (style_value StyleValue) as_url() ?URLStyleValue {
+	value := style_value
+	if value is URLStyleValue {
+		return value
+	}
+	return none
+}
+
+pub fn (style_value StyleValue) as_font_style() ?FontStyleStyleValue {
+	value := style_value
+	if value is FontStyleStyleValue {
+		return value
+	}
+	return none
+}
+
+pub fn (style_value StyleValue) as_linear_gradient() ?LinearGradientStyleValue {
+	value := style_value
+	if value is LinearGradientStyleValue {
+		return value
+	}
+	return none
+}
+
+pub fn (style_value StyleValue) as_radial_gradient() ?RadialGradientStyleValue {
+	value := style_value
+	if value is RadialGradientStyleValue {
+		return value
+	}
+	return none
+}
+
+pub fn (style_value StyleValue) as_conic_gradient() ?ConicGradientStyleValue {
+	value := style_value
+	if value is ConicGradientStyleValue {
+		return value
+	}
+	return none
+}
+
+pub fn (style_value StyleValue) as_radial_size() ?RadialSizeStyleValue {
+	value := style_value
+	if value is RadialSizeStyleValue {
 		return value
 	}
 	return none

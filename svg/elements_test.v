@@ -4,7 +4,7 @@ import math
 
 fn test_geometry_elements() {
 	line := Element{
-		tag:        'line'
+		tag: 'line'
 		attributes: {
 			'x1': '10%'
 			'y1': '20%'
@@ -15,14 +15,14 @@ fn test_geometry_elements() {
 	assert geometry_path(line, 200, 100).endpoints() == [Point{ x: 20, y: 20 },
 		Point{ x: 100, y: 80 }]
 	polygon := Element{
-		tag:        'polygon'
+		tag: 'polygon'
 		attributes: {
 			'points': '0,0 10,0 10,10'
 		}
 	}
 	assert geometry_path(polygon, 100, 100).instructions.last().type_ == .close_path
 	circle := Element{
-		tag:        'circle'
+		tag: 'circle'
 		attributes: {
 			'cx': '50%'
 			'cy': '50%'
@@ -31,7 +31,7 @@ fn test_geometry_elements() {
 	}
 	assert geometry_path(circle, 200, 100).instructions.len == 5
 	assert geometry_path(Element{
-		tag:        'ellipse'
+		tag: 'ellipse'
 		attributes: {
 			'rx': '0'
 			'ry': '4'
@@ -41,7 +41,7 @@ fn test_geometry_elements() {
 
 fn test_rect_corner_radius_defaulting_and_clamping() {
 	rect := Element{
-		tag:        'rect'
+		tag: 'rect'
 		attributes: {
 			'x':      '10'
 			'y':      '20'
@@ -66,7 +66,7 @@ fn test_base_element_behavior_and_use_transform() {
 	assert !new_element('defs').includes_in_accessibility_tree()
 	assert new_element('a').default_role() or { '' } == 'generic'
 	labelled_shape := Element{
-		tag:      'circle'
+		tag: 'circle'
 		children: [Element{ tag: 'title', text: 'A circle' }]
 	}
 	assert labelled_shape.includes_in_accessibility_tree()
@@ -76,7 +76,7 @@ fn test_base_element_behavior_and_use_transform() {
 	assert valid_use_reference_tag('use')
 	assert !valid_use_reference_tag('div')
 	use := Element{
-		tag:        'use'
+		tag: 'use'
 		attributes: {
 			'x':         '4'
 			'y':         '5'
@@ -107,26 +107,28 @@ fn test_fit_to_viewbox_viewport_and_text_positioning() {
 	fit.update_attribute('preserveAspectRatio', 'xMinYMax slice')
 	assert fit.preserve_aspect_ratio.align == .x_min_y_max
 	viewport := SvgViewport{
-		fit:              fit
+		fit: fit
 		fallback_viewbox: ViewBox{
-			width:  10
+			width: 10
 			height: 10
 		}
 	}
 	assert viewport.active_viewbox() or { ViewBox{} }.height == 480
 	positioning := text_positioning({
-		'x':      '1 2'
-		'dy':     '3,4'
+		'x':      '1'
+		'dy':     '3'
 		'rotate': '10'
 	})
-	assert positioning.x == [1.0, 2.0]
-	assert positioning.dy == [3.0, 4.0]
+	assert positioning.x == [number(1)]
+	assert positioning.dy == [number(3)]
+	assert positioning.rotate == []
+	assert positioning.apply_to_text_position(4, Point{}, Point{ x: 100, y: 100 }) == Point{ x: 1, y: 3 }
 }
 
 fn test_text_content_utf16_length_and_geometry_reference() {
 	text := Element{
-		tag:      'text'
-		text:     ' \tA😀'
+		tag: 'text'
+		text: ' \tA😀'
 		children: [Element{ tag: 'tspan', text: 'B' }]
 	}
 	assert text.text_contents() == 'A😀B'
@@ -145,7 +147,7 @@ fn test_text_content_utf16_length_and_geometry_reference() {
 
 fn test_affine_transform_maps_rotated_rect_from_all_four_corners() {
 	transform := AffineTransform{}.translated(20, 10).multiply(Transform{
-		kind:   .rotate
+		kind: .rotate
 		values: [f64(90), 0, 0, 0, 0, 0]!
 	}.matrix())
 	mapped := transform.map_rect(Rect{ x: 0, y: 0, width: 30, height: 10 })

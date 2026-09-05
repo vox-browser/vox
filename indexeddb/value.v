@@ -44,21 +44,21 @@ pub fn null_value() Value {
 
 pub fn bool_value(value bool) Value {
 	return Value{
-		kind:  .boolean
+		kind: .boolean
 		bool_: value
 	}
 }
 
 pub fn number_value(value f64) Value {
 	return Value{
-		kind:   .number
+		kind: .number
 		number: value
 	}
 }
 
 pub fn date_value(value f64) Value {
 	return Value{
-		kind:   .date
+		kind: .date
 		number: value
 	}
 }
@@ -72,33 +72,33 @@ pub fn string_value(value string) Value {
 
 pub fn binary_value(value []u8) Value {
 	return Value{
-		kind:  .binary
+		kind: .binary
 		bytes: value.clone()
 	}
 }
 
 pub fn array_value(value []Value) Value {
 	return Value{
-		kind:  .array
+		kind: .array
 		items: clone_values(value)
 	}
 }
 
 pub fn object_value(value map[string]Value) Value {
 	return Value{
-		kind:   .object
+		kind: .object
 		fields: clone_fields(value)
 	}
 }
 
 pub fn (value Value) clone() Value {
 	return Value{
-		kind:   value.kind
-		bool_:  value.bool_
+		kind: value.kind
+		bool_: value.bool_
 		number: value.number
-		text:   value.text
-		bytes:  value.bytes.clone()
-		items:  clone_values(value.items)
+		text: value.text
+		bytes: value.bytes.clone()
+		items: clone_values(value.items)
 		fields: clone_fields(value.fields)
 	}
 }
@@ -221,14 +221,18 @@ pub fn evaluate_key_path(value Value, path KeyPath) ?Key {
 		string {
 			found := evaluate_string_key_path(value, path) or { return none }
 			key := value_to_key(found)
-			if key.is_valid() { return key }
+			if key.is_valid() {
+				return key
+			}
 		}
 		[]string {
 			mut keys := []Key{cap: path.len}
 			for component in path {
 				found := evaluate_string_key_path(value, component) or { return none }
 				key := value_to_key(found)
-				if !key.is_valid() { return none }
+				if !key.is_valid() {
+					return none
+				}
 				keys << key
 			}
 			return array_key(keys)

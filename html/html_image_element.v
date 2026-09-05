@@ -9,6 +9,7 @@
 module html
 
 import aria
+import css
 import dom
 
 pub enum ImageLoadingAttribute {
@@ -16,12 +17,12 @@ pub enum ImageLoadingAttribute {
 	lazy
 }
 
-pub type HTMLImageFetchHook = fn(dom.URL) !DecodedImageData
+pub type HTMLImageFetchHook = fn (dom.URL) !DecodedImageData
 
 @[heap]
 struct BatchingDispatcher {
 mut:
-	queue     []fn()
+	queue     []fn ()
 	scheduled bool
 }
 
@@ -39,7 +40,7 @@ fn batching_dispatcher() &BatchingDispatcher {
 	return html_image_batching_dispatcher
 }
 
-fn (mut dispatcher BatchingDispatcher) enqueue(callback fn()) {
+fn (mut dispatcher BatchingDispatcher) enqueue(callback fn ()) {
 	dispatcher.queue << callback
 	if dispatcher.queue.len >= 16 {
 		dispatcher.process()
@@ -120,6 +121,18 @@ fn image_dom_element(element &dom.HTMLImageElement) &dom.Element {
 	return unsafe { &dom.Element(element) }
 }
 
+fn html_image_viewport_client_did_set_rect(target voidptr, viewport_rect dom.Rect) {
+	mut image := unsafe { &HTMLImageElementModel(target) }
+	image.did_set_viewport_rect(viewport_rect)
+}
+
+fn image_viewport_client(image &HTMLImageElementModel) dom.ViewportClient {
+	return dom.ViewportClient{
+		target: voidptr(image)
+		did_set_viewport_rect: html_image_viewport_client_did_set_rect
+	}
+}
+
 // Return the translated HTMLImageElement state associated with a concrete DOM
 // image, materializing the state on first use just as initialize() does in C++.
 pub fn html_image_element_model_for_dom_element(element &dom.HTMLImageElement) &HTMLImageElementModel {
@@ -143,7 +156,7 @@ pub fn html_image_element_model_for_dom_element(element &dom.HTMLImageElement) &
 	mut mutable_element := unsafe { &dom.HTMLImageElement(element) }
 	mutable_element.image_element_model_ = voidptr(model)
 	mut document := unsafe { &dom.Document(dom_element.document()) }
-	document.register_viewport_client(voidptr(model))
+	document.register_viewport_client(image_viewport_client(model))
 	return model
 }
 
@@ -215,15 +228,6 @@ pub fn (image &HTMLImageElementModel) uses_srcset_or_picture() bool {
 	return false
 }
 
-fn image_source_size_from_sizes(sizes ?string) f64 {
-	value := sizes or { return 100.0 }
-	trimmed := ascii_lowercase_string(value.trim_space())
-	if trimmed.ends_with('px') {
-		return trimmed[..trimmed.len - 2].f64()
-	}
-	return 100.0
-}
-
 pub fn (mut image HTMLImageElementModel) update_source_set() {
 	if element := image.element_ {
 		dom_element := image_dom_element(element)
@@ -241,14 +245,19 @@ pub fn (mut image HTMLImageElementModel) update_source_set() {
 					if source_set.is_empty() {
 						continue
 					}
-					media := ascii_lowercase_string(child.get_attribute_value('media').trim_space())
-					if media in ['not all', 'print'] {
+					if child.has_attribute('media') {
+						media_query := css.parse_media_query(css.ParsingParams{
+							document: dom_element.document()
+						}, child.get_attribute_value('media')) or { continue }
+						if !media_query.evaluate(dom_element.document()) {
+							continue
+						}
+					}
+					source_set.source_size = parse_a_sizes_attribute(dom_element, child.get_attribute_value('sizes'), element)
+					if child.has_attribute('type')
+						&& !is_supported_image_type(child.get_attribute_value('type')) {
 						continue
 					}
-					if child.has_attribute('type') && !is_supported_image_type(child.get_attribute_value('type')) {
-						continue
-					}
-					source_set.source_size = image_source_size_from_sizes(child.get_attribute('sizes'))
 					source_set.normalize_source_densities(source_set.source_size)
 					image.source_set_ = source_set
 					if child.has_attribute('width') || child.has_attribute('height') {
@@ -265,7 +274,12 @@ pub fn (mut image HTMLImageElementModel) update_source_set() {
 		image.sizes_ = dom_element.get_attribute('sizes')
 	}
 	image.set_dimension_attribute_source(none)
-	image.source_set_ = create_source_set(image.src_ or { '' }, image.srcset_ or { '' }, image_source_size_from_sizes(image.sizes_))
+	if element := image.element_ {
+		dom_element := image_dom_element(element)
+		image.source_set_ = create_source_set(image.src_ or { '' }, image.srcset_ or { '' }, parse_a_sizes_attribute(dom_element, image.sizes_ or { '' }, element))
+		return
+	}
+	image.source_set_ = create_source_set(image.src_ or { '' }, image.srcset_ or { '' }, 100.0)
 }
 
 // https://html.spec.whatwg.org/multipage/images.html#update-the-source-set
@@ -526,6 +540,8 @@ pub fn (mut image HTMLImageElementModel) set_dimension_attribute_source(source ?
 	}
 	image.dimension_attribute_source = source
 	if element := image.element_ {
+		mut dom_image := unsafe { &dom.HTMLImageElement(element) }
+		dom_image.dimension_attribute_source_ = source
 		mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
 		node.set_needs_style_update(true)
 	}
@@ -665,13 +681,13 @@ pub fn (mut image HTMLImageElementModel) react_to_changes_in_the_environment() {
 pub fn (mut image HTMLImageElementModel) adopted_from(old_document &dom.Document) {
 	old_document_mut := unsafe { &dom.Document(old_document) }
 	mut mutable_old_document := old_document_mut
-	mutable_old_document.unregister_viewport_client(voidptr(&image))
+	mutable_old_document.unregister_viewport_client(image_viewport_client(&image))
 	if element := image.element_ {
 		image.document_ = image_dom_element(element).document()
 		image.base_url_ = image.document_.base_url()
 	}
 	mut document := unsafe { &dom.Document(image.document_) }
-	document.register_viewport_client(voidptr(&image))
+	document.register_viewport_client(image_viewport_client(&image))
 	if mut form_control := image.form_control_ {
 		form_control.reset_form_owner()
 	}

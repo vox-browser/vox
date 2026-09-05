@@ -6,9 +6,10 @@ pub enum CornerClip {
 }
 
 pub enum ScalingMode {
-	nearest_neighbor
+	none_
 	bilinear
-	smooth_pixels
+	bilinear_mipmap
+	nearest_neighbor
 }
 
 pub enum Orientation {
@@ -152,6 +153,7 @@ pub struct FillPath {
 pub:
 	path_id            string
 	path_bounding_rect IntRect
+	path               ClipPathVisualData
 	opacity            f64 = 1.0
 	color              Color
 	winding_rule       WindingRule
@@ -330,8 +332,7 @@ pub fn command_bounding_rect(command DisplayListCommand) ?IntRect {
 			command.rect.translated(IntPoint{int(command.translation.x), int(command.translation.y)})
 		}
 		DrawLine {
-			int_rect_from_two_points(command.from, command.to).inflated(command.thickness,
-				command.thickness, command.thickness, command.thickness)
+			int_rect_from_two_points(command.from, command.to).inflated(command.thickness, command.thickness, command.thickness, command.thickness)
 		}
 		DrawRect {
 			command.rect
@@ -367,8 +368,7 @@ pub fn command_bounding_rect(command DisplayListCommand) ?IntRect {
 			command.rect
 		}
 		PaintOuterBoxShadow {
-			command.shadow_rect.inflated(command.blur_radius * 2, command.blur_radius * 2,
-				command.blur_radius * 2, command.blur_radius * 2)
+			command.shadow_rect.inflated(command.blur_radius * 2, command.blur_radius * 2, command.blur_radius * 2, command.blur_radius * 2)
 		}
 		PaintRadialGradient {
 			command.rect
@@ -671,6 +671,8 @@ fn (mut planner PlaybackPlanner) apply_context(index int) {
 		TransformVisualData { 'ApplyTransform' }
 		ClipVisualData { 'ApplyClip' }
 		ClipPathVisualData { 'ApplyClipPath' }
+		SVGClipVisualData { 'ApplySVGClipMask' }
+		SVGMaskVisualData { 'ApplySVGMask' }
 	}
 	delta := match node.data {
 		ScrollVisualData {
@@ -682,9 +684,9 @@ fn (mut planner PlaybackPlanner) apply_context(index int) {
 		}
 	}
 	planner.actions << PlaybackAction{
-		kind:          kind
+		kind: kind
 		context_index: index
-		delta:         delta
+		delta: delta
 	}
 }
 
@@ -714,9 +716,9 @@ fn (mut planner PlaybackPlanner) switch_to_context(target int) {
 
 pub fn (list DisplayList) playback_plan(snapshot ScrollStateSnapshot, visible_clip IntRect) []PlaybackAction {
 	mut planner := PlaybackPlanner{
-		tree:     list.visual_context_tree
+		tree: list.visual_context_tree
 		snapshot: snapshot
-		clip:     visible_clip
+		clip: visible_clip
 	}
 	for item in list.commands {
 		bounds := command_bounding_rect(item.command)
@@ -734,9 +736,9 @@ pub fn (list DisplayList) playback_plan(snapshot ScrollStateSnapshot, visible_cl
 			if bound.is_empty() || !bound.intersects(visible_clip) {
 				if command_is_clip(item.command) {
 					planner.actions << PlaybackAction{
-						kind:          'AddClipRect'
+						kind: 'AddClipRect'
 						context_index: item.context_index
-						rect:          bound
+						rect: bound
 					}
 				}
 				continue
@@ -751,16 +753,16 @@ pub fn (list DisplayList) playback_plan(snapshot ScrollStateSnapshot, visible_cl
 				IntPoint{int(-offset.x * scrollbar.scroll_size), 0}
 			}
 			planner.actions << PlaybackAction{
-				kind:          command_name(item.command)
+				kind: command_name(item.command)
 				context_index: item.context_index
-				delta:         delta
+				delta: delta
 			}
 			continue
 		}
 		planner.actions << PlaybackAction{
-			kind:          command_name(item.command)
+			kind: command_name(item.command)
 			context_index: item.context_index
-			rect:          bounds
+			rect: bounds
 		}
 	}
 	for planner.applied_depth > 0 {

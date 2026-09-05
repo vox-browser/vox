@@ -2,10 +2,8 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of the self-contained host-parsing helpers of LibURL/Parser.cpp — the forbidden host and
-// domain code point predicates, the opaque-host parser, and the "ends in a number" check (used to decide
-// whether a domain should be parsed as IPv4). The domain host parser itself needs IDNA (domain to ASCII)
-// and is not translated. Validation-error reporting is dropped.
+// Translation of LibURL/Parser.cpp's host parsing algorithms. UTS #46 domain
+// processing is provided by the same ICU backend used by Ladybird.
 // https://url.spec.whatwg.org/#host-parsing
 module url
 
@@ -37,6 +35,37 @@ pub fn parse_opaque_host(input string) ?string {
 	// 2-3. (Validation-error-only checks are omitted, as upstream.)
 	// 4. Percent-encode using the C0 control percent-encode set.
 	return percent_encode(input, .c0_control, false)
+}
+
+// https://url.spec.whatwg.org/#concept-host-parser
+pub fn parse_host(input string, is_opaque bool) ?Host {
+	if input.starts_with('[') {
+		if !input.ends_with(']') {
+			return none
+		}
+		pieces := parse_ipv6_address(input[1..input.len - 1]) or { return none }
+		return Host.ipv6(pieces)
+	}
+	if is_opaque {
+		value := parse_opaque_host(input) or { return none }
+		return Host.from_string(value)
+	}
+	if input == '' {
+		return none
+	}
+	domain_bytes := percent_decode(input)
+	domain := domain_bytes.bytestr()
+	ascii_domain := domain_to_ascii(domain, false) or { return none }
+	for character in ascii_domain.bytes() {
+		if is_forbidden_domain_code_point(character) {
+			return none
+		}
+	}
+	if ends_in_a_number_checker(ascii_domain) {
+		address := parse_ipv4_address(ascii_domain) or { return none }
+		return Host.ipv4(address)
+	}
+	return Host.from_string(ascii_domain)
 }
 
 fn all_ascii_digits(input string) bool {

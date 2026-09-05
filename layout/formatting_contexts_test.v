@@ -1,6 +1,8 @@
 module layout
 
 import html
+import platform
+import svg
 
 fn layout_node_with_id(root &Node, id string) ?&Node {
 	if dom_node := root.dom_node() {
@@ -50,6 +52,50 @@ fn test_multiline_flex_align_content_distributes_cross_axis_space() {
 	two := used_for_id(result, 'two')
 	assert one.offset.y().to_double() == 40
 	assert two.offset.y().to_double() == 50
+}
+
+fn test_flex_auto_placement_uses_bucketed_order_modified_document_order() {
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; width:400px }
+		#flex > div { flex:none; width:100px; height:10px }
+		#last { order:2 } #first, #also-first { order:-1 }
+	</style><div id="flex"><div id="last"></div><div id="first"></div><div id="middle"></div><div id="also-first"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'first').offset.x().to_double() == 0
+	assert used_for_id(result, 'also-first').offset.x().to_double() == 100
+	assert used_for_id(result, 'middle').offset.x().to_double() == 200
+	assert used_for_id(result, 'last').offset.x().to_double() == 300
+}
+
+fn test_flex_percentage_gaps_resolve_against_their_axis_inner_size() {
+	row_document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-wrap:wrap; align-content:flex-start;
+			width:200px; height:100px; row-gap:10% }
+		#one, #two { flex:none; width:120px; height:10px }
+	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+	row_result := run_document_layout(row_document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(row_result, 'one').offset.y().to_double() == 0
+	assert used_for_id(row_result, 'two').offset.y().to_double() == 20
+
+	column_document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-direction:column; width:200px; height:100px; row-gap:10% }
+		#one, #two { flex:none; width:20px; height:20px }
+	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+	column_result := run_document_layout(column_document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(column_result, 'one').offset.y().to_double() == 0
+	assert used_for_id(column_result, 'two').offset.y().to_double() == 30
+}
+
+fn test_automatic_flex_cross_size_uses_used_inner_size_for_percentage_gap() {
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-wrap:wrap; align-content:flex-start; width:100px; row-gap:10% }
+		#one, #two { flex:none; width:60px; height:10px }
+	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'one').offset.y().to_double() == 0
+	// The parent formatting context has assigned a 20px used inner height before
+	// FlexFormattingContext::cross_gap() is called, so the gap is 2px.
+	assert used_for_id(result, 'two').offset.y().to_double() == 12
 }
 
 fn test_wrap_reverse_swaps_align_content_cross_start_and_end() {
@@ -195,6 +241,101 @@ fn test_flex_factors_below_one_leave_part_of_free_space_unfilled() {
 	assert used_for_id(result, 'shrink').content_width().to_double() == 75
 }
 
+fn test_definite_single_line_flex_skips_automatic_minimum_intrinsic_layout() {
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; width:200px }
+		#item { flex:none; width:100px }
+	</style><div id="flex"><div id="item">content that would otherwise be measured</div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	flex_node := layout_node_with_id(result.root, 'flex') or { panic('missing #flex') }
+	item_node := layout_node_with_id(result.root, 'item') or { panic('missing #item') }
+	flex_styled := flex_node.as_node_with_style() or { panic('#flex has no style') }
+	item_styled := item_node.as_node_with_style() or { panic('#item has no style') }
+	flex_state := result.state.try_get(flex_styled) or { panic('#flex has no used values') }
+	item_state := result.state.try_get(item_styled) or { panic('#item has no used values') }
+	assert should_skip_automatic_minimum_size_clamp(result.state, flex_node, flex_state, .normal, [
+		item_node,
+	], [CSSPixels.new(100)], true, CSSPixels.new(200))
+	mut item_box := item_node.as_box() or { panic('#item is not a box') }
+	item_box.reset_cached_intrinsic_sizes()
+	mut measurement_state := result.state
+	assert flex_used_main_minimum(mut measurement_state, item_node, item_state, true, CSSPixels.new(200), true).raw_value() == 0
+	assert item_box.cached_intrinsic_sizes_ == none
+	assert used_for_id(result, 'item').content_width().to_double() == 100
+}
+
+fn test_definite_item_basis_skips_redundant_automatic_minimum_intrinsic_layout() {
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-wrap:wrap; width:80px }
+		#item, #scroll, #ratio, #replaced { flex:none; width:100px }
+		#scroll { overflow:auto }
+		#ratio { aspect-ratio:2/1 }
+	</style><div id="flex">
+		<div id="item">content that would otherwise be measured</div>
+		<div id="scroll"></div><div id="ratio"></div><img id="replaced">
+	</div>')
+	mut result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	flex_node := layout_node_with_id(result.root, 'flex') or { panic('missing #flex') }
+	item_node := layout_node_with_id(result.root, 'item') or { panic('missing #item') }
+	flex_styled := flex_node.as_node_with_style() or { panic('#flex has no style') }
+	item_styled := item_node.as_node_with_style() or { panic('#item has no style') }
+	flex_state := result.state.try_get(flex_styled) or { panic('#flex has no used values') }
+	item_state := result.state.try_get(item_styled) or { panic('#item has no used values') }
+	// Wrapping disables the whole-container optimization, so only the C++
+	// per-item proof can skip this automatic minimum.
+	assert !should_skip_automatic_minimum_size_clamp(result.state, flex_node, flex_state, .normal, [
+		item_node,
+	], [CSSPixels.new(100)], true, CSSPixels.new(80))
+	assert can_skip_automatic_minimum_size_for_item(item_node, item_state, flex_state, CSSPixels.new(100), true, CSSPixels.new(80))
+	for id in ['scroll', 'ratio', 'replaced'] {
+		excluded_node := layout_node_with_id(result.root, id) or { panic('missing #${id}') }
+		excluded_styled := excluded_node.as_node_with_style() or { panic('#${id} has no style') }
+		excluded_state := result.state.try_get(excluded_styled) or {
+			panic('#${id} has no used values')
+		}
+		assert !can_skip_automatic_minimum_size_for_item(excluded_node, excluded_state, flex_state, CSSPixels.new(100), true, CSSPixels.new(80))
+	}
+	mut item_box := item_node.as_box() or { panic('#item is not a box') }
+	item_box.reset_cached_intrinsic_sizes()
+	mut measurement_state := result.state
+	assert flex_used_main_minimum(mut measurement_state, item_node, item_state, true, CSSPixels.new(80), true).raw_value() == 0
+	assert item_box.cached_intrinsic_sizes_ == none
+	assert used_for_id(result, 'item').content_width().to_double() == 100
+}
+
+fn test_per_item_skipped_minimum_is_restored_for_flex_violations() {
+	row_document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-wrap:wrap; width:80px }
+		#item { flex:0.1 1 auto; width:100px; white-space:nowrap }
+	</style><div id="flex"><div id="item">content wider than the specified width</div></div>')
+	row_result := run_document_layout(row_document, 800, 600) or { panic('layout failed') }
+	// The per-item proof skips the hypothetical minimum, but the unfrozen
+	// violation pass must restore the specified-size-capped 100px minimum.
+	assert used_for_id(row_result, 'item').content_width().to_double() == 100
+
+	column_document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-flow:column wrap; width:100px; height:80px }
+		#item { flex:0.1 1 auto; height:100px }
+		#child { height:120px }
+	</style><div id="flex"><div id="item"><div id="child"></div></div></div>')
+	column_result := run_document_layout(column_document, 800, 600) or {
+		panic('column layout failed')
+	}
+	assert used_for_id(column_result, 'item').content_height().to_double() == 100
+}
+
+fn test_skipped_hypothetical_minimum_is_restored_for_flex_violations() {
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; width:200px }
+		#item { flex:0.1 1 20px; width:100px; white-space:nowrap }
+	</style><div id="flex"><div id="item">content wider than the specified width</div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// The initial hypothetical-size pass can skip the automatic minimum, but
+	// resolve_flexible_lengths_for_line() must still apply its real 100px cap
+	// when fixing the unfrozen item's minimum violation.
+	assert used_for_id(result, 'item').content_width().to_double() == 100
+}
+
 fn test_flex_wrap_collects_lines_using_outer_hypothetical_sizes() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:flex-start; width:100px }
@@ -220,6 +361,45 @@ fn test_column_flex_automatic_minimum_size_is_content_based() {
 	assert used_for_id(result, 'auto-column').content_height().to_double() == 80
 	assert used_for_id(result, 'zero').content_height().to_double() == 50
 	assert used_for_id(result, 'scroll').content_height().to_double() == 50
+}
+
+fn test_nested_flex_with_parent_resolved_size_skips_intrinsic_relayout() {
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; width:100px; height:50px }
+		#item { flex:0 0 content }
+	</style><div id="flex"><div id="item"><span>expensive intrinsic content</span></div></div>')
+	mut result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	flex_node := layout_node_with_id(result.root, 'flex') or { panic('missing #flex') }
+	item_node := layout_node_with_id(result.root, 'item') or { panic('missing #item') }
+	flex_styled := flex_node.as_node_with_style() or { panic('#flex has no style') }
+	mut measurement_state := result.state
+	mut flex_state := measurement_state.get_mutable(flex_styled)
+	mut item_box := item_node.as_box() or { panic('#item is not a box') }
+	item_box.reset_cached_intrinsic_sizes()
+	assert item_box.cached_intrinsic_sizes_ == none
+	result_ := run_flex_formatting_context_with_mode(mut measurement_state, flex_node, mut flex_state, .intrinsic_sizing, AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(100)), AvailableSize.make_definite(CSSPixels.new(50))))
+	assert result_.automatic_content_width.to_double() == 100
+	assert result_.automatic_content_height.to_double() == 50
+	assert item_box.cached_intrinsic_sizes_ == none
+}
+
+fn test_nested_grid_with_parent_resolved_size_skips_intrinsic_relayout() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:100px; height:50px; grid-template-columns:auto }
+	</style><div id="grid"><div id="item"><span>expensive intrinsic content</span></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid_node := layout_node_with_id(result.root, 'grid') or { panic('missing #grid') }
+	item_node := layout_node_with_id(result.root, 'item') or { panic('missing #item') }
+	grid_styled := grid_node.as_node_with_style() or { panic('#grid has no style') }
+	mut measurement_state := result.state
+	mut grid_state := measurement_state.get_mutable(grid_styled)
+	mut item_box := item_node.as_box() or { panic('#item is not a box') }
+	item_box.reset_cached_intrinsic_sizes()
+	assert item_box.cached_intrinsic_sizes_ == none
+	result_ := run_grid_formatting_context(mut measurement_state, grid_node, mut grid_state, .intrinsic_sizing, AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(100)), AvailableSize.make_definite(CSSPixels.new(50))))
+	assert result_.automatic_content_width.to_double() == 100
+	assert result_.automatic_content_height.to_double() == 50
+	assert item_box.cached_intrinsic_sizes_ == none
 }
 
 fn test_flex_automatic_minimum_uses_transferred_aspect_ratio_suggestion() {
@@ -258,6 +438,42 @@ fn test_flex_basis_intrinsic_sizing_keywords_choose_their_matching_contribution(
 	assert used_for_id(result, 'auto').content_width().to_double() == 0
 }
 
+fn test_column_flex_intrinsic_cross_size_resolves_percentage_minimum_in_second_pass() {
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-direction:column }
+		#item { min-width:200% }
+		#content { width:50px; height:10px }
+	</style><div id="flex"><div id="item"><div id="content"></div></div></div>')
+	mut result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	flex_node := layout_node_with_id(result.root, 'flex') or { panic('missing #flex') }
+	item_node := layout_node_with_id(result.root, 'item') or { panic('missing #item') }
+	mut flex_box := flex_node.as_box() or { panic('#flex is not a box') }
+	mut item_box := item_node.as_box() or { panic('#item is not a box') }
+	flex_box.reset_cached_intrinsic_sizes()
+	item_box.reset_cached_intrinsic_sizes()
+	mut measurement_state := result.state
+	// Pass one ignores the cyclic percentage and gets 50px from the content.
+	// Pass two resolves min-width:200% against that result, producing 100px.
+	assert calculate_min_content_width(mut measurement_state, flex_box).to_double() == 100
+	assert calculate_max_content_width(mut measurement_state, flex_box).to_double() == 100
+}
+
+fn test_wrapped_column_flex_max_content_cross_size_sums_flex_lines() {
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-flow:column wrap; height:50px; column-gap:10px }
+		.item { flex:none; width:40px; height:40px }
+	</style><div id="flex"><div class="item"></div><div class="item"></div></div>')
+	mut result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	flex_node := layout_node_with_id(result.root, 'flex') or { panic('missing #flex') }
+	mut flex_box := flex_node.as_box() or { panic('#flex is not a box') }
+	flex_box.reset_cached_intrinsic_sizes()
+	mut measurement_state := result.state
+	// Multi-line column min-content sizing uses the largest item contribution,
+	// while max-content layout forms two 40px columns with the 10px gap.
+	assert calculate_min_content_width(mut measurement_state, flex_box).to_double() == 40
+	assert calculate_max_content_width(mut measurement_state, flex_box).to_double() == 90
+}
+
 fn test_flex_content_basis_uses_definite_cross_size_and_aspect_ratio() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; width:200px }
@@ -265,6 +481,18 @@ fn test_flex_content_basis_uses_definite_cross_size_and_aspect_ratio() {
 	</style><div id="flex"><div id="item"></div></div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	assert used_for_id(result, 'item').content_width().to_double() == 80
+}
+
+fn test_column_flex_base_size_is_adjusted_through_natural_aspect_ratio() {
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-direction:column; width:200px; height:300px; align-items:flex-start }
+		#item { flex:0 0 100px; max-width:100px }
+	</style><div id="flex"><canvas id="item"></canvas></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// The 2:1 canvas starts with a 100px flex basis. Its 100px cross maximum
+	// transfers back through the ratio, reducing that main-axis base to 50px.
+	assert used_for_id(result, 'item').content_width().to_double() == 100
+	assert used_for_id(result, 'item').content_height().to_double() == 50
 }
 
 fn test_row_flex_baseline_alignment_uses_each_items_last_line_baseline() {
@@ -523,6 +751,194 @@ fn test_grid_formatting_context_sizes_fr_tracks_and_gap() {
 	assert two.offset.y().to_double() == 0
 }
 
+fn test_grid_max_content_flexible_track_accounts_for_spanning_item() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:max-content; grid-template-columns:50px 1fr }
+		#item { grid-column:1 / 3; width:200px; height:10px }
+	</style><div id="grid"><div id="item"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := used_for_id(result, 'grid')
+	item := used_for_id(result, 'item')
+	assert grid.content_width().to_double() == 200
+	assert item.content_width().to_double() == 200
+}
+
+fn test_grid_spanning_item_minimum_grows_flexible_track_before_expansion() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:100px; grid-template-columns:50px 1fr }
+		#span { grid-column:1 / 3; width:200px; height:10px }
+		#flex { grid-column:2; height:10px }
+	</style><div id="grid"><div id="span"></div><div id="flex"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := used_for_id(result, 'grid')
+	span := used_for_id(result, 'span')
+	flex := used_for_id(result, 'flex')
+	assert grid.content_width().to_double() == 100
+	assert span.content_width().to_double() == 200
+	assert flex.offset.x().to_double() == 50
+	assert flex.content_width().to_double() == 150
+}
+
+fn test_grid_spanning_intrinsic_distribution_freezes_at_growth_limits() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:max-content;
+			grid-template-columns:minmax(auto, 50px) minmax(auto, 200px) }
+		#span { grid-column:1 / 3; width:300px; height:10px }
+		#first { grid-column:1; height:10px }
+		#second { grid-column:2; height:10px }
+	</style><div id="grid"><div id="span"></div><div id="first"></div><div id="second"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := used_for_id(result, 'grid')
+	first := used_for_id(result, 'first')
+	second := used_for_id(result, 'second')
+	assert grid.content_width().to_double() == 300
+	assert first.content_width().to_double() == 75
+	assert second.offset.x().to_double() == 75
+	assert second.content_width().to_double() == 225
+}
+
+fn test_grid_fixed_minimum_does_not_become_an_intrinsic_base_size() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:100px; grid-template-columns:minmax(50px, max-content) }
+		#wide { width:200px; height:10px }
+		#probe { height:10px }
+	</style><div id="grid"><div id="wide"></div><div id="probe"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := used_for_id(result, 'grid')
+	wide := used_for_id(result, 'wide')
+	probe := used_for_id(result, 'probe')
+	assert grid.content_width().to_double() == 100
+	assert wide.content_width().to_double() == 200
+	assert probe.content_width().to_double() == 100
+}
+
+fn test_grid_spanning_item_increases_intrinsic_growth_limits() {
+	mut tracks := [GridTrack{
+		max_content_max: true
+	}, GridTrack{
+		max_content_max: true
+	}]
+	distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut tracks, 0, 2, CSSPixels.new(0), CSSPixels.new(300), .intrinsic_maximum)
+	assert tracks[0].has_growth_limit
+	assert tracks[0].growth_limit.to_double() == 150
+	assert tracks[1].growth_limit.to_double() == 150
+
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:max-content;
+			grid-template-columns:minmax(0px, max-content) minmax(0px, max-content) }
+		#span { grid-column:1 / 3; width:300px; height:10px }
+	</style><div id="grid"><div id="span"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := used_for_id(result, 'grid')
+	span := used_for_id(result, 'span')
+	assert grid.content_width().to_double() == 300
+	assert span.content_width().to_double() == 300
+}
+
+fn test_grid_maximum_width_retries_track_maximization() {
+	mut tracks := [GridTrack{
+		has_growth_limit: true
+		growth_limit: CSSPixels.new(100)
+	}, GridTrack{
+		has_growth_limit: true
+		growth_limit: CSSPixels.new(100)
+	}]
+	maximize_grid_tracks(mut tracks, AvailableSize.make_max_content(), CSSPixels.new(0), CSSPixels.new(100))
+	assert tracks[0].base_size.to_double() == 50
+	assert tracks[1].base_size.to_double() == 50
+
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:max-content; max-width:100px;
+			grid-template-columns:minmax(0px, max-content) minmax(0px, max-content) }
+		#one, #two { width:100px; height:10px }
+	</style><div id="grid"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := used_for_id(result, 'grid')
+	one := used_for_id(result, 'one')
+	two := used_for_id(result, 'two')
+	assert grid.content_width().to_double() == 100
+	assert one.content_width().to_double() == 100
+	assert two.offset.x().to_double() == 50
+}
+
+fn test_grid_definite_available_height_limits_row_maximization() {
+	mut rows := [GridTrack{
+		has_growth_limit: true
+		growth_limit: CSSPixels.new(200)
+	}]
+	maximize_grid_tracks(mut rows, AvailableSize.make_definite(CSSPixels.new(100)), CSSPixels.new(0), none)
+	assert rows[0].base_size.to_double() == 100
+
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:100px; align-content:start;
+			grid-template-rows:minmax(0px, max-content) }
+		#item, #probe { grid-row:1; grid-column:1 }
+		#item { height:200px }
+	</style><div id="grid"><div id="item"></div><div id="probe"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid_node := layout_node_with_id(result.root, 'grid') or { panic('missing #grid') }
+	grid_styled := grid_node.as_node_with_style() or { panic('#grid has no style') }
+	mut relayout_state := result.state
+	mut grid_state := relayout_state.get_mutable(grid_styled)
+	assert !grid_state.has_definite_height()
+	run_grid_formatting_context(mut relayout_state, grid_node, mut grid_state, .normal, AvailableSpace.new(AvailableSize.make_definite(CSSPixels.new(100)), AvailableSize.make_definite(CSSPixels.new(100))))
+	probe_node := layout_node_with_id(result.root, 'probe') or { panic('missing #probe') }
+	probe_styled := probe_node.as_node_with_style() or { panic('#probe has no style') }
+	assert relayout_state.get(probe_styled).content_height().to_double() == 100
+}
+
+fn test_grid_indefinite_flexible_row_accounts_for_spanning_item() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:100px; grid-template-rows:50px 1fr }
+		#item { grid-row:1 / 3; height:200px }
+	</style><div id="grid"><div id="item"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := used_for_id(result, 'grid')
+	item := used_for_id(result, 'item')
+	assert grid.content_height().to_double() == 200
+	assert item.content_height().to_double() == 200
+}
+
+fn test_grid_multispan_flexible_row_uses_zero_automatic_minimum() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:100px; height:100px; align-content:start;
+			grid-template-rows:50px 1fr }
+		#span { grid-row:1 / 3 }
+		#content { height:200px }
+		#probe { grid-row:2 }
+	</style><div id="grid"><div id="span"><div id="content"></div></div><div id="probe"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	span := used_for_id(result, 'span')
+	probe := used_for_id(result, 'probe')
+	assert span.content_height().to_double() == 100
+	assert probe.offset.y().to_double() == 50
+	assert probe.content_height().to_double() == 50
+}
+
+fn test_grid_intrinsic_flexible_row_uses_limited_min_content_contribution() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:100px; height:min-content; max-height:50px;
+			grid-template-rows:minmax(0px, 1fr) }
+		#item { min-height:0 }
+		#content { height:100px }
+	</style><div id="grid"><div id="item"><div id="content"></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := used_for_id(result, 'grid')
+	item := used_for_id(result, 'item')
+	assert grid.content_height().to_double() == 50
+	assert item.content_height().to_double() == 50
+}
+
+fn test_grid_percentage_gaps_resolve_against_their_axis_available_size() {
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; width:200px; height:100px; align-content:start;
+			grid-template-columns:100px; grid-template-rows:20px 20px; row-gap:10% }
+	</style><div id="grid"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'one').offset.y().to_double() == 0
+	assert used_for_id(result, 'two').offset.y().to_double() == 30
+}
+
 fn test_grid_auto_placement_expands_repeat_and_accommodates_largest_span() {
 	document := html.parse_document('<!doctype html><style>
 		#grid { display:grid; width:300px; grid-template-columns:repeat(3, 1fr) }
@@ -541,13 +957,29 @@ fn test_grid_auto_placement_expands_repeat_and_accommodates_largest_span() {
 
 fn test_grid_auto_placement_uses_order_modified_document_order() {
 	document := html.parse_document('<!doctype html><style>
-		#grid { display:grid; width:300px; grid-template-columns:repeat(3, 1fr) }
-		#last { order:2 } #first { order:-1 }
-	</style><div id="grid"><div id="last"></div><div id="first"></div><div id="middle"></div></div>')
+		#grid { display:grid; width:400px; grid-template-columns:repeat(4, 1fr) }
+		#last { order:2 } #first, #also-first { order:-1 }
+	</style><div id="grid"><div id="last"></div><div id="first"></div><div id="middle"></div><div id="also-first"></div></div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	assert used_for_id(result, 'first').offset.x().to_double() == 0
-	assert used_for_id(result, 'middle').offset.x().to_double() == 100
-	assert used_for_id(result, 'last').offset.x().to_double() == 200
+	assert used_for_id(result, 'also-first').offset.x().to_double() == 100
+	assert used_for_id(result, 'middle').offset.x().to_double() == 200
+	assert used_for_id(result, 'last').offset.x().to_double() == 300
+}
+
+fn test_grid_occupation_uses_distinct_packed_signed_coordinates() {
+	mut occupied := map[u64]bool{}
+	placement := GridItemPlacement{
+		row: -2
+		column: -3
+		row_span: 2
+		column_span: 2
+	}
+	occupy_grid_area(mut occupied, placement)
+	assert !grid_area_is_free(occupied, -2, -3, 2, 2)
+	assert grid_area_is_free(occupied, -3, -2, 1, 1)
+	assert grid_cell_key(-1, 0) != grid_cell_key(0, -1)
+	assert occupied.len == 4
 }
 
 fn test_grid_dense_auto_placement_backfills_earlier_holes() {
@@ -626,7 +1058,10 @@ fn test_grid_spanning_items_grow_intrinsic_columns_and_rows() {
 	after := used_for_id(result, 'after')
 	assert spanning.content_width().to_double() == 200
 	assert spanning.content_height().to_double() == 60
-	assert after.content_width().to_double() == 100
+	// The empty non-spanning item gives the first auto track a zero growth
+	// limit. C++ freezes that track and places the spanning contribution in the
+	// still-unbounded second track.
+	assert after.content_width().to_double() == 0
 	assert after.offset.y().to_double() == 60
 }
 
@@ -991,15 +1426,16 @@ fn test_rtl_table_places_logical_first_column_at_right() {
 
 fn test_rtl_table_cell_spanning_logical_columns_uses_mirrored_range() {
 	document := html.parse_document('<!doctype html><style>
-		table { direction:rtl; width:300px; border-spacing:0; table-layout:fixed }
+		table { direction:rtl; width:340px; border-spacing:10px; table-layout:fixed }
 		col { width:100px } td { padding:0; height:10px }
 	</style><table><col><col><col><tbody><tr><td id="span" colspan="2"></td><td id="last"></td></tr></tbody></table>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	span := used_for_id(result, 'span')
 	last := used_for_id(result, 'last')
-	assert span.content_width().to_double() == 200
-	assert span.offset.x().to_double() == 100
-	assert last.offset.x().to_double() == 0
+	assert span.content_width().to_double() == 210
+	assert span.offset.x().to_double() == 120
+	assert last.content_width().to_double() == 100
+	assert last.offset.x().to_double() == 10
 }
 
 fn test_fixed_table_cell_border_box_width_is_not_counted_twice() {
@@ -1028,6 +1464,36 @@ fn test_table_auto_layout_uses_definite_cell_width_contributions() {
 	assert wide.content_width().to_double() == 120
 	assert narrow.content_width().to_double() == 40
 	assert narrow.offset.x().to_double() == 120
+}
+
+fn test_table_min_content_measure_does_not_use_the_cells_preferred_width() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:min-content; border-spacing:0 } td { width:300px; padding:0 }
+	</style><table id="table"><tr><td>x</td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// TableFormattingContext::compute_cell_measures() defines outer min-content
+	// from max(min-width, min-content), without the preferred width.
+	assert used_for_id(result, 'table').content_width().to_double() < 50
+}
+
+fn test_constrained_table_column_uses_cell_min_content_for_its_max_measure() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:max-content; border-spacing:0 } col { width:100px } td { padding:0 }
+	</style><table id="table"><col><tr><td>a a a a a a a a a a a a a a a a a a a a</td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// A cell originating in a constrained column contributes its min-content
+	// width to the column's outer max-content measure.
+	assert used_for_id(result, 'table').content_width().to_double() == 100
+}
+
+fn test_table_cell_margins_do_not_participate_in_grid_measurement_or_positioning() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:100px; border-spacing:0 } td { margin:40px; padding:0 }
+	</style><table><tr><td id="cell"></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	cell := used_for_id(result, 'cell')
+	assert cell.content_width().to_double() == 100
+	assert cell.offset.x().to_double() == 0
 }
 
 fn test_table_spanning_cell_distributes_its_minimum_width_over_columns() {
@@ -1115,6 +1581,64 @@ fn test_fixed_table_layout_uses_first_row_widths_and_shares_unassigned_space() {
 	assert used_for_id(result, 'three').content_width().to_double() == 100
 	assert used_for_id(result, 'last').content_width().to_double() == 300
 	assert used_for_id(result, 'last').offset.x().to_double() == 300
+}
+
+fn test_fixed_table_equal_distribution_truncates_css_pixel_fractions() {
+	mut widths := [CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(299)]
+	assert distribute_table_excess_width_equally(mut widths, [true, true, true, false], CSSPixels.new(299))
+	// CSSPixels(299) / 3 is a CSSPixelFraction in LibWeb. Its conversion back
+	// to CSSPixels truncates 19136 raw units / 3 to 6378.
+	assert widths[0].raw_value() == 6378
+	assert widths[1].raw_value() == 6378
+	assert widths[2].raw_value() == 6378
+	assert widths[3] == CSSPixels.new(299)
+}
+
+fn test_table_wrapper_and_percentage_table_share_final_width_before_centering() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:8px } table { width:50%; border-spacing:0 }
+	</style><center><table id="table"><tr><td></td></tr></table></center>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table_node := layout_node_with_id(result.root, 'table') or { panic('missing table') }
+	table := used_for_id(result, 'table')
+	wrapper_node := table_node.parent() or { panic('table has no wrapper') }
+	wrapper_styled := wrapper_node.as_node_with_style() or { panic('wrapper has no style') }
+	wrapper := result.used_values_for(wrapper_styled) or { panic('wrapper has no used values') }
+	assert wrapper.content_width().to_double() == 392
+	assert table.content_width().to_double() == 392
+	assert wrapper.offset.x().to_double() == 196
+	assert table.offset.x().to_double() == 0
+}
+
+fn test_empty_table_row_is_retained_when_the_grid_has_no_columns() {
+	document := html.parse_document('<!doctype html><style>
+		table { height:100px; padding:10px; border:1px solid; }
+	</style><table><tr id="row"></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	row := used_for_id(result, 'row')
+	assert row.content_width().to_double() == 0
+	assert row.content_height().to_double() == 0
+	assert row.offset.x().to_double() == 2
+	assert row.offset.y().to_double() == 2
+}
+
+fn test_empty_table_row_group_uses_current_group_cursor() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:100px; border-spacing:5px 7px }
+		tr { height:10px } td { padding:0 }
+	</style><table><tbody id="first"><tr><td></td></tr><tr><td></td></tr></tbody>
+		<tbody id="empty"></tbody><tbody id="last"><tr><td></td></tr></tbody></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	first := used_for_id(result, 'first')
+	empty := used_for_id(result, 'empty')
+	last := used_for_id(result, 'last')
+	assert first.offset.y().to_double() == 7
+	assert first.content_height().to_double() == 27
+	assert empty.offset.y().to_double() == 41
+	assert empty.content_width().to_double() == 0
+	assert empty.content_height().to_double() == 0
+	assert last.offset.y().to_double() == 41
+	assert last.content_height().to_double() == 10
 }
 
 fn test_fixed_table_layout_distributes_excess_proportionally_when_all_columns_are_sized() {
@@ -1347,12 +1871,58 @@ fn test_svg_formatting_context_applies_viewbox_and_group_transforms_to_geometry(
 	assert shape.offset.y().to_double() == 30
 	assert shape.content_width().to_double() == 60
 	assert shape.content_height().to_double() == 30
-	assert shape.computed_svg_path() or { panic('shape has no SVG path') }.serialize().starts_with('M20')
+	assert shape.computed_svg_path() or { panic('shape has no SVG path') }.serialize().starts_with('M 20')
 	group := used_for_id(result, 'group')
 	assert group.offset.x().to_double() == shape.offset.x().to_double()
 	assert group.offset.y().to_double() == shape.offset.y().to_double()
 	assert group.content_width().to_double() == shape.content_width().to_double()
 	assert group.content_height().to_double() == shape.content_height().to_double()
+}
+
+fn test_svg_text_is_materialized_as_glyph_outline_path_like_cpp() {
+	document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="200" height="100"><text id="label" x="20" y="40" font-size="20" fill="red" stroke="blue">O</text></svg>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	label := used_for_id(result, 'label')
+	path := label.computed_svg_path() or { panic('SVG text has no glyph outline path') }
+	assert path.instructions.len > 6
+	assert path.instructions[0].type_ == .move
+	assert path.instructions.any(it.type_ == .quadratic_bezier_curve)
+	assert path.instructions.any(it.type_ == .close_path)
+	assert label.content_width().to_double() > 0
+	assert label.content_height().to_double() > 0
+}
+
+fn test_svg_text_path_places_rotated_glyph_outlines_on_first_contour() {
+	font := &platform.Font{
+		family: 'sans-serif'
+		point_size: 20
+	}
+	horizontal := svg_place_text_along_path(svg.parse_path_data('M 10 40 L 150 40'), 'OO', font)
+	horizontal_bounds := svg_path_bounds(horizontal) or { panic('missing horizontal text path') }
+	assert horizontal.instructions.any(it.type_ == .quadratic_bezier_curve)
+	assert horizontal_bounds.width > horizontal_bounds.height
+
+	vertical := svg_place_text_along_path(svg.parse_path_data('M 30 10 L 30 150'), 'OO', font)
+	vertical_bounds := svg_path_bounds(vertical) or { panic('missing vertical text path') }
+	assert vertical_bounds.height > vertical_bounds.width
+
+	// SkPathMeasure measures its first contour only. A later long contour must
+	// not rescue a glyph whose midpoint does not fit on the first one.
+	short_first := svg_place_text_along_path(svg.parse_path_data('M 0 0 L 1 0 M 20 20 L 200 20'), 'O', font)
+	assert short_first.instructions.len == 0
+}
+
+fn test_svg_text_path_dom_node_retains_only_the_placed_glyph_geometry() {
+	document := html.parse_document('<!doctype html><style>body { margin:0 }</style><svg width="200" height="100"><defs><path id="guide" d="M 10 50 L 180 50"/></defs><text fill="red"><textPath id="label" href="#guide" font-size="24">OO</textPath></text></svg>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	label := used_for_id(result, 'label')
+	path := label.computed_svg_path() or { panic('textPath has no placed glyph path') }
+	assert path.instructions.len > 12
+	assert path.instructions.any(it.type_ == .quadratic_bezier_curve)
+	assert label.content_width().to_double() > 20
+	assert label.content_height().to_double() > 10
+	// The referenced guide is not copied into the output path.
+	assert path.serialize() != 'M 10 50 L 180 50'
 }
 
 fn test_svg_foreign_object_delegates_its_contents_to_block_layout() {
@@ -1382,7 +1952,7 @@ fn test_svg_computed_geometry_properties_override_presentation_attributes_where_
 	</svg>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	circle := used_for_id(result, 'circle')
-	assert circle.computed_svg_path() or { panic('circle has no path') }.serialize().starts_with('M50 20')
+	assert circle.computed_svg_path() or { panic('circle has no path') }.serialize().starts_with('M 50 20')
 	assert circle.offset.x().to_double() == 60
 	assert circle.offset.y().to_double() == 20
 	assert circle.content_width().to_double() == 40

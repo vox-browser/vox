@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of the Host record and its serializer/classifiers from LibURL/Host.cpp/Host.h — a host is
-// an IPv4 address, an IPv6 address, or a string (a domain, an opaque host, or the empty host). The
-// public-suffix/registrable-domain methods need the Public Suffix List table and are out of scope.
+// an IPv4 address, an IPv6 address, or a string (a domain, an opaque host, or the empty host).
 // https://url.spec.whatwg.org/#concept-host
 module url
 
@@ -70,4 +69,56 @@ pub fn (host Host) serialize() string {
 			host
 		}
 	}
+}
+
+// https://url.spec.whatwg.org/#host-public-suffix
+pub fn (host Host) public_suffix() ?string {
+	if !host.is_domain() {
+		return none
+	}
+	host_string := host as string
+	trailing_dot := if host_string.ends_with('.') { '.' } else { '' }
+	host_without_trailing_dot := if trailing_dot == '' {
+		host_string
+	} else {
+		host_string[..host_string.len - 1]
+	}
+	public_suffix := get_public_suffix(host_without_trailing_dot) or {
+		last_dot := host_without_trailing_dot.last_index('.') or { -1 }
+		host_without_trailing_dot[last_dot + 1..]
+	}
+	return public_suffix + trailing_dot
+}
+
+// https://url.spec.whatwg.org/#host-registrable-domain
+pub fn (host Host) registrable_domain() ?string {
+	if !host.is_domain() {
+		return none
+	}
+	host_string := host as string
+	public_suffix := host.public_suffix() or { return none }
+	if public_suffix == host_string {
+		return none
+	}
+	trailing_dot := if host_string.ends_with('.') { '.' } else { '' }
+	host_without_trailing_dot := if trailing_dot == '' {
+		host_string
+	} else {
+		host_string[..host_string.len - 1]
+	}
+	mut registrable := get_registrable_domain(host_without_trailing_dot) or {
+		last_dot := host_without_trailing_dot.last_index('.') or { -1 }
+		if last_dot >= 0 {
+			second_last_dot := host_without_trailing_dot[..last_dot].last_index('.') or { -1 }
+			if second_last_dot >= 0 {
+				host_without_trailing_dot[second_last_dot + 1..]
+			} else {
+				host_without_trailing_dot
+			}
+		} else {
+			host_without_trailing_dot
+		}
+	}
+	registrable += trailing_dot
+	return registrable
 }

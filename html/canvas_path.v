@@ -4,11 +4,10 @@
 
 // Translation of Libraries/LibWeb/HTML/Canvas/CanvasPath.cpp.
 //
-// The C++ builds up a Gfx::Path (a list of path segments). Gfx::Path is not translated, so this
-// file includes a faithful minimal model of it (CanvasGfxPath — the same MoveTo/LineTo/bezier/
-// elliptical-arc segment list). The CanvasPath geometry itself (finite checks, ensure-subpath,
-// the ellipse full-circle handling, and the arc_to tangent-circle math) is translated directly.
-// Curve/arc tessellation stays in the (untranslated) painter; only the path structure is built.
+// The C++ builds up a Gfx::Path. CanvasGfxPath is the V backend for the same
+// MoveTo/LineTo/Bezier/elliptical-arc segment model. CanvasPath geometry is a
+// direct translation; the software painter consumes these segments in
+// canvas_rendering_algorithms.v.
 module html
 
 import math
@@ -138,12 +137,50 @@ pub fn (mut p CanvasGfxPath) close() {
 	p.last_point_ = p.subpath_start_
 }
 
-// A copy of the path with every point transformed by `transform`.
-// NOTE: for elliptical-arc segments only the endpoint is transformed; a general affine also
-// warps the radii/rotation (Gfx::Path handles that), which is out of scope for this model.
+fn transformed_ellipse(radii FloatSize, rotation f64, transform CanvasAffineTransform) (FloatSize, f64) {
+	// An ellipse is R(rotation) * diag(rx, ry). Applying the affine's
+	// linear part gives a new 2x2 ellipse matrix. The eigenvalues/vectors
+	// of M*M^T are its squared radii and axis rotation, matching the path
+	// transformation performed by Gfx::Path/SkPath upstream.
+	cosine := math.cos(rotation)
+	sine := math.sin(rotation)
+	column_0_x := radii.width * (transform.a * cosine + transform.c * sine)
+	column_0_y := radii.width * (transform.b * cosine + transform.d * sine)
+	column_1_x := radii.height * (-transform.a * sine + transform.c * cosine)
+	column_1_y := radii.height * (-transform.b * sine + transform.d * cosine)
+	q_xx := column_0_x * column_0_x + column_1_x * column_1_x
+	q_xy := column_0_x * column_0_y + column_1_x * column_1_y
+	q_yy := column_0_y * column_0_y + column_1_y * column_1_y
+	discriminant := math.sqrt(math.max(0.0, (q_xx - q_yy) * (q_xx - q_yy) +
+		4.0 * q_xy * q_xy))
+	major_squared := math.max(0.0, (q_xx + q_yy + discriminant) / 2.0)
+	minor_squared := math.max(0.0, (q_xx + q_yy - discriminant) / 2.0)
+	return FloatSize{
+		width: math.sqrt(major_squared)
+		height: math.sqrt(minor_squared)
+	}, 0.5 * math.atan2(2.0 * q_xy, q_xx - q_yy)
+}
+
+// A copy of the path transformed exactly as Gfx::Path::copy_transformed().
 pub fn (p &CanvasGfxPath) copy_transformed(transform CanvasAffineTransform) CanvasGfxPath {
 	mut result := CanvasGfxPath{}
 	for segment in p.segments {
+		if segment.kind == .elliptical_arc_to {
+			transformed_radii, transformed_rotation := transformed_ellipse(
+				segment.radii, segment.x_axis_rotation, transform)
+			result.segments << PathSegment{
+				...segment
+				point: transform.map(segment.point)
+				radii: transformed_radii
+				x_axis_rotation: transformed_rotation
+				sweep: if transform.a * transform.d - transform.b * transform.c < 0 {
+					!segment.sweep
+				} else {
+					segment.sweep
+				}
+			}
+			continue
+		}
 		result.segments << PathSegment{
 			...segment
 			point:           transform.map(segment.point)

@@ -5,6 +5,7 @@
 // ClientEvent values so the browser/embedder boundary is deterministic.
 module page
 
+import dom
 import math
 
 pub enum PendingDialog {
@@ -109,6 +110,7 @@ struct PendingFullscreenOperation {
 
 @[heap]
 pub struct Page {
+	dom.Page
 pub mut:
 	event_handler  &EventHandler = &EventHandler{}
 	client_events  []ClientEvent
@@ -154,13 +156,35 @@ mut:
 	fullscreen_elements_           map[string]string
 }
 
+fn page_did_create_document_callback(target voidptr, document &dom.Document) {
+	mut model := unsafe { &Page(target) }
+	model.client_.page_did_create_new_document(document.url_string())
+}
+
+fn page_did_update_resource_count_callback(target voidptr, count int) {
+	mut model := unsafe { &Page(target) }
+	model.client_.page_did_update_resource_count(i32(count))
+}
+
+fn page_did_change_title_callback(target voidptr, title string) {
+	mut model := unsafe { &Page(target) }
+	model.client_.page_did_change_title(title)
+}
+
 pub fn Page.create(device_scale f64) !&Page {
 	if device_scale <= 0 || math.is_nan(device_scale) || math.is_inf(device_scale, 0) {
 		return error('device pixel scale must be finite and positive')
 	}
-	return &Page{
+	mut model := &Page{
 		device_scale: device_scale
 	}
+	model.Page = dom.Page{
+		target: voidptr(model)
+		did_create_document_callback: page_did_create_document_callback
+		did_update_resource_count_callback: page_did_update_resource_count_callback
+		did_change_title_callback: page_did_change_title_callback
+	}
+	return model
 }
 
 pub fn (mut p Page) set_top_level_traversable(id string) ! {

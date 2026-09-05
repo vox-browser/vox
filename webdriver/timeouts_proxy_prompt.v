@@ -4,6 +4,7 @@
 // Translation of TimeoutsConfiguration, Proxy, and UserPrompt.
 module webdriver
 
+import url as liburl
 import x.json2
 
 pub const maximum_safe_integer = u64(9_007_199_254_740_991)
@@ -52,14 +53,22 @@ pub fn deserialize_timeouts_into(value json2.Any, mut configuration TimeoutsConf
 	}
 	for key, item in value as map[string]json2.Any {
 		parsed := timeout_number(item) or {
-			if key in ['script', 'pageLoad', 'implicit'] { return err }
+			if key in ['script', 'pageLoad', 'implicit'] {
+				return err
+			}
 			continue
 		}
 		optional := if parsed.is_null { ?u64(none) } else { ?u64(parsed.value) }
 		match key {
-			'script' { configuration.script_timeout = optional }
-			'pageLoad' { configuration.page_load_timeout = optional }
-			'implicit' { configuration.implicit_wait_timeout = optional }
+			'script' {
+				configuration.script_timeout = optional
+			}
+			'pageLoad' {
+				configuration.page_load_timeout = optional
+			}
+			'implicit' {
+				configuration.implicit_wait_timeout = optional
+			}
 			else {}
 		}
 	}
@@ -82,43 +91,29 @@ pub fn (configuration TimeoutsConfiguration) to_object() map[string]json2.Any {
 }
 
 fn url_has_scheme(value string, expected ?string) bool {
-	colon := value.index(':') or { return false }
-	if colon == 0 {
-		return false
-	}
-	if !value[0].is_letter() {
-		return false
-	}
-	for byte in value[..colon].bytes() {
-		if !(byte.is_alnum() || byte in [`+`, `-`, `.`]) {
-			return false
-		}
-	}
+	parsed := liburl.basic_parse(value, none) or { return false }
 	if scheme := expected {
-		return value[..colon].to_lower() == scheme
+		return parsed.scheme == scheme
 	}
 	return true
 }
 
 pub fn deserialize_proxy(value json2.Any) !map[string]json2.Any {
 	if value !is map[string]json2.Any {
-		return error(WebDriverError.from_code(.invalid_argument,
-			'Capability proxy must be an object').msg())
+		return error(WebDriverError.from_code(.invalid_argument, 'Capability proxy must be an object').msg())
 	}
 	object := value as map[string]json2.Any
 	for key, item in object {
 		match key {
 			'proxyType' {
-				if item !is string
-					|| item as string !in ['pac', 'direct', 'autodetect', 'system', 'manual'] {
-					return error(WebDriverError.from_code(.invalid_argument,
-						"Invalid 'proxyType' value").msg())
+				if item !is string || item as string !in ['pac', 'direct', 'autodetect', 'system',
+					'manual'] {
+					return error(WebDriverError.from_code(.invalid_argument, "Invalid 'proxyType' value").msg())
 				}
 			}
 			'proxyAutoconfigUrl', 'socksProxy' {
 				if item !is string || !url_has_scheme(item as string, none) {
-					return error(WebDriverError.from_code(.invalid_argument,
-						"Proxy configuration item '${key}' must be a valid URL").msg())
+					return error(WebDriverError.from_code(.invalid_argument, "Proxy configuration item '${key}' must be a valid URL").msg())
 				}
 			}
 			'ftpProxy', 'httpProxy', 'sslProxy' {
@@ -130,19 +125,16 @@ pub fn deserialize_proxy(value json2.Any) !map[string]json2.Any {
 					'https'
 				}
 				if item !is string || !url_has_scheme(item as string, scheme) {
-					return error(WebDriverError.from_code(.invalid_argument,
-						"Proxy configuration item '${key}' has the wrong URL scheme").msg())
+					return error(WebDriverError.from_code(.invalid_argument, "Proxy configuration item '${key}' has the wrong URL scheme").msg())
 				}
 			}
 			'noProxy' {
 				if item !is []json2.Any {
-					return error(WebDriverError.from_code(.invalid_argument,
-						"Proxy configuration item 'noProxy' must be a list").msg())
+					return error(WebDriverError.from_code(.invalid_argument, "Proxy configuration item 'noProxy' must be a list").msg())
 				}
 				for entry in item as []json2.Any {
 					if entry !is string {
-						return error(WebDriverError.from_code(.invalid_argument,
-							"Proxy configuration item 'noProxy' must be a list of strings").msg())
+						return error(WebDriverError.from_code(.invalid_argument, "Proxy configuration item 'noProxy' must be a list of strings").msg())
 					}
 				}
 			}
@@ -154,13 +146,11 @@ pub fn deserialize_proxy(value json2.Any) !map[string]json2.Any {
 					number = i64(item as f64)
 				}
 				if number < 0 || number > 255 {
-					return error(WebDriverError.from_code(.invalid_argument,
-						"Proxy configuration item 'socksVersion' must be an integer in the range [0, 255]").msg())
+					return error(WebDriverError.from_code(.invalid_argument, "Proxy configuration item 'socksVersion' must be an integer in the range [0, 255]").msg())
 				}
 			}
 			else {
-				return error(WebDriverError.from_code(.invalid_argument,
-					'Invalid proxy configuration item').msg())
+				return error(WebDriverError.from_code(.invalid_argument, 'Invalid proxy configuration item').msg())
 			}
 		}
 	}
@@ -172,6 +162,7 @@ pub enum PromptHandler {
 	accept
 	ignore
 }
+
 pub enum PromptType {
 	alert
 	before_unload
@@ -197,7 +188,9 @@ pub fn (state UserPromptState) matches(requested map[PromptType]PromptHandlerCon
 	if current := state.handler {
 		for type_, configuration in requested {
 			if existing := current[type_] {
-				if existing != configuration { return false }
+				if existing != configuration {
+					return false
+				}
 			}
 		}
 	}
@@ -266,24 +259,23 @@ pub fn parse_prompt_configuration(value string) !PromptHandlerConfiguration {
 		'dismiss and notify' {
 			PromptHandlerConfiguration{
 				handler: .dismiss
-				notify:  true
+				notify: true
 			}
 		}
 		'accept and notify' {
 			PromptHandlerConfiguration{
 				handler: .accept
-				notify:  true
+				notify: true
 			}
 		}
 		'ignore' {
 			PromptHandlerConfiguration{
 				handler: .ignore
-				notify:  true
+				notify: true
 			}
 		}
 		else {
-			error(WebDriverError.from_code(.invalid_argument,
-				"'${value}' is not a known prompt handler").msg())
+			error(WebDriverError.from_code(.invalid_argument, "'${value}' is not a known prompt handler").msg())
 		}
 	}
 }
@@ -312,8 +304,7 @@ fn prompt_type_from_name(name string) !PromptType {
 			.fallback_default
 		}
 		else {
-			error(WebDriverError.from_code(.invalid_argument,
-				"'${name}' is not a valid prompt type").msg())
+			error(WebDriverError.from_code(.invalid_argument, "'${name}' is not a valid prompt type").msg())
 		}
 	}
 }
@@ -326,19 +317,16 @@ pub fn deserialize_unhandled_prompt_behavior(value json2.Any) !map[PromptType]Pr
 	} else if value is map[string]json2.Any {
 		object = value.clone()
 	} else {
-		return error(WebDriverError.from_code(.invalid_argument,
-			'Capability unhandledPromptBehavior must be a string or object').msg())
+		return error(WebDriverError.from_code(.invalid_argument, 'Capability unhandledPromptBehavior must be a string or object').msg())
 	}
 	mut result := map[PromptType]PromptHandlerConfiguration{}
 	for name, item in object {
 		if !is_string_value && name == 'fallbackDefault' {
-			return error(WebDriverError.from_code(.invalid_argument,
-				"'fallbackDefault' is not a valid prompt type").msg())
+			return error(WebDriverError.from_code(.invalid_argument, "'fallbackDefault' is not a valid prompt type").msg())
 		}
 		type_ := prompt_type_from_name(name)!
 		if item !is string {
-			return error(WebDriverError.from_code(.invalid_argument,
-				'Prompt handler must be a string').msg())
+			return error(WebDriverError.from_code(.invalid_argument, 'Prompt handler must be a string').msg())
 		}
 		result[type_] = parse_prompt_configuration(item as string)!
 	}
@@ -366,4 +354,45 @@ pub fn serialize_user_prompt_handler(handler ?map[PromptType]PromptHandlerConfig
 		return object
 	}
 	return 'dismiss and notify'
+}
+
+fn prompt_handler_configuration_to_internal_object(configuration PromptHandlerConfiguration) map[string]json2.Any {
+	handler := match configuration.handler {
+		.dismiss { 'dismiss' }
+		.accept { 'accept' }
+		.ignore { 'ignore' }
+	}
+	return {
+		'handler': handler
+		'notify':  configuration.notify
+	}
+}
+
+fn prompt_handler_map_to_internal_object(handler map[PromptType]PromptHandlerConfiguration) map[string]json2.Any {
+	mut object := map[string]json2.Any{}
+	for type_, configuration in handler {
+		name := match type_ {
+			.alert { 'alert' }
+			.before_unload { 'beforeUnload' }
+			.confirm { 'confirm' }
+			.default_ { 'default' }
+			.file { 'file' }
+			.prompt { 'prompt' }
+			.fallback_default { 'fallbackDefault' }
+		}
+		object[name] = prompt_handler_configuration_to_internal_object(configuration)
+	}
+	return object
+}
+
+fn prompt_handler_map_from_internal_object(value json2.Any) !map[PromptType]PromptHandlerConfiguration {
+	if value !is map[string]json2.Any {
+		return error(WebDriverError.from_code(.invalid_argument, 'Prompt handler must be an object').msg())
+	}
+	mut handler := map[PromptType]PromptHandlerConfiguration{}
+	for name, configuration in value as map[string]json2.Any {
+		type_ := prompt_type_from_name(name)!
+		handler[type_] = PromptHandlerConfiguration.deserialize(configuration)!
+	}
+	return handler
 }

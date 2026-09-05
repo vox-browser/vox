@@ -322,7 +322,9 @@ fn test_inline_author_style_paints_over_parsed_document() {
 	root_box := layout.layout_document(doc, 800)
 	commands := root_box.paint_commands()
 	assert commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(255 165 0)').len == 1
-	assert commands.filter(it.kind == 'stroke_rounded_rect' && it.color == 'rgb(0 128 0)').len == 1
+	// Borders go through the translated painting display list, which paints all four edges as
+	// one filled path (upstream's paint_all_borders), not as a stroked rounded rect.
+	assert commands.filter(it.kind == 'draw_svg_path' && it.color == 'rgb(0 128 0)').len == 1
 	assert commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(0 100 0)').len == 1
 }
 
@@ -684,7 +686,7 @@ fn test_border_and_inline_color_over_parsed_document() {
 	div := css.query_selector(root, 'div') or { panic('no div') }
 
 	cmds := layout.layout_block(div, 0, 0, 1000, []&css.CSSRule{}).paint_commands()
-	assert cmds[0].kind == 'fill_rect' // first: the green border edges (no background)
+	assert cmds[0].kind == 'draw_svg_path' // first: the green border edges as one filled path
 	assert cmds[0].color == 'rgb(0 128 0)'
 	mut texts := []layout.PaintCommand{}
 	for c in cmds {
@@ -890,7 +892,7 @@ fn test_text_transform_over_parsed_document() {
 	root := unsafe { &dom.Node(doc) }
 	p := css.query_selector(root, 'p') or { panic('no p') }
 
-	// The <p>'s line-box fragments carry the uppercased words.
+	// The committed <p> fragment retains the uppercased shaped run.
 	p_box := root_box.find_box(i64(p.as_node().unique_id())) or { panic('no p box') }
 	mut texts := []string{}
 	for line in p_box.lines {
@@ -898,7 +900,7 @@ fn test_text_transform_over_parsed_document() {
 			texts << frag.text
 		}
 	}
-	assert texts == ['HELLO', 'WORLD']
+	assert texts == ['HELLO WORLD']
 
 	// And the SVG output draws the uppercased text.
 	svg := root_box.render_svg(600, root_box.height + 20)
@@ -1437,8 +1439,9 @@ fn test_grid_span_over_parsed_document() {
 // pipeline (css_style_computer_for -> update_style -> bridge -> computed_value_for) resolves inline
 // styles + inheritance over the html-parser-built DOM tree.
 fn test_real_style_computer_over_parsed_document() {
-	doc :=
+	mut doc :=
 		html.parse_document('<body style="color: navy"><div><p>text</p><span style="color: red">red</span></div></body>')
+	doc.set_browsing_context(&dom.BrowsingContext{})
 	root := unsafe { &dom.Node(doc) }
 	body := css.query_selector(root, 'body') or { panic('no body') }
 	p := css.query_selector(root, 'p') or { panic('no p') }

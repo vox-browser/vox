@@ -40,7 +40,7 @@ pub fn (mut list RequestList) append(request &IDBRequest) {
 		return
 	}
 	list.entries << RequestListEntry{
-		request:    request
+		request: request
 		dispatched: true
 	}
 }
@@ -48,7 +48,7 @@ pub fn (mut list RequestList) append(request &IDBRequest) {
 pub fn (mut list RequestList) enqueue(request &IDBRequest, steps RequestSteps) {
 	list.entries << RequestListEntry{
 		request: request
-		steps:   steps
+		steps: steps
 	}
 	list.maybe_process_next_request()
 }

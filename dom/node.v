@@ -9,6 +9,7 @@
 // Translated from Libraries/LibWeb/DOM/Node.cpp
 module dom
 
+import math
 import strings
 
 pub type UniqueNodeID = i64
@@ -125,6 +126,7 @@ pub enum StyleInvalidationReason {
 	html_details_or_dialog_open_attribute_change
 	html_dialog_element_set_is_modal
 	html_iframe_element_geometry_change
+	html_input_element_set_checked
 	html_object_element_update_layout_and_child_objects
 	html_option_element_selected_change
 	navigable_set_viewport_size
@@ -133,6 +135,7 @@ pub enum StyleInvalidationReason {
 	node_set_text_content
 	settings_change
 	style_change
+	media_query_changed_match_state
 }
 
 pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) string {
@@ -146,6 +149,7 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 		.html_details_or_dialog_open_attribute_change { 'HTMLDetailsOrDialogOpenAttributeChange' }
 		.html_dialog_element_set_is_modal { 'HTMLDialogElementSetIsModal' }
 		.html_iframe_element_geometry_change { 'HTMLIFrameElementGeometryChange' }
+		.html_input_element_set_checked { 'HTMLInputElementSetChecked' }
 		.html_object_element_update_layout_and_child_objects {
 			'HTMLObjectElementUpdateLayoutAndChildObjects'
 		}
@@ -156,6 +160,7 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 		.node_set_text_content { 'NodeSetTextContent' }
 		.settings_change { 'SettingsChange' }
 		.style_change { 'StyleChange' }
+		.media_query_changed_match_state { 'MediaQueryChangedMatchState' }
 	}
 }
 
@@ -203,11 +208,25 @@ pub const document_position_contains = u16(8)
 pub const document_position_contained_by = u16(16)
 pub const document_position_implementation_specific = u16(32)
 
+pub type PaintableSetNeedsRepaintCallback = fn (voidptr, voidptr, InvalidateDisplayList)
+
 @[heap]
 pub struct Paintable {
 pub mut:
-	needs_repaint bool
-	is_box        bool
+	needs_repaint              bool
+	is_box                     bool
+	selection_state            SelectionState
+	layout_handle              voidptr = unsafe { nil }
+	repaint_callback_target    voidptr = unsafe { nil }
+	set_needs_repaint_callback PaintableSetNeedsRepaintCallback = unsafe { nil }
+}
+
+pub enum SelectionState {
+	none
+	start
+	end
+	start_and_end
+	full
 }
 
 pub fn (p &Paintable) is_paintable_box() bool {
@@ -215,21 +234,58 @@ pub fn (p &Paintable) is_paintable_box() bool {
 }
 
 pub fn (mut p Paintable) set_needs_repaint(should_invalidate_display_list InvalidateDisplayList) {
-	_ = should_invalidate_display_list
 	p.needs_repaint = true
+	if p.repaint_callback_target != unsafe { nil }
+		&& p.set_needs_repaint_callback != unsafe { nil } {
+		p.set_needs_repaint_callback(p.repaint_callback_target, p.layout_handle, should_invalidate_display_list)
+	}
+}
+
+pub fn (mut p Paintable) set_selection_state(state SelectionState) {
+	p.selection_state = state
 }
 
 @[heap]
 pub struct PaintableBox {
 	Paintable
 pub mut:
-	visible          bool = true
-	scrollable       bool
-	stacking_context bool
+	visible                   bool = true
+	scrollable                bool
+	stacking_context          bool
+	has_scrollable_overflow_  bool
+	wheel_scrolls_horizontal_ bool
+	wheel_scrolls_vertical_   bool
+	scroll_offset_            CSSPixelPoint_
+	scrollable_overflow_rect_ ?CSSPixelRect_
+	padding_box_width_        f64
+	padding_box_height_       f64
+	dom_node_                 &Node = unsafe { nil }
 }
 
 pub fn (p &PaintableBox) could_be_scrolled_by_wheel_event() bool {
-	return p.scrollable
+	return p.wheel_scrolls_horizontal_ || p.wheel_scrolls_vertical_
+}
+
+pub fn (p &PaintableBox) could_be_scrolled_horizontally_by_wheel_event() bool {
+	return p.wheel_scrolls_horizontal_
+}
+
+pub fn (p &PaintableBox) could_be_scrolled_vertically_by_wheel_event() bool {
+	return p.wheel_scrolls_vertical_
+}
+
+// Translation of PaintableBox::handle_mousewheel(). Returning false at a
+// clamped edge lets EventHandler continue up the containing-block chain.
+pub fn (mut p PaintableBox) handle_mousewheel(delta_x f64, delta_y f64) bool {
+	if (delta_x == 0 || !p.wheel_scrolls_horizontal_)
+		&& (delta_y == 0 || !p.wheel_scrolls_vertical_) {
+		return false
+	}
+	current := p.scroll_offset()
+	return p.set_scroll_offset(CSSPixelPoint_{
+		x_: current.x() + delta_x
+		y_: current.y() + delta_y
+	})
 }
 
 pub fn (p &PaintableBox) is_visible() bool {
@@ -238,6 +294,67 @@ pub fn (p &PaintableBox) is_visible() bool {
 
 pub fn (p &PaintableBox) has_stacking_context() bool {
 	return p.stacking_context
+}
+
+pub fn (p &PaintableBox) has_scrollable_overflow() bool {
+	return p.has_scrollable_overflow_
+}
+
+pub fn (p &PaintableBox) scroll_offset() CSSPixelPoint_ {
+	// Painting::PaintableBox keeps element scroll state on the DOM element so it
+	// survives layout-tree and paintable reconstruction.
+	if p.dom_node_ != unsafe { nil } {
+		if element := p.dom_node_.as_element() {
+			return element.el_scroll_offset()
+		}
+	}
+	return p.scroll_offset_
+}
+
+// Translation of Painting::PaintableBox::set_scroll_offset(). The retained
+// display-list phase buckets remain valid: replay consumes a refreshed scroll
+// snapshot, so only the assembled display list is discarded.
+pub fn (mut p PaintableBox) set_scroll_offset(requested_offset CSSPixelPoint_) bool {
+	overflow := p.scrollable_overflow_rect_ or { return false }
+	max_x_offset := math.max(overflow.width() - p.padding_box_width_, 0)
+	max_y_offset := math.max(overflow.height() - p.padding_box_height_, 0)
+	offset := CSSPixelPoint_{
+		x_: math.max(f64(0), math.min(max_x_offset, requested_offset.x()))
+		y_: math.max(f64(0), math.min(max_y_offset, requested_offset.y()))
+	}
+	if p.scroll_offset() == offset {
+		return false
+	}
+
+	p.scroll_offset_ = offset
+	if p.dom_node_ != unsafe { nil } {
+		if mut element := p.dom_node_.as_element() {
+			element.set_scroll_offset(none, offset)
+		}
+		mut document := unsafe { &Document(p.dom_node_.document()) }
+		if document != unsafe { nil } {
+			document.set_needs_to_refresh_scroll_state(true)
+			mut already_pending := false
+			for pending in document.pending_scroll_events {
+				if pending.target == p.dom_node_ && pending.type_ == 'scroll' {
+					already_pending = true
+					break
+				}
+			}
+			if !already_pending {
+				document.pending_scroll_events << PendingScrollEvent{
+					target: p.dom_node_
+					type_: 'scroll'
+				}
+			}
+		}
+	}
+	p.set_needs_repaint(.no)
+	return true
+}
+
+pub fn (p &PaintableBox) scrollable_overflow_rect() ?CSSPixelRect_ {
+	return p.scrollable_overflow_rect_
 }
 
 pub enum InvalidationPropertyType {
@@ -331,6 +448,8 @@ pub enum ChildrenChangedType {
 @[heap]
 pub struct HTMLAnchorElement {
 	HTMLElement
+pub mut:
+	rel_list_ ?&DOMTokenList
 }
 
 @[heap]
@@ -359,7 +478,8 @@ pub mut:
 pub struct HTMLImageElement {
 	HTMLElement
 pub mut:
-	image_element_model_ voidptr = unsafe { nil }
+	image_element_model_        voidptr = unsafe { nil }
+	dimension_attribute_source_ ?&Element
 }
 
 @[heap]
@@ -372,12 +492,38 @@ pub mut:
 	checkedness_             bool
 	checkedness_initialized_ bool
 	dirty_checkedness_       bool
+	indeterminate_           bool
 	input_element_model_     voidptr = unsafe { nil }
+}
+
+// HTMLInputElement checkedness is live control state. The content attribute is
+// only its default until an interaction or IDL setter makes checkedness dirty.
+pub fn (e &HTMLInputElement) checked() bool {
+	if e.checkedness_initialized_ {
+		return e.checkedness_
+	}
+	return unsafe { &Element(e) }.has_attribute('checked')
+}
+
+pub fn (mut e HTMLInputElement) set_checkedness(value bool, dirty bool) {
+	e.checkedness_ = value
+	e.checkedness_initialized_ = true
+	e.dirty_checkedness_ = dirty
+}
+
+pub fn (e &HTMLInputElement) indeterminate() bool {
+	return e.indeterminate_
+}
+
+pub fn (mut e HTMLInputElement) set_indeterminate(value bool) {
+	e.indeterminate_ = value
 }
 
 @[heap]
 pub struct HTMLSelectElement {
 	HTMLElement
+pub mut:
+	select_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -1011,27 +1157,24 @@ pub fn (mut n Node) normalize() ! {
 					break
 				}
 
-				document := node.document()
-				if document != unsafe { nil } {
-					for live_range in document.live_ranges_ {
-						mut range := unsafe { &Range(live_range) }
-						if range.start_container_ == current {
-							range.start_offset_ += length
+				for _, live_range in dom_live_ranges {
+					mut range := unsafe { &Range(live_range) }
+					if range.start_container_ == current {
+						range.start_offset_ += length
+						range.start_container_ = node
+					}
+					if range.end_container_ == current {
+						range.end_offset_ += length
+						range.end_container_ = node
+					}
+					if parent := current.parent() {
+						if range.start_container_ == parent && range.start_offset_ == current.index() {
 							range.start_container_ = node
+							range.start_offset_ = length
 						}
-						if range.end_container_ == current {
-							range.end_offset_ += length
+						if range.end_container_ == parent && range.end_offset_ == current.index() {
 							range.end_container_ = node
-						}
-						if parent := current.parent() {
-							if range.start_container_ == parent && range.start_offset_ == current.index() {
-								range.start_container_ = node
-								range.start_offset_ = length
-							}
-							if range.end_container_ == parent && range.end_offset_ == current.index() {
-								range.end_container_ = node
-								range.end_offset_ = length
-							}
+							range.end_offset_ = length
 						}
 					}
 				}
@@ -1281,6 +1424,10 @@ pub fn (ln &LayoutNode) parent() ?&LayoutNode {
 	return ln.parent_
 }
 
+pub fn (ln &LayoutNode) containing_block() ?&LayoutNode {
+	return ln.containing_block_
+}
+
 pub fn (ln &LayoutNode) is_anonymous() bool {
 	return ln.is_anonymous_
 }
@@ -1297,14 +1444,17 @@ pub fn (ln &LayoutNode) real_layout_handle() voidptr {
 	return ln.layout_handle
 }
 
-fn element_allows_accessible_name_from_content_stub(element &Element) bool {
+fn element_allows_accessible_name_from_content(element &Element, should_compute_role ShouldComputeRole) bool {
+	if allows := element.document().element_allows_accessible_name_from_content(element, should_compute_role == .yes) {
+		return allows
+	}
 	role := element_aria_role(element) or { return false }
 	return aria_role_allows_name_from_content(role)
 }
 
-// Approximation of Element::role_or_default(). Reads the `role` attribute if
-// present; otherwise falls back to a default role derived from the element's
-// local name for HTML elements with implicit ARIA semantics.
+// The HTML/ARIA implementation above is the normal engine path. This local
+// fallback keeps standalone DOM-only tests useful when no owning HTML module
+// has installed the document callback.
 fn element_aria_role(element &Element) ?string {
 	if value := element.get_attribute('role') {
 		for token in value.fields() {
@@ -1398,11 +1548,11 @@ fn rendered_text_for_accessibility(node &Node) ?string {
 	return layout_node.rendered_text_
 }
 
-fn element_is_referenced_for_accessibility_stub(element &Element) bool {
+fn element_is_referenced_for_accessibility(element &Element) bool {
 	return element.is_referenced()
 }
 
-fn element_has_referenced_and_hidden_ancestor_stub(element &Element) bool {
+fn element_has_referenced_and_hidden_ancestor(element &Element) bool {
 	return element.has_referenced_and_hidden_ancestor()
 }
 
@@ -1783,16 +1933,13 @@ pub fn (mut n Node) insert_before(node &Node, child ?&Node, suppress_observers b
 		fragment.queue_tree_mutation_record([], nodes, unsafe { nil }, unsafe { nil })
 	}
 	if child_node := child {
-		doc := n.document()
-		if doc != unsafe { nil } {
-			for live_range in doc.live_ranges_ {
-				mut range := unsafe { &Range(live_range) }
-				if range.start_container_ == &n && range.start_offset_ > child_node.index() {
-					range.start_offset_ += count
-				}
-				if range.end_container_ == &n && range.end_offset_ > child_node.index() {
-					range.end_offset_ += count
-				}
+		for _, live_range in dom_live_ranges {
+			mut range := unsafe { &Range(live_range) }
+			if range.start_container_ == &n && range.start_offset_ > child_node.index() {
+				range.start_offset_ += count
+			}
+			if range.end_container_ == &n && range.end_offset_ > child_node.index() {
+				range.end_offset_ += count
 			}
 		}
 	}
@@ -1935,9 +2082,8 @@ pub fn (mut n Node) live_range_pre_remove() {
 	// 3. Let index be node's index.
 	index := n.index()
 	node := unsafe { &Node(&n) }
-	document := n.document()
 	// 4. For each live range whose start node is an inclusive descendant of node, set its start to (parent, index).
-	for live_range in document.live_ranges_ {
+	for _, live_range in dom_live_ranges {
 		mut range := unsafe { &Range(live_range) }
 		if range.start_container_.is_inclusive_descendant_of(node) {
 			range.start_container_ = parent
@@ -1945,7 +2091,7 @@ pub fn (mut n Node) live_range_pre_remove() {
 		}
 	}
 	// 5. For each live range whose end node is an inclusive descendant of node, set its end to (parent, index).
-	for live_range in document.live_ranges_ {
+	for _, live_range in dom_live_ranges {
 		mut range := unsafe { &Range(live_range) }
 		if range.end_container_.is_inclusive_descendant_of(node) {
 			range.end_container_ = parent
@@ -1953,14 +2099,14 @@ pub fn (mut n Node) live_range_pre_remove() {
 		}
 	}
 	// 6. For each live range whose start node is parent and start offset is greater than index, decrease its start offset by 1.
-	for live_range in document.live_ranges_ {
+	for _, live_range in dom_live_ranges {
 		mut range := unsafe { &Range(live_range) }
 		if range.start_container_ == parent && range.start_offset_ > index {
 			range.start_offset_--
 		}
 	}
 	// 7. For each live range whose end node is parent and end offset is greater than index, decrease its end offset by 1.
-	for live_range in document.live_ranges_ {
+	for _, live_range in dom_live_ranges {
 		mut range := unsafe { &Range(live_range) }
 		if range.end_container_ == parent && range.end_offset_ > index {
 			range.end_offset_--
@@ -2155,16 +2301,14 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 		assign_slottables_for_a_tree(old_parent_root)
 		assign_slottables_for_a_tree(&n)
 	}
-	if doc != unsafe { nil } {
-		if child_node := child {
-			for live_range in doc.live_ranges_ {
-				mut range := unsafe { &Range(live_range) }
-				if range.start_container_ == &new_parent && range.start_offset_ > child_node.index() {
-					range.start_offset_++
-				}
-				if range.end_container_ == &new_parent && range.end_offset_ > child_node.index() {
-					range.end_offset_++
-				}
+	if child_node := child {
+		for _, live_range in dom_live_ranges {
+			mut range := unsafe { &Range(live_range) }
+			if range.start_container_ == &new_parent && range.start_offset_ > child_node.index() {
+				range.start_offset_++
+			}
+			if range.end_container_ == &new_parent && range.end_offset_ > child_node.index() {
+				range.end_offset_++
 			}
 		}
 	}
@@ -2863,7 +3007,9 @@ pub fn (n &Node) serialize_tree_as_json(mut object strings.Builder) {
 		}
 	}
 	object.write_string(',"visible":${n.layout_node() != none}')
-	if n.children.len > 0 {
+	if element := n.as_element() {
+		element.serialize_children_as_json(mut object)
+	} else if n.children.len > 0 {
 		object.write_string(',"children":[')
 		mut wrote_child := false
 		for child in n.children {
@@ -3197,7 +3343,8 @@ pub fn (n &Node) locate_a_namespace(prefix ?string) ?string {
 			for attr in attrs.attrs {
 				if attr.namespace_uri_ or { '' } == namespace_xmlns_uri {
 					if (attr.prefix__ or { '' }) == 'xmlns' && prefix != none && attr.local_name_ == prefix or {
-						''} {
+						''
+					} {
 						if attr.value().len > 0 {
 							return attr.value()
 						}
@@ -3645,9 +3792,6 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 	// 1. Set the root node to the given element, the current node to the root node, and the total accumulated text to the
 	//    empty string (""). If the root node's role prohibits naming, return the empty string ("").
 	node_id := n.unique_id()
-	if visited_nodes[node_id] {
-		return ''
-	}
 	visited_nodes[node_id] = true
 	if element := n.as_element() {
 		// A. Hidden Not Referenced:
@@ -3672,15 +3816,17 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 					if target == .name {
 						if aria_label := referenced_element.get_attribute('aria-label') {
 							if aria_label.trim_space().len > 0 {
-								append_accessible_text(mut accumulated_text, aria_label)
+								accumulated_text.write_string(' ')
+								accumulated_text.write_string(aria_label)
 							}
 						}
 					}
 					if visited_nodes[referenced_node.unique_id()] {
 						continue
 					}
-					result := referenced_node.name_or_description(target, document, mut visited_nodes, .no, should_compute_role)!
-					append_accessible_text(mut accumulated_text, result)
+					result := referenced_node.name_or_description(target, document, mut visited_nodes, .no, .yes)!
+					accumulated_text.write_string(' ')
+					accumulated_text.write_string(result)
 				}
 				if accumulated_text.str().trim_space().len == 0 && target == .name {
 					if aria_label := element.get_attribute('aria-label') {
@@ -3701,6 +3847,13 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 					return aria_label
 				}
 			}
+		}
+
+		// C. Embedded Control. The concrete HTML element and form-control
+		// implementations live above DOM's module boundary; the installed HTML
+		// hook executes the same labels/role/value dispatch as Node.cpp.
+		if embedded_control_value := document.embedded_control_label_value(element) {
+			return embedded_control_value
 		}
 
 		// E. Host Language Label: Otherwise, if the current node's native markup provides an attribute (e.g. alt) or
@@ -3756,7 +3909,7 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 		// F. Name From Content: Otherwise, if the current node's role allows name from content, or if the current node
 		//    is referenced by aria-labelledby, aria-describedby, or is a native host language text alternative element
 		//    (e.g. label in HTML), or is a descendant of a native host language text alternative element:
-		if element_allows_accessible_name_from_content_stub(element) || element_is_referenced_for_accessibility_stub(element) || is_descendant == .yes {
+		if element_allows_accessible_name_from_content(element, should_compute_role) || element_is_referenced_for_accessibility(element) || is_descendant == .yes {
 			mut accumulated_text := strings.new_builder(0)
 			accumulated_text.write_string(generated_content_text(element, .before))
 			mut child_nodes := n.children.clone()
@@ -3779,6 +3932,11 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 					continue
 				}
 				mut should_add_space := true
+				// Node.cpp updates layout before consulting the child's display. Apart
+				// from spacing, this also ensures TextNode::text_for_rendering() is
+				// available for step G of the accessible-name algorithm.
+				mut mutable_document := unsafe { &Document(document) }
+				mutable_document.update_layout(.node_name_or_description)
 				if layout_node := child_node.layout_node() {
 					display := layout_node.display()
 					if display.is_inline_outside() && display.is_flow_inside() {
@@ -3790,7 +3948,8 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 				}
 				result := child_node.name_or_description(target, document, mut visited_nodes, .yes, should_compute_role)!
 				if should_add_space {
-					append_accessible_text(mut accumulated_text, result)
+					accumulated_text.write_string(' ')
+					accumulated_text.write_string(result)
 				} else {
 					accumulated_text.write_string(result)
 				}
@@ -3805,7 +3964,7 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 	// G. Text Node: Otherwise, if the current node is a Text Node, return its textual contents.
 	if n.is_text() {
 		if parent_element := n.parent_element() {
-			if !element_is_referenced_for_accessibility_stub(parent_element) && parent_element.is_hidden() && parent_element.has_hidden_ancestor() && !element_has_referenced_and_hidden_ancestor_stub(parent_element) {
+			if !element_is_referenced_for_accessibility(parent_element) && parent_element.is_hidden() && parent_element.has_hidden_ancestor() && !element_has_referenced_and_hidden_ancestor(parent_element) {
 				return ''
 			}
 		}
@@ -3817,6 +3976,9 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 
 	// I. Otherwise, if the current node has a Tooltip attribute, return its value.
 	if element := n.as_element() {
+		if !element.is_html_element() {
+			return ''
+		}
 		if title := element.get_attribute('title') {
 			if title.len > 0 {
 				return title
@@ -3826,7 +3988,7 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 
 	// 3. After all steps are completed, the total accumulated text is used as the accessible name or accessible description
 	//    of the element that initiated the computation.
-	return n.text_content() or { '' }
+	return ''
 }
 
 // https://www.w3.org/TR/accname-1.2/#mapping_additional_nd_name
@@ -4005,7 +4167,7 @@ pub fn (n &Node) in_editable_subtree() bool {
 	return n.in_editable_subtree_
 }
 
-pub fn (n &Node) for_each_child(callback fn(&Node) TraversalDecision) TraversalDecision {
+pub fn (n &Node) for_each_child(callback fn (&Node) TraversalDecision) TraversalDecision {
 	for child in n.children {
 		if callback(child) == .@break {
 			return .@break
@@ -4014,7 +4176,7 @@ pub fn (n &Node) for_each_child(callback fn(&Node) TraversalDecision) TraversalD
 	return .@continue
 }
 
-pub fn (n &Node) for_each_in_subtree(callback fn(&Node) TraversalDecision) TraversalDecision {
+pub fn (n &Node) for_each_in_subtree(callback fn (&Node) TraversalDecision) TraversalDecision {
 	for child in n.children {
 		decision := callback(child)
 		if decision == .@break {
@@ -4030,7 +4192,7 @@ pub fn (n &Node) for_each_in_subtree(callback fn(&Node) TraversalDecision) Trave
 	return .@continue
 }
 
-pub fn (n &Node) for_each_in_inclusive_subtree(callback fn(&Node) TraversalDecision) TraversalDecision {
+pub fn (n &Node) for_each_in_inclusive_subtree(callback fn (&Node) TraversalDecision) TraversalDecision {
 	decision := callback(n)
 	if decision == .@break {
 		return .@break
@@ -4042,7 +4204,7 @@ pub fn (n &Node) for_each_in_inclusive_subtree(callback fn(&Node) TraversalDecis
 }
 
 // https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-descendant
-pub fn (n &Node) for_each_shadow_including_inclusive_descendant(callback fn(&Node) TraversalDecision) TraversalDecision {
+pub fn (n &Node) for_each_shadow_including_inclusive_descendant(callback fn (&Node) TraversalDecision) TraversalDecision {
 	decision := callback(n)
 	if decision == .@break {
 		return .@break
@@ -4054,7 +4216,7 @@ pub fn (n &Node) for_each_shadow_including_inclusive_descendant(callback fn(&Nod
 }
 
 // https://dom.spec.whatwg.org/#concept-shadow-including-descendant
-pub fn (n &Node) for_each_shadow_including_descendant(callback fn(&Node) TraversalDecision) TraversalDecision {
+pub fn (n &Node) for_each_shadow_including_descendant(callback fn (&Node) TraversalDecision) TraversalDecision {
 	if element := n.as_element() {
 		if shadow_root := element.shadow_root() {
 			shadow_root_node := unsafe { &Node(shadow_root) }
@@ -4358,10 +4520,44 @@ pub fn (mut si StyleInvalidator) enqueue_invalidation_plan(node &Node, reason St
 
 pub fn (mut ln LayoutNode) set_needs_layout_update(reason SetNeedsLayoutReason) {
 	_ = reason
+	if ln.layout_handle != unsafe { nil } && ln.set_needs_layout_update_callback != unsafe { nil } {
+		ln.set_needs_layout_update_callback(ln.layout_handle, true)
+	}
+	if ln.needs_layout_update_ {
+		return
+	}
+	ln.needs_layout_update_ = true
+	mut ancestor := ln.parent_
+	for {
+		parent := ancestor or { break }
+		if parent.needs_layout_update_ {
+			break
+		}
+		unsafe {
+			parent.needs_layout_update_ = true
+		}
+		ancestor = parent.parent_
+	}
+}
+
+pub fn (ln &LayoutNode) needs_layout_update() bool {
+	return ln.needs_layout_update_
+}
+
+pub fn (mut ln LayoutNode) reset_needs_layout_update() {
+	ln.needs_layout_update_ = false
+	if ln.layout_handle != unsafe { nil } && ln.set_needs_layout_update_callback != unsafe { nil } {
+		ln.set_needs_layout_update_callback(ln.layout_handle, false)
+	}
+}
+
+pub fn (ln &LayoutNode) apply_style(css_computed_properties_handle voidptr) {
+	if ln.layout_handle == unsafe { nil } || ln.apply_style_callback == unsafe { nil } || css_computed_properties_handle == unsafe { nil } {
+		return
+	}
+	ln.apply_style_callback(ln.layout_handle, css_computed_properties_handle)
 }
 
 pub fn (ln &LayoutNode) paintables() []&Paintable {
-	_ = ln
-	// Stub for Layout::Node::paintables() until layout paintables are ported.
-	return []&Paintable{}
+	return ln.paintables_.clone()
 }

@@ -15,7 +15,9 @@ fn (mut context WebGLRenderingContext) require_webgl2() bool {
 }
 
 pub fn (mut context WebGLRenderingContext) copy_buffer_sub_data(read_target GLenum, write_target GLenum, read_offset i64, write_offset i64, size i64) {
-	if !context.require_webgl2() { return }
+	if !context.require_webgl2() {
+		return
+	}
 	if read_offset < 0 || write_offset < 0 || size < 0 {
 		context.set_error(invalid_value)
 		return
@@ -37,22 +39,27 @@ pub fn (mut context WebGLRenderingContext) copy_buffer_sub_data(read_target GLen
 		return
 	}
 	mut mutable_write_buffer := unsafe { &WebGLBuffer(write_buffer) }
-	if read_offset + size > read_buffer.data_.len
-		|| write_offset + size > mutable_write_buffer.data_.len {
+	if read_offset + size > read_buffer.data_.len || write_offset + size > mutable_write_buffer.data_.len {
 		context.set_error(invalid_value)
 		return
 	}
-	// A temporary copy preserves overlapping same-buffer semantics.
-	bytes := read_buffer.data_[int(read_offset)..int(read_offset + size)].clone()
-	for index, byte in bytes {
-		mutable_write_buffer.data_[int(write_offset) + index] = byte
+	read_start := int(read_offset)
+	write_start := int(write_offset)
+	count := int(size)
+	if read_handle == write_handle && write_start > read_start && write_start < read_start + count {
+		for index := count - 1; index >= 0; index-- {
+			mutable_write_buffer.data_[write_start + index] = read_buffer.data_[read_start + index]
+		}
+	} else {
+		copy(mut mutable_write_buffer.data_[write_start..write_start + count], read_buffer.data_[read_start..read_start + count])
 	}
-	context.native.dispatch('copy_buffer_sub_data', read_target, write_target, read_offset,
-		write_offset, size)
+	context.native.dispatch('copy_buffer_sub_data', read_target, write_target, read_offset, write_offset, size)
 }
 
 pub fn (mut context WebGLRenderingContext) get_buffer_sub_data(target GLenum, source_offset i64, mut destination []u8, destination_offset int, length int) {
-	if !context.require_webgl2() { return }
+	if !context.require_webgl2() {
+		return
+	}
 	if source_offset < 0 || destination_offset < 0 || length < 0 {
 		context.set_error(invalid_value)
 		return
@@ -66,16 +73,12 @@ pub fn (mut context WebGLRenderingContext) get_buffer_sub_data(target GLenum, so
 		return
 	}
 	copy_length := if length == 0 { destination.len - destination_offset } else { length }
-	if destination_offset + copy_length > destination.len
-		|| source_offset + copy_length > buffer.data_.len {
+	if destination_offset + copy_length > destination.len || source_offset + copy_length > buffer.data_.len {
 		context.set_error(invalid_value)
 		return
 	}
-	for index in 0 .. copy_length {
-		destination[destination_offset + index] = buffer.data_[int(source_offset) + index]
-	}
-	context.native.dispatch('get_buffer_sub_data', target, source_offset, destination_offset,
-		copy_length)
+	copy(mut destination[destination_offset..destination_offset + copy_length], buffer.data_[int(source_offset)..int(source_offset) + copy_length])
+	context.native.dispatch('get_buffer_sub_data', target, source_offset, destination_offset, copy_length)
 }
 
 pub fn (mut context WebGLRenderingContext) create_query() &WebGLQuery {
@@ -96,7 +99,9 @@ fn valid_query_target(target GLenum) bool {
 }
 
 pub fn (mut context WebGLRenderingContext) begin_query(target GLenum, mut query WebGLQuery) {
-	if !context.require_webgl2() { return }
+	if !context.require_webgl2() {
+		return
+	}
 	if !valid_query_target(target) {
 		context.set_error(invalid_enum)
 		return
@@ -121,7 +126,9 @@ pub fn (mut context WebGLRenderingContext) begin_query(target GLenum, mut query 
 }
 
 pub fn (mut context WebGLRenderingContext) end_query(target GLenum) {
-	if !context.require_webgl2() { return }
+	if !context.require_webgl2() {
+		return
+	}
 	if !valid_query_target(target) {
 		context.set_error(invalid_enum)
 		return
@@ -223,8 +230,7 @@ pub fn (mut context WebGLRenderingContext) sampler_parameteri(mut sampler WebGLS
 		context.set_error(invalid_operation)
 		return
 	}
-	if !valid_sampler_parameter(pname) && !(pname == texture_max_anisotropy_ext
-		&& context.extension_enabled('EXT_texture_filter_anisotropic')) {
+	if !valid_sampler_parameter(pname) && !(pname == texture_max_anisotropy_ext && context.extension_enabled('EXT_texture_filter_anisotropic')) {
 		context.set_error(invalid_enum)
 		return
 	}
@@ -237,8 +243,7 @@ pub fn (mut context WebGLRenderingContext) sampler_parameterf(mut sampler WebGLS
 		context.set_error(invalid_operation)
 		return
 	}
-	if !valid_sampler_parameter(pname) && !(pname == texture_max_anisotropy_ext
-		&& context.extension_enabled('EXT_texture_filter_anisotropic')) {
+	if !valid_sampler_parameter(pname) && !(pname == texture_max_anisotropy_ext && context.extension_enabled('EXT_texture_filter_anisotropic')) {
 		context.set_error(invalid_enum)
 		return
 	}
@@ -291,8 +296,12 @@ pub fn (mut context WebGLRenderingContext) client_wait_sync(mut sync WebGLSync, 
 		context.set_error(invalid_value)
 		return wait_failed
 	}
-	if sync.signaled_ { return already_signaled }
-	if timeout == 0 { return timeout_expired }
+	if sync.signaled_ {
+		return already_signaled
+	}
+	if timeout == 0 {
+		return timeout_expired
+	}
 	sync.signaled_ = true
 	context.native.dispatch('client_wait_sync', sync.object.handle_, flags, i64(timeout))
 	return condition_satisfied
@@ -459,7 +468,9 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGL
 		value.object.invalidate()
 		context.vertex_arrays.delete(handle)
 		if current := context.current_vertex_array {
-			if current == value { context.current_vertex_array = none }
+			if current == value {
+				context.current_vertex_array = none
+			}
 		}
 		context.native.dispatch('delete_vertex_array', handle)
 	}
@@ -480,7 +491,9 @@ pub fn (mut context WebGLRenderingContext) create_vertex_array_oes() &WebGLVerte
 
 pub fn (mut context WebGLRenderingContext) bind_vertex_array_oes(array ?&WebGLVertexArrayObjectOES) {
 	if value := array {
-		if !context.owns(&value.object) { return }
+		if !context.owns(&value.object) {
+			return
+		}
 	}
 	context.current_vertex_array_oes = array
 	context.native.dispatch('bind_vertex_array_oes', if value := array {
@@ -515,7 +528,9 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGL
 }
 
 pub fn offset_span(bytes []u8, source_offset u64, length_override u32) ![]u8 {
-	if source_offset > u64(bytes.len) { return error('offset exceeds source') }
+	if source_offset > u64(bytes.len) {
+		return error('offset exceeds source')
+	}
 	length := if length_override == 0 {
 		u64(bytes.len) - source_offset
 	} else {
@@ -524,7 +539,7 @@ pub fn offset_span(bytes []u8, source_offset u64, length_override u32) ![]u8 {
 	if source_offset + length < source_offset || source_offset + length > u64(bytes.len) {
 		return error('slice exceeds source')
 	}
-	return bytes[int(source_offset)..int(source_offset + length)].clone()
+	return bytes[int(source_offset)..int(source_offset + length)]
 }
 
 pub fn (mut context WebGLRenderingContext) compressed_tex_image3d(target GLenum, level int, internal_format GLenum, width int, height int, depth int, border int, source []u8, source_offset u64, length_override u32) {
@@ -536,8 +551,7 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_image3d(target GLenum,
 		context.set_error(invalid_value)
 		return
 	}
-	context.native.dispatch('compressed_tex_image3d', target, level, internal_format, width,
-		height, depth, border, pixels.len)
+	context.native.dispatch('compressed_tex_image3d', target, level, internal_format, width, height, depth, border, pixels.len)
 }
 
 pub fn (mut context WebGLRenderingContext) draw_arrays_instanced(mode GLenum, first int, count int, instance_count int) {
@@ -559,6 +573,8 @@ pub fn (mut context WebGLRenderingContext) draw_elements_instanced(mode GLenum, 
 // Remaining WebGL2 pixel, texture, uniform matrix and reflection entry points
 // use this checked dispatch after WebIDL conversion has produced native values.
 pub fn (mut context WebGLRenderingContext) webgl2_command(name string, args ...i64) {
-	if !context.require_webgl2() { return }
+	if !context.require_webgl2() {
+		return
+	}
 	context.native.dispatch(name, ...args)
 }

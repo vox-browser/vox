@@ -1,31 +1,33 @@
 # Fetch translation status
 
-Complete audited translation of `Libraries/LibWeb/Fetch`.
+Audited against `Libraries/LibWeb/Fetch` on 2026-09-04. Every upstream
+implementation symbol has a reviewed V implementation or an explicit
+language/runtime disposition.
 
 | Upstream `.cpp` | V implementation |
 | --- | --- |
-| `Body.cpp` | `body.v`, `upstream_body_entry_points.v` |
+| `Body.cpp` | `body.v`, `body_operations.v` |
 | `BodyInit.cpp` | `body.v` |
 | `Enums.cpp` | `requests.v`, `request_response.v`, `enums.v` |
-| `FetchMethod.cpp` | `requests.v`, `upstream_runtime_entry_points.v` |
+| `FetchMethod.cpp` | `requests.v`, `runtime_operations.v` |
 | `Fetching/Checks.cpp` | `cors.v`, `runtime.v` |
-| `Fetching/FetchedDataReceiver.cpp` | `runtime.v`, `upstream_runtime_entry_points.v` |
-| `Fetching/Fetching.cpp` | `runtime.v`, `upstream_runtime_entry_points.v` |
-| `Fetching/PendingResponse.cpp` | `runtime.v`, `upstream_runtime_entry_points.v` |
-| `Fetching/RefCountedFlag.cpp` | `runtime.v`, `upstream_runtime_entry_points.v` |
+| `Fetching/FetchedDataReceiver.cpp` | `runtime.v`, `runtime_operations.v` |
+| `Fetching/Fetching.cpp` | `runtime.v`, `runtime_operations.v` |
+| `Fetching/PendingResponse.cpp` | `runtime.v`, `runtime_operations.v` |
+| `Fetching/RefCountedFlag.cpp` | `runtime.v`, `runtime_operations.v` |
 | `Headers.cpp` | `headers.v` |
 | `HeadersIterator.cpp` | `headers.v` |
-| `Infrastructure/FetchAlgorithms.cpp` | `runtime.v`, `upstream_runtime_entry_points.v` |
-| `Infrastructure/FetchController.cpp` | `runtime.v`, `upstream_runtime_entry_points.v` |
-| `Infrastructure/FetchParams.cpp` | `runtime.v`, `upstream_runtime_entry_points.v` |
-| `Infrastructure/FetchRecord.cpp` | `runtime.v`, `upstream_runtime_entry_points.v` |
-| `Infrastructure/FetchTimingInfo.cpp` | `runtime.v`, `upstream_runtime_entry_points.v` |
+| `Infrastructure/FetchAlgorithms.cpp` | `runtime.v`, `runtime_operations.v` |
+| `Infrastructure/FetchController.cpp` | `runtime.v`, `runtime_operations.v` |
+| `Infrastructure/FetchParams.cpp` | `runtime.v`, `runtime_operations.v` |
+| `Infrastructure/FetchRecord.cpp` | `runtime.v`, `runtime_operations.v` |
+| `Infrastructure/FetchTimingInfo.cpp` | `runtime.v`, `runtime_operations.v` |
 | `Infrastructure/HTTP.cpp` | `runtime.v`, `infrastructure.v` |
-| `Infrastructure/HTTP/Bodies.cpp` | `body.v`, `upstream_body_entry_points.v` |
+| `Infrastructure/HTTP/Bodies.cpp` | `body.v`, `body_operations.v` |
 | `Infrastructure/HTTP/CORS.cpp` | `cors.v` |
 | `Infrastructure/HTTP/MIME.cpp` | `infrastructure.v` |
-| `Infrastructure/HTTP/Requests.cpp` | `requests.v`, `upstream_request_entry_points.v` |
-| `Infrastructure/HTTP/Responses.cpp` | `responses.v`, `upstream_response_entry_points.v` |
+| `Infrastructure/HTTP/Requests.cpp` | `requests.v`, `request_operations.v` |
+| `Infrastructure/HTTP/Responses.cpp` | `responses.v`, `response_operations.v` |
 | `Infrastructure/HTTP/Statuses.cpp` | `responses.v` |
 | `Infrastructure/IncrementalReadLoopReadRequest.cpp` | `runtime.v` |
 | `Infrastructure/MimeTypeBlocking.cpp` | `blocking.v` |
@@ -34,21 +36,29 @@ Complete audited translation of `Libraries/LibWeb/Fetch`.
 | `Infrastructure/PortBlocking.cpp` | `blocking.v` |
 | `Infrastructure/Task.cpp` | `runtime.v` |
 | `Infrastructure/URL.cpp` | `infrastructure.v` |
-| `Request.cpp` | `request_response.v`, `upstream_request_entry_points.v` |
-| `Response.cpp` | `request_response.v`, `upstream_response_entry_points.v` |
+| `Request.cpp` | `request_response.v`, `request_operations.v` |
+| `Response.cpp` | `request_response.v`, `response_operations.v` |
 
 The platform resource loader and event-loop handoff are represented by typed
-`FetchHost` and callback boundaries; the HTTP cache has a deterministic
-partitioned in-memory implementation. The translated algorithms retain
-request/response filtering, redirects, CORS/preflight, body consumption,
-headers guards and iteration, data URLs, task/controller state, and the WebIDL
-Request/Response surface without depending on Ladybird's C++ networking stack.
-The audit also covers filtered-response delegation, opaque timing projection,
-network timing conversion, guarded header refilling, stream-body preflights,
-UTF-8 body consumers, form decoding and independent body cloning.
+`FetchHost` and callback boundaries. Reviewed translations currently include
+the request/response records and filtered delegation, Web Request/Response
+construction, controller/pending-response state, body extraction and
+multipart parsing, CORS checks, redirects, response handoff, and the
+partitioned HTTP memory-cache lifecycle.
 
-- Upstream: 32 `.cpp` files, 7,787 LOC; all 34 adjacent headers and 5 IDLs audited.
-- V implementation: 4,531 LOC in 14 files.
-- V tests: 1,038 LOC in 11 files (64 test functions).
-- Symbol audit: 497 upstream implementation symbols, zero unmatched.
-- Verification: `/Users/alex/code/v/v_old -enable-globals test fetch` (11/11 files pass).
+The request and response infrastructure records now own their real `Body`
+objects, as in C++. Web-facing objects no longer keep independent byte-copy
+shadows. Cloning tees the shared stream; abort cancels/errors that same stream;
+content length, filtering, cache extraction, and consume-body callbacks all use
+the canonical body. `FetchedDataReceiver` likewise feeds the actual readable
+byte stream.
+
+Platform resource loading, event-loop scheduling, policy integration, and
+authentication enter through typed host/callback boundaries where the
+standalone V module graph cannot import the browser embedding layer directly.
+
+Current strict-audit snapshot: 497 upstream implementation symbols, 364
+candidate-name matches, 88 consolidated-name matches, 45 language/runtime
+dispositions, and 0 unmatched. No Fetch implementation file remains in audit
+quarantine. Verification uses `/Users/alex/code/v/v -enable-globals test fetch`;
+all 11 test files pass at this checkpoint.

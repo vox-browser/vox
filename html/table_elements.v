@@ -437,11 +437,14 @@ pub fn html_table_cell_element_default_role(cell &dom.HTMLTableCellElement) ?ari
 	for ancestor != none {
 		current := ancestor or { break }
 		if current.local_name() == 'table' {
-			role := current.get_attribute_value('role').to_lower()
-			if role in ['grid', 'treegrid'] {
+			role := html_element_role_or_default(current) or { return none }
+			if role in [.grid, .gridcell] {
 				return .gridcell
 			}
-			return .cell
+			if role == .table {
+				return .cell
+			}
+			return none
 		}
 		ancestor = current.as_node().parent_element()
 	}

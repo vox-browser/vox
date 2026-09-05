@@ -55,8 +55,7 @@ fn test_cascade_with_author_stylesheet() {
 	mut div_node := div.as_node()
 	div_node.append_child(p.as_node()) or { panic('${err}') }
 
-	rules := parse_css_stylesheet_contents_with_parser('.box { color: teal } p { color: black; font-size: 12px } #lead { color: maroon }',
-		map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('.box { color: teal } p { color: black; font-size: 12px } #lead { color: maroon }', map[string]bool{})
 
 	// div: matches '.box' -> color teal; display defaults to initial.
 	assert cascaded_value_with_stylesheet(div, pid('color'), rules) == 'teal'
@@ -82,8 +81,7 @@ fn test_specificity_beats_source_order() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := el_with(doc, 'div', 'class', 'high')
 	// '.high' (0,1,0) is EARLIER in source but more specific than 'div' (0,0,1) which is LATER.
-	rules := parse_css_stylesheet_contents_with_parser('.high { color: green } div { color: red }',
-		map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('.high { color: green } div { color: red }', map[string]bool{})
 	assert cascaded_value_with_stylesheet(el, pid('color'), rules) == 'green'
 }
 
@@ -91,8 +89,7 @@ fn test_compound_selector_specificity() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := el_with(doc, 'div', 'class', 'x')
 	// div.x (0,1,1) > .x (0,1,0) > div (0,0,1), regardless of source order.
-	rules := parse_css_stylesheet_contents_with_parser('div.x { color: blue } div { color: red } .x { color: green }',
-		map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('div.x { color: blue } div { color: red } .x { color: green }', map[string]bool{})
 	assert cascaded_value_with_stylesheet(el, pid('color'), rules) == 'blue'
 }
 
@@ -100,16 +97,14 @@ fn test_important_beats_higher_specificity() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := el_with(doc, 'div', 'id', 'x')
 	// '#x' (id, high specificity) is normal; 'div' (low specificity) is !important -> important wins.
-	rules := parse_css_stylesheet_contents_with_parser('#x { color: green } div { color: red !important }',
-		map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('#x { color: green } div { color: red !important }', map[string]bool{})
 	assert cascaded_value_with_stylesheet(el, pid('color'), rules) == 'red'
 }
 
 fn test_inline_important_beats_author_important() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := el_with(doc, 'p', 'style', 'color: blue !important')
-	rules := parse_css_stylesheet_contents_with_parser('p { color: red !important }',
-		map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('p { color: red !important }', map[string]bool{})
 	// Inline !important outranks author !important (inline has the higher specificity).
 	assert cascaded_value_with_stylesheet(el, pid('color'), rules) == 'blue'
 }
@@ -126,8 +121,7 @@ fn test_shorthand_expansion_inline() {
 fn test_shorthand_expansion_author_rule() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := el_with(doc, 'div', 'class', 'box')
-	rules := parse_css_stylesheet_contents_with_parser('.box { padding: 10px 20px }',
-		map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('.box { padding: 10px 20px }', map[string]bool{})
 	// 2-value padding: top/bottom 10px, left/right 20px.
 	assert cascaded_value_with_stylesheet(el, pid('padding-top'), rules) == '10px'
 	assert cascaded_value_with_stylesheet(el, pid('padding-left'), rules) == '20px'
@@ -137,8 +131,7 @@ fn test_longhand_overrides_shorthand_in_cascade() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := el_with(doc, 'div', 'class', 'box')
 	// A later, equally-specific rule's longhand overrides the earlier shorthand's contribution.
-	rules := parse_css_stylesheet_contents_with_parser('.box { margin: 5px } .box { margin-top: 9px }',
-		map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('.box { margin: 5px } .box { margin-top: 9px }', map[string]bool{})
 	assert cascaded_value_with_stylesheet(el, pid('margin-top'), rules) == '9px'
 	assert cascaded_value_with_stylesheet(el, pid('margin-left'), rules) == '5px'
 }
@@ -172,20 +165,38 @@ fn test_computed_font_size_rem_and_keyword() {
 	no_author := []&CSSRule{}
 	assert computed_font_size_px(rem_el, no_author) == 20.0
 
-	// Absolute-size keyword (large = 6/5 * 16).
+	// Absolute-size keywords use CSSPixels fixed-point rounding, like StyleComputer.
 	kw_el := el_with(doc, 'span', 'style', 'font-size: large')
-	assert computed_font_size_px(kw_el, no_author) == default_font_size_px * 6.0 / 5.0
+	assert computed_font_size_px(kw_el, no_author) == StyleComputer.absolute_size_mapping(.large, StyleComputer.default_user_font_size()).to_double()
 	// Default (no font-size anywhere) is medium = 16px.
 	plain := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
 	assert computed_font_size_px(plain, no_author) == 16.0
+}
+
+fn test_computed_font_size_uses_typed_viewport_calc_and_font_metrics() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_viewport_rect(dom.Rect{0, 0, 500, 400})
+	parent := el_with(doc, 'div', 'style', 'font-size: 20px')
+	viewport_child := el_with(doc, 'span', 'style', 'font-size: 10vw')
+	calc_child := el_with(doc, 'span', 'style', 'font-size: calc(1em + 5px)')
+	ex_child := el_with(doc, 'span', 'style', 'font-size: 2ex')
+	mut parent_node := parent.as_node()
+	parent_node.append_child(viewport_child.as_node()) or { panic('${err}') }
+	parent_node.append_child(calc_child.as_node()) or { panic('${err}') }
+	parent_node.append_child(ex_child.as_node()) or { panic('${err}') }
+
+	no_author := []&CSSRule{}
+	assert computed_font_size_px(viewport_child, no_author) == 50
+	assert computed_font_size_px(calc_child, no_author) == 25
+	metrics := computed_interpolation_font_metrics_for_size(CSSPixels.nearest_value_for(20))
+	assert computed_font_size_px(ex_child, no_author) == metrics.x_height.times_float(2).to_double()
 }
 
 fn test_computed_length_px() {
 	doc := dom.Document.create(dom.url_about_blank())
 	html := el_with(doc, 'html', 'style', 'font-size: 10px')
 	// div: em resolves against the div's OWN font-size (20), rem against the root (10).
-	div := el_with(doc, 'div', 'style',
-		'font-size: 20px; width: 2em; margin-top: 5px; padding-left: 1.5rem')
+	div := el_with(doc, 'div', 'style', 'font-size: 20px; width: 2em; margin-top: 5px; padding-left: 1.5rem')
 	mut html_node := html.as_node()
 	html_node.append_child(div.as_node()) or { panic('${err}') }
 
@@ -205,8 +216,7 @@ fn test_computed_length_px() {
 fn test_computed_color() {
 	doc := dom.Document.create(dom.url_about_blank())
 	parent := el_with(doc, 'div', 'style', 'color: red')
-	child := el_with(doc, 'span', 'style',
-		'background-color: #00ff00; border-top-color: currentColor')
+	child := el_with(doc, 'span', 'style', 'background-color: #00ff00; border-top-color: currentColor')
 	mut parent_node := parent.as_node()
 	parent_node.append_child(child.as_node()) or { panic('${err}') }
 
@@ -263,8 +273,7 @@ fn test_author_rule_inheritance() {
 	mut root_node := root.as_node()
 	root_node.append_child(child.as_node()) or { panic('${err}') }
 
-	rules := parse_css_stylesheet_contents_with_parser('.themed { color: purple }',
-		map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('.themed { color: purple }', map[string]bool{})
 	// color is inherited: the child inherits the author-rule color from its ancestor.
 	assert cascaded_value_with_stylesheet(child, pid('color'), rules) == 'purple'
 }
@@ -300,8 +309,7 @@ fn test_calc_computed_length() {
 fn test_computed_style_value() {
 	doc := dom.Document.create(dom.url_about_blank())
 	parent := el_with(doc, 'div', 'style', 'color: red; font-size: 20px')
-	child := el_with(doc, 'span', 'style',
-		'width: 100px; background-color: #00ff00; line-height: 30px')
+	child := el_with(doc, 'span', 'style', 'width: 100px; background-color: #00ff00; line-height: 30px')
 	mut pn := parent.as_node()
 	pn.append_child(child.as_node()) or { panic('${err}') }
 
@@ -412,6 +420,22 @@ fn test_css_wide_keyword_unset() {
 	assert cascaded_value_with_ua(child, pid('display'), no) == 'inline'
 }
 
+// `revert` rolls an author declaration back to the lower UA origin. If that
+// origin has no declaration, normal inheritance/initial-value processing runs.
+fn test_css_wide_keyword_revert_rolls_back_origin() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	parent.set_attribute_value('style', 'color: rgb(9, 8, 7)')
+	mut child := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	child.set_attribute_value('style', 'display: revert; color: revert')
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node()) or { panic('${err}') }
+	no := []&CSSRule{}
+
+	assert cascaded_value_with_ua(child, pid('display'), no) == 'block'
+	assert cascaded_value_with_ua(child, pid('color'), no) == 'rgb(9, 8, 7)'
+}
+
 // `inherit` chains: an intermediate ancestor that itself declares `inherit` resolves fully.
 fn test_css_wide_keyword_inherit_chain() {
 	doc := dom.Document.create(dom.url_about_blank())
@@ -434,8 +458,7 @@ fn test_css_wide_keyword_inherit_chain() {
 fn test_var_basic_and_fallback() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut div := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
-	div.set_attribute_value('style',
-		'--brand: rgb(1, 2, 3); color: var(--brand); width: var(--w, 9px)')
+	div.set_attribute_value('style', '--brand: rgb(1, 2, 3); color: var(--brand); width: var(--w, 9px)')
 	no := []&CSSRule{}
 
 	assert cascaded_value_with_ua(div, pid('color'), no) == 'rgb(1, 2, 3)'
@@ -476,6 +499,21 @@ fn test_var_fallback_uses_var() {
 	assert cascaded_value_with_ua(div, pid('width'), no) == '5px'
 }
 
+fn test_invalid_var_substitution_uses_inherited_or_initial_value() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	parent.set_attribute_value('style', 'color: rgb(1, 2, 3)')
+	mut child := doc.create_element_ns(html_ns, 'span') or { panic('${err}') }
+	child.set_attribute_value('style', 'color: var(--missing); width: var(--missing); --bad-width: red; height: var(--bad-width)')
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node()) or { panic('${err}') }
+	no := []&CSSRule{}
+
+	assert cascaded_value_with_ua(child, pid('color'), no) == 'rgb(1, 2, 3)'
+	assert cascaded_value_with_ua(child, pid('width'), no) == 'auto'
+	assert cascaded_value_with_ua(child, pid('height'), no) == 'auto'
+}
+
 // The minimal media-query evaluator: width features and media types against a viewport width.
 fn test_media_condition_matches() {
 	// min-width matches when the viewport is at least as wide.
@@ -496,12 +534,18 @@ fn test_media_condition_matches() {
 	assert !media_condition_matches('(min-width: 300px) and (max-width: 900px)', 1000.0)
 	// `only screen` — the leading `only` is a no-op.
 	assert media_condition_matches('only screen and (min-width: 500px)', 700.0)
+	assert media_condition_matches('(600px <= width < 900px)', 700.0)
+	assert !media_condition_matches('(600px <= width < 900px)', 950.0)
+	assert media_condition_matches('(orientation: landscape)', 800.0)
+	assert !media_condition_matches('(orientation: landscape)', 500.0)
+	assert media_condition_matches('(resolution: 1dppx)', 800.0)
+	assert !media_condition_matches('not screen', 800.0)
+	assert !media_condition_matches('', 800.0)
 }
 
 // flatten_media_rules includes a matching @media's children and drops a non-matching one's.
 fn test_flatten_media_rules() {
-	rules := parse_css_stylesheet_contents_with_parser('.a { color: red } @media (min-width: 600px) { .wide { color: blue } } @media (max-width: 400px) { .narrow { color: green } }',
-		map[string]bool{})
+	rules := parse_css_stylesheet_contents_with_parser('.a { color: red } @media (min-width: 600px) { .wide { color: blue } } @media (max-width: 400px) { .narrow { color: green } }', map[string]bool{})
 
 	// At 800px wide: .a + the wide media's child (narrow media dropped).
 	wide := flatten_media_rules(rules, 800.0)

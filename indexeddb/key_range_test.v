@@ -87,8 +87,7 @@ fn test_key_path_string_and_array_lengths() {
 	}
 	assert string_length.kind == .number
 	assert string_length.number == 2
-	array_length := evaluate_key_path(array_value([string_value('a'),
-		string_value('b')]), 'length') or { panic('missing array length') }
+	array_length := evaluate_key_path(array_value([string_value('a'), string_value('b')]), 'length') or { panic('missing array length') }
 	assert array_length.kind == .number
 	assert array_length.number == 2
 	nested_length := evaluate_key_path(object_value({

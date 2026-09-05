@@ -103,6 +103,52 @@ fn test_window_selection_stringifier_uses_focused_text_control_selection() {
 		&dom.HTMLTextAreaElement(element)}) == textarea
 }
 
+fn test_document_active_input_events_target_uses_focused_form_text_control() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	input_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'input')!
+	mut input := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(input_element) })
+	document.set_focused_area(input_element.as_node())
+
+	mut target := document.active_input_events_target(none) or {
+		assert false, 'focused text input did not expose its InputEventsTarget'
+		return
+	}
+	assert voidptr(target) == voidptr(input.text_control)
+
+	input.set_type('button')
+	assert document.active_input_events_target(none) == none
+
+	textarea_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'textarea')!
+	textarea := HTMLTextAreaElementModel.create(unsafe { &dom.HTMLTextAreaElement(textarea_element) })
+	document.set_focused_area(textarea_element.as_node())
+	target = document.active_input_events_target(none) or {
+		assert false, 'focused textarea did not expose its InputEventsTarget'
+		return
+	}
+	assert voidptr(target) == voidptr(textarea.text)
+}
+
+fn test_document_cursor_position_and_blink_timer_use_form_text_control() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	input_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'input')!
+	input := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(input_element) })
+	document.set_focused_area(input_element.as_node())
+
+	position := document.cursor_position() or {
+		assert false, 'focused text input did not provide a cursor position'
+		return
+	}
+	text_node := input.text_control.text_node_ or {
+		assert false, 'text input did not create its editing text node'
+		return
+	}
+	assert voidptr(position.node()?) == voidptr(text_node.as_node())
+	assert position.offset() == 0
+
+	document.reset_cursor_blink_cycle()
+	assert document.cursor_blink_timer.is_active()
+}
+
 fn test_textarea_shadow_selection_lifecycle_editing_and_clone_algorithms() {
 	mut document := parse_document('<textarea required maxlength="3" placeholder="hint"></textarea>')
 	form_elements_make_document_fully_active(mut document)

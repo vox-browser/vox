@@ -14,11 +14,11 @@ pub fn attribute_names() []string {
 		'pointsAtX', 'pointsAtY', 'pointsAtZ', 'preserveAlpha', 'preserveAspectRatio',
 		'primitiveUnits', 'r', 'radius', 'refX', 'refY', 'repeatCount', 'repeatDur',
 		'requiredExtensions', 'requiredFeatures', 'result', 'rotate', 'rx', 'ry', 'scale', 'seed',
-		'slope', 'specularConstant', 'specularExponent', 'spreadMethod', 'startOffset',
-		'stdDeviation', 'stitchTiles', 'stop-color', 'stop-opacity', 'surfaceScale', 'systemLanguage',
-		'tableValues', 'targetX', 'targetY', 'textLength', 'type', 'values', 'version', 'viewBox',
-		'viewTarget', 'width', 'x', 'x1', 'x2', 'xChannelSelector', 'xlink:href', 'xmlns', 'y',
-		'y1', 'y2', 'yChannelSelector', 'zoomAndPan']
+		'slope', 'specularConstant', 'specularExponent', 'spreadMethod', 'startOffset', 'stdDeviation',
+		'stitchTiles', 'stop-color', 'stop-opacity', 'surfaceScale', 'systemLanguage', 'tableValues',
+		'targetX', 'targetY', 'textLength', 'type', 'values', 'version', 'viewBox', 'viewTarget',
+		'width', 'x', 'x1', 'x2', 'xChannelSelector', 'xlink:href', 'xmlns', 'y', 'y1', 'y2',
+		'yChannelSelector', 'zoomAndPan']
 }
 
 pub fn tag_names() []string {

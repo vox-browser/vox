@@ -58,7 +58,7 @@ pub mut:
 pub fn Internals.create(platform &PlatformState, navigator &gamepad.NavigatorGamepadPartial) &Internals {
 	return &Internals{
 		InternalsBase: InternalsBase.new(platform)
-		navigator:     navigator
+		navigator: navigator
 	}
 }
 
@@ -101,7 +101,9 @@ pub fn (mut api Internals) load_test_variants(metadata DocumentMetadata) {
 }
 
 pub fn (mut api Internals) set_time_zone(time_zone string) !string {
-	if time_zone.len == 0 { return error('Could not set time zone: empty identifier') }
+	if time_zone.len == 0 {
+		return error('Could not set time zone: empty identifier')
+	}
 	previous := api.platform.time_zone
 	api.platform.time_zone = time_zone
 	return previous
@@ -114,7 +116,7 @@ pub fn (mut api Internals) gc() {
 pub fn (api &Internals) hit_test(_ f64, _ f64) ?HitTestObject {
 	result := api.platform.hit_test_result or { return none }
 	return HitTestObject{
-		node:          result.node
+		node: result.node
 		index_in_node: result.index_in_node
 	}
 }
@@ -153,16 +155,16 @@ pub fn (mut api Internals) send_text(target &dom.Element, value string, modifier
 		code_point := u32(character)
 		if data := webdriver_key_to_key_code(code_point) {
 			api.platform.input_actions << InputAction{
-				kind:       .key_down
-				key:        data.key
-				modifiers:  modifiers | data.modifiers
+				kind: .key_down
+				key: data.key
+				modifiers: modifiers | data.modifiers
 				code_point: data.code_point
 			}
 		} else {
 			api.platform.input_actions << InputAction{
-				kind:       .key_down
-				key:        character.str()
-				modifiers:  modifiers
+				kind: .key_down
+				key: character.str()
+				modifiers: modifiers
 				code_point: code_point
 			}
 		}
@@ -172,8 +174,8 @@ pub fn (mut api Internals) send_text(target &dom.Element, value string, modifier
 pub fn (mut api Internals) send_key(target &dom.Element, key_name string, modifiers u16) {
 	html.HTMLOrSVGElement.create(target).focus()
 	api.platform.input_actions << InputAction{
-		kind:      .key_down
-		key:       key_name
+		kind: .key_down
+		key: key_name
 		modifiers: modifiers
 	}
 }
@@ -188,28 +190,28 @@ pub fn (mut api Internals) paste(target &dom.Element, text string) {
 
 pub fn (mut api Internals) commit_text() {
 	api.platform.input_actions << InputAction{
-		kind:       .commit_text
+		kind: .commit_text
 		code_point: 13
 	}
 }
 
 pub fn (mut api Internals) mouse_down(x f64, y f64, click_count u16, button u16, modifiers u16) {
 	api.platform.input_actions << InputAction{
-		kind:        .mouse_down
-		x:           x
-		y:           y
+		kind: .mouse_down
+		x: x
+		y: y
 		click_count: click_count
-		button:      api.button_from_unsigned_short(button)
-		modifiers:   modifiers
+		button: api.button_from_unsigned_short(button)
+		modifiers: modifiers
 	}
 }
 
 pub fn (mut api Internals) mouse_up(x f64, y f64, button u16, modifiers u16) {
 	api.platform.input_actions << InputAction{
-		kind:      .mouse_up
-		x:         x
-		y:         y
-		button:    api.button_from_unsigned_short(button)
+		kind: .mouse_up
+		x: x
+		y: y
+		button: api.button_from_unsigned_short(button)
 		modifiers: modifiers
 	}
 }
@@ -224,9 +226,9 @@ pub fn (_ &Internals) button_from_unsigned_short(button u16) u16 {
 
 pub fn (mut api Internals) mouse_move(x f64, y f64, modifiers u16) {
 	api.platform.input_actions << InputAction{
-		kind:      .mouse_move
-		x:         x
-		y:         y
+		kind: .mouse_move
+		x: x
+		y: y
 		modifiers: modifiers
 	}
 }
@@ -242,9 +244,9 @@ pub fn (mut api Internals) click_and_hold(x f64, y f64, click_count u16, button 
 
 pub fn (mut api Internals) wheel(x f64, y f64, delta_x f64, delta_y f64) {
 	api.platform.input_actions << InputAction{
-		kind:    .wheel
-		x:       x
-		y:       y
+		kind: .wheel
+		x: x
+		y: y
 		delta_x: delta_x
 		delta_y: delta_y
 	}
@@ -252,9 +254,9 @@ pub fn (mut api Internals) wheel(x f64, y f64, delta_x f64, delta_y f64) {
 
 pub fn (mut api Internals) pinch(x f64, y f64, scale f64) {
 	api.platform.input_actions << InputAction{
-		kind:  .pinch
-		x:     x
-		y:     y
+		kind: .pinch
+		x: x
+		y: y
 		scale: scale
 	}
 }
@@ -293,27 +295,27 @@ pub fn (api &Internals) create_internal_animation_timeline() &InternalAnimationT
 
 pub fn (mut api Internals) simulate_drag_start(x f64, y f64, mime_type string, contents string) {
 	api.platform.input_actions << InputAction{
-		kind:      .drag_start
-		x:         x
-		y:         y
+		kind: .drag_start
+		x: x
+		y: y
 		mime_type: mime_type
-		text:      contents
+		text: contents
 	}
 }
 
 pub fn (mut api Internals) simulate_drag_move(x f64, y f64) {
 	api.platform.input_actions << InputAction{
 		kind: .drag_move
-		x:    x
-		y:    y
+		x: x
+		y: y
 	}
 }
 
 pub fn (mut api Internals) simulate_drop(x f64, y f64) {
 	api.platform.input_actions << InputAction{
 		kind: .drop
-		x:    x
-		y:    y
+		x: x
+		y: y
 	}
 }
 
@@ -382,19 +384,18 @@ fn internals_role_resolver(element &dom.Element) ?aria.Role {
 }
 
 pub fn (api &Internals) get_computed_role(element &dom.Element) string {
-	mixin := aria.ARIAMixin.create(element, internals_default_role(element),
-		internals_role_resolver)
+	mixin := aria.ARIAMixin.create(element, internals_default_role(element), internals_role_resolver)
 	role := mixin.role_or_default() or { return '' }
 	return aria.role_name(role)
 }
 
 pub fn (api &Internals) get_computed_label(element &dom.Element) string {
-	return element.as_node().accessible_name(element.document(), .no) or { '' }
+	html.install_document_accessibility_role_hook(element.document())
+	return element.as_node().accessible_name(element.document(), .yes) or { '' }
 }
 
 pub fn (api &Internals) get_computed_aria_level(element &dom.Element) string {
-	mixin := aria.ARIAMixin.create(element, internals_default_role(element),
-		internals_role_resolver)
+	mixin := aria.ARIAMixin.create(element, internals_default_role(element), internals_role_resolver)
 	data := aria.AriaData.from_mixin(mixin)
 	level := data.aria_level_or_default() or { return '' }
 	return level.str()

@@ -9,8 +9,8 @@ module loader
 
 import dom
 import http
-import net.urllib
 import os
+import url as liburl
 
 __global (
 	loader_global_resource_loader          &ResourceLoader
@@ -376,7 +376,7 @@ pub fn (mut resource_loader ResourceLoader) handle_about_load_request(request &L
 	} else {
 		url.serialize().all_after('about:').all_before('?').all_before('#')
 	}
-	path := urllib.query_unescape(encoded_path) or { encoded_path }
+	path := liburl.percent_decode(encoded_path).bytestr()
 	data := if path == 'version' {
 		load_about_version_page().bytes()
 	} else {

@@ -14,7 +14,7 @@ pub fn normalized_stops(stops []Stop) []Stop {
 		offset := clamp(stop.offset, previous, 1)
 		result << Stop{
 			...stop
-			offset:  offset
+			offset: offset
 			opacity: clamp(stop.opacity, 0, 1)
 		}
 		previous = offset
@@ -66,28 +66,28 @@ fn resolve_linear_gradient_inner(id string, gradients map[string]LinearGradient,
 		none
 	}
 	return ResolvedLinearGradient{
-		x1:        gradient.x1 or {
+		x1: gradient.x1 or {
 			if inherited := parent { inherited.x1 } else { percentage(0) }
 		}
-		y1:        gradient.y1 or {
+		y1: gradient.y1 or {
 			if inherited := parent { inherited.y1 } else { percentage(0) }
 		}
-		x2:        gradient.x2 or {
+		x2: gradient.x2 or {
 			if inherited := parent { inherited.x2 } else { percentage(100) }
 		}
-		y2:        gradient.y2 or {
+		y2: gradient.y2 or {
 			if inherited := parent { inherited.y2 } else { percentage(0) }
 		}
-		units:     gradient.units or {
+		units: gradient.units or {
 			if inherited := parent { inherited.units } else { Units.object_bounding_box }
 		}
-		spread:    gradient.spread or {
+		spread: gradient.spread or {
 			if inherited := parent { inherited.spread } else { SpreadMethod.pad }
 		}
 		transform: gradient.transform or {
 			if inherited := parent { inherited.transform } else { []Transform{} }
 		}
-		stops:     if gradient.stops.len > 0 {
+		stops: if gradient.stops.len > 0 {
 			normalized_stops(gradient.stops)
 		} else if inherited := parent {
 			inherited.stops
@@ -170,26 +170,26 @@ fn resolve_radial_gradient_inner(id string, gradients map[string]LinkedRadialGra
 	}
 
 	return ResolvedRadialGradient{
-		cx:        cx
-		cy:        cy
-		r:         resolved_radial_radius(gradient.r, parent, false)
-		fx:        gradient.fx or {
+		cx: cx
+		cy: cy
+		r: resolved_radial_radius(gradient.r, parent, false)
+		fx: gradient.fx or {
 			if inherited := parent { inherited.fx } else { cx }
 		}
-		fy:        gradient.fy or {
+		fy: gradient.fy or {
 			if inherited := parent { inherited.fy } else { cy }
 		}
-		fr:        resolved_radial_radius(gradient.fr, parent, true)
-		units:     gradient.units or {
+		fr: resolved_radial_radius(gradient.fr, parent, true)
+		units: gradient.units or {
 			if inherited := parent { inherited.units } else { Units.object_bounding_box }
 		}
-		spread:    gradient.spread or {
+		spread: gradient.spread or {
 			if inherited := parent { inherited.spread } else { SpreadMethod.pad }
 		}
 		transform: gradient.transform or {
 			if inherited := parent { inherited.transform } else { []Transform{} }
 		}
-		stops:     if gradient.stops.len > 0 {
+		stops: if gradient.stops.len > 0 {
 			normalized_stops(gradient.stops)
 		} else if inherited := parent {
 			inherited.stops
@@ -230,10 +230,14 @@ pub fn pattern_content_id(id string, patterns map[string]Pattern) ?string {
 	mut current := id
 	mut seen := map[string]bool{}
 	for current.len > 0 {
-		if seen[current] { return none }
+		if seen[current] {
+			return none
+		}
 		seen[current] = true
 		pattern := patterns[current] or { return none }
-		if pattern.has_children { return current }
+		if pattern.has_children {
+			return current
+		}
 		current = pattern.href.trim_left('#')
 	}
 	return none
@@ -258,7 +262,9 @@ pub fn resolve_pattern(id string, patterns map[string]Pattern) ?ResolvedPattern 
 }
 
 fn resolve_pattern_inner(id string, patterns map[string]Pattern, mut seen map[string]bool) ?ResolvedPattern {
-	if seen[id] { return none }
+	if seen[id] {
+		return none
+	}
 	seen[id] = true
 	pattern := patterns[id] or { return none }
 	parent_id := pattern.href.trim_left('#')
@@ -268,29 +274,29 @@ fn resolve_pattern_inner(id string, patterns map[string]Pattern, mut seen map[st
 		none
 	}
 	return ResolvedPattern{
-		x:             pattern.x or {
+		x: pattern.x or {
 			if inherited := parent { inherited.x } else { number(0) }
 		}
-		y:             pattern.y or {
+		y: pattern.y or {
 			if inherited := parent { inherited.y } else { number(0) }
 		}
-		width:         pattern.width or {
+		width: pattern.width or {
 			if inherited := parent { inherited.width } else { number(0) }
 		}
-		height:        pattern.height or {
+		height: pattern.height or {
 			if inherited := parent { inherited.height } else { number(0) }
 		}
-		units:         pattern.units or {
+		units: pattern.units or {
 			if inherited := parent { inherited.units } else { Units.object_bounding_box }
 		}
 		content_units: pattern.content_units or {
 			if inherited := parent { inherited.content_units } else { Units.user_space_on_use }
 		}
-		transform:     pattern.transform or {
+		transform: pattern.transform or {
 			if inherited := parent { inherited.transform } else { []Transform{} }
 		}
-		viewbox:       inherited_pattern_viewbox(pattern, parent)
-		content_id:    inherited_pattern_content_id(id, pattern, parent)
+		viewbox: inherited_pattern_viewbox(pattern, parent)
+		content_id: inherited_pattern_content_id(id, pattern, parent)
 	}
 }
 

@@ -153,7 +153,7 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_resource_timing_buffer_siz
 }
 
 pub fn (scope &WindowOrWorkerGlobalScopeMixin) window_or_worker_global_scope_extract_an_origin() ?dom.Origin {
-	if scope.origin_.serialize() == 'opaque' {
+	if scope.origin_.is_opaque() {
 		return none
 	}
 	return scope.origin_

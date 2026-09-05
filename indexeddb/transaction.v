@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of IDBTransaction.{h,cpp,idl} and
-// Internal/MutationLog.{h,cpp}. The snapshot is the standalone equivalent of
-// upstream's per-store reverse mutation log and preserves atomic abort.
+// Internal/MutationLog.{h,cpp}.
 module indexeddb
 
 pub enum IDBTransactionMode {
@@ -27,20 +26,26 @@ pub enum TransactionState {
 	aborted
 }
 
+pub struct StoreMutationLogEntry {
+pub:
+	store &ObjectStoreData
+	log   &MutationLog
+}
+
 @[heap]
 pub struct IDBTransaction {
 pub mut:
-	database         &IDBDatabase
-	mode             IDBTransactionMode
-	durability       IDBTransactionDurability
-	scope_names      []string
-	state            TransactionState = .active
-	error_message    string
-	events           []string
-	requests         []&IDBRequest
-	snapshot         map[string]ObjectStoreData
-	original_version u64
-	associated_request_ ?&IDBRequest
+	database             &IDBDatabase
+	mode                 IDBTransactionMode
+	durability           IDBTransactionDurability
+	scope_names          []string
+	state                TransactionState = .active
+	error_message        string
+	events               []string
+	requests             []&IDBRequest
+	store_mutation_logs  []StoreMutationLogEntry
+	original_version     u64
+	associated_request_  ?&IDBRequest
 	aborted_             bool
 	cleanup_event_loop_  string
 	object_store_handles map[string]IDBObjectStore
@@ -51,18 +56,17 @@ pub mut:
 }
 
 pub fn IDBTransaction.create(database &IDBDatabase, mode IDBTransactionMode, durability IDBTransactionDurability, scope []string) &IDBTransaction {
-	mut snapshot := map[string]ObjectStoreData{}
-	if mode != .readonly {
-		snapshot = database.data.clone_stores()
-	}
-	return &IDBTransaction{
-		database:         database
-		mode:             mode
-		durability:       durability
-		scope_names:      scope.clone()
-		snapshot:         snapshot
+	mut transaction := &IDBTransaction{
+		database: database
+		mode: mode
+		durability: durability
+		scope_names: scope.clone()
 		original_version: database.data.version
 	}
+	if mode != .readonly {
+		transaction.set_up_mutation_logs()
+	}
+	return transaction
 }
 
 pub fn (transaction &IDBTransaction) object_store_names() []string {
@@ -98,9 +102,13 @@ pub fn (mut transaction IDBTransaction) object_store(name string) !IDBObjectStor
 	if name !in transaction.scope_names || name !in transaction.database.data.stores {
 		return error('NotFoundError: object store is not in the transaction scope')
 	}
+	store := transaction.database.data.stores[name] or {
+		return error('NotFoundError: object store is not in the transaction scope')
+	}
 	return IDBObjectStore{
 		transaction: &transaction
-		name_:       name
+		name_: name
+		store_: store
 	}
 }
 
@@ -109,6 +117,7 @@ pub fn (mut transaction IDBTransaction) commit() ! {
 		return error('InvalidStateError: transaction is not active')
 	}
 	transaction.state = .committing
+	transaction.discard_mutation_logs()
 	transaction.state = .finished
 	transaction.events << 'complete'
 	if callback := transaction.oncomplete_ {
@@ -122,8 +131,8 @@ pub fn (mut transaction IDBTransaction) abort(reason string) ! {
 		return error('InvalidStateError: transaction is ending')
 	}
 	if transaction.mode != .readonly {
-		transaction.database.data.stores = clone_store_map(transaction.snapshot)
-		transaction.database.data.version = transaction.original_version
+		transaction.revert_all_mutations()
+		transaction.discard_mutation_logs()
 	}
 	transaction.error_message = reason
 	transaction.aborted_ = true
@@ -141,19 +150,13 @@ pub fn (mut transaction IDBTransaction) abort(reason string) ! {
 	transaction.finish_connection_if_needed()
 }
 
-fn clone_store_map(source map[string]ObjectStoreData) map[string]ObjectStoreData {
-	mut result := map[string]ObjectStoreData{}
-	for name, store in source {
-		result[name] = store.clone()
-	}
-	return result
-}
-
 fn (mut transaction IDBTransaction) finish_connection_if_needed() {
 	unsafe {
 		mut connection := transaction.database
-		if connection.state == .closing
-			&& !connection.transactions.any(it.state !in [.finished, .aborted]) {
+		if connection.state == .closing && !connection.transactions.any(it.state !in [
+			.finished,
+			.aborted,
+		]) {
 			connection.finish_close()
 		}
 	}

@@ -78,3 +78,23 @@ fn test_effective_domain() {
 	// An opaque origin has no effective domain.
 	assert Origin.opaque([16]u8{}, .standard).effective_domain() == none
 }
+
+fn test_create_opaque_uses_fresh_nonce_and_same_site_uses_registrable_domain() {
+	first := Origin.create_opaque(.standard)
+	second := Origin.create_opaque(.standard)
+	assert first.is_same_origin(first)
+	assert !first.is_same_origin(second)
+	assert !first.is_same_site(second)
+	a := Origin.tuple('https', Host.from_string('a.example.co.uk'), none, none)
+	b := Origin.tuple('https', Host.from_string('b.example.co.uk'), none, none)
+	c := Origin.tuple('http', Host.from_string('b.example.co.uk'), none, none)
+	assert a.is_same_site(b)
+	assert !a.is_same_site(c)
+}
+
+fn test_url_origin_algorithm() {
+	assert parse('https://example.test/path')?.origin().serialize() == 'https://example.test'
+	assert parse('blob:https://example.test/id')?.origin().serialize() == 'https://example.test'
+	assert parse('file:///tmp/a')?.origin().is_opaque_file_origin()
+	assert parse('data:text/plain,x')?.origin().is_opaque()
+}

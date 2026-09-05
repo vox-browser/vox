@@ -4,6 +4,7 @@ import dom
 import css
 import html
 import os
+import painting
 import svg
 import time
 import url
@@ -91,8 +92,10 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 	origin := css.CounterOriginatingElement{
 		id: abstract_element_counter_id(&abstract_element)
 		parent_id: if parent_element := parent {
-			abstract_element_counter_id(&parent_element)} else {
-			none}
+			abstract_element_counter_id(&parent_element)
+		} else {
+			none
+		}
 		tree_order_index: builder_state.counter_tree_order_index
 		debug_description: abstract_element.debug_description()
 	}
@@ -137,22 +140,42 @@ fn resolve_marker_layout_counters(mut builder_state TreeBuilderState, abstract_e
 // assigning containing blocks and layout indexes.
 pub fn build_layout_tree(document &dom.Document) ?&Node {
 	mut timing_checkpoint := time.sys_mono_now()
-	root_element := document.document_element() or { return none }
-	materialize_svg_use_shadow_trees(document)
-	materialize_audio_controls_shadow_trees(document)
+	document.document_element() or { return none }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	if mutable_document.get_browsing_context() == none {
+		mutable_document.set_browsing_context(&dom.BrowsingContext{
+			active_document_: document
+		})
+	}
+	if mutable_document.navigable() == none {
+		mutable_document.set_cached_navigable(&dom.Navigable{
+			active_document_: document
+		})
+	}
+	css.begin_selector_parse_cache()
+	defer {
+		css.end_selector_parse_cache()
+	}
+	prepare_document_for_layout(document)
 	timing_checkpoint = layout_timing_checkpoint('    materialize', timing_checkpoint)
-	// HTML cannot own concrete CSSStyleSheet objects because css imports html's
-	// DOM layer. Synchronize <style> elements at the boundary, then perform the
-	// same top-down style pass that Document::update_style() performs upstream.
 	css.sync_document_style_elements(document)
 	timing_checkpoint = layout_timing_checkpoint('    sync_styles', timing_checkpoint)
 	mut style_computer := css.css_style_computer_for(document)
-	viewport_rect := document.viewport_rect()
-	style_computer.set_viewport_rect(css.CSSPixelRect.new(viewport_rect.x, viewport_rect.y, viewport_rect.width, viewport_rect.height))
 	css.begin_style_profile()
-	css.recompute_style_for_subtree(mut style_computer, root_element.as_node())
+	mutable_document.set_needs_full_style_update(true)
+	mutable_document.update_style()
 	css.end_style_profile()
 	timing_checkpoint = layout_timing_checkpoint('    style', timing_checkpoint)
+	return build_layout_tree_from_computed_styles(document, mut style_computer, timing_checkpoint)
+}
+
+// Layout::TreeBuilder::build() consumes already-computed style. Keeping style
+// calculation outside this helper lets Document::update_layout() follow the
+// upstream order (update_style, then optionally rebuild the layout tree)
+// without recascading inside TreeBuilder.
+fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_computer css.StyleComputer, initial_checkpoint u64) ?&Node {
+	mut timing_checkpoint := initial_checkpoint
+	root_element := document.document_element() or { return none }
 	// The layout tree's root is the Viewport (whose DOM node is the Document itself); the root element's box
 	// is its child. This is faithful to TreeBuilder recursing from the Document node, where
 	// `is<DOM::Document>` allocates a Layout::Viewport with the document style.
@@ -189,6 +212,11 @@ pub fn build_layout_tree(document &dom.Document) ?&Node {
 	return viewport
 }
 
+fn prepare_document_for_layout(document &dom.Document) {
+	materialize_svg_use_shadow_trees(document)
+	materialize_audio_controls_shadow_trees(document)
+}
+
 fn layout_timing_checkpoint(label string, previous u64) u64 {
 	now := time.sys_mono_now()
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
@@ -211,17 +239,13 @@ fn materialize_audio_controls_shadow_trees(document &dom.Document) {
 	}
 }
 
-fn containment_is_active(containment css.Containment) bool {
-	return containment.size_containment || containment.inline_size_containment || containment.layout_containment || containment.style_containment || containment.paint_containment
-}
-
 // CSS Overflow 3 viewport propagation. This runs after the element layout
 // nodes exist and before formatting-context selection, matching
 // DOM::Document::update_layout(): the source element's used overflow becomes
 // visible, so propagating body overflow does not spuriously create a BFC.
 fn propagate_overflow_to_viewport(root &Node, mut viewport Node) {
 	root_styled := root.as_node_with_style() or { return }
-	if containment_is_active(root_styled.computed_values().contain()) {
+	if !root_styled.computed_values().contain().is_empty() {
 		return
 	}
 	mut origin := root_styled
@@ -235,7 +259,7 @@ fn propagate_overflow_to_viewport(root &Node, mut viewport Node) {
 				continue
 			}
 			child_styled := child.as_node_with_style() or { break }
-			if containment_is_active(child_styled.computed_values().contain()) {
+			if !child_styled.computed_values().contain().is_empty() {
 				return
 			}
 			origin = child_styled
@@ -263,41 +287,69 @@ fn propagate_overflow_to_viewport(root &Node, mut viewport Node) {
 			css_text: 'visible'
 		})
 	}
+	_ = css.resolve_computed_values_for_document(viewport_computed, root.document_)
+	_ = css.resolve_computed_values_for_document(origin_computed, root.document_)
 }
 
 // The result of laying out a document: the root layout box and the LayoutState holding every box's geometry.
 pub struct DocumentLayoutResult {
 pub:
-	root  &Node = unsafe { nil }
-	state &LayoutState = unsafe { nil }
+	root     &Node = unsafe { nil }
+	state    &LayoutState = unsafe { nil }
+	document &dom.Document = unsafe { nil }
+pub mut:
+	paint_tree                        BlockBox
+	display_list_commands             []PaintCommand
+	display_list                      &dom.DisplayList = unsafe { nil }
+	stacking_context                  &dom.StackingContext = unsafe { nil }
+	needs_to_refresh_scroll_state     bool = true
+	needs_accumulated_visual_contexts bool = true
+	needs_repaint                     bool = true
+	stacking_context_tree_is_valid    bool
+	scroll_state                      painting.ScrollState
+	visual_context_tree               painting.AccumulatedVisualContextTree = painting.new_accumulated_visual_context_tree()
+mut:
+	// ViewportPaintable::build_stacking_context_tree() retains this sorted tree
+	// until stacking invalidation upstream. Painting and hit testing consume the
+	// same plan rather than rebuilding and sorting it independently.
+	paint_order    []PaintOrderEntry
+	paint_steps    []CompatibilityPaintStep
+	hit_test_order []&BlockBox
+	// PaintableBox retains one command vector per PaintPhase. These buckets are
+	// independent of display-list and stacking traversal lifetimes.
+	paint_phase_commands      [][]PaintCommand
+	paint_phase_command_count int
+	paint_phase_cache_valid   bool
+	paint_phase_entry_valid   []bool
 }
 
-fn document_layout_update_callback(target voidptr, document &dom.Document, viewport_width f64, viewport_height f64) voidptr {
+fn document_layout_update_callback(target voidptr, document &dom.Document, viewport_width f64, viewport_height f64, needs_layout_tree_rebuild bool) voidptr {
 	_ = target
-	result := run_document_layout(document, viewport_width, viewport_height) or {
+	result := run_document_layout_with_current_style(document, viewport_width, viewport_height, needs_layout_tree_rebuild) or {
 		return unsafe { nil }
 	}
+	paint_tree := renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
 	result_ptr := &DocumentLayoutResult{
 		root: result.root
 		state: result.state
+		document: document
+		paint_tree: paint_tree
 	}
+	install_document_painting_bridge(document, result_ptr)
 	return voidptr(result_ptr)
 }
 
-fn document_rendered_text_callback(target voidptr, document &dom.Document, element &dom.Element) string {
-	_ = target
-	viewport_width := document.viewport_rect().width
-	author_rules := css.flatten_media_rules(collect_document_author_rules(document), viewport_width)
-	return inner_text(element, author_rules)
-}
-
 pub fn install_document_layout_hook(document &dom.Document) {
+	// Document owns its StyleComputer before update_layout() can enter the
+	// layout callback upstream. Establish that side of the module boundary here
+	// as well, so the first update performs Document::update_style() rather than
+	// constructing a tree from unstored fallback styles.
+	css.css_style_computer_for(document)
+	html.install_document_accessibility_role_hook(document)
+	html.install_document_csp_hook(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_layout_update_hook(dom.DocumentLayoutUpdateHook{
 		callback: document_layout_update_callback
-	})
-	mutable_document.set_rendered_text_hook(dom.DocumentRenderedTextHook{
-		callback: document_rendered_text_callback
 	})
 }
 
@@ -316,28 +368,109 @@ pub fn (result &DocumentLayoutResult) used_values_for(box &NodeWithStyle) ?&Used
 // formatting context handles block, inline, flex, grid, table, SVG, fieldset,
 // and replaced content.
 pub fn run_document_layout(document &dom.Document, viewport_width f64, viewport_height f64) ?DocumentLayoutResult {
-	mut timing_checkpoint := time.sys_mono_now()
+	mut mutable_document := unsafe { &dom.Document(document) }
+	old_viewport := mutable_document.viewport_rect()
+	viewport_changed := old_viewport.x != 0 || old_viewport.y != 0
+		|| old_viewport.width != viewport_width || old_viewport.height != viewport_height
+	mutable_document.set_viewport_rect(dom.Rect{0, 0, viewport_width, viewport_height})
+	if mutable_document.get_browsing_context() == none {
+		mutable_document.set_browsing_context(&dom.BrowsingContext{
+			active_document_: document
+		})
+	}
+	if mutable_document.navigable() == none {
+		mutable_document.set_cached_navigable(&dom.Navigable{
+			active_document_: document
+		})
+	}
+	css.begin_selector_parse_cache()
+	defer {
+		css.end_selector_parse_cache()
+	}
+	prepare_document_for_layout(document)
+	css.sync_document_style_elements(document)
 	install_document_layout_hook(document)
-	root := build_layout_tree(document) or { return none }
+	if mutable_document.layout_engine_handle() == unsafe { nil } || viewport_changed {
+		mutable_document.set_needs_full_style_update(true)
+		mutable_document.set_needs_full_layout_tree_update(true)
+	}
+	css.begin_style_profile()
+	mutable_document.update_layout(.debugging)
+	css.end_style_profile()
+	result := document_layout_result(document) or { return none }
+	return DocumentLayoutResult{
+		root: result.root
+		state: result.state
+		document: result.document
+		paint_tree: result.paint_tree
+	}
+}
+
+// Document::update_layout() has already run Document::update_style() before it
+// enters the layout-module callback. This path therefore translates the C++
+// pipeline directly and never repeats the cascade while building the tree.
+fn run_document_layout_with_current_style(document &dom.Document, viewport_width f64, viewport_height f64, needs_layout_tree_rebuild bool) ?DocumentLayoutResult {
+	mut timing_checkpoint := time.sys_mono_now()
+	root := if !needs_layout_tree_rebuild {
+		previous := document_layout_result(document) or { return none }
+		previous.root
+	} else {
+		mut style_computer := css.css_style_computer_for(document)
+		build_layout_tree_from_computed_styles(document, mut style_computer, timing_checkpoint) or {
+			return none
+		}
+	}
 	timing_checkpoint = layout_timing_checkpoint('    build_tree_total', timing_checkpoint)
+	return finish_document_layout(document, root, viewport_width, viewport_height, timing_checkpoint)
+}
+
+fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64) ?DocumentLayoutResult {
+	mut timing_checkpoint := initial_checkpoint
 	viewport := root.as_viewport() or { return none }
 	// TreeBuilder upstream associates each DOM node with its Layout::Node as it
 	// is created. Install the opaque bridge before layout as well, so algorithms
 	// which run during layout (notably list-item ordinal resolution) observe the
 	// same complete layout tree. Geometry is refreshed after layout below.
-	attach_layout_nodes(root)
+	initial_root_placeholder := attach_layout_nodes(root)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_layout_viewport(&dom.LayoutViewport{
+		root_node: initial_root_placeholder
+	})
 	mut state := LayoutState.new()
+	geometry_started := timing_checkpoint
 	layout_viewport(mut state, viewport, viewport_width, viewport_height)
+	timing_checkpoint = layout_timing_checkpoint('      formatting_contexts', timing_checkpoint)
 	layout_absolutely_positioned_descendants(mut state, root)
+	timing_checkpoint = layout_timing_checkpoint('      absolute_descendants', timing_checkpoint)
 	resolve_relative_insets(mut state, root)
+	timing_checkpoint = layout_timing_checkpoint('      relative_insets', timing_checkpoint)
 	measure_document_scrollable_overflow(mut state, root)
-	timing_checkpoint = layout_timing_checkpoint('    geometry', timing_checkpoint)
-	attach_layout_nodes_with_state(root, state)
+	timing_checkpoint = layout_timing_checkpoint('      scrollable_overflow', timing_checkpoint)
+	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
+		eprintln('Ladybird V timing:     geometry ${(timing_checkpoint - geometry_started) / 1_000_000} ms')
+	}
+	root_placeholder := attach_layout_nodes_with_state(root, state)
+	mutable_document.set_layout_viewport(&dom.LayoutViewport{
+		root_node: root_placeholder
+	})
+	root.for_each_in_inclusive_subtree(fn (node &Node) dom.TraversalDecision {
+		mut mutable_node := unsafe { &Node(node) }
+		mutable_node.reset_needs_layout_update()
+		return .@continue
+	})
 	layout_timing_checkpoint('    attach_layout', timing_checkpoint)
 	return DocumentLayoutResult{
 		root: root
 		state: state
 	}
+}
+
+pub fn document_layout_result(document &dom.Document) ?&DocumentLayoutResult {
+	handle := document.layout_engine_handle()
+	if handle == unsafe { nil } {
+		return none
+	}
+	return unsafe { &DocumentLayoutResult(handle) }
 }
 
 fn build_layout_box_for_element(document &dom.Document, element &dom.Element, style_computer &css.StyleComputer, mut builder_state TreeBuilderState) ?&Node {
@@ -356,9 +489,18 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 
 	mut box_node := if resource_kind := svg_resource_kind {
 		match resource_kind {
-			.mask { unsafe { &Node(SVGMaskBox.new(document, element, computed)) } }
-			.clip_path { unsafe { &Node(SVGClipBox.new(document, element, computed)) } }
-			.pattern { unsafe { &Node(SVGPatternBox.new(document, element, computed)) } }
+			.mask {
+				resource_box := SVGMaskBox.new(document, element, computed)
+				unsafe { &Node(resource_box) }
+			}
+			.clip_path {
+				resource_box := SVGClipBox.new(document, element, computed)
+				unsafe { &Node(resource_box) }
+			}
+			.pattern {
+				resource_box := SVGPatternBox.new(document, element, computed)
+				unsafe { &Node(resource_box) }
+			}
 		}
 	} else {
 		create_layout_node_for_element(document, element, computed) or { return none }
@@ -384,7 +526,8 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	for child_node in layout_tree_children_for_element(element) {
 		// Textarea light-DOM text initializes its value; rendering traverses the
 		// UA-internal shadow tree instead.
-		if element.is_html_element() && element.local_name() in ['textarea', 'select', 'details'] {
+		if element.is_html_element() && element.local_name() in ['textarea', 'select', 'details']
+			&& element.shadow_root() == none {
 			continue
 		}
 		if child_element := child_node.as_element() {
@@ -408,19 +551,22 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 			}
 		}
 	}
-	if element.is_html_element() && element.local_name() == 'input' {
+	if element.is_html_element() && element.local_name() == 'input'
+		&& element.shadow_root() == none {
 		mut internal_children := build_input_internal_layout_children(document, element, computed)
 		for mut internal_child in internal_children {
 			mark_ua_internal_layout_subtree(mut internal_child)
 		}
 		children << internal_children
-	} else if element.is_html_element() && element.local_name() == 'textarea' {
+	} else if element.is_html_element() && element.local_name() == 'textarea'
+		&& element.shadow_root() == none {
 		mut internal_children := build_textarea_internal_layout_children(document, element, computed)
 		for mut internal_child in internal_children {
 			mark_ua_internal_layout_subtree(mut internal_child)
 		}
 		children << internal_children
-	} else if element.is_html_element() && element.local_name() == 'select' {
+	} else if element.is_html_element() && element.local_name() == 'select'
+		&& element.shadow_root() == none {
 		mut internal_children := build_select_internal_layout_children(document, element, computed)
 		for mut internal_child in internal_children {
 			mark_ua_internal_layout_subtree(mut internal_child)
@@ -580,46 +726,39 @@ fn build_details_internal_layout_children(document &dom.Document, element &dom.E
 	return children
 }
 
-fn svg_resource_url_from_style_value(value css.StyleValue) ?string {
-	return match value {
-		css.URLStyleValue {
-			value.url().url()
-		}
-		css.ImageStyleValue {
-			value.url_.url()
-		}
-		css.StyleValueList {
-			mut result := ?string(none)
-			for item in value.values() {
-				if item_url := svg_resource_url_from_style_value(item) {
-					result = item_url
-					break
-				}
+fn svg_resource_fragment_for_property(computed &css.ComputedValues, property_id css.PropertyID) ?string {
+	reference := match property_id {
+		.mask_image {
+			if mask := computed.mask() {
+				?string(mask.url().url())
+			} else if image := computed.mask_image() {
+				?string(image.url_.url())
+			} else {
+				none
 			}
-			result
 		}
-		css.ShorthandStyleValue {
-			mut result := ?string(none)
-			for item in value.values() {
-				if item_url := svg_resource_url_from_style_value(item) {
-					result = item_url
-					break
-				}
+		.clip_path {
+			if clip_path := computed.clip_path() {
+				if clip_path.is_url() { ?string(clip_path.url().url()) } else { none }
+			} else {
+				none
 			}
-			result
 		}
-		else {
-			none
+		.fill {
+			if paint := computed.fill() {
+				if paint.is_url() { ?string(paint.as_url().url()) } else { none }
+			} else {
+				none
+			}
 		}
-	}
-}
-
-fn svg_resource_fragment_for_property(computed &css.ComputedProperties, property_id css.PropertyID) ?string {
-	mut reference := ?string(none)
-	if declared := computed.property(property_id, .yes) {
-		if parsed := css.parse_css_value_logic(property_id, declared.css_text) {
-			reference = svg_resource_url_from_style_value(parsed)
+		.stroke {
+			if paint := computed.stroke() {
+				if paint.is_url() { ?string(paint.as_url().url()) } else { none }
+			} else {
+				none
+			}
 		}
+		else { none }
 	}
 	resolved_reference := reference or { return none }
 	fragment_offset := resolved_reference.index('#') or { return none }
@@ -658,6 +797,61 @@ fn svg_resource_target_in_tree_scope(owner &Node, document &dom.Document, fragme
 	return document.get_element_by_id(fragment)
 }
 
+fn svg_pattern_href(element &dom.Element) string {
+	if element.has_attribute('href') {
+		return element.get_attribute_value('href').trim_space()
+	}
+	return element.get_attribute_value('xlink:href').trim_space()
+}
+
+fn linked_svg_pattern(element &dom.Element, mut seen map[i64]bool) ?&dom.Element {
+	identity := element.as_node().unique_id().value()
+	if !seen[identity] {
+		seen[identity] = true
+	}
+	link := svg_pattern_href(element)
+	if link == '' {
+		return none
+	}
+	parsed := element.document().encoding_parse_url(link) or { return none }
+	fragment := parsed.fragment() or { return none }
+	if fragment == '' {
+		return none
+	}
+	linked := element.document().get_element_by_id(fragment) or { return none }
+	if !linked.is_svg_element() || linked.local_name() != 'pattern'
+		|| linked.as_node().unique_id() == element.as_node().unique_id() {
+		return none
+	}
+	linked_identity := linked.as_node().unique_id().value()
+	if seen[linked_identity] {
+		return none
+	}
+	return linked
+}
+
+fn svg_pattern_has_element_children(element &dom.Element) bool {
+	for child in element.as_node().children_as_vector() {
+		if child.as_element() != none {
+			return true
+		}
+	}
+	return false
+}
+
+fn svg_pattern_content_element(element &dom.Element) ?&dom.Element {
+	mut seen := map[i64]bool{}
+	seen[element.as_node().unique_id().value()] = true
+	mut current := element
+	for {
+		if svg_pattern_has_element_children(current) {
+			return current
+		}
+		current = linked_svg_pattern(current, mut seen) or { return none }
+	}
+	return none
+}
+
 fn attach_referenced_svg_resource(mut owner Node, document &dom.Document, style_computer &css.StyleComputer, mut builder_state TreeBuilderState, property_id css.PropertyID, expected_tag string, resource_kind SVGReferencedResourceKind) {
 	computed := owner.computed_values()
 	fragment := svg_resource_fragment_for_property(computed, property_id) or { return }
@@ -686,11 +880,15 @@ fn attach_referenced_svg_resources_in_subtree(mut node Node, document &dom.Docum
 			computed := node.computed_values()
 			fragment := svg_resource_fragment_for_property(computed, property_id) or { continue }
 			target := svg_resource_target_in_tree_scope(node, document, fragment) or { continue }
-			target_id := target.as_node().unique_id().value()
-			if target.is_svg_element() && target.local_name() == 'pattern' && !seen_patterns[target_id] && !layout_node_has_dom_ancestor(node, target) {
-				if resource := build_layout_box_for_element_with_svg_resource_kind(document, target, style_computer, mut builder_state, .pattern) {
+			if !target.is_svg_element() || target.local_name() != 'pattern' {
+				continue
+			}
+			content_element := svg_pattern_content_element(target) or { continue }
+			content_id := content_element.as_node().unique_id().value()
+			if !seen_patterns[content_id] && !layout_node_has_dom_ancestor(node, content_element) {
+				if resource := build_layout_box_for_element_with_svg_resource_kind(document, content_element, style_computer, mut builder_state, .pattern) {
 					node.append_child(resource)
-					seen_patterns[target_id] = true
+					seen_patterns[content_id] = true
 				}
 			}
 		}
@@ -821,9 +1019,9 @@ fn mark_ua_internal_layout_subtree(mut node Node) {
 	}
 }
 
-// HTMLInputElement's UA-internal shadow trees. The DOM port does not yet
-// materialize closed UA shadow roots, so TreeBuilder creates the equivalent
-// styled layout subtree at the same boundary where upstream descends into it.
+// HTMLInputElement's UA-internal shadow-tree fallback. Normal element-model
+// lifecycle materializes the closed shadow root; this constructs the same
+// styled subtree for documents parsed without that lifecycle hook.
 fn build_input_internal_layout_children(document &dom.Document, element &dom.Element, host_computed &css.ComputedProperties) []&Node {
 	type_ := element.get_attribute_value('type').trim_space().to_lower()
 	if type_ in ['', 'text', 'search', 'url', 'tel', 'email', 'password', 'number'] {
@@ -1152,7 +1350,7 @@ fn build_select_internal_layout_children(document &dom.Document, element &dom.El
 	options := css.query_selector_all(element.as_node(), 'option')
 	mut selected_text := ''
 	for option in options {
-		if option.has_attribute('selected') {
+		if html.html_option_element_selected(unsafe { &dom.HTMLOptionElement(option) }) {
 			selected_text = (option.as_node().text_content() or { '' }).trim_space()
 			break
 		}
@@ -1340,7 +1538,9 @@ fn fixup_fieldset_content_box(mut node Node, document &dom.Document) {
 	}
 	legend := fieldset.rendered_legend() or { return }
 	mut fieldset_style := node.as_node_with_style() or { return }
-	content_style := fieldset_style.computed_values_.take_properties_for_fieldset_content_box()
+	mut fieldset_computed := unsafe { &css.ComputedProperties(fieldset_style.computed_values_) }
+	content_style := fieldset_computed.take_properties_for_fieldset_content_box()
+	fieldset_style.computed_values_ = css.resolve_computed_values_for_document(fieldset_computed, document)
 	mut wrapper := unsafe { &Node(BlockContainer.new(document, none, content_style)) }
 	wrapper.anonymous_ = true
 	mut non_legend_children := []&Node{}
@@ -1362,6 +1562,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	if computed.display().is_none() {
 		return none
 	}
+	css.resolve_computed_values_for_document(computed, document)
 	abstract_element := dom.AbstractElement.new(element, dom_pseudo)
 	initial_quote_nesting_level := builder_state.quote_nesting_level
 	initial_content_result := computed.content(&abstract_element, initial_quote_nesting_level, builder_state.registered_counter_styles)
@@ -1410,6 +1611,7 @@ fn build_backdrop_pseudo_element(document &dom.Document, element &dom.Element, m
 	if computed.display().is_none() {
 		return none
 	}
+	css.resolve_computed_values_for_document(computed, document)
 	resolve_layout_counters(mut builder_state, dom.AbstractElement.new(element, .backdrop), computed)
 	mut node := create_layout_node_for_generated_content(document, computed)
 	node.set_generated_for(.backdrop, element)
@@ -1423,6 +1625,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	if marker_computed.display().is_none() {
 		return none
 	}
+	css.resolve_computed_values_for_document(marker_computed, document)
 	abstract_element := dom.AbstractElement.new(element, .marker)
 	initial_content := marker_computed.content(&abstract_element, 0, builder_state.registered_counter_styles).content_data
 	if initial_content.type_ == .none_ {
@@ -1447,7 +1650,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 		}
 		return marker
 	}
-	list_style_type := list_item_computed.list_style_type(builder_state.registered_counter_styles)
+	list_style_type := unsafe { &css.ComputedValues(list_item_computed) }.computed_list_style_type()
 	if list_style_type.kind == .none_ {
 		return none
 	}

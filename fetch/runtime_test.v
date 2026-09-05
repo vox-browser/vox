@@ -4,6 +4,16 @@ module fetch
 import dom
 import http
 
+__global (
+	fetched_data_promise_resolutions int
+)
+
+fn controller_test_process_response(_ &Response) {}
+
+fn resolve_fetched_data_promise() {
+	fetched_data_promise_resolutions++
+}
+
 fn test_fetch_controller_params_tasks_and_timing() {
 	mut controller := FetchController.create()
 	assert controller.state() == .ongoing
@@ -15,35 +25,103 @@ fn test_fetch_controller_params_tasks_and_timing() {
 	controller.abort('stop')
 	assert controller.state() == .aborted
 	assert controller.deserialize_a_serialized_abort_reason() == 'stop'
-	request := Request.create()
+	mut request := Request.create()
 	params := FetchParams.create(request, FetchTimingInfo.create())
 	assert !params.is_canceled()
 	opaque := create_opaque_timing_info(&FetchTimingInfo{
-		start_time:          1
+		start_time: 1
 		redirect_start_time: 2
-		end_time:            3
+		end_time: 3
 	})
 	assert opaque.start_time == 1
 	assert opaque.post_redirect_start_time == 1
 	assert opaque.redirect_start_time == 0 && opaque.end_time == 0
 }
 
+fn test_fetch_controller_matches_upstream_state_transitions_and_cleanup() {
+	mut request := Request.create()
+	mut params := FetchParams.create(request, FetchTimingInfo.create())
+	params.algorithms = FetchAlgorithms.create(FetchAlgorithmsInput{
+		process_response: controller_test_process_response
+	})
+	mut controller := params.controller
+	controller.set_pending_request(request)
+	id := controller.next_fetch_task_id()
+	controller.fetch_task_queued(id, 17)
+	controller.stop_fetch()
+	assert controller.state() == .stopped
+	assert !params.is_canceled()
+	assert controller.ongoing_task_count() == 0
+	assert controller.pending_request_stopped_
+	if _ := params.algorithms.process_response() {
+		assert false
+	}
+
+	mut canceled := FetchController.create()
+	canceled.fetch_task_queued(canceled.next_fetch_task_id(), 23)
+	canceled.abort('first')
+	canceled.stop_fetch()
+	assert canceled.state() == .aborted
+	assert canceled.ongoing_task_count() == 1
+	canceled.terminate()
+	assert canceled.state() == .terminated
+	canceled.abort('last')
+	assert canceled.state() == .aborted
+	assert canceled.deserialize_a_serialized_abort_reason() == 'last'
+
+	mut live_controller := FetchController.create()
+	mut record := FetchRecord.create(request, live_controller)
+	record.finalize()
+	assert live_controller.state() == .ongoing
+}
+
 fn test_pending_response_and_fetched_data_receiver() {
-	request := Request.create()
-	mut pending := PendingResponse.create(request, none)
+	mut request := Request.create()
+	mut pending := PendingResponse.create(mut request, none)
+	assert request.pending_responses.len == 1
 	assert !pending.is_resolved()
 	response := Response.create()
 	pending.resolve(response)
 	assert pending.is_resolved()
-	mut receiver :=
-		FetchedDataReceiver.create(FetchParams.create(request, FetchTimingInfo.create()))
+	assert request.pending_responses.len == 1
+	pending.when_loaded(fn (_ &Response) {})
+	assert request.pending_responses.len == 0
 	mut body := Body.streaming()
+	mut receiver := FetchedDataReceiver.create(FetchParams.create(request, FetchTimingInfo.create()), body.stream())
 	receiver.set_body(body)
-	receiver.handle_network_bytes('abc'.bytes(), .complete)
-	assert receiver.copy_unpulled_bytes() == 'abc'.bytes()
-	receiver.set_pending_pull()
+	receiver.handle_network_bytes('abc'.bytes(), .ongoing)
+	receiver.handle_network_bytes([]u8{}, .complete)
+	fetched_data_promise_resolutions = 0
+	receiver.set_pending_promise(resolve_fetched_data_promise)
+	assert receiver.lifecycle_state() == .ready_to_close
+	assert fetched_data_promise_resolutions == 1
+	receiver.set_pending_promise(resolve_fetched_data_promise)
 	assert receiver.lifecycle_state() == .closed
+	assert fetched_data_promise_resolutions == 2
 	assert body.sniff_bytes_if_available()? == 'abc'.bytes()
+	assert body.fully_read()! == 'abc'.bytes()
+}
+
+fn test_abort_fetch_cancels_the_infrastructure_request_body_stream() {
+	mut request := Request.create()
+	body := Body.streaming()
+	request.body = RequestBody{
+		kind: .body_object
+		body_object: body
+	}
+	abort_fetch(mut request, none, 'stop')
+	assert body.disturbed()
+	assert body.stream().state() == .closed
+	assert request.body.body_object? == body
+
+	mut response_object := ResponseObject.construct(BodyInit{
+		kind: .readable_stream
+	}, ResponseInit{})!
+	response_body := response_object.response_.body?
+	abort_fetch(mut request, response_object, 'response stopped')
+	assert response_body.errored()
+	assert response_body.error_reason() == 'response stopped'
+	assert response_object.body_mixin().body? == response_body
 }
 
 fn test_cors_tao_and_fetch_metadata_headers() {
@@ -51,13 +129,13 @@ fn test_cors_tao_and_fetch_metadata_headers() {
 	request.url_list = [dom.URL{'https://example.test/a'}]
 	request.origin = RequestOrigin{
 		is_client: false
-		origin:    dom.Origin{'https://example.test'}
+		origin: dom.Origin{ value: 'https://example.test' }
 	}
 	mut response := Response.create()
 	response.header_list.append(http.Header{ name: 'Access-Control-Allow-Origin', value: '*' })
 	assert cors_check(request, response)
 	response.header_list.append(http.Header{
-		name:  'Timing-Allow-Origin'
+		name: 'Timing-Allow-Origin'
 		value: 'https://example.test'
 	})
 	assert tao_check(request, response)
@@ -72,37 +150,108 @@ fn host_fetch(request &Request) !&Response {
 	mut response := Response.create()
 	response.url_list = request.url_list.clone()
 	response.status = 200
-	response.body = 'ok'.bytes()
+	response.set_body_bytes('ok'.bytes())
+	return response
+}
+
+fn cors_host_fetch(request &Request) !&Response {
+	mut response := Response.create()
+	response.url_list = request.url_list.clone()
+	response.set_body_bytes('cross-origin'.bytes())
+	response.header_list.append(http.Header{
+		name: 'Access-Control-Allow-Origin'
+		value: 'https://origin.test'
+	})
+	response.header_list.append(http.Header{
+		name: 'Access-Control-Expose-Headers'
+		value: 'X-Visible'
+	})
+	response.header_list.append(http.Header{ name: 'X-Visible', value: 'yes' })
+	return response
+}
+
+fn no_cors_headers_host_fetch(request &Request) !&Response {
+	mut response := Response.create()
+	response.url_list = request.url_list.clone()
+	response.set_body_bytes('hidden'.bytes())
 	return response
 }
 
 fn test_scheme_and_main_fetch_host_boundary_and_data_url() {
 	mut request := Request.create()
 	request.url_list = [dom.URL{'https://example.test/data'}]
+	request.origin = RequestOrigin{
+		is_client: false
+		origin: dom.Origin{ value: 'https://example.test' }
+	}
 	host := FetchHost{
 		perform: host_fetch
 	}
 	params := FetchParams.create(request, FetchTimingInfo.create())
-	assert main_fetch(params, host).response()?.body? == 'ok'.bytes()
+	assert main_fetch(params, host).response()?.fetch_response_body()?.bytes() == 'ok'.bytes()
 	mut data_request := Request.create()
 	data_request.url_list = [dom.URL{'data:text/plain,hello'}]
 	data_params := FetchParams.create(data_request, FetchTimingInfo.create())
-	assert scheme_fetch(data_params, host).response()?.body? == 'hello'.bytes()
+	assert scheme_fetch(data_params, host).response()?.body?.bytes() == 'hello'.bytes()
 	set_http_memory_cache_enabled(false)
 	assert !http_memory_cache_enabled()
 	set_http_memory_cache_enabled(true)
 }
 
+fn test_main_fetch_applies_upstream_tainting_cors_and_integrity_steps() {
+	host := FetchHost{ perform: cors_host_fetch }
+	mut cors_request := Request.create()
+	cors_request.url_list = [dom.URL{'https://cross-origin.test/data'}]
+	cors_request.origin = RequestOrigin{
+		is_client: false
+		origin: dom.Origin{ value: 'https://origin.test' }
+	}
+	cors_request.mode = .cors
+	cors_response := main_fetch(FetchParams.create(cors_request, FetchTimingInfo.create()), host).response()?
+	assert cors_response.response_type == .cors
+	assert cors_response.fetch_response_body()?.bytes() == 'cross-origin'.bytes()
+	assert cors_response.header_list.get('X-Visible')? == 'yes'
+
+	mut opaque_request := Request.create()
+	opaque_request.url_list = [dom.URL{'https://cross-origin.test/data'}]
+	opaque_request.origin = RequestOrigin{
+		is_client: false
+		origin: dom.Origin{ value: 'https://origin.test' }
+	}
+	opaque_response := main_fetch(FetchParams.create(opaque_request, FetchTimingInfo.create()), FetchHost{ perform: no_cors_headers_host_fetch }).response()?
+	assert opaque_response.response_type == .opaque
+	assert opaque_response.fetch_response_body() == none
+	assert opaque_response.unsafe_response().body?.bytes() == 'hidden'.bytes()
+
+	mut bad_cors_request := cors_request.clone()
+	bad_cors_request.url_list = [dom.URL{'https://cross-origin.test/bad'}]
+	bad_cors_response := main_fetch(FetchParams.create(bad_cors_request, FetchTimingInfo.create()), FetchHost{ perform: no_cors_headers_host_fetch }).response()?
+	assert bad_cors_response.is_network_error()
+
+	mut integrity_request := Request.create()
+	integrity_request.url_list = [dom.URL{'https://origin.test/data'}]
+	integrity_request.origin = RequestOrigin{
+		is_client: false
+		origin: dom.Origin{ value: 'https://origin.test' }
+	}
+	integrity_request.integrity_metadata = 'sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
+	integrity_response := main_fetch(FetchParams.create(integrity_request, FetchTimingInfo.create()), FetchHost{ perform: host_fetch }).response()?
+	assert integrity_response.is_network_error()
+}
+
 fn test_network_partition_key_and_user_agent() {
-	assert determine_the_network_partition_key(dom.Origin{'https://example.test'})?.top_level_origin == 'https://example.test'
-	assert determine_the_network_partition_key(dom.Origin{'opaque'}) == none
+	assert determine_the_network_partition_key(dom.Origin{ value: 'https://example.test' })?.top_level_origin.serialize() == 'https://example.test'
+	opaque_a := dom.origin_create_opaque()
+	opaque_b := dom.origin_create_opaque()
+	assert determine_the_network_partition_key(opaque_a)?.top_level_origin.is_same_origin(opaque_a)
+	assert determine_the_network_partition_key(opaque_a)?.top_level_origin.serialize_for_ipc() != determine_the_network_partition_key(opaque_b)?.top_level_origin.serialize_for_ipc()
 	assert default_user_agent_value().contains('Ladybird')
 }
 
 fn redirect_host(request &Request) !&Response {
 	mut response := Response.create()
 	response.url_list = request.url_list.clone()
-	response.body = request.current_url().serialize().bytes()
+	response.set_body_bytes(request.current_url().serialize().bytes())
 	return response
 }
 
@@ -112,7 +261,7 @@ fn test_http_redirect_and_cors_preflight_boundaries() {
 	request.url_list = [dom.URL{'https://example.test/start'}]
 	request.origin = RequestOrigin{
 		is_client: false
-		origin:    dom.Origin{'https://example.test'}
+		origin: dom.Origin{ value: 'https://example.test' }
 	}
 	mut redirect := Response.create()
 	redirect.status = 303
@@ -125,5 +274,5 @@ fn test_http_redirect_and_cors_preflight_boundaries() {
 	result := http_redirect_fetch(params, redirect, host).response()?
 	assert request.method == 'GET'
 	assert request.current_url().serialize() == 'https://example.test/next'
-	assert result.body?.bytestr() == 'https://example.test/next'
+	assert result.fetch_response_body()?.bytes().bytestr() == 'https://example.test/next'
 }

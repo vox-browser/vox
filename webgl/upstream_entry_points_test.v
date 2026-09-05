@@ -30,8 +30,7 @@ fn test_upstream_texture_renderbuffer_and_framebuffer_state() {
 	mut texture := WebGLTexture.create(mut context)
 	context.bind_texture(texture_2d, texture)
 	context.tex_parameteri(texture_2d, texture_min_filter, 0x2601)
-	context.tex_image2d(texture_2d, 0, 0x1908, 2, 3, 0, 0x1908, 0x1401,
-		[]u8{len: 24})
+	context.tex_image2d(texture_2d, 0, 0x1908, 2, 3, 0, 0x1908, 0x1401, []u8{len: 24})
 	assert texture.width_ == 2
 	assert texture.height_ == 3
 	assert context.get_tex_parameter(texture_2d, texture_min_filter).integer == 0x2601
@@ -83,7 +82,11 @@ fn test_upstream_uniform_vectors_matrices_and_webgl2_validation() {
 
 fn test_upstream_spans_pixels_and_object_lifetime_factories() {
 	mut context := WebGLRenderingContext.create(.webgl1, WebGLContextAttributes{}, [])
-	assert context.get_offset_span([u8(1), 2, 3, 4], 1, 2)! == [u8(2), 3]
+	mut bytes := [u8(1), 2, 3, 4]
+	span := context.get_offset_span(bytes, 1, 2)!
+	assert span == [u8(2), 3]
+	bytes[1] = 9
+	assert span == [u8(9), 3]
 	assert context.span_from_float32_list([f32(1), 2, 3], 1, 0)! == [f32(2), 3]
 	assert context.null_terminated_string([u8(`o`), `k`, 0, `x`]) == 'ok'
 	assert WebGLQuery.create(mut context).object.handle_ != 0
@@ -91,4 +94,41 @@ fn test_upstream_spans_pixels_and_object_lifetime_factories() {
 	assert WebGLTransformFeedback.create(mut context).object.handle_ != 0
 	assert WebGLVertexArrayObject.create(mut context).object.handle_ != 0
 	assert WebGLVertexArrayObjectOES.create(mut context).object.handle_ != 0
+}
+
+fn test_native_dispatch_transcript_is_opt_in() {
+	mut context := WebGLRenderingContext.create(.webgl1, WebGLContextAttributes{}, [])
+	context.clear(0x4000)
+	assert context.native.native_calls().len == 0
+	context.native.set_native_call_recording(true)
+	context.clear(0x4000)
+	assert context.native.native_calls().map(it.name) == ['clear']
+	context.native.set_native_call_recording(false)
+	assert context.native.native_calls().len == 0
+}
+
+fn test_upstream_parameter_queries_preserve_distinct_gl_state() {
+	mut context := WebGLRenderingContext.create(.webgl2, WebGLContextAttributes{}, [])
+	mut buffer := WebGLBuffer.create(mut context)
+	context.bind_buffer(array_buffer, buffer)
+	context.buffer_data(array_buffer, []u8{len: 32}, 0x88e8)
+	assert context.get_buffer_parameter(array_buffer, buffer_size).integer == 32
+	assert context.get_buffer_parameter(array_buffer, buffer_usage).integer == 0x88e8
+
+	context.vertex_attrib_pointer(3, 2, gl_float, true, 16, 8)
+	assert context.get_vertex_attrib(3, vertex_attrib_array_buffer_binding).object == buffer.object.handle_
+	assert context.get_vertex_attrib(3, vertex_attrib_array_size).integer == 2
+	assert context.get_vertex_attrib(3, vertex_attrib_array_normalized).boolean
+	assert context.get_vertex_attrib(3, vertex_attrib_array_stride).integer == 16
+	assert context.get_vertex_attrib_offset(3, vertex_attrib_array_pointer) == 8
+	context.vertex_attrib2f(3, 4, 5)
+	assert context.get_vertex_attrib(3, current_vertex_attrib).numbers == [f64(4), 5, 0, 1]
+
+	mut vertex := WebGLShader.create(mut context, vertex_shader) or { panic('shader') }
+	assert context.get_shader_parameter(vertex, shader_type).integer == vertex_shader
+	assert !context.get_shader_parameter(vertex, compile_status).boolean
+	mut program := WebGLProgram.create(mut context)
+	context.attach_shader(mut program, vertex)
+	assert context.get_program_parameter(program, attached_shaders).integer == 1
+	assert !context.get_program_parameter(program, link_status).boolean
 }

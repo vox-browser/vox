@@ -6,6 +6,7 @@ module layout
 
 import css
 import dom
+import html
 import math
 import platform
 import svg
@@ -75,7 +76,7 @@ fn scale_and_align_viewbox_content(preserve_aspect_ratio svg.PreserveAspectRatio
 		}
 	}
 	return SVGViewBoxTransform{
-		offset:         CSSPixelPoint.new(offset_x, offset_y)
+		offset: CSSPixelPoint.new(offset_x, offset_y)
 		scale_factor_x: uniform_scale
 		scale_factor_y: uniform_scale
 	}
@@ -83,10 +84,10 @@ fn scale_and_align_viewbox_content(preserve_aspect_ratio svg.PreserveAspectRatio
 
 fn run_svg_formatting_context(mut state LayoutState, context_box &Node, mut root_state UsedValues, available_space AvailableSpace, parent_viewbox_transform svg.AffineTransform) FormattingContextResult {
 	mut context := SVGFormattingContext{
-		state:                    state
-		context_box:              context_box
+		state: state
+		context_box: context_box
 		parent_viewbox_transform: parent_viewbox_transform
-		available_space:          available_space
+		available_space: available_space
 	}
 	context.run(mut root_state)
 	// SVGFormattingContext::automatic_content_width/height() both return zero.
@@ -116,7 +117,7 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 			svg.Units.user_space_on_use
 		} == .object_bounding_box {
 			active_view_box = svg.ViewBox{
-				width:  1
+				width: 1
 				height: 1
 			}
 		}
@@ -132,7 +133,7 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 			if natural_width := natural_size.width {
 				if natural_height := natural_size.height {
 					active_view_box = svg.ViewBox{
-						width:  natural_width.to_double()
+						width: natural_width.to_double()
 						height: natural_height.to_double()
 					}
 				}
@@ -154,8 +155,7 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 	// origin. This is the same distinction made by the upstream inline layout
 	// path before SVGFormattingContext consumes the state.
 	context.svg_offset = if context.context_box.display().is_inline_outside() {
-		CSSPixelPoint.new(svg_box_state.offset.x().plus(svg_box_state.border_box_left()),
-			svg_box_state.offset.y().plus(svg_box_state.border_box_top()))
+		CSSPixelPoint.new(svg_box_state.offset.x().plus(svg_box_state.border_box_left()), svg_box_state.offset.y().plus(svg_box_state.border_box_top()))
 	} else {
 		svg_box_state.offset
 	}
@@ -185,11 +185,8 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 				svg.PreserveAspectRatio{}
 			}
 		}
-		viewbox_transform := scale_and_align_viewbox_content(preserve_aspect_ratio, view_box,
-			scale_width, scale_height, svg_box_state)
-		context.current_viewbox_transform = context.current_viewbox_transform.translated(viewbox_transform.offset.x().to_double(),
-			viewbox_transform.offset.y().to_double()).scaled(viewbox_transform.scale_factor_x,
-			viewbox_transform.scale_factor_y).translated(-view_box.min_x, -view_box.min_y)
+		viewbox_transform := scale_and_align_viewbox_content(preserve_aspect_ratio, view_box, scale_width, scale_height, svg_box_state)
+		context.current_viewbox_transform = context.current_viewbox_transform.translated(viewbox_transform.offset.x().to_double(), viewbox_transform.offset.y().to_double()).scaled(viewbox_transform.scale_factor_x, viewbox_transform.scale_factor_y).translated(-view_box.min_x, -view_box.min_y)
 	}
 
 	viewport_width := if view_box := active_view_box {
@@ -206,9 +203,9 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 
 	if svg_box_state.has_definite_width() && svg_box_state.has_definite_height() {
 		mapped := context.parent_viewbox_transform.map_rect(svg.Rect{
-			x:      svg_box_state.offset.x().to_double()
-			y:      svg_box_state.offset.y().to_double()
-			width:  svg_box_state.content_width().to_double()
+			x: svg_box_state.offset.x().to_double()
+			y: svg_box_state.offset.y().to_double()
+			width: svg_box_state.content_width().to_double()
 			height: svg_box_state.content_height().to_double()
 		})
 		set_used_values_rect(mut svg_box_state, mapped)
@@ -260,15 +257,13 @@ fn (mut context SVGFormattingContext) layout_nested_viewport(viewport &Node) {
 	computed := viewport.computed_values()
 	x := resolve_computed_svg_length(computed, .x, context.viewport_size.width(), CSSPixels.new(0))
 	y := resolve_computed_svg_length(computed, .y, context.viewport_size.height(), CSSPixels.new(0))
-	width := resolve_computed_svg_viewport_dimension(computed, .width,
-		context.viewport_size.width())
-	height := resolve_computed_svg_viewport_dimension(computed, .height,
-		context.viewport_size.height())
+	width := resolve_computed_svg_viewport_dimension(computed, .width, context.viewport_size.width())
+	height := resolve_computed_svg_viewport_dimension(computed, .height, context.viewport_size.height())
 
 	mut content_rect := svg.Rect{
-		x:      x.to_double()
-		y:      y.to_double()
-		width:  width.to_double()
+		x: x.to_double()
+		y: y.to_double()
+		width: width.to_double()
 		height: height.to_double()
 	}
 	mut parent_viewbox_transform := context.current_viewbox_transform
@@ -279,8 +274,7 @@ fn (mut context SVGFormattingContext) layout_nested_viewport(viewport &Node) {
 	set_used_values_rect(mut viewport_state, content_rect)
 	viewport_state.set_has_definite_width(true)
 	viewport_state.set_has_definite_height(true)
-	run_svg_formatting_context(mut context.state, viewport, mut viewport_state,
-		context.available_space, parent_viewbox_transform)
+	run_svg_formatting_context(mut context.state, viewport, mut viewport_state, context.available_space, parent_viewbox_transform)
 }
 
 fn (mut context SVGFormattingContext) layout_foreign_object(child &Node) {
@@ -289,21 +283,16 @@ fn (mut context SVGFormattingContext) layout_foreign_object(child &Node) {
 	_ = svg_element_for_layout_node(child) or { return }
 	computed := child.computed_values()
 	rect := svg.Rect{
-		x:      resolve_computed_svg_length(computed, .x,
-			context.available_space.width.to_px_or_zero(), CSSPixels.new(0)).to_double()
-		y:      resolve_computed_svg_length(computed, .y,
-			context.available_space.height.to_px_or_zero(), CSSPixels.new(0)).to_double()
-		width:  resolve_computed_svg_length(computed, .width,
-			context.available_space.width.to_px_or_zero(), CSSPixels.new(0)).to_double()
-		height: resolve_computed_svg_length(computed, .height,
-			context.available_space.height.to_px_or_zero(), CSSPixels.new(0)).to_double()
+		x: resolve_computed_svg_length(computed, .x, context.available_space.width.to_px_or_zero(), CSSPixels.new(0)).to_double()
+		y: resolve_computed_svg_length(computed, .y, context.available_space.height.to_px_or_zero(), CSSPixels.new(0)).to_double()
+		width: resolve_computed_svg_length(computed, .width, context.available_space.width.to_px_or_zero(), CSSPixels.new(0)).to_double()
+		height: resolve_computed_svg_length(computed, .height, context.available_space.height.to_px_or_zero(), CSSPixels.new(0)).to_double()
 	}
 	transformed_rect := context.current_viewbox_transform.map_rect(rect)
 	set_used_values_rect(mut child_state, transformed_rect)
 	child_state.set_has_definite_width(true)
 	child_state.set_has_definite_height(true)
-	layout_inside_independent_formatting_context(mut context.state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()),
-		AvailableSize.make_definite(child_state.content_height())))
+	layout_inside_independent_formatting_context(mut context.state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()), AvailableSize.make_definite(child_state.content_height())))
 	for resource in child.children() {
 		if resource.is_svg_mask_box() || resource.is_svg_clip_box() {
 			context.layout_mask_or_clip(resource)
@@ -364,22 +353,28 @@ fn (mut context SVGFormattingContext) layout_path_like_element(graphics_box &Nod
 	to_css_pixels := context.current_viewbox_transform.multiply(graphics_state.svg_transform())
 
 	if graphics_box.is_svg_geometry_box() {
-		path := svg.geometry_path(svg_geometry_element_model(graphics_box, element,
-			context.viewport_size), context.viewport_size.width().to_double(),
-			context.viewport_size.height().to_double())
+		path := svg.geometry_path(svg_geometry_element_model(graphics_box, element, context.viewport_size), context.viewport_size.width().to_double(), context.viewport_size.height().to_double())
 		bounds := svg_path_bounds(path) or { svg.Rect{} }
 		mut transformed_bounds := quantize_svg_rect(to_css_pixels.map_rect(bounds))
-		stroke_width := CSSPixels.nearest_value_for(visible_svg_stroke_width(graphics_box,
-			context.viewport_size) * context.current_viewbox_transform.x_scale()).to_double()
+		stroke_width := CSSPixels.nearest_value_for(visible_svg_stroke_width(graphics_box, context.viewport_size) * context.current_viewbox_transform.x_scale()).to_double()
 		transformed_bounds = inflate_svg_rect(transformed_bounds, stroke_width)
 		set_used_values_rect(mut graphics_state, transformed_bounds)
 		graphics_state.set_computed_svg_path(path)
 	} else if graphics_box.is_svg_text_box() {
-		context.layout_text_element(graphics_box, element, to_css_pixels, mut graphics_state)
+		text_bounds := context.layout_text_element(graphics_box, element, to_css_pixels, mut graphics_state)
+		// <text> and <tspan> elements can contain more text elements.
 		for child in graphics_box.children() {
 			if child.is_svg_text_box() || child.is_svg_text_path_box() {
 				context.layout_graphics_element(child)
 			}
+		}
+		// C++ advances the current text position from this element's own path only after
+		// its children have been laid out. A <text> whose characters all live in nested
+		// <tspan>s has an empty path, so advancing before the recursion would discard the
+		// x/y it just established and start every child from the origin instead.
+		context.current_text_position = svg.Point{
+			x: text_bounds.x + text_bounds.width
+			y: text_bounds.y + text_bounds.height
 		}
 	} else if graphics_box.is_svg_text_path_box() {
 		context.layout_text_path_element(graphics_box, element, to_css_pixels, mut graphics_state)
@@ -390,32 +385,26 @@ fn (mut context SVGFormattingContext) layout_path_like_element(graphics_box &Nod
 	graphics_state.set_has_definite_height(true)
 }
 
-fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, element &dom.Element, transform svg.AffineTransform, mut graphics_state UsedValues) {
+fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, element &dom.Element, transform svg.AffineTransform, mut graphics_state UsedValues) svg.Rect {
 	if x := first_svg_text_position(element.get_attribute_value('x'), context.viewport_size.width()) {
 		context.current_text_position = svg.Point{
 			x: x
 			y: context.current_text_position.y
 		}
 	}
-	if y := first_svg_text_position(element.get_attribute_value('y'),
-		context.viewport_size.height())
-	{
+	if y := first_svg_text_position(element.get_attribute_value('y'), context.viewport_size.height()) {
 		context.current_text_position = svg.Point{
 			x: context.current_text_position.x
 			y: y
 		}
 	}
-	if dx := first_svg_text_position(element.get_attribute_value('dx'),
-		context.viewport_size.width())
-	{
+	if dx := first_svg_text_position(element.get_attribute_value('dx'), context.viewport_size.width()) {
 		context.current_text_position = svg.Point{
 			x: context.current_text_position.x + dx
 			y: context.current_text_position.y
 		}
 	}
-	if dy := first_svg_text_position(element.get_attribute_value('dy'),
-		context.viewport_size.height())
-	{
+	if dy := first_svg_text_position(element.get_attribute_value('dy'), context.viewport_size.height()) {
 		context.current_text_position = svg.Point{
 			x: context.current_text_position.x
 			y: context.current_text_position.y + dy
@@ -424,13 +413,11 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 	text := svg_direct_text_contents(element)
 	computed := graphics_box.computed_values()
 	font := &platform.Font{
-		family:     'sans-serif'
+		family: 'sans-serif'
 		point_size: f32(computed.resolved_font_size_px())
-		weight:     int(computed.font_weight())
+		weight: int(computed.font_weight())
 	}
-	run := platform.shape_text(0,
-		f32(resolved_text_spacing_for_node(graphics_box, .letter_spacing).to_double()), text, font,
-		.context_dependent)
+	run := platform.shape_text(0, 0, text, font, .context_dependent)
 	text_width := f64(run.width())
 	mut x := context.current_text_position.x
 	anchor := match computed.text_anchor() {
@@ -439,46 +426,131 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 		.end_ { svg.TextAnchor.end }
 	}
 	match anchor {
-		.middle { x -= text_width / 2 }
-		.end { x -= text_width }
+		.middle {
+			x -= text_width / 2
+		}
+		.end {
+			x -= text_width
+		}
 		else {}
 	}
-	baseline_y := context.current_text_position.y +
-		svg_dominant_baseline_offset(computed.dominant_baseline(), font.pixel_metrics())
-	mut local_bounds := ?svg.Rect(none)
+	baseline_y := context.current_text_position.y + svg_dominant_baseline_offset(computed.dominant_baseline(), font.pixel_metrics())
+	path := svg_text_outline_path(text, font, x, baseline_y)
+	final_local_bounds := svg_path_bounds(path) or { svg.Rect{} }
+	mut transformed_bounds := quantize_svg_rect(transform.map_rect(final_local_bounds))
+	stroke_width := CSSPixels.nearest_value_for(visible_svg_stroke_width(graphics_box, context.viewport_size) * context.current_viewbox_transform.x_scale()).to_double()
+	transformed_bounds = inflate_svg_rect(transformed_bounds, stroke_width)
+	set_used_values_rect(mut graphics_state, transformed_bounds)
+	graphics_state.set_computed_svg_path(path)
+	return final_local_bounds
+}
+
+fn svg_outline_point(point platform.FontGlyphOutlinePoint, transform svg.AffineTransform) svg.Point {
+	// SkFont glyph paths use CSS/Skia's positive-down coordinates while the
+	// TrueType source contours are positive-up.
+	return transform.map_point(svg.Point{
+		x: f64(point.x)
+		y: -f64(point.y)
+	})
+}
+
+fn svg_midpoint(a svg.Point, b svg.Point) svg.Point {
+	return svg.Point{
+		x: (a.x + b.x) / 2
+		y: (a.y + b.y) / 2
+	}
+}
+
+// Gfx::Path::text()/SkFont::getPath() materializes TrueType's quadratic
+// contours. Consecutive off-curve points have an implied on-curve midpoint;
+// an off-curve first point starts at the last on-curve point or the implied
+// midpoint between the last and first points.
+fn append_svg_glyph_contour(mut instructions []svg.PathInstruction, contour []platform.FontGlyphOutlinePoint, transform svg.AffineTransform) {
+	if contour.len == 0 {
+		return
+	}
+	first := contour[0]
+	last := contour[contour.len - 1]
+	mut start := svg.Point{}
+	mut first_index := 0
+	mut point_count := contour.len
+	if first.on_curve {
+		start = svg_outline_point(first, transform)
+		first_index = 1
+		point_count--
+	} else if last.on_curve {
+		start = svg_outline_point(last, transform)
+		point_count--
+	} else {
+		start = svg_midpoint(svg_outline_point(last, transform), svg_outline_point(first, transform))
+	}
+	instructions << svg.PathInstruction{
+		type_: .move
+		absolute: true
+		data: [start.x, start.y]
+	}
+	mut control := ?svg.Point(none)
+	for offset in 0 .. point_count {
+		point := contour[(first_index + offset) % contour.len]
+		mapped := svg_outline_point(point, transform)
+		if point.on_curve {
+			if previous_control := control {
+				instructions << svg.PathInstruction{
+					type_: .quadratic_bezier_curve
+					absolute: true
+					data: [previous_control.x, previous_control.y, mapped.x, mapped.y]
+				}
+			} else {
+				instructions << svg.PathInstruction{
+					type_: .line
+					absolute: true
+					data: [mapped.x, mapped.y]
+				}
+			}
+			control = none
+		} else if previous_control := control {
+			implied := svg_midpoint(previous_control, mapped)
+			instructions << svg.PathInstruction{
+				type_: .quadratic_bezier_curve
+				absolute: true
+				data: [previous_control.x, previous_control.y, implied.x, implied.y]
+			}
+			control = mapped
+		} else {
+			control = mapped
+		}
+	}
+	if final_control := control {
+		instructions << svg.PathInstruction{
+			type_: .quadratic_bezier_curve
+			absolute: true
+			data: [final_control.x, final_control.y, start.x, start.y]
+		}
+	}
+	instructions << svg.PathInstruction{
+		type_: .close_path
+		absolute: true
+	}
+}
+
+fn svg_text_outline_path(text string, font &platform.Font, x f64, baseline_y f64) svg.Path {
+	mut instructions := []svg.PathInstruction{}
 	mut glyph_x := x
 	for character in text.runes() {
 		advance, glyph_index := font.glyph_advance_and_index(u32(character))
-		bounds := font.glyph_bounds(glyph_index)
-		if bounds.x_min == 0 && bounds.x_max == 0 && bounds.y_min == 0 && bounds.y_max == 0 {
-			glyph_x += f64(advance)
-			continue
-		}
-		glyph_rect := svg.Rect{
-			x:      glyph_x + f64(bounds.x_min)
-			y:      baseline_y - f64(bounds.y_max)
-			width:  f64(bounds.x_max - bounds.x_min)
-			height: f64(bounds.y_max - bounds.y_min)
-		}
-		local_bounds = if current := local_bounds {
-			union_svg_rect(current, glyph_rect)
-		} else {
-			glyph_rect
+		if outline := font.glyph_outline(glyph_index) {
+			transform := svg.AffineTransform{
+				e: glyph_x
+				f: baseline_y
+			}
+			for contour in outline.contours {
+				append_svg_glyph_contour(mut instructions, contour, transform)
+			}
 		}
 		glyph_x += f64(advance)
 	}
-	final_local_bounds := local_bounds or { svg.Rect{} }
-	mut transformed_bounds := quantize_svg_rect(transform.map_rect(final_local_bounds))
-	stroke_width := CSSPixels.nearest_value_for(visible_svg_stroke_width(graphics_box,
-		context.viewport_size) * context.current_viewbox_transform.x_scale()).to_double()
-	transformed_bounds = inflate_svg_rect(transformed_bounds, stroke_width)
-	set_used_values_rect(mut graphics_state, transformed_bounds)
-	graphics_state.set_svg_text(text)
-	if local_bounds != none {
-		context.current_text_position = svg.Point{
-			x: final_local_bounds.x + final_local_bounds.width
-			y: final_local_bounds.y + final_local_bounds.height
-		}
+	return svg.Path{
+		instructions: instructions
 	}
 }
 
@@ -498,7 +570,7 @@ fn svg_direct_text_contents(element &dom.Element) string {
 			text += character_data.data()
 		}
 	}
-	return text.fields().join(' ')
+	return text.trim(' \t\n\r\f')
 }
 
 fn svg_dominant_baseline_offset(metric ?css.BaselineMetric, font_metrics platform.FontPixelMetrics) f64 {
@@ -525,12 +597,130 @@ fn (mut context SVGFormattingContext) layout_text_path_element(graphics_box &Nod
 		set_used_values_rect(mut graphics_state, svg.Rect{})
 		return
 	}
-	path := svg.geometry_path(svg_element_model(shape), context.viewport_size.width().to_double(),
-		context.viewport_size.height().to_double())
-	bounds := svg_path_bounds(path) or { svg.Rect{} }
-	set_used_values_rect(mut graphics_state, transform.map_rect(bounds))
+	shape_path := svg.geometry_path(svg_element_model(shape), context.viewport_size.width().to_double(), context.viewport_size.height().to_double())
+	computed := graphics_box.computed_values()
+	font := &platform.Font{
+		family: 'sans-serif'
+		point_size: f32(computed.resolved_font_size_px())
+		weight: int(computed.font_weight())
+	}
+	path := svg_place_text_along_path(shape_path, svg_direct_text_contents(element), font)
+	local_bounds := svg_path_bounds(path) or { svg.Rect{} }
+	mut transformed_bounds := quantize_svg_rect(transform.map_rect(local_bounds))
+	stroke_width := CSSPixels.nearest_value_for(visible_svg_stroke_width(graphics_box, context.viewport_size) * context.current_viewbox_transform.x_scale()).to_double()
+	transformed_bounds = inflate_svg_rect(transformed_bounds, stroke_width)
+	set_used_values_rect(mut graphics_state, transformed_bounds)
 	graphics_state.set_computed_svg_path(path)
-	graphics_state.set_svg_text(svg_element_model(element).text_contents())
+	context.current_text_position = svg.Point{
+		x: local_bounds.x + local_bounds.width
+		y: local_bounds.y + local_bounds.height
+	}
+}
+
+struct SVGFirstContourMeasure {
+	points     []svg.Point
+	cumulative []f64
+	length     f64
+}
+
+struct SVGPathPositionAndTangent {
+	position svg.Point
+	tangent  svg.Point
+}
+
+// SkPathMeasure(path, false) measures only the first contour. Curve
+// subdivision is shared with the retained Canvas/Gfx path fallback and is
+// performed once during layout, never during repaint.
+fn svg_first_contour_measure(path svg.Path) ?SVGFirstContourMeasure {
+	polyline := html.canvas_gfx_path_first_contour_polyline(html.canvas_gfx_path_from_svg_path(path))
+	if polyline.len < 2 {
+		return none
+	}
+	mut points := []svg.Point{cap: polyline.len}
+	mut cumulative := []f64{cap: polyline.len}
+	mut length := 0.0
+	for index, point in polyline {
+		mapped := svg.Point{point.x, point.y}
+		if index > 0 {
+			previous := points[index - 1]
+			length += math.hypot(mapped.x - previous.x, mapped.y - previous.y)
+		}
+		points << mapped
+		cumulative << length
+	}
+	if length <= 0 {
+		return none
+	}
+	return SVGFirstContourMeasure{
+		points: points
+		cumulative: cumulative
+		length: length
+	}
+}
+
+fn (measure SVGFirstContourMeasure) position_and_tangent(distance f64) ?SVGPathPositionAndTangent {
+	if distance < 0 || distance > measure.length {
+		return none
+	}
+	for index := 1; index < measure.points.len; index++ {
+		segment_length := measure.cumulative[index] - measure.cumulative[index - 1]
+		if segment_length <= 0 || (measure.cumulative[index] < distance
+			&& index + 1 < measure.points.len) {
+			continue
+		}
+		fraction := math.max(0.0, math.min(1.0, (distance - measure.cumulative[index - 1]) / segment_length))
+		start := measure.points[index - 1]
+		end := measure.points[index]
+		return SVGPathPositionAndTangent{
+			position: svg.Point{
+				x: start.x + (end.x - start.x) * fraction
+				y: start.y + (end.y - start.y) * fraction
+			}
+			tangent: svg.Point{
+				x: (end.x - start.x) / segment_length
+				y: (end.y - start.y) / segment_length
+			}
+		}
+	}
+	return none
+}
+
+// Gfx::Path::place_text_along(): place each unshaped SkFont glyph at the
+// current path distance, rotate it to the tangent, reject a glyph whose
+// midpoint falls beyond the first contour, then advance by its SkFont width.
+fn svg_place_text_along_path(shape_path svg.Path, text string, font &platform.Font) svg.Path {
+	measure := svg_first_contour_measure(shape_path) or { return svg.Path{} }
+	mut accumulated_distance := 0.0
+	mut instructions := []svg.PathInstruction{}
+	for character in text.runes() {
+		advance, glyph_index := font.glyph_advance_and_index(u32(character))
+		position_and_tangent := measure.position_and_tangent(accumulated_distance) or {
+			continue
+		}
+		if accumulated_distance + f64(advance) / 2.0 > measure.length {
+			break
+		}
+		angle := math.atan2(position_and_tangent.tangent.y, position_and_tangent.tangent.x)
+		cosine := math.cos(angle)
+		sine := math.sin(angle)
+		transform := svg.AffineTransform{
+			a: cosine
+			b: sine
+			c: -sine
+			d: cosine
+			e: position_and_tangent.position.x
+			f: position_and_tangent.position.y
+		}
+		if outline := font.glyph_outline(glyph_index) {
+			for contour in outline.contours {
+				append_svg_glyph_contour(mut instructions, contour, transform)
+			}
+		}
+		accumulated_distance += f64(advance)
+	}
+	return svg.Path{
+		instructions: instructions
+	}
 }
 
 fn (mut context SVGFormattingContext) layout_image_element(image_box &Node) {
@@ -538,15 +728,51 @@ fn (mut context SVGFormattingContext) layout_image_element(image_box &Node) {
 	mut image_state := context.state.get_mutable(styled)
 	element := svg_element_for_layout_node(image_box) or { return }
 	transform := context.current_viewbox_transform.multiply(image_state.svg_transform())
+	mut source := ''
+	if element.has_attribute('href') {
+		source = element.get_attribute_value('href').trim_space()
+	} else {
+		source = element.get_attribute_value('xlink:href').trim_space()
+	}
+	intrinsic := image_intrinsic_size_for_source(image_box.document(), source) or {
+		css.SizeWithAspectRatio{}
+	}
+	mut width := ?f64(none)
+	mut height := ?f64(none)
+	if element.has_attribute('width') {
+		width = resolve_svg_attribute_length(element, 'width', context.viewport_size.width(), CSSPixels.new(0)).to_double()
+	}
+	if element.has_attribute('height') {
+		height = resolve_svg_attribute_length(element, 'height', context.viewport_size.height(), CSSPixels.new(0)).to_double()
+	}
+	// SVGImageElement::bounding_box() derives a missing author dimension from
+	// the decoded image ratio before falling back to each intrinsic dimension.
+	if width_value := width {
+		if height == none {
+			if ratio := intrinsic.aspect_ratio {
+				height = width_value / ratio.to_double()
+			}
+		}
+	} else if height_value := height {
+		if ratio := intrinsic.aspect_ratio {
+			width = height_value * ratio.to_double()
+		}
+	}
+	if width == none {
+		if intrinsic_width := intrinsic.width {
+			width = intrinsic_width.to_double()
+		}
+	}
+	if height == none {
+		if intrinsic_height := intrinsic.height {
+			height = intrinsic_height.to_double()
+		}
+	}
 	rect := svg.Rect{
-		x:      resolve_svg_attribute_length(element, 'x', context.viewport_size.width(),
-			CSSPixels.new(0)).to_double()
-		y:      resolve_svg_attribute_length(element, 'y', context.viewport_size.height(),
-			CSSPixels.new(0)).to_double()
-		width:  resolve_svg_attribute_length(element, 'width', context.viewport_size.width(),
-			CSSPixels.new(0)).to_double()
-		height: resolve_svg_attribute_length(element, 'height', context.viewport_size.height(),
-			CSSPixels.new(0)).to_double()
+		x: resolve_svg_attribute_length(element, 'x', context.viewport_size.width(), CSSPixels.new(0)).to_double()
+		y: resolve_svg_attribute_length(element, 'y', context.viewport_size.height(), CSSPixels.new(0)).to_double()
+		width: width or { 0.0 }
+		height: height or { 0.0 }
 	}
 	set_used_values_rect(mut image_state, transform.map_rect(rect))
 	image_state.set_has_definite_width(true)
@@ -568,8 +794,13 @@ fn (mut context SVGFormattingContext) layout_mask_or_clip(mask_or_clip &Node) {
 	} else {
 		'patternContentUnits'
 	}
-	content_units := svg.parse_units(element.get_attribute_value(units_attribute)) or {
-		svg.Units.user_space_on_use
+	mut seen_patterns := map[i64]bool{}
+	content_units := if mask_or_clip.is_svg_pattern_box() {
+		svg_pattern_units(element, units_attribute, .user_space_on_use, mut seen_patterns)
+	} else {
+		svg.parse_units(element.get_attribute_value(units_attribute)) or {
+			svg.Units.user_space_on_use
+		}
 	}
 	mut parent_transform := context.current_viewbox_transform
 	parent := mask_or_clip.parent() or { return }
@@ -580,31 +811,47 @@ fn (mut context SVGFormattingContext) layout_mask_or_clip(mask_or_clip &Node) {
 	} else {
 		false
 	}
-	if content_units == .object_bounding_box {
+	if mask_or_clip.is_svg_pattern_box()
+		&& svg.parse_viewbox(element.get_attribute_value('viewBox')) != none {
+		seen_patterns.clear()
+		pattern_units := svg_pattern_units(element, 'patternUnits', .object_bounding_box, mut seen_patterns)
+		seen_patterns.clear()
+		pattern_width := svg_pattern_coordinate(element, 'width', mut seen_patterns)
+		seen_patterns.clear()
+		pattern_height := svg_pattern_coordinate(element, 'height', mut seen_patterns)
+		if pattern_units == .user_space_on_use {
+			layout_state.set_content_width(CSSPixels.nearest_value_for(pattern_width.resolve_relative_to(context.viewport_size.width().to_double())))
+			layout_state.set_content_height(CSSPixels.nearest_value_for(pattern_height.resolve_relative_to(context.viewport_size.height().to_double())))
+		} else {
+			layout_state.set_content_width(CSSPixels.nearest_value_for(pattern_width.value * parent_state.content_width().to_double()))
+			layout_state.set_content_height(CSSPixels.nearest_value_for(pattern_height.value * parent_state.content_height().to_double()))
+			parent_transform = if resource_containing_block_is_parent {
+				svg.AffineTransform{}
+			} else {
+				svg.AffineTransform{}.translated(parent_state.offset.x().to_double(), parent_state.offset.y().to_double())
+			}
+		}
+	} else if content_units == .object_bounding_box {
 		layout_state.set_content_width(parent_state.content_width())
 		layout_state.set_content_height(parent_state.content_height())
 		parent_transform = if resource_containing_block_is_parent {
 			svg.AffineTransform{}
 		} else {
-			svg.AffineTransform{}.translated(parent_state.offset.x().to_double(),
-				parent_state.offset.y().to_double())
+			svg.AffineTransform{}.translated(parent_state.offset.x().to_double(), parent_state.offset.y().to_double())
 		}
 		if mask_or_clip.is_svg_pattern_box() {
-			parent_transform = parent_transform.scaled(parent_state.content_width().to_double(),
-				parent_state.content_height().to_double())
+			parent_transform = parent_transform.scaled(parent_state.content_width().to_double(), parent_state.content_height().to_double())
 		}
 	} else {
 		layout_state.set_content_width(context.viewport_size.width())
 		layout_state.set_content_height(context.viewport_size.height())
 		if resource_containing_block_is_parent {
-			parent_transform = parent_transform.translated(-parent_state.offset.x().to_double(),
-				-parent_state.offset.y().to_double())
+			parent_transform = parent_transform.translated(-parent_state.offset.x().to_double(), -parent_state.offset.y().to_double())
 		}
 	}
 	layout_state.set_has_definite_width(true)
 	layout_state.set_has_definite_height(true)
-	run_svg_formatting_context(mut context.state, mask_or_clip, mut layout_state,
-		context.available_space, parent_transform)
+	run_svg_formatting_context(mut context.state, mask_or_clip, mut layout_state, context.available_space, parent_transform)
 }
 
 fn (mut context SVGFormattingContext) layout_container_element(container &Node) {
@@ -620,9 +867,9 @@ fn (mut context SVGFormattingContext) layout_container_element(container &Node) 
 		child_styled := child.as_node_with_style() or { continue }
 		child_state := context.state.try_get(child_styled) or { continue }
 		child_rect := svg.Rect{
-			x:      child_state.offset.x().to_double()
-			y:      child_state.offset.y().to_double()
-			width:  child_state.content_width().to_double()
+			x: child_state.offset.x().to_double()
+			y: child_state.offset.y().to_double()
+			width: child_state.content_width().to_double()
 			height: child_state.content_height().to_double()
 		}
 		bounds = if current := bounds { union_svg_rect(current, child_rect) } else { child_rect }
@@ -696,12 +943,9 @@ fn svg_geometry_element_model(graphics_box &Node, element &dom.Element, viewport
 		return model
 	}
 	computed := graphics_box.computed_values()
-	diagonal := math.sqrt((viewport_size.width().to_double() * viewport_size.width().to_double() +
-		viewport_size.height().to_double() * viewport_size.height().to_double()) / 2.0)
-	model.attributes['cx'] = '${computed.length_percentage_to_px(.cx,
-		viewport_size.width().to_double()) or { 0.0 }}'
-	model.attributes['cy'] = '${computed.length_percentage_to_px(.cy,
-		viewport_size.height().to_double()) or { 0.0 }}'
+	diagonal := math.sqrt((viewport_size.width().to_double() * viewport_size.width().to_double() + viewport_size.height().to_double() * viewport_size.height().to_double()) / 2.0)
+	model.attributes['cx'] = '${computed.length_percentage_to_px(.cx, viewport_size.width().to_double()) or { 0.0 }}'
+	model.attributes['cy'] = '${computed.length_percentage_to_px(.cy, viewport_size.height().to_double()) or { 0.0 }}'
 	model.attributes['r'] = '${computed.length_percentage_to_px(.r, diagonal) or { 0.0 }}'
 	return model
 }
@@ -714,9 +958,9 @@ fn set_used_values_rect(mut state UsedValues, rect svg.Rect) {
 
 fn quantize_svg_rect(rect svg.Rect) svg.Rect {
 	return svg.Rect{
-		x:      CSSPixels.nearest_value_for(rect.x).to_double()
-		y:      CSSPixels.nearest_value_for(rect.y).to_double()
-		width:  CSSPixels.nearest_value_for(rect.width).to_double()
+		x: CSSPixels.nearest_value_for(rect.x).to_double()
+		y: CSSPixels.nearest_value_for(rect.y).to_double()
+		width: CSSPixels.nearest_value_for(rect.width).to_double()
 		height: CSSPixels.nearest_value_for(rect.height).to_double()
 	}
 }
@@ -728,9 +972,9 @@ fn inflate_svg_rect(rect svg.Rect, stroke_width f64) svg.Rect {
 	quantized_stroke_width := CSSPixels.nearest_value_for(stroke_width)
 	half_stroke_width := CSSPixels.from_raw(quantized_stroke_width.raw_value() / 2).to_double()
 	return svg.Rect{
-		x:      rect.x - half_stroke_width
-		y:      rect.y - half_stroke_width
-		width:  rect.width + quantized_stroke_width.to_double()
+		x: rect.x - half_stroke_width
+		y: rect.y - half_stroke_width
+		width: rect.width + quantized_stroke_width.to_double()
 		height: rect.height + quantized_stroke_width.to_double()
 	}
 }
@@ -741,9 +985,9 @@ fn union_svg_rect(a svg.Rect, b svg.Rect) svg.Rect {
 	right := math.max(a.x + a.width, b.x + b.width)
 	bottom := math.max(a.y + a.height, b.y + b.height)
 	return svg.Rect{
-		x:      left
-		y:      top
-		width:  right - left
+		x: left
+		y: top
+		width: right - left
 		height: bottom - top
 	}
 }
@@ -765,8 +1009,7 @@ fn svg_path_bounds(path svg.Path) ?svg.Rect {
 		mut endpoint := current
 		match instruction.type_ {
 			.move, .line {
-				endpoint = svg_command_point(instruction.data[0], instruction.data[1],
-					instruction.absolute, origin)
+				endpoint = svg_command_point(instruction.data[0], instruction.data[1], instruction.absolute, origin)
 			}
 			.horizontal_line {
 				endpoint = svg.Point{
@@ -781,15 +1024,12 @@ fn svg_path_bounds(path svg.Path) ?svg.Rect {
 				}
 			}
 			.curve {
-				first_control := svg_command_point(instruction.data[0], instruction.data[1],
-					instruction.absolute, origin)
-				second_control := svg_command_point(instruction.data[2], instruction.data[3],
-					instruction.absolute, origin)
+				first_control := svg_command_point(instruction.data[0], instruction.data[1], instruction.absolute, origin)
+				second_control := svg_command_point(instruction.data[2], instruction.data[3], instruction.absolute, origin)
 				points << first_control
 				points << second_control
 				previous_cubic_control = second_control
-				endpoint = svg_command_point(instruction.data[4], instruction.data[5],
-					instruction.absolute, origin)
+				endpoint = svg_command_point(instruction.data[4], instruction.data[5], instruction.absolute, origin)
 			}
 			.smooth_curve {
 				first_control := if previous_type in [.curve, .smooth_curve] {
@@ -797,21 +1037,17 @@ fn svg_path_bounds(path svg.Path) ?svg.Rect {
 				} else {
 					origin
 				}
-				second_control := svg_command_point(instruction.data[0], instruction.data[1],
-					instruction.absolute, origin)
+				second_control := svg_command_point(instruction.data[0], instruction.data[1], instruction.absolute, origin)
 				points << first_control
 				points << second_control
 				previous_cubic_control = second_control
-				endpoint = svg_command_point(instruction.data[2], instruction.data[3],
-					instruction.absolute, origin)
+				endpoint = svg_command_point(instruction.data[2], instruction.data[3], instruction.absolute, origin)
 			}
 			.quadratic_bezier_curve {
-				control := svg_command_point(instruction.data[0], instruction.data[1],
-					instruction.absolute, origin)
+				control := svg_command_point(instruction.data[0], instruction.data[1], instruction.absolute, origin)
 				points << control
 				previous_quadratic_control = control
-				endpoint = svg_command_point(instruction.data[2], instruction.data[3],
-					instruction.absolute, origin)
+				endpoint = svg_command_point(instruction.data[2], instruction.data[3], instruction.absolute, origin)
 			}
 			.smooth_quadratic_bezier_curve {
 				control := if previous_type in [.quadratic_bezier_curve,
@@ -822,15 +1058,11 @@ fn svg_path_bounds(path svg.Path) ?svg.Rect {
 				}
 				points << control
 				previous_quadratic_control = control
-				endpoint = svg_command_point(instruction.data[0], instruction.data[1],
-					instruction.absolute, origin)
+				endpoint = svg_command_point(instruction.data[0], instruction.data[1], instruction.absolute, origin)
 			}
 			.elliptical_arc {
-				endpoint = svg_command_point(instruction.data[5], instruction.data[6],
-					instruction.absolute, origin)
-				points << svg_arc_extrema(origin, endpoint, instruction.data[0],
-					instruction.data[1], instruction.data[2], instruction.data[3] != 0,
-					instruction.data[4] != 0)
+				endpoint = svg_command_point(instruction.data[5], instruction.data[6], instruction.absolute, origin)
+				points << svg_arc_extrema(origin, endpoint, instruction.data[0], instruction.data[1], instruction.data[2], instruction.data[3] != 0, instruction.data[4] != 0)
 			}
 			.close_path {
 				endpoint = subpath_start
@@ -857,9 +1089,9 @@ fn svg_path_bounds(path svg.Path) ?svg.Rect {
 		max_y = math.max(max_y, point.y)
 	}
 	return svg.Rect{
-		x:      min_x
-		y:      min_y
-		width:  max_x - min_x
+		x: min_x
+		y: min_y
+		width: max_x - min_x
 		height: max_y - min_y
 	}
 }
@@ -916,8 +1148,7 @@ fn svg_arc_extrema(start svg.Point, end svg.Point, radius_x f64, radius_y f64, r
 	denominator := rx2 * y1_prime2 + ry2 * x1_prime2
 	mut factor := 0.0
 	if denominator != 0 {
-		factor = math.sqrt(math.max(0.0,
-			(rx2 * ry2 - rx2 * y1_prime2 - ry2 * x1_prime2) / denominator))
+		factor = math.sqrt(math.max(0.0, (rx2 * ry2 - rx2 * y1_prime2 - ry2 * x1_prime2) / denominator))
 	}
 	if large_arc == sweep {
 		factor = -factor

@@ -1,6 +1,7 @@
 module html
 
 import dom
+import fetch
 
 fn environment_test_document(url string) &dom.Document {
 	parsed := dom.URL{url}
@@ -14,10 +15,10 @@ fn environment_test_document(url string) &dom.Document {
 }
 
 fn test_window_environment_settings_setup_urls_security_and_serialization() {
-	document := environment_test_document('https://example.test/app/index.html')
+	mut document := environment_test_document('https://example.test/app/index.html')
 	window := WindowModel.create_top_level(document, none, 'main')!
 	mut realm := &ScriptingRealm{}
-	settings_object := WindowEnvironmentSettingsObject.setup(window, dom.URL{'https://example.test/app/index.html'}, mut realm, none, dom.URL{'https://example.test/'}, dom.Origin{'https://example.test'})
+	settings_object := WindowEnvironmentSettingsObject.setup(window, dom.URL{'https://example.test/app/index.html'}, mut realm, none, dom.URL{'https://example.test/'}, dom.Origin{ value: 'https://example.test' })
 	settings := settings_object.settings
 	assert settings.realm_execution_context() == realm
 	assert settings.realm() == realm
@@ -72,7 +73,8 @@ fn test_worker_environment_uses_outside_origin_except_for_data_urls() {
 	mut data_realm := &ScriptingRealm{}
 	data_scope := WorkerGlobalScope.create(dom.URL{'data:text/javascript,close()'}, .classic, '', data_realm)
 	data_worker := WorkerEnvironmentSettingsObject.setup(data_scope, mut data_realm, outside, 1.0)
-	assert data_worker.origin().serialize() == 'opaque'
+	assert data_worker.origin().is_opaque()
+	assert data_worker.origin().serialize() == 'null'
 	assert data_worker.has_cross_site_ancestor()
 }
 
@@ -148,4 +150,32 @@ fn test_realm_selection_environment_and_global_algorithms() {
 
 	insecure := Environment.create('insecure', dom.URL{'http://example.test/'}, dom.URL{'http://example.test/'}, none, none)
 	assert is_non_secure_context(insecure)
+}
+
+fn test_fetch_request_retains_a_typed_environment_settings_client() {
+	mut document := environment_test_document('https://example.test/app/index.html')
+	window := WindowModel.create_top_level(document, none, 'fetch-client-test')!
+	mut realm := &ScriptingRealm{}
+	mut settings := WindowEnvironmentSettingsObject.setup(window, document.url, mut realm, none,
+		document.url, document.origin()).settings
+	settings.set_policy_container(&PolicyContainer{
+		embedder_policy: EmbedderPolicy{
+			value: .credentialless
+		}
+	})
+
+	mut request := fetch.Request.create()
+	request.set_client(settings)
+	assert request.client != none
+	assert request.client_present
+	assert request.client_is_window
+	assert request.client_document_url? == document.url
+	assert request.client_creation_url? == document.url
+	assert request.origin.is_client
+	assert request.embedder_policy_credentialless
+
+	fetch.populate_request_from_client(mut request)
+	assert !request.origin.is_client
+	assert request.origin.origin? == document.origin()
+	document.finalize()
 }

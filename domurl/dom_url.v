@@ -4,172 +4,54 @@
 // Translation of DOMURL/DOMURL.{h,cpp,idl} and Origin.{h,cpp,idl}.
 module domurl
 
-import net.urllib
-import rand
 import fileapi
+import url as liburl
 
-const url_hex_upper = '0123456789ABCDEF'
-
-fn percent_encode_url_component(input string, should_encode fn (u8) bool) string {
-	mut output := ''
-	for byte in input.bytes() {
-		if should_encode(byte) {
-			output += '%${url_hex_upper[byte >> 4].ascii_str()}${url_hex_upper[byte & 0x0f].ascii_str()}'
-		} else {
-			output += byte.ascii_str()
-		}
+// DOMURL::parse() is a thin binding-facing wrapper around LibURL's basic URL
+// parser. Keeping the typed URL record here preserves empty query/fragment
+// components, opaque paths, host variants, IDNA and state-override setters.
+fn parse_api_url(input string, base ?string) ?liburl.URL {
+	if base_value := base {
+		parsed_base := liburl.parse(base_value) or { return none }
+		return liburl.parse_with_base(input, &parsed_base)
 	}
-	return output
-}
-
-fn encode_url_query(input string, special bool) string {
-	return percent_encode_url_component(input, fn [special] (byte u8) bool {
-		should_encode := byte <= 0x20 || byte > 0x7e || byte in [`"`, `#`, `<`, `>`]
-			|| (special && byte == `'`)
-		return should_encode
-	})
-}
-
-fn encode_url_userinfo(input string) string {
-	return percent_encode_url_component(input, fn (byte u8) bool {
-		if byte <= 0x20 || byte > 0x7e {
-			return true
-		}
-		return byte in [`"`, `#`, `<`, `>`, `?`, `/`, `:`, `;`, `=`, `@`, `[`, `\\`, `]`, `^`,
-			`|`]
-	})
-}
-
-fn encode_url_fragment(input string) string {
-	return percent_encode_url_component(input, fn (byte u8) bool {
-		return byte <= 0x20 || byte > 0x7e || byte in [`"`, `<`, `>`] || byte == 0x60
-	})
-}
-
-fn percent_encode_url_path_segment(input string) string {
-	return percent_encode_url_component(input, fn (byte u8) bool {
-		return byte <= 0x20 || byte > 0x7e || byte in [`"`, `#`, `<`, `>`, `?`, `^`,
-			`\``, `{`, `}`]
-	})
-}
-
-fn serialized_hostname(record urllib.URL) string {
-	if record.host.starts_with('[') {
-		closing_bracket := record.host.index_u8(`]`)
-		if closing_bracket >= 0 {
-			return record.host[..closing_bracket + 1].to_lower()
-		}
-	}
-	return record.hostname().to_lower()
-}
-
-fn serialize_url_record(record urllib.URL, fragment_present bool) string {
-	mut without_components := record
-	without_components.user = none
-	without_components.fragment = ''
-	mut serialized := without_components.str()
-	if user := record.user {
-		userinfo := encode_url_userinfo(user.username) + if user.password_set {
-			':${encode_url_userinfo(user.password)}'
-		} else {
-			''
-		}
-		if userinfo != '' {
-			authority_start := serialized.index('://') or { -1 }
-			if authority_start >= 0 {
-				insert_at := authority_start + 3
-				serialized = '${serialized[..insert_at]}${userinfo}@${serialized[insert_at..]}'
-			}
-		}
-	}
-	if fragment_present {
-		serialized += '#${encode_url_fragment(record.fragment)}'
-	}
-	return serialized
-}
-
-fn default_port_for_scheme(scheme string) string {
-	return match scheme {
-		'ftp' { '21' }
-		'http', 'ws' { '80' }
-		'https', 'wss' { '443' }
-		else { '' }
-	}
-}
-
-fn normalize_url_record(record urllib.URL) urllib.URL {
-	mut normalized := record
-	if normalized.host != '' {
-		hostname := serialized_hostname(normalized)
-		port := normalized.port()
-		normalized.host = if port == '' { hostname } else { '${hostname}:${port}' }
-	}
-	if normalized.port() == default_port_for_scheme(normalized.scheme) {
-		normalized.host = serialized_hostname(normalized)
-	}
-	if normalized.raw_query != '' {
-		normalized.raw_query = encode_url_query(normalized.raw_query, normalized.scheme in [
-			'ftp',
-			'file',
-			'http',
-			'https',
-			'ws',
-			'wss',
-		])
-	}
-	return normalized
-}
-
-fn parse_api_url(input string, base ?string) ?urllib.URL {
-	reference := urllib.parse(input) or { return none }
-	if reference.is_abs() {
-		return normalize_url_record(reference)
-	}
-	base_value := base or { return none }
-	parsed_base := urllib.parse(base_value) or { return none }
-	if !parsed_base.is_abs() {
-		return none
-	}
-	resolved := parsed_base.resolve_reference(reference) or { return none }
-	return normalize_url_record(resolved)
+	return liburl.parse(input)
 }
 
 @[heap]
 pub struct DOMURL {
 mut:
-	record           urllib.URL
-	fragment_present bool
+	record liburl.URL
 pub mut:
 	query_object &URLSearchParams
 }
 
-pub fn DOMURL.create(record urllib.URL, fragment_present bool, query &URLSearchParams) &DOMURL {
+pub fn DOMURL.create(record liburl.URL, query &URLSearchParams) &DOMURL {
 	return &DOMURL{
-		record:           record
-		fragment_present: fragment_present
-		query_object:     query
+		record:       record
+		query_object: query
 	}
 }
 
-pub fn DOMURL.initialize_a_url(record urllib.URL, fragment_present bool) &DOMURL {
-	mut query := URLSearchParams.from_string(record.raw_query)
-	url := DOMURL.create(record, fragment_present, query)
+pub fn DOMURL.initialize_a_url(record liburl.URL) &DOMURL {
+	mut query := URLSearchParams.from_string(record.query or { '' })
+	url := DOMURL.create(record, query)
 	query.bind_url(url)
 	return url
 }
 
-fn initialize_a_url(record urllib.URL, fragment_present bool) &DOMURL {
-	return DOMURL.initialize_a_url(record, fragment_present)
+fn initialize_a_url(record liburl.URL) &DOMURL {
+	return DOMURL.initialize_a_url(record)
 }
 
 pub fn DOMURL.construct_impl(input string, base ?string) !&DOMURL {
 	record := parse_api_url(input, base) or { return error('TypeError: Invalid URL') }
-	return initialize_a_url(record, record.fragment != '' || input.contains('#'))
+	return initialize_a_url(record)
 }
 
 pub fn DOMURL.parse_for_bindings(input string, base ?string) ?&DOMURL {
 	record := parse_api_url(input, base) or { return none }
-	return initialize_a_url(record, record.fragment != '' || input.contains('#'))
+	return initialize_a_url(record)
 }
 
 pub fn DOMURL.can_parse(input string, base ?string) bool {
@@ -177,14 +59,13 @@ pub fn DOMURL.can_parse(input string, base ?string) bool {
 }
 
 pub fn (url &DOMURL) href() string {
-	return serialize_url_record(url.record, url.fragment_present)
+	return url.record.serialize(false)
 }
 
 pub fn (mut url DOMURL) set_href(value string) ! {
 	record := parse_api_url(value, none) or { return error('TypeError: Invalid URL') }
 	url.record = record
-	url.fragment_present = record.fragment != '' || value.contains('#')
-	url.query_object.list = url_decode(record.raw_query)
+	url.query_object.list = url_decode(record.query or { '' })
 }
 
 pub fn (url &DOMURL) to_json() string {
@@ -199,207 +80,98 @@ pub fn (url &DOMURL) protocol() string {
 	return '${url.record.scheme}:'
 }
 
-fn valid_scheme(value string) bool {
-	if value.len == 0 || !value[0].is_letter() {
-		return false
-	}
-	for byte in value.bytes()[1..] {
-		if !byte.is_alnum() && byte !in [`+`, `-`, `.`] {
-			return false
-		}
-	}
-	return true
-}
-
 pub fn (mut url DOMURL) set_protocol(value string) {
-	scheme := value.trim_right(':').to_lower()
-	if !valid_scheme(scheme) {
-		return
-	}
-	old_is_special := url.record.scheme in ['ftp', 'file', 'http', 'https', 'ws', 'wss']
-	new_is_special := scheme in ['ftp', 'file', 'http', 'https', 'ws', 'wss']
-	if old_is_special != new_is_special {
-		return
-	}
-	userinfo := url.record.user
-	has_credentials := userinfo != none && (url.username() != '' || url.password() != '')
-	if scheme == 'file' && (has_credentials || url.port() != '') {
-		return
-	}
-	if url.record.scheme == 'file' && url.record.host == '' {
-		return
-	}
-	url.record.scheme = scheme
-	if url.port() == default_port_for_scheme(scheme) {
-		url.record.host = serialized_hostname(url.record)
-	}
+	url.record = url.record.with_scheme(value)
 }
 
 pub fn (url &DOMURL) username() string {
-	return if user := url.record.user { encode_url_userinfo(user.username) } else { '' }
+	return url.record.username
 }
 
 pub fn (mut url DOMURL) set_username(value string) {
-	if url.cannot_have_credentials() {
-		return
-	}
-	password := if user := url.record.user { user.password } else { '' }
-	password_set := if user := url.record.user { user.password_set } else { false }
-	url.record.user = urllib.Userinfo{
-		username:     value
-		password:     password
-		password_set: password_set
-	}
+	url.record = url.record.with_username(value)
 }
 
 pub fn (url &DOMURL) password() string {
-	return if user := url.record.user { encode_url_userinfo(user.password) } else { '' }
+	return url.record.password
 }
 
 pub fn (mut url DOMURL) set_password(value string) {
-	if url.cannot_have_credentials() {
-		return
-	}
-	url.record.user = urllib.Userinfo{
-		username:     if user := url.record.user { user.username } else { '' }
-		password:     value
-		password_set: true
-	}
+	url.record = url.record.with_password(value)
 }
 
 fn (url &DOMURL) cannot_have_credentials() bool {
-	return url.record.hostname() == '' || url.record.scheme == 'file'
+	return url.record.cannot_have_a_username_or_password_or_port()
 }
 
 pub fn (url &DOMURL) host() string {
-	return url.record.host
+	host := url.record.host or { return '' }
+	return host.serialize() + if port := url.record.port { ':${port}' } else { '' }
 }
 
 pub fn (mut url DOMURL) set_host(value string) {
-	if url.record.opaque != '' {
-		return
-	}
-	parsed := urllib.parse('${url.record.scheme}://${value}/') or { return }
-	if parsed.hostname() == '' || parsed.user != none {
-		return
-	}
-	url.record.host = if parsed.port() == default_port_for_scheme(url.record.scheme) {
-		serialized_hostname(parsed)
-	} else {
-		parsed.host.to_lower()
-	}
+	url.record = url.record.with_host(value, false)
 }
 
 pub fn (url &DOMURL) hostname() string {
-	return serialized_hostname(url.record)
+	return if host := url.record.host { host.serialize() } else { '' }
 }
 
 pub fn (mut url DOMURL) set_hostname(value string) {
-	if url.record.opaque != '' {
-		return
-	}
-	parsed := urllib.parse('${url.record.scheme}://${value}/') or { return }
-	if parsed.hostname() == '' || parsed.port() != '' || parsed.user != none {
-		return
-	}
-	port := url.record.port()
-	hostname := serialized_hostname(parsed)
-	url.record.host = if port == '' { hostname } else { '${hostname}:${port}' }
+	url.record = url.record.with_host(value, true)
 }
 
 pub fn (url &DOMURL) port() string {
-	return url.record.port()
+	return if port := url.record.port { port.str() } else { '' }
 }
 
 pub fn (mut url DOMURL) set_port(value string) {
-	if url.cannot_have_credentials() {
-		return
-	}
-	for byte in value.bytes() {
-		if byte < `0` || byte > `9` {
-			return
-		}
-	}
-	if value != '' && value.u64() > 65535 {
-		return
-	}
-	hostname := url.record.hostname()
-	normalized := if value == '' { '' } else { value.u64().str() }
-	url.record.host = if normalized == ''
-		|| normalized == default_port_for_scheme(url.record.scheme) {
-		hostname
-	} else {
-		'${hostname}:${normalized}'
-	}
+	url.record = url.record.with_port(value)
 }
 
 pub fn (url &DOMURL) pathname() string {
-	return if url.record.opaque != '' { url.record.opaque } else { url.record.escaped_path() }
+	return url.record.serialize_path()
 }
 
 pub fn (url &DOMURL) fragment() ?string {
-	if !url.fragment_present {
-		return none
-	}
 	return url.record.fragment
 }
 
 pub fn (mut url DOMURL) set_paths(paths []string) {
-	if url.record.opaque != '' {
+	if url.record.has_an_opaque_path {
 		return
 	}
-	url.record.path = if paths.len == 0 { '' } else { '/' + paths.join('/') }
-	url.record.raw_path = if paths.len == 0 {
-		''
-	} else {
-		'/' + paths.map(percent_encode_url_path_segment(it)).join('/')
-	}
+	url.record = url.record.with_path(paths.join('/'))
 }
 
 pub fn (mut url DOMURL) set_pathname(value string) {
-	if url.record.opaque == '' {
-		url.record.path = if url.record.host != '' && !value.starts_with('/') {
-			'/${value}'
-		} else {
-			value
-		}
-		url.record.raw_path = ''
-	}
+	url.record = url.record.with_path(value)
 }
 
 pub fn (url &DOMURL) search() string {
-	return if url.record.raw_query == '' { '' } else { '?${url.record.raw_query}' }
+	query := url.record.query or { return '' }
+	return if query == '' { '' } else { '?${query}' }
 }
 
 pub fn (mut url DOMURL) set_search(value string) {
 	if value == '' {
-		url.record.raw_query = ''
-		url.record.force_query = false
+		url.record = url.record.with_query(none)
 		url.query_object.list.clear()
 		return
 	}
 	input := if value.starts_with('?') { value[1..] } else { value }
-	url.record.raw_query = encode_url_query(input, url.record.scheme in ['ftp', 'file', 'http',
-		'https', 'ws', 'wss'])
-	url.record.force_query = true
-	url.query_object.list = url_decode(input)
+	url.record = url.record.with_query(input)
+	url.query_object.list = url_decode(url.record.query or { '' })
 }
 
 fn (mut url DOMURL) set_query_from_params(query ?string) {
-	if value := query {
-		url.record.raw_query = value
-		url.record.force_query = true
-	} else {
-		url.record.raw_query = ''
-		url.record.force_query = false
-	}
+	// URLSearchParams serialization is already application/x-www-form-urlencoded
+	// encoded, so install it directly rather than percent-encoding it again.
+	url.record.query = query
 }
 
 pub fn (url &DOMURL) query() ?string {
-	if url.record.raw_query == '' && !url.record.force_query {
-		return none
-	}
-	return url.record.raw_query
+	return url.record.query
 }
 
 pub fn (mut url DOMURL) set_query(query ?string) {
@@ -411,25 +183,29 @@ pub fn (url &DOMURL) search_params() &URLSearchParams {
 }
 
 pub fn (url &DOMURL) hash() string {
-	return if url.record.fragment == '' {
+	fragment := url.record.fragment or { return '' }
+	return if fragment == '' {
 		''
 	} else {
-		'#${encode_url_fragment(url.record.fragment)}'
+		'#${fragment}'
 	}
 }
 
 pub fn (mut url DOMURL) set_hash(value string) {
-	url.fragment_present = value != ''
-	url.record.fragment = if value.starts_with('#') { value[1..] } else { value }
+	if value == '' {
+		url.record = url.record.with_fragment(none)
+		return
+	}
+	input := if value.starts_with('#') { value[1..] } else { value }
+	url.record = url.record.with_fragment(input)
 }
 
 pub fn (url &DOMURL) has_an_opaque_path() bool {
-	return url.record.opaque != ''
+	return url.record.has_an_opaque_path
 }
 
 pub fn (url &DOMURL) path_segment_at_index(index int) string {
-	segments := url.record.path.trim_left('/').split('/')
-	return segments[index]
+	return url.record.path_segment_at_index(index)
 }
 
 pub type CreateObjectURLHook = fn (object_id string) !string
@@ -460,11 +236,8 @@ pub fn DOMURL.revoke_object_url_from_store(value string, environment fileapi.Blo
 
 @[heap]
 pub struct Origin {
-pub:
-	scheme       string
-	host         string
-	port         string
-	opaque_token u64
+mut:
+	record liburl.Origin
 }
 
 pub struct OriginDOMURLSource {
@@ -481,7 +254,7 @@ pub type OriginInput = OriginDOMURLSource | OriginObjectSource | string
 
 pub fn Origin.construct_impl() &Origin {
 	return &Origin{
-		opaque_token: rand.u64()
+		record: liburl.Origin.create_opaque(.standard)
 	}
 }
 
@@ -505,80 +278,29 @@ pub fn Origin.from(value OriginInput) !&Origin {
 }
 
 pub fn (url &DOMURL) extract_an_origin() &Origin {
-	if url.record.scheme == 'blob' {
-		if inner := urllib.parse(url.record.opaque) {
-			if inner.scheme in ['ftp', 'http', 'https', 'ws', 'wss'] && inner.hostname() != '' {
-				mut port := inner.port()
-				if port == default_port_for_scheme(inner.scheme) {
-					port = ''
-				}
-				return &Origin{
-					scheme: inner.scheme
-					host:   inner.hostname().to_lower()
-					port:   port
-				}
-			}
-		}
-		return Origin.construct_impl()
-	}
-	host := url.hostname()
-	if host == '' || url.record.scheme !in ['ftp', 'http', 'https', 'ws', 'wss'] {
-		return Origin.construct_impl()
-	}
-	mut port := url.port()
-	if (url.protocol() == 'http:' && port == '80')
-		|| (url.protocol() == 'https:' && port == '443')
-		|| (url.protocol() == 'ws:' && port == '80')
-		|| (url.protocol() == 'wss:' && port == '443')
-		|| (url.protocol() == 'ftp:' && port == '21') {
-		port = ''
-	}
 	return &Origin{
-		scheme: url.record.scheme
-		host:   host.to_lower()
-		port:   port
+		record: url.record.origin()
 	}
 }
 
 pub fn (origin &Origin) extract_an_origin() &Origin {
 	return &Origin{
-		scheme:       origin.scheme
-		host:         origin.host
-		port:         origin.port
-		opaque_token: origin.opaque_token
+		record: origin.record
 	}
 }
 
 pub fn (origin &Origin) opaque() bool {
-	return origin.opaque_token != 0
+	return origin.record.is_opaque()
 }
 
 pub fn (origin &Origin) is_same_origin(other &Origin) bool {
-	if origin.opaque() || other.opaque() {
-		return origin.opaque() && other.opaque() && origin.opaque_token == other.opaque_token
-	}
-	return origin.scheme == other.scheme && origin.host == other.host && origin.port == other.port
+	return origin.record.is_same_origin(other.record)
 }
 
 pub fn (origin &Origin) is_same_site(other &Origin) bool {
-	if origin.is_same_origin(other) {
-		return true
-	}
-	if origin.opaque() || other.opaque() || origin.scheme != other.scheme {
-		return false
-	}
-	// Public-suffix/registrable-domain lookup is a host service. Without it,
-	// exact hosts are the conservative same-site result.
-	return origin.host == other.host
+	return origin.record.is_same_site(other.record)
 }
 
 pub fn (origin &Origin) serialize() string {
-	if origin.opaque() {
-		return 'null'
-	}
-	return '${origin.scheme}://${origin.host}${if origin.port == '' {
-		''
-	} else {
-		':${origin.port}'
-	}}'
+	return origin.record.serialize()
 }

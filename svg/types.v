@@ -44,7 +44,7 @@ pub enum MeetOrSlice {
 
 pub struct PreserveAspectRatio {
 pub:
-	align         Align       = .x_mid_y_mid
+	align         Align = .x_mid_y_mid
 	meet_or_slice MeetOrSlice = .meet
 }
 
@@ -84,7 +84,7 @@ pub fn number(value f64) NumberPercentage {
 
 pub fn percentage(value f64) NumberPercentage {
 	return NumberPercentage{
-		value:         value / 100.0
+		value: value / 100.0
 		is_percentage: true
 	}
 }
@@ -97,6 +97,7 @@ pub fn (n NumberPercentage) resolve_relative_to(length f64) f64 {
 }
 
 pub enum TransformKind {
+	unknown
 	translate
 	scale
 	rotate
@@ -183,9 +184,9 @@ pub fn (transform AffineTransform) map_rect(rect Rect) Rect {
 		max_y = math.max(max_y, point.y)
 	}
 	return Rect{
-		x:      min_x
-		y:      min_y
-		width:  max_x - min_x
+		x: min_x
+		y: min_y
+		width: max_x - min_x
 		height: max_y - min_y
 	}
 }
@@ -212,6 +213,9 @@ pub fn (transform AffineTransform) x_scale() f64 {
 
 pub fn (transform Transform) matrix() AffineTransform {
 	match transform.kind {
+		.unknown {
+			return AffineTransform{}
+		}
 		.translate {
 			return AffineTransform{
 				e: transform.values[0]
@@ -469,27 +473,27 @@ fn (list TransformList) ensure_mutable() ! {
 }
 
 pub struct AnimatedLength {
-pub mut:
-	base_value SvgLength
-	anim_value SvgLength
+pub:
+	base_value &SvgLength = unsafe { nil }
+	anim_value &SvgLength = unsafe { nil }
 }
 
 pub struct AnimatedLengthList {
-pub mut:
-	base_value LengthList
-	anim_value LengthList
+pub:
+	base_value &LengthList = unsafe { nil }
+	anim_value &LengthList = unsafe { nil }
 }
 
 pub struct AnimatedNumberList {
-pub mut:
-	base_value NumberList
-	anim_value NumberList
+pub:
+	base_value &NumberList = unsafe { nil }
+	anim_value &NumberList = unsafe { nil }
 }
 
 pub struct AnimatedTransformList {
-pub mut:
-	base_value TransformList
-	anim_value TransformList
+pub:
+	base_value &TransformList = unsafe { nil }
+	anim_value &TransformList = unsafe { nil }
 }
 
 pub struct AnimatedRect {
@@ -597,7 +601,9 @@ pub fn (animated AnimatedNumber) value() f64 {
 		return animated.parse_value_or_initial(animated.attribute)
 	}
 	parts := animated.attribute.split(' ')
-	if parts.len == 0 { return animated.initial }
+	if parts.len == 0 {
+		return animated.initial
+	}
 	first := animated.parse_value_or_initial(parts[0])
 	if animated.represents_second && parts.len > 1 && parts[1].len > 0 {
 		return animated.parse_value_or_initial(parts[1])
@@ -648,7 +654,9 @@ pub fn (animated AnimatedInteger) value() int {
 		return animated.parse_value_or_initial(animated.attribute)
 	}
 	parts := animated.attribute.split(' ')
-	if parts.len == 0 { return animated.initial }
+	if parts.len == 0 {
+		return animated.initial
+	}
 	first := animated.parse_value_or_initial(parts[0])
 	if animated.represents_second && parts.len > 1 && parts[1].len > 0 {
 		return animated.parse_value_or_initial(parts[1])

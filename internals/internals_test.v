@@ -127,6 +127,10 @@ fn test_computed_accessibility_values_and_form_clear_algorithm() {
 	assert api.get_computed_role(element) == 'button'
 	element.set_attribute_value('role', 'unknown img')
 	assert api.get_computed_role(element) == 'image'
+	// The ARIA image role does not allow a name to be derived from child content.
+	assert api.get_computed_label(element) == ''
+	element.remove_attribute('role')
+	element.set_attribute_value('aria-label', 'Save')
 	assert api.get_computed_label(element) == 'Save'
 	assert api.get_computed_aria_level(element) == '3'
 	element.set_attribute_value('aria-level', 'not-an-integer')

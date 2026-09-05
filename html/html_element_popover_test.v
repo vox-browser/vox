@@ -6,6 +6,7 @@ fn active_popover_document() &dom.Document {
 	mut document := dom.Document.create(dom.URL{
 		value: 'https://example.test/'
 	})
+	install_document_fullscreen_hook(document)
 	mut navigable := &dom.Navigable{
 		active_document_: document
 		is_top_level_traversable_: true
@@ -39,7 +40,7 @@ fn test_popover_reflection_and_validity() {
 	assert html_element_popover_value_to_state('hint') or { '' } == 'hint'
 	assert html_element_popover_value_to_state('anything') or { '' } == 'manual'
 
-	document := active_popover_document()
+	mut document := active_popover_document()
 	detached := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
 	mut mutable_detached := detached
 	mutable_detached.set_attribute_value('popover', 'auto')
@@ -110,4 +111,57 @@ fn test_popover_ancestor_and_light_dismiss_helpers() {
 	html_element_light_dismiss_open_popovers(down, root.as_node())
 	html_element_light_dismiss_open_popovers(up, root.as_node())
 	assert popover.popover_visibility_state() == .hidden
+}
+
+fn test_fullscreen_uses_the_translated_popover_hiding_algorithm() {
+	mut document := active_popover_document()
+	root := document.document_element() or { panic('missing root') }
+	popover := append_popover_element(document, root.as_node(), 'menu', 'auto')
+	mut outside := document.create_element('div') or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(outside.as_node()) or { panic(err) }
+	html_element_show_popover(popover, .yes, none)!
+	assert popover.popover_visibility_state() == .showing
+
+	document.fullscreen_element_within_doc(mut outside)
+	assert popover.popover_visibility_state() == .hidden
+	assert document.showing_auto_popover_list().len == 0
+
+	mut inside := document.create_element('span') or { panic(err) }
+	mut popover_node := unsafe { &dom.Element(popover) }.as_node()
+	popover_node.append_child(inside.as_node()) or { panic(err) }
+	html_element_show_popover(popover, .yes, none)!
+	document.fullscreen_element_within_doc(mut inside)
+	assert popover.popover_visibility_state() == .showing
+}
+
+fn test_collect_documents_to_unfullscreen_walks_container_documents() {
+	mut parent_document := active_popover_document()
+	mut child_document := active_popover_document()
+	iframe_element := parent_document.create_element_ns('http://www.w3.org/1999/xhtml', 'iframe') or {
+		panic(err)
+	}
+	mut parent_root := parent_document.document_element() or { panic('missing parent root') }
+	mut parent_root_node := parent_root.as_node()
+	parent_root_node.append_child(iframe_element.as_node()) or { panic(err) }
+
+	mut child_navigable := &dom.Navigable{
+		active_document_: child_document
+		container_:       iframe_element.as_node()
+	}
+	child_document.set_cached_navigable(child_navigable)
+	mut parent_fullscreen := parent_document.create_element('div') or { panic(err) }
+	mut child_fullscreen := child_document.create_element('div') or { panic(err) }
+	parent_document.fullscreen_element_within_doc(mut parent_fullscreen)
+	child_document.fullscreen_element_within_doc(mut child_fullscreen)
+
+	documents := child_document.collect_documents_to_unfullscreen()
+	assert documents.len == 2
+	assert voidptr(documents[0]) == voidptr(child_document)
+	assert voidptr(documents[1]) == voidptr(parent_document)
+
+	iframe := unsafe { &dom.HTMLIFrameElement(iframe_element) }
+	mut iframe_model := html_iframe_element_model_for_dom_element(iframe)
+	iframe_model.set_iframe_fullscreen_flag(true)
+	assert child_document.collect_documents_to_unfullscreen().len == 1
 }

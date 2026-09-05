@@ -54,7 +54,7 @@ fn navigable_test_fetch(request &fetch.Request) !&fetch.Response {
 		})
 		return response
 	}
-	response.body = '<!doctype html><html><body>fetched response</body></html>'.bytes()
+	response.set_body_bytes('<!doctype html><html><body>fetched response</body></html>'.bytes())
 	response.header_list.append(http.Header{
 		name: 'Content-Type'
 		value: 'text/html'
@@ -83,6 +83,10 @@ fn test_navigable_initialization_hierarchy_and_target_choice() {
 	assert parent_model.target_name() == 'top'
 	assert parent_model.is_top_level_traversable()
 	assert parent_model.is_script_closable()
+	assert !parent_model.host_navigable().is_focused()
+	mut focused_parent_model := unsafe { &NavigableModel(parent_model) }
+	focused_parent_model.set_focused(true)
+	assert parent_model.host_navigable().is_focused()
 
 	mut child_document := dom.Document.create(dom.URL{'https://example.test/frame'})
 	child_document.set_origin(child_document.url.origin())
@@ -175,6 +179,9 @@ fn test_navigable_sandbox_viewport_selection_observers_and_rendering() {
 	model.perform_scroll_of_viewport_scrolling_box(css.CSSPixelPoint.from_values(12, 18))
 	assert model.viewport_scroll_offset().to_double_pair() == [12.0, 18.0]!
 	assert model.snapshot_containing_block().left_value() == 12
+	document.scroll_to_the_beginning_of_the_document()
+	assert model.viewport_scroll_offset().to_double_pair() == [0.0, 0.0]!
+	model.perform_scroll_of_viewport_scrolling_box(css.CSSPixelPoint.from_values(12, 18))
 	assert model.scroll_viewport_by_delta(css.CSSPixelPoint.from_values(-12, -18)).state() == .fulfilled
 	assert model.viewport_scroll_offset().to_double_pair() == [0.0, 0.0]!
 
@@ -275,6 +282,6 @@ fn test_navigable_fetch_redirect_policy_and_url_history_algorithms() {
 		document_state: srcdoc_state
 	}
 	srcdoc_params := create_navigation_params_from_a_srcdoc_resource(srcdoc_entry, model, TargetSnapshotParams{}, .none, none)!
-	assert srcdoc_params.response.body?.bytestr() == '<p>srcdoc</p>'
+	assert srcdoc_params.response.fetch_response_body()?.bytes().bytestr() == '<p>srcdoc</p>'
 	assert srcdoc_params.response.header_list.get('Content-Type')? == 'text/html'
 }

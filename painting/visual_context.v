@@ -1,5 +1,7 @@
 module painting
 
+import css
+
 pub struct ScrollVisualData {
 pub:
 	scroll_frame_index int
@@ -27,23 +29,126 @@ pub:
 	matrix Affine
 }
 
+pub enum ClipPathSegmentKind {
+	move_to
+	line_to
+	quadratic_bezier_curve_to
+	cubic_bezier_curve_to
+	elliptical_arc_to
+	close_path
+}
+
+// Gfx::Path segment data retained by ClipPathData. Curves remain exact for
+// display-list replay; `polygons` below is the one-time flattened counterpart
+// used by the compact software hit-test backend.
+pub struct ClipPathSegment {
+pub:
+	kind            ClipPathSegmentKind
+	point           Point
+	control_point_0 Point
+	control_point_1 Point
+	radii           Size
+	rotation        f64
+	large_arc       bool
+	sweep           bool
+}
+
 pub struct ClipPathVisualData {
 pub:
 	bounding_rect IntRect
-	polygon       []Point
-	fill_rule     WindingRule = .nonzero
+	segments      []ClipPathSegment
+	polygons      [][]Point
+	// Retained for callers which construct the earlier single-contour form.
+	polygon   []Point
+	fill_rule WindingRule = .nonzero
+}
+
+// SVGMaskable paints a referenced <clipPath> into an alpha mask around the
+// target stacking context. Unlike a CSS basic-shape clip this deliberately is
+// not consulted by hit testing, matching StackingContext::hit_test(). Each
+// resource geometry keeps its own clip-rule and SVG transform; painting unions
+// the components in the alpha mask instead of intersecting their paths.
+pub struct SVGClipPathComponent {
+pub:
+	path      ClipPathVisualData
+	transform Affine
+}
+
+pub struct SVGClipVisualData {
+pub:
+	bounding_rect IntRect
+	components    []SVGClipPathComponent
+	cache_key     u64
+	scope_id      u64
+}
+
+pub enum SVGMaskPaintOperationKind {
+	begin_opacity
+	end_opacity
+	image
+	path
+}
+
+// The nested display list produced by SVGMaskable is retained as an ordered
+// operation stream. Opacity boundaries cannot be multiplied into each leaf:
+// a group's children must be composited before the group opacity is applied.
+pub struct SVGMaskPaintOperation {
+pub:
+	kind                   SVGMaskPaintOperationKind
+	opacity                f64 = 1.0
+	image_url              string
+	image_rect             Rect
+	image_position_x       string = '50%'
+	image_position_y       string = '50%'
+	image_rendering        css.ImageRendering
+	path                   ClipPathVisualData
+	transform              Affine
+	fill_linear_gradient   ?SVGLinearGradientPaintStyle
+	stroke_linear_gradient ?SVGLinearGradientPaintStyle
+	fill_radial_gradient   ?SVGRadialGradientPaintStyle
+	stroke_radial_gradient ?SVGRadialGradientPaintStyle
+	fill_pattern           ?&SVGPatternPaintStyle
+	stroke_pattern         ?&SVGPatternPaintStyle
+	fill_color             Color
+	stroke_color           Color
+	has_fill               bool
+	has_stroke             bool
+	stroke_first           bool
+	fill_opacity           f64 = 1.0
+	stroke_opacity         f64 = 1.0
+	stroke_width           f64
+	stroke_linecap         LineCap
+	stroke_linejoin        LineJoin
+	stroke_miter_limit     f64 = 4.0
+}
+
+// Kept behind a pointer in SVGPatternPaintStyle so nested pattern paints have
+// the same reference graph as C++ PaintStyle without forming a recursive V
+// value type.
+pub struct SVGPatternDisplayList {
+pub:
+	operations []SVGMaskPaintOperation
+}
+
+pub struct SVGMaskVisualData {
+pub:
+	bounding_rect IntRect
+	mask_type     SVGMaskType
+	operations    []SVGMaskPaintOperation
+	cache_key     u64
+	scope_id      u64
 }
 
 fn edge_side(start Point, end Point, point Point) f64 {
 	return (end.x - start.x) * (point.y - start.y) - (point.x - start.x) * (end.y - start.y)
 }
 
-pub fn polygon_contains_with_rule(polygon []Point, point Point, rule WindingRule) bool {
-	if polygon.len < 3 {
-		return false
-	}
+fn polygon_crossings_and_winding(polygon []Point, point Point) (int, int) {
 	mut crossings := 0
 	mut winding := 0
+	if polygon.len < 3 {
+		return crossings, winding
+	}
 	mut previous := polygon.len - 1
 	for current := 0; current < polygon.len; current++ {
 		first := polygon[previous]
@@ -61,12 +166,31 @@ pub fn polygon_contains_with_rule(polygon []Point, point Point, rule WindingRule
 		}
 		previous = current
 	}
+	return crossings, winding
+}
+
+pub fn polygon_contains_with_rule(polygon []Point, point Point, rule WindingRule) bool {
+	crossings, winding := polygon_crossings_and_winding(polygon, point)
+	return if rule == .even_odd { crossings % 2 == 1 } else { winding != 0 }
+}
+
+pub fn polygons_contain_with_rule(polygons [][]Point, point Point, rule WindingRule) bool {
+	mut crossings := 0
+	mut winding := 0
+	for polygon in polygons {
+		polygon_crossings, polygon_winding := polygon_crossings_and_winding(polygon, point)
+		crossings += polygon_crossings
+		winding += polygon_winding
+	}
 	return if rule == .even_odd { crossings % 2 == 1 } else { winding != 0 }
 }
 
 pub fn (clip ClipPathVisualData) contains(point Point) bool {
 	if !clip.bounding_rect.contains(IntPoint{int(point.x), int(point.y)}) {
 		return false
+	}
+	if clip.polygons.len > 0 {
+		return polygons_contain_with_rule(clip.polygons, point, clip.fill_rule)
 	}
 	return polygon_contains_with_rule(clip.polygon, point, clip.fill_rule)
 }
@@ -87,6 +211,8 @@ pub type VisualContextData = ClipPathVisualData
 	| EffectsVisualData
 	| PerspectiveVisualData
 	| ScrollVisualData
+	| SVGClipVisualData
+	| SVGMaskVisualData
 	| TransformVisualData
 
 pub struct AccumulatedVisualContextNode {
@@ -115,7 +241,17 @@ pub fn (mut tree AccumulatedVisualContextTree) append(data VisualContextData, pa
 	if !empty_clip {
 		empty_clip = match data {
 			ClipVisualData { data.rect.is_empty() }
-			ClipPathVisualData { data.bounding_rect.is_empty() || data.polygon.len < 3 }
+			ClipPathVisualData {
+				data.bounding_rect.is_empty()
+					|| (data.polygons.all(it.len < 3) && data.polygon.len < 3)
+			}
+			SVGClipVisualData {
+				data.bounding_rect.is_empty() || data.components.len == 0
+			}
+			SVGMaskVisualData {
+				data.bounding_rect.is_empty()
+					|| data.operations.all(it.kind != .path && it.kind != .image)
+			}
 			else { false }
 		}
 	}
@@ -194,6 +330,12 @@ pub fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test(index in
 					return none
 				}
 			}
+
+			// URL-referenced SVG masks/clips are paint-time masks in
+			// StackingContext::paint, not accumulated geometric clips. Upstream hit
+			// testing therefore does not reject points outside their painted alpha.
+			SVGClipVisualData {}
+			SVGMaskVisualData {}
 			EffectsVisualData {}
 		}
 	}
@@ -281,6 +423,14 @@ pub fn (tree AccumulatedVisualContextTree) dump(index int) string {
 		ClipPathVisualData {
 			data := tree.nodes[index].data
 			'clip_path=[${data.bounding_rect.x},${data.bounding_rect.y} ${data.bounding_rect.width}x${data.bounding_rect.height}]'
+		}
+		SVGClipVisualData {
+			data := tree.nodes[index].data
+			'svg_clip=[${data.bounding_rect.x},${data.bounding_rect.y} ${data.bounding_rect.width}x${data.bounding_rect.height}] [components: ${data.components.len}]'
+		}
+		SVGMaskVisualData {
+			data := tree.nodes[index].data
+			'svg_mask=[${data.bounding_rect.x},${data.bounding_rect.y} ${data.bounding_rect.width}x${data.bounding_rect.height}] [operations: ${data.operations.len}, type: ${data.mask_type}]'
 		}
 		EffectsVisualData {
 			'effects=[opacity=${tree.nodes[index].data.opacity}]'

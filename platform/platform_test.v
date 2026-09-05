@@ -3,7 +3,7 @@ module platform
 fn successful_decode(bytes []u8) !DecodedImage {
 	return DecodedImage{
 		frame_count: 1
-		frames:      [Frame{ bitmap: bytes, duration: 10 }]
+		frames: [Frame{ bitmap: bytes, duration: 10 }]
 	}
 }
 
@@ -25,6 +25,27 @@ fn test_font_plugin_fallbacks_and_layout_mode() {
 	layout := FontPlugin.new(true, [], false)
 	assert layout.generic_font_name(.cursive) == 'SerenitySans'
 	assert layout.symbol_font_names() == ['Noto Emoji']
+}
+
+fn test_font_exposes_scaled_true_type_glyph_contours_for_svg_paths() {
+	font := &Font{
+		family: 'sans-serif'
+		point_size: 16
+	}
+	_, glyph_index := font.glyph_advance_and_index(u32(`O`))
+	outline := font.glyph_outline(glyph_index) or { panic('missing O outline') }
+	assert outline.contours.len > 0
+	assert outline.contours.all(it.len > 2)
+	mut has_on_curve := false
+	mut has_off_curve := false
+	for contour in outline.contours {
+		for point in contour {
+			has_on_curve = has_on_curve || point.on_curve
+			has_off_curve = has_off_curve || !point.on_curve
+		}
+	}
+	assert has_on_curve
+	assert has_off_curve
 }
 
 fn test_timer_state_and_single_shot_fire() {
@@ -50,8 +71,7 @@ fn test_image_codec_and_plugin_registries() {
 	codecs.install(codec)
 	assert codecs.is_initialized()
 	assert codecs.get().decode_image([u8(1), 2])!.frames[0].bitmap == [u8(1), 2]
-	normalized := codecs.get().decode_image_with_callbacks([u8(3)], normalize_decode,
-		ignore_decode_error)!
+	normalized := codecs.get().decode_image_with_callbacks([u8(3)], normalize_decode, ignore_decode_error)!
 	assert normalized.is_animated
 	assert normalized.loop_count == 2
 	mut fonts := FontPluginRegistry{}

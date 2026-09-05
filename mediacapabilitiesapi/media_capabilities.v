@@ -227,8 +227,8 @@ pub:
 	// keySystemAccess is marked FIXME in the upstream IDL and is not exposed.
 }
 
-// Current Ladybird's to_object() intentionally omits configuration (upstream
-// FIXME) and exposes only these three properties.
+// Current Ladybird's to_object() exposes only these three properties; its
+// upstream FIXME does not yet add configuration to the JS object.
 pub struct MediaCapabilitiesDecodingInfoObject {
 pub:
 	supported       bool

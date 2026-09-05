@@ -2,9 +2,8 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of the self-contained IPv4 parser of LibURL/Parser.cpp — the WHATWG URL "IPv4 number
-// parser" and "IPv4 parser". These are pure string->number algorithms; the surrounding host parser and
-// URL record are not translated. Validation-error reporting (a debug side effect) is dropped, but the
+// Translation of the WHATWG URL "IPv4 number parser" and "IPv4 parser" from
+// LibURL/Parser.cpp. Validation-error reporting (a debug side effect) is dropped, but the
 // per-number validation_error flag is kept on ParsedIPv4Number. The address is returned as a u32.
 // https://url.spec.whatwg.org/#concept-ipv4-parser
 module url

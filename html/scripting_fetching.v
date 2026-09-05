@@ -40,12 +40,12 @@ pub mut:
 	fetch_priority      fetch.Priority = .auto
 }
 
-pub type OnFetchScriptComplete = fn(?&Script)
+pub type OnFetchScriptComplete = fn (?&Script)
 
 // The C++ implementation delivers a response through a consume-body callback.
 // V hosts return that response synchronously; the HTML algorithm immediately
 // performs the same consume-body steps before returning to the caller.
-pub type PerformTheFetchHook = fn(&fetch.Request, TopLevelModule) !&fetch.Response
+pub type PerformTheFetchHook = fn (&fetch.Request, TopLevelModule) !&fetch.Response
 
 struct ModuleScriptFetchResult {
 	module_script ?&ModuleScript
@@ -63,7 +63,7 @@ pub:
 	error              ?string
 }
 
-pub type OffThreadParseComplete = fn(ParsedProgram, string)
+pub type OffThreadParseComplete = fn (ParsedProgram, string)
 
 // V's runtime-neutral parser is a host hook. Invoke it outside the script
 // execution context, then deliver completion and drain queued microtasks just
@@ -153,7 +153,7 @@ fn script_response_body(response &fetch.Response) ?[]u8 {
 	if !fetch.is_ok_status(unsafe_response.status) {
 		return none
 	}
-	return unsafe_response.body
+	return unsafe_response.fetch_response_body_bytes()
 }
 
 fn response_for_script_request(request &fetch.Request, is_top_level TopLevelModule, settings_object &EnvironmentSettingsObject, perform_fetch ?PerformTheFetchHook) !&fetch.Response {
@@ -167,7 +167,7 @@ fn response_for_script_request(request &fetch.Request, is_top_level TopLevelModu
 		data := fetch.process_data_url(request.current_url())!
 		mut response := fetch.Response.create()
 		response.url_list = request.url_list.clone()
-		response.body = data.body
+		response.set_body_bytes(data.body)
 		response.header_list.append(http.Header{
 			name: 'Content-Type'
 			value: data.mime_type.serialized()
@@ -203,8 +203,7 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 		.same_origin
 	}
 	request.use_url_credentials = true
-	request.client = voidptr(settings_object)
-	request.client_present = true
+	request.set_client(settings_object)
 	request.initiator_type = .script
 	set_up_classic_script_request(mut request, options)
 	response := response_for_script_request(request, .yes, settings_object, none) or {
@@ -235,8 +234,7 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 pub fn fetch_classic_worker_script(url dom.URL, fetch_client &EnvironmentSettingsObject, destination fetch.Destination, settings_object &EnvironmentSettingsObject, perform_fetch ?PerformTheFetchHook, on_complete OnFetchScriptComplete) ! {
 	mut request := fetch.Request.create()
 	request.set_url(url)
-	request.client = voidptr(fetch_client)
-	request.client_present = true
+	request.set_client(fetch_client)
 	request.destination = destination
 	request.initiator_type = .other
 	// Match the current upstream compatibility workaround.
@@ -272,8 +270,7 @@ pub fn fetch_classic_worker_script(url dom.URL, fetch_client &EnvironmentSetting
 pub fn fetch_a_classic_worker_imported_script(url dom.URL, settings_object &EnvironmentSettingsObject, perform_fetch ?PerformTheFetchHook) !&ClassicScript {
 	mut request := fetch.Request.create()
 	request.set_url(url)
-	request.client = voidptr(settings_object)
-	request.client_present = true
+	request.set_client(settings_object)
 	request.destination = .script
 	request.initiator_type = .other
 	request.parser_metadata = .not_parser_inserted
@@ -329,8 +326,7 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 	request.set_url(url)
 	request.mode = .cors
 	request.referrer = referrer
-	request.client = voidptr(fetch_client)
-	request.client_present = true
+	request.set_client(fetch_client)
 	request.destination = fetch_destination_from_module_type(destination, module_type)
 	if destination in [.worker, .shared_worker, .service_worker] && is_top_level == .yes {
 		request.mode = .same_origin

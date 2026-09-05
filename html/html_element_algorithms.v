@@ -247,29 +247,39 @@ fn html_element_rendered_text_collection_steps(node &dom.Node) []RenderedTextIte
 	for child in node.children_as_vector() {
 		items << html_element_rendered_text_collection_steps(child)
 	}
-	if node.layout_node() == none {
+	layout_node := node.layout_node() or {
+		return items
+	}
+	if layout_node.visibility_ != .visible {
+		return items
+	}
+	if layout_node.content_visibility_ == .hidden {
 		return items
 	}
 	if node.is_text() {
-		return [RenderedTextItem(unsafe { &dom.Text(node) }.data())]
+		mut text_items := []RenderedTextItem{}
+		for chunk in layout_node.rendered_text_chunks_ {
+			text_items << RenderedTextItem(chunk)
+		}
+		return text_items
 	}
 	element := node.as_element() or { return items }
 	if element.local_name() == 'br' {
 		items << RenderedTextItem('\n')
 		return items
 	}
-	if element.local_name() in ['td', 'th'] && node.next_sibling() != none {
+	display := layout_node.display()
+	if display.is_table_cell() && node.next_sibling() != none {
 		items << RenderedTextItem('\t')
 	}
-	if element.local_name() == 'tr' && node.next_sibling() != none {
+	if display.is_table_row() && node.next_sibling() != none {
 		items << RenderedTextItem('\n')
 	}
 	if element.local_name() == 'p' {
 		items.prepend(RenderedTextItem(RequiredLineBreakCount{ count: 2 }))
 		items << RenderedTextItem(RequiredLineBreakCount{ count: 2 })
-	} else if element.local_name() in ['address', 'article', 'aside', 'blockquote', 'div', 'dl',
-		'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-		'header', 'hr', 'main', 'nav', 'ol', 'pre', 'section', 'table', 'ul'] {
+	}
+	if display.is_block_outside() || display.is_table_caption() {
 		items.prepend(RenderedTextItem(RequiredLineBreakCount{ count: 1 }))
 		items << RenderedTextItem(RequiredLineBreakCount{ count: 1 })
 	}
@@ -286,9 +296,6 @@ pub fn html_element_get_the_text_steps(element &dom.HTMLElement) string {
 	document.update_layout(.html_element_get_the_text_steps)
 	if node.layout_node() == none {
 		return node.descendant_text_content()
-	}
-	if rendered_text := document.rendered_text(dom_element_from_html_element(element)) {
-		return rendered_text
 	}
 	mut results := []RenderedTextItem{}
 	for child in node.children_as_vector() {

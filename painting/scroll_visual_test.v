@@ -22,12 +22,12 @@ fn test_scroll_state_hierarchy_snapshot_and_clear() {
 fn test_scrollbar_thumb_geometry_and_pointer_mapping() {
 	metrics := new_chrome_metrics(1) or { panic(err) }
 	data := compute_scrollbar_data(ScrollbarGeometryInput{
-		direction:           .vertical
-		padding_rect:        Rect{0, 0, 100, 200}
+		direction: .vertical
+		padding_rect: Rect{0, 0, 100, 200}
 		scrollable_overflow: Rect{0, 0, 100, 800}
-		scroll_offset:       Point{0, 300}
-		metrics:             metrics
-		with_gutter:         true
+		scroll_offset: Point{0, 300}
+		metrics: metrics
+		with_gutter: true
 	}) or { panic('expected scrollbar') }
 	assert data.gutter_rect == Rect{88, 0, 12, 200}
 	assert data.thumb_rect.width == 8
@@ -85,12 +85,20 @@ fn test_visual_context_tree_ancestry_transform_clip_and_empty_propagation() {
 	child := tree.append(EffectsVisualData{}, empty)
 	assert tree.nodes[empty].has_empty_effective_clip
 	assert tree.nodes[child].has_empty_effective_clip
-	double_wound_square := [Point{0, 0}, Point{10, 0}, Point{10, 10},
-		Point{0, 10}, Point{0, 0}, Point{10, 0}, Point{10, 10},
-		Point{0, 10}]
+	image_mask := tree.append(SVGMaskVisualData{
+		bounding_rect: IntRect{0, 0, 100, 50}
+		operations: [SVGMaskPaintOperation{
+			kind: .image
+			image_url: 'https://example.test/mask.png'
+			image_rect: Rect{0, 0, 100, 50}
+		}]
+	}, 0)
+	assert !tree.nodes[image_mask].has_empty_effective_clip
+	double_wound_square := [Point{0, 0}, Point{10, 0}, Point{10, 10}, Point{0, 10}, Point{0, 0},
+		Point{10, 0}, Point{10, 10}, Point{0, 10}]
 	nonzero_clip := ClipPathVisualData{
 		bounding_rect: IntRect{0, 0, 10, 10}
-		polygon:       double_wound_square
+		polygon: double_wound_square
 	}
 	even_odd_clip := ClipPathVisualData{
 		...nonzero_clip
@@ -98,6 +106,16 @@ fn test_visual_context_tree_ancestry_transform_clip_and_empty_propagation() {
 	}
 	assert nonzero_clip.contains(Point{5, 5})
 	assert !even_odd_clip.contains(Point{5, 5})
+	hole_clip := ClipPathVisualData{
+		bounding_rect: IntRect{0, 0, 10, 10}
+		polygons: [
+			[Point{0, 0}, Point{10, 0}, Point{10, 10}, Point{0, 10}],
+			[Point{2, 2}, Point{8, 2}, Point{8, 8}, Point{2, 8}],
+		]
+		fill_rule: .even_odd
+	}
+	assert hole_clip.contains(Point{1, 1})
+	assert !hole_clip.contains(Point{5, 5})
 	assert !EffectsVisualData{}.needs_layer()
 	assert EffectsVisualData{
 		opacity: 0.5

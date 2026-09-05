@@ -6,19 +6,14 @@
 module credentialmanagement
 
 import dom
-import net.urllib
+import url as liburl
 
 fn parse_federated_provider_origin(provider string) !dom.Origin {
-	parsed := urllib.parse(provider) or {
-		return error("SyntaxError: 'provider' is not a valid URL.")
-	}
-	// LibURL's basic parser is invoked without a base URL upstream, so a
-	// relative reference is not a provider URL.
-	if !parsed.is_abs() || parsed.scheme == '' {
+	parsed := liburl.parse(provider) or {
 		return error("SyntaxError: 'provider' is not a valid URL.")
 	}
 	return dom.URL{
-		value: parsed.str()
+		value: parsed.serialize(false)
 	}.origin()
 }
 

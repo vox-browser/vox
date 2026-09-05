@@ -33,7 +33,9 @@ fn test_typed_layout_is_the_renderer_source() {
 	assert body.width == 200
 	paragraph := body.children.filter(it.tag_name == 'p')[0]
 	assert paragraph.lines.len == 1
-	assert paragraph.lines[0].fragments.map(it.text) == ['four', 'four', 'four']
+	// The renderer transport preserves LayoutState::commit()'s PaintableFragment
+	// boundary instead of expanding the run into compatibility word objects.
+	assert paragraph.lines[0].fragments.map(it.text) == ['four four four']
 	assert root.paint_commands().any(it.kind == 'draw_text' && it.text == 'four four four')
 }
 
@@ -54,11 +56,12 @@ fn test_default_page_geometry_and_text_spacing_come_from_typed_layout() {
 	assert body.x == 132
 	heading := body.children.filter(it.tag_name == 'h1')[0]
 	assert heading.lines.len == 1
-	assert heading.lines[0].fragments.map(it.text) == ['Ladybird,', 'rendered', 'by', 'V']
+	assert heading.lines[0].fragments.map(it.text) == ['Ladybird, rendered by V']
 	paragraph := body.children.filter(it.tag_name == 'p')[0]
 	assert paragraph.lines.len == 1
-	assert paragraph.lines[0].fragments.map(it.text) == ['This', 'native', 'window', 'was',
-		'compiled', 'from', 'the', 'translated', 'LibWeb', 'V', 'modules.']
+	assert paragraph.lines[0].fragments.map(it.text) == [
+		'This native window was compiled from the translated LibWeb V modules.',
+	]
 	commands := root.paint_commands()
 	assert commands.any(it.kind == 'draw_text' && it.text == 'Ladybird, rendered by V')
 	assert commands.any(it.kind == 'draw_text'
@@ -77,7 +80,7 @@ fn test_svg_geometry_reaches_the_renderer_with_viewbox_transform_and_paint() {
 	paths := commands.filter(it.kind == 'draw_svg_path')
 	assert paths.len == 1
 	path := paths[0]
-	assert path.path.starts_with('M20 10')
+	assert path.path.starts_with('M 20 10')
 	assert path.path_transform[0] == 2
 	assert path.path_transform[1] == 0
 	assert path.path_transform[2] == 0
@@ -89,7 +92,7 @@ fn test_svg_geometry_reaches_the_renderer_with_viewbox_transform_and_paint() {
 	assert path.height >= 30
 
 	output := root.render_svg(320, 200)
-	assert output.contains('<path d="M20 10')
+	assert output.contains('<path d="M 20 10')
 	assert output.contains('transform="matrix(2 0 0 2')
 	assert output.contains('fill="rgb(255 0 0)"')
 	assert output.contains('stroke="rgb(0 0 255)"')

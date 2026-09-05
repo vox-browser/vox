@@ -66,8 +66,7 @@ fn (mut m BlockMarginState) unregister_block_container_y_position_update() {
 // place_block_level_element_in_normal_flow_vertically(box, base_y + collapsed_margin)).
 fn (m &BlockMarginState) update_block_waiting_for_final_y_position() {
 	mut box := m.waiting_box or { return }
-	place_block_level_element_in_normal_flow_vertically(mut box, m.waiting_box_base_y +
-		m.current_collapsed_margin())
+	place_block_level_element_in_normal_flow_vertically(mut box, m.waiting_box_base_y + m.current_collapsed_margin())
 }
 
 // BlockMarginState::reset.
@@ -97,7 +96,10 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 		return true
 	}
 	computed := box.computed_values()
-	if computed.overflow_x() !in [.visible, .clip] || computed.overflow_y() !in [.visible, .clip] {
+	if computed.overflow_x() !in [.visible, .clip] || computed.overflow_y() !in [
+		.visible,
+		.clip,
+	] {
 		return true
 	}
 	if display.is_flow_root_inside() || node.has_layout_containment()
@@ -110,13 +112,11 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 			return true
 		}
 	}
-	if !computed.size_value(.column_width).is_auto() {
+	if !computed.column_width().is_auto() {
 		return true
 	}
-	if column_count := computed.property(.column_count, .yes) {
-		if column_count.css_text.trim_space().to_lower() != 'auto' {
-			return true
-		}
+	if _ := computed.column_count() {
+		return true
 	}
 	if node.is_fieldset_box() {
 		return true
@@ -124,14 +124,8 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 	return false
 }
 
-fn computed_multicol_column_count(computed &css.ComputedProperties) ?int {
-	value := computed.property(.column_count, .yes) or { return none }
-	text := value.css_text.trim_space().to_lower()
-	if text == 'auto' {
-		return none
-	}
-	count := text.int()
-	return if count > 0 { count } else { none }
+fn computed_multicol_column_count(computed &css.ComputedValues) ?int {
+	return computed.column_count()
 }
 
 // https://quirks.spec.whatwg.org/#the-percentage-height-calculation-quirk
@@ -190,15 +184,14 @@ fn multicol_column_gap(node &Node, available_width CSSPixels) CSSPixels {
 }
 
 fn multicol_specified_column_width(node &Node, available_width CSSPixels) CSSPixels {
-	width := resolve_layout_size(node, node.computed_values().size_value(.column_width),
-		available_width) or { CSSPixels.new(1) }
+	width := resolve_layout_size(node, node.computed_values().column_width(), available_width) or { CSSPixels.new(1) }
 	return css_pixels_max(CSSPixels.new(1), width)
 }
 
 // https://drafts.csswg.org/css-multicol/#pseudo-algorithm
 fn determine_used_multicol_column_count(node &Node, available_width CSSPixels) ?int {
 	computed := node.computed_values()
-	column_width_is_auto := computed.size_value(.column_width).is_auto()
+	column_width_is_auto := computed.column_width().is_auto()
 	column_count := computed_multicol_column_count(computed)
 	if column_width_is_auto && column_count == none {
 		return none
@@ -289,8 +282,7 @@ fn (mut bfc BlockFormattingContext) compute_auto_height_for_block_level_element(
 			bfc.margin_state.set_box_last_in_flow_child_margin_bottom_collapsed(true)
 			margin_bottom = CSSPixels.new(0)
 		}
-		return css_pixels_max(CSSPixels.new(0),
-			child_state.offset.y().plus(child_state.content_height()).plus(child_state.border_box_bottom()).plus(margin_bottom))
+		return css_pixels_max(CSSPixels.new(0), child_state.offset.y().plus(child_state.content_height()).plus(child_state.border_box_bottom()).plus(margin_bottom))
 	}
 	if marker_line_height.raw_value() > 0 {
 		return marker_line_height
@@ -347,8 +339,7 @@ fn place_block_level_element_in_normal_flow_horizontally(mut box_state UsedValue
 		if text_align == .libweb_center {
 			x = css_px(available_width / 2.0 - box_state.content_width().to_double() / 2.0)
 		} else if text_align == .libweb_right {
-			x = css_px(available_width - box_state.content_width().to_double() -
-				box_state.margin_box_left().to_double())
+			x = css_px(available_width - box_state.content_width().to_double() - box_state.margin_box_left().to_double())
 		} else {
 			x = box_state.margin_box_left()
 		}
@@ -420,8 +411,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 			continue
 		}
 		child := child_node.as_node_with_style() or { continue }
-		child_bottom := bfc.layout_block_level_box(mut state, child, block_container,
-			content_width, cb_height_for_children)
+		child_bottom := bfc.layout_block_level_box(mut state, child, block_container, content_width, cb_height_for_children)
 		if child_bottom > bottom_of_lowest_margin_box {
 			bottom_of_lowest_margin_box = child_bottom
 		}
@@ -444,8 +434,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	// Fold this box's top margin into the collapsible state, then reposition any waiting block container.
 	bfc.margin_state.add_margin(box_state.margin_top.to_double())
 	container_origin := state.get(block_container).cumulative_offset()
-	bfc.apply_clearance(computed.clear(), block_container.computed_values().direction(),
-		container_origin.y())
+	bfc.apply_clearance(computed.clear(), block_container.computed_values().direction(), container_origin.y())
 	bfc.update_block_waiting_for_final_y_position()
 
 	y := bfc.y_offset_of_current_block_container
@@ -474,24 +463,35 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		// Block-level replaced boxes use their independently computed width as
 		// the input to the CSS 2.1 block width equation so auto margins are
 		// resolved exactly like non-replaced blocks.
-		resolve_auto_margins(computed, mut box_state, containing_block_width,
-			replaced_size.width().to_double(), block_container.computed_values().direction())
+		resolve_auto_margins(computed, mut box_state, containing_block_width, replaced_size.width().to_double(), block_container.computed_values().direction())
 	} else if box_as_node.is_table_wrapper() {
-		wrapper_width := compute_table_wrapper_content_width(mut state, box_as_node, mut box_state,
-			css_px(containing_block_width))
+		wrapper_width := compute_table_wrapper_content_width(mut state, box_as_node, mut box_state, css_px(containing_block_width))
 		box_state.set_content_width(wrapper_width)
 		if box_state.margin_box_width().to_double() <= containing_block_width {
-			resolve_auto_margins(computed, mut box_state, containing_block_width,
-				wrapper_width.to_double(), block_container.computed_values().direction())
+			resolve_auto_margins(computed, mut box_state, containing_block_width, wrapper_width.to_double(), block_container.computed_values().direction())
 		}
 	} else {
-		compute_block_used_width_for_node(mut state, box, mut box_state,
-			AvailableSize.make_definite(css_px(containing_block_width)))
+		compute_block_used_width_for_node(mut state, box, mut box_state, AvailableSize.make_definite(css_px(containing_block_width)))
+		// The principal table is sized by its anonymous wrapper's intrinsic
+		// table-width pass. In particular, percentages on the table are relative
+		// to the wrapper's containing block, not to the wrapper itself. Keep the
+		// generic width equation's used margins, but expose the already-computed
+		// table border-box width before horizontal placement, matching the order
+		// in which LibWeb's table width is observed by the parent BFC.
+		if box_as_node.display().is_table_inside() {
+			if parent := box_as_node.parent() {
+				if parent.is_table_wrapper() {
+					if wrapper_values := box_state.containing_block_used_values() {
+						table_width := wrapper_values.content_width().minus(box_state.border_box_left()).minus(box_state.border_box_right())
+						box_state.set_content_width(table_width)
+					}
+				}
+			}
+		}
 	}
 	box_state.set_containing_block_used_values(state.get_mutable(block_container))
 	if box_should_avoid_floats(box_as_node) && bfc.floating_boxes.len > 0 {
-		bfc.place_box_avoiding_float_intrusions(mut box_state, block_container,
-			css_px(containing_block_width), computed)
+		bfc.place_box_avoiding_float_intrusions(mut box_state, block_container, css_px(containing_block_width), computed)
 	} else {
 		place_block_level_element_in_normal_flow_horizontally(mut box_state, containing_block_width)
 	}
@@ -502,25 +502,21 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	content_width := box_state.content_width().to_double()
 	mut height_resolution_basis := containing_block_height
 	if percentage_height_quirk_applies(box_as_node, computed) {
-		height_resolution_basis = containing_block_height_to_resolve_percentage_in_quirks_mode(state,
-			box_as_node).to_double()
+		height_resolution_basis = containing_block_height_to_resolve_percentage_in_quirks_mode(state, box_as_node).to_double()
 	}
 	mut html_quirk_min_height := ?f64(none)
 	if box_as_node.document().in_quirks_mode() && box_as_node.is_root_element()
 		&& property_is_auto(computed, .height) {
 		if viewport_height := containing_block_height {
-			minimum := viewport_height - box_state.margin_top.to_double() -
-				box_state.margin_bottom.to_double()
+			minimum := viewport_height - box_state.margin_top.to_double() - box_state.margin_bottom.to_double()
 			html_quirk_min_height = if minimum > 0 { minimum } else { 0.0 }
 			box_state.set_content_height(css_px(html_quirk_min_height or { 0.0 }))
 			box_state.set_has_definite_height(true)
 		}
 	}
-	mut definite_content_height := resolve_content_height_for_node(mut state, box, box_state,
-		height_resolution_basis)
+	mut definite_content_height := resolve_content_height_for_node(mut state, box, box_state, height_resolution_basis)
 	if resolved_height := definite_content_height {
-		definite_content_height = clamp_content_height_for_node(mut state, box, box_state,
-			css_px(resolved_height), height_resolution_basis).to_double()
+		definite_content_height = clamp_content_height_for_node(mut state, box, box_state, css_px(resolved_height), height_resolution_basis).to_double()
 	}
 	if html_height := html_quirk_min_height {
 		// The html height is definite for descendant percentage resolution, but
@@ -541,8 +537,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	// resolution; set_content_height() deliberately does not change that flag.
 	if definite_content_height == none && box_as_node.display().is_flex_inside() {
 		if flex_box := box_as_node.as_box() {
-			box_state.set_content_height(calculate_max_content_height(mut state, flex_box,
-				css_px(content_width)))
+			box_state.set_content_height(calculate_max_content_height(mut state, flex_box, css_px(content_width)))
 		}
 	}
 	// Anonymous block wrappers pass through the containing block's available
@@ -579,18 +574,13 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 				ancestor = unsafe { &Node(ancestor_node) }.containing_block()
 			}
 			mut measuring_values := measuring_state.get_mutable(box)
-			measured := layout_inside_independent_formatting_context_with_mode(mut measuring_state,
-				box_as_node, mut measuring_values, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)),
-				AvailableSize.make_indefinite()))
-			minimum := clamp_content_height_for_node(mut measuring_state, box, measuring_values,
-				CSSPixels.new(0), containing_block_height)
+			measured := layout_inside_independent_formatting_context_with_mode(mut measuring_state, box_as_node, mut measuring_values, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), AvailableSize.make_indefinite()))
+			minimum := clamp_content_height_for_node(mut measuring_state, box, measuring_values, CSSPixels.new(0), containing_block_height)
 			if measured.automatic_content_height.raw_value() < minimum.raw_value() {
 				available_height = AvailableSize.make_definite(minimum)
 			}
 		}
-		inside_result := layout_inside_independent_formatting_context_with_mode(mut state,
-			box_as_node, mut box_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)),
-			available_height))
+		inside_result := layout_inside_independent_formatting_context_with_mode(mut state, box_as_node, mut box_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))
 		content_height_from_children = if box_as_node.is_replaced_box() {
 			box_state.content_height().to_double()
 		} else {
@@ -603,9 +593,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			} else {
 				AvailableSize.make_indefinite()
 			}
-			inline_result := bfc.run_inline_formatting_context_with_floats(mut state,
-				inline_container, mut box_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)),
-				available_height))
+			inline_result := bfc.run_inline_formatting_context_with_floats(mut state, inline_container, mut box_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))
 			_ = inline_result
 			content_height_from_children = if box_state.line_boxes.len > 0 {
 				box_state.line_boxes.last().bottom().to_double()
@@ -626,8 +614,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			bfc.margin_state.register_block_container_y_position_update(box_state, y)
 			registered = true
 		}
-		bfc.layout_block_level_children(mut state, box, content_width,
-			children_containing_block_height)
+		bfc.layout_block_level_children(mut state, box, content_width, children_containing_block_height)
 		// Upstream only invokes the auto-height algorithm (which also records
 		// whether the last child's bottom margin collapsed with this box) when
 		// the used height is actually auto. A definite height must stop that
@@ -660,8 +647,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		&& property_is_auto(computed, .height) && !box_as_node.is_absolutely_positioned()
 		&& !box_as_node.is_floating() && !box_as_node.is_inline() {
 		if containing_values := box_state.containing_block_used_values() {
-			fill_height := containing_values.content_height().to_double() -
-				box_state.margin_top.to_double() - box_state.margin_bottom.to_double()
+			fill_height := containing_values.content_height().to_double() - box_state.margin_top.to_double() - box_state.margin_bottom.to_double()
 			if fill_height > height {
 				height = fill_height
 			}
@@ -676,8 +662,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			}
 		}
 	}
-	height = clamp_content_height_for_node(mut state, box, box_state, css_px(height),
-		height_resolution_basis).to_double()
+	height = clamp_content_height_for_node(mut state, box, box_state, css_px(height), height_resolution_basis).to_double()
 	box_state.set_content_height(css_px(height))
 	if definite_content_height != none {
 		box_state.set_has_definite_height(true)
@@ -690,16 +675,14 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		if !bfc.margin_state.box_last_in_flow_child_margin_bottom_collapsed() {
 			bfc.margin_state.reset()
 		}
-		bfc.y_offset_of_current_block_container = box_state.offset.y().to_double() +
-			box_state.content_height().to_double() + box_state.border_box_bottom().to_double()
+		bfc.y_offset_of_current_block_container = box_state.offset.y().to_double() + box_state.content_height().to_double() + box_state.border_box_bottom().to_double()
 	}
 	bfc.margin_state.set_box_last_in_flow_child_margin_bottom_collapsed(false)
 
 	bfc.margin_state.add_margin(box_state.margin_bottom.to_double())
 	bfc.update_block_waiting_for_final_y_position()
 
-	flow_bottom := box_state.offset.y().to_double() + box_state.content_height().to_double() +
-		box_state.margin_box_bottom().to_double()
+	flow_bottom := box_state.offset.y().to_double() + box_state.content_height().to_double() + box_state.margin_box_bottom().to_double()
 	return flow_bottom
 }
 
@@ -716,9 +699,9 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	marker_text := marker.text()
 	if text := marker_text {
 		font := platform.Font{
-			family:     'sans-serif'
+			family: 'sans-serif'
 			point_size: f32(marker.computed_values().resolved_font_size_px())
-			weight:     int(marker.computed_values().font_weight())
+			weight: int(marker.computed_values().font_weight())
 		}
 		run := platform.shape_text(0, 0, text, font, .context_dependent)
 		marker_state.set_content_width(CSSPixels.nearest_value_for(f64(run.width())))
@@ -738,14 +721,11 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 		// marker's own width.
 		list_item_state.set_content_width(list_item_state.content_width().minus(marker_state.content_width()))
 	}
-	offset_y := css.css_pixels_round(css_pixels_max(CSSPixels.new(0),
-		marker.computed_values().line_height().minus(marker_state.content_height()).divided_by_float(2)))
+	offset_y := css.css_pixels_round(css_pixels_max(CSSPixels.new(0), marker.computed_values().line_height().minus(marker_state.content_height()).divided_by_float(2)))
 	// Reserve the same left-side float intrusion that the following inline
 	// formatting pass will use. This keeps an outside marker immediately before
 	// the intruded list text instead of leaving it behind under the float.
-	left_intrusion, _, _ := bfc.float_boundaries_at(offset_y, marker_state.content_height(),
-		list_item_state.content_width(), list_item.computed_values().direction(),
-		list_item_state.cumulative_offset())
+	left_intrusion, _, _ := bfc.float_boundaries_at(offset_y, marker_state.content_height(), list_item_state.content_width(), list_item.computed_values().direction(), list_item_state.cumulative_offset())
 	offset_x :=
 		css.css_pixels_round(left_intrusion.minus(marker_distance).minus(marker_state.content_width()))
 	marker_state.set_content_offset(css.CSSPixelPoint.new(offset_x, offset_y))
@@ -834,7 +814,7 @@ fn clear_applies_to_float(clear css.Clear, side css.Float, direction css.Directi
 	return (left && (clear == .left || (clear == .inline_start && direction == .ltr)
 		|| (clear == .inline_end && direction == .rtl)))
 		|| (!left && (clear == .right || (clear == .inline_end && direction == .ltr)
-		|| (clear == .inline_start && direction == .rtl)))
+			|| (clear == .inline_start && direction == .rtl)))
 }
 
 fn (bfc &BlockFormattingContext) clearance_y(clear css.Clear, direction css.Direction, container_root_y CSSPixels, current_y CSSPixels) CSSPixels {
@@ -904,18 +884,14 @@ fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_sta
 	mut margin_box_y := box_state.offset.y().minus(box_state.margin_box_top())
 	mut first_iteration := true
 	for {
-		left, right, next_y := bfc.float_boundaries_at(margin_box_y, CSSPixels.new(1),
-			container_width, direction, container_root_offset)
+		left, right, next_y := bfc.float_boundaries_at(margin_box_y, CSSPixels.new(1), container_width, direction, container_root_offset)
 		remaining := right.minus(left)
 		if first_iteration && property_is_auto(computed, .width) {
 			compute_block_used_width(computed, mut box_state, remaining.to_double())
 		} else if first_iteration {
 			node := box_state.node()
-			if resolved_width := resolve_layout_content_size(unsafe { &Node(node) },
-				computed.size_value(.width), container_width, box_state, true)
-			{
-				compute_block_used_width_with_override(computed, mut box_state,
-					remaining.to_double(), resolved_width, direction)
+			if resolved_width := resolve_layout_content_size(unsafe { &Node(node) }, computed.size_value(.width), container_width, box_state, true) {
+				compute_block_used_width_with_override(computed, mut box_state, remaining.to_double(), resolved_width, direction)
 			}
 		}
 		first_iteration = false
@@ -923,8 +899,7 @@ fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_sta
 			|| next_y.might_be_saturated() {
 			mut x := left
 			if !property_is_auto(computed, .margin_left) {
-				x = css_pixels_max(x.minus(css_pixels_max(box_state.margin_left, CSSPixels.new(0))),
-					CSSPixels.new(0))
+				x = css_pixels_max(x.minus(css_pixels_max(box_state.margin_left, CSSPixels.new(0))), CSSPixels.new(0))
 			}
 			box_state.set_content_x(x.plus(box_state.margin_box_left()))
 			box_state.set_content_y(margin_box_y.plus(box_state.margin_box_top()))
@@ -939,14 +914,11 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 	mut initial_state := state.get_mutable(styled)
 	mut container_state := state.get_mutable(block_container)
 	initial_state.set_containing_block_used_values(container_state)
-	resolve_box_model_edges(styled.computed_values(), mut initial_state,
-		container_width.to_double())
+	resolve_box_model_edges(styled.computed_values(), mut initial_state, container_width.to_double())
 	mut forced_width := if box.is_table_wrapper() {
-		?CSSPixels(compute_table_wrapper_content_width(mut state, box, mut initial_state,
-			container_width))
+		?CSSPixels(compute_table_wrapper_content_width(mut state, box, mut initial_state, container_width))
 	} else {
-		resolve_layout_content_size(box, styled.computed_values().size_value(.width),
-			container_width, initial_state, true)
+		resolve_layout_content_size(box, styled.computed_values().size_value(.width), container_width, initial_state, true)
 	}
 	// Replaced floats are sized by the replaced-element algorithm. Their
 	// intrinsic width must not be converted into a forced shrink-to-fit width,
@@ -954,12 +926,10 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 	// aspect ratio and change the inline size as well.
 	if forced_width == none && !box.is_replaced_box() {
 		if box_as_box := box.as_box() {
-			forced_width = calculate_fit_content_width(mut state, box_as_box,
-				AvailableSize.make_definite(container_width))
+			forced_width = calculate_fit_content_width(mut state, box_as_box, AvailableSize.make_definite(container_width))
 		}
 	}
-	mut box_state := layout_independent_child(mut state, box, mut container_state, container_width,
-		container_height, forced_width, none)
+	mut box_state := layout_independent_child(mut state, box, mut container_state, container_width, container_height, forced_width, none)
 	container_root_offset := container_state.cumulative_offset()
 	direction := block_container.computed_values().direction()
 	side := styled.computed_values().float_()
@@ -992,8 +962,7 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 		for floating in current_boxes {
 			lowest_margin_edge = css_pixels_max(lowest_margin_edge, floating.bottom)
 		}
-		shift := css_pixels_max(CSSPixels.new(0),
-			lowest_margin_edge.minus(container_root_offset.y().plus(y)))
+		shift := css_pixels_max(CSSPixels.new(0), lowest_margin_edge.minus(container_root_offset.y().plus(y)))
 		side_y_offset = side_y_offset.plus(shift)
 		y = y.plus(shift)
 		current_boxes.clear()
@@ -1006,8 +975,7 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 		bfc.right_floats.current_boxes = current_boxes
 	}
 	for {
-		left, right, next_y := bfc.float_boundaries_at(y, box_state.margin_box_height(),
-			container_width, direction, container_root_offset)
+		left, right, next_y := bfc.float_boundaries_at(y, box_state.margin_box_height(), container_width, direction, container_root_offset)
 		// With no intersecting float boundary, an over-wide float still goes at
 		// the appropriate containing-block edge and overflows it. There is no
 		// lower Y at which waiting could make it fit.
@@ -1021,12 +989,12 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 			box_state.set_content_x(margin_left.plus(box_state.margin_box_left()))
 			box_state.set_content_y(y.plus(box_state.margin_box_top()))
 			record := FloatingBoxRecord{
-				left:   container_root_offset.x().plus(margin_left)
-				top:    container_root_offset.y().plus(y)
-				right:  container_root_offset.x().plus(margin_left).plus(box_state.margin_box_width())
+				left: container_root_offset.x().plus(margin_left)
+				top: container_root_offset.y().plus(y)
+				right: container_root_offset.x().plus(margin_left).plus(box_state.margin_box_width())
 				bottom: container_root_offset.y().plus(y).plus(box_state.margin_box_height())
-				side:   side
-				box:    box
+				side: side
+				box: box
 			}
 			bfc.floating_boxes << record
 			if is_left {

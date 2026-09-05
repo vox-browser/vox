@@ -16,7 +16,7 @@ fn css_fetch_test_host(request &fetch.Request) !&fetch.Response {
 	assert request.initiator_type or { panic('missing initiator') } == .script
 	mut response := fetch.Response.create()
 	response.url_list = request.url_list.clone()
-	response.body = 'font-data'.bytes()
+	response.set_body_bytes('font-data'.bytes())
 	return response
 }
 
@@ -39,4 +39,16 @@ fn test_fetch_a_style_resource_dispatches_through_fetch_runtime() {
 	controller := fetch_a_style_resource('../assets/font.woff2', rule_or_declaration, .font, .cors, css_fetch_test_process_response, host) or { panic('fetch was not started') }
 	assert controller.state() == .ongoing
 	assert css_fetch_response_body == 'font-data'.bytes()
+}
+
+fn test_style_resource_url_resolution_uses_the_url_standard_parser() {
+	assert resolve_css_url_with_base('../assets/font.woff2', 'https://example.test/styles/main.css') or { panic('relative URL did not parse') } == 'https://example.test/assets/font.woff2'
+	assert resolve_css_url_with_base('%2e%2e\\images\\logo.png', 'https://EXAMPLE.test:443/styles/main.css?old#fragment') or {
+		panic('special URL with encoded dot segment did not parse')
+	} == 'https://example.test/images/logo.png'
+	assert resolve_css_url_with_base('?new#fragment', 'https://example.test/styles/main.css?old#old') or {
+		panic('query-relative URL did not parse')
+	} == 'https://example.test/styles/main.css?new#fragment'
+	assert resolve_css_url_with_base('https://BÜCHER.example/a b', 'https://unused.test/') or { panic('IDNA URL did not parse') } == 'https://xn--bcher-kva.example/a%20b'
+	assert resolve_css_url_with_base('http://[::1', 'https://example.test/') == none
 }

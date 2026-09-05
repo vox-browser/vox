@@ -97,3 +97,20 @@ fn test_module_script_module_map_and_temporary_context() {
 	assert realm.script_execution_depth == 0
 	assert realm.callback_execution_depth == 0
 }
+
+fn test_document_temporary_execution_context_bridge_uses_the_window_realm() {
+	document := dom.Document.create(dom.url_about_blank())
+	window := WindowModel.create_top_level(document, none, 'execution-context-test') or {
+		panic('${err}')
+	}
+	realm := window.scripting_realm_
+	checkpoint_count := realm.microtask_checkpoint_count
+
+	context := document.begin_temporary_execution_context()
+	assert context != unsafe { nil }
+	assert realm.script_execution_depth == 1
+	document.end_temporary_execution_context(context)
+
+	assert realm.script_execution_depth == 0
+	assert realm.microtask_checkpoint_count == checkpoint_count + 1
+}

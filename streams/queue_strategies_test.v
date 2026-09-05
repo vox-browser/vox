@@ -14,6 +14,34 @@ fn test_queue_with_sizes_preserves_fifo_and_repairs_rounding() {
 	assert queue.is_empty()
 }
 
+fn test_queue_with_sizes_retains_source_linked_fifo_shape_for_long_queues() {
+	mut queue := QueueWithSizes{}
+	for index in 0 .. 4096 {
+		queue.enqueue_value_with_size(number_value(index), 1)!
+	}
+	assert queue.queue_.values().len == 4096
+	for index in 0 .. 4096 {
+		assert queue.dequeue_value()!.number == index
+	}
+	assert queue.is_empty()
+	assert queue.total_size() == 0
+}
+
+fn test_write_request_list_retains_source_linked_fifo_shape() {
+	mut requests := VoidPromiseList{}
+	mut promises := []&VoidPromise{cap: 4096}
+	for _ in 0 .. 4096 {
+		promise := VoidPromise.pending()
+		promises << promise
+		requests.append(promise)
+	}
+	assert requests.values().len == 4096
+	for promise in promises {
+		assert requests.shift()! == promise
+	}
+	assert requests.len == 0
+}
+
 fn test_queue_rejects_invalid_sizes_and_reset_clears_it() {
 	mut queue := QueueWithSizes{}
 	if _ := queue.enqueue_value_with_size(undefined_value(), -1) {
@@ -42,8 +70,7 @@ fn test_high_water_mark_and_size_algorithm_extraction() {
 	}, 7)! == 2.5
 	if _ := extract_high_water_mark(QueuingStrategy{
 		high_water_mark: -0.1
-	}, 1)
-	{
+	}, 1) {
 		assert false
 	} else {
 		assert err.msg().contains('highWaterMark')

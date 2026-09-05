@@ -10,7 +10,7 @@ module xhr
 import fileapi
 import encoding
 import mimesniff
-import net.urllib
+import url as liburl
 import x.json2
 
 pub enum State {
@@ -130,12 +130,12 @@ pub fn (mut request XMLHttpRequest) open(method string, input_url string, async 
 		return error("SecurityError: Forbidden method, must not be 'CONNECT', 'TRACE', or 'TRACK'")
 	}
 	mut parsed := resolve_url_record(input_url, request.base_url)!
-	if parsed.host != '' && (username != none || password != none) {
-		current_user := parsed.user or { urllib.Userinfo{} }
-		parsed.user = urllib.Userinfo{
-			username:     username or { current_user.username }
-			password:     password or { current_user.password }
-			password_set: password != none || current_user.password_set
+	if parsed.host != none {
+		if username_value := username {
+			parsed = parsed.with_username(username_value)
+		}
+		if password_value := password {
+			parsed = parsed.with_password(password_value)
 		}
 	}
 	if !async && request.global_kind == .window
@@ -144,7 +144,7 @@ pub fn (mut request XMLHttpRequest) open(method string, input_url string, async 
 	}
 	request.send_flag = false
 	request.request_method = normalize_method(method)
-	request.request_url = parsed.str()
+	request.request_url = parsed.serialize(false)
 	request.author_request_headers.clear()
 	request.request_body.clear()
 	request.request_body_present = false
@@ -178,22 +178,9 @@ fn normalize_method(method string) string {
 	return if upper in ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT'] { upper } else { method }
 }
 
-fn resolve_url_record(input string, base string) !urllib.URL {
-	reference := urllib.parse(input) or { return error('SyntaxError: Invalid URL') }
-	mut parsed := if reference.is_abs() {
-		empty_base := urllib.URL{}
-		empty_base.resolve_reference(reference) or { return error('SyntaxError: Invalid URL') }
-	} else {
-		base_url := urllib.parse(base) or { return error('SyntaxError: Invalid URL') }
-		if !base_url.is_abs() {
-			return error('SyntaxError: Invalid URL')
-		}
-		base_url.resolve_reference(reference) or { return error('SyntaxError: Invalid URL') }
-	}
-	if parsed.scheme == '' {
-		return error('SyntaxError: Invalid URL')
-	}
-	return parsed
+fn resolve_url_record(input string, base string) !liburl.URL {
+	base_url := liburl.parse(base) or { return error('SyntaxError: Invalid URL') }
+	return liburl.parse_with_base(input, &base_url) or { return error('SyntaxError: Invalid URL') }
 }
 
 pub fn (mut request XMLHttpRequest) set_request_header(name string, value string) ! {

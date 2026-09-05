@@ -1,5 +1,6 @@
 module css
 
+import encoding as text_encoding
 import strconv
 import strings
 
@@ -666,14 +667,18 @@ mut:
 	prev_position TokenPosition
 }
 
-// Explicit local stub for LibTextCodec::decoder_for(...).to_utf8(...).
-// The V port currently accepts UTF-8 strings directly and ignores the encoding name.
-fn decode_css_input(input string, encoding string) string {
-	_ = encoding
-	return input
+fn decode_css_input(input string, encoding_name string) string {
+	decoder := text_encoding.TextDecoder.construct(encoding_name,
+		text_encoding.TextDecoderOptions{}) or {
+		panic('VERIFY(TextCodec::decoder_for(${encoding_name}).has_value())')
+	}
+	return decoder.decode(input.bytes(), text_encoding.TextDecodeOptions{}) or {
+		panic('MUST(decoder->to_utf8(input)): ${err.msg()}')
+	}
 }
 
-// Explicit local stub for tokenizer parse-error logging.
+// Upstream's tokenizer diagnostic is guarded by CSS_TOKENIZER_DEBUG. Production
+// builds do not emit it, so the disabled branch intentionally has no side effect.
 fn log_parse_error() {}
 
 // https://www.w3.org/TR/css-syntax-3/#css-filter-code-points
@@ -1880,7 +1885,6 @@ pub fn tokenize_css(input string, encoding string) []Token {
 
 // --- Component values and parser types ---
 
-// Explicit local stub for LibWeb/CSS/Parser/ErrorReporter.h.
 pub struct InvalidRuleLocationError {
 pub:
 	outer_rule_name string
@@ -1888,7 +1892,7 @@ pub:
 }
 
 fn report_invalid_rule_location(error InvalidRuleLocationError) {
-	_ = error
+	parser_report_error(ParsingError(error))
 }
 
 pub type AtRuleVisitor = fn (AtRule)

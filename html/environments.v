@@ -207,6 +207,56 @@ pub fn (settings &EnvironmentSettingsObject) origin() dom.Origin {
 	return settings.origin_
 }
 
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_is_window() bool {
+	return settings.global_kind_ == .window
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_api_base_url() dom.URL {
+	return settings.api_base_url()
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_origin() dom.Origin {
+	return settings.origin()
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_document_url() ?dom.URL {
+	document := settings.responsible_document() or { return none }
+	return document.url
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_creation_url() dom.URL {
+	return settings.environment_.creation_url
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_embedder_policy_credentialless() bool {
+	return settings.policy_container_.embedder_policy.value == .credentialless
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_top_level_origin() ?dom.Origin {
+	return settings.environment_.top_level_origin
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_top_level_creation_url() ?dom.URL {
+	return settings.environment_.top_level_creation_url
+}
+
+pub fn (settings &EnvironmentSettingsObject) fetch_request_client_cross_origin_isolated_capability() bool {
+	return settings.cross_origin_isolated_capability() == .yes
+}
+
+pub fn (environment &Environment) fetch_request_environment_top_level_origin() ?dom.Origin {
+	return environment.top_level_origin
+}
+
+pub fn (environment &Environment) fetch_request_environment_top_level_creation_url() ?dom.URL {
+	return environment.top_level_creation_url
+}
+
+pub fn (settings &EnvironmentSettingsObject) has_transient_activation() bool {
+	window := settings.window_ or { return false }
+	return window.has_transient_activation()
+}
+
 pub fn (settings &EnvironmentSettingsObject) has_cross_site_ancestor() bool {
 	if window := settings.window_ {
 		context := window.browsing_context()
@@ -566,6 +616,8 @@ pub:
 }
 
 pub fn WindowEnvironmentSettingsObject.setup(window &WindowModel, creation_url dom.URL, mut realm ScriptingRealm, reserved_environment ?&Environment, top_level_creation_url dom.URL, top_level_origin dom.Origin) &WindowEnvironmentSettingsObject {
+	mut mutable_window := unsafe { &WindowModel(window) }
+	mutable_window.scripting_realm_ = &realm
 	mut id := ''
 	mut target := ?&BrowsingContextModel(none)
 	if mut reserved := reserved_environment {
@@ -583,10 +635,16 @@ pub fn WindowEnvironmentSettingsObject.setup(window &WindowModel, creation_url d
 	settings.universal_global_scope_ = UniversalGlobalScopeMixin.create(settings.global_object_, realm, window.associated_document())
 	settings.origin_ = window.associated_document().origin()
 	settings.time_origin_ = window.associated_document().load_timing_info.navigation_start_time
-	return &WindowEnvironmentSettingsObject{
+	object := &WindowEnvironmentSettingsObject{
 		settings: settings
 		window: window
 	}
+	mutable_window.environment_settings_ = object
+	return object
+}
+
+pub fn (settings &EnvironmentSettingsObject) execution_ready() bool {
+	return settings.environment_.execution_ready
 }
 
 pub fn (object &WindowEnvironmentSettingsObject) responsible_document() &dom.Document {

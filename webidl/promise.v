@@ -269,6 +269,10 @@ pub fn create_rejected_promise_from_exception(exception SimpleException) &Promis
 	return create_rejected_promise(string_value(exception.message))
 }
 
+pub fn create_rejected_promise_from_dom_exception(exception DOMException) &Promise {
+	return create_rejected_promise(dom_exception_value(exception))
+}
+
 fn property_callback_stub(_ Value, _ []Value) !Value {
 	return undefined_value()
 }

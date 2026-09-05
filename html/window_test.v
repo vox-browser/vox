@@ -156,3 +156,13 @@ fn test_window_named_objects_and_find_follow_upstream_ordering() {
 	assert !window.find('needle')
 	assert !window.find('')
 }
+
+fn test_document_open_window_routes_to_window_open_steps_and_preserves_proxy_identity() {
+	mut document, window := create_active_window('https://example.test/')!
+	assert document.is_fully_active()
+	model_proxy := window.browsing_context().window_proxy() or { panic('missing WindowProxyModel') }
+	first := document.open_window('', '_self', '') or { panic('window open returned null') }
+	second := document.open_window('', '_self', '') or { panic('window open returned null') }
+	assert voidptr(first) == voidptr(model_proxy.dom_proxy())
+	assert voidptr(second) == voidptr(first)
+}

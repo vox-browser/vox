@@ -317,7 +317,7 @@ pub fn (mut window WindowModel) window_open_steps_internal(url string, target_ s
 
 // Window overrides EventTarget dispatch with the legacy target override flag.
 pub fn (window &WindowModel) dispatch_event(event &dom.Event) bool {
-	return window.EventTarget.dispatch_event(event)
+	return window.Window.EventTarget.dispatch_event(event)
 }
 
 // https://html.spec.whatwg.org/multipage/nav-history-apis.html#fire-a-page-transition-event
@@ -671,7 +671,7 @@ pub fn (window &WindowModel) get_computed_style(element &dom.Element, pseudo_ele
 // https://w3c.github.io/csswg-drafts/cssom-view/#dom-window-matchmedia
 pub fn (window &WindowModel) match_media(query string) &css.MediaQueryList {
 	queries := css.parse_css_media_query_list_value_logic(query)
-	list := css.MediaQueryList.create(window.associated_document(), queries)
+	mut list := css.MediaQueryList.create(window.associated_document(), queries)
 	list.register_with_document()
 	return list
 }
@@ -880,10 +880,9 @@ pub fn (window &WindowModel) named_objects(name string) WindowNamedObjects {
 	}
 	mut elements := []&dom.Element{}
 	for element in window.associated_document().potentially_named_elements() {
-		if id := element.id() {
-			if id == name {
-				elements << element
-			}
+		if _ := element.id() {
+			// Elements with an id are appended from ElementByIdMap below, in
+			// document order, exactly as in Window::named_objects().
 			continue
 		}
 		if element_name := element.get_name() {
@@ -892,6 +891,7 @@ pub fn (window &WindowModel) named_objects(name string) WindowNamedObjects {
 			}
 		}
 	}
+	elements << window.associated_document().elements_with_id(name)
 	return WindowNamedObjects{
 		navigables: navigables
 		elements: elements
@@ -900,7 +900,7 @@ pub fn (window &WindowModel) named_objects(name string) WindowNamedObjects {
 
 fn window_named_collection_elements(collection &WindowNamedCollection) []&dom.Element {
 	mut elements := []&dom.Element{}
-	for element in collection.root.potentially_named_elements() {
+	for element in collection.root.descendant_elements() {
 		local_name := element.local_name()
 		mut name_matches := false
 		if element_name := element.get_name() {

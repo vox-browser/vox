@@ -11,23 +11,38 @@ pub mut:
 	transaction &IDBTransaction
 	store_name  string
 	name_       string
+	store_      ?&ObjectStoreData
+	index_      ?&IndexData
 }
 
-fn (index &IDBIndex) load() !(ObjectStoreData, IndexData) {
+fn (index &IDBIndex) load() !(&ObjectStoreData, &IndexData) {
+	if store := index.store_ {
+		if store.deleted {
+			return error('InvalidStateError: object store was deleted')
+		}
+		if data := index.index_ {
+			if data.deleted {
+				return error('InvalidStateError: index was deleted')
+			}
+			return store, data
+		}
+	}
 	if index.store_name !in index.transaction.database.data.stores {
 		return error('InvalidStateError: object store was deleted')
 	}
-	stored := index.transaction.database.data.stores[index.store_name] or {
+	store := index.transaction.database.data.stores[index.store_name] or {
 		return error('InvalidStateError: object store was deleted')
 	}
-	store := stored.clone()
 	if index.name_ !in store.indexes {
 		return error('InvalidStateError: index was deleted')
 	}
-	return store, store.indexes[index.name_].clone()
+	return store, store.indexes[index.name_] or { return error('InvalidStateError: index was deleted') }
 }
 
 pub fn (index &IDBIndex) name() string {
+	if data := index.index_ {
+		return data.name
+	}
 	return index.name_
 }
 
@@ -52,10 +67,12 @@ pub fn (mut index IDBIndex) rename(name string) ! {
 	if name != index.name_ && name in store.indexes {
 		return error('ConstraintError: index already exists')
 	}
+	if mut log := store.mutation_log_ {
+		log.note_index_renamed(data, data.name)
+	}
 	store.indexes.delete(index.name_)
 	data.name = name
 	store.indexes[name] = data
-	index.transaction.database.data.stores[index.store_name] = store
 	index.name_ = name
 }
 
@@ -65,36 +82,58 @@ fn (mut index IDBIndex) new_request() &IDBRequest {
 	return request
 }
 
-fn (index &IDBIndex) entries(range IDBKeyRange, direction IDBCursorDirection) ![]CursorEntry {
+fn (index &IDBIndex) entries(range IDBKeyRange, direction IDBCursorDirection, include_values bool) ![]CursorEntry {
 	store, data := index.load()!
 	mut entries := []CursorEntry{}
 	if direction in [.prev, .prevunique] {
 		for i := data.records.len - 1; i >= 0; i-- {
 			record := data.records[i]
 			if range.includes(record.key)! {
-				position := find_record(store.records, record.primary_key)
+				position := if include_values {
+					find_record(store.records, record.primary_key)
+				} else {
+					0
+				}
 				if position >= 0 {
-					if direction == .prevunique && entries.any(keys_equal(it.key, record.key)) { continue
-					 }
-					entries << CursorEntry{
-						key:         record.key.clone()
+					entry := CursorEntry{
+						key: record.key.clone()
 						primary_key: record.primary_key.clone()
-						value:       store.records[position].value.clone()
+						value: if include_values {
+							store.records[position].value.clone()
+						} else {
+							undefined_value()
+						}
 					}
+					if direction == .prevunique && entries.len > 0 && keys_equal(entries[entries.len - 1].key, record.key) {
+						// The upstream prevunique algorithm retains the first
+						// (lowest-primary-key) record in each equal-key run.
+						entries[entries.len - 1] = entry
+						continue
+					}
+					entries << entry
 				}
 			}
 		}
 	} else {
 		for record in data.records {
 			if range.includes(record.key)! {
-				position := find_record(store.records, record.primary_key)
+				position := if include_values {
+					find_record(store.records, record.primary_key)
+				} else {
+					0
+				}
 				if position >= 0 {
-					if direction == .nextunique && entries.any(keys_equal(it.key, record.key)) { continue
-					 }
+					if direction == .nextunique && entries.len > 0 && keys_equal(entries[entries.len - 1].key, record.key) {
+						continue
+					}
 					entries << CursorEntry{
-						key:         record.key.clone()
+						key: record.key.clone()
 						primary_key: record.primary_key.clone()
-						value:       store.records[position].value.clone()
+						value: if include_values {
+							store.records[position].value.clone()
+						} else {
+							undefined_value()
+						}
 					}
 				}
 			}
@@ -105,10 +144,10 @@ fn (index &IDBIndex) entries(range IDBKeyRange, direction IDBCursorDirection) ![
 
 pub fn (mut index IDBIndex) get(range IDBKeyRange) !&IDBRequest {
 	index.transaction.require_active()!
-	entries := index.entries(range, .next)!
+	store, data := index.load()!
 	mut request := index.new_request()
-	if entries.len > 0 {
-		request.value = entries[0].value.clone()
+	if record := data.first_in_range(range) {
+		request.value = (data.referenced_value(record, store) or { undefined_value() }).clone()
 		request.succeed(.value)
 	} else {
 		request.succeed(.undefined)
@@ -118,10 +157,10 @@ pub fn (mut index IDBIndex) get(range IDBKeyRange) !&IDBRequest {
 
 pub fn (mut index IDBIndex) get_key(range IDBKeyRange) !&IDBRequest {
 	index.transaction.require_active()!
-	entries := index.entries(range, .next)!
+	_, data := index.load()!
 	mut request := index.new_request()
-	if entries.len > 0 {
-		request.key = entries[0].primary_key.clone()
+	if record := data.first_in_range(range) {
+		request.key = record.primary_key.clone()
 		request.succeed(.key)
 	} else {
 		request.succeed(.undefined)
@@ -132,9 +171,9 @@ pub fn (mut index IDBIndex) get_key(range IDBKeyRange) !&IDBRequest {
 pub fn (mut index IDBIndex) get_all(options IDBGetAllOptions) !&IDBRequest {
 	index.transaction.require_active()!
 	range := options.range or { IDBKeyRange.unbounded() }
-	mut entries := index.entries(range, options.direction)!
+	mut entries := index.entries(range, options.direction, true)!
 	if count := options.count {
-		if entries.len > int(count) { entries.trim(int(count)) }
+		if count > 0 && entries.len > int(count) { entries.trim(int(count)) }
 	}
 	mut request := index.new_request()
 	request.values = entries.map(it.value.clone())
@@ -145,9 +184,9 @@ pub fn (mut index IDBIndex) get_all(options IDBGetAllOptions) !&IDBRequest {
 pub fn (mut index IDBIndex) get_all_keys(options IDBGetAllOptions) !&IDBRequest {
 	index.transaction.require_active()!
 	range := options.range or { IDBKeyRange.unbounded() }
-	mut entries := index.entries(range, options.direction)!
+	mut entries := index.entries(range, options.direction, false)!
 	if count := options.count {
-		if entries.len > int(count) { entries.trim(int(count)) }
+		if count > 0 && entries.len > int(count) { entries.trim(int(count)) }
 	}
 	mut request := index.new_request()
 	request.keys = entries.map(it.primary_key.clone())
@@ -158,15 +197,15 @@ pub fn (mut index IDBIndex) get_all_keys(options IDBGetAllOptions) !&IDBRequest 
 pub fn (mut index IDBIndex) get_all_records(options IDBGetAllOptions) !&IDBRequest {
 	index.transaction.require_active()!
 	range := options.range or { IDBKeyRange.unbounded() }
-	mut entries := index.entries(range, options.direction)!
+	mut entries := index.entries(range, options.direction, true)!
 	if count := options.count {
-		if entries.len > int(count) { entries.trim(int(count)) }
+		if count > 0 && entries.len > int(count) { entries.trim(int(count)) }
 	}
 	mut request := index.new_request()
 	request.records = entries.map(IDBRecord{
-		key:         it.key.clone()
+		key: it.key.clone()
 		primary_key: it.primary_key.clone()
-		value:       it.value.clone()
+		value: it.value.clone()
 	})
 	request.succeed(.records)
 	return request
@@ -175,24 +214,23 @@ pub fn (mut index IDBIndex) get_all_records(options IDBGetAllOptions) !&IDBReque
 pub fn (mut index IDBIndex) count(range ?IDBKeyRange) !&IDBRequest {
 	index.transaction.require_active()!
 	actual := range or { IDBKeyRange.unbounded() }
-	entries := index.entries(actual, .next)!
+	_, data := index.load()!
 	mut request := index.new_request()
-	request.count = u64(entries.len)
+	request.count = data.count_records_in_range(actual)
 	request.succeed(.count)
 	return request
 }
 
 pub fn (mut index IDBIndex) open_cursor(range ?IDBKeyRange, direction IDBCursorDirection, keys_only bool) !&IDBRequest {
 	index.transaction.require_active()!
+	store, data := index.load()!
 	actual := range or { IDBKeyRange.unbounded() }
-	entries := index.entries(actual, direction)!
 	mut request := index.new_request()
-	if entries.len == 0 {
+	mut cursor := IDBCursor.create(index.transaction, store, data, direction, actual, !keys_only, request)
+	if !cursor.iterate(none, none, 1)! {
 		request.succeed(.undefined)
 		return request
 	}
-	mut cursor := IDBCursor.create(index.transaction, index.store_name, index.name_, direction,
-		entries, !keys_only, request)
 	request.cursor = cursor
 	request.succeed(.cursor)
 	return request

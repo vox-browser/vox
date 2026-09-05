@@ -15,10 +15,8 @@ fn compute_replaced_size(box &Box, available_space AvailableSpace) CSSPixelSize 
 	height_basis := available_space.height.to_px_or_zero()
 	computed_width := computed.size_value(.width)
 	computed_height := computed.size_value(.height)
-	mut specified_width := resolve_replaced_content_size(node, computed_width, width_basis,
-		width_basis, true)
-	mut specified_height := resolve_replaced_content_size(node, computed_height, height_basis,
-		width_basis, false)
+	mut specified_width := resolve_replaced_content_size(node, computed_width, width_basis, width_basis, true)
+	mut specified_height := resolve_replaced_content_size(node, computed_height, height_basis, width_basis, false)
 	if computed_width.contains_percentage() && !available_space.width.is_definite() {
 		// CSS Sizing's replaced percentage min-contribution resolves a cyclic
 		// percentage preferred width against zero. Under max-content or a plain
@@ -88,8 +86,7 @@ fn compute_replaced_size(box &Box, available_space AvailableSpace) CSSPixelSize 
 		// a width constraint applied to a ratio-only replaced element becomes
 		// the basis for its tentative auto height.
 		if !available_space.width.is_definite() {
-			width = solve_replaced_size_constraint(box, width, height, intrinsic_ratio,
-				available_space).width()
+			width = solve_replaced_size_constraint(box, width, height, intrinsic_ratio, available_space).width()
 			height = width.divided_by_fraction(intrinsic_ratio)
 		}
 	} else {
@@ -99,10 +96,8 @@ fn compute_replaced_size(box &Box, available_space AvailableSpace) CSSPixelSize 
 	if intrinsic_ratio := ratio {
 		return solve_replaced_size_constraint(box, width, height, intrinsic_ratio, available_space)
 	}
-	width = clamp_replaced_axis(node, computed.size_value(.min_width),
-		computed.size_value(.max_width), width, available_space.width, width_basis, true)
-	height = clamp_replaced_axis(node, computed.size_value(.min_height),
-		computed.size_value(.max_height), height, available_space.height, width_basis, false)
+	width = clamp_replaced_axis(node, computed.size_value(.min_width), computed.size_value(.max_width), width, available_space.width, width_basis, true)
+	height = clamp_replaced_axis(node, computed.size_value(.min_height), computed.size_value(.max_height), height, available_space.height, width_basis, false)
 	return CSSPixelSize.new(width, height)
 }
 
@@ -113,27 +108,18 @@ fn replaced_box_sizing_edges(node &Node, percentage_basis CSSPixels, width bool)
 	}
 	basis := percentage_basis.to_double()
 	if width {
-		return css_px(
-			resolve_used_border_width(computed, .border_left_width, .border_left_style, basis) +
-			(computed.length_percentage_to_px(.padding_left, basis) or {
+		return css_px(resolve_used_border_width(computed, .border_left_width) + (computed.length_percentage_to_px(.padding_left, basis) or {
 			0.0
-		}) +
-			(computed.length_percentage_to_px(.padding_right, basis) or { 0.0 }) +
-			resolve_used_border_width(computed, .border_right_width, .border_right_style, basis))
+		}) + (computed.length_percentage_to_px(.padding_right, basis) or { 0.0 }) + resolve_used_border_width(computed, .border_right_width))
 	}
-	return css_px(
-		resolve_used_border_width(computed, .border_top_width, .border_top_style, basis) +
-		(computed.length_percentage_to_px(.padding_top, basis) or {
+	return css_px(resolve_used_border_width(computed, .border_top_width) + (computed.length_percentage_to_px(.padding_top, basis) or {
 		0.0
-	}) +
-		(computed.length_percentage_to_px(.padding_bottom, basis) or { 0.0 }) +
-		resolve_used_border_width(computed, .border_bottom_width, .border_bottom_style, basis))
+	}) + (computed.length_percentage_to_px(.padding_bottom, basis) or { 0.0 }) + resolve_used_border_width(computed, .border_bottom_width))
 }
 
 fn resolve_replaced_content_size(node &Node, size css.Size, size_basis CSSPixels, box_model_basis CSSPixels, width bool) ?CSSPixels {
 	resolved := resolve_layout_size(node, size, size_basis) or { return none }
-	return css_pixels_max(CSSPixels.new(0), resolved.minus(replaced_box_sizing_edges(node,
-		box_model_basis, width)))
+	return css_pixels_max(CSSPixels.new(0), resolved.minus(replaced_box_sizing_edges(node, box_model_basis, width)))
 }
 
 fn should_treat_replaced_max_as_none(maximum css.Size, available_size AvailableSize) bool {
@@ -173,8 +159,7 @@ fn replaced_axis_constraints(node &Node, minimum css.Size, maximum css.Size, inp
 }
 
 fn clamp_replaced_axis(node &Node, minimum css.Size, maximum css.Size, input CSSPixels, available_size AvailableSize, box_model_basis CSSPixels, width bool) CSSPixels {
-	min_value, max_value := replaced_axis_constraints(node, minimum, maximum, input,
-		available_size, box_model_basis, width)
+	min_value, max_value := replaced_axis_constraints(node, minimum, maximum, input, available_size, box_model_basis, width)
 	return css_pixels_max(min_value, css_pixels_min(input, max_value))
 }
 
@@ -184,10 +169,8 @@ fn solve_replaced_size_constraint(box &Box, input_width CSSPixels, input_height 
 	node := unsafe { &Node(box) }
 	computed := node.computed_values()
 	width_basis := available_space.width.to_px_or_zero()
-	min_width, max_width := replaced_axis_constraints(node, computed.size_value(.min_width),
-		computed.size_value(.max_width), input_width, available_space.width, width_basis, true)
-	min_height, max_height := replaced_axis_constraints(node, computed.size_value(.min_height),
-		computed.size_value(.max_height), input_height, available_space.height, width_basis, false)
+	min_width, max_width := replaced_axis_constraints(node, computed.size_value(.min_width), computed.size_value(.max_width), input_width, available_space.width, width_basis, true)
+	min_height, max_height := replaced_axis_constraints(node, computed.size_value(.min_height), computed.size_value(.max_height), input_height, available_space.height, width_basis, false)
 
 	if input_width.raw_value() < min_width.raw_value()
 		&& input_height.raw_value() > max_height.raw_value() {
@@ -202,44 +185,36 @@ fn solve_replaced_size_constraint(box &Box, input_width CSSPixels, input_height 
 		height_scale := max_height.to_double() / input_height.to_double()
 		if input_width.raw_value() > max_width.raw_value()
 			&& input_height.raw_value() > max_height.raw_value() && width_scale <= height_scale {
-			return CSSPixelSize.new(max_width, css_pixels_max(min_height,
-				max_width.divided_by_fraction(aspect_ratio)))
+			return CSSPixelSize.new(max_width, css_pixels_max(min_height, max_width.divided_by_fraction(aspect_ratio)))
 		}
 		if input_width.raw_value() > max_width.raw_value()
 			&& input_height.raw_value() > max_height.raw_value() && width_scale > height_scale {
-			return CSSPixelSize.new(css_pixels_max(min_width,
-				max_height.times_fraction(aspect_ratio)), max_height)
+			return CSSPixelSize.new(css_pixels_max(min_width, max_height.times_fraction(aspect_ratio)), max_height)
 		}
 		min_width_scale := min_width.to_double() / input_width.to_double()
 		min_height_scale := min_height.to_double() / input_height.to_double()
 		if input_width.raw_value() < min_width.raw_value()
 			&& input_height.raw_value() < min_height.raw_value()
 			&& min_width_scale <= min_height_scale {
-			return CSSPixelSize.new(css_pixels_min(max_width,
-				min_height.times_fraction(aspect_ratio)), min_height)
+			return CSSPixelSize.new(css_pixels_min(max_width, min_height.times_fraction(aspect_ratio)), min_height)
 		}
 		if input_width.raw_value() < min_width.raw_value()
 			&& input_height.raw_value() < min_height.raw_value()
 			&& min_width_scale > min_height_scale {
-			return CSSPixelSize.new(min_width, css_pixels_min(max_height,
-				min_width.divided_by_fraction(aspect_ratio)))
+			return CSSPixelSize.new(min_width, css_pixels_min(max_height, min_width.divided_by_fraction(aspect_ratio)))
 		}
 	}
 	if input_width.raw_value() > max_width.raw_value() {
-		return CSSPixelSize.new(max_width, css_pixels_max(max_width.divided_by_fraction(aspect_ratio),
-			min_height))
+		return CSSPixelSize.new(max_width, css_pixels_max(max_width.divided_by_fraction(aspect_ratio), min_height))
 	}
 	if input_width.raw_value() < min_width.raw_value() {
-		return CSSPixelSize.new(min_width, css_pixels_min(min_width.divided_by_fraction(aspect_ratio),
-			max_height))
+		return CSSPixelSize.new(min_width, css_pixels_min(min_width.divided_by_fraction(aspect_ratio), max_height))
 	}
 	if input_height.raw_value() > max_height.raw_value() {
-		return CSSPixelSize.new(css_pixels_max(max_height.times_fraction(aspect_ratio), min_width),
-			max_height)
+		return CSSPixelSize.new(css_pixels_max(max_height.times_fraction(aspect_ratio), min_width), max_height)
 	}
 	if input_height.raw_value() < min_height.raw_value() {
-		return CSSPixelSize.new(css_pixels_min(min_height.times_fraction(aspect_ratio), max_width),
-			min_height)
+		return CSSPixelSize.new(css_pixels_min(min_height.times_fraction(aspect_ratio), max_width), min_height)
 	}
 	return CSSPixelSize.new(input_width, input_height)
 }

@@ -61,6 +61,26 @@ fn test_close_watcher_user_activation_opens_a_new_group() {
 	assert manager.groups.len == 1
 }
 
+fn test_dom_window_activation_notifies_the_translated_close_watcher_manager() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	window := WindowModel.create_top_level(document, none, '')!
+	manager := window.close_watcher_manager()
+	first := make_close_watcher(manager, close_watcher_enabled, close_watcher_cancel_allows_close)
+	assert !manager.can_prevent_close()
+
+	mut dom_window := document.get_window() or {
+		assert false, 'translated WindowModel was not exposed through DOM'
+		return
+	}
+	dom_window.close_watcher_manager().notify_about_user_activation()
+	assert manager.can_prevent_close()
+
+	second := make_close_watcher(manager, close_watcher_enabled, close_watcher_cancel_allows_close)
+	assert manager.groups.len == 2
+	assert first.is_active
+	assert second.is_active
+}
+
 fn test_close_watcher_cancel_and_disabled_states() {
 	manager := CloseWatcherManager.create()
 	prevented := make_close_watcher(manager, close_watcher_enabled,

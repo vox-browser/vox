@@ -57,15 +57,15 @@ pub:
 	initial_insertion    InitialInsertion = .no
 }
 
-pub type NavigableJavaScriptURLHook = fn(string, &dom.Document) ?string
+pub type NavigableJavaScriptURLHook = fn (string, &dom.Document) ?string
 
-pub type NavigablePasteHook = fn(string)
+pub type NavigablePasteHook = fn (string)
 
-pub type NavigablePaintHook = fn()
+pub type NavigablePaintHook = fn ()
 
-pub type NavigableScreenshotHook = fn(dom.Rect)
+pub type NavigableScreenshotHook = fn (dom.Rect)
 
-pub type NavigableNavigationFetchHook = fn(&fetch.Request) !&fetch.Response
+pub type NavigableNavigationFetchHook = fn (&fetch.Request) !&fetch.Response
 
 @[heap]
 pub struct NavigationParams {
@@ -171,6 +171,29 @@ pub fn all_navigable_models() []&NavigableModel {
 	return html_all_navigable_models.clone()
 }
 
+fn navigable_model_scroll_viewport_box(target voidptr, position dom.CSSPixelPoint_) {
+	mut model := unsafe { &NavigableModel(target) }
+	model.perform_scroll_of_viewport_scrolling_box(css.CSSPixelPoint.from_values(position.x(), position.y()))
+}
+
+fn navigable_model_perform_viewport_scroll(target voidptr, position dom.CSSPixelPoint_) &dom.Promise {
+	mut model := unsafe { &NavigableModel(target) }
+	return model.perform_a_scroll_of_the_viewport(css.CSSPixelPoint.from_values(position.x(), position.y()))
+}
+
+fn navigable_model_is_focused(target voidptr) bool {
+	model := unsafe { &NavigableModel(target) }
+	return model.is_focused()
+}
+
+fn connect_navigable_model_to_host(model &NavigableModel) {
+	mut host := unsafe { &dom.Navigable(model.host_) }
+	host.html_model_handle_ = voidptr(model)
+	host.viewport_scroll_callback_ = navigable_model_scroll_viewport_box
+	host.perform_scroll_callback_ = navigable_model_perform_viewport_scroll
+	host.is_focused_callback_ = navigable_model_is_focused
+}
+
 // Binds the DOM identity created by Document/Window to the translated HTML
 // state. Repeated calls preserve history and only refresh the context link.
 pub fn NavigableModel.create(host &dom.Navigable, context ?&BrowsingContextModel) !&NavigableModel {
@@ -180,6 +203,7 @@ pub fn NavigableModel.create(host &dom.Navigable, context ?&BrowsingContextModel
 			mutable_existing.context_ = value
 			mutable_existing.synchronize_host_container(value)
 		}
+		connect_navigable_model_to_host(existing)
 		return existing
 	}
 	mut model := &NavigableModel{
@@ -188,6 +212,7 @@ pub fn NavigableModel.create(host &dom.Navigable, context ?&BrowsingContextModel
 		event_handler_: &page.EventHandler{}
 		rendering_thread_: RenderingThread.create(navigable_noop_presentation_callback)
 	}
+	connect_navigable_model_to_host(model)
 	html_all_navigable_models << model
 	if value := context {
 		model.context_ = value
@@ -522,7 +547,9 @@ fn (model &NavigableModel) find_a_navigable_by_target_name(name string) ?&Naviga
 			continue
 		}
 		candidate_context := candidate.context_ or { continue }
-		if current_context.is_familiar_with(candidate_context) && model.allowed_by_sandboxing_to_navigate(candidate, SourceSnapshotParams{}) {
+		current_document := model.active_document() or { return none }
+		source_snapshot_params := snapshot_source_snapshot_params(current_document)
+		if current_context.is_familiar_with(candidate_context) && model.allowed_by_sandboxing_to_navigate(candidate, source_snapshot_params) {
 			return candidate
 		}
 	}
@@ -693,7 +720,7 @@ fn create_navigation_params_from_a_srcdoc_resource(entry &SessionHistoryEntry, n
 		name: 'Content-Type'
 		value: 'text/html'
 	})
-	response.body = resource.bytes()
+	response.set_body_bytes(resource.bytes())
 	response_origin := determine_the_origin(response.url(), target_snapshot_params.sandboxing_flags, state.origin)
 	history_container := history_policy_container_value(state.history_policy_container)
 	policy_container := determine_navigation_params_policy_container(srcdoc_url, history_container, none, none, none)
@@ -756,8 +783,9 @@ fn create_navigation_params_by_fetching(entry &SessionHistoryEntry, navigable &N
 	}
 	mut request := fetch.Request.create()
 	request.set_url(entry.url)
-	request.client = source_snapshot_params.fetch_client
-	request.client_present = source_snapshot_params.fetch_client != unsafe { nil }
+	if client := source_snapshot_params.fetch_client {
+		request.set_client(client)
+	}
 	request.destination = .document
 	request.credentials_mode = .include
 	request.use_url_credentials = true
@@ -768,8 +796,10 @@ fn create_navigation_params_by_fetching(entry &SessionHistoryEntry, navigable &N
 		RequestReferrerClient {
 			fetch.Referrer{
 				sentinel: if state.request_referrer == RequestReferrerClient.no_referrer {
-					fetch.ReferrerSentinel.no_referrer} else {
-					fetch.ReferrerSentinel.client}
+					fetch.ReferrerSentinel.no_referrer
+				} else {
+					fetch.ReferrerSentinel.client
+				}
 			}
 		}
 		dom.URL {
@@ -781,7 +811,7 @@ fn create_navigation_params_by_fetching(entry &SessionHistoryEntry, navigable &N
 	if navigable.is_top_level_traversable() {
 		request.top_level_navigation_initiator_origin = state.initiator_origin
 	}
-	if request.client == unsafe { nil } {
+	if request.client == none {
 		request.origin = fetch.RequestOrigin{
 			is_client: false
 			origin: dom.origin_create_opaque()
@@ -870,7 +900,7 @@ fn fetch_referrer_to_document_referrer(referrer fetch.Referrer) RequestReferrer 
 }
 
 // Helper for populate_session_history_entry_document, steps 7 and 8.
-fn finalize_session_history_entry(entry &SessionHistoryEntry, received_navigation_params NavigableNavigationParamsResult, save_extra_document_state bool, completion_steps ?fn()) {
+fn finalize_session_history_entry(entry &SessionHistoryEntry, received_navigation_params NavigableNavigationParamsResult, save_extra_document_state bool, completion_steps ?fn ()) {
 	if document := entry.document() {
 		if state := entry.document_state {
 			mut mutable_state := unsafe { &DocumentState(state) }
@@ -899,7 +929,7 @@ fn finalize_session_history_entry(entry &SessionHistoryEntry, received_navigatio
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#populate-the-session-history-entry's-document
-pub fn (mut model NavigableModel) populate_session_history_entry_document(entry &SessionHistoryEntry, source_snapshot_params SourceSnapshotParams, target_snapshot_params TargetSnapshotParams, user_involvement dom.UserNavigationInvolvement, navigation_id ?string, completion_steps ?fn()) {
+pub fn (mut model NavigableModel) populate_session_history_entry_document(entry &SessionHistoryEntry, source_snapshot_params SourceSnapshotParams, target_snapshot_params TargetSnapshotParams, user_involvement dom.UserNavigationInvolvement, navigation_id ?string, navigation_params ?&NavigationParams, completion_steps ?fn ()) {
 	_ = source_snapshot_params
 	_ = target_snapshot_params
 	_ = user_involvement
@@ -909,6 +939,7 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		mutable_entry.document_state = new_state
 		new_state
 	}
+	mut installed_window_before_load := false
 	if state.document == none {
 		mut document := dom.Document.create(entry.url)
 		document.set_document_type(.html)
@@ -916,6 +947,31 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		document.set_origin(state.origin or { entry.url.origin() })
 		document.set_navigation_id(navigation_id)
 		document.set_allow_declarative_shadow_roots(true)
+		if params := navigation_params {
+			document.set_active_sandboxing_flag_bits(params.final_sandboxing_flags.bits)
+		}
+		state.document = document
+		document.set_cached_navigable(model.host_)
+		if context := model.context_ {
+			if document.get_browsing_context() == none {
+				document.set_browsing_context(&dom.BrowsingContext{
+					active_document_: document
+				})
+			}
+			mut mutable_context := unsafe { &BrowsingContextModel(context) }
+			mutable_context.set_active_document(document)
+			// Upstream creates the Window and its environment settings before
+			// loading/parsing the response body.
+			_ = WindowModel.create(document, context) or { unsafe { nil } }
+			installed_window_before_load = true
+			if params := navigation_params {
+				settings_pointer := document.relevant_settings_object()
+				if settings_pointer != unsafe { nil } {
+					mut settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+					settings.set_policy_container(params.policy_container)
+				}
+			}
+		}
 		match state.resource {
 			string {
 				parse_html_from_a_string(document, state.resource as string)
@@ -929,7 +985,6 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 				document.populate_with_html_head_and_body() or {}
 			}
 		}
-		state.document = document
 		state.origin = document.origin()
 		state.ever_populated = true
 	}
@@ -944,9 +999,11 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		}
 		mut mutable_context := unsafe { &BrowsingContextModel(context) }
 		mutable_context.set_active_document(document)
-		// Cross-document navigation installs a fresh Window while retaining the
-		// browsing context's WindowProxy identity.
-		_ = WindowModel.create(document, context) or { unsafe { nil } }
+		if !installed_window_before_load {
+			// Cross-document navigation installs a fresh Window while retaining the
+			// browsing context's WindowProxy identity.
+			_ = WindowModel.create(document, context) or { unsafe { nil } }
+		}
 	}
 	if callback := completion_steps {
 		callback()
@@ -996,7 +1053,8 @@ pub fn (mut model NavigableModel) navigate(params NavigableNavigateParams) ! {
 	active_document := model.active_document() or {
 		return error('InvalidStateError: navigable has no active document')
 	}
-	if !model.allowed_by_sandboxing_to_navigate(&model, SourceSnapshotParams{}) {
+	source_snapshot_params := snapshot_source_snapshot_params(params.source_document)
+	if !model.allowed_by_sandboxing_to_navigate(&model, source_snapshot_params) {
 		return error('SecurityError: source is not allowed to navigate target')
 	}
 	history_handling := resolved_history_handling(params.history_handling, active_document)
@@ -1021,9 +1079,10 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 		model.set_ongoing_navigation(NavigableOngoingNavigation{})
 		return
 	}
+	source_snapshot_params := snapshot_source_snapshot_params(params.source_document)
 	history_handling := resolved_history_handling(params.history_handling, active_document)
 	if params.url.scheme() == 'javascript' {
-		model.navigate_to_a_javascript_url(params.url, history_handling, SourceSnapshotParams{}, params.source_document.origin(), params.user_involvement, params.initial_insertion, navigation_id)
+		model.navigate_to_a_javascript_url(params.url, history_handling, source_snapshot_params, params.source_document.origin(), params.user_involvement, params.initial_insertion, navigation_id)
 		return
 	}
 	mut state := &DocumentState{
@@ -1050,7 +1109,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 			navigation_params: navigation_params
 		}
 	} else if fetch_hook := model.navigation_fetch_hook_ {
-		received_navigation_params = create_navigation_params_by_fetching(entry, &model, SourceSnapshotParams{}, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id, fetch_hook) or {
+		received_navigation_params = create_navigation_params_by_fetching(entry, &model, source_snapshot_params, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id, fetch_hook) or {
 			model.set_ongoing_navigation(NavigableOngoingNavigation{})
 			return
 		}
@@ -1069,11 +1128,11 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 	if navigation_params := received_navigation_params.navigation_params {
 		state.origin = navigation_params.origin
 		state.about_base_url = navigation_params.about_base_url
-		if body := navigation_params.response.body {
-			state.resource = body.bytestr()
+		if body := navigation_params.response.fetch_response_body() {
+			state.resource = body.bytes().bytestr()
 		}
 	}
-	model.populate_session_history_entry_document(entry, SourceSnapshotParams{}, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id, none)
+	model.populate_session_history_entry_document(entry, source_snapshot_params, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id, received_navigation_params.navigation_params, none)
 	finalize_session_history_entry(entry, received_navigation_params, true, none)
 	finalize_a_cross_document_navigation(&model, history_handling, params.user_involvement, entry)
 }
@@ -1204,7 +1263,12 @@ pub fn perform_url_and_history_update_steps(document &dom.Document, new_url dom.
 		history.length = history.index + 1
 	}
 	mutable_document.set_url(new_url)
-	mutable_document.set_latest_entry(&dom.SessionHistoryEntry{ url: new_url })
+	mutable_document.set_latest_entry(&dom.SessionHistoryEntry{
+		url: new_url
+		classic_history_api_state: dom.DOMSerializationRecord{
+			data: new_entry.classic_history_api_state.data.clone()
+		}
+	})
 	model.commit_navigation_entry(new_entry, history_handling)
 	if mut window := model.active_window() {
 		mut navigation := unsafe { &Navigation(window.navigation()) }
@@ -1298,7 +1362,9 @@ pub fn (mut model NavigableModel) reload(navigation_api_state ?SerializationReco
 		kind: .navigation
 		id: rand.uuid_v4()
 	})
-	model.populate_session_history_entry_document(entry, SourceSnapshotParams{}, model.snapshot_target_snapshot_params(), user_involvement, model.ongoing_navigation_.id, none)
+	active_document := model.active_document() or { return }
+	source_snapshot_params := snapshot_source_snapshot_params(active_document)
+	model.populate_session_history_entry_document(entry, source_snapshot_params, model.snapshot_target_snapshot_params(), user_involvement, model.ongoing_navigation_.id, none, none)
 	model.commit_navigation_entry(entry, .replace)
 }
 

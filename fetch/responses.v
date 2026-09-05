@@ -4,12 +4,12 @@
 
 // Translation of Libraries/LibWeb/Fetch/Infrastructure/HTTP/Responses.{h,cpp} — the Fetch
 // `response` record (https://fetch.spec.whatwg.org/#concept-response): its enumerations, fields,
-// the network-error creators, the network-error predicates, and url(). The header list is a real
-// http.HeaderList; the Fetch Body object stays opaque (body carries only the byte-buffer case).
+// the network-error creators, the network-error predicates, and url().
 module fetch
 
 import dom
 import http
+import time
 
 // https://fetch.spec.whatwg.org/#concept-response-cache-state
 pub enum CacheState {
@@ -45,8 +45,9 @@ pub mut:
 // https://fetch.spec.whatwg.org/#concept-response
 @[heap]
 pub struct Response {
-pub mut:
+
 	// https://fetch.spec.whatwg.org/#concept-response-type
+pub mut:
 	response_type ResponseType = .default
 	// https://fetch.spec.whatwg.org/#concept-response-aborted
 	aborted bool
@@ -58,9 +59,8 @@ pub mut:
 	status_message string
 	// https://fetch.spec.whatwg.org/#concept-response-header-list
 	header_list &http.HeaderList = http.HeaderList.create()
-	// https://fetch.spec.whatwg.org/#concept-response-body (a Body, or null). The Body object is
-	// opaque; none means the null body that is_network_error checks for.
-	body ?[]u8
+	// https://fetch.spec.whatwg.org/#concept-response-body (a Body, or null).
+	body ?&Body
 	// https://fetch.spec.whatwg.org/#concept-response-cache-state
 	cache_state ?CacheState
 	// https://fetch.spec.whatwg.org/#concept-response-cors-exposed-header-name-list
@@ -84,7 +84,9 @@ pub mut:
 
 // https://fetch.spec.whatwg.org/#concept-response-clone (allocation only).
 pub fn Response.create() &Response {
-	return &Response{}
+	return &Response{
+		monotonic_response_time: i64(time.sys_mono_now())
+	}
 }
 
 // https://fetch.spec.whatwg.org/#concept-network-error
@@ -107,38 +109,39 @@ pub fn Response.aborted_network_error() &Response {
 // https://fetch.spec.whatwg.org/#concept-response-url
 // A response's URL is the last URL in its URL list, or null if the list is empty.
 pub fn (response &Response) url() ?dom.URL {
-	if response.url_list.len == 0 {
+	url_list := response.fetch_response_url_list()
+	if url_list.len == 0 {
 		return none
 	}
-	return response.url_list.last()
+	return url_list.last()
 }
 
 // https://fetch.spec.whatwg.org/#aborted-network-error
 pub fn (response &Response) is_aborted_network_error() bool {
 	// A response whose type is "error" and aborted flag is set.
-	return response.response_type == .error && response.aborted
+	return response.fetch_response_type() == .error && response.fetch_response_aborted()
 }
 
 // https://fetch.spec.whatwg.org/#concept-network-error
 pub fn (response &Response) is_network_error() bool {
 	// type "error", status 0, empty status message, empty header list, null body, default body info.
-	if response.response_type != .error {
+	if response.fetch_response_type() != .error {
 		return false
 	}
-	if response.status != 0 {
+	if response.fetch_response_status() != 0 {
 		return false
 	}
-	if response.status_message.len != 0 {
+	if response.fetch_response_status_message().len != 0 {
 		return false
 	}
 	// The header list is empty.
-	if !response.header_list.is_empty() {
+	if !response.fetch_response_header_list().is_empty() {
 		return false
 	}
-	if response.body != none {
+	if response.fetch_response_body() != none {
 		return false
 	}
-	if response.body_info != BodyInfo{} {
+	if response.fetch_response_body_info() != BodyInfo{} {
 		return false
 	}
 	return true
@@ -150,7 +153,7 @@ pub:
 }
 
 pub fn (response &Response) location_url(request_fragment ?string) !LocationURLResult {
-	if !is_redirect_status(response.status) {
+	if !is_redirect_status(response.fetch_response_status()) {
 		return LocationURLResult{}
 	}
 	values := response.header_list.get_decode_and_split('Location') or {
@@ -180,23 +183,20 @@ pub fn (response &Response) clone() &Response {
 		headers.append(header)
 	}
 	return &Response{
-		response_type:                 response.response_type
-		aborted:                       response.aborted
-		url_list:                      response.url_list.clone()
-		status:                        response.status
-		status_message:                response.status_message
-		header_list:                   headers
-		body:                          if bytes := response.body { bytes.clone() } else { none }
-		cache_state:                   response.cache_state
+		response_type: response.response_type
+		aborted: response.aborted
+		url_list: response.url_list.clone()
+		status: response.status
+		status_message: response.status_message
+		header_list: headers
+		body: clone_body(response.body)
+		cache_state: response.cache_state
 		cors_exposed_header_name_list: response.cors_exposed_header_name_list.clone()
-		range_requested:               response.range_requested
-		request_includes_credentials:  response.request_includes_credentials
-		timing_allow_passed:           response.timing_allow_passed
-		body_info:                     response.body_info
-		redirect_taint:                response.redirect_taint
-		method:                        response.method
-		monotonic_response_time:       response.monotonic_response_time
-		network_error_message:         response.network_error_message
+		range_requested: response.range_requested
+		request_includes_credentials: response.request_includes_credentials
+		timing_allow_passed: response.timing_allow_passed
+		body_info: response.body_info
+		monotonic_response_time: i64(time.sys_mono_now())
 	}
 }
 
@@ -205,11 +205,11 @@ pub fn (response &Response) unsafe_response() &Response {
 }
 
 pub fn (response &Response) is_cors_same_origin() bool {
-	return response.response_type in [.basic, .cors, .default]
+	return response.fetch_response_type() in [.basic, .cors, .default]
 }
 
 pub fn (response &Response) is_cors_cross_origin() bool {
-	return response.response_type in [.opaque, .opaque_redirect]
+	return response.fetch_response_type() in [.opaque, .opaque_redirect]
 }
 
 pub fn filtered_response(internal &Response, response_type ResponseType) &Response {
@@ -222,9 +222,7 @@ pub fn filtered_response(internal &Response, response_type ResponseType) &Respon
 		}
 		.cors {
 			for header in internal.header_list.headers() {
-				if is_cors_safelisted_response_header_name(header.name,
-					internal.cors_exposed_header_name_list)
-				{
+				if is_cors_safelisted_response_header_name(header.name, internal.cors_exposed_header_name_list) {
 					headers.append(header)
 				}
 			}
@@ -233,53 +231,43 @@ pub fn filtered_response(internal &Response, response_type ResponseType) &Respon
 	}
 	if response_type == .opaque {
 		return &Response{
-			response_type:     .opaque
-			aborted:           internal.aborted
-			status:            0
-			header_list:       headers
-			cache_state:       internal.cache_state
-			body_info:         internal.body_info
-			redirect_taint:    internal.redirect_taint
-			method:            internal.method
-			monotonic_response_time: internal.monotonic_response_time
-			network_error_message: internal.network_error_message
+			response_type: .opaque
+			aborted: internal.aborted
+			status: 0
+			header_list: headers
+			cache_state: internal.cache_state
+			body_info: internal.body_info
+			monotonic_response_time: i64(time.sys_mono_now())
 			internal_response: internal
 		}
 	}
 	if response_type == .opaque_redirect {
 		return &Response{
-			response_type:     .opaque_redirect
-			aborted:           internal.aborted
-			status:            0
-			url_list:          internal.url_list.clone()
-			header_list:       headers
-			cache_state:       internal.cache_state
-			body_info:         internal.body_info
-			redirect_taint:    internal.redirect_taint
-			method:            internal.method
-			monotonic_response_time: internal.monotonic_response_time
-			network_error_message: internal.network_error_message
+			response_type: .opaque_redirect
+			aborted: internal.aborted
+			status: 0
+			url_list: internal.url_list.clone()
+			header_list: headers
+			cache_state: internal.cache_state
+			body_info: internal.body_info
+			monotonic_response_time: i64(time.sys_mono_now())
 			internal_response: internal
 		}
 	}
 	return &Response{
-		response_type:     response_type
-		aborted:           internal.aborted
-		url_list:          internal.url_list.clone()
-		status:            internal.status
-		status_message:    internal.status_message
-		header_list:       headers
-		body:              if bytes := internal.body { bytes.clone() } else { none }
-		cache_state:       internal.cache_state
+		response_type: response_type
+		aborted: internal.aborted
+		url_list: internal.url_list.clone()
+		status: internal.status
+		status_message: internal.status_message
+		header_list: headers
+		cache_state: internal.cache_state
 		cors_exposed_header_name_list: internal.cors_exposed_header_name_list.clone()
 		range_requested: internal.range_requested
 		request_includes_credentials: internal.request_includes_credentials
 		timing_allow_passed: internal.timing_allow_passed
-		body_info:         internal.body_info
-		redirect_taint: internal.redirect_taint
-		method: internal.method
-		monotonic_response_time: internal.monotonic_response_time
-		network_error_message: internal.network_error_message
+		body_info: internal.body_info
+		monotonic_response_time: i64(time.sys_mono_now())
 		internal_response: internal
 	}
 }

@@ -751,24 +751,72 @@ fn logical_alias_normalize_value(abstract_element dom.AbstractElement, property_
 
 // The compute-and-store core of DOM::Element::recompute_style (Element.cpp:855): compute the element's
 // style and store it (bridged) on the element, so descendants inherit through it and layout can read the
-// mirrored fields off the placeholder. The DOM-side Element.recompute_style is a stub because dom cannot
-// import css; this is its CSS half, meant to be driven top-down over the tree (parents before children).
-// Invalidation diffing and display-change animation replay remain owned by the
-// layout/embedder boundary; the computed main and generated pseudo styles are
-// both installed here.
+// mirrored fields off the module-cycle boundary object. This is its CSS half,
+// driven top-down over the tree (parents before children); invalidation diffing,
+// display-change animation replay, and generated pseudo styles all run here.
 pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractElement) &ComputedProperties {
+	mut did_change_custom_properties := false
+	_, computed := s.recompute_style_with_invalidation(mut abstract_element,
+		&did_change_custom_properties)
+	return computed
+}
+
+pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &ComputedProperties, font_computer &FontComputer) RequiredInvalidationAfterStyleChange {
+	mut invalidation := RequiredInvalidationAfterStyleChange{}
+	mut mutable_old_style := unsafe { &ComputedProperties(old_style) }
+	mut mutable_new_style := unsafe { &ComputedProperties(new_style) }
+	old_font_list := mutable_old_style.computed_font_list(font_computer)
+	new_font_list := mutable_new_style.computed_font_list(font_computer)
+	if !old_font_list.equals(new_font_list) {
+		invalidation.relayout = true
+	}
+	for property_id in computed_interpolation_longhand_property_ids() {
+		invalidation = required_invalidation_after_style_change_or(invalidation,
+			compute_property_invalidation(property_id, old_style.property(property_id, .no),
+			new_style.property(property_id, .no)))
+	}
+	return invalidation
+}
+
+// DOM::Element::recompute_style(). It computes and installs main and pseudo
+// styles, diffs every longhand through CSS::compute_property_invalidation(),
+// and applies retained style to an existing layout tree when no rebuild is
+// required.
+fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom.AbstractElement, did_change_custom_properties &bool) (RequiredInvalidationAfterStyleChange, &ComputedProperties) {
 	mut element := unsafe { &dom.Element(abstract_element.element()) }
 	element.reset_style_dependency_flags()
 	mut had_list_marker := false
+	mut old_style := ?&ComputedProperties(none)
 	if old_dom_style := abstract_element.computed_properties() {
-		if old_style := computed_properties_from_dom(old_dom_style) {
-			had_list_marker = old_style.display().is_list_item()
-		}
+		old_style = computed_properties_from_dom(old_dom_style)
 	}
-	computed := s.compute_style(abstract_element)
+	if previous := old_style {
+		had_list_marker = previous.display().is_list_item()
+	}
+	old_display_is_none := if previous := old_style { previous.display().is_none() } else { true }
+	computed := s.compute_style_tracking_custom_property_changes(abstract_element,
+		did_change_custom_properties)
+	mut invalidation := if previous := old_style {
+		compute_required_invalidation(previous, computed, s.font_computer())
+	} else {
+		required_invalidation_after_style_change_full()
+	}
 	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
+	new_display_is_none := computed.display().is_none()
+	if old_display_is_none != new_display_is_none {
+		element.as_node().for_each_shadow_including_inclusive_descendant(fn (node &dom.Node) dom.TraversalDecision {
+			if node.is_element() {
+				mut descendant := unsafe { &dom.Element(node) }
+				descendant.play_or_cancel_animations_after_display_property_change()
+			}
+			return .@continue
+		})
+	}
 
-	mut pseudo_elements := [dom.PseudoElement.before, .after, .selection, .backdrop]
+	mut pseudo_elements := [dom.PseudoElement.before, .after, .selection]
+	if element.rendered_in_top_layer() {
+		pseudo_elements << dom.PseudoElement.backdrop
+	}
 	if had_list_marker || computed.display().is_list_item() {
 		pseudo_elements << dom.PseudoElement.marker
 	}
@@ -776,24 +824,294 @@ pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractEleme
 	for pseudo_element in pseudo_elements {
 		mutable_computer.push_ancestor(abstract_element.element())
 		mut pseudo_abstract := dom.AbstractElement.new(abstract_element.element(), pseudo_element)
+		mut old_pseudo_style := ?&ComputedProperties(none)
+		if old_dom_pseudo_style := pseudo_abstract.computed_properties() {
+			old_pseudo_style = computed_properties_from_dom(old_dom_pseudo_style)
+		}
 		css_pseudo_element := style_scope_pseudo_element_from_abstract_element(pseudo_abstract) or {
 			mutable_computer.pop_ancestor(abstract_element.element())
 			continue
 		}
 		scope := css_style_scope_for(pseudo_abstract)
-		if !scope.has_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element) {
-			pseudo_abstract.set_computed_properties(none)
-			mutable_computer.pop_ancestor(abstract_element.element())
-			continue
+		mut new_pseudo_style := ?&ComputedProperties(none)
+		if scope.has_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element) {
+			new_pseudo_style = s.compute_pseudo_element_style_if_needed_tracking_custom_property_changes(pseudo_abstract,
+				did_change_custom_properties)
 		}
-		if pseudo_style := s.compute_pseudo_element_style_if_needed(pseudo_abstract) {
+		if pseudo_style := new_pseudo_style {
+			if previous := old_pseudo_style {
+				invalidation = required_invalidation_after_style_change_or(invalidation,
+					compute_required_invalidation(previous, pseudo_style, s.font_computer()))
+			} else {
+				invalidation = required_invalidation_after_style_change_full()
+			}
 			pseudo_abstract.set_computed_properties(computed_properties_to_dom(pseudo_style))
 		} else {
+			if old_pseudo_style != none {
+				invalidation = required_invalidation_after_style_change_full()
+			}
 			pseudo_abstract.set_computed_properties(none)
 		}
 		mutable_computer.pop_ancestor(abstract_element.element())
 	}
-	return computed
+
+	if !invalidation.is_none() && !invalidation.rebuild_layout_tree {
+		if layout_node := abstract_element.unsafe_layout_node() {
+			if dom_style := abstract_element.computed_properties() {
+				layout_node.apply_style(dom_style)
+			}
+		}
+		for pseudo_element in pseudo_elements {
+			pseudo_abstract := dom.AbstractElement.new(abstract_element.element(), pseudo_element)
+			if layout_node := pseudo_abstract.unsafe_layout_node() {
+				if dom_style := pseudo_abstract.computed_properties() {
+					layout_node.apply_style(dom_style)
+				}
+			}
+		}
+	}
+	return invalidation, computed
+}
+
+// DOM::Element::recompute_inherited_style(). This is the narrow inherited-style
+// update used when an ancestor changed but the element itself did not need a
+// fresh cascade. It updates inherited and font-relative computed values in
+// place, preserving the cascaded-property and computed-style objects exactly as
+// upstream does.
+fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_element dom.AbstractElement) RequiredInvalidationAfterStyleChange {
+	dom_cascaded := abstract_element.cascaded_properties() or {
+		return RequiredInvalidationAfterStyleChange{}
+	}
+	cascaded := cascaded_properties_from_dom(dom_cascaded) or {
+		return RequiredInvalidationAfterStyleChange{}
+	}
+	dom_computed := abstract_element.computed_properties() or {
+		return RequiredInvalidationAfterStyleChange{}
+	}
+	mut computed := computed_properties_from_dom(dom_computed) or {
+		return RequiredInvalidationAfterStyleChange{}
+	}
+	layout_node := abstract_element.unsafe_layout_node() or {
+		return RequiredInvalidationAfterStyleChange{}
+	}
+
+	mut invalidation := RequiredInvalidationAfterStyleChange{}
+	mut values_affected_by_inherited_style := map[PropertyID]&dom.StyleValue{}
+	animated_values := computed.animated_property_values()
+	for property_id in computed_interpolation_longhand_property_ids() {
+		preabsolutized_value := cascaded.property(property_id)
+		old_value := computed.property(property_id, .no)
+
+		if preabsolutized := preabsolutized_value {
+			if typed := typed_style_value_logic_from_dom(preabsolutized) {
+				keyword := typed.to_keyword()
+				needs_updating := (typed is LengthStyleValue && typed.length().is_font_relative())
+					|| (property_id == .font_weight && keyword in [.bolder, .lighter])
+					|| (property_id == .font_size && keyword in [.larger, .smaller])
+				if needs_updating {
+					computed.set_property_without_modifying_flags(property_id, preabsolutized)
+					if old := old_value {
+						values_affected_by_inherited_style[property_id] = old
+					}
+				}
+			}
+		}
+
+		if !computed.is_property_inherited(property_id) {
+			continue
+		}
+
+		if computed.is_animated_property_inherited(property_id) || property_id !in animated_values {
+			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id,
+				abstract_element) {
+				computed.set_animated_property(property_id, animated_inherit.value,
+					animated_inherit.is_result_of_transition, .yes)
+			} else if property_id in animated_values {
+				computed.remove_animated_property(property_id)
+			}
+		}
+
+		new_value := StyleComputer.get_non_animated_inherit_value(property_id, abstract_element)
+		computed.set_property(property_id, new_value, .yes, .no)
+		invalidation = required_invalidation_after_style_change_or(invalidation,
+			compute_property_invalidation(property_id, old_value, computed.property(property_id,
+			.no)))
+	}
+
+	if invalidation.is_none() && values_affected_by_inherited_style.len == 0 {
+		return invalidation
+	}
+
+	s.compute_property_values(mut computed, *abstract_element)
+	for property_id, old_value in values_affected_by_inherited_style {
+		invalidation = required_invalidation_after_style_change_or(invalidation,
+			compute_property_invalidation(property_id, old_value, computed.property(property_id,
+			.no)))
+	}
+	if invalidation.is_none() {
+		return invalidation
+	}
+
+	// Refresh the DOM-side mirror after mutating the retained ComputedProperties
+	// and apply the same object to the retained Layout::Node.
+	computed_dom_mirror := computed_properties_to_dom(computed)
+	abstract_element.set_computed_properties(computed_dom_mirror)
+	layout_node.apply_style(computed_dom_mirror)
+	return invalidation
+}
+
+fn animated_property_maps_invalidation(old_values map[PropertyID]&dom.StyleValue, new_values map[PropertyID]&dom.StyleValue) RequiredInvalidationAfterStyleChange {
+	mut invalidation := RequiredInvalidationAfterStyleChange{}
+	for property_id in computed_interpolation_longhand_property_ids() {
+		mut old_value := ?&dom.StyleValue(none)
+		mut new_value := ?&dom.StyleValue(none)
+		if value := old_values[property_id] {
+			old_value = value
+		}
+		if value := new_values[property_id] {
+			new_value = value
+		}
+		if old_value == none && new_value == none {
+			continue
+		}
+		invalidation = required_invalidation_after_style_change_or(invalidation,
+			compute_property_invalidation(property_id, old_value, new_value))
+	}
+	return invalidation
+}
+
+fn (s &StyleComputer) recompute_inherited_style_for_animated_descendants(node &dom.Node) RequiredInvalidationAfterStyleChange {
+	mut invalidation := RequiredInvalidationAfterStyleChange{}
+	if element := node.as_element() {
+		mut abstract_element := dom.AbstractElement.new(element, none)
+		element_invalidation := s.recompute_inherited_style_with_invalidation(mut abstract_element)
+		if element_invalidation.is_none() {
+			return invalidation
+		}
+		invalidation = required_invalidation_after_style_change_or(invalidation,
+			element_invalidation)
+		if shadow_root := element.shadow_root() {
+			invalidation = required_invalidation_after_style_change_or(invalidation,
+				s.recompute_inherited_style_for_animated_descendants(unsafe { &dom.Node(shadow_root) }))
+		}
+	}
+
+	mut child := node.first_child()
+	for {
+		current := child or { break }
+		invalidation = required_invalidation_after_style_change_or(invalidation,
+			s.recompute_inherited_style_for_animated_descendants(current))
+		child = current.next_sibling()
+	}
+	return invalidation
+}
+
+// Document::update_animated_style_if_needed() and AnimationUpdateContext's
+// destructor. Group active effects by target, reset non-inherited animated
+// values once, sample every CSS animation/transition, diff the animated
+// property maps, update inherited descendants, and propagate the resulting
+// layout/paint invalidation.
+fn style_computer_update_animated_style_callback(target voidptr) {
+	if target == unsafe { nil } {
+		return
+	}
+	mut style_computer := unsafe { &StyleComputer(target) }
+	mut targets := []dom.AbstractElement{}
+	mut seen := map[i64]bool{}
+	if style_computer.css_animation_storage_ != unsafe { nil } {
+		for entry in style_computer.css_animation_storage_.entries {
+			key := abstract_element_storage_key(entry.abstract_element)
+			if key !in seen {
+				seen[key] = true
+				targets << entry.abstract_element
+			}
+		}
+	}
+	if style_computer.css_transition_storage_ != unsafe { nil } {
+		for _, bucket in style_computer.css_transition_storage_.associated_transitions {
+			for entry in bucket.entries {
+				key := abstract_element_storage_key(entry.abstract_element)
+				if key !in seen {
+					seen[key] = true
+					targets << entry.abstract_element
+				}
+			}
+		}
+	}
+
+	for target_element in targets {
+		target_node := target_element.element().as_node()
+		if !target_node.is_connected() || target_node.has_inclusive_ancestor_with_display_none() {
+			continue
+		}
+		dom_computed := target_element.computed_properties() or { continue }
+		mut computed := computed_properties_from_dom(dom_computed) or { continue }
+		old_animated_values := computed.animated_property_values()
+		computed.reset_non_inherited_animated_properties()
+
+		if style_computer.css_animation_storage_ != unsafe { nil } {
+			for existing in style_computer.css_animation_storage_.animations_for(target_element) {
+				mut animation := existing
+				if animation.sample_at(style_computer.animation_time_ms_) != none {
+					style_computer.collect_animation_into(target_element, voidptr(animation.effect_),
+						mut computed)
+				}
+			}
+		}
+		if style_computer.css_transition_storage_ != unsafe { nil } {
+			for existing in style_computer.css_transition_storage_.transitions_for(target_element) {
+				mut transition := existing
+				if transition.sample_at(style_computer.animation_time_ms_) != none {
+					style_computer.collect_animation_into(target_element,
+						voidptr(transition.keyframe_effect_), mut computed)
+				}
+			}
+		}
+
+		mut invalidation := animated_property_maps_invalidation(old_animated_values,
+			computed.animated_property_values())
+		if invalidation.is_none() {
+			continue
+		}
+		mut child := target_node.first_child()
+		for {
+			current := child or { break }
+			invalidation = required_invalidation_after_style_change_or(invalidation,
+				style_computer.recompute_inherited_style_for_animated_descendants(current))
+			child = current.next_sibling()
+		}
+
+		computed_dom_mirror := computed_properties_to_dom(computed)
+		mut mutable_target := target_element
+		mutable_target.set_computed_properties(computed_dom_mirror)
+		if layout_node := target_element.unsafe_layout_node() {
+			layout_node.apply_style(computed_dom_mirror)
+		}
+
+		mut mutable_target_node := unsafe { &dom.Node(target_node) }
+		if invalidation.relayout {
+			mutable_target_node.set_needs_layout_update(.keyframe_effect)
+		}
+		if invalidation.rebuild_layout_tree {
+			if parent_element := target_node.parent_element() {
+				mut parent_node := unsafe { &dom.Node(parent_element.as_node()) }
+				parent_node.set_needs_layout_tree_update(true, .keyframe_effect)
+			} else {
+				mutable_target_node.set_needs_layout_tree_update(true, .keyframe_effect)
+			}
+		}
+		mut document := unsafe { &dom.Document(target_element.document()) }
+		if invalidation.repaint {
+			mutable_target_node.set_needs_repaint(.yes)
+			document.invalidate_display_list()
+			if invalidation.rebuild_accumulated_visual_contexts {
+				document.set_needs_accumulated_visual_contexts_update(true)
+			}
+		}
+		if invalidation.rebuild_stacking_context_tree {
+			document.invalidate_stacking_context_tree()
+		}
+	}
 }
 
 // Recompute style for `node` and its whole subtree, top-down — the recursive core of
@@ -804,12 +1122,6 @@ pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractEleme
 // traverses shadow roots before light-DOM children, matching Document's
 // shadow-including style walk.
 pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.Node) {
-	is_top_level_pass := style_computer.style_computation_pass_depth_ == 0
-	if is_top_level_pass {
-		style_computer.style_sharing_cache_.clear()
-	}
-	style_computer.style_computation_pass_depth_++
-
 	element_opt := node.as_element()
 	if element := element_opt {
 		style_computer.push_ancestor(element)
@@ -837,15 +1149,155 @@ pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.N
 	mutable_node.set_needs_style_update(false)
 	mutable_node.set_child_needs_style_update(false)
 	mutable_node.set_entire_subtree_needs_style_update(false)
-	style_computer.style_computation_pass_depth_--
 }
 
-// The computed value of `property_id` for `element`, serialized — the real-StyleComputer equivalent of the
-// from-scratch minimal `cascaded_value_for`. Runs a full style pass over the element's document (so
+fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, needs_inherited_style_update bool, recompute_elements_depending_on_custom_properties bool, parent_display_changed bool) RequiredInvalidationAfterStyleChange {
+	needs_full_style_update := node.document().needs_full_style_update()
+	mut invalidation := RequiredInvalidationAfterStyleChange{}
+	element_opt := node.as_element()
+	if element := element_opt {
+		style_computer.push_ancestor(element)
+	}
+
+	mut is_display_none := false
+	mut did_change_custom_properties := false
+	mut node_invalidation := RequiredInvalidationAfterStyleChange{}
+	if element := element_opt {
+		needs_style_update_due_to_if_media := element.style_uses_if_css_function()
+		should_recompute := needs_full_style_update || node.needs_style_update()
+			|| parent_display_changed
+			|| (recompute_elements_depending_on_custom_properties
+			&& (element.style_uses_var_css_function() || element.style_uses_inherit_css_function()))
+			|| needs_style_update_due_to_if_media
+		if should_recompute {
+			mut abstract_element := dom.AbstractElement.new(element, none)
+			node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element,
+				&did_change_custom_properties)
+		} else if needs_inherited_style_update {
+			mut abstract_element := dom.AbstractElement.new(element, none)
+			node_invalidation = style_computer.recompute_inherited_style_with_invalidation(mut
+				abstract_element)
+		}
+		if dom_computed := element.el_computed_properties() {
+			if computed := computed_properties_from_dom(dom_computed) {
+				is_display_none = computed.display().is_none()
+			}
+		}
+
+		// Slotted nodes inherit from their slot in the flat tree, rather than
+		// their light-DOM parent.
+		if !node_invalidation.is_none() && element.is_html_element()
+			&& element.local_name() == 'slot' {
+			slot := unsafe { &dom.HTMLSlotElement(element) }
+			for assigned_node in slot.assigned_nodes_internal() {
+				mut mutable_assigned_node := unsafe { &dom.Node(assigned_node) }
+				mutable_assigned_node.set_needs_style_update(true)
+			}
+		}
+	}
+
+	mut mutable_node := unsafe { &dom.Node(node) }
+	if node_invalidation.relayout {
+		mutable_node.set_needs_layout_update(.style_change)
+	}
+	if node_invalidation.rebuild_layout_tree {
+		if parent_element := node.parent_element() {
+			mut mutable_parent := unsafe { &dom.Node(parent_element.as_node()) }
+			mutable_parent.set_needs_layout_tree_update(true, .style_change)
+		} else {
+			mutable_node.set_needs_layout_tree_update(true, .style_change)
+		}
+	}
+	mutable_node.set_needs_style_update(false)
+	invalidation = required_invalidation_after_style_change_or(invalidation, node_invalidation)
+
+	mut recompute_custom_property_dependents := recompute_elements_depending_on_custom_properties
+	if did_change_custom_properties {
+		recompute_custom_property_dependents = true
+	}
+	children_need_inherited_style_update := !invalidation.is_none()
+	children_need_full_style_recompute := node_invalidation.rebuild_layout_tree
+	if needs_full_style_update || node.child_needs_style_update()
+		|| children_need_inherited_style_update || recompute_custom_property_dependents
+		|| children_need_full_style_recompute {
+		if element := element_opt {
+			if shadow_root := element.shadow_root() {
+				shadow_node := unsafe { &dom.Node(shadow_root) }
+				if needs_full_style_update || shadow_node.needs_style_update()
+					|| shadow_node.child_needs_style_update() {
+					subtree_invalidation := update_style_recursively(mut style_computer,
+						shadow_node, children_need_inherited_style_update,
+						recompute_custom_property_dependents, children_need_full_style_recompute)
+					if !is_display_none {
+						invalidation = required_invalidation_after_style_change_or(invalidation,
+							subtree_invalidation)
+					}
+				}
+			}
+		}
+
+		mut child := node.first_child()
+		for {
+			current := child or { break }
+			if needs_full_style_update || current.needs_style_update()
+				|| children_need_inherited_style_update || current.child_needs_style_update()
+				|| recompute_custom_property_dependents || children_need_full_style_recompute {
+				subtree_invalidation := update_style_recursively(mut style_computer,
+					current, children_need_inherited_style_update, recompute_custom_property_dependents,
+					children_need_full_style_recompute)
+				if !is_display_none {
+					invalidation = required_invalidation_after_style_change_or(invalidation,
+						subtree_invalidation)
+				}
+			}
+			child = current.next_sibling()
+		}
+	}
+
+	mutable_node.set_child_needs_style_update(false)
+	mutable_node.set_entire_subtree_needs_style_update(false)
+	if element := element_opt {
+		style_computer.pop_ancestor(element)
+	}
+	return invalidation
+}
+
+fn update_style_for_document_from_upstream(document &dom.Document) RequiredInvalidationAfterStyleChange {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	if mutable_document.needs_invalidation_of_elements_affected_by_has {
+		mutable_document.needs_invalidation_of_elements_affected_by_has = false
+		mut document_scope := css_style_scope_for_document(document)
+		document_scope.invalidate_style_of_elements_affected_by_has()
+		root := unsafe { &dom.Node(document) }
+		root.for_each_shadow_including_inclusive_descendant(fn (node &dom.Node) dom.TraversalDecision {
+			if element := node.as_element() {
+				if shadow_root := element.shadow_root() {
+					mut scope := css_style_scope_for_shadow_root(shadow_root)
+					scope.invalidate_style_of_elements_affected_by_has()
+				}
+			}
+			return .@continue
+		})
+	}
+
+	mut style_computer := css_style_computer_for(document)
+	viewport := document.viewport_rect()
+	style_computer.set_viewport_rect(CSSPixelRect.new(viewport.x, viewport.y, viewport.width,
+		viewport.height))
+	evaluate_media_rules_for_document(document)
+	style_computer.reset_has_result_cache()
+	style_computer.reset_ancestor_filter()
+	mutable_document.build_registered_properties_cache()
+	mutable_document.build_counter_style_cache()
+	return update_style_recursively(mut style_computer, unsafe { &dom.Node(document) },
+		false, false, false)
+}
+
+// The computed value of `property_id` for `element`, serialized from the retained StyleComputer result.
+// Runs a full style pass over the element's document (so
 // inheritance from ancestors resolves), then reads the element's stored computed value.
-// NOTE: UA-default rules are NOT applied yet (the UA stylesheet is not embedded — user_agent_style_sheet_source
-// returns none), so this reflects inline styles + author stylesheets (when attached to the document) +
-// inheritance + initial values, but not user-agent display/etc. defaults.
+// This reflects the same UA, user, author, inline, inheritance, and initial-value
+// inputs as the document's StyleComputer pass.
 pub fn computed_value_for(element &dom.Element, property_id PropertyID) ?string {
 	mut document := element.as_node().document()
 	css_style_computer_for(document)

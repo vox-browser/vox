@@ -85,6 +85,20 @@ pub fn (exception DOMException) str() string {
 	return '[${exception.name_}]: ${exception.message_}'
 }
 
+// A DOMException is a Web IDL platform object when used as a JavaScript value.
+// Keep its observable properties on the typed value so promise rejection
+// reasons retain the exception instead of degrading to a message string.
+pub fn dom_exception_value(exception DOMException) Value {
+	return Value{
+		kind: .platform_object
+		object_value: {
+			'name':    string_value(exception.name())
+			'message': string_value(exception.message())
+			'code':    number_value(exception.code())
+		}
+	}
+}
+
 pub fn legacy_code_for_name(name string) u16 {
 	return match name {
 		'IndexSizeError' { 1 }

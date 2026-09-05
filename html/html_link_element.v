@@ -151,6 +151,19 @@ fn link_dom_element(element &dom.HTMLLinkElement) &dom.Element {
 	return unsafe { &dom.Element(element) }
 }
 
+fn link_model_has_loaded_icon(target voidptr) bool {
+	model := unsafe { &HTMLLinkElementModel(target) }
+	return model.has_loaded_icon()
+}
+
+fn link_model_load_favicon(target voidptr) bool {
+	model := unsafe { &HTMLLinkElementModel(target) }
+	data := model.loaded_icon() or { return false }
+	url := model.loaded_icon_url() or { return false }
+	element := model.element_ or { return false }
+	return decode_favicon(data, url, link_dom_element(element).document()) or { false }
+}
+
 pub fn html_link_element_model_for_dom_element(element &dom.HTMLLinkElement) &HTMLLinkElementModel {
 	if element.link_element_model_ != unsafe { nil } {
 		return unsafe { &HTMLLinkElementModel(element.link_element_model_) }
@@ -172,6 +185,8 @@ pub fn html_link_element_model_for_dom_element(element &dom.HTMLLinkElement) &HT
 	model.connected_ = dom_element.as_node().is_browsing_context_connected()
 	mut mutable_element := unsafe { &dom.HTMLLinkElement(element) }
 	mutable_element.link_element_model_ = voidptr(model)
+	mutable_element.link_has_loaded_icon_callback_ = link_model_has_loaded_icon
+	mutable_element.link_load_favicon_callback_ = link_model_load_favicon
 	return model
 }
 

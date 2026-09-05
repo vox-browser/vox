@@ -3,12 +3,15 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/libweb_v`
-Audited: 2026-08-30
+Audited: 2026-09-05
 
 The earlier inventory mapped every upstream implementation filename to V code,
-but filename coverage alone did not establish literal behavioral parity. Layout
-has now been re-audited against the upstream implementation and its complete
-904-case regression corpus; all comparable snapshots pass exactly.
+but filename and symbol-name coverage did not establish behavioral parity. A
+semantic re-audit found name-only `upstream_*entry_points.v` coverage-shim
+files. Every such file has now been compared with the corresponding upstream
+bodies, rewritten where necessary, and promoted under an implementation name;
+the current audit has no quarantined coverage files. The remaining `Present`
+modules still have upstream bodies that require the same behavioral audit.
 
 `Complete` means every upstream `.cpp` unit has an audited V implementation
 mapping. `Present` means translated module code exists but its full upstream
@@ -33,109 +36,124 @@ root-level LibWeb `.cpp` support units are mapped separately in
 
 | Upstream module | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `ARIA` | 6 | 1,876 | 2,523 | 354 | Complete |
-| `Animations` | 10 | 4,381 | 2,217 | 389 | Complete |
-| `Bindings` | 9 | 1,718 | 1,639 | 488 | Complete |
-| `CSS` | 212 | 66,305 | 90,675 | 3,594 | Complete |
-| `Clipboard` | 4 | 892 | 948 | 332 | Complete |
-| `Compression` | 2 | 359 | 322 | 135 | Complete |
-| `ContentSecurityPolicy` | 37 | 4,653 | 2,404 | 389 | Complete |
-| `CookieStore` | 2 | 900 | 997 | 392 | Complete |
-| `CredentialManagement` | 6 | 369 | 400 | 293 | Complete |
-| `Crypto` | 6 | 13,297 | 2,303 | 879 | Complete |
-| `DOM` | 57 | 26,465 | 32,188 | 1,494 | Complete |
-| `DOMURL` | 4 | 1,016 | 932 | 270 | Complete |
-| `Editing` | 4 | 7,980 | 2,019 | 660 | Complete |
-| `Encoding` | 4 | 438 | 668 | 235 | Complete |
+| `ARIA` | 6 | 1,876 | 2,535 | 399 | Complete |
+| `Animations` | 10 | 4,381 | 3,028 | 473 | Complete |
+| `Bindings` | 9 | 1,718 | 1,731 | 555 | Complete |
+| `CSS` | 212 | 66,305 | 99,216 | 6,542 | Present |
+| `Clipboard` | 4 | 892 | 973 | 343 | Complete |
+| `Compression` | 2 | 359 | 424 | 138 | Complete |
+| `ContentSecurityPolicy` | 37 | 4,653 | 2,721 | 439 | Complete |
+| `CookieStore` | 2 | 900 | 859 | 434 | Complete |
+| `CredentialManagement` | 6 | 369 | 405 | 293 | Complete |
+| `Crypto` | 6 | 13,297 | 3,287 | 1,006 | Complete |
+| `DOM` | 57 | 26,465 | 36,784 | 2,250 | Complete |
+| `DOMURL` | 4 | 1,016 | 754 | 336 | Complete |
+| `Editing` | 4 | 7,980 | 3,074 | 741 | Complete |
+| `Encoding` | 4 | 438 | 705 | 244 | Complete |
 | `EncryptedMediaExtensions` | 3 | 544 | 572 | 329 | Complete |
 | `EntriesAPI` | 1 | 55 | 44 | 32 | Complete |
-| `EventTiming` | 1 | 131 | 170 | 93 | Complete |
-| `Fetch` | 32 | 7,787 | 3,194 | 876 | Complete |
-| `FileAPI` | 6 | 1,359 | 943 | 448 | Complete |
+| `EventTiming` | 1 | 131 | 153 | 94 | Complete |
+| `Fetch` | 32 | 7,787 | 5,187 | 1,365 | Complete |
+| `FileAPI` | 6 | 1,359 | 1,018 | 499 | Complete |
 | `Fullscreen` | 0 | 0 | 93 | 177 | Complete |
 | `GPC` | 1 | 21 | 16 | 13 | Complete |
-| `Gamepad` | 6 | 1,382 | 681 | 210 | Complete |
-| `Geolocation` | 4 | 511 | 391 | 174 | Complete |
-| `Geometry` | 8 | 2,157 | 1,962 | 952 | Complete |
-| `HTML` | 261 | 73,434 | 54,896 | 10,966 | Complete |
-| `HighResolutionTime` | 2 | 521 | 362 | 181 | Complete |
-| `IndexedDB` | 18 | 6,449 | 2,362 | 523 | Complete |
-| `Infra` | 3 | 405 | 193 | 61 | Complete |
-| `Internals` | 7 | 951 | 826 | 220 | Complete |
-| `IntersectionObserver` | 2 | 445 | 376 | 186 | Complete |
-| `Layout` | 50 | 19,592 | 27,672 | 8,384 | Complete |
-| `Loader` | 5 | 887 | 830 | 292 | Complete |
-| `MathML` | 5 | 292 | 361 | 75 | Complete |
-| `MediaCapabilitiesAPI` | 1 | 247 | 369 | 99 | Complete |
+| `Gamepad` | 6 | 1,382 | 756 | 274 | Complete |
+| `Geolocation` | 4 | 511 | 416 | 176 | Complete |
+| `Geometry` | 8 | 2,157 | 2,062 | 1,008 | Complete |
+| `HTML` | 261 | 73,434 | 56,234 | 11,896 | Complete |
+| `HighResolutionTime` | 2 | 521 | 435 | 195 | Complete |
+| `IndexedDB` | 18 | 6,449 | 4,364 | 682 | Complete |
+| `Infra` | 3 | 405 | 207 | 63 | Complete |
+| `Internals` | 7 | 951 | 854 | 230 | Complete |
+| `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
+| `Layout` | 50 | 19,592 | 34,261 | 11,547 | Present |
+| `Loader` | 5 | 887 | 1,111 | 349 | Complete |
+| `MathML` | 5 | 292 | 411 | 97 | Complete |
+| `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
 | `MediaSourceExtensions` | 8 | 413 | 357 | 110 | Complete |
-| `MimeSniff` | 2 | 1,357 | 1,035 | 269 | Complete |
+| `MimeSniff` | 2 | 1,357 | 1,055 | 269 | Complete |
 | `MixedContent` | 1 | 121 | 125 | 105 | Complete |
-| `NavigationTiming` | 3 | 104 | 264 | 42 | Complete |
-| `NotificationsAPI` | 1 | 249 | 278 | 68 | Complete |
-| `Page` | 7 | 4,298 | 1,533 | 317 | Complete |
-| `Painting` | 48 | 10,038 | 4,265 | 825 | Complete |
-| `PerformanceTimeline` | 5 | 391 | 417 | 130 | Complete |
-| `PermissionsPolicy` | 1 | 98 | 79 | 21 | Complete |
-| `Platform` | 4 | 415 | 1,014 | 61 | Complete |
+| `NavigationTiming` | 3 | 104 | 291 | 45 | Complete |
+| `NotificationsAPI` | 1 | 249 | 290 | 68 | Complete |
+| `Page` | 7 | 4,298 | 2,206 | 414 | Complete |
+| `Painting` | 48 | 10,038 | 5,061 | 1,286 | Present |
+| `PerformanceTimeline` | 5 | 391 | 447 | 130 | Complete |
+| `PermissionsPolicy` | 1 | 98 | 86 | 21 | Complete |
+| `Platform` | 4 | 415 | 1,167 | 96 | Complete |
 | `ReferrerPolicy` | 2 | 298 | 239 | 123 | Complete |
-| `RequestIdleCallback` | 1 | 55 | 36 | 10 | Complete |
-| `ResizeObserver` | 4 | 376 | 238 | 89 | Complete |
-| `ResourceTiming` | 1 | 340 | 317 | 71 | Complete |
+| `RequestIdleCallback` | 1 | 55 | 59 | 18 | Complete |
+| `ResizeObserver` | 4 | 376 | 420 | 152 | Complete |
+| `ResourceTiming` | 1 | 340 | 330 | 72 | Complete |
 | `SRI` | 1 | 191 | 147 | 95 | Complete |
-| `SVG` | 80 | 9,570 | 3,561 | 726 | Complete |
-| `SecureContexts` | 1 | 88 | 63 | 13 | Complete |
-| `Selection` | 1 | 744 | 569 | 96 | Complete |
+| `SVG` | 80 | 9,570 | 5,066 | 1,015 | Complete |
+| `SecureContexts` | 1 | 88 | 59 | 13 | Complete |
+| `Selection` | 1 | 744 | 563 | 96 | Complete |
 | `Serial` | 2 | 381 | 231 | 33 | Complete |
-| `ServiceWorker` | 9 | 1,365 | 842 | 248 | Complete |
-| `Speech` | 11 | 504 | 596 | 111 | Complete |
-| `StorageAPI` | 7 | 381 | 342 | 146 | Complete |
-| `Streams` | 25 | 8,784 | 4,683 | 918 | Complete |
-| `TrustedTypes` | 7 | 1,108 | 722 | 168 | Complete |
-| `UIEvents` | 12 | 1,557 | 1,270 | 252 | Complete |
-| `URLPattern` | 1 | 148 | 300 | 41 | Complete |
-| `UserTiming` | 2 | 164 | 89 | 29 | Complete |
-| `ViewTransition` | 1 | 1,046 | 567 | 319 | Complete |
-| `WebAssembly` | 6 | 2,157 | 740 | 245 | Complete |
-| `WebAudio` | 26 | 3,649 | 1,660 | 298 | Complete |
-| `WebDriver` | 17 | 5,013 | 2,091 | 423 | Complete |
-| `WebGL` | 39 | 7,163 | 3,006 | 288 | Complete |
-| `WebIDL` | 10 | 2,110 | 1,139 | 279 | Complete |
-| `WebSockets` | 1 | 429 | 285 | 100 | Complete |
+| `ServiceWorker` | 9 | 1,365 | 919 | 305 | Complete |
+| `Speech` | 11 | 504 | 624 | 111 | Complete |
+| `StorageAPI` | 7 | 381 | 444 | 235 | Complete |
+| `Streams` | 25 | 8,784 | 5,645 | 1,649 | Complete |
+| `TrustedTypes` | 7 | 1,108 | 756 | 185 | Complete |
+| `UIEvents` | 12 | 1,557 | 1,358 | 378 | Complete |
+| `URLPattern` | 1 | 148 | 1,632 | 214 | Complete |
+| `UserTiming` | 2 | 164 | 115 | 35 | Complete |
+| `ViewTransition` | 1 | 1,046 | 582 | 322 | Complete |
+| `WebAssembly` | 6 | 2,157 | 1,057 | 268 | Complete |
+| `WebAudio` | 26 | 3,649 | 2,593 | 420 | Complete |
+| `WebDriver` | 17 | 5,013 | 3,447 | 638 | Complete |
+| `WebGL` | 39 | 7,163 | 3,649 | 328 | Complete |
+| `WebIDL` | 10 | 2,110 | 1,564 | 381 | Complete |
+| `WebSockets` | 1 | 429 | 312 | 114 | Complete |
 | `WebVTT` | 2 | 326 | 445 | 221 | Complete |
-| `WebXR` | 3 | 409 | 200 | 41 | Complete |
+| `WebXR` | 3 | 409 | 308 | 86 | Complete |
 | `Worker` | 1 | 47 | 81 | 33 | Complete |
-| `XHR` | 7 | 1,706 | 964 | 274 | Complete |
+| `XHR` | 7 | 1,706 | 1,115 | 340 | Complete |
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
-| `XML` | 2 | 534 | 244 | 83 | Complete |
-| `XPath` | 5 | 438 | 407 | 83 | Complete |
-| **Total** | **1,147** | **316,400** | **272,002** | **42,009** | **75 complete, 0 present, 0 untranslated** |
+| `XML` | 2 | 534 | 414 | 124 | Complete |
+| `XPath` | 5 | 438 | 534 | 128 | Complete |
+| **Total** | **1,147** | **316,400** | **311,454** | **54,333** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
-The current repository-wide implementation-symbol audit is clean, and the
-focused CSS and Layout verification suites pass:
+The semantic inventory deliberately fails while reviewed upstream bodies are
+missing. Its current baseline is:
 
 ```text
 $ python3 tools/libweb_translation_audit.py
 upstream modules: 74
 upstream .cpp files: 1147
 upstream implementations: 18658
+quarantined name-only coverage shims: 0 files / 0 functions
+explicit semantic-divergence markers: 11
+suspicious empty/default-return implementations: 588
+  candidate-name-match: 13942
+  unmatched: 1825
+  language-constructor-or-destructor: 1182
+  gc-or-binding-runtime: 1109
+  consolidated-name-match: 312
+  namespace-template-specialization: 152
+  language-operator: 71
+  language-template-trait: 65
 unmatched implementations by module:
+
+   707 CSS
+   597 Layout
+   521 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
 
-$ /Users/alex/code/v/v_old -enable-globals test layout
-Summary for all V _test.v files: 17 passed, 17 total.
+$ /Users/alex/code/v/v -enable-globals test css
+Summary for all V _test.v files: 26 passed, 26 total.
 
-$ /Users/alex/code/v/v_old -enable-globals test css
-Summary for all V _test.v files: 19 passed, 19 total.
+$ /Users/alex/code/v/v -enable-globals test layout
+Summary for all V _test.v files: 18 passed, 18 total.
 
-$ /Users/alex/code/v/v_old -enable-globals test integration
-Summary for all V _test.v files: 2 passed, 2 total.
+$ /Users/alex/code/v/v -enable-globals test painting
+Summary for all V _test.v files: 7 passed, 7 total.
 
-$ /Users/alex/code/v/v_old -enable-globals test .
-Summary for all V _test.v files: 357 passed, 357 total.
+$ /Users/alex/code/v/v -enable-globals test .
+Summary for all V _test.v files: 385 passed, 385 total.
 ```
 
 ## Native browser rendering
@@ -153,5 +171,154 @@ RMSE: 7.8784
 
 The page geometry and content coincide visually; the remaining pixel delta is
 concentrated on glyph edges rendered by the two native text backends. The
-layout-test comparison path selects Ladybird's Serenity Sans test face and also
-exercises native polygon decorations and clipped outer box shadows.
+layout-test comparison path selects Ladybird's Serenity Sans test face.
+Production style and geometry already run through `Document::update_style()`,
+`StyleComputer`, `Layout::TreeBuilder`, and the typed formatting contexts. The
+active compatibility renderer still adapts that typed tree to `BlockBox` and
+`PaintCommand`; this transport conversion is a real remaining handwritten
+boundary and is not counted as a completed Painting translation. It replays
+retained box commands through
+Ladybird's stacking-context phase order instead of painting each flattened box
+atomically. Its hit-test path retains the sorted paintable order until stacking
+invalidation, resolves the direct DOM owner, and applies inverse transforms and
+`pointer-events` filtering instead of rebuilding paint order and rescanning the
+DOM for each mouse event. Committed text runs also remain source-shaped
+`PaintableFragment`s instead of being expanded into compatibility word objects
+and joined again before native shaping. The native shell records through the
+translated `Document::record_display_list()` lifecycle; painting and hit testing
+share one retained sorted stacking plan, and command storage crosses the native
+boundary without a full-array clone. Retained per-paintable `PaintPhase` command
+buckets survive document-level repaints, while `PaintableBox` repaint requests
+selectively regenerate that box and its anonymous children. Explicit all-cache
+and stacking invalidation clear the whole store, matching the separate C++
+invalidation boundaries. Checkbox/radio buckets read live DOM checkedness and
+indeterminate state rather than a layout-time attribute snapshot; the translated
+`HTMLInputElement::set_checked()` invalidation refreshes the retained commands.
+Its overlay phase uses Painting's translated scrollbar geometry and
+ports PaintableBox's scrollbar colors, mirroring, current-offset placement, and
+resize-gripper drawing. Retained replay and hit testing now share translated
+`ScrollState` snapshots: a mandatory root frame and live element offsets
+transform descendant content, padding-box clips contain overflow, sticky
+constraints track element or viewport scrollports and containing blocks, and
+fixed contexts remain rooted to the viewport. Accumulated overflow clips retain
+their nested transformed shapes and elliptical per-corner radii in shared
+context lists; the native Quartz path intersects those shapes with antialiased
+rounded clipping rather than reducing them to bounding boxes. CSS basic-shape
+`clip-path` now follows the same accumulated-context order as
+C++ and retains move, line, quadratic/cubic Bezier, elliptical-arc, close, and
+nonzero/even-odd path state. Quartz clips with the exact retained curves, while
+hit testing consumes contours flattened once when the paint tree is built;
+neither path is reparsed per command or pointer event. Wheel routing follows
+the C++ containing-block fallback, including declining
+programmatic-only hidden overflow and saturated inner scrollers. These updates
+preserve layout and per-phase command caches while refreshing visual scroll
+state and dynamic scrollbar thumbs. SVG geometry now reaches the native Quartz
+renderer as its retained move, line, quadratic/cubic Bezier, elliptical-arc,
+and close segments, including fill rule and stroke cap/join/miter state. URL
+`<clipPath>` resources follow `SVGMaskable`'s paint-time path: the attached
+resource subtree, target/resource transforms, `userSpaceOnUse` or
+`objectBoundingBox` units, per-component `clip-rule`, and component union are
+retained in a reusable alpha-mask cache. Empty resources suppress the target;
+the mask is deliberately excluded from hit testing, as in C++. SVG `<mask>`
+path content now follows the same retained nested-display-list boundary: normal
+fill/stroke colors and opacity, `paint-order`, group opacity layers, mask-area
+clipping, `maskContentUnits`, and alpha/luminance conversion are composited once
+over the complete target context with `destination-in`. URL clips use that same
+layer boundary instead of applying antialiased coverage independently to every
+leaf command. The shared four-entry native cache rasterizes only each mask's
+transformed bounds, not a full-window surface. SVG text is materialized from
+the font's TrueType contours into the same quadratic path representation as
+`Gfx::Path::text()`, so ordinary text and text inside a mask share SVG
+fill/stroke/paint-order and mask compositing. SVG `<textPath>` now follows
+`Path::place_text_along()` too: it measures only the referenced path's first
+contour, rotates glyph outlines to each tangent, and enforces the glyph-midpoint
+cutoff before the same normal or mask path replay. SVG `<image>` now follows
+`ImagePaintable` through href/XLink selection, intrinsic-ratio sizing, forced
+`contain`, computed object position, `image-rendering` scaling selection,
+image-rect clipping, and transformed native bitmap replay. The same ordered
+bitmap operations can supply alpha or luminance inside `<mask>`, including
+nested group opacity. URL `<linearGradient>` and `<radialGradient>` fill
+and stroke paints now retain C++'s same-document resource resolution, href
+inheritance and precedence, normalized computed stops, `gradientUnits`,
+`gradientTransform`, `spreadMethod`, color interpolation, and paint order.
+Radial gradients additionally retain the two focal/end circles, `fr`, C++'s
+negative-radius inheritance behavior, and width-relative radius resolution.
+Quartz consumes both retained styles directly for ordinary paths and mask
+content, including pad/repeat/reflect tiling, instead of substituting the URL
+paint's fallback color. SVG `<pattern>` now follows C++'s retained paint-server
+path as well: same-document href inheritance, first content-owning linked
+resource selection, `patternUnits`, `patternContentUnits`, `viewBox`,
+`preserveAspectRatio`, CSS-transform precedence, `patternTransform`, and
+non-invertible/empty-tile rejection feed a cached tile display list. Tile
+content preserves ordered solid, linear/radial gradient, image, nested-pattern,
+stroke, and group-opacity operations. Object-bounding-box content is normalized
+against the target origin before rasterization, matching the C++ recorder's
+content-origin translation. Quartz caches the resulting high-DPI tile and
+repeats it for normal fill/stroke and alpha/luminance mask content. Standard CSS
+filters now follow `PaintableBox::resolve_css_filter()` and
+`ResolvedCSSFilter::to_gfx_filter()`: retained computed blur, drop-shadow,
+brightness, contrast, grayscale, invert, opacity, saturate, sepia, and
+hue-rotate operations preserve C++ composition order and create one visual
+layer around the complete filtered subtree. Filter layers and SVG masks share
+one ordered scope stream, so either may correctly contain the other. The native
+Core Image replay uses LibGfx's exact color matrices and device-scaled blur and
+drop-shadow geometry instead of filtering individual leaf commands. SVG URL
+filters no longer use the earlier generic sequential placeholder graph:
+`SVGFilterElement::gfx_filter()` is represented with LibGfx constructor input
+order and primitive-specific state, including explicit SourceAlpha and
+luminance matrices, named-result fallback, blend/composite/arithmetic modes,
+component-transfer channel tables, matrix/saturate/hue operations, merge,
+morphology, offset, turbulence, displacement, and the specified six-node
+drop-shadow expansion. Same-document fragment URLs now resolve the live
+`SVGFilterElement`, preserve the standard-CSS-inside/SVG-outside composition
+order, and carry the resolved target region and computed flood color/opacity to
+native replay. Empty-source, content-generating graphs retain C++'s transparent
+target-bounds display-list trigger. Core Image executes flood, every translated
+blend/composite mode (including arithmetic and plus-darker), anisotropic blur
+and morphology, color matrix/saturate/hue, component-transfer tables, merge,
+offset, and channel-selecting displacement while propagating logical graph
+extents instead of allocating or flooding the full canvas. Native turbulence
+generation and decoded-bitmap `feImage` graph inputs remain outstanding. Its
+table phase consumes the translated collapsed and separate border collector,
+including conflict winners, cell snapping, empty-cell suppression, and exact
+rounded-cell repainting. Ordinary block and inline borders now retain their
+computed per-edge styles and consume the direct `BorderPainting.cpp`
+translation, including elliptical joins, same-color path batching,
+dotted/dashed endpoints, inset/outset colors, and double/groove/ridge recursion.
+Outlines resolve their computed style and `auto` accent color, inflate the border
+geometry with the C++ negative-offset clamp, and enter the same dispatcher.
+URL backgrounds now retain typed layer data and enter the direct
+`BackgroundPainting.cpp` sizing/repetition path after decode. This restores the
+source ordering for default sizing, contain/cover, `round` aspect correction,
+fixed-point positions, `space` gaps, and attachment handling. Cached replay
+refreshes local and viewport scroll offsets, while Quartz resolves tiles in CSS
+coordinates, then applies the accumulated transform and the layer's shrunken
+elliptical clip radii. The previous screen-AABB sizing and stale-scroll paths
+are gone. Non-normal URL layers now paint with all 18 translated CSS blend
+modes inside the isolated background group required by
+`BackgroundPainting.cpp`, rather than blending directly with page content.
+Typed linear, radial, and conic gradients now travel through that same ordered
+background-image list instead of a separate first-gradient shortcut. Each
+gradient is resolved only after `BackgroundPainting.cpp` determines its tile
+size with absent intrinsic dimensions, and retains its own origin, clip,
+position, size, repetition, attachment, and blend mode. Blocks, inline
+fragments, portable SVG, and native Quartz replay all consume the same layer
+geometry; transformed native gradients sample in tile-local coordinates and
+clip against the exact per-corner elliptical background box.
+The gradient parser now follows `GradientParsing.cpp` for interpolation-method
+placement, geometry ordering, double-position stops, position-first stops, and
+transition-hint attachment. Modern stops select the upstream OKLab default;
+legacy stops retain sRGB. Resolved gradients carry that method into every
+backend, where the V sampler mirrors `DisplayListPlayerSkia`'s premultiplied
+sRGB, linear-sRGB, Lab/OKLab, wide-gamut RGB, and polar-space interpolation,
+including hue routing and Skia's powerless-hue neighbor substitution. Portable
+SVG uses native sRGB/linearRGB when exact and emits sampled stops for the other
+spaces instead of silently falling back to raw sRGB channel mixing.
+The same group now implements `background-clip:text`. It records the element's
+inclusive-subtree glyph runs, skips absolute/fixed subtrees while retaining
+floats, masks the color and all image layers together, and leaves root canvas
+backgrounds unmasked. Quartz rasterizes the real configured document font into
+one bounded alpha mask before compositing the background group; portable SVG
+emits the equivalent user-space text mask.
+Full typed Painting
+display-list integration remains outstanding.

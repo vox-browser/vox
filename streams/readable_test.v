@@ -12,6 +12,10 @@ fn failing_pull() ! {
 	return error('pull failed')
 }
 
+fn readable_failing_start() ! {
+	return error('start failed')
+}
+
 fn failing_cancel(_ Value) ! {
 	return error('cancel failed')
 }
@@ -19,7 +23,7 @@ fn failing_cancel(_ Value) ! {
 fn test_readable_from_default_reader_and_close_drain() {
 	mut stream := ReadableStream.from([string_value('a'), string_value('b')])!
 	assert stream.state() == .readable
-	assert stream.queued_chunks() == 2
+	assert stream.queued_chunks() == 0
 	mut reader := stream.get_default_reader()!
 	assert stream.locked()
 	assert stream.cancel(undefined_value()).state() == .rejected
@@ -29,9 +33,10 @@ fn test_readable_from_default_reader_and_close_drain() {
 	assert !first.result().done
 	second := reader.read()
 	assert second.result().value.text == 'b'
-	assert stream.state() == .closed
+	assert stream.state() == .readable
 	last := reader.read()
 	assert last.result().done
+	assert stream.state() == .closed
 	assert reader.closed().state() == .fulfilled
 }
 
@@ -48,10 +53,28 @@ fn test_pending_read_is_fulfilled_by_enqueue() {
 	assert reader.closed().state() == .fulfilled
 }
 
+fn test_pending_reads_retain_source_linked_fifo_shape() {
+	mut stream := ReadableStream.construct_impl(UnderlyingSource{}, QueuingStrategy{})!
+	mut reader := stream.get_default_reader()!
+	mut reads := []&ReadPromise{cap: 4096}
+	for _ in 0 .. 4096 {
+		reads << reader.read()
+	}
+	assert stream.pending_reads_.len == 4096
+	mut controller := stream.default_controller()!
+	for index in 0 .. 4096 {
+		controller.enqueue(number_value(index))!
+	}
+	for index, read in reads {
+		assert read.result().value.number == index
+	}
+	assert stream.pending_reads_.len == 0
+}
+
 fn test_controller_desired_size_custom_size_and_error() {
 	mut stream := ReadableStream.construct_impl(UnderlyingSource{}, QueuingStrategy{
 		high_water_mark: 3
-		size:            size_two
+		size: size_two
 	})!
 	mut controller := stream.default_controller()!
 	assert controller.desired_size()? == 3
@@ -66,6 +89,14 @@ fn test_controller_desired_size_custom_size_and_error() {
 }
 
 fn test_start_and_pull_failures_error_the_stream() {
+	if _ := ReadableStream.construct_impl(UnderlyingSource{
+		start: readable_failing_start
+	}, QueuingStrategy{}) {
+		assert false
+	} else {
+		assert err.msg() == 'start failed'
+	}
+
 	stream := ReadableStream.construct_impl(UnderlyingSource{
 		pull: failing_pull
 	}, QueuingStrategy{})!
@@ -87,6 +118,8 @@ fn test_release_lock_rejects_pending_read_and_unlocks() {
 fn test_release_lock_replaces_a_settled_closed_promise() {
 	mut stream := ReadableStream.from([]Value{})!
 	mut reader := stream.get_default_reader()!
+	assert reader.closed().state() == .pending
+	assert reader.read().result().done
 	assert reader.closed().state() == .fulfilled
 	reader.release_lock()!
 	assert reader.closed().state() == .rejected

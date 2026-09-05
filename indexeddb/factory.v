@@ -27,7 +27,7 @@ pub fn IDBFactory.create(storage_key string) !&IDBFactory {
 	}
 	return &IDBFactory{
 		storage_key: storage_key
-		databases:   map[string]&DatabaseData{}
+		databases: map[string]&DatabaseData{}
 	}
 }
 
@@ -48,16 +48,17 @@ pub fn (mut factory IDBFactory) open(name string, requested_version ?u64) !&IDBO
 		}
 	}
 	mut request := &IDBOpenDBRequest{
-		request:       IDBRequest.create('factory')
-		factory:       &factory
+		request: IDBRequest.create('factory')
+		factory: &factory
 		database_name: name
 	}
 	if name !in factory.databases {
-		mut data := &DatabaseData{
-			name:        name
-			storage_key: factory.storage_key
-			stores:      map[string]ObjectStoreData{}
+		if existing := DatabaseData.for_key_and_name(factory.storage_key, name) {
+			factory.databases[name] = existing
 		}
+	}
+	if name !in factory.databases {
+		mut data := DatabaseData.create_for_key_and_name(factory.storage_key, name)
 		factory.databases[name] = data
 		mut connection := new_connection(data)
 		request.connection = connection
@@ -84,8 +85,10 @@ pub fn (mut factory IDBFactory) open(name string, requested_version ?u64) !&IDBO
 	request.old_version = old_version
 	request.new_version = target
 	if target > old_version {
-		mut upgrade := IDBTransaction.create(connection, .versionchange, .default_,
-			data.stores.keys())
+		// IDBTransaction::set_up_mutation_logs captures the pre-upgrade
+		// version before the upgrade algorithm updates the database.
+		data.version = old_version
+		mut upgrade := IDBTransaction.create(connection, .versionchange, .default_, data.stores.keys())
 		connection.transactions << upgrade
 		connection.upgrade_active = true
 		data.version = target
@@ -118,6 +121,7 @@ pub fn (mut request IDBOpenDBRequest) abort_upgrade(reason string) ! {
 		request.connection.close()
 		if request.old_version == 0 && !isnil(request.factory) {
 			request.factory.databases.delete(request.database_name)
+			DatabaseData.delete_for_key_and_name(request.factory.storage_key, request.database_name)
 		}
 	}
 	request.request.fail(if reason == '' { 'AbortError: upgrade aborted' } else { reason })
@@ -125,9 +129,14 @@ pub fn (mut request IDBOpenDBRequest) abort_upgrade(reason string) ! {
 
 pub fn (mut factory IDBFactory) delete_database(name string) &IDBOpenDBRequest {
 	mut request := &IDBOpenDBRequest{
-		request:       IDBRequest.create('factory')
-		factory:       &factory
+		request: IDBRequest.create('factory')
+		factory: &factory
 		database_name: name
+	}
+	if name !in factory.databases {
+		if existing := DatabaseData.for_key_and_name(factory.storage_key, name) {
+			factory.databases[name] = existing
+		}
 	}
 	if name !in factory.databases {
 		request.request.succeed(.undefined)
@@ -141,11 +150,17 @@ pub fn (mut factory IDBFactory) delete_database(name string) &IDBOpenDBRequest {
 		return request
 	}
 	factory.databases.delete(name)
+	DatabaseData.delete_for_key_and_name(factory.storage_key, name)
 	request.request.succeed(.undefined)
 	return request
 }
 
 pub fn (mut factory IDBFactory) retry_delete(mut request IDBOpenDBRequest, name string) bool {
+	if name !in factory.databases {
+		if existing := DatabaseData.for_key_and_name(factory.storage_key, name) {
+			factory.databases[name] = existing
+		}
+	}
 	if name !in factory.databases {
 		return false
 	}
@@ -154,27 +169,23 @@ pub fn (mut factory IDBFactory) retry_delete(mut request IDBOpenDBRequest, name 
 		return false
 	}
 	factory.databases.delete(name)
+	DatabaseData.delete_for_key_and_name(factory.storage_key, name)
 	request.request.succeed(.undefined)
 	return true
 }
 
 pub fn (factory &IDBFactory) database_infos() []IDBDatabaseInfo {
 	mut result := []IDBDatabaseInfo{}
-	for _, database in factory.databases {
+	for database in DatabaseData.for_key(factory.storage_key) {
 		if database.version > 0 {
 			result << IDBDatabaseInfo{
-				name:    database.name
+				name: database.name
 				version: database.version
 			}
 		}
 	}
-	for index in 1 .. result.len {
-		mut position := index
-		for position > 0
-			&& compare_utf16_code_units(result[position].name, result[position - 1].name) < 0 {
-			result[position], result[position - 1] = result[position - 1], result[position]
-			position--
-		}
-	}
+	result.sort_with_compare(fn (a &IDBDatabaseInfo, b &IDBDatabaseInfo) int {
+		return compare_utf16_code_units(a.name, b.name)
+	})
 	return result
 }

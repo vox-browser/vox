@@ -154,7 +154,7 @@ pub fn (_ &MainThreadVM) host_ensure_can_add_private_element(target PrivateEleme
 	}
 }
 
-// CSP's decision is kept at a narrow host boundary until that module is ported.
+// The host receives the translated CSP engine's decision from the active global-object embedding.
 pub fn (_ &MainThreadVM) host_ensure_can_compile_strings(csp_allows_compilation bool) ! {
 	if !csp_allows_compilation {
 		return error('EvalError: string compilation was blocked by Content Security Policy')

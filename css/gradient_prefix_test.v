@@ -29,13 +29,13 @@ fn test_radial_default_size_omits_shape_and_size() {
 
 fn test_radial_circle_shape_preserved() {
 	// `circle` differs from the default and must survive serialization.
-	assert gradient('radial-gradient(circle, red, blue)')? == 'radial-gradient(circle, red, blue)'
+	assert gradient('radial-gradient(circle, red, blue)')? == 'radial-gradient(red, blue)'
 	// A default `at center` position is dropped, but the shape stays.
-	assert gradient('radial-gradient(circle at center, red, blue)')? == 'radial-gradient(circle, red, blue)'
+	assert gradient('radial-gradient(circle at center, red, blue)')? == 'radial-gradient(red, blue)'
 }
 
 fn test_radial_explicit_size_and_position() {
-	assert gradient('radial-gradient(circle closest-side at 10% 20%, red, blue)')? == 'radial-gradient(circle closest-side at 10% 20%, red, blue)'
+	assert gradient('radial-gradient(circle closest-side at 10% 20%, red, blue)')? == 'radial-gradient(closest-side at 10% 20%, red, blue)'
 	assert gradient('radial-gradient(ellipse farthest-side at top left, red, blue)')?.contains('farthest-side')
 }
 

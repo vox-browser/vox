@@ -41,7 +41,16 @@ fn test_cookie_url_parser_resolves_and_compares_hierarchical_urls() {
 	}
 	assert relative.serialize(false) == 'https://www.example.com/settings?tab=cookies'
 	assert parse_cookie_store_url('https://:bad/', &base) == none
-	assert parse_cookie_store_url('data:text/plain,no', &base) == none
+	// URL::Parser accepts non-cookie schemes here; CookieStore rejects them at
+	// the subsequent same-origin check, just like upstream.
+	data_url := parse_cookie_store_url('data:text/plain,no', &base) or {
+		panic('the basic URL parser should accept a data URL')
+	}
+	assert data_url.scheme == 'data'
+	standard_edge_case := parse_cookie_store_url('%2e%2e\\BÜCHER', &base) or {
+		panic('encoded dot/backslash URL should parse')
+	}
+	assert standard_edge_case.serialize(false) == 'https://www.example.com/B%C3%9CCHER'
 	assert serialized_cookie_default_path(&base) == '/account'
 	root := cookie_test_url('/')
 	assert serialized_cookie_default_path(&root) == '/'

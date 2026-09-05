@@ -77,6 +77,21 @@ pub:
 	y_max f32
 }
 
+// A scaled TrueType outline point. Gfx::Path::text() asks Skia for these
+// contours and appends them to the SVG path; exposing the same data keeps SVG
+// text in the path pipeline instead of routing it through inline text paint.
+pub struct FontGlyphOutlinePoint {
+pub:
+	x        f32
+	y        f32
+	on_curve bool
+}
+
+pub struct FontGlyphOutline {
+pub:
+	contours [][]FontGlyphOutlinePoint
+}
+
 fn font_u16_at(bytes []u8, offset int) ?u16 {
 	if offset < 0 || offset + 2 > bytes.len {
 		return none
@@ -207,6 +222,44 @@ pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
 		x_max: f32(x_max) * scale
 		y_min: f32(y_min) * scale
 		y_max: f32(y_max) * scale
+	}
+}
+
+// The glyph outline consumed by Gfx::Path::text(). Coordinates are scaled to
+// the font's point size but retain TrueType's positive-up Y axis; Path::text()
+// callers position them relative to the CSS baseline and invert Y there.
+pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
+	face := serenity_sans_face()?
+	if glyph_index < 0 || glyph_index > 0xffff {
+		return none
+	}
+	mut mutable_face := unsafe { &ttf.TTF_File(face) }
+	glyph := mutable_face.read_glyph(u16(glyph_index))
+	if !glyph.valid_glyph || glyph.contour_ends.len == 0 {
+		return none
+	}
+	scale := font.point_size / f32(face.units_per_em)
+	mut contours := [][]FontGlyphOutlinePoint{cap: glyph.contour_ends.len}
+	mut start := 0
+	for contour_end in glyph.contour_ends {
+		end := int(contour_end)
+		if end < start || end >= glyph.points.len {
+			return none
+		}
+		mut contour := []FontGlyphOutlinePoint{cap: end - start + 1}
+		for index in start .. end + 1 {
+			point := glyph.points[index]
+			contour << FontGlyphOutlinePoint{
+				x: f32(point.x) * scale
+				y: f32(point.y) * scale
+				on_curve: point.on_curve
+			}
+		}
+		contours << contour
+		start = end + 1
+	}
+	return FontGlyphOutline{
+		contours: contours
 	}
 }
 

@@ -1,15 +1,17 @@
-# CSS module V translation — complete
+# CSS module V translation — present; semantic re-audit in progress
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/CSS`
 
 Translation workspace: `~/code/libweb_v/css`
-Audited: 2026-08-29
+Audited: 2026-09-05
 
-Every current upstream implementation unit and its adjacent declarations were
-audited against the V package. The inventory is 212 `.cpp` files / 66,305 LOC,
+Every current upstream implementation unit has a filename-level mapping, but
+that mapping is not proof that its C++ body was translated. The semantic audit
+currently reports 708 unmatched CSS implementations after quarantining the
+name-only `upstream_*entry_points.v` facades. The inventory is 212 `.cpp` files / 66,305 LOC,
 233 `.h` files / 18,353 LOC, and 72 `.idl` files / 994 LOC. The translated
-package has 58 implementation `.v` files / 90,675 LOC and 19 test `.v` files /
-3,594 LOC. Documentation is excluded from both V LOC totals.
+package has 56 implementation `.v` files / 99,216 LOC and 26 test `.v` files /
+6,542 LOC. Documentation is excluded from both V LOC totals.
 
 ## Implementation-unit mapping
 
@@ -32,7 +34,7 @@ of mirroring C++ compilation-unit boundaries.
 | `CSSAnimation.cpp`, `CSSTransition.cpp`, `EasingFunction.cpp` | `screen_animation.v`, `computed_interpolation.v`, `misc_values.v` |
 | `Screen.cpp`, `ScreenOrientation.cpp`, `VisualViewport.cpp` | `screen_animation.v` |
 | `BooleanExpression.cpp`, `Supports.cpp` | `boolean_expressions.v`, `media_queries.v` |
-| `PreferredColorScheme.cpp`, `PreferredContrast.cpp`, `PreferredMotion.cpp` | `media_queries.v`, `media_queries_minimal.v` |
+| `PreferredColorScheme.cpp`, `PreferredContrast.cpp`, `PreferredMotion.cpp` | `media_queries.v`, `media_query_compatibility.v` |
 | `MediaList.cpp`, `MediaQuery.cpp`, `MediaQueryList.cpp`, `MediaQueryListEvent.cpp` | `media_queries.v`, `events_misc.v` |
 | `CSSConditionRule.cpp`, `CSSGroupingRule.cpp`, `CSSImportRule.cpp`, `CSSLayerBlockRule.cpp`, `CSSLayerStatementRule.cpp`, `CSSMarginRule.cpp`, `CSSMediaRule.cpp`, `CSSNamespaceRule.cpp`, `CSSNestedDeclarations.cpp`, `CSSPageRule.cpp`, `CSSPropertyRule.cpp`, `CSSRule.cpp`, `CSSRuleList.cpp`, `CSSStyleRule.cpp`, `CSSSupportsRule.cpp` | `cssom_rules.v`, `parser_rules_selectors.v` |
 | `CSSCounterStyleRule.cpp` | `cssom_rules.v`, `counter_values.v` |
@@ -61,7 +63,7 @@ of mirroring C++ compilation-unit boundaries.
 | `Parser/MediaParsing.cpp` | `media_queries.v`, `parser_value_logic.v` |
 | `Parser/Syntax.cpp`, `Parser/SyntaxParsing.cpp` | `parser_syntax_helpers.v` |
 | `SyntaxHighlighter/SyntaxHighlighter.cpp` | `syntax_highlighter.v` |
-| `StyleValues/AbstractImageStyleValue.cpp`, `StyleValues/ColorFunctionStyleValue.cpp`, `StyleValues/ColorInterpolationMethodStyleValue.cpp`, `StyleValues/ColorMixStyleValue.cpp`, `StyleValues/ColorSchemeStyleValue.cpp`, `StyleValues/ColorStyleValue.cpp`, `StyleValues/ConicGradientStyleValue.cpp`, `StyleValues/HSLColorStyleValue.cpp`, `StyleValues/HWBColorStyleValue.cpp`, `StyleValues/ImageStyleValue.cpp`, `StyleValues/LCHLikeColorStyleValue.cpp`, `StyleValues/LabLikeColorStyleValue.cpp`, `StyleValues/LightDarkStyleValue.cpp`, `StyleValues/LinearGradientStyleValue.cpp`, `StyleValues/RGBColorStyleValue.cpp`, `StyleValues/RadialGradientStyleValue.cpp`, `StyleValues/RadialSizeStyleValue.cpp` | `image_color_values.v`, `more_style_values.v` |
+| `StyleValues/AbstractImageStyleValue.cpp`, `StyleValues/ColorFunctionStyleValue.cpp`, `StyleValues/ColorInterpolationMethodStyleValue.cpp`, `StyleValues/ColorMixStyleValue.cpp`, `StyleValues/ColorSchemeStyleValue.cpp`, `StyleValues/ColorStyleValue.cpp`, `StyleValues/ConicGradientStyleValue.cpp`, `StyleValues/HSLColorStyleValue.cpp`, `StyleValues/HWBColorStyleValue.cpp`, `StyleValues/ImageStyleValue.cpp`, `StyleValues/LCHLikeColorStyleValue.cpp`, `StyleValues/LabLikeColorStyleValue.cpp`, `StyleValues/LightDarkStyleValue.cpp`, `StyleValues/LinearGradientStyleValue.cpp`, `StyleValues/RGBColorStyleValue.cpp`, `StyleValues/RadialGradientStyleValue.cpp`, `StyleValues/RadialSizeStyleValue.cpp` | `image_color_values.v`, `gradient_color_interpolation.v`, `more_style_values.v` |
 | `StyleValues/CounterDefinitionsStyleValue.cpp`, `StyleValues/CounterStyleStyleValue.cpp`, `StyleValues/CounterStyleSystemStyleValue.cpp`, `StyleValues/CounterStyleValue.cpp`, `StyleValues/TreeCountingFunctionStyleValue.cpp` | `counter_values.v`, `more_style_values.v` |
 | `StyleValues/GridAutoFlowStyleValue.cpp`, `StyleValues/GridTemplateAreaStyleValue.cpp`, `StyleValues/GridTrackPlacementStyleValue.cpp`, `StyleValues/GridTrackSizeListStyleValue.cpp` | `grid_values.v` |
 | `StyleValues/TransformationStyleValue.cpp` | `transforms.v` |
@@ -101,15 +103,220 @@ style-value parsing, constructed stylesheet replacement/insertion/deletion,
 `CSS.escape`, both `CSS.supports` forms, custom-property registration, and
 screen/orientation observable defaults and errors.
 
-The final implementation-symbol audit inventories all 4,427 current upstream
-CSS implementations: 3,903 direct candidate matches, 276 constructors or
-destructors, 132 binding/GC runtime hooks, 47 language operators, 41 language
-template traits, 19 reviewed consolidated-name matches, and 9 namespace
-template specializations. There are zero unmatched implementations. The
-generated computed-value surface and the upstream parser, calculation-node,
-CSSOM rule/sheet, font, style-value, and namespace entry points are preserved
-by the stateful `upstream_*_entry_points.v` records and exercised by
-`upstream_entry_points_test.v`.
+The 2026-09-03 source-generator audit removed the remaining handwritten copies
+of Ladybird's generated property metadata. The V generator now performs the
+same logical-alias replacement as `GenerateCSSPropertyID.cpp` and derives names,
+legacy property and value aliases, accepted keywords/types/ranges, initial and
+inherited values, multiplicity and maximum value counts, animation types and
+shorthand animatability, computation requirements, positional shorthands, and
+layout/stacking invalidation flags and property quirk assignments from `Properties.json`,
+`LogicalPropertyGroups.json`, and `Enums.json`. Direct and expanded shorthand
+tables retain the order emitted by Ladybird's generated `PropertyID.cpp`.
+This fixed missing logical-property grammars, restored `filter`,
+`backdrop-filter`, and `clip-path` stacking-context invalidation, and removed
+three incorrect initial-value computation flags.
+
+The 2026-09-04 semantic pass replaced additional compatibility logic with the
+corresponding upstream algorithms. `position-area` and position-try tactics now
+use the C++ axis validation, ordering, duplicate rejection, and computed-value
+canonicalization; media-query compatibility reads use the translated parser and
+`MediaQuery.evaluate()` path instead of a width-only evaluator; calculated
+rounding/sign operations preserve IEEE negative zero; and opacity computation
+uses retained typed values. `StyleComputer::compute_value_of_property()` now
+absolutizes every specified value before dispatch and repeats coordinated
+background longhand lists to the computed `background-image` layer count, while
+reusing the original retained object when absolutization makes no change.
+
+The same pass now translates the common zero-duration transition exit,
+`required_box_type_transformation()`, `is_monospace()`, and
+`apply_dimension_attribute()` directly. Dimension hints preserve the upstream
+canvas exception and selected `<picture><source>` ownership. Font-family
+parsing retains the required one-item list, and transition registrations are no
+longer allocated for the initial `0s`/`0s` case.
+
+Media-query parsing now follows `Parser/MediaParsing.cpp` over the existing
+component-value token stream. The `parse_as_media_query_list()`,
+`parse_a_media_query()`, condition, type, and feature paths no longer serialize
+and re-tokenize through an independently written text parser. Feature values
+retain their typed length, ratio, resolution, and calculated representations,
+so evaluation performs the upstream canonical-unit and length-context
+conversions instead of treating every dimension as a raw number. The same
+parser owns the direct `parse_as_supports()` entry points and preserves the C++
+invalid-query and unsupported-declaration boundaries.
+Supports, Media, and `if()` conditions now share that one translated
+boolean-expression/group implementation instead of maintaining three separate
+handwritten parsers. Supports declarations keep syntactically valid unknown
+properties as false declaration nodes and validate known property values
+directly from their component tokens. Arbitrary-substitution `if()` processing
+also reuses one Parser across all branches, matching the C++ allocation boundary.
+
+The compact cascade compatibility path also implements the upstream
+guaranteed-invalid behavior for custom-property substitution. Missing or cyclic
+`var()` references without a usable fallback, and property values that are
+invalid after substitution, now resolve as `unset` (inherited or initial as
+appropriate) rather than silently substituting an empty string.
+
+`Parser/ValueParsing.cpp` numeric and dimension entry points now use the same
+token probes and transactions as C++. Angle, length, flex, frequency,
+resolution, and time parsing preserve invalid-unit rollback; unitless zero is
+no longer treated as an angle or time; negative resolutions are rejected; and
+SVG unitless angles and lengths flow through `ParsingMode::SVGPresentationAttribute`.
+This replaces the former SVG presentation-attribute allowlist and append-`px`
+retry parser with one mode-aware parse. Quirks-mode unitless lengths and
+hashless hexadecimal colors are driven by the generated `Properties.json`
+quirk table, including the upstream property and child-function restrictions.
+
+Integer and number parsing now follows the upstream raw-value, calculation,
+then tree-counting order without consuming failed alternatives.
+`sibling-count()` and `sibling-index()` are reachable as their existing typed
+style values and as dynamic non-math leaves inside calculations. They remain
+symbolic until an element-backed calculation context resolves them, while
+descriptor and media-condition contexts retain the C++ restriction against
+those functions.
+
+`Parser/PropertyParsing.cpp` shorthand selection now runs through the translated
+`parse_css_value_for_properties()` type/keyword/range order rather than parallel
+handwritten probes. Positional and simple comma-separated lists, animation and
+transition coordinating lists, `columns` (including `column-height`), flex,
+flex-flow, scroll/view timelines, place-content/items/self, list-style,
+text-decoration, and border-radius retain the same transactions and defaulting
+rules as C++. The border family also retains nested width/style/color shorthands
+and a recursively materialized initial border-image value; expansion and
+serialization consume that upstream-shaped graph directly. Focused regressions
+cover ambiguous numeric routing, negative duration ranges, reset-only animation
+timelines, timeline ordering, multi-keyword decoration lines, flex defaults,
+border-image slash portions, and nested border expansion.
+
+Layered background and mask parsing now share the C++ component selector,
+transaction, slash-size, geometry-box, final-color, and defaulting rules.
+Background retains its nested position shorthand, while a one-layer mask keeps
+direct longhand values and only creates comma lists for multiple layers. The
+font shorthand likewise retains nested `font-variant`, restricts its CSS2 width
+slot to keywords, and resets the same longhands as C++. All grid placement,
+template-area, explicit-track, and auto-flow shorthand branches now follow the
+corresponding `PropertyParsing.cpp` routines. This leaves no unmatched method in
+that upstream implementation unit.
+
+Value parsing now carries the translated `ValueParsingContext` stack rather
+than independent property/quirk booleans. This restores the C++ nesting rules
+for quirky lengths and colors, tree-counting functions, and calculation
+contexts. The calculation parser now also translates `random()`, including
+fixed, element-shared, and document-shared value sharing, generated `auto`
+names, stepped selection, clamping, and cache reuse. CSS `path()` values are
+validated and normalized by the translated SVG path-data parser instead of
+being retained as unchecked strings.
+
+The calculation-tree audit replaced the remaining compact reducer behavior
+with the ordered `CalculatedStyleValue.cpp` algorithms. Sum and product
+serialization sorts number, percentage, and dimension children like C++;
+`min()`/`max()` partially combine comparable same-unit operands; and scalar
+products distribute over all-numeric sums before canonical folding.
+`CalculationContext` now reaches percentage-leaf typing and used-value
+resolution, preserving percent hints without resolving a dimension-associated
+percentage before its basis is available. Function evaluation also retains the
+upstream consistent result types, NaN propagation and top-level censoring,
+strict `mod()`/`rem()` type check, signed-zero behavior, and `atan2()` range.
+`CSSNumericValue.parse()` now reifies the translated calculation tree into
+`CSSUnitValue` and the supported `CSSMath*` node graph, including nested sums,
+products, negations, inversions, comparisons, and clamps, instead of using a
+separate single-component parser.
+
+A follow-up serialization audit replaced the remaining locally invented parts of
+`serialize_a_calculation_tree()` and `serialize_a_math_function()`. Every nested
+Sum, Product, Negate, and Invert is now parenthesised, and Negate/Invert use the
+`(-1 * x)`/`(1 / x)` spelling; only the root of a math function and its
+comma-separated arguments are emitted bare. The previous flattening changed what
+a serialization re-parsed to, so `calc(1px / (1em / 1vw))` round-trips again
+instead of collapsing into `calc(1px / 1em / 1vw)`. The non-finite keyword form
+(`infinity * 1px`) is likewise restricted to the numeric root of a math function,
+because only `<number>` spells its non-finite values as keywords: a nested
+percentage or dimension leaf prints the raw number, giving `calc(1em + infpx)`
+and `calc(inf% + 1em)`. `sign()` was moved off the canonical-unit fold path onto
+`SignCalculationNode`'s raw-value one, so `calc(sign(1em) * 1px)` folds to
+`calc(1px)` while `abs(1em)` correctly stays symbolic. `mod()`, `rem()`, and
+`log()` now apply the `same` parameter-validation rule from `MathFunctions.json`
+rather than the `consistent` rule used by `min()`/`max()`/`clamp()`/`round()`, so
+`mod(1em, 3%)` is rejected while parsing. Finally, `CalculatedStyleValue`
+implements step 1 of "serialize a math function": a numeric root serialized for a
+computed value or later is range-clamped, NaN-censored, and emitted without the
+`calc()` wrapper, so `width: calc(50%)` has a resolved value of `50%` and
+`z-index: calc(2.5)` one of `3`.
+
+These serializations were differentially validated against the upstream browser:
+10,915 generated `calc()`/math-function declarations covering eleven properties,
+operator and nesting shapes to depth three, non-finite and constant leaves, and
+every math function were serialized by `Build/release/bin/Ladybird.app` and by
+this package. All of them agree except for numbers whose magnitude falls outside
+`[5e-7, 1e21)`, where AK's floating-point formatter switches to scientific
+notation (and overflows into garbage digits near 1e20). `serialize_a_number()`
+documents that as its one deliberate deviation, because upstream's own FIXME in
+that function asks for the base-ten spelling this package already produces.
+
+Responsive image `sizes` parsing now enters the CSS component-value and media
+condition parsers, resolves viewport-relative/calculated lengths with the
+document context, and applies the translated default sizing algorithm for a
+rendered `auto` image width. This replaces the previous trailing-`px` shortcut
+and hard-coded `100` fallback used by HTML image selection.
+
+The descriptor/rule audit also removed V-specific capture failures. Parsed
+`@font-face` rules now retain their last-valid typed family, style, weight,
+width, source, Unicode-range, OpenType-setting, metric-override, display, and
+string descriptors. Font sources use the translated component-value grammar
+for `local()`, `url()`/`src()`, `format()`, and `tech()`, discard invalid or
+unsupported fallbacks independently, and carry their parsed
+`FontSourceStyleValue` and `URL` objects through font selection. Feature and
+variation maps, metric percentages, and Unicode ranges likewise consume their
+retained values without serialize/reparse loss. `@page` retains page
+descriptors and margin child rules. `SyntaxHighlighter::rehighlight_text()` and
+invalidation-set serialization now retain the arrays produced while walking
+their inputs.
+
+Layout style application now resolves the hot `ComputedValues` fields once, in
+the dependency order used by `Layout::NodeWithStyle::apply_style()`, instead of
+re-decoding the retained property graph on each layout query. The translated
+`MutableComputedValues` setters cover sizing and box edges, flex/grid alignment,
+text flow, overflow, opacity and stacking, object fitting, pointer events,
+outline state, and SVG paint scalars. Table/fieldset transfers, viewport
+overflow propagation, anonymous inheritance, and generated table-cell mutation
+refresh or directly update the resolved fields at the same boundary.
+
+Computed-value conversion now also selects the same property-specific
+`StyleComputer` context as C++. Font properties resolve relative units against
+the inheritance parent's font metrics, `line-height` combines the current font
+size with the inherited parent line height, and other properties use the
+partially computed current style. This removes the former shared shortcut that
+misresolved nested `em` values and treated a temporary monospace recascade
+placeholder as the element's font-size basis.
+
+The 2026-09-04 continuation completed the `ComputedValues.h` body audit. Border
+style/width/color and radii, document-aware colors, SVG paint and mask/clip
+references, shadows, scrollbar colors, transition delay, the font cascade,
+list-style type, and counter operations are now retained at the same style
+application boundary as C++. Layout and painting no longer reparse those
+properties for each formatting, marker, counter, or paint query. Composite
+initial values and `Position::resolved()` are translated from the header, and
+anonymous inherited-value clones carry the new inherited slots. The only
+strictly unmatched entries in that header are an unused content setter and two
+language/audit artifacts (`SVGPaint::m_value` and `TouchActionData::none`).
+
+The 2026-09-05 gradient pass replaced the compatibility parser and raw-channel
+sampler with the corresponding `GradientParsing.cpp`, gradient style-value, and
+Skia interpolation behavior. Linear, radial, and conic syntax now retains `in
+<color-space>` in every upstream-supported position; color-stop parsing accepts
+position-first and double-position stops and associates a transition hint with
+the following stop. The style values derive modern versus legacy syntax from
+their colors and therefore choose the upstream OKLab or sRGB default. The
+resolved sampler covers sRGB, linear-sRGB, Lab, OKLab, Display P3, A98 RGB,
+ProPhoto RGB, Rec.2020, HSL, HWB, LCH, and OKLCH with premultiplied alpha, all
+four hue routes, and Skia's powerless-hue thresholds and neighbor substitution.
+
+The current implementation-symbol audit inventories all 4,427 current upstream
+CSS implementations and reports 708 unmatched bodies. Name-only
+`upstream_*entry_points.v` records are explicitly excluded from coverage. The
+live browser path now retains typed declarations, computed values, rule-cache
+entries, and custom-property values by identity, following the upstream
+ownership model; remaining parser, calculation, CSSOM, font, style-value, and
+namespace bodies still require body-by-body review.
 
 ## Boundaries
 
@@ -133,7 +340,13 @@ $ python3 tools/libweb_translation_audit.py
 upstream modules: 74
 upstream implementations: 18658
 unmatched implementations by module:
+   707 CSS
 
-$ /Users/alex/code/v/v_old -enable-globals test css
-Summary for all V _test.v files: 19 passed, 19 total.
+$ /Users/alex/code/v/v -enable-globals test css
+Summary for all V _test.v files: 26 passed, 26 total.
 ```
+
+The calc() serialization differential run above compares 10,915 generated
+declarations against `Build/release/bin/Ladybird.app --headless=text`; 10,913
+agree exactly and the two that differ are the documented `serialize_a_number()`
+deviation for magnitudes outside `[5e-7, 1e21)`.

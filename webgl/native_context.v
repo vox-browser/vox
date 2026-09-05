@@ -32,14 +32,15 @@ mut:
 	needs_to_present_     bool
 	supported_extensions_ []string
 	requested_extensions_ []string
+	record_native_calls_  bool
 	native_calls_         []NativeCall
 }
 
 pub fn OpenGLContext.new(version WebGLVersion, options DrawingBufferOptions, supported []string) &OpenGLContext {
 	return &OpenGLContext{
-		version:                version
+		version: version
 		drawing_buffer_options: options
-		supported_extensions_:  supported.clone()
+		supported_extensions_: supported.clone()
 	}
 }
 
@@ -48,7 +49,9 @@ pub fn (mut context OpenGLContext) make_current() {
 }
 
 pub fn (mut context OpenGLContext) set_size(width int, height int) {
-	if width == context.width_ && height == context.height_ { return }
+	if width == context.width_ && height == context.height_ {
+		return
+	}
 	context.width_ = if width < 0 { 0 } else { width }
 	context.height_ = if height < 0 { 0 } else { height }
 	context.surface_allocated_ = false
@@ -59,7 +62,9 @@ pub fn (context &OpenGLContext) size() (int, int) {
 }
 
 pub fn (mut context OpenGLContext) allocate_painting_surface_if_needed() {
-	if context.width_ > 0 && context.height_ > 0 { context.surface_allocated_ = true }
+	if context.width_ > 0 && context.height_ > 0 {
+		context.surface_allocated_ = true
+	}
 }
 
 pub fn (mut context OpenGLContext) notify_content_will_change() {
@@ -69,7 +74,9 @@ pub fn (mut context OpenGLContext) notify_content_will_change() {
 
 pub fn (mut context OpenGLContext) present() bool {
 	context.allocate_painting_surface_if_needed()
-	if !context.surface_allocated_ { return false }
+	if !context.surface_allocated_ {
+		return false
+	}
 	context.needs_to_present_ = false
 	context.content_will_change_ = false
 	return true
@@ -95,11 +102,22 @@ pub fn (mut context OpenGLContext) request_extension(extension string) {
 
 pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) {
 	context.make_current()
-	context.native_calls_ << NativeCall{
-		name: name
-		args: args.clone()
+	if context.record_native_calls_ {
+		context.native_calls_ << NativeCall{
+			name: name
+			args: args.clone()
+		}
 	}
 	if name.starts_with('draw') || name == 'clear' { context.notify_content_will_change() }
+}
+
+// Native-call recording is a test/debug hook. Upstream dispatches directly to
+// GL and does not allocate an ever-growing command transcript on the hot path.
+pub fn (mut context OpenGLContext) set_native_call_recording(enabled bool) {
+	context.record_native_calls_ = enabled
+	if !enabled {
+		context.native_calls_.clear()
+	}
 }
 
 pub fn (context &OpenGLContext) native_calls() []NativeCall {

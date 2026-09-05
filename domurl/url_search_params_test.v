@@ -201,6 +201,10 @@ fn test_dom_url_setters_validate_normalize_and_percent_encode() {
 	assert url.port() == '8080'
 	url.set_port('invalid')
 	assert url.port() == '8080'
+	// The URL Standard's port state consumes the leading digit run and stops at
+	// the first other code point.
+	url.set_port('9090trailing')
+	assert url.port() == '9090'
 	url.set_pathname('a b')
 	assert url.pathname() == '/a%20b'
 	assert url.href().contains('/a%20b')
@@ -210,6 +214,18 @@ fn test_dom_url_setters_validate_normalize_and_percent_encode() {
 	old_host := url.host()
 	url.set_host('bad host')
 	assert url.host() == old_host
+}
+
+fn test_dom_url_origin_same_site_uses_the_public_suffix_list() {
+	first := Origin.from_string('https://news.example.co.uk/a')!
+	second := Origin.from_string('https://cdn.example.co.uk/b')!
+	assert first.is_same_site(second)
+
+	// github.io is itself a public suffix, so distinct project hosts are
+	// distinct sites even though their last two labels match.
+	alice := Origin.from_string('https://alice.github.io/')!
+	bob := Origin.from_string('https://bob.github.io/')!
+	assert !alice.is_same_site(bob)
 }
 
 fn test_blob_url_origin_and_store_integration() {
@@ -301,10 +317,10 @@ fn test_dom_url_internal_component_entry_points() {
 
 fn test_dom_url_create_initialize_and_origin_from_entry_points() {
 	record := parse_api_url('https://example.com/path?x=1', none) or { panic('parse failed') }
-	mut query := URLSearchParams.from_string(record.raw_query)
-	created := DOMURL.create(record, false, query)
+	mut query := URLSearchParams.from_string(record.query or { '' })
+	created := DOMURL.create(record, query)
 	assert created.href() == 'https://example.com/path?x=1'
-	initialized := DOMURL.initialize_a_url(record, false)
+	initialized := DOMURL.initialize_a_url(record)
 	assert initialized.search_params().get('x')? == '1'
 
 	from_string := Origin.from(OriginInput('https://example.com:443/a'))!

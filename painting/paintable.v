@@ -76,8 +76,7 @@ pub mut:
 }
 
 pub fn (fragment PaintableFragment) absolute_rect() Rect {
-	return Rect{fragment.offset.x + fragment.containing_block_offset.x, fragment.offset.y +
-		fragment.containing_block_offset.y, fragment.size.width, fragment.size.height}
+	return Rect{fragment.offset.x + fragment.containing_block_offset.x, fragment.offset.y + fragment.containing_block_offset.y, fragment.size.width, fragment.size.height}
 }
 
 pub fn (fragment PaintableFragment) index_in_node_for_point(position Point) int {
@@ -121,10 +120,8 @@ pub fn (fragment PaintableFragment) compute_selection_offsets(state SelectionSta
 				none
 			} else {
 				SelectionOffsets{
-					start:                       start_offset - min_int(start_offset,
-						fragment.start_offset)
-					end:                         min_int(end_offset - fragment.start_offset,
-						fragment.length_in_code_units)
+					start: start_offset - min_int(start_offset, fragment.start_offset)
+					end: min_int(end_offset - fragment.start_offset, fragment.length_in_code_units)
 					include_trailing_whitespace: end_offset >= end_index
 				}
 			}
@@ -140,8 +137,7 @@ pub fn (fragment PaintableFragment) compute_selection_offsets(state SelectionSta
 			if start_index > end_offset {
 				none
 			} else {
-				SelectionOffsets{0, min_int(end_offset - fragment.start_offset,
-					fragment.length_in_code_units), end_offset >= end_index}
+				SelectionOffsets{0, min_int(end_offset - fragment.start_offset, fragment.length_in_code_units), end_offset >= end_index}
 			}
 		}
 	}
@@ -155,8 +151,7 @@ pub fn (fragment PaintableFragment) range_rect(state SelectionState, start_offse
 	mut rect := fragment.absolute_rect()
 	mut pixel_offset := f64(0)
 	mut pixel_width := f64(0)
-	if offsets.start == 0 && offsets.end == fragment.length_in_code_units
-		&& fragment.length_in_code_units > 0 {
+	if offsets.start == 0 && offsets.end == fragment.length_in_code_units && fragment.length_in_code_units > 0 {
 		pixel_width = if fragment.orientation == .horizontal { rect.width } else { rect.height }
 	} else {
 		mut units_seen := 0
@@ -172,8 +167,7 @@ pub fn (fragment PaintableFragment) range_rect(state SelectionState, start_offse
 	if offsets.start == offsets.end {
 		pixel_width = 1
 	}
-	if offsets.start != offsets.end && fragment.has_trailing_whitespace
-		&& offsets.include_trailing_whitespace {
+	if offsets.start != offsets.end && fragment.has_trailing_whitespace && offsets.include_trailing_whitespace {
 		pixel_width += fragment.space_width
 	}
 	if fragment.orientation == .horizontal {
@@ -241,15 +235,15 @@ fn (tree PaintableTree) hit_test_node(index int, position Point, hit_type HitTes
 	for fragment in node.fragments.reverse() {
 		if fragment.absolute_rect().contains(position) || hit_type == .text_cursor {
 			return HitTestResult{
-				paintable_id:      node.id
-				index_in_node:     fragment.index_in_node_for_point(position)
+				paintable_id: node.id
+				index_in_node: fragment.index_in_node_for_point(position)
 				internal_position: .inside
 			}
 		}
 	}
 	if node.rect.contains(position) {
 		return HitTestResult{
-			paintable_id:      node.id
+			paintable_id: node.id
 			internal_position: .inside
 		}
 	}
@@ -280,8 +274,7 @@ pub mut:
 }
 
 pub fn (box PaintableBox) absolute_rect() Rect {
-	return Rect{box.containing_block_position.x + box.offset.x, box.containing_block_position.y +
-		box.offset.y, box.content_size.width, box.content_size.height}
+	return Rect{box.containing_block_position.x + box.offset.x, box.containing_block_position.y + box.offset.y, box.content_size.width, box.content_size.height}
 }
 
 pub fn (box PaintableBox) absolute_padding_box_rect() Rect {
@@ -304,8 +297,7 @@ pub fn (mut box PaintableBox) set_scroll_offset(offset Point) bool {
 	padding := box.absolute_padding_box_rect()
 	max_x := math.max(overflow.scrollable_overflow_rect.width - padding.width, 0.0)
 	max_y := math.max(overflow.scrollable_overflow_rect.height - padding.height, 0.0)
-	constrained := Point{math.max(0.0, math.min(max_x, offset.x)), math.max(0.0, math.min(max_y,
-		offset.y))}
+	constrained := Point{math.max(0.0, math.min(max_x, offset.x)), math.max(0.0, math.min(max_y, offset.y))}
 	if constrained == box.scroll_offset {
 		return false
 	}
@@ -344,26 +336,84 @@ pub fn (mut box PaintableBox) invalidate_paint_cache() {
 
 pub struct StackingContext {
 pub:
-	paintable_id string
-	parent_id    string
-	paintable_box_id string
-	z_index      int
-	tree_order   int
+	paintable_id             string
+	parent_id                string
+	paintable_box_id         string
+	z_index                  int
+	tree_order               int
+	opacity                  f64 = 1.0
+	non_invertible_transform bool
 pub mut:
 	children                 []StackingContext
 	last_paint_generation_id ?u64
 }
 
-pub fn (context StackingContext) parent() string { return context.parent_id }
-pub fn (context StackingContext) paintable_box() string { return if context.paintable_box_id.len > 0 { context.paintable_box_id } else { context.paintable_id } }
-pub fn (context StackingContext) paint_node() []string { return [context.paintable_id] }
-pub fn (context StackingContext) paint_node_as_stacking_context() []string { return stacking_paint_order(context) }
-pub fn (context StackingContext) paint_svg() []string { return stacking_paint_order(context) }
-pub fn (context StackingContext) paint_descendants() []string { mut result := []string{}; for child in context.children { result << stacking_paint_order(child) }; return result }
-pub fn (context StackingContext) paint_child(index int) []string { return if index >= 0 && index < context.children.len { stacking_paint_order(context.children[index]) } else { [] } }
-pub fn (context StackingContext) paint_internal() []string { return stacking_paint_order(context) }
-pub fn (context StackingContext) paint() []string { return stacking_paint_order(context) }
-pub fn (context StackingContext) hit_test(id string) ?string { if context.paintable_id == id { return id }; for child in context.children.reverse() { if found := child.hit_test(id) { return found } }; return none }
+pub fn (context StackingContext) parent() string {
+	return context.parent_id
+}
+
+pub fn (context StackingContext) paintable_box() string {
+	return if context.paintable_box_id.len > 0 {
+		context.paintable_box_id
+	} else {
+		context.paintable_id
+	}
+}
+
+pub fn (context StackingContext) paint_node() []string {
+	return [context.paintable_id]
+}
+
+pub fn (context StackingContext) paint_node_as_stacking_context() []string {
+	return stacking_paint_order(context)
+}
+
+pub fn (context StackingContext) paint_svg() []string {
+	return stacking_paint_order(context)
+}
+
+pub fn (context StackingContext) paint_descendants() []string {
+	mut sorted_context := context
+	sorted_context.sort()
+	mut result := []string{}
+	for child in sorted_context.children {
+		append_stacking_paint_order(child, mut result)
+	}
+	return result
+}
+
+pub fn (context StackingContext) paint_child(index int) []string {
+	return if index >= 0 && index < context.children.len {
+		context.children[index].paint()
+	} else {
+		[]
+	}
+}
+
+pub fn (context StackingContext) paint_internal() []string {
+	return stacking_paint_order(context)
+}
+
+pub fn (context StackingContext) paint() []string {
+	// StackingContext::paint() rejects non-invertible transforms and fully
+	// transparent contexts before recording any descendant commands.
+	if context.non_invertible_transform || context.opacity == 0 {
+		return []string{}
+	}
+	return stacking_paint_order(context)
+}
+
+pub fn (context StackingContext) hit_test(id string) ?string {
+	if context.paintable_id == id {
+		return id
+	}
+	for child in context.children.reverse() {
+		if found := child.hit_test(id) {
+			return found
+		}
+	}
+	return none
+}
 
 pub fn (mut context StackingContext) sort() {
 	context.children.sort_with_compare(fn (a &StackingContext, b &StackingContext) int {
@@ -388,27 +438,31 @@ pub fn (mut context StackingContext) set_last_paint_generation_id(id u64) bool {
 }
 
 pub fn stacking_paint_order(context StackingContext) []string {
-	mut negative := []StackingContext{}
-	mut zero := []StackingContext{}
-	mut positive := []StackingContext{}
+	mut sorted_context := context
+	sorted_context.sort()
+	mut order := []string{}
+	append_stacking_paint_order(sorted_context, mut order)
+	return order
+}
+
+fn append_stacking_paint_order(context StackingContext, mut order []string) {
+	if context.non_invertible_transform || context.opacity == 0 {
+		return
+	}
+	order << context.paintable_id
 	for child in context.children {
 		if child.z_index < 0 {
-			negative << child
-		} else if child.z_index == 0 {
-			zero << child
-		} else {
-			positive << child
+			append_stacking_paint_order(child, mut order)
 		}
 	}
-	mut order := [context.paintable_id]
-	for child in negative {
-		order << child.paintable_id
+	for child in context.children {
+		if child.z_index == 0 {
+			append_stacking_paint_order(child, mut order)
+		}
 	}
-	for child in zero {
-		order << child.paintable_id
+	for child in context.children {
+		if child.z_index > 0 {
+			append_stacking_paint_order(child, mut order)
+		}
 	}
-	for child in positive {
-		order << child.paintable_id
-	}
-	return order
 }

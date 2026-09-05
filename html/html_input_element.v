@@ -65,7 +65,7 @@ pub:
 	initial_color  string
 }
 
-pub type InputPickerRequestCallback = fn(voidptr, InputPickerRequest)
+pub type InputPickerRequestCallback = fn (voidptr, InputPickerRequest)
 
 pub struct InputPickerHook {
 pub:
@@ -85,7 +85,7 @@ pub enum InputFormAction {
 	implicit_submit
 }
 
-pub type InputFormActionCallback = fn(voidptr, &FormAssociatedElement, InputFormAction) !
+pub type InputFormActionCallback = fn (voidptr, &FormAssociatedElement, InputFormAction) !
 
 pub struct InputFormActionHook {
 pub:
@@ -103,9 +103,6 @@ pub mut:
 	type_state_                      HTMLInputTypeState
 	value_                           string
 	dirty_value_                     bool
-	checked_                         bool
-	dirty_checkedness_               bool
-	indeterminate_                   bool
 	user_validity_                   bool
 	has_uncommitted_changes_         bool
 	selected_files_                  []SelectedFile
@@ -137,8 +134,6 @@ pub mut:
 	visible_in_viewport_             bool = true
 	form_action_hook_                ?InputFormActionHook
 }
-
-__global html_input_models []&HTMLInputElementModel
 
 fn is_integral_multiple(value f64, step f64) bool {
 	assert step > 0
@@ -245,6 +240,10 @@ pub fn HTMLInputElementModel.create(element &dom.HTMLInputElement) &HTMLInputEle
 		return unsafe { &HTMLInputElementModel(element.input_element_model_) }
 	}
 	dom_element := unsafe { &dom.Element(element) }
+	mut mutable_input := unsafe { &dom.HTMLInputElement(element) }
+	initial_checkedness := mutable_input.checked()
+	initial_dirty_checkedness := mutable_input.dirty_checkedness_
+	mutable_input.set_checkedness(initial_checkedness, initial_dirty_checkedness)
 	control := FormAssociatedElement.create(dom_element)
 	type_state := parse_html_input_type(dom_element.get_attribute_value('type'))
 	mut model := &HTMLInputElementModel{
@@ -252,18 +251,20 @@ pub fn HTMLInputElementModel.create(element &dom.HTMLInputElement) &HTMLInputEle
 		control: control
 		text_control: FormAssociatedTextControlElement.create(control, '')
 		type_state_: type_state
-		checked_: dom_element.has_attribute('checked')
 		event_target_: dom.EventTarget.new()
 	}
+	// Install the model identity before initialization below. Radio-group
+	// algorithms walk the live DOM tree, and creating a sibling model may query
+	// this element again while that sibling is initialized.
+	mut mutable_element := unsafe { &dom.HTMLInputElement(element) }
+	mutable_element.input_element_model_ = voidptr(model)
+	model.control.reset_form_owner()
 	model.value_ = model.sanitize_value(dom_element.get_attribute_value('value'))
 	model.text_control.did_edit_target_ = voidptr(model)
 	model.text_control.did_edit_callback_ = html_input_element_did_edit_callback
 	model.text_control.set_relevant_value(model.value_)
 	model.update_validity()
 	model.create_shadow_tree_if_needed()
-	html_input_models << model
-	mut mutable_element := unsafe { &dom.HTMLInputElement(element) }
-	mutable_element.input_element_model_ = voidptr(model)
 	install_form_control_selected_text_callback(dom_element.document())
 	return model
 }
@@ -420,9 +421,6 @@ pub fn (mut model HTMLInputElementModel) type_attribute_changed(old_state HTMLIn
 	model.signal_a_type_change()
 	model.value_ = model.value_sanitization_algorithm(model.value_)
 	model.text_control.set_relevant_value(model.value_)
-	if !model.checked_applies() {
-		model.indeterminate_ = false
-	}
 	if new_state != .file_upload {
 		model.selected_files_.clear()
 	}
@@ -434,11 +432,10 @@ pub fn (mut model HTMLInputElementModel) type_attribute_changed(old_state HTMLIn
 }
 
 pub fn (mut model HTMLInputElementModel) signal_a_type_change() {
-	if model.type_state_ == .radio_button && model.checked_ {
-		for mut other in html_input_models {
+	if model.type_state_ == .radio_button && model.checked() {
+		for mut other in input_models_in_same_tree(&model) {
 			if same_radio_group(&model, other) {
-				other.checked_ = false
-				other.update_validity()
+				other.set_checked(false)
 			}
 		}
 	}
@@ -602,7 +599,7 @@ pub fn (mut model HTMLInputElementModel) set_value(value string) ! {
 }
 
 pub fn (model &HTMLInputElementModel) checked() bool {
-	return model.checked_
+	return unsafe { &dom.HTMLInputElement(model.element) }.checked()
 }
 
 fn same_radio_group(a &HTMLInputElementModel, b &HTMLInputElementModel) bool {
@@ -611,24 +608,73 @@ fn same_radio_group(a &HTMLInputElementModel, b &HTMLInputElementModel) bool {
 	}
 	a_element := input_element(a)
 	b_element := input_element(b)
-	return a_element.as_node().root() == b_element.as_node().root() && a_element.get_attribute_value('name') == b_element.get_attribute_value('name') && a_element.get_attribute_value('name') != ''
+	if a_element.as_node().root() != b_element.as_node().root() {
+		return false
+	}
+	a_form := a.control.form()
+	b_form := b.control.form()
+	if a_form == none {
+		if b_form != none {
+			return false
+		}
+	} else {
+		actual_a_form := a_form
+		actual_b_form := b_form or { return false }
+		if voidptr(actual_a_form) != voidptr(actual_b_form) {
+			return false
+		}
+	}
+	a_name := a_element.get_attribute('name') or { return false }
+	b_name := b_element.get_attribute('name') or { return false }
+	return a_name != '' && a_name == b_name
+}
+
+fn collect_input_models_in_subtree(node &dom.Node, mut models []&HTMLInputElementModel) {
+	if element := node.as_element() {
+		if element.is_html_element() && element.local_name() == 'input' {
+			models << HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+		}
+	}
+	for child in node.children {
+		collect_input_models_in_subtree(child, mut models)
+	}
+}
+
+// HTMLInputElement's radio algorithms use root().for_each_in_inclusive_subtree
+// in C++. Keep the same live-tree boundary rather than retaining a global list
+// of every model ever created.
+fn input_models_in_same_tree(model &HTMLInputElementModel) []&HTMLInputElementModel {
+	mut models := []&HTMLInputElementModel{}
+	collect_input_models_in_subtree(input_element(model).as_node().root(), mut models)
+	return models
 }
 
 pub fn (mut model HTMLInputElementModel) set_checked(value bool) {
-	model.checked_ = value
-	model.dirty_checkedness_ = true
-	if value && model.type_state_ == .radio_button {
-		for mut other in html_input_models {
-			if same_radio_group(&model, other) {
-				other.checked_ = false
-			}
-		}
+	mut input := unsafe { &dom.HTMLInputElement(model.element) }
+	old_value := input.checked()
+	input.set_checkedness(value, true)
+	if old_value == value {
+		return
 	}
+	mut node := input_element(&model).as_node()
+	node.invalidate_style(.html_input_element_set_checked)
+	node.set_needs_repaint(.yes)
 	model.update_validity()
 }
 
 pub fn (mut model HTMLInputElementModel) set_checked_within_group() {
+	if model.checked() {
+		return
+	}
 	model.set_checked(true)
+	if input_element(&model).get_attribute_value('name') == '' {
+		return
+	}
+	for mut other in input_models_in_same_tree(&model) {
+		if other.checked() && same_radio_group(&model, other) {
+			other.set_checked(false)
+		}
+	}
 }
 
 pub fn (mut model HTMLInputElementModel) set_checked_binding(value bool) {
@@ -640,11 +686,12 @@ pub fn (mut model HTMLInputElementModel) set_checked_binding(value bool) {
 }
 
 pub fn (mut model HTMLInputElementModel) set_indeterminate(value bool) {
-	model.indeterminate_ = value
+	mut input := unsafe { &dom.HTMLInputElement(model.element) }
+	input.set_indeterminate(value)
 }
 
 pub fn (model &HTMLInputElementModel) indeterminate() bool {
-	return model.indeterminate_
+	return unsafe { &dom.HTMLInputElement(model.element) }.indeterminate()
 }
 
 fn find_input_suggestions_source(node &dom.Node, id string, mut found ?&dom.Element) bool {
@@ -786,7 +833,10 @@ pub fn (mut model HTMLInputElementModel) create_text_input_shadow_tree() {
 	mut container := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
 	container.set_attribute_value('style', 'display:flex;height:100%;align-items:center;white-space:pre;border:none;padding:1px 2px;')
 	inner := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
-	text := element.document().create_text_node(model.value_)
+	mut text := element.document().create_text_node(model.value_)
+	if model.type_state_ == .password {
+		text.set_is_password_input(true)
+	}
 	mut inner_node := inner.as_node()
 	append_input_shadow_child(mut inner_node, text.as_node())
 	placeholder := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
@@ -1024,15 +1074,15 @@ pub fn (mut model HTMLInputElementModel) activation_behavior(event &dom.Event) !
 }
 
 pub fn (mut model HTMLInputElementModel) legacy_pre_activation_behavior() {
-	model.before_activation_checked_ = model.checked_
-	model.before_activation_indeterminate_ = model.indeterminate_
+	model.before_activation_checked_ = model.checked()
+	model.before_activation_indeterminate_ = model.indeterminate()
 	if model.type_state_ == .checkbox {
-		model.set_checked(!model.checked_)
-		model.indeterminate_ = false
+		model.set_checked(!model.checked())
+		model.set_indeterminate(false)
 	} else if model.type_state_ == .radio_button {
 		model.previously_checked_radio_ = none
-		for other in html_input_models {
-			if other.checked_ && same_radio_group(&model, other) {
+		for other in input_models_in_same_tree(&model) {
+			if other.checked() && same_radio_group(&model, other) {
 				model.previously_checked_radio_ = other
 				break
 			}
@@ -1044,7 +1094,7 @@ pub fn (mut model HTMLInputElementModel) legacy_pre_activation_behavior() {
 pub fn (mut model HTMLInputElementModel) legacy_cancelled_activation_behavior() {
 	if model.type_state_ == .checkbox {
 		model.set_checked(model.before_activation_checked_)
-		model.indeterminate_ = model.before_activation_indeterminate_
+		model.set_indeterminate(model.before_activation_indeterminate_)
 	} else if model.type_state_ == .radio_button {
 		mut did_reselect := false
 		if previous := model.previously_checked_radio_ {
@@ -1836,12 +1886,12 @@ pub fn (model &HTMLInputElementModel) is_focusable() bool {
 	return model.type_state_ != .hidden && !input_element(model).is_actually_disabled()
 }
 
-pub fn (model &HTMLInputElementModel) default_role() ?aria.Role {
-	if !input_element(model).is_connected() {
+pub fn html_input_element_default_role(input &dom.HTMLInputElement) ?aria.Role {
+	element := unsafe { &dom.Element(input) }
+	if !element.is_connected() {
 		return none
 	}
-	element := input_element(model)
-	return match model.type_state_ {
+	return match parse_html_input_type(element.get_attribute_value('type')) {
 		.button, .image_button, .reset_button, .submit_button { aria.Role.button }
 		.checkbox {
 			if element.has_attribute('switch') { aria.Role.switch_ } else { aria.Role.checkbox }
@@ -1861,6 +1911,10 @@ pub fn (model &HTMLInputElementModel) default_role() ?aria.Role {
 		}
 		else { none }
 	}
+}
+
+pub fn (model &HTMLInputElementModel) default_role() ?aria.Role {
+	return html_input_element_default_role(model.element)
 }
 
 pub fn (model &HTMLInputElementModel) is_mutable() bool {
@@ -1988,7 +2042,7 @@ pub fn (mut model HTMLInputElementModel) computed_properties_changed() {
 pub fn (mut model HTMLInputElementModel) form_associated_element_was_inserted() {
 	model.control.form_node_was_inserted()
 	model.create_shadow_tree_if_needed()
-	if input_element(&model).is_connected() && model.type_state_ == .radio_button && model.checked_ {
+	if input_element(&model).is_connected() && model.type_state_ == .radio_button && model.checked() {
 		model.signal_a_type_change()
 	}
 }
@@ -2000,9 +2054,10 @@ pub fn (mut model HTMLInputElementModel) form_associated_element_attribute_chang
 	model.control.form_node_attribute_changed(name)
 	match ascii_lowercase_string(name) {
 		'checked' {
-			if !model.dirty_checkedness_ {
+			mut input := unsafe { &dom.HTMLInputElement(model.element) }
+			if !input.dirty_checkedness_ {
 				model.set_checked(value != none)
-				model.dirty_checkedness_ = false
+				input.set_checkedness(model.checked(), false)
 			}
 		}
 		'type' {
@@ -2067,9 +2122,10 @@ pub fn (model &HTMLInputElementModel) cloned(mut copy HTMLInputElementModel, _ b
 	copy.value_ = model.value_
 	copy.dirty_value_ = model.dirty_value_
 	copy.text_control.set_relevant_value(model.text_control.relevant_value())
-	copy.checked_ = model.checked_
-	copy.dirty_checkedness_ = model.dirty_checkedness_
-	copy.indeterminate_ = model.indeterminate_
+	source_input := unsafe { &dom.HTMLInputElement(model.element) }
+	mut copy_input := unsafe { &dom.HTMLInputElement(copy.element) }
+	copy_input.set_checkedness(source_input.checked(), source_input.dirty_checkedness_)
+	copy_input.set_indeterminate(source_input.indeterminate())
 }
 
 pub fn (mut model HTMLInputElementModel) update_validity() {
@@ -2077,18 +2133,18 @@ pub fn (mut model HTMLInputElementModel) update_validity() {
 	model.control.value_ = model.value()
 	model.control.missing_ = false
 	if model.type_state_ == .radio_button {
-		mut group_has_checked := model.checked_
+		mut group_has_checked := model.checked()
 		mut group_has_required := element.has_attribute('required')
-		for other in html_input_models {
+		for other in input_models_in_same_tree(&model) {
 			if same_radio_group(&model, other) {
-				group_has_checked = group_has_checked || other.checked_
+				group_has_checked = group_has_checked || other.checked()
 				group_has_required = group_has_required || input_element(other).has_attribute('required')
 			}
 		}
 		model.control.missing_ = group_has_required && !group_has_checked
 	} else if element.has_attribute('required') && model.required_applies() {
 		model.control.missing_ = match model.type_state_ {
-			.checkbox { !model.checked_ }
+			.checkbox { !model.checked() }
 			.file_upload { model.selected_files_.len == 0 }
 			else { model.value() == '' }
 		}
@@ -2144,9 +2200,9 @@ pub fn (mut model HTMLInputElementModel) commit_pending_changes() {
 pub fn (mut model HTMLInputElementModel) reset() {
 	model.user_validity_ = false
 	model.dirty_value_ = false
-	model.dirty_checkedness_ = false
 	model.value_ = model.sanitize_value(input_element(&model).get_attribute_value('value'))
-	model.checked_ = input_element(&model).has_attribute('checked')
+	mut input := unsafe { &dom.HTMLInputElement(model.element) }
+	input.set_checkedness(input_element(&model).has_attribute('checked'), false)
 	model.selected_files_.clear()
 	model.text_control.set_relevant_value(model.value_)
 	model.update_validity()
@@ -2159,9 +2215,9 @@ pub fn (mut model HTMLInputElementModel) reset_algorithm() {
 
 pub fn (mut model HTMLInputElementModel) clear() {
 	model.dirty_value_ = false
-	model.dirty_checkedness_ = false
 	model.value_ = model.sanitize_value('')
-	model.checked_ = input_element(&model).has_attribute('checked')
+	mut input := unsafe { &dom.HTMLInputElement(model.element) }
+	input.set_checkedness(input_element(&model).has_attribute('checked'), false)
 	model.selected_files_.clear()
 	model.text_control.set_relevant_value(model.value_)
 	model.fire_event('input')

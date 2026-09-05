@@ -5,9 +5,6 @@ import strconv
 import strings
 
 // This file ports the LibWeb/CSS selector data model and selector-engine logic.
-// CSSOM in this V port already exposes `Selector` as a raw-text wrapper, so the
-// parsed selector tree below is built on demand from `Selector.text` rather than
-// changing the public CSSOM storage shape in cssom_rules.v.
 const selector_ancestor_hash_count = 8
 const selector_unbounded_sibling_invalidation_distance = int(0x3fffffff)
 const selector_html_namespace = 'http://www.w3.org/1999/xhtml'
@@ -127,40 +124,45 @@ pub fn (mut bitmap PseudoClassBitmap) merge(other PseudoClassBitmap) {
 }
 
 pub enum PseudoElement {
-	unknown
-	before
 	after
-	first_line
-	first_letter
-	marker
-	placeholder
-	selection
 	backdrop
+	before
 	details_content
 	file_selector_button
-	grammar_error
-	spelling_error
-	target_text
-	cue
-	highlight
-	slotted
+	first_letter
+	first_line
+	marker
 	part
+	placeholder
+	selection
+	slider_fill
+	slider_thumb
+	slider_track
+	slotted
 	view_transition
 	view_transition_group
 	view_transition_image_pair
-	view_transition_old
 	view_transition_new
+	view_transition_old
+	known_pseudo_element_count
 	unknown_webkit
+	// V uses a sentinel where C++'s pseudo_element_from_string() returns Optional{}.
+	unknown
 }
 
 pub fn is_known_pseudo_element_type(pseudo_element PseudoElement) bool {
-	return pseudo_element != .unknown && pseudo_element != .unknown_webkit
+	return pseudo_element != .known_pseudo_element_count && pseudo_element != .unknown_webkit
+		&& pseudo_element != .unknown
 }
 
 pub fn is_has_allowed_pseudo_element(pseudo_element PseudoElement) bool {
-	// :has() generally bans pseudo-elements. The pseudo-elements that can be
-	// safely queried without introducing cycles are explicitly allow-listed.
-	return pseudo_element == .slotted
+	_ = pseudo_element
+	// Generated from PseudoElements.json: no current pseudo-element is allowed in :has().
+	return false
+}
+
+pub fn is_pseudo_element_root(pseudo_element PseudoElement) bool {
+	return pseudo_element == .view_transition
 }
 
 pub fn selector_pseudo_class_name(pseudo_class PseudoClass) string {
@@ -309,49 +311,59 @@ pub fn pseudo_class_from_string(name string) PseudoClass {
 
 pub fn pseudo_element_name(pseudo_element PseudoElement) string {
 	return match pseudo_element {
-		.unknown { '' }
-		.before { 'before' }
 		.after { 'after' }
-		.first_line { 'first-line' }
-		.first_letter { 'first-letter' }
-		.marker { 'marker' }
-		.placeholder { 'placeholder' }
-		.selection { 'selection' }
 		.backdrop { 'backdrop' }
+		.before { 'before' }
 		.details_content { 'details-content' }
 		.file_selector_button { 'file-selector-button' }
-		.grammar_error { 'grammar-error' }
-		.spelling_error { 'spelling-error' }
-		.target_text { 'target-text' }
-		.cue { 'cue' }
-		.highlight { 'highlight' }
-		.slotted { 'slotted' }
+		.first_letter { 'first-letter' }
+		.first_line { 'first-line' }
+		.marker { 'marker' }
 		.part { 'part' }
+		.placeholder { 'placeholder' }
+		.selection { 'selection' }
+		.slider_fill { 'slider-fill' }
+		.slider_thumb { 'slider-thumb' }
+		.slider_track { 'slider-track' }
+		.slotted { 'slotted' }
 		.view_transition { 'view-transition' }
 		.view_transition_group { 'view-transition-group' }
 		.view_transition_image_pair { 'view-transition-image-pair' }
-		.view_transition_old { 'view-transition-old' }
 		.view_transition_new { 'view-transition-new' }
+		.view_transition_old { 'view-transition-old' }
+		.known_pseudo_element_count, .unknown { '' }
 		.unknown_webkit { '-webkit-unknown' }
 	}
 }
 
 pub fn pseudo_element_from_string(name string) PseudoElement {
 	return match name.to_lower() {
-		'before' {
-			.before
-		}
 		'after' {
 			.after
 		}
-		'first-line' {
-			.first_line
+		'backdrop' {
+			.backdrop
+		}
+		'before' {
+			.before
+		}
+		'details-content' {
+			.details_content
+		}
+		'file-selector-button' {
+			.file_selector_button
 		}
 		'first-letter' {
 			.first_letter
 		}
+		'first-line' {
+			.first_line
+		}
 		'marker' {
 			.marker
+		}
+		'part' {
+			.part
 		}
 		'placeholder' {
 			.placeholder
@@ -359,32 +371,17 @@ pub fn pseudo_element_from_string(name string) PseudoElement {
 		'selection' {
 			.selection
 		}
-		'backdrop' {
-			.backdrop
+		'slider-fill' {
+			.slider_fill
 		}
-		'file-selector-button' {
-			.file_selector_button
+		'slider-thumb' {
+			.slider_thumb
 		}
-		'grammar-error' {
-			.grammar_error
-		}
-		'spelling-error' {
-			.spelling_error
-		}
-		'target-text' {
-			.target_text
-		}
-		'cue' {
-			.cue
-		}
-		'highlight' {
-			.highlight
+		'slider-track' {
+			.slider_track
 		}
 		'slotted' {
 			.slotted
-		}
-		'part' {
-			.part
 		}
 		'view-transition' {
 			.view_transition
@@ -395,11 +392,25 @@ pub fn pseudo_element_from_string(name string) PseudoElement {
 		'view-transition-image-pair' {
 			.view_transition_image_pair
 		}
+		'view-transition-new' {
+			.view_transition_new
+		}
 		'view-transition-old' {
 			.view_transition_old
 		}
-		'view-transition-new' {
-			.view_transition_new
+		// Legacy aliases generated from PseudoElements.json.
+		'-moz-meter-bar', '-moz-progress-bar', '-moz-range-progress', '-webkit-progress-value' {
+			.slider_fill
+		}
+		'-moz-range-thumb', '-webkit-slider-thumb' {
+			.slider_thumb
+		}
+		'-moz-range-track', '-webkit-meter-bar', '-webkit-progress-bar',
+		'-webkit-slider-runnable-track' {
+			.slider_track
+		}
+		'-moz-placeholder', '-webkit-input-placeholder' {
+			.placeholder
 		}
 		else {
 			if name.to_lower().starts_with('-webkit-') {
@@ -843,7 +854,7 @@ pub fn (simple_selector SimpleSelector) absolutized(selector_for_nesting SimpleS
 			if pseudo_class.argument_selector_list.selectors.len != 0 {
 				mut new_selector_list := SelectorList{}
 				for argument_selector in pseudo_class.argument_selector_list.selectors {
-					if absolutized := absolutize_selector_with_simple(argument_selector, selector_for_nesting) {
+					if absolutized := argument_selector.absolutized(selector_for_nesting) {
 						new_selector_list.selectors << absolutized
 					} else if !pseudo_class.is_forgiving {
 						return none
@@ -890,25 +901,62 @@ pub mut:
 	simple_selectors []SimpleSelector
 }
 
-// Selectors are immutable value objects in the style system, but the compact V
-// representation retains their serialized text. Scope a parsed representation
-// cache to one style/layout traversal so each selector is parsed once without
-// retaining every selector from every navigation for the process lifetime.
-__global (
-	parsed_compound_selector_cache         = map[string][]CompoundSelector{}
-	parsed_compound_selector_cache_enabled bool
-)
+// C++ Selector is RefCounted and SelectorList stores NonnullRefPtr<Selector>.
+// Keep the recursive selector graph behind one shared allocation as well; a
+// by-value graph makes every Selector copy recursively retain/copy its arrays.
+pub struct SelectorData {
+pub mut:
+	text                              string
+	compound_selectors                []CompoundSelector
+	specificity                       ?u32
+	pseudo_element                    ?PseudoElementSelector
+	sibling_invalidation_distance     ?int
+	can_use_fast_matches              bool
+	can_use_ancestor_filter           bool
+	contains_the_nesting_selector     bool
+	contained_pseudo_classes          PseudoClassBitmap
+	ancestor_hashes                   [8]u32
+}
 
+// Kept as traversal entry points for the declared-value fallback cache. Parsed
+// selectors themselves are retained by Selector, matching C++ Selector's typed
+// ComplexSelector storage.
 pub fn begin_selector_parse_cache() {
-	parsed_compound_selector_cache.clear()
-	parsed_compound_selector_cache_enabled = true
 	begin_parsed_value_cache()
 }
 
 pub fn end_selector_parse_cache() {
-	parsed_compound_selector_cache_enabled = false
-	parsed_compound_selector_cache.clear()
 	end_parsed_value_cache()
+}
+
+pub fn selector_from_text(text string) Selector {
+	return create_selector(text, parse_complex_selector(text))
+}
+
+fn selector_from_compound_selectors(compound_selectors []CompoundSelector) Selector {
+	return create_selector(serialize_compound_selectors_raw(compound_selectors), compound_selectors.clone())
+}
+
+fn create_selector(text string, compound_selectors []CompoundSelector) Selector {
+	mut data := &SelectorData{
+		text: text
+		compound_selectors: compound_selectors
+	}
+	selector := Selector{
+		data_: data
+	}
+
+	// Selector::Selector computes these once in C++. Matching then reads the
+	// cached metadata through the selector's RefPtr rather than traversing the
+	// selector graph again for every candidate element.
+	data.pseudo_element = selector_pseudo_element_uncached(compound_selectors)
+	data.contains_the_nesting_selector = selector_contains_nesting_uncached(compound_selectors)
+	data.contained_pseudo_classes = selector_contained_pseudo_classes_uncached(compound_selectors)
+	data.can_use_fast_matches = can_selector_use_fast_matches(selector)
+	ancestor_hashes, can_use_ancestor_filter := selector_ancestor_hashes(selector)
+	data.ancestor_hashes = ancestor_hashes
+	data.can_use_ancestor_filter = can_use_ancestor_filter
+	return selector
 }
 
 pub fn (compound_selector CompoundSelector) absolutized(selector_for_nesting SimpleSelector) ?CompoundSelector {
@@ -929,20 +977,59 @@ pub fn (compound_selector CompoundSelector) absolutized(selector_for_nesting Sim
 }
 
 pub fn (selector Selector) compound_selectors() []CompoundSelector {
-	if parsed_compound_selector_cache_enabled {
-		if cached := parsed_compound_selector_cache[selector.text] {
-			return cached
+	if selector.data_ != unsafe { nil } {
+		return selector.data_.compound_selectors
+	}
+	return []CompoundSelector{}
+}
+
+pub fn (selector Selector) text() string {
+	if selector.data_ == unsafe { nil } {
+		return ''
+	}
+	return selector.data_.text
+}
+
+pub fn (selector Selector) contains_the_nesting_selector() bool {
+	if selector.data_ != unsafe { nil } {
+		return selector.data_.contains_the_nesting_selector
+	}
+	return selector_contains_nesting_uncached(selector.compound_selectors())
+}
+
+fn selector_contains_nesting_uncached(compound_selectors []CompoundSelector) bool {
+	for compound_selector in compound_selectors {
+		for simple_selector in compound_selector.simple_selectors {
+			if simple_selector.type_ == .nesting {
+				return true
+			}
+			if simple_selector.type_ == .pseudo_class {
+				for child_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+					if child_selector.contains_the_nesting_selector() {
+						return true
+					}
+				}
+			}
+			if simple_selector.type_ == .pseudo_element {
+				if child_selector := simple_selector.pseudo_element.compound_selector {
+					if child_selector.contains_the_nesting_selector() {
+						return true
+					}
+				}
+			}
 		}
 	}
-	parsed := parse_complex_selector(selector.text)
-	if parsed_compound_selector_cache_enabled {
-		parsed_compound_selector_cache[selector.text] = parsed
-	}
-	return parsed
+	return false
 }
 
 pub fn (selector Selector) pseudo_element() ?PseudoElementSelector {
-	compound_selectors := selector.compound_selectors()
+	if selector.data_ != unsafe { nil } {
+		return selector.data_.pseudo_element
+	}
+	return selector_pseudo_element_uncached(selector.compound_selectors())
+}
+
+fn selector_pseudo_element_uncached(compound_selectors []CompoundSelector) ?PseudoElementSelector {
 	if compound_selectors.len == 0 {
 		return none
 	}
@@ -956,7 +1043,10 @@ pub fn (selector Selector) pseudo_element() ?PseudoElementSelector {
 }
 
 pub fn (selector Selector) contains_pseudo_class(pseudo_class PseudoClass) bool {
-	return selector_contained_pseudo_classes(selector).get(pseudo_class)
+	if selector.data_ != unsafe { nil } {
+		return selector.data_.contained_pseudo_classes.get(pseudo_class)
+	}
+	return selector_contained_pseudo_classes_uncached(selector.compound_selectors()).get(pseudo_class)
 }
 
 pub fn (selector Selector) contains_unknown_webkit_pseudo_element() bool {
@@ -978,15 +1068,24 @@ pub fn (selector Selector) contains_unknown_webkit_pseudo_element() bool {
 }
 
 pub fn (selector Selector) can_use_fast_matches() bool {
+	if selector.data_ != unsafe { nil } {
+		return selector.data_.can_use_fast_matches
+	}
 	return can_selector_use_fast_matches(selector)
 }
 
 pub fn (selector Selector) can_use_ancestor_filter() bool {
+	if selector.data_ != unsafe { nil } {
+		return selector.data_.can_use_ancestor_filter
+	}
 	_, can_use := selector_ancestor_hashes(selector)
 	return can_use
 }
 
 pub fn (selector Selector) ancestor_hashes() [8]u32 {
+	if selector.data_ != unsafe { nil } {
+		return selector.data_.ancestor_hashes
+	}
 	hashes, _ := selector_ancestor_hashes(selector)
 	return hashes
 }
@@ -1003,6 +1102,11 @@ pub fn (selector Selector) has_part_pseudo_element() bool {
 
 // https://www.w3.org/TR/selectors-4/#specificity-rules
 pub fn (selector Selector) specificity() u32 {
+	if selector.data_ != unsafe { nil } {
+		if specificity := selector.data_.specificity {
+			return specificity
+		}
+	}
 	ids_shift := u32(16)
 	classes_shift := u32(8)
 	tag_names_shift := u32(0)
@@ -1100,17 +1204,23 @@ pub fn (selector Selector) specificity() u32 {
 
 	// Due to storage limitations, implementations may have limitations on the size of A, B, or C.
 	// If so, values higher than the limit must be clamped to that limit, and not overflow.
-	return (selector_min_u32(ids, 0xff) << ids_shift) + (selector_min_u32(classes, 0xff) << classes_shift) + (selector_min_u32(tag_names, 0xff) << tag_names_shift)
+	specificity := (selector_min_u32(ids, 0xff) << ids_shift) + (selector_min_u32(classes,
+		0xff) << classes_shift) + (selector_min_u32(tag_names, 0xff) << tag_names_shift)
+	if selector.data_ != unsafe { nil } {
+		mut data := unsafe { &SelectorData(selector.data_) }
+		data.specificity = specificity
+	}
+	return specificity
 }
 
 // https://www.w3.org/TR/cssom/#serialize-a-selector
 pub fn (selector Selector) serialize() string {
 	compound_selectors := selector.compound_selectors()
 	if compound_selectors.len == 0 {
-		return selector.text.trim_space()
+		return selector.text().trim_space()
 	}
 
-	mut s := strings.new_builder(selector.text.len)
+	mut s := strings.new_builder(selector.text().len)
 
 	// AD-HOC: If this is a relative selector, we need to serialize the starting combinator.
 	if compound_selectors.len != 0 {
@@ -1195,9 +1305,7 @@ pub fn (selector Selector) relative_to(parent SimpleSelector) Selector {
 		copied_compound_selectors << compound_selector
 	}
 
-	return Selector{
-		text: serialize_compound_selectors(copied_compound_selectors)
-	}
+	return selector_from_compound_selectors(copied_compound_selectors)
 }
 
 pub fn sibling_invalidation_distance_for_selector(selector Selector) int {
@@ -1205,6 +1313,11 @@ pub fn sibling_invalidation_distance_for_selector(selector Selector) int {
 }
 
 pub fn (selector Selector) sibling_invalidation_distance() int {
+	if selector.data_ != unsafe { nil } {
+		if distance := selector.data_.sibling_invalidation_distance {
+			return distance
+		}
+	}
 	mut sibling_invalidation_distance := 0
 	mut current_distance := 0
 	for compound_selector in selector.compound_selectors() {
@@ -1213,7 +1326,8 @@ pub fn (selector Selector) sibling_invalidation_distance() int {
 		}
 
 		if compound_selector.combinator == .subsequent_sibling {
-			return selector_unbounded_sibling_invalidation_distance
+			sibling_invalidation_distance = selector_unbounded_sibling_invalidation_distance
+			break
 		}
 
 		if compound_selector.combinator == .next_sibling {
@@ -1226,8 +1340,13 @@ pub fn (selector Selector) sibling_invalidation_distance() int {
 		}
 	}
 
-	if current_distance > 0 && current_distance > sibling_invalidation_distance {
+	if sibling_invalidation_distance != selector_unbounded_sibling_invalidation_distance
+		&& current_distance > 0 && current_distance > sibling_invalidation_distance {
 		sibling_invalidation_distance = current_distance
+	}
+	if selector.data_ != unsafe { nil } {
+		mut data := unsafe { &SelectorData(selector.data_) }
+		data.sibling_invalidation_distance = sibling_invalidation_distance
 	}
 	return sibling_invalidation_distance
 }
@@ -1262,9 +1381,7 @@ pub fn adapt_nested_relative_selector_list(selectors SelectorList) SelectorList 
 			// Replace leading descendant combinator (whitespace) with none, because we're not actually relative.
 			mut copied_compound_selectors := compound_selectors.clone()
 			copied_compound_selectors[0].combinator = .no_combinator
-			new_list.selectors << Selector{
-				text: serialize_compound_selectors(copied_compound_selectors)
-			}
+			new_list.selectors << selector_from_compound_selectors(copied_compound_selectors)
 		} else {
 			new_list.selectors << selector
 		}
@@ -2377,9 +2494,7 @@ fn parse_pseudo_element_selector(name string, argument string, is_function bool)
 					return invalid_simple_selector('::${name}(${argument})')
 				}
 				selector.value_kind = .compound_selector
-				selector.compound_selector = Selector{
-					text: argument.trim_space()
-				}
+				selector.compound_selector = selector_from_text(argument.trim_space())
 			}
 			.part {
 				idents := split_selector_whitespace(argument)
@@ -2689,13 +2804,9 @@ fn selector_list_from_text(text string, relative bool) SelectorList {
 			continue
 		}
 		if relative && !starts_with_combinator(trimmed) {
-			list.selectors << Selector{
-				text: ' ${trimmed}'
-			}
+			list.selectors << selector_from_text(' ${trimmed}')
 		} else {
-			list.selectors << Selector{
-				text: trimmed
-			}
+			list.selectors << selector_from_text(trimmed)
 		}
 	}
 	return list
@@ -2768,9 +2879,7 @@ fn split_an_plus_b_of_selector(argument string) (string, string) {
 }
 
 fn serialize_compound_selectors(compound_selectors []CompoundSelector) string {
-	return Selector{
-		text: serialize_compound_selectors_raw(compound_selectors)
-	}.serialize()
+	return selector_from_compound_selectors(compound_selectors).serialize()
 }
 
 fn serialize_compound_selectors_raw(compound_selectors []CompoundSelector) string {
@@ -2924,14 +3033,18 @@ fn append_unique_hash(hash u32, ancestor_hashes [8]u32, next_hash_index int) App
 	return result
 }
 
-fn selector_contained_pseudo_classes(selector Selector) PseudoClassBitmap {
+fn selector_contained_pseudo_classes_uncached(compound_selectors []CompoundSelector) PseudoClassBitmap {
 	mut bitmap := PseudoClassBitmap{}
-	for compound_selector in selector.compound_selectors() {
+	for compound_selector in compound_selectors {
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .pseudo_class {
 				bitmap.set(simple_selector.pseudo_class.type_, true)
 				for child_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
-					bitmap.merge(selector_contained_pseudo_classes(child_selector))
+					if child_selector.data_ != unsafe { nil } {
+						bitmap.merge(child_selector.data_.contained_pseudo_classes)
+					} else {
+						bitmap.merge(selector_contained_pseudo_classes_uncached(child_selector.compound_selectors()))
+					}
 				}
 			}
 		}
@@ -2967,7 +3080,7 @@ fn contains_invalid_contents_for_has(selector Selector) bool {
 	return false
 }
 
-fn absolutize_selector_with_simple(selector Selector, selector_for_nesting SimpleSelector) ?Selector {
+pub fn (selector Selector) absolutized(selector_for_nesting SimpleSelector) ?Selector {
 	if !selector.contains_the_nesting_selector() {
 		return selector
 	}
@@ -2979,9 +3092,7 @@ fn absolutize_selector_with_simple(selector Selector, selector_for_nesting Simpl
 			return none
 		}
 	}
-	return Selector{
-		text: serialize_compound_selectors_raw(absolutized_compound_selectors)
-	}
+	return selector_from_compound_selectors(absolutized_compound_selectors)
 }
 
 // Upward traversal for descendant (' ') and immediate child combinator ('>')
@@ -3158,7 +3269,7 @@ fn has_matching_descendant_for_relative(selector Selector, node &dom.Node, shado
 
 // https://drafts.csswg.org/selectors-4/#relational
 fn matches_has_pseudo_class(selector Selector, anchor &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode) bool {
-	cache_key := '${selector.text}\0${anchor.as_node().unique_id()}'
+	cache_key := '${selector.text()}\0${anchor.as_node().unique_id()}'
 	if cached := context.has_result_cache[cache_key] {
 		return cached == .matched
 	}

@@ -58,7 +58,7 @@ pub fn (mut allowlist AutoplayAllowlist) enable_for_origins(origins []string) {
 		}
 		url := dom.dom_url_parse(value, dom.url_about_blank(), 'utf-8') or { continue }
 		origin := url.origin()
-		if origin.value != 'opaque' {
+		if !origin.is_opaque() {
 			allowlist.patterns << origin
 		}
 	}

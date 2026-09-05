@@ -214,7 +214,9 @@ pub fn parse_points(input string) []Point {
 	scanner.whitespace()
 	for !scanner.done() {
 		x := scanner.number() or {
-			if points.len == 0 { return [] }
+			if points.len == 0 {
+				return []
+			}
 			break
 		}
 		scanner.comma_whitespace()
@@ -223,8 +225,9 @@ pub fn parse_points(input string) []Point {
 			x: x
 			y: y
 		}
-		if scanner.done() { break
-		 }
+		if scanner.done() {
+			break
+		}
 		scanner.comma_whitespace()
 	}
 	return points
@@ -246,7 +249,9 @@ pub fn parse_preserve_aspect_ratio(input string) ?PreserveAspectRatio {
 		'xMinYMax' { Align.x_min_y_max }
 		'xMidYMax' { Align.x_mid_y_max }
 		'xMaxYMax' { Align.x_max_y_max }
-		else { return none }
+		else {
+			return none
+		}
 	}
 	meet_or_slice := if parts.len == 1 || parts[1] == 'meet' {
 		MeetOrSlice.meet
@@ -256,7 +261,7 @@ pub fn parse_preserve_aspect_ratio(input string) ?PreserveAspectRatio {
 		return none
 	}
 	return PreserveAspectRatio{
-		align:         align
+		align: align
 		meet_or_slice: meet_or_slice
 	}
 }
@@ -292,9 +297,9 @@ pub fn parse_viewbox(input string) ?ViewBox {
 		return none
 	}
 	return ViewBox{
-		min_x:  values[0]
-		min_y:  values[1]
-		width:  values[2]
+		min_x: values[0]
+		min_y: values[1]
+		width: values[2]
 		height: values[3]
 	}
 }
@@ -334,36 +339,48 @@ pub fn parse_transform(input string) ?[]Transform {
 		mut values := [6]f64{}
 		kind := match name {
 			'translate' {
-				if parameters.len !in [1, 2] { return none }
+				if parameters.len !in [1, 2] {
+					return none
+				}
 				values[0] = parameters[0]
 				values[1] = if parameters.len == 2 { parameters[1] } else { 0 }
 				TransformKind.translate
 			}
 			'scale' {
-				if parameters.len !in [1, 2] { return none }
+				if parameters.len !in [1, 2] {
+					return none
+				}
 				values[0] = parameters[0]
 				values[1] = if parameters.len == 2 { parameters[1] } else { parameters[0] }
 				TransformKind.scale
 			}
 			'rotate' {
-				if parameters.len < 1 || parameters.len > 3 { return none }
+				if parameters.len < 1 || parameters.len > 3 {
+					return none
+				}
 				for index, parameter in parameters {
 					values[index] = parameter
 				}
 				TransformKind.rotate
 			}
 			'skewX' {
-				if parameters.len != 1 { return none }
+				if parameters.len != 1 {
+					return none
+				}
 				values[0] = parameters[0]
 				TransformKind.skew_x
 			}
 			'skewY' {
-				if parameters.len != 1 { return none }
+				if parameters.len != 1 {
+					return none
+				}
 				values[0] = parameters[0]
 				TransformKind.skew_y
 			}
 			'matrix' {
-				if parameters.len != 6 { return none }
+				if parameters.len != 6 {
+					return none
+				}
 				for index, parameter in parameters {
 					values[index] = parameter
 				}
@@ -374,7 +391,7 @@ pub fn parse_transform(input string) ?[]Transform {
 			}
 		}
 		transforms << Transform{
-			kind:   kind
+			kind: kind
 			values: values
 		}
 		scanner.whitespace()

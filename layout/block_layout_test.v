@@ -3,13 +3,13 @@ module layout
 import dom
 import css
 
-fn computed_style_for(doc &dom.Document, tag string, style string) &css.ComputedProperties {
+fn computed_style_for(doc &dom.Document, tag string, style string) &css.ComputedValues {
 	mut el := doc.create_element_ns('http://www.w3.org/1999/xhtml', tag) or { panic('${err}') }
 	if style.len > 0 {
 		el.set_attribute_value('style', style)
 	}
 	s := css.css_style_computer_for(doc)
-	return s.compute_style(dom.AbstractElement.new(el, none))
+	return css.resolve_computed_values(s.compute_style(dom.AbstractElement.new(el, none)))
 }
 
 // Box-model edges resolve from the computed style; an auto-width block fills its containing block minus
@@ -32,8 +32,7 @@ fn test_block_width_auto() {
 // A definite-width block with `margin: auto` on both sides is centered in its containing block.
 fn test_block_width_definite_auto_margins() {
 	doc := dom.Document.create(dom.url_about_blank())
-	computed := computed_style_for(doc, 'div',
-		'width: 100px; margin-left: auto; margin-right: auto')
+	computed := computed_style_for(doc, 'div', 'width: 100px; margin-left: auto; margin-right: auto')
 
 	mut uv := &UsedValues{}
 	resolve_box_model_edges(computed, mut uv, 300.0)

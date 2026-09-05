@@ -3,7 +3,7 @@ module painting
 fn test_all_mix_blend_modes_map_without_fallback() {
 	modes := [BlendMode.normal, .multiply, .screen, .overlay, .darken, .lighten, .color_dodge,
 		.color_burn, .hard_light, .soft_light, .difference, .exclusion, .hue, .saturation, .color,
-		.luminosity]
+		.luminosity, .plus_darker, .plus_lighter]
 	for index, mode in modes {
 		expected := if index == 0 { 0 } else { index + 1 }
 		assert int(mix_blend_mode_to_operator(mode)) == expected
@@ -19,14 +19,14 @@ fn test_resolved_css_filter_scales_and_composes_in_upstream_order() {
 			DropShadowFilter{
 				offset_x: 2
 				offset_y: -1
-				radius:   4
-				color:    Color{
+				radius: 4
+				color: Color{
 					r: 9
 				}
 			},
 			ColorFilter{
 				operation: .contrast
-				amount:    1.5
+				amount: 1.5
 			},
 			HueRotateFilter{
 				angle_degrees: 90
@@ -49,6 +49,39 @@ fn test_resolved_css_filter_scales_and_composes_in_upstream_order() {
 	assert ResolvedCSSFilter{}.to_gfx_filter(1) == none
 }
 
+fn test_svg_filter_graph_wraps_the_css_filter_chain_without_flattening() {
+	svg := GfxFilter{
+		nodes: [
+			GfxFilterNode{
+				id: 0
+				kind: 'blur'
+				input_ids: [-1]
+				parameters: {
+					'radius_x': 2.0
+					'radius_y': 3.0
+				}
+			},
+		]
+		root_id: 0
+	}
+	filter := ResolvedCSSFilter{
+		operations: [ResolvedFilterOperation(ColorFilter{
+			operation: .contrast
+			amount: 1.5
+		})]
+		svg_filter: svg
+		svg_filter_bounds: Rect{10, 20, 30, 40}
+	}
+	gfx := filter.to_gfx_filter(2) or { panic('expected composed filter') }
+	assert gfx.operations.len == 1
+	assert gfx.operations[0].kind == 'color'
+	assert gfx.nodes.len == 1
+	assert gfx.nodes[0].input_ids == [-1]
+	assert gfx.nodes[0].parameters['radius_x'] == 2
+	assert gfx.root_id or { -1 } == 0
+	assert gfx.bounds or { panic('expected SVG filter bounds') } == Rect{10, 20, 30, 40}
+}
+
 fn test_transition_hints_expand_to_five_sampled_stops() {
 	red := Color{
 		r: 255
@@ -57,8 +90,8 @@ fn test_transition_hints_expand_to_five_sampled_stops() {
 		b: 255
 	}
 	stops := [ColorStop{ color: red, position: 0 }, ColorStop{
-		color:           blue
-		position:        1
+		color: blue
+		position: 1
 		transition_hint: 0.5
 	}]
 	expanded := replace_transition_hints(stops)
@@ -72,12 +105,12 @@ fn test_transition_hints_expand_to_five_sampled_stops() {
 
 fn test_repeating_gradient_expands_and_clamps_ends() {
 	stops := [ColorStop{
-		color:    Color{
+		color: Color{
 			r: 255
 		}
 		position: 0.25
 	}, ColorStop{
-		color:    Color{
+		color: Color{
 			b: 255
 		}
 		position: 0.5
@@ -95,20 +128,20 @@ fn test_box_shadow_layers_are_painted_back_to_front() {
 	converter := new_device_pixel_converter(1) or { panic(err) }
 	layers := [
 		ShadowData{
-			color:           Color{
+			color: Color{
 				r: 1
 			}
-			offset_x:        1
-			blur_radius:     2
+			offset_x: 1
+			blur_radius: 2
 			spread_distance: 3
 		},
 		ShadowData{
-			color:       Color{
+			color: Color{
 				b: 2
 			}
-			offset_y:    2
+			offset_y: 2
 			blur_radius: 1
-			placement:   .inner
+			placement: .inner
 		},
 	]
 	resolved := resolve_box_shadows(Rect{10, 20, 30, 40}, BorderRadiiData{}, layers, converter)

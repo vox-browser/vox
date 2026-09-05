@@ -26,13 +26,11 @@ fn test_layout_node_tree() {
 	assert layout_nodes_same(root.first_child() or { panic('no first child') }, child1)
 	assert layout_nodes_same(root.last_child() or { panic('no last child') }, child2)
 
-	assert layout_nodes_same(child1.next_sibling() or { panic('child1 has no next sibling') },
-		child2)
+	assert layout_nodes_same(child1.next_sibling() or { panic('child1 has no next sibling') }, child2)
 	if _ := child2.next_sibling() {
 		panic('child2 should have no next sibling')
 	}
-	assert layout_nodes_same(child2.previous_sibling() or { panic('child2 has no prev sibling') },
-		child1)
+	assert layout_nodes_same(child2.previous_sibling() or { panic('child2 has no prev sibling') }, child1)
 	if _ := child1.previous_sibling() {
 		panic('child1 should have no previous sibling')
 	}
@@ -127,6 +125,30 @@ fn test_node_with_style() {
 	if _ := bare.as_node_with_style() {
 		panic('a styleless Node should not cast to NodeWithStyle')
 	}
+}
+
+fn test_node_with_style_resolves_computed_values_once_per_style_application() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut computed := css.ComputedProperties.new()
+	computed.set_property_without_modifying_flags(.width, &dom.StyleValue{
+		css_text: '10px'
+	})
+	mut node := NodeWithStyle.new(document, none, computed)
+	assert node.computed_values().size_value(.width).length().absolute_length_to_px().to_double() == 10
+
+	// ComputedValues is a resolved layout snapshot. Mutating the source property
+	// graph does not affect it until NodeWithStyle::apply_style() runs again.
+	computed.set_property_without_modifying_flags(.width, &dom.StyleValue{
+		css_text: '99px'
+	})
+	assert node.computed_values().size_value(.width).length().absolute_length_to_px().to_double() == 10
+
+	node.apply_style(computed)
+	assert node.computed_values().size_value(.width).length().absolute_length_to_px().to_double() == 99
+
+	inherited := node.computed_values().clone_inherited_values()
+	assert inherited.font_size() == node.computed_values().font_size()
+	assert inherited.width().is_auto()
 }
 
 fn test_first_available_font_uses_computed_font_cascade() {
@@ -346,10 +368,8 @@ fn test_user_select_used_value_matches_upstream_resolution() {
 	document := dom.Document.create(dom.url_about_blank())
 	mut parent_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
 	child_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
-	mut parent := NodeWithStyle.new(document, parent_element.as_node(),
-		node_test_computed_user_select('all'))
-	child := NodeWithStyle.new(document, child_element.as_node(),
-		node_test_computed_user_select('auto'))
+	mut parent := NodeWithStyle.new(document, parent_element.as_node(), node_test_computed_user_select('all'))
+	child := NodeWithStyle.new(document, child_element.as_node(), node_test_computed_user_select('auto'))
 	parent.append_child(unsafe { &Node(child) })
 	assert unsafe { &Node(child) }.user_select_used_value() == .all
 
@@ -359,13 +379,11 @@ fn test_user_select_used_value_matches_upstream_resolution() {
 
 	mut editing_host := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
 	editing_host.set_attribute_value('contenteditable', 'true')
-	editing_node := NodeWithStyle.new(document, editing_host.as_node(),
-		node_test_computed_user_select('none'))
+	editing_node := NodeWithStyle.new(document, editing_host.as_node(), node_test_computed_user_select('none'))
 	assert unsafe { &Node(editing_node) }.user_select_used_value() == .contain
 
 	mut input := document.create_element_ns('http://www.w3.org/1999/xhtml', 'input')!
-	input_node := NodeWithStyle.new(document, input.as_node(),
-		node_test_computed_user_select('none'))
+	input_node := NodeWithStyle.new(document, input.as_node(), node_test_computed_user_select('none'))
 	assert unsafe { &Node(input_node) }.user_select_used_value() == .contain
 	input.set_attribute_value('readonly', '')
 	assert unsafe { &Node(input_node) }.user_select_used_value() == .none_

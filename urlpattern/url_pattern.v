@@ -1,24 +1,22 @@
-// Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2025-2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of URLPattern/URLPattern.{h,cpp,idl}. Pattern token compilation
-// in upstream LibURL is represented here by deterministic component matching;
-// URL parsing remains the standard-library boundary.
+// Translation of LibURL/Pattern/Pattern.cpp and LibWeb/URLPattern/URLPattern.cpp.
 module urlpattern
 
-import net.urllib
+import url as liburl
 
 pub struct URLPatternInit {
 pub:
-	protocol string
-	username string
-	password string
-	hostname string
-	port     string
-	pathname string
-	search   string
-	hash     string
-	base_url string
+	protocol ?string
+	username ?string
+	password ?string
+	hostname ?string
+	port     ?string
+	pathname ?string
+	search   ?string
+	hash     ?string
+	base_url ?string
 }
 
 pub type URLPatternInput = URLPatternInit | string
@@ -47,265 +45,266 @@ pub:
 	hash     URLPatternComponentResult
 }
 
-// WebIDL's nullable URLPatternResult needs to coexist with parsing exceptions.
-// V does not combine option and result return types, so this record preserves
-// the null-vs-match distinction while `!` remains available for TypeError.
 pub struct URLPatternExecResult {
 pub:
 	matched bool
 	result  URLPatternResult
 }
 
-struct PatternComponents {
-	protocol string = '*'
-	username string = '*'
-	password string = '*'
-	hostname string = '*'
-	port     string = '*'
-	pathname string = '*'
-	search   string = '*'
-	hash     string = '*'
-}
-
 @[heap]
 pub struct URLPattern {
-pub:
-	ignore_case bool
-mut:
-	components PatternComponents
+	protocol_component CompiledPatternComponent
+	username_component CompiledPatternComponent
+	password_component CompiledPatternComponent
+	hostname_component CompiledPatternComponent
+	port_component     CompiledPatternComponent
+	pathname_component CompiledPatternComponent
+	search_component   CompiledPatternComponent
+	hash_component     CompiledPatternComponent
 }
 
 pub fn URLPattern.new(input URLPatternInput, base_url ?string, options URLPatternOptions) !&URLPattern {
 	return URLPattern.construct_impl(input, base_url, options)
 }
 
-// V does not overload functions, so the nullable base_url represents both
-// Web IDL constructor overloads from URLPattern.cpp.
 pub fn URLPattern.construct_impl(input URLPatternInput, base_url ?string, options URLPatternOptions) !&URLPattern {
 	return URLPattern.create(input, base_url, options)
 }
 
-// https://urlpattern.spec.whatwg.org/#urlpattern-initialize
+// https://urlpattern.spec.whatwg.org/#url-pattern-create
 pub fn URLPattern.create(input URLPatternInput, base_url ?string, options URLPatternOptions) !&URLPattern {
-	components := components_from_input(input, base_url)!
-	return &URLPattern{
-		ignore_case: options.ignore_case
-		components:  components
-	}
-}
-
-fn components_from_input(input URLPatternInput, base_url ?string) !PatternComponents {
+	mut init := PatternInitRecord{}
 	match input {
 		string {
-			parsed := parse_url_reference(input, base_url)!
-			return components_from_url(parsed)
+			init = parse_constructor_string(input)!
+			if base_url == none && init.protocol == none {
+				return error('TypeError: relative URLPattern constructor must provide one of baseURL or protocol')
+			}
+			if value := base_url {
+				init.base_url = value
+			}
 		}
 		URLPatternInit {
-			selected_base := if input.base_url != '' { ?string(input.base_url) } else { base_url }
-			mut defaults := PatternComponents{}
-			if base := selected_base {
-				defaults = components_from_url(urllib.parse(base)!)
+			if base_url != none {
+				return error('TypeError: constructor with URLPatternInit must not provide baseURL')
 			}
-			return PatternComponents{
-				protocol: value_or(input.protocol, defaults.protocol)
-				username: value_or(input.username, defaults.username)
-				password: value_or(input.password, defaults.password)
-				hostname: value_or(input.hostname, defaults.hostname)
-				port:     value_or(input.port, defaults.port)
-				pathname: value_or(input.pathname, defaults.pathname)
-				search:   value_or(input.search, defaults.search)
-				hash:     value_or(input.hash, defaults.hash)
+			init = pattern_init_record(input)
+		}
+	}
+	mut processed := process_url_pattern_init(init, .pattern, none, none, none, none, none, none, none, none)!
+	if processed.protocol == none {
+		processed.protocol = '*'
+	}
+	if processed.username == none {
+		processed.username = '*'
+	}
+	if processed.password == none {
+		processed.password = '*'
+	}
+	if processed.hostname == none {
+		processed.hostname = '*'
+	}
+	if processed.port == none {
+		processed.port = '*'
+	}
+	if processed.pathname == none {
+		processed.pathname = '*'
+	}
+	if processed.search == none {
+		processed.search = '*'
+	}
+	if processed.hash == none {
+		processed.hash = '*'
+	}
+	protocol_string := processed.protocol or { '*' }
+	mut port_string := processed.port or { '*' }
+	if liburl.is_special_scheme(protocol_string) {
+		if default_port := liburl.default_port_for_scheme(protocol_string) {
+			if port_string == default_port.str() {
+				port_string = ''
 			}
 		}
 	}
-}
-
-fn value_or(value string, fallback string) string {
-	return if value == '' { fallback } else { value }
-}
-
-fn parse_url_reference(raw string, base_url ?string) !urllib.URL {
-	reference := urllib.parse(raw)!
-	if reference.is_abs() {
-		return reference
+	protocol_component := compile_pattern_component(protocol_string, .protocol, default_pattern_options())!
+	username_component := compile_pattern_component(processed.username or { '*' }, .username, default_pattern_options())!
+	password_component := compile_pattern_component(processed.password or { '*' }, .password, default_pattern_options())!
+	hostname_string := processed.hostname or { '*' }
+	hostname_component := compile_pattern_component(hostname_string, if hostname_pattern_is_ipv6_address(hostname_string) {
+		PatternCanonicalization.ipv6_hostname
+	} else {
+		PatternCanonicalization.hostname
+	}, hostname_pattern_options())!
+	port_component := compile_pattern_component(port_string, .port, default_pattern_options())!
+	case_options := PatternCompileOptions{
+		ignore_case: options.ignore_case
 	}
-	base := base_url or { return error('TypeError: a relative URLPattern string requires baseURL') }
-	parsed_base := urllib.parse(base)!
-	return parsed_base.resolve_reference(reference)!
+	pathname_component := if protocol_component_matches_special_scheme(&protocol_component) {
+		compile_pattern_component(processed.pathname or { '*' }, .pathname, pathname_pattern_options(options.ignore_case))!
+	} else {
+		compile_pattern_component(processed.pathname or { '*' }, .opaque_pathname, case_options)!
+	}
+	search_component := compile_pattern_component(processed.search or { '*' }, .search, case_options)!
+	hash_component := compile_pattern_component(processed.hash or { '*' }, .hash, case_options)!
+	return &URLPattern{
+		protocol_component: protocol_component
+		username_component: username_component
+		password_component: password_component
+		hostname_component: hostname_component
+		port_component: port_component
+		pathname_component: pathname_component
+		search_component: search_component
+		hash_component: hash_component
+	}
 }
 
-fn components_from_url(url urllib.URL) PatternComponents {
-	mut username := ''
-	mut password := ''
-	if user := url.user {
-		username = user.username
-		if user.password_set {
-			password = user.password
-		}
-	}
-	return PatternComponents{
-		protocol: url.scheme
-		username: username
-		password: password
-		hostname: url.hostname()
-		port:     url.port()
-		pathname: url.path
-		search:   url.raw_query
-		hash:     url.fragment
+fn pattern_init_record(input URLPatternInit) PatternInitRecord {
+	return PatternInitRecord{
+		protocol: input.protocol
+		username: input.username
+		password: input.password
+		hostname: input.hostname
+		port: input.port
+		pathname: input.pathname
+		search: input.search
+		hash: input.hash
+		base_url: input.base_url
 	}
 }
 
 pub fn (pattern &URLPattern) protocol() string {
-	return pattern.components.protocol
+	return pattern.protocol_component.pattern_string
 }
 
 pub fn (pattern &URLPattern) username() string {
-	return pattern.components.username
+	return pattern.username_component.pattern_string
 }
 
 pub fn (pattern &URLPattern) password() string {
-	return pattern.components.password
+	return pattern.password_component.pattern_string
 }
 
 pub fn (pattern &URLPattern) hostname() string {
-	return pattern.components.hostname
+	return pattern.hostname_component.pattern_string
 }
 
 pub fn (pattern &URLPattern) port() string {
-	return pattern.components.port
+	return pattern.port_component.pattern_string
 }
 
 pub fn (pattern &URLPattern) pathname() string {
-	return pattern.components.pathname
+	return pattern.pathname_component.pattern_string
 }
 
 pub fn (pattern &URLPattern) search() string {
-	return pattern.components.search
+	return pattern.search_component.pattern_string
 }
 
 pub fn (pattern &URLPattern) hash() string {
-	return pattern.components.hash
+	return pattern.hash_component.pattern_string
 }
 
 pub fn (pattern &URLPattern) has_reg_exp_groups() bool {
-	for component in pattern.pattern_component_values() {
-		if component.contains('(') || component.contains(')') {
-			return true
-		}
-	}
-	return false
+	return pattern.protocol_component.has_regexp_groups || pattern.username_component.has_regexp_groups || pattern.password_component.has_regexp_groups || pattern.hostname_component.has_regexp_groups || pattern.port_component.has_regexp_groups || pattern.pathname_component.has_regexp_groups || pattern.search_component.has_regexp_groups || pattern.hash_component.has_regexp_groups
 }
 
-fn (pattern &URLPattern) pattern_component_values() []string {
-	return [pattern.protocol(), pattern.username(), pattern.password(),
-		pattern.hostname(), pattern.port(), pattern.pathname(),
-		pattern.search(), pattern.hash()]
+struct URLPatternMatchInput {
+	valid      bool
+	inputs     []URLPatternInput
+	components PatternInitRecord
+}
+
+fn prepare_url_pattern_match_input(input URLPatternInput, base_url ?string) !URLPatternMatchInput {
+	mut inputs := []URLPatternInput{}
+	inputs << input
+	match input {
+		URLPatternInit {
+			if base_url != none {
+				return error('TypeError: base URL cannot be provided with URLPatternInit')
+			}
+			components := process_url_pattern_init(pattern_init_record(input), .url, '', '', '', '', '', '', '', '') or { return URLPatternMatchInput{} }
+			return URLPatternMatchInput{
+				valid: true
+				inputs: inputs
+				components: components
+			}
+		}
+		string {
+			mut parsed_base := ?liburl.URL(none)
+			if base_url_string := base_url {
+				parsed_base = liburl.parse(base_url_string) or { return URLPatternMatchInput{} }
+				inputs << URLPatternInput(base_url_string)
+			}
+			parsed := if base := parsed_base {
+				liburl.parse_with_base(input, &base) or { return URLPatternMatchInput{} }
+			} else {
+				liburl.parse(input) or { return URLPatternMatchInput{} }
+			}
+			hostname := if host_record := parsed.host { host_record.serialize() } else { '' }
+			return URLPatternMatchInput{
+				valid: true
+				inputs: inputs
+				components: PatternInitRecord{
+					protocol: parsed.scheme
+					username: parsed.username
+					password: parsed.password
+					hostname: hostname
+					port: if parsed_port := parsed.port { parsed_port.str() } else { '' }
+					pathname: parsed.serialize_path()
+					search: parsed.query or { '' }
+					hash: parsed.fragment or { '' }
+				}
+			}
+		}
+	}
 }
 
 pub fn (pattern &URLPattern) test(input URLPatternInput, base_url ?string) !bool {
-	candidate := components_from_input(input, base_url)!
-	patterns := pattern.pattern_component_values()
-	values := [candidate.protocol, candidate.username, candidate.password, candidate.hostname,
-		candidate.port, candidate.pathname, candidate.search, candidate.hash]
-	for index, component_pattern in patterns {
-		match_component(component_pattern, values[index], pattern.ignore_case) or { return false }
+	prepared := prepare_url_pattern_match_input(input, base_url)!
+	if !prepared.valid {
+		return false
 	}
-	return true
+	return pattern.match_components(prepared.components) != none
 }
 
 pub fn (pattern &URLPattern) exec(input URLPatternInput, base_url ?string) !URLPatternExecResult {
-	candidate := components_from_input(input, base_url)!
-	mut results := []URLPatternComponentResult{cap: 8}
-	patterns := pattern.pattern_component_values()
-	values := [candidate.protocol, candidate.username, candidate.password, candidate.hostname,
-		candidate.port, candidate.pathname, candidate.search, candidate.hash]
-	for index, component_pattern in patterns {
-		result := match_component(component_pattern, values[index], pattern.ignore_case) or {
-			return URLPatternExecResult{}
-		}
-		results << result
+	prepared := prepare_url_pattern_match_input(input, base_url)!
+	if !prepared.valid {
+		return URLPatternExecResult{}
 	}
+	matches := pattern.match_components(prepared.components) or { return URLPatternExecResult{} }
 	return URLPatternExecResult{
 		matched: true
-		result:  URLPatternResult{
-			inputs:   [input]
-			protocol: results[0]
-			username: results[1]
-			password: results[2]
-			hostname: results[3]
-			port:     results[4]
-			pathname: results[5]
-			search:   results[6]
-			hash:     results[7]
+		result: URLPatternResult{
+			inputs: prepared.inputs
+			protocol: component_result(matches[0])
+			username: component_result(matches[1])
+			password: component_result(matches[2])
+			hostname: component_result(matches[3])
+			port: component_result(matches[4])
+			pathname: component_result(matches[5])
+			search: component_result(matches[6])
+			hash: component_result(matches[7])
 		}
 	}
 }
 
-// match_component supports URLPattern's common literal, wildcard and named
-// segment forms. Parenthesized regexp tokens are retained/reflected but native
-// regexp execution is deliberately outside this package.
-fn match_component(raw_pattern string, raw_input string, ignore_case bool) ?URLPatternComponentResult {
-	component_pattern := if ignore_case { raw_pattern.to_lower_ascii() } else { raw_pattern }
-	input := if ignore_case { raw_input.to_lower_ascii() } else { raw_input }
-	mut groups := map[string]string{}
-	if component_pattern == '*' {
-		groups['0'] = raw_input
-		return URLPatternComponentResult{
-			input:  raw_input
-			groups: groups
-		}
+fn (pattern &URLPattern) match_components(components PatternInitRecord) ?[]PatternComponentMatch {
+	values := [components.protocol or { '' }, components.username or { '' },
+		components.password or { '' }, components.hostname or { '' }, components.port or { '' },
+		components.pathname or { '' }, components.search or { '' }, components.hash or { '' }]
+	compiled := [&pattern.protocol_component, &pattern.username_component,
+		&pattern.password_component, &pattern.hostname_component, &pattern.port_component,
+		&pattern.pathname_component, &pattern.search_component, &pattern.hash_component]
+	mut matches := []PatternComponentMatch{cap: 8}
+	for index, component in compiled {
+		matches << component.match(values[index]) or { return none }
 	}
-	pattern_segments := component_pattern.split('/')
-	input_segments := input.split('/')
-	if pattern_segments.len == input_segments.len {
-		mut matched := true
-		for index, segment in pattern_segments {
-			if segment.starts_with(':') && segment.len > 1 {
-				groups[segment[1..]] = raw_input.split('/')[index]
-			} else if !glob_match(segment, input_segments[index]) {
-				matched = false
-				break
-			}
-		}
-		if matched {
-			return URLPatternComponentResult{
-				input:  raw_input
-				groups: groups
-			}
-		}
-	}
-	if glob_match(component_pattern, input) {
-		return URLPatternComponentResult{
-			input:  raw_input
-			groups: groups
-		}
-	}
-	return none
+	return matches
 }
 
-fn glob_match(pattern string, input string) bool {
-	mut pattern_index := 0
-	mut input_index := 0
-	mut star_index := -1
-	mut retry_input := 0
-	for input_index < input.len {
-		if pattern_index < pattern.len && pattern[pattern_index] == input[input_index] {
-			pattern_index++
-			input_index++
-		} else if pattern_index < pattern.len && pattern[pattern_index] == `*` {
-			star_index = pattern_index
-			pattern_index++
-			retry_input = input_index
-		} else if star_index >= 0 {
-			pattern_index = star_index + 1
-			retry_input++
-			input_index = retry_input
-		} else {
-			return false
-		}
+fn component_result(value PatternComponentMatch) URLPatternComponentResult {
+	return URLPatternComponentResult{
+		input: value.input
+		groups: value.groups
 	}
-	for pattern_index < pattern.len && pattern[pattern_index] == `*` {
-		pattern_index++
-	}
-	return pattern_index == pattern.len
 }

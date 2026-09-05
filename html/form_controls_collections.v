@@ -29,16 +29,12 @@ fn radio_button(node &dom.Node) ?&dom.HTMLInputElement {
 }
 
 pub fn html_input_element_checked(element &dom.HTMLInputElement) bool {
-	if element.checkedness_initialized_ {
-		return element.checkedness_
-	}
-	return unsafe { &dom.Element(element) }.has_attribute('checked')
+	return element.checked()
 }
 
 pub fn html_input_element_set_checked(mut element dom.HTMLInputElement, checked bool) {
-	element.checkedness_ = checked
-	element.checkedness_initialized_ = true
-	element.dirty_checkedness_ = true
+	mut model := HTMLInputElementModel.create(&element)
+	model.set_checked(checked)
 }
 
 fn radio_node_list_element_checked(element &dom.Element) bool {
@@ -57,7 +53,7 @@ mut:
 	list &dom.NodeList
 }
 
-pub fn RadioNodeList.create(root &dom.Node, scope dom.LiveNodeListScope, filter fn(&dom.Node) bool) &RadioNodeList {
+pub fn RadioNodeList.create(root &dom.Node, scope dom.LiveNodeListScope, filter fn (&dom.Node) bool) &RadioNodeList {
 	return &RadioNodeList{
 		list: dom.LiveNodeList.create(root, scope, filter)
 	}
@@ -100,9 +96,9 @@ pub fn (mut list RadioNodeList) set_value(value string) {
 		}
 	}
 	target := matching or { return }
-	// HTMLInputElement::set_checked() unchecks other radios in the group. The
-	// RadioNodeList already represents that named group, so perform that state
-	// transition here as part of the host-independent translation.
+	// RadioNodeList's value setter explicitly updates the named group. This uses
+	// HTMLInputElement::set_checked(), whose C++ counterpart only changes one
+	// element; radio-group exclusivity belongs to the caller here.
 	for node in list.list.collection() {
 		element := radio_node_list_radio_element(node) or { continue }
 		radio_node_list_set_element_checked(element, voidptr(element) == voidptr(target))
@@ -131,7 +127,7 @@ mut:
 	collection &dom.HTMLCollection
 }
 
-pub fn HTMLFormControlsCollection.create(root &dom.ParentNode, scope dom.HTMLCollectionScope, filter fn(&dom.Element) bool) &HTMLFormControlsCollection {
+pub fn HTMLFormControlsCollection.create(root &dom.ParentNode, scope dom.HTMLCollectionScope, filter fn (&dom.Element) bool) &HTMLFormControlsCollection {
 	return &HTMLFormControlsCollection{
 		collection: dom.HTMLCollection.create(root, scope, filter, form_collection_never_sort)
 	}
@@ -172,8 +168,10 @@ pub fn (collection &HTMLFormControlsCollection) named_item_or_radio_node_list(na
 	base_filter := collection.collection.filter
 	return HTMLFormControlsCollectionRadioNodeList{
 		list: RadioNodeList.create(root, scope, fn [name, base_filter] (node &dom.Node) bool {
-			element := node.as_element() or { return false }return base_filter(element) && (element.id() or { '' } == name || element.get_attribute('name') or {
-				''} == name)
+			element := node.as_element() or { return false }
+			return base_filter(element) && (element.id() or { '' } == name || element.get_attribute('name') or {
+				''
+			} == name)
 		})
 	}
 }

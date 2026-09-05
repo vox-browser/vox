@@ -1,11 +1,13 @@
 // Copyright (c) 2026, Ladybird contributors
 //
 // SPDX-License-Identifier: BSD-2-Clause
-
 module layout
 
 import css
 import math
+import os
+import painting
+import time
 
 struct TableCellPlacement {
 	cell        &Node = unsafe { nil }
@@ -21,6 +23,42 @@ struct TableColumnDefinition {
 	span  int = 1
 }
 
+struct TableRowGroupInfo {
+	node        &Node = unsafe { nil }
+	start_index int
+	last_index  int
+}
+
+// TableFormattingContext::Cell stores these two measures together. Keeping the
+// pair is important: column initialization, spanning-cell distribution, and
+// percentage width constraints all consume the same computed cell measures.
+struct TableCellIntrinsicWidthMeasures {
+	outer_min_width CSSPixels
+	outer_max_width CSSPixels
+}
+
+@[heap]
+struct TableGridIntrinsicWidths {
+	grid_min                  CSSPixels
+	grid_max                  CSSPixels
+	capmin                    CSSPixels
+	percentage_adjusted_width CSSPixels
+	percentage_basis          CSSPixels
+	rows                      []&Node
+	placements                []TableCellPlacement
+	column_definitions        []TableColumnDefinition
+	column_count              int
+	cell_measures             []TableCellIntrinsicWidthMeasures
+	nonspanning_min_widths    []CSSPixels
+	nonspanning_max_widths    []CSSPixels
+	column_min_widths         []CSSPixels
+	column_max_widths         []CSSPixels
+	constrained_columns       []bool
+	intrinsic_percentages     []f64
+	has_intrinsic_percentage  []bool
+	has_originating_cells     []bool
+}
+
 enum TableBorderSide {
 	left
 	right
@@ -29,134 +67,163 @@ enum TableBorderSide {
 }
 
 struct TableBorderCandidate {
-	width CSSPixels
-	style string
-	kind  int
+	border_data  painting.BorderData
+	element_kind painting.ConflictingElementKind
+	row          ?int
+	column       ?int
 }
 
-fn table_border_property_ids(side TableBorderSide) (css.PropertyID, css.PropertyID) {
-	return match side {
-		.left { css.PropertyID.border_left_width, css.PropertyID.border_left_style }
-		.right { css.PropertyID.border_right_width, css.PropertyID.border_right_style }
-		.top { css.PropertyID.border_top_width, css.PropertyID.border_top_style }
-		.bottom { css.PropertyID.border_bottom_width, css.PropertyID.border_bottom_style }
-	}
-}
-
-fn table_border_candidate(node &Node, side TableBorderSide, kind int) TableBorderCandidate {
-	width_property, style_property := table_border_property_ids(side)
-	computed := node.computed_values()
-	style_value := computed.property(style_property, .yes)
-	style := if value := style_value { value.css_text.trim_space().to_lower() } else { 'none' }
-	width := css_px(computed.length_percentage_to_px(width_property, 0) or { 0.0 })
-	return TableBorderCandidate{
-		width: width
-		style: style
-		kind:  kind
-	}
-}
-
-fn table_border_style_rank(style string) int {
+fn table_painting_line_style(style css.LineStyle) painting.LineStyle {
 	return match style {
-		'inset' { 0 }
-		'groove' { 1 }
-		'outset' { 2 }
-		'ridge' { 3 }
-		'dotted' { 4 }
-		'dashed' { 5 }
-		'solid' { 6 }
-		'double' { 7 }
+		.none_ { .none }
+		.hidden { .hidden }
+		.dotted { .dotted }
+		.dashed { .dashed }
+		.solid { .solid }
+		.double_ { .double }
+		.groove { .groove }
+		.ridge { .ridge }
+		.inset { .inset }
+		.outset { .outset }
+	}
+}
+
+fn table_border_candidate(node &Node, side TableBorderSide, element_kind painting.ConflictingElementKind, row ?int, column ?int) TableBorderCandidate {
+	computed := node.computed_values()
+	border := match side {
+		.left { computed.border_left() }
+		.right { computed.border_right() }
+		.top { computed.border_top() }
+		.bottom { computed.border_bottom() }
+	}
+	line_style := table_painting_line_style(border.line_style)
+	color := border.color
+	return TableBorderCandidate{
+		border_data: painting.BorderData{
+			color: painting.Color{color.r, color.g, color.b, color.a}
+			line_style: line_style
+			width: border.width.to_double()
+		}
+		element_kind: element_kind
+		row: row
+		column: column
+	}
+}
+
+fn table_border_style_rank(style painting.LineStyle) int {
+	return match style {
+		.inset { 0 }
+		.groove { 1 }
+		.outset { 2 }
+		.ridge { 3 }
+		.dotted { 4 }
+		.dashed { 5 }
+		.solid { 6 }
+		.double { 7 }
 		else { -1 }
 	}
 }
 
+fn table_border_is_less_specific(a painting.BorderData, b painting.BorderData) bool {
+	if a.line_style == .hidden {
+		return false
+	}
+	if b.line_style == .hidden {
+		return true
+	}
+	if a.line_style == .none {
+		return true
+	}
+	if b.line_style == .none {
+		return false
+	}
+	if a.width != b.width {
+		return a.width < b.width
+	}
+	return table_border_style_rank(a.line_style) < table_border_style_rank(b.line_style)
+}
+
 fn winning_table_border(a TableBorderCandidate, b TableBorderCandidate) TableBorderCandidate {
-	if a.style == 'hidden' {
-		return a
-	}
-	if b.style == 'hidden' {
-		return b
-	}
-	if a.style == 'none' {
-		return b
-	}
-	if b.style == 'none' {
-		return a
-	}
-	if a.width.raw_value() != b.width.raw_value() {
-		return if a.width.raw_value() > b.width.raw_value() { a } else { b }
-	}
-	a_rank := table_border_style_rank(a.style)
-	b_rank := table_border_style_rank(b.style)
-	if a_rank != b_rank {
-		return if a_rank > b_rank { a } else { b }
-	}
-	// Cell, row, row group, column, column group, table.
-	return if a.kind >= b.kind { a } else { b }
-}
-
-fn table_placement_at_anchor(placements []TableCellPlacement, row int, column int) ?TableCellPlacement {
-	if row < 0 || column < 0 {
-		return none
-	}
-	for placement in placements {
-		if row == placement.row && column == placement.column {
-			return placement
+	// Step 4 is checked first upstream: equal style and width are resolved by
+	// element kind, then by the leftmost/topmost source edge.
+	if a.border_data.line_style == b.border_data.line_style && a.border_data.width == b.border_data.width {
+		if int(a.element_kind) != int(b.element_kind) {
+			return if int(a.element_kind) < int(b.element_kind) { a } else { b }
 		}
-	}
-	return none
-}
-
-fn table_column_definition_covering(definitions []TableColumnDefinition, column int) ?TableColumnDefinition {
-	for definition in definitions {
-		if column >= definition.index && column < definition.index + definition.span {
-			return definition
-		}
-	}
-	return none
-}
-
-fn table_row_group_bounds(rows []&Node, row_index int) (?&Node, int, int) {
-	if row_index < 0 || row_index >= rows.len {
-		return ?&Node(none), -1, -1
-	}
-	parent := rows[row_index].parent() or { return ?&Node(none), -1, -1 }
-	if !parent.display().is_table_row_group() && !parent.display().is_table_header_group()
-		&& !parent.display().is_table_footer_group() {
-		return ?&Node(none), -1, -1
-	}
-	mut first := -1
-	mut last := -1
-	for index, row in rows {
-		row_parent := row.parent() or { continue }
-		if row_parent == parent {
-			if first < 0 {
-				first = index
+		if a_column := a.column {
+			if b_column := b.column {
+				if a_column != b_column {
+					return if a_column < b_column { a } else { b }
+				}
 			}
-			last = index
 		}
+		if a_row := a.row {
+			if b_row := b.row {
+				if a_row != b_row {
+					return if a_row < b_row { a } else { b }
+				}
+			}
+		}
+		return a
 	}
-	return parent, first, last
+	return if table_border_is_less_specific(a.border_data, b.border_data) { b } else { a }
 }
 
-fn resolved_collapsed_table_cell_border(table &Node, rows []&Node, placements []TableCellPlacement, column_definitions []TableColumnDefinition, column_count int, placement TableCellPlacement, side TableBorderSide) CSSPixels {
-	// Element-kind values are ordered by CSS 2.2 conflict specificity.
-	mut winner := table_border_candidate(placement.cell, side, 6)
+fn table_placement_key(row int, column int) u64 {
+	return (u64(u32(row)) << 32) | u64(u32(column))
+}
+
+fn table_row_groups_by_index(rows []&Node) map[int]TableRowGroupInfo {
+	mut result := map[int]TableRowGroupInfo{}
+	mut index := 0
+	for index < rows.len {
+		parent := rows[index].parent() or {
+			index++
+			continue
+		}
+		if !parent.display().is_table_row_group() && !parent.display().is_table_header_group() && !parent.display().is_table_footer_group() {
+			index++
+			continue
+		}
+		start_index := index
+		for index + 1 < rows.len {
+			next_parent := rows[index + 1].parent() or { break }
+			if next_parent != parent {
+				break
+			}
+			index++
+		}
+		info := TableRowGroupInfo{
+			node: parent
+			start_index: start_index
+			last_index: index
+		}
+		for row_index in start_index .. index + 1 {
+			result[row_index] = info
+		}
+		index++
+	}
+	return result
+}
+
+fn resolved_collapsed_table_cell_border(table &Node, rows []&Node, placements_by_coordinate map[u64]TableCellPlacement, row_groups_by_index map[int]TableRowGroupInfo, column_definitions_by_index map[int]TableColumnDefinition, column_count int, placement TableCellPlacement, side TableBorderSide) TableBorderCandidate {
+	mut winner := table_border_candidate(placement.cell, side, .cell, placement.row, placement.column)
 	neighbor_row, neighbor_column, neighbor_side := match side {
-		.left { placement.row, placement.column - 1, TableBorderSide.right }
+		.left { placement.row, placement.column - placement.column_span, TableBorderSide.right }
 		.right { placement.row, placement.column + placement.column_span, TableBorderSide.left }
-		.top { placement.row - 1, placement.column, TableBorderSide.bottom }
+		.top { placement.row - placement.row_span, placement.column, TableBorderSide.bottom }
 		.bottom { placement.row + placement.row_span, placement.column, TableBorderSide.top }
 	}
-	if neighbor := table_placement_at_anchor(placements, neighbor_row, neighbor_column) {
-		winner = winning_table_border(winner,
-			table_border_candidate(neighbor.cell, neighbor_side, 6))
+	if neighbor_row >= 0 && neighbor_column >= 0 {
+		if neighbor := placements_by_coordinate[table_placement_key(neighbor_row, neighbor_column)] {
+			winner = winning_table_border(winner, table_border_candidate(neighbor.cell, neighbor_side, .cell, neighbor.row, neighbor.column))
+		}
 	}
 
 	// Row borders conflict with horizontal cell edges. Row left/right borders
 	// participate only at the outside edge of the grid.
 	if side == .top || side == .bottom {
-		winner = winning_table_border(winner, table_border_candidate(rows[placement.row], side, 5))
+		winner = winning_table_border(winner, table_border_candidate(rows[placement.row], side, .row, placement.row, none))
 		adjacent_row := if side == .top {
 			placement.row - 1
 		} else {
@@ -167,20 +234,15 @@ fn resolved_collapsed_table_cell_border(table &Node, rows []&Node, placements []
 				TableBorderSide.bottom
 			} else {
 				TableBorderSide.top
-			}, 5))
+			}, .row, adjacent_row, none))
 		}
-	} else if (side == .left && placement.column == 0)
-		|| (side == .right && placement.column + placement.column_span == column_count) {
-		winner = winning_table_border(winner, table_border_candidate(rows[placement.row], side, 5))
+	} else if (side == .left && placement.column == 0) || (side == .right && placement.column + placement.column_span == column_count) {
+		winner = winning_table_border(winner, table_border_candidate(rows[placement.row], side, .row, placement.row, none))
 	}
 
-	group, group_first, group_last := table_row_group_bounds(rows, placement.row)
-	if row_group := group {
-		if (side == .top && placement.row == group_first)
-			|| (side == .bottom && placement.row + placement.row_span - 1 == group_last)
-			|| (side == .left && placement.column == 0)
-			|| (side == .right && placement.column + placement.column_span == column_count) {
-			winner = winning_table_border(winner, table_border_candidate(row_group, side, 4))
+	if group := row_groups_by_index[placement.row] {
+		if (side == .top && placement.row == group.start_index) || (side == .bottom && placement.row == group.last_index) || (side == .left && placement.column == 0) || (side == .right && placement.column + placement.column_span == column_count) {
+			winner = winning_table_border(winner, table_border_candidate(group.node, side, .row_group, group.start_index, none))
 		}
 	}
 	adjacent_group_row := if side == .top {
@@ -191,16 +253,13 @@ fn resolved_collapsed_table_cell_border(table &Node, rows []&Node, placements []
 		-1
 	}
 	if adjacent_group_row >= 0 && adjacent_group_row < rows.len {
-		adjacent_group, adjacent_first, adjacent_last := table_row_group_bounds(rows,
-			adjacent_group_row)
-		if row_group := adjacent_group {
-			if (side == .top && adjacent_group_row == adjacent_last)
-				|| (side == .bottom && adjacent_group_row == adjacent_first) {
-				winner = winning_table_border(winner, table_border_candidate(row_group, if side == .top {
+		if adjacent_group := row_groups_by_index[adjacent_group_row] {
+			if (side == .top && placement.row == adjacent_group.last_index + 1) || (side == .bottom && adjacent_group_row == adjacent_group.start_index) {
+				winner = winning_table_border(winner, table_border_candidate(adjacent_group.node, if side == .top {
 					TableBorderSide.bottom
 				} else {
 					TableBorderSide.top
-				}, 4))
+				}, .row_group, adjacent_group.start_index, none))
 			}
 		}
 	}
@@ -210,60 +269,75 @@ fn resolved_collapsed_table_cell_border(table &Node, rows []&Node, placements []
 	} else {
 		placement.column
 	}
-	column_edge_participates := side == .left || side == .right
-		|| (side == .top && placement.row == 0)
-		|| (side == .bottom && placement.row + placement.row_span == rows.len)
+	column_edge_participates := side == .left || side == .right || (side == .top && placement.row == 0) || (side == .bottom && placement.row + placement.row_span == rows.len)
 	if column_edge_participates {
-		if definition := table_column_definition_covering(column_definitions, column_index) {
-			winner = winning_table_border(winner, table_border_candidate(definition.node, side, 3))
+		if definition := column_definitions_by_index[column_index] {
+			winner = winning_table_border(winner, table_border_candidate(definition.node, side, .column, none, definition.index))
 			if parent := definition.node.parent() {
 				if parent.display().is_table_column_group() {
-					winner = winning_table_border(winner, table_border_candidate(parent, side, 2))
+					winner = winning_table_border(winner, table_border_candidate(parent, side, .column_group, none, definition.index))
 				}
 			}
 		}
 	}
 	if side == .left && placement.column > 0 {
-		if definition := table_column_definition_covering(column_definitions, placement.column - 1) {
-			winner = winning_table_border(winner,
-				table_border_candidate(definition.node, .right, 3))
+		if definition := column_definitions_by_index[placement.column - 1] {
+			winner = winning_table_border(winner, table_border_candidate(definition.node, .right, .column, none, definition.index))
 		}
 	} else if side == .right && placement.column + placement.column_span < column_count {
-		if definition := table_column_definition_covering(column_definitions, placement.column +
-			placement.column_span)
-		{
-			winner = winning_table_border(winner, table_border_candidate(definition.node, .left, 3))
+		if definition := column_definitions_by_index[placement.column + placement.column_span] {
+			winner = winning_table_border(winner, table_border_candidate(definition.node, .left, .column, none, definition.index))
 		}
 	}
 
-	if (side == .top && placement.row == 0)
-		|| (side == .bottom && placement.row + placement.row_span == rows.len)
-		|| (side == .left && placement.column == 0)
-		|| (side == .right && placement.column + placement.column_span == column_count) {
-		winner = winning_table_border(winner, table_border_candidate(table, side, 1))
+	if (side == .top && placement.row == 0) || (side == .bottom && placement.row + placement.row_span == rows.len) || (side == .left && placement.column == 0) || (side == .right && placement.column + placement.column_span == column_count) {
+		winner = winning_table_border(winner, table_border_candidate(table, side, .table, none, none))
 	}
-	if winner.style == 'hidden' || winner.style == 'none' {
-		return CSSPixels.new(0)
-	}
-	return winner.width
+	return winner
 }
 
 fn resolve_collapsed_table_borders(mut state LayoutState, table &Node, rows []&Node, placements []TableCellPlacement, column_definitions []TableColumnDefinition, column_count int) {
-	if table.computed_values().border_collapse() != .collapse {
-		return
+	// TableGrid::m_cells_by_coordinate provides constant-time neighboring-cell
+	// lookup upstream. Preserve that complexity instead of rescanning every
+	// placement for all four edges of every cell.
+	mut placements_by_coordinate := map[u64]TableCellPlacement{}
+	for placement in placements {
+		placements_by_coordinate[table_placement_key(placement.row, placement.column)] = placement
+	}
+	row_groups_by_index := table_row_groups_by_index(rows)
+	mut column_definitions_by_index := map[int]TableColumnDefinition{}
+	for definition in column_definitions {
+		for column in definition.index .. definition.index + definition.span {
+			column_definitions_by_index[column] = definition
+		}
 	}
 	for placement in placements {
 		styled := placement.cell.as_node_with_style() or { continue }
 		mut cell_state := state.get_mutable(styled)
+		cell_state.table_cell_coordinates_ = painting.TableCellCoordinates{
+			row_index: placement.row
+			column_index: placement.column
+			row_span: placement.row_span
+			column_span: placement.column_span
+		}
+		if table.computed_values().border_collapse() != .collapse {
+			continue
+		}
 		cell_state.use_collapsing_borders_model_ = true
-		cell_state.border_left = resolved_collapsed_table_cell_border(table, rows, placements,
-			column_definitions, column_count, placement, .left)
-		cell_state.border_right = resolved_collapsed_table_cell_border(table, rows, placements,
-			column_definitions, column_count, placement, .right)
-		cell_state.border_top = resolved_collapsed_table_cell_border(table, rows, placements,
-			column_definitions, column_count, placement, .top)
-		cell_state.border_bottom = resolved_collapsed_table_cell_border(table, rows, placements,
-			column_definitions, column_count, placement, .bottom)
+		left := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .left)
+		right := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .right)
+		top := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .top)
+		bottom := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .bottom)
+		cell_state.border_left = CSSPixels.nearest_value_for(left.border_data.width)
+		cell_state.border_right = CSSPixels.nearest_value_for(right.border_data.width)
+		cell_state.border_top = CSSPixels.nearest_value_for(top.border_data.width)
+		cell_state.border_bottom = CSSPixels.nearest_value_for(bottom.border_data.width)
+		cell_state.override_borders_data_ = painting.BordersDataWithElementKind{
+			left: painting.BorderDataWithElementKind{left.border_data, left.element_kind}
+			right: painting.BorderDataWithElementKind{right.border_data, right.element_kind}
+			top: painting.BorderDataWithElementKind{top.border_data, top.element_kind}
+			bottom: painting.BorderDataWithElementKind{bottom.border_data, bottom.element_kind}
+		}
 	}
 }
 
@@ -272,11 +346,7 @@ fn initialize_trailing_table_whitespace_state(mut state LayoutState, node &Node)
 		initialize_trailing_table_whitespace_state(mut state, child)
 	}
 	parent := node.parent() or { return }
-	if !is_trailing_whitespace_of_inline_table(node)
-		|| !ignorable_table_whitespace(node)
-		|| (!parent.display().is_table_inside() && !parent.display().is_table_row_group()
-		&& !parent.display().is_table_header_group() && !parent.display().is_table_footer_group()
-		&& !parent.display().is_table_row()) {
+	if !is_trailing_whitespace_of_inline_table(node) || !ignorable_table_whitespace(node) || (!parent.display().is_table_inside() && !parent.display().is_table_row_group() && !parent.display().is_table_header_group() && !parent.display().is_table_footer_group() && !parent.display().is_table_row()) {
 		return
 	}
 	styled := node.as_node_with_style() or { return }
@@ -298,8 +368,7 @@ fn collect_typed_table_rows(node &Node, mut rows []&Node) {
 	for child in node.children() {
 		if child.display().is_table_row() {
 			rows << child
-		} else if child.display().is_table_row_group() || child.display().is_table_header_group()
-			|| child.display().is_table_footer_group() {
+		} else if child.display().is_table_row_group() || child.display().is_table_header_group() || child.display().is_table_footer_group() {
 			collect_typed_table_rows(child, mut rows)
 		}
 	}
@@ -326,9 +395,9 @@ fn collect_typed_table_columns(table &Node) []TableColumnDefinition {
 		if child.display().is_table_column() {
 			span := table_span(child, 'span')
 			columns << TableColumnDefinition{
-				node:  child
+				node: child
 				index: index
-				span:  span
+				span: span
 			}
 			index += span
 			continue
@@ -344,18 +413,18 @@ fn collect_typed_table_columns(table &Node) []TableColumnDefinition {
 			found_child_column = true
 			span := table_span(column, 'span')
 			columns << TableColumnDefinition{
-				node:  column
+				node: column
 				index: index
-				span:  span
+				span: span
 			}
 			index += span
 		}
 		if !found_child_column {
 			span := table_span(child, 'span')
 			columns << TableColumnDefinition{
-				node:  child
+				node: child
 				index: index
-				span:  span
+				span: span
 			}
 			index += span
 		}
@@ -378,12 +447,16 @@ fn calculate_table_cell_placements(rows []&Node) ([]TableCellPlacement, int) {
 			}
 			column_span := table_span(cell, 'colspan')
 			authored_row_span := table_span(cell, 'rowspan')
-			row_span := if authored_row_span == 0 { rows.len - row_index } else { authored_row_span }
+			row_span := if authored_row_span == 0 {
+				rows.len - row_index
+			} else {
+				authored_row_span
+			}
 			placement := TableCellPlacement{
-				cell:        cell
-				row:         row_index
-				column:      column
-				row_span:    row_span
+				cell: cell
+				row: row_index
+				column: column
+				row_span: row_span
 				column_span: column_span
 			}
 			placements << placement
@@ -399,63 +472,200 @@ fn calculate_table_cell_placements(rows []&Node) ([]TableCellPlacement, int) {
 	return placements, column_count
 }
 
-fn table_column_range_width(widths []CSSPixels, start int, span int, spacing CSSPixels) CSSPixels {
-	mut width := spacing.scaled(f64(if span > 0 { span - 1 } else { 0 }))
-	for column in start .. start + span {
-		if column < widths.len {
-			width = width.plus(widths[column])
-		}
+// TableFormattingContext::position_cell_boxes() records each column's
+// left_offset once. Keep the equivalent prefix array so cell measurement and
+// final positioning do not repeatedly sum every preceding column.
+fn table_column_offsets(widths []CSSPixels, spacing CSSPixels) []CSSPixels {
+	mut offsets := []CSSPixels{len: widths.len + 1}
+	mut offset := spacing
+	for index, width in widths {
+		offsets[index] = offset
+		offset = offset.plus(width).plus(spacing)
 	}
-	return width
+	offsets[widths.len] = offset
+	return offsets
 }
 
-fn table_column_offset(widths []CSSPixels, column int, spacing CSSPixels) CSSPixels {
-	mut offset := spacing.scaled(f64(column + 1))
-	for index in 0 .. column {
-		if index < widths.len {
-			offset = offset.plus(widths[index])
-		}
+fn table_column_range_width(offsets []CSSPixels, start int, span int, spacing CSSPixels) CSSPixels {
+	if start < 0 || span <= 0 || start >= offsets.len - 1 {
+		return CSSPixels.new(0)
 	}
-	return offset
+	end := if start + span < offsets.len { start + span } else { offsets.len - 1 }
+	return offsets[end].minus(offsets[start]).minus(spacing)
 }
 
-fn table_cell_physical_offset(table &Node, table_width CSSPixels, widths []CSSPixels, placement TableCellPlacement, spacing CSSPixels) CSSPixels {
-	logical_offset := table_column_offset(widths, placement.column, spacing)
+fn table_cell_physical_offset(table &Node, table_width CSSPixels, offsets []CSSPixels, placement TableCellPlacement, spacing CSSPixels) CSSPixels {
+	logical_offset := offsets[placement.column]
 	if table.computed_values().direction() != .rtl {
 		return logical_offset
 	}
-	cell_width := table_column_range_width(widths, placement.column, placement.column_span, spacing)
+	cell_width := table_column_range_width(offsets, placement.column, placement.column_span, spacing)
 	return table_width.minus(logical_offset).minus(cell_width)
 }
 
-fn distribute_table_cell_minimum_across_columns(mut widths []CSSPixels, placement TableCellPlacement, spacing CSSPixels, contribution CSSPixels) {
-	current := table_column_range_width(widths, placement.column, placement.column_span, spacing)
-	shortfall := contribution.minus(current)
-	if shortfall.raw_value() <= 0 || placement.column_span <= 0 {
-		return
-	}
-	mut baseline := CSSPixels.new(0)
-	for column in placement.column .. placement.column + placement.column_span {
-		if column >= 0 && column < widths.len {
-			baseline = baseline.plus(widths[column])
-		}
-	}
-	if baseline.raw_value() != 0 {
-		for column in placement.column .. placement.column + placement.column_span {
-			if column >= 0 && column < widths.len {
-				ratio :=
-					CSSPixels.nearest_value_for(widths[column].to_double() / baseline.to_double())
-				widths[column] = widths[column].plus(ratio.times(shortfall))
+// TableFormattingContext::compute_table_measures<Column>(). Spanning cells are
+// processed by increasing span, and every contribution for a span is derived
+// from the previous span's measures before any column is committed.
+fn compute_spanning_table_column_measures(mut min_widths []CSSPixels, mut max_widths []CSSPixels, placements []TableCellPlacement, cell_measures []TableCellIntrinsicWidthMeasures, spacing CSSPixels, maximum_span int) {
+	for current_span in 2 .. maximum_span + 1 {
+		mut next_min_widths := min_widths.clone()
+		mut next_max_widths := max_widths.clone()
+		for placement_index, placement in placements {
+			if placement.column_span != current_span {
+				continue
+			}
+			end_column := if placement.column + placement.column_span < min_widths.len {
+				placement.column + placement.column_span
+			} else {
+				min_widths.len
+			}
+			mut baseline_min_content_size := CSSPixels.new(0)
+			mut baseline_max_content_size := CSSPixels.new(0)
+			for column in placement.column .. end_column {
+				baseline_min_content_size = baseline_min_content_size.plus(min_widths[column])
+				baseline_max_content_size = baseline_max_content_size.plus(max_widths[column])
+			}
+			baseline_border_spacing := spacing.scaled(f64(placement.column_span - 1))
+			measures := cell_measures[placement_index]
+			for column in placement.column .. end_column {
+				mut min_contribution := min_widths[column]
+				baseline_difference := baseline_max_content_size.minus(baseline_min_content_size)
+				normalized_difference := if baseline_difference.raw_value() != 0 {
+					max_widths[column].minus(min_widths[column]).to_double() / baseline_difference.to_double()
+				} else {
+					0.0
+				}
+				clamped_difference := css_pixels_min(css_pixels_max(measures.outer_min_width.minus(baseline_min_content_size).minus(baseline_border_spacing), CSSPixels.new(0)), baseline_difference)
+				min_contribution = min_contribution.plus(clamped_difference.times_float(normalized_difference))
+				if baseline_max_content_size.raw_value() != 0 {
+					ratio := CSSPixels.nearest_value_for(max_widths[column].to_double() / baseline_max_content_size.to_double())
+					extra := css_pixels_max(CSSPixels.new(0), measures.outer_min_width.minus(baseline_max_content_size).minus(baseline_border_spacing))
+					min_contribution = min_contribution.plus(ratio.times(extra))
+				} else {
+					extra := css_pixels_max(CSSPixels.new(0), measures.outer_min_width.minus(baseline_border_spacing))
+					min_contribution = min_contribution.plus(extra.divided_by_float(f64(placement.column_span)))
+				}
+
+				mut max_contribution := max_widths[column]
+				if baseline_max_content_size.raw_value() != 0 {
+					ratio := CSSPixels.nearest_value_for(max_widths[column].to_double() / baseline_max_content_size.to_double())
+					extra := css_pixels_max(CSSPixels.new(0), measures.outer_max_width.minus(baseline_max_content_size).minus(baseline_border_spacing))
+					max_contribution = max_contribution.plus(ratio.times(extra))
+				} else {
+					extra := css_pixels_max(CSSPixels.new(0), measures.outer_max_width.minus(baseline_border_spacing))
+					max_contribution = max_contribution.plus(extra.divided_by_float(f64(placement.column_span)))
+				}
+				next_min_widths[column] = css_pixels_max(next_min_widths[column], min_contribution)
+				next_max_widths[column] = css_pixels_max(next_max_widths[column], max_contribution)
 			}
 		}
+		min_widths = next_min_widths.clone()
+		max_widths = next_max_widths.clone()
+	}
+}
+
+fn table_cell_intrinsic_percentage_contribution(cell &Node) f64 {
+	computed := cell.computed_values()
+	width_percentage := if computed.size_value(.width).is_percentage() {
+		computed.size_value(.width).percentage().value()
 	} else {
-		addition := CSSPixels.from_raw(shortfall.raw_value() / placement.column_span)
-		for column in placement.column .. placement.column + placement.column_span {
-			if column >= 0 && column < widths.len {
-				widths[column] = widths[column].plus(addition)
-			}
+		0.0
+	}
+	max_width_percentage := if computed.size_value(.max_width).is_percentage() {
+		computed.size_value(.max_width).percentage().value()
+	} else {
+		math.inf(1)
+	}
+	return math.min(width_percentage, max_width_percentage)
+}
+
+// TableFormattingContext::compute_intrinsic_percentage<Column>().
+fn compute_table_column_intrinsic_percentages(column_count int, column_definitions []TableColumnDefinition, placements []TableCellPlacement, nonspanning_max_widths []CSSPixels, maximum_span int) ([]f64, []bool, []bool) {
+	mut intrinsic_percentages := []f64{len: column_count}
+	mut has_intrinsic_percentage := []bool{len: column_count}
+	mut has_originating_cells := []bool{len: column_count}
+	for definition in column_definitions {
+		if definition.index >= column_count {
+			continue
+		}
+		computed := definition.node.computed_values()
+		width_percentage := if computed.size_value(.width).is_percentage() {
+			computed.size_value(.width).percentage().value()
+		} else {
+			0.0
+		}
+		max_width_percentage := if computed.size_value(.max_width).is_percentage() {
+			computed.size_value(.max_width).percentage().value()
+		} else {
+			math.inf(1)
+		}
+		has_intrinsic_percentage[definition.index] = computed.size_value(.width).is_percentage() || computed.size_value(.max_width).is_percentage()
+		intrinsic_percentages[definition.index] = math.min(width_percentage, max_width_percentage)
+	}
+	for placement in placements {
+		if placement.column < column_count {
+			has_originating_cells[placement.column] = true
+		}
+		if !placement.cell.computed_values().size_value(.width).is_percentage() {
+			continue
+		}
+		end_column := if placement.column + placement.column_span < column_count {
+			placement.column + placement.column_span
+		} else {
+			column_count
+		}
+		for column in placement.column .. end_column {
+			has_intrinsic_percentage[column] = true
+		}
+		if placement.column_span == 1 && placement.column < column_count {
+			intrinsic_percentages[placement.column] = math.max(intrinsic_percentages[placement.column], table_cell_intrinsic_percentage_contribution(placement.cell))
 		}
 	}
+	for current_span in 2 .. maximum_span + 1 {
+		mut next_percentages := intrinsic_percentages.clone()
+		for placement in placements {
+			if placement.column_span != current_span {
+				continue
+			}
+			end_column := if placement.column + placement.column_span < column_count {
+				placement.column + placement.column_span
+			} else {
+				column_count
+			}
+			mut cell_contribution := CSSPixels.nearest_value_for(table_cell_intrinsic_percentage_contribution(placement.cell))
+			for column in placement.column .. end_column {
+				cell_contribution = css_pixels_max(CSSPixels.new(0), cell_contribution.minus(CSSPixels.nearest_value_for(intrinsic_percentages[column])))
+			}
+			mut zero_percentage_max_sum := CSSPixels.new(0)
+			mut zero_percentage_count := 0
+			for column in placement.column .. end_column {
+				if intrinsic_percentages[column] == 0 {
+					zero_percentage_max_sum = zero_percentage_max_sum.plus(nonspanning_max_widths[column])
+					zero_percentage_count++
+				}
+			}
+			for column in placement.column .. end_column {
+				if intrinsic_percentages[column] > 0 {
+					continue
+				}
+				adjusted := if zero_percentage_max_sum.raw_value() != 0 {
+					cell_contribution.times_float(nonspanning_max_widths[column].to_double() / zero_percentage_max_sum.to_double())
+				} else if zero_percentage_count > 0 {
+					cell_contribution.divided_by_float(f64(zero_percentage_count))
+				} else {
+					CSSPixels.new(0)
+				}
+				next_percentages[column] = math.max(next_percentages[column], adjusted.to_double())
+			}
+		}
+		intrinsic_percentages = next_percentages.clone()
+	}
+	mut total_intrinsic_percentage := 0.0
+	for index in 0 .. intrinsic_percentages.len {
+		intrinsic_percentages[index] = math.max(math.min(100.0 - total_intrinsic_percentage, intrinsic_percentages[index]), 0.0)
+		total_intrinsic_percentage += intrinsic_percentages[index]
+	}
+	return intrinsic_percentages, has_intrinsic_percentage, has_originating_cells
 }
 
 fn table_columns_total_width(widths []CSSPixels) CSSPixels {
@@ -474,10 +684,196 @@ fn assign_table_column_widths_linear_combination(mut widths []CSSPixels, candida
 	}
 	candidate_weight := available_width.minus(used_total).to_double() / candidate_total.minus(used_total).to_double()
 	for index in 0 .. widths.len {
-		widths[index] = CSSPixels.nearest_value_for(
-			candidate_weight * candidate_widths[index].to_double() +
-			(1.0 - candidate_weight) * widths[index].to_double())
+		widths[index] = CSSPixels.nearest_value_for(candidate_weight * candidate_widths[index].to_double() + (1.0 - candidate_weight) * widths[index].to_double())
 	}
+}
+
+fn distribute_table_excess_width_equally(mut widths []CSSPixels, eligible []bool, excess CSSPixels) bool {
+	mut count := 0
+	for value in eligible {
+		if value {
+			count++
+		}
+	}
+	if count == 0 {
+		return false
+	}
+	// In C++, `CSSPixels / size_t` produces a CSSPixelFraction and converting
+	// that fraction back to CSSPixels truncates the fixed-point quotient. Do not
+	// use divided_by_float() here: that rounds to nearest and can make the sum of
+	// the column widths exceed the table width by one raw unit per column.
+	addition := excess.divided_by(CSSPixels.new(count)).to_css_pixels()
+	for index in 0 .. widths.len {
+		if eligible[index] {
+			widths[index] = widths[index].plus(addition)
+		}
+	}
+	return true
+}
+
+fn distribute_table_excess_width_proportionally(mut widths []CSSPixels, eligible []bool, base_widths []CSSPixels, excess CSSPixels) bool {
+	mut total_base_width := CSSPixels.new(0)
+	mut found := false
+	for index in 0 .. widths.len {
+		if eligible[index] {
+			found = true
+			total_base_width = total_base_width.plus(base_widths[index])
+		}
+	}
+	if !found || total_base_width.raw_value() <= 0 {
+		return false
+	}
+	for index in 0 .. widths.len {
+		if eligible[index] {
+			widths[index] = widths[index].plus(excess.times_float(base_widths[index].to_double() / total_base_width.to_double()))
+		}
+	}
+	return true
+}
+
+fn distribute_table_excess_width_by_percentage(mut widths []CSSPixels, eligible []bool, intrinsic_percentages []f64, excess CSSPixels) bool {
+	mut total_percentage := 0.0
+	mut found := false
+	for index in 0 .. widths.len {
+		if eligible[index] {
+			found = true
+			total_percentage += intrinsic_percentages[index]
+		}
+	}
+	if !found || total_percentage <= 0 {
+		return false
+	}
+	for index in 0 .. widths.len {
+		if eligible[index] {
+			widths[index] = widths[index].plus(excess.times_float(intrinsic_percentages[index] / total_percentage))
+		}
+	}
+	return true
+}
+
+// TableFormattingContext::distribute_width_to_columns() and
+// distribute_excess_width_to_columns().
+fn distribute_table_width_to_columns(min_widths []CSSPixels, max_widths []CSSPixels, constrained_columns []bool, intrinsic_percentages []f64, has_intrinsic_percentage []bool, has_originating_cells []bool, table_width CSSPixels, spacing CSSPixels, fixed_mode bool) []CSSPixels {
+	available_width := table_width.minus(spacing.scaled(f64(min_widths.len + 1)))
+	mut widths := []CSSPixels{len: min_widths.len, init: CSSPixels.new(0)}
+	mut candidate_widths := []CSSPixels{len: min_widths.len, init: CSSPixels.new(0)}
+	for index in 0 .. widths.len {
+		if !fixed_mode || constrained_columns[index] {
+			widths[index] = min_widths[index]
+			candidate_widths[index] = min_widths[index]
+		}
+	}
+	for index in 0 .. widths.len {
+		if has_intrinsic_percentage[index] {
+			candidate_widths[index] = css_pixels_max(min_widths[index], CSSPixels.nearest_value_for(intrinsic_percentages[index] / 100.0 * available_width.to_double()))
+		}
+	}
+	if available_width.raw_value() < table_columns_total_width(candidate_widths).raw_value() {
+		assign_table_column_widths_linear_combination(mut widths, candidate_widths, available_width)
+		return widths
+	}
+	widths = candidate_widths.clone()
+	for index in 0 .. widths.len {
+		if constrained_columns[index] {
+			candidate_widths[index] = max_widths[index]
+		}
+	}
+	if available_width.raw_value() < table_columns_total_width(candidate_widths).raw_value() {
+		assign_table_column_widths_linear_combination(mut widths, candidate_widths, available_width)
+		return widths
+	}
+	widths = candidate_widths.clone()
+	for index in 0 .. widths.len {
+		if !has_intrinsic_percentage[index] {
+			candidate_widths[index] = max_widths[index]
+		}
+	}
+	if available_width.raw_value() < table_columns_total_width(candidate_widths).raw_value() {
+		assign_table_column_widths_linear_combination(mut widths, candidate_widths, available_width)
+		return widths
+	}
+	widths = candidate_widths.clone()
+	mut excess := available_width.minus(table_columns_total_width(widths))
+	if excess.raw_value() <= 0 {
+		return widths
+	}
+	mut eligible := []bool{len: widths.len}
+	if fixed_mode {
+		for index in 0 .. widths.len {
+			eligible[index] = !constrained_columns[index] && !has_intrinsic_percentage[index]
+		}
+		if distribute_table_excess_width_equally(mut widths, eligible, excess) {
+			return widths
+		}
+		for index in 0 .. widths.len {
+			eligible[index] = widths[index].raw_value() > 0
+		}
+		if distribute_table_excess_width_proportionally(mut widths, eligible, widths.clone(), excess) {
+			return widths
+		}
+		for index in 0 .. widths.len {
+			eligible[index] = intrinsic_percentages[index] > 0
+		}
+		if distribute_table_excess_width_by_percentage(mut widths, eligible, intrinsic_percentages, excess) {
+			return widths
+		}
+		for index in 0 .. widths.len {
+			eligible[index] = widths[index].raw_value() == 0
+		}
+		distribute_table_excess_width_equally(mut widths, eligible, excess)
+		return widths
+	}
+
+	for index in 0 .. widths.len {
+		eligible[index] = !constrained_columns[index] && has_originating_cells[index] && intrinsic_percentages[index] == 0 && max_widths[index].raw_value() > 0
+	}
+	if distribute_table_excess_width_proportionally(mut widths, eligible, max_widths, excess) {
+		excess = available_width.minus(table_columns_total_width(widths))
+		if excess.raw_value() <= 0 {
+			return widths
+		}
+	}
+	for index in 0 .. widths.len {
+		eligible[index] = !constrained_columns[index] && has_originating_cells[index] && intrinsic_percentages[index] == 0
+	}
+	if distribute_table_excess_width_equally(mut widths, eligible, excess) {
+		excess = available_width.minus(table_columns_total_width(widths))
+		if excess.raw_value() <= 0 {
+			return widths
+		}
+	}
+	for index in 0 .. widths.len {
+		eligible[index] = constrained_columns[index] && intrinsic_percentages[index] == 0 && max_widths[index].raw_value() > 0
+	}
+	if distribute_table_excess_width_proportionally(mut widths, eligible, max_widths, excess) {
+		excess = available_width.minus(table_columns_total_width(widths))
+		if excess.raw_value() <= 0 {
+			return widths
+		}
+	}
+	for index in 0 .. widths.len {
+		eligible[index] = intrinsic_percentages[index] > 0
+	}
+	if distribute_table_excess_width_by_percentage(mut widths, eligible, intrinsic_percentages, excess) {
+		excess = available_width.minus(table_columns_total_width(widths))
+		if excess.raw_value() <= 0 {
+			return widths
+		}
+	}
+	for index in 0 .. widths.len {
+		eligible[index] = has_originating_cells[index]
+	}
+	if distribute_table_excess_width_equally(mut widths, eligible, excess) {
+		excess = available_width.minus(table_columns_total_width(widths))
+		if excess.raw_value() <= 0 {
+			return widths
+		}
+	}
+	for index in 0 .. widths.len {
+		eligible[index] = true
+	}
+	distribute_table_excess_width_equally(mut widths, eligible, excess)
+	return widths
 }
 
 fn collapsed_table_border_layout_width(width CSSPixels) CSSPixels {
@@ -495,7 +891,7 @@ fn table_cell_measurement_inline_edges(values UsedValues, collapsed bool) CSSPix
 	} else {
 		values.border_right
 	}
-	return values.margin_left.plus(left_border).plus(values.padding_left).plus(values.padding_right).plus(right_border).plus(values.margin_right)
+	return left_border.plus(values.padding_left).plus(values.padding_right).plus(right_border)
 }
 
 fn table_cell_measurement_block_edges(values UsedValues, collapsed bool) CSSPixels {
@@ -509,7 +905,7 @@ fn table_cell_measurement_block_edges(values UsedValues, collapsed bool) CSSPixe
 	} else {
 		values.border_bottom
 	}
-	return values.margin_top.plus(top_border).plus(values.padding_top).plus(values.padding_bottom).plus(bottom_border).plus(values.margin_bottom)
+	return top_border.plus(values.padding_top).plus(values.padding_bottom).plus(bottom_border)
 }
 
 fn table_cell_measurement_outer_height(values UsedValues, collapsed bool) CSSPixels {
@@ -522,7 +918,7 @@ fn table_cell_content_offset_left(values UsedValues, collapsed bool) CSSPixels {
 	} else {
 		values.border_left
 	}
-	return values.margin_left.plus(border).plus(values.padding_left)
+	return border.plus(values.padding_left)
 }
 
 fn table_cell_content_offset_top(values UsedValues, collapsed bool) CSSPixels {
@@ -531,7 +927,7 @@ fn table_cell_content_offset_top(values UsedValues, collapsed bool) CSSPixels {
 	} else {
 		values.border_top
 	}
-	return values.margin_top.plus(border).plus(values.padding_top)
+	return border.plus(values.padding_top)
 }
 
 // TableFormattingContext::position_cell_boxes()'s
@@ -546,53 +942,95 @@ fn table_cell_is_anonymous_wrapper_for_flex_or_grid(cell &Node) bool {
 	return display.is_flex_inside() || display.is_grid_inside()
 }
 
-fn table_cell_intrinsic_outer_width_contribution(mut state LayoutState, cell &Node, constraint SizeConstraint, collapsed bool) CSSPixels {
-	box := cell.as_box() or { return CSSPixels.new(0) }
+fn table_uses_fixed_mode_layout(table &Node) bool {
+	width := table.computed_values().size_value(.width)
+	return table.computed_values().table_layout() == .fixed && (width.is_length() || width.is_percentage() || width.is_min_content() || width.is_fit_content())
+}
+
+fn table_cell_intrinsic_width_measures(mut state LayoutState, cell &Node, collapsed bool, column_is_constrained bool, fixed_mode bool, percentage_basis CSSPixels) TableCellIntrinsicWidthMeasures {
+	box := cell.as_box() or { return TableCellIntrinsicWidthMeasures{} }
 	// Anonymous table cells are created after their descendants have already
 	// participated in table fixup. Measure their current subtree directly so a
 	// pre-fixup intrinsic cache cannot hide floats wrapped by that cell.
-	styled := cell.as_node_with_style() or { return CSSPixels.new(0) }
+	styled := cell.as_node_with_style() or { return TableCellIntrinsicWidthMeasures{} }
 	mut values := state.get_mutable(styled)
-	containing_width := if containing := values.containing_block_used_values() {
-		containing.content_width()
-	} else {
-		CSSPixels.new(0)
-	}
 	winning_left := values.border_left
 	winning_right := values.border_right
 	winning_top := values.border_top
 	winning_bottom := values.border_bottom
-	resolve_box_model_edges(styled.computed_values(), mut values, containing_width.to_double())
-	computed_left := values.border_left
-	computed_right := values.border_right
-	mut contribution := if cell.is_anonymous() {
-		calculate_content_width_with_constraint(mut state, box, constraint).plus(flex_or_grid_item_outer_inline_edges(values))
-	} else {
-		intrinsic_outer_width_contribution(mut state, box, constraint)
-	}
-	// TableFormattingContext::compute_cell_measures(). A definite width on a
-	// table cell constrains its max-content measure, but it never replaces the
-	// cell's min-content floor. Generic intrinsic contribution sizing does let
-	// a definite preferred width replace descendant intrinsic width, so restore
-	// the table-specific outer min-content formula here.
-	min_content_floor :=
-		calculate_min_content_width(mut state, box).plus(flex_or_grid_item_outer_inline_edges(values))
-	contribution = css_pixels_max(contribution, min_content_floor)
+	resolve_box_model_edges(styled.computed_values(), mut values, percentage_basis.to_double())
 	if collapsed {
-		contribution =
-			contribution.minus(computed_left).minus(computed_right).plus(collapsed_table_border_layout_width(winning_left)).plus(collapsed_table_border_layout_width(winning_right))
 		values.border_left = winning_left
 		values.border_right = winning_right
 		values.border_top = winning_top
 		values.border_bottom = winning_bottom
 	}
-	return contribution
+	computed := cell.computed_values()
+	min_content_width := calculate_min_content_width(mut state, box)
+	max_content_width := calculate_max_content_width(mut state, box)
+	edges := table_cell_measurement_inline_edges(values, collapsed)
+	mut min_width := computed.size_value(.min_width).to_px(layout_length_resolution_context(cell), percentage_basis)
+	mut width := if computed.size_value(.width).is_length() {
+		computed.size_value(.width).to_px(layout_length_resolution_context(cell), percentage_basis)
+	} else {
+		CSSPixels.new(0)
+	}
+	mut max_width := if computed.size_value(.max_width).is_length() {
+		computed.size_value(.max_width).to_px(layout_length_resolution_context(cell), percentage_basis)
+	} else {
+		CSSPixels.max()
+	}
+	if computed.box_sizing() == .border_box {
+		min_width = css_pixels_max(CSSPixels.new(0), min_width.minus(edges))
+		width = css_pixels_max(CSSPixels.new(0), width.minus(edges))
+		if max_width.raw_value() != CSSPixels.max().raw_value() {
+			max_width = css_pixels_max(CSSPixels.new(0), max_width.minus(edges))
+		}
+	}
+	width_is_specified_length_or_percentage := computed.size_value(.width).is_length() || computed.size_value(.width).is_percentage()
+	mut outer_min_width := CSSPixels.new(0)
+	mut outer_max_width := CSSPixels.new(0)
+	if !fixed_mode || width_is_specified_length_or_percentage {
+		outer_min_width = css_pixels_max(min_width, min_content_width).plus(edges)
+		if column_is_constrained {
+			outer_max_width = css_pixels_max(min_width, css_pixels_max(width, min_content_width)).plus(edges)
+		} else {
+			outer_max_width = css_pixels_max(min_width, css_pixels_max(width, css_pixels_max(min_content_width, css_pixels_min(max_width, max_content_width)))).plus(edges)
+		}
+	}
+	return TableCellIntrinsicWidthMeasures{
+		outer_min_width: outer_min_width
+		outer_max_width: outer_max_width
+	}
 }
 
 // The anonymous table wrapper's used width is the table grid's intrinsic
 // width, not the fill-available width of an ordinary block. This is the width
 // phase of TableFormattingContext::run_until_width_calculation().
-fn calculate_table_grid_intrinsic_width(mut state LayoutState, table &Node, percentage_basis CSSPixels, constraint SizeConstraint) CSSPixels {
+fn cached_table_grid_intrinsic_widths(table &Node, percentage_basis CSSPixels) ?&TableGridIntrinsicWidths {
+	table_box := table.as_box() or { return none }
+	mut mutable_table_box := unsafe { &Box(table_box) }
+	cache := mutable_table_box.cached_intrinsic_sizes()
+	widths := cache.table_grid_width_measures or { return none }
+	if widths.percentage_basis.raw_value() != percentage_basis.raw_value() {
+		return none
+	}
+	return widths
+}
+
+fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, percentage_basis CSSPixels) &TableGridIntrinsicWidths {
+	if cached := cached_table_grid_intrinsic_widths(table, percentage_basis) {
+		return cached
+	}
+	intrinsic_timing_start := time.sys_mono_now()
+	defer {
+		if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
+			intrinsic_elapsed := (time.sys_mono_now() - intrinsic_timing_start) / 1_000_000
+			if intrinsic_elapsed > 0 {
+				eprintln('Ladybird V timing:       table_intrinsic_measures ${intrinsic_elapsed} ms')
+			}
+		}
+	}
 	mut rows := []&Node{}
 	collect_typed_table_rows(table, mut rows)
 	placements, placement_column_count := calculate_table_cell_placements(rows)
@@ -604,70 +1042,97 @@ fn calculate_table_grid_intrinsic_width(mut state LayoutState, table &Node, perc
 		}
 	}
 	computed := table.computed_values()
-	resolve_collapsed_table_borders(mut state, table, rows, placements, column_definitions,
-		column_count)
+	resolve_collapsed_table_borders(mut state, table, rows, placements, column_definitions, column_count)
 	spacing := if computed.border_collapse() == .collapse {
 		CSSPixels.new(0)
 	} else {
 		computed.border_spacing_horizontal().to_px(layout_length_resolution_context(table))
 	}
 	if column_count == 0 {
-		return spacing
+		return &TableGridIntrinsicWidths{
+			grid_min: spacing
+			grid_max: spacing
+			percentage_basis: percentage_basis
+			rows: rows
+			placements: placements
+			column_definitions: column_definitions
+			column_count: column_count
+		}
 	}
-	mut widths := []CSSPixels{len: column_count, init: CSSPixels.new(0)}
+	mut min_widths := []CSSPixels{len: column_count, init: CSSPixels.new(0)}
+	mut max_widths := []CSSPixels{len: column_count, init: CSSPixels.new(0)}
+	mut constrained_columns := []bool{len: column_count}
 	for definition in column_definitions {
-		definition_width := resolve_layout_size(definition.node,
-			definition.node.computed_values().size_value(.width), percentage_basis) or { continue }
-		per_column := definition_width.divided_by_float(f64(definition.span))
+		definition_computed := definition.node.computed_values()
+		definition_min_width := definition_computed.size_value(.min_width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
+		definition_width := definition_computed.size_value(.width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
+		definition_max_width := if definition_computed.size_value(.max_width).is_length() {
+			definition_computed.size_value(.max_width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
+		} else {
+			CSSPixels.max()
+		}
+		definition_min_size := css_pixels_max(definition_min_width, definition_width)
+		definition_max_size := css_pixels_max(definition_min_width, css_pixels_min(definition_max_width, definition_width))
 		for column in definition.index .. definition.index + definition.span {
-			if column < widths.len {
-				widths[column] = css_pixels_max(widths[column], per_column)
+			if column < min_widths.len {
+				min_widths[column] = css_pixels_max(min_widths[column], definition_min_size)
+				max_widths[column] = css_pixels_max(max_widths[column], definition_max_size)
 			}
+		}
+		if definition.index < constrained_columns.len && definition_computed.size_value(.width).is_length() {
+			constrained_columns[definition.index] = true
 		}
 	}
 	for placement in placements {
-		if placement.column_span != 1 {
+		if placement.column < constrained_columns.len && placement.cell.computed_values().size_value(.width).is_length() {
+			constrained_columns[placement.column] = true
+		}
+	}
+	fixed_mode := table_uses_fixed_mode_layout(table)
+	mut cell_measures := []TableCellIntrinsicWidthMeasures{cap: placements.len}
+	for placement in placements {
+		cell_measures << table_cell_intrinsic_width_measures(mut state, placement.cell, computed.border_collapse() == .collapse, constrained_columns[placement.column], fixed_mode, percentage_basis)
+	}
+	for placement_index, placement in placements {
+		if placement.column_span != 1 || (fixed_mode && placement.row != 0) {
 			continue
 		}
-		contribution := table_cell_intrinsic_outer_width_contribution(mut state, placement.cell,
-			constraint, computed.border_collapse() == .collapse)
-		widths[placement.column] = css_pixels_max(widths[placement.column], contribution)
+		measures := cell_measures[placement_index]
+		min_widths[placement.column] = css_pixels_max(min_widths[placement.column], measures.outer_min_width)
+		max_widths[placement.column] = css_pixels_max(max_widths[placement.column], measures.outer_max_width)
 	}
+	nonspanning_min_widths := min_widths.clone()
+	nonspanning_max_widths := max_widths.clone()
 	mut maximum_span := 1
 	for placement in placements {
 		if placement.column_span > maximum_span {
 			maximum_span = placement.column_span
 		}
 	}
-	for span in 2 .. maximum_span + 1 {
-		for placement in placements {
-			if placement.column_span != span {
-				continue
-			}
-			distribute_table_cell_minimum_across_columns(mut widths, placement, spacing, table_cell_intrinsic_outer_width_contribution(mut state,
-				placement.cell, constraint, computed.border_collapse() == .collapse))
-		}
+	intrinsic_percentages, has_intrinsic_percentage, has_originating_cells := compute_table_column_intrinsic_percentages(column_count, column_definitions, placements, nonspanning_max_widths, maximum_span)
+	compute_spanning_table_column_measures(mut min_widths, mut max_widths, placements, cell_measures, spacing, maximum_span)
+	undistributable_space := spacing.scaled(f64(column_count + 1))
+	mut grid_min := undistributable_space
+	mut grid_max := undistributable_space
+	for width in min_widths {
+		grid_min = grid_min.plus(width)
 	}
-	mut result := spacing.scaled(f64(column_count + 1))
-	for width in widths {
-		result = result.plus(width)
+	for width in max_widths {
+		grid_max = grid_max.plus(width)
 	}
+	mut percentage_adjusted_width := grid_min
 	// With width:auto, a percentage cell is also a constraint on the table
 	// width. CSS 2.2 auto table layout asks the UA to enlarge the grid enough
 	// for the cell's outer max-content width to occupy that percentage.
-	if constraint == .max_content {
-		for placement in placements {
-			cell_width := placement.cell.computed_values().size_value(.width)
-			if !cell_width.is_percentage() || cell_width.percentage().value() == 0 {
-				continue
-			}
-			outer_max_width := table_cell_intrinsic_outer_width_contribution(mut state,
-				placement.cell, .max_content, computed.border_collapse() == .collapse)
-			adjusted :=
-				spacing.scaled(f64(column_count + 1)).plus(CSSPixels.nearest_value_for(math.ceil(100.0 / cell_width.percentage().value() * outer_max_width.to_double())))
-			result = css_pixels_max(result, adjusted)
+	for placement_index, placement in placements {
+		cell_width := placement.cell.computed_values().size_value(.width)
+		if !cell_width.is_percentage() || cell_width.percentage().value() == 0 {
+			continue
 		}
+		adjusted := undistributable_space.plus(CSSPixels.nearest_value_for(math.ceil(100.0 / cell_width.percentage().value() * cell_measures[placement_index].outer_max_width.to_double())))
+		percentage_adjusted_width = css_pixels_max(percentage_adjusted_width, adjusted)
 	}
+	mut capmin := CSSPixels.new(0)
 	for child in table.children() {
 		if !child.display().is_table_caption() {
 			continue
@@ -675,12 +1140,53 @@ fn calculate_table_grid_intrinsic_width(mut state LayoutState, table &Node, perc
 		caption := child.as_box() or { continue }
 		// CAPMIN is the caption's min-content width, not its outer
 		// max-content contribution.
-		result = css_pixels_max(result, calculate_min_content_width(mut state, caption))
+		capmin = css_pixels_max(capmin, calculate_min_content_width(mut state, caption))
 	}
-	return result
+	widths := &TableGridIntrinsicWidths{
+		grid_min: grid_min
+		grid_max: grid_max
+		capmin: capmin
+		percentage_adjusted_width: percentage_adjusted_width
+		percentage_basis: percentage_basis
+		rows: rows
+		placements: placements
+		column_definitions: column_definitions
+		column_count: column_count
+		cell_measures: cell_measures
+		nonspanning_min_widths: nonspanning_min_widths
+		nonspanning_max_widths: nonspanning_max_widths
+		column_min_widths: min_widths
+		column_max_widths: max_widths
+		constrained_columns: constrained_columns
+		intrinsic_percentages: intrinsic_percentages
+		has_intrinsic_percentage: has_intrinsic_percentage
+		has_originating_cells: has_originating_cells
+	}
+	if table_box := table.as_box() {
+		mut mutable_table_box := unsafe { &Box(table_box) }
+		mut cache := mutable_table_box.cached_intrinsic_sizes()
+		cache.min_content_width = grid_min
+		cache.max_content_width = grid_max
+		cache.table_grid_width_measures = widths
+	}
+	return widths
+}
+
+fn calculate_table_grid_intrinsic_width(mut state LayoutState, table &Node, percentage_basis CSSPixels, constraint SizeConstraint) CSSPixels {
+	widths := calculate_table_grid_intrinsic_widths(mut state, table, percentage_basis)
+	return if constraint == .min_content { widths.grid_min } else { widths.grid_max }
 }
 
 fn compute_table_wrapper_content_width(mut state LayoutState, wrapper &Node, mut wrapper_state UsedValues, containing_width CSSPixels) CSSPixels {
+	wrapper_timing_start := time.sys_mono_now()
+	defer {
+		if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
+			wrapper_elapsed := (time.sys_mono_now() - wrapper_timing_start) / 1_000_000
+			if wrapper_elapsed > 0 {
+				eprintln('Ladybird V timing:       table_wrapper_width ${wrapper_elapsed} ms')
+			}
+		}
+	}
 	mut table := ?&Node(none)
 	for child in wrapper.children() {
 		if child.display().is_table_inside() {
@@ -692,34 +1198,27 @@ fn compute_table_wrapper_content_width(mut state LayoutState, wrapper &Node, mut
 	table_styled := table_node.as_node_with_style() or { return CSSPixels.new(0) }
 	mut table_state := state.get_mutable(table_styled)
 	table_state.set_containing_block_used_values(wrapper_state)
-	resolve_box_model_edges(table_styled.computed_values(), mut table_state,
-		containing_width.to_double())
+	resolve_box_model_edges(table_styled.computed_values(), mut table_state, containing_width.to_double())
 	table_width := table_styled.computed_values().size_value(.width)
-	grid_min := calculate_table_grid_intrinsic_width(mut state, table_node, containing_width,
-		.min_content)
-	grid_max := calculate_table_grid_intrinsic_width(mut state, table_node, containing_width,
-		.max_content)
-	mut table_content_width := grid_min
+	intrinsic_widths := calculate_table_grid_intrinsic_widths(mut state, table_node, containing_width)
+	grid_min := intrinsic_widths.grid_min
+	grid_max := intrinsic_widths.grid_max
+	used_min_width := css_pixels_max(grid_min, intrinsic_widths.capmin)
+	mut table_content_width := used_min_width
 	if table_width.is_min_content() || wrapper_state.width_constraint == .min_content {
 		table_content_width = grid_min
 	} else if table_width.is_max_content() || wrapper_state.width_constraint == .max_content {
 		table_content_width = grid_max
 	} else if table_width.is_auto() {
-		available_wrapper_content_width :=
-			containing_width.minus(wrapper_state.margin_box_left()).minus(wrapper_state.margin_box_right())
-		available_table_content_width :=
-			available_wrapper_content_width.minus(table_state.border_box_left()).minus(table_state.border_box_right())
-		table_content_width = css_pixels_max(css_pixels_min(grid_max, available_table_content_width),
-			grid_min)
-	} else if specified := resolve_layout_content_size(table_node, table_width, containing_width,
-		table_state, true)
-	{
-		table_content_width = css_pixels_max(specified, grid_min)
+		available_wrapper_content_width := containing_width.minus(wrapper_state.margin_box_left()).minus(wrapper_state.margin_box_right())
+		available_table_content_width := available_wrapper_content_width.minus(table_state.border_box_left()).minus(table_state.border_box_right())
+		table_content_width = css_pixels_max(css_pixels_min(grid_max, available_table_content_width), used_min_width)
+		table_content_width = css_pixels_min(css_pixels_max(table_content_width, intrinsic_widths.percentage_adjusted_width), available_table_content_width)
+	} else if specified := resolve_layout_content_size(table_node, table_width, containing_width, table_state, true) {
+		table_content_width = css_pixels_max(specified, used_min_width)
 	}
-	table_content_width = clamp_layout_content_size(table_node, table_content_width,
-		containing_width, table_state, true)
-	table_border_box_width :=
-		table_content_width.plus(table_state.border_left).plus(table_state.padding_left).plus(table_state.padding_right).plus(table_state.border_right)
+	table_content_width = clamp_layout_content_size(table_node, table_content_width, containing_width, table_state, true)
+	table_border_box_width := table_content_width.plus(table_state.border_left).plus(table_state.padding_left).plus(table_state.padding_right).plus(table_state.border_right)
 	return table_border_box_width
 }
 
@@ -740,19 +1239,14 @@ fn table_wrapper_participates_as_grid_item(table &Node) bool {
 // width calculation replaces its content width, but the CSS 2.1 block-width
 // pass's consumed end margin remains from that intrinsic wrapper pass.
 fn preserve_grid_intrinsic_table_end_margin(mut state LayoutState, table &Node, mut table_state UsedValues, percentage_basis CSSPixels) {
-	if !table_wrapper_participates_as_grid_item(table)
-		|| !table.computed_values().size_value(.width).contains_percentage() {
+	if !table_wrapper_participates_as_grid_item(table) || !table.computed_values().size_value(.width).contains_percentage() {
 		return
 	}
-	grid_min := calculate_table_grid_intrinsic_width(mut state, table, percentage_basis,
-		.min_content)
-	intrinsic_wrapper_width :=
-		grid_min.plus(table_state.border_box_left()).plus(table_state.border_box_right())
+	grid_min := calculate_table_grid_intrinsic_width(mut state, table, percentage_basis, .min_content)
+	intrinsic_wrapper_width := grid_min.plus(table_state.border_box_left()).plus(table_state.border_box_right())
 	mut intrinsic_table_state := UsedValues{}
-	resolve_box_model_edges(table.computed_values(), mut intrinsic_table_state,
-		intrinsic_wrapper_width.to_double())
-	compute_block_used_width(table.computed_values(), mut intrinsic_table_state,
-		intrinsic_wrapper_width.to_double())
+	resolve_box_model_edges(table.computed_values(), mut intrinsic_table_state, intrinsic_wrapper_width.to_double())
+	compute_block_used_width(table.computed_values(), mut intrinsic_table_state, intrinsic_wrapper_width.to_double())
 	table_state.margin_left = intrinsic_table_state.margin_left
 	table_state.margin_right = intrinsic_table_state.margin_right
 }
@@ -782,8 +1276,7 @@ fn layout_table_captions(mut state LayoutState, table &Node, mut table_state Use
 		mut caption_containing_state := caption_state.containing_block_used_values() or {
 			table_state
 		}
-		resolve_box_model_edges(styled.computed_values(), mut caption_state,
-			caption_available_width.to_double())
+		resolve_box_model_edges(styled.computed_values(), mut caption_state, caption_available_width.to_double())
 		if child.computed_values().size_value(.width).is_auto() {
 			// TableFormattingContext::run_caption_layout() enters the caption's
 			// independent BFC with the table border-box width, then resolves the
@@ -792,8 +1285,7 @@ fn layout_table_captions(mut state LayoutState, table &Node, mut table_state Use
 			// is narrowed by its own border and padding afterwards.
 			caption_state.set_content_width(caption_available_width)
 			caption_state.set_has_definite_width(true)
-			result := layout_inside_independent_formatting_context(mut state, child, mut
-				caption_state, AvailableSpace.new(AvailableSize.make_definite(caption_available_width), if table_state.has_definite_height() {
+			result := layout_inside_independent_formatting_context(mut state, child, mut caption_state, AvailableSpace.new(AvailableSize.make_definite(caption_available_width), if table_state.has_definite_height() {
 				AvailableSize.make_definite(table_state.content_height())
 			} else {
 				AvailableSize.make_indefinite()
@@ -803,8 +1295,7 @@ fn layout_table_captions(mut state LayoutState, table &Node, mut table_state Use
 				caption_state.set_content_height(result.automatic_content_height)
 			}
 		} else {
-			caption_state = layout_independent_child(mut state, child, mut
-				caption_containing_state, caption_available_width, if table_state.has_definite_height() {
+			caption_state = layout_independent_child(mut state, child, mut caption_containing_state, caption_available_width, if table_state.has_definite_height() {
 				table_state.content_height()
 			} else {
 				none
@@ -822,26 +1313,23 @@ fn layout_table_captions(mut state LayoutState, table &Node, mut table_state Use
 }
 
 fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_state UsedValues, available_space AvailableSpace) FormattingContextResult {
+	table_timing_start := time.sys_mono_now()
 	_ = available_space
-	mut rows := []&Node{}
-	collect_typed_table_rows(table, mut rows)
-	placements, placement_column_count := calculate_table_cell_placements(rows)
-	column_definitions := collect_typed_table_columns(table)
-	mut defined_column_count := 0
-	for definition in column_definitions {
-		defined_column_count = if definition.index + definition.span > defined_column_count {
-			definition.index + definition.span
+	table_width_percentage_basis := if wrapper_state := table_state.containing_block_used_values() {
+		if containing_state := wrapper_state.containing_block_used_values() {
+			containing_state.content_width()
 		} else {
-			defined_column_count
+			wrapper_state.content_width()
 		}
-	}
-	column_count := if placement_column_count > defined_column_count {
-		placement_column_count
 	} else {
-		defined_column_count
+		table_state.content_width()
 	}
-	top_caption_height := layout_table_captions(mut state, table, mut table_state, .top,
-		CSSPixels.new(0))
+	intrinsic_widths := calculate_table_grid_intrinsic_widths(mut state, table, table_width_percentage_basis)
+	rows := intrinsic_widths.rows
+	placements := intrinsic_widths.placements
+	column_definitions := intrinsic_widths.column_definitions
+	column_count := intrinsic_widths.column_count
+	top_caption_height := layout_table_captions(mut state, table, mut table_state, .top, CSSPixels.new(0))
 	for child in table.children() {
 		if !child.display().is_table_caption() || child.computed_values().caption_side() != .top {
 			continue
@@ -852,8 +1340,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		}
 	}
 	computed := table.computed_values()
-	resolve_collapsed_table_borders(mut state, table, rows, placements, column_definitions,
-		column_count)
+	resolve_collapsed_table_borders(mut state, table, rows, placements, column_definitions, column_count)
 	if computed.size_value(.width).contains_percentage() {
 		// Percentages on the principal table are relative to the table wrapper's
 		// containing block, not to the anonymous wrapper itself. The generic
@@ -861,13 +1348,9 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		// margin is retained, as in LibWeb.
 		if wrapper_state := table_state.containing_block_used_values() {
 			if outer_containing_state := wrapper_state.containing_block_used_values() {
-				preserve_grid_intrinsic_table_end_margin(mut state, table, mut table_state,
-					outer_containing_state.content_width())
-				if resolved := resolve_layout_content_size(table, computed.size_value(.width),
-					outer_containing_state.content_width(), table_state, true)
-				{
-					table_state.set_content_width(clamp_layout_content_size(table, resolved,
-						outer_containing_state.content_width(), table_state, true))
+				preserve_grid_intrinsic_table_end_margin(mut state, table, mut table_state, outer_containing_state.content_width())
+				if resolved := resolve_layout_content_size(table, computed.size_value(.width), outer_containing_state.content_width(), table_state, true) {
+					table_state.set_content_width(clamp_layout_content_size(table, resolved, outer_containing_state.content_width(), table_state, true))
 					table_state.set_has_definite_width(true)
 				}
 			}
@@ -894,359 +1377,20 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	} else {
 		computed.border_spacing_vertical().to_px(layout_length_resolution_context(table))
 	}
-	mut column_widths := []CSSPixels{len: column_count, init: CSSPixels.new(0)}
-	mut column_min_widths := []CSSPixels{len: column_count, init: CSSPixels.new(0)}
-	mut constrained_columns := []bool{len: column_count}
-	mut intrinsic_percentages := []f64{len: column_count}
-	mut has_intrinsic_percentage := []bool{len: column_count}
-	for definition in column_definitions {
-		definition_width := resolve_layout_size(definition.node,
-			definition.node.computed_values().size_value(.width), table_state.content_width()) or {
-			continue
-		}
-		per_column := definition_width.divided_by_float(f64(definition.span))
-		for column in definition.index .. definition.index + definition.span {
-			if column >= column_widths.len {
-				continue
-			}
-			column_widths[column] = css_pixels_max(column_widths[column], per_column)
-			column_min_widths[column] = css_pixels_max(column_min_widths[column], per_column)
-			constrained_columns[column] = true
-		}
+	fixed_mode := table_uses_fixed_mode_layout(table)
+	if intrinsic_widths.grid_min.raw_value() > table_state.content_width().raw_value() {
+		table_state.set_content_width(intrinsic_widths.grid_min)
 	}
-	preferred_table_width := computed.size_value(.width)
-	fixed_mode := computed.table_layout() == .fixed && !preferred_table_width.is_auto()
-	if fixed_mode {
-		// In fixed mode only cells in the first row contribute column measures.
-		// Percentage widths are intrinsic percentages, not constrained columns;
-		// auto cells contribute zero. This is the fixed-mode specialization of
-		// CSS Tables 3's cell-measure and column-measure algorithms.
-		for placement in placements {
-			if placement.row != 0 || placement.column_span != 1 {
-				continue
-			}
-			styled := placement.cell.as_node_with_style() or { continue }
-			mut cell_state := state.get_mutable(styled)
-			resolve_box_model_edges(styled.computed_values(), mut cell_state,
-				table_state.content_width().to_double())
-			cell_width := placement.cell.computed_values().size_value(.width)
-			if cell_width.is_percentage() {
-				has_intrinsic_percentage[placement.column] = true
-				intrinsic_percentages[placement.column] = math.max(intrinsic_percentages[placement.column],
-					cell_width.percentage().value())
-				column_min_widths[placement.column] = css_pixels_max(column_min_widths[placement.column], table_cell_intrinsic_outer_width_contribution(mut state,
-					placement.cell, .min_content, computed.border_collapse() == .collapse))
-			} else if cell_width.is_length()
-				|| (cell_width.is_calculated() && !cell_width.contains_percentage()) {
-				resolved_width := resolve_layout_content_size(placement.cell, cell_width,
-					table_state.content_width(), cell_state, true) or { continue }
-				outer_width := resolved_width.plus(flex_or_grid_item_outer_inline_edges(cell_state))
-				column_min_widths[placement.column] = css_pixels_max(column_min_widths[placement.column],
-					outer_width)
-				column_widths[placement.column] = css_pixels_max(column_widths[placement.column],
-					outer_width)
-				constrained_columns[placement.column] = true
-			}
-		}
-		assignable_width := table_state.content_width().minus(horizontal_spacing.scaled(f64(
-			column_count + 1)))
-		// 1. Min-content sizing guess. Percent and auto columns start at zero
-		// in fixed mode; constrained length columns start at their minimum.
-		for index in 0 .. column_widths.len {
-			if constrained_columns[index] {
-				column_widths[index] = column_min_widths[index]
-			}
-		}
-		// 2. Min-content-percentage sizing guess.
-		mut candidate_widths := column_widths.clone()
-		for index in 0 .. candidate_widths.len {
-			if has_intrinsic_percentage[index] {
-				percentage_width :=
-					CSSPixels.nearest_value_for(intrinsic_percentages[index] / 100.0 * assignable_width.to_double())
-				candidate_widths[index] = css_pixels_max(column_min_widths[index], percentage_width)
-			}
-		}
-		if assignable_width.raw_value() < table_columns_total_width(candidate_widths).raw_value() {
-			assign_table_column_widths_linear_combination(mut column_widths, candidate_widths,
-				assignable_width)
-		} else {
-			column_widths = candidate_widths.clone()
-			// The min-content-specified and max-content guesses do not add
-			// anything in fixed mode. Distribute the remaining width using the
-			// fixed-mode priority order.
-			remaining_width := assignable_width.minus(table_columns_total_width(column_widths))
-			mut unconstrained_auto_count := 0
-			for index in 0 .. column_widths.len {
-				if !constrained_columns[index] && !has_intrinsic_percentage[index] {
-					unconstrained_auto_count++
-				}
-			}
-			if remaining_width.raw_value() > 0 && unconstrained_auto_count > 0 {
-				addition :=
-					CSSPixels.from_raw(remaining_width.raw_value() / unconstrained_auto_count)
-				for index in 0 .. column_widths.len {
-					if !constrained_columns[index] && !has_intrinsic_percentage[index] {
-						column_widths[index] = column_widths[index].plus(addition)
-					}
-				}
-			} else if remaining_width.raw_value() > 0 {
-				used_width := table_columns_total_width(column_widths)
-				if used_width.raw_value() > 0 {
-					for index in 0 .. column_widths.len {
-						if column_widths[index].raw_value() > 0 {
-							addition :=
-								CSSPixels.nearest_value_for(remaining_width.times(column_widths[index]).to_double() / used_width.to_double())
-							column_widths[index] = column_widths[index].plus(addition)
-						}
-					}
-				} else {
-					mut percentage_total := 0.0
-					for percentage in intrinsic_percentages {
-						percentage_total += percentage
-					}
-					if percentage_total > 0 {
-						for index in 0 .. column_widths.len {
-							if intrinsic_percentages[index] > 0 {
-								addition :=
-									CSSPixels.nearest_value_for(remaining_width.to_double() * intrinsic_percentages[index] / percentage_total)
-								column_widths[index] = column_widths[index].plus(addition)
-							}
-						}
-					} else if column_count > 0 {
-						equal_width := remaining_width.divided_by_float(f64(column_count))
-						for index in 0 .. column_widths.len {
-							column_widths[index] = column_widths[index].plus(equal_width)
-						}
-					}
-				}
-			}
-		}
-	} else {
-		for placement in placements {
-			if placement.column_span == 1 {
-				cell_preferred_width := placement.cell.computed_values().size_value(.width)
-				column_min_widths[placement.column] = css_pixels_max(column_min_widths[placement.column], table_cell_intrinsic_outer_width_contribution(mut state,
-					placement.cell, .min_content, computed.border_collapse() == .collapse))
-				column_widths[placement.column] = css_pixels_max(column_widths[placement.column], table_cell_intrinsic_outer_width_contribution(mut state,
-					placement.cell, .max_content, computed.border_collapse() == .collapse))
-				if cell_preferred_width.is_length() {
-					constrained_columns[placement.column] = true
-				}
-				if cell_preferred_width.is_percentage() {
-					has_intrinsic_percentage[placement.column] = true
-					intrinsic_percentages[placement.column] = math.max(intrinsic_percentages[placement.column],
-						cell_preferred_width.percentage().value())
-				}
-			}
-		}
-		mut maximum_column_span := 1
-		for placement in placements {
-			if placement.column_span > maximum_column_span {
-				maximum_column_span = placement.column_span
-			}
-		}
-		// Intrinsic percentages from spanning cells are distributed using the
-		// non-spanning max-content measures of the columns they cover.
-		for span in 2 .. maximum_column_span + 1 {
-			mut next_percentages := intrinsic_percentages.clone()
-			for placement in placements {
-				if placement.column_span != span {
-					continue
-				}
-				cell_width := placement.cell.computed_values().size_value(.width)
-				if !cell_width.is_percentage() {
-					continue
-				}
-				end_column := if placement.column + placement.column_span < column_count {
-					placement.column + placement.column_span
-				} else {
-					column_count
-				}
-				mut cell_contribution :=
-					CSSPixels.nearest_value_for(cell_width.percentage().value())
-				for column in placement.column .. end_column {
-					cell_contribution =
-						cell_contribution.minus(CSSPixels.nearest_value_for(intrinsic_percentages[column]))
-					cell_contribution = css_pixels_max(cell_contribution, CSSPixels.new(0))
-				}
-				mut zero_percentage_max_sum := CSSPixels.new(0)
-				mut zero_percentage_count := 0
-				for column in placement.column .. end_column {
-					if intrinsic_percentages[column] == 0 {
-						zero_percentage_max_sum =
-							zero_percentage_max_sum.plus(column_widths[column])
-						zero_percentage_count++
-					}
-				}
-				for column in placement.column .. end_column {
-					if intrinsic_percentages[column] > 0 {
-						continue
-					}
-					adjusted := if zero_percentage_max_sum.raw_value() != 0 {
-						cell_contribution.times_float(column_widths[column].to_double() / zero_percentage_max_sum.to_double())
-					} else if zero_percentage_count > 0 {
-						CSSPixels.from_raw(cell_contribution.raw_value() / zero_percentage_count)
-					} else {
-						CSSPixels.new(0)
-					}
-					next_percentages[column] = math.max(next_percentages[column],
-						adjusted.to_double())
-				}
-			}
-			intrinsic_percentages = next_percentages.clone()
-		}
-		mut total_intrinsic_percentage := 0.0
-		for index in 0 .. intrinsic_percentages.len {
-			intrinsic_percentages[index] = math.max(math.min(100.0 - total_intrinsic_percentage,
-				intrinsic_percentages[index]), 0.0)
-			total_intrinsic_percentage += intrinsic_percentages[index]
-			has_intrinsic_percentage[index] = intrinsic_percentages[index] > 0
-		}
-		for span in 2 .. maximum_column_span + 1 {
-			for placement in placements {
-				if placement.column_span != span {
-					continue
-				}
-				min_contribution := table_cell_intrinsic_outer_width_contribution(mut state,
-					placement.cell, .min_content, computed.border_collapse() == .collapse)
-				distribute_table_cell_minimum_across_columns(mut column_min_widths, placement,
-					horizontal_spacing, min_contribution)
-				contribution := table_cell_intrinsic_outer_width_contribution(mut state,
-					placement.cell, .max_content, computed.border_collapse() == .collapse)
-				distribute_table_cell_minimum_across_columns(mut column_widths, placement,
-					horizontal_spacing, contribution)
-			}
-		}
-		// The used table width is never smaller than GRIDMIN. A specified table
-		// width is therefore allowed to grow when its cells' min-content measures
-		// do not fit (CSS Tables 3, "Computing the table width").
-		mut grid_min := horizontal_spacing.scaled(f64(column_count + 1))
-		for width in column_min_widths {
-			grid_min = grid_min.plus(width)
-		}
-		if grid_min.raw_value() > table_state.content_width().raw_value() {
-			table_state.set_content_width(grid_min)
-		}
-		column_max_widths := column_widths.clone()
-		assignable_width := table_state.content_width().minus(horizontal_spacing.scaled(f64(
-			column_count + 1)))
-		column_widths = column_min_widths.clone()
-		mut candidate_widths := column_min_widths.clone()
-		// Min-content-percentage sizing guess.
-		for index in 0 .. candidate_widths.len {
-			if has_intrinsic_percentage[index] {
-				percentage_width :=
-					CSSPixels.nearest_value_for(intrinsic_percentages[index] / 100.0 * assignable_width.to_double())
-				candidate_widths[index] = css_pixels_max(column_min_widths[index], percentage_width)
-			}
-		}
-		mut width_distribution_complete := false
-		if assignable_width.raw_value() < table_columns_total_width(candidate_widths).raw_value() {
-			assign_table_column_widths_linear_combination(mut column_widths, candidate_widths,
-				assignable_width)
-			width_distribution_complete = true
-		} else {
-			column_widths = candidate_widths.clone()
-		}
-		// Min-content-specified sizing guess.
-		if !width_distribution_complete {
-			for index in 0 .. candidate_widths.len {
-				if constrained_columns[index] {
-					candidate_widths[index] = column_max_widths[index]
-				}
-			}
-			if assignable_width.raw_value() < table_columns_total_width(candidate_widths).raw_value() {
-				assign_table_column_widths_linear_combination(mut column_widths, candidate_widths,
-					assignable_width)
-				width_distribution_complete = true
-			} else {
-				column_widths = candidate_widths.clone()
-			}
-		}
-		// Max-content sizing guess.
-		if !width_distribution_complete {
-			for index in 0 .. candidate_widths.len {
-				if !has_intrinsic_percentage[index] {
-					candidate_widths[index] = column_max_widths[index]
-				}
-			}
-			if assignable_width.raw_value() < table_columns_total_width(candidate_widths).raw_value() {
-				assign_table_column_widths_linear_combination(mut column_widths, candidate_widths,
-					assignable_width)
-				width_distribution_complete = true
-			} else {
-				column_widths = candidate_widths.clone()
-			}
-		}
-		mut remaining := assignable_width.minus(table_columns_total_width(column_widths))
-		if !width_distribution_complete && remaining.raw_value() > 0 {
-			// First excess-width rule: grow non-constrained, non-percentage
-			// originating columns in proportion to max-content width.
-			mut zero_percentage_max_total := CSSPixels.new(0)
-			for index in 0 .. column_widths.len {
-				if !constrained_columns[index] && intrinsic_percentages[index] == 0
-					&& column_max_widths[index].raw_value() > 0 {
-					zero_percentage_max_total =
-						zero_percentage_max_total.plus(column_max_widths[index])
-				}
-			}
-			if zero_percentage_max_total.raw_value() > 0 {
-				for index in 0 .. column_widths.len {
-					if !constrained_columns[index] && intrinsic_percentages[index] == 0
-						&& column_max_widths[index].raw_value() > 0 {
-						addition :=
-							CSSPixels.nearest_value_for(remaining.times(column_max_widths[index]).to_double() / zero_percentage_max_total.to_double())
-						column_widths[index] = column_widths[index].plus(addition)
-					}
-				}
-				remaining = assignable_width.minus(table_columns_total_width(column_widths))
-			}
-			mut percentage_total := 0.0
-			for percentage in intrinsic_percentages {
-				percentage_total += percentage
-			}
-			if percentage_total > 0 && remaining.raw_value() > 0 {
-				for index in 0 .. column_widths.len {
-					if intrinsic_percentages[index] > 0 {
-						addition :=
-							CSSPixels.nearest_value_for(remaining.to_double() * intrinsic_percentages[index] / percentage_total)
-						column_widths[index] = column_widths[index].plus(addition)
-					}
-				}
-			}
-			remaining_after_percentages :=
-				assignable_width.minus(table_columns_total_width(column_widths))
-			mut growth_column_count := 0
-			for index, constrained in constrained_columns {
-				if !constrained && intrinsic_percentages[index] == 0 {
-					growth_column_count++
-				}
-			}
-			if growth_column_count == 0 && percentage_total == 0 {
-				growth_column_count = column_count
-			}
-			intrinsic_columns_width := table_columns_total_width(column_max_widths)
-			if growth_column_count == column_count && intrinsic_columns_width.raw_value() > 0
-				&& remaining_after_percentages.raw_value() > 0 {
-				// In the final auto-layout distribution step, columns without a
-				// specified width grow in proportion to their max-content widths.
-				// This also preserves the ratio established by spanning cells.
-				for index in 0 .. column_widths.len {
-					addition :=
-						CSSPixels.nearest_value_for(remaining_after_percentages.times(column_max_widths[index]).to_double() / intrinsic_columns_width.to_double())
-					column_widths[index] = column_widths[index].plus(addition)
-				}
-			} else if growth_column_count > 0 && remaining_after_percentages.raw_value() > 0 {
-				addition := remaining_after_percentages.divided_by_float(f64(growth_column_count))
-				for index in 0 .. column_widths.len {
-					if !constrained_columns[index] && intrinsic_percentages[index] == 0 {
-						column_widths[index] = column_widths[index].plus(addition)
-					}
-				}
-			}
-		}
+	// TableFormattingContext::compute_table_width() makes the anonymous table
+	// wrapper exactly as wide as the principal table's border box. The wrapper
+	// was measured in an intrinsic throwaway state before this real table pass,
+	// so the real state must be synchronized here as well.
+	if wrapper_values := table_state.containing_block_used_values() {
+		mut wrapper_state := unsafe { &UsedValues(wrapper_values) }
+		wrapper_state.set_content_width(table_state.border_box_width())
 	}
-
+	column_widths := distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode)
+	column_offsets := table_column_offsets(column_widths, horizontal_spacing)
 	mut row_heights := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
 	mut row_baselines := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
 	mut cell_baselines := []CSSPixels{len: placements.len, init: CSSPixels.new(0)}
@@ -1254,18 +1398,14 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		// First pass: definite row lengths participate in the base height.
 		// Percentages are resolved only after the table grid height is known.
 		row_height := row.computed_values().size_value(.height)
-		if row_height.is_length()
-			|| (row_height.is_calculated() && !row_height.contains_percentage()) {
-			if specified_height := resolve_layout_size(row, row_height,
-				table_state.content_height())
-			{
+		if row_height.is_length() || (row_height.is_calculated() && !row_height.contains_percentage()) {
+			if specified_height := resolve_layout_size(row, row_height, table_state.content_height()) {
 				row_heights[index] = specified_height
 			}
 		}
 	}
 	for placement_index, placement in placements {
-		cell_width := table_column_range_width(column_widths, placement.column,
-			placement.column_span, horizontal_spacing)
+		cell_width := table_column_range_width(column_offsets, placement.column, placement.column_span, horizontal_spacing)
 		styled := placement.cell.as_node_with_style() or { continue }
 		mut cell_state := state.get_mutable(styled)
 		cell_state.set_containing_block_used_values(table_state)
@@ -1287,25 +1427,19 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		if border := collapsed_bottom {
 			cell_state.border_bottom = border
 		}
-		content_width :=
-			cell_width.minus(table_cell_measurement_inline_edges(cell_state, collapsed))
+		content_width := cell_width.minus(table_cell_measurement_inline_edges(cell_state, collapsed))
 		// CSS Tables computes a definite cell height as the used height of the
 		// cell's border box. UsedValues stores the content height, so subtract
 		// the resolved padding and borders before laying out the cell contents.
 		// This is intentionally different from ordinary box height resolution.
 		mut forced_cell_height := ?CSSPixels(none)
 		cell_computed_height := placement.cell.computed_values().size_value(.height)
-		if cell_computed_height.is_length()
-			|| (cell_computed_height.is_calculated() && !cell_computed_height.contains_percentage()) {
-			if cell_used_height := resolve_layout_size(placement.cell, cell_computed_height,
-				table_state.content_height())
-			{
-				forced_cell_height = cell_used_height.minus(table_cell_measurement_block_edges(cell_state,
-					collapsed))
+		if cell_computed_height.is_length() || (cell_computed_height.is_calculated() && !cell_computed_height.contains_percentage()) {
+			if cell_used_height := resolve_layout_size(placement.cell, cell_computed_height, table_state.content_height()) {
+				forced_cell_height = cell_used_height.minus(table_cell_measurement_block_edges(cell_state, collapsed))
 			}
 		}
-		cell_state = layout_independent_child_using_automatic_height(mut state, placement.cell, mut
-			table_state, table_state.content_width(), if table_state.has_definite_height() {
+		cell_state = layout_independent_child_using_automatic_height(mut state, placement.cell, mut table_state, table_state.content_width(), if table_state.has_definite_height() {
 			table_state.content_height()
 		} else {
 			none
@@ -1324,20 +1458,14 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		}
 		cell_baselines[placement_index] = layout_box_baseline(state, placement.cell)
 		if placement.row >= 0 && placement.row < row_baselines.len {
-			row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row],
-				cell_baselines[placement_index])
+			row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row], cell_baselines[placement_index])
 		}
 		if placement.row_span == 1 {
-			row_heights[placement.row] = css_pixels_max(row_heights[placement.row], table_cell_measurement_outer_height(cell_state,
-				collapsed))
+			row_heights[placement.row] = css_pixels_max(row_heights[placement.row], table_cell_measurement_outer_height(cell_state, collapsed))
 			cell_height := placement.cell.computed_values().size_value(.height)
-			if cell_height.is_length()
-				|| (cell_height.is_calculated() && !cell_height.contains_percentage()) {
-				if specified_height := resolve_layout_size(placement.cell, cell_height,
-					table_state.content_height())
-				{
-					row_heights[placement.row] = css_pixels_max(row_heights[placement.row],
-						specified_height)
+			if cell_height.is_length() || (cell_height.is_calculated() && !cell_height.contains_percentage()) {
+				if specified_height := resolve_layout_size(placement.cell, cell_height, table_state.content_height()) {
+					row_heights[placement.row] = css_pixels_max(row_heights[placement.row], specified_height)
 				}
 			}
 		}
@@ -1356,8 +1484,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 				current = current.plus(row_heights[row])
 			}
 		}
-		shortfall := table_cell_measurement_outer_height(cell_state,
-			computed.border_collapse() == .collapse).minus(current)
+		shortfall := table_cell_measurement_outer_height(cell_state, computed.border_collapse() == .collapse).minus(current)
 		if shortfall.raw_value() > 0 {
 			addition := shortfall.divided_by_float(f64(placement.row_span))
 			for row in placement.row .. placement.row + placement.row_span {
@@ -1384,20 +1511,16 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 				percentage_basis = outer_containing_state.content_height()
 			}
 		}
-		if specified_height := resolve_layout_content_size(table, table_height, percentage_basis,
-			table_state, false)
-		{
+		if specified_height := resolve_layout_content_size(table, table_height, percentage_basis, table_state, false) {
 			table_grid_height = css_pixels_max(table_grid_height, specified_height)
 		}
 	}
 	mut reference_heights := row_heights.clone()
 	for index, row in rows {
 		row_height := row.computed_values().size_value(.height)
-		if row_height.is_percentage()
-			|| (row_height.is_calculated() && row_height.contains_percentage()) {
+		if row_height.is_percentage() || (row_height.is_calculated() && row_height.contains_percentage()) {
 			if specified_height := resolve_layout_size(row, row_height, table_grid_height) {
-				reference_heights[index] = css_pixels_max(reference_heights[index],
-					specified_height)
+				reference_heights[index] = css_pixels_max(reference_heights[index], specified_height)
 			}
 		}
 	}
@@ -1406,13 +1529,11 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			continue
 		}
 		cell_height := placement.cell.computed_values().size_value(.height)
-		if !cell_height.is_percentage() && !(cell_height.is_calculated()
-			&& cell_height.contains_percentage()) {
+		if !cell_height.is_percentage() && !(cell_height.is_calculated() && cell_height.contains_percentage()) {
 			continue
 		}
 		if specified_height := resolve_layout_size(placement.cell, cell_height, table_grid_height) {
-			reference_heights[placement.row] = css_pixels_max(reference_heights[placement.row],
-				specified_height)
+			reference_heights[placement.row] = css_pixels_max(reference_heights[placement.row], specified_height)
 		}
 	}
 	mut sum_reference_height := CSSPixels.new(0)
@@ -1423,8 +1544,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		if table_grid_height.raw_value() <= sum_reference_height.raw_value() {
 			for index in 0 .. row_heights.len {
 				weight := reference_heights[index].to_double() / sum_reference_height.to_double()
-				row_heights[index] =
-					CSSPixels.nearest_value_for(table_grid_height.to_double() * weight)
+				row_heights[index] = CSSPixels.nearest_value_for(table_grid_height.to_double() * weight)
 			}
 		} else if table_grid_height.raw_value() > sum_reference_height.raw_value() {
 			mut auto_row_count := 0
@@ -1434,8 +1554,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 				}
 			}
 			if auto_row_count > 0 {
-				increment :=
-					table_grid_height.minus(sum_reference_height).divided_by_float(f64(auto_row_count))
+				increment := table_grid_height.minus(sum_reference_height).divided_by_float(f64(auto_row_count))
 				for index, row in rows {
 					row_heights[index] = reference_heights[index]
 					if row.computed_values().size_value(.height).is_auto() {
@@ -1443,8 +1562,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 					}
 				}
 			} else if row_heights.len > 0 {
-				increment :=
-					table_grid_height.minus(sum_reference_height).divided_by_float(f64(row_heights.len))
+				increment := table_grid_height.minus(sum_reference_height).divided_by_float(f64(row_heights.len))
 				for index in 0 .. row_heights.len {
 					row_heights[index] = reference_heights[index].plus(increment)
 				}
@@ -1472,44 +1590,40 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		}
 		cursor_y = cursor_y.plus(row_heights[index]).plus(vertical_spacing)
 	}
+	// TableFormattingContext::position_row_boxes() advances a row-group cursor
+	// while walking each group's own rows. This is linear in the grid size and
+	// also leaves an empty group at the current cursor after preceding groups.
+	mut row_group_top_offset := vertical_spacing
 	for group in table.children() {
-		if !group.display().is_table_row_group() && !group.display().is_table_header_group()
-			&& !group.display().is_table_footer_group() {
-			continue
-		}
-		mut first_row := -1
-		mut last_row := -1
-		for index, row in rows {
-			parent := row.parent() or { continue }
-			if parent != group {
-				continue
-			}
-			if first_row < 0 {
-				first_row = index
-			}
-			last_row = index
-		}
-		if first_row < 0 {
-			// Empty row groups still start at the table grid's first spacing
-			// edge. They have no row-derived width or height.
-			styled := group.as_node_with_style() or { continue }
-			mut group_state := state.get_mutable(styled)
-			group_state.set_containing_block_used_values(table_state)
-			group_state.set_content_width(CSSPixels.new(0))
-			group_state.set_content_height(CSSPixels.new(0))
-			group_state.set_content_offset(CSSPixelPoint.new(horizontal_spacing, vertical_spacing))
+		if !group.display().is_table_row_group() && !group.display().is_table_header_group() && !group.display().is_table_footer_group() {
 			continue
 		}
 		styled := group.as_node_with_style() or { continue }
 		mut group_state := state.get_mutable(styled)
 		group_state.set_containing_block_used_values(table_state)
-		mut group_height := vertical_spacing.scaled(f64(last_row - first_row))
-		for row_index in first_row .. last_row + 1 {
-			group_height = group_height.plus(row_heights[row_index])
+		group_state.set_content_offset(CSSPixelPoint.new(horizontal_spacing, row_group_top_offset))
+		mut group_height := CSSPixels.new(0)
+		mut group_width := CSSPixels.new(0)
+		mut row_count := 0
+		for row in group.children() {
+			if !row.display().is_table_row() {
+				continue
+			}
+			row_styled := row.as_node_with_style() or { continue }
+			row_state := state.get(row_styled)
+			group_height = group_height.plus(row_state.border_box_height())
+			group_width = css_pixels_max(group_width, row_state.border_box_width())
+			row_count++
 		}
-		group_state.set_content_width(table_grid_content_width)
+		if row_count >= 2 {
+			group_height = group_height.plus(vertical_spacing.scaled(f64(row_count - 1)))
+		}
+		group_state.set_content_width(group_width)
 		group_state.set_content_height(group_height)
-		group_state.set_content_offset(CSSPixelPoint.new(horizontal_spacing, row_offsets[first_row]))
+		row_group_top_offset = row_group_top_offset.plus(group_height)
+		if row_count > 0 {
+			row_group_top_offset = row_group_top_offset.plus(vertical_spacing)
+		}
 	}
 	for placement_index, placement in placements {
 		styled := placement.cell.as_node_with_style() or { continue }
@@ -1521,8 +1635,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			}
 		}
 		collapsed := computed.border_collapse() == .collapse
-		alignment_space := spanned_height.minus(table_cell_measurement_outer_height(cell_state,
-			collapsed))
+		alignment_space := spanned_height.minus(table_cell_measurement_outer_height(cell_state, collapsed))
 		if alignment_space.raw_value() > 0 {
 			if table_cell_is_anonymous_wrapper_for_flex_or_grid(placement.cell) {
 				cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space)
@@ -1537,11 +1650,9 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 						cell_state.padding_top = cell_state.padding_top.plus(alignment_space)
 					}
 					.baseline, .sub, .super_, .text_top, .text_bottom {
-						baseline_adjustment :=
-							row_baselines[placement.row].minus(cell_baselines[placement_index])
+						baseline_adjustment := row_baselines[placement.row].minus(cell_baselines[placement_index])
 						cell_state.padding_top = cell_state.padding_top.plus(baseline_adjustment)
-						cell_state.padding_bottom =
-							cell_state.padding_bottom.plus(alignment_space.minus(baseline_adjustment))
+						cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space.minus(baseline_adjustment))
 					}
 					.top {
 						cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space)
@@ -1549,23 +1660,24 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 				}
 			}
 		}
-		cell_state.set_content_x(table_cell_physical_offset(table, table_state.content_width(),
-			column_widths, placement, horizontal_spacing).plus(table_cell_content_offset_left(cell_state,
-			collapsed)))
-		cell_state.set_content_y(row_offsets[placement.row].plus(table_cell_content_offset_top(cell_state,
-			collapsed)))
+		cell_state.set_content_x(table_cell_physical_offset(table, table_state.content_width(), column_offsets, placement, horizontal_spacing).plus(table_cell_content_offset_left(cell_state, collapsed)))
+		cell_state.set_content_y(row_offsets[placement.row].plus(table_cell_content_offset_top(cell_state, collapsed)))
 	}
 	final_table_height := css_pixels_max(cursor_y, table_grid_height)
 	table_state.set_content_height(final_table_height)
-	bottom_caption_height := layout_table_captions(mut state, table, mut table_state, .bottom,
-		table_state.margin_box_height())
-	table_state.margin_bottom =
-		table_state.margin_bottom.plus(top_caption_height).plus(bottom_caption_height)
+	bottom_caption_height := layout_table_captions(mut state, table, mut table_state, .bottom, table_state.margin_box_height())
+	table_state.margin_bottom = table_state.margin_bottom.plus(top_caption_height).plus(bottom_caption_height)
 	if table.is_inline_table() {
 		initialize_trailing_table_whitespace_state(mut state, table)
 	}
+	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
+		table_elapsed := (time.sys_mono_now() - table_timing_start) / 1_000_000
+		if table_elapsed > 0 {
+			eprintln('Ladybird V timing:       table ${table_elapsed} ms (${rows.len} rows, ${placements.len} cells)')
+		}
+	}
 	return FormattingContextResult{
-		automatic_content_width:  table_state.content_width()
+		automatic_content_width: table_state.content_width()
 		automatic_content_height: final_table_height
 	}
 }

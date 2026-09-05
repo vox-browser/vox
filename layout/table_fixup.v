@@ -71,8 +71,7 @@ fn flush_table_fixup_sequence(mut rebuilt []&Node, mut sequence []&Node, parent 
 	}
 	mut wrapper := anonymous_table_box(document, parent, display, kind)
 	wrapper_style := wrapper.as_node_with_style() or { return }
-	attach_children_maintaining_inline_invariant(mut wrapper, sequence.clone(), document,
-		wrapper_style.computed_values())
+	attach_children_maintaining_inline_invariant(mut wrapper, sequence.clone(), document, wrapper_style.computed_values())
 	rebuilt << wrapper
 	sequence.clear()
 }
@@ -141,24 +140,20 @@ fn generate_table_child_wrappers(mut node Node, document &dom.Document) {
 		generate_table_child_wrappers(mut mutable_child, document)
 	}
 	if node.display().is_table_inside() {
-		wrap_table_child_sequences(mut node, document, table_not_proper_child,
-			css.Display.from_internal(.table_row), .box)
+		wrap_table_child_sequences(mut node, document, table_not_proper_child, css.Display.from_internal(.table_row), .box)
 	}
 	if node.display().is_table_row_group() || node.display().is_table_header_group()
 		|| node.display().is_table_footer_group() {
-		wrap_table_child_sequences(mut node, document, table_not_row,
-			css.Display.from_internal(.table_row), .box)
+		wrap_table_child_sequences(mut node, document, table_not_row, css.Display.from_internal(.table_row), .box)
 	}
 	if node.display().is_table_row() {
-		wrap_table_child_sequences(mut node, document, table_not_cell,
-			css.Display.from_internal(.table_cell), .cell)
+		wrap_table_child_sequences(mut node, document, table_not_cell, css.Display.from_internal(.table_cell), .cell)
 	}
 }
 
 fn generate_missing_table_parents(mut node Node, document &dom.Document) {
 	if !node.display().is_table_row() {
-		wrap_table_child_sequences(mut node, document, table_is_cell,
-			css.Display.from_internal(.table_row), .box)
+		wrap_table_child_sequences(mut node, document, table_is_cell, css.Display.from_internal(.table_row), .box)
 	}
 	if !node.display().is_table_inside() && !node.display().is_table_row_group()
 		&& !node.display().is_table_header_group() && !node.display().is_table_footer_group()
@@ -187,6 +182,8 @@ fn wrap_table_roots(mut node Node, document &dom.Document) {
 			}
 			mut table_style := unsafe { &css.ComputedProperties(child_styled.computed_values()) }
 			style := table_style.take_properties_for_table_wrapper()
+			mut mutable_child_style := unsafe { &NodeWithStyle(child_styled) }
+			mutable_child_style.computed_values_ = css.resolve_computed_values_for_document(table_style, document)
 			mut wrapper := unsafe { &Node(TableWrapper.new(document, none, style)) }
 			wrapper.anonymous_ = true
 			wrapper.append_child(child)
@@ -225,13 +222,12 @@ fn append_missing_table_cells(mut table Node, document &dom.Document) {
 			if occupied[column] {
 				continue
 			}
-			cell := anonymous_table_box(document, row, css.Display.from_internal(.table_cell),
-				.cell)
+			cell := anonymous_table_box(document, row, css.Display.from_internal(.table_cell), .cell)
 			// Upstream missing-cells fixup explicitly centers a zero-height cell so
 			// its used border box grows symmetrically to the row height.
 			if styled := cell.as_node_with_style() {
-				mut computed := unsafe { &css.ComputedProperties(styled.computed_values()) }
-				computed.set_vertical_align_for_anonymous_table_cell(.middle)
+				mut computed := unsafe { &css.MutableComputedValues(styled.computed_values()) }
+				computed.set_vertical_align(.middle)
 			}
 			mutable_row.append_child(cell)
 		}

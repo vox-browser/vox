@@ -12,6 +12,10 @@ fn negative_size(_ Value) !f64 {
 	return -1
 }
 
+fn failing_abort(_ Value) ! {
+	return error('abort failed')
+}
+
 fn test_writable_writer_lock_write_and_close() {
 	mut stream := WritableStream.construct_impl(UnderlyingSink{}, QueuingStrategy{})!
 	mut writer := stream.get_writer()!
@@ -52,7 +56,7 @@ fn test_writer_ready_is_fulfilled_after_close_at_zero_high_water_mark() {
 	assert writer.closed().state() == .rejected
 }
 
-fn test_write_failure_errors_stream_and_aborts_signal() {
+fn test_write_failure_errors_stream_without_signaling_abort() {
 	mut stream := WritableStream.construct_impl(UnderlyingSink{
 		write: failing_write
 	}, QueuingStrategy{})!
@@ -62,17 +66,20 @@ fn test_write_failure_errors_stream_and_aborts_signal() {
 	assert result.state() == .rejected
 	assert result.reason() == 'write failed'
 	assert stream.state() == .errored
-	assert stream.controller().signal().aborted()
+	assert !stream.controller().signal().aborted()
 	assert ready.state() == .fulfilled
 	assert writer.ready().state() == .rejected
 	assert writer.closed().state() == .rejected
 }
 
 fn test_start_and_size_failures_error_writable_stream() {
-	started := WritableStream.construct_impl(UnderlyingSink{
+	if _ := WritableStream.construct_impl(UnderlyingSink{
 		start: failing_start
-	}, QueuingStrategy{})!
-	assert started.state() == .errored
+	}, QueuingStrategy{}) {
+		assert false
+	} else {
+		assert err.msg() == 'start failed'
+	}
 	mut sized := WritableStream.construct_impl(UnderlyingSink{}, QueuingStrategy{
 		size: negative_size
 	})!
@@ -96,11 +103,48 @@ fn test_controller_error_and_writer_abort() {
 	assert aborted.controller().signal().reason().text == 'stop'
 }
 
+fn test_writable_requests_follow_in_flight_and_close_sentinel_lifecycle() {
+	mut stream := WritableStream.construct_impl(UnderlyingSink{}, QueuingStrategy{})!
+	mut writer := stream.get_writer()!
+	write := writer.write(string_value('one'))
+	assert write.state() == .fulfilled
+	assert stream.write_requests_.len == 0
+	assert isnil(stream.in_flight_write_request_)
+	assert stream.queue_.is_empty()
+
+	close := writer.close()
+	assert close.state() == .fulfilled
+	assert stream.state() == .closed
+	assert isnil(stream.close_request_)
+	assert isnil(stream.in_flight_close_request_)
+	assert stream.queue_.is_empty()
+}
+
+fn test_abort_rejection_replaces_abort_result_and_clears_algorithms() {
+	mut stream := WritableStream.construct_impl(UnderlyingSink{
+		abort: failing_abort
+	}, QueuingStrategy{})!
+	result := stream.abort(string_value('stop'))
+	assert result.state() == .rejected
+	assert result.reason() == 'abort failed'
+	assert stream.state() == .errored
+	assert stream.controller().signal().aborted()
+	if _ := stream.controller().abort_algorithm() {
+		assert false
+	}
+	if _ := stream.controller().write_algorithm() {
+		assert false
+	}
+	if _ := stream.controller().close_algorithm() {
+		assert false
+	}
+	assert stream.abort(string_value('again')).state() == .fulfilled
+}
+
 fn test_underlying_sink_type_is_rejected() {
 	if _ := WritableStream.construct_impl(UnderlyingSink{
 		type_: 'bytes'
-	}, QueuingStrategy{})
-	{
+	}, QueuingStrategy{}) {
 		assert false
 	} else {
 		assert err.msg().contains('Unsupported')

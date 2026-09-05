@@ -8,7 +8,8 @@ fn test_upstream_parameter_normalization_and_binary_helpers() {
 		'counter': json2.Any('0123456789abcdef')
 		'length':  json2.Any(i64(128))
 	}))!
-	assert params.name == 'AES-CTR'
+	// Upstream initializes the normalized name after parameter conversion.
+	assert params.name == ''
 	assert params.counter == '0123456789abcdef'.bytes()
 	assert params.length == 128
 
@@ -17,16 +18,56 @@ fn test_upstream_parameter_normalization_and_binary_helpers() {
 		'salt': json2.Any('salt')
 		'info': json2.Any('info')
 	}))!
-	hkdf_value := HkdfParams(hkdf)
-	assert hkdf_value.name == 'HKDF'
+	hkdf_value := HkdfParams{...hkdf}
+	assert hkdf_value.name == ''
 	assert hkdf_value.hash == 'SHA-256'
+	hash_from_object := hash_algorithm_identifier_from_value(json2.Any({
+		'name': json2.Any('sha-384')
+	}))!
+	assert hash_from_object.name()! == 'SHA-384'
+	assert AlgorithmParams.from_value(json2.Any(i64(42)))!.name == ''
+
+	gcm := AesGcmParams.from_value(json2.Any({
+		'iv': json2.Any('0123456789ab')
+	}))!
+	assert gcm.name == ''
+	assert gcm.additional_data == none
+	assert gcm.tag_length == none
+	argon := Argon2Params.from_value(json2.Any({
+		'nonce':       json2.Any('nonce-value')
+		'parallelism': json2.Any(i64(1))
+		'memory':      json2.Any(i64(1024))
+		'passes':      json2.Any(i64(2))
+		'secretValue': json2.Any('secret')
+	}))!
+	assert argon.name == ''
+	assert argon.version == none
+	assert argon.secret_value or { []u8{} } == 'secret'.bytes()
+	assert argon.associated_data == none
 
 	encoded := base64_url_uint_encode([u8(0), 0, 1, 2, 3])
 	assert base64_url_uint_decode(encoded)! == [u8(1), 2, 3]
+	assert base64_url_uint_encode([]) == 'AA'
+	assert base64_url_uint_encode([u8(0), 0]) == 'AA'
+	assert base64_url_uint_decode('AA')! == [u8(0)]
 	structure := parse_an_asn1_structure([u8(0x30), 3, 1, 2, 3])!
 	assert structure.tag == 0x30
 	assert structure.contents == [u8(1), 2, 3]
 	assert parse_a_subject_public_key_info([u8(0x30), 0])!.contents.len == 0
+	public_key := parse_jwk_rsa_public_key(JsonWebKey{
+		n: base64_url_uint_encode([u8(1), 2, 3])
+		e: base64_url_uint_encode([u8(1), 0, 1])
+	})!
+	assert public_key.modulus == [u8(1), 2, 3]
+	assert public_key.public_exponent == [u8(1), 0, 1]
+	private_key := parse_jwk_rsa_private_key(JsonWebKey{
+		n: base64_url_uint_encode([u8(1), 2, 3])
+		e: base64_url_uint_encode([u8(1), 0, 1])
+		d: base64_url_uint_encode([u8(4), 5, 6])
+	})!
+	assert private_key.modulus == [u8(1), 2, 3]
+	assert private_key.public_exponent == [u8(1), 0, 1]
+	assert private_key.private_exponent == [u8(4), 5, 6]
 }
 
 fn test_upstream_aes_algorithm_class_delegates_to_translated_primitive() {
@@ -69,8 +110,18 @@ fn test_upstream_key_pair_and_registry_entry_points() {
 	pair := CryptoKeyPair.create(public_key, private_key)
 	assert pair.public_key() == public_key
 	assert pair.private_key() == private_key
-	assert usage_intersection([KeyUsage.sign, .verify], [.verify]) == [.verify]
+	assert usage_intersection([KeyUsage.verify, .sign, .verify], [.verify, .sign]) == [
+		KeyUsage.sign,
+		.verify,
+		.verify,
+	]
 	mut registry := supported_algorithms()
 	define_an_algorithm(mut registry, 'digest', 'TEST-HASH')
 	assert 'TEST-HASH' in registry['digest']
+	assert EncapsulatedBits{}.to_object().len == 0
+	bits_object := EncapsulatedBits{
+		shared_key: [u8(1), 2]
+	}.to_object()
+	assert 'sharedKey' in bits_object
+	assert 'ciphertext' !in bits_object
 }

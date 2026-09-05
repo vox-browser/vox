@@ -72,3 +72,18 @@ fn test_fallback_default_prompt_key_is_only_valid_in_string_form() {
 	}
 	assert false
 }
+
+fn test_upstream_internal_prompt_configuration_deserialization() {
+	configuration := PromptHandlerConfiguration.deserialize(json_value_from_text('{"handler":"accept","notify":true}'))!
+	assert configuration.handler == .accept
+	assert configuration.notify
+	assert prompt_handler_from_string('accept and notify') == none
+	response := deserialize_as_an_unhandled_prompt_behavior(json_value_from_text('{"alert":"accept and notify"}'))
+	assert !response.is_error()
+	internal := response.value or { panic('missing response value') }
+	object := internal as map[string]json2.Any
+	alert := object['alert'] or { panic('missing alert configuration') }
+	alert_object := alert as map[string]json2.Any
+	assert (alert_object['handler'] or { panic('missing handler') }) as string == 'accept'
+	assert (alert_object['notify'] or { panic('missing notify') }) as bool
+}

@@ -8,7 +8,6 @@ module html
 
 import dom
 import infra
-import net.urllib
 import x.json2
 
 pub type ImportMapWarningHandler = fn(string)
@@ -143,13 +142,14 @@ fn (integrity []ModuleIntegrityEntry) contains_url(url dom.URL) bool {
 }
 
 fn parse_absolute_url(input string) ?dom.URL {
-	parsed := urllib.parse(input) or { return none }
-	if !parsed.is_abs() {
+	parsed := dom.dom_url_parse(input, dom.url_about_blank(), 'utf-8') or { return none }
+	// A URL-like module specifier that is not path-relative must supply its own
+	// scheme; the about:blank base must not turn a bare specifier into a URL.
+	colon := input.index_u8(`:`)
+	if colon <= 0 {
 		return none
 	}
-	return dom.URL{
-		value: parsed.str()
-	}
+	return parsed
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#resolving-a-url-like-module-specifier
@@ -286,8 +286,7 @@ pub fn parse_import_map_string(input string, base_url dom.URL) !ImportMap {
 }
 
 fn url_is_special(url dom.URL) bool {
-	parsed := urllib.parse(url.value) or { return false }
-	return parsed.scheme in ['ftp', 'file', 'http', 'https', 'ws', 'wss']
+	return url.scheme() in ['ftp', 'file', 'http', 'https', 'ws', 'wss']
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#resolving-an-imports-match

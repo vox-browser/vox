@@ -65,3 +65,27 @@ fn test_form_associated_text_control_selection_and_utf16_ranges() {
 	text.handle_delete('deleteContentBackward')!
 	assert text.relevant_value() == 'ABC'
 }
+
+fn test_document_id_notifications_reset_registered_form_owner() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	mut root := document.create_element_ns(form_associated_html_namespace, 'html')!
+	mut form := document.create_element_ns(form_associated_html_namespace, 'form')!
+	form.set_attribute_value('id', 'owner')
+	mut input := document.create_element_ns(form_associated_html_namespace, 'input')!
+	input.set_attribute_value('form', 'owner')
+	root.append_child(form)
+	root.append_child(input)
+	document.append_child(root)
+
+	mut control := FormAssociatedElement.create(input)
+	control.form_node_was_inserted()
+	assert control.form() != none
+	assert document.form_associated_elements_with_form_attribute.len == 1
+
+	form.set_attribute_value('id', 'renamed')
+	assert control.form() == none
+
+	input.remove_attribute('form')
+	control.form_node_attribute_changed('form')
+	assert document.form_associated_elements_with_form_attribute.len == 0
+}

@@ -52,7 +52,7 @@ pub mut:
 	worker_type                  WorkerType
 	name_                        string
 	closing_                     bool
-	location_                    &WorkerLocation
+	location_                    &WorkerLocation = unsafe { nil }
 	navigator_                   &WorkerNavigator
 	internal_port_               ?&MessagePort
 	policy_container_initialized bool
@@ -64,15 +64,16 @@ pub mut:
 }
 
 pub fn WorkerGlobalScope.create(url dom.URL, worker_type WorkerType, name string, realm &ScriptingRealm) &WorkerGlobalScope {
-	return &WorkerGlobalScope{
+	mut scope := &WorkerGlobalScope{
 		realm: realm
 		event_loop: EventLoop.create(.worker)
 		url_: url
 		worker_type: worker_type
 		name_: name
-		location_: WorkerLocation.create(url)
 		navigator_: WorkerNavigator.create()
 	}
+	scope.location_ = WorkerLocation.create(scope)
+	return scope
 }
 
 pub fn (scope &WorkerGlobalScope) url() dom.URL {
@@ -89,7 +90,7 @@ pub fn (scope &WorkerGlobalScope) self() &WorkerGlobalScope {
 
 pub fn (scope &WorkerGlobalScope) extract_an_origin() ?dom.Origin {
 	origin := scope.url_.origin()
-	return if origin.serialize() == 'opaque' { none } else { origin }
+	return if origin.is_opaque() { none } else { origin }
 }
 
 pub fn (mut scope WorkerGlobalScope) set_url(url dom.URL) {

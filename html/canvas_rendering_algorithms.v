@@ -10,6 +10,7 @@ module html
 import css
 import dom
 import math
+import svg
 
 pub struct CanvasFloatRect {
 pub:
@@ -45,13 +46,90 @@ fn parse_fill_rule(fill_rule string) string {
 	return if fill_rule == 'evenodd' { 'evenodd' } else { 'nonzero' }
 }
 
+fn canvas_vector_angle(ux f64, uy f64, vx f64, vy f64) f64 {
+	return math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)
+}
+
+// Convert Gfx::Path's SVG endpoint-form elliptical arc to line segments for
+// the software raster backend. This is the endpoint-to-center conversion used
+// by SVG 2; it includes radii correction and preserves large-arc/sweep.
+fn append_canvas_elliptical_arc(mut points []FloatPoint, start FloatPoint, segment PathSegment) {
+	end := segment.point
+	if start == end {
+		return
+	}
+	mut radius_x := math.abs(segment.radii.width)
+	mut radius_y := math.abs(segment.radii.height)
+	if radius_x == 0 || radius_y == 0 {
+		points << end
+		return
+	}
+	cosine := math.cos(segment.x_axis_rotation)
+	sine := math.sin(segment.x_axis_rotation)
+	half_dx := (start.x - end.x) / 2.0
+	half_dy := (start.y - end.y) / 2.0
+	x1_prime := cosine * half_dx + sine * half_dy
+	y1_prime := -sine * half_dx + cosine * half_dy
+	radii_scale := x1_prime * x1_prime / (radius_x * radius_x) + y1_prime * y1_prime / (radius_y * radius_y)
+	if radii_scale > 1.0 {
+		scale := math.sqrt(radii_scale)
+		radius_x *= scale
+		radius_y *= scale
+	}
+	rx2 := radius_x * radius_x
+	ry2 := radius_y * radius_y
+	xp2 := x1_prime * x1_prime
+	yp2 := y1_prime * y1_prime
+	denominator := rx2 * yp2 + ry2 * xp2
+	if denominator == 0 {
+		points << end
+		return
+	}
+	coefficient_sign := if segment.large_arc == segment.sweep { -1.0 } else { 1.0 }
+	coefficient := coefficient_sign * math.sqrt(math.max(0.0, (rx2 * ry2 - rx2 * yp2 - ry2 * xp2) / denominator))
+	cx_prime := coefficient * radius_x * y1_prime / radius_y
+	cy_prime := coefficient * -radius_y * x1_prime / radius_x
+	center_x := cosine * cx_prime - sine * cy_prime + (start.x + end.x) / 2.0
+	center_y := sine * cx_prime + cosine * cy_prime + (start.y + end.y) / 2.0
+	start_unit_x := (x1_prime - cx_prime) / radius_x
+	start_unit_y := (y1_prime - cy_prime) / radius_y
+	end_unit_x := (-x1_prime - cx_prime) / radius_x
+	end_unit_y := (-y1_prime - cy_prime) / radius_y
+	start_angle := canvas_vector_angle(1.0, 0.0, start_unit_x, start_unit_y)
+	mut angle_delta := canvas_vector_angle(start_unit_x, start_unit_y, end_unit_x, end_unit_y)
+	if !segment.sweep && angle_delta > 0 {
+		angle_delta -= 2.0 * math.pi
+	} else if segment.sweep && angle_delta < 0 {
+		angle_delta += 2.0 * math.pi
+	}
+	// Keep the polygon's geometric error below roughly a quarter pixel while
+	// retaining a useful minimum for small circles.
+	max_radius := math.max(radius_x, radius_y)
+	angular_steps := int(math.ceil(math.abs(angle_delta) / (math.pi / 16.0)))
+	error_steps := int(math.ceil(math.abs(angle_delta) * math.sqrt(max_radius)))
+	steps := math.min(4096, math.max(1, math.max(angular_steps, error_steps)))
+	for index := 1; index <= steps; index++ {
+		if index == steps {
+			points << end
+			continue
+		}
+		angle := start_angle + angle_delta * f64(index) / f64(steps)
+		unit_x := radius_x * math.cos(angle)
+		unit_y := radius_y * math.sin(angle)
+		points << FloatPoint{
+			x: center_x + cosine * unit_x - sine * unit_y
+			y: center_y + sine * unit_x + cosine * unit_y
+		}
+	}
+}
+
 // This follows the current upstream implementation: all represented sources are
 // treated as origin-clean until their CORS state is wired into the image models.
 pub fn image_is_not_origin_clean(_ CanvasImageSource) bool {
 	return false
 }
 
-fn canvas_path_polygons(path CanvasGfxPath) [][]FloatPoint {
+fn canvas_path_polygons_with_limit(path CanvasGfxPath, maximum_contours int) [][]FloatPoint {
 	mut polygons := [][]FloatPoint{}
 	mut points := []FloatPoint{}
 	mut current := FloatPoint{}
@@ -61,6 +139,9 @@ fn canvas_path_polygons(path CanvasGfxPath) [][]FloatPoint {
 			.move_to {
 				if points.len > 0 {
 					polygons << points
+					if maximum_contours > 0 && polygons.len >= maximum_contours {
+						return polygons
+					}
 				}
 				points = [segment.point]
 				current = segment.point
@@ -98,10 +179,7 @@ fn canvas_path_polygons(path CanvasGfxPath) [][]FloatPoint {
 				current = segment.point
 			}
 			.elliptical_arc_to {
-				// CanvasGfxPath stores the endpoint form used by Gfx::Path. The
-				// raster boundary conservatively retains the chord; the exact arc
-				// remains in the path model for a platform painter.
-				points << segment.point
+				append_canvas_elliptical_arc(mut points, current, segment)
 				current = segment.point
 			}
 			.close_path {
@@ -116,6 +194,57 @@ fn canvas_path_polygons(path CanvasGfxPath) [][]FloatPoint {
 		polygons << points
 	}
 	return polygons
+}
+
+fn canvas_path_polygons(path CanvasGfxPath) [][]FloatPoint {
+	return canvas_path_polygons_with_limit(path, 0)
+}
+
+// Convert the typed path emitted by CSS::BasicShapeStyleValue::to_path() into
+// the same Gfx::Path-compatible segment model used by Path2D. Keeping the
+// segments intact lets native painting retain curves and elliptical arcs;
+// software hit testing consumes the flattened contours below.
+pub fn canvas_gfx_path_from_style_value_path(path css.StyleValuePath) CanvasGfxPath {
+	mut output := CanvasGfxPath{}
+	for command in path.commands {
+		point := FloatPoint{command.point.x().to_double(), command.point.y().to_double()}
+		match command.type_ {
+			.move_to {
+				output.move_to(point)
+			}
+			.line_to {
+				output.line_to(point)
+			}
+			.elliptical_arc_to {
+				output.elliptical_arc_to(point, FloatSize{
+					width: command.radii.width().to_double()
+					height: command.radii.height().to_double()
+				}, command.rotation, command.large_arc, command.sweep)
+			}
+			.close {
+				output.close()
+			}
+			.svg_path {
+				output.append_path(svg_path_to_canvas_gfx_path(svg.parse_path_data(command.svg_source)))
+			}
+		}
+	}
+	return output
+}
+
+// Gfx::Path::contains() operates on the retained curve path upstream. The
+// compact software hit-test backend uses these adaptively subdivided contours;
+// conversion happens once while constructing the paint tree, not per hit.
+pub fn canvas_gfx_path_flattened_polygons(path CanvasGfxPath) [][]FloatPoint {
+	return canvas_path_polygons(path)
+}
+
+// SkPathMeasure(path, false) consumes only the first contour. Expose a bounded
+// version for SVG text-on-path so later contours are neither flattened nor
+// allocated merely to be discarded.
+pub fn canvas_gfx_path_first_contour_polyline(path CanvasGfxPath) []FloatPoint {
+	polygons := canvas_path_polygons_with_limit(path, 1)
+	return if polygons.len > 0 { polygons[0] } else { []FloatPoint{} }
 }
 
 fn canvas_path_bounds(path CanvasGfxPath) ?CanvasFloatRect {

@@ -23,23 +23,28 @@ pub struct IDBObjectStore {
 pub mut:
 	transaction &IDBTransaction
 	name_       string
+	store_      ?&ObjectStoreData
 }
 
-fn (store &IDBObjectStore) load() !ObjectStoreData {
+fn (store &IDBObjectStore) load() !&ObjectStoreData {
+	if data := store.store_ {
+		if data.deleted {
+			return error('InvalidStateError: object store was deleted')
+		}
+		return data
+	}
 	if store.name_ !in store.transaction.database.data.stores {
 		return error('InvalidStateError: object store was deleted')
 	}
-	data := store.transaction.database.data.stores[store.name_] or {
+	return store.transaction.database.data.stores[store.name_] or {
 		return error('InvalidStateError: object store was deleted')
 	}
-	return data.clone()
-}
-
-fn (mut store IDBObjectStore) save(data ObjectStoreData) {
-	store.transaction.database.data.stores[store.name_] = data
 }
 
 pub fn (store &IDBObjectStore) name() string {
+	if data := store.store_ {
+		return data.name
+	}
 	return store.name_
 }
 
@@ -65,7 +70,11 @@ pub fn (mut store IDBObjectStore) rename(name string) ! {
 	if name != store.name_ && name in store.transaction.database.data.stores {
 		return error('ConstraintError: object store already exists')
 	}
+	if mut log := data.mutation_log_ {
+		log.note_object_store_renamed(store.name_)
+	}
 	store.transaction.database.data.stores.delete(store.name_)
+	store.transaction.object_store_handles.delete(store.name_)
 	data.name = name
 	store.transaction.database.data.stores[name] = data
 	store.transaction.scope_names = store.transaction.scope_names.map(if it == store.name_ {
@@ -75,6 +84,7 @@ pub fn (mut store IDBObjectStore) rename(name string) ! {
 	})
 	sort_name_list(mut store.transaction.scope_names)
 	store.name_ = name
+	store.transaction.object_store_handles[name] = store
 }
 
 pub fn (mut store IDBObjectStore) add(value Value, key ?Key) !&IDBRequest {
@@ -88,6 +98,7 @@ pub fn (mut store IDBObjectStore) put(value Value, key ?Key) !&IDBRequest {
 fn (mut store IDBObjectStore) store_record(input Value, supplied_key ?Key, no_overwrite bool) !&IDBRequest {
 	store.transaction.require_writable()!
 	mut data := store.load()!
+	mutation_position := data.mutation_log_position()
 	mut value := input.clone()
 	mut key := invalid_key()
 	if path := data.key_path {
@@ -101,48 +112,63 @@ fn (mut store IDBObjectStore) store_record(input Value, supplied_key ?Key, no_ov
 			}
 			match path {
 				string {
-					key = data.key_generator.generate()!
-					value = inject_key(value, path, key)!
+					key = number_key(f64(data.generate_a_key()!))
+					value = inject_key(value, path, key) or {
+						data.revert_mutations_from(mutation_position)
+						return completed_error_request(mut store, err.msg())
+					}
 				}
 				[]string {
 					return error('DataError: generated key cannot populate a sequence key path')
 				}
 			}
 		} else if data.auto_increment {
-			data.key_generator.possibly_update(key)
+			data.possibly_update_the_key_generator(key)
 		}
 	} else if provided := supplied_key {
 		key = provided.clone()
 		ensure_valid_key(key)!
 		if data.auto_increment {
-			data.key_generator.possibly_update(key)
+			data.possibly_update_the_key_generator(key)
 		}
 	} else if data.auto_increment {
-		key = data.key_generator.generate()!
+		key = number_key(f64(data.generate_a_key()!))
 	} else {
 		return error('DataError: out-of-line object store requires a key')
 	}
 	position := find_record(data.records, key)
 	if no_overwrite && position >= 0 {
+		data.revert_mutations_from(mutation_position)
 		return completed_error_request(mut store, 'ConstraintError: key already exists')
 	}
 	if position >= 0 {
-		data.records[position] = ObjectStoreRecord{
-			key:   key.clone()
-			value: value.clone()
+		range := IDBKeyRange.only(key)!
+		data.remove_records_in_range(range)
+		for _, mut index in data.indexes {
+			index.remove_records_with_value_in_range(range)
 		}
-	} else {
-		data.records << ObjectStoreRecord{
-			key:   key.clone()
-			value: value.clone()
+	}
+	data.store_a_record(ObjectStoreRecord{
+		key: key
+		value: value
+	})!
+	for _, mut index in data.indexes {
+		index_keys := index_keys_for_value(index, value)
+		if index.unique {
+			for index_key in index_keys {
+				if index.has_record_with_key(index_key) {
+					data.revert_mutations_from(mutation_position)
+					return completed_error_request(mut store, 'ConstraintError: unique index key already exists')
+				}
+			}
 		}
-		sort_object_store_records(mut data.records)
+		for index_key in index_keys {
+			index.store_a_record(IndexRecord{
+				key: index_key
+				primary_key: key
+			})!
+		}
 	}
-	rebuild_all_indexes(mut data) or {
-		return completed_error_request(mut store,
-			'ConstraintError: unique index key already exists')
-	}
-	store.save(data)
 	mut request := store.new_request()
 	request.key = key.clone()
 	request.succeed(.key)
@@ -198,7 +224,7 @@ pub fn (mut store IDBObjectStore) get_all(options IDBGetAllOptions) !&IDBRequest
 	range := options.range or { IDBKeyRange.unbounded() }
 	mut records := records_in_range(data.records, range, options.direction)!
 	if count := options.count {
-		if records.len > int(count) { records.trim(int(count)) }
+		if count > 0 && records.len > int(count) { records.trim(int(count)) }
 	}
 	mut request := store.new_request()
 	request.values = records.map(it.value.clone())
@@ -212,7 +238,7 @@ pub fn (mut store IDBObjectStore) get_all_keys(options IDBGetAllOptions) !&IDBRe
 	range := options.range or { IDBKeyRange.unbounded() }
 	mut records := records_in_range(data.records, range, options.direction)!
 	if count := options.count {
-		if records.len > int(count) { records.trim(int(count)) }
+		if count > 0 && records.len > int(count) { records.trim(int(count)) }
 	}
 	mut request := store.new_request()
 	request.keys = records.map(it.key.clone())
@@ -226,13 +252,13 @@ pub fn (mut store IDBObjectStore) get_all_records(options IDBGetAllOptions) !&ID
 	range := options.range or { IDBKeyRange.unbounded() }
 	mut records := records_in_range(data.records, range, options.direction)!
 	if count := options.count {
-		if records.len > int(count) { records.trim(int(count)) }
+		if count > 0 && records.len > int(count) { records.trim(int(count)) }
 	}
 	mut request := store.new_request()
 	request.records = records.map(IDBRecord{
-		key:         it.key.clone()
+		key: it.key.clone()
 		primary_key: it.key.clone()
-		value:       it.value.clone()
+		value: it.value.clone()
 	})
 	request.succeed(.records)
 	return request
@@ -253,9 +279,10 @@ pub fn (mut store IDBObjectStore) count(range ?IDBKeyRange) !&IDBRequest {
 pub fn (mut store IDBObjectStore) delete(range IDBKeyRange) !&IDBRequest {
 	store.transaction.require_writable()!
 	mut data := store.load()!
-	data.records = records_outside_range(data.records, range)!
-	rebuild_all_indexes(mut data)!
-	store.save(data)
+	data.remove_records_in_range(range)
+	for _, mut index in data.indexes {
+		index.remove_records_with_value_in_range(range)
+	}
 	mut request := store.new_request()
 	request.succeed(.undefined)
 	return request
@@ -264,13 +291,10 @@ pub fn (mut store IDBObjectStore) delete(range IDBKeyRange) !&IDBRequest {
 pub fn (mut store IDBObjectStore) clear() !&IDBRequest {
 	store.transaction.require_writable()!
 	mut data := store.load()!
-	data.records.clear()
-	for name, original in data.indexes {
-		mut index := original
-		index.records.clear()
-		data.indexes[name] = index
+	data.clear_records()
+	for _, mut index in data.indexes {
+		index.clear_records()
 	}
-	store.save(data)
 	mut request := store.new_request()
 	request.succeed(.undefined)
 	return request
@@ -290,14 +314,6 @@ fn records_in_range(records []ObjectStoreRecord, range IDBKeyRange, direction ID
 	return result
 }
 
-fn records_outside_range(records []ObjectStoreRecord, range IDBKeyRange) ![]ObjectStoreRecord {
-	mut result := []ObjectStoreRecord{}
-	for record in records {
-		if !range.includes(record.key)! { result << record }
-	}
-	return result
-}
-
 pub fn (mut store IDBObjectStore) create_index(name string, key_path KeyPath, parameters IDBIndexParameters) !IDBIndex {
 	store.transaction.require_versionchange_active()!
 	mut data := store.load()!
@@ -309,23 +325,32 @@ pub fn (mut store IDBObjectStore) create_index(name string, key_path KeyPath, pa
 	}
 	if parameters.multi_entry {
 		match key_path {
-			[]string { return error('InvalidAccessError: multiEntry cannot use a sequence key path') }
+			[]string {
+				return error('InvalidAccessError: multiEntry cannot use a sequence key path')
+			}
 			else {}
 		}
 	}
 	mut index := IndexData{
-		name:        name
-		key_path:    clone_key_path(key_path)
-		unique:      parameters.unique
+		name: name
+		key_path: clone_key_path(key_path)
+		unique: parameters.unique
 		multi_entry: parameters.multi_entry
 	}
 	rebuild_index(data, mut index)!
-	data.indexes[name] = index
-	store.save(data)
+	index.store_name = data.name
+	index.object_store_ = data
+	mut stored_index := &index
+	data.indexes[name] = stored_index
+	if mut log := data.mutation_log_ {
+		log.note_index_created(stored_index)
+	}
 	return IDBIndex{
 		transaction: store.transaction
-		store_name:  store.name_
-		name_:       name
+		store_name: store.name_
+		name_: name
+		store_: data
+		index_: stored_index
 	}
 }
 
@@ -336,8 +361,10 @@ pub fn (store &IDBObjectStore) index(name string) !IDBIndex {
 	}
 	return IDBIndex{
 		transaction: store.transaction
-		store_name:  store.name_
-		name_:       name
+		store_name: store.name_
+		name_: name
+		store_: data
+		index_: data.indexes[name] or { return error('NotFoundError: index does not exist') }
 	}
 }
 
@@ -347,30 +374,24 @@ pub fn (mut store IDBObjectStore) delete_index(name string) ! {
 	if name !in data.indexes {
 		return error('NotFoundError: index does not exist')
 	}
+	mut index := data.indexes[name] or { return error('NotFoundError: index does not exist') }
+	if mut log := data.mutation_log_ {
+		log.note_index_deleted(index)
+	}
+	index.deleted = true
 	data.indexes.delete(name)
-	store.save(data)
 }
 
 pub fn (mut store IDBObjectStore) open_cursor(range ?IDBKeyRange, direction IDBCursorDirection, keys_only bool) !&IDBRequest {
 	store.transaction.require_active()!
 	data := store.load()!
 	actual := range or { IDBKeyRange.unbounded() }
-	records := records_in_range(data.records, actual, direction)!
-	mut entries := []CursorEntry{cap: records.len}
-	for record in records {
-		entries << CursorEntry{
-			key:         record.key.clone()
-			primary_key: record.key.clone()
-			value:       record.value.clone()
-		}
-	}
 	mut request := store.new_request()
-	if entries.len == 0 {
+	mut cursor := IDBCursor.create(store.transaction, data, none, direction, actual, !keys_only, request)
+	if !cursor.iterate(none, none, 1)! {
 		request.succeed(.undefined)
 		return request
 	}
-	mut cursor := IDBCursor.create(store.transaction, store.name_, '', direction, entries,
-		!keys_only, request)
 	request.cursor = cursor
 	request.succeed(.cursor)
 	return request

@@ -1,4 +1,4 @@
-# Crypto module V translation — complete
+# Crypto module V translation — present; semantic re-audit in progress
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Crypto`
 
@@ -18,16 +18,18 @@ import V's standard `crypto.*` primitives without shadowing that namespace.
 | `KeyAlgorithms.cpp` | `key_algorithms.v` |
 | `SubtleCrypto.cpp` | `subtle_crypto.v` |
 | concrete `AlgorithmMethods` subclasses | `upstream_algorithm_classes.v` |
-| parameter parsing, DER/JWK helpers, registry and shared entry points | `upstream_protocol_entry_points.v` |
+| parameter parsing, DER/JWK helpers, registry and shared entry points | `crypto_protocol.v` |
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Crypto/` | 6 | 13,297 | 3,077 | 955 | Complete |
+| `Crypto/` | 6 | 13,297 | 3,077 | 955 | Present |
 
-The symbol-level audit accounts for all 338 implementations: 272 direct V
-owner/name matches, one documented V spelling adaptation, 18 GC/binding
-runtime hooks, and 47 constructors/destructors supplied by V construction.
-There are no unmatched Crypto symbols.
+The shared protocol implementations have been moved out of the quarantined
+`upstream_*entry_points.v` filename after source review. That review corrected
+the ordering and duplicate-preservation requirements of `usage_intersection`
+and the mandatory one-octet representation of the integer zero. Remaining
+DER/JWK representation differences and binding conversions are still being
+reviewed body-by-body, so this module is not yet declared complete.
 
 The port covers secure random values and UUIDv4 generation, the WebCrypto IDL
 enums and JWK conversion, key metadata and structured serialization, algorithm

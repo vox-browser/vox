@@ -97,6 +97,7 @@ fn add_associated_element_to_form(form &dom.HTMLFormElement, element &dom.Elemen
 
 @[heap]
 pub struct FormAssociatedElement {
+	dom.FormAssociatedElement
 pub:
 	element &dom.Element
 pub mut:
@@ -118,17 +119,45 @@ pub mut:
 	user_validity_                bool
 }
 
-pub fn FormAssociatedElement.create(element &dom.Element) &FormAssociatedElement {
-	return &FormAssociatedElement{
-		element: element
+fn form_associated_element_id_changed_callback(target voidptr) {
+	mut control := unsafe { &FormAssociatedElement(target) }
+	control.element_id_changed()
+}
+
+fn form_associated_element_with_id_added_or_removed_callback(target voidptr) {
+	mut control := unsafe { &FormAssociatedElement(target) }
+	control.element_with_id_was_added_or_removed()
+}
+
+fn initialize_form_associated_element_dom_identity(mut control FormAssociatedElement) {
+	control.FormAssociatedElement = dom.FormAssociatedElement{
+		target: voidptr(&control)
+		element_id_changed_callback: form_associated_element_id_changed_callback
+		element_with_id_added_or_removed_callback: form_associated_element_with_id_added_or_removed_callback
+	}
+	if control.element.has_attribute('form') {
+		mut document := control.element.document()
+		document.add_form_associated_element_with_form_attribute(unsafe {
+			&dom.FormAssociatedElement(&control)
+		})
 	}
 }
 
+pub fn FormAssociatedElement.create(element &dom.Element) &FormAssociatedElement {
+	mut control := &FormAssociatedElement{
+		element: element
+	}
+	initialize_form_associated_element_dom_identity(mut control)
+	return control
+}
+
 pub fn FormAssociatedElement.create_custom(element &dom.Element) &FormAssociatedElement {
-	return &FormAssociatedElement{
+	mut control := &FormAssociatedElement{
 		element: element
 		custom_element_: true
 	}
+	initialize_form_associated_element_dom_identity(mut control)
+	return control
 }
 
 pub fn (control &FormAssociatedElement) form() ?&dom.HTMLFormElement {
@@ -235,6 +264,13 @@ pub fn (mut control FormAssociatedElement) form_node_was_moved() {
 
 pub fn (mut control FormAssociatedElement) form_node_attribute_changed(name string) {
 	if name == 'form' {
+		mut document := control.element.document()
+		dom_control := unsafe { &dom.FormAssociatedElement(&control) }
+		if control.element.has_attribute('form') {
+			document.add_form_associated_element_with_form_attribute(dom_control)
+		} else {
+			document.remove_form_associated_element_with_form_attribute(dom_control)
+		}
 		control.reset_form_owner()
 	}
 }
@@ -516,6 +552,7 @@ fn form_utf16_to_string(units []u16) string {
 
 @[heap]
 pub struct FormAssociatedTextControlElement {
+	dom.InputEventsTarget
 pub:
 	control &FormAssociatedElement
 pub mut:
@@ -530,11 +567,21 @@ pub mut:
 	did_edit_callback_                  ?fn(voidptr, string, ?string)
 }
 
+fn form_associated_text_control_cursor_position(target voidptr) ?&dom.Position {
+	text := unsafe { &FormAssociatedTextControlElement(target) }
+	return text.cursor_position()
+}
+
 pub fn FormAssociatedTextControlElement.create(control &FormAssociatedElement, value string) &FormAssociatedTextControlElement {
-	return &FormAssociatedTextControlElement{
+	mut text := &FormAssociatedTextControlElement{
 		control: control
 		relevant_value_: value
 	}
+	text.InputEventsTarget = dom.InputEventsTarget{
+		target: voidptr(text)
+		cursor_position_callback: form_associated_text_control_cursor_position
+	}
+	return text
 }
 
 pub fn (text &FormAssociatedTextControlElement) relevant_value() string {

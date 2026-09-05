@@ -1,9 +1,9 @@
-# IndexedDB module V translation — complete
+# IndexedDB module V translation — parity audit
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/IndexedDB`
 
 Translation workspace: `~/code/libweb_v/indexeddb`
-Audited: 2026-08-29
+Audited: 2026-09-04
 
 All 18 upstream IndexedDB `.cpp` implementation units have an audited V
 implementation mapping. The companion headers and all 12 IDL files are
@@ -55,14 +55,14 @@ represented by typed V APIs.
 | `Internal/RequestList.h` | `request_list.v` |
 
 The upstream inline accessor surfaces and shared algorithms are implemented in
-`upstream_object_entry_points.v`, `upstream_handle_entry_points.v`,
-`upstream_internal_entry_points.v`, and `upstream_algorithm_entry_points.v`.
+`object_factories.v`, `handle_operations.v`, `internal_operations.v`, and
+`algorithm_operations.v`.
 The internal C++ `Database`, `ObjectStore`, and `Index` classes map to the V
 `DatabaseData`, `ObjectStoreData`, and `IndexData` records respectively.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `IndexedDB/` | 18 | 6,449 | 3,979 | 622 | Complete |
+| `IndexedDB/` | 18 | 6,449 | 4,364 | 682 | Audited |
 
 The V implementation covers IndexedDB key construction and total ordering,
 key/value conversion, compound and dotted key paths, generated-key injection,
@@ -79,8 +79,15 @@ validation and `continuePrimaryKey` ordering, direct-versionchange rejection,
 live-upgrade transaction exclusion, and rollback of newly created databases.
 Internal mutation logs retain inverse record, index, schema-name, and key
 generator operations, including per-request rollback from a saved log
-position. Connection registries and transaction-local handle caches preserve
-database and handle identity at the standalone runtime boundary.
+position. The audit replaced copied database, store, index, transaction, and
+cursor state with stable heap-backed objects. Transactions now retain
+per-store inverse mutation logs instead of cloning the complete database,
+indexes are maintained incrementally instead of rebuilt after each write, and
+cursors scan the live sorted source rather than eagerly materializing every
+matching record. Shared storage-key registries and transaction-local handle
+caches preserve database and handle identity at the standalone runtime
+boundary. Stored values are cloned only at structured-storage and API-output
+boundaries.
 
 The symbol audit covers 425 upstream implementation entries with zero
 unmatched symbols.
@@ -101,7 +108,7 @@ the work normally performed inside the asynchronous `upgradeneeded` callback.
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v_old -enable-globals test indexeddb
+$ /Users/alex/code/v/v -enable-globals test indexeddb
 Summary for all V _test.v files: 5 passed, 5 total.
 
 $ git diff --check -- indexeddb

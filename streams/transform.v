@@ -19,16 +19,16 @@ pub:
 @[heap]
 pub struct TransformStream {
 mut:
-	readable_            &ReadableStream                   = unsafe { nil }
-	writable_            &WritableStream                   = unsafe { nil }
-	controller_          &TransformStreamDefaultController = unsafe { nil }
-	transform_algorithm_ ?TransformAlgorithm
-	flush_algorithm_     ?FlushAlgorithm
-	cancel_algorithm_    ?CancelAlgorithm
-	backpressure_        bool
+	readable_                    &ReadableStream = unsafe { nil }
+	writable_                    &WritableStream = unsafe { nil }
+	controller_                  &TransformStreamDefaultController = unsafe { nil }
+	transform_algorithm_         ?TransformAlgorithm
+	flush_algorithm_             ?FlushAlgorithm
+	cancel_algorithm_            ?CancelAlgorithm
+	backpressure_                bool
 	backpressure_change_promise_ &VoidPromise = unsafe { nil }
-	stored_error_        string
-	terminated_          bool
+	stored_error_                string
+	terminated_                  bool
 }
 
 pub fn TransformStream.construct_impl(transformer Transformer, writable_strategy QueuingStrategy, readable_strategy QueuingStrategy) !&TransformStream {
@@ -38,36 +38,14 @@ pub fn TransformStream.construct_impl(transformer Transformer, writable_strategy
 	if type_ := transformer.writable_type {
 		return error('RangeError: Unsupported transformer writableType ${type_}')
 	}
-	mut transform := &TransformStream{
-		transform_algorithm_: transformer.transform
-		flush_algorithm_:     transformer.flush
-		cancel_algorithm_:    transformer.cancel
-		backpressure_change_promise_: VoidPromise.pending()
-	}
 	readable_high_water_mark := extract_high_water_mark(readable_strategy, 0)!
 	writable_high_water_mark := extract_high_water_mark(writable_strategy, 1)!
-	transform.readable_ = ReadableStream.construct_impl(UnderlyingSource{}, QueuingStrategy{
-		high_water_mark: readable_high_water_mark
-		size:            readable_strategy.size
-	})!
-	transform.writable_ = WritableStream.construct_impl(UnderlyingSink{}, QueuingStrategy{
-		high_water_mark: writable_high_water_mark
-		size:            writable_strategy.size
-	})!
-	transform.controller_ = &TransformStreamDefaultController{
-		stream_: transform
-	}
-	transform.readable_.owner_kind_ = .transform
-	transform.readable_.owner_ = voidptr(transform)
-	transform.writable_.owner_kind_ = .transform
-	transform.writable_.owner_ = voidptr(transform)
+	mut transform := &TransformStream{}
+	initialize_transform_stream(mut transform, writable_high_water_mark, extract_size_algorithm(writable_strategy), readable_high_water_mark, extract_size_algorithm(readable_strategy))!
+	set_up_transform_stream_default_controller_from_transformer(mut transform, transformer)
 	if start := transformer.start {
-		start() or {
-			transform.error(err.msg())
-			return transform
-		}
+		start()!
 	}
-	transform.update_backpressure()
 	return transform
 }
 
@@ -114,7 +92,7 @@ fn (mut stream TransformStream) write_chunk(value Value) ! {
 			return err
 		}
 	} else {
-		outputs << value.clone()
+		outputs << value
 	}
 	mut controller := stream.controller_
 	for output in outputs {
@@ -123,39 +101,121 @@ fn (mut stream TransformStream) write_chunk(value Value) ! {
 	stream.update_backpressure()
 }
 
-fn (mut stream TransformStream) close_writable() ! {
-	if stream.stored_error_ != '' {
-		return error(stream.stored_error_)
+fn (mut stream TransformStream) clear_algorithms() {
+	stream.transform_algorithm_ = none
+	stream.flush_algorithm_ = none
+	stream.cancel_algorithm_ = none
+}
+
+// https://streams.spec.whatwg.org/#transform-stream-default-sink-close-algorithm
+fn (mut stream TransformStream) close_writable() &VoidPromise {
+	mut controller := stream.controller_
+	if !isnil(controller.finish_promise_) {
+		return controller.finish_promise_
 	}
+	controller.finish_promise_ = VoidPromise.pending()
+	mut finish_promise := controller.finish_promise_
 	mut outputs := []Value{}
 	if algorithm := stream.flush_algorithm_ {
 		outputs = algorithm() or {
-			stream.error(err.msg())
-			return err
+			reason := err.msg()
+			stream.clear_algorithms()
+			mut readable := stream.readable_
+			readable.error(reason)
+			finish_promise.reject(reason)
+			return finish_promise
 		}
 	}
-	mut controller := stream.controller_
+	stream.clear_algorithms()
+	if stream.readable_.state_ == .errored {
+		finish_promise.reject(stream.readable_.stored_error_)
+		return finish_promise
+	}
 	for output in outputs {
-		controller.enqueue(output)!
+		controller.enqueue(output) or {
+			reason := err.msg()
+			mut readable := stream.readable_
+			readable.error(reason)
+			finish_promise.reject(reason)
+			return finish_promise
+		}
 	}
 	mut readable_controller := stream.readable_.default_controller_
-	readable_controller.close()!
+	readable_controller.close() or {
+		reason := err.msg()
+		mut readable := stream.readable_
+		readable.error(reason)
+		finish_promise.reject(reason)
+		return finish_promise
+	}
+	finish_promise.resolve()
+	return finish_promise
 }
 
-fn (mut stream TransformStream) abort_writable(reason Value) {
-	stream.error(reason.description())
-}
-
-fn (mut stream TransformStream) cancel_readable(reason Value) &VoidPromise {
+// https://streams.spec.whatwg.org/#transform-stream-default-sink-abort-algorithm
+fn (mut stream TransformStream) abort_writable(reason Value) &VoidPromise {
+	mut controller := stream.controller_
+	if !isnil(controller.finish_promise_) {
+		return controller.finish_promise_
+	}
+	controller.finish_promise_ = VoidPromise.pending()
+	mut finish_promise := controller.finish_promise_
 	if algorithm := stream.cancel_algorithm_ {
 		algorithm(reason) or {
-			stream.error(err.msg())
-			return VoidPromise.rejected(err.msg())
+			rejection := err.msg()
+			stream.clear_algorithms()
+			mut readable := stream.readable_
+			readable.error(rejection)
+			finish_promise.reject(rejection)
+			return finish_promise
 		}
+	}
+	stream.clear_algorithms()
+	if stream.readable_.state_ == .errored {
+		finish_promise.reject(stream.readable_.stored_error_)
+		return finish_promise
+	}
+	mut readable := stream.readable_
+	readable.error(reason.description())
+	finish_promise.resolve()
+	return finish_promise
+}
+
+// https://streams.spec.whatwg.org/#transform-stream-default-source-cancel
+fn (mut stream TransformStream) cancel_readable(reason Value) &VoidPromise {
+	mut controller := stream.controller_
+	if !isnil(controller.finish_promise_) {
+		return controller.finish_promise_
+	}
+	controller.finish_promise_ = VoidPromise.pending()
+	mut finish_promise := controller.finish_promise_
+	if algorithm := stream.cancel_algorithm_ {
+		algorithm(reason) or {
+			rejection := err.msg()
+			stream.clear_algorithms()
+			mut writable := stream.writable_
+			writable.start_erroring(rejection)
+			stream.unblock_write()
+			finish_promise.reject(rejection)
+			return finish_promise
+		}
+	}
+	stream.clear_algorithms()
+	if stream.writable_.state_ == .errored {
+		finish_promise.reject(stream.writable_.stored_error_)
+		return finish_promise
 	}
 	mut writable := stream.writable_
 	writable.start_erroring(reason.description())
-	return VoidPromise.fulfilled()
+	stream.unblock_write()
+	finish_promise.resolve()
+	return finish_promise
+}
+
+fn (mut stream TransformStream) unblock_write() {
+	if stream.backpressure_ {
+		stream.set_backpressure(false)
+	}
 }
 
 pub fn (mut stream TransformStream) error(reason string) {
@@ -165,8 +225,10 @@ pub fn (mut stream TransformStream) error(reason string) {
 	stream.stored_error_ = reason
 	mut readable := stream.readable_
 	readable.error(reason)
+	stream.clear_algorithms()
 	mut writable := stream.writable_
 	writable.start_erroring(reason)
+	stream.unblock_write()
 }
 
 pub fn (mut stream TransformStream) terminate() {
@@ -176,15 +238,17 @@ pub fn (mut stream TransformStream) terminate() {
 	stream.terminated_ = true
 	mut readable := stream.readable_
 	readable.close()
+	stream.clear_algorithms()
 	mut writable := stream.writable_
-	writable.start_erroring('TypeError: TransformStream was terminated')
+	writable.start_erroring('TypeError: Stream has been terminated.')
+	stream.unblock_write()
 }
 
 @[heap]
 pub struct TransformStreamDefaultController {
 mut:
-	stream_        &TransformStream = unsafe { nil }
-	finish_promise_ &VoidPromise    = unsafe { nil }
+	stream_         &TransformStream = unsafe { nil }
+	finish_promise_ &VoidPromise = unsafe { nil }
 }
 
 pub fn (controller &TransformStreamDefaultController) desired_size() ?f64 {

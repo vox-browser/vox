@@ -1,7 +1,10 @@
 module main
 
+import css
 import html
+import layout
 import os
+import painting
 
 fn test_parse_launch_options_keeps_interactive_defaults() {
 	options := parse_launch_options(['https://example.com']) or { panic(err) }
@@ -54,6 +57,44 @@ fn test_native_text_draw_y_converts_layout_line_box_to_cocoa_position() {
 	assert native_text_draw_y(10, 10) == 10
 }
 
+fn test_native_gradient_clip_path_is_one_closed_tile_path() {
+	path := native_gradient_clip_path(layout.PaintCommand{
+		gradient_background_layer: true
+	}, painting.Rect{10, 20, 30, 40})
+	stride := layout.compatibility_clip_path_segment_stride
+	assert path.len == 5 * stride
+	assert path[0] == 0
+	assert path[stride] == 1
+	assert path[2 * stride] == 1
+	assert path[3 * stride] == 1
+	assert path[4 * stride] == 5
+	assert path[1] == 10 && path[2] == 20
+	assert path[2 * stride + 1] == 40 && path[2 * stride + 2] == 60
+}
+
+fn test_native_gradient_stop_data_preserves_hard_stops_and_applies_opacity() {
+	gradient := layout.LinearGradient{
+		colors: [css.Color{255, 0, 0, 255}, css.Color{0, 0, 255, 128}]
+		stops: [
+			layout.GradientStop{css.Color{255, 0, 0, 255}, 0.0},
+			layout.GradientStop{css.Color{255, 0, 0, 255}, 0.5},
+			layout.GradientStop{css.Color{0, 0, 255, 128}, 0.5},
+			layout.GradientStop{css.Color{0, 0, 255, 128}, 1.0},
+		]
+	}
+	data := native_gradient_stop_data(gradient, 0.5)
+	mut half_offsets := 0
+	for index := 0; index < data.len; index += 5 {
+		if data[index + 4] == 0.5 {
+			half_offsets++
+		}
+		assert data[index + 3] <= 0.5
+	}
+	assert half_offsets == 2
+	assert data[3] == 0.5
+	assert data[data.len - 2] > 0.25 && data[data.len - 2] < 0.252
+}
+
 fn test_document_preload_resources_are_resolved_deduplicated_and_ordered() {
 	document := html.parse_document('<html><head>
 		<link rel="stylesheet" href="/news.css">
@@ -62,13 +103,33 @@ fn test_document_preload_resources_are_resolved_deduplicated_and_ordered() {
 		<script type="application/json" src="ignored.json"></script>
 		</head><body>
 		<img src="/y18.svg"><img src="data:image/gif;base64,AA==">
+		<svg><image href="/mask.png"/><image xlink:href="legacy.png"/>
+		<image href="/y18.svg"/><image href="" xlink:href="ignored.png"/></svg>
 		</body></html>')
 	urls := document_preload_resource_urls(document, 'https://news.ycombinator.com/news')
 	assert urls == [
 		'https://news.ycombinator.com/news.css',
 		'https://news.ycombinator.com/hn.js',
 		'https://news.ycombinator.com/y18.svg',
+		'https://news.ycombinator.com/mask.png',
+		'https://news.ycombinator.com/legacy.png',
 	]
+}
+
+fn test_svg_image_contain_destination_preserves_ratio_and_object_position() {
+	x, y, width, height := contained_image_destination(10, 20, 100, 100, 200, 100, '25%', '75%')
+	assert x == 10
+	assert y == 57.5
+	assert width == 100
+	assert height == 50
+}
+
+fn test_svg_image_contain_destination_resolves_computed_edge_offsets() {
+	x, y, width, height := contained_image_destination(10, 20, 100, 100, 50, 100, 'calc(100% - 10px)', 'calc(100% - 20px)')
+	assert x == 50
+	assert y == 0
+	assert width == 50
+	assert height == 100
 }
 
 fn test_document_preload_resources_are_bounded() {
@@ -120,4 +181,9 @@ fn test_cached_status_is_replaced_without_relayout() {
 	app.replace_load_status('HTTP 200 · 35000 bytes')
 	assert app.load_status == 'HTTP 200 · 35000 bytes'
 	assert app.status == 'HTTP 200 · 35000 bytes · 525 paints · 1200×1219 CSS px'
+}
+
+fn test_address_for_display_handles_a_narrow_toolbar() {
+	assert address_for_display('file:///tmp/example.html', 0, false, 0) == ''
+	assert address_for_display('file:///tmp/example.html', 0, true, -4) == ''
 }

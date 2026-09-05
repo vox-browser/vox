@@ -69,6 +69,42 @@ fn popover_pointer_key(element &dom.HTMLElement) u64 {
 	return u64(voidptr(element))
 }
 
+fn document_fullscreen_hide_popovers(_ voidptr, document &dom.Document, element &dom.Element) {
+	mut endpoint := PopoverEndpoint{
+		document: document
+	}
+	if hint_ancestor := html_element_topmost_popover_ancestor(element.as_node(),
+		document.showing_hint_popover_list(), none, .no) {
+		endpoint = PopoverEndpoint{
+			element: hint_ancestor
+		}
+	} else if auto_ancestor := html_element_topmost_popover_ancestor(element.as_node(),
+		document.showing_auto_popover_list(), none, .no) {
+		endpoint = PopoverEndpoint{
+			element: auto_ancestor
+		}
+	}
+	html_element_hide_all_popovers_until(endpoint, .no, .yes)
+}
+
+fn document_fullscreen_container_iframe_flag(_ voidptr, container &dom.Node) bool {
+	element := container.as_element() or { return false }
+	if !element.is_html_element() || element.local_name() != 'iframe' {
+		return false
+	}
+	iframe := unsafe { &dom.HTMLIFrameElement(element) }
+	return html_iframe_element_model_for_dom_element(iframe).iframe_fullscreen_flag()
+}
+
+pub fn install_document_fullscreen_hook(document &dom.Document) {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_fullscreen_hook(dom.DocumentFullscreenHook{
+		target:        voidptr(document)
+		hide_popovers: document_fullscreen_hide_popovers
+		container_iframe_fullscreen_flag: document_fullscreen_container_iframe_flag
+	})
+}
+
 fn popover_list_contains(list []&dom.HTMLElement, element &dom.HTMLElement) bool {
 	for candidate in list {
 		if voidptr(candidate) == voidptr(element) {

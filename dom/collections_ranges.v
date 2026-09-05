@@ -20,6 +20,8 @@
 // - Libraries/LibWeb/DOM/Position.cpp
 module dom
 
+__global dom_live_ranges map[u64]&Range
+
 // The current V DOM port has skeletal storage for some platform objects.
 // This file keeps the translated behavior narrow and uses simple snapshots
 // where the original C++ object has cache/filter/GC state that is not present
@@ -848,7 +850,12 @@ pub fn (mut n NamedNodeMap) remove_named_item_ns(namespace_ ?string, local_name 
 
 // https://dom.spec.whatwg.org/#concept-element-attributes-set
 pub fn (mut n NamedNodeMap) set_attribute(attribute &Attr_) !&Attr_ {
-	// 1. Trusted Types validation is not available in this partial V port.
+	// 1. Obtain the Trusted Types-compliant value for this attribute mutation.
+	if n.element != unsafe { nil } {
+		verified_value := n.element.document().trusted_types_compliant_attribute_value(n.element, attribute.local_name_, attribute.namespace_uri_, attribute.value_)!
+		mut mutable_attribute := unsafe { &Attr_(attribute) }
+		mutable_attribute.value_ = verified_value
+	}
 	// 2. If attr's element is neither null nor element, throw an "InUseAttributeError" DOMException.
 	if owner := attribute.owner_element() {
 		if n.element != unsafe { nil } && owner != n.element {
@@ -1744,9 +1751,7 @@ fn (mut p ParentNode) as_mut_node() &Node {
 }
 
 fn contains_named_namespace(selectors SelectorList) bool {
-	_ = selectors
-	// Stub for walking CSS::SelectorList and detecting named namespace qualified names.
-	return false
+	return selectors.contains_named_namespace
 }
 
 fn parse_selector(document &Document, selector_text string) ?SelectorList {
@@ -1760,6 +1765,11 @@ fn parse_selector(document &Document, selector_text string) ?SelectorList {
 			selectors: [CSSSelector{
 				text: selector_text
 			}]
+			contains_named_namespace: if hook.contains_named_namespace != unsafe { nil } {
+				hook.contains_named_namespace(hook.target, selector_text)
+			} else {
+				false
+			}
 		}
 	}
 	mut selectors := []CSSSelector{}
@@ -2186,8 +2196,7 @@ pub fn Range.create(document &Document) &Range {
 		start_container_: unsafe { &Node(document) }
 		end_container_: unsafe { &Node(document) }
 	}
-	mut mutable_document := unsafe { &Document(document) }
-	mutable_document.live_ranges_ << range
+	dom_live_ranges[u64(voidptr(range))] = range
 	return range
 }
 
@@ -2210,10 +2219,7 @@ pub fn Range.create_from_boundary_points(start_container &Node, start_offset int
 		end_container_: end_container
 		end_offset_: end_offset
 	}
-	mut document := unsafe { &Document(start_container.document()) }
-	if document != unsafe { nil } {
-		document.live_ranges_ << range
-	}
+	dom_live_ranges[u64(voidptr(range))] = range
 	return range
 }
 
@@ -2222,16 +2228,7 @@ pub fn Range.construct_impl() &Range {
 }
 
 pub fn (mut r Range) finalize() {
-	mut document := unsafe { &Document(r.start_container_.document()) }
-	if document == unsafe { nil } {
-		return
-	}
-	for index, live_range in document.live_ranges_ {
-		if live_range == &r {
-			document.live_ranges_.delete(index)
-			return
-		}
-	}
+	dom_live_ranges.delete(u64(voidptr(&r)))
 }
 
 pub fn (mut r Range) initialize() {
@@ -3268,7 +3265,7 @@ pub fn (r &Range) get_bounding_client_rect() DOMRect {
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-range-createcontextualfragment
 pub fn (r &Range) create_contextual_fragment(fragment string) !&DocumentFragment {
 	// 1. Let compliantString be the result of invoking the Get Trusted Type compliant string algorithm.
-	compliant_string := fragment
+	compliant_string := r.start_container_.document().trusted_types_compliant_html(fragment, 'range-create-contextual-fragment')!
 	// 2. Let node be this's start node.
 	node := r.start_container_
 	// 3. Let element be null.
@@ -3343,7 +3340,7 @@ pub fn (r &Range) contained_nodes() []&Node {
 }
 
 pub fn Range.live_ranges() []&Range {
-	return []
+	return dom_live_ranges.values()
 }
 
 // --- Position ---

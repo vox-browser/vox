@@ -44,7 +44,7 @@ pub:
 	value json2.Any = json2.null
 }
 
-pub type ScriptExecutor = fn (body string, arguments []json2.Any, async_ bool) !json2.Any
+pub type ScriptExecutor = fn(body string, arguments []json2.Any, async_ bool) !json2.Any
 
 pub fn execute_script(body string, arguments []json2.Any, executor ScriptExecutor) ExecutionResult {
 	value := executor(body, arguments, false) or {
@@ -98,22 +98,26 @@ pub fn (mut timer HeapTimer) start(timeout_ms u64) {
 	timer.running = true
 	timer.timeout_ms = timeout_ms
 	timer.elapsed_ms = 0
-	timer.fired = false
 }
 
 pub fn (mut timer HeapTimer) tick(elapsed_ms u64) bool {
-	if !timer.running { return false }
+	if !timer.running {
+		return false
+	}
 	timer.elapsed_ms += elapsed_ms
-	if timer.elapsed_ms < timer.timeout_ms { return false }
+	if timer.elapsed_ms < timer.timeout_ms {
+		return false
+	}
 	timer.running = false
 	timer.fired = true
 	return true
 }
 
 pub fn (mut timer HeapTimer) stop_and_fire_timeout_handler() bool {
-	if !timer.running { return false }
+	if !timer.running {
+		return false
+	}
 	timer.running = false
-	timer.fired = true
 	return true
 }
 

@@ -15,8 +15,7 @@ fn test_numeric_attribute_parsing() {
 
 fn test_sequences_points_and_viewbox() {
 	assert parse_number_sequence('1,2 3,-4')! == [1.0, 2.0, 3.0, -4.0]
-	assert parse_points('0,0 10,20') == [Point{ x: 0, y: 0 },
-		Point{ x: 10, y: 20 }]
+	assert parse_points('0,0 10,20') == [Point{ x: 0, y: 0 }, Point{ x: 10, y: 20 }]
 	assert parse_points('0 0 1') == [Point{ x: 0, y: 0 }]
 	assert parse_points('0 0 trailing') == [Point{ x: 0, y: 0 }]
 	assert parse_table_values('0 .25, 1') == [0.0, 0.25, 1.0]
@@ -24,8 +23,8 @@ fn test_sequences_points_and_viewbox() {
 	assert parse_table_values('+1 0').len == 0
 	assert parse_table_values('0,').len == 1
 	assert parse_viewbox('0 1 640 480') or { ViewBox{} } == ViewBox{
-		min_y:  1
-		width:  640
+		min_y: 1
+		width: 640
 		height: 480
 	}
 	assert parse_viewbox('0 0 -1 2') or { ViewBox{} }.width == -1

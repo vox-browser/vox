@@ -1,9 +1,9 @@
-# WebAudio module V translation — complete
+# WebAudio module V translation — upstream algorithm coverage reviewed
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebAudio`
 
 Translation workspace: `~/code/libweb_v/webaudio`
-Audited: 2026-08-29
+Audited: 2026-09-01
 
 All 26 upstream implementation units, all 28 headers, and all 25 IDL files were
 cross-audited and are represented. Audio device access, decoding, rendering threads, event-loop task
@@ -16,12 +16,12 @@ delivery, and media-element ownership remain explicit platform boundaries.
 | `AudioBuffer.cpp`, `AnalyserNode.cpp` | `buffer_analyser.v` |
 | `AudioBufferSourceNode.cpp`, `BiquadFilterNode.cpp`, `ChannelMergerNode.cpp`, `ChannelSplitterNode.cpp`, `ConstantSourceNode.cpp`, `DelayNode.cpp`, `DynamicsCompressorNode.cpp`, `GainNode.cpp`, `OscillatorNode.cpp`, `PeriodicWave.cpp`, `ScriptProcessorNode.cpp`, `StereoPannerNode.cpp` | `nodes.v` |
 | `PannerNode.cpp`, `OfflineAudioContext.cpp`, `OfflineAudioCompletionEvent.cpp` | `spatial_offline.v` |
-| public/inline constructor, accessor, overload, and internal algorithm surface | `upstream_entry_points.v` |
+| public/inline constructor, accessor, overload, and internal algorithm surface | `audio_algorithms.v` |
 | all 25 `*.idl` files | typed enums, option dictionaries, attributes, methods, event state, and constructors across the files above |
 
 | Upstream source area | `.cpp` files / LOC | `.h` files / LOC | `.idl` files / LOC | Implementation `.v` files / LOC | Test `.v` files / LOC | Status |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| `WebAudio/` | 26 / 3,649 | 28 / 1,656 | 25 / 570 | 6 / 2,330 | 6 / 392 | Complete |
+| `WebAudio/` | 26 / 3,649 | 28 / 1,656 | 25 / 570 | 6 implementation units | 6 test units | Reviewed; host boundaries below |
 
 The symbol-level audit accounts for all 341 implementations: 266 direct V
 owner/name matches, 7 documented language or shared-base consolidations, 45
@@ -46,11 +46,13 @@ produces the current placeholder buffer, and offline resume/suspend reject as
 unsupported. V nodes are values rather than upstream GC identities, so graph
 operations that need reverse-edge mutation accept both endpoints (for example,
 `connect_nodes` and `disconnect_nodes`); device/render-thread ownership and
-event-loop scheduling remain typed deterministic boundaries.
+event-loop scheduling remain typed deterministic boundaries. Those boundaries
+are not claims that audio device access, asynchronous HTML task delivery, or a
+rendering thread exists in the standalone V runtime.
 
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v_old -enable-globals test webaudio
+$ /Users/alex/code/v/v -enable-globals test webaudio
 Summary for all V _test.v files: 6 passed, 6 total.
 ```

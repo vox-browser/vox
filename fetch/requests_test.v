@@ -40,7 +40,7 @@ fn test_request_is_mutable_record() {
 	request.credentials_mode = .include
 	request.destination = .script
 	request.body = RequestBody{
-		kind:  .bytes
+		kind: .bytes
 		bytes: 'payload'.bytes()
 	}
 	assert request.method == 'POST'
@@ -56,11 +56,11 @@ fn test_request_classification_clone_range_and_strings() {
 	request.url_list = [dom.URL{'https://example.test/a'}, dom.URL{'https://example.test/b'}]
 	request.origin = RequestOrigin{
 		is_client: false
-		origin:    dom.Origin{'https://example.test'}
+		origin: dom.Origin{ value: 'https://example.test' }
 	}
 	assert request.is_subresource_request()
 	assert !request.is_navigation_request()
-	request.add_range_header(2, u64(5))!
+	request.add_range_header(2, u64(5))
 	assert request.header_list.get('Range')? == 'bytes=2-5'
 	clone := request.clone()
 	assert clone != request
@@ -78,7 +78,7 @@ fn test_request_origin_header_and_redirect_taint() {
 	request.method = 'POST'
 	request.origin = RequestOrigin{
 		is_client: false
-		origin:    dom.Origin{'https://example.test'}
+		origin: dom.Origin{ value: 'https://example.test' }
 	}
 	request.url_list = [dom.URL{'https://example.test/a'}]
 	request.referrer_policy = 'strict-origin-when-cross-origin'
@@ -90,4 +90,15 @@ fn test_request_origin_header_and_redirect_taint() {
 	request.url_list << dom.URL{'https://third.test/c'}
 	assert request.redirect_taint() == .cross_site
 	assert request.serialize_origin() == 'null'
+}
+
+fn test_redirect_taint_uses_request_origin_same_site_before_cross_site() {
+	mut request := Request.create()
+	request.origin = RequestOrigin{
+		is_client: false
+		origin: dom.Origin{ value: 'https://a.example.test' }
+	}
+	request.url_list = [dom.URL{'https://b.example.test/start'},
+		dom.URL{'https://elsewhere.test/end'}]
+	assert request.redirect_taint() == .same_site
 }

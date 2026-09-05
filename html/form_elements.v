@@ -28,9 +28,31 @@ fn form_control_selected_text_callback(element &dom.Element) ?string {
 	return none
 }
 
+fn form_control_input_events_target_callback(node &dom.Node) ?&dom.InputEventsTarget {
+	element := node.as_element() or { return none }
+	if !element.is_html_element() {
+		return none
+	}
+	if element.local_name() == 'input' {
+		input := unsafe { &dom.HTMLInputElement(element) }
+		model := HTMLInputElementModel.create(input)
+		if !model.selection_or_range_applies() {
+			return none
+		}
+		return unsafe { &dom.InputEventsTarget(model.text_control) }
+	}
+	if element.local_name() == 'textarea' {
+		textarea := unsafe { &dom.HTMLTextAreaElement(element) }
+		model := html_text_area_element_model_for_dom_element(textarea)
+		return unsafe { &dom.InputEventsTarget(model.text) }
+	}
+	return none
+}
+
 fn install_form_control_selected_text_callback(document &dom.Document) {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_form_control_selected_text_callback(form_control_selected_text_callback)
+	mutable_document.set_form_control_input_events_target_callback(form_control_input_events_target_callback)
 }
 
 @[heap]

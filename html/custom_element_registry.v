@@ -43,6 +43,7 @@ pub:
 	lifecycle_callbacks []string
 	disabled_features   []string
 	form_associated     bool
+	exception_reporter  ?dom.CustomElementExceptionReporter
 }
 
 @[heap]
@@ -164,6 +165,9 @@ pub fn (mut registry CustomElementRegistry) define(name string, constructor Cust
 		form_associated_: constructor.form_associated
 		disable_internals_: 'internals' in constructor.disabled_features
 		disable_shadow_: 'shadow' in constructor.disabled_features
+		constructor_id_: constructor.id
+		lifecycle_callbacks_: lifecycle_callbacks.clone()
+		exception_reporter_: constructor.exception_reporter
 	}
 	registration := &CustomElementRegistration{
 		definition: definition

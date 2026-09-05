@@ -21,8 +21,12 @@ pub type Path2DConstructorArgument = Path2D | string
 pub fn Path2D.construct_impl(path ?Path2DConstructorArgument) !&Path2D {
 	argument := path or { return Path2D.create() }
 	match argument {
-		Path2D { return Path2D.create_from_path(&argument) }
-		string { return Path2D.create_from_svg_path_data(argument) }
+		Path2D {
+			return Path2D.create_from_path(&argument)
+		}
+		string {
+			return Path2D.create_from_svg_path_data(argument)
+		}
 	}
 }
 
@@ -91,14 +95,11 @@ fn svg_path_to_canvas_gfx_path(path svg.Path) CanvasGfxPath {
 			}
 			.elliptical_arc {
 				next_point := svg_path_point(instruction.data, 5, last_point, instruction.absolute)
-				output.elliptical_arc_to(next_point, FloatSize{instruction.data[0], instruction.data[1]},
-					instruction.data[2] * math.pi / 180.0, instruction.data[3] != 0,
-					instruction.data[4] != 0)
+				output.elliptical_arc_to(next_point, FloatSize{instruction.data[0], instruction.data[1]}, instruction.data[2] * math.pi / 180.0, instruction.data[3] != 0, instruction.data[4] != 0)
 			}
 			.quadratic_bezier_curve {
 				clear_last_control_point = false
-				control_point := svg_path_point(instruction.data, 0, last_point,
-					instruction.absolute)
+				control_point := svg_path_point(instruction.data, 0, last_point, instruction.absolute)
 				end_point := svg_path_point(instruction.data, 2, last_point, instruction.absolute)
 				output.quadratic_bezier_curve_to(control_point, end_point)
 				previous_control_point = control_point
@@ -122,10 +123,8 @@ fn svg_path_to_canvas_gfx_path(path svg.Path) CanvasGfxPath {
 			}
 			.curve {
 				clear_last_control_point = false
-				control_point_1 := svg_path_point(instruction.data, 0, last_point,
-					instruction.absolute)
-				control_point_2 := svg_path_point(instruction.data, 2, last_point,
-					instruction.absolute)
+				control_point_1 := svg_path_point(instruction.data, 0, last_point, instruction.absolute)
+				control_point_2 := svg_path_point(instruction.data, 2, last_point, instruction.absolute)
 				end_point := svg_path_point(instruction.data, 4, last_point, instruction.absolute)
 				output.cubic_bezier_curve_to(control_point_1, control_point_2, end_point)
 				previous_control_point = control_point_2
@@ -143,8 +142,7 @@ fn svg_path_to_canvas_gfx_path(path svg.Path) CanvasGfxPath {
 				previous := previous_control_point or { last_point }
 				control_point_1 :=
 					FloatPoint{2 * last_point.x - previous.x, 2 * last_point.y - previous.y}
-				control_point_2 := svg_path_point(instruction.data, 0, last_point,
-					instruction.absolute)
+				control_point_2 := svg_path_point(instruction.data, 0, last_point, instruction.absolute)
 				end_point := svg_path_point(instruction.data, 2, last_point, instruction.absolute)
 				output.cubic_bezier_curve_to(control_point_1, control_point_2, end_point)
 				previous_control_point = control_point_2
@@ -156,6 +154,14 @@ fn svg_path_to_canvas_gfx_path(path svg.Path) CanvasGfxPath {
 		last_instruction = instruction.type_
 	}
 	return output
+}
+
+// SVGPathPaintable and SVGMaskable retain SVG::Path until display-list
+// recording. Expose the same SVG::Path::to_gfx_path() translation used by the
+// Path2D constructor so layout/painting do not serialize and parse path data a
+// second time merely to recover exact curves.
+pub fn canvas_gfx_path_from_svg_path(path svg.Path) CanvasGfxPath {
+	return svg_path_to_canvas_gfx_path(path)
 }
 
 // https://html.spec.whatwg.org/multipage/canvas.html#dom-path2d-addpath

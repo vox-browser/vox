@@ -55,6 +55,15 @@ V_INTERFACE = re.compile(
 )
 V_INTERFACE_METHOD = re.compile(r"(?m)^\s*(?P<name>[A-Za-z_]\w*)\s*\(")
 RUNTIME_ONLY_METHODS = {"initialize", "visit_edges", "finalize"}
+# These WebIDL dictionaries enter the standalone port as typed V values. Their
+# C++ from_value() methods only inspect JS objects and manufacture callback
+# wrappers, work which belongs to the embedding/bindings layer rather than the
+# typed Streams implementation.
+BINDING_RUNTIME_METHODS = {
+    ("Transformer", "from_value"),
+    ("UnderlyingSink", "from_value"),
+    ("UnderlyingSource", "from_value"),
+}
 NAMESPACE_TEMPLATE_CLASSES = {"IPC"}
 # C++ customization points whose behavior is supplied by V's built-in map,
 # equality, hashing, and formatting machinery rather than translated methods.
@@ -118,94 +127,26 @@ CONSOLIDATED_OWNER_ALIASES: dict[str, tuple[str, ...]] = {
     "DrawRepeatedImmutableBitmap": ("DrawRepeatedBitmap",),
     "FillRectWithRoundedCorners": ("FillRoundedRect",),
     "PaintScrollBar": ("PaintScrollbar",),
-    # Layout executes formatting contexts as typed free algorithms. These small
-    # state facades expose the upstream class entry points without duplicating
-    # the already-tested block/flex/grid/table algorithms.
-    "FormattingContext": ("FormattingContextState",),
-    "BlockFormattingContext": ("FormattingContextState",),
-    "FlexFormattingContext": ("FormattingContextState",),
-    "GridFormattingContext": ("FormattingContextState",),
-    "InlineFormattingContext": ("FormattingContextState",),
-    "TableFormattingContext": ("FormattingContextState",),
-    "SVGFormattingContext": ("FormattingContextState",),
-    "ReplacedWithChildrenFormattingContext": ("FormattingContextState",),
-    "Node": ("LayoutNodeState",),
-    "NodeWithStyle": ("LayoutNodeState",),
-    "NodeWithStyleAndBoxModelMetrics": ("LayoutNodeState",),
-    "Box": ("LayoutNodeState",),
-    "BlockContainer": ("LayoutNodeState",),
-    "InlineNode": ("LayoutNodeState",),
-    "BreakNode": ("LayoutNodeState",),
-    "Viewport": ("LayoutNodeState",),
-    "TextNode": ("LayoutNodeState",),
-    "ReplacedBox": ("LayoutNodeState",),
-    "NavigableContainerViewport": ("LayoutNodeState",),
-    "CheckBox": ("LayoutNodeState",),
-    "RadioButton": ("LayoutNodeState",),
-    "CanvasBox": ("LayoutNodeState",),
-    "ImageBox": ("LayoutNodeState",),
-    "ImageProvider": ("LayoutNodeState",),
-    "AudioBox": ("LayoutNodeState",),
-    "VideoBox": ("LayoutNodeState",),
-    "TextInputBox": ("LayoutNodeState",),
-    "TextAreaBox": ("LayoutNodeState",),
-    "FieldSetBox": ("LayoutNodeState",),
-    "LegendBox": ("LayoutNodeState",),
-    "TableWrapper": ("LayoutNodeState",),
-    "ListItemBox": ("LayoutNodeState",),
-    "ListItemMarkerBox": ("LayoutNodeState",),
-    "SVGBox": ("LayoutNodeState",),
-    "SVGGraphicsBox": ("LayoutNodeState",),
-    "SVGGeometryBox": ("LayoutNodeState",),
-    "SVGImageBox": ("LayoutNodeState",),
-    "SVGClipBox": ("LayoutNodeState",),
-    "SVGMaskBox": ("LayoutNodeState",),
-    "SVGPatternBox": ("LayoutNodeState",),
-    "SVGTextBox": ("LayoutNodeState",),
-    "SVGTextPathBox": ("LayoutNodeState",),
-    "SVGForeignObjectBox": ("LayoutNodeState",),
-    "SVGSVGBox": ("LayoutNodeState",),
-    "TreeBuilder": ("LayoutTreeBuilder",),
-    "GridItem": ("LayoutItemState",),
-    "FlexItem": ("LayoutItemState",),
-    "OccupationGrid": ("LayoutGridState",),
-    "TableGrid": ("LayoutGridState",),
-    "BorderConflictFinder": ("LayoutTableState",),
-    "GridTrack": ("LayoutTrackState",),
-    "FlexLine": ("LayoutFlexLineState",),
-    "ChunkIterator": ("TextNodeChunkIterator",),
-    "PagedStore": ("UsedValuesPagedStore",),
-    "BlockMarginState": ("LayoutMarginState",),
-    "FloatSideData": ("LayoutFloatSideState",),
-    "Item": ("InlineLevelItem",),
-    "UsedValues": ("UsedValuesFacade",),
-    "LayoutState": ("LayoutStateFacade",),
-    "LineBuilder": ("LayoutLineBuilderState",),
-    # CSS deliberately collapses a number of the upstream inheritance-only
-    # wrappers into stateful value records. Keep these aliases explicit so a
-    # symbol is credited only to the record that owns the translated behavior.
-    "ComputedValues": ("ComputedProperties", "CSSComputedValuesFacade"),
-    "InitialValues": ("ComputedProperties", "CSSInitialValuesFacade"),
-    "MutableComputedValues": ("MutableComputedValuesFacade",),
-    "Parser": ("RuleSelectorParser", "CSSParserFacade"),
-    "TokenStream": ("ParserTokenStream", "CSSTokenStreamFacade"),
-    "FontFace": ("FontFaceObject", "CSSFontFacade"),
-    "FontFaceSet": ("CSSFontFacade",),
-    "FontComputer": ("CSSFontFacade",),
-    "ParsedFontFace": ("CSSFontFacade",),
-    "CSSStyleDeclaration": ("CSSStyleProperties", "CSSRuleFacade"),
-    "CSSStyleProperties": ("CSSStyleProperties", "CSSRuleFacade"),
-    "CSSStyleSheet": ("CSSStyleSheet", "CSSRuleFacade"),
-    "StyleSheet": ("CSSStyleSheet", "CSSRuleFacade"),
-    "StyleSheetList": ("CSSRuleFacade",),
-    "CSSRuleList": ("CSSRuleList", "CSSRuleFacade"),
-    "CSSDescriptors": ("CSSRuleFacade",),
-    "CSSFontFeatureValuesMap": ("CSSRuleFacade",),
-    "MediaList": ("CSSRuleFacade",),
-    "StylePropertyMap": ("CSSRuleFacade",),
-    "StyleScope": ("CSSRuleFacade",),
-    "Subresource": ("CSSRuleFacade",),
-    "StateTransaction": ("CSSRuleFacade",),
+    # CSS collapses inheritance-only wrappers into the concrete translated
+    # records. Never point coverage at a synthetic facade: the named owner must
+    # execute the engine's real typed implementation.
+    "ComputedValues": ("ComputedProperties",),
+    "InitialValues": ("ComputedProperties",),
+    "MutableComputedValues": ("ComputedProperties",),
+    "Parser": ("Parser", "RuleSelectorParser"),
+    "TokenStream": ("ComponentValueStream", "ParserTokenStream"),
+    "FontFace": ("FontFaceObject",),
+    "CSSStyleDeclaration": ("CSSStyleProperties",),
+    "StyleSheet": ("CSSStyleSheet",),
+    # BooleanExpression's C++ subclass family is one tagged, typed tree in V.
+    # Evaluation, serialization, and debug dumping dispatch on `kind`; this is
+    # a representation consolidation, not a symbol-only facade.
+    "GeneralEnclosed": ("BooleanExpression",),
+    "BooleanNotExpression": ("BooleanExpression",),
+    "BooleanExpressionInParens": ("BooleanExpression",),
+    "BooleanAndExpression": ("BooleanExpression",),
+    "BooleanOrExpression": ("BooleanExpression",),
+    "ConstantBooleanExpression": ("BooleanExpression",),
     # SVG's Web-facing wrapper classes share compact value records and one
     # Element representation in the standalone port.
     "AttributeParser": ("Scanner",),
@@ -261,7 +202,7 @@ for _css_rule_owner in (
     "CSSNamespaceRule", "CSSNestedDeclarations", "CSSPageRule",
     "CSSPropertyRule", "CSSStyleRule", "CSSSupportsRule", "CSSFontFaceRule",
 ):
-    CONSOLIDATED_OWNER_ALIASES[_css_rule_owner] = ("CSSRule", "CSSRuleFacade")
+    CONSOLIDATED_OWNER_ALIASES[_css_rule_owner] = ("CSSRule",)
 
 for _css_calculation_owner in (
     "CalculationNode", "NumericCalculationNode", "RandomCalculationNode",
@@ -270,133 +211,17 @@ for _css_calculation_owner in (
     "Pow", "Sqrt", "Hypot", "Log", "Exp", "Mod", "Rem", "NonMathFunction",
     "CalculationResult", "CalculatedStyleValue",
 ):
-    CONSOLIDATED_OWNER_ALIASES[_css_calculation_owner] = ("CalculationNodeFacade",)
-
-CONSOLIDATED_OWNER_ALIASES["CalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["NumericCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["RandomCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["NegateCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["InvertCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["MinCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["MaxCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["ClampCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["RoundCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["SumCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["ProductCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["AbsCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["SignCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["SinCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["CosCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["TanCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["AsinCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["AcosCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["AtanCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["Atan2CalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["PowCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["SqrtCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["HypotCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["LogCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["ExpCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["ModCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["RemCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["NonMathFunctionCalculationNode"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["CalculationResult"] = ("CalculationNodeFacade",)
-CONSOLIDATED_OWNER_ALIASES["CalculatedStyleValue"] = ("CalculationNodeFacade",)
-
-for _css_value_owner in (
-    "PercentageOr", "CalculatedOr", "AngleOrCalculated", "FrequencyOrCalculated",
-    "LengthOrCalculated", "TimeOrCalculated", "MediaFeature",
-    "MediaFeatureValue", "SimpleSelector", "PseudoElementSelector", "Selector",
-    "SVGPaint", "ColumnCount", "ClipPathReference", "WillChange", "NumericType",
-    "BorderRadiusStyleValue", "ColorFunctionStyleValue",
-    "PendingSubstitutionStyleValue", "StringStyleValue", "URLStyleValue",
-    "UnresolvedStyleValue", "CSSStyleValue", "CSSTransformComponent", "Position",
-    "Containment", "ContainerType", "MaskReference", "TouchActionData",
-    "BorderRadiusData", "FontWeightRange", "OwnFontFaceKey", "Frequency",
-    "ComponentValue", "PropertyNameAndID", "HasResultCacheKeyTraits",
-    "StyleValueWithDefaultOperators", "ColorResolutionContext", "Supports",
-):
-    CONSOLIDATED_OWNER_ALIASES[_css_value_owner] = ("CSSValueFacade",)
-
-for _css_style_value_owner in (
-    "StyleValue", "AbstractImageStyleValue", "FitContentStyleValue",
-    "CustomIdentStyleValue", "ImageStyleValue", "AngleStyleValue", "Xywh", "Rect",
-    "Path", "ColorInterpolationMethodStyleValue", "ColorMixStyleValue",
-    "ColorSchemeStyleValue", "ContentStyleValue", "Function", "Blur", "HueRotate",
-    "FlexStyleValue", "FontStyleStyleValue", "FrequencyStyleValue",
-    "GuaranteedInvalidStyleValue", "IntegerStyleValue", "LCHColorStyleValue",
-    "OKLCHColorStyleValue", "OKLabColorStyleValue", "LabColorStyleValue",
-    "LengthStyleValue", "LightDarkStyleValue", "NumberStyleValue",
-    "PercentageStyleValue", "RGBColorStyleValue", "RatioStyleValue",
-    "ResolutionStyleValue", "TimeStyleValue", "TreeCountingFunctionStyleValue",
-    "HSL", "HWB", "LCHLike", "LabLike", "ColorStyleValue",
-    "LinearGradientStyleValue", "RadialGradientStyleValue", "ConicGradientStyleValue",
-):
-    CONSOLIDATED_OWNER_ALIASES[_css_style_value_owner] = ("CSSValueFacade",)
-
-for _css_syntax_owner in (
-    "TypeSyntaxNode", "IdentSyntaxNode", "MultiplierSyntaxNode",
-    "CommaSeparatedMultiplierSyntaxNode", "AlternativesSyntaxNode",
-    "UniversalSyntaxNode", "GeneralEnclosed", "Declaration", "FontFormat",
-    "FontTech", "BooleanExpression", "BooleanExpressionInParens",
-    "BooleanExpressionNot", "BooleanExpressionOperation",
-    "ConstantBooleanExpression", "Linear", "CubicBezier", "Steps", "Inset",
-    "Circle", "Ellipse", "Polygon", "CountingBloomFilter", "ErrorReporter",
-):
-    CONSOLIDATED_OWNER_ALIASES[_css_syntax_owner] = ("CSSValueFacade",)
-
-CONSOLIDATED_OWNER_ALIASES["Angle"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["ResolutionContext"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["FlexOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["IntegerOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["LengthOrAutoOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["NumberOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["PercentageOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["ResolutionOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["HSLColorStyleValue"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["HWBColorStyleValue"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["LCHLikeColorStyleValue"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["LabLikeColorStyleValue"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["BooleanNotExpression"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["BooleanAndExpression"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["BooleanOrExpression"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["Color"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["Screen"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["Client"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["Time"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["Length"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["UnknownPropertyError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["UnknownRuleError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["UnknownMediaFeatureError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["UnknownPseudoClassOrElementError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["InvalidPropertyError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["InvalidValueError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["InvalidRuleError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["InvalidQueryError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["InvalidSelectorError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["InvalidPseudoClassOrElementError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["InvalidRuleLocationError"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["AngleOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["FlexOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["FrequencyOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["IntegerOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["LengthOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["LengthOrAutoOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["NumberOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["PercentageOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["ResolutionOrCalculated"] = ("CSSValueFacade",)
-CONSOLIDATED_OWNER_ALIASES["TimeOrCalculated"] = ("CSSValueFacade",)
+    CONSOLIDATED_OWNER_ALIASES[_css_calculation_owner] = (
+        "CalcNode", "CalculatedStyleValue", "CalcResult", "NumericType"
+    )
 
 # Class-qualified implementations that must use a different V owner because
 # the C++ class name is reserved or the translated representation is shared.
-CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str], ...]] = {
+CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None], ...]] = {
     # Macro/variant constructor spellings are not valid V method identifiers;
     # they map to the equivalent tagged-value operations.
-    ("StyleValue", "__ENUMERATE_CSS_STYLE_VALUE_TYPE"): (("type_", "CSSValueFacade"),),
-    ("FitContentStyleValue", "StyleValue"): (("as_style_value", "CSSValueFacade"),),
-    ("URLStyleValue", "StyleValueWithDefaultOperators"): (("as_style_value", "CSSValueFacade"),),
-    ("ComponentValue", "Token"): (("as_style_value", "CSSValueFacade"),),
-    ("TouchActionData", "none"): (("none_", "CSSValueFacade"),),
+    ("StyleValue", "__ENUMERATE_CSS_STYLE_VALUE_TYPE"): (("type_", "StyleValue"),),
+    ("ComponentValue", "Token"): (("from_token", "ComponentValue"),),
     # `Error` is V's built-in error interface. The concrete protocol error is
     # therefore named WebDriverError while retaining both upstream factories.
     ("Error", "from_code"): (
@@ -444,6 +269,12 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str], ...]]
     ("SlottableMixin", "manual_slot_assignment"): (("manual_slot_assignment", "Node"),),
     ("SlottableMixin", "set_manual_slot_assignment"): (
         ("set_manual_slot_assignment", "Node"),
+    ),
+    # SourceSnapshotParams is an HTML type. Importing HTML from DOM would make
+    # the module graph cyclic, so the complete Document algorithm lives on the
+    # HTML side and takes its source Document explicitly.
+    ("Document", "snapshot_source_snapshot_params"): (
+        ("snapshot_source_snapshot_params", None),
     ),
     # PseudoElement is already the public CSS pseudo-element enum in V, so the
     # backing object uses the unambiguous PseudoElement_ name.
@@ -650,6 +481,36 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str], ...]]
         ("set_closed_promise_capability", "ReadableStreamDefaultReader"),
         ("set_byob_closed_promise_capability", "ReadableStreamBYOBReader"),
     ),
+    # Streams uses synchronously observable promise records. The private C++
+    # request callback classes therefore collapse into the pumps which inspect
+    # promise settlement and run the same chunk/close/error branches.
+    ("ReadLoopReadRequest", "on_chunk"): (("read_all_bytes", "ReadableStreamDefaultReader"),),
+    ("ReadLoopReadRequest", "on_close"): (("read_all_bytes", "ReadableStreamDefaultReader"),),
+    ("ReadLoopReadRequest", "on_error"): (("read_all_bytes", "ReadableStreamDefaultReader"),),
+    ("ReadableStreamDefaultReader", "read_a_chunk"): (("readable_stream_default_reader_read", None),),
+    ("ReadableStreamPipeTo", "process"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "set_abort_signal"): (("pipe_to", "ReadableStream"),),
+    ("ReadableStreamPipeTo", "shutdown_with_action"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "shutdown"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "read_chunk"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "write_chunk"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "write_unwritten_chunks"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "wait_for_pending_writes_to_complete"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "finish"): (("finish_pipe", None), ("fail_pipe", None)),
+    ("ReadableStreamPipeTo", "check_for_error_and_close_states"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "check_for_forward_errors"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "check_for_backward_errors"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "check_for_forward_close"): (("pump_readable_pipe", None),),
+    ("ReadableStreamPipeTo", "check_for_backward_close"): (("pump_readable_pipe", None),),
+    ("ReadableStreamTeeReadRequest", "on_chunk"): (("pump_readable_tee_source", None),),
+    ("ReadableStreamTeeReadRequest", "on_close"): (("close_tee_branches", None),),
+    ("ReadableStreamTeeReadRequest", "on_error"): (("error_tee_branches", None),),
+    ("ReadableByteStreamTeeDefaultReadRequest", "on_chunk"): (("pump_readable_byte_tee_source", None),),
+    ("ReadableByteStreamTeeDefaultReadRequest", "on_close"): (("close_tee_branches", None),),
+    ("ReadableByteStreamTeeDefaultReadRequest", "on_error"): (("error_tee_branches", None),),
+    ("ReadableByteStreamTeeBYOBReadRequest", "on_chunk"): (("pump_readable_byte_tee_source", None),),
+    ("ReadableByteStreamTeeBYOBReadRequest", "on_close"): (("close_byte_tee_branches_after_byob_read", None),),
+    ("ReadableByteStreamTeeBYOBReadRequest", "on_error"): (("error_tee_branches", None),),
 }
 
 # Some V modules deliberately consolidate private C++ helpers into a shared
@@ -874,7 +735,7 @@ def method_inventory(
                 disposition = "language-template-trait"
             elif method_name == class_name or method_name == "~" + class_name:
                 disposition = "language-constructor-or-destructor"
-            elif method_name in RUNTIME_ONLY_METHODS:
+            elif method_name in RUNTIME_ONLY_METHODS or (class_name, method_name) in BINDING_RUNTIME_METHODS:
                 disposition = "gc-or-binding-runtime"
             elif method_name.startswith("operator"):
                 disposition = "language-operator"
@@ -1094,7 +955,7 @@ def header_inline_inventory(
                                 disposition = "language-template-trait"
                             elif method_name == class_name or method_name == "~" + class_name:
                                 disposition = "language-constructor-or-destructor"
-                            elif method_name in RUNTIME_ONLY_METHODS:
+                            elif method_name in RUNTIME_ONLY_METHODS or (class_name, method_name) in BINDING_RUNTIME_METHODS:
                                 disposition = "gc-or-binding-runtime"
                             elif method_name.startswith("operator"):
                                 disposition = "language-operator"

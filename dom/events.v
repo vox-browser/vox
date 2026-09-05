@@ -22,9 +22,9 @@ module dom
 
 import time
 
-// The JS and WebIDL support types used by these C++ files are not translated in
-// this repository yet. These narrow stubs keep the DOM event algorithms present
-// and compilable without inventing a full JavaScript runtime.
+// DOM event algorithms use the translated callback and JS-value boundary types
+// below. Execution realms and arbitrary JavaScript objects remain runtime
+// boundaries; event state and callback return-value semantics stay typed here.
 
 pub type DOMHighResTimeStamp = f64
 
@@ -1209,6 +1209,7 @@ fn compile_raw_event_handler(event_target &EventTarget, name string, body string
 	_ = name
 	_ = body
 	return &CallbackType{
+		associated_window: event_target_relevant_window(event_target)
 		handle_event: fn (event &Event, current_target ?&EventTarget) JSValue {
 			_ = event
 			_ = current_target
@@ -1268,6 +1269,7 @@ pub fn (et &EventTarget) activate_event_handler(name string, event_handler Event
 	// 7. Set eventHandler's listener to listener.
 	event_target := unsafe { &EventTarget(et) }
 	callback := &CallbackType{
+		associated_window: event_target_relevant_window(event_target)
 		handle_event: fn [event_target, name] (event &Event, current_target ?&EventTarget) JSValue {
 			_ = current_target
 			event_target.process_event_handler_for_event(name, event) or {}
@@ -1327,7 +1329,11 @@ pub fn (et &EventTarget) process_event_handler_for_event(name string, event &Eve
 		if !return_value.is_nullish() {
 			mut mutable_event := unsafe { &Event(event) }
 			mutable_event.set_cancelled(true)
-			// BeforeUnloadEvent.returnValue is not represented in this DOM file set yet.
+			// If returnValue is still empty, convert and retain the callback's return value.
+			mut before_unload_event := unsafe { &BeforeUnloadEvent(event) }
+			if before_unload_event.return_value().len == 0 {
+				before_unload_event.set_return_value(return_value.to_string_value())
+			}
 		}
 	}
 
@@ -1384,10 +1390,7 @@ fn pointer_event_pointer_type(event &Event) string {
 }
 
 fn should_inline_script_attribute_be_blocked_by_content_security_policy(element &Element, value string) bool {
-	_ = element
-	_ = value
-	// Stub for ContentSecurityPolicy::should_elements_inline_type_behavior_be_blocked_by_content_security_policy(..., ScriptAttribute, ...).
-	return false
+	return element.document().should_block_inline_content(element, 'script-attribute', value)
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-attributes:concept-element-attributes-change-ext
@@ -1502,15 +1505,12 @@ fn event_target_relevant_window(target &EventTarget) ?&Window {
 	return none
 }
 
-fn event_listener_callback_global_window(listener &DOMEventListener, event &Event) ?&Window {
-	// C++: listener callback's associated Realm's global object.
-	// The V callback stub does not carry Realm/global metadata yet, so use the event current
-	// target's relevant Window as the named stand-in for that associated global.
-	_ = listener
-	if current_target := event.current_target() {
-		return event_target_relevant_window(current_target)
-	}
-	return none
+fn event_listener_callback_global_window(listener &DOMEventListener) ?&Window {
+	// C++ obtains this from listener.callback.callback's associated Realm. The
+	// WebIDL bridge stores that Realm's Window directly on CallbackType; it must
+	// not be inferred from currentTarget because callbacks can cross realms.
+	callback := listener.callback or { return none }
+	return callback.callback().associated_window
 }
 
 pub fn (et &EventTarget) has_event_listener(type_ string) bool {
@@ -1603,7 +1603,7 @@ pub fn EventDispatcher.inner_invoke(event &Event, listeners []&DOMEventListener,
 		}
 
 		// 6. Let global be listener callback's associated Realm's global object.
-		listener_global_window := event_listener_callback_global_window(listener, event)
+		listener_global_window := event_listener_callback_global_window(listener)
 
 		// 7. Let currentEvent be undefined.
 		mut current_event := ?&Event(none)

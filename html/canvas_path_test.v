@@ -73,8 +73,8 @@ fn test_round_rect_radius_count_validation() {
 	if _ := p.round_rect(0, 0, 10, 10, []) {
 		assert false, 'expected RangeError for empty radii'
 	}
-	too_many := [RoundRectRadius{1, 1}, RoundRectRadius{1, 1},
-		RoundRectRadius{1, 1}, RoundRectRadius{1, 1}, RoundRectRadius{1, 1}]
+	too_many := [RoundRectRadius{1, 1}, RoundRectRadius{1, 1}, RoundRectRadius{1, 1},
+		RoundRectRadius{1, 1}, RoundRectRadius{1, 1}]
 	if _ := p.round_rect(0, 0, 10, 10, too_many) {
 		assert false, 'expected RangeError for >4 radii'
 	}
@@ -117,6 +117,23 @@ fn test_affine_transform_map_and_inverse() {
 		d: 0
 	}
 	assert singular.inverse() == none
+}
+
+fn test_path_affine_transform_preserves_elliptical_arc_geometry() {
+	mut path := CanvasGfxPath{}
+	path.move_to(FloatPoint{10, 0})
+	path.elliptical_arc_to(FloatPoint{-10, 0}, FloatSize{10, 5}, 0, false, true)
+	transformed := path.copy_transformed(CanvasAffineTransform{
+		a: -2
+		d: 3
+		e: 4
+		f: 7
+	})
+	arc := transformed.segments()[1]
+	assert arc.point == FloatPoint{24, 7}
+	assert math.abs(arc.radii.width - 20.0) < 0.000001
+	assert math.abs(arc.radii.height - 15.0) < 0.000001
+	assert !arc.sweep // Reflection reverses path orientation.
 }
 
 fn test_path2d_copy_and_add_path() {
@@ -178,4 +195,13 @@ fn test_path2d_svg_path_data_constructor_translates_every_command() {
 
 fn test_path2d_svg_path_data_rejects_non_moveto_prefix() {
 	assert Path2D.create_from_svg_path_data('L10 20').path().is_empty()
+}
+
+fn test_first_contour_polyline_stops_before_later_subpaths() {
+	path := Path2D.create_from_svg_path_data('M0 0 L10 0 M100 100 C110 100 120 120 130 100').path()
+	first := canvas_gfx_path_first_contour_polyline(path)
+	assert first == [FloatPoint{0, 0}, FloatPoint{10, 0}]
+	all := canvas_gfx_path_flattened_polygons(path)
+	assert all.len >= 2
+	assert all[1].len > 2
 }

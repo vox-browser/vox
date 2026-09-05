@@ -1,0 +1,1715 @@
+module layout
+
+import css
+import dom
+import html
+import math
+import painting
+
+fn computed_paint_test_style(style string) &css.ComputedProperties {
+	document := dom.Document.create(dom.url_about_blank())
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	element.set_attribute_value('style', style)
+	mut computer := css.StyleComputer.new(document)
+	computed := computer.compute_style(dom.AbstractElement.new(element, none))
+	_ = css.resolve_computed_values_for_document(computed, document)
+	return computed
+}
+
+fn test_typed_paint_adapter_retains_composite_values_without_css_text_reparse() {
+	computed := computed_paint_test_style('color: rgb(1 2 3); background-color: currentColor; border-right: 7px dashed red; border-top-left-radius: 10% 20%; box-shadow: rgb(10 20 30) 2px 3px 4px 5px inset')
+	values := css.resolve_computed_values(computed)
+
+	// Poison the compatibility serialization. The adapter must consume the
+	// retained StyleValue objects, as the C++ paint path does.
+	for property in [css.PropertyID.background_color, .border_right_width, .border_right_style,
+		.border_top_left_radius, .box_shadow] {
+		value := computed.property(property, .yes) or { panic('missing computed property') }
+		mut mutable_value := unsafe { &dom.StyleValue(value) }
+		mutable_value.css_text = 'not-a-valid-${css.string_from_property_id(property)}'
+	}
+
+	current_color := css.Color{1, 2, 3, 255}
+	color_context := css.ColorResolutionContext{
+		current_color: current_color
+	}
+	assert computed_paint_color(computed, .background_color, color_context, current_color) == current_color
+	assert values.border_right().line_style == .dashed
+	assert math.abs(values.border_right().width.to_double() - 7.0) < 0.001
+	assert values.has_noninitial_border_radii()
+
+	radius := computed_corner_radius(values, .border_top_left_radius, 200, 100)
+	assert math.abs(radius.x - 20.0) < 0.001
+	assert math.abs(radius.y - 20.0) < 0.001
+
+	shadows := computed_box_shadows(values)
+	assert shadows.len == 1
+	assert math.abs(shadows[0].offset_x - 2.0) < 0.001
+	assert math.abs(shadows[0].offset_y - 3.0) < 0.001
+	assert math.abs(shadows[0].blur - 4.0) < 0.001
+	assert math.abs(shadows[0].spread - 5.0) < 0.001
+	assert shadows[0].inset
+	assert shadows[0].color == css.Color{10, 20, 30, 255}
+}
+
+fn test_typed_paint_adapter_uses_computed_enums_and_lengths() {
+	computed := computed_paint_test_style('appearance: none; outline: solid 7px; outline-offset: 3px; text-decoration-style: wavy; text-decoration-thickness: 25%; font-size: 20px; font-style: italic; font-family: monospace')
+
+	assert computed.appearance() == .none_
+	assert math.abs(computed_outline_width(css.resolve_computed_values(computed)) - 7.0) < 0.001
+	assert computed_text_decoration_style(computed) == 'wavy'
+	assert math.abs(computed_text_decoration_thickness(computed, 20) - 5.0) < 0.001
+	assert computed.font_slope() != 0
+	assert computed_font_is_monospace(computed)
+}
+
+fn test_css_filter_resolver_uses_retained_computed_operations() {
+	computed := computed_paint_test_style('color: rgb(9 10 11); filter: blur(3px) drop-shadow(2px -1px 4px currentColor) contrast(150%) hue-rotate(.25turn)')
+	values := css.resolve_computed_values(computed)
+	resolved := resolved_css_filter(values, css.ColorResolutionContext{
+		current_color: values.color()
+	})
+	assert resolved.operations.len == 4
+	assert resolved.operations[0] is painting.BlurFilter
+	blur := resolved.operations[0] as painting.BlurFilter
+	assert blur.radius == 3
+	assert resolved.operations[1] is painting.DropShadowFilter
+	shadow := resolved.operations[1] as painting.DropShadowFilter
+	assert shadow.offset_x == 2
+	assert shadow.offset_y == -1
+	assert shadow.radius == 4
+	assert shadow.color == painting.Color{9, 10, 11, 255}
+	assert resolved.operations[2] is painting.ColorFilter
+	color_filter := resolved.operations[2] as painting.ColorFilter
+	assert color_filter.operation == .contrast
+	assert color_filter.amount == 1.5
+	assert resolved.operations[3] is painting.HueRotateFilter
+	assert (resolved.operations[3] as painting.HueRotateFilter).angle_degrees == 90
+}
+
+fn test_css_filter_is_lowered_once_around_the_complete_subtree() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { filter: blur(3px) contrast(150%) } .part { width: 40px; height: 20px } </style><body><div id="filtered"><div class="part" style="background:red"></div><div class="part" style="background:blue"></div></div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	filter_begins := commands.filter(it.kind == 'begin_css_filter_layer')
+	filter_ends := commands.filter(it.kind == 'end_css_filter_layer')
+	assert filter_begins.len == 1
+	assert filter_ends.len == 1
+	filter := filter_begins[0].visual_layer.filter or { panic('missing retained filter') }
+	assert filter.operations.len == 2
+	// Gfx::Filter composition stores the outer (later CSS) operation first.
+	assert filter.operations[0].kind == 'color'
+	assert filter.operations[1].kind == 'blur'
+	mut inside_filter := false
+	mut filtered_parts := 0
+	for command in commands {
+		if command.kind == 'begin_css_filter_layer' {
+			inside_filter = true
+		} else if command.kind == 'end_css_filter_layer' {
+			inside_filter = false
+		} else if command.kind == 'fill_rect'
+			&& command.color in ['rgb(255 0 0)', 'rgb(0 0 255)'] {
+			assert inside_filter
+			filtered_parts++
+		}
+	}
+	assert filtered_parts == 2
+}
+
+fn test_same_document_svg_filter_url_retains_the_translated_graph() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; background: red; filter: contrast(150%) url(#soft) } feFlood { flood-color: rgb(12 34 56); flood-opacity: .25 }</style><body><svg width="0" height="0"><defs><filter id="soft"><feGaussianBlur in="SourceGraphic" stdDeviation="2 3" result="blurred"/><feOffset in="blurred" dx="4" dy="5" result="shifted"/><feFlood result="paint"/><feBlend in="shifted" in2="paint" mode="multiply"/></filter></defs></svg><div id="filtered"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
+	assert filter_commands.len == 1
+	filter := filter_commands[0].visual_layer.filter or { panic('missing retained filter') }
+	assert filter.operations.len == 1
+	assert filter.operations[0].kind == 'color'
+	assert filter.nodes.len == 4
+	assert filter.root_id or { -1 } == 3
+	assert filter.nodes[0].kind == 'blur'
+	assert filter.nodes[0].input_ids == [-1]
+	assert filter.nodes[0].parameters['radius_x'] == 2
+	assert filter.nodes[0].parameters['radius_y'] == 3
+	assert filter.nodes[1].kind == 'offset'
+	assert filter.nodes[1].input_ids == [0]
+	assert filter.nodes[2].kind == 'flood'
+	assert filter.nodes[2].color == painting.Color{12, 34, 56, 255}
+	assert filter.nodes[2].parameters['opacity'] == 0.25
+	assert filter.nodes[3].kind == 'blend'
+	assert filter.nodes[3].input_ids == [2, 1]
+	assert filter.nodes[3].string_parameters['mode'] == 'multiply'
+}
+
+fn test_svg_filter_content_generation_records_the_cpp_transparent_bounds_trigger() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; filter: url(#paint) }</style><body><svg width="0" height="0"><defs><filter id="paint"><feFlood flood-color="green"/></filter></defs></svg><div id="filtered"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	mut begin_index := -1
+	mut trigger_index := -1
+	mut end_index := -1
+	for index, command in commands {
+		if command.kind == 'begin_css_filter_layer' && begin_index < 0 {
+			begin_index = index
+		} else if command.kind == 'fill_rect_transparent' && trigger_index < 0 {
+			trigger_index = index
+		} else if command.kind == 'end_css_filter_layer' && end_index < 0 {
+			end_index = index
+		}
+	}
+	assert begin_index >= 0
+	assert trigger_index > begin_index
+	assert end_index > trigger_index
+	trigger := commands[trigger_index]
+	assert trigger.width == 80
+	assert trigger.height == 40
+	filter := commands[begin_index].visual_layer.filter or { panic('missing retained filter') }
+	bounds := filter.bounds or { panic('missing retained filter bounds') }
+	assert bounds.x == trigger.x
+	assert bounds.y == trigger.y
+	assert bounds.width == trigger.width
+	assert bounds.height == trigger.height
+}
+
+fn test_external_and_non_filter_css_urls_do_not_create_svg_graphs() {
+	document := html.parse_document('<!doctype html><style>#target { filter: url(https://example.test/filter.svg#remote) url(#not-filter) blur(2px) }</style><body><div id="not-filter"></div><div id="target">text</div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	filter_commands := display_list_commands(display_list).filter(it.kind == 'begin_css_filter_layer')
+	assert filter_commands.len == 1
+	filter := filter_commands[0].visual_layer.filter or { panic('missing retained filter') }
+	assert filter.operations.len == 1
+	assert filter.operations[0].kind == 'blur'
+	assert filter.nodes.len == 0
+	assert filter.root_id == none
+}
+
+fn test_css_filter_and_svg_mask_keep_visual_context_nesting_order() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { filter: saturate(50%) } svg { display:block }</style><body><div id="filtered"><svg width="120" height="80"><defs><mask id="fade" mask-type="alpha"><rect width="120" height="80" fill="white"/></mask></defs><g mask="url(#fade)"><rect width="120" height="80" fill="red"/></g></svg></div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	mut significant := []string{}
+	for command in display_list_commands(display_list) {
+		if command.kind in ['begin_css_filter_layer', 'begin_svg_mask_layer', 'draw_svg_path',
+			'end_svg_mask_layer', 'end_css_filter_layer'] {
+			significant << command.kind
+		}
+	}
+	assert significant == ['begin_css_filter_layer', 'begin_svg_mask_layer', 'draw_svg_path',
+		'end_svg_mask_layer', 'end_css_filter_layer']
+}
+
+fn test_typed_paint_adapter_resolves_gradients_from_retained_style_values() {
+	linear := computed_paint_test_style('background-image: linear-gradient(90deg, red 10%, blue 90%)')
+	linear_value := linear.property(.background_image, .yes) or { panic('missing gradient') }
+	mut mutable_linear_value := unsafe { &dom.StyleValue(linear_value) }
+	mutable_linear_value.css_text = 'none'
+	color_context := css.ColorResolutionContext{
+		current_color: css.Color{0, 0, 0, 255}
+	}
+	resolved_linear := computed_background_gradient(linear, 200, 100, color_context) or {
+		panic('linear gradient was reparsed from poisoned text')
+	}
+	assert resolved_linear.kind == 'linear'
+	assert math.abs(resolved_linear.x1) < 0.001
+	assert math.abs(resolved_linear.x2 - 1.0) < 0.001
+	assert resolved_linear.stops.len == 2
+	assert math.abs(resolved_linear.stops[0].offset - 0.1) < 0.001
+	assert math.abs(resolved_linear.stops[1].offset - 0.9) < 0.001
+	// ComputedProperties.cpp converts the default `background-size: auto` entries through
+	// LengthPercentageOrAuto::from_style_value; this must remain auto rather than reaching the
+	// length-only VERIFY_NOT_REACHED path.
+	layers := linear.background_layers()
+	assert layers.len == 1
+	assert layers[0].size_type == .length_percentage
+	assert layers[0].size_x.is_auto()
+	assert layers[0].size_y.is_auto()
+
+	radial := computed_paint_test_style('background-image: radial-gradient(circle closest-side at 25% 75%, red, blue)')
+	resolved_radial := computed_background_gradient(radial, 200, 100, color_context) or {
+		panic('missing radial gradient')
+	}
+	assert resolved_radial.kind == 'radial'
+	assert math.abs(resolved_radial.center_x - 0.25) < 0.001
+	assert math.abs(resolved_radial.center_y - 0.75) < 0.001
+	assert math.abs(resolved_radial.radius_x - 0.125) < 0.001
+	assert math.abs(resolved_radial.radius_y - 0.25) < 0.001
+
+	conic := computed_paint_test_style('background-image: conic-gradient(from 45deg at 20% 30%, red 0deg, blue 1turn)')
+	resolved_conic := computed_background_gradient(conic, 200, 100, color_context) or {
+		panic('missing conic gradient')
+	}
+	assert resolved_conic.kind == 'conic'
+	assert math.abs(resolved_conic.center_x - 0.2) < 0.001
+	assert math.abs(resolved_conic.center_y - 0.3) < 0.001
+	assert math.abs(resolved_conic.start_degrees - 45.0) < 0.001
+	assert math.abs(resolved_conic.stops[1].offset - 1.0) < 0.001
+}
+
+fn test_typed_gradient_sampler_retains_cpp_interpolation_method() {
+	color_context := css.ColorResolutionContext{
+		current_color: css.Color{0, 0, 0, 255}
+	}
+	linear := computed_paint_test_style('background-image: linear-gradient(in srgb-linear, red, blue)')
+	resolved_linear := computed_background_gradient(linear, 200, 100, color_context) or {
+		panic('missing linear gradient')
+	}
+	method := resolved_linear.interpolation_method or { panic('lost interpolation method') }
+	assert method == css.ColorInterpolationMethod(css.RectangularColorSpace.srgb_linear)
+	linear_midpoint := gradient_color_at(resolved_linear, 0.5)
+	assert math.abs(f64(linear_midpoint.r) - 188.0) <= 1
+	assert linear_midpoint.g == 0
+	assert math.abs(f64(linear_midpoint.b) - 188.0) <= 1
+
+	modern := computed_paint_test_style('background-image: radial-gradient(color(srgb 1 0 0), blue)')
+	resolved_modern := computed_background_gradient(modern, 200, 100, color_context) or {
+		panic('missing modern gradient')
+	}
+	modern_method := resolved_modern.interpolation_method or {
+		panic('lost modern default interpolation method')
+	}
+	assert modern_method == css.ColorInterpolationMethod(css.RectangularColorSpace.oklab)
+	modern_midpoint := gradient_color_at(resolved_modern, 0.5)
+	assert math.abs(f64(modern_midpoint.r) - 140.0) <= 1
+	assert math.abs(f64(modern_midpoint.g) - 83.0) <= 1
+	assert math.abs(f64(modern_midpoint.b) - 162.0) <= 1
+}
+
+fn test_portable_svg_preserves_or_samples_css_gradient_interpolation_space() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } div { width: 100px; height: 20px } #linear { background-image: linear-gradient(in srgb-linear, red, blue) } #oklab { background-image: linear-gradient(in oklab, red, blue) }</style><body><div id="linear"></div><div id="oklab"></div></body>')
+	root := layout_document_typed_in_viewport(document, 120, 80)
+	svg := root.render_svg(120, 80)
+	assert svg.contains('color-interpolation="linearRGB"')
+	assert svg.contains('color-interpolation="sRGB"')
+	// OKLab has no native SVG interpolation mode, so the portable backend
+	// materializes sampled sRGB stops, including the exact 50% midpoint.
+	assert svg.contains('offset="50%" stop-color="rgb(140 83 162)"')
+}
+
+fn test_typed_background_images_keep_gradient_url_layer_order_and_geometry() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#target {
+			width: 100px; height: 60px; padding: 10px; border: 5px solid;
+			border-radius: 20px / 12px;
+			background-image: linear-gradient(90deg, red, blue), url("back.png");
+			background-size: 25px auto, 12px 8px;
+			background-repeat: space no-repeat, no-repeat;
+			background-position: 75% 25%, 10% 20%;
+			background-origin: content-box, padding-box;
+			background-clip: padding-box, content-box;
+			background-attachment: local, fixed;
+			background-blend-mode: multiply, screen;
+		}
+	</style><body><div id="target"></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	target_element := document.get_element_by_id('target') or { panic('missing target') }
+	target := root.find_box(i64(target_element.as_node().unique_id())) or {
+		panic('missing target box')
+	}
+	assert target.background_images.len == 2
+	assert target.background_images[0].gradient_source != none
+	assert target.background_images[0].url == ''
+	assert target.background_images[1].gradient_source == none
+	assert target.background_images[1].url.ends_with('back.png')
+
+	commands := target.paint_commands()
+	background_commands := commands.filter(it.kind in ['fill_gradient', 'draw_background_image'])
+	assert background_commands.len == 2
+	// CSS stores image layers front-to-back; BackgroundPainting paints them back-to-front.
+	assert background_commands[0].kind == 'draw_background_image'
+	assert background_commands[1].kind == 'fill_gradient'
+	gradient_command := background_commands[1]
+	assert gradient_command.gradient_background_layer
+	assert gradient_command.width == 100
+	assert gradient_command.height == 60
+	assert gradient_command.image_clip_width == 120
+	assert gradient_command.image_clip_height == 80
+	assert gradient_command.image_attachment == 'local'
+	assert gradient_command.background_blend_mode == .multiply
+	gradient_layer := gradient_command.image_computed_layer or {
+		panic('gradient lost its typed BackgroundLayerData')
+	}
+	assert gradient_layer.repeat_x == .space
+	assert gradient_layer.repeat_y == .no_repeat
+	assert gradient_layer.origin == .content_box
+	assert gradient_layer.clip == .padding_box
+	gradient := gradient_command.gradient or { panic('gradient was not resolved for its tile') }
+	assert math.abs(gradient.x1) < 0.001
+	assert math.abs(gradient.x2 - 1.0) < 0.001
+	gradient_tiles := resolved_background_gradient_tiles(gradient_command)
+	// The padding-box clip extends one tile beyond each side of the content-box positioning area.
+	assert gradient_tiles.len == 6
+	assert gradient_tiles[0].width == 25
+	assert gradient_tiles[0].height == 60
+
+	assert background_commands[0].background_blend_mode == .screen
+	assert background_commands[0].image_clip_width == 100
+	assert background_commands[0].image_clip_height == 60
+	svg := target.render_svg(160, 120)
+	assert svg.contains('style="mix-blend-mode:multiply"')
+	assert svg.contains('style="mix-blend-mode:screen"')
+	assert svg.contains('<g style="isolation:isolate">')
+	assert svg.contains('<clipPath id="gradient-clip')
+}
+
+fn test_typed_background_clip_text_reaches_the_group_mask() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 180px; height: 50px; color: transparent; font-size: 24px; background-color: red; background-image: linear-gradient(90deg, yellow, blue); background-clip: text }</style><body><div id="target">Clipped words</div></body>')
+	root := layout_document_typed_in_viewport(document, 240, 100)
+	target_element := document.get_element_by_id('target') or { panic('missing target') }
+	target := root.find_box(i64(target_element.as_node().unique_id())) or {
+		panic('missing target box')
+	}
+	assert target.background_color_clip == 'text'
+	commands := target.paint_commands()
+	begin_commands := commands.filter(it.kind == 'begin_background_text_clip')
+	assert begin_commands.len == 1
+	assert begin_commands[0].text_clip_runs.len == 1
+	assert begin_commands[0].text_clip_runs[0].text == 'Clipped words'
+	assert commands.filter(it.kind == 'end_background_text_clip').len == 1
+	assert target.render_svg(240, 100).contains('<g mask="url(#background-text-mask')
+}
+
+fn test_body_background_is_propagated_to_canvas_and_not_painted_twice() {
+	document := html.parse_document('<!doctype html><style>html { background: transparent } body { margin: 20px; width: 100px; height: 40px; background: rgb(12 34 56) }</style><body id="body"></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	body := document.get_element_by_id('body') or { panic('missing body') }
+	body_box := root.find_box(i64(body.as_node().unique_id())) or { panic('missing body box') }
+
+	assert root.paints_canvas_background
+	assert root.background_color == css.Color{12, 34, 56, 255}
+	assert document.background_color() == dom.Color{12, 34, 56, 255}
+	assert body_box.skip_background_paint
+	fills := root.paint_commands().filter(it.kind == 'fill_rect' && it.color == 'rgb(12 34 56)')
+	assert fills.len == 1
+	assert fills[0].x == 0
+	assert fills[0].y == 0
+	assert fills[0].width == 320
+	assert fills[0].height == 200
+}
+
+fn test_containment_disables_body_background_propagation() {
+	document := html.parse_document('<!doctype html><style>html { background: transparent } body { contain: paint; margin: 20px; width: 100px; height: 40px; background: rgb(12 34 56) }</style><body id="body"></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	body := document.get_element_by_id('body') or { panic('missing body') }
+	body_box := root.find_box(i64(body.as_node().unique_id())) or { panic('missing body box') }
+
+	assert root.background_color.a == 0
+	assert !body_box.skip_background_paint
+	fills := root.paint_commands().filter(it.kind == 'fill_rect' && it.color == 'rgb(12 34 56)')
+	assert fills.len == 1
+	assert fills[0].x != 0 || fills[0].width != 320
+}
+
+fn test_body_background_layers_are_propagated_to_root_canvas() {
+	document := html.parse_document('<!doctype html><style>html { background: transparent } body { margin: 20px; width: 100px; height: 40px; background-image: linear-gradient(red, blue); image-rendering: pixelated }</style><body id="body"></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	body := document.get_element_by_id('body') or { panic('missing body') }
+	body_box := root.find_box(i64(body.as_node().unique_id())) or { panic('missing body box') }
+
+	assert body_box.skip_background_paint
+	assert root.background_gradient != none
+	gradients := root.paint_commands().filter(it.kind == 'fill_gradient')
+	assert gradients.len == 1
+	assert gradients[0].x == 0
+	assert gradients[0].y == 0
+	assert gradients[0].width == 320
+	assert gradients[0].height == root.border_box().height
+	root_tiles := resolved_background_gradient_tiles(gradients[0])
+	assert root_tiles.len > 1
+	assert root_tiles.last().bottom() >= 200
+
+	// Document's painting helpers cross the DOM -> CSS dependency boundary but
+	// must expose the same retained typed values as the body Layout::Box.
+	dom_layers := document.background_layers() or { panic('missing document background layers') }
+	assert dom_layers.len == 1
+	typed_layer := css.background_layer_from_dom(dom_layers[0]) or {
+		panic('background layer was not retained as typed CSS data')
+	}
+	assert typed_layer.image.contains('linear-gradient')
+	assert document.background_image_rendering() == .pixelated
+}
+
+fn test_root_background_layer_prevents_body_propagation() {
+	document := html.parse_document('<!doctype html><style>html { background-image: linear-gradient(black, white) } body { margin: 20px; width: 100px; height: 40px; background: rgb(12 34 56) }</style><body id="body"></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	body := document.get_element_by_id('body') or { panic('missing body') }
+	body_box := root.find_box(i64(body.as_node().unique_id())) or { panic('missing body box') }
+
+	assert !body_box.skip_background_paint
+	gradients := root.paint_commands().filter(it.kind == 'fill_gradient')
+	assert gradients.len == 1
+	assert gradients[0].width == 320
+	fills := root.paint_commands().filter(it.kind == 'fill_rect' && it.color == 'rgb(12 34 56)')
+	assert fills.len == 1
+	assert fills[0].x != 0 || fills[0].width != 320
+}
+
+fn test_typed_paint_adapter_composes_nested_transforms_while_descending() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 }
+		#outer { transform:translateX(10px); transform-origin:0 0 }
+		#middle { transform:translateY(20px); transform-origin:0 0 }
+		#inner { width:20px; height:10px; transform:scale(2); transform-origin:0 0 }
+	</style><body><div id="outer"><div id="middle"><div id="inner"></div></div></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	outer_element := document.get_element_by_id('outer') or { panic('missing outer') }
+	middle_element := document.get_element_by_id('middle') or { panic('missing middle') }
+	inner_element := document.get_element_by_id('inner') or { panic('missing inner') }
+	outer := root.find_box(i64(outer_element.as_node().unique_id())) or {
+		panic('missing outer box')
+	}
+	middle := root.find_box(i64(middle_element.as_node().unique_id())) or {
+		panic('missing middle box')
+	}
+	inner := root.find_box(i64(inner_element.as_node().unique_id())) or {
+		panic('missing inner box')
+	}
+	assert outer.paint_transform == [f64(1), 0, 0, 1, 10, 0]!
+	assert middle.paint_transform == [f64(1), 0, 0, 1, 10, 20]!
+	assert inner.paint_transform == [f64(2), 0, 0, 2, 10, 20]!
+}
+
+fn test_typed_paint_adapter_preserves_large_committed_text_fragment() {
+	text := ('word '.repeat(2048)).trim_space()
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #text { white-space: nowrap }</style><body><p id="text">${text}</p></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	element := document.get_element_by_id('text') or { panic('missing text element') }
+	paragraph := root.find_box(i64(element.as_node().unique_id())) or {
+		panic('missing text box')
+	}
+	assert paragraph.lines.len == 1
+	assert paragraph.lines[0].fragments.len == 1
+	assert paragraph.lines[0].fragments[0].text == text
+	draws := root.paint_commands().filter(it.kind == 'draw_text' && it.text == text)
+	assert draws.len == 1
+}
+
+fn test_document_viewport_paintable_records_and_hit_tests_committed_layout() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { position: relative; z-index: 2; width: 120px; height: 60px; background: red }</style><body><div id="target"></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	target := document.get_element_by_id('target') or { panic('missing target') }
+
+	viewport := document.layout_node() or { panic('missing retained layout viewport') }
+	assert viewport.root_layout_node() != none
+	viewport_paintable := document.paintable() or { panic('missing viewport paintable') }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	assert commands.len == display_list.command_count()
+	assert commands.len == root.paint_commands().len
+	assert commands.any(it.kind == 'fill_rect' && it.color == 'rgb(255 0 0)')
+
+	hit := mutable_document.element_from_point(10, 10) or { panic('missing hit') }
+	assert hit == target
+	hits := mutable_document.elements_from_point(10, 10)
+	assert hits.len >= 1
+	assert hits[0] == target
+	viewport_paintable.build_stacking_context_tree_if_needed()
+	stacking_context := viewport_paintable.stacking_context() or {
+		panic('missing stacking context')
+	}
+	dump_text := stacking_context.dump()
+	assert dump_text.contains('SC for')
+	assert dump_text.contains(target.as_node().debug_description())
+}
+
+fn test_document_display_list_retains_one_stacking_plan_and_command_store() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } .front { position: relative; z-index: 2 }</style><body><div id="back">back</div><div id="front" class="front">front</div></body>')
+	_ := layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	result := document_layout_result(document) or { panic('missing layout result') }
+	assert result.stacking_context_tree_is_valid
+	assert result.paint_order.len > 0
+	assert result.paint_steps.len > result.paint_order.len
+	assert result.hit_test_order.len == result.paint_order.len
+	assert result.paint_phase_cache_valid
+	assert result.paint_phase_commands.len == result.paint_order.len * compatibility_paint_phase_count
+	assert result.paint_phase_entry_valid.len == result.paint_order.len
+	assert result.paint_phase_entry_valid.all(it)
+	for index, entry in result.paint_order {
+		assert result.hit_test_order[index] == entry.box
+	}
+
+	first_commands := display_list_commands(display_list)
+	second_commands := display_list_commands(display_list)
+	assert first_commands.len > 0
+	assert first_commands.data == second_commands.data
+	paint_order_data := result.paint_order.data
+	paint_steps_data := result.paint_steps.data
+	paint_phase_commands_data := result.paint_phase_commands.data
+	paintable := document.paintable_box() or { panic('missing viewport paintable') }
+
+	// Document::set_needs_repaint() invalidates the assembled display list, not
+	// the source-shaped stacking tree or any PaintableBox phase cache.
+	mutable_document.set_needs_repaint()
+	assert mutable_document.cached_display_list() == none
+	_ = mutable_document.record_display_list() or { panic('missing repainted display list') }
+	assert result.paint_order.data == paint_order_data
+	assert result.paint_steps.data == paint_steps_data
+	assert result.paint_phase_commands.data == paint_phase_commands_data
+	assert result.paint_phase_entry_valid.all(it)
+
+	// PaintableBox::set_needs_repaint() invalidates that box's phase vectors and
+	// its anonymous children before forwarding to Document. The viewport is the
+	// root paintable in this module-cycle bridge.
+	paintable.set_needs_repaint()
+	mut root_entry_index := -1
+	for index, entry in result.paint_order {
+		if entry.box == &result.paint_tree {
+			root_entry_index = index
+			break
+		}
+	}
+	assert root_entry_index >= 0
+	assert !result.paint_phase_entry_valid[root_entry_index]
+	_ = mutable_document.record_display_list() or { panic('missing box-invalidated display list') }
+	assert result.paint_phase_entry_valid.all(it)
+	assert result.paint_phase_commands.data == paint_phase_commands_data
+
+	// Node::set_needs_repaint() reaches the concrete child PaintableBox cache,
+	// not just the viewport bridge. Other retained paintables stay valid.
+	front := document.get_element_by_id('front') or { panic('missing front element') }
+	mut front_paintable := front.paintable_box() or { panic('missing front paintable') }
+	mut front_entry_index := -1
+	mut containing_block_entry_index := -1
+	front_layout_node := unsafe { &Node(front_paintable.layout_handle) }
+	front_containing_block := front_layout_node.containing_block() or {
+		panic('missing front containing block')
+	}
+	front_containing_block_handle := voidptr(unsafe { &Node(front_containing_block) })
+	for index, entry in result.paint_order {
+		if entry.box.layout_handle == front_paintable.layout_handle {
+			front_entry_index = index
+		}
+		if entry.box.layout_handle == front_containing_block_handle {
+			containing_block_entry_index = index
+		}
+	}
+	assert front_entry_index >= 0
+	assert containing_block_entry_index >= 0
+	front_paintable.set_needs_repaint(.yes)
+	assert mutable_document.cached_display_list() == none
+	assert !result.paint_phase_entry_valid[front_entry_index]
+	assert !result.paint_phase_entry_valid[containing_block_entry_index]
+	assert result.paint_phase_entry_valid[root_entry_index]
+	_ = mutable_document.record_display_list() or { panic('missing child-invalidated display list') }
+	assert result.paint_phase_entry_valid.all(it)
+	assert result.paint_phase_commands.data == paint_phase_commands_data
+
+	// The explicit full-cache path discards every phase bucket. The following
+	// recording reconstructs them from the retained paintables.
+	paintable.invalidate_all_paint_caches()
+	assert !result.paint_phase_cache_valid
+	assert result.paint_phase_commands.len == 0
+	assert result.paint_phase_entry_valid.len == 0
+	mutable_document.set_needs_repaint()
+	_ = mutable_document.record_display_list() or { panic('missing uncached display list') }
+	assert result.paint_phase_cache_valid
+	assert result.paint_phase_commands.len == result.paint_order.len * compatibility_paint_phase_count
+}
+
+fn test_document_hit_testing_reuses_paint_order_and_maps_transforms_to_local_space() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#under { position: absolute; left: 0; top: 0; z-index: 1; width: 20px; height: 20px; transform: translateX(100px); transform-origin: 0 0 }
+		#cover { position: absolute; left: 100px; top: 0; z-index: 2; width: 20px; height: 20px; pointer-events: none }
+		#flat { position: absolute; left: 100px; top: 0; z-index: 3; width: 20px; height: 20px; transform: matrix(0, 0, 0, 0, 100, 0); transform-origin: 0 0 }
+	</style><body><div id="under"></div><div id="cover"></div><div id="flat"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	under := document.get_element_by_id('under') or { panic('missing under') }
+	result := document_layout_result(document) or { panic('missing layout result') }
+	assert result.hit_test_order.len == 0
+
+	mut mutable_document := unsafe { &dom.Document(document) }
+	hit := mutable_document.element_from_point(105, 10) or { panic('missing transformed hit') }
+	assert hit.as_node().unique_id() == under.as_node().unique_id()
+	assert result.hit_test_order.len > 0
+	retained_count := result.hit_test_order.len
+	second_hit := mutable_document.element_from_point(105, 10) or { panic('missing repeated hit') }
+	assert second_hit.as_node().unique_id() == under.as_node().unique_id()
+	assert result.hit_test_order.len == retained_count
+
+	mutable_document.invalidate_stacking_context_tree()
+	assert result.hit_test_order.len == 0
+	rebuilt_hit := mutable_document.element_from_point(105, 10) or { panic('missing rebuilt hit') }
+	assert rebuilt_hit.as_node().unique_id() == under.as_node().unique_id()
+	assert result.hit_test_order.len == retained_count
+}
+
+fn test_typed_paint_adapter_transports_custom_scrollbar_and_resizer_overlay() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto; resize: both; direction: rtl; scrollbar-color: rgb(1 2 3) rgb(4 5 6) } #content { height: 200px }</style><body><div id="scroller"><div id="content"></div></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
+	box := root.find_box(i64(scroller.as_node().unique_id())) or { panic('missing scroller box') }
+	overlay := box.overlay or { panic('missing overlay transport') }
+	assert !overlay.can_scroll_horizontally
+	assert overlay.can_scroll_vertically
+	assert overlay.has_resizer
+	assert overlay.chrome_mirrored
+	assert !overlay.default_scrollbar_colors
+	assert overlay.scrollbar_thumb_color == css.Color{1, 2, 3, 255}
+	assert overlay.scrollbar_track_color == css.Color{4, 5, 6, 255}
+
+	commands := root.paint_commands()
+	thumbs := commands.filter(it.kind == 'fill_rounded_rect' && it.color == css.Color{1, 2, 3, 255}.serialize())
+	assert thumbs.len == 1
+	assert math.abs(thumbs[0].x - 2.0) < 0.001
+	assert commands.filter(it.kind == 'draw_line').len == 8
+
+	mut paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
+	paintable.set_scroll_offset(dom.CSSPixelPoint_{
+		y_: 30
+	})
+	moved_thumbs := root.paint_commands().filter(it.kind == 'fill_rounded_rect' && it.color == css.Color{1, 2, 3, 255}.serialize())
+	assert moved_thumbs.len == 1
+	assert moved_thumbs[0].y > thumbs[0].y
+}
+
+fn test_element_scroll_replays_retained_commands_through_live_visual_context() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto; background: rgb(9 8 7) } #spacer { height: 80px } #target { height: 20px; background: rgb(1 2 3) }</style><body><div id="scroller"><div id="spacer"></div><div id="target"></div></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	initial_display_list := mutable_document.record_display_list() or {
+		panic('missing initial display list')
+	}
+	initial_commands := display_list_commands(initial_display_list)
+	target_color := css.Color{1, 2, 3, 255}.serialize()
+	initial_target_commands := initial_commands.filter(it.kind == 'fill_rect'
+		&& it.color == target_color)
+	assert initial_target_commands.len == 1
+	assert initial_target_commands[0].transform[5] == 0
+	assert initial_target_commands[0].has_clip
+	assert initial_target_commands[0].clip_width == 100
+	assert initial_target_commands[0].clip_height == 50
+
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	initial_hit := mutable_document.element_from_point(10, 85) or { panic('missing initial hit') }
+	assert initial_hit.as_node().unique_id() != target.as_node().unique_id()
+
+	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
+	mut paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
+	result := document_layout_result(document) or { panic('missing layout result') }
+	retained_command_count := result.paint_phase_command_count
+	assert paintable.could_be_scrolled_by_wheel_event()
+	assert !paintable.could_be_scrolled_horizontally_by_wheel_event()
+	assert paintable.could_be_scrolled_vertically_by_wheel_event()
+	assert paintable.handle_mousewheel(0, 70)
+	// Once clamped at the edge this scroller declines the wheel delta, allowing
+	// the containing-block walk to offer it to an ancestor.
+	assert !paintable.handle_mousewheel(0, 70)
+	assert paintable.scroll_offset().y() == 50
+	assert scroller.el_scroll_offset().y() == 50
+	assert document.document_pending_scroll_events().len == 1
+	assert mutable_document.cached_display_list() == none
+	assert result.paint_phase_cache_valid
+
+	scrolled_display_list := mutable_document.record_display_list() or {
+		panic('missing scrolled display list')
+	}
+	scrolled_commands := display_list_commands(scrolled_display_list)
+	scrolled_target_commands := scrolled_commands.filter(it.kind == 'fill_rect'
+		&& it.color == target_color)
+	assert scrolled_target_commands.len == 1
+	assert scrolled_target_commands[0].transform[5] == -50
+	assert result.paint_phase_command_count == retained_command_count
+	scrolled_hit := mutable_document.element_from_point(10, 35) or { panic('missing scrolled hit') }
+	assert scrolled_hit.as_node().unique_id() == target.as_node().unique_id()
+}
+
+fn test_overflow_hidden_allows_programmatic_scroll_but_declines_wheel_scroll() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: hidden } #content { height: 100px }</style><body><div id="scroller"><div id="content"></div></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
+	mut paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
+	assert !paintable.could_be_scrolled_by_wheel_event()
+	assert !paintable.handle_mousewheel(0, 20)
+	assert paintable.set_scroll_offset(dom.CSSPixelPoint_{ y_: 20 })
+	assert paintable.scroll_offset().y() == 20
+}
+
+fn test_retained_commands_preserve_nested_rounded_overflow_clip_nodes() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #outer { width: 100px; height: 80px; overflow: hidden; border-radius: 30px / 20px } #inner { width: 80px; height: 60px; overflow: hidden; border-radius: 10px / 6px; transform: translate(5px, 7px); transform-origin: 0 0 } #target { width: 120px; height: 120px; background: rgb(71 72 73) }</style><body><div id="outer"><div id="inner"><div id="target"></div></div></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	target_color := css.Color{71, 72, 73, 255}.serialize()
+	target_commands := display_list_commands(display_list).filter(it.kind == 'fill_rect'
+		&& it.color == target_color)
+	assert target_commands.len == 1
+	command := target_commands[0]
+	assert command.has_clip
+	assert command.clip_list != unsafe { nil }
+	assert command.clip_list.items.len == 2
+	assert command.clip_list.items[0].rect.width == 100
+	assert command.clip_list.items[0].rect.height == 80
+	assert command.clip_list.items[0].corner_radii.top_left == CornerRadius{30, 20}
+	assert command.clip_list.items[1].rect.width == 80
+	assert command.clip_list.items[1].rect.height == 60
+	assert command.clip_list.items[1].corner_radii.top_left == CornerRadius{10, 6}
+	assert command.clip_list.items[1].transform == [f64(1), 0, 0, 1, 5, 7]!
+
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	clipped_corner_hit := mutable_document.element_from_point(1, 1) or {
+		panic('missing corner fallback hit')
+	}
+	assert clipped_corner_hit.as_node().unique_id() != target.as_node().unique_id()
+	inside_hit := mutable_document.element_from_point(50, 40) or { panic('missing inside hit') }
+	assert inside_hit.as_node().unique_id() == target.as_node().unique_id()
+}
+
+fn test_basic_shape_clip_path_retains_curves_fill_rule_and_hit_testing() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 100px; height: 100px; background: rgb(81 82 83); clip-path: path(evenodd, "M 0 0 H 100 V 100 H 0 Z M 25 25 H 75 V 75 H 25 Z") }</style><body><div id="target"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	target_color := css.Color{81, 82, 83, 255}.serialize()
+	target_commands := display_list_commands(display_list).filter(it.kind == 'fill_rect'
+		&& it.color == target_color)
+	assert target_commands.len == 1
+	command := target_commands[0]
+	assert command.has_clip
+	assert command.clip_list != unsafe { nil }
+	assert command.clip_list.items.len == 1
+	clip := command.clip_list.items[0]
+	assert clip.is_path
+	assert clip.path_even_odd
+	assert clip.path_data.len == 10 * compatibility_clip_path_segment_stride
+	assert clip.path_data[0] == 0 // move_to
+	assert clip.path_data[compatibility_clip_path_segment_stride] == 1 // line_to
+
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	outer_hit := mutable_document.element_from_point(10, 10) or { panic('missing outer hit') }
+	assert outer_hit.as_node().unique_id() == target.as_node().unique_id()
+	hole_hit := mutable_document.element_from_point(50, 50) or {
+		panic('missing hole fallback hit')
+	}
+	assert hole_hit.as_node().unique_id() != target.as_node().unique_id()
+}
+
+fn test_circle_clip_path_retains_endpoint_arcs() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 100px; height: 100px; background: rgb(91 92 93); clip-path: circle(40px at 50px 50px) }</style><body><div id="target"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	target_color := css.Color{91, 92, 93, 255}.serialize()
+	commands := display_list_commands(display_list).filter(it.kind == 'fill_rect'
+		&& it.color == target_color)
+	assert commands.len == 1
+	clip := commands[0].clip_list.items[0]
+	assert clip.is_path
+	assert clip.path_data.len == 3 * compatibility_clip_path_segment_stride
+	assert clip.path_data[compatibility_clip_path_segment_stride] == 4 // elliptical_arc_to
+	assert clip.path_data[compatibility_clip_path_segment_stride * 2] == 4
+}
+
+fn test_svg_paths_retain_exact_geometry_and_stroke_style_for_native_replay() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="200" height="100" viewBox="0 0 100 50"><path d="M 5 25 C 20 0 35 50 50 25 A 10 6 30 0 1 75 25" fill="red" fill-rule="evenodd" stroke="blue" stroke-width="3" stroke-linecap="round" stroke-linejoin="bevel" stroke-miterlimit="7"/></svg>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	command := paths[0]
+	assert command.path_data.len == 3 * compatibility_clip_path_segment_stride
+	assert command.path_data[0] == 0 // move_to
+	assert command.path_data[compatibility_clip_path_segment_stride] == 3 // cubic curve
+	assert command.path_data[compatibility_clip_path_segment_stride * 2] == 4 // arc
+	assert command.fill_even_odd
+	assert command.stroke_linecap == 1
+	assert command.stroke_linejoin == 2
+	assert command.stroke_miterlimit == 7
+}
+
+fn test_svg_linear_gradient_paints_retain_linked_resource_algorithms() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="200" height="100" viewBox="0 0 100 50"><defs><linearGradient id="wrong"><stop stop-color="black"/></linearGradient><linearGradient id="base" gradientUnits="userSpaceOnUse" x1="10%" y1="20%" x2="90%" y2="80%" spreadMethod="reflect" gradientTransform="translate(3 4)" color-interpolation="linearRGB"><stop offset="70%" stop-color="rgb(10 20 30)" stop-opacity=".5"/><stop offset="20%" stop-color="rgb(40 50 60)"/></linearGradient><linearGradient id="derived" href="#base" xlink:href="#wrong" x2="50%" color-interpolation="linearRGB"/></defs><rect x="10" y="5" width="80" height="40" fill="url(#derived) magenta" stroke="url(#base) cyan" stroke-width="3" paint-order="stroke fill"/></svg>')
+	root := layout_document_typed_in_viewport(document, 240, 140)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	command := paths[0]
+	assert command.color == ''
+	assert command.stroke_color == ''
+	assert command.stroke_first
+	fill := command.fill_linear_gradient or { panic('missing retained fill gradient') }
+	stroke := command.stroke_linear_gradient or { panic('missing retained stroke gradient') }
+	assert math.abs(fill.start_point.x - 10.0) < 0.001
+	assert math.abs(fill.start_point.y - 10.0) < 0.001
+	assert math.abs(fill.end_point.x - 50.0) < 0.001
+	assert math.abs(fill.end_point.y - 40.0) < 0.001
+	assert math.abs(stroke.end_point.x - 90.0) < 0.001
+	assert fill.gradient.spread_method == .reflect
+	assert fill.gradient.color_space == .linear_srgb
+	transform := fill.gradient.gradient_transform or { panic('missing gradient transform') }
+	assert transform == painting.Affine{ e: 3, f: 4 }
+	assert fill.gradient.color_stops.len == 2
+	assert fill.gradient.color_stops[0].color == painting.Color{10, 20, 30, 128}
+	assert math.abs(fill.gradient.color_stops[0].position - 0.7) < 0.001
+	// SVGGradientElement clamps every later offset to the preceding offset.
+	assert math.abs(fill.gradient.color_stops[1].position - 0.7) < 0.001
+	serialized := root.render_svg(240, 140)
+	assert serialized.contains('gradientUnits="userSpaceOnUse"')
+	assert serialized.contains('spreadMethod="reflect"')
+	assert serialized.contains('color-interpolation="linearRGB"')
+	assert serialized.contains('paint-order="stroke fill"')
+}
+
+fn test_svg_radial_gradient_paints_retain_two_circle_linked_resource_algorithms() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="200" height="100" viewBox="0 0 200 100"><defs><radialGradient id="base" gradientUnits="userSpaceOnUse" cx="25%" cy="40%" r="30%" fx="10%" fr="5%" spreadMethod="reflect" gradientTransform="translate(3 4)"><stop offset="20%" stop-color="rgb(10 20 30)"/><stop offset="100%" stop-color="rgb(40 50 60)" stop-opacity=".5"/></radialGradient><radialGradient id="derived" href="#base" cx="60%" r="-3" fr="-10%" color-interpolation="linearRGB"/></defs><rect x="10" y="5" width="80" height="40" fill="url(#derived) magenta" stroke="url(#base) cyan" stroke-width="3" paint-order="stroke fill"/></svg>')
+	root := layout_document_typed_in_viewport(document, 240, 140)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	command := paths[0]
+	assert command.color == ''
+	assert command.stroke_color == ''
+	assert command.stroke_first
+	fill := command.fill_radial_gradient or { panic('missing retained radial fill') }
+	stroke := command.stroke_radial_gradient or { panic('missing retained radial stroke') }
+	assert command.fill_linear_gradient == none
+	assert command.stroke_linear_gradient == none
+	assert math.abs(fill.start_center.x - 20.0) < 0.001
+	assert math.abs(fill.start_center.y - 40.0) < 0.001
+	assert math.abs(fill.start_radius - 10.0) < 0.001
+	assert math.abs(fill.end_center.x - 120.0) < 0.001
+	assert math.abs(fill.end_center.y - 40.0) < 0.001
+	// Negative derived radii are absent for inheritance in the C++ implementation.
+	assert math.abs(fill.end_radius - 60.0) < 0.001
+	assert math.abs(stroke.end_center.x - 50.0) < 0.001
+	assert fill.gradient.spread_method == .reflect
+	assert fill.gradient.color_space == .linear_srgb
+	transform := fill.gradient.gradient_transform or { panic('missing radial transform') }
+	assert transform == painting.Affine{ e: 3, f: 4 }
+	assert fill.gradient.color_stops.len == 2
+	assert fill.gradient.color_stops[1].color == painting.Color{40, 50, 60, 128}
+	serialized := root.render_svg(240, 140)
+	assert serialized.contains('<radialGradient')
+	assert serialized.contains('fx="20" fy="40" fr="10" cx="120" cy="40" r="60"')
+	assert serialized.contains('spreadMethod="reflect"')
+	assert serialized.contains('paint-order="stroke fill"')
+}
+
+fn test_svg_radial_gradient_object_bounding_box_defaults_match_cpp_width_resolution() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="100" height="100"><defs><radialGradient id="spot"><stop stop-color="white"/><stop offset="100%" stop-color="black"/></radialGradient></defs><rect x="10" y="5" width="80" height="40" fill="url(#spot) red"/></svg>')
+	root := layout_document_typed_in_viewport(document, 120, 120)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	gradient := paths[0].fill_radial_gradient or { panic('missing default radial gradient') }
+	assert gradient.start_center == painting.Point{50, 25}
+	assert gradient.end_center == painting.Point{50, 25}
+	assert gradient.start_radius == 0
+	// SVGRadialGradientElement.cpp resolves object-box radii against width.
+	assert gradient.end_radius == 40
+}
+
+fn test_svg_pattern_paints_retain_linked_tile_display_list() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100" viewBox="0 0 200 100"><defs><linearGradient id="shade"><stop stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient><pattern id="base" patternUnits="userSpaceOnUse" patternContentUnits="userSpaceOnUse" x="10" y="5" width="20" height="10" patternTransform="translate(3 4)"><rect width="10" height="10" fill="rgb(10 20 30)"/><circle cx="15" cy="5" r="4" fill="rgb(40 50 60)"/><path d="M0 0H20V2H0Z" fill="url(#shade)" fill-opacity=".6"/></pattern><pattern id="derived" href="#base" width="25"/></defs><rect x="20" y="10" width="100" height="60" fill="url(#derived) magenta" stroke="url(#base) cyan" stroke-width="3" paint-order="stroke fill"/></svg>')
+	root := layout_document_typed_in_viewport(document, 220, 120)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	command := paths[0]
+	assert command.color == ''
+	assert command.stroke_color == ''
+	assert command.stroke_first
+	fill := command.fill_pattern or { panic('missing retained pattern fill') }
+	stroke := command.stroke_pattern or { panic('missing retained pattern stroke') }
+	assert fill.tile_rect == painting.Rect{10, 5, 25, 10}
+	assert stroke.tile_rect == painting.Rect{10, 5, 20, 10}
+	assert fill.pattern_transform or { painting.Affine{} } == painting.Affine{ e: 3, f: 4 }
+	display_list := fill.tile_display_list or { panic('missing pattern display list') }
+	operations := display_list.operations.filter(it.kind == .path)
+	assert operations.len == 3
+	assert operations.all(it.has_fill)
+	assert operations[0].fill_color == painting.Color{10, 20, 30, 255}
+	assert operations[1].fill_color == painting.Color{40, 50, 60, 255}
+	assert operations[2].fill_linear_gradient != none
+	assert fill.cache_key != 0
+	serialized := root.render_svg(220, 120)
+	assert serialized.contains('<pattern')
+	assert serialized.contains('patternUnits="userSpaceOnUse"')
+	assert serialized.contains('patternTransform="matrix(1 0 0 1 3 4)"')
+	assert serialized.contains('fill="url(#svg-paint')
+	assert serialized.contains('fill-opacity="0.600000')
+}
+
+fn test_svg_pattern_viewbox_overrides_object_bounding_box_content_units() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100"><defs><pattern id="scaled" patternUnits="userSpaceOnUse" patternContentUnits="objectBoundingBox" width="40" height="20" viewBox="0 0 10 10" preserveAspectRatio="none"><rect width="5" height="10" fill="red"/><rect x="5" width="5" height="10" fill="blue"/></pattern></defs><rect x="20" y="10" width="100" height="60" fill="url(#scaled)"/></svg>')
+	root := layout_document_typed_in_viewport(document, 220, 120)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	pattern := paths[0].fill_pattern or { panic('missing viewBox pattern fill') }
+	assert pattern.tile_rect == painting.Rect{0, 0, 40, 20}
+	operations := (pattern.tile_display_list or { panic('missing viewBox tile display list') }).operations.filter(it.kind == .path)
+	assert operations.len == 2
+	// The pattern viewBox maps 10x10 user units into the 40x20 tile. It takes
+	// precedence over patternContentUnits="objectBoundingBox", as in C++.
+	assert operations.all(math.abs(it.transform.a - 4.0) < 0.001)
+	assert operations.all(math.abs(it.transform.d - 2.0) < 0.001)
+}
+
+fn test_svg_pattern_object_bounding_box_geometry_is_target_relative() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="560" height="330"><defs><pattern id="bbox" width="25%" height="50%" patternContentUnits="objectBoundingBox"><rect width=".5" height="1" fill="orange"/><rect x=".5" width=".5" height="1" fill="purple"/></pattern></defs><rect x="10" y="145" width="160" height="100" fill="url(#bbox)"/></svg>')
+	root := layout_document_typed_in_viewport(document, 560, 330)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	pattern := paths[0].fill_pattern or { panic('missing object-box pattern fill') }
+	assert pattern.tile_rect == painting.Rect{10, 145, 40, 50}
+	operations := (pattern.tile_display_list or { panic('missing object-box display list') }).operations.filter(it.kind == .path)
+	assert operations.len == 2
+	assert operations.all(math.abs(it.transform.e) < 0.001)
+	assert operations.all(math.abs(it.transform.f) < 0.001)
+	assert operations.all(math.abs(it.transform.a - 160.0) < 0.001)
+	assert operations.all(math.abs(it.transform.d - 100.0) < 0.001)
+}
+
+fn test_svg_mask_path_retains_pattern_instead_of_url_fallback() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="100"><defs><pattern id="checks" width="20%" height="20%"><rect width=".5" height="1" fill="white"/></pattern><mask id="mask"><rect width="100" height="100" fill="url(#checks) red"/></mask></defs><rect width="100" height="100" fill="blue" mask="url(#mask)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 120, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_commands.len == 1
+	paths := mask_commands[0].mask_clip.mask_operations.filter(it.kind == .path)
+	assert paths.len == 1
+	operation := paths[0]
+	assert operation.has_fill
+	assert operation.fill_color == css.Color{ a: 0 }.serialize()
+	pattern := operation.fill_pattern or { panic('missing mask fill pattern') }
+	assert pattern.tile_rect == painting.Rect{0, 0, 20, 20}
+	assert (pattern.tile_display_list or { panic('missing mask pattern display list') }).operations.len == 1
+}
+
+fn test_svg_mask_path_retains_linear_gradient_instead_of_url_fallback() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="100"><defs><linearGradient id="fade"><stop stop-color="black"/><stop offset="100%" stop-color="white"/></linearGradient><mask id="mask"><rect width="100" height="100" fill="url(#fade) red"/></mask></defs><rect width="100" height="100" fill="blue" mask="url(#mask)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 120, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_commands.len == 1
+	paths := mask_commands[0].mask_clip.mask_operations.filter(it.kind == .path)
+	assert paths.len == 1
+	operation := paths[0]
+	assert operation.has_fill
+	assert operation.fill_color == css.Color{ a: 0 }.serialize()
+	gradient := operation.fill_linear_gradient or { panic('missing mask fill gradient') }
+	assert gradient.gradient.color_stops.len == 2
+	assert gradient.start_point == painting.Point{0, 0}
+	assert gradient.end_point == painting.Point{100, 0}
+}
+
+fn test_svg_mask_path_retains_radial_gradient_instead_of_url_fallback() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="100"><defs><radialGradient id="fade" fx="25%" fy="30%" fr="10%"><stop stop-color="black"/><stop offset="100%" stop-color="white"/></radialGradient><mask id="mask"><rect width="100" height="100" fill="url(#fade) red"/></mask></defs><rect width="100" height="100" fill="blue" mask="url(#mask)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 120, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_commands.len == 1
+	paths := mask_commands[0].mask_clip.mask_operations.filter(it.kind == .path)
+	assert paths.len == 1
+	operation := paths[0]
+	assert operation.has_fill
+	assert operation.fill_color == css.Color{ a: 0 }.serialize()
+	gradient := operation.fill_radial_gradient or { panic('missing radial mask fill') }
+	assert gradient.gradient.color_stops.len == 2
+	assert gradient.start_center == painting.Point{25, 30}
+	assert gradient.start_radius == 10
+	assert gradient.end_center == painting.Point{50, 50}
+	assert gradient.end_radius == 50
+}
+
+fn test_svg_text_reuses_svg_path_painting_instead_of_generic_text_commands() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="200" height="100"><text x="20" y="45" font-size="24" fill="rgb(10 20 30)" stroke="rgb(40 50 60)" stroke-width="2">O</text></svg>')
+	root := layout_document_typed_in_viewport(document, 240, 140)
+	commands := root.paint_commands()
+	assert commands.all(it.kind != 'draw_text')
+	paths := commands.filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	assert paths[0].path_data.len > 6 * compatibility_clip_path_segment_stride
+	assert paths[0].color == css.Color{10, 20, 30, 255}.serialize()
+	assert paths[0].stroke_color == css.Color{40, 50, 60, 255}.serialize()
+	assert paths[0].stroke_width == 2
+}
+
+fn test_svg_image_uses_image_paintable_contain_sizing_and_resolved_href() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100" viewBox="0 0 100 50"><image x="10" y="5" width="60" height="30" transform="translate(3 4)" href="https://example.test/picture.png" style="object-position:25% 75%;image-rendering:pixelated"/></svg>')
+	root := layout_document_typed_in_viewport(document, 240, 140)
+	commands := root.paint_commands()
+	images := commands.filter(it.kind == 'draw_svg_image')
+	assert images.len == 1
+	image := images[0]
+	// SVGFormattingContext maps the image bounding box through viewBox and the
+	// element transform before ImagePaintable receives its absolute rectangle.
+	assert image.x == 26
+	assert image.y == 18
+	assert image.width == 120
+	assert image.height == 60
+	assert image.image_url == 'https://example.test/picture.png'
+	assert image.image_size == 'contain'
+	assert image.image_position_x == '25%'
+	assert image.image_position_y == '75%'
+	assert image.image_rendering == .pixelated
+	assert commands.all(it.kind != 'draw_background_image' || it.image_url != image.image_url)
+}
+
+fn test_svg_image_bounding_box_uses_intrinsic_ratio_for_a_missing_dimension() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100"><image x="7" y="9" width="80" href="data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2220%22%3E%3C/svg%3E"/></svg>')
+	root := layout_document_typed_in_viewport(document, 240, 140)
+	images := root.paint_commands().filter(it.kind == 'draw_svg_image')
+	assert images.len == 1
+	assert images[0].x == 7
+	assert images[0].y == 9
+	assert images[0].width == 80
+	assert images[0].height == 40
+}
+
+fn test_svg_image_legacy_xlink_href_is_used_only_when_href_is_absent() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="50"><image width="40" height="20" xlink:href="https://example.test/legacy.png"/><image y="25" width="40" height="20" href="" xlink:href="https://example.test/ignored.png"/></svg>')
+	root := layout_document_typed_in_viewport(document, 120, 70)
+	images := root.paint_commands().filter(it.kind == 'draw_svg_image')
+	assert images.len == 1
+	assert images[0].image_url == 'https://example.test/legacy.png'
+}
+
+fn test_url_svg_clip_path_is_a_retained_alpha_mask_not_a_painted_child_or_hit_test_clip() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="140" height="120" viewBox="0 0 140 120"><defs><clipPath id="cut"><circle cx="60" cy="50" r="35" clip-rule="evenodd"/></clipPath></defs><rect id="target" x="10" y="0" width="100" height="100" fill="rgb(101 102 103)" clip-path="url(#cut)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	paths := display_list_commands(display_list).filter(it.kind == 'draw_svg_path')
+	// SVGMaskable paints the attached clip resource into a separate mask display
+	// list; the resource geometry must not leak into the target display list.
+	assert paths.len == 1
+	command := paths[0]
+	assert command.has_clip
+	commands := display_list_commands(display_list)
+	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
+	mask_ends := commands.filter(it.kind == 'end_svg_mask_layer')
+	assert mask_begins.len == 1
+	assert mask_ends.len == 1
+	clip := mask_begins[0].mask_clip
+	assert clip.is_svg_mask
+	assert clip.path_components.len == 1
+	component := clip.path_components[0]
+	assert component.path_even_odd
+	assert component.path_data.len == 5 * compatibility_clip_path_segment_stride
+	assert component.path_data[compatibility_clip_path_segment_stride] == 4
+	assert component.transform == [f64(1), 0, 0, 1, 0, 0]!
+
+	// StackingContext::hit_test() does not consult SVG mask alpha.
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	hit := mutable_document.element_from_point(12, 12) or { panic('missing target hit') }
+	assert hit.as_node().unique_id() == target.as_node().unique_id()
+}
+
+fn test_url_svg_clip_path_prepends_target_and_resource_transforms() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="280" height="240" viewBox="0 0 140 120"><defs><clipPath id="cut" transform="translate(3 4)"><circle cx="60" cy="50" r="35"/></clipPath></defs><rect transform="translate(7 8)" x="10" y="5" width="100" height="80" fill="red" clip-path="url(#cut)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 320, 260)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	paths := display_list_commands(display_list).filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_begins.len == 1
+	clip := mask_begins[0].mask_clip
+	assert clip.is_svg_mask
+	assert clip.path_components.len == 1
+	// root viewBox scale(2) * target translate(7,8) * clipPath translate(3,4)
+	assert clip.path_components[0].transform == [f64(2), 0, 0, 2, 20, 24]!
+}
+
+fn test_object_bounding_box_svg_clip_retains_every_component_for_union_mask() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="280" height="240" viewBox="0 0 140 120"><defs><clipPath id="cut" clipPathUnits="objectBoundingBox"><circle cx=".3" cy=".5" r=".2"/><circle cx=".7" cy=".5" r=".2"/></clipPath></defs><rect x="10" y="5" width="100" height="80" fill="red" clip-path="url(#cut)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 320, 260)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	paths := display_list_commands(display_list).filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_begins.len == 1
+	clip := mask_begins[0].mask_clip
+	assert clip.is_svg_mask
+	assert clip.path_components.len == 2
+	assert clip.path_components.all(it.transform == [f64(200), 0, 0, 160, 20, 10]!)
+	assert clip.cache_key != 0
+}
+
+fn test_empty_url_svg_clip_path_fully_clips_the_target() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="100" height="100"><defs><clipPath id="empty"/></defs><rect width="100" height="100" fill="red" clip-path="url(#empty)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 120, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	paths := display_list_commands(display_list).filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_begins.len == 1
+	assert mask_begins[0].mask_clip.path_components.len == 0
+	assert paths[0].clip_width == 0
+	assert paths[0].clip_height == 0
+}
+
+fn test_svg_clip_mask_wraps_the_complete_target_context_once() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="160" height="100"><defs><clipPath id="cut"><circle cx="60" cy="50" r="40"/></clipPath></defs><g clip-path="url(#cut)"><rect width="120" height="50" fill="red"/><rect y="50" width="120" height="50" fill="green"/></g></svg>')
+	_ = layout_document_typed_in_viewport(document, 180, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	paths := commands.filter(it.kind == 'draw_svg_path')
+	assert paths.len == 2
+	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
+	mask_ends := commands.filter(it.kind == 'end_svg_mask_layer')
+	assert mask_begins.len == 1
+	assert mask_ends.len == 1
+	assert mask_begins[0].mask_clip.cache_key == mask_ends[0].mask_clip.cache_key
+	assert mask_begins[0].mask_clip.path_components.len == 1
+	mut inside_mask := false
+	mut masked_paths := 0
+	for command in commands {
+		if command.kind == 'begin_svg_mask_layer' {
+			inside_mask = true
+		} else if command.kind == 'end_svg_mask_layer' {
+			inside_mask = false
+		} else if command.kind == 'draw_svg_path' {
+			assert inside_mask
+			masked_paths++
+		}
+	}
+	assert masked_paths == 2
+}
+
+fn test_url_svg_mask_retains_luminance_paint_and_group_opacity_layers() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="280" height="240" viewBox="0 0 140 120"><defs><mask id="fade" mask-type="luminance" transform="translate(3 4)"><g opacity=".5"><path d="M 0 0 C 25 0 25 40 50 40 Z" fill="rgb(200 20 10)" fill-opacity=".4" stroke="rgb(10 20 200)" stroke-opacity=".6" stroke-width="3" stroke-linecap="round" stroke-linejoin="bevel" stroke-miterlimit="7" paint-order="stroke fill"/></g></mask></defs><rect transform="translate(7 8)" x="10" y="5" width="100" height="80" fill="red" mask="url(#fade)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 320, 260)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	paths := commands.filter(it.kind == 'draw_svg_path')
+	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
+	mask_ends := commands.filter(it.kind == 'end_svg_mask_layer')
+	assert paths.len == 1
+	assert mask_begins.len == 1
+	assert mask_ends.len == 1
+	mask := mask_begins[0].mask_clip
+	assert mask.is_svg_content_mask
+	assert mask.mask_luminance
+	assert mask.mask_operations.len == 3
+	assert mask.mask_operations[0].kind == .begin_opacity
+	assert math.abs(mask.mask_operations[0].opacity - 0.5) < 0.001
+	operation := mask.mask_operations[1]
+	assert operation.kind == .path
+	assert operation.path_data.len == 3 * compatibility_clip_path_segment_stride
+	assert operation.transform == [f64(2), 0, 0, 2, 20, 24]!
+	assert operation.fill_color == css.Color{200, 20, 10, 255}.serialize()
+	assert operation.stroke_color == css.Color{10, 20, 200, 255}.serialize()
+	assert operation.has_fill
+	assert operation.has_stroke
+	assert operation.stroke_first
+	assert math.abs(operation.fill_opacity - 0.4) < 0.001
+	assert math.abs(operation.stroke_opacity - 0.6) < 0.001
+	assert operation.stroke_width == 3
+	assert operation.stroke_linecap == 1
+	assert operation.stroke_linejoin == 2
+	assert operation.stroke_miterlimit == 7
+	assert mask.mask_operations[2].kind == .end_opacity
+	mut inside_mask := false
+	for command in commands {
+		if command.kind == 'begin_svg_mask_layer' {
+			inside_mask = true
+		} else if command.kind == 'end_svg_mask_layer' {
+			inside_mask = false
+		} else if command.kind == 'draw_svg_path' {
+			assert inside_mask
+		}
+	}
+}
+
+fn test_svg_mask_text_is_the_same_retained_glyph_path_as_normal_svg_painting() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="180" height="100"><defs><mask id="letters" mask-type="alpha"><text x="10" y="60" font-size="48" fill="white" stroke="rgb(20 30 40)" stroke-width="2">O</text></mask></defs><rect width="180" height="100" fill="red" mask="url(#letters)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 200, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	assert commands.all(it.kind != 'draw_text')
+	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_begins.len == 1
+	operations := mask_begins[0].mask_clip.mask_operations.filter(it.kind == .path)
+	assert operations.len == 1
+	assert operations[0].path_data.len > 6 * compatibility_clip_path_segment_stride
+	assert operations[0].fill_color == css.Color{255, 255, 255, 255}.serialize()
+	assert operations[0].stroke_color == css.Color{20, 30, 40, 255}.serialize()
+	assert operations[0].stroke_width == 2
+}
+
+fn test_svg_mask_text_path_reuses_rotated_glyph_geometry_without_text_fallback() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="180" height="120"><defs><path id="guide" d="M 20 10 L 20 110"/><mask id="letters" mask-type="alpha"><text fill="white"><textPath href="#guide" font-size="28">OO</textPath></text></mask></defs><rect width="180" height="120" fill="red" mask="url(#letters)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 200, 140)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	assert commands.all(it.kind != 'draw_text')
+	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_begins.len == 1
+	operations := mask_begins[0].mask_clip.mask_operations.filter(it.kind == .path)
+	assert operations.len == 1
+	assert operations[0].path_data.len > 12 * compatibility_clip_path_segment_stride
+	assert operations[0].fill_color == css.Color{255, 255, 255, 255}.serialize()
+}
+
+fn test_svg_mask_retains_image_paintable_between_group_opacity_boundaries() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100"><defs><mask id="picture" mask-type="luminance"><g opacity=".4"><image x="10" y="12" width="80" height="40" href="https://example.test/mask.png" style="object-position:25% 75%;image-rendering:crisp-edges"/></g></mask></defs><rect width="180" height="90" fill="red" mask="url(#picture)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 240, 140)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	assert commands.all(it.kind != 'draw_svg_image')
+	mask_begins := commands.filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_begins.len == 1
+	mask := mask_begins[0].mask_clip
+	assert mask.mask_luminance
+	assert mask.mask_operations.len == 3
+	assert mask.mask_operations[0].kind == .begin_opacity
+	assert math.abs(mask.mask_operations[0].opacity - 0.4) < 0.001
+	image := mask.mask_operations[1]
+	assert image.kind == .image
+	assert image.image_url == 'https://example.test/mask.png'
+	assert image.image_rect == LayoutRect{10, 12, 80, 40}
+	assert image.image_position_x == '25%'
+	assert image.image_position_y == '75%'
+	assert image.image_rendering == .crisp_edges
+	assert image.transform == [f64(1), 0, 0, 1, 0, 0]!
+	assert mask.mask_operations[2].kind == .end_opacity
+	assert mask.cache_key != 0
+}
+
+fn test_alpha_svg_mask_and_empty_svg_mask_keep_upstream_mask_semantics() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="220" height="100"><defs><mask id="alpha" mask-type="alpha"><rect x="10" y="10" width="50" height="50" fill="rgb(1 2 3)"/></mask><mask id="empty" mask-type="alpha"/></defs><rect width="100" height="100" fill="red" mask="url(#alpha)"/><rect x="110" width="100" height="100" fill="blue" mask="url(#empty)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 240, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	masks := commands.filter(it.kind == 'begin_svg_mask_layer').map(it.mask_clip)
+	assert masks.len == 2
+	assert masks.all(!it.mask_luminance)
+	mut painted_masks := []PaintClip{}
+	mut empty_masks := []PaintClip{}
+	for mask in masks {
+		if mask.mask_operations.any(it.kind == .path) {
+			painted_masks << mask
+		} else {
+			empty_masks << mask
+		}
+	}
+	assert painted_masks.len == 1
+	assert empty_masks.len == 1
+	empty_mask := empty_masks[0]
+	// A non-empty resolved mask area with an empty nested display list still
+	// clears the target through DestinationIn.
+	assert empty_mask.rect.width > 0
+	assert empty_mask.mask_operations.all(it.kind != .path)
+}
+
+fn test_svg_mask_and_clip_layers_are_nested_in_upstream_order() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="120" height="100"><defs><mask id="fade" mask-type="alpha"><rect width="120" height="100" fill="white" fill-opacity=".5"/></mask><clipPath id="cut"><circle cx="60" cy="50" r="40"/></clipPath></defs><g mask="url(#fade)" clip-path="url(#cut)"><rect width="80" height="100" fill="blue"/><rect x="40" width="80" height="100" fill="blue"/></g></svg>')
+	_ = layout_document_typed_in_viewport(document, 140, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	mut significant := []string{}
+	for command in commands {
+		if command.kind in ['begin_svg_mask_layer', 'draw_svg_path', 'end_svg_mask_layer'] {
+			significant << if command.kind == 'begin_svg_mask_layer' {
+				if command.mask_clip.is_svg_content_mask { 'begin-mask' } else { 'begin-clip' }
+			} else if command.kind == 'end_svg_mask_layer' {
+				if command.mask_clip.is_svg_content_mask { 'end-mask' } else { 'end-clip' }
+			} else {
+				'path'
+			}
+		}
+	}
+	assert significant == ['begin-mask', 'begin-clip', 'path', 'path', 'end-clip', 'end-mask']
+}
+
+fn test_object_bounding_box_svg_mask_content_uses_target_geometry() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="280" height="240" viewBox="0 0 140 120"><defs><mask id="fade" mask-type="alpha" maskContentUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".4" fill="white"/></mask></defs><rect x="10" y="5" width="100" height="80" fill="red" mask="url(#fade)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 320, 260)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_begins.len == 1
+	mask := mask_begins[0].mask_clip
+	assert mask.is_svg_content_mask
+	paths := mask.mask_operations.filter(it.kind == .path)
+	assert paths.len == 1
+	// root viewBox scale(2) * target object bounding box(100x80 at 10,5)
+	assert paths[0].transform == [f64(200), 0, 0, 160, 20, 10]!
+}
+
+fn test_sticky_element_uses_live_scroll_frame_without_rebuilding_phase_commands() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto } #before { height: 30px } #sticky { position: sticky; top: 0; height: 10px; background: rgb(21 22 23) } #after { height: 100px; background: rgb(31 32 33) }</style><body><div id="scroller"><div id="before"></div><div id="sticky"></div><div id="after"></div></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	initial_display_list := mutable_document.record_display_list() or {
+		panic('missing initial display list')
+	}
+	sticky_color := css.Color{21, 22, 23, 255}.serialize()
+	initial_sticky_commands := display_list_commands(initial_display_list).filter(it.kind == 'fill_rect'
+		&& it.color == sticky_color)
+	assert initial_sticky_commands.len == 1
+	assert initial_sticky_commands[0].transform[5] == 0
+
+	result := document_layout_result(document) or { panic('missing layout result') }
+	// ViewportPaintable always owns the root scrolling frame; the overflow box
+	// contributes the second ordinary frame.
+	assert result.scroll_state.scrolling_frame_indices().len == 2
+	assert result.scroll_state.sticky_frame_indices().len == 1
+	retained_command_count := result.paint_phase_command_count
+
+	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
+	mut scroller_paintable := scroller.paintable_box() or { panic('missing scroller paintable') }
+	assert scroller_paintable.set_scroll_offset(dom.CSSPixelPoint_{ y_: 40 })
+	scrolled_display_list := mutable_document.record_display_list() or {
+		panic('missing scrolled display list')
+	}
+	scrolled_sticky_commands := display_list_commands(scrolled_display_list).filter(it.kind == 'fill_rect'
+		&& it.color == sticky_color)
+	assert scrolled_sticky_commands.len == 1
+	// The ancestor contributes -40 and the sticky constraint contributes +10,
+	// keeping the box whose layout y is 30 at the top of the scrollport.
+	assert scrolled_sticky_commands[0].transform[5] == -30
+	assert result.paint_phase_command_count == retained_command_count
+
+	sticky := document.get_element_by_id('sticky') or { panic('missing sticky') }
+	hit := mutable_document.element_from_point(10, 5) or { panic('missing sticky hit') }
+	assert hit.as_node().unique_id() == sticky.as_node().unique_id()
+}
+
+fn test_sticky_element_uses_the_viewport_scroll_frame() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #before { height: 30px } #sticky { position: sticky; top: 0; height: 10px; background: rgb(61 62 63) } #after { height: 150px }</style><body><div id="before"></div><div id="sticky"></div><div id="after"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	initial_display_list := mutable_document.record_display_list() or {
+		panic('missing initial display list')
+	}
+	sticky_color := css.Color{61, 62, 63, 255}.serialize()
+	initial_sticky_commands := display_list_commands(initial_display_list).filter(it.kind == 'fill_rect'
+		&& it.color == sticky_color)
+	assert initial_sticky_commands.len == 1
+	assert initial_sticky_commands[0].transform[5] == 0
+
+	result := document_layout_result(document) or { panic('missing layout result') }
+	assert result.scroll_state.scrolling_frame_indices().len == 1
+	assert result.scroll_state.sticky_frame_indices().len == 1
+	retained_command_count := result.paint_phase_command_count
+
+	viewport := mutable_document.viewport_rect()
+	mutable_document.set_viewport_rect(dom.Rect{0, 40, viewport.width, viewport.height})
+	assert mutable_document.cached_display_list() == none
+	scrolled_display_list := mutable_document.record_display_list() or {
+		panic('missing scrolled display list')
+	}
+	scrolled_sticky_commands := display_list_commands(scrolled_display_list).filter(it.kind == 'fill_rect'
+		&& it.color == sticky_color)
+	assert scrolled_sticky_commands.len == 1
+	// The viewport contributes -40 while the sticky constraint contributes +10.
+	assert scrolled_sticky_commands[0].transform[5] == -30
+	assert result.paint_phase_command_count == retained_command_count
+
+	sticky := document.get_element_by_id('sticky') or { panic('missing sticky') }
+	hit := mutable_document.element_from_point(10, 5) or { panic('missing sticky hit') }
+	assert hit.as_node().unique_id() == sticky.as_node().unique_id()
+}
+
+fn test_fixed_visual_context_bypasses_viewport_scroll_for_paint_and_hit_testing() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #spacer { height: 100px } #target { height: 20px; background: rgb(41 42 43) } #fixed { position: fixed; top: 5px; left: 0; width: 20px; height: 20px; background: rgb(51 52 53) }</style><body><div id="spacer"></div><div id="target"></div><div id="fixed"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	fixed_color := css.Color{51, 52, 53, 255}.serialize()
+	target_color := css.Color{41, 42, 43, 255}.serialize()
+	fixed_commands := commands.filter(it.kind == 'fill_rect' && it.color == fixed_color)
+	target_commands := commands.filter(it.kind == 'fill_rect' && it.color == target_color)
+	assert fixed_commands.len == 1 && fixed_commands[0].fixed_to_viewport
+	assert target_commands.len == 1 && !target_commands[0].fixed_to_viewport
+
+	viewport := mutable_document.viewport_rect()
+	mutable_document.set_viewport_rect(dom.Rect{0, 100, viewport.width, viewport.height})
+	scrolled_display_list := mutable_document.record_display_list() or {
+		panic('missing scrolled display list')
+	}
+	scrolled_commands := display_list_commands(scrolled_display_list)
+	scrolled_fixed := scrolled_commands.filter(it.kind == 'fill_rect' && it.color == fixed_color)
+	scrolled_target := scrolled_commands.filter(it.kind == 'fill_rect' && it.color == target_color)
+	assert scrolled_fixed.len == 1 && scrolled_fixed[0].transform[5] == 0
+	assert scrolled_target.len == 1 && scrolled_target[0].transform[5] == -100
+	fixed := document.get_element_by_id('fixed') or { panic('missing fixed') }
+	fixed_hit := mutable_document.element_from_point(5, 10) or { panic('missing fixed hit') }
+	assert fixed_hit.as_node().unique_id() == fixed.as_node().unique_id()
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	target_hit := mutable_document.element_from_point(50, 5) or { panic('missing target hit') }
+	assert target_hit.as_node().unique_id() == target.as_node().unique_id()
+}
+
+fn test_checkbox_paint_reads_live_checkedness_and_invalidates_retained_commands() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><body><input id="control" type="checkbox"></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	initial_display_list := mutable_document.record_display_list() or {
+		panic('missing initial display list')
+	}
+	assert !display_list_commands(initial_display_list).any(it.kind == 'fill_polygon')
+
+	control := document.get_element_by_id('control') or { panic('missing checkbox') }
+	mut model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(control) })
+	model.set_checked(true)
+	assert control.matches_checked_pseudo_class()
+	assert mutable_document.cached_display_list() == none
+	checked_display_list := mutable_document.record_display_list() or {
+		panic('missing checked display list')
+	}
+	assert display_list_commands(checked_display_list).any(it.kind == 'fill_polygon')
+
+	model.set_indeterminate(true)
+	indeterminate_commands := root.paint_commands()
+	assert !indeterminate_commands.any(it.kind == 'fill_polygon')
+	assert indeterminate_commands.any(it.kind == 'fill_rect' && it.color == 'rgb(0 0 0)')
+}
+
+fn test_document_viewport_paintable_recomputes_text_selection_states() {
+	document := html.parse_document('<!doctype html><body><span id="start">hello</span><span id="end">world</span></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	start_element := document.get_element_by_id('start') or { panic('missing start element') }
+	end_element := document.get_element_by_id('end') or { panic('missing end element') }
+	start_text := start_element.as_node().first_child() or { panic('missing start text') }
+	end_text := end_element.as_node().first_child() or { panic('missing end text') }
+	viewport := document.paintable() or { panic('missing viewport paintable') }
+	assert viewport.is_viewport_paintable()
+	assert viewport.selection() == document.get_selection()
+
+	range := dom.Range.create_from_boundary_points(start_text, 1, end_text, 2)
+	viewport.recompute_selection_states(range)
+	start_paintable := start_text.paintable() or { panic('missing start text paintable') }
+	end_paintable := end_text.paintable() or { panic('missing end text paintable') }
+	assert start_paintable.selection_state == .start
+	assert end_paintable.selection_state == .end
+
+	same_text_range := dom.Range.create_from_boundary_points(start_text, 1, start_text, 4)
+	viewport.recompute_selection_states(same_text_range)
+	assert start_paintable.selection_state == .start_and_end
+	assert end_paintable.selection_state == .none
+
+	collapsed_range := dom.Range.create_from_boundary_points(start_text, 2, start_text, 2)
+	viewport.recompute_selection_states(collapsed_range)
+	assert start_paintable.selection_state == .none
+	assert end_paintable.selection_state == .none
+}
+
+fn test_typed_collapsed_table_borders_retain_winners_and_paint_shared_edges_once() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } table { border-collapse: collapse } td { width: 30px; height: 20px; padding: 0; border: 2px solid rgb(200 0 0); background: rgb(250 250 0) } #right { border-left: 6px dashed rgb(0 0 200) }</style><body><table id="table"><tr><td id="left"></td><td id="right"></td></tr></table></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	table_element := document.get_element_by_id('table') or { panic('missing table') }
+	left_element := document.get_element_by_id('left') or { panic('missing left cell') }
+	right_element := document.get_element_by_id('right') or { panic('missing right cell') }
+	table_box := root.find_box(i64(table_element.as_node().unique_id())) or {
+		panic('missing table box')
+	}
+	left_box := root.find_box(i64(left_element.as_node().unique_id())) or {
+		panic('missing left cell box')
+	}
+	right_box := root.find_box(i64(right_element.as_node().unique_id())) or {
+		panic('missing right cell box')
+	}
+
+	assert table_box.table_inside
+	assert table_box.uses_collapsed_borders
+	assert left_box.table_cell && right_box.table_cell
+	left_coordinates := left_box.table_cell_coordinates or { panic('missing left coordinates') }
+	right_coordinates := right_box.table_cell_coordinates or { panic('missing right coordinates') }
+	assert left_coordinates == painting.TableCellCoordinates{0, 0, 1, 1}
+	assert right_coordinates == painting.TableCellCoordinates{0, 1, 1, 1}
+	left_borders := left_box.table_cell_borders or { panic('missing winning borders') }
+	right_borders := right_box.table_cell_borders or { panic('missing winning borders') }
+	assert left_borders.right.border_data.width == 6
+	assert right_borders.left.border_data.width == 6
+	assert left_borders.right.border_data.line_style == .dashed
+	assert left_borders.right.border_data.color == painting.Color{0, 0, 200, 255}
+	// The active paint geometry uses the rounded half-width on either side of
+	// the padding box, matching PaintableBox::absolute_border_box_rect().
+	assert left_box.border.right == 3
+	assert right_box.border.left == 3
+
+	commands := root.paint_commands()
+	table_border_commands := commands.filter(it.paint_phase == .table_collapsed_border)
+	// The two-cell row has six outside edges and one shared edge, rather than
+	// eight independently painted cell sides.
+	assert table_border_commands.len == 7
+	blue_shared_edge := table_border_commands.filter(it.kind == 'draw_line' && it.color == 'rgb(0 0 200)')
+	assert blue_shared_edge.len == 1
+	assert blue_shared_edge[0].stroke_width == 6
+	assert blue_shared_edge[0].line_style == 'dashed'
+	assert blue_shared_edge[0].points[0] == blue_shared_edge[0].points[2]
+
+	mut last_cell_background := -1
+	mut first_table_border := commands.len
+	for index, command in commands {
+		if command.color == 'rgb(250 250 0)' {
+			last_cell_background = index
+		}
+		if command.paint_phase == .table_collapsed_border && first_table_border == commands.len {
+			first_table_border = index
+		}
+	}
+	assert last_cell_background >= 0
+	assert first_table_border > last_cell_background
+}
+
+fn test_typed_ordinary_borders_retain_cpp_line_style_dispatch() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #double { width: 40px; height: 20px; border: 6px double rgb(200 0 0) } #dashed { width: 40px; height: 20px; border: 4px dashed rgb(0 100 0) } #inset { width: 40px; height: 20px; border: 6px inset rgb(102 102 102) } #rounded { width: 40px; height: 20px; border: 5px solid rgb(40 50 70); border-radius: 12px 7px 4px 9px }</style><body><div id="double"></div><div id="dashed"></div><div id="inset"></div><div id="rounded"></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 240)
+	double_element := document.get_element_by_id('double') or { panic('missing double border') }
+	dashed_element := document.get_element_by_id('dashed') or { panic('missing dashed border') }
+	inset_element := document.get_element_by_id('inset') or { panic('missing inset border') }
+	double_box := root.find_box(i64(double_element.as_node().unique_id())) or {
+		panic('missing double box')
+	}
+	dashed_box := root.find_box(i64(dashed_element.as_node().unique_id())) or {
+		panic('missing dashed box')
+	}
+	inset_box := root.find_box(i64(inset_element.as_node().unique_id())) or {
+		panic('missing inset box')
+	}
+	assert double_box.border_styles.top == .double
+	assert dashed_box.border_styles.right == .dashed
+	assert inset_box.border_styles.bottom == .inset
+
+	border_commands := root.paint_commands().filter(it.paint_phase == .border)
+	double_commands := border_commands.filter(it.color == 'rgb(200 0 0)')
+	assert double_commands.len == 8
+	assert double_commands.all(it.kind == 'draw_svg_path' && it.path.len > 0
+		&& it.path_data.len > 0 && it.fill_even_odd)
+	dashed_commands := border_commands.filter(it.color == 'rgb(0 100 0)')
+	assert dashed_commands.len == 4
+	assert dashed_commands.all(it.kind == 'draw_line' && it.line_style == 'dashed'
+		&& it.stroke_width == 4)
+	dark_inset := border_commands.filter(it.color == 'rgb(17 17 17)')
+	light_inset := border_commands.filter(it.color == 'rgb(102 102 102)')
+	assert dark_inset.len == 1
+	assert light_inset.len == 1
+	assert dark_inset[0].kind == 'draw_svg_path'
+	assert light_inset[0].kind == 'draw_svg_path'
+	rounded_commands := border_commands.filter(it.color == 'rgb(40 50 70)')
+	assert rounded_commands.len == 1
+	assert rounded_commands[0].kind == 'draw_svg_path'
+	assert rounded_commands[0].path.contains('A ')
+	assert rounded_commands[0].path_data.len > 0
+	assert rounded_commands[0].path_polygons.len == 4
+	assert rounded_commands[0].fill_even_odd
+}
+
+fn test_typed_outlines_use_cpp_border_dispatch_and_auto_accent() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #dashed { width: 80px; height: 30px; outline: 6px dashed rgb(10 90 40); outline-offset: 2px } #double { width: 80px; height: 30px; outline: 9px double rgb(120 20 30); border-radius: 12px 6px } #automatic { width: 40px; height: 20px; outline-style: auto; outline-width: 10px; outline-color: red }</style><body><div id="dashed"></div><div id="double"></div><div id="automatic"></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 240)
+	dashed_element := document.get_element_by_id('dashed') or { panic('missing dashed outline') }
+	double_element := document.get_element_by_id('double') or { panic('missing double outline') }
+	automatic_element := document.get_element_by_id('automatic') or {
+		panic('missing automatic outline')
+	}
+	dashed_box := root.find_box(i64(dashed_element.as_node().unique_id())) or {
+		panic('missing dashed outline box')
+	}
+	double_box := root.find_box(i64(double_element.as_node().unique_id())) or {
+		panic('missing double outline box')
+	}
+	automatic_box := root.find_box(i64(automatic_element.as_node().unique_id())) or {
+		panic('missing automatic outline box')
+	}
+	assert dashed_box.outline_style == .dashed
+	assert double_box.outline_style == .double
+	assert automatic_box.outline_style == .solid
+	assert automatic_box.outline_width == 2
+
+	outline_commands := root.paint_commands().filter(it.paint_phase == .outline)
+	dashed_commands := outline_commands.filter(it.color == 'rgb(10 90 40)')
+	assert dashed_commands.len == 4
+	assert dashed_commands.all(it.kind == 'draw_line' && it.line_style == 'dashed'
+		&& it.stroke_width == 6)
+	double_commands := outline_commands.filter(it.color == 'rgb(120 20 30)')
+	assert double_commands.len == 8
+	assert double_commands.all(it.kind == 'draw_svg_path' && it.path.contains('A ')
+		&& it.fill_even_odd)
+	automatic_commands := outline_commands.filter(it.color == 'rgb(61 174 233)')
+	assert automatic_commands.len == 1
+	assert automatic_commands[0].kind == 'draw_svg_path'
+}
+
+fn test_borderless_collapsed_table_does_not_invent_medium_currentcolor_edges() {
+	document := html.parse_document('<!doctype html><style>table { border-collapse: collapse } td { width: 20px; height: 10px }</style><body><table><tr><td></td><td></td></tr></table></body>')
+	root := layout_document_typed_in_viewport(document, 200, 100)
+	assert root.paint_commands().all(it.paint_phase != .table_collapsed_border)
+}
+
+fn test_separate_table_cell_borders_are_snapped_in_the_table_phase_and_empty_cells_hide() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } table { border-spacing: 0 } td { width: 20px; height: 10px; padding: 0; border: 2px solid rgb(10 20 30); background: rgb(40 50 60); empty-cells: hide }</style><body><table id="table"><tr><td id="empty"></td><td id="filled">x</td></tr></table></body>')
+	root := layout_document_typed_in_viewport(document, 200, 100)
+	table_element := document.get_element_by_id('table') or { panic('missing table') }
+	empty_element := document.get_element_by_id('empty') or { panic('missing empty cell') }
+	filled_element := document.get_element_by_id('filled') or { panic('missing filled cell') }
+	table_box := root.find_box(i64(table_element.as_node().unique_id())) or {
+		panic('missing table box')
+	}
+	empty_box := root.find_box(i64(empty_element.as_node().unique_id())) or {
+		panic('missing empty cell box')
+	}
+	filled_box := root.find_box(i64(filled_element.as_node().unique_id())) or {
+		panic('missing filled cell box')
+	}
+	assert table_box.table_inside && !table_box.uses_collapsed_borders
+	assert empty_box.table_cell_coordinates != none
+	assert filled_box.table_cell_coordinates != none
+	assert empty_box.empty_cells_hide && !empty_box.has_layout_children
+	assert filled_box.empty_cells_hide && filled_box.has_layout_children
+
+	commands := root.paint_commands()
+	table_border_commands := commands.filter(it.paint_phase == .table_collapsed_border)
+	assert table_border_commands.len == 1
+	assert table_border_commands[0].kind == 'draw_svg_path'
+	assert table_border_commands[0].fill_even_odd
+	assert table_border_commands.all(it.color == 'rgb(10 20 30)')
+	backgrounds := commands.filter(it.color == 'rgb(40 50 60)' && it.paint_phase == .background)
+	assert backgrounds.len == 1
+	assert backgrounds[0].x >= filled_box.border_box().x
+	// Text in the filled cell remains in its block paintable. It must not
+	// manufacture a second inline-fragment background from the td style.
+	assert commands.filter(it.color == 'rgb(40 50 60)').len == 1
+}
+
+fn test_typed_text_box_decorations_only_come_from_inline_paintables() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #block { width: 100px; background: rgb(11 22 33) } #inline { background: rgb(44 55 66) }</style><body><div id="block">block <span id="inline">inline</span></div></body>')
+	root := layout_document_typed_in_viewport(document, 200, 100)
+	commands := root.paint_commands()
+
+	// PaintableWithLines for the block paints its own background once. Its
+	// direct text fragments carry text styling only.
+	assert commands.filter(it.color == 'rgb(11 22 33)').len == 1
+	// LayoutState relocates the span fragment into an InlineNode paintable, so
+	// its decorating box is still emitted before the text.
+	inline_backgrounds := commands.filter(it.color == 'rgb(44 55 66)')
+	assert inline_backgrounds.len == 1
+	assert inline_backgrounds[0].paint_phase == .foreground
+}
+
+fn test_typed_table_cell_radii_reach_the_active_table_border_phase() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } table { border-spacing: 0 } td { width: 30px; height: 20px; padding: 0; border: 3px solid rgb(70 80 90); border-radius: 8px 5px }</style><body><table><tr><td></td></tr></table></body>')
+	root := layout_document_typed_in_viewport(document, 200, 100)
+	commands := root.paint_commands().filter(it.paint_phase == .table_collapsed_border)
+	assert commands.len == 1
+	assert commands.all(it.kind == 'draw_svg_path')
+	assert commands.all(it.color == 'rgb(70 80 90)')
+	assert commands.all(it.path.contains('A ') && it.path_data.len > 0 && it.fill_even_odd)
+	assert commands.all(it.path_polygons.len == 4)
+}

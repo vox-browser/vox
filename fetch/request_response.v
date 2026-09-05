@@ -7,6 +7,7 @@ module fetch
 
 import dom
 import http
+import infra
 
 pub enum RequestDuplex {
 	half
@@ -28,6 +29,10 @@ pub:
 	signal          ?&dom.AbortSignal
 	duplex          ?RequestDuplex
 	priority        ?Priority
+	// Web IDL dictionaries distinguish an omitted nullable member from a
+	// present member whose value is null.
+	body_present    bool
+	window_present  bool
 	window_non_null bool
 }
 
@@ -36,42 +41,93 @@ fn (init RequestInit) is_empty() bool {
 		&& init.referrer_policy == none && init.mode == none && init.credentials == none
 		&& init.cache == none && init.redirect == none && init.integrity == none
 		&& init.keepalive == none && init.signal == none && init.duplex == none
-		&& init.priority == none && !init.window_non_null
+		&& init.priority == none && !init.body_present && !init.window_present
+		&& !init.window_non_null
 }
 
 pub struct RequestInput {
 pub:
 	url     ?dom.URL
 	request ?&RequestObject
+	// The relevant settings object supplied by the bindings layer. It carries
+	// the API base URL, origin, and request client without introducing a Fetch
+	// -> HTML import cycle.
+	environment ?RequestClient
 }
 
 @[heap]
 pub struct RequestObject {
 mut:
-	request_ &Request         = unsafe { nil }
-	headers_ &Headers         = unsafe { nil }
+	request_ &Request = unsafe { nil }
+	headers_ &Headers = unsafe { nil }
 	signal_  &dom.AbortSignal = unsafe { nil }
-	body_    ?&Body
 }
 
 pub fn RequestObject.construct(input RequestInput, init RequestInit) !&RequestObject {
 	if init.window_non_null {
 		return error('TypeError: RequestInit.window must be null')
 	}
-	init_is_empty := init.is_empty()
-	mut request := if source := input.request { source.request_.clone() } else { Request.create() }
-	if input.request == none {
+
+	// Steps 1-6: obtain the input request, fallback mode, base URL, and signal.
+	mut fallback_mode := ?Mode(none)
+	mut input_request := if source := input.request {
+		source.request_
+	} else {
 		url := input.url or { return error('TypeError: Request input URL is required') }
 		if url.username() != '' || url.password() != '' {
 			return error('TypeError: Request URL contains credentials')
 		}
-		request.set_url(url)
-		request.mode = .cors
-	} else {
-		request.destination = none
+		mut created := Request.create()
+		created.set_url(url)
+		fallback_mode = .cors
+		created
 	}
+	base_url := if environment := input.environment {
+		environment.fetch_request_client_api_base_url()
+	} else {
+		input_request.url()
+	}
+	relevant_origin := if environment := input.environment {
+		environment.fetch_request_client_origin()
+	} else {
+		base_url.origin()
+	}
+
+	// Steps 8-12: construct the new infrastructure request by copying only the
+	// fields listed by Fetch. In particular this is deliberately not Request::clone().
+	mut traversable_for_user_prompts := TraversableForUserPrompts.client
+	if init.window_present || init.window_non_null {
+		traversable_for_user_prompts = .no_traversable
+	}
+	mut copied_headers := http.HeaderList.create()
+	for header in input_request.header_list.headers() {
+		copied_headers.append(header)
+	}
+	mut request := Request.create()
+	request.set_url(input_request.url())
+	request.method = input_request.method
+	request.header_list = copied_headers
 	request.unsafe_request = true
+	if environment := input.environment {
+		request.set_client(environment)
+	}
+	request.traversable_for_user_prompts = traversable_for_user_prompts
+	request.priority = input_request.priority
+	request.origin = input_request.origin
+	request.referrer = input_request.referrer
+	request.referrer_policy = input_request.referrer_policy
+	request.mode = input_request.mode
+	request.credentials_mode = input_request.credentials_mode
+	request.cache_mode = input_request.cache_mode
+	request.redirect_mode = input_request.redirect_mode
+	request.integrity_metadata = input_request.integrity_metadata
+	request.keepalive = input_request.keepalive
+	request.reload_navigation = input_request.reload_navigation
+	request.history_navigation = input_request.history_navigation
+	request.url_list = input_request.url_list.clone()
 	request.initiator_type = .fetch
+
+	init_is_empty := init.is_empty()
 	if !init_is_empty {
 		if request.mode == .navigate {
 			request.mode = .same_origin
@@ -83,9 +139,15 @@ pub fn RequestObject.construct(input RequestInput, init RequestInit) !&RequestOb
 		request.referrer_policy = ''
 		request.set_url(request.current_url())
 	}
-	if mode := init.mode {
-		if mode == .navigate { return error('TypeError: navigate mode cannot be constructed') }
-		request.mode = mode
+	mut mode := fallback_mode
+	if init_mode := init.mode {
+		mode = init_mode
+	}
+	if selected_mode := mode {
+		if selected_mode == .navigate {
+			return error('TypeError: navigate mode cannot be constructed')
+		}
+		request.mode = selected_mode
 	}
 	if method := init.method {
 		if !http.is_method(method) {
@@ -96,24 +158,38 @@ pub fn RequestObject.construct(input RequestInput, init RequestInit) !&RequestOb
 		}
 		request.method = http.normalize_method(method)
 	}
-	if credentials := init.credentials { request.credentials_mode = credentials }
-	if cache := init.cache { request.cache_mode = cache }
-	if redirect := init.redirect { request.redirect_mode = redirect }
-	if integrity := init.integrity { request.integrity_metadata = integrity }
-	if keepalive := init.keepalive { request.keepalive = keepalive }
-	if priority := init.priority { request.priority = priority }
-	if referrer_policy := init.referrer_policy { request.referrer_policy = referrer_policy }
+	if credentials := init.credentials {
+		request.credentials_mode = credentials
+	}
+	if cache := init.cache {
+		request.cache_mode = cache
+	}
+	if redirect := init.redirect {
+		request.redirect_mode = redirect
+	}
+	if integrity := init.integrity {
+		request.integrity_metadata = integrity
+	}
+	if keepalive := init.keepalive {
+		request.keepalive = keepalive
+	}
+	if priority := init.priority {
+		request.priority = priority
+	}
+	if referrer_policy := init.referrer_policy {
+		request.referrer_policy = referrer_policy
+	}
 	if referrer := init.referrer {
 		if referrer == '' {
 			request.referrer = Referrer{
 				sentinel: .no_referrer
 			}
 		} else {
-			base := request.url()
-			parsed := dom.dom_url_parse(referrer, base, 'UTF-8') or {
+			parsed := dom.dom_url_parse(referrer, base_url, 'UTF-8') or {
 				return error('TypeError: Invalid referrer URL')
 			}
-			if parsed.serialize() == 'about:client' || parsed.origin().value != base.origin().value {
+			if (parsed.scheme() == 'about' && parsed.serialize_path() == 'client')
+				|| !parsed.origin().is_same_origin(relevant_origin) {
 				request.referrer = Referrer{}
 			} else {
 				request.referrer = Referrer{
@@ -151,10 +227,11 @@ pub fn RequestObject.construct(input RequestInput, init RequestInit) !&RequestOb
 		request.header_list = headers.header_list()
 	}
 	mut body := ?&Body(none)
+	input_body_present := input_request.body.kind != .empty
+	if (init.body != none || input_body_present) && request.method in ['GET', 'HEAD'] {
+		return error('TypeError: GET/HEAD requests cannot have a body')
+	}
 	if body_init := init.body {
-		if request.method in ['GET', 'HEAD'] {
-			return error('TypeError: GET/HEAD requests cannot have a body')
-		}
 		if body_init.kind == .readable_stream && init.duplex == none {
 			return error('TypeError: ReadableStream body requires duplex=half')
 		}
@@ -164,8 +241,8 @@ pub fn RequestObject.construct(input RequestInput, init RequestInit) !&RequestOb
 		extracted := extract_body(body_init, request.keepalive)!
 		body = extracted.body
 		request.body = RequestBody{
-			kind:  .body_object
-			bytes: extracted.body.bytes()
+			kind: .body_object
+			body_object: extracted.body
 		}
 		if content_type := extracted.type_ {
 			if !request.header_list.contains('Content-Type') {
@@ -176,7 +253,7 @@ pub fn RequestObject.construct(input RequestInput, init RequestInit) !&RequestOb
 			request.use_cors_preflight = true
 		}
 	} else if source := input.request {
-		body = source.body_
+		body = source.request_.body.body_object
 		if source_body := body {
 			if source_body.source_kind == .readable_stream
 				&& request.mode !in [Mode.same_origin, .cors] {
@@ -186,17 +263,26 @@ pub fn RequestObject.construct(input RequestInput, init RequestInit) !&RequestOb
 				request.use_cors_preflight = true
 			}
 		}
+		if source.body_mixin().is_unusable() {
+			return error('TypeError: Request is unusable')
+		}
+		request.body = RequestBody{
+			kind: source.request_.body.kind
+			bytes: source.request_.body.bytes.clone()
+			body_object: source.request_.body.body_object
+		}
 	}
-	source_signal := init.signal or {
-		if source := input.request { source.signal_ } else { dom.AbortSignal.new() }
+	mut signals := []&dom.AbortSignal{}
+	if source_signal := init.signal {
+		signals << source_signal
+	} else if source := input.request {
+		signals << source.signal_
 	}
-
-	signal := dom.AbortSignal.create_dependent_abort_signal([source_signal])!
+	signal := dom.AbortSignal.create_dependent_abort_signal(signals)!
 	return &RequestObject{
 		request_: request
 		headers_: headers
-		signal_:  signal
-		body_:    body
+		signal_: signal
 	}
 }
 
@@ -221,8 +307,12 @@ pub fn (object &RequestObject) destination() ?Destination {
 }
 
 pub fn (object &RequestObject) referrer() string {
-	if object.request_.referrer.sentinel == .no_referrer { return '' }
-	if url := object.request_.referrer.url { return url.serialize() }
+	if object.request_.referrer.sentinel == .no_referrer {
+		return ''
+	}
+	if url := object.request_.referrer.url {
+		return url.serialize()
+	}
 	return 'about:client'
 }
 
@@ -272,7 +362,7 @@ pub fn (object &RequestObject) duplex() RequestDuplex {
 
 pub fn (object &RequestObject) body_mixin() BodyMixin {
 	return BodyMixin{
-		body:      object.body_
+		body: object.request_.body.body_object
 		mime_type: extract_mime_type(object.request_.header_list)
 	}
 }
@@ -282,109 +372,84 @@ pub fn (object &RequestObject) clone() !&RequestObject {
 		return error('TypeError: Body is unusable')
 	}
 	request := object.request_.clone()
-	body := if source_body := object.body_ { ?&Body(source_body.clone()) } else { ?&Body(none) }
 	signal := dom.AbortSignal.create_dependent_abort_signal([object.signal_])!
 	return &RequestObject{
 		request_: request
 		headers_: Headers.from_header_list(request.header_list, object.headers_.guard())
-		signal_:  signal
-		body_:    body
+		signal_: signal
 	}
 }
 
 pub struct ResponseInit {
 pub:
-	status      u16 = 200
-	status_text string
-	headers     []HeaderPair
+	status          u16 = 200
+	status_text     string
+	headers         []HeaderPair
+	headers_present bool
 }
 
 @[heap]
 pub struct ResponseObject {
 mut:
 	response_ &Response = unsafe { nil }
-	headers_  &Headers  = unsafe { nil }
-	body_     ?&Body
-}
-
-fn valid_status_text(value string) bool {
-	return value.bytes().all(it == 0x09 || (it >= 0x20 && it <= 0x7e))
+	headers_  &Headers = unsafe { nil }
 }
 
 pub fn ResponseObject.construct(body_init ?BodyInit, init ResponseInit) !&ResponseObject {
-	if init.status < 200 || init.status > 599 {
-		return error('RangeError: Invalid response status')
-	}
-	if !valid_status_text(init.status_text) {
-		return error('TypeError: Invalid response status text')
-	}
 	mut response := Response.create()
-	response.status = init.status
-	response.status_message = init.status_text
-	mut headers := Headers.construct(init.headers)!
-	headers.set_guard(.response)
-	response.header_list = headers.header_list()
-	mut body := ?&Body(none)
+	mut object := &ResponseObject{
+		response_: response
+		headers_: Headers.from_header_list(response.header_list, .response)
+	}
+	mut body_with_type := ?BodyWithType(none)
 	if init_body := body_init {
-		if is_null_body_status(init.status) {
-			return error('TypeError: Null-body status cannot have a body')
-		}
-		extracted := extract_body(init_body, false)!
-		body = extracted.body
-		response.body = extracted.body.bytes()
-		if content_type := extracted.type_ {
-			if !response.header_list.contains('Content-Type') {
-				response.header_list.append(http.Header{ name: 'Content-Type', value: content_type })
-			}
-		}
+		body_with_type = extract_body(init_body, false)!
 	}
-	return &ResponseObject{
-		response_: response
-		headers_:  headers
-		body_:     body
-	}
-}
-
-pub fn ResponseObject.error() &ResponseObject {
-	response := Response.network_error('Network error')
-	return &ResponseObject{
-		response_: response
-		headers_:  Headers.from_header_list(response.header_list, .immutable)
-	}
-}
-
-pub fn ResponseObject.redirect(url string, status u16) !&ResponseObject {
-	if status !in [u16(301), 302, 303, 307, 308] {
-		return error('RangeError: Invalid redirect status')
-	}
-	parsed := dom.dom_url_parse(url, dom.URL{'about:blank'}, 'UTF-8') or {
-		return error('TypeError: Invalid redirect URL')
-	}
-	mut object := ResponseObject.construct(none, ResponseInit{
-		status:  status
-		headers: [HeaderPair{ name: 'Location', value: parsed.serialize() }]
-	})!
-	object.headers_.set_guard(.immutable)
+	object.initialize_response(init, body_with_type)!
 	return object
 }
 
-pub fn ResponseObject.json(data string, init ResponseInit) !&ResponseObject {
-	mut headers := init.headers.clone()
-	if !headers.any(equals_ignoring_ascii_case(it.name, 'content-type')) {
-		headers << HeaderPair{
-			name:  'Content-Type'
-			value: 'application/json'
-		}
+pub fn ResponseObject.error() &ResponseObject {
+	response := Response.network_error('Response created via `Response.error()`')
+	return &ResponseObject{
+		response_: response
+		headers_: Headers.from_header_list(response.header_list, .immutable)
 	}
-	return ResponseObject.construct(BodyInit{ kind: .bytes, bytes: data.bytes() }, ResponseInit{
-		status:      init.status
-		status_text: init.status_text
-		headers:     headers
-	})
+}
+
+pub fn ResponseObject.redirect(url string, status u16, api_base_url dom.URL) !&ResponseObject {
+	parsed := dom.dom_url_parse(url, api_base_url, 'UTF-8') or {
+		return error('TypeError: Invalid redirect URL')
+	}
+	if !is_redirect_status(status) {
+		return error('RangeError: Invalid redirect status')
+	}
+	mut response := Response.create()
+	response.status = status
+	response.header_list.append(http.Header{ name: 'Location', value: parsed.serialize() })
+	return &ResponseObject{
+		response_: response
+		headers_: Headers.from_header_list(response.header_list, .immutable)
+	}
+}
+
+pub fn ResponseObject.json(data infra.JSONValue, init ResponseInit) !&ResponseObject {
+	bytes := infra.serialize_javascript_value_to_json_bytes(data)!
+	extracted := extract_body(BodyInit{ kind: .bytes, bytes: bytes }, false)!
+	mut response := Response.create()
+	mut object := &ResponseObject{
+		response_: response
+		headers_: Headers.from_header_list(response.header_list, .response)
+	}
+	object.initialize_response(init, BodyWithType{
+		body: extracted.body
+		type_: 'application/json'
+	})!
+	return object
 }
 
 pub fn (object &ResponseObject) type_() ResponseType {
-	return object.response_.response_type
+	return object.response_.fetch_response_type()
 }
 
 pub fn (object &ResponseObject) url() string {
@@ -394,19 +459,19 @@ pub fn (object &ResponseObject) url() string {
 }
 
 pub fn (object &ResponseObject) redirected() bool {
-	return object.response_.url_list.len > 1
+	return object.response_.fetch_response_url_list().len > 1
 }
 
 pub fn (object &ResponseObject) status() u16 {
-	return object.response_.status
+	return object.response_.fetch_response_status()
 }
 
 pub fn (object &ResponseObject) ok() bool {
-	return is_ok_status(object.response_.status)
+	return is_ok_status(object.response_.fetch_response_status())
 }
 
 pub fn (object &ResponseObject) status_text() string {
-	return object.response_.status_message
+	return object.response_.fetch_response_status_message()
 }
 
 pub fn (object &ResponseObject) headers() &Headers {
@@ -415,18 +480,19 @@ pub fn (object &ResponseObject) headers() &Headers {
 
 pub fn (object &ResponseObject) body_mixin() BodyMixin {
 	return BodyMixin{
-		body:      object.body_
+		body: object.response_.fetch_response_body()
 		mime_type: extract_mime_type(object.response_.header_list)
 	}
 }
 
 pub fn (object &ResponseObject) clone() !&ResponseObject {
-	if object.body_mixin().is_unusable() { return error('TypeError: Body is unusable') }
+	if object.body_mixin().is_unusable() {
+		return error('TypeError: Body is unusable')
+	}
 	response := object.response_.clone()
 	return &ResponseObject{
 		response_: response
-		headers_:  Headers.from_header_list(response.header_list, object.headers_.guard())
-		body_:     if body := object.body_ { body.clone() } else { none }
+		headers_: Headers.from_header_list(response.header_list, object.headers_.guard())
 	}
 }
 
@@ -434,12 +500,13 @@ pub fn fetch_request(input RequestInput, init RequestInit, host &FetchHost) !&Re
 	request_object := RequestObject.construct(input, init)!
 	params := FetchParams.create(request_object.internal_request(), FetchTimingInfo.create())
 	response := main_fetch(params, host).response() or { return error('NetworkError: No response') }
-	if response.is_network_error() { return error(response.network_error_message or {
-			'NetworkError'}) }
-	body := if bytes := response.body { Body.from_bytes(bytes, .bytes) } else { none }
+	if response.is_network_error() {
+		return error(response.network_error_message or {
+			'NetworkError'
+		})
+	}
 	return &ResponseObject{
 		response_: response
-		headers_:  Headers.from_header_list(response.header_list, .immutable)
-		body_:     body
+		headers_: Headers.from_header_list(response.header_list, .immutable)
 	}
 }

@@ -42,9 +42,9 @@ pub mut:
 	processed     bool
 	aborted       bool
 	transaction_  ?&IDBTransaction
-	uuid_          string
-	onsucceed_     ?IDBEventHandler
-	onerror_       ?IDBEventHandler
+	uuid_         string
+	onsucceed_    ?IDBEventHandler
+	onerror_      ?IDBEventHandler
 }
 
 pub fn IDBRequest.create(source_name string) &IDBRequest {
@@ -100,8 +100,8 @@ pub mut:
 	old_version         u64
 	new_version         ?u64
 	upgrade_transaction &IDBTransaction = unsafe { nil }
-	onblocked_           ?IDBEventHandler
-	onupgradeneeded_     ?IDBEventHandler
+	onblocked_          ?IDBEventHandler
+	onupgradeneeded_    ?IDBEventHandler
 }
 
 pub struct IDBVersionChangeEvent {
@@ -115,7 +115,7 @@ pub:
 
 pub fn new_version_change_event(type_ string, old_version u64, new_version ?u64) IDBVersionChangeEvent {
 	return IDBVersionChangeEvent{
-		type_:       type_
+		type_: type_
 		old_version: old_version
 		new_version: new_version
 	}

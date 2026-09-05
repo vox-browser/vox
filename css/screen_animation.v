@@ -2,6 +2,7 @@ module css
 
 import dom
 import math
+import time
 
 pub struct CSSPixelPoint {
 pub mut:
@@ -77,16 +78,14 @@ pub fn (mut transform AffineTransform) scale(scale_x f64, scale_y f64) {
 }
 
 pub fn (transform AffineTransform) map(position CSSPixelPoint) CSSPixelPoint {
-	return CSSPixelPoint.from_values(position.x_.to_double() * transform.scale_x +
-		transform.translate_x, position.y_.to_double() * transform.scale_y + transform.translate_y)
+	return CSSPixelPoint.from_values(position.x_.to_double() * transform.scale_x + transform.translate_x, position.y_.to_double() * transform.scale_y + transform.translate_y)
 }
 
 pub fn (transform AffineTransform) inverse_map(position CSSPixelPoint) CSSPixelPoint {
 	if transform.scale_x == 0 || transform.scale_y == 0 {
 		return position
 	}
-	return CSSPixelPoint.from_values((position.x_.to_double() - transform.translate_x) / transform.scale_x,
-		(position.y_.to_double() - transform.translate_y) / transform.scale_y)
+	return CSSPixelPoint.from_values((position.x_.to_double() - transform.translate_x) / transform.scale_x, (position.y_.to_double() - transform.translate_y) / transform.scale_y)
 }
 
 // https://drafts.csswg.org/cssom-view/#the-screen-interface
@@ -96,7 +95,7 @@ pub struct Screen {
 pub mut:
 	web_exposed_screen_area           CSSPixelRect = CSSPixelRect.new(0, 0, 800, 600)
 	web_exposed_available_screen_area CSSPixelRect = CSSPixelRect.new(0, 0, 800, 600)
-	screen_count                      int          = 1
+	screen_count                      int = 1
 	window_management_allowed         bool
 	orientation_                      ?&ScreenOrientation
 }
@@ -278,7 +277,7 @@ pub struct VisualViewport {
 pub mut:
 	document_      ?&dom.Document
 	offset_        CSSPixelPoint
-	scale_         f64          = 1.0
+	scale_         f64 = 1.0
 	viewport_rect_ CSSPixelRect = CSSPixelRect.new(0, 0, 800, 600)
 	needs_repaint  bool
 	needs_contexts bool
@@ -439,8 +438,7 @@ pub fn (viewport &VisualViewport) transform() AffineTransform {
 pub fn (mut viewport VisualViewport) zoom(position CSSPixelPoint, scale_delta f64) {
 	min_allowed_scale := 1.0
 	max_allowed_scale := 5.0
-	new_scale := screen_animation_clamp_f64(viewport.scale_ * (1.0 + scale_delta),
-		min_allowed_scale, max_allowed_scale)
+	new_scale := screen_animation_clamp_f64(viewport.scale_ * (1.0 + scale_delta), min_allowed_scale, max_allowed_scale)
 	applied_delta := new_scale / viewport.scale_
 
 	// For pinch zoom we want focal_point to stay put on screen:
@@ -457,8 +455,7 @@ pub fn (mut viewport VisualViewport) zoom(position CSSPixelPoint, scale_delta f6
 	new_offset_y = screen_animation_clamp_f64(new_offset_y, 0.0, max_y_offset)
 
 	viewport.scale_ = new_scale
-	viewport.offset_ = CSSPixelPoint.from_values(new_offset_x / viewport.scale_,
-		new_offset_y / viewport.scale_)
+	viewport.offset_ = CSSPixelPoint.from_values(new_offset_x / viewport.scale_, new_offset_y / viewport.scale_)
 	viewport.needs_contexts = true
 	viewport.needs_repaint = true
 }
@@ -508,7 +505,7 @@ pub mut:
 	target_                      ?dom.AbstractElement
 	specified_start_delay        f64
 	specified_iteration_duration f64
-	iteration_count              f64            = 1.0
+	iteration_count              f64 = 1.0
 	timing_function_             EasingFunction = EasingFunction.linear()
 	fill_mode                    AnimationFillMode
 	playback_direction           AnimationDirection
@@ -518,9 +515,20 @@ pub mut:
 	// CSS-side sampling state. Upstream obtains these through AnimationEffect's
 	// associated Animation and timeline; keeping them on the translated effect
 	// preserves that behavior without making dom import css.
-	output_progress   ?f64
-	default_easing    EasingFunction = EasingFunction.ease()
-	is_css_transition bool
+	output_progress            ?f64
+	default_easing             EasingFunction = EasingFunction.ease()
+	is_css_transition          bool
+	previous_phase             WebAnimationEffectPhase = .idle
+	current_phase              WebAnimationEffectPhase = .idle
+	previous_current_iteration f64
+	current_iteration          f64
+}
+
+pub enum WebAnimationEffectPhase {
+	before
+	active
+	after
+	idle
 }
 
 pub fn KeyframeEffect.create() &KeyframeEffect {
@@ -598,6 +606,7 @@ const animation_key_frame_key_scale_factor = 1000
 
 @[heap]
 pub struct CSSAnimation {
+	dom.Animation
 pub mut:
 	animation_name_                string
 	default_easing_                EasingFunction = EasingFunction.ease()
@@ -614,7 +623,10 @@ pub mut:
 }
 
 pub fn CSSAnimation.create() &CSSAnimation {
-	return &CSSAnimation{}
+	mut animation := &CSSAnimation{}
+	animation.Animation.concrete_handle_ = voidptr(animation)
+	animation.Animation.concrete_kind_ = .css_animation
+	return animation
 }
 
 // https://drafts.csswg.org/css-animations-2/#dom-cssanimation-animationname
@@ -688,6 +700,7 @@ pub fn (mut animation CSSAnimation) cancel() {
 	animation.play_state_ = .idle
 	if animation.effect_ != unsafe { nil } {
 		animation.effect_.set_output_progress(none)
+		animation.effect_.current_phase = .idle
 	}
 	animation.last_sample_time_ = none
 	animation.paused_progress_ = none
@@ -819,6 +832,7 @@ pub fn (mut animation CSSAnimation) sample_at(timeline_time f64) ?f64 {
 	mut effect := animation.effect_
 	if animation.play_state_ == .idle || animation.timeline_ == none {
 		effect.set_output_progress(none)
+		effect.current_phase = .idle
 		return none
 	}
 	if animation.play_state_ == .paused {
@@ -839,6 +853,13 @@ pub fn (mut animation CSSAnimation) sample_at(timeline_time f64) ?f64 {
 		math.inf(1)
 	} else {
 		math.max(0.0, duration) * math.max(0.0, effect.iteration_count)
+	}
+	effect.current_phase = if active_time < 0 {
+		.before
+	} else if active_time >= active_duration && !math.is_inf(active_duration, 0) {
+		.after
+	} else {
+		.active
 	}
 
 	mut simple_progress := 0.0
@@ -886,6 +907,7 @@ pub fn (mut animation CSSAnimation) sample_at(timeline_time f64) ?f64 {
 	}
 
 	effect.set_output_progress(simple_progress)
+	effect.current_iteration = f64(iteration_index)
 	if animation.play_state_ == .paused {
 		animation.paused_progress_ = simple_progress
 	}
@@ -933,9 +955,17 @@ pub fn (mut storage CSSAnimationStorage) set(abstract_element dom.AbstractElemen
 	}
 	storage.entries << CSSAnimationStorageEntry{
 		abstract_element: abstract_element
-		name:             name
-		animation:        animation
+		name: name
+		animation: animation
 	}
+	mut mutable_abstract_element := abstract_element
+	mutable_abstract_element.set_css_defined_animation(name, &dom.CSSAnimation_{
+		target: voidptr(animation)
+		cancel_callback: dom_css_animation_cancel
+		play_callback: dom_css_animation_play
+		pause_callback: dom_css_animation_pause
+		last_play_state_callback: dom_css_animation_last_play_state
+	})
 }
 
 pub fn (mut storage CSSAnimationStorage) remove_animations_not_named(abstract_element dom.AbstractElement, defined_names map[string]bool) {
@@ -947,9 +977,35 @@ pub fn (mut storage CSSAnimationStorage) remove_animations_not_named(abstract_el
 		} else {
 			mut animation := entry.animation
 			animation.cancel()
+			mut mutable_abstract_element := abstract_element
+			mutable_abstract_element.remove_css_defined_animation(entry.name)
 		}
 	}
 	storage.entries = kept
+}
+
+fn dom_css_animation_cancel(target voidptr) {
+	mut animation := unsafe { &CSSAnimation(target) }
+	animation.cancel()
+}
+
+fn dom_css_animation_play(target voidptr) {
+	mut animation := unsafe { &CSSAnimation(target) }
+	animation.play() or {}
+}
+
+fn dom_css_animation_pause(target voidptr) {
+	mut animation := unsafe { &CSSAnimation(target) }
+	animation.pause() or {}
+}
+
+fn dom_css_animation_last_play_state(target voidptr) ?dom.CSSAnimationPlayState_ {
+	animation := unsafe { &CSSAnimation(target) }
+	state := animation.last_css_animation_play_state() or { return none }
+	return match state {
+		.running { dom.CSSAnimationPlayState_.running }
+		.paused { dom.CSSAnimationPlayState_.paused }
+	}
 }
 
 pub fn (mut animation CSSAnimation) set_timeline_for_bindings(timeline ?&AnimationTimeline) {
@@ -966,6 +1022,7 @@ pub fn (animation &CSSAnimation) is_css_animation() bool {
 
 @[heap]
 pub struct CSSTransition {
+	dom.Animation
 pub mut:
 	owning_element_              ?dom.AbstractElement
 	global_animation_list_order_ int
@@ -987,6 +1044,7 @@ pub mut:
 	keyframe_effect_             &KeyframeEffect = unsafe { nil }
 	cached_declaration           ?&CSSStyleProperties
 	previous_phase_              CSSTransitionPhase = .idle
+	current_phase_               CSSTransitionPhase = .idle
 	timeline_                    ?&AnimationTimeline
 	play_state_                  WebAnimationPlayState
 }
@@ -1031,14 +1089,19 @@ pub mut:
 }
 
 fn style_values_equal(a &dom.StyleValue, b &dom.StyleValue) bool {
+	if typed_a := typed_style_value_logic_from_dom(a) {
+		if typed_b := typed_style_value_logic_from_dom(b) {
+			return typed_a.equals(typed_b)
+		}
+	}
 	return a.css_text == b.css_text
 }
 
 fn transition_attributes_from_transition_properties(properties TransitionProperties) TransitionTimingAttributes {
 	return TransitionTimingAttributes{
-		delay:               properties.delay
-		duration:            properties.duration
-		timing_function:     properties.timing_function
+		delay: properties.delay
+		duration: properties.duration
+		timing_function: properties.timing_function
 		transition_behavior: properties.transition_behavior
 	}
 }
@@ -1088,8 +1151,8 @@ pub fn (mut storage CSSTransitionStorage) add_transitioned_properties(abstract_e
 			bucket.indexes[property_id] = bucket.entries.len
 			bucket.entries << CSSTransitionStorageEntry{
 				abstract_element: abstract_element
-				property_id:      property_id
-				attributes:       attributes
+				property_id: property_id
+				attributes: attributes
 			}
 		}
 	}
@@ -1152,8 +1215,8 @@ pub fn (mut storage CSSTransitionStorage) set_transition(abstract_element dom.Ab
 	bucket.indexes[property_id] = bucket.entries.len
 	bucket.entries << CSSTransitionStorageEntry{
 		abstract_element: abstract_element
-		property_id:      property_id
-		transition:       transition
+		property_id: property_id
+		transition: transition
 	}
 }
 
@@ -1175,7 +1238,7 @@ pub fn (mut storage CSSTransitionStorage) remove_transition(abstract_element dom
 	}
 }
 
-pub fn compute_transitioned_properties_for_storage(style &ComputedProperties, abstract_element dom.AbstractElement, mut storage CSSTransitionStorage) {
+pub fn compute_transitioned_properties(style &ComputedProperties, abstract_element dom.AbstractElement, mut storage CSSTransitionStorage) {
 	// FIXME: For now we don't bother registering transitions on the first computation since they can't run (because
 	//        there is nothing to transition from) but this will change once we implement @starting-style.
 	if abstract_element.computed_properties() == none {
@@ -1183,6 +1246,42 @@ pub fn compute_transitioned_properties_for_storage(style &ComputedProperties, ab
 	}
 
 	storage.clear_registered_transitions(abstract_element)
+
+	delay := style.property(.transition_delay, .no) or { return }
+	duration := style.property(.transition_duration, .no) or { return }
+
+	value_is_list_containing_a_single_time_of_zero_seconds := fn (value &dom.StyleValue) bool {
+		style_value := typed_style_value_logic_from_dom(value) or { return false }
+		if style_value !is StyleValueList {
+			return false
+		}
+
+		value_list := style_value as StyleValueList
+		values := value_list.values()
+		if values.len != 1 {
+			return false
+		}
+
+		if values[0] !is TimeStyleValue {
+			return false
+		}
+
+		return (values[0] as TimeStyleValue).time().to_seconds() == 0
+	}
+
+	// OPTIMIZATION: Registered transitions with a "combined duration" of less than or equal to 0s are equivalent to not
+	//               having a transition registered at all, except in the case that we already have an associated
+	//               transition for that property, so we can skip registering them. This implementation intentionally
+	//               ignores some of those cases (e.g. transitions being registered but for other properties, multiple
+	//               transitions, negative delays, etc) since it covers the common (initial property values) case and
+	//               the other cases are rare enough that the cost of identifying them would likely more than offset any
+	//               gains.
+	if storage.property_ids_with_existing_transitions(abstract_element).len == 0
+		&& value_is_list_containing_a_single_time_of_zero_seconds(delay)
+		&& value_is_list_containing_a_single_time_of_zero_seconds(duration) {
+		return
+	}
+
 	storage.add_transitioned_properties(abstract_element, style.transitions())
 }
 
@@ -1194,67 +1293,68 @@ fn combined_transition_duration(transition_attributes TransitionTimingAttributes
 fn collect_transition_into_computed_properties(abstract_element dom.AbstractElement, transition &CSSTransition, mut computed_properties ComputedProperties) {
 	start := transition.transition_start_value()
 	end := transition.transition_end_value()
-	value := interpolate_property(abstract_element.element(), transition.transition_property_,
-		start, end, 0.0, .yes) or { start }
+	value := interpolate_property(abstract_element.element(), transition.transition_property_, start, end, 0.0, .yes) or { start }
 	computed_properties.set_animated_property(transition.transition_property_, value, .yes, .no)
 }
 
 pub fn transition_timing_attributes_for_property(abstract_element dom.AbstractElement, property_id PropertyID) TransitionTimingAttributes {
-	_ = abstract_element
-	_ = property_id
-	// Boundary: Element::property_transition_attributes(pseudo_element, property_id) is not translated on DOM::Element.
-	// Callers that translate StyleComputer's transition update flow should pass CSSTransitionStorage explicitly.
-	return TransitionTimingAttributes{}
+	style_computer := css_style_computer_for(abstract_element.document())
+	storage := style_computer.css_transition_storage_
+	if storage == unsafe { nil } {
+		return TransitionTimingAttributes{}
+	}
+	return storage.property_transition_attributes(abstract_element, property_id) or {
+		TransitionTimingAttributes{}
+	}
 }
 
 fn document_timeline_for_transition(abstract_element dom.AbstractElement) ?&AnimationTimeline {
-	_ = abstract_element
-	// Boundary: abstract_element.document().timeline() is a DOM DocumentTimeline in this partial port,
-	// while CSS animations currently use the local AnimationTimeline model.
-	return &AnimationTimeline{}
+	style_computer := css_style_computer_for(abstract_element.document())
+	if style_computer.document_timeline_ == unsafe { nil } {
+		return none
+	}
+	return style_computer.document_timeline_
 }
 
 fn set_transition_on_element(abstract_element dom.AbstractElement, property_id PropertyID, transition &CSSTransition) {
-	_ = abstract_element
-	_ = property_id
-	_ = transition
-	// Boundary: Element::set_transition(pseudo_element, property_id, transition) is not translated yet.
+	mut style_computer := css_style_computer_for(abstract_element.document())
+	if style_computer.css_transition_storage_ == unsafe { nil } {
+		return
+	}
+	style_computer.css_transition_storage_.set_transition(abstract_element, property_id, transition)
 }
 
 pub fn CSSTransition.start_a_transition(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
-	return CSSTransition.new(abstract_element, property_id, transition_generation, delay,
-		start_time, end_time, start_value, end_value, reversing_adjusted_start_value,
-		reversing_shortening_factor)
+	return CSSTransition.new(abstract_element, property_id, transition_generation, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor)
 }
 
 pub fn CSSTransition.new(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
-	transition_attributes := transition_timing_attributes_for_property(abstract_element,
-		property_id)
-	return CSSTransition.new_with_timing_attributes(abstract_element, property_id,
-		transition_generation, transition_attributes, delay, start_time, end_time, start_value,
-		end_value, reversing_adjusted_start_value, reversing_shortening_factor)
+	transition_attributes := transition_timing_attributes_for_property(abstract_element, property_id)
+	transition := CSSTransition.new_with_timing_attributes(abstract_element, property_id, transition_generation, transition_attributes, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor)
+	set_transition_on_element(abstract_element, property_id, transition)
+	return transition
 }
 
 pub fn CSSTransition.start_a_transition_for_storage(mut storage CSSTransitionStorage, abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, transition_attributes TransitionTimingAttributes, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
-	transition := CSSTransition.new_with_timing_attributes(abstract_element, property_id,
-		transition_generation, transition_attributes, delay, start_time, end_time, start_value,
-		end_value, reversing_adjusted_start_value, reversing_shortening_factor)
+	transition := CSSTransition.new_with_timing_attributes(abstract_element, property_id, transition_generation, transition_attributes, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor)
 	storage.set_transition(abstract_element, property_id, transition)
 	return transition
 }
 
 pub fn CSSTransition.new_with_timing_attributes(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, transition_attributes TransitionTimingAttributes, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
 	mut transition := &CSSTransition{
-		transition_property_:            property_id
-		transition_generation_:          transition_generation
-		start_time_:                     start_time + delay
-		end_time_:                       end_time + delay
-		start_value_:                    start_value
-		end_value_:                      end_value
+		transition_property_: property_id
+		transition_generation_: transition_generation
+		start_time_: start_time + delay
+		end_time_: end_time + delay
+		start_value_: start_value
+		end_value_: end_value
 		reversing_adjusted_start_value_: reversing_adjusted_start_value
-		reversing_shortening_factor_:    reversing_shortening_factor
-		keyframe_effect_:                KeyframeEffect.create()
+		reversing_shortening_factor_: reversing_shortening_factor
+		keyframe_effect_: KeyframeEffect.create()
 	}
+	transition.Animation.concrete_handle_ = voidptr(transition)
+	transition.Animation.concrete_kind_ = .css_transition
 
 	// FIXME:
 	// Transitions generated using the markup defined in this specification are not added to the global animation list
@@ -1291,17 +1391,15 @@ pub fn CSSTransition.new_with_timing_attributes(abstract_element dom.AbstractEle
 	transition.set_timeline(document_timeline_for_transition(abstract_element))
 	transition.set_owning_element(abstract_element)
 	transition.set_effect(transition.keyframe_effect_)
-	set_transition_on_element(abstract_element, transition.transition_property_, transition)
-
-	// Boundary: HTML::TemporaryExecutionContext is not translated yet.
+	document := abstract_element.document()
+	execution_context := document.begin_temporary_execution_context()
 	transition.play() or {}
+	document.end_temporary_execution_context(execution_context)
 	return transition
 }
 
 fn start_transition_for_storage(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, transition_attributes TransitionTimingAttributes, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64, mut new_style ComputedProperties, mut storage CSSTransitionStorage) &CSSTransition {
-	transition := CSSTransition.start_a_transition_for_storage(mut storage, abstract_element,
-		property_id, transition_generation, transition_attributes, delay, start_time, end_time,
-		start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor)
+	transition := CSSTransition.start_a_transition_for_storage(mut storage, abstract_element, property_id, transition_generation, transition_attributes, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor)
 
 	// Immediately set the property's value to the transition's current value, to prevent single-frame jumps.
 	collect_transition_into_computed_properties(abstract_element, transition, mut new_style)
@@ -1309,16 +1407,15 @@ fn start_transition_for_storage(abstract_element dom.AbstractElement, property_i
 }
 
 // https://drafts.csswg.org/css-transitions/#starting
-pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, mut new_style ComputedProperties, abstract_element dom.AbstractElement, transition_generation int, style_change_event_time f64, mut storage CSSTransitionStorage) {
+pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, mut new_style ComputedProperties, abstract_element dom.AbstractElement, transition_generation int, document_timeline &AnimationTimeline, mut storage CSSTransitionStorage) {
 	// For each element and property, the implementation must act as follows:
-	// NB: C++ gets style_change_event_time from DocumentTimeline's current time in milliseconds. The caller supplies it
-	// here because DocumentTimeline is not translated into this CSS animation model yet.
+	// NB: A DocumentTimeline's current time is always in milliseconds.
+	style_change_event_time := document_timeline.current_time_ms() or { return }
 
 	// OPTIMIZATION: Instead of iterating over all properties we split the logic into two loops, one for the properties
 	//               which appear in transition-property and one for those which have existing transitions
 	for property_id in storage.property_ids_with_matching_transition_property_entry(abstract_element) {
-		matching_transition_properties := storage.property_transition_attributes(abstract_element,
-			property_id) or { continue }
+		matching_transition_properties := storage.property_transition_attributes(abstract_element, property_id) or { continue }
 
 		mut existing_transition := &CSSTransition(unsafe { nil })
 		mut has_existing_transition := false
@@ -1350,7 +1447,7 @@ pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, 
 		// - the before-change style is different from the after-change style for that property, and the values for the property are transitionable,
 		before_and_after_are_transitionable :=
 			!style_values_equal(before_change_value, after_change_value)
-			&& property_values_are_transitionable(property_id, before_change_value, after_change_value, abstract_element.element(), matching_transition_properties.transition_behavior)
+				&& property_values_are_transitionable(property_id, before_change_value, after_change_value, abstract_element.element(), matching_transition_properties.transition_behavior)
 		// - the element does not have a completed transition for the property
 		//   or the end value of the completed transition is different from the after-change style for the property,
 		completed_transition_can_be_replaced := !has_completed_transition
@@ -1363,6 +1460,7 @@ pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, 
 			if has_completed_transition {
 				storage.remove_transition(abstract_element, property_id)
 			}
+
 			// and start a transition whose:
 
 			// AD-HOC: We pass delay to the constructor separately so we can use it to construct the contained KeyframeEffect
@@ -1386,15 +1484,11 @@ pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, 
 			// - reversing shortening factor is 1.
 			reversing_shortening_factor := 1.0
 
-			start_transition_for_storage(abstract_element, property_id, transition_generation,
-				matching_transition_properties, delay, start_time, end_time, start_value,
-				end_value, reversing_adjusted_start_value, reversing_shortening_factor, mut
-				new_style, mut storage)
-		}
-		// 2. Otherwise, if the element has a completed transition for the property
-		//    and the end value of the completed transition is different from the after-change style for the property,
-		//    then implementations must remove the completed transition from the set of completed transitions.
-		else if has_completed_transition
+			start_transition_for_storage(abstract_element, property_id, transition_generation, matching_transition_properties, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor, mut new_style, mut storage)
+			// 2. Otherwise, if the element has a completed transition for the property
+			//    and the end value of the completed transition is different from the after-change style for the property,
+			//    then implementations must remove the completed transition from the set of completed transitions.
+		} else if has_completed_transition
 			&& !style_values_equal(existing_transition.transition_end_value(), after_change_value) {
 			storage.remove_transition(abstract_element, property_id)
 		}
@@ -1413,19 +1507,15 @@ pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, 
 			if style_values_equal(current_value, after_change_value)
 				|| !property_values_are_transitionable(property_id, current_value, after_change_value, abstract_element.element(), matching_transition_properties.transition_behavior) {
 				existing_transition.cancel()
-			}
-			// 2. Otherwise, if the combined duration is less than or equal to 0s,
-			//    or if the current value of the property in the running transition is not transitionable with the value of the property in the after-change style,
-			//    then implementations must cancel the running transition.
-			else if combined_transition_duration(matching_transition_properties) <= 0
+				// 2. Otherwise, if the combined duration is less than or equal to 0s,
+				//    or if the current value of the property in the running transition is not transitionable with the value of the property in the after-change style,
+				//    then implementations must cancel the running transition.
+			} else if combined_transition_duration(matching_transition_properties) <= 0
 				|| !property_values_are_transitionable(property_id, current_value, after_change_value, abstract_element.element(), matching_transition_properties.transition_behavior) {
 				existing_transition.cancel()
-			}
-			// 3. Otherwise, if the reversing-adjusted start value of the running transition is the same as the value of the property in the after-change style
-			//    (see the section on reversing of transitions for why these case exists),
-			else if style_values_equal(existing_transition.reversing_adjusted_start_value(),
-				after_change_value)
-			{
+				// 3. Otherwise, if the reversing-adjusted start value of the running transition is the same as the value of the property in the after-change style
+				//    (see the section on reversing of transitions for why these case exists),
+			} else if style_values_equal(existing_transition.reversing_adjusted_start_value(), after_change_value) {
 				// implementations must cancel the running transition and start a new transition whose:
 				existing_transition.cancel()
 				// AD-HOC: Remove the cancelled transition, otherwise it breaks the invariant that there is only one
@@ -1441,8 +1531,7 @@ pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, 
 				term_1 := existing_transition.timing_function_output_at_time(style_change_event_time) * existing_transition.reversing_shortening_factor()
 				//   2. 1 minus the reversing shortening factor of the old transition.
 				term_2 := 1 - existing_transition.reversing_shortening_factor()
-				reversing_shortening_factor := screen_animation_clamp_f64(math.abs(term_1 + term_2),
-					0.0, 1.0)
+				reversing_shortening_factor := screen_animation_clamp_f64(math.abs(term_1 + term_2), 0.0, 1.0)
 
 				// AD-HOC: We pass delay to the constructor separately so we can use it to construct the contained KeyframeEffect
 				delay := if matching_transition_properties.delay >= 0 {
@@ -1457,8 +1546,7 @@ pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, 
 				start_time := style_change_event_time
 
 				// - end time is the start time plus the product of the matching transition duration and the new transition's reversing shortening factor,
-				end_time := start_time +
-					(matching_transition_properties.duration * reversing_shortening_factor)
+				end_time := start_time + (matching_transition_properties.duration * reversing_shortening_factor)
 
 				// - start value is the current value of the property in the running transition,
 				start_value := current_value
@@ -1466,13 +1554,9 @@ pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, 
 				// - end value is the value of the property in the after-change style,
 				end_value := after_change_value
 
-				start_transition_for_storage(abstract_element, property_id, transition_generation,
-					matching_transition_properties, delay, start_time, end_time, start_value,
-					end_value, reversing_adjusted_start_value, reversing_shortening_factor, mut
-					new_style, mut storage)
-			}
-			// 4. Otherwise,
-			else {
+				start_transition_for_storage(abstract_element, property_id, transition_generation, matching_transition_properties, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor, mut new_style, mut storage)
+			} else {
+				// 4. Otherwise,
 				// implementations must cancel the running transition and start a new transition whose:
 				existing_transition.cancel()
 				// AD-HOC: Remove the cancelled transition, otherwise it breaks the invariant that there is only one
@@ -1500,10 +1584,7 @@ pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, 
 				// - reversing shortening factor is 1.
 				reversing_shortening_factor := 1.0
 
-				start_transition_for_storage(abstract_element, property_id, transition_generation,
-					matching_transition_properties, delay, start_time, end_time, start_value,
-					end_value, reversing_adjusted_start_value, reversing_shortening_factor, mut
-					new_style, mut storage)
+				start_transition_for_storage(abstract_element, property_id, transition_generation, matching_transition_properties, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor, mut new_style, mut storage)
 			}
 		}
 	}
@@ -1578,23 +1659,29 @@ pub fn (mut transition CSSTransition) play() ! {
 
 pub fn (mut transition CSSTransition) cancel() {
 	transition.play_state_ = .idle
+	transition.current_phase_ = .idle
 	transition.keyframe_effect_.set_output_progress(none)
 }
 
 pub fn (mut transition CSSTransition) sample_at(timeline_time f64) ?f64 {
 	if transition.play_state_ == .idle || transition.keyframe_effect_ == unsafe { nil } {
+		transition.current_phase_ = .idle
 		return none
 	}
 	mut progress := 0.0
 	if transition.end_time_ <= transition.start_time_ {
 		progress = 1.0
-	} else if timeline_time <= transition.start_time_ {
+		transition.current_phase_ = .after
+	} else if timeline_time < transition.start_time_ {
 		progress = 0.0
+		transition.current_phase_ = .before
 	} else if timeline_time >= transition.end_time_ {
 		progress = 1.0
 		transition.play_state_ = .finished
+		transition.current_phase_ = .after
 	} else {
 		progress = (timeline_time - transition.start_time_) / (transition.end_time_ - transition.start_time_)
+		transition.current_phase_ = .active
 	}
 	transition.keyframe_effect_.set_output_progress(progress)
 	return progress
@@ -1709,4 +1796,184 @@ pub fn (mut transition CSSTransition) set_previous_phase(phase CSSTransitionPhas
 pub fn (transition &CSSTransition) is_css_transition() bool {
 	_ = transition
 	return true
+}
+
+enum TransitionEventInterval {
+	start
+	end
+	active_time
+}
+
+fn css_animation_pseudo_element_string(owner dom.AbstractElement) string {
+	pseudo := owner.pseudo_element() or { return '' }
+	return '::${pseudo_element_name(style_scope_pseudo_element_from_dom(pseudo))}'
+}
+
+fn css_animation_event_scheduled_time() f64 {
+	return f64(time.sys_mono_now()) / 1.0e6
+}
+
+fn append_transition_event(mut document dom.Document, transition &CSSTransition, name string, interval TransitionEventInterval) {
+	owner := transition.owning_element() or { return }
+	effect := transition.effect() or { return }
+	active_duration := math.max(0.0, effect.specified_iteration_duration)
+	elapsed_time_ms := match interval {
+		.start { math.max(0.0, math.min(-effect.specified_start_delay, active_duration)) }
+		.end { active_duration }
+		.active_time { 0.0 }
+	}
+	event := TransitionEvent.create(name, TransitionEventInit{
+		EventInit: dom.EventInit{
+			bubbles: true
+		}
+		property_name: transition.transition_property()
+		elapsed_time: elapsed_time_ms / 1000.0
+		pseudo_element: css_animation_pseudo_element_string(owner)
+	})
+	document.append_pending_animation_event(dom.PendingAnimationEvent{
+		event: event.base_event()
+		animation: &transition.Animation
+		target: unsafe { &dom.EventTarget(owner.element().as_node()) }
+		scheduled_event_time: css_animation_event_scheduled_time()
+	})
+}
+
+// Document::dispatch_events_for_transition(), operating on the concrete
+// CSS-owned transition after crossing DOM's module-cycle boundary.
+fn dispatch_events_for_css_transition(mut document dom.Document, mut transition CSSTransition) {
+	previous_phase := transition.previous_phase()
+	transition_phase := transition.current_phase_
+	if previous_phase == .idle {
+		if transition_phase == .pending || transition_phase == .before {
+			append_transition_event(mut document, transition, 'transitionrun', .start)
+		}
+		if transition_phase == .active {
+			append_transition_event(mut document, transition, 'transitionrun', .start)
+			append_transition_event(mut document, transition, 'transitionstart', .start)
+		}
+		if transition_phase == .after {
+			append_transition_event(mut document, transition, 'transitionrun', .start)
+			append_transition_event(mut document, transition, 'transitionstart', .start)
+			append_transition_event(mut document, transition, 'transitionend', .end)
+		}
+	} else if previous_phase == .pending || previous_phase == .before {
+		if transition_phase == .active {
+			append_transition_event(mut document, transition, 'transitionstart', .start)
+		}
+		if transition_phase == .after {
+			append_transition_event(mut document, transition, 'transitionstart', .start)
+			append_transition_event(mut document, transition, 'transitionend', .end)
+		}
+	} else if previous_phase == .active {
+		if transition_phase == .after {
+			append_transition_event(mut document, transition, 'transitionend', .end)
+		}
+		if transition_phase == .before {
+			append_transition_event(mut document, transition, 'transitionend', .start)
+		}
+	} else if previous_phase == .after {
+		if transition_phase == .active {
+			append_transition_event(mut document, transition, 'transitionstart', .end)
+		}
+		if transition_phase == .before {
+			append_transition_event(mut document, transition, 'transitionstart', .end)
+			append_transition_event(mut document, transition, 'transitionend', .start)
+		}
+	}
+	if transition_phase == .idle && previous_phase != .idle && previous_phase != .after {
+		// Preserve the current upstream spelling in this cancellation branch.
+		append_transition_event(mut document, transition, 'animationstart', .active_time)
+	}
+	transition.set_previous_phase(transition_phase)
+}
+
+fn append_css_animation_event(mut document dom.Document, animation &CSSAnimation, name string, elapsed_time_ms f64) {
+	effect := animation.effect() or { return }
+	target := effect.target_ or { return }
+	owner := animation.owning_element() or { target }
+	event := AnimationEvent.create(name, AnimationEventInit{
+		EventInit: dom.EventInit{
+			bubbles: true
+		}
+		animation_name: animation.animation_name()
+		elapsed_time: elapsed_time_ms / 1000.0
+		pseudo_element: css_animation_pseudo_element_string(owner)
+	})
+	document.append_pending_animation_event(dom.PendingAnimationEvent{
+		event: event.base_event()
+		animation: &animation.Animation
+		target: unsafe { &dom.EventTarget(target.element().as_node()) }
+		scheduled_event_time: css_animation_event_scheduled_time()
+	})
+}
+
+// Document::dispatch_events_for_animation_if_necessary() for CSSAnimation.
+fn dispatch_events_for_css_animation(mut document dom.Document, mut animation CSSAnimation) {
+	mut effect := animation.effect() or { return }
+	target := effect.target_ or { return }
+	_ = target
+	previous_phase := effect.previous_phase
+	current_phase := effect.current_phase
+	current_iteration := effect.current_iteration
+	active_duration := if math.is_inf(effect.iteration_count, 0) {
+		math.inf(1)
+	} else {
+		math.max(0.0, effect.specified_iteration_duration) * math.max(0.0, effect.iteration_count)
+	}
+	interval_start := math.max(0.0, math.min(-effect.specified_start_delay, active_duration))
+	interval_end := active_duration
+	if previous_phase == .before || previous_phase == .idle {
+		if current_phase == .active {
+			append_css_animation_event(mut document, animation, 'animationstart', interval_start)
+		} else if current_phase == .after {
+			append_css_animation_event(mut document, animation, 'animationstart', interval_start)
+			append_css_animation_event(mut document, animation, 'animationend', interval_end)
+		}
+	} else if previous_phase == .active {
+		if current_phase == .before {
+			append_css_animation_event(mut document, animation, 'animationend', interval_start)
+		} else if current_phase == .active {
+			if effect.previous_current_iteration != current_iteration {
+				iteration_boundary := if effect.previous_current_iteration > current_iteration {
+					current_iteration + 1.0
+				} else {
+					current_iteration
+				}
+				elapsed_time := effect.specified_iteration_duration * iteration_boundary
+				append_css_animation_event(mut document, animation, 'animationiteration', elapsed_time)
+			}
+		} else if current_phase == .after {
+			append_css_animation_event(mut document, animation, 'animationend', interval_end)
+		}
+	} else if previous_phase == .after {
+		if current_phase == .active {
+			append_css_animation_event(mut document, animation, 'animationstart', interval_end)
+		} else if current_phase == .before {
+			append_css_animation_event(mut document, animation, 'animationstart', interval_end)
+			append_css_animation_event(mut document, animation, 'animationend', interval_start)
+		}
+	}
+	if current_phase == .idle && previous_phase != .idle && previous_phase != .after {
+		append_css_animation_event(mut document, animation, 'animationcancel', 0.0)
+	}
+	effect.previous_phase = current_phase
+	effect.previous_current_iteration = current_iteration
+}
+
+fn style_computer_dispatch_css_animation_event(_ voidptr, document &dom.Document, animation &dom.Animation) {
+	if animation.concrete_handle_ == unsafe { nil } {
+		return
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	match animation.concrete_kind_ {
+		.css_transition {
+			mut transition := unsafe { &CSSTransition(animation.concrete_handle_) }
+			dispatch_events_for_css_transition(mut mutable_document, mut transition)
+		}
+		.css_animation {
+			mut css_animation := unsafe { &CSSAnimation(animation.concrete_handle_) }
+			dispatch_events_for_css_animation(mut mutable_document, mut css_animation)
+		}
+		else {}
+	}
 }

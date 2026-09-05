@@ -4,22 +4,48 @@ module css
 import dom
 import math
 
-// --- Small local stubs for parser/JS/WebIDL-only pieces ---
+// --- Small parser/JS/WebIDL boundary types ---
+pub struct AcceptedTypeRange {
+pub mut:
+	min f64
+	max f64
+}
 
 pub struct CalculationContext {
 pub mut:
-	property PropertyNameAndID
+	percentages_resolve_as      ?ValueType
+	resolve_numbers_as_integers bool
+	accepted_type_ranges        map[ValueType]AcceptedTypeRange
 }
 
 pub fn CalculationContext.for_property(property PropertyNameAndID) CalculationContext {
+	// FIXME: Handle registered custom properties, which may limit which types they accept.
+	property_id := property.id() or { return CalculationContext{} }
 	return CalculationContext{
-		property: property
+		percentages_resolve_as: property_resolves_percentages_relative_to(property_id)
+		resolve_numbers_as_integers: property_accepts_type(property_id, .integer)
+		accepted_type_ranges: property_accepted_type_ranges(property_id)
 	}
 }
 
 pub struct CalculationNode {
 pub mut:
 	serialization string
+	node          []CalcNode
+}
+
+fn calculation_node_from_calc(node CalcNode) CalculationNode {
+	return CalculationNode{
+		serialization: node.serialize_top()
+		node: [node]
+	}
+}
+
+fn (node CalculationNode) typed_node() !CalcNode {
+	if node.node.len != 1 {
+		return error('CalculationNode has no typed calculation tree')
+	}
+	return node.node[0]
 }
 
 pub fn Color.black() Color {
@@ -43,8 +69,7 @@ pub fn (c Color) alpha() u8 {
 }
 
 pub fn (c Color) luminosity() u8 {
-	return u8(int(math.round(f64(c.red()) * 0.2126 + f64(c.green()) * 0.7152 +
-		f64(c.blue()) * 0.0722)))
+	return u8(int(math.round(f64(c.red()) * 0.2126 + f64(c.green()) * 0.7152 + f64(c.blue()) * 0.0722)))
 }
 
 pub fn (c Color) contrast_ratio(other Color) f64 {
@@ -56,8 +81,7 @@ pub fn (c Color) contrast_ratio(other Color) f64 {
 }
 
 pub fn (c Color) darkened(amount f64) Color {
-	return Color.rgba(u8(int(f64(c.red()) * amount)), u8(int(f64(c.green()) * amount)),
-		u8(int(f64(c.blue()) * amount)), c.alpha())
+	return Color.rgba(u8(int(f64(c.red()) * amount)), u8(int(f64(c.green()) * amount)), u8(int(f64(c.blue()) * amount)), c.alpha())
 }
 
 pub fn (c Color) inverted() Color {
@@ -75,7 +99,7 @@ pub struct ComputationContext {
 pub mut:
 	length_resolution_context LengthResolutionContext = LengthResolutionContext.default()
 	color_scheme              ?PreferredColorScheme
-	abstract_element          ?&dom.AbstractElement
+	abstract_element          ?dom.AbstractElement
 }
 
 pub enum PerformTypeCheck {
@@ -92,1242 +116,18 @@ pub mut:
 
 // Legacy property-name aliases (Properties.json `legacy-alias-for`): these resolve to a
 // canonical property so e.g. `-webkit-transform` is treated as `transform`.
-fn resolve_legacy_property_alias(name string) string {
-	return match name {
-		'-moz-appearance', '-webkit-appearance' { 'appearance' }
-		'-webkit-align-content' { 'align-content' }
-		'-webkit-align-items', '-webkit-box-align' { 'align-items' }
-		'-webkit-align-self' { 'align-self' }
-		'-webkit-animation' { 'animation' }
-		'-webkit-animation-delay' { 'animation-delay' }
-		'-webkit-animation-direction' { 'animation-direction' }
-		'-webkit-animation-duration' { 'animation-duration' }
-		'-webkit-animation-fill-mode' { 'animation-fill-mode' }
-		'-webkit-animation-iteration-count' { 'animation-iteration-count' }
-		'-webkit-animation-name' { 'animation-name' }
-		'-webkit-animation-play-state' { 'animation-play-state' }
-		'-webkit-animation-timing-function' { 'animation-timing-function' }
-		'-webkit-background-clip' { 'background-clip' }
-		'-webkit-background-origin' { 'background-origin' }
-		'-webkit-background-size' { 'background-size' }
-		'-webkit-border-bottom-left-radius' { 'border-bottom-left-radius' }
-		'-webkit-border-bottom-right-radius' { 'border-bottom-right-radius' }
-		'-webkit-border-radius' { 'border-radius' }
-		'-webkit-border-top-left-radius' { 'border-top-left-radius' }
-		'-webkit-border-top-right-radius' { 'border-top-right-radius' }
-		'-webkit-box-flex' { 'flex-grow' }
-		'-webkit-box-ordinal-group', '-webkit-order' { 'order' }
-		'-webkit-box-orient', '-webkit-flex-direction' { 'flex-direction' }
-		'-webkit-box-pack', '-webkit-justify-content' { 'justify-content' }
-		'-webkit-box-shadow' { 'box-shadow' }
-		'-webkit-box-sizing' { 'box-sizing' }
-		'-webkit-filter' { 'filter' }
-		'-webkit-flex' { 'flex' }
-		'-webkit-flex-basis' { 'flex-basis' }
-		'-webkit-flex-flow' { 'flex-flow' }
-		'-webkit-flex-grow' { 'flex-grow' }
-		'-webkit-flex-shrink' { 'flex-shrink' }
-		'-webkit-flex-wrap' { 'flex-wrap' }
-		'-webkit-mask' { 'mask' }
-		'-webkit-mask-clip' { 'mask-clip' }
-		'-webkit-mask-composite' { 'mask-composite' }
-		'-webkit-mask-image' { 'mask-image' }
-		'-webkit-mask-origin' { 'mask-origin' }
-		'-webkit-mask-position' { 'mask-position' }
-		'-webkit-mask-repeat' { 'mask-repeat' }
-		'-webkit-mask-size' { 'mask-size' }
-		'-webkit-perspective' { 'perspective' }
-		'-webkit-perspective-origin' { 'perspective-origin' }
-		'-webkit-transform' { 'transform' }
-		'-webkit-transform-origin' { 'transform-origin' }
-		'-webkit-transform-style' { 'transform-style' }
-		'-webkit-transition' { 'transition' }
-		'-webkit-transition-delay' { 'transition-delay' }
-		'-webkit-transition-duration' { 'transition-duration' }
-		'-webkit-transition-property' { 'transition-property' }
-		'-webkit-transition-timing-function' { 'transition-timing-function' }
-		'-webkit-user-select' { 'user-select' }
-		'font-stretch' { 'font-width' }
-		'grid-column-gap' { 'column-gap' }
-		'grid-gap' { 'gap' }
-		'grid-row-gap' { 'row-gap' }
-		'word-wrap' { 'overflow-wrap' }
-		else { name }
-	}
-}
-
 pub fn PropertyNameAndID.from_name(name string) ?PropertyNameAndID {
 	if is_a_custom_property_name_string(name) {
 		return PropertyNameAndID{
-			name_:      name
+			name_: name
 			is_custom_: true
 		}
 	}
-	lowercase_name := resolve_legacy_property_alias(to_ascii_lowercase(name))
-	property_id := match lowercase_name {
-		'accent-color' {
-			PropertyID.accent_color
-		}
-		'anchor-name' {
-			PropertyID.anchor_name
-		}
-		'anchor-scope' {
-			PropertyID.anchor_scope
-		}
-		'align-content', '-webkit-align-content' {
-			PropertyID.align_content
-		}
-		'align-items', '-webkit-align-items', '-webkit-box-align' {
-			PropertyID.align_items
-		}
-		'align-self', '-webkit-align-self' {
-			PropertyID.align_self
-		}
-		'animation-composition' {
-			PropertyID.animation_composition
-		}
-		'animation-delay', '-webkit-animation-delay' {
-			PropertyID.animation_delay
-		}
-		'animation-direction', '-webkit-animation-direction' {
-			PropertyID.animation_direction
-		}
-		'animation-duration', '-webkit-animation-duration' {
-			PropertyID.animation_duration
-		}
-		'animation-fill-mode', '-webkit-animation-fill-mode' {
-			PropertyID.animation_fill_mode
-		}
-		'animation-iteration-count', '-webkit-animation-iteration-count' {
-			PropertyID.animation_iteration_count
-		}
-		'animation-name' {
-			PropertyID.animation_name
-		}
-		'-webkit-animation-name' {
-			PropertyID.animation_name
-		}
-		'animation-play-state', '-webkit-animation-play-state' {
-			PropertyID.animation_play_state
-		}
-		'animation-timeline' {
-			PropertyID.animation_timeline
-		}
-		'animation-timing-function', '-webkit-animation-timing-function' {
-			PropertyID.animation_timing_function
-		}
-		'aspect-ratio' {
-			PropertyID.aspect_ratio
-		}
-		'appearance', '-moz-appearance', '-webkit-appearance' {
-			PropertyID.appearance
-		}
-		'background-color' {
-			PropertyID.background_color
-		}
-		'background-attachment' {
-			PropertyID.background_attachment
-		}
-		'background-blend-mode' {
-			PropertyID.background_blend_mode
-		}
-		'background-clip' {
-			PropertyID.background_clip
-		}
-		'background-image' {
-			PropertyID.background_image
-		}
-		'background-origin' {
-			PropertyID.background_origin
-		}
-		'background-position-x' {
-			PropertyID.background_position_x
-		}
-		'background-position-y' {
-			PropertyID.background_position_y
-		}
-		'background-repeat' {
-			PropertyID.background_repeat
-		}
-		'background-size' {
-			PropertyID.background_size
-		}
-		'block-size' {
-			PropertyID.block_size
-		}
-		'bottom' {
-			PropertyID.bottom
-		}
-		'border-bottom-color' {
-			PropertyID.border_bottom_color
-		}
-		'border-bottom-width' {
-			PropertyID.border_bottom_width
-		}
-		'border-bottom-style' {
-			PropertyID.border_bottom_style
-		}
-		'border-bottom-left-radius' {
-			PropertyID.border_bottom_left_radius
-		}
-		'border-bottom-right-radius' {
-			PropertyID.border_bottom_right_radius
-		}
-		'border-block-end-color' {
-			PropertyID.border_block_end_color
-		}
-		'border-block-end-style' {
-			PropertyID.border_block_end_style
-		}
-		'border-block-end-width' {
-			PropertyID.border_block_end_width
-		}
-		'border-block-start-color' {
-			PropertyID.border_block_start_color
-		}
-		'border-block-start-style' {
-			PropertyID.border_block_start_style
-		}
-		'border-block-start-width' {
-			PropertyID.border_block_start_width
-		}
-		'border-end-end-radius' {
-			PropertyID.border_end_end_radius
-		}
-		'border-end-start-radius' {
-			PropertyID.border_end_start_radius
-		}
-		'border-left-color' {
-			PropertyID.border_left_color
-		}
-		'border-left-width' {
-			PropertyID.border_left_width
-		}
-		'border-left-style' {
-			PropertyID.border_left_style
-		}
-		'border-inline-end-color' {
-			PropertyID.border_inline_end_color
-		}
-		'border-inline-end-style' {
-			PropertyID.border_inline_end_style
-		}
-		'border-inline-end-width' {
-			PropertyID.border_inline_end_width
-		}
-		'border-inline-start-color' {
-			PropertyID.border_inline_start_color
-		}
-		'border-inline-start-style' {
-			PropertyID.border_inline_start_style
-		}
-		'border-inline-start-width' {
-			PropertyID.border_inline_start_width
-		}
-		'border-right-color' {
-			PropertyID.border_right_color
-		}
-		'border-right-width' {
-			PropertyID.border_right_width
-		}
-		'border-right-style' {
-			PropertyID.border_right_style
-		}
-		'border-top-color' {
-			PropertyID.border_top_color
-		}
-		'border-top-width' {
-			PropertyID.border_top_width
-		}
-		'border-top-style' {
-			PropertyID.border_top_style
-		}
-		'border-top-left-radius' {
-			PropertyID.border_top_left_radius
-		}
-		'border-top-right-radius' {
-			PropertyID.border_top_right_radius
-		}
-		'border-start-end-radius' {
-			PropertyID.border_start_end_radius
-		}
-		'border-start-start-radius' {
-			PropertyID.border_start_start_radius
-		}
-		'border-image-outset' {
-			PropertyID.border_image_outset
-		}
-		'border-image-repeat' {
-			PropertyID.border_image_repeat
-		}
-		'border-image-slice' {
-			PropertyID.border_image_slice
-		}
-		'border-image-source' {
-			PropertyID.border_image_source
-		}
-		'border-image-width' {
-			PropertyID.border_image_width
-		}
-		'border-spacing' {
-			PropertyID.border_spacing
-		}
-		'border-collapse' {
-			PropertyID.border_collapse
-		}
-		'box-sizing' {
-			PropertyID.box_sizing
-		}
-		'caption-side' {
-			PropertyID.caption_side
-		}
-		'caret-color' {
-			PropertyID.caret_color
-		}
-		'clear' {
-			PropertyID.clear
-		}
-		'clip-rule' {
-			PropertyID.clip_rule
-		}
-		'color' {
-			PropertyID.color
-		}
-		'color-interpolation' {
-			PropertyID.color_interpolation
-		}
-		'color-scheme' {
-			PropertyID.color_scheme
-		}
-		'content-visibility' {
-			PropertyID.content_visibility
-		}
-		'contain' {
-			PropertyID.contain
-		}
-		'container-type' {
-			PropertyID.container_type
-		}
-		'column-span' {
-			PropertyID.column_span
-		}
-		'column-count' {
-			PropertyID.column_count
-		}
-		'column-width' {
-			PropertyID.column_width
-		}
-		'column-height' {
-			PropertyID.column_height
-		}
-		'column-gap' {
-			PropertyID.column_gap
-		}
-		'row-gap' {
-			PropertyID.row_gap
-		}
-		'direction' {
-			PropertyID.direction
-		}
-		'empty-cells' {
-			PropertyID.empty_cells
-		}
-		'corner-bottom-left-shape' {
-			PropertyID.corner_bottom_left_shape
-		}
-		'corner-bottom-right-shape' {
-			PropertyID.corner_bottom_right_shape
-		}
-		'corner-end-end-shape' {
-			PropertyID.corner_end_end_shape
-		}
-		'corner-end-start-shape' {
-			PropertyID.corner_end_start_shape
-		}
-		'corner-start-end-shape' {
-			PropertyID.corner_start_end_shape
-		}
-		'corner-start-start-shape' {
-			PropertyID.corner_start_start_shape
-		}
-		'corner-top-left-shape' {
-			PropertyID.corner_top_left_shape
-		}
-		'corner-top-right-shape' {
-			PropertyID.corner_top_right_shape
-		}
-		'fill-opacity' {
-			PropertyID.fill_opacity
-		}
-		'fill-rule' {
-			PropertyID.fill_rule
-		}
-		'flood-color' {
-			PropertyID.flood_color
-		}
-		'flood-opacity' {
-			PropertyID.flood_opacity
-		}
-		'float' {
-			PropertyID.float_
-		}
-		'font-feature-settings' {
-			PropertyID.font_feature_settings
-		}
-		'font-kerning' {
-			PropertyID.font_kerning
-		}
-		'font-language-override' {
-			PropertyID.font_language_override
-		}
-		'font-optical-sizing' {
-			PropertyID.font_optical_sizing
-		}
-		'font-style' {
-			PropertyID.font_style
-		}
-		'font-variant-caps' {
-			PropertyID.font_variant_caps
-		}
-		'font-variant-emoji' {
-			PropertyID.font_variant_emoji
-		}
-		'font-variant-position' {
-			PropertyID.font_variant_position
-		}
-		'font-variation-settings' {
-			PropertyID.font_variation_settings
-		}
-		'font-weight' {
-			PropertyID.font_weight
-		}
-		'font-width' {
-			PropertyID.font_width
-		}
-		'height' {
-			PropertyID.height
-		}
-		'flex-grow', '-webkit-box-flex', '-webkit-flex-grow' {
-			PropertyID.flex_grow
-		}
-		'flex-shrink', '-webkit-flex-shrink' {
-			PropertyID.flex_shrink
-		}
-		'flex-direction', '-webkit-flex-direction', '-webkit-box-orient' {
-			PropertyID.flex_direction
-		}
-		'flex-wrap', '-webkit-flex-wrap' {
-			PropertyID.flex_wrap
-		}
-		'image-rendering' {
-			PropertyID.image_rendering
-		}
-		'inline-size' {
-			PropertyID.inline_size
-		}
-		'inset-block-end' {
-			PropertyID.inset_block_end
-		}
-		'inset-block-start' {
-			PropertyID.inset_block_start
-		}
-		'inset-inline-end' {
-			PropertyID.inset_inline_end
-		}
-		'inset-inline-start' {
-			PropertyID.inset_inline_start
-		}
-		'isolation' {
-			PropertyID.isolation
-		}
-		'left' {
-			PropertyID.left
-		}
-		'justify-content', '-webkit-justify-content', '-webkit-box-pack' {
-			PropertyID.justify_content
-		}
-		'justify-items' {
-			PropertyID.justify_items
-		}
-		'justify-self' {
-			PropertyID.justify_self
-		}
-		'letter-spacing' {
-			PropertyID.letter_spacing
-		}
-		'line-height' {
-			PropertyID.line_height
-		}
-		'list-style-position' {
-			PropertyID.list_style_position
-		}
-		'list-style-image' {
-			PropertyID.list_style_image
-		}
-		'math-shift' {
-			PropertyID.math_shift
-		}
-		'mask-composite', '-webkit-mask-composite' {
-			PropertyID.mask_composite
-		}
-		'mask-clip' {
-			PropertyID.mask_clip
-		}
-		'mask-image' {
-			PropertyID.mask_image
-		}
-		'mask-mode' {
-			PropertyID.mask_mode
-		}
-		'mask-origin', '-webkit-mask-origin' {
-			PropertyID.mask_origin
-		}
-		'mask-position' {
-			PropertyID.mask_position
-		}
-		'mask-repeat' {
-			PropertyID.mask_repeat
-		}
-		'mask-size' {
-			PropertyID.mask_size
-		}
-		'margin-block-end' {
-			PropertyID.margin_block_end
-		}
-		'margin-block-start' {
-			PropertyID.margin_block_start
-		}
-		'margin-bottom' {
-			PropertyID.margin_bottom
-		}
-		'margin-inline-end' {
-			PropertyID.margin_inline_end
-		}
-		'margin-inline-start' {
-			PropertyID.margin_inline_start
-		}
-		'margin-left' {
-			PropertyID.margin_left
-		}
-		'margin-right' {
-			PropertyID.margin_right
-		}
-		'margin-top' {
-			PropertyID.margin_top
-		}
-		'mask-type' {
-			PropertyID.mask_type
-		}
-		'math-depth' {
-			PropertyID.math_depth
-		}
-		'math-style' {
-			PropertyID.math_style
-		}
-		'max-block-size' {
-			PropertyID.max_block_size
-		}
-		'max-height' {
-			PropertyID.max_height
-		}
-		'max-inline-size' {
-			PropertyID.max_inline_size
-		}
-		'max-width' {
-			PropertyID.max_width
-		}
-		'min-block-size' {
-			PropertyID.min_block_size
-		}
-		'min-height' {
-			PropertyID.min_height
-		}
-		'min-inline-size' {
-			PropertyID.min_inline_size
-		}
-		'min-width' {
-			PropertyID.min_width
-		}
-		'mix-blend-mode' {
-			PropertyID.mix_blend_mode
-		}
-		'object-fit' {
-			PropertyID.object_fit
-		}
-		'object-position' {
-			PropertyID.object_position
-		}
-		'opacity' {
-			PropertyID.opacity
-		}
-		'order' {
-			PropertyID.order
-		}
-		'orphans' {
-			PropertyID.orphans
-		}
-		'outline-color' {
-			PropertyID.outline_color
-		}
-		'outline-offset' {
-			PropertyID.outline_offset
-		}
-		'outline-style' {
-			PropertyID.outline_style
-		}
-		'outline-width' {
-			PropertyID.outline_width
-		}
-		'overflow-x' {
-			PropertyID.overflow_x
-		}
-		'overflow-y' {
-			PropertyID.overflow_y
-		}
-		'overflow-block' {
-			PropertyID.overflow_block
-		}
-		'overflow-clip-margin-block-end' {
-			PropertyID.overflow_clip_margin_block_end
-		}
-		'overflow-clip-margin-block-start' {
-			PropertyID.overflow_clip_margin_block_start
-		}
-		'overflow-clip-margin-bottom' {
-			PropertyID.overflow_clip_margin_bottom
-		}
-		'overflow-clip-margin-inline-end' {
-			PropertyID.overflow_clip_margin_inline_end
-		}
-		'overflow-clip-margin-inline-start' {
-			PropertyID.overflow_clip_margin_inline_start
-		}
-		'overflow-clip-margin-left' {
-			PropertyID.overflow_clip_margin_left
-		}
-		'overflow-clip-margin-right' {
-			PropertyID.overflow_clip_margin_right
-		}
-		'overflow-clip-margin-top' {
-			PropertyID.overflow_clip_margin_top
-		}
-		'overflow-inline' {
-			PropertyID.overflow_inline
-		}
-		'overflow-wrap', 'word-wrap' {
-			PropertyID.overflow_wrap
-		}
-		'paint-order' {
-			PropertyID.paint_order
-		}
-		'perspective' {
-			PropertyID.perspective
-		}
-		'perspective-origin' {
-			PropertyID.perspective_origin
-		}
-		'padding-block-end' {
-			PropertyID.padding_block_end
-		}
-		'padding-block-start' {
-			PropertyID.padding_block_start
-		}
-		'padding-bottom' {
-			PropertyID.padding_bottom
-		}
-		'padding-inline-end' {
-			PropertyID.padding_inline_end
-		}
-		'padding-inline-start' {
-			PropertyID.padding_inline_start
-		}
-		'padding-left' {
-			PropertyID.padding_left
-		}
-		'padding-right' {
-			PropertyID.padding_right
-		}
-		'padding-top' {
-			PropertyID.padding_top
-		}
-		'pointer-events' {
-			PropertyID.pointer_events
-		}
-		'position' {
-			PropertyID.position
-		}
-		'position-anchor' {
-			PropertyID.position_anchor
-		}
-		'position-area' {
-			PropertyID.position_area
-		}
-		'position-try-fallbacks' {
-			PropertyID.position_try_fallbacks
-		}
-		'position-try-order' {
-			PropertyID.position_try_order
-		}
-		'position-visibility' {
-			PropertyID.position_visibility
-		}
-		'shape-margin' {
-			PropertyID.shape_margin
-		}
-		'shape-image-threshold' {
-			PropertyID.shape_image_threshold
-		}
-		'shape-rendering' {
-			PropertyID.shape_rendering
-		}
-		'stop-color' {
-			PropertyID.stop_color
-		}
-		'stop-opacity' {
-			PropertyID.stop_opacity
-		}
-		'stroke-opacity' {
-			PropertyID.stroke_opacity
-		}
-		'stroke-linecap' {
-			PropertyID.stroke_linecap
-		}
-		'stroke-linejoin' {
-			PropertyID.stroke_linejoin
-		}
-		'stroke-miterlimit' {
-			PropertyID.stroke_miterlimit
-		}
-		'stroke-width' {
-			PropertyID.stroke_width
-		}
-		'stroke-dashoffset' {
-			PropertyID.stroke_dashoffset
-		}
-		'rotate' {
-			PropertyID.rotate
-		}
-		'resize' {
-			PropertyID.resize
-		}
-		'right' {
-			PropertyID.right
-		}
-		'scroll-behavior' {
-			PropertyID.scroll_behavior
-		}
-		'scale' {
-			PropertyID.scale
-		}
-		'scrollbar-color' {
-			PropertyID.scrollbar_color
-		}
-		'scrollbar-gutter' {
-			PropertyID.scrollbar_gutter
-		}
-		'scrollbar-width' {
-			PropertyID.scrollbar_width
-		}
-		'scroll-timeline-axis' {
-			PropertyID.scroll_timeline_axis
-		}
-		'scroll-timeline-name' {
-			PropertyID.scroll_timeline_name
-		}
-		'table-layout' {
-			PropertyID.table_layout
-		}
-		'tab-size' {
-			PropertyID.tab_size
-		}
-		'text-align' {
-			PropertyID.text_align
-		}
-		'text-anchor' {
-			PropertyID.text_anchor
-		}
-		'text-decoration-color' {
-			PropertyID.text_decoration_color
-		}
-		'text-decoration-line' {
-			PropertyID.text_decoration_line
-		}
-		'text-decoration-style' {
-			PropertyID.text_decoration_style
-		}
-		'text-decoration-thickness' {
-			PropertyID.text_decoration_thickness
-		}
-		'text-underline-offset' {
-			PropertyID.text_underline_offset
-		}
-		'text-underline-position' {
-			PropertyID.text_underline_position
-		}
-		'text-indent' {
-			PropertyID.text_indent
-		}
-		'text-justify' {
-			PropertyID.text_justify
-		}
-		'text-overflow' {
-			PropertyID.text_overflow
-		}
-		'text-rendering' {
-			PropertyID.text_rendering
-		}
-		'text-transform' {
-			PropertyID.text_transform
-		}
-		'text-wrap-mode' {
-			PropertyID.text_wrap_mode
-		}
-		'text-wrap-style' {
-			PropertyID.text_wrap_style
-		}
-		'transform' {
-			PropertyID.transform
-		}
-		'transform-box' {
-			PropertyID.transform_box
-		}
-		'transform-origin' {
-			PropertyID.transform_origin
-		}
-		'transform-style' {
-			PropertyID.transform_style
-		}
-		'transition-behavior' {
-			PropertyID.transition_behavior
-		}
-		'transition-delay' {
-			PropertyID.transition_delay
-		}
-		'transition-duration' {
-			PropertyID.transition_duration
-		}
-		'transition-property' {
-			PropertyID.transition_property
-		}
-		'transition-timing-function' {
-			PropertyID.transition_timing_function
-		}
-		'translate' {
-			PropertyID.translate
-		}
-		'timeline-scope' {
-			PropertyID.timeline_scope
-		}
-		'unicode-bidi' {
-			PropertyID.unicode_bidi
-		}
-		'user-select' {
-			PropertyID.user_select
-		}
-		'touch-action' {
-			PropertyID.touch_action
-		}
-		'top' {
-			PropertyID.top
-		}
-		'view-timeline-inset' {
-			PropertyID.view_timeline_inset
-		}
-		'view-timeline-axis' {
-			PropertyID.view_timeline_axis
-		}
-		'view-timeline-name' {
-			PropertyID.view_timeline_name
-		}
-		'view-transition-name' {
-			PropertyID.view_transition_name
-		}
-		'visibility' {
-			PropertyID.visibility
-		}
-		'vertical-align' {
-			PropertyID.vertical_align
-		}
-		'width' {
-			PropertyID.width
-		}
-		'will-change' {
-			PropertyID.will_change
-		}
-		'-webkit-text-fill-color' {
-			PropertyID.webkit_text_fill_color
-		}
-		'white-space-collapse' {
-			PropertyID.white_space_collapse
-		}
-		'white-space-trim' {
-			PropertyID.white_space_trim
-		}
-		'word-break' {
-			PropertyID.word_break
-		}
-		'word-spacing' {
-			PropertyID.word_spacing
-		}
-		'writing-mode' {
-			PropertyID.writing_mode
-		}
-		'widows' {
-			PropertyID.widows
-		}
-		'z-index' {
-			PropertyID.z_index
-		}
-		'cx' {
-			PropertyID.cx
-		}
-		'cy' {
-			PropertyID.cy
-		}
-		'x' {
-			PropertyID.x
-		}
-		'y' {
-			PropertyID.y
-		}
-		'r' {
-			PropertyID.r
-		}
-		'rx' {
-			PropertyID.rx
-		}
-		'ry' {
-			PropertyID.ry
-		}
-		'dominant-baseline' {
-			PropertyID.dominant_baseline
-		}
-		'display' {
-			PropertyID.display
-		}
-		'flex-basis' {
-			PropertyID.flex_basis
-		}
-		'quotes' {
-			PropertyID.quotes
-		}
-		'box-shadow', '-webkit-box-shadow' {
-			PropertyID.box_shadow
-		}
-		'text-shadow' {
-			PropertyID.text_shadow
-		}
-		'list-style-type' {
-			PropertyID.list_style_type
-		}
-		'clip' {
-			PropertyID.clip
-		}
-		'stroke-dasharray' {
-			PropertyID.stroke_dasharray
-		}
-		'font-family' {
-			PropertyID.font_family
-		}
-		'grid-column-start' {
-			PropertyID.grid_column_start
-		}
-		'grid-column-end' {
-			PropertyID.grid_column_end
-		}
-		'grid-row-start' {
-			PropertyID.grid_row_start
-		}
-		'grid-row-end' {
-			PropertyID.grid_row_end
-		}
-		'grid-auto-flow' {
-			PropertyID.grid_auto_flow
-		}
-		'grid-auto-columns' {
-			PropertyID.grid_auto_columns
-		}
-		'grid-auto-rows' {
-			PropertyID.grid_auto_rows
-		}
-		'grid-template-columns' {
-			PropertyID.grid_template_columns
-		}
-		'grid-template-rows' {
-			PropertyID.grid_template_rows
-		}
-		'grid-template-areas' {
-			PropertyID.grid_template_areas
-		}
-		'filter', '-webkit-filter' {
-			PropertyID.filter
-		}
-		'backdrop-filter', '-webkit-backdrop-filter' {
-			PropertyID.backdrop_filter
-		}
-		'counter-increment' {
-			PropertyID.counter_increment
-		}
-		'counter-reset' {
-			PropertyID.counter_reset
-		}
-		'counter-set' {
-			PropertyID.counter_set
-		}
-		'cursor' {
-			PropertyID.cursor
-		}
-		'font-size' {
-			PropertyID.font_size
-		}
-		'fill' {
-			PropertyID.fill
-		}
-		'stroke' {
-			PropertyID.stroke
-		}
-		'font-variant-ligatures' {
-			PropertyID.font_variant_ligatures
-		}
-		'font-variant-numeric' {
-			PropertyID.font_variant_numeric
-		}
-		'font-variant-east-asian' {
-			PropertyID.font_variant_east_asian
-		}
-		'clip-path' {
-			PropertyID.clip_path
-		}
-		'shape-outside' {
-			PropertyID.shape_outside
-		}
-		'content' {
-			PropertyID.content
-		}
-		'font-variant-alternates' {
-			PropertyID.font_variant_alternates
-		}
-		'overflow' {
-			PropertyID.overflow
-		}
-		'gap', 'grid-gap' {
-			PropertyID.gap
-		}
-		'place-items' {
-			PropertyID.place_items
-		}
-		'place-content' {
-			PropertyID.place_content
-		}
-		'place-self' {
-			PropertyID.place_self
-		}
-		'flex-flow' {
-			PropertyID.flex_flow
-		}
-		'columns' {
-			PropertyID.columns
-		}
-		'text-wrap' {
-			PropertyID.text_wrap
-		}
-		'margin' {
-			PropertyID.margin
-		}
-		'padding' {
-			PropertyID.padding
-		}
-		'inset' {
-			PropertyID.inset
-		}
-		'margin-block' {
-			PropertyID.margin_block
-		}
-		'margin-inline' {
-			PropertyID.margin_inline
-		}
-		'padding-block' {
-			PropertyID.padding_block
-		}
-		'padding-inline' {
-			PropertyID.padding_inline
-		}
-		'inset-block' {
-			PropertyID.inset_block
-		}
-		'inset-inline' {
-			PropertyID.inset_inline
-		}
-		'border-color' {
-			PropertyID.border_color
-		}
-		'border-style' {
-			PropertyID.border_style
-		}
-		'border-width' {
-			PropertyID.border_width
-		}
-		'border-block-color' {
-			PropertyID.border_block_color
-		}
-		'border-inline-color' {
-			PropertyID.border_inline_color
-		}
-		'border-block-style' {
-			PropertyID.border_block_style
-		}
-		'border-inline-style' {
-			PropertyID.border_inline_style
-		}
-		'border-block-width' {
-			PropertyID.border_block_width
-		}
-		'border-inline-width' {
-			PropertyID.border_inline_width
-		}
-		'border-top' {
-			PropertyID.border_top
-		}
-		'border-right' {
-			PropertyID.border_right
-		}
-		'border-bottom' {
-			PropertyID.border_bottom
-		}
-		'border-left' {
-			PropertyID.border_left
-		}
-		'border-block-start' {
-			PropertyID.border_block_start
-		}
-		'border-block-end' {
-			PropertyID.border_block_end
-		}
-		'border-inline-start' {
-			PropertyID.border_inline_start
-		}
-		'border-inline-end' {
-			PropertyID.border_inline_end
-		}
-		'border' {
-			PropertyID.border
-		}
-		'border-block' {
-			PropertyID.border_block
-		}
-		'border-inline' {
-			PropertyID.border_inline
-		}
-		'outline' {
-			PropertyID.outline
-		}
-		'list-style' {
-			PropertyID.list_style
-		}
-		'text-decoration' {
-			PropertyID.text_decoration
-		}
-		'font-variant' {
-			PropertyID.font_variant
-		}
-		'flex' {
-			PropertyID.flex
-		}
-		'corner-shape' {
-			PropertyID.corner_shape
-		}
-		'corner-top-shape' {
-			PropertyID.corner_top_shape
-		}
-		'corner-bottom-shape' {
-			PropertyID.corner_bottom_shape
-		}
-		'corner-left-shape' {
-			PropertyID.corner_left_shape
-		}
-		'corner-right-shape' {
-			PropertyID.corner_right_shape
-		}
-		'corner-block-start-shape' {
-			PropertyID.corner_block_start_shape
-		}
-		'corner-block-end-shape' {
-			PropertyID.corner_block_end_shape
-		}
-		'corner-inline-start-shape' {
-			PropertyID.corner_inline_start_shape
-		}
-		'corner-inline-end-shape' {
-			PropertyID.corner_inline_end_shape
-		}
-		'grid-row' {
-			PropertyID.grid_row
-		}
-		'grid-column' {
-			PropertyID.grid_column
-		}
-		'grid-area' {
-			PropertyID.grid_area
-		}
-		'white-space' {
-			PropertyID.white_space
-		}
-		'overflow-clip-margin' {
-			PropertyID.overflow_clip_margin
-		}
-		'overflow-clip-margin-block' {
-			PropertyID.overflow_clip_margin_block
-		}
-		'overflow-clip-margin-inline' {
-			PropertyID.overflow_clip_margin_inline
-		}
-		'all' {
-			PropertyID.all
-		}
-		'border-radius' {
-			PropertyID.border_radius
-		}
-		'transition' {
-			PropertyID.transition
-		}
-		'animation' {
-			PropertyID.animation
-		}
-		'scroll-timeline' {
-			PropertyID.scroll_timeline
-		}
-		'view-timeline' {
-			PropertyID.view_timeline
-		}
-		'border-image' {
-			PropertyID.border_image
-		}
-		'background-position' {
-			PropertyID.background_position
-		}
-		'grid-template' {
-			PropertyID.grid_template
-		}
-		'grid' {
-			PropertyID.grid
-		}
-		'font' {
-			PropertyID.font
-		}
-		'background' {
-			PropertyID.background
-		}
-		'mask' {
-			PropertyID.mask
-		}
-		else {
-			return none
-		}
-	}
-
+	canonical_name := canonical_property_name_from_metadata(to_ascii_lowercase(name))
+	property_id := property_id_from_canonical_name(canonical_name) or { return none }
 	return PropertyNameAndID{
-		name_: lowercase_name
-		id_:   property_id
+		name_: canonical_name
+		id_: property_id
 	}
 }
 
@@ -1350,1019 +150,22 @@ pub fn property_id_from_string(name string) ?PropertyID {
 	return none
 }
 
-pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
-	return match property_id {
-		.animation_delay, .animation_duration {
-			value_type == .time
-		}
-		.animation_iteration_count {
-			value_type == .number
-		}
-		.animation_name, .font_family {
-			value_type in [.custom_ident, .string]
-		}
-		.counter_increment, .counter_reset, .counter_set {
-			value_type in [.custom_ident, .integer]
-		}
-		.animation_timing_function {
-			value_type == .easing_function
-		}
-		.aspect_ratio {
-			value_type == .ratio
-		}
-		.anchor_name, .anchor_scope, .position_anchor, .position_try_fallbacks,
-		.scroll_timeline_name, .timeline_scope, .view_timeline_name {
-			value_type == .dashed_ident
-		}
-		.accent_color, .background_color, .border_block_end_color, .border_block_start_color,
-		.border_bottom_color, .border_inline_end_color, .border_inline_start_color,
-		.border_left_color, .border_right_color, .border_top_color, .caret_color, .color,
-		.flood_color, .outline_color, .stop_color, .text_decoration_color, .webkit_text_fill_color {
-			value_type == .color
-		}
-		.background_image, .border_image_source, .list_style_image {
-			value_type == .image
-		}
-		.fill, .stroke {
-			value_type == .paint
-		}
-		.clip_path, .shape_outside {
-			value_type == .basic_shape
-		}
-		.content {
-			value_type in [.string, .image]
-		}
-		.mask_image {
-			value_type in [.image, .url]
-		}
-		.color_scheme {
-			value_type == .custom_ident
-		}
-		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end {
-			value_type == .custom_ident
-		}
-		.view_transition_name {
-			value_type == .custom_ident
-		}
-		.font_language_override, .quotes, .list_style_type, .grid_template_areas {
-			value_type == .string
-		}
-		.background_attachment, .background_blend_mode, .background_clip, .background_origin,
-		.background_repeat, .border_block_end_style, .border_block_start_style,
-		.border_bottom_style, .border_collapse, .border_image_repeat, .border_inline_end_style,
-		.border_inline_start_style, .border_left_style, .border_right_style, .border_top_style,
-		.box_sizing, .caption_side, .clip_rule, .color_interpolation, .content_visibility,
-		.direction, .empty_cells, .fill_rule, .font_kerning, .font_optical_sizing,
-		.font_variant_caps, .font_variant_emoji, .font_variant_position, .font_variant_ligatures,
-		.font_variant_numeric, .font_variant_east_asian, .font_variant_alternates, .flex_direction,
-		.flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items,
-		.justify_self, .appearance, .column_span, .image_rendering, .transform_box, .touch_action,
-		.writing_mode, .scrollbar_width, .resize, .contain, .container_type, .text_decoration_line,
-		.text_decoration_style, .paint_order, .overflow_block, .overflow_inline, .overflow_wrap,
-		.position_area, .position_try_order, .scroll_behavior, .scrollbar_color, .scrollbar_gutter,
-		.text_underline_position, .math_shift, .isolation, .list_style_position, .mask_clip,
-		.mask_composite, .mask_mode, .mask_origin, .mask_repeat, .mask_type {
-			false
-		}
-		.clear, .float_, .mix_blend_mode, .object_fit, .outline_style, .overflow_x, .overflow_y,
-		.pointer_events, .position, .position_visibility, .scroll_timeline_axis, .shape_rendering,
-		.stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_justify,
-		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style,
-		.transform_style, .unicode_bidi, .user_select, .view_timeline_axis, .visibility,
-		.white_space_collapse, .white_space_trim, .word_break {
-			false
-		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
-		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
-		.corner_top_left_shape, .corner_top_right_shape {
-			value_type == .corner_shape
-		}
-		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity {
-			value_type in [.number, .percentage, .opacity]
-		}
-		.animation_timeline {
-			value_type in [.dashed_ident, .scroll_function, .view_function]
-		}
-		.order, .orphans, .z_index {
-			value_type == .integer
-		}
-		.column_count, .widows {
-			value_type == .integer
-		}
-		.view_timeline_inset {
-			value_type == .view_timeline_inset
-		}
-		.object_position, .perspective_origin {
-			value_type == .position
-		}
-		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
-		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
-		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
-		.overflow_clip_margin_right, .overflow_clip_margin_top, .perspective {
-			value_type == .length
-		}
-		.tab_size {
-			value_type in [.length, .number]
-		}
-		.transform_origin, .vertical_align, .flex_basis, .grid_auto_columns, .grid_auto_rows,
-		.grid_template_columns, .grid_template_rows, .font_size {
-			value_type in [.length, .percentage]
-		}
-		.will_change {
-			value_type == .custom_ident
-		}
-		.border_block_end_width, .border_block_start_width, .border_bottom_width,
-		.border_inline_end_width, .border_inline_start_width, .border_left_width,
-		.border_right_width, .border_top_width, .outline_offset, .outline_width {
-			value_type == .length
-		}
-		.column_width, .column_height {
-			value_type == .length
-		}
-		.font_feature_settings, .font_variation_settings {
-			value_type == .opentype_tag
-		}
-		.font_style {
-			value_type == .font_style
-		}
-		.font_weight {
-			value_type == .number
-		}
-		.flex_grow, .flex_shrink, .stroke_miterlimit {
-			value_type == .number
-		}
-		.font_width {
-			value_type == .percentage
-		}
-		.line_height {
-			value_type in [.length, .number, .percentage]
-		}
-		.letter_spacing, .word_spacing {
-			value_type in [.length, .percentage]
-		}
-		.background_position_x, .background_position_y, .background_size, .mask_size {
-			value_type in [.length, .percentage]
-		}
-		.mask_position {
-			value_type == .position
-		}
-		.block_size, .height, .inline_size, .min_block_size, .min_height, .min_inline_size,
-		.min_width, .width, .max_block_size, .max_height, .max_inline_size, .max_width {
-			value_type in [.anchor_size, .fit_content, .length, .percentage]
-		}
-		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
-		.left, .right, .top {
-			value_type in [.anchor, .length, .percentage]
-		}
-		.margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end,
-		.margin_inline_start, .margin_left, .margin_right, .margin_top {
-			value_type in [.anchor_size, .length, .percentage]
-		}
-		.padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
-		.padding_inline_start, .padding_left, .padding_right, .padding_top {
-			value_type in [.length, .percentage]
-		}
-		.border_spacing {
-			value_type == .length
-		}
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius,
-		.border_end_start_radius, .border_start_end_radius, .border_start_start_radius,
-		.border_top_left_radius, .border_top_right_radius {
-			value_type in [.length, .percentage]
-		}
-		.border_image_outset {
-			value_type in [.length, .number]
-		}
-		.border_image_slice {
-			value_type in [.number, .percentage]
-		}
-		.border_image_width {
-			value_type in [.length, .number, .percentage]
-		}
-		.column_gap, .row_gap, .shape_margin, .cx, .cy, .x, .y, .r, .rx, .ry,
-		.text_decoration_thickness, .text_underline_offset, .text_indent {
-			value_type in [.length, .percentage]
-		}
-		.stroke_width, .stroke_dashoffset, .stroke_dasharray {
-			value_type in [.length, .number, .percentage]
-		}
-		.math_depth {
-			value_type == .integer
-		}
-		.math_style {
-			false
-		}
-		.transform {
-			value_type in [.transform_function, .transform_list]
-		}
-		.rotate, .scale, .translate {
-			value_type == .transform_function
-		}
-		.transition_delay, .transition_duration {
-			value_type == .time
-		}
-		.transition_timing_function {
-			value_type == .easing_function
-		}
-		.animation_composition, .animation_direction, .animation_fill_mode, .animation_play_state,
-		.transition_behavior, .transition_property, .dominant_baseline, .display, .box_shadow,
-		.text_shadow, .clip, .grid_auto_flow, .filter, .backdrop_filter, .cursor {
-			false
-		}
-		else {
-			// Shorthands accept no value-type directly; they have dedicated parsers.
-			false
-		}
-	}
-}
-
-fn is_position_area_keyword_string(value string) bool {
-	return value in [
-		'left',
-		'center',
-		'right',
-		'span-left',
-		'span-right',
-		'x-start',
-		'x-end',
-		'span-x-start',
-		'span-x-end',
-		'self-x-start',
-		'self-x-end',
-		'span-self-x-start',
-		'span-self-x-end',
-		'span-all',
-		'top',
-		'bottom',
-		'span-top',
-		'span-bottom',
-		'y-start',
-		'y-end',
-		'span-y-start',
-		'span-y-end',
-		'self-y-start',
-		'self-y-end',
-		'span-self-y-start',
-		'span-self-y-end',
-		'block-start',
-		'block-end',
-		'span-block-start',
-		'span-block-end',
-		'inline-start',
-		'inline-end',
-		'span-inline-start',
-		'span-inline-end',
-		'self-block-start',
-		'self-block-end',
-		'span-self-block-start',
-		'span-self-block-end',
-		'self-inline-start',
-		'self-inline-end',
-		'span-self-inline-start',
-		'span-self-inline-end',
-		'start',
-		'end',
-		'span-start',
-		'span-end',
-		'self-start',
-		'self-end',
-		'span-self-start',
-		'span-self-end',
-	]
-}
-
-fn is_try_tactic_keyword_string(value string) bool {
-	return value in ['flip-block', 'flip-inline', 'flip-start']
-}
-
-fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
-	lowercase_value := to_ascii_lowercase(value)
-	if is_css_wide_keyword_string(lowercase_value) {
-		return true
-	}
-	return match property_id {
-		.animation_composition {
-			lowercase_value in ['replace', 'add', 'accumulate']
-		}
-		.animation_delay {
-			false
-		}
-		.animation_direction {
-			lowercase_value in ['normal', 'reverse', 'alternate', 'alternate-reverse']
-		}
-		.animation_duration {
-			lowercase_value == 'auto'
-		}
-		.animation_fill_mode {
-			lowercase_value in ['none', 'forwards', 'backwards', 'both']
-		}
-		.animation_iteration_count {
-			lowercase_value == 'infinite'
-		}
-		.animation_name {
-			lowercase_value == 'none'
-		}
-		.animation_play_state {
-			lowercase_value in ['running', 'paused']
-		}
-		.animation_timing_function {
-			lowercase_value in ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease']
-		}
-		.aspect_ratio {
-			lowercase_value == 'auto'
-		}
-		.anchor_name {
-			lowercase_value == 'none'
-		}
-		.anchor_scope {
-			lowercase_value in ['none', 'all']
-		}
-		.align_content {
-			lowercase_value in ['normal', 'start', 'flex-start', 'end', 'flex-end', 'center',
-				'space-between', 'space-around', 'space-evenly', 'stretch']
-		}
-		.align_items {
-			lowercase_value in ['baseline', 'center', 'end', 'flex-end', 'flex-start', 'normal',
-				'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe']
-		}
-		.align_self {
-			lowercase_value in ['auto', 'baseline', 'center', 'end', 'flex-end', 'flex-start',
-				'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe']
-		}
-		.appearance {
-			lowercase_value in ['auto', 'button', 'checkbox', 'listbox', 'menulist', 'meter',
-				'menulist-button', 'none', 'push-button', 'progress-bar', 'radio', 'searchfield',
-				'slider-horizontal', 'square-button', 'textarea', 'textfield']
-		}
-		.position_anchor {
-			lowercase_value == 'auto'
-		}
-		.scroll_timeline_name, .view_timeline_name {
-			lowercase_value == 'none'
-		}
-		.view_timeline_inset {
-			false
-		}
-		.view_transition_name {
-			lowercase_value == 'none'
-		}
-		.accent_color, .caret_color {
-			if lowercase_value == 'auto' {
-				true
-			} else if keyword := keyword_from_string(lowercase_value) {
-				KeywordStyleValue.is_color(keyword)
-			} else {
-				false
-			}
-		}
-		.background_color, .border_block_end_color, .border_block_start_color,
-		.border_bottom_color, .border_inline_end_color, .border_inline_start_color,
-		.border_left_color, .border_right_color, .border_top_color, .color, .flood_color,
-		.outline_color, .stop_color, .text_decoration_color, .webkit_text_fill_color {
-			if keyword := keyword_from_string(lowercase_value) {
-				KeywordStyleValue.is_color(keyword)
-			} else {
-				false
-			}
-		}
-		.background_image, .border_image_source, .list_style_image, .mask_image {
-			lowercase_value == 'none'
-		}
-		.background_attachment {
-			lowercase_value in ['fixed', 'local', 'scroll']
-		}
-		.background_blend_mode {
-			lowercase_value in ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten',
-				'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion',
-				'hue', 'saturation', 'color', 'luminosity', 'plus-darker', 'plus-lighter']
-		}
-		.background_clip, .background_origin {
-			lowercase_value in ['border-box', 'content-box', 'padding-box', 'text']
-		}
-		.background_position_x {
-			lowercase_value in ['center', 'left', 'right']
-		}
-		.background_position_y {
-			lowercase_value in ['center', 'bottom', 'top']
-		}
-		.background_repeat, .mask_repeat {
-			lowercase_value in ['no-repeat', 'repeat', 'round', 'space', 'repeat-x', 'repeat-y']
-		}
-		.background_size, .mask_size {
-			lowercase_value in ['auto', 'cover', 'contain']
-		}
-		.object_position, .perspective_origin, .transform_origin {
-			lowercase_value in ['bottom', 'center', 'left', 'right', 'top']
-		}
-		.color_scheme {
-			// color-scheme = normal | [ light | dark | <custom-ident> ]+ && only?
-			lowercase_value in ['normal', 'light', 'dark']
-		}
-		.content_visibility {
-			// content-visibility = visible | auto | hidden
-			lowercase_value in ['visible', 'auto', 'hidden']
-		}
-		.contain {
-			lowercase_value in ['none', 'strict', 'content', 'size', 'inline-size', 'layout', 'style',
-				'paint']
-		}
-		.container_type {
-			lowercase_value in ['normal', 'size', 'inline-size', 'scroll-state']
-		}
-		.column_span {
-			lowercase_value in ['none', 'all']
-		}
-		.column_count, .column_width, .column_height {
-			lowercase_value == 'auto'
-		}
-		.column_gap, .row_gap {
-			lowercase_value == 'normal'
-		}
-		.clip_rule, .fill_rule {
-			lowercase_value in ['nonzero', 'evenodd']
-		}
-		.color_interpolation {
-			lowercase_value in ['auto', 'linearrgb', 'srgb']
-		}
-		.caption_side {
-			lowercase_value in ['top', 'bottom']
-		}
-		.direction {
-			lowercase_value in ['ltr', 'rtl']
-		}
-		.empty_cells {
-			lowercase_value in ['show', 'hide']
-		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape,
-		.corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape,
-		.corner_top_left_shape, .corner_top_right_shape {
-			lowercase_value in ['round', 'scoop', 'bevel', 'notch', 'square', 'squircle']
-		}
-		.animation_timeline {
-			// animation-timeline = auto | none | <dashed-ident> | scroll() | view()
-			lowercase_value in ['auto', 'none']
-		}
-		.border_block_end_width, .border_block_start_width, .border_bottom_width,
-		.border_inline_end_width, .border_inline_start_width, .border_left_width,
-		.border_right_width, .border_top_width, .outline_width {
-			lowercase_value in ['thin', 'medium', 'thick']
-		}
-		.border_block_end_style, .border_block_start_style, .border_bottom_style,
-		.border_inline_end_style, .border_inline_start_style, .border_left_style,
-		.border_right_style, .border_top_style {
-			lowercase_value in ['none', 'hidden', 'dotted', 'dashed', 'solid', 'double', 'groove',
-				'ridge', 'inset', 'outset']
-		}
-		.border_image_repeat {
-			lowercase_value in ['stretch', 'repeat', 'round', 'space']
-		}
-		.border_image_slice {
-			lowercase_value == 'fill'
-		}
-		.border_image_width {
-			lowercase_value == 'auto'
-		}
-		.block_size, .height, .inline_size, .min_block_size, .min_height, .min_inline_size,
-		.min_width, .width {
-			lowercase_value in ['auto', 'fit-content', 'max-content', 'min-content']
-		}
-		.max_block_size, .max_height, .max_inline_size, .max_width {
-			lowercase_value in ['fit-content', 'max-content', 'min-content', 'none']
-		}
-		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
-		.left, .right, .top, .margin_block_end, .margin_block_start, .margin_bottom,
-		.margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top {
-			lowercase_value == 'auto'
-		}
-		.border_spacing, .padding_block_end, .padding_block_start, .padding_bottom,
-		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
-		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
-		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
-		.overflow_clip_margin_right, .overflow_clip_margin_top, .padding_inline_end,
-		.padding_inline_start, .padding_left, .padding_right, .padding_top, .tab_size {
-			false
-		}
-		.perspective {
-			lowercase_value == 'none'
-		}
-		.position_area {
-			lowercase_value == 'none' || is_position_area_keyword_string(lowercase_value)
-		}
-		.position_try_fallbacks {
-			lowercase_value == 'none' || is_position_area_keyword_string(lowercase_value)
-				|| is_try_tactic_keyword_string(lowercase_value)
-		}
-		.position_try_order {
-			lowercase_value in ['normal', 'most-width', 'most-height', 'most-block-size',
-				'most-inline-size']
-		}
-		.border_collapse {
-			lowercase_value in ['collapse', 'separate']
-		}
-		.box_sizing {
-			lowercase_value in ['border-box', 'content-box']
-		}
-		.outline_offset {
-			false
-		}
-		.order, .orphans, .widows {
-			false
-		}
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius,
-		.border_end_start_radius, .border_image_outset, .border_start_end_radius,
-		.border_start_start_radius, .border_top_left_radius, .border_top_right_radius, .flex_grow,
-		.flex_shrink, .stroke_miterlimit, .stroke_width, .stroke_dashoffset, .shape_margin, .cx,
-		.cy, .x, .y, .r {
-			false
-		}
-		.rx, .ry, .text_underline_offset {
-			lowercase_value == 'auto'
-		}
-		.text_decoration_thickness {
-			lowercase_value in ['auto', 'from-font']
-		}
-		.text_indent {
-			lowercase_value in ['each-line', 'hanging']
-		}
-		.outline_style {
-			lowercase_value in ['auto', 'none', 'dotted', 'dashed', 'solid', 'double', 'groove',
-				'ridge', 'inset', 'outset']
-		}
-		.overflow_block, .overflow_inline, .overflow_x, .overflow_y {
-			lowercase_value in ['auto', 'clip', 'hidden', 'scroll', 'visible', 'overlay']
-		}
-		.overflow_wrap {
-			lowercase_value in ['anywhere', 'break-word', 'normal']
-		}
-		.pointer_events {
-			lowercase_value in ['auto', 'all', 'none']
-		}
-		.paint_order {
-			lowercase_value in ['normal', 'fill', 'stroke', 'markers']
-		}
-		.clear {
-			lowercase_value in ['none', 'left', 'right', 'both', 'inline-start', 'inline-end']
-		}
-		.float_ {
-			lowercase_value in ['none', 'left', 'right', 'inline-start', 'inline-end']
-		}
-		.position {
-			lowercase_value in ['absolute', 'fixed', 'relative', 'static', 'sticky']
-		}
-		.table_layout {
-			lowercase_value in ['auto', 'fixed']
-		}
-		.unicode_bidi {
-			lowercase_value in ['bidi-override', 'embed', 'isolate', 'isolate-override', 'normal',
-				'plaintext']
-		}
-		.visibility {
-			lowercase_value in ['collapse', 'hidden', 'visible']
-		}
-		.z_index {
-			lowercase_value == 'auto'
-		}
-		.mix_blend_mode {
-			lowercase_value in ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten',
-				'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion',
-				'hue', 'saturation', 'color', 'luminosity', 'plus-darker', 'plus-lighter']
-		}
-		.object_fit {
-			lowercase_value in ['fill', 'contain', 'cover', 'none', 'scale-down']
-		}
-		.isolation {
-			lowercase_value in ['auto', 'isolate']
-		}
-		.list_style_position {
-			lowercase_value in ['inside', 'outside']
-		}
-		.mask_type {
-			lowercase_value in ['luminance', 'alpha']
-		}
-		.mask_clip {
-			lowercase_value in ['content-box', 'padding-box', 'border-box', 'fill-box', 'stroke-box',
-				'view-box', 'no-clip']
-		}
-		.mask_position {
-			lowercase_value in ['center', 'left', 'right', 'top', 'bottom']
-		}
-		.mask_composite {
-			lowercase_value in ['add', 'subtract', 'intersect', 'exclude']
-		}
-		.mask_mode {
-			lowercase_value in ['alpha', 'luminance', 'match-source']
-		}
-		.mask_origin {
-			lowercase_value in ['content-box', 'padding-box', 'border-box', 'fill-box', 'stroke-box',
-				'view-box']
-		}
-		.scroll_timeline_axis, .view_timeline_axis {
-			lowercase_value in ['block', 'inline', 'x', 'y']
-		}
-		.position_visibility {
-			lowercase_value in ['always', 'anchors-valid', 'anchors-visible', 'no-overflow']
-		}
-		.shape_rendering {
-			lowercase_value in ['auto', 'optimizespeed', 'crispedges', 'geometricprecision']
-		}
-		.stroke_linecap {
-			lowercase_value in ['butt', 'round', 'square']
-		}
-		.stroke_linejoin {
-			lowercase_value in ['miter', 'round', 'bevel']
-		}
-		.text_anchor {
-			lowercase_value in ['start', 'middle', 'end']
-		}
-		.text_decoration_line {
-			lowercase_value in ['none', 'underline', 'overline', 'line-through', 'blink',
-				'spelling-error', 'grammar-error']
-		}
-		.text_decoration_style {
-			lowercase_value in ['dashed', 'dotted', 'double', 'solid', 'wavy']
-		}
-		.text_align {
-			lowercase_value in ['center', 'justify', 'start', 'end', 'left', 'right', 'match-parent',
-				'-libweb-center', '-libweb-inherit-or-center', '-libweb-left', '-libweb-right']
-		}
-		.text_justify {
-			lowercase_value in ['auto', 'none', 'inter-word', 'inter-character']
-		}
-		.text_overflow {
-			lowercase_value in ['clip', 'ellipsis']
-		}
-		.text_rendering {
-			lowercase_value in ['auto', 'optimizespeed', 'optimizelegibility', 'geometricprecision']
-		}
-		.text_transform {
-			lowercase_value in ['capitalize', 'full-size-kana', 'full-width', 'lowercase',
-				'math-auto', 'none', 'uppercase']
-		}
-		.text_wrap_mode {
-			lowercase_value in ['wrap', 'nowrap']
-		}
-		.text_wrap_style {
-			lowercase_value in ['auto', 'balance', 'stable', 'pretty']
-		}
-		.transform_style {
-			lowercase_value in ['flat', 'preserve-3d']
-		}
-		.transform_box {
-			lowercase_value in ['content-box', 'border-box', 'fill-box', 'stroke-box', 'view-box']
-		}
-		.touch_action {
-			lowercase_value in ['auto', 'manipulation', 'none', 'pan-down', 'pan-left', 'pan-right',
-				'pan-up', 'pan-x', 'pan-y']
-		}
-		.writing_mode {
-			lowercase_value in ['horizontal-tb', 'vertical-rl', 'vertical-lr', 'sideways-rl',
-				'sideways-lr']
-		}
-		.scrollbar_width {
-			lowercase_value in ['auto', 'thin', 'none']
-		}
-		.resize {
-			lowercase_value in ['none', 'both', 'horizontal', 'vertical', 'inline', 'block']
-		}
-		.user_select {
-			lowercase_value in ['all', 'auto', 'contain', 'none', 'text']
-		}
-		.white_space_collapse {
-			lowercase_value in ['collapse', 'discard', 'preserve', 'preserve-breaks',
-				'preserve-spaces', 'break-spaces']
-		}
-		.white_space_trim {
-			lowercase_value in ['none', 'discard-before', 'discard-after', 'discard-inner']
-		}
-		.word_break {
-			lowercase_value in ['normal', 'keep-all', 'break-all', 'break-word']
-		}
-		.font_feature_settings, .font_variation_settings {
-			lowercase_value == 'normal'
-		}
-		.font_kerning {
-			lowercase_value in ['auto', 'normal', 'none']
-		}
-		.font_language_override {
-			lowercase_value == 'normal'
-		}
-		.font_optical_sizing {
-			lowercase_value in ['auto', 'none']
-		}
-		.font_style {
-			lowercase_value in ['normal', 'italic', 'left', 'right', 'oblique']
-		}
-		.font_variant_caps {
-			lowercase_value in ['normal', 'small-caps', 'all-small-caps', 'petite-caps',
-				'all-petite-caps', 'unicase', 'titling-caps']
-		}
-		.font_variant_emoji {
-			lowercase_value in ['normal', 'text', 'emoji', 'unicode']
-		}
-		.font_variant_position {
-			lowercase_value in ['normal', 'sub', 'super']
-		}
-		.font_weight {
-			lowercase_value in ['normal', 'bold', 'bolder', 'lighter']
-		}
-		.font_width {
-			lowercase_value in ['ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed',
-				'normal', 'semi-expanded', 'expanded', 'extra-expanded', 'ultra-expanded']
-		}
-		.flex_direction {
-			lowercase_value in ['row', 'row-reverse', 'column', 'column-reverse']
-		}
-		.flex_wrap {
-			lowercase_value in ['nowrap', 'wrap', 'wrap-reverse']
-		}
-		.image_rendering {
-			lowercase_value in ['auto', 'crisp-edges', 'high-quality', 'pixelated', 'smooth',
-				'optimizespeed', 'optimizequality']
-		}
-		.justify_content {
-			lowercase_value in ['normal', 'start', 'end', 'flex-start', 'flex-end', 'center',
-				'space-between', 'space-around', 'space-evenly', 'stretch', 'left', 'right']
-		}
-		.justify_items {
-			lowercase_value in ['baseline', 'center', 'end', 'flex-end', 'flex-start', 'legacy',
-				'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe', 'left',
-				'right']
-		}
-		.justify_self {
-			lowercase_value in ['auto', 'baseline', 'center', 'end', 'flex-end', 'flex-start',
-				'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe', 'left',
-				'right']
-		}
-		.letter_spacing, .line_height, .word_spacing {
-			lowercase_value == 'normal'
-		}
-		.math_depth {
-			lowercase_value == 'auto-add'
-		}
-		.math_style {
-			lowercase_value in ['normal', 'compact']
-		}
-		.math_shift {
-			lowercase_value in ['normal', 'compact']
-		}
-		.fill_opacity, .flood_opacity, .opacity, .shape_image_threshold, .stop_opacity,
-		.stroke_opacity {
-			false
-		}
-		.rotate, .scale, .transform, .translate {
-			lowercase_value == 'none'
-		}
-		.transition_behavior {
-			lowercase_value in ['normal', 'allow-discrete']
-		}
-		.transition_timing_function {
-			lowercase_value in ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'ease']
-		}
-		.transition_property {
-			lowercase_value == 'none'
-		}
-		.transition_delay, .transition_duration {
-			false
-		}
-		.scroll_behavior {
-			lowercase_value in ['auto', 'smooth']
-		}
-		.scrollbar_color {
-			lowercase_value == 'auto'
-		}
-		.scrollbar_gutter {
-			lowercase_value in ['auto', 'stable', 'both-edges']
-		}
-		.text_underline_position {
-			lowercase_value in ['auto', 'from-font', 'under', 'left', 'right']
-		}
-		.timeline_scope {
-			lowercase_value in ['none', 'all']
-		}
-		.vertical_align {
-			lowercase_value in ['baseline', 'sub', 'super', 'text-top', 'text-bottom', 'middle',
-				'top', 'bottom']
-		}
-		.will_change {
-			lowercase_value in ['auto', 'scroll-position', 'contents']
-		}
-		.dominant_baseline {
-			lowercase_value in ['auto', 'text-bottom', 'alphabetic', 'ideographic', 'middle',
-				'central', 'mathematical', 'hanging', 'text-top']
-		}
-		.flex_basis {
-			lowercase_value in ['auto', 'content', 'min-content', 'max-content', 'fit-content']
-		}
-		.quotes {
-			lowercase_value in ['auto', 'none']
-		}
-		.box_shadow, .text_shadow {
-			lowercase_value == 'none'
-		}
-		.list_style_type {
-			lowercase_value == 'none'
-		}
-		.clip {
-			lowercase_value == 'auto'
-		}
-		.stroke_dasharray {
-			lowercase_value == 'none'
-		}
-		.font_family {
-			is_generic_font_family_name(lowercase_value)
-		}
-		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end {
-			lowercase_value == 'auto'
-		}
-		.grid_auto_flow {
-			lowercase_value in ['row', 'column', 'dense']
-		}
-		.grid_auto_columns, .grid_auto_rows {
-			lowercase_value in ['auto', 'min-content', 'max-content']
-		}
-		.grid_template_columns, .grid_template_rows {
-			lowercase_value in ['none', 'auto', 'min-content', 'max-content']
-		}
-		.grid_template_areas {
-			lowercase_value == 'none'
-		}
-		.filter, .backdrop_filter {
-			lowercase_value == 'none'
-		}
-		.counter_increment, .counter_reset, .counter_set {
-			lowercase_value == 'none'
-		}
-		.cursor {
-			lowercase_value in cursor_predefined_keywords
-		}
-		.font_size {
-			lowercase_value in font_size_keywords
-		}
-		.fill, .stroke {
-			lowercase_value == 'none'
-		}
-		.clip_path, .shape_outside {
-			lowercase_value == 'none'
-		}
-		.content {
-			lowercase_value in ['normal', 'none', 'open-quote', 'close-quote', 'no-open-quote',
-				'no-close-quote']
-		}
-		.font_variant_alternates {
-			lowercase_value in ['normal', 'historical-forms']
-		}
-		.font_variant_ligatures {
-			lowercase_value in font_variant_ligatures_keywords
-		}
-		.font_variant_numeric {
-			lowercase_value in font_variant_numeric_keywords
-		}
-		.font_variant_east_asian {
-			lowercase_value in font_variant_east_asian_keywords
-		}
-		.display {
-			lowercase_value in ['block', 'inline', 'run-in', 'flow', 'flow-root', 'table', 'flex',
-				'grid', 'ruby', 'math', 'list-item', 'table-row-group', 'table-header-group',
-				'table-footer-group', 'table-row', 'table-cell', 'table-column-group', 'table-column',
-				'table-caption', 'ruby-base', 'ruby-text', 'ruby-base-container',
-				'ruby-text-container', 'contents', 'none', 'inline-block', 'inline-table',
-				'inline-flex', 'inline-grid']
-		}
-		else {
-			// Shorthands validate keywords via their longhands.
-			false
-		}
-	}
-}
-
 fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
-	if lowercase_value.len == 0 || is_css_wide_keyword_string(lowercase_value) {
+	if lowercase_value.len == 0 || lowercase_value == 'default'
+		|| is_css_wide_keyword_string(lowercase_value) {
 		return false
 	}
-	return match property_id {
-		.animation_name {
-			lowercase_value !in ['default', 'none']
-		}
-		.border_block_end_color, .border_block_end_style, .border_block_end_width,
-		.border_block_start_color, .border_block_start_style, .border_block_start_width,
-		.border_end_end_radius, .border_end_start_radius, .border_inline_end_color,
-		.border_inline_end_style, .border_inline_end_width, .border_inline_start_color,
-		.border_inline_start_style, .border_inline_start_width, .border_start_end_radius,
-		.border_start_start_radius, .corner_end_end_shape, .corner_end_start_shape,
-		.corner_start_end_shape, .corner_start_start_shape {
-			false
-		}
-		.object_position, .overflow_block, .overflow_clip_margin_block_end,
-		.overflow_clip_margin_block_start, .overflow_clip_margin_bottom,
-		.overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start,
-		.overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top,
-		.overflow_inline, .perspective, .perspective_origin, .position_area, .position_try_order,
-		.scrollbar_color, .scrollbar_gutter, .tab_size, .text_underline_position,
-		.transform_origin, .vertical_align {
-			false
-		}
-		.accent_color, .background_attachment, .background_blend_mode, .background_clip,
-		.background_color, .background_image, .background_origin, .background_position_x,
-		.background_position_y, .background_repeat, .background_size, .border_bottom_color,
-		.border_bottom_style, .border_bottom_left_radius, .border_bottom_right_radius,
-		.border_collapse, .border_image_outset, .border_image_repeat, .border_image_slice,
-		.border_image_source, .border_image_width, .border_left_color, .border_left_style,
-		.border_right_color, .border_right_style, .border_top_color, .border_top_style,
-		.border_top_left_radius, .border_top_right_radius, .border_spacing, .block_size, .bottom,
-		.box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation,
-		.direction, .empty_cells, .fill_rule, .float_, .flood_color, .font_kerning,
-		.font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji,
-		.font_variant_position, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap,
-		.align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self,
-		.appearance, .column_span, .column_count, .column_width, .column_height, .column_gap,
-		.row_gap, .height, .image_rendering, .inline_size, .inset_block_end, .inset_block_start,
-		.inset_inline_end, .inset_inline_start, .isolation, .left, .list_style_image,
-		.list_style_position, .margin_block_end, .margin_block_start, .margin_bottom,
-		.margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top,
-		.mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_position,
-		.mask_repeat, .mask_size, .mask_type, .max_block_size, .max_height, .max_inline_size,
-		.max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .mix_blend_mode,
-		.object_fit, .outline_color, .outline_style, .overflow_x, .overflow_y, .overflow_wrap,
-		.padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end,
-		.padding_inline_start, .padding_left, .padding_right, .padding_top, .paint_order,
-		.pointer_events, .position, .position_visibility, .right, .scroll_timeline_axis,
-		.shape_margin, .shape_rendering, .stop_color, .stroke_linecap, .stroke_linejoin,
-		.stroke_miterlimit, .stroke_width, .stroke_dashoffset, .table_layout, .text_align,
-		.text_anchor, .text_decoration_color, .text_decoration_line, .text_decoration_style,
-		.text_decoration_thickness, .text_underline_offset, .text_indent, .text_justify,
-		.text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .top,
-		.transform_box, .transform_style, .touch_action, .width, .writing_mode, .scrollbar_width,
-		.resize, .scroll_behavior, .math_shift, .contain, .container_type, .unicode_bidi,
-		.user_select, .view_timeline_axis, .view_timeline_inset, .visibility,
-		.webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .widows,
-		.cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes,
-		.box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_flow, .grid_auto_columns,
-		.grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas,
-		.filter, .backdrop_filter, .cursor, .font_size, .fill, .stroke, .font_variant_ligatures,
-		.font_variant_numeric, .font_variant_east_asian, .clip_path, .shape_outside, .content,
-		.font_variant_alternates {
-			false
-		}
-		.color_scheme {
-			// color-scheme accepts `light` and `dark` as keywords, but excludes
-			// them from the <custom-ident> branch.
-			lowercase_value !in ['normal', 'light', 'dark', 'only']
-		}
-		.view_transition_name {
-			lowercase_value !in ['auto', 'none']
-		}
-		.content_visibility {
-			false
-		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape,
-		.corner_top_right_shape {
-			false
-		}
-		.animation_timeline {
-			// The named timeline branch is a <dashed-ident>, represented by
-			// CustomIdentStyleValue until a dedicated DashedIdent StyleValue exists.
-			value.starts_with('--')
-		}
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration,
-		.animation_fill_mode, .animation_iteration_count, .animation_play_state,
-		.animation_timing_function, .aspect_ratio, .border_bottom_width, .border_left_width,
-		.border_right_width, .border_top_width, .font_feature_settings, .font_style,
-		.font_variation_settings, .font_weight, .font_width, .letter_spacing, .line_height,
-		.math_depth, .math_style, .fill_opacity, .flood_opacity, .opacity, .order, .orphans,
-		.outline_offset, .outline_width, .shape_image_threshold, .stop_opacity, .stroke_opacity,
-		.rotate, .scale, .transform, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_timing_function, .translate, .word_spacing, .z_index {
-			false
-		}
-		.transition_property, .list_style_type, .counter_increment, .counter_reset, .counter_set {
-			lowercase_value != 'none'
-		}
-		.font_family {
-			lowercase_value != 'default' && !is_generic_font_family_name(lowercase_value)
-		}
-		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end {
-			lowercase_value !in ['auto', 'span']
-		}
-		.anchor_name, .position_try_fallbacks, .scroll_timeline_name, .timeline_scope,
-		.view_timeline_name {
-			value.starts_with('--') && lowercase_value != 'none'
-		}
-		.anchor_scope {
-			value.starts_with('--') && lowercase_value !in ['none', 'all']
-		}
-		.position_anchor {
-			value.starts_with('--') && lowercase_value != 'auto'
-		}
-		.will_change {
-			lowercase_value !in ['all', 'auto', 'contents', 'none', 'scroll-position', 'will-change']
-		}
-		else {
-			// Shorthands don't accept a <custom-ident> directly.
-			false
-		}
+	if property_accepts_type(property_id, .custom_ident) {
+		return lowercase_value !in property_custom_ident_blacklist(property_id)
 	}
+	// The compact StyleValue union does not yet have a separate
+	// DashedIdentStyleValue. Preserve that representation boundary while using
+	// the generated property type table to decide where it is legal.
+	if property_accepts_type(property_id, .dashed_ident) {
+		return value.starts_with('--')
+	}
+	return false
 }
 
 fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
@@ -2388,6 +191,9 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		EasingStyleValue {
 			property_accepts_type(property_id, .easing_function)
 		}
+		FitContentStyleValue {
+			property_accepts_type(property_id, .fit_content)
+		}
 		BackgroundSizeStyleValue {
 			property_id in [.background_size, .mask_size]
 		}
@@ -2409,19 +215,16 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 			property_accepts_type(property_id, .image)
 		}
 		NumberStyleValue {
-			property_accepts_type(property_id, .number)
-				&& property_accepts_number(property_id, value.number())
+			property_accepts_type(property_id, .number) && property_accepts_number(property_id, value.number())
 		}
 		IntegerStyleValue {
-			property_accepts_type(property_id, .integer)
-				&& property_accepts_integer(property_id, value.integer())
+			property_accepts_type(property_id, .integer) && property_accepts_integer(property_id, value.integer())
 		}
 		OpenTypeTaggedStyleValue {
 			property_accepts_type(property_id, .opentype_tag)
 		}
 		PercentageStyleValue {
-			property_accepts_type(property_id, .percentage)
-				&& property_accepts_percentage(property_id, value.percentage())
+			property_accepts_type(property_id, .percentage) && property_accepts_percentage(property_id, value.percentage())
 		}
 		PositionStyleValue {
 			property_accepts_type(property_id, .position)
@@ -2438,31 +241,11 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		StringStyleValue {
 			property_accepts_type(property_id, .string)
 		}
-		StubStyleValue {
-			match value.type_ {
-				.anchor {
-					property_accepts_type(property_id, .anchor)
-				}
-				.anchor_size {
-					property_accepts_type(property_id, .anchor_size)
-				}
-				.fit_content {
-					property_accepts_type(property_id, .fit_content)
-				}
-				.keyword {
-					property_accepts_keyword_string(property_id, value.serialize(.normal))
-				}
-				else {
-					false
-				}
-			}
-		}
 		SuperellipseStyleValue {
 			property_accepts_type(property_id, .corner_shape)
 		}
 		TimeStyleValue {
-			property_accepts_type(property_id, .time)
-				&& property_accepts_time(property_id, value.time())
+			property_accepts_type(property_id, .time) && property_accepts_time(property_id, value.time())
 		}
 		TransformationStyleValue {
 			property_accepts_type(property_id, .transform_function)
@@ -2480,8 +263,15 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 			property_accepts_type(property_id, .url)
 		}
 		StyleValueList {
-			if property_is_list_valued(property_id)
-				|| property_id in [.border_image_outset, .border_image_repeat, .border_image_width, .border_spacing, .scrollbar_color, .scrollbar_gutter, .transform_origin] {
+			if property_is_list_valued(property_id) || property_id in [
+				.border_image_outset,
+				.border_image_repeat,
+				.border_image_width,
+				.border_spacing,
+				.scrollbar_color,
+				.scrollbar_gutter,
+				.transform_origin,
+			] {
 				for item in value.values() {
 					if !property_accepts_style_value(property_id, item) {
 						return false
@@ -2509,107 +299,6 @@ pub fn property_accepts_keyword(property_id PropertyID, keyword Keyword) bool {
 	return property_accepts_keyword_string(property_id, string_from_keyword(keyword))
 }
 
-pub fn property_accepts_number(property_id PropertyID, value f64) bool {
-	return match property_id {
-		.animation_iteration_count {
-			value >= 0
-		}
-		.font_weight {
-			value >= 1 && value <= 1000
-		}
-		.flex_grow, .flex_shrink, .border_image_outset, .border_image_slice, .border_image_width,
-		.stroke_miterlimit, .stroke_width, .stroke_dashoffset, .tab_size {
-			value >= 0
-		}
-		else {
-			true
-		}
-	}
-}
-
-pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
-	return match property_id {
-		.column_count, .orphans, .widows { value >= 1 }
-		else { true }
-	}
-}
-
-pub fn property_accepts_percentage(property_id PropertyID, value Percentage) bool {
-	return match property_id {
-		.background_size, .mask_size, .block_size, .border_bottom_left_radius,
-		.border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius,
-		.border_image_slice, .border_image_width, .border_start_end_radius,
-		.border_start_start_radius, .border_top_left_radius, .border_top_right_radius, .height,
-		.inline_size, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size,
-		.min_height, .min_inline_size, .min_width, .padding_block_end, .padding_block_start,
-		.padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right,
-		.padding_top, .width, .column_gap, .row_gap, .shape_margin, .r, .rx, .ry, .stroke_width,
-		.stroke_dashoffset {
-			value.value() >= 0
-		}
-		else {
-			true
-		}
-	}
-}
-
-pub fn property_accepts_angle(property_id PropertyID, value Angle) bool {
-	_ = property_id
-	_ = value
-	return true
-}
-
-pub fn property_accepts_flex(property_id PropertyID, value Flex) bool {
-	_ = property_id
-	_ = value
-	return true
-}
-
-pub fn property_accepts_frequency(property_id PropertyID, value Frequency) bool {
-	_ = property_id
-	_ = value
-	return true
-}
-
-pub fn property_accepts_length(property_id PropertyID, value Length) bool {
-	return match property_id {
-		.background_size, .mask_size, .block_size, .border_block_end_width,
-		.border_block_start_width, .border_bottom_left_radius, .border_bottom_right_radius,
-		.border_bottom_width, .border_end_end_radius, .border_end_start_radius,
-		.border_image_outset, .border_image_width, .border_inline_end_width,
-		.border_inline_start_width, .border_left_width, .border_right_width, .border_spacing,
-		.border_start_end_radius, .border_start_start_radius, .border_top_left_radius,
-		.border_top_right_radius, .border_top_width, .height, .inline_size, .max_block_size,
-		.max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size,
-		.min_width, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start,
-		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
-		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
-		.overflow_clip_margin_right, .overflow_clip_margin_top, .padding_block_end,
-		.padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start,
-		.padding_left, .padding_right, .padding_top, .perspective, .tab_size, .width,
-		.column_width, .column_height, .column_gap, .row_gap, .shape_margin, .r, .rx, .ry,
-		.stroke_width, .stroke_dashoffset, .flex_basis, .stroke_dasharray, .font_size {
-			value.raw_value() >= 0
-		}
-		else {
-			true
-		}
-	}
-}
-
-pub fn property_accepts_resolution(property_id PropertyID, value Resolution) bool {
-	_ = property_id
-	_ = value
-	return true
-}
-
-pub fn property_accepts_time(property_id PropertyID, value Time) bool {
-	return match property_id {
-		.animation_duration, .transition_duration { value.to_seconds() >= 0 }
-		else { true }
-	}
-}
-
 fn to_ascii_lowercase(value string) string {
 	mut bytes := value.bytes()
 	for i, byte in bytes {
@@ -2629,7 +318,6 @@ pub fn (value_type ValueType) to_string() string {
 }
 
 // --- Units helpers used by CSSUnitValue and NumericType ---
-
 pub enum DimensionType {
 	angle
 	flex
@@ -2778,7 +466,6 @@ pub fn dimension_for_unit(unit string) ?DimensionType {
 }
 
 // --- NumericType ---
-
 pub enum NumericBaseType {
 	length
 	angle
@@ -2858,22 +545,27 @@ pub fn NumericType.create_from_unit(unit string) ?NumericType {
 			.length {
 				NumericType.with_type(.length, 1)
 			}
+
 			// unit is an <angle> unit
 			.angle {
 				NumericType.with_type(.angle, 1)
 			}
+
 			// unit is a <time> unit
 			.time {
 				NumericType.with_type(.time, 1)
 			}
+
 			// unit is a <frequency> unit
 			.frequency {
 				NumericType.with_type(.frequency, 1)
 			}
+
 			// unit is a <resolution> unit
 			.resolution {
 				NumericType.with_type(.resolution, 1)
 			}
+
 			// unit is a <flex> unit
 			.flex {
 				NumericType.with_type(.flex, 1)
@@ -2935,13 +627,27 @@ pub fn (t NumericType) exponent(type_ NumericBaseType) ?int {
 
 pub fn (mut t NumericType) set_exponent(type_ NumericBaseType, exponent int) {
 	match type_ {
-		.length { t.length_ = exponent }
-		.angle { t.angle_ = exponent }
-		.time { t.time_ = exponent }
-		.frequency { t.frequency_ = exponent }
-		.resolution { t.resolution_ = exponent }
-		.flex { t.flex_ = exponent }
-		.percent { t.percent_ = exponent }
+		.length {
+			t.length_ = exponent
+		}
+		.angle {
+			t.angle_ = exponent
+		}
+		.time {
+			t.time_ = exponent
+		}
+		.frequency {
+			t.frequency_ = exponent
+		}
+		.resolution {
+			t.resolution_ = exponent
+		}
+		.flex {
+			t.flex_ = exponent
+		}
+		.percent {
+			t.percent_ = exponent
+		}
 	}
 }
 
@@ -2983,18 +689,19 @@ pub fn (t NumericType) added_to(other NumericType) ?NumericType {
 			// Apply the percent hint hint to type2.
 			type2.apply_percent_hint(hint1)
 		}
-	}
-	//    Vice versa if type2 has a non-null percent hint and type1 does not.
-	else if hint2 := type2.percent_hint {
-		if type1.percent_hint == none {
-			type1.apply_percent_hint(hint2)
+	} else {
+		//    Vice versa if type2 has a non-null percent hint and type1 does not.
+		if hint2 := type2.percent_hint {
+			if type1.percent_hint == none {
+				type1.apply_percent_hint(hint2)
+			}
 		}
 	}
+
 	// Otherwise, continue to the next step.
 
 	// 3. If all the entries of type1 with non-zero values are contained in type2 with the same value, and vice-versa
-	if type2.contains_all_the_non_zero_entries_of_other_with_the_same_value(type1)
-		&& type1.contains_all_the_non_zero_entries_of_other_with_the_same_value(type2) {
+	if type2.contains_all_the_non_zero_entries_of_other_with_the_same_value(type1) && type1.contains_all_the_non_zero_entries_of_other_with_the_same_value(type2) {
 		// Copy all of type1's entries to finalType, and then copy all of type2's entries to finalType that
 		// finalType does not already contain. Set finalType's percent hint to type1's percent hint. Return finalType.
 		final_type.copy_all_entries_from(type1, false)
@@ -3004,10 +711,8 @@ pub fn (t NumericType) added_to(other NumericType) ?NumericType {
 	}
 	//    If type1 and/or type2 contain "percent" with a non-zero value,
 	//    and type1 and/or type2 contain a key other than "percent" with a non-zero value
-	any_percent_is_non_zero := optional_non_zero(type1.exponent(.percent))
-		|| optional_non_zero(type2.exponent(.percent))
-	any_non_percent_is_non_zero := type1.contains_a_key_other_than_percent_with_a_non_zero_value()
-		|| type2.contains_a_key_other_than_percent_with_a_non_zero_value()
+	any_percent_is_non_zero := optional_non_zero(type1.exponent(.percent)) || optional_non_zero(type2.exponent(.percent))
+	any_non_percent_is_non_zero := type1.contains_a_key_other_than_percent_with_a_non_zero_value() || type2.contains_a_key_other_than_percent_with_a_non_zero_value()
 	if any_percent_is_non_zero && any_non_percent_is_non_zero {
 		// For each base type other than "percent" hint:
 		for hint in numeric_base_types() {
@@ -3025,8 +730,7 @@ pub fn (t NumericType) added_to(other NumericType) ?NumericType {
 			//    with the same value, and vice versa, then copy all of type1's entries to finalType,
 			//    and then copy all of type2's entries to finalType that finalType does not already contain.
 			//    Set finalType's percent hint to hint. Return finalType.
-			if provisional_type2.contains_all_the_non_zero_entries_of_other_with_the_same_value(provisional_type1)
-				&& provisional_type1.contains_all_the_non_zero_entries_of_other_with_the_same_value(provisional_type2) {
+			if provisional_type2.contains_all_the_non_zero_entries_of_other_with_the_same_value(provisional_type1) && provisional_type1.contains_all_the_non_zero_entries_of_other_with_the_same_value(provisional_type2) {
 				final_type.copy_all_entries_from(provisional_type1, false)
 				final_type.copy_all_entries_from(provisional_type2, true)
 				final_type.percent_hint = hint
@@ -3069,11 +773,12 @@ pub fn (t NumericType) multiplied_by(other NumericType) ?NumericType {
 		if type2.percent_hint == none {
 			type2.apply_percent_hint(hint1)
 		}
-	}
-	//    Vice versa if type2 has a non-null percent hint and type1 does not.
-	else if hint2 := type2.percent_hint {
-		if type1.percent_hint == none {
-			type1.apply_percent_hint(hint2)
+	} else {
+		//    Vice versa if type2 has a non-null percent hint and type1 does not.
+		if hint2 := type2.percent_hint {
+			if type1.percent_hint == none {
+				type1.apply_percent_hint(hint2)
+			}
 		}
 	}
 
@@ -3085,9 +790,8 @@ pub fn (t NumericType) multiplied_by(other NumericType) ?NumericType {
 		// 1. If finalType[baseType] exists, increment its value by power.
 		if exponent := final_type.exponent(base_type) {
 			final_type.set_exponent(base_type, exponent + power)
-		}
-		// 2. Otherwise, set finalType[baseType] to power.
-		else {
+		} else {
+			// 2. Otherwise, set finalType[baseType] to power.
 			final_type.set_exponent(base_type, power)
 		}
 	}
@@ -3374,7 +1078,6 @@ pub fn (t NumericType) matches_dimension() bool {
 	// This is not a spec algorithm.
 	// A type should match `<dimension>` if there are no non-zero entries,
 	// or it has a single non-zero entry (other than percent) which is equal to 1.
-
 	mut number_of_one_exponents := 0
 	for base_type in numeric_base_types() {
 		type_exponent := t.exponent(base_type) or { continue }
@@ -3445,296 +1148,14 @@ pub fn product_of_two_unit_maps(units1 map[string]int, units2 map[string]int) ma
 }
 
 // --- Keywords ---
-
 pub enum Keyword {
 	invalid
-	inherit
-	initial
-	revert
-	revert_layer
-	unset
-	all
-	auto_add
-	auto
-	none_
-	visible
-	hidden
-	dotted
-	dashed
-	solid
-	double_
-	groove
-	ridge
-	inset
-	outset
-	clip
-	no_clip
-	scroll
-	repeat
-	no_repeat
-	repeat_x
-	repeat_y
-	fill
-	stroke
-	markers
-	contain
-	cover
-	scale_down
-	multiply
-	screen
-	overlay
-	darken
-	lighten
-	color_dodge
-	color_burn
-	hard_light
-	soft_light
-	difference
-	exclusion
-	hue
-	saturation
-	color
-	luminosity
-	plus_darker
-	plus_lighter
-	inline_start
-	inline_end
-	top
-	bottom
-	collapse
-	show
-	hide
-	ltr
-	rtl
-	embed
-	isolate
-	bidi_override
-	isolate_override
-	plaintext
-	nonzero
-	evenodd
-	linearrgb
-	srgb
-	luminance
-	alpha
-	match_source
-	optimizespeed
-	crispedges
-	geometricprecision
-	butt
-	miter
-	start
-	middle
-	end_
-	center
-	justify
-	match_parent
+	negative_infinity
+	libweb_buttonfacedisabled
+	libweb_buttonfacehover
 	libweb_center
 	libweb_inherit_or_center
 	libweb_left
-	libweb_right
-	inter_word
-	inter_character
-	ellipsis
-	optimizelegibility
-	capitalize
-	full_size_kana
-	full_width
-	lowercase
-	math_auto
-	uppercase
-	nowrap
-	wrap
-	balance
-	stable
-	pretty
-	discard
-	preserve
-	preserve_breaks
-	preserve_spaces
-	break_spaces
-	discard_before
-	discard_after
-	discard_inner
-	keep_all
-	break_all
-	break_word
-	anywhere
-	small_caps
-	all_small_caps
-	petite_caps
-	all_petite_caps
-	unicase
-	titling_caps
-	emoji
-	unicode
-	sub
-	super
-	flex_start
-	flex_end
-	space_between
-	space_around
-	space_evenly
-	self_start
-	self_end
-	stretch
-	baseline
-	safe
-	unsafe_
-	legacy
-	row
-	row_reverse
-	column
-	column_reverse
-	wrap_reverse
-	button
-	checkbox
-	listbox
-	menulist
-	meter
-	menulist_button
-	push_button
-	progress_bar
-	radio
-	searchfield
-	slider_horizontal
-	square_button
-	textarea
-	textfield
-	crisp_edges
-	high_quality
-	pixelated
-	smooth
-	optimizequality
-	fill_box
-	stroke_box
-	view_box
-	manipulation
-	pan_down
-	pan_left
-	pan_right
-	pan_up
-	pan_x
-	pan_y
-	horizontal_tb
-	vertical_rl
-	vertical_lr
-	sideways_rl
-	sideways_lr
-	thin
-	horizontal
-	vertical
-	block
-	inline_
-	x
-	y
-	strict
-	content
-	size
-	inline_size
-	layout
-	style
-	paint
-	scroll_state
-	separate
-	margin_box
-	border_box
-	padding_box
-	content_box
-	inside
-	outside
-	flat
-	preserve_3d
-	text
-	absolute
-	fixed
-	local
-	relative
-	static_
-	sticky
-	normal
-	from_font
-	compact
-	hanging
-	each_line
-	underline
-	overline
-	line_through
-	blink
-	spelling_error
-	grammar_error
-	wavy
-	bold
-	bolder
-	lighter
-	italic
-	linear
-	ease
-	ease_in
-	ease_out
-	ease_in_out
-	left
-	right
-	oblique
-	round
-	space
-	scoop
-	bevel
-	notch
-	square
-	squircle
-	infinity
-	negative_infinity
-	allow_discrete
-	reverse
-	alternate
-	alternate_reverse
-	running
-	paused
-	forwards
-	backwards
-	both
-	infinite
-	replace
-	add
-	subtract
-	intersect
-	exclude
-	accumulate
-	light
-	dark
-	always
-	anchors_valid
-	anchors_visible
-	no_overflow
-	accentcolor
-	accentcolortext
-	activeborder
-	activecaption
-	activetext
-	appworkspace
-	background
-	buttonborder
-	buttonface
-	buttonhighlight
-	buttonshadow
-	buttontext
-	canvas
-	canvastext
-	captiontext
-	currentcolor
-	field
-	fieldtext
-	graytext
-	highlight
-	highlighttext
-	inactiveborder
-	inactivecaption
-	inactivecaptiontext
-	infobackground
-	infotext
-	libweb_buttonfacedisabled
-	libweb_buttonfacehover
 	libweb_link
 	libweb_palette_active_link
 	libweb_palette_active_window_border1
@@ -3790,120 +1211,793 @@ pub enum Keyword {
 	libweb_palette_visited_link
 	libweb_palette_window
 	libweb_palette_window_text
+	libweb_right
+	a3
+	a4
+	a5
+	a98_rgb
+	absolute
+	accentcolor
+	accentcolortext
+	accumulate
+	active
+	activeborder
+	activecaption
+	activetext
+	add
+	additive
+	adlam
+	afar
+	agaw
+	alias
+	all
+	all_petite_caps
+	all_scroll
+	all_small_caps
+	allow_discrete
+	alpha
+	alphabetic
+	alternate
+	alternate_reverse
+	always
+	anchors_valid
+	anchors_visible
+	ancient_tamil
+	anonymous
+	anywhere
+	appworkspace
+	arabic_abjad
+	arabic_indic
+	ari
+	armenian
+	auto
+	auto_add
+	avar2
+	b4
+	b5
+	back
+	background
+	backwards
+	balance
+	balinese
+	bamum
+	bangla
+	baseline
+	bengali
+	bevel
+	bidi_override
+	binary
+	blin
+	blink
+	block
+	block_end
+	block_start
+	bodo
+	bold
+	bolder
+	border_box
+	both
+	both_edges
+	bottom
+	break_all
+	break_spaces
+	break_word
+	browser
+	bullets
+	butt
+	button
+	buttonborder
+	buttonface
+	buttonhighlight
+	buttonshadow
+	buttontext
+	cambodian
+	canvas
+	canvastext
+	capitalize
+	captiontext
+	cell
+	center
+	central
+	checkbox
+	circle
+	circled_decimal
+	circled_ideograph
+	circled_katakana
+	circled_korean_consonant
+	circled_korean_syllable
+	circled_lower_latin
+	circled_upper_latin
+	cjk_decimal
+	cjk_earthly_branch
+	cjk_heavenly_stem
+	cjk_ideographic
+	cjk_stem_branch
+	cjk_tally_mark
+	clip
+	close_quote
+	closest_corner
+	closest_side
+	coarse
+	col_resize
+	collapse
+	color
+	color_burn
+	color_cbdt
+	color_colrv0
+	color_colrv1
+	color_dodge
+	color_sbix
+	color_svg
+	column
+	column_reverse
+	common_ligatures
+	compact
+	condensed
+	contain
+	content
+	content_box
+	contents
+	context_menu
+	contextual
+	copy
+	cover
+	crisp_edges
+	crispedges
+	crop
+	cross
+	crosshair
+	currentcolor
+	cursive
+	custom
+	cyclic
+	dark
+	darken
+	dashed
+	decimal
+	decimal_leading_zero
+	decreasing
+	default
+	devanagari
+	diagonal_fractions
+	difference
+	disc
+	discard
+	discard_before
+	discard_after
+	discard_inner
+	disclosure_closed
+	disclosure_open
+	discretionary_ligatures
+	distribute
+	display_p3
+	display_p3_linear
+	dizi
+	dogri
+	dotted_decimal
+	dotted
+	double_circled_decimal
+	double_
+	down
+	e
+	e_resize
+	each_line
+	ease
+	ease_in
+	ease_in_out
+	ease_out
+	element_shared
+	ellipsis
+	else_
+	embed
+	emoji
+	enabled
+	end_
+	ethiopic_halehame_am
+	ethiopic_halehame_ti_er
+	ethiopic_halehame_ti_et
+	ethiopic_halehame
+	ethiopic_numeric
+	evenodd
+	ew_resize
+	exclude
+	exclusion
+	expanded
+	extends
+	extra_condensed
+	extra_expanded
+	fallback
+	false_
+	fantasy
+	farthest_corner
+	farthest_side
+	fast
+	features_aat
+	features_graphite
+	features_opentype
+	field
+	fieldtext
+	fill
+	fill_box
+	filled_circled_decimal
+	fine
+	fixed
+	flat
+	flex
+	flex_end
+	flex_start
+	flip_block
+	flip_inline
+	flip_start
+	flow
+	flow_root
+	forwards
+	from_font
+	full_size_kana
+	full_width
+	fullwidth_decimal
+	fullwidth_lower_alpha
+	fullwidth_upper_alpha
+	fullwidth_upper_roman
+	fullscreen
+	gedeo
+	geometricprecision
+	georgian
+	grab
+	grabbing
+	grammar_error
+	graytext
+	greek_lower_ancient
+	greek_lower_modern
+	greek_upper_ancient
+	greek_upper_modern
+	grid
+	groove
+	gujarati_alpha
+	gujarati
+	gumuz
+	gurmukhi
+	hadiyaa
+	hanging
+	hangul_consonant
+	hangul
+	hanifi_rohingya
+	harari
+	hard_light
+	hebrew
+	height
+	help
+	hide
+	hidden
+	high
+	high_quality
+	highlight
+	highlighttext
+	hindi
+	hiragana_iroha
+	hiragana
+	historical_forms
+	historical_ligatures
+	horizontal
+	horizontal_tb
+	hover
+	hsl
+	hue
+	hwb
+	inactiveborder
+	inactivecaption
+	inactivecaptiontext
+	increasing
+	ideographic
+	incremental
+	infinite
+	infinity
+	infobackground
+	infotext
+	inherit
+	initial
+	initial_only
+	inline_
+	inline_block
+	inline_end
+	inline_flex
+	inline_grid
+	inline_size
+	inline_start
+	inline_table
+	inset
+	inside
+	inter_character
+	inter_word
+	interlace
+	intersect
+	invert
+	inverted
+	isolate
+	isolate_override
+	italic
+	japanese_formal
+	japanese_informal
+	javanese
+	jis_b4
+	jis_b5
+	jis04
+	jis78
+	jis83
+	jis90
+	jump_both
+	jump_end
+	jump_none
+	jump_start
+	justify
+	kaffa
+	kannada_alpha
+	kannada
+	kashmiri
+	katakana_iroha
+	katakana
+	kayah_li
+	kebena
+	keep_all
+	kembata
+	khmer_consonant
+	khmer
+	konkani
+	konso
+	korean_consonant
+	korean_hangul_formal
+	korean_hanja_formal
+	korean_hanja_informal
+	korean_syllable
+	kunama
+	landscape
+	lanna_hora
+	lanna_tham
+	lao
+	lab
+	large
+	larger
+	layout
+	lch
+	ledger
+	left
+	legacy
+	legal
+	lepcha
+	less
+	letter
+	light
+	lighten
+	lighter
+	limbu
+	line_through
+	linear
+	linearrgb
+	lining_nums
 	linktext
+	list_item
+	listbox
+	local
+	longer
+	lower_alpha_symbolic
+	lower_alpha
+	lower_armenian
+	lower_belorussian
+	lower_bulgarian
+	lower_greek
+	lower_hexadecimal
+	lower_latin
+	lower_macedonian
+	lower_oromo_qubee
+	lower_roman
+	lower_russian_full
+	lower_russian
+	lower_serbian
+	lower_ukrainian_full
+	lower_ukrainian
+	lowercase
+	ltr
+	luminance
+	luminosity
+	maghrebi_abjad
+	maithili
+	malayalam_alpha
+	malayalam
+	manipulation
+	manipuri
+	marathi
+	margin_box
 	mark
+	markers
 	marktext
+	match_parent
+	match_source
+	math
+	math_auto
+	mathematical
+	max_content
+	medium
+	meen
+	meetei
 	menu
+	menulist
+	menulist_button
 	menutext
+	meter
+	middle
+	min_content
+	minimal_ui
+	miter
+	mongolian
+	monospace
+	more
+	most_block_size
+	most_height
+	most_inline_size
+	most_width
+	move
+	mro
+	multiply
+	myanmar
+	n_resize
+	nag_mundari
+	nan
+	ne_resize
+	nearest
+	nesw_resize
+	new_base_60
+	newa
+	nko_cardinal
+	no_clip
+	no_close_quote
+	no_common_ligatures
+	no_contextual
+	no_discretionary_ligatures
+	no_drop
+	no_historical_ligatures
+	no_open_quote
+	no_overflow
+	no_preference
+	no_referrer
+	no_referrer_when_downgrade
+	no_repeat
+	none_
+	nonzero
+	normal
+	not_allowed
+	notch
+	nowrap
+	ns_resize
+	numbers
+	numeric
+	nw_resize
+	nwse_resize
+	oblique
+	octal
+	odia
+	off
+	oklab
+	oklch
+	ol_chiki
+	oldstyle_nums
+	on
+	opaque
+	open_quote
+	optimizelegibility
+	optimizequality
+	optimizespeed
+	optional
+	ordinal
+	origin
+	origin_when_cross_origin
+	oriya
+	oromo
+	outset
+	outside
+	overlay
+	overline
+	p3
+	padding_box
+	paged
+	paint
+	palettes
+	pan_down
+	pan_left
+	pan_right
+	pan_up
+	pan_x
+	pan_y
+	parenthesized_decimal
+	parenthesized_hangul_consonant
+	parenthesized_hangul_syllable
+	parenthesized_ideograph
+	parenthesized_lower_latin
+	paused
+	persian_abjad
+	persian_alphabetic
+	persian
+	petite_caps
+	pi
+	picture_in_picture
+	pixelated
+	plaintext
+	plus_darker
+	plus_lighter
+	pointer
+	portrait
+	pre
+	pre_line
+	pre_wrap
+	preserve
+	preserve_3d
+	preserve_breaks
+	preserve_spaces
+	pretty
+	progress
+	progress_bar
+	progressive
+	prophoto_rgb
+	proportional_nums
+	proportional_width
+	punjabi
+	push_button
+	radio
+	rec2020
+	reduce
+	relative
+	repeat
+	repeat_x
+	repeat_y
+	replace
+	reverse
+	revert
+	revert_layer
+	ridge
+	right
+	root
+	rotate_left
+	rotate_right
+	round
+	row
+	row_resize
+	row_reverse
+	rtl
+	ruby
+	ruby_base
+	ruby_base_container
+	ruby_text
+	ruby_text_container
+	run_in
+	running
+	s_resize
+	safe
+	saho
+	same_origin
+	sans_serif
+	sanskrit
+	santali
+	saturation
+	scale_down
+	scoop
+	screen
+	scroll
+	scroll_position
+	scroll_state
 	scrollbar
+	se_resize
+	searchfield
 	selecteditem
 	selecteditemtext
+	self
+	self_block
+	self_block_end
+	self_block_start
+	self_end
+	self_inline
+	self_inline_end
+	self_inline_start
+	self_x_end
+	self_x_start
+	self_y_end
+	self_y_start
+	self_start
+	semi_condensed
+	semi_expanded
+	separate
+	serif
+	shan
+	shorter
+	show
+	sidama
+	sideways_lr
+	sideways_rl
+	silti
+	simp_chinese_formal
+	simp_chinese_informal
+	simple_lower_roman
+	simple_upper_roman
+	simplified
+	sindhi
+	size
+	slashed_zero
+	slider_horizontal
+	slow
+	small
+	small_caps
+	smaller
+	smooth
+	soft_light
+	solid
+	space
+	space_around
+	space_between
+	space_evenly
+	span_all
+	span_block_end
+	span_block_start
+	span_bottom
+	span_end
+	span_inline_end
+	span_inline_start
+	span_left
+	span_right
+	span_self_block_end
+	span_self_block_start
+	span_self_end
+	span_self_inline_end
+	span_self_inline_start
+	span_self_start
+	span_self_x_end
+	span_self_x_start
+	span_self_y_end
+	span_self_y_start
+	span_start
+	span_top
+	span_x_end
+	span_x_start
+	span_y_end
+	span_y_start
+	spelling_error
+	spell_out
+	square
+	square_button
+	squircle
+	srgb
+	srgb_linear
+	stable
+	stacked_fractions
+	standalone
+	standard
+	start
+	static_
+	sticky
+	stretch
+	strict
+	strict_origin
+	strict_origin_when_cross_origin
+	stroke
+	stroke_box
+	style
+	sub
+	subtract
+	subtractive
+	sundanese
+	super_decimal
+	super
+	sw_resize
+	swap
+	symbolic
+	table
+	table_caption
+	table_cell
+	table_column
+	table_column_group
+	table_footer_group
+	table_header_group
+	table_row
+	table_row_group
+	tabular_nums
+	tai_lue
+	tally_mark
+	tamil
+	telugu_alpha
+	telugu
+	text
+	text_bottom
+	text_top
+	textarea
+	textfield
+	thai_alpha
+	thai
+	thick
+	thin
 	threeddarkshadow
 	threedface
 	threedhighlight
 	threedlightshadow
 	threedshadow
+	tibetan
+	tigre
+	titling_caps
+	to_zero
+	top
+	trad_chinese_formal
+	trad_chinese_informal
+	traditional
+	true_
+	ui_monospace
+	ui_rounded
+	ui_sans_serif
+	ui_serif
+	ultra_condensed
+	ultra_expanded
+	under
+	underline
+	unicase
+	unicode
+	unsafe_
+	unsafe_url
+	unset
+	up
+	upper_alpha_symbolic
+	upper_alpha
+	upper_armenian
+	upper_belorussian
+	upper_bulgarian
+	upper_hexadecimal
+	upper_latin
+	upper_macedonian
+	upper_oromo_qubee
+	upper_roman
+	upper_russian_full
+	upper_russian
+	upper_serbian
+	upper_ukrainian_full
+	upper_ukrainian
+	uppercase
+	upright
+	urdu_abjad
+	urdu_alphabetic
+	urdu
+	use_credentials
+	variations
+	vertical
+	vertical_lr
+	vertical_rl
+	vertical_text
+	view_box
+	visible
 	visitedtext
+	w_resize
+	wait
+	warang_citi
+	wavy
+	width
 	window
 	windowframe
 	windowtext
-	text_bottom
-	alphabetic
-	ideographic
-	central
-	mathematical
-	text_top
-	serif
-	sans_serif
-	monospace
-	cursive
-	fantasy
-	system_ui
-	ui_serif
-	ui_sans_serif
-	ui_monospace
-	ui_rounded
-	math
-	fangsong
-	default
-	context_menu
-	help
-	pointer
-	progress
-	wait
-	cell
-	crosshair
-	vertical_text
-	alias
-	copy
-	move
-	no_drop
-	not_allowed
-	grab
-	grabbing
-	e_resize
-	n_resize
-	ne_resize
-	nw_resize
-	s_resize
-	se_resize
-	sw_resize
-	w_resize
-	ew_resize
-	ns_resize
-	nesw_resize
-	nwse_resize
-	col_resize
-	row_resize
-	all_scroll
+	wolaita
+	words
+	wrap
+	wrap_reverse
+	x
+	x_end
+	x_large
+	x_start
+	x_small
+	xx_large
+	xx_small
+	xxx_large
+	xyz
+	xyz_d50
+	xyz_d65
+	y
+	y_end
+	y_start
+	yemsa
+	zhuyin
 	zoom_in
 	zoom_out
-	xx_small
-	x_small
-	small
-	medium
-	large
-	x_large
-	xx_large
-	xxx_large
-	larger
-	smaller
-	jis78
-	jis83
-	jis90
-	jis04
-	simplified
-	traditional
-	proportional_width
-	ruby
-	lining_nums
-	oldstyle_nums
-	proportional_nums
-	tabular_nums
-	diagonal_fractions
-	stacked_fractions
-	ordinal
-	slashed_zero
-	common_ligatures
-	no_common_ligatures
-	discretionary_ligatures
-	no_discretionary_ligatures
-	historical_ligatures
-	no_historical_ligatures
-	contextual
-	no_contextual
-	closest_corner
-	closest_side
-	farthest_corner
-	farthest_side
-	open_quote
-	close_quote
-	no_open_quote
-	no_close_quote
-	historical_forms
-	pre
-	pre_wrap
-	pre_line
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3920,293 +2014,12 @@ pub fn is_css_wide_keyword_string(value string) bool {
 pub fn string_from_keyword(keyword Keyword) string {
 	return match keyword {
 		.invalid { '' }
-		.inherit { 'inherit' }
-		.initial { 'initial' }
-		.revert { 'revert' }
-		.revert_layer { 'revert-layer' }
-		.unset { 'unset' }
-		.all { 'all' }
-		.auto_add { 'auto-add' }
-		.auto { 'auto' }
-		.none_ { 'none' }
-		.visible { 'visible' }
-		.hidden { 'hidden' }
-		.dotted { 'dotted' }
-		.dashed { 'dashed' }
-		.solid { 'solid' }
-		.double_ { 'double' }
-		.groove { 'groove' }
-		.ridge { 'ridge' }
-		.inset { 'inset' }
-		.outset { 'outset' }
-		.clip { 'clip' }
-		.no_clip { 'no-clip' }
-		.scroll { 'scroll' }
-		.repeat { 'repeat' }
-		.no_repeat { 'no-repeat' }
-		.repeat_x { 'repeat-x' }
-		.repeat_y { 'repeat-y' }
-		.fill { 'fill' }
-		.stroke { 'stroke' }
-		.markers { 'markers' }
-		.contain { 'contain' }
-		.cover { 'cover' }
-		.scale_down { 'scale-down' }
-		.multiply { 'multiply' }
-		.screen { 'screen' }
-		.overlay { 'overlay' }
-		.darken { 'darken' }
-		.lighten { 'lighten' }
-		.color_dodge { 'color-dodge' }
-		.color_burn { 'color-burn' }
-		.hard_light { 'hard-light' }
-		.soft_light { 'soft-light' }
-		.difference { 'difference' }
-		.exclusion { 'exclusion' }
-		.hue { 'hue' }
-		.saturation { 'saturation' }
-		.color { 'color' }
-		.luminosity { 'luminosity' }
-		.plus_darker { 'plus-darker' }
-		.plus_lighter { 'plus-lighter' }
-		.inline_start { 'inline-start' }
-		.inline_end { 'inline-end' }
-		.top { 'top' }
-		.bottom { 'bottom' }
-		.collapse { 'collapse' }
-		.show { 'show' }
-		.hide { 'hide' }
-		.ltr { 'ltr' }
-		.rtl { 'rtl' }
-		.embed { 'embed' }
-		.isolate { 'isolate' }
-		.bidi_override { 'bidi-override' }
-		.isolate_override { 'isolate-override' }
-		.plaintext { 'plaintext' }
-		.nonzero { 'nonzero' }
-		.evenodd { 'evenodd' }
-		.linearrgb { 'linearrgb' }
-		.srgb { 'srgb' }
-		.luminance { 'luminance' }
-		.alpha { 'alpha' }
-		.match_source { 'match-source' }
-		.optimizespeed { 'optimizespeed' }
-		.crispedges { 'crispedges' }
-		.geometricprecision { 'geometricprecision' }
-		.butt { 'butt' }
-		.miter { 'miter' }
-		.start { 'start' }
-		.middle { 'middle' }
-		.end_ { 'end' }
-		.center { 'center' }
-		.justify { 'justify' }
-		.match_parent { 'match-parent' }
+		.negative_infinity { '-infinity' }
+		.libweb_buttonfacedisabled { '-libweb-buttonfacedisabled' }
+		.libweb_buttonfacehover { '-libweb-buttonfacehover' }
 		.libweb_center { '-libweb-center' }
 		.libweb_inherit_or_center { '-libweb-inherit-or-center' }
 		.libweb_left { '-libweb-left' }
-		.libweb_right { '-libweb-right' }
-		.inter_word { 'inter-word' }
-		.inter_character { 'inter-character' }
-		.ellipsis { 'ellipsis' }
-		.optimizelegibility { 'optimizelegibility' }
-		.capitalize { 'capitalize' }
-		.full_size_kana { 'full-size-kana' }
-		.full_width { 'full-width' }
-		.lowercase { 'lowercase' }
-		.math_auto { 'math-auto' }
-		.uppercase { 'uppercase' }
-		.nowrap { 'nowrap' }
-		.wrap { 'wrap' }
-		.balance { 'balance' }
-		.stable { 'stable' }
-		.pretty { 'pretty' }
-		.discard { 'discard' }
-		.preserve { 'preserve' }
-		.preserve_breaks { 'preserve-breaks' }
-		.preserve_spaces { 'preserve-spaces' }
-		.break_spaces { 'break-spaces' }
-		.discard_before { 'discard-before' }
-		.discard_after { 'discard-after' }
-		.discard_inner { 'discard-inner' }
-		.keep_all { 'keep-all' }
-		.break_all { 'break-all' }
-		.break_word { 'break-word' }
-		.anywhere { 'anywhere' }
-		.small_caps { 'small-caps' }
-		.all_small_caps { 'all-small-caps' }
-		.petite_caps { 'petite-caps' }
-		.all_petite_caps { 'all-petite-caps' }
-		.unicase { 'unicase' }
-		.titling_caps { 'titling-caps' }
-		.emoji { 'emoji' }
-		.unicode { 'unicode' }
-		.sub { 'sub' }
-		.super { 'super' }
-		.flex_start { 'flex-start' }
-		.flex_end { 'flex-end' }
-		.space_between { 'space-between' }
-		.space_around { 'space-around' }
-		.space_evenly { 'space-evenly' }
-		.self_start { 'self-start' }
-		.self_end { 'self-end' }
-		.stretch { 'stretch' }
-		.baseline { 'baseline' }
-		.safe { 'safe' }
-		.unsafe_ { 'unsafe' }
-		.legacy { 'legacy' }
-		.row { 'row' }
-		.row_reverse { 'row-reverse' }
-		.column { 'column' }
-		.column_reverse { 'column-reverse' }
-		.wrap_reverse { 'wrap-reverse' }
-		.button { 'button' }
-		.checkbox { 'checkbox' }
-		.listbox { 'listbox' }
-		.menulist { 'menulist' }
-		.meter { 'meter' }
-		.menulist_button { 'menulist-button' }
-		.push_button { 'push-button' }
-		.progress_bar { 'progress-bar' }
-		.radio { 'radio' }
-		.searchfield { 'searchfield' }
-		.slider_horizontal { 'slider-horizontal' }
-		.square_button { 'square-button' }
-		.textarea { 'textarea' }
-		.textfield { 'textfield' }
-		.crisp_edges { 'crisp-edges' }
-		.high_quality { 'high-quality' }
-		.pixelated { 'pixelated' }
-		.smooth { 'smooth' }
-		.optimizequality { 'optimizequality' }
-		.fill_box { 'fill-box' }
-		.stroke_box { 'stroke-box' }
-		.view_box { 'view-box' }
-		.manipulation { 'manipulation' }
-		.pan_down { 'pan-down' }
-		.pan_left { 'pan-left' }
-		.pan_right { 'pan-right' }
-		.pan_up { 'pan-up' }
-		.pan_x { 'pan-x' }
-		.pan_y { 'pan-y' }
-		.horizontal_tb { 'horizontal-tb' }
-		.vertical_rl { 'vertical-rl' }
-		.vertical_lr { 'vertical-lr' }
-		.sideways_rl { 'sideways-rl' }
-		.sideways_lr { 'sideways-lr' }
-		.thin { 'thin' }
-		.horizontal { 'horizontal' }
-		.vertical { 'vertical' }
-		.block { 'block' }
-		.inline_ { 'inline' }
-		.x { 'x' }
-		.y { 'y' }
-		.strict { 'strict' }
-		.content { 'content' }
-		.size { 'size' }
-		.inline_size { 'inline-size' }
-		.layout { 'layout' }
-		.style { 'style' }
-		.paint { 'paint' }
-		.scroll_state { 'scroll-state' }
-		.separate { 'separate' }
-		.margin_box { 'margin-box' }
-		.border_box { 'border-box' }
-		.padding_box { 'padding-box' }
-		.content_box { 'content-box' }
-		.inside { 'inside' }
-		.outside { 'outside' }
-		.flat { 'flat' }
-		.preserve_3d { 'preserve-3d' }
-		.text { 'text' }
-		.absolute { 'absolute' }
-		.fixed { 'fixed' }
-		.local { 'local' }
-		.relative { 'relative' }
-		.static_ { 'static' }
-		.sticky { 'sticky' }
-		.normal { 'normal' }
-		.from_font { 'from-font' }
-		.compact { 'compact' }
-		.hanging { 'hanging' }
-		.each_line { 'each-line' }
-		.underline { 'underline' }
-		.overline { 'overline' }
-		.line_through { 'line-through' }
-		.blink { 'blink' }
-		.spelling_error { 'spelling-error' }
-		.grammar_error { 'grammar-error' }
-		.wavy { 'wavy' }
-		.bold { 'bold' }
-		.bolder { 'bolder' }
-		.lighter { 'lighter' }
-		.italic { 'italic' }
-		.linear { 'linear' }
-		.ease { 'ease' }
-		.ease_in { 'ease-in' }
-		.ease_out { 'ease-out' }
-		.ease_in_out { 'ease-in-out' }
-		.left { 'left' }
-		.right { 'right' }
-		.oblique { 'oblique' }
-		.round { 'round' }
-		.space { 'space' }
-		.scoop { 'scoop' }
-		.bevel { 'bevel' }
-		.notch { 'notch' }
-		.square { 'square' }
-		.squircle { 'squircle' }
-		.infinity { 'infinity' }
-		.negative_infinity { '-infinity' }
-		.allow_discrete { 'allow-discrete' }
-		.reverse { 'reverse' }
-		.alternate { 'alternate' }
-		.alternate_reverse { 'alternate-reverse' }
-		.running { 'running' }
-		.paused { 'paused' }
-		.forwards { 'forwards' }
-		.backwards { 'backwards' }
-		.both { 'both' }
-		.infinite { 'infinite' }
-		.replace { 'replace' }
-		.add { 'add' }
-		.subtract { 'subtract' }
-		.intersect { 'intersect' }
-		.exclude { 'exclude' }
-		.accumulate { 'accumulate' }
-		.light { 'light' }
-		.dark { 'dark' }
-		.always { 'always' }
-		.anchors_valid { 'anchors-valid' }
-		.anchors_visible { 'anchors-visible' }
-		.no_overflow { 'no-overflow' }
-		.accentcolor { 'accentcolor' }
-		.accentcolortext { 'accentcolortext' }
-		.activeborder { 'activeborder' }
-		.activecaption { 'activecaption' }
-		.activetext { 'activetext' }
-		.appworkspace { 'appworkspace' }
-		.background { 'background' }
-		.buttonborder { 'buttonborder' }
-		.buttonface { 'buttonface' }
-		.buttonhighlight { 'buttonhighlight' }
-		.buttonshadow { 'buttonshadow' }
-		.buttontext { 'buttontext' }
-		.canvas { 'canvas' }
-		.canvastext { 'canvastext' }
-		.captiontext { 'captiontext' }
-		.currentcolor { 'currentcolor' }
-		.field { 'field' }
-		.fieldtext { 'fieldtext' }
-		.graytext { 'graytext' }
-		.highlight { 'highlight' }
-		.highlighttext { 'highlighttext' }
-		.inactiveborder { 'inactiveborder' }
-		.inactivecaption { 'inactivecaption' }
-		.inactivecaptiontext { 'inactivecaptiontext' }
-		.infobackground { 'infobackground' }
-		.infotext { 'infotext' }
-		.libweb_buttonfacedisabled { '-libweb-buttonfacedisabled' }
-		.libweb_buttonfacehover { '-libweb-buttonfacehover' }
 		.libweb_link { '-libweb-link' }
 		.libweb_palette_active_link { '-libweb-palette-active-link' }
 		.libweb_palette_active_window_border1 { '-libweb-palette-active-window-border1' }
@@ -4250,7 +2063,9 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.libweb_palette_syntax_keyword { '-libweb-palette-syntax-keyword' }
 		.libweb_palette_syntax_number { '-libweb-palette-syntax-number' }
 		.libweb_palette_syntax_operator { '-libweb-palette-syntax-operator' }
-		.libweb_palette_syntax_preprocessor_statement { '-libweb-palette-syntax-preprocessor-statement' }
+		.libweb_palette_syntax_preprocessor_statement {
+			'-libweb-palette-syntax-preprocessor-statement'
+		}
 		.libweb_palette_syntax_preprocessor_value { '-libweb-palette-syntax-preprocessor-value' }
 		.libweb_palette_syntax_punctuation { '-libweb-palette-syntax-punctuation' }
 		.libweb_palette_syntax_string { '-libweb-palette-syntax-string' }
@@ -4262,412 +2077,804 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.libweb_palette_visited_link { '-libweb-palette-visited-link' }
 		.libweb_palette_window { '-libweb-palette-window' }
 		.libweb_palette_window_text { '-libweb-palette-window-text' }
+		.libweb_right { '-libweb-right' }
+		.a3 { 'a3' }
+		.a4 { 'a4' }
+		.a5 { 'a5' }
+		.a98_rgb { 'a98-rgb' }
+		.absolute { 'absolute' }
+		.accentcolor { 'accentcolor' }
+		.accentcolortext { 'accentcolortext' }
+		.accumulate { 'accumulate' }
+		.active { 'active' }
+		.activeborder { 'activeborder' }
+		.activecaption { 'activecaption' }
+		.activetext { 'activetext' }
+		.add { 'add' }
+		.additive { 'additive' }
+		.adlam { 'adlam' }
+		.afar { 'afar' }
+		.agaw { 'agaw' }
+		.alias { 'alias' }
+		.all { 'all' }
+		.all_petite_caps { 'all-petite-caps' }
+		.all_scroll { 'all-scroll' }
+		.all_small_caps { 'all-small-caps' }
+		.allow_discrete { 'allow-discrete' }
+		.alpha { 'alpha' }
+		.alphabetic { 'alphabetic' }
+		.alternate { 'alternate' }
+		.alternate_reverse { 'alternate-reverse' }
+		.always { 'always' }
+		.anchors_valid { 'anchors-valid' }
+		.anchors_visible { 'anchors-visible' }
+		.ancient_tamil { 'ancient-tamil' }
+		.anonymous { 'anonymous' }
+		.anywhere { 'anywhere' }
+		.appworkspace { 'appworkspace' }
+		.arabic_abjad { 'arabic-abjad' }
+		.arabic_indic { 'arabic-indic' }
+		.ari { 'ari' }
+		.armenian { 'armenian' }
+		.auto { 'auto' }
+		.auto_add { 'auto-add' }
+		.avar2 { 'avar2' }
+		.b4 { 'b4' }
+		.b5 { 'b5' }
+		.back { 'back' }
+		.background { 'background' }
+		.backwards { 'backwards' }
+		.balance { 'balance' }
+		.balinese { 'balinese' }
+		.bamum { 'bamum' }
+		.bangla { 'bangla' }
+		.baseline { 'baseline' }
+		.bengali { 'bengali' }
+		.bevel { 'bevel' }
+		.bidi_override { 'bidi-override' }
+		.binary { 'binary' }
+		.blin { 'blin' }
+		.blink { 'blink' }
+		.block { 'block' }
+		.block_end { 'block-end' }
+		.block_start { 'block-start' }
+		.bodo { 'bodo' }
+		.bold { 'bold' }
+		.bolder { 'bolder' }
+		.border_box { 'border-box' }
+		.both { 'both' }
+		.both_edges { 'both-edges' }
+		.bottom { 'bottom' }
+		.break_all { 'break-all' }
+		.break_spaces { 'break-spaces' }
+		.break_word { 'break-word' }
+		.browser { 'browser' }
+		.bullets { 'bullets' }
+		.butt { 'butt' }
+		.button { 'button' }
+		.buttonborder { 'buttonborder' }
+		.buttonface { 'buttonface' }
+		.buttonhighlight { 'buttonhighlight' }
+		.buttonshadow { 'buttonshadow' }
+		.buttontext { 'buttontext' }
+		.cambodian { 'cambodian' }
+		.canvas { 'canvas' }
+		.canvastext { 'canvastext' }
+		.capitalize { 'capitalize' }
+		.captiontext { 'captiontext' }
+		.cell { 'cell' }
+		.center { 'center' }
+		.central { 'central' }
+		.checkbox { 'checkbox' }
+		.circle { 'circle' }
+		.circled_decimal { 'circled-decimal' }
+		.circled_ideograph { 'circled-ideograph' }
+		.circled_katakana { 'circled-katakana' }
+		.circled_korean_consonant { 'circled-korean-consonant' }
+		.circled_korean_syllable { 'circled-korean-syllable' }
+		.circled_lower_latin { 'circled-lower-latin' }
+		.circled_upper_latin { 'circled-upper-latin' }
+		.cjk_decimal { 'cjk-decimal' }
+		.cjk_earthly_branch { 'cjk-earthly-branch' }
+		.cjk_heavenly_stem { 'cjk-heavenly-stem' }
+		.cjk_ideographic { 'cjk-ideographic' }
+		.cjk_stem_branch { 'cjk-stem-branch' }
+		.cjk_tally_mark { 'cjk-tally-mark' }
+		.clip { 'clip' }
+		.close_quote { 'close-quote' }
+		.closest_corner { 'closest-corner' }
+		.closest_side { 'closest-side' }
+		.coarse { 'coarse' }
+		.col_resize { 'col-resize' }
+		.collapse { 'collapse' }
+		.color { 'color' }
+		.color_burn { 'color-burn' }
+		.color_cbdt { 'color-cbdt' }
+		.color_colrv0 { 'color-colrv0' }
+		.color_colrv1 { 'color-colrv1' }
+		.color_dodge { 'color-dodge' }
+		.color_sbix { 'color-sbix' }
+		.color_svg { 'color-svg' }
+		.column { 'column' }
+		.column_reverse { 'column-reverse' }
+		.common_ligatures { 'common-ligatures' }
+		.compact { 'compact' }
+		.condensed { 'condensed' }
+		.contain { 'contain' }
+		.content { 'content' }
+		.content_box { 'content-box' }
+		.contents { 'contents' }
+		.context_menu { 'context-menu' }
+		.contextual { 'contextual' }
+		.copy { 'copy' }
+		.cover { 'cover' }
+		.crisp_edges { 'crisp-edges' }
+		.crispedges { 'crispedges' }
+		.crop { 'crop' }
+		.cross { 'cross' }
+		.crosshair { 'crosshair' }
+		.currentcolor { 'currentcolor' }
+		.cursive { 'cursive' }
+		.custom { 'custom' }
+		.cyclic { 'cyclic' }
+		.dark { 'dark' }
+		.darken { 'darken' }
+		.dashed { 'dashed' }
+		.decimal { 'decimal' }
+		.decimal_leading_zero { 'decimal-leading-zero' }
+		.decreasing { 'decreasing' }
+		.default { 'default' }
+		.devanagari { 'devanagari' }
+		.diagonal_fractions { 'diagonal-fractions' }
+		.difference { 'difference' }
+		.disc { 'disc' }
+		.discard { 'discard' }
+		.discard_before { 'discard-before' }
+		.discard_after { 'discard-after' }
+		.discard_inner { 'discard-inner' }
+		.disclosure_closed { 'disclosure-closed' }
+		.disclosure_open { 'disclosure-open' }
+		.discretionary_ligatures { 'discretionary-ligatures' }
+		.distribute { 'distribute' }
+		.display_p3 { 'display-p3' }
+		.display_p3_linear { 'display-p3-linear' }
+		.dizi { 'dizi' }
+		.dogri { 'dogri' }
+		.dotted_decimal { 'dotted-decimal' }
+		.dotted { 'dotted' }
+		.double_circled_decimal { 'double-circled-decimal' }
+		.double_ { 'double' }
+		.down { 'down' }
+		.e { 'e' }
+		.e_resize { 'e-resize' }
+		.each_line { 'each-line' }
+		.ease { 'ease' }
+		.ease_in { 'ease-in' }
+		.ease_in_out { 'ease-in-out' }
+		.ease_out { 'ease-out' }
+		.element_shared { 'element-shared' }
+		.ellipsis { 'ellipsis' }
+		.else_ { 'else' }
+		.embed { 'embed' }
+		.emoji { 'emoji' }
+		.enabled { 'enabled' }
+		.end_ { 'end' }
+		.ethiopic_halehame_am { 'ethiopic-halehame-am' }
+		.ethiopic_halehame_ti_er { 'ethiopic-halehame-ti-er' }
+		.ethiopic_halehame_ti_et { 'ethiopic-halehame-ti-et' }
+		.ethiopic_halehame { 'ethiopic-halehame' }
+		.ethiopic_numeric { 'ethiopic-numeric' }
+		.evenodd { 'evenodd' }
+		.ew_resize { 'ew-resize' }
+		.exclude { 'exclude' }
+		.exclusion { 'exclusion' }
+		.expanded { 'expanded' }
+		.extends { 'extends' }
+		.extra_condensed { 'extra-condensed' }
+		.extra_expanded { 'extra-expanded' }
+		.fallback { 'fallback' }
+		.false_ { 'false' }
+		.fantasy { 'fantasy' }
+		.farthest_corner { 'farthest-corner' }
+		.farthest_side { 'farthest-side' }
+		.fast { 'fast' }
+		.features_aat { 'features-aat' }
+		.features_graphite { 'features-graphite' }
+		.features_opentype { 'features-opentype' }
+		.field { 'field' }
+		.fieldtext { 'fieldtext' }
+		.fill { 'fill' }
+		.fill_box { 'fill-box' }
+		.filled_circled_decimal { 'filled-circled-decimal' }
+		.fine { 'fine' }
+		.fixed { 'fixed' }
+		.flat { 'flat' }
+		.flex { 'flex' }
+		.flex_end { 'flex-end' }
+		.flex_start { 'flex-start' }
+		.flip_block { 'flip-block' }
+		.flip_inline { 'flip-inline' }
+		.flip_start { 'flip-start' }
+		.flow { 'flow' }
+		.flow_root { 'flow-root' }
+		.forwards { 'forwards' }
+		.from_font { 'from-font' }
+		.full_size_kana { 'full-size-kana' }
+		.full_width { 'full-width' }
+		.fullwidth_decimal { 'fullwidth-decimal' }
+		.fullwidth_lower_alpha { 'fullwidth-lower-alpha' }
+		.fullwidth_upper_alpha { 'fullwidth-upper-alpha' }
+		.fullwidth_upper_roman { 'fullwidth-upper-roman' }
+		.fullscreen { 'fullscreen' }
+		.gedeo { 'gedeo' }
+		.geometricprecision { 'geometricprecision' }
+		.georgian { 'georgian' }
+		.grab { 'grab' }
+		.grabbing { 'grabbing' }
+		.grammar_error { 'grammar-error' }
+		.graytext { 'graytext' }
+		.greek_lower_ancient { 'greek-lower-ancient' }
+		.greek_lower_modern { 'greek-lower-modern' }
+		.greek_upper_ancient { 'greek-upper-ancient' }
+		.greek_upper_modern { 'greek-upper-modern' }
+		.grid { 'grid' }
+		.groove { 'groove' }
+		.gujarati_alpha { 'gujarati-alpha' }
+		.gujarati { 'gujarati' }
+		.gumuz { 'gumuz' }
+		.gurmukhi { 'gurmukhi' }
+		.hadiyaa { 'hadiyaa' }
+		.hanging { 'hanging' }
+		.hangul_consonant { 'hangul-consonant' }
+		.hangul { 'hangul' }
+		.hanifi_rohingya { 'hanifi-rohingya' }
+		.harari { 'harari' }
+		.hard_light { 'hard-light' }
+		.hebrew { 'hebrew' }
+		.height { 'height' }
+		.help { 'help' }
+		.hide { 'hide' }
+		.hidden { 'hidden' }
+		.high { 'high' }
+		.high_quality { 'high-quality' }
+		.highlight { 'highlight' }
+		.highlighttext { 'highlighttext' }
+		.hindi { 'hindi' }
+		.hiragana_iroha { 'hiragana-iroha' }
+		.hiragana { 'hiragana' }
+		.historical_forms { 'historical-forms' }
+		.historical_ligatures { 'historical-ligatures' }
+		.horizontal { 'horizontal' }
+		.horizontal_tb { 'horizontal-tb' }
+		.hover { 'hover' }
+		.hsl { 'hsl' }
+		.hue { 'hue' }
+		.hwb { 'hwb' }
+		.inactiveborder { 'inactiveborder' }
+		.inactivecaption { 'inactivecaption' }
+		.inactivecaptiontext { 'inactivecaptiontext' }
+		.increasing { 'increasing' }
+		.ideographic { 'ideographic' }
+		.incremental { 'incremental' }
+		.infinite { 'infinite' }
+		.infinity { 'infinity' }
+		.infobackground { 'infobackground' }
+		.infotext { 'infotext' }
+		.inherit { 'inherit' }
+		.initial { 'initial' }
+		.initial_only { 'initial-only' }
+		.inline_ { 'inline' }
+		.inline_block { 'inline-block' }
+		.inline_end { 'inline-end' }
+		.inline_flex { 'inline-flex' }
+		.inline_grid { 'inline-grid' }
+		.inline_size { 'inline-size' }
+		.inline_start { 'inline-start' }
+		.inline_table { 'inline-table' }
+		.inset { 'inset' }
+		.inside { 'inside' }
+		.inter_character { 'inter-character' }
+		.inter_word { 'inter-word' }
+		.interlace { 'interlace' }
+		.intersect { 'intersect' }
+		.invert { 'invert' }
+		.inverted { 'inverted' }
+		.isolate { 'isolate' }
+		.isolate_override { 'isolate-override' }
+		.italic { 'italic' }
+		.japanese_formal { 'japanese-formal' }
+		.japanese_informal { 'japanese-informal' }
+		.javanese { 'javanese' }
+		.jis_b4 { 'jis-b4' }
+		.jis_b5 { 'jis-b5' }
+		.jis04 { 'jis04' }
+		.jis78 { 'jis78' }
+		.jis83 { 'jis83' }
+		.jis90 { 'jis90' }
+		.jump_both { 'jump-both' }
+		.jump_end { 'jump-end' }
+		.jump_none { 'jump-none' }
+		.jump_start { 'jump-start' }
+		.justify { 'justify' }
+		.kaffa { 'kaffa' }
+		.kannada_alpha { 'kannada-alpha' }
+		.kannada { 'kannada' }
+		.kashmiri { 'kashmiri' }
+		.katakana_iroha { 'katakana-iroha' }
+		.katakana { 'katakana' }
+		.kayah_li { 'kayah-li' }
+		.kebena { 'kebena' }
+		.keep_all { 'keep-all' }
+		.kembata { 'kembata' }
+		.khmer_consonant { 'khmer-consonant' }
+		.khmer { 'khmer' }
+		.konkani { 'konkani' }
+		.konso { 'konso' }
+		.korean_consonant { 'korean-consonant' }
+		.korean_hangul_formal { 'korean-hangul-formal' }
+		.korean_hanja_formal { 'korean-hanja-formal' }
+		.korean_hanja_informal { 'korean-hanja-informal' }
+		.korean_syllable { 'korean-syllable' }
+		.kunama { 'kunama' }
+		.landscape { 'landscape' }
+		.lanna_hora { 'lanna-hora' }
+		.lanna_tham { 'lanna-tham' }
+		.lao { 'lao' }
+		.lab { 'lab' }
+		.large { 'large' }
+		.larger { 'larger' }
+		.layout { 'layout' }
+		.lch { 'lch' }
+		.ledger { 'ledger' }
+		.left { 'left' }
+		.legacy { 'legacy' }
+		.legal { 'legal' }
+		.lepcha { 'lepcha' }
+		.less { 'less' }
+		.letter { 'letter' }
+		.light { 'light' }
+		.lighten { 'lighten' }
+		.lighter { 'lighter' }
+		.limbu { 'limbu' }
+		.line_through { 'line-through' }
+		.linear { 'linear' }
+		.linearrgb { 'linearrgb' }
+		.lining_nums { 'lining-nums' }
 		.linktext { 'linktext' }
+		.list_item { 'list-item' }
+		.listbox { 'listbox' }
+		.local { 'local' }
+		.longer { 'longer' }
+		.lower_alpha_symbolic { 'lower-alpha-symbolic' }
+		.lower_alpha { 'lower-alpha' }
+		.lower_armenian { 'lower-armenian' }
+		.lower_belorussian { 'lower-belorussian' }
+		.lower_bulgarian { 'lower-bulgarian' }
+		.lower_greek { 'lower-greek' }
+		.lower_hexadecimal { 'lower-hexadecimal' }
+		.lower_latin { 'lower-latin' }
+		.lower_macedonian { 'lower-macedonian' }
+		.lower_oromo_qubee { 'lower-oromo-qubee' }
+		.lower_roman { 'lower-roman' }
+		.lower_russian_full { 'lower-russian-full' }
+		.lower_russian { 'lower-russian' }
+		.lower_serbian { 'lower-serbian' }
+		.lower_ukrainian_full { 'lower-ukrainian-full' }
+		.lower_ukrainian { 'lower-ukrainian' }
+		.lowercase { 'lowercase' }
+		.ltr { 'ltr' }
+		.luminance { 'luminance' }
+		.luminosity { 'luminosity' }
+		.maghrebi_abjad { 'maghrebi-abjad' }
+		.maithili { 'maithili' }
+		.malayalam_alpha { 'malayalam-alpha' }
+		.malayalam { 'malayalam' }
+		.manipulation { 'manipulation' }
+		.manipuri { 'manipuri' }
+		.marathi { 'marathi' }
+		.margin_box { 'margin-box' }
 		.mark { 'mark' }
+		.markers { 'markers' }
 		.marktext { 'marktext' }
+		.match_parent { 'match-parent' }
+		.match_source { 'match-source' }
+		.math { 'math' }
+		.math_auto { 'math-auto' }
+		.mathematical { 'mathematical' }
+		.max_content { 'max-content' }
+		.medium { 'medium' }
+		.meen { 'meen' }
+		.meetei { 'meetei' }
 		.menu { 'menu' }
+		.menulist { 'menulist' }
+		.menulist_button { 'menulist-button' }
 		.menutext { 'menutext' }
+		.meter { 'meter' }
+		.middle { 'middle' }
+		.min_content { 'min-content' }
+		.minimal_ui { 'minimal-ui' }
+		.miter { 'miter' }
+		.mongolian { 'mongolian' }
+		.monospace { 'monospace' }
+		.more { 'more' }
+		.most_block_size { 'most-block-size' }
+		.most_height { 'most-height' }
+		.most_inline_size { 'most-inline-size' }
+		.most_width { 'most-width' }
+		.move { 'move' }
+		.mro { 'mro' }
+		.multiply { 'multiply' }
+		.myanmar { 'myanmar' }
+		.n_resize { 'n-resize' }
+		.nag_mundari { 'nag-mundari' }
+		.nan { 'nan' }
+		.ne_resize { 'ne-resize' }
+		.nearest { 'nearest' }
+		.nesw_resize { 'nesw-resize' }
+		.new_base_60 { 'new-base-60' }
+		.newa { 'newa' }
+		.nko_cardinal { 'nko-cardinal' }
+		.no_clip { 'no-clip' }
+		.no_close_quote { 'no-close-quote' }
+		.no_common_ligatures { 'no-common-ligatures' }
+		.no_contextual { 'no-contextual' }
+		.no_discretionary_ligatures { 'no-discretionary-ligatures' }
+		.no_drop { 'no-drop' }
+		.no_historical_ligatures { 'no-historical-ligatures' }
+		.no_open_quote { 'no-open-quote' }
+		.no_overflow { 'no-overflow' }
+		.no_preference { 'no-preference' }
+		.no_referrer { 'no-referrer' }
+		.no_referrer_when_downgrade { 'no-referrer-when-downgrade' }
+		.no_repeat { 'no-repeat' }
+		.none_ { 'none' }
+		.nonzero { 'nonzero' }
+		.normal { 'normal' }
+		.not_allowed { 'not-allowed' }
+		.notch { 'notch' }
+		.nowrap { 'nowrap' }
+		.ns_resize { 'ns-resize' }
+		.numbers { 'numbers' }
+		.numeric { 'numeric' }
+		.nw_resize { 'nw-resize' }
+		.nwse_resize { 'nwse-resize' }
+		.oblique { 'oblique' }
+		.octal { 'octal' }
+		.odia { 'odia' }
+		.off { 'off' }
+		.oklab { 'oklab' }
+		.oklch { 'oklch' }
+		.ol_chiki { 'ol-chiki' }
+		.oldstyle_nums { 'oldstyle-nums' }
+		.on { 'on' }
+		.opaque { 'opaque' }
+		.open_quote { 'open-quote' }
+		.optimizelegibility { 'optimizelegibility' }
+		.optimizequality { 'optimizequality' }
+		.optimizespeed { 'optimizespeed' }
+		.optional { 'optional' }
+		.ordinal { 'ordinal' }
+		.origin { 'origin' }
+		.origin_when_cross_origin { 'origin-when-cross-origin' }
+		.oriya { 'oriya' }
+		.oromo { 'oromo' }
+		.outset { 'outset' }
+		.outside { 'outside' }
+		.overlay { 'overlay' }
+		.overline { 'overline' }
+		.p3 { 'p3' }
+		.padding_box { 'padding-box' }
+		.paged { 'paged' }
+		.paint { 'paint' }
+		.palettes { 'palettes' }
+		.pan_down { 'pan-down' }
+		.pan_left { 'pan-left' }
+		.pan_right { 'pan-right' }
+		.pan_up { 'pan-up' }
+		.pan_x { 'pan-x' }
+		.pan_y { 'pan-y' }
+		.parenthesized_decimal { 'parenthesized-decimal' }
+		.parenthesized_hangul_consonant { 'parenthesized-hangul-consonant' }
+		.parenthesized_hangul_syllable { 'parenthesized-hangul-syllable' }
+		.parenthesized_ideograph { 'parenthesized-ideograph' }
+		.parenthesized_lower_latin { 'parenthesized-lower-latin' }
+		.paused { 'paused' }
+		.persian_abjad { 'persian-abjad' }
+		.persian_alphabetic { 'persian-alphabetic' }
+		.persian { 'persian' }
+		.petite_caps { 'petite-caps' }
+		.pi { 'pi' }
+		.picture_in_picture { 'picture-in-picture' }
+		.pixelated { 'pixelated' }
+		.plaintext { 'plaintext' }
+		.plus_darker { 'plus-darker' }
+		.plus_lighter { 'plus-lighter' }
+		.pointer { 'pointer' }
+		.portrait { 'portrait' }
+		.pre { 'pre' }
+		.pre_line { 'pre-line' }
+		.pre_wrap { 'pre-wrap' }
+		.preserve { 'preserve' }
+		.preserve_3d { 'preserve-3d' }
+		.preserve_breaks { 'preserve-breaks' }
+		.preserve_spaces { 'preserve-spaces' }
+		.pretty { 'pretty' }
+		.progress { 'progress' }
+		.progress_bar { 'progress-bar' }
+		.progressive { 'progressive' }
+		.prophoto_rgb { 'prophoto-rgb' }
+		.proportional_nums { 'proportional-nums' }
+		.proportional_width { 'proportional-width' }
+		.punjabi { 'punjabi' }
+		.push_button { 'push-button' }
+		.radio { 'radio' }
+		.rec2020 { 'rec2020' }
+		.reduce { 'reduce' }
+		.relative { 'relative' }
+		.repeat { 'repeat' }
+		.repeat_x { 'repeat-x' }
+		.repeat_y { 'repeat-y' }
+		.replace { 'replace' }
+		.reverse { 'reverse' }
+		.revert { 'revert' }
+		.revert_layer { 'revert-layer' }
+		.ridge { 'ridge' }
+		.right { 'right' }
+		.root { 'root' }
+		.rotate_left { 'rotate-left' }
+		.rotate_right { 'rotate-right' }
+		.round { 'round' }
+		.row { 'row' }
+		.row_resize { 'row-resize' }
+		.row_reverse { 'row-reverse' }
+		.rtl { 'rtl' }
+		.ruby { 'ruby' }
+		.ruby_base { 'ruby-base' }
+		.ruby_base_container { 'ruby-base-container' }
+		.ruby_text { 'ruby-text' }
+		.ruby_text_container { 'ruby-text-container' }
+		.run_in { 'run-in' }
+		.running { 'running' }
+		.s_resize { 's-resize' }
+		.safe { 'safe' }
+		.saho { 'saho' }
+		.same_origin { 'same-origin' }
+		.sans_serif { 'sans-serif' }
+		.sanskrit { 'sanskrit' }
+		.santali { 'santali' }
+		.saturation { 'saturation' }
+		.scale_down { 'scale-down' }
+		.scoop { 'scoop' }
+		.screen { 'screen' }
+		.scroll { 'scroll' }
+		.scroll_position { 'scroll-position' }
+		.scroll_state { 'scroll-state' }
 		.scrollbar { 'scrollbar' }
+		.se_resize { 'se-resize' }
+		.searchfield { 'searchfield' }
 		.selecteditem { 'selecteditem' }
 		.selecteditemtext { 'selecteditemtext' }
+		.self { 'self' }
+		.self_block { 'self-block' }
+		.self_block_end { 'self-block-end' }
+		.self_block_start { 'self-block-start' }
+		.self_end { 'self-end' }
+		.self_inline { 'self-inline' }
+		.self_inline_end { 'self-inline-end' }
+		.self_inline_start { 'self-inline-start' }
+		.self_x_end { 'self-x-end' }
+		.self_x_start { 'self-x-start' }
+		.self_y_end { 'self-y-end' }
+		.self_y_start { 'self-y-start' }
+		.self_start { 'self-start' }
+		.semi_condensed { 'semi-condensed' }
+		.semi_expanded { 'semi-expanded' }
+		.separate { 'separate' }
+		.serif { 'serif' }
+		.shan { 'shan' }
+		.shorter { 'shorter' }
+		.show { 'show' }
+		.sidama { 'sidama' }
+		.sideways_lr { 'sideways-lr' }
+		.sideways_rl { 'sideways-rl' }
+		.silti { 'silti' }
+		.simp_chinese_formal { 'simp-chinese-formal' }
+		.simp_chinese_informal { 'simp-chinese-informal' }
+		.simple_lower_roman { 'simple-lower-roman' }
+		.simple_upper_roman { 'simple-upper-roman' }
+		.simplified { 'simplified' }
+		.sindhi { 'sindhi' }
+		.size { 'size' }
+		.slashed_zero { 'slashed-zero' }
+		.slider_horizontal { 'slider-horizontal' }
+		.slow { 'slow' }
+		.small { 'small' }
+		.small_caps { 'small-caps' }
+		.smaller { 'smaller' }
+		.smooth { 'smooth' }
+		.soft_light { 'soft-light' }
+		.solid { 'solid' }
+		.space { 'space' }
+		.space_around { 'space-around' }
+		.space_between { 'space-between' }
+		.space_evenly { 'space-evenly' }
+		.span_all { 'span-all' }
+		.span_block_end { 'span-block-end' }
+		.span_block_start { 'span-block-start' }
+		.span_bottom { 'span-bottom' }
+		.span_end { 'span-end' }
+		.span_inline_end { 'span-inline-end' }
+		.span_inline_start { 'span-inline-start' }
+		.span_left { 'span-left' }
+		.span_right { 'span-right' }
+		.span_self_block_end { 'span-self-block-end' }
+		.span_self_block_start { 'span-self-block-start' }
+		.span_self_end { 'span-self-end' }
+		.span_self_inline_end { 'span-self-inline-end' }
+		.span_self_inline_start { 'span-self-inline-start' }
+		.span_self_start { 'span-self-start' }
+		.span_self_x_end { 'span-self-x-end' }
+		.span_self_x_start { 'span-self-x-start' }
+		.span_self_y_end { 'span-self-y-end' }
+		.span_self_y_start { 'span-self-y-start' }
+		.span_start { 'span-start' }
+		.span_top { 'span-top' }
+		.span_x_end { 'span-x-end' }
+		.span_x_start { 'span-x-start' }
+		.span_y_end { 'span-y-end' }
+		.span_y_start { 'span-y-start' }
+		.spelling_error { 'spelling-error' }
+		.spell_out { 'spell-out' }
+		.square { 'square' }
+		.square_button { 'square-button' }
+		.squircle { 'squircle' }
+		.srgb { 'srgb' }
+		.srgb_linear { 'srgb-linear' }
+		.stable { 'stable' }
+		.stacked_fractions { 'stacked-fractions' }
+		.standalone { 'standalone' }
+		.standard { 'standard' }
+		.start { 'start' }
+		.static_ { 'static' }
+		.sticky { 'sticky' }
+		.stretch { 'stretch' }
+		.strict { 'strict' }
+		.strict_origin { 'strict-origin' }
+		.strict_origin_when_cross_origin { 'strict-origin-when-cross-origin' }
+		.stroke { 'stroke' }
+		.stroke_box { 'stroke-box' }
+		.style { 'style' }
+		.sub { 'sub' }
+		.subtract { 'subtract' }
+		.subtractive { 'subtractive' }
+		.sundanese { 'sundanese' }
+		.super_decimal { 'super-decimal' }
+		.super { 'super' }
+		.sw_resize { 'sw-resize' }
+		.swap { 'swap' }
+		.symbolic { 'symbolic' }
+		.table { 'table' }
+		.table_caption { 'table-caption' }
+		.table_cell { 'table-cell' }
+		.table_column { 'table-column' }
+		.table_column_group { 'table-column-group' }
+		.table_footer_group { 'table-footer-group' }
+		.table_header_group { 'table-header-group' }
+		.table_row { 'table-row' }
+		.table_row_group { 'table-row-group' }
+		.tabular_nums { 'tabular-nums' }
+		.tai_lue { 'tai-lue' }
+		.tally_mark { 'tally-mark' }
+		.tamil { 'tamil' }
+		.telugu_alpha { 'telugu-alpha' }
+		.telugu { 'telugu' }
+		.text { 'text' }
+		.text_bottom { 'text-bottom' }
+		.text_top { 'text-top' }
+		.textarea { 'textarea' }
+		.textfield { 'textfield' }
+		.thai_alpha { 'thai-alpha' }
+		.thai { 'thai' }
+		.thick { 'thick' }
+		.thin { 'thin' }
 		.threeddarkshadow { 'threeddarkshadow' }
 		.threedface { 'threedface' }
 		.threedhighlight { 'threedhighlight' }
 		.threedlightshadow { 'threedlightshadow' }
 		.threedshadow { 'threedshadow' }
+		.tibetan { 'tibetan' }
+		.tigre { 'tigre' }
+		.titling_caps { 'titling-caps' }
+		.to_zero { 'to-zero' }
+		.top { 'top' }
+		.trad_chinese_formal { 'trad-chinese-formal' }
+		.trad_chinese_informal { 'trad-chinese-informal' }
+		.traditional { 'traditional' }
+		.true_ { 'true' }
+		.ui_monospace { 'ui-monospace' }
+		.ui_rounded { 'ui-rounded' }
+		.ui_sans_serif { 'ui-sans-serif' }
+		.ui_serif { 'ui-serif' }
+		.ultra_condensed { 'ultra-condensed' }
+		.ultra_expanded { 'ultra-expanded' }
+		.under { 'under' }
+		.underline { 'underline' }
+		.unicase { 'unicase' }
+		.unicode { 'unicode' }
+		.unsafe_ { 'unsafe' }
+		.unsafe_url { 'unsafe-url' }
+		.unset { 'unset' }
+		.up { 'up' }
+		.upper_alpha_symbolic { 'upper-alpha-symbolic' }
+		.upper_alpha { 'upper-alpha' }
+		.upper_armenian { 'upper-armenian' }
+		.upper_belorussian { 'upper-belorussian' }
+		.upper_bulgarian { 'upper-bulgarian' }
+		.upper_hexadecimal { 'upper-hexadecimal' }
+		.upper_latin { 'upper-latin' }
+		.upper_macedonian { 'upper-macedonian' }
+		.upper_oromo_qubee { 'upper-oromo-qubee' }
+		.upper_roman { 'upper-roman' }
+		.upper_russian_full { 'upper-russian-full' }
+		.upper_russian { 'upper-russian' }
+		.upper_serbian { 'upper-serbian' }
+		.upper_ukrainian_full { 'upper-ukrainian-full' }
+		.upper_ukrainian { 'upper-ukrainian' }
+		.uppercase { 'uppercase' }
+		.upright { 'upright' }
+		.urdu_abjad { 'urdu-abjad' }
+		.urdu_alphabetic { 'urdu-alphabetic' }
+		.urdu { 'urdu' }
+		.use_credentials { 'use-credentials' }
+		.variations { 'variations' }
+		.vertical { 'vertical' }
+		.vertical_lr { 'vertical-lr' }
+		.vertical_rl { 'vertical-rl' }
+		.vertical_text { 'vertical-text' }
+		.view_box { 'view-box' }
+		.visible { 'visible' }
 		.visitedtext { 'visitedtext' }
+		.w_resize { 'w-resize' }
+		.wait { 'wait' }
+		.warang_citi { 'warang-citi' }
+		.wavy { 'wavy' }
+		.width { 'width' }
 		.window { 'window' }
 		.windowframe { 'windowframe' }
 		.windowtext { 'windowtext' }
-		.text_bottom { 'text-bottom' }
-		.alphabetic { 'alphabetic' }
-		.ideographic { 'ideographic' }
-		.central { 'central' }
-		.mathematical { 'mathematical' }
-		.text_top { 'text-top' }
-		.serif { 'serif' }
-		.sans_serif { 'sans-serif' }
-		.monospace { 'monospace' }
-		.cursive { 'cursive' }
-		.fantasy { 'fantasy' }
-		.system_ui { 'system-ui' }
-		.ui_serif { 'ui-serif' }
-		.ui_sans_serif { 'ui-sans-serif' }
-		.ui_monospace { 'ui-monospace' }
-		.ui_rounded { 'ui-rounded' }
-		.math { 'math' }
-		.fangsong { 'fangsong' }
-		.default { 'default' }
-		.context_menu { 'context-menu' }
-		.help { 'help' }
-		.pointer { 'pointer' }
-		.progress { 'progress' }
-		.wait { 'wait' }
-		.cell { 'cell' }
-		.crosshair { 'crosshair' }
-		.vertical_text { 'vertical-text' }
-		.alias { 'alias' }
-		.copy { 'copy' }
-		.move { 'move' }
-		.no_drop { 'no-drop' }
-		.not_allowed { 'not-allowed' }
-		.grab { 'grab' }
-		.grabbing { 'grabbing' }
-		.e_resize { 'e-resize' }
-		.n_resize { 'n-resize' }
-		.ne_resize { 'ne-resize' }
-		.nw_resize { 'nw-resize' }
-		.s_resize { 's-resize' }
-		.se_resize { 'se-resize' }
-		.sw_resize { 'sw-resize' }
-		.w_resize { 'w-resize' }
-		.ew_resize { 'ew-resize' }
-		.ns_resize { 'ns-resize' }
-		.nesw_resize { 'nesw-resize' }
-		.nwse_resize { 'nwse-resize' }
-		.col_resize { 'col-resize' }
-		.row_resize { 'row-resize' }
-		.all_scroll { 'all-scroll' }
+		.wolaita { 'wolaita' }
+		.words { 'words' }
+		.wrap { 'wrap' }
+		.wrap_reverse { 'wrap-reverse' }
+		.x { 'x' }
+		.x_end { 'x-end' }
+		.x_large { 'x-large' }
+		.x_start { 'x-start' }
+		.x_small { 'x-small' }
+		.xx_large { 'xx-large' }
+		.xx_small { 'xx-small' }
+		.xxx_large { 'xxx-large' }
+		.xyz { 'xyz' }
+		.xyz_d50 { 'xyz-d50' }
+		.xyz_d65 { 'xyz-d65' }
+		.y { 'y' }
+		.y_end { 'y-end' }
+		.y_start { 'y-start' }
+		.yemsa { 'yemsa' }
+		.zhuyin { 'zhuyin' }
 		.zoom_in { 'zoom-in' }
 		.zoom_out { 'zoom-out' }
-		.xx_small { 'xx-small' }
-		.x_small { 'x-small' }
-		.small { 'small' }
-		.medium { 'medium' }
-		.large { 'large' }
-		.x_large { 'x-large' }
-		.xx_large { 'xx-large' }
-		.xxx_large { 'xxx-large' }
-		.larger { 'larger' }
-		.smaller { 'smaller' }
-		.jis78 { 'jis78' }
-		.jis83 { 'jis83' }
-		.jis90 { 'jis90' }
-		.jis04 { 'jis04' }
-		.simplified { 'simplified' }
-		.traditional { 'traditional' }
-		.proportional_width { 'proportional-width' }
-		.ruby { 'ruby' }
-		.lining_nums { 'lining-nums' }
-		.oldstyle_nums { 'oldstyle-nums' }
-		.proportional_nums { 'proportional-nums' }
-		.tabular_nums { 'tabular-nums' }
-		.diagonal_fractions { 'diagonal-fractions' }
-		.stacked_fractions { 'stacked-fractions' }
-		.ordinal { 'ordinal' }
-		.slashed_zero { 'slashed-zero' }
-		.common_ligatures { 'common-ligatures' }
-		.no_common_ligatures { 'no-common-ligatures' }
-		.discretionary_ligatures { 'discretionary-ligatures' }
-		.no_discretionary_ligatures { 'no-discretionary-ligatures' }
-		.historical_ligatures { 'historical-ligatures' }
-		.no_historical_ligatures { 'no-historical-ligatures' }
-		.contextual { 'contextual' }
-		.no_contextual { 'no-contextual' }
-		.closest_corner { 'closest-corner' }
-		.closest_side { 'closest-side' }
-		.farthest_corner { 'farthest-corner' }
-		.farthest_side { 'farthest-side' }
-		.open_quote { 'open-quote' }
-		.close_quote { 'close-quote' }
-		.no_open_quote { 'no-open-quote' }
-		.no_close_quote { 'no-close-quote' }
-		.historical_forms { 'historical-forms' }
-		.pre { 'pre' }
-		.pre_wrap { 'pre-wrap' }
-		.pre_line { 'pre-line' }
 	}
 }
 
 pub fn keyword_from_string(input string) ?Keyword {
 	return match to_ascii_lowercase(input) {
-		'inherit' { Keyword.inherit }
-		'initial' { Keyword.initial }
-		'revert' { Keyword.revert }
-		'revert-layer' { Keyword.revert_layer }
-		'unset' { Keyword.unset }
-		'all' { Keyword.all }
-		'auto-add' { Keyword.auto_add }
-		'auto' { Keyword.auto }
-		'none' { Keyword.none_ }
-		'visible' { Keyword.visible }
-		'hidden' { Keyword.hidden }
-		'dotted' { Keyword.dotted }
-		'dashed' { Keyword.dashed }
-		'solid' { Keyword.solid }
-		'double' { Keyword.double_ }
-		'groove' { Keyword.groove }
-		'ridge' { Keyword.ridge }
-		'inset' { Keyword.inset }
-		'outset' { Keyword.outset }
-		'clip' { Keyword.clip }
-		'no-clip' { Keyword.no_clip }
-		'scroll' { Keyword.scroll }
-		'repeat' { Keyword.repeat }
-		'no-repeat' { Keyword.no_repeat }
-		'repeat-x' { Keyword.repeat_x }
-		'repeat-y' { Keyword.repeat_y }
-		'fill' { Keyword.fill }
-		'stroke' { Keyword.stroke }
-		'markers' { Keyword.markers }
-		'contain' { Keyword.contain }
-		'cover' { Keyword.cover }
-		'scale-down' { Keyword.scale_down }
-		'multiply' { Keyword.multiply }
-		'screen' { Keyword.screen }
-		'overlay' { Keyword.overlay }
-		'darken' { Keyword.darken }
-		'lighten' { Keyword.lighten }
-		'color-dodge' { Keyword.color_dodge }
-		'color-burn' { Keyword.color_burn }
-		'hard-light' { Keyword.hard_light }
-		'soft-light' { Keyword.soft_light }
-		'difference' { Keyword.difference }
-		'exclusion' { Keyword.exclusion }
-		'hue' { Keyword.hue }
-		'saturation' { Keyword.saturation }
-		'color' { Keyword.color }
-		'luminosity' { Keyword.luminosity }
-		'plus-darker' { Keyword.plus_darker }
-		'plus-lighter' { Keyword.plus_lighter }
-		'inline-start' { Keyword.inline_start }
-		'inline-end' { Keyword.inline_end }
-		'top' { Keyword.top }
-		'bottom' { Keyword.bottom }
-		'collapse' { Keyword.collapse }
-		'show' { Keyword.show }
-		'hide' { Keyword.hide }
-		'ltr' { Keyword.ltr }
-		'rtl' { Keyword.rtl }
-		'embed' { Keyword.embed }
-		'isolate' { Keyword.isolate }
-		'bidi-override' { Keyword.bidi_override }
-		'isolate-override' { Keyword.isolate_override }
-		'plaintext' { Keyword.plaintext }
-		'nonzero' { Keyword.nonzero }
-		'evenodd' { Keyword.evenodd }
-		'linearrgb' { Keyword.linearrgb }
-		'srgb' { Keyword.srgb }
-		'luminance' { Keyword.luminance }
-		'alpha' { Keyword.alpha }
-		'match-source' { Keyword.match_source }
-		'optimizespeed' { Keyword.optimizespeed }
-		'crispedges' { Keyword.crispedges }
-		'geometricprecision' { Keyword.geometricprecision }
-		'butt' { Keyword.butt }
-		'miter' { Keyword.miter }
-		'start' { Keyword.start }
-		'middle' { Keyword.middle }
-		'end' { Keyword.end_ }
-		'center' { Keyword.center }
-		'justify' { Keyword.justify }
-		'match-parent' { Keyword.match_parent }
+		'-infinity' { Keyword.negative_infinity }
+		'-libweb-buttonfacedisabled' { Keyword.libweb_buttonfacedisabled }
+		'-libweb-buttonfacehover' { Keyword.libweb_buttonfacehover }
 		'-libweb-center' { Keyword.libweb_center }
 		'-libweb-inherit-or-center' { Keyword.libweb_inherit_or_center }
 		'-libweb-left' { Keyword.libweb_left }
-		'-libweb-right' { Keyword.libweb_right }
-		'inter-word' { Keyword.inter_word }
-		'inter-character' { Keyword.inter_character }
-		'ellipsis' { Keyword.ellipsis }
-		'optimizelegibility' { Keyword.optimizelegibility }
-		'capitalize' { Keyword.capitalize }
-		'full-size-kana' { Keyword.full_size_kana }
-		'full-width' { Keyword.full_width }
-		'lowercase' { Keyword.lowercase }
-		'math-auto' { Keyword.math_auto }
-		'uppercase' { Keyword.uppercase }
-		'nowrap' { Keyword.nowrap }
-		'wrap' { Keyword.wrap }
-		'balance' { Keyword.balance }
-		'stable' { Keyword.stable }
-		'pretty' { Keyword.pretty }
-		'discard' { Keyword.discard }
-		'preserve' { Keyword.preserve }
-		'preserve-breaks' { Keyword.preserve_breaks }
-		'preserve-spaces' { Keyword.preserve_spaces }
-		'break-spaces' { Keyword.break_spaces }
-		'discard-before' { Keyword.discard_before }
-		'discard-after' { Keyword.discard_after }
-		'discard-inner' { Keyword.discard_inner }
-		'keep-all' { Keyword.keep_all }
-		'break-all' { Keyword.break_all }
-		'break-word' { Keyword.break_word }
-		'anywhere' { Keyword.anywhere }
-		'small-caps' { Keyword.small_caps }
-		'all-small-caps' { Keyword.all_small_caps }
-		'petite-caps' { Keyword.petite_caps }
-		'all-petite-caps' { Keyword.all_petite_caps }
-		'unicase' { Keyword.unicase }
-		'titling-caps' { Keyword.titling_caps }
-		'emoji' { Keyword.emoji }
-		'unicode' { Keyword.unicode }
-		'sub' { Keyword.sub }
-		'super' { Keyword.super }
-		'flex-start' { Keyword.flex_start }
-		'flex-end' { Keyword.flex_end }
-		'space-between' { Keyword.space_between }
-		'space-around' { Keyword.space_around }
-		'space-evenly' { Keyword.space_evenly }
-		'self-start' { Keyword.self_start }
-		'self-end' { Keyword.self_end }
-		'stretch' { Keyword.stretch }
-		'baseline' { Keyword.baseline }
-		'safe' { Keyword.safe }
-		'unsafe' { Keyword.unsafe_ }
-		'legacy' { Keyword.legacy }
-		'row' { Keyword.row }
-		'row-reverse' { Keyword.row_reverse }
-		'column' { Keyword.column }
-		'column-reverse' { Keyword.column_reverse }
-		'wrap-reverse' { Keyword.wrap_reverse }
-		'button' { Keyword.button }
-		'checkbox' { Keyword.checkbox }
-		'listbox' { Keyword.listbox }
-		'menulist' { Keyword.menulist }
-		'meter' { Keyword.meter }
-		'menulist-button' { Keyword.menulist_button }
-		'push-button' { Keyword.push_button }
-		'progress-bar' { Keyword.progress_bar }
-		'radio' { Keyword.radio }
-		'searchfield' { Keyword.searchfield }
-		'slider-horizontal' { Keyword.slider_horizontal }
-		'square-button' { Keyword.square_button }
-		'textarea' { Keyword.textarea }
-		'textfield' { Keyword.textfield }
-		'crisp-edges' { Keyword.crisp_edges }
-		'high-quality' { Keyword.high_quality }
-		'pixelated' { Keyword.pixelated }
-		'smooth' { Keyword.smooth }
-		'optimizequality' { Keyword.optimizequality }
-		'fill-box' { Keyword.fill_box }
-		'stroke-box' { Keyword.stroke_box }
-		'view-box' { Keyword.view_box }
-		'manipulation' { Keyword.manipulation }
-		'pan-down' { Keyword.pan_down }
-		'pan-left' { Keyword.pan_left }
-		'pan-right' { Keyword.pan_right }
-		'pan-up' { Keyword.pan_up }
-		'pan-x' { Keyword.pan_x }
-		'pan-y' { Keyword.pan_y }
-		'horizontal-tb' { Keyword.horizontal_tb }
-		'vertical-rl' { Keyword.vertical_rl }
-		'vertical-lr' { Keyword.vertical_lr }
-		'sideways-rl' { Keyword.sideways_rl }
-		'sideways-lr' { Keyword.sideways_lr }
-		'thin' { Keyword.thin }
-		'horizontal' { Keyword.horizontal }
-		'vertical' { Keyword.vertical }
-		'block' { Keyword.block }
-		'inline' { Keyword.inline_ }
-		'x' { Keyword.x }
-		'y' { Keyword.y }
-		'strict' { Keyword.strict }
-		'content' { Keyword.content }
-		'size' { Keyword.size }
-		'inline-size' { Keyword.inline_size }
-		'layout' { Keyword.layout }
-		'style' { Keyword.style }
-		'paint' { Keyword.paint }
-		'scroll-state' { Keyword.scroll_state }
-		'separate' { Keyword.separate }
-		'margin-box' { Keyword.margin_box }
-		'border-box' { Keyword.border_box }
-		'padding-box' { Keyword.padding_box }
-		'content-box' { Keyword.content_box }
-		'inside' { Keyword.inside }
-		'outside' { Keyword.outside }
-		'flat' { Keyword.flat }
-		'preserve-3d' { Keyword.preserve_3d }
-		'text' { Keyword.text }
-		'absolute' { Keyword.absolute }
-		'fixed' { Keyword.fixed }
-		'local' { Keyword.local }
-		'relative' { Keyword.relative }
-		'static' { Keyword.static_ }
-		'sticky' { Keyword.sticky }
-		'normal' { Keyword.normal }
-		'from-font' { Keyword.from_font }
-		'compact' { Keyword.compact }
-		'hanging' { Keyword.hanging }
-		'each-line' { Keyword.each_line }
-		'underline' { Keyword.underline }
-		'overline' { Keyword.overline }
-		'line-through' { Keyword.line_through }
-		'blink' { Keyword.blink }
-		'spelling-error' { Keyword.spelling_error }
-		'grammar-error' { Keyword.grammar_error }
-		'wavy' { Keyword.wavy }
-		'bold' { Keyword.bold }
-		'bolder' { Keyword.bolder }
-		'lighter' { Keyword.lighter }
-		'italic' { Keyword.italic }
-		'linear' { Keyword.linear }
-		'ease' { Keyword.ease }
-		'ease-in' { Keyword.ease_in }
-		'ease-out' { Keyword.ease_out }
-		'ease-in-out' { Keyword.ease_in_out }
-		'left' { Keyword.left }
-		'right' { Keyword.right }
-		'oblique' { Keyword.oblique }
-		'round' { Keyword.round }
-		'space' { Keyword.space }
-		'scoop' { Keyword.scoop }
-		'bevel' { Keyword.bevel }
-		'notch' { Keyword.notch }
-		'square' { Keyword.square }
-		'squircle' { Keyword.squircle }
-		'infinity' { Keyword.infinity }
-		'-infinity' { Keyword.negative_infinity }
-		'allow-discrete' { Keyword.allow_discrete }
-		'reverse' { Keyword.reverse }
-		'alternate' { Keyword.alternate }
-		'alternate-reverse' { Keyword.alternate_reverse }
-		'running' { Keyword.running }
-		'paused' { Keyword.paused }
-		'forwards' { Keyword.forwards }
-		'backwards' { Keyword.backwards }
-		'both' { Keyword.both }
-		'infinite' { Keyword.infinite }
-		'replace' { Keyword.replace }
-		'add' { Keyword.add }
-		'subtract' { Keyword.subtract }
-		'intersect' { Keyword.intersect }
-		'exclude' { Keyword.exclude }
-		'accumulate' { Keyword.accumulate }
-		'light' { Keyword.light }
-		'dark' { Keyword.dark }
-		'always' { Keyword.always }
-		'anchors-valid' { Keyword.anchors_valid }
-		'anchors-visible' { Keyword.anchors_visible }
-		'no-overflow' { Keyword.no_overflow }
-		'accentcolor' { Keyword.accentcolor }
-		'accentcolortext' { Keyword.accentcolortext }
-		'activeborder' { Keyword.activeborder }
-		'activecaption' { Keyword.activecaption }
-		'activetext' { Keyword.activetext }
-		'appworkspace' { Keyword.appworkspace }
-		'background' { Keyword.background }
-		'buttonborder' { Keyword.buttonborder }
-		'buttonface' { Keyword.buttonface }
-		'buttonhighlight' { Keyword.buttonhighlight }
-		'buttonshadow' { Keyword.buttonshadow }
-		'buttontext' { Keyword.buttontext }
-		'canvas' { Keyword.canvas }
-		'canvastext' { Keyword.canvastext }
-		'captiontext' { Keyword.captiontext }
-		'currentcolor' { Keyword.currentcolor }
-		'field' { Keyword.field }
-		'fieldtext' { Keyword.fieldtext }
-		'graytext' { Keyword.graytext }
-		'highlight' { Keyword.highlight }
-		'highlighttext' { Keyword.highlighttext }
-		'inactiveborder' { Keyword.inactiveborder }
-		'inactivecaption' { Keyword.inactivecaption }
-		'inactivecaptiontext' { Keyword.inactivecaptiontext }
-		'infobackground' { Keyword.infobackground }
-		'infotext' { Keyword.infotext }
-		'-libweb-buttonfacedisabled' { Keyword.libweb_buttonfacedisabled }
-		'-libweb-buttonfacehover' { Keyword.libweb_buttonfacehover }
 		'-libweb-link' { Keyword.libweb_link }
 		'-libweb-palette-active-link' { Keyword.libweb_palette_active_link }
 		'-libweb-palette-active-window-border1' { Keyword.libweb_palette_active_window_border1 }
@@ -4679,8 +2886,12 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'-libweb-palette-button-text' { Keyword.libweb_palette_button_text }
 		'-libweb-palette-desktop-background' { Keyword.libweb_palette_desktop_background }
 		'-libweb-palette-focus-outline' { Keyword.libweb_palette_focus_outline }
-		'-libweb-palette-highlight-window-border1' { Keyword.libweb_palette_highlight_window_border1 }
-		'-libweb-palette-highlight-window-border2' { Keyword.libweb_palette_highlight_window_border2 }
+		'-libweb-palette-highlight-window-border1' {
+			Keyword.libweb_palette_highlight_window_border1
+		}
+		'-libweb-palette-highlight-window-border2' {
+			Keyword.libweb_palette_highlight_window_border2
+		}
 		'-libweb-palette-highlight-window-title' { Keyword.libweb_palette_highlight_window_title }
 		'-libweb-palette-hover-highlight' { Keyword.libweb_palette_hover_highlight }
 		'-libweb-palette-inactive-selection' { Keyword.libweb_palette_inactive_selection }
@@ -4711,8 +2922,12 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'-libweb-palette-syntax-keyword' { Keyword.libweb_palette_syntax_keyword }
 		'-libweb-palette-syntax-number' { Keyword.libweb_palette_syntax_number }
 		'-libweb-palette-syntax-operator' { Keyword.libweb_palette_syntax_operator }
-		'-libweb-palette-syntax-preprocessor-statement' { Keyword.libweb_palette_syntax_preprocessor_statement }
-		'-libweb-palette-syntax-preprocessor-value' { Keyword.libweb_palette_syntax_preprocessor_value }
+		'-libweb-palette-syntax-preprocessor-statement' {
+			Keyword.libweb_palette_syntax_preprocessor_statement
+		}
+		'-libweb-palette-syntax-preprocessor-value' {
+			Keyword.libweb_palette_syntax_preprocessor_value
+		}
 		'-libweb-palette-syntax-punctuation' { Keyword.libweb_palette_syntax_punctuation }
 		'-libweb-palette-syntax-string' { Keyword.libweb_palette_syntax_string }
 		'-libweb-palette-syntax-type' { Keyword.libweb_palette_syntax_type }
@@ -4723,126 +2938,798 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'-libweb-palette-visited-link' { Keyword.libweb_palette_visited_link }
 		'-libweb-palette-window' { Keyword.libweb_palette_window }
 		'-libweb-palette-window-text' { Keyword.libweb_palette_window_text }
+		'-libweb-right' { Keyword.libweb_right }
+		'a3' { Keyword.a3 }
+		'a4' { Keyword.a4 }
+		'a5' { Keyword.a5 }
+		'a98-rgb' { Keyword.a98_rgb }
+		'absolute' { Keyword.absolute }
+		'accentcolor' { Keyword.accentcolor }
+		'accentcolortext' { Keyword.accentcolortext }
+		'accumulate' { Keyword.accumulate }
+		'active' { Keyword.active }
+		'activeborder' { Keyword.activeborder }
+		'activecaption' { Keyword.activecaption }
+		'activetext' { Keyword.activetext }
+		'add' { Keyword.add }
+		'additive' { Keyword.additive }
+		'adlam' { Keyword.adlam }
+		'afar' { Keyword.afar }
+		'agaw' { Keyword.agaw }
+		'alias' { Keyword.alias }
+		'all' { Keyword.all }
+		'all-petite-caps' { Keyword.all_petite_caps }
+		'all-scroll' { Keyword.all_scroll }
+		'all-small-caps' { Keyword.all_small_caps }
+		'allow-discrete' { Keyword.allow_discrete }
+		'alpha' { Keyword.alpha }
+		'alphabetic' { Keyword.alphabetic }
+		'alternate' { Keyword.alternate }
+		'alternate-reverse' { Keyword.alternate_reverse }
+		'always' { Keyword.always }
+		'anchors-valid' { Keyword.anchors_valid }
+		'anchors-visible' { Keyword.anchors_visible }
+		'ancient-tamil' { Keyword.ancient_tamil }
+		'anonymous' { Keyword.anonymous }
+		'anywhere' { Keyword.anywhere }
+		'appworkspace' { Keyword.appworkspace }
+		'arabic-abjad' { Keyword.arabic_abjad }
+		'arabic-indic' { Keyword.arabic_indic }
+		'ari' { Keyword.ari }
+		'armenian' { Keyword.armenian }
+		'auto' { Keyword.auto }
+		'auto-add' { Keyword.auto_add }
+		'avar2' { Keyword.avar2 }
+		'b4' { Keyword.b4 }
+		'b5' { Keyword.b5 }
+		'back' { Keyword.back }
+		'background' { Keyword.background }
+		'backwards' { Keyword.backwards }
+		'balance' { Keyword.balance }
+		'balinese' { Keyword.balinese }
+		'bamum' { Keyword.bamum }
+		'bangla' { Keyword.bangla }
+		'baseline' { Keyword.baseline }
+		'bengali' { Keyword.bengali }
+		'bevel' { Keyword.bevel }
+		'bidi-override' { Keyword.bidi_override }
+		'binary' { Keyword.binary }
+		'blin' { Keyword.blin }
+		'blink' { Keyword.blink }
+		'block' { Keyword.block }
+		'block-end' { Keyword.block_end }
+		'block-start' { Keyword.block_start }
+		'bodo' { Keyword.bodo }
+		'bold' { Keyword.bold }
+		'bolder' { Keyword.bolder }
+		'border-box' { Keyword.border_box }
+		'both' { Keyword.both }
+		'both-edges' { Keyword.both_edges }
+		'bottom' { Keyword.bottom }
+		'break-all' { Keyword.break_all }
+		'break-spaces' { Keyword.break_spaces }
+		'break-word' { Keyword.break_word }
+		'browser' { Keyword.browser }
+		'bullets' { Keyword.bullets }
+		'butt' { Keyword.butt }
+		'button' { Keyword.button }
+		'buttonborder' { Keyword.buttonborder }
+		'buttonface' { Keyword.buttonface }
+		'buttonhighlight' { Keyword.buttonhighlight }
+		'buttonshadow' { Keyword.buttonshadow }
+		'buttontext' { Keyword.buttontext }
+		'cambodian' { Keyword.cambodian }
+		'canvas' { Keyword.canvas }
+		'canvastext' { Keyword.canvastext }
+		'capitalize' { Keyword.capitalize }
+		'captiontext' { Keyword.captiontext }
+		'cell' { Keyword.cell }
+		'center' { Keyword.center }
+		'central' { Keyword.central }
+		'checkbox' { Keyword.checkbox }
+		'circle' { Keyword.circle }
+		'circled-decimal' { Keyword.circled_decimal }
+		'circled-ideograph' { Keyword.circled_ideograph }
+		'circled-katakana' { Keyword.circled_katakana }
+		'circled-korean-consonant' { Keyword.circled_korean_consonant }
+		'circled-korean-syllable' { Keyword.circled_korean_syllable }
+		'circled-lower-latin' { Keyword.circled_lower_latin }
+		'circled-upper-latin' { Keyword.circled_upper_latin }
+		'cjk-decimal' { Keyword.cjk_decimal }
+		'cjk-earthly-branch' { Keyword.cjk_earthly_branch }
+		'cjk-heavenly-stem' { Keyword.cjk_heavenly_stem }
+		'cjk-ideographic' { Keyword.cjk_ideographic }
+		'cjk-stem-branch' { Keyword.cjk_stem_branch }
+		'cjk-tally-mark' { Keyword.cjk_tally_mark }
+		'clip' { Keyword.clip }
+		'close-quote' { Keyword.close_quote }
+		'closest-corner' { Keyword.closest_corner }
+		'closest-side' { Keyword.closest_side }
+		'coarse' { Keyword.coarse }
+		'col-resize' { Keyword.col_resize }
+		'collapse' { Keyword.collapse }
+		'color' { Keyword.color }
+		'color-burn' { Keyword.color_burn }
+		'color-cbdt' { Keyword.color_cbdt }
+		'color-colrv0' { Keyword.color_colrv0 }
+		'color-colrv1' { Keyword.color_colrv1 }
+		'color-dodge' { Keyword.color_dodge }
+		'color-sbix' { Keyword.color_sbix }
+		'color-svg' { Keyword.color_svg }
+		'column' { Keyword.column }
+		'column-reverse' { Keyword.column_reverse }
+		'common-ligatures' { Keyword.common_ligatures }
+		'compact' { Keyword.compact }
+		'condensed' { Keyword.condensed }
+		'contain' { Keyword.contain }
+		'content' { Keyword.content }
+		'content-box' { Keyword.content_box }
+		'contents' { Keyword.contents }
+		'context-menu' { Keyword.context_menu }
+		'contextual' { Keyword.contextual }
+		'copy' { Keyword.copy }
+		'cover' { Keyword.cover }
+		'crisp-edges' { Keyword.crisp_edges }
+		'crispedges' { Keyword.crispedges }
+		'crop' { Keyword.crop }
+		'cross' { Keyword.cross }
+		'crosshair' { Keyword.crosshair }
+		'currentcolor' { Keyword.currentcolor }
+		'cursive' { Keyword.cursive }
+		'custom' { Keyword.custom }
+		'cyclic' { Keyword.cyclic }
+		'dark' { Keyword.dark }
+		'darken' { Keyword.darken }
+		'dashed' { Keyword.dashed }
+		'decimal' { Keyword.decimal }
+		'decimal-leading-zero' { Keyword.decimal_leading_zero }
+		'decreasing' { Keyword.decreasing }
+		'default' { Keyword.default }
+		'devanagari' { Keyword.devanagari }
+		'diagonal-fractions' { Keyword.diagonal_fractions }
+		'difference' { Keyword.difference }
+		'disc' { Keyword.disc }
+		'discard' { Keyword.discard }
+		'discard-before' { Keyword.discard_before }
+		'discard-after' { Keyword.discard_after }
+		'discard-inner' { Keyword.discard_inner }
+		'disclosure-closed' { Keyword.disclosure_closed }
+		'disclosure-open' { Keyword.disclosure_open }
+		'discretionary-ligatures' { Keyword.discretionary_ligatures }
+		'distribute' { Keyword.distribute }
+		'display-p3' { Keyword.display_p3 }
+		'display-p3-linear' { Keyword.display_p3_linear }
+		'dizi' { Keyword.dizi }
+		'dogri' { Keyword.dogri }
+		'dotted-decimal' { Keyword.dotted_decimal }
+		'dotted' { Keyword.dotted }
+		'double-circled-decimal' { Keyword.double_circled_decimal }
+		'double' { Keyword.double_ }
+		'down' { Keyword.down }
+		'e' { Keyword.e }
+		'e-resize' { Keyword.e_resize }
+		'each-line' { Keyword.each_line }
+		'ease' { Keyword.ease }
+		'ease-in' { Keyword.ease_in }
+		'ease-in-out' { Keyword.ease_in_out }
+		'ease-out' { Keyword.ease_out }
+		'element-shared' { Keyword.element_shared }
+		'ellipsis' { Keyword.ellipsis }
+		'else' { Keyword.else_ }
+		'embed' { Keyword.embed }
+		'emoji' { Keyword.emoji }
+		'enabled' { Keyword.enabled }
+		'end' { Keyword.end_ }
+		'ethiopic-halehame-am' { Keyword.ethiopic_halehame_am }
+		'ethiopic-halehame-ti-er' { Keyword.ethiopic_halehame_ti_er }
+		'ethiopic-halehame-ti-et' { Keyword.ethiopic_halehame_ti_et }
+		'ethiopic-halehame' { Keyword.ethiopic_halehame }
+		'ethiopic-numeric' { Keyword.ethiopic_numeric }
+		'evenodd' { Keyword.evenodd }
+		'ew-resize' { Keyword.ew_resize }
+		'exclude' { Keyword.exclude }
+		'exclusion' { Keyword.exclusion }
+		'expanded' { Keyword.expanded }
+		'extends' { Keyword.extends }
+		'extra-condensed' { Keyword.extra_condensed }
+		'extra-expanded' { Keyword.extra_expanded }
+		'fallback' { Keyword.fallback }
+		'false' { Keyword.false_ }
+		'fantasy' { Keyword.fantasy }
+		'farthest-corner' { Keyword.farthest_corner }
+		'farthest-side' { Keyword.farthest_side }
+		'fast' { Keyword.fast }
+		'features-aat' { Keyword.features_aat }
+		'features-graphite' { Keyword.features_graphite }
+		'features-opentype' { Keyword.features_opentype }
+		'field' { Keyword.field }
+		'fieldtext' { Keyword.fieldtext }
+		'fill' { Keyword.fill }
+		'fill-box' { Keyword.fill_box }
+		'filled-circled-decimal' { Keyword.filled_circled_decimal }
+		'fine' { Keyword.fine }
+		'fixed' { Keyword.fixed }
+		'flat' { Keyword.flat }
+		'flex' { Keyword.flex }
+		'flex-end' { Keyword.flex_end }
+		'flex-start' { Keyword.flex_start }
+		'flip-block' { Keyword.flip_block }
+		'flip-inline' { Keyword.flip_inline }
+		'flip-start' { Keyword.flip_start }
+		'flow' { Keyword.flow }
+		'flow-root' { Keyword.flow_root }
+		'forwards' { Keyword.forwards }
+		'from-font' { Keyword.from_font }
+		'full-size-kana' { Keyword.full_size_kana }
+		'full-width' { Keyword.full_width }
+		'fullwidth-decimal' { Keyword.fullwidth_decimal }
+		'fullwidth-lower-alpha' { Keyword.fullwidth_lower_alpha }
+		'fullwidth-upper-alpha' { Keyword.fullwidth_upper_alpha }
+		'fullwidth-upper-roman' { Keyword.fullwidth_upper_roman }
+		'fullscreen' { Keyword.fullscreen }
+		'gedeo' { Keyword.gedeo }
+		'geometricprecision' { Keyword.geometricprecision }
+		'georgian' { Keyword.georgian }
+		'grab' { Keyword.grab }
+		'grabbing' { Keyword.grabbing }
+		'grammar-error' { Keyword.grammar_error }
+		'graytext' { Keyword.graytext }
+		'greek-lower-ancient' { Keyword.greek_lower_ancient }
+		'greek-lower-modern' { Keyword.greek_lower_modern }
+		'greek-upper-ancient' { Keyword.greek_upper_ancient }
+		'greek-upper-modern' { Keyword.greek_upper_modern }
+		'grid' { Keyword.grid }
+		'groove' { Keyword.groove }
+		'gujarati-alpha' { Keyword.gujarati_alpha }
+		'gujarati' { Keyword.gujarati }
+		'gumuz' { Keyword.gumuz }
+		'gurmukhi' { Keyword.gurmukhi }
+		'hadiyaa' { Keyword.hadiyaa }
+		'hanging' { Keyword.hanging }
+		'hangul-consonant' { Keyword.hangul_consonant }
+		'hangul' { Keyword.hangul }
+		'hanifi-rohingya' { Keyword.hanifi_rohingya }
+		'harari' { Keyword.harari }
+		'hard-light' { Keyword.hard_light }
+		'hebrew' { Keyword.hebrew }
+		'height' { Keyword.height }
+		'help' { Keyword.help }
+		'hide' { Keyword.hide }
+		'hidden' { Keyword.hidden }
+		'high' { Keyword.high }
+		'high-quality' { Keyword.high_quality }
+		'highlight' { Keyword.highlight }
+		'highlighttext' { Keyword.highlighttext }
+		'hindi' { Keyword.hindi }
+		'hiragana-iroha' { Keyword.hiragana_iroha }
+		'hiragana' { Keyword.hiragana }
+		'historical-forms' { Keyword.historical_forms }
+		'historical-ligatures' { Keyword.historical_ligatures }
+		'horizontal' { Keyword.horizontal }
+		'horizontal-tb' { Keyword.horizontal_tb }
+		'hover' { Keyword.hover }
+		'hsl' { Keyword.hsl }
+		'hue' { Keyword.hue }
+		'hwb' { Keyword.hwb }
+		'inactiveborder' { Keyword.inactiveborder }
+		'inactivecaption' { Keyword.inactivecaption }
+		'inactivecaptiontext' { Keyword.inactivecaptiontext }
+		'increasing' { Keyword.increasing }
+		'ideographic' { Keyword.ideographic }
+		'incremental' { Keyword.incremental }
+		'infinite' { Keyword.infinite }
+		'infinity' { Keyword.infinity }
+		'infobackground' { Keyword.infobackground }
+		'infotext' { Keyword.infotext }
+		'inherit' { Keyword.inherit }
+		'initial' { Keyword.initial }
+		'initial-only' { Keyword.initial_only }
+		'inline' { Keyword.inline_ }
+		'inline-block' { Keyword.inline_block }
+		'inline-end' { Keyword.inline_end }
+		'inline-flex' { Keyword.inline_flex }
+		'inline-grid' { Keyword.inline_grid }
+		'inline-size' { Keyword.inline_size }
+		'inline-start' { Keyword.inline_start }
+		'inline-table' { Keyword.inline_table }
+		'inset' { Keyword.inset }
+		'inside' { Keyword.inside }
+		'inter-character' { Keyword.inter_character }
+		'inter-word' { Keyword.inter_word }
+		'interlace' { Keyword.interlace }
+		'intersect' { Keyword.intersect }
+		'invert' { Keyword.invert }
+		'inverted' { Keyword.inverted }
+		'isolate' { Keyword.isolate }
+		'isolate-override' { Keyword.isolate_override }
+		'italic' { Keyword.italic }
+		'japanese-formal' { Keyword.japanese_formal }
+		'japanese-informal' { Keyword.japanese_informal }
+		'javanese' { Keyword.javanese }
+		'jis-b4' { Keyword.jis_b4 }
+		'jis-b5' { Keyword.jis_b5 }
+		'jis04' { Keyword.jis04 }
+		'jis78' { Keyword.jis78 }
+		'jis83' { Keyword.jis83 }
+		'jis90' { Keyword.jis90 }
+		'jump-both' { Keyword.jump_both }
+		'jump-end' { Keyword.jump_end }
+		'jump-none' { Keyword.jump_none }
+		'jump-start' { Keyword.jump_start }
+		'justify' { Keyword.justify }
+		'kaffa' { Keyword.kaffa }
+		'kannada-alpha' { Keyword.kannada_alpha }
+		'kannada' { Keyword.kannada }
+		'kashmiri' { Keyword.kashmiri }
+		'katakana-iroha' { Keyword.katakana_iroha }
+		'katakana' { Keyword.katakana }
+		'kayah-li' { Keyword.kayah_li }
+		'kebena' { Keyword.kebena }
+		'keep-all' { Keyword.keep_all }
+		'kembata' { Keyword.kembata }
+		'khmer-consonant' { Keyword.khmer_consonant }
+		'khmer' { Keyword.khmer }
+		'konkani' { Keyword.konkani }
+		'konso' { Keyword.konso }
+		'korean-consonant' { Keyword.korean_consonant }
+		'korean-hangul-formal' { Keyword.korean_hangul_formal }
+		'korean-hanja-formal' { Keyword.korean_hanja_formal }
+		'korean-hanja-informal' { Keyword.korean_hanja_informal }
+		'korean-syllable' { Keyword.korean_syllable }
+		'kunama' { Keyword.kunama }
+		'landscape' { Keyword.landscape }
+		'lanna-hora' { Keyword.lanna_hora }
+		'lanna-tham' { Keyword.lanna_tham }
+		'lao' { Keyword.lao }
+		'lab' { Keyword.lab }
+		'large' { Keyword.large }
+		'larger' { Keyword.larger }
+		'layout' { Keyword.layout }
+		'lch' { Keyword.lch }
+		'ledger' { Keyword.ledger }
+		'left' { Keyword.left }
+		'legacy' { Keyword.legacy }
+		'legal' { Keyword.legal }
+		'lepcha' { Keyword.lepcha }
+		'less' { Keyword.less }
+		'letter' { Keyword.letter }
+		'light' { Keyword.light }
+		'lighten' { Keyword.lighten }
+		'lighter' { Keyword.lighter }
+		'limbu' { Keyword.limbu }
+		'line-through' { Keyword.line_through }
+		'linear' { Keyword.linear }
+		'linearrgb' { Keyword.linearrgb }
+		'lining-nums' { Keyword.lining_nums }
 		'linktext' { Keyword.linktext }
+		'list-item' { Keyword.list_item }
+		'listbox' { Keyword.listbox }
+		'local' { Keyword.local }
+		'longer' { Keyword.longer }
+		'lower-alpha-symbolic' { Keyword.lower_alpha_symbolic }
+		'lower-alpha' { Keyword.lower_alpha }
+		'lower-armenian' { Keyword.lower_armenian }
+		'lower-belorussian' { Keyword.lower_belorussian }
+		'lower-bulgarian' { Keyword.lower_bulgarian }
+		'lower-greek' { Keyword.lower_greek }
+		'lower-hexadecimal' { Keyword.lower_hexadecimal }
+		'lower-latin' { Keyword.lower_latin }
+		'lower-macedonian' { Keyword.lower_macedonian }
+		'lower-oromo-qubee' { Keyword.lower_oromo_qubee }
+		'lower-roman' { Keyword.lower_roman }
+		'lower-russian-full' { Keyword.lower_russian_full }
+		'lower-russian' { Keyword.lower_russian }
+		'lower-serbian' { Keyword.lower_serbian }
+		'lower-ukrainian-full' { Keyword.lower_ukrainian_full }
+		'lower-ukrainian' { Keyword.lower_ukrainian }
+		'lowercase' { Keyword.lowercase }
+		'ltr' { Keyword.ltr }
+		'luminance' { Keyword.luminance }
+		'luminosity' { Keyword.luminosity }
+		'maghrebi-abjad' { Keyword.maghrebi_abjad }
+		'maithili' { Keyword.maithili }
+		'malayalam-alpha' { Keyword.malayalam_alpha }
+		'malayalam' { Keyword.malayalam }
+		'manipulation' { Keyword.manipulation }
+		'manipuri' { Keyword.manipuri }
+		'marathi' { Keyword.marathi }
+		'margin-box' { Keyword.margin_box }
 		'mark' { Keyword.mark }
+		'markers' { Keyword.markers }
 		'marktext' { Keyword.marktext }
+		'match-parent' { Keyword.match_parent }
+		'match-source' { Keyword.match_source }
+		'math' { Keyword.math }
+		'math-auto' { Keyword.math_auto }
+		'mathematical' { Keyword.mathematical }
+		'max-content' { Keyword.max_content }
+		'medium' { Keyword.medium }
+		'meen' { Keyword.meen }
+		'meetei' { Keyword.meetei }
 		'menu' { Keyword.menu }
+		'menulist' { Keyword.menulist }
+		'menulist-button' { Keyword.menulist_button }
 		'menutext' { Keyword.menutext }
+		'meter' { Keyword.meter }
+		'middle' { Keyword.middle }
+		'min-content' { Keyword.min_content }
+		'minimal-ui' { Keyword.minimal_ui }
+		'miter' { Keyword.miter }
+		'mongolian' { Keyword.mongolian }
+		'monospace' { Keyword.monospace }
+		'more' { Keyword.more }
+		'most-block-size' { Keyword.most_block_size }
+		'most-height' { Keyword.most_height }
+		'most-inline-size' { Keyword.most_inline_size }
+		'most-width' { Keyword.most_width }
+		'move' { Keyword.move }
+		'mro' { Keyword.mro }
+		'multiply' { Keyword.multiply }
+		'myanmar' { Keyword.myanmar }
+		'n-resize' { Keyword.n_resize }
+		'nag-mundari' { Keyword.nag_mundari }
+		'nan' { Keyword.nan }
+		'ne-resize' { Keyword.ne_resize }
+		'nearest' { Keyword.nearest }
+		'nesw-resize' { Keyword.nesw_resize }
+		'new-base-60' { Keyword.new_base_60 }
+		'newa' { Keyword.newa }
+		'nko-cardinal' { Keyword.nko_cardinal }
+		'no-clip' { Keyword.no_clip }
+		'no-close-quote' { Keyword.no_close_quote }
+		'no-common-ligatures' { Keyword.no_common_ligatures }
+		'no-contextual' { Keyword.no_contextual }
+		'no-discretionary-ligatures' { Keyword.no_discretionary_ligatures }
+		'no-drop' { Keyword.no_drop }
+		'no-historical-ligatures' { Keyword.no_historical_ligatures }
+		'no-open-quote' { Keyword.no_open_quote }
+		'no-overflow' { Keyword.no_overflow }
+		'no-preference' { Keyword.no_preference }
+		'no-referrer' { Keyword.no_referrer }
+		'no-referrer-when-downgrade' { Keyword.no_referrer_when_downgrade }
+		'no-repeat' { Keyword.no_repeat }
+		'none' { Keyword.none_ }
+		'nonzero' { Keyword.nonzero }
+		'normal' { Keyword.normal }
+		'not-allowed' { Keyword.not_allowed }
+		'notch' { Keyword.notch }
+		'nowrap' { Keyword.nowrap }
+		'ns-resize' { Keyword.ns_resize }
+		'numbers' { Keyword.numbers }
+		'numeric' { Keyword.numeric }
+		'nw-resize' { Keyword.nw_resize }
+		'nwse-resize' { Keyword.nwse_resize }
+		'oblique' { Keyword.oblique }
+		'octal' { Keyword.octal }
+		'odia' { Keyword.odia }
+		'off' { Keyword.off }
+		'oklab' { Keyword.oklab }
+		'oklch' { Keyword.oklch }
+		'ol-chiki' { Keyword.ol_chiki }
+		'oldstyle-nums' { Keyword.oldstyle_nums }
+		'on' { Keyword.on }
+		'opaque' { Keyword.opaque }
+		'open-quote' { Keyword.open_quote }
+		'optimizelegibility' { Keyword.optimizelegibility }
+		'optimizequality' { Keyword.optimizequality }
+		'optimizespeed' { Keyword.optimizespeed }
+		'optional' { Keyword.optional }
+		'ordinal' { Keyword.ordinal }
+		'origin' { Keyword.origin }
+		'origin-when-cross-origin' { Keyword.origin_when_cross_origin }
+		'oriya' { Keyword.oriya }
+		'oromo' { Keyword.oromo }
+		'outset' { Keyword.outset }
+		'outside' { Keyword.outside }
+		'overlay' { Keyword.overlay }
+		'overline' { Keyword.overline }
+		'p3' { Keyword.p3 }
+		'padding-box' { Keyword.padding_box }
+		'paged' { Keyword.paged }
+		'paint' { Keyword.paint }
+		'palettes' { Keyword.palettes }
+		'pan-down' { Keyword.pan_down }
+		'pan-left' { Keyword.pan_left }
+		'pan-right' { Keyword.pan_right }
+		'pan-up' { Keyword.pan_up }
+		'pan-x' { Keyword.pan_x }
+		'pan-y' { Keyword.pan_y }
+		'parenthesized-decimal' { Keyword.parenthesized_decimal }
+		'parenthesized-hangul-consonant' { Keyword.parenthesized_hangul_consonant }
+		'parenthesized-hangul-syllable' { Keyword.parenthesized_hangul_syllable }
+		'parenthesized-ideograph' { Keyword.parenthesized_ideograph }
+		'parenthesized-lower-latin' { Keyword.parenthesized_lower_latin }
+		'paused' { Keyword.paused }
+		'persian-abjad' { Keyword.persian_abjad }
+		'persian-alphabetic' { Keyword.persian_alphabetic }
+		'persian' { Keyword.persian }
+		'petite-caps' { Keyword.petite_caps }
+		'pi' { Keyword.pi }
+		'picture-in-picture' { Keyword.picture_in_picture }
+		'pixelated' { Keyword.pixelated }
+		'plaintext' { Keyword.plaintext }
+		'plus-darker' { Keyword.plus_darker }
+		'plus-lighter' { Keyword.plus_lighter }
+		'pointer' { Keyword.pointer }
+		'portrait' { Keyword.portrait }
+		'pre' { Keyword.pre }
+		'pre-line' { Keyword.pre_line }
+		'pre-wrap' { Keyword.pre_wrap }
+		'preserve' { Keyword.preserve }
+		'preserve-3d' { Keyword.preserve_3d }
+		'preserve-breaks' { Keyword.preserve_breaks }
+		'preserve-spaces' { Keyword.preserve_spaces }
+		'pretty' { Keyword.pretty }
+		'progress' { Keyword.progress }
+		'progress-bar' { Keyword.progress_bar }
+		'progressive' { Keyword.progressive }
+		'prophoto-rgb' { Keyword.prophoto_rgb }
+		'proportional-nums' { Keyword.proportional_nums }
+		'proportional-width' { Keyword.proportional_width }
+		'punjabi' { Keyword.punjabi }
+		'push-button' { Keyword.push_button }
+		'radio' { Keyword.radio }
+		'rec2020' { Keyword.rec2020 }
+		'reduce' { Keyword.reduce }
+		'relative' { Keyword.relative }
+		'repeat' { Keyword.repeat }
+		'repeat-x' { Keyword.repeat_x }
+		'repeat-y' { Keyword.repeat_y }
+		'replace' { Keyword.replace }
+		'reverse' { Keyword.reverse }
+		'revert' { Keyword.revert }
+		'revert-layer' { Keyword.revert_layer }
+		'ridge' { Keyword.ridge }
+		'right' { Keyword.right }
+		'root' { Keyword.root }
+		'rotate-left' { Keyword.rotate_left }
+		'rotate-right' { Keyword.rotate_right }
+		'round' { Keyword.round }
+		'row' { Keyword.row }
+		'row-resize' { Keyword.row_resize }
+		'row-reverse' { Keyword.row_reverse }
+		'rtl' { Keyword.rtl }
+		'ruby' { Keyword.ruby }
+		'ruby-base' { Keyword.ruby_base }
+		'ruby-base-container' { Keyword.ruby_base_container }
+		'ruby-text' { Keyword.ruby_text }
+		'ruby-text-container' { Keyword.ruby_text_container }
+		'run-in' { Keyword.run_in }
+		'running' { Keyword.running }
+		's-resize' { Keyword.s_resize }
+		'safe' { Keyword.safe }
+		'saho' { Keyword.saho }
+		'same-origin' { Keyword.same_origin }
+		'sans-serif' { Keyword.sans_serif }
+		'sanskrit' { Keyword.sanskrit }
+		'santali' { Keyword.santali }
+		'saturation' { Keyword.saturation }
+		'scale-down' { Keyword.scale_down }
+		'scoop' { Keyword.scoop }
+		'screen' { Keyword.screen }
+		'scroll' { Keyword.scroll }
+		'scroll-position' { Keyword.scroll_position }
+		'scroll-state' { Keyword.scroll_state }
 		'scrollbar' { Keyword.scrollbar }
+		'se-resize' { Keyword.se_resize }
+		'searchfield' { Keyword.searchfield }
 		'selecteditem' { Keyword.selecteditem }
 		'selecteditemtext' { Keyword.selecteditemtext }
+		'self' { Keyword.self }
+		'self-block' { Keyword.self_block }
+		'self-block-end' { Keyword.self_block_end }
+		'self-block-start' { Keyword.self_block_start }
+		'self-end' { Keyword.self_end }
+		'self-inline' { Keyword.self_inline }
+		'self-inline-end' { Keyword.self_inline_end }
+		'self-inline-start' { Keyword.self_inline_start }
+		'self-x-end' { Keyword.self_x_end }
+		'self-x-start' { Keyword.self_x_start }
+		'self-y-end' { Keyword.self_y_end }
+		'self-y-start' { Keyword.self_y_start }
+		'self-start' { Keyword.self_start }
+		'semi-condensed' { Keyword.semi_condensed }
+		'semi-expanded' { Keyword.semi_expanded }
+		'separate' { Keyword.separate }
+		'serif' { Keyword.serif }
+		'shan' { Keyword.shan }
+		'shorter' { Keyword.shorter }
+		'show' { Keyword.show }
+		'sidama' { Keyword.sidama }
+		'sideways-lr' { Keyword.sideways_lr }
+		'sideways-rl' { Keyword.sideways_rl }
+		'silti' { Keyword.silti }
+		'simp-chinese-formal' { Keyword.simp_chinese_formal }
+		'simp-chinese-informal' { Keyword.simp_chinese_informal }
+		'simple-lower-roman' { Keyword.simple_lower_roman }
+		'simple-upper-roman' { Keyword.simple_upper_roman }
+		'simplified' { Keyword.simplified }
+		'sindhi' { Keyword.sindhi }
+		'size' { Keyword.size }
+		'slashed-zero' { Keyword.slashed_zero }
+		'slider-horizontal' { Keyword.slider_horizontal }
+		'slow' { Keyword.slow }
+		'small' { Keyword.small }
+		'small-caps' { Keyword.small_caps }
+		'smaller' { Keyword.smaller }
+		'smooth' { Keyword.smooth }
+		'soft-light' { Keyword.soft_light }
+		'solid' { Keyword.solid }
+		'space' { Keyword.space }
+		'space-around' { Keyword.space_around }
+		'space-between' { Keyword.space_between }
+		'space-evenly' { Keyword.space_evenly }
+		'span-all' { Keyword.span_all }
+		'span-block-end' { Keyword.span_block_end }
+		'span-block-start' { Keyword.span_block_start }
+		'span-bottom' { Keyword.span_bottom }
+		'span-end' { Keyword.span_end }
+		'span-inline-end' { Keyword.span_inline_end }
+		'span-inline-start' { Keyword.span_inline_start }
+		'span-left' { Keyword.span_left }
+		'span-right' { Keyword.span_right }
+		'span-self-block-end' { Keyword.span_self_block_end }
+		'span-self-block-start' { Keyword.span_self_block_start }
+		'span-self-end' { Keyword.span_self_end }
+		'span-self-inline-end' { Keyword.span_self_inline_end }
+		'span-self-inline-start' { Keyword.span_self_inline_start }
+		'span-self-start' { Keyword.span_self_start }
+		'span-self-x-end' { Keyword.span_self_x_end }
+		'span-self-x-start' { Keyword.span_self_x_start }
+		'span-self-y-end' { Keyword.span_self_y_end }
+		'span-self-y-start' { Keyword.span_self_y_start }
+		'span-start' { Keyword.span_start }
+		'span-top' { Keyword.span_top }
+		'span-x-end' { Keyword.span_x_end }
+		'span-x-start' { Keyword.span_x_start }
+		'span-y-end' { Keyword.span_y_end }
+		'span-y-start' { Keyword.span_y_start }
+		'spelling-error' { Keyword.spelling_error }
+		'spell-out' { Keyword.spell_out }
+		'square' { Keyword.square }
+		'square-button' { Keyword.square_button }
+		'squircle' { Keyword.squircle }
+		'srgb' { Keyword.srgb }
+		'srgb-linear' { Keyword.srgb_linear }
+		'stable' { Keyword.stable }
+		'stacked-fractions' { Keyword.stacked_fractions }
+		'standalone' { Keyword.standalone }
+		'standard' { Keyword.standard }
+		'start' { Keyword.start }
+		'static' { Keyword.static_ }
+		'sticky' { Keyword.sticky }
+		'stretch' { Keyword.stretch }
+		'strict' { Keyword.strict }
+		'strict-origin' { Keyword.strict_origin }
+		'strict-origin-when-cross-origin' { Keyword.strict_origin_when_cross_origin }
+		'stroke' { Keyword.stroke }
+		'stroke-box' { Keyword.stroke_box }
+		'style' { Keyword.style }
+		'sub' { Keyword.sub }
+		'subtract' { Keyword.subtract }
+		'subtractive' { Keyword.subtractive }
+		'sundanese' { Keyword.sundanese }
+		'super-decimal' { Keyword.super_decimal }
+		'super' { Keyword.super }
+		'sw-resize' { Keyword.sw_resize }
+		'swap' { Keyword.swap }
+		'symbolic' { Keyword.symbolic }
+		'table' { Keyword.table }
+		'table-caption' { Keyword.table_caption }
+		'table-cell' { Keyword.table_cell }
+		'table-column' { Keyword.table_column }
+		'table-column-group' { Keyword.table_column_group }
+		'table-footer-group' { Keyword.table_footer_group }
+		'table-header-group' { Keyword.table_header_group }
+		'table-row' { Keyword.table_row }
+		'table-row-group' { Keyword.table_row_group }
+		'tabular-nums' { Keyword.tabular_nums }
+		'tai-lue' { Keyword.tai_lue }
+		'tally-mark' { Keyword.tally_mark }
+		'tamil' { Keyword.tamil }
+		'telugu-alpha' { Keyword.telugu_alpha }
+		'telugu' { Keyword.telugu }
+		'text' { Keyword.text }
+		'text-bottom' { Keyword.text_bottom }
+		'text-top' { Keyword.text_top }
+		'textarea' { Keyword.textarea }
+		'textfield' { Keyword.textfield }
+		'thai-alpha' { Keyword.thai_alpha }
+		'thai' { Keyword.thai }
+		'thick' { Keyword.thick }
+		'thin' { Keyword.thin }
 		'threeddarkshadow' { Keyword.threeddarkshadow }
 		'threedface' { Keyword.threedface }
 		'threedhighlight' { Keyword.threedhighlight }
 		'threedlightshadow' { Keyword.threedlightshadow }
 		'threedshadow' { Keyword.threedshadow }
+		'tibetan' { Keyword.tibetan }
+		'tigre' { Keyword.tigre }
+		'titling-caps' { Keyword.titling_caps }
+		'to-zero' { Keyword.to_zero }
+		'top' { Keyword.top }
+		'trad-chinese-formal' { Keyword.trad_chinese_formal }
+		'trad-chinese-informal' { Keyword.trad_chinese_informal }
+		'traditional' { Keyword.traditional }
+		'true' { Keyword.true_ }
+		'ui-monospace' { Keyword.ui_monospace }
+		'ui-rounded' { Keyword.ui_rounded }
+		'ui-sans-serif' { Keyword.ui_sans_serif }
+		'ui-serif' { Keyword.ui_serif }
+		'ultra-condensed' { Keyword.ultra_condensed }
+		'ultra-expanded' { Keyword.ultra_expanded }
+		'under' { Keyword.under }
+		'underline' { Keyword.underline }
+		'unicase' { Keyword.unicase }
+		'unicode' { Keyword.unicode }
+		'unsafe' { Keyword.unsafe_ }
+		'unsafe-url' { Keyword.unsafe_url }
+		'unset' { Keyword.unset }
+		'up' { Keyword.up }
+		'upper-alpha-symbolic' { Keyword.upper_alpha_symbolic }
+		'upper-alpha' { Keyword.upper_alpha }
+		'upper-armenian' { Keyword.upper_armenian }
+		'upper-belorussian' { Keyword.upper_belorussian }
+		'upper-bulgarian' { Keyword.upper_bulgarian }
+		'upper-hexadecimal' { Keyword.upper_hexadecimal }
+		'upper-latin' { Keyword.upper_latin }
+		'upper-macedonian' { Keyword.upper_macedonian }
+		'upper-oromo-qubee' { Keyword.upper_oromo_qubee }
+		'upper-roman' { Keyword.upper_roman }
+		'upper-russian-full' { Keyword.upper_russian_full }
+		'upper-russian' { Keyword.upper_russian }
+		'upper-serbian' { Keyword.upper_serbian }
+		'upper-ukrainian-full' { Keyword.upper_ukrainian_full }
+		'upper-ukrainian' { Keyword.upper_ukrainian }
+		'uppercase' { Keyword.uppercase }
+		'upright' { Keyword.upright }
+		'urdu-abjad' { Keyword.urdu_abjad }
+		'urdu-alphabetic' { Keyword.urdu_alphabetic }
+		'urdu' { Keyword.urdu }
+		'use-credentials' { Keyword.use_credentials }
+		'variations' { Keyword.variations }
+		'vertical' { Keyword.vertical }
+		'vertical-lr' { Keyword.vertical_lr }
+		'vertical-rl' { Keyword.vertical_rl }
+		'vertical-text' { Keyword.vertical_text }
+		'view-box' { Keyword.view_box }
+		'visible' { Keyword.visible }
 		'visitedtext' { Keyword.visitedtext }
+		'w-resize' { Keyword.w_resize }
+		'wait' { Keyword.wait }
+		'warang-citi' { Keyword.warang_citi }
+		'wavy' { Keyword.wavy }
+		'width' { Keyword.width }
 		'window' { Keyword.window }
 		'windowframe' { Keyword.windowframe }
 		'windowtext' { Keyword.windowtext }
-		'text-bottom' { Keyword.text_bottom }
-		'alphabetic' { Keyword.alphabetic }
-		'ideographic' { Keyword.ideographic }
-		'central' { Keyword.central }
-		'mathematical' { Keyword.mathematical }
-		'text-top' { Keyword.text_top }
-		'serif' { Keyword.serif }
-		'sans-serif' { Keyword.sans_serif }
-		'monospace' { Keyword.monospace }
-		'cursive' { Keyword.cursive }
-		'fantasy' { Keyword.fantasy }
-		'system-ui' { Keyword.system_ui }
-		'ui-serif' { Keyword.ui_serif }
-		'ui-sans-serif' { Keyword.ui_sans_serif }
-		'ui-monospace' { Keyword.ui_monospace }
-		'ui-rounded' { Keyword.ui_rounded }
-		'math' { Keyword.math }
-		'fangsong' { Keyword.fangsong }
-		'default' { Keyword.default }
-		'context-menu' { Keyword.context_menu }
-		'help' { Keyword.help }
-		'pointer' { Keyword.pointer }
-		'progress' { Keyword.progress }
-		'wait' { Keyword.wait }
-		'cell' { Keyword.cell }
-		'crosshair' { Keyword.crosshair }
-		'vertical-text' { Keyword.vertical_text }
-		'alias' { Keyword.alias }
-		'copy' { Keyword.copy }
-		'move' { Keyword.move }
-		'no-drop' { Keyword.no_drop }
-		'not-allowed' { Keyword.not_allowed }
-		'grab' { Keyword.grab }
-		'grabbing' { Keyword.grabbing }
-		'e-resize' { Keyword.e_resize }
-		'n-resize' { Keyword.n_resize }
-		'ne-resize' { Keyword.ne_resize }
-		'nw-resize' { Keyword.nw_resize }
-		's-resize' { Keyword.s_resize }
-		'se-resize' { Keyword.se_resize }
-		'sw-resize' { Keyword.sw_resize }
-		'w-resize' { Keyword.w_resize }
-		'ew-resize' { Keyword.ew_resize }
-		'ns-resize' { Keyword.ns_resize }
-		'nesw-resize' { Keyword.nesw_resize }
-		'nwse-resize' { Keyword.nwse_resize }
-		'col-resize' { Keyword.col_resize }
-		'row-resize' { Keyword.row_resize }
-		'all-scroll' { Keyword.all_scroll }
+		'wolaita' { Keyword.wolaita }
+		'words' { Keyword.words }
+		'wrap' { Keyword.wrap }
+		'wrap-reverse' { Keyword.wrap_reverse }
+		'x' { Keyword.x }
+		'x-end' { Keyword.x_end }
+		'x-large' { Keyword.x_large }
+		'x-start' { Keyword.x_start }
+		'x-small' { Keyword.x_small }
+		'xx-large' { Keyword.xx_large }
+		'xx-small' { Keyword.xx_small }
+		'xxx-large' { Keyword.xxx_large }
+		'xyz' { Keyword.xyz }
+		'xyz-d50' { Keyword.xyz_d50 }
+		'xyz-d65' { Keyword.xyz_d65 }
+		'y' { Keyword.y }
+		'y-end' { Keyword.y_end }
+		'y-start' { Keyword.y_start }
+		'yemsa' { Keyword.yemsa }
+		'zhuyin' { Keyword.zhuyin }
 		'zoom-in' { Keyword.zoom_in }
 		'zoom-out' { Keyword.zoom_out }
-		'xx-small' { Keyword.xx_small }
-		'x-small' { Keyword.x_small }
-		'small' { Keyword.small }
-		'medium' { Keyword.medium }
-		'large' { Keyword.large }
-		'x-large' { Keyword.x_large }
-		'xx-large' { Keyword.xx_large }
-		'xxx-large' { Keyword.xxx_large }
-		'larger' { Keyword.larger }
-		'smaller' { Keyword.smaller }
-		'jis78' { Keyword.jis78 }
-		'jis83' { Keyword.jis83 }
-		'jis90' { Keyword.jis90 }
-		'jis04' { Keyword.jis04 }
-		'simplified' { Keyword.simplified }
-		'traditional' { Keyword.traditional }
-		'proportional-width' { Keyword.proportional_width }
-		'ruby' { Keyword.ruby }
-		'lining-nums' { Keyword.lining_nums }
-		'oldstyle-nums' { Keyword.oldstyle_nums }
-		'proportional-nums' { Keyword.proportional_nums }
-		'tabular-nums' { Keyword.tabular_nums }
-		'diagonal-fractions' { Keyword.diagonal_fractions }
-		'stacked-fractions' { Keyword.stacked_fractions }
-		'ordinal' { Keyword.ordinal }
-		'slashed-zero' { Keyword.slashed_zero }
-		'common-ligatures' { Keyword.common_ligatures }
-		'no-common-ligatures' { Keyword.no_common_ligatures }
-		'discretionary-ligatures' { Keyword.discretionary_ligatures }
-		'no-discretionary-ligatures' { Keyword.no_discretionary_ligatures }
-		'historical-ligatures' { Keyword.historical_ligatures }
-		'no-historical-ligatures' { Keyword.no_historical_ligatures }
-		'contextual' { Keyword.contextual }
-		'no-contextual' { Keyword.no_contextual }
-		'closest-corner' { Keyword.closest_corner }
-		'closest-side' { Keyword.closest_side }
-		'farthest-corner' { Keyword.farthest_corner }
-		'farthest-side' { Keyword.farthest_side }
-		'open-quote' { Keyword.open_quote }
-		'close-quote' { Keyword.close_quote }
-		'no-open-quote' { Keyword.no_open_quote }
-		'no-close-quote' { Keyword.no_close_quote }
-		'historical-forms' { Keyword.historical_forms }
-		'pre' { Keyword.pre }
-		'pre-wrap' { Keyword.pre_wrap }
-		'pre-line' { Keyword.pre_line }
 		else { none }
 	}
 }
 
 // --- StyleValue ---
-
 pub enum StyleValueType {
 	add_function
 	anchor
@@ -4952,6 +3839,7 @@ pub type StyleValue = KeywordStyleValue
 	| EasingStyleValue
 	| EdgeStyleValue
 	| FilterValueListStyleValue
+	| FitContentStyleValue
 	| FlexStyleValue
 	| FontSourceStyleValue
 	| FontStyleStyleValue
@@ -4993,7 +3881,6 @@ pub type StyleValue = KeywordStyleValue
 	| ShorthandStyleValue
 	| StringStyleValue
 	| StyleValueList
-	| StubStyleValue
 	| SuperellipseStyleValue
 	| TextIndentStyleValue
 	| TextUnderlinePositionStyleValue
@@ -5007,6 +3894,35 @@ pub type StyleValue = KeywordStyleValue
 	| ViewFunctionStyleValue
 
 pub type StyleValueVector = []StyleValue
+
+// StyleValue::set_style_sheet and the four upstream overrides. V sum types are
+// values rather than GC references, so write the mutated concrete value back
+// into the sum after propagating ownership.
+pub fn (mut style_value StyleValue) set_style_sheet(style_sheet ?&CSSStyleSheet) {
+	match style_value {
+		ImageStyleValue {
+			mut value := style_value
+			value.set_style_sheet(style_sheet)
+			style_value = StyleValue(value)
+		}
+		ContentStyleValue {
+			mut value := style_value
+			value.set_style_sheet(style_sheet)
+			style_value = StyleValue(value)
+		}
+		ShorthandStyleValue {
+			mut value := style_value
+			value.set_style_sheet(style_sheet)
+			style_value = StyleValue(value)
+		}
+		StyleValueList {
+			mut value := style_value
+			value.set_style_sheet(style_sheet)
+			style_value = StyleValue(value)
+		}
+		else {}
+	}
+}
 
 pub fn (style_value StyleValue) type_() StyleValueType {
 	return match style_value {
@@ -5036,6 +3952,7 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		EasingStyleValue { .easing }
 		EdgeStyleValue { .edge }
 		FilterValueListStyleValue { .filter_value_list }
+		FitContentStyleValue { .fit_content }
 		FlexStyleValue { .flex }
 		FontSourceStyleValue { .font_source }
 		FontStyleStyleValue { .font_style }
@@ -5078,7 +3995,6 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		ShorthandStyleValue { .shorthand }
 		StringStyleValue { .string }
 		StyleValueList { .value_list }
-		StubStyleValue { style_value.type_ }
 		SuperellipseStyleValue { .superellipse }
 		TextIndentStyleValue { .text_indent }
 		TextUnderlinePositionStyleValue { .text_underline_position }
@@ -5127,8 +4043,7 @@ pub fn (style_value StyleValue) is_custom_ident() bool {
 
 pub fn (style_value StyleValue) is_dimension() bool {
 	return match style_value {
-		AngleStyleValue, FlexStyleValue, FrequencyStyleValue, LengthStyleValue,
-		PercentageStyleValue, ResolutionStyleValue, TimeStyleValue {
+		AngleStyleValue, FlexStyleValue, FrequencyStyleValue, LengthStyleValue, PercentageStyleValue, ResolutionStyleValue, TimeStyleValue {
 			true
 		}
 		else {
@@ -5217,8 +4132,7 @@ pub fn (style_value StyleValue) as_dimension() DimensionStyleValue {
 // https://www.w3.org/TR/css-values-4/#common-keywords
 // https://drafts.csswg.org/css-cascade-4/#valdef-all-revert
 pub fn (style_value StyleValue) is_css_wide_keyword() bool {
-	return style_value.is_inherit() || style_value.is_initial() || style_value.is_revert()
-		|| style_value.is_unset() || style_value.is_revert_layer()
+	return style_value.is_inherit() || style_value.is_initial() || style_value.is_revert() || style_value.is_unset() || style_value.is_revert_layer()
 }
 
 pub fn (style_value StyleValue) is_inherit() bool {
@@ -5250,9 +4164,7 @@ pub fn (style_value StyleValue) has_color() bool {
 		KeywordStyleValue {
 			style_value.has_color()
 		}
-		ColorFunctionStyleValue, ColorMixStyleValue, ColorStyleValue, HSLColorStyleValue,
-		HWBColorStyleValue, LabColorStyleValue, LCHColorStyleValue, LightDarkStyleValue,
-		OKLabColorStyleValue, OKLCHColorStyleValue, RGBColorStyleValue {
+		ColorFunctionStyleValue, ColorMixStyleValue, ColorStyleValue, HSLColorStyleValue, HWBColorStyleValue, LabColorStyleValue, LCHColorStyleValue, LightDarkStyleValue, OKLabColorStyleValue, OKLCHColorStyleValue, RGBColorStyleValue {
 			true
 		}
 		else {
@@ -5279,6 +4191,8 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		FilterValueListStyleValue { style_value.absolutized(context) }
 		FontStyleStyleValue { style_value.absolutized(context) }
 		FontVariantAlternatesFunctionStyleValue { style_value.absolutized(context) }
+		GridTrackPlacementStyleValue { StyleValue(style_value.absolutized(context)) }
+		GridTrackSizeListStyleValue { StyleValue(style_value.absolutized(context)) }
 		HSLColorStyleValue { StyleValue(style_value.absolutized(context)) }
 		HWBColorStyleValue { StyleValue(style_value.absolutized(context)) }
 		ImageStyleValue { StyleValue(style_value.absolutized(context)) }
@@ -5326,12 +4240,6 @@ pub fn (style_value StyleValue) to_keyword() Keyword {
 	if style_value is KeywordStyleValue {
 		return style_value.keyword()
 	}
-	// A handful of generated keyword sets are represented by StubStyleValue
-	// until they gain dedicated enum cases. They must still be safe to query as
-	// keyword-like values during the cascade.
-	if style_value is StubStyleValue && style_value.type_ == .keyword {
-		return keyword_from_string(style_value.serialization) or { Keyword.invalid }
-	}
 	return .invalid
 }
 
@@ -5363,6 +4271,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		EasingStyleValue { style_value.serialize(mode) }
 		EdgeStyleValue { style_value.serialize(mode) }
 		FilterValueListStyleValue { style_value.serialize(mode) }
+		FitContentStyleValue { style_value.serialize(mode) }
 		FlexStyleValue { style_value.serialize(mode) }
 		FontSourceStyleValue { style_value.serialize(mode) }
 		FontStyleStyleValue { style_value.serialize(mode) }
@@ -5405,7 +4314,6 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		ShorthandStyleValue { style_value.serialize(mode) }
 		StringStyleValue { style_value.serialize(mode) }
 		StyleValueList { style_value.serialize(mode) }
-		StubStyleValue { style_value.serialize(mode) }
 		SuperellipseStyleValue { style_value.serialize(mode) }
 		TextIndentStyleValue { style_value.serialize(mode) }
 		TextUnderlinePositionStyleValue { style_value.serialize(mode) }
@@ -5559,7 +4467,6 @@ pub fn string_from_style_value(style_value StyleValue) string {
 }
 
 // --- DimensionStyleValue ---
-
 pub fn (style_value DimensionStyleValue) raw_value() f64 {
 	return match style_value {
 		AngleStyleValue { style_value.raw_value() }
@@ -5601,12 +4508,10 @@ pub fn (style_value DimensionStyleValue) reify(associated_property string) CSSSt
 	//    value's type, with the numeric value scaled accordingly.
 	// FIXME: Reify computed value correctly. That sounds like it should work by computing the value properly before we
 	//        reach this point.
-	return CSSStyleValue.from_numeric(CSSUnitValue.create(style_value.raw_value(),
-		style_value.unit_name()))
+	return CSSStyleValue.from_numeric(CSSUnitValue.create(style_value.raw_value(), style_value.unit_name()))
 }
 
 // --- KeywordStyleValue ---
-
 pub struct KeywordStyleValue {
 pub mut:
 	keyword_ Keyword = .invalid
@@ -5633,38 +4538,7 @@ pub fn (style_value KeywordStyleValue) to_string() string {
 
 pub fn KeywordStyleValue.is_color(keyword Keyword) bool {
 	return match keyword {
-		.accentcolor, .accentcolortext, .activeborder, .activecaption, .activetext, .appworkspace,
-		.background, .buttonborder, .buttonface, .buttonhighlight, .buttonshadow, .buttontext,
-		.canvas, .canvastext, .captiontext, .currentcolor, .field, .fieldtext, .graytext,
-		.highlight, .highlighttext, .inactiveborder, .inactivecaption, .inactivecaptiontext,
-		.infobackground, .infotext, .libweb_buttonfacedisabled, .libweb_buttonfacehover,
-		.libweb_link, .libweb_palette_active_link, .libweb_palette_active_window_border1,
-		.libweb_palette_active_window_border2, .libweb_palette_active_window_title,
-		.libweb_palette_base, .libweb_palette_base_text, .libweb_palette_button,
-		.libweb_palette_button_text, .libweb_palette_desktop_background,
-		.libweb_palette_focus_outline, .libweb_palette_highlight_window_border1,
-		.libweb_palette_highlight_window_border2, .libweb_palette_highlight_window_title,
-		.libweb_palette_hover_highlight, .libweb_palette_inactive_selection,
-		.libweb_palette_inactive_selection_text, .libweb_palette_inactive_window_border1,
-		.libweb_palette_inactive_window_border2, .libweb_palette_inactive_window_title,
-		.libweb_palette_link, .libweb_palette_menu_base, .libweb_palette_menu_base_text,
-		.libweb_palette_menu_selection, .libweb_palette_menu_selection_text,
-		.libweb_palette_menu_stripe, .libweb_palette_moving_window_border1,
-		.libweb_palette_moving_window_border2, .libweb_palette_moving_window_title,
-		.libweb_palette_rubber_band_border, .libweb_palette_rubber_band_fill,
-		.libweb_palette_ruler, .libweb_palette_ruler_active_text, .libweb_palette_ruler_border,
-		.libweb_palette_ruler_inactive_text, .libweb_palette_selection,
-		.libweb_palette_selection_text, .libweb_palette_syntax_comment,
-		.libweb_palette_syntax_control_keyword, .libweb_palette_syntax_identifier,
-		.libweb_palette_syntax_keyword, .libweb_palette_syntax_number,
-		.libweb_palette_syntax_operator, .libweb_palette_syntax_preprocessor_statement,
-		.libweb_palette_syntax_preprocessor_value, .libweb_palette_syntax_punctuation,
-		.libweb_palette_syntax_string, .libweb_palette_syntax_type, .libweb_palette_text_cursor,
-		.libweb_palette_threed_highlight, .libweb_palette_threed_shadow1,
-		.libweb_palette_threed_shadow2, .libweb_palette_visited_link, .libweb_palette_window,
-		.libweb_palette_window_text, .linktext, .mark, .marktext, .menu, .menutext, .scrollbar,
-		.selecteditem, .selecteditemtext, .threeddarkshadow, .threedface, .threedhighlight,
-		.threedlightshadow, .threedshadow, .visitedtext, .window, .windowframe, .windowtext {
+		.accentcolor, .accentcolortext, .activeborder, .activecaption, .activetext, .appworkspace, .background, .buttonborder, .buttonface, .buttonhighlight, .buttonshadow, .buttontext, .canvas, .canvastext, .captiontext, .currentcolor, .field, .fieldtext, .graytext, .highlight, .highlighttext, .inactiveborder, .inactivecaption, .inactivecaptiontext, .infobackground, .infotext, .libweb_buttonfacedisabled, .libweb_buttonfacehover, .libweb_link, .libweb_palette_active_link, .libweb_palette_active_window_border1, .libweb_palette_active_window_border2, .libweb_palette_active_window_title, .libweb_palette_base, .libweb_palette_base_text, .libweb_palette_button, .libweb_palette_button_text, .libweb_palette_desktop_background, .libweb_palette_focus_outline, .libweb_palette_highlight_window_border1, .libweb_palette_highlight_window_border2, .libweb_palette_highlight_window_title, .libweb_palette_hover_highlight, .libweb_palette_inactive_selection, .libweb_palette_inactive_selection_text, .libweb_palette_inactive_window_border1, .libweb_palette_inactive_window_border2, .libweb_palette_inactive_window_title, .libweb_palette_link, .libweb_palette_menu_base, .libweb_palette_menu_base_text, .libweb_palette_menu_selection, .libweb_palette_menu_selection_text, .libweb_palette_menu_stripe, .libweb_palette_moving_window_border1, .libweb_palette_moving_window_border2, .libweb_palette_moving_window_title, .libweb_palette_rubber_band_border, .libweb_palette_rubber_band_fill, .libweb_palette_ruler, .libweb_palette_ruler_active_text, .libweb_palette_ruler_border, .libweb_palette_ruler_inactive_text, .libweb_palette_selection, .libweb_palette_selection_text, .libweb_palette_syntax_comment, .libweb_palette_syntax_control_keyword, .libweb_palette_syntax_identifier, .libweb_palette_syntax_keyword, .libweb_palette_syntax_number, .libweb_palette_syntax_operator, .libweb_palette_syntax_preprocessor_statement, .libweb_palette_syntax_preprocessor_value, .libweb_palette_syntax_punctuation, .libweb_palette_syntax_string, .libweb_palette_syntax_type, .libweb_palette_text_cursor, .libweb_palette_threed_highlight, .libweb_palette_threed_shadow1, .libweb_palette_threed_shadow2, .libweb_palette_visited_link, .libweb_palette_window, .libweb_palette_window_text, .linktext, .mark, .marktext, .menu, .menutext, .scrollbar, .selecteditem, .selecteditemtext, .threeddarkshadow, .threedface, .threedhighlight, .threedlightshadow, .threedshadow, .visitedtext, .window, .windowframe, .windowtext {
 			true
 		}
 		else {
@@ -5713,8 +4587,7 @@ pub fn (style_value KeywordStyleValue) to_color(color_resolution_context ColorRe
 		.accentcolor {
 			return color_resolution_context.accent_color or { SystemColor.accent_color(scheme) }
 		}
-		.buttonborder, .activeborder, .inactiveborder, .threeddarkshadow, .threedhighlight,
-		.threedlightshadow, .threedshadow, .windowframe {
+		.buttonborder, .activeborder, .inactiveborder, .threeddarkshadow, .threedhighlight, .threedlightshadow, .threedshadow, .windowframe {
 			return SystemColor.button_border(scheme)
 		}
 		.buttonface, .buttonhighlight, .buttonshadow, .threedface {
@@ -5723,8 +4596,7 @@ pub fn (style_value KeywordStyleValue) to_color(color_resolution_context ColorRe
 		.buttontext {
 			return SystemColor.button_text(scheme)
 		}
-		.canvas, .appworkspace, .background, .inactivecaption, .infobackground, .menu, .scrollbar,
-		.window {
+		.canvas, .appworkspace, .background, .inactivecaption, .infobackground, .menu, .scrollbar, .window {
 			return SystemColor.canvas(scheme)
 		}
 		.canvastext, .activecaption, .captiontext, .infotext, .menutext, .windowtext {
@@ -5811,7 +4683,6 @@ pub fn (style_value KeywordStyleValue) properties_equal(other KeywordStyleValue)
 }
 
 // --- LengthStyleValue ---
-
 pub struct LengthStyleValue {
 pub mut:
 	length_ Length
@@ -5851,7 +4722,6 @@ pub fn (style_value LengthStyleValue) absolutized(computation_context Computatio
 }
 
 // --- NumberStyleValue ---
-
 pub struct NumberStyleValue {
 pub mut:
 	value_ f64
@@ -5878,8 +4748,7 @@ pub fn (style_value NumberStyleValue) to_string() string {
 
 pub fn (style_value NumberStyleValue) tokenize() []ComponentValue {
 	return [
-		ComponentValue.from_token(Token.create_number(Number.with_type(.number, style_value.value_),
-			style_value.serialize(.normal))),
+		ComponentValue.from_token(Token.create_number(Number.with_type(.number, style_value.value_), style_value.serialize(.normal))),
 	]
 }
 
@@ -5907,7 +4776,6 @@ pub fn (style_value NumberStyleValue) reify(associated_property string) CSSStyle
 }
 
 // --- RatioStyleValue ---
-
 pub struct RatioStyleValue {
 pub mut:
 	ratio_ Ratio
@@ -5930,18 +4798,15 @@ pub fn (style_value RatioStyleValue) serialize(mode SerializationMode) string {
 
 pub fn (style_value RatioStyleValue) tokenize() []ComponentValue {
 	return [
-		ComponentValue.from_token(Token.create_number(Number.with_type(.number,
-			style_value.ratio_.numerator()), serialize_a_number(style_value.ratio_.numerator()))),
+		ComponentValue.from_token(Token.create_number(Number.with_type(.number, style_value.ratio_.numerator()), serialize_a_number(style_value.ratio_.numerator()))),
 		ComponentValue.from_token(Token.create_whitespace(' ')),
 		ComponentValue.from_token(Token.create_delim(u32(`/`), '/')),
 		ComponentValue.from_token(Token.create_whitespace(' ')),
-		ComponentValue.from_token(Token.create_number(Number.with_type(.number,
-			style_value.ratio_.denominator()), serialize_a_number(style_value.ratio_.denominator()))),
+		ComponentValue.from_token(Token.create_number(Number.with_type(.number, style_value.ratio_.denominator()), serialize_a_number(style_value.ratio_.denominator()))),
 	]
 }
 
 // --- IntegerStyleValue ---
-
 pub struct IntegerStyleValue {
 pub mut:
 	value_ i64
@@ -5968,8 +4833,7 @@ pub fn (style_value IntegerStyleValue) to_string() string {
 
 pub fn (style_value IntegerStyleValue) tokenize() []ComponentValue {
 	return [
-		ComponentValue.from_token(Token.create_number(Number.with_type(.integer,
-			f64(style_value.value_)), style_value.serialize(.normal))),
+		ComponentValue.from_token(Token.create_number(Number.with_type(.integer, f64(style_value.value_)), style_value.serialize(.normal))),
 	]
 }
 
@@ -5997,7 +4861,6 @@ pub fn (style_value IntegerStyleValue) reify(associated_property string) CSSStyl
 }
 
 // --- AngleStyleValue ---
-
 pub struct AngleStyleValue {
 pub mut:
 	angle_ Angle
@@ -6030,7 +4893,6 @@ pub fn (style_value AngleStyleValue) to_string() string {
 }
 
 // --- PercentageStyleValue ---
-
 pub struct PercentageStyleValue {
 pub mut:
 	percentage_ Percentage
@@ -6064,7 +4926,6 @@ pub fn (style_value PercentageStyleValue) to_string() string {
 }
 
 // --- Additional dimension style value wrappers needed by CSSUnitValue ---
-
 pub struct FlexStyleValue {
 pub mut:
 	flex_ Flex
@@ -6173,8 +5034,7 @@ pub fn (style_value TimeStyleValue) serialize(mode SerializationMode) string {
 	return style_value.time_.serialize(mode)
 }
 
-// --- Explicit stubs for called but untranslated StyleValue subclasses ---
-
+// --- Core scalar and substitution StyleValue subclasses ---
 pub struct ColorStyleValue {
 pub mut:
 	color_ Color
@@ -6252,7 +5112,7 @@ pub fn UnresolvedStyleValue.create(tokens []ComponentValue) UnresolvedStyleValue
 		}
 	}
 	return UnresolvedStyleValue{
-		tokens:                          tokens
+		tokens: tokens
 		substitution_functions_presence: presence
 	}
 }
@@ -6299,13 +5159,20 @@ pub fn URLStyleValue.create(url URL) URLStyleValue {
 
 pub fn URLStyleValue.create_with_paint_fallback(url URL, paint_fallback StyleValue) URLStyleValue {
 	return URLStyleValue{
-		url_:            url
+		url_: url
 		paint_fallback_: [paint_fallback]
 	}
 }
 
 pub fn (style_value URLStyleValue) url() URL {
 	return style_value.url_
+}
+
+pub fn (style_value URLStyleValue) paint_fallback() ?StyleValue {
+	if style_value.paint_fallback_.len == 1 {
+		return style_value.paint_fallback_[0]
+	}
+	return none
 }
 
 pub fn (style_value URLStyleValue) serialize(mode SerializationMode) string {
@@ -6344,27 +5211,9 @@ pub fn (style_value PendingSubstitutionStyleValue) original_shorthand_value_ref(
 	return style_value.original_shorthand_value
 }
 
-pub struct StubStyleValue {
-pub mut:
-	type_         StyleValueType
-	serialization string
-}
-
-pub fn StubStyleValue.create(type_ StyleValueType, serialization string) StubStyleValue {
-	return StubStyleValue{
-		type_:         type_
-		serialization: serialization
-	}
-}
-
-pub fn (style_value StubStyleValue) serialize(mode SerializationMode) string {
-	_ = mode
-	return style_value.serialization
-}
-
 pub fn (c CalculatedStyleValue) resolves_to_number() bool {
 	if numeric_type := c.numeric_type() {
-		return numeric_type.matches_number(none)
+		return numeric_type.matches_number(c.calculation_context.percentages_resolve_as)
 	}
 	return true
 }
@@ -6377,7 +5226,6 @@ pub fn (c CalculatedStyleValue) resolves_to_percentage() bool {
 }
 
 // --- CSSStyleValue ---
-
 pub enum CSSStyleValueKind {
 	style
 	keyword
@@ -6398,36 +5246,36 @@ pub mut:
 
 pub fn CSSStyleValue.create(associated_property string, source_value StyleValue) CSSStyleValue {
 	return CSSStyleValue{
-		kind_:               .style
+		kind_: .style
 		associated_property: associated_property
-		source_value_:       source_value
+		source_value_: source_value
 	}
 }
 
 pub fn CSSStyleValue.from_source(source_value StyleValue) CSSStyleValue {
 	return CSSStyleValue{
-		kind_:         .style
+		kind_: .style
 		source_value_: source_value
 	}
 }
 
 pub fn CSSStyleValue.from_keyword(value CSSKeywordValue) CSSStyleValue {
 	return CSSStyleValue{
-		kind_:          .keyword
+		kind_: .keyword
 		keyword_value_: value
 	}
 }
 
 pub fn CSSStyleValue.from_numeric(value CSSNumericValue) CSSStyleValue {
 	return CSSStyleValue{
-		kind_:          .numeric
+		kind_: .numeric
 		numeric_value_: value
 	}
 }
 
 pub fn CSSStyleValue.from_transform(value CSSTransformValue) CSSStyleValue {
 	return CSSStyleValue{
-		kind_:            .transform
+		kind_: .transform
 		transform_value_: value
 	}
 }
@@ -6545,7 +5393,6 @@ pub fn (value CSSStyleValue) create_an_internal_representation(property Property
 }
 
 // --- CSSKeywordValue ---
-
 pub type CSSKeywordish = CSSKeywordValue | string
 
 // https://drafts.css-houdini.org/css-typed-om-1/#csskeywordvalue
@@ -6647,7 +5494,6 @@ pub fn rectify_a_keywordish_value(keywordish CSSKeywordish) CSSKeywordValue {
 }
 
 // --- CSSNumericValue ---
-
 pub struct CSSNumericType {
 pub mut:
 	length       ?int
@@ -6676,19 +5522,6 @@ pub mut:
 	parenless bool
 }
 
-pub struct CSSMathValueStub {
-pub mut:
-	type_         NumericType
-	serialization string
-}
-
-pub fn CSSMathValueStub.create(type_ NumericType, serialization string) CSSMathValueStub {
-	return CSSMathValueStub{
-		type_:         type_
-		serialization: serialization
-	}
-}
-
 pub type CSSNumericValue = CSSUnitValue
 	| CSSMathClamp
 	| CSSMathInvert
@@ -6697,7 +5530,6 @@ pub type CSSNumericValue = CSSUnitValue
 	| CSSMathNegate
 	| CSSMathProduct
 	| CSSMathSum
-	| CSSMathValueStub
 
 pub type CSSNumberish = CSSUnitValue
 	| CSSMathClamp
@@ -6707,13 +5539,11 @@ pub type CSSNumberish = CSSUnitValue
 	| CSSMathNegate
 	| CSSMathProduct
 	| CSSMathSum
-	| CSSMathValueStub
 	| f64
 
 pub fn (value CSSNumericValue) type_() NumericType {
 	return match value {
 		CSSUnitValue { value.type_ }
-		CSSMathValueStub { value.type_ }
 		CSSMathSum { value.type_ }
 		CSSMathProduct { value.type_ }
 		CSSMathNegate { value.type_ }
@@ -7077,10 +5907,8 @@ pub fn (value CSSNumericValue) serialize(params CSSNumericSerializationParams) s
 		CSSUnitValue {
 			value.serialize_unit_value(params.minimum, params.maximum)
 		}
+
 		// 2. Otherwise, serialize a CSSMathValue from this, and return the result.
-		CSSMathValueStub {
-			value.serialization
-		}
 		CSSMathSum {
 			value.serialize_math_value(if params.nested { .yes } else { .no }, if params.parenless {
 				.without
@@ -7147,14 +5975,6 @@ pub fn (value CSSNumericValue) is_equal_numeric_value(other CSSNumericValue) boo
 				false
 			}
 		}
-		CSSMathValueStub {
-			other_value := other
-			if other_value is CSSMathValueStub {
-				value.type_ == other_value.type_ && value.serialization == other_value.serialization
-			} else {
-				false
-			}
-		}
 		CSSMathSum {
 			value.is_equal_numeric_value(other)
 		}
@@ -7182,7 +6002,6 @@ pub fn (value CSSNumericValue) is_equal_numeric_value(other CSSNumericValue) boo
 pub fn (value CSSNumericValue) create_a_sum_value() ?SumValue {
 	return match value {
 		CSSUnitValue { value.create_a_sum_value() }
-		CSSMathValueStub { none }
 		CSSMathSum { value.create_a_sum_value() }
 		CSSMathProduct { value.create_a_sum_value() }
 		CSSMathNegate { value.create_a_sum_value() }
@@ -7206,8 +6025,7 @@ pub fn CSSNumericValue.parse(css_text string) !CSSNumericValue {
 
 	// 2. If result is not a <number-token>, <percentage-token>, <dimension-token>, or a math function, throw a
 	//    SyntaxError and abort this algorithm.
-	if !(result.is(.number) || result.is(.percentage) || result.is(.dimension)
-		|| css_numeric_value_is_math_function(result)) {
+	if !(result.is(.number) || result.is(.percentage) || result.is(.dimension) || css_numeric_value_is_math_function(result)) {
 		return error('SyntaxError: Input not a <number-token>, <percentage-token>, <dimension-token>, or a math function.')
 	}
 
@@ -7229,8 +6047,7 @@ fn css_numeric_value_is_math_function(component_value ComponentValue) bool {
 	}
 
 	return match to_ascii_lowercase(component_value.function().name) {
-		'abs', 'acos', 'asin', 'atan', 'atan2', 'clamp', 'calc', 'cos', 'exp', 'hypot', 'log',
-		'max', 'min', 'mod', 'pow', 'random', 'rem', 'round', 'sign', 'sin', 'sqrt', 'tan' {
+		'abs', 'acos', 'asin', 'atan', 'atan2', 'clamp', 'calc', 'cos', 'exp', 'hypot', 'log', 'max', 'min', 'mod', 'pow', 'random', 'rem', 'round', 'sign', 'sin', 'sqrt', 'tan' {
 			true
 		}
 		else {
@@ -7266,58 +6083,91 @@ fn css_numeric_value_reify_component_value(numeric_value ComponentValue) !CSSNum
 	if !numeric_value.is(.dimension) {
 		panic('VERIFY_NOT_REACHED')
 	}
-	return CSSNumericValue(CSSUnitValue.create(numeric_value.token().dimension_value(),
-		numeric_value.token().dimension_unit()))
+	return CSSNumericValue(CSSUnitValue.create(numeric_value.token().dimension_value(), numeric_value.token().dimension_unit()))
 }
 
-fn css_numeric_value_reify_single_component(values []ComponentValue) !CSSNumericValue {
-	components := remove_whitespace_from_component_values(values)
-	if components.len != 1 {
-		return error('SyntaxError: Unable to parse input as a calculation tree.')
+fn reify_children(children []CalcNode) ![]CSSNumericValue {
+	mut reified := []CSSNumericValue{cap: children.len}
+	for child in children {
+		reified << reify_calc_node(child)!
 	}
-	return css_numeric_value_reify_component_value(components[0])!
+	return reified
+}
+
+// CalculationNode::reify(), translated for every node represented by CSS Typed OM.
+// Functions without a corresponding CSSMath interface deliberately fail, matching the
+// C++ fallback from CalculatedStyleValue::reify() to a plain CSSStyleValue.
+fn reify_calc_node(node CalcNode) !CSSNumericValue {
+	match node {
+		CalcNumeric {
+			unit := match node.kind {
+				.number { 'number' }
+				.percentage { 'percent' }
+				else { node.unit }
+			}
+			return CSSNumericValue(CSSUnitValue.create(node.value, unit))
+		}
+		CalcSum {
+			type_ := CalcNode(node).numeric_type() or {
+				return error('Unable to reify this math function.')
+			}
+			return CSSNumericValue(CSSMathSum.create(type_, CSSNumericArray.create(reify_children(node.children)!)))
+		}
+		CalcProduct {
+			type_ := CalcNode(node).numeric_type() or {
+				return error('Unable to reify this math function.')
+			}
+			return CSSNumericValue(CSSMathProduct.create(type_, CSSNumericArray.create(reify_children(node.children)!)))
+		}
+		CalcNegate {
+			type_ := CalcNode(node).numeric_type() or {
+				return error('Unable to reify this math function.')
+			}
+			return CSSNumericValue(CSSMathNegate.create(type_, reify_calc_node(node.children[0])!))
+		}
+		CalcInvert {
+			type_ := CalcNode(node).numeric_type() or {
+				return error('Unable to reify this math function.')
+			}
+			return CSSNumericValue(CSSMathInvert.create(type_, reify_calc_node(node.children[0])!))
+		}
+		CalcFunction {
+			type_ := CalcNode(node).numeric_type() or {
+				return error('Unable to reify this math function.')
+			}
+			children := reify_children(node.children)!
+			return match node.name {
+				'min' {
+					CSSNumericValue(CSSMathMin.create(type_, CSSNumericArray.create(children)))
+				}
+				'max' {
+					CSSNumericValue(CSSMathMax.create(type_, CSSNumericArray.create(children)))
+				}
+				'clamp' {
+					CSSNumericValue(CSSMathClamp.create(type_, children[0], children[1], children[2]))
+				}
+				else {
+					return error('Unable to reify this math function.')
+				}
+			}
+		}
+		CalcRandom, CalcTreeCounting {
+			return error('Unable to reify this math function.')
+		}
+	}
 }
 
 fn css_numeric_value_reify_math_function(numeric_value ComponentValue) !CSSNumericValue {
-	function := numeric_value.function()
-	name := to_ascii_lowercase(function.name)
-
-	// The C++ implementation parses every math function through CalculatedStyleValue and then reifies the resulting
-	// CalculationNode tree. This port has the Typed OM math classes but not the full calculation parser yet, so wire the
-	// directly representable functions and keep the upstream SyntaxError behavior for the remaining function grammar.
-	if name == 'calc' {
-		return css_numeric_value_reify_single_component(function.value)!
+	mut tokens := ComponentValueStream.new([numeric_value])
+	calculated := parse_calculated_value(mut tokens) or {
+		return error('SyntaxError: Unable to parse input as a calculation tree.')
 	}
-
-	arguments := parse_a_comma_separated_list_of_component_values_for_value_logic(function.value)
-	if name == 'min' || name == 'max' {
-		if arguments.len == 0 {
-			return error('SyntaxError: Unable to parse input as a calculation tree.')
-		}
-		mut values := []CSSNumericValue{}
-		for argument in arguments {
-			values << css_numeric_value_reify_single_component(argument)!
-		}
-		if name == 'min' {
-			return CSSNumericValue(CSSMathMin.add_all_types_into_math_min(values)!)
-		}
-		return CSSNumericValue(CSSMathMax.add_all_types_into_math_max(values)!)
+	if calculated !is CalculatedStyleValue || calculated.node.len != 1 {
+		return error('SyntaxError: Unable to parse input as a calculation tree.')
 	}
-
-	if name == 'clamp' {
-		if arguments.len != 3 {
-			return error('SyntaxError: Unable to parse input as a calculation tree.')
-		}
-		lower :=
-			css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[0])!)
-		value :=
-			css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[1])!)
-		upper :=
-			css_numberish_from_numeric_value(css_numeric_value_reify_single_component(arguments[2])!)
-		return CSSNumericValue(CSSMathClamp.construct_impl(lower, value, upper)!)
+	return reify_calc_node(calculated.node[0]) or {
+		return error('SyntaxError: Unable to reify this math function.')
 	}
-
-	return error('SyntaxError: Unable to parse input as a calculation tree.')
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#rectify-a-numberish-value
@@ -7331,7 +6181,6 @@ pub fn rectify_a_numberish_value_with_unit(numberish CSSNumberish, unit ?string)
 	return match numberish {
 		// 1. If num is a CSSNumericValue, return num.
 		CSSUnitValue { CSSNumericValue(numberish) }
-		CSSMathValueStub { CSSNumericValue(numberish) }
 		CSSMathSum { CSSNumericValue(numberish) }
 		CSSMathProduct { CSSNumericValue(numberish) }
 		CSSMathNegate { CSSNumericValue(numberish) }
@@ -7395,7 +6244,6 @@ fn numeric_values_join(values []CSSNumericValue, separator string) string {
 }
 
 // --- CSSUnitValue ---
-
 pub type NumericPrimitiveValue = Angle
 	| Flex
 	| Frequency
@@ -7462,8 +6310,8 @@ pub fn CSSUnitValue.construct_impl(value f64, unit string) !CSSUnitValue {
 	// 2. Return a new CSSUnitValue with its value internal slot set to value and its unit set to unit.
 	return CSSUnitValue{
 		value_: value
-		unit_:  to_ascii_lowercase(unit)
-		type_:  numeric_type
+		unit_: to_ascii_lowercase(unit)
+		type_: numeric_type
 	}
 }
 
@@ -7508,14 +6356,12 @@ pub fn (unit_value CSSUnitValue) serialize_unit_value(minimum ?f64, maximum ?f64
 	// -> "number"
 	if unit_value.unit_ == 'number' {
 		// Do nothing.
-	}
-	// -> "percent"
-	else if unit_value.unit_ == 'percent' {
+	} else if unit_value.unit_ == 'percent' {
+		// -> "percent"
 		// Append "%" to s.
 		serialized += '%'
-	}
-	// -> anything else
-	else {
+	} else {
+		// -> anything else
 		// Append unit to s.
 		serialized += to_ascii_lowercase(unit_value.unit_)
 	}
@@ -7631,8 +6477,7 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.angle {
 				angle_unit := string_to_angle_unit(unit) or { return none }
 				canonical_unit := canonical_angle_unit()
-				if angle_unit != canonical_unit
-					&& angle_units_are_compatible(angle_unit, canonical_unit) {
+				if angle_unit != canonical_unit && angle_units_are_compatible(angle_unit, canonical_unit) {
 					value *= ratio_between_angle_units(angle_unit, canonical_unit)
 					unit = angle_unit_name(canonical_unit)
 				}
@@ -7640,8 +6485,7 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.flex {
 				flex_unit := string_to_flex_unit(unit) or { return none }
 				canonical_unit := canonical_flex_unit()
-				if flex_unit != canonical_unit
-					&& flex_units_are_compatible(flex_unit, canonical_unit) {
+				if flex_unit != canonical_unit && flex_units_are_compatible(flex_unit, canonical_unit) {
 					value *= ratio_between_flex_units(flex_unit, canonical_unit)
 					unit = flex_unit_name(canonical_unit)
 				}
@@ -7649,8 +6493,7 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.frequency {
 				frequency_unit := string_to_frequency_unit(unit) or { return none }
 				canonical_unit := canonical_frequency_unit()
-				if frequency_unit != canonical_unit
-					&& frequency_units_are_compatible(frequency_unit, canonical_unit) {
+				if frequency_unit != canonical_unit && frequency_units_are_compatible(frequency_unit, canonical_unit) {
 					value *= ratio_between_frequency_units(frequency_unit, canonical_unit)
 					unit = to_ascii_lowercase(frequency_unit_name(canonical_unit))
 				}
@@ -7658,8 +6501,7 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.length {
 				length_unit := string_to_length_unit(unit) or { return none }
 				canonical_unit := canonical_length_unit()
-				if length_unit != canonical_unit
-					&& length_units_are_compatible(length_unit, canonical_unit) {
+				if length_unit != canonical_unit && length_units_are_compatible(length_unit, canonical_unit) {
 					value *= ratio_between_length_units(length_unit, canonical_unit)
 					unit = length_unit_name(canonical_unit)
 				}
@@ -7667,8 +6509,7 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.resolution {
 				resolution_unit := string_to_resolution_unit(unit) or { return none }
 				canonical_unit := canonical_resolution_unit()
-				if resolution_unit != canonical_unit
-					&& resolution_units_are_compatible(resolution_unit, canonical_unit) {
+				if resolution_unit != canonical_unit && resolution_units_are_compatible(resolution_unit, canonical_unit) {
 					value *= ratio_between_resolution_units(resolution_unit, canonical_unit)
 					unit = resolution_unit_name(canonical_unit)
 				}
@@ -7676,8 +6517,7 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 			.time {
 				time_unit := string_to_time_unit(unit) or { return none }
 				canonical_unit := canonical_time_unit()
-				if time_unit != canonical_unit
-					&& time_units_are_compatible(time_unit, canonical_unit) {
+				if time_unit != canonical_unit && time_units_are_compatible(time_unit, canonical_unit) {
 					value *= ratio_between_time_units(time_unit, canonical_unit)
 					unit = time_unit_name(canonical_unit)
 				}
@@ -7688,14 +6528,14 @@ pub fn (unit_value CSSUnitValue) create_a_sum_value() ?SumValue {
 	// 3. If unit is "number", return [(value, [])].
 	if unit == 'number' {
 		return [SumValueItem{
-			value:    value
+			value: value
 			unit_map: map[string]int{}
 		}]
 	}
 
 	// 4. Otherwise, return [(value, [unit -> 1])].
 	return [SumValueItem{
-		value:    value
+		value: value
 		unit_map: {
 			unit: 1
 		}
@@ -7774,17 +6614,6 @@ pub fn (unit_value CSSUnitValue) create_an_internal_representation(property Prop
 
 	context := CalculationContext.for_property(property)
 	wrap_in_math_sum := fn [context] (primitive NumericPrimitiveValue) StyleValue {
-		serialization := match primitive {
-			Number { primitive.serialize(.normal) }
-			Percentage { primitive.serialize(.normal) }
-			Angle { primitive.serialize(.normal) }
-			Flex { primitive.serialize(.normal) }
-			Frequency { primitive.serialize(.normal) }
-			Length { primitive.serialize(.normal) }
-			Resolution { primitive.serialize(.normal) }
-			Time { primitive.serialize(.normal) }
-		}
-
 		type_ := NumericType.create_from_unit(match primitive {
 			Number { 'number' }
 			Percentage { 'percent' }
@@ -7795,9 +6624,8 @@ pub fn (unit_value CSSUnitValue) create_an_internal_representation(property Prop
 			Resolution { primitive.unit_name() }
 			Time { primitive.unit_name() }
 		}) or { NumericType.new() }
-		return StyleValue(CalculatedStyleValue.create(CalculationNode{
-			serialization: 'calc(${serialization})'
-		}, type_, context))
+		calculation_node := calculation_node_from_numeric_primitive(primitive)
+		return StyleValue(CalculatedStyleValue.create(calculation_node, type_, context))
 	}
 
 	value := create_numeric_value(unit_value.value_, unit_value.unit_) or {
@@ -7928,19 +6756,77 @@ pub fn (unit_value CSSUnitValue) create_calculation_node(context CalculationCont
 	value := create_numeric_value(unit_value.value_, unit_value.unit_) or {
 		return error('Unable to create calculation node from `${unit_value.value_}${unit_value.unit_}`.')
 	}
+	return calculation_node_from_numeric_primitive(value)
+}
 
-	return CalculationNode{
-		serialization: match value {
-			Number { value.serialize(.normal) }
-			Percentage { value.serialize(.normal) }
-			Angle { value.serialize(.normal) }
-			Flex { value.serialize(.normal) }
-			Frequency { value.serialize(.normal) }
-			Length { value.serialize(.normal) }
-			Resolution { value.serialize(.normal) }
-			Time { value.serialize(.normal) }
+fn calculation_node_from_numeric_primitive(value NumericPrimitiveValue) CalculationNode {
+	leaf := match value {
+		Number {
+			CalcNumeric{
+				kind: .number
+				value: value.value()
+				unit: ''
+				type_: NumericType.new()
+			}
+		}
+		Percentage {
+			CalcNumeric{
+				kind: .percentage
+				value: value.value()
+				unit: '%'
+				type_: NumericType.with_type(.percent, 1)
+			}
+		}
+		Angle {
+			CalcNumeric{
+				kind: .angle
+				value: value.raw_value()
+				unit: value.unit_name()
+				type_: NumericType.with_type(.angle, 1)
+			}
+		}
+		Flex {
+			CalcNumeric{
+				kind: .flex
+				value: value.raw_value()
+				unit: value.unit_name()
+				type_: NumericType.with_type(.flex, 1)
+			}
+		}
+		Frequency {
+			CalcNumeric{
+				kind: .frequency
+				value: value.raw_value()
+				unit: value.unit_name()
+				type_: NumericType.with_type(.frequency, 1)
+			}
+		}
+		Length {
+			CalcNumeric{
+				kind: .length
+				value: value.raw_value()
+				unit: value.unit_name()
+				type_: NumericType.with_type(.length, 1)
+			}
+		}
+		Resolution {
+			CalcNumeric{
+				kind: .resolution
+				value: value.raw_value()
+				unit: value.unit_name()
+				type_: NumericType.with_type(.resolution, 1)
+			}
+		}
+		Time {
+			CalcNumeric{
+				kind: .time
+				value: value.raw_value()
+				unit: value.unit_name()
+				type_: NumericType.with_type(.time, 1)
+			}
 		}
 	}
+	return calculation_node_from_calc(CalcNode(leaf))
 }
 
 // --- CSSNumericArray ---

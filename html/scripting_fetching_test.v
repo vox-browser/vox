@@ -51,7 +51,7 @@ fn scripting_fetching_host(request &fetch.Request, is_top_level TopLevelModule) 
 	mut response := fetch.Response.create()
 	response.url_list = request.url_list.clone()
 	mut content_type := 'text/javascript'
-	response.body = if url.serialize().ends_with('/classic.js') {
+	body := if url.serialize().ends_with('/classic.js') {
 		content_type = 'text/javascript; charset=windows-1252'
 		[u8(0xe9)]
 	} else if url.serialize().ends_with('/root.js') {
@@ -64,6 +64,7 @@ fn scripting_fetching_host(request &fetch.Request, is_top_level TopLevelModule) 
 	} else {
 		'worker source'.bytes()
 	}
+	response.set_body_bytes(body)
 	response.header_list.append(http.Header{
 		name: 'Content-Type'
 		value: content_type

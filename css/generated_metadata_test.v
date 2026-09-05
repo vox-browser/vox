@@ -1,6 +1,7 @@
 module css
 
 import dom
+import math
 
 fn test_logical_alias_metadata_covers_generated_properties() {
 	assert property_is_logical_alias(.margin_inline_start)
@@ -15,11 +16,11 @@ fn test_logical_alias_metadata_covers_generated_properties() {
 fn test_logical_edges_map_in_horizontal_writing_mode() {
 	ltr := LogicalAliasMappingContext{
 		writing_mode: .horizontal_tb
-		direction:    .ltr
+		direction: .ltr
 	}
 	rtl := LogicalAliasMappingContext{
 		writing_mode: .horizontal_tb
-		direction:    .rtl
+		direction: .rtl
 	}
 	assert map_logical_alias_to_physical_property(.margin_block_start, ltr) == .margin_top
 	assert map_logical_alias_to_physical_property(.margin_block_end, ltr) == .margin_bottom
@@ -34,15 +35,15 @@ fn test_logical_edges_map_in_horizontal_writing_mode() {
 fn test_logical_edges_map_in_vertical_and_sideways_writing_modes() {
 	vertical_rl := LogicalAliasMappingContext{
 		writing_mode: .vertical_rl
-		direction:    .ltr
+		direction: .ltr
 	}
 	vertical_lr_rtl := LogicalAliasMappingContext{
 		writing_mode: .vertical_lr
-		direction:    .rtl
+		direction: .rtl
 	}
 	sideways_lr := LogicalAliasMappingContext{
 		writing_mode: .sideways_lr
-		direction:    .ltr
+		direction: .ltr
 	}
 	assert map_logical_alias_to_physical_property(.padding_block_start, vertical_rl) == .padding_right
 	assert map_logical_alias_to_physical_property(.padding_block_end, vertical_rl) == .padding_left
@@ -59,7 +60,7 @@ fn test_logical_corner_mapping() {
 	horizontal_ltr := LogicalAliasMappingContext{}
 	vertical_rl_rtl := LogicalAliasMappingContext{
 		writing_mode: .vertical_rl
-		direction:    .rtl
+		direction: .rtl
 	}
 	assert map_logical_alias_to_physical_property(.border_start_start_radius, horizontal_ltr) == .border_top_left_radius
 	assert map_logical_alias_to_physical_property(.border_end_end_radius, horizontal_ltr) == .border_bottom_right_radius
@@ -79,6 +80,13 @@ fn test_pseudo_element_property_whitelists() {
 	assert pseudo_element_supports_property(.selection, .text_decoration_line)
 	assert !pseudo_element_supports_property(.selection, .font_size)
 	assert pseudo_element_supports_property(.before, .display)
+	assert int(PseudoElement.after) == int(dom.PseudoElement.after)
+	assert int(PseudoElement.placeholder) == int(dom.PseudoElement.placeholder)
+	assert int(PseudoElement.details_content) == int(dom.PseudoElement.details_content)
+	assert pseudo_element_from_string('slider-track') == .slider_track
+	assert pseudo_element_from_string('-webkit-slider-thumb') == .slider_thumb
+	assert !is_has_allowed_pseudo_element(.slotted)
+	assert is_pseudo_element_root(.view_transition)
 }
 
 fn test_generated_property_computation_dependency_order() {
@@ -87,6 +95,22 @@ fn test_generated_property_computation_dependency_order() {
 	assert order.index(PropertyID.font_size) < order.index(PropertyID.line_height)
 	assert order.index(PropertyID.background_image) < order.index(PropertyID.background_position_x)
 	assert order.len == computed_interpolation_longhand_property_ids().len
+}
+
+fn test_generated_shorthand_relationship_metadata_matches_upstream_order() {
+	assert generated_expanded_longhands_for_shorthand(.margin) == [
+		PropertyID.margin_top,
+		.margin_right,
+		.margin_bottom,
+		.margin_left,
+	]
+	assert generated_shorthands_for_longhand(.margin_top) == [PropertyID.all, .margin]
+	assert generated_shorthands_for_longhand(.border_top_width) == [PropertyID.all, .border,
+		.border_width, .border_top]
+	assert generated_shorthands_for_longhand(.grid_column_start) == [PropertyID.all, .grid_area,
+		.grid_column]
+	assert PropertyID.direction !in generated_expanded_longhands_for_shorthand(.all)
+	assert PropertyID.unicode_bidi !in generated_expanded_longhands_for_shorthand(.all)
 }
 
 fn test_computed_font_size_and_line_height_use_parent_metrics() {
@@ -159,8 +183,7 @@ fn test_root_and_out_of_flow_elements_are_blockified() {
 	mut absolute_child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
 		panic('${err}')
 	}
-	absolute_child.set_attribute_value('style',
-		'display: inline-block; position: absolute; float: left')
+	absolute_child.set_attribute_value('style', 'display: inline-block; position: absolute; float: left')
 	mut root_node := root.as_node()
 	root_node.append_child(absolute_child.as_node()) or { panic('${err}') }
 	mut document_node := unsafe { &dom.Node(doc) }
@@ -230,32 +253,169 @@ fn test_full_style_pipeline_resolves_inherited_custom_properties_and_shorthands(
 
 fn test_custom_property_important_wins_in_author_stylesheet() {
 	doc := dom.Document.create(dom.url_about_blank())
-	add_document_author_style_sheet(doc,
-		'.target { --tone: red !important; } .target { --tone: blue; color: var(--tone); }')
+	add_document_author_style_sheet(doc, '.target { --tone: red !important; } .target { --tone: blue; color: var(--tone); }')
 	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic('${err}')
 	}
 	element.set_attribute_value('class', 'target')
 	computed := StyleComputer.new(doc).compute_style(dom.AbstractElement.new(element, none))
 	color := computed.property(.color, .no) or { panic('color missing') }
-	assert color.css_text == 'red'
+	assert color.css_text == 'rgb(255, 0, 0)'
+}
+
+fn test_custom_property_data_is_shared_with_descendants_without_own_values() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	parent.set_attribute_value('style', '--tone: red')
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node()) or { panic('${err}') }
+
+	computer := StyleComputer.new(doc)
+	mut parent_abstract := dom.AbstractElement.new(parent, none)
+	parent_style := computer.compute_style(parent_abstract)
+	parent_abstract.set_computed_properties(computed_properties_to_dom(parent_style))
+	child_abstract := dom.AbstractElement.new(child, none)
+	_ = computer.compute_style(child_abstract)
+	parent_data := parent_abstract.custom_property_data() or { panic('parent data missing') }
+	child_data := child_abstract.custom_property_data() or { panic('child data missing') }
+	assert parent_data == child_data
+	assert (child_data.get('--tone') or { panic('--tone missing') }).css_text == 'red'
+}
+
+fn test_custom_property_data_is_shared_when_the_same_rule_matches_parent_and_child() {
+	doc := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(doc, '.shared { --tone: var(--base, red); }')
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	parent.set_attribute_value('class', 'shared')
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	child.set_attribute_value('class', 'shared')
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node()) or { panic('${err}') }
+
+	computer := StyleComputer.new(doc)
+	mut parent_abstract := dom.AbstractElement.new(parent, none)
+	parent_style := computer.compute_style(parent_abstract)
+	parent_abstract.set_computed_properties(computed_properties_to_dom(parent_style))
+	child_abstract := dom.AbstractElement.new(child, none)
+	_ = computer.compute_style(child_abstract)
+	parent_data := parent_abstract.custom_property_data() or { panic('parent data missing') }
+	child_data := child_abstract.custom_property_data() or { panic('child data missing') }
+	assert parent_data == child_data
+	value := child_abstract.get_custom_property('--tone') or { panic('custom property missing') }
+	assert value.css_value_handle != unsafe { nil }
+	retained := dom_style_value_from_custom_property_bridge(value) or {
+		panic('retained custom property value missing')
+	}
+	typed := typed_style_value_logic_from_dom(retained) or { panic('typed value missing') }
+	assert typed is UnresolvedStyleValue
+}
+
+fn test_custom_property_css_wide_keywords_follow_upstream_computation() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	parent.set_attribute_value('style', '--tone: green')
+	mut inherited := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	inherited.set_attribute_value('style', '--tone: inherit; color: var(--tone)')
+	mut initial := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	initial.set_attribute_value('style', '--tone: initial; color: var(--tone, blue)')
+	mut parent_node := parent.as_node()
+	parent_node.append_child(inherited.as_node()) or { panic('${err}') }
+	parent_node.append_child(initial.as_node()) or { panic('${err}') }
+
+	computer := StyleComputer.new(doc)
+	mut parent_abstract := dom.AbstractElement.new(parent, none)
+	parent_style := computer.compute_style(parent_abstract)
+	parent_abstract.set_computed_properties(computed_properties_to_dom(parent_style))
+	inherited_style := computer.compute_style(dom.AbstractElement.new(inherited, none))
+	initial_style := computer.compute_style(dom.AbstractElement.new(initial, none))
+	inherited_color := inherited_style.property(.color, .no) or { panic('inherited color missing') }
+	initial_color := initial_style.property(.color, .no) or { panic('initial color missing') }
+	assert inherited_color.css_text == 'rgb(0, 128, 0)'
+	assert initial_color.css_text == 'rgb(0, 0, 255)'
+}
+
+fn test_custom_property_change_tracking_compares_resolved_own_values() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	element.set_attribute_value('style', '--tone: red')
+	abstract_element := dom.AbstractElement.new(element, none)
+	computer := StyleComputer.new(doc)
+
+	mut changed := false
+	_ = computer.compute_style_tracking_custom_property_changes(abstract_element, &changed)
+	assert changed
+
+	changed = false
+	_ = computer.compute_style_tracking_custom_property_changes(abstract_element, &changed)
+	assert !changed
+
+	element.set_attribute_value('style', '--tone: blue')
+	changed = false
+	_ = computer.compute_style_tracking_custom_property_changes(abstract_element, &changed)
+	assert changed
+}
+
+fn test_inline_style_retains_one_typed_declaration_across_cascades_and_mutations() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	element.set_attribute_value('style', 'color: red; --tone: 7px')
+	abstract_element := dom.AbstractElement.new(element, none)
+	first := inline_style_for_abstract_element(abstract_element) or {
+		panic('inline style missing')
+	}
+	second := inline_style_for_abstract_element(abstract_element) or {
+		panic('inline style missing on second lookup')
+	}
+	assert first == second
+	custom := first.custom_property('--tone') or { panic('custom declaration missing') }
+	assert custom.value.css_value_handle != unsafe { nil }
+
+	element.set_attribute_value('style', 'color: blue; --tone: 9px')
+	third := inline_style_for_abstract_element(abstract_element) or {
+		panic('inline style missing after mutation')
+	}
+	assert first == third
+	assert third.get_property_value('color') == 'blue'
+	assert third.get_property_value('--tone') == '9px'
+
+	mut declaration := third
+	declaration.set_property('display', 'flex', '') or { panic('${err}') }
+	assert (element.get_attribute('style') or { '' }).contains('display: flex')
+	assert inline_style_for_abstract_element(abstract_element) or {
+		panic('inline style missing after CSSOM mutation')
+	} == first
 }
 
 fn test_pseudo_element_style_is_created_only_when_generated() {
 	doc := dom.Document.create(dom.url_about_blank())
-	add_document_author_style_sheet(doc,
-		'div::before { content: "hello"; color: red; } div::after { content: none; color: blue; }')
+	add_document_author_style_sheet(doc, 'div::before { content: "hello"; color: red; } div::after { content: none; color: blue; }')
 	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic('${err}')
 	}
 	s := StyleComputer.new(doc)
-	before := s.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(element,
-		dom.PseudoElement.before)) or { panic('::before style was not generated') }
+	before := s.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(element, dom.PseudoElement.before)) or { panic('::before style was not generated') }
 	before_color := before.property(.color, .no) or { panic('::before color missing') }
-	assert before_color.css_text == 'red'
-	if _ := s.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(element,
-		dom.PseudoElement.after))
-	{
+	assert before_color.css_text == 'rgb(255, 0, 0)'
+	if _ := s.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(element, dom.PseudoElement.after)) {
 		panic('content:none must suppress ::after')
 	}
 
@@ -264,17 +424,42 @@ fn test_pseudo_element_style_is_created_only_when_generated() {
 		panic('${err}')
 	}
 	plain_computer := StyleComputer.new(plain_doc)
-	if _ := plain_computer.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(plain,
-		dom.PseudoElement.before))
-	{
+	if _ := plain_computer.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(plain, dom.PseudoElement.before)) {
 		panic('unmatched ::before must not be generated')
 	}
-	if _ := plain_computer.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(plain,
-		dom.PseudoElement.marker))
-	{
+	if _ := plain_computer.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(plain, dom.PseudoElement.marker)) {
 	} else {
 		panic('::marker has implicit style')
 	}
+	for implicit in [dom.PseudoElement.details_content, .file_selector_button, .placeholder] {
+		if _ := plain_computer.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(plain, implicit)) {
+		} else {
+			panic('${dom.pseudo_element_name(implicit)} must have implicit style')
+		}
+	}
+}
+
+fn test_internal_shadow_tree_element_uses_host_pseudo_element_style() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut host := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'textarea') or {
+		panic('${err}')
+	}
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(host.as_node()) or { panic('${err}') }
+	shadow_root := host.attach_a_user_agent_shadow_root(.named)
+	mut internal := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	internal.set_use_pseudo_element(int(PseudoElement.placeholder))
+	internal.set_attribute_value('style', 'color: blue')
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	shadow_node.append_child(internal.as_node()) or { panic('${err}') }
+	add_document_author_style_sheet(doc, 'textarea::placeholder { color: red; opacity: .5; }')
+
+	computed := StyleComputer.new(doc).compute_style(dom.AbstractElement.new(internal, none))
+	assert (computed.property(.color, .no) or { panic('color missing') }).css_text == 'blue'
+	assert (computed.property(.opacity, .no) or { panic('opacity missing') }).css_text == '0.5'
+	assert dom.AbstractElement.new(internal, none).cascaded_properties() != none
 }
 
 fn test_monospace_font_family_recascades_inherited_keyword_font_size() {
@@ -301,6 +486,50 @@ fn test_monospace_font_family_recascades_inherited_keyword_font_size() {
 	assert child_computed.font_size().to_double() == 19.5
 }
 
+fn test_font_relative_units_use_the_inheritance_parent_computation_context() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	parent.set_attribute_value('style', 'font-size: 200%')
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	child.set_attribute_value('style', 'font-size: 2em')
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node()) or { panic('${err}') }
+
+	s := StyleComputer.new(doc)
+	mut parent_abstract := dom.AbstractElement.new(parent, none)
+	parent_computed := s.compute_style(parent_abstract)
+	parent_abstract.set_computed_properties(computed_properties_to_dom(parent_computed))
+	child_computed := s.compute_style(dom.AbstractElement.new(child, none))
+
+	assert parent_computed.font_size().to_double() == 32
+	assert child_computed.font_size().to_double() == 64
+}
+
+fn test_own_monospace_font_size_does_not_use_the_recascade_placeholder_as_its_em_basis() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	child.set_attribute_value('style', 'font-family: monospace; font-size: 3em')
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node()) or { panic('${err}') }
+
+	s := StyleComputer.new(doc)
+	mut parent_abstract := dom.AbstractElement.new(parent, none)
+	parent_computed := s.compute_style(parent_abstract)
+	parent_abstract.set_computed_properties(computed_properties_to_dom(parent_computed))
+	child_computed := s.compute_style(dom.AbstractElement.new(child, none))
+
+	assert child_computed.font_size().to_double() == 48
+}
+
 fn test_match_parent_text_align_resolves_against_parent_direction() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
@@ -323,25 +552,28 @@ fn test_match_parent_text_align_resolves_against_parent_direction() {
 }
 
 fn test_computed_cssom_reads_regular_and_custom_properties() {
-	doc := dom.Document.create(dom.url_about_blank())
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
 	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic('${err}')
 	}
 	element.set_attribute_value('style', '--tone: red; color: var(--tone)')
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(element.as_node()) or { panic('${err}') }
 	mut abstract_element := dom.AbstractElement.new(element, none)
 	computed := StyleComputer.new(doc).compute_style(abstract_element)
 	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
 
 	resolved := CSSStyleProperties.create_resolved_style(abstract_element)
-	assert resolved.get_property_value('color') == 'red'
+	assert resolved.get_property_value('color') == 'rgb(255, 0, 0)'
 	assert resolved.get_property_value('--tone') == 'red'
 	color_property := resolved.get_property(.color) or { panic('computed color missing') }
-	assert color_property.value.css_text == 'red'
+	assert color_property.value.css_text == 'rgb(255, 0, 0)'
 
 	mut property_map := StylePropertyMapReadOnly.create_computed_style(abstract_element)
 	color := property_map.get('color') or { panic('computed style map color missing') }
 	custom := property_map.get('--tone') or { panic('computed style map custom value missing') }
-	assert color.to_string() or { panic('${err}') } == 'red'
+	assert color.to_string() or { panic('${err}') } == 'rgb(255, 0, 0)'
 	assert custom.to_string() or { panic('${err}') } == 'red'
 	assert property_map.has('--tone')
 }
@@ -367,12 +599,53 @@ fn test_stacking_context_neutral_values_are_detected() {
 	})
 }
 
+fn test_computed_values_composite_initial_values_match_upstream() {
+	assert InitialValues.border_spacing().absolute_length_to_px().to_double() == 0
+	assert InitialValues.background_color() == Color{0, 0, 0, 0}
+	assert InitialValues.stroke_width().to_string() == '1px'
+	assert InitialValues.inset().top().is_auto()
+	assert InitialValues.margin().top().length_percentage().to_string() == '0px'
+	assert InitialValues.min_width().is_auto()
+	assert InitialValues.max_width().is_none()
+	assert InitialValues.column_count() == none
+	assert InitialValues.column_gap().is_normal
+	assert InitialValues.transition_delay().to_seconds() == 0
+	assert InitialValues.outline_width().to_double() == 3
+	assert InitialValues.rx().is_auto()
+
+	position := Position{
+		offset_x: LengthPercentage.from_percentage(Percentage.new(25))
+		offset_y: LengthPercentage.from_length(Length.make_px(5))
+	}
+	resolved := position.resolved(LengthResolutionContext{}, CSSPixelRect.new(10, 20, 200, 100))
+	assert resolved.x().to_double() == 60
+	assert resolved.y().to_double() == 25
+}
+
 fn test_computed_property_accessors_return_typed_values() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic('${err}')
 	}
 	element.set_attribute_value('style', [
+		'color: rgb(1 2 3)',
+		'background-color: currentcolor',
+		'border-right-color: currentcolor',
+		'text-decoration-color: currentcolor',
+		'outline-color: rgb(4 5 6)',
+		'caret-color: auto',
+		'-webkit-text-fill-color: currentcolor',
+		'stop-color: rgb(7 8 9)',
+		'flood-color: rgb(10 11 12)',
+		'fill: url("#gradient") rgb(20 21 22)',
+		'stroke: rgb(30 31 32)',
+		'mask-image: url("#mask")',
+		'clip-path: circle(50%)',
+		'scrollbar-color: rgb(40 41 42) rgb(50 51 52)',
+		'list-style-type: upper-roman',
+		'counter-reset: section 2',
+		'counter-increment: section 3',
+		'counter-set: section 4',
 		'width: min-content',
 		'margin: 1px 2px 3px 4px',
 		'border-spacing: 5px 6px',
@@ -384,7 +657,9 @@ fn test_computed_property_accessors_return_typed_values() {
 		'backdrop-filter: brightness(50%)',
 		'text-underline-position: under right',
 		'font-feature-settings: "liga" 0, "kern"',
+		'font-language-override: "SRB"',
 		'font-variation-settings: "wght" 625',
+		'transition-delay: calc(1s + 250ms), 9s',
 		'grid-auto-flow: column dense',
 		'grid-column-start: span 2',
 		'object-position: right 10px bottom 20px',
@@ -392,8 +667,7 @@ fn test_computed_property_accessors_return_typed_values() {
 	computed := StyleComputer.new(doc).compute_style(dom.AbstractElement.new(element, none))
 
 	assert computed.size_value(.width).type_ == .min_content
-	box := computed.length_box(.margin_left, .margin_top, .margin_right, .margin_bottom,
-		LengthPercentageOrAuto.make_auto())
+	box := computed.length_box(.margin_left, .margin_top, .margin_right, .margin_bottom, LengthPercentageOrAuto.make_auto())
 	assert box.top().length_percentage().to_string() == '1px'
 	assert box.right().length_percentage().to_string() == '2px'
 	assert box.bottom().length_percentage().to_string() == '3px'
@@ -416,13 +690,49 @@ fn test_computed_property_accessors_return_typed_values() {
 	assert backdrop_filters.len == 1
 	assert backdrop_filters[0] is FilterOperationColor
 	assert (backdrop_filters[0] as FilterOperationColor).operation == .brightness
-	assert (backdrop_filters[0] as FilterOperationColor).amount.serialize(.normal) == '50%'
+	assert (backdrop_filters[0] as FilterOperationColor).amount.serialize(.normal) == '0.5'
 	underline := computed.text_underline_position()
 	assert underline.horizontal == .under
 	assert underline.vertical == .right
 	assert computed.font_feature_settings()['liga'] == 0
 	assert computed.font_feature_settings()['kern'] == 1
 	assert computed.font_variation_settings()['wght'] == 625.0
+	values := resolve_computed_values_for_document(computed, doc)
+	assert values.font_language_override() or { '' } == 'SRB'
+	assert values.font_variation_settings()['wght'] == 625.0
+	assert math.abs(values.transition_delay().to_seconds() - 1.25) < 0.001
+	assert values.color() == Color{1, 2, 3, 255}
+	assert values.caret_color() == Color{1, 2, 3, 255}
+	assert values.background_color() == Color{1, 2, 3, 255}
+	assert values.border_right().color == Color{1, 2, 3, 255}
+	assert values.text_decoration_color() == Color{1, 2, 3, 255}
+	assert values.webkit_text_fill_color() == Color{1, 2, 3, 255}
+	assert values.outline_color() == Color{4, 5, 6, 255}
+	assert values.stop_color() == Color{7, 8, 9, 255}
+	assert values.flood_color() == Color{10, 11, 12, 255}
+	fill := values.fill() or { panic('missing SVG fill') }
+	assert fill.is_url()
+	assert fill.fallback_color() or { Color{} } == Color{20, 21, 22, 255}
+	stroke := values.stroke() or { panic('missing SVG stroke') }
+	assert stroke.is_color()
+	assert stroke.as_color() == Color{30, 31, 32, 255}
+	mask_image := values.mask_image() or { panic('missing mask image') }
+	assert mask_image.url_.url() == '#mask'
+	clip_path := values.clip_path() or { panic('missing clip path') }
+	assert clip_path.is_basic_shape()
+	scrollbar_color := values.computed_scrollbar_color()
+	assert !scrollbar_color.auto_
+	assert scrollbar_color.thumb == ComputedColor.rgba(40, 41, 42, 255)
+	assert scrollbar_color.track == ComputedColor.rgba(50, 51, 52, 255)
+	list_style_type := values.computed_list_style_type()
+	assert list_style_type.kind == .counter_style
+	assert list_style_type.name == 'upper-roman'
+	assert (list_style_type.counter_style or { panic('upper-roman did not resolve') }).name() == 'upper-roman'
+	assert values.counter_reset().len == 1
+	assert values.counter_reset()[0].name == 'section'
+	assert values.counter_reset()[0].value or { 0 } == 2
+	assert values.counter_increment()[0].value or { 0 } == 3
+	assert values.counter_set()[0].value or { 0 } == 4
 	assert !computed.grid_auto_flow().row
 	assert computed.grid_auto_flow().dense
 	assert !computed.grid_column_start().is_auto()
@@ -440,8 +750,7 @@ fn test_box_shadow_interpolation_uses_typed_shadow_components() {
 	to := &dom.StyleValue{
 		css_text: 'rgb(0, 0, 255) 10px 20px 30px 40px inset'
 	}
-	interpolated := interpolate_box_shadow(element,
-		InterpolationCalculationContext.for_property(.box_shadow), from, to, 0.5, .no) or {
+	interpolated := interpolate_box_shadow(element, InterpolationCalculationContext.for_property(.box_shadow), from, to, 0.5, .no) or {
 		panic('box-shadow interpolation failed')
 	}
 	parsed := parse_css_value_logic(.box_shadow, interpolated.css_text) or {
@@ -462,8 +771,7 @@ fn test_box_shadow_interpolation_uses_typed_shadow_components() {
 	from_none := &dom.StyleValue{
 		css_text: 'none'
 	}
-	extended := interpolate_box_shadow(element,
-		InterpolationCalculationContext.for_property(.box_shadow), from_none, to, 0.5, .no) or {
+	extended := interpolate_box_shadow(element, InterpolationCalculationContext.for_property(.box_shadow), from_none, to, 0.5, .no) or {
 		panic('box-shadow list extension failed')
 	}
 	extended_value := parse_css_value_logic(.box_shadow, extended.css_text) or {
@@ -475,14 +783,11 @@ fn test_box_shadow_interpolation_uses_typed_shadow_components() {
 
 fn test_mixed_length_percentage_interpolation_builds_a_calculation() {
 	context := InterpolationCalculationContext.for_property(.width)
-	interpolated := interpolate_length_percentage(context,
-		LengthPercentage.from_length(Length.make_px(10)),
-		LengthPercentage.from_percentage(Percentage.new(50)), 0.5) or {
+	interpolated := interpolate_length_percentage(context, LengthPercentage.from_length(Length.make_px(10)), LengthPercentage.from_percentage(Percentage.new(50)), 0.5) or {
 		panic('mixed length-percentage interpolation failed')
 	}
 	assert interpolated.is_calculated()
-	resolved := interpolated.resolved(LengthResolutionContext.default(),
-		CSSPixels.nearest_value_for(200))
+	resolved := interpolated.resolved(LengthResolutionContext.default(), CSSPixels.nearest_value_for(200))
 	assert resolved.absolute_length_to_px().to_double() == 55.0
 
 	from := StyleValue(LengthStyleValue.create(Length.make_px(20)))
@@ -491,8 +796,7 @@ fn test_mixed_length_percentage_interpolation_builds_a_calculation() {
 		panic('mixed StyleValue interpolation failed')
 	}
 	assert mixed is CalculatedStyleValue
-	assert LengthPercentage.from_style_value_logic(mixed).resolved(LengthResolutionContext.default(),
-		CSSPixels.nearest_value_for(400)).absolute_length_to_px().to_double() == 40.0
+	assert LengthPercentage.from_style_value_logic(mixed).resolved(LengthResolutionContext.default(), CSSPixels.nearest_value_for(400)).absolute_length_to_px().to_double() == 40.0
 }
 
 fn test_additive_composition_uses_typed_css_values() {
@@ -512,8 +816,7 @@ fn test_additive_composition_uses_typed_css_values() {
 		panic('composited width did not parse')
 	}
 	assert width_value is CalculatedStyleValue
-	assert LengthPercentage.from_style_value_logic(width_value).resolved(LengthResolutionContext.default(),
-		CSSPixels.nearest_value_for(100)).absolute_length_to_px().to_double() == 30.0
+	assert LengthPercentage.from_style_value_logic(width_value).resolved(LengthResolutionContext.default(), CSSPixels.nearest_value_for(100)).absolute_length_to_px().to_double() == 30.0
 
 	radius := composite_value(.border_top_left_radius, &dom.StyleValue{
 		css_text: '1px 2px'
@@ -705,8 +1008,7 @@ fn test_layout_node_resolution_context_uses_installed_element_and_root_styles() 
 	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
 	root.set_attribute_value('style', 'font-size: 10px')
 	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
-	child.set_attribute_value('style',
-		'font-size: 20px; line-height: 30px; color: rgb(1, 2, 3); accent-color: rgb(4, 5, 6); color-scheme: dark')
+	child.set_attribute_value('style', 'font-size: 20px; line-height: 30px; color: rgb(1, 2, 3); accent-color: rgb(4, 5, 6); color-scheme: dark')
 	mut document_node := unsafe { &dom.Node(doc) }
 	document_node.append_child(root.as_node()) or { panic('${err}') }
 	mut root_node := root.as_node()
@@ -739,8 +1041,7 @@ fn test_unresolved_css_functions_record_dom_style_dependencies() {
 	}
 	abstract_element := dom.AbstractElement.new(element, none)
 	for function_name in ['attr', 'if', 'inherit', 'var'] {
-		unresolved :=
-			UnresolvedStyleValue.create(parse_component_values_for_value_logic('${function_name}(--x)'))
+		unresolved := UnresolvedStyleValue.create(parse_component_values_for_value_logic('${function_name}(--x)'))
 		resolve_unresolved_style_value_for_property(abstract_element, .width, unresolved)
 	}
 	assert element.style_uses_attr_css_function()
@@ -771,19 +1072,20 @@ fn test_inline_style_priority_and_viewport_relative_lengths() {
 }
 
 fn test_css_transitions_are_retained_and_sampled() {
-	doc := dom.Document.create(dom.url_about_blank())
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{
+		active_document_: doc
+	})
 	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic('${err}')
 	}
-	element.set_attribute_value('style',
-		'opacity: 0; transition-property: opacity; transition-duration: 1000ms; transition-timing-function: linear')
+	element.set_attribute_value('style', 'opacity: 0; transition-property: opacity; transition-duration: 1000ms; transition-timing-function: linear')
 	mut computer := StyleComputer.new(doc)
 	mut abstract_element := dom.AbstractElement.new(element, none)
 	initial := computer.compute_style(abstract_element)
 	abstract_element.set_computed_properties(computed_properties_to_dom(initial))
 
-	element.set_attribute_value('style',
-		'opacity: 1; transition-property: opacity; transition-duration: 1000ms; transition-timing-function: linear')
+	element.set_attribute_value('style', 'opacity: 1; transition-property: opacity; transition-duration: 1000ms; transition-timing-function: linear')
 	started := computer.compute_style(abstract_element)
 	assert (started.property(.opacity, .yes) or { panic('starting opacity missing') }).css_text == '0'
 	abstract_element.set_computed_properties(computed_properties_to_dom(started))
@@ -791,6 +1093,24 @@ fn test_css_transitions_are_retained_and_sampled() {
 	computer.set_animation_time_ms(500)
 	midpoint := computer.compute_style(abstract_element)
 	assert (midpoint.property(.opacity, .yes) or { panic('transition opacity missing') }).css_text == '0.5'
+}
+
+fn test_zero_duration_transitions_do_not_allocate_registration_storage() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{
+		active_document_: doc
+	})
+	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut computer := StyleComputer.new(doc)
+	mut abstract_element := dom.AbstractElement.new(element, none)
+	initial := computer.compute_style(abstract_element)
+	abstract_element.set_computed_properties(computed_properties_to_dom(initial))
+
+	_ = computer.compute_style(abstract_element)
+	key := abstract_element_storage_key(abstract_element)
+	assert key !in computer.css_transition_storage_.registered_transition_attributes
 }
 
 fn test_shadow_root_author_stylesheet_uses_its_own_css_scope() {
@@ -808,7 +1128,7 @@ fn test_shadow_root_author_stylesheet_uses_its_own_css_scope() {
 	add_shadow_root_author_style_sheet(shadow_root, '.inside { color: red; }')
 
 	computed := StyleComputer.new(doc).compute_style(dom.AbstractElement.new(child, none))
-	assert (computed.property(.color, .no) or { panic('shadow color missing') }).css_text == 'red'
+	assert (computed.property(.color, .no) or { panic('shadow color missing') }).css_text == 'rgb(255, 0, 0)'
 }
 
 fn test_subtree_style_recompute_installs_pseudos_and_walks_shadow_tree() {
@@ -832,7 +1152,7 @@ fn test_subtree_style_recompute_installs_pseudos_and_walks_shadow_tree() {
 	child_style := computed_properties_from_dom(dom.AbstractElement.new(child, none).computed_properties() or {
 		panic('shadow child was not styled')
 	}) or { panic('shadow child CSS handle missing') }
-	assert (child_style.property(.color, .no) or { panic('shadow child color missing') }).css_text == 'red'
+	assert (child_style.property(.color, .no) or { panic('shadow child color missing') }).css_text == 'rgb(255, 0, 0)'
 }
 
 fn test_subtree_style_recompute_filters_pseudos_without_skipping_bucketed_rules() {
@@ -863,7 +1183,7 @@ fn test_document_user_stylesheet_participates_in_user_cascade() {
 	}
 	element.set_attribute_value('class', 'target')
 	computed := StyleComputer.new(doc).compute_style(dom.AbstractElement.new(element, none))
-	assert (computed.property(.color, .no) or { panic('user color missing') }).css_text == 'green'
+	assert (computed.property(.color, .no) or { panic('user color missing') }).css_text == 'rgb(0, 128, 0)'
 }
 
 fn interpolate_test_property(element &dom.Element, property_id PropertyID, from_text string, to_text string, delta f64) string {
@@ -880,6 +1200,33 @@ fn interpolate_test_property(element &dom.Element, property_id PropertyID, from_
 	}).css_text
 }
 
+fn test_computed_value_flag_helpers_match_computed_values_contract() {
+	assert Containment{}.is_empty()
+	assert !Containment{
+		paint_containment: true
+	}.is_empty()
+	assert ContainerType{}.is_empty()
+	assert !ContainerType{
+		is_inline_size_container: true
+	}.is_empty()
+
+	auto := WillChange.make_auto()
+	assert auto.is_auto()
+	assert !auto.has_contents()
+	assert !auto.has_scroll_position()
+
+	will_change := WillChange{
+		names: ['contents', 'scroll-position', 'opacity']
+	}
+	assert !will_change.is_auto()
+	assert will_change.has_contents()
+	assert will_change.has_scroll_position()
+	assert will_change.has_property(.opacity)
+
+	mask_reference := MaskReference.from_url(URL.from_url('#mask'))
+	assert mask_reference.url().url() == '#mask'
+}
+
 fn test_custom_property_interpolation_matches_css_animation_rules() {
 	doc := dom.Document.create(dom.url_about_blank())
 	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
@@ -887,7 +1234,6 @@ fn test_custom_property_interpolation_matches_css_animation_rules() {
 	assert interpolate_test_property(element, .translate, 'none', '20px 40px', 0.5) == '10px 20px'
 	assert interpolate_test_property(element, .rotate, 'none', '90deg', 0.5) == '45deg'
 	assert interpolate_test_property(element, .font_style, 'normal', 'oblique 20deg', 0.5) == 'oblique 10deg'
-	assert interpolate_test_property(element, .font_variation_settings, '"wght" 100', '"wght" 900',
-		0.5) == '"wght" 500'
+	assert interpolate_test_property(element, .font_variation_settings, '"wght" 100', '"wght" 900', 0.5) == '"wght" 500'
 	assert interpolate_test_property(element, .filter, 'none', 'blur(10px)', 0.5) == 'blur(5px)'
 }

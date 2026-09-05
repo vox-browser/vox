@@ -1,12 +1,12 @@
-# WebDriver module V translation — complete
+# WebDriver module V translation — upstream algorithm coverage reviewed
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebDriver`
 
 Translation workspace: `~/code/libweb_v/webdriver`
-Audited: 2026-08-17
+Audited: 2026-09-01
 
 All 17 upstream implementation units and all 18 headers were cross-audited and
-are represented. The
+their algorithm entry points are represented. The
 translation keeps browser-process ownership explicit: browsing contexts,
 elements, JavaScript execution, event-loop time, network requests, framebuffer
 capture, and PNG encoding enter through typed values or host callbacks rather
@@ -14,24 +14,25 @@ than hidden globals.
 
 | Upstream implementation | V implementation |
 | --- | --- |
-| `Actions.cpp`, `InputSource.cpp`, `InputState.cpp` | `input_actions.v` |
+| `Actions.cpp`, `InputSource.cpp`, `InputState.cpp` | `input_actions.v`, `action_algorithms.v` |
 | `Capabilities.cpp` | `capabilities.v` |
 | `Client.cpp`, `Screenshot.cpp` | `client_screenshot.v` |
-| `Contexts.cpp`, `ElementLocationStrategies.cpp`, `ElementReference.cpp` | `elements_contexts.v` |
+| `Contexts.cpp`, `ElementLocationStrategies.cpp`, `ElementReference.cpp` | `elements_contexts.v`, `protocol_algorithms.v` |
 | `Error.cpp`, `Response.cpp`, `Properties.h` | `error_response.v` |
 | `ExecuteScript.cpp`, `HeapTimer.cpp`, `JSON.cpp` | `json_script_timer.v` |
 | `Proxy.cpp`, `TimeoutsConfiguration.cpp`, `UserPrompt.cpp` | `timeouts_proxy_prompt.v` |
 
 | Upstream source area | `.cpp` files / LOC | `.h` files / LOC | `.idl` files / LOC | Implementation `.v` files / LOC | Test `.v` files / LOC | Status |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| `WebDriver/` | 17 / 5,013 | 18 / 1,050 | 0 / 0 | 7 / 2,091 | 4 / 423 | Complete |
+| `WebDriver/` | 17 | 18 | 0 | 9 | 4 | Present; algorithm names fully audited |
 
 The port covers the complete error-code table, typed property/range checks,
 timeouts, proxy and prompt deserialization, capability validation/merging and
 matching, every HTTP route, ordered route parameters, node/shadow/window/frame
 references and staleness, the portable location-strategy surfaces,
 input-source allocation, action sequence transposition and validation,
-JavaScript-safe numeric limits, key/pointer dispatch state, viewport bounds,
+JavaScript-safe numeric limits, key/pointer dispatch state, action-queue
+lifetime, viewport bounds,
 JSON cloning, script execution completion, one-shot timers, framebuffer
 painting dimensions, and PNG base64 response encoding. It also preserves the
 current upstream quirks around unknown mouse-button masks and Audio/DOM-free
@@ -51,6 +52,12 @@ encoding is a callback boundary.
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v test webdriver
+$ /Users/alex/code/v/v -enable-globals test webdriver
 Summary for all V _test.v files: 4 passed, 4 total.
 ```
+
+The strict repository audit reports zero unmatched WebDriver implementation
+names. This is not a claim that browser-owned DOM, JavaScript VM, socket, event
+loop, framebuffer, or PNG facilities are reimplemented inside this portable
+module; those remain explicit typed/callback boundaries supplied by the
+embedding browser.

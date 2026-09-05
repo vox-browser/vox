@@ -1,5 +1,11 @@
 module css
 
+fn test_tokenizer_decodes_the_declared_input_encoding() {
+	tokens := Tokenizer.tokenize([u8(0x80)].bytestr(), 'windows-1252')
+	assert tokens[0].is(.ident)
+	assert tokens[0].ident() == '€'
+}
+
 // Translation of Tests/LibWeb/TestCSSTokenStream.cpp.
 
 fn ident_token(name string) Token {

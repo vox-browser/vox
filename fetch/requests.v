@@ -10,6 +10,7 @@ module fetch
 
 import dom
 import http
+import time
 
 // https://fetch.spec.whatwg.org/#concept-request-credentials-mode
 pub enum CredentialsMode {
@@ -169,16 +170,40 @@ pub enum RequestBodyKind {
 
 pub struct RequestBody {
 pub mut:
-	kind  RequestBodyKind = .empty
-	bytes []u8
-	// Body-object storage is represented by Body in the Web-exposed RequestObject layer.
+	kind        RequestBodyKind = .empty
+	bytes       []u8
+	body_object ?&Body
+}
+
+// Infrastructure::Request stores an HTML::EnvironmentSettingsObject. Fetch
+// cannot import HTML (HTML itself imports Fetch), so retain the typed behavior
+// through the structurally implemented client contract instead of a voidptr
+// plus manually synchronized flags.
+pub interface RequestClient {
+	fetch_request_client_api_base_url() dom.URL
+	fetch_request_client_is_window() bool
+	fetch_request_client_origin() dom.Origin
+	fetch_request_client_document_url() ?dom.URL
+	fetch_request_client_creation_url() dom.URL
+	fetch_request_client_embedder_policy_credentialless() bool
+	fetch_request_client_top_level_origin() ?dom.Origin
+	fetch_request_client_top_level_creation_url() ?dom.URL
+	fetch_request_client_cross_origin_isolated_capability() bool
+}
+
+// Infrastructure::Request::ReservedClientType is HTML::Environment, distinct
+// from the EnvironmentSettingsObject stored in client.
+pub interface RequestReservedClient {
+	fetch_request_environment_top_level_origin() ?dom.Origin
+	fetch_request_environment_top_level_creation_url() ?dom.URL
 }
 
 // https://fetch.spec.whatwg.org/#concept-request
 @[heap]
 pub struct Request {
-pub mut:
+
 	// https://fetch.spec.whatwg.org/#concept-request-method
+pub mut:
 	method string = 'GET'
 	// https://fetch.spec.whatwg.org/#local-urls-only-flag
 	local_urls_only bool
@@ -187,9 +212,8 @@ pub mut:
 	// https://fetch.spec.whatwg.org/#unsafe-request-flag
 	unsafe_request bool
 	// https://fetch.spec.whatwg.org/#concept-request-body
-	body RequestBody
-	// The client is an EnvironmentSettingsObject (not translated) — held opaquely.
-	client voidptr = unsafe { nil }
+	body   RequestBody
+	client ?RequestClient
 	// Typed observable projection of the environment used by ReferrerPolicy.
 	// A Window client uses document_url; other clients use creation_url.
 	client_is_window               bool
@@ -198,9 +222,7 @@ pub mut:
 	client_creation_url            ?dom.URL
 	client_present                 bool
 	embedder_policy_credentialless bool
-	// The reserved client is an Environment in upstream. It remains opaque at
-	// this platform boundary, just like client.
-	reserved_client                voidptr = unsafe { nil }
+	reserved_client                ?RequestReservedClient
 	replaces_client_id             string
 	traversable_for_user_prompts   TraversableForUserPrompts = .client
 	keepalive                      bool
@@ -247,12 +269,34 @@ pub mut:
 	done                                               bool
 	timing_allow_failed                                bool
 	// Pending responses are represented by Fetching::PendingResponse in runtime.v.
-	pending_responses  []&PendingResponse
-	request_time i64
+	pending_responses []&PendingResponse
+	request_time      i64
 }
 
 pub fn Request.create() &Request {
-	return &Request{}
+	return &Request{
+		request_time: i64(time.now().unix_milli())
+	}
+}
+
+pub fn (mut request Request) set_client(client RequestClient) {
+	request.client = client
+	request.client_present = true
+	request.client_is_window = client.fetch_request_client_is_window()
+	request.client_origin_opaque = client.fetch_request_client_origin().value == 'opaque'
+	request.client_document_url = client.fetch_request_client_document_url()
+	request.client_creation_url = client.fetch_request_client_creation_url()
+	request.embedder_policy_credentialless = client.fetch_request_client_embedder_policy_credentialless()
+}
+
+pub fn (mut request Request) clear_client() {
+	request.client = none
+	request.client_present = false
+	request.client_is_window = false
+	request.client_origin_opaque = false
+	request.client_document_url = none
+	request.client_creation_url = none
+	request.embedder_policy_credentialless = false
 }
 
 // https://fetch.spec.whatwg.org/#concept-request-url
@@ -303,14 +347,7 @@ pub fn (request &Request) is_navigation_request() bool {
 }
 
 fn request_same_site(a dom.URL, b dom.URL) bool {
-	if a.scheme() != b.scheme() {
-		return false
-	}
-	left := a.serialized_host().split('.')
-	right := b.serialized_host().split('.')
-	left_site := if left.len >= 2 { left[left.len - 2..].join('.') } else { a.serialized_host() }
-	right_site := if right.len >= 2 { right[right.len - 2..].join('.') } else { b.serialized_host() }
-	return left_site == right_site
+	return a.origin().is_same_site(b.origin())
 }
 
 pub fn (request &Request) redirect_taint() RedirectTaint {
@@ -322,15 +359,20 @@ pub fn (request &Request) redirect_taint() RedirectTaint {
 			continue
 		}
 
-		origin_matches_previous := if origin := request.origin.origin {
-			origin.value == previous.origin().value
+		origin_is_same_site_as_previous := if origin := request.origin.origin {
+			origin.is_same_site(previous.origin())
 		} else {
 			false
 		}
-		if !request_same_site(current, previous) && !origin_matches_previous {
+		origin_is_same_origin_as_previous := if origin := request.origin.origin {
+			origin.is_same_origin(previous.origin())
+		} else {
+			false
+		}
+		if !request_same_site(current, previous) && !origin_is_same_site_as_previous {
 			return .cross_site
 		}
-		if current.origin().value != previous.origin().value && !origin_matches_previous {
+		if !current.origin().is_same_origin(previous.origin()) && !origin_is_same_origin_as_previous {
 			taint = .same_site
 		}
 		last = current
@@ -343,7 +385,7 @@ pub fn (request &Request) serialize_origin() string {
 		return 'null'
 	}
 	origin := request.origin.origin or { return 'null' }
-	return origin.value
+	return origin.serialize()
 }
 
 pub fn (request &Request) clone() &Request {
@@ -352,64 +394,61 @@ pub fn (request &Request) clone() &Request {
 		headers.append(header)
 	}
 	return &Request{
-		method:                                             request.method
-		local_urls_only:                                    request.local_urls_only
-		header_list:                                        headers
-		unsafe_request:                                     request.unsafe_request
-		body:                                               RequestBody{
-			kind:  request.body.kind
+		method: request.method
+		local_urls_only: request.local_urls_only
+		header_list: headers
+		unsafe_request: request.unsafe_request
+		body: RequestBody{
+			kind: request.body.kind
 			bytes: request.body.bytes.clone()
+			body_object: clone_body(request.body.body_object)
 		}
-		client:                                             request.client
-		client_is_window:                                   request.client_is_window
-		client_origin_opaque:                               request.client_origin_opaque
-		client_document_url:                                request.client_document_url
-		client_creation_url:                                request.client_creation_url
-		client_present:                                     request.client_present
-		embedder_policy_credentialless:                     request.embedder_policy_credentialless
-		reserved_client:                                    request.reserved_client
-		replaces_client_id:                                 request.replaces_client_id
-		traversable_for_user_prompts:                       request.traversable_for_user_prompts
-		keepalive:                                          request.keepalive
-		initiator_type:                                     request.initiator_type
-		service_workers_mode:                               request.service_workers_mode
-		initiator:                                          request.initiator
-		destination:                                        request.destination
-		priority:                                           request.priority
-		origin:                                             request.origin
-		top_level_navigation_initiator_origin:              request.top_level_navigation_initiator_origin
-		policy_container:                                   request.policy_container
-		referrer:                                           request.referrer
-		referrer_policy:                                    request.referrer_policy
-		mode:                                               request.mode
-		use_cors_preflight:                                 request.use_cors_preflight
-		credentials_mode:                                   request.credentials_mode
-		use_url_credentials:                                request.use_url_credentials
-		cache_mode:                                         request.cache_mode
-		redirect_mode:                                      request.redirect_mode
-		integrity_metadata:                                 request.integrity_metadata
-		cryptographic_nonce_metadata:                       request.cryptographic_nonce_metadata
-		parser_metadata:                                    request.parser_metadata
-		reload_navigation:                                  request.reload_navigation
-		history_navigation:                                 request.history_navigation
-		user_activation:                                    request.user_activation
-		render_blocking:                                    request.render_blocking
-		url_list:                                           request.url_list.clone()
-		redirect_count:                                     request.redirect_count
-		response_tainting:                                  request.response_tainting
+		client: request.client
+		client_is_window: request.client_is_window
+		client_origin_opaque: request.client_origin_opaque
+		client_document_url: request.client_document_url
+		client_creation_url: request.client_creation_url
+		client_present: request.client_present
+		embedder_policy_credentialless: request.embedder_policy_credentialless
+		reserved_client: request.reserved_client
+		replaces_client_id: request.replaces_client_id
+		traversable_for_user_prompts: request.traversable_for_user_prompts
+		keepalive: request.keepalive
+		initiator_type: request.initiator_type
+		service_workers_mode: request.service_workers_mode
+		initiator: request.initiator
+		destination: request.destination
+		priority: request.priority
+		origin: request.origin
+		policy_container: request.policy_container
+		referrer: request.referrer
+		referrer_policy: request.referrer_policy
+		mode: request.mode
+		use_cors_preflight: request.use_cors_preflight
+		credentials_mode: request.credentials_mode
+		use_url_credentials: request.use_url_credentials
+		cache_mode: request.cache_mode
+		redirect_mode: request.redirect_mode
+		integrity_metadata: request.integrity_metadata
+		cryptographic_nonce_metadata: request.cryptographic_nonce_metadata
+		parser_metadata: request.parser_metadata
+		reload_navigation: request.reload_navigation
+		history_navigation: request.history_navigation
+		user_activation: request.user_activation
+		render_blocking: request.render_blocking
+		url_list: request.url_list.clone()
+		redirect_count: request.redirect_count
+		response_tainting: request.response_tainting
 		prevent_no_cache_cache_control_header_modification: request.prevent_no_cache_cache_control_header_modification
-		done:                                               request.done
-		timing_allow_failed:                                request.timing_allow_failed
-		pending_responses:                                  request.pending_responses.clone()
-		request_time:                                       request.request_time
+		done: request.done
+		timing_allow_failed: request.timing_allow_failed
+		request_time: i64(time.now().unix_milli())
 	}
 }
 
-pub fn (mut request Request) add_range_header(first u64, last ?u64) ! {
+pub fn (mut request Request) add_range_header(first u64, last ?u64) {
 	if end := last {
-		if first > end {
-			return error('Range start must not exceed its end')
-		}
+		assert first <= end
 		request.header_list.append(http.Header{ name: 'Range', value: 'bytes=${first}-${end}' })
 	} else {
 		request.header_list.append(http.Header{ name: 'Range', value: 'bytes=${first}-' })
@@ -431,13 +470,15 @@ pub fn (mut request Request) add_origin_header() {
 		} else if request.referrer_policy in ['no-referrer-when-downgrade', 'strict-origin',
 			'strict-origin-when-cross-origin'] {
 			if origin := request.origin.origin {
-				if origin.value.starts_with('https://') && request.current_url().scheme() != 'https' {
+				if origin.serialize().starts_with('https://') && request.current_url().scheme() != 'https' {
 					serialized = 'null'
 				}
 			}
 		} else if request.referrer_policy == 'same-origin' {
 			if origin := request.origin.origin {
-				if origin.value != request.current_url().origin().value { serialized = 'null' }
+				if !origin.is_same_origin(request.current_url().origin()) {
+					serialized = 'null'
+				}
 			}
 		}
 	}
@@ -445,13 +486,11 @@ pub fn (mut request Request) add_origin_header() {
 }
 
 pub fn (request &Request) cross_origin_embedder_policy_allows_credentials() bool {
-	if request.mode != .no_cors || !request.client_present
-		|| !request.embedder_policy_credentialless {
+	if request.mode != .no_cors || !request.client_present || !request.embedder_policy_credentialless {
 		return true
 	}
 	origin := request.origin.origin or { return false }
-	return origin.value == request.current_url().origin().value
-		&& request.redirect_taint() != .same_origin
+	return origin.is_same_origin(request.current_url().origin()) && request.redirect_taint() != .same_origin
 }
 
 pub fn request_destination_to_string(destination Destination) string {
@@ -482,7 +521,9 @@ pub fn request_destination_to_string(destination Destination) string {
 }
 
 pub fn translate_potential_destination(value string) ?Destination {
-	if value == 'fetch' { return none }
+	if value == 'fetch' {
+		return none
+	}
 	return match value {
 		'audio' { Destination.audio }
 		'audioworklet' { Destination.audio_worklet }

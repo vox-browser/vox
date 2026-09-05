@@ -29,7 +29,7 @@ pub fn SyntaxNode.create_universal() SyntaxNode {
 
 pub fn SyntaxNode.create_ident(ident string) SyntaxNode {
 	return SyntaxNode{
-		type_:  .ident
+		type_: .ident
 		ident_: ident
 	}
 }
@@ -37,7 +37,7 @@ pub fn SyntaxNode.create_ident(ident string) SyntaxNode {
 pub fn SyntaxNode.create_type(type_name string) SyntaxNode {
 	value_type := value_type_from_string(type_name)
 	return SyntaxNode{
-		type_:      .type_
+		type_: .type_
 		type_name_: type_name
 		value_type: value_type
 	}
@@ -45,21 +45,21 @@ pub fn SyntaxNode.create_type(type_name string) SyntaxNode {
 
 pub fn SyntaxNode.create_multiplier(child SyntaxNode) SyntaxNode {
 	return SyntaxNode{
-		type_:    .multiplier
+		type_: .multiplier
 		children: [child]
 	}
 }
 
 pub fn SyntaxNode.create_comma_separated_multiplier(child SyntaxNode) SyntaxNode {
 	return SyntaxNode{
-		type_:    .comma_separated_multiplier
+		type_: .comma_separated_multiplier
 		children: [child]
 	}
 }
 
 pub fn SyntaxNode.create_alternatives(children []SyntaxNode) SyntaxNode {
 	return SyntaxNode{
-		type_:    .alternatives
+		type_: .alternatives
 		children: children
 	}
 }
@@ -665,7 +665,9 @@ fn referrer_policy_modifier_value_from_string(value string) ?ReferrerPolicyModif
 		'origin' { ReferrerPolicyModifierValue.origin }
 		'strict-origin' { ReferrerPolicyModifierValue.strict_origin }
 		'origin-when-cross-origin' { ReferrerPolicyModifierValue.origin_when_cross_origin }
-		'strict-origin-when-cross-origin' { ReferrerPolicyModifierValue.strict_origin_when_cross_origin }
+		'strict-origin-when-cross-origin' {
+			ReferrerPolicyModifierValue.strict_origin_when_cross_origin
+		}
 		'unsafe-url' { ReferrerPolicyModifierValue.unsafe_url }
 		else { none }
 	}
@@ -706,7 +708,8 @@ fn sort_request_url_modifiers_for_serialization(modifiers []RequestURLModifier) 
 }
 
 // https://drafts.csswg.org/css-values-4/#url-value
-fn parse_url_function_for_syntax(mut tokens ComponentValueStream) ?URL {
+// ValueParsing.cpp: Parser::parse_url_function.
+fn parse_url_function(mut tokens ComponentValueStream) ?URL {
 	// <url> = <url()> | <src()>
 	// <url()> = url( <string> <url-modifier>* ) | <url-token>
 	// <src()> = src( <string> <url-modifier>* )
@@ -791,14 +794,13 @@ fn parse_url_function_for_syntax(mut tokens ComponentValueStream) ?URL {
 	// AD-HOC: This isn't mentioned in the spec, but WPT expects modifiers to be sorted alphabetically.
 	// Spec issue: https://github.com/w3c/csswg-drafts/issues/12151
 	tokens = transaction
-	return URL.new(url_string.token().string_value(), function_type,
-		sort_request_url_modifiers_for_serialization(request_url_modifiers))
+	return URL.new(url_string.token().string_value(), function_type, sort_request_url_modifiers_for_serialization(request_url_modifiers))
 }
 
 fn parse_image_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
 	mut parser := Parser.from_component_values([])
 	mut url_probe := tokens.clone()
-	if url := parse_url_function_for_syntax(mut url_probe) {
+	if url := parse_url_function(mut url_probe) {
 		// If the value is a 'url(..)' parse as image, but if it is just a reference 'url(#xx)', leave it alone,
 		// so we can parse as URL further on. These URLs are used as references inside SVG documents for masks.
 		// FIXME: Remove this special case once mask-image accepts `<image>`.
@@ -816,7 +818,7 @@ fn parse_image_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
 }
 
 fn parse_url_value_for_syntax(mut tokens ComponentValueStream) ?StyleValue {
-	url := parse_url_function_for_syntax(mut tokens) or { return none }
+	url := parse_url_function(mut tokens) or { return none }
 	return StyleValue(URLStyleValue.create(url))
 }
 

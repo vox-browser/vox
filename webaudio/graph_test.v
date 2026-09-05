@@ -6,14 +6,20 @@ fn test_audio_node_connections_are_unique_validated_and_disconnectable() {
 	mut destination := first_context.base.create_gain(1, AudioNodeOptions{}) or { panic(err) }
 	connect_nodes(mut source.node, mut destination.node, 0, 0) or { panic(err) }
 	connect_nodes(mut source.node, mut destination.node, 0, 0) or { panic(err) }
-	assert source.node.output_connections.len == 1
-	assert destination.node.input_connections.len == 1
+	assert source.node.output_connection_records().len == 1
+	assert destination.node.input_connection_records().len == 1
 	connect_param(mut source.node, destination.gain, 0) or { panic(err) }
-	assert source.node.param_connections.len == 1
+	assert source.node.param_connection_records().len == 1
 	disconnect_nodes(mut source.node, mut destination.node, 0, 0) or { panic(err) }
 	source.node.disconnect_parameter(destination.gain.id, 0) or { panic(err) }
-	assert source.node.output_connections.len == 0
-	assert destination.node.input_connections.len == 0
+	assert source.node.output_connection_records().len == 0
+	assert destination.node.input_connection_records().len == 0
+	connect_nodes(mut source.node, mut destination.node, 0, 0) or { panic(err) }
+	connect_param(mut source.node, destination.gain, 0) or { panic(err) }
+	source.node.disconnect_all()
+	assert source.node.output_connection_records().len == 0
+	assert source.node.param_connection_records().len == 0
+	assert destination.node.input_connection_records().len == 0
 	mut second_context := new_audio_context(2, 44100, true) or { panic(err) }
 	mut other := second_context.base.create_gain(1, AudioNodeOptions{}) or { panic(err) }
 	connect_nodes(mut source.node, mut other.node, 0, 0) or {
@@ -38,9 +44,9 @@ fn test_audio_param_clamps_visible_value_and_fixed_rate() {
 fn test_scheduled_source_enforces_one_shot_lifecycle() {
 	mut context := new_audio_context(1, 44100, true) or { panic(err) }
 	mut node := AudioNode{
-		id:                1
-		context_id:        1
-		kind:              .oscillator
+		id: 1
+		context_id: 1
+		kind: .oscillator
 		number_of_outputs: 1
 	}
 	start_scheduled_source(mut context.base, mut node, 0.25) or { panic(err) }

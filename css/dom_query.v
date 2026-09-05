@@ -33,6 +33,34 @@ fn dom_selector_query_validate(target voidptr, selector_text string) bool {
 	return state.parse(selector_text) != none
 }
 
+fn selector_list_contains_named_namespace(selectors SelectorList) bool {
+	for selector in selectors.selectors {
+		for compound_selector in selector.compound_selectors() {
+			for simple_selector in compound_selector.simple_selectors {
+				if simple_selector.type_ in [.tag_name, .universal]
+					&& simple_selector.qualified_name.namespace_type == .named {
+					return true
+				}
+				if simple_selector.type_ == .attribute
+					&& simple_selector.attribute.qualified_name.namespace_type == .named {
+					return true
+				}
+				if simple_selector.type_ == .pseudo_class
+					&& selector_list_contains_named_namespace(simple_selector.pseudo_class.argument_selector_list) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+fn dom_selector_query_contains_named_namespace(target voidptr, selector_text string) bool {
+	mut state := unsafe { &DocumentSelectorQueryState(target) }
+	selectors := state.parse(selector_text) or { return false }
+	return selector_list_contains_named_namespace(selectors)
+}
+
 fn dom_selector_query_matches(target voidptr, selector_text string, element &dom.Element, scoping_root &dom.ParentNode) bool {
 	mut state := unsafe { &DocumentSelectorQueryState(target) }
 	selectors := state.parse(selector_text) or { return false }
@@ -52,9 +80,10 @@ pub fn install_document_selector_query_hook(document &dom.Document) {
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_selector_query_hook(dom.DocumentSelectorQueryHook{
-		target:   voidptr(state)
-		validate: dom_selector_query_validate
-		matches:  dom_selector_query_matches
+		target:                   voidptr(state)
+		validate:                 dom_selector_query_validate
+		matches:                  dom_selector_query_matches
+		contains_named_namespace: dom_selector_query_contains_named_namespace
 	})
 }
 

@@ -27,7 +27,26 @@ pub:
 }
 
 fn unlock_pipe(mut source ReadableStream, mut destination WritableStream) {
-	if source.reader_kind_ == .pipe {
+	if !isnil(source.pipe_read_request_) {
+		mut request := source.pipe_read_request_
+		if request.state() == .pending {
+			source.pending_reads_.remove(request)
+			request.reject('TypeError: Pipe reader has been released')
+		}
+		source.pipe_read_request_ = unsafe { nil }
+	}
+	if mut signal := source.pipe_options_.signal {
+		for index, pipe_source in signal.pipes_ {
+			if pipe_source == &source {
+				signal.pipes_.delete(index)
+				break
+			}
+		}
+	}
+	if !isnil(source.default_reader_) {
+		mut reader := source.default_reader_
+		reader.release_lock() or {}
+	} else if source.reader_kind_ == .pipe {
 		source.reader_kind_ = .none
 	}
 	if !isnil(destination.writer_) {
@@ -36,6 +55,25 @@ fn unlock_pipe(mut source ReadableStream, mut destination WritableStream) {
 	}
 	source.pipe_destination_ = unsafe { nil }
 	destination.pipe_source_ = unsafe { nil }
+}
+
+fn pipe_result_error(result &VoidPromise, original string) string {
+	return if result.state() == .rejected { result.reason() } else { original }
+}
+
+fn abort_pipe(mut source ReadableStream, mut destination WritableStream, reason Value) string {
+	mut final_reason := reason.description()
+	if !source.pipe_options_.prevent_abort && destination.state_ == .writable {
+		abort_result := destination.abort_internal(reason)
+		final_reason = pipe_result_error(abort_result, final_reason)
+	}
+	if !source.pipe_options_.prevent_cancel && source.state_ == .readable {
+		cancel_result := source.cancel_internal(reason)
+		if cancel_result.state() == .rejected {
+			final_reason = cancel_result.reason()
+		}
+	}
+	return final_reason
 }
 
 fn fail_pipe(mut source ReadableStream, reason string) {
@@ -59,65 +97,120 @@ fn finish_pipe(mut source ReadableStream) {
 }
 
 fn pump_readable_pipe(mut source ReadableStream) {
-	if isnil(source.pipe_destination_) || isnil(source.pipe_promise_)
-		|| source.pipe_promise_.state() != .pending {
+	if isnil(source.pipe_destination_) || isnil(source.pipe_promise_) || source.pipe_promise_.state() != .pending || source.pipe_pumping_ {
 		return
+	}
+	source.pipe_pumping_ = true
+	defer {
+		source.pipe_pumping_ = false
 	}
 	mut destination := source.pipe_destination_
 	if signal := source.pipe_options_.signal {
 		if signal.aborted() {
 			reason := signal.reason()
-			if !source.pipe_options_.prevent_abort {
-				destination.abort_internal(reason)
-			}
-			if !source.pipe_options_.prevent_cancel {
-				source.cancel_internal(reason)
-			}
-			fail_pipe(mut source, reason.description())
+			final_reason := abort_pipe(mut source, mut destination, reason)
+			fail_pipe(mut source, final_reason)
 			return
 		}
 	}
 	if source.state_ == .errored {
-		if !source.pipe_options_.prevent_abort {
-			destination.abort_internal(string_value(source.stored_error_))
+		mut reason := source.stored_error_
+		if !source.pipe_options_.prevent_abort && destination.state_ == .writable {
+			result := destination.abort_internal(string_value(reason))
+			reason = pipe_result_error(result, reason)
 		}
-		fail_pipe(mut source, source.stored_error_)
+		fail_pipe(mut source, reason)
 		return
 	}
 	if destination.state_ == .errored || destination.state_ == .erroring {
+		mut reason := destination.stored_error_
 		if !source.pipe_options_.prevent_cancel {
-			source.cancel_internal(string_value(destination.stored_error_))
+			result := source.cancel_internal(string_value(reason))
+			reason = pipe_result_error(result, reason)
 		}
-		fail_pipe(mut source, destination.stored_error_)
+		fail_pipe(mut source, reason)
 		return
 	}
-	for !source.queue_.is_empty() {
-		value := source.queue_.dequeue_value() or {
-			fail_pipe(mut source, err.msg())
-			return
+	if writable_stream_close_queued_or_in_flight(destination) || destination.state_ == .closed {
+		destination_closed := 'TypeError: Destination stream was closed during piping operation'
+		mut reason := destination_closed
+		if !source.pipe_options_.prevent_cancel && source.state_ == .readable {
+			result := source.cancel_internal(string_value(destination_closed))
+			reason = pipe_result_error(result, reason)
 		}
-		source.disturbed_ = true
-		write := destination.write_internal(value)
-		if write.state() == .rejected {
-			if !source.pipe_options_.prevent_cancel {
-				source.cancel_internal(string_value(write.reason()))
+		fail_pipe(mut source, reason)
+		return
+	}
+	for {
+		if !isnil(source.pipe_read_request_) {
+			request := source.pipe_read_request_
+			if request.state() == .pending {
+				return
 			}
-			fail_pipe(mut source, write.reason())
+			source.pipe_read_request_ = unsafe { nil }
+			if request.state() == .rejected {
+				mut reason := request.reason()
+				if !source.pipe_options_.prevent_abort && destination.state_ == .writable {
+					result := destination.abort_internal(string_value(reason))
+					reason = pipe_result_error(result, reason)
+				}
+				fail_pipe(mut source, reason)
+				return
+			}
+			read_result := request.result()
+			if read_result.done {
+				if !source.pipe_options_.prevent_close {
+					closed := destination.close_internal()
+					if closed.state() == .rejected {
+						fail_pipe(mut source, closed.reason())
+						return
+					}
+				}
+				finish_pipe(mut source)
+				return
+			}
+			write := destination.write_internal(read_result.value)
+			if write.state() == .rejected {
+				mut reason := write.reason()
+				if !source.pipe_options_.prevent_cancel && source.state_ == .readable {
+					result := source.cancel_internal(string_value(reason))
+					reason = pipe_result_error(result, reason)
+				}
+				fail_pipe(mut source, reason)
+				return
+			}
+			continue
+		}
+		if source.state_ == .closed {
+			if !source.pipe_options_.prevent_close {
+				closed := destination.close_internal()
+				if closed.state() == .rejected {
+					fail_pipe(mut source, closed.reason())
+					return
+				}
+			}
+			finish_pipe(mut source)
 			return
 		}
-	}
-	if source.close_requested_ && source.queue_.is_empty() {
-		source.close_internal()
-	}
-	if source.state_ == .closed {
-		if !source.pipe_options_.prevent_close {
-			closed := destination.close_internal()
-			if closed.state() == .rejected {
-				fail_pipe(mut source, closed.reason())
+		if !isnil(destination.writer_) {
+			ready := destination.writer_.ready()
+			if ready.state() == .pending {
+				return
+			}
+			if ready.state() == .rejected {
+				mut reason := ready.reason()
+				if !source.pipe_options_.prevent_cancel && source.state_ == .readable {
+					result := source.cancel_internal(string_value(reason))
+					reason = pipe_result_error(result, reason)
+				}
+				fail_pipe(mut source, reason)
 				return
 			}
 		}
-		finish_pipe(mut source)
+		source.pipe_read_request_ = source.read_internal()
+		if source.pipe_read_request_.state() == .pending {
+			return
+		}
 	}
 }
 
@@ -131,9 +224,13 @@ pub fn (mut source ReadableStream) pipe_to(mut destination WritableStream, optio
 	if voidptr(&source) == voidptr(&destination) {
 		return VoidPromise.rejected('TypeError: A stream cannot be piped to itself')
 	}
-	writer := destination.get_writer() or { return VoidPromise.rejected(err.msg()) }
+	mut reader := source.get_default_reader() or { return VoidPromise.rejected(err.msg()) }
+	writer := destination.get_writer() or {
+		reader.release_lock() or {}
+		return VoidPromise.rejected(err.msg())
+	}
 	_ = writer
-	source.reader_kind_ = .pipe
+	source.disturbed_ = true
 	source.pipe_destination_ = &destination
 	destination.pipe_source_ = &source
 	source.pipe_options_ = options
@@ -157,10 +254,359 @@ pub fn (mut source ReadableStream) pipe_through(pair ReadableWritablePair, optio
 	return pair.readable
 }
 
-pub fn (mut source ReadableStream) tee() !ReadableStreamPair {
+fn settle_tee_cancel_promises(mut source ReadableStream, reason ?string) {
+	for mut branch in source.tee_branches_ {
+		if !isnil(branch.tee_cancel_promise_) && branch.tee_cancel_promise_.state() == .pending {
+			mut promise := branch.tee_cancel_promise_
+			if error_reason := reason {
+				promise.reject(error_reason)
+			} else {
+				promise.resolve()
+			}
+		}
+	}
+}
+
+fn close_tee_branches(mut source ReadableStream) {
+	mut any_branch_open := false
+	for mut branch in source.tee_branches_ {
+		if branch.tee_cancelled_ {
+			continue
+		}
+		any_branch_open = true
+		branch.close()
+	}
+	if any_branch_open {
+		settle_tee_cancel_promises(mut source, none)
+	}
+}
+
+fn error_tee_branches(mut source ReadableStream, reason string) {
+	for mut branch in source.tee_branches_ {
+		if !branch.tee_cancelled_ {
+			branch.error(reason)
+		}
+	}
+	settle_tee_cancel_promises(mut source, reason)
+}
+
+fn continue_byte_tee_after_read(mut source ReadableStream) {
+	source.tee_reading_ = false
+	if source.tee_read_again_1_ {
+		pump_readable_tee_branch(mut source.tee_branches_[0])
+	} else if source.tee_read_again_2_ {
+		pump_readable_tee_branch(mut source.tee_branches_[1])
+	}
+}
+
+fn close_byte_tee_branches_after_byob_read(mut source ReadableStream, byob_branch_index int) {
+	other_branch_index := if byob_branch_index == 1 { 2 } else { 1 }
+	mut byob_branch := source.tee_branches_[byob_branch_index - 1]
+	mut other_branch := source.tee_branches_[other_branch_index - 1]
+	if !byob_branch.tee_cancelled_ {
+		mut controller := byob_branch.byte_controller_
+		readable_byte_stream_controller_close(mut controller) or {
+			error_tee_branches(mut source, err.msg())
+			return
+		}
+		if controller.pending_pull_intos_.len > 0 {
+			readable_byte_stream_controller_respond(mut controller, 0) or {
+				error_tee_branches(mut source, err.msg())
+				return
+			}
+		}
+	}
+	if !other_branch.tee_cancelled_ {
+		mut controller := other_branch.byte_controller_
+		readable_byte_stream_controller_close(mut controller) or {
+			error_tee_branches(mut source, err.msg())
+			return
+		}
+		if controller.pending_pull_intos_.len > 0 {
+			readable_byte_stream_controller_respond(mut controller, 0) or {
+				error_tee_branches(mut source, err.msg())
+				return
+			}
+		}
+	}
+	if !byob_branch.tee_cancelled_ || !other_branch.tee_cancelled_ {
+		settle_tee_cancel_promises(mut source, none)
+	}
+}
+
+fn pump_readable_byte_tee_source(mut source ReadableStream) {
+	if !source.tee_reading_ {
+		return
+	}
+	if !isnil(source.tee_byob_request_) {
+		request := source.tee_byob_request_
+		if request.state() == .pending {
+			return
+		}
+		source.tee_byob_request_ = unsafe { nil }
+		byob_branch_index := source.tee_byob_branch_
+		source.tee_byob_branch_ = 0
+		if request.state() == .rejected {
+			source.tee_reading_ = false
+			error_tee_branches(mut source, request.reason())
+			return
+		}
+		source.tee_read_again_1_ = false
+		source.tee_read_again_2_ = false
+		result := request.result()
+		if result.done {
+			source.tee_reading_ = false
+			close_byte_tee_branches_after_byob_read(mut source, byob_branch_index)
+			return
+		}
+
+		other_branch_index := if byob_branch_index == 1 { 2 } else { 1 }
+		mut byob_branch := source.tee_branches_[byob_branch_index - 1]
+		mut other_branch := source.tee_branches_[other_branch_index - 1]
+		other_cancelled := other_branch.tee_cancelled_
+		byob_cancelled := byob_branch.tee_cancelled_
+		mut cloned_chunk := []u8{}
+		if !other_cancelled {
+			cloned_chunk = result.value.clone()
+		}
+		if !byob_cancelled {
+			// The source BYOB descriptor was constructed over this branch's
+			// request view, matching the transferred backing store upstream.
+			mut controller := byob_branch.byte_controller_
+			readable_byte_stream_controller_respond(mut controller, u64(result.value.len)) or {
+				source.tee_reading_ = false
+				error_tee_branches(mut source, err.msg())
+				return
+			}
+		}
+		if !other_cancelled {
+			mut controller := other_branch.byte_controller_
+			controller.enqueue(cloned_chunk) or {
+				source.tee_reading_ = false
+				error_tee_branches(mut source, err.msg())
+				return
+			}
+		}
+		continue_byte_tee_after_read(mut source)
+		return
+	}
+
+	if isnil(source.tee_read_request_) {
+		return
+	}
+	request := source.tee_read_request_
+	if request.state() == .pending {
+		return
+	}
+	source.tee_read_request_ = unsafe { nil }
+	if request.state() == .rejected {
+		source.tee_reading_ = false
+		error_tee_branches(mut source, request.reason())
+		return
+	}
+	source.tee_read_again_1_ = false
+	source.tee_read_again_2_ = false
+	result := request.result()
+	if result.done {
+		source.tee_reading_ = false
+		close_tee_branches(mut source)
+		return
+	}
+	if result.value.kind != .bytes {
+		source.tee_reading_ = false
+		error_tee_branches(mut source, 'TypeError: byte tee received a non-byte chunk')
+		return
+	}
+	branch1_cancelled := source.tee_branches_[0].tee_cancelled_
+	branch2_cancelled := source.tee_branches_[1].tee_cancelled_
+	mut chunk2 := unsafe { result.value.bytes_ }
+	if !branch1_cancelled && !branch2_cancelled {
+		chunk2 = result.value.bytes_.clone()
+	}
+	if !branch1_cancelled {
+		mut controller := source.tee_branches_[0].byte_controller_
+		controller.enqueue(result.value.bytes_) or {
+			source.tee_reading_ = false
+			error_tee_branches(mut source, err.msg())
+			return
+		}
+	}
+	if !branch2_cancelled {
+		mut controller := source.tee_branches_[1].byte_controller_
+		controller.enqueue(chunk2) or {
+			source.tee_reading_ = false
+			error_tee_branches(mut source, err.msg())
+			return
+		}
+	}
+	continue_byte_tee_after_read(mut source)
+}
+
+// The V promise records settle synchronously, but these pumps preserve
+// Ladybird's tee read/read-again state machines and demand-driven buffering.
+fn pump_readable_tee_source(mut source ReadableStream) {
+	if source.byte_stream_ {
+		pump_readable_byte_tee_source(mut source)
+		return
+	}
+	if !source.tee_reading_ || isnil(source.tee_read_request_) {
+		return
+	}
+	request := source.tee_read_request_
+	if request.state() == .pending {
+		return
+	}
+	source.tee_read_request_ = unsafe { nil }
+	if request.state() == .rejected {
+		source.tee_reading_ = false
+		error_tee_branches(mut source, request.reason())
+		return
+	}
+	result := request.result()
+	if result.done {
+		source.tee_reading_ = false
+		close_tee_branches(mut source)
+		return
+	}
+
+	// Tee read-request chunk steps clear readAgain before enqueueing. A branch
+	// which still desires data sets it again through its pull algorithm.
+	source.tee_read_again_ = false
+	for mut branch in source.tee_branches_ {
+		if branch.tee_cancelled_ || branch.state_ != .readable {
+			continue
+		}
+		if source.byte_stream_ {
+			mut controller := branch.byte_controller_
+			chunk := if branch.tee_branch_index_ == 2 {
+				result.value.bytes_.clone()
+			} else {
+				result.value.bytes_
+			}
+			controller.enqueue(chunk) or {
+				source.tee_reading_ = false
+				error_tee_branches(mut source, err.msg())
+				cancel_result := source.cancel_internal(string_value(err.msg()))
+				if cancel_result.state() == .rejected {
+					settle_tee_cancel_promises(mut source, cancel_result.reason())
+				}
+				return
+			}
+		} else {
+			chunk := if branch.tee_branch_index_ == 2 && source.tee_clone_branch2_ {
+				structured_clone(result.value)
+			} else {
+				result.value
+			}
+			mut controller := branch.default_controller_
+			controller.enqueue(chunk) or {
+				source.tee_reading_ = false
+				error_tee_branches(mut source, err.msg())
+				cancel_result := source.cancel_internal(string_value(err.msg()))
+				if cancel_result.state() == .rejected {
+					settle_tee_cancel_promises(mut source, cancel_result.reason())
+				}
+				return
+			}
+		}
+	}
+	source.tee_reading_ = false
+	if source.tee_read_again_ {
+		pump_readable_tee_branch(mut source.tee_branches_[0])
+	}
+}
+
+fn switch_byte_tee_to_default_reader(mut source ReadableStream) ! {
+	if source.reader_kind_ == .byob && !isnil(source.byob_reader_) {
+		mut reader := source.byob_reader_
+		if reader.read_into_requests_.len != 0 {
+			return error('InternalError: Cannot switch a byte tee with a pending BYOB read')
+		}
+		reader.release_lock()!
+	}
+	if source.reader_kind_ != .default_reader || isnil(source.default_reader_) {
+		_ = source.get_default_reader()!
+	}
+}
+
+fn switch_byte_tee_to_byob_reader(mut source ReadableStream) ! {
+	if source.reader_kind_ == .default_reader && !isnil(source.default_reader_) {
+		mut reader := source.default_reader_
+		if source.pending_reads_.len != 0 {
+			return error('InternalError: Cannot switch a byte tee with a pending default read')
+		}
+		reader.release_lock()!
+	}
+	if source.reader_kind_ != .byob || isnil(source.byob_reader_) {
+		_ = source.get_byob_reader()!
+	}
+}
+
+fn pump_readable_byte_tee_branch(mut branch ReadableStream, mut source ReadableStream) {
+	if source.tee_reading_ {
+		if branch.tee_branch_index_ == 1 {
+			source.tee_read_again_1_ = true
+		} else {
+			source.tee_read_again_2_ = true
+		}
+		return
+	}
+	source.tee_reading_ = true
+	mut controller := branch.byte_controller_
+	if byob_request := readable_byte_stream_controller_get_byob_request(mut controller) {
+		view := byob_request.view() or {
+			source.tee_reading_ = false
+			error_tee_branches(mut source, 'TypeError: Byte tee BYOB request has no view')
+			return
+		}
+		switch_byte_tee_to_byob_reader(mut source) or {
+			source.tee_reading_ = false
+			error_tee_branches(mut source, err.msg())
+			return
+		}
+		source.tee_byob_branch_ = branch.tee_branch_index_
+		mut reader := source.byob_reader_
+		source.tee_byob_request_ = reader.read_into_existing_view(view, 1)
+	} else {
+		switch_byte_tee_to_default_reader(mut source) or {
+			source.tee_reading_ = false
+			error_tee_branches(mut source, err.msg())
+			return
+		}
+		mut reader := source.default_reader_
+		source.tee_read_request_ = reader.read()
+	}
+	pump_readable_byte_tee_source(mut source)
+}
+
+fn pump_readable_tee_branch(mut branch ReadableStream) {
+	if isnil(branch.tee_source_) || branch.tee_cancelled_ {
+		return
+	}
+	mut source := branch.tee_source_
+	if source.byte_stream_ {
+		pump_readable_byte_tee_branch(mut branch, mut source)
+		return
+	}
+	if source.tee_reading_ {
+		source.tee_read_again_ = true
+		return
+	}
+	if source.tee_branches_.all(it.tee_cancelled_) {
+		return
+	}
+	source.tee_reading_ = true
+	source.tee_read_request_ = source.read_internal()
+	pump_readable_tee_source(mut source)
+}
+
+fn (mut source ReadableStream) tee_with_clone(clone_for_branch2 bool) !ReadableStreamPair {
 	if source.locked() {
 		return error('TypeError: Cannot tee a locked ReadableStream')
 	}
+	// Both tee algorithms acquire a default reader initially. Byte tees may
+	// later switch it to a BYOB reader when a branch supplies a BYOB view.
+	_ = source.get_default_reader()!
 	type_ := if source.byte_stream_ {
 		UnderlyingSourceType.bytes
 	} else {
@@ -168,46 +614,31 @@ pub fn (mut source ReadableStream) tee() !ReadableStreamPair {
 	}
 	mut branch1 := ReadableStream.construct_impl(UnderlyingSource{
 		type_: type_
-	}, QueuingStrategy{
-		high_water_mark: source.high_water_mark_
-	})!
+	}, QueuingStrategy{})!
 	mut branch2 := ReadableStream.construct_impl(UnderlyingSource{
 		type_: type_
-	}, QueuingStrategy{
-		high_water_mark: source.high_water_mark_
-	})!
+	}, QueuingStrategy{})!
 	branch1.tee_source_ = &source
 	branch1.tee_branch_index_ = 1
 	branch2.tee_source_ = &source
 	branch2.tee_branch_index_ = 2
-	source.reader_kind_ = .tee
 	source.disturbed_ = true
-	for !source.queue_.is_empty() {
-		value := source.queue_.dequeue_value()!
-		if source.byte_stream_ {
-			mut branch1_controller := branch1.byte_controller_
-			branch1_controller.enqueue(value.bytes_.clone())!
-			mut branch2_controller := branch2.byte_controller_
-			branch2_controller.enqueue(value.bytes_.clone())!
-		} else {
-			mut branch1_controller := branch1.default_controller_
-			branch1_controller.enqueue(value.clone())!
-			mut branch2_controller := branch2.default_controller_
-			branch2_controller.enqueue(structured_clone(value))!
-		}
-	}
+	source.tee_clone_branch2_ = clone_for_branch2
 	source.tee_branches_ = [branch1, branch2]
-	if source.state_ == .closed || source.close_requested_ {
-		branch1.close()
-		branch2.close()
-	} else if source.state_ == .errored {
-		branch1.error(source.stored_error_)
-		branch2.error(source.stored_error_)
+	if source.state_ == .errored {
+		error_tee_branches(mut source, source.stored_error_)
+	} else {
+		branch1.call_pull_if_needed()
+		branch2.call_pull_if_needed()
 	}
 	return ReadableStreamPair{
-		first:  branch1
+		first: branch1
 		second: branch2
 	}
+}
+
+pub fn (mut source ReadableStream) tee() !ReadableStreamPair {
+	return source.tee_with_clone(true)
 }
 
 fn cancel_tee_branch(mut branch ReadableStream, reason Value) &VoidPromise {
@@ -215,7 +646,7 @@ fn cancel_tee_branch(mut branch ReadableStream, reason Value) &VoidPromise {
 		return branch.tee_cancel_promise_
 	}
 	branch.tee_cancelled_ = true
-	branch.tee_cancel_reason_ = reason.clone()
+	branch.tee_cancel_reason_ = reason
 	branch.queue_.reset()
 	branch.close_internal()
 	branch.tee_cancel_promise_ = VoidPromise.pending()
@@ -230,7 +661,7 @@ fn cancel_tee_branch(mut branch ReadableStream, reason Value) &VoidPromise {
 	if !isnil(other) && other.tee_cancelled_ {
 		mut reasons := []Value{cap: source.tee_branches_.len}
 		for candidate in source.tee_branches_ {
-			reasons << candidate.tee_cancel_reason_.clone()
+			reasons << candidate.tee_cancel_reason_
 		}
 		composite := array_value(reasons)
 		result := source.cancel_internal(composite)
@@ -260,10 +691,11 @@ pub type MessageEventListener = fn (PackedMessage)
 @[heap]
 pub struct MessagePort {
 mut:
-	messages_       []PackedMessage
-	listeners_      []MessageEventListener
+	messages_        []PackedMessage
+	listeners_       []MessageEventListener
 	readable_target_ &ReadableStream = unsafe { nil }
-	closed_         bool
+	writable_target_ &WritableStream = unsafe { nil }
+	closed_          bool
 }
 
 pub fn MessagePort.create() &MessagePort {
@@ -297,12 +729,25 @@ pub fn pack_and_post_message(mut port MessagePort, type_ string, value Value) ! 
 	for listener in port.listeners_ {
 		listener(PackedMessage{
 			type_: message.type_
-			value: message.value.clone()
+			value: message.value
 		})
 	}
-	if !isnil(port.readable_target_) {
+	if type_ == 'pull' && !isnil(port.writable_target_) {
+		mut target := port.writable_target_
+		target.message_backpressure_ = true
+		target.process_queue()
+	}
+	if type_ in ['chunk', 'close', 'error'] && !isnil(port.readable_target_) {
 		mut target := port.readable_target_
 		receive_cross_realm_message(mut target, message)
+	}
+	if type_ == 'error' && !isnil(port.writable_target_) {
+		mut target := port.writable_target_
+		mut controller := target.controller_
+		writable_stream_default_controller_error_if_needed(mut controller, message.value)
+	}
+	if type_ in ['close', 'error'] {
+		port.close()
 	}
 }
 
@@ -321,34 +766,12 @@ pub fn (mut source ReadableStream) transfer() !&ReadableStream {
 	if source.locked() {
 		return error('DataCloneError: Cannot transfer a locked ReadableStream')
 	}
-	type_ := if source.byte_stream_ {
-		UnderlyingSourceType.bytes
-	} else {
-		UnderlyingSourceType.default_source
-	}
-	mut proxy := ReadableStream.construct_impl(UnderlyingSource{
-		type_: type_
-	}, QueuingStrategy{
-		high_water_mark: source.high_water_mark_
-	})!
-	for !source.queue_.is_empty() {
-		value := source.queue_.dequeue_value()!
-		if source.byte_stream_ {
-			mut proxy_controller := proxy.byte_controller_
-			proxy_controller.enqueue(value.bytes_.clone())!
-		} else {
-			mut proxy_controller := proxy.default_controller_
-			proxy_controller.enqueue(structured_clone(value))!
-		}
-	}
-	source.reader_kind_ = .transfer
-	source.disturbed_ = true
-	source.transfer_target_ = proxy
-	if source.state_ == .closed || source.close_requested_ {
-		proxy.close()
-	} else if source.state_ == .errored {
-		proxy.error(source.stored_error_)
-	}
+	mut port := MessagePort.create()
+	mut writable_endpoint := &WritableStream{}
+	set_up_cross_realm_transform_writable(mut writable_endpoint, mut port)
+	mut proxy := &ReadableStream{}
+	set_up_cross_realm_transform_readable(mut proxy, mut port)
+	_ = source.pipe_to(mut writable_endpoint, StreamPipeOptions{})
 	return proxy
 }
 
@@ -356,9 +779,11 @@ pub fn (mut destination WritableStream) transfer() !&WritableStream {
 	if destination.locked() {
 		return error('DataCloneError: Cannot transfer a locked WritableStream')
 	}
-	mut proxy := WritableStream.construct_impl(UnderlyingSink{}, QueuingStrategy{})!
-	proxy.owner_kind_ = .transfer_proxy
-	proxy.transfer_destination_ = &destination
-	destination.transfer_locked_ = true
+	mut port := MessagePort.create()
+	mut readable_endpoint := &ReadableStream{}
+	set_up_cross_realm_transform_readable(mut readable_endpoint, mut port)
+	mut proxy := &WritableStream{}
+	set_up_cross_realm_transform_writable(mut proxy, mut port)
+	_ = readable_endpoint.pipe_to(mut destination, StreamPipeOptions{})
 	return proxy
 }

@@ -43,6 +43,10 @@ pub fn computed_length_px(element &dom.Element, property_id PropertyID, author_r
 // computed style so Layout resolves them against the same context StyleComputer
 // used while computing the element.
 pub fn (c &ComputedProperties) length_percentage_to_px(property_id PropertyID, percentage_basis_px f64) ?f64 {
+	return computed_properties_length_percentage_to_px(c, property_id, percentage_basis_px)
+}
+
+fn computed_properties_length_percentage_to_px(c &ComputedProperties, property_id PropertyID, percentage_basis_px f64) ?f64 {
 	value := c.property(property_id, .yes) or { return none }
 	typed := style_value_logic_from_dom(property_id, value) or { return none }
 	if typed.is_percentage() {
@@ -86,6 +90,60 @@ pub fn (c &ComputedProperties) length_percentage_to_px(property_id PropertyID, p
 		return length.viewport_relative_length_to_px(c.viewport_rect_).to_double()
 	}
 	return length.to_px(context).to_double()
+}
+
+// Return the retained computed StyleValue. ComputedProperties stores the same
+// typed CSSStyleValue graph as C++; parsing css_text is only a compatibility
+// boundary for hand-authored DOM values.
+pub fn (c &ComputedProperties) typed_property_value(property_id PropertyID) ?StyleValue {
+	value := c.property(property_id, .yes) or { return none }
+	return style_value_logic_from_dom(property_id, value)
+}
+
+// Resolve a component of a typed composite value (for example a border-radius
+// axis or a shadow offset) with this computed style's font/root/viewport
+// metrics. This is Length::to_px(Length::ResolutionContext::for_layout_node())
+// without a serialize/parse round trip.
+pub fn (c &ComputedProperties) resolve_length_percentage_value_px(value StyleValue, percentage_basis_px f64) ?f64 {
+	if value.is_percentage() {
+		return value.as_percentage().percentage().value() * percentage_basis_px / 100.0
+	}
+	context := c.length_resolution_context()
+	if value.is_calculated() {
+		resolution_context := CalculationResolutionContext{
+			percentage_basis: Length.make_px(percentage_basis_px)
+			length_resolution_context: context
+		}
+		if length := value.as_calculated().resolve_length(resolution_context) {
+			return length.to_px(context).to_double()
+		}
+		return none
+	}
+	if !value.is_length() {
+		return none
+	}
+	length := value.as_length().length()
+	if length.is_absolute() {
+		return length.absolute_length_to_px().to_double()
+	}
+	if length.is_viewport_relative() {
+		return length.viewport_relative_length_to_px(c.viewport_rect_).to_double()
+	}
+	return length.to_px(context).to_double()
+}
+
+// Length::ResolutionContext::for_layout_node(), using the metrics retained by
+// ComputedProperties during StyleComputer::compute_property_values().
+pub fn (c &ComputedProperties) length_resolution_context() LengthResolutionContext {
+	font_px := CSSPixels.nearest_value_for(c.resolved_font_size_px())
+	root_font_px := CSSPixels.nearest_value_for(c.root_font_size_px_)
+	mut context := LengthResolutionContext.default()
+	context.viewport_rect = c.viewport_rect_
+	context.font_metrics = computed_interpolation_font_metrics_for_size(font_px)
+	context.font_metrics.line_height = c.line_height()
+	context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_font_px)
+	context.root_font_metrics.line_height = CSSPixels.nearest_value_for(c.root_line_height_px_)
+	return context
 }
 
 // Resolve an already-computed standalone <length-percentage> token using the

@@ -1,6 +1,7 @@
 module layout
 
 import css
+import painting
 import svg
 
 // Translation of Ladybird's Layout::LayoutState + LayoutState::UsedValues (Layout/LayoutState.h) — the
@@ -62,9 +63,10 @@ pub mut:
 	has_computed_svg_transforms_  bool
 	svg_viewbox_transform_        svg.AffineTransform
 	svg_transform_                svg.AffineTransform
-	svg_text_                     string
 	svg_rendering_disabled_       bool
 	use_collapsing_borders_model_ bool
+	override_borders_data_        ?painting.BordersDataWithElementKind
+	table_cell_coordinates_       ?painting.TableCellCoordinates
 	scrollable_overflow_rect_     ?css.CSSPixelRect
 	has_scrollable_overflow_      bool
 }
@@ -79,6 +81,14 @@ pub fn (u &UsedValues) containing_block_used_values() ?&UsedValues {
 
 pub fn (u &UsedValues) use_collapsing_borders_model() bool {
 	return u.use_collapsing_borders_model_
+}
+
+pub fn (u &UsedValues) override_borders_data() ?painting.BordersDataWithElementKind {
+	return u.override_borders_data_
+}
+
+pub fn (u &UsedValues) table_cell_coordinates() ?painting.TableCellCoordinates {
+	return u.table_cell_coordinates_
 }
 
 pub fn (u &UsedValues) scrollable_overflow_rect() ?css.CSSPixelRect {
@@ -102,18 +112,12 @@ fn (mut u UsedValues) set_node(node &NodeWithStyle, containing_block_used_values
 	u.containing_block_used_values_ = containing_block_used_values
 	computed := node.computed_values()
 
-	min_width := resolve_definite_size(node, computed, computed.size_value(.min_width),
-		containing_block_used_values, true, u)
-	max_width := resolve_definite_size(node, computed, computed.size_value(.max_width),
-		containing_block_used_values, true, u)
-	min_height := resolve_definite_size(node, computed, computed.size_value(.min_height),
-		containing_block_used_values, false, u)
-	max_height := resolve_definite_size(node, computed, computed.size_value(.max_height),
-		containing_block_used_values, false, u)
+	min_width := resolve_definite_size(node, computed, computed.size_value(.min_width), containing_block_used_values, true, u)
+	max_width := resolve_definite_size(node, computed, computed.size_value(.max_width), containing_block_used_values, true, u)
+	min_height := resolve_definite_size(node, computed, computed.size_value(.min_height), containing_block_used_values, false, u)
+	max_height := resolve_definite_size(node, computed, computed.size_value(.max_height), containing_block_used_values, false, u)
 
-	if width := resolve_definite_size(node, computed, computed.size_value(.width),
-		containing_block_used_values, true, u)
-	{
+	if width := resolve_definite_size(node, computed, computed.size_value(.width), containing_block_used_values, true, u) {
 		u.content_width_ = clamp_to_max_dimension_value(width)
 		u.has_definite_width_ = true
 		if minimum := min_width {
@@ -127,9 +131,7 @@ fn (mut u UsedValues) set_node(node &NodeWithStyle, containing_block_used_values
 			}
 		}
 	}
-	if height := resolve_definite_size(node, computed, computed.size_value(.height),
-		containing_block_used_values, false, u)
-	{
+	if height := resolve_definite_size(node, computed, computed.size_value(.height), containing_block_used_values, false, u) {
 		u.content_height_ = clamp_to_max_dimension_value(height)
 		u.has_definite_height_ = true
 		if minimum := min_height {
@@ -158,18 +160,11 @@ fn resolve_definite_size(node &NodeWithStyle, computed &css.ComputedProperties, 
 
 	if size.is_auto() {
 		parent := unsafe { &Node(node) }.parent() or { return none }
-		if width && !unsafe { &Node(node) }.is_floating()
-			&& !unsafe { &Node(node) }.is_absolutely_positioned()
-			&& computed.display().is_block_outside() && !parent.is_floating()
-			&& (parent.display().is_flow_root_inside() || parent.display().is_flow_inside()) {
+		if width && !unsafe { &Node(node) }.is_floating() && !unsafe { &Node(node) }.is_absolutely_positioned() && computed.display().is_block_outside() && !parent.is_floating() && (parent.display().is_flow_root_inside() || parent.display().is_flow_inside()) {
 			if containing_block := containing_block_used_values {
 				if containing_block_has_definite_size {
 					available_width := containing_block.content_width().to_double()
-					resolved := available_width - used_values.margin_left.to_double() -
-						used_values.margin_right.to_double() -
-						used_values.padding_left.to_double() -
-						used_values.padding_right.to_double() -
-						used_values.border_left.to_double() - used_values.border_right.to_double()
+					resolved := available_width - used_values.margin_left.to_double() - used_values.margin_right.to_double() - used_values.padding_left.to_double() - used_values.padding_right.to_double() - used_values.border_left.to_double() - used_values.border_right.to_double()
 					return clamp_to_max_dimension_value(CSSPixels.nearest_value_for(resolved))
 				}
 			}
@@ -189,8 +184,7 @@ fn resolve_definite_size(node &NodeWithStyle, computed &css.ComputedProperties, 
 	context.font_metrics.font_size = font_size
 	context.font_metrics.x_height = CSSPixels.nearest_value_for(f64(font_metrics.x_height))
 	context.font_metrics.cap_height = font_size.scaled(0.75)
-	context.font_metrics.zero_advance =
-		CSSPixels.nearest_value_for(f64(font_metrics.advance_of_ascii_zero))
+	context.font_metrics.zero_advance = CSSPixels.nearest_value_for(f64(font_metrics.advance_of_ascii_zero))
 	context.font_metrics.line_height = computed.line_height()
 	reference_value := if containing_block := containing_block_used_values {
 		if width { containing_block.content_width() } else { containing_block.content_height() }
@@ -198,8 +192,7 @@ fn resolve_definite_size(node &NodeWithStyle, computed &css.ComputedProperties, 
 		CSSPixels.new(0)
 	}
 	resolved := size.to_px(context, reference_value)
-	return clamp_to_max_dimension_value(adjust_size_for_box_sizing(computed, size, resolved, width,
-		containing_block_used_values, context))
+	return clamp_to_max_dimension_value(adjust_size_for_box_sizing(computed, size, resolved, width, containing_block_used_values, context))
 }
 
 fn adjust_size_for_box_sizing(computed &css.ComputedProperties, computed_size css.Size, unadjusted CSSPixels, width bool, containing_block_used_values ?&UsedValues, context css.LengthResolutionContext) CSSPixels {
@@ -213,34 +206,23 @@ fn adjust_size_for_box_sizing(computed &css.ComputedProperties, computed_size cs
 	}
 	mut border_and_padding := CSSPixels.new(0)
 	if width {
-		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed,
-			.border_left_width, .border_left_style, containing_block_width, context, true))
-		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed, .padding_left,
-			none, containing_block_width, context, false))
-		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed,
-			.border_right_width, .border_right_style, containing_block_width, context, true))
-		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed,
-			.padding_right, none, containing_block_width, context, false))
+		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed, .border_left_width, containing_block_width, context, true))
+		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed, .padding_left, containing_block_width, context, false))
+		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed, .border_right_width, containing_block_width, context, true))
+		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed, .padding_right, containing_block_width, context, false))
 	} else {
-		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed,
-			.border_top_width, .border_top_style, containing_block_width, context, true))
-		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed, .padding_top,
-			none, containing_block_width, context, false))
-		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed,
-			.border_bottom_width, .border_bottom_style, containing_block_width, context, true))
-		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed,
-			.padding_bottom, none, containing_block_width, context, false))
+		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed, .border_top_width, containing_block_width, context, true))
+		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed, .padding_top, containing_block_width, context, false))
+		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed, .border_bottom_width, containing_block_width, context, true))
+		border_and_padding = border_and_padding.plus(resolve_computed_edge(computed, .padding_bottom, containing_block_width, context, false))
 	}
 	return unadjusted.minus(border_and_padding)
 }
 
-fn resolve_computed_edge(computed &css.ComputedProperties, property_id css.PropertyID, style_property_id ?css.PropertyID, containing_block_width CSSPixels, context css.LengthResolutionContext, is_border bool) CSSPixels {
+fn resolve_computed_edge(computed &css.ComputedProperties, property_id css.PropertyID, containing_block_width CSSPixels, context css.LengthResolutionContext, is_border bool) CSSPixels {
 	if is_border {
-		style_id := style_property_id or { return CSSPixels.new(0) }
-		style := computed.property(style_id, .yes) or { return CSSPixels.new(0) }
-		if style.css_text.trim_space().to_lower() in ['none', 'hidden'] {
-			return CSSPixels.new(0)
-		}
+		values := unsafe { &css.ComputedValues(computed) }
+		return values.border_data(property_id).width
 	}
 	size := computed.size_value(property_id)
 	if !size.is_length() && !size.is_percentage() && !size.is_calculated() {
@@ -250,7 +232,6 @@ fn resolve_computed_edge(computed &css.ComputedProperties, property_id css.Prope
 }
 
 // --- Content size ---
-
 pub fn (u &UsedValues) content_width() CSSPixels {
 	return u.content_width_
 }
@@ -354,7 +335,6 @@ pub fn (u &UsedValues) available_inner_space_or_constraints_from(outer_space Ava
 }
 
 // --- Offset ---
-
 pub fn (mut u UsedValues) set_content_offset(new_offset css.CSSPixelPoint) {
 	u.offset = new_offset
 }
@@ -389,8 +369,7 @@ pub fn (u &UsedValues) abspos_containing_block_rect() ?css.CSSPixelRect {
 
 pub fn (u &UsedValues) static_position() css.CSSPixelPoint {
 	position := u.static_position_rect_ or { return css.CSSPixelPoint{} }
-	return position.aligned_position_for_box_with_size(css.CSSPixelSize.new(u.margin_box_width(),
-		u.margin_box_height()))
+	return position.aligned_position_for_box_with_size(css.CSSPixelSize.new(u.margin_box_width(), u.margin_box_height()))
 }
 
 // SVGGraphicsPaintable::ComputedTransforms and the path materialized by
@@ -422,10 +401,6 @@ pub fn (u &UsedValues) svg_transform() svg.AffineTransform {
 	return u.svg_transform_
 }
 
-pub fn (mut u UsedValues) set_svg_text(text string) {
-	u.svg_text_ = text
-}
-
 pub fn (mut u UsedValues) set_svg_rendering_disabled(disabled bool) {
 	u.svg_rendering_disabled_ = disabled
 }
@@ -434,12 +409,7 @@ pub fn (u &UsedValues) svg_rendering_disabled() bool {
 	return u.svg_rendering_disabled_
 }
 
-pub fn (u &UsedValues) svg_text() string {
-	return u.svg_text_
-}
-
 // --- Margin box (margin + border + padding + content) ---
-
 pub fn (u &UsedValues) margin_box_left() CSSPixels {
 	return css_pixels_sum([u.margin_left, u.border_left, u.padding_left])
 }
@@ -465,7 +435,6 @@ pub fn (u &UsedValues) margin_box_height() CSSPixels {
 }
 
 // --- Border box (border + padding + content) ---
-
 pub fn (u &UsedValues) border_box_left() CSSPixels {
 	return css_pixels_sum([u.border_left, u.padding_left])
 }
@@ -631,7 +600,6 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 	values.has_computed_svg_transforms_ = source_values.has_computed_svg_transforms_
 	values.svg_viewbox_transform_ = source_values.svg_viewbox_transform_
 	values.svg_transform_ = source_values.svg_transform_
-	values.svg_text_ = source_values.svg_text_
 	values.svg_rendering_disabled_ = source_values.svg_rendering_disabled_
 	values.containing_block_used_values_ = none
 	return values
@@ -645,8 +613,7 @@ fn (mut state LayoutState) ensure_used_values_for(node &NodeWithStyle) &UsedValu
 	node_as_node := unsafe { &Node(node) }
 	if subtree_root := state.subtree_root {
 		root_as_node := unsafe { &Node(subtree_root) }
-		if voidptr(subtree_root) != voidptr(node)
-			&& !root_as_node.is_inclusive_ancestor_of(node_as_node) {
+		if voidptr(subtree_root) != voidptr(node) && !root_as_node.is_inclusive_ancestor_of(node_as_node) {
 			panic('LayoutState subtree root ${layout_debug_class_name(root_as_node)} <${layout_debug_tag(root_as_node)}> does not contain ${layout_debug_class_name(node_as_node)} <${layout_debug_tag(node_as_node)}>')
 		}
 	}
@@ -690,7 +657,6 @@ pub fn (state &LayoutState) try_get_mutable(node &NodeWithStyle) ?&UsedValues {
 }
 
 // --- CSSPixels helpers (the port's CSSPixels has no arithmetic operators) ---
-
 fn css_pixels_sum(values []CSSPixels) CSSPixels {
 	mut total := 0.0
 	for value in values {
@@ -700,8 +666,7 @@ fn css_pixels_sum(values []CSSPixels) CSSPixels {
 }
 
 fn css_pixel_point_add(a css.CSSPixelPoint, b css.CSSPixelPoint) css.CSSPixelPoint {
-	return css.CSSPixelPoint.from_values(a.x().to_double() + b.x().to_double(), a.y().to_double() +
-		b.y().to_double())
+	return css.CSSPixelPoint.from_values(a.x().to_double() + b.x().to_double(), a.y().to_double() + b.y().to_double())
 }
 
 pub fn clamp_to_max_dimension_value(value CSSPixels) CSSPixels {

@@ -8,12 +8,14 @@ fn person(name string, age f64) Value {
 }
 
 fn object_store_test_database() !(&IDBFactory, &IDBDatabase) {
-	mut factory := IDBFactory.create('https://object-store.test')!
+	storage_key := 'https://object-store.test'
+	DatabaseData.delete_for_key_and_name(storage_key, 'people-db')
+	mut factory := IDBFactory.create(storage_key)!
 	mut open := factory.open('people-db', u64(1))!
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	mut people := connection.create_object_store(mut upgrade, 'people', IDBObjectStoreParameters{
-		key_path:       'id'
+		key_path: 'id'
 		auto_increment: true
 	})!
 	people.create_index('by_name', 'name', IDBIndexParameters{ unique: true })!
@@ -33,6 +35,11 @@ fn test_object_store_add_put_get_delete_and_key_generator() {
 	duplicate_name := store.add(person('Ada', 50), none)!
 	assert duplicate_name.error()!.contains('ConstraintError')
 	assert store.count(none)!.count == 2
+	// The failed request rolls its key-generator and index mutations back from
+	// the request's mutation-log position; it must not consume key 3.
+	third := store.add(person('Katherine', 32), none)!
+	assert third.key or { panic('no generated key') }.number == 3
+	assert store.count(none)!.count == 3
 
 	range := IDBKeyRange.only(number_key(1))!
 	got := store.get(range)!
@@ -45,7 +52,7 @@ fn test_object_store_add_put_get_delete_and_key_generator() {
 	store.put(updated, none)!
 	assert store.get(range)!.value.fields['age'].number == 37
 	store.delete(IDBKeyRange.only(number_key(2))!)!
-	assert store.count(none)!.count == 1
+	assert store.count(none)!.count == 2
 	transaction.commit()!
 }
 

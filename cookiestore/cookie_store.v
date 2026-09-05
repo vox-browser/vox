@@ -7,7 +7,6 @@ module cookiestore
 
 import dom
 import html
-import strconv
 import url
 
 pub struct CookieListItem {
@@ -164,184 +163,15 @@ pub:
 	document         ?&dom.Document
 }
 
-fn first_url_delimiter(input string, start int) int {
-	for index := start; index < input.len; index++ {
-		if input[index] == `/` || input[index] == `?` || input[index] == `#` {
-			return index
-		}
-	}
-	return input.len
-}
-
-fn normalize_path_segments(segments []string) []string {
-	mut output := []string{}
-	for segment in segments {
-		if segment == '.' {
-			continue
-		}
-		if segment == '..' {
-			if output.len > 0 {
-				output.delete(output.len - 1)
-			}
-			continue
-		}
-		output << segment
-	}
-	return output
-}
-
-fn split_url_tail(record_input url.URL, tail string) url.URL {
-	mut record := record_input
-	mut path_end := tail.len
-	for index, byte in tail.bytes() {
-		if byte == `?` || byte == `#` {
-			path_end = index
-			break
-		}
-	}
-	path := tail[..path_end]
-	if path.len > 0 {
-		if path.starts_with('/') {
-			record.paths = normalize_path_segments(path[1..].split('/'))
-		} else {
-			mut base_paths := record.paths.clone()
-			if base_paths.len > 0 {
-				base_paths.delete(base_paths.len - 1)
-			}
-			base_paths << path.split('/')
-			record.paths = normalize_path_segments(base_paths)
-		}
-	}
-	record.query = none
-	record.fragment = none
-	if path_end < tail.len && tail[path_end] == `?` {
-		query_start := path_end + 1
-		mut query_end := tail.len
-		for index := query_start; index < tail.len; index++ {
-			if tail[index] == `#` {
-				query_end = index
-				break
-			}
-		}
-		record.query = tail[query_start..query_end]
-		if query_end < tail.len {
-			record.fragment = tail[query_end + 1..]
-		}
-	} else if path_end < tail.len && tail[path_end] == `#` {
-		record.fragment = tail[path_end + 1..]
-	}
-	return record
-}
-
-// The translated URL module intentionally contains records rather than the
-// full LibURL parser. CookieStore needs this focused absolute/relative parser
-// for its options dictionary; it accepts the hierarchical HTTP-family URLs
-// usable by the cookie API.
+// CookieStore.cpp parses the option with URL::Parser::basic_parse and the
+// environment's API base URL. Keep that exact subsystem boundary here rather
+// than maintaining a second CookieStore-specific URL grammar.
 pub fn parse_cookie_store_url(input string, base &url.URL) ?url.URL {
-	if input.len == 0 {
-		return none
-	}
-	if scheme_end := input.index('://') {
-		scheme := input[..scheme_end].to_lower()
-		if scheme !in ['http', 'https', 'ws', 'wss'] {
-			return none
-		}
-		authority_start := scheme_end + 3
-		authority_end := first_url_delimiter(input, authority_start)
-		mut authority := input[authority_start..authority_end]
-		if authority.len == 0 {
-			return none
-		}
-		mut username := ''
-		mut password := ''
-		if at := authority.last_index('@') {
-			userinfo := authority[..at]
-			authority = authority[at + 1..]
-			if colon := userinfo.index(':') {
-				username = userinfo[..colon]
-				password = userinfo[colon + 1..]
-			} else {
-				username = userinfo
-			}
-		}
-		mut host := ''
-		mut port := ?u16(none)
-		if authority.starts_with('[') {
-			closing := authority.index(']') or { return none }
-			host = authority[..closing + 1].to_lower()
-			if closing + 1 < authority.len {
-				if authority[closing + 1] != `:` {
-					return none
-				}
-				parsed_port := strconv.atoi(authority[closing + 2..]) or { return none }
-				if parsed_port < 0 || parsed_port > 65535 {
-					return none
-				}
-				port = u16(parsed_port)
-			}
-		} else {
-			if colon := authority.last_index(':') {
-				host = authority[..colon].to_lower()
-				parsed_port := strconv.atoi(authority[colon + 1..]) or { return none }
-				if parsed_port < 0 || parsed_port > 65535 {
-					return none
-				}
-				port = u16(parsed_port)
-			} else {
-				host = authority.to_lower()
-			}
-		}
-		if host.len == 0 {
-			return none
-		}
-		for code_point in host.runes() {
-			if url.is_forbidden_host_code_point(u32(code_point)) && code_point != `[` && code_point != `]` {
-				return none
-			}
-		}
-		if actual_port := port {
-			if actual_port == url.default_port_for_scheme(scheme) or { u16(0) } {
-				port = none
-			}
-		}
-		mut result := url.URL{
-			scheme: scheme
-			username: username
-			password: password
-			host: url.Host.from_string(host)
-			port: port
-			paths: ['']
-		}
-		if authority_end < input.len {
-			result = split_url_tail(result, input[authority_end..])
-		}
-		return result
-	}
-	// A colon in the first path segment denotes an absolute URL. Schemes
-	// outside the HTTP family are not cookie URLs, and malformed HTTP URLs
-	// must not be reinterpreted as relative paths.
-	first_delimiter := first_url_delimiter(input, 0)
-	if input[..first_delimiter].contains(':') {
-		return none
-	}
-	if input.starts_with('//') {
-		return parse_cookie_store_url(base.scheme + ':' + input, base)
-	}
-	if input.starts_with('#') {
-		mut result := *base
-		result.fragment = input[1..]
-		return result
-	}
-	if input.starts_with('?') {
-		mut result := *base
-		return split_url_tail(result, input)
-	}
-	mut result := *base
-	return split_url_tail(result, input)
+	return url.basic_parse(input, base)
 }
 
 fn urls_have_same_origin(a &url.URL, b &url.URL) bool {
-	return a.scheme == b.scheme && url_host_string(a) == url_host_string(b) && a.port_or_default() == b.port_or_default()
+	return a.origin().is_same_origin(b.origin())
 }
 
 // https://cookiestore.spec.whatwg.org/#create-a-cookielistitem

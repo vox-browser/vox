@@ -1,5 +1,7 @@
 module webaudio
 
+import math
+
 fn test_factories_apply_node_specific_defaults_and_constraints() {
 	mut context := new_audio_context(1, 48000, true) or { panic(err) }
 	merger := context.base.create_channel_merger(6, AudioNodeOptions{}) or { panic(err) }
@@ -14,6 +16,15 @@ fn test_factories_apply_node_specific_defaults_and_constraints() {
 	assert biquad.gain.max_value > 1541
 	context.base.create_delay(180, 0, AudioNodeOptions{}) or {
 		assert err.msg().contains('exclusive')
+		return
+	}
+	assert false
+}
+
+fn test_delay_rejects_nan_max_delay_time() {
+	mut context := new_audio_context(7, none, true) or { panic(err) }
+	context.base.create_delay(math.nan(), 0, AudioNodeOptions{}) or {
+		assert err.msg().contains('NotSupportedError')
 		return
 	}
 	assert false

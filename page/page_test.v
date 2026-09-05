@@ -1,5 +1,7 @@
 module page
 
+import dom
+
 fn test_page_identity_geometry_dialogs_and_clipboard_correlation() {
 	mut p := Page.create(2)!
 	p.set_top_level_traversable('top')!
@@ -34,6 +36,23 @@ fn test_page_identity_geometry_dialogs_and_clipboard_correlation() {
 	assert first == 0 && second == 1
 	assert p.retrieved_clipboard_entries(second)
 	assert !p.retrieved_clipboard_entries(second)
+}
+
+fn test_dom_document_notifications_reach_the_translated_page_client() {
+	mut model := Page.create(1.0)!
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_page(unsafe { &dom.Page(model) })
+	assert model.client().events.last().name == 'create-new-document'
+	assert model.client().events.last().text == 'https://example.test/'
+
+	document.increment_number_of_things_delaying_the_load_event()
+	assert model.client().events.last().name == 'update-resource-count'
+	assert model.client().events.last().text == '1'
+
+	mut dom_page := unsafe { &dom.Page(model) }
+	dom_page.client_page_did_change_title('Translated title')
+	assert model.client().events.last().name == 'change-title'
+	assert model.client().events.last().text == 'Translated title'
 }
 
 fn test_media_registry_and_find_in_page_wrap_rules() {

@@ -3,9 +3,21 @@ module html
 import dom
 
 fn loc(url string) &WorkerLocation {
-	return WorkerLocation.create(dom.URL{
+	scope := WorkerGlobalScope.create(dom.URL{
 		value: url
-	})
+	}, .classic, '', &ScriptingRealm{})
+	return scope.location()
+}
+
+fn test_location_reflects_the_worker_global_scope_url_live() {
+	mut scope := WorkerGlobalScope.create(dom.URL{ value: 'https://example.test/first' },
+		.classic, '', &ScriptingRealm{})
+	location := scope.location()
+	assert location.pathname() == '/first'
+	scope.set_url(dom.URL{ value: 'https://example.test/second?q=1' })
+	assert location.href() == 'https://example.test/second?q=1'
+	assert location.pathname() == '/second'
+	assert location.search() == '?q=1'
 }
 
 fn test_full_url_components() {

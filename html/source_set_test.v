@@ -41,3 +41,18 @@ fn test_create_and_select_source_set() {
 	assert created.source_size == 100
 	assert density_of(created.sources[0]) == 2
 }
+
+fn test_sizes_attribute_uses_css_parser_media_and_math_algorithms() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+	element := document.create_element('img')!
+
+	assert parse_a_sizes_attribute(element, '', none) == 800
+	assert parse_a_sizes_attribute(element, '(max-width: 500px) 100px, (min-width: 501px) 50vw', none) == 400
+	assert parse_a_sizes_attribute(element, 'calc(50vw - 10px)', none) == 390
+	assert parse_a_sizes_attribute(element, 'auto, 25vw', none) == 200
+	assert parse_a_sizes_attribute(element, 'url(not-a-size)', none) == 800
+
+	document.set_viewport_rect(dom.Rect{0, 0, 400, 600})
+	assert parse_a_sizes_attribute(element, '(max-width: 500px) 100px, (min-width: 501px) 50vw', none) == 100
+}

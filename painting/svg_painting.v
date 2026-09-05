@@ -53,6 +53,8 @@ pub:
 	tile_display_list_id string
 	tile_rect            Rect
 	pattern_transform    ?Affine
+	tile_display_list    ?&SVGPatternDisplayList
+	cache_key            u64
 }
 
 pub type SVGPaintStyle = SVGLinearGradientPaintStyle
@@ -75,7 +77,7 @@ pub:
 	kind           SVGPaintableKind
 	absolute_rect  Rect
 	transform      Affine = Affine{}
-	anti_alias     bool   = true
+	anti_alias     bool = true
 	path           []Point
 	stroke_width   f64
 	fill_enabled   bool = true
@@ -85,23 +87,31 @@ pub:
 	children       []SVGPaintable
 }
 
-pub fn (paintable SVGPaintable) compute_absolute_rect() Rect { return paintable.transform.map_rect(paintable.absolute_rect) }
-pub fn (paintable SVGPaintable) is_svg_paintable() bool { return true }
-pub fn (paintable SVGPaintable) layout_box() string { return paintable.id }
-pub fn (paintable SVGPaintable) should_anti_alias() bool { return paintable.anti_alias }
+pub fn (paintable SVGPaintable) compute_absolute_rect() Rect {
+	return paintable.transform.map_rect(paintable.absolute_rect)
+}
+
+pub fn (paintable SVGPaintable) is_svg_paintable() bool {
+	return true
+}
+
+pub fn (paintable SVGPaintable) layout_box() string {
+	return paintable.id
+}
+
+pub fn (paintable SVGPaintable) should_anti_alias() bool {
+	return paintable.anti_alias
+}
 
 fn distance_to_segment(point Point, start Point, end Point) f64 {
 	dx := end.x - start.x
 	dy := end.y - start.y
 	if dx == 0 && dy == 0 {
-		return math.sqrt((point.x - start.x) * (point.x - start.x) +
-			(point.y - start.y) * (point.y - start.y))
+		return math.sqrt((point.x - start.x) * (point.x - start.x) + (point.y - start.y) * (point.y - start.y))
 	}
-	t := math.max(0.0, math.min(1.0, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (
-		dx * dx + dy * dy)))
+	t := math.max(0.0, math.min(1.0, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)))
 	projection := Point{start.x + t * dx, start.y + t * dy}
-	return math.sqrt((point.x - projection.x) * (point.x - projection.x) +
-		(point.y - projection.y) * (point.y - projection.y))
+	return math.sqrt((point.x - projection.x) * (point.x - projection.x) + (point.y - projection.y) * (point.y - projection.y))
 }
 
 pub fn (paintable SVGPaintable) hit_test(screen_point Point) bool {
@@ -130,23 +140,23 @@ pub fn (paintable SVGPaintable) paint_commands(phase PaintPhase, converter Devic
 	path_bounds := converter.enclosing_device_rect(paintable.absolute_rect)
 	if paintable.fill_enabled {
 		commands << FillPath{
-			path_id:            paintable.id
+			path_id: paintable.id
 			path_bounding_rect: path_bounds
-			color:              color
-			winding_rule:       paintable.fill_rule
-			anti_alias:         paintable.anti_alias
+			color: color
+			winding_rule: paintable.fill_rule
+			anti_alias: paintable.anti_alias
 		}
 	}
 	if paintable.stroke_enabled {
 		commands << StrokePath{
-			path_id:            paintable.id
+			path_id: paintable.id
 			path_bounding_rect: path_bounds
-			cap_style:          .butt
-			join_style:         .miter
-			miter_limit:        4
-			color:              color
-			thickness:          paintable.stroke_width
-			anti_alias:         paintable.anti_alias
+			cap_style: .butt
+			join_style: .miter
+			miter_limit: 4
+			color: color
+			thickness: paintable.stroke_width
+			anti_alias: paintable.anti_alias
 		}
 	}
 	return commands
@@ -207,11 +217,11 @@ fn paint_svg_clip_descendants(root SVGPaintable,
 	mut commands := []DisplayListCommand{}
 	if root.kind == .path && root.path.len >= 3 {
 		commands << FillPath{
-			path_id:            root.id
+			path_id: root.id
 			path_bounding_rect: converter.enclosing_device_rect(root.absolute_rect)
-			color:              Color{}
-			winding_rule:       root.clip_rule
-			anti_alias:         root.anti_alias
+			color: Color{}
+			winding_rule: root.clip_rule
+			anti_alias: root.anti_alias
 		}
 	}
 	for child in root.children {

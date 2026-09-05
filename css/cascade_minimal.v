@@ -7,16 +7,6 @@ import dom
 // style_computer.v, computed_interpolation.v, and style_scope_cache.v; these helpers intentionally
 // expose the smaller rule-list/inline-style calculation used by focused callers and tests.
 
-// https://drafts.csswg.org/css-cascade/#inherited-property — does this longhand inherit by default?
-pub fn is_inherited_property(property_id PropertyID) bool {
-	return string_from_property_id(property_id) in inherited_properties
-}
-
-// The property's initial value, as a source string (from Properties.json), or '' if none.
-pub fn property_initial_value_string(property_id PropertyID) string {
-	return property_initial_values[string_from_property_id(property_id)] or { '' }
-}
-
 // A single longhand value taken from a declaration (directly or via an expanded shorthand).
 struct LonghandDeclaration {
 	value     string
@@ -39,15 +29,14 @@ fn expand_shorthand_value(shorthand_id PropertyID, value_text string) map[string
 	return result
 }
 
-// The declaration's value for the longhand `property_name`: a direct declaration if present,
-// otherwise a value produced by expanding any shorthand the declaration sets.
-// FIXME: source order between a shorthand and an overlapping longhand within one block is not
-// tracked (a direct longhand always wins here).
+// The declaration's value for the longhand `property_name`. CSSStyleProperties is already in
+// specified order with shorthands expanded by convert_declarations_to_specified_order(), so a
+// direct lookup observes the same winner as the C++ CSSOM declaration block.
 fn declaration_longhand(declaration &CSSStyleProperties, property_name string) ?LonghandDeclaration {
 	direct := declaration.get_property_value(property_name)
 	if direct.len > 0 {
 		return LonghandDeclaration{
-			value:     direct
+			value: direct
 			important: declaration.property_priority(property_name) == 'important'
 		}
 	}
@@ -57,11 +46,10 @@ fn declaration_longhand(declaration &CSSStyleProperties, property_name string) ?
 		if !property_is_shorthand(shorthand_id) {
 			continue
 		}
-		expanded := expand_shorthand_value(shorthand_id,
-			declaration.get_property_value(shorthand_name))
+		expanded := expand_shorthand_value(shorthand_id, declaration.get_property_value(shorthand_name))
 		if value := expanded[property_name] {
 			return LonghandDeclaration{
-				value:     value
+				value: value
 				important: declaration.property_priority(shorthand_name) == 'important'
 			}
 		}
@@ -71,11 +59,7 @@ fn declaration_longhand(declaration &CSSStyleProperties, property_name string) ?
 
 // The element's inline style declaration block, if it has a non-empty style attribute.
 fn inline_declaration_block(element &dom.Element) ?&CSSStyleProperties {
-	style_text := element.get_attribute('style') or { return none }
-	if style_text.len == 0 {
-		return none
-	}
-	return parse_css_property_declaration_block_with_parser(style_text)
+	return inline_style_for_abstract_element(dom.AbstractElement.new(element, none))
 }
 
 // The element's declared value for `property_name` from its inline style attribute, if present
@@ -172,32 +156,36 @@ fn rule_matches_for(element &dom.Element, property_name string, rules []&CSSRule
 		}
 		if specificity := best_specificity {
 			result << CascadeMatch{
-				origin:      origin
-				important:   longhand.important
+				origin: origin
+				important: longhand.important
 				specificity: specificity
-				order:       order
-				value:       longhand.value
+				order: order
+				value: longhand.value
 			}
 		}
 	}
 	return result
 }
 
-fn specified_value_on(element &dom.Element, property_name string, author_rules []&CSSRule, ua_rules []&CSSRule) ?string {
+fn specified_match_on(element &dom.Element, property_name string, author_rules []&CSSRule, ua_rules []&CSSRule, include_author bool) ?CascadeMatch {
 	mut matches := []CascadeMatch{}
 	// UA origin first (lowest source order), then author rules.
 	matches << rule_matches_for(element, property_name, ua_rules, .user_agent, 0)
-	matches << rule_matches_for(element, property_name, author_rules, .author, ua_rules.len)
+	if include_author {
+		matches << rule_matches_for(element, property_name, author_rules, .author, ua_rules.len)
+	}
 
 	// Inline style is an author-origin declaration with a specificity higher than any selector.
-	if block := inline_declaration_block(element) {
-		if longhand := declaration_longhand(block, property_name) {
-			matches << CascadeMatch{
-				origin:      .author
-				important:   longhand.important
-				specificity: u32(0xffffffff)
-				order:       0x7fffffff
-				value:       longhand.value
+	if include_author {
+		if block := inline_declaration_block(element) {
+			if longhand := declaration_longhand(block, property_name) {
+				matches << CascadeMatch{
+					origin: .author
+					important: longhand.important
+					specificity: u32(0xffffffff)
+					order: 0x7fffffff
+					value: longhand.value
+				}
 			}
 		}
 	}
@@ -211,43 +199,71 @@ fn specified_value_on(element &dom.Element, property_name string, author_rules [
 			winner = match_candidate
 		}
 	}
-	return winner.value
+	return winner
 }
 
-// Resolve `property_id` for `element` given `author_rules` and `ua_rules`: the winning specified
-// value (cascade of UA + author + inline), else inheritance, else the initial value. The CSS-wide
-// keywords in a specified value are resolved here: `initial`, `inherit`, and `unset` (and `revert`,
-// approximated as `unset`).
-fn cascaded_value_impl(element &dom.Element, property_id PropertyID, author_rules []&CSSRule, ua_rules []&CSSRule) string {
-	name := string_from_property_id(property_id)
-	if value := specified_value_on(element, name, author_rules, ua_rules) {
-		// Substitute any var() references before interpreting the value.
-		resolved := substitute_var(element, value, author_rules, ua_rules)
-		return match resolved {
-			'initial' {
-				property_initial_value_string(property_id)
-			}
-			'inherit' {
-				inherited_value(element, property_id, author_rules, ua_rules)
-			}
-			'unset', 'revert' {
-				// `unset` acts as `inherit` for inherited properties and `initial` otherwise. `revert`
-				// is approximated as `unset` here. FIXME: `revert` should roll back to the UA cascade.
-				if is_inherited_property(property_id) {
-					inherited_value(element, property_id, author_rules, ua_rules)
-				} else {
-					property_initial_value_string(property_id)
-				}
-			}
-			else {
-				resolved
-			}
-		}
-	}
+fn specified_value_on(element &dom.Element, property_name string, author_rules []&CSSRule, ua_rules []&CSSRule) ?string {
+	return specified_match_on(element, property_name, author_rules, ua_rules, true)?.value
+}
+
+fn inherited_or_initial_value(element &dom.Element, property_id PropertyID, author_rules []&CSSRule, ua_rules []&CSSRule) string {
 	if is_inherited_property(property_id) {
 		return inherited_value(element, property_id, author_rules, ua_rules)
 	}
 	return property_initial_value_string(property_id)
+}
+
+fn resolve_cascade_match(element &dom.Element, property_id PropertyID, property_name string, winner CascadeMatch, author_rules []&CSSRule, ua_rules []&CSSRule) string {
+	had_variable_substitution := winner.value.contains('var(')
+	resolved := substitute_var(element, winner.value, author_rules, ua_rules) or {
+		return inherited_or_initial_value(element, property_id, author_rules, ua_rules)
+	}
+	return match resolved {
+		'initial' {
+			property_initial_value_string(property_id)
+		}
+		'inherit' {
+			inherited_value(element, property_id, author_rules, ua_rules)
+		}
+		'unset' {
+			inherited_or_initial_value(element, property_id, author_rules, ua_rules)
+		}
+		'revert', 'revert-layer' {
+			// This compatibility cascade has no user origin or named layers. Reverting an
+			// author declaration therefore exposes the winning UA declaration; reverting a
+			// UA declaration falls through to inheritance/the initial value. This is the same
+			// origin rollback performed by CascadedProperties in the primary StyleComputer.
+			if winner.origin == .author {
+				if lower_winner := specified_match_on(element, property_name, []&CSSRule{}, ua_rules, false) {
+					resolve_cascade_match(element, property_id, property_name, lower_winner, author_rules, ua_rules)
+				} else {
+					inherited_or_initial_value(element, property_id, author_rules, ua_rules)
+				}
+			} else {
+				inherited_or_initial_value(element, property_id, author_rules, ua_rules)
+			}
+		}
+		else {
+			// An arbitrary substitution is parsed against the destination property's
+			// grammar after substitution. Failure makes the declaration invalid at
+			// computed-value time, which is equivalent to `unset`.
+			if had_variable_substitution && parse_css_value_logic(property_id, resolved) == none {
+				return inherited_or_initial_value(element, property_id, author_rules, ua_rules)
+			}
+			resolved
+		}
+	}
+}
+
+// Resolve `property_id` for `element` given `author_rules` and `ua_rules`: the winning specified
+// value (cascade of UA + author + inline), else inheritance, else the initial value. The CSS-wide
+// keywords in a specified value are resolved here, including origin rollback for `revert`.
+fn cascaded_value_impl(element &dom.Element, property_id PropertyID, author_rules []&CSSRule, ua_rules []&CSSRule) string {
+	name := string_from_property_id(property_id)
+	if winner := specified_match_on(element, name, author_rules, ua_rules, true) {
+		return resolve_cascade_match(element, property_id, name, winner, author_rules, ua_rules)
+	}
+	return inherited_or_initial_value(element, property_id, author_rules, ua_rules)
 }
 
 // The declared value of a custom property (`--name`) on `element`, resolved through the cascade and
@@ -263,15 +279,18 @@ fn custom_property_value(element &dom.Element, name string, author_rules []&CSSR
 
 // Substitute every var(--name[, fallback]) reference in `value` with the custom property's value (or
 // its fallback when the property is undefined), for `element`. Substitution re-scans so a custom
-// property whose value itself uses var() is resolved. A recursion cap guards against cyclic vars.
-// FIXME: an undefined var() with no fallback substitutes to the empty string rather than making the
-// whole declaration invalid (which should fall back to the inherited/initial value).
-fn substitute_var(element &dom.Element, value string, author_rules []&CSSRule, ua_rules []&CSSRule) string {
+// property whose value itself uses var() is resolved. Missing fallbacks, malformed functions, and
+// cycles return failure, matching the guaranteed-invalid result of the upstream substitution
+// algorithm.
+fn substitute_var(element &dom.Element, value string, author_rules []&CSSRule, ua_rules []&CSSRule) ?string {
 	return substitute_var_impl(element, value, author_rules, ua_rules, 0)
 }
 
-fn substitute_var_impl(element &dom.Element, value string, author_rules []&CSSRule, ua_rules []&CSSRule, depth int) string {
-	if depth > 32 || !value.contains('var(') {
+fn substitute_var_impl(element &dom.Element, value string, author_rules []&CSSRule, ua_rules []&CSSRule, depth int) ?string {
+	if depth > 32 {
+		return none
+	}
+	if !value.contains('var(') {
 		return value
 	}
 	start := value.index('var(') or { return value }
@@ -291,14 +310,19 @@ fn substitute_var_impl(element &dom.Element, value string, author_rules []&CSSRu
 		}
 	}
 	if end < 0 {
-		return value // malformed var()
+		return none
 	}
 	inner := value[start + 4..end]
 	parts := split_first_top_level_comma(inner)
 	var_name := parts[0].trim_space()
 	replacement := custom_property_value(element, var_name, author_rules, ua_rules) or {
-		// Undefined: use the fallback (itself possibly containing var()), else the empty string.
-		if parts.len > 1 { parts[1].trim_space() } else { '' }
+		// Undefined: use the fallback (itself possibly containing var()). A
+		// missing fallback makes the whole declaration guaranteed-invalid.
+		if parts.len > 1 {
+			parts[1].trim_space()
+		} else {
+			return none
+		}
 	}
 	rebuilt := value[..start] + replacement + value[end + 1..]
 	return substitute_var_impl(element, rebuilt, author_rules, ua_rules, depth + 1)
@@ -341,6 +365,20 @@ pub fn cascaded_value_with_stylesheet(element &dom.Element, property_id Property
 // elements get their UA defaults (e.g. div -> display: block, head -> display: none). Order:
 // UA/author/importance tier -> specificity -> source order, then inheritance, then initial.
 pub fn cascaded_value_with_ua(element &dom.Element, property_id PropertyID, author_rules []&CSSRule) string {
+	// Browser/layout callers normally arrive with StyleComputer's retained
+	// ComputedProperties already installed. Read that canonical object directly
+	// instead of rescanning every stylesheet and reparsing the inline declaration
+	// for every property lookup. The explicit rule list is only a detached-tree
+	// fallback; installed computed state was produced by the canonical document
+	// cascade and takes precedence regardless of that compatibility argument.
+	abstract_element := dom.AbstractElement.new(element, none)
+	if dom_computed := abstract_element.computed_properties() {
+		if computed := computed_properties_from_dom(dom_computed) {
+			if value := computed.property(property_id, .yes) {
+				return value.css_text
+			}
+		}
+	}
 	return cascaded_value_impl(element, property_id, author_rules, user_agent_rules())
 }
 
@@ -349,6 +387,12 @@ pub fn cascaded_value_with_ua(element &dom.Element, property_id PropertyID, auth
 // layout decide whether a physical box edge that was never set should defer to its CSS logical
 // equivalent (e.g. an unset `margin-top` deferring to a declared `margin-block-start`).
 pub fn is_property_specified(element &dom.Element, property_id PropertyID, author_rules []&CSSRule) bool {
+	abstract_element := dom.AbstractElement.new(element, none)
+	if dom_cascaded := abstract_element.cascaded_properties() {
+		if cascaded := cascaded_properties_from_dom(dom_cascaded) {
+			return cascaded.property(property_id) != none
+		}
+	}
 	name := string_from_property_id(property_id)
 	if _ := specified_value_on(element, name, author_rules, user_agent_rules()) {
 		return true

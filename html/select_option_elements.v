@@ -324,8 +324,7 @@ pub fn html_data_list_element_options(datalist &dom.HTMLDataListElement) &dom.HT
 		return options
 	}
 	element := unsafe { &dom.Element(datalist) }
-	options := dom.HTMLCollection.create(unsafe { &dom.ParentNode(element) }, .descendants,
-		fn (candidate &dom.Element) bool {
+	options := dom.HTMLCollection.create(unsafe { &dom.ParentNode(element) }, .descendants, fn (candidate &dom.Element) bool {
 		return candidate.local_name() == 'option'
 	}, fn (_ &dom.Element, _ &dom.Element) bool {
 		return false
@@ -457,6 +456,12 @@ pub fn html_select_element_selected_index(select_element &dom.HTMLSelectElement)
 }
 
 pub fn set_html_select_element_selected_index(select_element &dom.HTMLSelectElement, selected_index i32) {
+	// In C++, the form-associated insertion steps have already materialized the
+	// built-in shadow tree before an IDL setter can run. Ensure the split V model
+	// has reached the same state, then preserve the setter's ScopeGuard update of
+	// the built-in label below.
+	mut model := HTMLSelectElementModel.create(select_element)
+	model.create_shadow_tree_if_needed()
 	mut first_matching_option := ?&dom.HTMLOptionElement(none)
 	for index, option in html_select_element_list_of_options(select_element) {
 		html_option_element_set_selected_internal(option, false)
@@ -469,6 +474,8 @@ pub fn set_html_select_element_selected_index(select_element &dom.HTMLSelectElem
 		mut mutable_option := unsafe { &dom.HTMLOptionElement(option) }
 		mutable_option.dirty_ = true
 	}
+	html_select_element_update_selectedcontent(select_element) or {}
+	model.update_inner_text_element()
 }
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-value
@@ -537,8 +544,7 @@ pub fn html_select_element_update_selectedness(select_element &dom.HTMLSelectEle
 // https://html.spec.whatwg.org/multipage/form-elements.html#the-select-element:concept-form-reset-control
 pub fn html_select_element_reset(select_element &dom.HTMLSelectElement) {
 	for option in html_select_element_list_of_options(select_element) {
-		html_option_element_set_selected_internal(option,
-			option_dom_element(option).has_attribute('selected'))
+		html_option_element_set_selected_internal(option, option_dom_element(option).has_attribute('selected'))
 		mut mutable_option := unsafe { &dom.HTMLOptionElement(option) }
 		mutable_option.dirty_ = false
 	}
@@ -590,8 +596,7 @@ pub fn set_html_select_element_length(select_element &dom.HTMLSelectElement, val
 		}
 		mut root := select_node(select_element)
 		for _ in 0 .. int(value) - current {
-			option := dom.create_element(select_dom_element(select_element).document(), 'option',
-				ns_html, none, none, false)!
+			option := dom.create_element(select_dom_element(select_element).document(), 'option', ns_html, none, none, false)!
 			root.append_child(option.as_node())!
 		}
 	} else if value < u32(current) {
@@ -614,8 +619,7 @@ pub fn set_html_select_element_indexed_option(select_element &dom.HTMLSelectElem
 		mut root := select_node(select_element)
 		if delta > 0 {
 			for _ in 0 .. int(delta) {
-				placeholder := dom.create_element(select_dom_element(select_element).document(),
-					'option', ns_html, none, none, false)!
+				placeholder := dom.create_element(select_dom_element(select_element).document(), 'option', ns_html, none, none, false)!
 				root.append_child(placeholder.as_node())!
 			}
 		}

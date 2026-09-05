@@ -33,9 +33,7 @@ fn test_dump_css_objects() {
 		value:     'red'
 		important: true
 	}
-	selector_value := css.Selector{
-		text: 'div > .item'
-	}
+	selector_value := css.selector_from_text('div > .item')
 	rule_list := css.CSSRuleList.create_empty()
 	rule_value := css.CSSRule.create_style(css.SelectorList{
 		selectors: [

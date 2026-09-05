@@ -16,43 +16,61 @@ struct CalcResult {
 	type_ NumericType
 }
 
-fn resolve_calc_node(node CalcNode, ctx CalculationResolutionContext) ?CalcResult {
+fn resolve_calc_node(node CalcNode, calculation_context CalculationContext, ctx CalculationResolutionContext) ?CalcResult {
 	match node {
 		CalcNumeric {
-			return resolve_calc_leaf(node, ctx)
+			return resolve_calc_leaf(node, calculation_context, ctx)
+		}
+		CalcTreeCounting {
+			abstract_element := ctx.abstract_element or { return none }
+			return CalcResult{
+				value: f64(node.style_value.resolve_for_dom_abstract_element(&abstract_element))
+				type_: NumericType.new()
+			}
 		}
 		CalcSum {
-			mut accumulated := resolve_calc_node(node.children[0], ctx) or { return none }
+			mut accumulated := resolve_calc_node(node.children[0], calculation_context, ctx) or {
+				return none
+			}
 			for index := 1; index < node.children.len; index++ {
-				addend := resolve_calc_node(node.children[index], ctx) or { return none }
+				addend := resolve_calc_node(node.children[index], calculation_context, ctx) or {
+					return none
+				}
 				accumulated = calc_result_add(accumulated, addend) or { return none }
 			}
 			return accumulated
 		}
 		CalcProduct {
-			mut accumulated := resolve_calc_node(node.children[0], ctx) or { return none }
+			mut accumulated := resolve_calc_node(node.children[0], calculation_context, ctx) or {
+				return none
+			}
 			for index := 1; index < node.children.len; index++ {
-				factor := resolve_calc_node(node.children[index], ctx) or { return none }
+				factor := resolve_calc_node(node.children[index], calculation_context, ctx) or {
+					return none
+				}
 				accumulated = calc_result_multiply(accumulated, factor) or { return none }
 			}
 			return accumulated
 		}
 		CalcNegate {
-			child := resolve_calc_node(node.children[0], ctx) or { return none }
+			child := resolve_calc_node(node.children[0], calculation_context, ctx) or { return none }
 			return CalcResult{
 				value: -child.value
 				type_: child.type_
 			}
 		}
 		CalcInvert {
-			child := resolve_calc_node(node.children[0], ctx) or { return none }
+			child := resolve_calc_node(node.children[0], calculation_context, ctx) or { return none }
 			return CalcResult{
 				value: 1.0 / child.value
 				type_: child.type_.inverted()
 			}
 		}
 		CalcFunction {
-			return resolve_calc_function(node, ctx)
+			return resolve_calc_function(node, calculation_context, ctx)
+		}
+		CalcRandom {
+			return resolve_calc_random(node, calculation_context, ctx)
 		}
 	}
 	return none
@@ -110,7 +128,7 @@ fn calc_result_multiply(a CalcResult, b CalcResult) ?CalcResult {
 	}
 }
 
-fn resolve_calc_leaf(leaf CalcNumeric, ctx CalculationResolutionContext) ?CalcResult {
+fn resolve_calc_leaf(leaf CalcNumeric, calculation_context CalculationContext, ctx CalculationResolutionContext) ?CalcResult {
 	match leaf.kind {
 		.number {
 			return CalcResult{
@@ -122,6 +140,11 @@ fn resolve_calc_leaf(leaf CalcNumeric, ctx CalculationResolutionContext) ?CalcRe
 			// Resolve against the basis if one is available; otherwise stay a raw percentage.
 			if resolved := resolve_calc_percentage_against_basis(leaf.value, ctx) {
 				return resolved
+			}
+			// C++ leaves percentages symbolic when their calculation context associates
+			// them with another type but no basis is available yet.
+			if calculation_context.percentages_resolve_as != none {
+				return none
 			}
 			return CalcResult{
 				value: leaf.value
@@ -213,40 +236,75 @@ fn resolve_calc_percentage_against_basis(value f64, ctx CalculationResolutionCon
 	return none
 }
 
-fn resolve_calc_function(node CalcFunction, ctx CalculationResolutionContext) ?CalcResult {
+fn resolve_calc_function(node CalcFunction, calculation_context CalculationContext, ctx CalculationResolutionContext) ?CalcResult {
+	// sign() is the one type-changing function that operates directly on any numeric
+	// leaf, including an unresolved percentage or non-canonical dimension. This mirrors
+	// SignCalculationNode::run_operation_if_possible rather than forcing it through the
+	// canonical-unit path used by min()/abs()/round()/etc.
+	if node.name == 'sign' {
+		child := node.children[0]
+		if child is CalcNumeric {
+			return_type := NumericType.new().made_consistent_with(child.type_) or { return none }
+			return CalcResult{
+				value: calc_sign_of(child.value)
+				type_: return_type
+			}
+		}
+	}
+
 	mut results := []CalcResult{}
 	for child in node.children {
-		results << (resolve_calc_node(child, ctx) or { return none })
+		results << (resolve_calc_node(child, calculation_context, ctx) or { return none })
 	}
 	match node.name {
 		'min' {
+			consistent_type := calc_consistent_results_type(results) or { return none }
 			mut minimum := results[0].value
 			for index := 1; index < results.len; index++ {
+				// CSS Values requires any operation with a NaN argument to produce NaN.
+				// Ordinary floating-point comparisons would otherwise silently retain the
+				// first finite operand.
+				if math.is_nan(minimum) || math.is_nan(results[index].value) {
+					minimum = math.nan()
+					continue
+				}
 				if results[index].value < minimum {
 					minimum = results[index].value
 				}
 			}
 			return CalcResult{
 				value: minimum
-				type_: results[0].type_
+				type_: consistent_type
 			}
 		}
 		'max' {
+			consistent_type := calc_consistent_results_type(results) or { return none }
 			mut maximum := results[0].value
 			for index := 1; index < results.len; index++ {
+				if math.is_nan(maximum) || math.is_nan(results[index].value) {
+					maximum = math.nan()
+					continue
+				}
 				if results[index].value > maximum {
 					maximum = results[index].value
 				}
 			}
 			return CalcResult{
 				value: maximum
-				type_: results[0].type_
+				type_: consistent_type
 			}
 		}
 		'clamp' {
+			consistent_type := calc_consistent_results_type(results) or { return none }
 			minimum := results[0].value
 			central := results[1].value
 			maximum := results[2].value
+			if math.is_nan(minimum) || math.is_nan(central) || math.is_nan(maximum) {
+				return CalcResult{
+					value: math.nan()
+					type_: consistent_type
+				}
+			}
 			mut clamped := central
 			if clamped > maximum {
 				clamped = maximum
@@ -256,17 +314,18 @@ fn resolve_calc_function(node CalcFunction, ctx CalculationResolutionContext) ?C
 			}
 			return CalcResult{
 				value: clamped
-				type_: results[0].type_
+				type_: consistent_type
 			}
 		}
 		'hypot' {
+			consistent_type := calc_consistent_results_type(results) or { return none }
 			mut sum_of_squares := 0.0
 			for result in results {
 				sum_of_squares += result.value * result.value
 			}
 			return CalcResult{
 				value: math.sqrt(sum_of_squares)
-				type_: results[0].type_
+				type_: consistent_type
 			}
 		}
 		'abs' {
@@ -276,47 +335,69 @@ fn resolve_calc_function(node CalcFunction, ctx CalculationResolutionContext) ?C
 			}
 		}
 		'sign' {
+			return_type := NumericType.new().made_consistent_with(results[0].type_) or {
+				return none
+			}
 			return CalcResult{
 				value: calc_sign_of(results[0].value)
-				type_: NumericType.new()
+				type_: return_type
 			}
 		}
 		'sin' {
-			return calc_number_result(math.sin(calc_to_radians(results[0])))
+			return calc_number_result_consistent(math.sin(calc_to_radians(results[0])), results[0].type_)
 		}
 		'cos' {
-			return calc_number_result(math.cos(calc_to_radians(results[0])))
+			return calc_number_result_consistent(math.cos(calc_to_radians(results[0])), results[0].type_)
 		}
 		'tan' {
-			return calc_number_result(math.tan(calc_to_radians(results[0])))
+			return calc_number_result_consistent(math.tan(calc_to_radians(results[0])), results[0].type_)
 		}
 		'asin' {
-			return calc_arc_result(math.asin(results[0].value), -90, 90)
+			return calc_arc_result(math.asin(results[0].value), -90, 90, results[0].type_)
 		}
 		'acos' {
-			return calc_arc_result(math.acos(results[0].value), 0, 180)
+			return calc_arc_result(math.acos(results[0].value), 0, 180, results[0].type_)
 		}
 		'atan' {
-			return calc_arc_result(math.atan(results[0].value), -90, 90)
+			return calc_arc_result(math.atan(results[0].value), -90, 90, results[0].type_)
 		}
 		'atan2' {
+			input_type := results[0].type_.consistent_type(results[1].type_) or { return none }
+			return_type := NumericType.with_type(.angle, 1).made_consistent_with(input_type) or {
+				return none
+			}
+			mut degrees := calc_radians_to_degrees(math.atan2(results[0].value, results[1].value))
+			// atan2()'s CSS range is (-180deg, 180deg], so the IEEE -180deg
+			// result (notably from atan2(-0, -1)) is represented as +180deg.
+			for degrees <= -180 {
+				degrees += 360
+			}
+			for degrees > 180 {
+				degrees -= 360
+			}
 			return CalcResult{
-				value: calc_radians_to_degrees(math.atan2(results[0].value, results[1].value))
-				type_: NumericType.with_type(.angle, 1)
+				value: degrees
+				type_: return_type
 			}
 		}
 		'pow' {
-			return calc_number_result(math.pow(results[0].value, results[1].value))
+			consistent_type := results[0].type_.consistent_type(results[1].type_) or {
+				return none
+			}
+			return CalcResult{
+				value: math.pow(results[0].value, results[1].value)
+				type_: consistent_type
+			}
 		}
 		'sqrt' {
-			return calc_number_result(math.sqrt(results[0].value))
+			return calc_number_result_consistent(math.sqrt(results[0].value), results[0].type_)
 		}
 		'exp' {
-			return calc_number_result(math.exp(results[0].value))
+			return calc_number_result_consistent(math.exp(results[0].value), results[0].type_)
 		}
 		'log' {
 			base := if results.len == 2 { results[1].value } else { math.e }
-			return calc_number_result(math.log(results[0].value) / math.log(base))
+			return calc_number_result_consistent(math.log(results[0].value) / math.log(base), results[0].type_)
 		}
 		'mod' {
 			return calc_mod_or_rem(results[0], results[1], false)
@@ -333,11 +414,116 @@ fn resolve_calc_function(node CalcFunction, ctx CalculationResolutionContext) ?C
 	}
 }
 
-fn calc_number_result(value f64) CalcResult {
+// https://drafts.csswg.org/css-values-5/#random-evaluation
+fn resolve_calc_random(node CalcRandom, calculation_context CalculationContext, ctx CalculationResolutionContext) ?CalcResult {
+	mut sharing := node.sharing
+	if !sharing.is_fixed() {
+		if ctx.abstract_element == none {
+			return none
+		}
+		absolutized := sharing.absolutized(ComputationContext{
+			length_resolution_context: ctx.length_resolution_context
+			abstract_element: ctx.abstract_element
+		})
+		if absolutized is RandomValueSharingStyleValue {
+			sharing = absolutized
+		} else {
+			return none
+		}
+	}
+
+	minimum := resolve_calc_node(node.children[0], calculation_context, ctx) or { return none }
+	maximum_result := resolve_calc_node(node.children[1], calculation_context, ctx) or { return none }
+	mut minimum_value := minimum.value
+	mut maximum_value := maximum_result.value
+	mut step_value := 0.0
+	if node.children.len == 3 {
+		step := resolve_calc_node(node.children[2], calculation_context, ctx) or { return none }
+		step_value = step.value
+	}
+	result_type := calc_consistent_calc_children_type(node.children) or { return none }
+
+	if maximum_value < minimum_value {
+		maximum_value = minimum_value
+	}
+	if math.is_inf(minimum_value, 0) {
+		return CalcResult{
+			value: math.inf(1)
+			type_: result_type
+		}
+	}
+	if math.is_inf(maximum_value, 0) {
+		return CalcResult{
+			value: math.nan()
+			type_: result_type
+		}
+	}
+	if math.is_inf(step_value, 0) {
+		return CalcResult{
+			value: minimum_value
+			type_: result_type
+		}
+	}
+	if math.is_nan(minimum_value) || math.is_nan(maximum_value) || math.is_nan(step_value) {
+		return CalcResult{
+			value: math.nan()
+			type_: result_type
+		}
+	}
+
+	random_base_value := sharing.random_base_value()
+	// AK::NumericLimits<float>::epsilon() * 1000.
+	has_step := step_value > 1.1920928955078125e-4
+	if !has_step {
+		return CalcResult{
+			value: minimum_value + random_base_value * (maximum_value - minimum_value)
+			type_: result_type
+		}
+	}
+
+	epsilon := step_value / 1000.0
+	mut n := math.floor((maximum_value - minimum_value) / step_value)
+	if math.abs(maximum_value - (n * step_value + minimum_value)) > epsilon
+		&& math.abs(maximum_value - ((n + 1) * step_value + minimum_value)) < epsilon {
+		n++
+	}
+	step_index := math.floor((n + 1) * random_base_value)
+	value := minimum_value + step_index * step_value
+	if step_index == n && math.abs(maximum_value - value) < epsilon {
+		return CalcResult{
+			value: maximum_value
+			type_: result_type
+		}
+	}
 	return CalcResult{
 		value: value
-		type_: NumericType.new()
+		type_: result_type
 	}
+}
+
+fn calc_number_result_consistent(value f64, input_type NumericType) ?CalcResult {
+	return_type := NumericType.new().made_consistent_with(input_type) or { return none }
+	return CalcResult{
+		value: value
+		type_: return_type
+	}
+}
+
+fn calc_consistent_results_type(results []CalcResult) ?NumericType {
+	mut result := results[0].type_
+	for index := 1; index < results.len; index++ {
+		result = result.consistent_type(results[index].type_) or { return none }
+	}
+	return result
+}
+
+fn calc_consistent_calc_children_type(children []CalcNode) ?NumericType {
+	mut result := children[0].numeric_type() or { return none }
+	for index := 1; index < children.len; index++ {
+		child_type := children[index].numeric_type() or { return none }
+		result = result.consistent_type(child_type) or { return none }
+	}
+	return result
 }
 
 fn calc_sign_of(value f64) f64 {
@@ -350,7 +536,8 @@ fn calc_sign_of(value f64) f64 {
 	if value > 0 {
 		return 1
 	}
-	return 0
+	// FloatExtractor::sign in the C++ implementation distinguishes 0- from 0+.
+	return math.copysign(0.0, value)
 }
 
 // The radians for sin/cos/tan: an angle resolves to degrees (convert), a number is radians.
@@ -365,7 +552,7 @@ fn calc_radians_to_degrees(radians f64) f64 {
 	return radians * 180.0 / math.pi
 }
 
-fn calc_arc_result(radians f64, min_degrees f64, max_degrees f64) CalcResult {
+fn calc_arc_result(radians f64, min_degrees f64, max_degrees f64, input_type NumericType) ?CalcResult {
 	mut degrees := calc_radians_to_degrees(radians)
 	for degrees < min_degrees {
 		degrees += 360
@@ -373,13 +560,21 @@ fn calc_arc_result(radians f64, min_degrees f64, max_degrees f64) CalcResult {
 	for degrees > max_degrees {
 		degrees -= 360
 	}
+	return_type := NumericType.with_type(.angle, 1).made_consistent_with(input_type) or {
+		return none
+	}
 	return CalcResult{
 		value: degrees
-		type_: NumericType.with_type(.angle, 1)
+		type_: return_type
 	}
 }
 
-fn calc_mod_or_rem(numerator CalcResult, divisor CalcResult, is_rem bool) CalcResult {
+fn calc_mod_or_rem(numerator CalcResult, divisor CalcResult, is_rem bool) ?CalcResult {
+	// Unlike round(), mod()/rem() require the two resolved arguments to have the
+	// same type, not merely types that can be made consistent.
+	if numerator.type_ != divisor.type_ {
+		return none
+	}
 	value := if is_rem {
 		math.fmod(numerator.value, divisor.value)
 	} else {
@@ -391,10 +586,10 @@ fn calc_mod_or_rem(numerator CalcResult, divisor CalcResult, is_rem bool) CalcRe
 	}
 }
 
-fn calc_round(strategy string, a CalcResult, b CalcResult) CalcResult {
+fn calc_round(strategy string, a CalcResult, b CalcResult) ?CalcResult {
 	value := a.value
 	interval := b.value
-	numeric_type := a.type_
+	numeric_type := a.type_.made_consistent_with(b.type_) or { return none }
 
 	// https://drafts.csswg.org/css-values-4/#round-infinities
 	if interval == 0 || (math.is_inf(value, 0) && math.is_inf(interval, 0)) {
@@ -403,18 +598,25 @@ fn calc_round(strategy string, a CalcResult, b CalcResult) CalcResult {
 			type_: numeric_type
 		}
 	}
-	if math.is_inf(value, 0) && !math.is_inf(interval, 0) {
+	if math.is_inf(value, 0) && !math.is_inf(interval, 0) && !math.is_nan(interval) {
 		return CalcResult{
 			value: value
 			type_: numeric_type
 		}
 	}
-	if !math.is_inf(value, 0) && math.is_inf(interval, 0) {
-		mut result := 0.0
-		if strategy == 'up' && value > 0 {
-			result = math.inf(1)
-		} else if strategy == 'down' && value < 0 {
-			result = math.inf(-1)
+	if !math.is_inf(value, 0) && !math.is_nan(value) && math.is_inf(interval, 0) {
+		zero_with_value_sign := math.copysign(0.0, value)
+		result := match strategy {
+			'up' {
+				if value > 0 { math.inf(1) } else { zero_with_value_sign }
+			}
+			'down' {
+				if value < 0 { math.inf(-1) } else { zero_with_value_sign }
+			}
+			else {
+				// nearest and to-zero both preserve whether A is 0- or 0+.
+				zero_with_value_sign
+			}
 		}
 		return CalcResult{
 			value: result

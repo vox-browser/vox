@@ -62,8 +62,8 @@ pub fn AsciiStringMatcher.create(patterns []string) !AsciiStringMatcher {
 	}
 
 	// Compute inherited output flags exactly as the C++ build step does. The
-	// runtime representation intentionally omits failure links, matching its
-	// Node layout and root-retry scan.
+	// Failure links are build-time state; the C++ runtime Node layout likewise
+	// retains only transitions/output and restarts its scan from the root.
 	mut failure_links := []u32{len: build_nodes.len}
 	mut queue := []u32{}
 	for transition in build_nodes[0].children {

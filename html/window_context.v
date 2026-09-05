@@ -10,6 +10,7 @@ module html
 
 import css
 import dom
+import fileapi
 import speech
 
 pub struct LocationNavigation {
@@ -24,6 +25,7 @@ pub type LocationReloadHook = fn()
 
 @[heap]
 pub struct LocationModel {
+	dom.Location
 mut:
 	document_                   ?&dom.Document
 	entry_origin_               dom.Origin
@@ -232,6 +234,7 @@ pub fn (location &LocationModel) internal_own_property_keys(caller_origin dom.Or
 
 pub fn LocationModel.create(document ?&dom.Document, entry_origin dom.Origin) &LocationModel {
 	return &LocationModel{
+		Location: dom.Location{}
 		document_: document
 		entry_origin_: entry_origin
 	}
@@ -913,13 +916,20 @@ fn window_property_array_index(key string) ?int {
 @[heap]
 pub struct WindowProxyModel {
 mut:
-	window_ &WindowModel = unsafe { nil }
+	window_    &WindowModel = unsafe { nil }
+	dom_proxy_ &dom.WindowProxy = unsafe { nil }
 }
 
 pub fn WindowProxyModel.create(window &WindowModel) &WindowProxyModel {
-	return &WindowProxyModel{
+	mut proxy := &WindowProxyModel{
 		window_: window
 	}
+	proxy.dom_proxy_ = &dom.WindowProxy{}
+	return proxy
+}
+
+pub fn (proxy &WindowProxyModel) dom_proxy() &dom.WindowProxy {
+	return proxy.dom_proxy_
 }
 
 pub fn (proxy &WindowProxyModel) window() &WindowModel {
@@ -1144,7 +1154,7 @@ pub:
 
 @[heap]
 pub struct WindowModel {
-	dom.EventTarget
+	dom.Window
 mut:
 	document_                                 &dom.Document = unsafe { nil }
 	browsing_context_                         &BrowsingContextModel = unsafe { nil }
@@ -1155,7 +1165,8 @@ mut:
 	navigator_                                &Navigator = unsafe { nil }
 	custom_elements_                          &CustomElementRegistry = unsafe { nil }
 	animation_driver_                         &AnimationFrameCallbackDriver = unsafe { nil }
-	close_watcher_manager_                    &CloseWatcherManager = unsafe { nil }
+	close_watcher_manager_model_              &CloseWatcherManager = unsafe { nil }
+	global_scope_                             &WindowOrWorkerGlobalScopeMixin = unsafe { nil }
 	screen_                                   ?&css.Screen
 	visual_viewport_                          ?&css.VisualViewport
 	speech_synthesis_                         ?&speech.SpeechSynthesis
@@ -1195,13 +1206,146 @@ mut:
 	find_match_index_                         int = -1
 	last_activation_timestamp_                dom.DOMHighResTimeStamp = 1e308
 	last_history_action_activation_timestamp_ dom.DOMHighResTimeStamp = 1e308
+	scripting_realm_                          &ScriptingRealm = unsafe { nil }
+	environment_settings_                    &WindowEnvironmentSettingsObject = unsafe { nil }
 }
 
 pub fn (window &WindowModel) prototype() dom.JSValue {
 	return window.prototype_
 }
 
+fn document_entry_associated_document(fallback &dom.Document) &dom.Document {
+	if html_scripting_execution_context_stack.len == 0 {
+		return fallback
+	}
+	return entry_settings_object().responsible_document() or { fallback }
+}
+
+fn document_update_url_and_history(document &dom.Document, url dom.URL) ! {
+	perform_url_and_history_update_steps(document, url, none, .replace)!
+}
+
+fn document_open_window(target voidptr, url string, name string, features string) ?&dom.WindowProxy {
+	mut window := unsafe { &WindowModel(target) }
+	result := window.window_open_steps(url, name, features) or { return none }
+	proxy := result.window_proxy or { return none }
+	return proxy.dom_proxy()
+}
+
+fn document_declarative_refresh_navigate(_ voidptr, document &dom.Document, url dom.URL) {
+	host := document.navigable() or { return }
+	mut navigable := navigable_model_for_host(host) or { return }
+	if navigable.has_been_destroyed() {
+		return
+	}
+	navigable.navigate(NavigableNavigateParams{
+		url: url
+		source_document: document
+		history_handling: .replace
+	}) or {}
+}
+
+fn document_begin_temporary_execution_context(target voidptr) voidptr {
+	mut window := unsafe { &WindowModel(target) }
+	if window.scripting_realm_ == unsafe { nil } {
+		window.scripting_realm_ = &ScriptingRealm{}
+	}
+	mut realm := window.scripting_realm_
+	return voidptr(TemporaryExecutionContext.create(mut realm, .no))
+}
+
+fn document_end_temporary_execution_context(_ voidptr, context_handle voidptr) {
+	mut context := unsafe { &TemporaryExecutionContext(context_handle) }
+	context.close()
+}
+
+fn document_register_with_event_loop(_ voidptr, document &dom.Document) {
+	mut event_loop := main_thread_event_loop()
+	event_loop.register_document(document)
+}
+
+fn document_unregister_from_event_loop(_ voidptr, document &dom.Document) {
+	mut event_loop := main_thread_event_loop()
+	event_loop.unregister_document(document)
+}
+
+fn document_remove_tasks_from_event_loop(_ voidptr, document &dom.Document) {
+	mut event_loop := main_thread_event_loop()
+	mut queue := event_loop.task_queue()
+	queue.remove_tasks_matching(fn [document] (task &Task) bool {
+		task_document := task.document() or { return false }
+		return voidptr(task_document) == voidptr(document)
+	})
+}
+
+fn document_increment_event_loop_termination_nesting(_ voidptr, _ &dom.Document) {
+	mut event_loop := main_thread_event_loop()
+	event_loop.increment_termination_nesting_level()
+}
+
+fn document_decrement_event_loop_termination_nesting(_ voidptr, _ &dom.Document) {
+	mut event_loop := main_thread_event_loop()
+	event_loop.decrement_termination_nesting_level()
+}
+
+fn document_set_execution_ready(target voidptr, _ &dom.Document) {
+	window := unsafe { &WindowModel(target) }
+	if window.environment_settings_ == unsafe { nil } {
+		return
+	}
+	mut settings := window.environment_settings_.settings
+	settings.environment_.execution_ready = true
+}
+
+fn document_relevant_settings_object(target voidptr, _ &dom.Document) voidptr {
+	window := unsafe { &WindowModel(target) }
+	if window.environment_settings_ == unsafe { nil } {
+		return unsafe { nil }
+	}
+	return voidptr(window.environment_settings_.settings)
+}
+
+fn document_structured_deserialize(_ voidptr, record dom.DOMSerializationRecord) ?dom.JSValue {
+	return structured_deserialize(SerializationRecord{
+		data: record.data.clone()
+	}) or { return none }
+}
+
+fn document_queue_intersection_observer_task(_ voidptr, document &dom.Document) {
+	queue_a_task(.intersection_observer, main_thread_event_loop(), document, fn [document] () {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.notify_intersection_observers()
+	})
+}
+
+fn document_queue_selectionchange_event_task(_ voidptr, target &dom.Document, document &dom.Document) {
+	queue_a_task(.user_interaction, main_thread_event_loop(), document, fn [target, document] () {
+		mut mutable_target := unsafe { &dom.Document(target) }
+		dom.fire_a_selectionchange_event(mut mutable_target, document)
+	})
+}
+
+fn document_run_unloading_cleanup_steps(target voidptr, document &dom.Document) {
+	mut window := unsafe { &WindowModel(target) }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	if window.global_scope_ != unsafe { nil } {
+		if window.global_scope_.make_disappear_all_web_sockets() {
+			mutable_document.make_unsalvageable('websocket')
+		}
+		if !mutable_document.salvageable {
+			window.global_scope_.forcibly_close_all_event_sources()
+			window.global_scope_.clear_map_of_active_timers()
+		}
+	}
+	if window.environment_settings_ != unsafe { nil } {
+		mut store := fileapi.blob_url_store()
+		store.run_unloading_cleanup_steps(window.environment_settings_.settings.environment().id)
+	}
+	mutable_document.fully_exit_fullscreen()
+}
+
 pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel) !&WindowModel {
+	mut document_with_html_hooks := unsafe { &dom.Document(document) }
 	if document.get_browsing_context() == none {
 		mut mutable_document := unsafe { &dom.Document(document) }
 		mutable_document.set_browsing_context(&dom.BrowsingContext{
@@ -1233,7 +1377,12 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 	mut history := History.create(document.url, dom.js_null())!
 	mut navigation := Navigation.create(document)
 	history.set_navigation(navigation)
+	close_watcher_manager := CloseWatcherManager.create()
 	mut window := &WindowModel{
+		Window: dom.Window{
+			associated_document_: document
+			close_watcher_manager_: unsafe { &dom.CloseWatcherManager(close_watcher_manager) }
+		}
 		document_: document
 		browsing_context_: context
 		history_: history
@@ -1241,12 +1390,45 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		navigator_: Navigator.create(NavigatorHostConfiguration{})
 		custom_elements_: CustomElementRegistry.create(document)
 		animation_driver_: &AnimationFrameCallbackDriver{}
-		close_watcher_manager_: CloseWatcherManager.create()
+		close_watcher_manager_model_: close_watcher_manager
+		global_scope_: WindowOrWorkerGlobalScopeMixin.create(document.origin(), false, false)
+		scripting_realm_: &ScriptingRealm{}
 	}
+	document_with_html_hooks.set_html_navigation_hook(dom.DocumentHTMLNavigationHook{
+		target:                    voidptr(window)
+		entry_associated_document: document_entry_associated_document
+		update_url_and_history:    document_update_url_and_history
+		open_window:               document_open_window
+		declarative_refresh_navigate: document_declarative_refresh_navigate
+	})
+	mut window_realm := window.scripting_realm_
+	_ = WindowEnvironmentSettingsObject.setup(window, document.url, mut window_realm, none,
+		document.url, document.origin())
+	document_with_html_hooks.set_temporary_execution_context_hook(dom.DocumentTemporaryExecutionContextHook{
+		target: voidptr(window)
+		begin:  document_begin_temporary_execution_context
+		end:    document_end_temporary_execution_context
+	})
+	document_with_html_hooks.set_lifecycle_hook(dom.DocumentLifecycleHook{
+		target:                           voidptr(window)
+		register_document:                document_register_with_event_loop
+		unregister_document:              document_unregister_from_event_loop
+		remove_tasks_for_document:        document_remove_tasks_from_event_loop
+		increment_termination_nesting:    document_increment_event_loop_termination_nesting
+		decrement_termination_nesting:    document_decrement_event_loop_termination_nesting
+		set_execution_ready:              document_set_execution_ready
+		relevant_settings_object:         document_relevant_settings_object
+		structured_deserialize:           document_structured_deserialize
+		queue_intersection_observer_task: document_queue_intersection_observer_task
+		queue_selectionchange_event_task: document_queue_selectionchange_event_task
+		run_unloading_cleanup_steps:      document_run_unloading_cleanup_steps
+	})
 	proxy := WindowProxyModel.create(window)
 	location := LocationModel.create(document, document.origin())
 	window.window_proxy_ = proxy
 	window.location_ = location
+	window.Window.location_ = unsafe { &dom.Location(location) }
+	document_with_html_hooks.set_window(unsafe { &dom.Window(window) })
 	mut mutable_context := unsafe { &BrowsingContextModel(context) }
 	mutable_context.set_active_document(document)
 	mutable_context.set_active_window(window)
@@ -1267,13 +1449,17 @@ pub fn (window &WindowModel) associated_document() &dom.Document {
 	return window.document_
 }
 
+pub fn (window &WindowModel) window_or_worker_global_scope() &WindowOrWorkerGlobalScopeMixin {
+	return window.global_scope_
+}
+
 pub fn (window &WindowModel) this_impl() &dom.EventTarget {
 	return unsafe { &dom.EventTarget(window) }
 }
 
 pub fn (window &WindowModel) extract_an_origin() ?dom.Origin {
 	origin := window.document_.origin()
-	return if origin.serialize() == 'opaque' { none } else { origin }
+	return if origin.is_opaque() { none } else { origin }
 }
 
 pub fn (mut window WindowModel) append_resolved_module(resolution SpecifierResolution) {
@@ -1344,7 +1530,7 @@ pub fn (window &WindowModel) custom_elements() &CustomElementRegistry {
 }
 
 pub fn (window &WindowModel) close_watcher_manager() &CloseWatcherManager {
-	return window.close_watcher_manager_
+	return window.close_watcher_manager_model_
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#history-action-activation
@@ -1545,7 +1731,7 @@ pub fn (mut window WindowModel) window_post_message_steps(message dom.JSValue, s
 		data: data
 		origin: source_origin
 	})
-	window.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
+	window.Window.EventTarget.dispatch_event(unsafe { &dom.Event(event) })
 }
 
 pub fn (mut window WindowModel) post_message(message dom.JSValue, source_origin dom.Origin, options WindowPostMessageOptions) ! {
@@ -1553,10 +1739,10 @@ pub fn (mut window WindowModel) post_message(message dom.JSValue, source_origin 
 }
 
 fn source_origin_url(origin dom.Origin) dom.URL {
-	if origin.value == 'opaque' {
+	if origin.is_opaque() {
 		return dom.url_about_blank()
 	}
-	return dom.URL{origin.value + '/'}
+	return dom.URL{origin.serialize() + '/'}
 }
 
 pub fn (window &WindowModel) posted_messages() []PostedWindowMessage {
@@ -1653,10 +1839,10 @@ pub fn (window &WindowModel) supported_property_names() []string {
 				names << element_name
 			}
 		}
-		if id := element.id() {
-			if id != '' && id !in names {
-				names << id
-			}
+	}
+	for id in window.associated_document().element_ids() {
+		if id != '' && id !in names {
+			names << id
 		}
 	}
 	return names

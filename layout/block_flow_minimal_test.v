@@ -3,6 +3,7 @@ module layout
 import dom
 import css
 import math
+import painting
 
 const html_ns = 'http://www.w3.org/1999/xhtml'
 
@@ -46,7 +47,6 @@ fn test_block_flow_widths_heights_and_stacking() {
 
 	assert box.children[1].height == 20.0
 	assert box.children[1].y == 30.0 // stacked below the first child
-
 }
 
 // A leaf block with no explicit height and no children has content height 0.
@@ -142,7 +142,6 @@ fn test_block_box_model_explicit_width() {
 	assert box.margin_box_height() == 70.0 // 20+5+10+0+10+5+20
 
 	assert box.margin_box_width() == 170.0 // 20+5+10+100+10+5+20
-
 }
 
 // Box model with width:auto: content width fills what's left after margins, borders, padding.
@@ -185,7 +184,6 @@ fn test_block_box_model_stacking_with_margins() {
 
 	assert box.children[1].width == 200.0
 	assert box.height == 60.0 // content: 30 + 10 gap + 20; first's top margin collapsed out
-
 }
 
 // Border width is 0 unless a border-style is set; keywords resolve on the thin/medium/thick scale.
@@ -194,17 +192,14 @@ fn test_block_border_style_gating_and_keywords() {
 	no_style := styled(doc, 'div', 'border-top-width: 5px')
 	assert layout_block(no_style, 0, 0, 800, []&css.CSSRule{}).border.top == 0.0 // style defaults to none
 
-
 	with_style := styled(doc, 'div', 'border-top-width: 5px; border-top-style: solid')
 	assert layout_block(with_style, 0, 0, 800, []&css.CSSRule{}).border.top == 5.0
 
 	thick := styled(doc, 'div', 'border: thick solid')
 	assert layout_block(thick, 0, 0, 800, []&css.CSSRule{}).border.top == 5.0 // thick = 5px
 
-
 	medium := styled(doc, 'div', 'border: solid')
 	assert layout_block(medium, 0, 0, 800, []&css.CSSRule{}).border.top == 3.0 // medium (initial) = 3px
-
 }
 
 // Adjoining sibling margins collapse to their maximum (not their sum): a 30px bottom margin meeting
@@ -224,7 +219,6 @@ fn test_block_sibling_margin_collapse_positive() {
 	assert box.children[1].y == 70.0 // 40 + 30 (collapsed), not 40 + 30 + 20 = 90
 
 	assert box.height == 130.0 // 40 + 30 + 60 (no trailing margin)
-
 }
 
 // A negative margin offsets a positive one: max(positive) + min(negative) = 30 + (-50) = -20.
@@ -242,7 +236,6 @@ fn test_block_sibling_margin_collapse_negative() {
 	assert box.children[1].y == 20.0 // 40 + (-20)
 
 	assert box.height == 80.0 // 40 + (-20) + 60
-
 }
 
 fn test_empty_block_collapses_its_margins_into_the_sibling_margin_chain() {
@@ -355,7 +348,6 @@ fn test_display_none_and_inline_children_skipped() {
 	assert box.children[1].y == 10.0 // li stacks directly under the 10px div
 
 	assert box.height == 30.0 // 10 + 20; none/inline children contribute nothing
-
 }
 
 // is_block_level_display classification.
@@ -380,7 +372,6 @@ fn test_inline_text_single_line_height() {
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 30.0
 	assert box.children.len == 0 // text isn't a block box
-
 }
 
 // Text wraps at word boundaries. The width admits two shaped four-letter words per line, so six
@@ -410,7 +401,6 @@ fn test_block_children_win_over_stray_text() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.children.len == 1
 	assert box.height == 25.0 // just the child; stray text contributes no line box
-
 }
 
 // Whitespace-only text collapses to nothing -> no line box -> height 0.
@@ -465,6 +455,32 @@ fn test_layout_document_manual_root() {
 	assert box.children[0].children[0].height == 50.0
 }
 
+fn test_attached_inner_text_uses_retained_computed_display_and_rendered_text() {
+	doc := dom.Document.create(dom.url_about_blank())
+	html_el := styled(doc, 'html', '')
+	body := styled(doc, 'body', '')
+	root := styled(doc, 'div', 'text-transform: uppercase')
+	first := styled(doc, 'span', 'display: block')
+	second := styled(doc, 'span', 'display: block')
+	mut first_node := first.as_node()
+	first_node.append_child(doc.create_text_node('one').as_node()) or { panic('${err}') }
+	mut second_node := second.as_node()
+	second_node.append_child(doc.create_text_node('two').as_node()) or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(first.as_node()) or { panic('${err}') }
+	root_node.append_child(second.as_node()) or { panic('${err}') }
+	mut body_node := body.as_node()
+	body_node.append_child(root.as_node()) or { panic('${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(body.as_node()) or { panic('${err}') }
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(html_el.as_node()) or { panic('${err}') }
+
+	layout_document(doc, 800)
+	assert root.as_node().layout_node() != none
+	assert inner_text(root, []&css.CSSRule{}) == 'ONE\nTWO'
+}
+
 // collect_document_author_rules parses each <style> element's text into rules.
 fn test_collect_document_author_rules() {
 	doc := dom.Document.create(dom.url_about_blank())
@@ -492,7 +508,6 @@ fn test_box_sizing_border_box_width() {
 	assert box.width == 70.0 // content
 
 	assert box.margin_box_width() == 100.0 // border box == specified width (no margins here)
-
 }
 
 // content-box (the default) leaves the specified width as the content width.
@@ -503,7 +518,6 @@ fn test_box_sizing_content_box_default() {
 	assert box.width == 100.0 // content
 
 	assert box.margin_box_width() == 130.0 // 100 + 2*(10+5)
-
 }
 
 // border-box height subtracts vertical padding+border from the specified height.
@@ -514,7 +528,6 @@ fn test_box_sizing_border_box_height() {
 	assert box.height == 70.0 // 100 - 2*(10+5)
 
 	assert box.margin_box_height() == 100.0 // border box == specified height
-
 }
 
 // A border-box percentage width also has its edges subtracted: 50% of 400 = 200, minus 2*(10+5).
@@ -523,7 +536,6 @@ fn test_box_sizing_border_box_percentage() {
 	el := styled(doc, 'div', 'box-sizing: border-box; width: 50%; padding: 10px; border: 5px solid')
 	box := layout_block(el, 0, 0, 400, []&css.CSSRule{})
 	assert box.width == 170.0 // 200 - 30
-
 }
 
 // border-box never drives the content width negative when edges exceed the specified size.
@@ -532,7 +544,6 @@ fn test_box_sizing_border_box_clamps_to_zero() {
 	el := styled(doc, 'div', 'box-sizing: border-box; width: 10px; padding: 20px')
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.width == 0.0 // 10 - 40 clamped
-
 }
 
 // max-width clamps an auto (full-fill) width down: 800 available, max-width 100 -> 100.
@@ -590,7 +601,6 @@ fn test_min_max_width_border_box_aware() {
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.width == 70.0
 	assert box.margin_box_width() == 100.0 // border box hits the max-width
-
 }
 
 // margin: 0 auto centers a fixed-width block: (800 - 200) / 2 = 300 on each side.
@@ -603,7 +613,6 @@ fn test_auto_margins_center_fixed_width() {
 	assert box.x == 300.0 // content origin is centered
 
 	assert box.margin_box_width() == 800.0 // fills the containing block
-
 }
 
 // A single auto margin absorbs the whole remainder: margin-left:auto right-aligns (600 to the left).
@@ -625,7 +634,6 @@ fn test_auto_margins_with_auto_width_are_zero() {
 	assert box.margin.left == 0.0
 	assert box.margin.right == 0.0
 	assert box.width == 800.0 // fills
-
 }
 
 // Centering respects the box model: a fixed margin on one side and auto on the other absorbs the
@@ -665,7 +673,6 @@ fn test_parent_child_top_margin_collapse() {
 	assert box.y == 40.0 // root border box pushed down by the collapsed margin
 
 	assert box.children[0].y == 40.0 // child sits at the root's content top (margin collapsed out)
-
 }
 
 // Top border/padding on the parent stops the collapse: the child's top margin stays inside.
@@ -682,7 +689,6 @@ fn test_parent_border_stops_top_collapse() {
 	assert box.y == 25.0 // 20 margin + 5 padding
 
 	assert box.children[0].y == 65.0 // 25 content top + 40 own margin, held inside
-
 }
 
 // Parent/child bottom collapsing: with auto height and no bottom border/padding, the parent's bottom
@@ -698,7 +704,6 @@ fn test_parent_child_bottom_margin_collapse() {
 	assert box.height == 30.0 // child's bottom margin collapsed out of the content
 
 	assert box.outer_bottom_margin == 25.0 // max(15, 25)
-
 }
 
 // Bottom border/padding keeps the last child's bottom margin inside the parent's content height.
@@ -713,7 +718,6 @@ fn test_parent_border_stops_bottom_collapse() {
 	assert box.height == 55.0 // 30 + 25 (child bottom margin held inside)
 
 	assert box.outer_bottom_margin == 15.0 // no collapse-through
-
 }
 
 // Top margins collapse through multiple nesting levels when nothing separates them.
@@ -734,7 +738,6 @@ fn test_nested_top_margin_collapse_through() {
 	assert box.children[0].y == 30.0 // child at root content top
 
 	assert box.children[0].children[0].y == 30.0 // grandchild too; all three tops coincide
-
 }
 
 // overflow != visible establishes a BFC: the child's top margin is CONTAINED (does not collapse
@@ -755,7 +758,6 @@ fn test_bfc_overflow_contains_child_top_margin() {
 	assert box.children[0].y == 40.0 // child's top margin held inside the box
 
 	assert box.height == 70.0 // 40 (margin, inside) + 30
-
 }
 
 // display: flow-root is the modern explicit BFC trigger; same containment.
@@ -784,7 +786,6 @@ fn test_bfc_contains_child_bottom_margin() {
 	assert box.height == 55.0 // 30 + 25 (bottom margin contained)
 
 	assert box.outer_bottom_margin == 0.0 // not collapsed out
-
 }
 
 // establishes_block_formatting_context classification.
@@ -824,7 +825,6 @@ fn test_relative_position_negative_and_bottom_right() {
 	assert bb.x == -30.0 // right offsets leftward
 
 	assert bb.y == -20.0 // bottom offsets upward
-
 }
 
 // A relatively positioned child moves but does NOT affect its siblings' flow positions.
@@ -843,7 +843,6 @@ fn test_relative_position_does_not_affect_siblings() {
 	assert box.children[1].y == 30.0 // second still flows right after first's NORMAL position
 
 	assert box.height == 50.0 // container height uses the flow, not the offset
-
 }
 
 // The relative offset carries the box's whole subtree along.
@@ -910,7 +909,6 @@ fn test_absolute_position_removed_from_flow() {
 	assert box.height == 70.0 // 30 + 40; abs's 999 height doesn't count
 
 	assert box.children[2].height == 999.0 // the abspos box itself
-
 }
 
 // right/bottom position the box's far edges against the containing block.
@@ -925,7 +923,6 @@ fn test_absolute_position_right_bottom() {
 	assert box.children[0].x == 150.0 // 200 - 10 - 40
 
 	assert box.children[0].y == 65.0 // 100 - 15 - 20
-
 }
 
 // width:auto with both left and right fills the gap between them.
@@ -939,7 +936,6 @@ fn test_absolute_position_auto_width_between_insets() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.children[0].x == 20.0
 	assert box.children[0].width == 250.0 // 300 - 20 - 30
-
 }
 
 fn test_absolute_position_equal_auto_margins_center_between_insets() {
@@ -1042,7 +1038,6 @@ fn test_inline_long_word_stays_on_one_line() {
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 30.0 // one line, overflowing -- not 3
-
 }
 
 // wrapped_line_count: greedy word wrapping with an unbreakable overflow word.
@@ -1071,7 +1066,6 @@ fn test_br_forces_line_break() {
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 60.0 // 2 lines * 30, though "one two" would fit on one 500px line
-
 }
 
 // Consecutive <br><br> creates an empty line between segments.
@@ -1086,7 +1080,6 @@ fn test_double_br_empty_line() {
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 90.0 // "a" | (empty) | "b" -> 3 lines * 30
-
 }
 
 // A <br> combines with word wrapping: a wrapping segment then a forced break then another segment.
@@ -1101,7 +1094,6 @@ fn test_br_combines_with_wrapping() {
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 90.0 // 2 (wrapped) + 1 (after break) = 3 lines * 30
-
 }
 
 // <br> inside a nested inline element still breaks the block's line.
@@ -1118,7 +1110,6 @@ fn test_br_nested_in_inline() {
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.height == 60.0 // the <br> inside the span breaks the div's inline flow -> 2 lines
-
 }
 
 // Text produces a line box with geometry; default alignment (start) puts it at the content's left.
@@ -1136,7 +1127,6 @@ fn test_line_box_left_aligned() {
 	assert box.lines[0].width == 21.0
 	assert box.lines[0].height == 30.0
 	assert box.children.len == 0 // lines aren't block children
-
 }
 
 // text-align: center centers the line within the content box.
@@ -1148,7 +1138,6 @@ fn test_line_box_centered() {
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.lines[0].x == 89.5 // (200 - 21) / 2
-
 }
 
 // text-align: right pushes the line to the content's right edge.
@@ -1160,7 +1149,6 @@ fn test_line_box_right_aligned() {
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.lines[0].x == 179.0 // 200 - 21, rounded to CSS pixels
-
 }
 
 // Wrapped text produces a line box per line, stacked by line-height, each with its own used width.
@@ -1190,7 +1178,6 @@ fn test_line_boxes_follow_relative_offset() {
 	assert box.lines[0].x == 25.0 // content_x includes the left offset
 
 	assert box.lines[0].y == 15.0 // content_top includes the top offset
-
 }
 
 // white-space: nowrap keeps text on a single line even when it would otherwise wrap.
@@ -1269,7 +1256,6 @@ fn test_white_space_normal_collapses_newline() {
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.lines.len == 1 // newline collapses to a space; both words fit the 500px line
-
 }
 
 // white_space helper classification.
@@ -1342,7 +1328,6 @@ fn test_intrinsic_content_width() {
 
 	assert intrinsic_content_width(text, []&css.CSSRule{}, true) == 53.140625 // min-content
 
-
 	parent := styled(doc, 'div', 'font-size: 20px')
 	child1 := styled(doc, 'div', '')
 	child2 := styled(doc, 'div', '')
@@ -1354,7 +1339,6 @@ fn test_intrinsic_content_width() {
 	pn.append_child(child1.as_node()) or { panic('${err}') }
 	pn.append_child(child2.as_node()) or { panic('${err}') }
 	assert intrinsic_content_width(parent, []&css.CSSRule{}, false) == 159.6875 // widest child
-
 }
 
 // An absolutely positioned box with no width shrinks to fit its content (was: stretched to the CB).
@@ -1369,7 +1353,6 @@ fn test_absolute_position_shrink_to_fit() {
 
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.children[0].width == 80.375 // shrink-to-fit to max-content (fits in the 500px CB)
-
 }
 
 // A left float is placed at the container's left edge; a BFC (overflow:hidden) grows to contain it.
@@ -1387,7 +1370,6 @@ fn test_float_left_placement_bfc_contains() {
 	assert box.children[0].width == 100.0
 	assert box.children[0].height == 50.0
 	assert box.height == 50.0 // BFC contains the float
-
 }
 
 // A right float is placed against the container's right edge.
@@ -1421,7 +1403,6 @@ fn test_two_left_floats_stack() {
 
 	assert box.children[1].width == 60.0
 	assert box.height == 50.0 // tallest float
-
 }
 
 fn test_floats_move_down_until_their_margin_box_fits() {
@@ -1481,7 +1462,6 @@ fn test_clear_left() {
 	assert box.children[1].y == 0.0 // the float itself
 
 	assert box.height == 70.0 // 50 (clearance) + 20; float not contained (no BFC)
-
 }
 
 // Without a BFC, a float overflows its container (the container's height ignores it).
@@ -1496,7 +1476,6 @@ fn test_float_overflows_without_bfc() {
 	assert box.children[0].height == 80.0 // float still placed
 
 	assert box.height == 0.0 // but NOT contained -- no BFC, no in-flow content
-
 }
 
 // clearance_bottom classification.
@@ -1530,7 +1509,6 @@ fn test_inline_wraps_around_left_float() {
 
 	assert box.lines[2].y == 40.0
 	assert box.height == 60.0 // 3 lines * 20 (taller than the 40px float)
-
 }
 
 // A right float shortens the lines in its band (forcing wrapping) without offsetting them.
@@ -1548,7 +1526,6 @@ fn test_inline_wraps_around_right_float() {
 	assert box.lines[0].x == 0.0 // not offset (float is on the right); just shortened
 
 	assert box.lines[2].y == 40.0 // third line clears the float
-
 }
 
 // A word too wide to fit beside a float drops below it rather than overflowing into it.
@@ -1591,7 +1568,6 @@ fn test_paint_order_z_index() {
 	assert order[2].z_index == 0 // auto (paints in tree order at 0)
 
 	assert order[3].z_index == 5 // front
-
 }
 
 // z-index is ignored for non-positioned boxes: they keep tree order.
@@ -1610,7 +1586,6 @@ fn test_paint_order_ignores_z_on_static() {
 
 	assert order[1].z_index == 0
 	assert order[2].height == 20.0 // second stays second (z-index:-1 has no effect)
-
 }
 
 // A box's subtree is contiguous in paint order (self, then descendants, before the next sibling).
@@ -1632,7 +1607,6 @@ fn test_paint_order_subtree_contiguous() {
 	assert order[2].height == 10.0 // grandchild comes right after its parent
 
 	assert order[3].height == 20.0 // the sibling comes after the whole parent subtree
-
 }
 
 fn test_descendant_stacking_context_is_hoisted_through_z_auto_ancestor() {
@@ -1679,7 +1653,6 @@ fn test_z_index_field() {
 	assert layout_block(styled(doc, 'div', 'z-index: 3'), 0, 0, 800, []&css.CSSRule{}).z_index == 0 // static
 
 	assert layout_block(styled(doc, 'div', 'position: relative'), 0, 0, 800, []&css.CSSRule{}).z_index == 0 // auto
-
 }
 
 // A line carries its words as positioned fragments laid out left-to-right.
@@ -1712,7 +1685,6 @@ fn test_inline_fragments_follow_text_align() {
 
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.lines[0].fragments[0].x == 89.5 // (200 - 21) / 2
-
 }
 
 // Fragments span wrapped lines, each line's words positioned from its own left edge.
@@ -1731,7 +1703,6 @@ fn test_inline_fragments_across_wrapped_lines() {
 	assert box.lines[1].fragments[0].text == 'cccc'
 	assert box.lines[1].fragments[0].x == 0.0
 	assert box.lines[1].fragments[0].y == 30.0 // second line
-
 }
 
 // Fragments ride along when the box is repositioned (relative offset translates them).
@@ -1745,7 +1716,6 @@ fn test_inline_fragments_translate_with_box() {
 	assert box.lines[0].fragments[0].x == 25.0 // content_x includes the left offset
 
 	assert box.lines[0].fragments[0].y == 15.0 // content_top includes the top offset
-
 }
 
 // Fragments follow the line's float offset (the first word sits past a left float).
@@ -1761,7 +1731,6 @@ fn test_inline_fragments_follow_float() {
 	assert box.lines[0].fragments[0].x == 150.0 // first word offset past the float
 
 	assert box.lines[2].fragments[0].x == 0.0 // third line dropped below the float -> full width
-
 }
 
 // A nested <span> with a larger font measures its text at that size, and makes the line taller.
@@ -1837,7 +1806,6 @@ fn test_justify_single_line_not_stretched() {
 	assert box.lines[0].fragments[1].x == 33.375 // natural shaping; no slack added
 
 	assert box.lines[0].width == 57.0625 // natural width, not the 500px available
-
 }
 
 // A background-color produces a fill_rect over the border box; no text -> no draw commands.
@@ -1921,25 +1889,20 @@ fn test_paint_z_index_order() {
 	assert cmds[1].color == 'rgb(255 0 0)' // behind (z -1)
 
 	assert cmds[2].color == 'rgb(0 0 255)' // front (z 1)
-
 }
 
-// A visible border emits one fill_rect per edge in the border color.
+// A visible same-color border is one joined even-odd path, matching paint_all_borders().
 fn test_paint_border_edges() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := styled(doc, 'div', 'width: 100px; height: 50px; border: 5px solid red')
 	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
-	assert cmds.len == 4 // no background; 4 border edges
-
-	assert cmds[0].width == 110.0 && cmds[0].height == 5.0 // top edge spans the border box
-
+	assert cmds.len == 1
+	assert cmds[0].kind == 'draw_svg_path'
+	assert cmds[0].width == 110.0 && cmds[0].height == 60.0
 	assert cmds[0].color == 'rgb(255 0 0)'
-	assert cmds[1].y == 55.0 // bottom edge at border-box bottom - 5
-
-	assert cmds[2].width == 5.0 && cmds[2].height == 60.0 // left edge
-
-	assert cmds[3].x == 105.0 // right edge at border-box right - 5
-
+	assert cmds[0].fill_even_odd
+	assert cmds[0].path_data.len > 0
+	assert cmds[0].path_polygons.len == 4
 }
 
 // Physical border colors remain independent through layout and are painted as mitered polygons, so
@@ -1953,11 +1916,11 @@ fn test_paint_independent_border_side_colors_without_corner_overlap() {
 	assert box.border_colors.bottom.serialize() == 'rgb(0 0 255)'
 	assert box.border_colors.left.serialize() == 'rgb(0 0 0)'
 
-	borders := box.paint_commands().filter(it.kind == 'fill_polygon')
+	borders := box.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert borders.len == 4
-	assert borders.map(it.color) == ['rgb(255 0 0)', 'rgb(0 0 255)', 'rgb(0 0 0)', 'rgb(0 128 0)']
-	assert borders[0].points == [f64(0), 0, 108, 0, 105, 2, 5, 2]
-	assert borders[3].points == [f64(108), 0, 108, 56, 105, 52, 105, 2]
+	// C++ starts after the first color transition, then walks clockwise.
+	assert borders.map(it.color) == ['rgb(0 128 0)', 'rgb(0 0 255)', 'rgb(0 0 0)', 'rgb(255 0 0)']
+	assert borders.all(it.path_data.len > 0 && it.path_polygons.len == 1 && it.fill_even_odd)
 }
 
 fn test_inline_border_side_colors_reach_the_display_list() {
@@ -1972,9 +1935,9 @@ fn test_inline_border_side_colors_reach_the_display_list() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	fragment := box.lines[0].fragments[0]
 	assert fragment.border_colors.right.serialize() == 'rgb(0 128 0)'
-	borders := box.paint_commands().filter(it.kind == 'fill_polygon')
+	borders := box.paint_commands().filter(it.kind == 'draw_svg_path')
 	assert borders.len == 4
-	assert borders.map(it.color) == ['rgb(255 0 0)', 'rgb(0 0 255)', 'rgb(0 0 0)', 'rgb(0 128 0)']
+	assert borders.map(it.color) == ['rgb(0 128 0)', 'rgb(0 0 255)', 'rgb(0 0 0)', 'rgb(255 0 0)']
 }
 
 // Background paints first, then borders.
@@ -1982,23 +1945,22 @@ fn test_paint_background_then_border() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := styled(doc, 'div', 'width: 100px; height: 50px; border: 2px solid black; background-color: yellow')
 	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
-	assert cmds.len == 5 // background + 4 edges
-
+	assert cmds.len == 2 // background + one joined border path
 	assert cmds[0].color == 'rgb(255 255 0)' // yellow background first
-
 	assert cmds[1].color == 'rgb(0 0 0)' // then black border
-
+	assert cmds[1].kind == 'draw_svg_path'
 }
 
-fn test_uniform_rounded_border_is_a_single_rounded_stroke() {
+fn test_uniform_rounded_border_is_a_single_joined_path() {
 	doc := dom.Document.create(dom.url_about_blank())
 	el := styled(doc, 'div', 'width: 100px; height: 50px; border: 3px solid red; border-radius: 12px; background: white')
 	commands := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
-	strokes := commands.filter(it.kind == 'stroke_rounded_rect')
-	assert strokes.len == 1
-	assert strokes[0].radius == 12.0
-	assert strokes[0].stroke_width == 3.0
-	assert strokes[0].color == 'rgb(255 0 0)'
+	borders := commands.filter(it.kind == 'draw_svg_path' && it.color == 'rgb(255 0 0)')
+	assert borders.len == 1
+	assert borders[0].path.contains('A 12 12')
+	assert borders[0].path_data.len > 0
+	assert borders[0].path_polygons.len == 4
+	assert borders[0].fill_even_odd
 }
 
 // A border with no explicit color uses currentColor (the text color).
@@ -2007,7 +1969,6 @@ fn test_paint_border_current_color() {
 	el := styled(doc, 'div', 'width: 100px; height: 50px; border: 3px solid; color: blue')
 	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
 	assert cmds[0].color == 'rgb(0 0 255)' // border resolves currentColor to blue
-
 }
 
 // Each text fragment paints in its own element's color (per-inline color).
@@ -2029,7 +1990,6 @@ fn test_paint_per_inline_color() {
 
 	assert cmds[1].text == 'RED'
 	assert cmds[1].color == 'rgb(255 0 0)' // the span's own color
-
 }
 
 // A calc() width resolves against the containing width (calc(100% - 40px) in a 300px block -> 260).
@@ -2055,7 +2015,6 @@ fn test_calc_percentage_padding() {
 	el := styled(doc, 'div', 'width: 100px; padding-left: calc(10% + 5px)')
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.padding.left == 85.0 // 80 (10% of 800) + 5
-
 }
 
 // opacity is emitted per paint command (color stays unscaled).
@@ -2065,7 +2024,6 @@ fn test_paint_opacity() {
 	cmds := layout_block(el, 0, 0, 800, []&css.CSSRule{}).paint_commands()
 	assert cmds[0].opacity == 0.5
 	assert cmds[0].color == 'rgb(255 0 0)' // color itself is not scaled
-
 }
 
 // Opacity accumulates down the tree: a child's paint opacity is its own times its ancestors'.
@@ -2080,7 +2038,6 @@ fn test_paint_opacity_cumulative() {
 	assert cmds[0].opacity == 0.5 // root
 
 	assert cmds[1].opacity == 0.25 // child: 0.5 * 0.5
-
 }
 
 // Default opacity is 1; values are clamped to 0..1.
@@ -2109,7 +2066,6 @@ fn test_transform_translate() {
 	assert box.children[1].y == 30.0 // second still flows after first's UNTRANSFORMED box
 
 	assert box.height == 50.0 // container height from the flow, ignoring the transform
-
 }
 
 // translateX / translateY offset one axis only.
@@ -2335,7 +2291,6 @@ fn test_hit_test() {
 
 	assert box.hit_test(-5, 10) == none // left of everything
 
-
 	// element_at_point resolves back to the element.
 	hit := box.element_at_point(50, 20, root.as_node()) or { panic('no hit') }
 	assert i64(hit.as_node().unique_id()) == i64(first.as_node().unique_id())
@@ -2378,7 +2333,6 @@ fn test_offset_properties() {
 
 	parent := offset_parent_element(child, no) or { panic('no offsetParent') }
 	assert i64(parent.as_node().unique_id()) == i64(container.as_node().unique_id()) // the relative container
-
 }
 
 // offsetParent skips a static intermediate ancestor.
@@ -2394,7 +2348,6 @@ fn test_offset_parent_skips_static() {
 
 	parent := offset_parent_element(child, []&css.CSSRule{}) or { panic('no offsetParent') }
 	assert i64(parent.as_node().unique_id()) == i64(rel.as_node().unique_id()) // rel, not mid
-
 }
 
 // innerText: block children are separated by single line breaks, <p> by blank lines, and a
@@ -2580,7 +2533,6 @@ fn test_visibility_hidden_reserves_space_but_no_paint() {
 	assert box.height == 30.0 // the hidden child still occupies its 30px
 
 	assert box.paint_commands().len == 0 // ...but produces no paint commands
-
 }
 
 // A visibility: visible descendant of a visibility: hidden box still paints (visibility is inherited
@@ -2737,7 +2689,6 @@ fn test_text_decoration_propagates_to_descendants() {
 	assert count == 2 // 'parent' and 'child'
 
 	assert all_decorated // both underlined, including the span's text
-
 }
 
 // A display:list-item box gets a disc marker hanging to the left of its content box.
@@ -2757,7 +2708,6 @@ fn test_list_item_disc_marker() {
 	assert marker.x < li_box.x // hangs to the left of the content box
 
 	assert li_box.lines[1].fragments[0].text == 'item' // content follows the marker line
-
 }
 
 fn test_inside_list_marker_flows_at_the_start_of_the_first_line() {
@@ -2936,7 +2886,6 @@ fn test_physical_edge_wins_over_logical() {
 	assert box.margin.top == 5.0 // physical wins
 
 	assert box.margin.bottom == 16.0 // still the UA logical margin-block-end
-
 }
 
 fn test_logical_edges_follow_direction_and_vertical_writing_mode() {
@@ -2966,7 +2915,6 @@ fn test_text_indent_first_line() {
 
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.lines[0].fragments[0].x == 30.0 // content_x (0) + 30px indent
-
 }
 
 // Only the first line is indented; wrapped lines start at the content edge.
@@ -2981,7 +2929,6 @@ fn test_text_indent_only_first_line() {
 	assert box.lines[0].fragments[0].x == 30.0 // first line indented
 
 	assert box.lines[1].fragments[0].x == 0.0 // wrapped line not indented
-
 }
 
 // A negative text-indent outdents the first line.
@@ -2995,20 +2942,19 @@ fn test_negative_text_indent() {
 	assert box.lines[0].fragments[0].x == -10.0
 }
 
-// border-radius rounds the background fill: the fill_rect carries the radius and the SVG rect gets rx/ry.
+// A rounded background retains its corner geometry in the display list and SVG path.
 fn test_border_radius_rounds_background() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'width: 100px; height: 50px; background-color: rgb(0, 128, 0); border-radius: 8px')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	assert box.border_radius == 8.0
-	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	fills := box.paint_commands().filter(it.kind == 'fill_rect' && it.radius > 0)
 	assert fills.len == 1
 	assert fills[0].radius == 8.0
 
 	svg := box.render_svg(200, 200)
-	assert svg.contains('rx="8"')
-	assert svg.contains('ry="8"')
+	assert svg.contains('rx="8" ry="8"')
 }
 
 // A radius larger than half the smaller dimension is clamped (a 50% pill on a 100x40 box -> 20px).
@@ -3017,9 +2963,8 @@ fn test_border_radius_clamped() {
 	root := styled(doc, 'div', 'width: 100px; height: 40px; background-color: rgb(0, 0, 0); border-radius: 999px')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
-	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	fills := box.paint_commands().filter(it.kind == 'fill_rect' && it.radius > 0)
 	assert fills[0].radius == 20.0 // clamped to min(100, 40)/2
-
 }
 
 // border-radius: 50% resolves against the border-box width, then clamps to half the smaller side.
@@ -3029,7 +2974,7 @@ fn test_border_radius_percentage() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	// 50% of 80 = 40, clamped to min(80,80)/2 = 40.
-	fills := box.paint_commands().filter(it.kind == 'fill_rect')
+	fills := box.paint_commands().filter(it.kind == 'fill_rect' && it.radius > 0)
 	assert fills[0].radius == 40.0
 }
 
@@ -3042,13 +2987,17 @@ fn test_independent_elliptical_border_radii_are_resolved_and_painted() {
 	assert box.border_radii.bottom_right == CornerRadius{30, 15}
 	assert box.border_radii.bottom_left == CornerRadius{40, 20}
 	commands := box.paint_commands()
-	background := commands.filter(it.kind == 'fill_polygon' && it.color == 'rgb(255 0 0)')
+	background := commands.filter(it.kind == 'fill_rounded_rect' && it.color == 'rgb(255 0 0)')
 	assert background.len == 1
-	assert background[0].points.len == 40
-	border := commands.filter(it.kind == 'stroke_rounded_rect')
+	assert background[0].corner_radii == box.border_radii
+	border := commands.filter(it.kind == 'draw_svg_path' && it.color == 'rgb(0 0 0)')
 	assert border.len == 1
-	assert border[0].points.len == 40
-	assert box.render_svg(120, 70).contains('<polygon points=')
+	assert border[0].path.contains('A 10 5')
+	assert border[0].path_data.len > 0
+	assert border[0].path_polygons.len == 4
+	assert border[0].fill_even_odd
+	svg := box.render_svg(120, 70)
+	assert svg.contains('<path d="M 10 0 L 84 0 A 20 10 0 0 1 104 10')
 }
 
 fn test_overlapping_corner_radii_are_scaled_by_one_common_factor() {
@@ -3070,24 +3019,23 @@ fn test_no_border_radius_is_square() {
 	assert !box.render_svg(100, 100).contains('rx=')
 }
 
-// outline paints four rects outside the border box, offset by outline-offset, in outline-color.
-fn test_outline_paints_four_edges() {
+// A solid outline uses BorderPainting.cpp's joined path outside the offset border box.
+fn test_outline_paints_one_joined_path() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'width: 100px; height: 50px; outline: 3px solid rgb(255, 0, 0); outline-offset: 2px')
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 
 	assert box.outline_width == 3.0
 	assert box.outline_offset == 2.0
-	fills := box.paint_commands().filter(it.kind == 'fill_rect')
-	assert fills.len == 4 // four outline edges, no background
-
-	assert fills.filter(it.color == 'rgb(255 0 0)').len == 4
-	// The top edge spans the expanded box plus the outline width on each side, above it by ow.
-	assert fills[0].y == -5.0 // border_top(0) - offset(2) - width(3)
-
-	assert fills[0].height == 3.0
-	assert fills[0].width == 110.0 // 100 + 2*offset(2) + 2*width(3)
-
+	outlines := box.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert outlines.len == 1
+	assert outlines[0].color == 'rgb(255 0 0)'
+	assert outlines[0].x == -5.0 // border_left(0) - offset(2) - width(3)
+	assert outlines[0].y == -5.0
+	assert outlines[0].width == 110.0 // 100 + 2*offset(2) + 2*width(3)
+	assert outlines[0].height == 60.0
+	assert outlines[0].path_polygons.len == 4
+	assert outlines[0].fill_even_odd
 }
 
 // No outline by default (outline-style: none) -> only the background is painted.
@@ -3098,7 +3046,6 @@ fn test_no_outline_by_default() {
 
 	assert box.outline_width == 0.0
 	assert box.paint_commands().filter(it.kind == 'fill_rect').len == 1 // just the background
-
 }
 
 // outline-width defaults to medium (3px) and outline-color defaults to currentColor (the text color).
@@ -3109,10 +3056,37 @@ fn test_outline_medium_and_current_color() {
 
 	assert box.outline_width == 3.0 // 'medium'
 
-	fills := box.paint_commands().filter(it.kind == 'fill_rect')
-	assert fills.len == 4
-	assert fills[0].color == 'rgb(0 200 0)' // currentColor
+	outlines := box.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert outlines.len == 1
+	assert outlines[0].color == 'rgb(0 200 0)' // currentColor
+}
 
+fn test_outline_styles_and_negative_offset_follow_border_painting() {
+	doc := dom.Document.create(dom.url_about_blank())
+	dashed := styled(doc, 'div', 'width: 100px; height: 50px; outline: 6px dashed rgb(10 90 40); outline-offset: -100px')
+	dashed_box := layout_block(dashed, 0, 0, 800, []&css.CSSRule{})
+	assert dashed_box.outline_style == .dashed
+	dashed_commands := dashed_box.paint_commands().filter(it.color == 'rgb(10 90 40)')
+	assert dashed_commands.len == 4
+	assert dashed_commands.all(it.kind == 'draw_line' && it.line_style == 'dashed')
+	// C++ clamps a too-negative offset to half the border-box size independently per axis.
+	assert dashed_commands[0].points == [47.0, 22.0, 52.0, 22.0]
+	assert dashed_commands[1].points[0] == 52.0
+
+	double := styled(doc, 'div', 'width: 100px; height: 50px; outline: 9px double rgb(120 20 30); border-radius: 12px 6px')
+	double_box := layout_block(double, 0, 0, 800, []&css.CSSRule{})
+	assert double_box.outline_style == .double
+	double_commands := double_box.paint_commands().filter(it.color == 'rgb(120 20 30)')
+	assert double_commands.len == 8
+	assert double_commands.all(it.kind == 'draw_svg_path' && it.path.contains('A '))
+
+	automatic := styled(doc, 'div', 'width: 40px; height: 20px; outline-style: auto; outline-width: 10px; outline-color: red')
+	automatic_box := layout_block(automatic, 0, 0, 800, []&css.CSSRule{})
+	assert automatic_box.outline_width == 2
+	assert automatic_box.outline_style == .solid
+	automatic_commands := automatic_box.paint_commands().filter(it.paint_phase == .outline)
+	assert automatic_commands.len == 1
+	assert automatic_commands[0].color == 'rgb(61 174 233)'
 }
 
 // box-shadow: a drop shadow rect offset behind the box, carrying the blur radius.
@@ -3148,7 +3122,6 @@ fn test_box_shadow_behind_background() {
 	assert fills[0].blur == 0.0 // no blur token given
 
 	assert fills[1].color == 'rgb(0 128 0)' // background on top
-
 }
 
 fn test_multiple_outer_box_shadows_are_parsed_and_painted_in_order() {
@@ -3196,7 +3169,6 @@ fn test_box_shadow_spread() {
 	assert fills[0].x == -5.0 // 0 - spread
 
 	assert fills[0].width == 110.0 // 100 + 2*spread
-
 }
 
 // A blurred shadow gets a Gaussian-blur filter in the SVG; no shadow -> no filter.
@@ -3241,7 +3213,7 @@ fn test_linear_gradient_background() {
 
 fn test_url_background_image_layers_reach_display_list_with_box_metadata() {
 	doc := dom.Document.create(dom.url_about_blank())
-	el := styled(doc, 'div', 'width: 100px; height: 50px; padding: 10px; border: 5px solid; background-image: url("data:image/png;base64,AA=="); background-repeat: no-repeat; background-size: contain; background-position: center; background-origin: content-box; background-clip: padding-box')
+	el := styled(doc, 'div', 'width: 100px; height: 50px; padding: 10px; border: 5px solid; border-radius: 20px / 10px; background-image: url("data:image/png;base64,AA=="); background-repeat: no-repeat; background-size: contain; background-position: center; background-origin: content-box; background-clip: padding-box')
 	box := layout_block(el, 0, 0, 800, []&css.CSSRule{})
 	assert box.background_images.len == 1
 	commands := box.paint_commands().filter(it.kind == 'draw_background_image')
@@ -3254,9 +3226,106 @@ fn test_url_background_image_layers_reach_display_list_with_box_metadata() {
 	assert commands[0].width == 100 && commands[0].height == 50
 	assert commands[0].image_clip_x == 5 && commands[0].image_clip_y == 5
 	assert commands[0].image_clip_width == 120 && commands[0].image_clip_height == 70
+	assert commands[0].image_clip_radii.top_left == CornerRadius{15, 5}
+	assert commands[0].image_clip_radii.bottom_right == CornerRadius{15, 5}
 	svg := box.render_svg(140, 90)
 	assert svg.contains('<image href="data:image/png;base64,AA=="')
 	assert svg.contains('preserveAspectRatio="xMidYMid meet"')
+	assert svg.contains('<clipPath id="imageclip0"><path d="M')
+}
+
+fn test_background_attachment_offsets_are_refreshed_during_retained_replay() {
+	box := &BlockBox{
+		overlay: CompatibilityOverlayData{
+			scroll_offset_x: 7
+			scroll_offset_y: 9
+		}
+	}
+	mut command := PaintCommand{ kind: 'draw_background_image' }
+	apply_live_background_offsets(mut command, box, painting.Point{11, 13})
+	assert command.image_scroll_offset_x == 7
+	assert command.image_scroll_offset_y == 9
+	assert command.image_viewport_offset_x == 11
+	assert command.image_viewport_offset_y == 13
+	mut gradient_command := PaintCommand{
+		kind: 'fill_gradient'
+		gradient_background_layer: true
+	}
+	apply_live_background_offsets(mut gradient_command, box, painting.Point{11, 13})
+	assert gradient_command.image_scroll_offset_x == 7
+	assert gradient_command.image_scroll_offset_y == 9
+	assert gradient_command.image_viewport_offset_x == 11
+	assert gradient_command.image_viewport_offset_y == 13
+}
+
+fn text_clip_test_box(text string) BlockBox {
+	return BlockBox{
+		paintable_with_lines: true
+		lines: [
+			TextLine{
+				fragments: [
+					TextFragment{
+						x: 10
+						y: 12
+						width: 40
+						height: 20
+						text: text
+						color: css.Color{0, 0, 0, 255}
+						font_size: 16
+					},
+				]
+			},
+		]
+	}
+}
+
+fn test_background_clip_text_uses_inclusive_in_flow_and_floating_glyph_runs() {
+	mut in_flow := text_clip_test_box('flow')
+	mut floating := text_clip_test_box('float')
+	floating.floating = true
+	mut absolute := text_clip_test_box('absolute')
+	absolute.absolutely_positioned = true
+	absolute.children = [text_clip_test_box('absolute-child')]
+	box := BlockBox{
+		width: 100
+		height: 60
+		background_color: css.Color{255, 0, 0, 255}
+		background_color_clip: 'text'
+		paintable_with_lines: true
+		lines: text_clip_test_box('own').lines
+		children: [in_flow, floating, absolute]
+	}
+	commands := box.paint_commands()
+	begin_commands := commands.filter(it.kind == 'begin_background_text_clip')
+	assert begin_commands.len == 1
+	run_text := begin_commands[0].text_clip_runs.map(it.text)
+	assert run_text == ['own', 'flow', 'float']
+	mut background_sequence := []string{}
+	for command in commands {
+		if command.kind in ['begin_background_text_clip', 'end_background_text_clip']
+			|| (command.kind == 'fill_rect' && command.color == 'rgb(255 0 0)') {
+			background_sequence << command.kind
+		}
+	}
+	assert background_sequence == ['begin_background_text_clip', 'fill_rect',
+		'end_background_text_clip']
+	svg := box.render_svg(120, 80)
+	assert svg.contains('<mask id="background-text-mask0"')
+	assert svg.contains('fill="white">own</text>')
+	assert svg.contains('<g mask="url(#background-text-mask0)">')
+
+	root := BlockBox{
+		width: 100
+		height: 60
+		background_color: css.Color{255, 0, 0, 255}
+		background_color_clip: 'text'
+		paints_canvas_background: true
+		canvas_width: 120
+		canvas_height: 80
+		paintable_with_lines: true
+		lines: text_clip_test_box('root').lines
+	}
+	assert root.paint_commands().all(it.kind != 'begin_background_text_clip')
 }
 
 fn test_multiple_url_background_layers_paint_back_to_front_and_coordinate_lists() {
@@ -3377,7 +3446,6 @@ fn test_flex_row_basic() {
 	assert box.children[1].x == 100.0 && box.children[1].width == 80.0 // after a's 100px
 
 	assert box.children[0].y == 0.0 && box.children[1].y == 0.0 // both at the cross-start (top)
-
 }
 
 fn test_flex_row_reverse_places_main_start_at_the_right_edge() {
@@ -3420,7 +3488,6 @@ fn test_flex_item_auto_width_shrinks_to_fit() {
 
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.children[0].width == 17.328125 // shaped max-content width, not the container
-
 }
 
 // Flex items pack by their margin box.
@@ -3436,7 +3503,6 @@ fn test_flex_items_pack_by_margin_box() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.children[0].x == 0.0
 	assert box.children[1].x == 60.0 // after a's margin box (50 + 10)
-
 }
 
 // A flex container with auto height takes the tallest item's margin-box height.
@@ -3530,7 +3596,6 @@ fn test_align_self_overrides_align_items() {
 	assert box.children[0].y == 0.0 // container flex-start
 
 	assert box.children[1].y == 40.0 // align-self flex-end -> 60 - 20
-
 }
 
 // gap adds fixed spacing between flex items along the main axis.
@@ -3546,7 +3611,6 @@ fn test_flex_gap_basic() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.children[0].x == 0.0
 	assert box.children[1].x == 120.0 // 100px item + 20px gap
-
 }
 
 // gap and justify-content compose: the gap is fixed spacing, justify distributes the remaining space.
@@ -3563,7 +3627,6 @@ fn test_flex_gap_with_center() {
 	// items+gap = 220; free = 80; center leading = 40.
 	assert box.children[0].x == 40.0
 	assert box.children[1].x == 160.0 // 40 + 100 + 20 gap
-
 }
 
 // flex-grow distributes the free main space to items in proportion to their grow factors.
@@ -3686,7 +3749,6 @@ fn test_flex_no_grow_leaves_free_space() {
 	assert box.children[0].width == 100.0 // not grown
 
 	assert box.children[0].x == 200.0 // pushed to the end (300 - 100)
-
 }
 
 // align-items: stretch (the default) grows auto-height items to the container's cross size.
@@ -3720,7 +3782,6 @@ fn test_align_items_stretch_to_tallest() {
 	assert box.children[0].height == 50.0 // explicit, unchanged
 
 	assert box.children[1].height == 50.0 // stretched to match
-
 }
 
 // A definite-height item is not stretched (stretch has no effect on its size) and top-aligns.
@@ -3735,7 +3796,6 @@ fn test_align_items_stretch_skips_definite_height() {
 	assert box.children[0].height == 30.0 // unchanged
 
 	assert box.children[0].y == 0.0 // top-aligned
-
 }
 
 // flex-direction: column stacks items vertically; auto-width items fill the container (stretch).
@@ -3752,7 +3812,6 @@ fn test_flex_column_basic() {
 	assert box.children[0].y == 0.0 && box.children[1].y == 50.0 // stacked
 
 	assert box.children[0].width == 200.0 && box.children[1].width == 200.0 // stretch fills
-
 }
 
 fn test_flex_column_reverse_places_main_start_at_the_bottom_edge() {
@@ -3796,7 +3855,6 @@ fn test_flex_column_align_center() {
 	assert box.children[0].width == 80.0 // definite width kept
 
 	assert box.children[0].x == 60.0 // centered: (200 - 80) / 2
-
 }
 
 // A column with auto height flows to the total item height (plus gaps).
@@ -3813,7 +3871,6 @@ fn test_flex_column_auto_height() {
 	assert box.height == 80.0 // 30 + 10 gap + 40
 
 	assert box.children[1].y == 40.0 // 30 + 10 gap
-
 }
 
 fn test_flex_column_grow_distributes_main_axis_space() {
@@ -3998,6 +4055,61 @@ fn test_linear_gradient_still_linear() {
 	assert box.render_svg(100, 100).contains('<linearGradient')
 }
 
+fn test_sampled_gradient_stops_preserve_interpolation_and_hard_boundaries() {
+	gradient := LinearGradient{
+		stops: [
+			GradientStop{css.Color{255, 0, 0, 255}, 0.0},
+			GradientStop{css.Color{255, 0, 0, 255}, 0.5},
+			GradientStop{css.Color{0, 0, 255, 255}, 0.5},
+			GradientStop{css.Color{0, 0, 255, 255}, 1.0},
+		]
+		interpolation_method: css.ColorInterpolationMethod(css.RectangularColorSpace.oklab)
+	}
+	sampled := sampled_gradient_stops(gradient, 16)
+	assert sampled[0] == GradientStop{css.Color{255, 0, 0, 255}, 0.0}
+	assert sampled[sampled.len - 1] == GradientStop{css.Color{0, 0, 255, 255}, 1.0}
+	hard_edge := sampled.filter(math.abs(it.offset - 0.5) < 0.000001)
+	assert hard_edge.len == 2
+	assert hard_edge[0].color == css.Color{255, 0, 0, 255}
+	assert hard_edge[1].color == css.Color{0, 0, 255, 255}
+}
+
+fn test_sampled_gradient_stops_clip_out_of_range_stops_to_rendered_interval() {
+	gradient := LinearGradient{
+		stops: [
+			GradientStop{css.Color{255, 0, 0, 255}, -1.0},
+			GradientStop{css.Color{0, 0, 255, 255}, 2.0},
+		]
+	}
+	sampled := sampled_gradient_stops(gradient, 16)
+	assert sampled[0].offset == 0
+	assert sampled[sampled.len - 1].offset == 1
+	assert sampled.all(it.offset >= 0 && it.offset <= 1)
+	assert sampled[0].color == gradient_color_at(gradient, 0)
+	assert sampled[sampled.len - 1].color == gradient_color_at(gradient, 1)
+}
+
+fn test_sampled_gradient_stops_keep_clamped_leading_and_trailing_ranges() {
+	gradient := LinearGradient{
+		stops: [
+			GradientStop{css.Color{255, 0, 0, 255}, 0.25},
+			GradientStop{css.Color{0, 0, 255, 255}, 0.75},
+		]
+	}
+	sampled := sampled_gradient_stops(gradient, 4)
+	assert sampled[0] == GradientStop{css.Color{255, 0, 0, 255}, 0.0}
+	assert sampled[1] == GradientStop{css.Color{255, 0, 0, 255}, 0.25}
+	assert sampled[sampled.len - 2] == GradientStop{css.Color{0, 0, 255, 255}, 0.75}
+	assert sampled[sampled.len - 1] == GradientStop{css.Color{0, 0, 255, 255}, 1.0}
+}
+
+fn test_gradient_color_at_interpolates_compatibility_color_arrays() {
+	gradient := LinearGradient{
+		colors: [css.Color{255, 0, 0, 255}, css.Color{0, 0, 255, 255}]
+	}
+	assert gradient_color_at(gradient, 0.5) == css.Color{128, 0, 128, 255}
+}
+
 // Bijective base-26 alphabetic markers.
 fn test_alphabetic_marker() {
 	assert alphabetic_marker(1, false) == 'a'
@@ -4064,14 +4176,15 @@ fn test_inline_background_border_and_shadow_paint() {
 	fragments := box.lines[0].fragments
 	assert fragments.len == 2
 	commands := box.paint_commands()
-	backgrounds := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(255 165 0)')
+	backgrounds := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(255 165 0)' && it.radius > 0)
 	assert backgrounds.len == 1
 	assert backgrounds[0].x == fragments[0].x - 2.0
 	assert backgrounds[0].width == fragments[1].x + fragments[1].width - fragments[0].x + 4.0
 	assert backgrounds[0].radius == 6.0
-	borders := commands.filter(it.kind == 'stroke_rounded_rect' && it.color == 'rgb(0 128 0)')
+	borders := commands.filter(it.kind == 'draw_svg_path' && it.color == 'rgb(0 128 0)')
 	assert borders.len == 1
-	assert borders[0].radius == 6
+	assert borders[0].path.contains('A 6 6')
+	assert borders[0].fill_even_odd
 	shadows := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(0 100 0)')
 	assert shadows.len == 1
 	assert shadows[0].blur == 4.0
@@ -4119,7 +4232,6 @@ fn test_inline_block_auto_width_shrink_to_fit() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.children.len == 1
 	assert box.children[0].width == 17.328125 // shaped max-content width, not the container
-
 }
 
 // The inline-block box paints (its background reaches the display list).
@@ -4183,7 +4295,6 @@ fn test_table_grid_layout() {
 	assert box.children[2].x == 0.0
 	assert box.children[2].y == box.children[0].y + line
 	assert box.height == 2.0 * line // two rows
-
 }
 
 fn test_table_colspan_reserves_and_sizes_all_covered_columns() {
@@ -4418,7 +4529,6 @@ fn test_grid_fixed_and_fr_with_gap() {
 	cells := grid_cells('100px 1fr', '20px', 2)
 	assert cells[0].x == 0.0 && cells[0].width == 100.0
 	assert cells[1].x == 120.0 && cells[1].width == 180.0 // 100 + 20 gap
-
 }
 
 // repeat(n, track) expands to n columns.
@@ -4492,7 +4602,6 @@ fn test_flex_wrap() {
 	assert box.children[2].x == 0.0 && box.children[2].y == 30.0 // wrapped to line 2
 
 	assert box.height == 60.0 // two 30px lines
-
 }
 
 fn test_flex_wrap_reverse_reverses_the_cross_axis_line_order() {

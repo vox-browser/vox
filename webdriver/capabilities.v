@@ -11,6 +11,7 @@ pub enum PageLoadStrategy {
 	eager
 	normal
 }
+
 pub enum InterfaceMode {
 	graphical
 	headless
@@ -24,24 +25,22 @@ pub:
 	user_agent      string = 'Ladybird'
 	interface_mode  InterfaceMode
 	http_session    bool
-	proxy_available bool
-	prompt_handler  ?map[PromptType]PromptHandlerConfiguration
 }
 
 fn validate_capability(name string, value json2.Any) !json2.Any {
-	if value is json2.Null { return json2.null }
+	if value is json2.Null {
+		return json2.null
+	}
 	match name {
 		'acceptInsecureCerts', 'strictFileInteractability', 'webSocketUrl', 'ladybird:headless' {
 			if value !is bool {
-				return error(WebDriverError.from_code(.invalid_argument,
-					'Capability ${name} must be a boolean').msg())
+				return error(WebDriverError.from_code(.invalid_argument, 'Capability ${name} must be a boolean').msg())
 			}
 			return value as bool
 		}
 		'browserName', 'browserVersion', 'platformName' {
 			if value !is string {
-				return error(WebDriverError.from_code(.invalid_argument,
-					'Capability ${name} must be a string').msg())
+				return error(WebDriverError.from_code(.invalid_argument, 'Capability ${name} must be a string').msg())
 			}
 			return value as string
 		}
@@ -59,15 +58,16 @@ fn validate_capability(name string, value json2.Any) !json2.Any {
 		}
 		'unhandledPromptBehavior' {
 			handler := deserialize_unhandled_prompt_behavior(value)!
-			return serialize_user_prompt_handler(handler)
+			return prompt_handler_map_to_internal_object(handler)
 		}
 		else {
 			if !name.contains(':') {
-				return error(WebDriverError.from_code(.invalid_argument,
-					'Unrecognized capability: ${name}').msg())
+				return error(WebDriverError.from_code(.invalid_argument, 'Unrecognized capability: ${name}').msg())
 			}
 			// Unknown extension capabilities are intentionally elided by Ladybird.
-			if !name.starts_with('ladybird:') { return json2.null }
+			if !name.starts_with('ladybird:') {
+				return json2.null
+			}
 		}
 	}
 	return json2.null
@@ -80,25 +80,22 @@ fn validate_capabilities(value json2.Any) !map[string]json2.Any {
 	mut result := map[string]json2.Any{}
 	object := value as map[string]json2.Any
 	for name, item in object {
-		if item is json2.Null { continue
-		 }
+		if item is json2.Null {
+			continue
+		}
 		match name {
-			'acceptInsecureCerts', 'strictFileInteractability', 'webSocketUrl',
-			'ladybird:headless' {
+			'acceptInsecureCerts', 'strictFileInteractability', 'webSocketUrl', 'ladybird:headless' {
 				if item !is bool {
-					return error(WebDriverError.from_code(.invalid_argument,
-						'Capability ${name} must be a boolean').msg())
+					return error(WebDriverError.from_code(.invalid_argument, 'Capability ${name} must be a boolean').msg())
 				}
 				result[name] = item as bool
 			}
 			'browserName', 'browserVersion', 'platformName', 'pageLoadStrategy' {
 				if item !is string {
-					return error(WebDriverError.from_code(.invalid_argument,
-						'Capability ${name} must be a string').msg())
+					return error(WebDriverError.from_code(.invalid_argument, 'Capability ${name} must be a string').msg())
 				}
 				if name == 'pageLoadStrategy' && item as string !in ['none', 'eager', 'normal'] {
-					return error(WebDriverError.from_code(.invalid_argument,
-						'Invalid pageLoadStrategy').msg())
+					return error(WebDriverError.from_code(.invalid_argument, 'Invalid pageLoadStrategy').msg())
 				}
 				result[name] = (item as string).clone()
 			}
@@ -109,15 +106,15 @@ fn validate_capabilities(value json2.Any) !map[string]json2.Any {
 				result[name] = deserialize_timeouts(item)!.to_object()
 			}
 			'unhandledPromptBehavior' {
-				result[name] =
-					serialize_user_prompt_handler(deserialize_unhandled_prompt_behavior(item)!)
+				result[name] = prompt_handler_map_to_internal_object(deserialize_unhandled_prompt_behavior(item)!)
 			}
 			else {
 				if !name.contains(':') {
-					return error(WebDriverError.from_code(.invalid_argument,
-						'Unrecognized capability: ${name}').msg())
+					return error(WebDriverError.from_code(.invalid_argument, 'Unrecognized capability: ${name}').msg())
 				}
-				if name.starts_with('ladybird:') { result[name] = item }
+				if name.starts_with('ladybird:') {
+					result[name] = item
+				}
 			}
 		}
 	}
@@ -131,8 +128,7 @@ fn merge_capabilities(primary map[string]json2.Any, secondary map[string]json2.A
 	}
 	for name, value in secondary {
 		if name in primary {
-			return error(WebDriverError.from_code(.invalid_argument,
-				'Unable to merge capability ${name}').msg())
+			return error(WebDriverError.from_code(.invalid_argument, 'Unable to merge capability ${name}').msg())
 		}
 		result[name] = value
 	}
@@ -141,18 +137,18 @@ fn merge_capabilities(primary map[string]json2.Any, secondary map[string]json2.A
 
 fn string_matches(object map[string]json2.Any, key string, required string) bool {
 	value := object[key] or { return true }
-	if value !is string { return false }
+	if value !is string {
+		return false
+	}
 	return (value as string) == required
 }
 
 fn platform_matches(requested string, actual string) bool {
-	return requested == actual || (requested == 'mac' && actual == 'macos')
-		|| (requested == 'serenity' && actual == 'serenityos')
+	return requested == actual || (requested == 'mac' && actual == 'macos') || (requested == 'serenity' && actual == 'serenityos')
 }
 
 fn match_capabilities(requested map[string]json2.Any, endpoint EndpointCapabilities) CapabilitiesResult {
-	if !string_matches(requested, 'browserName', endpoint.browser_name)
-		|| !string_matches(requested, 'browserVersion', endpoint.browser_version) {
+	if !string_matches(requested, 'browserName', endpoint.browser_name) || !string_matches(requested, 'browserVersion', endpoint.browser_version) {
 		return CapabilitiesResult{}
 	}
 	if 'platformName' in requested {
@@ -163,18 +159,23 @@ fn match_capabilities(requested map[string]json2.Any, endpoint EndpointCapabilit
 	}
 	if 'acceptInsecureCerts' in requested {
 		insecure := requested['acceptInsecureCerts'] or { return CapabilitiesResult{} }
-		if insecure is bool && insecure { return CapabilitiesResult{} }
-	}
-	if 'proxy' in requested && !endpoint.proxy_available { return CapabilitiesResult{} }
-	if 'webSocketUrl' in requested { return CapabilitiesResult{} }
-	if prompt_value := requested['unhandledPromptBehavior'] {
-		requested_handler := deserialize_unhandled_prompt_behavior(prompt_value) or {
+		if insecure is bool && insecure {
 			return CapabilitiesResult{}
 		}
-		prompt_state := UserPromptState{
-			handler: endpoint.prompt_handler
+	}
+	if 'proxy' in requested && has_proxy_configuration() {
+		return CapabilitiesResult{}
+	}
+	if 'webSocketUrl' in requested {
+		return CapabilitiesResult{}
+	}
+	if prompt_value := requested['unhandledPromptBehavior'] {
+		requested_handler := prompt_handler_map_from_internal_object(prompt_value) or {
+			return CapabilitiesResult{}
 		}
-		if !prompt_state.matches(requested_handler) { return CapabilitiesResult{} }
+		if !check_user_prompt_handler_matches(requested_handler) {
+			return CapabilitiesResult{}
+		}
 	}
 	mut matched := map[string]json2.Any{}
 	matched['browserName'] = endpoint.browser_name
@@ -184,12 +185,16 @@ fn match_capabilities(requested map[string]json2.Any, endpoint EndpointCapabilit
 	matched['setWindowRect'] = true
 	matched['userAgent'] = endpoint.user_agent
 	matched['ladybird:headless'] = endpoint.interface_mode == .headless
-	if endpoint.http_session { matched['strictFileInteractability'] = false }
+	if endpoint.http_session {
+		matched['strictFileInteractability'] = false
+	}
 	for name, value in requested {
-		if value !is json2.Null { matched[name] = value }
+		if value !is json2.Null {
+			matched[name] = value
+		}
 	}
 	return CapabilitiesResult{
-		matched:      true
+		matched: true
 		capabilities: matched
 	}
 }
@@ -202,8 +207,7 @@ pub:
 
 pub fn process_capabilities(parameters json2.Any, endpoint EndpointCapabilities) !CapabilitiesResult {
 	if parameters !is map[string]json2.Any {
-		return error(WebDriverError.from_code(.invalid_argument,
-			'Session parameters is not an object').msg())
+		return error(WebDriverError.from_code(.invalid_argument, 'Session parameters is not an object').msg())
 	}
 	root := parameters as map[string]json2.Any
 	capability_value := root['capabilities'] or {
@@ -223,15 +227,16 @@ pub fn process_capabilities(parameters json2.Any, endpoint EndpointCapabilities)
 	if 'firstMatch' in capabilities_request {
 		first := capabilities_request['firstMatch'] or { return error('missing firstMatch') }
 		if first !is []json2.Any || (first as []json2.Any).len == 0 {
-			return error(WebDriverError.from_code(.invalid_argument,
-				'Capability firstMatch must be an array with at least one entry').msg())
+			return error(WebDriverError.from_code(.invalid_argument, 'Capability firstMatch must be an array with at least one entry').msg())
 		}
 		alternatives = first as []json2.Any
 	}
 	for alternative in alternatives {
 		candidate := merge_capabilities(required, validate_capabilities(alternative)!)!
 		matched := match_capabilities(candidate, endpoint)
-		if matched.matched { return matched }
+		if matched.matched {
+			return matched
+		}
 	}
 	return CapabilitiesResult{}
 }

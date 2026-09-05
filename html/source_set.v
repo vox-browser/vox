@@ -5,6 +5,7 @@
 // Translation of the source-selection algorithms in Libraries/LibWeb/HTML/SourceSet.cpp.
 module html
 
+import css
 import dom
 import strconv
 
@@ -316,14 +317,36 @@ pub fn create_source_set(default_source string, srcset string, source_size f64) 
 }
 
 pub fn parse_a_sizes_attribute(element &dom.Element, sizes string, image ?&dom.HTMLImageElement) f64 {
-	// CSS size parsing currently enters this compact port through the numeric
-	// source-size representation used by SourceSet.
-	_ = element
-	_ = image
-	return image_source_size_from_sizes(if sizes == '' { none } else { sizes })
+	mut rendered_auto_width := ?f64(none)
+	if image_element := image {
+		model := html_image_element_model_for_dom_element(image_element)
+		if model.immutable_bitmap() != none && model.allows_auto_sizes() {
+			natural_width := model.intrinsic_width()
+			natural_height := model.intrinsic_height()
+			natural_aspect_ratio := model.intrinsic_aspect_ratio()
+			concrete_size := css.run_default_sizing_algorithm(css.CSSPixels.new(int(model.width())), css.CSSPixels.new(int(model.height())), css.SizeWithAspectRatio{
+				width: if width := natural_width {
+					css.CSSPixels.nearest_value_for(width)
+				} else {
+					none
+				}
+				height: if height := natural_height {
+					css.CSSPixels.nearest_value_for(height)
+				} else {
+					none
+				}
+				aspect_ratio: if ratio := natural_aspect_ratio {
+					css.CSSPixelFraction.from_double(ratio)
+				} else {
+					none
+				}
+			}, css.CSSPixelSize.from_values(300, 150))
+			rendered_auto_width = concrete_size.width().to_double()
+		}
+	}
+	return css.parse_sizes_attribute_source_size(element, sizes, rendered_auto_width)
 }
 
 pub fn SourceSet.create(element &dom.Element, default_source string, srcset string, sizes string, image ?&dom.HTMLImageElement) SourceSet {
-	return create_source_set(default_source, srcset, parse_a_sizes_attribute(element, sizes,
-		image))
+	return create_source_set(default_source, srcset, parse_a_sizes_attribute(element, sizes, image))
 }

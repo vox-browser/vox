@@ -1,10 +1,50 @@
+@[has_globals]
 module intersectionobserver
 
 import dom
 import geometry
+import html
+import layout
 import math
 
+__global (
+	intersection_observer_callback_count  int
+	intersection_observer_entry_count     int
+	intersection_observer_entry_time      f64
+	intersection_observer_is_intersecting bool
+	intersection_observer_ratio           f64
+)
+
 fn discard_entries(_ []&IntersectionObserverEntry, _ &IntersectionObserver) {}
+
+fn record_delivered_entries(entries []&IntersectionObserverEntry, _ &IntersectionObserver) {
+	unsafe {
+		intersection_observer_callback_count++
+		intersection_observer_entry_count = entries.len
+		if entries.len > 0 {
+			intersection_observer_entry_time = entries[0].time()
+			intersection_observer_is_intersecting = entries[0].is_intersecting()
+			intersection_observer_ratio = entries[0].intersection_ratio()
+		}
+	}
+}
+
+fn reset_recorded_entries() {
+	unsafe {
+		intersection_observer_callback_count = 0
+		intersection_observer_entry_count = 0
+		intersection_observer_entry_time = 0
+		intersection_observer_is_intersecting = false
+		intersection_observer_ratio = 0
+	}
+}
+
+fn deliver_intersection_observer_tasks() {
+	mut event_loop := html.main_thread_event_loop()
+	for event_loop.task_queue().has_runnable_tasks() {
+		event_loop.process()
+	}
+}
 
 fn default_observer() &IntersectionObserver {
 	return IntersectionObserver.construct(discard_entries, IntersectionObserverInit{}) or {
@@ -114,6 +154,106 @@ fn test_observe_unobserve_disconnect_and_take_records() {
 	observer.queue_entry(entry)
 	assert observer.take_records() == [entry]
 	assert observer.take_records().len == 0
+}
+
+fn test_document_queues_one_task_constructs_entries_and_notifies_registered_observer() {
+	reset_recorded_entries()
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_window(&dom.Window{})
+	_ = html.WindowModel.create_top_level(document, none, 'intersection-observer-test') or {
+		panic(err)
+	}
+	mut navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
+	assert document.is_fully_active()
+	mut observer := IntersectionObserver.construct(record_delivered_entries, IntersectionObserverInit{
+		relevant_document: document
+	}) or { panic(err) }
+	assert document.registered_intersection_observer_count() == 1
+	target := document.create_element('div') or { panic(err) }
+	registration := observer.document_registration_ or { panic('observer was not registered') }
+
+	document.queue_an_intersection_observer_entry(registration, 42.5, dom.Rect{1, 2, 3, 4}, dom.Rect{5, 6, 7, 8}, dom.Rect{9, 10, 11, 12}, true, 0.75, target)
+	document.queue_an_intersection_observer_entry(registration, 43.5, dom.Rect{}, dom.Rect{}, dom.Rect{}, false, 0.0, target)
+	assert intersection_observer_callback_count == 0
+
+	mut event_loop := html.main_thread_event_loop()
+	for event_loop.task_queue().has_runnable_tasks() && intersection_observer_callback_count == 0 {
+		event_loop.process()
+	}
+	assert intersection_observer_callback_count == 1
+	assert intersection_observer_entry_count == 2
+	assert intersection_observer_entry_time == 42.5
+	assert observer.take_records().len == 0
+
+	observer.finalize()
+	assert document.registered_intersection_observer_count() == 0
+}
+
+fn test_document_update_intersection_observations_uses_layout_geometry_and_threshold_state() {
+	reset_recorded_entries()
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_window(&dom.Window{})
+	document.set_browsing_context(&dom.BrowsingContext{})
+	document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+	_ = html.WindowModel.create_top_level(document, none, 'intersection-observer-layout-test') or {
+		panic(err)
+	}
+	mut navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
+
+	mut html_element := document.create_element('html') or { panic(err) }
+	mut target := document.create_element('div') or { panic(err) }
+	target.set_attribute_value('style', 'position: absolute; left: 10px; top: 20px; width: 100px; height: 50px')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(html_element.as_node()) or { panic(err) }
+	mut html_node := html_element.as_node()
+	html_node.append_child(target.as_node()) or { panic(err) }
+	layout.install_document_layout_hook(document)
+	document.needs_full_layout_tree_update = true
+	document.update_layout(.debugging)
+	assert target.el_layout_node() != none
+
+	mut observer := IntersectionObserver.construct(record_delivered_entries, IntersectionObserverInit{
+		relevant_document: document
+		thresholds: [0.0, 0.5, 1.0]
+	}) or { panic(err) }
+	observer.observe(target)
+	document.run_the_update_intersection_observations_steps(100)
+	deliver_intersection_observer_tasks()
+	assert intersection_observer_callback_count == 1
+	assert intersection_observer_entry_count == 1
+	assert intersection_observer_entry_time == 100
+	assert intersection_observer_is_intersecting
+	assert math.abs(intersection_observer_ratio - 1.0) < 0.000001
+
+	// The retained registration suppresses delivery while threshold index and
+	// intersection state remain unchanged.
+	document.run_the_update_intersection_observations_steps(101)
+	deliver_intersection_observer_tasks()
+	assert intersection_observer_callback_count == 1
+
+	// Moving the same observed target outside the viewport crosses every
+	// threshold and queues one new entry with the updated state.
+	target.set_attribute_value('style', 'position: absolute; left: 900px; top: 20px; width: 100px; height: 50px')
+	document.update_layout(.debugging)
+	document.run_the_update_intersection_observations_steps(102)
+	deliver_intersection_observer_tasks()
+	assert intersection_observer_callback_count == 2
+	assert intersection_observer_entry_count == 1
+	assert intersection_observer_entry_time == 102
+	assert !intersection_observer_is_intersecting
+	assert intersection_observer_ratio == 0.0
+
+	observer.finalize()
 }
 
 fn test_observe_uses_dom_object_identity_for_equivalent_elements() {

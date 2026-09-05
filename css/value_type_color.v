@@ -122,8 +122,7 @@ pub fn Color.from_hsla(h_degrees f64, s_ f64, l_ f64, a_ f64) Color {
 	g := to_rgb(h, s, l, 8.0)
 	b := to_rgb(h, s, l, 4.0)
 
-	return Color.rgba(color_round_to_u8(r * 255.0), color_round_to_u8(g * 255.0),
-		color_round_to_u8(b * 255.0), color_round_to_u8(a * 255.0))
+	return Color.rgba(color_round_to_u8(r * 255.0), color_round_to_u8(g * 255.0), color_round_to_u8(b * 255.0), color_round_to_u8(a * 255.0))
 }
 
 pub fn Color.from_hsv(hue f64, saturation f64, value f64) Color {
@@ -177,8 +176,7 @@ pub fn Color.from_hsv(hue f64, saturation f64, value f64) Color {
 		else {}
 	}
 
-	return Color.rgb(color_round_to_u8(r * 255.0), color_round_to_u8(g * 255.0),
-		color_round_to_u8(b * 255.0))
+	return Color.rgb(color_round_to_u8(r * 255.0), color_round_to_u8(g * 255.0), color_round_to_u8(b * 255.0))
 }
 
 pub fn (color Color) with_opacity(opacity f64) Color {
@@ -201,8 +199,7 @@ pub fn Color.from_linear_srgb(red_ f64, green_ f64, blue_ f64, alpha f64) Color 
 	green := linear_to_srgb(green_) * 255.0
 	blue := linear_to_srgb(blue_) * 255.0
 
-	return Color.rgba(color_round_to_u8(red), color_round_to_u8(green), color_round_to_u8(blue),
-		color_round_to_u8(alpha * 255.0))
+	return Color.rgba(color_round_to_u8(red), color_round_to_u8(green), color_round_to_u8(blue), color_round_to_u8(alpha * 255.0))
 }
 
 pub fn Color.from_linear_display_p3(r f64, g f64, b f64, alpha f64) Color {
@@ -216,7 +213,8 @@ pub fn Color.from_linear_display_p3(r f64, g f64, b f64, alpha f64) Color {
 // https://www.w3.org/TR/css-color-4/#predefined-a98-rgb
 pub fn Color.from_a98rgb(r f64, g f64, b f64, alpha f64) Color {
 	to_linear := fn (c f64) f64 {
-		return math.pow(c, 563.0 / 256.0)
+		sign := if c < 0 { -1.0 } else { 1.0 }
+		return sign * math.pow(math.abs(c), 563.0 / 256.0)
 	}
 
 	linear_r := to_linear(r)
@@ -255,7 +253,7 @@ pub fn Color.from_pro_photo_rgb(r f64, g f64, b f64, alpha f64) Color {
 		if absolute <= 16.0 / 252.0 {
 			return c / 16.0
 		}
-		return sign * math.pow(c, 1.8)
+		return sign * math.pow(absolute, 1.8)
 	}
 
 	linear_r := to_linear(r)

@@ -11,7 +11,7 @@ import aria
 import dom
 import infra
 
-pub type SelectPickerHook = fn([]SelectItem)
+pub type SelectPickerHook = fn ([]SelectItem)
 
 @[heap]
 pub struct HTMLOptionsCollection {
@@ -87,10 +87,16 @@ mut:
 }
 
 pub fn HTMLSelectElementModel.create(element &dom.HTMLSelectElement) &HTMLSelectElementModel {
-	return &HTMLSelectElementModel{
+	if element.select_element_model_ != unsafe { nil } {
+		return unsafe { &HTMLSelectElementModel(element.select_element_model_) }
+	}
+	model := &HTMLSelectElementModel{
 		element: element
 		control: FormAssociatedElement.create(select_dom_element(element))
 	}
+	mut mutable_element := unsafe { &dom.HTMLSelectElement(element) }
+	mutable_element.select_element_model_ = voidptr(model)
+	return model
 }
 
 pub fn (mut model HTMLSelectElementModel) set_picker_hook(hook ?SelectPickerHook) {
@@ -160,11 +166,25 @@ pub fn (model &HTMLSelectElementModel) is_html_select_element() bool {
 	return true
 }
 
-pub fn (model &HTMLSelectElementModel) is_listed() bool { return true }
-pub fn (model &HTMLSelectElementModel) is_submittable() bool { return true }
-pub fn (model &HTMLSelectElementModel) is_resettable() bool { return true }
-pub fn (model &HTMLSelectElementModel) is_autocapitalize_and_autocorrect_inheriting() bool { return true }
-pub fn (model &HTMLSelectElementModel) is_labelable() bool { return true }
+pub fn (model &HTMLSelectElementModel) is_listed() bool {
+	return true
+}
+
+pub fn (model &HTMLSelectElementModel) is_submittable() bool {
+	return true
+}
+
+pub fn (model &HTMLSelectElementModel) is_resettable() bool {
+	return true
+}
+
+pub fn (model &HTMLSelectElementModel) is_autocapitalize_and_autocorrect_inheriting() bool {
+	return true
+}
+
+pub fn (model &HTMLSelectElementModel) is_labelable() bool {
+	return true
+}
 
 pub fn (model &HTMLSelectElementModel) user_validity() bool {
 	return model.user_validity_
@@ -211,8 +231,8 @@ pub fn (mut model HTMLSelectElementModel) children_changed(metadata dom.Children
 	model.update_inner_text_element()
 }
 
-pub fn (model &HTMLSelectElementModel) default_role() aria.Role {
-	element := select_dom_element(model.element)
+pub fn html_select_element_default_role(select_element &dom.HTMLSelectElement) aria.Role {
+	element := select_dom_element(select_element)
 	if element.has_attribute('multiple') {
 		return .listbox
 	}
@@ -222,6 +242,10 @@ pub fn (model &HTMLSelectElementModel) default_role() aria.Role {
 		}
 	}
 	return .combobox
+}
+
+pub fn (model &HTMLSelectElementModel) default_role() aria.Role {
+	return html_select_element_default_role(model.element)
 }
 
 pub fn (mut model HTMLSelectElementModel) send_select_update_notifications() {

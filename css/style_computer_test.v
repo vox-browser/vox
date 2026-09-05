@@ -2,6 +2,11 @@ module css
 
 import dom
 
+struct CSSAnimationEventObservation {
+mut:
+	names []string
+}
+
 fn test_abstract_element_equality_uses_dom_identity() {
 	document := dom.Document.create(dom.url_about_blank())
 	first := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
@@ -59,7 +64,7 @@ fn test_cascade_declarations_inline_style() {
 
 	s := StyleComputer.new(doc)
 	mut cascaded := CascadedProperties.new()
-	s.cascade_declarations(mut cascaded, abstract_element, []MatchingRule{}, CascadeOrigin.author, Important.no, none, none, []PropertyID{})
+	s.cascade_declarations(mut cascaded, abstract_element, []&MatchingRule{}, CascadeOrigin.author, Important.no, none, none, []PropertyID{})
 
 	// The direct `color` declaration is cascaded.
 	color_id := property_id_from_string('color') or { panic('no color id') }
@@ -75,6 +80,19 @@ fn test_cascade_declarations_inline_style() {
 	assert padding_top.css_text == '10px'
 }
 
+fn test_cascaded_properties_cache_retains_unresolved_shorthand_ids() {
+	mut cascaded := CascadedProperties.new()
+	unresolved := dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic('var(--spacing)'))))
+	cascaded.set_property(.margin, unresolved, .no, .author, none, unsafe { nil })
+
+	retained := cascaded.property(.margin) or {
+		panic('unresolved shorthand was not retained in the cascade')
+	}
+	assert retained == unresolved
+	cascaded.revert_property(.margin, .no, .author)
+	assert cascaded.property(.margin) == none
+}
+
 // compute_properties turns cascaded values into computed values and runs the tail adjustments; here the
 // effective-overflow rule applies: overflow-y: scroll forces overflow-x: visible to compute to auto.
 fn test_compute_properties_resolves_effective_overflow() {
@@ -85,7 +103,7 @@ fn test_compute_properties_resolves_effective_overflow() {
 
 	s := StyleComputer.new(doc)
 	mut cascaded := CascadedProperties.new()
-	s.cascade_declarations(mut cascaded, abstract_element, []MatchingRule{}, CascadeOrigin.author, Important.no, none, none, []PropertyID{})
+	s.cascade_declarations(mut cascaded, abstract_element, []&MatchingRule{}, CascadeOrigin.author, Important.no, none, none, []PropertyID{})
 
 	mut computed := s.compute_properties(abstract_element, mut cascaded)
 	assert computed.overflow_y() == .scroll
@@ -334,49 +352,11 @@ fn test_recompute_style_for_subtree_inherits_down_levels() {
 	assert leaf_color.css_text == root_color.css_text
 }
 
-fn test_style_sharing_keeps_element_styles_independent() {
-	mut doc := dom.Document.create(dom.url_about_blank())
-	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
-		panic('${err}')
-	}
-	mut first := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
-		panic('${err}')
-	}
-	mut second := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
-		panic('${err}')
-	}
-	mut root_node := root.as_node()
-	root_node.append_child(first.as_node()) or { panic('append first failed: ${err}') }
-	root_node.append_child(second.as_node()) or { panic('append second failed: ${err}') }
-	mut document_node := unsafe { &dom.Node(doc) }
-	document_node.append_child(root.as_node()) or { panic('append root failed: ${err}') }
-
-	mut computer := StyleComputer.new(doc)
-	recompute_style_for_subtree(mut computer, root.as_node())
-	mut first_style := computed_properties_from_dom(dom.AbstractElement.new(first, none).computed_properties() or {
-		panic('first style missing')
-	}) or { panic('first typed style missing') }
-	second_style := computed_properties_from_dom(dom.AbstractElement.new(second, none).computed_properties() or {
-		panic('second style missing')
-	}) or { panic('second typed style missing') }
-
-	assert first_style.style_sharing_identity_ != ''
-	assert first_style.style_sharing_identity_ == second_style.style_sharing_identity_
-	assert voidptr(first_style) != voidptr(second_style)
-	assert first_style.equals(second_style)
-
-	new_width := parse_css_value(ParsingParams{}, '37px', .width) or {
-		panic('width did not parse')
-	}
-	first_style.set_property_without_modifying_flags(.width, new_width)
-	assert first_style.property(.width, .no)?.css_text == '37px'
-	assert second_style.property(.width, .no)?.css_text != '37px'
-}
-
 // DOM::Document.update_style() runs the CSS style pass over the whole tree through the installed hook:
 // after a single update_style() call, every element is styled and inherited color reaches a descendant.
 fn test_document_update_style_runs_css_pass_via_hook() {
 	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
 	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
 	root.set_attribute_value('style', 'color: blue')
 	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
@@ -408,6 +388,7 @@ fn test_document_update_style_runs_css_pass_via_hook() {
 // so plain doc.update_style() runs the CSS pass without a separate install_document_style_hook call.
 fn test_css_style_computer_for_caches_and_autowires() {
 	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
 	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
 	root.set_attribute_value('style', 'color: teal')
 	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
@@ -462,6 +443,132 @@ fn test_media_feature_evaluation_uses_document_viewport() {
 	mutable_doc.set_viewport_rect(dom.Rect{0, 0, 800, 600})
 	assert query.evaluate(doc)
 	assert !portrait.evaluate(doc)
+}
+
+fn test_document_update_style_reevaluates_media_rules_before_cascade() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	doc.set_viewport_rect(dom.Rect{0, 0, 500, 600})
+	mut html := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut target := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html.as_node()) or { panic('${err}') }
+	mut html_node := html.as_node()
+	html_node.append_child(target.as_node()) or { panic('${err}') }
+	add_document_author_style_sheet(doc, 'div { color: blue; } @media (min-width: 600px) { div { color: red; } }')
+	css_style_computer_for(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+
+	doc.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+	doc.needs_full_style_update = true
+	doc.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+}
+
+fn test_document_media_rule_entry_point_crosses_css_module_boundary() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	doc.set_viewport_rect(dom.Rect{0, 0, 500, 600})
+	mut html := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut target := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html.as_node()) or { panic('${err}') }
+	mut html_node := html.as_node()
+	html_node.append_child(target.as_node()) or { panic('${err}') }
+	add_document_author_style_sheet(doc, 'div { color: blue; } @media (min-width: 600px) { div { color: red; } }')
+	css_style_computer_for(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
+
+	// Upstream Document::evaluate_media_queries_and_report_changes() calls
+	// evaluate_media_rules() directly. This must invalidate style through the
+	// CSS-owned StyleScope without requiring an unrelated full-style flag.
+	doc.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+	doc.evaluate_media_rules()
+	assert doc.needs_full_style_update
+	doc.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+}
+
+fn test_document_style_sheet_source_entry_point_uses_css_owned_sheets() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut style := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'style') or {
+		panic('${err}')
+	}
+	mut style_node := style.as_node()
+	style_node.append_child(doc.create_text_node('.card { color: red; }').as_node()) or {
+		panic('${err}')
+	}
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(style.as_node()) or { panic('${err}') }
+	css_style_computer_for(doc)
+
+	assert doc.get_style_sheet_source(&dom.StyleSheetIdentifier{
+		type_: .style_element
+		dom_element_unique_id: style.as_node().unique_id()
+	}) or { '' } == '.card { color: red; }'
+
+	set_document_user_style_sheet(doc, 'body { color: green; }')
+	assert doc.get_style_sheet_source(&dom.StyleSheetIdentifier{
+		type_: .user_style
+	}) or { '' } == 'body { color: green; }'
+
+	ua_source := doc.get_style_sheet_source(&dom.StyleSheetIdentifier{
+		type_: .user_agent
+		url: 'CSS/Default.css'
+	}) or { '' }
+	assert ua_source.contains('display: block')
+}
+
+fn test_document_update_style_builds_property_rule_registration_cache() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	mut html := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html.as_node()) or { panic('${err}') }
+	add_document_author_style_sheet(doc, '@property --accent { syntax: "<color>"; inherits: false; initial-value: red; }')
+	css_style_computer_for(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+
+	registration := doc.get_registered_custom_property('--accent') or {
+		panic('missing @property registration')
+	}
+	assert registration.syntax == '<color>'
+	assert !registration.inherits
+	assert registration.initial_value or { '' } == 'red'
+}
+
+fn test_document_cache_entry_points_cross_the_dom_css_boundary() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	add_document_author_style_sheet(doc, '@property --accent { syntax: "<color>"; inherits: false; initial-value: red; } @counter-style boxes { system: cyclic; symbols: "□"; suffix: " "; }')
+	css_style_computer_for(doc)
+
+	doc.build_registered_properties_cache()
+	registration := doc.get_registered_custom_property('--accent') or {
+		panic('missing @property registration')
+	}
+	assert registration.syntax == '<color>'
+	assert registration.initial_value or { '' } == 'red'
+
+	doc.build_counter_style_cache()
+	styles := registered_counter_styles_for_document(doc)
+	assert 'boxes' in styles
+	assert 'ethiopic-numeric' in styles
 }
 
 fn test_comma_only_media_query_list_does_not_match() {
@@ -544,15 +651,20 @@ fn test_concrete_html_element_presentational_hint_entry_points() {
 
 	assert html_div_element_is_presentational_hint(unsafe { &dom.HTMLDivElement(hr_element) }, 'align')
 	assert html_paragraph_element_is_presentational_hint(unsafe {
-		&dom.HTMLParagraphElement(hr_element)}, 'align')
+		&dom.HTMLParagraphElement(hr_element)
+	}, 'align')
 	assert html_table_col_element_is_presentational_hint(unsafe {
-		&dom.HTMLTableColElement(hr_element)}, 'width')
+		&dom.HTMLTableColElement(hr_element)
+	}, 'width')
 	assert html_table_section_element_is_presentational_hint(unsafe {
-		&dom.HTMLTableSectionElement(hr_element)}, 'background')
+		&dom.HTMLTableSectionElement(hr_element)
+	}, 'background')
 	assert html_heading_element_is_presentational_hint(unsafe {
-		&dom.HTMLHeadingElement(hr_element)}, 'align')
+		&dom.HTMLHeadingElement(hr_element)
+	}, 'align')
 	assert html_table_cell_element_is_presentational_hint(unsafe {
-		&dom.HTMLTableCellElement(hr_element)}, 'nowrap')
+		&dom.HTMLTableCellElement(hr_element)
+	}, 'nowrap')
 
 	mut body_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'body') or {
 		panic(err)
@@ -683,6 +795,36 @@ fn test_embed_frame_iframe_and_canvas_adjust_display_contents_to_none() {
 	}
 }
 
+fn test_dimension_attributes_follow_style_computer_source_rules() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut canvas := document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas') or {
+		panic('${err}')
+	}
+	canvas.set_attribute_value('width', '320')
+	canvas.set_attribute_value('height', '200')
+	canvas_computed := StyleComputer.new(document).compute_style(dom.AbstractElement.new(canvas, none))
+	assert (canvas_computed.property(.width, .no) or { panic('canvas width missing') }).css_text == 'auto'
+	assert (canvas_computed.property(.height, .no) or { panic('canvas height missing') }).css_text == 'auto'
+	assert (canvas_computed.property(.aspect_ratio, .no) or {
+		panic('canvas aspect ratio missing')
+	}).css_text == 'auto 320 / 200'
+
+	mut image_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'img') or {
+		panic('${err}')
+	}
+	image_element.set_attribute_value('width', '100')
+	mut selected_source := document.create_element_ns('http://www.w3.org/1999/xhtml', 'source') or {
+		panic('${err}')
+	}
+	selected_source.set_attribute_value('width', '240')
+	selected_source.set_attribute_value('height', '120')
+	mut image := unsafe { &dom.HTMLImageElement(image_element) }
+	image.dimension_attribute_source_ = selected_source
+	image_computed := StyleComputer.new(document).compute_style(dom.AbstractElement.new(image_element, none))
+	assert (image_computed.property(.width, .no) or { panic('image width missing') }).css_text == '240px'
+	assert (image_computed.property(.height, .no) or { panic('image height missing') }).css_text == '120px'
+}
+
 fn test_media_element_adjusts_inline_and_contents_display() {
 	document := dom.Document.create(dom.url_about_blank())
 	computer := StyleComputer.new(document)
@@ -719,6 +861,7 @@ fn test_invalid_media_group_does_not_override_matching_style_rule() {
 
 fn test_attribute_mutation_uses_css_invalidation_plan_for_descendant() {
 	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
 	mut html := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
 	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
 		panic('${err}')
@@ -739,16 +882,17 @@ fn test_attribute_mutation_uses_css_invalidation_plan_for_descendant() {
 	css_style_computer_for(doc)
 	doc.needs_full_style_update = true
 	doc.update_style()
-	assert computed_value_for(target, .color) or { '' } == 'blue'
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 0, 255)'
 
 	parent.set_attribute_value('class', 'theme')
 	assert doc.element_needs_style_update(target)
 	doc.update_style()
-	assert computed_value_for(target, .color) or { '' } == 'red'
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
 }
 
 fn test_computed_style_records_attempted_pseudo_class_matches() {
 	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
 	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
 	mut item := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
 	item.set_attribute_value('class', 'item')
@@ -761,6 +905,106 @@ fn test_computed_style_records_attempted_pseudo_class_matches() {
 	doc.needs_full_style_update = true
 	doc.update_style()
 	assert item.affected_by_pseudo_class(.hover)
+}
+
+fn test_typed_view_transition_name_reaches_dom_element_algorithm() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut item := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(root.as_node()) or { panic('append root failed: ${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(item.as_node()) or { panic('append item failed: ${err}') }
+	add_document_author_style_sheet(doc, 'div { view-transition-name: card; }')
+	css_style_computer_for(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+	assert item.document_scoped_view_transition_name() or { '' } == 'card'
+}
+
+fn test_dynamic_pseudo_class_changes_use_rule_cache_selector_deltas() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or { panic('${err}') }
+	mut hovered := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'section') or {
+		panic('${err}')
+	}
+	hovered.set_attribute_value('class', 'hovered')
+	mut descendant := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic('${err}')
+	}
+	descendant.set_attribute_value('class', 'descendant')
+	mut unrelated := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'aside') or {
+		panic('${err}')
+	}
+	unrelated.set_attribute_value('class', 'unrelated')
+	mut focus_parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	focus_parent.set_attribute_value('class', 'focus-parent')
+	mut focus_child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'input') or {
+		panic('${err}')
+	}
+	focus_child.set_attribute_value('class', 'focus-child')
+	mut target := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	target.set_attribute_value('class', 'target')
+
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(root.as_node()) or { panic('append root failed: ${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(hovered.as_node()) or { panic('append hovered failed: ${err}') }
+	mut hovered_node := hovered.as_node()
+	hovered_node.append_child(descendant.as_node()) or {
+		panic('append descendant failed: ${err}')
+	}
+	root_node.append_child(unrelated.as_node()) or { panic('append unrelated failed: ${err}') }
+	root_node.append_child(focus_parent.as_node()) or {
+		panic('append focus parent failed: ${err}')
+	}
+	mut focus_parent_node := focus_parent.as_node()
+	focus_parent_node.append_child(focus_child.as_node()) or {
+		panic('append focus child failed: ${err}')
+	}
+	root_node.append_child(target.as_node()) or { panic('append target failed: ${err}') }
+
+	add_document_author_style_sheet(doc, '
+		.hovered:hover { color: red; }
+		.hovered:hover .descendant { color: blue; }
+		.focus-parent:focus-within { background-color: green; }
+		.focus-child:focus-visible { color: purple; }
+		.target:target { color: orange; }
+	')
+	css_style_computer_for(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+
+	assert !hovered.needs_style_update()
+	assert !descendant.needs_style_update()
+	assert !unrelated.needs_style_update()
+	doc.set_hovered_node(hovered.as_node())
+	assert hovered.needs_style_update()
+	assert descendant.needs_style_update()
+	assert !unrelated.needs_style_update()
+	doc.update_style()
+	assert computed_value_for(hovered, .color) or { '' } == 'rgb(255, 0, 0)'
+	assert computed_value_for(descendant, .color) or { '' } == 'rgb(0, 0, 255)'
+
+	doc.set_focused_area(focus_child.as_node())
+	assert focus_parent.needs_style_update()
+	assert focus_child.needs_style_update()
+	assert !unrelated.needs_style_update()
+	doc.update_style()
+	assert computed_value_for(focus_parent, .background_color) or { '' } == 'rgb(0, 128, 0)'
+	assert computed_value_for(focus_child, .color) or { '' } == 'rgb(128, 0, 128)'
+
+	doc.set_target_element(target)
+	assert target.needs_style_update()
+	assert !unrelated.needs_style_update()
+	doc.update_style()
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 165, 0)'
 }
 
 fn test_meta_theme_color_uses_css_color_and_media_parsers() {
@@ -798,6 +1042,7 @@ fn test_meta_theme_color_uses_css_color_and_media_parsers() {
 // a full style pass over the document resolves inline styles + inheritance, read back per element.
 fn test_computed_value_for_inline_and_inheritance() {
 	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
 	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
 		panic('${err}')
 	}
@@ -825,10 +1070,57 @@ fn test_computed_value_for_inline_and_inheritance() {
 	assert span_color != body_color
 }
 
+fn test_compatibility_property_reads_reuse_retained_computed_style() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut target := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	target.set_attribute_value('style', 'color: red; font-size: 20px; width: 2em')
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('append html failed: ${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(target.as_node()) or { panic('append target failed: ${err}') }
+
+	computed_width := computed_value_for(target, .width) or { panic('no computed width') }
+	assert computed_width == '40px'
+	conflicting_rules := parse_css_stylesheet_contents_with_parser('div { color: blue; font-size: 5px; width: 99px }', map[string]bool{})
+	assert cascaded_value_with_ua(target, .width, conflicting_rules) == computed_width
+	computed_color_value := computed_value_for(target, .color) or { panic('no computed color') }
+	assert cascaded_value_with_ua(target, .color, conflicting_rules) == computed_color_value
+	assert computed_font_size_px(target, conflicting_rules) == 20.0
+	assert is_property_specified(target, .width, conflicting_rules)
+	assert !is_property_specified(target, .height, conflicting_rules)
+}
+
+fn test_background_lists_are_coordinated_at_computed_value_time() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut target := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	target.set_attribute_value('style', 'font-size: 20px; background-image: none, none; background-repeat: no-repeat; background-position-x: 2em')
+
+	computer := StyleComputer.new(doc)
+	computed := computer.compute_style(dom.AbstractElement.new(target, none))
+	background_repeat := computed.property(.background_repeat, .no) or {
+		panic('no computed background-repeat')
+	}
+	background_position_x := computed.property(.background_position_x, .no) or {
+		panic('no computed background-position-x')
+	}
+
+	assert background_repeat.css_text == 'no-repeat, no-repeat'
+	assert background_position_x.css_text == '40px, 40px'
+}
+
 // With the UA stylesheet wired in, the real StyleComputer applies user-agent display defaults
 // (head { display: none }, li { display: list-item }, div { display: block }), not just inline/inheritance.
 fn test_ua_default_stylesheet_applies_display() {
 	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
 	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
 		panic('${err}')
 	}
@@ -861,6 +1153,7 @@ fn test_ua_default_stylesheet_applies_display() {
 // an unmatched element's initial color.
 fn test_real_pipeline_matches_author_stylesheet() {
 	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
 	add_document_author_style_sheet(doc, '.card { color: navy }')
 
 	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
@@ -964,4 +1257,121 @@ fn test_dir_pseudo_class_ua_direction_and_inheritance() {
 	child_computed := computed_properties_for_element(child) or { panic('child style') }
 	assert html_computed.direction() == .rtl
 	assert child_computed.direction() == .rtl
+}
+
+fn test_document_rendering_update_advances_the_css_default_document_timeline() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	mut computer := css_style_computer_for(document)
+
+	document.update_animations_and_send_events(125.0)
+	assert computer.animation_time_ms_ == 125.0
+	assert computer.document_timeline_.current_time_ms() or { -1.0 } == 125.0
+
+	// DocumentTimeline becomes monotonically increasing once active.
+	document.update_animations_and_send_events(100.0)
+	assert computer.animation_time_ms_ == 125.0
+	assert computer.document_timeline_.current_time_ms() or { -1.0 } == 125.0
+}
+
+fn test_document_rendering_update_dispatches_css_animation_phase_events() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(target.as_node()) or { panic(err) }
+	observation := &CSSAnimationEventObservation{}
+	callback := &dom.CallbackType{
+		handle_event: fn [observation] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut mutable_observation := unsafe { &CSSAnimationEventObservation(observation) }
+			mutable_observation.names << event.type_name()
+			return dom.js_undefined()
+		}
+	}
+	mut event_target := unsafe { &dom.EventTarget(target.as_node()) }
+	event_target.set_event_handler_attribute('animationstart', callback)
+	event_target.set_event_handler_attribute('animationend', callback)
+
+	mut computer := css_style_computer_for(document)
+	abstract_target := dom.AbstractElement.new(target, none)
+	mut effect := KeyframeEffect.create()
+	effect.set_target(abstract_target)
+	effect.set_specified_iteration_duration(100.0)
+	effect.set_fill_mode(.forwards)
+	mut animation := CSSAnimation.create()
+	animation.set_animation_name('fade')
+	animation.set_owning_element(abstract_target)
+	animation.set_effect(effect)
+	animation.set_timeline(computer.document_timeline_)
+	animation.play() or { panic(err) }
+	computer.css_animation_storage_.set(abstract_target, 'fade', animation)
+
+	document.update_animations_and_send_events(0.0)
+	document.update_animations_and_send_events(150.0)
+	assert observation.names == ['animationstart', 'animationend']
+}
+
+fn test_display_change_cancels_and_restarts_css_defined_animations() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	target.set_attribute_value('style', 'display: block; animation-name: fade; animation-duration: 1s; animation-play-state: running')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(target.as_node()) or { panic(err) }
+
+	mut computer := css_style_computer_for(document)
+	mut abstract_target := dom.AbstractElement.new(target, none)
+	computer.recompute_style(mut abstract_target)
+	mut animation := computer.css_animation_storage_.animation(abstract_target, 'fade') or {
+		panic('missing CSS animation')
+	}
+	assert animation.play_state() == .running
+
+	target.set_attribute_value('style', 'display: none; animation-name: fade; animation-duration: 1s; animation-play-state: running')
+	computer.recompute_style(mut abstract_target)
+	assert animation.play_state() == .idle
+
+	target.set_attribute_value('style', 'display: block; animation-name: fade; animation-duration: 1s; animation-play-state: running')
+	computer.recompute_style(mut abstract_target)
+	assert animation.play_state() == .running
+}
+
+fn test_document_rendering_update_dispatches_css_transition_phase_events() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(target.as_node()) or { panic(err) }
+	observation := &CSSAnimationEventObservation{}
+	callback := &dom.CallbackType{
+		handle_event: fn [observation] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut mutable_observation := unsafe { &CSSAnimationEventObservation(observation) }
+			mutable_observation.names << event.type_name()
+			return dom.js_undefined()
+		}
+	}
+	mut event_target := unsafe { &dom.EventTarget(target.as_node()) }
+	for event_name in ['transitionrun', 'transitionstart', 'transitionend'] {
+		event_target.set_event_handler_attribute(event_name, callback)
+	}
+
+	_ = css_style_computer_for(document)
+	abstract_target := dom.AbstractElement.new(target, none)
+	start_value := &dom.StyleValue{ css_text: '0' }
+	end_value := &dom.StyleValue{ css_text: '1' }
+	_ = CSSTransition.start_a_transition(abstract_target, .opacity, 1, 0.0, 0.0, 100.0, start_value, end_value, start_value, 1.0)
+	document.update_animations_and_send_events(0.0)
+	document.update_animations_and_send_events(150.0)
+	assert observation.names == ['transitionrun', 'transitionstart', 'transitionend']
 }

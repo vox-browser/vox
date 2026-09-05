@@ -4,11 +4,10 @@ import dom
 import math
 
 // --- CalculatedOr ---
-
 pub fn (c CalculatedStyleValue) resolve_angle(context CalculationResolutionContext) ?Angle {
 	result := c.resolve_value(context) or { return none }
 	resolved_type := result.type_ or { return none }
-	if resolved_type.matches_angle(none) {
+	if resolved_type.matches_angle(c.calculation_context.percentages_resolve_as) {
 		return Angle.make_degrees(result.value)
 	}
 	if resolved_type.matches_percentage() {
@@ -22,7 +21,7 @@ pub fn (c CalculatedStyleValue) resolve_angle(context CalculationResolutionConte
 pub fn (c CalculatedStyleValue) resolve_flex(context CalculationResolutionContext) ?Flex {
 	result := c.resolve_value(context) or { return none }
 	resolved_type := result.type_ or { return none }
-	if resolved_type.matches_flex(none) {
+	if resolved_type.matches_flex(c.calculation_context.percentages_resolve_as) {
 		return Flex.make_fr(result.value)
 	}
 	return none
@@ -31,7 +30,7 @@ pub fn (c CalculatedStyleValue) resolve_flex(context CalculationResolutionContex
 pub fn (c CalculatedStyleValue) resolve_frequency(context CalculationResolutionContext) ?Frequency {
 	result := c.resolve_value(context) or { return none }
 	resolved_type := result.type_ or { return none }
-	if resolved_type.matches_frequency(none) {
+	if resolved_type.matches_frequency(c.calculation_context.percentages_resolve_as) {
 		return Frequency.make_hertz(result.value)
 	}
 	if resolved_type.matches_percentage() {
@@ -52,7 +51,7 @@ pub fn (c CalculatedStyleValue) resolve_integer(context CalculationResolutionCon
 pub fn (c CalculatedStyleValue) resolve_number(context CalculationResolutionContext) ?f64 {
 	result := c.resolve_value(context) or { return none }
 	resolved_type := result.type_ or { return none }
-	if resolved_type.matches_number(none) {
+	if resolved_type.matches_number(c.calculation_context.percentages_resolve_as) {
 		return result.value
 	}
 	if resolved_type.matches_percentage() {
@@ -75,7 +74,7 @@ pub fn (c CalculatedStyleValue) resolve_percentage(context CalculationResolution
 pub fn (c CalculatedStyleValue) resolve_resolution(context CalculationResolutionContext) ?Resolution {
 	result := c.resolve_value(context) or { return none }
 	resolved_type := result.type_ or { return none }
-	if resolved_type.matches_resolution(none) {
+	if resolved_type.matches_resolution(c.calculation_context.percentages_resolve_as) {
 		return Resolution.make_dots_per_pixel(result.value)
 	}
 	return none
@@ -84,7 +83,7 @@ pub fn (c CalculatedStyleValue) resolve_resolution(context CalculationResolution
 pub fn (c CalculatedStyleValue) resolve_time(context CalculationResolutionContext) ?Time {
 	result := c.resolve_value(context) or { return none }
 	resolved_type := result.type_ or { return none }
-	if resolved_type.matches_time(none) {
+	if resolved_type.matches_time(c.calculation_context.percentages_resolve_as) {
 		return Time.make_seconds(result.value)
 	}
 	if resolved_type.matches_percentage() {

@@ -2,6 +2,12 @@ module html
 
 import dom
 
+__global custom_element_reported_exceptions = []string{}
+
+fn custom_element_exception_reporter(message string) {
+	custom_element_reported_exceptions << message
+}
+
 fn custom_registry_find(node &dom.Node, name string) ?&dom.Element {
 	if element := node.as_element() {
 		if element.local_name() == name {
@@ -28,6 +34,7 @@ fn test_custom_element_registry_define_get_when_defined_and_upgrade() {
 		lifecycle_callbacks: ['connectedCallback', 'attributeChangedCallback']
 		disabled_features:   ['shadow']
 		form_associated:     true
+		exception_reporter:  custom_element_exception_reporter
 	}, ElementDefinitionOptions{})!
 	assert registry.get('x-widget')? == 42
 	assert registry.get_name(42)? == 'x-widget'
@@ -38,6 +45,11 @@ fn test_custom_element_registry_define_get_when_defined_and_upgrade() {
 	assert definition.form_associated()
 	assert definition.disable_shadow()
 	assert definition.observed_attributes == ['observed']
+	assert definition.constructor() == 42
+	assert definition.lifecycle_callbacks() == ['connectedCallback', 'attributeChangedCallback']
+	custom_element_reported_exceptions.clear()
+	definition.report_constructor_exception('constructor failed')
+	assert custom_element_reported_exceptions == ['constructor failed']
 	widget := custom_registry_find(unsafe { &dom.Node(document) }, 'x-widget')?
 	assert widget.ensure_custom_element_reaction_queue().len == 1
 

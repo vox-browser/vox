@@ -230,3 +230,33 @@ fn test_link_stylesheet_icon_preload_and_connections() {
 	preconnect.fetch_and_process_linked_resource()
 	assert connection_urls.len == 2
 }
+
+fn test_document_selects_last_loaded_favicon_in_head_tree_order() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	mut html_element := document.create_element_ns(dom.namespace_html_uri, 'html')!
+	mut head := document.create_element_ns(dom.namespace_html_uri, 'head')!
+	mut first := document.create_element_ns(dom.namespace_html_uri, 'link')!
+	mut second := document.create_element_ns(dom.namespace_html_uri, 'link')!
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(html_element.as_node())!
+	mut html_node := html_element.as_node()
+	html_node.append_child(head.as_node())!
+	mut head_node := head.as_node()
+	head_node.append_child(first.as_node())!
+	head_node.append_child(second.as_node())!
+
+	first_link := unsafe { &dom.HTMLLinkElement(first) }
+	second_link := unsafe { &dom.HTMLLinkElement(second) }
+	mut first_model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(first_link)) }
+	mut second_model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(second_link)) }
+	first_model.process_icon_resource(true, dom.URL{ value: 'https://example.test/first.png' },
+		[u8(1)])
+	assert voidptr(document.active_favicon) == voidptr(first_link)
+	second_model.process_icon_resource(true, dom.URL{ value: 'https://example.test/second.png' },
+		[u8(2)])
+	assert voidptr(document.active_favicon) == voidptr(second_link)
+
+	// A later re-check still picks the last loaded link in tree order.
+	document.check_favicon_after_loading_link_resource()
+	assert voidptr(document.active_favicon) == voidptr(second_link)
+}

@@ -101,3 +101,30 @@ fn test_standard_dom_selector_entry_points_use_css_engine() {
 	closest := link.closest('.container') or { panic('DOM closest did not match') }
 	assert id_of(closest) == 'root'
 }
+
+fn test_dom_selector_namespace_validation_uses_full_selector_tree() {
+	// ParentNode.cpp rejects named namespace prefixes but accepts the wildcard namespace.
+	doc := dom.Document.create(dom.url_about_blank())
+	root := build_tree(doc)
+	install_document_selector_query_hook(doc)
+	mut parent := unsafe { &dom.ParentNode(root) }
+	wildcard := parent.query_selector_all('*|li') or { panic('wildcard namespace must parse') }
+	assert wildcard.length() == 3
+	_ := parent.query_selector_all('svg|li') or {
+		assert err.msg().contains('SyntaxError')
+		return
+	}
+	assert false
+}
+
+fn test_named_namespace_detection_recurses_into_pseudo_class_selector_lists() {
+	selectors := parse_selector_with_parser(':is(div, :not(svg|rect))', {
+		'svg': true
+	}) or { panic('selector with declared namespace did not parse') }
+	assert selector_list_contains_named_namespace(selectors)
+
+	wildcard := parse_selector_with_parser(':is(*|rect)', map[string]bool{}) or {
+		panic('wildcard namespace did not parse')
+	}
+	assert !selector_list_contains_named_namespace(wildcard)
+}

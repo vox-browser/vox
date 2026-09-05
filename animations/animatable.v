@@ -8,6 +8,10 @@ module animations
 import css
 import dom
 
+__global (
+	document_animation_timelines = map[u64]&AnimationTimeline{}
+)
+
 pub struct KeyframeAnimationOptions {
 	KeyframeEffectOptions
 pub mut:
@@ -50,18 +54,194 @@ pub mut:
 }
 
 pub fn Animatable.new(target ?&dom.Element) &Animatable {
-	return &Animatable{
+	if element := target {
+		if element.animations_animatable_handle_ != unsafe { nil } {
+			return unsafe { &Animatable(element.animations_animatable_handle_) }
+		}
+	}
+	mut animatable := &Animatable{
 		target_: target
 	}
+	if element := target {
+		mut mutable_element := unsafe { &dom.Element(element) }
+		mutable_element.animations_animatable_handle_ = voidptr(animatable)
+		mut document := unsafe { &dom.Document(element.document()) }
+		document.set_animations_hook(dom.DocumentAnimationsHook{
+			target:                   voidptr(document)
+			calculate_get_animations: calculate_get_animations_for_dom_root
+			update_animations:        update_animations_for_dom_root
+			remove_replaced_animations: remove_replaced_animations_for_dom_root
+			compare_animations:       compare_dom_animations
+		})
+	}
+	return animatable
+}
+
+fn append_all_animations_for_dom_subtree(node &dom.Node, mut result []&Animation) {
+	if element := node.as_element() {
+		if element.animations_animatable_handle_ != unsafe { nil } {
+			animatable := unsafe { &Animatable(element.animations_animatable_handle_) }
+			result << animatable.associated_animations_
+		}
+	}
+	for child in node.children_as_vector() {
+		append_all_animations_for_dom_subtree(child, mut result)
+	}
+}
+
+fn all_animations_for_dom_root(root &dom.Node) []&Animation {
+	mut result := []&Animation{}
+	for child in root.children_as_vector() {
+		append_all_animations_for_dom_subtree(child, mut result)
+	}
+	return result
+}
+
+fn compare_animations(a &Animation, b &Animation) int {
+	a_effect := a.effect_ or { return 0 }
+	b_effect := b.effect_ or { return 0 }
+	if !a_effect.is_keyframe_effect_ || !b_effect.is_keyframe_effect_ {
+		return 0
+	}
+	return keyframe_effect_composite_order(unsafe { &KeyframeEffect(a_effect) },
+		unsafe { &KeyframeEffect(b_effect) })
+}
+
+fn compare_dom_animations(_ voidptr, a &dom.Animation, b &dom.Animation) int {
+	if a.concrete_handle_ == unsafe { nil } || b.concrete_handle_ == unsafe { nil } {
+		return 0
+	}
+	return compare_animations(unsafe { &Animation(a.concrete_handle_) },
+		unsafe { &Animation(b.concrete_handle_) })
+}
+
+fn update_animations_for_dom_root(_ voidptr, root &dom.Node, timestamp f64) {
+	collected_animations := all_animations_for_dom_root(root)
+	mut updated_timelines := map[u64]bool{}
+	for animation in collected_animations {
+		if mut timeline := animation.timeline_ {
+			key := u64(voidptr(timeline))
+			if key !in updated_timelines {
+				if document := timeline.document_ {
+					timeline.set_document_active(document.is_active())
+				}
+				timeline.update_current_time(timestamp)
+				updated_timelines[key] = true
+			}
+		}
+	}
+	for animation in collected_animations {
+		mut mutable_animation := unsafe { &Animation(animation) }
+		mutable_animation.update()
+	}
+}
+
+fn remove_replaced_animations_for_dom_root(_ voidptr, root &dom.Node) {
+	mut replaceable_animations := []&Animation{}
+	for animation in all_animations_for_dom_root(root) {
+		effect := animation.effect_ or { continue }
+		if !effect.is_keyframe_effect_ {
+			continue
+		}
+		target := unsafe { &KeyframeEffect(effect) }.target() or { continue }
+		if voidptr(target.document()) != voidptr(root.document()) || !animation.is_replaceable()
+			|| animation.replace_state() != .active {
+			continue
+		}
+		replaceable_animations << animation
+	}
+	replaceable_animations.sort_with_compare(fn (a &&Animation, b &&Animation) int {
+		return compare_animations(*a, *b)
+	})
+	mut highest_property_composite_orders := map[css.PropertyID]int{}
+	for index := replaceable_animations.len - 1; index >= 0; index-- {
+		mut animation := replaceable_animations[index]
+		effect := animation.effect_ or { continue }
+		mut has_any_highest_priority_property := false
+		for property_id, _ in effect.target_properties() {
+			if property_id !in highest_property_composite_orders {
+				has_any_highest_priority_property = true
+				highest_property_composite_orders[property_id] = index
+			}
+		}
+		if has_any_highest_priority_property {
+			continue
+		}
+		animation.set_replace_state(.removed)
+		timeline := animation.timeline_ or { continue }
+		remove_event := AnimationPlaybackEvent.create('remove', AnimationPlaybackEventInit{
+			current_time:  if value := animation.current_time() { value.as_css_numberish() } else { none }
+			timeline_time: if value := timeline.current_time() { value.as_css_numberish() } else { none }
+		})
+		animation.emitted_events_ << remove_event
+		if document := animation.document_for_timing() {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			mutable_document.append_pending_animation_event(dom.PendingAnimationEvent{
+				event:                unsafe { &dom.Event(remove_event) }
+				animation:            unsafe { &dom.Animation(animation) }
+				target:               &animation.EventTarget
+				scheduled_event_time: timeline.convert_a_timeline_time_to_an_origin_relative_time(timeline.current_time())
+			})
+		} else {
+			animation.EventTarget.dispatch_event(unsafe { &dom.Event(remove_event) })
+		}
+	}
+}
+
+fn default_timeline_for_animatable(animatable &Animatable) &AnimationTimeline {
+	if element := animatable.target_ {
+		document := element.document()
+		key := u64(voidptr(document))
+		if existing := document_animation_timelines[key] {
+			return existing
+		}
+		mut timeline := new_document_timeline(document, 0, 0)
+		timeline.set_document_active(document.is_active())
+		unsafe {
+			document_animation_timelines[key] = timeline
+		}
+		return timeline
+	}
+	mut timeline := new_document_timeline(none, 0, 0)
+	timeline.set_document_active(true)
+	return timeline
+}
+
+fn append_animations_for_dom_subtree(node &dom.Node, mut result []&Animation) ! {
+	if element := node.as_element() {
+		if element.animations_animatable_handle_ != unsafe { nil } {
+			mut animatable := unsafe { &Animatable(element.animations_animatable_handle_) }
+			result << animatable.get_animations_internal(false, GetAnimationsOptions{})!
+		}
+	}
+	for child in node.children_as_vector() {
+		append_animations_for_dom_subtree(child, mut result)!
+	}
+}
+
+// DocumentOrShadowRoot::calculate_get_animations(). DOM owns tree traversal;
+// this callback supplies Animatable relevance and KeyframeEffect composite
+// ordering from the translated Animations module.
+fn calculate_get_animations_for_dom_root(_ voidptr, root &dom.Node) ![]&dom.Animation {
+	mut collected_animations := []&Animation{}
+	for child in root.children_as_vector() {
+		append_animations_for_dom_subtree(child, mut collected_animations)!
+	}
+	collected_animations.sort_with_compare(fn (a &&Animation, b &&Animation) int {
+		return compare_animations(*a, *b)
+	})
+	mut result := []&dom.Animation{cap: collected_animations.len}
+	for animation in collected_animations {
+		result << unsafe { &dom.Animation(animation) }
+	}
+	return result
 }
 
 pub fn (mut animatable Animatable) animate(keyframes []BaseKeyframe, options KeyframeAnimationOptions) !&Animation {
 	effect := KeyframeEffect.construct_impl(animatable.target_, keyframes,
 		options.KeyframeEffectOptions)!
 	mut timeline := options.timeline or {
-		mut default_timeline := new_document_timeline(none, 0, 0)
-		default_timeline.set_document_active(true)
-		default_timeline
+		default_timeline_for_animatable(animatable)
 	}
 
 	mut animation := Animation.construct_impl(effect.as_animation_effect(), timeline)!

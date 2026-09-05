@@ -19,6 +19,8 @@ pub enum BlendMode {
 	saturation
 	color
 	luminosity
+	plus_darker
+	plus_lighter
 }
 
 pub enum CompositingAndBlendingOperator {
@@ -39,6 +41,8 @@ pub enum CompositingAndBlendingOperator {
 	saturation
 	color
 	luminosity
+	plus_darker
+	plus_lighter
 }
 
 pub fn mix_blend_mode_to_operator(mode BlendMode) CompositingAndBlendingOperator {
@@ -59,6 +63,8 @@ pub fn mix_blend_mode_to_operator(mode BlendMode) CompositingAndBlendingOperator
 		.saturation { .saturation }
 		.color { .color }
 		.luminosity { .luminosity }
+		.plus_darker { .plus_darker }
+		.plus_lighter { .plus_lighter }
 	}
 }
 
@@ -108,10 +114,39 @@ pub:
 	color_operation ColorFilterType
 }
 
+// Gfx::Filter is a tree, not a flat list. CSS filter functions happen to form
+// a chain, while SVG filters can name earlier results and combine any number of
+// inputs. Keep that graph intact across the layout/painting boundary.
+pub struct GfxFilterColorTable {
+pub:
+	channel string
+	values  []u8
+}
+
+pub struct GfxFilterNode {
+pub:
+	id                int
+	kind              string
+	input_ids         []int
+	parameters        map[string]f64
+	string_parameters map[string]string
+	color             Color
+	matrix            []f64
+	color_tables      []GfxFilterColorTable
+}
+
 pub struct GfxFilter {
 pub:
 	// Operations are in composition order; later CSS operations wrap earlier ones.
 	operations []GfxFilterOperation
+	// SVG graph nodes are in construction order. Input -1 is SourceGraphic,
+	// which is the result of the CSS operation chain when both are present.
+	nodes   []GfxFilterNode
+	root_id ?int
+	// SVG content-generating primitives are evaluated over this target region.
+	// The transparent display-list trigger carries the same rectangle, matching
+	// StackingContext::paint() and SVGSVGPaintable::paint_svg_box().
+	bounds ?Rect
 }
 
 pub struct ResolvedCSSFilter {
@@ -131,34 +166,37 @@ pub fn (filter ResolvedCSSFilter) has_svg_filters() bool {
 
 pub fn (filter ResolvedCSSFilter) to_gfx_filter(device_scale f64) ?GfxFilter {
 	mut operations := []GfxFilterOperation{}
+	mut nodes := []GfxFilterNode{}
+	mut root_id := ?int(none)
+	mut bounds := ?Rect(none)
 	for operation in filter.operations {
 		match operation {
 			BlurFilter {
 				operations.prepend(GfxFilterOperation{
-					kind:   'blur'
-					first:  operation.radius * device_scale
+					kind: 'blur'
+					first: operation.radius * device_scale
 					second: operation.radius * device_scale
 				})
 			}
 			DropShadowFilter {
 				operations.prepend(GfxFilterOperation{
-					kind:   'drop-shadow'
-					first:  operation.offset_x * device_scale
+					kind: 'drop-shadow'
+					first: operation.offset_x * device_scale
 					second: operation.offset_y * device_scale
-					third:  operation.radius * device_scale
-					color:  operation.color
+					third: operation.radius * device_scale
+					color: operation.color
 				})
 			}
 			ColorFilter {
 				operations.prepend(GfxFilterOperation{
-					kind:            'color'
-					first:           operation.amount
+					kind: 'color'
+					first: operation.amount
 					color_operation: operation.operation
 				})
 			}
 			HueRotateFilter {
 				operations.prepend(GfxFilterOperation{
-					kind:  'hue-rotate'
+					kind: 'hue-rotate'
 					first: operation.angle_degrees
 				})
 			}
@@ -168,12 +206,18 @@ pub fn (filter ResolvedCSSFilter) to_gfx_filter(device_scale f64) ?GfxFilter {
 		for operation in svg.operations.reverse() {
 			operations.prepend(operation)
 		}
+		nodes = svg.nodes.clone()
+		root_id = svg.root_id
+		bounds = filter.svg_filter_bounds
 	}
-	if operations.len == 0 {
+	if operations.len == 0 && root_id == none {
 		return none
 	}
 	return GfxFilter{
 		operations: operations
+		nodes: nodes
+		root_id: root_id
+		bounds: bounds
 	}
 }
 
@@ -182,7 +226,9 @@ pub fn (filter ResolvedCSSFilter) dump() string {
 	for operation in filter.operations {
 		descriptions << match operation {
 			BlurFilter { 'blur(${operation.radius})' }
-			DropShadowFilter { 'drop-shadow(${operation.offset_x} ${operation.offset_y} ${operation.radius})' }
+			DropShadowFilter {
+				'drop-shadow(${operation.offset_x} ${operation.offset_y} ${operation.radius})'
+			}
 			ColorFilter { '${operation.operation}(${operation.amount})' }
 			HueRotateFilter { 'hue-rotate(${operation.angle_degrees}deg)' }
 		}
@@ -272,13 +318,13 @@ pub fn replace_transition_hints(stops []ColorStop) []ColorStop {
 				position := previous.position + sample * distance
 				amount := color_stop_step(previous, stop, position)
 				expanded << ColorStop{
-					color:    interpolate_color(previous.color, stop.color, amount)
+					color: interpolate_color(previous.color, stop.color, amount)
 					position: position
 				}
 			}
 		}
 		expanded << ColorStop{
-			color:    stop.color
+			color: stop.color
 			position: stop.position
 		}
 	}
@@ -374,30 +420,29 @@ pub fn resolve_box_shadows(content_rect Rect, radii BorderRadiiData, layers []Sh
 			mut shadow_corners := content_corners
 			shadow_corners.adjust_for_spread_distance(spread)
 			resolved << ResolvedShadow{
-				placement:            layer.placement
-				color:                layer.color
-				blur_radius:          blur
-				content_rect:         device_content
+				placement: layer.placement
+				color: layer.color
+				blur_radius: blur
+				content_rect: device_content
 				content_corner_radii: content_corners
-				shadow_rect:          shadow_rect
-				shadow_corner_radii:  shadow_corners
+				shadow_rect: shadow_rect
+				shadow_corner_radii: shadow_corners
 			}
 		} else {
 			mut outer_shadow_rect := device_content.translated(offset)
 			inner_shadow_rect := outer_shadow_rect.inflated(-spread, -spread, -spread, -spread)
-			outer_shadow_rect = outer_shadow_rect.inflated(blur + offset.y,
-				blur + abs_int(offset.x), blur + abs_int(offset.y), blur + offset.x)
+			outer_shadow_rect = outer_shadow_rect.inflated(blur + offset.y, blur + abs_int(offset.x), blur + abs_int(offset.y), blur + offset.x)
 			mut inner_corners := content_corners
 			inner_corners.adjust_for_spread_distance(-spread)
 			resolved << ResolvedShadow{
-				placement:            layer.placement
-				color:                layer.color
-				blur_radius:          blur
-				content_rect:         device_content
+				placement: layer.placement
+				color: layer.color
+				blur_radius: blur
+				content_rect: device_content
 				content_corner_radii: content_corners
-				outer_shadow_rect:    outer_shadow_rect
-				inner_shadow_rect:    inner_shadow_rect
-				inner_corner_radii:   inner_corners
+				outer_shadow_rect: outer_shadow_rect
+				inner_shadow_rect: inner_shadow_rect
+				inner_corner_radii: inner_corners
 			}
 		}
 	}

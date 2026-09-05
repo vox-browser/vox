@@ -3,7 +3,6 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
-
 module css
 
 import dom
@@ -23,7 +22,6 @@ import math
 // - LibWeb/CSS/StyleValues/TransformationStyleValue.cpp/.h
 
 // --- Narrow geometry stand-ins used by the translated transform code ---
-
 pub struct FloatVector3 {
 pub mut:
 	x f64
@@ -145,10 +143,7 @@ pub fn rotation_matrix(axis FloatVector3, angle_radians f64) FloatMatrix4x4 {
 	s := math.sin(angle_radians)
 	t := 1.0 - c
 
-	return FloatMatrix4x4.from_values(t * x * x + c, t * x * y - s * z, t * x * z + s * y, 0,
-
-		t * x * y + s * z, t * y * y + c, t * y * z - s * x, 0, t * x * z - s * y,
-		t * y * z + s * x, t * z * z + c, 0, 0, 0, 0, 1)
+	return FloatMatrix4x4.from_values(t * x * x + c, t * x * y - s * z, t * x * z + s * y, 0, t * x * y + s * z, t * y * y + c, t * y * z - s * x, 0, t * x * z - s * y, t * y * z + s * x, t * z * z + c, 0, 0, 0, 0, 1)
 }
 
 pub struct DOMMatrix {
@@ -168,7 +163,7 @@ pub mut:
 	m41_   f64
 	m42_   f64
 	m43_   f64
-	m44_   f64  = 1
+	m44_   f64 = 1
 	is_2d_ bool = true
 }
 
@@ -185,9 +180,7 @@ pub fn (matrix DOMMatrix) is2d() bool {
 }
 
 fn (mut matrix DOMMatrix) update_is_2d() {
-	matrix.is_2d_ = matrix.m13_ == 0 && matrix.m14_ == 0 && matrix.m23_ == 0 && matrix.m24_ == 0
-		&& matrix.m31_ == 0 && matrix.m32_ == 0 && matrix.m33_ == 1 && matrix.m34_ == 0
-		&& matrix.m43_ == 0 && matrix.m44_ == 1
+	matrix.is_2d_ = matrix.m13_ == 0 && matrix.m14_ == 0 && matrix.m23_ == 0 && matrix.m24_ == 0 && matrix.m31_ == 0 && matrix.m32_ == 0 && matrix.m33_ == 1 && matrix.m34_ == 0 && matrix.m43_ == 0 && matrix.m44_ == 1
 }
 
 pub fn (matrix DOMMatrix) a() f64 {
@@ -360,38 +353,22 @@ pub fn (mut matrix DOMMatrix) set_m44(value f64) {
 
 fn (matrix DOMMatrix) multiplied_by(other DOMMatrix) DOMMatrix {
 	mut result := DOMMatrix{}
-	result.m11_ = matrix.m11_ * other.m11_ + matrix.m12_ * other.m21_ + matrix.m13_ * other.m31_ +
-		matrix.m14_ * other.m41_
-	result.m12_ = matrix.m11_ * other.m12_ + matrix.m12_ * other.m22_ + matrix.m13_ * other.m32_ +
-		matrix.m14_ * other.m42_
-	result.m13_ = matrix.m11_ * other.m13_ + matrix.m12_ * other.m23_ + matrix.m13_ * other.m33_ +
-		matrix.m14_ * other.m43_
-	result.m14_ = matrix.m11_ * other.m14_ + matrix.m12_ * other.m24_ + matrix.m13_ * other.m34_ +
-		matrix.m14_ * other.m44_
-	result.m21_ = matrix.m21_ * other.m11_ + matrix.m22_ * other.m21_ + matrix.m23_ * other.m31_ +
-		matrix.m24_ * other.m41_
-	result.m22_ = matrix.m21_ * other.m12_ + matrix.m22_ * other.m22_ + matrix.m23_ * other.m32_ +
-		matrix.m24_ * other.m42_
-	result.m23_ = matrix.m21_ * other.m13_ + matrix.m22_ * other.m23_ + matrix.m23_ * other.m33_ +
-		matrix.m24_ * other.m43_
-	result.m24_ = matrix.m21_ * other.m14_ + matrix.m22_ * other.m24_ + matrix.m23_ * other.m34_ +
-		matrix.m24_ * other.m44_
-	result.m31_ = matrix.m31_ * other.m11_ + matrix.m32_ * other.m21_ + matrix.m33_ * other.m31_ +
-		matrix.m34_ * other.m41_
-	result.m32_ = matrix.m31_ * other.m12_ + matrix.m32_ * other.m22_ + matrix.m33_ * other.m32_ +
-		matrix.m34_ * other.m42_
-	result.m33_ = matrix.m31_ * other.m13_ + matrix.m32_ * other.m23_ + matrix.m33_ * other.m33_ +
-		matrix.m34_ * other.m43_
-	result.m34_ = matrix.m31_ * other.m14_ + matrix.m32_ * other.m24_ + matrix.m33_ * other.m34_ +
-		matrix.m34_ * other.m44_
-	result.m41_ = matrix.m41_ * other.m11_ + matrix.m42_ * other.m21_ + matrix.m43_ * other.m31_ +
-		matrix.m44_ * other.m41_
-	result.m42_ = matrix.m41_ * other.m12_ + matrix.m42_ * other.m22_ + matrix.m43_ * other.m32_ +
-		matrix.m44_ * other.m42_
-	result.m43_ = matrix.m41_ * other.m13_ + matrix.m42_ * other.m23_ + matrix.m43_ * other.m33_ +
-		matrix.m44_ * other.m43_
-	result.m44_ = matrix.m41_ * other.m14_ + matrix.m42_ * other.m24_ + matrix.m43_ * other.m34_ +
-		matrix.m44_ * other.m44_
+	result.m11_ = matrix.m11_ * other.m11_ + matrix.m12_ * other.m21_ + matrix.m13_ * other.m31_ + matrix.m14_ * other.m41_
+	result.m12_ = matrix.m11_ * other.m12_ + matrix.m12_ * other.m22_ + matrix.m13_ * other.m32_ + matrix.m14_ * other.m42_
+	result.m13_ = matrix.m11_ * other.m13_ + matrix.m12_ * other.m23_ + matrix.m13_ * other.m33_ + matrix.m14_ * other.m43_
+	result.m14_ = matrix.m11_ * other.m14_ + matrix.m12_ * other.m24_ + matrix.m13_ * other.m34_ + matrix.m14_ * other.m44_
+	result.m21_ = matrix.m21_ * other.m11_ + matrix.m22_ * other.m21_ + matrix.m23_ * other.m31_ + matrix.m24_ * other.m41_
+	result.m22_ = matrix.m21_ * other.m12_ + matrix.m22_ * other.m22_ + matrix.m23_ * other.m32_ + matrix.m24_ * other.m42_
+	result.m23_ = matrix.m21_ * other.m13_ + matrix.m22_ * other.m23_ + matrix.m23_ * other.m33_ + matrix.m24_ * other.m43_
+	result.m24_ = matrix.m21_ * other.m14_ + matrix.m22_ * other.m24_ + matrix.m23_ * other.m34_ + matrix.m24_ * other.m44_
+	result.m31_ = matrix.m31_ * other.m11_ + matrix.m32_ * other.m21_ + matrix.m33_ * other.m31_ + matrix.m34_ * other.m41_
+	result.m32_ = matrix.m31_ * other.m12_ + matrix.m32_ * other.m22_ + matrix.m33_ * other.m32_ + matrix.m34_ * other.m42_
+	result.m33_ = matrix.m31_ * other.m13_ + matrix.m32_ * other.m23_ + matrix.m33_ * other.m33_ + matrix.m34_ * other.m43_
+	result.m34_ = matrix.m31_ * other.m14_ + matrix.m32_ * other.m24_ + matrix.m33_ * other.m34_ + matrix.m34_ * other.m44_
+	result.m41_ = matrix.m41_ * other.m11_ + matrix.m42_ * other.m21_ + matrix.m43_ * other.m31_ + matrix.m44_ * other.m41_
+	result.m42_ = matrix.m41_ * other.m12_ + matrix.m42_ * other.m22_ + matrix.m43_ * other.m32_ + matrix.m44_ * other.m42_
+	result.m43_ = matrix.m41_ * other.m13_ + matrix.m42_ * other.m23_ + matrix.m43_ * other.m33_ + matrix.m44_ * other.m43_
+	result.m44_ = matrix.m41_ * other.m14_ + matrix.m42_ * other.m24_ + matrix.m43_ * other.m34_ + matrix.m44_ * other.m44_
 	result.update_is_2d()
 	return result
 }
@@ -502,7 +479,6 @@ pub fn (box TransformPaintableBox) transform_reference_box() TransformReferenceB
 }
 
 // --- TransformFunctions.json ---
-
 pub enum TransformFunction {
 	matrix
 	matrix3d
@@ -602,7 +578,7 @@ pub mut:
 
 fn transform_parameter(type_ TransformFunctionParameterType, required bool) TransformFunctionParameter {
 	return TransformFunctionParameter{
-		type_:    type_
+		type_: type_
 		required: required
 	}
 }
@@ -613,8 +589,7 @@ pub fn transform_function_metadata(function TransformFunction) TransformFunction
 			.matrix {
 				[transform_parameter(.number, true), transform_parameter(.number, true),
 					transform_parameter(.number, true), transform_parameter(.number, true),
-					transform_parameter(.number, true), transform_parameter(.number, true)]
-			}
+					transform_parameter(.number, true), transform_parameter(.number, true)]}
 			.matrix3d {
 				[transform_parameter(.number, true), transform_parameter(.number, true),
 					transform_parameter(.number, true), transform_parameter(.number, true),
@@ -623,60 +598,45 @@ pub fn transform_function_metadata(function TransformFunction) TransformFunction
 					transform_parameter(.number, true), transform_parameter(.number, true),
 					transform_parameter(.number, true), transform_parameter(.number, true),
 					transform_parameter(.number, true), transform_parameter(.number, true),
-					transform_parameter(.number, true), transform_parameter(.number, true)]
-			}
+					transform_parameter(.number, true), transform_parameter(.number, true)]}
 			.perspective {
-				[transform_parameter(.length_none, true)]
-			}
+				[transform_parameter(.length_none, true)]}
 			.translate {
 				[transform_parameter(.length_percentage, true),
-					transform_parameter(.length_percentage, false)]
-			}
+					transform_parameter(.length_percentage, false)]}
 			.translate3d {
 				[transform_parameter(.length_percentage, true),
 					transform_parameter(.length_percentage, true),
-					transform_parameter(.length, true)]
-			}
+					transform_parameter(.length, true)]}
 			.translate_x, .translate_y {
-				[transform_parameter(.length_percentage, true)]
-			}
+				[transform_parameter(.length_percentage, true)]}
 			.translate_z {
-				[transform_parameter(.length, true)]
-			}
+				[transform_parameter(.length, true)]}
 			.scale {
 				[transform_parameter(.number_percentage, true),
-					transform_parameter(.number_percentage, false)]
-			}
+					transform_parameter(.number_percentage, false)]}
 			.scale3d {
 				[transform_parameter(.number_percentage, true),
 					transform_parameter(.number_percentage, true),
-					transform_parameter(.number_percentage, true)]
-			}
+					transform_parameter(.number_percentage, true)]}
 			.scale_x, .scale_y, .scale_z {
-				[transform_parameter(.number_percentage, true)]
-			}
+				[transform_parameter(.number_percentage, true)]}
 			.rotate {
-				[transform_parameter(.angle, true)]
-			}
+				[transform_parameter(.angle, true)]}
 			.rotate3d {
 				[transform_parameter(.number, true), transform_parameter(.number, true),
-					transform_parameter(.number, true), transform_parameter(.angle, true)]
-			}
+					transform_parameter(.number, true), transform_parameter(.angle, true)]}
 			.rotate_x, .rotate_y, .rotate_z {
-				[transform_parameter(.angle, true)]
-			}
+				[transform_parameter(.angle, true)]}
 			.skew {
-				[transform_parameter(.angle, true), transform_parameter(.angle, false)]
-			}
+				[transform_parameter(.angle, true), transform_parameter(.angle, false)]}
 			.skew_x, .skew_y {
-				[transform_parameter(.angle, true)]
-			}
+				[transform_parameter(.angle, true)]}
 		}
 	}
 }
 
 // --- Helpers for missing StyleValue affordances used by TransformationStyleValue ---
-
 pub fn (style_value StyleValue) is_length() bool {
 	return style_value is LengthStyleValue
 }
@@ -703,21 +663,21 @@ pub fn (style_value StyleValue) as_angle() AngleStyleValue {
 
 pub fn (c CalculatedStyleValue) resolves_to_angle() bool {
 	if numeric_type := c.numeric_type() {
-		return numeric_type.matches_angle(none)
+		return numeric_type.matches_angle(c.calculation_context.percentages_resolve_as)
 	}
 	return true
 }
 
 pub fn (c CalculatedStyleValue) resolves_to_length() bool {
 	if numeric_type := c.numeric_type() {
-		return numeric_type.matches_length(none)
+		return numeric_type.matches_length(c.calculation_context.percentages_resolve_as)
 	}
 	return true
 }
 
 pub fn (c CalculatedStyleValue) resolves_to_length_percentage() bool {
 	if numeric_type := c.numeric_type() {
-		return numeric_type.matches_length_percentage(none)
+		return numeric_type.matches_length_percentage(c.calculation_context.percentages_resolve_as)
 	}
 	return true
 }
@@ -727,21 +687,7 @@ pub fn (value CSSNumericValue) create_an_internal_representation(property Proper
 		CSSUnitValue {
 			value.create_an_internal_representation(property, perform_type_check)!
 		}
-		CSSMathValueStub {
-			context := CalculationContext.for_property(property)
-			if perform_type_check == .yes {
-				property_id := property.id() or {
-					return error('Property does not accept values of this type.')
-				}
-				if !css_numeric_type_matches_property(value.type_, property_id, none) {
-					return error('Property does not accept values of this type.')
-				}
-			}
-			node := CSSNumericValue(value).create_calculation_node(context)!
-			StyleValue(CalculatedStyleValue.create(node, value.type_, context))
-		}
-		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax,
-		CSSMathClamp {
+		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp {
 			CSSMathValue(value).create_an_internal_representation(property, perform_type_check)!
 		}
 	}
@@ -755,7 +701,6 @@ fn style_value_is_keyword_none(value StyleValue) bool {
 }
 
 // --- CSSTransformComponent ---
-
 pub enum CSSTransformComponentIs2D {
 	no
 	yes
@@ -827,7 +772,6 @@ pub fn (component CSSTransformComponent) create_style_value(property PropertyNam
 }
 
 // --- CSSMatrixComponent ---
-
 pub struct CSSMatrixComponentOptions {
 pub mut:
 	is2d ?bool
@@ -841,7 +785,7 @@ pub mut:
 
 pub fn CSSMatrixComponent.create(is_2d CSSTransformComponentIs2D, matrix DOMMatrix) CSSMatrixComponent {
 	return CSSMatrixComponent{
-		is_2d_:  transform_component_is_2d_flag(is_2d)
+		is_2d_: transform_component_is_2d_flag(is_2d)
 		matrix_: matrix
 	}
 }
@@ -939,7 +883,6 @@ pub fn (component CSSMatrixComponent) create_style_value(property PropertyNameAn
 }
 
 // --- CSSPerspective ---
-
 pub type CSSPerspectiveValue = CSSKeywordValue
 	| CSSMathClamp
 	| CSSMathInvert
@@ -948,7 +891,6 @@ pub type CSSPerspectiveValue = CSSKeywordValue
 	| CSSMathNegate
 	| CSSMathProduct
 	| CSSMathSum
-	| CSSMathValueStub
 	| CSSUnitValue
 	| string
 
@@ -960,13 +902,11 @@ pub type CSSPerspectiveValueInternal = CSSKeywordValue
 	| CSSMathNegate
 	| CSSMathProduct
 	| CSSMathSum
-	| CSSMathValueStub
 	| CSSUnitValue
 
 fn css_numeric_value_from_perspective_internal(value CSSPerspectiveValueInternal) ?CSSNumericValue {
 	return match value {
 		CSSUnitValue { CSSNumericValue(value) }
-		CSSMathValueStub { CSSNumericValue(value) }
 		CSSMathSum { CSSNumericValue(value) }
 		CSSMathProduct { CSSNumericValue(value) }
 		CSSMathNegate { CSSNumericValue(value) }
@@ -983,8 +923,7 @@ fn css_keyword_value_from_perspective_internal(value CSSPerspectiveValueInternal
 		CSSKeywordValue {
 			value
 		}
-		CSSUnitValue, CSSMathValueStub, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert,
-		CSSMathMin, CSSMathMax, CSSMathClamp {
+		CSSUnitValue, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp {
 			none
 		}
 	}
@@ -993,7 +932,6 @@ fn css_keyword_value_from_perspective_internal(value CSSPerspectiveValueInternal
 fn css_perspective_internal_from_numeric(value CSSNumericValue) CSSPerspectiveValueInternal {
 	return match value {
 		CSSUnitValue { CSSPerspectiveValueInternal(value) }
-		CSSMathValueStub { CSSPerspectiveValueInternal(value) }
 		CSSMathSum { CSSPerspectiveValueInternal(value) }
 		CSSMathProduct { CSSPerspectiveValueInternal(value) }
 		CSSMathNegate { CSSPerspectiveValueInternal(value) }
@@ -1007,8 +945,7 @@ fn css_perspective_internal_from_numeric(value CSSNumericValue) CSSPerspectiveVa
 fn to_internal_css_perspective_value(value CSSPerspectiveValue) !CSSPerspectiveValueInternal {
 	return match value {
 		// 1. If length is a CSSNumericValue:
-		CSSUnitValue, CSSMathValueStub, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert,
-		CSSMathMin, CSSMathMax, CSSMathClamp {
+		CSSUnitValue, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp {
 			numeric_value := CSSNumericValue(value)
 			// 1. If length does not match <length>, throw a TypeError.
 			if !numeric_value.type_().matches_length(none) {
@@ -1016,6 +953,7 @@ fn to_internal_css_perspective_value(value CSSPerspectiveValue) !CSSPerspectiveV
 			}
 			CSSPerspectiveValueInternal(value)
 		}
+
 		// 2. Otherwise (that is, if length is not a CSSNumericValue):
 		CSSKeywordValue {
 			// 1. Rectify a keywordish value from length, then set length to the result’s value.
@@ -1052,7 +990,7 @@ pub mut:
 
 pub fn CSSPerspective.create(length CSSPerspectiveValueInternal) CSSPerspective {
 	return CSSPerspective{
-		is_2d_:  false
+		is_2d_: false
 		length_: length
 	}
 }
@@ -1075,7 +1013,6 @@ pub fn (perspective CSSPerspective) is_2d() bool {
 pub fn (perspective CSSPerspective) length() CSSPerspectiveValue {
 	return match perspective.length_ {
 		CSSUnitValue { CSSPerspectiveValue(perspective.length_) }
-		CSSMathValueStub { CSSPerspectiveValue(perspective.length_) }
 		CSSMathSum { CSSPerspectiveValue(perspective.length_) }
 		CSSMathProduct { CSSPerspectiveValue(perspective.length_) }
 		CSSMathNegate { CSSPerspectiveValue(perspective.length_) }
@@ -1094,8 +1031,7 @@ pub fn (perspective CSSPerspective) to_string() !string {
 
 	// 2. Serialize this’s length internal slot, with a minimum of 0px, and append it to s.
 	serialized += match perspective.length_ {
-		CSSUnitValue, CSSMathValueStub, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert,
-		CSSMathMin, CSSMathMax, CSSMathClamp {
+		CSSUnitValue, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp {
 			CSSNumericValue(perspective.length_).serialize(CSSNumericSerializationParams{
 				minimum: 0
 			})
@@ -1148,8 +1084,7 @@ pub fn (mut perspective CSSPerspective) set_is_2d(value bool) {
 
 pub fn (perspective CSSPerspective) create_style_value(property PropertyNameAndID) !TransformationStyleValue {
 	length := match perspective.length_ {
-		CSSUnitValue, CSSMathValueStub, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert,
-		CSSMathMin, CSSMathMax, CSSMathClamp {
+		CSSUnitValue, CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp {
 			CSSNumericValue(perspective.length_).create_an_internal_representation(property, .no)!
 		}
 		CSSKeywordValue {
@@ -1157,14 +1092,12 @@ pub fn (perspective CSSPerspective) create_style_value(property PropertyNameAndI
 		}
 	}
 
-	return TransformationStyleValue.create(transform_property_from_property(property),
-		.perspective, [
+	return TransformationStyleValue.create(transform_property_from_property(property), .perspective, [
 		length,
 	])
 }
 
 // --- CSSRotate ---
-
 pub struct CSSRotate {
 pub mut:
 	is_2d_ bool
@@ -1177,9 +1110,9 @@ pub mut:
 pub fn CSSRotate.create(is_2d CSSTransformComponentIs2D, x CSSNumericValue, y CSSNumericValue, z CSSNumericValue, angle CSSNumericValue) CSSRotate {
 	return CSSRotate{
 		is_2d_: transform_component_is_2d_flag(is_2d)
-		x_:     x
-		y_:     y
-		z_:     z
+		x_: x
+		y_: y
+		z_: z
 		angle_: angle
 	}
 }
@@ -1196,8 +1129,7 @@ pub fn CSSRotate.construct_impl(angle CSSNumericValue) !CSSRotate {
 	// 2. Return a new CSSRotate with its angle internal slot set to angle, its x and y internal slots set to new unit
 	//    values of (0, "number"), its z internal slot set to a new unit value of (1, "number"), and its is2D internal
 	//    slot set to true.
-	return CSSRotate.create(.yes, CSSUnitValue.create(0, 'number'),
-		CSSUnitValue.create(0, 'number'), CSSUnitValue.create(1, 'number'), angle)
+	return CSSRotate.create(.yes, CSSUnitValue.create(0, 'number'), CSSUnitValue.create(0, 'number'), CSSUnitValue.create(1, 'number'), angle)
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#dom-cssrotate-cssrotate-x-y-z-anglec
@@ -1243,11 +1175,7 @@ pub fn (rotate CSSRotate) x() CSSNumberish {
 		CSSUnitValue {
 			CSSNumberish(rotate.x_)
 		}
-		CSSMathValueStub {
-			CSSNumberish(rotate.x_)
-		}
-		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax,
-		CSSMathClamp {
+		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp {
 			CSSNumberish(rotate.x_)
 		}
 	}
@@ -1258,11 +1186,7 @@ pub fn (rotate CSSRotate) y() CSSNumberish {
 		CSSUnitValue {
 			CSSNumberish(rotate.y_)
 		}
-		CSSMathValueStub {
-			CSSNumberish(rotate.y_)
-		}
-		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax,
-		CSSMathClamp {
+		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp {
 			CSSNumberish(rotate.y_)
 		}
 	}
@@ -1273,11 +1197,7 @@ pub fn (rotate CSSRotate) z() CSSNumberish {
 		CSSUnitValue {
 			CSSNumberish(rotate.z_)
 		}
-		CSSMathValueStub {
-			CSSNumberish(rotate.z_)
-		}
-		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax,
-		CSSMathClamp {
+		CSSMathSum, CSSMathProduct, CSSMathNegate, CSSMathInvert, CSSMathMin, CSSMathMax, CSSMathClamp {
 			CSSNumberish(rotate.z_)
 		}
 	}
@@ -1321,9 +1241,8 @@ pub fn (rotate CSSRotate) to_string() !string {
 		// 9. Append ")" to s, and return s.
 		serialized += ')'
 		return serialized
-	}
-	// 2. Otherwise:
-	else {
+	} else {
+		// 2. Otherwise:
 		// 1. Append "rotate(" to s.
 		serialized += 'rotate('
 
@@ -1347,7 +1266,6 @@ pub fn (rotate CSSRotate) to_matrix() !DOMMatrix {
 	//    generating the matrix are not compatible units with px (such as relative lengths or percentages), throw a
 	//    TypeError.
 	// 2. Return matrix.
-
 	mut matrix := DOMMatrix.create()
 
 	// NB: to() throws a TypeError if the conversion can't be done.
@@ -1424,7 +1342,6 @@ pub fn (rotate CSSRotate) create_style_value(property PropertyNameAndID) !Transf
 }
 
 // --- CSSScale ---
-
 pub struct CSSScale {
 pub mut:
 	is_2d_ bool
@@ -1436,9 +1353,9 @@ pub mut:
 pub fn CSSScale.create(is_2d CSSTransformComponentIs2D, x CSSNumericValue, y CSSNumericValue, z CSSNumericValue) CSSScale {
 	return CSSScale{
 		is_2d_: transform_component_is_2d_flag(is_2d)
-		x_:     x
-		y_:     y
-		z_:     z
+		x_: x
+		y_: y
+		z_: z
 	}
 }
 
@@ -1530,9 +1447,8 @@ pub fn (scale CSSScale) to_string() !string {
 		// 7. Append ")" to s, and return s.
 		serialized += ')'
 		return serialized
-	}
-	// 3. Otherwise:
-	else {
+	} else {
+		// 3. Otherwise:
 		// 1. Append "scale(" to s.
 		serialized += 'scale('
 
@@ -1566,7 +1482,6 @@ pub fn (scale CSSScale) to_matrix() !DOMMatrix {
 	//    generating the matrix are not compatible units with px (such as relative lengths or percentages), throw a
 	//    TypeError.
 	// 2. Return matrix.
-
 	mut matrix := DOMMatrix.create()
 
 	// NB: to() throws a TypeError if the conversion can't be done.
@@ -1633,7 +1548,6 @@ pub fn (scale CSSScale) create_style_value(property PropertyNameAndID) !Transfor
 }
 
 // --- CSSTranslate ---
-
 pub struct CSSTranslate {
 pub mut:
 	is_2d_ bool
@@ -1645,9 +1559,9 @@ pub mut:
 pub fn CSSTranslate.create(is_2d CSSTransformComponentIs2D, x CSSNumericValue, y CSSNumericValue, z CSSNumericValue) CSSTranslate {
 	return CSSTranslate{
 		is_2d_: transform_component_is_2d_flag(is_2d)
-		x_:     x
-		y_:     y
-		z_:     z
+		x_: x
+		y_: y
+		z_: z
 	}
 }
 
@@ -1735,9 +1649,8 @@ pub fn (translate CSSTranslate) to_string() !string {
 		// 7. Append ")" to s, and return s.
 		serialized += ')'
 		return serialized
-	}
-	// 3. Otherwise:
-	else {
+	} else {
+		// 3. Otherwise:
 		// 1. Append "translate(" to s.
 		serialized += 'translate('
 
@@ -1808,15 +1721,13 @@ pub fn (mut translate CSSTranslate) set_z(z CSSNumericValue) ! {
 
 pub fn (translate CSSTranslate) create_style_value(property PropertyNameAndID) !TransformationStyleValue {
 	if translate.is_2d() {
-		return TransformationStyleValue.create(transform_property_from_property(property),
-			.translate, [
+		return TransformationStyleValue.create(transform_property_from_property(property), .translate, [
 			translate.x_.create_an_internal_representation(property, .no)!,
 			translate.y_.create_an_internal_representation(property, .no)!,
 		])
 	}
 
-	return TransformationStyleValue.create(transform_property_from_property(property),
-		.translate3d, [
+	return TransformationStyleValue.create(transform_property_from_property(property), .translate3d, [
 		translate.x_.create_an_internal_representation(property, .no)!,
 		translate.y_.create_an_internal_representation(property, .no)!,
 		translate.z_.create_an_internal_representation(property, .no)!,
@@ -1824,7 +1735,6 @@ pub fn (translate CSSTranslate) create_style_value(property PropertyNameAndID) !
 }
 
 // --- CSSSkew ---
-
 pub struct CSSSkew {
 pub mut:
 	is_2d_ bool = true
@@ -1835,8 +1745,8 @@ pub mut:
 pub fn CSSSkew.create(ax CSSNumericValue, ay CSSNumericValue) CSSSkew {
 	return CSSSkew{
 		is_2d_: true
-		ax_:    ax
-		ay_:    ay
+		ax_: ax
+		ay_: ay
 	}
 }
 
@@ -1950,7 +1860,6 @@ pub fn (skew CSSSkew) create_style_value(property PropertyNameAndID) !Transforma
 }
 
 // --- CSSSkewX ---
-
 pub struct CSSSkewX {
 pub mut:
 	is_2d_ bool = true
@@ -1960,7 +1869,7 @@ pub mut:
 pub fn CSSSkewX.create(ax CSSNumericValue) CSSSkewX {
 	return CSSSkewX{
 		is_2d_: true
-		ax_:    ax
+		ax_: ax
 	}
 }
 
@@ -2040,7 +1949,6 @@ pub fn (skew CSSSkewX) create_style_value(property PropertyNameAndID) !Transform
 }
 
 // --- CSSSkewY ---
-
 pub struct CSSSkewY {
 pub mut:
 	is_2d_ bool = true
@@ -2050,7 +1958,7 @@ pub mut:
 pub fn CSSSkewY.create(ay CSSNumericValue) CSSSkewY {
 	return CSSSkewY{
 		is_2d_: true
-		ay_:    ay
+		ay_: ay
 	}
 }
 
@@ -2130,7 +2038,6 @@ pub fn (skew CSSSkewY) create_style_value(property PropertyNameAndID) !Transform
 }
 
 // --- CSSTransformValue ---
-
 pub struct CSSTransformValue {
 pub mut:
 	transforms_ []CSSTransformComponent
@@ -2272,7 +2179,6 @@ pub fn (value CSSTransformValue) create_an_internal_representation(property Prop
 }
 
 // --- TransformationStyleValue ---
-
 pub enum TransformProperty {
 	transform
 	rotate
@@ -2312,9 +2218,9 @@ pub mut:
 
 pub fn TransformationStyleValue.create(property TransformProperty, transform_function TransformFunction, values StyleValueVector) TransformationStyleValue {
 	return TransformationStyleValue{
-		property_:           property
+		property_: property
 		transform_function_: transform_function
-		values_:             values
+		values_: values
 	}
 }
 
@@ -2338,7 +2244,7 @@ pub mut:
 
 pub fn TransformationStyleValueList.create(values []TransformationStyleValue, separator TransformationStyleValueListSeparator) TransformationStyleValueList {
 	return TransformationStyleValueList{
-		values_:    values
+		values_: values
 		separator_: separator
 	}
 }
@@ -2371,6 +2277,28 @@ fn multiply_affine_2d(left [6]f64, right [6]f64) [6]f64 {
 // 3D painting path and therefore returns none here instead of silently flattening it.
 pub fn resolve_transform_2d_matrix(element &dom.Element, text string, reference_width f64, reference_height f64, author_rules []&CSSRule) ?[6]f64 {
 	parsed := parse_css_value_logic(.transform, text) or { return none }
+	mut length_context := LengthResolutionContext.for_document(element.document())
+	font_size := CSSPixels.nearest_value_for(computed_font_size_px(element, author_rules))
+	length_context.font_metrics = computed_interpolation_font_metrics_for_size(font_size)
+	length_context.font_metrics.line_height = CSSPixels.nearest_value_for(computed_line_height_px(element,
+		author_rules))
+	root_size := CSSPixels.nearest_value_for(root_font_size_px(element, author_rules))
+	length_context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_size)
+	return resolve_transform_style_value_2d_matrix(parsed, reference_width, reference_height,
+		length_context)
+}
+
+// Paintable::compute_transform() consumes the already-computed typed value and
+// the layout node's length context. This avoids re-running the compatibility
+// cascade and re-parsing transform text from the typed layout adapter.
+pub fn resolve_computed_transform_2d_matrix(computed &ComputedProperties, reference_width f64, reference_height f64) ?[6]f64 {
+	value := computed.property(.transform, .yes) or { return [f64(1), 0, 0, 1, 0, 0]! }
+	parsed := style_value_logic_from_dom(.transform, value) or { return none }
+	return resolve_transform_style_value_2d_matrix(parsed, reference_width, reference_height,
+		computed.length_resolution_context())
+}
+
+fn resolve_transform_style_value_2d_matrix(parsed StyleValue, reference_width f64, reference_height f64, length_context LengthResolutionContext) ?[6]f64 {
 	mut transformations := []TransformationStyleValue{}
 	if parsed is TransformationStyleValue {
 		transformations << parsed
@@ -2385,16 +2313,9 @@ pub fn resolve_transform_2d_matrix(element &dom.Element, text string, reference_
 		return [f64(1), 0, 0, 1, 0, 0]!
 	}
 
-	mut length_context := LengthResolutionContext.for_document(element.document())
-	font_size := CSSPixels.nearest_value_for(computed_font_size_px(element, author_rules))
-	length_context.font_metrics = computed_interpolation_font_metrics_for_size(font_size)
-	length_context.font_metrics.line_height = CSSPixels.nearest_value_for(computed_line_height_px(element,
-		author_rules))
-	root_size := CSSPixels.nearest_value_for(root_font_size_px(element, author_rules))
-	length_context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_size)
 	paintable_box := TransformPaintableBox{
-		reference_box:             TransformReferenceBox{
-			width:  CSSPixels.nearest_value_for(reference_width)
+		reference_box: TransformReferenceBox{
+			width: CSSPixels.nearest_value_for(reference_width)
 			height: CSSPixels.nearest_value_for(reference_height)
 		}
 		length_resolution_context: length_context
@@ -2402,11 +2323,11 @@ pub fn resolve_transform_2d_matrix(element &dom.Element, text string, reference_
 	mut result := [f64(1), 0, 0, 1, 0, 0]!
 	for transformation in transformations {
 		matrix := transformation.to_matrix(paintable_box) or { return none }
-		if matrix.m13 != 0 || matrix.m23 != 0 || matrix.m31 != 0 || matrix.m32 != 0
-			|| matrix.m33 != 1 || matrix.m34 != 0 || matrix.m43 != 0 || matrix.m44 != 1 {
+		if matrix.m13 != 0 || matrix.m23 != 0 || matrix.m31 != 0 || matrix.m32 != 0 || matrix.m33 != 1 || matrix.m34 != 0 || matrix.m43 != 0 || matrix.m44 != 1 {
 			return none
 		}
-		function_matrix := [f64(matrix.m11), matrix.m21, matrix.m12, matrix.m22, matrix.m14, matrix.m24]!
+		function_matrix := [f64(matrix.m11), matrix.m21, matrix.m12, matrix.m22, matrix.m14,
+			matrix.m24]!
 		result = multiply_affine_2d(result, function_matrix)
 	}
 	return result
@@ -2424,7 +2345,6 @@ pub fn TransformationStyleValue.identity_transformation(transform_function Trans
 	// and matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1). A special case is perspective: perspective(none).
 	// The value of m34 becomes infinitesimal small and the transform function is therefore assumed to be equal to the
 	// identity matrix.
-
 	number_zero := StyleValue(NumberStyleValue.create(0.0))
 	number_one := StyleValue(NumberStyleValue.create(1.0))
 	zero_angle := StyleValue(AngleStyleValue.create(Angle.make_degrees(0.0)))
@@ -2555,8 +2475,7 @@ fn (style_value TransformationStyleValue) get_value(argument_index int, referenc
 			return error("Can't resolve percentage to length without a reference value.")
 		}
 
-		return style_value.length_to_px(Length.make_css_px(reference).percentage_of(transformation_value.as_percentage().percentage()),
-			paintable_box)
+		return style_value.length_to_px(Length.make_css_px(reference).percentage_of(transformation_value.as_percentage().percentage()), paintable_box)
 	}
 
 	if transformation_value.is_number() {
@@ -2598,100 +2517,72 @@ pub fn (style_value TransformationStyleValue) to_matrix(paintable_box ?Transform
 				if distance < 1 {
 					distance = 1
 				}
-				return FloatMatrix4x4.from_values(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0,
-					-1.0 / distance, 1)
+				return FloatMatrix4x4.from_values(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -1.0 / distance, 1)
 			}
 		}
 		.matrix {
 			if count == 6 {
-				return FloatMatrix4x4.from_values(style_value.get_value(0, none, paintable_box)!, style_value.get_value(2,
-					none, paintable_box)!, 0, style_value.get_value(4, none, paintable_box)!, style_value.get_value(1,
-					none, paintable_box)!, style_value.get_value(3, none, paintable_box)!, 0, style_value.get_value(5,
-					none, paintable_box)!, 0, 0, 1, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(style_value.get_value(0, none, paintable_box)!, style_value.get_value(2, none, paintable_box)!, 0, style_value.get_value(4, none, paintable_box)!, style_value.get_value(1, none, paintable_box)!, style_value.get_value(3, none, paintable_box)!, 0, style_value.get_value(5, none, paintable_box)!, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 		}
 		.matrix3d {
 			if count == 16 {
-				return FloatMatrix4x4.from_values(style_value.get_value(0, none, paintable_box)!, style_value.get_value(4,
-					none, paintable_box)!, style_value.get_value(8, none, paintable_box)!, style_value.get_value(12,
-					none, paintable_box)!, style_value.get_value(1, none, paintable_box)!, style_value.get_value(5,
-					none, paintable_box)!, style_value.get_value(9, none, paintable_box)!, style_value.get_value(13,
-					none, paintable_box)!, style_value.get_value(2, none, paintable_box)!, style_value.get_value(6,
-					none, paintable_box)!, style_value.get_value(10, none, paintable_box)!, style_value.get_value(14,
-					none, paintable_box)!, style_value.get_value(3, none, paintable_box)!, style_value.get_value(7,
-					none, paintable_box)!, style_value.get_value(11, none, paintable_box)!, style_value.get_value(15,
-					none, paintable_box)!)
+				return FloatMatrix4x4.from_values(style_value.get_value(0, none, paintable_box)!, style_value.get_value(4, none, paintable_box)!, style_value.get_value(8, none, paintable_box)!, style_value.get_value(12, none, paintable_box)!, style_value.get_value(1, none, paintable_box)!, style_value.get_value(5, none, paintable_box)!, style_value.get_value(9, none, paintable_box)!, style_value.get_value(13, none, paintable_box)!, style_value.get_value(2, none, paintable_box)!, style_value.get_value(6, none, paintable_box)!, style_value.get_value(10, none, paintable_box)!, style_value.get_value(14, none, paintable_box)!, style_value.get_value(3, none, paintable_box)!, style_value.get_value(7, none, paintable_box)!, style_value.get_value(11, none, paintable_box)!, style_value.get_value(15, none, paintable_box)!)
 			}
 		}
 		.translate {
 			if count == 1 {
-				return FloatMatrix4x4.from_values(1, 0, 0, style_value.get_value(0, width,
-					paintable_box)!, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, 0, 0, style_value.get_value(0, width, paintable_box)!, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 			if count == 2 {
-				return FloatMatrix4x4.from_values(1, 0, 0, style_value.get_value(0, width,
-					paintable_box)!, 0, 1, 0, style_value.get_value(1, height, paintable_box)!, 0,
-					0, 1, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, 0, 0, style_value.get_value(0, width, paintable_box)!, 0, 1, 0, style_value.get_value(1, height, paintable_box)!, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 		}
 		.translate3d {
-			return FloatMatrix4x4.from_values(1, 0, 0, style_value.get_value(0, width,
-				paintable_box)!, 0, 1, 0, style_value.get_value(1, height, paintable_box)!, 0, 0,
-				1, style_value.get_value(2, none, paintable_box)!, 0, 0, 0, 1)
+			return FloatMatrix4x4.from_values(1, 0, 0, style_value.get_value(0, width, paintable_box)!, 0, 1, 0, style_value.get_value(1, height, paintable_box)!, 0, 0, 1, style_value.get_value(2, none, paintable_box)!, 0, 0, 0, 1)
 		}
 		.translate_x {
 			if count == 1 {
-				return FloatMatrix4x4.from_values(1, 0, 0, style_value.get_value(0, width,
-					paintable_box)!, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, 0, 0, style_value.get_value(0, width, paintable_box)!, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 		}
 		.translate_y {
 			if count == 1 {
-				return FloatMatrix4x4.from_values(1, 0, 0, 0, 0, 1, 0, style_value.get_value(0,
-					height, paintable_box)!, 0, 0, 1, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, 0, 0, 0, 0, 1, 0, style_value.get_value(0, height, paintable_box)!, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 		}
 		.translate_z {
 			if count == 1 {
-				return FloatMatrix4x4.from_values(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, style_value.get_value(0,
-					none, paintable_box)!, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, style_value.get_value(0, none, paintable_box)!, 0, 0, 0, 1)
 			}
 		}
 		.scale {
 			if count == 1 {
 				value := style_value.get_value(0, none, paintable_box)!
-				return FloatMatrix4x4.from_values(value, 0, 0, 0, 0, value, 0, 0, 0, 0, 1, 0, 0, 0,
-					0, 1)
+				return FloatMatrix4x4.from_values(value, 0, 0, 0, 0, value, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 			if count == 2 {
-				return FloatMatrix4x4.from_values(style_value.get_value(0, none, paintable_box)!,
-					0, 0, 0, 0, style_value.get_value(1, none, paintable_box)!, 0, 0, 0, 0, 1, 0,
-					0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(style_value.get_value(0, none, paintable_box)!, 0, 0, 0, 0, style_value.get_value(1, none, paintable_box)!, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 		}
 		.scale3d {
 			if count == 3 {
-				return FloatMatrix4x4.from_values(style_value.get_value(0, none, paintable_box)!,
-					0, 0, 0, 0, style_value.get_value(1, none, paintable_box)!, 0, 0, 0, 0, style_value.get_value(2,
-					none, paintable_box)!, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(style_value.get_value(0, none, paintable_box)!, 0, 0, 0, 0, style_value.get_value(1, none, paintable_box)!, 0, 0, 0, 0, style_value.get_value(2, none, paintable_box)!, 0, 0, 0, 0, 1)
 			}
 		}
 		.scale_x {
 			if count == 1 {
-				return FloatMatrix4x4.from_values(style_value.get_value(0, none, paintable_box)!,
-					0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(style_value.get_value(0, none, paintable_box)!, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 		}
 		.scale_y {
 			if count == 1 {
-				return FloatMatrix4x4.from_values(1, 0, 0, 0, 0, style_value.get_value(0, none,
-					paintable_box)!, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, 0, 0, 0, 0, style_value.get_value(0, none, paintable_box)!, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 		}
 		.scale_z {
 			if count == 1 {
-				return FloatMatrix4x4.from_values(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, style_value.get_value(0,
-					none, paintable_box)!, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, style_value.get_value(0, none, paintable_box)!, 0, 0, 0, 0, 1)
 			}
 		}
 		.rotate3d {
@@ -2705,8 +2596,7 @@ pub fn (style_value TransformationStyleValue) to_matrix(paintable_box ?Transform
 				if axis.length() < epsilon {
 					return FloatMatrix4x4.identity()
 				}
-				return rotation_matrix(axis.normalized(), style_value.get_value(3, none,
-					paintable_box)!)
+				return rotation_matrix(axis.normalized(), style_value.get_value(3, none, paintable_box)!)
 			}
 		}
 		.rotate_x {
@@ -2738,26 +2628,20 @@ pub fn (style_value TransformationStyleValue) to_matrix(paintable_box ?Transform
 		}
 		.skew {
 			if count == 1 {
-				return FloatMatrix4x4.from_values(1, math.tan(style_value.get_value(0, none,
-					paintable_box)!), 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, math.tan(style_value.get_value(0, none, paintable_box)!), 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 			if count == 2 {
-				return FloatMatrix4x4.from_values(1, math.tan(style_value.get_value(0, none,
-					paintable_box)!), 0, 0,
-					math.tan(style_value.get_value(1, none, paintable_box)!), 1, 0, 0, 0, 0, 1, 0,
-					0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, math.tan(style_value.get_value(0, none, paintable_box)!), 0, 0, math.tan(style_value.get_value(1, none, paintable_box)!), 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 		}
 		.skew_x {
 			if count == 1 {
-				return FloatMatrix4x4.from_values(1, math.tan(style_value.get_value(0, none,
-					paintable_box)!), 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, math.tan(style_value.get_value(0, none, paintable_box)!), 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 		}
 		.skew_y {
 			if count == 1 {
-				return FloatMatrix4x4.from_values(1, 0, 0, 0, math.tan(style_value.get_value(0,
-					none, paintable_box)!), 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+				return FloatMatrix4x4.from_values(1, 0, 0, 0, math.tan(style_value.get_value(0, none, paintable_box)!), 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 			}
 		}
 	}
@@ -2816,6 +2700,7 @@ pub fn (style_value TransformationStyleValue) serialize(mode SerializationMode) 
 			.rotate_y {
 				return 'y ${style_value.values_[0].to_string_with_mode(mode)}'
 			}
+
 			// If a rotation about the z axis (that is, in 2D) is specified, the property must serialize as just an <angle>.
 			.rotate, .rotate_z {
 				return style_value.values_[0].to_string_with_mode(mode)
@@ -2871,8 +2756,7 @@ pub fn (style_value TransformationStyleValue) serialize(mode SerializationMode) 
 			x_value
 		}
 		mut z_value := ?string(none)
-		if style_value.values_.len == 3 && (!style_value.values_[2].is_number()
-			|| style_value.values_[2].as_number().number() != 1) {
+		if style_value.values_.len == 3 && (!style_value.values_[2].is_number() || style_value.values_[2].as_number().number() != 1) {
 			z_value = resolve_number_style_value_to_string(style_value.values_[2], mode)
 		}
 
@@ -2895,8 +2779,7 @@ pub fn (style_value TransformationStyleValue) serialize(mode SerializationMode) 
 			?string(none)
 		}
 		mut z_value := ?string(none)
-		if style_value.values_.len == 3 && (!style_value.values_[2].is_length()
-			|| style_value.values_[2].as_length().length() != Length.make_px(0)) {
+		if style_value.values_.len == 3 && (!style_value.values_[2].is_length() || style_value.values_[2].as_length().length() != Length.make_px(0)) {
 			z_value = resolve_translate_style_value_to_string(style_value.values_[2], mode)
 		}
 
@@ -2916,10 +2799,7 @@ pub fn (style_value TransformationStyleValue) serialize(mode SerializationMode) 
 		// https://www.w3.org/TR/css-transforms-2/#individual-transforms
 		// A <percentage> is equivalent to a <number>, for example scale: 100% is equivalent to scale: 1.
 		// Numbers are used during serialization of specified and computed values.
-		if (style_value.transform_function_ == .scale || style_value.transform_function_ == .scale3d
-			|| style_value.transform_function_ == .scale_x
-			|| style_value.transform_function_ == .scale_y
-			|| style_value.transform_function_ == .scale_z) && value.is_percentage() {
+		if (style_value.transform_function_ == .scale || style_value.transform_function_ == .scale3d || style_value.transform_function_ == .scale_x || style_value.transform_function_ == .scale_y || style_value.transform_function_ == .scale_z) && value.is_percentage() {
 			serialized += serialize_a_number(value.as_percentage().percentage().as_fraction())
 		} else {
 			serialized += value.to_string_with_mode(mode)
@@ -2992,6 +2872,7 @@ pub fn (style_value TransformationStyleValue) reify_a_transform_function() !CSST
 			}
 			return CSSTransformComponent(CSSMatrixComponent.create(is_2d, matrix))
 		}
+
 		// -> translate()
 		// -> translateX()
 		// -> translateY()
@@ -3003,25 +2884,21 @@ pub fn (style_value TransformationStyleValue) reify_a_transform_function() !CSST
 		.translate {
 			// NB: Default y to 0px if it's not specified.
 			y := if style_value.values_.len > 1 { reify_numeric_argument(1)! } else { reify_0px() }
-			return CSSTransformComponent(CSSTranslate.create(.yes, reify_numeric_argument(0)!, y,
-				reify_0px()))
+			return CSSTransformComponent(CSSTranslate.create(.yes, reify_numeric_argument(0)!, y, reify_0px()))
 		}
 		.translate_x {
-			return CSSTransformComponent(CSSTranslate.create(.yes, reify_numeric_argument(0)!,
-				reify_0px(), reify_0px()))
+			return CSSTransformComponent(CSSTranslate.create(.yes, reify_numeric_argument(0)!, reify_0px(), reify_0px()))
 		}
 		.translate_y {
-			return CSSTransformComponent(CSSTranslate.create(.yes, reify_0px(),
-				reify_numeric_argument(0)!, reify_0px()))
+			return CSSTransformComponent(CSSTranslate.create(.yes, reify_0px(), reify_numeric_argument(0)!, reify_0px()))
 		}
 		.translate3d {
-			return CSSTransformComponent(CSSTranslate.create(.no, reify_numeric_argument(0)!,
-				reify_numeric_argument(1)!, reify_numeric_argument(2)!))
+			return CSSTransformComponent(CSSTranslate.create(.no, reify_numeric_argument(0)!, reify_numeric_argument(1)!, reify_numeric_argument(2)!))
 		}
 		.translate_z {
-			return CSSTransformComponent(CSSTranslate.create(.no, reify_0px(), reify_0px(),
-				reify_numeric_argument(0)!))
+			return CSSTransformComponent(CSSTranslate.create(.no, reify_0px(), reify_0px(), reify_numeric_argument(0)!))
 		}
+
 		// -> scale()
 		// -> scaleX()
 		// -> scaleY()
@@ -3037,25 +2914,21 @@ pub fn (style_value TransformationStyleValue) reify_a_transform_function() !CSST
 			} else {
 				reify_numeric_argument(0)!
 			}
-			return CSSTransformComponent(CSSScale.create(.yes, reify_numeric_argument(0)!, y,
-				reify_1()))
+			return CSSTransformComponent(CSSScale.create(.yes, reify_numeric_argument(0)!, y, reify_1()))
 		}
 		.scale_x {
-			return CSSTransformComponent(CSSScale.create(.yes, reify_numeric_argument(0)!,
-				reify_1(), reify_1()))
+			return CSSTransformComponent(CSSScale.create(.yes, reify_numeric_argument(0)!, reify_1(), reify_1()))
 		}
 		.scale_y {
-			return CSSTransformComponent(CSSScale.create(.yes, reify_1(),
-				reify_numeric_argument(0)!, reify_1()))
+			return CSSTransformComponent(CSSScale.create(.yes, reify_1(), reify_numeric_argument(0)!, reify_1()))
 		}
 		.scale3d {
-			return CSSTransformComponent(CSSScale.create(.no, reify_numeric_argument(0)!,
-				reify_numeric_argument(1)!, reify_numeric_argument(2)!))
+			return CSSTransformComponent(CSSScale.create(.no, reify_numeric_argument(0)!, reify_numeric_argument(1)!, reify_numeric_argument(2)!))
 		}
 		.scale_z {
-			return CSSTransformComponent(CSSScale.create(.no, reify_1(), reify_1(),
-				reify_numeric_argument(0)!))
+			return CSSTransformComponent(CSSScale.create(.no, reify_1(), reify_1(), reify_numeric_argument(0)!))
 		}
+
 		// -> rotate()
 		// -> rotate3d()
 		// -> rotateX()
@@ -3066,25 +2939,21 @@ pub fn (style_value TransformationStyleValue) reify_a_transform_function() !CSST
 		//       axis coordinates if not specified in func and whose is2D internal slot is true if func is rotate(), and
 		//       false otherwise.
 		.rotate {
-			return CSSTransformComponent(CSSRotate.create(.yes, reify_0(), reify_0(), reify_1(),
-				reify_numeric_argument(0)!))
+			return CSSTransformComponent(CSSRotate.create(.yes, reify_0(), reify_0(), reify_1(), reify_numeric_argument(0)!))
 		}
 		.rotate3d {
-			return CSSTransformComponent(CSSRotate.create(.no, reify_numeric_argument(0)!,
-				reify_numeric_argument(1)!, reify_numeric_argument(2)!, reify_numeric_argument(3)!))
+			return CSSTransformComponent(CSSRotate.create(.no, reify_numeric_argument(0)!, reify_numeric_argument(1)!, reify_numeric_argument(2)!, reify_numeric_argument(3)!))
 		}
 		.rotate_x {
-			return CSSTransformComponent(CSSRotate.create(.no, reify_1(), reify_0(), reify_0(),
-				reify_numeric_argument(0)!))
+			return CSSTransformComponent(CSSRotate.create(.no, reify_1(), reify_0(), reify_0(), reify_numeric_argument(0)!))
 		}
 		.rotate_y {
-			return CSSTransformComponent(CSSRotate.create(.no, reify_0(), reify_1(), reify_0(),
-				reify_numeric_argument(0)!))
+			return CSSTransformComponent(CSSRotate.create(.no, reify_0(), reify_1(), reify_0(), reify_numeric_argument(0)!))
 		}
 		.rotate_z {
-			return CSSTransformComponent(CSSRotate.create(.no, reify_0(), reify_0(), reify_1(),
-				reify_numeric_argument(0)!))
+			return CSSTransformComponent(CSSRotate.create(.no, reify_0(), reify_0(), reify_1(), reify_numeric_argument(0)!))
 		}
+
 		// -> skew()
 		//    1. Return a new CSSSkew object, whose ax and ay internal slots are set to the reification of the specified x
 		//       and y angles, or the reification of 0deg if not specified in func, and whose is2D internal slot is true.
@@ -3093,18 +2962,21 @@ pub fn (style_value TransformationStyleValue) reify_a_transform_function() !CSST
 			y := if style_value.values_.len > 1 { reify_numeric_argument(1)! } else { reify_0deg() }
 			return CSSTransformComponent(CSSSkew.create(reify_numeric_argument(0)!, y))
 		}
+
 		// -> skewX()
 		//    1. Return a new CSSSkewX object, whose ax internal slot is set to the reification of the specified x angle,
 		//       or the reification of 0deg if not specified in func, and whose is2D internal slot is true.
 		.skew_x {
 			return CSSTransformComponent(CSSSkewX.create(reify_numeric_argument(0)!))
 		}
+
 		// -> skewY()
 		//    1. Return a new CSSSkewY object, whose ay internal slot is set to the reification of the specified y angle,
 		//       or the reification of 0deg if not specified in func, and whose is2D internal slot is true.
 		.skew_y {
 			return CSSTransformComponent(CSSSkewY.create(reify_numeric_argument(0)!))
 		}
+
 		// -> perspective()
 		//    1. Return a new CSSPerspective object, whose length internal slot is set to the reification of the specified
 		//       length (see reify a numeric value if it is a length, and reify an identifier if it is the keyword none)
@@ -3137,12 +3009,9 @@ pub fn (style_value TransformationStyleValue) absolutized(computation_context Co
 		return style_value
 	}
 
-	return TransformationStyleValue.create(style_value.property_, style_value.transform_function_,
-		absolutized_values)
+	return TransformationStyleValue.create(style_value.property_, style_value.transform_function_, absolutized_values)
 }
 
 pub fn (style_value TransformationStyleValue) properties_equal(other TransformationStyleValue) bool {
-	return style_value.property_ == other.property_
-		&& style_value.transform_function_ == other.transform_function_
-		&& style_value.values_ == other.values_
+	return style_value.property_ == other.property_ && style_value.transform_function_ == other.transform_function_ && style_value.values_ == other.values_
 }

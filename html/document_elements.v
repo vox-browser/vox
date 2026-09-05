@@ -132,8 +132,7 @@ pub fn html_base_element_attribute_changed(base &dom.HTMLBaseElement, name strin
 pub fn html_base_element_href(base &dom.HTMLBaseElement) string {
 	element := unsafe { &dom.Element(base) }
 	href := element.get_attribute_value('href')
-	url := dom.dom_url_parse(href, element.document().fallback_base_url(),
-		element.document().encoding_or_default()) or { return href }
+	url := dom.dom_url_parse(href, element.document().fallback_base_url(), element.document().encoding_or_default()) or { return href }
 	return url.serialize()
 }
 
@@ -384,7 +383,7 @@ pub fn html_meta_element_inserted(meta &dom.HTMLMetaElement) {
 	match state {
 		.refresh {
 			if content != '' {
-				document.shared_declarative_refresh_steps(content)
+				document.shared_declarative_refresh_steps_for_meta(content)
 			}
 		}
 		.content_language {
@@ -761,8 +760,15 @@ pub:
 	user_involvement UserNavigationInvolvement
 }
 
-pub fn html_anchor_element_rel_list(anchor &dom.HTMLAnchorElement) []string {
-	return relation_tokens(unsafe { &dom.Element(anchor) }.get_attribute_value('rel'))
+pub fn html_anchor_element_rel_list(anchor &dom.HTMLAnchorElement) &dom.DOMTokenList {
+	if list := anchor.rel_list_ {
+		return list
+	}
+	element := unsafe { &dom.Element(anchor) }
+	list := dom.DOMTokenList.create(element, 'rel')
+	mut mutable_anchor := unsafe { &dom.HTMLAnchorElement(anchor) }
+	mutable_anchor.rel_list_ = list
+	return list
 }
 
 pub fn html_area_element_rel_list(area &dom.HTMLAreaElement) &dom.DOMTokenList {
@@ -837,10 +843,17 @@ pub fn html_anchor_element_has_download_preference(anchor &dom.HTMLAnchorElement
 	return unsafe { &dom.Element(anchor) }.has_attribute('download')
 }
 
-pub fn html_anchor_element_attribute_changed(_ &dom.HTMLAnchorElement, local_name string) {
-	// relList is materialized on demand in this port, so changing rel needs no
-	// cached-token-list invalidation beyond the attribute mutation itself.
-	_ = local_name
+pub fn html_anchor_element_attribute_changed(anchor &dom.HTMLAnchorElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut element := unsafe { &dom.Element(anchor) }
+	html_element_attribute_changed(unsafe { &dom.HTMLElement(anchor) }, name, old_value, value, namespace_)
+	if name == 'href' {
+		html_hyperlink_element_utils_set_the_url(element)
+	} else if name == 'rel' {
+		if list := anchor.rel_list_ {
+			mut mutable_list := unsafe { &dom.DOMTokenList(list) }
+			mutable_list.associated_attribute_changed(value or { '' })
+		}
+	}
 }
 
 pub fn html_anchor_element_has_activation_behavior(_ &dom.HTMLAnchorElement) bool {
@@ -869,8 +882,7 @@ pub fn html_map_element_areas(map_element &dom.HTMLMapElement) &dom.HTMLCollecti
 		return areas
 	}
 	element := unsafe { &dom.Element(map_element) }
-	areas := dom.HTMLCollection.create(unsafe { &dom.ParentNode(element) }, .descendants,
-		fn (candidate &dom.Element) bool {
+	areas := dom.HTMLCollection.create(unsafe { &dom.ParentNode(element) }, .descendants, fn (candidate &dom.Element) bool {
 		return candidate.local_name() == 'area'
 	}, fn (_ &dom.Element, _ &dom.Element) bool {
 		return false

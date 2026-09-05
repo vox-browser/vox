@@ -238,12 +238,22 @@ mut:
 	skipped_targets_     []&ResizeObservation
 	registered_          bool
 	last_entries_        []&ResizeObserverEntry
+	document_            ?&dom.Document
+	dom_registration_    &dom.ResizeObserver = unsafe { nil }
 }
 
 pub fn ResizeObserver.new(callback ResizeObserverCallback) &ResizeObserver {
-	return &ResizeObserver{
+	mut observer := &ResizeObserver{
 		callback_: callback
 	}
+	observer.dom_registration_ = &dom.ResizeObserver{
+		target:          voidptr(observer)
+		gather_at_depth: resize_observer_gather_at_depth_callback
+		broadcast:       resize_observer_broadcast_callback
+		has_active:      resize_observer_has_active_callback
+		has_skipped:     resize_observer_has_skipped_callback
+	}
+	return observer
 }
 
 pub fn ResizeObserver.construct_impl(callback ResizeObserverCallback) &ResizeObserver {
@@ -270,10 +280,24 @@ pub fn (observer &ResizeObserver) last_entries() []&ResizeObserverEntry {
 	return observer.last_entries_.clone()
 }
 
+fn (mut observer ResizeObserver) register_with_document_if_needed(document &dom.Document) {
+	if registered_document := observer.document_ {
+		_ = registered_document
+	} else {
+		observer.document_ = document
+	}
+	if observer.registered_ {
+		return
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.register_resize_observer(observer.dom_registration_)
+	observer.registered_ = true
+}
+
 pub fn (mut observer ResizeObserver) observe(target &ResizeTarget, options ResizeObserverOptions) {
 	observer.unobserve(target)
 	observer.observation_targets_ << ResizeObservation.new(target, options.box)
-	observer.registered_ = true
+	observer.register_with_document_if_needed(target.element.document())
 }
 
 pub fn (mut observer ResizeObserver) unobserve(target &ResizeTarget) {
@@ -293,10 +317,75 @@ pub fn (mut observer ResizeObserver) disconnect() {
 	observer.unregister_observer_if_needed()
 }
 
+// C++: ResizeObserver::invoke_callback(ReadonlySpan<...>) const. The V
+// callback receives the already-wrapped entry vector directly; exception
+// reporting is owned by the scripting bridge that constructs this callback.
+pub fn (observer &ResizeObserver) invoke_callback(entries []&ResizeObserverEntry) {
+	if observer.callback_ != unsafe { nil } {
+		observer.callback_(entries, observer)
+	}
+}
+
 pub fn (mut observer ResizeObserver) unregister_observer_if_needed() {
-	if observer.observation_targets_.len == 0 {
+	if observer.observation_targets_.len == 0 && observer.registered_ {
+		if document := observer.document_ {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			mutable_document.unregister_resize_observer(observer.dom_registration_)
+		}
 		observer.registered_ = false
 	}
+}
+
+pub fn (mut observer ResizeObserver) gather_active_observations_at_depth(depth int) {
+	observer.active_targets_.clear()
+	observer.skipped_targets_.clear()
+	for observation in observer.observation_targets_ {
+		if !observation.is_active() {
+			continue
+		}
+		target_depth := dom.calculate_depth_for_node(observation.target().element.as_node())
+		if target_depth > depth {
+			observer.active_targets_ << observation
+		} else {
+			observer.skipped_targets_ << observation
+		}
+	}
+}
+
+pub fn (mut observer ResizeObserver) broadcast_active_resize_observations() int {
+	if observer.active_targets_.len == 0 {
+		return max_int
+	}
+	mut shallowest_target_depth := max_int
+	mut entries := []&ResizeObserverEntry{cap: observer.active_targets_.len}
+	for observation in observer.active_targets_ {
+		entry := ResizeObserverEntry.create_and_populate(observation.target())
+		entries << entry
+		matching_sizes := match observation.observed_box() {
+			.border_box { entry.border_box_size() }
+			.content_box { entry.content_box_size() }
+			.device_pixel_content_box { entry.device_pixel_content_box_size() }
+		}
+		unsafe {
+			observation.last_reported_sizes_ = matching_sizes
+		}
+		target_depth := dom.calculate_depth_for_node(observation.target().element.as_node())
+		if target_depth < shallowest_target_depth {
+			shallowest_target_depth = target_depth
+		}
+	}
+	observer.last_entries_ = entries.clone()
+	observer.invoke_callback(entries)
+	observer.active_targets_.clear()
+	return shallowest_target_depth
+}
+
+pub fn (observer &ResizeObserver) has_active_observations() bool {
+	return observer.active_targets_.len > 0
+}
+
+pub fn (observer &ResizeObserver) has_skipped_observations() bool {
+	return observer.skipped_targets_.len > 0
 }
 
 pub fn (mut observer ResizeObserver) gather_active_observations() {
@@ -307,17 +396,25 @@ pub fn (mut observer ResizeObserver) gather_active_observations() {
 }
 
 pub fn (mut observer ResizeObserver) broadcast_active_observations() {
-	mut entries := []&ResizeObserverEntry{}
-	for index in 0 .. observer.active_targets_.len {
-		mut observation := observer.active_targets_[index]
-		entries << ResizeObserverEntry.create_and_populate(observation.target())
-		unsafe {
-			observation.last_reported_sizes_ = [
-				ResizeObserverSize.compute_box_size(observation.target(), observation.observed_box()),
-			]
-		}
-	}
-	observer.active_targets_.clear()
-	observer.last_entries_ = entries.clone()
-	if entries.len > 0 { observer.callback_(entries, observer) }
+	_ = observer.broadcast_active_resize_observations()
+}
+
+fn resize_observer_gather_at_depth_callback(target voidptr, depth int) {
+	mut observer := unsafe { &ResizeObserver(target) }
+	observer.gather_active_observations_at_depth(depth)
+}
+
+fn resize_observer_broadcast_callback(target voidptr) int {
+	mut observer := unsafe { &ResizeObserver(target) }
+	return observer.broadcast_active_resize_observations()
+}
+
+fn resize_observer_has_active_callback(target voidptr) bool {
+	observer := unsafe { &ResizeObserver(target) }
+	return observer.has_active_observations()
+}
+
+fn resize_observer_has_skipped_callback(target voidptr) bool {
+	observer := unsafe { &ResizeObserver(target) }
+	return observer.has_skipped_observations()
 }

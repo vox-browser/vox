@@ -23,6 +23,7 @@ pub mut:
 	content_type              string = 'text/html'
 	completely_loaded         bool
 	ready_for_post_load_tasks bool
+	anything_delays_load_event bool
 	body_needs_style_update   bool
 }
 
@@ -245,14 +246,46 @@ pub fn (container &NavigableContainerModel) is_navigable_container() bool {
 
 // https://html.spec.whatwg.org/multipage/iframe-embed-object.html#potentially-delays-the-load-event
 pub fn (container &NavigableContainerModel) currently_delays_the_load_event() bool {
-	navigable := container.content_navigable_ or { return false }
-	if !navigable.has_session_history_entry_and_ready {
+	if !container.content_navigable_has_session_history_entry_and_ready_for_navigation() {
 		return true
 	}
 	if !container.potentially_delays_load_event_ {
 		return false
 	}
-	return !navigable.active_document.ready_for_post_load_tasks || navigable.is_delaying_load_events
+	navigable := container.content_navigable_ or { return false }
+	if !navigable.active_document.ready_for_post_load_tasks {
+		return true
+	}
+	if navigable.is_delaying_load_events {
+		return true
+	}
+	return navigable.active_document.anything_delays_load_event
+}
+
+fn navigable_container_load_event_delay_callback(target voidptr) bool {
+	if target == unsafe { nil } {
+		return false
+	}
+	return unsafe { &NavigableContainerModel(target) }.currently_delays_the_load_event()
+}
+
+fn navigable_container_active_window_proxy_callback(target voidptr) ?&dom.WindowProxy {
+	if target == unsafe { nil } {
+		return none
+	}
+	return unsafe { &NavigableContainerModel(target) }.content_window()
+}
+
+pub fn attach_navigable_container_load_event_delay_hook(element &dom.Element, container &NavigableContainerModel) {
+	mut node := element.as_node()
+	node.set_load_event_delay_hook(dom.NodeLoadEventDelayHook{
+		target: voidptr(container)
+		callback: navigable_container_load_event_delay_callback
+	})
+	node.set_active_window_proxy_hook(dom.NodeActiveWindowProxyHook{
+		target: voidptr(container)
+		callback: navigable_container_active_window_proxy_callback
+	})
 }
 
 pub fn (mut container NavigableContainerModel) mark_content_navigable_ready() {
@@ -319,6 +352,7 @@ pub fn html_iframe_element_model_for_dom_element(element &dom.HTMLIFrameElement)
 	model.referrer_policy_ = referrer_policy_from_string(dom_element.get_attribute_value('referrerpolicy')) or {
 		ReferrerPolicy.empty_string
 	}
+	attach_navigable_container_load_event_delay_hook(dom_element, model.container)
 	mut mutable_element := unsafe { &dom.HTMLIFrameElement(element) }
 	mutable_element.iframe_element_model_ = model
 	return model
@@ -621,6 +655,7 @@ pub fn html_object_element_model_for_dom_element(element &dom.HTMLObjectElement)
 	model.connected_ = dom_element.as_node().is_connected()
 	model.fully_active_ = dom_element.document().is_fully_active()
 	model.form_control_ = FormAssociatedElement.create(dom_element)
+	attach_navigable_container_load_event_delay_hook(dom_element, model.container)
 	mut mutable_element := unsafe { &dom.HTMLObjectElement(element) }
 	mutable_element.object_element_model_ = voidptr(model)
 	return model

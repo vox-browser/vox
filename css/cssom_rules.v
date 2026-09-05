@@ -97,20 +97,7 @@ pub fn css_style_sheet_loading_state_name(loading_state CSSStyleSheetLoadingStat
 
 pub struct Selector {
 pub mut:
-	text string
-}
-
-pub fn (selector Selector) contains_the_nesting_selector() bool {
-	return selector.text.contains('&')
-}
-
-pub fn (selector Selector) absolutized(parent_selector Selector) ?Selector {
-	if !selector.contains_the_nesting_selector() {
-		return selector
-	}
-	return Selector{
-		text: selector.text.replace('&', parent_selector.text)
-	}
+	data_ &SelectorData = unsafe { nil }
 }
 
 pub struct SelectorList {
@@ -129,10 +116,11 @@ pub fn (list SelectorList) is_empty() bool {
 pub fn serialize_a_group_of_selectors(selectors SelectorList) string {
 	mut serialized := []string{}
 	for selector in selectors.selectors {
-		if selector.text.trim_space().len == 0 {
+		selector_text := selector.serialize().trim_space()
+		if selector_text.len == 0 {
 			continue
 		}
-		serialized << selector.text.trim_space()
+		serialized << selector_text
 	}
 	return serialized.join(', ')
 }
@@ -149,7 +137,10 @@ pub mut:
 pub struct CSSStyleProperties {
 pub mut:
 	properties        []CSSStyleProperty
-	custom_properties map[string]string
+	// CSSStyleProperties stores custom declarations as StyleProperty objects in
+	// upstream, preserving the parsed UnresolvedStyleValue token graph and its
+	// pointer identity through the cascade.
+	custom_properties map[string]StyleProperty
 	parent_rule       ?&CSSRule
 	computed          bool
 	readonly          bool
@@ -159,7 +150,7 @@ pub mut:
 
 pub fn CSSStyleProperties.create() &CSSStyleProperties {
 	return &CSSStyleProperties{
-		custom_properties: map[string]string{}
+		custom_properties: map[string]StyleProperty{}
 	}
 }
 
@@ -168,18 +159,7 @@ pub fn (properties &CSSStyleProperties) length() int {
 }
 
 pub fn (properties &CSSStyleProperties) serialized() string {
-	mut declarations := []string{}
-	for property in properties.properties {
-		mut declaration := '${property.name}: ${property.value}'
-		if property.important {
-			declaration += ' !important'
-		}
-		declarations << '${declaration};'
-	}
-	for name, value in properties.custom_properties {
-		declarations << '${name}: ${value};'
-	}
-	return declarations.join(' ')
+	return css_style_properties_serialized(properties)
 }
 
 pub fn (mut properties CSSStyleProperties) set_parent_rule(rule &CSSRule) {
@@ -707,7 +687,13 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 
 	if rule.type_ == .style {
 		// This is annoying: Style values that request resources need to know their CSSStyleSheet in order to fetch them.
-		// Boundary: style-value resource loading is represented by the typed StyleValue layer, not this CSSOM wrapper.
+		if declaration := rule.declaration {
+			for property in declaration.properties {
+				if dom_value := property.style_value {
+					set_style_sheet_on_dom_style_value(dom_value, parent_style_sheet)
+				}
+			}
+		}
 	}
 }
 
@@ -737,7 +723,7 @@ pub fn (rule &CSSRule) dump(indent_levels int) string {
 		}
 		.style {
 			for selector in rule.selectors.selectors {
-				builder.write_string('${cssom_indent(indent_levels + 1)}Selector: ${selector.text}\n')
+				builder.write_string('${cssom_indent(indent_levels + 1)}Selector: ${selector.serialize()}\n')
 			}
 		}
 		else {}
@@ -1339,14 +1325,18 @@ pub fn (mut rule CSSRule) absolutized_selectors() SelectorList {
 	// When used in any other context, it represents the same elements as :scope in that context (unless otherwise defined)."
 	// https://drafts.csswg.org/css-nesting-1/#nest-selector
 	if parent_style_rule := rule.parent_style_rule() {
-		// TODO: If there's only 1, we don't have to use `:is()` for it
+		// TODO: If there's only 1, we don't have to use `:is()` for it.
 		mut mutable_parent := unsafe { &CSSRule(parent_style_rule) }
-		parent_selector := Selector{
-			text: ':is(${serialize_a_group_of_selectors(mutable_parent.absolutized_selectors())})'
+		selector_for_nesting := SimpleSelector{
+			type_: .pseudo_class
+			pseudo_class: PseudoClassSelector{
+				type_: .is_
+				argument_selector_list: mutable_parent.absolutized_selectors()
+			}
 		}
 		mut absolutized_selectors := SelectorList{}
 		for selector in rule.selectors.selectors {
-			if absolutized := selector.absolutized(parent_selector) {
+			if absolutized := selector.absolutized(selector_for_nesting) {
 				absolutized_selectors.selectors << absolutized
 			}
 		}
@@ -1768,8 +1758,13 @@ pub fn (sheet &CSSStyleSheet) for_each_effective_property_at_rule(callback fn (&
 
 pub fn (sheet &CSSStyleSheet) registered_properties_from_css_property_rules() map[string]CustomPropertyRegistration {
 	mut registered_properties := map[string]CustomPropertyRegistration{}
-	sheet.for_each_effective_property_at_rule(fn [mut registered_properties] (rule &CSSRule) {
-		registered_properties[rule.property_rule_name()] = rule.property_rule_to_registration()
+	registered_properties_ptr := &registered_properties
+	sheet.for_each_effective_property_at_rule(fn [registered_properties_ptr] (rule &CSSRule) {
+		unsafe {
+			mut registrations := *registered_properties_ptr
+			registrations[rule.property_rule_name()] = rule.property_rule_to_registration()
+			*registered_properties_ptr = registrations
+		}
 	})
 	return registered_properties
 }

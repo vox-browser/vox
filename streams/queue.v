@@ -14,9 +14,78 @@ pub:
 	size  f64
 }
 
+@[heap]
+struct ValueWithSizeEntry {
+mut:
+	value ValueWithSize
+	next_ &ValueWithSizeEntry = unsafe { nil }
+}
+
+// ReadableStreamDefaultController and WritableStreamDefaultController use an
+// AK::SinglyLinkedList for this slot. Dequeueing the head must not shift every
+// remaining stream chunk.
+struct ValueWithSizeList {
+mut:
+	head_ &ValueWithSizeEntry = unsafe { nil }
+	tail_ &ValueWithSizeEntry = unsafe { nil }
+pub mut:
+	len int
+}
+
+fn (mut list ValueWithSizeList) append(value ValueWithSize) {
+	entry := &ValueWithSizeEntry{
+		value: value
+	}
+	if isnil(list.tail_) {
+		list.head_ = entry
+	} else {
+		mut tail := list.tail_
+		tail.next_ = entry
+	}
+	list.tail_ = entry
+	list.len++
+}
+
+fn (list &ValueWithSizeList) first() !ValueWithSize {
+	if isnil(list.head_) {
+		return error('InternalError: Cannot inspect an empty stream queue')
+	}
+	return list.head_.value
+}
+
+fn (mut list ValueWithSizeList) shift() !ValueWithSize {
+	if isnil(list.head_) {
+		return error('InternalError: Cannot dequeue an empty stream queue')
+	}
+	mut entry := list.head_
+	list.head_ = entry.next_
+	entry.next_ = unsafe { nil }
+	if isnil(list.head_) {
+		list.tail_ = unsafe { nil }
+	}
+	list.len--
+	return entry.value
+}
+
+fn (mut list ValueWithSizeList) clear() {
+	list.head_ = unsafe { nil }
+	list.tail_ = unsafe { nil }
+	list.len = 0
+}
+
+fn (list &ValueWithSizeList) values() []ValueWithSize {
+	mut values := []ValueWithSize{cap: list.len}
+	mut entry := list.head_
+	for !isnil(entry) {
+		values << entry.value
+		entry = entry.next_
+	}
+	return values
+}
+
 pub struct QueueWithSizes {
 mut:
-	queue_      []ValueWithSize
+	queue_      ValueWithSizeList
 	total_size_ f64
 }
 
@@ -39,10 +108,10 @@ pub fn (mut queue QueueWithSizes) enqueue_value_with_size(value Value, size f64)
 	if math.is_inf(size, 1) {
 		return error('RangeError: Chunk size must be finite')
 	}
-	queue.queue_ << ValueWithSize{
-		value: value.clone()
-		size:  size
-	}
+	queue.queue_.append(ValueWithSize{
+		value: value
+		size: size
+	})
 	queue.total_size_ += size
 }
 
@@ -50,20 +119,19 @@ pub fn (mut queue QueueWithSizes) dequeue_value() !Value {
 	if queue.queue_.len == 0 {
 		return error('InternalError: Cannot dequeue an empty stream queue')
 	}
-	entry := queue.queue_[0]
-	queue.queue_.delete(0)
+	entry := queue.queue_.shift()!
 	queue.total_size_ -= entry.size
 	if queue.total_size_ < 0 {
 		queue.total_size_ = 0
 	}
-	return entry.value.clone()
+	return entry.value
 }
 
 pub fn (queue &QueueWithSizes) peek_queue_value() !Value {
 	if queue.queue_.len == 0 {
 		return error('InternalError: Cannot peek an empty stream queue')
 	}
-	return queue.queue_[0].value.clone()
+	return queue.queue_.first()!.value
 }
 
 pub fn (mut queue QueueWithSizes) reset() {
@@ -107,8 +175,10 @@ pub fn transfer_array_buffer(mut buffer ArrayBuffer) !ArrayBuffer {
 	if buffer.detached_ {
 		return error('DataCloneError: ArrayBuffer is detached')
 	}
-	transferred := ArrayBuffer.from_bytes(buffer.data_)
-	buffer.data_.clear()
+	transferred := ArrayBuffer{
+		data_: buffer.data_
+	}
+	buffer.data_ = []u8{}
 	buffer.detached_ = true
 	return transferred
 }
@@ -130,8 +200,7 @@ pub fn can_copy_data_block_bytes_buffer(to &ArrayBuffer, to_index int, from &Arr
 	if voidptr(to) == voidptr(from) {
 		return false
 	}
-	return to_index <= to.data_.len && count <= to.data_.len - to_index
-		&& from_index <= from.data_.len && count <= from.data_.len - from_index
+	return to_index <= to.data_.len && count <= to.data_.len - to_index && from_index <= from.data_.len && count <= from.data_.len - from_index
 }
 
 pub fn structured_clone(value Value) Value {

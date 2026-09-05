@@ -142,7 +142,7 @@ fn environment_append_optional_url(mut output []u8, value ?dom.URL) {
 fn environment_append_optional_origin(mut output []u8, value ?dom.Origin) {
 	if origin := value {
 		environment_append_bool(mut output, true)
-		environment_append_string(mut output, origin.value)
+		environment_append_string(mut output, origin.serialize_for_ipc())
 	} else {
 		environment_append_bool(mut output, false)
 	}
@@ -161,7 +161,7 @@ fn environment_append_policy_container(mut output []u8, container SerializedPoli
 		}
 		output << u8(policy.disposition)
 		output << u8(policy.source)
-		environment_append_string(mut output, policy.self_origin.value)
+		environment_append_string(mut output, policy.self_origin.serialize_for_ipc())
 		environment_append_string(mut output, policy.pre_parsed_policy_string)
 	}
 	output << u8(container.embedder_policy.value)
@@ -190,7 +190,7 @@ pub fn encode_serialized_environment_settings_object(object SerializedEnvironmen
 	environment_append_optional_url(mut output, object.top_level_creation_url)
 	environment_append_optional_origin(mut output, object.top_level_origin)
 	environment_append_string(mut output, object.api_base_url.value)
-	environment_append_string(mut output, object.origin.value)
+	environment_append_string(mut output, object.origin.serialize_for_ipc())
 	environment_append_bool(mut output, object.has_cross_site_ancestor)
 	environment_append_policy_container(mut output, object.policy_container)
 	output << u8(object.cross_origin_isolated_capability)
@@ -327,9 +327,7 @@ fn (mut decoder EnvironmentSettingsDecoder) read_policy_container() !SerializedP
 			directives:               directives
 			disposition:              environment_csp_disposition(decoder.read_u8()!)!
 			source:                   environment_csp_source(decoder.read_u8()!)!
-			self_origin:              dom.Origin{
-				value: decoder.read_string()!
-			}
+			self_origin:              dom.origin_from_ipc(decoder.read_string()!)
 			pre_parsed_policy_string: decoder.read_string()!
 		}
 	}
@@ -401,18 +399,14 @@ pub fn decode_serialized_environment_settings_object(data []u8) !SerializedEnvir
 		?dom.URL(none)
 	}
 	top_level_origin := if decoder.read_bool()! {
-		?dom.Origin(dom.Origin{
-			value: decoder.read_string()!
-		})
+		?dom.Origin(dom.origin_from_ipc(decoder.read_string()!))
 	} else {
 		?dom.Origin(none)
 	}
 	api_base_url := dom.URL{
 		value: decoder.read_string()!
 	}
-	origin := dom.Origin{
-		value: decoder.read_string()!
-	}
+	origin := dom.origin_from_ipc(decoder.read_string()!)
 	has_cross_site_ancestor := decoder.read_bool()!
 	policy_container := decoder.read_policy_container()!
 	capability_byte := decoder.read_u8()!

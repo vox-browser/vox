@@ -13,7 +13,7 @@ pub mut:
 
 pub fn new_element(tag string) Element {
 	return Element{
-		tag:        tag
+		tag: tag
 		attributes: map[string]string{}
 	}
 }
@@ -123,14 +123,14 @@ pub fn geometry_path(element Element, viewport_width f64, viewport_height f64) P
 			return Path{
 				instructions: [
 					PathInstruction{
-						type_:    .move
+						type_: .move
 						absolute: true
-						data:     [x1, y1]
+						data: [x1, y1]
 					},
 					PathInstruction{
-						type_:    .line
+						type_: .line
 						absolute: true
-						data:     [x2, y2]
+						data: [x2, y2]
 					},
 				]
 			}
@@ -142,21 +142,21 @@ pub fn geometry_path(element Element, viewport_width f64, viewport_height f64) P
 			}
 			mut instructions := [
 				PathInstruction{
-					type_:    .move
+					type_: .move
 					absolute: true
-					data:     [points[0].x, points[0].y]
+					data: [points[0].x, points[0].y]
 				},
 			]
 			for point in points[1..] {
 				instructions << PathInstruction{
-					type_:    .line
+					type_: .line
 					absolute: true
-					data:     [point.x, point.y]
+					data: [point.x, point.y]
 				}
 			}
 			if element.tag == 'polygon' {
 				instructions << PathInstruction{
-					type_:    .close_path
+					type_: .close_path
 					absolute: true
 				}
 			}
@@ -169,8 +169,7 @@ pub fn geometry_path(element Element, viewport_width f64, viewport_height f64) P
 				attribute_number_percentage(element.attributes, 'cx').resolve_relative_to(viewport_width)
 			cy :=
 				attribute_number_percentage(element.attributes, 'cy').resolve_relative_to(viewport_height)
-			diagonal := math.sqrt((viewport_width * viewport_width +
-				viewport_height * viewport_height) / 2)
+			diagonal := math.sqrt((viewport_width * viewport_width + viewport_height * viewport_height) / 2)
 			radius :=
 				attribute_number_percentage(element.attributes, 'r').resolve_relative_to(diagonal)
 			if radius <= 0 {
@@ -201,29 +200,29 @@ fn ellipse_path(cx f64, cy f64, rx f64, ry f64) Path {
 	return Path{
 		instructions: [
 			PathInstruction{
-				type_:    .move
+				type_: .move
 				absolute: true
-				data:     [cx + rx, cy]
+				data: [cx + rx, cy]
 			},
 			PathInstruction{
-				type_:    .elliptical_arc
+				type_: .elliptical_arc
 				absolute: true
-				data:     [rx, ry, 0, 0, 1, cx, cy + ry]
+				data: [rx, ry, 0, 0, 1, cx, cy + ry]
 			},
 			PathInstruction{
-				type_:    .elliptical_arc
+				type_: .elliptical_arc
 				absolute: true
-				data:     [rx, ry, 0, 0, 1, cx - rx, cy]
+				data: [rx, ry, 0, 0, 1, cx - rx, cy]
 			},
 			PathInstruction{
-				type_:    .elliptical_arc
+				type_: .elliptical_arc
 				absolute: true
-				data:     [rx, ry, 0, 0, 1, cx, cy - ry]
+				data: [rx, ry, 0, 0, 1, cx, cy - ry]
 			},
 			PathInstruction{
-				type_:    .elliptical_arc
+				type_: .elliptical_arc
 				absolute: true
-				data:     [rx, ry, 0, 0, 1, cx + rx, cy]
+				data: [rx, ry, 0, 0, 1, cx + rx, cy]
 			},
 		]
 	}
@@ -256,61 +255,61 @@ fn rect_path(attributes map[string]string, viewport_width f64, viewport_height f
 	ry = math.min(ry, height / 2)
 	mut instructions := [
 		PathInstruction{
-			type_:    .move
+			type_: .move
 			absolute: true
-			data:     [x + rx, y]
+			data: [x + rx, y]
 		},
 		PathInstruction{
-			type_:    .horizontal_line
+			type_: .horizontal_line
 			absolute: true
-			data:     [x + width - rx]
+			data: [x + width - rx]
 		},
 	]
 	if rx > 0 && ry > 0 {
 		instructions << PathInstruction{
-			type_:    .elliptical_arc
+			type_: .elliptical_arc
 			absolute: true
-			data:     [rx, ry, 0, 0, 1, x + width, y + ry]
+			data: [rx, ry, 0, 0, 1, x + width, y + ry]
 		}
 	}
 	instructions << PathInstruction{
-		type_:    .vertical_line
+		type_: .vertical_line
 		absolute: true
-		data:     [y + height - ry]
+		data: [y + height - ry]
 	}
 	if rx > 0 && ry > 0 {
 		instructions << PathInstruction{
-			type_:    .elliptical_arc
+			type_: .elliptical_arc
 			absolute: true
-			data:     [rx, ry, 0, 0, 1, x + width - rx, y + height]
+			data: [rx, ry, 0, 0, 1, x + width - rx, y + height]
 		}
 	}
 	instructions << PathInstruction{
-		type_:    .horizontal_line
+		type_: .horizontal_line
 		absolute: true
-		data:     [x + rx]
+		data: [x + rx]
 	}
 	if rx > 0 && ry > 0 {
 		instructions << PathInstruction{
-			type_:    .elliptical_arc
+			type_: .elliptical_arc
 			absolute: true
-			data:     [rx, ry, 0, 0, 1, x, y + height - ry]
+			data: [rx, ry, 0, 0, 1, x, y + height - ry]
 		}
 	}
 	instructions << PathInstruction{
-		type_:    .vertical_line
+		type_: .vertical_line
 		absolute: true
-		data:     [y + ry]
+		data: [y + ry]
 	}
 	if rx > 0 && ry > 0 {
 		instructions << PathInstruction{
-			type_:    .elliptical_arc
+			type_: .elliptical_arc
 			absolute: true
-			data:     [rx, ry, 0, 0, 1, x + rx, y]
+			data: [rx, ry, 0, 0, 1, x + rx, y]
 		}
 	}
 	instructions << PathInstruction{
-		type_:    .close_path
+		type_: .close_path
 		absolute: true
 	}
 	return Path{
@@ -322,8 +321,8 @@ pub fn element_transform(element Element) AffineTransform {
 	transforms := parse_transform(element.attributes['transform'] or { '' }) or { []Transform{} }
 	mut result := compose_transforms(transforms)
 	if element.tag == 'use' {
-		x := attribute_number_percentage(element.attributes, 'x').value
-		y := attribute_number_percentage(element.attributes, 'y').value
+		x := parse_coordinate(element.attributes['x'] or { '' }) or { 0 }
+		y := parse_coordinate(element.attributes['y'] or { '' }) or { 0 }
 		result = result.multiply(AffineTransform{
 			e: x
 			f: y
@@ -334,9 +333,9 @@ pub fn element_transform(element Element) AffineTransform {
 
 pub fn resolve_masking_area(target Rect) Rect {
 	return Rect{
-		x:      target.x - target.width * 0.2
-		y:      target.y - target.height * 0.2
-		width:  target.width * 1.4
+		x: target.x - target.width * 0.2
+		y: target.y - target.height * 0.2
+		width: target.width * 1.4
 		height: target.height * 1.4
 	}
 }
@@ -369,9 +368,9 @@ pub fn (mut fit FitToViewBox) update_attribute(name string, value ?string) {
 		fit.viewbox = parsed
 		if box := parsed {
 			rect := Rect{
-				x:      box.min_x
-				y:      box.min_y
-				width:  box.width
+				x: box.min_x
+				y: box.min_y
+				width: box.width
 				height: box.height
 			}
 			fit.bindings_rect.base_value = rect
@@ -389,13 +388,19 @@ pub fn (mut fit FitToViewBox) update_attribute(name string, value ?string) {
 
 pub struct SvgViewport {
 pub mut:
-	fit               FitToViewBox
-	fallback_viewbox  ?ViewBox
-	current_scale     f64 = 1
-	current_translate Point
+	fit                  FitToViewBox
+	fallback_viewbox     ?ViewBox
+	active_view_element_ ?Element
+	width                ?f64
+	height               ?f64
 }
 
 pub fn (viewport SvgViewport) active_viewbox() ?ViewBox {
+	if active_view := viewport.active_view_element_ {
+		if box := active_view.active_view_box() {
+			return box
+		}
+	}
 	if box := viewport.fit.viewbox {
 		return box
 	}
@@ -407,19 +412,26 @@ pub fn (viewport SvgViewport) active_viewbox() ?ViewBox {
 
 pub struct TextPositioning {
 pub:
-	x      []f64
-	y      []f64
-	dx     []f64
-	dy     []f64
+	x      []NumberPercentage
+	y      []NumberPercentage
+	dx     []NumberPercentage
+	dy     []NumberPercentage
 	rotate []f64
 }
 
 pub fn text_positioning(attributes map[string]string) TextPositioning {
 	return TextPositioning{
-		x:      parse_number_sequence(attributes['x'] or { '' }) or { [] }
-		y:      parse_number_sequence(attributes['y'] or { '' }) or { [] }
-		dx:     parse_number_sequence(attributes['dx'] or { '' }) or { [] }
-		dy:     parse_number_sequence(attributes['dy'] or { '' }) or { [] }
-		rotate: parse_number_sequence(attributes['rotate'] or { '' }) or { [] }
+		x: parse_text_position(attributes['x'] or { '' })
+		y: parse_text_position(attributes['y'] or { '' })
+		dx: parse_text_position(attributes['dx'] or { '' })
+		dy: parse_text_position(attributes['dy'] or { '' })
+		// SVGTextPositioningElement::text_positioning() does not support the
+		// rotate attribute yet.
+		rotate: []
 	}
+}
+
+fn parse_text_position(source string) []NumberPercentage {
+	value := parse_number_percentage(source) or { return [] }
+	return [value]
 }

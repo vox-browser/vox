@@ -57,3 +57,23 @@ fn test_ends_in_a_number_checker() {
 	assert !ends_in_a_number_checker('')
 	assert !ends_in_a_number_checker('.')
 }
+
+fn test_domain_to_ascii_and_host_parser_match_whatwg_url() {
+	assert domain_to_ascii('EXAMPLE.COM', false)? == 'example.com'
+	assert domain_to_ascii('faß.de', false)? == 'xn--fa-hia.de'
+	assert domain_to_ascii('測試', false)? == 'xn--g6w251d'
+	assert domain_to_ascii('', false) == none
+	assert domain_to_ascii('xn--a', false) == none
+
+	domain := parse_host('fa%C3%9F.de', false) or { panic('expected domain') }
+	assert domain is string
+	assert domain as string == 'xn--fa-hia.de'
+	ipv4 := parse_host('0x7f.1', false) or { panic('expected IPv4') }
+	assert ipv4 is Ipv4Host
+	assert (ipv4 as Ipv4Host).address == u32(0x7f000001)
+	ipv6 := parse_host('[2001:db8::1]', false) or { panic('expected IPv6') }
+	assert ipv6 is Ipv6Host
+	assert ipv6.serialize() == '[2001:db8::1]'
+	assert parse_host('[2001:db8::1', false) == none
+	assert parse_host('a/b', false) == none
+}

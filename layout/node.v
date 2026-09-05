@@ -359,7 +359,7 @@ pub fn (n &Node) display_before_box_type_transformation() css.Display {
 
 // Node::computed_values(): unstyled text nodes inherit the immutable computed
 // values of their styled parent.
-pub fn (n &Node) computed_values() &css.ComputedProperties {
+pub fn (n &Node) computed_values() &css.ComputedValues {
 	if styled := n.as_node_with_style() {
 		return styled.computed_values()
 	}
@@ -368,13 +368,11 @@ pub fn (n &Node) computed_values() &css.ComputedProperties {
 }
 
 pub fn (n &Node) first_available_font() &platform.Font {
-	mut computed := unsafe { &css.ComputedProperties(n.computed_values()) }
-	font_computer := css.FontComputer.create()
-	computed_font := computed.first_available_computed_font(font_computer)
+	computed_font := n.computed_values().font_list().font_for_code_point(u32(` `))
 	return &platform.Font{
-		family:     computed_font.typeface.family_name
+		family: computed_font.typeface.family_name
 		point_size: computed_font.point_size / 0.75
-		weight:     int(computed_font.variations.weight)
+		weight: int(computed_font.variations.weight)
 	}
 }
 
@@ -523,8 +521,7 @@ pub fn (n &Node) has_paint_containment() bool {
 
 fn layout_input_type_allows_readonly(element &dom.Element) bool {
 	return element.get_attribute_value('type').trim_space().to_lower() in ['', 'text', 'search',
-		'tel', 'url', 'email', 'password', 'date', 'month', 'week', 'time', 'datetime-local',
-		'number']
+		'tel', 'url', 'email', 'password', 'date', 'month', 'week', 'time', 'datetime-local', 'number']
 }
 
 fn layout_form_text_control_is_mutable(element &dom.Element) bool {
@@ -620,14 +617,7 @@ pub fn (n &Node) establishes_stacking_context() bool {
 		|| will_change.has_property(.backdrop_filter) || will_change.has_property(.filter) {
 		return true
 	}
-	clip_path := computed.property(.clip_path, .yes)
-	mask_image := computed.property(.mask_image, .yes)
-	if (clip_path != none
-		&& clip_path or { panic('unreachable') }.css_text.trim_space().to_lower() != 'none')
-		|| (mask_image != none
-		&& mask_image or {
-		panic('unreachable')
-	}.css_text.trim_space().to_lower() != 'none')
+	if computed.clip_path() != none || computed.mask() != none || computed.mask_image() != none
 		|| will_change.has_property(.clip_path)
 		|| will_change.has_property(.mask_image) {
 		return true
@@ -656,45 +646,42 @@ pub fn (n &Node) establishes_stacking_context() bool {
 	return computed.opacity() < 1.0 || will_change.has_property(.opacity)
 }
 
-fn will_change_has_property(computed &css.ComputedProperties, property_name string) bool {
-	return property_name in computed.will_change().names
-}
-
 // Node::computed_values_establish_absolute_positioning_containing_block().
 pub fn (n &Node) computed_values_establish_absolute_positioning_containing_block() bool {
 	computed := n.computed_values()
-	if computed.position() != .static_ || will_change_has_property(computed, 'position') {
+	will_change := computed.will_change()
+	if computed.position() != .static_ || will_change.has_property(.position) {
 		return true
 	}
-	if computed.transformations().len > 0 || will_change_has_property(computed, 'transform') {
+	if computed.transformations().len > 0 || will_change.has_property(.transform) {
 		return true
 	}
-	if computed.translate() != none || will_change_has_property(computed, 'translate') {
+	if computed.translate() != none || will_change.has_property(.translate) {
 		return true
 	}
-	if computed.rotate() != none || will_change_has_property(computed, 'rotate') {
+	if computed.rotate() != none || will_change.has_property(.rotate) {
 		return true
 	}
-	if computed.scale() != none || will_change_has_property(computed, 'scale') {
+	if computed.scale() != none || will_change.has_property(.scale) {
 		return true
 	}
-	if computed.perspective() != none || will_change_has_property(computed, 'perspective') {
+	if computed.perspective() != none || will_change.has_property(.perspective) {
 		return true
 	}
-	if (computed.filter().has_filters() || will_change_has_property(computed, 'filter'))
+	if (computed.filter().has_filters() || will_change.has_property(.filter))
 		&& !n.is_root_element() {
 		return true
 	}
 	if (computed.backdrop_filter().has_filters()
-		|| will_change_has_property(computed, 'backdrop-filter')) && !n.is_root_element() {
+		|| will_change.has_property(.backdrop_filter)) && !n.is_root_element() {
 		return true
 	}
 	if n.has_layout_containment() || n.has_paint_containment()
-		|| will_change_has_property(computed, 'contain') {
+		|| will_change.has_property(.contain) {
 		return true
 	}
 	if computed.transform_style() == .preserve_3d
-		|| will_change_has_property(computed, 'transform-style') {
+		|| will_change.has_property(.transform_style) {
 		return true
 	}
 	return false
@@ -723,35 +710,36 @@ pub fn (n &Node) establishes_a_fixed_positioning_containing_block() bool {
 		return true
 	}
 	computed := n.computed_values()
-	if computed.transformations().len > 0 || will_change_has_property(computed, 'transform') {
+	will_change := computed.will_change()
+	if computed.transformations().len > 0 || will_change.has_property(.transform) {
 		return true
 	}
-	if computed.translate() != none || will_change_has_property(computed, 'translate') {
+	if computed.translate() != none || will_change.has_property(.translate) {
 		return true
 	}
-	if computed.rotate() != none || will_change_has_property(computed, 'rotate') {
+	if computed.rotate() != none || will_change.has_property(.rotate) {
 		return true
 	}
-	if computed.scale() != none || will_change_has_property(computed, 'scale') {
+	if computed.scale() != none || will_change.has_property(.scale) {
 		return true
 	}
-	if computed.perspective() != none || will_change_has_property(computed, 'perspective') {
+	if computed.perspective() != none || will_change.has_property(.perspective) {
 		return true
 	}
-	if (computed.filter().has_filters() || will_change_has_property(computed, 'filter'))
+	if (computed.filter().has_filters() || will_change.has_property(.filter))
 		&& !n.is_root_element() {
 		return true
 	}
 	if (computed.backdrop_filter().has_filters()
-		|| will_change_has_property(computed, 'backdrop-filter')) && !n.is_root_element() {
+		|| will_change.has_property(.backdrop_filter)) && !n.is_root_element() {
 		return true
 	}
 	if n.has_layout_containment() || n.has_paint_containment()
-		|| will_change_has_property(computed, 'contain') {
+		|| will_change.has_property(.contain) {
 		return true
 	}
 	if computed.transform_style() == .preserve_3d
-		|| will_change_has_property(computed, 'transform-style') {
+		|| will_change.has_property(.transform_style) {
 		return true
 	}
 	return false
@@ -897,38 +885,37 @@ pub fn recompute_containing_blocks(root &Node) {
 
 // --- NodeWithStyle (Layout/Node.h) ---
 //
-// A layout node that has a computed style. C++ stores a resolved CSS::ComputedValues; this port holds a
-// reference to the css.ComputedProperties (the resolved property map the port already produces via the
-// StyleComputer), which exposes the layout-facing accessors (display(), overflow_x(), ...).
+// A layout node that has a computed style. As in C++, the layout-facing values
+// are resolved once when the style is applied.
 @[heap]
 pub struct NodeWithStyle {
 	Node
 pub mut:
-	computed_values_ &css.ComputedProperties = unsafe { nil }
+	computed_values_ &css.ComputedValues = unsafe { nil }
 	layout_index_    u32
 }
 
 pub fn NodeWithStyle.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &NodeWithStyle {
 	return &NodeWithStyle{
-		Node:             Node{
-			document_:  document
-			dom_node_:  dom_node
+		Node: Node{
+			document_: document
+			dom_node_: dom_node
 			has_style_: true
 		}
-		computed_values_: computed_values
+		computed_values_: css.resolve_computed_values_for_document(computed_values, document)
 	}
 }
 
-pub fn (n &NodeWithStyle) computed_values() &css.ComputedProperties {
+pub fn (n &NodeWithStyle) computed_values() &css.ComputedValues {
 	return n.computed_values_
 }
 
 pub fn (mut n NodeWithStyle) set_computed_values(computed_values &css.ComputedProperties) {
-	n.computed_values_ = computed_values
+	n.computed_values_ = css.resolve_computed_values_for_document(computed_values, n.document_)
 }
 
 pub fn (mut n NodeWithStyle) apply_style(computed_style &css.ComputedProperties) {
-	n.computed_values_ = computed_style
+	n.computed_values_ = css.resolve_computed_values_for_document(computed_style, n.document_)
 	n.propagate_style_to_anonymous_wrappers()
 	if metrics := unsafe { &Node(n) }.as_node_with_style_and_box_model_metrics() {
 		metrics.propagate_style_along_continuation(computed_style)
@@ -942,6 +929,7 @@ fn (mut n NodeWithStyle) propagate_style_to_anonymous_wrappers() {
 		if parent.is_table_wrapper() && node.display().is_table_inside() {
 			mut table_style := unsafe { &css.ComputedProperties(n.computed_values_) }
 			wrapper_style := table_style.take_properties_for_table_wrapper()
+			n.computed_values_ = css.resolve_computed_values_for_document(table_style, n.document_)
 			if wrapper_styled := parent.as_node_with_style() {
 				mut mutable_wrapper := unsafe { &NodeWithStyle(wrapper_styled) }
 				mutable_wrapper.set_computed_values(wrapper_style)
@@ -954,9 +942,9 @@ fn (mut n NodeWithStyle) propagate_style_to_anonymous_wrappers() {
 			continue
 		}
 		child_styled := child.as_node_with_style() or { continue }
-		mut child_style := unsafe { &css.ComputedProperties(child_styled.computed_values_) }
-		child_style.inherit_from_for_layout(n.computed_values_)
 		mut mutable_child := unsafe { &NodeWithStyle(child_styled) }
+		mut child_values := unsafe { &css.MutableComputedValues(mutable_child.computed_values_) }
+		child_values.inherit_from(n.computed_values_)
 		mutable_child.propagate_style_to_anonymous_wrappers()
 	}
 }
@@ -1101,13 +1089,13 @@ pub fn InlineNode.new(document &dom.Document, dom_node ?&dom.Node, computed_valu
 	return &InlineNode{
 		NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
 			NodeWithStyle: NodeWithStyle{
-				Node:             Node{
-					document_:       document
-					dom_node_:       dom_node
-					has_style_:      true
+				Node: Node{
+					document_: document
+					dom_node_: dom_node
+					has_style_: true
 					is_inline_node_: true
 				}
-				computed_values_: computed_values
+				computed_values_: css.resolve_computed_values_for_document(computed_values, document)
 			}
 		}
 	}
@@ -1135,13 +1123,13 @@ pub fn BreakNode.new(document &dom.Document, dom_node &dom.Node, computed_values
 	return &BreakNode{
 		NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
 			NodeWithStyle: NodeWithStyle{
-				Node:             Node{
-					document_:      document
-					dom_node_:      dom_node
-					has_style_:     true
+				Node: Node{
+					document_: document
+					dom_node_: dom_node
+					has_style_: true
 					is_break_node_: true
 				}
-				computed_values_: computed_values
+				computed_values_: css.resolve_computed_values_for_document(computed_values, document)
 			}
 		}
 	}
@@ -1177,23 +1165,24 @@ pub mut:
 @[heap]
 pub struct IntrinsicSizes {
 pub mut:
-	min_content_width  ?CSSPixels
-	max_content_width  ?CSSPixels
-	min_content_height map[int]?CSSPixels
-	max_content_height map[int]?CSSPixels
+	min_content_width         ?CSSPixels
+	max_content_width         ?CSSPixels
+	min_content_height        map[int]?CSSPixels
+	max_content_height        map[int]?CSSPixels
+	table_grid_width_measures ?&TableGridIntrinsicWidths
 }
 
 pub fn Box.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &Box {
 	return &Box{
 		NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
 			NodeWithStyle: NodeWithStyle{
-				Node:             Node{
-					document_:  document
-					dom_node_:  dom_node
+				Node: Node{
+					document_: document
+					dom_node_: dom_node
 					has_style_: true
-					is_box_:    true
+					is_box_: true
 				}
-				computed_values_: computed_values
+				computed_values_: css.resolve_computed_values_for_document(computed_values, document)
 			}
 		}
 	}
@@ -1238,7 +1227,7 @@ pub fn (n &Box) has_auto_content_box_size() bool {
 pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
 	if unsafe { &Node(n) }.has_size_containment() {
 		return css.SizeWithAspectRatio{
-			width:  CSSPixels.new(0)
+			width: CSSPixels.new(0)
 			height: CSSPixels.new(0)
 		}
 	}
@@ -1299,14 +1288,14 @@ pub fn BlockContainer.new(document &dom.Document, dom_node ?&dom.Node, computed_
 		Box: Box{
 			NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
 				NodeWithStyle: NodeWithStyle{
-					Node:             Node{
-						document_:           document
-						dom_node_:           dom_node
-						has_style_:          true
-						is_box_:             true
+					Node: Node{
+						document_: document
+						dom_node_: dom_node
+						has_style_: true
+						is_box_: true
 						is_block_container_: true
 					}
-					computed_values_: computed_values
+					computed_values_: css.resolve_computed_values_for_document(computed_values, document)
 				}
 			}
 		}
@@ -1339,15 +1328,15 @@ pub fn ListItemBox.new(document &dom.Document, dom_node ?&dom.Node, computed_val
 			Box: Box{
 				NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
 					NodeWithStyle: NodeWithStyle{
-						Node:             Node{
-							document_:           document
-							dom_node_:           dom_node
-							has_style_:          true
-							is_box_:             true
+						Node: Node{
+							document_: document
+							dom_node_: dom_node
+							has_style_: true
+							is_box_: true
 							is_block_container_: true
-							is_list_item_box_:   true
+							is_list_item_box_: true
 						}
-						computed_values_: computed_values
+						computed_values_: css.resolve_computed_values_for_document(computed_values, document)
 					}
 				}
 			}
@@ -1460,15 +1449,15 @@ pub fn Viewport.new(document &dom.Document, computed_values &css.ComputedPropert
 			Box: Box{
 				NodeWithStyleAndBoxModelMetrics: NodeWithStyleAndBoxModelMetrics{
 					NodeWithStyle: NodeWithStyle{
-						Node:             Node{
-							document_:           document
-							dom_node_:           document_node
-							has_style_:          true
-							is_box_:             true
+						Node: Node{
+							document_: document
+							dom_node_: document_node
+							has_style_: true
+							is_box_: true
 							is_block_container_: true
-							is_viewport_:        true
+							is_viewport_: true
 						}
-						computed_values_: computed_values
+						computed_values_: css.resolve_computed_values_for_document(computed_values, document)
 					}
 				}
 			}
@@ -1492,7 +1481,7 @@ fn (mut builder ViewportTextBlockBuilder) flush() {
 		return
 	}
 	builder.text_blocks << TextBlock{
-		text:      builder.current_text
+		text: builder.current_text
 		positions: builder.text_positions.clone()
 	}
 	builder.current_start_position = 0
@@ -1516,7 +1505,7 @@ fn collect_viewport_text_blocks(node &Node, mut builder ViewportTextBlockBuilder
 		if dom_node := text_node.dom_node() {
 			if dom_node.is_text() && !dom_node.is_inert() {
 				builder.text_positions << TextPosition{
-					dom_node:     unsafe { &dom.Text(dom_node) }
+					dom_node: unsafe { &dom.Text(dom_node) }
 					start_offset: if builder.text_positions.len == 0 {
 						0
 					} else {
@@ -1581,9 +1570,9 @@ pub fn (n &TextNode) font_for_rendering() &platform.Font {
 
 pub fn TextNode.new(document &dom.Document, dom_text_node &dom.Node, source_text string) &TextNode {
 	return &TextNode{
-		Node:         Node{
-			document_:     document
-			dom_node_:     dom_text_node
+		Node: Node{
+			document_: document
+			dom_node_: dom_text_node
 			is_text_node_: true
 		}
 		source_text_: source_text

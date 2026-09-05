@@ -4,11 +4,10 @@
 
 // Translation of Libraries/LibWeb/HTML/Canvas/CanvasState.{h,cpp}.
 //
-// This is the canvas drawing-state stack — the genuine state-management logic of the 2D context.
-// The actual pixel operations live in Gfx::Painter, which is not translated in this port; the
-// C++ save()/restore() also call painter->save()/restore(), and those calls are omitted here
-// (documented at each site). Gfx value types (Color, AffineTransform) are represented directly;
-// Gfx::PaintStyle / Filter / FontCascadeList and CanvasPattern are held opaquely.
+// This is the canvas drawing-state stack. The software bitmap context stores
+// clipping and transforms in DrawingState, so it does not need Gfx::Painter's
+// duplicate save stack. The reset callback preserves the virtual
+// reset_to_default_state() dispatch performed by the C++ implementation.
 module html
 
 import dom
@@ -261,8 +260,17 @@ pub mut:
 	drawing_state DrawingState
 mut:
 	drawing_state_stack []DrawingState
+	reset_target        voidptr
+	reset_callback      ?CanvasStateResetCallback
 	// https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-context-lost
 	context_lost_ bool
+}
+
+pub type CanvasStateResetCallback = fn(voidptr)
+
+pub fn (mut state CanvasState) set_reset_callback(target voidptr, callback CanvasStateResetCallback) {
+	state.reset_target = target
+	state.reset_callback = callback
 }
 
 // https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-save
@@ -287,9 +295,12 @@ pub fn (mut state CanvasState) restore() {
 
 // https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-reset
 pub fn (mut state CanvasState) reset() {
-	// Reset the rendering context to its default state. The C++ delegates to the concrete
-	// context's reset_to_default_state(), which also resets the backing bitmap (painter-side,
-	// out of scope here).
+	// C++ delegates through the concrete CanvasRenderingContext's virtual
+	// reset_to_default_state(), which also clears the current path.
+	if callback := state.reset_callback {
+		callback(state.reset_target)
+		return
+	}
 	state.reset_drawing_state()
 	state.clear_drawing_state_stack()
 }

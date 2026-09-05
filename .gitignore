@@ -1,3 +1,5 @@
 /Build/
 *.v3cc.*/
 /tools/layout_corpus
+# Compiled V test binaries dropped next to their _test.v source
+*_test

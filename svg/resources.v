@@ -110,10 +110,10 @@ pub fn clone_element_tree(element Element) Element {
 		cloned_children << clone_element_tree(child)
 	}
 	return Element{
-		tag:        element.tag
+		tag: element.tag
 		attributes: element.attributes.clone()
-		children:   cloned_children
-		text:       element.text
+		children: cloned_children
+		text: element.text
 	}
 }
 
@@ -145,28 +145,25 @@ pub:
 }
 
 pub fn (image DecodedImageData) intrinsic_width() ?f64 {
-	if width := image.width {
-		return width
-	}
-	if box := image.viewbox {
-		return box.width
-	}
-	return none
+	return image.width
 }
 
 pub fn (image DecodedImageData) intrinsic_height() ?f64 {
-	if height := image.height {
-		return height
-	}
-	if box := image.viewbox {
-		return box.height
-	}
-	return none
+	return image.height
 }
 
 pub fn (image DecodedImageData) intrinsic_aspect_ratio() ?f64 {
-	width := image.intrinsic_width() or { return none }
-	height := image.intrinsic_height() or { return none }
-	if height == 0 { return none }
-	return width / height
+	if width := image.width {
+		if height := image.height {
+			if width > 0 && height > 0 {
+				return width / height
+			}
+		}
+	}
+	if box := image.viewbox {
+		if box.width != 0 && box.height != 0 {
+			return box.width / box.height
+		}
+	}
+	return none
 }

@@ -46,7 +46,7 @@ mut:
 	clear_depth_                        f64 = 1.0
 	clear_stencil_                      int
 	color_mask_                         [4]bool = [true, true, true, true]!
-	depth_mask_                         bool    = true
+	depth_mask_                         bool = true
 	viewport_                           [4]int
 	scissor_                            [4]int
 	unpack_flip_y_                      bool
@@ -59,18 +59,19 @@ mut:
 	generic_parameters_                 map[GLenum]WebGLParameterValue
 	uniform_values_                     map[GLuint][]f32
 	vertex_attrib_values_               map[GLuint][]f32
+	vertex_attrib_states_               map[GLuint]VertexAttribState
 }
 
 pub fn WebGLRenderingContext.new(version WebGLVersion, attributes WebGLContextAttributes, supported_native_extensions []string) &WebGLRenderingContext {
 	native := OpenGLContext.new(version, DrawingBufferOptions{
-		depth:     attributes.depth
-		stencil:   attributes.stencil
+		depth: attributes.depth
+		stencil: attributes.stencil
 		antialias: attributes.antialias
 	}, supported_native_extensions)
 	return &WebGLRenderingContext{
-		version:    version
+		version: version
 		attributes: attributes
-		native:     native
+		native: native
 	}
 }
 
@@ -85,18 +86,24 @@ fn (mut context WebGLRenderingContext) allocate_handle() GLuint {
 }
 
 fn (mut context WebGLRenderingContext) set_error(error_value GLenum) {
-	if context.error_ == no_error { context.error_ = error_value }
+	if context.error_ == no_error {
+		context.error_ = error_value
+	}
 }
 
 pub fn (mut context WebGLRenderingContext) get_error() GLenum {
-	if context.context_lost_ { return context_lost_webgl }
+	if context.context_lost_ {
+		return context_lost_webgl
+	}
 	error_value := context.error_
 	context.error_ = no_error
 	return error_value
 }
 
 pub fn (context &WebGLRenderingContext) get_context_attributes() ?WebGLContextAttributes {
-	if context.context_lost_ { return none }
+	if context.context_lost_ {
+		return none
+	}
 	return context.attributes
 }
 
@@ -208,7 +215,7 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 	handle := context.allocate_handle()
 	shader := &WebGLShader{
 		object: new_object(context.identity(), handle)
-		type_:  type_
+		type_: type_
 	}
 	unsafe {
 		context.shaders[handle] = shader
@@ -291,21 +298,29 @@ pub fn (mut context WebGLRenderingContext) buffer_sub_data(target GLenum, offset
 		context.set_error(invalid_value)
 		return
 	}
-	for index, byte in data {
-		mutable_buffer.data_[int(offset) + index] = byte
-	}
+	copy(mut mutable_buffer.data_[int(offset)..int(offset) + data.len], data)
 	context.native.dispatch('buffer_sub_data', target, offset, data.len)
 }
 
 pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
 	if value := buffer {
 		mut mutable_value := unsafe { &WebGLBuffer(value) }
-		if !context.owns(&value.object) { return }
+		if !context.owns(&value.object) {
+			return
+		}
 		handle := value.object.handle_
 		mutable_value.object.invalidate()
 		context.buffers.delete(handle)
 		for target, bound in context.bound_buffers {
 			if bound == handle { context.bound_buffers.delete(target) }
+		}
+		for index, state in context.vertex_attrib_states_ {
+			if state.buffer_handle == handle {
+				context.vertex_attrib_states_[index] = VertexAttribState{
+					...state
+					buffer_handle: 0
+				}
+			}
 		}
 		context.native.dispatch('delete_buffer', handle)
 	}
@@ -336,12 +351,16 @@ pub fn (mut context WebGLRenderingContext) compile_shader(mut shader WebGLShader
 }
 
 pub fn (context &WebGLRenderingContext) get_shader_source(shader &WebGLShader) ?string {
-	if !context.owns(&shader.object) { return none }
+	if !context.owns(&shader.object) {
+		return none
+	}
 	return shader.source_
 }
 
 pub fn (context &WebGLRenderingContext) get_shader_info_log(shader &WebGLShader) ?string {
-	if !context.owns(&shader.object) { return none }
+	if !context.owns(&shader.object) {
+		return none
+	}
 	return shader.info_log_
 }
 
@@ -441,10 +460,14 @@ pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebG
 		context.set_error(invalid_operation)
 		return none
 	}
-	if name.contains('[') && !name.ends_with('[0]') { return none }
-	if existing := program.uniform_locations[name] { return existing }
+	if name.contains('[') && !name.ends_with('[0]') {
+		return none
+	}
+	if existing := program.uniform_locations[name] {
+		return existing
+	}
 	location := &WebGLUniformLocation{
-		handle_:           GLuint(program.uniform_locations.len)
+		handle_: GLuint(program.uniform_locations.len)
 		parent_program_id: program.object.handle_
 	}
 	unsafe {

@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of DOMParser.{h,cpp}. TrustedHTML is represented as a string;
-// HTML parsing delegates to HTMLParser and XML parsing implements the XML
+// Translation of DOMParser.{h,cpp}. HTML parsing delegates to HTMLParser and XML parsing implements the XML
 // document-builder path used by DOMParser.
 module html
 
@@ -482,15 +481,18 @@ pub fn parse_xml_fragment_with_options(context &dom.Element, input string, allow
 }
 
 pub fn (parser &DOMParser) parse_from_string(input string, type_ DOMParserSupportedType) !&dom.Document {
+	compliant_string := parser.associated_document.trusted_types_compliant_html(input,
+		'dom-parser-parse-from-string')!
 	mut document := dom.Document.create(dom.URL{ value: parser.associated_document.url_string() })
+	install_document_fragment_parsing_hook(document)
 	document.set_content_type(type_.content_type())
 	if type_ == .text_html {
 		document.set_document_type(.html)
-		mut html_parser := HTMLParser.create(document, input)
+		mut html_parser := HTMLParser.create(document, compliant_string)
 		html_parser.run()
 	} else {
 		document.set_document_type(.xml)
-		parse_xml_document_source(document, input) or {
+		parse_xml_document_source(document, compliant_string) or {
 			mut document_node := unsafe { &dom.Node(document) }
 			document_node.remove_all_children(true)
 			parser_error := document.create_element_ns(parser_error_namespace_uri, 'parsererror')!

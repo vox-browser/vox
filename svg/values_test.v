@@ -22,6 +22,12 @@ fn test_number_and_length_read_only_rules() {
 	length.set_value(5)!
 	assert length.value == 5
 	assert length.unit == .number
+	animated := AnimatedLength.create(SvgLength{ value: 8, unit: .px })
+	assert animated.base_val() != animated.anim_val()
+	assert animated.anim_val().read_only
+	mut animated_base := animated.base_val()
+	animated_base.set_value(9)!
+	assert animated.base_val().value == 9
 }
 
 fn test_number_list_webidl_algorithms() {
@@ -115,6 +121,11 @@ fn test_typed_lists_and_animated_rect() {
 	assert transforms.initialize(Transform{ kind: .skew_x })!.kind == .skew_x
 	transforms.clear()!
 	assert transforms.items.len == 0
+	animated_numbers := AnimatedNumberList.create(NumberList{ items: [1.0] })
+	assert animated_numbers.base_val() == animated_numbers.anim_val()
+	mut animated_number_base := animated_numbers.base_val()
+	animated_number_base.append_item(2)!
+	assert animated_numbers.anim_val().items == [1.0, 2.0]
 	mut rect := AnimatedRect{
 		nulled: true
 	}

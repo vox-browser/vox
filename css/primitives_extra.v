@@ -5,7 +5,7 @@ import strings
 
 // Extra low-level CSS primitive/layout helpers translated from the small LibWeb/CSS
 // primitive .cpp files. The core types live in css.v, misc_values.v, url_system.v,
-// and value_type_color.v; keep this file to missing helpers and explicit stubs.
+// and value_type_color.v; this file keeps their DOM/layout integration helpers.
 
 fn css_pixel_rect_from_dom_rect(rect dom.Rect) CSSPixelRect {
 	return CSSPixelRect.new(rect.x, rect.y, rect.width, rect.height)
@@ -214,6 +214,9 @@ pub fn LengthPercentage.from_style_value_logic(style_value StyleValue) LengthPer
 }
 
 pub fn LengthPercentageOrAuto.from_style_value_logic(style_value StyleValue) LengthPercentageOrAuto {
+	if style_value is KeywordStyleValue && style_value.keyword() == .auto {
+		return LengthPercentageOrAuto.make_auto()
+	}
 	return LengthPercentageOrAuto.from_length_percentage(LengthPercentage.from_style_value_logic(style_value))
 }
 

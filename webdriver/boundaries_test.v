@@ -35,9 +35,9 @@ fn test_script_clone_timer_and_screenshot_boundaries() {
 	assert !timer.tick(9)
 	assert timer.tick(1)
 	frame := FramebufferImage{
-		width:  2
+		width: 2
 		height: 2
-		rgba:   [u8(1), 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+		rgba: [u8(1), 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 	}
 	crop := draw_bounding_box_from_framebuffer(frame, Rect{ x: 1, width: 1, height: 2 }) or {
 		panic(err)
@@ -48,9 +48,9 @@ fn test_script_clone_timer_and_screenshot_boundaries() {
 
 fn test_screenshot_paints_from_origin_to_viewport_edge_and_rejects_empty_canvas() {
 	frame := FramebufferImage{
-		width:  3
+		width: 3
 		height: 1
-		rgba:   [u8(1), 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+		rgba: [u8(1), 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 	}
 	crop := draw_bounding_box_from_framebuffer(frame, Rect{ x: 1, width: 1, height: 1 }) or {
 		panic(err)
@@ -84,4 +84,18 @@ fn test_upstream_script_completion_helpers_observe_timeout() {
 	expired.start(1)
 	expired.tick(1)
 	assert fire_completion_when_resolved(result, mut expired).state == .pending
+}
+
+fn test_heap_timer_timed_out_flag_matches_upstream_lifecycle() {
+	mut manually_fired := HeapTimer{}
+	manually_fired.start(10)
+	assert manually_fired.stop_and_fire_timeout_handler()
+	assert !manually_fired.is_timed_out()
+
+	mut expired := HeapTimer{}
+	expired.start(1)
+	assert expired.tick(1)
+	assert expired.is_timed_out()
+	expired.start(100)
+	assert expired.is_timed_out()
 }

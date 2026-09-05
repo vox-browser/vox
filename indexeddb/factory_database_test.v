@@ -7,7 +7,7 @@ fn create_people_database() !(&IDBFactory, &IDBDatabase) {
 	mut connection := open.connection
 	mut upgrade := open.upgrade_transaction
 	mut people := connection.create_object_store(mut upgrade, 'people', IDBObjectStoreParameters{
-		key_path:       'id'
+		key_path: 'id'
 		auto_increment: true
 	})!
 	people.create_index('by_name', 'name', IDBIndexParameters{ unique: true })!
@@ -59,9 +59,19 @@ fn test_version_errors_blocked_delete_and_upgrade_abort_restore_schema() {
 	mut upgrade_request := factory.open('people-db', u64(2))!
 	mut connection := upgrade_request.connection
 	mut transaction := upgrade_request.upgrade_transaction
+	mut people := transaction.object_store('people')!
+	mut by_name := people.index('by_name')!
+	by_name.rename('by_person')!
+	people.rename('renamed_people')!
+	connection.delete_object_store(mut transaction, 'renamed_people')!
 	connection.create_object_store(mut transaction, 'temporary', IDBObjectStoreParameters{})!
 	upgrade_request.abort_upgrade('AbortError: test')!
 	assert 'temporary' !in first.data.stores
+	assert 'renamed_people' !in first.data.stores
+	assert 'people' in first.data.stores
+	restored_people := first.data.stores['people'] or { panic('people store was not restored') }
+	assert 'by_name' in restored_people.indexes
+	assert 'by_person' !in restored_people.indexes
 	assert first.data.version == 1
 	first.close()
 
@@ -88,8 +98,7 @@ fn test_aborting_initial_upgrade_removes_database_and_scope_names_are_deduplicat
 	mut reopened_upgrade := reopened.upgrade_transaction
 	reopened_connection.create_object_store(mut reopened_upgrade, 'items', IDBObjectStoreParameters{})!
 	reopened.finish_upgrade()!
-	mut transaction :=
-		reopened_connection.transaction(['items', 'items', 'items'], .readonly, IDBTransactionOptions{})!
+	mut transaction := reopened_connection.transaction(['items', 'items', 'items'], .readonly, IDBTransactionOptions{})!
 	assert transaction.object_store_names() == ['items']
 	transaction.commit()!
 }
@@ -102,11 +111,31 @@ fn test_schema_name_lists_use_utf16_code_unit_order() {
 	supplementary := rune(0x10000).str()
 	bmp_after_surrogates := rune(0xe000).str()
 	connection.create_object_store(mut upgrade, bmp_after_surrogates, IDBObjectStoreParameters{})!
-	mut store :=
-		connection.create_object_store(mut upgrade, supplementary, IDBObjectStoreParameters{})!
+	mut store := connection.create_object_store(mut upgrade, supplementary, IDBObjectStoreParameters{})!
 	store.create_index(bmp_after_surrogates, 'a', IDBIndexParameters{})!
 	store.create_index(supplementary, 'b', IDBIndexParameters{})!
 	assert connection.object_store_names() == [supplementary, bmp_after_surrogates]
 	assert upgrade.object_store_names() == [supplementary, bmp_after_surrogates]
 	assert store.index_names() == [supplementary, bmp_after_surrogates]
+}
+
+fn test_factories_for_the_same_storage_key_share_the_database_registry() {
+	storage_key := 'shared-factory-storage'
+	DatabaseData.delete_for_key_and_name(storage_key, 'shared')
+	mut first_factory := IDBFactory.create(storage_key)!
+	mut open := first_factory.open('shared', u64(1))!
+	mut first_connection := open.connection
+	mut upgrade := open.upgrade_transaction
+	first_connection.create_object_store(mut upgrade, 'items', IDBObjectStoreParameters{})!
+	open.finish_upgrade()!
+
+	mut second_factory := IDBFactory.create(storage_key)!
+	reopened := second_factory.open('shared', none)!
+	assert reopened.old_version == 1
+	assert reopened.connection.object_store_names() == ['items']
+	assert voidptr(reopened.connection.data) == voidptr(first_connection.data)
+	first_connection.close()
+	mut second_connection := reopened.connection
+	second_connection.close()
+	second_factory.delete_database('shared')
 }

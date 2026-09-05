@@ -41,7 +41,7 @@ fn test_is_network_error_requires_all_conditions() {
 	assert r.is_network_error() == false
 	// An error response with a body is not a network error.
 	mut r2 := Response.network_error('x')
-	r2.body = 'data'.bytes()
+	r2.set_body_bytes('data'.bytes())
 	assert r2.is_network_error() == false
 }
 
@@ -63,10 +63,16 @@ fn test_response_location_url_clone_and_cors_classification() {
 	response.status = 302
 	response.url_list = [dom.URL{'https://example.test/base'}]
 	response.header_list.append(http.Header{ name: 'Location', value: '/next' })
+	response.redirect_taint = .cross_site
+	response.method = 'POST'
+	response.network_error_message = 'outer-only metadata'
 	assert response.location_url('frag')!.url?.serialize() == 'https://example.test/next#frag'
 	clone := response.clone()
 	assert clone != response
 	assert clone.header_list.get('Location')? == '/next'
+	assert clone.redirect_taint == .same_origin
+	assert clone.method == ''
+	assert clone.network_error_message == none
 	assert response.is_cors_same_origin()
 	assert !response.is_cors_cross_origin()
 }
@@ -77,9 +83,15 @@ fn test_filtered_responses_hide_headers_and_unsafe_response() {
 	internal.header_list.append(http.Header{ name: 'Set-Cookie', value: 'a=1' })
 	internal.header_list.append(http.Header{ name: 'X-Visible', value: 'yes' })
 	internal.cors_exposed_header_name_list = ['x-visible']
+	internal.redirect_taint = .cross_site
+	internal.method = 'POST'
+	internal.network_error_message = 'internal-only metadata'
 	basic := filtered_response(internal, .basic)
 	assert basic.header_list.contains('Content-Type')
 	assert !basic.header_list.contains('Set-Cookie')
+	assert basic.fetch_response_redirect_taint() == .same_origin
+	assert basic.fetch_response_method() == ''
+	assert basic.fetch_response_network_error_message() == none
 	cors_response := filtered_response(internal, .cors)
 	assert cors_response.header_list.contains('X-Visible')
 	opaque := filtered_response(internal, .opaque)

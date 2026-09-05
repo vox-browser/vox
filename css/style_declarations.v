@@ -1,6 +1,7 @@
 module css
 
 import dom
+import math
 
 pub enum ComputedDeclarationFlag {
 	no
@@ -15,396 +16,7 @@ pub enum ReadonlyDeclarationFlag {
 pub fn PropertyNameAndID.from_id(property_id PropertyID) PropertyNameAndID {
 	return PropertyNameAndID{
 		name_: string_from_property_id(property_id)
-		id_:   property_id
-	}
-}
-
-pub fn string_from_property_id(property_id PropertyID) string {
-	return match property_id {
-		.accent_color { 'accent-color' }
-		.anchor_name { 'anchor-name' }
-		.anchor_scope { 'anchor-scope' }
-		.animation_composition { 'animation-composition' }
-		.animation_delay { 'animation-delay' }
-		.animation_direction { 'animation-direction' }
-		.animation_duration { 'animation-duration' }
-		.animation_fill_mode { 'animation-fill-mode' }
-		.animation_iteration_count { 'animation-iteration-count' }
-		.animation_name { 'animation-name' }
-		.animation_play_state { 'animation-play-state' }
-		.animation_timeline { 'animation-timeline' }
-		.animation_timing_function { 'animation-timing-function' }
-		.aspect_ratio { 'aspect-ratio' }
-		.background_color { 'background-color' }
-		.background_image { 'background-image' }
-		.background_attachment { 'background-attachment' }
-		.background_blend_mode { 'background-blend-mode' }
-		.background_clip { 'background-clip' }
-		.background_origin { 'background-origin' }
-		.background_position_x { 'background-position-x' }
-		.background_position_y { 'background-position-y' }
-		.background_repeat { 'background-repeat' }
-		.background_size { 'background-size' }
-		.block_size { 'block-size' }
-		.bottom { 'bottom' }
-		.border_bottom_color { 'border-bottom-color' }
-		.border_bottom_style { 'border-bottom-style' }
-		.border_bottom_width { 'border-bottom-width' }
-		.border_collapse { 'border-collapse' }
-		.border_left_color { 'border-left-color' }
-		.border_left_style { 'border-left-style' }
-		.border_left_width { 'border-left-width' }
-		.border_right_color { 'border-right-color' }
-		.border_right_style { 'border-right-style' }
-		.border_right_width { 'border-right-width' }
-		.border_top_color { 'border-top-color' }
-		.border_top_style { 'border-top-style' }
-		.border_top_width { 'border-top-width' }
-		.border_bottom_left_radius { 'border-bottom-left-radius' }
-		.border_bottom_right_radius { 'border-bottom-right-radius' }
-		.border_block_end_color { 'border-block-end-color' }
-		.border_block_end_style { 'border-block-end-style' }
-		.border_block_end_width { 'border-block-end-width' }
-		.border_block_start_color { 'border-block-start-color' }
-		.border_block_start_style { 'border-block-start-style' }
-		.border_block_start_width { 'border-block-start-width' }
-		.border_end_end_radius { 'border-end-end-radius' }
-		.border_end_start_radius { 'border-end-start-radius' }
-		.border_inline_end_color { 'border-inline-end-color' }
-		.border_inline_end_style { 'border-inline-end-style' }
-		.border_inline_end_width { 'border-inline-end-width' }
-		.border_inline_start_color { 'border-inline-start-color' }
-		.border_inline_start_style { 'border-inline-start-style' }
-		.border_inline_start_width { 'border-inline-start-width' }
-		.border_start_end_radius { 'border-start-end-radius' }
-		.border_start_start_radius { 'border-start-start-radius' }
-		.border_top_left_radius { 'border-top-left-radius' }
-		.border_top_right_radius { 'border-top-right-radius' }
-		.border_image_outset { 'border-image-outset' }
-		.border_image_repeat { 'border-image-repeat' }
-		.border_image_slice { 'border-image-slice' }
-		.border_image_source { 'border-image-source' }
-		.border_image_width { 'border-image-width' }
-		.border_spacing { 'border-spacing' }
-		.box_sizing { 'box-sizing' }
-		.caption_side { 'caption-side' }
-		.caret_color { 'caret-color' }
-		.clear { 'clear' }
-		.clip_rule { 'clip-rule' }
-		.color { 'color' }
-		.color_interpolation { 'color-interpolation' }
-		.color_scheme { 'color-scheme' }
-		.content_visibility { 'content-visibility' }
-		.contain { 'contain' }
-		.container_type { 'container-type' }
-		.direction { 'direction' }
-		.empty_cells { 'empty-cells' }
-		.corner_bottom_left_shape { 'corner-bottom-left-shape' }
-		.corner_bottom_right_shape { 'corner-bottom-right-shape' }
-		.corner_end_end_shape { 'corner-end-end-shape' }
-		.corner_end_start_shape { 'corner-end-start-shape' }
-		.corner_start_end_shape { 'corner-start-end-shape' }
-		.corner_start_start_shape { 'corner-start-start-shape' }
-		.corner_top_left_shape { 'corner-top-left-shape' }
-		.corner_top_right_shape { 'corner-top-right-shape' }
-		.fill_opacity { 'fill-opacity' }
-		.fill_rule { 'fill-rule' }
-		.flood_color { 'flood-color' }
-		.flood_opacity { 'flood-opacity' }
-		.float_ { 'float' }
-		.font_feature_settings { 'font-feature-settings' }
-		.font_kerning { 'font-kerning' }
-		.font_language_override { 'font-language-override' }
-		.font_optical_sizing { 'font-optical-sizing' }
-		.font_style { 'font-style' }
-		.font_variant_caps { 'font-variant-caps' }
-		.font_variant_emoji { 'font-variant-emoji' }
-		.font_variant_position { 'font-variant-position' }
-		.font_variation_settings { 'font-variation-settings' }
-		.font_weight { 'font-weight' }
-		.font_width { 'font-width' }
-		.height { 'height' }
-		.flex_grow { 'flex-grow' }
-		.flex_shrink { 'flex-shrink' }
-		.flex_direction { 'flex-direction' }
-		.flex_wrap { 'flex-wrap' }
-		.align_content { 'align-content' }
-		.align_items { 'align-items' }
-		.align_self { 'align-self' }
-		.justify_content { 'justify-content' }
-		.justify_items { 'justify-items' }
-		.justify_self { 'justify-self' }
-		.appearance { 'appearance' }
-		.column_span { 'column-span' }
-		.column_count { 'column-count' }
-		.column_width { 'column-width' }
-		.column_height { 'column-height' }
-		.column_gap { 'column-gap' }
-		.row_gap { 'row-gap' }
-		.image_rendering { 'image-rendering' }
-		.inline_size { 'inline-size' }
-		.inset_block_end { 'inset-block-end' }
-		.inset_block_start { 'inset-block-start' }
-		.inset_inline_end { 'inset-inline-end' }
-		.inset_inline_start { 'inset-inline-start' }
-		.isolation { 'isolation' }
-		.left { 'left' }
-		.letter_spacing { 'letter-spacing' }
-		.line_height { 'line-height' }
-		.list_style_image { 'list-style-image' }
-		.list_style_position { 'list-style-position' }
-		.mask_clip { 'mask-clip' }
-		.mask_composite { 'mask-composite' }
-		.mask_image { 'mask-image' }
-		.mask_mode { 'mask-mode' }
-		.mask_origin { 'mask-origin' }
-		.mask_position { 'mask-position' }
-		.mask_repeat { 'mask-repeat' }
-		.mask_size { 'mask-size' }
-		.margin_block_end { 'margin-block-end' }
-		.margin_block_start { 'margin-block-start' }
-		.margin_bottom { 'margin-bottom' }
-		.margin_inline_end { 'margin-inline-end' }
-		.margin_inline_start { 'margin-inline-start' }
-		.margin_left { 'margin-left' }
-		.margin_right { 'margin-right' }
-		.margin_top { 'margin-top' }
-		.mask_type { 'mask-type' }
-		.math_depth { 'math-depth' }
-		.math_shift { 'math-shift' }
-		.math_style { 'math-style' }
-		.max_block_size { 'max-block-size' }
-		.max_height { 'max-height' }
-		.max_inline_size { 'max-inline-size' }
-		.max_width { 'max-width' }
-		.min_block_size { 'min-block-size' }
-		.min_height { 'min-height' }
-		.min_inline_size { 'min-inline-size' }
-		.min_width { 'min-width' }
-		.mix_blend_mode { 'mix-blend-mode' }
-		.object_fit { 'object-fit' }
-		.object_position { 'object-position' }
-		.opacity { 'opacity' }
-		.order { 'order' }
-		.orphans { 'orphans' }
-		.overflow_block { 'overflow-block' }
-		.overflow_clip_margin_block_end { 'overflow-clip-margin-block-end' }
-		.overflow_clip_margin_block_start { 'overflow-clip-margin-block-start' }
-		.overflow_clip_margin_bottom { 'overflow-clip-margin-bottom' }
-		.overflow_clip_margin_inline_end { 'overflow-clip-margin-inline-end' }
-		.overflow_clip_margin_inline_start { 'overflow-clip-margin-inline-start' }
-		.overflow_clip_margin_left { 'overflow-clip-margin-left' }
-		.overflow_clip_margin_right { 'overflow-clip-margin-right' }
-		.overflow_clip_margin_top { 'overflow-clip-margin-top' }
-		.overflow_inline { 'overflow-inline' }
-		.overflow_wrap { 'overflow-wrap' }
-		.outline_color { 'outline-color' }
-		.outline_offset { 'outline-offset' }
-		.outline_style { 'outline-style' }
-		.outline_width { 'outline-width' }
-		.overflow_x { 'overflow-x' }
-		.overflow_y { 'overflow-y' }
-		.perspective { 'perspective' }
-		.perspective_origin { 'perspective-origin' }
-		.pointer_events { 'pointer-events' }
-		.paint_order { 'paint-order' }
-		.padding_block_end { 'padding-block-end' }
-		.padding_block_start { 'padding-block-start' }
-		.padding_bottom { 'padding-bottom' }
-		.padding_inline_end { 'padding-inline-end' }
-		.padding_inline_start { 'padding-inline-start' }
-		.padding_left { 'padding-left' }
-		.padding_right { 'padding-right' }
-		.padding_top { 'padding-top' }
-		.position { 'position' }
-		.position_anchor { 'position-anchor' }
-		.position_area { 'position-area' }
-		.position_try_fallbacks { 'position-try-fallbacks' }
-		.position_try_order { 'position-try-order' }
-		.position_visibility { 'position-visibility' }
-		.shape_margin { 'shape-margin' }
-		.shape_image_threshold { 'shape-image-threshold' }
-		.shape_rendering { 'shape-rendering' }
-		.stop_color { 'stop-color' }
-		.stop_opacity { 'stop-opacity' }
-		.stroke_linecap { 'stroke-linecap' }
-		.stroke_linejoin { 'stroke-linejoin' }
-		.stroke_miterlimit { 'stroke-miterlimit' }
-		.stroke_opacity { 'stroke-opacity' }
-		.stroke_width { 'stroke-width' }
-		.stroke_dashoffset { 'stroke-dashoffset' }
-		.rotate { 'rotate' }
-		.scale { 'scale' }
-		.scroll_behavior { 'scroll-behavior' }
-		.scrollbar_color { 'scrollbar-color' }
-		.scrollbar_gutter { 'scrollbar-gutter' }
-		.scrollbar_width { 'scrollbar-width' }
-		.right { 'right' }
-		.scroll_timeline_axis { 'scroll-timeline-axis' }
-		.scroll_timeline_name { 'scroll-timeline-name' }
-		.table_layout { 'table-layout' }
-		.tab_size { 'tab-size' }
-		.text_align { 'text-align' }
-		.text_anchor { 'text-anchor' }
-		.text_decoration_color { 'text-decoration-color' }
-		.text_decoration_line { 'text-decoration-line' }
-		.text_decoration_style { 'text-decoration-style' }
-		.text_decoration_thickness { 'text-decoration-thickness' }
-		.text_underline_offset { 'text-underline-offset' }
-		.text_underline_position { 'text-underline-position' }
-		.text_indent { 'text-indent' }
-		.text_justify { 'text-justify' }
-		.text_overflow { 'text-overflow' }
-		.text_rendering { 'text-rendering' }
-		.text_transform { 'text-transform' }
-		.text_wrap_mode { 'text-wrap-mode' }
-		.text_wrap_style { 'text-wrap-style' }
-		.transform { 'transform' }
-		.transform_box { 'transform-box' }
-		.transform_origin { 'transform-origin' }
-		.transform_style { 'transform-style' }
-		.transition_behavior { 'transition-behavior' }
-		.transition_delay { 'transition-delay' }
-		.transition_duration { 'transition-duration' }
-		.transition_property { 'transition-property' }
-		.transition_timing_function { 'transition-timing-function' }
-		.translate { 'translate' }
-		.timeline_scope { 'timeline-scope' }
-		.top { 'top' }
-		.unicode_bidi { 'unicode-bidi' }
-		.user_select { 'user-select' }
-		.touch_action { 'touch-action' }
-		.view_timeline_inset { 'view-timeline-inset' }
-		.view_timeline_axis { 'view-timeline-axis' }
-		.view_timeline_name { 'view-timeline-name' }
-		.view_transition_name { 'view-transition-name' }
-		.visibility { 'visibility' }
-		.vertical_align { 'vertical-align' }
-		.width { 'width' }
-		.will_change { 'will-change' }
-		.webkit_text_fill_color { '-webkit-text-fill-color' }
-		.white_space_collapse { 'white-space-collapse' }
-		.white_space_trim { 'white-space-trim' }
-		.word_break { 'word-break' }
-		.word_spacing { 'word-spacing' }
-		.writing_mode { 'writing-mode' }
-		.widows { 'widows' }
-		.z_index { 'z-index' }
-		.cx { 'cx' }
-		.cy { 'cy' }
-		.x { 'x' }
-		.y { 'y' }
-		.r { 'r' }
-		.rx { 'rx' }
-		.ry { 'ry' }
-		.resize { 'resize' }
-		.dominant_baseline { 'dominant-baseline' }
-		.display { 'display' }
-		.flex_basis { 'flex-basis' }
-		.quotes { 'quotes' }
-		.box_shadow { 'box-shadow' }
-		.text_shadow { 'text-shadow' }
-		.list_style_type { 'list-style-type' }
-		.clip { 'clip' }
-		.stroke_dasharray { 'stroke-dasharray' }
-		.font_family { 'font-family' }
-		.grid_column_start { 'grid-column-start' }
-		.grid_column_end { 'grid-column-end' }
-		.grid_row_start { 'grid-row-start' }
-		.grid_row_end { 'grid-row-end' }
-		.grid_auto_flow { 'grid-auto-flow' }
-		.grid_auto_columns { 'grid-auto-columns' }
-		.grid_auto_rows { 'grid-auto-rows' }
-		.grid_template_columns { 'grid-template-columns' }
-		.grid_template_rows { 'grid-template-rows' }
-		.grid_template_areas { 'grid-template-areas' }
-		.filter { 'filter' }
-		.backdrop_filter { 'backdrop-filter' }
-		.counter_increment { 'counter-increment' }
-		.counter_reset { 'counter-reset' }
-		.counter_set { 'counter-set' }
-		.cursor { 'cursor' }
-		.font_size { 'font-size' }
-		.fill { 'fill' }
-		.stroke { 'stroke' }
-		.font_variant_ligatures { 'font-variant-ligatures' }
-		.font_variant_numeric { 'font-variant-numeric' }
-		.font_variant_east_asian { 'font-variant-east-asian' }
-		.clip_path { 'clip-path' }
-		.shape_outside { 'shape-outside' }
-		.content { 'content' }
-		.font_variant_alternates { 'font-variant-alternates' }
-		.overflow { 'overflow' }
-		.gap { 'gap' }
-		.place_items { 'place-items' }
-		.place_content { 'place-content' }
-		.place_self { 'place-self' }
-		.flex_flow { 'flex-flow' }
-		.columns { 'columns' }
-		.text_wrap { 'text-wrap' }
-		.margin { 'margin' }
-		.padding { 'padding' }
-		.inset { 'inset' }
-		.margin_block { 'margin-block' }
-		.margin_inline { 'margin-inline' }
-		.padding_block { 'padding-block' }
-		.padding_inline { 'padding-inline' }
-		.inset_block { 'inset-block' }
-		.inset_inline { 'inset-inline' }
-		.border_color { 'border-color' }
-		.border_style { 'border-style' }
-		.border_width { 'border-width' }
-		.border_block_color { 'border-block-color' }
-		.border_inline_color { 'border-inline-color' }
-		.border_block_style { 'border-block-style' }
-		.border_inline_style { 'border-inline-style' }
-		.border_block_width { 'border-block-width' }
-		.border_inline_width { 'border-inline-width' }
-		.border_top { 'border-top' }
-		.border_right { 'border-right' }
-		.border_bottom { 'border-bottom' }
-		.border_left { 'border-left' }
-		.border_block_start { 'border-block-start' }
-		.border_block_end { 'border-block-end' }
-		.border_inline_start { 'border-inline-start' }
-		.border_inline_end { 'border-inline-end' }
-		.border { 'border' }
-		.border_block { 'border-block' }
-		.border_inline { 'border-inline' }
-		.outline { 'outline' }
-		.list_style { 'list-style' }
-		.text_decoration { 'text-decoration' }
-		.font_variant { 'font-variant' }
-		.flex { 'flex' }
-		.corner_shape { 'corner-shape' }
-		.corner_top_shape { 'corner-top-shape' }
-		.corner_bottom_shape { 'corner-bottom-shape' }
-		.corner_left_shape { 'corner-left-shape' }
-		.corner_right_shape { 'corner-right-shape' }
-		.corner_block_start_shape { 'corner-block-start-shape' }
-		.corner_block_end_shape { 'corner-block-end-shape' }
-		.corner_inline_start_shape { 'corner-inline-start-shape' }
-		.corner_inline_end_shape { 'corner-inline-end-shape' }
-		.grid_row { 'grid-row' }
-		.grid_column { 'grid-column' }
-		.grid_area { 'grid-area' }
-		.white_space { 'white-space' }
-		.overflow_clip_margin { 'overflow-clip-margin' }
-		.overflow_clip_margin_block { 'overflow-clip-margin-block' }
-		.overflow_clip_margin_inline { 'overflow-clip-margin-inline' }
-		.all { 'all' }
-		.border_radius { 'border-radius' }
-		.transition { 'transition' }
-		.animation { 'animation' }
-		.scroll_timeline { 'scroll-timeline' }
-		.view_timeline { 'view-timeline' }
-		.border_image { 'border-image' }
-		.background_position { 'background-position' }
-		.grid_template { 'grid-template' }
-		.grid { 'grid' }
-		.font { 'font' }
-		.background { 'background' }
-		.mask { 'mask' }
+		id_: property_id
 	}
 }
 
@@ -412,30 +24,18 @@ pub fn property_is_shorthand(property_id PropertyID) bool {
 	return longhands_for_shorthand_local(property_id).len > 0
 }
 
+pub enum PropertyMultiplicity {
+	single
+	list
+	coordinating_list
+}
+
 pub fn property_is_single_valued(property_id PropertyID) bool {
 	return !property_is_list_valued(property_id)
 }
 
 pub fn property_is_list_valued(property_id PropertyID) bool {
-	return match property_id {
-		.anchor_name, .anchor_scope, .animation_composition, .animation_delay,
-		.animation_direction, .animation_duration, .animation_fill_mode,
-		.animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline,
-		.animation_timing_function, .background_image, .background_attachment,
-		.background_blend_mode, .background_clip, .background_origin, .background_position_x,
-		.background_position_y, .background_repeat, .background_size, .font_feature_settings,
-		.font_variation_settings, .mask_image, .mask_clip, .mask_composite, .mask_mode,
-		.mask_origin, .mask_position, .mask_repeat, .mask_size, .scroll_timeline_axis,
-		.scroll_timeline_name, .transition_behavior, .transition_delay, .transition_duration,
-		.transition_property, .transition_timing_function, .view_timeline_axis, .timeline_scope,
-		.view_timeline_inset, .view_timeline_name, .will_change, .position_try_fallbacks, .quotes,
-		.box_shadow, .font_family, .counter_increment, .counter_reset, .counter_set {
-			true
-		}
-		else {
-			false
-		}
-	}
+	return property_multiplicity(property_id) != .single
 }
 
 pub const number_of_longhand_properties = 313
@@ -796,82 +396,235 @@ fn css_style_properties_length(properties &CSSStyleProperties) int {
 	return properties.length()
 }
 
-fn custom_property_is_important(serialized_value string) bool {
-	return custom_property_priority_start(serialized_value) != none
-}
-
-fn custom_property_value_without_priority(serialized_value string) string {
-	priority_start := custom_property_priority_start(serialized_value) or {
-		return serialized_value.trim_space()
-	}
-	return serialized_value[..priority_start].trim_space()
-}
-
-fn custom_property_value_with_priority(value string, important Important) string {
-	if important == .yes {
-		return '${value} !important'
-	}
-	return value
-}
-
-fn custom_property_priority_start(serialized_value string) ?int {
-	mut end := serialized_value.len
-	for end > 0 && is_ascii_whitespace_byte(serialized_value[end - 1]) {
-		end--
-	}
-
-	if end < 'important'.len {
-		return none
-	}
-
-	important_start := end - 'important'.len
-	if !equals_ignoring_ascii_case(serialized_value[important_start..end], 'important') {
-		return none
-	}
-
-	mut bang_end := important_start
-	for bang_end > 0 && is_ascii_whitespace_byte(serialized_value[bang_end - 1]) {
-		bang_end--
-	}
-
-	if bang_end == 0 || serialized_value[bang_end - 1] != `!` {
-		return none
-	}
-
-	return bang_end - 1
-}
-
-fn parse_custom_property_value(value string) string {
+fn parse_custom_property_value(value string) &dom.StyleValue {
 	mut parser := Parser.from_css_text(value)
-	return StyleValue(UnresolvedStyleValue.create(parser.component_values)).serialize(.normal)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	if keyword := parser.parse_css_wide_keyword_value(mut tokens) {
+		tokens.consume_whitespace()
+		if tokens.is_empty() {
+			return dom_style_value_from_value_logic(keyword)
+		}
+	}
+	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create(parser.component_values)))
 }
 
+fn cssom_style_property_as_style_property(property CSSStyleProperty) ?StyleProperty {
+	property_id := property_id_from_string(property.name) or { return none }
+	value := property.style_value or {
+		parsed := parse_css_value_logic(property_id, property.value) or { return none }
+		dom_style_value_from_value_logic(parsed)
+	}
+	return StyleProperty{
+		important: if property.important { Important.yes } else { Important.no }
+		property_id: property_id
+		value: value
+	}
+}
+
+fn cssom_expanded_longhands_for_shorthand(shorthand PropertyID) []PropertyID {
+	return generated_expanded_longhands_for_shorthand(shorthand)
+}
+
+// Generated `shorthands_for_longhand()`/`property_maps_to_shorthand()` data,
+// derived from the same canonical shorthand table retained by this port.
+fn cssom_shorthands_for_longhand(longhand PropertyID) []PropertyID {
+	return generated_shorthands_for_longhand(longhand)
+}
+
+fn cssom_style_property_index(properties &CSSStyleProperties, property_id PropertyID) ?int {
+	name := string_from_property_id(property_id)
+	for index, property in properties.properties {
+		if property.name == name {
+			return index
+		}
+	}
+	return none
+}
+
+fn cssom_make_shorthand_value(shorthand PropertyID, declarations []StyleProperty) ?StyleValue {
+	longhand_ids := longhands_for_shorthand_local(shorthand)
+	mut values := []StyleValue{cap: longhand_ids.len}
+	for longhand_id in longhand_ids {
+		if property_is_shorthand(longhand_id) {
+			values << cssom_make_shorthand_value(longhand_id, declarations) or { return none }
+			continue
+		}
+		mut found := false
+		for declaration in declarations {
+			if declaration.property_id == longhand_id {
+				values << style_value_logic_from_dom(longhand_id, declaration.value) or { return none }
+				found = true
+				break
+			}
+		}
+		if !found {
+			return none
+		}
+	}
+	return StyleValue(ShorthandStyleValue.create(shorthand, longhand_ids, values))
+}
+
+// https://www.w3.org/TR/cssom/#serialize-a-css-value (list overload).
+fn cssom_serialize_a_css_value_list(declarations []StyleProperty) string {
+	if declarations.len == 0 {
+		return ''
+	}
+	for shorthand in cssom_shorthands_for_longhand(declarations[0].property_id) {
+		expanded := cssom_expanded_longhands_for_shorthand(shorthand)
+		if expanded.len != declarations.len {
+			continue
+		}
+		mut exact_match := true
+		for longhand in expanded {
+			if !declarations.any(it.property_id == longhand) {
+				exact_match = false
+				break
+			}
+		}
+		if !exact_match {
+			continue
+		}
+		value := cssom_make_shorthand_value(shorthand, declarations) or { return '' }
+		return value.serialize(.normal)
+	}
+	return ''
+}
+
+fn cssom_mark_serialized(property_id PropertyID, mut already_serialized map[PropertyID]bool) {
+	already_serialized[property_id] = true
+	if property_is_shorthand(property_id) {
+		for longhand in longhands_for_shorthand_local(property_id) {
+			cssom_mark_serialized(longhand, mut already_serialized)
+		}
+	}
+}
+
+// https://www.w3.org/TR/cssom/#serialize-a-css-declaration-block
 fn css_style_properties_serialized(properties &CSSStyleProperties) string {
 	mut declarations := []string{}
-	for name, value in properties.custom_properties {
-		declarations << serialize_a_css_declaration(name,
-			custom_property_value_without_priority(value), if custom_property_is_important(value) {
-			Important.yes
-		} else {
-			Important.no
-		})
+	mut already_serialized := map[PropertyID]bool{}
+
+	// LibWeb stores custom properties separately, so they precede the ordinary
+	// declaration loop exactly as in CSSStyleProperties.cpp.
+	for name, property in properties.custom_properties {
+		declarations << serialize_a_css_declaration(name, dom_style_value_to_css_text(property.value), property.important)
 	}
-	for property in properties.properties {
-		declarations << serialize_a_css_declaration(property.name, property.value, if property.important {
-			Important.yes
-		} else {
-			Important.no
-		})
+
+	for source_property in properties.properties {
+		property := cssom_style_property_as_style_property(source_property) or { continue }
+		if already_serialized[property.property_id] {
+			continue
+		}
+
+		for shorthand in cssom_shorthands_for_longhand(property.property_id) {
+			mut longhands := []StyleProperty{}
+			for candidate_source in properties.properties {
+				candidate := cssom_style_property_as_style_property(candidate_source) or { continue }
+				if !already_serialized[candidate.property_id] && shorthand in cssom_shorthands_for_longhand(candidate.property_id) {
+					longhands << candidate
+				}
+			}
+
+			required := cssom_expanded_longhands_for_shorthand(shorthand)
+			mut all_required_present := true
+			for required_id in required {
+				if !longhands.any(it.property_id == required_id) {
+					all_required_present = false
+					break
+				}
+			}
+			if !all_required_present || longhands.len == 0 {
+				continue
+			}
+
+			important := longhands[0].important
+			if longhands.any(it.important != important) {
+				continue
+			}
+
+			first_index := cssom_style_property_index(properties, longhands[0].property_id) or { continue }
+			last_index := cssom_style_property_index(properties, longhands[longhands.len - 1].property_id) or { continue }
+			mut conflicts_with_logical_mapping := false
+			for index in first_index .. last_index + 1 {
+				between := cssom_style_property_as_style_property(properties.properties[index]) or { continue }
+				if longhands.any(it.property_id == between.property_id) {
+					continue
+				}
+				between_group := logical_property_group_for_property(between.property_id) or { continue }
+				between_is_logical := property_is_logical_alias(between.property_id)
+				for current in longhands {
+					if current_group := logical_property_group_for_property(current.property_id) {
+						if current_group == between_group && property_is_logical_alias(current.property_id) != between_is_logical {
+							conflicts_with_logical_mapping = true
+							break
+						}
+					}
+				}
+				if conflicts_with_logical_mapping {
+					break
+				}
+			}
+			if conflicts_with_logical_mapping {
+				continue
+			}
+
+			value := cssom_serialize_a_css_value_list(longhands)
+			if value.len == 0 {
+				continue
+			}
+			declarations << serialize_a_css_declaration(string_from_property_id(shorthand), value, important)
+			for longhand in longhands {
+				cssom_mark_serialized(longhand.property_id, mut already_serialized)
+			}
+		}
+
+		if !already_serialized[property.property_id] {
+			declarations << serialize_a_css_declaration(string_from_property_id(property.property_id), properties.serialize_a_css_value(property), property.important)
+			cssom_mark_serialized(property.property_id, mut already_serialized)
+		}
 	}
 	return declarations.join(' ')
 }
 
 fn parse_css_property_declaration_block_for_style_properties(context ParsingParams, block string) &CSSStyleProperties {
 	return parse_css_property_declaration_block_with_params(ParsingParams{
-		document:            context.document
-		rule_context:        [RuleContext.style]
+		document: context.document
+		rule_context: [RuleContext.style]
 		declared_namespaces: context.declared_namespaces.clone()
 	}, block)
+}
+
+fn set_dom_inline_style_declarations(target voidptr, text string) {
+	mut properties := unsafe { &CSSStyleProperties(target) }
+	properties.set_declarations_from_text(text)
+}
+
+// Element::inline_style() retains one parsed CSSStyleProperties object. The DOM
+// side stores it opaquely to avoid a module cycle, while all CSS consumers share
+// the typed declarations just as the C++ implementation does.
+fn inline_style_for_abstract_element(abstract_element dom.AbstractElement) ?&CSSStyleProperties {
+	if abstract_element.pseudo_element() != none {
+		return none
+	}
+	mut element := unsafe { &dom.Element(abstract_element.element()) }
+	mut bridge := element.el_inline_style() or {
+		if !element.has_attribute('style') {
+			return none
+		}
+		element.style_for_bindings()
+	}
+	if bridge.css_handle != unsafe { nil } {
+		return unsafe { &CSSStyleProperties(bridge.css_handle) }
+	}
+	text := element.get_attribute('style') or { '' }
+	properties := parse_css_property_declaration_block_for_style_properties(ParsingParams{
+		document: element.document()
+	}, text)
+	mut mutable_properties := properties
+	mutable_properties.set_owner_node(abstract_element)
+	bridge.css_handle = voidptr(properties)
+	bridge.set_declarations_callback = set_dom_inline_style_declarations
+	return properties
 }
 
 fn serialized_text_from_mutable_style_property_map_value(value MutableStylePropertyMapValue) !string {
@@ -890,11 +643,9 @@ pub fn CSSStyleProperties.create_from_declarations(properties []StyleProperty, c
 	//     parent CSS rule: The context object.
 	//     owner node: Null.
 	mut declaration := CSSStyleProperties.create()
-	declaration.properties =
-		css_style_properties_to_cssom_properties(convert_declarations_to_specified_order(properties))
+	declaration.properties = css_style_properties_to_cssom_properties(convert_declarations_to_specified_order(properties))
 	for name, property in custom_properties {
-		declaration.custom_properties[name] = custom_property_value_with_priority(dom_style_value_to_css_text(property.value),
-			property.important)
+		declaration.custom_properties[name] = property
 	}
 	return declaration
 }
@@ -928,9 +679,9 @@ fn css_style_properties_to_cssom_properties(properties []StyleProperty) []CSSSty
 	mut result := []CSSStyleProperty{}
 	for property in properties {
 		result << CSSStyleProperty{
-			name:        string_from_property_id(property.property_id)
-			value:       dom_style_value_to_css_text(property.value)
-			important:   property.important == .yes
+			name: string_from_property_id(property.property_id)
+			value: dom_style_value_to_css_text(property.value)
+			important: property.important == .yes
 			style_value: unsafe { property.value }
 		}
 	}
@@ -956,8 +707,7 @@ pub fn convert_declarations_to_specified_order(declarations []StyleProperty) []S
 
 			if index := existing_entry_index {
 				// If there is an existing entry for this property and it is a higher cascading order than the current entry, skip the current entry.
-				if specified_order_declarations[index].important == .yes
-					&& declaration.important == .no {
+				if specified_order_declarations[index].important == .yes && declaration.important == .no {
 					continue
 				}
 
@@ -966,9 +716,9 @@ pub fn convert_declarations_to_specified_order(declarations []StyleProperty) []S
 			}
 
 			specified_order_declarations << StyleProperty{
-				important:   declaration.important
+				important: declaration.important
 				property_id: longhand.id
-				value:       unsafe { longhand.value }
+				value: unsafe { longhand.value }
 			}
 		}
 	}
@@ -1019,7 +769,10 @@ pub fn (mut properties CSSStyleProperties) update_style_attribute() {
 	// 5. Set an attribute value for owner node using "style" and the result of serializing declaration block.
 	if owner_node := properties.owner_node {
 		mut element := unsafe { &dom.Element(owner_node.element()) }
+		mut bridge := element.style_for_bindings()
+		bridge.is_updating_ = true
 		element.set_attribute_value('style', css_style_properties_serialized(properties))
+		bridge.is_updating_ = false
 	}
 
 	// 6. Unset declaration block's updating flag.
@@ -1083,32 +836,23 @@ pub fn (properties &CSSStyleProperties) custom_property(custom_property_name str
 			}
 			return StyleProperty{
 				property_id: .color
-				value:       &dom.StyleValue{
-					css_text: initial_value
-				}
+				value: parse_custom_property_value(initial_value)
 			}
 		}
 		if value.guaranteed_invalid {
 			return none
 		}
+		retained_value := dom_style_value_from_custom_property_bridge(value) or {
+			parse_custom_property_value(value.css_text)
+		}
 		return StyleProperty{
 			property_id: .color
-			value:       &dom.StyleValue{
-				css_text: value.css_text
-			}
+			value: retained_value
 		}
 	}
 
 	if value := properties.custom_properties[custom_property_name] {
-		return StyleProperty{
-			property_id: .color
-			value:       css_style_properties_empty_dom_style_value()
-			important:   if custom_property_is_important(value) {
-				Important.yes
-			} else {
-				Important.no
-			}
-		}
+		return value
 	}
 	return none
 }
@@ -1146,12 +890,11 @@ pub fn (mut properties CSSStyleProperties) set_property_internal(property Proper
 	}
 
 	if property.is_custom_property() {
-		serialized := custom_property_value_with_priority(parse_custom_property_value(value), if priority.len != 0 {
-			Important.yes
-		} else {
-			Important.no
-		})
-		properties.custom_properties[property.name()] = serialized
+		properties.custom_properties[property.name()] = StyleProperty{
+			important: if priority.len != 0 { Important.yes } else { Important.no }
+			property_id: .color
+			value: parse_custom_property_value(value)
+		}
 		properties.update_style_attribute()
 		properties.invalidate_owners(.style_sheet_changed)
 		return
@@ -1188,15 +931,16 @@ pub fn (mut properties CSSStyleProperties) set_property_internal(property Proper
 				Important.no
 			}) || updated
 		}
-	}
-	// 9. Otherwise,
-	else {
+	} else {
+		// 9. Otherwise,
 		// let updated be the result of set the CSS declaration property with value component value list,
 		// with the important flag set if priority is not the empty string, and unset otherwise,
 		// and with the list of declarations being the declarations.
-		updated = properties.set_a_css_declaration_with_serialized(property_id,
-			component_value_list, if priority.len != 0 { Important.yes } else { Important.no },
-			value)
+		updated = properties.set_a_css_declaration_with_serialized(property_id, component_value_list, if priority.len != 0 {
+			Important.yes
+		} else {
+			Important.no
+		}, value)
 	}
 
 	// 10. If updated is true, update style attribute for the CSS declaration block.
@@ -1212,16 +956,60 @@ pub fn (mut properties CSSStyleProperties) set_property_by_id(property_id Proper
 	properties.set_property_internal(PropertyNameAndID.from_id(property_id), css_text, priority)!
 }
 
+// CSSStyleProperties::set_property_style_value(). This is the typed-OM entry
+// point: keep the parsed StyleValue graph and expand shorthands directly,
+// without serializing and reparsing it through set_property().
+pub fn (mut properties CSSStyleProperties) set_property_style_value(property PropertyNameAndID, style_value &dom.StyleValue) ! {
+	if properties.is_computed() {
+		return error('NoModificationAllowedError: Cannot modify properties in result of getComputedStyle()')
+	}
+
+	if property.is_custom_property() {
+		properties.custom_properties.delete(property.name())
+		properties.custom_properties[property.name()] = StyleProperty{
+			property_id: .color
+			value: unsafe { style_value }
+		}
+		properties.update_style_attribute()
+		properties.invalidate_owners(.style_sheet_changed)
+		return
+	}
+
+	property_id := property.id() or { return }
+	typed := style_value_logic_from_dom(property_id, style_value) or {
+		return error("Setting ${property.name()} to '${style_value.css_text}' is not allowed.")
+	}
+	if property_is_positional_value_list_shorthand(property_id) && typed !is ShorthandStyleValue && typed !is UnresolvedStyleValue && typed !is PendingSubstitutionStyleValue && typed !is GuaranteedInvalidStyleValue && !typed.is_css_wide_keyword() {
+		return error("Setting ${property.name()} to '${typed.serialize(.normal)}' is not allowed.")
+	}
+
+	for longhand in expand_property_longhands(property_id, style_value) {
+		for index, existing in properties.properties {
+			if existing.name == string_from_property_id(longhand.id) {
+				properties.properties.delete(index)
+				break
+			}
+		}
+		properties.properties << CSSStyleProperty{
+			name: string_from_property_id(longhand.id)
+			value: dom_style_value_to_css_text(longhand.value)
+			style_value: unsafe { longhand.value }
+		}
+	}
+
+	properties.update_style_attribute()
+	properties.invalidate_owners(.style_sheet_changed)
+}
+
 pub fn (mut properties CSSStyleProperties) set_a_css_declaration(property_id PropertyID, value &dom.StyleValue, important Important) bool {
-	return properties.set_a_css_declaration_with_serialized(property_id, value, important,
-		dom_style_value_to_css_text(value))
+	return properties.set_a_css_declaration_with_serialized(property_id, value, important, dom_style_value_to_css_text(value))
 }
 
 fn (mut properties CSSStyleProperties) set_a_css_declaration_with_serialized(property_id PropertyID, value &dom.StyleValue, important Important, serialized_value string) bool {
 	new_property := CSSStyleProperty{
-		name:        string_from_property_id(property_id)
-		value:       serialized_value
-		important:   important == .yes
+		name: string_from_property_id(property_id)
+		value: serialized_value
+		important: important == .yes
 		style_value: unsafe { value }
 	}
 
@@ -1235,8 +1023,7 @@ fn (mut properties CSSStyleProperties) set_a_css_declaration_with_serialized(pro
 						continue
 					}
 					if later_group := logical_property_group_for_property(later_property_id) {
-						if later_group == group
-							&& property_is_logical_alias(later_property_id) != is_logical_alias {
+						if later_group == group && property_is_logical_alias(later_property_id) != is_logical_alias {
 							needs_append = true
 							break
 						}
@@ -1245,8 +1032,7 @@ fn (mut properties CSSStyleProperties) set_a_css_declaration_with_serialized(pro
 			}
 
 			if !needs_append {
-				if property.important == new_property.important
-					&& property.value == new_property.value {
+				if property.important == new_property.important && property.value == new_property.value {
 					return false
 				}
 				properties.properties[index] = new_property
@@ -1276,7 +1062,7 @@ pub fn (mut properties CSSStyleProperties) remove_property_internal(property Pro
 	mut removed_value := ''
 	if property.is_custom_property() {
 		if value := properties.custom_properties[property.name()] {
-			removed_value = custom_property_value_without_priority(value)
+			removed_value = dom_style_value_to_css_text(value.value)
 			properties.custom_properties.delete(property.name())
 			removed = true
 		}
@@ -1303,6 +1089,31 @@ pub fn (mut properties CSSStyleProperties) set_css_text(css_text string) ! {
 	if properties.is_readonly() {
 		return error('NoModificationAllowedError: Cannot modify readonly CSSStyleProperties')
 	}
+	properties.set_declarations_from_text(css_text)
+	properties.update_style_attribute()
+	properties.invalidate_owners(.style_sheet_changed)
+}
+
+// CSSStyleProperties::empty_the_declarations().
+pub fn (mut properties CSSStyleProperties) empty_the_declarations() {
+	properties.properties.clear()
+	properties.custom_properties.clear()
+}
+
+// CSSStyleProperties::set_the_declarations(). Parsed declarations are put in
+// specified order, expanding shorthands and retaining only the winner at its
+// specified relative position.
+pub fn (mut properties CSSStyleProperties) set_the_declarations(property_values []StyleProperty, custom_property_values map[string]StyleProperty) {
+	properties.properties = css_style_properties_to_cssom_properties(convert_declarations_to_specified_order(property_values))
+	properties.custom_properties.clear()
+	for name, property in custom_property_values {
+		properties.custom_properties[name] = property
+	}
+}
+
+// CSSStyleProperties::set_declarations_from_text().
+pub fn (mut properties CSSStyleProperties) set_declarations_from_text(css_text string) {
+	properties.empty_the_declarations()
 	context := if owner_node := properties.owner_node {
 		ParsingParams{
 			document: owner_node.element().document()
@@ -1310,46 +1121,544 @@ pub fn (mut properties CSSStyleProperties) set_css_text(css_text string) ! {
 	} else {
 		ParsingParams{}
 	}
-	new_properties := parse_css_property_declaration_block_for_style_properties(context, css_text)
-	properties.properties = new_properties.properties
-	properties.custom_properties = new_properties.custom_properties.clone()
-	properties.update_style_attribute()
-	properties.invalidate_owners(.style_sheet_changed)
+	parsed := parse_css_property_declaration_block_for_style_properties(context, css_text)
+	properties.properties = parsed.properties.clone()
+	properties.custom_properties = parsed.custom_properties.clone()
 }
 
 pub fn (properties &CSSStyleProperties) get_property_internal(property PropertyNameAndID) ?StyleProperty {
 	if property.is_custom_property() {
-		return properties.custom_property(property.name())
+		return properties.get_direct_property(property)
 	}
-	if properties.is_computed() {
-		owner := properties.owner_node or { return none }
-		property_id := property.id() or { return none }
-		dom_computed := owner.computed_properties() or { return none }
-		computed := computed_properties_from_dom(dom_computed) or { return none }
-		value := computed.property(property_id, .yes) or { return none }
-		return StyleProperty{
-			property_id: property_id
-			value:       value
-			important:   if computed.is_property_important(property_id) {
-				Important.yes
+
+	// https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-getpropertyvalue
+	// A shorthand is observable only when every component longhand exists and
+	// has the same importance. Reconstruct the same retained
+	// ShorthandStyleValue as CSSStyleProperties.cpp instead of returning the
+	// first serialized declaration that happens to share its name.
+	property_id := property.id() or { return none }
+	if property_is_shorthand(property_id) {
+		longhand_ids := longhands_for_shorthand_local(property_id)
+		mut longhand_values := []StyleValue{cap: longhand_ids.len}
+		mut important := ?Important(none)
+		for longhand_id in longhand_ids {
+			declaration := properties.get_property_internal(PropertyNameAndID.from_id(longhand_id)) or {
+				return none
+			}
+			if previous := important {
+				if previous != declaration.important {
+					return none
+				}
 			} else {
-				Important.no
+				important = declaration.important
+			}
+			value := style_value_logic_from_dom(longhand_id, declaration.value) or { return none }
+			longhand_values << value
+		}
+
+		// CSS Values 5 pending-substitution serialization. All component
+		// longhands created from one unresolved shorthand retain the same
+		// original value. V value sums preserve that value rather than a C++
+		// RefPtr, so structural equality is the corresponding identity test.
+		if longhand_values.len > 0 && longhand_values[0] is PendingSubstitutionStyleValue {
+			first_pending := longhand_values[0] as PendingSubstitutionStyleValue
+			original := first_pending.original_shorthand_value_ref()
+			mut all_from_same_original := true
+			for value in longhand_values {
+				if value !is PendingSubstitutionStyleValue {
+					all_from_same_original = false
+					break
+				}
+				pending := value as PendingSubstitutionStyleValue
+				if !pending.original_shorthand_value_ref().equals(original) {
+					all_from_same_original = false
+					break
+				}
+			}
+			if all_from_same_original {
+				return StyleProperty{
+					important: important or { Important.no }
+					property_id: property_id
+					value: dom_style_value_from_value_logic(original)
+				}
 			}
 		}
+		for value in longhand_values {
+			if value is PendingSubstitutionStyleValue || value is UnresolvedStyleValue {
+				return none
+			}
+		}
+
+		return StyleProperty{
+			important: important or { Important.no }
+			property_id: property_id
+			value: dom_style_value_from_value_logic(StyleValue(ShorthandStyleValue.create(property_id, longhand_ids, longhand_values)))
+		}
 	}
-	property_name := string_from_property_id(property.id() or { PropertyID.color })
+
+	return properties.get_direct_property(property)
+}
+
+// CSSStyleProperties::get_direct_property().
+pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNameAndID) ?StyleProperty {
+	if properties.is_computed() {
+		owner := properties.owner_node or { return none }
+		element := owner.element()
+		if !element.is_connected() {
+			return none
+		}
+		mut document := unsafe { &dom.Document(owner.document()) }
+		if document.get_browsing_context() == none {
+			return none
+		}
+
+		// Ensure Document::update_style() reaches the translated StyleComputer.
+		mut style_computer := css_style_computer_for(document)
+		if property.is_custom_property() {
+			if document.element_needs_style_update(element) {
+				document.update_style()
+			}
+			return properties.custom_property(property.name())
+		}
+
+		property_id := property.id() or { return none }
+		needs_layout := generated_property_needs_layout_for_getcomputedstyle(property_id)
+		needs_layout_node := generated_property_needs_layout_node_for_resolved_value(property_id) || property_is_logical_alias(property_id) || property_is_shorthand(property_id)
+		if needs_layout || needs_layout_node {
+			document.update_layout(.resolved_css_style_declaration_property)
+		} else if document.element_needs_style_update(element) {
+			document.update_style()
+		}
+
+		layout_node_with_style := owner.layout_node() or {
+			// Match the one-off upstream path for elements that do not generate a
+			// layout box. Seeding the ancestor chain is required for selectors such
+			// as `.outer .inner .target`.
+			computed := style_computer.compute_style_with_seeded_ancestors(owner)
+			value := computed.property(property_id, .yes) or { return none }
+			return StyleProperty{
+				property_id: property_id
+				value: value
+			}
+		}
+		layout_node := layout_node_with_style.layout_node_ or { return none }
+		value := properties.style_value_for_computed_property(layout_node, property_id) or {
+			return none
+		}
+		return StyleProperty{
+			property_id: property_id
+			value: value
+		}
+	}
+	property_name := string_from_property_id(property.id() or { return none })
 	for existing in properties.properties {
 		if existing.name == property_name {
 			return StyleProperty{
-				important:   if existing.important { Important.yes } else { Important.no }
+				important: if existing.important { Important.yes } else { Important.no }
 				property_id: property.id() or { PropertyID.color }
-				value:       existing.style_value or {
+				value: existing.style_value or {
 					css_style_properties_empty_dom_style_value()
 				}
 			}
 		}
 	}
 	return none
+}
+
+fn cssom_style_value_for_px(value f64) &dom.StyleValue {
+	return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(value))))
+}
+
+fn cssom_style_value_for_length_percentage(value LengthPercentage) &dom.StyleValue {
+	if value.is_percentage() {
+		return dom_style_value_from_value_logic(StyleValue(PercentageStyleValue.create(value.percentage())))
+	}
+	if value.is_length() {
+		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(value.length())))
+	}
+	return dom_style_value_from_value_logic(StyleValue(value.calculated()))
+}
+
+fn cssom_style_value_for_length_percentage_or_auto(value LengthPercentageOrAuto) &dom.StyleValue {
+	if value.is_auto() {
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto)))
+	}
+	return cssom_style_value_for_length_percentage(value.length_percentage())
+}
+
+fn cssom_style_value_for_size(value Size) &dom.StyleValue {
+	if value.is_none() {
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.none_)))
+	}
+	if value.is_percentage() {
+		return dom_style_value_from_value_logic(StyleValue(PercentageStyleValue.create(value.percentage())))
+	}
+	if value.is_length() {
+		return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(value.length())))
+	}
+	if value.is_auto() {
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto)))
+	}
+	if value.is_calculated() {
+		return dom_style_value_from_value_logic(StyleValue(value.calculated()))
+	}
+	if value.is_min_content() {
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.min_content)))
+	}
+	if value.is_max_content() {
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.max_content)))
+	}
+	if value.is_fit_content() {
+		if available_space := value.fit_content_available_space() {
+			return dom_style_value_from_value_logic(StyleValue(FitContentStyleValue.create_with_length_percentage(style_value_logic_for_length_percentage(available_space))))
+		}
+		return dom_style_value_from_value_logic(StyleValue(FitContentStyleValue.create()))
+	}
+	return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto)))
+}
+
+fn style_value_logic_for_length_percentage(value LengthPercentage) StyleValue {
+	if value.is_percentage() {
+		return StyleValue(PercentageStyleValue.create(value.percentage()))
+	}
+	if value.is_length() {
+		return StyleValue(LengthStyleValue.create(value.length()))
+	}
+	return StyleValue(value.calculated())
+}
+
+fn cssom_resolve_color_style_value(style_value &dom.StyleValue, context ColorResolutionContext) &dom.StyleValue {
+	typed := style_value_logic_from_dom(.color, style_value) or { return unsafe { style_value } }
+	if typed is ColorFunctionStyleValue || typed is LabColorStyleValue || typed is OKLabColorStyleValue || typed is LCHColorStyleValue || typed is OKLCHColorStyleValue {
+		return unsafe { style_value }
+	}
+	color := typed.to_color(context) or { return unsafe { style_value } }
+	return dom_style_value_from_value_logic(StyleValue(ColorStyleValue.create_from_color(color, .modern, none)))
+}
+
+fn cssom_style_value_for_shadow(shadow_type ShadowType, shadows []ShadowData) &dom.StyleValue {
+	if shadows.len == 0 {
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.none_)))
+	}
+	mut values := []StyleValue{cap: shadows.len}
+	for shadow in shadows {
+		color := Color.rgba(shadow.color.red(), shadow.color.green(), shadow.color.blue(), shadow.color.alpha())
+		values << StyleValue(ShadowStyleValue.create(shadow_type, StyleValue(ColorStyleValue.create_from_color(color, .modern, none)), StyleValue(LengthStyleValue.create(shadow.offset_x)), StyleValue(LengthStyleValue.create(shadow.offset_y)), StyleValue(LengthStyleValue.create(shadow.blur_radius)), StyleValue(LengthStyleValue.create(shadow.spread_distance)), if shadow.inset {
+			ShadowPlacement.inner
+		} else {
+			ShadowPlacement.outer
+		}))
+	}
+	if values.len == 1 {
+		return dom_style_value_from_value_logic(values[0])
+	}
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(values, .comma, .yes)))
+}
+
+fn cssom_multiply_transform_matrices(left FloatMatrix4x4, right FloatMatrix4x4) FloatMatrix4x4 {
+	mut values := [16]f64{}
+	for row in 0 .. 4 {
+		for column in 0 .. 4 {
+			mut value := 0.0
+			for index in 0 .. 4 {
+				value += left.at(row, index) * right.at(index, column)
+			}
+			values[row * 4 + column] = value
+		}
+	}
+	return FloatMatrix4x4.from_values(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15])
+}
+
+fn cssom_resolved_transform(computed &ComputedProperties, layout_node &dom.LayoutNode) ?&dom.StyleValue {
+	computed_value := computed.property(.transform, .yes) or { return none }
+	parsed := style_value_logic_from_dom(.transform, computed_value) or { return none }
+	if parsed.to_keyword() == .none_ {
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.none_)))
+	}
+	mut transformations := []TransformationStyleValue{}
+	if parsed is TransformationStyleValue {
+		transformations << parsed
+	} else if parsed is StyleValueList {
+		for value in parsed.values() {
+			if value !is TransformationStyleValue {
+				return none
+			}
+			transformations << (value as TransformationStyleValue)
+		}
+	} else {
+		return none
+	}
+
+	paintable_box := TransformPaintableBox{
+		reference_box: TransformReferenceBox{
+			width: CSSPixels.nearest_value_for(layout_node.border_box_.width)
+			height: CSSPixels.nearest_value_for(layout_node.border_box_.height)
+		}
+		length_resolution_context: length_resolution_context_from_layout_node(layout_node) or {
+			LengthResolutionContext.default()
+		}
+	}
+	mut transform := FloatMatrix4x4.identity()
+	for transformation in transformations {
+		matrix := transformation.to_matrix(paintable_box) or { return none }
+		transform = cssom_multiply_transform_matrices(transform, matrix)
+	}
+
+	epsilon := 1.1920929e-7
+	is_2d := math.abs(transform.at(0, 2)) <= epsilon && math.abs(transform.at(1, 2)) <= epsilon && math.abs(transform.at(2, 0)) <= epsilon && math.abs(transform.at(2, 1)) <= epsilon && math.abs(transform.at(2, 3)) <= epsilon && math.abs(transform.at(3, 0)) <= epsilon && math.abs(transform.at(3, 1)) <= epsilon && math.abs(transform.at(3, 2)) <= epsilon && math.abs(math.abs(transform.at(2, 2)) - 1) <= epsilon && math.abs(math.abs(transform.at(3, 3)) - 1) <= epsilon
+	if is_2d {
+		return dom_style_value_from_value_logic(StyleValue(TransformationStyleValue.create(.transform, .matrix, [
+			StyleValue(NumberStyleValue.create(transform.at(0, 0))),
+			StyleValue(NumberStyleValue.create(transform.at(1, 0))),
+			StyleValue(NumberStyleValue.create(transform.at(0, 1))),
+			StyleValue(NumberStyleValue.create(transform.at(1, 1))),
+			StyleValue(NumberStyleValue.create(transform.at(0, 3))),
+			StyleValue(NumberStyleValue.create(transform.at(1, 3))),
+		])))
+	}
+	mut values := []StyleValue{cap: 16}
+	for column in 0 .. 4 {
+		for row in 0 .. 4 {
+			values << StyleValue(NumberStyleValue.create(transform.at(row, column)))
+		}
+	}
+	return dom_style_value_from_value_logic(StyleValue(TransformationStyleValue.create(.transform, .matrix3d, values)))
+}
+
+fn cssom_resolved_animation_duration(computed &ComputedProperties) ?&dom.StyleValue {
+	timeline_value := computed.property(.animation_timeline, .yes) or { return none }
+	duration_value := computed.property(.animation_duration, .yes) or { return none }
+	timeline := style_value_logic_from_dom(.animation_timeline, timeline_value) or { return none }
+	duration := style_value_logic_from_dom(.animation_duration, duration_value) or { return none }
+	if timeline !is StyleValueList || duration !is StyleValueList {
+		return unsafe { duration_value }
+	}
+	timeline_list := timeline as StyleValueList
+	duration_list := duration as StyleValueList
+	if timeline_list.size() != 1 || timeline_list.values()[0].to_keyword() != .auto {
+		return unsafe { duration_value }
+	}
+	mut resolved := []StyleValue{cap: duration_list.size()}
+	for value in duration_list.values() {
+		if value.to_keyword() == .auto {
+			resolved << StyleValue(TimeStyleValue.create(Time.make_seconds(0)))
+		} else {
+			resolved << value
+		}
+	}
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(resolved, .comma, .yes)))
+}
+
+fn cssom_resolved_border_width(computed &ComputedProperties, width_property PropertyID, style_property PropertyID) &dom.StyleValue {
+	if style := computed.property(style_property, .yes) {
+		keyword := computed_interpolation_style_value_keyword(style) or { Keyword.invalid }
+		if keyword in [.none_, .hidden] {
+			return cssom_style_value_for_px(0)
+		}
+	}
+	length := computed.length(width_property)
+	return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(length)))
+}
+
+// CSSStyleProperties::style_value_for_computed_property(). This is the CSSOM
+// resolved-value algorithm, consuming the geometry mirrored by
+// layout/dom_layout_bridge.v instead of a second independently computed box.
+pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout_node &dom.LayoutNode, property_id PropertyID) ?&dom.StyleValue {
+	owner := properties.owner_node or { return none }
+	dom_computed := owner.computed_properties() or { return none }
+	computed := computed_properties_from_dom(dom_computed) or { return none }
+
+	if property_is_logical_alias(property_id) {
+		physical := map_logical_alias_to_physical_property(property_id, LogicalAliasMappingContext{
+			writing_mode: computed.writing_mode()
+			direction: computed.direction()
+		})
+		return properties.style_value_for_computed_property(layout_node, physical)
+	}
+
+	get_computed_value := fn [computed] (id PropertyID) ?&dom.StyleValue {
+		return computed.property(id, .yes)
+	}
+	display_allows_used_value := !computed.display().is_none() && !computed.display().is_contents() && layout_node.has_geometry_
+	margin := computed.length_box(.margin_left, .margin_top, .margin_right, .margin_bottom, LengthPercentageOrAuto.make_auto())
+	padding := computed.length_box(.padding_left, .padding_top, .padding_right, .padding_bottom, LengthPercentageOrAuto.from_length(Length.make_px(0)))
+	inset := computed.length_box(.left, .top, .right, .bottom, LengthPercentageOrAuto.make_auto())
+
+	match property_id {
+		.background_color, .border_bottom_color, .border_left_color, .border_right_color, .border_top_color, .caret_color, .color, .outline_color, .text_decoration_color, .webkit_text_fill_color {
+			value := get_computed_value(property_id) or { return none }
+			return cssom_resolve_color_style_value(value, color_resolution_context_for_layout_node(layout_node))
+		}
+		.box_shadow {
+			return cssom_style_value_for_shadow(.normal, computed.box_shadow(layout_node))
+		}
+		.text_shadow {
+			return cssom_style_value_for_shadow(.text, computed.text_shadow(layout_node))
+		}
+		.line_height {
+			value := get_computed_value(property_id) or { return none }
+			if keyword := computed_interpolation_style_value_keyword(value) {
+				if keyword == .normal {
+					return value
+				}
+			}
+			return cssom_style_value_for_px(computed.line_height().to_double())
+		}
+		.height {
+			if display_allows_used_value {
+				used := if computed.box_sizing() == .border_box {
+					layout_node.border_box_.height
+				} else {
+					layout_node.content_height_
+				}
+				return cssom_style_value_for_size(Size.make_px(CSSPixels.nearest_value_for(used)))
+			}
+			return cssom_style_value_for_size(computed.size_value(.height))
+		}
+		.width {
+			if display_allows_used_value {
+				used := if computed.box_sizing() == .border_box {
+					layout_node.border_box_.width
+				} else {
+					layout_node.content_width_
+				}
+				return cssom_style_value_for_size(Size.make_px(CSSPixels.nearest_value_for(used)))
+			}
+			return cssom_style_value_for_size(computed.size_value(.width))
+		}
+		.margin_bottom {
+			if display_allows_used_value {
+				return cssom_style_value_for_px(layout_node.margin_bottom_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(margin.bottom())
+		}
+		.margin_left {
+			if display_allows_used_value {
+				return cssom_style_value_for_px(layout_node.margin_left_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(margin.left())
+		}
+		.margin_right {
+			if display_allows_used_value {
+				return cssom_style_value_for_px(layout_node.margin_right_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(margin.right())
+		}
+		.margin_top {
+			if display_allows_used_value {
+				return cssom_style_value_for_px(layout_node.margin_top_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(margin.top())
+		}
+		.padding_bottom {
+			if display_allows_used_value {
+				return cssom_style_value_for_px(layout_node.padding_bottom_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(padding.bottom())
+		}
+		.padding_left {
+			if display_allows_used_value {
+				return cssom_style_value_for_px(layout_node.padding_left_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(padding.left())
+		}
+		.padding_right {
+			if display_allows_used_value {
+				return cssom_style_value_for_px(layout_node.padding_right_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(padding.right())
+		}
+		.padding_top {
+			if display_allows_used_value {
+				return cssom_style_value_for_px(layout_node.padding_top_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(padding.top())
+		}
+		.bottom {
+			if cssom_should_use_resolved_inset(layout_node, inset.bottom(), inset.top()) {
+				return cssom_style_value_for_px(layout_node.inset_bottom_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(inset.bottom())
+		}
+		.left {
+			if cssom_should_use_resolved_inset(layout_node, inset.left(), inset.right()) {
+				return cssom_style_value_for_px(layout_node.inset_left_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(inset.left())
+		}
+		.right {
+			if cssom_should_use_resolved_inset(layout_node, inset.right(), inset.left()) {
+				return cssom_style_value_for_px(layout_node.inset_right_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(inset.right())
+		}
+		.top {
+			if cssom_should_use_resolved_inset(layout_node, inset.top(), inset.bottom()) {
+				return cssom_style_value_for_px(layout_node.inset_top_)
+			}
+			return cssom_style_value_for_length_percentage_or_auto(inset.top())
+		}
+		.transform {
+			return cssom_resolved_transform(computed, layout_node)
+		}
+		.animation_duration {
+			return cssom_resolved_animation_duration(computed)
+		}
+		.border_bottom_width {
+			return cssom_resolved_border_width(computed, .border_bottom_width, .border_bottom_style)
+		}
+		.border_left_width {
+			return cssom_resolved_border_width(computed, .border_left_width, .border_left_style)
+		}
+		.border_right_width {
+			return cssom_resolved_border_width(computed, .border_right_width, .border_right_style)
+		}
+		.border_top_width {
+			return cssom_resolved_border_width(computed, .border_top_width, .border_top_style)
+		}
+		.contain {
+			containment := computed.contain()
+			if containment.layout_containment && containment.style_containment && containment.paint_containment {
+				if containment.size_containment {
+					return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.strict)))
+				}
+				if !containment.inline_size_containment {
+					return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.content)))
+				}
+			}
+		}
+		.letter_spacing {
+			if computed.letter_spacing().to_double() == 0 {
+				return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.normal)))
+			}
+		}
+		.z_index {
+			if z_index := computed.z_index() {
+				return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(z_index)))
+			}
+		}
+		else {}
+	}
+
+	if !property_is_shorthand(property_id) {
+		return get_computed_value(property_id)
+	}
+	longhand_ids := longhands_for_shorthand_local(property_id)
+	mut values := []StyleValue{cap: longhand_ids.len}
+	for longhand_id in longhand_ids {
+		longhand := properties.style_value_for_computed_property(layout_node, longhand_id) or {
+			return none
+		}
+		values << (style_value_logic_from_dom(longhand_id, longhand) or { return none })
+	}
+	return dom_style_value_from_value_logic(StyleValue(ShorthandStyleValue.create(property_id, longhand_ids, values)))
+}
+
+fn cssom_should_use_resolved_inset(layout_node &dom.LayoutNode, start LengthPercentageOrAuto, end LengthPercentageOrAuto) bool {
+	if !layout_node.is_positioned_ || layout_node.is_sticky_position_ || !layout_node.has_geometry_ {
+		return false
+	}
+	return start.is_percentage() || start.is_calculated() || start.is_auto() || end.is_auto()
 }
 
 pub fn (properties &CSSStyleProperties) get_property_style_value(property PropertyNameAndID) ?&dom.StyleValue {
@@ -1371,28 +1680,46 @@ pub fn (properties &CSSStyleProperties) property_value(property_name string) str
 			return dom_style_value_to_css_text(custom.value)
 		}
 		if value := properties.custom_properties[property.name()] {
-			return custom_property_value_without_priority(value)
+			return dom_style_value_to_css_text(value.value)
 		}
 		return ''
 	}
-	property_id := property.id() or { return '' }
-	property_id_name := string_from_property_id(property_id)
-	for existing in properties.properties {
-		if existing.name == property_id_name {
-			return existing.value
-		}
-	}
 	if style_property := properties.get_property_internal(property) {
-		return dom_style_value_to_css_text(style_property.value)
+		return properties.serialize_a_css_value(style_property)
 	}
 	return ''
+}
+
+// https://www.w3.org/TR/cssom/#serialize-a-css-value
+pub fn (properties &CSSStyleProperties) serialize_a_css_value(declaration StyleProperty) string {
+	if typed := typed_style_value_logic_from_dom(declaration.value) {
+		return typed.serialize(if properties.is_computed() {
+			SerializationMode.resolved_value
+		} else {
+			SerializationMode.normal
+		})
+	}
+	return declaration.value.css_text
+}
+
+// CSSStyleProperties::css_float()/set_css_float().
+pub fn (properties &CSSStyleProperties) css_float() string {
+	return properties.get_property_value('float')
+}
+
+pub fn (mut properties CSSStyleProperties) set_css_float(value string) ! {
+	properties.set_property('float', value, '')!
+}
+
+pub fn (properties &CSSStyleProperties) custom_property_count() usize {
+	return usize(properties.custom_properties.len)
 }
 
 pub fn (properties &CSSStyleProperties) property_priority(property_name string) string {
 	property := css_style_property_name_and_id_from_name(property_name) or { return '' }
 	if property.is_custom_property() {
 		if value := properties.custom_properties[property.name()] {
-			if custom_property_is_important(value) {
+			if value.important == .yes {
 				return 'important'
 			}
 		}
@@ -1430,7 +1757,9 @@ fn (properties &CSSStyleProperties) invalidate_owners(reason StyleInvalidationRe
 fn css_style_declarations_to_dom_invalidation_reason(reason StyleInvalidationReason) dom.StyleInvalidationReason {
 	return match reason {
 		.base_url_changed { dom.StyleInvalidationReason.base_url_changed }
-		.hover_changed, .style_sheet_changed, .dom_mutation { dom.StyleInvalidationReason.style_change }
+		.hover_changed, .style_sheet_changed, .dom_mutation {
+			dom.StyleInvalidationReason.style_change
+		}
 	}
 }
 
@@ -1478,8 +1807,7 @@ pub fn (mut property_map StylePropertyMapReadOnly) get(property_name string) ?CS
 	}
 	if property_value := property_map.get_style_value(property) {
 		if property_value.css_text.len > 0 {
-			reified_values := reify_serialized_style_map_value(property, property_value.css_text,
-				false)
+			reified_values := reify_serialized_style_map_value(property, property_value.css_text, false)
 			if reified_values.len > 0 {
 				return reified_values[0]
 			}
@@ -1509,18 +1837,23 @@ pub fn (mut property_map StylePropertyMapReadOnly) get_all(property_name string)
 		if reified_values.len > 0 {
 			return reified_values
 		}
-		return [StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic(serialized_value))).reify(property.name())]
+		return [
+			StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic(serialized_value))).reify(property.name()),
+		]
 	}
 	if property_value := property_map.get_style_value(property) {
 		if property_value.css_text.len > 0 {
-			reified_values :=
-				reify_serialized_style_map_value(property, property_value.css_text, true)
+			reified_values := reify_serialized_style_map_value(property, property_value.css_text, true)
 			if reified_values.len > 0 {
 				return reified_values
 			}
-			return [StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic(property_value.css_text))).reify(property.name())]
+			return [
+				StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic(property_value.css_text))).reify(property.name()),
+			]
 		}
-		return [StyleValue(UnresolvedStyleValue.create([]ComponentValue{})).reify(property.name())]
+		return [
+			StyleValue(UnresolvedStyleValue.create([]ComponentValue{})).reify(property.name()),
+		]
 	}
 
 	// 5. Otherwise, return an empty list.
@@ -1572,7 +1905,7 @@ pub fn (property_map &StylePropertyMapReadOnly) size() u32 {
 		element := property_map.element or { return number_of_longhand_properties }
 		mut custom_properties := map[string]bool{}
 		if data := element.custom_property_data() {
-			for name, _ in data.properties {
+			for name, _ in data.all_values() {
 				custom_properties[name] = true
 			}
 		}
@@ -1620,7 +1953,7 @@ fn (mut property_map StylePropertyMapReadOnly) get_serialized_style_value(proper
 	if declaration := property_map.declaration {
 		if property.is_custom_property() {
 			if value := declaration.custom_properties[property.name()] {
-				return custom_property_value_without_priority(value)
+				return dom_style_value_to_css_text(value.value)
 			}
 			return none
 		}
@@ -1753,18 +2086,18 @@ pub fn (mut property_map MutableStylePropertyMap) set(property_name string, valu
 	// NOTE: The property is deleted then added back so that it gets put at the end of the ordered map, which gives the
 	//       expected behavior in the face of shorthand properties.
 	if property.is_custom_property() {
-		props.custom_properties[property.name()] =
-			parse_custom_property_value(serialized_values.join(', '))
+		props.custom_properties[property.name()] = StyleProperty{
+			property_id: .color
+			value: parse_custom_property_value(serialized_values.join(', '))
+		}
 		props.update_style_attribute()
 		props.invalidate_owners(.style_sheet_changed)
 	} else if values_to_set.len == 1 {
-		props.set_a_css_declaration_with_serialized(property.id() or { PropertyID.color },
-			values_to_set[0], .no, serialized_values[0])
+		props.set_a_css_declaration_with_serialized(property.id() or { PropertyID.color }, values_to_set[0], .no, serialized_values[0])
 		props.update_style_attribute()
 		props.invalidate_owners(.style_sheet_changed)
 	} else {
-		props.set_a_css_declaration_with_serialized(property.id() or { PropertyID.color },
-			css_style_properties_empty_dom_style_value(), .no, serialized_values.join(', '))
+		props.set_a_css_declaration_with_serialized(property.id() or { PropertyID.color }, css_style_properties_empty_dom_style_value(), .no, serialized_values.join(', '))
 		props.update_style_attribute()
 		props.invalidate_owners(.style_sheet_changed)
 	}
@@ -1826,8 +2159,7 @@ pub fn (mut property_map MutableStylePropertyMap) append(property_name string, v
 		serialized_value += ', '
 	}
 	serialized_value += serialized_values.join(', ')
-	props.set_a_css_declaration_with_serialized(property.id() or { PropertyID.color },
-		css_style_properties_empty_dom_style_value(), .no, serialized_value)
+	props.set_a_css_declaration_with_serialized(property.id() or { PropertyID.color }, css_style_properties_empty_dom_style_value(), .no, serialized_value)
 	props.update_style_attribute()
 	props.invalidate_owners(.style_sheet_changed)
 }

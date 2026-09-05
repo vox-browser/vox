@@ -202,14 +202,25 @@ pub fn (watcher &CloseWatcher) onclose() ?&dom.CallbackType {
 
 @[heap]
 pub struct CloseWatcherManager {
+	dom.CloseWatcherManager
 mut:
 	groups                             [][]&CloseWatcher
 	allowed_number_of_groups           u32  = 1
 	next_user_interaction_allows_group bool = true
 }
 
+fn close_watcher_manager_notify_user_activation(target voidptr) {
+	mut manager := unsafe { &CloseWatcherManager(target) }
+	manager.notify_about_user_activation()
+}
+
 pub fn CloseWatcherManager.create() &CloseWatcherManager {
-	return &CloseWatcherManager{}
+	mut manager := &CloseWatcherManager{}
+	manager.CloseWatcherManager = dom.CloseWatcherManager{
+		target: voidptr(manager)
+		notify_user_activation_callback: close_watcher_manager_notify_user_activation
+	}
+	return manager
 }
 
 pub fn (mut manager CloseWatcherManager) add(close_watcher &CloseWatcher) {

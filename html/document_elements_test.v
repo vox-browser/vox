@@ -84,11 +84,17 @@ fn test_body_hints_anchor_label_fieldset_and_output() {
 	assert hints.margin_left? == 8
 	assert hints.margin_top? == 4
 
-	document := parse_document('<a href="/go" rel="next noopener">old</a><label for="x">Name</label><input id="x"><fieldset><input><output for="x y">initial</output></fieldset>')
+	mut document := parse_document('<a href="/go" rel="next noopener">old</a><label for="x">Name</label><input id="x"><fieldset><input><output for="x y">initial</output></fieldset>')
+	document.set_url(dom.URL{ value: 'https://example.test/' })
 	root := unsafe { &dom.Node(document) }
-	anchor_element := document_elements_find(root, 'a')?
+	mut anchor_element := document_elements_find(root, 'a')?
 	anchor := unsafe { &dom.HTMLAnchorElement(anchor_element) }
-	assert html_anchor_element_rel_list(anchor) == ['next', 'noopener']
+	rel_list := html_anchor_element_rel_list(anchor)
+	assert rel_list.token_set == ['next', 'noopener']
+	anchor_element.set_attribute_value('rel', 'external')
+	html_anchor_element_attribute_changed(anchor, 'rel', 'next noopener', 'external', none)
+	assert html_anchor_element_rel_list(anchor) == rel_list
+	assert rel_list.token_set == ['external']
 	assert html_anchor_element_has_activation_behavior(anchor)
 	assert html_anchor_element_default_tab_index_value(anchor) == 0
 	assert html_anchor_element_default_role(anchor) == .link
@@ -142,27 +148,37 @@ fn test_label_activation_form_and_fieldset_disabled_legend_exception() {
 fn test_map_areas_and_modification_and_quote_default_roles() {
 	document := parse_document('<map><area id="one"><div><area id="two"></div><a id="not-area"></a></map><del></del><ins></ins><blockquote></blockquote><q></q>')
 	root := unsafe { &dom.Node(document) }
-	map_element := unsafe { &dom.HTMLMapElement(document_elements_find(root, 'map') or {
-		panic('map')
-	}) }
+	map_element := unsafe {
+		&dom.HTMLMapElement(document_elements_find(root, 'map') or {
+			panic('map')
+		})
+	}
 	areas := html_map_element_areas(map_element)
 	assert areas.length() == 2
 	assert areas.item(0)?.get_attribute_value('id') == 'one'
 	assert areas.item(1)?.get_attribute_value('id') == 'two'
 	assert html_map_element_areas(map_element) == areas
 
-	del_element := unsafe { &dom.HTMLModElement(document_elements_find(root, 'del') or {
-		panic('del')
-	}) }
-	ins_element := unsafe { &dom.HTMLModElement(document_elements_find(root, 'ins') or {
-		panic('ins')
-	}) }
-	blockquote := unsafe { &dom.HTMLQuoteElement(document_elements_find(root, 'blockquote') or {
-		panic('blockquote')
-	}) }
-	quote := unsafe { &dom.HTMLQuoteElement(document_elements_find(root, 'q') or {
-		panic('q')
-	}) }
+	del_element := unsafe {
+		&dom.HTMLModElement(document_elements_find(root, 'del') or {
+			panic('del')
+		})
+	}
+	ins_element := unsafe {
+		&dom.HTMLModElement(document_elements_find(root, 'ins') or {
+			panic('ins')
+		})
+	}
+	blockquote := unsafe {
+		&dom.HTMLQuoteElement(document_elements_find(root, 'blockquote') or {
+			panic('blockquote')
+		})
+	}
+	quote := unsafe {
+		&dom.HTMLQuoteElement(document_elements_find(root, 'q') or {
+			panic('q')
+		})
+	}
 	assert html_mod_element_default_role(del_element) == .deletion
 	assert html_mod_element_default_role(ins_element) == .insertion
 	assert html_quote_element_default_role(blockquote) == .blockquote
@@ -174,9 +190,11 @@ fn test_concrete_area_base_meta_source_and_style_element_algorithms() {
 	document.set_url(dom.URL{ value: 'https://example.test/root/page.html' })
 	root := unsafe { &dom.Node(document) }
 
-	base_element := unsafe { &dom.HTMLBaseElement(document_elements_find(root, 'base') or {
-		panic('base')
-	}) }
+	base_element := unsafe {
+		&dom.HTMLBaseElement(document_elements_find(root, 'base') or {
+			panic('base')
+		})
+	}
 	html_base_element_inserted(base_element)
 	assert html_base_element_href(base_element) == 'https://example.test/root/assets/'
 	assert document.base_url().serialize() == 'https://example.test/root/assets/'
@@ -191,21 +209,27 @@ fn test_concrete_area_base_meta_source_and_style_element_algorithms() {
 	html_area_element_attribute_changed(area, 'rel', 'next noopener', 'external', none)
 	assert rel_list.contains('external')
 
-	language := unsafe { &dom.HTMLMetaElement(document.get_element_by_id('language') or {
-		panic('language meta')
-	}) }
-	referrer := unsafe { &dom.HTMLMetaElement(document.get_element_by_id('referrer') or {
-		panic('referrer meta')
-	}) }
+	language := unsafe {
+		&dom.HTMLMetaElement(document.get_element_by_id('language') or {
+			panic('language meta')
+		})
+	}
+	referrer := unsafe {
+		&dom.HTMLMetaElement(document.get_element_by_id('referrer') or {
+			panic('referrer meta')
+		})
+	}
 	assert html_meta_element_http_equiv_state(language)? == .content_language
 	html_meta_element_inserted(language)
 	html_meta_element_inserted(referrer)
 	assert document.pragma_set_default_language_value()? == 'en-GB'
 	assert document.meta_referrer_policy() == 'no-referrer'
 
-	style := unsafe { &dom.HTMLStyleElement(document_elements_find(root, 'style') or {
-		panic('style')
-	}) }
+	style := unsafe {
+		&dom.HTMLStyleElement(document_elements_find(root, 'style') or {
+			panic('style')
+		})
+	}
 	html_style_element_inserted(style)
 	assert html_style_element_sheet(style) != none
 	assert html_style_element_sheet(style)?.media == 'screen'
@@ -214,9 +238,11 @@ fn test_concrete_area_base_meta_source_and_style_element_algorithms() {
 	set_html_style_element_disabled(style, true)
 	assert html_style_element_disabled(style)
 
-	source := unsafe { &dom.HTMLSourceElement(document_elements_find(root, 'source') or {
-		panic('source')
-	}) }
+	source := unsafe {
+		&dom.HTMLSourceElement(document_elements_find(root, 'source') or {
+			panic('source')
+		})
+	}
 	html_source_element_inserted(source)
 	parent := unsafe { &dom.Element(source) }.as_node().parent_element() or { panic('audio') }
 	media := html_media_element_for_dom_element(parent) or { panic('media state') }
@@ -248,6 +274,5 @@ fn test_body_link_background_and_window_event_targets() {
 	}
 	assert voidptr(load_target) == voidptr(unsafe { &dom.EventTarget(window) })
 	assert voidptr(click_target) == voidptr(unsafe { &dom.EventTarget(body_element.as_node()) })
-	assert voidptr(html_body_element_window_event_handlers_to_event_target(body)?) ==
-		voidptr(unsafe { &dom.EventTarget(window) })
+	assert voidptr(html_body_element_window_event_handlers_to_event_target(body)?) == voidptr(unsafe { &dom.EventTarget(window) })
 }

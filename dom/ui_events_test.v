@@ -2,6 +2,11 @@ module dom
 
 import math
 
+struct EventRealmObservation {
+mut:
+	saw_callback_realm_event bool
+}
+
 // The DOM's UIEvents predicates now identify the real MouseEvent/KeyboardEvent/PointerEvent subclasses
 // via the Event.interface_ tag, and downcast to read subclass fields.
 fn test_ui_events_predicates() {
@@ -74,6 +79,46 @@ fn test_html_events_predicates() {
 	plain := Event.new('custom')
 	assert !event_is_before_unload_event(plain)
 	assert !event_is_error_event(plain)
+}
+
+fn test_beforeunload_event_handler_return_value_is_retained() {
+	mut target := EventTarget.new()
+	callback := &CallbackType{
+		handle_event: fn (_ &Event, _ ?&EventTarget) JSValue {
+			return js_string('leave this page')
+		}
+	}
+	target.set_event_handler_attribute('beforeunload', callback)
+	before_unload := BeforeUnloadEvent.create('beforeunload', EventInit{ cancelable: true })
+	assert !event_target_dispatch_event(target, unsafe { &Event(before_unload) })
+	assert before_unload.return_value() == 'leave this page'
+
+	// The processing algorithm must not overwrite a value assigned by script before dispatch.
+	mut preset := BeforeUnloadEvent.create('beforeunload', EventInit{ cancelable: true })
+	preset.set_return_value('already set')
+	assert !event_target_dispatch_event(target, unsafe { &Event(preset) })
+	assert preset.return_value() == 'already set'
+}
+
+fn test_event_dispatch_uses_callback_realm_instead_of_current_target_realm() {
+	target := EventTarget.new()
+	callback_window := &Window{}
+	observation := &EventRealmObservation{}
+	callback := &CallbackType{
+		associated_window: callback_window
+		handle_event: fn [callback_window, observation] (event &Event, _ ?&EventTarget) JSValue {
+			mut mutable_observation := unsafe { &EventRealmObservation(observation) }
+			mutable_observation.saw_callback_realm_event = callback_window.current_event() or {
+				return js_undefined()
+			} == event
+			return js_undefined()
+		}
+	}
+	target.add_event_listener_without_options('cross-realm', IDLEventListener.create(callback))
+	event := Event.create('cross-realm', EventInit{})
+	assert event_target_dispatch_event(target, event)
+	assert observation.saw_callback_realm_event
+	assert callback_window.current_event() == none
 }
 
 fn test_ui_event_constructors_legacy_initializers_and_modifiers() {

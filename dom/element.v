@@ -10,6 +10,7 @@ module dom
 import rand
 import math
 import strings
+import webidl
 
 // --- Types needed by Element that are NOT already in document.v ---
 pub struct QualifiedName {
@@ -281,16 +282,21 @@ pub enum ProximityToTheViewport {
 	not_determined
 }
 
+pub type CustomElementExceptionReporter = fn (string)
+
 @[heap]
 pub struct CustomElementDefinition {
 pub mut:
-	disable_shadow_     bool
-	disable_internals_  bool
-	form_associated_    bool
-	construction_stack  []&Element
-	name_               string
-	local_name_         string
-	observed_attributes []string
+	disable_shadow_      bool
+	disable_internals_   bool
+	form_associated_     bool
+	construction_stack   []&Element
+	name_                string
+	local_name_          string
+	observed_attributes  []string
+	constructor_id_      u64
+	lifecycle_callbacks_ []string
+	exception_reporter_  ?CustomElementExceptionReporter
 }
 
 pub fn CustomElementDefinition.create(name string, local_name string, observed_attributes []string, form_associated bool, disable_internals bool, disable_shadow bool) &CustomElementDefinition {
@@ -328,9 +334,7 @@ pub fn (d &CustomElementDefinition) form_associated() bool {
 }
 
 pub fn (d &CustomElementDefinition) constructor() u64 {
-	// The translated registry uses stable constructor IDs instead of a JS
-	// callback object. Definitions originating in DOM-only code have ID zero.
-	return 0
+	return d.constructor_id_
 }
 
 pub fn (d &CustomElementDefinition) observed_attributes() []string {
@@ -338,8 +342,12 @@ pub fn (d &CustomElementDefinition) observed_attributes() []string {
 }
 
 pub fn (d &CustomElementDefinition) lifecycle_callbacks() []string {
-	_ = d
-	return []
+	return d.lifecycle_callbacks_.clone()
+}
+
+pub fn (d &CustomElementDefinition) report_constructor_exception(message string) {
+	reporter := d.exception_reporter_ or { return }
+	reporter(message)
 }
 
 pub fn (d &CustomElementDefinition) construction_stack() []&Element {
@@ -423,14 +431,25 @@ pub fn (mut states CustomStateSet) clear() {
 @[heap]
 pub struct CSSStyleProperties_ {
 pub mut:
-	is_updating_              bool
-	associated_element        ?&Element
+	is_updating_       bool
+	associated_element ?&Element
+	// DOM owns the element while CSS owns the typed CSSStyleProperties. Keep the
+	// same live declaration object across cascades and attribute mutations without
+	// introducing a dom -> css import cycle.
+	css_handle                voidptr = unsafe { nil }
+	set_declarations_callback fn (voidptr, string) = unsafe { nil }
 	prefetch_resources_target voidptr = unsafe { nil }
 	prefetch_resources        fn (voidptr, &Document) = unsafe { nil }
 }
 
 pub fn (c &CSSStyleProperties_) is_updating() bool {
 	return c.is_updating_
+}
+
+pub fn (mut c CSSStyleProperties_) set_declarations_from_text(text string) {
+	if c.css_handle != unsafe { nil } && c.set_declarations_callback != unsafe { nil } {
+		c.set_declarations_callback(c.css_handle, text)
+	}
 }
 
 fn create_element_inline_style(element &Element) &CSSStyleProperties_ {
@@ -452,6 +471,7 @@ pub mut:
 	scrollbar_width_                string = 'auto'
 	math_depth_                     int
 	math_style_                     CSSMathStyle_ = .normal
+	view_transition_name_           ?string
 	attempted_pseudo_class_matches_ map[string]bool
 	// dom<->css bridge: opaque handle to the real css.ComputedProperties this placeholder mirrors.
 	// The CSS module (which owns the type) sets/reads it via unsafe cast; dom cannot name the type
@@ -496,7 +516,7 @@ pub fn (c &CSSComputedProperties_) math_style() CSSMathStyle_ {
 }
 
 pub fn (c &CSSComputedProperties_) view_transition_name() ?string {
-	return none
+	return c.view_transition_name_
 }
 
 pub fn (c &CSSComputedProperties_) has_attempted_match_against_pseudo_class(pseudo_class PseudoClass) bool {
@@ -515,11 +535,26 @@ pub fn (c &CSSComputedProperties_) has_attempted_match_against_pseudo_class(pseu
 
 pub struct CSSDisplay_ {
 pub mut:
-	is_none_           bool
-	is_list_item_      bool
-	is_contents_       bool
-	is_inline_outside_ bool
-	is_flow_inside_    bool
+	is_none_               bool
+	is_list_item_          bool
+	is_contents_           bool
+	is_inline_outside_     bool
+	is_flow_inside_        bool
+	is_flow_root_inside_   bool
+	is_flex_inside_        bool
+	is_grid_inside_        bool
+	is_table_inside_       bool
+	is_math_inside_        bool
+	is_ruby_inside_        bool
+	is_block_outside_      bool
+	is_table_caption_      bool
+	is_table_cell_         bool
+	is_table_row_          bool
+	is_table_row_group_    bool
+	is_table_header_group_ bool
+	is_table_footer_group_ bool
+	is_table_column_       bool
+	is_table_column_group_ bool
 }
 
 pub fn (d CSSDisplay_) is_none() bool {
@@ -528,6 +563,66 @@ pub fn (d CSSDisplay_) is_none() bool {
 
 pub fn (d CSSDisplay_) is_list_item() bool {
 	return d.is_list_item_
+}
+
+pub fn (d CSSDisplay_) is_block_outside() bool {
+	return d.is_block_outside_
+}
+
+pub fn (d CSSDisplay_) is_table_caption() bool {
+	return d.is_table_caption_
+}
+
+pub fn (d CSSDisplay_) is_table_cell() bool {
+	return d.is_table_cell_
+}
+
+pub fn (d CSSDisplay_) is_table_row() bool {
+	return d.is_table_row_
+}
+
+pub fn (d CSSDisplay_) is_flow_root_inside() bool {
+	return d.is_flow_root_inside_
+}
+
+pub fn (d CSSDisplay_) is_flex_inside() bool {
+	return d.is_flex_inside_
+}
+
+pub fn (d CSSDisplay_) is_grid_inside() bool {
+	return d.is_grid_inside_
+}
+
+pub fn (d CSSDisplay_) is_table_inside() bool {
+	return d.is_table_inside_
+}
+
+pub fn (d CSSDisplay_) is_math_inside() bool {
+	return d.is_math_inside_
+}
+
+pub fn (d CSSDisplay_) is_ruby_inside() bool {
+	return d.is_ruby_inside_
+}
+
+pub fn (d CSSDisplay_) is_table_row_group() bool {
+	return d.is_table_row_group_
+}
+
+pub fn (d CSSDisplay_) is_table_header_group() bool {
+	return d.is_table_header_group_
+}
+
+pub fn (d CSSDisplay_) is_table_footer_group() bool {
+	return d.is_table_footer_group_
+}
+
+pub fn (d CSSDisplay_) is_table_column() bool {
+	return d.is_table_column_
+}
+
+pub fn (d CSSDisplay_) is_table_column_group() bool {
+	return d.is_table_column_group_
 }
 
 pub enum CSSOverflow_ {
@@ -564,13 +659,105 @@ pub mut:
 }
 
 @[heap]
+pub struct CSSCustomProperty_ {
+pub:
+	important bool
+	value     &CSSStyleValue_
+}
+
+@[heap]
 pub struct CSSCustomPropertyData_ {
 pub mut:
-	properties map[string]&CSSStyleValue_
+	own_values     map[string]CSSCustomProperty_
+	parent         ?&CSSCustomPropertyData_
+	ancestor_count u8
 }
 
 pub fn (data &CSSCustomPropertyData_) get(name string) ?&CSSStyleValue_ {
-	return data.properties[name] or { return none }
+	return (data.get_property(name) or { return none }).value
+}
+
+pub fn (data &CSSCustomPropertyData_) get_property(name string) ?CSSCustomProperty_ {
+	if property := data.own_values[name] {
+		return property
+	}
+	if parent := data.parent {
+		return parent.get_property(name)
+	}
+	return none
+}
+
+pub fn (data &CSSCustomPropertyData_) all_values() map[string]CSSCustomProperty_ {
+	mut values := map[string]CSSCustomProperty_{}
+	mut node := ?&CSSCustomPropertyData_(data)
+	for {
+		current := node or { break }
+		for name, property in current.own_values {
+			if name !in values {
+				values[name] = property
+			}
+		}
+		node = current.parent
+	}
+	return values
+}
+
+pub fn (data &CSSCustomPropertyData_) is_empty() bool {
+	if data.own_values.len != 0 {
+		return false
+	}
+	if parent := data.parent {
+		return parent.is_empty()
+	}
+	return true
+}
+
+// CustomPropertyData::create (LibWeb/CSS/CustomPropertyData.cpp). Keep shallow
+// chains by flattening after 32 ancestors and absorbing parents with at most
+// eight own declarations, exactly like upstream.
+pub fn CSSCustomPropertyData_.create(input_own_values map[string]CSSCustomProperty_, parent ?&CSSCustomPropertyData_) &CSSCustomPropertyData_ {
+	mut own_values := input_own_values.clone()
+	parent_data := parent or {
+		return &CSSCustomPropertyData_{
+			own_values: own_values
+		}
+	}
+
+	if parent_data.ancestor_count >= 31 {
+		for name, property in parent_data.all_values() {
+			if name !in own_values {
+				own_values[name] = property
+			}
+		}
+		return &CSSCustomPropertyData_{
+			own_values: own_values
+		}
+	}
+
+	if parent_data.own_values.len <= 8 {
+		for name, property in parent_data.own_values {
+			if name !in own_values {
+				own_values[name] = property
+			}
+		}
+		grandparent := parent_data.parent
+		ancestor_count := if grandparent_data := grandparent {
+			grandparent_data.ancestor_count + 1
+		} else {
+			u8(0)
+		}
+		return &CSSCustomPropertyData_{
+			own_values: own_values
+			parent: grandparent
+			ancestor_count: ancestor_count
+		}
+	}
+
+	return &CSSCustomPropertyData_{
+		own_values: own_values
+		parent: parent_data
+		ancestor_count: parent_data.ancestor_count + 1
+	}
 }
 
 @[heap]
@@ -594,13 +781,16 @@ pub fn (mut c CSSCountersSet_) visit_edges(visitor &CellVisitor) {
 
 pub struct RequiredInvalidationAfterStyleChange {
 pub mut:
-	relayout            bool
-	rebuild_layout_tree bool
-	repaint             bool
+	relayout                            bool
+	rebuild_layout_tree                 bool
+	repaint                             bool
+	rebuild_stacking_context_tree       bool
+	rebuild_accumulated_visual_contexts bool
 }
 
 pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
 	return !r.relayout && !r.rebuild_layout_tree && !r.repaint
+		&& !r.rebuild_stacking_context_tree && !r.rebuild_accumulated_visual_contexts
 }
 
 fn required_invalidation_full() RequiredInvalidationAfterStyleChange {
@@ -608,6 +798,7 @@ fn required_invalidation_full() RequiredInvalidationAfterStyleChange {
 		relayout: true
 		rebuild_layout_tree: true
 		repaint: true
+		rebuild_stacking_context_tree: true
 	}
 }
 
@@ -654,17 +845,32 @@ pub fn (mut p PseudoElement_) set_custom_property_data(data ?&CSSCustomPropertyD
 	p.custom_prop_data = data
 }
 
+pub enum LayoutNodeKind {
+	box
+	list_item_box
+	block_container
+	inline_node
+}
+
 @[heap]
 pub struct LayoutNodeWithStyle_ {
 pub mut:
 	layout_node_        ?&LayoutNode
 	applied_properties_ ?&CSSComputedProperties_
+	kind_               LayoutNodeKind = .inline_node
 }
 
 pub fn (n &LayoutNodeWithStyle_) apply_style(props &CSSComputedProperties_) {
 	unsafe {
 		n.applied_properties_ = props
 	}
+	if layout_node := n.layout_node_ {
+		layout_node.apply_style(props.css_handle)
+	}
+}
+
+pub fn (n &LayoutNodeWithStyle_) layout_node_kind() LayoutNodeKind {
+	return n.kind_
 }
 
 pub fn (n &LayoutNodeWithStyle_) is_scroll_container() bool {
@@ -783,27 +989,29 @@ pub mut:
 	data       []u8
 }
 
-pub fn (a &CSSAnimation_) cancel() {}
-
-pub fn (a &CSSAnimation_) play() ! {}
-
-pub fn (a &CSSAnimation_) pause() ! {}
-
-pub struct PaintableBox_ {
-pub mut:
-	scroll_offset_ CSSPixelPoint_
+pub fn (a &CSSAnimation_) cancel() {
+	if a.target != unsafe { nil } && a.cancel_callback != unsafe { nil } {
+		a.cancel_callback(a.target)
+	}
 }
 
-pub fn (p &PaintableBox_) scroll_offset() CSSPixelPoint_ {
-	return p.scroll_offset_
+pub fn (a &CSSAnimation_) play() ! {
+	if a.target != unsafe { nil } && a.play_callback != unsafe { nil } {
+		a.play_callback(a.target)
+	}
 }
 
-pub fn (mut p PaintableBox_) set_scroll_offset(offset CSSPixelPoint_) {
-	p.scroll_offset_ = offset
+pub fn (a &CSSAnimation_) pause() ! {
+	if a.target != unsafe { nil } && a.pause_callback != unsafe { nil } {
+		a.pause_callback(a.target)
+	}
 }
 
-pub fn (p &PaintableBox_) scrollable_overflow_rect() ?CSSPixelRect_ {
-	return CSSPixelRect_{}
+pub fn (a &CSSAnimation_) last_css_animation_play_state() ?CSSAnimationPlayState_ {
+	if a.target != unsafe { nil } && a.last_play_state_callback != unsafe { nil } {
+		return a.last_play_state_callback(a.target)
+	}
+	return none
 }
 
 pub struct CSSPixelPoint_ {
@@ -854,7 +1062,9 @@ fn css_pixel_rect_intersects_rect(rect CSSPixelRect_, other Rect) bool {
 
 pub struct IntersectionObserverRegistration_ {
 pub mut:
-	observer voidptr
+	observer                 voidptr
+	previous_threshold_index ?usize
+	previous_is_intersecting bool
 }
 
 pub enum Dir {
@@ -880,7 +1090,6 @@ pub enum FullscreenRequester {
 
 pub enum RequestFullscreenError {
 	false_
-	true_
 	unsupported_element
 	element_ready_check_failed
 	no_transient_user_activation
@@ -1167,8 +1376,9 @@ pub mut:
 
 	scroll_offset_ CSSPixelPoint_
 
-	css_defined_animations_         map[string]&CSSAnimation_
+	css_defined_animations_         map[int]map[string]&CSSAnimation_
 	has_css_defined_animations_flag bool
+	animations_animatable_handle_   voidptr = unsafe { nil }
 
 	// Boolean flags
 	is_being_activated_                                                             bool
@@ -1435,13 +1645,15 @@ pub fn (mut e Element) set_attribute_for_bindings(qualified_name string, value s
 		}
 	}
 
-	e.set_attribute_value(actual_name, value)
+	verified_value := e.document().trusted_types_compliant_attribute_value(&e, actual_name, none, value)!
+	e.set_attribute_value(actual_name, verified_value)
 }
 
 // https://dom.spec.whatwg.org/#dom-element-setattributens
 pub fn (mut e Element) set_attribute_ns_for_bindings(namespace_ ?string, qualified_name string, value string) ! {
 	extracted := validate_and_extract(namespace_, qualified_name, .attribute)!
-	e.set_attribute_value_ns(extracted.local_name, value, extracted.prefix_, extracted.namespace_)
+	verified_value := e.document().trusted_types_compliant_attribute_value(&e, extracted.local_name, extracted.namespace_, value)!
+	e.set_attribute_value_ns(extracted.local_name, verified_value, extracted.prefix_, extracted.namespace_)
 }
 
 // https://dom.spec.whatwg.org/#dom-element-setattributenode
@@ -1896,17 +2108,49 @@ pub fn (e &Element) create_layout_node(style &CSSComputedProperties_) ?&LayoutNo
 
 pub fn create_layout_node_for_display_type(document &Document, display CSSDisplay_, style &CSSComputedProperties_, element &Element) ?&LayoutNodeWithStyle_ {
 	_ = document
-	_ = style
-	_ = element
 	if display.is_none() {
 		return none
 	}
-	// Stub for Layout::{Box,ListItemBox,BlockContainer,InlineNode} allocation.
-	return &LayoutNodeWithStyle_{}
+	kind := if display.is_table_inside() || display.is_table_row_group()
+		|| display.is_table_header_group() || display.is_table_footer_group()
+		|| display.is_table_row() {
+		LayoutNodeKind.box
+	} else if display.is_list_item() {
+		LayoutNodeKind.list_item_box
+	} else if display.is_table_cell() || display.is_table_column()
+		|| display.is_table_column_group() || display.is_table_caption()
+		|| display.is_math_inside() {
+		LayoutNodeKind.block_container
+	} else if display.is_inline_outside() {
+		if display.is_flow_root_inside() {
+			LayoutNodeKind.block_container
+		} else if display.is_flow_inside() {
+			LayoutNodeKind.inline_node
+		} else if display.is_flex_inside() || display.is_grid_inside() {
+			LayoutNodeKind.box
+		} else {
+			LayoutNodeKind.inline_node
+		}
+	} else if display.is_flex_inside() || display.is_grid_inside() {
+		LayoutNodeKind.box
+	} else if display.is_flow_inside() || display.is_flow_root_inside() || display.is_contents()
+		|| display.is_ruby_inside() {
+		LayoutNodeKind.block_container
+	} else {
+		LayoutNodeKind.inline_node
+	}
+	return &LayoutNodeWithStyle_{
+		layout_node_: &LayoutNode{
+			dom_node_: element.as_node()
+			display_: display
+		}
+		applied_properties_: style
+		kind_: kind
+	}
 }
 
-pub fn (e &Element) paintable_box() ?&PaintableBox_ {
-	return none
+pub fn (e &Element) paintable_box() ?&PaintableBox {
+	return e.as_node().paintable_box()
 }
 
 // --- Style / Computed properties ---
@@ -2079,23 +2323,12 @@ pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?
 
 // --- recompute_style ---
 pub fn (mut e Element) recompute_style() RequiredInvalidationAfterStyleChange {
-	e.reset_style_dependency_flags()
-	e.affected_by_has_pseudo_class_in_subject_position = false
-	e.affected_by_has_pseudo_class_in_non_subject_position = false
-	e.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator = false
-	e.affected_by_direct_sibling_combinator = false
-	e.affected_by_indirect_sibling_combinator = false
-	e.affected_by_first_child_pseudo_class = false
-	e.affected_by_last_child_pseudo_class = false
-	e.affected_by_forward_positional_pseudo_class = false
-	e.affected_by_backward_positional_pseudo_class = false
-	e.sibling_invalidation_distance = 0
-
-	mut invalidation := RequiredInvalidationAfterStyleChange{}
-	if e.computed_properties_ == none {
-		invalidation = required_invalidation_full()
+	style_computer := e.document().style_computer()
+	if style_computer.css_handle == unsafe { nil }
+		|| style_computer.recompute_style_callback == unsafe { nil } {
+		return RequiredInvalidationAfterStyleChange{}
 	}
-	return invalidation
+	return style_computer.recompute_style_callback(style_computer.css_handle, &e)
 }
 
 pub fn (mut e Element) reset_style_dependency_flags() {
@@ -2140,19 +2373,21 @@ pub fn (e &Element) style_uses_inherit_css_function() bool {
 
 // --- recompute_inherited_style ---
 pub fn (mut e Element) recompute_inherited_style() RequiredInvalidationAfterStyleChange {
-	if e.cascaded_properties_ == none || e.computed_properties_ == none || e.el_unsafe_layout_node() == none {
+	style_computer := e.document().style_computer()
+	if style_computer.css_handle == unsafe { nil }
+		|| style_computer.recompute_inherited_style_callback == unsafe { nil } {
 		return RequiredInvalidationAfterStyleChange{}
 	}
-	return RequiredInvalidationAfterStyleChange{}
+	return style_computer.recompute_inherited_style_callback(style_computer.css_handle, &e)
 }
 
 // --- Inner/Outer HTML ---
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-innerhtml
 pub fn (mut e Element) set_inner_html(value string) ! {
-	// Trusted Types compliance is not translated yet; treat value as the compliant string.
+	compliant_string := e.document().trusted_types_compliant_html(value, 'element-inner-html')!
 	mut node := unsafe { &Node(&e) }
-	node.unsafely_set_html(&e, value)!
+	node.unsafely_set_html(&e, compliant_string)!
 	node.set_needs_style_update(true)
 	if node.is_connected() {
 		node.set_needs_layout_tree_update(true, .element_set_inner_html)
@@ -2168,7 +2403,7 @@ pub fn (e &Element) outer_html() !string {
 }
 
 pub fn (mut e Element) set_outer_html(value string) ! {
-	// Trusted Types compliance is not translated yet; treat value as the compliant string.
+	compliant_string := e.document().trusted_types_compliant_html(value, 'element-outer-html')!
 	parent := e.as_node().parent() or { return }
 	if parent.is_document() {
 		return error('NoModificationAllowedError: Cannot set outer HTML on document')
@@ -2183,7 +2418,7 @@ pub fn (mut e Element) set_outer_html(value string) ! {
 		return error('NoModificationAllowedError: Cannot set outer HTML without an element context')
 	}
 
-	fragment := parse_fragment_fallback(context_element, value)!
+	fragment := parse_fragment_fallback(context_element, compliant_string)!
 	mut mutable_parent := unsafe { &Node(parent) }
 	mutable_parent.replace_child(fragment.as_node(), e.as_node())!
 }
@@ -2225,8 +2460,9 @@ pub fn (mut e Element) set_inner_text(input string) {
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-sethtmlunsafe
 pub fn (mut e Element) set_html_unsafe(html string) ! {
+	compliant_html := e.document().trusted_types_compliant_html(html, 'element-set-html-unsafe')!
 	mut node := unsafe { &Node(&e) }
-	node.unsafely_set_html(&e, html)!
+	node.unsafely_set_html(&e, compliant_html)!
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-gethtml
@@ -2237,6 +2473,7 @@ pub fn (e &Element) get_html(options GetHTMLOptions) !string {
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#the-insertadjacenthtml()-method
 pub fn (mut e Element) insert_adjacent_html(position string, text string) ! {
+	compliant_string := e.document().trusted_types_compliant_html(text, 'element-insert-adjacent-html')!
 	lower_pos := to_ascii_lowercase(position)
 	if lower_pos !in ['beforebegin', 'afterbegin', 'beforeend', 'afterend'] {
 		return error('SyntaxError: insertAdjacentHTML: invalid position argument')
@@ -2259,12 +2496,13 @@ pub fn (mut e Element) insert_adjacent_html(position string, text string) ! {
 		context_element = create_element(e.document(), 'body', namespace_html_, none, none, false)!
 	} else if element := context_element {
 		if element.document().document_type() == .html && element.local_name() == 'html' && element.namespace_uri() or {
-			''} == namespace_html_ {
+			''
+		} == namespace_html_ {
 			context_element = create_element(e.document(), 'body', namespace_html_, none, none, false)!
 		}
 	}
 	element_context := context_element or { return }
-	fragment := parse_fragment_fallback(element_context, text)!
+	fragment := parse_fragment_fallback(element_context, compliant_string)!
 	match lower_pos {
 		'beforebegin' {
 			parent := e.as_node().parent() or { return }
@@ -3222,7 +3460,12 @@ pub fn (mut e Element) set_scroll_offset_internal(typ ?int, offset CSSPixelPoint
 
 // https://w3c.github.io/csswg-drafts/cssom-view-1/#dom-element-scrollintoview
 pub fn (mut e Element) scroll_into_view() &Promise {
-	return &Promise{}
+	mut document := unsafe { &Document(e.document()) }
+	document.update_layout(.element_scroll_into_view)
+	if e.as_node().layout_node() == none {
+		return Promise.resolved(js_undefined())
+	}
+	return scroll_an_element_into_view(e, .auto_, .start, .nearest, none)
 }
 
 // --- Fullscreen ---
@@ -3253,8 +3496,10 @@ pub fn (mut e Element) request_fullscreen(requester FullscreenRequester) &Promis
 
 pub fn (e &Element) is_element_allowed_to_enter_fullscreen(requester FullscreenRequester) RequestFullscreenError {
 	// This's namespace is the HTML namespace or this is an SVG svg element.
-	// MathML math element support is not represented in the current V DOM type set.
-	if !(e.namespace_uri() or { '' } == namespace_html_uri || e.is_svg_svg_element()) {
+	namespace_ := e.namespace_uri() or { '' }
+	is_mathml_math := namespace_ == 'http://www.w3.org/1998/Math/MathML'
+		&& e.local_name() == 'math'
+	if !(namespace_ == namespace_html_uri || e.is_svg_svg_element() || is_mathml_math) {
 		return .unsupported_element
 	}
 
@@ -3268,11 +3513,14 @@ pub fn (e &Element) is_element_allowed_to_enter_fullscreen(requester FullscreenR
 		return .element_ready_check_failed
 	}
 
-	// Fullscreen support is represented by Document.is_allowed_to_use_feature().
-	// Transient user activation is owned by Window/HTML agent state, which is not
-	// translated in this DOM-only V port. WebDriver and bindings share the same
-	// successful path until that state exists.
-	_ = requester
+	// FIXME: Handle user-generated orientation changes, as upstream does.
+	// WebDriver deliberately bypasses transient activation.
+	if requester != .web_driver {
+		window := e.document().window
+		if window == unsafe { nil } || !window.has_transient_activation() {
+			return .no_transient_user_activation
+		}
+	}
 	return .false_
 }
 
@@ -3863,7 +4111,7 @@ pub fn (e &Element) locate_a_namespace_prefix(namespace_ ?string) ?string {
 	return none
 }
 
-pub fn (e &Element) for_each_attribute(callback fn(&Attr_)) {
+pub fn (e &Element) for_each_attribute(callback fn (&Attr_)) {
 	attrs := e.attributes_ or { return }
 	for i := 0; i < attrs.length(); i++ {
 		if a := attrs.item(i) {
@@ -3872,7 +4120,7 @@ pub fn (e &Element) for_each_attribute(callback fn(&Attr_)) {
 	}
 }
 
-pub fn (e &Element) for_each_attribute_name_value(callback fn(string, string)) {
+pub fn (e &Element) for_each_attribute_name_value(callback fn (string, string)) {
 	attrs := e.attributes_ or { return }
 	for i := 0; i < attrs.length(); i++ {
 		if a := attrs.item(i) {
@@ -3944,8 +4192,7 @@ fn (e &Element) auto_directionality() ?Directionality {
 		if assigned_nodes.len > 0 {
 			for child in assigned_nodes {
 				child_direction := if child.is_text() {
-					unsafe { &Text(child) }
-					.directionality()
+					unsafe { &Text(child) }.directionality()
 				} else if child_element := child.as_element() {
 					child_element.contained_text_auto_directionality(true)
 				} else {
@@ -4167,7 +4414,8 @@ pub fn (e &Element) matches_checked_pseudo_class() bool {
 	}
 	if e.local_name() == 'input' {
 		type_ := to_ascii_lowercase(e.get_attribute_value('type'))
-		return type_ in ['checkbox', 'radio'] && e.has_attribute('checked')
+		input := unsafe { &HTMLInputElement(e) }
+		return type_ in ['checkbox', 'radio'] && input.checked()
 	}
 	return e.local_name() == 'option' && e.has_attribute('selected')
 }
@@ -4178,7 +4426,8 @@ pub fn (e &Element) matches_unchecked_pseudo_class() bool {
 	}
 	if e.local_name() == 'input' {
 		type_ := to_ascii_lowercase(e.get_attribute_value('type'))
-		return type_ in ['checkbox', 'radio'] && !e.has_attribute('checked')
+		input := unsafe { &HTMLInputElement(e) }
+		return type_ in ['checkbox', 'radio'] && !input.checked()
 	}
 	return e.local_name() == 'option' && !e.has_attribute('selected')
 }
@@ -4302,7 +4551,7 @@ pub fn (e &Element) number_of_owned_list_items() int {
 
 // Wraps `numbered_items_owned_by_list_owner` to mirror the C++ template
 // `Element::for_each_numbered_item_owned_by_list_owner(Callback)` API.
-pub fn (e &Element) for_each_numbered_item_owned_by_list_owner(callback fn(&Element) TraversalDecision) {
+pub fn (e &Element) for_each_numbered_item_owned_by_list_owner(callback fn (&Element) TraversalDecision) {
 	for item in e.numbered_items_owned_by_list_owner() {
 		if callback(item) == .@break {
 			return
@@ -4521,14 +4770,20 @@ pub fn (mut e Element) play_or_cancel_animations_after_display_property_change()
 		return
 	}
 
-	// Setting display:none terminates running CSS animations. Restart/pause state
-	// tracking lives in CSSAnimation and is not ported, so this is a narrow stub.
+	// Setting display:none terminates running CSS animations. Restoring display
+	// resumes each animation according to its last CSS animation-play-state.
 	has_display_none_inclusive_ancestor := e.as_node().has_inclusive_ancestor_with_display_none()
-	for _, animation in e.css_defined_animations_ {
-		if has_display_none_inclusive_ancestor {
-			animation.cancel()
-		} else {
-			animation.play() or {}
+	for _, animations in e.css_defined_animations_ {
+		for _, animation in animations {
+			if has_display_none_inclusive_ancestor {
+				animation.cancel()
+				continue
+			}
+			play_state := animation.last_css_animation_play_state() or { continue }
+			match play_state {
+				.running { animation.play() or {} }
+				.paused { animation.pause() or {} }
+			}
 		}
 	}
 }
@@ -4547,11 +4802,10 @@ pub fn (e &Element) has_pointer_capture(pointer_id int) bool {
 	return false
 }
 
-pub fn (e &Element) request_pointer_lock(options ?PointerLockOptions) &Promise {
+pub fn (e &Element) request_pointer_lock(options ?PointerLockOptions) &webidl.Promise {
 	_ = e
 	_ = options
-	// Stub for Pointer Lock; C++ returns a rejected NotSupportedError promise.
-	return &Promise{}
+	return webidl.create_rejected_promise_from_dom_exception(webidl.DOMException.create('NotSupportedError', 'request_pointer_lock() is not implemented'))
 }
 
 // --- Lang ---
@@ -4691,11 +4945,15 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 			cl.associated_attribute_changed(value_or_empty)
 		}
 	} else if local_name == 'style' {
-		if s := e.inline_style_ {
-			if s.is_updating() {
-				return
-			}
+		mut inline_style := e.inline_style_ or {
+			style := create_element_inline_style(&e)
+			e.inline_style_ = style
+			style
 		}
+		if inline_style.is_updating() {
+			return
+		}
+		inline_style.set_declarations_from_text(value_or_empty)
 		e.set_needs_style_update(true)
 	} else if local_name == 'dir' {
 		lowercase_value := to_ascii_lowercase(value_or_empty)
@@ -5074,7 +5332,7 @@ pub fn (mut e Element) inserted() {
 		}
 	}
 
-	// play_or_cancel_animations_after_display_property_change() depends on the animation/style subsystems.
+	e.play_or_cancel_animations_after_display_property_change()
 }
 
 pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
@@ -5101,7 +5359,7 @@ pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
 		}
 	}
 
-	// play_or_cancel_animations_after_display_property_change() depends on the animation/style subsystems.
+	e.play_or_cancel_animations_after_display_property_change()
 	e.exit_fullscreen_on_element_removal()
 
 	// https://html.spec.whatwg.org/multipage/interactive-elements.html#the-dialog-element:html-element-removing-steps
@@ -5152,8 +5410,68 @@ pub fn (e &Element) element_to_inherit_style_from(pseudo_element ?int) ?&Element
 }
 
 // --- Serialize ---
+fn serialize_pseudo_element_as_json(element &Element, pseudo_element_type PseudoElement, mut sb strings.Builder, wrote_child bool) bool {
+	pseudo_element := element.get_pseudo_element(int(pseudo_element_type)) or { return wrote_child }
+	if pseudo_element.layout_node() == none {
+		return wrote_child
+	}
+	if wrote_child {
+		sb.write_string(',')
+	}
+	sb.write_string('{"name":${json_quote('::${pseudo_element_name(pseudo_element_type)}')},"type":"pseudo-element","parent-id":${element.as_node().unique_id().value()},"pseudo-element":${int(pseudo_element_type)}}')
+	return true
+}
+
 pub fn (e &Element) serialize_children_as_json(mut sb strings.Builder) {
-	_ = sb
+	has_pseudo_elements := e.has_pseudo_elements()
+	if !e.is_shadow_host() && !e.as_node().has_children() && !has_pseudo_elements {
+		return
+	}
+
+	sb.write_string(',"children":[')
+	mut wrote_child := false
+
+	if has_pseudo_elements {
+		for pseudo_element_type in [PseudoElement.backdrop, .marker, .before] {
+			wrote_child = serialize_pseudo_element_as_json(e, pseudo_element_type, mut sb, wrote_child)
+		}
+	}
+
+	if shadow_root := e.shadow_root() {
+		if wrote_child {
+			sb.write_string(',')
+		}
+		unsafe { &Node(shadow_root) }.serialize_tree_as_json(mut sb)
+		wrote_child = true
+	}
+
+	for child in e.as_node().children {
+		if child.is_uninteresting_whitespace_node() {
+			continue
+		}
+		if wrote_child {
+			sb.write_string(',')
+		}
+		child.serialize_tree_as_json(mut sb)
+		wrote_child = true
+	}
+
+	if has_pseudo_elements {
+		wrote_child = serialize_pseudo_element_as_json(e, .after, mut sb, wrote_child)
+		mut pseudo_element_types := e.pseudo_element_data.keys()
+		pseudo_element_types.sort()
+		for pseudo_element_type_int in pseudo_element_types {
+			pseudo_element := e.pseudo_element_data[pseudo_element_type_int] or { continue }
+			pseudo_element_type := unsafe { PseudoElement(pseudo_element_type_int) }
+			if pseudo_element_type in [.after, .backdrop, .before, .marker]
+				|| pseudo_element.layout_node() == none {
+				continue
+			}
+			wrote_child = serialize_pseudo_element_as_json(e, pseudo_element_type, mut sb, wrote_child)
+		}
+	}
+
+	sb.write_string(']')
 }
 
 // --- get_an_elements_target ---

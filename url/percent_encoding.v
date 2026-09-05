@@ -2,10 +2,7 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of the URL percent-encoding suite of LibURL/URL.cpp — the percent-encode sets and the
-// code_point_is_in_percent_encode_set predicate, percent_encode (with the space-as-plus option), and
-// percent_decode. These are the pure, parser-independent parts of the WHATWG URL percent-encoding
-// machinery; the URL record and parser are not translated.
+// Translation of the URL percent-encoding suite of LibURL/URL.cpp.
 // https://url.spec.whatwg.org/#percent-encoded-bytes
 module url
 

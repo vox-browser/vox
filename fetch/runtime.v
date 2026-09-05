@@ -9,13 +9,29 @@
 module fetch
 
 import dom
+import highresolutiontime
 import http
 import securecontexts
+import sri
+import streams
+
+struct FetchMemoryCacheEntry {
+	vary_key         string
+	status_code      u16
+	reason_phrase    string
+	request_headers  &http.HeaderList
+	response_headers &http.HeaderList
+	request_time     i64
+	response_time    i64
+mut:
+	response_body []u8
+}
 
 __global (
-	fetch_http_memory_cache_enabled = true
-	fetch_next_task_id              = u64(1)
-	fetch_http_memory_cache         = map[string]&Response{}
+	fetch_http_memory_cache_enabled  = true
+	fetch_next_task_id               = u64(1)
+	fetch_http_memory_cache_pending  = map[string][]FetchMemoryCacheEntry{}
+	fetch_http_memory_cache_complete = map[string][]FetchMemoryCacheEntry{}
 )
 
 pub enum BodyBytesKind {
@@ -82,7 +98,6 @@ mut:
 	pending_request_stopped_    bool
 	ongoing_fetch_tasks_        map[u64]u64
 	next_fetch_task_id_         u64
-	inner_controller_           ?&FetchController
 	fetch_params_               ?&FetchParams
 	pending_request_            ?&Request
 }
@@ -108,25 +123,31 @@ pub fn (mut controller FetchController) set_next_manual_redirect_steps(callback 
 }
 
 pub fn (controller &FetchController) report_timing() {
-	if callback := controller.report_timing_steps_ {
-		if info := controller.full_timing_info_ { callback(info) }
+	callback := controller.report_timing_steps_ or {
+		panic('FetchController.report_timing called without report timing steps')
 	}
+	info := controller.full_timing_info_ or {
+		panic('FetchController.report_timing called without full timing info')
+	}
+	callback(info)
 }
 
 pub fn (controller &FetchController) process_next_manual_redirect() {
-	if callback := controller.next_manual_redirect_steps_ { callback() }
+	callback := controller.next_manual_redirect_steps_ or {
+		panic('FetchController.process_next_manual_redirect called without redirect steps')
+	}
+	callback()
 }
 
 pub fn (controller &FetchController) extract_full_timing_info() &FetchTimingInfo {
-	return controller.full_timing_info_ or { &FetchTimingInfo{} }
+	return controller.full_timing_info_ or {
+		panic('FetchController.extract_full_timing_info called without full timing info')
+	}
 }
 
 pub fn (mut controller FetchController) abort(reason ?string) {
-	if controller.state_ != .ongoing { return }
 	controller.state_ = .aborted
 	controller.serialized_abort_reason_ = reason or { 'AbortError' }
-	controller.stop_request()
-	if mut inner := controller.inner_controller_ { inner.abort(reason) }
 }
 
 pub fn (controller &FetchController) deserialize_a_serialized_abort_reason() string {
@@ -134,21 +155,25 @@ pub fn (controller &FetchController) deserialize_a_serialized_abort_reason() str
 }
 
 pub fn (mut controller FetchController) terminate() {
-	if controller.state_ == .ongoing { controller.state_ = .terminated }
+	controller.state_ = .terminated
 }
 
 pub fn (mut controller FetchController) stop_fetch() {
-	if controller.state_ == .ongoing { controller.state_ = .stopped }
+	if controller.state_ in [.aborted, .terminated] {
+		return
+	}
+	controller.state_ = .stopped
 	controller.ongoing_fetch_tasks_.clear()
+	if mut params := controller.fetch_params_ {
+		params.algorithms = FetchAlgorithms.create(FetchAlgorithmsInput{})
+	}
 	controller.stop_request()
 }
 
 pub fn (mut controller FetchController) stop_request() {
+	assert controller.state_ == .stopped
 	controller.pending_request_stopped_ = true
-}
-
-pub fn (mut controller FetchController) set_inner_fetch_controller(inner &FetchController) {
-	controller.inner_controller_ = inner
+	controller.pending_request_ = none
 }
 
 pub fn (mut controller FetchController) next_fetch_task_id() u64 {
@@ -171,11 +196,11 @@ pub fn (controller &FetchController) ongoing_task_count() int {
 
 pub struct ConnectionTimingInfo {
 pub mut:
-	domain_lookup_start     f64
-	domain_lookup_end       f64
-	connect_start           f64
-	connect_end             f64
-	secure_connection_start f64
+	domain_lookup_start      f64
+	domain_lookup_end        f64
+	connect_start            f64
+	connect_end              f64
+	secure_connection_start  f64
 	alpn_negotiated_protocol string
 }
 
@@ -183,14 +208,14 @@ pub mut:
 // fill these microsecond offsets before handing them to FetchTimingInfo.
 pub struct RequestTimingInfo {
 pub:
-	domain_lookup_start_microseconds i64
-	domain_lookup_end_microseconds   i64
-	connect_start_microseconds       i64
-	connect_end_microseconds         i64
+	domain_lookup_start_microseconds  i64
+	domain_lookup_end_microseconds    i64
+	connect_start_microseconds        i64
+	connect_end_microseconds          i64
 	secure_connect_start_microseconds i64
-	request_start_microseconds       i64
-	response_start_microseconds      i64
-	http_version_alpn_identifier     string
+	request_start_microseconds        i64
+	response_start_microseconds       i64
+	http_version_alpn_identifier      string
 }
 
 @[heap]
@@ -216,7 +241,7 @@ pub fn FetchTimingInfo.create() &FetchTimingInfo {
 
 pub fn create_opaque_timing_info(info &FetchTimingInfo) &FetchTimingInfo {
 	return &FetchTimingInfo{
-		start_time:               info.start_time
+		start_time: info.start_time
 		post_redirect_start_time: info.start_time
 	}
 }
@@ -236,7 +261,7 @@ pub:
 @[heap]
 pub struct FetchParams {
 pub mut:
-	request                      &Request         = unsafe { nil }
+	request                      &Request = unsafe { nil }
 	algorithms                   &FetchAlgorithms = unsafe { nil }
 	controller                   &FetchController = unsafe { nil }
 	timing_info                  &FetchTimingInfo = unsafe { nil }
@@ -247,24 +272,27 @@ pub mut:
 }
 
 pub fn FetchParams.create(request &Request, timing_info &FetchTimingInfo) &FetchParams {
-	return &FetchParams{
-		request:     request
-		algorithms:  FetchAlgorithms.create(FetchAlgorithmsInput{})
-		controller:  FetchController.create()
+	mut controller := FetchController.create()
+	params := &FetchParams{
+		request: request
+		algorithms: FetchAlgorithms.create(FetchAlgorithmsInput{})
+		controller: controller
 		timing_info: timing_info
 	}
+	controller.set_fetch_params(params)
+	return params
 }
 
 pub fn (params &FetchParams) copy() &FetchParams {
 	return &FetchParams{
-		request:                      params.request
-		algorithms:                   params.algorithms
-		controller:                   params.controller
-		timing_info:                  params.timing_info
-		task_destination:             params.task_destination
-		cross_origin_isolated:        params.cross_origin_isolated
+		request: params.request
+		algorithms: params.algorithms
+		controller: params.controller
+		timing_info: params.timing_info
+		task_destination: params.task_destination
+		cross_origin_isolated: params.cross_origin_isolated
 		preloaded_response_candidate: params.preloaded_response_candidate
-		preloaded_response:           params.preloaded_response
+		preloaded_response: params.preloaded_response
 	}
 }
 
@@ -273,7 +301,7 @@ pub fn (params &FetchParams) is_aborted() bool {
 }
 
 pub fn (params &FetchParams) is_canceled() bool {
-	return params.controller.state() in [.aborted, .terminated, .stopped]
+	return params.controller.state() in [.aborted, .terminated]
 }
 
 @[heap]
@@ -285,13 +313,14 @@ pub mut:
 
 pub fn FetchRecord.create(request &Request, controller ?&FetchController) &FetchRecord {
 	return &FetchRecord{
-		request:          request
+		request: request
 		fetch_controller: controller
 	}
 }
 
-pub fn (mut record FetchRecord) finalize() {
-	if mut controller := record.fetch_controller { controller.stop_fetch() }
+pub fn (mut _ FetchRecord) finalize() {
+	// The C++ finalizer only removes the record's intrusive-list node. V does
+	// not use that list, so there is no controller action to perform here.
 }
 
 pub type PendingResponseCallback = fn (&Response)
@@ -301,15 +330,18 @@ pub struct PendingResponse {
 pub:
 	request &Request
 mut:
-	response_ ?&Response
-	callback_ ?PendingResponseCallback
+	response_            ?&Response
+	callback_            ?PendingResponseCallback
+	callback_registered_ bool
 }
 
-pub fn PendingResponse.create(request &Request, response ?&Response) &PendingResponse {
-	return &PendingResponse{
-		request:   request
+pub fn PendingResponse.create(mut request Request, response ?&Response) &PendingResponse {
+	pending := &PendingResponse{
+		request: request
 		response_: response
 	}
+	request.add_pending_response(pending)
+	return pending
 }
 
 pub fn (response &PendingResponse) is_resolved() bool {
@@ -317,19 +349,19 @@ pub fn (response &PendingResponse) is_resolved() bool {
 }
 
 pub fn (mut pending PendingResponse) when_loaded(callback PendingResponseCallback) {
+	assert !pending.callback_registered_
+	pending.callback_registered_ = true
 	pending.callback_ = callback
-	if response := pending.response_ {
-		callback(response)
-		pending.callback_ = none
+	if pending.response_ != none {
+		pending.run_callback()
 	}
 }
 
 pub fn (mut pending PendingResponse) resolve(response &Response) {
-	if pending.response_ != none { return }
+	assert pending.response_ == none
 	pending.response_ = response
-	if callback := pending.callback_ {
-		callback(response)
-		pending.callback_ = none
+	if pending.callback_ != none {
+		pending.run_callback()
 	}
 }
 
@@ -360,28 +392,43 @@ pub enum FetchedDataLifecycle {
 	complete_pending
 	ready_to_close
 	closed
-	failed
 }
 
 @[heap]
 pub struct FetchedDataReceiver {
 mut:
-	fetch_params_    &FetchParams = unsafe { nil }
-	response_        ?&Response
-	body_            ?&Body
-	buffer_          []u8
-	pulled_bytes_    int
-	lifecycle_state_ FetchedDataLifecycle
-	pending_pull_    bool
-	pending_promise_ ?FetchedDataPendingPromise
+	fetch_params_            &FetchParams = unsafe { nil }
+	stream_                  &streams.ReadableStream = unsafe { nil }
+	response_                ?&Response
+	body_                    ?&Body
+	buffer_                  []u8
+	pulled_bytes_            int
+	lifecycle_state_         FetchedDataLifecycle
+	pending_promise_         ?FetchedDataPendingPromise
+	has_unfulfilled_promise_ bool
 }
 
 pub type FetchedDataPendingPromise = fn ()
 
-pub fn FetchedDataReceiver.create(params &FetchParams) &FetchedDataReceiver {
-	return &FetchedDataReceiver{
+pub fn FetchedDataReceiver.create(params &FetchParams, stream &streams.ReadableStream) &FetchedDataReceiver {
+	mut receiver := &FetchedDataReceiver{
 		fetch_params_: params
+		stream_: stream
 	}
+	mut mutable_stream := stream
+	mut controller := mutable_stream.byte_controller() or {
+		panic('FetchedDataReceiver requires a readable byte stream')
+	}
+	controller.set_pull_algorithm(fn [mut receiver] () ! {
+		if receiver.pending_promise_ == none && !receiver.has_unfulfilled_promise_ {
+			receiver.set_pending_promise(fn () {})
+		}
+	})
+	controller.set_cancel_algorithm(fn [mut receiver] (reason streams.Value) ! {
+		mut fetch_controller := receiver.fetch_params_.controller
+		fetch_controller.abort(reason.description())
+	})
+	return receiver
 }
 
 pub fn (mut receiver FetchedDataReceiver) set_response(response &Response) {
@@ -389,6 +436,7 @@ pub fn (mut receiver FetchedDataReceiver) set_response(response &Response) {
 }
 
 pub fn (mut receiver FetchedDataReceiver) set_body(body &Body) {
+	assert body.stream() == receiver.stream_
 	receiver.body_ = body
 	if mut stored_body := receiver.body_ {
 		if receiver.buffer_.len > 0 {
@@ -400,53 +448,61 @@ pub fn (mut receiver FetchedDataReceiver) set_body(body &Body) {
 	}
 }
 
-pub fn (mut receiver FetchedDataReceiver) set_pending_pull() {
-	receiver.pending_pull_ = true
-	receiver.pull_bytes_into_stream()
-}
-
 pub fn (mut receiver FetchedDataReceiver) handle_network_bytes(bytes []u8, state NetworkState) {
-	if receiver.lifecycle_state_ in [.closed, .failed] { return }
+	assert receiver.lifecycle_state_ == .receiving
 	match state {
 		.ongoing {
 			receiver.buffer_ << bytes
 			if mut body := receiver.body_ { body.append_sniff_bytes(bytes) }
 		}
 		.complete {
-			// Upstream delivers an empty final chunk. Accepting a non-empty
-			// final chunk keeps this boundary usable by synchronous hosts and
-			// processes those bytes exactly once before completion.
-			if bytes.len > 0 {
-				receiver.buffer_ << bytes
-				if mut body := receiver.body_ { body.append_sniff_bytes(bytes) }
-			}
-			if mut body := receiver.body_ { body.set_sniff_bytes_complete() }
+			assert bytes.len == 0
 			receiver.lifecycle_state_ = .complete_pending
+			if mut body := receiver.body_ { body.set_sniff_bytes_complete() }
 		}
-		.error {
-			receiver.lifecycle_state_ = .failed
-			if mut response := receiver.response_ { response.body = none }
-		}
+		.error {}
 	}
-	receiver.pull_bytes_into_stream()
+	if receiver.pending_promise_ == none {
+		if receiver.lifecycle_state_ == .complete_pending && receiver.buffer_is_eof() && !receiver.has_unfulfilled_promise_ {
+			receiver.lifecycle_state_ = .ready_to_close
+		}
+		return
+	}
+	if bytes.len > 0 {
+		receiver.pull_bytes_into_stream()
+		return
+	}
+	if receiver.lifecycle_state_ == .complete_pending {
+		receiver.close_stream()
+	}
 }
 
 fn (mut receiver FetchedDataReceiver) pull_bytes_into_stream() {
-	if !receiver.pending_pull_ && receiver.pending_promise_ == none { return }
-	if !receiver.buffer_is_eof() {
-		_ = receiver.copy_unpulled_bytes()
+	assert receiver.lifecycle_state_ in [.receiving, .complete_pending]
+	bytes := receiver.copy_unpulled_bytes()
+	assert bytes.len > 0
+	callback := receiver.pending_promise_ or {
+		panic('FetchedDataReceiver.pull_bytes_into_stream called without a pending promise')
 	}
-	receiver.pending_pull_ = false
-	if callback := receiver.pending_promise_ {
-		callback()
-		receiver.pending_promise_ = none
-	}
-	if receiver.lifecycle_state_ == .complete_pending && receiver.buffer_is_eof() {
-		receiver.lifecycle_state_ = .ready_to_close
-		if receiver.pending_promise_ == none {
-			receiver.close_stream()
+	assert !receiver.has_unfulfilled_promise_
+	receiver.has_unfulfilled_promise_ = true
+	receiver.pending_promise_ = none
+	queue_fetch_task_for_controller(mut receiver.fetch_params_.controller, fn [mut receiver, callback, bytes] () {
+		receiver.has_unfulfilled_promise_ = false
+		assert receiver.lifecycle_state_ in [.receiving, .complete_pending]
+		mut stream := receiver.stream_
+		stream.pull_from_bytes(bytes) or {
+			stream.error(err.msg())
+			mut fetch_controller := receiver.fetch_params_.controller
+			fetch_controller.terminate()
+			callback()
+			return
 		}
-	}
+		callback()
+		if receiver.lifecycle_state_ == .complete_pending && receiver.buffer_is_eof() {
+			receiver.lifecycle_state_ = .ready_to_close
+		}
+	})
 }
 
 pub fn (mut receiver FetchedDataReceiver) copy_unpulled_bytes() []u8 {
@@ -461,19 +517,31 @@ pub fn (receiver &FetchedDataReceiver) lifecycle_state() FetchedDataLifecycle {
 
 pub fn cors_check(request &Request, response &Response) bool {
 	origin := response.header_list.get('Access-Control-Allow-Origin') or { return false }
-	if request.credentials_mode != .include && origin == '*' { return true }
-	if request.serialize_origin() != origin { return false }
-	if request.credentials_mode != .include { return true }
+	if request.credentials_mode != .include && origin == '*' {
+		return true
+	}
+	if request.serialize_origin() != origin {
+		return false
+	}
+	if request.credentials_mode != .include {
+		return true
+	}
 	return response.header_list.get('Access-Control-Allow-Credentials') or { '' } == 'true'
 }
 
 pub fn tao_check(request &Request, response &Response) bool {
-	if request.timing_allow_failed { return false }
+	if request.timing_allow_failed {
+		return false
+	}
 	values := response.header_list.get_decode_and_split('Timing-Allow-Origin') or { []string{} }
-	if '*' in values || request.serialize_origin() in values { return true }
+	if '*' in values || request.serialize_origin() in values {
+		return true
+	}
 	if request.mode == .navigate {
 		if origin := request.origin.origin {
-			if request.current_url().origin().value != origin.value { return false }
+			if !request.current_url().origin().is_same_origin(origin) {
+				return false
+			}
 		}
 	}
 	return request.response_tainting == .basic
@@ -490,7 +558,7 @@ pub fn set_sec_fetch_dest_header(mut request Request) {
 
 pub fn set_sec_fetch_mode_header(mut request Request) {
 	request.header_list.append(http.Header{
-		name:  'Sec-Fetch-Mode'
+		name: 'Sec-Fetch-Mode'
 		value: request_mode_to_string(request.mode)
 	})
 }
@@ -503,11 +571,13 @@ pub fn set_sec_fetch_site_header(mut request Request) {
 			break
 		}
 
-		if url.origin().value == origin.value { continue
-		 }
+		if url.origin().is_same_origin(origin) {
+			continue
+		}
 		value = if request_same_site(url, request.url()) { 'same-site' } else { 'cross-site' }
-		if value == 'cross-site' { break
-		 }
+		if value == 'cross-site' {
+			break
+		}
 	}
 	request.header_list.append(http.Header{ name: 'Sec-Fetch-Site', value: value })
 }
@@ -534,14 +604,16 @@ pub fn default_user_agent_value() string {
 
 pub struct NetworkPartitionKey {
 pub:
-	top_level_origin string
+	// Upstream keeps the URL::Origin itself in the partition key. Keeping the
+	// typed origin is important: two opaque origins serialize for the web as
+	// `null`, but their nonces still make them distinct partition keys.
+	top_level_origin dom.Origin
 }
 
 pub fn determine_the_network_partition_key(origin ?dom.Origin) ?NetworkPartitionKey {
 	value := origin or { return none }
-	if value.value == '' || value.value == 'opaque' { return none }
 	return NetworkPartitionKey{
-		top_level_origin: value.value
+		top_level_origin: value
 	}
 }
 
@@ -549,115 +621,377 @@ pub type FetchHostHook = fn (&Request) !&Response
 
 pub struct FetchHost {
 pub:
-	perform FetchHostHook @[required]
+	perform             FetchHostHook @[required]
+	preferred_languages []string = ['en-US']
 }
 
 pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
-	request := params.request
+	mut request := params.request
+	if params.is_canceled() {
+		return PendingResponse.create(mut request, appropriate_network_error(params))
+	}
+	scheme := request.current_url().scheme()
+	if scheme == 'about' && request.current_url().serialize_path() == 'blank' {
+		mut response := Response.create()
+		response.status_message = 'OK'
+		response.header_list.append(http.Header{
+			name: 'Content-Type'
+			value: 'text/html;charset=utf-8'
+		})
+		response.set_body_bytes([]u8{})
+		return PendingResponse.create(mut request, response)
+	}
 	if request.current_url().scheme() == 'data' {
 		data := process_data_url(request.current_url()) or {
-			return PendingResponse.create(request, Response.network_error(err.msg()))
+			return PendingResponse.create(mut request, Response.network_error(err.msg()))
 		}
 		mut response := Response.create()
 		response.url_list = request.url_list.clone()
-		response.body = data.body
+		response.status_message = 'OK'
+		response.set_body_bytes(data.body)
 		response.header_list.append(http.Header{
-			name:  'Content-Type'
+			name: 'Content-Type'
 			value: data.mime_type.serialized()
 		})
-		return PendingResponse.create(request, response)
+		return PendingResponse.create(mut request, response)
 	}
-	response := host.perform(request) or { Response.network_error(err.msg()) }
-	return PendingResponse.create(request, response)
+	if scheme in ['http', 'https'] {
+		return http_fetch(params, host, false)
+	}
+	if scheme in ['about', 'blob', 'file', 'resource'] {
+		return nonstandard_resource_loader_file_or_http_network_fetch(params, host)
+	}
+	message := if scheme == 'about' {
+		"Request has invalid 'about:' URL, only 'about:blank' can be fetched"
+	} else {
+		"Request URL has invalid scheme, must be one of 'about', 'blob', 'data', 'file', 'http', or 'https'"
+	}
+	return PendingResponse.create(mut request, Response.network_error(message))
 }
 
 pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
-	request := params.request
-	if params.is_canceled() {
-		return PendingResponse.create(request, appropriate_network_error(params))
-	}
+	mut request := params.request
+	mut response := ?&Response(none)
 	if request.local_urls_only && !is_local_url(request.current_url()) {
-		return PendingResponse.create(request, Response.network_error('URL is not local'))
+		response = Response.network_error('Request with local-URLs-only flag must have a local URL')
 	}
 	if block_bad_port(request) == .blocked {
-		return PendingResponse.create(request, Response.network_error('Bad port'))
+		response = Response.network_error('Request was blocked')
 	}
-	return scheme_fetch(params, host)
-}
-
-pub fn populate_request_from_client(mut request Request) {
-	if request.origin.is_client {
-		if client_url := request.client_document_url {
-			request.origin = RequestOrigin{
-				is_client: false
-				origin:    client_url.origin()
+	if request.referrer_policy == '' {
+		request.referrer_policy = 'strict-origin-when-cross-origin'
+	}
+	if response == none {
+		if preloaded := params.preloaded_response {
+			response = preloaded
+		} else {
+			origin := request.origin.origin
+			is_same_origin := if request_origin := origin {
+				request.current_url().origin().is_same_origin(request_origin)
+			} else {
+				false
 			}
-		} else if creation_url := request.client_creation_url {
-			request.origin = RequestOrigin{
-				is_client: false
-				origin:    creation_url.origin()
+			if (is_same_origin && request.response_tainting == .basic) || request.current_url().scheme() == 'data' || request.mode in [
+				.navigate,
+				.websocket,
+			] {
+				request.response_tainting = .basic
+				response = scheme_fetch(params, host).response()
+			} else if request.mode == .same_origin {
+				response = Response.network_error("Request with 'same-origin' mode must have same URL and request origin")
+			} else if request.mode == .no_cors {
+				if request.redirect_mode != .follow {
+					response = Response.network_error("Request with 'no-cors' mode must have redirect mode set to 'follow'")
+				} else {
+					request.response_tainting = .opaque
+					response = scheme_fetch(params, host).response()
+				}
+			} else if request.current_url().scheme() !in ['http', 'https'] {
+				response = Response.network_error("Request with 'cors' mode must have URL with HTTP or HTTPS scheme")
+			} else {
+				request.response_tainting = .cors
+				make_preflight := request.use_cors_preflight || (request.unsafe_request && (!http.is_cors_safelisted_method(request.method) || get_cors_unsafe_header_names(request.header_list).len > 0))
+				response = http_fetch(params, host, make_preflight).response()
 			}
 		}
 	}
-	if request.referrer_policy == '' { request.referrer_policy = 'strict-origin-when-cross-origin' }
+	mut resolved := response or { appropriate_network_error(params) }
+	if !resolved.is_network_error() && resolved.internal_response == none {
+		if request.response_tainting == .cors {
+			if exposed_names := resolved.header_list.get_decode_and_split('Access-Control-Expose-Headers') {
+				if request.credentials_mode != .include && '*' in exposed_names {
+					mut unique_names := []string{}
+					for header in resolved.header_list.headers() {
+						if !unique_names.any(equals_ignoring_ascii_case(it, header.name)) {
+							unique_names << header.name
+						}
+					}
+					resolved.cors_exposed_header_name_list = unique_names
+				} else if exposed_names.len > 0 {
+					resolved.cors_exposed_header_name_list = exposed_names
+				}
+			}
+		}
+		resolved = match request.response_tainting {
+			.basic { filtered_response(resolved, .basic) }
+			.cors { filtered_response(resolved, .cors) }
+			.opaque { filtered_response(resolved, .opaque) }
+		}
+	}
+	mut internal := resolved.unsafe_response()
+	if internal.url_list.len == 0 {
+		internal.url_list = request.url_list.clone()
+	}
+	internal.redirect_taint = request.redirect_taint()
+	if !request.timing_allow_failed {
+		internal.timing_allow_passed = true
+	}
+	if !resolved.is_network_error() && (should_response_to_request_be_blocked_due_to_its_mime_type(internal, request) == .blocked || should_response_to_request_be_blocked_due_to_nosniff(internal, request) == .blocked) {
+		resolved = Response.network_error('Response was blocked')
+		internal = resolved
+	}
+	if resolved.response_type == .opaque && internal.status == 206 && internal.range_requested && !request.header_list.contains('Range') {
+		resolved = Response.network_error("Response has status 206 and 'range-requested' flag set, but request has no 'Range' header")
+		internal = resolved
+	}
+	if !resolved.is_network_error() && (request.method in ['HEAD', 'CONNECT'] || is_null_body_status(internal.status)) {
+		internal.body = none
+	}
+	if request.integrity_metadata.len > 0 {
+		body := internal.body or {
+			return PendingResponse.create(mut request, Response.network_error('Response body could not be processed'))
+		}
+		bytes := body.bytes()
+		matches := sri.do_bytes_match_metadata_list(bytes, request.integrity_metadata) or { false }
+		if !matches {
+			resolved = Response.network_error('Response body could not be processed')
+		}
+	}
+	return PendingResponse.create(mut request, resolved)
+}
+
+pub fn populate_request_from_client(mut request Request) {
+	if request.traversable_for_user_prompts == .client {
+		request.traversable_for_user_prompts = .no_traversable
+	}
+	if client := request.client {
+		request.client_present = true
+		request.client_is_window = client.fetch_request_client_is_window()
+		request.client_origin_opaque = client.fetch_request_client_origin().value == 'opaque'
+		request.client_document_url = client.fetch_request_client_document_url()
+		request.client_creation_url = client.fetch_request_client_creation_url()
+		request.embedder_policy_credentialless = client.fetch_request_client_embedder_policy_credentialless()
+	}
+	if request.origin.is_client {
+		client := request.client or {
+			panic('populate_request_from_client requires a client when request origin is client')
+		}
+		request.origin = RequestOrigin{
+			is_client: false
+			origin: client.fetch_request_client_origin()
+		}
+	}
+	if request.referrer_policy == '' {
+		request.referrer_policy = 'strict-origin-when-cross-origin'
+	}
 }
 
 pub fn fetch_response_handover(params &FetchParams, response &Response) {
 	algorithms := params.algorithms.input
-	if callback := algorithms.process_response { callback(response) }
-	if callback := algorithms.process_response_consume_body {
-		callback(response, if bytes := response.body {
-			BodyBytes{
-				kind:  .bytes
-				bytes: bytes.clone()
-			}
-		} else {
-			BodyBytes{
-				kind: .empty
-			}
+	mut controller := params.controller
+	if callback := algorithms.process_response {
+		queue_fetch_task_for_controller(mut controller, fn [callback, response] () {
+			callback(response)
 		})
 	}
-	if callback := algorithms.process_response_end_of_body { callback(response) }
+	if callback := algorithms.process_response_consume_body {
+		body_bytes := if mut body := response.unsafe_response().body {
+			if bytes := body.fully_read() {
+				BodyBytes{ kind: .bytes, bytes: bytes }
+			} else {
+				BodyBytes{ kind: .failure }
+			}
+		} else {
+			BodyBytes{ kind: .empty }
+		}
+		queue_fetch_task_for_controller(mut controller, fn [callback, response, body_bytes] () {
+			callback(response, body_bytes)
+		})
+	}
+	unsafe_end_time := highresolutiontime.unsafe_shared_current_time()
+	if destination := params.request.destination {
+		if destination == .document {
+			controller.set_full_timing_info(params.timing_info)
+		}
+	}
+	controller.set_report_timing_steps(fn [unsafe_end_time] (timing_info &FetchTimingInfo) {
+		mut timing := unsafe { &FetchTimingInfo(timing_info) }
+		timing.end_time = unsafe_end_time
+	})
+	mut request := params.request
+	request.done = true
+	if callback := algorithms.process_response_end_of_body {
+		queue_fetch_task_for_controller(mut controller, fn [callback, response] () {
+			callback(response)
+		})
+	}
 }
 
 pub fn http_network_or_cache_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
-	return scheme_fetch(params, host)
+	mut request := params.request
+	if params.is_canceled() {
+		return PendingResponse.create(mut request, appropriate_network_error(params))
+	}
+	mut http_request := request.clone()
+	if http_request.body.kind == .empty && http_request.method in ['POST', 'PUT'] {
+		http_request.header_list.append(http.Header{ name: 'Content-Length', value: '0' })
+	} else if body := http_request.body.body_object {
+		if length := body.length {
+			http_request.header_list.append(http.Header{
+				name: 'Content-Length'
+				value: length.str()
+			})
+		}
+	} else if http_request.body.kind == .bytes {
+		http_request.header_list.append(http.Header{
+			name: 'Content-Length'
+			value: http_request.body.bytes.len.str()
+		})
+	}
+	if referrer_url := http_request.referrer.url {
+		http_request.header_list.append(http.Header{
+			name: 'Referer'
+			value: referrer_url.serialize()
+		})
+	}
+	http_request.add_origin_header()
+	append_fetch_metadata_headers_for_request(mut http_request)
+	if !http_request.header_list.contains('User-Agent') {
+		http_request.header_list.append(http.Header{
+			name: 'User-Agent'
+			value: default_user_agent_value()
+		})
+	}
+	if http_request.cache_mode == .default && ['If-Modified-Since', 'If-None-Match',
+		'If-Unmodified-Since', 'If-Match', 'If-Range'].any(http_request.header_list.contains(it)) {
+		http_request.cache_mode = .no_store
+	}
+	if http_request.cache_mode == .no_cache && !http_request.prevent_no_cache_cache_control_header_modification && !http_request.header_list.contains('Cache-Control') {
+		http_request.header_list.append(http.Header{ name: 'Cache-Control', value: 'max-age=0' })
+	}
+	if http_request.cache_mode in [.no_store, .reload] {
+		if !http_request.header_list.contains('Pragma') {
+			http_request.header_list.append(http.Header{ name: 'Pragma', value: 'no-cache' })
+		}
+		if !http_request.header_list.contains('Cache-Control') {
+			http_request.header_list.append(http.Header{
+				name: 'Cache-Control'
+				value: 'no-cache'
+			})
+		}
+	}
+	include_credentials := (request.credentials_mode == .include || (request.credentials_mode == .same_origin && request.response_tainting == .basic)) && request.cross_origin_embedder_policy_allows_credentials()
+	if determine_the_http_cache_partition(http_request) == none {
+		http_request.cache_mode = .no_store
+	}
+	mut response := ?&Response(none)
+	if http_request.cache_mode !in [.no_store, .reload] {
+		response = select_response_from_cache(http_request)
+	}
+	if mut stored_response := response {
+		stored_response.cache_state = .local
+	} else {
+		mut forward_response := host.perform(http_request) or {
+			Response.network_error(err.msg())
+		}
+		response = forward_response
+		store_response_in_cache(http_request, forward_response)
+		finalize_response_in_cache(http_request, forward_response)
+	}
+	mut resolved := response or { Response.network_error('HTTP fetch produced no response') }
+	resolved.url_list = http_request.url_list.clone()
+	if http_request.header_list.contains('Range') {
+		resolved.range_requested = true
+	}
+	resolved.request_includes_credentials = include_credentials
+	return PendingResponse.create(mut request, resolved)
 }
 
 pub fn nonstandard_resource_loader_file_or_http_network_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
-	return scheme_fetch(params, host)
+	mut request := params.request
+	response := host.perform(request) or { Response.network_error(err.msg()) }
+	return PendingResponse.create(mut request, response)
 }
 
-pub fn cors_preflight_fetch(request &Request, host &FetchHost) &PendingResponse {
+pub fn cors_preflight_fetch(mut request Request, host &FetchHost) &PendingResponse {
 	mut preflight := request.clone()
 	preflight.method = 'OPTIONS'
 	preflight.body = RequestBody{}
 	preflight.header_list = http.HeaderList.create()
 	preflight.header_list.append(http.Header{ name: 'Accept', value: '*/*' })
 	preflight.header_list.append(http.Header{
-		name:  'Access-Control-Request-Method'
+		name: 'Access-Control-Request-Method'
 		value: request.method
 	})
 	unsafe_names := get_cors_unsafe_header_names(request.header_list)
 	if unsafe_names.len > 0 {
 		preflight.header_list.append(http.Header{
-			name:  'Access-Control-Request-Headers'
+			name: 'Access-Control-Request-Headers'
 			value: unsafe_names.join(',')
 		})
 	}
 	response := host.perform(preflight) or { Response.network_error(err.msg()) }
 	if response.is_network_error() || !cors_check(request, response) {
-		return PendingResponse.create(request,
-			Response.network_error('CORS-preflight check failed'))
+		return PendingResponse.create(mut request, Response.network_error('CORS-preflight check failed'))
 	}
-	return PendingResponse.create(request, response)
+	return PendingResponse.create(mut request, response)
 }
 
 pub fn http_fetch(params &FetchParams, host &FetchHost, make_cors_preflight bool) &PendingResponse {
-	if make_cors_preflight || params.request.use_cors_preflight {
-		return cors_preflight_fetch(params.request, host)
+	mut request := params.request
+	needs_preflight := make_cors_preflight && ((!http.is_cors_safelisted_method(request.method) || request.use_cors_preflight) || get_cors_unsafe_header_names(request.header_list).len > 0)
+	if needs_preflight {
+		preflight_response := cors_preflight_fetch(mut request, host).response() or {
+			return PendingResponse.create(mut request, Response.network_error('CORS-preflight fetch produced no response'))
+		}
+		if preflight_response.is_network_error() {
+			return PendingResponse.create(mut request, preflight_response)
+		}
 	}
-	return http_network_or_cache_fetch(params, host)
+	if request.redirect_mode == .follow {
+		request.service_workers_mode = .none
+	}
+	mut response := http_network_or_cache_fetch(params, host).response() or {
+		return PendingResponse.create(mut request, Response.network_error('HTTP fetch produced no response'))
+	}
+	mut internal := response.unsafe_response()
+	if request.response_tainting == .cors && internal.status !in [u16(304), 407] && !cors_check(request, internal) {
+		return PendingResponse.create(mut request, Response.network_error("Request with 'cors' response tainting failed CORS check"))
+	}
+	if !tao_check(request, internal) {
+		request.timing_allow_failed = true
+	}
+	if is_redirect_status(internal.status) {
+		match request.redirect_mode {
+			.error {
+				response = Response.network_error("Request with 'error' redirect mode received redirect response")
+			}
+			.manual {
+				if request.mode == .navigate {
+					mut controller := params.controller
+					controller.set_next_manual_redirect_steps(fn [params, response, host] () {
+						_ = http_redirect_fetch(params, response, host)
+					})
+				} else {
+					response = filtered_response(internal, .opaque_redirect)
+				}
+			}
+			.follow {
+				return http_redirect_fetch(params, response, host)
+			}
+		}
+	}
+	return PendingResponse.create(mut request, response)
 }
 
 fn remove_request_headers(mut request Request, names []string) {
@@ -670,33 +1004,58 @@ fn remove_request_headers(mut request Request, names []string) {
 
 pub fn http_redirect_fetch(params &FetchParams, response &Response, host &FetchHost) &PendingResponse {
 	mut request := params.request
-	location_result := response.location_url(request.current_url().fragment()) or {
-		return PendingResponse.create(request, Response.network_error(err.msg()))
+	internal := response.unsafe_response()
+	location_result := internal.location_url(request.current_url().fragment()) or {
+		return PendingResponse.create(mut request, Response.network_error(err.msg()))
 	}
-	mut location := location_result.url or { return PendingResponse.create(request, response) }
-	if request.redirect_mode == .error {
-		return PendingResponse.create(request, Response.network_error('Redirect mode is error'))
+	mut location := location_result.url or { return PendingResponse.create(mut request, response) }
+	if location.scheme() !in ['http', 'https'] {
+		return PendingResponse.create(mut request, Response.network_error('Request redirect URL must have HTTP or HTTPS scheme'))
 	}
-	if request.redirect_mode == .manual {
-		return PendingResponse.create(request, filtered_response(response, .opaque_redirect))
-	}
-	if request.redirect_count >= 20 {
-		return PendingResponse.create(request, Response.network_error('Redirect count exceeded'))
+	if request.redirect_count == 20 {
+		return PendingResponse.create(mut request, Response.network_error('Request has reached maximum redirect count of 20'))
 	}
 	request.redirect_count++
-	if location.fragment() == none { location.set_fragment(request.current_url().fragment()) }
-	if ((response.status == 301 || response.status == 302) && request.method == 'POST')
-		|| (response.status == 303 && request.method !in ['GET', 'HEAD']) {
+	location_includes_credentials := location.username().len > 0 || location.password().len > 0
+	if request.mode == .cors && location_includes_credentials {
+		if origin := request.origin.origin {
+			if !origin.is_same_origin(location.origin()) {
+				return PendingResponse.create(mut request, Response.network_error("Request with 'cors' mode and different URL and request origin must not include credentials in redirect URL"))
+			}
+		}
+	}
+	if request.response_tainting == .cors && location_includes_credentials {
+		return PendingResponse.create(mut request, Response.network_error("Request with 'cors' response tainting must not include credentials in redirect URL"))
+	}
+	if ((internal.status == 301 || internal.status == 302) && request.method == 'POST') || (internal.status == 303 && request.method !in [
+		'GET',
+		'HEAD',
+	]) {
 		request.method = 'GET'
 		request.body = RequestBody{}
 		remove_request_headers(mut request, ['Content-Encoding', 'Content-Language',
 			'Content-Location', 'Content-Type'])
 	}
-	if location.origin().value != request.current_url().origin().value {
-		remove_request_headers(mut request, ['Authorization', 'Proxy-Authorization', 'Cookie',
-			'Host'])
+	if !location.origin().is_same_origin(request.current_url().origin()) {
+		remove_request_headers(mut request, ['Authorization'])
+	}
+	now := highresolutiontime.coarsened_shared_current_time(params.cross_origin_isolated)
+	mut timing_info := params.timing_info
+	timing_info.redirect_end_time = now
+	timing_info.post_redirect_start_time = now
+	if timing_info.redirect_start_time == 0 {
+		timing_info.redirect_start_time = timing_info.start_time
 	}
 	request.url_list << location
+	if policies := internal.header_list.get_decode_and_split('Referrer-Policy') {
+		for policy in policies {
+			if policy in ['no-referrer', 'no-referrer-when-downgrade', 'same-origin', 'origin',
+				'strict-origin', 'origin-when-cross-origin', 'strict-origin-when-cross-origin',
+				'unsafe-url'] {
+				request.referrer_policy = policy
+			}
+		}
+	}
 	return main_fetch(params, host)
 }
 
@@ -704,7 +1063,7 @@ pub struct IncrementalReadLoopReadRequest {
 pub:
 	body          &Body
 	process_chunk BodyChunkCallback @[required]
-	process_end   BodyEndCallback   @[required]
+	process_end   BodyEndCallback @[required]
 	process_error BodyErrorCallback @[required]
 }
 
@@ -721,29 +1080,57 @@ pub fn (request &IncrementalReadLoopReadRequest) on_error(reason string) {
 }
 
 pub fn fetch(request &Request, algorithms &FetchAlgorithms, host &FetchHost) &FetchController {
-	timing := FetchTimingInfo.create()
-	mut params := FetchParams.create(request, timing)
+	assert request.mode == .navigate || algorithms.input.process_early_hints_response == none
+	mut mutable_request := request
+	populate_request_from_client(mut mutable_request)
+	cross_origin_isolated := if client := mutable_request.client {
+		client.fetch_request_client_cross_origin_isolated_capability()
+	} else {
+		false
+	}
+	now := highresolutiontime.coarsened_shared_current_time(cross_origin_isolated)
+	mut timing := FetchTimingInfo.create()
+	timing.start_time = now
+	timing.post_redirect_start_time = now
+	timing.render_blocking = mutable_request.render_blocking
+	mut params := FetchParams.create(mutable_request, timing)
 	params.algorithms = algorithms
-	mut controller := params.controller
-	controller.set_full_timing_info(timing)
+	params.cross_origin_isolated = cross_origin_isolated
+	if !mutable_request.header_list.contains('Accept') {
+		mut value := '*/*'
+		is_prefetch := if initiator := mutable_request.initiator {
+			initiator == .prefetch
+		} else {
+			false
+		}
+		is_document_destination := if destination := mutable_request.destination {
+			destination in [.document, .frame, .iframe]
+		} else {
+			false
+		}
+		if is_prefetch || is_document_destination {
+			value = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+		} else if destination := mutable_request.destination {
+			value = match destination {
+				.image { 'image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5' }
+				.json { 'application/json,*/*;q=0.5' }
+				.style { 'text/css,*/*;q=0.1' }
+				else { value }
+			}
+		}
+		mutable_request.header_list.append(http.Header{ name: 'Accept', value: value })
+	}
+	if !mutable_request.header_list.contains('Accept-Language') {
+		mutable_request.header_list.append(http.Header{
+			name: 'Accept-Language'
+			value: host.preferred_languages.join(',')
+		})
+	}
 	pending := main_fetch(params, host)
 	if response := pending.response() {
-		if callback := algorithms.input.process_response { callback(response) }
-		if callback := algorithms.input.process_response_consume_body {
-			callback(response, if bytes := response.body {
-				BodyBytes{
-					kind:  .bytes
-					bytes: bytes.clone()
-				}
-			} else {
-				BodyBytes{
-					kind: .empty
-				}
-			})
-		}
-		if callback := algorithms.input.process_response_end_of_body { callback(response) }
+		fetch_response_handover(params, response)
 	}
-	return controller
+	return params.controller
 }
 
 pub fn appropriate_network_error(params &FetchParams) &Response {
@@ -778,5 +1165,6 @@ pub fn http_memory_cache_enabled() bool {
 }
 
 pub fn clear_http_memory_cache() {
-	fetch_http_memory_cache.clear()
+	fetch_http_memory_cache_pending.clear()
+	fetch_http_memory_cache_complete.clear()
 }

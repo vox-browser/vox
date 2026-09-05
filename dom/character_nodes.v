@@ -7,18 +7,24 @@
 // CDATASection.cpp/.h, ProcessingInstruction.cpp/.h,
 // DocumentType.cpp/.h, DocumentFragment.cpp/.h, and
 // QualifiedName.cpp/.h.
-
 module dom
 
 import strings
 
-// --- QualifiedName ---
+#flag darwin -licucore
 
+#flag linux -licuuc
+
+#include <unicode/uchar.h>
+
+fn C.u_charDirection(code_point i32) int
+
+// --- QualifiedName ---
 pub fn QualifiedName.new(local_name string, prefix ?string, namespace_ ?string) QualifiedName {
 	return QualifiedName{
-		local_name:            local_name
-		prefix_:               prefix
-		namespace_:            namespace_
+		local_name: local_name
+		prefix_: prefix
+		namespace_: namespace_
 		lowercased_local_name: to_ascii_lowercase(local_name)
 	}
 }
@@ -76,7 +82,6 @@ pub fn (mut q QualifiedName) set_prefix(value ?string) {
 }
 
 // --- Shared node casts ---
-
 pub fn (c &CharacterData) as_node() &Node {
 	return unsafe { &Node(c) }
 }
@@ -102,18 +107,17 @@ pub fn (d &DocumentType) as_node() &Node {
 }
 
 // --- Attr ---
-
 pub fn Attr.create(document &Document, qualified_name QualifiedName, value string, owner_element ?&Element) &Attr {
 	return assign_unique_node_id(&Attr{
-		Node:           Node{
-			node_type:  .attribute_node
-			document_:  document
+		Node: Node{
+			node_type: .attribute_node
+			document_: document
 			unique_id_: UniqueNodeID(0)
 		}
-		name_:          qualified_name.as_string()
-		value_:         value
-		local_name_:    qualified_name.local_name
-		prefix__:       qualified_name.prefix_
+		name_: qualified_name.as_string()
+		value_: value
+		local_name_: qualified_name.local_name
+		prefix__: qualified_name.prefix_
 		namespace_uri_: qualified_name.namespace_
 		owner_element_: owner_element or { unsafe { nil } }
 	})
@@ -124,8 +128,7 @@ pub fn Attr.create_with_local_name(document &Document, local_name string, value 
 }
 
 pub fn (a &Attr) clone(document &Document) &Attr {
-	return Attr.create(document, QualifiedName.new(a.local_name_, a.prefix__, a.namespace_uri_),
-		a.value_, none)
+	return Attr.create(document, QualifiedName.new(a.local_name_, a.prefix__, a.namespace_uri_), a.value_, none)
 }
 
 pub fn (mut a Attr) initialize() {
@@ -163,8 +166,7 @@ pub fn (mut a Attr) set_value_with_attribute_steps(value string) ! {
 
 	// 3. Let verifiedValue be the result of calling get Trusted Types-compliant attribute value with
 	//    attribute's local name, attribute's namespace, element, and value.
-	verified_value := get_trusted_types_compliant_attribute_value(a.local_name_, a.namespace_uri_,
-		element, value)!
+	verified_value := get_trusted_types_compliant_attribute_value(a.local_name_, a.namespace_uri_, element, value)!
 
 	// 4. If attribute's element is null, then set attribute's value to verifiedValue, and return.
 	if a.owner_element() == none {
@@ -194,8 +196,7 @@ pub fn (a &Attr) handle_attribute_changes(element &Element, old_value ?string, n
 	// 1. Queue a mutation record of "attributes" for element with attribute's local name,
 	//    attribute's namespace, oldValue, << >>, << >>, null, and null.
 	mut element_node := unsafe { &Node(element) }
-	element_node.queue_mutation_record(.attributes, a.local_name_, a.namespace_uri_, old_value,
-		[]&Node{}, []&Node{}, unsafe { nil }, unsafe { nil })
+	element_node.queue_mutation_record(.attributes, a.local_name_, a.namespace_uri_, old_value, []&Node{}, []&Node{}, unsafe { nil }, unsafe { nil })
 
 	mut mutable_element := unsafe { &Element(element) }
 
@@ -211,24 +212,19 @@ pub fn (a &Attr) handle_attribute_changes(element &Element, old_value ?string, n
 	}
 
 	// 3. Run the attribute change steps with element, attribute's local name, oldValue, newValue, and attribute's namespace.
-	mutable_element.run_attribute_change_steps(a.local_name_, old_value, new_value,
-		a.namespace_uri_)
+	mutable_element.run_attribute_change_steps(a.local_name_, old_value, new_value, a.namespace_uri_)
 }
 
 fn get_trusted_types_compliant_attribute_value(local_name string, namespace_uri ?string, element &Element, value string) !string {
-	_ = local_name
-	_ = namespace_uri
-	_ = element
-	return value
+	return element.document().trusted_types_compliant_attribute_value(element, local_name, namespace_uri, value)!
 }
 
 // --- CharacterData ---
-
 pub fn CharacterData.new(document &Document, node_type NodeType, data string) &CharacterData {
 	return assign_unique_node_id(&CharacterData{
-		Node:  Node{
-			node_type:  node_type
-			document_:  document
+		Node: Node{
+			node_type: node_type
+			document_: document
 			unique_id_: UniqueNodeID(0)
 		}
 		data_: data
@@ -300,8 +296,7 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 
 	// 4. Queue a mutation record of "characterData" for node with null, null, node's data, << >>, << >>, null, and null.
 	// NOTE: We do this later so that the mutation observer may notify UI clients of this node's new value.
-	node.queue_mutation_record(.character_data, none, none, old_data, []&Node{}, []&Node{},
-		unsafe { nil }, unsafe { nil })
+	node.queue_mutation_record(.character_data, none, none, old_data, []&Node{}, []&Node{}, unsafe { nil }, unsafe { nil })
 
 	// 8. For each live range whose start node is node and start offset is greater than offset but less than or equal to
 	//    offset plus count, set its start offset to offset.
@@ -311,15 +306,14 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 	//     start offset by data's length and decrease it by count.
 	// 11. For each live range whose end node is node and end offset is greater than offset plus count, increase its end
 	//     offset by data's length and decrease it by count.
-	update_live_ranges_for_character_data_replacement(node, offset, actual_count,
-		utf16_code_unit_length(data))
+	update_live_ranges_for_character_data_replacement(node, offset, actual_count, utf16_code_unit_length(data))
 
 	// 12. If node's parent is non-null, then run the children changed steps for node's parent.
 	if parent := node.parent() {
 		mut mutable_parent := unsafe { &Node(parent) }
 		mutable_parent.children_changed(ChildrenChangedMetadata{
 			type_: .mutation
-			node:  node
+			node: node
 		})
 	}
 
@@ -443,13 +437,9 @@ pub fn (c &CharacterData) word_segmenter() &Segmenter {
 }
 
 fn update_live_ranges_for_character_data_replacement(node &Node, offset int, count int, data_length int) {
-	mut document := unsafe { &Document(node.document()) }
-	if document == unsafe { nil } {
-		return
-	}
 	end_offset := offset + count
 	delta := data_length - count
-	for live_range in document.live_ranges_ {
+	for _, live_range in dom_live_ranges {
 		mut range := unsafe { &Range(live_range) }
 		if range.start_container_ == node {
 			if range.start_offset_ > offset && range.start_offset_ <= end_offset {
@@ -469,7 +459,6 @@ fn update_live_ranges_for_character_data_replacement(node &Node, offset int, cou
 }
 
 // --- Text ---
-
 pub fn Text.new(document &Document, data string) &Text {
 	return Text.new_with_type(document, .text_node, data)
 }
@@ -477,9 +466,9 @@ pub fn Text.new(document &Document, data string) &Text {
 pub fn Text.new_with_type(document &Document, node_type NodeType, data string) &Text {
 	return assign_unique_node_id(&Text{
 		CharacterData: CharacterData{
-			Node:  Node{
-				node_type:  node_type
-				document_:  document
+			Node: Node{
+				node_type: node_type
+				document_: document
 				unique_id_: UniqueNodeID(0)
 			}
 			data_: data
@@ -617,8 +606,7 @@ pub fn (t &Text) directionality() ?Directionality {
 	for r in t.data().runes() {
 		code_point := u32(r)
 		bidi_class := unicode_bidirectional_class(code_point)
-		if bidi_class == .left_to_right || bidi_class == .right_to_left_arabic
-			|| bidi_class == .right_to_left {
+		if bidi_class == .left_to_right || bidi_class == .right_to_left_arabic || bidi_class == .right_to_left {
 			found_character_bidi_class = bidi_class
 			break
 		}
@@ -635,12 +623,8 @@ pub fn (t &Text) directionality() ?Directionality {
 }
 
 fn update_live_ranges_for_text_split(node &Node, new_node &Node, parent &Node, offset int) {
-	mut document := unsafe { &Document(node.document()) }
-	if document == unsafe { nil } {
-		return
-	}
 	node_inserted_after_index := node.index() + 1
-	for live_range in document.live_ranges_ {
+	for _, live_range in dom_live_ranges {
 		mut range := unsafe { &Range(live_range) }
 		if range.start_container_ == node && range.start_offset_ > offset {
 			range.start_container_ = new_node
@@ -667,71 +651,16 @@ enum UnicodeBidiClass {
 }
 
 fn unicode_bidirectional_class(code_point u32) UnicodeBidiClass {
-	// C++ calls Unicode::bidirectional_class(code_point). The Unicode database is not part of
-	// this DOM-only port yet, so keep the call boundary explicit.
-	return unicode_bidirectional_class_stub(code_point)
-}
-
-fn unicode_bidirectional_class_stub(code_point u32) UnicodeBidiClass {
-	// Approximation of Unicode::bidirectional_class until the full Unicode
-	// database is ported. Covers ASCII letters and the most common strong
-	// bidi ranges (Hebrew, Arabic, Latin/Greek/Cyrillic letters) so that
-	// HTML text directionality inference works for the vast majority of
-	// real-world content.
-
-	// ASCII letters → L
-	if (code_point >= 0x41 && code_point <= 0x5A) || (code_point >= 0x61 && code_point <= 0x7A) {
-		return .left_to_right
+	// LibUnicode::bidirectional_class() is a direct mapping from ICU's
+	// u_charDirection(). Only the three strong classes are consumed by the
+	// HTML directionality algorithms here; preserve every other ICU class as
+	// `other` without inventing range tables.
+	return match C.u_charDirection(i32(code_point)) {
+		0 { .left_to_right } // U_LEFT_TO_RIGHT
+		1 { .right_to_left } // U_RIGHT_TO_LEFT
+		13 { .right_to_left_arabic } // U_RIGHT_TO_LEFT_ARABIC
+		else { .other }
 	}
-	if code_point < 0x80 {
-		return .other
-	}
-
-	// Hebrew block → R
-	if code_point >= 0x0590 && code_point <= 0x05FF {
-		return .right_to_left
-	}
-	// Hebrew presentation forms → R
-	if code_point >= 0xFB1D && code_point <= 0xFB4F {
-		return .right_to_left
-	}
-
-	// Arabic blocks → AL
-	if (code_point >= 0x0600 && code_point <= 0x06FF)
-		|| (code_point >= 0x0750 && code_point <= 0x077F)
-		|| (code_point >= 0x08A0 && code_point <= 0x08FF)
-		|| (code_point >= 0xFB50 && code_point <= 0xFDFF)
-		|| (code_point >= 0xFE70 && code_point <= 0xFEFF) {
-		return .right_to_left_arabic
-	}
-
-	// Thaana (Maldivian) → R
-	if code_point >= 0x0780 && code_point <= 0x07BF {
-		return .right_to_left
-	}
-	// N'Ko / Samaritan / Mandaic → R
-	if (code_point >= 0x07C0 && code_point <= 0x07FF)
-		|| (code_point >= 0x0800 && code_point <= 0x083F)
-		|| (code_point >= 0x0840 && code_point <= 0x085F) {
-		return .right_to_left
-	}
-	// Syriac → AL
-	if code_point >= 0x0700 && code_point <= 0x074F {
-		return .right_to_left_arabic
-	}
-
-	// Latin-1 letters, Latin Extended, IPA, Greek, Cyrillic, Armenian, ... → L
-	// (Approximation: most letters in these blocks are L; we don't model
-	// the narrow set of LRM/RLM/format characters here.)
-	if (code_point >= 0x00C0 && code_point <= 0x024F)
-		|| (code_point >= 0x0370 && code_point <= 0x03FF)
-		|| (code_point >= 0x0400 && code_point <= 0x04FF)
-		|| (code_point >= 0x0500 && code_point <= 0x052F)
-		|| (code_point >= 0x0530 && code_point <= 0x058F) {
-		return .left_to_right
-	}
-
-	return .other
 }
 
 fn is_ltr_code_point_for_directionality(code_point u32) bool {
@@ -744,13 +673,12 @@ fn is_rtl_code_point_for_directionality(code_point u32) bool {
 }
 
 // --- Comment ---
-
 pub fn Comment.new(document &Document, data string) &Comment {
 	return assign_unique_node_id(&Comment{
 		CharacterData: CharacterData{
-			Node:  Node{
-				node_type:  .comment_node
-				document_:  document
+			Node: Node{
+				node_type: .comment_node
+				document_: document
 				unique_id_: UniqueNodeID(0)
 			}
 			data_: data
@@ -773,14 +701,13 @@ pub fn (c &Comment) node_name() string {
 }
 
 // --- CDATASection ---
-
 pub fn CDATASection.new(document &Document, data string) &CDATASection {
 	return assign_unique_node_id(&CDATASection{
 		Text: Text{
 			CharacterData: CharacterData{
-				Node:  Node{
-					node_type:  .cdata_section_node
-					document_:  document
+				Node: Node{
+					node_type: .cdata_section_node
+					document_: document
 					unique_id_: UniqueNodeID(0)
 				}
 				data_: data
@@ -803,18 +730,17 @@ pub fn (c &CDATASection) node_name() string {
 }
 
 // --- ProcessingInstruction ---
-
 pub fn ProcessingInstruction.new(document &Document, data string, target string) &ProcessingInstruction {
 	return assign_unique_node_id(&ProcessingInstruction{
 		CharacterData: CharacterData{
-			Node:  Node{
-				node_type:  .processing_instruction_node
-				document_:  document
+			Node: Node{
+				node_type: .processing_instruction_node
+				document_: document
 				unique_id_: UniqueNodeID(0)
 			}
 			data_: data
 		}
-		target_:       target
+		target_: target
 	})
 }
 
@@ -828,7 +754,6 @@ pub fn (p &ProcessingInstruction) node_name() string {
 }
 
 // --- DocumentType ---
-
 pub fn DocumentType.create(document &Document) &DocumentType {
 	return DocumentType.new(document)
 }
@@ -836,8 +761,8 @@ pub fn DocumentType.create(document &Document) &DocumentType {
 pub fn DocumentType.new(document &Document) &DocumentType {
 	return assign_unique_node_id(&DocumentType{
 		Node: Node{
-			node_type:  .document_type_node
-			document_:  document
+			node_type: .document_type_node
+			document_: document
 			unique_id_: UniqueNodeID(0)
 		}
 	})
@@ -888,13 +813,12 @@ pub fn is_valid_doctype_name(name string) bool {
 }
 
 // --- DocumentFragment ---
-
 pub fn DocumentFragment.new(document &Document) &DocumentFragment {
 	return assign_unique_node_id(&DocumentFragment{
 		ParentNode: ParentNode{
 			Node: Node{
-				node_type:  .document_fragment_node
-				document_:  document
+				node_type: .document_fragment_node
+				document_: document
 				unique_id_: UniqueNodeID(0)
 			}
 		}

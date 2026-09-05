@@ -42,8 +42,8 @@ pub struct AesGcmParams {
 pub:
 	name            string = 'AES-GCM'
 	iv              []u8
-	additional_data []u8
-	tag_length      u8 = 128
+	additional_data ?[]u8
+	tag_length      ?u8
 }
 
 pub struct HkdfParams {
@@ -194,26 +194,26 @@ pub:
 
 pub struct Argon2Params {
 pub:
-	name        string
-	nonce       []u8
-	parallelism u32
-	memory      u32
-	passes      u32
-	version     ?u8
-	secret      []u8
-	associated  []u8
+	name            string
+	nonce           []u8
+	parallelism     u32
+	memory          u32
+	passes          u32
+	version         ?u8
+	secret_value    ?[]u8
+	associated_data ?[]u8
 }
 
 pub struct EncapsulatedBits {
 pub:
-	shared_key []u8
-	ciphertext []u8
+	shared_key ?[]u8
+	ciphertext ?[]u8
 }
 
 pub struct EncapsulatedKey {
 pub:
-	shared_key &CryptoKey
-	ciphertext []u8
+	shared_key ?&CryptoKey
+	ciphertext ?[]u8
 }
 
 pub type EncryptionParams = AeadParams
@@ -221,6 +221,7 @@ pub type EncryptionParams = AeadParams
 	| AesCtrParams
 	| AesGcmParams
 	| AlgorithmParams
+
 pub type DeriveParams = Argon2Params | HkdfParams | Pbkdf2Params
 
 fn canonical_hash_name(name string) !string {
@@ -245,7 +246,9 @@ pub fn digest_bytes(algorithm string, data []u8) ![]u8 {
 		'SHA3-256' { sha3.sum256(data) }
 		'SHA3-384' { sha3.sum384(data) }
 		'SHA3-512' { sha3.sum512(data) }
-		else { return error('NotSupportedError: Unsupported digest') }
+		else {
+			return error('NotSupportedError: Unsupported digest')
+		}
 	}
 }
 
@@ -256,7 +259,9 @@ fn hash_block_size(name string) !int {
 		'SHA3-256' { 136 }
 		'SHA3-384' { 104 }
 		'SHA3-512' { 72 }
-		else { return error('NotSupportedError: Unsupported hash') }
+		else {
+			return error('NotSupportedError: Unsupported hash')
+		}
 	}
 }
 
@@ -270,7 +275,9 @@ fn hmac_bytes(hash_name string, key []u8, data []u8) ![]u8 {
 		'SHA3-256' { hmac.new(key, data, sha3.sum256, 136) }
 		'SHA3-384' { hmac.new(key, data, sha3.sum384, 104) }
 		'SHA3-512' { hmac.new(key, data, sha3.sum512, 72) }
-		else { return error('NotSupportedError: Unsupported HMAC hash') }
+		else {
+			return error('NotSupportedError: Unsupported HMAC hash')
+		}
 	}
 }
 
@@ -328,7 +335,7 @@ fn aes_cbc_encrypt(params AesCbcParams, key &CryptoKey, plaintext []u8) ![]u8 {
 	}
 	padded := pkcs7_pad(plaintext)
 	mut output := []u8{len: padded.len}
-	block := aes.new_cipher(key_bytes)
+	block := aes.new_cipher(key_bytes)!
 	mut mode := cipher.new_cbc(block, params.iv)
 	mode.encrypt_blocks(mut output, padded)
 	return output
@@ -343,7 +350,7 @@ fn aes_cbc_decrypt(params AesCbcParams, key &CryptoKey, ciphertext []u8) ![]u8 {
 		return error('OperationError: AES-CBC ciphertext must contain full blocks')
 	}
 	mut output := []u8{len: ciphertext.len}
-	block := aes.new_cipher(key_bytes)
+	block := aes.new_cipher(key_bytes)!
 	mut mode := cipher.new_cbc(block, params.iv)
 	mode.decrypt_blocks(mut output, ciphertext)
 	return pkcs7_unpad(output)
@@ -374,7 +381,7 @@ fn aes_ctr_crypt(params AesCtrParams, key &CryptoKey, input []u8) ![]u8 {
 	if params.length < 64 && block_count > u64(1) << params.length {
 		return error('OperationError: AES-CTR counter would repeat')
 	}
-	block := aes.new_cipher(key_bytes)
+	block := aes.new_cipher(key_bytes)!
 	mut counter := params.counter.clone()
 	mut output := []u8{len: input.len}
 	mut offset := 0
@@ -491,40 +498,42 @@ fn gcm_authentication_tag(block cipher.Block, hash_subkey []u8, initial_counter 
 
 fn aes_gcm_encrypt(params AesGcmParams, key &CryptoKey, plaintext []u8) ![]u8 {
 	key_bytes := valid_aes_key(key, 'AES-GCM')!
-	if params.iv.len == 0 || !valid_gcm_tag_length(params.tag_length) {
+	tag_length := params.tag_length or { u8(128) }
+	if params.iv.len == 0 || !valid_gcm_tag_length(tag_length) {
 		return error('OperationError: Invalid AES-GCM IV or tag length')
 	}
-	block := aes.new_cipher(key_bytes)
+	additional_data := params.additional_data or { []u8{} }
+	block := aes.new_cipher(key_bytes)!
 	mut hash_subkey := []u8{len: 16}
 	block.encrypt(mut hash_subkey, []u8{len: 16})
 	initial_counter := gcm_initial_counter(params.iv, hash_subkey)
 	mut payload_counter := initial_counter.clone()
 	gcm_increment_counter(mut payload_counter)
 	ciphertext := gcm_counter_crypt(block, payload_counter, plaintext)
-	tag := gcm_authentication_tag(block, hash_subkey, initial_counter, params.additional_data,
-		ciphertext)
+	tag := gcm_authentication_tag(block, hash_subkey, initial_counter, additional_data, ciphertext)
 	mut output := ciphertext.clone()
-	output << tag[..int(params.tag_length / 8)]
+	output << tag[..int(tag_length / 8)]
 	return output
 }
 
 fn aes_gcm_decrypt(params AesGcmParams, key &CryptoKey, input []u8) ![]u8 {
 	key_bytes := valid_aes_key(key, 'AES-GCM')!
-	if params.iv.len == 0 || !valid_gcm_tag_length(params.tag_length) {
+	tag_length := params.tag_length or { u8(128) }
+	if params.iv.len == 0 || !valid_gcm_tag_length(tag_length) {
 		return error('OperationError: Invalid AES-GCM IV or tag length')
 	}
-	tag_size := int(params.tag_length / 8)
+	additional_data := params.additional_data or { []u8{} }
+	tag_size := int(tag_length / 8)
 	if input.len < tag_size {
 		return error('OperationError: AES-GCM ciphertext is shorter than its tag')
 	}
 	ciphertext := input[..input.len - tag_size]
 	tag := input[input.len - tag_size..]
-	block := aes.new_cipher(key_bytes)
+	block := aes.new_cipher(key_bytes)!
 	mut hash_subkey := []u8{len: 16}
 	block.encrypt(mut hash_subkey, []u8{len: 16})
 	initial_counter := gcm_initial_counter(params.iv, hash_subkey)
-	expected := gcm_authentication_tag(block, hash_subkey, initial_counter, params.additional_data,
-		ciphertext)
+	expected := gcm_authentication_tag(block, hash_subkey, initial_counter, additional_data, ciphertext)
 	if subtle.constant_time_compare(expected[..tag_size], tag) != 1 {
 		return error('OperationError: AES-GCM authentication failed')
 	}
@@ -534,8 +543,7 @@ fn aes_gcm_decrypt(params AesGcmParams, key &CryptoKey, input []u8) ![]u8 {
 }
 
 fn chacha20_poly1305_crypt(params AeadParams, key &CryptoKey, input []u8, decrypt bool) ![]u8 {
-	if params.name != 'ChaCha20-Poly1305' || key.algorithm_name() != params.name
-		|| key.type_ != .secret || key.handle_.len != 32 {
+	if params.name != 'ChaCha20-Poly1305' || key.algorithm_name() != params.name || key.type_ != .secret || key.handle_.len != 32 {
 		return error('InvalidAccessError: A ChaCha20-Poly1305 secret key is required')
 	}
 	if params.iv.len != 12 {
@@ -626,7 +634,7 @@ fn hkdf_derive(params HkdfParams, secret []u8, length_bytes int) ![]u8 {
 }
 
 fn argon2_derive(params Argon2Params, password []u8, length_bytes int) ![]u8 {
-	if params.secret.len > 0 || params.associated.len > 0 {
+	if params.secret_value != none || params.associated_data != none {
 		return error('NotSupportedError: The pure-V Argon2 backend has no secret/associated-data input')
 	}
 	if params.parallelism == 0 || params.parallelism > 255 || params.passes == 0 {
@@ -634,16 +642,13 @@ fn argon2_derive(params Argon2Params, password []u8, length_bytes int) ![]u8 {
 	}
 	return match params.name {
 		'Argon2d' {
-			argon2.d_key(password, params.nonce, params.passes, params.memory,
-				u8(params.parallelism), u32(length_bytes))!
+			argon2.d_key(password, params.nonce, params.passes, params.memory, u8(params.parallelism), u32(length_bytes))!
 		}
 		'Argon2i' {
-			argon2.key(password, params.nonce, params.passes, params.memory,
-				u8(params.parallelism), u32(length_bytes))!
+			argon2.key(password, params.nonce, params.passes, params.memory, u8(params.parallelism), u32(length_bytes))!
 		}
 		'Argon2id' {
-			argon2.id_key(password, params.nonce, params.passes, params.memory,
-				u8(params.parallelism), u32(length_bytes))!
+			argon2.id_key(password, params.nonce, params.passes, params.memory, u8(params.parallelism), u32(length_bytes))!
 		}
 		else {
 			error('NotSupportedError: Unsupported Argon2 variant')
@@ -680,12 +685,14 @@ pub fn generate_aes_key(params AesKeyGenParams, extractable bool, usages []KeyUs
 	allowed := match params.name {
 		'AES-CBC', 'AES-CTR', 'AES-GCM' { [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key] }
 		'AES-KW' { [KeyUsage.wrap_key, .unwrap_key] }
-		else { return error('NotSupportedError: Unsupported AES algorithm: ${params.name}') }
+		else {
+			return error('NotSupportedError: Unsupported AES algorithm: ${params.name}')
+		}
 	}
 	validate_usages(usages, allowed)!
 	material := rand.bytes(int(params.length / 8))!
 	return CryptoKey.create(.secret, extractable, AesKeyAlgorithm{
-		name:   params.name
+		name: params.name
 		length: params.length
 	}, usages, material)
 }
@@ -704,7 +711,7 @@ pub fn import_secret_key(algorithm string, material []u8, extractable bool, usag
 			}
 			validate_usages(usages, allowed)!
 			return CryptoKey.create(.secret, extractable, AesKeyAlgorithm{
-				name:   canonical
+				name: canonical
 				length: u16(material.len * 8)
 			}, usages, material)
 		}
@@ -715,7 +722,7 @@ pub fn import_secret_key(algorithm string, material []u8, extractable bool, usag
 			validate_usages(usages, [KeyUsage.sign, .verify])!
 			hash := canonical_hash_name(hash_name)!
 			return CryptoKey.create(.secret, extractable, HmacKeyAlgorithm{
-				hash:   hash
+				hash: hash
 				length: u32(material.len * 8)
 			}, usages, material)
 		}
@@ -724,16 +731,14 @@ pub fn import_secret_key(algorithm string, material []u8, extractable bool, usag
 				return error('DataError: ChaCha20-Poly1305 key must be 256 bits')
 			}
 			validate_usages(usages, [KeyUsage.encrypt, .decrypt, .wrap_key, .unwrap_key])!
-			return CryptoKey.create(.secret, extractable, KeyAlgorithm{ name: canonical }, usages,
-				material)
+			return CryptoKey.create(.secret, extractable, KeyAlgorithm{ name: canonical }, usages, material)
 		}
 		'HKDF', 'PBKDF2', 'Argon2d', 'Argon2i', 'Argon2id' {
 			if extractable {
 				return error('SyntaxError: Derivation keys must not be extractable')
 			}
 			validate_usages(usages, [KeyUsage.derive_bits, .derive_key])!
-			return CryptoKey.create(.secret, false, KeyAlgorithm{ name: canonical }, usages,
-				material)
+			return CryptoKey.create(.secret, false, KeyAlgorithm{ name: canonical }, usages, material)
 		}
 		else {
 			return error('NotSupportedError: Raw secret import is unavailable for ${canonical}')
@@ -751,7 +756,7 @@ pub fn generate_hmac_key(params HmacKeyGenParams, extractable bool, usages []Key
 	}
 	material := rand.bytes(int(length / 8))!
 	return CryptoKey.create(.secret, extractable, HmacKeyAlgorithm{
-		hash:   hash
+		hash: hash
 		length: length
 	}, usages, material)
 }
@@ -762,10 +767,8 @@ pub fn generate_ed25519_key(extractable bool, usages []KeyUsage) !CryptoKeyPair 
 	public_usages := if KeyUsage.verify in usages { [KeyUsage.verify] } else { []KeyUsage{} }
 	private_usages := if KeyUsage.sign in usages { [KeyUsage.sign] } else { []KeyUsage{} }
 	return CryptoKeyPair{
-		public_key:  CryptoKey.create(.public_key, true, KeyAlgorithm{ name: 'Ed25519' },
-			public_usages, public_material)
-		private_key: CryptoKey.create(.private_key, extractable, KeyAlgorithm{ name: 'Ed25519' },
-			private_usages, private_material)
+		public_key: CryptoKey.create(.public_key, true, KeyAlgorithm{ name: 'Ed25519' }, public_usages, public_material)
+		private_key: CryptoKey.create(.private_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, private_usages, private_material)
 	}
 }
 
@@ -776,8 +779,7 @@ pub fn import_ed25519_key(format KeyFormat, material []u8, extractable bool, usa
 				return error('DataError: Ed25519 public key must be 32 bytes')
 			}
 			validate_usages(usages, [KeyUsage.verify])!
-			CryptoKey.create(.public_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, usages,
-				material)
+			CryptoKey.create(.public_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, usages, material)
 		}
 		.raw_seed {
 			if material.len != ed25519.seed_size {
@@ -785,16 +787,14 @@ pub fn import_ed25519_key(format KeyFormat, material []u8, extractable bool, usa
 			}
 			validate_usages(usages, [KeyUsage.sign])!
 			private_material := ed25519.new_key_from_seed(material)
-			CryptoKey.create(.private_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, usages,
-				private_material)
+			CryptoKey.create(.private_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, usages, private_material)
 		}
 		.raw_private {
 			if material.len != ed25519.private_key_size {
 				return error('DataError: Ed25519 private key must be 64 bytes')
 			}
 			validate_usages(usages, [KeyUsage.sign])!
-			CryptoKey.create(.private_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, usages,
-				material)
+			CryptoKey.create(.private_key, extractable, KeyAlgorithm{ name: 'Ed25519' }, usages, material)
 		}
 		else {
 			error('NotSupportedError: Ed25519 format is not implemented')
@@ -838,7 +838,7 @@ pub fn aes_key_wrap(key &CryptoKey, plaintext []u8) ![]u8 {
 	n := plaintext.len / 8
 	mut a := []u8{len: 8, init: 0xa6}
 	mut r := plaintext.clone()
-	block_cipher := aes.new_cipher(key_bytes)
+	block_cipher := aes.new_cipher(key_bytes)!
 	for round in 0 .. 6 {
 		for index in 0 .. n {
 			mut input := a.clone()
@@ -863,7 +863,7 @@ pub fn aes_key_unwrap(key &CryptoKey, ciphertext []u8) ![]u8 {
 	n := ciphertext.len / 8 - 1
 	mut a := ciphertext[..8].clone()
 	mut r := ciphertext[8..].clone()
-	block_cipher := aes.new_cipher(key_bytes)
+	block_cipher := aes.new_cipher(key_bytes)!
 	for round := 5; round >= 0; round-- {
 		for index := n - 1; index >= 0; index-- {
 			mut first := a.clone()

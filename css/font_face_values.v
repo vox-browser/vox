@@ -1,14 +1,17 @@
 module css
 
+import dom
+import fetch
 import math
+import mimesniff
 import strconv
 import strings
+import webidl
 
 // This file ports Ladybird's LibWeb/CSS font-face, font-feature-values, and
-// font-computer logic into one self-contained V file. The surrounding V port
-// does not yet have the JS realm/promise, fetch, parser descriptor, style scope,
-// or platform font APIs that the C++ code uses, so those integration points are
-// represented by explicit local boundary helpers below.
+// font-computer logic. It uses the translated WebIDL promise, Fetch response,
+// MIME sniffing, parser descriptor, and style-scope types. JS realms, queued
+// tasks, and the platform font decoders remain explicit integration boundaries.
 //
 // NOTE: css/events_misc.v already owns a zero-field `FontFace` type for
 // FontFaceSetLoadEvent. To keep this file disjoint, the stateful FontFace
@@ -182,7 +185,7 @@ pub mut:
 
 	font_feature_settings map[string]u32
 
-	font_kerning   FontKerning   = .auto_
+	font_kerning   FontKerning = .auto_
 	text_rendering TextRendering = .auto_
 }
 
@@ -546,7 +549,7 @@ pub fn (data FontFeatureData) to_shape_features(font_feature_values map[string][
 			continue
 		}
 		shape_features << ShapeFeature{
-			tag:   tag
+			tag: tag
 			value: value
 		}
 	}
@@ -579,9 +582,9 @@ pub mut:
 
 pub fn CSSFontFeatureValuesMap.create(max_value_count usize, parent_rule ?&CSSFontFeatureValuesRule) &CSSFontFeatureValuesMap {
 	return &CSSFontFeatureValuesMap{
-		entries:         map[string][]u32{}
+		entries: map[string][]u32{}
 		max_value_count: max_value_count
-		parent_rule:     parent_rule
+		parent_rule: parent_rule
 	}
 }
 
@@ -766,8 +769,7 @@ pub fn (rule &CSSFontFeatureValuesRule) to_hash_map() map[string][]u32 {
 	add_font_feature_values_map_to_hash_map(mut feature_map, rule.ornaments_, .ornaments)
 	add_font_feature_values_map_to_hash_map(mut feature_map, rule.stylistic_, .stylistic)
 	add_font_feature_values_map_to_hash_map(mut feature_map, rule.swash_, .swash)
-	add_font_feature_values_map_to_hash_map(mut feature_map, rule.character_variant_,
-		.character_variant)
+	add_font_feature_values_map_to_hash_map(mut feature_map, rule.character_variant_, .character_variant)
 	add_font_feature_values_map_to_hash_map(mut feature_map, rule.styleset_, .styleset)
 
 	// NB: We don't include historical-forms since it can't be referenced - it seems like its inclusion in the syntax
@@ -782,7 +784,7 @@ fn add_font_feature_values_map_to_hash_map(mut target map[string][]u32, source &
 
 		target[font_feature_value_key_id(FontFeatureValueKey{
 			type_: type_
-			name:  key
+			name: key
 		})] = values.clone()
 	}
 }
@@ -817,8 +819,11 @@ pub enum FontFaceDescriptorID {
 
 pub struct FontFaceDescriptor {
 pub mut:
-	id    FontFaceDescriptorID
-	value string
+	id             FontFaceDescriptorID
+	value          string
+	font_sources   []FontSourceStyleValue
+	unicode_ranges []UnicodeRange
+	style_value    ?StyleValue
 }
 
 @[heap]
@@ -855,6 +860,33 @@ pub fn (descriptors &CSSFontFaceDescriptors) descriptor_or_initial_value(id Font
 	return initial_font_face_descriptor_value(id)
 }
 
+fn (descriptors &CSSFontFaceDescriptors) font_source_values() []FontSourceStyleValue {
+	for descriptor in descriptors.descriptors {
+		if descriptor.id == .src {
+			return descriptor.font_sources.clone()
+		}
+	}
+	return []FontSourceStyleValue{}
+}
+
+fn (descriptors &CSSFontFaceDescriptors) unicode_range_values() []UnicodeRange {
+	for descriptor in descriptors.descriptors {
+		if descriptor.id == .unicode_range {
+			return descriptor.unicode_ranges.clone()
+		}
+	}
+	return []UnicodeRange{}
+}
+
+fn (descriptors &CSSFontFaceDescriptors) descriptor_style_value(id FontFaceDescriptorID) ?StyleValue {
+	for descriptor in descriptors.descriptors {
+		if descriptor.id == id {
+			return descriptor.style_value
+		}
+	}
+	return none
+}
+
 pub fn (mut descriptors CSSFontFaceDescriptors) set_property(property string, value string, priority string) ! {
 	if descriptors.readonly {
 		return error('NoModificationAllowedError: Cannot modify properties of readonly CSSStyleDeclaration')
@@ -871,8 +903,93 @@ pub fn (mut descriptors CSSFontFaceDescriptors) set_property(property string, va
 		return
 	}
 
-	parsed := parse_font_face_descriptor(id, value) or { return }
-	descriptors.set_descriptor_value(id, parsed)
+	if id == .src {
+		parsed := parse_font_source_descriptor(value) or { return }
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: parsed.serialized
+			font_sources: parsed.sources
+		})
+	} else if id == .font_family {
+		parsed := parse_font_family_descriptor(value) or { return }
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: parsed.serialize(.normal)
+			style_value: parsed
+		})
+	} else if id == .font_style {
+		parsed := parse_font_style_descriptor(value) or { return }
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: parsed.serialize(.normal)
+			style_value: parsed
+		})
+	} else if id == .font_weight {
+		parsed := parse_font_weight_descriptor(value) or { return }
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: parsed.serialize(.normal)
+			style_value: parsed
+		})
+	} else if id == .font_width {
+		parsed := parse_font_width_descriptor(value) or { return }
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: parsed.serialize(.normal)
+			style_value: parsed
+		})
+	} else if id in [.font_feature_settings, .font_variation_settings] {
+		property_id := if id == .font_feature_settings {
+			PropertyID.font_feature_settings
+		} else {
+			PropertyID.font_variation_settings
+		}
+		parsed := parse_font_property_descriptor(value, property_id) or { return }
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: parsed.serialize(.normal)
+			style_value: parsed
+		})
+	} else if id in [.ascent_override, .descent_override, .line_gap_override] {
+		parsed := parse_font_metric_override_descriptor(value) or { return }
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: parsed.serialize(.normal)
+			style_value: parsed
+		})
+	} else if id == .font_display {
+		parsed := parse_font_keyword_descriptor(value, ['auto', 'block', 'swap', 'fallback',
+			'optional']) or { return }
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: parsed.serialize(.normal)
+			style_value: parsed
+		})
+	} else if id in [.font_language_override, .font_named_instance] {
+		keyword := if id == .font_language_override { 'normal' } else { 'auto' }
+		parsed := parse_font_keyword_or_string_descriptor(value, keyword) or { return }
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: parsed.serialize(.normal)
+			style_value: parsed
+		})
+	} else if id == .unicode_range {
+		ranges := parse_unicode_ranges(value)
+		if ranges.len == 0 {
+			return
+		}
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: ranges.map(it.to_css_string()).join(', ')
+			unicode_ranges: ranges
+		})
+	} else {
+		parsed := parse_font_face_descriptor(id, value) or { return }
+		descriptors.set_descriptor_value(FontFaceDescriptor{
+			id: id
+			value: parsed
+		})
+	}
 
 	if mut rule := descriptors.parent_rule {
 		rule.handle_descriptor_change(property)
@@ -895,17 +1012,14 @@ pub fn (mut descriptors CSSFontFaceDescriptors) remove_property(property string)
 	return old_value
 }
 
-fn (mut descriptors CSSFontFaceDescriptors) set_descriptor_value(id FontFaceDescriptorID, value string) {
+fn (mut descriptors CSSFontFaceDescriptors) set_descriptor_value(new_descriptor FontFaceDescriptor) {
 	for i, descriptor in descriptors.descriptors {
-		if descriptor.id == id {
-			descriptors.descriptors[i].value = value
+		if descriptor.id == new_descriptor.id {
+			descriptors.descriptors[i] = new_descriptor
 			return
 		}
 	}
-	descriptors.descriptors << FontFaceDescriptor{
-		id:    id
-		value: value
-	}
+	descriptors.descriptors << new_descriptor
 }
 
 fn (mut descriptors CSSFontFaceDescriptors) remove_descriptor(id FontFaceDescriptorID) {
@@ -1101,19 +1215,17 @@ fn parse_font_face_descriptor(id FontFaceDescriptorID, value string) ?string {
 
 	match id {
 		.font_display {
-			if trimmed.to_lower() !in ['auto', 'block', 'swap', 'fallback', 'optional'] {
-				return none
-			}
+			return parse_font_keyword_descriptor(trimmed, ['auto', 'block', 'swap', 'fallback',
+				'optional'])?.serialize(.normal)
 		}
 		.ascent_override, .descent_override, .line_gap_override {
-			if trimmed.to_lower() != 'normal' && !is_valid_non_negative_css_percentage(trimmed) {
-				return none
-			}
+			return parse_font_metric_override_descriptor(trimmed)?.serialize(.normal)
 		}
 		.src {
-			if parse_font_face_sources(trimmed).len == 0 {
-				return none
-			}
+			return parse_font_source_descriptor(trimmed)?.serialized
+		}
+		.font_family {
+			return parse_font_family_descriptor(trimmed)?.serialize(.normal)
 		}
 		.unicode_range {
 			if parse_unicode_ranges(trimmed).len == 0 {
@@ -1121,39 +1233,25 @@ fn parse_font_face_descriptor(id FontFaceDescriptorID, value string) ?string {
 			}
 		}
 		.font_weight {
-			if !is_valid_font_weight_descriptor(trimmed) {
-				return none
-			}
+			return parse_font_weight_descriptor(trimmed)?.serialize(.normal)
 		}
 		.font_style {
-			if !is_valid_font_style_descriptor(trimmed) {
-				return none
-			}
+			return parse_font_style_descriptor(trimmed)?.serialize(.normal)
 		}
 		.font_width {
-			if !is_valid_font_width_descriptor(trimmed) {
-				return none
-			}
+			return parse_font_width_descriptor(trimmed)?.serialize(.normal)
 		}
 		.font_feature_settings {
-			if !is_valid_font_feature_settings_descriptor(trimmed) {
-				return none
-			}
+			return parse_font_property_descriptor(trimmed, .font_feature_settings)?.serialize(.normal)
 		}
 		.font_variation_settings {
-			if !is_valid_font_variation_settings_descriptor(trimmed) {
-				return none
-			}
+			return parse_font_property_descriptor(trimmed, .font_variation_settings)?.serialize(.normal)
 		}
 		.font_language_override {
-			if !is_valid_font_language_override_descriptor(trimmed) {
-				return none
-			}
+			return parse_font_keyword_or_string_descriptor(trimmed, 'normal')?.serialize(.normal)
 		}
 		.font_named_instance {
-			if !is_valid_font_named_instance_descriptor(trimmed) {
-				return none
-			}
+			return parse_font_keyword_or_string_descriptor(trimmed, 'auto')?.serialize(.normal)
 		}
 		else {}
 	}
@@ -1210,6 +1308,7 @@ pub fn (mut rule CSSFontFaceRule) set_css_connected_font_face(font_face ?&FontFa
 pub fn (rule &CSSFontFaceRule) serialized() string {
 	descriptors := rule.style_
 	mut builder := strings.new_builder(128)
+
 	// The result of concatenating the following:
 
 	// 1. The string "@font-face {", followed by a single SPACE (U+0020).
@@ -1392,6 +1491,7 @@ pub struct ParsedFontFaceSource {
 pub mut:
 	kind   FontSourceKind
 	value  string
+	url    ?URL
 	format ?string
 	tech   []FontTech
 }
@@ -1444,21 +1544,13 @@ pub fn ParsedFontFace.sources_from_style_value(style_value string) []ParsedFontF
 }
 
 pub fn ParsedFontFace.from_descriptors(descriptors &CSSFontFaceDescriptors) ParsedFontFace {
-	extract_percentage_or_normal := fn (value string) ?Percentage {
-		trimmed := value.trim_space()
-		if trimmed.ends_with('%') {
-			number := strconv.atof64(trimmed[..trimmed.len - 1]) or { return none }
-			return Percentage.new(number)
-		}
-		if trimmed.to_lower() == 'normal' {
-			return none
-		}
-		return none
-	}
-
 	mut font_family := ''
 	if value := descriptors.descriptor_or_initial_value(.font_family) {
-		font_family = string_from_font_family_descriptor(value)
+		if parsed_family := descriptors.descriptor_style_value(.font_family) {
+			font_family = string_from_style_value(parsed_family)
+		} else {
+			font_family = string_from_font_family_descriptor(value)
+		}
 	}
 
 	mut weight := ?FontWeightRange(none)
@@ -1472,6 +1564,8 @@ pub fn ParsedFontFace.from_descriptors(descriptors &CSSFontFaceDescriptors) Pars
 				min: 400
 				max: 400
 			}
+		} else if parsed_weight := descriptors.descriptor_style_value(.font_weight) {
+			weight = font_weight_range_from_style_value(parsed_weight)
 		} else {
 			weight = parse_font_weight_range(value)
 		}
@@ -1485,6 +1579,12 @@ pub fn ParsedFontFace.from_descriptors(descriptors &CSSFontFaceDescriptors) Pars
 		//  - FIXME: For variation axis clamping, clamping does not occur
 		if value.to_lower() == 'auto' {
 			slope = 0
+		} else if parsed_style := descriptors.descriptor_style_value(.font_style) {
+			if font_style := parsed_style.as_font_style() {
+				slope = font_style.to_font_slope()
+			} else {
+				slope = compute_font_style_slope(value)
+			}
 		} else {
 			slope = compute_font_style_slope(value)
 		}
@@ -1498,88 +1598,126 @@ pub fn ParsedFontFace.from_descriptors(descriptors &CSSFontFaceDescriptors) Pars
 		//  - FIXME: For variation axis clamping, clamping does not occur
 		if value.to_lower() == 'auto' {
 			width = 100
+		} else if parsed_width := descriptors.descriptor_style_value(.font_width) {
+			width = font_width_from_style_value(parsed_width)
 		} else {
 			width = compute_font_width(value)
 		}
 	}
 
 	mut sources := []ParsedFontFaceSource{}
-	if value := descriptors.descriptor_or_initial_value(.src) {
-		sources = ParsedFontFace.sources_from_style_value(value)
+	if value := descriptors.descriptor(.src) {
+		font_source_values := descriptors.font_source_values()
+		// Descriptors produced by the parser and CSSOM retain their parsed values. Keep a
+		// compatibility fallback for callers that manually construct the public V struct.
+		sources = if font_source_values.len > 0 {
+			parsed_font_face_sources_from_style_values(font_source_values)
+		} else {
+			ParsedFontFace.sources_from_style_value(value)
+		}
 	}
 
 	mut unicode_ranges := []UnicodeRange{}
 	if value := descriptors.descriptor_or_initial_value(.unicode_range) {
-		unicode_ranges = parse_unicode_ranges(value)
+		parsed_ranges := descriptors.unicode_range_values()
+		unicode_ranges = if parsed_ranges.len > 0 {
+			parsed_ranges.clone()
+		} else {
+			parse_unicode_ranges(value)
+		}
 	}
 
 	mut ascent_override := ?Percentage(none)
 	if value := descriptors.descriptor_or_initial_value(.ascent_override) {
-		ascent_override = extract_percentage_or_normal(value)
+		if parsed_value := descriptors.descriptor_style_value(.ascent_override) {
+			ascent_override = percentage_from_font_metric_override(parsed_value)
+		} else if parsed_value := parse_font_metric_override_descriptor(value) {
+			ascent_override = percentage_from_font_metric_override(parsed_value)
+		}
 	}
 
 	mut descent_override := ?Percentage(none)
 	if value := descriptors.descriptor_or_initial_value(.descent_override) {
-		descent_override = extract_percentage_or_normal(value)
+		if parsed_value := descriptors.descriptor_style_value(.descent_override) {
+			descent_override = percentage_from_font_metric_override(parsed_value)
+		} else if parsed_value := parse_font_metric_override_descriptor(value) {
+			descent_override = percentage_from_font_metric_override(parsed_value)
+		}
 	}
 
 	mut line_gap_override := ?Percentage(none)
 	if value := descriptors.descriptor_or_initial_value(.line_gap_override) {
-		line_gap_override = extract_percentage_or_normal(value)
+		if parsed_value := descriptors.descriptor_style_value(.line_gap_override) {
+			line_gap_override = percentage_from_font_metric_override(parsed_value)
+		} else if parsed_value := parse_font_metric_override_descriptor(value) {
+			line_gap_override = percentage_from_font_metric_override(parsed_value)
+		}
 	}
 
 	mut font_display := FontDisplay.auto_
 	if value := descriptors.descriptor_or_initial_value(.font_display) {
-		font_display = font_display_from_string(value) or { FontDisplay.auto_ }
+		if parsed_value := descriptors.descriptor_style_value(.font_display) {
+			font_display = font_display_from_keyword(parsed_value.to_keyword()) or { FontDisplay.auto_ }
+		} else {
+			font_display = font_display_from_string(value) or { FontDisplay.auto_ }
+		}
 	}
 
 	mut font_named_instance := ?string(none)
 	if value := descriptors.descriptor_or_initial_value(.font_named_instance) {
-		if value.to_lower() != 'auto' {
-			font_named_instance = unquote_css_string(value)
+		if parsed_value := descriptors.descriptor_style_value(.font_named_instance) {
+			font_named_instance = string_from_font_keyword_or_string(parsed_value)
+		} else if parsed_value := parse_font_keyword_or_string_descriptor(value, 'auto') {
+			font_named_instance = string_from_font_keyword_or_string(parsed_value)
 		}
 	}
 
 	mut font_language_override := ?string(none)
 	if value := descriptors.descriptor_or_initial_value(.font_language_override) {
-		if value.to_lower() != 'normal' {
-			font_language_override = unquote_css_string(value)
+		if parsed_value := descriptors.descriptor_style_value(.font_language_override) {
+			font_language_override = string_from_font_keyword_or_string(parsed_value)
+		} else if parsed_value := parse_font_keyword_or_string_descriptor(value, 'normal') {
+			font_language_override = string_from_font_keyword_or_string(parsed_value)
 		}
 	}
 
 	mut font_feature_settings := ?map[string]i64(none)
 	if value := descriptors.descriptor_or_initial_value(.font_feature_settings) {
-		if value.to_lower() == 'normal' {
-			font_feature_settings = map[string]i64{}
-		} else {
-			font_feature_settings = parse_integer_open_type_settings(value)
+		if value.to_lower() != 'normal' {
+			if parsed_value := descriptors.descriptor_style_value(.font_feature_settings) {
+				font_feature_settings = font_feature_settings_from_style_value(parsed_value)
+			} else if parsed_value := parse_font_property_descriptor(value, .font_feature_settings) {
+				font_feature_settings = font_feature_settings_from_style_value(parsed_value)
+			}
 		}
 	}
 
 	mut font_variation_settings := ?map[string]f64(none)
 	if value := descriptors.descriptor_or_initial_value(.font_variation_settings) {
-		if value.to_lower() == 'normal' {
-			font_variation_settings = map[string]f64{}
-		} else {
-			font_variation_settings = parse_number_open_type_settings(value)
+		if value.to_lower() != 'normal' {
+			if parsed_value := descriptors.descriptor_style_value(.font_variation_settings) {
+				font_variation_settings = font_variation_settings_from_style_value(parsed_value)
+			} else if parsed_value := parse_font_property_descriptor(value, .font_variation_settings) {
+				font_variation_settings = font_variation_settings_from_style_value(parsed_value)
+			}
 		}
 	}
 
 	return ParsedFontFace{
-		parent_rule:              descriptors.parent_rule
-		font_family_:             font_family
-		weight_:                  weight
-		slope_:                   slope
-		width_:                   width
-		sources_:                 sources
-		unicode_ranges_:          unicode_ranges
-		ascent_override_:         ascent_override
-		descent_override_:        descent_override
-		line_gap_override_:       line_gap_override
-		font_display_:            font_display
-		font_named_instance_:     font_named_instance
-		font_language_override_:  font_language_override
-		font_feature_settings_:   font_feature_settings
+		parent_rule: descriptors.parent_rule
+		font_family_: font_family
+		weight_: weight
+		slope_: slope
+		width_: width
+		sources_: sources
+		unicode_ranges_: unicode_ranges
+		ascent_override_: ascent_override
+		descent_override_: descent_override
+		line_gap_override_: line_gap_override
+		font_display_: font_display
+		font_named_instance_: font_named_instance
+		font_language_override_: font_language_override
+		font_feature_settings_: font_feature_settings
 		font_variation_settings_: font_variation_settings
 	}
 }
@@ -1693,12 +1831,6 @@ pub fn FontFaceSource.from_binary(data []u8) FontFaceSource {
 	}
 }
 
-pub struct FontPromiseStub {
-pub mut:
-	state  string = 'pending'
-	reason string
-}
-
 @[heap]
 pub struct FontFaceObject {
 pub mut:
@@ -1716,11 +1848,10 @@ pub mut:
 	line_gap_override_  string
 
 	status_             FontFaceLoadStatus = .unloaded
-	font_status_promise FontPromiseStub
+	font_status_promise &webidl.Promise = unsafe { nil }
 	urls                []ParsedFontFaceSource
 	binary_data         []u8
 	parsed_font         ?PlatformTypeface
-	font_load_promise   ?FontLoadPromiseStub
 
 	css_font_face_rule ?&CSSFontFaceRule
 	containing_sets    []&FontFaceSet
@@ -1731,7 +1862,7 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 	// 1. Let font face be a fresh FontFace object. Set font face's status attribute to "unloaded",
 	//    Set its internal [[FontStatusPromise]] slot to a fresh pending Promise object.
 	mut font_face := &FontFaceObject{
-		font_status_promise: FontPromiseStub{}
+		font_status_promise: webidl.create_promise()
 	}
 
 	//    Parse the family argument, and the members of the descriptors argument,
@@ -1740,31 +1871,26 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 	//    If any of them fail to parse correctly, reject font face's [[FontStatusPromise]] with a DOMException named "SyntaxError",
 	//    set font face's corresponding attributes to the empty string, and set font face's status attribute to "error".
 	//    Otherwise, set font face's corresponding attributes to the serialization of the parsed values.
-	font_face.family_ = font_face_try_parse_descriptor(mut font_face, .font_family, family)
+	if parsed_family := parse_font_family_descriptor(family) {
+		font_face.family_ = string_from_style_value(parsed_family)
+	} else {
+		font_face.reject_status_promise('FontFace constructor: Invalid font-family')
+	}
 	font_face.style_ = font_face_try_parse_descriptor(mut font_face, .font_style, descriptors.style)
-	font_face.weight_ = font_face_try_parse_descriptor(mut font_face, .font_weight,
-		descriptors.weight)
-	font_face.stretch_ = font_face_try_parse_descriptor(mut font_face, .font_width,
-		descriptors.stretch)
-	font_face.unicode_range_ = font_face_try_parse_descriptor(mut font_face, .unicode_range,
-		descriptors.unicode_range)
-	font_face.feature_settings_ = font_face_try_parse_descriptor(mut font_face,
-		.font_feature_settings, descriptors.feature_settings)
-	font_face.variation_settings_ = font_face_try_parse_descriptor(mut font_face,
-		.font_variation_settings, descriptors.variation_settings)
-	font_face.display_ = font_face_try_parse_descriptor(mut font_face, .font_display,
-		descriptors.display)
-	font_face.ascent_override_ = font_face_try_parse_descriptor(mut font_face, .ascent_override,
-		descriptors.ascent_override)
-	font_face.descent_override_ = font_face_try_parse_descriptor(mut font_face, .descent_override,
-		descriptors.descent_override)
-	font_face.line_gap_override_ = font_face_try_parse_descriptor(mut font_face,
-		.line_gap_override, descriptors.line_gap_override)
+	font_face.weight_ = font_face_try_parse_descriptor(mut font_face, .font_weight, descriptors.weight)
+	font_face.stretch_ = font_face_try_parse_descriptor(mut font_face, .font_width, descriptors.stretch)
+	font_face.unicode_range_ = font_face_try_parse_descriptor(mut font_face, .unicode_range, descriptors.unicode_range)
+	font_face.feature_settings_ = font_face_try_parse_descriptor(mut font_face, .font_feature_settings, descriptors.feature_settings)
+	font_face.variation_settings_ = font_face_try_parse_descriptor(mut font_face, .font_variation_settings, descriptors.variation_settings)
+	font_face.display_ = font_face_try_parse_descriptor(mut font_face, .font_display, descriptors.display)
+	font_face.ascent_override_ = font_face_try_parse_descriptor(mut font_face, .ascent_override, descriptors.ascent_override)
+	font_face.descent_override_ = font_face_try_parse_descriptor(mut font_face, .descent_override, descriptors.descent_override)
+	font_face.line_gap_override_ = font_face_try_parse_descriptor(mut font_face, .line_gap_override, descriptors.line_gap_override)
 
-	mut parsed_source := ?string(none)
+	mut parsed_source_values := []FontSourceStyleValue{}
 	if source.kind == .cssom_string {
-		if parsed := parse_font_face_descriptor(.src, source.text) {
-			parsed_source = parsed
+		if parsed := parse_font_source_descriptor(source.text) {
+			parsed_source_values = parsed.sources.clone()
 		} else {
 			font_face.reject_status_promise('FontFace constructor: Invalid src')
 		}
@@ -1780,7 +1906,7 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 	// 2. If the source argument was a CSSOMString, set font face's internal [[Urls]] slot to the string.
 	//    If the source argument was a BinaryData, set font face's internal [[Data]] slot to the passed argument.
 	if source.kind == .cssom_string {
-		font_face.urls = ParsedFontFace.sources_from_style_value(parsed_source or { '' })
+		font_face.urls = parsed_font_face_sources_from_style_values(parsed_source_values)
 		font_face.urls = font_face.urls.filter(!is_unsupported_source(it))
 	} else {
 		font_face.binary_data = source.data.clone()
@@ -1804,14 +1930,14 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 // https://drafts.csswg.org/css-font-loading/#font-face-css-connection
 pub fn FontFaceObject.create_css_connected(rule &CSSFontFaceRule) &FontFaceObject {
 	mut font_face := &FontFaceObject{
-		font_status_promise: FontPromiseStub{}
-		css_font_face_rule:  rule
+		font_status_promise: webidl.create_promise()
+		css_font_face_rule: rule
 	}
 
 	font_face.reparse_connected_css_font_face_rule_descriptors()
 
-	if src_value := rule.descriptors().descriptor(.src) {
-		font_face.urls = ParsedFontFace.sources_from_style_value(src_value)
+	if _ := rule.descriptors().descriptor(.src) {
+		font_face.urls = parsed_font_face_sources_from_style_values(rule.descriptors().font_source_values())
 		font_face.urls = font_face.urls.filter(!is_unsupported_source(it))
 	}
 
@@ -1825,7 +1951,9 @@ pub fn (mut face FontFaceObject) reparse_connected_css_font_face_rule_descriptor
 	rule := face.css_font_face_rule or { return }
 	descriptors := rule.descriptors()
 
-	if value := descriptors.descriptor(.font_family) {
+	if parsed_family := descriptors.descriptor_style_value(.font_family) {
+		face.family_ = string_from_style_value(parsed_family)
+	} else if value := descriptors.descriptor(.font_family) {
 		face.set_family_impl(value)
 	}
 	face.set_style_impl(descriptors.descriptor_or_initial_value(.font_style) or { 'auto' })
@@ -1860,19 +1988,19 @@ pub fn (face &FontFaceObject) parsed_font_face() ParsedFontFace {
 	// FIXME: The ParsedFontFace is kind of expensive to create. We should be using a shared sub-object for the data
 	return ParsedFontFace{
 		// Create a dummy CSSFontFaceRule so that we load relative to the document's base URL.
-		parent_rule:  CSSFontFaceRule.create(CSSFontFaceDescriptors.create([]FontFaceDescriptor{}))
+		parent_rule: CSSFontFaceRule.create(CSSFontFaceDescriptors.create([]FontFaceDescriptor{}))
 		font_family_: face.family_
 		// FIXME: Actually parse this as we're supposed to.
-		weight_:              parse_font_face_object_numeric_weight(face.weight_)
-		slope_:               0   // FIXME: slope
-		width_:               100 // FIXME: width
-		sources_:             face.urls.clone()
-		unicode_ranges_:      face.unicode_ranges_.clone()
-		font_display_:        .auto_ // FIXME: font_display
-		font_named_instance_: none   // font-named-instance doesn't exist in FontFace
+		weight_: parse_font_face_object_numeric_weight(face.weight_)
+		slope_: 0 // FIXME: slope
+		width_: 100 // FIXME: width
+		sources_: face.urls.clone()
+		unicode_ranges_: face.unicode_ranges_.clone()
+		font_display_: .auto_ // FIXME: font_display
+		font_named_instance_: none // font-named-instance doesn't exist in FontFace
 		// font-language-override doesn't exist in FontFace
-		font_language_override_:  none
-		font_feature_settings_:   none // FIXME: feature_settings
+		font_language_override_: none
+		font_feature_settings_: none // FIXME: feature_settings
 		font_variation_settings_: none // FIXME: variation_settings
 	}
 }
@@ -1933,23 +2061,23 @@ pub fn (face &FontFaceObject) status() FontFaceLoadStatus {
 	return face.status_
 }
 
-pub fn (face &FontFaceObject) loaded() FontPromiseStub {
+pub fn (face &FontFaceObject) loaded() &webidl.Promise {
 	return face.font_status_promise
 }
 
-pub fn (face &FontFaceObject) font_status_promise_ref() FontPromiseStub {
+pub fn (face &FontFaceObject) font_status_promise_ref() &webidl.Promise {
 	return face.font_status_promise
 }
 
 pub fn (mut face FontFaceObject) set_family(value string) ! {
-	parsed := parse_font_face_descriptor(.font_family, value) or {
+	parsed := parse_font_family_descriptor(value) or {
 		return error('SyntaxError: FontFace.family setter: Invalid descriptor value')
 	}
 	if mut rule := face.css_font_face_rule {
 		mut descriptors := unsafe { &CSSFontFaceDescriptors(rule.descriptors()) }
 		descriptors.set_font_family(value)!
 	}
-	face.set_family_impl(parsed)
+	face.family_ = string_from_style_value(parsed)
 }
 
 pub fn (mut face FontFaceObject) set_family_impl(value string) {
@@ -2109,7 +2237,7 @@ pub fn (mut face FontFaceObject) set_line_gap_override_impl(value string) {
 }
 
 // https://drafts.csswg.org/css-font-loading/#dom-fontface-load
-pub fn (mut face FontFaceObject) load() FontPromiseStub {
+pub fn (mut face FontFaceObject) load() &webidl.Promise {
 	//  1. Let font face be the FontFace object on which this method was called.
 
 	// 2. If font face's [[Urls]] slot is null, or its status attribute is anything other than "unloaded",
@@ -2126,7 +2254,7 @@ pub fn (mut face FontFaceObject) load() FontPromiseStub {
 	return face.loaded()
 }
 
-pub fn (mut face FontFaceObject) load_with_font_computer(font_computer &FontComputer) FontPromiseStub {
+pub fn (mut face FontFaceObject) load_with_font_computer(font_computer &FontComputer) &webidl.Promise {
 	if !face.begin_url_load() {
 		return face.loaded()
 	}
@@ -2161,8 +2289,7 @@ pub fn (mut face FontFaceObject) remove_from_set(set &FontFaceSet) {
 
 fn (mut face FontFaceObject) reject_status_promise(reason string) {
 	if face.status_ != .error {
-		face.font_status_promise.state = 'rejected'
-		face.font_status_promise.reason = reason
+		face.font_status_promise.reject(webidl.string_value(reason))
 		face.status_ = .error
 	}
 }
@@ -2184,7 +2311,8 @@ fn (face &FontFaceObject) load_first_available_url() ?PlatformTypeface {
 		if source.kind != .url {
 			continue
 		}
-		if typeface := platform_load_font_from_url_boundary(source.value) {
+		url := source.url or { URL.from_url(source.value) }
+		if typeface := platform_load_font_from_url_boundary(url.url()) {
 			return typeface
 		}
 	}
@@ -2194,10 +2322,10 @@ fn (face &FontFaceObject) load_first_available_url() ?PlatformTypeface {
 fn (mut face FontFaceObject) start_binary_load() {
 	face.status_ = .loading
 	for mut font_face_set in face.containing_sets {
-		if font_face_set.loading_fonts.len == 0 {
+		if font_face_set.loading_fonts_.len == 0 {
 			font_face_set.switch_to_loading()
 		}
-		font_face_set.loading_fonts << face
+		font_face_set.loading_fonts_ << face
 	}
 	typeface := platform_load_font_from_bytes_boundary(face.binary_data)
 	face.finish_loading_from_typeface(typeface)
@@ -2209,7 +2337,7 @@ fn (mut face FontFaceObject) finish_loading_from_typeface(maybe_typeface ?Platfo
 		//    fulfill font face's [[FontStatusPromise]] with font face, and set its status attribute to "loaded".
 		face.parsed_font = typeface
 		face.status_ = .loaded
-		face.font_status_promise.state = 'fulfilled'
+		face.font_status_promise.resolve(webidl.platform_object_value())
 		if mut rule := face.css_font_face_rule {
 			rule.set_loading_state(.loaded)
 		}
@@ -2217,12 +2345,12 @@ fn (mut face FontFaceObject) finish_loading_from_typeface(maybe_typeface ?Platfo
 		// For each FontFaceSet font face is in:
 		for mut font_face_set in face.containing_sets {
 			// 1. Add font face to the FontFaceSet's [[LoadedFonts]] list.
-			font_face_set.loaded_fonts << face
+			font_face_set.loaded_fonts_ << face
 
 			// 2. Remove font face from the FontFaceSet's [[LoadingFonts]] list. If font was the last item in
 			//    that list (and so the list is now empty), switch the FontFaceSet to loaded.
 			font_face_set.remove_loading_font(face)
-			if font_face_set.loading_fonts.len == 0 {
+			if font_face_set.loading_fonts_.len == 0 {
 				font_face_set.switch_to_loaded()
 			}
 		}
@@ -2235,14 +2363,13 @@ fn (mut face FontFaceObject) finish_loading_from_typeface(maybe_typeface ?Platfo
 		}
 
 		for mut font_face_set in face.containing_sets {
-			font_face_set.failed_fonts << face
+			font_face_set.failed_fonts_ << face
 			font_face_set.remove_loading_font(face)
-			if font_face_set.loading_fonts.len == 0 {
+			if font_face_set.loading_fonts_.len == 0 {
 				font_face_set.switch_to_loaded()
 			}
 		}
 	}
-	face.font_load_promise = none
 }
 
 fn font_face_try_parse_descriptor(mut font_face FontFaceObject, descriptor_id FontFaceDescriptorID, value string) string {
@@ -2275,6 +2402,7 @@ pub fn font_format_is_supported(name string) bool {
 		'collection', 'opentype', 'truetype', 'woff', 'woff2' {
 			true
 		}
+
 		// LibGfx::font_format_is_supported currently reports these as unsupported.
 		'embedded-opentype', 'svg' {
 			false
@@ -2289,10 +2417,10 @@ pub fn font_tech_is_supported(font_tech FontTech) bool {
 	// https://drafts.csswg.org/css-fonts-4/#font-tech-definitions
 	// https://drafts.csswg.org/css-fonts-5/#font-tech-definitions
 	return match font_tech {
-		.features_opentype, .features_aat, .color_colrv0, .color_colrv1, .color_svg, .color_sbix,
-		.color_cbdt, .palettes, .avar2 {
+		.features_opentype, .features_aat, .color_colrv0, .color_colrv1, .color_svg, .color_sbix, .color_cbdt, .palettes, .avar2 {
 			true
 		}
+
 		// The C++ implementation makes Graphite support depend on the HarfBuzz build flag. This standalone V port has
 		// no such capability check, so keep the boundary conservative.
 		.features_graphite, .variations, .incremental {
@@ -2317,14 +2445,15 @@ pub enum FontFaceSetLoadStatus {
 
 @[heap]
 pub struct FontFaceSet {
+	dom.EventTarget
 pub mut:
 	set_entries_ []&FontFaceObject
 
-	ready_promise FontPromiseStub
+	ready_promise &webidl.Promise = unsafe { nil }
 
-	loading_fonts []&FontFaceObject
-	loaded_fonts  []&FontFaceObject
-	failed_fonts  []&FontFaceObject
+	loading_fonts_ []&FontFaceObject
+	loaded_fonts_  []&FontFaceObject
+	failed_fonts_  []&FontFaceObject
 
 	status_ FontFaceSetLoadStatus = .loaded
 
@@ -2341,13 +2470,81 @@ pub mut:
 }
 
 pub fn FontFaceSet.create() &FontFaceSet {
-	return &FontFaceSet{
-		ready_promise: FontPromiseStub{}
+	mut set := &FontFaceSet{
+		ready_promise: webidl.create_promise()
 	}
+	set.initialize()
+	return set
+}
+
+pub fn (mut set FontFaceSet) initialize() {
+	// WEB_SET_PROTOTYPE_FOR_INTERFACE(FontFaceSet);
+	set.EventTarget.initialize()
+}
+
+pub fn (mut set FontFaceSet) visit_edges(mut visitor dom.CellVisitor) {
+	set.EventTarget.visit_edges(mut visitor)
+	for face in set.set_entries_ {
+		visitor.visit(face)
+	}
+	visitor.visit(set.ready_promise)
+	for face in set.loading_fonts_ {
+		visitor.visit(face)
+	}
+	for face in set.loaded_fonts_ {
+		visitor.visit(face)
+	}
+	for face in set.failed_fonts_ {
+		visitor.visit(face)
+	}
+}
+
+fn (set &FontFaceSet) event_target() &dom.EventTarget {
+	return unsafe { &dom.EventTarget(set) }
 }
 
 pub fn (set &FontFaceSet) set_entries() []&FontFaceObject {
 	return set.set_entries_
+}
+
+pub fn (set &FontFaceSet) loading_fonts() []&FontFaceObject {
+	return set.loading_fonts_
+}
+
+pub fn (set &FontFaceSet) loaded_fonts() []&FontFaceObject {
+	return set.loaded_fonts_
+}
+
+pub fn (set &FontFaceSet) failed_fonts() []&FontFaceObject {
+	return set.failed_fonts_
+}
+
+pub fn (set &FontFaceSet) set_onloading(event_handler ?&dom.CallbackType) {
+	set.event_target().set_event_handler_attribute('loading', event_handler)
+}
+
+pub fn (set &FontFaceSet) onloading() ?&dom.CallbackType {
+	return set.event_target().event_handler_attribute('loading')
+}
+
+pub fn (set &FontFaceSet) set_onloadingdone(event_handler ?&dom.CallbackType) {
+	set.event_target().set_event_handler_attribute('loadingdone', event_handler)
+}
+
+pub fn (set &FontFaceSet) onloadingdone() ?&dom.CallbackType {
+	return set.event_target().event_handler_attribute('loadingdone')
+}
+
+pub fn (set &FontFaceSet) set_onloadingerror(event_handler ?&dom.CallbackType) {
+	set.event_target().set_event_handler_attribute('loadingerror', event_handler)
+}
+
+pub fn (set &FontFaceSet) onloadingerror() ?&dom.CallbackType {
+	return set.event_target().event_handler_attribute('loadingerror')
+}
+
+pub fn (set &FontFaceSet) on_set_modified_from_js() {
+	_ = set
 }
 
 // https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-add
@@ -2381,12 +2578,12 @@ pub fn (mut set FontFaceSet) add_css_connected_font(face &FontFaceObject) {
 	// 4. If font's status attribute is "loading"
 	if face.status() == .loading {
 		// 1. If the FontFaceSet's [[LoadingFonts]] list is empty, switch the FontFaceSet to loading.
-		if set.loading_fonts.len == 0 {
+		if set.loading_fonts_.len == 0 {
 			set.switch_to_loading()
 		}
 
 		// 2. Append font to the FontFaceSet's [[LoadingFonts]] list.
-		set.loading_fonts << face
+		set.loading_fonts_ << face
 	}
 }
 
@@ -2403,14 +2600,14 @@ pub fn (mut set FontFaceSet) delete_(face &FontFaceObject) bool {
 	mutable_face.remove_from_set(set)
 
 	// 3. If font is present in the FontFaceSet's [[LoadedFonts]], or [[FailedFonts]] lists, remove it.
-	set.loaded_fonts = font_face_object_array_without(set.loaded_fonts, face)
-	set.failed_fonts = font_face_object_array_without(set.failed_fonts, face)
+	set.loaded_fonts_ = font_face_object_array_without(set.loaded_fonts_, face)
+	set.failed_fonts_ = font_face_object_array_without(set.failed_fonts_, face)
 
 	// 4. If font is present in the FontFaceSet's [[LoadingFonts]] list, remove it.
 	//    If font was the last item in that list (and so the list is now empty), switch the FontFaceSet to loaded.
-	was_in_loading_fonts := font_face_object_array_contains(set.loading_fonts, face)
-	set.loading_fonts = font_face_object_array_without(set.loading_fonts, face)
-	if was_in_loading_fonts && set.loading_fonts.len == 0 {
+	was_in_loading_fonts := font_face_object_array_contains(set.loading_fonts_, face)
+	set.loading_fonts_ = font_face_object_array_without(set.loading_fonts_, face)
+	if was_in_loading_fonts && set.loading_fonts_.len == 0 {
 		set.switch_to_loaded()
 	}
 
@@ -2431,13 +2628,13 @@ pub fn (mut set FontFaceSet) clear() {
 		}
 	}
 	set.set_entries_ = kept_entries
-	set.loaded_fonts = set.loaded_fonts.filter(it.is_css_connected())
-	set.failed_fonts = set.failed_fonts.filter(it.is_css_connected())
+	set.loaded_fonts_ = set.loaded_fonts_.filter(it.is_css_connected())
+	set.failed_fonts_ = set.failed_fonts_.filter(it.is_css_connected())
 
 	// 2. If the FontFaceSet's [[LoadingFonts]] list is non-empty, remove all items from it,
 	//    then switch the FontFaceSet to loaded.
-	if set.loading_fonts.len != 0 {
-		set.loading_fonts.clear()
+	if set.loading_fonts_.len != 0 {
+		set.loading_fonts_.clear()
 		set.switch_to_loaded()
 	}
 }
@@ -2487,44 +2684,42 @@ fn find_matching_font_faces(font_face_set &FontFaceSet, font string, text string
 }
 
 // https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-load
-pub fn (mut set FontFaceSet) load(font string, text string) !FontPromiseStub {
+pub fn (mut set FontFaceSet) load(font string, text string) !&webidl.Promise {
 	// 1. Let font face set be the FontFaceSet object this method was called on. Let promise be a newly-created promise object.
-	mut promise := FontPromiseStub{}
+	mut promise := webidl.create_promise()
 
 	// 3. Find the matching font faces from font face set using the font and text arguments passed to the function,
 	//    and let font face list be the return value (ignoring the found faces flag). If a syntax error was returned,
 	//    reject promise with a SyntaxError exception and terminate these steps.
 	matched_font_faces := find_matching_font_faces(set, font, text) or {
-		promise.state = 'rejected'
-		promise.reason = err.msg()
+		promise.reject(webidl.string_value(err.msg()))
 		return promise
 	}
 
 	// 4. Queue a task to run the following steps synchronously:
-	// Boundary: C++ defers this algorithm through the event loop, then queues a font-loading task and resolves with
-	// wait_for_all over FontStatusPromise values. This local PromiseStub observes the same final fulfilled/rejected
-	// state after running the representable steps synchronously.
+	// Boundary: C++ defers this algorithm through the event loop, then queues a font-loading task. The translated
+	// event-loop boundary currently invokes these representable steps synchronously; promise aggregation below still
+	// uses WebIDL::wait_for_all semantics and therefore also handles pending FontStatusPromise values.
 	// 1. For all of the font faces in the font face list, call their load() method.
+	mut promises := []&webidl.Promise{cap: matched_font_faces.len}
 	for font_face in matched_font_faces {
 		mut mutable_font_face := unsafe { &FontFaceObject(font_face) }
 		mutable_font_face.load()
+		promises << font_face.loaded()
 	}
 
 	// 2. Resolve promise with the result of waiting for all of the [[FontStatusPromise]]s of each font face in
 	//    the font face list, in order.
-	for font_face in matched_font_faces {
-		if font_face.status() == .error {
-			promise.state = 'rejected'
-			promise.reason = font_face.loaded().reason
-			return promise
-		}
-	}
-	promise.state = 'fulfilled'
+	webidl.wait_for_all(promises, fn [mut promise] (fonts []webidl.Value) {
+		promise.resolve(webidl.sequence_value(fonts))
+	}, fn [mut promise] (reason webidl.Value) {
+		promise.reject(reason)
+	})
 	return promise
 }
 
 // https://drafts.csswg.org/css-font-loading/#font-face-set-ready
-pub fn (set &FontFaceSet) ready() FontPromiseStub {
+pub fn (set &FontFaceSet) ready() &webidl.Promise {
 	return set.ready_promise
 }
 
@@ -2545,9 +2740,13 @@ pub fn (mut set FontFaceSet) fire_a_font_load_event(name string, font_faces []&F
 		}
 	}
 	set.fired_events << FontFaceSetLoadEventRecord{
-		name:      name
+		name: name
 		fontfaces: filtered
 	}
+	event := FontFaceSetLoadEvent.create(name, FontFaceSetLoadEventInit{
+		fontfaces: filtered
+	})
+	dom.event_target_dispatch_event(set.event_target(), event.base_event())
 }
 
 // https://drafts.csswg.org/css-font-loading/#ref-for-fontfaceset-pending-on-the-environment
@@ -2565,7 +2764,7 @@ pub fn (mut set FontFaceSet) set_is_pending_on_the_environment(is_pending_on_the
 		// FIXME: We also need to mark empty FontFaceSets as loaded, so that the [[ReadyPromise]] gets resolved.
 		//        Spec issue: https://github.com/w3c/csswg-drafts/issues/13538#issuecomment-3933951987
 		if set.set_entries_.len == 0
-			|| (set.is_stuck_on_the_environment && set.loading_fonts.len == 0) {
+			|| (set.is_stuck_on_the_environment && set.loading_fonts_.len == 0) {
 			set.switch_to_loaded()
 		}
 
@@ -2582,8 +2781,8 @@ pub fn (mut set FontFaceSet) switch_to_loading() {
 
 	// 3. If font face set's [[ReadyPromise]] slot currently holds a fulfilled promise, replace it with a fresh pending
 	//    promise.
-	if set.ready_promise.state == 'fulfilled' {
-		set.ready_promise = FontPromiseStub{}
+	if set.ready_promise.state == .fulfilled {
+		set.ready_promise = webidl.create_promise()
 	}
 
 	// 4. Queue a task to fire a font load event named loading at font face set.
@@ -2604,7 +2803,7 @@ pub fn (mut set FontFaceSet) switch_to_loaded() {
 	set.status_ = .loaded
 
 	// 4. Fulfill font face set's [[ReadyPromise]] attribute's value with font face set.
-	set.ready_promise.state = 'fulfilled'
+	set.ready_promise.resolve(webidl.platform_object_value())
 
 	// 5. Queue a task to perform the following steps synchronously:
 	// Boundary: The C++ resolves ready immediately, then queues event dispatch and list reset on the font-loading task
@@ -2612,10 +2811,10 @@ pub fn (mut set FontFaceSet) switch_to_loaded() {
 	// 1. Let loaded fonts be the (possibly empty) contents of font face set's [[LoadedFonts]] slot.
 	// 2. Let failed fonts be the (possibly empty) contents of font face set's [[FailedFonts]] slot.
 	// 3. Reset the [[LoadedFonts]] and [[FailedFonts]] slots to empty lists.
-	loaded_fonts := set.loaded_fonts.clone()
-	failed_fonts := set.failed_fonts.clone()
-	set.loaded_fonts.clear()
-	set.failed_fonts.clear()
+	loaded_fonts := set.loaded_fonts_.clone()
+	failed_fonts := set.failed_fonts_.clone()
+	set.loaded_fonts_.clear()
+	set.failed_fonts_.clear()
 
 	// 4. Fire a font load event named loadingdone at font face set with loaded fonts.
 	set.fire_a_font_load_event('loadingdone', loaded_fonts)
@@ -2628,7 +2827,7 @@ pub fn (mut set FontFaceSet) switch_to_loaded() {
 }
 
 fn (mut set FontFaceSet) remove_loading_font(face &FontFaceObject) {
-	set.loading_fonts = font_face_object_array_without(set.loading_fonts, face)
+	set.loading_fonts_ = font_face_object_array_without(set.loading_fonts_, face)
 }
 
 fn (mut set FontFaceSet) remove_set_entry(face &FontFaceObject) bool {
@@ -2674,6 +2873,7 @@ pub:
 	unicode_ranges []UnicodeRange
 }
 
+@[heap]
 pub struct FontCascadeList {
 pub mut:
 	fonts            []FontCascadeEntry
@@ -2686,7 +2886,7 @@ pub fn FontCascadeList.create() FontCascadeList {
 
 pub fn (mut list FontCascadeList) add(font PlatformFont, unicode_ranges []UnicodeRange) {
 	list.fonts << FontCascadeEntry{
-		font:           font
+		font: font
 		unicode_ranges: unicode_ranges.clone()
 	}
 }
@@ -2702,6 +2902,38 @@ pub fn (mut list FontCascadeList) extend(other FontCascadeList) {
 
 pub fn (list &FontCascadeList) is_empty() bool {
 	return list.fonts.len == 0
+}
+
+fn platform_font_equals(left PlatformFont, right PlatformFont) bool {
+	return left.typeface.family_name == right.typeface.family_name
+		&& left.typeface.weight_ == right.typeface.weight_
+		&& left.typeface.width_ == right.typeface.width_
+		&& left.typeface.slope_ == right.typeface.slope_
+		&& left.point_size == right.point_size
+		&& left.variations.weight == right.variations.weight
+		&& left.variations.width == right.variations.width
+		&& left.variations.opsz == right.variations.opsz
+		&& left.variations.axes == right.variations.axes && left.features == right.features
+}
+
+pub fn (list &FontCascadeList) equals(other &FontCascadeList) bool {
+	if list.fonts.len != other.fonts.len {
+		return false
+	}
+	for index, entry in list.fonts {
+		other_entry := other.fonts[index]
+		if entry.unicode_ranges != other_entry.unicode_ranges
+			|| !platform_font_equals(entry.font, other_entry.font) {
+			return false
+		}
+	}
+	if left := list.last_resort_font {
+		if right := other.last_resort_font {
+			return platform_font_equals(left, right)
+		}
+		return false
+	}
+	return other.last_resort_font == none
 }
 
 pub fn (mut list FontCascadeList) set_last_resort_font(font PlatformFont) {
@@ -2735,11 +2967,6 @@ pub mut:
 	axes   map[string]f64
 }
 
-pub struct FontLoadPromiseStub {
-pub mut:
-	state string = 'pending'
-}
-
 pub struct FontFaceKey {
 pub mut:
 	family_name string
@@ -2761,29 +2988,29 @@ pub mut:
 pub fn OwnFontFaceKey.from_font_face_key(other FontFaceKey) OwnFontFaceKey {
 	return OwnFontFaceKey{
 		family_name: other.family_name
-		weight:      other.weight
-		slope:       other.slope
+		weight: other.weight
+		slope: other.slope
 	}
 }
 
 pub fn (key OwnFontFaceKey) as_font_face_key() FontFaceKey {
 	return FontFaceKey{
 		family_name: key.family_name
-		weight:      key.weight
-		slope:       key.slope
+		weight: key.weight
+		slope: key.slope
 	}
 }
 
 fn font_face_key_for_parsed_font_face(font_face ParsedFontFace) FontFaceKey {
 	return FontFaceKey{
 		family_name: font_face.font_family()
-		weight:      font_face.weight() or {
+		weight: font_face.weight() or {
 			FontWeightRange{
 				min: 0
 				max: 0
 			}
 		}
-		slope:       font_face.slope() or { 0 }
+		slope: font_face.slope() or { 0 }
 	}
 }
 
@@ -2833,17 +3060,17 @@ pub mut:
 	family_name_    string
 	unicode_ranges_ []UnicodeRange
 	typeface        ?PlatformTypeface
-	urls            []string
+	urls            []URL
 	on_load         ?fn (?PlatformTypeface)
 }
 
-pub fn FontLoader.create(font_computer &FontComputer, family_name string, unicode_ranges []UnicodeRange, urls []string, on_load ?fn (?PlatformTypeface)) &FontLoader {
+pub fn FontLoader.create(font_computer &FontComputer, family_name string, unicode_ranges []UnicodeRange, urls []URL, on_load ?fn (?PlatformTypeface)) &FontLoader {
 	return &FontLoader{
-		font_computer:   font_computer
-		family_name_:    family_name
+		font_computer: font_computer
+		family_name_: family_name
 		unicode_ranges_: unicode_ranges.clone()
-		urls:            urls.clone()
-		on_load:         on_load
+		urls: urls.clone()
+		on_load: on_load
 	}
 }
 
@@ -2860,10 +3087,10 @@ pub fn (mut loader FontLoader) font_with_point_size(point_size f32, variations F
 	}
 	typeface := loader.typeface or { return none }
 	return PlatformFont{
-		typeface:   typeface
+		typeface: typeface
 		point_size: point_size
 		variations: variations
-		features:   shape_features
+		features: shape_features
 	}
 }
 
@@ -2882,7 +3109,7 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 	url := loader.urls[0]
 	loader.urls.delete(0)
 
-	typeface := platform_load_font_from_url_boundary(url)
+	typeface := platform_load_font_from_url_boundary(url.url())
 	if typeface == none && loader.urls.len != 0 {
 		loader.start_loading_next_url()
 		return
@@ -2898,13 +3125,25 @@ pub fn (loader &FontLoader) family_name() string {
 	return loader.family_name_
 }
 
-pub fn (loader &FontLoader) try_load_font(response FontFetchResponseStub, bytes []u8) !PlatformTypeface {
-	_ = response
-	// Boundary: C++ first extracts or sniffs the response MIME type, then attempts the matching TTF/OTF, WOFF, or WOFF2
-	// decoder. The V port has no HTTP response headers or font decoders wired in yet, so byte decoding is centralized
-	// at this explicit platform boundary.
-	if typeface := platform_load_font_from_bytes_boundary(bytes) {
-		return typeface
+pub fn (loader &FontLoader) try_load_font(response &fetch.Response, bytes []u8) !PlatformTypeface {
+	_ = loader
+	// Match FontComputer.cpp: trust a font MIME type, otherwise sniff in the font context,
+	// then dispatch only the TTF/OTF, WOFF, and WOFF2 families to the platform decoder.
+	mut mime_type := fetch.extract_mime_type(response.header_list) or {
+		mimesniff.Resource.sniff(bytes, mimesniff.SniffingConfiguration{
+			sniffing_context: .font
+		})
+	}
+	if !mime_type.is_font() {
+		mime_type = mimesniff.Resource.sniff(bytes, mimesniff.SniffingConfiguration{
+			sniffing_context: .font
+		})
+	}
+	if mime_type.essence() in ['font/ttf', 'application/x-font-ttf', 'font/otf', 'font/woff',
+		'application/font-woff', 'font/woff2', 'application/font-woff2'] {
+		if typeface := platform_load_font_from_bytes_boundary(bytes) {
+			return typeface
+		}
 	}
 	return error('Automatic format detection failed')
 }
@@ -2946,10 +3185,10 @@ fn (mut candidate MatchingFontCandidate) font_with_point_size(point_size f32, va
 
 	typeface := candidate.typeface or { return none }
 	font_list.add(PlatformFont{
-		typeface:   typeface
+		typeface: typeface
 		point_size: point_size
 		variations: variations
-		features:   shape_features
+		features: shape_features
 	}, [])
 	return font_list
 }
@@ -2965,8 +3204,8 @@ pub mut:
 
 pub fn FontComputer.create() &FontComputer {
 	return &FontComputer{
-		loaded_fonts:              map[string][]&FontLoader{}
-		computed_font_cache:       map[string]FontCascadeList{}
+		loaded_fonts: map[string][]&FontLoader{}
+		computed_font_cache: map[string]FontCascadeList{}
 		font_feature_values_cache: map[string]map[string][]u32{}
 	}
 }
@@ -3024,10 +3263,10 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 	key := font_face_key_for_parsed_font_face(font_face)
 
 	// FIXME: Handle local() font sources.
-	mut urls := []string{}
+	mut urls := []URL{}
 	for source in font_face.sources() {
 		if source.kind == .url {
-			urls << source.value
+			urls << (source.url or { URL.from_url(source.value) })
 		}
 	}
 
@@ -3038,8 +3277,7 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 		return none
 	}
 
-	loader := FontLoader.create(computer, font_face.font_family(), font_face.unicode_ranges(),
-		urls, on_load)
+	loader := FontLoader.create(computer, font_face.font_family(), font_face.unicode_ranges(), urls, on_load)
 	mut loaders := computer.loaded_fonts[key.id()] or { []&FontLoader{} }
 	loaders << loader
 	computer.loaded_fonts[key.id()] = loaders
@@ -3125,21 +3363,20 @@ pub fn (mut computer FontComputer) unload_fonts_from_css_rules(rules []&CSSRule)
 
 pub fn (mut computer FontComputer) compute_font_for_style_values(font_family []string, font_size CSSPixels, font_slope int, font_weight f64, font_width Percentage, font_optical_sizing FontOpticalSizing, font_variation_settings map[string]f64, font_feature_data FontFeatureData) FontCascadeList {
 	cache_key := ComputedFontCacheKey{
-		font_family:             font_family.clone()
-		font_optical_sizing:     font_optical_sizing
-		font_size:               font_size
-		font_slope:              font_slope
-		font_weight:             font_weight
-		font_width:              font_width
+		font_family: font_family.clone()
+		font_optical_sizing: font_optical_sizing
+		font_size: font_size
+		font_slope: font_slope
+		font_weight: font_weight
+		font_width: font_width
 		font_variation_settings: font_variation_settings.clone()
-		font_feature_data:       font_feature_data
+		font_feature_data: font_feature_data
 	}
 	key := cache_key.id()
 	if cached := computer.computed_font_cache[key] {
 		return cached
 	}
-	value := computer.compute_font_for_style_values_impl(font_family, font_size, font_slope,
-		font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
+	value := computer.compute_font_for_style_values_impl(font_family, font_size, font_slope, font_weight, font_width, font_optical_sizing, font_variation_settings, font_feature_data)
 	computer.computed_font_cache[key] = value
 	return value
 }
@@ -3180,11 +3417,9 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 	for family in font_family {
 		mut other_font_list := ?FontCascadeList(none)
 		if is_generic_font_family(family) {
-			other_font_list = computer.find_font(platform_generic_font_name_boundary(family),
-				weight, slope, font_size_in_pt, variation, font_feature_data)
+			other_font_list = computer.find_font(platform_generic_font_name_boundary(family), weight, slope, font_size_in_pt, variation, font_feature_data)
 		} else {
-			other_font_list = computer.find_font(family, weight, slope, font_size_in_pt, variation,
-				font_feature_data)
+			other_font_list = computer.find_font(family, weight, slope, font_size_in_pt, variation, font_feature_data)
 		}
 
 		if other := other_font_list {
@@ -3193,8 +3428,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 	}
 
 	// NB: @font-feature-values can't apply to the default font since it's not loaded from CSS
-	default_font := platform_default_font_boundary(font_size_in_pt, variation,
-		font_feature_data.to_shape_features(map[string][]u32{}))
+	default_font := platform_default_font_boundary(font_size_in_pt, variation, font_feature_data.to_shape_features(map[string][]u32{}))
 	if font_list.is_empty() {
 		// This is needed to make sure we check default font before reaching to emojis.
 		font_list.add(default_font, [])
@@ -3202,9 +3436,7 @@ fn (mut computer FontComputer) compute_font_for_style_values_impl(font_family []
 
 	// Add emoji and symbol fonts
 	for font_name in platform_symbol_font_names_boundary() {
-		if other_font_list := computer.find_font(font_name, weight, slope, font_size_in_pt,
-			variation, font_feature_data)
-		{
+		if other_font_list := computer.find_font(font_name, weight, slope, font_size_in_pt, variation, font_feature_data) {
 			font_list.extend(other_font_list)
 		}
 	}
@@ -3225,29 +3457,25 @@ fn (mut computer FontComputer) find_font(family string, weight int, slope int, f
 	// FIXME: Respect the other font-* descriptors
 	key := FontFaceKey{
 		family_name: family
-		weight:      FontWeightRange{
+		weight: FontWeightRange{
 			min: weight
 			max: weight
 		}
-		slope:       slope
+		slope: slope
 	}
 	if loaders := computer.loaded_fonts[key.id()] {
 		mut result := FontCascadeList.create()
 		for loader in loaders {
 			mut mutable_loader := unsafe { &FontLoader(loader) }
 			shape_features := font_feature_data.to_shape_features(font_feature_values)
-			if found_font := mutable_loader.font_with_point_size(font_size_in_pt, variation,
-				shape_features)
-			{
+			if found_font := mutable_loader.font_with_point_size(font_size_in_pt, variation, shape_features) {
 				result.add(found_font, loader.unicode_ranges())
 			}
 		}
 		return result
 	}
 
-	if found_font := computer.font_matching_algorithm(family, weight, slope, font_size_in_pt,
-		variation, font_feature_data, font_feature_values)
-	{
+	if found_font := computer.font_matching_algorithm(family, weight, slope, font_size_in_pt, variation, font_feature_data, font_feature_values) {
 		if !found_font.is_empty() {
 			return found_font
 		}
@@ -3265,23 +3493,23 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 		key := font_face_key_from_id(key_string)
 		if key.family_name.to_lower() == family_name.to_lower() {
 			matching_family_fonts << MatchingFontCandidate{
-				key:         key
+				key: key
 				loader_list: loaders.clone()
 			}
 		}
 	}
 	for typeface in platform_typefaces_with_family_name_boundary(family_name) {
 		matching_family_fonts << MatchingFontCandidate{
-			key:              FontFaceKey{
+			key: FontFaceKey{
 				family_name: typeface.family_name
 				// FIXME: Support system fonts that have a range of weights, etc.
 				weight: FontWeightRange{
 					min: typeface.weight_
 					max: typeface.weight_
 				}
-				slope:  typeface.slope_
+				slope: typeface.slope_
 			}
-			typeface:         typeface
+			typeface: typeface
 			is_platform_font: true
 		}
 	}
@@ -3305,6 +3533,7 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 	if has_style_match {
 		matching_family_fonts = matching_family_fonts.filter(it.key.slope == slope)
 	}
+
 	// 3. font-weight is matched next.
 	// If a font does not have any concept of varying strengths of weights, its weight is mapped according list in the
 	// property definition. If bolder/lighter relative weights are used, the effective weight is calculated based on
@@ -3325,9 +3554,7 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 	if matching_weight_index >= 0 {
 		for i := matching_weight_index; i < matching_family_fonts.len; i++ {
 			mut candidate := matching_family_fonts[i]
-			if found_font := candidate.font_with_point_size(font_size_in_pt, variations,
-				font_feature_data, font_feature_values)
-			{
+			if found_font := candidate.font_with_point_size(font_size_in_pt, variations, font_feature_data, font_feature_values) {
 				return found_font
 			}
 		}
@@ -3345,22 +3572,16 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 		}
 		for ; i < matching_family_fonts.len && matching_family_fonts[i].key.weight.min <= 500; i++ {
 			mut candidate := matching_family_fonts[i]
-			if found_font := candidate.font_with_point_size(font_size_in_pt, variations,
-				font_feature_data, font_feature_values)
-			{
+			if found_font := candidate.font_with_point_size(font_size_in_pt, variations, font_feature_data, font_feature_values) {
 				return found_font
 			}
 		}
-		if found_font := find_matching_font_weight_descending(mut matching_family_fonts, weight,
-			font_size_in_pt, variations, font_feature_data, font_feature_values, false)
-		{
+		if found_font := find_matching_font_weight_descending(mut matching_family_fonts, weight, font_size_in_pt, variations, font_feature_data, font_feature_values, false) {
 			return found_font
 		}
 		for ; i < matching_family_fonts.len; i++ {
 			mut candidate := matching_family_fonts[i]
-			if found_font := candidate.font_with_point_size(font_size_in_pt, variations,
-				font_feature_data, font_feature_values)
-			{
+			if found_font := candidate.font_with_point_size(font_size_in_pt, variations, font_feature_data, font_feature_values) {
 				return found_font
 			}
 		}
@@ -3368,28 +3589,20 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 	// - If the desired weight is less than 400, weights less than or equal to the desired weight are checked in
 	//   descending order followed by weights above the desired weight in ascending order until a match is found.
 	if weight < 400 {
-		if found_font := find_matching_font_weight_descending(mut matching_family_fonts, weight,
-			font_size_in_pt, variations, font_feature_data, font_feature_values, true)
-		{
+		if found_font := find_matching_font_weight_descending(mut matching_family_fonts, weight, font_size_in_pt, variations, font_feature_data, font_feature_values, true) {
 			return found_font
 		}
-		if found_font := find_matching_font_weight_ascending(mut matching_family_fonts, weight,
-			font_size_in_pt, variations, font_feature_data, font_feature_values, false)
-		{
+		if found_font := find_matching_font_weight_ascending(mut matching_family_fonts, weight, font_size_in_pt, variations, font_feature_data, font_feature_values, false) {
 			return found_font
 		}
 	}
 	// - If the desired weight is greater than 500, weights greater than or equal to the desired weight are checked in
 	//   ascending order followed by weights below the desired weight in descending order until a match is found.
 	if weight > 500 {
-		if found_font := find_matching_font_weight_ascending(mut matching_family_fonts, weight,
-			font_size_in_pt, variations, font_feature_data, font_feature_values, true)
-		{
+		if found_font := find_matching_font_weight_ascending(mut matching_family_fonts, weight, font_size_in_pt, variations, font_feature_data, font_feature_values, true) {
 			return found_font
 		}
-		if found_font := find_matching_font_weight_descending(mut matching_family_fonts, weight,
-			font_size_in_pt, variations, font_feature_data, font_feature_values, false)
-		{
+		if found_font := find_matching_font_weight_descending(mut matching_family_fonts, weight, font_size_in_pt, variations, font_feature_data, font_feature_values, false) {
 			return found_font
 		}
 	}
@@ -3406,9 +3619,7 @@ fn find_matching_font_weight_ascending(mut candidates []MatchingFontCandidate, t
 		} else if candidate.key.weight.min <= target_weight {
 			continue
 		}
-		if found_font := candidate.font_with_point_size(font_size_in_pt, variations,
-			font_feature_data, font_feature_values)
-		{
+		if found_font := candidate.font_with_point_size(font_size_in_pt, variations, font_feature_data, font_feature_values) {
 			return found_font
 		}
 	}
@@ -3425,9 +3636,7 @@ fn find_matching_font_weight_descending(mut candidates []MatchingFontCandidate, 
 		} else if candidate.key.weight.max >= target_weight {
 			continue
 		}
-		if found_font := candidate.font_with_point_size(font_size_in_pt, variations,
-			font_feature_data, font_feature_values)
-		{
+		if found_font := candidate.font_with_point_size(font_size_in_pt, variations, font_feature_data, font_feature_values) {
 			return found_font
 		}
 	}
@@ -3474,83 +3683,325 @@ fn merge_font_feature_values(mut target map[string][]u32, source map[string][]u3
 
 // --- Parsing stubs and platform boundaries local to this file ---
 
-pub struct FontFetchResponseStub {}
+struct ParsedFontSourceDescriptor {
+	serialized string
+	sources    []FontSourceStyleValue
+}
+
+fn parse_font_family_descriptor(value string) ?StyleValue {
+	return parse_font_family_descriptor_components(parse_component_values_for_value_logic(value))
+}
+
+fn parse_font_family_descriptor_components(component_values []ComponentValue) ?StyleValue {
+	mut parser := Parser.from_component_values(component_values)
+	mut tokens := ComponentValueStream.new(component_values)
+	font_family := parser.parse_family_name_value(mut tokens) or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return font_family
+}
+
+fn parse_font_style_descriptor(value string) ?StyleValue {
+	return parse_font_style_descriptor_components(parse_component_values_for_value_logic(value))
+}
+
+fn parse_font_style_descriptor_components(component_values []ComponentValue) ?StyleValue {
+	mut parser := Parser.from_component_values(component_values)
+	mut tokens := ComponentValueStream.new(component_values)
+	mut transaction := tokens.clone()
+	transaction.consume_whitespace()
+	if component_value := transaction.peek() {
+		if component_value.is(.ident)
+			&& equals_ignoring_ascii_case(component_value.token().ident(), 'auto') {
+			transaction.consume()
+			transaction.consume_whitespace()
+			if !transaction.has_more_tokens() {
+				return StyleValue(KeywordStyleValue.create(.auto))
+			}
+		}
+	}
+
+	font_style := parser.parse_font_style_value(mut tokens) or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return font_style
+}
+
+fn parse_font_weight_descriptor(value string) ?StyleValue {
+	return parse_font_weight_descriptor_components(parse_component_values_for_value_logic(value))
+}
+
+fn parse_font_weight_descriptor_components(component_values []ComponentValue) ?StyleValue {
+	mut parser := Parser.from_component_values(component_values)
+	mut tokens := ComponentValueStream.new(component_values)
+	mut auto_attempt := tokens.clone()
+	auto_attempt.consume_whitespace()
+	if component_value := auto_attempt.consume() {
+		if component_value.is(.ident)
+			&& equals_ignoring_ascii_case(component_value.token().ident(), 'auto') {
+			auto_attempt.consume_whitespace()
+			if !auto_attempt.has_more_tokens() {
+				return StyleValue(KeywordStyleValue.create(.auto))
+			}
+		}
+	}
+
+	mut weights := []StyleValue{}
+	for weights.len < 2 {
+		tokens.consume_whitespace()
+		if !tokens.has_more_tokens() {
+			break
+		}
+		weight := parser.parse_font_weight_value(mut tokens) or { return none }
+		if weight.to_keyword() in [.lighter, .bolder] {
+			return none
+		}
+		weights << weight
+	}
+	tokens.consume_whitespace()
+	if weights.len == 0 || tokens.has_more_tokens() {
+		return none
+	}
+	return StyleValue(StyleValueList.create(weights, .space, .yes))
+}
+
+fn font_weight_range_from_style_value(style_value StyleValue) ?FontWeightRange {
+	list := style_value.as_value_list() or { return none }
+	values := list.values()
+	if values.len == 0 || values.len > 2 {
+		return none
+	}
+	first := absolute_font_weight_from_style_value(values[0]) or { return none }
+	second := if values.len == 2 {
+		absolute_font_weight_from_style_value(values[1]) or { return none }
+	} else {
+		first
+	}
+	return FontWeightRange{
+		min: if first < second { first } else { second }
+		max: if first > second { first } else { second }
+	}
+}
+
+fn absolute_font_weight_from_style_value(style_value StyleValue) ?int {
+	return match style_value.to_keyword() {
+		.normal { 400 }
+		.bold { 700 }
+		.invalid { int(number_from_style_value(style_value, none)) }
+		else { none }
+	}
+}
+
+fn parse_font_width_descriptor(value string) ?StyleValue {
+	return parse_font_width_descriptor_components(parse_component_values_for_value_logic(value))
+}
+
+fn parse_font_property_descriptor(value string, property_id PropertyID) ?StyleValue {
+	return parse_font_property_descriptor_components(parse_component_values_for_value_logic(value), property_id)
+}
+
+fn parse_font_property_descriptor_components(component_values []ComponentValue, property_id PropertyID) ?StyleValue {
+	mut parser := Parser.from_component_values(component_values)
+	mut tokens := ComponentValueStream.new(component_values)
+	style_value := parser.parse_css_value_tokens(property_id, mut tokens) or { return none }
+	// Descriptor property references reuse the property grammar, but unlike properties they
+	// do not accept CSS-wide keywords or arbitrary substitution functions.
+	if style_value.is_css_wide_keyword() || style_value is UnresolvedStyleValue {
+		return none
+	}
+	return style_value
+}
+
+fn parse_font_keyword_descriptor(value string, allowed_keywords []string) ?StyleValue {
+	return parse_font_keyword_descriptor_components(parse_component_values_for_value_logic(value), allowed_keywords)
+}
+
+fn parse_font_keyword_descriptor_components(component_values []ComponentValue, allowed_keywords []string) ?StyleValue {
+	mut tokens := ComponentValueStream.new(component_values)
+	style_value := parse_property_keyword_value(mut tokens, allowed_keywords) or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return style_value
+}
+
+fn parse_font_keyword_or_string_descriptor(value string, keyword string) ?StyleValue {
+	return parse_font_keyword_or_string_descriptor_components(parse_component_values_for_value_logic(value), keyword)
+}
+
+fn parse_font_keyword_or_string_descriptor_components(component_values []ComponentValue, keyword string) ?StyleValue {
+	if keyword_value := parse_font_keyword_descriptor_components(component_values, [
+		keyword,
+	]) {
+		return keyword_value
+	}
+	mut parser := Parser.from_component_values(component_values)
+	mut tokens := ComponentValueStream.new(component_values)
+	string_value := parser.parse_string_value(mut tokens) or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return StyleValue(string_value)
+}
+
+fn string_from_font_keyword_or_string(style_value StyleValue) ?string {
+	if style_value is StringStyleValue {
+		return style_value.string_value()
+	}
+	return none
+}
+
+fn parse_font_metric_override_descriptor(value string) ?StyleValue {
+	return parse_font_metric_override_descriptor_components(parse_component_values_for_value_logic(value))
+}
+
+fn parse_font_metric_override_descriptor_components(component_values []ComponentValue) ?StyleValue {
+	if normal := parse_font_keyword_descriptor_components(component_values, ['normal']) {
+		return normal
+	}
+	mut parser := Parser.from_component_values(component_values)
+	mut tokens := ComponentValueStream.new(component_values)
+	percentage_value := parser.parse_percentage_value(mut tokens) or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return none
+	}
+	if percentage_value is PercentageStyleValue {
+		if percentage_value.raw_value() < 0 {
+			return none
+		}
+		return percentage_value
+	}
+	if percentage_value is CalculatedStyleValue {
+		percentage := percentage_value.resolve_percentage(CalculationResolutionContext{}) or {
+			return none
+		}
+		if percentage.value() < 0 {
+			return none
+		}
+		return StyleValue(PercentageStyleValue.create(percentage))
+	}
+	return none
+}
+
+fn percentage_from_font_metric_override(style_value StyleValue) ?Percentage {
+	if style_value is PercentageStyleValue {
+		return style_value.percentage()
+	}
+	return none
+}
+
+fn parse_font_width_descriptor_components(component_values []ComponentValue) ?StyleValue {
+	mut parser := Parser.from_component_values(component_values)
+	mut tokens := ComponentValueStream.new(component_values)
+	mut auto_attempt := tokens.clone()
+	auto_attempt.consume_whitespace()
+	if component_value := auto_attempt.consume() {
+		if component_value.is(.ident)
+			&& equals_ignoring_ascii_case(component_value.token().ident(), 'auto') {
+			auto_attempt.consume_whitespace()
+			if !auto_attempt.has_more_tokens() {
+				return StyleValue(KeywordStyleValue.create(.auto))
+			}
+		}
+	}
+
+	font_width := parser.parse_font_width_value(mut tokens) or { return none }
+	tokens.consume_whitespace()
+	if tokens.has_more_tokens() {
+		return none
+	}
+	if font_width is PercentageStyleValue {
+		if font_width.percentage().value() < 0 {
+			return none
+		}
+	} else if font_width is CalculatedStyleValue {
+		percentage := font_width.resolve_percentage(CalculationResolutionContext{}) or { return none }
+		if percentage.value() < 0 {
+			return none
+		}
+	}
+	return font_width
+}
+
+fn font_width_from_style_value(style_value StyleValue) ?int {
+	if style_value is PercentageStyleValue {
+		return int(style_value.percentage().value())
+	}
+	if style_value is CalculatedStyleValue {
+		percentage := style_value.resolve_percentage(CalculationResolutionContext{}) or {
+			return none
+		}
+		return int(percentage.value())
+	}
+	return font_width_from_keyword(style_value.to_keyword())
+}
+
+fn font_width_from_keyword(keyword Keyword) ?int {
+	return match keyword {
+		.ultra_condensed { 50 }
+		.extra_condensed { 62 }
+		.condensed { 75 }
+		.semi_condensed { 87 }
+		.normal { 100 }
+		.semi_expanded { 112 }
+		.expanded { 125 }
+		.extra_expanded { 150 }
+		.ultra_expanded { 200 }
+		else { none }
+	}
+}
+
+fn parse_font_source_descriptor(value string) ?ParsedFontSourceDescriptor {
+	sources := parse_font_source_style_values(value)
+	if sources.len == 0 {
+		return none
+	}
+	return ParsedFontSourceDescriptor{
+		serialized: sources.map(it.serialize(.normal)).join(', ')
+		sources: sources
+	}
+}
 
 fn parse_font_face_sources(value string) []ParsedFontFaceSource {
+	return parsed_font_face_sources_from_style_values(parse_font_source_style_values(value))
+}
+
+fn parsed_font_face_sources_from_style_values(style_values []FontSourceStyleValue) []ParsedFontFaceSource {
 	mut sources := []ParsedFontFaceSource{}
-	for part in split_css_comma_list(value) {
-		if source := parse_font_face_source(part) {
-			sources << source
+	for style_value in style_values {
+		source := style_value.source()
+		match source {
+			FontSourceLocal {
+				sources << ParsedFontFaceSource{
+					kind: .local
+					value: string_from_style_value(source.name)
+				}
+			}
+			URL {
+				sources << ParsedFontFaceSource{
+					kind: .url
+					value: source.url()
+					url: source
+					format: style_value.format()
+					tech: style_value.tech()
+				}
+			}
 		}
 	}
 	return sources
 }
 
-fn parse_font_face_source(input string) ?ParsedFontFaceSource {
-	text := input.trim_space()
-	lower := text.to_lower()
-	if lower.starts_with('local(') && text.ends_with(')') {
-		name := string_from_font_family_descriptor(text[6..text.len - 1].trim_space())
-		if name.len == 0 {
-			return none
-		}
-		return ParsedFontFaceSource{
-			kind:  .local
-			value: name
-		}
-	}
-
-	mut url := ''
-	mut rest := ''
-	if lower.starts_with('url(') {
-		close := text.index(')') or { return none }
-		url = unquote_css_string(text[4..close].trim_space())
-		rest = text[close + 1..].trim_space()
-	} else {
-		return none
-	}
-
-	mut source := ParsedFontFaceSource{
-		kind:  .url
-		value: url
-	}
-	mut saw_format := false
-	mut saw_tech := false
-	for modifier in split_css_space_list(rest) {
-		modifier_lower := modifier.to_lower()
-		if modifier_lower.starts_with('format(') && modifier.ends_with(')') {
-			if saw_format || saw_tech {
-				return none
-			}
-			saw_format = true
-			format_name := normalize_font_format_name(modifier[7..modifier.len - 1].trim_space()) or {
-				return none
-			}
-			source.format = format_name.name
-			for tech in format_name.implied_tech {
-				source.tech << tech
-			}
-		} else if modifier_lower.starts_with('tech(') && modifier.ends_with(')') {
-			if saw_tech {
-				return none
-			}
-			saw_tech = true
-			tech_names := split_font_tech_names(modifier[5..modifier.len - 1]) or { return none }
-			for tech_name in tech_names {
-				if tech := font_tech_from_string(tech_name) {
-					if !font_tech_is_supported(tech) {
-						return none
-					}
-					source.tech << tech
-				} else {
-					return none
-				}
-			}
-		} else {
-			return none
-		}
-	}
-	return source
+fn parse_font_source_style_values(value string) []FontSourceStyleValue {
+	mut parser := Parser.from_css_text(value)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	return parser.parse_font_source_values(mut tokens)
 }
 
 struct NormalizedFontFormatName {
@@ -3558,7 +4009,7 @@ struct NormalizedFontFormatName {
 	implied_tech []FontTech
 }
 
-fn normalize_font_format_name(value string) ?NormalizedFontFormatName {
+fn normalize_legacy_font_format_name(value string) ?NormalizedFontFormatName {
 	// Quoted legacy format strings are normalized before support is checked:
 	// format("woff2")                 -> format(woff2)
 	// format("woff")                  -> format(woff)
@@ -3569,85 +4020,61 @@ fn normalize_font_format_name(value string) ?NormalizedFontFormatName {
 	// format("woff-variations")       -> format(woff) tech(variations)
 	// format("truetype-variations")   -> format(truetype) tech(variations)
 	// format("opentype-variations")   -> format(opentype) tech(variations)
-	trimmed := value.trim_space()
-	lower := unquote_css_string(trimmed).to_lower()
-	if is_quoted_css_string(trimmed) {
-		return match lower {
-			'woff2', 'woff', 'truetype', 'opentype', 'collection' {
-				if !font_format_is_supported(lower) {
-					none
-				} else {
-					NormalizedFontFormatName{
-						name: lower
-					}
-				}
-			}
-			'woff2-variations' {
-				if !font_format_is_supported('woff2') {
-					none
-				} else {
-					NormalizedFontFormatName{
-						name:         'woff2'
-						implied_tech: [FontTech.variations]
-					}
-				}
-			}
-			'woff-variations' {
-				if !font_format_is_supported('woff') {
-					none
-				} else {
-					NormalizedFontFormatName{
-						name:         'woff'
-						implied_tech: [FontTech.variations]
-					}
-				}
-			}
-			'truetype-variations' {
-				if !font_format_is_supported('truetype') {
-					none
-				} else {
-					NormalizedFontFormatName{
-						name:         'truetype'
-						implied_tech: [FontTech.variations]
-					}
-				}
-			}
-			'opentype-variations' {
-				if !font_format_is_supported('opentype') {
-					none
-				} else {
-					NormalizedFontFormatName{
-						name:         'opentype'
-						implied_tech: [FontTech.variations]
-					}
-				}
-			}
-			else {
+	lower := value.to_lower()
+	return match lower {
+		'woff2', 'woff', 'truetype', 'opentype', 'collection' {
+			if !font_format_is_supported(lower) {
 				none
+			} else {
+				NormalizedFontFormatName{
+					name: lower
+				}
 			}
 		}
-	}
-	if font_format_is_supported(lower) {
-		return NormalizedFontFormatName{
-			name: lower
+		'woff2-variations' {
+			if !font_format_is_supported('woff2') {
+				none
+			} else {
+				NormalizedFontFormatName{
+					name: 'woff2'
+					implied_tech: [FontTech.variations]
+				}
+			}
+		}
+		'woff-variations' {
+			if !font_format_is_supported('woff') {
+				none
+			} else {
+				NormalizedFontFormatName{
+					name: 'woff'
+					implied_tech: [FontTech.variations]
+				}
+			}
+		}
+		'truetype-variations' {
+			if !font_format_is_supported('truetype') {
+				none
+			} else {
+				NormalizedFontFormatName{
+					name: 'truetype'
+					implied_tech: [FontTech.variations]
+				}
+			}
+		}
+		'opentype-variations' {
+			if !font_format_is_supported('opentype') {
+				none
+			} else {
+				NormalizedFontFormatName{
+					name: 'opentype'
+					implied_tech: [FontTech.variations]
+				}
+			}
+		}
+		else {
+			none
 		}
 	}
-	return none
-}
-
-fn split_font_tech_names(value string) ?[]string {
-	mut names := []string{}
-	for comma_part in split_css_comma_list(value) {
-		name := comma_part.trim_space()
-		if name.len == 0 || is_quoted_css_string(name) || split_css_space_list(name).len != 1 {
-			return none
-		}
-		names << name
-	}
-	if names.len == 0 {
-		return none
-	}
-	return names
 }
 
 fn split_css_comma_list(value string) []string {
@@ -3739,16 +4166,9 @@ fn split_css_space_list(value string) []string {
 }
 
 fn parse_unicode_ranges(value string) []UnicodeRange {
-	mut ranges := []UnicodeRange{}
-	parts := split_css_comma_list(value)
-	if parts.len == 0 {
-		return ranges
-	}
-	for part in parts {
-		range := parse_unicode_range(part) or { return []UnicodeRange{} }
-		ranges << range
-	}
-	return ranges
+	mut parser := Parser.from_css_text(value)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	return parser.parse_unicode_ranges(mut tokens)
 }
 
 fn make_valid_unicode_range(start u64, end u64) ?UnicodeRange {
@@ -3757,7 +4177,7 @@ fn make_valid_unicode_range(start u64, end u64) ?UnicodeRange {
 	}
 	return UnicodeRange{
 		start: u32(start)
-		end:   u32(end)
+		end: u32(end)
 	}
 }
 
@@ -3826,6 +4246,17 @@ fn font_display_from_string(value string) ?FontDisplay {
 	}
 }
 
+fn font_display_from_keyword(keyword Keyword) ?FontDisplay {
+	return match keyword {
+		.auto { FontDisplay.auto_ }
+		.block { FontDisplay.block }
+		.swap { FontDisplay.swap }
+		.fallback { FontDisplay.fallback }
+		.optional { FontDisplay.optional }
+		else { none }
+	}
+}
+
 fn font_tech_from_string(value string) ?FontTech {
 	return match value.to_lower() {
 		'features-opentype' { FontTech.features_opentype }
@@ -3845,171 +4276,8 @@ fn font_tech_from_string(value string) ?FontTech {
 }
 
 fn parse_font_weight_range(value string) ?FontWeightRange {
-	lower := value.to_lower().trim_space()
-	if lower == 'normal' {
-		return FontWeightRange{
-			min: 400
-			max: 400
-		}
-	}
-	if lower == 'bold' {
-		return FontWeightRange{
-			min: 700
-			max: 700
-		}
-	}
-	parts := lower.split(' ').filter(it.len != 0)
-	if parts.len == 1 {
-		weight := strconv.atoi(parts[0]) or { return none }
-		return FontWeightRange{
-			min: weight
-			max: weight
-		}
-	}
-	if parts.len == 2 {
-		first := strconv.atoi(parts[0]) or { return none }
-		second := strconv.atoi(parts[1]) or { return none }
-		return FontWeightRange{
-			min: if first < second { first } else { second }
-			max: if first > second { first } else { second }
-		}
-	}
-	return none
-}
-
-fn is_valid_font_weight_descriptor(value string) bool {
-	lower := value.to_lower().trim_space()
-	if lower in ['auto', 'normal', 'bold'] {
-		return true
-	}
-	parts := split_css_space_list(lower)
-	if parts.len == 0 || parts.len > 2 {
-		return false
-	}
-	for part in parts {
-		if !is_valid_css_integer(part) {
-			return false
-		}
-		weight := strconv.atoi(part) or { return false }
-		if weight < 1 || weight > 1000 {
-			return false
-		}
-	}
-	return true
-}
-
-fn is_valid_font_style_descriptor(value string) bool {
-	lower := value.to_lower().trim_space()
-	if lower in ['auto', 'normal', 'italic'] {
-		return true
-	}
-	parts := split_css_space_list(lower)
-	if parts.len == 0 || parts[0] != 'oblique' || parts.len > 3 {
-		return false
-	}
-	if parts.len == 1 {
-		return true
-	}
-	for part in parts[1..] {
-		if !is_valid_css_angle(part) {
-			return false
-		}
-	}
-	return true
-}
-
-fn is_valid_font_width_descriptor(value string) bool {
-	lower := value.to_lower().trim_space()
-	if lower in ['auto', 'ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed',
-		'normal', 'semi-expanded', 'expanded', 'extra-expanded', 'ultra-expanded'] {
-		return true
-	}
-	parts := split_css_space_list(lower)
-	if parts.len == 0 || parts.len > 2 {
-		return false
-	}
-	for part in parts {
-		if !is_valid_css_percentage(part) {
-			return false
-		}
-		percentage := strconv.atof64(part[..part.len - 1]) or { return false }
-		if percentage < 0 {
-			return false
-		}
-	}
-	return true
-}
-
-fn is_valid_font_feature_settings_descriptor(value string) bool {
-	if value.to_lower().trim_space() == 'normal' {
-		return true
-	}
-	items := split_css_comma_list(value)
-	if items.len == 0 {
-		return false
-	}
-	for item in items {
-		tag, setting_value := parse_open_type_setting(item) or { return false }
-		if !is_valid_open_type_tag(tag) {
-			return false
-		}
-		parts := split_css_space_list(item)
-		if parts.len == 0 || parts.len > 2 || !is_quoted_css_string(parts[0]) {
-			return false
-		}
-		if parts.len == 2 {
-			lower := parts[1].to_lower()
-			if lower !in ['on', 'off'] {
-				if !is_valid_css_integer(parts[1]) {
-					return false
-				}
-				if setting_value < 0 {
-					return false
-				}
-			}
-		}
-	}
-	return true
-}
-
-fn is_valid_font_variation_settings_descriptor(value string) bool {
-	if value.to_lower().trim_space() == 'normal' {
-		return true
-	}
-	items := split_css_comma_list(value)
-	if items.len == 0 {
-		return false
-	}
-	for item in items {
-		tag, _ := parse_open_type_setting(item) or { return false }
-		if !is_valid_open_type_tag(tag) {
-			return false
-		}
-		parts := split_css_space_list(item)
-		if parts.len != 2 || !is_quoted_css_string(parts[0]) || !is_valid_css_number(parts[1]) {
-			return false
-		}
-	}
-	return true
-}
-
-fn is_valid_font_language_override_descriptor(value string) bool {
-	lower := value.to_lower().trim_space()
-	if lower == 'normal' {
-		return true
-	}
-	if !is_quoted_css_string(value) {
-		return false
-	}
-	tag := unquote_css_string(value)
-	return tag.len != 0 && tag.len <= 4 && is_printable_ascii(tag)
-}
-
-fn is_valid_font_named_instance_descriptor(value string) bool {
-	if value.to_lower().trim_space() == 'auto' {
-		return true
-	}
-	return is_quoted_css_string(value) && unquote_css_string(value).len != 0
+	parsed := parse_font_weight_descriptor(value) or { return none }
+	return font_weight_range_from_style_value(parsed)
 }
 
 fn parse_font_face_object_numeric_weight(value string) ?FontWeightRange {
@@ -4021,81 +4289,51 @@ fn parse_font_face_object_numeric_weight(value string) ?FontWeightRange {
 }
 
 fn compute_font_style_slope(value string) int {
-	lower := value.to_lower()
-	if lower.contains('oblique') {
-		parts := lower.split(' ')
-		for part in parts {
-			trimmed := part.trim_right('deg')
-			if number := strconv.atoi(trimmed) {
-				return number
-			}
-		}
-		return 14
-	}
-	if lower.contains('italic') {
-		return 14
+	parsed := parse_font_style_descriptor(value) or { return 0 }
+	if font_style := parsed.as_font_style() {
+		return font_style.to_font_slope()
 	}
 	return 0
 }
 
 fn compute_font_width(value string) int {
-	lower := value.to_lower().trim_space()
-	if lower.ends_with('%') {
-		parsed := strconv.atof64(lower[..lower.len - 1]) or { return 100 }
-		return int(math.round(parsed))
+	parsed := parse_font_width_descriptor(value) or { return 100 }
+	if parsed.to_keyword() == .auto {
+		return 100
 	}
-	return match lower {
-		'ultra-condensed' { 50 }
-		'extra-condensed' { 62 }
-		'condensed' { 75 }
-		'semi-condensed' { 87 }
-		'normal' { 100 }
-		'semi-expanded' { 112 }
-		'expanded' { 125 }
-		'extra-expanded' { 150 }
-		'ultra-expanded' { 200 }
-		else { 100 }
-	}
+	return font_width_from_style_value(parsed) or { 100 }
 }
 
-fn parse_integer_open_type_settings(value string) map[string]i64 {
+fn font_feature_settings_from_style_value(style_value StyleValue) ?map[string]i64 {
+	if style_value.to_keyword() == .normal {
+		return none
+	}
+	list := style_value.as_value_list() or { return none }
 	mut settings := map[string]i64{}
-	for item in split_css_comma_list(value) {
-		tag, number := parse_open_type_setting(item) or { continue }
-		settings[tag] = i64(number)
+	for item in list.values() {
+		if item !is OpenTypeTaggedStyleValue {
+			return none
+		}
+		tagged := item as OpenTypeTaggedStyleValue
+		settings[tagged.tag()] = int_from_style_value(tagged.value())
 	}
 	return settings
 }
 
-fn parse_number_open_type_settings(value string) map[string]f64 {
+fn font_variation_settings_from_style_value(style_value StyleValue) ?map[string]f64 {
+	if style_value.to_keyword() == .normal {
+		return none
+	}
+	list := style_value.as_value_list() or { return none }
 	mut settings := map[string]f64{}
-	for item in split_css_comma_list(value) {
-		tag, number := parse_open_type_setting(item) or { continue }
-		settings[tag] = number
+	for item in list.values() {
+		if item !is OpenTypeTaggedStyleValue {
+			return none
+		}
+		tagged := item as OpenTypeTaggedStyleValue
+		settings[tagged.tag()] = number_from_style_value(tagged.value(), none)
 	}
 	return settings
-}
-
-fn parse_open_type_setting(item string) ?(string, f64) {
-	parts := split_css_space_list(item)
-	if parts.len == 0 {
-		return none
-	}
-	tag := unquote_css_string(parts[0])
-	if tag.len != 4 {
-		return none
-	}
-	if parts.len == 1 {
-		return tag, 1.0
-	}
-	if parts[1].to_lower() == 'on' {
-		return tag, 1.0
-	}
-	if parts[1].to_lower() == 'off' {
-		return tag, 0.0
-	}
-	number := strconv.atof64(parts[1]) or { return none }
-	return tag, number
 }
 
 fn string_from_font_family_descriptor(value string) string {
@@ -4158,41 +4396,6 @@ fn is_valid_css_percentage(value string) bool {
 		return false
 	}
 	return is_valid_css_number(trimmed[..trimmed.len - 1])
-}
-
-fn is_valid_non_negative_css_percentage(value string) bool {
-	trimmed := value.trim_space()
-	if !is_valid_css_percentage(trimmed) {
-		return false
-	}
-	number := strconv.atof64(trimmed[..trimmed.len - 1]) or { return false }
-	return number >= 0
-}
-
-fn is_valid_css_angle(value string) bool {
-	lower := value.to_lower().trim_space()
-	for unit in ['deg', 'grad', 'rad', 'turn'] {
-		if lower.ends_with(unit) && lower.len > unit.len {
-			return is_valid_css_number(lower[..lower.len - unit.len])
-		}
-	}
-	return false
-}
-
-fn is_valid_open_type_tag(tag string) bool {
-	if tag.len != 4 {
-		return false
-	}
-	return is_printable_ascii(tag)
-}
-
-fn is_printable_ascii(value string) bool {
-	for ch in value {
-		if ch < 0x20 || ch > 0x7e {
-			return false
-		}
-	}
-	return true
 }
 
 fn parse_font_family_list(value string) []string {
@@ -4431,11 +4634,11 @@ fn font_face_key_from_id(id string) FontFaceKey {
 	}
 	return FontFaceKey{
 		family_name: parts[0]
-		weight:      FontWeightRange{
+		weight: FontWeightRange{
 			min: min
 			max: max
 		}
-		slope:       strconv.atoi(parts[2]) or { 0 }
+		slope: strconv.atoi(parts[2]) or { 0 }
 	}
 }
 
@@ -4453,14 +4656,14 @@ fn platform_load_font_from_bytes_boundary(data []u8) ?PlatformTypeface {
 
 fn platform_default_font_boundary(point_size f32, variations FontVariationSettings, shape_features ShapeFeatures) PlatformFont {
 	return PlatformFont{
-		typeface:   PlatformTypeface{
+		typeface: PlatformTypeface{
 			family_name: 'Default'
-			weight_:     int(variations.weight)
-			width_:      int(variations.width)
+			weight_: int(variations.weight)
+			width_: int(variations.width)
 		}
 		point_size: point_size
 		variations: variations
-		features:   shape_features
+		features: shape_features
 	}
 }
 

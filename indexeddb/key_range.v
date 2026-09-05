@@ -24,7 +24,7 @@ pub fn IDBKeyRange.only(value Key) !IDBKeyRange {
 pub fn IDBKeyRange.lower_bound(lower Key, open bool) !IDBKeyRange {
 	ensure_valid_key(lower)!
 	return IDBKeyRange{
-		lower:      lower.clone()
+		lower: lower.clone()
 		lower_open: open
 		upper_open: true
 	}
@@ -33,7 +33,7 @@ pub fn IDBKeyRange.lower_bound(lower Key, open bool) !IDBKeyRange {
 pub fn IDBKeyRange.upper_bound(upper Key, open bool) !IDBKeyRange {
 	ensure_valid_key(upper)!
 	return IDBKeyRange{
-		upper:      upper.clone()
+		upper: upper.clone()
 		lower_open: true
 		upper_open: open
 	}
@@ -47,8 +47,8 @@ pub fn IDBKeyRange.bound(lower Key, upper Key, lower_open bool, upper_open bool)
 		return error('DataError: lower key is greater than upper key')
 	}
 	return IDBKeyRange{
-		lower:      lower.clone()
-		upper:      upper.clone()
+		lower: lower.clone()
+		upper: upper.clone()
 		lower_open: lower_open
 		upper_open: upper_open
 	}

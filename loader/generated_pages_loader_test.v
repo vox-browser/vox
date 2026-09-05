@@ -6,7 +6,9 @@ import os
 
 fn test_error_and_version_pages_escape_inserted_values() {
 	error_page := load_error_page(dom.URL{'https://example.test/?x=<tag>'}, '<boom> & "bad"')
-	assert error_page.contains('x=&lt;tag&gt;')
+	// URL serialization percent-encodes forbidden query code points before the
+	// generated page applies HTML escaping.
+	assert error_page.contains('x=%3Ctag%3E')
 	assert error_page.contains('&lt;boom&gt; &amp; &quot;bad&quot;')
 	assert !error_page.contains('<boom>')
 

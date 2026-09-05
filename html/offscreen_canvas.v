@@ -211,6 +211,11 @@ mut:
 	height_ u32
 }
 
+fn offscreen_canvas_state_reset(target voidptr) {
+	mut context := unsafe { &OffscreenCanvasRenderingContext2D(target) }
+	context.reset_to_default_state()
+}
+
 pub fn OffscreenCanvasRenderingContext2D.create(canvas &OffscreenCanvas, settings CanvasRenderingContext2DSettings) &OffscreenCanvasRenderingContext2D {
 	mut context := &OffscreenCanvasRenderingContext2D{
 		canvas_: canvas
@@ -219,6 +224,7 @@ pub fn OffscreenCanvasRenderingContext2D.create(canvas &OffscreenCanvas, setting
 		height_: canvas.height()
 	}
 	context.CanvasPath.canvas_state_ = &context.CanvasState
+	context.CanvasState.set_reset_callback(voidptr(context), offscreen_canvas_state_reset)
 	return context
 }
 
@@ -245,7 +251,8 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) set_size(width u32, heigh
 }
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) reset_to_default_state() {
-	context.CanvasState.reset()
+	context.CanvasState.reset_drawing_state()
+	context.CanvasState.clear_drawing_state_stack()
 	context.CanvasPath.path_ = CanvasGfxPath{}
 }
 

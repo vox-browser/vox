@@ -6,7 +6,7 @@ module loader
 
 import dom
 import os
-import net.urllib
+import url as liburl
 
 const error_page_template = '<!doctype html><title>Load error</title><h1>Failed to load %failed_url%</h1><pre>%error_message%</pre>'
 const directory_page_template = '<!doctype html><title>Index of %path%</title><a href="%parent_url%">Parent directory</a>%contents%'
@@ -54,7 +54,7 @@ fn human_readable_size(size u64) string {
 }
 
 fn file_path_from_url(url dom.URL) !string {
-	return urllib.query_unescape(url.serialize_path())
+	return liburl.percent_decode(url.serialize_path()).bytestr()
 }
 
 pub fn load_file_directory_page(url dom.URL) !string {

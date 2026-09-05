@@ -59,6 +59,31 @@ fn test_navigable_container_origin_navigation_and_destruction() {
 	assert container.content_navigable() == none
 }
 
+fn test_dom_load_event_delay_uses_navigable_container_algorithm() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://parent.test/' })
+	document.set_origin(dom.Origin{ value: 'https://parent.test' })
+	iframe_element := unsafe { &dom.HTMLIFrameElement(document.create_element('iframe')!) }
+	mut iframe := html_iframe_element_model_for_dom_element(iframe_element)
+	dom_element := unsafe { &dom.Element(iframe_element) }
+
+	assert dom_element.as_node().currently_delays_the_load_event()
+	mut child := iframe.container.create_new_child_navigable()
+	assert dom_element.as_node().currently_delays_the_load_event()
+	iframe.container.mark_content_navigable_ready()
+	assert dom_element.as_node().currently_delays_the_load_event()
+
+	child.active_document.ready_for_post_load_tasks = true
+	assert !dom_element.as_node().currently_delays_the_load_event()
+	child.is_delaying_load_events = true
+	assert dom_element.as_node().currently_delays_the_load_event()
+	child.is_delaying_load_events = false
+	child.active_document.anything_delays_load_event = true
+	assert dom_element.as_node().currently_delays_the_load_event()
+
+	iframe.container.set_potentially_delays_the_load_event(false)
+	assert !dom_element.as_node().currently_delays_the_load_event()
+}
+
 fn test_iframe_srcdoc_sandbox_lazy_loading_and_events() {
 	mut iframe := HTMLIFrameElementModel.create(dom.URL{ value: 'https://example.test/' }, dom.Origin{
 		value: 'https://example.test'

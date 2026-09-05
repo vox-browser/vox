@@ -13,13 +13,13 @@ pub enum Trustworthiness {
 }
 
 pub fn is_origin_potentially_trustworthy(origin dom.Origin) Trustworthiness {
-	if origin.value == 'opaque-file' {
+	if origin.is_opaque_file_origin() {
 		return .potentially_trustworthy
 	}
-	if origin.value == 'opaque' || origin.value == '' {
+	if origin.is_opaque() {
 		return .not_trustworthy
 	}
-	url := dom.URL{origin.value}
+	url := dom.URL{origin.serialize()}
 	scheme := url.scheme()
 	if scheme == 'https' || scheme == 'wss' {
 		return .potentially_trustworthy
@@ -55,9 +55,5 @@ pub fn is_url_potentially_trustworthy(url dom.URL) Trustworthiness {
 	if url.serialized_host() == '::1' || url.serialized_host() == '[::1]' {
 		return .potentially_trustworthy
 	}
-	mut origin := url.origin()
-	if url.scheme() == 'file' && origin.value == 'opaque' {
-		origin = dom.Origin{'opaque-file'}
-	}
-	return is_origin_potentially_trustworthy(origin)
+	return is_origin_potentially_trustworthy(url.origin())
 }

@@ -5,7 +5,6 @@ import dom
 import os
 import platform
 import strconv
-import strings
 import time
 
 // Translated scaffolding from:
@@ -306,6 +305,129 @@ pub enum LineStyle {
 	outset
 }
 
+pub struct BorderData {
+pub mut:
+	color      Color
+	line_style LineStyle
+	width      CSSPixels
+}
+
+pub struct BorderRadiusData {
+pub mut:
+	horizontal_radius LengthPercentage = LengthPercentage.from_length(Length.make_px(0))
+	vertical_radius   LengthPercentage = LengthPercentage.from_length(Length.make_px(0))
+}
+
+pub fn (radius BorderRadiusData) is_initial() bool {
+	return radius.horizontal_radius.is_length() && radius.horizontal_radius.length().is_px()
+		&& radius.horizontal_radius.length().absolute_length_to_px().raw_value() == 0
+		&& radius.vertical_radius.is_length() && radius.vertical_radius.length().is_px()
+		&& radius.vertical_radius.length().absolute_length_to_px().raw_value() == 0
+}
+
+pub type SVGPaintValue = Color | URL
+
+pub struct SVGPaint {
+pub mut:
+	value_          SVGPaintValue
+	fallback_color_ ?Color
+}
+
+pub fn SVGPaint.from_color(color Color) SVGPaint {
+	return SVGPaint{
+		value_: color
+	}
+}
+
+pub fn SVGPaint.from_url(url URL, fallback_color ?Color) SVGPaint {
+	return SVGPaint{
+		value_: url
+		fallback_color_: fallback_color
+	}
+}
+
+pub fn (paint SVGPaint) is_color() bool {
+	return paint.value_ is Color
+}
+
+pub fn (paint SVGPaint) is_url() bool {
+	return paint.value_ is URL
+}
+
+pub fn (paint SVGPaint) as_color() Color {
+	if paint.value_ is Color {
+		return paint.value_
+	}
+	panic('VERIFY_NOT_REACHED')
+}
+
+pub fn (paint SVGPaint) as_url() URL {
+	if paint.value_ is URL {
+		return paint.value_
+	}
+	panic('VERIFY_NOT_REACHED')
+}
+
+pub fn (paint SVGPaint) fallback_color() ?Color {
+	return paint.fallback_color_
+}
+
+pub struct MaskReference {
+pub mut:
+	url_ URL
+}
+
+pub fn MaskReference.from_url(url URL) MaskReference {
+	return MaskReference{
+		url_: url
+	}
+}
+
+pub fn (reference MaskReference) url() URL {
+	return reference.url_
+}
+
+pub type ClipPathReferenceValue = BasicShapeStyleValue | URL
+
+pub struct ClipPathReference {
+pub mut:
+	value_ ClipPathReferenceValue
+}
+
+pub fn ClipPathReference.from_url(url URL) ClipPathReference {
+	return ClipPathReference{
+		value_: url
+	}
+}
+
+pub fn ClipPathReference.from_basic_shape(shape BasicShapeStyleValue) ClipPathReference {
+	return ClipPathReference{
+		value_: shape
+	}
+}
+
+pub fn (reference ClipPathReference) is_basic_shape() bool {
+	return reference.value_ is BasicShapeStyleValue
+}
+
+pub fn (reference ClipPathReference) is_url() bool {
+	return reference.value_ is URL
+}
+
+pub fn (reference ClipPathReference) url() URL {
+	if reference.value_ is URL {
+		return reference.value_
+	}
+	panic('VERIFY_NOT_REACHED')
+}
+
+pub fn (reference ClipPathReference) basic_shape() BasicShapeStyleValue {
+	if reference.value_ is BasicShapeStyleValue {
+		return reference.value_
+	}
+	panic('VERIFY_NOT_REACHED')
+}
+
 pub enum OutlineStyle {
 	auto_
 	none_
@@ -600,6 +722,12 @@ pub mut:
 	offset_y LengthPercentage = LengthPercentage.from_percentage(Percentage.new(50))
 }
 
+pub fn (position Position) resolved(context LengthResolutionContext, rect CSSPixelRect) CSSPixelPoint {
+	x := position.offset_x.to_px(context, rect.width)
+	y := position.offset_y.to_px(context, rect.height)
+	return CSSPixelPoint.new(rect.x.plus(x), rect.y.plus(y))
+}
+
 pub enum TableLayout {
 	auto_
 	fixed
@@ -675,11 +803,22 @@ pub mut:
 	paint_containment       bool
 }
 
+pub fn (containment Containment) is_empty() bool {
+	return !(containment.size_containment || containment.inline_size_containment
+		|| containment.layout_containment || containment.style_containment
+		|| containment.paint_containment)
+}
+
 pub struct ContainerType {
 pub mut:
 	is_size_container         bool
 	is_inline_size_container  bool
 	is_scroll_state_container bool
+}
+
+pub fn (container_type ContainerType) is_empty() bool {
+	return !(container_type.is_size_container || container_type.is_inline_size_container
+		|| container_type.is_scroll_state_container)
 }
 
 pub enum MixBlendMode {
@@ -836,12 +975,23 @@ pub mut:
 
 pub struct WillChange {
 pub mut:
-	is_auto bool = true
-	names   []string
+	names []string
 }
 
 pub fn WillChange.make_auto() WillChange {
 	return WillChange{}
+}
+
+pub fn (will_change &WillChange) is_auto() bool {
+	return will_change.names.len == 0
+}
+
+pub fn (will_change &WillChange) has_contents() bool {
+	return 'contents' in will_change.names
+}
+
+pub fn (will_change &WillChange) has_scroll_position() bool {
+	return 'scroll-position' in will_change.names
 }
 
 pub fn (will_change &WillChange) has_property(property_id PropertyID) bool {
@@ -940,14 +1090,73 @@ pub enum AnimationComposition {
 
 pub enum AnimationTimelineKind {
 	generic
+	document
 	scroll
 }
 
 @[heap]
 pub struct AnimationTimeline {
 pub mut:
-	kind             AnimationTimelineKind
-	anonymous_source ?string
+	kind                AnimationTimelineKind
+	anonymous_source    ?string
+	current_time_ms_    ?f64
+	origin_time_ms_     f64
+	monotonic_          bool
+	associated_document ?&dom.Document
+}
+
+// CSS owns a small, cycle-free view of an animation timeline because the
+// animations module already imports css. Keep the state and update rules in
+// lockstep with Animations::AnimationTimeline/DocumentTimeline rather than
+// substituting a free-standing timestamp.
+pub fn AnimationTimeline.document_timeline(document &dom.Document, origin_time_ms f64, timestamp_ms f64) &AnimationTimeline {
+	mut timeline := &AnimationTimeline{
+		kind: .document
+		origin_time_ms_: origin_time_ms
+		associated_document: document
+	}
+	timeline.update_current_time(timestamp_ms)
+	return timeline
+}
+
+pub fn (timeline &AnimationTimeline) is_inactive() bool {
+	if timeline.current_time_ms_ == none {
+		return true
+	}
+	if timeline.kind == .document {
+		if document := timeline.associated_document {
+			return !document.is_active()
+		}
+	}
+	return false
+}
+
+pub fn (timeline &AnimationTimeline) current_time_ms() ?f64 {
+	if timeline.is_inactive() {
+		return none
+	}
+	return timeline.current_time_ms_
+}
+
+pub fn (mut timeline AnimationTimeline) update_current_time(timestamp_ms f64) {
+	next_time := if timeline.kind == .document {
+		timestamp_ms - timeline.origin_time_ms_
+	} else {
+		timestamp_ms
+	}
+	if timeline.monotonic_ {
+		if previous := timeline.current_time_ms_ {
+			if next_time < previous {
+				return
+			}
+		}
+	}
+	timeline.current_time_ms_ = next_time
+	// Like DocumentTimeline, a document timeline becomes monotonically
+	// increasing after its first active sample.
+	if timeline.kind == .document && !timeline.monotonic_ && !timeline.is_inactive() {
+		timeline.monotonic_ = true
+	}
 }
 
 pub enum TransitionBehavior {
@@ -986,6 +1195,11 @@ fn computed_interpolation_empty_style_value() &dom.StyleValue {
 fn style_value_option_changed(old_value ?&dom.StyleValue, new_value ?&dom.StyleValue) bool {
 	if old := old_value {
 		if new := new_value {
+			if old_typed := typed_style_value_logic_from_dom(old) {
+				if new_typed := typed_style_value_logic_from_dom(new) {
+					return !old_typed.equals(new_typed)
+				}
+			}
 			return old.css_text != new.css_text
 		}
 		return true
@@ -1066,618 +1280,28 @@ fn computed_interpolation_property_computation_order() ComputedInterpolationProp
 }
 
 __global computed_interpolation_computation_order_cache = []PropertyID{}
-__global computed_interpolation_initial_value_cache = map[PropertyID]&dom.StyleValue{}
+// Generated property IDs form one contiguous longhand range. Upstream's
+// property_initial_value() dispatches directly on that enum; keep the retained
+// typed values in the same enum-indexed shape instead of paying a hash lookup
+// for every property of every styled element.
+__global computed_interpolation_initial_value_cache = []&dom.StyleValue{}
 
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
-	if cached := computed_interpolation_initial_value_cache[property_id] {
+	if computed_interpolation_initial_value_cache.len == 0 {
+		computed_interpolation_initial_value_cache = []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
+	}
+	index := int(property_id) - int(first_longhand_property_id())
+	cached := computed_interpolation_initial_value_cache[index]
+	if cached != unsafe { nil } {
 		return cached
 	}
-	initial_text := match property_id {
-		.accent_color {
-			'auto'
-		}
-		.anchor_name, .anchor_scope {
-			'none'
-		}
-		.animation_composition {
-			'replace'
-		}
-		.animation_delay {
-			'0s'
-		}
-		.animation_direction {
-			'normal'
-		}
-		.animation_duration {
-			'0s'
-		}
-		.animation_fill_mode {
-			'none'
-		}
-		.animation_iteration_count {
-			'1'
-		}
-		.animation_name {
-			'none'
-		}
-		.animation_play_state {
-			'running'
-		}
-		.animation_timeline {
-			'auto'
-		}
-		.animation_timing_function {
-			'ease'
-		}
-		.aspect_ratio {
-			'auto'
-		}
-		.background_color {
-			'transparent'
-		}
-		.background_attachment {
-			'scroll'
-		}
-		.background_blend_mode {
-			'normal'
-		}
-		.background_clip {
-			'border-box'
-		}
-		.background_image {
-			'none'
-		}
-		.background_origin {
-			'padding-box'
-		}
-		.background_position_x, .background_position_y {
-			'0%'
-		}
-		.background_repeat {
-			'repeat'
-		}
-		.background_size {
-			'auto'
-		}
-		.block_size, .height, .inline_size, .min_height, .min_width, .width {
-			'auto'
-		}
-		.max_block_size, .max_height, .max_inline_size, .max_width {
-			'none'
-		}
-		.min_block_size, .min_inline_size {
-			'0'
-		}
-		.bottom, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left, .right, .top {
-			'auto'
-		}
-		.border_block_end_color, .border_block_start_color, .border_bottom_color, .border_inline_end_color, .border_inline_start_color, .border_left_color, .border_right_color, .border_top_color {
-			'currentcolor'
-		}
-		.border_block_end_style, .border_block_start_style, .border_bottom_style, .border_inline_end_style, .border_inline_start_style, .border_left_style, .border_right_style, .border_top_style {
-			'none'
-		}
-		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width {
-			'medium'
-		}
-		.border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_start_end_radius, .border_start_start_radius, .border_top_left_radius, .border_top_right_radius {
-			'0'
-		}
-		.border_collapse {
-			'separate'
-		}
-		.border_image_outset {
-			'0'
-		}
-		.border_image_repeat {
-			'stretch'
-		}
-		.border_image_slice {
-			'100%'
-		}
-		.border_image_source {
-			'none'
-		}
-		.border_image_width {
-			'1'
-		}
-		.border_spacing {
-			'0'
-		}
-		.box_sizing {
-			'content-box'
-		}
-		.caption_side {
-			'top'
-		}
-		.caret_color {
-			'auto'
-		}
-		.clip_rule {
-			'nonzero'
-		}
-		.color_interpolation {
-			'srgb'
-		}
-		.clear {
-			'none'
-		}
-		.color {
-			'canvastext'
-		}
-		.color_scheme {
-			'normal'
-		}
-		.content_visibility {
-			'visible'
-		}
-		.contain {
-			'none'
-		}
-		.container_type {
-			'normal'
-		}
-		.direction {
-			'ltr'
-		}
-		.empty_cells {
-			'show'
-		}
-		.corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape {
-			'round'
-		}
-		.fill_opacity, .flood_opacity {
-			'1'
-		}
-		.fill_rule {
-			'nonzero'
-		}
-		.flood_color {
-			'black'
-		}
-		.float_ {
-			'none'
-		}
-		.font_feature_settings {
-			'normal'
-		}
-		.font_style {
-			'normal'
-		}
-		.font_variation_settings {
-			'normal'
-		}
-		.font_weight {
-			'normal'
-		}
-		.font_width {
-			'normal'
-		}
-		.font_kerning {
-			'auto'
-		}
-		.font_language_override {
-			'normal'
-		}
-		.font_optical_sizing {
-			'auto'
-		}
-		.font_variant_caps, .font_variant_emoji, .font_variant_position {
-			'normal'
-		}
-		.flex_grow {
-			'0'
-		}
-		.flex_shrink {
-			'1'
-		}
-		.flex_direction {
-			'row'
-		}
-		.flex_wrap {
-			'nowrap'
-		}
-		.align_content, .align_items, .justify_content {
-			'normal'
-		}
-		.align_self, .justify_self {
-			'auto'
-		}
-		.justify_items {
-			'legacy'
-		}
-		.appearance, .column_span {
-			'none'
-		}
-		.column_count, .column_width, .column_height {
-			'auto'
-		}
-		.column_gap, .row_gap {
-			'normal'
-		}
-		.image_rendering {
-			'auto'
-		}
-		.isolation {
-			'auto'
-		}
-		.letter_spacing {
-			'normal'
-		}
-		.line_height {
-			'normal'
-		}
-		.list_style_image, .mask_image {
-			'none'
-		}
-		.list_style_position {
-			'outside'
-		}
-		.margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top {
-			'0'
-		}
-		.mask_clip {
-			'border-box'
-		}
-		.mask_type {
-			'luminance'
-		}
-		.mask_composite {
-			'add'
-		}
-		.mask_mode {
-			'match-source'
-		}
-		.mask_origin {
-			'border-box'
-		}
-		.mask_position {
-			'0% 0%'
-		}
-		.mask_repeat {
-			'repeat'
-		}
-		.mask_size {
-			'auto'
-		}
-		.math_depth {
-			'0'
-		}
-		.math_shift {
-			'normal'
-		}
-		.math_style {
-			'normal'
-		}
-		.mix_blend_mode {
-			'normal'
-		}
-		.object_fit {
-			'fill'
-		}
-		.object_position {
-			'50% 50%'
-		}
-		.opacity {
-			'1'
-		}
-		.order {
-			'0'
-		}
-		.orphans {
-			'2'
-		}
-		.widows {
-			'2'
-		}
-		.outline_color {
-			'currentcolor'
-		}
-		.outline_offset {
-			'0'
-		}
-		.outline_style {
-			'none'
-		}
-		.outline_width {
-			'medium'
-		}
-		.overflow_block, .overflow_inline, .overflow_x, .overflow_y {
-			'visible'
-		}
-		.overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top {
-			'0px'
-		}
-		.overflow_wrap {
-			'normal'
-		}
-		.perspective {
-			'none'
-		}
-		.perspective_origin {
-			'50% 50%'
-		}
-		.pointer_events {
-			'auto'
-		}
-		.paint_order {
-			'normal'
-		}
-		.position {
-			'static'
-		}
-		.position_anchor {
-			'auto'
-		}
-		.position_area, .position_try_fallbacks {
-			'none'
-		}
-		.position_try_order {
-			'normal'
-		}
-		.position_visibility {
-			'anchors-visible'
-		}
-		.shape_margin {
-			'0'
-		}
-		.shape_image_threshold {
-			'0'
-		}
-		.shape_rendering {
-			'auto'
-		}
-		.stop_color {
-			'black'
-		}
-		.stop_opacity, .stroke_opacity {
-			'1'
-		}
-		.stroke_linecap {
-			'butt'
-		}
-		.stroke_linejoin {
-			'miter'
-		}
-		.stroke_miterlimit {
-			'4'
-		}
-		.stroke_width {
-			'1px'
-		}
-		.stroke_dashoffset {
-			'0px'
-		}
-		.rotate, .scale, .transform, .translate {
-			'none'
-		}
-		.scroll_timeline_name {
-			'none'
-		}
-		.scroll_timeline_axis {
-			'block'
-		}
-		.scrollbar_color, .scrollbar_gutter {
-			'auto'
-		}
-		.tab_size {
-			'8'
-		}
-		.table_layout {
-			'auto'
-		}
-		.text_align {
-			'start'
-		}
-		.text_anchor {
-			'start'
-		}
-		.text_decoration_color {
-			'currentcolor'
-		}
-		.text_decoration_line {
-			'none'
-		}
-		.text_decoration_style {
-			'solid'
-		}
-		.text_decoration_thickness, .text_underline_offset {
-			'auto'
-		}
-		.text_underline_position {
-			'auto'
-		}
-		.text_indent {
-			'0'
-		}
-		.text_justify {
-			'auto'
-		}
-		.text_overflow {
-			'clip'
-		}
-		.text_rendering {
-			'auto'
-		}
-		.text_transform {
-			'none'
-		}
-		.text_wrap_mode {
-			'wrap'
-		}
-		.text_wrap_style {
-			'auto'
-		}
-		.timeline_scope {
-			'none'
-		}
-		.transform_style {
-			'flat'
-		}
-		.transform_box {
-			'view-box'
-		}
-		.transform_origin {
-			'50% 50%'
-		}
-		.transition_behavior {
-			'normal'
-		}
-		.transition_delay, .transition_duration {
-			'0s'
-		}
-		.transition_property {
-			'all'
-		}
-		.transition_timing_function {
-			'ease'
-		}
-		.unicode_bidi {
-			'normal'
-		}
-		.vertical_align {
-			'baseline'
-		}
-		.user_select {
-			'auto'
-		}
-		.touch_action {
-			'auto'
-		}
-		.writing_mode {
-			'horizontal-tb'
-		}
-		.view_transition_name {
-			'none'
-		}
-		.scrollbar_width {
-			'auto'
-		}
-		.resize {
-			'none'
-		}
-		.scroll_behavior {
-			'auto'
-		}
-		.webkit_text_fill_color {
-			'currentcolor'
-		}
-		.view_timeline_inset {
-			'auto'
-		}
-		.view_timeline_axis {
-			'block'
-		}
-		.view_timeline_name {
-			'none'
-		}
-		.visibility {
-			'visible'
-		}
-		.will_change {
-			'auto'
-		}
-		.white_space_collapse {
-			'collapse'
-		}
-		.white_space_trim {
-			'none'
-		}
-		.word_break {
-			'normal'
-		}
-		.word_spacing {
-			'normal'
-		}
-		.z_index {
-			'auto'
-		}
-		.cx, .cy, .x, .y, .r {
-			'0'
-		}
-		.rx, .ry {
-			'auto'
-		}
-		.dominant_baseline {
-			'auto'
-		}
-		.display {
-			'inline'
-		}
-		.flex_basis {
-			'auto'
-		}
-		.quotes {
-			'auto'
-		}
-		.box_shadow, .text_shadow {
-			'none'
-		}
-		.list_style_type {
-			'disc'
-		}
-		.clip {
-			'auto'
-		}
-		.stroke_dasharray {
-			'none'
-		}
-		.font_family {
-			'serif'
-		}
-		.grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end {
-			'auto'
-		}
-		.grid_auto_flow {
-			'row'
-		}
-		.grid_auto_columns, .grid_auto_rows {
-			'auto'
-		}
-		.grid_template_columns, .grid_template_rows {
-			'none'
-		}
-		.grid_template_areas {
-			'none'
-		}
-		.filter, .backdrop_filter {
-			'none'
-		}
-		.counter_increment, .counter_reset, .counter_set {
-			'none'
-		}
-		.cursor {
-			'auto'
-		}
-		.font_size {
-			'medium'
-		}
-		.fill {
-			'black'
-		}
-		.stroke {
-			'none'
-		}
-		.font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .font_variant_alternates {
-			'normal'
-		}
-		.clip_path, .shape_outside {
-			'none'
-		}
-		.content {
-			'normal'
-		}
-		else {
-			// Shorthands have no initial value of their own; their longhands do.
-			''
-		}
-	}
+	initial_text := property_initial_value_string(property_id)
 
 	value := parse_css_value(ParsingParams{}, initial_text, property_id) or {
 		return computed_interpolation_empty_style_value()
 	}
-	computed_interpolation_initial_value_cache[property_id] = value
+	computed_interpolation_initial_value_cache[index] = value
 	return value
 }
 
@@ -1687,7 +1311,7 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		computed_interpolation_inherited_cache = []u8{len: number_of_longhand_properties}
 		for index in 0 .. number_of_longhand_properties {
 			if id := property_id_from_longhand_index(index) {
-				if string_from_property_id(id) in inherited_properties {
+				if is_inherited_property(id) {
 					computed_interpolation_inherited_cache[index] = 1
 				}
 			}
@@ -1702,42 +1326,6 @@ __global (
 	computed_interpolation_inherited_cache             = []u8{}
 	computed_interpolation_inherited_cache_initialized bool
 )
-
-fn computed_interpolation_property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
-	computed_interpolation_verify_longhand_property(property_id)
-	return match property_id {
-		.accent_color, .animation_delay, .animation_duration, .animation_iteration_count, .animation_name, .animation_timeline, .animation_timing_function, .aspect_ratio, .background_color, .background_image, .background_attachment, .background_blend_mode, .background_clip, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .border_block_end_color, .border_block_end_width, .border_block_start_color, .border_block_start_width, .border_bottom_color, .border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_image_outset, .border_image_slice, .border_image_source, .border_image_width, .border_inline_end_color, .border_inline_end_width, .border_inline_start_color, .border_inline_start_width, .border_left_color, .border_left_width, .border_right_color, .border_right_width, .border_spacing, .border_start_end_radius, .border_start_start_radius, .border_top_color, .border_top_width, .border_top_left_radius, .border_top_right_radius, .block_size, .bottom, .caret_color, .color, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity, .font_feature_settings, .font_style, .font_variation_settings, .font_weight, .font_width, .flex_grow, .flex_shrink, .column_count, .column_width, .column_height, .column_gap, .row_gap, .height, .inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left, .letter_spacing, .line_height, .list_style_image, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .mask_image, .mask_position, .mask_size, .math_depth, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .object_position, .opacity, .order, .orphans, .widows, .outline_color, .outline_offset, .outline_width, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .perspective, .perspective_origin, .position_area, .right, .scrollbar_color, .shape_margin, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .tab_size, .text_decoration_color, .text_decoration_thickness, .text_underline_offset, .text_indent, .top, .transform_origin, .vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .rotate, .scale, .transform, .transition_delay, .transition_duration, .transition_timing_function, .translate, .view_timeline_inset, .webkit_text_fill_color, .word_spacing, .z_index, .flex_basis, .box_shadow, .text_shadow, .clip, .stroke_dasharray, .grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .counter_increment, .counter_reset, .counter_set, .cursor, .font_size, .fill, .stroke, .clip_path, .shape_outside, .content {
-			true
-		}
-		else {
-			false
-		}
-	}
-}
-
-fn computed_interpolation_property_requires_computation_with_inherited_value(property_id PropertyID) bool {
-	computed_interpolation_verify_longhand_property(property_id)
-	return match property_id {
-		.background_attachment, .background_blend_mode, .background_clip, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size {
-			true
-		}
-		else {
-			false
-		}
-	}
-}
-
-fn computed_interpolation_property_requires_computation_with_initial_value(property_id PropertyID) bool {
-	computed_interpolation_verify_longhand_property(property_id)
-	return match property_id {
-		.background_attachment, .background_blend_mode, .background_clip, .background_color, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .color, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .flood_color, .font_style, .font_weight, .font_width, .letter_spacing, .math_depth, .outline_width, .stop_color, .text_decoration_color, .word_spacing, .font_size, .fill {
-			true
-		}
-		else {
-			false
-		}
-	}
-}
 
 fn computed_interpolation_style_value_keyword(value &dom.StyleValue) ?Keyword {
 	if typed := typed_style_value_logic_from_dom(value) {
@@ -1836,10 +1424,6 @@ pub mut:
 	cached_first_available_computed_font_   ?&PlatformFont
 	line_height_                            ?CSSPixels
 	attempted_pseudo_class_matches_         map[string]bool
-	// Stable identity of the inputs used by the style-sharing cache. Clones
-	// retain it so equivalent descendant subtrees can share computations even
-	// though every element owns a separately mutable ComputedProperties object.
-	style_sharing_identity_ string
 	// Lengths whose computed value remains viewport- or root-font-relative
 	// need the same style-computation context when Layout resolves their used
 	// value. LibWeb carries that context through the layout node; retaining it
@@ -1847,7 +1431,196 @@ pub mut:
 	viewport_rect_       CSSPixelRect
 	root_font_size_px_   f64 = 16.0
 	root_line_height_px_ f64 = 19.2
+
+	// Layout::NodeWithStyle resolves these values once in apply_style(). Keeping
+	// the translated ComputedValues slots on the retained object avoids decoding
+	// StyleValue objects on every layout query.
+	computed_values_resolved_                      bool
+	computed_values_display_                       Display = Display.new()
+	computed_values_display_before_transformation_ Display = Display.new()
+	computed_values_position_                      Positioning
+	computed_values_float_                         Float
+	computed_values_clear_                         Clear
+	computed_values_direction_                     Direction
+	computed_values_writing_mode_                  WritingMode
+	computed_values_overflow_x_                    Overflow
+	computed_values_overflow_y_                    Overflow
+	computed_values_font_size_                     CSSPixels
+	computed_values_line_height_                   CSSPixels
+	computed_values_font_weight_                   f64
+	computed_values_font_language_override_        ?string
+	computed_values_font_variation_settings_       map[string]f64
+	computed_values_caret_color_                   Color = Color{0, 0, 0, 255}
+	computed_values_color_                         Color = Color{0, 0, 0, 255}
+	computed_values_accent_color_                  ?Color
+	computed_values_color_scheme_                  PreferredColorScheme
+	computed_values_width_                         Size
+	computed_values_min_width_                     Size
+	computed_values_max_width_                     Size
+	computed_values_height_                        Size
+	computed_values_min_height_                    Size
+	computed_values_max_height_                    Size
+	computed_values_inset_                         LengthBox
+	computed_values_margin_                        LengthBox
+	computed_values_padding_                       LengthBox
+	computed_values_overflow_clip_margin_          LengthBox
+	computed_values_border_left_                   BorderData
+	computed_values_border_top_                    BorderData
+	computed_values_border_right_                  BorderData
+	computed_values_border_bottom_                 BorderData
+	computed_values_has_noninitial_border_radii_   bool
+	computed_values_border_bottom_left_radius_     BorderRadiusData
+	computed_values_border_bottom_right_radius_    BorderRadiusData
+	computed_values_border_top_left_radius_        BorderRadiusData
+	computed_values_border_top_right_radius_       BorderRadiusData
+	computed_values_flex_direction_                FlexDirection
+	computed_values_flex_wrap_                     FlexWrap
+	computed_values_flex_basis_                    FlexBasis
+	computed_values_flex_grow_                     f32
+	computed_values_flex_shrink_                   f32
+	computed_values_order_                         int
+	computed_values_align_content_                 AlignContent
+	computed_values_align_items_                   AlignItems
+	computed_values_align_self_                    AlignSelf
+	computed_values_justify_content_               JustifyContent
+	computed_values_justify_items_                 JustifyItems
+	computed_values_justify_self_                  JustifySelf
+	computed_values_text_align_                    TextAlign
+	computed_values_text_justify_                  TextJustify
+	computed_values_text_transform_                TextTransform
+	computed_values_text_wrap_mode_                TextWrapMode
+	computed_values_white_space_collapse_          WhiteSpaceCollapse
+	computed_values_word_break_                    WordBreak
+	computed_values_visibility_                    Visibility
+	computed_values_box_sizing_                    BoxSizing
+	computed_values_vertical_align_                VerticalAlign
+	computed_values_caption_side_                  CaptionSide
+	computed_values_content_visibility_            ContentVisibility
+	computed_values_user_select_                   UserSelect
+	computed_values_table_layout_                  TableLayout
+	computed_values_border_collapse_               BorderCollapse
+	computed_values_contain_                       Containment
+	computed_values_aspect_ratio_                  AspectRatio
+	computed_values_column_gap_                    GapValue
+	computed_values_row_gap_                       GapValue
+	computed_values_grid_auto_columns_             GridTrackSizeList
+	computed_values_grid_auto_rows_                GridTrackSizeList
+	computed_values_grid_template_columns_         GridTrackSizeList
+	computed_values_grid_template_rows_            GridTrackSizeList
+	computed_values_grid_template_areas_           GridTemplateAreas
+	computed_values_grid_auto_flow_                GridAutoFlow
+	computed_values_appearance_                    Appearance
+	computed_values_opacity_                       f32
+	computed_values_z_index_                       ?int
+	computed_values_image_rendering_               ImageRendering
+	computed_values_pointer_events_                PointerEvents
+	computed_values_list_style_type_               ListStyleType
+	computed_values_list_style_position_           ListStylePosition
+	computed_values_grid_column_end_               GridTrackPlacement
+	computed_values_grid_column_start_             GridTrackPlacement
+	computed_values_grid_row_end_                  GridTrackPlacement
+	computed_values_grid_row_start_                GridTrackPlacement
+	computed_values_column_span_                   ColumnSpan
+	computed_values_empty_cells_                   EmptyCells
+	computed_values_object_fit_                    ObjectFit
+	computed_values_object_position_               Position
+	computed_values_unicode_bidi_                  UnicodeBidi
+	computed_values_isolation_                     Isolation
+	computed_values_mix_blend_mode_                MixBlendMode
+	computed_values_mask_type_                     MaskType
+	computed_values_stop_opacity_                  f32
+	computed_values_fill_opacity_                  f32
+	computed_values_stroke_linecap_                StrokeLinecap
+	computed_values_stroke_linejoin_               StrokeLinejoin
+	computed_values_stroke_miterlimit_             f64
+	computed_values_stroke_opacity_                f32
+	computed_values_fill_rule_                     FillRule
+	computed_values_clip_rule_                     ClipRule
+	computed_values_shape_rendering_               ShapeRendering
+	computed_values_text_anchor_                   TextAnchor
+	computed_values_outline_offset_                Length
+	computed_values_outline_style_                 OutlineStyle
+	computed_values_scrollbar_width_               ScrollbarWidth
+	computed_values_resize_                        Resize
+	computed_values_border_spacing_horizontal_     Length
+	computed_values_border_spacing_vertical_       Length
+	computed_values_color_interpolation_           ColorInterpolation
+	computed_values_clip_                          Clip
+	computed_values_cursor_                        []CursorData
+	computed_values_background_color_clip_         BackgroundBox
+	computed_values_background_color_              Color
+	computed_values_background_layers_             []BackgroundLayerData
+	computed_values_tab_size_                      TabSize
+	computed_values_text_decoration_line_          []TextDecorationLine
+	computed_values_text_decoration_thickness_     TextDecorationThickness
+	computed_values_text_decoration_style_         TextDecorationStyle
+	computed_values_text_decoration_color_         Color = Color{0, 0, 0, 255}
+	computed_values_text_indent_                   TextIndentData
+	computed_values_text_overflow_                 TextOverflow
+	computed_values_text_underline_offset_         CSSPixels
+	computed_values_text_underline_position_       TextUnderlinePosition
+	computed_values_white_space_trim_              WhiteSpaceTrimData
+	computed_values_word_spacing_                  CSSPixels
+	computed_values_letter_spacing_                CSSPixels
+	computed_values_backdrop_filter_               Filter
+	computed_values_filter_                        Filter
+	computed_values_rotate_                        ?TransformationData
+	computed_values_scale_                         ?TransformationData
+	computed_values_perspective_                   ?CSSPixels
+	computed_values_perspective_origin_            Position
+	computed_values_transformations_               []TransformationData
+	computed_values_transform_box_                 TransformBox
+	computed_values_transform_origin_              TransformOrigin
+	computed_values_transform_style_               TransformStyle
+	computed_values_translate_                     ?TransformationData
+	computed_values_quotes_                        QuotesData
+	computed_values_dominant_baseline_             ?BaselineMetric
+	computed_values_container_type_                ContainerType
+	computed_values_view_transition_name_          ?string
+	computed_values_touch_action_                  TouchActionData
+	computed_values_stroke_dasharray_              []StrokeDasharrayItem
+	computed_values_flood_opacity_                 f32
+	computed_values_paint_order_                   PaintOrderList
+	computed_values_math_shift_                    MathShift
+	computed_values_math_style_                    MathStyle
+	computed_values_math_depth_                    int
+	computed_values_will_change_                   WillChange
+	computed_values_stroke_dashoffset_             LengthPercentage
+	computed_values_stroke_width_                  LengthPercentage
+	computed_values_cx_                            LengthPercentage
+	computed_values_cy_                            LengthPercentage
+	computed_values_r_                             LengthPercentage
+	computed_values_rx_                            LengthPercentageOrAuto
+	computed_values_ry_                            LengthPercentageOrAuto
+	computed_values_x_                             LengthPercentage
+	computed_values_y_                             LengthPercentage
+	computed_values_column_count_                  ?int
+	computed_values_column_width_                  Size
+	computed_values_column_height_                 Size
+	computed_values_outline_width_                 CSSPixels
+	computed_values_transition_delay_              Time
+	computed_values_webkit_text_fill_color_        Color = Color{0, 0, 0, 255}
+	computed_values_stop_color_                    Color = Color{0, 0, 0, 255}
+	computed_values_flood_color_                   Color = Color{0, 0, 0, 255}
+	computed_values_outline_color_                 Color = Color{0, 0, 0, 255}
+	computed_values_fill_                          ?SVGPaint
+	computed_values_stroke_                        ?SVGPaint
+	computed_values_mask_                          ?MaskReference
+	computed_values_mask_image_                    ?ImageStyleValue
+	computed_values_clip_path_                     ?ClipPathReference
+	computed_values_text_shadow_                   []ShadowData
+	computed_values_box_shadow_                    []ShadowData
+	computed_values_scrollbar_color_               ScrollbarColorData
+	computed_values_counter_increment_             []CounterData
+	computed_values_counter_reset_                 []CounterData
+	computed_values_counter_set_                   []CounterData
 }
+
+pub type ComputedValues = ComputedProperties
+
+pub type ImmutableComputedValues = ComputedValues
+
+pub type MutableComputedValues = ComputedValues
 
 pub fn ComputedProperties.new() &ComputedProperties {
 	return &ComputedProperties{
@@ -1857,24 +1630,6 @@ pub fn ComputedProperties.new() &ComputedProperties {
 		animated_property_inherited_: []u8{len: (number_of_longhand_properties + 7) / 8}
 		animated_property_result_of_transition_: []u8{len: (number_of_longhand_properties + 7) / 8}
 		animated_property_values_: map[PropertyID]&dom.StyleValue{}
-	}
-}
-
-fn (c &ComputedProperties) clone_for_style_sharing() &ComputedProperties {
-	return &ComputedProperties{
-		property_values_: c.property_values_.clone()
-		property_important_: c.property_important_.clone()
-		property_inherited_: c.property_inherited_.clone()
-		animated_property_inherited_: c.animated_property_inherited_.clone()
-		animated_property_result_of_transition_: c.animated_property_result_of_transition_.clone()
-		animated_property_values_: map[PropertyID]&dom.StyleValue{}
-		display_before_box_type_transformation_: c.display_before_box_type_transformation_
-		line_height_: c.line_height_
-		attempted_pseudo_class_matches_: map[string]bool{}
-		style_sharing_identity_: c.style_sharing_identity_
-		viewport_rect_: c.viewport_rect_
-		root_font_size_px_: c.root_font_size_px_
-		root_line_height_px_: c.root_line_height_px_
 	}
 }
 
@@ -1997,7 +1752,7 @@ pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedP
 	return wrapper
 }
 
-pub fn (c &ComputedProperties) for_each_property(callback fn(PropertyID, &dom.StyleValue)) {
+pub fn (c &ComputedProperties) for_each_property(callback fn (PropertyID, &dom.StyleValue)) {
 	for index, value in c.property_values_ {
 		if value != unsafe { nil } {
 			if property_id := property_id_from_longhand_index(index) {
@@ -2187,19 +1942,11 @@ pub fn (c &ComputedProperties) size_value(property_id PropertyID) Size {
 	if parsed is LengthStyleValue {
 		return Size.make_length(parsed.length())
 	}
-	if parsed is StubStyleValue && parsed.type_ == .fit_content {
-		text := parsed.serialization.trim_space()
-		if text == 'fit-content' {
-			return Size.make_fit_content_without_available_space()
+	if parsed is FitContentStyleValue {
+		if available_space := parsed.length_percentage() {
+			return Size.make_fit_content(LengthPercentage.from_style_value_logic(available_space))
 		}
-		if text.starts_with('fit-content(') && text.ends_with(')') {
-			inner := text['fit-content('.len..text.len - 1]
-			mut parser := Parser.from_css_text(inner)
-			mut tokens := ComponentValueStream.new(parser.component_values)
-			if inner_value := parser.parse_length_percentage_value(mut tokens) {
-				return Size.make_fit_content(LengthPercentage.from_style_value_logic(inner_value))
-			}
-		}
+		return Size.make_fit_content_without_available_space()
 	}
 	return Size.make_auto()
 }
@@ -2599,13 +2346,17 @@ pub fn (c &ComputedProperties) background_layers() []BackgroundLayerData {
 		mut layer := BackgroundLayerData{
 			image: image.css_text
 			attachment: keyword_to_background_attachment_for_computed_properties(computed_interpolation_style_value_keyword(attachment_value) or {
-				Keyword.scroll}) or { BackgroundAttachment.scroll }
+				Keyword.scroll
+			}) or { BackgroundAttachment.scroll }
 			blend_mode: keyword_to_mix_blend_mode_for_computed_properties(computed_interpolation_style_value_keyword(blend_value) or {
-				Keyword.normal}) or { MixBlendMode.normal }
+				Keyword.normal
+			}) or { MixBlendMode.normal }
 			clip: keyword_to_background_box_for_computed_properties(computed_interpolation_style_value_keyword(clip_value) or {
-				Keyword.border_box}, .border_box)
+				Keyword.border_box
+			}, .border_box)
 			origin: keyword_to_background_box_for_computed_properties(computed_interpolation_style_value_keyword(origin_value) or {
-				Keyword.padding_box}, .padding_box)
+				Keyword.padding_box
+			}, .padding_box)
 		}
 		if parsed_x := style_value_logic_from_dom(.background_position_x, position_x_value) {
 			if parsed_x is EdgeStyleValue {
@@ -2821,8 +2572,10 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 		return ContentDataAndQuoteNestingLevel{
 			content_data: ContentData{
 				type_: if keyword == .none_ {
-					ContentDataType.none_} else {
-					ContentDataType.normal}
+					ContentDataType.none_
+				} else {
+					ContentDataType.normal
+				}
 			}
 			final_quote_nesting_level: initial_quote_nesting_level
 		}
@@ -4520,8 +4273,10 @@ pub fn (c &ComputedProperties) animations(abstract_element &dom.AbstractElement)
 		animations << ComputedAnimationProperties{
 			duration: duration
 			duration_string: if duration_keyword == .auto {
-				'auto'} else {
-				''}
+				'auto'
+			} else {
+				''
+			}
 			timing_function: EasingFunction.from_style_value(timing_function_values[i])
 			iteration_count: computed_interpolation_animation_iteration_count_from_style_value(iteration_count_values[i])
 			direction: computed_interpolation_animation_direction_from_style_value(direction_values[i])
@@ -4624,14 +4379,14 @@ fn computed_interpolation_animation_name_from_style_value(value &dom.StyleValue)
 }
 
 fn computed_interpolation_animation_timeline_from_style_value(value &dom.StyleValue, abstract_element &dom.AbstractElement) ?&AnimationTimeline {
-	_ = abstract_element
 	keyword := computed_interpolation_style_value_keyword(value) or { Keyword.invalid }
 
 	// https://drafts.csswg.org/css-animations-2/#animation-timeline
 	if keyword == .auto {
 		// auto
 		// The animation's timeline is a DocumentTimeline, more specifically the default document timeline.
-		return &AnimationTimeline{}
+		style_computer := css_style_computer_for(abstract_element.document())
+		return style_computer.document_timeline_
 	}
 
 	if keyword == .none_ {
@@ -4663,7 +4418,8 @@ fn computed_interpolation_animation_timeline_from_style_value(value &dom.StyleVa
 	//
 	// FIXME: We fall back to document timeline for now as though we don't support the `animation-timeline` property at
 	//        all
-	return &AnimationTimeline{}
+	style_computer := css_style_computer_for(abstract_element.document())
+	return style_computer.document_timeline_
 }
 
 pub fn (c &ComputedProperties) transitions() []TransitionProperties {
@@ -5361,7 +5117,6 @@ pub fn (c &ComputedProperties) will_change() WillChange {
 		}
 	}
 	return WillChange{
-		is_auto: false
 		names: names
 	}
 }
@@ -5706,12 +5461,6 @@ pub enum InterpolableValueType {
 	integer
 }
 
-pub struct AcceptedTypeRange {
-pub mut:
-	min f64
-	max f64
-}
-
 pub struct InterpolationCalculationContext {
 pub mut:
 	property             PropertyID
@@ -5783,33 +5532,6 @@ pub fn interpolate_discrete(from &dom.StyleValue, to &dom.StyleValue, delta f64,
 		return unsafe { to }
 	}
 	return unsafe { from }
-}
-
-fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
-	return match property_id {
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .direction, .math_depth, .math_style, .contain, .container_type, .math_shift, .scroll_behavior, .scroll_timeline_axis, .scroll_timeline_name, .timeline_scope, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .unicode_bidi, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .will_change, .writing_mode, .resize {
-			.none_
-		}
-		.accent_color, .aspect_ratio, .background_color, .border_block_end_color, .border_block_end_width, .border_block_start_color, .border_block_start_width, .border_bottom_color, .border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_image_outset, .border_image_slice, .border_image_width, .border_inline_end_color, .border_inline_end_width, .border_inline_start_color, .border_inline_start_width, .border_left_color, .border_left_width, .border_right_color, .border_right_width, .border_start_end_radius, .border_start_start_radius, .border_top_color, .border_top_width, .border_top_left_radius, .border_top_right_radius, .border_spacing, .block_size, .bottom, .caret_color, .color, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .flood_color, .flood_opacity, .font_weight, .font_width, .flex_grow, .flex_shrink, .column_count, .column_width, .column_height, .column_gap, .row_gap, .height, .inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .left, .letter_spacing, .line_height, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .opacity, .order, .orphans, .widows, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .perspective, .perspective_origin, .right, .scrollbar_color, .shape_margin, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .tab_size, .text_decoration_color, .text_decoration_thickness, .text_underline_offset, .text_indent, .top, .transform_origin, .vertical_align, .width, .cx, .cy, .x, .y, .r, .rx, .ry, .webkit_text_fill_color, .word_spacing, .scrollbar_width, .z_index, .flex_basis, .clip, .grid_auto_columns, .grid_auto_rows, .counter_increment, .counter_reset, .counter_set, .font_size, .fill, .stroke, .clip_path, .shape_outside {
-			.by_computed_value
-		}
-		.content_visibility, .visibility, .display, .box_shadow, .text_shadow, .stroke_dasharray, .grid_template_columns, .grid_template_rows, .filter, .backdrop_filter, .font_style, .font_variation_settings, .rotate, .scale, .transform, .translate {
-			.custom
-		}
-		.background_clip, .background_origin, .background_position_x, .background_position_y, .background_size, .mask_position, .mask_size {
-			.repeatable_list
-		}
-		.object_position {
-			.repeatable_list
-		}
-		.anchor_name, .anchor_scope, .background_attachment, .background_blend_mode, .background_image, .background_repeat, .border_block_end_style, .border_block_start_style, .border_bottom_style, .border_collapse, .border_image_repeat, .border_image_source, .border_inline_end_style, .border_inline_start_style, .border_left_style, .border_right_style, .border_top_style, .box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation, .color_scheme, .empty_cells, .fill_rule, .float_, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span, .image_rendering, .isolation, .list_style_image, .list_style_position, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_repeat, .mask_type, .mix_blend_mode, .object_fit, .overflow_block, .overflow_inline, .overflow_x, .overflow_y, .overflow_wrap, .pointer_events, .position, .position_anchor, .position_area, .position_try_fallbacks, .position_try_order, .position_visibility, .paint_order, .scrollbar_gutter, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify, .text_overflow, .text_rendering, .text_transform, .text_underline_position, .text_wrap_mode, .text_wrap_style, .transform_box, .transform_style, .touch_action, .user_select, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break, .dominant_baseline, .quotes, .list_style_type, .font_family, .grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow, .grid_template_areas, .cursor, .font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .content, .font_variant_alternates {
-			.discrete
-		}
-		else {
-			// Shorthands are expanded before reaching this longhand-only classifier.
-			.none_
-		}
-	}
 }
 
 pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from &dom.StyleValue, a_to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
@@ -6849,8 +6571,10 @@ fn interpolation_filter_initial_value(value FilterStyleValue) ?FilterStyleValue 
 					.invert,
 					.sepia,
 				] {
-					0} else {
-					1}))
+					0
+				} else {
+					1
+				}))
 			})
 		}
 		URL {
@@ -6911,8 +6635,10 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 					offset_x: x
 					offset_y: y
 					radius: if if delta >= 0.5 { to.radius != none } else { from.radius != none } {
-						interpolated_radius} else {
-						none}
+						interpolated_radius
+					} else {
+						none
+					}
 					color: StyleValue(ColorStyleValue.create(interpolate_css_color(from_color, to_color, delta, .modern)))
 				})
 			} else {
@@ -7566,41 +7292,6 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 }
 
 // --- Style invalidation after style changes ---
-fn property_affects_layout_generated_metadata_boundary(property_id PropertyID) bool {
-	return match property_id {
-		// C++ handles ContentVisibility as a full layout-tree rebuild before the
-		// generated property metadata check. For the currently translated
-		// PropertyID set, the missing generated metadata has no remaining
-		// layout-affecting properties.
-		.accent_color, .anchor_scope, .animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .background_attachment, .background_blend_mode, .background_clip, .background_color, .background_image, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .border_block_end_color, .border_block_start_color, .border_bottom_color, .border_bottom_left_radius, .border_bottom_right_radius, .border_end_end_radius, .border_end_start_radius, .border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source, .border_image_width, .border_inline_end_color, .border_inline_start_color, .border_left_color, .border_right_color, .border_start_end_radius, .border_start_start_radius, .border_top_color, .border_top_left_radius, .border_top_right_radius, .caret_color, .clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_end_end_shape, .corner_end_start_shape, .corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .font_feature_settings, .font_variation_settings, .font_weight, .font_width, .image_rendering, .line_height, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth, .math_style, .mix_blend_mode, .object_fit, .object_position, .opacity, .outline_color, .outline_offset, .outline_style, .outline_width, .perspective_origin, .pointer_events, .scrollbar_color, .scrollbar_gutter, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .rotate, .scale, .scroll_timeline_axis, .scroll_timeline_name, .timeline_scope, .transform, .transform_box, .transform_origin, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .translate, .touch_action, .user_select, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .view_transition_name, .will_change, .scrollbar_width, .scroll_behavior, .resize, .text_decoration_color, .text_decoration_line, .text_decoration_style, .text_decoration_thickness, .text_overflow, .text_rendering, .webkit_text_fill_color, .z_index, .box_shadow, .text_shadow, .clip, .stroke_dasharray, .filter, .backdrop_filter, .cursor, .fill, .stroke, .clip_path {
-			false
-		}
-		.anchor_name, .aspect_ratio, .block_size, .bottom, .border_block_end_style, .border_block_end_width, .border_block_start_style, .border_block_start_width, .border_bottom_style, .border_bottom_width, .border_collapse, .border_inline_end_style, .border_inline_end_width, .border_inline_start_style, .border_inline_start_width, .border_left_style, .border_left_width, .border_right_style, .border_right_width, .border_spacing, .border_top_style, .border_top_width, .box_sizing, .caption_side, .clear, .direction, .empty_cells, .float_, .font_kerning, .font_language_override, .font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span, .column_count, .column_width, .column_height, .column_gap, .row_gap, .contain, .container_type, .height, .inline_size, .inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start, .isolation, .left, .letter_spacing, .list_style_image, .list_style_position, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .math_shift, .max_block_size, .max_height, .max_inline_size, .max_width, .min_block_size, .min_height, .min_inline_size, .min_width, .order, .orphans, .widows, .overflow_block, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .padding_block_end, .padding_block_start, .padding_bottom, .padding_inline_end, .padding_inline_start, .padding_left, .padding_right, .padding_top, .paint_order, .perspective, .position, .position_anchor, .position_area, .position_try_fallbacks, .position_try_order, .position_visibility, .right, .shape_margin, .shape_rendering, .tab_size, .table_layout, .text_align, .text_anchor, .text_justify, .text_underline_offset, .text_underline_position, .text_indent, .text_transform, .text_wrap_mode, .text_wrap_style, .top, .transform_style, .unicode_bidi, .vertical_align, .visibility, .white_space_collapse, .white_space_trim, .width, .word_break, .word_spacing, .writing_mode, .cx, .cy, .x, .y, .r, .rx, .ry, .dominant_baseline, .display, .flex_basis, .quotes, .list_style_type, .font_family, .grid_column_start, .grid_column_end, .grid_row_start, .grid_row_end, .grid_auto_flow, .grid_auto_columns, .grid_auto_rows, .grid_template_columns, .grid_template_rows, .grid_template_areas, .counter_increment, .counter_reset, .counter_set, .font_size, .font_variant_ligatures, .font_variant_numeric, .font_variant_east_asian, .shape_outside, .content, .font_variant_alternates {
-			true
-		}
-		else {
-			// Shorthands are expanded before reaching this longhand-only classifier.
-			false
-		}
-	}
-}
-
-fn property_affects_stacking_context_generated_metadata_boundary(property_id PropertyID) bool {
-	return match property_id {
-		// None of the currently translated longhands maps to the C++ generated
-		// affects-stacking-context metadata. ContentVisibility is handled by the
-		// full-invalidation branch above.
-		.contain, .container_type, .mask_image, .mix_blend_mode, .opacity, .perspective, .rotate, .scale, .transform, .translate, .view_transition_name, .will_change, .z_index {
-			true
-		}
-		.accent_color, .anchor_name, .anchor_scope, .animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .aspect_ratio, .background_attachment, .background_blend_mode, .background_clip, .background_color, .background_image, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size, .border_bottom_color, .border_bottom_style, .border_bottom_width, .border_bottom_left_radius, .border_bottom_right_radius, .border_collapse, .border_image_outset, .border_image_repeat, .border_image_slice, .border_image_source, .border_image_width, .border_left_color, .border_left_style, .border_left_width, .border_right_color, .border_right_style, .border_right_width, .border_top_color, .border_top_style, .border_top_width, .border_top_left_radius, .border_top_right_radius, .box_sizing, .caption_side, .caret_color, .clear, .clip_rule, .color, .color_interpolation, .color_scheme, .content_visibility, .corner_bottom_left_shape, .corner_bottom_right_shape, .corner_top_left_shape, .corner_top_right_shape, .fill_opacity, .fill_rule, .flood_color, .flood_opacity, .float_, .direction, .empty_cells, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_style, .font_variant_caps, .font_variant_emoji, .font_variant_position, .font_variation_settings, .font_weight, .font_width, .flex_grow, .flex_shrink, .flex_direction, .flex_wrap, .align_content, .align_items, .align_self, .justify_content, .justify_items, .justify_self, .appearance, .column_span, .column_count, .column_width, .column_height, .column_gap, .row_gap, .image_rendering, .isolation, .letter_spacing, .line_height, .list_style_image, .list_style_position, .mask_clip, .mask_composite, .mask_mode, .mask_origin, .mask_position, .mask_repeat, .mask_size, .mask_type, .math_depth, .math_shift, .math_style, .object_fit, .object_position, .order, .orphans, .widows, .outline_color, .outline_offset, .outline_style, .outline_width, .overflow_block, .overflow_clip_margin_block_end, .overflow_clip_margin_block_start, .overflow_clip_margin_bottom, .overflow_clip_margin_inline_end, .overflow_clip_margin_inline_start, .overflow_clip_margin_left, .overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .perspective_origin, .pointer_events, .position_area, .position_try_fallbacks, .position_try_order, .paint_order, .scroll_behavior, .scroll_timeline_axis, .scrollbar_color, .scrollbar_gutter, .shape_margin, .shape_rendering, .position, .position_anchor, .position_visibility, .scroll_timeline_name, .shape_image_threshold, .stop_color, .stop_opacity, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit, .stroke_opacity, .stroke_width, .stroke_dashoffset, .tab_size, .table_layout, .text_align, .text_anchor, .text_decoration_color, .text_decoration_line, .text_decoration_style, .text_decoration_thickness, .text_underline_offset, .text_underline_position, .text_indent, .text_justify, .text_overflow, .text_rendering, .text_transform, .text_wrap_mode, .text_wrap_style, .timeline_scope, .transform_box, .transform_origin, .transform_style, .touch_action, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .unicode_bidi, .user_select, .vertical_align, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .writing_mode, .scrollbar_width, .resize, .visibility, .webkit_text_fill_color, .white_space_collapse, .white_space_trim, .word_break, .word_spacing, .cx, .cy, .x, .y, .r, .rx, .ry {
-			false
-		}
-		else {
-			false
-		}
-	}
-}
 
 fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&dom.StyleValue) bool {
 	style_value := unsafe { value or { return false } }
@@ -7718,11 +7409,11 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 		}
 		// Of course, we still have to repaint on any visibility change.
 		invalidation.repaint = true
-	} else if property_affects_layout_generated_metadata_boundary(property_id) {
+	} else if property_affects_layout(property_id) {
 		invalidation.relayout = true
 	}
 
-	if property_affects_stacking_context_generated_metadata_boundary(property_id) {
+	if property_affects_stacking_context(property_id) {
 		// z-index changes always require rebuilding the stacking context tree because
 		// the value determines painting order within the tree, not just whether a
 		// stacking context is created. During tree construction, elements with
@@ -8017,7 +7708,7 @@ pub fn (s &InvalidationSet) properties() ComputedInterpolationInvalidationProper
 	return s.properties_.clone()
 }
 
-pub fn (s &InvalidationSet) for_each_property(callback fn(InvalidationProperty) bool) {
+pub fn (s &InvalidationSet) for_each_property(callback fn (InvalidationProperty) bool) {
 	if s.needs_invalidate_self_ {
 		if !callback(InvalidationProperty.invalidate_self()) {
 			return
@@ -8037,10 +7728,15 @@ pub fn (s &InvalidationSet) for_each_property(callback fn(InvalidationProperty) 
 
 pub fn (s &InvalidationSet) to_string() string {
 	mut parts := []string{}
-	s.for_each_property(fn [mut parts] (property InvalidationProperty) bool {
+	if s.needs_invalidate_self_ {
+		parts << InvalidationProperty.invalidate_self().to_string()
+	}
+	if s.needs_invalidate_whole_subtree_ {
+		parts << InvalidationProperty.invalidate_whole_subtree().to_string()
+	}
+	for property in s.properties_ {
 		parts << property.to_string()
-		return true
-	})
+	}
 	return parts.join(', ')
 }
 
@@ -8625,6 +8321,7 @@ pub fn (f &CountingBloomFilter) may_contain(hash u32) bool {
 	return f.buckets[f.hash1(hash)] != 0 && f.buckets[f.hash2(hash)] != 0
 }
 
+@[heap]
 pub struct MatchingRule {
 pub mut:
 	shadow_root                  ?&dom.ShadowRoot
@@ -8645,13 +8342,13 @@ pub mut:
 pub struct LayerMatchingRules {
 pub mut:
 	qualified_layer_name string
-	rules                []MatchingRule
+	rules                []&MatchingRule
 }
 
 pub struct MatchingRuleSet {
 pub mut:
-	user_agent_rules []MatchingRule
-	user_rules       []MatchingRule
+	user_agent_rules []&MatchingRule
+	user_rules       []&MatchingRule
 	author_rules     []LayerMatchingRules
 }
 
@@ -8686,24 +8383,16 @@ pub mut:
 
 pub struct RuleCache {
 pub mut:
-	rules_by_id                  map[string][]MatchingRule
-	rules_by_class               map[string][]MatchingRule
-	rules_by_tag_name            map[string][]MatchingRule
-	rules_by_attribute_name      map[string][]MatchingRule
-	rules_by_pseudo_element      map[PseudoElement][]MatchingRule
-	root_rules                   []MatchingRule
-	slotted_rules                []MatchingRule
-	part_rules                   []MatchingRule
-	other_rules                  []MatchingRule
+	rules_by_id                  map[string][]&MatchingRule
+	rules_by_class               map[string][]&MatchingRule
+	rules_by_tag_name            map[string][]&MatchingRule
+	rules_by_attribute_name      map[string][]&MatchingRule
+	rules_by_pseudo_element      map[PseudoElement][]&MatchingRule
+	root_rules                   []&MatchingRule
+	slotted_rules                []&MatchingRule
+	part_rules                   []&MatchingRule
+	other_rules                  []&MatchingRule
 	rules_by_animation_keyframes map[string]&KeyFrameSet
-}
-
-pub struct StyleComputationContextStub {
-pub mut:
-	property_id               PropertyID
-	length_resolution_context LengthResolutionContext = LengthResolutionContext.default()
-	color_scheme              ?PreferredColorScheme
-	abstract_element          ?dom.AbstractElement
 }
 
 @[heap]
@@ -8712,36 +8401,42 @@ pub mut:
 	document_                              &dom.Document = unsafe { nil }
 	default_font_metrics                   LengthFontMetrics = LengthFontMetrics.default()
 	root_element_font_metrics              LengthFontMetrics = LengthFontMetrics.default()
-	cached_font_computation_context        ?StyleComputationContextStub
-	cached_line_height_computation_context ?StyleComputationContextStub
-	cached_generic_computation_context     ?StyleComputationContextStub
+	cached_font_computation_context        ?ComputationContext
+	cached_line_height_computation_context ?ComputationContext
+	cached_generic_computation_context     ?ComputationContext
 	viewport_rect_                         CSSPixelRect
 	ancestor_filter_                       CountingBloomFilter = CountingBloomFilter.new()
 	has_result_cache_                      map[string]HasMatchResult
 	css_animation_storage_                 &CSSAnimationStorage = unsafe { nil }
 	css_transition_storage_                &CSSTransitionStorage = unsafe { nil }
+	document_timeline_                     &AnimationTimeline = unsafe { nil }
+	font_computer_                         &FontComputer = unsafe { nil }
+	registered_counter_styles_             map[string]CounterStyle
+	has_registered_counter_styles_         bool
 	animation_time_ms_                     f64
 	transition_generation_                 int
-	style_sharing_cache_                   map[string]&ComputedProperties
-	style_computation_pass_depth_          int
-	style_sharing_enabled_                 bool
 }
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
+	initial_timeline_time := document.last_animation_frame_timestamp_value() or { 0.0 }
 	return &StyleComputer{
 		document_: unsafe { document }
 		viewport_rect_: css_pixel_rect_from_dom_rect(document.viewport_rect())
 		css_animation_storage_: &CSSAnimationStorage{}
 		css_transition_storage_: &CSSTransitionStorage{}
-		style_sharing_cache_: map[string]&ComputedProperties{}
-		style_sharing_enabled_: os.getenv('LADYBIRD_DISABLE_STYLE_SHARING') == ''
+		document_timeline_: AnimationTimeline.document_timeline(document, 0.0, initial_timeline_time)
+		font_computer_: FontComputer.create()
 	}
 }
 
-pub fn StyleComputer.for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn(PropertyID, &dom.StyleValue)) {
-	// Cascaded properties store opaque dom.StyleValues that only carry the serialized text. To expand a shorthand we
-	// re-parse that text into a typed ShorthandStyleValue and run the typed expansion, bridging each longhand back to
-	// a dom.StyleValue.
+pub fn (computer &StyleComputer) font_computer() &FontComputer {
+	return computer.font_computer_
+}
+
+pub fn StyleComputer.for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn (PropertyID, &dom.StyleValue)) {
+	// Cascaded properties retain typed StyleValue handles. Expand a typed
+	// shorthand and bridge each resulting longhand across the DOM/CSS module
+	// boundary; only DOM-authored boundary values need the parser fallback.
 	if property_is_shorthand(property_id) {
 		if typed_value := style_value_logic_from_dom(property_id, value) {
 			for_each_typed_property_expanding_shorthands(property_id, typed_value, fn [set_longhand_property] (longhand_id PropertyID, longhand_value StyleValue) {
@@ -8774,8 +8469,10 @@ pub fn StyleComputer.get_animated_inherit_value(property_id PropertyID, abstract
 	return AnimatedInheritValue{
 		value: animated_value
 		is_result_of_transition: if parent.is_animated_property_result_of_transition(property_id) {
-			AnimatedPropertyResultOfTransition.yes} else {
-			AnimatedPropertyResultOfTransition.no}
+			AnimatedPropertyResultOfTransition.yes
+		} else {
+			AnimatedPropertyResultOfTransition.no
+		}
 	}
 }
 
@@ -8795,33 +8492,35 @@ pub fn (mut s StyleComputer) reset_has_result_cache() {
 	s.has_result_cache_.clear()
 }
 
-fn style_computer_element_hashes(element &dom.Element) []u32 {
-	mut hashes := []u32{}
-	hashes << selector_string_hash(to_ascii_lowercase(element.local_name()))
+fn for_each_element_hash(element &dom.Element, callback fn (u32)) {
+	callback(selector_string_hash(to_ascii_lowercase(element.local_name())))
 	if id := element.id() {
-		hashes << selector_string_hash(id)
+		callback(selector_string_hash(id))
 	}
 	if class_attribute := element.get_attribute('class') {
 		for class_name in class_attribute.fields() {
-			hashes << selector_string_hash(class_name)
+			callback(selector_string_hash(class_name))
 		}
 	}
 	for attribute_name in element.get_attribute_names() {
-		hashes << selector_string_hash(to_ascii_lowercase(attribute_name))
+		callback(selector_string_hash(to_ascii_lowercase(attribute_name)))
 	}
-	return hashes
 }
 
 pub fn (mut s StyleComputer) push_ancestor(element &dom.Element) {
-	for hash in style_computer_element_hashes(element) {
-		s.ancestor_filter_.increment(hash)
-	}
+	filter := &s.ancestor_filter_
+	for_each_element_hash(element, fn [filter] (hash u32) {
+		mut mutable_filter := unsafe { &CountingBloomFilter(filter) }
+		mutable_filter.increment(hash)
+	})
 }
 
 pub fn (mut s StyleComputer) pop_ancestor(element &dom.Element) {
-	for hash in style_computer_element_hashes(element) {
-		s.ancestor_filter_.decrement(hash)
-	}
+	filter := &s.ancestor_filter_
+	for_each_element_hash(element, fn [filter] (hash u32) {
+		mut mutable_filter := unsafe { &CountingBloomFilter(filter) }
+		mutable_filter.decrement(hash)
+	})
 }
 
 pub fn (s &StyleComputer) create_document_style() &ComputedProperties {
@@ -8845,6 +8544,13 @@ pub fn (s &StyleComputer) compute_style(abstract_element dom.AbstractElement) &C
 	// an empty ComputedProperties defensively (upstream dereferences the returned pointer).
 	scope := css_style_scope_for(abstract_element)
 	return s.compute_style_impl(abstract_element, .normal, none, scope) or {
+		ComputedProperties.new()
+	}
+}
+
+pub fn (s &StyleComputer) compute_style_tracking_custom_property_changes(abstract_element dom.AbstractElement, did_change_custom_properties &bool) &ComputedProperties {
+	scope := css_style_scope_for(abstract_element)
+	return s.compute_style_impl(abstract_element, .normal, did_change_custom_properties, scope) or {
 		ComputedProperties.new()
 	}
 }
@@ -8873,7 +8579,12 @@ pub fn (s &StyleComputer) compute_pseudo_element_style_if_needed(abstract_elemen
 	return s.compute_style_impl(abstract_element, .create_pseudo_element_style_if_needed, none, scope)
 }
 
-pub fn (s &StyleComputer) collect_matching_rules(abstract_element dom.AbstractElement, origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []MatchingRule {
+pub fn (s &StyleComputer) compute_pseudo_element_style_if_needed_tracking_custom_property_changes(abstract_element dom.AbstractElement, did_change_custom_properties &bool) ?&ComputedProperties {
+	scope := css_style_scope_for(abstract_element)
+	return s.compute_style_impl(abstract_element, .create_pseudo_element_style_if_needed, did_change_custom_properties, scope)
+}
+
+pub fn (s &StyleComputer) collect_matching_rules(abstract_element dom.AbstractElement, origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []&MatchingRule {
 	return style_computer_collect_matching_rules_without_scope_boundary(s, abstract_element, origin, mut attempted_pseudo_class_matches, qualified_layer_name)
 }
 
@@ -8930,15 +8641,20 @@ pub fn StyleComputer.relative_size_mapping(size RelativeSize, inherited_font_siz
 	}
 }
 
+fn is_monospace(value &dom.StyleValue) bool {
+	style_value := typed_style_value_logic_from_dom(value) or { return false }
+	if style_value !is StyleValueList {
+		return false
+	}
+
+	value_list := style_value as StyleValueList
+	values := value_list.values()
+	return values.len == 1 && values[0].to_keyword() == .monospace
+}
+
 pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) ?&dom.StyleValue {
 	font_family := cascaded_properties.property(.font_family) or { return none }
-	parsed_family := style_value_logic_from_dom(.font_family, font_family) or { return none }
-	mut is_single_monospace := parsed_family.to_keyword() == .monospace
-	if parsed_family is StyleValueList {
-		family_list := parsed_family as StyleValueList
-		is_single_monospace = family_list.values().len == 1 && family_list.values()[0].to_keyword() == .monospace
-	}
-	if !is_single_monospace {
+	if !is_monospace(font_family) {
 		return none
 	}
 
@@ -9188,7 +8904,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 				properties.set_property_important(property_id, .yes)
 			}
 			value = cascaded_style_property.value
-			requires_computation = computed_interpolation_property_requires_computation_with_cascaded_value(property_id)
+			requires_computation = property_requires_computation_with_cascaded_value(property_id)
 		}
 		if property_id == .font_size && value == none && recascaded_font_size != none {
 			continue
@@ -9221,7 +8937,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 					value = inherited_value
 				}
 			}
-			requires_computation = computed_interpolation_property_requires_computation_with_inherited_value(property_id)
+			requires_computation = property_requires_computation_with_inherited_value(property_id)
 			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id, abstract_element) {
 				properties.set_animated_property(property_id, animated_inherit.value, animated_inherit.is_result_of_transition, .yes)
 			}
@@ -9230,11 +8946,11 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		if style_value := value {
 			if computed_interpolation_style_value_is_initial(style_value) || computed_interpolation_style_value_is_unset(style_value) || (should_inherit && !inherited_source_available) {
 				value = computed_interpolation_property_initial_value(property_id)
-				requires_computation = computed_interpolation_property_requires_computation_with_initial_value(property_id)
+				requires_computation = property_requires_computation_with_initial_value(property_id)
 			}
 		} else {
 			value = computed_interpolation_property_initial_value(property_id)
-			requires_computation = computed_interpolation_property_requires_computation_with_initial_value(property_id)
+			requires_computation = property_requires_computation_with_initial_value(property_id)
 		}
 
 		style_value := value or { continue }
@@ -9294,7 +9010,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 
 	if s.css_transition_storage_ != unsafe { nil } {
 		mut transition_storage := s.css_transition_storage_
-		compute_transitioned_properties_for_storage(properties, abstract_element, mut transition_storage)
+		compute_transitioned_properties(properties, abstract_element, mut transition_storage)
 		if old_dom_style := abstract_element.computed_properties() {
 			if old_style := computed_properties_from_dom(old_dom_style) {
 				s.start_needed_transitions(old_style, mut properties, abstract_element)
@@ -9651,37 +9367,113 @@ pub fn (s &StyleComputer) should_reject_with_ancestor_filter(selector Selector) 
 	return false
 }
 
-pub fn StyleComputer.compute_value_of_custom_property(abstract_element dom.AbstractElement, custom_property string) &dom.StyleValue {
-	value := abstract_element.get_custom_property(custom_property) or {
-		if initial_value := abstract_element.document().custom_property_initial_value(custom_property) {
-			return &dom.StyleValue{
-				css_text: initial_value
-			}
+fn custom_property_initial_style_value(document &dom.Document, name string) &dom.StyleValue {
+	if initial_value := document.custom_property_initial_value(name) {
+		return parse_custom_property_value(initial_value)
+	}
+	return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
+}
+
+fn dom_style_value_from_custom_property_bridge(value &dom.CSSStyleValue_) ?&dom.StyleValue {
+	if value.css_value_handle == unsafe { nil } {
+		return none
+	}
+	return unsafe { &dom.StyleValue(value.css_value_handle) }
+}
+
+fn compute_value_of_custom_property_with_guarded_contexts(abstract_element dom.AbstractElement, custom_property string, mut guarded_contexts GuardedSubstitutionContexts) &dom.StyleValue {
+	bridged_value := abstract_element.get_custom_property(custom_property) or {
+		return custom_property_initial_style_value(abstract_element.document(), custom_property)
+	}
+	if bridged_value.guaranteed_invalid {
+		return custom_property_initial_style_value(abstract_element.document(), custom_property)
+	}
+	value := dom_style_value_from_custom_property_bridge(bridged_value) or {
+		parse_custom_property_value(bridged_value.css_text)
+	}
+	typed := typed_style_value_logic_from_dom(value) or {
+		return value
+	}
+	keyword := typed.to_keyword()
+	if keyword == .initial {
+		return custom_property_initial_style_value(abstract_element.document(), custom_property)
+	}
+	if keyword in [.inherit, .unset] {
+		inherit_from := abstract_element.element_to_inherit_style_from() or {
+			return custom_property_initial_style_value(abstract_element.document(), custom_property)
 		}
-		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
+		inherited := inherit_from.get_custom_property(custom_property) or {
+			return custom_property_initial_style_value(abstract_element.document(), custom_property)
+		}
+		return dom_style_value_from_custom_property_bridge(inherited) or {
+			parse_custom_property_value(inherited.css_text)
+		}
 	}
-	if value.guaranteed_invalid {
-		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
+	if typed !is UnresolvedStyleValue || !typed.substitution_functions_presence.has_any() {
+		return value
 	}
-	mut guarded_contexts := GuardedSubstitutionContexts{}
-	result := substitute_arbitrary_substitution_functions_for_element(abstract_element, mut guarded_contexts, parse_component_values_for_value_logic(value.css_text), SubstitutionContext{
+
+	result := substitute_arbitrary_substitution_functions_for_element(abstract_element, mut guarded_contexts, typed.tokens, SubstitutionContext{
 		dependency_type: .property
 		first: custom_property
 	})
 	if contains_guaranteed_invalid_value(result) {
 		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
 	}
-	return &dom.StyleValue{
-		css_text: parser_component_values_to_string(result).trim_space()
-	}
+	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create(result)))
 }
 
-pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified_value &dom.StyleValue, get_property_specified_value fn(PropertyID) &dom.StyleValue, computation_context StyleComputationContextStub, device_pixels_per_css_pixel f64) &dom.StyleValue {
-	absolutized_value := unsafe { specified_value }
+pub fn StyleComputer.compute_value_of_custom_property(abstract_element dom.AbstractElement, custom_property string) &dom.StyleValue {
+	mut guarded_contexts := GuardedSubstitutionContexts{}
+	return compute_value_of_custom_property_with_guarded_contexts(abstract_element, custom_property, mut guarded_contexts)
+}
+
+fn repeat_style_value_list_to_n_elements(style_value &dom.StyleValue, n int) &dom.StyleValue {
+	typed_value := typed_style_value_logic_from_dom(style_value) or {
+		panic('repeat_style_value_list_to_n_elements requires a typed StyleValue')
+	}
+	if typed_value !is StyleValueList {
+		panic('repeat_style_value_list_to_n_elements requires a StyleValueList')
+	}
+	value_list := typed_value as StyleValueList
+	if value_list.size() == n {
+		return unsafe { style_value }
+	}
+
+	mut repeated_values := []StyleValue{cap: n}
+	for i := 0; i < n; i++ {
+		repeated_values << value_list.value_at(i, true)
+	}
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create_collapsible(repeated_values, value_list.separator())))
+}
+
+pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified_value &dom.StyleValue, get_property_specified_value fn (PropertyID) &dom.StyleValue, computation_context ComputationContext, device_pixels_per_css_pixel f64) &dom.StyleValue {
+	typed_specified_value := typed_style_value_logic_from_dom(specified_value) or {
+		panic('StyleComputer.compute_value_of_property requires a typed StyleValue')
+	}
+	typed_absolutized_value := typed_specified_value.absolutized(computation_context)
+	absolutized_value := if typed_absolutized_value == typed_specified_value {
+		unsafe { specified_value }
+	} else {
+		dom_style_value_from_value_logic(typed_absolutized_value)
+	}
 
 	return match property_id {
 		.animation_name {
 			StyleComputer.compute_animation_name(absolutized_value)
+		}
+
+		// NB: The background properties are coordinated at compute time rather than use time,
+		// unlike other coordinating list property groups.
+		.background_attachment, .background_clip, .background_origin, .background_position_x, .background_position_y, .background_repeat, .background_size {
+			background_image := get_property_specified_value(.background_image)
+			typed_background_image := typed_style_value_logic_from_dom(background_image) or {
+				panic('background-image requires a typed StyleValue')
+			}
+			if typed_background_image !is StyleValueList {
+				panic('background-image requires a StyleValueList')
+			}
+			repeat_style_value_list_to_n_elements(absolutized_value, (typed_background_image as StyleValueList).size())
 		}
 		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .outline_width {
 			StyleComputer.compute_border_or_outline_width(absolutized_value, device_pixels_per_css_pixel, computation_context)
@@ -9739,19 +9531,19 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 			StyleComputer.compute_absolutized_value(property_id, absolutized_value, computation_context)
 		}
 		else {
-			unsafe { specified_value }
+			absolutized_value
 		}
 	}
 }
 
-fn style_computation_inheritance_parent(computation_context StyleComputationContextStub) ?dom.AbstractElement {
+fn style_computation_inheritance_parent(computation_context ComputationContext) ?dom.AbstractElement {
 	if abstract_element := computation_context.abstract_element {
 		return abstract_element.element_to_inherit_style_from()
 	}
 	return none
 }
 
-fn computed_interpolation_compute_style_value_list(style_value &dom.StyleValue, compute_entry fn(StyleValue) ?StyleValue) ?&dom.StyleValue {
+fn computed_interpolation_compute_style_value_list(style_value &dom.StyleValue, compute_entry fn (StyleValue) ?StyleValue) ?&dom.StyleValue {
 	mut computed_entries := []StyleValue{}
 	for entry_component_values in parse_a_comma_separated_list_of_component_values_for_value_logic(parse_component_values_for_value_logic(style_value.css_text)) {
 		mut entry_tokens := ComponentValueStream.new(entry_component_values)
@@ -9870,7 +9662,7 @@ fn computed_interpolation_length_from_dom_style_value(style_value &dom.StyleValu
 	return none
 }
 
-pub fn StyleComputer.compute_border_or_outline_width(absolutized_value &dom.StyleValue, device_pixels_per_css_pixel f64, computation_context StyleComputationContextStub) &dom.StyleValue {
+pub fn StyleComputer.compute_border_or_outline_width(absolutized_value &dom.StyleValue, device_pixels_per_css_pixel f64, computation_context ComputationContext) &dom.StyleValue {
 	// https://drafts.csswg.org/css-backgrounds/#border-width
 	// absolute length, snapped as a border width
 	mut absolute_length := computed_interpolation_line_width_keyword_to_css_pixels(absolutized_value.css_text) or {
@@ -9901,7 +9693,7 @@ pub fn StyleComputer.compute_border_or_outline_width(absolutized_value &dom.Styl
 	return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_css_px(snapped_length))))
 }
 
-pub fn StyleComputer.compute_length(absolutized_value &dom.StyleValue, computation_context StyleComputationContextStub) &dom.StyleValue {
+pub fn StyleComputer.compute_length(absolutized_value &dom.StyleValue, computation_context ComputationContext) &dom.StyleValue {
 	length := computed_interpolation_length_from_dom_style_value(absolutized_value) or {
 		return unsafe { absolutized_value }
 	}
@@ -9911,7 +9703,7 @@ pub fn StyleComputer.compute_length(absolutized_value &dom.StyleValue, computati
 	return dom_style_value_from_value_logic(StyleValue(computed_length))
 }
 
-pub fn StyleComputer.compute_absolutized_value(property_id PropertyID, absolutized_value &dom.StyleValue, computation_context StyleComputationContextStub) &dom.StyleValue {
+pub fn StyleComputer.compute_absolutized_value(property_id PropertyID, absolutized_value &dom.StyleValue, computation_context ComputationContext) &dom.StyleValue {
 	parsed_value := style_value_logic_from_dom(property_id, absolutized_value) or {
 		return unsafe { absolutized_value }
 	}
@@ -10098,7 +9890,7 @@ fn computed_interpolation_compute_font_feature_tag_value_list(absolutized_value 
 	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(axis_tags, .comma, .yes)))
 }
 
-pub fn StyleComputer.compute_font_feature_tag_value_list(absolutized_value &dom.StyleValue, computation_context StyleComputationContextStub) &dom.StyleValue {
+pub fn StyleComputer.compute_font_feature_tag_value_list(absolutized_value &dom.StyleValue, computation_context ComputationContext) &dom.StyleValue {
 	_ = computation_context
 	// https://drafts.csswg.org/css-fonts-4/#font-variation-settings-def
 	// https://drafts.csswg.org/css-fonts/#font-feature-settings-prop
@@ -10557,7 +10349,7 @@ pub fn StyleComputer.compute_font_width(absolutized_value &dom.StyleValue) &dom.
 	return dom_style_value_from_value_logic(StyleValue(PercentageStyleValue.create(percentage)))
 }
 
-pub fn StyleComputer.compute_font_variation_settings(absolutized_value &dom.StyleValue, computation_context StyleComputationContextStub) &dom.StyleValue {
+pub fn StyleComputer.compute_font_variation_settings(absolutized_value &dom.StyleValue, computation_context ComputationContext) &dom.StyleValue {
 	_ = computation_context
 	// https://drafts.csswg.org/css-fonts-4/#font-variation-settings-def
 	// https://drafts.csswg.org/css-fonts/#font-feature-settings-prop
@@ -10608,51 +10400,124 @@ pub fn StyleComputer.compute_line_height(absolutized_value &dom.StyleValue, comp
 	return unsafe { absolutized_value }
 }
 
-fn computed_interpolation_opacity_value_from_numeric_value(numeric_value CSSNumericValue) ?f64 {
-	if numeric_value is CSSUnitValue {
-		unit := numeric_value.unit()
-		if unit == 'number' {
-			return clamp_f64(numeric_value.value(), 0.0, 1.0)
-		}
-		if unit == 'percent' {
-			return clamp_f64(numeric_value.value() / 100.0, 0.0, 1.0)
-		}
-	}
-
-	sum := numeric_value.create_a_sum_value() or { return none }
-	if sum.len != 1 {
-		return none
-	}
-	item := sum[0]
-	if item.unit_map.len == 0 {
-		return clamp_f64(item.value, 0.0, 1.0)
-	}
-	if item.unit_map.len == 1 {
-		if exponent := item.unit_map['percent'] {
-			if exponent == 1 {
-				return clamp_f64(item.value / 100.0, 0.0, 1.0)
-			}
-		}
-	}
-	return none
-}
-
 pub fn StyleComputer.compute_opacity(absolutized_value &dom.StyleValue) &dom.StyleValue {
 	// https://drafts.csswg.org/css-color-4/#transparency
 	// specified number, clamped to the range [0,1]
-	numeric_value := CSSNumericValue.parse(absolutized_value.css_text) or {
+	typed := typed_style_value_logic_from_dom(absolutized_value) or {
 		return unsafe { absolutized_value }
 	}
-	value := computed_interpolation_opacity_value_from_numeric_value(numeric_value) or {
-		return unsafe { absolutized_value }
+	value := match typed {
+		NumberStyleValue {
+			clamp_f64(typed.number(), 0.0, 1.0)
+		}
+		CalculatedStyleValue {
+			if typed.resolves_to_number() {
+				typed.resolve_number(CalculationResolutionContext{}) or {
+					return unsafe { absolutized_value }
+				}
+			} else if typed.resolves_to_percentage() {
+				percentage := typed.resolve_percentage(CalculationResolutionContext{}) or {
+					return unsafe { absolutized_value }
+				}
+				percentage.as_fraction()
+			} else {
+				return unsafe { absolutized_value }
+			}
+		}
+		PercentageStyleValue {
+			clamp_f64(typed.percentage().as_fraction(), 0.0, 1.0)
+		}
+		else {
+			return unsafe { absolutized_value }
+		}
 	}
-	return &dom.StyleValue{
-		css_text: serialize_a_number(value)
-	}
+	return dom_style_value_from_value_logic(StyleValue(NumberStyleValue.create(value)))
 }
 
 pub fn StyleComputer.compute_position_area(absolutized_value &dom.StyleValue) &dom.StyleValue {
-	return unsafe { absolutized_value }
+	// The computed value has two axis keywords in grammar order, with the
+	// long block/inline logical spellings converted to their short forms.
+	typed := typed_style_value_logic_from_dom(absolutized_value) or {
+		return unsafe { absolutized_value }
+	}
+	if typed is KeywordStyleValue {
+		return unsafe { absolutized_value }
+	}
+	if typed !is StyleValueList {
+		return unsafe { absolutized_value }
+	}
+	value_list := typed as StyleValueList
+	if value_list.values_.len != 2 {
+		return unsafe { absolutized_value }
+	}
+
+	block_value := value_list.values_[0]
+	inline_value := value_list.values_[1]
+	if block_value !is KeywordStyleValue {
+		return unsafe { absolutized_value }
+	}
+	if inline_value !is KeywordStyleValue {
+		return unsafe { absolutized_value }
+	}
+	block_keyword := (block_value as KeywordStyleValue).keyword()
+	inline_keyword := (inline_value as KeywordStyleValue).keyword()
+
+	if block_keyword == .span_all {
+		keyword := match inline_keyword {
+			.start { Keyword.inline_start }
+			.end_ { Keyword.inline_end }
+			.self_start { Keyword.self_inline_start }
+			.self_end { Keyword.self_inline_end }
+			.span_start { Keyword.span_inline_start }
+			.span_end { Keyword.span_inline_end }
+			.span_self_start { Keyword.span_self_inline_start }
+			.span_self_end { Keyword.span_self_inline_end }
+			else {
+				return unsafe { absolutized_value }
+			}
+		}
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(keyword)))
+	}
+	if inline_keyword == .span_all {
+		keyword := match block_keyword {
+			.start { Keyword.block_start }
+			.end_ { Keyword.block_end }
+			.self_start { Keyword.self_block_start }
+			.self_end { Keyword.self_block_end }
+			.span_start { Keyword.span_block_start }
+			.span_end { Keyword.span_block_end }
+			.span_self_start { Keyword.span_self_block_start }
+			.span_self_end { Keyword.span_self_block_end }
+			else {
+				return unsafe { absolutized_value }
+			}
+		}
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(keyword)))
+	}
+
+	short_block_keyword := position_area_short_keyword(block_keyword)
+	short_inline_keyword := position_area_short_keyword(inline_keyword)
+	if short_block_keyword == block_keyword && short_inline_keyword == inline_keyword {
+		return unsafe { absolutized_value }
+	}
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create([
+		StyleValue(KeywordStyleValue.create(short_block_keyword)),
+		StyleValue(KeywordStyleValue.create(short_inline_keyword)),
+	], .space, .yes)))
+}
+
+fn position_area_short_keyword(keyword Keyword) Keyword {
+	return match keyword {
+		.block_start, .inline_start { .start }
+		.block_end, .inline_end { .end_ }
+		.self_block_start, .self_inline_start { .self_start }
+		.self_block_end, .self_inline_end { .self_end }
+		.span_block_start, .span_inline_start { .span_start }
+		.span_block_end, .span_inline_end { .span_end }
+		.span_self_block_start, .span_self_inline_start { .span_self_start }
+		.span_self_block_end, .span_self_inline_end { .span_self_end }
+		else { keyword }
+	}
 }
 
 pub fn (s &StyleComputer) build_matching_rule_set(abstract_element dom.AbstractElement, mut attempted_pseudo_class_matches PseudoClassBitmap, did_match_any_pseudo_element_rules &bool, mode ComputeStyleMode, scope &StyleScope) MatchingRuleSet {
@@ -10683,169 +10548,194 @@ pub fn (s &StyleComputer) compute_logical_alias_mapping_context(abstract_element
 	}
 }
 
-fn custom_property_bridge_value(serialized string) &dom.CSSStyleValue_ {
-	value := custom_property_value_without_priority(serialized).trim_space()
-	if equals_ignoring_ascii_case(value, 'initial') {
-		return &dom.CSSStyleValue_{
-			guaranteed_invalid: true
+fn custom_property_bridge_value(value &dom.StyleValue) &dom.CSSStyleValue_ {
+	typed := typed_style_value_logic_from_dom(value)
+	if resolved := typed {
+		if resolved.type_() == .guaranteed_invalid {
+			return &dom.CSSStyleValue_{
+				guaranteed_invalid: true
+				css_value_handle: voidptr(value)
+			}
 		}
 	}
 	return &dom.CSSStyleValue_{
-		css_text: value
+		css_text: dom_style_value_to_css_text(value)
+		css_value_handle: voidptr(value)
 	}
 }
 
-fn apply_custom_properties_from_declaration(declaration &CSSStyleProperties, important Important, mut values map[string]&dom.CSSStyleValue_) {
-	for name, serialized in declaration.custom_properties {
-		is_important := custom_property_is_important(serialized)
-		if is_important != (important == .yes) {
-			continue
-		}
-		value := custom_property_value_without_priority(serialized).trim_space()
-		// Both keywords inherit for custom properties. `revert` and `revert-layer` expose the inherited
-		// value here because user/UA custom-property origins are not attached to this compact style scope.
-		if value in ['inherit', 'unset', 'revert', 'revert-layer'] {
-			continue
-		}
-		values[name] = custom_property_bridge_value(serialized)
+fn custom_property_from_style_property(property StyleProperty) dom.CSSCustomProperty_ {
+	return dom.CSSCustomProperty_{
+		important: property.important == .yes
+		value: custom_property_bridge_value(property.value)
 	}
 }
 
-fn apply_custom_properties_from_matching_rules(rules []MatchingRule, important Important, mut values map[string]&dom.CSSStyleValue_) {
+fn cascade_custom_properties_from_declaration(declaration &CSSStyleProperties, mut values map[string]dom.CSSCustomProperty_, mut important_values map[string]dom.CSSCustomProperty_) {
+	for name, style_property in declaration.custom_properties {
+		typed := typed_style_value_logic_from_dom(style_property.value)
+		if value := typed {
+			if value.to_keyword() == .revert_layer {
+				continue
+			}
+		}
+		property := custom_property_from_style_property(style_property)
+		if property.important {
+			important_values[name] = property
+		}
+		values[name] = property
+	}
+}
+
+fn custom_property_bridge_values_equal(left &dom.CSSStyleValue_, right &dom.CSSStyleValue_) bool {
+	if left.css_value_handle != unsafe { nil } && right.css_value_handle != unsafe { nil } {
+		left_value := unsafe { &dom.StyleValue(left.css_value_handle) }
+		right_value := unsafe { &dom.StyleValue(right.css_value_handle) }
+		if left_typed := typed_style_value_logic_from_dom(left_value) {
+			if right_typed := typed_style_value_logic_from_dom(right_value) {
+				return left_typed.equals(right_typed)
+			}
+		}
+		return voidptr(left_value) == voidptr(right_value)
+	}
+	return left.guaranteed_invalid == right.guaranteed_invalid && left.css_text == right.css_text
+}
+
+fn custom_property_bridge_values_identical(left &dom.CSSStyleValue_, right &dom.CSSStyleValue_) bool {
+	if left.css_value_handle != unsafe { nil } && right.css_value_handle != unsafe { nil } {
+		return left.css_value_handle == right.css_value_handle
+	}
+	return voidptr(left) == voidptr(right)
+}
+
+// StyleComputer.cpp:cascade_custom_properties. Important declarations are
+// collected while walking the matching rules and applied after normal ones.
+fn cascade_custom_properties(abstract_element dom.AbstractElement, rules []&MatchingRule, mut values map[string]dom.CSSCustomProperty_) {
+	mut important_values := map[string]dom.CSSCustomProperty_{}
 	for match_rule in rules {
 		rule := match_rule.rule or { continue }
 		declaration := rule.style() or { continue }
-		apply_custom_properties_from_declaration(declaration, important, mut values)
+		cascade_custom_properties_from_declaration(declaration, mut values, mut important_values)
+	}
+	if abstract_element.pseudo_element() == none {
+		if inline_declaration := inline_style_for_abstract_element(abstract_element) {
+			cascade_custom_properties_from_declaration(inline_declaration, mut values, mut important_values)
+		}
+	}
+	for name, property in important_values {
+		values[name] = property
+	}
+}
+
+fn custom_property_own_values_equal(left ?&dom.CSSCustomPropertyData_, right ?&dom.CSSCustomPropertyData_) bool {
+	left_values := if data := left {
+		data.own_values
+	} else {
+		map[string]dom.CSSCustomProperty_{}
+	}
+	right_values := if data := right {
+		data.own_values
+	} else {
+		map[string]dom.CSSCustomProperty_{}
+	}
+	if left_values.len != right_values.len {
+		return false
+	}
+	for name, left_property in left_values {
+		right_property := right_values[name] or { return false }
+		if left_property.important != right_property.important
+			|| !custom_property_bridge_values_equal(left_property.value, right_property.value) {
+			return false
+		}
+	}
+	return true
+}
+
+fn set_custom_properties_changed(did_change &bool) {
+	unsafe {
+		*did_change = true
 	}
 }
 
 fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, matching_rule_set MatchingRuleSet) {
-	mut values := map[string]&dom.CSSStyleValue_{}
-	if parent := abstract_element.element_to_inherit_style_from() {
-		if parent_data := parent.custom_property_data() {
-			values = parent_data.properties.clone()
-		}
-	}
-
-	// Normal author layers: later layers win.
+	mut cascaded_all := map[string]dom.CSSCustomProperty_{}
 	for layer in matching_rule_set.author_rules {
-		apply_custom_properties_from_matching_rules(layer.rules, .no, mut values)
-	}
-	// Important author layers reverse layer order, so earlier layers win.
-	for index := matching_rule_set.author_rules.len - 1; index >= 0; index-- {
-		apply_custom_properties_from_matching_rules(matching_rule_set.author_rules[index].rules, .yes, mut values)
+		cascade_custom_properties(abstract_element, layer.rules, mut cascaded_all)
 	}
 
-	if abstract_element.pseudo_element() == none {
-		style_text := abstract_element.element().get_attribute('style') or { '' }
-		if style_text.len != 0 {
-			inline_declaration := parse_css_property_declaration_block_with_parser(style_text)
-			apply_custom_properties_from_declaration(inline_declaration, .no, mut values)
-			apply_custom_properties_from_declaration(inline_declaration, .yes, mut values)
+	mut parent_data := ?&dom.CSSCustomPropertyData_(none)
+	if parent := abstract_element.element_to_inherit_style_from() {
+		parent_data = parent.custom_property_data()
+	}
+
+	// Build own_values with only declarations whose retained StyleValue differs
+	// from the parent's, matching the pointer-identity check in C++.
+	mut cascaded_own := map[string]dom.CSSCustomProperty_{}
+	for name, property in cascaded_all {
+		if parent := parent_data {
+			if parent_property := parent.get_property(name) {
+				if custom_property_bridge_values_identical(parent_property.value, property.value) {
+					continue
+				}
+			}
 		}
+		cascaded_own[name] = property
 	}
 
 	mut mutable_abstract_element := abstract_element
-	if values.len == 0 {
-		mutable_abstract_element.set_custom_property_data(none)
+	if cascaded_own.len == 0 {
+		if parent := parent_data {
+			mutable_abstract_element.set_custom_property_data(parent)
+		} else {
+			mutable_abstract_element.set_custom_property_data(none)
+		}
 	} else {
-		mutable_abstract_element.set_custom_property_data(&dom.CSSCustomPropertyData_{
-			properties: values
-		})
+		mutable_abstract_element.set_custom_property_data(dom.CSSCustomPropertyData_.create(cascaded_own, parent_data))
 	}
 }
 
-fn style_sharing_write_part(mut builder strings.Builder, value string) {
-	builder.write_string(value.len.str())
-	builder.write_u8(`:`)
-	builder.write_string(value)
-	builder.write_u8(`;`)
-}
-
-// Build a conservative identity for every input that can affect the computed
-// result after the cascade. A cache miss is always safe; a hit is allowed only
-// for initial, non-pseudo style computation without custom properties,
-// animations, transitions, random(), or tree-counting values. Each hit is
-// cloned into a fresh ComputedProperties so later layout/animation mutations
-// remain element-local.
-fn computed_style_sharing_key(abstract_element dom.AbstractElement, cascaded &CascadedProperties) ?string {
-	if abstract_element.pseudo_element() != none || abstract_element.element().is_document_element() || abstract_element.computed_properties() != none || abstract_element.custom_property_data() != none {
-		return none
-	}
-
-	mut property_ids := []int{cap: cascaded.properties_.len}
-	for property_id, _ in cascaded.properties_ {
-		if property_id in [.animation_composition, .animation_delay, .animation_direction,
-			.animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name,
-			.animation_play_state, .animation_timeline, .animation_timing_function,
-			.transition_behavior, .transition_delay, .transition_duration, .transition_property,
-			.transition_timing_function] {
-			return none
-		}
-		entries := cascaded.properties_[property_id] or { continue }
-		if entries.len == 0 {
-			continue
-		}
-		value := entries.last().property.value
-		if typed := typed_style_value_logic_from_dom(value) {
-			if typed is RandomValueSharingStyleValue || typed is TreeCountingFunctionStyleValue || typed is UnresolvedStyleValue || typed is PendingSubstitutionStyleValue {
-				return none
-			}
-		}
-		// Monospace font-size recascading intentionally walks the ancestor
-		// cascaded-value chain, which is broader than the computed parent identity.
-		if property_id == .font_family && value.css_text.trim_space().to_lower() == 'monospace' {
-			return none
-		}
-		// The legacy table-header value searches the ancestor cascaded-value
-		// chain, not just the computed inheritance parent.
-		if property_id == .text_align && computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .libweb_inherit_or_center {
-			return none
-		}
-		property_ids << int(property_id)
-	}
-	property_ids.sort()
-
-	mut builder := strings.new_builder(256)
-	parent := parent_computed_properties(abstract_element) or { return none }
-	if parent.style_sharing_identity_ != '' {
-		style_sharing_write_part(mut builder, parent.style_sharing_identity_)
-	} else {
-		style_sharing_write_part(mut builder, usize(voidptr(parent)).str())
-	}
-	element := abstract_element.element()
-	local_name := element.local_name().to_lower()
-	style_sharing_write_part(mut builder, local_name)
-	style_sharing_write_part(mut builder, element.namespace_uri() or { '' })
-	// Selector matching and presentational hints have already been reduced to
-	// the cascaded values above. Only the attributes read by the post-cascade
-	// element adjustment remain computation inputs.
-	if local_name == 'audio' {
-		builder.write_u8(if element.has_attribute('controls') { `1` } else { `0` })
-	} else if local_name == 'input' {
-		style_sharing_write_part(mut builder, element.get_attribute_value('type'))
-		style_sharing_write_part(mut builder, element.get_attribute_value('size'))
-	}
-	for raw_property_id in property_ids {
-		property_id := unsafe { PropertyID(raw_property_id) }
-		entries := cascaded.properties_[property_id] or { continue }
-		entry := entries.last()
-		style_sharing_write_part(mut builder, raw_property_id.str())
-		style_sharing_write_part(mut builder, entry.property.value.css_text)
-		style_sharing_write_part(mut builder, entry.property.value.base_url or { '' })
-		builder.write_u8(if entry.property.important == .yes { `1` } else { `0` })
-	}
-	return builder.str()
-}
-
-pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?bool, scope &StyleScope) ?&ComputedProperties {
-	_ = did_change_custom_properties
+pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElement, mode ComputeStyleMode, did_change_custom_properties ?&bool, scope &StyleScope) ?&ComputedProperties {
 	mut profile_checkpoint := if css_style_profile_enabled { time.sys_mono_now() } else { u64(0) }
 	// StyleComputer::compute_style_impl (StyleComputer.cpp:1806).
 	scope.build_rule_cache_if_needed()
 
-	// FIXME (boundary): the use_pseudo_element internal-shadow-tree special path depends on the HTML
-	// user-agent shadow tree representation.
+	// Special path for elements representing a pseudo-element in an element's
+	// internal user-agent shadow tree.
+	if raw_pseudo_element := abstract_element.element().use_pseudo_element_value() {
+		if raw_pseudo_element >= 0 && raw_pseudo_element < int(PseudoElement.known_pseudo_element_count) {
+			element := abstract_element.element()
+			root := element.as_node().root()
+			host_element := root.parent_or_shadow_host_element() or { return none }
+			dom_pseudo_element := unsafe { dom.PseudoElement(raw_pseudo_element) }
+			mut pseudo_abstract_element := dom.AbstractElement.new(host_element, dom_pseudo_element)
+			if parent_element := element.as_node().parent_element() {
+				pseudo_abstract_element.set_inheritance_override(parent_element)
+			} else {
+				pseudo_abstract_element.set_inheritance_override(host_element)
+			}
+
+			mut style := s.compute_style(pseudo_abstract_element)
+			mut mutable_abstract_element := abstract_element
+			mutable_abstract_element.set_cascaded_properties(pseudo_abstract_element.cascaded_properties())
+
+			// Internal shadow-tree nodes may still carry inline declarations. Merge
+			// those after the pseudo-element style, as upstream does.
+			if inline_declaration := inline_style_for_abstract_element(abstract_element) {
+				for property in declaration_style_properties(inline_declaration) {
+					for longhand in expand_property_longhands(property.property_id, property.value) {
+						style.set_property_without_modifying_flags(longhand.id, longhand.value)
+					}
+				}
+			}
+			adjust_element_computed_style(mut style, element)
+			return style
+		}
+	}
+
+	defer {
+		mut mutable_element := unsafe { &dom.Element(abstract_element.element()) }
+		mutable_element.set_needs_style_update(false)
+	}
 
 	// 1. Perform the cascade. This produces the "specified style".
 	mut did_match_any_pseudo_element_rules := false
@@ -10857,12 +10747,14 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 
 	if mode == .create_pseudo_element_style_if_needed {
 		pseudo_element := abstract_element.pseudo_element() or { return none }
-		has_implicit_style := pseudo_element in [.marker, .placeholder]
+		has_implicit_style := pseudo_element in [.details_content, .file_selector_button, .marker,
+			.placeholder]
 		if !did_match_any_pseudo_element_rules && !has_implicit_style {
 			return none
 		}
 	}
 
+	old_custom_property_data := abstract_element.custom_property_data()
 	install_custom_property_data_for_style(abstract_element, matching_rule_set)
 	next_custom_checkpoint, custom_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	profile_checkpoint = next_custom_checkpoint
@@ -10896,44 +10788,9 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 	mut mutable_abstract_element := abstract_element
 	mutable_abstract_element.set_cascaded_properties(cascaded_properties_to_dom(cascaded_properties))
 
-	sharing_checkpoint := if css_style_profile_enabled { time.sys_mono_now() } else { u64(0) }
-	sharing_key := if mode == .normal && s.style_sharing_enabled_ {
-		computed_style_sharing_key(mutable_abstract_element, cascaded_properties)
-	} else {
-		none
-	}
-	if css_style_profile_enabled {
-		css_style_profile_sharing_key_ns += time.sys_mono_now() - sharing_checkpoint
-	}
-	if key := sharing_key {
-		if cached := s.style_sharing_cache_[key] {
-			clone_checkpoint := if css_style_profile_enabled { time.sys_mono_now() } else { u64(0) }
-			mut shared_properties := cached.clone_for_style_sharing()
-			if css_style_profile_enabled {
-				css_style_profile_sharing_clone_ns += time.sys_mono_now() - clone_checkpoint
-			}
-			_, compute_elapsed := css_style_profile_checkpoint(profile_checkpoint)
-			css_style_profile_compute_ns += compute_elapsed
-			css_style_profile_cache_hits++
-			mut attempted_matches_by_name := map[string]bool{}
-			for pseudo_class, attempted in attempted_pseudo_class_matches.values {
-				if attempted {
-					attempted_matches_by_name[selector_pseudo_class_name(pseudo_class)] = true
-				}
-			}
-			shared_properties.set_attempted_pseudo_class_matches(attempted_matches_by_name)
-			return shared_properties
-		}
-	}
-
 	mut computed_properties := s.compute_properties(mutable_abstract_element, mut cascaded_properties)
 	_, compute_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	css_style_profile_compute_ns += compute_elapsed
-	if key := sharing_key {
-		computed_properties.style_sharing_identity_ = key
-		mut mutable_s := unsafe { &StyleComputer(s) }
-		mutable_s.style_sharing_cache_[key] = computed_properties
-	}
 	mut attempted_matches_by_name := map[string]bool{}
 	for pseudo_class, attempted in attempted_pseudo_class_matches.values {
 		if attempted {
@@ -10941,19 +10798,23 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 		}
 	}
 	computed_properties.set_attempted_pseudo_class_matches(attempted_matches_by_name)
+	if did_change := did_change_custom_properties {
+		new_custom_property_data := abstract_element.custom_property_data()
+		if old_custom_property_data != new_custom_property_data
+			&& !custom_property_own_values_equal(old_custom_property_data, new_custom_property_data) {
+			unsafe { set_custom_properties_changed(did_change) }
+		}
+	}
 	return computed_properties
 }
 
 __global (
-	css_style_profile_enabled          bool
-	css_style_profile_matching_ns      u64
-	css_style_profile_custom_ns        u64
-	css_style_profile_logical_ns       u64
-	css_style_profile_cascade_ns       u64
-	css_style_profile_compute_ns       u64
-	css_style_profile_sharing_key_ns   u64
-	css_style_profile_sharing_clone_ns u64
-	css_style_profile_cache_hits       int
+	css_style_profile_enabled     bool
+	css_style_profile_matching_ns u64
+	css_style_profile_custom_ns   u64
+	css_style_profile_logical_ns  u64
+	css_style_profile_cascade_ns  u64
+	css_style_profile_compute_ns  u64
 )
 
 fn css_style_profile_checkpoint(previous u64) (u64, u64) {
@@ -10971,9 +10832,6 @@ pub fn begin_style_profile() {
 	css_style_profile_logical_ns = 0
 	css_style_profile_cascade_ns = 0
 	css_style_profile_compute_ns = 0
-	css_style_profile_sharing_key_ns = 0
-	css_style_profile_sharing_clone_ns = 0
-	css_style_profile_cache_hits = 0
 }
 
 pub fn end_style_profile() {
@@ -10985,9 +10843,6 @@ pub fn end_style_profile() {
 	eprintln('Ladybird V timing:       logical ${css_style_profile_logical_ns / 1_000_000} ms')
 	eprintln('Ladybird V timing:       cascade ${css_style_profile_cascade_ns / 1_000_000} ms')
 	eprintln('Ladybird V timing:       compute ${css_style_profile_compute_ns / 1_000_000} ms')
-	eprintln('Ladybird V timing:         sharing_key ${css_style_profile_sharing_key_ns / 1_000_000} ms')
-	eprintln('Ladybird V timing:         sharing_clone ${css_style_profile_sharing_clone_ns / 1_000_000} ms')
-	eprintln('Ladybird V timing:       style_cache ${css_style_profile_cache_hits} hits')
 	css_style_profile_enabled = false
 }
 
@@ -11045,9 +10900,8 @@ fn set_html_presentational_hint(mut cascaded_properties CascadedProperties, prop
 }
 
 fn html_dimension_presentational_hint(source string, property_id PropertyID, reject_zero bool) ?StyleValue {
-	// HTML's legacy dimension microsyntax consumes the leading decimal number
-	// and ignores any trailing unit text (except an immediately following `%`).
-	// Thus values such as "420px" are valid 420px presentational hints.
+	_ = property_id
+	// https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-dimension-values
 	mut position := 0
 	for position < source.len && source[position] in [`\t`, `\n`, `\f`, `\r`, ` `] {
 		position++
@@ -11059,22 +10913,36 @@ fn html_dimension_presentational_hint(source string, property_id PropertyID, rej
 	for position < source.len && source[position] >= `0` && source[position] <= `9` {
 		position++
 	}
+	integer_value := strconv.atof64(source[start..position]) or { return none }
+	mut value := f32(math.min(integer_value, f64(css_pixels_max_dimension_value)))
+
 	if position < source.len && source[position] == `.` {
 		position++
-		for position < source.len && source[position] >= `0` && source[position] <= `9` {
-			position++
+		if position < source.len && source[position] >= `0` && source[position] <= `9` {
+			mut divisor := f32(1)
+			for {
+				divisor *= 10
+				value += f32(source[position] - `0`) / divisor
+				position++
+				if position >= source.len || source[position] < `0` || source[position] > `9` {
+					break
+				}
+			}
 		}
 	}
-	number := strconv.atof64(source[start..position]) or { return none }
-	if reject_zero && number == 0 {
+	if reject_zero && value == 0 {
 		return none
 	}
-	normalized := if position < source.len && source[position] == `%` {
-		'${number}%'
-	} else {
-		'${number}px'
+	if position < source.len && source[position] == `%` {
+		return StyleValue(PercentageStyleValue.create(Percentage.new(f64(value))))
 	}
-	return parse_css_value_logic(property_id, normalized)
+	return StyleValue(LengthStyleValue.create(Length.make_px(CSSPixels.nearest_value_for(f64(value)).to_double())))
+}
+
+fn apply_dimension_attribute(mut cascaded_properties CascadedProperties, element &dom.Element, attribute_name string, property_id PropertyID, properties_to_cascade ComputedInterpolationPropertyIDs) {
+	attribute := element.get_attribute(attribute_name) or { return }
+	parsed_value := html_dimension_presentational_hint(attribute, property_id, false) or { return }
+	set_html_presentational_hint(mut cascaded_properties, properties_to_cascade, property_id, parsed_value)
 }
 
 // https://html.spec.whatwg.org/multipage/rendering.html#rules-for-parsing-a-legacy-font-size
@@ -11458,8 +11326,7 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 		}
 	}
 	input_accepts_dimensions := tag_name == 'input' && element.get_attribute_value('type').trim_space().to_lower() == 'image'
-	if tag_name in ['table', 'td', 'th', 'tr', 'col', 'colgroup', 'img', 'iframe', 'embed', 'object',
-		'canvas', 'video'] || input_accepts_dimensions {
+	if tag_name in ['table', 'td', 'th', 'tr', 'col', 'colgroup', 'embed', 'object'] {
 		if width := element.get_attribute('width') {
 			if value := html_dimension_presentational_hint(width, .width, tag_name in [
 				'table',
@@ -11698,6 +11565,18 @@ fn apply_html_presentational_hints(mut cascaded_properties CascadedProperties, e
 			}
 		}
 	}
+
+	if tag_name in ['img', 'iframe', 'video'] || input_accepts_dimensions {
+		mut dimension_source := element
+		if tag_name == 'img' && element.as_node().is_html_image_element() {
+			image := unsafe { &dom.HTMLImageElement(element) }
+			if source := image.dimension_attribute_source_ {
+				dimension_source = source
+			}
+		}
+		apply_dimension_attribute(mut cascaded_properties, dimension_source, 'width', .width, properties_to_cascade)
+		apply_dimension_attribute(mut cascaded_properties, dimension_source, 'height', .height, properties_to_cascade)
+	}
 }
 
 pub fn html_div_element_is_presentational_hint(_ &dom.HTMLDivElement, name string) bool {
@@ -11894,7 +11773,7 @@ pub fn html_canvas_element_apply_presentational_hints(element &dom.HTMLCanvasEle
 }
 
 pub fn html_image_element_is_presentational_hint(_ &dom.HTMLImageElement, name string) bool {
-	return name in ['width', 'height', 'hspace', 'vspace', 'border']
+	return name in ['hspace', 'vspace', 'border']
 }
 
 pub fn html_image_element_apply_presentational_hints(element &dom.HTMLImageElement, mut properties CascadedProperties) {
@@ -11976,51 +11855,64 @@ fn apply_svg_presentational_hints(mut cascaded_properties CascadedProperties, el
 		if properties_to_cascade.len > 0 && property_id !in properties_to_cascade {
 			continue
 		}
-		value := parse_svg_presentation_attribute_value(property_id, element.get_attribute_value(attribute_name)) or { continue }
+		value := parse_svg_presentation_attribute_value(element.document(), property_id, element.get_attribute_value(attribute_name)) or { continue }
 		cascaded_properties.set_property_from_presentational_hint(property_id, dom_style_value_from_value_logic(value))
 	}
 }
 
-// SVG presentation attributes are parsed in SVGPresentationAttribute mode in
-// LibWeb. That mode accepts unitless user-unit values where ordinary CSS
-// requires a length. The translated parser has no parsing-mode parameter yet,
-// so perform the mode's number-to-px conversion at this boundary.
-fn parse_svg_presentation_attribute_value(property_id PropertyID, source string) ?StyleValue {
-	if value := parse_css_value_logic(property_id, source) {
-		return value
-	}
-	if property_id !in [.cx, .cy, .r, .rx, .ry, .x, .y, .width, .height, .font_size, .letter_spacing,
-		.word_spacing, .stroke_width, .stroke_dashoffset] {
-		return none
-	}
-	text := source.trim_space()
-	if text.len == 0 {
-		return none
-	}
-	strconv.atof64(text) or { return none }
-	return parse_css_value_logic(property_id, '${text}px')
+fn parse_svg_presentation_attribute_value(document &dom.Document, property_id PropertyID, source string) ?StyleValue {
+	mut parser := Parser.with_context(ParsingParams{
+		document: document
+		mode: .svg_presentation_attribute
+	}, source)
+	return parser.parse_css_value(property_id)
 }
 
 pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties ComputedProperties, abstract_element dom.AbstractElement) {
 	_ = s
 	_ = computed_properties
 	data := abstract_element.custom_property_data() or { return }
-	mut mutable_data := unsafe { &dom.CSSCustomPropertyData_(data) }
-	for name, value in data.properties {
-		if value.guaranteed_invalid {
-			continue
-		}
-		computed_value := StyleComputer.compute_value_of_custom_property(abstract_element, name)
-		if computed_value.css_text.len == 0 {
-			mutable_data.properties[name] = &dom.CSSStyleValue_{
-				guaranteed_invalid: true
-			}
-		} else {
-			mutable_data.properties[name] = &dom.CSSStyleValue_{
-				css_text: computed_value.css_text
+	if inherit_from := abstract_element.element_to_inherit_style_from() {
+		if parent_data := inherit_from.custom_property_data() {
+			if data == parent_data {
+				return
 			}
 		}
 	}
+	if data.own_values.len == 0 {
+		return
+	}
+
+	mut parent_data := ?&dom.CSSCustomPropertyData_(none)
+	if inherit_from := abstract_element.element_to_inherit_style_from() {
+		parent_data = inherit_from.custom_property_data()
+	}
+	mut resolved_own := map[string]dom.CSSCustomProperty_{}
+	for name, property in data.own_values {
+		computed_value := StyleComputer.compute_value_of_custom_property(abstract_element, name)
+		resolved_value := custom_property_bridge_value(computed_value)
+		if parent := parent_data {
+			if parent_property := parent.get_property(name) {
+				if custom_property_bridge_values_equal(parent_property.value, resolved_value) {
+					continue
+				}
+			}
+		}
+		resolved_own[name] = dom.CSSCustomProperty_{
+			important: property.important
+			value: resolved_value
+		}
+	}
+
+	mut mutable_abstract_element := abstract_element
+	if resolved_own.len == 0 {
+		if parent := parent_data {
+			mutable_abstract_element.set_custom_property_data(parent)
+			return
+		}
+	}
+	fallback_parent := if _ := parent_data { parent_data } else { data.parent }
+	mutable_abstract_element.set_custom_property_data(dom.CSSCustomPropertyData_.create(resolved_own, fallback_parent))
 }
 
 pub fn (s &StyleComputer) start_needed_transitions(old_style &ComputedProperties, mut new_style ComputedProperties, abstract_element dom.AbstractElement) {
@@ -12029,7 +11921,7 @@ pub fn (s &StyleComputer) start_needed_transitions(old_style &ComputedProperties
 	}
 	mut storage := s.css_transition_storage_
 	storage.transition_generation++
-	start_needed_transitions_for_storage(old_style, mut new_style, abstract_element, storage.transition_generation, s.animation_time_ms_, mut storage)
+	start_needed_transitions_for_storage(old_style, mut new_style, abstract_element, storage.transition_generation, s.document_timeline_, mut storage)
 }
 
 pub fn (s &StyleComputer) resolve_effective_overflow_values(mut computed_properties ComputedProperties) {
@@ -12057,64 +11949,141 @@ pub fn (s &StyleComputer) resolve_effective_overflow_values(mut computed_propert
 	}
 }
 
+enum BoxTypeTransformation {
+	none_
+	blockify
+	inlinify
+}
+
+fn required_box_type_transformation(style &ComputedProperties, abstract_element dom.AbstractElement) BoxTypeTransformation {
+	// NOTE: We never blockify <br> elements. They are always inline.
+	//       There is currently no way to express in CSS how a <br> element really behaves.
+	//       Spec issue: https://github.com/whatwg/html/issues/2291
+	if abstract_element.pseudo_element() == none && abstract_element.element().is_html_element()
+		&& to_ascii_lowercase(abstract_element.element().local_name()) == 'br' {
+		return .none_
+	}
+
+	// Absolute positioning or floating an element blockifies the box's display type. [CSS2]
+	if style.position() == .absolute || style.position() == .fixed || style.float_() != .none_ {
+		return .blockify
+	}
+
+	// FIXME: Containment in a ruby container inlinifies the box's display type, as described in [CSS-RUBY-1].
+
+	// NOTE: If we're computing style for a pseudo-element, the effective parent will be the originating element itself, not its parent.
+	mut parent := abstract_element.element_to_inherit_style_from()
+
+	// Climb out of `display: contents` context.
+	for {
+		current := parent or { break }
+		dom_parent_style := current.computed_properties() or { break }
+		parent_style := computed_properties_from_dom(dom_parent_style) or { break }
+		if !parent_style.display().is_contents() {
+			break
+		}
+		parent = current.element_to_inherit_style_from()
+	}
+
+	// A parent with a grid or flex display value blockifies the box's display type. [CSS-GRID-1] [CSS-FLEXBOX-1]
+	if current := parent {
+		if dom_parent_style := current.computed_properties() {
+			if parent_style := computed_properties_from_dom(dom_parent_style) {
+				parent_display := parent_style.display()
+				if parent_display.is_grid_inside() || parent_display.is_flex_inside() {
+					return .blockify
+				}
+			}
+		}
+	}
+
+	return .none_
+}
+
 pub fn (s &StyleComputer) transform_box_type_if_needed(mut computed_properties ComputedProperties, abstract_element dom.AbstractElement) {
 	_ = s
+	// 2.7. Automatic Box Type Transformations
+	//
+	// Some layout effects require blockification or inlinification of the box type,
+	// which sets the box's computed outer display type to block or inline (respectively).
+	// (This has no effect on display types that generate no box at all, such as none or contents.)
 	display := computed_properties.display()
 	computed_properties.set_display_before_box_type_transformation(display)
 	if display.is_none() || (display.is_contents() && !abstract_element.element().is_document_element()) {
 		return
 	}
 
-	mut new_display := display
+	// https://drafts.csswg.org/css-display/#root
+	// The root element's display type is always blockified, and its principal box always establishes an independent formatting context.
 	if abstract_element.element().is_document_element() && !display.is_block_outside() {
-		new_display = Display.from_short(.block)
-	} else {
-		if display.is_math_inside() {
-			namespace_ := abstract_element.element().namespace_uri() or { '' }
-			name := to_ascii_lowercase(abstract_element.element().local_name())
-			if namespace_ != 'http://www.w3.org/1998/Math/MathML' {
-				new_display = Display.from_outside_inside(display.outside(), .flow)
-			} else if name == 'mtable' {
-				new_display = Display.from_outside_inside(display.outside(), .table)
-			} else if name == 'mtr' {
-				new_display = Display.from_internal(.table_row)
-			} else if name == 'mtd' {
-				new_display = Display.from_internal(.table_cell)
+		computed_properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.block)))))
+		return
+	}
+
+	mut new_display := display
+
+	if display.is_math_inside() {
+		namespace_ := abstract_element.element().namespace_uri() or { '' }
+		name := to_ascii_lowercase(abstract_element.element().local_name())
+		if namespace_ != 'http://www.w3.org/1998/Math/MathML' {
+			new_display = Display.from_outside_inside(display.outside(), .flow)
+		} else if name == 'mtable' {
+			new_display = Display.from_outside_inside(display.outside(), .table)
+		} else if name == 'mtr' {
+			new_display = Display.from_internal(.table_row)
+		} else if name == 'mtd' {
+			new_display = Display.from_internal(.table_cell)
+		}
+	}
+
+	// https://www.w3.org/TR/CSS2/visuren.html#dis-pos-flo
+	// If 'position' has the value 'absolute' or 'fixed', [...] 'float' is set to 'none'.
+	if computed_properties.position() == .absolute || computed_properties.position() == .fixed {
+		computed_properties.set_property_without_modifying_flags(.float_, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.none_))))
+	}
+
+	match required_box_type_transformation(computed_properties, abstract_element) {
+		.none_ {}
+		.blockify {
+			if display.is_block_outside() {
+				return
 			}
-		}
-
-		position := computed_properties.position()
-		if position == .absolute || position == .fixed {
-			computed_properties.set_property_without_modifying_flags(.float_, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.none_))))
-		}
-
-		is_br := abstract_element.pseudo_element() == none && abstract_element.element().is_html_element() && to_ascii_lowercase(abstract_element.element().local_name()) == 'br'
-		mut should_blockify := !is_br && (position == .absolute || position == .fixed || computed_properties.float_() != .none_)
-		if !should_blockify && !is_br {
-			mut parent := abstract_element.element_to_inherit_style_from()
-			for {
-				current := parent or { break }
-				dom_parent_style := current.computed_properties() or { break }
-				parent_style := computed_properties_from_dom(dom_parent_style) or { break }
-				parent_display := parent_style.display()
-				if parent_display.is_contents() {
-					parent = current.element_to_inherit_style_from()
-					continue
-				}
-				should_blockify = parent_display.is_grid_inside() || parent_display.is_flex_inside()
-				break
-			}
-		}
-
-		if should_blockify && !display.is_block_outside() {
+			// If a layout-internal box is blockified, its inner display type converts to flow so that it becomes a block container.
 			if display.is_internal() {
 				new_display = Display.from_short(.block)
-			} else if display.is_outside_and_inside() {
+			} else {
+				assert display.is_outside_and_inside()
+
+				// For legacy reasons, if an inline block box (inline flow-root) is blockified, it becomes a block box (loses its flow-root nature).
+				// For consistency, a run-in flow-root box also blockifies to a block box.
 				if display.is_inline_block() {
 					new_display = Display.from_outside_inside_and_list_item(.block, .flow, display.list_item())
 				} else {
 					new_display = Display.from_outside_inside_and_list_item(.block, display.inside(), display.list_item())
 				}
+			}
+		}
+		.inlinify {
+			if display.is_inline_outside() {
+				// FIXME: If an inline box (inline flow) is inlinified, it recursively inlinifies all of its in-flow children,
+				//        so that no block-level descendants break up the inline formatting context in which it participates.
+				if display.is_flow_inside() {
+					eprintln('FIXME: Inlinify inline box children recursively')
+				}
+				return
+			}
+			if display.is_internal() {
+				// Inlinification has no effect on layout-internal boxes. (However, placement in such an inline context will typically cause them
+				// to be wrapped in an appropriately-typed anonymous inline-level box.)
+			} else {
+				assert display.is_outside_and_inside()
+
+				// If a block box (block flow) is inlinified, its inner display type is set to flow-root so that it remains a block container.
+				if display.is_block_outside() && display.is_flow_inside() {
+					new_display = Display.from_outside_inside_and_list_item(.inline_, .flow_root, display.list_item())
+				}
+
+				new_display = Display.from_outside_inside_and_list_item(.inline_, display.inside(), display.list_item())
 			}
 		}
 	}
@@ -12139,7 +12108,7 @@ fn style_computer_css_wide_keyword_from_declaration_text(value string) ?Keyword 
 	return keyword_from_string(value.trim_space()) or { none }
 }
 
-pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, rules []MatchingRule, origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
+pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, rules []&MatchingRule, origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	_ = s
 	// StyleComputer::cascade_declarations (StyleComputer.cpp:476): cascade each matching rule's
 	// declaration, then — for the author origin on a non-pseudo element — the element's inline style.
@@ -12153,12 +12122,7 @@ pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedP
 	}
 
 	if origin == .author && abstract_element.pseudo_element() == none {
-		// Inline style is the element's `style` attribute parsed as a declaration block. (Upstream reads
-		// element().inline_style(); the port's DOM inline-style object is an opaque placeholder, so parse
-		// the attribute text instead.)
-		style_text := abstract_element.element().get_attribute('style') or { return }
-		if style_text.len > 0 {
-			inline_declaration := parse_css_property_declaration_block_with_parser(style_text)
+		if inline_declaration := inline_style_for_abstract_element(abstract_element) {
 			cascade_one_declaration(mut cascaded_properties, abstract_element, inline_declaration, origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
 		}
 	}
@@ -12178,7 +12142,16 @@ pub fn (s &StyleComputer) clear_computation_context_caches() {
 // Advance the deterministic CSS animation timeline used by this standalone
 // port. Embedders can set it from their document timeline before a style pass.
 pub fn (mut s StyleComputer) set_animation_time_ms(time_ms f64) {
-	s.animation_time_ms_ = time_ms
+	if s.document_timeline_ != unsafe { nil } {
+		s.document_timeline_.update_current_time(time_ms)
+		s.animation_time_ms_ = s.document_timeline_.current_time_ms() or { time_ms }
+	} else {
+		s.animation_time_ms_ = time_ms
+	}
+	if s.document_ != unsafe { nil } {
+		mut document := unsafe { &dom.Document(s.document_) }
+		document.set_needs_animated_style_update()
+	}
 }
 
 pub fn (s &StyleComputer) css_animation_for(abstract_element dom.AbstractElement, name string) ?&CSSAnimation {
@@ -12192,25 +12165,77 @@ pub fn (s &StyleComputer) computation_context_cache_is_empty() bool {
 	return s.cached_font_computation_context == none && s.cached_line_height_computation_context == none && s.cached_generic_computation_context == none
 }
 
-pub fn (s &StyleComputer) get_computation_context_for_property(property_id PropertyID, computed_properties &ComputedProperties, abstract_element ?dom.AbstractElement) StyleComputationContextStub {
-	mut font_metrics := computed_interpolation_font_metrics_for_size(computed_properties.font_size())
-	font_metrics.line_height = computed_properties.line_height()
-	mut root_font_metrics := s.root_element_font_metrics
-	if root := s.document_.document_element() {
+pub fn (s &StyleComputer) get_computation_context_for_property(property_id PropertyID, computed_properties &ComputedProperties, abstract_element ?dom.AbstractElement) ComputationContext {
+	font_computation_property := property_id in [.color_scheme, .font_family, .font_feature_settings,
+		.font_kerning, .font_optical_sizing, .font_size, .font_style, .font_variant_alternates,
+		.font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures,
+		.font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight,
+		.font_width, .math_depth, .text_rendering]
+	if font_computation_property {
+		// StyleComputer::get_computation_context_for_property() deliberately
+		// resolves font-relative units against the inheritance parent. The
+		// partially built current style may contain the temporary 13px value used
+		// by monospace font-size recascading and must not be used here.
+		mut font_metrics := LengthFontMetrics.default()
 		if current := abstract_element {
-			if voidptr(current.element()) == voidptr(root) {
-				root_font_metrics = font_metrics
+			if parent := current.element_to_inherit_style_from() {
+				if dom_computed := parent.computed_properties() {
+					if inherited := computed_properties_from_dom(dom_computed) {
+						font_metrics = computed_interpolation_font_metrics_for_size(inherited.font_size())
+						font_metrics.line_height = inherited.line_height()
+					}
+				}
 			}
 		}
-		root_abstract := dom.AbstractElement.new(root, none)
-		if root_dom_computed := root_abstract.computed_properties() {
-			if root_computed := computed_properties_from_dom(root_dom_computed) {
-				root_font_metrics = s.calculate_root_element_font_metrics(root_computed)
+		return ComputationContext{
+			length_resolution_context: LengthResolutionContext{
+				viewport_rect: s.viewport_rect_
+				font_metrics: font_metrics
+				root_font_metrics: s.root_element_font_metrics
+			}
+			abstract_element: abstract_element
+		}
+	}
+
+	mut font_metrics := computed_interpolation_font_metrics_for_size(computed_properties.font_size())
+	mut root_font_metrics := s.root_element_font_metrics
+	if property_id == .line_height {
+		// Line-height is the one font-adjacent property that resolves em units
+		// against the element's newly computed font size, while lh inherits its
+		// parent line height.
+		if current := abstract_element {
+			if parent := current.element_to_inherit_style_from() {
+				if dom_computed := parent.computed_properties() {
+					if inherited := computed_properties_from_dom(dom_computed) {
+						font_metrics.line_height = inherited.line_height()
+					}
+				}
+			}
+		}
+		if root := s.document_.document_element() {
+			if current := abstract_element {
+				if voidptr(current.element()) == voidptr(root) {
+					root_font_metrics = font_metrics
+				}
+			}
+		}
+	} else {
+		font_metrics.line_height = computed_properties.line_height()
+		if root := s.document_.document_element() {
+			if current := abstract_element {
+				if voidptr(current.element()) == voidptr(root) {
+					root_font_metrics = font_metrics
+				}
+			}
+			root_abstract := dom.AbstractElement.new(root, none)
+			if root_dom_computed := root_abstract.computed_properties() {
+				if root_computed := computed_properties_from_dom(root_dom_computed) {
+					root_font_metrics = s.calculate_root_element_font_metrics(root_computed)
+				}
 			}
 		}
 	}
-	return StyleComputationContextStub{
-		property_id: property_id
+	return ComputationContext{
 		length_resolution_context: LengthResolutionContext{
 			viewport_rect: s.viewport_rect_
 			font_metrics: font_metrics

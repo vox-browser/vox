@@ -153,7 +153,7 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'function __setAttribute(s, n, v) { n = String(n).toLowerCase(); s.attributes[n] = String(v); s.attributesDirty = true; if (n === "id") s.id = String(v); if (n === "class") s.className = String(v); if (n === "style") s.styleText = String(v); }',
 		'function __removeAttribute(s, n) { n = String(n).toLowerCase(); delete s.attributes[n]; s.attributesDirty = true; }',
 		'function __isDescendant(s, ancestor) { for (let p = s.parentIndex; p >= 0; p = __state.nodes[p].parentIndex) if (p === ancestor) return true; return false; }',
-		'function __matches(s, q) { q = String(q || "").trim(); if (!q) return false; if (q[0] === "#") return s.id === q.slice(1); if (q[0] === ".") return String(s.className || "").split(/\\s+/).indexOf(q.slice(1)) >= 0; const a = /^\\[([^=\\]]+)(?:=["\']?([^"\']*)["\']?)?\\]$/.exec(q); if (a) return Object.prototype.hasOwnProperty.call(s.attributes, a[1]) && (a[2] === undefined || s.attributes[a[1]] === a[2]); return s.tagName === q.toLowerCase(); }',
+		'function __matches(s, q) { q = String(q || "").trim(); if (!q) return false; if (q[0] === "#") return s.id === q.slice(1); if (q[0] === ".") return String(s.className || "").split(/\\s+/).indexOf(q.slice(1)) >= 0; const a = /^\\[([^=\\]]+)(?:=["\']?([^"\']*)["\']?)?\\]\$/.exec(q); if (a) return Object.prototype.hasOwnProperty.call(s.attributes, a[1]) && (a[2] === undefined || s.attributes[a[1]] === a[2]); return s.tagName === q.toLowerCase(); }',
 		'function __element(s) {',
 		'  if (__objects[s.index]) return __objects[s.index];',
 		'  const target = {',
@@ -175,7 +175,7 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'  target.style = __styleProxy(s); Object.defineProperty(target, "__state", { value: s });',
 		'  const proxy = new Proxy(target, {',
 		'    get: function (o, p) { if (p in o) return o[p]; if (p === "id") return s.id; if (p === "tagName") return String(s.tagName).toUpperCase(); if (p === "textContent" || p === "innerText") return s.textContent; if (p === "innerHTML") return s.innerHTML; if (p === "className") return s.className; if (p === "offsetLeft") return Math.trunc((s.rect && s.rect.offsetLeft) || 0); if (p === "offsetTop") return Math.trunc((s.rect && s.rect.offsetTop) || 0); if (p === "offsetWidth") return Math.trunc((s.rect && s.rect.width) || 0); if (p === "offsetHeight") return Math.trunc((s.rect && s.rect.height) || 0); if (p === "selectedIndex") return s.selectedIndex === undefined ? -1 : s.selectedIndex; if (["multiple", "hidden", "controls"].indexOf(p) >= 0) return Object.prototype.hasOwnProperty.call(s.attributes, p); if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) return s.attributes[p] || ""; return undefined; },',
-		'    set: function (o, p, v) { if (p === "textContent" || p === "innerText") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "innerHTML") { s.innerHTML = String(v); s.innerHTMLDirty = true; return true; } if (p === "className") { s.className = String(v); __setAttribute(s, "class", v); return true; } if (p === "selectedIndex") { s.selectedIndex = Number(v); let option = 0; for (const n of __state.nodes) if (n.tagName === "option" && __isDescendant(n, s.index)) { if (option++ === s.selectedIndex) __setAttribute(n, "selected", ""); else __removeAttribute(n, "selected"); } return true; } if (["multiple", "hidden", "controls"].indexOf(p) >= 0) { if (v) __setAttribute(s, p, ""); else __removeAttribute(s, p); return true; } if (p === "value" && s.tagName === "textarea") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) { __setAttribute(s, p, v); return true; } o[p] = v; return true; }',
+		'    set: function (o, p, v) { if (p === "textContent" || p === "innerText") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "innerHTML") { s.innerHTML = String(v); s.innerHTMLDirty = true; return true; } if (p === "className") { s.className = String(v); __setAttribute(s, "class", v); return true; } if (p === "selectedIndex") { s.selectedIndex = Number(v); __state.operations.push({ op: "selectedIndex", target: s.index, value: s.selectedIndex }); return true; } if (["multiple", "hidden", "controls"].indexOf(p) >= 0) { if (v) __setAttribute(s, p, ""); else __removeAttribute(s, p); return true; } if (p === "value" && s.tagName === "textarea") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "value" && s.tagName === "input") { s.value = String(v); __state.operations.push({ op: "inputValue", target: s.index, value: s.value }); return true; } if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) { __setAttribute(s, p, v); return true; } o[p] = v; return true; }',
 		'  }); __objects[s.index] = proxy; return proxy;',
 		'}',
 		'const document = {',
@@ -225,6 +225,39 @@ fn bridge_int_property(object map[string]json2.Any, name string) ?int {
 		f64 { int(value) }
 		f32 { int(value) }
 		else { none }
+	}
+}
+
+// Attribute::handle_attribute_changes() invokes the concrete HTML element's
+// attribute_changed() override after the generic Element steps. The DOM module
+// cannot import HTML in V, so replay that second half at this bridge boundary.
+// This keeps reflected IDL properties such as input.type/placeholder/multiple
+// on the same translated code path as Ladybird instead of merely editing the
+// serialized attribute map.
+fn bridge_html_attribute_changed(element &dom.Element, name string, old_value ?string, value ?string) {
+	if !element.is_html_element() {
+		return
+	}
+	match element.local_name() {
+		'input' {
+			mut model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+			model.form_associated_element_attribute_changed(name, old_value, value, none)
+		}
+		'option' {
+			option := unsafe { &dom.HTMLOptionElement(element) }
+			if name == 'selected' {
+				html.html_option_element_selected_attribute_changed(option, value)
+			} else if name == 'label' {
+				html.html_option_element_update_selection_label(option)
+			}
+		}
+		'select' {
+			if name == 'multiple' {
+				mut model := html.HTMLSelectElementModel.create(unsafe { &dom.HTMLSelectElement(element) })
+				model.form_associated_element_attribute_changed(name, value)
+			}
+		}
+		else {}
 	}
 }
 
@@ -294,12 +327,18 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 							attributes := attribute_values as map[string]json2.Any
 							for existing_name in element.get_attribute_names() {
 								if existing_name !in attributes {
+									old_value := element.get_attribute(existing_name)
 									element.remove_attribute(existing_name)
+									bridge_html_attribute_changed(element, existing_name, old_value, none)
 								}
 							}
 							for name, attribute_value in attributes {
 								if attribute_value is string {
-									element.set_attribute_value(name, attribute_value)
+									old_value := element.get_attribute(name)
+									if old_value or { '\x00' } != attribute_value {
+										element.set_attribute_value(name, attribute_value)
+										bridge_html_attribute_changed(element, name, old_value, attribute_value)
+									}
 								}
 							}
 						}
@@ -345,8 +384,7 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 						child := element_by_index[child_index] or { continue }
 						mut target_node := unsafe { &dom.Node(target) }
 						if kind == 'prependNode' {
-							target_node.insert_before(child.as_node(), target_node.first_child(),
-								false)
+							target_node.insert_before(child.as_node(), target_node.first_child(), false)
 						} else if target.local_name() == 'body' {
 							target_node.insert_before(child.as_node(), body_append_reference, false)
 						} else {
@@ -360,11 +398,9 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 						target_node.remove_child(child.as_node())!
 					}
 					'prependText' {
-						text_node := document.create_text_node(bridge_string_property(operation,
-							'text') or { '' })
+						text_node := document.create_text_node(bridge_string_property(operation, 'text') or { '' })
 						mut target_node := unsafe { &dom.Node(target) }
-						target_node.insert_before(text_node.as_node(), target_node.first_child(),
-							false)
+						target_node.insert_before(text_node.as_node(), target_node.first_child(), false)
 					}
 					'insertAdjacentHTML' {
 						target.insert_adjacent_html(bridge_string_property(operation, 'position') or {
@@ -378,6 +414,18 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 					'showDialog' {
 						mut dialog := unsafe { &dom.HTMLDialogElement(target) }
 						html.show_html_dialog_element(mut dialog) or {}
+					}
+					'selectedIndex' {
+						selected_index := bridge_int_property(operation, 'value') or { -1 }
+						html.set_html_select_element_selected_index(unsafe {
+							&dom.HTMLSelectElement(target)
+						}, i32(selected_index))
+					}
+					'inputValue' {
+						mut model := html.HTMLInputElementModel.create(unsafe {
+							&dom.HTMLInputElement(target)
+						})
+						model.set_value(bridge_string_property(operation, 'value') or { '' }) or {}
 					}
 					'click' {
 						target_id := target.get_attribute_value('popovertarget')

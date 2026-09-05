@@ -1,6 +1,7 @@
 module html
 
 import dom
+import encoding
 
 fn dom_html_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots) ![]&dom.Node {
 	_ = target
@@ -97,9 +98,43 @@ fn dom_html_parser_create_for_scripting_callback(target voidptr, document &dom.D
 	return make_dom_html_parser_handle(parser)
 }
 
+fn dom_encoding_sniff_callback(_ voidptr, _ &dom.Document, data []u8, transport_encoding ?string) string {
+	return run_html_encoding_sniffing_algorithm(data, transport_encoding)
+}
+
+fn dom_loaded_html_parse_callback(_ voidptr, document &dom.Document, data []u8, transport_encoding ?string, _ dom.URL) ! {
+	mut parser := HTMLParser.create_with_uncertain_encoding(document, data, transport_encoding)!
+	parser.run()
+}
+
+fn dom_loaded_text_parse_callback(_ voidptr, document &dom.Document, data []u8, transport_encoding ?string, _ dom.URL) !string {
+	encoding_name := run_html_encoding_sniffing_algorithm(data, transport_encoding)
+	decoder := encoding.TextDecoder.construct(encoding_name, encoding.TextDecoderOptions{})!
+	decoded_input := decoder.decode(data, encoding.TextDecodeOptions{})!
+	mut parser := HTMLParser.create_for_scripting(document)
+	mut tokenizer := parser.tokenizer()
+	tokenizer.update_insertion_point()
+	tokenizer.insert_input_at_insertion_point('<pre>\n')
+	parser.run()
+	tokenizer = parser.tokenizer()
+	tokenizer.switch_to(.plaintext)
+	tokenizer.insert_input_at_insertion_point(decoded_input)
+	tokenizer.insert_eof()
+	parser.run()
+	return encoding_name
+}
+
+fn dom_xml_document_parse_callback(_ voidptr, document &dom.Document, source string) bool {
+	parse_xml_document_source(document, source) or { return false }
+	return true
+}
+
 // Install the HTML tree builder behind DOM::Element.innerHTML/setHTMLUnsafe/insertAdjacentHTML.
 // The callback avoids a module cycle: html imports dom, while dom only retains this function pointer.
 pub fn install_document_fragment_parsing_hook(document &dom.Document) {
+	install_document_accessibility_role_hook(document)
+	install_document_csp_hook(document)
+	install_document_fullscreen_hook(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_html_fragment_parsing_hook(dom.DocumentHTMLFragmentParsingHook{
 		parse_fragment: dom_html_fragment_parse_callback
@@ -107,6 +142,10 @@ pub fn install_document_fragment_parsing_hook(document &dom.Document) {
 		prepare_script_descendants: dom_fragment_prepare_script_descendants_callback
 		parse_document: dom_html_document_parse_callback
 		create_parser_for_scripting: dom_html_parser_create_for_scripting_callback
+		sniff_encoding: dom_encoding_sniff_callback
+		parse_loaded_html: dom_loaded_html_parse_callback
+		parse_loaded_text: dom_loaded_text_parse_callback
+		parse_xml_document: dom_xml_document_parse_callback
 	})
 }
 

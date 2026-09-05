@@ -5,10 +5,15 @@
 module webgl
 
 pub type GLenum = u32
+
 pub type GLuint = u32
+
 pub type GLint = int
+
 pub type GLsizei = int
+
 pub type GLintptr = i64
+
 pub type GLsizeiptr = i64
 
 pub const no_error = GLenum(0)
@@ -30,6 +35,30 @@ pub const uniform_buffer = GLenum(0x8a11)
 
 pub const vertex_shader = GLenum(0x8b31)
 pub const fragment_shader = GLenum(0x8b30)
+pub const delete_status = GLenum(0x8b80)
+pub const compile_status = GLenum(0x8b81)
+pub const link_status = GLenum(0x8b82)
+pub const validate_status = GLenum(0x8b83)
+pub const attached_shaders = GLenum(0x8b85)
+pub const active_uniforms = GLenum(0x8b86)
+pub const active_attributes = GLenum(0x8b89)
+pub const shader_type = GLenum(0x8b4f)
+pub const buffer_size = GLenum(0x8764)
+pub const buffer_usage = GLenum(0x8765)
+pub const current_vertex_attrib = GLenum(0x8626)
+pub const vertex_attrib_array_enabled = GLenum(0x8622)
+pub const vertex_attrib_array_size = GLenum(0x8623)
+pub const vertex_attrib_array_stride = GLenum(0x8624)
+pub const vertex_attrib_array_type = GLenum(0x8625)
+pub const vertex_attrib_array_pointer = GLenum(0x8645)
+pub const vertex_attrib_array_normalized = GLenum(0x886a)
+pub const vertex_attrib_array_buffer_binding = GLenum(0x889f)
+pub const vertex_attrib_array_integer = GLenum(0x88fd)
+pub const vertex_attrib_array_divisor = GLenum(0x88fe)
+pub const transform_feedback_buffer_mode = GLenum(0x8c7f)
+pub const transform_feedback_varyings = GLenum(0x8c83)
+pub const active_uniform_blocks = GLenum(0x8a36)
+pub const gl_float = GLenum(0x1406)
 pub const texture_2d = GLenum(0x0de1)
 pub const texture_cube_map = GLenum(0x8513)
 pub const framebuffer = GLenum(0x8d40)
@@ -122,21 +151,23 @@ pub fn convert_context_attributes(input ?ContextAttributeInput) !WebGLContextAtt
 			'default' { WebGLPowerPreference.default_ }
 			'high-performance' { WebGLPowerPreference.high_performance }
 			'low-power' { WebGLPowerPreference.low_power }
-			else { return error("TypeError: invalid WebGLPowerPreference '${preference}'") }
+			else {
+				return error("TypeError: invalid WebGLPowerPreference '${preference}'")
+			}
 		}
 	} else {
 		WebGLPowerPreference.default_
 	}
 	return WebGLContextAttributes{
-		alpha:                            attributes.alpha or { true }
-		depth:                            attributes.depth or { true }
-		stencil:                          attributes.stencil or { false }
-		antialias:                        attributes.antialias or { true }
-		premultiplied_alpha:              attributes.premultiplied_alpha or { true }
-		preserve_drawing_buffer:          attributes.preserve_drawing_buffer or { false }
-		power_preference:                 power
+		alpha: attributes.alpha or { true }
+		depth: attributes.depth or { true }
+		stencil: attributes.stencil or { false }
+		antialias: attributes.antialias or { true }
+		premultiplied_alpha: attributes.premultiplied_alpha or { true }
+		preserve_drawing_buffer: attributes.preserve_drawing_buffer or { false }
+		power_preference: power
 		fail_if_major_performance_caveat: attributes.fail_if_major_performance_caveat or { false }
-		desynchronized:                   attributes.desynchronized or { false }
+		desynchronized: attributes.desynchronized or { false }
 	}
 }
 
@@ -153,7 +184,7 @@ pub:
 
 pub fn WebGLContextEvent.new(type_ string, init WebGLContextEventInit) WebGLContextEvent {
 	return WebGLContextEvent{
-		type_:          type_
+		type_: type_
 		status_message: init.status_message
 	}
 }
@@ -170,4 +201,16 @@ pub:
 	range_min int
 	range_max int
 	precision int
+}
+
+pub struct VertexAttribState {
+pub:
+	buffer_handle GLuint
+	size          int = 4
+	type_         GLenum = gl_float
+	normalized    bool
+	stride        int
+	offset        i64
+	integer       bool
+	divisor       GLuint
 }

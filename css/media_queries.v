@@ -15,7 +15,7 @@ pub mut:
 pub fn Supports.create(condition &BooleanExpression) &Supports {
 	return &Supports{
 		condition: condition
-		matches:   condition.evaluate_to_boolean(none)
+		matches: condition.evaluate_to_boolean(none)
 	}
 }
 
@@ -28,19 +28,12 @@ pub fn (supports &Supports) matches_condition() bool {
 }
 
 pub fn (supports &Supports) dump(indent_levels int) string {
-	return '${cssom_indent(indent_levels)}Supports condition: (matches = ${supports.matches})\n${supports.condition.dump(
-		indent_levels + 1)}'
+	return '${cssom_indent(indent_levels)}Supports condition: (matches = ${supports.matches})\n${supports.condition.dump(indent_levels + 1)}'
 }
 
 pub fn parse_css_supports(context ParsingParams, condition_text string) ?&Supports {
-	mut tokens := SupportsTokenStream.from_values_with_namespaces(parse_component_values_for_value_logic(condition_text),
-		context.declared_namespaces)
-	condition := parse_supports_condition(mut tokens) or { return none }
-	tokens.discard_whitespace()
-	if tokens.has_next_token() {
-		return none
-	}
-	return Supports.create(condition)
+	mut parser := Parser.with_context(context, condition_text)
+	return parser.parse_as_supports()
 }
 
 struct SupportsTokenStream {
@@ -52,14 +45,14 @@ mut:
 
 fn SupportsTokenStream.from_values(values []ComponentValue) SupportsTokenStream {
 	return SupportsTokenStream{
-		values:              values.clone()
+		values: values.clone()
 		declared_namespaces: map[string]bool{}
 	}
 }
 
 fn SupportsTokenStream.from_values_with_namespaces(values []ComponentValue, declared_namespaces map[string]bool) SupportsTokenStream {
 	return SupportsTokenStream{
-		values:              values.clone()
+		values: values.clone()
 		declared_namespaces: declared_namespaces.clone()
 	}
 }
@@ -99,13 +92,22 @@ fn (mut tokens SupportsTokenStream) discard_whitespace() {
 
 // https://drafts.csswg.org/css-conditional-3/#typedef-supports-condition
 fn parse_supports_condition(mut tokens SupportsTokenStream) ?&BooleanExpression {
-	// RuleContext::SupportsCondition is represented by calling the declaration
-	// parser with supports-condition validation below.
-	return parse_supports_boolean_expression(mut tokens, .false_)
+	mut parser := Parser{
+		context: ParsingParams{
+			declared_namespaces: tokens.declared_namespaces
+		}
+	}
+	return parser.parse_supports_condition(mut tokens)
+}
+
+enum BooleanExpressionParseTest {
+	supports_feature
+	media_in_parens
+	if_test
 }
 
 // https://drafts.csswg.org/css-values-5/#typedef-boolean-expr
-fn parse_supports_boolean_expression(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
+fn (mut parser Parser) parse_boolean_expression(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult, parse_test BooleanExpressionParseTest) ?&BooleanExpression {
 	mut transaction := tokens
 	transaction.discard_whitespace()
 
@@ -114,8 +116,7 @@ fn parse_supports_boolean_expression(mut tokens SupportsTokenStream, result_for_
 		if peeked_token.is_ident('not') {
 			transaction.discard_a_token()
 			transaction.discard_whitespace()
-			child := parse_supports_boolean_expression_group(mut transaction,
-				result_for_general_enclosed) or { return none }
+			child := parser.parse_boolean_expression_group(mut transaction, result_for_general_enclosed, parse_test) or { return none }
 			transaction.discard_whitespace()
 			tokens = transaction
 			return BooleanExpression.create_not(child)
@@ -144,8 +145,7 @@ fn parse_supports_boolean_expression(mut tokens SupportsTokenStream, result_for_
 		}
 
 		transaction.discard_whitespace()
-		child := parse_supports_boolean_expression_group(mut transaction,
-			result_for_general_enclosed) or { return none }
+		child := parser.parse_boolean_expression_group(mut transaction, result_for_general_enclosed, parse_test) or { return none }
 		children << child
 		transaction.discard_whitespace()
 	}
@@ -170,17 +170,14 @@ fn parse_supports_boolean_expression(mut tokens SupportsTokenStream, result_for_
 	return none
 }
 
-fn parse_supports_boolean_expression_group(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
+fn (mut parser Parser) parse_boolean_expression_group(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult, parse_test BooleanExpressionParseTest) ?&BooleanExpression {
 	// <boolean-expr-group> = <test> | ( <boolean-expr[ <test> ]> ) | <general-enclosed>
 	if first_token := tokens.next_token() {
 		if first_token.is_block() && first_token.block().is_paren() {
 			mut transaction := tokens
 			transaction.discard_a_token()
-			mut child_tokens := SupportsTokenStream.from_values_with_namespaces(first_token.block().value,
-				tokens.declared_namespaces)
-			if expression := parse_supports_boolean_expression(mut child_tokens,
-				result_for_general_enclosed)
-			{
+			mut child_tokens := SupportsTokenStream.from_values_with_namespaces(first_token.block().value, tokens.declared_namespaces)
+			if expression := parser.parse_boolean_expression(mut child_tokens, result_for_general_enclosed, parse_test) {
 				child_tokens.discard_whitespace()
 				if !child_tokens.has_next_token() {
 					tokens = transaction
@@ -190,19 +187,38 @@ fn parse_supports_boolean_expression_group(mut tokens SupportsTokenStream, resul
 		}
 	}
 
-	if test := parse_supports_feature(mut tokens) {
-		return test
+	match parse_test {
+		.supports_feature {
+			if test := parser.parse_supports_feature(mut tokens) {
+				return test
+			}
+		}
+		.media_in_parens {
+			if test := parser.parse_media_in_parens(mut tokens) {
+				return test
+			}
+		}
+		.if_test {
+			if test := parser.parse_if_test(mut tokens) {
+				return test
+			}
+		}
 	}
 
-	if general_enclosed := parse_supports_general_enclosed(mut tokens, result_for_general_enclosed) {
+	if general_enclosed := parser.parse_general_enclosed(mut tokens, result_for_general_enclosed) {
 		return general_enclosed
 	}
 
 	return none
 }
 
+// https://drafts.csswg.org/css-conditional-3/#typedef-supports-condition
+fn (mut parser Parser) parse_supports_condition(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	return parser.parse_boolean_expression(mut tokens, .false_, .supports_feature)
+}
+
 // https://drafts.csswg.org/css-conditional-5/#typedef-supports-feature
-fn parse_supports_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
+fn (mut parser Parser) parse_supports_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	mut transaction := tokens
 	transaction.discard_whitespace()
 	first_token := transaction.consume_a_token() or { return none }
@@ -210,7 +226,7 @@ fn parse_supports_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	// `<supports-decl> = ( <declaration> )`
 	if first_token.is_block() && first_token.block().is_paren() {
 		mut block_tokens := ParserTokenStream.from_values(first_token.block().value)
-		if declaration := parse_supports_declaration_from_parser_tokens(mut block_tokens) {
+		if declaration := parser.parse_supports_declaration(mut block_tokens) {
 			transaction.discard_whitespace()
 			tokens = transaction
 			return BooleanExpression.create_in_parens(declaration)
@@ -220,7 +236,7 @@ fn parse_supports_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	// `<supports-selector-fn> = selector( <complex-selector> )`
 	if first_token.is_function_named('selector') {
 		selector := supports_component_values_to_string(first_token.function().value)
-		matches := parse_selector_with_parser(selector, transaction.declared_namespaces) != none
+		matches := parse_selector_with_parser(selector, parser.context.declared_namespaces) != none
 			&& !supports_selector_contains_unknown_webkit_pseudo_element(selector)
 		tokens = transaction
 		return BooleanExpression.create_supports_selector(selector, matches)
@@ -237,8 +253,7 @@ fn parse_supports_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
 		}
 		tech_name := tech_token.token().ident()
 		tokens = transaction
-		return BooleanExpression.create_supports_font_tech(tech_name,
-			font_tech_is_supported_name(tech_name))
+		return BooleanExpression.create_supports_font_tech(tech_name, font_tech_is_supported_name(tech_name))
 	}
 
 	// `<supports-font-format-fn> = font-format( <font-format> )`
@@ -252,39 +267,56 @@ fn parse_supports_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
 		}
 		format_name := format_token.token().ident()
 		tokens = transaction
-		return BooleanExpression.create_supports_font_format(format_name,
-			font_format_is_supported(format_name))
+		return BooleanExpression.create_supports_font_format(format_name, font_format_is_supported(format_name))
 	}
 
 	return none
 }
 
 // https://drafts.csswg.org/css-conditional-5/#typedef-supports-decl
-fn parse_supports_declaration_from_parser_tokens(mut tokens ParserTokenStream) ?&BooleanExpression {
-	mut parser := RuleSelectorParser.create(ParsingParams{}, '', 'utf-8')
-	declaration := parser.consume_a_declaration(mut tokens, .no, .yes) or { return none }
+fn (mut parser Parser) parse_supports_declaration(mut tokens ParserTokenStream) ?&BooleanExpression {
+	mut rule_context := parser.context.rule_context.clone()
+	rule_context << .supports_condition
+	mut declaration_parser := RuleSelectorParser.create(ParsingParams{
+		document: parser.context.document
+		mode: parser.context.mode
+		value_context: parser.value_context.clone()
+		rule_context: rule_context
+		declared_namespaces: parser.context.declared_namespaces
+		is_ua_style_sheet: parser.context.is_ua_style_sheet
+	}, '', 'utf-8')
+	declaration := declaration_parser.consume_a_declaration(mut tokens, .no, .yes) or {
+		return none
+	}
 	tokens.discard_whitespace()
 	if tokens.has_next_token() {
 		return none
 	}
 
-	property := PropertyNameAndID.from_name(declaration.name) or { return none }
+	value_text := supports_component_values_to_string(declaration.value).trim_space()
+	original := declaration.original_full_text or { '${declaration.name}: ${value_text}' }
+	property := PropertyNameAndID.from_name(declaration.name) or {
+		return BooleanExpression.create_supports_declaration(original, false)
+	}
 	if property.is_custom_property() {
-		original := declaration.original_full_text or {
-			supports_component_values_to_string(declaration.value)
-		}
-
 		return BooleanExpression.create_supports_declaration(original, true)
 	}
-	property_id := property.id() or { return none }
-	value_text := supports_component_values_to_string(declaration.value).trim_space()
-	matches := parse_css_value(ParsingParams{}, value_text, property_id) != none
-	original := declaration.original_full_text or { '${declaration.name}: ${value_text}' }
+	property_id := property.id() or {
+		return BooleanExpression.create_supports_declaration(original, false)
+	}
+	mut value_tokens := ComponentValueStream.new(declaration.value)
+	matches := parser.parse_css_value_tokens(property_id, mut value_tokens) != none
 	return BooleanExpression.create_supports_declaration(original, matches)
 }
 
+fn parse_supports_declaration_from_parser_tokens(mut tokens ParserTokenStream) ?&BooleanExpression {
+	mut parser := Parser{}
+	return parser.parse_supports_declaration(mut tokens)
+}
+
 // https://www.w3.org/TR/mediaqueries-4/#typedef-general-enclosed
-fn parse_supports_general_enclosed(mut tokens SupportsTokenStream, result MatchResult) ?&BooleanExpression {
+fn (mut parser Parser) parse_general_enclosed(mut tokens SupportsTokenStream, result MatchResult) ?&BooleanExpression {
+	_ = parser
 	mut transaction := tokens
 	transaction.discard_whitespace()
 	first_token := transaction.consume_a_token() or { return none }
@@ -344,7 +376,7 @@ pub fn media_query_known_media_type_to_string(media_type MediaQueryKnownMediaTyp
 pub struct MediaQuery {
 pub mut:
 	text            string = 'all'
-	matches         bool   = true
+	matches         bool = true
 	negated         bool
 	media_type      MediaQueryType = MediaQueryType.all()
 	media_condition ?&BooleanExpression
@@ -358,35 +390,31 @@ pub mut:
 
 pub fn MediaQueryType.all() MediaQueryType {
 	return MediaQueryType{
-		name:       'all'
+		name: 'all'
 		known_type: MediaQueryKnownMediaType.all
 	}
 }
 
 pub fn MediaQuery.create_not_all() &MediaQuery {
 	return &MediaQuery{
-		text:       'not all'
-		matches:    false
-		negated:    true
+		text: 'not all'
+		matches: false
+		negated: true
 		media_type: MediaQueryType.all()
 	}
 }
 
 pub fn MediaQuery.create() &MediaQuery {
 	return &MediaQuery{
-		text:       'all'
-		matches:    true
+		text: 'all'
+		matches: true
 		media_type: MediaQueryType.all()
 	}
 }
 
 pub fn parse_media_query(context ParsingParams, text string) ?&MediaQuery {
-	queries := parse_css_media_query_list_value_logic(text)
-	if queries.len != 1 {
-		return none
-	}
-	_ = context
-	return queries[0]
+	mut parser := Parser.with_context(context, text)
+	return parser.parse_as_media_query()
 }
 
 pub fn (media_query &MediaQuery) evaluate(doc ?&dom.Document) bool {
@@ -460,6 +488,8 @@ pub mut:
 	document_          &dom.Document = unsafe { nil }
 	media_queries      []&MediaQuery
 	has_changed_state_ ?bool = false
+	dom_registration_  &dom.MediaQueryList = unsafe { nil }
+	registered_        bool
 }
 
 pub fn MediaQueryList.create(document &dom.Document, media []&MediaQuery) &MediaQueryList {
@@ -468,8 +498,16 @@ pub fn MediaQueryList.create(document &dom.Document, media []&MediaQuery) &Media
 
 pub fn MediaQueryList.new(document &dom.Document, media []&MediaQuery) &MediaQueryList {
 	mut media_query_list := &MediaQueryList{
-		document_:     document
+		document_: document
 		media_queries: media.clone()
+	}
+	media_query_list.dom_registration_ = &dom.MediaQueryList{
+		target: voidptr(media_query_list)
+		matches_callback: media_query_list_registration_matches
+		evaluate_callback: media_query_list_registration_evaluate
+		has_changed_state_callback: media_query_list_registration_has_changed_state
+		set_has_changed_state_callback: media_query_list_registration_set_has_changed_state
+		dispatch_change_event_callback: media_query_list_registration_dispatch_change_event
 	}
 	media_query_list.has_changed_state_ = false
 	media_query_list.evaluate()
@@ -591,7 +629,7 @@ pub fn (mut media_query_list MediaQueryList) set_has_changed_state(has_changed_s
 
 pub fn (media_query_list &MediaQueryList) dispatch_change_event(matches bool) {
 	mut init := MediaQueryListEventInit{
-		media:   media_query_list.media()
+		media: media_query_list.media()
 		matches: matches
 	}
 	init.EventInit = dom.EventInit{}
@@ -624,19 +662,14 @@ fn media_query_list_registration_dispatch_change_event(target voidptr, matches b
 	media_query_list.dispatch_change_event(matches)
 }
 
-pub fn (media_query_list &MediaQueryList) register_with_document() {
+pub fn (mut media_query_list MediaQueryList) register_with_document() {
 	// Window::match_media() registers the C++ CSS::MediaQueryList with DOM::Document.
-	// Boundary: the V dom module cannot import css, so register the translated CSS
-	// object through an opaque callback record owned by DOM.
+	if media_query_list.registered_ {
+		return
+	}
 	mut document := unsafe { &dom.Document(media_query_list.document_) }
-	document.add_css_media_query_list(dom.CSSMediaQueryListRegistration{
-		target:                voidptr(media_query_list)
-		matches:               media_query_list_registration_matches
-		evaluate:              media_query_list_registration_evaluate
-		has_changed_state:     media_query_list_registration_has_changed_state
-		set_has_changed_state: media_query_list_registration_set_has_changed_state
-		dispatch_change_event: media_query_list_registration_dispatch_change_event
-	})
+	document.add_media_query_list(media_query_list.dom_registration_)
+	media_query_list.registered_ = true
 }
 
 pub struct MediaQueryListEntry {
@@ -807,7 +840,7 @@ pub fn serialize_a_media_query_list_entries(media_queries []MediaQueryListEntry)
 fn parse_media_query_entry(medium string) ?MediaQueryListEntry {
 	query := parse_media_query_from_text(medium) or { return none }
 	return MediaQueryListEntry{
-		text:    query.to_string()
+		text: query.to_string()
 		matches: query.matches()
 	}
 }
@@ -821,7 +854,7 @@ fn media_query_entries_from_queries(queries []&MediaQuery) []MediaQueryListEntry
 	mut entries := []MediaQueryListEntry{cap: queries.len}
 	for query in queries {
 		entries << MediaQueryListEntry{
-			text:    query.to_string()
+			text: query.to_string()
 			matches: query.matches()
 		}
 	}
@@ -829,81 +862,8 @@ fn media_query_entries_from_queries(queries []&MediaQuery) []MediaQueryListEntry
 }
 
 pub fn parse_media_query_from_text(text string) ?&MediaQuery {
-	trimmed := text.trim_space()
-	if trimmed.len == 0 {
-		return none
-	}
-
-	mut condition_tokens :=
-		SupportsTokenStream.from_values(parse_component_values_for_value_logic(trimmed))
-	if condition := parse_media_condition(mut condition_tokens) {
-		condition_tokens.discard_whitespace()
-		if !condition_tokens.has_next_token() {
-			mut query := MediaQuery{
-				text:            trimmed
-				media_type:      MediaQueryType.all()
-				media_condition: unsafe { &BooleanExpression(condition) }
-			}
-			query.matches = query.evaluate(none)
-			return &query
-		}
-	}
-
-	lower := trimmed.to_lower()
-	if lower == 'not all' {
-		return MediaQuery.create_not_all()
-	}
-
-	mut remaining := trimmed
-	mut negated := false
-	mut only_modifier := false
-	if starts_with_ascii_word_case_insensitive(remaining, 'not') {
-		negated = true
-		remaining = remaining[3..].trim_space()
-	} else if starts_with_ascii_word_case_insensitive(remaining, 'only') {
-		only_modifier = true
-		remaining = remaining[4..].trim_space()
-	}
-	_ = only_modifier
-
-	media_type_name, rest := consume_first_ascii_word(remaining)
-	if media_type_name.len == 0
-		|| media_type_name.to_lower() in ['layer', 'not', 'and', 'only', 'or'] {
-		return MediaQuery.create_not_all()
-	}
-
-	mut media_type := MediaQueryType{
-		name:       media_type_name
-		known_type: media_type_from_string(media_type_name)
-	}
-	mut condition := ?&BooleanExpression(none)
-	mut condition_text := rest.trim_space()
-	if condition_text.len != 0 {
-		if !starts_with_ascii_word_case_insensitive(condition_text, 'and') {
-			return MediaQuery.create_not_all()
-		}
-		condition_text = condition_text[3..].trim_space()
-		if condition_text.len == 0 {
-			return MediaQuery.create_not_all()
-		}
-		condition = parse_media_condition_from_text(condition_text) or {
-			return MediaQuery.create_not_all()
-		}
-		if media_condition := condition {
-			if media_condition.kind == .or {
-				return MediaQuery.create_not_all()
-			}
-		}
-	}
-
-	mut query := MediaQuery{
-		text:            trimmed
-		negated:         negated
-		media_type:      media_type
-		media_condition: condition
-	}
-	query.matches = query.evaluate(none)
-	return &query
+	mut parser := Parser.from_css_text(text)
+	return parser.parse_as_media_query()
 }
 
 fn media_query_matches_media_type(media_type MediaQueryType) MatchResult {
@@ -923,122 +883,18 @@ fn media_query_matches_media_type(media_type MediaQueryType) MatchResult {
 	}
 }
 
-fn parse_media_condition_from_text(condition_text string) ?&BooleanExpression {
-	trimmed := condition_text.trim_space()
-	if trimmed.len == 0 {
-		return none
-	}
-	mut tokens := SupportsTokenStream.from_values(parse_component_values_for_value_logic(trimmed))
-	condition := parse_media_condition(mut tokens) or { return none }
-	tokens.discard_whitespace()
-	if tokens.has_next_token() {
-		return none
-	}
-	return condition
-}
-
 // `<media-condition>`, https://www.w3.org/TR/mediaqueries-4/#typedef-media-condition
 fn parse_media_condition(mut tokens SupportsTokenStream) ?&BooleanExpression {
-	return parse_media_boolean_expression(mut tokens, .unknown)
+	mut parser := Parser.from_component_values(tokens.values[tokens.index..])
+	return parse_media_condition_with_parser(mut parser, mut tokens)
 }
 
-// https://drafts.csswg.org/css-values-5/#typedef-boolean-expr
-fn parse_media_boolean_expression(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
-	mut transaction := tokens
-	transaction.discard_whitespace()
-
-	if peeked_token := transaction.next_token() {
-		if peeked_token.is_ident('not') {
-			transaction.discard_a_token()
-			transaction.discard_whitespace()
-			child := parse_media_boolean_expression_group(mut transaction,
-				result_for_general_enclosed) or { return none }
-			transaction.discard_whitespace()
-			tokens = transaction
-			return BooleanExpression.create_not(child)
-		}
-	}
-
-	mut children := []&BooleanExpression{}
-	mut combinator := ?string(none)
-	for transaction.has_next_token() {
-		if children.len != 0 {
-			token := transaction.consume_a_token() or { return none }
-			if !token.is(.ident) {
-				return none
-			}
-			maybe_combinator := token.token().ident().to_lower()
-			if maybe_combinator != 'and' && maybe_combinator != 'or' {
-				return none
-			}
-			if existing := combinator {
-				if existing != maybe_combinator {
-					return none
-				}
-			} else {
-				combinator = maybe_combinator
-			}
-		}
-
-		transaction.discard_whitespace()
-		child := parse_media_boolean_expression_group(mut transaction, result_for_general_enclosed) or {
-			return none
-		}
-		children << child
-		transaction.discard_whitespace()
-	}
-
-	if children.len == 0 {
-		return none
-	}
-
-	tokens = transaction
-	if children.len == 1 {
-		return children[0]
-	}
-
-	if combinator_value := combinator {
-		if combinator_value == 'and' {
-			return BooleanExpression.create_and(children)
-		}
-		if combinator_value == 'or' {
-			return BooleanExpression.create_or(children)
-		}
-	}
-	return none
+fn parse_media_condition_with_parser(mut parser Parser, mut tokens SupportsTokenStream) ?&BooleanExpression {
+	return parser.parse_boolean_expression(mut tokens, .unknown, .media_in_parens)
 }
 
-fn parse_media_boolean_expression_group(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
-	if first_token := tokens.next_token() {
-		if first_token.is_block() && first_token.block().is_paren() {
-			mut transaction := tokens
-			transaction.discard_a_token()
-			mut child_tokens := SupportsTokenStream.from_values(first_token.block().value)
-			if expression := parse_media_boolean_expression(mut child_tokens,
-				result_for_general_enclosed)
-			{
-				child_tokens.discard_whitespace()
-				if !child_tokens.has_next_token() {
-					tokens = transaction
-					return BooleanExpression.create_in_parens(expression)
-				}
-			}
-		}
-	}
-
-	if test := parse_media_in_parens(mut tokens) {
-		return test
-	}
-
-	if general_enclosed := parse_supports_general_enclosed(mut tokens, result_for_general_enclosed) {
-		return general_enclosed
-	}
-
-	return none
-}
-
-// `<media-in-parens>` currently only has the concrete `<media-feature>` branch in the V port.
-fn parse_media_in_parens(mut tokens SupportsTokenStream) ?&BooleanExpression {
+// The `<media-in-parens>` test callback parses the parenthesized `<media-feature>` branch.
+fn (mut parser Parser) parse_media_in_parens(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	mut transaction := tokens
 	transaction.discard_whitespace()
 
@@ -1049,7 +905,7 @@ fn parse_media_in_parens(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	transaction.discard_a_token()
 
 	mut inner_tokens := SupportsTokenStream.from_values(first_token.block().value)
-	feature := parse_media_feature(mut inner_tokens) or { return none }
+	feature := parser.parse_media_feature(mut inner_tokens) or { return none }
 	inner_tokens.discard_whitespace()
 	if inner_tokens.has_next_token() {
 		return none
@@ -1088,10 +944,11 @@ enum MediaFeatureValueKindLocal {
 }
 
 struct MediaFeatureValueLocal {
-	kind  MediaFeatureValueKindLocal
-	text  string
-	name  string
-	value f64
+	kind        MediaFeatureValueKindLocal
+	text        string
+	name        string
+	value       f64
+	typed_value ?StyleValue
 }
 
 enum MediaFeatureComparison {
@@ -1103,19 +960,25 @@ enum MediaFeatureComparison {
 }
 
 fn parse_media_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
-	if feature := parse_media_feature_boolean(mut tokens) {
+	mut parser := Parser.from_component_values(tokens.values[tokens.index..])
+	return parser.parse_media_feature(mut tokens)
+}
+
+fn (mut parser Parser) parse_media_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	if feature := parse_media_feature_boolean(mut parser, mut tokens) {
 		return feature
 	}
-	if feature := parse_media_feature_plain(mut tokens) {
+	if feature := parse_media_feature_plain(mut parser, mut tokens) {
 		return feature
 	}
-	if feature := parse_media_feature_range(mut tokens) {
+	if feature := parse_media_feature_range(mut parser, mut tokens) {
 		return feature
 	}
 	return none
 }
 
-fn parse_media_feature_boolean(mut tokens SupportsTokenStream) ?&BooleanExpression {
+fn parse_media_feature_boolean(mut parser Parser, mut tokens SupportsTokenStream) ?&BooleanExpression {
+	_ = parser
 	mut transaction := tokens
 	transaction.discard_whitespace()
 	name := parse_media_feature_name(mut transaction, false) or { return none }
@@ -1128,7 +991,7 @@ fn parse_media_feature_boolean(mut tokens SupportsTokenStream) ?&BooleanExpressi
 	return BooleanExpression.create_media_feature(text, name.name, .is_true, none, none, none, none)
 }
 
-fn parse_media_feature_plain(mut tokens SupportsTokenStream) ?&BooleanExpression {
+fn parse_media_feature_plain(mut parser Parser, mut tokens SupportsTokenStream) ?&BooleanExpression {
 	mut transaction := tokens
 	transaction.discard_whitespace()
 	name := parse_media_feature_name(mut transaction, true) or { return none }
@@ -1137,7 +1000,9 @@ fn parse_media_feature_plain(mut tokens SupportsTokenStream) ?&BooleanExpression
 		return none
 	}
 	transaction.discard_whitespace()
-	value := parse_media_feature_value(name.name, mut transaction) or { return none }
+	value := parse_media_feature_value_with_parser(mut parser, name.name, mut transaction) or {
+		return none
+	}
 	transaction.discard_whitespace()
 	if transaction.has_next_token() {
 		return none
@@ -1146,23 +1011,20 @@ fn parse_media_feature_plain(mut tokens SupportsTokenStream) ?&BooleanExpression
 	match name.prefix {
 		.normal {
 			text := '(${name.name}: ${value.text})'
-			return BooleanExpression.create_media_feature(text, name.name, .exact_value, value,
-				none, none, none)
+			return BooleanExpression.create_media_feature(text, name.name, .exact_value, value, none, none, none)
 		}
 		.min {
 			text := '(min-${name.name}: ${value.text})'
-			return BooleanExpression.create_media_feature(text, name.name, .min_value, value, none,
-				none, none)
+			return BooleanExpression.create_media_feature(text, name.name, .min_value, value, none, none, none)
 		}
 		.max {
 			text := '(max-${name.name}: ${value.text})'
-			return BooleanExpression.create_media_feature(text, name.name, .max_value, value, none,
-				none, none)
+			return BooleanExpression.create_media_feature(text, name.name, .max_value, value, none, none, none)
 		}
 	}
 }
 
-fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression {
+fn parse_media_feature_range(mut parser Parser, mut tokens SupportsTokenStream) ?&BooleanExpression {
 	mut transaction := tokens
 	transaction.discard_whitespace()
 
@@ -1170,13 +1032,12 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 		transaction.discard_whitespace()
 		if comparison := parse_media_feature_comparison(mut transaction) {
 			transaction.discard_whitespace()
-			if value := parse_media_feature_value(name.name, mut transaction) {
+			if value := parse_media_feature_value_with_parser(mut parser, name.name, mut transaction) {
 				transaction.discard_whitespace()
 				if !transaction.has_next_token() && value.kind != .ident {
 					tokens = transaction
 					text := '(${name.name} ${media_feature_comparison_to_string(comparison)} ${value.text})'
-					return BooleanExpression.create_media_feature(text, name.name,
-						.half_range_query_left, value, comparison, none, none)
+					return BooleanExpression.create_media_feature(text, name.name, .half_range_query_left, value, comparison, none, none)
 				}
 			}
 		}
@@ -1184,11 +1045,13 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 
 	transaction = SupportsTokenStream{
 		values: tokens.values.clone()
-		index:  tokens.index
+		index: tokens.index
 	}
 	transaction.discard_whitespace()
 	maybe_name := find_media_feature_name_after_comparison(transaction) or { return none }
-	left_value := parse_media_feature_value(maybe_name.name, mut transaction) or { return none }
+	left_value := parse_media_feature_value_with_parser(mut parser, maybe_name.name, mut transaction) or {
+		return none
+	}
 	transaction.discard_whitespace()
 	left_comparison := parse_media_feature_comparison(mut transaction) or { return none }
 	transaction.discard_whitespace()
@@ -1202,13 +1065,14 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 	if !transaction.has_next_token() {
 		tokens = transaction
 		text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name})'
-		return BooleanExpression.create_media_feature(text, maybe_name.name,
-			.half_range_query_right, left_value, left_comparison, none, none)
+		return BooleanExpression.create_media_feature(text, maybe_name.name, .half_range_query_right, left_value, left_comparison, none, none)
 	}
 
 	right_comparison := parse_media_feature_comparison(mut transaction) or { return none }
 	transaction.discard_whitespace()
-	right_value := parse_media_feature_value(maybe_name.name, mut transaction) or { return none }
+	right_value := parse_media_feature_value_with_parser(mut parser, maybe_name.name, mut transaction) or {
+		return none
+	}
 	transaction.discard_whitespace()
 	if transaction.has_next_token()
 		|| !media_feature_comparisons_match(left_comparison, right_comparison)
@@ -1218,8 +1082,7 @@ fn parse_media_feature_range(mut tokens SupportsTokenStream) ?&BooleanExpression
 
 	tokens = transaction
 	text := '(${left_value.text} ${media_feature_comparison_to_string(left_comparison)} ${maybe_name.name} ${media_feature_comparison_to_string(right_comparison)} ${right_value.text})'
-	return BooleanExpression.create_media_feature(text, maybe_name.name, .range, left_value,
-		left_comparison, right_comparison, right_value)
+	return BooleanExpression.create_media_feature(text, maybe_name.name, .range, left_value, left_comparison, right_comparison, right_value)
 }
 
 fn find_media_feature_name_after_comparison(tokens SupportsTokenStream) ?MediaFeatureName {
@@ -1246,7 +1109,7 @@ fn parse_media_feature_name(mut tokens SupportsTokenStream, allow_min_max_prefix
 	if media_feature_is_known(name) {
 		tokens = transaction
 		return MediaFeatureName{
-			name:   name.to_lower()
+			name: name.to_lower()
 			prefix: .normal
 		}
 	}
@@ -1259,7 +1122,7 @@ fn parse_media_feature_name(mut tokens SupportsTokenStream, allow_min_max_prefix
 				&& media_feature_type_is_range_name(adjusted_name) {
 				tokens = transaction
 				return MediaFeatureName{
-					name:   adjusted_name
+					name: adjusted_name
 					prefix: if lower.starts_with('min-') {
 						MediaFeatureNamePrefix.min
 					} else {
@@ -1310,10 +1173,9 @@ fn parse_media_feature_comparison(mut tokens SupportsTokenStream) ?MediaFeatureC
 	return none
 }
 
-fn parse_media_feature_value(feature_name string, mut tokens SupportsTokenStream) ?MediaFeatureValueLocal {
+fn parse_media_feature_value_with_parser(mut parser Parser, feature_name string, mut tokens SupportsTokenStream) ?MediaFeatureValueLocal {
 	mut transaction := tokens
 	transaction.discard_whitespace()
-	start_index := transaction.index
 	mut values := []ComponentValue{}
 	for transaction.has_next_token() {
 		next := transaction.next_token() or { break }
@@ -1326,168 +1188,98 @@ fn parse_media_feature_value(feature_name string, mut tokens SupportsTokenStream
 		return none
 	}
 
-	text := supports_component_values_to_string(values).trim_space()
-	mut value_tokens := SupportsTokenStream.from_values(values)
-	if value := parse_known_media_feature_value(feature_name, text, mut value_tokens) {
-		value_tokens.discard_whitespace()
-		if !is_media_feature_value_token(value_tokens.next_token() or {
-			ComponentValue.from_token(Tokenizer.create_eof_token())
-		}) {
+	// Parse through Parser::parse_media_feature_value(), just like the upstream
+	// media parser. Keeping a second value parser here used to discard units.
+	mut value_tokens := ComponentValueStream.new(values)
+	if style_value := parser.parse_media_feature_value(feature_name, mut value_tokens) {
+		value_tokens.consume_whitespace()
+		if !value_tokens.has_more_tokens() {
 			tokens = transaction
-			return value
+			return media_feature_value_from_style_value(feature_name, style_value)
 		}
 	}
 
-	// Match C++ parse_media_feature_value() fallback: preserve unknown value tokens when they are syntactically value-like.
-	if transaction.index > start_index {
-		tokens = transaction
-		return MediaFeatureValueLocal{
-			kind: .unknown
-			text: text
-		}
+	// Match the C++ fallback by preserving unrecognized, syntactically
+	// value-like component values.
+	tokens = transaction
+	return MediaFeatureValueLocal{
+		kind: .unknown
+		text: supports_component_values_to_string(values).trim_space()
 	}
-	return none
 }
 
-fn parse_known_media_feature_value(feature_name string, text string, mut tokens SupportsTokenStream) ?MediaFeatureValueLocal {
-	tokens.discard_whitespace()
-	if token := tokens.next_token() {
-		if token.is(.ident) {
-			ident := token.token().ident().to_lower()
-			if media_feature_accepts_keyword_name(feature_name, ident) {
-				tokens.discard_a_token()
-				return MediaFeatureValueLocal{
-					kind: .ident
-					text: text
-					name: ident
-				}
+fn media_feature_value_from_style_value(feature_name string, style_value StyleValue) MediaFeatureValueLocal {
+	text := style_value.serialize(.normal)
+	return match style_value {
+		KeywordStyleValue {
+			MediaFeatureValueLocal{
+				kind: .ident
+				text: text
+				name: string_from_keyword(style_value.keyword())
+				typed_value: style_value
+			}
+		}
+		IntegerStyleValue {
+			MediaFeatureValueLocal{
+				kind: .integer
+				text: text
+				value: f64(style_value.integer())
+				typed_value: style_value
+			}
+		}
+		LengthStyleValue {
+			MediaFeatureValueLocal{
+				kind: .length
+				text: text
+				typed_value: style_value
+			}
+		}
+		RatioStyleValue {
+			MediaFeatureValueLocal{
+				kind: .ratio
+				text: text
+				typed_value: style_value
+			}
+		}
+		ResolutionStyleValue {
+			MediaFeatureValueLocal{
+				kind: .resolution
+				text: text
+				typed_value: style_value
+			}
+		}
+		CalculatedStyleValue {
+			MediaFeatureValueLocal{
+				kind: media_feature_calculated_value_kind(feature_name)
+				text: text
+				typed_value: style_value
+			}
+		}
+		else {
+			MediaFeatureValueLocal{
+				kind: .unknown
+				text: text
+				typed_value: style_value
 			}
 		}
 	}
+}
 
-	if media_feature_accepts_type_name(feature_name, .boolean) {
-		if value := parse_media_feature_integer_value(mut tokens) {
-			if value == 0 || value == 1 {
-				return MediaFeatureValueLocal{
-					kind:  .integer
-					text:  text
-					value: value
-				}
-			}
-		}
+fn media_feature_calculated_value_kind(feature_name string) MediaFeatureValueKindLocal {
+	if media_feature_accepts_type_name(feature_name, .boolean)
+		|| media_feature_accepts_type_name(feature_name, .integer) {
+		return .integer
 	}
-
-	if media_feature_accepts_type_name(feature_name, .integer) {
-		if value := parse_media_feature_integer_value(mut tokens) {
-			return MediaFeatureValueLocal{
-				kind:  .integer
-				text:  text
-				value: value
-			}
-		}
-	}
-
 	if media_feature_accepts_type_name(feature_name, .length) {
-		if value := parse_media_feature_length_value(mut tokens) {
-			return MediaFeatureValueLocal{
-				kind:  .length
-				text:  text
-				value: value
-			}
-		}
+		return .length
 	}
-
 	if media_feature_accepts_type_name(feature_name, .ratio) {
-		if value := parse_media_feature_ratio_value(mut tokens) {
-			return MediaFeatureValueLocal{
-				kind:  .ratio
-				text:  text
-				value: value
-			}
-		}
+		return .ratio
 	}
-
 	if media_feature_accepts_type_name(feature_name, .resolution) {
-		if value := parse_media_feature_resolution_value(mut tokens) {
-			return MediaFeatureValueLocal{
-				kind:  .resolution
-				text:  text
-				value: value
-			}
-		}
+		return .resolution
 	}
-
-	return none
-}
-
-fn parse_media_feature_integer_value(mut tokens SupportsTokenStream) ?f64 {
-	mut transaction := tokens
-	transaction.discard_whitespace()
-	token := transaction.consume_a_token() or { return none }
-	if !token.is(.number) || !token.token().number().is_integer() {
-		return none
-	}
-	tokens = transaction
-	return token.token().number().value()
-}
-
-fn parse_media_feature_length_value(mut tokens SupportsTokenStream) ?f64 {
-	mut transaction := tokens
-	transaction.discard_whitespace()
-	token := transaction.consume_a_token() or { return none }
-	if token.is(.number) && token.token().number_value() == 0 {
-		tokens = transaction
-		return 0.0
-	}
-	if token.is(.dimension) {
-		unit := string_to_length_unit(token.token().dimension_unit()) or { return none }
-		if unit == .px {
-			tokens = transaction
-			return token.token().dimension_value()
-		}
-		if parse_css_media_feature_value_logic('', token.to_string()) != none {
-			tokens = transaction
-			return token.token().dimension_value()
-		}
-	}
-	if token.is_function() && parse_css_media_feature_value_logic('', token.to_string()) != none {
-		tokens = transaction
-		return 0.0
-	}
-	return none
-}
-
-fn parse_media_feature_ratio_value(mut tokens SupportsTokenStream) ?f64 {
-	mut transaction := tokens
-	transaction.discard_whitespace()
-	left := transaction.consume_a_token() or { return none }
-	if !left.is(.number) || left.token().number_value() < 0 {
-		return none
-	}
-	transaction.discard_whitespace()
-	solidus := transaction.consume_a_token() or { return none }
-	if !solidus.is_delim(u32(`/`)) {
-		return none
-	}
-	transaction.discard_whitespace()
-	right := transaction.consume_a_token() or { return none }
-	if !right.is(.number) || right.token().number_value() <= 0 {
-		return none
-	}
-	tokens = transaction
-	return left.token().number_value() / right.token().number_value()
-}
-
-fn parse_media_feature_resolution_value(mut tokens SupportsTokenStream) ?f64 {
-	mut transaction := tokens
-	transaction.discard_whitespace()
-	token := transaction.consume_a_token() or { return none }
-	if token.is(.dimension) {
-		unit := string_to_resolution_unit(token.token().dimension_unit()) or { return none }
-		tokens = transaction
-		return token.token().dimension_value() * ratio_between_resolution_units(unit, .dppx)
-	}
-	return none
+	return .unknown
 }
 
 fn is_media_feature_value_token(component_value ComponentValue) bool {
@@ -1523,40 +1315,40 @@ fn evaluate_media_feature(feature_name string, kind MediaFeatureEvalKind, value 
 	queried_value := query_media_feature(feature_name, document) or { return .unknown }
 	match kind {
 		.is_true {
-			return evaluate_media_feature_value_as_boolean(feature_name, queried_value)
+			return evaluate_media_feature_value_as_boolean(feature_name, queried_value, document)
 		}
 		.exact_value {
 			expected := value or { return .unknown }
-			return compare_media_feature_values(queried_value, .equal, expected)
+			return compare_media_feature_values(queried_value, .equal, expected, document)
 		}
 		.min_value {
 			expected := value or { return .unknown }
-			return compare_media_feature_values(queried_value, .greater_than_or_equal, expected)
+			return compare_media_feature_values(queried_value, .greater_than_or_equal, expected, document)
 		}
 		.max_value {
 			expected := value or { return .unknown }
-			return compare_media_feature_values(queried_value, .less_than_or_equal, expected)
+			return compare_media_feature_values(queried_value, .less_than_or_equal, expected, document)
 		}
 		.half_range_query_left {
 			expected := value or { return .unknown }
 			expected_comparison := comparison or { return .unknown }
-			return compare_media_feature_values(queried_value, expected_comparison, expected)
+			return compare_media_feature_values(queried_value, expected_comparison, expected, document)
 		}
 		.half_range_query_right {
 			expected := value or { return .unknown }
 			expected_comparison := comparison or { return .unknown }
-			return compare_media_feature_values(expected, expected_comparison, queried_value)
+			return compare_media_feature_values(expected, expected_comparison, queried_value, document)
 		}
 		.range {
 			left := value or { return .unknown }
 			left_comparison := comparison or { return .unknown }
 			right := right_value or { return .unknown }
 			comparison_to_right := right_comparison or { return .unknown }
-			left_result := compare_media_feature_values(left, left_comparison, queried_value)
+			left_result := compare_media_feature_values(left, left_comparison, queried_value, document)
 			if left_result != .true_ {
 				return left_result
 			}
-			return compare_media_feature_values(queried_value, comparison_to_right, right)
+			return compare_media_feature_values(queried_value, comparison_to_right, right, document)
 		}
 	}
 }
@@ -1614,8 +1406,7 @@ fn query_media_feature(feature_name string, document ?&dom.Document) ?MediaFeatu
 		'prefers-color-scheme' {
 			media_feature_ident_value('light')
 		}
-		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion',
-		'prefers-reduced-transparency' {
+		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion', 'prefers-reduced-transparency' {
 			media_feature_ident_value('no-preference')
 		}
 		'resolution' {
@@ -1653,37 +1444,37 @@ fn media_feature_ident_value(name string) MediaFeatureValueLocal {
 
 fn media_feature_integer_value(value f64) MediaFeatureValueLocal {
 	return MediaFeatureValueLocal{
-		kind:  .integer
-		text:  serialize_a_number(value)
+		kind: .integer
+		text: serialize_a_number(value)
 		value: value
 	}
 }
 
 fn media_feature_length_value(value f64) MediaFeatureValueLocal {
 	return MediaFeatureValueLocal{
-		kind:  .length
-		text:  '${serialize_a_number(value)}px'
+		kind: .length
+		text: '${serialize_a_number(value)}px'
 		value: value
 	}
 }
 
 fn media_feature_ratio_value(value f64) MediaFeatureValueLocal {
 	return MediaFeatureValueLocal{
-		kind:  .ratio
-		text:  serialize_a_number(value)
+		kind: .ratio
+		text: serialize_a_number(value)
 		value: value
 	}
 }
 
 fn media_feature_resolution_value(value f64) MediaFeatureValueLocal {
 	return MediaFeatureValueLocal{
-		kind:  .resolution
-		text:  '${serialize_a_number(value)}dppx'
+		kind: .resolution
+		text: '${serialize_a_number(value)}dppx'
 		value: value
 	}
 }
 
-fn evaluate_media_feature_value_as_boolean(feature_name string, value MediaFeatureValueLocal) MatchResult {
+fn evaluate_media_feature_value_as_boolean(feature_name string, value MediaFeatureValueLocal, document ?&dom.Document) MatchResult {
 	match value.kind {
 		.ident {
 			if media_feature_keyword_is_falsey_name(feature_name, value.name) {
@@ -1692,15 +1483,16 @@ fn evaluate_media_feature_value_as_boolean(feature_name string, value MediaFeatu
 			return .true_
 		}
 		.integer, .length, .ratio, .resolution {
-			return as_match_result(value.value != 0)
+			resolved := media_feature_numeric_value(value, document) or { return .false_ }
+			return as_match_result(resolved != 0)
 		}
 		.unknown {
-			return .unknown
+			return .false_
 		}
 	}
 }
 
-fn compare_media_feature_values(left MediaFeatureValueLocal, comparison MediaFeatureComparison, right MediaFeatureValueLocal) MatchResult {
+fn compare_media_feature_values(left MediaFeatureValueLocal, comparison MediaFeatureComparison, right MediaFeatureValueLocal, document ?&dom.Document) MatchResult {
 	if left.kind == .unknown || right.kind == .unknown {
 		return .unknown
 	}
@@ -1713,13 +1505,65 @@ fn compare_media_feature_values(left MediaFeatureValueLocal, comparison MediaFea
 		}
 		return .false_
 	}
+	left_value := media_feature_numeric_value(left, document) or { return .false_ }
+	right_value := media_feature_numeric_value(right, document) or { return .false_ }
 	return match comparison {
-		.equal { as_match_result(left.value == right.value) }
-		.less_than { as_match_result(left.value < right.value) }
-		.less_than_or_equal { as_match_result(left.value <= right.value) }
-		.greater_than { as_match_result(left.value > right.value) }
-		.greater_than_or_equal { as_match_result(left.value >= right.value) }
+		.equal { as_match_result(left_value == right_value) }
+		.less_than { as_match_result(left_value < right_value) }
+		.less_than_or_equal { as_match_result(left_value <= right_value) }
+		.greater_than { as_match_result(left_value > right_value) }
+		.greater_than_or_equal { as_match_result(left_value >= right_value) }
 	}
+}
+
+fn media_feature_numeric_value(value MediaFeatureValueLocal, document ?&dom.Document) ?f64 {
+	if typed_value := value.typed_value {
+		length_context := media_feature_length_resolution_context(document)
+		calculation_context := CalculationResolutionContext{
+			length_resolution_context: length_context
+		}
+		return match typed_value {
+			IntegerStyleValue { f64(typed_value.integer()) }
+			LengthStyleValue {
+				media_feature_length_to_px(typed_value.length(), length_context)
+			}
+			RatioStyleValue { typed_value.ratio().value() }
+			ResolutionStyleValue { typed_value.resolution().to_dots_per_pixel() }
+			CalculatedStyleValue {
+				media_feature_calculated_numeric_value(typed_value, value.kind, calculation_context, length_context)
+			}
+			else { none }
+		}
+	}
+	return value.value
+}
+
+fn media_feature_calculated_numeric_value(value CalculatedStyleValue, kind MediaFeatureValueKindLocal, calculation_context CalculationResolutionContext, length_context LengthResolutionContext) ?f64 {
+	if kind == .length {
+		length := value.resolve_length(calculation_context) or { return none }
+		return media_feature_length_to_px(length, length_context)
+	}
+	if kind == .integer || kind == .resolution {
+		resolved := value.resolve_value(calculation_context) or { return none }
+		return resolved.value
+	}
+	return none
+}
+
+fn media_feature_length_resolution_context(document ?&dom.Document) LengthResolutionContext {
+	if doc := document {
+		return LengthResolutionContext.for_document(doc)
+	}
+	mut context := LengthResolutionContext.default()
+	context.viewport_rect = CSSPixelRect.new(0, 0, 800, 600)
+	return context
+}
+
+fn media_feature_length_to_px(length Length, context LengthResolutionContext) ?f64 {
+	if !length.is_absolute() && !length.is_font_relative() && !length.is_viewport_relative() {
+		return none
+	}
+	return length.to_px_without_rounding(context)
 }
 
 fn media_feature_comparisons_match(a MediaFeatureComparison, b MediaFeatureComparison) bool {
@@ -1898,40 +1742,17 @@ fn media_feature_keyword_is_falsey_name(name string, keyword string) bool {
 	lower_name := name.to_lower()
 	lower_keyword := keyword.to_lower()
 	return match lower_name {
-		'any-hover', 'any-pointer', 'forced-colors', 'hover', 'inverted-colors', 'nav-controls',
-		'overflow-block', 'overflow-inline', 'pointer', 'scan', 'scripting', 'update' {
+		'any-hover', 'any-pointer', 'forced-colors', 'hover', 'inverted-colors', 'nav-controls', 'overflow-block', 'overflow-inline', 'pointer', 'scan', 'scripting', 'update' {
 			lower_keyword == 'none'
 		}
 		'dynamic-range', 'video-dynamic-range' {
 			lower_keyword in ['standard', 'high']
 		}
-		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion',
-		'prefers-reduced-transparency' {
+		'prefers-contrast', 'prefers-reduced-data', 'prefers-reduced-motion', 'prefers-reduced-transparency' {
 			lower_keyword == 'no-preference'
 		}
 		else {
 			false
 		}
 	}
-}
-
-fn starts_with_ascii_word_case_insensitive(text string, word string) bool {
-	if text.len < word.len {
-		return false
-	}
-	if text[..word.len].to_lower() != word {
-		return false
-	}
-	if text.len == word.len {
-		return true
-	}
-	return text[word.len].is_space()
-}
-
-fn consume_first_ascii_word(text string) (string, string) {
-	mut index := 0
-	for index < text.len && !text[index].is_space() {
-		index++
-	}
-	return text[..index], text[index..]
 }

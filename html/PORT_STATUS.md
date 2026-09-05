@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 
 Translation workspace: `~/code/libweb_v/html`
-Audited: 2026-08-28
+Audited: 2026-09-04
 
 All 261 upstream HTML `.cpp` implementation units have a V implementation
 mapping. The audit deliberately ignores this status file when checking mappings,
@@ -34,8 +34,8 @@ itself.
 | `HTML/SyntaxHighlighter` | 1 | 206 | Complete |
 | **Total** | **261** | **73,434** | **Complete** |
 
-The translated module contains 146 implementation files (54,896 LOC) and 100
-test files (10,966 LOC), containing 494 V test functions. Several V files
+The translated module contains 147 implementation files (56,234 LOC) and 106
+test files (11,896 LOC), containing 538 V test functions. Several V files
 consolidate tightly coupled C++ classes, while parser and state-machine code is
 split by responsibility; file and test counts are therefore not expected to
 match one-to-one with the upstream layout.
@@ -60,7 +60,7 @@ upstream methods: 4226
 unmatched methods by class:
 
 $ /Users/alex/code/v/v_old -enable-globals test html
-Summary for all V _test.v files: 100 passed, 100 total.
+Summary for all V _test.v files: 106 passed, 106 total.
 ```
 
 Focused coverage includes the HTML tokenizer/tree builder, foreign and fragment
@@ -69,6 +69,19 @@ offscreen canvas, navigation/session history and same-document updates,
 browsing contexts and cross-origin access, event loop and messaging, classic
 and module-script fetching, workers and scripting environments, structured
 serialization, rendering-thread command ordering, and syntax highlighting.
+
+Responsive image source selection now delegates `sizes` to CSS's translated
+component-value, media-condition, calculation, and viewport-length algorithms.
+Picture-source media matching uses the same `MediaQuery.evaluate()` path, and
+rendered `auto` sizes use the translated replaced-element default sizing
+algorithm rather than a trailing-`px` parser and fixed numeric fallback.
+
+`HTMLInputElement` checkedness, dirty checkedness, and indeterminate state now
+live on the DOM element, matching C++, rather than being copied into a second
+HTML model. `set_checked()` performs only the single-control transition and
+style/repaint invalidation; binding and radio-group algorithms own exclusivity,
+walk the current DOM root, and compare form owners instead of scanning a
+process-global list of previously created models.
 
 ## Port boundary
 

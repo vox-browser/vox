@@ -30,6 +30,21 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 			is_contents_:       display.is_contents()
 			is_inline_outside_: display.is_inline_outside()
 			is_flow_inside_:    display.is_flow_inside()
+			is_flow_root_inside_: display.is_flow_root_inside()
+			is_flex_inside_:    display.is_flex_inside()
+			is_grid_inside_:    display.is_grid_inside()
+			is_table_inside_:   display.is_table_inside()
+			is_math_inside_:    display.is_math_inside()
+			is_ruby_inside_:    display.is_ruby_inside()
+			is_block_outside_:  display.is_block_outside()
+			is_table_caption_:  display.is_table_caption()
+			is_table_cell_:     display.is_table_cell()
+			is_table_row_:      display.is_table_row()
+			is_table_row_group_: display.is_table_row_group()
+			is_table_header_group_: display.is_table_header_group()
+			is_table_footer_group_: display.is_table_footer_group()
+			is_table_column_: display.is_table_column()
+			is_table_column_group_: display.is_table_column_group()
 		}
 		overflow_x_:                     overflow_to_dom(computed.overflow_x())
 		overflow_y_:                     overflow_to_dom(computed.overflow_y())
@@ -39,6 +54,7 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 		font_weight_:                    computed.font_weight()
 		math_depth_:                     computed.math_depth()
 		math_style_:                     math_style_to_dom(computed.math_style())
+		view_transition_name_:           computed.view_transition_name()
 		attempted_pseudo_class_matches_: computed.attempted_pseudo_class_matches()
 		css_handle:                      voidptr(computed)
 	}
@@ -456,12 +472,164 @@ pub fn sync_document_style_elements(document &dom.Document) {
 	scope.invalidate_rule_cache()
 }
 
+// DOM::Document::evaluate_media_rules(). CSSStyleSheet is CSS-owned in the V
+// module graph, so the translated algorithm lives at this bridge rather than
+// in dom.Document.
+fn evaluate_media_rules_for_document(document &dom.Document) {
+	mut any_media_queries_changed_match_state := false
+	changed_ptr := &any_media_queries_changed_match_state
+	mut document_scope := css_style_scope_for_document(document)
+	for sheet in document_scope.stylesheets_for_cascade_origin(.author) {
+		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+		if mutable_sheet.evaluate_media_queries(document) {
+			any_media_queries_changed_match_state = true
+		}
+	}
+
+	root := unsafe { &dom.Node(document) }
+	root.for_each_shadow_including_inclusive_descendant(fn [document, changed_ptr] (node &dom.Node) dom.TraversalDecision {
+		if shadow_root := node.as_shadow_root() {
+			mut scope := css_style_scope_for_shadow_root(shadow_root)
+			for sheet in scope.stylesheets_for_cascade_origin(.author) {
+				mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
+				if mutable_sheet.evaluate_media_queries(document) {
+					unsafe {
+						*changed_ptr = true
+					}
+				}
+			}
+		}
+		return .@continue
+	})
+
+	if !any_media_queries_changed_match_state {
+		return
+	}
+	document_scope.invalidate_rule_cache()
+	root.for_each_shadow_including_inclusive_descendant(fn (node &dom.Node) dom.TraversalDecision {
+		if shadow_root := node.as_shadow_root() {
+			mut scope := css_style_scope_for_shadow_root(shadow_root)
+			scope.invalidate_rule_cache()
+		}
+		return .@continue
+	})
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mut document_node := unsafe { &dom.Node(mutable_document) }
+	document_node.invalidate_style(.media_query_changed_match_state)
+}
+
+fn document_evaluate_media_rules_callback(target voidptr) {
+	document := unsafe { &dom.Document(target) }
+	evaluate_media_rules_for_document(document)
+}
+
+fn find_style_sheet_with_url(url string, sheet &CSSStyleSheet) ?&CSSStyleSheet {
+	if href := sheet.href() {
+		if href == url {
+			return sheet
+		}
+	}
+	for import_rule in sheet.import_rules {
+		if loaded_style_sheet := import_rule.loaded_style_sheet {
+			if found := find_style_sheet_with_url(url, loaded_style_sheet) {
+				return found
+			}
+		}
+	}
+	return none
+}
+
+fn document_get_style_sheet_source_callback(target voidptr, identifier &dom.StyleSheetIdentifier) ?string {
+	document := unsafe { &dom.Document(target) }
+	return match identifier.type_ {
+		.style_element {
+			unique_id := identifier.dom_element_unique_id or { return none }
+			node := dom.Node.from_unique_id(unique_id) or { return none }
+			element := node.as_element() or { return none }
+			if element.local_name() != 'style' {
+				return none
+			}
+			element.as_node().child_text_content()
+		}
+		.link_element, .import_rule {
+			url := identifier.url or { return none }
+			holder := css_author_style_sheets_for(document)
+			for sheet in holder.sheets {
+				if found := find_style_sheet_with_url(url, sheet) {
+					return found.source_text()
+				}
+			}
+			for sheet in holder.embedded_sheets {
+				if found := find_style_sheet_with_url(url, sheet) {
+					return found.source_text()
+				}
+			}
+			none
+		}
+		.user_agent {
+			url := identifier.url or { return none }
+			user_agent_style_sheet_source(url)
+		}
+		.user_style {
+			scope := css_style_scope_for_document(document)
+			scope.user_style_source
+		}
+	}
+}
+
+// DOM::Document::build_registered_properties_cache(). The concrete CSS rules
+// remain CSS-owned, while the compact registration records are mirrored onto
+// Document for custom-property computation.
+fn build_registered_properties_cache_for_document(document &dom.Document) {
+	mut registrations := map[string]dom.CustomPropertyRegistration{}
+	scope := css_style_scope_for_document(document)
+	for sheet in scope.stylesheets_for_cascade_origin(.author) {
+		for name, registration in sheet.registered_properties_from_css_property_rules() {
+			registrations[name] = dom.CustomPropertyRegistration{
+				initial_value: registration.initial_value
+				syntax: registration.syntax
+				inherits: registration.inherit
+			}
+		}
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.cached_registered_properties_from_css_property_rules = registrations.clone()
+}
+
+fn style_computer_build_registered_properties_cache_callback(target voidptr) {
+	style_computer := unsafe { &StyleComputer(target) }
+	if style_computer.document_ != unsafe { nil } {
+		build_registered_properties_cache_for_document(style_computer.document_)
+	}
+}
+
+fn style_computer_build_counter_style_cache_callback(target voidptr) {
+	style_computer := unsafe { &StyleComputer(target) }
+	if style_computer.document_ != unsafe { nil } {
+		rebuild_registered_counter_styles_for_document(style_computer.document_)
+	}
+}
+
 // Return the concrete computed style stored on an element by the document
 // style pass. Layout consumes that single canonical result instead of running
 // a second, inheritance-blind computation while building its tree.
 pub fn computed_properties_for_element(element &dom.Element) ?&ComputedProperties {
 	placeholder := dom.AbstractElement.new(element, none).computed_properties() or { return none }
 	return computed_properties_from_dom(placeholder)
+}
+
+// Recover the canonical typed CSS layer represented by DOM's cycle-breaking
+// view. No CSS text serialization or reparsing occurs.
+pub fn background_layer_from_dom(layer dom.BackgroundLayerData) ?BackgroundLayerData {
+	if layer.computed_properties_handle == unsafe { nil } {
+		return none
+	}
+	computed := unsafe { &ComputedProperties(layer.computed_properties_handle) }
+	layers := computed.background_layers()
+	if layer.layer_index < 0 || layer.layer_index >= layers.len {
+		return none
+	}
+	return layers[layer.layer_index]
 }
 
 // Return the concrete computed style installed for a generated pseudo-element
@@ -499,30 +667,283 @@ pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	dom_style_computer := mutable_document.style_computer
 	if dom_style_computer != unsafe { nil } && dom_style_computer.css_handle != unsafe { nil } {
+		install_document_background_style_hook(document)
 		return unsafe { &StyleComputer(dom_style_computer.css_handle) }
 	}
 	style_computer := StyleComputer.new(document)
+	mutable_document.set_css_animation_timeline_update_hook(dom.DocumentCSSAnimationTimelineUpdateHook{
+		target:   voidptr(style_computer)
+		callback: style_computer_document_timeline_update_callback
+	})
+	mutable_document.set_css_animation_event_hook(dom.DocumentCSSAnimationEventHook{
+		target:   voidptr(style_computer)
+		dispatch: style_computer_dispatch_css_animation_event
+	})
 	mutable_document.style_computer = &dom.StyleComputer{
 		css_handle:                                 voidptr(style_computer)
 		invalidation_property_used_in_has_callback: style_computer_invalidation_property_used_in_has_callback
 		invalidation_plan_callback:                 style_computer_invalidation_plan_callback
+		recompute_style_callback:                   style_computer_recompute_style_callback
+		recompute_inherited_style_callback:         style_computer_recompute_inherited_style_callback
+		update_animated_style_callback:             style_computer_update_animated_style_callback
+		build_registered_properties_cache_callback: style_computer_build_registered_properties_cache_callback
+		build_counter_style_cache_callback:         style_computer_build_counter_style_cache_callback
 	}
 	mutable_document.set_theme_color_hook(dom.DocumentThemeColorHook{
 		target:        voidptr(document)
 		parse_color:   document_theme_color_parse_callback
 		media_matches: document_theme_color_media_matches_callback
 	})
+	install_document_background_style_hook(document)
 	install_document_style_hook(document)
 	return style_computer
 }
 
+fn document_background_layers_callback(_ voidptr, element &dom.Element) ?[]dom.BackgroundLayerData {
+	computed := computed_properties_for_element(element) or { return none }
+	layers := computed.background_layers()
+	mut result := []dom.BackgroundLayerData{cap: layers.len}
+	for index, _ in layers {
+		result << dom.BackgroundLayerData{
+			computed_properties_handle: voidptr(computed)
+			layer_index:                index
+		}
+	}
+	return result
+}
+
+fn document_background_color_callback(_ voidptr, element &dom.Element) dom.Color {
+	computed := computed_properties_for_element(element) or { return dom.Color{} }
+	abstract_element := dom.AbstractElement.new(element, none)
+	context := ColorResolutionContext.for_element(&abstract_element)
+	value := computed.typed_property_value(.background_color) or { return dom.Color{} }
+	color := value.to_color(context) or { return dom.Color{} }
+	return dom.Color{
+		r: color.r
+		g: color.g
+		b: color.b
+		a: color.a
+	}
+}
+
+fn document_background_image_rendering_callback(_ voidptr, element &dom.Element) dom.ImageRendering {
+	computed := computed_properties_for_element(element) or { return .auto_ }
+	return match computed.image_rendering() {
+		.auto_ { .auto_ }
+		.crisp_edges { .crisp_edges }
+		.high_quality { .high_quality }
+		.pixelated { .pixelated }
+		.smooth { .smooth }
+	}
+}
+
+fn install_document_background_style_hook(document &dom.Document) {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_background_style_hook(dom.DocumentBackgroundStyleHook{
+		target:                     voidptr(document)
+		background_color:           document_background_color_callback
+		background_layers:          document_background_layers_callback
+		background_image_rendering: document_background_image_rendering_callback
+	})
+}
+
+fn style_computer_document_timeline_update_callback(target voidptr, timestamp f64) {
+	mut style_computer := unsafe { &StyleComputer(target) }
+	style_computer.set_animation_time_ms(timestamp)
+	if style_computer.css_animation_storage_ != unsafe { nil } {
+		for entry in style_computer.css_animation_storage_.entries {
+			mut animation := unsafe { &CSSAnimation(entry.animation) }
+			_ = animation.sample_at(style_computer.animation_time_ms_)
+			mut document := unsafe { &dom.Document(style_computer.document_) }
+			document.dispatch_events_for_animation_if_necessary(&animation.Animation)
+		}
+	}
+	if style_computer.css_transition_storage_ != unsafe { nil } {
+		for _, bucket in style_computer.css_transition_storage_.associated_transitions {
+			for entry in bucket.entries {
+				mut transition := unsafe { &CSSTransition(entry.transition) }
+				_ = transition.sample_at(style_computer.animation_time_ms_)
+				mut document := unsafe { &dom.Document(style_computer.document_) }
+				document.dispatch_events_for_animation_if_necessary(&transition.Animation)
+			}
+		}
+	}
+}
+
+fn required_style_invalidation_to_dom(invalidation RequiredInvalidationAfterStyleChange) dom.RequiredInvalidationAfterStyleChange {
+	return dom.RequiredInvalidationAfterStyleChange{
+		relayout:                            invalidation.relayout
+		rebuild_layout_tree:                 invalidation.rebuild_layout_tree
+		repaint:                             invalidation.repaint
+		rebuild_stacking_context_tree:       invalidation.rebuild_stacking_context_tree
+		rebuild_accumulated_visual_contexts: invalidation.rebuild_accumulated_visual_contexts
+	}
+}
+
+fn style_computer_recompute_style_callback(target voidptr, element &dom.Element) dom.RequiredInvalidationAfterStyleChange {
+	style_computer := unsafe { &StyleComputer(target) }
+	mut abstract_element := dom.AbstractElement.new(element, none)
+	mut did_change_custom_properties := false
+	invalidation, _ := style_computer.recompute_style_with_invalidation(mut abstract_element,
+		&did_change_custom_properties)
+	return required_style_invalidation_to_dom(invalidation)
+}
+
+fn style_computer_recompute_inherited_style_callback(target voidptr, element &dom.Element) dom.RequiredInvalidationAfterStyleChange {
+	style_computer := unsafe { &StyleComputer(target) }
+	mut abstract_element := dom.AbstractElement.new(element, none)
+	return required_style_invalidation_to_dom(style_computer.recompute_inherited_style_with_invalidation(mut
+		abstract_element))
+}
+
 // The DOM->CSS callback DOM::Document.update_style() invokes: run the CSS style pass (recompute_style_for_subtree)
 // over the document's element tree. `target` is the &dom.Document passed at install time.
-fn document_style_update_callback(target voidptr) {
+fn document_style_update_callback(target voidptr) dom.RequiredInvalidationAfterStyleChange {
 	document := unsafe { &dom.Document(target) }
-	root_element := document.document_element() or { return }
-	mut style_computer := css_style_computer_for(document)
-	recompute_style_for_subtree(mut style_computer, root_element.as_node())
+	invalidation := update_style_for_document_from_upstream(document)
+	return dom.RequiredInvalidationAfterStyleChange{
+		relayout:                            invalidation.relayout
+		rebuild_layout_tree:                 invalidation.rebuild_layout_tree
+		repaint:                             invalidation.repaint
+		rebuild_stacking_context_tree:       invalidation.rebuild_stacking_context_tree
+		rebuild_accumulated_visual_contexts: invalidation.rebuild_accumulated_visual_contexts
+	}
+}
+
+fn selector_pseudo_class_from_dom(pseudo_class dom.PseudoClass) ?PseudoClass {
+	return match pseudo_class {
+		.hover { PseudoClass.hover }
+		.active { PseudoClass.active }
+		.focus { PseudoClass.focus }
+		.focus_within { PseudoClass.focus_within }
+		.focus_visible { PseudoClass.focus_visible }
+		.target { PseudoClass.target }
+		.visited { PseudoClass.visited }
+		.link { PseudoClass.link }
+	}
+}
+
+fn pseudo_class_rule_matches_element(style_computer &StyleComputer, element &dom.Element, rule &MatchingRule, shadow_root ?&dom.ShadowRoot) bool {
+	rule_root := rule.shadow_root
+	from_user_agent_or_user_stylesheet := rule.cascade_origin == .user_agent
+		|| rule.cascade_origin == .user
+	mut rule_is_relevant_for_current_scope := style_scope_optional_shadow_root_equal(rule_root,
+		shadow_root)
+	if element.is_shadow_host() {
+		if element_shadow_root := element.shadow_root() {
+			rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope
+				|| style_scope_optional_shadow_root_equal(rule_root, element_shadow_root)
+		}
+	}
+	rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope
+		|| from_user_agent_or_user_stylesheet
+	if !rule_is_relevant_for_current_scope {
+		return false
+	}
+
+	selector := rule.selector
+	if selector.can_use_ancestor_filter()
+		&& style_computer.should_reject_with_ancestor_filter(selector) {
+		return false
+	}
+
+	mut context := MatchContext{}
+	if matches(selector, element, none, mut context, none, none, .normal, none) {
+		return true
+	}
+	if element.has_pseudo_element(int(dom.PseudoElement.before))
+		&& matches(selector, element, none, mut context, .before, none, .normal, none) {
+		return true
+	}
+	if element.has_pseudo_element(int(dom.PseudoElement.after))
+		&& matches(selector, element, none, mut context, .after, none, .normal, none) {
+		return true
+	}
+	return false
+}
+
+fn pseudo_class_matches_different_rule_set_after_state_change(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, element &dom.Element, rules &RuleCache, shadow_root ?&dom.ShadowRoot, style_computer &StyleComputer) bool {
+	abstract_element := dom.AbstractElement.new(element, none)
+	old_node := document.pseudo_class_state_node(pseudo_class)
+	for bucket in rules.matching_rule_buckets(abstract_element) {
+		for rule in bucket {
+			before := pseudo_class_rule_matches_element(style_computer, element, rule,
+				shadow_root)
+			mut mutable_document := unsafe { &dom.Document(document) }
+			mutable_document.set_pseudo_class_state_without_invalidation(pseudo_class, new_node)
+			after := pseudo_class_rule_matches_element(style_computer, element, rule,
+				shadow_root)
+			mutable_document.set_pseudo_class_state_without_invalidation(pseudo_class, old_node)
+			if before != after {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+fn invalidate_elements_affected_by_pseudo_class_recursively(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, node &dom.Node, rules &RuleCache, shadow_root ?&dom.ShadowRoot, style_computer &StyleComputer) {
+	mut element_for_pop := ?&dom.Element(none)
+	if element := node.as_element() {
+		mut mutable_style_computer := unsafe { &StyleComputer(style_computer) }
+		mutable_style_computer.push_ancestor(element)
+		element_for_pop = element
+		if element.affected_by_pseudo_class(pseudo_class)
+			&& pseudo_class_matches_different_rule_set_after_state_change(document,
+				pseudo_class, new_node, element, rules, shadow_root, style_computer) {
+			mut mutable_element := unsafe { &dom.Element(element) }
+			mutable_element.set_needs_style_update(true)
+		}
+	}
+
+	for child in node.children_as_vector() {
+		invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class,
+			new_node, child, rules, shadow_root, style_computer)
+	}
+
+	if element := element_for_pop {
+		mut mutable_style_computer := unsafe { &StyleComputer(style_computer) }
+		mutable_style_computer.pop_ancestor(element)
+	}
+}
+
+fn document_pseudo_class_invalidation_callback(target voidptr, pseudo_class dom.PseudoClass, common_ancestor &dom.Node, new_node ?&dom.Node) {
+	document := unsafe { &dom.Document(target) }
+	selector_pseudo_class := selector_pseudo_class_from_dom(pseudo_class) or { return }
+	root := common_ancestor.root()
+	shadow_root := root.as_shadow_root()
+	scope := if concrete_shadow_root := shadow_root {
+		css_style_scope_for_shadow_root(concrete_shadow_root)
+	} else {
+		css_style_scope_for_document(document)
+	}
+	rules := scope.get_pseudo_class_rule_cache(selector_pseudo_class) or { return }
+	style_computer := css_style_computer_for(document)
+
+	// Seed the ancestor bloom filter above the subtree root, exactly as
+	// Document.cpp does for ancestor-dependent selectors.
+	mut ancestor := common_ancestor.parent()
+	for ancestor != none {
+		current := ancestor or { break }
+		if element := current.as_element() {
+			mut mutable_style_computer := unsafe { &StyleComputer(style_computer) }
+			mutable_style_computer.push_ancestor(element)
+		}
+		ancestor = current.parent()
+	}
+
+	invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class,
+		new_node, common_ancestor, rules, shadow_root, style_computer)
+
+	ancestor = common_ancestor.parent()
+	for ancestor != none {
+		current := ancestor or { break }
+		if element := current.as_element() {
+			mut mutable_style_computer := unsafe { &StyleComputer(style_computer) }
+			mutable_style_computer.pop_ancestor(element)
+		}
+		ancestor = current.parent()
+	}
 }
 
 // Register the CSS style pass as DOM::Document.update_style()'s hook, so a plain doc.update_style() call
@@ -531,8 +952,11 @@ fn document_style_update_callback(target voidptr) {
 pub fn install_document_style_hook(document &dom.Document) {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_style_update_hook(dom.DocumentStyleUpdateHook{
-		target:   voidptr(document)
-		callback: document_style_update_callback
+		target:                      voidptr(document)
+		callback:                    document_style_update_callback
+		invalidate_for_pseudo_class: document_pseudo_class_invalidation_callback
+		evaluate_media_rules:        document_evaluate_media_rules_callback
+		get_style_sheet_source:      document_get_style_sheet_source_callback
 	})
 }
 

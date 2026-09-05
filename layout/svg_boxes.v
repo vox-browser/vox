@@ -192,8 +192,8 @@ fn negotiate_svg_natural_metrics(element &dom.Element) css.SizeWithAspectRatio {
 		}
 	}
 	return css.SizeWithAspectRatio{
-		width:        width
-		height:       height
+		width: width
+		height: height
 		aspect_ratio: aspect_ratio
 	}
 }
@@ -230,6 +230,17 @@ fn svg_element_model(element &dom.Element) svg.Element {
 	for name in element.get_attribute_names() {
 		attributes[name] = element.get_attribute_value(name)
 	}
+	// SVGFEFloodElement::flood_{color,opacity}() read computed CSS, not merely
+	// presentation attributes. Materialize those values in the standalone SVG
+	// model so the shared filter-graph translation sees the same inputs.
+	if element.local_name() in ['feFlood', 'feDropShadow'] {
+		if properties := css.computed_properties_for_element(element) {
+			computed := css.resolve_computed_values_for_document(properties, element.document())
+			color := computed.flood_color()
+			attributes['flood-color'] = '#${color.r:02x}${color.g:02x}${color.b:02x}${color.a:02x}'
+			attributes['flood-opacity'] = '${computed.flood_opacity()}'
+		}
+	}
 	mut children := []svg.Element{}
 	mut direct_text := ''
 	for child in element.as_node().children_as_vector() {
@@ -242,10 +253,10 @@ fn svg_element_model(element &dom.Element) svg.Element {
 		}
 	}
 	return svg.Element{
-		tag:        element.local_name()
+		tag: element.local_name()
 		attributes: attributes
-		children:   children
-		text:       direct_text
+		children: children
+		text: direct_text
 	}
 }
 

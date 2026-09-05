@@ -68,15 +68,19 @@ fn test_input_checkbox_radio_files_and_accept() {
 	assert checkbox.control.suffering_from_being_missing()
 	checkbox.activate()
 	assert checkbox.checked()
+	assert elements[0].matches_checked_pseudo_class()
+	assert unsafe { &dom.HTMLInputElement(elements[0]) }.checked()
 	assert !checkbox.control.suffering_from_being_missing()
 	assert checkbox.event_count('change') == 1
 
 	mut first_radio := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[1]) })
 	mut second_radio := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[2]) })
-	first_radio.set_checked(true)
-	second_radio.set_checked(true)
+	first_radio.set_checked_binding(true)
+	second_radio.set_checked_binding(true)
 	assert !first_radio.checked()
 	assert second_radio.checked()
+	assert !elements[1].matches_checked_pseudo_class()
+	assert elements[2].matches_checked_pseudo_class()
 
 	mut file := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[3]) })
 	file.did_select_files([SelectedFile.from_contents('a.txt', 'a'.bytes())], .replace)
@@ -86,6 +90,29 @@ fn test_input_checkbox_radio_files_and_accept() {
 	file.set_value('not allowed') or { assert err.msg().starts_with('InvalidStateError:') }
 	file.set_value('')!
 	assert file.files()?.len == 0
+}
+
+fn test_input_radio_group_uses_live_tree_and_form_owner_boundaries() {
+	elements := input_test_elements('<form><input type="radio" name="g"><input type="radio" name="g"></form><form><input type="radio" name="g" checked></form>')
+	mut first := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[0]) })
+	mut second := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[1]) })
+	third := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[2]) })
+
+	first.set_checked_binding(true)
+	assert first.checked()
+	assert !second.checked()
+	assert third.checked()
+
+	second.set_checked_binding(true)
+	assert !first.checked()
+	assert second.checked()
+	assert third.checked()
+
+	// This is the internal C++ primitive: group exclusivity is implemented by
+	// set_checked_binding()/set_checked_within_group(), not set_checked().
+	first.set_checked(true)
+	assert first.checked()
+	assert second.checked()
 }
 
 fn test_input_date_time_value_as_number() {
@@ -177,10 +204,10 @@ fn test_input_validation_picker_and_legacy_activation() {
 }
 
 fn test_input_image_resource_dimensions_and_hints() {
-	element := input_test_elements('<input type="image" src="image.png" border="2" hspace="3">')[0]
+	element := input_test_elements('<input type="image" src="https://example.test/image.png" border="2" hspace="3">')[0]
 	mut image := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
 	image.set_image_fetch_hook(input_test_image_fetch)
-	image.handle_src_attribute('image.png')!
+	image.handle_src_attribute('https://example.test/image.png')!
 	assert image.is_image_available()
 	assert image.intrinsic_width()? == 40
 	assert image.width() == 40

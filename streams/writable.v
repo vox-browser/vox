@@ -25,61 +25,48 @@ pub:
 enum WritableOwnerKind {
 	regular
 	transform
-	transfer_proxy
 	message_port
 }
 
 @[heap]
 pub struct WritableStream {
 mut:
-	state_                WritableStreamState
-	stored_error_         string
-	writer_               &WritableStreamDefaultWriter     = unsafe { nil }
-	controller_           &WritableStreamDefaultController = unsafe { nil }
-	queue_                QueueWithSizes
-	high_water_mark_      f64           = 1.0
-	size_algorithm_       SizeAlgorithm = default_size_algorithm
-	write_algorithm_      ?WriteAlgorithm
-	close_algorithm_      ?CloseAlgorithm
-	abort_algorithm_      ?AbortAlgorithm
-	backpressure_         bool
-	close_queued_         bool
-	in_flight_write_      bool
-	in_flight_close_      bool
-	owner_kind_           WritableOwnerKind
-	owner_                voidptr
-	transfer_destination_ &WritableStream = unsafe { nil }
-	message_port_         &MessagePort = unsafe { nil }
-	transfer_locked_      bool
-	pipe_source_          &ReadableStream = unsafe { nil }
-	written_values_       []Value
-	close_request_        &VoidPromise = unsafe { nil }
+	state_                   WritableStreamState
+	stored_error_            string
+	writer_                  &WritableStreamDefaultWriter = unsafe { nil }
+	controller_              &WritableStreamDefaultController = unsafe { nil }
+	queue_                   QueueWithSizes
+	high_water_mark_         f64 = 1.0
+	size_algorithm_          SizeAlgorithm = default_size_algorithm
+	write_algorithm_         ?WriteAlgorithm
+	close_algorithm_         ?CloseAlgorithm
+	abort_algorithm_         ?AbortAlgorithm
+	started_                 bool
+	backpressure_            bool
+	owner_kind_              WritableOwnerKind
+	owner_                   voidptr
+	message_port_            &MessagePort = unsafe { nil }
+	message_backpressure_    bool
+	pipe_source_             &ReadableStream = unsafe { nil }
+	written_values_          []Value
+	close_request_           &VoidPromise = unsafe { nil }
 	in_flight_write_request_ &VoidPromise = unsafe { nil }
 	in_flight_close_request_ &VoidPromise = unsafe { nil }
-	pending_abort_request_ &VoidPromise = unsafe { nil }
-	write_requests_       []&VoidPromise
+	pending_abort_request_   &VoidPromise = unsafe { nil }
+	pending_abort_reason_    Value
+	pending_abort_erroring_  bool
+	write_requests_          VoidPromiseList
 }
 
 pub fn WritableStream.construct_impl(sink UnderlyingSink, strategy QueuingStrategy) !&WritableStream {
 	if type_ := sink.type_ {
 		return error('RangeError: Unsupported underlying sink type ${type_}')
 	}
+	size_algorithm := extract_size_algorithm(strategy)
 	high_water_mark := extract_high_water_mark(strategy, 1.0)!
-	mut stream := &WritableStream{
-		high_water_mark_: high_water_mark
-		size_algorithm_:  extract_size_algorithm(strategy)
-		write_algorithm_: sink.write
-		close_algorithm_: sink.close
-		abort_algorithm_: sink.abort
-	}
-	stream.controller_ = &WritableStreamDefaultController{
-		stream_: stream
-		signal_: AbortSignal.create()
-	}
-	if start := sink.start {
-		start() or { stream.start_erroring(err.msg()) }
-	}
-	stream.update_backpressure()
+	mut stream := &WritableStream{}
+	initialize_writable_stream(mut stream)
+	set_up_writable_stream_default_controller_from_underlying_sink(mut stream, sink, high_water_mark, size_algorithm)!
 	return stream
 }
 
@@ -92,7 +79,7 @@ pub fn (stream &WritableStream) stored_error() string {
 }
 
 pub fn (stream &WritableStream) locked() bool {
-	return !isnil(stream.writer_) || stream.transfer_locked_
+	return !isnil(stream.writer_)
 }
 
 pub fn (stream &WritableStream) backpressure() bool {
@@ -129,19 +116,7 @@ fn (mut stream WritableStream) update_backpressure() {
 	} else {
 		false
 	}
-	if stream.backpressure_ == new_backpressure {
-		return
-	}
-	stream.backpressure_ = new_backpressure
-	if !isnil(stream.writer_) {
-		mut writer := stream.writer_
-		if new_backpressure {
-			writer.ready_ = VoidPromise.pending()
-		} else {
-			mut ready := writer.ready_
-			ready.resolve()
-		}
-	}
+	writable_stream_update_backpressure(mut stream, new_backpressure)
 }
 
 fn (mut stream WritableStream) start_erroring(reason string) {
@@ -159,9 +134,9 @@ fn (mut stream WritableStream) start_erroring(reason string) {
 			writer.ready_ = VoidPromise.rejected(reason)
 		}
 	}
-	mut signal := stream.controller_.signal_
-	signal.abort(string_value(reason))
-	stream.finish_erroring()
+	if !writable_stream_has_operation_marked_in_flight(stream) && stream.started_ {
+		stream.finish_erroring()
+	}
 	if !isnil(stream.pipe_source_) {
 		mut source := stream.pipe_source_
 		pump_readable_pipe(mut source)
@@ -169,12 +144,46 @@ fn (mut stream WritableStream) start_erroring(reason string) {
 }
 
 fn (mut stream WritableStream) finish_erroring() {
+	if stream.state_ != .erroring || writable_stream_has_operation_marked_in_flight(stream) {
+		return
+	}
 	stream.state_ = .errored
 	stream.queue_.reset()
-	stream.close_queued_ = false
+	for mut request in stream.write_requests_.values() {
+		request.reject(stream.stored_error_)
+	}
+	stream.write_requests_.clear()
+	if !isnil(stream.pending_abort_request_) {
+		mut abort_request := stream.pending_abort_request_
+		was_already_erroring := stream.pending_abort_erroring_
+		reason := stream.pending_abort_reason_
+		stream.pending_abort_request_ = unsafe { nil }
+		stream.pending_abort_reason_ = undefined_value()
+		stream.pending_abort_erroring_ = false
+		if was_already_erroring {
+			abort_request.reject(stream.stored_error_)
+		} else {
+			mut controller := stream.controller_
+			abort_result := controller.abort_steps(reason)
+			if abort_result.state() == .rejected {
+				abort_request.reject(abort_result.reason())
+			} else if abort_result.state() == .fulfilled {
+				abort_request.resolve()
+			}
+		}
+	}
+	if !isnil(stream.close_request_) {
+		mut close_request := stream.close_request_
+		close_request.reject(stream.stored_error_)
+		stream.close_request_ = unsafe { nil }
+	}
 	if !isnil(stream.writer_) {
 		mut closed := stream.writer_.closed_
 		closed.reject(stream.stored_error_)
+	}
+	if !isnil(stream.pipe_source_) {
+		mut source := stream.pipe_source_
+		pump_readable_pipe(mut source)
 	}
 }
 
@@ -189,124 +198,112 @@ fn (mut stream WritableStream) perform_write(value Value) ! {
 			mut transform := unsafe { &TransformStream(stream.owner_) }
 			transform.write_chunk(value)!
 		}
-		.transfer_proxy {
-			if isnil(stream.transfer_destination_) {
-				return error('DataCloneError: Transferred writable endpoint is unavailable')
-			}
-			mut destination := stream.transfer_destination_
-			result := destination.write_internal(structured_clone(value))
-			if result.state() == .rejected {
-				return error(result.reason())
-			}
-		}
 		.message_port {
 			if isnil(stream.message_port_) {
 				return error('DataCloneError: Cross-realm writable endpoint is unavailable')
 			}
 			mut port := stream.message_port_
 			pack_and_post_message(mut port, 'chunk', value)!
+			stream.message_backpressure_ = false
 		}
 	}
 }
 
-fn (mut stream WritableStream) process_queue() {
-	if stream.state_ != .writable || stream.in_flight_write_ {
-		return
-	}
-	for !stream.queue_.is_empty() && stream.state_ == .writable {
-		stream.in_flight_write_ = true
-		value := stream.queue_.dequeue_value() or {
-			stream.in_flight_write_ = false
-			stream.start_erroring(err.msg())
-			return
-		}
-		stream.perform_write(value) or {
-			stream.in_flight_write_ = false
-			stream.start_erroring(err.msg())
-			return
-		}
-		stream.written_values_ << value.clone()
-		stream.in_flight_write_ = false
-		stream.update_backpressure()
-	}
-	if stream.close_queued_ && stream.queue_.is_empty() && stream.state_ == .writable {
-		stream.finish_close()
-	}
-}
-
-fn (mut stream WritableStream) write_internal(value Value) &VoidPromise {
-	if stream.state_ == .errored || stream.state_ == .erroring {
-		return VoidPromise.rejected(stream.stored_error_)
-	}
-	if stream.state_ == .closed || stream.close_queued_ {
-		return VoidPromise.rejected('TypeError: WritableStream is closing or closed')
-	}
-	size := stream.size_algorithm_(value) or {
-		stream.start_erroring(err.msg())
-		return VoidPromise.rejected(err.msg())
-	}
-	stream.queue_.enqueue_value_with_size(value, size) or {
-		stream.start_erroring(err.msg())
-		return VoidPromise.rejected(err.msg())
-	}
-	stream.update_backpressure()
-	stream.process_queue()
-	if stream.state_ == .errored {
-		return VoidPromise.rejected(stream.stored_error_)
-	}
-	return VoidPromise.fulfilled()
-}
-
-fn (mut stream WritableStream) finish_close() {
-	stream.in_flight_close_ = true
+fn (mut stream WritableStream) perform_close() &VoidPromise {
 	match stream.owner_kind_ {
 		.regular {
 			if algorithm := stream.close_algorithm_ {
-				algorithm() or {
-					stream.in_flight_close_ = false
-					stream.start_erroring(err.msg())
-					return
-				}
+				algorithm() or { return VoidPromise.rejected(err.msg()) }
 			}
 		}
 		.transform {
 			mut transform := unsafe { &TransformStream(stream.owner_) }
-			transform.close_writable() or {
-				stream.in_flight_close_ = false
-				stream.start_erroring(err.msg())
-				return
-			}
-		}
-		.transfer_proxy {
-			if !isnil(stream.transfer_destination_) {
-				mut destination := stream.transfer_destination_
-				result := destination.close_internal()
-				if result.state() == .rejected {
-					stream.in_flight_close_ = false
-					stream.start_erroring(result.reason())
-					return
-				}
-			}
+			return transform.close_writable()
 		}
 		.message_port {
 			if !isnil(stream.message_port_) {
 				mut port := stream.message_port_
 				pack_and_post_message(mut port, 'close', undefined_value()) or {
-					stream.in_flight_close_ = false
-					stream.start_erroring(err.msg())
-					return
+					return VoidPromise.rejected(err.msg())
 				}
 			}
 		}
 	}
-	stream.in_flight_close_ = false
-	stream.state_ = .closed
-	if !isnil(stream.writer_) {
-		mut ready := stream.writer_.ready_
-		ready.resolve()
-		mut closed := stream.writer_.closed_
-		closed.resolve()
+	return VoidPromise.fulfilled()
+}
+
+fn (mut stream WritableStream) perform_abort(reason Value) &VoidPromise {
+	match stream.owner_kind_ {
+		.regular {
+			if algorithm := stream.abort_algorithm_ {
+				algorithm(reason) or { return VoidPromise.rejected(err.msg()) }
+			}
+		}
+		.transform {
+			mut transform := unsafe { &TransformStream(stream.owner_) }
+			return transform.abort_writable(reason)
+		}
+		.message_port {
+			if !isnil(stream.message_port_) {
+				mut port := stream.message_port_
+				pack_and_post_message(mut port, 'error', reason) or {
+					return VoidPromise.rejected(err.msg())
+				}
+			}
+		}
 	}
+	return VoidPromise.fulfilled()
+}
+
+fn (mut stream WritableStream) process_queue() {
+	if !stream.started_ || writable_stream_has_operation_marked_in_flight(stream)
+		|| stream.state_ in [
+			.closed,
+			.errored,
+		] {
+		return
+	}
+	if stream.state_ == .erroring {
+		stream.finish_erroring()
+		return
+	}
+	if stream.owner_kind_ == .transform {
+		mut transform := unsafe { &TransformStream(stream.owner_) }
+		if transform.backpressure_ {
+			return
+		}
+	}
+	value := stream.queue_.peek_queue_value() or { return }
+	if stream.owner_kind_ == .message_port && !is_close_sentinel(value) && !stream.message_backpressure_ {
+		return
+	}
+	mut controller := stream.controller_
+	if is_close_sentinel(value) {
+		writable_stream_default_controller_process_close(mut controller)
+	} else {
+		writable_stream_default_controller_process_write(mut controller, value)
+	}
+}
+
+fn (mut stream WritableStream) write_internal(value Value) &VoidPromise {
+	mut controller := stream.controller_
+	chunk_size := writable_stream_default_controller_get_chunk_size(mut controller, value) or {
+		return VoidPromise.rejected(err.msg())
+	}
+	if stream.state_ == .errored || stream.state_ == .erroring {
+		return VoidPromise.rejected(stream.stored_error_)
+	}
+	if stream.state_ == .closed || writable_stream_close_queued_or_in_flight(stream) {
+		return VoidPromise.rejected('TypeError: WritableStream is closing or closed')
+	}
+	mut request := VoidPromise.pending()
+	stream.write_requests_.append(request)
+	writable_stream_default_controller_write(mut controller, value, chunk_size) or {
+		if request.state() == .pending {
+			request.reject(err.msg())
+		}
+	}
+	return request
 }
 
 fn (mut stream WritableStream) close_internal() &VoidPromise {
@@ -316,54 +313,44 @@ fn (mut stream WritableStream) close_internal() &VoidPromise {
 	if stream.state_ == .errored || stream.state_ == .erroring {
 		return VoidPromise.rejected(stream.stored_error_)
 	}
-	if stream.close_queued_ {
+	if writable_stream_close_queued_or_in_flight(stream) {
 		return VoidPromise.rejected('TypeError: WritableStream is already closing')
 	}
-	stream.close_queued_ = true
-	stream.process_queue()
-	if stream.state_ == .errored {
-		return VoidPromise.rejected(stream.stored_error_)
+	request := VoidPromise.pending()
+	stream.close_request_ = request
+	if !isnil(stream.writer_) && stream.backpressure_ && stream.state_ == .writable {
+		mut ready := stream.writer_.ready_
+		ready.resolve()
 	}
-	return VoidPromise.fulfilled()
+	mut controller := stream.controller_
+	writable_stream_default_controller_close(mut controller)
+	return request
 }
 
 fn (mut stream WritableStream) abort_internal(reason Value) &VoidPromise {
-	if stream.state_ == .closed {
+	if stream.state_ in [.closed, .errored] {
 		return VoidPromise.fulfilled()
-	}
-	if stream.state_ == .errored {
-		return VoidPromise.rejected(stream.stored_error_)
 	}
 	mut signal := stream.controller_.signal_
 	signal.abort(reason)
-	match stream.owner_kind_ {
-		.regular {
-			if algorithm := stream.abort_algorithm_ {
-				algorithm(reason) or {
-					stream.start_erroring(err.msg())
-					return VoidPromise.rejected(err.msg())
-				}
-			}
-		}
-		.transform {
-			mut transform := unsafe { &TransformStream(stream.owner_) }
-			transform.abort_writable(reason)
-		}
-		.transfer_proxy {
-			if !isnil(stream.transfer_destination_) {
-				mut destination := stream.transfer_destination_
-				return destination.abort_internal(structured_clone(reason))
-			}
-		}
-		.message_port {
-			if !isnil(stream.message_port_) {
-				mut port := stream.message_port_
-				pack_and_post_message_handling_error(mut port, 'error', reason)
-			}
-		}
+	if !isnil(stream.pending_abort_request_) {
+		return stream.pending_abort_request_
 	}
-	stream.start_erroring(reason.description())
-	return VoidPromise.fulfilled()
+	was_already_erroring := stream.state_ == .erroring
+	request := VoidPromise.pending()
+	stream.pending_abort_request_ = request
+	stream.pending_abort_reason_ = if was_already_erroring {
+		undefined_value()
+	} else {
+		reason
+	}
+	stream.pending_abort_erroring_ = was_already_erroring
+	if !was_already_erroring {
+		stream.start_erroring(reason.description())
+	} else if !writable_stream_has_operation_marked_in_flight(stream) && stream.started_ {
+		stream.finish_erroring()
+	}
+	return request
 }
 
 pub fn (mut stream WritableStream) close() &VoidPromise {
@@ -388,6 +375,8 @@ pub fn (mut stream WritableStream) get_writer() !&WritableStreamDefaultWriter {
 	mut ready := VoidPromise.fulfilled()
 	if stream.state_ == .closed {
 		closed.resolve()
+	} else if stream.state_ == .erroring {
+		ready = VoidPromise.rejected(stream.stored_error_)
 	} else if stream.state_ == .errored {
 		closed.reject(stream.stored_error_)
 		ready = VoidPromise.rejected(stream.stored_error_)
@@ -397,7 +386,7 @@ pub fn (mut stream WritableStream) get_writer() !&WritableStreamDefaultWriter {
 	writer := &WritableStreamDefaultWriter{
 		stream_: &stream
 		closed_: closed
-		ready_:  ready
+		ready_: ready
 	}
 	stream.writer_ = writer
 	return writer
@@ -407,7 +396,7 @@ pub fn (mut stream WritableStream) get_writer() !&WritableStreamDefaultWriter {
 pub struct WritableStreamDefaultController {
 mut:
 	stream_ &WritableStream = unsafe { nil }
-	signal_ &AbortSignal    = unsafe { nil }
+	signal_ &AbortSignal = unsafe { nil }
 }
 
 pub fn (controller &WritableStreamDefaultController) signal() &AbortSignal {
@@ -415,16 +404,15 @@ pub fn (controller &WritableStreamDefaultController) signal() &AbortSignal {
 }
 
 pub fn (mut controller WritableStreamDefaultController) error(reason string) {
-	mut stream := controller.stream_
-	stream.start_erroring(reason)
+	writable_stream_default_controller_error_if_needed(mut controller, string_value(reason))
 }
 
 @[heap]
 pub struct WritableStreamDefaultWriter {
 mut:
 	stream_   &WritableStream = unsafe { nil }
-	closed_   &VoidPromise    = unsafe { nil }
-	ready_    &VoidPromise    = unsafe { nil }
+	closed_   &VoidPromise = unsafe { nil }
+	ready_    &VoidPromise = unsafe { nil }
 	released_ bool
 }
 

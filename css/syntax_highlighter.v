@@ -129,24 +129,31 @@ pub fn (highlighter SyntaxHighlighter) rehighlight_text(text string, palette Pal
 	mut folding_regions := []SyntaxTextDocumentFoldingRegion{}
 	mut spans := []SyntaxTextDocumentSpan{}
 
-	mut highlight := fn [mut spans] (start_line usize, start_column usize, end_line usize, end_column usize, attributes SyntaxTextAttributes, type_ TokenType) {
+	// V function values capture dynamic-array headers by value. Keep a pointer
+	// to the caller's header so appends remain visible in the returned result.
+	spans_ptr := &spans
+	highlight := fn [spans_ptr] (start_line usize, start_column usize, end_line usize, end_column usize, attributes SyntaxTextAttributes, type_ TokenType) {
 		if start_line > end_line || (start_line == end_line && start_column >= end_column) {
 			return
 		}
-		spans << SyntaxTextDocumentSpan{
-			range:       SyntaxTextRange{
+		mut updated_spans := unsafe { *spans_ptr }
+		updated_spans << SyntaxTextDocumentSpan{
+			range: SyntaxTextRange{
 				start: SyntaxTextPosition{
-					line:   start_line
+					line: start_line
 					column: start_column
 				}
-				end:   SyntaxTextPosition{
-					line:   end_line
+				end: SyntaxTextPosition{
+					line: end_line
 					column: end_column
 				}
 			}
-			attributes:  attributes
-			data:        type_
+			attributes: attributes
+			data: type_
 			navigatable: false
+		}
+		unsafe {
+			*spans_ptr = updated_spans
 		}
 	}
 
@@ -164,11 +171,11 @@ pub fn (highlighter SyntaxHighlighter) rehighlight_text(text string, palette Pal
 				folding_regions << SyntaxTextDocumentFoldingRegion{
 					range: SyntaxTextRange{
 						start: SyntaxTextPosition{
-							line:   start_token.end_position().line
+							line: start_token.end_position().line
 							column: start_token.end_position().column
 						}
-						end:   SyntaxTextPosition{
-							line:   token.start_position().line
+						end: SyntaxTextPosition{
+							line: token.start_position().line
 							column: token.start_position().column
 						}
 					}
@@ -178,96 +185,80 @@ pub fn (highlighter SyntaxHighlighter) rehighlight_text(text string, palette Pal
 
 		match token.token_type() {
 			.ident {
-				highlight(token.start_position().line, token.start_position().column,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: palette.syntax_identifier()
 				}, token.token_type())
 			}
 			.string {
-				highlight(token.start_position().line, token.start_position().column,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: palette.syntax_string()
 				}, token.token_type())
 			}
 			.whitespace {
 				// CSS doesn't produce comment tokens, they're just included as part of whitespace.
-				highlight(token.start_position().line, token.start_position().column,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: palette.syntax_comment()
 				}, token.token_type())
 			}
 			.at_keyword {
-				highlight(token.start_position().line, token.start_position().column,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: palette.syntax_keyword()
 				}, token.token_type())
 			}
 			.function {
 				// Function tokens include the opening '(', so we split that into two tokens for highlighting purposes.
-				highlight(token.start_position().line, token.start_position().column,
-					token.end_position().line, token.end_position().column - 1, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column, token.end_position().line, token.end_position().column - 1, SyntaxTextAttributes{
 					color: palette.syntax_keyword()
 				}, token.token_type())
-				highlight(token.end_position().line, token.end_position().column - 1,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+				highlight(token.end_position().line, token.end_position().column - 1, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: palette.syntax_punctuation()
 				}, .open_paren)
 			}
 			.url {
 				// An Url token is a `url()` function with its parameter string unquoted.
 				// url
-				highlight(token.start_position().line, token.start_position().column,
-					token.start_position().line, token.start_position().column + 3, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column, token.start_position().line, token.start_position().column + 3, SyntaxTextAttributes{
 					color: palette.syntax_keyword()
 				}, token.token_type())
 				// (
-				highlight(token.start_position().line, token.start_position().column + 3,
-					token.start_position().line, token.start_position().column + 4, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column + 3, token.start_position().line, token.start_position().column + 4, SyntaxTextAttributes{
 					color: palette.syntax_punctuation()
 				}, .open_paren)
 				// <string>
-				highlight(token.start_position().line, token.start_position().column + 4,
-					token.end_position().line, token.end_position().column - 1, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column + 4, token.end_position().line, token.end_position().column - 1, SyntaxTextAttributes{
 					color: palette.syntax_string()
 				}, .string)
 				// )
-				highlight(token.end_position().line, token.end_position().column - 1,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+				highlight(token.end_position().line, token.end_position().column - 1, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: palette.syntax_punctuation()
 				}, .close_paren)
 			}
 			.number, .dimension, .percentage {
-				highlight(token.start_position().line, token.start_position().column,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: palette.syntax_number()
 				}, token.token_type())
 			}
-			.delim, .colon, .comma, .semicolon, .open_curly, .open_paren, .open_square,
-			.close_curly, .close_paren, .close_square {
-				highlight(token.start_position().line, token.start_position().column,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+			.delim, .colon, .comma, .semicolon, .open_curly, .open_paren, .open_square, .close_curly, .close_paren, .close_square {
+				highlight(token.start_position().line, token.start_position().column, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: palette.syntax_punctuation()
 				}, token.token_type())
 			}
 			.cdo, .cdc {
-				highlight(token.start_position().line, token.start_position().column,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: palette.syntax_comment()
 				}, token.token_type())
 			}
 			.hash {
 				// FIXME: Hash tokens can be ID selectors or colors, we don't know which without parsing properly.
-				highlight(token.start_position().line, token.start_position().column,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: palette.syntax_number()
 				}, token.token_type())
 			}
 			.invalid, .bad_url, .bad_string {
 				// FIXME: Error highlighting color in palette?
-				highlight(token.start_position().line, token.start_position().column,
-					token.end_position().line, token.end_position().column, SyntaxTextAttributes{
+				highlight(token.start_position().line, token.start_position().column, token.end_position().line, token.end_position().column, SyntaxTextAttributes{
 					color: .error
-					bold:  true
+					bold: true
 				}, token.token_type())
 			}
 			.end_of_file {}
@@ -275,7 +266,7 @@ pub fn (highlighter SyntaxHighlighter) rehighlight_text(text string, palette Pal
 	}
 
 	return SyntaxHighlightResult{
-		spans:           spans
+		spans: spans
 		folding_regions: folding_regions
 	}
 }
@@ -284,19 +275,19 @@ pub fn (highlighter SyntaxHighlighter) matching_token_pairs_impl() []SyntaxMatch
 	_ = highlighter
 	return [
 		SyntaxMatchingTokenPair{
-			open:  .open_curly
+			open: .open_curly
 			close: .close_curly
 		},
 		SyntaxMatchingTokenPair{
-			open:  .open_paren
+			open: .open_paren
 			close: .close_paren
 		},
 		SyntaxMatchingTokenPair{
-			open:  .open_square
+			open: .open_square
 			close: .close_square
 		},
 		SyntaxMatchingTokenPair{
-			open:  .cdo
+			open: .cdo
 			close: .cdc
 		},
 	]

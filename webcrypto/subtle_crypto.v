@@ -513,11 +513,14 @@ pub fn (subtle_crypto &SubtleCrypto) decapsulate_bits(algorithm string, key &Cry
 pub fn (subtle_crypto &SubtleCrypto) encapsulate_key(algorithm string, key &CryptoKey,
 	shared_key_algorithm string, extractable bool, usages []KeyUsage) !EncapsulatedKey {
 	bits := subtle_crypto.encapsulate_bits(algorithm, key)!
-	shared_key := subtle_crypto.import_key(.raw_secret, bits.shared_key,
+	shared_key_bits := bits.shared_key or {
+		return error('OperationError: Encapsulation produced no shared key')
+	}
+	shared_key := subtle_crypto.import_key(.raw_secret, shared_key_bits,
 		shared_key_algorithm, extractable, normalize_key_usages_for_operation(usages), '')!
 	return EncapsulatedKey{
 		shared_key: shared_key
-		ciphertext: bits.ciphertext.clone()
+		ciphertext: bits.ciphertext
 	}
 }
 

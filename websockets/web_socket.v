@@ -8,7 +8,7 @@
 module websockets
 
 import fileapi
-import net.urllib
+import url as liburl
 import webidl
 
 pub enum ReadyState {
@@ -117,35 +117,22 @@ pub fn WebSocket.construct_impl(input string, base_url string, protocols Protoco
 }
 
 fn normalize_websocket_url(input string, base_url string) !string {
-	reference := urllib.parse(input) or { return error('SyntaxError: Invalid URL') }
-	mut parsed := if reference.is_abs() {
-		// resolve_reference also removes dot segments from an absolute reference.
-		empty_base := urllib.URL{}
-		empty_base.resolve_reference(reference) or { return error('SyntaxError: Invalid URL') }
-	} else {
-		base := urllib.parse(base_url) or { return error('SyntaxError: Invalid URL') }
-		if !base.is_abs() {
-			return error('SyntaxError: Invalid URL')
-		}
-		base.resolve_reference(reference) or { return error('SyntaxError: Invalid URL') }
-	}
-	// urllib cannot distinguish a null fragment from an explicitly empty one,
-	// so retain the source spelling check in addition to the parsed value.
-	if input.contains('#') || parsed.fragment != '' {
-		return error('SyntaxError: Presence of URL fragment is invalid')
+	mut parsed := liburl.parse(input) or {
+		base := liburl.parse(base_url) or { return error('SyntaxError: Invalid URL') }
+		liburl.parse_with_base(input, &base) or { return error('SyntaxError: Invalid URL') }
 	}
 	if parsed.scheme == 'http' {
-		parsed.scheme = 'ws'
+		parsed = parsed.with_scheme('ws')
 	} else if parsed.scheme == 'https' {
-		parsed.scheme = 'wss'
+		parsed = parsed.with_scheme('wss')
 	}
 	if parsed.scheme !in ['ws', 'wss'] {
 		return error('SyntaxError: Invalid protocol')
 	}
-	if parsed.host == '' {
-		return error('SyntaxError: Invalid URL')
+	if parsed.fragment != none {
+		return error('SyntaxError: Presence of URL fragment is invalid')
 	}
-	return parsed.str()
+	return parsed.serialize(false)
 }
 
 // Models the deferred establish_web_socket_connection callback.

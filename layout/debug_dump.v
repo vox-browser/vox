@@ -16,6 +16,15 @@ pub fn dump_document_layout_tree(document &dom.Document, viewport_width f64, vie
 	return dump_typed_layout_tree(result.root, result.state)
 }
 
+// Serialize the retained tree produced by Document::update_layout without
+// triggering a second style/layout pass. This is the V browser equivalent of
+// Ladybird's `--headless=layout-tree` output path and keeps profiling scoped to
+// the single production layout performed while loading the page.
+pub fn dump_current_document_layout_tree(document &dom.Document) ?string {
+	result := document_layout_result(document) or { return none }
+	return dump_typed_layout_tree(result.root, result.state)
+}
+
 // LayoutTest snapshots contain the Layout tree, the committed paint tree, and the
 // stacking-context tree. Keep dump_document_layout_tree() as the focused first-section API used by
 // unit tests, and expose the complete translated LayoutState::commit() result here.

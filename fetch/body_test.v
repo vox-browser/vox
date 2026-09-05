@@ -41,10 +41,27 @@ fn test_multipart_form_data_parser() {
 	assert entries[1].content_type? == 'text/plain'
 }
 
+fn test_multipart_parser_preserves_upstream_lexer_constraints() {
+	mime := mimesniff.MimeType.parse('multipart/form-data;boundary=abc')?
+	missing_initial_boundary := 'preamble\r\n--abc--'
+	if _ := parse_multipart_form_data(missing_initial_boundary, mime) {
+		assert false
+	}
+	malformed_newline := '--abc\nContent-Disposition: form-data; name="field"\n\nvalue\n--abc--'
+	if _ := parse_multipart_form_data(malformed_newline, mime) {
+		assert false
+	}
+
+	filename_without_type := '--abc\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\n\r\ntext\r\n--abc--trailing data is ignored'
+	entries := parse_multipart_form_data(filename_without_type, mime)!
+	assert entries.len == 1
+	assert entries[0].content_type? == 'text/plain'
+}
+
 fn test_body_mixin_consumers_and_unusable_state() {
 	body := Body.from_bytes('{"ok":true}'.bytes(), .bytes)
 	mixin := BodyMixin{
-		body:      body
+		body: body
 		mime_type: mimesniff.MimeType.parse('application/json')
 	}
 	assert mixin.json()! == '{"ok":true}'
@@ -56,7 +73,7 @@ fn test_body_text_json_and_url_encoded_follow_fetch_decoding_rules() {
 	text_mixin := BodyMixin{
 		body: Body.from_bytes([u8(0xef), 0xbb, 0xbf, `o`, `k`, 0xff], .bytes)
 	}
-	assert text_mixin.text()! == 'ok\ufffd'
+	assert text_mixin.text()! == 'ok�'
 	assert BodyMixin{
 		body: Body.from_bytes('42'.bytes(), .bytes)
 	}.json()! == '42'
@@ -65,15 +82,14 @@ fn test_body_text_json_and_url_encoded_follow_fetch_decoding_rules() {
 	}.json()! == '"value"'
 	if _ := BodyMixin{
 		body: Body.from_bytes('{bad}'.bytes(), .bytes)
-	}.json()
-	{
+	}.json() {
 		assert false
 	}
 	mime := mimesniff.MimeType.parse('application/x-www-form-urlencoded') or {
 		panic('expected MIME type')
 	}
 	entries := BodyMixin{
-		body:      Body.from_bytes('first+name=Alex%20Smith&&check=%E2%9C%93'.bytes(), .bytes)
+		body: Body.from_bytes('first+name=Alex%20Smith&&check=%E2%9C%93'.bytes(), .bytes)
 		mime_type: mime
 	}.form_data()!
 	assert entries.len == 2
@@ -81,7 +97,7 @@ fn test_body_text_json_and_url_encoded_follow_fetch_decoding_rules() {
 	assert entries[0].value == 'Alex Smith'
 	assert entries[1].value == '✓'
 	empty_entries := BodyMixin{
-		body:      Body.from_bytes([]u8{}, .bytes)
+		body: Body.from_bytes([]u8{}, .bytes)
 		mime_type: mime
 	}.form_data()!
 	assert empty_entries.len == 0

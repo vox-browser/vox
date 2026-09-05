@@ -3,7 +3,8 @@ module css
 
 import math
 
-// Stub for Bindings::CSSMathOperator.
+// Generated Bindings::CSSMathOperator from CSSMathValue.idl, kept here because
+// the V port does not generate a separate bindings module for enum-only IDL.
 pub enum CSSMathOperator {
 	sum
 	product
@@ -180,11 +181,6 @@ pub fn (value CSSNumericValue) create_calculation_node(context CalculationContex
 		CSSUnitValue {
 			value.create_calculation_node(context)!
 		}
-		CSSMathValueStub {
-			CalculationNode{
-				serialization: value.serialization
-			}
-		}
 		CSSMathSum {
 			value.create_calculation_node(context)!
 		}
@@ -212,7 +208,6 @@ pub fn (value CSSNumericValue) create_calculation_node(context CalculationContex
 fn css_numberish_from_numeric_value(value CSSNumericValue) CSSNumberish {
 	return match value {
 		CSSUnitValue { CSSNumberish(value) }
-		CSSMathValueStub { CSSNumberish(value) }
 		CSSMathSum { CSSNumberish(value) }
 		CSSMathProduct { CSSNumberish(value) }
 		CSSMathNegate { CSSNumberish(value) }
@@ -419,14 +414,13 @@ pub fn (sum CSSMathSum) create_a_sum_value() ?SumValue {
 }
 
 pub fn (sum CSSMathSum) create_calculation_node(context CalculationContext) !CalculationNode {
-	mut child_nodes := []CalculationNode{}
+	mut children := []CalcNode{}
 	for child_value in sum.values_.values() {
-		child_nodes << child_value.create_calculation_node(context)!
+		children << child_value.create_calculation_node(context)!.typed_node()!
 	}
-
-	return CalculationNode{
-		serialization: join_calculation_nodes(child_nodes, ' + ', 'calc(', ')')
-	}
+	return calculation_node_from_calc(CalcNode(CalcSum{
+		children: children
+	}))
 }
 
 pub fn CSSMathProduct.create(type_ NumericType, values CSSNumericArray) CSSMathProduct {
@@ -596,14 +590,13 @@ pub fn (product CSSMathProduct) create_a_sum_value() ?SumValue {
 }
 
 pub fn (product CSSMathProduct) create_calculation_node(context CalculationContext) !CalculationNode {
-	mut child_nodes := []CalculationNode{}
+	mut children := []CalcNode{}
 	for child_value in product.values_.values() {
-		child_nodes << child_value.create_calculation_node(context)!
+		children << child_value.create_calculation_node(context)!.typed_node()!
 	}
-
-	return CalculationNode{
-		serialization: join_calculation_nodes(child_nodes, ' * ', 'calc(', ')')
-	}
+	return calculation_node_from_calc(CalcNode(CalcProduct{
+		children: children
+	}))
 }
 
 pub fn CSSMathNegate.create(type_ NumericType, value CSSNumericValue) CSSMathNegate {
@@ -696,9 +689,9 @@ pub fn (negate CSSMathNegate) create_a_sum_value() ?SumValue {
 
 pub fn (negate CSSMathNegate) create_calculation_node(context CalculationContext) !CalculationNode {
 	child := negate.value_.create_calculation_node(context)!
-	return CalculationNode{
-		serialization: '-${child.serialization}'
-	}
+	return calculation_node_from_calc(CalcNode(CalcNegate{
+		children: [child.typed_node()!]
+	}))
 }
 
 pub fn CSSMathInvert.create(type_ NumericType, value CSSNumericValue) CSSMathInvert {
@@ -802,9 +795,9 @@ pub fn (invert CSSMathInvert) create_a_sum_value() ?SumValue {
 
 pub fn (invert CSSMathInvert) create_calculation_node(context CalculationContext) !CalculationNode {
 	child := invert.value_.create_calculation_node(context)!
-	return CalculationNode{
-		serialization: '1 / ${child.serialization}'
-	}
+	return calculation_node_from_calc(CalcNode(CalcInvert{
+		children: [child.typed_node()!]
+	}))
 }
 
 pub fn CSSMathMin.create(type_ NumericType, values CSSNumericArray) CSSMathMin {
@@ -914,14 +907,14 @@ pub fn (min CSSMathMin) create_a_sum_value() ?SumValue {
 }
 
 pub fn (min CSSMathMin) create_calculation_node(context CalculationContext) !CalculationNode {
-	mut child_nodes := []CalculationNode{}
+	mut children := []CalcNode{}
 	for child_value in min.values_.values() {
-		child_nodes << child_value.create_calculation_node(context)!
+		children << child_value.create_calculation_node(context)!.typed_node()!
 	}
-
-	return CalculationNode{
-		serialization: join_calculation_nodes(child_nodes, ', ', 'min(', ')')
-	}
+	return calculation_node_from_calc(CalcNode(CalcFunction{
+		name:     'min'
+		children: children
+	}))
 }
 
 pub fn CSSMathMax.create(type_ NumericType, values CSSNumericArray) CSSMathMax {
@@ -1031,14 +1024,14 @@ pub fn (max CSSMathMax) create_a_sum_value() ?SumValue {
 }
 
 pub fn (max CSSMathMax) create_calculation_node(context CalculationContext) !CalculationNode {
-	mut child_nodes := []CalculationNode{}
+	mut children := []CalcNode{}
 	for child_value in max.values_.values() {
-		child_nodes << child_value.create_calculation_node(context)!
+		children << child_value.create_calculation_node(context)!.typed_node()!
 	}
-
-	return CalculationNode{
-		serialization: join_calculation_nodes(child_nodes, ', ', 'max(', ')')
-	}
+	return calculation_node_from_calc(CalcNode(CalcFunction{
+		name:     'max'
+		children: children
+	}))
 }
 
 pub fn CSSMathClamp.create(type_ NumericType, lower CSSNumericValue, value CSSNumericValue, upper CSSNumericValue) CSSMathClamp {
@@ -1164,9 +1157,10 @@ pub fn (clamp_value CSSMathClamp) create_calculation_node(context CalculationCon
 	lower := clamp_value.lower_.create_calculation_node(context)!
 	value := clamp_value.value_.create_calculation_node(context)!
 	upper := clamp_value.upper_.create_calculation_node(context)!
-	return CalculationNode{
-		serialization: 'clamp(${lower.serialization}, ${value.serialization}, ${upper.serialization})'
-	}
+	return calculation_node_from_calc(CalcNode(CalcFunction{
+		name: 'clamp'
+		children: [lower.typed_node()!, value.typed_node()!, upper.typed_node()!]
+	}))
 }
 
 fn serialize_min_or_max_math_value(name string, values CSSNumericArray) string {
@@ -1217,12 +1211,4 @@ fn numeric_type_from_sum_value_unit_map(unit_map map[string]int) ?NumericType {
 		return NumericType.new()
 	}
 	return NumericType.create_from_unit_map(unit_map)
-}
-
-fn join_calculation_nodes(nodes []CalculationNode, separator string, prefix string, suffix string) string {
-	mut parts := []string{}
-	for node in nodes {
-		parts << node.serialization
-	}
-	return '${prefix}${parts.join(separator)}${suffix}'
 }

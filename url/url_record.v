@@ -2,12 +2,11 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of the URL record and its serializer from LibURL/URL.cpp/URL.h — the scheme, credentials,
-// host, port, path, query, and fragment components, and the URL/path serializers. The URL parser (which
-// needs IDNA for domains) and the blob URL entry are out of scope; the serializers are self-contained.
+// Translation of the URL record and its serializer from LibURL/URL.cpp/URL.h.
 // https://url.spec.whatwg.org/#url-representation
 module url
 
+@[heap]
 pub struct URL {
 pub mut:
 	scheme   string
@@ -105,6 +104,27 @@ pub fn (record &URL) basename() string {
 // are identical.
 pub fn (record &URL) equals(other &URL, exclude_fragment bool) bool {
 	return record.serialize(exclude_fragment) == other.serialize(exclude_fragment)
+}
+
+// https://url.spec.whatwg.org/#concept-url-origin. Blob URL entry lookup is an
+// HTML/Blob-store concern; when no entry is installed, upstream falls back to
+// parsing the blob URL's serialized path, which is what this record performs.
+pub fn (record &URL) origin() Origin {
+	if record.scheme == 'blob' {
+		path_url := parse(record.serialize_path()) or { return Origin.create_opaque(.standard) }
+		if path_url.scheme in ['http', 'https', 'file'] {
+			return path_url.origin()
+		}
+		return Origin.create_opaque(.standard)
+	}
+	if record.scheme in ['ftp', 'http', 'https', 'ws', 'wss'] {
+		host := record.host or { return Origin.create_opaque(.standard) }
+		return Origin.tuple(record.scheme, host, record.port, none)
+	}
+	if record.scheme in ['file', 'resource'] {
+		return Origin.create_opaque(.file)
+	}
+	return Origin.create_opaque(.standard)
 }
 
 // LibURL URL::serialize_for_display — like serialize but omitting credentials and always keeping the

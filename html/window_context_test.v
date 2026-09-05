@@ -7,12 +7,50 @@ mut:
 	now f64
 }
 
+fn unloading_cleanup_websocket_disappears() bool {
+	return true
+}
+
 fn window_test_document(url string) &dom.Document {
 	parsed := dom.URL{url}
 	return &dom.Document{
 		url:     parsed
 		origin_: parsed.origin()
 	}
+}
+
+fn test_window_unloading_cleanup_uses_translated_global_scope_algorithms() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	window := WindowModel.create_top_level(document, none, 'cleanup')!
+	mut scope := unsafe { &WindowOrWorkerGlobalScopeMixin(window.window_or_worker_global_scope()) }
+	scope.set_timeout(timer_source_handler('cleanup'), 1000, [])
+	socket := &GlobalScopeWebSocket{
+		make_disappear: unloading_cleanup_websocket_disappears
+	}
+	scope.register_web_socket(socket)
+	assert scope.active_timer_count() == 1
+	assert document.salvageable
+
+	document.run_unloading_cleanup_steps()
+	assert !document.salvageable
+	assert scope.active_timer_count() == 0
+}
+
+fn test_window_and_location_are_the_dom_exposed_objects() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/path' })
+	window := WindowModel.create_top_level(document, none, '')!
+
+	dom_window := document.get_window() or {
+		assert false, 'WindowModel was not installed as the document global object'
+		return
+	}
+	assert voidptr(dom_window) == voidptr(window)
+	dom_location := document.location() or {
+		assert false, 'fully-active document did not expose WindowModel.location'
+		return
+	}
+	assert voidptr(dom_location) == voidptr(window.location())
+	assert window.location().href()! == 'https://example.test/path'
 }
 
 fn test_location_component_access_and_navigation() {
@@ -35,16 +73,39 @@ fn test_location_component_access_and_navigation() {
 	location.set_pathname('next')!
 	assert document.url.serialize_path() == '/next'
 	location.set_port('443')!
-	assert location.port()! == '443'
+	// URL's port state removes the scheme's default port, so Location::port
+	// returns the empty string exactly as upstream does for https:443.
+	assert location.port()! == ''
 	location.replace('/replacement')!
 	assert location.navigations().last().history_behavior == .replace
 	location.reload()
 	assert location.reload_count() == 1
 }
 
+fn test_declarative_refresh_uses_the_translated_navigable_with_replace_history() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/start' })
+	_ = WindowModel.create_top_level(document, none, '')!
+	mut navigable := NavigableModel.navigable_with_active_document(document) or {
+		assert false, 'WindowModel did not create the translated NavigableModel'
+		return
+	}
+	assert navigable.get_session_history_entries().len == 1
+
+	document.shared_declarative_refresh_steps('0; url=/refreshed')
+	document.completely_finish_loading()
+	document.active_refresh_timer.fire()
+
+	entry := navigable.current_session_history_entry() or {
+		assert false, 'declarative refresh did not retain a current history entry'
+		return
+	}
+	assert entry.url().serialize() == 'https://example.test/refreshed'
+	assert navigable.get_session_history_entries().len == 1
+}
+
 fn test_location_enforces_same_origin_for_sensitive_operations() {
 	document := window_test_document('https://example.test/a')
-	mut location := LocationModel.create(document, dom.Origin{'https://other.test'})
+	mut location := LocationModel.create(document, dom.Origin{ value: 'https://other.test' })
 	if _ := location.href() {
 		assert false
 	} else {
@@ -71,7 +132,7 @@ fn test_location_exact_exotic_internal_methods() {
 	assert location.internal_delete(document.origin(), 'answer')!
 	assert location.internal_get(document.origin(), 'answer')!.is_undefined()
 	assert 'href' in location.internal_own_property_keys(document.origin())
-	cross_origin := dom.Origin{'https://other.test'}
+	cross_origin := dom.Origin{ value: 'https://other.test' }
 	assert location.internal_get_prototype_of(cross_origin).kind == .null_
 	assert location.internal_get_own_property(cross_origin, 'replace')!.found
 	assert location.internal_set(cross_origin, 'href', dom.js_string('/next'))!
@@ -135,14 +196,14 @@ fn test_window_proxy_indexed_and_cross_origin_access() {
 	_ = child
 	proxy := top.window()
 
-	indexed := proxy.get_own_property(dom.Origin{'https://elsewhere.test'}, '0')!
+	indexed := proxy.get_own_property(dom.Origin{ value: 'https://elsewhere.test' }, '0')!
 	assert indexed.found
 	assert indexed.descriptor.value.kind == .object
 	assert proxy.own_property_keys(top_document.origin())[0] == '0'
-	length_property := proxy.get_own_property(dom.Origin{'https://elsewhere.test'}, 'length')!
+	length_property := proxy.get_own_property(dom.Origin{ value: 'https://elsewhere.test' }, 'length')!
 	assert length_property.found
 	assert length_property.descriptor.value.number_data == 1
-	if _ := proxy.get_own_property(dom.Origin{'https://elsewhere.test'}, 'secret') {
+	if _ := proxy.get_own_property(dom.Origin{ value: 'https://elsewhere.test' }, 'secret') {
 		assert false
 	} else {
 		assert err.msg().contains('SecurityError')
@@ -155,7 +216,7 @@ fn test_window_proxy_indexed_and_cross_origin_access() {
 	mut mutable_proxy := unsafe { &WindowProxyModel(proxy) }
 	assert !mutable_proxy.internal_prevent_extensions()
 	assert mutable_proxy.internal_set_prototype_of(dom.js_null())
-	assert proxy.internal_get_prototype_of(dom.Origin{'https://elsewhere.test'}).kind == .null_
+	assert proxy.internal_get_prototype_of(dom.Origin{ value: 'https://elsewhere.test' }).kind == .null_
 	assert proxy.internal_get_own_property(top_document.origin(), 'answer')!.found
 	assert proxy.internal_get(top_document.origin(), 'answer')!.number_data == 42
 	assert proxy.internal_define_own_property(top_document.origin(), 'second', dom.js_number(2))!

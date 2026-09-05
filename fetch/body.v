@@ -7,6 +7,7 @@ module fetch
 
 import encoding
 import mimesniff
+import streams
 import x.json2
 
 pub type SniffBytesCallback = fn ([]u8)
@@ -33,59 +34,62 @@ pub:
 	source_kind BodySourceKind
 	length      ?u64
 mut:
-	bytes_                []u8
-	stream_locked_        bool
-	disturbed_            bool
-	errored_              bool
-	error_reason_         string
+	stream_               &streams.ReadableStream = unsafe { nil }
+	source_bytes_         []u8
 	sniff_bytes_          []u8
 	sniff_bytes_complete_ bool
 	sniff_callback_       ?SniffBytesCallback
 }
 
 pub fn Body.from_bytes(bytes []u8, source_kind BodySourceKind) &Body {
+	mut stream := streams.ReadableStream.construct_impl(streams.UnderlyingSource{
+		type_: .bytes
+	}, streams.QueuingStrategy{}) or { panic(err) }
+	if bytes.len > 0 {
+		stream.enqueue(streams.bytes_value(bytes)) or { panic(err) }
+	}
+	stream.close()
 	return &Body{
-		source_kind:           source_kind
-		length:                u64(bytes.len)
-		bytes_:                bytes.clone()
-		sniff_bytes_:          bytes[..if bytes.len < 1445 { bytes.len } else { 1445 }].clone()
-		sniff_bytes_complete_: true
+		source_kind: source_kind
+		length: u64(bytes.len)
+		stream_: stream
+		source_bytes_: bytes.clone()
 	}
 }
 
 pub fn Body.streaming() &Body {
+	stream := streams.ReadableStream.construct_impl(streams.UnderlyingSource{
+		type_: .bytes
+	}, streams.QueuingStrategy{}) or { panic(err) }
 	return &Body{
 		source_kind: .readable_stream
+		stream_: stream
 	}
 }
 
 pub fn (body &Body) bytes() []u8 {
-	return body.bytes_.clone()
+	return body.source_bytes_.clone()
 }
 
 pub fn (body &Body) stream_locked() bool {
-	return body.stream_locked_
+	return body.stream_.locked()
 }
 
 pub fn (body &Body) disturbed() bool {
-	return body.disturbed_
+	return body.stream_.disturbed()
 }
 
 pub fn (body &Body) errored() bool {
-	return body.errored_
+	return body.stream_.state() == .errored
 }
 
 pub fn (body &Body) error_reason() string {
-	return body.error_reason_
+	return body.stream_.stored_error()
 }
 
 pub fn (mut body Body) error_stream(reason string) {
-	body.errored_ = true
-	body.error_reason_ = reason
-}
-
-pub fn (mut body Body) set_stream_locked(value bool) {
-	body.stream_locked_ = value
+	mut stream := body.stream_
+	stream.error(reason)
 }
 
 pub fn (mut body Body) append_sniff_bytes(bytes []u8) {
@@ -111,6 +115,14 @@ pub fn (mut body Body) set_sniff_bytes_complete() {
 }
 
 pub fn (body &Body) sniff_bytes_if_available() ?[]u8 {
+	if body.source_kind != .readable_stream {
+		limit := if body.source_bytes_.len < 1445 {
+			body.source_bytes_.len
+		} else {
+			1445
+		}
+		return body.source_bytes_[..limit].clone()
+	}
 	if body.sniff_bytes_complete_ {
 		return body.sniff_bytes_.clone()
 	}
@@ -125,45 +137,62 @@ pub fn (mut body Body) wait_for_sniff_bytes(callback SniffBytesCallback) {
 	body.sniff_callback_ = callback
 }
 
-pub fn (body &Body) clone() &Body {
+pub fn (mut body Body) clone() &Body {
+	mut stream := body.stream_
+	pair := stream.tee() or { panic(err) }
+	body.stream_ = pair.first
 	return &Body{
-		source_kind:           body.source_kind
-		length:                body.length
-		bytes_:                body.bytes_.clone()
-		sniff_bytes_:          body.sniff_bytes_.clone()
+		source_kind: body.source_kind
+		length: body.length
+		stream_: pair.second
+		source_bytes_: body.source_bytes_.clone()
+		sniff_bytes_: body.sniff_bytes_.clone()
 		sniff_bytes_complete_: body.sniff_bytes_complete_
 	}
 }
 
-pub fn (mut body Body) fully_read() ![]u8 {
-	if body.stream_locked_ || body.disturbed_ {
-		return error('TypeError: Body is unusable')
-	}
-	body.disturbed_ = true
-	return body.bytes_.clone()
+fn clone_body(body ?&Body) ?&Body {
+	mut source := body or { return none }
+	return source.clone()
 }
 
-pub fn (mut body Body) incrementally_read(chunk_size int, process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {
-	if body.stream_locked_ || body.disturbed_ {
-		process_error('TypeError: Body is unusable')
+pub fn (mut body Body) fully_read() ![]u8 {
+	mut stream := body.stream_
+	mut reader := stream.get_default_reader()!
+	return reader.read_all_bytes()
+}
+
+pub fn (mut body Body) incrementally_read(process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {
+	mut stream := body.stream_
+	mut reader := stream.get_default_reader() or {
+		process_error(err.msg())
 		return
 	}
-	body.disturbed_ = true
-	if chunk_size <= 0 {
-		process_error('TypeError: Invalid chunk size')
-		return
-	}
-	mut offset := 0
-	for offset < body.bytes_.len {
-		end := if offset + chunk_size < body.bytes_.len {
-			offset + chunk_size
-		} else {
-			body.bytes_.len
+	body.incrementally_read_loop(mut reader, process_chunk, process_end, process_error)
+}
+
+pub fn (mut body Body) incrementally_read_loop(mut reader streams.ReadableStreamDefaultReader, process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {
+	for {
+		read := reader.read()
+		if read.state() == .pending {
+			process_error('TypeError: Body stream did not synchronously produce a chunk')
+			return
 		}
-		process_chunk(body.bytes_[offset..end].clone())
-		offset = end
+		if read.state() == .rejected {
+			process_error(read.reason())
+			return
+		}
+		result := read.result()
+		if result.done {
+			process_end()
+			return
+		}
+		if result.value.kind != .bytes {
+			process_error('TypeError: Body stream produced a non-byte chunk')
+			return
+		}
+		process_chunk(result.value.bytes_.clone())
 	}
-	process_end()
 }
 
 pub struct BodyWithType {
@@ -180,6 +209,7 @@ pub:
 	type_            string
 	stream_locked    bool
 	stream_disturbed bool
+	stream           ?&streams.ReadableStream
 }
 
 pub fn extract_body(object BodyInit, keepalive bool) !BodyWithType {
@@ -189,6 +219,14 @@ pub fn extract_body(object BodyInit, keepalive bool) !BodyWithType {
 		}
 		if object.stream_locked || object.stream_disturbed {
 			return error('TypeError: ReadableStream body is disturbed or locked')
+		}
+		if supplied_stream := object.stream {
+			return BodyWithType{
+				body: &Body{
+					source_kind: .readable_stream
+					stream_: supplied_stream
+				}
+			}
 		}
 		return BodyWithType{
 			body: Body.streaming()
@@ -216,7 +254,7 @@ pub fn extract_body(object BodyInit, keepalive bool) !BodyWithType {
 		else {}
 	}
 	return BodyWithType{
-		body:  Body.from_bytes(bytes, object.kind)
+		body: Body.from_bytes(bytes, object.kind)
 		type_: type_
 	}
 }
@@ -233,70 +271,154 @@ pub:
 	content_type ?string
 }
 
-fn unquote_header_parameter(value string) string {
-	trimmed := value.trim_space()
-	if trimmed.len >= 2 && trimmed[0] == `"` && trimmed[trimmed.len - 1] == `"` {
-		return parse_multipart_form_data_name(trimmed[1..trimmed.len - 1]) or { '' }
-	}
-	return trimmed
+struct MultipartLexer {
+	input string
+mut:
+	position int
 }
 
-// Multipart parser used by Body.formData(). It preserves entry order and the
-// upstream name/filename/content-type projection.
+fn (lexer &MultipartLexer) next_is(value string) bool {
+	return lexer.position + value.len <= lexer.input.len && lexer.input[lexer.position..lexer.position + value.len] == value
+}
+
+fn (mut lexer MultipartLexer) consume_specific(value string) bool {
+	if !lexer.next_is(value) {
+		return false
+	}
+	lexer.position += value.len
+	return true
+}
+
+fn (mut lexer MultipartLexer) consume_until_any(delimiters string) string {
+	start := lexer.position
+	for lexer.position < lexer.input.len && lexer.input[lexer.position] !in delimiters.bytes() {
+		lexer.position++
+	}
+	return lexer.input[start..lexer.position]
+}
+
+fn (mut lexer MultipartLexer) consume_until(value string) string {
+	start := lexer.position
+	relative_end := lexer.input[start..].index(value) or {
+		lexer.position = lexer.input.len
+		return lexer.input[start..]
+	}
+	lexer.position = start + relative_end
+	return lexer.input[start..lexer.position]
+}
+
+fn trim_http_tab_or_space(value string) string {
+	return value.trim(' \t')
+}
+
+fn trim_http_tab_or_space_right(value string) string {
+	return value.trim_right(' \t')
+}
+
+fn parse_multipart_form_data_name_from_lexer(mut lexer MultipartLexer) !string {
+	name := lexer.consume_until_any('\n\r"')
+	if !lexer.consume_specific('"') {
+		return error('Multipart parsing failed: expected quote at position ${lexer.position}')
+	}
+	return name.replace('%0A', '\n').replace('%0D', '\r').replace('%22', '"')
+}
+
+fn parse_multipart_form_data_header_from_lexer(mut lexer MultipartLexer) !MultipartFormDataHeader {
+	mut name := ?string(none)
+	mut filename := ?string(none)
+	mut content_type := ?string(none)
+	for {
+		if lexer.next_is('\r\n') {
+			parsed_name := name or {
+				return error('Multipart parsing failed: missing name parameter in Content-Disposition header')
+			}
+			return MultipartFormDataHeader{
+				name: parsed_name
+				filename: filename
+				content_type: content_type
+			}
+		}
+
+		header_name := trim_http_tab_or_space(lexer.consume_until_any('\n\r:'))
+		if header_name == '' || !header_name.bytes().all(http_header_name_byte) {
+			return error('Multipart parsing failed: invalid header name ${header_name}')
+		}
+		if !lexer.consume_specific(':') {
+			return error('Multipart parsing failed: expected colon at position ${lexer.position}')
+		}
+		for lexer.position < lexer.input.len && lexer.input[lexer.position] in [` `, `\t`] {
+			lexer.position++
+		}
+
+		if header_name.to_lower() == 'content-disposition' {
+			name = none
+			filename = none
+			if !lexer.consume_specific('form-data; name="') {
+				return error('Multipart parsing failed: expected form-data name at position ${lexer.position}')
+			}
+			name = parse_multipart_form_data_name_from_lexer(mut lexer)!
+			if lexer.consume_specific('; filename="') {
+				filename = parse_multipart_form_data_name_from_lexer(mut lexer)!
+			}
+		} else if header_name.to_lower() == 'content-type' {
+			content_type = trim_http_tab_or_space_right(lexer.consume_until_any('\n\r'))
+		} else {
+			lexer.consume_until_any('\n\r')
+		}
+
+		if !lexer.consume_specific('\r\n') {
+			return error('Multipart parsing failed: expected CRLF at position ${lexer.position}')
+		}
+	}
+	return error('Multipart parsing failed')
+}
+
+// Direct translation of Body.cpp's position-driven multipart parser.
 pub fn parse_multipart_form_data(input string, mime_type mimesniff.MimeType) ![]FormDataEntry {
 	parameters := mime_type.parameters()
 	boundary := parameters['boundary'] or {
 		return error('Multipart parsing failed: missing boundary')
 	}
-	if boundary == '' {
-		return error('Multipart parsing failed: empty boundary')
+	boundary_with_dashes := '--${boundary}'
+	mut lexer := MultipartLexer{
+		input: input
 	}
-	marker := '--${boundary}'
 	mut entries := []FormDataEntry{}
-	for raw_part in input.split(marker)[1..] {
-		if raw_part.starts_with('--') {
-			break
+	for {
+		if !lexer.consume_specific(boundary_with_dashes) {
+			return error('Multipart parsing failed: expected boundary at position ${lexer.position}')
 		}
-		mut part := raw_part
-		if part.starts_with('\r\n') { part = part[2..] }
-		separator := part.index('\r\n\r\n') or {
-			return error('Multipart parsing failed: malformed headers')
+		if lexer.next_is('--') {
+			return entries
 		}
-		headers_text := part[..separator]
-		mut value := part[separator + 4..]
-		if value.ends_with('\r\n') { value = value[..value.len - 2] }
-		mut name := ?string(none)
-		mut filename := ?string(none)
-		mut content_type := ?string(none)
-		for line in headers_text.split('\r\n') {
-			colon := line.index_u8(`:`)
-			if colon < 0 { continue
-			 }
-			header_name := ascii_lowercase(line[..colon].trim_space())
-			header_value := line[colon + 1..].trim_space()
-			if header_name == 'content-disposition' {
-				pieces := header_value.split(';')
-				if ascii_lowercase(pieces[0].trim_space()) != 'form-data' { continue
-				 }
-				for parameter in pieces[1..] {
-					equals := parameter.index_u8(`=`)
-					if equals < 0 { continue
-					 }
-					parameter_name := ascii_lowercase(parameter[..equals].trim_space())
-					parameter_value := unquote_header_parameter(parameter[equals + 1..])
-					if parameter_name == 'name' { name = parameter_value }
-					if parameter_name == 'filename' { filename = parameter_value }
-				}
-			} else if header_name == 'content-type' {
-				content_type = header_value
+		if !lexer.consume_specific('\r\n') {
+			return error('Multipart parsing failed: expected CRLF at position ${lexer.position}')
+		}
+
+		header := parse_multipart_form_data_header_from_lexer(mut lexer)!
+		lexer.position += 2
+		mut value := lexer.consume_until(boundary_with_dashes)
+		if lexer.next_is(boundary_with_dashes) && value.len >= 2 {
+			value = value[..value.len - 2]
+			lexer.position -= 2
+		}
+		if !lexer.consume_specific('\r\n') {
+			return error('Multipart parsing failed: expected CRLF before boundary at position ${lexer.position}')
+		}
+
+		mut entry_content_type := header.content_type
+		if header.filename != none {
+			mut file_type := entry_content_type or { 'text/plain' }
+			if !file_type.is_ascii() {
+				file_type = ''
 			}
+			entry_content_type = file_type
 		}
-		entry_name := name or { return error('Multipart parsing failed: missing name') }
 		entries << FormDataEntry{
-			name:         entry_name
-			value:        value
-			filename:     filename
-			content_type: content_type
+			name: header.name or { return error('Multipart parsing failed: missing name') }
+			value: value
+			filename: header.filename
+			content_type: entry_content_type
 		}
 	}
 	return entries
@@ -360,7 +482,7 @@ pub fn (mixin &BodyMixin) form_data() ![]FormDataEntry {
 			}
 			parts := pair.split_nth('=', 2)
 			entries << FormDataEntry{
-				name:  decode_url_encoded_component(parts[0])
+				name: decode_url_encoded_component(parts[0])
 				value: if parts.len > 1 { decode_url_encoded_component(parts[1]) } else { '' }
 			}
 		}

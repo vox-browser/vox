@@ -100,7 +100,11 @@ fn test_concrete_image_element_picture_source_requests_roles_and_dimensions() {
 	mut source := document.create_element_ns('http://www.w3.org/1999/xhtml', 'source') or {
 		panic(err)
 	}
+	mut non_matching_source := document.create_element_ns('http://www.w3.org/1999/xhtml', 'source') or { panic(err) }
+	non_matching_source.set_attribute_value('srcset', '/wrong-media.png 1x')
+	non_matching_source.set_attribute_value('media', '(max-width: 100px)')
 	source.set_attribute_value('srcset', '/picture.png 1x, /retina.png 2x')
+	source.set_attribute_value('media', '(min-width: 600px)')
 	source.set_attribute_value('type', 'image/png')
 	source.set_attribute_value('width', '320')
 	mut image_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'img') or {
@@ -109,6 +113,7 @@ fn test_concrete_image_element_picture_source_requests_roles_and_dimensions() {
 	image_element.set_attribute_value('src', '/fallback.png')
 	image_element.set_attribute_value('alt', 'translated image')
 	mut picture_node := unsafe { &dom.Node(picture) }
+	picture_node.append_child(non_matching_source.as_node()) or { panic(err) }
 	picture_node.append_child(source.as_node()) or { panic(err) }
 	picture_node.append_child(image_element.as_node()) or { panic(err) }
 	mut document_node := unsafe { &dom.Node(document) }

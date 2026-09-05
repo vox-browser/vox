@@ -388,7 +388,8 @@ pub fn (mut descriptors CSSDescriptors) set_css_text(value string) ! {
 		return error('NoModificationAllowedError: Cannot modify properties of readonly CSSStyleDeclaration')
 	}
 
-	descriptors.descriptors = parse_descriptor_declaration_block(descriptors.at_rule_id, value)
+	descriptors.descriptors = parse_css_descriptor_declaration_block(ParsingParams{},
+		descriptors.at_rule_id, value)
 	descriptors.update_style_attribute()
 }
 
@@ -459,13 +460,13 @@ fn expand_page_margin_shorthand_descriptor_value(value StyleValue) []ExpandedDes
 	]
 }
 
-fn parse_descriptor_declaration_block(at_rule_id AtRuleID, text string) []Descriptor {
+pub fn parse_css_descriptor_declaration_block(parsing_params ParsingParams, at_rule_id AtRuleID, text string) []Descriptor {
 	mut block := text.trim_space()
 	if block.starts_with('{') && block.ends_with('}') {
 		block = block[1..block.len - 1]
 	}
 
-	mut parser := RuleSelectorParser.create(ParsingParams{}, block, 'utf-8')
+	mut parser := RuleSelectorParser.create(parsing_params, block, 'utf-8')
 	mut input := parser.token_stream
 	mut declarations := []Descriptor{}
 

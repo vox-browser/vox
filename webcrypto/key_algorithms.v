@@ -43,6 +43,11 @@ fn unsigned_big_integer_bytes(bytes []u8) []u8 {
 	for first_nonzero < bytes.len && bytes[first_nonzero] == 0 {
 		first_nonzero++
 	}
+	// WebCrypto's BigInteger uses the shortest unsigned big-endian octet
+	// sequence, except that zero is represented by one zero-valued octet.
+	if first_nonzero == bytes.len {
+		return [u8(0)]
+	}
 	return bytes[first_nonzero..].clone()
 }
 

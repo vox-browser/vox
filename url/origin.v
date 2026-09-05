@@ -10,6 +10,8 @@
 // https://html.spec.whatwg.org/multipage/browsers.html#concept-origin
 module url
 
+import rand
+
 pub struct OriginTuple {
 pub:
 	scheme ?string
@@ -41,12 +43,24 @@ pub fn Origin.tuple(scheme ?string, host Host, port ?u16, domain ?string) Origin
 	}
 }
 
-// An opaque origin with an explicit nonce (upstream create_opaque generates a random one).
+// An opaque origin with an explicit nonce.
 pub fn Origin.opaque(nonce [16]u8, type_ OpaqueOriginType) Origin {
 	return OpaqueOriginData{
 		nonce: nonce
 		type_: type_
 	}
+}
+
+// Origin::create_opaque(). Each invocation gets a fresh 128-bit nonce.
+pub fn Origin.create_opaque(type_ OpaqueOriginType) Origin {
+	first := rand.u64()
+	second := rand.u64()
+	mut nonce := [16]u8{}
+	for index in 0 .. 8 {
+		nonce[index] = u8(first >> (index * 8))
+		nonce[index + 8] = u8(second >> (index * 8))
+	}
+	return Origin.opaque(nonce, type_)
 }
 
 fn (origin Origin) as_tuple() ?OriginTuple {
@@ -61,6 +75,10 @@ fn (origin Origin) as_opaque() ?OpaqueOriginData {
 		return origin
 	}
 	return none
+}
+
+pub fn (origin Origin) opaque_data() ?OpaqueOriginData {
+	return origin.as_opaque()
 }
 
 fn opt_string_eq(a ?string, b ?string) bool {
@@ -168,4 +186,30 @@ pub fn (origin Origin) is_same_origin_domain(other Origin) bool {
 	}
 	// 3. Otherwise not same origin-domain.
 	return false
+}
+
+// https://html.spec.whatwg.org/multipage/browsers.html#same-site
+pub fn (origin Origin) is_same_site(other Origin) bool {
+	if opaque := origin.as_opaque() {
+		if other_opaque := other.as_opaque() {
+			return opaque.nonce == other_opaque.nonce
+		}
+		return false
+	}
+	first := origin.as_tuple() or { return false }
+	second := other.as_tuple() or { return false }
+	if !opt_string_eq(first.scheme, second.scheme) {
+		return false
+	}
+	first_site_host := if registrable := first.host.registrable_domain() {
+		Host.from_string(registrable)
+	} else {
+		first.host
+	}
+	second_site_host := if registrable := second.host.registrable_domain() {
+		Host.from_string(registrable)
+	} else {
+		second.host
+	}
+	return first_site_host == second_site_host
 }

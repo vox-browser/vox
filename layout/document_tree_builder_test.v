@@ -440,7 +440,7 @@ fn test_before_and_after_pseudo_elements_generate_layout_content_in_tree_order()
 		panic('after child is not text')}.text_for_rendering() == 'after'
 	attach_layout_nodes(root)
 	target_element := document.get_element_by_id('target') or { panic('no target element') }
-	assert target_element.as_node().accessible_name(document, .no)! == 'before middleafter'
+	assert target_element.as_node().accessible_name(document, .yes)! == 'before middleafter'
 }
 
 fn test_generated_inline_content_is_laid_out_inside_mixed_content_wrappers() {

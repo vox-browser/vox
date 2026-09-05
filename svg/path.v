@@ -51,7 +51,7 @@ pub fn (instruction PathInstruction) serialize() string {
 	if instruction.data.len == 0 {
 		return letter
 	}
-	return letter + instruction.data.map(format_number(it)).join(' ')
+	return letter + ' ' + instruction.data.map(format_number(it)).join(' ')
 }
 
 pub fn (path Path) serialize() string {
@@ -70,88 +70,8 @@ fn path_arity(kind PathInstructionType) int {
 }
 
 pub fn parse_path_data(input string) Path {
-	mut scanner := Scanner{
-		source: input
-	}
-	mut instructions := []PathInstruction{}
-	mut command := u8(0)
-	scanner.whitespace()
-	for !scanner.done() {
-		if scanner.current().is_letter() {
-			command = scanner.current()
-			scanner.index++
-		} else if command == 0 {
-			break
-		}
-		absolute := command.is_capital()
-		upper := command.ascii_str().to_upper()[0]
-		kind := match upper {
-			`M` { PathInstructionType.move }
-			`Z` { PathInstructionType.close_path }
-			`L` { PathInstructionType.line }
-			`H` { PathInstructionType.horizontal_line }
-			`V` { PathInstructionType.vertical_line }
-			`C` { PathInstructionType.curve }
-			`S` { PathInstructionType.smooth_curve }
-			`Q` { PathInstructionType.quadratic_bezier_curve }
-			`T` { PathInstructionType.smooth_quadratic_bezier_curve }
-			`A` { PathInstructionType.elliptical_arc }
-			else { break }
-		}
-		scanner.whitespace()
-		if kind == .close_path {
-			instructions << PathInstruction{
-				type_:    kind
-				absolute: absolute
-			}
-			command = 0
-			continue
-		}
-		arity := path_arity(kind)
-		mut first_for_move := true
-		mut parsed := false
-		for !scanner.done() && !scanner.current().is_letter() {
-			mut data := []f64{cap: arity}
-			for index in 0 .. arity {
-				value := if kind == .elliptical_arc && index in [3, 4] {
-					scanner.flag() or { break }
-				} else {
-					scanner.number() or { break }
-				}
-				data << value
-				if index + 1 < arity {
-					scanner.comma_whitespace()
-				}
-			}
-			if data.len != arity {
-				break
-			}
-			actual_kind := if kind == .move && !first_for_move {
-				PathInstructionType.line
-			} else {
-				kind
-			}
-			instructions << PathInstruction{
-				type_:    actual_kind
-				absolute: absolute
-				data:     data
-			}
-			parsed = true
-			first_for_move = false
-			if !scanner.comma_whitespace() && (scanner.done() || scanner.current().is_letter()) {
-				break
-			}
-		}
-		if !parsed {
-			break
-		}
-	}
-	if instructions.len > 0 && instructions[0].type_ != .move {
-		return Path{}
-	}
-	return Path{
-		instructions: instructions
-	}
+	mut parser := AttributeParser.from_string(input)
+	return parser.parse_path_data()
 }
 
 // Endpoints reproduces the absolute/relative current-point state used by
@@ -193,30 +113,36 @@ pub fn (path Path) endpoints() []Point {
 					x: instruction.data[4]
 					y: instruction.data[5]
 				}
-				if !instruction.absolute { next = Point{
+				if !instruction.absolute {
+					next = Point{
 						x: next.x + current.x
 						y: next.y + current.y
-					} }
+					}
+				}
 			}
 			.smooth_curve, .quadratic_bezier_curve {
 				next = Point{
 					x: instruction.data[2]
 					y: instruction.data[3]
 				}
-				if !instruction.absolute { next = Point{
+				if !instruction.absolute {
+					next = Point{
 						x: next.x + current.x
 						y: next.y + current.y
-					} }
+					}
+				}
 			}
 			.elliptical_arc {
 				next = Point{
 					x: instruction.data[5]
 					y: instruction.data[6]
 				}
-				if !instruction.absolute { next = Point{
+				if !instruction.absolute {
+					next = Point{
 						x: next.x + current.x
 						y: next.y + current.y
-					} }
+					}
+				}
 			}
 			.close_path {
 				next = subpath
