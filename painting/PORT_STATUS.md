@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 507
+filename-level mappings. The current semantic audit nevertheless reports 506
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 507 unmatched Painting
+  were removed; the audit currently reports 506 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -84,6 +84,13 @@ following behavioral mismatches and added focused regressions:
   draws that external content; Canvas JavaScript bindings remain a separate
   HTML host gap, so the active integration is exercised through the translated
   Canvas 2D API.
+- `VideoPaintable::paint()` now carries the source representation switch into
+  the active typed bridge. First/current video frames become
+  `DrawExternalContent`, poster frames become `DrawScaledBitmap`, and the
+  no-data state records transparent black. Every branch uses the rounded video
+  rectangle, translated image scaling, the explicit rectangular clip, and
+  normalized border-shrunken corner radii. The native RGBA bridge replays both
+  frame kinds while media decoding remains the existing host boundary.
 - `SVGLinearGradientPaintStyle` now crosses the active path and mask boundaries
   without being reduced to an SVG paint fallback color. Resource href
   precedence and inheritance, monotonic computed stops, object-bounding-box and
@@ -274,7 +281,7 @@ following behavioral mismatches and added focused regressions:
 | `StackingContext.cpp` | `paintable.v` |
 | `TableBordersPainting.cpp` | `table_borders_painting.v` |
 | `TextPaintable.cpp` | `paintable.v` |
-| `VideoPaintable.cpp` | `painting_algorithms.v` |
+| `VideoPaintable.cpp` | `video_paintable.v` |
 | `ViewportPaintable.cpp` | `paintable.v`, `scrolling.v`, `visual_context.v` |
 
 The former consolidated C++ class-name facades
@@ -343,7 +350,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 507 unmatched implementations.
+Painting: 506 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

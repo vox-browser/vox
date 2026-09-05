@@ -36,8 +36,11 @@ fn test_video_representation_dimensions_poster_and_controls() {
 	assert video.current_representation() == .poster_frame
 	assert video.bitmap()?.width == 320
 	video.set_video_dimensions(1920, 1080)
-	assert video.video_width() == 1920
+	assert video.video_width() == 0
+	assert video.video_height() == 0
 	media.load()!
+	assert video.video_width() == 1920
+	assert video.video_height() == 1080
 	assert video.current_representation() == .poster_frame
 	mut controls := MediaControls.create(media)
 	controls.toggle_playback()

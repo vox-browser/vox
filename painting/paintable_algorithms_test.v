@@ -441,6 +441,45 @@ fn test_canvas_paintable_presents_external_content_with_source_geometry() {
 	assert paintable.paint('empty', IntSize{}, converter) == none
 }
 
+fn test_video_paintable_switches_between_external_poster_and_transparent_content() {
+	converter := new_device_pixel_converter(1) or { panic(err) }
+	paintable := VideoPaintable{
+		video_rect: Rect{5, 7, 100, 50}
+		border_radii: BorderRadiiData{
+			top_left: BorderRadiusData{12, 12}
+			top_right: BorderRadiusData{12, 12}
+			bottom_right: BorderRadiusData{12, 12}
+			bottom_left: BorderRadiusData{12, 12}
+		}
+		border_widths: PixelBox{2, 2, 2, 2}
+		image_rendering: .auto_
+	}
+	external := paintable.paint(.video_frame, 'video', none, converter) or {
+		panic('expected external video paint')
+	}
+	assert external.content is DrawExternalContent
+	external_content := external.content as DrawExternalContent
+	assert external_content.destination == IntRect{5, 7, 100, 50}
+	assert external_content.scaling == .bilinear
+	assert external.clip_radii.top_left == CornerRadius{10, 10}
+
+	poster := paintable.paint(.poster_frame, 'poster', IntSize{200, 100}, converter) or {
+		panic('expected poster paint')
+	}
+	assert poster.content is DrawScaledBitmap
+	poster_content := poster.content as DrawScaledBitmap
+	assert poster_content.destination == IntRect{5, 7, 100, 50}
+	assert poster_content.clip_rect == poster_content.destination
+	assert poster_content.scaling == .bilinear_mipmap
+
+	transparent_result := paintable.paint(.transparent_black, '', none, converter) or {
+		panic('expected transparent video paint')
+	}
+	assert transparent_result.content is FillRect
+	assert (transparent_result.content as FillRect).color == transparent
+	assert paintable.paint(.poster_frame, '', none, converter) == none
+}
+
 fn test_native_input_control_colors_follow_active_disabled_and_contrast_paths() {
 	colors := compute_input_colors(.light, css.Color{255, 0, 0, 255})
 	active_checkbox := checkbox_commands(IntRect{0, 0, 20, 20}, true, false, true, true, .light, colors)

@@ -76,6 +76,13 @@ Picture-source media matching uses the same `MediaQuery.evaluate()` path, and
 rendered `auto` sizes use the translated replaced-element default sizing
 algorithm rather than a trailing-`px` parser and fixed numeric fallback.
 
+Video frame handoff now feeds the media element's external-content source used
+by `VideoPaintable`, while poster, current/first-frame, and transparent-black
+selection stays in `HTMLVideoElementModel::current_representation()`. The
+`videoWidth` and `videoHeight` accessors now also return zero in `HAVE_NOTHING`,
+matching the current C++ guard instead of exposing stored decoder dimensions
+too early.
+
 `HTMLInputElement` checkedness, dirty checkedness, and indeterminate state now
 live on the DOM element, matching C++, rather than being copied into a second
 HTML model. `set_checked()` performs only the single-control transition and

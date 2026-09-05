@@ -2553,6 +2553,10 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut replaced_image_paintable := ?painting.ImagePaintable(none)
 	mut canvas_bitmap := ?&dom.ImmutableBitmap_(none)
 	mut canvas_paintable := ?painting.CanvasPaintable(none)
+	mut video_bitmap := ?&dom.ImmutableBitmap_(none)
+	mut video_external_source := ?&html.MediaExternalContentSource(none)
+	mut video_representation := painting.VideoRepresentation.transparent_black
+	mut video_paintable := ?painting.VideoPaintable(none)
 	mut form_control_kind := ''
 	mut form_control_checked := false
 	mut form_control_indeterminate := false
@@ -2805,6 +2809,51 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			}
 		}
 	}
+	if tag_name == 'video' {
+		if video_element := element {
+			video := unsafe { &dom.HTMLVideoElement(video_element) }
+			model := html.html_video_element_model_for_dom_element(video)
+			video_representation = match model.current_representation() {
+				.video_frame { .video_frame }
+				.first_video_frame { .first_video_frame }
+				.poster_frame { .poster_frame }
+				.transparent_black { .transparent_black }
+			}
+			match video_representation {
+				.video_frame, .first_video_frame {
+					mut media := model.media
+					source := media.ensure_external_content_source()
+					video_external_source = source
+					video_bitmap = source.frame()
+				}
+				.poster_frame {
+					video_bitmap = model.poster_frame()
+				}
+				.transparent_black {}
+			}
+			video_paintable = painting.VideoPaintable{
+				video_rect: painting.Rect{
+					x: position.x().to_double()
+					y: position.y().to_double()
+					width: used.content_width().to_double()
+					height: used.content_height().to_double()
+				}
+				border_radii: painting.BorderRadiiData{
+					top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
+					top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
+					bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
+					bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
+				}
+				border_widths: painting.PixelBox{
+					top: used.border_top.to_double()
+					right: used.border_right.to_double()
+					bottom: used.border_bottom.to_double()
+					left: used.border_left.to_double()
+				}
+				image_rendering: computed.image_rendering()
+			}
+		}
+	}
 	if styled_element := element {
 		if styled_element.local_name() == 'input' && computed.appearance() != .none_ {
 			input_type := styled_element.get_attribute_value('type').to_lower()
@@ -2971,6 +3020,10 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		replaced_image_paintable: replaced_image_paintable
 		canvas_bitmap: canvas_bitmap
 		canvas_paintable: canvas_paintable
+		video_bitmap: video_bitmap
+		video_external_source: video_external_source
+		video_representation: video_representation
+		video_paintable: video_paintable
 		is_svg_image: node.is_svg_image_box()
 		form_control_kind: form_control_kind
 		form_control_checked: form_control_checked

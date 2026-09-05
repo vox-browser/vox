@@ -305,7 +305,11 @@ nested group opacity. Canvas boxes likewise retain a dedicated
 presents that surface before retaining its RGBA bitmap, preserves
 `image-rendering` and border-shrunken corner radii, and emits external content
 instead of the old bitmap classification; untouched canvases do not allocate a
-default paint surface. URL `<linearGradient>`, `<radialGradient>`, and `<pattern>`
+default paint surface. Video boxes retain the HTML model's exact current/first
+frame, poster, or transparent-black representation and pass it through the
+dedicated `VideoPaintable`; live frames use external content while posters use
+immutable bitmap commands, with scaling and clipping resolved in Painting.
+URL `<linearGradient>`, `<radialGradient>`, and `<pattern>`
 fill and stroke paints are active for ordinary
 geometry/text and path content inside SVG masks. The typed adapter follows the
 linked-resource algorithms for href precedence, coordinate and generic-attribute

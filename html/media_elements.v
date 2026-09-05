@@ -118,15 +118,24 @@ pub fn (video &HTMLVideoElementModel) supports_dimension_attributes() bool {
 }
 
 pub fn (video &HTMLVideoElementModel) video_width() u32 {
+	if video.media.ready_state() == .have_nothing {
+		return 0
+	}
 	return video.video_width_
 }
 
 pub fn (video &HTMLVideoElementModel) video_height() u32 {
+	if video.media.ready_state() == .have_nothing {
+		return 0
+	}
 	return video.video_height_
 }
 
 pub fn (mut video HTMLVideoElementModel) set_current_frame(frame ?&dom.ImmutableBitmap_) {
 	video.current_frame_ = frame
+	mut media := video.media
+	mut source := media.ensure_external_content_source()
+	source.update(frame)
 }
 
 pub fn (video &HTMLVideoElementModel) poster_frame() ?&dom.ImmutableBitmap_ {
@@ -146,7 +155,13 @@ pub fn (video &HTMLVideoElementModel) current_representation() VideoRepresentati
 pub fn (video &HTMLVideoElementModel) bitmap() ?&dom.ImmutableBitmap_ {
 	return match video.current_representation() {
 		.poster_frame { video.poster_frame_ }
-		.video_frame, .first_video_frame { video.current_frame_ }
+		.video_frame, .first_video_frame {
+			if source := video.media.external_content_source_ {
+				source.frame()
+			} else {
+				video.current_frame_
+			}
+		}
 		.transparent_black { ?&dom.ImmutableBitmap_(none) }
 	}
 }

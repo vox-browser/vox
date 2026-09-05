@@ -2851,6 +2851,65 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 				}
 			}
 		}
+		'draw_video' {
+			paintable := command.video_paintable or { return }
+			mut video_bitmap := command.video_bitmap
+			if source := command.video_external_source {
+				video_bitmap = source.frame()
+			}
+			mut bitmap_size := ?painting.IntSize(none)
+			if bitmap := video_bitmap {
+				bitmap_size = painting.IntSize{bitmap.width, bitmap.height}
+			}
+			converter := painting.new_device_pixel_converter(1.0) or { return }
+			result := paintable.paint(command.video_representation, 'video', bitmap_size, converter) or { return }
+			mut destination := painting.IntRect{}
+			mut scaling := painting.ScalingMode.none_
+			match result.content {
+				painting.DrawExternalContent {
+					destination = result.content.destination
+					scaling = result.content.scaling
+				}
+				painting.DrawScaledBitmap {
+					destination = result.content.destination
+					scaling = result.content.scaling
+				}
+				painting.FillRect {
+					// Transparent black deliberately records bounds upstream but has
+					// no visible pixels to replay.
+					return
+				}
+				else {
+					return
+				}
+			}
+			bitmap := video_bitmap or { return }
+			if bitmap.width <= 0 || bitmap.height <= 0 || bitmap.pitch != bitmap.width * 4
+				|| bitmap.data.len < bitmap.pitch * bitmap.height {
+				return
+			}
+			$if macos {
+				if app.ctx.native_rendering {
+					clip := result.clip_rect
+					radii := result.clip_radii
+					video_image := &gg.Image{
+						width: bitmap.width
+						height: bitmap.height
+						nr_channels: 4
+						ok: true
+						data: bitmap.data.data
+					}
+					C.native_begin_clip()
+					C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+					C.native_draw_image_part_transformed(video_image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(bitmap.width), f32(bitmap.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.opacity), if scaling == .nearest_neighbor {
+						1
+					} else {
+						0
+					})
+					C.native_end_clip()
+				}
+			}
+		}
 		'draw_background_image' {
 			image := app.background_image(command.image_url) or { return }
 			intrinsic_width := f32(image.width)

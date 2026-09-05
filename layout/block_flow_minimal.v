@@ -319,6 +319,10 @@ pub mut:
 	replaced_image_paintable  ?painting.ImagePaintable
 	canvas_bitmap             ?&dom.ImmutableBitmap_
 	canvas_paintable          ?painting.CanvasPaintable
+	video_bitmap              ?&dom.ImmutableBitmap_
+	video_external_source     ?&html.MediaExternalContentSource
+	video_representation      painting.VideoRepresentation
+	video_paintable           ?painting.VideoPaintable
 	// Retained for detached compatibility commands; typed HTML/SVG images carry
 	// their source semantics in replaced_image_paintable.
 	is_svg_image               bool
@@ -1323,6 +1327,12 @@ pub mut:
 	// CanvasPaintable publishes its current RGBA surface as external content.
 	canvas_bitmap    ?&dom.ImmutableBitmap_
 	canvas_paintable ?painting.CanvasPaintable
+	// VideoPaintable retains the representation switch separately from the
+	// optional poster/current-frame bitmap.
+	video_bitmap          ?&dom.ImmutableBitmap_
+	video_external_source ?&html.MediaExternalContentSource
+	video_representation  painting.VideoRepresentation
+	video_paintable       ?painting.VideoPaintable
 	// Synthetic balanced controls around the complete background color/layer
 	// group. The begin command owns the inclusive-subtree glyph runs.
 	text_clip_runs []PaintTextClipRun
@@ -2358,6 +2368,20 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 					canvas_bitmap: bitmap
 					canvas_paintable: canvas_paintable
 				}
+			}
+		}
+		if video_paintable := box.video_paintable {
+			commands << PaintCommand{
+				kind: 'draw_video'
+				x: box.x
+				y: box.y
+				width: box.width
+				height: box.height
+				opacity: opacity
+				video_bitmap: box.video_bitmap
+				video_external_source: box.video_external_source
+				video_representation: box.video_representation
+				video_paintable: video_paintable
 			}
 		}
 		form_control_state := box.current_form_control_state()

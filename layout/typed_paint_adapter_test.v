@@ -6,6 +6,22 @@ import html
 import math
 import painting
 
+fn typed_video_paint_fetch(_ dom.URL, _ u64) !html.MediaResourceResponse {
+	return html.MediaResourceResponse{
+		mime_type: 'video/mp4'
+		video_tracks: [html.MediaTrackMetadata{ identifier: 1, name: 'video' }]
+	}
+}
+
+fn typed_video_poster_fetch(_ dom.URL) !&dom.ImmutableBitmap_ {
+	return &dom.ImmutableBitmap_{
+		width: 30
+		height: 15
+		pitch: 120
+		data: []u8{len: 30 * 15 * 4}
+	}
+}
+
 fn computed_paint_test_style(style string) &css.ComputedProperties {
 	document := dom.Document.create(dom.url_about_blank())
 	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
@@ -1194,6 +1210,64 @@ fn test_canvas_uses_canvas_paintable_only_after_a_surface_exists() {
 	assert resolved.content.destination.height == 50
 	assert resolved.content.scaling == .nearest_neighbor
 	assert resolved.clip_radii.top_left == painting.CornerRadius{8, 8}
+}
+
+fn test_video_uses_the_paintable_representation_switch() {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}video{display:block;width:100px;height:50px;border:4px solid red;border-radius:12px;image-rendering:pixelated}</style><video id="frame"></video><video id="poster"></video><video id="blank"></video>')
+	frame_element := document.get_element_by_id('frame') or { panic('missing frame video') }
+	frame_video := unsafe { &dom.HTMLVideoElement(frame_element) }
+	mut frame_model := html.html_video_element_model_for_dom_element(frame_video)
+	mut frame_media := frame_model.media
+	frame_media.set_fetch_hook(typed_video_paint_fetch)
+	frame_media.set_source('https://example.test/movie.mp4')
+	frame_media.load() or { panic(err) }
+	frame_media.set_current_playback_position(1)
+	frame_model.set_current_frame(&dom.ImmutableBitmap_{
+		width: 20
+		height: 10
+		pitch: 80
+		data: []u8{len: 20 * 10 * 4}
+	})
+
+	poster_element := document.get_element_by_id('poster') or { panic('missing poster video') }
+	poster_video := unsafe { &dom.HTMLVideoElement(poster_element) }
+	mut poster_model := html.html_video_element_model_for_dom_element(poster_video)
+	poster_model.set_poster_fetch_hook(typed_video_poster_fetch)
+	poster_model.set_poster('https://example.test/poster.png')
+
+	root := layout_document_typed_in_viewport(document, 240, 190)
+	commands := root.paint_commands().filter(it.kind == 'draw_video')
+	assert commands.len == 3
+	frame_command := commands.filter(it.video_representation == .video_frame)[0]
+	frame_bitmap := frame_command.video_bitmap or { panic('missing current video frame') }
+	frame_result := (frame_command.video_paintable or { panic('missing VideoPaintable') }).paint(frame_command.video_representation, 'video', painting.IntSize{frame_bitmap.width, frame_bitmap.height}, painting.new_device_pixel_converter(1) or { panic(err) }) or {
+		panic('missing video frame paint result')
+	}
+	assert frame_result.content is painting.DrawExternalContent
+	assert (frame_result.content as painting.DrawExternalContent).scaling == .nearest_neighbor
+	assert frame_result.clip_radii.top_left == painting.CornerRadius{8, 8}
+	frame_source := frame_command.video_external_source or { panic('missing external source') }
+	frame_model.set_current_frame(&dom.ImmutableBitmap_{
+		width: 40
+		height: 20
+		pitch: 160
+		data: []u8{len: 40 * 20 * 4}
+	})
+	assert frame_source.frame()?.width == 40
+
+	poster_command := commands.filter(it.video_representation == .poster_frame)[0]
+	poster_bitmap := poster_command.video_bitmap or { panic('missing poster frame') }
+	poster_result := (poster_command.video_paintable or { panic('missing poster VideoPaintable') }).paint(poster_command.video_representation, 'poster', painting.IntSize{poster_bitmap.width, poster_bitmap.height}, painting.new_device_pixel_converter(1) or { panic(err) }) or {
+		panic('missing poster paint result')
+	}
+	assert poster_result.content is painting.DrawScaledBitmap
+
+	blank_command := commands.filter(it.video_representation == .transparent_black)[0]
+	assert blank_command.video_bitmap == none
+	blank_result := (blank_command.video_paintable or { panic('missing blank VideoPaintable') }).paint(blank_command.video_representation, '', none, painting.new_device_pixel_converter(1) or { panic(err) }) or {
+		panic('missing transparent paint result')
+	}
+	assert blank_result.content is painting.FillRect
 }
 
 fn test_url_svg_clip_path_is_a_retained_alpha_mask_not_a_painted_child_or_hit_test_clip() {
