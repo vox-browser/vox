@@ -1840,6 +1840,84 @@ fn test_percentage_table_cell_alignment_retains_signed_row_difference() {
 	assert sized.padding_bottom.to_double() == -17.140625
 }
 
+fn test_collapsed_table_row_has_zero_height_and_does_not_advance_row_cursor() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 } table { width:150px; border-spacing:3px 5px }
+		td { padding:2px; border:1px solid }
+	</style><table id="table"><tbody id="group"><tr id="first" style="height:20px"><td>a</td></tr>
+		<tr id="collapsed" style="visibility:collapse;height:70px"><td id="collapsed-cell" style="height:50px">b</td></tr>
+		<tr id="last" style="height:30px"><td>c</td></tr></tbody></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table := used_for_id(result, 'table')
+	group := used_for_id(result, 'group')
+	first := used_for_id(result, 'first')
+	collapsed := used_for_id(result, 'collapsed')
+	last := used_for_id(result, 'last')
+	collapsed_cell := used_for_id(result, 'collapsed-cell')
+	assert table.content_height().to_double() == 74
+	assert group.content_height().to_double() == 64
+	assert first.content_height().to_double() == 24
+	assert first.offset.y().to_double() == 5
+	assert collapsed.content_height().to_double() == 0
+	assert collapsed.offset.y().to_double() == 34
+	assert last.content_height().to_double() == 30
+	assert last.offset.y().to_double() == 34
+	// Collapsed cells are still laid out. Positioning applies the signed
+	// alignment difference against their zero-height row.
+	assert collapsed_cell.content_height().to_double() == 18
+	assert collapsed_cell.padding_top.to_double() == -10
+	assert collapsed_cell.padding_bottom.to_double() == -10
+}
+
+fn test_collapsed_table_row_group_preserves_upstream_group_spacing_quirk() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 } table { width:150px; height:160px; border-spacing:3px 5px }
+		td { padding:2px; border:1px solid }
+	</style><table id="table"><tbody id="collapsed-group" style="visibility:collapse">
+		<tr id="collapsed-one"><td></td></tr><tr id="collapsed-two"><td></td></tr></tbody>
+		<tbody id="visible-group"><tr id="visible"><td></td></tr></tbody></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table := used_for_id(result, 'table')
+	collapsed_group := used_for_id(result, 'collapsed-group')
+	visible_group := used_for_id(result, 'visible-group')
+	assert used_for_id(result, 'collapsed-one').content_height().to_double() == 0
+	assert used_for_id(result, 'collapsed-two').content_height().to_double() == 0
+	assert collapsed_group.offset.y().to_double() == 5
+	// position_row_boxes() still counts the spacing between collapsed row
+	// boxes when it sizes the group, even though the row cursor did not move.
+	assert collapsed_group.content_height().to_double() == 5
+	assert visible_group.offset.y().to_double() == 15
+	assert used_for_id(result, 'visible').offset.y().to_double() == 5
+	assert used_for_id(result, 'visible').content_height().to_double() == 160
+	assert table.content_height().to_double() == 180
+}
+
+fn test_table_auto_row_height_distribution_truncates_fractional_increment() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 } table { width:120px; height:137px; border-spacing:0; table-layout:fixed }
+		td { padding:2px; border:1px solid } td div { height:7px }
+	</style><table id="table"><tr id="one"><td><div></div></td></tr>
+		<tr id="two"><td><div></div></td></tr><tr id="three"><td><div></div></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'one').content_height().to_double() == 45.65625
+	assert used_for_id(result, 'two').content_height().to_double() == 45.65625
+	assert used_for_id(result, 'three').content_height().to_double() == 45.65625
+	// Three truncated shares total 1/32px less than the table's minimum.
+	assert used_for_id(result, 'table').content_height().to_double() == 137
+}
+
+fn test_percentage_height_rowspan_cell_is_relaid_out_in_second_pass() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 } table { width:120px; height:100px; border-spacing:0; table-layout:fixed }
+		tr { height:50px } td { padding:0 } #span { height:60%; vertical-align:top }
+	</style><table><tr><td id="span" rowspan="2"><div style="height:7px"></div></td><td></td></tr>
+		<tr><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	span := used_for_id(result, 'span')
+	assert span.content_height().to_double() == 60
+	assert span.padding_bottom.to_double() == 40
+}
+
 fn test_table_caption_position_ignores_own_margins_at_wrapper_origin() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:200px; border-spacing:0 } caption { height:10px; margin:3px 7px; padding:5px } td { height:20px; padding:0 }

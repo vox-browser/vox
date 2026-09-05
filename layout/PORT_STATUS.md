@@ -98,11 +98,17 @@ cell taller than its row, and `position_cell_boxes()` retains the resulting
 negative alignment padding. Caption descendants are laid out against the full
 table border-box width before the caption's own fixed or percentage width and
 box model are resolved. Caption margins do not shift a top caption from the
-wrapper origin. Finally, `rowspan="0"` remains a one-row span because upstream's
-downward-growing-cell step is still a FIXME. A generated 752-case table matrix
-covering width modes, collapsed/separate spacing, row and cell percentages,
-spans, groups, vertical alignment, and captions agrees with the current C++
-layout tree on every case.
+wrapper origin. Percentage-height cells spanning multiple rows also participate
+in the second pass, as they do in the source. `visibility: collapse` on a row or
+its row group now zeroes that row's base, reference, and final height and keeps
+it from advancing the row cursor. The row-group cursor intentionally retains
+the source's quirk of counting spacing between collapsed row boxes. Height left
+over for auto rows is converted from `CSSPixelFraction` by truncating instead of
+being recomputed and rounded through `f64`. Finally, `rowspan="0"` remains a
+one-row span because upstream's downward-growing-cell step is still a FIXME. A
+generated 752-case general table matrix and a separate 216-case collapsed-row
+matrix covering both row- and group-level collapse agree with the current C++
+layout tree on every tracked case.
 
 Column flex intrinsic cross sizing now follows C++'s two-pass contribution
 algorithm for single-line min/max-content sizing and multi-line min-content

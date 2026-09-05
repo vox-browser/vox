@@ -206,6 +206,21 @@ fn table_row_groups_by_index(rows []&Node) map[int]TableRowGroupInfo {
 	return result
 }
 
+fn table_row_is_collapsed(row &Node) bool {
+	if row.computed_values().visibility() == .collapse {
+		return true
+	}
+	if row_group := row.parent() {
+		if (row_group.display().is_table_row_group()
+			|| row_group.display().is_table_header_group()
+			|| row_group.display().is_table_footer_group())
+			&& row_group.computed_values().visibility() == .collapse {
+			return true
+		}
+	}
+	return false
+}
+
 fn resolved_collapsed_table_cell_border(table &Node, rows []&Node, placements_by_coordinate map[u64]TableCellPlacement, row_groups_by_index map[int]TableRowGroupInfo, column_definitions_by_index map[int]TableColumnDefinition, column_count int, placement TableCellPlacement, side TableBorderSide) TableBorderCandidate {
 	mut winner := table_border_candidate(placement.cell, side, .cell, placement.row, placement.column)
 	neighbor_row, neighbor_column, neighbor_side := match side {
@@ -1397,10 +1412,14 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	}
 	column_widths := distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode)
 	column_offsets := table_column_offsets(column_widths, horizontal_spacing)
+	row_is_collapsed := rows.map(table_row_is_collapsed(it))
 	mut row_heights := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
 	mut row_baselines := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
 	mut cell_baselines := []CSSPixels{len: placements.len, init: CSSPixels.new(0)}
 	for index, row in rows {
+		if row_is_collapsed[index] {
+			continue
+		}
 		// First pass: definite row lengths participate in the base height.
 		// Percentages are resolved only after the table grid height is known.
 		row_height := row.computed_values().size_value(.height)
@@ -1440,7 +1459,9 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		// This is intentionally different from ordinary box height resolution.
 		mut forced_cell_height := ?CSSPixels(none)
 		cell_computed_height := placement.cell.computed_values().size_value(.height)
-		if cell_computed_height.is_length() || (cell_computed_height.is_calculated() && !cell_computed_height.contains_percentage()) {
+		if !row_is_collapsed[placement.row]
+			&& (cell_computed_height.is_length()
+				|| (cell_computed_height.is_calculated() && !cell_computed_height.contains_percentage())) {
 			if cell_used_height := resolve_layout_size(placement.cell, cell_computed_height, table_state.content_height()) {
 				forced_cell_height = cell_used_height.minus(table_cell_measurement_block_edges(cell_state, collapsed))
 			}
@@ -1463,10 +1484,11 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			cell_state.border_bottom = border
 		}
 		cell_baselines[placement_index] = layout_box_baseline(state, placement.cell)
-		if placement.row >= 0 && placement.row < row_baselines.len {
+		if placement.row >= 0 && placement.row < row_baselines.len
+			&& !row_is_collapsed[placement.row] {
 			row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row], cell_baselines[placement_index])
 		}
-		if placement.row_span == 1 {
+		if placement.row_span == 1 && !row_is_collapsed[placement.row] {
 			row_heights[placement.row] = css_pixels_max(row_heights[placement.row], table_cell_measurement_outer_height(cell_state, collapsed))
 			cell_height := placement.cell.computed_values().size_value(.height)
 			if cell_height.is_length() || (cell_height.is_calculated() && !cell_height.contains_percentage()) {
@@ -1500,6 +1522,15 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			}
 		}
 	}
+	// TableGrid marks a row collapsed when either the row itself or its row
+	// group has visibility: collapse. Intrinsic row measures are still computed,
+	// but compute_table_height() discards the collapsed row's base height.
+	for index in 0 .. row_heights.len {
+		if row_is_collapsed[index] {
+			row_heights[index] = CSSPixels.new(0)
+			row_baselines[index] = CSSPixels.new(0)
+		}
+	}
 
 	// CSS Tables 3 table-height distribution. The specified table height is a
 	// minimum for the grid. Once it is known, percentage row/cell heights can
@@ -1523,6 +1554,10 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	}
 	mut reference_heights := row_heights.clone()
 	for index, row in rows {
+		if row_is_collapsed[index] {
+			reference_heights[index] = CSSPixels.new(0)
+			continue
+		}
 		row_height := row.computed_values().size_value(.height)
 		if row_height.is_percentage() || (row_height.is_calculated() && row_height.contains_percentage()) {
 			if specified_height := resolve_layout_size(row, row_height, table_grid_height) {
@@ -1531,15 +1566,14 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		}
 	}
 	for placement_index, placement in placements {
-		if placement.row_span != 1 {
-			continue
-		}
 		cell_height := placement.cell.computed_values().size_value(.height)
 		if !cell_height.is_percentage() && !(cell_height.is_calculated() && cell_height.contains_percentage()) {
 			continue
 		}
 		if specified_height := resolve_layout_size(placement.cell, cell_height, table_grid_height) {
-			reference_heights[placement.row] = css_pixels_max(reference_heights[placement.row], specified_height)
+			if !row_is_collapsed[placement.row] {
+				reference_heights[placement.row] = css_pixels_max(reference_heights[placement.row], specified_height)
+			}
 			// TableFormattingContext::compute_table_height() performs a second
 			// cell layout after the table height makes percentages definite. The
 			// resolved height is the cell's border-box height. It writes that
@@ -1557,43 +1591,65 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			cell_state.set_has_definite_height(true)
 			layout_inside_independent_formatting_context(mut state, placement.cell, mut cell_state, AvailableSpace.new(AvailableSize.make_definite(content_width), AvailableSize.make_definite(content_height)))
 			cell_baselines[placement_index] = layout_box_baseline(state, placement.cell)
-			row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row], cell_baselines[placement_index])
+			if !row_is_collapsed[placement.row] {
+				reference_heights[placement.row] = css_pixels_max(reference_heights[placement.row], table_cell_measurement_outer_height(cell_state, collapsed))
+				row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row], cell_baselines[placement_index])
+			}
 		}
 	}
 	mut sum_reference_height := CSSPixels.new(0)
-	for height in reference_heights {
+	mut visible_row_count := 0
+	for index, height in reference_heights {
 		sum_reference_height = sum_reference_height.plus(height)
+		if !row_is_collapsed[index] {
+			visible_row_count++
+		}
 	}
 	if sum_reference_height.raw_value() > 0 {
 		if table_grid_height.raw_value() <= sum_reference_height.raw_value() {
 			for index in 0 .. row_heights.len {
+				if row_is_collapsed[index] {
+					row_heights[index] = CSSPixels.new(0)
+					continue
+				}
 				weight := reference_heights[index].to_double() / sum_reference_height.to_double()
 				row_heights[index] = CSSPixels.nearest_value_for(table_grid_height.to_double() * weight)
 			}
 		} else if table_grid_height.raw_value() > sum_reference_height.raw_value() {
 			mut auto_row_count := 0
-			for row in rows {
-				if row.computed_values().size_value(.height).is_auto() {
+			for index, row in rows {
+				if row.computed_values().size_value(.height).is_auto()
+					&& !row_is_collapsed[index] {
 					auto_row_count++
 				}
 			}
 			if auto_row_count > 0 {
-				increment := table_grid_height.minus(sum_reference_height).divided_by_float(f64(auto_row_count))
+				// CSSPixels / size_t yields a CSSPixelFraction upstream; assigning
+				// that fraction to a row truncates the fixed-point quotient.
+				increment := table_grid_height.minus(sum_reference_height).divided_by(CSSPixels.new(auto_row_count)).to_css_pixels()
 				for index, row in rows {
 					row_heights[index] = reference_heights[index]
-					if row.computed_values().size_value(.height).is_auto() {
+					if row.computed_values().size_value(.height).is_auto()
+						&& !row_is_collapsed[index] {
 						row_heights[index] = row_heights[index].plus(increment)
 					}
 				}
-			} else if row_heights.len > 0 {
-				increment := table_grid_height.minus(sum_reference_height).divided_by_float(f64(row_heights.len))
+			} else if visible_row_count > 0 {
+				increment := table_grid_height.minus(sum_reference_height).divided_by(CSSPixels.new(visible_row_count)).to_css_pixels()
 				for index in 0 .. row_heights.len {
+					if row_is_collapsed[index] {
+						row_heights[index] = CSSPixels.new(0)
+						continue
+					}
 					row_heights[index] = reference_heights[index].plus(increment)
 				}
 			}
 		} else {
 			row_heights = reference_heights.clone()
 		}
+		// CSS Tables calls this the undistributable space. It is based on the
+		// number of visible rows, not on the number of tracks in the grid.
+		table_grid_height = table_grid_height.plus(vertical_spacing.scaled(f64(visible_row_count + 1)))
 	}
 
 	mut row_offsets := []CSSPixels{len: rows.len}
@@ -1612,7 +1668,9 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			row_state.set_content_height(row_heights[index])
 			row_state.set_content_offset(CSSPixelPoint.new(horizontal_spacing, cursor_y))
 		}
-		cursor_y = cursor_y.plus(row_heights[index]).plus(vertical_spacing)
+		if !row_is_collapsed[index] {
+			cursor_y = cursor_y.plus(row_heights[index]).plus(vertical_spacing)
+		}
 	}
 	// TableFormattingContext::position_row_boxes() advances a row-group cursor
 	// while walking each group's own rows. This is linear in the grid size and
@@ -1689,7 +1747,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		cell_state.set_content_x(table_cell_physical_offset(table, table_state.content_width(), column_offsets, placement, horizontal_spacing).plus(table_cell_content_offset_left(cell_state, collapsed)))
 		cell_state.set_content_y(row_offsets[placement.row].plus(table_cell_content_offset_top(cell_state, collapsed)))
 	}
-	final_table_height := css_pixels_max(cursor_y, table_grid_height)
+	final_table_height := css_pixels_max(css_pixels_max(cursor_y, row_group_top_offset), table_grid_height)
 	table_state.set_content_height(final_table_height)
 	bottom_caption_height := layout_table_captions(mut state, table, mut table_state, .bottom, table_state.margin_box_height(), available_space.height)
 	table_state.margin_bottom = table_state.margin_bottom.plus(top_caption_height).plus(bottom_caption_height)
