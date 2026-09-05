@@ -447,11 +447,11 @@ fn calculate_table_cell_placements(rows []&Node) ([]TableCellPlacement, int) {
 			}
 			column_span := table_span(cell, 'colspan')
 			authored_row_span := table_span(cell, 'rowspan')
-			row_span := if authored_row_span == 0 {
-				rows.len - row_index
-			} else {
-				authored_row_span
-			}
+			// TableGrid::calculate_row_column_grid() currently records a
+			// rowspan="0" cell as a one-row cell. Its downward-growing-cell
+			// step is still a FIXME upstream, so preserve that behavior rather
+			// than implementing the specification ahead of the source.
+			row_span := if authored_row_span == 0 { 1 } else { authored_row_span }
 			placement := TableCellPlacement{
 				cell: cell
 				row: row_index
@@ -1251,8 +1251,8 @@ fn preserve_grid_intrinsic_table_end_margin(mut state LayoutState, table &Node, 
 	table_state.margin_right = intrinsic_table_state.margin_right
 }
 
-fn layout_table_captions(mut state LayoutState, table &Node, mut table_state UsedValues, side css.CaptionSide, start_y CSSPixels) CSSPixels {
-	mut cursor := start_y
+fn layout_table_captions(mut state LayoutState, table &Node, mut table_state UsedValues, side css.CaptionSide, start_y CSSPixels, caption_available_height AvailableSize) CSSPixels {
+	mut total_height := CSSPixels.new(0)
 	caption_available_width := table_state.border_box_width()
 	for child in table.children() {
 		if !child.display().is_table_caption() || child.computed_values().caption_side() != side {
@@ -1273,43 +1273,49 @@ fn layout_table_captions(mut state LayoutState, table &Node, mut table_state Use
 		if !has_caption_containing_state {
 			caption_state.set_containing_block_used_values(table_state)
 		}
-		mut caption_containing_state := caption_state.containing_block_used_values() or {
-			table_state
-		}
+		// run_caption_layout() creates and runs the caption's independent BFC
+		// before resolving the caption's own box model. Descendants therefore
+		// see the full table border-box width even when the caption later resolves
+		// to a percentage or fixed width.
+		caption_state.set_content_width(caption_available_width)
+		caption_state.set_has_definite_width(true)
+		result := layout_inside_independent_formatting_context(mut state, child, mut caption_state, AvailableSpace.new(AvailableSize.make_definite(caption_available_width), caption_available_height))
 		resolve_box_model_edges(styled.computed_values(), mut caption_state, caption_available_width.to_double())
-		if child.computed_values().size_value(.width).is_auto() {
-			// TableFormattingContext::run_caption_layout() enters the caption's
-			// independent BFC with the table border-box width, then resolves the
-			// caption's own horizontal metrics. Thus auto-width descendants see
-			// the full caption available space even though the caption content box
-			// is narrowed by its own border and padding afterwards.
-			caption_state.set_content_width(caption_available_width)
-			caption_state.set_has_definite_width(true)
-			result := layout_inside_independent_formatting_context(mut state, child, mut caption_state, AvailableSpace.new(AvailableSize.make_definite(caption_available_width), if table_state.has_definite_height() {
-				AvailableSize.make_definite(table_state.content_height())
-			} else {
-				AvailableSize.make_indefinite()
-			}))
+		caption_width := child.computed_values().size_value(.width)
+		if caption_width.is_auto() {
 			caption_state.set_content_width(caption_available_width.minus(flex_or_grid_item_outer_inline_edges(caption_state)))
-			if child.computed_values().size_value(.height).is_auto() {
-				caption_state.set_content_height(result.automatic_content_height)
-			}
-		} else {
-			caption_state = layout_independent_child(mut state, child, mut caption_containing_state, caption_available_width, if table_state.has_definite_height() {
-				table_state.content_height()
-			} else {
-				none
-			}, none, none)
+		} else if resolved_width := resolve_layout_content_size(child, caption_width, caption_available_width, caption_state, true) {
+			caption_state.set_content_width(clamp_layout_content_size(child, resolved_width, caption_available_width, caption_state, true))
 		}
-		caption_state.set_content_x(caption_state.margin_box_left())
-		caption_state.set_content_y(cursor.plus(if side == .bottom {
+		height_basis := if caption_available_height.is_definite() {
+			?f64(caption_available_height.to_px_or_zero().to_double())
+		} else {
+			?f64(none)
+		}
+		if resolved_height := resolve_content_height_for_node(mut state, styled, caption_state, height_basis) {
+			caption_state.set_content_height(css_px(resolved_height))
+			caption_state.set_has_definite_height(true)
+		} else {
+			caption_state.set_content_height(result.automatic_content_height)
+		}
+		// run_caption_layout() aligns the caption's border box, not its
+		// margin box, with the table wrapper. Top captions keep the origin
+		// assigned by their independent BFC; bottom captions add only their
+		// own margin-box top to the table's margin-box bottom. Multiple
+		// captions therefore overlap upstream rather than advancing a cursor.
+		caption_state.set_content_x(if caption_width.is_auto() {
+			caption_state.border_box_left()
+		} else {
+			CSSPixels.new(0)
+		})
+		caption_state.set_content_y(start_y.plus(if side == .bottom {
 			caption_state.margin_box_top()
 		} else {
-			caption_state.margin_top
+			CSSPixels.new(0)
 		}))
-		cursor = cursor.plus(caption_state.margin_box_height())
+		total_height = total_height.plus(caption_state.margin_box_height())
 	}
-	return cursor.minus(start_y)
+	return total_height
 }
 
 fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_state UsedValues, available_space AvailableSpace) FormattingContextResult {
@@ -1329,7 +1335,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	placements := intrinsic_widths.placements
 	column_definitions := intrinsic_widths.column_definitions
 	column_count := intrinsic_widths.column_count
-	top_caption_height := layout_table_captions(mut state, table, mut table_state, .top, CSSPixels.new(0))
+	top_caption_height := layout_table_captions(mut state, table, mut table_state, .top, CSSPixels.new(0), available_space.height)
 	for child in table.children() {
 		if !child.display().is_table_caption() || child.computed_values().caption_side() != .top {
 			continue
@@ -1524,7 +1530,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			}
 		}
 	}
-	for placement in placements {
+	for placement_index, placement in placements {
 		if placement.row_span != 1 {
 			continue
 		}
@@ -1534,6 +1540,24 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		}
 		if specified_height := resolve_layout_size(placement.cell, cell_height, table_grid_height) {
 			reference_heights[placement.row] = css_pixels_max(reference_heights[placement.row], specified_height)
+			// TableFormattingContext::compute_table_height() performs a second
+			// cell layout after the table height makes percentages definite. The
+			// resolved height is the cell's border-box height. It writes that
+			// content height directly and reruns the already-created independent
+			// formatting context without recomputing or clamping the cell metrics.
+			cell_width := table_column_range_width(column_offsets, placement.column, placement.column_span, horizontal_spacing)
+			styled := placement.cell.as_node_with_style() or { continue }
+			mut cell_state := state.get_mutable(styled)
+			collapsed := computed.border_collapse() == .collapse
+			content_width := cell_width.minus(table_cell_measurement_inline_edges(cell_state, collapsed))
+			content_height := specified_height.minus(table_cell_measurement_block_edges(cell_state, collapsed))
+			cell_state.set_content_width(content_width)
+			cell_state.set_content_height(content_height)
+			cell_state.set_has_definite_width(true)
+			cell_state.set_has_definite_height(true)
+			layout_inside_independent_formatting_context(mut state, placement.cell, mut cell_state, AvailableSpace.new(AvailableSize.make_definite(content_width), AvailableSize.make_definite(content_height)))
+			cell_baselines[placement_index] = layout_box_baseline(state, placement.cell)
+			row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row], cell_baselines[placement_index])
 		}
 	}
 	mut sum_reference_height := CSSPixels.new(0)
@@ -1635,28 +1659,30 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			}
 		}
 		collapsed := computed.border_collapse() == .collapse
+		// position_cell_boxes() applies the signed difference verbatim. A
+		// percentage-height cell can be taller than the row after weighted row
+		// distribution, in which case upstream deliberately produces negative
+		// alignment padding rather than clamping it to zero.
 		alignment_space := spanned_height.minus(table_cell_measurement_outer_height(cell_state, collapsed))
-		if alignment_space.raw_value() > 0 {
-			if table_cell_is_anonymous_wrapper_for_flex_or_grid(placement.cell) {
-				cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space)
-			} else {
-				match placement.cell.computed_values().vertical_align() {
-					.middle {
-						leading := CSSPixels.from_raw(alignment_space.raw_value() / 2)
-						cell_state.padding_top = cell_state.padding_top.plus(leading)
-						cell_state.padding_bottom = cell_state.padding_bottom.plus(leading)
-					}
-					.bottom {
-						cell_state.padding_top = cell_state.padding_top.plus(alignment_space)
-					}
-					.baseline, .sub, .super_, .text_top, .text_bottom {
-						baseline_adjustment := row_baselines[placement.row].minus(cell_baselines[placement_index])
-						cell_state.padding_top = cell_state.padding_top.plus(baseline_adjustment)
-						cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space.minus(baseline_adjustment))
-					}
-					.top {
-						cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space)
-					}
+		if table_cell_is_anonymous_wrapper_for_flex_or_grid(placement.cell) {
+			cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space)
+		} else {
+			match placement.cell.computed_values().vertical_align() {
+				.middle {
+					leading := CSSPixels.from_raw(alignment_space.raw_value() / 2)
+					cell_state.padding_top = cell_state.padding_top.plus(leading)
+					cell_state.padding_bottom = cell_state.padding_bottom.plus(leading)
+				}
+				.bottom {
+					cell_state.padding_top = cell_state.padding_top.plus(alignment_space)
+				}
+				.baseline, .sub, .super_, .text_top, .text_bottom {
+					baseline_adjustment := row_baselines[placement.row].minus(cell_baselines[placement_index])
+					cell_state.padding_top = cell_state.padding_top.plus(baseline_adjustment)
+					cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space.minus(baseline_adjustment))
+				}
+				.top {
+					cell_state.padding_bottom = cell_state.padding_bottom.plus(alignment_space)
 				}
 			}
 		}
@@ -1665,7 +1691,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	}
 	final_table_height := css_pixels_max(cursor_y, table_grid_height)
 	table_state.set_content_height(final_table_height)
-	bottom_caption_height := layout_table_captions(mut state, table, mut table_state, .bottom, table_state.margin_box_height())
+	bottom_caption_height := layout_table_captions(mut state, table, mut table_state, .bottom, table_state.margin_box_height(), available_space.height)
 	table_state.margin_bottom = table_state.margin_bottom.plus(top_caption_height).plus(bottom_caption_height)
 	if table.is_inline_table() {
 		initialize_trailing_table_whitespace_state(mut state, table)

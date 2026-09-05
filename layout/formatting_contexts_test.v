@@ -1789,7 +1789,7 @@ fn test_table_cell_vertical_alignment_distributes_extra_row_height_to_padding() 
 	assert bottom.padding_top.to_double() == 60
 }
 
-fn test_table_rowspan_zero_grows_cell_through_remaining_rows() {
+fn test_table_rowspan_zero_matches_upstream_unimplemented_downward_growth() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:200px; border-spacing:0 } td { width:100px; height:30px; padding:0 }
 		#span { height:90px }
@@ -1805,16 +1805,62 @@ fn test_table_rowspan_zero_grows_cell_through_remaining_rows() {
 	assert span.padding_top.to_double() == 45
 	assert span.padding_bottom.to_double() == 45
 	assert one.offset.x().to_double() == 100
-	assert two.offset.x().to_double() == 100
-	assert three.offset.x().to_double() == 100
+	assert two.offset.x().to_double() == 0
+	assert three.offset.x().to_double() == 0
 	assert span.offset.y().to_double() == 45
-	assert one.offset.y().to_double() == 15
-	assert two.offset.y().to_double() == 45
-	assert three.offset.y().to_double() == 75
+	assert one.offset.y().to_double() == 45
+	assert two.offset.y().to_double() == 105
+	assert three.offset.y().to_double() == 135
 	assert body.offset.x().to_double() == 0
 	assert body.offset.y().to_double() == 0
 	assert body.content_width().to_double() == 200
-	assert body.content_height().to_double() == 90
+	assert body.content_height().to_double() == 150
+}
+
+fn test_percentage_table_cell_height_is_applied_during_second_layout_pass() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:200px; height:100px; border-spacing:0 } td { padding:0 }
+		#sized { height:60%; vertical-align:top } #row { height:80px }
+	</style><table><tr id="row"><td id="sized"><div style="height:10px"></div></td><td></td></tr><tr><td></td><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	sized := used_for_id(result, 'sized')
+	assert sized.content_height().to_double() == 60
+	assert sized.padding_top.to_double() == 0
+	assert sized.padding_bottom.to_double() == 20
+}
+
+fn test_percentage_table_cell_alignment_retains_signed_row_difference() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:200px; height:100px; border-spacing:0 } td { padding:0 }
+		#fixed-row { height:80px } #sized { height:60%; vertical-align:top }
+	</style><table><tr><td id="sized"><div style="height:10px"></div></td><td></td></tr><tr id="fixed-row"><td></td><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	sized := used_for_id(result, 'sized')
+	assert sized.content_height().to_double() == 60
+	assert sized.padding_bottom.to_double() == -17.140625
+}
+
+fn test_table_caption_position_ignores_own_margins_at_wrapper_origin() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:200px; border-spacing:0 } caption { height:10px; margin:3px 7px; padding:5px } td { height:20px; padding:0 }
+	</style><table><caption id="caption"><div></div></caption><tr><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	caption := used_for_id(result, 'caption')
+	assert caption.offset.x().to_double() == 5
+	assert caption.offset.y().to_double() == 0
+}
+
+fn test_table_caption_resolves_own_width_after_laying_out_descendants() {
+	document := html.parse_document('<!doctype html><style>
+		table { width:200px; border-spacing:0 } caption { width:50%; height:10px; padding:5px } td { height:20px; padding:0 }
+	</style><table><caption id="caption"><div id="inside"></div></caption><tr><td></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	caption := used_for_id(result, 'caption')
+	inside := used_for_id(result, 'inside')
+	assert caption.content_width().to_double() == 100
+	assert caption.offset.x().to_double() == 0
+	assert inside.content_width().to_double() == 200
+	assert inside.offset.x().to_double() == 0
 }
 
 fn test_fixed_table_layout_uses_first_row_widths_and_shares_unassigned_space() {

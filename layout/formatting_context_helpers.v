@@ -186,10 +186,10 @@ fn layout_independent_child(mut state LayoutState, child &Node, mut containing_s
 		containing_width, containing_height, forced_width, forced_height, false)
 }
 
-// Table cells use a definite computed height as the available block size for
-// their contents, but retain the independent formatting context's automatic
-// content height. The table formatting context subsequently adds the remaining
-// row height as vertical-alignment padding.
+// TableFormattingContext::compute_table_height() initially uses a definite
+// cell height to lay out descendants, then replaces the cell's content height
+// with the independent formatting context's automatic height. The authored
+// height remains a row minimum and vertical alignment supplies the difference.
 fn layout_independent_child_using_automatic_height(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, available_content_height ?CSSPixels) &UsedValues {
 	return layout_independent_child_with_height_mode(mut state, child, mut containing_state,
 		containing_width, containing_height, forced_width, available_content_height, true)

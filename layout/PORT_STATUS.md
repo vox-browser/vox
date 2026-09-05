@@ -90,6 +90,20 @@ walks each group's own rows with C++'s advancing group cursor instead of
 rescanning every table row for every group; this also fixes empty groups after
 nonempty groups being placed back at the table's first spacing edge.
 
+Table height and caption layout now preserve the source's two-pass ordering and
+its current quirks rather than independently implementing the specification.
+Percentage cell heights are resolved and their contents laid out again only
+after the table height is known; weighted row distribution may then leave the
+cell taller than its row, and `position_cell_boxes()` retains the resulting
+negative alignment padding. Caption descendants are laid out against the full
+table border-box width before the caption's own fixed or percentage width and
+box model are resolved. Caption margins do not shift a top caption from the
+wrapper origin. Finally, `rowspan="0"` remains a one-row span because upstream's
+downward-growing-cell step is still a FIXME. A generated 752-case table matrix
+covering width modes, collapsed/separate spacing, row and cell percentages,
+spans, groups, vertical alignment, and captions agrees with the current C++
+layout tree on every case.
+
 Column flex intrinsic cross sizing now follows C++'s two-pass contribution
 algorithm for single-line min/max-content sizing and multi-line min-content
 sizing. The first pass ignores cyclic percentage min/max constraints and sets
