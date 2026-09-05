@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 35,349 | 12,357 | Present |
+| `Layout` | 50 | 19,592 | 35,359 | 12,358 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **313,237** | **55,451** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **313,247** | **55,452** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 588
-  candidate-name-match: 13978
-  unmatched: 1789
+  candidate-name-match: 13979
+  unmatched: 1788
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   485 Painting
+   484 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -411,6 +411,10 @@ translation, including elliptical joins, same-color path batching,
 dotted/dashed endpoints, inset/outset colors, and double/groove/ridge recursion.
 Outlines resolve their computed style and `auto` accent color, inflate the border
 geometry with the C++ negative-offset clamp, and enter the same dispatcher.
+The root/body branches of `PaintableBox::paint_background()` are now a single
+source-shaped operation. When the body's background is propagated to the root
+canvas, its `image-rendering` value travels with its color and image layers
+instead of leaving the root's sampling mode in place.
 URL backgrounds now retain typed layer data and enter the direct
 `BackgroundPainting.cpp` sizing/repetition path after decode. This restores the
 source ordering for default sizing, contain/cover, `round` aspect correction,

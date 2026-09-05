@@ -410,6 +410,10 @@ double/groove/ridge bands now cross the compatibility renderer boundary intact.
 The outline phase inflates the outer border geometry and radii, clamps excessively
 negative offsets, resolves `auto` to a 2px accent-color solid, and invokes that
 same dispatcher instead of drawing local rectangles or a rounded stroke.
+Root-canvas background preparation now follows the root/body branches of
+`PaintableBox::paint_background()` as one operation. Body background propagation
+copies `image-rendering` together with the retained color and layers, so decoded
+body background images no longer use the transparent root's sampling mode.
 URL background layers now retain `CSS::BackgroundLayerData` through the typed
 adapter and call Painting's translated sizing/repetition algorithm only after
 the renderer has decoded the image. `round`, `space`, contain/cover, one-axis

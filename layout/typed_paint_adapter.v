@@ -2025,19 +2025,14 @@ pub fn layout_document_typed_in_viewport(document &dom.Document, viewport_width 
 	return result.paint_tree
 }
 
-// Translate the committed typed layout tree into the renderer transport. This
-// is shared by the native shell and DOM's callback-backed viewport paintable;
-// both must record and hit-test the exact same paint-order tree.
-fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewport_width f64, viewport_height f64) BlockBox {
-	layout_completed := time.sys_mono_now()
-	root_layout_node := result.root.first_child() or { return BlockBox{} }
-	mut root_box := block_box_from_typed_layout(root_layout_node, result.state)
-
-	// PaintableBox::paint_background expands the root background to the viewport and the root's
-	// scrollable overflow. Keep the root's layout geometry intact and retain that canvas separately.
+// Direct translation of the root/body branches in PaintableBox::paint_background().
+// Ordinary boxes already retain their resolved background directly; the root additionally
+// expands to the canvas and may paint the body's propagated properties.
+fn paintable_box_paint_background(mut root_box BlockBox, root_layout_node &Node,
+	state &LayoutState, viewport_width f64, viewport_height f64) {
 	mut canvas_rect := LayoutRect{0, 0, viewport_width, viewport_height}
 	if root_styled := root_layout_node.as_node_with_style() {
-		if root_used := result.state.try_get(root_styled) {
+		if root_used := state.try_get(root_styled) {
 			if overflow := root_used.scrollable_overflow_rect() {
 				canvas_rect = rect_union(canvas_rect, LayoutRect{overflow.x.to_double(), overflow.y.to_double(), overflow.width.to_double(), overflow.height.to_double()})
 			}
@@ -2048,12 +2043,6 @@ fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewpo
 	root_box.canvas_y = canvas_rect.y
 	root_box.canvas_width = canvas_rect.width
 	root_box.canvas_height = canvas_rect.height
-	// The compatibility transport omits the typed Viewport node itself. Mark its
-	// root element as the owner of the mandatory viewport scroll frame so replay
-	// still follows ViewportPaintable::assign_scroll_frames().
-	root_box.is_viewport_scroller = true
-	root_box.viewport_width = viewport_width
-	root_box.viewport_height = viewport_height
 
 	// HTMLHtmlElement::should_use_body_background_properties(): propagation is disabled by any
 	// containment on html/body and otherwise happens only when the root has no image layers and a
@@ -2071,11 +2060,32 @@ fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewpo
 					root_box.background_color = computed_paint_color(body_computed, .background_color, color_context, css.Color{0, 0, 0, 0})
 					root_box.background_gradient = computed_background_gradient(body_computed, root_box.border_box().width, root_box.border_box().height, color_context)
 					root_box.background_images = computed_background_image_layers(body_element, body_computed, color_context)
+					// If the body's background was propagated to the root element, use the
+					// body's image-rendering value too.
+					root_box.replaced_image_rendering = body_computed.image_rendering()
 					suppress_background_for_node_id(mut root_box, i64(body_element.as_node().unique_id()))
 				}
 			}
 		}
 	}
+}
+
+// Translate the committed typed layout tree into the renderer transport. This
+// is shared by the native shell and DOM's callback-backed viewport paintable;
+// both must record and hit-test the exact same paint-order tree.
+fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewport_width f64, viewport_height f64) BlockBox {
+	layout_completed := time.sys_mono_now()
+	root_layout_node := result.root.first_child() or { return BlockBox{} }
+	mut root_box := block_box_from_typed_layout(root_layout_node, result.state)
+	paintable_box_paint_background(mut root_box, root_layout_node, result.state, viewport_width,
+		viewport_height)
+
+	// The compatibility transport omits the typed Viewport node itself. Mark its
+	// root element as the owner of the mandatory viewport scroll frame so replay
+	// still follows ViewportPaintable::assign_scroll_frames().
+	root_box.is_viewport_scroller = true
+	root_box.viewport_width = viewport_width
+	root_box.viewport_height = viewport_height
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
 		eprintln('Ladybird V timing:     renderer_adapter ${(time.sys_mono_now() - layout_completed) / 1_000_000} ms')
 	}

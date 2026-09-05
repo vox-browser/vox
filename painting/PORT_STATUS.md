@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 485
+filename-level mappings. The current semantic audit nevertheless reports 484
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 485 unmatched Painting
+  were removed; the audit currently reports 484 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -192,6 +192,9 @@ following behavioral mismatches and added focused regressions:
   layers with any of the 18 CSS blend modes paint over the color and lower
   layers inside the isolated group required by the compositing specification;
   Quartz and the portable SVG serializer consume the same retained mode.
+- The root/body branches of `PaintableBox::paint_background()` now keep the
+  body's `image-rendering` value when its background properties are propagated
+  to the root canvas, matching the source's explicit sampling-mode override.
 - CSS gradients now use the same typed, source-ordered layer path as URL images.
   Their absent natural width, height, and aspect ratio are preserved through
   background-size resolution, and linear/radial/conic data resolves against the
@@ -402,7 +405,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 485 unmatched implementations.
+Painting: 484 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

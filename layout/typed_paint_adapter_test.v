@@ -468,6 +468,7 @@ fn test_body_background_layers_are_propagated_to_root_canvas() {
 
 	assert body_box.skip_background_paint
 	assert root.background_gradient != none
+	assert root.replaced_image_rendering == .pixelated
 	gradients := root.paint_commands().filter(it.kind == 'fill_gradient')
 	assert gradients.len == 1
 	assert gradients[0].x == 0
