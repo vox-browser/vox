@@ -209,6 +209,30 @@ fn test_command_bounds_and_playback_culling_context_switches() {
 	assert command_bounding_rect(line) or { panic('expected bounds') } == IntRect{8, 3, 24, 19}
 }
 
+fn test_playback_switches_sibling_contexts_through_their_common_ancestor() {
+	mut tree := AccumulatedVisualContextTree.create()
+	transform := tree.append(TransformVisualData{}, 0)
+	clip := tree.append(ClipVisualData{ rect: IntRect{0, 0, 100, 100} }, transform)
+	effect := tree.append(EffectsVisualData{ opacity: 0.5 }, clip)
+	scroll := tree.append(ScrollVisualData{ scroll_frame_index: 1 }, transform)
+	mut list := DisplayList{
+		visual_context_tree: tree
+	}
+	assert list.append(FillRect{IntRect{1, 1, 5, 5}, Color{ r: 1 }}, effect)
+	assert list.append(FillRect{IntRect{2, 2, 5, 5}, Color{ g: 1 }}, scroll)
+	actions := list.playback_plan(ScrollStateSnapshot{
+		device_offsets: [Point{}, Point{3, 4}]
+	}, IntRect{0, 0, 100, 100})
+	assert actions.map(it.kind) == ['ApplyTransform', 'ApplyClip', 'ApplyEffects', 'FillRect',
+		'RestoreContext', 'RestoreContext', 'ApplyScroll', 'FillRect', 'RestoreContext',
+		'RestoreContext']
+	assert actions[0].context_index == transform
+	assert actions[1].context_index == clip
+	assert actions[2].context_index == effect
+	assert actions[6].context_index == scroll
+	assert actions[6].delta == IntPoint{3, 4}
+}
+
 fn test_display_list_commands_own_upstream_bounds_and_diagnostics() {
 	glyphs := DrawGlyphRun{
 		rect: IntRect{10, 20, 30, 40}

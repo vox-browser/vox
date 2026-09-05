@@ -229,10 +229,22 @@ pub mut:
 	nodes []AccumulatedVisualContextNode
 }
 
-pub fn new_accumulated_visual_context_tree() AccumulatedVisualContextTree {
+pub fn AccumulatedVisualContextTree.create() AccumulatedVisualContextTree {
 	return AccumulatedVisualContextTree{
 		nodes: [AccumulatedVisualContextNode{ data: ScrollVisualData{} }]
 	}
+}
+
+pub fn new_accumulated_visual_context_tree() AccumulatedVisualContextTree {
+	return AccumulatedVisualContextTree.create()
+}
+
+pub fn (tree &AccumulatedVisualContextTree) node_at(index int) &AccumulatedVisualContextNode {
+	return &tree.nodes[index]
+}
+
+pub fn (tree &AccumulatedVisualContextTree) has_empty_effective_clip(index int) bool {
+	return tree.nodes[index].has_empty_effective_clip
 }
 
 pub fn (mut tree AccumulatedVisualContextTree) append(data VisualContextData, parent int) int {
@@ -280,7 +292,7 @@ pub fn (tree AccumulatedVisualContextTree) find_common_ancestor(first int, secon
 	return a
 }
 
-pub fn (tree AccumulatedVisualContextTree) ancestor_chain(index int) []int {
+fn (tree AccumulatedVisualContextTree) build_ancestor_chain(index int) []int {
 	if index <= 0 || index >= tree.nodes.len {
 		return []
 	}
@@ -364,7 +376,7 @@ pub fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test(index in
 		}
 		return point
 	}
-	chain := tree.ancestor_chain(index)
+	chain := tree.build_ancestor_chain(index)
 	for reverse_index := chain.len - 1; reverse_index >= 0; reverse_index-- {
 		point = tree.transform_point_for_hit_test_through_node(chain[reverse_index], point, snapshot) or { return none }
 	}
@@ -416,7 +428,7 @@ pub fn (tree AccumulatedVisualContextTree) inverse_transform_point(index int,
 		return point
 	}
 	mut point := screen_point
-	chain := tree.ancestor_chain(index)
+	chain := tree.build_ancestor_chain(index)
 	for reverse_index := chain.len - 1; reverse_index >= 0; reverse_index-- {
 		point = tree.inverse_transform_point_through_node(chain[reverse_index], point)
 	}

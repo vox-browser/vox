@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 326
+filename-level mappings. The current semantic audit nevertheless reports 322
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 6,529 | 1,961 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 6,545 | 1,987 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 326 unmatched Painting
+  were removed; the audit currently reports 322 unmatched Painting
   implementations.
 
 - `DisplayListRecordingContext` is now translated as the central boundary for
@@ -40,6 +40,12 @@ following behavioral mismatches and added focused regressions:
   implementation bodies from the context `.cpp` and header, plus the adjacent
   `DevicePixelConverter` scale accessor, are now accounted for by the semantic
   audit.
+- `AccumulatedVisualContextTree::create()`, `build_ancestor_chain()`,
+  `node_at()`, and `has_empty_effective_clip()` now have source-shaped
+  translations. Display-list context switching follows C++'s recursive
+  common-ancestor-to-target traversal rather than allocating and reversing a
+  dynamic ancestor array for every switch. A sibling-context regression checks
+  parent-first application, exact restore depth, and scroll-offset propagation.
 - `DisplayListRecorder` now follows the source command-capture boundary instead
   of replaying cached commands through its ordinary append path. Cached replay
   updates save nesting and appends with the current visual context without
@@ -523,7 +529,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 326 unmatched implementations.
+Painting: 322 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

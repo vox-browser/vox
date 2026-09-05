@@ -464,6 +464,10 @@ borders also retain their four computed `LineStyle` values and call Painting's
 translated `paint_all_borders()`: joined elliptical paths, even-odd fill,
 same-color batching, inset/outset HSV colors, dotted/dashed lines, and recursive
 double/groove/ridge bands now cross the compatibility renderer boundary intact.
+The immediate-mode compatibility bridge now walks accumulated visual contexts
+parent-first with the same recursive shape as display-list playback. It no
+longer builds and reverses a dynamic ancestor array for every distinct command
+context; transform, scroll, clip, SVG mask, and filter ordering remain unchanged.
 The outline phase inflates the outer border geometry and radii, clamps excessively
 negative offsets, resolves `auto` to a 2px accent-color solid, and invokes that
 same dispatcher instead of drawing local rectangles or a rounded stroke.

@@ -673,7 +673,7 @@ pub mut:
 
 pub fn (mut list DisplayList) append(command DisplayListCommand, context_index int) bool {
 	if context_index > 0 && context_index < list.visual_context_tree.nodes.len
-		&& list.visual_context_tree.nodes[context_index].has_empty_effective_clip {
+		&& list.visual_context_tree.has_empty_effective_clip(context_index) {
 		return false
 	}
 	list.commands << DisplayListItem{context_index, command}
@@ -988,7 +988,7 @@ mut:
 }
 
 fn (mut planner PlaybackPlanner) apply_context(index int) {
-	node := planner.tree.nodes[index]
+	node := planner.tree.node_at(index)
 	kind := match node.data {
 		EffectsVisualData { 'ApplyEffects' }
 		PerspectiveVisualData { 'ApplyPerspective' }
@@ -1015,27 +1015,31 @@ fn (mut planner PlaybackPlanner) apply_context(index int) {
 	}
 }
 
+fn (mut planner PlaybackPlanner) apply_contexts_from_common_ancestor(common int, target int) {
+	if target <= 0 || target == common {
+		return
+	}
+	planner.apply_contexts_from_common_ancestor(common, planner.tree.node_at(target).parent_index)
+	planner.apply_context(target)
+	planner.applied_depth++
+}
+
 fn (mut planner PlaybackPlanner) switch_to_context(target int) {
 	if planner.applied_context == target {
 		return
 	}
 	common := planner.tree.find_common_ancestor(planner.applied_context, target)
-	common_depth := if common > 0 { planner.tree.nodes[common].depth } else { 0 }
+	common_depth := if common > 0 { planner.tree.node_at(common).depth } else { 0 }
 	for planner.applied_depth > common_depth {
 		planner.actions << PlaybackAction{
 			kind: 'RestoreContext'
 		}
 		planner.applied_depth--
 	}
-	chain := planner.tree.ancestor_chain(target)
-	for reverse_index := chain.len - 1; reverse_index >= 0; reverse_index-- {
-		index := chain[reverse_index]
-		if index == common || planner.tree.nodes[index].depth <= common_depth {
-			continue
-		}
-		planner.apply_context(index)
-		planner.applied_depth++
-	}
+	// DisplayListPlayer::execute_impl() recursively visits the path from the
+	// common ancestor to the target. Do the same instead of allocating and
+	// reversing an ancestor vector for every display-list context switch.
+	planner.apply_contexts_from_common_ancestor(common, target)
 	planner.applied_context = target
 }
 
@@ -1050,7 +1054,7 @@ pub fn (list DisplayList) playback_plan(snapshot ScrollStateSnapshot, visible_cl
 		if item.context_index > 0 && planner.applied_context != item.context_index
 			&& planner.tree.is_effect(item.context_index) {
 			if bound := bounds {
-				planner.switch_to_context(planner.tree.nodes[item.context_index].parent_index)
+				planner.switch_to_context(planner.tree.node_at(item.context_index).parent_index)
 				if bound.is_empty() || !bound.intersects(visible_clip) {
 					continue
 				}

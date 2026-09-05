@@ -158,7 +158,7 @@ fn test_resize_handle_and_backing_store_state_machines() {
 }
 
 fn test_visual_context_tree_ancestry_transform_clip_and_empty_propagation() {
-	mut tree := new_accumulated_visual_context_tree()
+	mut tree := AccumulatedVisualContextTree.create()
 	transform := tree.append(TransformVisualData{
 		origin: Point{10, 10}
 		matrix: Affine{
@@ -169,6 +169,8 @@ fn test_visual_context_tree_ancestry_transform_clip_and_empty_propagation() {
 	clip := tree.append(ClipVisualData{ rect: IntRect{0, 0, 100, 100} }, transform)
 	effect := tree.append(EffectsVisualData{ opacity: 0.5 }, clip)
 	sibling := tree.append(ScrollVisualData{ scroll_frame_index: 1 }, transform)
+	assert tree.node_at(effect).parent_index == clip
+	assert !tree.has_empty_effective_clip(effect)
 	assert tree.find_common_ancestor(effect, sibling) == transform
 	assert tree.is_effect(effect)
 	point := tree.transform_point_for_hit_test(effect, Point{30, 30}, ScrollStateSnapshot{}) or {
@@ -180,8 +182,8 @@ fn test_visual_context_tree_ancestry_transform_clip_and_empty_propagation() {
 	assert tree.transform_rect_to_viewport(effect, Rect{10, 10, 5, 5}, ScrollStateSnapshot{}) == Rect{10, 10, 10, 10}
 	empty := tree.append(ClipVisualData{ rect: IntRect{} }, 0)
 	child := tree.append(EffectsVisualData{}, empty)
-	assert tree.nodes[empty].has_empty_effective_clip
-	assert tree.nodes[child].has_empty_effective_clip
+	assert tree.has_empty_effective_clip(empty)
+	assert tree.has_empty_effective_clip(child)
 	image_mask := tree.append(SVGMaskVisualData{
 		bounding_rect: IntRect{0, 0, 100, 50}
 		operations: [SVGMaskPaintOperation{

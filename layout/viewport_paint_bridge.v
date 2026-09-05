@@ -914,217 +914,227 @@ pub fn compatibility_pack_clip_path_segments(clip painting.ClipPathVisualData) [
 	return packed
 }
 
+// DisplayListPlayer::execute_impl() recursively walks from the common ancestor
+// towards its target. Preserve that source ordering for the immediate-mode
+// native bridge without allocating an ancestor array for each distinct context.
+fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualContextTree,
+	index int, snapshot painting.ScrollStateSnapshot,
+	mut flattened CompatibilityFlattenedVisualContext) {
+	if index <= 0 || index >= tree.nodes.len {
+		return
+	}
+	node := tree.node_at(index)
+	apply_compatibility_visual_context_chain(tree, node.parent_index, snapshot, mut flattened)
+	match node.data {
+		painting.TransformVisualData {
+			matrix := [node.data.matrix.a, node.data.matrix.b, node.data.matrix.c,
+				node.data.matrix.d, node.data.matrix.e, node.data.matrix.f]!
+			around_origin := affine_around_origin(matrix, node.data.origin.x, node.data.origin.y)
+			flattened.transform = multiply_affine(flattened.transform, around_origin)
+		}
+		painting.PerspectiveVisualData {
+			matrix := [node.data.matrix.a, node.data.matrix.b, node.data.matrix.c,
+				node.data.matrix.d, node.data.matrix.e, node.data.matrix.f]!
+			flattened.transform = multiply_affine(flattened.transform, matrix)
+		}
+		painting.ScrollVisualData {
+			offset := snapshot.device_offset_for_index(node.data.scroll_frame_index)
+			flattened.transform = multiply_affine(flattened.transform, translated_affine(offset.x, offset.y))
+		}
+		painting.ClipVisualData {
+			local_clip := LayoutRect{
+				x: node.data.rect.x
+				y: node.data.rect.y
+				width: node.data.rect.width
+				height: node.data.rect.height
+			}
+			flattened.clips << PaintClip{
+				rect: local_clip
+				corner_radii: compatibility_box_radii(node.data.corner_radii)
+				transform: flattened.transform
+			}
+			clip := compatibility_affine_map_rect(flattened.transform, local_clip)
+			if flattened.has_clip {
+				flattened.clip = compatibility_intersect_rects(flattened.clip, clip)
+			} else {
+				flattened.has_clip = true
+				flattened.clip = clip
+			}
+		}
+		painting.ClipPathVisualData {
+			local_clip := LayoutRect{
+				x: node.data.bounding_rect.x
+				y: node.data.bounding_rect.y
+				width: node.data.bounding_rect.width
+				height: node.data.bounding_rect.height
+			}
+			flattened.clips << PaintClip{
+				rect: local_clip
+				is_path: true
+				path_data: compatibility_pack_clip_path_segments(node.data)
+				path_even_odd: node.data.fill_rule == .even_odd
+				transform: flattened.transform
+			}
+			clip := compatibility_affine_map_rect(flattened.transform, local_clip)
+			if flattened.has_clip {
+				flattened.clip = compatibility_intersect_rects(flattened.clip, clip)
+			} else {
+				flattened.has_clip = true
+				flattened.clip = clip
+			}
+		}
+		painting.SVGClipVisualData {
+			local_clip := LayoutRect{
+				x: node.data.bounding_rect.x
+				y: node.data.bounding_rect.y
+				width: node.data.bounding_rect.width
+				height: node.data.bounding_rect.height
+			}
+			mut components := []PaintPath{cap: node.data.components.len}
+			for component in node.data.components {
+				component_transform := multiply_affine(flattened.transform, [
+					component.transform.a,
+					component.transform.b,
+					component.transform.c,
+					component.transform.d,
+					component.transform.e,
+					component.transform.f,
+				]!)
+				components << PaintPath{
+					path_data: compatibility_pack_clip_path_segments(component.path)
+					path_even_odd: component.path.fill_rule == .even_odd
+					transform: component_transform
+				}
+			}
+			mut cache_key := node.data.cache_key
+			for value in flattened.transform {
+				cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
+			}
+			resolved_clip := PaintClip{
+				rect: local_clip
+				is_svg_mask: true
+				path_components: components
+				cache_key: cache_key
+				scope_id: node.data.scope_id
+				transform: flattened.transform
+			}
+			flattened.clips << resolved_clip
+			flattened.layers << PaintVisualLayer{
+				kind: .svg_mask
+				scope_id: node.data.scope_id
+				mask_clip: resolved_clip
+			}
+			clip := compatibility_affine_map_rect(flattened.transform, local_clip)
+			if flattened.has_clip {
+				flattened.clip = compatibility_intersect_rects(flattened.clip, clip)
+			} else {
+				flattened.has_clip = true
+				flattened.clip = clip
+			}
+		}
+		painting.SVGMaskVisualData {
+			local_clip := LayoutRect{
+				x: node.data.bounding_rect.x
+				y: node.data.bounding_rect.y
+				width: node.data.bounding_rect.width
+				height: node.data.bounding_rect.height
+			}
+			mut operations := []PaintMaskOperation{cap: node.data.operations.len}
+			for operation in node.data.operations {
+				operation_transform := multiply_affine(flattened.transform, [
+					operation.transform.a,
+					operation.transform.b,
+					operation.transform.c,
+					operation.transform.d,
+					operation.transform.e,
+					operation.transform.f,
+				]!)
+				operations << PaintMaskOperation{
+					kind: match operation.kind {
+						.begin_opacity { PaintMaskOperationKind.begin_opacity }
+						.end_opacity { PaintMaskOperationKind.end_opacity }
+						.image { PaintMaskOperationKind.image }
+						.path { PaintMaskOperationKind.path }
+					}
+					opacity: operation.opacity
+					image_url: operation.image_url
+					image_rect: LayoutRect{
+						x: operation.image_rect.x
+						y: operation.image_rect.y
+						width: operation.image_rect.width
+						height: operation.image_rect.height
+					}
+					image_position_x: operation.image_position_x
+					image_position_y: operation.image_position_y
+					image_rendering: operation.image_rendering
+					image_paintable: operation.image_paintable
+					path_data: compatibility_pack_clip_path_segments(operation.path)
+					path_even_odd: operation.path.fill_rule == .even_odd
+					transform: operation_transform
+					fill_color: painting_color_string(operation.fill_color)
+					stroke_color: painting_color_string(operation.stroke_color)
+					fill_linear_gradient: operation.fill_linear_gradient
+					stroke_linear_gradient: operation.stroke_linear_gradient
+					fill_radial_gradient: operation.fill_radial_gradient
+					stroke_radial_gradient: operation.stroke_radial_gradient
+					fill_pattern: operation.fill_pattern
+					stroke_pattern: operation.stroke_pattern
+					has_fill: operation.has_fill
+					has_stroke: operation.has_stroke
+					fill_opacity: operation.fill_opacity
+					stroke_opacity: operation.stroke_opacity
+					stroke_width: operation.stroke_width
+					stroke_linecap: int(operation.stroke_linecap)
+					stroke_linejoin: int(operation.stroke_linejoin)
+					stroke_miterlimit: operation.stroke_miter_limit
+					stroke_first: operation.stroke_first
+				}
+			}
+			mut cache_key := node.data.cache_key
+			for value in flattened.transform {
+				cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
+			}
+			resolved_clip := PaintClip{
+				rect: local_clip
+				is_svg_content_mask: true
+				mask_operations: operations
+				cache_key: cache_key
+				scope_id: node.data.scope_id
+				mask_luminance: node.data.mask_type == .luminance
+				transform: flattened.transform
+			}
+			flattened.clips << resolved_clip
+			flattened.layers << PaintVisualLayer{
+				kind: .svg_mask
+				scope_id: node.data.scope_id
+				mask_clip: resolved_clip
+			}
+			clip := compatibility_affine_map_rect(flattened.transform, local_clip)
+			if flattened.has_clip {
+				flattened.clip = compatibility_intersect_rects(flattened.clip, clip)
+			} else {
+				flattened.has_clip = true
+				flattened.clip = clip
+			}
+		}
+		painting.EffectsVisualData {
+			if filter := node.data.filter {
+				flattened.layers << PaintVisualLayer{
+					kind: .css_filter
+					scope_id: u64(index)
+					filter: filter
+				}
+			}
+		}
+	}
+}
+
 // Flatten the translated AccumulatedVisualContext tree for the immediate-mode
 // native shell. Context nodes remain retained and shared; only the compact
 // affine and effective clip are copied onto a replayed command.
 fn flatten_compatibility_visual_context(tree painting.AccumulatedVisualContextTree, index int, snapshot painting.ScrollStateSnapshot) CompatibilityFlattenedVisualContext {
 	mut flattened := CompatibilityFlattenedVisualContext{}
-	chain := tree.ancestor_chain(index)
-	for reverse_index := chain.len - 1; reverse_index >= 0; reverse_index-- {
-		node := tree.nodes[chain[reverse_index]]
-		match node.data {
-			painting.TransformVisualData {
-				matrix := [node.data.matrix.a, node.data.matrix.b, node.data.matrix.c,
-					node.data.matrix.d, node.data.matrix.e, node.data.matrix.f]!
-				around_origin := affine_around_origin(matrix, node.data.origin.x, node.data.origin.y)
-				flattened.transform = multiply_affine(flattened.transform, around_origin)
-			}
-			painting.PerspectiveVisualData {
-				matrix := [node.data.matrix.a, node.data.matrix.b, node.data.matrix.c,
-					node.data.matrix.d, node.data.matrix.e, node.data.matrix.f]!
-				flattened.transform = multiply_affine(flattened.transform, matrix)
-			}
-			painting.ScrollVisualData {
-				offset := snapshot.device_offset_for_index(node.data.scroll_frame_index)
-				flattened.transform = multiply_affine(flattened.transform, translated_affine(offset.x, offset.y))
-			}
-			painting.ClipVisualData {
-				local_clip := LayoutRect{
-					x: node.data.rect.x
-					y: node.data.rect.y
-					width: node.data.rect.width
-					height: node.data.rect.height
-				}
-				flattened.clips << PaintClip{
-					rect: local_clip
-					corner_radii: compatibility_box_radii(node.data.corner_radii)
-					transform: flattened.transform
-				}
-				clip := compatibility_affine_map_rect(flattened.transform, local_clip)
-				if flattened.has_clip {
-					flattened.clip = compatibility_intersect_rects(flattened.clip, clip)
-				} else {
-					flattened.has_clip = true
-					flattened.clip = clip
-				}
-			}
-			painting.ClipPathVisualData {
-				local_clip := LayoutRect{
-					x: node.data.bounding_rect.x
-					y: node.data.bounding_rect.y
-					width: node.data.bounding_rect.width
-					height: node.data.bounding_rect.height
-				}
-				flattened.clips << PaintClip{
-					rect: local_clip
-					is_path: true
-					path_data: compatibility_pack_clip_path_segments(node.data)
-					path_even_odd: node.data.fill_rule == .even_odd
-					transform: flattened.transform
-				}
-				clip := compatibility_affine_map_rect(flattened.transform, local_clip)
-				if flattened.has_clip {
-					flattened.clip = compatibility_intersect_rects(flattened.clip, clip)
-				} else {
-					flattened.has_clip = true
-					flattened.clip = clip
-				}
-			}
-			painting.SVGClipVisualData {
-				local_clip := LayoutRect{
-					x: node.data.bounding_rect.x
-					y: node.data.bounding_rect.y
-					width: node.data.bounding_rect.width
-					height: node.data.bounding_rect.height
-				}
-				mut components := []PaintPath{cap: node.data.components.len}
-				for component in node.data.components {
-					component_transform := multiply_affine(flattened.transform, [
-						component.transform.a,
-						component.transform.b,
-						component.transform.c,
-						component.transform.d,
-						component.transform.e,
-						component.transform.f,
-					]!)
-					components << PaintPath{
-						path_data: compatibility_pack_clip_path_segments(component.path)
-						path_even_odd: component.path.fill_rule == .even_odd
-						transform: component_transform
-					}
-				}
-				mut cache_key := node.data.cache_key
-				for value in flattened.transform {
-					cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
-				}
-				resolved_clip := PaintClip{
-					rect: local_clip
-					is_svg_mask: true
-					path_components: components
-					cache_key: cache_key
-					scope_id: node.data.scope_id
-					transform: flattened.transform
-				}
-				flattened.clips << resolved_clip
-				flattened.layers << PaintVisualLayer{
-					kind: .svg_mask
-					scope_id: node.data.scope_id
-					mask_clip: resolved_clip
-				}
-				clip := compatibility_affine_map_rect(flattened.transform, local_clip)
-				if flattened.has_clip {
-					flattened.clip = compatibility_intersect_rects(flattened.clip, clip)
-				} else {
-					flattened.has_clip = true
-					flattened.clip = clip
-				}
-			}
-			painting.SVGMaskVisualData {
-				local_clip := LayoutRect{
-					x: node.data.bounding_rect.x
-					y: node.data.bounding_rect.y
-					width: node.data.bounding_rect.width
-					height: node.data.bounding_rect.height
-				}
-				mut operations := []PaintMaskOperation{cap: node.data.operations.len}
-				for operation in node.data.operations {
-					operation_transform := multiply_affine(flattened.transform, [
-						operation.transform.a,
-						operation.transform.b,
-						operation.transform.c,
-						operation.transform.d,
-						operation.transform.e,
-						operation.transform.f,
-					]!)
-					operations << PaintMaskOperation{
-						kind: match operation.kind {
-							.begin_opacity { PaintMaskOperationKind.begin_opacity }
-							.end_opacity { PaintMaskOperationKind.end_opacity }
-							.image { PaintMaskOperationKind.image }
-							.path { PaintMaskOperationKind.path }
-						}
-						opacity: operation.opacity
-						image_url: operation.image_url
-						image_rect: LayoutRect{
-							x: operation.image_rect.x
-							y: operation.image_rect.y
-							width: operation.image_rect.width
-							height: operation.image_rect.height
-						}
-						image_position_x: operation.image_position_x
-						image_position_y: operation.image_position_y
-						image_rendering: operation.image_rendering
-						image_paintable: operation.image_paintable
-						path_data: compatibility_pack_clip_path_segments(operation.path)
-						path_even_odd: operation.path.fill_rule == .even_odd
-						transform: operation_transform
-						fill_color: painting_color_string(operation.fill_color)
-						stroke_color: painting_color_string(operation.stroke_color)
-						fill_linear_gradient: operation.fill_linear_gradient
-						stroke_linear_gradient: operation.stroke_linear_gradient
-						fill_radial_gradient: operation.fill_radial_gradient
-						stroke_radial_gradient: operation.stroke_radial_gradient
-						fill_pattern: operation.fill_pattern
-						stroke_pattern: operation.stroke_pattern
-						has_fill: operation.has_fill
-						has_stroke: operation.has_stroke
-						fill_opacity: operation.fill_opacity
-						stroke_opacity: operation.stroke_opacity
-						stroke_width: operation.stroke_width
-						stroke_linecap: int(operation.stroke_linecap)
-						stroke_linejoin: int(operation.stroke_linejoin)
-						stroke_miterlimit: operation.stroke_miter_limit
-						stroke_first: operation.stroke_first
-					}
-				}
-				mut cache_key := node.data.cache_key
-				for value in flattened.transform {
-					cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
-				}
-				resolved_clip := PaintClip{
-					rect: local_clip
-					is_svg_content_mask: true
-					mask_operations: operations
-					cache_key: cache_key
-					scope_id: node.data.scope_id
-					mask_luminance: node.data.mask_type == .luminance
-					transform: flattened.transform
-				}
-				flattened.clips << resolved_clip
-				flattened.layers << PaintVisualLayer{
-					kind: .svg_mask
-					scope_id: node.data.scope_id
-					mask_clip: resolved_clip
-				}
-				clip := compatibility_affine_map_rect(flattened.transform, local_clip)
-				if flattened.has_clip {
-					flattened.clip = compatibility_intersect_rects(flattened.clip, clip)
-				} else {
-					flattened.has_clip = true
-					flattened.clip = clip
-				}
-			}
-			painting.EffectsVisualData {
-				if filter := node.data.filter {
-					flattened.layers << PaintVisualLayer{
-						kind: .css_filter
-						scope_id: u64(chain[reverse_index])
-						filter: filter
-					}
-				}
-			}
-		}
-	}
+	apply_compatibility_visual_context_chain(&tree, index, snapshot, mut flattened)
 	if flattened.clips.len > 0 {
 		flattened.clip_list = &PaintClipList{
 			items: flattened.clips
