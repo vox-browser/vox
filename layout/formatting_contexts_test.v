@@ -159,6 +159,38 @@ fn test_indefinite_column_flex_intrinsic_main_size_counts_gaps_and_edges() {
 	assert used_for_id(result, 'two').content_height().to_double() == 20
 }
 
+fn test_wrapping_container_sizes_its_only_line_to_its_items() {
+	// calculate_cross_size_of_each_flex_line() gives the line the container's inner cross
+	// size only when the container is single-line, and is_single_line() means
+	// `flex-wrap: nowrap` - not "collection happened to produce one line". A wrapping
+	// container whose items all fit on one line still sizes that line to its items, which is
+	// what leaves cross-axis free space for align-content to distribute.
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-direction:column; flex-wrap:wrap; align-content:flex-end;
+		        width:180px; height:160px }
+		#flex > div { width:300px }
+		#one { height:20px } #two { height:30px }
+	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// The single line is 300 wide against a 180 container, so flex-end starts it at -120.
+	assert used_for_id(result, 'one').offset.x().to_double() == -120
+	assert used_for_id(result, 'two').offset.x().to_double() == -120
+}
+
+fn test_nowrap_container_still_stretches_its_line_to_the_definite_cross_size() {
+	// The nowrap half of the same rule: a single-line container with a definite cross size
+	// hands that size to its only line, so there is no free space and align-content is inert.
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-direction:column; flex-wrap:nowrap; align-content:flex-end;
+		        width:180px; height:160px }
+		#flex > div { width:300px }
+		#one { height:20px } #two { height:30px }
+	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'one').offset.x().to_double() == 0
+	assert used_for_id(result, 'two').offset.x().to_double() == 0
+}
+
 fn test_flex_percentage_gaps_resolve_against_their_axis_inner_size() {
 	row_document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:flex-start;

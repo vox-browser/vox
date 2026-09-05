@@ -1187,7 +1187,12 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			cross_size = css_pixels_max(cross_size, item_state.margin_box_height())
 			used_main = used_main.plus(item_state.margin_box_width())
 		}
-		if lines.len == 1 {
+		// calculate_cross_size_of_each_flex_line(): "If the flex container is single-line and
+		// has a definite cross size, the cross size of the flex line is the flex container's
+		// inner cross size." is_single_line() is `flex-wrap: nowrap`, not "only one line came
+		// out of collection" - a wrapping container that happens to fit on one line still
+		// sizes that line to its items, which is what lets align-content move it.
+		if container.computed_values().flex_wrap() == .nowrap {
 			if container_state.has_definite_height() {
 				cross_size = container_state.content_height()
 			} else if available_space.height.is_definite() {
@@ -1666,9 +1671,9 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		}
 		line_cross_sizes << cross_size
 	}
-	if lines.len == 1 && line_cross_sizes.len == 1 {
-		line_cross_sizes[0] = container_width
-	}
+
+	// No is_single_line() rule here: this path only runs for a wrapping container, so a line
+	// is always sized to its items even when collection produced just one of them.
 
 	mut total_cross_size := column_gap.scaled(f64(if lines.len > 0 { lines.len - 1 } else { 0 }))
 	for cross_size in line_cross_sizes {
