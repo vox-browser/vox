@@ -95,6 +95,20 @@ fn test_native_gradient_stop_data_preserves_hard_stops_and_applies_opacity() {
 	assert data[data.len - 2] > 0.25 && data[data.len - 2] < 0.252
 }
 
+fn test_backdrop_filter_canvas_detection_descends_into_nested_viewports() {
+	assert !paint_commands_contain_backdrop_filter([
+		layout.PaintCommand{ kind: 'fill_rect' },
+	])
+	assert paint_commands_contain_backdrop_filter([
+		layout.PaintCommand{
+			kind: 'paint_nested_display_list'
+			nested_viewport_commands: [
+				layout.PaintCommand{ kind: 'apply_backdrop_filter' },
+			]
+		},
+	])
+}
+
 fn test_document_preload_resources_are_resolved_deduplicated_and_ordered() {
 	document := html.parse_document('<html><head>
 		<link rel="stylesheet" href="/news.css">

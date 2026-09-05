@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 35,375 | 12,419 | Present |
+| `Layout` | 50 | 19,592 | 35,427 | 12,517 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **313,558** | **55,627** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **313,610** | **55,725** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 595
-  candidate-name-match: 14041
-  unmatched: 1726
+  candidate-name-match: 14043
+  unmatched: 1724
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   422 Painting
+   420 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -386,8 +386,19 @@ hue-rotate operations preserve C++ composition order and create one visual
 layer around the complete filtered subtree. Filter layers and SVG masks share
 one ordered scope stream, so either may correctly contain the other. The native
 Core Image replay uses LibGfx's exact color matrices and device-scaled blur and
-drop-shadow geometry instead of filtering individual leaf commands. SVG URL
-filters no longer use the earlier generic sequential placeholder graph:
+drop-shadow geometry instead of filtering individual leaf commands.
+`PaintableBox::paint_backdrop_filter()` now uses that same translated resolver
+for `backdrop-filter`, records `ApplyBackdropFilter` before the box background
+and shadows, and retains the normalized border radii and accumulated clips and
+transforms. Quartz snapshots the already-painted destination, applies the
+LibGfx operation chain through the shared Core Image implementation, and
+composites only the transformed rounded region. If the box also has `filter`,
+the sample comes from outside its newly opened filter layer and the result is
+painted inside it with the rest of the box. Backdrop presence is cached when
+the display list changes (including nested viewports); pages without it remain
+on the direct rendering path, and Core Image evaluates only the backdrop's
+device bounds. SVG URL filters no longer use the earlier generic sequential
+placeholder graph:
 `SVGFilterElement::gfx_filter()` is represented with LibGfx constructor input
 order and primitive-specific state, including explicit SourceAlpha and
 luminance matrices, named-result fallback, blend/composite/arithmetic modes,

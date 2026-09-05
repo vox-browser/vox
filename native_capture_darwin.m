@@ -1254,6 +1254,9 @@ typedef struct {
 typedef struct {
 	CGContextRef context;
 	CGContextRef destination;
+	CGImageRef backdrop_source;
+	CGPathRef backdrop_clip;
+	CGRect backdrop_bounds;
 	float canvas_width;
 	float canvas_height;
 	CGFloat scale;
@@ -1313,6 +1316,57 @@ void native_begin_css_filter_layer(float canvas_width, float canvas_height) {
 				[NSGraphicsContext graphicsContextWithCGContext:layer.context flipped:NO]];
 			layer.active = 1;
 		}
+	}
+	native_css_filter_stack[native_css_filter_stack_depth++] = layer;
+}
+
+void native_begin_backdrop_filter_layer(float canvas_width, float canvas_height,
+	float region_x, float region_y, float region_width, float region_height,
+	float top_left_x, float top_left_y, float top_right_x, float top_right_y,
+	float bottom_right_x, float bottom_right_y, float bottom_left_x,
+	float bottom_left_y, float transform_a, float transform_b, float transform_c,
+	float transform_d, float transform_e, float transform_f, float page_x,
+	float page_y, float scroll_y, int source_outside_current_filter) {
+	if (native_css_filter_stack_depth >= NATIVE_CSS_FILTER_MAX_DEPTH) {
+		native_css_filter_overflow_depth++;
+		return;
+	}
+	CGContextRef destination = [[NSGraphicsContext currentContext] CGContext];
+	CGContextRef source = destination;
+	if (source_outside_current_filter && native_css_filter_stack_depth > 0) {
+		NativeCSSFilterLayer const *current_filter =
+			&native_css_filter_stack[native_css_filter_stack_depth - 1];
+		if (current_filter->destination != NULL) {
+			source = current_filter->destination;
+		}
+	}
+	NativeCSSFilterLayer layer = {
+		.destination = destination,
+		.canvas_width = canvas_width,
+		.canvas_height = canvas_height,
+		.scale = native_svg_mask_backing_scale(),
+	};
+	if (source != NULL && destination != NULL && region_width > 0.0f
+		&& region_height > 0.0f && canvas_width > 0.0f && canvas_height > 0.0f) {
+		layer.backdrop_source = CGBitmapContextCreateImage(source);
+		CGPathRef local_path = native_create_corner_rounded_rect_path(region_x,
+			region_y, region_width, region_height, top_left_x, top_left_y,
+			top_right_x, top_right_y, bottom_right_x, bottom_right_y,
+			bottom_left_x, bottom_left_y);
+		CGAffineTransform to_canvas = CGAffineTransformMake(transform_a,
+			-transform_b, transform_c, -transform_d, page_x + transform_e,
+			canvas_height - page_y + scroll_y - transform_f);
+		layer.backdrop_clip = CGPathCreateCopyByTransformingPath(local_path,
+			&to_canvas);
+		CGPathRelease(local_path);
+		if (layer.backdrop_clip != NULL) {
+			layer.backdrop_bounds = CGRectIntersection(
+				CGRectStandardize(CGPathGetPathBoundingBox(layer.backdrop_clip)),
+				CGRectMake(0, 0, canvas_width, canvas_height));
+		}
+		layer.active = layer.backdrop_source != NULL && layer.backdrop_clip != NULL
+			&& !CGRectIsNull(layer.backdrop_bounds)
+			&& !CGRectIsEmpty(layer.backdrop_bounds);
 	}
 	native_css_filter_stack[native_css_filter_stack_depth++] = layer;
 }
@@ -2112,6 +2166,33 @@ static void native_free_svg_filter_graph(NativeCSSFilterLayer *layer) {
 	layer->graph_node_count = 0;
 }
 
+static CIImage *native_apply_css_filter_layer(NativeCSSFilterLayer const *layer,
+	CGImageRef source_image) {
+	CIImage *output = [CIImage imageWithCGImage:source_image];
+	for (NSInteger index = (NSInteger)layer->operation_count - 1;
+		index >= 0; --index) {
+		NativeCSSFilterOperation operation = layer->operations[index];
+		switch (operation.kind) {
+		case 0:
+			output = native_apply_css_blur(output, operation.first * layer->scale);
+			break;
+		case 1:
+			output = native_apply_css_drop_shadow(output, operation, layer->scale);
+			break;
+		case 2:
+			output = native_apply_css_color_filter(output, (int)operation.second,
+				operation.first);
+			break;
+		case 3:
+			output = native_apply_css_hue_rotate(output, operation.first);
+			break;
+		default:
+			break;
+		}
+	}
+	return native_apply_svg_filter_graph(layer, output);
+}
+
 void native_end_css_filter_layer(void) {
 	if (native_css_filter_overflow_depth > 0) {
 		native_css_filter_overflow_depth--;
@@ -2137,35 +2218,18 @@ void native_end_css_filter_layer(void) {
 		return;
 	}
 	@autoreleasepool {
-		native_initialize_css_filter_renderer();
-		CIImage *output = [CIImage imageWithCGImage:source_image];
-		for (NSInteger index = (NSInteger)layer.operation_count - 1;
-			index >= 0; --index) {
-			NativeCSSFilterOperation operation = layer.operations[index];
-			switch (operation.kind) {
-			case 0:
-				output = native_apply_css_blur(output, operation.first * layer.scale);
-				break;
-			case 1:
-				output = native_apply_css_drop_shadow(output, operation, layer.scale);
-				break;
-			case 2:
-				output = native_apply_css_color_filter(output, (int)operation.second,
-					operation.first);
-				break;
-			case 3:
-				output = native_apply_css_hue_rotate(output, operation.first);
-				break;
-			default:
-				break;
-			}
-		}
-		output = native_apply_svg_filter_graph(&layer, output);
 		CGRect source_rect = CGRectMake(0, 0,
 			CGImageGetWidth(source_image), CGImageGetHeight(source_image));
-		CGImageRef filtered_image = [native_css_filter_ci_context createCGImage:output
-			fromRect:source_rect format:kCIFormatRGBA8
-			colorSpace:native_css_filter_color_space];
+		CGImageRef filtered_image = NULL;
+		if (layer.operation_count == 0 && layer.graph_node_count == 0) {
+			filtered_image = CGImageRetain(source_image);
+		} else {
+			native_initialize_css_filter_renderer();
+			CIImage *output = native_apply_css_filter_layer(&layer, source_image);
+			filtered_image = [native_css_filter_ci_context createCGImage:output
+				fromRect:source_rect format:kCIFormatRGBA8
+				colorSpace:native_css_filter_color_space];
+		}
 		if (filtered_image != NULL && layer.destination != NULL) {
 			CGContextDrawImage(layer.destination,
 				CGRectMake(0, 0, layer.canvas_width, layer.canvas_height),
@@ -2174,6 +2238,58 @@ void native_end_css_filter_layer(void) {
 		}
 	}
 	CGImageRelease(source_image);
+	free(layer.operations);
+	native_free_svg_filter_graph(&layer);
+}
+
+void native_end_backdrop_filter_layer(float opacity) {
+	if (native_css_filter_overflow_depth > 0) {
+		native_css_filter_overflow_depth--;
+		return;
+	}
+	if (native_css_filter_stack_depth <= 0) {
+		return;
+	}
+	NativeCSSFilterLayer layer =
+		native_css_filter_stack[--native_css_filter_stack_depth];
+	if (layer.active) {
+		@autoreleasepool {
+			native_initialize_css_filter_renderer();
+			CIImage *output = native_apply_css_filter_layer(&layer,
+				layer.backdrop_source);
+			// Core Image is demand-driven. Render only the transformed backdrop
+			// bounds; blur and drop-shadow filters request their required source
+			// pixels outside this rectangle through their region-of-interest logic.
+			CGRect source_rect = CGRectMake(
+				layer.backdrop_bounds.origin.x * layer.scale,
+				layer.backdrop_bounds.origin.y * layer.scale,
+				layer.backdrop_bounds.size.width * layer.scale,
+				layer.backdrop_bounds.size.height * layer.scale);
+			source_rect = CGRectIntersection(source_rect, CGRectMake(0, 0,
+				CGImageGetWidth(layer.backdrop_source),
+				CGImageGetHeight(layer.backdrop_source)));
+			CGImageRef filtered_image = [native_css_filter_ci_context
+				createCGImage:output fromRect:source_rect format:kCIFormatRGBA8
+				colorSpace:native_css_filter_color_space];
+			if (filtered_image != NULL) {
+				CGContextSaveGState(layer.destination);
+				CGContextAddPath(layer.destination, layer.backdrop_clip);
+				CGContextClip(layer.destination);
+				CGContextSetAlpha(layer.destination, MAX(0.0f, MIN(opacity, 1.0f)));
+				CGContextDrawImage(layer.destination,
+					layer.backdrop_bounds,
+					filtered_image);
+				CGContextRestoreGState(layer.destination);
+				CGImageRelease(filtered_image);
+			}
+		}
+	}
+	if (layer.backdrop_source != NULL) {
+		CGImageRelease(layer.backdrop_source);
+	}
+	if (layer.backdrop_clip != NULL) {
+		CGPathRelease(layer.backdrop_clip);
+	}
 	free(layer.operations);
 	native_free_svg_filter_graph(&layer);
 }

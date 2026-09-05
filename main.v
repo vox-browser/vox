@@ -152,6 +152,8 @@ fn C.native_end_svg_mask_layer(cache_key u64, content_mask int, canvas_width f32
 
 fn C.native_begin_css_filter_layer(canvas_width f32, canvas_height f32)
 
+fn C.native_begin_backdrop_filter_layer(canvas_width f32, canvas_height f32, region_x f32, region_y f32, region_width f32, region_height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, source_outside_current_filter int)
+
 fn C.native_add_css_filter_operation(kind int, first f32, second f32, third f32, color gg.Color)
 
 fn C.native_begin_svg_filter_graph(root_id int, node_count int, bounds_x f32, bounds_y f32, bounds_width f32, bounds_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32)
@@ -165,6 +167,8 @@ fn C.native_set_svg_filter_node_matrix(id int, matrix &f64, count int)
 fn C.native_set_svg_filter_color_table(id int, channel int, values &u8, count int)
 
 fn C.native_end_css_filter_layer()
+
+fn C.native_end_backdrop_filter_layer(opacity f32)
 
 fn C.native_end_clip()
 
@@ -218,38 +222,39 @@ const demo_markup = '<!doctype html>
 
 struct BrowserApp {
 mut:
-	ctx                   &gg.Context = unsafe { nil }
-	page_model            &page.Page = unsafe { nil }
-	js_runtime            &browserjs.Runtime = unsafe { nil }
-	document              &dom.Document = unsafe { nil }
-	root_box              layout.BlockBox
-	markup                string
-	source_label          string
-	address               string
-	address_cursor        int
-	address_active        bool
-	address_select        bool
-	viewport_width        int
-	viewport_height       int
-	scroll_y              f64
-	content_height        f64
-	paint_commands        []layout.PaintCommand
-	status                string
-	load_status           string
-	js_messages           []string
-	history               []HistoryEntry
-	history_index         int = -1
-	hovered_link          string
-	navigation_results    chan NavigationResult
-	navigation_generation int
-	background_image_ids  map[string]int
-	resource_cache        map[string]PreloadedResource
-	screenshot_path       string
-	screenshot_scheduled  bool
-	document_presented    bool
-	refresh_not_before    i64
-	snapshot_visible      bool
-	snapshot_cached       bool
+	ctx                                 &gg.Context = unsafe { nil }
+	page_model                          &page.Page = unsafe { nil }
+	js_runtime                          &browserjs.Runtime = unsafe { nil }
+	document                            &dom.Document = unsafe { nil }
+	root_box                            layout.BlockBox
+	markup                              string
+	source_label                        string
+	address                             string
+	address_cursor                      int
+	address_active                      bool
+	address_select                      bool
+	viewport_width                      int
+	viewport_height                     int
+	scroll_y                            f64
+	content_height                      f64
+	paint_commands                      []layout.PaintCommand
+	paint_commands_have_backdrop_filter bool
+	status                              string
+	load_status                         string
+	js_messages                         []string
+	history                             []HistoryEntry
+	history_index                       int = -1
+	hovered_link                        string
+	navigation_results                  chan NavigationResult
+	navigation_generation               int
+	background_image_ids                map[string]int
+	resource_cache                      map[string]PreloadedResource
+	screenshot_path                     string
+	screenshot_scheduled                bool
+	document_presented                  bool
+	refresh_not_before                  i64
+	snapshot_visible                    bool
+	snapshot_cached                     bool
 	// While a cached raster is displayed we keep it up until the background
 	// refresh has produced the live document, so neither the cached-DOM rebuild
 	// nor the refresh rebuild is seen as a frozen window. snapshot_hold_until is
@@ -1122,8 +1127,10 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	mut mutable_document := unsafe { &dom.Document(app.document) }
 	if display_list := mutable_document.record_display_list() {
 		app.paint_commands = layout.display_list_commands(display_list)
+		app.paint_commands_have_backdrop_filter = paint_commands_contain_backdrop_filter(app.paint_commands)
 	} else {
 		app.paint_commands = []layout.PaintCommand{}
+		app.paint_commands_have_backdrop_filter = false
 	}
 	debug_timing_checkpoint('  paint_commands', layout_checkpoint)
 	root_rect := app.root_box.border_box()
@@ -1872,6 +1879,17 @@ fn transformed_rect_points(command layout.PaintCommand, page_x f32, page_y f32, 
 	return points
 }
 
+fn paint_commands_contain_backdrop_filter(commands []layout.PaintCommand) bool {
+	for command in commands {
+		if command.kind == 'apply_backdrop_filter'
+			|| (command.nested_viewport_commands.len > 0
+				&& paint_commands_contain_backdrop_filter(command.nested_viewport_commands)) {
+			return true
+		}
+	}
+	return false
+}
+
 fn (app &BrowserApp) background_image_bytes(image_url string) ![]u8 {
 	if resource := app.resource_cache[image_url] {
 		if resource.error == '' {
@@ -2270,6 +2288,27 @@ fn add_native_svg_filter_graph(filter painting.GfxFilter, transform [6]f64, page
 	}
 }
 
+fn add_native_css_filter(filter painting.GfxFilter, transform [6]f64, page_x f32,
+	page_y f32) {
+	for operation in filter.operations {
+		kind := match operation.kind {
+			'blur' { 0 }
+			'drop-shadow' { 1 }
+			'color' { 2 }
+			'hue-rotate' { 3 }
+			else {
+				continue
+			}
+		}
+		C.native_add_css_filter_operation(kind, f32(operation.first), if operation.kind == 'color' {
+			f32(int(operation.color_operation))
+		} else {
+			f32(operation.second)
+		}, f32(operation.third), gg.rgba(operation.color.r, operation.color.g, operation.color.b, operation.color.a))
+	}
+	add_native_svg_filter_graph(filter, transform, page_x, page_y)
+}
+
 fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, page_y f32, window_height int) {
 	if command.kind == 'begin_background_text_clip' {
 		$if macos {
@@ -2343,23 +2382,7 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 			if app.ctx.native_rendering {
 				C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
 				if filter := command.visual_layer.filter {
-					for operation in filter.operations {
-						kind := match operation.kind {
-							'blur' { 0 }
-							'drop-shadow' { 1 }
-							'color' { 2 }
-							'hue-rotate' { 3 }
-							else {
-								continue
-							}
-						}
-						C.native_add_css_filter_operation(kind, f32(operation.first), if operation.kind == 'color' {
-							f32(int(operation.color_operation))
-						} else {
-							f32(operation.second)
-						}, f32(operation.third), gg.rgba(operation.color.r, operation.color.g, operation.color.b, operation.color.a))
-					}
-					add_native_svg_filter_graph(filter, command.transform, page_x, page_y)
+					add_native_css_filter(filter, command.transform, page_x, page_y)
 				}
 			}
 		}
@@ -2506,6 +2529,19 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 		}
 	}
 	if cull_bottom < app.page_top() || cull_top > f32(window_height - app.status_height()) {
+		return
+	}
+	if command.kind == 'apply_backdrop_filter' {
+		$if macos {
+			if app.ctx.native_rendering {
+				radii := command.corner_radii
+				C.native_begin_backdrop_filter_layer(f32(app.ctx.width), f32(app.ctx.height), f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), int(command.backdrop_source_outside_filter))
+				if filter := command.backdrop_filter {
+					add_native_css_filter(filter, command.transform, page_x, page_y)
+				}
+				C.native_end_backdrop_filter_layer(f32(command.opacity))
+			}
+		}
 		return
 	}
 	match command.kind {
@@ -3402,13 +3438,28 @@ fn (mut app BrowserApp) draw() {
 		mut mutable_document := unsafe { &dom.Document(app.document) }
 		if display_list := mutable_document.record_display_list() {
 			app.paint_commands = layout.display_list_commands(display_list)
+			app.paint_commands_have_backdrop_filter = paint_commands_contain_backdrop_filter(app.paint_commands)
 		}
 	}
 	app.ctx.begin()
+	$if macos {
+		if app.ctx.native_rendering
+			&& app.paint_commands_have_backdrop_filter {
+			// Backdrop commands need a snapshot of pixels already painted in this
+			// frame. Keep the ordinary fast path direct-to-window.
+			C.native_begin_css_filter_layer(f32(app.ctx.width), f32(app.ctx.height))
+		}
+	}
 	draw_srgb_rect(app.ctx, 0, 0, f32(window.width), f32(window.height), gg.rgb(255, 255, 255))
 	page_y := app.page_top()
 	for command in app.paint_commands {
 		app.draw_command(command, 0, page_y, window.height)
+	}
+	$if macos {
+		if app.ctx.native_rendering
+			&& app.paint_commands_have_backdrop_filter {
+			C.native_end_css_filter_layer()
+		}
 	}
 
 	if app.chrome_height() > 0 {

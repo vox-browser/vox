@@ -674,15 +674,16 @@ fn resolved_svg_filter(element &dom.Element, reference string) ?painting.GfxFilt
 	return painting_filter_from_svg_graph(svg_element_model(filter_element).gfx_filter())
 }
 
-fn resolved_css_filter_for_element(computed &css.ComputedValues, color_context css.ColorResolutionContext,
+fn resolve_css_filter(computed_filter css.Filter, computed &css.ComputedValues,
+	color_context css.ColorResolutionContext,
 	element ?&dom.Element, bounds ?painting.Rect) painting.ResolvedCSSFilter {
-	if !computed.filter().has_filters() {
+	if !computed_filter.has_filters() {
 		return painting.ResolvedCSSFilter{}
 	}
 	mut operations := []painting.ResolvedFilterOperation{}
 	mut svg_filter := ?painting.GfxFilter(none)
 	mut svg_filter_bounds := ?painting.Rect(none)
-	for filter_operation in computed.filter().filters() {
+	for filter_operation in computed_filter.filters() {
 		match filter_operation {
 			css.FilterOperationBlur {
 				operations << painting.BlurFilter{
@@ -733,6 +734,12 @@ fn resolved_css_filter_for_element(computed &css.ComputedValues, color_context c
 		svg_filter: svg_filter
 		svg_filter_bounds: svg_filter_bounds
 	}
+}
+
+fn resolved_css_filter_for_element(computed &css.ComputedValues,
+	color_context css.ColorResolutionContext, element ?&dom.Element,
+	bounds ?painting.Rect) painting.ResolvedCSSFilter {
+	return resolve_css_filter(computed.filter(), computed, color_context, element, bounds)
 }
 
 fn resolved_css_filter(computed &css.ComputedValues, color_context css.ColorResolutionContext) painting.ResolvedCSSFilter {
@@ -2657,12 +2664,14 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	if paint_element == none && node.is_generated_for_pseudo_element() {
 		paint_element = painted_owner_element(node)
 	}
-	filter := resolved_css_filter_for_element(computed, color_context, paint_element, painting.Rect{
+	border_box_bounds := painting.Rect{
 		x: position.x().to_double() - used.padding_left.to_double() - used.border_left.to_double()
 		y: position.y().to_double() - used.padding_top.to_double() - used.border_top.to_double()
 		width: used.border_box_width().to_double()
 		height: used.border_box_height().to_double()
-	})
+	}
+	filter := resolved_css_filter_for_element(computed, color_context, paint_element, border_box_bounds)
+	backdrop_filter := resolve_css_filter(computed.backdrop_filter(), computed, color_context, paint_element, border_box_bounds)
 	if styled_element := paint_element {
 		text_color = computed.color()
 		color_context.current_color = text_color
@@ -3116,6 +3125,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		fieldset_paintable: fieldset_paintable
 		opacity: f64(computed.opacity())
 		filter: filter
+		backdrop_filter: backdrop_filter
 		visible: computed.visibility() == .visible
 		pointer_events_enabled: paintable_visible_for_hit_testing(node, computed)
 		node_id: node_id

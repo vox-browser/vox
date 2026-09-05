@@ -433,6 +433,15 @@ Stop normalization, repeat expansion, and transition-hint sampling now route
 through Painting's shared `GradientPainting.cpp` translation rather than a
 duplicate Layout implementation; only the final conversion to the compact
 native transport remains in Layout.
+`PaintableBox::paint_backdrop_filter()` is now active as a distinct first
+command in the background phase. It resolves the computed `backdrop-filter`
+through the same translated helper as ordinary CSS filters, converts it with
+`ResolvedCSSFilter::to_gfx_filter()`, and retains the rounded border box,
+elliptical corner radii, visual transform, and ancestor clips. Native replay
+samples pixels already painted behind the box and renders only the affected
+device bounds; a box's ordinary `filter` remains outside the backdrop operation
+in the same order as C++. The frame-level bitmap requirement is cached with the
+display-list command store and is not paid by pages without backdrop filters.
 This path is shared by block and inline-fragment backgrounds. Portable SVG and
 native Quartz both materialize the translated repeated-tile geometry. Quartz
 now mirrors `DisplayListPlayerSkia::paint_*_gradient()` by submitting one axial,

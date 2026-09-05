@@ -350,7 +350,8 @@ pub mut:
 	opacity f64 = 1.0
 	// Painting::ResolvedCSSFilter retained from computed style. The visual-context
 	// builder converts this to a device filter before display-list replay.
-	filter painting.ResolvedCSSFilter
+	filter          painting.ResolvedCSSFilter
+	backdrop_filter painting.ResolvedCSSFilter
 	// Whether this box paints its own background/border/text (`visibility: visible`). A
 	// `visibility: hidden` box still takes up space but is not painted; because `visibility` inherits,
 	// each box carries its own resolved value, so a visible descendant of a hidden box still paints.
@@ -1401,6 +1402,11 @@ pub mut:
 	// replay can emit balanced layer boundaries around the complete subtree.
 	visual_layer_list &PaintVisualLayerList = unsafe { nil }
 	visual_layer      PaintVisualLayer
+	// ApplyBackdropFilter samples the already-painted destination. If this box
+	// also has `filter`, that sample comes from outside its newly-opened filter
+	// layer while the filtered backdrop is painted into the layer with the box.
+	backdrop_filter                ?painting.GfxFilter
+	backdrop_source_outside_filter bool
 	// Synthetic display-list controls bracket all commands belonging to one
 	// SVG mask/clip stacking scope so destination-in is applied once.
 	mask_clip PaintClip
@@ -2197,7 +2203,40 @@ fn append_painting_display_command(mut commands []PaintCommand,
 				line_style: painting_line_style_string(display_command.line_style)
 			}
 		}
+		painting.ApplyBackdropFilter {
+			commands << PaintCommand{
+				kind: 'apply_backdrop_filter'
+				x: display_command.backdrop_region.x
+				y: display_command.backdrop_region.y
+				width: display_command.backdrop_region.width
+				height: display_command.backdrop_region.height
+				corner_radii: transport_radii_from_painting(display_command.corner_radii)
+				backdrop_filter: display_command.filter
+				opacity: opacity
+			}
+		}
 		else {}
+	}
+}
+
+// Direct translation of PaintableBox::paint_backdrop_filter(). The display-list
+// command is recorded before the background and box-shadow commands and is
+// clipped to the normalized border radii by the player.
+fn paintable_box_paint_backdrop_filter(mut commands []PaintCommand, box &BlockBox,
+	border_rect LayoutRect, border_radii BoxRadii, opacity f64) {
+	filter := box.backdrop_filter.to_gfx_filter(1.0) or { return }
+	region := compatibility_rounded_int_rect(border_rect)
+	if region.is_empty() {
+		return
+	}
+	start := commands.len
+	append_painting_display_command(mut commands, painting.ApplyBackdropFilter{
+		backdrop_region: region
+		corner_radii: painting_radii_from_transport(border_radii)
+		filter: filter
+	}, opacity)
+	if commands.len > start {
+		commands[start].backdrop_source_outside_filter = box.filter.to_gfx_filter(1.0) != none
 	}
 }
 
@@ -2327,6 +2366,9 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 			}
 		}
 		background_paint_start := commands.len
+		if !empty_cell_hidden {
+			paintable_box_paint_backdrop_filter(mut commands, box, border_rect, box_radii, opacity)
+		}
 		background_isolated := box.background_images.any(background_image_layer_blend_mode(it) != .normal)
 		needs_background_text_clip := box.background_color_clip == 'text'
 			&& !box.paints_canvas_background && !box.skip_background_paint && !empty_cell_hidden

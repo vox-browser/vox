@@ -170,6 +170,104 @@ fn test_css_filter_is_lowered_once_around_the_complete_subtree() {
 	assert filtered_parts == 2
 }
 
+fn test_backdrop_filter_records_cpp_background_phase_command() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { margin: 10px; width: 80px; height: 40px; padding: 4px; border: 3px solid black; border-radius: 10px 20px 30px 40px / 5px 10px 15px 20px; background: rgb(12 34 56); backdrop-filter: blur(3px) contrast(150%); box-shadow: 1px 2px 3px red }</style><body><div id="target"></div></body>')
+	root := layout_document_typed_in_viewport(document, 180, 120)
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	target_box := root.find_box(i64(target.as_node().unique_id())) or {
+		panic('missing target box')
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing display list')
+	})
+	backdrops := commands.filter(it.kind == 'apply_backdrop_filter')
+	assert backdrops.len == 1
+	backdrop := backdrops[0]
+	assert backdrop.x == math.round(target_box.x - target_box.padding.left - target_box.border.left)
+	assert backdrop.y == math.round(target_box.y - target_box.padding.top - target_box.border.top)
+	assert backdrop.width == math.round(target_box.width + target_box.padding.left + target_box.padding.right + target_box.border.left + target_box.border.right)
+	assert backdrop.height == math.round(target_box.height + target_box.padding.top + target_box.padding.bottom + target_box.border.top + target_box.border.bottom)
+	assert backdrop.corner_radii.top_left.x == math.floor(target_box.border_radii.top_left.x)
+	assert backdrop.corner_radii.bottom_left.y == math.floor(target_box.border_radii.bottom_left.y)
+	assert !backdrop.backdrop_source_outside_filter
+	filter := backdrop.backdrop_filter or { panic('missing backdrop filter') }
+	// Gfx::Filter stores the later CSS operation outside the earlier one.
+	assert filter.operations.len == 2
+	assert filter.operations[0].kind == 'color'
+	assert filter.operations[0].first == 1.5
+	assert filter.operations[1].kind == 'blur'
+	assert filter.operations[1].first == 3
+	mut backdrop_index := -1
+	mut background_index := -1
+	mut shadow_index := -1
+	for index, command in commands {
+		if command.kind == 'apply_backdrop_filter' {
+			backdrop_index = index
+		} else if command.kind == 'fill_rounded_rect' && command.color == 'rgb(12 34 56)' {
+			background_index = index
+		} else if command.kind == 'paint_outer_box_shadow' && command.color == 'rgb(255 0 0)' {
+			shadow_index = index
+		}
+	}
+	assert backdrop_index >= 0
+	assert background_index > backdrop_index
+	assert shadow_index > background_index
+}
+
+fn test_backdrop_filter_samples_outside_own_css_filter_layer() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 80px; height: 40px; background: rgb(11 22 33); filter: saturate(50%); backdrop-filter: brightness(120%) }</style><body><div id="target"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing display list')
+	})
+	mut begin_index := -1
+	mut backdrop_index := -1
+	mut background_index := -1
+	mut end_index := -1
+	for index, command in commands {
+		if command.kind == 'begin_css_filter_layer' {
+			begin_index = index
+		} else if command.kind == 'apply_backdrop_filter' {
+			backdrop_index = index
+			assert command.backdrop_source_outside_filter
+		} else if command.kind == 'fill_rect' && command.color == 'rgb(11 22 33)' {
+			background_index = index
+		} else if command.kind == 'end_css_filter_layer' {
+			end_index = index
+		}
+	}
+	assert begin_index >= 0
+	assert backdrop_index > begin_index
+	assert background_index > backdrop_index
+	assert end_index > background_index
+}
+
+fn test_same_document_svg_backdrop_filter_retains_the_translated_graph() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 80px; height: 40px; backdrop-filter: url(#soft) }</style><body><svg width="0" height="0"><defs><filter id="soft"><feGaussianBlur in="SourceGraphic" stdDeviation="2 3"/></filter></defs></svg><div id="target"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing display list')
+	})
+	backdrops := commands.filter(it.kind == 'apply_backdrop_filter')
+	assert backdrops.len == 1
+	filter := backdrops[0].backdrop_filter or { panic('missing backdrop filter') }
+	assert filter.operations.len == 0
+	assert filter.nodes.len == 1
+	assert filter.root_id or { -1 } == 0
+	assert filter.nodes[0].kind == 'blur'
+	assert filter.nodes[0].input_ids == [-1]
+	assert filter.nodes[0].parameters['radius_x'] == 2
+	assert filter.nodes[0].parameters['radius_y'] == 3
+	bounds := filter.bounds or { panic('missing backdrop filter bounds') }
+	assert bounds.x == backdrops[0].x
+	assert bounds.y == backdrops[0].y
+	assert bounds.width == backdrops[0].width
+	assert bounds.height == backdrops[0].height
+}
+
 fn test_same_document_svg_filter_url_retains_the_translated_graph() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #filtered { width: 80px; height: 40px; background: red; filter: contrast(150%) url(#soft) } feFlood { flood-color: rgb(12 34 56); flood-opacity: .25 }</style><body><svg width="0" height="0"><defs><filter id="soft"><feGaussianBlur in="SourceGraphic" stdDeviation="2 3" result="blurred"/><feOffset in="blurred" dx="4" dy="5" result="shifted"/><feFlood result="paint"/><feBlend in="shifted" in2="paint" mode="multiply"/></filter></defs></svg><div id="filtered"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)
