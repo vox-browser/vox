@@ -242,6 +242,12 @@ individual `translate`, `rotate`, and `scale` before the legacy transform list,
 including percentage resolution against the selected reference box. The HTML
 transform-box reftest and both WPT individual-transform pairs are pixel-exact;
 the comprehensive HTML/SVG screenshot's MAE fell from 4.6117 to 0.2584.
+Text decorations now retain the committed fragment baseline and selected font
+metrics through this bridge. The active painter directly follows
+`PaintableWithLines::paint_text_decoration()` for device rounding, minimum
+thickness, underline offset/position, solid/double/dotted/dashed line placement,
+and the round-joined triangular wave path. Three focused upstream reference
+pairs render with zero differing pixels.
 `SVGMaskable`'s URL `<clipPath>` path is active too: attached resource geometry
 is omitted from normal child painting and retained as exact mask components.
 Target, resource, child, viewBox, and `objectBoundingBox` transforms compose at

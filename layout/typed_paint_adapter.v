@@ -2929,6 +2929,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 		for fragment in line_box.fragments_ {
 			text := fragment.text() or { continue }
 			computed := fragment.layout_node_.computed_values()
+			font_metrics := fragment.layout_node_.first_available_font().pixel_metrics()
 			mut color := css.Color{0, 0, 0, 255}
 			mut background := css.Color{0, 0, 0, 0}
 			mut background_images := []BackgroundImageLayer{}
@@ -2938,6 +2939,9 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			mut decoration_color := color
 			mut decoration_style := 'solid'
 			mut decoration_thickness := 0.0
+			mut decoration_thickness_set := false
+			mut text_underline_offset := 0.0
+			mut text_underline_position := 'auto'
 			mut border := BoxEdges{}
 			mut radius := 0.0
 			mut radii := BoxRadii{}
@@ -2950,6 +2954,15 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			decoration_color = computed.text_decoration_color()
 			decoration_style = computed_text_decoration_style(computed)
 			decoration_thickness = computed_text_decoration_thickness(computed, computed.font_size().to_double())
+			decoration_thickness_value := computed.text_decoration_thickness()
+			decoration_thickness_set = !decoration_thickness_value.is_auto
+				&& !decoration_thickness_value.from_font
+			text_underline_offset = computed.text_underline_offset().to_double()
+			text_underline_position = match computed.text_underline_position().horizontal {
+				.under { 'under' }
+				.from_font { 'from-font' }
+				else { 'auto' }
+			}
 			// LayoutState::commit() relocates a line-box fragment to the first
 			// non-atomic InlineNode ancestor. Only that inline paintable owns box
 			// decorations; text left in the block paintable must not repaint the
@@ -3008,6 +3021,16 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				decoration_color_set: true
 				decoration_style: decoration_style
 				decoration_thickness: decoration_thickness
+				baseline: fragment.baseline().to_double()
+				baseline_set: true
+				font_metrics_set: true
+				font_ascent: f64(font_metrics.ascent)
+				font_descent: f64(font_metrics.descent)
+				font_x_height: f64(font_metrics.x_height)
+				glyph_height: f64(font_metrics.size)
+				decoration_thickness_set: decoration_thickness_set
+				text_underline_offset: text_underline_offset
+				text_underline_position: text_underline_position
 			}
 			// PaintableFragment is constructed directly from the committed
 			// LineBoxFragment upstream. Preserve that run instead of splitting it

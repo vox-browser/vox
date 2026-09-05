@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 519
+filename-level mappings. The current semantic audit nevertheless reports 517
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 519 unmatched Painting
+  were removed; the audit currently reports 517 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -163,6 +163,14 @@ following behavioral mismatches and added focused regressions:
   pairs are pixel-identical. The comprehensive `css-transform-box` screenshot
   improved from 24,212 to 9,859 differing pixels and MAE from 4.6117 to 0.2584;
   the residual is raster-edge and text-antialiasing variance.
+- `PaintableWithLines::paint_text_decoration()` and
+  `build_triangle_wave_path()` replace the former hand-built fill rectangles,
+  ellipses, and wave polygons. The active path retains the line builder's exact
+  baseline and font metrics, rounds endpoints and thickness in device space,
+  and preserves C++'s per-style double offsets, native dotted/dashed strokes,
+  underline position/offset, spelling/grammar colors, and round cap/join wave
+  path. The anonymous-wrapper, minimum-thickness, and underline-offset upstream
+  reference pairs are pixel-identical.
 
 ## Implementation-unit mapping
 
@@ -283,7 +291,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 519 unmatched implementations.
+Painting: 517 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

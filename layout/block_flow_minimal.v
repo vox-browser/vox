@@ -164,6 +164,18 @@ pub:
 	decoration_color_set bool
 	decoration_style     string = 'solid'
 	decoration_thickness f64
+	// PaintableFragment retains the line builder's baseline rather than
+	// reconstructing it from an assumed 0.8em ascent at paint time.
+	baseline                 f64
+	baseline_set             bool
+	font_metrics_set         bool
+	font_ascent              f64
+	font_descent             f64
+	font_x_height            f64
+	glyph_height             f64
+	decoration_thickness_set bool
+	text_underline_offset    f64
+	text_underline_position  string = 'auto'
 }
 
 // A laid-out line box within a block's inline formatting context: `x`/`y` is the top-left of the
@@ -219,6 +231,16 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 			decoration_color_set: it.decoration_color_set
 			decoration_style: it.decoration_style
 			decoration_thickness: it.decoration_thickness
+			baseline: it.baseline
+			baseline_set: it.baseline_set
+			font_metrics_set: it.font_metrics_set
+			font_ascent: it.font_ascent
+			font_descent: it.font_descent
+			font_x_height: it.font_x_height
+			glyph_height: it.glyph_height
+			decoration_thickness_set: it.decoration_thickness_set
+			text_underline_offset: it.text_underline_offset
+			text_underline_position: it.text_underline_position
 		})
 	}
 }
@@ -2940,147 +2962,237 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) []PaintComman
 	return commands
 }
 
-fn append_styled_decoration(mut commands []PaintCommand, x f64, y f64, width f64, thickness f64, color string, style string, opacity f64) {
-	if width <= 0 || thickness <= 0 {
-		return
+fn append_text_decoration_draw_line(mut commands []PaintCommand, from painting.IntPoint, to painting.IntPoint, color string, thickness int, style string, opacity f64) {
+	commands << PaintCommand{
+		kind: 'draw_line'
+		x: from.x
+		y: from.y
+		width: to.x - from.x
+		height: to.y - from.y
+		color: color
+		opacity: opacity
+		points: [f64(from.x), f64(from.y), f64(to.x), f64(to.y)]
+		stroke_width: thickness
+		line_style: style
 	}
+}
+
+fn triangle_wave_line_to(mut segments []painting.ClipPathSegment, mut points []painting.Point, point painting.Point) {
+	segments << painting.ClipPathSegment{
+		kind: .line_to
+		point: point
+	}
+	points << point
+}
+
+// Direct translation of PaintableWithLines.cpp::build_triangle_wave_path().
+fn build_triangle_wave_path(from painting.IntPoint, to painting.IntPoint, amplitude f64) painting.ClipPathVisualData {
+	if from.y != to.y || amplitude <= 0 {
+		return painting.ClipPathVisualData{}
+	}
+	start := painting.Point{f64(from.x), f64(from.y)}
+	mut segments := [painting.ClipPathSegment{
+		kind: .move_to
+		point: start
+	}]
+	mut points := [start]
+	wavelength := amplitude * 2.0
+	half_wavelength := amplitude
+	quarter_wavelength := amplitude / 2.0
+	mut position := start
+	mut remaining := math.abs(f64(to.x) - position.x)
+	for remaining > wavelength {
+		triangle_wave_line_to(mut segments, mut points, painting.Point{position.x + quarter_wavelength, position.y - quarter_wavelength})
+		triangle_wave_line_to(mut segments, mut points, painting.Point{position.x + quarter_wavelength + half_wavelength, position.y + quarter_wavelength})
+		triangle_wave_line_to(mut segments, mut points, painting.Point{position.x + wavelength, position.y})
+		position = painting.Point{position.x + wavelength, position.y}
+		remaining = math.abs(f64(to.x) - position.x)
+	}
+	if remaining > quarter_wavelength {
+		triangle_wave_line_to(mut segments, mut points, painting.Point{position.x + quarter_wavelength, position.y - quarter_wavelength})
+		position = painting.Point{position.x + quarter_wavelength, position.y}
+		remaining = math.abs(f64(to.x) - position.x)
+	} else if remaining >= 1 {
+		fraction := remaining / quarter_wavelength
+		triangle_wave_line_to(mut segments, mut points, painting.Point{position.x + fraction * quarter_wavelength, position.y - fraction * quarter_wavelength})
+		remaining = 0
+	}
+	if remaining > half_wavelength {
+		triangle_wave_line_to(mut segments, mut points, painting.Point{position.x + half_wavelength, position.y + quarter_wavelength})
+		position = painting.Point{position.x + half_wavelength, position.y}
+		remaining = math.abs(f64(to.x) - position.x)
+	} else if remaining >= 1 {
+		fraction := remaining / half_wavelength
+		triangle_wave_line_to(mut segments, mut points, painting.Point{position.x + fraction * half_wavelength, position.y - quarter_wavelength + fraction * half_wavelength})
+		remaining = 0
+	}
+	if remaining >= 1 {
+		fraction := remaining / quarter_wavelength
+		triangle_wave_line_to(mut segments, mut points, painting.Point{position.x + fraction * quarter_wavelength, position.y + (1.0 - fraction) * quarter_wavelength})
+	}
+	return painting.ClipPathVisualData{
+		segments: segments
+		polygons: [points.clone()]
+		polygon: points
+	}
+}
+
+fn append_text_decoration_style(mut commands []PaintCommand, line string, start painting.IntPoint, end painting.IntPoint, color string, thickness int, style string, opacity f64) {
+	mut line_start := start
+	mut line_end := end
 	match style {
 		'double' {
-			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: x
-				y: y - thickness
-				width: width
-				height: thickness
-				color: color
-				opacity: opacity
-			}
-			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: x
-				y: y + thickness
-				width: width
-				height: thickness
-				color: color
-				opacity: opacity
-			}
-		}
-		'dotted' {
-			mut cursor := x
-			for cursor < x + width {
-				diameter := if cursor + thickness <= x + width {
-					thickness
-				} else {
-					x + width - cursor
+			match line {
+				'overline' {
+					line_start = painting.IntPoint{line_start.x, line_start.y - thickness - 1}
+					line_end = painting.IntPoint{line_end.x, line_end.y - thickness - 1}
 				}
-				commands << PaintCommand{
-					kind: 'fill_ellipse'
-					x: cursor
-					y: y
-					width: diameter
-					height: thickness
-					color: color
-					opacity: opacity
+				'line-through' {
+					line_start = painting.IntPoint{line_start.x, line_start.y - thickness / 2}
+					line_end = painting.IntPoint{line_end.x, line_end.y - thickness / 2}
 				}
-				cursor += thickness * 2.0
+				else {}
 			}
-		}
-		'dashed' {
-			mut cursor := x
-			dash := thickness * 3.0
-			for cursor < x + width {
-				segment_width := if cursor + dash <= x + width { dash } else { x + width - cursor }
-				commands << PaintCommand{
-					kind: 'fill_rect'
-					x: cursor
-					y: y
-					width: segment_width
-					height: thickness
-					color: color
-					opacity: opacity
-				}
-				cursor += dash + thickness
-			}
+			append_text_decoration_draw_line(mut commands, line_start, line_end, color, thickness, 'solid', opacity)
+			append_text_decoration_draw_line(mut commands, painting.IntPoint{line_start.x, line_start.y + thickness + 1}, painting.IntPoint{line_end.x, line_end.y + thickness + 1}, color, thickness, 'solid', opacity)
 		}
 		'wavy' {
-			amplitude := thickness
-			wave := thickness * 4.0
-			mut cursor := x
-			for cursor < x + width {
-				end := if cursor + wave < x + width { cursor + wave } else { x + width }
-				mid := (cursor + end) / 2.0
-				commands << PaintCommand{
-					kind: 'fill_polygon'
-					color: color
-					opacity: opacity
-					points: [cursor, y + amplitude, mid, y, end, y + amplitude, end,
-						y + amplitude + thickness, mid, y + thickness, cursor,
-						y + amplitude + thickness]
+			match line {
+				'underline' {
+					line_start = painting.IntPoint{line_start.x, line_start.y + thickness + 1}
+					line_end = painting.IntPoint{line_end.x, line_end.y + thickness + 1}
 				}
-				cursor = end
+				'overline' {
+					line_start = painting.IntPoint{line_start.x, line_start.y - thickness - 1}
+					line_end = painting.IntPoint{line_end.x, line_end.y - thickness - 1}
+				}
+				'line-through' {
+					line_start = painting.IntPoint{line_start.x, line_start.y - thickness / 2}
+					line_end = painting.IntPoint{line_end.x, line_end.y - thickness / 2}
+				}
+				else {}
+			}
+			path := build_triangle_wave_path(line_start, line_end, f64(thickness * 3))
+			if path.segments.len == 0 {
+				return
+			}
+			mut flat_points := []f64{}
+			for point in path.polygon {
+				flat_points << point.x
+				flat_points << point.y
+			}
+			commands << PaintCommand{
+				kind: 'draw_svg_path'
+				x: math.min(f64(line_start.x), f64(line_end.x))
+				y: math.min(f64(line_start.y), f64(line_end.y)) - f64(thickness * 3)
+				width: math.abs(f64(line_end.x - line_start.x))
+				height: f64(thickness * 6)
+				opacity: opacity
+				path: painting_path_svg(path)
+				path_data: compatibility_pack_clip_path_segments(path)
+				points: flat_points
+				path_polygons: [flat_points.clone()]
+				stroke_color: color
+				stroke_width: thickness
+				stroke_linecap: 1
+				stroke_linejoin: 1
+				stroke_miterlimit: 0
 			}
 		}
 		else {
-			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: x
-				y: y
-				width: width
-				height: thickness
-				color: color
-				opacity: opacity
-			}
+			append_text_decoration_draw_line(mut commands, line_start, line_end, color, thickness, style, opacity)
 		}
 	}
 }
 
-// Paint decoration geometry from the translated fallback font metrics used by line construction:
-// ascent is 0.8em, descent 0.2em, and half-leading centers that em box in the line box.
-fn decoration_commands(fragment TextFragment, opacity f64) []PaintCommand {
+// Direct translation of PaintableWithLines.cpp::paint_text_decoration().
+fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 	if fragment.decoration == '' || fragment.decoration == 'none' {
 		return []PaintCommand{}
+	}
+	mut glyph_height := fragment.glyph_height
+	mut font_ascent := fragment.font_ascent
+	mut font_descent := fragment.font_descent
+	mut font_x_height := fragment.font_x_height
+	if !fragment.font_metrics_set {
+		font := &platform.Font{
+			family: if fragment.mono { 'monospace' } else { 'sans-serif' }
+			point_size: f32(fragment.font_size)
+			weight: if fragment.bold { 700 } else { 400 }
+		}
+		metrics := font.pixel_metrics()
+		glyph_height = f64(metrics.size)
+		font_ascent = f64(metrics.ascent)
+		font_descent = f64(metrics.descent)
+		font_x_height = f64(metrics.x_height)
+	}
+	typographic_height := font_ascent + font_descent
+	baseline := if fragment.baseline_set {
+		fragment.baseline
+	} else {
+		font_ascent + (fragment.height - typographic_height) / 2.0
 	}
 	mut color := if fragment.decoration_color_set {
 		fragment.decoration_color.serialize()
 	} else {
 		fragment.color.serialize()
 	}
-	mut thickness := if fragment.decoration_thickness > 0 {
-		fragment.decoration_thickness
-	} else if fragment.font_size / 16.0 > 1.0 {
-		fragment.font_size / 16.0
+	css_thickness := if fragment.decoration_thickness_set || fragment.decoration_thickness > 0 {
+		math.max(fragment.decoration_thickness, 1.0)
 	} else {
-		1.0
+		math.max(glyph_height * 0.1, 1.0)
 	}
-	half_leading := (fragment.height - fragment.font_size) / 2.0
-	baseline := fragment.y + half_leading + fragment.font_size * 0.8
+	mut thickness := int(math.round(css_thickness))
 	mut style := if fragment.decoration_style == '' { 'solid' } else { fragment.decoration_style }
-	mut decoration := fragment.decoration
-	// CSS Text Decoration defines spelling-error and grammar-error as UA-styled underlines.
-	// Match Ladybird's painter: both are one-pixel wavy underlines, red for spelling and
-	// dark green for grammar, irrespective of the other decoration longhands.
-	if decoration.contains('spelling-error') {
-		decoration = 'underline'
-		color = 'rgb(255 0 0)'
-		thickness = 1
-		style = 'wavy'
-	} else if decoration.contains('grammar-error') {
-		decoration = 'underline'
-		color = 'rgb(0 100 0)'
-		thickness = 1
-		style = 'wavy'
-	}
+	mut underline_offset := fragment.text_underline_offset
 	mut commands := []PaintCommand{}
-	if decoration.contains('underline') {
-		append_styled_decoration(mut commands, fragment.x, baseline + fragment.font_size * 0.1, fragment.width, thickness, color, style, opacity)
-	}
-	if decoration.contains('overline') {
-		append_styled_decoration(mut commands, fragment.x, fragment.y + half_leading, fragment.width, thickness, color, style, opacity)
-	}
-	if decoration.contains('line-through') {
-		append_styled_decoration(mut commands, fragment.x, baseline - fragment.font_size * 0.3, fragment.width, thickness, color, style, opacity)
+	for input_line in fragment.decoration.fields() {
+		mut line := input_line
+		if line == 'spelling-error' {
+			color = 'rgb(255 0 0)'
+			thickness = 1
+			style = 'wavy'
+			line = 'underline'
+			underline_offset = 0
+		} else if line == 'grammar-error' {
+			color = 'rgb(0 100 0)'
+			thickness = 1
+			style = 'wavy'
+			line = 'underline'
+			underline_offset = 0
+		}
+		if line == 'none' || line == 'blink' {
+			return commands
+		}
+		mut line_y := 0.0
+		match line {
+			'underline' {
+				position := if fragment.text_underline_position == 'under' {
+					baseline + font_descent
+				} else {
+					baseline
+				}
+				line_y = fragment.y + position + underline_offset
+			}
+			'overline' {
+				line_y = fragment.y + baseline - glyph_height
+			}
+			'line-through' {
+				line_y = fragment.y + baseline - font_x_height * 0.5
+			}
+			else {
+				continue
+			}
+		}
+		start := painting.IntPoint{int(math.round(fragment.x)), int(math.round(line_y))}
+		end := painting.IntPoint{int(math.round(fragment.x + fragment.width)), int(math.round(line_y))}
+		append_text_decoration_style(mut commands, line, start, end, color, thickness, style, opacity)
 	}
 	return commands
+}
+
+fn decoration_commands(fragment TextFragment, opacity f64) []PaintCommand {
+	return paint_text_decoration(fragment, opacity)
 }
 
 // The outside marker line for a `display: list-item` element. It hangs one glyph-width to the left

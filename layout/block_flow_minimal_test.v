@@ -2554,7 +2554,7 @@ fn test_visibility_visible_child_of_hidden_paints() {
 	assert fills[0].color == 'rgb(0 128 0)'
 }
 
-// text-decoration: underline (shorthand) marks the fragment and emits an underline rect near the
+// text-decoration: underline (shorthand) marks the fragment and emits an underline near the
 // bottom of the text, in the text color.
 fn test_text_decoration_underline() {
 	doc := dom.Document.create(dom.url_about_blank())
@@ -2568,14 +2568,14 @@ fn test_text_decoration_underline() {
 
 	cmds := box.paint_commands()
 	assert cmds.filter(it.kind == 'draw_text').len == 1
-	underlines := cmds.filter(it.kind == 'fill_rect')
+	underlines := cmds.filter(it.kind == 'draw_line')
 	assert underlines.len == 1
-	assert underlines[0].y > frag.y + frag.height * 0.5 // near the baseline, below the middle
+	assert underlines[0].points[1] > frag.y + frag.height * 0.5 // near the baseline, below the middle
 
-	assert underlines[0].width == frag.width
+	assert underlines[0].points[2] - underlines[0].points[0] == math.round(frag.x + frag.width) - math.round(frag.x)
 }
 
-// text-decoration-line: line-through emits a strike rect through the middle of the text.
+// text-decoration-line: line-through emits a strike through the middle of the text.
 fn test_text_decoration_line_through() {
 	doc := dom.Document.create(dom.url_about_blank())
 	root := styled(doc, 'div', 'width: 500px; font-size: 20px; text-decoration-line: line-through')
@@ -2584,10 +2584,10 @@ fn test_text_decoration_line_through() {
 
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	frag := box.lines[0].fragments[0]
-	strikes := box.paint_commands().filter(it.kind == 'fill_rect')
+	strikes := box.paint_commands().filter(it.kind == 'draw_line')
 	assert strikes.len == 1
 	// The strike sits around the vertical middle of the line.
-	assert strikes[0].y > frag.y && strikes[0].y < frag.y + frag.height * 0.85
+	assert strikes[0].points[1] > frag.y && strikes[0].points[1] < frag.y + frag.height * 0.85
 }
 
 fn test_text_decoration_color_style_and_thickness() {
@@ -2601,9 +2601,10 @@ fn test_text_decoration_color_style_and_thickness() {
 	assert fragment.decoration_color.serialize() == 'rgb(255 0 0)'
 	assert fragment.decoration_style == 'dashed'
 	assert fragment.decoration_thickness == 3.0
-	dashes := box.paint_commands().filter(it.kind == 'fill_rect' && it.color == 'rgb(255 0 0)')
-	assert dashes.len > 1
-	assert dashes.all(it.height == 3.0)
+	dashes := box.paint_commands().filter(it.kind == 'draw_line' && it.color == 'rgb(255 0 0)')
+	assert dashes.len == 1
+	assert dashes[0].line_style == 'dashed'
+	assert dashes[0].stroke_width == 3.0
 }
 
 fn test_double_and_dotted_text_decoration_emit_their_distinct_geometry() {
@@ -2622,15 +2623,32 @@ fn test_double_and_dotted_text_decoration_emit_their_distinct_geometry() {
 	}
 	double_commands := decoration_commands(double_fragment, 1)
 	assert double_commands.len == 2
-	assert double_commands.all(it.kind == 'fill_rect' && it.height == 2)
+	assert double_commands.all(it.kind == 'draw_line' && it.stroke_width == 2)
+	assert double_commands[1].points[1] - double_commands[0].points[1] == 3
 
 	dotted_fragment := TextFragment{
 		...double_fragment
 		decoration_style: 'dotted'
 	}
 	dots := decoration_commands(dotted_fragment, 1)
-	assert dots.len > 2
-	assert dots.all(it.kind == 'fill_ellipse')
+	assert dots.len == 1
+	assert dots[0].kind == 'draw_line'
+	assert dots[0].line_style == 'dotted'
+}
+
+fn test_triangle_wave_path_matches_upstream_full_and_partial_wave_geometry() {
+	path := build_triangle_wave_path(painting.IntPoint{0, 0}, painting.IntPoint{18, 0}, 6)
+	assert path.segments.len == 6
+	assert path.segments[0].kind == .move_to
+	assert path.segments[1..].all(it.kind == .line_to)
+	assert path.polygon == [
+		painting.Point{0, 0},
+		painting.Point{3, -3},
+		painting.Point{9, 3},
+		painting.Point{12, 0},
+		painting.Point{15, -3},
+		painting.Point{18, 0},
+	]
 }
 
 fn test_spelling_and_grammar_error_decorations_use_upstream_ua_styles() {
@@ -2650,17 +2668,20 @@ fn test_spelling_and_grammar_error_decorations_use_upstream_ua_styles() {
 		...base
 		decoration: 'spelling-error'
 	}, 1)
-	assert spelling.len > 1
-	assert spelling.all(it.kind == 'fill_polygon')
-	assert spelling.all(it.color == 'rgb(255 0 0)')
+	assert spelling.len == 1
+	assert spelling[0].kind == 'draw_svg_path'
+	assert spelling[0].stroke_color == 'rgb(255 0 0)'
+	assert spelling[0].stroke_width == 1
+	assert spelling[0].path_data.len > 0
 
 	grammar := decoration_commands(TextFragment{
 		...base
 		decoration: 'grammar-error'
 	}, 1)
-	assert grammar.len > 1
-	assert grammar.all(it.kind == 'fill_polygon')
-	assert grammar.all(it.color == 'rgb(0 100 0)')
+	assert grammar.len == 1
+	assert grammar[0].kind == 'draw_svg_path'
+	assert grammar[0].stroke_color == 'rgb(0 100 0)'
+	assert grammar[0].stroke_width == 1
 }
 
 // text-decoration propagates to descendant inline text (the decorating box): a span with no

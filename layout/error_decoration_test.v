@@ -18,9 +18,10 @@ fn test_error_decoration_shorthands_reach_the_paint_pipeline() {
 		box := layout_block(element, 0, 0, 800, []&css.CSSRule{})
 		assert box.lines.len == 1
 		assert box.lines[0].fragments[0].decoration == decoration
-		commands := box.paint_commands().filter(it.kind == 'fill_polygon')
-		assert commands.len > 1
-		assert commands.all(it.color == expected_color)
+		commands := box.paint_commands().filter(it.kind == 'draw_svg_path')
+		assert commands.len == 1
+		assert commands[0].stroke_color == expected_color
+		assert commands[0].stroke_width == 1
 	}
 }
 
@@ -35,9 +36,9 @@ fn test_error_decoration_shorthands_reach_layout_from_author_rules() {
 	rules := css.parse_css_stylesheet_contents_with_parser('.spelling-error { text-decoration: spelling-error; }', map[string]bool{})
 	box := layout_block(element, 0, 0, 800, rules)
 	assert box.lines[0].fragments[0].decoration == 'spelling-error'
-	commands := box.paint_commands().filter(it.kind == 'fill_polygon')
-	assert commands.len > 1
-	assert commands.all(it.color == 'rgb(255 0 0)')
+	commands := box.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert commands.len == 1
+	assert commands[0].stroke_color == 'rgb(255 0 0)'
 }
 
 fn test_typed_document_paint_preserves_error_decoration_lines() {
@@ -75,9 +76,9 @@ fn test_typed_document_paint_preserves_error_decoration_lines() {
 	document_node.append_child(html.as_node()) or { panic(err) }
 
 	box := layout_document_typed_in_viewport(document, 800, 600)
-	commands := box.paint_commands().filter(it.kind == 'fill_polygon'
-		&& it.color == 'rgb(255 0 0)')
-	assert commands.len > 1
+	commands := box.paint_commands().filter(it.kind == 'draw_svg_path'
+		&& it.stroke_color == 'rgb(255 0 0)')
+	assert commands.len == 1
 }
 
 fn test_typed_document_paint_preserves_computed_background_image_layers() {
