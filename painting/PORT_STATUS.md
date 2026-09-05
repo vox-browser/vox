@@ -191,6 +191,10 @@ following behavioral mismatches and added focused regressions:
   use `DevicePixelConverter::rounded_device_rect()` semantics instead of the
   former floor/ceil expansion. All five relevant upstream reftest pairs render
   with zero differing pixels; `clip.html` improved from 5,166 to zero.
+- `PaintableBox::border_radii_data()` and the corresponding final hit-test gate
+  now use the resolved, normalized elliptical radii retained by the typed paint
+  tree. Points inside the rectangular border box but outside a rounded corner
+  no longer select that paintable, matching the upstream hit-test traversal.
 - `PaintableBox::transform_reference_box()` now selects the source-shaped
   content/border/fill/stroke/view reference rectangle for HTML and SVG boxes,
   including the nearest SVG viewport and upstream's current fill/stroke

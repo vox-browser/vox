@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 35,102 | 12,118 | Present |
+| `Layout` | 50 | 19,592 | 35,121 | 12,134 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **312,847** | **55,177** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **312,866** | **55,193** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -229,6 +229,8 @@ from an absolute/fixed box's border box, inserted after its transform and before
 Negative extents become an empty clip and the four edges use the same rounded
 device conversion as C++. Five upstream reftest pairs, including transformed,
 offscreen, descendant, and image cases, render with zero differing pixels.
+The final `PaintableBox` hit-test gate also rejects points outside normalized
+elliptical border radii instead of treating every rounded box as rectangular.
 `PaintableBox::transform_reference_box()` is translated on the same active path:
 CSS boxes remap fill/stroke/view to content/border, SVG paintables remap
 content/border to fill/stroke, and SVG view-box transforms use the nearest SVG

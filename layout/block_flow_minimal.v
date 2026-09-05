@@ -520,9 +520,26 @@ pub fn (b &BlockBox) hit_test(x f64, y f64) ?i64 {
 
 // PaintableBox::transform_point_to_local() maps the screen point back through
 // the accumulated visual context before testing the untransformed border box.
+fn (b &BlockBox) border_radii_data() painting.BorderRadiiData {
+	return painting.BorderRadiiData{
+		top_left: painting.BorderRadiusData{b.border_radii.top_left.x, b.border_radii.top_left.y}
+		top_right: painting.BorderRadiusData{b.border_radii.top_right.x, b.border_radii.top_right.y}
+		bottom_right: painting.BorderRadiusData{b.border_radii.bottom_right.x, b.border_radii.bottom_right.y}
+		bottom_left: painting.BorderRadiusData{b.border_radii.bottom_left.x, b.border_radii.bottom_left.y}
+	}
+}
+
+fn (b &BlockBox) border_box_contains_hit_test_point(point painting.Point) bool {
+	border_box := b.border_box()
+	if !border_box.contains(point.x, point.y) {
+		return false
+	}
+	return b.border_radii_data().contains(point, painting.Rect{border_box.x, border_box.y, border_box.width, border_box.height})
+}
+
 fn (b &BlockBox) contains_hit_test_point(x f64, y f64) bool {
 	if affine_is_compact_identity(b.paint_transform) {
-		return b.border_box().contains(x, y)
+		return b.border_box_contains_hit_test_point(painting.Point{x, y})
 	}
 	matrix := normalized_affine(b.paint_transform)
 	determinant := matrix[0] * matrix[3] - matrix[1] * matrix[2]
@@ -533,7 +550,7 @@ fn (b &BlockBox) contains_hit_test_point(x f64, y f64) bool {
 	translated_y := y - matrix[5]
 	local_x := (matrix[3] * translated_x - matrix[2] * translated_y) / determinant
 	local_y := (-matrix[1] * translated_x + matrix[0] * translated_y) / determinant
-	return b.border_box().contains(local_x, local_y)
+	return b.border_box_contains_hit_test_point(painting.Point{local_x, local_y})
 }
 
 fn hit_test_paint_order(order []&BlockBox, x f64, y f64) ?i64 {

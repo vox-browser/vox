@@ -709,6 +709,22 @@ fn test_document_hit_testing_reuses_paint_order_and_maps_transforms_to_local_spa
 	assert result.hit_test_order.len == retained_count
 }
 
+fn test_document_hit_testing_rejects_points_outside_rounded_border_corners() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#under { position: absolute; z-index: 1; width: 100px; height: 100px; background: blue }
+		#rounded { position: absolute; z-index: 2; width: 100px; height: 100px; border-radius: 50px; background: red }
+	</style><body><div id="under"></div><div id="rounded"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	under := document.get_element_by_id('under') or { panic('missing under element') }
+	rounded := document.get_element_by_id('rounded') or { panic('missing rounded element') }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	corner_hit := mutable_document.element_from_point(1, 1) or { panic('missing corner hit') }
+	assert corner_hit.as_node().unique_id() == under.as_node().unique_id()
+	center_hit := mutable_document.element_from_point(50, 50) or { panic('missing center hit') }
+	assert center_hit.as_node().unique_id() == rounded.as_node().unique_id()
+}
+
 fn test_typed_paint_adapter_transports_custom_scrollbar_and_resizer_overlay() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto; resize: both; direction: rtl; scrollbar-color: rgb(1 2 3) rgb(4 5 6) } #content { height: 200px }</style><body><div id="scroller"><div id="content"></div></div></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)

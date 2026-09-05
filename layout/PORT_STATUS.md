@@ -216,8 +216,11 @@ the stacking-context tree until invalidation instead of reconstructing and
 sorting it for every pointer event. It resolves retained DOM identities directly,
 inverse-maps points through accumulated transforms, and applies `visibility`,
 `pointer-events`, and non-invertible-transform filtering at the same boundary as
-`PaintableBox::hit_test()`. The native shell consumes this same viewport callback
-instead of independently flattening `BlockBox` during mouse movement. The final
+`PaintableBox::hit_test()`. Its final border-box test also uses the translated
+normalized elliptical border-radii containment check, so clipped corner pixels
+fall through to the paintable underneath. The native shell consumes this same
+viewport callback instead of independently flattening `BlockBox` during mouse
+movement. The final
 retained replay also consumes Painting's translated `ScrollState` snapshots.
 The mandatory viewport frame and normal overflow frames apply live, clamped
 scroll offsets to descendant commands and hit testing without reconstructing

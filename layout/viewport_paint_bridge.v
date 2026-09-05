@@ -1253,7 +1253,9 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 
 fn compatibility_box_contains_hit_test_point(box &BlockBox, x f64, y f64, tree painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot) bool {
 	local_point := tree.transform_point_for_hit_test(box.accumulated_visual_context_index, painting.Point{x, y}, snapshot) or { return false }
-	return box.border_box().contains(local_point.x, local_point.y)
+	// PaintableBox::hit_test() applies the normalized border radii after mapping
+	// the viewport point into the box's local coordinate space.
+	return box.border_box_contains_hit_test_point(local_point)
 }
 
 // Recover the concrete renderer commands retained by a DOM DisplayList. Like
