@@ -290,8 +290,29 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 //
 // `lines` are the inline line boxes of a text-bearing block (empty for a block with block children).
 struct StaticPosition {
-	x f64
-	y f64
+	x                    f64
+	y                    f64
+	width                f64
+	height               f64
+	horizontal_alignment StaticPositionAlignment = .start
+	vertical_alignment   StaticPositionAlignment = .start
+}
+
+// StaticPositionRect::aligned_position_for_box_with_size(). Alignment is intentionally resolved
+// after the abspos box's margins and dimensions are final.
+fn (position StaticPosition) aligned_for_margin_box(width f64, height f64) StaticPosition {
+	return StaticPosition{
+		x: position.x + match position.horizontal_alignment {
+			.center { (position.width - width) / 2.0 }
+			.end { position.width - width }
+			.start { 0.0 }
+		}
+		y: position.y + match position.vertical_alignment {
+			.center { (position.height - height) / 2.0 }
+			.end { position.height - height }
+			.start { 0.0 }
+		}
+	}
 }
 
 pub struct BlockBox {
@@ -5024,6 +5045,10 @@ fn translate_static_positions(positions map[i64]StaticPosition, dx f64, dy f64) 
 		translated[node_id] = StaticPosition{
 			x: position.x + dx
 			y: position.y + dy
+			width: position.width
+			height: position.height
+			horizontal_alignment: position.horizontal_alignment
+			vertical_alignment: position.vertical_alignment
 		}
 	}
 	return translated
@@ -6217,6 +6242,125 @@ fn collect_flex_item_elements(node &dom.Node, author_rules []&css.CSSRule, mut e
 			}
 			elements << element
 		}
+	}
+}
+
+// Formatting contexts calculate static-position rectangles for their direct out-of-flow children.
+// `display: contents` contributes its children at the same level in the generated layout tree.
+fn positioned_child_elements(node &dom.Node, author_rules []&css.CSSRule) []&dom.Element {
+	mut elements := []&dom.Element{}
+	collect_positioned_child_elements(node, author_rules, mut elements)
+	return elements
+}
+
+fn collect_positioned_child_elements(node &dom.Node, author_rules []&css.CSSRule, mut elements []&dom.Element) {
+	display_id := css.property_id_from_string('display') or { return }
+	for child_node in node.children_as_vector() {
+		child := child_node.as_element() or { continue }
+		display := css.cascaded_value_with_ua(child, display_id, author_rules)
+		if display == 'none' {
+			continue
+		}
+		if display == 'contents' {
+			collect_positioned_child_elements(child.as_node(), author_rules, mut elements)
+			continue
+		}
+		if is_absolutely_positioned(position_value(child, author_rules)) {
+			elements << child
+		}
+	}
+}
+
+fn retain_static_position(child &dom.Element, position StaticPosition, mut absolute_positions map[i64]StaticPosition, mut fixed_positions map[i64]StaticPosition, author_rules []&css.CSSRule) {
+	node_id := i64(child.as_node().unique_id())
+	if position_value(child, author_rules) == 'fixed' {
+		fixed_positions[node_id] = position
+	} else {
+		absolute_positions[node_id] = position
+	}
+}
+
+fn static_position_alignment(value string) StaticPositionAlignment {
+	return match value {
+		'center' { .center }
+		'flex-end', 'end', 'right', 'self-end' { .end }
+		else { .start }
+	}
+}
+
+fn flex_static_cross_alignment(element &dom.Element, container_alignment string, author_rules []&css.CSSRule) StaticPositionAlignment {
+	id := css.property_id_from_string('align-self') or {
+		return static_position_alignment(container_alignment)
+	}
+	value := css.cascaded_value_with_ua(element, id, author_rules)
+	// FlexFormattingContext::alignment_for_item() inherits align-items only for align-self:auto.
+	// In particular, explicit `normal` remains Normal and maps to the physical start edge.
+	return static_position_alignment(if value == '' || value == 'auto' {
+		container_alignment
+	} else {
+		value
+	})
+}
+
+// FlexFormattingContext::is_direction_reverse(). RTL reverses a plain row rather than row-reverse;
+// column-reverse remains reversed in either inline direction.
+fn flex_static_direction_is_reversed(element &dom.Element, author_rules []&css.CSSRule) bool {
+	direction := css.cascaded_value_with_ua(element, css.property_id_from_string('direction') or {
+		return false
+	}, author_rules)
+	flex_direction := flex_direction_value(element, author_rules)
+	if direction == 'rtl' {
+		return flex_direction == 'column-reverse' || flex_direction == 'row'
+	}
+	return flex_direction == 'column-reverse' || flex_direction == 'row-reverse'
+}
+
+// The main-axis alignment of the flex static-position rectangle is not the ordinary multi-item
+// justify offset: the abspos child is treated as the sole fixed-size flex item.
+fn flex_static_main_alignment(element &dom.Element, author_rules []&css.CSSRule) StaticPositionAlignment {
+	value := css.cascaded_value_with_ua(element, css.property_id_from_string('justify-content') or {
+		return .start
+	}, author_rules)
+	reversed := flex_static_direction_is_reversed(element, author_rules)
+	return match value {
+		'start', 'left' { StaticPositionAlignment.start }
+		'end', 'right' { StaticPositionAlignment.end }
+		'flex-end' {
+			if reversed { StaticPositionAlignment.start } else { StaticPositionAlignment.end }
+		}
+		'center', 'space-around', 'space-evenly' { StaticPositionAlignment.center }
+		// normal, stretch, flex-start, and space-between use the main-start edge.
+		else {
+			if reversed { StaticPositionAlignment.end } else { StaticPositionAlignment.start }
+		}
+	}
+}
+
+fn retain_flex_static_positions(element &dom.Element, content_x f64, content_width f64, content_height f64, row_layout bool, mut absolute_positions map[i64]StaticPosition, mut fixed_positions map[i64]StaticPosition, author_rules []&css.CSSRule) {
+	main_alignment := flex_static_main_alignment(element, author_rules)
+	container_alignment := align_items_value(element, author_rules)
+	for child in positioned_child_elements(element.as_node(), author_rules) {
+		cross_alignment := flex_static_cross_alignment(child, container_alignment, author_rules)
+		position := StaticPosition{
+			x: content_x
+			y: 0.0
+			width: content_width
+			height: content_height
+			horizontal_alignment: if row_layout { main_alignment } else { cross_alignment }
+			vertical_alignment: if row_layout { cross_alignment } else { main_alignment }
+		}
+		retain_static_position(child, position, mut absolute_positions, mut fixed_positions, author_rules)
+	}
+}
+
+fn retain_grid_static_positions(element &dom.Element, content_x f64, content_width f64, content_height f64, mut absolute_positions map[i64]StaticPosition, mut fixed_positions map[i64]StaticPosition, author_rules []&css.CSSRule) {
+	for child in positioned_child_elements(element.as_node(), author_rules) {
+		retain_static_position(child, StaticPosition{
+			x: content_x
+			y: 0.0
+			width: content_width
+			height: content_height
+		}, mut absolute_positions, mut fixed_positions, author_rules)
 	}
 }
 
@@ -8933,19 +9077,20 @@ fn layout_absolute(element &dom.Element, cb PositionedContainingBlock, static_po
 
 	margin_box_width := box.margin_box_width()
 	margin_box_height := box.margin_box_height()
+	aligned_static_position := static_position.aligned_for_margin_box(margin_box_width, margin_box_height)
 	margin_x := if l := left {
 		cb.x + l
 	} else if r := right {
 		cb.x + cb.width - r - margin_box_width
 	} else {
-		static_position.x
+		aligned_static_position.x
 	}
 	margin_y := if t := top {
 		cb.y + t
 	} else if b := bottom {
 		cb.y + cb.height - b - margin_box_height
 	} else {
-		static_position.y
+		aligned_static_position.y
 	}
 	// The provisional box's margin-box origin (it was laid out at (0,0), and abspos establishes a BFC
 	// so no margin collapsed through — its margin-box origin is exactly (0,0)).
@@ -9829,6 +9974,20 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 	min_height := resolve_size_constraint(element, 'min-height', none, border_padding_tb, border_box, author_rules) or { 0.0 }
 	max_height := resolve_size_constraint(element, 'max-height', none, border_padding_tb, border_box, author_rules)
 	height := clamp_size(tentative_height, min_height, max_height)
+
+	// FlexFormattingContext::parent_context_did_dimension_child_root_box() records the full content
+	// rectangle for each direct abspos child only after the container has its final used size. The
+	// rectangle's alignment is resolved later, once the child's margin-box size is known.
+	if is_flex_row(element, author_rules) {
+		retain_flex_static_positions(element, content_x, width, height, true, mut local_absolute_static_positions, mut local_fixed_static_positions, author_rules)
+	} else if is_flex_column(element, author_rules) {
+		retain_flex_static_positions(element, content_x, width, height, false, mut local_absolute_static_positions, mut local_fixed_static_positions, author_rules)
+	} else if is_grid(element, author_rules) {
+		// GridFormattingContext::calculate_static_position_rect() uses the grid content box when the
+		// grid container is not itself the abspos containing block. Positioned grids replace this with
+		// per-item grid-area rectangles in the separate containing-block resolution step.
+		retain_grid_static_positions(element, content_x, width, height, mut local_absolute_static_positions, mut local_fixed_static_positions, author_rules)
+	}
 
 	// This box's collapsed outer margins (propagated to the parent). The top collapses with the first
 	// child's outer top margin when the top edges adjoin; the bottom collapses with the last child's

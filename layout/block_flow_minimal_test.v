@@ -949,6 +949,100 @@ fn test_absolute_position_static_position_crosses_static_ancestor() {
 	assert abs_box.y == 28.0
 }
 
+// FlexFormattingContext retains the container's content rectangle and resolves both axes only after
+// the abspos child's final margin-box size is known.
+fn test_flex_absolute_static_position_uses_alignment_rectangle() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; display: flex; width: 100px; height: 60px; justify-content: center; align-items: flex-end')
+	abs := styled(doc, 'div', 'position: absolute; width: 20px; height: 10px; margin-left: 10px; margin-top: 5px')
+	mut root_node := root.as_node()
+	root_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 45.0 // centered 30px margin box starts at 35, then 10px left margin
+	assert abs_box.y == 50.0 // 15px margin box ends at 60, then 5px top margin
+}
+
+// For reversed main directions, flex-start selects the physical end of the static-position rect.
+fn test_flex_absolute_static_position_honors_reversed_main_axis() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; display: flex; flex-direction: row-reverse; width: 100px; height: 40px; justify-content: flex-start; align-items: flex-start')
+	abs := styled(doc, 'div', 'position: absolute; width: 20px; height: 10px')
+	mut root_node := root.as_node()
+	root_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 80.0
+	assert abs_box.y == 0.0
+}
+
+// A column flex container swaps the main/cross alignments onto the vertical/horizontal axes.
+fn test_column_flex_absolute_static_position_swaps_alignment_axes() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; display: flex; flex-direction: column; width: 100px; height: 80px; justify-content: flex-end; align-items: center')
+	abs := styled(doc, 'div', 'position: absolute; width: 20px; height: 10px')
+	mut root_node := root.as_node()
+	root_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 40.0
+	assert abs_box.y == 70.0
+}
+
+fn test_flex_absolute_explicit_normal_align_self_stays_at_cross_start() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; display: flex; width: 100px; height: 60px; align-items: center')
+	abs := styled(doc, 'div', 'position: absolute; width: 20px; height: 10px; align-self: normal')
+	mut root_node := root.as_node()
+	root_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.y == 0.0
+}
+
+// A static flex container calculates the rectangle, while the actual positioned ancestor still
+// supplies the abspos containing block. Retained coordinates must survive that traversal.
+fn test_flex_absolute_static_rectangle_crosses_static_flex_container() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
+	flex := styled(doc, 'div', 'display: flex; width: 100px; height: 60px; margin-left: 20px; justify-content: center; align-items: center')
+	abs := styled(doc, 'div', 'position: absolute; width: 20px; height: 10px')
+	mut flex_node := flex.as_node()
+	flex_node.append_child(abs.as_node()) or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(flex.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 60.0
+	assert abs_box.y == 25.0
+}
+
+// GridFormattingContext likewise retains its content-box rectangle when the actual containing block
+// is an outer positioned ancestor; the grid's own flow offset must not be replaced by that ancestor's
+// origin.
+fn test_absolute_static_rectangle_crosses_static_grid_container() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; height: 100px')
+	flow := styled(doc, 'div', 'height: 15px')
+	grid := styled(doc, 'div', 'display: grid; width: 100px; height: 60px; margin-left: 20px')
+	abs := styled(doc, 'div', 'position: absolute; width: 10px; height: 10px')
+	mut grid_node := grid.as_node()
+	grid_node.append_child(abs.as_node()) or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(flow.as_node()) or { panic('${err}') }
+	root_node.append_child(grid.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 20.0
+	assert abs_box.y == 15.0
+}
+
 // InlineFormattingContext positions an inline-outside abspos box at the previous fragment's
 // top-right corner after line construction has settled.
 fn test_inline_absolute_position_follows_previous_fragment() {

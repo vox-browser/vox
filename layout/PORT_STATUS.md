@@ -157,9 +157,14 @@ block; fixed positions continue to the initial containing block. Auto inset
 placement from block and inline formatting contexts therefore no longer
 substitutes the containing block's padding-box origin. Focused regressions cover
 padding, pending margins, a static intermediate ancestor, and both
-inline-outside and block-outside IFC placement. The compatibility flex/grid
-alignment rectangles remain a separate translation slice; the active typed
-formatting contexts already retain them exactly.
+inline-outside and block-outside IFC placement. The compatibility flex path now
+also retains C++'s content-box rectangle after the container's final size is
+known, maps every `justify-content` keyword through the main-direction reversal
+rules, swaps main/cross axes for columns, and resolves `align-self` only after
+the abspos margin box is final. Static grid contexts retain their content-box
+rectangle through an outer containing block as well. Positioned grids still
+need the separate per-item grid-area containing rectangle translation; the
+active typed formatting contexts already implement that path exactly.
 
 The default-page spacing defect was caused by the old renderer transport
 painting individually estimated word fragments. The typed adapter now preserves
