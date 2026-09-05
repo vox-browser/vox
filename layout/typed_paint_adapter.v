@@ -165,9 +165,40 @@ fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used
 	}
 }
 
-// Translation of ViewportPaintable::compute_clip_data() and
-// PaintableBox::overflow_clip_edge_rect(). Geometry remains in CSS pixels; the
-// visual-context builder performs the device-pixel rounding at commit time.
+// Direct translation of PaintableBox::overflow_clip_edge_rect(). Geometry
+// remains in CSS pixels; the visual-context builder performs device rounding.
+fn paintable_box_overflow_clip_edge_rect(node &Node, computed &css.ComputedProperties, used &UsedValues, position css.CSSPixelPoint) LayoutRect {
+	padding_rect := LayoutRect{
+		x: position.x().to_double() - used.padding_left.to_double()
+		y: position.y().to_double() - used.padding_top.to_double()
+		width: used.content_width().to_double() + used.padding_left.to_double() + used.padding_right.to_double()
+		height: used.content_height().to_double() + used.padding_top.to_double() + used.padding_bottom.to_double()
+	}
+	mut overflow_clip_edge := if node.is_replaced_box() {
+		LayoutRect{
+			x: position.x().to_double()
+			y: position.y().to_double()
+			width: used.content_width().to_double()
+			height: used.content_height().to_double()
+		}
+	} else {
+		padding_rect
+	}
+	clip_margin := unsafe { &css.ComputedValues(computed) }.overflow_clip_margin()
+	context := computed.length_resolution_context()
+	margin_top := clip_margin.top().to_px_or_zero(context, css.CSSPixels{}).to_double()
+	margin_right := clip_margin.right().to_px_or_zero(context, css.CSSPixels{}).to_double()
+	margin_bottom := clip_margin.bottom().to_px_or_zero(context, css.CSSPixels{}).to_double()
+	margin_left := clip_margin.left().to_px_or_zero(context, css.CSSPixels{}).to_double()
+	return LayoutRect{
+		x: overflow_clip_edge.x - margin_left
+		y: overflow_clip_edge.y - margin_top
+		width: overflow_clip_edge.width + margin_left + margin_right
+		height: overflow_clip_edge.height + margin_top + margin_bottom
+	}
+}
+
+// Translation of ViewportPaintable::compute_clip_data().
 fn compatibility_overflow_clip(node &Node, computed &css.ComputedProperties, used &UsedValues, position css.CSSPixelPoint, border_radii BoxRadii) ?CompatibilityOverflowClip {
 	mut overflow_x := computed.overflow_x()
 	mut overflow_y := computed.overflow_y()
@@ -192,28 +223,7 @@ fn compatibility_overflow_clip(node &Node, computed &css.ComputedProperties, use
 		width: used.content_width().to_double() + used.padding_left.to_double() + used.padding_right.to_double()
 		height: used.content_height().to_double() + used.padding_top.to_double() + used.padding_bottom.to_double()
 	}
-	mut overflow_clip_edge := if node.is_replaced_box() {
-		LayoutRect{
-			x: position.x().to_double()
-			y: position.y().to_double()
-			width: used.content_width().to_double()
-			height: used.content_height().to_double()
-		}
-	} else {
-		padding_rect
-	}
-	clip_margin := unsafe { &css.ComputedValues(computed) }.overflow_clip_margin()
-	context := computed.length_resolution_context()
-	margin_top := clip_margin.top().to_px_or_zero(context, css.CSSPixels{}).to_double()
-	margin_right := clip_margin.right().to_px_or_zero(context, css.CSSPixels{}).to_double()
-	margin_bottom := clip_margin.bottom().to_px_or_zero(context, css.CSSPixels{}).to_double()
-	margin_left := clip_margin.left().to_px_or_zero(context, css.CSSPixels{}).to_double()
-	overflow_clip_edge = LayoutRect{
-		x: overflow_clip_edge.x - margin_left
-		y: overflow_clip_edge.y - margin_top
-		width: overflow_clip_edge.width + margin_left + margin_right
-		height: overflow_clip_edge.height + margin_top + margin_bottom
-	}
+	overflow_clip_edge := paintable_box_overflow_clip_edge_rect(node, computed, used, position)
 
 	unbounded_clip_extent := 1_000_000_000.0
 	clip_x := if overflow_x == .visible {

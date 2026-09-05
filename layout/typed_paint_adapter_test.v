@@ -792,6 +792,26 @@ fn test_paintable_box_chrome_predicates_follow_layout_type_and_writing_mode() {
 	assert paintable_box_is_chrome_mirrored(vertical_rl_style)
 }
 
+fn test_paintable_box_overflow_clip_edge_uses_padding_or_replaced_content_box() {
+	document := dom.Document.create(dom.url_about_blank())
+	computed := computed_paint_test_style('display: block; overflow: clip; overflow-clip-margin-top: 1px; overflow-clip-margin-right: 2px; overflow-clip-margin-bottom: 3px; overflow-clip-margin-left: 4px')
+	normal := BlockContainer.new(document, none, computed)
+	replaced := BlockContainer.new(document, none, computed)
+	mut replaced_node := unsafe { &Node(replaced) }
+	replaced_node.is_replaced_box_ = true
+	mut used := UsedValues{
+		padding_left: CSSPixels.new(4)
+		padding_right: CSSPixels.new(6)
+		padding_top: CSSPixels.new(5)
+		padding_bottom: CSSPixels.new(7)
+	}
+	used.set_content_width(CSSPixels.new(100))
+	used.set_content_height(CSSPixels.new(50))
+	position := css.CSSPixelPoint.from_values(20, 30)
+	assert paintable_box_overflow_clip_edge_rect(unsafe { &Node(normal) }, computed, used, position) == LayoutRect{12, 24, 116, 66}
+	assert paintable_box_overflow_clip_edge_rect(replaced_node, computed, used, position) == LayoutRect{16, 29, 106, 54}
+}
+
 fn test_typed_paint_adapter_transports_custom_scrollbar_and_resizer_overlay() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto; resize: both; direction: rtl; scrollbar-color: rgb(1 2 3) rgb(4 5 6) } #content { height: 200px }</style><body><div id="scroller"><div id="content"></div></div></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)

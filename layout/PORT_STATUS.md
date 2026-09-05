@@ -239,6 +239,11 @@ the zero/root parent; an intervening fixed containing block terminates an
 ordinary descendant's search, while a sticky descendant crosses that boundary
 to find the outer scrollport required for sticky constraints. Focused tests
 cover the active fixed-scroller path and both synthetic boundary branches.
+`PaintableBox::overflow_clip_edge_rect()` is likewise a standalone operation on
+the active visual-context path. It chooses the absolute padding box for normal
+boxes and the content box for replaced boxes before applying the four resolved
+overflow-clip margins. A focused geometry matrix covers both origins and
+asymmetric edge inflation.
 The DOM mirror also preserves the layout tree's split-inline continuation chain
 in forward order. This lets `PaintableBox`'s united geometry and the CSSOM
 `offsetTop`, `offsetLeft`, `offsetWidth`, and `offsetHeight` algorithms account
