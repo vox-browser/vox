@@ -162,9 +162,18 @@ also retains C++'s content-box rectangle after the container's final size is
 known, maps every `justify-content` keyword through the main-direction reversal
 rules, swaps main/cross axes for columns, and resolves `align-self` only after
 the abspos margin box is final. Static grid contexts retain their content-box
-rectangle through an outer containing block as well. Positioned grids still
-need the separate per-item grid-area containing rectangle translation; the
-active typed formatting contexts already implement that path exactly.
+rectangle through an outer containing block as well. Positioned grids now keep
+the static-position rectangle separate from C++'s per-item inset containing
+rectangle: explicit row/column lines select their grid area, auto axes use the
+augmented padding-edge lines, content alignment and RTL determine its physical
+origin, and percentage insets and sizes resolve against that area. The area is
+also propagated through static descendants of an in-flow grid item, while a
+nearer positioned item continues to establish its own containing block.
+Compatibility row tracks now share the column sizing phases rather than deriving
+every row solely from its tallest auto-placed item. Focused regressions cover
+explicit two-dimensional areas and rows, self-alignment, percentages, padding
+edges, content alignment, RTL, and a nested abspos descendant. The active typed
+formatting contexts retain the same data in `LayoutState`.
 
 The default-page spacing defect was caused by the old renderer transport
 painting individually estimated word fragments. The typed adapter now preserves

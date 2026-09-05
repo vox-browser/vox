@@ -1043,6 +1043,106 @@ fn test_absolute_static_rectangle_crosses_static_grid_container() {
 	assert abs_box.y == 15.0
 }
 
+fn test_absolute_grid_child_uses_explicit_grid_area_as_containing_block() {
+	doc := dom.Document.create(dom.url_about_blank())
+	grid := styled(doc, 'div', 'position: relative; display: grid; width: 300px; height: 100px; grid-template-columns: 100px 200px; grid-template-rows: 40px 60px')
+	abs := styled(doc, 'div', 'position: absolute; grid-column: 2; grid-row: 2; left: 0; top: 0; width: 20px; height: 10px')
+	mut grid_node := grid.as_node()
+	grid_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(grid, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 100.0
+	assert abs_box.y == 40.0
+}
+
+fn test_absolute_grid_child_auto_insets_align_inside_grid_area() {
+	doc := dom.Document.create(dom.url_about_blank())
+	grid := styled(doc, 'div', 'position: relative; display: grid; width: 300px; height: 100px; grid-template-columns: 100px 200px; grid-template-rows: 40px 60px')
+	abs := styled(doc, 'div', 'position: absolute; grid-column: 2; grid-row: 2; width: 20px; height: 10px; justify-self: center; align-self: end')
+	mut grid_node := grid.as_node()
+	grid_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(grid, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 190.0
+	assert abs_box.y == 90.0
+}
+
+fn test_absolute_grid_child_percentages_resolve_against_grid_area() {
+	doc := dom.Document.create(dom.url_about_blank())
+	grid := styled(doc, 'div', 'position: relative; display: grid; width: 300px; height: 100px; grid-template-columns: 100px 200px; grid-template-rows: 40px 60px')
+	abs := styled(doc, 'div', 'position: absolute; grid-column: 2; grid-row: 2; left: 10%; top: 10%; width: 50%; height: 50%')
+	mut grid_node := grid.as_node()
+	grid_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(grid, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 120.0
+	assert abs_box.y == 46.0
+	assert abs_box.width == 100.0
+	assert abs_box.height == 30.0
+}
+
+fn test_absolute_grid_auto_axis_and_end_line_use_padding_edges() {
+	doc := dom.Document.create(dom.url_about_blank())
+	grid := styled(doc, 'div', 'position: relative; display: grid; width: 150px; height: 150px; padding: 10px; grid-template-columns: 50px 100px; grid-template-rows: 50px 100px')
+	abs := styled(doc, 'div', 'position: absolute; grid-column: 3; left: 0; top: 0; width: 100%; height: 100%')
+	mut grid_node := grid.as_node()
+	grid_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(grid, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 160.0
+	assert abs_box.y == 0.0
+	assert abs_box.width == 10.0
+	assert abs_box.height == 170.0
+}
+
+fn test_rtl_absolute_grid_child_uses_physical_grid_area() {
+	doc := dom.Document.create(dom.url_about_blank())
+	grid := styled(doc, 'div', 'position: relative; direction: rtl; display: grid; width: 300px; height: 100px; grid-template-columns: 100px 200px')
+	abs := styled(doc, 'div', 'position: absolute; grid-column: 1; left: 0; top: 0; width: 20px; height: 10px')
+	mut grid_node := grid.as_node()
+	grid_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(grid, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 200.0
+}
+
+fn test_absolute_descendant_of_grid_item_uses_ancestor_grid_area() {
+	doc := dom.Document.create(dom.url_about_blank())
+	grid := styled(doc, 'div', 'position: relative; display: grid; width: 300px; height: 100px; grid-template-columns: 100px 200px; grid-template-rows: 100px')
+	item := styled(doc, 'div', 'grid-column: 2')
+	abs := styled(doc, 'div', 'position: absolute; left: 0; top: 0; width: 20px; height: 10px')
+	mut item_node := item.as_node()
+	item_node.append_child(abs.as_node()) or { panic('${err}') }
+	mut grid_node := grid.as_node()
+	grid_node.append_child(item.as_node()) or { panic('${err}') }
+
+	box := layout_block(grid, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 100.0
+	assert abs_box.y == 0.0
+}
+
+fn test_positioned_grid_item_remains_nearer_absolute_containing_block() {
+	doc := dom.Document.create(dom.url_about_blank())
+	grid := styled(doc, 'div', 'position: relative; display: grid; width: 300px; height: 100px; grid-template-columns: 100px 200px; grid-template-rows: 100px')
+	item := styled(doc, 'div', 'position: relative; grid-column: 2')
+	abs := styled(doc, 'div', 'position: absolute; left: 10px; top: 5px; width: 20px; height: 10px')
+	mut item_node := item.as_node()
+	item_node.append_child(abs.as_node()) or { panic('${err}') }
+	mut grid_node := grid.as_node()
+	grid_node.append_child(item.as_node()) or { panic('${err}') }
+
+	box := layout_block(grid, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 110.0
+	assert abs_box.y == 5.0
+}
+
 // InlineFormattingContext positions an inline-outside abspos box at the previous fragment's
 // top-right corner after line construction has settled.
 fn test_inline_absolute_position_follows_previous_fragment() {
@@ -4780,6 +4880,34 @@ fn test_grid_named_column_lines_place_items() {
 	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
 	assert box.children[0].x == 100
 	assert box.children[0].width == 100
+}
+
+fn test_grid_explicit_row_tracks_size_and_position_in_flow_items() {
+	doc := dom.Document.create(dom.url_about_blank())
+	grid := styled(doc, 'div', 'display: grid; width: 100px; grid-template-columns: 100px; grid-template-rows: 40px 60px')
+	first := styled(doc, 'div', 'height: 10px')
+	second := styled(doc, 'div', 'height: 10px')
+	mut grid_node := grid.as_node()
+	grid_node.append_child(first.as_node()) or { panic('${err}') }
+	grid_node.append_child(second.as_node()) or { panic('${err}') }
+
+	box := layout_block(grid, 0, 0, 800, []&css.CSSRule{})
+	assert box.height == 100.0
+	assert box.children[0].y == 0.0
+	assert box.children[1].y == 40.0
+}
+
+fn test_absolute_grid_area_includes_content_alignment_offsets() {
+	doc := dom.Document.create(dom.url_about_blank())
+	grid := styled(doc, 'div', 'position: relative; display: grid; width: 300px; height: 100px; grid-template-columns: 50px 50px; grid-template-rows: 20px 20px; justify-content: center; align-content: end')
+	abs := styled(doc, 'div', 'position: absolute; grid-column: 2; grid-row: 2; left: 0; top: 0; width: 10px; height: 10px')
+	mut grid_node := grid.as_node()
+	grid_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(grid, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 150.0
+	assert abs_box.y == 80.0
 }
 
 // flex-wrap: wrap breaks items onto multiple lines when they overflow the main size; lines stack.

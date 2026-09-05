@@ -290,12 +290,17 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 //
 // `lines` are the inline line boxes of a text-bearing block (empty for a block with block children).
 struct StaticPosition {
-	x                    f64
-	y                    f64
-	width                f64
-	height               f64
-	horizontal_alignment StaticPositionAlignment = .start
-	vertical_alignment   StaticPositionAlignment = .start
+	x                         f64
+	y                         f64
+	width                     f64
+	height                    f64
+	horizontal_alignment      StaticPositionAlignment = .start
+	vertical_alignment        StaticPositionAlignment = .start
+	has_containing_block_rect bool
+	containing_block_x        f64
+	containing_block_y        f64
+	containing_block_width    f64
+	containing_block_height   f64
 }
 
 // StaticPositionRect::aligned_position_for_box_with_size(). Alignment is intentionally resolved
@@ -5049,6 +5054,11 @@ fn translate_static_positions(positions map[i64]StaticPosition, dx f64, dy f64) 
 			height: position.height
 			horizontal_alignment: position.horizontal_alignment
 			vertical_alignment: position.vertical_alignment
+			has_containing_block_rect: position.has_containing_block_rect
+			containing_block_x: position.containing_block_x + dx
+			containing_block_y: position.containing_block_y + dy
+			containing_block_width: position.containing_block_width
+			containing_block_height: position.containing_block_height
 		}
 	}
 	return translated
@@ -5844,7 +5854,7 @@ struct GridPlacement {
 	span int = 1
 }
 
-struct GridColumnPlacement {
+struct LegacyGridAxisPlacement {
 	start int = -1
 	span  int = 1
 }
@@ -5898,10 +5908,12 @@ fn resolve_grid_line(value string, track_count int, line_names map[string][]int)
 	return indices[selected_index]
 }
 
-// Resolve an item's explicit integer or named column lines and span.
-fn grid_column_placement(element &dom.Element, track_count int, line_names map[string][]int, author_rules []&css.CSSRule) GridColumnPlacement {
-	start_id := css.property_id_from_string('grid-column-start') or { return GridColumnPlacement{} }
-	end_id := css.property_id_from_string('grid-column-end') or { return GridColumnPlacement{} }
+// Resolve an item's explicit integer or named grid lines and span. In-flow placement clamps the
+// result to real tracks; abspos placement also preserves the special line after the final track,
+// whose area is formed with the container's end padding edge.
+fn grid_axis_placement(element &dom.Element, start_property string, end_property string, track_count int, line_names map[string][]int, clamp_to_tracks bool, author_rules []&css.CSSRule) LegacyGridAxisPlacement {
+	start_id := css.property_id_from_string(start_property) or { return LegacyGridAxisPlacement{} }
+	end_id := css.property_id_from_string(end_property) or { return LegacyGridAxisPlacement{} }
 	start := css.cascaded_value_with_ua(element, start_id, author_rules)
 	end := css.cascaded_value_with_ua(element, end_id, author_rules)
 	start_span := grid_span_from_line(start)
@@ -5913,25 +5925,38 @@ fn grid_column_placement(element &dom.Element, track_count int, line_names map[s
 	if first := start_line {
 		resolved_start = first
 		if last := end_line {
-			if last > first {
-				span = last - first
+			if last != first {
+				resolved_start = if first < last { first } else { last }
+				span = if first < last { last - first } else { first - last }
 			}
 		}
 	} else if last := end_line {
 		resolved_start = last - span
 	}
-	if span > track_count {
+	if clamp_to_tracks && span > track_count {
 		span = track_count
 	}
-	if resolved_start >= 0 {
+	if clamp_to_tracks && resolved_start >= 0 {
 		if resolved_start + span > track_count {
 			resolved_start = track_count - span
 		}
 	}
-	return GridColumnPlacement{
+	return LegacyGridAxisPlacement{
 		start: resolved_start
 		span: span
 	}
+}
+
+fn grid_column_placement(element &dom.Element, track_count int, line_names map[string][]int, author_rules []&css.CSSRule) LegacyGridAxisPlacement {
+	return grid_axis_placement(element, 'grid-column-start', 'grid-column-end', track_count, line_names, true, author_rules)
+}
+
+fn grid_abspos_column_placement(element &dom.Element, track_count int, line_names map[string][]int, author_rules []&css.CSSRule) LegacyGridAxisPlacement {
+	return grid_axis_placement(element, 'grid-column-start', 'grid-column-end', track_count, line_names, false, author_rules)
+}
+
+fn grid_abspos_row_placement(element &dom.Element, track_count int, line_names map[string][]int, author_rules []&css.CSSRule) LegacyGridAxisPlacement {
+	return grid_axis_placement(element, 'grid-row-start', 'grid-row-end', track_count, line_names, false, author_rules)
 }
 
 fn grid_repeat_minimum(token string, element &dom.Element, containing_width f64, author_rules []&css.CSSRule) f64 {
@@ -6112,25 +6137,13 @@ fn legacy_grid_track_sizing(token string, index int, minimums []f64, maximums []
 	}
 }
 
-// Resolve the explicit column track list through the Grid track-sizing phases represented by this
-// renderer transport: expand repeat()/auto-repeat, initialize fixed and intrinsic minima, grow
-// intrinsic tracks to their limits, flex the remaining space, then stretch auto maxima.
-fn parse_grid_tracks(value string, element &dom.Element, containing_width f64, gap f64, author_rules []&css.CSSRule) []f64 {
-	v := value.trim_space()
-	if v == '' || v == 'none' {
-		return [containing_width]
-	}
-	tokens := expanded_grid_track_tokens(v, element, containing_width, gap, author_rules).filter(!it.starts_with('['))
-	if tokens.len == 0 {
-		return [containing_width]
-	}
-	minimums, maximums := legacy_grid_intrinsic_widths(element, tokens.len, author_rules)
+fn resolve_legacy_grid_tracks(tokens []string, minimums []f64, maximums []f64, element &dom.Element, available_size f64, gap f64, author_rules []&css.CSSRule) []f64 {
 	mut tracks := []LegacyGridTrackSizing{}
 	for index, token in tokens {
-		tracks << legacy_grid_track_sizing(token, index, minimums, maximums, element, containing_width, author_rules)
+		tracks << legacy_grid_track_sizing(token, index, minimums, maximums, element, available_size, author_rules)
 	}
 	total_gaps := if tokens.len > 1 { f64(tokens.len - 1) * gap } else { 0.0 }
-	mut free := containing_width - total_gaps
+	mut free := available_size - total_gaps
 	for track in tracks {
 		free -= track.base
 	}
@@ -6214,6 +6227,54 @@ fn parse_grid_tracks(value string, element &dom.Element, containing_width f64, g
 		}
 	}
 	return tracks.map(it.base)
+}
+
+// Resolve the explicit column track list through the Grid track-sizing phases represented by this
+// renderer transport: expand repeat()/auto-repeat, initialize fixed and intrinsic minima, grow
+// intrinsic tracks to their limits, flex the remaining space, then stretch auto maxima.
+fn parse_grid_tracks(value string, element &dom.Element, containing_width f64, gap f64, author_rules []&css.CSSRule) []f64 {
+	v := value.trim_space()
+	if v == '' || v == 'none' {
+		return [containing_width]
+	}
+	tokens := expanded_grid_track_tokens(v, element, containing_width, gap, author_rules).filter(!it.starts_with('['))
+	if tokens.len == 0 {
+		return [containing_width]
+	}
+	minimums, maximums := legacy_grid_intrinsic_widths(element, tokens.len, author_rules)
+	return resolve_legacy_grid_tracks(tokens, minimums, maximums, element, containing_width, gap, author_rules)
+}
+
+// Row tracks share the same sizing machinery as columns. The compatibility grid pass supplies its
+// measured row contributions; explicit tracks are padded to the template's size, while additional
+// auto-placed rows remain implicit `auto` tracks.
+fn parse_grid_row_tracks(value string, element &dom.Element, containing_height f64, gap f64, natural_rows []f64, author_rules []&css.CSSRule) []f64 {
+	v := value.trim_space()
+	mut tokens := if v == '' || v == 'none' {
+		[]string{}
+	} else {
+		expanded_grid_track_tokens(v, element, containing_height, gap, author_rules).filter(!it.starts_with('['))
+	}
+	track_count := if tokens.len > natural_rows.len {
+		tokens.len
+	} else if natural_rows.len > 0 {
+		natural_rows.len
+	} else {
+		1
+	}
+	for tokens.len < track_count {
+		tokens << 'auto'
+	}
+	mut minimums := []f64{len: track_count}
+	mut maximums := []f64{len: track_count}
+	for index in 0 .. natural_rows.len {
+		if index >= track_count {
+			break
+		}
+		minimums[index] = natural_rows[index]
+		maximums[index] = natural_rows[index]
+	}
+	return resolve_legacy_grid_tracks(tokens, minimums, maximums, element, containing_height, gap, author_rules)
 }
 
 // The flex items of `node`: its in-flow element children (any display is blockified, so inline and
@@ -6353,14 +6414,200 @@ fn retain_flex_static_positions(element &dom.Element, content_x f64, content_wid
 	}
 }
 
-fn retain_grid_static_positions(element &dom.Element, content_x f64, content_width f64, content_height f64, mut absolute_positions map[i64]StaticPosition, mut fixed_positions map[i64]StaticPosition, author_rules []&css.CSSRule) {
+struct LegacyGridAxisRect {
+	start f64
+	size  f64
+}
+
+fn legacy_grid_track_range_size(tracks []f64, start int, span int, gap f64) f64 {
+	mut size := gap * f64(if span > 0 { span - 1 } else { 0 })
+	for index in start .. start + span {
+		if index >= 0 && index < tracks.len {
+			size += tracks[index]
+		}
+	}
+	return size
+}
+
+fn legacy_grid_track_offset(tracks []f64, index int, gap f64) f64 {
+	gap_count := if index <= 0 || tracks.len <= 1 {
+		0
+	} else if index < tracks.len {
+		index
+	} else {
+		tracks.len - 1
+	}
+	mut offset := gap * f64(gap_count)
+	for track_index in 0 .. index {
+		if track_index < tracks.len {
+			offset += tracks[track_index]
+		}
+	}
+	return offset
+}
+
+// Float transport of grid_inline_content_geometry()/grid_block_content_geometry(). Distributed
+// alignment can replace a smaller authored gap, then the remaining free space determines the lead.
+fn legacy_grid_content_geometry(element &dom.Element, content_size f64, tracks []f64, computed_gap f64, horizontal bool, author_rules []&css.CSSRule) (f64, f64) {
+	property := if horizontal { 'justify-content' } else { 'align-content' }
+	value := css.cascaded_value_with_ua(element, css.property_id_from_string(property) or {
+		return 0.0, computed_gap
+	}, author_rules)
+	mut tracks_size := 0.0
+	for track in tracks {
+		tracks_size += track
+	}
+	gap_count := if tracks.len > 0 { tracks.len - 1 } else { 0 }
+	mut effective_gap := computed_gap
+	if gap_count > 0 {
+		total_gap_space := non_negative(content_size - tracks_size)
+		distributed_gap := match value {
+			'space-between' { total_gap_space / f64(gap_count) }
+			'space-around' { total_gap_space / f64(gap_count + 1) }
+			'space-evenly' { total_gap_space / f64(gap_count + 2) }
+			else { 0.0 }
+		}
+		if distributed_gap > effective_gap {
+			effective_gap = distributed_gap
+		}
+	}
+	used_size := tracks_size + effective_gap * f64(gap_count)
+	free_space := non_negative(content_size - used_size)
+	mut leading := match value {
+		'end', 'flex-end', 'right' { free_space }
+		'center', 'space-around', 'space-evenly' { free_space / 2.0 }
+		else { 0.0 }
+	}
+	if horizontal && css.cascaded_value_with_ua(element, css.property_id_from_string('direction') or {
+		return leading, effective_gap
+	}, author_rules) == 'rtl' {
+		if value == 'left' {
+			leading = free_space
+		} else if value == 'right' {
+			leading = 0.0
+		}
+	}
+	return leading, effective_gap
+}
+
+fn legacy_grid_axis_rect(tracks []f64, placement LegacyGridAxisPlacement, padding_start f64, padding_end f64, content_size f64, leading f64, gap f64) LegacyGridAxisRect {
+	if placement.start < 0 {
+		return LegacyGridAxisRect{
+			start: -padding_start
+			size: padding_start + content_size + padding_end
+		}
+	}
+	if placement.start >= tracks.len {
+		return LegacyGridAxisRect{
+			start: leading + legacy_grid_track_offset(tracks, tracks.len, gap)
+			size: padding_end
+		}
+	}
+	start := placement.start
+	return LegacyGridAxisRect{
+		start: leading + legacy_grid_track_offset(tracks, start, gap)
+		size: legacy_grid_track_range_size(tracks, start, placement.span, gap)
+	}
+}
+
+fn grid_static_self_alignment(element &dom.Element, self_property string, container_value string, author_rules []&css.CSSRule) StaticPositionAlignment {
+	id := css.property_id_from_string(self_property) or {
+		return static_position_alignment(container_value)
+	}
+	value := css.cascaded_value_with_ua(element, id, author_rules)
+	return static_position_alignment(if value == '' || value == 'auto' {
+		container_value
+	} else {
+		value
+	})
+}
+
+fn retain_grid_static_positions(element &dom.Element, content_x f64, content_width f64, content_height f64, padding BoxEdges, columns []f64, rows []f64, column_gap f64, row_gap f64, column_names map[string][]int, row_names map[string][]int, mut absolute_positions map[i64]StaticPosition, mut fixed_positions map[i64]StaticPosition, author_rules []&css.CSSRule) {
+	column_leading, effective_column_gap := legacy_grid_content_geometry(element, content_width, columns, column_gap, true, author_rules)
+	row_leading, effective_row_gap := legacy_grid_content_geometry(element, content_height, rows, row_gap, false, author_rules)
+	container_justify := justify_items_value(element, author_rules)
+	container_align := align_items_value(element, author_rules)
+	grid_establishes_containing_block := is_positioned(position_value(element, author_rules))
+	rtl := css.cascaded_value_with_ua(element, css.property_id_from_string('direction') or {
+		return
+	}, author_rules) == 'rtl'
 	for child in positioned_child_elements(element.as_node(), author_rules) {
-		retain_static_position(child, StaticPosition{
+		mut position := StaticPosition{
 			x: content_x
 			y: 0.0
 			width: content_width
 			height: content_height
-		}, mut absolute_positions, mut fixed_positions, author_rules)
+		}
+		if grid_establishes_containing_block && position_value(child, author_rules) == 'absolute' {
+			column_placement := grid_abspos_column_placement(child, columns.len, column_names, author_rules)
+			row_placement := grid_abspos_row_placement(child, rows.len, row_names, author_rules)
+			column_rect := legacy_grid_axis_rect(columns, column_placement, padding.left, padding.right, content_width, column_leading, effective_column_gap)
+			row_rect := legacy_grid_axis_rect(rows, row_placement, padding.top, padding.bottom, content_height, row_leading, effective_row_gap)
+			physical_column_start := if rtl && column_placement.start >= 0 {
+				content_width - column_rect.start - column_rect.size
+			} else {
+				column_rect.start
+			}
+			position = StaticPosition{
+				x: content_x + physical_column_start
+				y: row_rect.start
+				width: column_rect.size
+				height: row_rect.size
+				horizontal_alignment: grid_static_self_alignment(child, 'justify-self', container_justify, author_rules)
+				vertical_alignment: grid_static_self_alignment(child, 'align-self', container_align, author_rules)
+				has_containing_block_rect: true
+				containing_block_x: content_x + physical_column_start
+				containing_block_y: row_rect.start
+				containing_block_width: column_rect.size
+				containing_block_height: row_rect.size
+			}
+		}
+		retain_static_position(child, position, mut absolute_positions, mut fixed_positions, author_rules)
+	}
+}
+
+fn grid_position_with_containing_block_rect(position StaticPosition, x f64, y f64, width f64, height f64) StaticPosition {
+	return StaticPosition{
+		x: position.x
+		y: position.y
+		width: position.width
+		height: position.height
+		horizontal_alignment: position.horizontal_alignment
+		vertical_alignment: position.vertical_alignment
+		has_containing_block_rect: true
+		containing_block_x: x
+		containing_block_y: y
+		containing_block_width: width
+		containing_block_height: height
+	}
+}
+
+// GridFormattingContext propagates an in-flow grid item's area to abspos descendants whose actual
+// containing block is still the grid container. A nearer positioned descendant terminates the walk.
+fn retain_grid_area_for_absolute_descendants(node &dom.Node, area_x f64, area_y f64, area_width f64, area_height f64, mut positions map[i64]StaticPosition, author_rules []&css.CSSRule) {
+	display_id := css.property_id_from_string('display') or { return }
+	for child_node in node.children_as_vector() {
+		child := child_node.as_element() or { continue }
+		display := css.cascaded_value_with_ua(child, display_id, author_rules)
+		if display == 'none' {
+			continue
+		}
+		if display == 'contents' {
+			retain_grid_area_for_absolute_descendants(child.as_node(), area_x, area_y, area_width, area_height, mut positions, author_rules)
+			continue
+		}
+		position_value_ := position_value(child, author_rules)
+		if position_value_ == 'absolute' {
+			node_id := i64(child.as_node().unique_id())
+			if retained := positions[node_id] {
+				positions[node_id] = grid_position_with_containing_block_rect(retained, area_x, area_y, area_width, area_height)
+			}
+			continue
+		}
+		if position_value_ == 'fixed' || is_positioned(position_value_) {
+			continue
+		}
+		retain_grid_area_for_absolute_descendants(child.as_node(), area_x, area_y, area_width, area_height, mut positions, author_rules)
 	}
 }
 
@@ -9016,6 +9263,30 @@ fn layout_absolute(element &dom.Element, cb PositionedContainingBlock, static_po
 		fit + edges
 	}
 	mut box := layout_block(element, 0.0, 0.0, available_width, author_rules)
+	// The ordinary block pass has no definite containing-height input. Abspos layout does, so resolve
+	// percentage/calc heights against the selected (for grid, possibly per-item) containing rectangle.
+	if !height_auto {
+		height_id := css.property_id_from_string('height') or { return BlockBox{} }
+		resolved_height := if percentage := css.computed_percentage(element, height_id, author_rules) {
+			?f64(cb.height * percentage / 100.0)
+		} else if calc := css.computed_calc_px(element, height_id, cb.height, author_rules) {
+			?f64(calc)
+		} else {
+			?f64(none)
+		}
+		if specified_height := resolved_height {
+			border_padding := box.border.top + box.border.bottom + box.padding.top + box.padding.bottom
+			border_box := box_sizing_is_border_box(element, author_rules)
+			content_height := non_negative(if border_box {
+				specified_height - border_padding
+			} else {
+				specified_height
+			})
+			minimum := resolve_size_constraint(element, 'min-height', cb.height, border_padding, border_box, author_rules) or { 0.0 }
+			maximum := resolve_size_constraint(element, 'max-height', cb.height, border_padding, border_box, author_rules)
+			box.height = clamp_size(content_height, minimum, maximum)
+		}
+	}
 
 	// CSS 2 absolute positioning: auto margins are zero unless both opposing insets and the size are
 	// definite. In that fully constrained case, equal auto margins center the margin box; a single
@@ -9360,6 +9631,12 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 	mut local_lines := []TextLine{}
 	mut local_absolute_static_positions := map[i64]StaticPosition{}
 	mut local_fixed_static_positions := map[i64]StaticPosition{}
+	mut legacy_grid_columns := []f64{}
+	mut legacy_grid_rows := []f64{}
+	mut legacy_grid_column_gap := 0.0
+	mut legacy_grid_row_gap := 0.0
+	mut legacy_grid_column_names := map[string][]int{}
+	mut legacy_grid_row_names := map[string][]int{}
 	mut content_height := 0.0
 	mut first_child_outer_top := 0.0
 	mut last_child_outer_bottom := 0.0
@@ -9687,6 +9964,10 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		col_widths := parse_grid_tracks(template, element, width, gap_col, author_rules)
 		n_cols := col_widths.len
 		column_line_names := grid_line_names(template, element, width, gap_col, author_rules)
+		legacy_grid_columns = col_widths.clone()
+		legacy_grid_column_gap = gap_col
+		legacy_grid_row_gap = gap_row
+		legacy_grid_column_names = column_line_names.clone()
 		mut col_x := []f64{}
 		mut xacc := 0.0
 		for w in col_widths {
@@ -9698,7 +9979,7 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		// occupied cells. This preserves DOM order in the resulting child list while matching grid's
 		// placement priority.
 		mut placements := []GridPlacement{len: items.len}
-		mut column_specs := []GridColumnPlacement{cap: items.len}
+		mut column_specs := []LegacyGridAxisPlacement{cap: items.len}
 		for item in items {
 			column_specs << grid_column_placement(item, n_cols, column_line_names, author_rules)
 		}
@@ -9808,11 +10089,28 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 			inline_alignments << inline_alignment
 			block_alignments << block_alignment
 		}
+		row_template := css.cascaded_value_with_ua(element, css.property_id_from_string('grid-template-rows') or {
+			return BlockBox{}
+		}, author_rules)
+		mut natural_row_extent := gap_row * f64(if row_heights.len > 0 {
+			row_heights.len - 1
+		} else {
+			0
+		})
+		for row_height in row_heights {
+			natural_row_extent += row_height
+		}
+		row_basis := definite_content_height(element, border, padding, border_box, author_rules) or {
+			natural_row_extent
+		}
+		row_heights = parse_grid_row_tracks(row_template, element, row_basis, gap_row, row_heights, author_rules)
+		legacy_grid_rows = row_heights.clone()
+		legacy_grid_row_names = grid_line_names(row_template, element, row_basis, gap_row, author_rules)
 		mut row_y := []f64{}
 		mut yacc := 0.0
-		for r in 0 .. n_rows {
+		for r in 0 .. row_heights.len {
 			row_y << yacc
-			yacc += row_heights[r] + if r < n_rows - 1 { gap_row } else { 0.0 }
+			yacc += row_heights[r] + if r < row_heights.len - 1 { gap_row } else { 0.0 }
 		}
 		// Stretch auto-sized items, then align each margin box inside its grid area.
 		for i, original_box in item_boxes {
@@ -9827,7 +10125,19 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 				cross_axis_offset(inline_alignments[i], cell_widths[i], cb.margin_box_width())
 			}
 			block_offset := cross_axis_offset(block_alignments[i], row_heights[p.row], cb.margin_box_height())
-			local_children << translate_block(cb, content_x + col_x[p.col] + inline_offset, row_y[p.row] + block_offset)
+			mut placed_box := translate_block(cb, content_x + col_x[p.col] + inline_offset, row_y[p.row] + block_offset)
+			if is_positioned(position_value(element, author_rules)) {
+				// As in get_grid_area_rect(), a descendant's containing rectangle reaches the
+				// following grid line, including the following gutter except at the final line.
+				area_width := cell_widths[i] + if p.col + p.span < n_cols { gap_col } else { 0.0 }
+				area_height := row_heights[p.row] + if p.row + 1 < row_heights.len {
+					gap_row
+				} else {
+					0.0
+				}
+				retain_grid_area_for_absolute_descendants(items[i].as_node(), content_x + col_x[p.col], row_y[p.row], area_width, area_height, mut placed_box.absolute_static_positions, author_rules)
+			}
+			local_children << placed_box
 		}
 		content_height = yacc
 		has_children = item_boxes.len > 0
@@ -9986,7 +10296,7 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		// GridFormattingContext::calculate_static_position_rect() uses the grid content box when the
 		// grid container is not itself the abspos containing block. Positioned grids replace this with
 		// per-item grid-area rectangles in the separate containing-block resolution step.
-		retain_grid_static_positions(element, content_x, width, height, mut local_absolute_static_positions, mut local_fixed_static_positions, author_rules)
+		retain_grid_static_positions(element, content_x, width, height, padding, legacy_grid_columns, legacy_grid_rows, legacy_grid_column_gap, legacy_grid_row_gap, legacy_grid_column_names, legacy_grid_row_names, mut local_absolute_static_positions, mut local_fixed_static_positions, author_rules)
 	}
 
 	// This box's collapsed outer margins (propagated to the parent). The top collapses with the first
@@ -10041,11 +10351,6 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		include_fixed := !element.as_node().root().is_document()
 		for abspos in collect_abspos_in_scope(element.as_node(), include_fixed, author_rules) {
 			abspos_position := position_value(abspos, author_rules)
-			target_cb := if abspos_position == 'fixed' {
-				initial_containing_block(abspos, scope_cb.width, scope_cb.height)
-			} else {
-				scope_cb
-			}
 			static_position := if abspos_position == 'fixed' {
 				fixed_static_positions[i64(abspos.as_node().unique_id())] or {
 					StaticPosition{
@@ -10060,6 +10365,18 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 						y: content_top
 					}
 				}
+			}
+			target_cb := if abspos_position == 'fixed' {
+				initial_containing_block(abspos, scope_cb.width, scope_cb.height)
+			} else if static_position.has_containing_block_rect {
+				PositionedContainingBlock{
+					x: static_position.containing_block_x
+					y: static_position.containing_block_y
+					width: static_position.containing_block_width
+					height: static_position.containing_block_height
+				}
+			} else {
+				scope_cb
 			}
 			absolute_box := layout_absolute(abspos, target_cb, static_position, author_rules)
 			merge_static_positions(mut fixed_static_positions, absolute_box.fixed_static_positions)
