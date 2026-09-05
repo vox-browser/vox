@@ -1316,6 +1316,12 @@ pub:
 	italic    bool
 	mono      bool
 	rtl       bool
+	// BackgroundPainting.cpp records the same retained glyph run as ordinary
+	// foreground text, in opaque white, into the text clip mask.
+	glyph_run           ?&platform.GlyphRun
+	glyph_translation_x f64
+	glyph_translation_y f64
+	glyph_orientation   painting.Orientation
 }
 
 pub struct PaintCommand {
@@ -1332,8 +1338,15 @@ pub mut:
 	italic    bool
 	mono      bool
 	rtl       bool // base paragraph direction for shaped text
-	opacity   f64 = 1.0 // the box's cumulative opacity (this box × its ancestors')
-	radius    f64 // corner radius for a rounded 'fill_rect' (0 = square)
+	// DisplayListRecorder::DrawGlyphRun retains shaped glyph indices and
+	// positions. Raw text remains only as the portable/backend compatibility
+	// fallback; the native player must not shape it again during every repaint.
+	glyph_run           ?&platform.GlyphRun
+	glyph_translation_x f64
+	glyph_translation_y f64
+	glyph_orientation   painting.Orientation
+	opacity             f64 = 1.0 // the box's cumulative opacity (this box × its ancestors')
+	radius              f64 // corner radius for a rounded 'fill_rect' (0 = square)
 	// Retained used corner radii for `fill_rounded_rect`. This mirrors Painting's
 	// FillRoundedRect command instead of discarding elliptical/per-corner radii into vertices.
 	corner_radii    BoxRadii
@@ -3100,7 +3113,7 @@ fn unselected_text_fragment_commands(fragments []TextFragment, opacity f64) []Pa
 				run_right += fragments[j - 1].separator_width_after
 			}
 		}
-		commands << PaintCommand{
+		mut text_command := PaintCommand{
 			kind: 'draw_text'
 			x: run_left
 			y: first.y
@@ -3115,6 +3128,20 @@ fn unselected_text_fragment_commands(fragments []TextFragment, opacity f64) []Pa
 			rtl: first.rtl
 			opacity: opacity
 		}
+		// Typed layout transports one committed LineBoxFragment per entry. A
+		// compatibility run assembled from several word fragments has no single
+		// retained glyph run and keeps the raw-string fallback above.
+		if j == i + 1 {
+			if glyph_run := first.paintable_fragment.glyph_run {
+				mut retained_run := unsafe { &platform.GlyphRun(glyph_run) }
+				retained_run.refresh_replay_data()
+				text_command.glyph_run = retained_run
+				text_command.glyph_translation_x = first.x
+				text_command.glyph_translation_y = first.y + first.baseline
+				text_command.glyph_orientation = first.paintable_fragment.orientation
+			}
+		}
+		commands << text_command
 		for k := i; k < j; k++ {
 			commands << decoration_commands(fragments[k], opacity)
 		}
@@ -3290,6 +3317,37 @@ fn text_span_rect(fragment TextFragment, span TextRenderSpan) LayoutRect {
 	return text_fragment_relative_range_rect(fragment, span.start_code_unit, span.end_code_unit)
 }
 
+// ShadowPainting.cpp slices by UTF-16 code-unit boundaries without rebasing
+// glyph positions. This matters for ligatures, combining marks, bidi runs, and
+// a selected span that begins after the first glyph in its line fragment.
+fn text_shadow_glyph_run(fragment TextFragment, span TextRenderSpan) ?&platform.GlyphRun {
+	glyph_run := fragment.paintable_fragment.glyph_run or { return none }
+	mut retained_run := unsafe { &platform.GlyphRun(glyph_run) }
+	retained_run.refresh_replay_data()
+	if span.start_code_unit == 0
+		&& span.end_code_unit == fragment.paintable_fragment.length_in_code_units {
+		return retained_run
+	}
+	glyphs := retained_run.glyphs()
+	mut start_glyph := 0
+	mut glyph_count := 0
+	mut code_unit_offset := 0
+	for index, glyph in glyphs {
+		if code_unit_offset == span.start_code_unit {
+			start_glyph = index
+		}
+		code_unit_offset += glyph.length_in_code_units
+		if code_unit_offset == span.end_code_unit {
+			glyph_count = index - start_glyph + 1
+			break
+		}
+	}
+	if glyph_count > 0 {
+		return retained_run.slice(start_glyph, glyph_count)
+	}
+	return retained_run
+}
+
 // ShadowPainting.cpp::paint_text_shadow().
 fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 	span TextRenderSpan, opacity f64) {
@@ -3297,15 +3355,15 @@ fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 	if layers.len == 0 {
 		return
 	}
-	span_rect := text_span_rect(fragment, span)
 	span_text := utf16_substring_for_line_box(fragment.text, span.start_code_unit, span.end_code_unit - span.start_code_unit)
+	glyph_run := text_shadow_glyph_run(fragment, span)
 	for layer_index := layers.len - 1; layer_index >= 0; layer_index-- {
 		layer := layers[layer_index]
-		commands << PaintCommand{
+		mut shadow_command := PaintCommand{
 			kind: 'draw_text_shadow'
-			x: span_rect.x + layer.offset_x
+			x: fragment.x + layer.offset_x
 			y: fragment.y + layer.offset_y
-			width: span_rect.width
+			width: fragment.width
 			height: fragment.height
 			color: layer.color.serialize()
 			text: span_text
@@ -3317,6 +3375,12 @@ fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
 			opacity: opacity
 			blur: layer.blur
 		}
+		if retained_run := glyph_run {
+			shadow_command.glyph_run = retained_run
+			shadow_command.glyph_translation_x = fragment.x + layer.offset_x
+			shadow_command.glyph_translation_y = fragment.y + fragment.baseline + layer.offset_y
+		}
+		commands << shadow_command
 	}
 }
 
@@ -3342,6 +3406,14 @@ fn paint_text_fragment(mut commands []PaintCommand, fragment TextFragment,
 		mono: fragment.mono
 		rtl: fragment.rtl
 		opacity: opacity
+	}
+	if glyph_run := fragment.paintable_fragment.glyph_run {
+		mut retained_run := unsafe { &platform.GlyphRun(glyph_run) }
+		retained_run.refresh_replay_data()
+		text_command.glyph_run = retained_run
+		text_command.glyph_translation_x = fragment.x
+		text_command.glyph_translation_y = fragment.y + fragment.baseline
+		text_command.glyph_orientation = fragment.paintable_fragment.orientation
 	}
 	span_rect := text_span_rect(fragment, span)
 	if !full_fragment {
@@ -3525,6 +3597,10 @@ fn append_background_text_clip_runs(box &BlockBox, mut runs []PaintTextClipRun) 
 					italic: command.italic
 					mono: command.mono
 					rtl: command.rtl
+					glyph_run: command.glyph_run
+					glyph_translation_x: command.glyph_translation_x
+					glyph_translation_y: command.glyph_translation_y
+					glyph_orientation: command.glyph_orientation
 				}
 			}
 		}

@@ -76,6 +76,12 @@ fn bundled_font_path(file_name string) ?string {
 	return none
 }
 
+// The native display-list player must use the same fallback face as HarfBuzz:
+// retained glyph indices cannot be replayed through an inferred system font.
+pub fn emoji_font_path() ?string {
+	return bundled_font_path('NotoEmoji.ttf')
+}
+
 fn layout_test_font_path() ?string {
 	if configured := os.getenv_opt('LADYBIRD_LAYOUT_TEST_FONT') {
 		if os.is_file(configured) {
@@ -175,7 +181,8 @@ fn utf16_code_units(text string) []u16 {
 // TrueType fallback for standalone builds where the Layout test face is absent.
 fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font &Font, text_type GlyphRunTextType) ?&GlyphRun {
 	mut face := unsafe { nil }
-	if text_uses_emoji_fallback(text) {
+	uses_emoji := text_uses_emoji_fallback(text)
+	if uses_emoji {
 		face = emoji_harfbuzz_face()?
 	} else {
 		face = layout_test_harfbuzz_face()?
@@ -243,5 +250,9 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 	}
 	C.hb_buffer_destroy(buffer)
 	C.hb_font_destroy(hb_font)
-	return GlyphRun.new(font, text_type, glyphs)
+	return GlyphRun.new_with_face(font, text_type, glyphs, if uses_emoji {
+		.emoji
+	} else {
+		.document
+	})
 }

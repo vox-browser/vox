@@ -200,6 +200,7 @@ fn (mut fragment LineBoxFragment) append_glyph_run_ltr(glyph_run &platform.Glyph
 		fragment.current_insert_direction = run_direction
 	}
 	mut destination := fragment.glyph_run_ or { return }
+	destination.invalidate_replay_data()
 	match run_direction {
 		.ltr {
 			for source_glyph in glyph_run.glyphs_ {
@@ -234,6 +235,7 @@ fn (mut fragment LineBoxFragment) append_glyph_run_rtl(glyph_run &platform.Glyph
 		fragment.current_insert_direction = run_direction
 	}
 	mut destination := fragment.glyph_run_ or { return }
+	destination.invalidate_replay_data()
 	match run_direction {
 		.ltr {
 			for i in 0 .. destination.glyphs_.len {
@@ -325,7 +327,11 @@ pub fn (mut line LineBox) add_fragment(layout_node &Node, start int, length int,
 			if layout_nodes_same(last.layout_node_, layout_node)
 				&& last.start_ + last.length_in_code_units_ == start {
 				if last_run := last.glyph_run_ {
-					if voidptr(last_run.font()) == voidptr(run.font()) {
+					// The temporary V font model can select the bundled emoji
+					// HarfBuzz face behind the same CSS Font object. Glyph IDs from
+					// different faces cannot share one retained replay run.
+					if voidptr(last_run.font()) == voidptr(run.font())
+						&& last_run.face() == run.face() {
 						last.length_in_code_units_ += length
 						last.append_glyph_run(run, content_width)
 						did_merge = true

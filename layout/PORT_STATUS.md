@@ -2,7 +2,7 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Layout`
 
-Re-audited: 2026-09-05
+Re-audited: 2026-09-06
 
 All 50 upstream Layout `.cpp` units have filename-level homes in the typed V
 Layout package. That inventory does not establish body-level parity: the
@@ -207,6 +207,15 @@ invalidate the containing retained paint bucket, and the ordinary
 no-selection/no-shadow path remains coalesced. A focused regression covers
 custom background, replacement shadow, wavy decoration, webkit fill color,
 range geometry, command order, and cache invalidation.
+Display-list recording now also preserves those runs through backend replay.
+As in `GlyphRun::ensure_text_blob()`, packed glyph IDs and positions are
+refreshed only after line construction has finished merging shaped chunks; the
+native player draws them through their concrete document or emoji face and the
+full accumulated affine transform, without asking AppKit to reshape the source
+string on every repaint. Partial foreground spans clip the original run, while
+text shadows retain C++'s UTF-16-to-glyph slicing without rebasing positions.
+Compatibility-only word commands and vertical-orientation native fallback keep
+their existing string path.
 `PaintableWithLines::fragment_at_position()` and `paint_cursor()` now complete
 that foreground path. Fragment carets use the retained UTF-16 glyph-run geometry;
 empty editing hosts fall back to their padding-box origin and computed line
@@ -525,9 +534,9 @@ while leaving only short sRGB intervals for CoreGraphics to interpolate.
 balanced background-phase mask owns the shaped runs from the paintable's
 inclusive subtree, prunes absolute/fixed descendants but includes floats, and
 wraps the color plus every image layer once outside the optional blend-isolation
-group. The root bypasses that mask. Native Quartz builds a bounded mask with the
-same configured document font used for foreground text, while portable SVG
-serializes the corresponding user-space text mask.
+group. The root bypasses that mask. Native Quartz builds a bounded mask from the
+same retained glyph indices and positions used for foreground text, while
+portable SVG serializes the corresponding user-space text mask.
 Text fragments use the same nearest
 non-atomic `InlineNode` ancestor walk as `LayoutState::commit()`, so direct block
 text no longer repaints the block's background, border, radii, or box shadow as
@@ -541,11 +550,14 @@ decoded-bitmap `feImage` graph execution.
 
 ## Verification
 
-Verified through 2026-09-05:
+Verified through 2026-09-06:
 
 ```text
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
+
+$ /Users/alex/code/v/v_old -enable-globals test .
+Summary for all V _test.v files: 385 passed, 385 total.
 
 $ /Users/alex/code/v/v -enable-globals test layout
 Summary for all V _test.v files: 18 passed, 18 total.
@@ -562,12 +574,6 @@ Built V-native Ladybird app: Build/v/Ladybird.app
 $ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 Ladybird V smoke check passed
 ```
-
-The repository-wide test command currently reports 324 passed and 11
-compile-time failures in unrelated packages. None of those failures is in
-Layout, CSS, or integration; they are V-compiler compatibility issues in
-Encoding, Infra, Page, Platform, an SVG test, WebAssembly, WebDriver, and
-WebIDL.
 
 ## Module boundary
 

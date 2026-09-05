@@ -294,6 +294,7 @@ fn apply_text_overflow_ellipsis(text_node &TextNode, item InlineLevelItem, avail
 	}
 	if last_glyph_index > 1 {
 		mut run := unsafe { &platform.GlyphRun(run_pointer) }
+		run.invalidate_replay_data()
 		run.glyphs_ = run.glyphs_[..last_glyph_index - 1].clone()
 		run.glyphs_ << platform.Glyph{
 			code_point:           ellipsis_code_point

@@ -25,6 +25,7 @@ import net.http as vhttp
 import os
 import page
 import painting
+import platform
 import referrerpolicy
 import selection
 import sri
@@ -62,13 +63,19 @@ fn C.native_draw_ellipse_srgb(x f32, y f32, width f32, height f32, transform_a f
 
 fn C.native_configure_document_font(path string)
 
+fn C.native_configure_emoji_font(path string)
+
 fn C.native_draw_document_text_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int)
 
 fn C.native_draw_document_text_shadow_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int, blur f32)
 
+fn C.native_draw_document_glyph_run_srgb(glyphs &u16, positions &f64, glyph_count int, font_size f32, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, color gg.Color, blur f32, shadow_only int) int
+
 fn C.native_begin_background_text_clip(canvas_width f32, canvas_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32)
 
 fn C.native_add_background_text_clip_run(x f32, y f32, text string, size f32, bold int, italic int, monospace int)
+
+fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32) int
 
 fn C.native_finish_background_text_clip()
 
@@ -361,6 +368,9 @@ fn schedule_native_screenshot(path string) {
 
 fn configure_browser_layout_font() bool {
 	$if macos {
+		if emoji_path := platform.emoji_font_path() {
+			C.native_configure_emoji_font(emoji_path)
+		}
 		layout_test_font := os.getenv('LADYBIRD_LAYOUT_TEST_FONT')
 		if layout_test_font != '' {
 			C.native_configure_document_font(layout_test_font)
@@ -373,9 +383,11 @@ fn configure_browser_layout_font() bool {
 		}
 		if os.is_file(path) {
 			os.setenv('LADYBIRD_LAYOUT_TEST_FONT', path, true)
-			if use_document_font {
-				C.native_configure_document_font(path)
-			}
+			// Glyph indices are face-specific. Configure the same face for native
+			// display-list replay even when the browser is using its default Arial
+			// path, rather than enabling retained replay only for an explicit
+			// LADYBIRD_BROWSER_FONT override.
+			C.native_configure_document_font(path)
 			return use_document_font
 		}
 	}
@@ -1401,6 +1413,26 @@ fn paint_color(serialized string, opacity f64) gg.Color {
 	return gg.rgba(parsed.r, parsed.g, parsed.b, u8(int(alpha + 0.5)))
 }
 
+fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_y f32,
+	scroll_y f64, canvas_height f32, glyph_color gg.Color, blur f32, shadow_only bool) bool {
+	$if macos {
+		glyph_run := command.glyph_run or { return false }
+		if command.glyph_orientation != .horizontal {
+			return false
+		}
+		glyphs := glyph_run.glyph_indices()
+		positions := glyph_run.glyph_positions()
+		if glyphs.len == 0 || positions.len != glyphs.len * 2 {
+			return false
+		}
+		matrix := normalized_paint_transform(command.transform)
+		unsafe {
+			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_height, glyph_color, blur, int(shadow_only)) != 0
+		}
+	}
+	return false
+}
+
 fn native_text_draw_y(line_box_top f32, line_box_height f32) f32 {
 	// Cocoa's gg adapter positions text relative to a fixed 15px baseline. Convert Layout's
 	// line-box top to that coordinate system for both body text and larger headings.
@@ -2348,9 +2380,22 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 						run_y = math.min(run_y, run_points[index + 1])
 						run_bottom = math.max(run_bottom, run_points[index + 1])
 					}
-					font_size := f32(clamp(run.font_size * font_scale, 1.0, 256.0) + 0.5)
-					text_y := native_text_draw_y(run_y, run_bottom - run_y)
-					C.native_add_background_text_clip_run(run_x, f32(app.ctx.height) - text_y, run.text, font_size, int(run.bold), int(run.italic), int(run.mono))
+					mut retained_run_drawn := false
+					if glyph_run := run.glyph_run {
+						glyphs := glyph_run.glyph_indices()
+						positions := glyph_run.glyph_positions()
+						if run.glyph_orientation == .horizontal && glyphs.len > 0
+							&& positions.len == glyphs.len * 2 {
+							unsafe {
+								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.height)) != 0
+							}
+						}
+					}
+					if !retained_run_drawn {
+						font_size := f32(clamp(run.font_size * font_scale, 1.0, 256.0) + 0.5)
+						text_y := native_text_draw_y(run_y, run_bottom - run_y)
+						C.native_add_background_text_clip_run(run_x, f32(app.ctx.height) - text_y, run.text, font_size, int(run.bold), int(run.italic), int(run.mono))
+					}
 				}
 				C.native_finish_background_text_clip()
 			}
@@ -3407,9 +3452,14 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 				text_y := $if macos { native_text_draw_y(y, h) } $else { y }
 				text_color := paint_color(command.color, command.opacity)
 				$if macos {
-					if app.ctx.native_rendering && app.use_document_font {
-						C.native_draw_document_text_srgb(x, f32(app.ctx.height) - text_y, command.text, text_color, f32(font_size), int(command.bold), int(command.italic), int(command.mono))
-						return
+					if app.ctx.native_rendering {
+						if native_draw_retained_glyph_run(command, page_x, page_y, scroll_y, f32(app.ctx.height), text_color, 0, false) {
+							return
+						}
+						if app.use_document_font {
+							C.native_draw_document_text_srgb(x, f32(app.ctx.height) - text_y, command.text, text_color, f32(font_size), int(command.bold), int(command.italic), int(command.mono))
+							return
+						}
 					}
 				}
 				app.ctx.draw_text(int(x), int(text_y), command.text,
@@ -3428,9 +3478,14 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 				text_y := $if macos { native_text_draw_y(y, h) } $else { y }
 				shadow_color := paint_color(command.color, command.opacity)
 				$if macos {
-					if app.ctx.native_rendering && app.use_document_font {
-						C.native_draw_document_text_shadow_srgb(x, f32(app.ctx.height) - text_y, command.text, shadow_color, f32(font_size), int(command.bold), int(command.italic), int(command.mono), f32(command.blur * font_scale))
-						return
+					if app.ctx.native_rendering {
+						if native_draw_retained_glyph_run(command, page_x, page_y, scroll_y, f32(app.ctx.height), shadow_color, f32(command.blur * font_scale), true) {
+							return
+						}
+						if app.use_document_font {
+							C.native_draw_document_text_shadow_srgb(x, f32(app.ctx.height) - text_y, command.text, shadow_color, f32(font_size), int(command.bold), int(command.italic), int(command.mono), f32(command.blur * font_scale))
+							return
+						}
 					}
 				}
 				// Portable backends have no blurred glyph primitive; retain the

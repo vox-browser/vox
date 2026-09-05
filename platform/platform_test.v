@@ -48,6 +48,45 @@ fn test_font_exposes_scaled_true_type_glyph_contours_for_svg_paths() {
 	assert has_off_curve
 }
 
+fn test_glyph_run_retains_packed_replay_data_and_slices_without_rebasing() {
+	font := &Font{
+		family: 'sans-serif'
+		point_size: 16
+	}
+	mut run := GlyphRun.new_with_face(font, .ltr, [
+		Glyph{
+			glyph_index: 7
+			position: GlyphPosition{2.5, -0.25}
+			advance: 4
+			length_in_code_units: 1
+		},
+		Glyph{
+			glyph_index: 11
+			position: GlyphPosition{6.5, 0.75}
+			advance: 5
+			length_in_code_units: 2
+		},
+	], .emoji)
+	assert run.face() == .emoji
+	assert run.glyph_indices() == [u16(7), 11]
+	assert run.glyph_positions() == [f64(2.5), -0.25, 6.5, 0.75]
+	run.glyphs_ << Glyph{
+		glyph_index: 13
+		position: GlyphPosition{11.5, 0}
+		advance: 3
+	}
+	run.invalidate_replay_data()
+	run.refresh_replay_data()
+	assert run.glyph_indices() == [u16(7), 11, 13]
+	assert run.glyph_positions() == [f64(2.5), -0.25, 6.5, 0.75, 11.5, 0]
+	slice := run.slice(1, 1)
+	assert slice.face() == .emoji
+	assert slice.glyph_indices() == [u16(11)]
+	// Gfx::GlyphRun::slice() retains the original position so a partial text
+	// shadow stays aligned with the unsliced foreground run.
+	assert slice.glyph_positions() == [f64(6.5), 0.75]
+}
+
 fn test_timer_state_and_single_shot_fire() {
 	mut timer := Timer.create_single_shot(10, no_op)
 	assert timer.interval() == 10

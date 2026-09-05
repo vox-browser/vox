@@ -91,6 +91,32 @@ fn test_line_box_merges_contiguous_glyph_runs_and_trims_trailing_whitespace() {
 	assert !line.is_empty_or_ends_in_whitespace()
 }
 
+fn test_line_box_does_not_merge_glyph_indices_from_different_faces() {
+	text_node, _ := make_line_box_text_node('a😀')
+	font := &platform.Font{
+		family: 'Test'
+		point_size: 16
+	}
+	document_run := platform.GlyphRun.new_with_face(font, .ltr, [platform.Glyph{
+		glyph_index: 7
+		advance: 8
+		length_in_code_units: 1
+	}], .document)
+	emoji_run := platform.GlyphRun.new_with_face(font, .ltr, [platform.Glyph{
+		glyph_index: 11
+		advance: 16
+		length_in_code_units: 2
+	}], .emoji)
+	mut line := LineBox.new(.ltr, .horizontal_tb)
+	line.add_fragment(unsafe { &Node(text_node) }, 0, 1, CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(8), CSSPixels.new(16), CSSPixels.new(0), CSSPixels.new(0), document_run)
+	line.add_fragment(unsafe { &Node(text_node) }, 1, 2, CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(16), CSSPixels.new(16), CSSPixels.new(0), CSSPixels.new(0), emoji_run)
+	assert line.fragments().len == 2
+	first := line.fragments()[0].glyph_run() or { panic('missing document run') }
+	second := line.fragments()[1].glyph_run() or { panic('missing emoji run') }
+	assert first.face() == .document
+	assert second.face() == .emoji
+}
+
 fn test_line_box_removes_whitespace_only_fragments() {
 	text_node, _ := make_line_box_text_node('a ')
 	mut line := LineBox.new(.ltr, .horizontal_tb)

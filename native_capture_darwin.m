@@ -75,6 +75,8 @@ static NSView *native_browser_view(void) {
 }
 
 static NSString *native_document_font_name;
+static CGFontRef native_document_glyph_font;
+static CGFontRef native_emoji_glyph_font;
 
 static NSFont *native_document_font(float size, int bold, int italic, int monospace) {
 	NSFont *font = nil;
@@ -110,6 +112,10 @@ void native_configure_document_font(string path_value) {
 	if (font == NULL) {
 		return;
 	}
+	if (native_document_glyph_font != NULL) {
+		CGFontRelease(native_document_glyph_font);
+	}
+	native_document_glyph_font = CGFontRetain(font);
 	CFErrorRef registration_error = NULL;
 	CTFontManagerRegisterGraphicsFont(font, &registration_error);
 	if (registration_error != NULL) {
@@ -121,6 +127,23 @@ void native_configure_document_font(string path_value) {
 		CFRelease(postscript_name);
 	}
 	CGFontRelease(font);
+}
+
+void native_configure_emoji_font(string path_value) {
+	NSString *path = native_capture_string(path_value);
+	CGDataProviderRef provider = CGDataProviderCreateWithFilename([path fileSystemRepresentation]);
+	if (provider == NULL) {
+		return;
+	}
+	CGFontRef font = CGFontCreateWithDataProvider(provider);
+	CGDataProviderRelease(provider);
+	if (font == NULL) {
+		return;
+	}
+	if (native_emoji_glyph_font != NULL) {
+		CGFontRelease(native_emoji_glyph_font);
+	}
+	native_emoji_glyph_font = font;
 }
 
 int native_window_width(void) {
@@ -390,6 +413,62 @@ static CGColorRef native_srgb_color(gg__Color color) {
 	return CGColorCreate(color_space, components);
 }
 
+// DisplayListPlayerSkia replays the glyph IDs and positions retained by
+// Gfx::GlyphRun. Keep those values in glyph space here as well: its positive-Y
+// axis is the font's ascent direction, while the CSS transform's positive-Y
+// axis points down. Building the two basis vectors explicitly avoids asking
+// AppKit to shape the source string again and preserves arbitrary CSS affine
+// transforms.
+static int native_draw_retained_glyph_run(CGContextRef context,
+	const uint16_t *glyphs, const double *packed_positions, int glyph_count,
+	float font_size, int emoji_face, float baseline_x, float baseline_y,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_height, CGColorRef color, float blur,
+	int shadow_only) {
+	if (context == NULL || glyphs == NULL || packed_positions == NULL
+		|| glyph_count <= 0) {
+		return 0;
+	}
+	CGFontRef graphics_font = emoji_face
+		? native_emoji_glyph_font : native_document_glyph_font;
+	if (graphics_font == NULL) {
+		return 0;
+	}
+	CTFontRef font = CTFontCreateWithGraphicsFont(graphics_font,
+		MAX(font_size, 0.0f), NULL, NULL);
+	if (font == NULL) {
+		return 0;
+	}
+	// CGPoint is two CGFloats, and CGFloat is double on every macOS target this
+	// application supports. GlyphRun owns this packed f64 buffer for its entire
+	// retained lifetime, so replay performs no position conversion/allocation.
+	const CGPoint *positions = (const CGPoint *)packed_positions;
+	CGFloat origin_x = page_x + transform_e
+		+ transform_a * baseline_x + transform_c * baseline_y;
+	CGFloat origin_y = canvas_height - page_y + scroll_y - transform_f
+		- transform_b * baseline_x - transform_d * baseline_y;
+	CGAffineTransform glyph_to_canvas = CGAffineTransformMake(
+		transform_a, -transform_b, -transform_c, transform_d,
+		origin_x, origin_y);
+	CGContextSaveGState(context);
+	CGContextSetShouldAntialias(context, true);
+	CGContextSetFillColorWithColor(context, color);
+	if (shadow_only && blur > 0.0f) {
+		CGRect clip_bounds = CGContextGetClipBoundingBox(context);
+		CGFloat displacement = clip_bounds.size.width + 8192.0;
+		glyph_to_canvas.tx += displacement;
+		CGContextSetShadowWithColor(context, CGSizeMake(-displacement, 0.0),
+			floorf(blur), color);
+	}
+	CGContextConcatCTM(context, glyph_to_canvas);
+	CTFontDrawGlyphs(font, (const CGGlyph *)glyphs, positions,
+		(CFIndex)glyph_count, context);
+	CGContextRestoreGState(context);
+	CFRelease(font);
+	return 1;
+}
+
 void native_draw_ellipse_srgb(float x, float y, float width, float height,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
@@ -465,6 +544,22 @@ void native_draw_document_text_shadow_srgb(float x, float y, string value,
 	      withAttributes:attributes];
 	CGContextRestoreGState(context);
 	CGColorRelease(cg_color);
+}
+
+int native_draw_document_glyph_run_srgb(const uint16_t *glyphs,
+	const double *positions, int glyph_count, float font_size, int emoji_face,
+	float baseline_x, float baseline_y, float transform_a, float transform_b,
+	float transform_c, float transform_d, float transform_e, float transform_f,
+	float page_x, float page_y, float scroll_y, float canvas_height,
+	gg__Color color, float blur, int shadow_only) {
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	CGColorRef cg_color = native_srgb_color(color);
+	int did_draw = native_draw_retained_glyph_run(context, glyphs, positions, glyph_count,
+		font_size, emoji_face, baseline_x, baseline_y, transform_a, transform_b,
+		transform_c, transform_d, transform_e, transform_f, page_x, page_y,
+		scroll_y, canvas_height, cg_color, blur, shadow_only);
+	CGColorRelease(cg_color);
+	return did_draw;
 }
 
 void native_draw_polygon_srgb(const float *points, int point_count, float canvas_height,
@@ -2405,6 +2500,24 @@ void native_add_background_text_clip_run(float x, float y, string value,
 		      NSFontAttributeName : font
 	      }];
 	[NSGraphicsContext restoreGraphicsState];
+}
+
+int native_add_background_glyph_clip_run(const uint16_t *glyphs,
+	const double *positions, int glyph_count, float font_size, int emoji_face,
+	float baseline_x, float baseline_y, float transform_a, float transform_b,
+	float transform_c, float transform_d, float transform_e, float transform_f,
+	float page_x, float page_y, float scroll_y, float canvas_height) {
+	if (native_background_text_clip_build_context == NULL) {
+		return 0;
+	}
+	CGColorRef white = CGColorCreateGenericRGB(1.0, 1.0, 1.0, 1.0);
+	int did_draw = native_draw_retained_glyph_run(native_background_text_clip_build_context,
+		glyphs, positions, glyph_count, font_size, emoji_face, baseline_x,
+		baseline_y, transform_a, transform_b, transform_c, transform_d,
+		transform_e, transform_f, page_x, page_y, scroll_y, canvas_height,
+		white, 0.0f, 0);
+	CGColorRelease(white);
+	return did_draw;
 }
 
 void native_finish_background_text_clip(void) {

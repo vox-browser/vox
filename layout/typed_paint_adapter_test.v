@@ -539,6 +539,11 @@ fn test_typed_background_clip_text_reaches_the_group_mask() {
 	assert begin_commands.len == 1
 	assert begin_commands[0].text_clip_runs.len == 1
 	assert begin_commands[0].text_clip_runs[0].text == 'Clipped words'
+	clip_glyph_run := begin_commands[0].text_clip_runs[0].glyph_run or {
+		panic('background text clip discarded its retained glyph run')
+	}
+	assert clip_glyph_run.glyphs().len > 0
+	assert begin_commands[0].text_clip_runs[0].glyph_translation_y > begin_commands[0].text_clip_runs[0].y
 	assert commands.filter(it.kind == 'end_background_text_clip').len == 1
 	assert target.render_svg(240, 100).contains('<g mask="url(#background-text-mask')
 }
@@ -2555,6 +2560,10 @@ fn test_paintable_with_lines_translates_selection_render_spans_and_cache_invalid
 	})
 	initial_text := initial.filter(it.kind == 'draw_text' && it.text == 'hello')
 	assert initial_text.len == 1
+	initial_run := initial_text[0].glyph_run or { panic('missing retained glyph run') }
+	assert initial_run.glyphs().len == 5
+	assert initial_text[0].glyph_translation_x == initial_text[0].x
+	assert initial_text[0].glyph_translation_y > initial_text[0].y
 	// compute_render_spans() uses -webkit-text-fill-color, not color.
 	assert initial_text[0].color == 'rgb(5 6 7)'
 	assert initial.any(it.kind == 'draw_text_shadow' && it.text == 'hello'
@@ -2589,6 +2598,15 @@ fn test_paintable_with_lines_translates_selection_render_spans_and_cache_invalid
 	assert background_index >= 0
 	assert selection_shadow_index > background_index
 	assert selected_text_index > selection_shadow_index
+	selection_shadow_run := commands[selection_shadow_index].glyph_run or {
+		panic('missing selected shadow glyph run')
+	}
+	assert selection_shadow_run.glyphs().len == 3
+	assert selection_shadow_run.glyphs()[0].position.x == initial_run.glyphs()[1].position.x
+	selected_run := commands[selected_text_index].glyph_run or {
+		panic('missing selected foreground glyph run')
+	}
+	assert voidptr(selected_run) == voidptr(initial_run)
 	// An explicitly specified ::selection text-shadow replaces the ordinary
 	// shadow for the selected span; it is not appended to it.
 	assert !commands.any(it.kind == 'draw_text_shadow' && it.text == 'ell'
