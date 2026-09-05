@@ -248,6 +248,13 @@ The typed adapter also constructs outlines through a direct translation of
 `PaintableBox::outline_data()`. Its one result supplies color, line style, and
 width together after the source's `auto` accent override and shared invisible
 outline suppression, avoiding three separately maintained conversions.
+The adapter's border-radius path now directly translates
+`PaintableBox::border_radii_data()` and `normalized_border_radii_data()`.
+Radius resolution, exact overlap-factor comparison, both fixed-point refinement
+passes, and truncating multiplication occur before conversion to the renderer
+transport. Padding-edge clips then perform only the source's adjacent-border
+shrink; the previous extra normalization could let a wide opposite border
+collapse an unrelated corner radius.
 The DOM mirror also preserves the layout tree's split-inline continuation chain
 in forward order. This lets `PaintableBox`'s united geometry and the CSSOM
 `offsetTop`, `offsetLeft`, `offsetWidth`, and `offsetHeight` algorithms account

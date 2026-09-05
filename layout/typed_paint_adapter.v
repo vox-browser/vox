@@ -256,14 +256,10 @@ fn compatibility_overflow_clip(node &Node, computed &css.ComputedProperties, use
 	}
 	clip_rect := LayoutRect{clip_x, clip_y, clip_width, clip_height}
 
-	mut radii := BoxRadii{}
-	if overflow_x != .visible && overflow_y != .visible {
-		radii = normalize_box_radii(BoxRadii{
-			top_left: shrink_corner_radius(border_radii.top_left, used.border_left.to_double(), used.border_top.to_double())
-			top_right: shrink_corner_radius(border_radii.top_right, used.border_right.to_double(), used.border_top.to_double())
-			bottom_right: shrink_corner_radius(border_radii.bottom_right, used.border_right.to_double(), used.border_bottom.to_double())
-			bottom_left: shrink_corner_radius(border_radii.bottom_left, used.border_left.to_double(), used.border_bottom.to_double())
-		}, clip_rect.width, clip_rect.height)
+	radii := if overflow_x != .visible && overflow_y != .visible {
+		paintable_box_normalized_border_radii_data(border_radii, computed, .yes)
+	} else {
+		BoxRadii{}
 	}
 	return CompatibilityOverflowClip{
 		rect: clip_rect
@@ -434,29 +430,108 @@ fn retained_table_cell_borders(values &css.ComputedValues, used &UsedValues, col
 	}
 }
 
-fn computed_corner_radius(values &css.ComputedValues, property css.PropertyID, width f64, height f64) CornerRadius {
-	radius := match property {
-		.border_bottom_left_radius { values.border_bottom_left_radius() }
-		.border_bottom_right_radius { values.border_bottom_right_radius() }
-		.border_top_left_radius { values.border_top_left_radius() }
-		.border_top_right_radius { values.border_top_right_radius() }
-		else {
-			return CornerRadius{}
-		}
-	}
-	context := css.LengthResolutionContext.for_computed_properties(values)
-	x := non_negative(radius.horizontal_radius.to_px(context, css.CSSPixels.nearest_value_for(width)).to_double())
-	y := non_negative(radius.vertical_radius.to_px(context, css.CSSPixels.nearest_value_for(height)).to_double())
-	return CornerRadius{x, y}
+struct PaintableBoxPixelCornerRadius {
+	horizontal CSSPixels
+	vertical   CSSPixels
 }
 
-fn computed_box_radii(computed &css.ComputedValues, width f64, height f64) BoxRadii {
-	return normalize_box_radii(BoxRadii{
-		top_left: computed_corner_radius(computed, .border_top_left_radius, width, height)
-		top_right: computed_corner_radius(computed, .border_top_right_radius, width, height)
-		bottom_right: computed_corner_radius(computed, .border_bottom_right_radius, width, height)
-		bottom_left: computed_corner_radius(computed, .border_bottom_left_radius, width, height)
-	}, width, height)
+fn resolved_paintable_box_corner_radius(values &css.ComputedValues, radius css.BorderRadiusData, width CSSPixels, height CSSPixels) PaintableBoxPixelCornerRadius {
+	context := css.LengthResolutionContext.for_computed_properties(values)
+	return PaintableBoxPixelCornerRadius{
+		horizontal: radius.horizontal_radius.to_px(context, width)
+		vertical: radius.vertical_radius.to_px(context, height)
+	}
+}
+
+fn scale_paintable_box_corner_radius(radius PaintableBoxPixelCornerRadius, factor CSSPixelFraction) PaintableBoxPixelCornerRadius {
+	return PaintableBoxPixelCornerRadius{
+		horizontal: radius.horizontal.times_fraction(factor)
+		vertical: radius.vertical.times_fraction(factor)
+	}
+}
+
+fn paintable_box_corner_radius_transport(radius PaintableBoxPixelCornerRadius) CornerRadius {
+	return CornerRadius{radius.horizontal.to_double(), radius.vertical.to_double()}
+}
+
+// Direct translation of PaintableBox::border_radii_data() and
+// normalize_border_radii_data(). Keep the resolved radii and the overlap factor
+// in fixed-point units, including upstream's second refinement pass, and only
+// convert to the f64 paint transport after normalization is complete.
+fn paintable_box_border_radii_data(computed &css.ComputedValues, width CSSPixels, height CSSPixels) BoxRadii {
+	if !computed.has_noninitial_border_radii() {
+		return BoxRadii{}
+	}
+
+	mut top_left := resolved_paintable_box_corner_radius(computed, computed.border_top_left_radius(), width, height)
+	mut top_right := resolved_paintable_box_corner_radius(computed, computed.border_top_right_radius(), width, height)
+	mut bottom_right := resolved_paintable_box_corner_radius(computed, computed.border_bottom_right_radius(), width, height)
+	mut bottom_left := resolved_paintable_box_corner_radius(computed, computed.border_bottom_left_radius(), width, height)
+
+	one := CSSPixelFraction.new(CSSPixels.new(1), CSSPixels.new(1))
+	for _ in 0 .. 2 {
+		s_top := top_left.horizontal.plus(top_right.horizontal)
+		s_right := top_right.vertical.plus(bottom_right.vertical)
+		s_bottom := bottom_right.horizontal.plus(bottom_left.horizontal)
+		s_left := bottom_left.vertical.plus(top_left.vertical)
+
+		mut factor := one
+		if s_top.compare(width) > 0 {
+			factor = width.divided_by(s_top)
+		}
+		if s_right.compare(height) > 0 {
+			candidate := height.divided_by(s_right)
+			if candidate.compare(factor) < 0 {
+				factor = candidate
+			}
+		}
+		if s_bottom.compare(width) > 0 {
+			candidate := width.divided_by(s_bottom)
+			if candidate.compare(factor) < 0 {
+				factor = candidate
+			}
+		}
+		if s_left.compare(height) > 0 {
+			candidate := height.divided_by(s_left)
+			if candidate.compare(factor) < 0 {
+				factor = candidate
+			}
+		}
+		if factor.compare(one) >= 0 {
+			break
+		}
+
+		top_left = scale_paintable_box_corner_radius(top_left, factor)
+		top_right = scale_paintable_box_corner_radius(top_right, factor)
+		bottom_right = scale_paintable_box_corner_radius(bottom_right, factor)
+		bottom_left = scale_paintable_box_corner_radius(bottom_left, factor)
+	}
+
+	return BoxRadii{
+		top_left: paintable_box_corner_radius_transport(top_left)
+		top_right: paintable_box_corner_radius_transport(top_right)
+		bottom_right: paintable_box_corner_radius_transport(bottom_right)
+		bottom_left: paintable_box_corner_radius_transport(bottom_left)
+	}
+}
+
+enum PaintableBoxShrinkRadiiForBorders {
+	no
+	yes
+}
+
+// Direct translation of PaintableBox::normalized_border_radii_data(). Shrinking
+// is deliberately not followed by another overlap-normalization pass upstream.
+fn paintable_box_normalized_border_radii_data(border_radii BoxRadii, computed &css.ComputedValues, shrink PaintableBoxShrinkRadiiForBorders) BoxRadii {
+	if shrink == .no {
+		return border_radii
+	}
+	return BoxRadii{
+		top_left: shrink_corner_radius(border_radii.top_left, computed.border_left().width.to_double(), computed.border_top().width.to_double())
+		top_right: shrink_corner_radius(border_radii.top_right, computed.border_right().width.to_double(), computed.border_top().width.to_double())
+		bottom_right: shrink_corner_radius(border_radii.bottom_right, computed.border_right().width.to_double(), computed.border_bottom().width.to_double())
+		bottom_left: shrink_corner_radius(border_radii.bottom_left, computed.border_left().width.to_double(), computed.border_bottom().width.to_double())
+	}
 }
 
 fn computed_outline_line_style(style css.OutlineStyle) painting.LineStyle {
@@ -2655,7 +2730,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		border_colors = computed_border_colors(computed)
 		border_color = border_colors.top
 		border_styles = computed_border_styles(computed)
-		border_radii = computed_box_radii(computed, used.border_box_width().to_double(), used.border_box_height().to_double())
+		border_radii = paintable_box_normalized_border_radii_data(paintable_box_border_radii_data(computed, used.border_box_width(), used.border_box_height()), computed, .no)
 		border_radius = border_radii.top_left.x
 		if outline := paintable_box_outline_data(computed) {
 			outline_width = outline.top.width
@@ -3220,7 +3295,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				border_colors = computed_border_colors(owner_computed)
 				border_color = border_colors.top
 				border_styles = computed_border_styles(owner_computed)
-				radii = computed_box_radii(owner_computed, fragment.width().to_double(), fragment.height().to_double())
+				radii = paintable_box_border_radii_data(owner_computed, fragment.width(), fragment.height())
 				radius = radii.top_left.x
 				inline_shadows = computed_box_shadows(owner_computed)
 				if inline_shadows.len > 0 {

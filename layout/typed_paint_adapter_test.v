@@ -56,7 +56,7 @@ fn test_typed_paint_adapter_retains_composite_values_without_css_text_reparse() 
 	assert math.abs(values.border_right().width.to_double() - 7.0) < 0.001
 	assert values.has_noninitial_border_radii()
 
-	radius := computed_corner_radius(values, .border_top_left_radius, 200, 100)
+	radius := paintable_box_border_radii_data(values, CSSPixels.new(200), CSSPixels.new(100)).top_left
 	assert math.abs(radius.x - 20.0) < 0.001
 	assert math.abs(radius.y - 20.0) < 0.001
 
@@ -68,6 +68,36 @@ fn test_typed_paint_adapter_retains_composite_values_without_css_text_reparse() 
 	assert math.abs(shadows[0].spread - 5.0) < 0.001
 	assert shadows[0].inset
 	assert shadows[0].color == css.Color{10, 20, 30, 255}
+}
+
+fn test_paintable_box_border_radii_use_fixed_point_overlap_scaling() {
+	computed := computed_paint_test_style('border-top-left-radius: 50px; border-top-right-radius: 70px')
+	values := css.resolve_computed_values(computed)
+
+	radii := paintable_box_border_radii_data(values, CSSPixels.new(100), CSSPixels.new(100))
+
+	// Paintable.cpp multiplies each fixed-point radius by the exact 100/120
+	// CSSPixelFraction. That truncates to a CSS pixel quantum; an f64 rewrite
+	// instead leaves 41.666... and 58.333... in the paint transport.
+	assert radii.top_left.x == CSSPixels.from_raw(2666).to_double()
+	assert radii.top_right.x == CSSPixels.from_raw(3733).to_double()
+	assert radii.top_left.x + radii.top_right.x <= 100
+	assert radii.bottom_left == CornerRadius{}
+	assert radii.bottom_right == CornerRadius{}
+}
+
+fn test_paintable_box_normalized_border_radii_only_shrink_for_borders() {
+	computed := computed_paint_test_style('border-left: 90px solid; border-top-right-radius: 100px')
+	values := css.resolve_computed_values(computed)
+	border_radii := paintable_box_border_radii_data(values, CSSPixels.new(100), CSSPixels.new(100))
+
+	padding_radii := paintable_box_normalized_border_radii_data(border_radii, values, .yes)
+
+	// normalized_border_radii_data() shrinks each corner by its adjacent border
+	// widths but does not normalize the result against the padding box. The
+	// unrelated 90px left border therefore cannot shrink this top-right radius.
+	assert padding_radii.top_right.x == 100
+	assert padding_radii.top_left == CornerRadius{}
 }
 
 fn test_typed_paint_adapter_uses_computed_enums_and_lengths() {
