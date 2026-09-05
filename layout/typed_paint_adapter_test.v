@@ -736,6 +736,62 @@ fn test_split_inline_cssom_offsets_use_the_united_continuation_chain() {
 	assert html.html_element_offset_height(html_bold) == 54
 }
 
+fn test_paintable_box_chrome_predicates_follow_layout_type_and_writing_mode() {
+	document := dom.Document.create(dom.url_about_blank())
+	block_style := computed_paint_test_style('display: block; overflow: auto; resize: both')
+	block := BlockContainer.new(document, none, block_style)
+	block_node := unsafe { &Node(block) }
+	assert paintable_box_overflow_property_applies(block_node, block_style)
+	assert paintable_box_physical_resize_axes(block_node, block_style) == painting.PhysicalResizeAxes{
+		horizontal: true
+		vertical: true
+	}
+	assert paintable_box_has_resizer(block_node, block_style)
+
+	inline_resize := computed_paint_test_style('display: block; overflow: auto; resize: inline')
+	assert paintable_box_physical_resize_axes(block_node, inline_resize) == painting.PhysicalResizeAxes{
+		horizontal: true
+	}
+	vertical_inline_resize := computed_paint_test_style('display: block; overflow: auto; resize: inline; writing-mode: vertical-rl')
+	assert paintable_box_physical_resize_axes(block_node, vertical_inline_resize) == painting.PhysicalResizeAxes{
+		vertical: true
+	}
+	clipped_axes := computed_paint_test_style('display: block; overflow: clip; resize: both')
+	assert paintable_box_physical_resize_axes(block_node, clipped_axes) == painting.PhysicalResizeAxes{}
+
+	inline_style := computed_paint_test_style('display: inline; overflow: auto; resize: both')
+	inline_node := InlineNode.new(document, none, inline_style)
+	assert !paintable_box_overflow_property_applies(unsafe { &Node(inline_node) }, inline_style)
+	assert !paintable_box_has_resizer(unsafe { &Node(inline_node) }, inline_style)
+
+	table_row_style := computed_paint_test_style('display: table-row; overflow: hidden')
+	assert !paintable_box_overflow_property_applies(block_node, table_row_style)
+	table_cell_style := computed_paint_test_style('display: table-cell; overflow: hidden')
+	assert paintable_box_overflow_property_applies(block_node, table_cell_style)
+	table_caption_style := computed_paint_test_style('display: table-caption; overflow: hidden')
+	assert paintable_box_overflow_property_applies(block_node, table_caption_style)
+
+	mut svg_element := document.create_element_ns('http://www.w3.org/2000/svg', 'g') or {
+		panic(err)
+	}
+	svg_box := SVGBox.new(document, svg_element, block_style)
+	assert !paintable_box_overflow_property_applies(unsafe { &Node(svg_box) }, block_style)
+
+	viewport := Viewport.new(document, block_style)
+	assert !paintable_box_has_resizer(unsafe { &Node(viewport) }, block_style)
+	generated := BlockContainer.new(document, none, block_style)
+	mut generated_node := unsafe { &Node(generated) }
+	generated_node.generated_for_ = .before
+	assert !paintable_box_has_resizer(generated_node, block_style)
+
+	rtl_style := computed_paint_test_style('direction: rtl; writing-mode: horizontal-tb')
+	assert paintable_box_is_chrome_mirrored(rtl_style)
+	vertical_lr_style := computed_paint_test_style('writing-mode: vertical-lr')
+	assert !paintable_box_is_chrome_mirrored(vertical_lr_style)
+	vertical_rl_style := computed_paint_test_style('writing-mode: vertical-rl')
+	assert paintable_box_is_chrome_mirrored(vertical_rl_style)
+}
+
 fn test_typed_paint_adapter_transports_custom_scrollbar_and_resizer_overlay() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto; resize: both; direction: rtl; scrollbar-color: rgb(1 2 3) rgb(4 5 6) } #content { height: 200px }</style><body><div id="scroller"><div id="content"></div></div></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)

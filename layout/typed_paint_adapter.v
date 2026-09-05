@@ -70,20 +70,50 @@ fn compatibility_overflow_allows_scrolling(overflow css.Overflow, is_viewport bo
 	return (is_viewport && overflow != .hidden) || overflow in [.auto_, .scroll]
 }
 
-fn compatibility_has_resizer(node &Node, computed &css.ComputedProperties) bool {
-	// Translation of PaintableBox::physical_resize_axes() and has_resizer().
-	if node.is_viewport() || node.is_generated_for_pseudo_element() || computed.resize() == .none_ {
+// Direct translation of PaintableBox::overflow_property_applies().
+fn paintable_box_overflow_property_applies(node &Node, computed &css.ComputedProperties) bool {
+	if node.is_svg_box() || node.is_inline_node() {
 		return false
 	}
 	display := computed.display()
-	if display.is_inline_outside() && display.is_flow_inside() {
+	if display.is_ruby_inside() {
 		return false
+	}
+	if display.is_internal() && !display.is_table_cell() && !display.is_table_caption() {
+		return false
+	}
+	return true
+}
+
+// Direct translation of PaintableBox::physical_resize_axes().
+fn paintable_box_physical_resize_axes(_node &Node, computed &css.ComputedProperties) painting.PhysicalResizeAxes {
+	if computed.resize() == .none_ {
+		return painting.PhysicalResizeAxes{}
+	}
+	if computed.display().is_inline_outside() && computed.display().is_flow_inside() {
+		return painting.PhysicalResizeAxes{}
 	}
 	horizontal_writing_mode := computed.writing_mode() == .horizontal_tb
 	resize := computed.resize()
 	horizontal := computed.overflow_x() !in [.visible, .clip] && (resize in [.both, .horizontal] || (resize == .inline_ && horizontal_writing_mode) || (resize == .block && !horizontal_writing_mode))
 	vertical := computed.overflow_y() !in [.visible, .clip] && (resize in [.both, .vertical] || (resize == .inline_ && !horizontal_writing_mode) || (resize == .block && horizontal_writing_mode))
-	return horizontal || vertical
+	return painting.PhysicalResizeAxes{horizontal, vertical}
+}
+
+// Direct translation of PaintableBox::has_resizer().
+fn paintable_box_has_resizer(node &Node, computed &css.ComputedProperties) bool {
+	if node.is_viewport() || node.is_generated_for_pseudo_element() {
+		return false
+	}
+	axes := paintable_box_physical_resize_axes(node, computed)
+	return axes.horizontal || axes.vertical
+}
+
+// Direct translation of PaintableBox::is_chrome_mirrored().
+fn paintable_box_is_chrome_mirrored(computed &css.ComputedProperties) bool {
+	writing_mode := computed.writing_mode()
+	return (writing_mode == .horizontal_tb && computed.direction() == .rtl)
+		|| writing_mode in [.vertical_rl, .sideways_rl]
 }
 
 fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used &UsedValues) ?CompatibilityOverlayData {
@@ -92,7 +122,7 @@ fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used
 	padding_height := used.content_height().to_double() + used.padding_top.to_double() + used.padding_bottom.to_double()
 	can_scroll_horizontally := compatibility_overflow_allows_scrolling(computed.overflow_x(), node.is_viewport()) && overflow.width.to_double() > padding_width
 	can_scroll_vertically := compatibility_overflow_allows_scrolling(computed.overflow_y(), node.is_viewport()) && overflow.height.to_double() > padding_height
-	has_resizer := compatibility_has_resizer(node, computed)
+	has_resizer := paintable_box_has_resizer(node, computed)
 	if !can_scroll_horizontally && !can_scroll_vertically && !has_resizer {
 		return none
 	}
@@ -115,11 +145,6 @@ fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used
 			scroll_offset_y = scroll_offset.y()
 		}
 	}
-	writing_mode := computed.writing_mode()
-	chrome_mirrored := (writing_mode == .horizontal_tb && computed.direction() == .rtl) || writing_mode in [
-		.vertical_rl,
-		.sideways_rl,
-	]
 	return CompatibilityOverlayData{
 		scrollable_overflow: LayoutRect{
 			x: overflow.x.to_double()
@@ -136,7 +161,7 @@ fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used
 		scrollbar_track_color: track_color
 		default_scrollbar_colors: default_colors
 		has_resizer: has_resizer
-		chrome_mirrored: chrome_mirrored
+		chrome_mirrored: paintable_box_is_chrome_mirrored(computed)
 	}
 }
 
@@ -157,9 +182,7 @@ fn compatibility_overflow_clip(node &Node, computed &css.ComputedProperties, use
 	if overflow_x == .visible && overflow_y == .visible {
 		return none
 	}
-	display := computed.display()
-	if node.is_svg_box() || node.is_inline_node() || display.is_ruby_inside()
-		|| (display.is_internal() && !display.is_table_cell() && !display.is_table_caption()) {
+	if !paintable_box_overflow_property_applies(node, computed) {
 		return none
 	}
 

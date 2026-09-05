@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 501
+filename-level mappings. The current semantic audit nevertheless reports 497
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 501 unmatched Painting
+  were removed; the audit currently reports 497 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -133,6 +133,12 @@ following behavioral mismatches and added focused regressions:
   for scrollbar ordering/colors, chrome mirroring, thumb placement, and the
   resize-gripper line loop. This is a concrete one-way Layout-to-Painting use,
   although the native browser does not yet use Painting's retained display list.
+- The same active path now calls direct translations of
+  `PaintableBox::overflow_property_applies()`, `physical_resize_axes()`,
+  `has_resizer()`, and `is_chrome_mirrored()`. A focused predicate matrix
+  covers all source exclusions and table exceptions, viewport/generated
+  suppression, logical-axis mapping in horizontal and vertical writing modes,
+  clipped axes, and RTL/vertical chrome mirroring.
 - `TableBordersPainting.cpp` is now a dedicated source-shaped translation. It
   snaps spanned cells to shared device-pixel grid lines, emits each collapsed
   edge once, sorts intersections by border and element specificity, preserves
@@ -366,7 +372,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 501 unmatched implementations.
+Painting: 497 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

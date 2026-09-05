@@ -222,6 +222,12 @@ fall through to the paintable underneath. The native shell consumes this same
 viewport callback instead of independently flattening `BlockBox` during mouse
 movement. The final
 retained replay also consumes Painting's translated `ScrollState` snapshots.
+Chrome and overflow decisions on that path now call source-shaped translations
+of `PaintableBox::overflow_property_applies()`, `physical_resize_axes()`,
+`has_resizer()`, and `is_chrome_mirrored()`. The shared predicates preserve the
+SVG, inline, ruby, and internal-display exclusions; table-cell/caption
+exceptions; viewport/pseudo-element suppression; logical resize-axis mapping;
+and RTL/vertical writing-mode mirroring used by C++.
 The DOM mirror also preserves the layout tree's split-inline continuation chain
 in forward order. This lets `PaintableBox`'s united geometry and the CSSOM
 `offsetTop`, `offsetLeft`, `offsetWidth`, and `offsetHeight` algorithms account
