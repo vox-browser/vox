@@ -132,6 +132,23 @@ pub:
 	inner_shadow_corner_radii CornerRadii
 }
 
+pub fn (command PaintOuterBoxShadow) bounding_rect() IntRect {
+	distance := command.blur_radius * 2
+	return command.shadow_rect.inflated(distance, distance, distance, distance)
+}
+
+pub fn (command PaintInnerBoxShadow) bounding_rect() IntRect {
+	return command.device_content_rect
+}
+
+pub fn (command PaintOuterBoxShadow) dump() string {
+	return 'content_rect=${command.device_content_rect} shadow_rect=${command.shadow_rect} blur_radius=${command.blur_radius} color=${command.color}'
+}
+
+pub fn (command PaintInnerBoxShadow) dump() string {
+	return 'content_rect=${command.device_content_rect} outer_shadow_rect=${command.outer_shadow_rect} inner_shadow_rect=${command.inner_shadow_rect} blur_radius=${command.blur_radius} color=${command.color}'
+}
+
 pub struct PaintTextShadow {
 pub:
 	glyph_run_id         string
@@ -359,7 +376,7 @@ pub fn command_bounding_rect(command DisplayListCommand) ?IntRect {
 			command.rect
 		}
 		PaintInnerBoxShadow {
-			command.device_content_rect
+			command.bounding_rect()
 		}
 		PaintLinearGradient {
 			command.rect
@@ -368,7 +385,7 @@ pub fn command_bounding_rect(command DisplayListCommand) ?IntRect {
 			command.rect
 		}
 		PaintOuterBoxShadow {
-			command.shadow_rect.inflated(command.blur_radius * 2, command.blur_radius * 2, command.blur_radius * 2, command.blur_radius * 2)
+			command.bounding_rect()
 		}
 		PaintRadialGradient {
 			command.rect

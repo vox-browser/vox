@@ -32,10 +32,10 @@ pub:
 
 pub fn (metrics BoxModelMetrics) margin_box() PixelBox {
 	return PixelBox{
-		top:    metrics.margin.top + metrics.border.top + metrics.padding.top
-		right:  metrics.margin.right + metrics.border.right + metrics.padding.right
+		top: metrics.margin.top + metrics.border.top + metrics.padding.top
+		right: metrics.margin.right + metrics.border.right + metrics.padding.right
 		bottom: metrics.margin.bottom + metrics.border.bottom + metrics.padding.bottom
-		left:   metrics.margin.left + metrics.border.left + metrics.padding.left
+		left: metrics.margin.left + metrics.border.left + metrics.padding.left
 	}
 }
 
@@ -45,10 +45,10 @@ pub fn (metrics BoxModelMetrics) padding_box() PixelBox {
 
 pub fn (metrics BoxModelMetrics) border_box() PixelBox {
 	return PixelBox{
-		top:    metrics.border.top + metrics.padding.top
-		right:  metrics.border.right + metrics.padding.right
+		top: metrics.border.top + metrics.padding.top
+		right: metrics.border.right + metrics.padding.right
 		bottom: metrics.border.bottom + metrics.padding.bottom
-		left:   metrics.border.left + metrics.padding.left
+		left: metrics.border.left + metrics.padding.left
 	}
 }
 
@@ -75,7 +75,7 @@ pub fn (radius BorderRadiusData) is_present() bool {
 pub fn (radius BorderRadiusData) as_corner(converter DevicePixelConverter) CornerRadius {
 	return CornerRadius{
 		horizontal: converter.floored_device_pixels(radius.horizontal)
-		vertical:   converter.floored_device_pixels(radius.vertical)
+		vertical: converter.floored_device_pixels(radius.vertical)
 	}
 }
 
@@ -115,16 +115,14 @@ pub fn (radii CornerRadii) contains(point IntPoint, rect IntRect) bool {
 		return true
 	}
 	if radii.top_left.is_present() {
-		center := IntPoint{rect.left() + radii.top_left.horizontal, rect.top() +
-			radii.top_left.vertical}
+		center := IntPoint{rect.left() + radii.top_left.horizontal, rect.top() + radii.top_left.vertical}
 		if point.x < center.x && point.y < center.y
 			&& outside_ellipse(point, radii.top_left, center) {
 			return false
 		}
 	}
 	if radii.top_right.is_present() {
-		center := IntPoint{rect.right() - radii.top_right.horizontal, rect.top() +
-			radii.top_right.vertical}
+		center := IntPoint{rect.right() - radii.top_right.horizontal, rect.top() + radii.top_right.vertical}
 		if point.x > center.x && point.y < center.y
 			&& outside_ellipse(point, radii.top_right, center) {
 			return false
@@ -149,27 +147,27 @@ pub fn (radii CornerRadii) contains(point IntPoint, rect IntRect) bool {
 	return true
 }
 
-fn spread_radius(value int, distance int) int {
-	if value == 0 || distance == 0 {
-		return value
+fn add_spread_distance_to_border_radius(border_radius int, spread_distance int) int {
+	if border_radius == 0 || spread_distance == 0 {
+		return border_radius
 	}
-	if value > abs_int(distance) {
-		return value + distance
+	if border_radius > abs_int(spread_distance) {
+		return border_radius + spread_distance
 	}
-	ratio := f64(value) / f64(abs_int(distance))
+	ratio := f64(border_radius) / f64(abs_int(spread_distance))
 	// Assignment to the integer radius truncates exactly as in the C++ source.
-	return value + int(f64(distance) * (1.0 + math.pow(ratio - 1.0, 3.0)))
+	return border_radius + int(f64(spread_distance) * (1.0 + math.pow(ratio - 1.0, 3.0)))
 }
 
 pub fn (mut radii CornerRadii) adjust_for_spread_distance(distance int) {
-	radii.top_left.horizontal = spread_radius(radii.top_left.horizontal, distance)
-	radii.top_left.vertical = spread_radius(radii.top_left.vertical, distance)
-	radii.top_right.horizontal = spread_radius(radii.top_right.horizontal, distance)
-	radii.top_right.vertical = spread_radius(radii.top_right.vertical, distance)
-	radii.bottom_right.horizontal = spread_radius(radii.bottom_right.horizontal, distance)
-	radii.bottom_right.vertical = spread_radius(radii.bottom_right.vertical, distance)
-	radii.bottom_left.horizontal = spread_radius(radii.bottom_left.horizontal, distance)
-	radii.bottom_left.vertical = spread_radius(radii.bottom_left.vertical, distance)
+	radii.top_left.horizontal = add_spread_distance_to_border_radius(radii.top_left.horizontal, distance)
+	radii.top_left.vertical = add_spread_distance_to_border_radius(radii.top_left.vertical, distance)
+	radii.top_right.horizontal = add_spread_distance_to_border_radius(radii.top_right.horizontal, distance)
+	radii.top_right.vertical = add_spread_distance_to_border_radius(radii.top_right.vertical, distance)
+	radii.bottom_right.horizontal = add_spread_distance_to_border_radius(radii.bottom_right.horizontal, distance)
+	radii.bottom_right.vertical = add_spread_distance_to_border_radius(radii.bottom_right.vertical, distance)
+	radii.bottom_left.horizontal = add_spread_distance_to_border_radius(radii.bottom_left.horizontal, distance)
+	radii.bottom_left.vertical = add_spread_distance_to_border_radius(radii.bottom_left.vertical, distance)
 }
 
 pub struct BorderRadiiData {
@@ -190,10 +188,10 @@ pub fn (radii BorderRadiiData) contains(point Point, rect Rect) bool {
 		return false
 	}
 	corners := CornerRadii{
-		top_left:     CornerRadius{int(radii.top_left.horizontal), int(radii.top_left.vertical)}
-		top_right:    CornerRadius{int(radii.top_right.horizontal), int(radii.top_right.vertical)}
+		top_left: CornerRadius{int(radii.top_left.horizontal), int(radii.top_left.vertical)}
+		top_right: CornerRadius{int(radii.top_right.horizontal), int(radii.top_right.vertical)}
 		bottom_right: CornerRadius{int(radii.bottom_right.horizontal), int(radii.bottom_right.vertical)}
-		bottom_left:  CornerRadius{int(radii.bottom_left.horizontal), int(radii.bottom_left.vertical)}
+		bottom_left: CornerRadius{int(radii.bottom_left.horizontal), int(radii.bottom_left.vertical)}
 	}
 	return corners.contains(IntPoint{int(point.x), int(point.y)}, IntRect{int(rect.x), int(rect.y), int(rect.width), int(rect.height)})
 }
@@ -214,10 +212,10 @@ pub fn (radii BorderRadiiData) as_corners(converter DevicePixelConverter) Corner
 		return CornerRadii{}
 	}
 	return CornerRadii{
-		top_left:     radii.top_left.as_corner(converter)
-		top_right:    radii.top_right.as_corner(converter)
+		top_left: radii.top_left.as_corner(converter)
+		top_right: radii.top_right.as_corner(converter)
 		bottom_right: radii.bottom_right.as_corner(converter)
-		bottom_left:  radii.bottom_left.as_corner(converter)
+		bottom_left: radii.bottom_left.as_corner(converter)
 	}
 }
 
@@ -273,10 +271,10 @@ pub:
 
 pub fn (borders BordersData) to_device_pixels(converter DevicePixelConverter) DeviceBordersData {
 	return DeviceBordersData{
-		top:    DeviceBorderData{borders.top.color, borders.top.line_style, converter.enclosing_device_pixels(borders.top.width)}
-		right:  DeviceBorderData{borders.right.color, borders.right.line_style, converter.enclosing_device_pixels(borders.right.width)}
+		top: DeviceBorderData{borders.top.color, borders.top.line_style, converter.enclosing_device_pixels(borders.top.width)}
+		right: DeviceBorderData{borders.right.color, borders.right.line_style, converter.enclosing_device_pixels(borders.right.width)}
 		bottom: DeviceBorderData{borders.bottom.color, borders.bottom.line_style, converter.enclosing_device_pixels(borders.bottom.width)}
-		left:   DeviceBorderData{borders.left.color, borders.left.line_style, converter.enclosing_device_pixels(borders.left.width)}
+		left: DeviceBorderData{borders.left.color, borders.left.line_style, converter.enclosing_device_pixels(borders.left.width)}
 	}
 }
 
@@ -306,12 +304,12 @@ pub fn new_chrome_metrics(zoom_factor f64) !ChromeMetrics {
 	}
 	inverse := 1.0 / zoom_factor
 	return ChromeMetrics{
-		scroll_thumb_min_length:     24.0 * inverse
-		scroll_thumb_padding_thin:   2.0 * inverse
+		scroll_thumb_min_length: 24.0 * inverse
+		scroll_thumb_padding_thin: 2.0 * inverse
 		scroll_thumb_thickness_thin: 6.0 * inverse
-		scroll_thumb_thickness:      8.0 * inverse
-		scroll_gutter_thickness:     12.0 * inverse
-		resize_gripper_size:         12.0 * inverse
-		resize_gripper_padding:      2.0 * inverse
+		scroll_thumb_thickness: 8.0 * inverse
+		scroll_gutter_thickness: 12.0 * inverse
+		resize_gripper_size: 12.0 * inverse
+		resize_gripper_padding: 2.0 * inverse
 	}
 }

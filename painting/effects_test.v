@@ -6,7 +6,7 @@ fn test_all_mix_blend_modes_map_without_fallback() {
 		.luminosity, .plus_darker, .plus_lighter]
 	for index, mode in modes {
 		expected := if index == 0 { 0 } else { index + 1 }
-		assert int(mix_blend_mode_to_operator(mode)) == expected
+		assert int(mix_blend_mode_to_compositing_and_blending_operator(mode)) == expected
 	}
 }
 

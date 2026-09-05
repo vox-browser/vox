@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 482
+filename-level mappings. The current semantic audit nevertheless reports 476
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 5,673 | 1,640 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 5,688 | 1,649 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 482 unmatched Painting
+  were removed; the audit currently reports 476 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -127,6 +127,10 @@ following behavioral mismatches and added focused regressions:
   `smooth_pixels` mode was removed.
 - Inner shadows retain their distinct expanded outer and spread-adjusted inner
   rectangles and radii, rather than collapsing both geometries into one rect.
+  Their command types now own the translated `bounding_rect()` and `dump()`
+  methods used by generic display-list culling and diagnostics. Corner spread
+  adjustment and mix-blend conversion likewise use the upstream helper entry
+  points instead of equivalent logic hidden under port-only names.
 - `ShadowPainting.cpp::paint_box_shadow()` and
   `PaintableBox::paint_box_shadow()` now drive the active block paint path.
   Layers are recorded back-to-front after the background exactly where C++
@@ -415,7 +419,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 482 unmatched implementations.
+Painting: 476 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

@@ -29,13 +29,12 @@ fn test_command_bounds_and_playback_culling_context_switches() {
 	}
 	assert list.append(FillRect{IntRect{0, 0, 20, 20}, Color{ r: 1 }}, effect)
 	assert list.append(FillRect{IntRect{500, 500, 20, 20}, Color{ g: 1 }}, effect)
-	assert list.append(AddRoundedRectClip{uniform_corner_radii(4), IntRect{500, 500, 10, 10}, .outside},
-		0)
+	assert list.append(AddRoundedRectClip{uniform_corner_radii(4), IntRect{500, 500, 10, 10}, .outside}, 0)
 	assert list.append(PaintScrollbar{
 		scroll_frame_index: 1
-		thumb_rect:         IntRect{0, 0, 5, 20}
-		scroll_size:        2
-		vertical:           true
+		thumb_rect: IntRect{0, 0, 5, 20}
+		scroll_size: 2
+		vertical: true
 	}, 0)
 	actions := list.playback_plan(ScrollStateSnapshot{
 		device_offsets: [
@@ -50,10 +49,20 @@ fn test_command_bounds_and_playback_culling_context_switches() {
 		blur_radius: 3
 		shadow_rect: IntRect{10, 10, 20, 20}
 	}
+	assert outer.bounding_rect() == IntRect{4, 4, 32, 32}
 	assert command_bounding_rect(outer) or { panic('expected bounds') } == IntRect{4, 4, 32, 32}
+	assert outer.dump().contains('shadow_rect=')
+	inner := PaintInnerBoxShadow{
+		blur_radius: 5
+		device_content_rect: IntRect{2, 3, 40, 50}
+		outer_shadow_rect: IntRect{-5, -4, 60, 70}
+		inner_shadow_rect: IntRect{8, 9, 20, 30}
+	}
+	assert inner.bounding_rect() == IntRect{2, 3, 40, 50}
+	assert inner.dump().contains('inner_shadow_rect=')
 	line := DrawLine{
-		from:      IntPoint{10, 20}
-		to:        IntPoint{30, 5}
+		from: IntPoint{10, 20}
+		to: IntPoint{30, 5}
 		thickness: 2
 	}
 	assert command_bounding_rect(line) or { panic('expected bounds') } == IntRect{8, 3, 24, 19}
@@ -75,17 +84,17 @@ fn test_recorder_command_guards_rounded_fallback_and_masks() {
 	assert !recorder.fill_path(FillPath{})
 	assert !recorder.stroke_path(StrokePath{
 		path_bounding_rect: IntRect{0, 0, 10, 10}
-		color:              Color{
+		color: Color{
 			r: 1
 		}
 	})
 	assert !recorder.draw_line(DrawLine{
-		from:  IntPoint{0, 0}
-		to:    IntPoint{2, 2}
+		from: IntPoint{0, 0}
+		to: IntPoint{2, 2}
 		color: transparent
 	})
 	assert recorder.fill_rounded_rect(FillRoundedRect{
-		rect:  IntRect{0, 0, 5, 5}
+		rect: IntRect{0, 0, 5, 5}
 		color: Color{
 			r: 1
 		}
@@ -94,8 +103,8 @@ fn test_recorder_command_guards_rounded_fallback_and_masks() {
 	masks := [
 		MaskInfo{
 			display_list_id: 'mask-list'
-			rect:            IntRect{1, 2, 3, 4}
-			kind:            .luminance
+			rect: IntRect{1, 2, 3, 4}
+			kind: .luminance
 		},
 	]
 	recorder.begin_masks(masks)

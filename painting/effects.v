@@ -45,7 +45,7 @@ pub enum CompositingAndBlendingOperator {
 	plus_lighter
 }
 
-pub fn mix_blend_mode_to_operator(mode BlendMode) CompositingAndBlendingOperator {
+pub fn mix_blend_mode_to_compositing_and_blending_operator(mode BlendMode) CompositingAndBlendingOperator {
 	return match mode {
 		.normal { .normal }
 		.multiply { .multiply }
