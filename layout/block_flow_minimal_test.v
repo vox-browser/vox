@@ -911,6 +911,77 @@ fn test_absolute_position_removed_from_flow() {
 	assert box.children[2].height == 999.0 // the abspos box itself
 }
 
+// BlockFormattingContext retains the current border-box flow cursor for an abspos child's static
+// position. A pending bottom margin is not part of that cursor, and the static inline start is the
+// containing block's content edge rather than its padding edge.
+fn test_absolute_position_auto_insets_use_block_flow_static_position() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; padding: 7px')
+	flow := styled(doc, 'div', 'height: 20px; margin-bottom: 15px')
+	abs := styled(doc, 'div', 'position: absolute; width: 10px; height: 10px')
+	mut rn := root.as_node()
+	rn.append_child(flow.as_node()) or { panic('${err}') }
+	rn.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 7.0
+	assert abs_box.y == 27.0
+}
+
+// Static position is established in the formatting context where the abspos box occurred, then
+// converted through unpositioned ancestors to the actual containing block's coordinate space.
+fn test_absolute_position_static_position_crosses_static_ancestor() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; padding: 3px')
+	middle := styled(doc, 'div', 'padding: 5px')
+	flow := styled(doc, 'div', 'height: 20px')
+	abs := styled(doc, 'div', 'position: absolute; width: 10px; height: 10px')
+	mut middle_node := middle.as_node()
+	middle_node.append_child(flow.as_node()) or { panic('${err}') }
+	middle_node.append_child(abs.as_node()) or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(middle.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 8.0
+	assert abs_box.y == 28.0
+}
+
+// InlineFormattingContext positions an inline-outside abspos box at the previous fragment's
+// top-right corner after line construction has settled.
+fn test_inline_absolute_position_follows_previous_fragment() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; padding: 4px')
+	inline_box_element := styled(doc, 'span', 'display: inline-block; width: 20px; height: 10px')
+	abs := styled(doc, 'span', 'position: absolute; width: 10px; height: 10px')
+	mut root_node := root.as_node()
+	root_node.append_child(inline_box_element.as_node()) or { panic('${err}') }
+	root_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 24.0
+	assert abs_box.y == 4.0
+}
+
+// A block-outside abspos item encountered by an IFC uses the bottom of the previous fragment.
+fn test_block_outside_absolute_position_follows_previous_inline_fragment_bottom() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := styled(doc, 'div', 'position: relative; width: 200px; padding: 4px')
+	inline_box_element := styled(doc, 'span', 'display: inline-block; width: 20px; height: 10px')
+	abs := styled(doc, 'div', 'position: absolute; width: 10px; height: 10px')
+	mut root_node := root.as_node()
+	root_node.append_child(inline_box_element.as_node()) or { panic('${err}') }
+	root_node.append_child(abs.as_node()) or { panic('${err}') }
+
+	box := layout_block(root, 0, 0, 800, []&css.CSSRule{})
+	abs_box := box.find_box(i64(abs.as_node().unique_id())) or { panic('no abspos box') }
+	assert abs_box.x == 4.0
+	assert abs_box.y == 14.0
+}
+
 // right/bottom position the box's far edges against the containing block.
 fn test_absolute_position_right_bottom() {
 	doc := dom.Document.create(dom.url_about_blank())

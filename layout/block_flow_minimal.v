@@ -289,6 +289,11 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 // to collapse this box's margins against its siblings.
 //
 // `lines` are the inline line boxes of a text-bearing block (empty for a block with block children).
+struct StaticPosition {
+	x f64
+	y f64
+}
+
 pub struct BlockBox {
 pub:
 	tag_name string
@@ -461,6 +466,11 @@ pub mut:
 	// representation used by boxes which do not establish a transformed paint subtree.
 	paint_transform [6]f64
 mut:
+	// Out-of-flow descendants retain the position they would have occupied in this formatting
+	// context until their actual containing block lays them out. Absolute positions stop at the
+	// nearest positioned ancestor; fixed positions travel to the initial containing block.
+	absolute_static_positions                      map[i64]StaticPosition
+	fixed_static_positions                         map[i64]StaticPosition
 	own_scroll_frame_index                         int
 	sticky_scroll_frame_index                      int
 	accumulated_visual_context_index               int
@@ -5001,9 +5011,28 @@ fn translate_block(box BlockBox, dx f64, dy f64) BlockBox {
 	moved.x += dx
 	moved.y += dy
 	moved.paint_transform = affine_in_translated_coordinate_frame(box.paint_transform, dx, dy)
+	moved.absolute_static_positions = translate_static_positions(box.absolute_static_positions, dx, dy)
+	moved.fixed_static_positions = translate_static_positions(box.fixed_static_positions, dx, dy)
 	moved.children = box.children.map(translate_block(it, dx, dy))
 	moved.lines = box.lines.map(translate_line(it, dx, dy))
 	return moved
+}
+
+fn translate_static_positions(positions map[i64]StaticPosition, dx f64, dy f64) map[i64]StaticPosition {
+	mut translated := map[i64]StaticPosition{}
+	for node_id, position in positions {
+		translated[node_id] = StaticPosition{
+			x: position.x + dx
+			y: position.y + dy
+		}
+	}
+	return translated
+}
+
+fn merge_static_positions(mut target map[i64]StaticPosition, source map[i64]StaticPosition) {
+	for node_id, position in source {
+		target[node_id] = position
+	}
 }
 
 // A readable indented dump of the box tree — `tag (x,y) WxH` per box, children nested — for
@@ -5478,6 +5507,34 @@ fn collect_block_flow_child_elements(node &dom.Node, author_rules []&css.CSSRule
 			continue
 		}
 		if is_floating(element, author_rules) || is_block_level_display(display) {
+			elements << element
+		}
+	}
+}
+
+// The BFC visits out-of-flow boxes at their tree-order opportunity even though they do not become
+// flow children. Ladybird uses that visit to retain the current block cursor as their static
+// position. Keep them in this traversal instead of recovering a position after flow layout.
+fn block_flow_participants(node &dom.Node, author_rules []&css.CSSRule) []&dom.Element {
+	mut elements := []&dom.Element{}
+	collect_block_flow_participants(node, author_rules, mut elements)
+	return elements
+}
+
+fn collect_block_flow_participants(node &dom.Node, author_rules []&css.CSSRule, mut elements []&dom.Element) {
+	display_id := css.property_id_from_string('display') or { return }
+	for child in node.children_as_vector() {
+		element := child.as_element() or { continue }
+		display := css.cascaded_value_with_ua(element, display_id, author_rules)
+		if display == 'none' {
+			continue
+		}
+		if display == 'contents' {
+			collect_block_flow_participants(element.as_node(), author_rules, mut elements)
+			continue
+		}
+		if is_absolutely_positioned(position_value(element, author_rules))
+			|| is_floating(element, author_rules) || is_block_level_display(display) {
 			elements << element
 		}
 	}
@@ -7877,6 +7934,13 @@ struct InlineWord {
 	// For an atomic inline (an `inline-block`), the laid-out box (at margin-box origin (0,0)); the item
 	// occupies `width`×`height` on the line and is painted as its own box rather than as text.
 	box ?BlockBox
+	// An abspos item is retained as a zero-width line-builder item. Once trailing space and wrapping
+	// have settled, its previous fragment determines the static position exactly where the C++ IFC
+	// calculates it.
+	positioned_node_id             i64
+	positioned_fixed               bool
+	positioned_block_outside       bool
+	positioned_previous_sibling_id i64
 mut:
 	space_after     f64 // collapsed/preserved separator advance following this word
 	separator_after string
@@ -8121,7 +8185,22 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, preserve_sp
 			if child_display == 'none' {
 				continue
 			}
-			if is_absolutely_positioned(position_value(el, author_rules)) || is_floating(el, author_rules) {
+			position := position_value(el, author_rules)
+			if is_absolutely_positioned(position) {
+				previous_sibling_id := if previous := el.as_node().previous_sibling() {
+					i64(previous.unique_id())
+				} else {
+					i64(0)
+				}
+				segments[segments.len - 1] << InlineWord{
+					positioned_node_id: i64(el.as_node().unique_id())
+					positioned_fixed: position == 'fixed'
+					positioned_block_outside: is_block_level_display(child_display)
+					positioned_previous_sibling_id: previous_sibling_id
+				}
+				continue
+			}
+			if is_floating(el, author_rules) {
 				// out of flow — its text is its own content, not the container's
 				continue
 			}
@@ -8291,23 +8370,42 @@ fn aligned_line_x(content_x f64, content_width f64, line_width f64, align string
 // Each line carries shaped word fragments measured by the platform font contract; preserved-space
 // modes retain their exact separators and tab advances. The base paragraph direction controls
 // physical placement, while the renderer receives the logical run for its Unicode bidi shaper.
-// Returns the text line boxes AND the atomic inline (`inline-block`) boxes, both positioned in the
-// content-box local frame; the caller translates them to the content-box top and paints the boxes as
-// children.
-fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, float_bands []FloatBand, author_rules []&css.CSSRule) ([]TextLine, []BlockBox) {
+// Returns the text line boxes, atomic inline (`inline-block`) boxes, and the static positions retained
+// for out-of-flow items. Geometry is in the content-box local vertical frame; the caller translates
+// it to the final content-box top.
+fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, float_bands []FloatBand, author_rules []&css.CSSRule) ([]TextLine, []BlockBox, map[i64]StaticPosition, map[i64]StaticPosition) {
 	white_space := resolved_white_space_behavior(element, author_rules)
 
-	segments := collect_inline_segments(element, white_space.preserves_newlines(), white_space.preserves_spaces(), content_width, author_rules)
-	if segments.len == 1 && segments[0].len == 0 {
-		return []TextLine{}, []BlockBox{} // no inline content at all
+	raw_segments := collect_inline_segments(element, white_space.preserves_newlines(), white_space.preserves_spaces(), content_width, author_rules)
+	mut positioned_requests := []InlineWord{}
+	mut segments := [][]InlineWord{cap: raw_segments.len}
+	mut has_inline_content := false
+	for raw_segment in raw_segments {
+		mut segment := []InlineWord{cap: raw_segment.len}
+		for word in raw_segment {
+			if word.positioned_node_id != 0 {
+				positioned_requests << word
+			} else {
+				segment << word
+				has_inline_content = true
+			}
+		}
+		segments << segment
+	}
+	if !has_inline_content && positioned_requests.len == 0 {
+		return []TextLine{}, []BlockBox{}, map[i64]StaticPosition{}, map[i64]StaticPosition{} // no inline content at all
+	}
+	if !has_inline_content {
+		absolute_positions, fixed_positions := calculate_inline_static_positions(positioned_requests, content_x, []TextLine{}, []BlockBox{})
+		return []TextLine{}, []BlockBox{}, absolute_positions, fixed_positions
 	}
 
 	block_line_height := css.computed_line_height_px(element, author_rules)
 	align := css.cascaded_value_with_ua(element, css.property_id_from_string('text-align') or {
-		return []TextLine{}, []BlockBox{}
+		return []TextLine{}, []BlockBox{}, map[i64]StaticPosition{}, map[i64]StaticPosition{}
 	}, author_rules)
 	direction := css.cascaded_value_with_ua(element, css.property_id_from_string('direction') or {
-		return []TextLine{}, []BlockBox{}
+		return []TextLine{}, []BlockBox{}, map[i64]StaticPosition{}, map[i64]StaticPosition{}
 	}, author_rules)
 	rtl := direction == 'rtl'
 	physical_align := if align == 'start' && rtl {
@@ -8455,7 +8553,71 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 			y += line_height
 		}
 	}
-	return lines, inline_boxes
+	absolute_static_positions, fixed_static_positions := calculate_inline_static_positions(positioned_requests, content_x, lines, inline_boxes)
+	return lines, inline_boxes, absolute_static_positions, fixed_static_positions
+}
+
+// InlineFormattingContext::calculate_static_position_rect(): find the last line fragment generated
+// by an abspos box's immediate previous sibling. A block-outside box starts below it; an
+// inline-outside box starts at its top-right corner. The out-of-flow marker itself never participates
+// in line width, wrapping, alignment, or line-height.
+fn calculate_inline_static_positions(requests []InlineWord, content_x f64, lines []TextLine, inline_boxes []BlockBox) (map[i64]StaticPosition, map[i64]StaticPosition) {
+	mut absolute_positions := map[i64]StaticPosition{}
+	mut fixed_positions := map[i64]StaticPosition{}
+	for request in requests {
+		mut found := false
+		mut fragment_x := 0.0
+		mut fragment_y := 0.0
+		mut fragment_width := 0.0
+		mut fragment_height := 0.0
+		if request.positioned_previous_sibling_id != 0 {
+			for line in lines {
+				for fragment in line.fragments {
+					if fragment.text_run_id == request.positioned_previous_sibling_id
+						|| fragment.inline_node_id == request.positioned_previous_sibling_id {
+						found = true
+						fragment_x = fragment.x
+						fragment_y = fragment.y
+						fragment_width = fragment.width
+						fragment_height = fragment.height
+					}
+				}
+			}
+			for box in inline_boxes {
+				if box.node_id == request.positioned_previous_sibling_id {
+					found = true
+					fragment_x = box.x - box.padding.left - box.border.left - box.margin.left
+					fragment_y = box.y - box.padding.top - box.border.top - box.margin.top
+					fragment_width = box.margin_box_width()
+					fragment_height = box.margin_box_height()
+				}
+			}
+		}
+		position := if found {
+			if request.positioned_block_outside {
+				StaticPosition{
+					x: content_x
+					y: fragment_y + fragment_height
+				}
+			} else {
+				StaticPosition{
+					x: fragment_x + fragment_width
+					y: fragment_y
+				}
+			}
+		} else {
+			StaticPosition{
+				x: content_x
+				y: 0.0
+			}
+		}
+		if request.positioned_fixed {
+			fixed_positions[request.positioned_node_id] = position
+		} else {
+			absolute_positions[request.positioned_node_id] = position
+		}
+	}
+	return absolute_positions, fixed_positions
 }
 
 // Whether `element` uses the border-box box model (specified width/height include padding+border)
@@ -8685,8 +8847,9 @@ fn initial_containing_block(element &dom.Element, fallback_width f64, fallback_h
 // containing width chosen so the normal width algorithm yields the abspos width; the result is then
 // translated to the position implied by the insets.
 //
-// The static position (when top/left are auto) is approximated by the containing block's origin.
-fn layout_absolute(element &dom.Element, cb PositionedContainingBlock, author_rules []&css.CSSRule) BlockBox {
+// `static_position` is the retained margin-box origin from the formatting context in which this box
+// occurred. It can differ from the actual containing block's origin after crossing static ancestors.
+fn layout_absolute(element &dom.Element, cb PositionedContainingBlock, static_position StaticPosition, author_rules []&css.CSSRule) BlockBox {
 	left := offset_length(element, 'left', cb.width, author_rules)
 	right := offset_length(element, 'right', cb.width, author_rules)
 	top := offset_length(element, 'top', cb.height, author_rules)
@@ -8775,14 +8938,14 @@ fn layout_absolute(element &dom.Element, cb PositionedContainingBlock, author_ru
 	} else if r := right {
 		cb.x + cb.width - r - margin_box_width
 	} else {
-		cb.x // static-position approximation
+		static_position.x
 	}
 	margin_y := if t := top {
 		cb.y + t
 	} else if b := bottom {
 		cb.y + cb.height - b - margin_box_height
 	} else {
-		cb.y // static-position approximation
+		static_position.y
 	}
 	// The provisional box's margin-box origin (it was laid out at (0,0), and abspos establishes a BFC
 	// so no margin collapsed through — its margin-box origin is exactly (0,0)).
@@ -9050,6 +9213,8 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 	// is known.
 	mut local_children := []BlockBox{}
 	mut local_lines := []TextLine{}
+	mut local_absolute_static_positions := map[i64]StaticPosition{}
+	mut local_fixed_static_positions := map[i64]StaticPosition{}
 	mut content_height := 0.0
 	mut first_child_outer_top := 0.0
 	mut last_child_outer_bottom := 0.0
@@ -9529,7 +9694,29 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		mut pending_margins := []f64{}
 		mut leading_margins := []f64{}
 		mut has_non_self_collapsing_child := false
-		for child in block_flow_child_elements(element.as_node(), author_rules) {
+		flow_children := block_flow_child_elements(element.as_node(), author_rules)
+		flow_participants := if flow_children.len > 0 {
+			block_flow_participants(element.as_node(), author_rules)
+		} else {
+			[]&dom.Element{}
+		}
+		for child in flow_participants {
+			child_position := position_value(child, author_rules)
+			if is_absolutely_positioned(child_position) {
+				// BlockFormattingContext::layout_block_level_box() stores the BFC's current
+				// border-box cursor before returning for an out-of-flow child. Pending adjoining
+				// margins deliberately do not move this position.
+				static_position := StaticPosition{
+					x: content_x
+					y: if has_non_self_collapsing_child { flow_bottom } else { 0.0 }
+				}
+				if child_position == 'fixed' {
+					local_fixed_static_positions[i64(child.as_node().unique_id())] = static_position
+				} else {
+					local_absolute_static_positions[i64(child.as_node().unique_id())] = static_position
+				}
+				continue
+			}
 			if is_floating(child, author_rules) {
 				minimum_float_y := if has_non_self_collapsing_child { flow_bottom } else { 0.0 }
 				placed_float, band := place_float(child, minimum_float_y, content_x, width, float_bands, author_rules)
@@ -9598,8 +9785,10 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 				flow_bottom
 			}
 		} else {
-			lines, inline_boxes := layout_inline_lines(element, content_x, width, float_bands, author_rules)
+			lines, inline_boxes, inline_absolute_static_positions, inline_fixed_static_positions := layout_inline_lines(element, content_x, width, float_bands, author_rules)
 			local_lines = lines.clone()
+			local_absolute_static_positions = inline_absolute_static_positions.clone()
+			local_fixed_static_positions = inline_fixed_static_positions.clone()
 			// Atomic inline (inline-block) boxes join the children so they are painted and measured.
 			local_children << inline_boxes
 			for line in local_lines {
@@ -9666,6 +9855,12 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		children << translate_block(placed_float, 0.0, content_top)
 	}
 	lines := local_lines.map(translate_line(it, 0.0, content_top))
+	mut absolute_static_positions := translate_static_positions(local_absolute_static_positions, 0.0, content_top)
+	mut fixed_static_positions := translate_static_positions(local_fixed_static_positions, 0.0, content_top)
+	for child in children {
+		merge_static_positions(mut absolute_static_positions, child.absolute_static_positions)
+		merge_static_positions(mut fixed_static_positions, child.fixed_static_positions)
+	}
 
 	// If this box is positioned, it is the containing block for its abspos descendants: lay them out
 	// against its padding box (using its final, offset content origin). Their flow siblings above are
@@ -9686,18 +9881,44 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		}
 		include_fixed := !element.as_node().root().is_document()
 		for abspos in collect_abspos_in_scope(element.as_node(), include_fixed, author_rules) {
-			target_cb := if position_value(abspos, author_rules) == 'fixed' {
+			abspos_position := position_value(abspos, author_rules)
+			target_cb := if abspos_position == 'fixed' {
 				initial_containing_block(abspos, scope_cb.width, scope_cb.height)
 			} else {
 				scope_cb
 			}
-			children << layout_absolute(abspos, target_cb, author_rules)
+			static_position := if abspos_position == 'fixed' {
+				fixed_static_positions[i64(abspos.as_node().unique_id())] or {
+					StaticPosition{
+						x: content_x
+						y: content_top
+					}
+				}
+			} else {
+				absolute_static_positions[i64(abspos.as_node().unique_id())] or {
+					StaticPosition{
+						x: content_x
+						y: content_top
+					}
+				}
+			}
+			absolute_box := layout_absolute(abspos, target_cb, static_position, author_rules)
+			merge_static_positions(mut fixed_static_positions, absolute_box.fixed_static_positions)
+			children << absolute_box
 		}
 	}
 	if is_document_element {
 		viewport_cb := initial_containing_block(element, containing_width, height)
 		for fixed in collect_fixed_descendants(element.as_node(), author_rules) {
-			children << layout_absolute(fixed, viewport_cb, author_rules)
+			static_position := fixed_static_positions[i64(fixed.as_node().unique_id())] or {
+				StaticPosition{
+					x: content_x
+					y: content_top
+				}
+			}
+			fixed_box := layout_absolute(fixed, viewport_cb, static_position, author_rules)
+			merge_static_positions(mut fixed_static_positions, fixed_box.fixed_static_positions)
+			children << fixed_box
 		}
 	}
 
@@ -9834,6 +10055,16 @@ fn layout_block_impl(element &dom.Element, x f64, y f64, containing_width f64, f
 		visible: visible
 		pointer_events_enabled: pointer_events_enabled
 		node_id: i64(element.as_node().unique_id())
+		absolute_static_positions: if is_positioned(position) || is_document_element {
+			map[i64]StaticPosition{}
+		} else {
+			absolute_static_positions
+		}
+		fixed_static_positions: if is_document_element {
+			map[i64]StaticPosition{}
+		} else {
+			fixed_static_positions
+		}
 		children: children
 		lines: lines_with_marker
 		own_paint_transform: paint_transform

@@ -147,6 +147,20 @@ expected snapshot and compares all three upstream sections exactly: layout tree,
 paint tree, and text. The current checkout has 904 comparable cases; all 904
 pass byte-for-byte.
 
+The detached `BlockBox` compatibility layout now retains static-position data
+at the same formatting-context boundary as C++. Its block pass records the
+current border-box flow cursor before pending adjoining margins, and its inline
+pass resolves an out-of-flow box from the last fragment belonging to its
+immediate previous sibling after wrapping and trailing-space handling. Absolute
+positions cross static ancestors and stop at the nearest positioned containing
+block; fixed positions continue to the initial containing block. Auto inset
+placement from block and inline formatting contexts therefore no longer
+substitutes the containing block's padding-box origin. Focused regressions cover
+padding, pending margins, a static intermediate ancestor, and both
+inline-outside and block-outside IFC placement. The compatibility flex/grid
+alignment rectangles remain a separate translation slice; the active typed
+formatting contexts already retain them exactly.
+
 The default-page spacing defect was caused by the old renderer transport
 painting individually estimated word fragments. The typed adapter now preserves
 each committed `LineBoxFragment` as the corresponding C++ `PaintableFragment`.
