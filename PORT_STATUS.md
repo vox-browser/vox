@@ -46,7 +46,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `CookieStore` | 2 | 900 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 369 | 405 | 293 | Complete |
 | `Crypto` | 6 | 13,297 | 3,287 | 1,006 | Complete |
-| `DOM` | 57 | 26,465 | 36,803 | 2,250 | Complete |
+| `DOM` | 57 | 26,465 | 36,804 | 2,250 | Complete |
 | `DOMURL` | 4 | 1,016 | 754 | 336 | Complete |
 | `Editing` | 4 | 7,980 | 3,074 | 741 | Complete |
 | `Encoding` | 4 | 438 | 705 | 244 | Complete |
@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 36,190 | 12,833 | Present |
+| `Layout` | 50 | 19,592 | 36,370 | 12,951 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **314,424** | **56,057** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **314,605** | **56,175** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -127,10 +127,10 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 595
   candidate-name-match: 14046
-  unmatched: 1717
+  unmatched: 1713
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 316
+  consolidated-name-match: 320
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   413 Painting
+   409 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -192,10 +192,15 @@ active compatibility renderer still adapts that typed tree to `BlockBox` and
 boundary and is not counted as a completed Painting translation. It replays
 retained box commands through
 Ladybird's stacking-context phase order instead of painting each flattened box
-atomically. Its hit-test path retains the sorted paintable order until stacking
-invalidation, resolves the direct DOM owner, and applies inverse transforms and
-`pointer-events` filtering instead of rebuilding paint order and rescanning the
-DOM for each mouse event. Committed text runs also remain source-shaped
+atomically. Its hit-test path reverses that retained phase plan so overlay
+chrome, foreground fragments, and border-box fallback preserve their painted
+depth without rebuilding paint order or rescanning the DOM for each mouse
+event. It resolves the direct DOM owner and applies inverse transforms and
+`pointer-events` filtering at the same boundary. The hit plan separately keeps
+zero-opacity stacking contexts targetable while excluding non-invertible ones,
+and preserves the source's rectangle-only context-root fallback separately from
+ordinary boxes' rounded-corner containment.
+Committed text runs also remain source-shaped
 `PaintableFragment`s instead of being expanded into compatibility word objects
 and joined again before native shaping. The native shell records through the
 translated `Document::record_display_list()` lifecycle; painting and hit testing
@@ -209,7 +214,11 @@ indeterminate state rather than a layout-time attribute snapshot; the translated
 `HTMLInputElement::set_checked()` invalidation refreshes the retained commands.
 Its overlay phase uses Painting's translated scrollbar geometry and
 ports PaintableBox's scrollbar colors, mirroring, current-offset placement, and
-resize-gripper drawing. Retained replay and hit testing now share translated
+resize-gripper drawing. That geometry now also drives scrollbar and resize-handle
+hit testing, including horizontal-before-vertical checks, resize-corner
+precedence, border inflation, and stable chrome-widget identity. Both
+`elementFromPoint()` and `elementsFromPoint()` consume the same phase order.
+Retained replay and hit testing now share translated
 `ScrollState` snapshots: a mandatory root frame and live element offsets
 transform descendant content, padding-box clips contain overflow, sticky
 constraints track element or viewport scrollports and containing blocks, and

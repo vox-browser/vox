@@ -223,6 +223,20 @@ vertical/horizontal nearest-edge candidates, selection common-ancestor and
 fragment walk uses the containing box's descendant visual context so scrolling,
 transforms, and clipping remain shared with painting.
 
+`PaintableBox::hit_test_chrome()` and `resizer_contains()` now share the active
+overlay's translated scrollbar and resize geometry. Hit testing walks the
+retained stacking-context paint phases backwards: overlay chrome precedes
+descendants, foreground fragments precede their containing box, and border
+geometry supplies the box fallback. This removes the flat-order bug that let a
+scroller's child intercept its scrollbar. Horizontal/vertical scrollbar
+identity, resize-corner precedence, border inflation, pointer-event gating, and
+the source's inline `PaintableWithLines` gate have focused regressions. A
+separate retained hit phase plan includes zero-opacity stacking contexts while
+still excluding non-invertible transforms, matching `StackingContext::hit_test()`
+rather than inheriting `paint()`'s transparent-context early exit. The same
+plan drives `elementsFromPoint()`, so chrome-owning elements precede descendants
+at scrollbar coordinates there as well.
+
 The active compatibility paint bridge now builds long text runs with a
 capacity-sized `strings.Builder`, retains box references through paint-order
 and hit-test traversal, skips invisible hit-test candidates, and sorts stacking
@@ -235,14 +249,15 @@ zero/auto descendants, positive contexts, and outlines are replayed separately.
 It also skips zero-opacity and non-invertible transform contexts. CSS transform
 matrices are accumulated while descending the typed paint tree, matching the
 stacking-context traversal without recursively copying an already-built subtree
-for every transformed ancestor. Hit testing retains that sorted paint order with
-the stacking-context tree until invalidation instead of reconstructing and
-sorting it for every pointer event. It resolves retained DOM identities directly,
+for every transformed ancestor. Hit testing retains that source-shaped phase
+plan with the stacking-context tree until invalidation instead of reconstructing
+and sorting it for every pointer event. It resolves retained DOM identities directly,
 inverse-maps points through accumulated transforms, and applies `visibility`,
 `pointer-events`, and non-invertible-transform filtering at the same boundary as
-`PaintableBox::hit_test()`. Its final border-box test also uses the translated
-normalized elliptical border-radii containment check, so clipped corner pixels
-fall through to the paintable underneath. The native shell consumes this same
+`PaintableBox::hit_test()`. Ordinary paintable boxes use the translated
+normalized elliptical border-radii containment check, while stacking-context
+roots preserve `StackingContext::hit_test()`'s rectangle-only source behavior.
+The native shell consumes this same
 viewport callback instead of independently flattening `BlockBox` during mouse
 movement. The final
 retained replay also consumes Painting's translated `ScrollState` snapshots.

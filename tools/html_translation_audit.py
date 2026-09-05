@@ -239,6 +239,10 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("PaintableWithLines", "hit_test_fragments"): (
         ("compatibility_hit_test_fragments", None),
     ),
+    ("PaintableBox", "hit_test_chrome"): (("compatibility_hit_test_chrome", None),),
+    ("PaintableBox", "resizer_contains"): (("compatibility_resizer_contains", "BlockBox"),),
+    ("Scrollbar", "contains"): (("compatibility_scrollbar_contains", None),),
+    ("ResizeHandle", "contains"): (("compatibility_resizer_contains", "BlockBox"),),
     # AudioScheduledSourceNode is the shared AudioNode state in the value-model
     # translation; its six operations remain concrete AudioNode methods.
     ("AudioScheduledSourceNode", "onended"): (("onended", "AudioNode"),),

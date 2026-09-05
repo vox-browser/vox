@@ -1239,6 +1239,7 @@ fn viewport_build_stacking_context_tree(target voidptr) {
 		dump_callback: viewport_stacking_context_dump
 	}
 	result.paint_order, result.paint_steps = result.paint_tree.compatibility_paint_plan()
+	result.hit_test_steps = result.paint_tree.compatibility_hit_test_steps()
 	result.hit_test_order = []&BlockBox{cap: result.paint_order.len}
 	for entry in result.paint_order {
 		result.hit_test_order << entry.box
@@ -1306,6 +1307,7 @@ fn viewport_invalidate_stacking_context(target voidptr) {
 	result.stacking_context = unsafe { nil }
 	result.paint_order.clear()
 	result.paint_steps.clear()
+	result.hit_test_steps.clear()
 	result.hit_test_order.clear()
 	// The cache is indexed by the retained paint order. A rebuilt stacking tree
 	// may assign different indices even when individual box commands are stable.
@@ -1320,30 +1322,58 @@ fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.H
 	viewport_refresh_scroll_state(target)
 	viewport_build_stacking_context_tree(target)
 	snapshot := result.scroll_state.snapshot(1.0)
+	metrics := painting.new_chrome_metrics(1.0) or { return none }
 	mut hit_test_state := CompatibilityHitTestState{}
-	for index := result.hit_test_order.len - 1; index >= 0; index-- {
-		box := result.hit_test_order[index]
-		if empty_editable_result := compatibility_empty_editable_hit_test(box, x, y, type_, result.visual_context_tree, snapshot) {
-			if hit_test_state.consider_hit_test_result(empty_editable_result, type_) {
-				return hit_test_state.result
+	// StackingContext paints chrome in the overlay phase, fragments in the
+	// foreground phase, and the box itself behind its descendants. Reversing
+	// that retained source-shaped plan preserves the recursive hit-test order
+	// without rebuilding or resorting the tree for every pointer event.
+	for index := result.hit_test_steps.len - 1; index >= 0; index-- {
+		step := result.hit_test_steps[index]
+		box := step.box
+		match step.phase {
+			.overlay {
+				// Child stacking-context roots are entered through
+				// StackingContext::hit_test(), which does not run the ordinary
+				// PaintableBox chrome/empty-host preamble. The viewport itself is
+				// initially entered through PaintableBox::hit_test() and does.
+				if box.stacking_context && voidptr(box) != voidptr(&result.paint_tree) {
+					continue
+				}
+				// PaintableWithLines tests an empty editable host before chrome.
+				if empty_editable_result := compatibility_empty_editable_hit_test(box, x, y, type_, result.visual_context_tree, snapshot) {
+					if hit_test_state.consider_hit_test_result(empty_editable_result, type_) {
+						return hit_test_state.result
+					}
+				}
+				if chrome_result := compatibility_hit_test_chrome(box, x, y, result.visual_context_tree, snapshot, metrics) {
+					if hit_test_state.consider_hit_test_result(chrome_result, type_) {
+						return hit_test_state.result
+					}
+				}
 			}
-		}
-		if compatibility_hit_test_fragments(result.document, box, x, y, type_, result.visual_context_tree, snapshot, mut hit_test_state) {
-			return hit_test_state.result
-		}
-		candidate_node_id := box.node_id_for_hit_test()
-		if candidate_node_id == 0 || !box.visible || !box.pointer_events_enabled
-			|| !compatibility_box_contains_hit_test_point(box, x, y, result.visual_context_tree, snapshot) {
-			continue
-		}
-		if element := element_for_paint_node_id(candidate_node_id) {
-			candidate := dom.HitTestResult{
-				element: element
-				node: element.as_node()
+			.foreground {
+				if compatibility_hit_test_fragments(result.document, box, x, y, type_, result.visual_context_tree, snapshot, mut hit_test_state) {
+					return hit_test_state.result
+				}
 			}
-			if hit_test_state.consider_hit_test_result(candidate, type_) {
-				return hit_test_state.result
+			.border {
+				candidate_node_id := box.node_id_for_hit_test()
+				if candidate_node_id == 0 || !box.visible || !box.pointer_events_enabled
+					|| !compatibility_box_contains_hit_test_point(box, x, y, box.stacking_context, result.visual_context_tree, snapshot) {
+					continue
+				}
+				if element := element_for_paint_node_id(candidate_node_id) {
+					candidate := dom.HitTestResult{
+						element: element
+						node: element.as_node()
+					}
+					if hit_test_state.consider_hit_test_result(candidate, type_) {
+						return hit_test_state.result
+					}
+				}
 			}
+			else {}
 		}
 	}
 	return hit_test_state.result
@@ -1406,6 +1436,86 @@ fn compatibility_hit_test_result_for_node(node &dom.Node, index_in_node int,
 	}
 }
 
+fn compatibility_hit_test_result_for_chrome(box &BlockBox, chrome_widget_id string) dom.HitTestResult {
+	mut dom_node := unsafe { &dom.Node(nil) }
+	if box.layout_handle != unsafe { nil } {
+		layout_node := unsafe { &Node(box.layout_handle) }
+		if node := layout_node.dom_node() {
+			dom_node = node
+		}
+	}
+	if dom_node == unsafe { nil } {
+		node_id := box.node_id_for_hit_test()
+		if node_id != 0 {
+			if node := dom.Node.from_unique_id(dom.UniqueNodeID(node_id)) {
+				dom_node = node
+			}
+		}
+	}
+	return dom.HitTestResult{
+		element: if dom_node == unsafe { nil } {
+			unsafe { &dom.Element(nil) }
+		} else {
+			compatibility_element_for_hit_node(dom_node)
+		}
+		node: dom_node
+		chrome_widget_id: chrome_widget_id
+	}
+}
+
+fn compatibility_uses_paintable_with_lines_hit_test(box &BlockBox) bool {
+	if !box.paintable_with_lines {
+		return false
+	}
+	if box.layout_handle == unsafe { nil } {
+		return true
+	}
+	layout_node := unsafe { &Node(box.layout_handle) }
+	return layout_node.children_are_inline()
+}
+
+// Direct translation of PaintableBox::hit_test_chrome(). Resize chrome wins
+// over horizontal and then vertical scrollbars in their overlapping corners.
+fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
+	tree painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot,
+	metrics painting.ChromeMetrics) ?dom.HitTestResult {
+	uses_lines_hit_test := compatibility_uses_paintable_with_lines_hit_test(box)
+	if !box.visible || (!uses_lines_hit_test && !box.pointer_events_enabled) {
+		return none
+	}
+	overlay := box.overlay or { return none }
+	position := if uses_lines_hit_test {
+		painting.Point{x, y}
+	} else {
+		tree.transform_point_for_hit_test(box.accumulated_visual_context_index, painting.Point{x, y}, snapshot) or {
+			painting.Point{x, y}
+		}
+	}
+	identity := u64(voidptr(box))
+	if box.compatibility_resizer_contains(position, overlay, metrics) {
+		return compatibility_hit_test_result_for_chrome(box, 'resize-handle:${identity}')
+	}
+	if overlay.scrollbar_width == .none_ {
+		return none
+	}
+	for direction in [painting.ScrollDirection.horizontal, .vertical] {
+		can_scroll := if direction == .horizontal {
+			overlay.can_scroll_horizontally
+		} else {
+			overlay.can_scroll_vertically
+		}
+		if !can_scroll {
+			continue
+		}
+		input := box.compatibility_scrollbar_geometry_input(overlay, direction, metrics, false)
+		if compatibility_scrollbar_contains(position, input) {
+			name := if direction == .horizontal { 'horizontal' } else { 'vertical' }
+			return compatibility_hit_test_result_for_chrome(box, 'scrollbar-${name}:${identity}')
+		}
+	}
+	return none
+}
+
 // PaintableWithLines::hit_test()'s empty-editable fast path. It precedes the
 // ordinary child/fragment walk and gives an empty editing host an exact cursor
 // position at DOM offset zero.
@@ -1442,10 +1552,16 @@ fn compatibility_text_cursor_common_ancestor_parent(document &dom.Document) ?&do
 fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64,
 	y f64, type_ dom.HitTestType, tree painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot, mut hit_test_state CompatibilityHitTestState) bool {
-	if !box.paintable_with_lines || !box.visible || !box.pointer_events_enabled {
+	if !compatibility_uses_paintable_with_lines_hit_test(box) || !box.visible
+		|| !box.pointer_events_enabled {
 		return false
 	}
-	local_position := tree.transform_point_for_hit_test(box.accumulated_visual_context_for_descendants_idx, painting.Point{x, y}, snapshot) or { return false }
+	context_index := if box.stacking_context {
+		box.accumulated_visual_context_index
+	} else {
+		box.accumulated_visual_context_for_descendants_idx
+	}
+	local_position := tree.transform_point_for_hit_test(context_index, painting.Point{x, y}, snapshot) or { return false }
 	common_ancestor_parent := if type_ == .text_cursor {
 		compatibility_text_cursor_common_ancestor_parent(document)
 	} else {
@@ -1511,23 +1627,48 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 	viewport_refresh_scroll_state(target)
 	viewport_build_stacking_context_tree(target)
 	snapshot := result.scroll_state.snapshot(1.0)
+	metrics := painting.new_chrome_metrics(1.0) or { return []&dom.Element{} }
 	mut elements := []&dom.Element{}
-	for index := result.hit_test_order.len - 1; index >= 0; index-- {
-		box := result.hit_test_order[index]
-		node_id := box.node_id_for_hit_test()
-		if node_id == 0 || !box.visible || !box.pointer_events_enabled
-			|| !compatibility_box_contains_hit_test_point(box, x, y, result.visual_context_tree, snapshot) {
-			continue
-		}
-		if element := element_for_paint_node_id(node_id) {
-			elements << element
+	for index := result.hit_test_steps.len - 1; index >= 0; index-- {
+		step := result.hit_test_steps[index]
+		box := step.box
+		match step.phase {
+			.overlay {
+				if box.stacking_context && voidptr(box) != voidptr(&result.paint_tree) {
+					continue
+				}
+				if chrome_result := compatibility_hit_test_chrome(box, x, y, result.visual_context_tree, snapshot, metrics) {
+					if chrome_result.element != unsafe { nil } {
+						elements << chrome_result.element
+					}
+				}
+			}
+			.border {
+				node_id := box.node_id_for_hit_test()
+				if node_id == 0 || !box.visible || !box.pointer_events_enabled
+					|| !compatibility_box_contains_hit_test_point(box, x, y, box.stacking_context, result.visual_context_tree, snapshot) {
+					continue
+				}
+				if element := element_for_paint_node_id(node_id) {
+					elements << element
+				}
+			}
+			else {}
 		}
 	}
 	return elements
 }
 
-fn compatibility_box_contains_hit_test_point(box &BlockBox, x f64, y f64, tree painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot) bool {
+fn compatibility_box_contains_hit_test_point(box &BlockBox, x f64, y f64,
+	stacking_context_root bool, tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot) bool {
 	local_point := tree.transform_point_for_hit_test(box.accumulated_visual_context_index, painting.Point{x, y}, snapshot) or { return false }
+	if stacking_context_root {
+		// StackingContext::hit_test() intentionally performs only the final
+		// absolute-border-box containment check here.
+		border_box := box.border_box()
+		return border_box.contains(local_point.x, local_point.y)
+	}
 	// PaintableBox::hit_test() applies the normalized border radii after mapping
 	// the viewport point into the box's local coordinate space.
 	return box.border_box_contains_hit_test_point(local_point)

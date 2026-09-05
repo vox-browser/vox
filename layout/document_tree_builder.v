@@ -310,10 +310,12 @@ pub mut:
 	visual_context_tree               painting.AccumulatedVisualContextTree = painting.new_accumulated_visual_context_tree()
 mut:
 	// ViewportPaintable::build_stacking_context_tree() retains this sorted tree
-	// until stacking invalidation upstream. Painting and hit testing consume the
-	// same plan rather than rebuilding and sorting it independently.
+	// until stacking invalidation upstream. Painting and hit testing consume
+	// retained phase plans from the same ordering; the hit plan alone keeps
+	// opacity:0 contexts targetable.
 	paint_order    []PaintOrderEntry
 	paint_steps    []CompatibilityPaintStep
+	hit_test_steps []CompatibilityPaintStep
 	hit_test_order []&BlockBox
 	// PaintableBox retains one command vector per PaintPhase. These buckets are
 	// independent of display-list and stacking traversal lifetimes.

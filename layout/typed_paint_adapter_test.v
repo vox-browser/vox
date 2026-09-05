@@ -892,20 +892,67 @@ fn test_document_hit_testing_reuses_paint_order_and_maps_transforms_to_local_spa
 	assert result.hit_test_order.len == retained_count
 }
 
-fn test_document_hit_testing_rejects_points_outside_rounded_border_corners() {
+fn test_stacking_context_hit_test_keeps_zero_opacity_and_skips_noninvertible_contexts() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#under { position: absolute; z-index: 1; width: 100px; height: 100px }
+		#transparent { position: absolute; z-index: 2; width: 40px; height: 40px; opacity: 0 }
+		#flat { position: absolute; z-index: 3; width: 40px; height: 40px; transform: matrix(0, 0, 0, 0, 10, 70); transform-origin: 0 0 }
+	</style><body><div id="under"></div><div id="transparent"></div><div id="flat"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	under := document.get_element_by_id('under') or { panic('missing opacity underlay') }
+	transparent := document.get_element_by_id('transparent') or {
+		panic('missing transparent context')
+	}
+	flat := document.get_element_by_id('flat') or { panic('missing noninvertible context') }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	transparent_hit := mutable_document.element_from_point(10, 10) or {
+		panic('missing transparent hit')
+	}
+	assert transparent_hit.as_node().unique_id() == transparent.as_node().unique_id()
+	flat_hit := mutable_document.element_from_point(10, 70) or {
+		panic('missing noninvertible fallback hit')
+	}
+	assert flat_hit.as_node().unique_id() == under.as_node().unique_id()
+
+	result := document_layout_result(document) or { panic('missing hit phase plans') }
+	transparent_id := i64(transparent.as_node().unique_id())
+	flat_id := i64(flat.as_node().unique_id())
+	assert result.paint_steps.all(it.box.node_id != transparent_id)
+	assert result.hit_test_steps.any(it.box.node_id == transparent_id)
+	assert result.hit_test_steps.all(it.box.node_id != flat_id)
+}
+
+fn test_document_hit_testing_preserves_stacking_context_rounded_corner_distinction() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin: 0 }
 		#under { position: absolute; z-index: 1; width: 100px; height: 100px; background: blue }
 		#rounded { position: absolute; z-index: 2; width: 100px; height: 100px; border-radius: 50px; background: red }
 	</style><body><div id="under"></div><div id="rounded"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
-	under := document.get_element_by_id('under') or { panic('missing under element') }
 	rounded := document.get_element_by_id('rounded') or { panic('missing rounded element') }
 	mut mutable_document := unsafe { &dom.Document(document) }
 	corner_hit := mutable_document.element_from_point(1, 1) or { panic('missing corner hit') }
-	assert corner_hit.as_node().unique_id() == under.as_node().unique_id()
+	// StackingContext::hit_test() uses its root's border rectangle directly.
+	assert corner_hit.as_node().unique_id() == rounded.as_node().unique_id()
 	center_hit := mutable_document.element_from_point(50, 50) or { panic('missing center hit') }
 	assert center_hit.as_node().unique_id() == rounded.as_node().unique_id()
+
+	non_context_document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#under { position: absolute; z-index: -1; width: 100px; height: 100px; background: blue }
+		#rounded { position: absolute; width: 100px; height: 100px; border-radius: 50px; background: red }
+	</style><body><div id="under"></div><div id="rounded"></div></body>')
+	_ = layout_document_typed_in_viewport(non_context_document, 320, 200)
+	non_context_under := non_context_document.get_element_by_id('under') or {
+		panic('missing non-context underlay')
+	}
+	mut mutable_non_context_document := unsafe { &dom.Document(non_context_document) }
+	non_context_corner := mutable_non_context_document.element_from_point(1, 1) or {
+		panic('missing non-context corner hit')
+	}
+	// PaintableBox::hit_test() applies the normalized radii before its callback.
+	assert non_context_corner.as_node().unique_id() == non_context_under.as_node().unique_id()
 }
 
 fn test_document_hit_testing_skips_inert_paintables() {
@@ -1159,6 +1206,77 @@ fn test_typed_paint_adapter_transports_custom_scrollbar_and_resizer_overlay() {
 	moved_thumbs := root.paint_commands().filter(it.kind == 'fill_rounded_rect' && it.color == css.Color{1, 2, 3, 255}.serialize())
 	assert moved_thumbs.len == 1
 	assert moved_thumbs[0].y > thumbs[0].y
+}
+
+fn test_paintable_box_hit_test_chrome_uses_scrollbar_and_inflated_resizer_geometry() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#scroller { width: 100px; height: 50px; overflow: auto; resize: both; border: 4px solid }
+		#content { width: 200px; height: 200px }
+	</style><body><div id="scroller"><div id="content"></div></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	scroller := document.get_element_by_id('scroller') or { panic('missing chrome scroller') }
+	box := root.find_box(i64(scroller.as_node().unique_id())) or {
+		panic('missing chrome scroller box')
+	}
+	overlay := box.overlay or { panic('missing chrome overlay') }
+	assert overlay.can_scroll_horizontally
+	assert overlay.can_scroll_vertically
+	assert overlay.has_resizer
+	metrics := painting.new_chrome_metrics(1) or { panic(err) }
+	viewport := document.paintable_box() or { panic('missing chrome viewport') }
+
+	vertical_input := box.compatibility_scrollbar_geometry_input(overlay, .vertical, metrics, false)
+	vertical_rect := painting.paintable_box_absolute_scrollbar_rect(vertical_input)
+	vertical_hit := viewport.hit_test(vertical_rect.x + vertical_rect.width / 2, vertical_rect.y + 1, .exact) or { panic('missing vertical scrollbar hit') }
+	assert vertical_hit.element.as_node().unique_id() == scroller.as_node().unique_id()
+	assert vertical_hit.node.unique_id() == scroller.as_node().unique_id()
+	assert vertical_hit.chrome_widget_id.starts_with('scrollbar-vertical:')
+	mut mutable_document := unsafe { &dom.Document(document) }
+	all_vertical_hits := mutable_document.elements_from_point(vertical_rect.x + vertical_rect.width / 2, vertical_rect.y + 1)
+	assert all_vertical_hits.len > 0
+	assert all_vertical_hits[0].as_node().unique_id() == scroller.as_node().unique_id()
+
+	horizontal_input := box.compatibility_scrollbar_geometry_input(overlay, .horizontal, metrics, false)
+	horizontal_rect := painting.paintable_box_absolute_scrollbar_rect(horizontal_input)
+	horizontal_hit := viewport.hit_test(horizontal_rect.x + 1, horizontal_rect.y + horizontal_rect.height / 2, .exact) or {
+		panic('missing horizontal scrollbar hit')
+	}
+	assert horizontal_hit.chrome_widget_id.starts_with('scrollbar-horizontal:')
+
+	resizer_rect := painting.paintable_box_absolute_resizer_rect(box.compatibility_absolute_padding_rect(), true, false, metrics) or { panic('missing resize handle rect') }
+	// PaintableBox::resizer_contains() inflates through the right and bottom
+	// borders, beyond the 12px grip that is painted inside the padding box.
+	resize_hit := viewport.hit_test(resizer_rect.right() + 2, resizer_rect.bottom() + 2, .exact) or { panic('missing inflated resize handle hit') }
+	assert resize_hit.chrome_widget_id.starts_with('resize-handle:')
+
+	result := document_layout_result(document) or { panic('missing chrome layout result') }
+	snapshot := result.scroll_state.snapshot(1)
+	mut pointerless_box := box
+	pointerless_box.pointer_events_enabled = false
+	resize_position := painting.Point{resizer_rect.right() + 2, resizer_rect.bottom() + 2}
+	assert compatibility_hit_test_chrome(&pointerless_box, resize_position.x, resize_position.y, result.visual_context_tree, snapshot, metrics) == none
+
+	// PaintableWithLines::hit_test() intentionally checks visible chrome without
+	// the PaintableBox pointer-events gate; preserve that source distinction.
+	inline_document := html.parse_document('<!doctype html><style>
+		html, body, p { margin: 0 }
+		p { width: 100px; height: 20px; overflow: auto; resize: both; pointer-events: none; white-space: nowrap }
+	</style><body><p id="inline">overflowing inline text</p></body>')
+	inline_root := layout_document_typed_in_viewport(inline_document, 320, 200)
+	inline_element := inline_document.get_element_by_id('inline') or {
+		panic('missing pointerless inline scroller')
+	}
+	inline_box := inline_root.find_box(i64(inline_element.as_node().unique_id())) or {
+		panic('missing pointerless inline box')
+	}
+	inline_overlay := inline_box.overlay or { panic('missing pointerless inline overlay') }
+	inline_resizer := painting.paintable_box_absolute_resizer_rect(inline_box.compatibility_absolute_padding_rect(), inline_overlay.has_resizer, inline_overlay.chrome_mirrored, metrics) or {
+		panic('missing pointerless inline resizer')
+	}
+	inline_viewport := inline_document.paintable_box() or { panic('missing inline viewport') }
+	inline_chrome := inline_viewport.hit_test(inline_resizer.x + 1, inline_resizer.y + 1, .exact) or { panic('missing pointerless inline chrome hit') }
+	assert inline_chrome.chrome_widget_id.starts_with('resize-handle:')
 }
 
 fn test_element_scroll_replays_retained_commands_through_live_visual_context() {

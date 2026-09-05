@@ -1761,6 +1761,61 @@ fn (b &BlockBox) current_scroll_offset(fallback CompatibilityOverlayData) painti
 	return painting.Point{fallback.scroll_offset_x, fallback.scroll_offset_y}
 }
 
+fn (b &BlockBox) compatibility_absolute_padding_rect() painting.Rect {
+	return painting.Rect{
+		x: b.x - b.padding.left
+		y: b.y - b.padding.top
+		width: b.width + b.padding.left + b.padding.right
+		height: b.height + b.padding.top + b.padding.bottom
+	}
+}
+
+fn (b &BlockBox) compatibility_scrollbar_geometry_input(overlay CompatibilityOverlayData,
+	direction painting.ScrollDirection, metrics painting.ChromeMetrics,
+	with_gutter bool) painting.ScrollbarGeometryInput {
+	return painting.ScrollbarGeometryInput{
+		direction: direction
+		padding_rect: b.compatibility_absolute_padding_rect()
+		scrollable_overflow: painting.Rect{
+			x: overlay.scrollable_overflow.x
+			y: overlay.scrollable_overflow.y
+			width: overlay.scrollable_overflow.width
+			height: overlay.scrollable_overflow.height
+		}
+		scroll_offset: b.current_scroll_offset(overlay)
+		metrics: metrics
+		with_gutter: with_gutter
+		chrome_mirrored: overlay.chrome_mirrored
+		has_resizer: overlay.has_resizer
+		has_other_scrollbar: if direction == .vertical {
+			overlay.can_scroll_horizontally
+		} else {
+			overlay.can_scroll_vertically
+		}
+	}
+}
+
+// Direct translation of Scrollbar::contains() after the owning box has checked
+// that this axis is scrollable and scrollbar-width does not suppress chrome.
+fn compatibility_scrollbar_contains(position painting.Point,
+	input painting.ScrollbarGeometryInput) bool {
+	return painting.paintable_box_absolute_scrollbar_rect(input).contains(position)
+}
+
+// Direct translation of PaintableBox::resizer_contains(), also consumed by
+// ResizeHandle::contains(). The visible grip grows through the adjacent border
+// on the physical end side and through the bottom border.
+fn (b &BlockBox) compatibility_resizer_contains(position painting.Point,
+	overlay CompatibilityOverlayData, metrics painting.ChromeMetrics) bool {
+	mut rect := painting.paintable_box_absolute_resizer_rect(b.compatibility_absolute_padding_rect(), overlay.has_resizer, overlay.chrome_mirrored, metrics) or { return false }
+	rect = if overlay.chrome_mirrored {
+		rect.inflated(0, 0, b.border.bottom, b.border.left)
+	} else {
+		rect.inflated(0, b.border.right, b.border.bottom, 0)
+	}
+	return rect.contains(position)
+}
+
 struct CompatibilityFormControlState {
 	checked       bool
 	indeterminate bool
@@ -1878,47 +1933,19 @@ fn append_resizer_line_command(mut commands []PaintCommand, from_x f64, from_y f
 
 fn (b &BlockBox) append_overlay_commands(mut commands []PaintCommand, metrics painting.ChromeMetrics, opacity f64) {
 	overlay := b.overlay or { return }
-	padding_rect := painting.Rect{
-		x: b.x - b.padding.left
-		y: b.y - b.padding.top
-		width: b.width + b.padding.left + b.padding.right
-		height: b.height + b.padding.top + b.padding.bottom
-	}
-	overflow_rect := painting.Rect{
-		x: overlay.scrollable_overflow.x
-		y: overlay.scrollable_overflow.y
-		width: overlay.scrollable_overflow.width
-		height: overlay.scrollable_overflow.height
-	}
+	padding_rect := b.compatibility_absolute_padding_rect()
 	if overlay.scrollbar_width != .none_ {
-		scroll_offset := b.current_scroll_offset(overlay)
 		// PaintableBox::paint visits vertical before horizontal.
 		if overlay.can_scroll_vertically {
-			if data := painting.paintable_box_compute_scrollbar_data(painting.ScrollbarGeometryInput{
-				direction: .vertical
-				padding_rect: padding_rect
-				scrollable_overflow: overflow_rect
-				scroll_offset: scroll_offset
-				metrics: metrics
-				chrome_mirrored: overlay.chrome_mirrored
-				has_resizer: overlay.has_resizer
-				has_other_scrollbar: overlay.can_scroll_horizontally
-			}) {
-				append_scrollbar_overlay_command(mut commands, data, overlay, opacity, .vertical, scroll_offset.y)
+			input := b.compatibility_scrollbar_geometry_input(overlay, .vertical, metrics, false)
+			if data := painting.paintable_box_compute_scrollbar_data(input) {
+				append_scrollbar_overlay_command(mut commands, data, overlay, opacity, .vertical, input.scroll_offset.y)
 			}
 		}
 		if overlay.can_scroll_horizontally {
-			if data := painting.paintable_box_compute_scrollbar_data(painting.ScrollbarGeometryInput{
-				direction: .horizontal
-				padding_rect: padding_rect
-				scrollable_overflow: overflow_rect
-				scroll_offset: scroll_offset
-				metrics: metrics
-				chrome_mirrored: overlay.chrome_mirrored
-				has_resizer: overlay.has_resizer
-				has_other_scrollbar: overlay.can_scroll_vertically
-			}) {
-				append_scrollbar_overlay_command(mut commands, data, overlay, opacity, .horizontal, scroll_offset.x)
+			input := b.compatibility_scrollbar_geometry_input(overlay, .horizontal, metrics, false)
+			if data := painting.paintable_box_compute_scrollbar_data(input) {
+				append_scrollbar_overlay_command(mut commands, data, overlay, opacity, .horizontal, input.scroll_offset.x)
 			}
 		}
 	}
@@ -2852,8 +2879,9 @@ fn (b &BlockBox) has_noninvertible_paint_transform() bool {
 // Translation of Painting::StackingContext::paint_internal() for the active
 // compatibility BlockBox transport. It preserves the upstream phase ordering;
 // the command-generation details remain in flat_paint_commands().
-fn (b &BlockBox) collect_compatibility_stacking_context_paint_steps(mut steps []CompatibilityPaintStep) {
-	if b.opacity == 0 || b.has_noninvertible_paint_transform() {
+fn (b &BlockBox) collect_compatibility_stacking_context_paint_steps(mut steps []CompatibilityPaintStep,
+	for_hit_testing bool) {
+	if (!for_hit_testing && b.opacity == 0) || b.has_noninvertible_paint_transform() {
 		return
 	}
 
@@ -2864,7 +2892,7 @@ fn (b &BlockBox) collect_compatibility_stacking_context_paint_steps(mut steps []
 	append_compatibility_paint_step(b, .border, mut steps)
 
 	for child in stable_sort_box_references_by_z(members.negative) {
-		child.collect_compatibility_stacking_context_paint_steps(mut steps)
+		child.collect_compatibility_stacking_context_paint_steps(mut steps, for_hit_testing)
 	}
 
 	b.collect_compatibility_descendant_paint_steps(.background_and_borders, mut steps)
@@ -2875,14 +2903,14 @@ fn (b &BlockBox) collect_compatibility_stacking_context_paint_steps(mut steps []
 
 	for child in members.zero {
 		if child.stacking_context {
-			child.collect_compatibility_stacking_context_paint_steps(mut steps)
+			child.collect_compatibility_stacking_context_paint_steps(mut steps, for_hit_testing)
 		} else {
 			child.collect_compatibility_node_as_stacking_context_steps(mut steps)
 		}
 	}
 
 	for child in stable_sort_box_references_by_z(members.positive) {
-		child.collect_compatibility_stacking_context_paint_steps(mut steps)
+		child.collect_compatibility_stacking_context_paint_steps(mut steps, for_hit_testing)
 	}
 
 	append_compatibility_paint_step(b, .outline, mut steps)
@@ -2900,11 +2928,20 @@ fn (b &BlockBox) compatibility_paint_plan() ([]PaintOrderEntry, []CompatibilityP
 		entry_indexes[u64(voidptr(entry.box))] = index
 	}
 	mut steps := []CompatibilityPaintStep{cap: entries.len * compatibility_paint_phase_count}
-	b.collect_compatibility_stacking_context_paint_steps(mut steps)
+	b.collect_compatibility_stacking_context_paint_steps(mut steps, false)
 	for mut step in steps {
 		step.entry_index = entry_indexes[u64(voidptr(step.box))] or { -1 }
 	}
 	return entries, steps
+}
+
+// StackingContext::hit_test() follows the same phases in reverse but, unlike
+// paint(), opacity:0 remains hit-testable. Non-invertible contexts are omitted
+// from both plans.
+fn (b &BlockBox) compatibility_hit_test_steps() []CompatibilityPaintStep {
+	mut steps := []CompatibilityPaintStep{}
+	b.collect_compatibility_stacking_context_paint_steps(mut steps, true)
+	return steps
 }
 
 // Build commands once per retained box, then replay each box's cached phase in

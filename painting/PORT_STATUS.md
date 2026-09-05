@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 413
+filename-level mappings. The current semantic audit nevertheless reports 409
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 413 unmatched Painting
+  were removed; the audit currently reports 409 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -169,6 +169,20 @@ following behavioral mismatches and added focused regressions:
   adjustments and signed resizer-adjusted rectangles for undersized boxes,
   while retaining thumb margins, minimum length, travel ratio, mirroring, and
   gutter enlargement.
+- `PaintableBox::hit_test_chrome()` and `resizer_contains()`, plus the
+  `Scrollbar` and `ResizeHandle` containment delegates, now consume that same
+  geometry on the active hit-test path. Reverse traversal of the retained
+  stacking-context phase plan tests overlay chrome before descendant content,
+  foreground fragments before their containing box, and the box at its border
+  phase. Resize handles win overlapping corners and extend through the physical
+  end and bottom borders. The distinct `PaintableWithLines` visibility-only
+  chrome gate remains intact instead of being folded into the ordinary
+  pointer-events gate. The retained hit plan includes zero-opacity stacking
+  contexts but continues to reject non-invertible transforms, preserving the
+  different early exits in `StackingContext::hit_test()` and `paint()`.
+  Its context-root fallback also retains the source rectangle-only containment,
+  while ordinary `PaintableBox` fallback applies normalized corner radii.
+  `elementFromPoint()` and `elementsFromPoint()` share this ordering.
 - `PaintableBox::nearest_scroll_frame_index()` now drives the active Layout
   bridge. Fixed paintables and ordinary descendants behind a fixed containing
   block use the root frame, while sticky descendants keep searching for their
@@ -366,11 +380,11 @@ following behavioral mismatches and added focused regressions:
 | `NavigableContainerViewportPaintable.cpp` | `navigable_container_viewport_paintable.v` |
 | `PaintStyle.cpp` | `svg_painting.v` |
 | `Paintable.cpp` | `paintable.v` |
-| `PaintableBox.cpp` | `paintable.v`, `scrolling.v`, `painting_algorithms.v` |
+| `PaintableBox.cpp` | `paintable.v`, `scrolling.v`, `painting_algorithms.v`, `../layout/block_flow_minimal.v`, `../layout/viewport_paint_bridge.v` |
 | `PaintableFragment.cpp` | `paintable.v` |
 | `PaintableWithLines.cpp` | `paintable.v`, `../layout/viewport_paint_bridge.v` |
 | `RadioButtonPaintable.cpp` | `painting_algorithms.v` |
-| `ResizeHandle.cpp` | `scrolling.v` |
+| `ResizeHandle.cpp` | `scrolling.v`, `../layout/block_flow_minimal.v` |
 | `ResolvedCSSFilter.cpp` | `effects.v` |
 | `SVGClipPaintable.cpp` | `svg_painting.v` |
 | `SVGForeignObjectPaintable.cpp` | `svg_painting.v` |
@@ -383,7 +397,7 @@ following behavioral mismatches and added focused regressions:
 | `SVGSVGPaintable.cpp` | `svg_painting.v` |
 | `ScrollFrame.cpp` | `scrolling.v` |
 | `ScrollState.cpp` | `scrolling.v` |
-| `Scrollbar.cpp` | `scrolling.v` |
+| `Scrollbar.cpp` | `scrolling.v`, `../layout/block_flow_minimal.v` |
 | `ShadowPainting.cpp` | `effects.v` |
 | `StackingContext.cpp` | `paintable.v` |
 | `TableBordersPainting.cpp` | `table_borders_painting.v` |
@@ -457,7 +471,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 413 unmatched implementations.
+Painting: 409 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

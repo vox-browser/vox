@@ -3019,6 +3019,7 @@ pub:
 	// placement inside a Text node.
 	element             &Element = unsafe { nil }
 	node                &Node = unsafe { nil }
+	chrome_widget_id    string
 	index_in_node       int
 	vertical_distance   ?f64
 	horizontal_distance ?f64
