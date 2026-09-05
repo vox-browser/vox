@@ -67,6 +67,35 @@ fn test_flex_auto_placement_uses_bucketed_order_modified_document_order() {
 	assert used_for_id(result, 'last').offset.x().to_double() == 300
 }
 
+fn test_reverse_direction_sorts_order_keys_descending() {
+	// generate_anonymous_flex_items() sorts the distinct `order` keys descending for a
+	// reverse direction instead of reversing the item list, because a reverse line is
+	// already laid out from the far edge. Sorting ascending put the groups the wrong way
+	// round: the lowest order ended up at the far edge rather than the highest.
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-direction:row-reverse; width:240px }
+		#flex > div { flex:none; height:10px }
+		#second { width:70px; order:1 } #first { width:50px; order:2 }
+	</style><div id="flex"><div id="first"></div><div id="second"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// order:2 is the highest key, so it takes the reversed main-start edge on the right.
+	assert used_for_id(result, 'first').offset.x().to_double() == 190
+	assert used_for_id(result, 'second').offset.x().to_double() == 120
+}
+
+fn test_rtl_row_counts_as_the_reverse_direction_for_order_keys() {
+	// is_direction_reverse() swaps which of `row`/`row-reverse` is reversed under
+	// `direction: rtl`, so a plain rtl row sorts its order keys descending too.
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; direction:rtl; width:240px }
+		#flex > div { flex:none; height:10px }
+		#second { width:70px; order:1 } #first { width:50px; order:2 }
+	</style><div id="flex"><div id="first"></div><div id="second"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'first').offset.x().to_double() == 190
+	assert used_for_id(result, 'second').offset.x().to_double() == 120
+}
+
 fn test_flex_percentage_gaps_resolve_against_their_axis_inner_size() {
 	row_document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:flex-start;

@@ -37,6 +37,17 @@ fn flex_divide_by_integer(value CSSPixels, divisor int) CSSPixels {
 	return CSSPixels.from_raw(value.raw_value() / divisor)
 }
 
+// FlexFormattingContext::is_direction_reverse(). In a right-to-left container the physical
+// meaning of `row` and `row-reverse` swaps, so there it is plain `row` that counts as
+// reversed and `row-reverse` that does not.
+fn flex_direction_is_reverse(container &Node) bool {
+	direction := container.computed_values().flex_direction()
+	if container.computed_values().direction() == .rtl {
+		return direction == .column_reverse || direction == .row
+	}
+	return direction == .column_reverse || direction == .row_reverse
+}
+
 fn ordered_flex_items(container &Node) []&Node {
 	// FlexFormattingContext::generate_anonymous_flex_items() groups children by
 	// `order` and sorts only the distinct keys. Avoid insertion-sorting the
@@ -73,7 +84,15 @@ fn ordered_flex_items(container &Node) []&Node {
 		order_item_buckets[bucket_number - 1] << child
 		item_count++
 	}
-	keys.sort()
+	// C++ sorts the distinct order keys descending for a reverse direction rather than
+	// reversing the item list, because the positioning code already lays a reverse line out
+	// from the far edge. Sorting ascending here would place `order` groups the wrong way
+	// round: `row-reverse` with order:2 then order:1 puts the order:2 item at the far edge.
+	if flex_direction_is_reverse(container) {
+		keys.sort(a > b)
+	} else {
+		keys.sort()
+	}
 	mut items := []&Node{cap: item_count}
 	for key in keys {
 		bucket_number := bucket_indices[key] or { continue }
