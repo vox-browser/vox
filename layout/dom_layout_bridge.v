@@ -62,6 +62,15 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	placeholders[u64(voidptr(box))] = placeholder
+	if metrics := box.as_node_with_style_and_box_model_metrics() {
+		if previous := metrics.continuation_of_node() {
+			if previous_placeholder := placeholders[u64(voidptr(previous))] {
+				placeholder.continuation_of_node_ = previous_placeholder
+				mut mutable_previous_placeholder := unsafe { &dom.LayoutNode(previous_placeholder) }
+				mutable_previous_placeholder.continuation_next_ = placeholder
+			}
+		}
+	}
 	if containing_block := box.containing_block() {
 		if containing_block_placeholder := placeholders[u64(voidptr(containing_block))] {
 			placeholder.containing_block_ = containing_block_placeholder

@@ -725,6 +725,17 @@ fn test_document_hit_testing_rejects_points_outside_rounded_border_corners() {
 	assert center_hit.as_node().unique_id() == rounded.as_node().unique_id()
 }
 
+fn test_split_inline_cssom_offsets_use_the_united_continuation_chain() {
+	document := html.parse_document('<!doctype html><b>foo<div>bar</div>baz</b>')
+	_ = layout_document_typed_in_viewport(document, 800, 600)
+	bold := document.query_selector('b') or { panic('missing split inline element') }
+	html_bold := unsafe { &dom.HTMLElement(bold) }
+	assert html.html_element_offset_top(html_bold) == 8
+	assert html.html_element_offset_left(html_bold) == 8
+	assert html.html_element_offset_width(html_bold) == 784
+	assert html.html_element_offset_height(html_bold) == 54
+}
+
 fn test_typed_paint_adapter_transports_custom_scrollbar_and_resizer_overlay() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto; resize: both; direction: rtl; scrollbar-color: rgb(1 2 3) rgb(4 5 6) } #content { height: 200px }</style><body><div id="scroller"><div id="content"></div></div></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)

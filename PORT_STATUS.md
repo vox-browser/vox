@@ -46,7 +46,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `CookieStore` | 2 | 900 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 369 | 405 | 293 | Complete |
 | `Crypto` | 6 | 13,297 | 3,287 | 1,006 | Complete |
-| `DOM` | 57 | 26,465 | 36,784 | 2,250 | Complete |
+| `DOM` | 57 | 26,465 | 36,786 | 2,250 | Complete |
 | `DOMURL` | 4 | 1,016 | 754 | 336 | Complete |
 | `Editing` | 4 | 7,980 | 3,074 | 741 | Complete |
 | `Encoding` | 4 | 438 | 705 | 244 | Complete |
@@ -60,13 +60,13 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Gamepad` | 6 | 1,382 | 756 | 274 | Complete |
 | `Geolocation` | 4 | 511 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,157 | 2,062 | 1,008 | Complete |
-| `HTML` | 261 | 73,434 | 56,234 | 11,896 | Complete |
+| `HTML` | 261 | 73,434 | 56,330 | 11,899 | Complete |
 | `HighResolutionTime` | 2 | 521 | 435 | 195 | Complete |
 | `IndexedDB` | 18 | 6,449 | 4,364 | 682 | Complete |
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 35,121 | 12,134 | Present |
+| `Layout` | 50 | 19,592 | 35,130 | 12,145 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **312,866** | **55,193** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **312,973** | **55,207** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 588
-  candidate-name-match: 13958
-  unmatched: 1809
+  candidate-name-match: 13962
+  unmatched: 1805
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   505 Painting
+   501 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -231,6 +231,12 @@ device conversion as C++. Five upstream reftest pairs, including transformed,
 offscreen, descendant, and image cases, render with zero differing pixels.
 The final `PaintableBox` hit-test gate also rejects points outside normalized
 elliptical border radii instead of treating every rounded box as rectangular.
+The active DOM/layout bridge now retains the forward chain corresponding to
+Layout's split-inline continuation links. `PaintableBox`'s three absolute
+united-rectangle operations walk that chain and unite its nonempty border,
+padding, or content boxes; `HTMLElement` CSSOM offsets therefore include block
+descendants and trailing fragments of an inline principal box, matching the
+upstream split-inline regression exactly.
 `PaintableBox::transform_reference_box()` is translated on the same active path:
 CSS boxes remap fill/stroke/view to content/border, SVG paintables remap
 content/border to fill/stroke, and SVG view-box transforms use the nearest SVG

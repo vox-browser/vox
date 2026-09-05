@@ -34,8 +34,8 @@ itself.
 | `HTML/SyntaxHighlighter` | 1 | 206 | Complete |
 | **Total** | **261** | **73,434** | **Complete** |
 
-The translated module contains 147 implementation files (56,234 LOC) and 106
-test files (11,896 LOC), containing 538 V test functions. Several V files
+The translated module contains 147 implementation files (56,330 LOC) and 106
+test files (11,899 LOC), containing 538 V test functions. Several V files
 consolidate tightly coupled C++ classes, while parser and state-machine code is
 split by responsibility; file and test counts are therefore not expected to
 match one-to-one with the upstream layout.
@@ -82,6 +82,12 @@ selection stays in `HTMLVideoElementModel::current_representation()`. The
 `videoWidth` and `videoHeight` accessors now also return zero in `HAVE_NOTHING`,
 matching the current C++ guard instead of exposing stored decoder dimensions
 too early.
+
+The four `HTMLElement` CSSOM offset accessors now consume the translated
+`PaintableBox` united border/padding geometry. Inline principal boxes split by
+a block descendant retain their full continuation chain, so the offsets include
+the intervening block and trailing inline fragment instead of reporting only
+the first fragment.
 
 `HTMLInputElement` checkedness, dirty checkedness, and indeterminate state now
 live on the DOM element, matching C++, rather than being copied into a second

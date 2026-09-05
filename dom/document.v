@@ -1232,6 +1232,8 @@ pub mut:
 	dom_node_                                       ?&Node
 	parent_                                         ?&LayoutNode
 	containing_block_                               ?&LayoutNode
+	continuation_of_node_                           ?&LayoutNode
+	continuation_next_                              ?&LayoutNode
 	children_                                       []&LayoutNode
 	is_anonymous_                                   bool
 	is_text_node_                                   bool

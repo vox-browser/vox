@@ -67,7 +67,7 @@ files.
 
 - Upstream inventory: **57 `.cpp` / 26,465 LOC**, **67 `.h` / 6,636 LOC**,
   **37 `.idl` / 1,076 LOC**; **34,177 LOC total**.
-- Physical V implementation assigned only here: **34,455 LOC** across 16
+- Physical V implementation assigned only here: **34,457 LOC** across 16
   implementation files. `upstream_node_entry_points.v`,
   `upstream_inline_entry_points.v`, and `upstream_algorithm_entry_points.v`
   cover the adjacent inline headers, mixins, and file-local algorithms that do

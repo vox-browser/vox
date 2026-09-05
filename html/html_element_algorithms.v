@@ -8,6 +8,7 @@ module html
 
 import aria
 import dom
+import math
 
 pub enum AutocapitalizationHint {
 	default_
@@ -440,6 +441,68 @@ pub fn html_element_offset_parent(element &dom.HTMLElement) ?&dom.Element {
 }
 
 // https://www.w3.org/TR/cssom-view-1/#dom-htmlelement-offsettop
+fn unite_layout_rect(first dom.Rect, second dom.Rect) dom.Rect {
+	if first.width <= 0 || first.height <= 0 {
+		return second
+	}
+	if second.width <= 0 || second.height <= 0 {
+		return first
+	}
+	left := math.min(first.x, second.x)
+	top := math.min(first.y, second.y)
+	right := math.max(first.x + first.width, second.x + second.width)
+	bottom := math.max(first.y + first.height, second.y + second.height)
+	return dom.Rect{left, top, right - left, bottom - top}
+}
+
+enum PaintableBoxRectKind {
+	content
+	padding
+	border
+}
+
+fn united_rect_for_continuation_chain(start &dom.LayoutNode, kind PaintableBoxRectKind) ?dom.Rect {
+	mut result := ?dom.Rect(none)
+	mut current := ?&dom.LayoutNode(start)
+	for current != none {
+		node := current or { break }
+		if node.has_geometry_ {
+			mut rect := node.border_box_
+			if kind == .padding || kind == .content {
+				rect = dom.Rect{
+					x: rect.x + node.border_left_
+					y: rect.y + node.border_top_
+					width: math.max(0.0, rect.width - node.border_left_ - node.border_right_)
+					height: math.max(0.0, rect.height - node.border_top_ - node.border_bottom_)
+				}
+			}
+			if kind == .content {
+				rect = dom.Rect{
+					x: rect.x + node.padding_left_
+					y: rect.y + node.padding_top_
+					width: math.max(0.0, rect.width - node.padding_left_ - node.padding_right_)
+					height: math.max(0.0, rect.height - node.padding_top_ - node.padding_bottom_)
+				}
+			}
+			result = if united := result { unite_layout_rect(united, rect) } else { rect }
+		}
+		current = node.continuation_next_
+	}
+	return result
+}
+
+fn paintable_box_absolute_united_border_box_rect(start &dom.LayoutNode) ?dom.Rect {
+	return united_rect_for_continuation_chain(start, .border)
+}
+
+fn paintable_box_absolute_united_content_rect(start &dom.LayoutNode) ?dom.Rect {
+	return united_rect_for_continuation_chain(start, .content)
+}
+
+fn paintable_box_absolute_united_padding_box_rect(start &dom.LayoutNode) ?dom.Rect {
+	return united_rect_for_continuation_chain(start, .padding)
+}
+
 pub fn html_element_offset_top(element &dom.HTMLElement) int {
 	dom_element := dom_element_from_html_element(element)
 	if html_element_is_body(dom_element) {
@@ -451,13 +514,18 @@ pub fn html_element_offset_top(element &dom.HTMLElement) int {
 	if !layout_node.has_geometry_ {
 		return 0
 	}
-	top_border_edge := layout_node.border_box_.y
+	top_border_edge := (paintable_box_absolute_united_border_box_rect(layout_node) or {
+		layout_node.border_box_
+	}).y
 	offset_parent := html_element_offset_parent(element) or { return int(top_border_edge) }
 	parent_layout := offset_parent.as_node().layout_node() or { return int(top_border_edge) }
 	if html_element_is_body(offset_parent) && !parent_layout.is_positioned_ {
 		return int(top_border_edge)
 	}
-	return int(top_border_edge - (parent_layout.border_box_.y + parent_layout.border_top_))
+	parent_padding_box := paintable_box_absolute_united_padding_box_rect(parent_layout) or {
+		dom.Rect{ y: parent_layout.border_box_.y + parent_layout.border_top_ }
+	}
+	return int(top_border_edge - parent_padding_box.y)
 }
 
 // https://www.w3.org/TR/cssom-view-1/#dom-htmlelement-offsetleft
@@ -472,13 +540,18 @@ pub fn html_element_offset_left(element &dom.HTMLElement) int {
 	if !layout_node.has_geometry_ {
 		return 0
 	}
-	left_border_edge := layout_node.border_box_.x
+	left_border_edge := (paintable_box_absolute_united_border_box_rect(layout_node) or {
+		layout_node.border_box_
+	}).x
 	offset_parent := html_element_offset_parent(element) or { return int(left_border_edge) }
 	parent_layout := offset_parent.as_node().layout_node() or { return int(left_border_edge) }
 	if html_element_is_body(offset_parent) && !parent_layout.is_positioned_ {
 		return int(left_border_edge)
 	}
-	return int(left_border_edge - (parent_layout.border_box_.x + parent_layout.border_left_))
+	parent_padding_box := paintable_box_absolute_united_padding_box_rect(parent_layout) or {
+		dom.Rect{ x: parent_layout.border_box_.x + parent_layout.border_left_ }
+	}
+	return int(left_border_edge - parent_padding_box.x)
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetwidth
@@ -487,7 +560,7 @@ pub fn html_element_offset_width(element &dom.HTMLElement) int {
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_element_offset_width)
 	layout_node := dom_element.as_node().layout_node() or { return 0 }
-	return if layout_node.has_geometry_ { int(layout_node.border_box_.width) } else { 0 }
+	return int((paintable_box_absolute_united_border_box_rect(layout_node) or { return 0 }).width)
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetheight
@@ -496,7 +569,7 @@ pub fn html_element_offset_height(element &dom.HTMLElement) int {
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_element_offset_height)
 	layout_node := dom_element.as_node().layout_node() or { return 0 }
-	return if layout_node.has_geometry_ { int(layout_node.border_box_.height) } else { 0 }
+	return int((paintable_box_absolute_united_border_box_rect(layout_node) or { return 0 }).height)
 }
 
 pub fn html_element_set_subtree_inertness(element &dom.HTMLElement, is_inert bool) {

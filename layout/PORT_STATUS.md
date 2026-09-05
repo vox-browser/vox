@@ -222,6 +222,11 @@ fall through to the paintable underneath. The native shell consumes this same
 viewport callback instead of independently flattening `BlockBox` during mouse
 movement. The final
 retained replay also consumes Painting's translated `ScrollState` snapshots.
+The DOM mirror also preserves the layout tree's split-inline continuation chain
+in forward order. This lets `PaintableBox`'s united geometry and the CSSOM
+`offsetTop`, `offsetLeft`, `offsetWidth`, and `offsetHeight` algorithms account
+for every continuation without replacing the DOM element's principal layout
+node.
 The mandatory viewport frame and normal overflow frames apply live, clamped
 scroll offsets to descendant commands and hit testing without reconstructing
 layout or its cached paint phases; padding-box clips and dynamically positioned
