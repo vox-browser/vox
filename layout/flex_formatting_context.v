@@ -18,6 +18,10 @@ mut:
 }
 
 enum FlexCrossAlignment {
+	// `normal` is kept apart from an explicit `stretch` even though both stretch an
+	// auto-sized item: only `normal` follows a wrap-reverse container's swapped cross-start
+	// and cross-end directions. See cross_alignment_offset().
+	normal
 	start
 	end
 	self_start
@@ -894,6 +898,9 @@ fn effective_flex_cross_alignment(container &Node, item &Node) FlexCrossAlignmen
 		.stretch {
 			return .stretch
 		}
+		.normal {
+			return .normal
+		}
 		.baseline {
 			return .baseline
 		}
@@ -912,48 +919,34 @@ fn effective_flex_cross_alignment(container &Node, item &Node) FlexCrossAlignmen
 		.baseline { .baseline }
 		.start, .self_start { .self_start }
 		.flex_start { .start }
-		else { .stretch }
+		.stretch { .stretch }
+		else { .normal }
 	}
 }
 
-fn cross_alignment_offset(alignment FlexCrossAlignment, cross_size CSSPixels, item_size CSSPixels, reversed bool) CSSPixels {
+// align_all_flex_items_along_the_cross_axis(). Only `normal` consults flex-wrap:
+// https://drafts.csswg.org/css-flexbox/#flex-wrap-property says wrap-reverse swaps the
+// cross-start and cross-end directions, and C++ applies that swap to the `normal` case
+// alone. Every explicit keyword names a fixed edge of the line, so `flex-start` stays at the
+// line's cross-start edge and `flex-end` at its cross-end edge whichever way the container
+// wraps, and the inline `direction` does not enter into it either.
+fn cross_alignment_offset(alignment FlexCrossAlignment, cross_size CSSPixels, item_size CSSPixels, wrap_reverse bool) CSSPixels {
 	return match alignment {
-		.start {
-			if reversed {
+		.normal {
+			if wrap_reverse {
 				cross_size.minus(item_size)
 			} else {
 				CSSPixels.new(0)
 			}
 		}
-		.end {
-			if reversed {
-				CSSPixels.new(0)
-			} else {
-				cross_size.minus(item_size)
-			}
-		}
-		.self_start {
+		.start, .self_start, .stretch, .baseline {
 			CSSPixels.new(0)
 		}
-		.self_end {
+		.end, .self_end {
 			cross_size.minus(item_size)
 		}
 		.center {
 			flex_divide_by_integer(cross_size.minus(item_size), 2)
-		}
-		.stretch {
-			if reversed {
-				cross_size.minus(item_size)
-			} else {
-				CSSPixels.new(0)
-			}
-		}
-		.baseline {
-			if reversed {
-				cross_size.minus(item_size)
-			} else {
-				CSSPixels.new(0)
-			}
 		}
 	}
 }
@@ -1108,7 +1101,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		// inner cross size, clamped by its own cross-axis constraints.
 		if container.computed_values().flex_wrap() == .nowrap
 			&& container_state.has_definite_height()
-			&& effective_flex_cross_alignment(container, item) == .stretch
+			&& effective_flex_cross_alignment(container, item) in [.stretch, .normal]
 			&& property_is_auto(item.computed_values(), .height)
 			&& !property_is_auto(item.computed_values(), .margin_top)
 			&& !property_is_auto(item.computed_values(), .margin_bottom) {
@@ -1301,7 +1294,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			alignment := effective_flex_cross_alignment(container, item)
 			top_margin_auto := property_is_auto(item.computed_values(), .margin_top)
 			bottom_margin_auto := property_is_auto(item.computed_values(), .margin_bottom)
-			if alignment == .stretch && property_is_auto(item.computed_values(), .height)
+			if alignment in [.stretch, .normal] && property_is_auto(item.computed_values(), .height)
 				&& !top_margin_auto && !bottom_margin_auto {
 				stretched := cross_size.minus(flex_or_grid_item_outer_block_edges(item_state))
 				item_state = layout_independent_child(mut state, item, mut container_state, container_width, if container_state.has_definite_height() {
@@ -1322,12 +1315,9 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			} else {
 				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_height(), wrap_reverse)
 				if alignment == .baseline {
-					adjustment := max_baseline.minus(layout_box_baseline(state, item))
-					cross_delta = cross_delta.plus(if wrap_reverse {
-						adjustment.negated()
-					} else {
-						adjustment
-					})
+					// Baseline-aligned items start at the line's cross-start edge, so the
+					// baseline shift always runs towards cross-end.
+					cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item)))
 				}
 			}
 			item_state.set_content_x(cursor.plus(item_state.margin_box_left()))
@@ -1404,7 +1394,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		alignment := effective_flex_cross_alignment(container, item)
 		has_auto_cross_margin := property_is_auto(item.computed_values(), .margin_left)
 			|| property_is_auto(item.computed_values(), .margin_right)
-		mut forced_width := if alignment == .stretch
+		mut forced_width := if alignment in [.stretch, .normal]
 			&& property_is_auto(item.computed_values(), .width) && !has_auto_cross_margin {
 			?CSSPixels(container_width.minus(flex_or_grid_item_outer_inline_edges(item_state)))
 		} else if property_is_auto(item.computed_values(), .width) {
@@ -1472,7 +1462,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		alignment := effective_flex_cross_alignment(container, item)
 		has_auto_cross_margin := property_is_auto(item.computed_values(), .margin_left)
 			|| property_is_auto(item.computed_values(), .margin_right)
-		mut forced_width := if alignment == .stretch
+		mut forced_width := if alignment in [.stretch, .normal]
 			&& property_is_auto(item.computed_values(), .width) && !has_auto_cross_margin {
 			?CSSPixels(container_width.minus(flex_or_grid_item_outer_inline_edges(current)))
 		} else if property_is_auto(item.computed_values(), .width) {
@@ -1532,13 +1522,6 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		indexes.reverse_in_place()
 	}
 	main_reversed := container.computed_values().flex_direction() == .column_reverse
-	// https://drafts.csswg.org/css-flexbox/#flex-wrap-property
-	// "When flex-wrap is wrap-reverse, the cross-start and cross-end directions are
-	// swapped." For a column container the cross axis is the inline one, so a right-to-left
-	// container swaps them too and the two cancel out. This is what the wrapping column path
-	// and set_flex_abspos_static_positions() already compute; the single-line path was
-	// looking at `direction` alone and ignoring wrap-reverse entirely.
-	cross_reversed := (container.computed_values().direction() == .rtl) != (container.computed_values().flex_wrap() == .wrap_reverse)
 	mut cursor := flex_physical_leading_offset(container, container.computed_values().justify_content(), main_free_space, leading, distributed_gap, items.len, false, main_reversed, absorbed_main_space)
 	max_baseline := flex_line_max_baseline(state, container, line)
 	for visual_index, item_index in indexes {
@@ -1558,14 +1541,9 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		} else if cross_free_space.raw_value() > 0 && right_margin_auto {
 			item_state.margin_right = cross_free_space
 		} else {
-			cross_delta = cross_alignment_offset(alignment, container_width, item_state.margin_box_width(), cross_reversed)
+			cross_delta = cross_alignment_offset(alignment, container_width, item_state.margin_box_width(), container.computed_values().flex_wrap() == .wrap_reverse)
 			if alignment == .baseline {
-				adjustment := max_baseline.minus(layout_box_baseline(state, item))
-				cross_delta = cross_delta.plus(if cross_reversed {
-					adjustment.negated()
-				} else {
-					adjustment
-				})
+				cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item)))
 			}
 		}
 		item_state.set_content_x(cross_delta.plus(item_state.margin_box_left()))
@@ -1693,7 +1671,9 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		}
 		total_cross_size = total_cross_size.plus(stretched_cross.scaled(f64(lines.len)))
 	}
-	cross_reversed := (container.computed_values().direction() == .rtl) != (container.computed_values().flex_wrap() == .wrap_reverse)
+	// align_all_flex_lines() iterates the lines backwards for a wrap-reverse container and
+	// for nothing else; the inline direction never reverses the order of the lines.
+	cross_reversed := container.computed_values().flex_wrap() == .wrap_reverse
 	mut line_indexes := []int{cap: lines.len}
 	for index in 0 .. lines.len {
 		line_indexes << index
@@ -1781,7 +1761,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 			alignment := effective_flex_cross_alignment(container, item)
 			left_margin_auto := property_is_auto(item.computed_values(), .margin_left)
 			right_margin_auto := property_is_auto(item.computed_values(), .margin_right)
-			if alignment == .stretch && property_is_auto(item.computed_values(), .width)
+			if alignment in [.stretch, .normal] && property_is_auto(item.computed_values(), .width)
 				&& !left_margin_auto && !right_margin_auto {
 				stretched_width := clamp_layout_content_size(item, cross_size.minus(flex_or_grid_item_outer_inline_edges(item_state)), container_width, item_state, true)
 				item_state = layout_independent_child(mut state, item, mut container_state, container_width, main_size, stretched_width, current_line.targets[item_index])
@@ -1796,14 +1776,9 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 			} else if cross_free_space.raw_value() > 0 && right_margin_auto {
 				item_state.margin_right = cross_free_space
 			} else {
-				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_width(), cross_reversed)
+				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_width(), container.computed_values().flex_wrap() == .wrap_reverse)
 				if alignment == .baseline {
-					adjustment := max_baseline.minus(layout_box_baseline(state, item))
-					cross_delta = cross_delta.plus(if cross_reversed {
-						adjustment.negated()
-					} else {
-						adjustment
-					})
+					cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item)))
 				}
 			}
 			item_state.set_content_x(cross_cursor.plus(cross_delta).plus(item_state.margin_box_left()))

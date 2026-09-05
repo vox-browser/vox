@@ -113,16 +113,16 @@ fn test_single_line_column_flex_swaps_cross_edges_for_wrap_reverse() {
 	assert used_for_id(result, 'two').offset.y().to_double() == 20
 }
 
-fn test_rtl_wrap_reverse_column_cancels_both_cross_flips() {
-	// A right-to-left container swaps the inline cross edges as well, so combining it with
-	// wrap-reverse cancels out and the items sit at the left edge again.
+fn test_rtl_does_not_affect_the_wrap_reverse_cross_flip() {
+	// The item's own cross offset follows flex-wrap alone, so a right-to-left container does
+	// not cancel the wrap-reverse swap: `normal` items stay at the swapped cross-start edge.
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-direction:column; flex-wrap:wrap-reverse; direction:rtl; width:240px }
 		#one { width:50px; height:20px } #two { width:70px; height:30px }
 	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
-	assert used_for_id(result, 'one').offset.x().to_double() == 0
-	assert used_for_id(result, 'two').offset.x().to_double() == 0
+	assert used_for_id(result, 'one').offset.x().to_double() == 190
+	assert used_for_id(result, 'two').offset.x().to_double() == 170
 }
 
 fn test_indefinite_column_flex_uses_the_intrinsic_main_size_algorithm() {
@@ -207,6 +207,43 @@ fn test_negative_align_content_free_space_falls_back_to_center() {
 		assert used_for_id(result, 'one').offset.x().to_double() == -60
 		assert used_for_id(result, 'two').offset.x().to_double() == -60
 	}
+}
+
+fn test_only_normal_alignment_follows_a_wrap_reversed_cross_axis() {
+	// align_all_flex_items_along_the_cross_axis() consults flex-wrap for the `normal` case
+	// alone. Every explicit keyword names a fixed edge of the line, so `flex-start` stays at
+	// cross-start and `flex-end` at cross-end however the container wraps - and the inline
+	// `direction` does not enter into the item's own offset at all.
+	document := html.parse_document('<!doctype html><style>
+		.f { display:flex; flex-direction:row; flex-wrap:wrap-reverse; width:240px; height:120px }
+		.f > div { width:70px; height:30px }
+	</style>
+		<div class="f"><div id="start" style="align-self:flex-start"></div></div>
+		<div class="f"><div id="end" style="align-self:flex-end"></div></div>
+		<div class="f"><div id="stretch" style="align-self:stretch"></div></div>
+		<div class="f"><div id="normal" style="align-self:normal"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// Each container is 120 tall and each item 30, so within the line cross-start is at 0 and
+	// cross-end at 90.
+	assert used_for_id(result, 'start').offset.y().to_double() == 0
+	assert used_for_id(result, 'end').offset.y().to_double() == 90
+	assert used_for_id(result, 'stretch').offset.y().to_double() == 0
+	// Only this one follows the swapped cross-start edge at the bottom of its line.
+	assert used_for_id(result, 'normal').offset.y().to_double() == 90
+}
+
+fn test_column_cross_alignment_ignores_the_inline_direction() {
+	// A column container's cross axis is the inline one, but the item's own offset still
+	// names a fixed edge: rtl does not turn flex-start into the right edge.
+	document := html.parse_document('<!doctype html><style>
+		.f { display:flex; flex-direction:column; flex-wrap:wrap; direction:rtl; width:240px }
+		.f > div { width:70px; height:30px }
+	</style>
+		<div class="f"><div id="start" style="align-self:flex-start"></div></div>
+		<div class="f"><div id="end" style="align-self:flex-end"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'start').offset.x().to_double() == 0
+	assert used_for_id(result, 'end').offset.x().to_double() == 170
 }
 
 fn test_flex_percentage_gaps_resolve_against_their_axis_inner_size() {
@@ -762,14 +799,17 @@ fn test_row_reverse_justify_start_remains_physical_inline_start() {
 	assert used_for_id(result, 'two').offset.x().to_double() == 0
 }
 
-fn test_rtl_column_flex_cross_start_is_right_edge() {
+fn test_rtl_column_flex_item_alignment_names_a_fixed_edge() {
+	// align_all_flex_items_along_the_cross_axis() places `flex-start` at the line's
+	// cross-start edge and `flex-end` at its cross-end edge without consulting the inline
+	// direction, so an rtl column does not mirror them.
 	start_document := html.parse_document('<!doctype html><style>
 		#flex { direction:rtl; display:flex; flex-direction:column; align-items:flex-start;
 			width:100px; height:100px }
 		#item { width:20px; height:20px }
 	</style><div id="flex"><div id="item"></div></div>')
 	start_result := run_document_layout(start_document, 800, 600) or { panic('layout failed') }
-	assert used_for_id(start_result, 'item').offset.x().to_double() == 80
+	assert used_for_id(start_result, 'item').offset.x().to_double() == 0
 
 	end_document := html.parse_document('<!doctype html><style>
 		#flex { direction:rtl; display:flex; flex-direction:column; align-items:flex-end;
@@ -777,7 +817,7 @@ fn test_rtl_column_flex_cross_start_is_right_edge() {
 		#item { width:20px; height:20px }
 	</style><div id="flex"><div id="item"></div></div>')
 	end_result := run_document_layout(end_document, 800, 600) or { panic('layout failed') }
-	assert used_for_id(end_result, 'item').offset.x().to_double() == 0
+	assert used_for_id(end_result, 'item').offset.x().to_double() == 80
 }
 
 fn test_wrapping_column_flex_forms_columns_and_stretches_line_cross_sizes() {
@@ -805,15 +845,17 @@ fn test_wrapping_column_flex_applies_column_gap_and_align_content() {
 	assert used_for_id(result, 'two').offset.x().to_double() == 30
 }
 
-fn test_rtl_and_wrap_reverse_flip_wrapping_column_flex_cross_axis() {
+fn test_only_wrap_reverse_reverses_wrapping_column_flex_line_order() {
+	// align_all_flex_lines() iterates the lines backwards for a wrap-reverse container and
+	// for nothing else, so an rtl wrapping column still runs its lines left to right.
 	rtl_document := html.parse_document('<!doctype html><style>
 		#flex { direction:rtl; display:flex; flex-direction:column; flex-wrap:wrap;
 			width:200px; height:100px }
 		#one, #two { flex:none; width:20px; height:60px }
 	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
 	rtl_result := run_document_layout(rtl_document, 800, 600) or { panic('layout failed') }
-	assert used_for_id(rtl_result, 'one').offset.x().to_double() == 180
-	assert used_for_id(rtl_result, 'two').offset.x().to_double() == 80
+	assert used_for_id(rtl_result, 'one').offset.x().to_double() == 0
+	assert used_for_id(rtl_result, 'two').offset.x().to_double() == 100
 
 	reverse_document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-direction:column; flex-wrap:wrap-reverse;
@@ -836,7 +878,7 @@ fn test_wrapping_column_reverse_places_each_line_from_bottom_main_edge() {
 	assert used_for_id(result, 'two').offset.y().to_double() == 40
 }
 
-fn test_wrap_reverse_flips_item_cross_start_within_flex_line() {
+fn test_explicit_flex_start_is_not_flipped_within_a_wrap_reversed_line() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap-reverse; align-content:flex-start;
 			align-items:flex-start; width:100px; height:100px }
@@ -847,7 +889,9 @@ fn test_wrap_reverse_flips_item_cross_start_within_flex_line() {
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	large := used_for_id(result, 'large')
 	small := used_for_id(result, 'small')
-	assert small.offset.y().to_double() == large.offset.y().to_double() + 20
+	// `align-items: flex-start` names the line's cross-start edge whichever way the container
+	// wraps, so both items sit at the top of their line rather than the small one dropping.
+	assert small.offset.y().to_double() == large.offset.y().to_double()
 }
 
 fn test_intrinsic_width_keywords_relayout_content_under_constraints() {

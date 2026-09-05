@@ -511,7 +511,7 @@ fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constr
 		// aspect ratio, exactly as the full FlexFormattingContext does in step 2.
 		if container.computed_values().flex_wrap() == .nowrap
 			&& container_state.has_definite_height()
-			&& effective_flex_cross_alignment(container, item) == .stretch
+			&& effective_flex_cross_alignment(container, item) in [.stretch, .normal]
 			&& property_is_auto(item.computed_values(), .height)
 			&& !property_is_auto(item.computed_values(), .margin_top)
 			&& !property_is_auto(item.computed_values(), .margin_bottom) {
