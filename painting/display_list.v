@@ -1,5 +1,7 @@
 module painting
 
+import math
+
 pub enum CornerClip {
 	inside
 	outside
@@ -142,11 +144,11 @@ pub fn (command PaintInnerBoxShadow) bounding_rect() IntRect {
 }
 
 pub fn (command PaintOuterBoxShadow) dump() string {
-	return 'content_rect=${command.device_content_rect} shadow_rect=${command.shadow_rect} blur_radius=${command.blur_radius} color=${command.color}'
+	return ' content_rect=${command.device_content_rect} shadow_rect=${command.shadow_rect} blur_radius=${command.blur_radius} color=${command.color}'
 }
 
 pub fn (command PaintInnerBoxShadow) dump() string {
-	return 'content_rect=${command.device_content_rect} outer_shadow_rect=${command.outer_shadow_rect} inner_shadow_rect=${command.inner_shadow_rect} blur_radius=${command.blur_radius} color=${command.color}'
+	return ' content_rect=${command.device_content_rect} outer_shadow_rect=${command.outer_shadow_rect} inner_shadow_rect=${command.inner_shadow_rect} blur_radius=${command.blur_radius} color=${command.color}'
 }
 
 pub struct PaintTextShadow {
@@ -266,6 +268,203 @@ pub:
 	mask_kind ?MaskKind
 }
 
+pub fn (command DrawGlyphRun) bounding_rect() IntRect {
+	return IntRect{
+		x: int(math.round(f64(command.rect.x) + command.translation.x))
+		y: int(math.round(f64(command.rect.y) + command.translation.y))
+		width: command.rect.width
+		height: command.rect.height
+	}
+}
+
+pub fn (command DrawGlyphRun) dump() string {
+	return ' rect=${command.rect} translation=${command.translation} color=${command.color}'
+}
+
+pub fn (command FillRect) bounding_rect() IntRect {
+	return command.rect
+}
+
+pub fn (command FillRect) dump() string {
+	return ' rect=${command.rect} color=${command.color}'
+}
+
+pub fn (command DrawScaledBitmap) bounding_rect() IntRect {
+	return command.clip_rect
+}
+
+pub fn (command DrawScaledBitmap) dump() string {
+	return ' dst_rect=${command.destination} clip_rect=${command.clip_rect}'
+}
+
+pub fn (command DrawRepeatedBitmap) bounding_rect() IntRect {
+	return command.clip_rect
+}
+
+pub fn (command DrawRepeatedBitmap) dump() string {
+	return ' dst_rect=${command.destination} clip_rect=${command.clip_rect}'
+}
+
+pub fn (command DrawExternalContent) bounding_rect() IntRect {
+	return command.destination
+}
+
+pub fn (command DrawExternalContent) dump() string {
+	return ' dst_rect=${command.destination}'
+}
+
+pub fn (_ Save) dump() string {
+	return ''
+}
+
+pub fn (_ SaveLayer) dump() string {
+	return ''
+}
+
+pub fn (_ Restore) dump() string {
+	return ''
+}
+
+pub fn (command Translate) dump() string {
+	return ' delta=${command.delta}'
+}
+
+pub fn (command AddClipRect) bounding_rect() IntRect {
+	return command.rect
+}
+
+pub fn (command AddClipRect) dump() string {
+	return ' rect=${command.rect}'
+}
+
+pub fn (command AddClipRect) is_clip() bool {
+	return true
+}
+
+pub fn (command PaintLinearGradient) bounding_rect() IntRect {
+	return command.rect
+}
+
+pub fn (command PaintLinearGradient) dump() string {
+	return ' rect=${command.rect}'
+}
+
+pub fn (command PaintRadialGradient) bounding_rect() IntRect {
+	return command.rect
+}
+
+pub fn (command PaintRadialGradient) dump() string {
+	return ' rect=${command.rect} center=${command.center} size=${command.size}'
+}
+
+pub fn (command PaintConicGradient) bounding_rect() IntRect {
+	return command.rect
+}
+
+pub fn (command PaintConicGradient) dump() string {
+	return ' rect=${command.rect} position=${command.position} angle=${command.data.start_angle}'
+}
+
+pub fn (command PaintTextShadow) bounding_rect() IntRect {
+	return IntRect{int(command.draw_location.x), int(command.draw_location.y), command.shadow_bounding_rect.width, command.shadow_bounding_rect.height}
+}
+
+pub fn (command PaintTextShadow) dump() string {
+	return ' shadow_rect=${command.shadow_bounding_rect} text_rect=${command.text_rect} draw_location=${command.draw_location} blur_radius=${command.blur_radius} color=${command.color}'
+}
+
+pub fn (command FillRoundedRect) bounding_rect() IntRect {
+	return command.rect
+}
+
+pub fn (command FillRoundedRect) dump() string {
+	return ' rect=${command.rect} color=${command.color}'
+}
+
+pub fn (command FillPath) bounding_rect() IntRect {
+	return command.path_bounding_rect
+}
+
+pub fn (command FillPath) dump() string {
+	return ' path_bounding_rect=${command.path_bounding_rect}'
+}
+
+pub fn (command StrokePath) bounding_rect() IntRect {
+	return command.path_bounding_rect
+}
+
+pub fn (_ StrokePath) dump() string {
+	return ''
+}
+
+pub fn (command DrawEllipse) dump() string {
+	return ' rect=${command.rect} color=${command.color} thickness=${command.thickness}'
+}
+
+pub fn (command DrawEllipse) bounding_rect() IntRect {
+	return command.rect
+}
+
+pub fn (command FillEllipse) bounding_rect() IntRect {
+	return command.rect
+}
+
+pub fn (command FillEllipse) dump() string {
+	return ' rect=${command.rect} color=${command.color}'
+}
+
+pub fn (command DrawLine) bounding_rect() IntRect {
+	return int_rect_from_two_points(command.from, command.to).inflated(command.thickness, command.thickness, command.thickness, command.thickness)
+}
+
+pub fn (command DrawLine) dump() string {
+	return ' from=${command.from} to=${command.to} color=${command.color} thickness=${command.thickness}'
+}
+
+pub fn (command ApplyBackdropFilter) bounding_rect() IntRect {
+	return command.backdrop_region
+}
+
+pub fn (command ApplyBackdropFilter) dump() string {
+	return ' backdrop_region=${command.backdrop_region}'
+}
+
+pub fn (command DrawRect) bounding_rect() IntRect {
+	return command.rect
+}
+
+pub fn (command DrawRect) dump() string {
+	return ' rect=${command.rect} color=${command.color} rough=${command.rough}'
+}
+
+pub fn (command AddRoundedRectClip) bounding_rect() IntRect {
+	return command.border_rect
+}
+
+pub fn (command AddRoundedRectClip) dump() string {
+	return ' rect=${command.border_rect}'
+}
+
+pub fn (command AddRoundedRectClip) is_clip() bool {
+	return true
+}
+
+pub fn (command PaintNestedDisplayList) bounding_rect() IntRect {
+	return command.rect
+}
+
+pub fn (command PaintNestedDisplayList) dump() string {
+	return ' rect=${command.rect}'
+}
+
+pub fn (_ PaintScrollbar) dump() string {
+	return ''
+}
+
+pub fn (command ApplyEffects) dump() string {
+	return ' opacity=${command.opacity} has_filter=${command.filter != none}'
+}
+
 pub type DisplayListCommand = AddClipRect
 	| AddRoundedRectClip
 	| ApplyBackdropFilter
@@ -328,73 +527,106 @@ pub fn command_name(command DisplayListCommand) string {
 	}
 }
 
+pub fn command_dump(command DisplayListCommand) string {
+	return match command {
+		AddClipRect { command.dump() }
+		AddRoundedRectClip { command.dump() }
+		ApplyBackdropFilter { command.dump() }
+		ApplyEffects { command.dump() }
+		DrawEllipse { command.dump() }
+		DrawExternalContent { command.dump() }
+		DrawGlyphRun { command.dump() }
+		DrawLine { command.dump() }
+		DrawRect { command.dump() }
+		DrawRepeatedBitmap { command.dump() }
+		DrawScaledBitmap { command.dump() }
+		FillEllipse { command.dump() }
+		FillPath { command.dump() }
+		FillRect { command.dump() }
+		FillRoundedRect { command.dump() }
+		PaintConicGradient { command.dump() }
+		PaintInnerBoxShadow { command.dump() }
+		PaintLinearGradient { command.dump() }
+		PaintNestedDisplayList { command.dump() }
+		PaintOuterBoxShadow { command.dump() }
+		PaintRadialGradient { command.dump() }
+		PaintScrollbar { command.dump() }
+		PaintTextShadow { command.dump() }
+		Restore { command.dump() }
+		Save { command.dump() }
+		SaveLayer { command.dump() }
+		StrokePath { command.dump() }
+		Translate { command.dump() }
+	}
+}
+
 pub fn command_bounding_rect(command DisplayListCommand) ?IntRect {
 	return match command {
 		AddClipRect {
-			command.rect
+			command.bounding_rect()
 		}
 		AddRoundedRectClip {
-			command.border_rect
+			command.bounding_rect()
 		}
 		ApplyBackdropFilter {
-			command.backdrop_region
+			command.bounding_rect()
 		}
 		DrawEllipse {
-			command.rect
+			command.bounding_rect()
 		}
 		DrawExternalContent {
-			command.destination
+			command.bounding_rect()
 		}
 		DrawGlyphRun {
-			command.rect.translated(IntPoint{int(command.translation.x), int(command.translation.y)})
+			command.bounding_rect()
 		}
 		DrawLine {
-			int_rect_from_two_points(command.from, command.to).inflated(command.thickness, command.thickness, command.thickness, command.thickness)
+			command.bounding_rect()
 		}
 		DrawRect {
-			command.rect
+			command.bounding_rect()
 		}
 		DrawRepeatedBitmap {
-			command.clip_rect
+			command.bounding_rect()
 		}
 		DrawScaledBitmap {
-			command.clip_rect
+			command.bounding_rect()
 		}
 		FillEllipse {
-			command.rect
+			command.bounding_rect()
 		}
 		FillPath {
-			command.path_bounding_rect
+			command.bounding_rect()
 		}
 		FillRect {
-			command.rect
+			command.bounding_rect()
 		}
 		FillRoundedRect {
-			command.rect
+			command.bounding_rect()
 		}
 		PaintConicGradient {
-			command.rect
+			command.bounding_rect()
 		}
 		PaintInnerBoxShadow {
 			command.bounding_rect()
 		}
 		PaintLinearGradient {
-			command.rect
+			command.bounding_rect()
 		}
 		PaintNestedDisplayList {
-			command.rect
+			command.bounding_rect()
 		}
 		PaintOuterBoxShadow {
 			command.bounding_rect()
 		}
 		PaintRadialGradient {
-			command.rect
+			command.bounding_rect()
 		}
 		PaintTextShadow {
-			IntRect{int(command.draw_location.x), int(command.draw_location.y), command.shadow_bounding_rect.width, command.shadow_bounding_rect.height}
+			command.bounding_rect()
 		}
 		StrokePath {
-			command.path_bounding_rect
+			command.bounding_rect()
 		}
 		else {
 			none
@@ -403,7 +635,11 @@ pub fn command_bounding_rect(command DisplayListCommand) ?IntRect {
 }
 
 pub fn command_is_clip(command DisplayListCommand) bool {
-	return command is AddClipRect || command is AddRoundedRectClip
+	return match command {
+		AddClipRect { command.is_clip() }
+		AddRoundedRectClip { command.is_clip() }
+		else { false }
+	}
 }
 
 pub fn command_nesting_change(command DisplayListCommand) int {

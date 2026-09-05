@@ -68,6 +68,44 @@ fn test_command_bounds_and_playback_culling_context_switches() {
 	assert command_bounding_rect(line) or { panic('expected bounds') } == IntRect{8, 3, 24, 19}
 }
 
+fn test_display_list_commands_own_upstream_bounds_and_diagnostics() {
+	glyphs := DrawGlyphRun{
+		rect: IntRect{10, 20, 30, 40}
+		translation: Point{
+			x: 0.6
+			y: -0.6
+		}
+		color: Color{
+			r: 1
+			g: 2
+			b: 3
+			a: 4
+		}
+	}
+	assert glyphs.bounding_rect() == IntRect{11, 19, 30, 40}
+	assert command_bounding_rect(glyphs) or { panic('expected bounds') } == glyphs.bounding_rect()
+	assert command_dump(glyphs).starts_with(' rect=')
+	assert command_dump(glyphs).contains(' translation=')
+	assert command_dump(glyphs).contains(' color=')
+
+	fill := FillRect{IntRect{1, 2, 3, 4}, Color{ r: 5 }}
+	assert fill.bounding_rect() == fill.rect
+	assert command_dump(fill).starts_with(' rect=')
+	assert command_dump(fill).contains(' color=')
+
+	clip := AddRoundedRectClip{
+		border_rect: IntRect{2, 4, 6, 8}
+	}
+	assert clip.bounding_rect() == clip.border_rect
+	assert clip.is_clip()
+	assert command_is_clip(clip)
+	assert command_dump(clip).starts_with(' rect=')
+
+	assert command_dump(ApplyEffects{ opacity: 0.25 }) == ' opacity=0.25 has_filter=false'
+	assert command_dump(Save{}) == ''
+	assert command_dump(StrokePath{}) == ''
+}
+
 fn test_external_content_source_replaces_and_clears_bitmap() {
 	mut source := ExternalContentSource{}
 	assert source.bitmap_id == none

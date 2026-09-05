@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 476
+filename-level mappings. The current semantic audit nevertheless reports 428
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 5,688 | 1,649 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 5,924 | 1,687 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 476 unmatched Painting
+  were removed; the audit currently reports 428 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -121,6 +121,11 @@ following behavioral mismatches and added focused regressions:
 - The display-list recorder now exposes guarded typed entry points for paths,
   ellipses, gradients, bitmaps, lines, rounded fills, filters and shadows, and
   implements balanced alpha/luminance mask layer recording.
+- Display-list commands now own the source-shaped `bounding_rect()`, `dump()`,
+  and clip predicates from `DisplayListCommand.{h,cpp}`. Generic culling and
+  diagnostics are thin variant dispatchers over those methods instead of a
+  second handwritten set of geometry rules. Glyph-run culling also rounds its
+  fractional translation like upstream rather than truncating it.
 - Bitmap scaling uses Ladybird's exact `None`, `Bilinear`,
   `BilinearMipmap`, and `NearestNeighbor` modes. Smooth/high-quality sampling
   selects mipmapping only when both target dimensions shrink; the invented
@@ -419,7 +424,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 476 unmatched implementations.
+Painting: 428 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)
