@@ -1,6 +1,7 @@
 module painting
 
 import math
+import platform
 
 pub enum PaintPhase {
 	background
@@ -65,6 +66,10 @@ pub mut:
 	start_offset            int
 	length_in_code_units    int
 	glyphs                  []GlyphMetric
+	// The active layout bridge retains the shaped run exactly, matching C++'s
+	// RefPtr<Gfx::GlyphRun>. Standalone painting callers can keep supplying the
+	// compact GlyphMetric vector above.
+	glyph_run               ?&platform.GlyphRun
 	baseline                f64
 	font_ascent             f64
 	font_descent            f64
@@ -91,14 +96,28 @@ pub fn (fragment PaintableFragment) index_in_node_for_point(position Point) int 
 	}
 	mut consumed_width := f64(0)
 	mut consumed_units := 0
-	for glyph in fragment.glyphs {
-		if relative < consumed_width + glyph.width / 2.0 {
-			break
+	if run := fragment.glyph_run {
+		for glyph in run.glyphs() {
+			width := f64(glyph.advance)
+			if relative < consumed_width + width / 2.0 {
+				break
+			}
+			consumed_width += width
+			consumed_units += glyph.length_in_code_units
+			if relative < consumed_width {
+				break
+			}
 		}
-		consumed_width += glyph.width
-		consumed_units += glyph.length_in_code_units
-		if relative < consumed_width {
-			break
+	} else {
+		for glyph in fragment.glyphs {
+			if relative < consumed_width + glyph.width / 2.0 {
+				break
+			}
+			consumed_width += glyph.width
+			consumed_units += glyph.length_in_code_units
+			if relative < consumed_width {
+				break
+			}
 		}
 	}
 	return fragment.start_offset + min_int(consumed_units, fragment.length_in_code_units)
@@ -155,20 +174,35 @@ pub fn (fragment PaintableFragment) range_rect(state SelectionState, start_offse
 		pixel_width = if fragment.orientation == .horizontal { rect.width } else { rect.height }
 	} else {
 		mut units_seen := 0
-		for glyph in fragment.glyphs {
-			if units_seen < offsets.start {
-				pixel_offset += glyph.width
-			} else if units_seen < offsets.end {
-				pixel_width += glyph.width
+		if run := fragment.glyph_run {
+			for glyph in run.glyphs() {
+				if units_seen < offsets.start {
+					pixel_offset += f64(glyph.advance)
+				} else if units_seen < offsets.end {
+					pixel_width += f64(glyph.advance)
+				}
+				units_seen += glyph.length_in_code_units
 			}
-			units_seen += glyph.length_in_code_units
+		} else {
+			for glyph in fragment.glyphs {
+				if units_seen < offsets.start {
+					pixel_offset += glyph.width
+				} else if units_seen < offsets.end {
+					pixel_width += glyph.width
+				}
+				units_seen += glyph.length_in_code_units
+			}
 		}
 	}
 	if offsets.start == offsets.end {
 		pixel_width = 1
 	}
 	if offsets.start != offsets.end && fragment.has_trailing_whitespace && offsets.include_trailing_whitespace {
-		pixel_width += fragment.space_width
+		pixel_width += if run := fragment.glyph_run {
+			f64(run.glyph_width(u16(` `)))
+		} else {
+			fragment.space_width
+		}
 	}
 	if fragment.orientation == .horizontal {
 		rect = Rect{rect.x + pixel_offset, rect.y, pixel_width, rect.height}

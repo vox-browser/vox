@@ -242,7 +242,14 @@ pub fn (mut p Paintable) set_needs_repaint(should_invalidate_display_list Invali
 }
 
 pub fn (mut p Paintable) set_selection_state(state SelectionState) {
+	if p.selection_state == state {
+		return
+	}
 	p.selection_state = state
+	// Paintable::set_selection_state() invalidates the box itself, or the text
+	// paintable's containing block. The downstream callback retains the source
+	// Layout::Node and performs that same targeted cache invalidation.
+	p.set_needs_repaint(.yes)
 }
 
 @[heap]

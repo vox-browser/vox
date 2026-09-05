@@ -2173,6 +2173,78 @@ fn test_document_viewport_paintable_recomputes_text_selection_states() {
 	assert end_paintable.selection_state == .none
 }
 
+fn test_paintable_with_lines_translates_selection_render_spans_and_cache_invalidation() {
+	document := html.parse_document('<!doctype html><style>
+		html, body, p { margin: 0 }
+		p { color: rgb(200 0 0); -webkit-text-fill-color: rgb(5 6 7);
+			text-shadow: rgb(1 2 3) 1px 0 2px }
+		p::selection { background-color: rgb(20 30 40); color: rgb(50 60 70);
+			text-shadow: rgb(80 90 100) 2px 3px 4px;
+			text-decoration-line: underline; text-decoration-style: wavy;
+			text-decoration-color: rgb(110 120 130) }
+	</style><body><p id="target">hello</p></body>')
+	root := layout_document_typed_in_viewport(document, 240, 100)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	initial := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing initial display list')
+	})
+	initial_text := initial.filter(it.kind == 'draw_text' && it.text == 'hello')
+	assert initial_text.len == 1
+	// compute_render_spans() uses -webkit-text-fill-color, not color.
+	assert initial_text[0].color == 'rgb(5 6 7)'
+	assert initial.any(it.kind == 'draw_text_shadow' && it.text == 'hello'
+		&& it.color == 'rgb(1 2 3)' && it.blur == 2)
+
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	text_node := target.as_node().first_child() or { panic('missing text node') }
+	range := dom.Range.create_from_boundary_points(text_node, 1, text_node, 4)
+	mut selection := document.get_selection() or { panic('missing document selection') }
+	selection.add_range(range)
+	paintable := text_node.paintable() or { panic('missing text paintable') }
+	assert paintable.selection_state == .start_and_end
+	assert paintable.needs_repaint
+
+	commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing selected display list')
+	})
+	mut background_index := -1
+	mut selection_shadow_index := -1
+	mut selected_text_index := -1
+	for index, command in commands {
+		if command.kind == 'fill_rect' && command.color == 'rgb(20 30 40)' {
+			background_index = index
+		} else if command.kind == 'draw_text_shadow' && command.text == 'ell'
+			&& command.color == 'rgb(80 90 100)' && command.blur == 4 {
+			selection_shadow_index = index
+		} else if command.kind == 'draw_text' && command.text == 'hello'
+			&& command.color == 'rgb(50 60 70)' && command.recording_clip != none {
+			selected_text_index = index
+		}
+	}
+	assert background_index >= 0
+	assert selection_shadow_index > background_index
+	assert selected_text_index > selection_shadow_index
+	// An explicitly specified ::selection text-shadow replaces the ordinary
+	// shadow for the selected span; it is not appended to it.
+	assert !commands.any(it.kind == 'draw_text_shadow' && it.text == 'ell'
+		&& it.color == 'rgb(1 2 3)')
+	selected_text := commands[selected_text_index]
+	selection_rect := selected_text.recording_clip or { panic('missing selection clip') }
+	selection_background := commands[background_index]
+	assert selection_background.x == selection_rect.x
+	assert selection_background.y == selection_rect.y
+	assert selection_background.width == selection_rect.width
+	assert selection_background.height == selection_rect.height
+	assert commands.any(it.stroke_color == 'rgb(110 120 130)'
+		&& it.kind == 'draw_svg_path')
+
+	target_box := root.find_box(i64(target.as_node().unique_id())) or {
+		panic('missing target paint box')
+	}
+	assert selection_rect.x > target_box.x
+	assert selection_rect.x + selection_rect.width < target_box.x + target_box.width
+}
+
 fn test_typed_collapsed_table_borders_retain_winners_and_paint_shared_edges_once() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } table { border-collapse: collapse } td { width: 30px; height: 20px; padding: 0; border: 2px solid rgb(200 0 0); background: rgb(250 250 0) } #right { border-left: 6px dashed rgb(0 0 200) }</style><body><table id="table"><tr><td id="left"></td><td id="right"></td></tr></table></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)

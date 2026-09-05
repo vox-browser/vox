@@ -196,6 +196,18 @@ it through the document's shared font computer; this preserves C++'s immutable
 ComputedValues lifetime and prevents repeated rewrap relayouts from reaching an
 empty cache.
 
+Committed line fragments now retain their exact shaped `GlyphRun` through the
+active paint bridge. A direct `PaintableWithLines` foreground translation
+splits each fragment into before/selected/after UTF-16 spans, resolves
+`Paintable::selection_style()` including explicit inheritance and UA shadow-host
+fallback, paints every selection background before shadows and glyphs, and
+clips partial colors from the original full run. Text-control ranges take
+precedence over the document selection. Selection-state changes selectively
+invalidate the containing retained paint bucket, and the ordinary
+no-selection/no-shadow path remains coalesced. A focused regression covers
+custom background, replacement shadow, wavy decoration, webkit fill color,
+range geometry, command order, and cache invalidation.
+
 The active compatibility paint bridge now builds long text runs with a
 capacity-sized `strings.Builder`, retains box references through paint-order
 and hit-test traversal, skips invisible hit-test candidates, and sorts stacking

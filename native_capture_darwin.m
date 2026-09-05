@@ -435,6 +435,38 @@ void native_draw_document_text_srgb(float x, float y, string value, gg__Color co
 	      withAttributes:@{ NSForegroundColorAttributeName : foreground, NSFontAttributeName : font }];
 }
 
+void native_draw_document_text_shadow_srgb(float x, float y, string value,
+	gg__Color color, float size, int bold, int italic, int monospace, float blur) {
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL)
+		return;
+	NSString *text = native_capture_string(value);
+	NSFont *font = native_document_font(size, bold, italic, monospace);
+	NSColor *foreground = [NSColor colorWithSRGBRed:(CGFloat)color.r / 255.0
+	                                        green:(CGFloat)color.g / 255.0
+	                                         blue:(CGFloat)color.b / 255.0
+	                                        alpha:(CGFloat)color.a / 255.0];
+	CGColorRef cg_color = native_srgb_color(color);
+	NSDictionary *attributes = @{
+		NSForegroundColorAttributeName : foreground,
+		NSFontAttributeName : font,
+	};
+	NSSize text_size = [text sizeWithAttributes:attributes];
+	CGRect clip_bounds = CGContextGetClipBoundingBox(context);
+	CGFloat displacement = clip_bounds.size.width + text_size.width
+		+ MAX(blur, 0.0f) * 8.0f + 1024.0f;
+	CGContextSaveGState(context);
+	// DisplayListPlayerSkia blurs only the glyph mask. Move AppKit's sharp
+	// source outside the current clip and shift its CoreGraphics shadow back to
+	// the retained draw location, as the path-shadow bridge does.
+	CGContextSetShadowWithColor(context, CGSizeMake(-displacement, 0.0),
+		floorf(MAX(blur, 0.0f)), cg_color);
+	[text drawAtPoint:NSMakePoint(x + displacement, y - 15.0)
+	      withAttributes:attributes];
+	CGContextRestoreGState(context);
+	CGColorRelease(cg_color);
+}
+
 void native_draw_polygon_srgb(const float *points, int point_count, float canvas_height,
 	gg__Color color) {
 	if (points == NULL || point_count < 3) {

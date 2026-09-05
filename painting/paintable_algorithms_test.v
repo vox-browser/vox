@@ -2,6 +2,7 @@ module painting
 
 import css
 import math
+import platform
 
 fn test_to_gfx_scaling_mode_matches_css_image_rendering() {
 	assert to_gfx_scaling_mode(.auto_, IntSize{200, 100}, IntSize{100, 50}) == .bilinear_mipmap
@@ -125,6 +126,21 @@ fn test_fragment_index_and_selection_offsets_cover_all_selection_states() {
 		font_descent: 5
 	}
 	assert overflowing.range_rect(.start_and_end, 6, 8) == Rect{20, 16, 20, 17}
+
+	font := &platform.Font{ point_size: 16 }
+	retained_run := platform.GlyphRun.new(font, .ltr, [
+		platform.Glyph{ advance: 7, length_in_code_units: 1 },
+		platform.Glyph{ advance: 13, length_in_code_units: 1 },
+	])
+	retained := PaintableFragment{
+		offset: Point{3, 4}
+		size: Size{20, 10}
+		start_offset: 2
+		length_in_code_units: 2
+		glyph_run: retained_run
+	}
+	assert retained.glyphs.len == 0
+	assert retained.range_rect(.start_and_end, 3, 4) == Rect{10, 4, 13, 10}
 }
 
 fn test_paintable_tree_hit_testing_uses_reverse_stacking_order() {

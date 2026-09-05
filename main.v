@@ -64,6 +64,8 @@ fn C.native_configure_document_font(path string)
 
 fn C.native_draw_document_text_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int)
 
+fn C.native_draw_document_text_shadow_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int, blur f32)
+
 fn C.native_begin_background_text_clip(canvas_width f32, canvas_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32)
 
 fn C.native_add_background_text_clip_run(x f32, y f32, text string, size f32, bold int, italic int, monospace int)
@@ -2505,9 +2507,9 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 	non_axis_aligned := matrix[1] != 0 || matrix[2] != 0
 	mut cull_top := y
 	mut cull_bottom := y + h
-	if command.kind in ['paint_outer_box_shadow', 'paint_inner_box_shadow'] {
+	if command.kind in ['paint_outer_box_shadow', 'paint_inner_box_shadow', 'draw_text_shadow'] {
 		mut bounds_command := command
-		if command.kind == 'paint_outer_box_shadow' {
+		if command.kind in ['paint_outer_box_shadow', 'draw_text_shadow'] {
 			margin := command.blur * 2.0
 			bounds_command.x -= margin
 			bounds_command.y -= margin
@@ -3378,6 +3380,29 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 				}
 				app.ctx.draw_text(int(x), int(text_y), command.text,
 					color: text_color
+					size: font_size
+					bold: command.bold
+					italic: command.italic
+					mono: command.mono
+				)
+			}
+		}
+		'draw_text_shadow' {
+			{
+				font_scale := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
+				font_size := int(clamp(command.font_size * font_scale, 1.0, 256.0) + 0.5)
+				text_y := $if macos { native_text_draw_y(y, h) } $else { y }
+				shadow_color := paint_color(command.color, command.opacity)
+				$if macos {
+					if app.ctx.native_rendering && app.use_document_font {
+						C.native_draw_document_text_shadow_srgb(x, f32(app.ctx.height) - text_y, command.text, shadow_color, f32(font_size), int(command.bold), int(command.italic), int(command.mono), f32(command.blur * font_scale))
+						return
+					}
+				}
+				// Portable backends have no blurred glyph primitive; retain the
+				// translated layer order and offset with a sharp shadow.
+				app.ctx.draw_text(int(x), int(text_y), command.text,
+					color: shadow_color
 					size: font_size
 					bold: command.bold
 					italic: command.italic

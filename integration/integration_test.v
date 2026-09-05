@@ -932,7 +932,7 @@ fn test_visibility_hidden_over_parsed_document() {
 }
 
 // Full-stack text-decoration: an author stylesheet underlines a paragraph; the rendered fragment
-// carries the decoration and the SVG output includes both the word and an underline rect.
+// carries the decoration and the SVG output includes both the word and an underline line.
 fn test_text_decoration_over_parsed_document() {
 	doc :=
 		html.parse_document('<html><head><style>p { text-decoration: underline }</style></head><body><p>linked</p></body></html>')
@@ -943,14 +943,14 @@ fn test_text_decoration_over_parsed_document() {
 	p_box := root_box.find_box(i64(p.as_node().unique_id())) or { panic('no p box') }
 	assert p_box.lines[0].fragments[0].decoration.contains('underline')
 
-	// The display list has the word plus an underline fill (the p has no background of its own).
+	// The source-shaped decoration path records a DrawLine, not the former fill-rect approximation.
 	cmds := root_box.paint_commands()
 	assert cmds.filter(it.kind == 'draw_text').len == 1
-	assert cmds.filter(it.kind == 'fill_rect').len == 1
+	assert cmds.filter(it.kind == 'draw_line').len == 1
 
 	svg := root_box.render_svg(600, root_box.height + 20)
 	assert svg.contains('linked')
-	assert svg.contains('<rect') // the underline
+	assert svg.contains('<line') // the underline
 }
 
 // Full-stack list markers: parse a <ul>, lay it out, and confirm each <li> gets the geometric disc
@@ -1074,7 +1074,7 @@ fn test_box_shadow_over_parsed_document() {
 
 	svg := root_box.render_svg(600, root_box.height + 40)
 	assert svg.contains('feGaussianBlur')
-	assert svg.contains('filter="url(#blur0)"')
+	assert svg.contains('filter="url(#outer-shadow-blur')
 }
 
 // Full-stack CSS-wide keywords: an author stylesheet uses `inherit` and `initial`; the values resolve

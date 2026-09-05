@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 422
+filename-level mappings. The current semantic audit nevertheless reports 417
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 5,953 | 1,705 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 5,987 | 1,721 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 422 unmatched Painting
+  were removed; the audit currently reports 417 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -281,6 +281,18 @@ following behavioral mismatches and added focused regressions:
   underline position/offset, spelling/grammar colors, and round cap/join wave
   path. The anonymous-wrapper, minimum-thickness, and underline-offset upstream
   reference pairs are pixel-identical.
+- Text selection now crosses the active retained-paint path through direct
+  translations of `Paintable::selection_style()`, `PaintableFragment` range
+  selection, `compute_render_spans()`, `paint_text_shadow()`, and
+  `paint_text_fragment()`. The bridge preserves explicit-property inheritance
+  rules and the UA shadow-host fallback, text-control precedence, UTF-16 span
+  boundaries, `-webkit-text-fill-color`, replacement selection shadows and
+  decorations, clipped full glyph runs, and the source background/shadow/text
+  ordering. Selection-state changes invalidate the owning retained phase cache.
+  Geometry walks the committed `GlyphRun` directly rather than constructing a
+  second per-paint glyph-metric vector, while the common no-selection/no-shadow
+  path keeps its coalesced fast path. Quartz replays blurred text-shadow masks;
+  the portable backend retains the same layer order with sharp shadows.
 - `InputColors.h`, `CheckBoxPaintable::paint()`,
   `RadioButtonPaintable::paint()`, and `check_mark_path()` now feed the active
   renderer instead of hard-coded white rectangles, ellipse strokes, and an
@@ -429,7 +441,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 422 unmatched implementations.
+Painting: 417 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

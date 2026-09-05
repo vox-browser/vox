@@ -46,7 +46,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `CookieStore` | 2 | 900 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 369 | 405 | 293 | Complete |
 | `Crypto` | 6 | 13,297 | 3,287 | 1,006 | Complete |
-| `DOM` | 57 | 26,465 | 36,786 | 2,250 | Complete |
+| `DOM` | 57 | 26,465 | 36,793 | 2,250 | Complete |
 | `DOMURL` | 4 | 1,016 | 754 | 336 | Complete |
 | `Editing` | 4 | 7,980 | 3,074 | 741 | Complete |
 | `Encoding` | 4 | 438 | 705 | 244 | Complete |
@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 35,434 | 12,546 | Present |
+| `Layout` | 50 | 19,592 | 35,876 | 12,618 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -76,7 +76,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `NavigationTiming` | 3 | 104 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 249 | 290 | 68 | Complete |
 | `Page` | 7 | 4,298 | 2,206 | 414 | Complete |
-| `Painting` | 48 | 10,038 | 5,953 | 1,705 | Present |
+| `Painting` | 48 | 10,038 | 5,987 | 1,721 | Present |
 | `PerformanceTimeline` | 5 | 391 | 447 | 130 | Complete |
 | `PermissionsPolicy` | 1 | 98 | 86 | 21 | Complete |
 | `Platform` | 4 | 415 | 1,167 | 96 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **313,617** | **55,754** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **314,100** | **55,842** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 595
-  candidate-name-match: 14043
-  unmatched: 1724
+  candidate-name-match: 14046
+  unmatched: 1721
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   420 Painting
+   417 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -291,8 +291,17 @@ wave follow the C++ switch directly. A retained fragment whose style mutation
 invalidated the aliased V font cache now rematerializes that cascade through the
 document's shared font computer, preserving C++'s immutable-ComputedValues
 lifetime across repeated relayouts. The anonymous-wrapper, minimum-thickness,
-and underline-offset upstream reference pairs are pixel-identical. Native
-checkbox and radio foreground painting now uses direct translations of
+and underline-offset upstream reference pairs are pixel-identical. Text
+selection now follows the adjacent upstream `PaintableWithLines`
+foreground pipeline as well. Committed fragments retain their shaped glyph run;
+selection and text-control ranges split it at UTF-16 boundaries; explicit
+`::selection` color, shadow, and decoration inheritance plus the UA shadow-host
+fallback are resolved once; and all backgrounds, shadows, then clipped glyph
+runs/decorations are recorded in source order. Selection-state changes
+selectively invalidate retained phase commands, while unselected text keeps the
+existing coalesced fast path. Quartz consumes the new blurred text-shadow
+command and the portable player preserves its layer order with a sharp fallback.
+Native checkbox and radio foreground painting now uses direct translations of
 `InputColors`, `CheckBoxPaintable`, and `RadioButtonPaintable` rather than
 renderer-local white boxes and approximate paths. Theme and accent colors,
 disabled and active shading, contrast correction, device rounding, rounded

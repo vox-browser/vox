@@ -596,9 +596,7 @@ fn paintable_box_outline_data(computed &css.ComputedValues) ?painting.BordersDat
 	return painting.borders_data_for_outline(painting.Color{outline_color.r, outline_color.g, outline_color.b, outline_color.a}, line_style, outline_width)
 }
 
-fn computed_box_shadows(computed &css.ComputedValues) []BoxShadow {
-	context := css.LengthResolutionContext.for_computed_properties(computed)
-	shadow_data := computed.box_shadow()
+fn computed_shadow_transport(shadow_data []css.ShadowData, context css.LengthResolutionContext) []BoxShadow {
 	mut shadows := []BoxShadow{cap: shadow_data.len}
 	for shadow in shadow_data {
 		shadows << BoxShadow{
@@ -611,6 +609,16 @@ fn computed_box_shadows(computed &css.ComputedValues) []BoxShadow {
 		}
 	}
 	return shadows
+}
+
+fn computed_box_shadows(computed &css.ComputedValues) []BoxShadow {
+	context := css.LengthResolutionContext.for_computed_properties(computed)
+	return computed_shadow_transport(computed.box_shadow(), context)
+}
+
+fn computed_text_shadows(computed &css.ComputedValues) []BoxShadow {
+	context := css.LengthResolutionContext.for_computed_properties(computed)
+	return computed_shadow_transport(computed.text_shadow(), context)
 }
 
 fn compatibility_color_filter_type(operation css.ColorFilterType) painting.ColorFilterType {
@@ -3216,7 +3224,9 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			mut inline_shadows := []BoxShadow{}
 			mut inline_node_id := i64(0)
 			mut color_context := color_resolution_context_for_typed_node(fragment.layout_node_, color)
-			color = computed.color()
+			// PaintableWithLines::compute_render_spans() uses the resolved
+			// -webkit-text-fill-color, not color, for ordinary glyph spans.
+			color = computed.webkit_text_fill_color()
 			color_context.current_color = color
 			decoration_color = computed.text_decoration_color()
 			decoration_style = computed_text_decoration_style(computed)
@@ -3259,9 +3269,16 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				}
 			}
 			offset := css_pixel_point_add(fragment.offset(), inline_relative_offset(fragment.layout_node_, state))
+			absolute_x := container_position.x().plus(offset.x()).to_double()
+			absolute_y := container_position.y().plus(offset.y()).to_double()
+			orientation := if fragment.writing_mode() == .horizontal_tb {
+				painting.Orientation.horizontal
+			} else {
+				painting.Orientation.vertical
+			}
 			transport_fragment := TextFragment{
-				x: container_position.x().plus(offset.x()).to_double()
-				y: container_position.y().plus(offset.y()).to_double()
+				x: absolute_x
+				y: absolute_y
 				width: fragment.width().to_double()
 				height: fragment.height().to_double()
 				text: text
@@ -3298,6 +3315,21 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				decoration_thickness_set: decoration_thickness_set
 				text_underline_offset: text_underline_offset
 				text_underline_position: text_underline_position
+				layout_handle: voidptr(fragment.layout_node_)
+				paintable_fragment: painting.PaintableFragment{
+					offset: painting.Point{absolute_x, absolute_y}
+					size: painting.Size{fragment.width().to_double(), fragment.height().to_double()}
+					start_offset: fragment.start()
+					length_in_code_units: fragment.length_in_code_units()
+					glyph_run: fragment.glyph_run()
+					baseline: fragment.baseline().to_double()
+					font_ascent: f64(font_metrics.ascent)
+					font_descent: f64(font_metrics.descent)
+					orientation: orientation
+					has_trailing_whitespace: fragment.has_trailing_whitespace()
+				}
+				text_shadows: computed_text_shadows(computed)
+				selection_style: selection_style(fragment.layout_node_)
 			}
 			// PaintableFragment is constructed directly from the committed
 			// LineBoxFragment upstream. Preserve that run instead of splitting it
@@ -3380,6 +3412,80 @@ fn painted_owner_computed_values(node &Node, owner &dom.Element) &css.ComputedPr
 fn text_run_identity(node &Node) i64 {
 	dom_node := node.dom_node() or { return 0 }
 	return i64(dom_node.unique_id())
+}
+
+fn selection_style_has_styling(style TextSelectionStyle) bool {
+	return style.background_color.a > 0 || style.text_color_set || style.text_shadows_set
+		|| style.decoration_set
+}
+
+// Direct translation of Paintable::selection_style()'s per-element lookup.
+// Inherited ::selection values remain represented in ComputedProperties, but
+// text color/shadow/decoration only override a span when the property was
+// explicitly specified on that pseudo-element upstream.
+fn selection_style_from_element(element &dom.Element) ?TextSelectionStyle {
+	element_layout := element.as_node().unsafe_layout_node() or { return none }
+	computed := css.computed_properties_for_pseudo_element(element, .selection) or {
+		return none
+	}
+	context := css.color_resolution_context_for_layout_node(element_layout)
+	mut style := TextSelectionStyle{
+		background_color: computed_paint_color(computed, .background_color, context, css.Color{})
+	}
+	if !computed.is_property_inherited(.color) {
+		style = TextSelectionStyle{
+			...style
+			text_color: computed_paint_color(computed, .color, context, css.Color{})
+			text_color_set: true
+		}
+	}
+	if !computed.is_property_inherited(.text_shadow) {
+		style = TextSelectionStyle{
+			...style
+			text_shadows: computed_shadow_transport(computed.text_shadow(element_layout), computed.length_resolution_context())
+			text_shadows_set: true
+		}
+	}
+	if !computed.is_property_inherited(.text_decoration_line) {
+		fallback := if style.text_color_set { style.text_color } else { css.Color{0, 0, 0, 255} }
+		style = TextSelectionStyle{
+			...style
+			decoration: text_decoration_string(computed.text_decoration_line())
+			decoration_color: computed_paint_color(computed, .text_decoration_color, context, fallback)
+			decoration_style: computed_text_decoration_style(computed)
+			decoration_set: true
+		}
+	}
+	if !selection_style_has_styling(style) {
+		return none
+	}
+	return style
+}
+
+// https://drafts.csswg.org/css-pseudo-4/#highlight-styling
+// Direct translation of Paintable::selection_style(), including the UA shadow
+// host fallback used by input controls.
+fn selection_style(node &Node) TextSelectionStyle {
+	default_style := TextSelectionStyle{
+		background_color: css.SystemColor.highlight(node.computed_values().color_scheme())
+	}
+	dom_node := node.dom_node() or { return default_style }
+	mut element := dom_node.as_element() or {
+		dom_node.parent_element() or { return default_style }
+	}
+	if style := selection_style_from_element(element) {
+		return style
+	}
+	if shadow_root := element.as_node().containing_shadow_root() {
+		if shadow_root.is_user_agent_internal() {
+			if host := shadow_root.host() {
+				if style := selection_style_from_element(host) {
+					return style
+				}
+			}
+		}
+	}
+	return default_style
 }
 
 fn text_decoration_string(lines []css.TextDecorationLine) string {

@@ -117,6 +117,23 @@ pub:
 	left   painting.LineStyle = .solid
 }
 
+// Painting::Paintable::SelectionStyle, retained on each typed text fragment so
+// repaint can build the source-ordered render spans without re-entering style
+// computation. The boolean flags preserve Optional<T> exactly: an explicitly
+// empty text-shadow suppresses the fragment's ordinary shadows.
+pub struct TextSelectionStyle {
+pub:
+	background_color css.Color
+	text_color       css.Color
+	text_color_set   bool
+	text_shadows     []BoxShadow
+	text_shadows_set bool
+	decoration       string = 'none'
+	decoration_color css.Color
+	decoration_style string = 'solid'
+	decoration_set   bool
+}
+
 fn solid_box_border_styles() BoxBorderStyles {
 	return BoxBorderStyles{}
 }
@@ -176,6 +193,13 @@ pub:
 	decoration_thickness_set bool
 	text_underline_offset    f64
 	text_underline_position  string = 'auto'
+	// PaintableFragment retains the source layout node, offsets, and glyph run.
+	// These are live paint inputs: selection state/range can change without a
+	// relayout, while the shaped glyph advances remain owned by the line box.
+	layout_handle      voidptr = unsafe { nil }
+	paintable_fragment painting.PaintableFragment
+	text_shadows       []BoxShadow
+	selection_style    TextSelectionStyle
 }
 
 // A laid-out line box within a block's inline formatting context: `x`/`y` is the top-left of the
@@ -189,6 +213,13 @@ pub mut:
 	width     f64
 	height    f64
 	fragments []TextFragment
+}
+
+fn translated_paintable_fragment(fragment painting.PaintableFragment, dx f64,
+	dy f64) painting.PaintableFragment {
+	mut translated := fragment
+	translated.offset = translated.offset.add(painting.Point{dx, dy})
+	return translated
 }
 
 // Return a copy of `line` (and its fragments) shifted by (`dx`, `dy`).
@@ -241,6 +272,10 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 			decoration_thickness_set: it.decoration_thickness_set
 			text_underline_offset: it.text_underline_offset
 			text_underline_position: it.text_underline_position
+			layout_handle: it.layout_handle
+			paintable_fragment: translated_paintable_fragment(it.paintable_fragment, dx, dy)
+			text_shadows: it.text_shadows.clone()
+			selection_style: it.selection_style
 		})
 	}
 }
@@ -2983,7 +3018,7 @@ fn text_fragments_share_run(first TextFragment, next TextFragment) bool {
 // Compatibility layout can still supply word fragments for one naturally-spaced DOM text node;
 // coalesce those into one paint command. The typed adapter already supplies the committed C++-shaped
 // LineBoxFragment intact, so it takes the single-fragment path without rebuilding the string.
-fn text_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand {
+fn unselected_text_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand {
 	mut commands := []PaintCommand{}
 	mut i := 0
 	for i < fragments.len {
@@ -3049,10 +3084,301 @@ fn text_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand 
 	return commands
 }
 
+struct TextRenderSpan {
+	fragment_index    int
+	start_code_unit   int
+	end_code_unit     int
+	text_color        css.Color
+	background_color  css.Color
+	shadow_layers     []BoxShadow
+	shadow_layers_set bool
+	decoration        string
+	decoration_color  css.Color
+	decoration_style  string
+	decoration_set    bool
+}
+
+fn dom_selection_state_to_painting(state dom.SelectionState) painting.SelectionState {
+	return match state {
+		.none { .none }
+		.start { .start }
+		.end { .end }
+		.start_and_end { .start_and_end }
+		.full { .full }
+	}
+}
+
+// Route the active transport through PaintableFragment's direct translation
+// instead of maintaining a second renderer-local selection calculation.
+fn text_fragment_compute_selection_offsets(fragment TextFragment,
+	state painting.SelectionState, start_offset int, end_offset int) ?painting.SelectionOffsets {
+	return fragment.paintable_fragment.compute_selection_offsets(state, start_offset, end_offset)
+}
+
+// PaintableFragment::selection_range_for_text_control().
+fn selection_range_for_text_control(fragment TextFragment) ?painting.SelectionOffsets {
+	if fragment.layout_handle == unsafe { nil } {
+		return none
+	}
+	layout_node := unsafe { &Node(fragment.layout_handle) }
+	fragment_dom_node := layout_node.dom_node() or { return none }
+	focused := layout_node.document().focused_area() or { return none }
+	focused_element := focused.as_element() or { return none }
+	mut selection_start := 0
+	mut selection_end := 0
+	mut control_text_node := ?&dom.Text(none)
+	if focused.is_html_input_element() {
+		model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(focused_element) })
+		if !model.selection_or_range_applies() {
+			return none
+		}
+		control_text_node = model.form_associated_element_to_text_node()
+		selection_start = int(model.text_control.selection_start())
+		selection_end = int(model.text_control.selection_end())
+	} else if focused_element.is_html_element() && focused_element.local_name() == 'textarea' {
+		model := html.html_text_area_element_model_for_dom_element(unsafe {
+			&dom.HTMLTextAreaElement(focused_element)
+		})
+		control_text_node = model.form_associated_element_to_text_node()
+		selection_start = int(model.text.selection_start())
+		selection_end = int(model.text.selection_end())
+	} else {
+		return none
+	}
+	text_node := control_text_node or { return none }
+	if voidptr(text_node.as_node()) != voidptr(fragment_dom_node)
+		|| selection_start == selection_end {
+		return none
+	}
+	return text_fragment_compute_selection_offsets(fragment, .start_and_end, selection_start, selection_end)
+}
+
+// PaintableFragment::selection_offsets(). Text-control state takes precedence
+// over the document Selection just as it does upstream.
+fn selection_offsets(fragment TextFragment) ?painting.SelectionOffsets {
+	if offsets := selection_range_for_text_control(fragment) {
+		return offsets
+	}
+	if fragment.layout_handle == unsafe { nil } {
+		return none
+	}
+	layout_node := unsafe { &Node(fragment.layout_handle) }
+	dom_node := layout_node.dom_node() or { return none }
+	paintable := dom_node.unsafe_paintable() or { return none }
+	state := dom_selection_state_to_painting(paintable.selection_state)
+	if state == .none {
+		return none
+	}
+	selection := layout_node.document().get_selection() or { return none }
+	range := selection.range() or { return none }
+	return text_fragment_compute_selection_offsets(fragment, state, range.start_offset(), range.end_offset())
+}
+
+fn text_fragment_has_active_selection(fragment TextFragment) bool {
+	return selection_offsets(fragment) != none
+}
+
+// PaintableFragment::range_rect() over the retained LineBoxFragment glyph run.
+fn text_fragment_relative_range_rect(fragment TextFragment, start int, end int) LayoutRect {
+	paintable_fragment := fragment.paintable_fragment
+	rect := paintable_fragment.range_rect(.start_and_end, paintable_fragment.start_offset + start, paintable_fragment.start_offset + end)
+	return LayoutRect{rect.x, rect.y, rect.width, rect.height}
+}
+
+// PaintableFragment::selection_rect(). The DOM-dependent range lookup stays at
+// the Layout bridge, while range geometry remains owned by PaintableFragment.
+fn selection_rect(fragment TextFragment) LayoutRect {
+	offsets := selection_offsets(fragment) or { return LayoutRect{} }
+	return text_fragment_relative_range_rect(fragment, offsets.start, offsets.end)
+}
+
+fn rounded_text_span_rect(rect LayoutRect) LayoutRect {
+	converter := painting.new_device_pixel_converter(1.0) or { return rect }
+	rounded := converter.rounded_device_rect(painting.Rect{rect.x, rect.y, rect.width, rect.height})
+	return LayoutRect{f64(rounded.x), f64(rounded.y), f64(rounded.width), f64(rounded.height)}
+}
+
+// PaintableWithLines.cpp::compute_render_spans().
+fn compute_render_spans(fragments []TextFragment) []TextRenderSpan {
+	mut spans := []TextRenderSpan{cap: fragments.len}
+	for fragment_index, fragment in fragments {
+		fragment_length := fragment.paintable_fragment.length_in_code_units
+		fragment_selection_offsets := selection_offsets(fragment) or {
+			spans << TextRenderSpan{
+				fragment_index: fragment_index
+				end_code_unit: fragment_length
+				text_color: fragment.color
+			}
+			continue
+		}
+		style := fragment.selection_style
+		selection_text_color := if style.text_color_set { style.text_color } else { fragment.color }
+		if fragment_selection_offsets.start > 0 {
+			spans << TextRenderSpan{
+				fragment_index: fragment_index
+				end_code_unit: fragment_selection_offsets.start
+				text_color: fragment.color
+			}
+		}
+		if fragment_selection_offsets.start < fragment_selection_offsets.end {
+			spans << TextRenderSpan{
+				fragment_index: fragment_index
+				start_code_unit: fragment_selection_offsets.start
+				end_code_unit: fragment_selection_offsets.end
+				text_color: selection_text_color
+				background_color: style.background_color
+				shadow_layers: style.text_shadows
+				shadow_layers_set: style.text_shadows_set
+				decoration: style.decoration
+				decoration_color: style.decoration_color
+				decoration_style: style.decoration_style
+				decoration_set: style.decoration_set
+			}
+		}
+		if fragment_selection_offsets.end < fragment_length {
+			spans << TextRenderSpan{
+				fragment_index: fragment_index
+				start_code_unit: fragment_selection_offsets.end
+				end_code_unit: fragment_length
+				text_color: fragment.color
+			}
+		}
+	}
+	return spans
+}
+
+fn text_span_rect(fragment TextFragment, span TextRenderSpan) LayoutRect {
+	return text_fragment_relative_range_rect(fragment, span.start_code_unit, span.end_code_unit)
+}
+
+// ShadowPainting.cpp::paint_text_shadow().
+fn paint_text_shadow(mut commands []PaintCommand, fragment TextFragment,
+	span TextRenderSpan, opacity f64) {
+	layers := if span.shadow_layers_set { span.shadow_layers } else { fragment.text_shadows }
+	if layers.len == 0 {
+		return
+	}
+	span_rect := text_span_rect(fragment, span)
+	span_text := utf16_substring_for_line_box(fragment.text, span.start_code_unit, span.end_code_unit - span.start_code_unit)
+	for layer_index := layers.len - 1; layer_index >= 0; layer_index-- {
+		layer := layers[layer_index]
+		commands << PaintCommand{
+			kind: 'draw_text_shadow'
+			x: span_rect.x + layer.offset_x
+			y: fragment.y + layer.offset_y
+			width: span_rect.width
+			height: fragment.height
+			color: layer.color.serialize()
+			text: span_text
+			font_size: fragment.font_size
+			bold: fragment.bold
+			italic: fragment.italic
+			mono: fragment.mono
+			rtl: fragment.rtl
+			opacity: opacity
+			blur: layer.blur
+		}
+	}
+}
+
+// PaintableWithLines.cpp::paint_text_fragment().
+fn paint_text_fragment(mut commands []PaintCommand, fragment TextFragment,
+	span TextRenderSpan, opacity f64) {
+	if span.start_code_unit == span.end_code_unit {
+		return
+	}
+	full_fragment := span.start_code_unit == 0
+		&& span.end_code_unit == fragment.paintable_fragment.length_in_code_units
+	mut text_command := PaintCommand{
+		kind: 'draw_text'
+		x: fragment.x
+		y: fragment.y
+		width: fragment.width
+		height: fragment.height
+		color: span.text_color.serialize()
+		text: fragment.text
+		font_size: fragment.font_size
+		bold: fragment.bold
+		italic: fragment.italic
+		mono: fragment.mono
+		rtl: fragment.rtl
+		opacity: opacity
+	}
+	span_rect := text_span_rect(fragment, span)
+	if !full_fragment {
+		text_command.recording_clip = rounded_text_span_rect(span_rect)
+	}
+	commands << text_command
+	decoration_rect := if full_fragment {
+		LayoutRect{fragment.x, fragment.y, fragment.width, fragment.height}
+	} else {
+		span_rect
+	}
+	decoration_fragment := if span.decoration_set {
+		TextFragment{
+			...fragment
+			x: decoration_rect.x
+			y: decoration_rect.y
+			width: decoration_rect.width
+			height: decoration_rect.height
+			decoration: span.decoration
+			decoration_color: span.decoration_color
+			decoration_color_set: true
+			decoration_style: span.decoration_style
+		}
+	} else {
+		TextFragment{
+			...fragment
+			x: decoration_rect.x
+			y: decoration_rect.y
+			width: decoration_rect.width
+			height: decoration_rect.height
+		}
+	}
+	commands << decoration_commands(decoration_fragment, opacity)
+}
+
+// PaintableWithLines::paint(Foreground): selection backgrounds for all spans,
+// then all shadows, then glyphs and decorations.
+fn selected_text_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand {
+	spans := compute_render_spans(fragments)
+	mut commands := []PaintCommand{}
+	for span in spans {
+		if span.background_color.a == 0 {
+			continue
+		}
+		rect := rounded_text_span_rect(selection_rect(fragments[span.fragment_index]))
+		commands << PaintCommand{
+			kind: 'fill_rect'
+			x: rect.x
+			y: rect.y
+			width: rect.width
+			height: rect.height
+			color: span.background_color.serialize()
+			opacity: opacity
+		}
+	}
+	for span in spans {
+		paint_text_shadow(mut commands, fragments[span.fragment_index], span, opacity)
+	}
+	for span in spans {
+		paint_text_fragment(mut commands, fragments[span.fragment_index], span, opacity)
+	}
+	return commands
+}
+
+fn text_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand {
+	if !fragments.any(text_fragment_has_active_selection(it))
+		&& !fragments.any(it.text_shadows.len > 0) {
+		return unselected_text_fragment_commands(fragments, opacity)
+	}
+	return selected_text_fragment_commands(fragments, opacity)
+}
+
 fn append_background_text_clip_runs(box &BlockBox, mut runs []PaintTextClipRun) {
 	if box.paintable_with_lines {
 		for line in box.lines {
-			for command in text_fragment_commands(line.fragments, 1.0) {
+			for command in unselected_text_fragment_commands(line.fragments, 1.0) {
 				if command.kind != 'draw_text' || command.text == '' {
 					continue
 				}
@@ -4109,6 +4435,16 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 				points << '${fmt_px(command.points[index])},${fmt_px(command.points[index + 1])}'
 			}
 			body << '<polygon points="${points.join(' ')}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
+		} else if command.kind == 'draw_line' {
+			linecap := if command.line_style == 'dotted' { ' stroke-linecap="round"' } else { '' }
+			dasharray := match command.line_style {
+				'dashed' {
+					' stroke-dasharray="${fmt_px(command.stroke_width * 3)} ${fmt_px(command.stroke_width * 3)}"'
+				}
+				'dotted' { ' stroke-dasharray="0 ${fmt_px(command.stroke_width * 2)}"' }
+				else { '' }
+			}
+			body << '<line x1="${fmt_px(command.x)}" y1="${fmt_px(command.y)}" x2="${fmt_px(command.x + command.width)}" y2="${fmt_px(command.y + command.height)}" fill="none" stroke="${command.color}" stroke-opacity="${fmt_px(command.opacity)}" stroke-width="${fmt_px(command.stroke_width)}"${linecap}${dasharray}/>'
 		} else if command.kind == 'fill_gradient' {
 			if grad := command.gradient {
 				tiles := resolved_background_gradient_tiles(command)
