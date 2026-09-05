@@ -459,14 +459,6 @@ fn computed_box_radii(computed &css.ComputedValues, width f64, height f64) BoxRa
 	}, width, height)
 }
 
-fn computed_outline_width(computed &css.ComputedValues) f64 {
-	return match computed.outline_style() {
-		.auto_ { 2.0 }
-		.none_ { 0.0 }
-		else { computed.outline_width().to_double() }
-	}
-}
-
 fn computed_outline_line_style(style css.OutlineStyle) painting.LineStyle {
 	return match style {
 		.auto_ { .solid }
@@ -480,6 +472,20 @@ fn computed_outline_line_style(style css.OutlineStyle) painting.LineStyle {
 		.inset { .inset }
 		.outset { .outset }
 	}
+}
+
+// Direct translation of PaintableBox::outline_data(). ComputedValues already
+// carries the layout-node-resolved system accent color at this bridge boundary.
+fn paintable_box_outline_data(computed &css.ComputedValues) ?painting.BordersData {
+	mut outline_color := computed.outline_color()
+	mut line_style := computed_outline_line_style(computed.outline_style())
+	mut outline_width := computed.outline_width().to_double()
+	if computed.outline_style() == .auto_ {
+		line_style = .solid
+		outline_color = computed.accent_color() or { outline_color }
+		outline_width = 2
+	}
+	return painting.borders_data_for_outline(painting.Color{outline_color.r, outline_color.g, outline_color.b, outline_color.a}, line_style, outline_width)
 }
 
 fn computed_box_shadows(computed &css.ComputedValues) []BoxShadow {
@@ -2651,18 +2657,16 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		border_styles = computed_border_styles(computed)
 		border_radii = computed_box_radii(computed, used.border_box_width().to_double(), used.border_box_height().to_double())
 		border_radius = border_radii.top_left.x
-		outline_width = computed_outline_width(computed)
-		outline_style = computed_outline_line_style(computed.outline_style())
+		if outline := paintable_box_outline_data(computed) {
+			outline_width = outline.top.width
+			outline_style = outline.top.line_style
+			outline_color = css.Color{outline.top.color.r, outline.top.color.g, outline.top.color.b, outline.top.color.a}
+		}
 		outline_offset_value := computed.typed_property_value(.outline_offset) or {
 			css.StyleValue(css.LengthStyleValue.create(css.Length.make_px(0)))
 		}
 		outline_offset = computed.resolve_length_percentage_value_px(outline_offset_value, 0) or {
 			0.0
-		}
-		outline_color = if computed.outline_style() == .auto_ {
-			computed.accent_color() or { computed.outline_color() }
-		} else {
-			computed.outline_color()
 		}
 		shadows = computed_box_shadows(computed)
 		if shadows.len > 0 {

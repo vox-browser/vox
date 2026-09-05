@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 491
+filename-level mappings. The current semantic audit nevertheless reports 490
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 491 unmatched Painting
+  were removed; the audit currently reports 490 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -168,7 +168,10 @@ following behavioral mismatches and added focused regressions:
   flattening away its even-odd winding or arc segments; the native renderer
   consumes the retained path data. Outlines use the same translated dispatcher,
   including CSS UI's negative-offset clamp, radii inflation, and the resolved
-  2px accent-color behavior for `outline-style:auto`.
+  2px accent-color behavior for `outline-style:auto`. The active adapter now
+  obtains color, style, and width together from a direct
+  `PaintableBox::outline_data()` translation, including the shared invisible
+  outline suppression.
 - `BackgroundPainting.cpp`'s per-layer sizing and repetition path is now direct
   rather than a renderer-local approximation. Typed `BackgroundLayerData`
   reaches Painting intact; default sizing, contain/cover, `round` resizing and
@@ -386,7 +389,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 491 unmatched implementations.
+Painting: 490 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

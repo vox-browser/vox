@@ -244,6 +244,10 @@ the active visual-context path. It chooses the absolute padding box for normal
 boxes and the content box for replaced boxes before applying the four resolved
 overflow-clip margins. A focused geometry matrix covers both origins and
 asymmetric edge inflation.
+The typed adapter also constructs outlines through a direct translation of
+`PaintableBox::outline_data()`. Its one result supplies color, line style, and
+width together after the source's `auto` accent override and shared invisible
+outline suppression, avoiding three separately maintained conversions.
 The DOM mirror also preserves the layout tree's split-inline continuation chain
 in forward order. This lets `PaintableBox`'s united geometry and the CSSOM
 `offsetTop`, `offsetLeft`, `offsetWidth`, and `offsetHeight` algorithms account

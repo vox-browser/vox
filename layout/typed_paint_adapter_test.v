@@ -74,7 +74,11 @@ fn test_typed_paint_adapter_uses_computed_enums_and_lengths() {
 	computed := computed_paint_test_style('appearance: none; outline: solid 7px; outline-offset: 3px; text-decoration-style: wavy; text-decoration-thickness: 25%; font-size: 20px; font-style: italic; font-family: monospace')
 
 	assert computed.appearance() == .none_
-	assert math.abs(computed_outline_width(css.resolve_computed_values(computed)) - 7.0) < 0.001
+	outline := paintable_box_outline_data(css.resolve_computed_values(computed)) or {
+		panic('missing outline data')
+	}
+	assert math.abs(outline.top.width - 7.0) < 0.001
+	assert outline.top.line_style == .solid
 	assert computed_text_decoration_style(computed) == 'wavy'
 	assert math.abs(computed_text_decoration_thickness(computed, 20) - 5.0) < 0.001
 	assert computed.font_slope() != 0
