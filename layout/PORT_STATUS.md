@@ -233,7 +233,15 @@ resolve it, its offsets use the absolute border box, negative extents produce an
 empty clip, and the node is appended between the box transform and `clip-path`
 so it clips self-paint, descendants, and hit testing. The `clip`, transformed
 clip, offscreen clip, absolute-descendant clip, and clipped-image upstream
-reftest pairs are pixel-identical. Wheel events follow
+reftest pairs are pixel-identical.
+`PaintableBox::transform_reference_box()` now supplies transform dimensions and
+origins instead of hard-coding the border box. CSS and SVG box-type remapping,
+the nearest SVG viewport for `view-box`, and the upstream fill/stroke box
+approximations are preserved. The computed transform path also composes
+individual `translate`, `rotate`, and `scale` before the legacy transform list,
+including percentage resolution against the selected reference box. The HTML
+transform-box reftest and both WPT individual-transform pairs are pixel-exact;
+the comprehensive HTML/SVG screenshot's MAE fell from 4.6117 to 0.2584.
 `SVGMaskable`'s URL `<clipPath>` path is active too: attached resource geometry
 is omitted from normal child painting and retained as exact mask components.
 Target, resource, child, viewBox, and `objectBoundingBox` transforms compose at

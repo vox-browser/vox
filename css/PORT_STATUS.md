@@ -91,6 +91,13 @@ animations and transitions; fonts and counter styles; images, gradients, modern
 color functions, grid and general style values; screen/orientation/viewport
 surfaces; inline-style and DOM query integration; and generated property metadata.
 
+Computed 2D transform resolution follows `ViewportPaintable::compute_transform()`
+source order: individual `translate`, `rotate`, and `scale` matrices precede the
+legacy transform list, and percentages resolve against the selected
+`PaintableBox::transform_reference_box()`. This replaces the former
+transform-list-only path; the fill-box and view-box WPT individual-transform
+reftest pairs are pixel-identical.
+
 The completion and independent audits corrected `FontFaceSetLoadEvent` to retain
 the actual translated `FontFaceObject` identity through its WebIDL-facing
 `FontFace` alias; preserved typed operations in computed `filter` and

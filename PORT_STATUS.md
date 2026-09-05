@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 588
-  candidate-name-match: 13943
-  unmatched: 1824
+  candidate-name-match: 13944
+  unmatched: 1823
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   520 Painting
+   519 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -229,7 +229,15 @@ from an absolute/fixed box's border box, inserted after its transform and before
 Negative extents become an empty clip and the four edges use the same rounded
 device conversion as C++. Five upstream reftest pairs, including transformed,
 offscreen, descendant, and image cases, render with zero differing pixels.
-Wheel routing follows
+`PaintableBox::transform_reference_box()` is translated on the same active path:
+CSS boxes remap fill/stroke/view to content/border, SVG paintables remap
+content/border to fill/stroke, and SVG view-box transforms use the nearest SVG
+viewport. `ViewportPaintable::compute_transform()` now composes individual
+`translate`, `rotate`, and `scale` before the transform list. The HTML reference
+and both WPT percentage-translate reference pairs are pixel-identical; the
+mixed HTML/SVG screenshot improved from 24,212 to 9,859 differing pixels and
+MAE 4.6117 to 0.2584, leaving raster-edge and text-antialiasing deltas. Wheel
+routing follows
 the C++ containing-block fallback, including declining
 programmatic-only hidden overflow and saturated inner scrollers. These updates
 preserve layout and per-phase command caches while refreshing visual scroll

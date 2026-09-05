@@ -2292,10 +2292,34 @@ pub fn resolve_transform_2d_matrix(element &dom.Element, text string, reference_
 // the layout node's length context. This avoids re-running the compatibility
 // cascade and re-parsing transform text from the typed layout adapter.
 pub fn resolve_computed_transform_2d_matrix(computed &ComputedProperties, reference_width f64, reference_height f64) ?[6]f64 {
-	value := computed.property(.transform, .yes) or { return [f64(1), 0, 0, 1, 0, 0]! }
-	parsed := style_value_logic_from_dom(.transform, value) or { return none }
-	return resolve_transform_style_value_2d_matrix(parsed, reference_width, reference_height,
-		computed.length_resolution_context())
+	// ViewportPaintable::compute_transform() composes the individual transform
+	// properties before the legacy transform list, in this exact order.
+	mut transformations := []TransformationStyleValue{}
+	for property_id in [PropertyID.translate, .rotate, .scale] {
+		value := computed.property(property_id, .yes) or { continue }
+		parsed := style_value_logic_from_dom(property_id, value) or { return none }
+		if parsed is TransformationStyleValue {
+			transformations << parsed
+		} else if !(parsed.is_keyword() && parsed.to_keyword() == .none_) {
+			return none
+		}
+	}
+	if value := computed.property(.transform, .yes) {
+		parsed := style_value_logic_from_dom(.transform, value) or { return none }
+		if parsed is TransformationStyleValue {
+			transformations << parsed
+		} else if parsed is StyleValueList {
+			for item in parsed.values() {
+				if item !is TransformationStyleValue {
+					return none
+				}
+				transformations << (item as TransformationStyleValue)
+			}
+		} else if !(parsed.is_keyword() && parsed.to_keyword() == .none_) {
+			return none
+		}
+	}
+	return resolve_transformations_2d_matrix(transformations, reference_width, reference_height, computed.length_resolution_context())
 }
 
 fn resolve_transform_style_value_2d_matrix(parsed StyleValue, reference_width f64, reference_height f64, length_context LengthResolutionContext) ?[6]f64 {
@@ -2313,6 +2337,10 @@ fn resolve_transform_style_value_2d_matrix(parsed StyleValue, reference_width f6
 		return [f64(1), 0, 0, 1, 0, 0]!
 	}
 
+	return resolve_transformations_2d_matrix(transformations, reference_width, reference_height, length_context)
+}
+
+fn resolve_transformations_2d_matrix(transformations []TransformationStyleValue, reference_width f64, reference_height f64, length_context LengthResolutionContext) ?[6]f64 {
 	paintable_box := TransformPaintableBox{
 		reference_box: TransformReferenceBox{
 			width: CSSPixels.nearest_value_for(reference_width)

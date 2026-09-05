@@ -479,6 +479,52 @@ fn test_typed_paint_adapter_composes_nested_transforms_while_descending() {
 	assert inner.paint_transform == [f64(2), 0, 0, 2, 10, 20]!
 }
 
+fn test_transform_box_uses_content_or_border_reference_for_css_boxes() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } .target { position: absolute; top: 0; width: 40px; height: 20px; padding: 5px; border: 10px solid black; transform: scale(2); transform-origin: 0 0 } #content { left: 0; transform-box: content-box } #border { left: 100px; transform-box: border-box }</style><body><div id="content" class="target"></div><div id="border" class="target"></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	content_element := document.get_element_by_id('content') or { panic('missing content box') }
+	border_element := document.get_element_by_id('border') or { panic('missing border box') }
+	content := root.find_box(i64(content_element.as_node().unique_id())) or {
+		panic('missing content paint box')
+	}
+	border := root.find_box(i64(border_element.as_node().unique_id())) or {
+		panic('missing border paint box')
+	}
+	assert content.own_paint_transform == [f64(2), 0, 0, 2, -15, -15]!
+	assert border.own_paint_transform == [f64(2), 0, 0, 2, -100, 0]!
+}
+
+fn test_transform_box_uses_nearest_svg_viewport_reference() {
+	document := html.parse_document('<!doctype html><style>html, body, svg { margin: 0; display: block } .target { transform: scale(2); transform-origin: 0 0 }</style><body><svg width="200" height="100"><rect id="fill" class="target" style="transform-box: fill-box" x="10" y="10" width="10" height="10" fill="red"/><rect id="view" class="target" style="transform-box: view-box" x="10" y="40" width="10" height="10" fill="blue"/></svg></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	fill_element := document.get_element_by_id('fill') or { panic('missing fill-box rect') }
+	view_element := document.get_element_by_id('view') or { panic('missing view-box rect') }
+	fill := root.find_box(i64(fill_element.as_node().unique_id())) or {
+		panic('missing fill paint box')
+	}
+	view := root.find_box(i64(view_element.as_node().unique_id())) or {
+		panic('missing view paint box')
+	}
+	assert fill.own_paint_transform == [f64(2), 0, 0, 2, -10, -10]!
+	assert view.own_paint_transform == [f64(2), 0, 0, 2, 0, 0]!
+}
+
+fn test_individual_transforms_compose_before_transform_list_against_reference_box() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { position: absolute; width: 40px; height: 20px; padding: 5px; border: 10px solid black; transform-box: content-box; translate: 100% 50%; rotate: 90deg; scale: 2; transform: translateX(5px); transform-origin: 0 0 }</style><body><div id="target"></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	element := document.get_element_by_id('target') or { panic('missing transform target') }
+	target := root.find_box(i64(element.as_node().unique_id())) or {
+		panic('missing transform paint box')
+	}
+	matrix := target.own_paint_transform
+	assert math.abs(matrix[0]) < 0.000001
+	assert math.abs(matrix[1] - 2) < 0.000001
+	assert math.abs(matrix[2] + 2) < 0.000001
+	assert math.abs(matrix[3]) < 0.000001
+	assert math.abs(matrix[4] - 85) < 0.000001
+	assert math.abs(matrix[5] - 5) < 0.000001
+}
+
 fn test_typed_paint_adapter_preserves_large_committed_text_fragment() {
 	text := ('word '.repeat(2048)).trim_space()
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #text { white-space: nowrap }</style><body><p id="text">${text}</p></body>')

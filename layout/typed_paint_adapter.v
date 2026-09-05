@@ -281,6 +281,71 @@ fn paintable_box_get_clip_rect(node &Node, computed &css.ComputedProperties, use
 	}
 }
 
+fn paintable_box_border_reference_box(used &UsedValues, position css.CSSPixelPoint) LayoutRect {
+	border := compatibility_paint_border_edges(used)
+	return LayoutRect{
+		x: position.x().to_double() - used.padding_left.to_double() - border.left
+		y: position.y().to_double() - used.padding_top.to_double() - border.top
+		width: used.content_width().to_double() + used.padding_left.to_double() + used.padding_right.to_double() + border.left + border.right
+		height: used.content_height().to_double() + used.padding_top.to_double() + used.padding_bottom.to_double() + border.top + border.bottom
+	}
+}
+
+// https://www.w3.org/TR/css-transforms-1/#reference-box
+// Direct translation of PaintableBox::transform_reference_box(). SVG
+// paintables remap content/border to fill/stroke, while CSS layout boxes remap
+// fill/stroke/view to content/border. Ladybird currently approximates SVG
+// fill/stroke boxes with the paintable content/border rects; preserve that
+// behavior until upstream grows exact SVG geometry boxes.
+fn paintable_box_transform_reference_box(node &Node, computed &css.ComputedProperties, used &UsedValues, position css.CSSPixelPoint, state &LayoutState) LayoutRect {
+	mut transform_box := computed.transform_box()
+	if node.is_svg_box() {
+		transform_box = match transform_box {
+			.content_box { .fill_box }
+			.border_box { .stroke_box }
+			else { transform_box }
+		}
+	} else {
+		transform_box = match transform_box {
+			.fill_box { .content_box }
+			.stroke_box, .view_box { .border_box }
+			else { transform_box }
+		}
+	}
+	match transform_box {
+		.content_box, .fill_box {
+			return LayoutRect{
+				x: position.x().to_double()
+				y: position.y().to_double()
+				width: used.content_width().to_double()
+				height: used.content_height().to_double()
+			}
+		}
+		.border_box, .stroke_box {
+			return paintable_box_border_reference_box(used, position)
+		}
+		.view_box {
+			mut ancestor := node.parent()
+			for ancestor != none {
+				current := ancestor or { break }
+				if current.is_svg_svg_box() {
+					styled := current.as_node_with_style() or { break }
+					ancestor_used := state.try_get(styled) or { break }
+					ancestor_position := paint_cumulative_offset(current, state, ancestor_used)
+					return LayoutRect{
+						x: ancestor_position.x().to_double()
+						y: ancestor_position.y().to_double()
+						width: ancestor_used.content_width().to_double()
+						height: ancestor_used.content_height().to_double()
+					}
+				}
+				ancestor = current.parent()
+			}
+			return paintable_box_border_reference_box(used, position)
+		}
+	}
+}
+
 fn computed_border_colors(computed &css.ComputedValues) BoxColors {
 	return BoxColors{
 		top: computed.border_top().color
@@ -1086,6 +1151,9 @@ fn computed_text_decoration_style(computed &css.ComputedProperties) string {
 }
 
 fn computed_transform_is_none(computed &css.ComputedProperties) bool {
+	if computed.translate() != none || computed.rotate() != none || computed.scale() != none {
+		return false
+	}
 	value := computed.typed_property_value(.transform) or { return true }
 	return value.is_keyword() && value.to_keyword() == .none_
 }
@@ -2545,7 +2613,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			}
 		}
 		if !computed_transform_is_none(computed) {
-			paint_transform = resolved_computed_transform_matrix(computed, position.x().to_double() - used.padding_left.to_double() - used.border_left.to_double(), position.y().to_double() - used.padding_top.to_double() - used.border_top.to_double(), used.border_box_width().to_double(), used.border_box_height().to_double())
+			reference_box := paintable_box_transform_reference_box(node, computed, used, position, state)
+			paint_transform = resolved_computed_transform_matrix(computed, reference_box.x, reference_box.y, reference_box.width, reference_box.height)
 		}
 		clip_path = basic_shape_clip_path_for_box(node, computed, LayoutRect{
 			x: position.x().to_double() - used.padding_left.to_double() - used.border_left.to_double()
