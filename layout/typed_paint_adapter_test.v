@@ -1602,6 +1602,29 @@ fn test_fieldset_paint_shifts_background_and_splits_top_border_around_legend() {
 	assert red_borders.any(it.recording_clip == none)
 }
 
+fn test_geometric_list_markers_use_translated_marker_paint_commands() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		ul { margin: 0 0 0 32px; padding: 0; color: rgb(20, 60, 180) }
+		li { width: 20px; height: 16px; font-size: 17px }
+		#a { list-style-type: square } #b { list-style-type: circle }
+		#c { list-style-type: disc } #d { list-style-type: disclosure-closed }
+		#e { list-style-type: disclosure-open }
+	</style><ul><li id="a"></li><li id="b"></li><li id="c"></li>
+		<li id="d"></li><li id="e"></li></ul>')
+	_ := layout_document_typed_in_viewport(document, 140, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing marker display list') }
+	commands := display_list_commands(display_list)
+	markers := commands.filter(it.color == 'rgb(20 60 180)')
+	assert markers.any(it.kind == 'fill_rect')
+	assert markers.any(it.kind == 'stroke_ellipse' && it.stroke_width == 1)
+	assert markers.any(it.kind == 'fill_ellipse')
+	triangle_markers := markers.filter(it.kind == 'draw_svg_path')
+	assert triangle_markers.len == 2
+	assert triangle_markers.all(it.path_data.len > 0 && it.fill_even_odd)
+}
+
 fn test_document_viewport_paintable_recomputes_text_selection_states() {
 	document := html.parse_document('<!doctype html><body><span id="start">hello</span><span id="end">world</span></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)

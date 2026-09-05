@@ -261,6 +261,11 @@ geometry. Background and split top-border recorder clips remain local to their
 commands, then compose with the same accumulated transforms, overflow clips,
 and masks as ordinary visual-context clips. This replaces the generic border
 path that painted through a transparent legend.
+Geometric list markers no longer branch into renderer-local rectangles,
+ellipses, and polygons. The adapter resolves a typed marker kind and sends the
+rounded marker rect through `MarkerPaintable::paint()`; its typed fill, ellipse,
+and exact path commands then use the ordinary retained visual context. Native
+ellipse replay restores the formerly absent `circle` and `disc` markers.
 `SVGMaskable`'s URL `<clipPath>` path is active too: attached resource geometry
 is omitted from normal child painting and retained as exact mask components.
 Target, resource, child, viewBox, and `objectBoundingBox` transforms compose at

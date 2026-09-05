@@ -1965,6 +1965,17 @@ fn set_recording_clip_for_range(mut commands []PaintCommand, start int, end int,
 fn append_painting_display_command(mut commands []PaintCommand,
 	display_command painting.DisplayListCommand, opacity f64) {
 	match display_command {
+		painting.FillRect {
+			commands << PaintCommand{
+				kind: 'fill_rect'
+				x: display_command.rect.x
+				y: display_command.rect.y
+				width: display_command.rect.width
+				height: display_command.rect.height
+				color: painting_color_string(display_command.color)
+				opacity: opacity
+			}
+		}
 		painting.FillRoundedRect {
 			commands << PaintCommand{
 				kind: 'fill_rounded_rect'
@@ -1992,6 +2003,29 @@ fn append_painting_display_command(mut commands []PaintCommand,
 				points: if polygons.len > 0 { polygons[0] } else { []f64{} }
 				path_polygons: polygons
 				fill_even_odd: display_command.winding_rule == .even_odd
+			}
+		}
+		painting.DrawEllipse {
+			commands << PaintCommand{
+				kind: 'stroke_ellipse'
+				x: display_command.rect.x
+				y: display_command.rect.y
+				width: display_command.rect.width
+				height: display_command.rect.height
+				color: painting_color_string(display_command.color)
+				opacity: opacity
+				stroke_width: display_command.thickness
+			}
+		}
+		painting.FillEllipse {
+			commands << PaintCommand{
+				kind: 'fill_ellipse'
+				x: display_command.rect.x
+				y: display_command.rect.y
+				width: display_command.rect.width
+				height: display_command.rect.height
+				color: painting_color_string(display_command.color)
+				opacity: opacity
 			}
 		}
 		painting.DrawLine {
@@ -2388,70 +2422,16 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 			}
 		}
 		if box.marker_shape.len > 0 {
-			match box.marker_shape {
-				'square' {
-					commands << PaintCommand{
-						kind: 'fill_rect'
-						x: box.x
-						y: box.y
-						width: box.width
-						height: box.height
-						color: box.text_color.serialize()
-						opacity: opacity
-					}
+			if marker_kind := painting.marker_kind_from_name(box.marker_shape) {
+				converter := painting.new_device_pixel_converter(1.0) or { return commands }
+				marker := painting.MarkerPaintable{
+					marker_rect: painting.Rect{box.x, box.y, box.width, box.height}
+					kind: marker_kind
+					color: painting.Color{box.text_color.r, box.text_color.g, box.text_color.b, box.text_color.a}
 				}
-				'disc' {
-					commands << PaintCommand{
-						kind: 'fill_ellipse'
-						x: box.x
-						y: box.y
-						width: box.width
-						height: box.height
-						color: box.text_color.serialize()
-						opacity: opacity
-					}
+				for display_command in marker.paint(converter) {
+					append_painting_display_command(mut commands, display_command, opacity)
 				}
-				'circle' {
-					commands << PaintCommand{
-						kind: 'stroke_ellipse'
-						x: box.x
-						y: box.y
-						width: box.width
-						height: box.height
-						color: box.text_color.serialize()
-						opacity: opacity
-						stroke_width: 1
-					}
-				}
-				'disclosure-closed' {
-					right := box.x + 0.866025403 * box.width
-					commands << PaintCommand{
-						kind: 'fill_polygon'
-						x: box.x
-						y: box.y
-						width: box.width
-						height: box.height
-						color: box.text_color.serialize()
-						opacity: opacity
-						points: [box.x, box.y, right, box.y + box.height / 2, box.x,
-							box.y + box.height]
-					}
-				}
-				'disclosure-open' {
-					bottom := box.y + 0.866025403 * box.height
-					commands << PaintCommand{
-						kind: 'fill_polygon'
-						x: box.x
-						y: box.y
-						width: box.width
-						height: box.height
-						color: box.text_color.serialize()
-						opacity: opacity
-						points: [box.x, box.y, box.x + box.width, box.y, box.x + box.width / 2,
-							bottom]
-					}
-				}
-				else {}
 			}
 		}
 		for line in box.lines {

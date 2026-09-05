@@ -390,6 +390,39 @@ static CGColorRef native_srgb_color(gg__Color color) {
 	return CGColorCreate(color_space, components);
 }
 
+void native_draw_ellipse_srgb(float x, float y, float width, float height,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_height, gg__Color color, int fill,
+	float thickness) {
+	if (width <= 0.0 || height <= 0.0) {
+		return;
+	}
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL) {
+		return;
+	}
+	CGPathRef path = CGPathCreateWithEllipseInRect(CGRectMake(x, y, width, height), NULL);
+	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
+		transform_c, -transform_d, page_x + transform_e,
+		canvas_height - page_y + scroll_y - transform_f);
+	CGColorRef cg_color = native_srgb_color(color);
+	CGContextSaveGState(context);
+	CGContextConcatCTM(context, to_canvas);
+	CGContextAddPath(context, path);
+	if (fill) {
+		CGContextSetFillColorWithColor(context, cg_color);
+		CGContextFillPath(context);
+	} else {
+		CGContextSetStrokeColorWithColor(context, cg_color);
+		CGContextSetLineWidth(context, MAX(thickness, 0.0));
+		CGContextStrokePath(context);
+	}
+	CGContextRestoreGState(context);
+	CGColorRelease(cg_color);
+	CGPathRelease(path);
+}
+
 void native_draw_document_text_srgb(float x, float y, string value, gg__Color color,
 	float size, int bold, int italic, int monospace) {
 	NSString *text = native_capture_string(value);

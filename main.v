@@ -58,6 +58,8 @@ fn C.native_cache_browser_snapshot(path string)
 
 fn C.native_draw_rect_srgb(x f32, y f32, width f32, height f32, fill_color gg.Color)
 
+fn C.native_draw_ellipse_srgb(x f32, y f32, width f32, height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, color gg.Color, fill int, thickness f32)
+
 fn C.native_configure_document_font(path string)
 
 fn C.native_draw_document_text_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int)
@@ -2559,6 +2561,12 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 		}
 		'fill_ellipse' {
 			fill := paint_color(command.color, command.opacity)
+			$if macos {
+				if app.ctx.native_rendering {
+					C.native_draw_ellipse_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), fill, 1, 0)
+					return
+				}
+			}
 			if non_axis_aligned {
 				mut points := []f32{cap: 64}
 				for step in 0 .. 32 {
@@ -2574,6 +2582,12 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 		}
 		'stroke_ellipse' {
 			stroke := paint_color(command.color, command.opacity)
+			$if macos {
+				if app.ctx.native_rendering {
+					C.native_draw_ellipse_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), stroke, 0, f32(command.stroke_width))
+					return
+				}
+			}
 			app.ctx.draw_ellipse_thick(x + w / 2, y + h / 2, w / 2, h / 2, f32(command.stroke_width), stroke)
 		}
 		'draw_line' {

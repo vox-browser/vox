@@ -1218,6 +1218,59 @@ pub enum MarkerKind {
 	disclosure_open
 }
 
+pub struct MarkerPaintable {
+pub:
+	marker_rect Rect
+	kind        MarkerKind
+	color       Color
+}
+
+pub fn marker_kind_from_name(name string) ?MarkerKind {
+	return match name {
+		'square' { .square }
+		'circle' { .circle }
+		'disc' { .disc }
+		'disclosure-closed' { .disclosure_closed }
+		'disclosure-open' { .disclosure_open }
+		else { none }
+	}
+}
+
+fn marker_triangle_path(kind MarkerKind, rect IntRect) ClipPathVisualData {
+	left := f64(rect.x)
+	right := left + f64(rect.width)
+	top := f64(rect.y)
+	bottom := top + f64(rect.height)
+	points := if kind == .disclosure_closed {
+		[Point{left, top}, Point{left + 0.866025403 * (right - left), (top + bottom) / 2.0},
+			Point{left, bottom}]
+	} else {
+		[Point{left, top}, Point{right, top},
+			Point{(left + right) / 2.0, top + 0.866025403 * (bottom - top)}]
+	}
+	return ClipPathVisualData{
+		bounding_rect: rect
+		segments: [
+			ClipPathSegment{
+				kind: .move_to
+				point: points[0]
+			},
+			ClipPathSegment{
+				kind: .line_to
+				point: points[1]
+			},
+			ClipPathSegment{
+				kind: .line_to
+				point: points[2]
+			},
+			ClipPathSegment{ kind: .close_path },
+		]
+		polygons: [points.clone()]
+		polygon: points
+		fill_rule: .even_odd
+	}
+}
+
 pub fn marker_command(kind MarkerKind, rect IntRect, color Color) DisplayListCommand {
 	return match kind {
 		.square {
@@ -1233,6 +1286,7 @@ pub fn marker_command(kind MarkerKind, rect IntRect, color Color) DisplayListCom
 			FillPath{
 				path_id: 'triangle-right'
 				path_bounding_rect: rect
+				path: marker_triangle_path(kind, rect)
 				color: color
 				winding_rule: .even_odd
 			}
@@ -1241,11 +1295,24 @@ pub fn marker_command(kind MarkerKind, rect IntRect, color Color) DisplayListCom
 			FillPath{
 				path_id: 'triangle-down'
 				path_bounding_rect: rect
+				path: marker_triangle_path(kind, rect)
 				color: color
 				winding_rule: .even_odd
 			}
 		}
 	}
+}
+
+// Direct translation of MarkerPaintable::paint()'s geometric-marker branch.
+pub fn (marker MarkerPaintable) paint(converter DevicePixelConverter) []DisplayListCommand {
+	rounded_marker_rect := Rect{
+		x: math.round(marker.marker_rect.x)
+		y: math.round(marker.marker_rect.y)
+		width: math.round(marker.marker_rect.width)
+		height: math.round(marker.marker_rect.height)
+	}
+	device_rect := converter.enclosing_device_rect(rounded_marker_rect)
+	return [marker_command(marker.kind, device_rect, marker.color)]
 }
 
 pub struct InputColors {

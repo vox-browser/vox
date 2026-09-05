@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 588
-  candidate-name-match: 13953
-  unmatched: 1814
+  candidate-name-match: 13954
+  unmatched: 1813
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   510 Painting
+   509 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -259,8 +259,14 @@ legend. The recorder-local clips compose with transforms and accumulated
 overflow/mask contexts without leaking into descendants or other paint phases;
 a transparent-legend capture confirms the former border-through-legend artifact
 is gone. Its font-free, scale-normalized upstream comparison has no channel
-error above 1 and MAE 0.0244. Wheel routing follows the C++ containing-block
-fallback, including
+error above 1 and MAE 0.0244. Geometric list markers also use
+`MarkerPaintable::paint()` instead of a renderer-local shape switch. The direct
+path preserves CSS-pixel rounding, enclosing device rectangles, exact
+disclosure triangles, and typed square/circle/disc commands. Native Quartz now
+consumes ellipse commands rather than sending them to the inactive software
+surface, restoring the missing circle and disc markers; the five-shape upstream
+corpus improves from MAE 0.4082 to 0.1665. Wheel routing follows the C++
+containing-block fallback, including
 declining
 programmatic-only hidden overflow and saturated inner scrollers. These updates
 preserve layout and per-phase command caches while refreshing visual scroll

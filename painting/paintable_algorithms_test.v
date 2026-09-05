@@ -302,6 +302,27 @@ fn test_background_table_control_and_replaced_content_algorithms() {
 	assert computed_colors.mid_gray == Color{180, 180, 180, 255}
 	assert computed_colors.light_gray == Color{203, 203, 203, 255}
 	assert command_name(marker_command(.disc, IntRect{0, 0, 5, 5}, Color{})) == 'FillEllipse'
+	closed_marker := marker_command(.disclosure_closed, IntRect{10, 20, 8, 6}, Color{})
+	assert closed_marker is FillPath
+	closed_path := closed_marker as FillPath
+	assert closed_path.winding_rule == .even_odd
+	assert closed_path.path.segments.len == 4
+	assert closed_path.path.polygon[0] == Point{10, 20}
+	assert math.abs(closed_path.path.polygon[1].x - 16.928203224) < 0.000001
+	assert closed_path.path.polygon[1].y == 23
+	assert closed_path.path.polygon[2] == Point{10, 26}
+	marker := MarkerPaintable{
+		marker_rect: Rect{0.4, 1.6, 4.4, 5.5}
+		kind: .circle
+		color: Color{1, 2, 3, 255}
+	}
+	marker_commands := marker.paint(new_device_pixel_converter(1) or { panic(err) })
+	assert marker_commands.len == 1
+	assert marker_commands[0] is DrawEllipse
+	assert (marker_commands[0] as DrawEllipse).rect == IntRect{0, 2, 4, 6}
+	open_kind := marker_kind_from_name('disclosure-open') or { panic('missing marker kind') }
+	assert open_kind == .disclosure_open
+	assert marker_kind_from_name('unknown') == none
 	assert command_name(replaced_content_command(.video, 'video', IntRect{0, 0, 10, 10}, IntRect{0, 0, 10, 10}, .bilinear)) == 'DrawExternalContent'
 }
 
