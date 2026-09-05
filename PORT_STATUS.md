@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 35,427 | 12,517 | Present |
+| `Layout` | 50 | 19,592 | 35,427 | 12,536 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **313,610** | **55,725** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **313,610** | **55,744** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -166,9 +166,8 @@ line placement, spans, template areas, named lines, gaps, and the
 justify/align-content/items/self keywords).
 
 The grid corpus agrees with `Build/release/bin/Ladybird.app --headless=layout-tree`
-on all 715 cases, and the `align-self` matrix on all 80. The flex corpus agrees on
-487 of 489; the two remaining cases differ by one subpixel and are diagnosed under
-"KNOWN DIVERGENCE" in `layout/PORT_STATUS.md`.
+on all 715 cases, the flex corpus on all 489, and the `align-self` /
+`align-content` matrices on all 80 cases each.
 
 ## Native browser rendering
 

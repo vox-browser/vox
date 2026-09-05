@@ -832,6 +832,99 @@ fn flex_physical_leading_offset(container &Node, justify css.JustifyContent, fre
 	return free_space.minus(logical_leading).minus(distributed_space)
 }
 
+// align_all_flex_lines(). C++ turns align-content into a starting cross edge, a distributed
+// gap, and two direction flags, then walks the lines from that edge - *subtracting* each
+// line's cross size for the keywords that place items backwards, rather than accumulating
+// forwards from a leading offset.
+//
+// The distinction is not cosmetic. handle_align_content_stretch() grows each line by a
+// truncated `remainder / line_count`, so the stretched line sizes can fall short of the
+// container by a subpixel; three lines sharing 70px take 23.328125px each, 1/64px short of
+// 160px. Accumulating forwards hands that residue to the last line placed, while starting
+// from the container's far edge never sees it, because a line's own cross size cancels out
+// of the centre calculation.
+struct FlexLinePlacement {
+mut:
+	start_of_current_line   CSSPixels
+	gap_size                CSSPixels
+	place_items_backwards   bool
+	iterate_lines_backwards bool
+}
+
+fn flex_line_placement(align css.AlignContent, cross_size_of_flex_container CSSPixels, sum_of_flex_line_cross_sizes CSSPixels, line_count int, wrap_reverse bool) FlexLinePlacement {
+	mut placement := FlexLinePlacement{}
+	if line_count == 0 {
+		return placement
+	}
+	leftover_free_space := cross_size_of_flex_container.minus(sum_of_flex_line_cross_sizes)
+	centered_start := flex_divide_by_integer(cross_size_of_flex_container, 2).minus(flex_divide_by_integer(sum_of_flex_line_cross_sizes, 2))
+	match align {
+		.start {
+			placement.iterate_lines_backwards = wrap_reverse
+		}
+		.end_ {
+			placement.start_of_current_line = cross_size_of_flex_container
+			placement.place_items_backwards = true
+			placement.iterate_lines_backwards = !wrap_reverse
+		}
+		.flex_start {
+			if wrap_reverse {
+				placement.start_of_current_line = cross_size_of_flex_container
+				placement.place_items_backwards = true
+			}
+		}
+		.flex_end {
+			placement.iterate_lines_backwards = true
+			if !wrap_reverse {
+				placement.start_of_current_line = cross_size_of_flex_container
+				placement.place_items_backwards = true
+			}
+		}
+		.center {
+			placement.iterate_lines_backwards = wrap_reverse
+			placement.start_of_current_line = centered_start
+		}
+		.space_between {
+			if wrap_reverse {
+				placement.start_of_current_line = cross_size_of_flex_container
+				placement.place_items_backwards = true
+			}
+			if leftover_free_space.raw_value() >= 0 && line_count > 1 {
+				placement.gap_size = flex_divide_by_integer(leftover_free_space, line_count - 1)
+			}
+		}
+		.space_around {
+			placement.iterate_lines_backwards = wrap_reverse
+			// "If the leftover free-space is negative this value is identical to center."
+			if leftover_free_space.raw_value() < 0 {
+				placement.start_of_current_line = centered_start
+			} else {
+				placement.gap_size = flex_divide_by_integer(leftover_free_space, line_count)
+				// Half the inter-line spacing sits between the edges and the first/last line.
+				placement.start_of_current_line = flex_divide_by_integer(placement.gap_size, 2)
+			}
+		}
+		.space_evenly {
+			placement.iterate_lines_backwards = wrap_reverse
+			if leftover_free_space.raw_value() < 0 {
+				placement.start_of_current_line = centered_start
+			} else {
+				placement.gap_size = flex_divide_by_integer(leftover_free_space, line_count + 1)
+				// The edge spacing matches the inter-line spacing.
+				placement.start_of_current_line = placement.gap_size
+			}
+		}
+		else {
+			// `normal` and `stretch`: the lines were already grown to fill the container.
+			if wrap_reverse {
+				placement.start_of_current_line = cross_size_of_flex_container
+				placement.place_items_backwards = true
+			}
+		}
+	}
+	return placement
+}
+
 fn flex_align_content_offsets(align css.AlignContent, free_space CSSPixels, line_count int, wrap_reverse bool) (CSSPixels, CSSPixels, CSSPixels) {
 	if line_count == 0 {
 		return CSSPixels.new(0), CSSPixels.new(0), CSSPixels.new(0)
@@ -1220,19 +1313,23 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	} else {
 		total_cross_size
 	}
-	leading_cross_space, distributed_cross_space, stretched_cross_space := flex_align_content_offsets(container.computed_values().align_content(), available_cross_size.minus(total_cross_size), line_cross_sizes.len, wrap_reverse)
+	_, _, stretched_cross_space := flex_align_content_offsets(container.computed_values().align_content(), available_cross_size.minus(total_cross_size), line_cross_sizes.len, wrap_reverse)
+	// handle_align_content_stretch(): grow every line by an equal, truncated share so their
+	// sum reaches the container's inner cross size.
 	if stretched_cross_space.raw_value() > 0 {
 		for index in 0 .. line_cross_sizes.len {
 			line_cross_sizes[index] = line_cross_sizes[index].plus(stretched_cross_space)
 		}
+		total_cross_size = total_cross_size.plus(stretched_cross_space.scaled(f64(line_cross_sizes.len)))
 	}
-	mut cross_offset := leading_cross_space
+	mut placement := flex_line_placement(container.computed_values().align_content(), available_cross_size, total_cross_size, lines.len, wrap_reverse)
+	distributed_cross_space := placement.gap_size
 
 	mut line_order := []int{}
 	for index in 0 .. lines.len {
 		line_order << index
 	}
-	if wrap_reverse {
+	if placement.iterate_lines_backwards {
 		line_order.reverse_in_place()
 	}
 	main_reversed := (direction == .row_reverse) != (container.computed_values().direction() == .rtl)
@@ -1321,7 +1418,12 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 				}
 			}
 			item_state.set_content_x(cursor.plus(item_state.margin_box_left()))
-			item_state.set_content_y(cross_offset.plus(cross_delta).plus(item_state.margin_box_top()))
+			line_cross_start := if placement.place_items_backwards {
+				placement.start_of_current_line.minus(cross_size)
+			} else {
+				placement.start_of_current_line
+			}
+			item_state.set_content_y(line_cross_start.plus(cross_delta).plus(item_state.margin_box_top()))
 			cursor = cursor.plus(item_state.margin_box_width())
 			// The flex algorithm consumes resolved main-axis auto margins while
 			// positioning, then the item's normal inside-layout pass exposes the
@@ -1343,10 +1445,12 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 				cursor = cursor.plus(column_gap).plus(distributed_gap)
 			}
 		}
-		cross_offset = cross_offset.plus(cross_size)
-		if visual_line_index + 1 < line_order.len {
-			cross_offset = cross_offset.plus(row_gap).plus(distributed_cross_space)
+		if placement.place_items_backwards {
+			placement.start_of_current_line = placement.start_of_current_line.minus(cross_size).minus(distributed_cross_space).minus(row_gap)
+		} else {
+			placement.start_of_current_line = placement.start_of_current_line.plus(cross_size).plus(distributed_cross_space).plus(row_gap)
 		}
+		_ = visual_line_index
 	}
 	set_flex_abspos_static_positions(mut state, container, container_state, direction)
 	result := FormattingContextResult{
@@ -1354,7 +1458,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		automatic_content_height: if container_state.has_definite_height() {
 			container_state.content_height()
 		} else {
-			cross_offset
+			total_cross_size
 		}
 	}
 	if layout_mode == .intrinsic_sizing {
@@ -1664,42 +1768,24 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 	for cross_size in line_cross_sizes {
 		total_cross_size = total_cross_size.plus(cross_size)
 	}
-	leading_cross, distributed_cross, stretched_cross := flex_align_content_offsets(container.computed_values().align_content(), container_width.minus(total_cross_size), lines.len, false)
+	_, _, stretched_cross := flex_align_content_offsets(container.computed_values().align_content(), container_width.minus(total_cross_size), lines.len, false)
 	if stretched_cross.raw_value() > 0 {
 		for index in 0 .. line_cross_sizes.len {
 			line_cross_sizes[index] = line_cross_sizes[index].plus(stretched_cross)
 		}
 		total_cross_size = total_cross_size.plus(stretched_cross.scaled(f64(lines.len)))
 	}
-	// align_all_flex_lines() iterates the lines backwards for a wrap-reverse container and
-	// for nothing else; the inline direction never reverses the order of the lines.
-	cross_reversed := container.computed_values().flex_wrap() == .wrap_reverse
+	// align_all_flex_lines(): the same per-keyword starting edge and direction flags the row
+	// axis uses. `start`/`end` name the container's own cross edges here too - C++ never
+	// consults the inline `direction` when placing the lines.
+	mut placement := flex_line_placement(container.computed_values().align_content(), container_width, total_cross_size, lines.len, container.computed_values().flex_wrap() == .wrap_reverse)
+	distributed_cross := placement.gap_size
 	mut line_indexes := []int{cap: lines.len}
 	for index in 0 .. lines.len {
 		line_indexes << index
 	}
-	if cross_reversed {
+	if placement.iterate_lines_backwards {
 		line_indexes.reverse_in_place()
-	}
-	mut cross_cursor := flex_physical_leading_offset(container, .flex_start, container_width.minus(total_cross_size), leading_cross, distributed_cross, lines.len, false, cross_reversed, false)
-	// `start`/`end` are tied to the inline writing direction, unlike
-	// `flex-start`/`flex-end`, which follow a wrap-reversed cross axis.
-	match container.computed_values().align_content() {
-		.start {
-			cross_cursor = if container.computed_values().direction() == .rtl {
-				container_width.minus(total_cross_size)
-			} else {
-				CSSPixels.new(0)
-			}
-		}
-		.end_ {
-			cross_cursor = if container.computed_values().direction() == .rtl {
-				CSSPixels.new(0)
-			} else {
-				container_width.minus(total_cross_size)
-			}
-		}
-		else {}
 	}
 
 	main_reversed := container.computed_values().flex_direction() == .column_reverse
@@ -1781,7 +1867,12 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 					cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item)))
 				}
 			}
-			item_state.set_content_x(cross_cursor.plus(cross_delta).plus(item_state.margin_box_left()))
+			line_cross_start := if placement.place_items_backwards {
+				placement.start_of_current_line.minus(cross_size)
+			} else {
+				placement.start_of_current_line
+			}
+			item_state.set_content_x(line_cross_start.plus(cross_delta).plus(item_state.margin_box_left()))
 			item_state.set_content_y(main_cursor.plus(item_state.margin_box_top()))
 			main_cursor = main_cursor.plus(item_state.margin_box_height())
 			if property_is_auto(item.computed_values(), .margin_top) {
@@ -1800,10 +1891,12 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 				main_cursor = main_cursor.plus(row_gap).plus(distributed_main)
 			}
 		}
-		cross_cursor = cross_cursor.plus(cross_size)
-		if visual_line_index + 1 < line_indexes.len {
-			cross_cursor = cross_cursor.plus(column_gap).plus(distributed_cross)
+		if placement.place_items_backwards {
+			placement.start_of_current_line = placement.start_of_current_line.minus(cross_size).minus(distributed_cross).minus(column_gap)
+		} else {
+			placement.start_of_current_line = placement.start_of_current_line.plus(cross_size).plus(distributed_cross).plus(column_gap)
 		}
+		_ = visual_line_index
 	}
 	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().flex_direction())
 	return FormattingContextResult{

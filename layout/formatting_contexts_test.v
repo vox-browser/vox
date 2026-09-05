@@ -54,6 +54,25 @@ fn test_multiline_flex_align_content_distributes_cross_axis_space() {
 	assert two.offset.y().to_double() == 50
 }
 
+fn test_wrap_reverse_stretch_places_flex_lines_from_the_far_cross_edge() {
+	for direction in ['row', 'row-reverse'] {
+		document := html.parse_document('<!doctype html><style>
+			* { margin:0; padding:0 }
+			#flex { display:flex; flex-direction:${direction}; flex-wrap:wrap-reverse;
+				align-content:stretch; width:180px; height:160px }
+			#one, #two, #three { flex:none; width:300px }
+			#one { height:20px } #two { height:30px } #three { height:40px }
+		</style><div id="flex"><div id="one"></div><div id="two"></div><div id="three"></div></div>')
+		result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+		// The 70px remainder is divided into three truncated 23.328125px shares.
+		// align_all_flex_lines() starts at the 160px far edge and subtracts each
+		// line, so the truncation residue does not shift the first placed item.
+		assert used_for_id(result, 'one').offset.y().to_double() == 140
+		assert used_for_id(result, 'two').offset.y().to_double() == 86.671875
+		assert used_for_id(result, 'three').offset.y().to_double() == 23.34375
+	}
+}
+
 fn test_flex_auto_placement_uses_bucketed_order_modified_document_order() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; width:400px }
