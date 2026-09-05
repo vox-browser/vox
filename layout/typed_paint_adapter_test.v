@@ -1169,6 +1169,33 @@ fn test_svg_image_legacy_xlink_href_is_used_only_when_href_is_absent() {
 	assert images[0].image_url == 'https://example.test/legacy.png'
 }
 
+fn test_canvas_uses_canvas_paintable_only_after_a_surface_exists() {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}canvas{display:block;width:100px;height:50px;border:4px solid red;border-radius:12px;image-rendering:pixelated}</style><canvas id="painted" width="20" height="10"></canvas><canvas id="blank"></canvas>')
+	painted_element := document.get_element_by_id('painted') or { panic('missing canvas') }
+	canvas := unsafe { &dom.HTMLCanvasElement(painted_element) }
+	mut context := html.html_canvas_element_get_context(canvas, '2d', none) or { panic(err) }
+	context.fill_rect(0, 0, 10, 10)
+
+	root := layout_document_typed_in_viewport(document, 240, 140)
+	commands := root.paint_commands().filter(it.kind == 'draw_canvas')
+	assert commands.len == 1
+	command := commands[0]
+	bitmap := command.canvas_bitmap or { panic('canvas surface was not retained') }
+	assert bitmap.width == 20
+	assert bitmap.height == 10
+	paintable := command.canvas_paintable or { panic('CanvasPaintable was not retained') }
+	assert paintable.canvas_rect.width == 100
+	assert paintable.canvas_rect.height == 50
+	assert paintable.border_widths == painting.PixelBox{4, 4, 4, 4}
+	resolved := paintable.paint('canvas', painting.IntSize{bitmap.width, bitmap.height}, painting.new_device_pixel_converter(1) or { panic(err) }) or {
+		panic('canvas surface did not produce a paint command')
+	}
+	assert resolved.content.destination.width == 100
+	assert resolved.content.destination.height == 50
+	assert resolved.content.scaling == .nearest_neighbor
+	assert resolved.clip_radii.top_left == painting.CornerRadius{8, 8}
+}
+
 fn test_url_svg_clip_path_is_a_retained_alpha_mask_not_a_painted_child_or_hit_test_clip() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="140" height="120" viewBox="0 0 140 120"><defs><clipPath id="cut"><circle cx="60" cy="50" r="35" clip-rule="evenodd"/></clipPath></defs><rect id="target" x="10" y="0" width="100" height="100" fill="rgb(101 102 103)" clip-path="url(#cut)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)

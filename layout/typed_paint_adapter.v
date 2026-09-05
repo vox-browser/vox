@@ -2551,6 +2551,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut replaced_image_position_x := '50%'
 	mut replaced_image_position_y := '50%'
 	mut replaced_image_paintable := ?painting.ImagePaintable(none)
+	mut canvas_bitmap := ?&dom.ImmutableBitmap_(none)
+	mut canvas_paintable := ?painting.CanvasPaintable(none)
 	mut form_control_kind := ''
 	mut form_control_checked := false
 	mut form_control_indeterminate := false
@@ -2774,6 +2776,35 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			is_svg_image: node.is_svg_image_box()
 		}
 	}
+	if tag_name == 'canvas' {
+		if canvas_element := element {
+			canvas := unsafe { &dom.HTMLCanvasElement(canvas_element) }
+			if bitmap := html.html_canvas_element_present_existing_surface(canvas) {
+				canvas_bitmap = bitmap
+				canvas_paintable = painting.CanvasPaintable{
+					canvas_rect: painting.Rect{
+						x: position.x().to_double()
+						y: position.y().to_double()
+						width: used.content_width().to_double()
+						height: used.content_height().to_double()
+					}
+					border_radii: painting.BorderRadiiData{
+						top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
+						top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
+						bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
+						bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
+					}
+					border_widths: painting.PixelBox{
+						top: used.border_top.to_double()
+						right: used.border_right.to_double()
+						bottom: used.border_bottom.to_double()
+						left: used.border_left.to_double()
+					}
+					image_rendering: computed.image_rendering()
+				}
+			}
+		}
+	}
 	if styled_element := element {
 		if styled_element.local_name() == 'input' && computed.appearance() != .none_ {
 			input_type := styled_element.get_attribute_value('type').to_lower()
@@ -2938,6 +2969,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		replaced_image_position_y: replaced_image_position_y
 		replaced_image_rendering: computed.image_rendering()
 		replaced_image_paintable: replaced_image_paintable
+		canvas_bitmap: canvas_bitmap
+		canvas_paintable: canvas_paintable
 		is_svg_image: node.is_svg_image_box()
 		form_control_kind: form_control_kind
 		form_control_checked: form_control_checked

@@ -408,7 +408,37 @@ fn test_background_table_control_and_replaced_content_algorithms() {
 	open_kind := marker_kind_from_name('disclosure-open') or { panic('missing marker kind') }
 	assert open_kind == .disclosure_open
 	assert marker_kind_from_name('unknown') == none
-	assert command_name(replaced_content_command(.video, 'video', IntRect{0, 0, 10, 10}, IntRect{0, 0, 10, 10}, .bilinear)) == 'DrawExternalContent'
+}
+
+fn test_canvas_paintable_presents_external_content_with_source_geometry() {
+	converter := new_device_pixel_converter(1) or { panic(err) }
+	paintable := CanvasPaintable{
+		canvas_rect: Rect{10.4, 20.6, 99.2, 49.1}
+		border_radii: BorderRadiiData{
+			top_left: BorderRadiusData{20, 18}
+			top_right: BorderRadiusData{16, 14}
+			bottom_right: BorderRadiusData{12, 10}
+			bottom_left: BorderRadiusData{8, 6}
+		}
+		border_widths: PixelBox{6, 5, 4, 3}
+		image_rendering: .auto_
+	}
+	result := paintable.paint('canvas', IntSize{100, 100}, converter) or {
+		panic('expected canvas paint')
+	}
+	assert result.content.destination == IntRect{10, 21, 100, 49}
+	assert result.content.source_id == 'canvas'
+	// Only the height shrinks, so the source selects bilinear rather than the
+	// bilinear-mipmap mode used when both dimensions shrink.
+	assert result.content.scaling == .bilinear
+	assert result.clip_rect == result.content.destination
+	assert result.clip_radii == CornerRadii{
+		top_left: CornerRadius{17, 12}
+		top_right: CornerRadius{11, 8}
+		bottom_right: CornerRadius{7, 6}
+		bottom_left: CornerRadius{5, 2}
+	}
+	assert paintable.paint('empty', IntSize{}, converter) == none
 }
 
 fn test_native_input_control_colors_follow_active_disabled_and_contrast_paths() {

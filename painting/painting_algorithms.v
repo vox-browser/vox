@@ -1532,18 +1532,3 @@ pub fn uniform_corner_radii(radius int) CornerRadii {
 	corner := CornerRadius{radius, radius}
 	return CornerRadii{corner, corner, corner, corner}
 }
-
-pub enum ReplacedContentKind {
-	canvas
-	image
-	video
-	navigable_viewport
-}
-
-pub fn replaced_content_command(kind ReplacedContentKind, source_id string, rect IntRect,
-	clip IntRect, scaling ScalingMode) DisplayListCommand {
-	return match kind {
-		.canvas, .image { DrawScaledBitmap{rect, clip, source_id, scaling} }
-		.video, .navigable_viewport { DrawExternalContent{rect, source_id, scaling} }
-	}
-}

@@ -2819,6 +2819,38 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 				color: gg.rgba(255, 255, 255, u8(clamp(command.opacity * 255.0, 0.0, 255.0)))
 			)
 		}
+		'draw_canvas' {
+			bitmap := command.canvas_bitmap or { return }
+			paintable := command.canvas_paintable or { return }
+			if bitmap.width <= 0 || bitmap.height <= 0 || bitmap.pitch != bitmap.width * 4
+				|| bitmap.data.len < bitmap.pitch * bitmap.height {
+				return
+			}
+			converter := painting.new_device_pixel_converter(1.0) or { return }
+			result := paintable.paint('canvas', painting.IntSize{bitmap.width, bitmap.height}, converter) or { return }
+			$if macos {
+				if app.ctx.native_rendering {
+					destination := result.content.destination
+					clip := result.clip_rect
+					radii := result.clip_radii
+					canvas_image := &gg.Image{
+						width: bitmap.width
+						height: bitmap.height
+						nr_channels: 4
+						ok: true
+						data: bitmap.data.data
+					}
+					C.native_begin_clip()
+					C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+					C.native_draw_image_part_transformed(canvas_image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(bitmap.width), f32(bitmap.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.opacity), if result.content.scaling == .nearest_neighbor {
+						1
+					} else {
+						0
+					})
+					C.native_end_clip()
+				}
+			}
+		}
 		'draw_background_image' {
 			image := app.background_image(command.image_url) or { return }
 			intrinsic_width := f32(image.width)

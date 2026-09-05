@@ -300,7 +300,12 @@ selection, and border-shrunken corner clipping in the translated paint method;
 they no longer detour through the renderer's CSS-background string resolver.
 The same bitmap operation is retained in
 SVG mask display-list order and participates in alpha/luminance conversion and
-nested group opacity. URL `<linearGradient>`, `<radialGradient>`, and `<pattern>`
+nested group opacity. Canvas boxes likewise retain a dedicated
+`CanvasPaintable` only when their element already owns a surface. The adapter
+presents that surface before retaining its RGBA bitmap, preserves
+`image-rendering` and border-shrunken corner radii, and emits external content
+instead of the old bitmap classification; untouched canvases do not allocate a
+default paint surface. URL `<linearGradient>`, `<radialGradient>`, and `<pattern>`
 fill and stroke paints are active for ordinary
 geometry/text and path content inside SVG masks. The typed adapter follows the
 linked-resource algorithms for href precedence, coordinate and generic-attribute

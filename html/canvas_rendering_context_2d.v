@@ -28,11 +28,11 @@ struct HTMLCanvasElementState {
 pub:
 	element &dom.HTMLCanvasElement
 pub mut:
-	surface     &OffscreenCanvas = unsafe { nil }
-	context     ?&CanvasRenderingContext2D
+	surface                 &OffscreenCanvas = unsafe { nil }
+	context                 ?&CanvasRenderingContext2D
 	external_content_source ?&CanvasExternalContentSource
-	transferred bool
-	dirty       bool
+	transferred             bool
+	dirty                   bool
 }
 
 __global html_canvas_element_states map[u64]&HTMLCanvasElementState
@@ -184,6 +184,15 @@ pub fn html_canvas_element_surface(element &dom.HTMLCanvasElement) ?&dom.Immutab
 	return html_canvas_element_get_bitmap_from_surface(element)
 }
 
+// CanvasPaintable::paint() only presents a surface which already exists; a
+// layout/paint pass must not allocate a default 300x150 bitmap for a canvas
+// whose context has never been requested.
+pub fn html_canvas_element_present_existing_surface(element &dom.HTMLCanvasElement) ?&dom.ImmutableBitmap_ {
+	state := html_canvas_element_states[html_canvas_element_key(element)] or { return none }
+	html_canvas_element_present(element)
+	return state.surface.bitmap()
+}
+
 pub fn html_canvas_element_allocate_painting_surface_if_needed(element &dom.HTMLCanvasElement) ! {
 	_ = ensure_html_canvas_element_state(element)!
 }
@@ -204,8 +213,7 @@ pub fn CanvasRenderingContext2D.create(element &dom.HTMLCanvasElement, surface &
 	// Rebind the self-references after copying the offscreen implementation
 	// into the element-owned context.
 	context.OffscreenCanvasRenderingContext2D.CanvasPath.canvas_state_ = &context.OffscreenCanvasRenderingContext2D.CanvasState
-	context.OffscreenCanvasRenderingContext2D.CanvasState.set_reset_callback(
-		voidptr(&context.OffscreenCanvasRenderingContext2D), offscreen_canvas_state_reset)
+	context.OffscreenCanvasRenderingContext2D.CanvasState.set_reset_callback(voidptr(&context.OffscreenCanvasRenderingContext2D), offscreen_canvas_state_reset)
 	mut mutable_surface := unsafe { &OffscreenCanvas(surface) }
 	mutable_surface.context_ = &context.OffscreenCanvasRenderingContext2D
 	return context

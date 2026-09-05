@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 588
-  candidate-name-match: 13955
-  unmatched: 1812
+  candidate-name-match: 13956
+  unmatched: 1811
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   508 Painting
+   507 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -302,8 +302,13 @@ cutoff before the same normal or mask path replay. SVG `<image>` now follows
 `contain`, computed object position, `image-rendering` scaling selection,
 image-rect clipping, and transformed native bitmap replay. The same ordered
 bitmap operations can supply alpha or luminance inside `<mask>`, including
-nested group opacity. URL `<linearGradient>` and `<radialGradient>` fill
-and stroke paints now retain C++'s same-document resource resolution, href
+nested group opacity. Canvas boxes now cross the same typed paint boundary:
+`CanvasPaintable::paint()` presents an existing surface without allocating one
+for untouched elements, retains the RGBA content as `DrawExternalContent`, and
+applies upstream scaling-mode selection plus border-shrunken corner clipping.
+Native replay consumes that surface directly. URL `<linearGradient>` and
+`<radialGradient>` fill and stroke paints now retain C++'s same-document
+resource resolution, href
 inheritance and precedence, normalized computed stops, `gradientUnits`,
 `gradientTransform`, `spreadMethod`, color interpolation, and paint order.
 Radial gradients additionally retain the two focal/end circles, `fr`, C++'s

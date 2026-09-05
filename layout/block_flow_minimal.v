@@ -317,6 +317,8 @@ pub mut:
 	replaced_image_position_y string
 	replaced_image_rendering  css.ImageRendering
 	replaced_image_paintable  ?painting.ImagePaintable
+	canvas_bitmap             ?&dom.ImmutableBitmap_
+	canvas_paintable          ?painting.CanvasPaintable
 	// Retained for detached compatibility commands; typed HTML/SVG images carry
 	// their source semantics in replaced_image_paintable.
 	is_svg_image               bool
@@ -1318,6 +1320,9 @@ pub mut:
 	// ImagePaintable's retained, typed replaced-content geometry. Background
 	// images leave this empty and continue through BackgroundPainting.
 	image_paintable ?painting.ImagePaintable
+	// CanvasPaintable publishes its current RGBA surface as external content.
+	canvas_bitmap    ?&dom.ImmutableBitmap_
+	canvas_paintable ?painting.CanvasPaintable
 	// Synthetic balanced controls around the complete background color/layer
 	// group. The begin command owns the inclusive-subtree glyph runs.
 	text_clip_runs []PaintTextClipRun
@@ -2339,6 +2344,20 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				image_clip_width: box.width
 				image_clip_height: box.height
 				image_paintable: box.replaced_image_paintable
+			}
+		}
+		if bitmap := box.canvas_bitmap {
+			if canvas_paintable := box.canvas_paintable {
+				commands << PaintCommand{
+					kind: 'draw_canvas'
+					x: box.x
+					y: box.y
+					width: box.width
+					height: box.height
+					opacity: opacity
+					canvas_bitmap: bitmap
+					canvas_paintable: canvas_paintable
+				}
 			}
 		}
 		form_control_state := box.current_form_control_state()

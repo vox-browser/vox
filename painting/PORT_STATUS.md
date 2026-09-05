@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 508
+filename-level mappings. The current semantic audit nevertheless reports 507
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 508 unmatched Painting
+  were removed; the audit currently reports 507 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -75,6 +75,15 @@ following behavioral mismatches and added focused regressions:
   allocation and string parsing from every replaced-image paint. SVG images
   nested in masks and pattern tiles consume this same result instead of the
   renderer-local `contained_image_destination()` shortcut.
+- `CanvasPaintable::paint()` is now a direct foreground-phase translation
+  instead of a test-only helper that incorrectly classified canvas content as
+  `DrawScaledBitmap`. The typed layout bridge presents an existing canvas
+  surface without allocating one for untouched elements, retains its RGBA
+  bitmap, selects the source `DrawExternalContent` scaling mode, and clips it
+  with normalized radii shrunken by the element's borders. Native replay now
+  draws that external content; Canvas JavaScript bindings remain a separate
+  HTML host gap, so the active integration is exercised through the translated
+  Canvas 2D API.
 - `SVGLinearGradientPaintStyle` now crosses the active path and mask boundaries
   without being reduced to an SVG paint fallback color. Resource href
   precedence and inheritance, monotonic computed stops, object-bounding-box and
@@ -228,7 +237,7 @@ following behavioral mismatches and added focused regressions:
 | `BorderRadiusCornerClipper.cpp` | `display_list.v` |
 | `BordersData.cpp` | `box_model.v` |
 | `BoxModelMetrics.cpp` | `box_model.v` |
-| `CanvasPaintable.cpp` | `painting_algorithms.v` |
+| `CanvasPaintable.cpp` | `canvas_paintable.v` |
 | `CheckBoxPaintable.cpp` | `painting_algorithms.v` |
 | `DisplayList.cpp` | `display_list.v` |
 | `DisplayListCommand.cpp` | `display_list.v` |
@@ -334,7 +343,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 508 unmatched implementations.
+Painting: 507 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)
