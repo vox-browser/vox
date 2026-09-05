@@ -227,7 +227,13 @@ instead of scissoring their rectangular intersection. CSS basic-shape
 segments and fill rule reach Quartz replay, including Bezier and elliptical-arc
 geometry and even-odd subpath holes. Hit testing shares the same context and
 uses contours flattened once during paint-tree construction rather than
-reparsing or retessellating the shape per event. Wheel events follow
+reparsing or retessellating the shape per event. CSS2 `clip: rect(...)` is also
+translated through `PaintableBox::get_clip_rect()`: only absolute/fixed boxes
+resolve it, its offsets use the absolute border box, negative extents produce an
+empty clip, and the node is appended between the box transform and `clip-path`
+so it clips self-paint, descendants, and hit testing. The `clip`, transformed
+clip, offscreen clip, absolute-descendant clip, and clipped-image upstream
+reftest pairs are pixel-identical. Wheel events follow
 `SVGMaskable`'s URL `<clipPath>` path is active too: attached resource geometry
 is omitted from normal child painting and retained as exact mask components.
 Target, resource, child, viewBox, and `objectBoundingBox` transforms compose at

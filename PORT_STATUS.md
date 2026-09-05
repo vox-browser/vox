@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 588
-  candidate-name-match: 13942
-  unmatched: 1825
+  candidate-name-match: 13943
+  unmatched: 1824
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   521 Painting
+   520 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -222,7 +222,14 @@ rounded clipping rather than reducing them to bounding boxes. CSS basic-shape
 C++ and retains move, line, quadratic/cubic Bezier, elliptical-arc, close, and
 nonzero/even-odd path state. Quartz clips with the exact retained curves, while
 hit testing consumes contours flattened once when the paint tree is built;
-neither path is reparsed per command or pointer event. Wheel routing follows
+neither path is reparsed per command or pointer event. Legacy CSS2
+`clip: rect(...)` now follows `PaintableBox::get_clip_rect()` too: it is resolved
+from an absolute/fixed box's border box, inserted after its transform and before
+`clip-path`, and shared by the box's own paint, descendants, and hit testing.
+Negative extents become an empty clip and the four edges use the same rounded
+device conversion as C++. Five upstream reftest pairs, including transformed,
+offscreen, descendant, and image cases, render with zero differing pixels.
+Wheel routing follows
 the C++ containing-block fallback, including declining
 programmatic-only hidden overflow and saturated inner scrollers. These updates
 preserve layout and per-phase command caches while refreshing visual scroll

@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 521
+filename-level mappings. The current semantic audit nevertheless reports 520
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 521 unmatched Painting
+  were removed; the audit currently reports 520 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -146,6 +146,14 @@ following behavioral mismatches and added focused regressions:
   `nested-boxes-with-hidden-overflow-and-border-radius` screenshot this reduced
   pixels with channel error over 3 from 103,304 to 4,022 and MAE from 3.2946 to
   0.1633; the remaining delta is confined to antialiased path edges.
+- `PaintableBox::get_clip_rect()` now crosses the active visual-context bridge
+  directly. CSS2 `clip: rect(...)` is limited to absolute/fixed boxes, resolves
+  auto and length edges from the absolute border box, maps negative extents to
+  the upstream empty rectangle, and clips the box itself, all descendants, and
+  hit testing in the same transform-before-clip order as C++. Clip edges now
+  use `DevicePixelConverter::rounded_device_rect()` semantics instead of the
+  former floor/ceil expansion. All five relevant upstream reftest pairs render
+  with zero differing pixels; `clip.html` improved from 5,166 to zero.
 
 ## Implementation-unit mapping
 
@@ -266,7 +274,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 521 unmatched implementations.
+Painting: 520 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

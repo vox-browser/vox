@@ -366,6 +366,10 @@ pub mut:
 	has_scrollable_overflow bool
 	scrollable_overflow     ?LayoutRect
 	overflow_clip           ?CompatibilityOverflowClip
+	// CSS2 `clip: rect(...)`, resolved from an absolute/fixed box's border box.
+	// Unlike overflow clipping, this belongs to the box's own visual context and
+	// therefore clips both the box and its descendants.
+	css_clip ?LayoutRect
 	// CSS basic-shape clip-path geometry is retained in absolute document
 	// coordinates, matching Painting::ClipPathData.
 	clip_path            ?painting.ClipPathVisualData

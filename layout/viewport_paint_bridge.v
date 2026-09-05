@@ -319,6 +319,16 @@ fn compatibility_enclosing_int_rect(rect LayoutRect) painting.IntRect {
 	return painting.IntRect{left, top, right - left, bottom - top}
 }
 
+fn compatibility_rounded_int_rect(rect LayoutRect) painting.IntRect {
+	// DevicePixelConverter::rounded_device_rect() rounds the four edges, rather
+	// than flooring the origin and ceiling the far edge.
+	left := int(math.round(rect.x))
+	top := int(math.round(rect.y))
+	right := int(math.round(rect.x + rect.width))
+	bottom := int(math.round(rect.y + rect.height))
+	return painting.IntRect{left, top, right - left, bottom - top}
+}
+
 fn compatibility_corner_radii(radii BoxRadii) painting.CornerRadii {
 	return painting.CornerRadii{
 		top_left: painting.CornerRadius{int(math.floor(radii.top_left.x)), int(math.floor(radii.top_left.y))}
@@ -370,6 +380,11 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 			matrix: compatibility_painting_affine(box.own_paint_transform)
 		}, own_state)
 	}
+	if css_clip := box.css_clip {
+		own_state = tree.append(painting.ClipVisualData{
+			rect: compatibility_rounded_int_rect(css_clip)
+		}, own_state)
+	}
 	if clip_path := box.clip_path {
 		own_state = tree.append(clip_path, own_state)
 	}
@@ -384,7 +399,7 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 	mut descendants_state := own_state
 	if clip := box.overflow_clip {
 		descendants_state = tree.append(painting.ClipVisualData{
-			rect: compatibility_enclosing_int_rect(clip.rect)
+			rect: compatibility_rounded_int_rect(clip.rect)
 			corner_radii: compatibility_corner_radii(clip.corner_radii)
 		}, descendants_state)
 	}

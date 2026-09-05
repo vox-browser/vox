@@ -238,6 +238,49 @@ fn compatibility_overflow_clip(node &Node, computed &css.ComputedProperties, use
 	}
 }
 
+fn compatibility_paint_border_edges(used &UsedValues) BoxEdges {
+	// PaintableBox::absolute_border_box_rect() gives a collapsed table cell half
+	// of each winning border. Keep the exact CSS-pixel rounding here so every
+	// visual-context consumer uses the same border box as painting.
+	if used.use_collapsing_borders_model() {
+		return BoxEdges{
+			top: math.round(used.border_top.to_double() / 2.0)
+			right: math.round(used.border_right.to_double() / 2.0)
+			bottom: math.round(used.border_bottom.to_double() / 2.0)
+			left: math.round(used.border_left.to_double() / 2.0)
+		}
+	}
+	return BoxEdges{used.border_top.to_double(), used.border_right.to_double(), used.border_bottom.to_double(), used.border_left.to_double()}
+}
+
+// Direct translation of PaintableBox::get_clip_rect() and
+// ViewportPaintable::effective_css_clip_rect(). The legacy CSS `clip` property
+// applies only to absolutely positioned boxes, is resolved from their absolute
+// border box, and clips both the box itself and its descendants.
+fn paintable_box_get_clip_rect(node &Node, computed &css.ComputedProperties, used &UsedValues, position css.CSSPixelPoint) ?LayoutRect {
+	clip := computed.clip()
+	if !clip.is_rect() || !node.is_absolutely_positioned() {
+		return none
+	}
+	border := compatibility_paint_border_edges(used)
+	border_box := css.CSSPixelRect.new(
+		position.x().to_double() - used.padding_left.to_double() - border.left,
+		position.y().to_double() - used.padding_top.to_double() - border.top,
+		used.content_width().to_double() + used.padding_left.to_double() + used.padding_right.to_double() + border.left + border.right,
+		used.content_height().to_double() + used.padding_top.to_double() + used.padding_bottom.to_double() + border.top + border.bottom,
+	)
+	resolved := clip.to_rect().resolved(computed.length_resolution_context(), border_box)
+	if resolved.width_value() < 0 || resolved.height_value() < 0 {
+		return LayoutRect{}
+	}
+	return LayoutRect{
+		x: resolved.left_value()
+		y: resolved.top_value()
+		width: resolved.width_value()
+		height: resolved.height_value()
+	}
+}
+
 fn computed_border_colors(computed &css.ComputedValues) BoxColors {
 	return BoxColors{
 		top: computed.border_top().color
@@ -2625,6 +2668,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	}
 	overlay := compatibility_overlay_data(node, computed, used)
 	overflow_clip := compatibility_overflow_clip(node, computed, used, position, border_radii)
+	css_clip := paintable_box_get_clip_rect(node, computed, used, position)
 	mut scrollable_overflow := ?LayoutRect(none)
 	if overflow := used.scrollable_overflow_rect() {
 		scrollable_overflow = LayoutRect{
@@ -2693,18 +2737,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	if display.is_table_cell() && table_cell_borders == none {
 		table_cell_borders = retained_table_cell_borders(computed, used, border_colors)
 	}
-	// PaintableBox::absolute_border_box_rect() uses half of each winning
-	// collapsed edge (rounded in CSS pixels) around the cell padding box.
-	paint_border := if used.use_collapsing_borders_model() {
-		BoxEdges{
-			top: math.round(used.border_top.to_double() / 2.0)
-			right: math.round(used.border_right.to_double() / 2.0)
-			bottom: math.round(used.border_bottom.to_double() / 2.0)
-			left: math.round(used.border_left.to_double() / 2.0)
-		}
-	} else {
-		BoxEdges{used.border_top.to_double(), used.border_right.to_double(), used.border_bottom.to_double(), used.border_left.to_double()}
-	}
+	paint_border := compatibility_paint_border_edges(used)
 	return BlockBox{
 		tag_name: tag_name
 		x: position.x().to_double()
@@ -2789,6 +2822,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		has_scrollable_overflow: used.has_scrollable_overflow() && !node.is_viewport()
 		scrollable_overflow: scrollable_overflow
 		overflow_clip: overflow_clip
+		css_clip: css_clip
 		clip_path: clip_path
 		svg_clip: svg_clip
 		svg_mask: svg_mask

@@ -768,6 +768,50 @@ fn test_retained_commands_preserve_nested_rounded_overflow_clip_nodes() {
 	assert inside_hit.as_node().unique_id() == target.as_node().unique_id()
 }
 
+fn test_css_clip_rect_clips_absolute_box_descendants_and_hit_testing() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { position: absolute; width: 100px; height: 100px; background: rgb(61 62 63); clip: rect(10px, 80px, 60px, 20px) } #child { width: 100px; height: 100px; background: rgb(64 65 66) }</style><body><div id="target"><div id="child"></div></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	for color in [css.Color{61, 62, 63, 255}.serialize(), css.Color{64, 65, 66, 255}.serialize()] {
+		matching := commands.filter(it.kind == 'fill_rect' && it.color == color)
+		assert matching.len == 1
+		assert matching[0].has_clip
+		assert matching[0].clip_list != unsafe { nil }
+		assert matching[0].clip_list.items.len == 1
+		clip := matching[0].clip_list.items[0]
+		assert clip.rect == LayoutRect{20, 10, 60, 50}
+		assert clip.corner_radii == BoxRadii{}
+	}
+
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	child := document.get_element_by_id('child') or { panic('missing child') }
+	outside_hit := mutable_document.element_from_point(5, 5) or { panic('missing outside hit') }
+	assert outside_hit.as_node().unique_id() != target.as_node().unique_id()
+	assert outside_hit.as_node().unique_id() != child.as_node().unique_id()
+	inside_hit := mutable_document.element_from_point(30, 30) or { panic('missing inside hit') }
+	assert inside_hit.as_node().unique_id() == child.as_node().unique_id()
+}
+
+fn test_css_clip_rect_is_ignored_for_non_positioned_boxes_and_negative_extents_are_empty() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #static { width: 100px; height: 30px; background: rgb(67 68 69); clip: rect(0, 0, 0, 0) } #negative { position: absolute; top: 40px; width: 100px; height: 100px; background: rgb(70 71 72); clip: rect(80px, 20px, 10px, 90px) }</style><body><div id="static"></div><div id="negative"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	commands := display_list_commands(display_list)
+	static_commands := commands.filter(it.kind == 'fill_rect'
+		&& it.color == css.Color{67, 68, 69, 255}.serialize())
+	assert static_commands.len == 1
+	assert !static_commands[0].has_clip
+	negative_commands := commands.filter(it.kind == 'fill_rect'
+		&& it.color == css.Color{70, 71, 72, 255}.serialize())
+	assert negative_commands.len == 1
+	assert negative_commands[0].has_clip
+	assert negative_commands[0].clip_list.items.len == 1
+	assert negative_commands[0].clip_list.items[0].rect == LayoutRect{}
+}
+
 fn test_basic_shape_clip_path_retains_curves_fill_rule_and_hit_testing() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 100px; height: 100px; background: rgb(81 82 83); clip-path: path(evenodd, "M 0 0 H 100 V 100 H 0 Z M 25 25 H 75 V 75 H 25 Z") }</style><body><div id="target"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
