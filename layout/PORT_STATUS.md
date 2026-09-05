@@ -239,6 +239,12 @@ the zero/root parent; an intervening fixed containing block terminates an
 ordinary descendant's search, while a sticky descendant crosses that boundary
 to find the outer scrollport required for sticky constraints. Focused tests
 cover the active fixed-scroller path and both synthetic boundary branches.
+Sticky inset resolution separately follows
+`PaintableBox::nearest_scrollable_ancestor()`. Unlike scroll-frame parentage,
+that containing-block walk tests whether each box accepts wheel scrolling and
+therefore skips `overflow:hidden`. Percentage insets use the returned box's
+content size, matching `LayoutState.cpp`, while sticky movement remains attached
+to the nearest scrolling frame.
 `PaintableBox::overflow_clip_edge_rect()` is likewise a standalone operation on
 the active visual-context path. It chooses the absolute padding box for normal
 boxes and the content box for replaced boxes before applying the four resolved

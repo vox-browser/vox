@@ -188,6 +188,55 @@ fn paintable_box_nearest_scroll_frame_index(box &BlockBox, boxes_by_layout map[u
 	return 0
 }
 
+fn paintable_box_could_be_scrolled_by_wheel_event(box &BlockBox) bool {
+	if box.layout_handle == unsafe { nil } {
+		return false
+	}
+	overflow_rect := box.scrollable_overflow or { return false }
+	node := unsafe { &Node(box.layout_handle) }
+	styled := node.as_node_with_style() or { return false }
+	computed := styled.computed_values()
+	is_viewport := box.is_viewport_scroller || node.is_viewport()
+	padding_width := if is_viewport {
+		box.viewport_width
+	} else {
+		box.width + box.padding.left + box.padding.right
+	}
+	padding_height := if is_viewport {
+		box.viewport_height
+	} else {
+		box.height + box.padding.top + box.padding.bottom
+	}
+	return (compatibility_overflow_allows_scrolling(computed.overflow_x(), is_viewport)
+		&& overflow_rect.width > padding_width)
+		|| (compatibility_overflow_allows_scrolling(computed.overflow_y(), is_viewport)
+		&& overflow_rect.height > padding_height)
+}
+
+// Direct translation of PaintableBox::nearest_scrollable_ancestor(). This is
+// deliberately not the nearest scroll frame: overflow:hidden creates a frame
+// for programmatic scrolling, but could_be_scrolled_by_wheel_event() rejects it.
+fn paintable_box_nearest_scrollable_ancestor(box &BlockBox, boxes_by_layout map[u64]&BlockBox) ?&BlockBox {
+	if box.layout_handle == unsafe { nil } {
+		return none
+	}
+	node := unsafe { &Node(box.layout_handle) }
+	mut containing_block := node.containing_block()
+	for containing_block != none {
+		ancestor := containing_block or { break }
+		if ancestor_box := boxes_by_layout[u64(voidptr(ancestor))] {
+			if paintable_box_could_be_scrolled_by_wheel_event(ancestor_box) {
+				return ancestor_box
+			}
+		}
+		if ancestor.is_fixed_position() {
+			return none
+		}
+		containing_block = ancestor.containing_block()
+	}
+	return none
+}
+
 fn compatibility_sticky_insets(box &BlockBox, scrollport_size painting.Size) painting.StickyInsets {
 	if box.layout_handle == unsafe { nil } {
 		return painting.StickyInsets{}
@@ -240,6 +289,11 @@ fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_in
 	scrollport_rect := compatibility_scrollport_rect(scroll_ancestor)
 	sticky_border_box := box.border_box()
 	scrollport_size := painting.Size{scrollport_rect.width, scrollport_rect.height}
+	mut inset_percentage_basis := painting.Size{}
+	if nearest_scrollable := paintable_box_nearest_scrollable_ancestor(box, boxes_by_layout) {
+		nearest_scrollport := compatibility_scrollport_rect(nearest_scrollable)
+		inset_percentage_basis = painting.Size{nearest_scrollport.width, nearest_scrollport.height}
+	}
 	mut containing_region := LayoutRect{}
 	mut needs_parent_offset_adjustment := false
 	if box.layout_handle != unsafe { nil } {
@@ -278,7 +332,7 @@ fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_in
 			height: containing_region.height
 		}
 		needs_parent_offset_adjustment: needs_parent_offset_adjustment
-		insets: compatibility_sticky_insets(box, scrollport_size)
+		insets: compatibility_sticky_insets(box, inset_percentage_basis)
 	}
 }
 

@@ -1890,6 +1890,31 @@ fn test_scroll_frame_parentage_stops_at_fixed_ancestors_except_for_sticky_boxes(
 	assert paintable_box_nearest_scroll_frame_index(sticky_transport, boxes_by_layout) == 7
 }
 
+fn test_percentage_sticky_insets_skip_overflow_hidden_ancestors() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#outer { width: 200px; height: 100px; overflow: auto }
+		#hidden { width: 100px; height: 40px; overflow: hidden }
+		#sticky { position: sticky; top: 50%; height: 10px }
+		#hidden-spacer { height: 100px }
+		#outer-spacer { height: 200px }
+	</style><body><div id="outer"><div id="hidden"><div id="sticky"></div><div id="hidden-spacer"></div></div><div id="outer-spacer"></div></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 240)
+	result := document_layout_result(document) or { panic('missing layout result') }
+	sticky_element := document.get_element_by_id('sticky') or { panic('missing sticky') }
+	sticky_box := root.find_box(i64(sticky_element.as_node().unique_id())) or {
+		panic('missing sticky box')
+	}
+	assert sticky_box.sticky_scroll_frame_index > 0
+	constraints := result.scroll_state.frames[sticky_box.sticky_scroll_frame_index].sticky_constraints or {
+		panic('missing sticky constraints')
+	}
+	// PaintableBox::nearest_scrollable_ancestor() skips the 40px-tall
+	// overflow:hidden box. The 50% inset therefore resolves against the
+	// 100px-tall outer scroll container.
+	assert constraints.insets.top or { -1 } == 50
+}
+
 fn test_checkbox_paint_reads_live_checkedness_and_invalidates_retained_commands() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #control { accent-color: rgb(255, 0, 0) }</style><body><input id="control" type="checkbox"></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)
