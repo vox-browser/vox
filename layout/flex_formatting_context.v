@@ -661,6 +661,94 @@ fn resolve_flexible_lengths(mut state LayoutState, line FlexLine, container_main
 	return targets
 }
 
+// https://drafts.csswg.org/css-flexbox/#intrinsic-main-size
+// calculate_intrinsic_main_size_of_flex_container(), for the block axis of a column
+// container whose main size is indefinite. The row axis already runs this in
+// calculate_intrinsic_flex_width(); the column path used to just add up the outer
+// hypothetical main sizes, which ignores flexibility. `flex: 1 1 0` and `flex: 2 1 0` items
+// whose contents are 20px and 30px tall need a 60px container, not a 50px one, because the
+// second item has to end up twice the first for both to reach their contributions.
+fn flex_intrinsic_main_size_of_column_container(mut state LayoutState, items []&Node, bases []CSSPixels, edges []CSSPixels, contributions []CSSPixels, gap CSSPixels) CSSPixels {
+	mut desired_fractions := []f64{cap: items.len}
+	mut sum_grow := 0.0
+	mut sum_shrink := 0.0
+	for index, item in items {
+		if index >= bases.len || index >= contributions.len {
+			break
+		}
+		computed := item.computed_values()
+		grow := f64(computed.flex_grow())
+		shrink := f64(computed.flex_shrink())
+
+		// 1. Subtract the outer flex base size from the max-content contribution, then
+		//    divide by the flex grow factor if it is >= 1 or multiply by it if it is < 1;
+		//    a negative result is divided by the scaled flex shrink factor instead.
+		mut difference := contributions[index].minus(bases[index].plus(edges[index]))
+		scaled_shrink := shrink * bases[index].to_double()
+		if difference.raw_value() > 0 {
+			difference = if grow >= 1 {
+				difference.divided_by_float(grow)
+			} else {
+				difference.scaled(grow)
+			}
+		} else if difference.raw_value() < 0 {
+			difference = if scaled_shrink == 0 {
+				CSSPixels.min()
+			} else {
+				difference.divided_by_float(scaled_shrink)
+			}
+		}
+		desired_fractions << difference.to_double()
+		sum_grow += grow
+		sum_shrink += shrink
+	}
+
+	// 2./3. The line's chosen flex fraction is the greatest desired flex fraction, adjusted
+	//       when the line's grow or shrink factors do not add up to a whole one.
+	mut chosen := 0.0
+	for fraction in desired_fractions {
+		if fraction > chosen {
+			chosen = fraction
+		}
+	}
+	if chosen > 0 && sum_grow < 1 && sum_grow > 0 {
+		chosen /= sum_grow
+	} else if chosen < 0 && sum_shrink < 1 {
+		chosen *= sum_shrink
+	}
+
+	// 4. Add each item's flex base size to the product of its flex factor and the chosen
+	//    flex fraction, clamped by the item's own main min/max sizes. The outer size is
+	//    summed so items with main-axis margins, borders, or padding do not overflow.
+	mut total := CSSPixels.new(0)
+	for index, item in items {
+		if index >= desired_fractions.len {
+			break
+		}
+		computed := item.computed_values()
+		product := if desired_fractions[index] > 0 {
+			chosen * f64(computed.flex_grow())
+		} else if desired_fractions[index] < 0 {
+			chosen * f64(computed.flex_shrink()) * bases[index].to_double()
+		} else {
+			0.0
+		}
+		mut result := bases[index].plus(CSSPixels.nearest_value_for(product))
+		styled := item.as_node_with_style() or { continue }
+		item_state := state.get(styled)
+		minimum := flex_used_main_minimum(mut state, item, item_state, false, none, false)
+		maximum := flex_used_main_maximum(mut state, item, item_state, false, none)
+		result = css_pixels_max(minimum, css_pixels_min(result, maximum))
+		total = total.plus(result).plus(edges[index])
+	}
+
+	// 5. CSS-FLEXBOX-2: account for the gap between flex items.
+	if items.len > 1 {
+		total = total.plus(gap.scaled(f64(items.len - 1)))
+	}
+	return total
+}
+
 fn flex_justify_offsets(justify css.JustifyContent, free_space CSSPixels, item_count int) (CSSPixels, CSSPixels) {
 	if item_count == 0 {
 		return CSSPixels.new(0), CSSPixels.new(0)
@@ -1295,6 +1383,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	}, false)
 	mut bases := []CSSPixels{}
 	mut edges := []CSSPixels{}
+	mut contributions := []CSSPixels{}
 	for item in items {
 		styled := item.as_node_with_style() or { continue }
 		mut item_state := state.get_mutable(styled)
@@ -1328,6 +1417,9 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		base := flex_base_height(mut state, item, container_height, laid_out.content_height(), laid_out)
 		bases << base
 		edges << flex_or_grid_item_outer_block_edges(laid_out)
+		// Laid out without a main-size target, so this is the item's outer max-content
+		// contribution in the block axis - what the intrinsic main size below needs.
+		contributions << laid_out.margin_box_height()
 	}
 	skip_automatic_minimum := should_skip_automatic_minimum_size_clamp(state, container, container_state, layout_mode, items, bases, false, available_space.height.to_px_or_zero())
 	mut minimums := []CSSPixels{}
@@ -1357,15 +1449,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		hypotheticals: hypotheticals
 	}
 	main_size := container_height or {
-		mut natural := row_gap.scaled(f64(if items.len > 0 { items.len - 1 } else { 0 }))
-		// With an indefinite main size, the flex container's intrinsic main
-		// size is formed from the outer hypothetical main sizes.  In
-		// particular, an item's min-height can enlarge its hypothetical size
-		// beyond its flex base size.
-		for index in 0 .. hypotheticals.len {
-			natural = natural.plus(hypotheticals[index]).plus(edges[index])
-		}
-		natural
+		flex_intrinsic_main_size_of_column_container(mut state, items, bases, edges, contributions, row_gap)
 	}
 
 	line.targets = resolve_flexible_lengths(mut state, line, main_size, edges, row_gap, container_height, false)

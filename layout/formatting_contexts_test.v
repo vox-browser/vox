@@ -125,6 +125,40 @@ fn test_rtl_wrap_reverse_column_cancels_both_cross_flips() {
 	assert used_for_id(result, 'two').offset.x().to_double() == 0
 }
 
+fn test_indefinite_column_flex_uses_the_intrinsic_main_size_algorithm() {
+	// calculate_intrinsic_main_size_of_flex_container(): the container is the smallest size
+	// at which every item reaches its max-content contribution, given the items' relative
+	// flexibility. Two `flex-basis: 0` items with 20px and 30px of content and grow factors
+	// 1 and 2 need a 60px container - the chosen flex fraction is 20, so the second item is
+	// twice the first. Summing the outer hypothetical sizes gave 50px and left both items at
+	// their zero flex base size.
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-direction:column; width:240px }
+		#one { flex:1 1 0; height:20px } #two { flex:2 1 0; height:30px }
+	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'flex').content_height().to_double() == 60
+	assert used_for_id(result, 'one').content_height().to_double() == 20
+	assert used_for_id(result, 'two').content_height().to_double() == 40
+	assert used_for_id(result, 'two').offset.y().to_double() == 20
+}
+
+fn test_indefinite_column_flex_intrinsic_main_size_counts_gaps_and_edges() {
+	// Step 5 adds the gaps, and each item is summed at its outer size so main-axis margins,
+	// borders, and padding do not overflow the container.
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-direction:column; width:240px; row-gap:10px }
+		#one { flex:1 1 0; height:20px; margin-bottom:5px }
+		#two { flex:1 1 0; height:20px; border-top:3px solid }
+	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	// Contributions are 25 and 23 outer; the greatest desired flex fraction is 20, so both
+	// items resolve to 20 of content plus their own edges, plus the 10px gap.
+	assert used_for_id(result, 'flex').content_height().to_double() == 58
+	assert used_for_id(result, 'one').content_height().to_double() == 20
+	assert used_for_id(result, 'two').content_height().to_double() == 20
+}
+
 fn test_flex_percentage_gaps_resolve_against_their_axis_inner_size() {
 	row_document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:flex-start;
