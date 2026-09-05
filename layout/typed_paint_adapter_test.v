@@ -1759,6 +1759,57 @@ fn test_fixed_visual_context_bypasses_viewport_scroll_for_paint_and_hit_testing(
 	assert target_hit.as_node().unique_id() == target.as_node().unique_id()
 }
 
+fn test_scroll_frame_parentage_stops_at_fixed_ancestors_except_for_sticky_boxes() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #fixed { position: fixed; width: 20px; height: 20px; overflow: auto } #content { height: 40px }</style><body><div id="fixed"><div id="content"></div></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	result := document_layout_result(document) or { panic('missing layout result') }
+	fixed_element := document.get_element_by_id('fixed') or { panic('missing fixed scroller') }
+	fixed_box := root.find_box(i64(fixed_element.as_node().unique_id())) or {
+		panic('missing fixed scroller box')
+	}
+	assert fixed_box.own_scroll_frame_index > 0
+	assert result.scroll_state.frames[fixed_box.own_scroll_frame_index].parent_index == 0
+
+	// Construct the containing-block relationship explicitly for the boundary
+	// cases that do not arise from the compact HTML layout fixture above.
+	synthetic_document := dom.Document.create(dom.url_about_blank())
+	viewport_style := computed_paint_test_style('display: block')
+	fixed_style := computed_paint_test_style('display: block; position: fixed')
+	normal_style := computed_paint_test_style('display: block')
+	sticky_style := computed_paint_test_style('display: block; position: sticky')
+	viewport := Viewport.new(synthetic_document, viewport_style)
+	fixed := BlockContainer.new(synthetic_document, none, fixed_style)
+	normal := BlockContainer.new(synthetic_document, none, normal_style)
+	sticky := BlockContainer.new(synthetic_document, none, sticky_style)
+	mut fixed_node := unsafe { &Node(fixed) }
+	mut normal_node := unsafe { &Node(normal) }
+	mut sticky_node := unsafe { &Node(sticky) }
+	fixed_node.containing_block_ = unsafe { &Box(viewport) }
+	normal_node.containing_block_ = unsafe { &Box(fixed) }
+	sticky_node.containing_block_ = unsafe { &Box(fixed) }
+
+	mut viewport_box := &BlockBox{
+		layout_handle: voidptr(unsafe { &Node(viewport) })
+	}
+	viewport_box.own_scroll_frame_index = 7
+	fixed_transport := &BlockBox{
+		layout_handle: voidptr(fixed_node)
+	}
+	normal_transport := &BlockBox{
+		layout_handle: voidptr(normal_node)
+	}
+	sticky_transport := &BlockBox{
+		layout_handle: voidptr(sticky_node)
+	}
+	boxes_by_layout := {
+		u64(voidptr(unsafe { &Node(viewport) })): viewport_box
+		u64(voidptr(fixed_node)):                 fixed_transport
+	}
+	assert paintable_box_nearest_scroll_frame_index(fixed_transport, boxes_by_layout) == 0
+	assert paintable_box_nearest_scroll_frame_index(normal_transport, boxes_by_layout) == 0
+	assert paintable_box_nearest_scroll_frame_index(sticky_transport, boxes_by_layout) == 7
+}
+
 fn test_checkbox_paint_reads_live_checkedness_and_invalidates_retained_commands() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #control { accent-color: rgb(255, 0, 0) }</style><body><input id="control" type="checkbox"></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)

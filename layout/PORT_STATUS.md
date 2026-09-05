@@ -233,6 +233,12 @@ Overlay geometry likewise consumes Painting's direct
 `compute_scrollbar_data()`, and `absolute_resizer_rect()` translations. The
 former combined helper's early clamp of undersized resizer-adjusted lengths is
 gone, preserving the source's signed rectangle until device clipping.
+Scroll-frame parentage now translates
+`PaintableBox::nearest_scroll_frame_index()` directly. A fixed paintable gets
+the zero/root parent; an intervening fixed containing block terminates an
+ordinary descendant's search, while a sticky descendant crosses that boundary
+to find the outer scrollport required for sticky constraints. Focused tests
+cover the active fixed-scroller path and both synthetic boundary branches.
 The DOM mirror also preserves the layout tree's split-inline continuation chain
 in forward order. This lets `PaintableBox`'s united geometry and the CSSOM
 `offsetTop`, `offsetLeft`, `offsetWidth`, and `offsetHeight` algorithms account

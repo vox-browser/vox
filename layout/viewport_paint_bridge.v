@@ -160,11 +160,16 @@ fn collect_compatibility_boxes(mut box BlockBox, mut boxes_by_layout map[u64]&Bl
 	}
 }
 
-fn nearest_compatibility_scroll_frame(box &BlockBox, boxes_by_layout map[u64]&BlockBox) int {
+// Direct translation of PaintableBox::nearest_scroll_frame_index(). The zero
+// index is ScrollFrameIndex{} in the V scroll-state representation.
+fn paintable_box_nearest_scroll_frame_index(box &BlockBox, boxes_by_layout map[u64]&BlockBox) int {
 	if box.layout_handle == unsafe { nil } {
 		return 0
 	}
 	node := unsafe { &Node(box.layout_handle) }
+	if node.is_fixed_position() {
+		return 0
+	}
 	mut containing_block := node.containing_block()
 	for containing_block != none {
 		ancestor := containing_block or { break }
@@ -172,6 +177,11 @@ fn nearest_compatibility_scroll_frame(box &BlockBox, boxes_by_layout map[u64]&Bl
 			if ancestor_box.own_scroll_frame_index > 0 {
 				return ancestor_box.own_scroll_frame_index
 			}
+		}
+		// Sticky boxes still need the outside scrollport to resolve their
+		// constraints, even when a fixed-position ancestor intervenes.
+		if ancestor.is_fixed_position() && !node.is_sticky_position() {
+			return 0
 		}
 		containing_block = ancestor.containing_block()
 	}
@@ -275,7 +285,7 @@ fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_in
 fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]&BlockBox, mut boxes_by_scroll_frame map[int]&BlockBox, mut state painting.ScrollState) {
 	box.own_scroll_frame_index = 0
 	box.sticky_scroll_frame_index = 0
-	parent_index := nearest_compatibility_scroll_frame(box, boxes_by_layout)
+	parent_index := paintable_box_nearest_scroll_frame_index(box, boxes_by_layout)
 	if box.sticky_position {
 		sticky_frame_index := state.create_sticky_frame(box.node_id.str(), parent_index)
 		box.sticky_scroll_frame_index = sticky_frame_index
