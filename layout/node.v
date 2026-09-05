@@ -368,7 +368,14 @@ pub fn (n &Node) computed_values() &css.ComputedValues {
 }
 
 pub fn (n &Node) first_available_font() &platform.Font {
-	computed_font := n.computed_values().font_list().font_for_code_point(u32(` `))
+	// ComputedValues is the retained ComputedProperties allocation in V. A
+	// style mutation can invalidate its font cache after line boxes have retained
+	// the layout node, whereas C++'s immutable ComputedValues always carries the
+	// materialized cascade. Rebuild that cache through the document's shared
+	// FontComputer before reading it so repaint after relayout preserves the C++
+	// lifetime invariant.
+	mut computed_values := unsafe { &css.ComputedProperties(n.computed_values()) }
+	computed_font := computed_values.first_available_computed_font(css.css_style_computer_for(n.document()).font_computer())
 	return &platform.Font{
 		family: computed_font.typeface.family_name
 		point_size: computed_font.point_size / 0.75

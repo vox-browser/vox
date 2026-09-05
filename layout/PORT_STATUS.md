@@ -190,8 +190,11 @@ That boundary now also retains the document font cascade, list-style type,
 counter reset/increment/set arrays, resolved colors, borders/radii, masks and
 clip paths, SVG paints, shadows, and scrollbar colors. Counter-tree and marker
 construction consume the retained values, and `Node::first_available_font()`
-selects directly from the materialized cascade instead of entering the style
-computer from a layout query.
+selects from the materialized cascade. If a retained line fragment outlives a
+style mutation that invalidates the aliased V cache, the accessor rematerializes
+it through the document's shared font computer; this preserves C++'s immutable
+ComputedValues lifetime and prevents repeated rewrap relayouts from reaching an
+empty cache.
 
 The active compatibility paint bridge now builds long text runs with a
 capacity-sized `strings.Builder`, retains box references through paint-order

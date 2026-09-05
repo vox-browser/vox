@@ -167,6 +167,16 @@ fn test_first_available_font_uses_computed_font_cascade() {
 	font := unsafe { &Node(node) }.first_available_font()
 	assert font.point_size == 20
 	assert font.weight == 700
+
+	// A retained line-box fragment can outlive the style mutation that clears
+	// ComputedProperties' cache. C++ keeps the cascade in immutable
+	// ComputedValues; the V boundary rematerializes the same cascade on demand.
+	mut retained_values := unsafe { &css.ComputedProperties(node.computed_values()) }
+	retained_values.clear_computed_font_list_cache()
+	rematerialized := unsafe { &Node(node) }.first_available_font()
+	assert rematerialized.family == font.family
+	assert rematerialized.point_size == 20
+	assert rematerialized.weight == 700
 }
 
 fn test_apply_style_propagates_to_anonymous_wrappers_and_continuations() {

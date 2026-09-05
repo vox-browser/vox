@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 35,427 | 12,536 | Present |
+| `Layout` | 50 | 19,592 | 35,434 | 12,546 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **313,610** | **55,744** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **313,617** | **55,754** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -287,7 +287,10 @@ MAE 4.6117 to 0.2584, leaving raster-edge and text-antialiasing deltas.
 reconstruction. Baselines and font metrics come from committed line fragments;
 thickness and endpoints use upstream rounding; double-line offsets, native
 dotted/dashed strokes, underline position/offset, and the round-joined triangle
-wave follow the C++ switch directly. The anonymous-wrapper, minimum-thickness,
+wave follow the C++ switch directly. A retained fragment whose style mutation
+invalidated the aliased V font cache now rematerializes that cascade through the
+document's shared font computer, preserving C++'s immutable-ComputedValues
+lifetime across repeated relayouts. The anonymous-wrapper, minimum-thickness,
 and underline-offset upstream reference pairs are pixel-identical. Native
 checkbox and radio foreground painting now uses direct translations of
 `InputColors`, `CheckBoxPaintable`, and `RadioButtonPaintable` rather than
