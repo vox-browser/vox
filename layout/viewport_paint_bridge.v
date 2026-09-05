@@ -1227,9 +1227,10 @@ fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.H
 	mut node_id := i64(0)
 	for index := result.hit_test_order.len - 1; index >= 0; index-- {
 		box := result.hit_test_order[index]
-		if box.node_id != 0 && box.visible && box.pointer_events_enabled
+		candidate_node_id := box.node_id_for_hit_test()
+		if candidate_node_id != 0 && box.visible && box.pointer_events_enabled
 			&& compatibility_box_contains_hit_test_point(box, x, y, result.visual_context_tree, snapshot) {
-			node_id = box.node_id
+			node_id = candidate_node_id
 			break
 		}
 	}
@@ -1250,11 +1251,12 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 	mut elements := []&dom.Element{}
 	for index := result.hit_test_order.len - 1; index >= 0; index-- {
 		box := result.hit_test_order[index]
-		if box.node_id == 0 || !box.visible || !box.pointer_events_enabled
+		node_id := box.node_id_for_hit_test()
+		if node_id == 0 || !box.visible || !box.pointer_events_enabled
 			|| !compatibility_box_contains_hit_test_point(box, x, y, result.visual_context_tree, snapshot) {
 			continue
 		}
-		if element := element_for_paint_node_id(box.node_id) {
+		if element := element_for_paint_node_id(node_id) {
 			elements << element
 		}
 	}

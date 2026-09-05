@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 488
+filename-level mappings. The current semantic audit nevertheless reports 486
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,13 +25,17 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 488 unmatched Painting
+  were removed; the audit currently reports 486 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
   height independently, matching `DevicePixelConverter` for fractional origins.
 - Text fragment point indexing, font ascender/descender selection inflation, and
   visibility/pointer-event gating now match the upstream hit-testing contract.
+  The active shared predicate also rejects inert DOM nodes. Anonymous middle
+  boxes created for split inline continuations keep a separate principal-inline
+  fallback identity, matching `PaintableBox::hit_test_continuation()` without
+  changing their paint or cache ownership.
 - Equal table-border conflicts prefer the earlier left/top edge; indeterminate
   checkbox dash geometry and the resize cursor fallback follow their native
   implementations.
@@ -394,7 +398,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 488 unmatched implementations.
+Painting: 486 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

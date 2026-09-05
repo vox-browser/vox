@@ -759,6 +759,32 @@ fn test_document_hit_testing_rejects_points_outside_rounded_border_corners() {
 	assert center_hit.as_node().unique_id() == rounded.as_node().unique_id()
 }
 
+fn test_document_hit_testing_skips_inert_paintables() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#under { position: absolute; z-index: 1; width: 100px; height: 100px; background: blue }
+		#inert { position: absolute; z-index: 2; width: 100px; height: 100px; background: red }
+	</style><body><div id="under"></div><div id="inert" inert></div></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	under := document.get_element_by_id('under') or { panic('missing underlying element') }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	hit := mutable_document.element_from_point(10, 10) or { panic('missing inert-filtered hit') }
+	assert hit.as_node().unique_id() == under.as_node().unique_id()
+}
+
+fn test_split_inline_anonymous_middle_hit_returns_inline_principal_box() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#under { position: absolute; z-index: -1; width: 100px; height: 100px }
+		#child { width: 100px; height: 100px; pointer-events: none }
+	</style><body><div id="under"></div><b id="outer"><div id="child"></div></b></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	outer := document.get_element_by_id('outer') or { panic('missing split inline') }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	hit := mutable_document.element_from_point(10, 10) or { panic('missing continuation hit') }
+	assert hit.as_node().unique_id() == outer.as_node().unique_id()
+}
+
 fn test_split_inline_cssom_offsets_use_the_united_continuation_chain() {
 	document := html.parse_document('<!doctype html><b>foo<div>bar</div>baz</b>')
 	_ = layout_document_typed_in_viewport(document, 800, 600)

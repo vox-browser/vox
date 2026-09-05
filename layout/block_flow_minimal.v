@@ -359,7 +359,8 @@ pub mut:
 	pointer_events_enabled bool = true
 	// The `unique_id` of the element this box was laid out for, so a box can be found from its element
 	// (backing getBoundingClientRect).
-	node_id i64
+	node_id                       i64
+	hit_test_continuation_node_id i64
 	// Identity of the typed Layout::Node which created this paintable. DOM keeps
 	// the same opaque handle on its module-cycle wrapper, allowing repaint
 	// invalidation to address the corresponding retained phase cache directly.
@@ -556,12 +557,20 @@ fn (b &BlockBox) contains_hit_test_point(x f64, y f64) bool {
 fn hit_test_paint_order(order []&BlockBox, x f64, y f64) ?i64 {
 	for i := order.len - 1; i >= 0; i-- {
 		box := order[i]
-		if box.node_id != 0 && box.visible && box.pointer_events_enabled
+		node_id := box.node_id_for_hit_test()
+		if node_id != 0 && box.visible && box.pointer_events_enabled
 			&& box.contains_hit_test_point(x, y) {
-			return box.node_id
+			return node_id
 		}
 	}
 	return none
+}
+
+fn (b &BlockBox) node_id_for_hit_test() i64 {
+	if b.node_id != 0 {
+		return b.node_id
+	}
+	return b.hit_test_continuation_node_id
 }
 
 fn element_for_paint_node_id(node_id i64) ?&dom.Element {
@@ -584,11 +593,12 @@ pub fn (b &BlockBox) elements_at_point(x f64, y f64, _root &dom.Node) []&dom.Ele
 	mut elements := []&dom.Element{}
 	for i := order.len - 1; i >= 0; i-- {
 		box := order[i]
-		if box.node_id == 0 || !box.visible || !box.pointer_events_enabled
+		node_id := box.node_id_for_hit_test()
+		if node_id == 0 || !box.visible || !box.pointer_events_enabled
 			|| !box.contains_hit_test_point(x, y) {
 			continue
 		}
-		if element := element_for_paint_node_id(box.node_id) {
+		if element := element_for_paint_node_id(node_id) {
 			elements << element
 		}
 	}

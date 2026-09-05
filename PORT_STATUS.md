@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 35,249 | 12,306 | Present |
+| `Layout` | 50 | 19,592 | 35,295 | 12,332 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **313,137** | **55,400** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **313,183** | **55,426** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 588
-  candidate-name-match: 13975
-  unmatched: 1792
+  candidate-name-match: 13977
+  unmatched: 1790
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   488 Painting
+   486 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -260,6 +260,11 @@ Border-radius transport now follows `PaintableBox::border_radii_data()` and
 `normalized_border_radii_data()` directly. Lengths and overlap factors remain
 fixed-point through the source's two refinement passes, and padding-edge clips
 only shrink adjacent radii instead of running a second, invented normalization.
+Hit-test eligibility now uses a direct
+`Paintable::visible_for_hit_testing()` predicate, excluding inert DOM nodes as
+well as `pointer-events:none`. Anonymous middle boxes in a split inline chain
+retain the source's `PaintableBox::hit_test_continuation()` fallback to the
+principal inline element after their block descendants decline the hit.
 The active DOM/layout bridge now retains the forward chain corresponding to
 Layout's split-inline continuation links. `PaintableBox`'s three absolute
 united-rectangle operations walk that chain and unite its nonempty border,

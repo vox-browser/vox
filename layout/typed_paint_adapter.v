@@ -435,6 +435,39 @@ struct PaintableBoxPixelCornerRadius {
 	vertical   CSSPixels
 }
 
+// Direct translation of Paintable::visible_for_hit_testing().
+fn paintable_visible_for_hit_testing(node &Node, computed &css.ComputedValues) bool {
+	if dom_node := node.dom_node() {
+		if dom_node.is_inert() {
+			return false
+		}
+	}
+	return computed.pointer_events() != .none_
+}
+
+// Direct translation of PaintableBox::hit_test_continuation(). Anonymous block
+// boxes in the middle of a split inline chain target the principal inline
+// paintable when none of their block descendants handled the hit.
+fn paintable_box_hit_test_continuation(node &Node) i64 {
+	if !node.is_anonymous() {
+		return 0
+	}
+	metrics := node.as_node_with_style_and_box_model_metrics() or { return 0 }
+	mut continuation := metrics.continuation_of_node() or { return 0 }
+	for {
+		previous := continuation.continuation_of_node() or { break }
+		continuation = previous
+	}
+	principal := unsafe { &Node(continuation) }
+	principal_style := principal.as_node_with_style() or { return 0 }
+	if !paintable_visible_for_hit_testing(principal, principal_style.computed_values()) {
+		return 0
+	}
+	dom_node := principal.dom_node() or { return 0 }
+	element := dom_node.as_element() or { return 0 }
+	return i64(element.as_node().unique_id())
+}
+
 fn resolved_paintable_box_corner_radius(values &css.ComputedValues, radius css.BorderRadiusData, width CSSPixels, height CSSPixels) PaintableBoxPixelCornerRadius {
 	context := css.LengthResolutionContext.for_computed_properties(values)
 	return PaintableBoxPixelCornerRadius{
@@ -3177,8 +3210,9 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		opacity: f64(computed.opacity())
 		filter: filter
 		visible: computed.visibility() == .visible
-		pointer_events_enabled: computed.pointer_events() != .none_
+		pointer_events_enabled: paintable_visible_for_hit_testing(node, computed)
 		node_id: node_id
+		hit_test_continuation_node_id: paintable_box_hit_test_continuation(node)
 		layout_handle: voidptr(node)
 		children: children
 		lines: lines

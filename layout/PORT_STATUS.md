@@ -255,6 +255,12 @@ passes, and truncating multiplication occur before conversion to the renderer
 transport. Padding-edge clips then perform only the source's adjacent-border
 shrink; the previous extra normalization could let a wide opposite border
 collapse an unrelated corner radius.
+The active hit-test bridge also translates
+`Paintable::visible_for_hit_testing()`, so inert DOM nodes no longer win
+`elementFromPoint()`. For an anonymous block in the middle of a split inline
+chain, `PaintableBox::hit_test_continuation()` walks back to the principal
+inline paintable and returns that element only after the block descendants
+decline the hit.
 The DOM mirror also preserves the layout tree's split-inline continuation chain
 in forward order. This lets `PaintableBox`'s united geometry and the CSSOM
 `offsetTop`, `offsetLeft`, `offsetWidth`, and `offsetHeight` algorithms account
