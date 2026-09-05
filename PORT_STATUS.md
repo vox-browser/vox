@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 34,261 | 11,547 | Present |
+| `Layout` | 50 | 19,592 | 35,102 | 12,118 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -76,7 +76,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `NavigationTiming` | 3 | 104 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 249 | 290 | 68 | Complete |
 | `Page` | 7 | 4,298 | 2,206 | 414 | Complete |
-| `Painting` | 48 | 10,038 | 5,061 | 1,286 | Present |
+| `Painting` | 48 | 10,038 | 5,613 | 1,559 | Present |
 | `PerformanceTimeline` | 5 | 391 | 447 | 130 | Complete |
 | `PermissionsPolicy` | 1 | 98 | 86 | 21 | Complete |
 | `Platform` | 4 | 415 | 1,167 | 96 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **311,454** | **54,333** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **312,847** | **55,177** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 588
-  candidate-name-match: 13957
-  unmatched: 1810
+  candidate-name-match: 13958
+  unmatched: 1809
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   506 Painting
+   505 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -310,7 +310,12 @@ Native replay consumes that surface directly. Video boxes now retain
 `VideoPaintable`'s full representation switch as well: current and first frames
 use external content, posters use scaled immutable bitmaps, and the no-data
 case records transparent black, all under the same rectangular and
-border-shrunken rounded clips. URL `<linearGradient>` and `<radialGradient>`
+border-shrunken rounded clips. Iframe `srcdoc` documents now cross that boundary
+as nested display lists too.
+`NavigableContainerViewportPaintable::paint()` updates and records the child at
+the iframe content size, clips it to the border-shrunken rounded viewport, and
+replays it under the parent transform without rasterizing the child tree.
+URL `<linearGradient>` and `<radialGradient>`
 fill and stroke paints now retain C++'s same-document resource resolution, href
 inheritance and precedence, normalized computed stops, `gradientUnits`,
 `gradientTransform`, `spreadMethod`, color interpolation, and paint order.

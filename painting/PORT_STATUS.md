@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 506
+filename-level mappings. The current semantic audit nevertheless reports 505
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 5,061 | 1,286 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 5,613 | 1,559 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 506 unmatched Painting
+  were removed; the audit currently reports 505 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -91,6 +91,12 @@ following behavioral mismatches and added focused regressions:
   rectangle, translated image scaling, the explicit rectangular clip, and
   normalized border-shrunken corner radii. The native RGBA bridge replays both
   frame kinds while media decoding remains the existing host boundary.
+- `NavigableContainerViewportPaintable::paint()` now records the hosted
+  `srcdoc` document as a nested display list in the active typed bridge. It
+  updates child layout at the iframe content size, retains child commands
+  instead of rasterizing them, applies both the source rectangular and
+  border-shrunken rounded clips, and composes the embedding transform into
+  child commands, clip paths, mask operations, and nested opacity at replay.
 - `SVGLinearGradientPaintStyle` now crosses the active path and mask boundaries
   without being reduced to an SVG paint fallback color. Resource href
   precedence and inheritance, monotonic computed stops, object-bounding-box and
@@ -256,7 +262,7 @@ following behavioral mismatches and added focused regressions:
 | `GradientPainting.cpp` | `effects.v` |
 | `ImagePaintable.cpp` | `image_paintable.v` |
 | `MarkerPaintable.cpp` | `painting_algorithms.v` |
-| `NavigableContainerViewportPaintable.cpp` | `painting_algorithms.v` |
+| `NavigableContainerViewportPaintable.cpp` | `navigable_container_viewport_paintable.v` |
 | `PaintStyle.cpp` | `svg_painting.v` |
 | `Paintable.cpp` | `paintable.v` |
 | `PaintableBox.cpp` | `paintable.v`, `scrolling.v`, `painting_algorithms.v` |
@@ -350,7 +356,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 506 unmatched implementations.
+Painting: 505 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

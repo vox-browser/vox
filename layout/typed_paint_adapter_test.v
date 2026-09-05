@@ -1270,6 +1270,28 @@ fn test_video_uses_the_paintable_representation_switch() {
 	assert blank_result.content is painting.FillRect
 }
 
+fn test_iframe_replays_the_hosted_document_as_a_nested_display_list() {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}iframe{display:block;width:120px;height:60px;border:4px solid red;border-radius:12px}</style><iframe srcdoc="<style>html,body{margin:0}body{background:rgb(12 34 56)}</style><p>nested</p>"></iframe>')
+	root := layout_document_typed_in_viewport(document, 240, 140)
+	commands := root.paint_commands().filter(it.kind == 'paint_nested_display_list')
+	assert commands.len == 1
+	command := commands[0]
+	assert command.x == 4
+	assert command.y == 4
+	assert command.width == 120
+	assert command.height == 60
+	assert command.nested_viewport_commands.any(it.kind == 'fill_rect'
+		&& it.color == 'rgb(12 34 56)')
+	assert command.nested_viewport_commands.any(it.kind == 'draw_text' && it.text == 'nested')
+	paintable := command.nested_viewport_paintable or { panic('missing nested viewport paintable') }
+	result := paintable.paint(painting.new_device_pixel_converter(1) or { panic(err) }) or {
+		panic('missing nested viewport paint result')
+	}
+	assert result.clip_rect == painting.IntRect{4, 4, 120, 60}
+	assert result.nested_rect == result.clip_rect
+	assert result.clip_radii.top_left == painting.CornerRadius{8, 8}
+}
+
 fn test_url_svg_clip_path_is_a_retained_alpha_mask_not_a_painted_child_or_hit_test_clip() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="140" height="120" viewBox="0 0 140 120"><defs><clipPath id="cut"><circle cx="60" cy="50" r="35" clip-rule="evenodd"/></clipPath></defs><rect id="target" x="10" y="0" width="100" height="100" fill="rgb(101 102 103)" clip-path="url(#cut)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)

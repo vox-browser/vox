@@ -81,8 +81,8 @@ pub fn ReplacedBox.new(document &dom.Document, element &dom.Element, computed_va
 }
 
 // Layout::NavigableContainerViewport. The DOM port does not yet attach a
-// NavigableContainer object to generic iframe Elements, so retain the active
-// about:blank document on the concrete layout box itself.
+// concrete DOM::Document to HTML's metadata-only NavigableContainer model, so
+// retain the active about:blank/srcdoc document on the layout box itself.
 @[heap]
 pub struct NavigableContainerViewport {
 	ReplacedBox
@@ -91,9 +91,10 @@ mut:
 }
 
 pub fn NavigableContainerViewport.new(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties) &NavigableContainerViewport {
+	source := element.get_attribute('srcdoc') or { '' }
 	mut box := &NavigableContainerViewport{
 		ReplacedBox: replaced_box_base(document, element, computed_values)
-		content_document_: html.parse_document('')
+		content_document_: html.parse_document(source)
 	}
 	box.is_navigable_container_viewport_ = true
 	return box

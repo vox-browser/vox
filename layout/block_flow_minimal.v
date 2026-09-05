@@ -323,6 +323,8 @@ pub mut:
 	video_external_source     ?&html.MediaExternalContentSource
 	video_representation      painting.VideoRepresentation
 	video_paintable           ?painting.VideoPaintable
+	nested_viewport_document  ?&dom.Document
+	nested_viewport_paintable ?painting.NavigableContainerViewportPaintable
 	// Retained for detached compatibility commands; typed HTML/SVG images carry
 	// their source semantics in replaced_image_paintable.
 	is_svg_image               bool
@@ -1333,6 +1335,10 @@ pub mut:
 	video_external_source ?&html.MediaExternalContentSource
 	video_representation  painting.VideoRepresentation
 	video_paintable       ?painting.VideoPaintable
+	// NavigableContainerViewportPaintable retains the hosted document's
+	// display list as a nested command stream rather than rasterizing it.
+	nested_viewport_commands  []PaintCommand
+	nested_viewport_paintable ?painting.NavigableContainerViewportPaintable
 	// Synthetic balanced controls around the complete background color/layer
 	// group. The begin command owns the inclusive-subtree glyph runs.
 	text_clip_runs []PaintTextClipRun
@@ -2382,6 +2388,28 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				video_external_source: box.video_external_source
 				video_representation: box.video_representation
 				video_paintable: video_paintable
+			}
+		}
+		if nested_viewport_paintable := box.nested_viewport_paintable {
+			if hosted_document := box.nested_viewport_document {
+				nested_layout := run_document_layout(hosted_document, box.width, box.height) or {
+					DocumentLayoutResult{}
+				}
+				if nested_layout.root != unsafe { nil } {
+					mut mutable_hosted_document := unsafe { &dom.Document(hosted_document) }
+					if nested_display_list := mutable_hosted_document.record_display_list() {
+						commands << PaintCommand{
+							kind: 'paint_nested_display_list'
+							x: box.x
+							y: box.y
+							width: box.width
+							height: box.height
+							opacity: opacity
+							nested_viewport_commands: display_list_commands(nested_display_list).clone()
+							nested_viewport_paintable: nested_viewport_paintable
+						}
+					}
+				}
 			}
 		}
 		form_control_state := box.current_form_control_state()
@@ -4167,6 +4195,63 @@ fn affine_in_translated_coordinate_frame(matrix [6]f64, dx f64, dy f64) [6]f64 {
 		return matrix
 	}
 	return multiply_affine(translated_affine(dx, dy), multiply_affine(matrix, translated_affine(-dx, -dy)))
+}
+
+fn nested_viewport_mask_operation(operation PaintMaskOperation, ancestor [6]f64) PaintMaskOperation {
+	return PaintMaskOperation{
+		...operation
+		transform: multiply_affine(ancestor, operation.transform)
+	}
+}
+
+fn nested_viewport_clip(clip PaintClip, ancestor [6]f64) PaintClip {
+	mut cache_key := clip.cache_key
+	if clip.is_svg_mask || clip.is_svg_content_mask {
+		for value in ancestor {
+			cache_key = svg_clip_hash_mix(cache_key, math.f64_bits(value))
+		}
+	}
+	return PaintClip{
+		...clip
+		path_components: clip.path_components.map(PaintPath{
+			...it
+			transform: multiply_affine(ancestor, it.transform)
+		})
+		mask_operations: clip.mask_operations.map(nested_viewport_mask_operation(it, ancestor))
+		cache_key: cache_key
+		transform: multiply_affine(ancestor, clip.transform)
+	}
+}
+
+// DisplayListPlayerSkia translates the canvas by the nested display-list rect
+// before replay. The compatibility player stores transforms per command, so
+// compose that translation and the embedding paintable's visual transform into
+// each command (including retained clip/mask geometry) at the replay boundary.
+pub fn paint_command_for_nested_viewport(command PaintCommand, outer_transform [6]f64,
+	nested_origin painting.IntPoint, outer_opacity f64) PaintCommand {
+	ancestor := multiply_affine(outer_transform, translated_affine(f64(nested_origin.x), f64(nested_origin.y)))
+	mut transformed := command
+	transformed.transform = multiply_affine(ancestor, command.transform)
+	transformed.opacity = command.opacity * outer_opacity
+	if command.has_clip {
+		mapped_clip := compatibility_affine_map_rect(ancestor, LayoutRect{
+			x: command.clip_x
+			y: command.clip_y
+			width: command.clip_width
+			height: command.clip_height
+		})
+		transformed.clip_x = mapped_clip.x
+		transformed.clip_y = mapped_clip.y
+		transformed.clip_width = mapped_clip.width
+		transformed.clip_height = mapped_clip.height
+	}
+	if command.clip_list != unsafe { nil } {
+		transformed.clip_list = &PaintClipList{
+			items: command.clip_list.items.map(nested_viewport_clip(it, ancestor))
+		}
+	}
+	transformed.mask_clip = nested_viewport_clip(command.mask_clip, ancestor)
+	return transformed
 }
 
 fn apply_ancestor_affine(box BlockBox, ancestor [6]f64) BlockBox {

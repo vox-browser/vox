@@ -480,6 +480,32 @@ fn test_video_paintable_switches_between_external_poster_and_transparent_content
 	assert paintable.paint(.poster_frame, '', none, converter) == none
 }
 
+fn test_navigable_container_viewport_paintable_clips_and_places_nested_display_list() {
+	converter := new_device_pixel_converter(1) or { panic(err) }
+	paintable := NavigableContainerViewportPaintable{
+		viewport_rect: Rect{10.25, 20.75, 99.5, 49.5}
+		border_radii: BorderRadiiData{
+			top_left: BorderRadiusData{18, 16}
+			top_right: BorderRadiusData{14, 12}
+			bottom_right: BorderRadiusData{10, 8}
+			bottom_left: BorderRadiusData{6, 4}
+		}
+		border_widths: PixelBox{5, 4, 3, 2}
+	}
+	result := paintable.paint(converter) or { panic('expected nested viewport paint') }
+	assert result.clip_rect == IntRect{10, 21, 100, 49}
+	assert result.nested_rect == IntRect{10, 20, 100, 50}
+	assert result.clip_radii == CornerRadii{
+		top_left: CornerRadius{16, 11}
+		top_right: CornerRadius{10, 7}
+		bottom_right: CornerRadius{6, 5}
+		bottom_left: CornerRadius{4, 1}
+	}
+	assert NavigableContainerViewportPaintable{
+		viewport_rect: Rect{0, 0, 0, 10}
+	}.paint(converter) == none
+}
+
 fn test_native_input_control_colors_follow_active_disabled_and_contrast_paths() {
 	colors := compute_input_colors(.light, css.Color{255, 0, 0, 255})
 	active_checkbox := checkbox_commands(IntRect{0, 0, 20, 20}, true, false, true, true, .light, colors)

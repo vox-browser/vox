@@ -4828,3 +4828,43 @@ fn test_grid_auto_margin_absorbs_only_its_cell_free_space() {
 	assert box.children[0].margin.left == 60.0
 	assert box.children[0].x == 60.0
 }
+
+fn test_nested_viewport_commands_compose_translation_transform_clip_and_opacity() {
+	clip := PaintClip{
+		rect: LayoutRect{1, 2, 30, 40}
+		is_svg_mask: true
+		transform: [f64(1), 0, 0, 1, 5, 6]!
+		path_components: [PaintPath{
+			transform: [f64(1), 0, 0, 1, 7, 8]!
+		}]
+		mask_operations: [PaintMaskOperation{
+			kind: .path
+			transform: [f64(1), 0, 0, 1, 9, 10]!
+		}]
+	}
+	command := PaintCommand{
+		x: 1
+		y: 2
+		opacity: 0.5
+		transform: [f64(1), 0, 0, 1, 3, 4]!
+		has_clip: true
+		clip_x: 1
+		clip_y: 2
+		clip_width: 30
+		clip_height: 40
+		clip_list: &PaintClipList{ items: [clip] }
+		mask_clip: clip
+	}
+	transformed := paint_command_for_nested_viewport(command, [f64(2), 0, 0, 2, 7, 8]!, painting.IntPoint{10, 20}, 0.5)
+	assert transformed.transform == [f64(2), 0, 0, 2, 33, 56]!
+	assert transformed.opacity == 0.25
+	assert transformed.clip_x == 29
+	assert transformed.clip_y == 52
+	assert transformed.clip_width == 60
+	assert transformed.clip_height == 80
+	assert transformed.clip_list.items[0].transform == [f64(2), 0, 0, 2, 37, 60]!
+	assert transformed.clip_list.items[0].path_components[0].transform == [f64(2), 0, 0, 2, 41,
+		64]!
+	assert transformed.mask_clip.mask_operations[0].transform == [f64(2), 0, 0, 2, 45, 68]!
+	assert transformed.mask_clip.cache_key != command.mask_clip.cache_key
+}

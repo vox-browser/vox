@@ -2480,6 +2480,35 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 		return
 	}
 	match command.kind {
+		'paint_nested_display_list' {
+			paintable := command.nested_viewport_paintable or { return }
+			converter := painting.new_device_pixel_converter(1.0) or { return }
+			result := paintable.paint(converter) or { return }
+			$if macos {
+				if app.ctx.native_rendering {
+					radii := result.clip_radii
+					C.native_begin_clip()
+					C.native_add_corner_rounded_clip(f32(result.clip_rect.x), f32(result.clip_rect.y), f32(result.clip_rect.width), f32(result.clip_rect.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+					C.native_add_corner_rounded_clip(f32(result.clip_rect.x), f32(result.clip_rect.y), f32(result.clip_rect.width), f32(result.clip_rect.height), 0, 0, 0, 0, 0, 0, 0, 0, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
+					for nested_command in command.nested_viewport_commands {
+						transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
+						app.draw_command(transformed, page_x, page_y, window_height)
+					}
+					C.native_end_clip()
+					return
+				}
+			}
+			clip_left := int(math.floor(f64(x)))
+			clip_top := int(math.floor(f64(y)))
+			clip_right := int(math.ceil(f64(x + w)))
+			clip_bottom := int(math.ceil(f64(y + h)))
+			for nested_command in command.nested_viewport_commands {
+				app.ctx.scissor_rect(clip_left, clip_top, clip_right - clip_left, clip_bottom - clip_top)
+				transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{result.nested_rect.x, result.nested_rect.y}, command.opacity)
+				app.draw_command(transformed, page_x, page_y, window_height)
+			}
+			app.ctx.scissor_rect(0, 0, app.ctx.width, app.ctx.height)
+		}
 		'fill_rect' {
 			fill := paint_color(command.color, command.opacity)
 			$if macos {

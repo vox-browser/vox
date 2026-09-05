@@ -177,6 +177,14 @@ live checked/indeterminate state when their phase bucket is rebuilt; checkedness
 changes use the translated style and repaint invalidation path, so retained
 commands cannot preserve the layout-time `checked` attribute snapshot.
 
+`NavigableContainerViewport` now retains its concrete `about:blank` or
+`srcdoc` DOM document through the typed layout tree. During parent display-list
+recording that document is updated at the iframe's content-box size and its
+display list is retained as a nested command stream, matching the upstream
+hosted-document-before-paint ordering. Replay translates the child coordinate
+space at the nested-list boundary and preserves the parent's transforms,
+rounded clipping, masks, and opacity.
+
 `NodeWithStyle::apply_style()` now follows the upstream resolved-value boundary:
 hot typed CSS values are materialized once and layout reads those slots instead
 of repeatedly decoding `StyleValue` objects. Style propagation and the table,
