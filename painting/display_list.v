@@ -1,6 +1,7 @@
 module painting
 
 import math
+import platform
 
 pub enum CornerClip {
 	inside
@@ -17,6 +18,12 @@ pub enum ScalingMode {
 pub enum Orientation {
 	horizontal
 	vertical
+}
+
+pub enum TextAlignment {
+	center_left
+	center
+	center_right
 }
 
 pub enum WindingRule {
@@ -39,10 +46,12 @@ pub enum LineJoin {
 pub struct DrawGlyphRun {
 pub:
 	glyph_run_id string
+	glyph_run    ?&platform.GlyphRun
 	rect         IntRect
 	translation  Point
 	color        Color
 	orientation  Orientation
+	scale        f64 = 1.0
 }
 
 pub struct FillRect {
@@ -642,7 +651,7 @@ pub fn command_is_clip(command DisplayListCommand) bool {
 	}
 }
 
-pub fn command_nesting_change(command DisplayListCommand) int {
+pub fn command_nesting_level_change(command DisplayListCommand) int {
 	return match command {
 		Save, SaveLayer, ApplyEffects { 1 }
 		Restore { -1 }
@@ -673,11 +682,37 @@ pub fn (mut list DisplayList) append(command DisplayListCommand, context_index i
 
 pub struct DisplayListRecorder {
 pub mut:
-	display_list              DisplayList
-	accumulated_context_index int
-	save_nesting_level        int
-	is_capturing              bool
-	captured_commands         []DisplayListCommand
+	display_list                     DisplayList
+	accumulated_visual_context_index int
+	save_nesting_level               int
+	is_capturing                     bool
+	captured_commands                []DisplayListCommand
+}
+
+// V has no move-only RAII value matching C++ CommandCapture, so callers close
+// this token explicitly with take() or end(). The token still owns the right to
+// finish exactly one capture and retains the source's move-out behavior.
+pub struct CommandCapture {
+mut:
+	active bool = true
+}
+
+pub fn (mut capture CommandCapture) take(mut recorder DisplayListRecorder) []DisplayListCommand {
+	assert capture.active && recorder.is_capturing
+	commands := recorder.captured_commands
+	recorder.captured_commands = []DisplayListCommand{}
+	recorder.is_capturing = false
+	capture.active = false
+	return commands
+}
+
+pub fn (mut capture CommandCapture) end(mut recorder DisplayListRecorder) {
+	if !capture.active {
+		return
+	}
+	assert recorder.is_capturing
+	recorder.end_capture()
+	capture.active = false
 }
 
 pub fn new_display_list_recorder(tree AccumulatedVisualContextTree) DisplayListRecorder {
@@ -689,41 +724,45 @@ pub fn new_display_list_recorder(tree AccumulatedVisualContextTree) DisplayListR
 }
 
 pub fn (mut recorder DisplayListRecorder) append(command DisplayListCommand) bool {
-	nesting_change := command_nesting_change(command)
-	if recorder.save_nesting_level + nesting_change < 0 {
-		return false
-	}
-	recorder.save_nesting_level += nesting_change
-	added := recorder.display_list.append(command, recorder.accumulated_context_index)
+	recorder.save_nesting_level += command_nesting_level_change(command)
+	added := recorder.display_list.append(command, recorder.accumulated_visual_context_index)
 	if added && recorder.is_capturing {
 		recorder.captured_commands << command
 	}
 	return added
 }
 
-pub fn (mut recorder DisplayListRecorder) begin_capture() bool {
-	if recorder.is_capturing {
-		return false
-	}
+pub fn (mut recorder DisplayListRecorder) begin_command_capture() CommandCapture {
+	assert !recorder.is_capturing
 	recorder.is_capturing = true
 	recorder.captured_commands.clear()
-	return true
+	return CommandCapture{}
 }
 
-pub fn (mut recorder DisplayListRecorder) take_capture() []DisplayListCommand {
-	if !recorder.is_capturing {
-		return []
-	}
+fn (mut recorder DisplayListRecorder) end_capture() {
 	recorder.is_capturing = false
-	commands := recorder.captured_commands.clone()
 	recorder.captured_commands.clear()
-	return commands
 }
 
-pub fn (mut recorder DisplayListRecorder) replay_cached(commands []DisplayListCommand) {
+pub fn (mut recorder DisplayListRecorder) replay_cached_commands(commands []DisplayListCommand) {
 	for command in commands {
-		recorder.append(command)
+		recorder.save_nesting_level += command_nesting_level_change(command)
+		// Deliberately bypass append(): cached commands are replayed into the
+		// display list but are not part of an active command capture upstream.
+		recorder.display_list.append(command, recorder.accumulated_visual_context_index)
 	}
+}
+
+pub fn (mut recorder DisplayListRecorder) paint_nested_display_list(command PaintNestedDisplayList) bool {
+	return recorder.append(command)
+}
+
+pub fn (mut recorder DisplayListRecorder) set_accumulated_visual_context(index int) {
+	recorder.accumulated_visual_context_index = index
+}
+
+pub fn (recorder DisplayListRecorder) accumulated_visual_context() int {
+	return recorder.accumulated_visual_context_index
 }
 
 pub fn (mut recorder DisplayListRecorder) fill_rect(rect IntRect, color Color) bool {
@@ -768,15 +807,15 @@ pub fn (mut recorder DisplayListRecorder) fill_ellipse(command FillEllipse) bool
 	return recorder.append(command)
 }
 
-pub fn (mut recorder DisplayListRecorder) paint_linear_gradient(command PaintLinearGradient) bool {
+pub fn (mut recorder DisplayListRecorder) fill_rect_with_linear_gradient(command PaintLinearGradient) bool {
 	return if command.rect.is_empty() { false } else { recorder.append(command) }
 }
 
-pub fn (mut recorder DisplayListRecorder) paint_radial_gradient(command PaintRadialGradient) bool {
+pub fn (mut recorder DisplayListRecorder) fill_rect_with_radial_gradient(command PaintRadialGradient) bool {
 	return if command.rect.is_empty() { false } else { recorder.append(command) }
 }
 
-pub fn (mut recorder DisplayListRecorder) paint_conic_gradient(command PaintConicGradient) bool {
+pub fn (mut recorder DisplayListRecorder) fill_rect_with_conic_gradient(command PaintConicGradient) bool {
 	return if command.rect.is_empty() { false } else { recorder.append(command) }
 }
 
@@ -791,11 +830,11 @@ pub fn (mut recorder DisplayListRecorder) draw_external_content(command DrawExte
 	return if command.destination.is_empty() { false } else { recorder.append(command) }
 }
 
-pub fn (mut recorder DisplayListRecorder) draw_scaled_bitmap(command DrawScaledBitmap) bool {
+pub fn (mut recorder DisplayListRecorder) draw_scaled_immutable_bitmap(command DrawScaledBitmap) bool {
 	return if command.destination.is_empty() { false } else { recorder.append(command) }
 }
 
-pub fn (mut recorder DisplayListRecorder) draw_repeated_bitmap(command DrawRepeatedBitmap) bool {
+pub fn (mut recorder DisplayListRecorder) draw_repeated_immutable_bitmap(command DrawRepeatedBitmap) bool {
 	return recorder.append(command)
 }
 
@@ -806,7 +845,40 @@ pub fn (mut recorder DisplayListRecorder) draw_line(command DrawLine) bool {
 	return recorder.append(command)
 }
 
-pub fn (mut recorder DisplayListRecorder) fill_rounded_rect(command FillRoundedRect) bool {
+pub fn (mut recorder DisplayListRecorder) draw_text(rect IntRect, text string,
+	font &platform.Font, alignment TextAlignment, color Color) bool {
+	if rect.is_empty() || color.a == 0 {
+		return false
+	}
+	glyph_run := platform.shape_text(0, 0, text, font, .ltr)
+	baseline_x := match alignment {
+		.center_left { f32(rect.x) }
+		.center { f32(rect.x) + (f32(rect.width) - glyph_run.width()) / 2.0 }
+		.center_right { f32(rect.right()) - glyph_run.width() }
+	}
+	metrics := font.pixel_metrics()
+	baseline_y := f32(rect.y) + metrics.ascent + (f32(rect.height) - (metrics.ascent + metrics.descent)) / 2.0
+	return recorder.draw_glyph_run(Point{f64(baseline_x), f64(baseline_y)}, glyph_run, color, rect, 1.0, .horizontal)
+}
+
+pub fn (mut recorder DisplayListRecorder) draw_glyph_run(baseline_start Point,
+	glyph_run &platform.GlyphRun, color Color, rect IntRect, scale f64,
+	orientation Orientation) bool {
+	if color.a == 0 {
+		return false
+	}
+	return recorder.append(DrawGlyphRun{
+		glyph_run_id: u64(voidptr(glyph_run)).str()
+		glyph_run: glyph_run
+		rect: rect
+		translation: baseline_start
+		color: color
+		orientation: orientation
+		scale: scale
+	})
+}
+
+pub fn (mut recorder DisplayListRecorder) fill_rect_with_rounded_corners(command FillRoundedRect) bool {
 	if command.rect.is_empty() || command.color.a == 0 {
 		return false
 	}
@@ -870,7 +942,7 @@ pub fn (mut recorder DisplayListRecorder) end_masks(masks []MaskInfo) {
 			?MaskKind(none)
 		}
 		recorder.apply_effects(1, .destination_in, none, mask_kind)
-		recorder.append(PaintNestedDisplayList{mask.display_list_id, mask.rect})
+		recorder.paint_nested_display_list(PaintNestedDisplayList{mask.display_list_id, mask.rect})
 		recorder.restore()
 		recorder.restore()
 		recorder.restore()

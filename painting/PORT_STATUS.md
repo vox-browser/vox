@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 376
+filename-level mappings. The current semantic audit nevertheless reports 358
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 6,266 | 1,821 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 6,338 | 1,888 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,9 +25,20 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 376 unmatched Painting
+  were removed; the audit currently reports 358 unmatched Painting
   implementations.
 
+- `DisplayListRecorder` now follows the source command-capture boundary instead
+  of replaying cached commands through its ordinary append path. Cached replay
+  updates save nesting and appends with the current visual context without
+  being captured again; `CommandCapture::take()` transfers the captured vector
+  without cloning it, and abandoned captures clear their commands. Gradient,
+  bitmap, glyph-run, rounded-rectangle, nested-list, and visual-context entry
+  points use the upstream recorder API and guards. `draw_text()` shapes the LTR
+  run and computes its aligned baseline from the same float font metrics before
+  delegating to `draw_glyph_run()`. This removes both duplicate cached captures
+  and a full command-vector copy from the recorder hot path; every upstream
+  `DisplayListRecorder` body now has a reviewed translation.
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
   height independently, matching `DevicePixelConverter` for fractional origins.
 - Text fragment point indexing, font ascender/descender selection inflation, and
@@ -500,7 +511,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 376 unmatched implementations.
+Painting: 358 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

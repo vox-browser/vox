@@ -126,7 +126,7 @@ pub fn (data &AnimatedDecodedImageData) session_id() i64 {
 
 pub fn (data &BitmapDecodedImageData) paint(mut recorder painting.DisplayListRecorder, frame_index usize, destination painting.IntRect, clip_rect painting.IntRect, scaling_mode painting.ScalingMode) bool {
 	bitmap := data.bitmap(frame_index) or { return false }
-	return recorder.draw_scaled_bitmap(painting.DrawScaledBitmap{
+	return recorder.draw_scaled_immutable_bitmap(painting.DrawScaledBitmap{
 		destination: destination
 		clip_rect:   clip_rect
 		bitmap_id:   u64(voidptr(bitmap)).str()
@@ -309,7 +309,7 @@ pub fn (data &AnimatedDecodedImageData) frame_rect(_ usize) ?BitmapRect {
 
 pub fn (data &AnimatedDecodedImageData) paint(mut recorder painting.DisplayListRecorder, frame_index usize, destination painting.IntRect, clip_rect painting.IntRect, scaling_mode painting.ScalingMode) bool {
 	bitmap := data.bitmap(frame_index) or { return false }
-	return recorder.draw_scaled_bitmap(painting.DrawScaledBitmap{
+	return recorder.draw_scaled_immutable_bitmap(painting.DrawScaledBitmap{
 		destination: destination
 		clip_rect:   clip_rect
 		bitmap_id:   u64(voidptr(bitmap)).str()

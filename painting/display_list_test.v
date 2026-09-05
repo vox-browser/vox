@@ -1,24 +1,91 @@
 module painting
 
+import platform
+
 fn test_display_list_recorder_capture_nesting_and_empty_clip_rejection() {
 	mut tree := new_accumulated_visual_context_tree()
 	empty_context := tree.append(ClipVisualData{ rect: IntRect{} }, 0)
 	mut recorder := new_display_list_recorder(tree)
 	assert !recorder.fill_rect(IntRect{}, Color{ r: 1 })
 	assert !recorder.fill_rect(IntRect{0, 0, 5, 5}, transparent)
-	assert recorder.begin_capture()
-	assert !recorder.begin_capture()
+	mut capture := recorder.begin_command_capture()
 	assert recorder.save()
 	assert recorder.fill_rect(IntRect{1, 2, 3, 4}, Color{ r: 9 })
 	assert recorder.restore()
-	captured := recorder.take_capture()
+	captured_data := recorder.captured_commands.data
+	captured := capture.take(mut recorder)
 	assert captured.len == 3
+	// CommandCapture::take() moves the vector instead of cloning every command.
+	assert captured.data == captured_data
 	assert command_name(captured[0]) == 'Save'
 	assert recorder.save_nesting_level == 0
-	assert !recorder.restore()
-	recorder.accumulated_context_index = empty_context
+	recorder.set_accumulated_visual_context(empty_context)
+	assert recorder.accumulated_visual_context() == empty_context
 	assert !recorder.fill_rect(IntRect{0, 0, 2, 2}, Color{ g: 1 })
 	assert recorder.display_list.commands.len == 3
+}
+
+fn test_cached_command_replay_bypasses_active_capture() {
+	mut recorder := new_display_list_recorder(new_accumulated_visual_context_tree())
+	mut capture := recorder.begin_command_capture()
+	assert recorder.fill_rect(IntRect{1, 2, 3, 4}, Color{ r: 1 })
+	recorder.replay_cached_commands([
+		DisplayListCommand(Save{}),
+		DisplayListCommand(FillRect{IntRect{5, 6, 7, 8}, Color{ g: 1 }}),
+		DisplayListCommand(Restore{}),
+	])
+	captured := capture.take(mut recorder)
+	assert captured.len == 1
+	assert recorder.display_list.commands.len == 4
+	assert (recorder.display_list.commands[2].command as FillRect).rect == IntRect{5, 6, 7, 8}
+	assert recorder.save_nesting_level == 0
+
+	mut abandoned_capture := recorder.begin_command_capture()
+	assert recorder.fill_rect(IntRect{9, 10, 11, 12}, Color{ b: 1 })
+	abandoned_capture.end(mut recorder)
+	assert !recorder.is_capturing
+	assert recorder.captured_commands.len == 0
+}
+
+fn test_recorder_source_shaped_entry_points_and_nesting_updates() {
+	mut recorder := new_display_list_recorder(new_accumulated_visual_context_tree())
+	assert !recorder.fill_rect_with_linear_gradient(PaintLinearGradient{})
+	assert recorder.fill_rect_with_linear_gradient(PaintLinearGradient{
+		rect: IntRect{1, 2, 3, 4}
+	})
+	assert recorder.fill_rect_with_radial_gradient(PaintRadialGradient{
+		rect: IntRect{2, 3, 4, 5}
+	})
+	assert recorder.fill_rect_with_conic_gradient(PaintConicGradient{
+		rect: IntRect{3, 4, 5, 6}
+	})
+	assert !recorder.draw_scaled_immutable_bitmap(DrawScaledBitmap{})
+	assert recorder.draw_scaled_immutable_bitmap(DrawScaledBitmap{
+		destination: IntRect{4, 5, 6, 7}
+	})
+	// The C++ repeated-bitmap entry point deliberately has no empty-rect guard.
+	assert recorder.draw_repeated_immutable_bitmap(DrawRepeatedBitmap{})
+	font := &platform.Font{ point_size: 16 }
+	glyph_run := platform.shape_text(0, 0, 'abc', font, .ltr)
+	assert !recorder.draw_glyph_run(Point{}, glyph_run, transparent, IntRect{0, 0, 20, 20}, 1, .horizontal)
+	assert recorder.draw_glyph_run(Point{1, 2}, glyph_run, Color{ r: 1 }, IntRect{0, 0, 20, 20}, 1, .horizontal)
+	assert !recorder.draw_text(IntRect{}, 'abc', font, .center, Color{ r: 1 })
+	assert recorder.draw_text(IntRect{10, 20, 100, 30}, 'abc', font, .center, Color{ r: 1 })
+	drawn_text := recorder.display_list.commands.last().command as DrawGlyphRun
+	retained_run := drawn_text.glyph_run or { panic('missing retained glyph run') }
+	assert retained_run.width() == glyph_run.width()
+	expected_x := f32(10) + (f32(100) - glyph_run.width()) / 2.0
+	metrics := font.pixel_metrics()
+	expected_y := f32(20) + metrics.ascent + (f32(30) - (metrics.ascent + metrics.descent)) / 2.0
+	assert drawn_text.translation == Point{f64(expected_x), f64(expected_y)}
+	assert recorder.paint_nested_display_list(PaintNestedDisplayList{
+		display_list_id: 'nested'
+	})
+
+	// APPEND updates the public nesting counter without an invented underflow
+	// guard; well-formed callers are responsible for balanced commands.
+	assert recorder.restore()
+	assert recorder.save_nesting_level == -1
 }
 
 fn test_command_bounds_and_playback_culling_context_switches() {
@@ -131,7 +198,7 @@ fn test_recorder_command_guards_rounded_fallback_and_masks() {
 		to: IntPoint{2, 2}
 		color: transparent
 	})
-	assert recorder.fill_rounded_rect(FillRoundedRect{
+	assert recorder.fill_rect_with_rounded_corners(FillRoundedRect{
 		rect: IntRect{0, 0, 5, 5}
 		color: Color{
 			r: 1
