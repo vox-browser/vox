@@ -156,12 +156,19 @@ $ /Users/alex/code/v/v -enable-globals test .
 Summary for all V _test.v files: 385 passed, 385 total.
 ```
 
-Flex layout was additionally checked differentially against the upstream browser
-with `tools/layout_dump.v`: a 489-case generated corpus (directions, wrapping,
-justify/align keywords, gaps, box-model edges, order, aspect ratios, item min/max
-sizes and auto margins) plus an 80-case `align-self` matrix. Both now agree with
-`Build/release/bin/Ladybird.app --headless=layout-tree` except for two cases that
-differ by one subpixel of rounding.
+Flex and grid layout were additionally checked differentially against the upstream
+browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,
+wrapping, justify/align keywords, gaps, box-model edges, order, aspect ratios,
+item min/max sizes and auto margins) plus an 80-case `align-self` matrix. Grid: a
+715-case corpus (track templates including `repeat()`, `minmax()`,
+`fit-content()` and `auto-fill`/`auto-fit`, auto-flow modes, explicit and negative
+line placement, spans, template areas, named lines, gaps, and the
+justify/align-content/items/self keywords).
+
+The grid corpus agrees with `Build/release/bin/Ladybird.app --headless=layout-tree`
+on all 715 cases, and the `align-self` matrix on all 80. The flex corpus agrees on
+487 of 489; the two remaining cases differ by one subpixel and are diagnosed under
+"KNOWN DIVERGENCE" in `layout/PORT_STATUS.md`.
 
 ## Native browser rendering
 

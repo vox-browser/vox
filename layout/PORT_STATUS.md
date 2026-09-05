@@ -72,7 +72,22 @@ case: wrap-reverse swaps the cross-start and cross-end directions for `normal`
 alone, while every explicit keyword names a fixed edge of the line and the inline
 `direction` does not affect the item's own offset. `FlexCrossAlignment` therefore
 keeps `normal` distinct from an explicit `stretch` even though both stretch an
-auto-sized item. Grid auto-placement also uses packed signed row/column keys for
+auto-sized item.
+
+KNOWN DIVERGENCE, diagnosed but not yet fixed: flex lines are positioned by a
+cursor that starts at the cross-start edge and adds each line's cross size, where
+`align_all_flex_lines()` computes a per-keyword `start_of_current_line` and, for
+the keywords that set `place_items_backwards`, *subtracts* each line's cross size
+from the container's cross edge. The two agree except when the stretched line
+sizes do not add up to the container exactly: `align-content: stretch` over three
+lines in a 160px container distributes 70px as a truncated 23.328125px each, so
+the sum is 1/64px short and the last line placed lands 1/64px off. Upstream never
+accumulates that residue because the line size cancels out of
+`start - cross_size/2` plus the item's own `cross_size/2 - item_size` offset.
+Closing it means translating that switch and its `place_items_backwards` /
+`iterate_lines_backwards` flags wholesale rather than patching the cursor, since
+the correct starting edge differs per keyword. It accounts for the 2 remaining
+divergences in the generated flex corpus. Grid auto-placement also uses packed signed row/column keys for
 its occupation set instead of formatting a string for every cell lookup. Table
 layout records the equivalent of C++'s per-column `left_offset` array once and
 uses prefix differences for spanning widths and final cell positions, removing
