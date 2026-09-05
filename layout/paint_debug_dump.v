@@ -8,7 +8,7 @@ import css
 
 // Literal debug serialization of the paintables materialized by LayoutState::commit(). This is a
 // debug/test representation; the native shell's display-list transport remains BlockBox.
-fn dump_typed_paint_tree(root &Node, state &LayoutState) string {
+pub fn dump_typed_paint_tree(root &Node, state &LayoutState) string {
 	mut lines := []string{}
 	append_typed_paintables(root, state, 0, mut lines)
 	return lines.join('\n').trim_right('\n')
