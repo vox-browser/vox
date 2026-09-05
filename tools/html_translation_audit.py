@@ -230,6 +230,11 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ),
     # V names cannot contain an uppercase character after the first word.
     ("AnalyserNode", "conversion_to_dB"): (("conversion_to_d_b", "AnalyserNode"),),
+    # PaintableWithLines is materialized as the active renderer's BlockBox
+    # transport to avoid a Painting -> Layout module cycle. These two complete
+    # methods therefore remain source-shaped free functions over that box.
+    ("PaintableWithLines", "fragment_at_position"): (("fragment_at_position", None),),
+    ("PaintableWithLines", "paint_cursor"): (("paint_cursor", None),),
     # AudioScheduledSourceNode is the shared AudioNode state in the value-model
     # translation; its six operations remain concrete AudioNode methods.
     ("AudioScheduledSourceNode", "onended"): (("onended", "AudioNode"),),

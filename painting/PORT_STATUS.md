@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 417
+filename-level mappings. The current semantic audit nevertheless reports 415
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 417 unmatched Painting
+  were removed; the audit currently reports 415 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -293,6 +293,12 @@ following behavioral mismatches and added focused regressions:
   second per-paint glyph-metric vector, while the common no-selection/no-shadow
   path keeps its coalesced fast path. Quartz replays blurred text-shadow masks;
   the portable backend retains the same layer order with sharp shadows.
+- `PaintableWithLines::fragment_at_position()` and `paint_cursor()` now complete
+  the adjacent foreground path. Focused editable carets use retained UTF-16
+  glyph-run geometry and custom `caret-color`; empty editing hosts use the
+  source padding-box and line-height fallback. Cursor offset, blink, and focus
+  changes invalidate only the old and new containing-block foreground buckets,
+  including moves between retained boxes, instead of replaying stale commands.
 - `InputColors.h`, `CheckBoxPaintable::paint()`,
   `RadioButtonPaintable::paint()`, and `check_mark_path()` now feed the active
   renderer instead of hard-coded white rectangles, ellipse strokes, and an
@@ -441,7 +447,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 417 unmatched implementations.
+Painting: 415 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

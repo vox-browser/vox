@@ -321,6 +321,13 @@ mut:
 	paint_phase_command_count int
 	paint_phase_cache_valid   bool
 	paint_phase_entry_valid   []bool
+	// The caret is emitted by its containing block's retained foreground phase.
+	// Remember the dynamic inputs which selected that command so cursor moves and
+	// blink/focus changes only invalidate the old and new containing blocks.
+	cursor_cache_layout_handle voidptr = unsafe { nil }
+	cursor_cache_offset        int
+	cursor_cache_visible       bool
+	cursor_cache_initialized   bool
 }
 
 fn document_layout_update_callback(target voidptr, document &dom.Document, viewport_width f64, viewport_height f64, needs_layout_tree_rebuild bool) voidptr {

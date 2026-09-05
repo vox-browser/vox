@@ -2245,6 +2245,110 @@ fn test_paintable_with_lines_translates_selection_render_spans_and_cache_invalid
 	assert selection_rect.x + selection_rect.width < target_box.x + target_box.width
 }
 
+fn test_paintable_with_lines_translates_fragment_caret_and_rebuilds_its_phase_cache() {
+	document := html.parse_document('<!doctype html><style>
+		html, body, p { margin: 0 }
+		p { caret-color: rgb(13 14 15) }
+		#other { caret-color: rgb(21 22 23) }
+	</style><body><p id="target" contenteditable>hello</p><p id="other" contenteditable>world</p></body>')
+	mut mutable_document := unsafe { &dom.Document(document) }
+	host := &dom.Navigable{
+		active_document_: document
+	}
+	mut navigable := html.NavigableModel.create(host, none) or { panic(err) }
+	navigable.set_focused(true)
+	mutable_document.set_cached_navigable(host)
+	_ = layout_document_typed_in_viewport(document, 240, 100)
+
+	target := document.get_element_by_id('target') or { panic('missing target') }
+	text_node := target.as_node().first_child() or { panic('missing text node') }
+	mutable_document.set_focused_area(target.as_node())
+	mut selection := document.get_selection() or { panic('missing document selection') }
+	selection.collapse(text_node, 2) or { panic(err) }
+	first_commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing first caret display list')
+	})
+	first_carets := first_commands.filter(it.kind == 'fill_rect'
+		&& it.color == 'rgb(13 14 15)')
+	assert first_carets.len == 1
+	assert first_carets[0].width == 1
+	mut first_text_index := -1
+	mut first_caret_index := -1
+	for index, command in first_commands {
+		if command.kind == 'draw_text' && command.text == 'hello' {
+			first_text_index = index
+		} else if command.kind == 'fill_rect' && command.color == 'rgb(13 14 15)' {
+			first_caret_index = index
+		}
+	}
+	assert first_caret_index > first_text_index
+
+	selection.collapse(text_node, 4) or { panic(err) }
+	assert mutable_document.cached_display_list() == none
+	second_commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing moved caret display list')
+	})
+	second_carets := second_commands.filter(it.kind == 'fill_rect'
+		&& it.color == 'rgb(13 14 15)')
+	assert second_carets.len == 1
+	assert second_carets[0].x > first_carets[0].x
+
+	// Moving between retained foreground buckets must evict the old caret as
+	// well as recording the new one.
+	other := document.get_element_by_id('other') or { panic('missing other target') }
+	other_text_node := other.as_node().first_child() or { panic('missing other text node') }
+	mutable_document.set_focused_area(other.as_node())
+	selection.collapse(other_text_node, 3) or { panic(err) }
+	third_commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing cross-box caret display list')
+	})
+	assert !third_commands.any(it.kind == 'fill_rect' && it.color == 'rgb(13 14 15)')
+	third_carets := third_commands.filter(it.kind == 'fill_rect'
+		&& it.color == 'rgb(21 22 23)')
+	assert third_carets.len == 1
+	assert third_carets[0].y > second_carets[0].y
+
+	// Losing the editable focus invalidates the last bucket and removes its
+	// already-recorded caret command.
+	mutable_document.set_focused_area(none)
+	last_commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing unfocused display list')
+	})
+	assert !last_commands.any(it.kind == 'fill_rect' && (it.color == 'rgb(13 14 15)'
+		|| it.color == 'rgb(21 22 23)'))
+}
+
+fn test_paintable_with_lines_paints_empty_editable_caret_at_padding_box() {
+	document := html.parse_document('<!doctype html><style>
+		html, body, p { margin: 0 }
+		p { padding: 3px 5px; min-height: 20px; line-height: 20px; caret-color: rgb(31 32 33) }
+	</style><body><p id="target" contenteditable></p></body>')
+	mut mutable_document := unsafe { &dom.Document(document) }
+	host := &dom.Navigable{
+		active_document_: document
+	}
+	mut navigable := html.NavigableModel.create(host, none) or { panic(err) }
+	navigable.set_focused(true)
+	mutable_document.set_cached_navigable(host)
+	root := layout_document_typed_in_viewport(document, 240, 100)
+	target := document.get_element_by_id('target') or { panic('missing empty target') }
+	mutable_document.set_focused_area(target.as_node())
+	mut selection := document.get_selection() or { panic('missing document selection') }
+	selection.collapse(target.as_node(), 0) or { panic(err) }
+	commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing empty caret display list')
+	})
+	carets := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(31 32 33)')
+	assert carets.len == 1
+	target_box := root.find_box(i64(target.as_node().unique_id())) or {
+		panic('missing empty target paint box')
+	}
+	assert carets[0].x == target_box.x - target_box.padding.left
+	assert carets[0].y == target_box.y - target_box.padding.top
+	assert carets[0].width == 1
+	assert carets[0].height == 20
+}
+
 fn test_typed_collapsed_table_borders_retain_winners_and_paint_shared_edges_once() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } table { border-collapse: collapse } td { width: 30px; height: 20px; padding: 0; border: 2px solid rgb(200 0 0); background: rgb(250 250 0) } #right { border-left: 6px dashed rgb(0 0 200) }</style><body><table id="table"><tr><td id="left"></td><td id="right"></td></tr></table></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)

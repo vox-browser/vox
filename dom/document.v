@@ -4445,7 +4445,10 @@ pub fn (mut d Document) initialize() {
 		}
 		document.cursor_blink_state = !document.cursor_blink_state
 		mut mutable_node := unsafe { &Node(node) }
-		mutable_node.set_needs_repaint(.no)
+		// Document.cpp calls Node::set_needs_repaint() with its default
+		// InvalidateDisplayList::Yes. The caret is part of the retained
+		// foreground list, so preserving that list would freeze the blink state.
+		mutable_node.set_needs_repaint(.yes)
 	})
 	d.cursor_blink_timer.start()
 	if d.page_ != unsafe { nil } {

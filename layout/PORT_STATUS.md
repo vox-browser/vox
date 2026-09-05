@@ -207,6 +207,13 @@ invalidate the containing retained paint bucket, and the ordinary
 no-selection/no-shadow path remains coalesced. A focused regression covers
 custom background, replacement shadow, wavy decoration, webkit fill color,
 range geometry, command order, and cache invalidation.
+`PaintableWithLines::fragment_at_position()` and `paint_cursor()` now complete
+that foreground path. Fragment carets use the retained UTF-16 glyph-run geometry;
+empty editing hosts fall back to their padding-box origin and computed line
+height; and transparent/custom caret colors follow the source checks. The
+retained cache keys the caret's layout node, offset, blink state, and navigable
+focus so movement between boxes or within one text node regenerates only the old
+and new foreground buckets.
 
 The active compatibility paint bridge now builds long text runs with a
 capacity-sized `strings.Builder`, retains box references through paint-order

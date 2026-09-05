@@ -210,7 +210,7 @@ fn paintable_box_could_be_scrolled_by_wheel_event(box &BlockBox) bool {
 	return (compatibility_overflow_allows_scrolling(computed.overflow_x(), is_viewport)
 		&& overflow_rect.width > padding_width)
 		|| (compatibility_overflow_allows_scrolling(computed.overflow_y(), is_viewport)
-		&& overflow_rect.height > padding_height)
+			&& overflow_rect.height > padding_height)
 }
 
 // Direct translation of PaintableBox::nearest_scrollable_ancestor(). This is
@@ -601,21 +601,7 @@ fn layout_paintable_set_needs_repaint(target voidptr, layout_handle voidptr, sho
 	mut result := viewport_layout_result(target)
 	result.needs_repaint = true
 	if should_invalidate_display_list == .yes {
-		if layout_handle != unsafe { nil } {
-			source_node := unsafe { &Node(layout_handle) }
-			mut invalid_layout_handles := map[u64]bool{}
-			if source_node.is_box() {
-				invalid_layout_handles[u64(layout_handle)] = true
-			}
-			if containing_block := source_node.containing_block() {
-				invalid_layout_handles[u64(voidptr(unsafe { &Node(containing_block) }))] = true
-			}
-			for entry in result.paint_order {
-				if u64(entry.box.layout_handle) in invalid_layout_handles {
-					viewport_invalidate_box_paint_cache(mut result, entry.box)
-				}
-			}
-		}
+		viewport_invalidate_layout_paint_cache(mut result, layout_handle)
 	}
 	// Paintable::set_needs_repaint() always forwards to Document. The enum only
 	// controls retained phase-command invalidation; even `No` must discard the
@@ -623,6 +609,62 @@ fn layout_paintable_set_needs_repaint(target voidptr, layout_handle voidptr, sho
 	mut document := unsafe { &dom.Document(result.document) }
 	document.needs_repaint = true
 	document.invalidate_display_list()
+}
+
+fn viewport_invalidate_layout_paint_cache(mut result DocumentLayoutResult, layout_handle voidptr) {
+	if layout_handle == unsafe { nil } {
+		return
+	}
+	source_node := unsafe { &Node(layout_handle) }
+	mut invalid_layout_handles := map[u64]bool{}
+	if source_node.is_box() {
+		invalid_layout_handles[u64(layout_handle)] = true
+	}
+	if containing_block := source_node.containing_block() {
+		invalid_layout_handles[u64(voidptr(unsafe { &Node(containing_block) }))] = true
+	}
+	for entry in result.paint_order {
+		if u64(entry.box.layout_handle) in invalid_layout_handles {
+			viewport_invalidate_box_paint_cache(mut result, entry.box)
+		}
+	}
+}
+
+fn viewport_sync_cursor_paint_cache(mut result DocumentLayoutResult) {
+	mut layout_handle := unsafe { nil }
+	mut offset := 0
+	mut visible := false
+	if position := result.document.cursor_position() {
+		if node := position.node() {
+			if paintable := node.unsafe_paintable() {
+				layout_handle = paintable.layout_handle
+				offset = position.offset()
+				if navigable := result.document.navigable() {
+					visible = navigable.is_focused() && result.document.get_cursor_blink_state()
+				}
+			}
+		}
+	}
+
+	if !result.cursor_cache_initialized {
+		result.cursor_cache_layout_handle = layout_handle
+		result.cursor_cache_offset = offset
+		result.cursor_cache_visible = visible
+		result.cursor_cache_initialized = true
+		return
+	}
+	if result.cursor_cache_layout_handle == layout_handle
+		&& result.cursor_cache_offset == offset && result.cursor_cache_visible == visible {
+		return
+	}
+
+	viewport_invalidate_layout_paint_cache(mut result, result.cursor_cache_layout_handle)
+	if layout_handle != result.cursor_cache_layout_handle {
+		viewport_invalidate_layout_paint_cache(mut result, layout_handle)
+	}
+	result.cursor_cache_layout_handle = layout_handle
+	result.cursor_cache_offset = offset
+	result.cursor_cache_visible = visible
 }
 
 fn collect_box_and_anonymous_descendants(box &BlockBox, mut targets map[u64]bool) {
@@ -1165,6 +1207,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		return result.display_list
 	}
 	viewport_build_stacking_context_tree(target)
+	viewport_sync_cursor_paint_cache(mut result)
 	if !result.paint_phase_cache_valid {
 		result.paint_phase_commands, result.paint_phase_command_count = result.paint_tree.build_paint_phase_command_cache(result.paint_order)
 		result.paint_phase_entry_valid = []bool{len: result.paint_order.len, init: true}

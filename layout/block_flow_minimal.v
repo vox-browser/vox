@@ -2698,6 +2698,11 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 			commands << inline_fragment_commands(line.fragments, opacity)
 			commands << text_fragment_commands(line.fragments, opacity)
 		}
+		if box.paintable_with_lines {
+			if cursor := paint_cursor(box, opacity) {
+				commands << cursor
+			}
+		}
 		foreground_content_end := commands.len
 		overlay_start := commands.len
 		box.append_overlay_commands(mut commands, metrics, opacity)
@@ -3373,6 +3378,99 @@ fn text_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand 
 		return unselected_text_fragment_commands(fragments, opacity)
 	}
 	return selected_text_fragment_commands(fragments, opacity)
+}
+
+// PaintableWithLines::fragment_at_position(). Boundary offsets are inclusive,
+// so a caret at a fragment edge resolves to the first retained fragment just
+// as Vector::first_matching() does upstream.
+fn fragment_at_position(box &BlockBox, position &dom.Position) ?&TextFragment {
+	position_node := position.node() or { return none }
+	for line_index in 0 .. box.lines.len {
+		for fragment_index in 0 .. box.lines[line_index].fragments.len {
+			fragment := unsafe { &box.lines[line_index].fragments[fragment_index] }
+			if fragment.layout_handle == unsafe { nil } {
+				continue
+			}
+			layout_node := unsafe { &Node(fragment.layout_handle) }
+			fragment_node := layout_node.dom_node() or { continue }
+			start := fragment.paintable_fragment.start_offset
+			end := start + fragment.paintable_fragment.length_in_code_units
+			if voidptr(fragment_node) == voidptr(position_node) && position.offset() >= start
+				&& position.offset() <= end {
+				return fragment
+			}
+		}
+	}
+	return none
+}
+
+fn active_text_control_is_mutable(document &dom.Document) bool {
+	active := document.active_element() or { return false }
+	if active.is_html_input_element() {
+		return html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(active) }).is_mutable()
+	}
+	if active.is_html_element() && active.local_name() == 'textarea' {
+		return html.html_text_area_element_model_for_dom_element(unsafe {
+			&dom.HTMLTextAreaElement(active)
+		}).is_mutable()
+	}
+	return false
+}
+
+// PaintableWithLines::paint_cursor(). The cursor is recorded after all text
+// spans in this foreground bucket and therefore participates in the same
+// targeted cache invalidation as upstream.
+fn paint_cursor(box &BlockBox, opacity f64) ?PaintCommand {
+	if box.layout_handle == unsafe { nil } {
+		return none
+	}
+	layout_node := unsafe { &Node(box.layout_handle) }
+	document := layout_node.document()
+	if !document.get_cursor_blink_state() {
+		return none
+	}
+	navigable := document.navigable() or { return none }
+	if !navigable.is_focused() {
+		return none
+	}
+	position := document.cursor_position() or { return none }
+	dom_node := layout_node.dom_node() or { return none }
+	if !active_text_control_is_mutable(document) && !dom_node.is_editable_or_editing_host() {
+		return none
+	}
+	mut rect := LayoutRect{}
+	mut caret_color := css.Color{}
+	if fragment := fragment_at_position(box, position) {
+		fragment_layout_node := unsafe { &Node(fragment.layout_handle) }
+		caret_color = fragment_layout_node.computed_values().caret_color()
+		fragment_rect := fragment.paintable_fragment.range_rect(.start_and_end, position.offset(), position.offset())
+		rect = LayoutRect{fragment_rect.x, fragment_rect.y, fragment_rect.width, fragment_rect.height}
+	} else {
+		position_node := position.node() or { return none }
+		if voidptr(position_node) != voidptr(dom_node) {
+			return none
+		}
+		caret_color = layout_node.computed_values().caret_color()
+		rect = LayoutRect{
+			x: box.x - box.padding.left
+			y: box.y - box.padding.top
+			width: 1
+			height: layout_node.computed_values().line_height().to_double()
+		}
+	}
+	if caret_color.a == 0 {
+		return none
+	}
+	rounded := rounded_text_span_rect(rect)
+	return PaintCommand{
+		kind: 'fill_rect'
+		x: rounded.x
+		y: rounded.y
+		width: rounded.width
+		height: rounded.height
+		color: caret_color.serialize()
+		opacity: opacity
+	}
 }
 
 fn append_background_text_clip_runs(box &BlockBox, mut runs []PaintTextClipRun) {
