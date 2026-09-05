@@ -1316,28 +1316,194 @@ fn viewport_invalidate_stacking_context(target voidptr) {
 }
 
 fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.HitTestResult {
-	_ = type_
 	mut result := viewport_layout_result(target)
 	viewport_refresh_scroll_state(target)
 	viewport_build_stacking_context_tree(target)
 	snapshot := result.scroll_state.snapshot(1.0)
-	mut node_id := i64(0)
+	mut hit_test_state := CompatibilityHitTestState{}
 	for index := result.hit_test_order.len - 1; index >= 0; index-- {
 		box := result.hit_test_order[index]
+		if empty_editable_result := compatibility_empty_editable_hit_test(box, x, y, type_, result.visual_context_tree, snapshot) {
+			if hit_test_state.consider_hit_test_result(empty_editable_result, type_) {
+				return hit_test_state.result
+			}
+		}
+		if compatibility_hit_test_fragments(result.document, box, x, y, type_, result.visual_context_tree, snapshot, mut hit_test_state) {
+			return hit_test_state.result
+		}
 		candidate_node_id := box.node_id_for_hit_test()
-		if candidate_node_id != 0 && box.visible && box.pointer_events_enabled
-			&& compatibility_box_contains_hit_test_point(box, x, y, result.visual_context_tree, snapshot) {
-			node_id = candidate_node_id
-			break
+		if candidate_node_id == 0 || !box.visible || !box.pointer_events_enabled
+			|| !compatibility_box_contains_hit_test_point(box, x, y, result.visual_context_tree, snapshot) {
+			continue
+		}
+		if element := element_for_paint_node_id(candidate_node_id) {
+			candidate := dom.HitTestResult{
+				element: element
+				node: element.as_node()
+			}
+			if hit_test_state.consider_hit_test_result(candidate, type_) {
+				return hit_test_state.result
+			}
 		}
 	}
-	if node_id == 0 {
+	return hit_test_state.result
+}
+
+struct CompatibilityHitTestState {
+mut:
+	result ?dom.HitTestResult
+}
+
+fn compatibility_hit_test_distance(distance ?f64) f64 {
+	// CSSPixels::max_integer_value is the fallback in PaintableBox.cpp. The
+	// fixed-point maximum itself still contains its 63/64 fractional tail.
+	return distance or { math.floor(css.CSSPixels.max().to_double()) }
+}
+
+// PaintableBox::hit_test() retains the candidate with either a smaller
+// vertical or horizontal distance. This deliberately mirrors its non-
+// lexicographic comparison rather than replacing it with an invented metric.
+fn compatibility_hit_test_result_is_better(candidate dom.HitTestResult, current ?dom.HitTestResult) bool {
+	result := current or { return true }
+	return compatibility_hit_test_distance(candidate.vertical_distance) < compatibility_hit_test_distance(result.vertical_distance)
+		|| compatibility_hit_test_distance(candidate.horizontal_distance) < compatibility_hit_test_distance(result.horizontal_distance)
+}
+
+fn compatibility_hit_test_result_has_zero_distances(result dom.HitTestResult) bool {
+	vertical_distance := result.vertical_distance or { return false }
+	horizontal_distance := result.horizontal_distance or { return false }
+	return vertical_distance == 0 && horizontal_distance == 0
+}
+
+fn (mut state CompatibilityHitTestState) consider_hit_test_result(candidate dom.HitTestResult,
+	type_ dom.HitTestType) bool {
+	mut result := state.result or { candidate }
+	if compatibility_hit_test_result_is_better(candidate, state.result) {
+		result = candidate
+	}
+	state.result = result
+	return type_ == .exact || compatibility_hit_test_result_has_zero_distances(result)
+}
+
+fn compatibility_element_for_hit_node(node &dom.Node) &dom.Element {
+	if element := node.as_element() {
+		return element
+	}
+	if element := node.parent_element() {
+		return element
+	}
+	return unsafe { &dom.Element(nil) }
+}
+
+fn compatibility_hit_test_result_for_node(node &dom.Node, index_in_node int,
+	vertical_distance ?f64, horizontal_distance ?f64) dom.HitTestResult {
+	return dom.HitTestResult{
+		element: compatibility_element_for_hit_node(node)
+		node: node
+		index_in_node: index_in_node
+		vertical_distance: vertical_distance
+		horizontal_distance: horizontal_distance
+	}
+}
+
+// PaintableWithLines::hit_test()'s empty-editable fast path. It precedes the
+// ordinary child/fragment walk and gives an empty editing host an exact cursor
+// position at DOM offset zero.
+fn compatibility_empty_editable_hit_test(box &BlockBox, x f64, y f64,
+	type_ dom.HitTestType, tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot) ?dom.HitTestResult {
+	if !box.paintable_with_lines || box.lines.any(it.fragments.len > 0) || box.children.len > 0
+		|| type_ != .text_cursor || !box.visible || !box.pointer_events_enabled
+		|| box.layout_handle == unsafe { nil } {
 		return none
 	}
-	element := element_for_paint_node_id(node_id) or { return none }
-	return dom.HitTestResult{
-		element: element
+	layout_node := unsafe { &Node(box.layout_handle) }
+	dom_node := layout_node.dom_node() or { return none }
+	if !dom_node.is_editable_or_editing_host() {
+		return none
 	}
+	local_position := tree.transform_point_for_hit_test(box.accumulated_visual_context_index, painting.Point{x, y}, snapshot) or { return none }
+	if !box.border_box_contains_hit_test_point(local_position) {
+		return none
+	}
+	return compatibility_hit_test_result_for_node(dom_node, 0, f64(0), f64(0))
+}
+
+fn compatibility_text_cursor_common_ancestor_parent(document &dom.Document) ?&dom.Node {
+	selection := document.get_selection() or { return none }
+	range := selection.range() or { return none }
+	common_ancestor := range.common_ancestor_container()
+	return common_ancestor.parent() or { common_ancestor }
+}
+
+// Direct translation of PaintableWithLines::hit_test_fragments(). Fragment
+// geometry is already absolute in the containing block's descendant visual
+// space, including its scroll offset.
+fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64,
+	y f64, type_ dom.HitTestType, tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot, mut hit_test_state CompatibilityHitTestState) bool {
+	if !box.paintable_with_lines || !box.visible || !box.pointer_events_enabled {
+		return false
+	}
+	local_position := tree.transform_point_for_hit_test(box.accumulated_visual_context_for_descendants_idx, painting.Point{x, y}, snapshot) or { return false }
+	common_ancestor_parent := if type_ == .text_cursor {
+		compatibility_text_cursor_common_ancestor_parent(document)
+	} else {
+		?&dom.Node(none)
+	}
+	for line in box.lines {
+		for fragment in line.fragments {
+			if fragment.layout_handle == unsafe { nil } {
+				continue
+			}
+			layout_node := unsafe { &Node(fragment.layout_handle) }
+			computed := layout_node.computed_values()
+			if layout_node.establishes_stacking_context() || computed.visibility() != .visible
+				|| !paintable_visible_for_hit_testing(layout_node, computed) {
+				continue
+			}
+			dom_node := layout_node.dom_node() or { continue }
+			fragment_rect := fragment.paintable_fragment.absolute_rect()
+			if fragment_rect.contains(local_position) {
+				index_in_node := if layout_node.is_text_node() {
+					fragment.paintable_fragment.index_in_node_for_point(local_position)
+				} else {
+					0
+				}
+				candidate := compatibility_hit_test_result_for_node(dom_node, index_in_node, f64(0), f64(0))
+				if hit_test_state.consider_hit_test_result(candidate, type_) {
+					return true
+				}
+				continue
+			}
+			if type_ != .text_cursor || layout_node.user_select_used_value() == .none_ {
+				continue
+			}
+			ancestor := common_ancestor_parent or { continue }
+			if !ancestor.is_ancestor_of(dom_node) {
+				continue
+			}
+
+			mut candidate := ?dom.HitTestResult(none)
+			if fragment_rect.bottom() - 1 <= local_position.y {
+				candidate = compatibility_hit_test_result_for_node(dom_node, fragment.paintable_fragment.start_offset + fragment.paintable_fragment.length_in_code_units, local_position.y - fragment_rect.bottom(), none)
+			} else if local_position.y < fragment_rect.top() {
+				candidate = compatibility_hit_test_result_for_node(dom_node, fragment.paintable_fragment.start_offset, fragment_rect.top() - local_position.y, none)
+			} else if fragment_rect.top() <= local_position.y {
+				if local_position.x < fragment_rect.left() {
+					candidate = compatibility_hit_test_result_for_node(dom_node, fragment.paintable_fragment.start_offset, f64(0), fragment_rect.left() - local_position.x)
+				} else if local_position.x > fragment_rect.right() {
+					candidate = compatibility_hit_test_result_for_node(dom_node, fragment.paintable_fragment.start_offset + fragment.paintable_fragment.length_in_code_units, f64(0), local_position.x - fragment_rect.right())
+				}
+			}
+			if value := candidate {
+				if hit_test_state.consider_hit_test_result(value, type_) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {

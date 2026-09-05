@@ -921,6 +921,117 @@ fn test_document_hit_testing_skips_inert_paintables() {
 	assert hit.as_node().unique_id() == under.as_node().unique_id()
 }
 
+fn test_paintable_with_lines_hit_testing_returns_text_node_and_utf16_cursor_index() {
+	document := html.parse_document('<!doctype html><style>
+		html, body, p { margin: 0 }
+		p { width: 220px; line-height: 20px }
+	</style><body><p id="target" contenteditable>a😀bc</p></body>')
+	root := layout_document_typed_in_viewport(document, 240, 100)
+	target := document.get_element_by_id('target') or { panic('missing hit-test target') }
+	text_node := target.as_node().first_child() or { panic('missing hit-test text') }
+	target_box := root.find_box(i64(target.as_node().unique_id())) or {
+		panic('missing hit-test paint box')
+	}
+	assert target_box.lines.len == 1
+	assert target_box.lines[0].fragments.len == 1
+	fragment := target_box.lines[0].fragments[0]
+	assert fragment.paintable_fragment.length_in_code_units == 5
+	fragment_rect := fragment.paintable_fragment.absolute_rect()
+	inside_point := painting.Point{fragment_rect.x + fragment_rect.width / 2, fragment_rect.y + fragment_rect.height / 2}
+	viewport := document.paintable_box() or { panic('missing viewport paintable') }
+	inside := viewport.hit_test(inside_point.x, inside_point.y, .exact) or {
+		panic('missing exact fragment hit')
+	}
+	assert inside.node == text_node
+	assert inside.element == target
+	assert inside.index_in_node == fragment.paintable_fragment.index_in_node_for_point(inside_point)
+	assert (inside.vertical_distance or { panic('missing exact vertical distance') }) == 0
+	assert (inside.horizontal_distance or { panic('missing exact horizontal distance') }) == 0
+
+	mut selection := document.get_selection() or { panic('missing hit-test selection') }
+	selection.collapse(text_node, 2) or { panic(err) }
+	beyond_x := fragment_rect.right() + 12
+	beyond := viewport.hit_test(beyond_x, inside_point.y, .text_cursor) or {
+		panic('missing nearest text cursor hit')
+	}
+	assert beyond.node == text_node
+	assert beyond.index_in_node == fragment.paintable_fragment.start_offset + fragment.paintable_fragment.length_in_code_units
+	assert (beyond.vertical_distance or { panic('missing cursor vertical distance') }) == 0
+	assert (beyond.horizontal_distance or { panic('missing cursor horizontal distance') }) == 12
+}
+
+fn test_paintable_with_lines_text_cursor_hit_tests_empty_editing_host() {
+	document := html.parse_document('<!doctype html><style>
+		html, body, p { margin: 0 }
+		p { width: 100px; height: 30px }
+	</style><body><p id="target" contenteditable></p></body>')
+	root := layout_document_typed_in_viewport(document, 240, 100)
+	target := document.get_element_by_id('target') or { panic('missing empty hit-test target') }
+	target_box := root.find_box(i64(target.as_node().unique_id())) or {
+		panic('missing empty hit-test paint box')
+	}
+	viewport := document.paintable_box() or { panic('missing viewport paintable') }
+	hit := viewport.hit_test(target_box.x + 10, target_box.y + 10, .text_cursor) or {
+		panic('missing empty editable cursor hit')
+	}
+	assert hit.node == target.as_node()
+	assert hit.element == target
+	assert hit.index_in_node == 0
+	assert (hit.vertical_distance or { panic('missing empty vertical distance') }) == 0
+	assert (hit.horizontal_distance or { panic('missing empty horizontal distance') }) == 0
+}
+
+fn test_paintable_with_lines_text_cursor_skips_user_select_none_fragment_edges() {
+	document := html.parse_document('<!doctype html><style>
+		html, body, p { margin: 0 }
+		p { width: 220px; line-height: 20px }
+		span { user-select: none }
+	</style><body><p id="target" contenteditable><span>hello</span></p></body>')
+	root := layout_document_typed_in_viewport(document, 240, 100)
+	target := document.get_element_by_id('target') or { panic('missing unselectable target') }
+	span := document.query_selector('span') or { panic('missing unselectable span') }
+	text_node := span.as_node().first_child() or { panic('missing unselectable text') }
+	target_box := root.find_box(i64(target.as_node().unique_id())) or {
+		panic('missing unselectable paint box')
+	}
+	assert target_box.lines.len == 1
+	assert target_box.lines[0].fragments.len == 1
+	fragment_rect := target_box.lines[0].fragments[0].paintable_fragment.absolute_rect()
+	mut selection := document.get_selection() or { panic('missing unselectable selection') }
+	selection.collapse(text_node, 2) or { panic(err) }
+	viewport := document.paintable_box() or { panic('missing viewport paintable') }
+	hit := viewport.hit_test(fragment_rect.right() + 12, fragment_rect.y + fragment_rect.height / 2, .text_cursor) or {
+		panic('missing box fallback hit')
+	}
+	assert hit.node != text_node
+	assert hit.vertical_distance == none
+	assert hit.horizontal_distance == none
+}
+
+fn test_paintable_with_lines_hit_test_preserves_global_candidate_callback_order() {
+	mut hit_test_state := CompatibilityHitTestState{
+		result: dom.HitTestResult{
+			vertical_distance: f64(5)
+			horizontal_distance: f64(5)
+		}
+	}
+	first_fragment := dom.HitTestResult{
+		vertical_distance: f64(4)
+		horizontal_distance: f64(100)
+	}
+	second_fragment := dom.HitTestResult{
+		vertical_distance: f64(100)
+		horizontal_distance: f64(99)
+	}
+	assert !hit_test_state.consider_hit_test_result(first_fragment, .text_cursor)
+	after_first := hit_test_state.result or { panic('missing first cursor candidate') }
+	assert (after_first.vertical_distance or { panic('missing first vertical distance') }) == 4
+	assert !hit_test_state.consider_hit_test_result(second_fragment, .text_cursor)
+	after_second := hit_test_state.result or { panic('missing second cursor candidate') }
+	assert (after_second.vertical_distance or { panic('missing second vertical distance') }) == 100
+	assert (after_second.horizontal_distance or { panic('missing second horizontal distance') }) == 99
+}
+
 fn test_split_inline_anonymous_middle_hit_returns_inline_principal_box() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin: 0 }

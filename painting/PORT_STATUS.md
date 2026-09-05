@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 415
+filename-level mappings. The current semantic audit nevertheless reports 413
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 415 unmatched Painting
+  were removed; the audit currently reports 413 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -299,6 +299,16 @@ following behavioral mismatches and added focused regressions:
   source padding-box and line-height fallback. Cursor offset, blink, and focus
   changes invalidate only the old and new containing-block foreground buckets,
   including moves between retained boxes, instead of replaying stale commands.
+- `PaintableWithLines::hit_test()` and `hit_test_fragments()` now drive the
+  active browser hit-test path instead of treating every inline container as
+  one box. Exact fragment hits return the underlying text node and a glyph-run
+  UTF-16 offset. Text-cursor mode retains the source nearest-edge comparison,
+  selection common-ancestor restriction, `user-select: none` exclusion, and
+  empty-editing-host offset-zero fast path. Fragment testing uses descendants'
+  transformed and scrolled visual context, while the existing box result
+  remains the fallback. Each candidate reaches the global callback-order state
+  individually because upstream's vertical-or-horizontal comparison is
+  deliberately non-lexicographic and cannot be safely reduced per box.
 - `InputColors.h`, `CheckBoxPaintable::paint()`,
   `RadioButtonPaintable::paint()`, and `check_mark_path()` now feed the active
   renderer instead of hard-coded white rectangles, ellipse strokes, and an
@@ -358,7 +368,7 @@ following behavioral mismatches and added focused regressions:
 | `Paintable.cpp` | `paintable.v` |
 | `PaintableBox.cpp` | `paintable.v`, `scrolling.v`, `painting_algorithms.v` |
 | `PaintableFragment.cpp` | `paintable.v` |
-| `PaintableWithLines.cpp` | `paintable.v` |
+| `PaintableWithLines.cpp` | `paintable.v`, `../layout/viewport_paint_bridge.v` |
 | `RadioButtonPaintable.cpp` | `painting_algorithms.v` |
 | `ResizeHandle.cpp` | `scrolling.v` |
 | `ResolvedCSSFilter.cpp` | `effects.v` |
@@ -447,7 +457,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 415 unmatched implementations.
+Painting: 413 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

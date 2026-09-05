@@ -3014,7 +3014,14 @@ pub fn (vp &ViewportPaintable) hit_test_all(x f64, y f64, mut results []&Element
 
 pub struct HitTestResult {
 pub:
-	element &Element = unsafe { nil }
+	// `element` remains the CSSOM/event compatibility target. Painting's source
+	// result owns the exact DOM node as well, which is required for text cursor
+	// placement inside a Text node.
+	element             &Element = unsafe { nil }
+	node                &Node = unsafe { nil }
+	index_in_node       int
+	vertical_distance   ?f64
+	horizontal_distance ?f64
 }
 
 pub fn retarget_from_ua_internal_shadow_root(element &Element) &Element {

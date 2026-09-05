@@ -215,6 +215,14 @@ retained cache keys the caret's layout node, offset, blink state, and navigable
 focus so movement between boxes or within one text node regenerates only the old
 and new foreground buckets.
 
+`PaintableWithLines::hit_test()` and `hit_test_fragments()` now replace the
+bridge's former box-only shortcut. Inline fragment hits retain their exact DOM
+text node and glyph-derived UTF-16 offset. Text-cursor misses use the source
+vertical/horizontal nearest-edge candidates, selection common-ancestor and
+`user-select: none` gates, while empty editable hosts produce offset zero. The
+fragment walk uses the containing box's descendant visual context so scrolling,
+transforms, and clipping remain shared with painting.
+
 The active compatibility paint bridge now builds long text runs with a
 capacity-sized `strings.Builder`, retains box references through paint-order
 and hit-test traversal, skips invisible hit-test candidates, and sorts stacking
