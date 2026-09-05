@@ -591,6 +591,48 @@ fn test_typed_paint_adapter_preserves_large_committed_text_fragment() {
 	assert draws.len == 1
 }
 
+fn test_box_shadows_follow_source_order_rectangles_and_elliptical_radii() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#target { width: 100px; height: 50px; padding: 4px; border: 3px solid black;
+			border-radius: 10px 20px 30px 40px / 5px 10px 15px 20px;
+			background: rgb(0 200 0);
+			box-shadow: 1px 2px 3px 2px rgb(200 0 0),
+				inset 4px 5px 6px 1px rgb(0 0 200) }
+	</style><body><div id="target"></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	commands := root.paint_commands()
+	mut background_index := -1
+	mut inner_index := -1
+	mut outer_index := -1
+	for index, command in commands {
+		if command.kind == 'fill_rounded_rect' && command.color == 'rgb(0 200 0)' {
+			background_index = index
+		} else if command.kind == 'paint_inner_box_shadow' && command.color == 'rgb(0 0 200)' {
+			inner_index = index
+		} else if command.kind == 'paint_outer_box_shadow' && command.color == 'rgb(200 0 0)' {
+			outer_index = index
+		}
+	}
+	assert background_index >= 0
+	assert inner_index > background_index
+	assert outer_index > inner_index
+	inner := commands[inner_index]
+	outer := commands[outer_index]
+	// Inner shadows use the padding box; outer shadows use the border box.
+	assert inner.shadow_content_width == 108
+	assert inner.shadow_content_height == 58
+	assert outer.shadow_content_width == 114
+	assert outer.shadow_content_height == 64
+	assert outer.corner_radii.top_left != outer.corner_radii.bottom_left
+	assert outer.corner_radii.top_left.x != outer.corner_radii.top_left.y
+	assert inner.shadow_inner_radii.top_right != inner.shadow_inner_radii.bottom_right
+	svg := root.render_svg(320, 200)
+	assert svg.contains('outer-shadow-clip')
+	assert svg.contains('inner-shadow-scoped')
+	assert svg.contains('fill-rule="evenodd"')
+}
+
 fn test_document_viewport_paintable_records_and_hit_tests_committed_layout() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { position: relative; z-index: 2; width: 120px; height: 60px; background: red }</style><body><div id="target"></div></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)

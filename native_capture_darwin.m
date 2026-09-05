@@ -472,6 +472,34 @@ static CGPathRef native_create_corner_rounded_rect_path(float x, float y, float 
 	float height, float top_left_x, float top_left_y, float top_right_x,
 	float top_right_y, float bottom_right_x, float bottom_right_y,
 	float bottom_left_x, float bottom_left_y) {
+	top_left_x = MAX(top_left_x, 0.0f);
+	top_left_y = MAX(top_left_y, 0.0f);
+	top_right_x = MAX(top_right_x, 0.0f);
+	top_right_y = MAX(top_right_y, 0.0f);
+	bottom_right_x = MAX(bottom_right_x, 0.0f);
+	bottom_right_y = MAX(bottom_right_y, 0.0f);
+	bottom_left_x = MAX(bottom_left_x, 0.0f);
+	bottom_left_y = MAX(bottom_left_y, 0.0f);
+	// SkRRect scales overlapping radii to fit the rectangle. Retained shadow
+	// commands can reuse border-box radii with the smaller padding box, so do
+	// that normalization here rather than relying on each caller to pre-scale.
+	float scale = 1.0f;
+	if (top_left_x + top_right_x > width)
+		scale = MIN(scale, width / (top_left_x + top_right_x));
+	if (bottom_left_x + bottom_right_x > width)
+		scale = MIN(scale, width / (bottom_left_x + bottom_right_x));
+	if (top_left_y + bottom_left_y > height)
+		scale = MIN(scale, height / (top_left_y + bottom_left_y));
+	if (top_right_y + bottom_right_y > height)
+		scale = MIN(scale, height / (top_right_y + bottom_right_y));
+	top_left_x *= scale;
+	top_left_y *= scale;
+	top_right_x *= scale;
+	top_right_y *= scale;
+	bottom_right_x *= scale;
+	bottom_right_y *= scale;
+	bottom_left_x *= scale;
+	bottom_left_y *= scale;
 	CGMutablePathRef path = CGPathCreateMutable();
 	CGPathMoveToPoint(path, NULL, x + top_left_x, y);
 	CGPathAddLineToPoint(path, NULL, x + width - top_right_x, y);
@@ -2713,6 +2741,162 @@ void native_draw_outer_box_shadow_srgb(float source_x, float source_y, float sou
 	CGPathRelease(clip_path);
 	CGPathRelease(source_path);
 	CGContextRestoreGState(context);
+}
+
+static void native_fill_blurred_path(CGContextRef context, CGPathRef path,
+	bool even_odd, float blur_radius, CGColorRef color) {
+	CGContextSetFillColorWithColor(context, color);
+	// Skia receives an integer sigma of blur_radius / 2. CoreGraphics' shadow
+	// softness is specified as a diameter-like blur amount, so the equivalent
+	// visual kernel uses the full retained radius.
+	float core_graphics_blur = floorf(MAX(blur_radius, 0.0f));
+	if (core_graphics_blur == 0.0f) {
+		CGContextAddPath(context, path);
+		if (even_odd)
+			CGContextEOFillPath(context);
+		else
+			CGContextFillPath(context);
+		return;
+	}
+	// CoreGraphics' shadow API normally paints the sharp source on top of the
+	// shadow. Skia's blur mask paints only the filtered mask. Move the source
+	// outside the current clip and offset its shadow back to the retained path.
+	CGRect clip_bounds = CGContextGetClipBoundingBox(context);
+	CGRect path_bounds = CGPathGetBoundingBox(path);
+	CGFloat displacement = clip_bounds.size.width + path_bounds.size.width
+		+ core_graphics_blur * 8.0f + 1024.0f;
+	CGAffineTransform move_source = CGAffineTransformMakeTranslation(displacement, 0.0f);
+	CGPathRef shifted_path = CGPathCreateCopyByTransformingPath(path, &move_source);
+	CGContextSetShadowWithColor(context, CGSizeMake(-displacement, 0.0f), core_graphics_blur,
+		color);
+	CGContextAddPath(context, shifted_path);
+	if (even_odd)
+		CGContextEOFillPath(context);
+	else
+		CGContextFillPath(context);
+	CGPathRelease(shifted_path);
+}
+
+void native_draw_outer_box_shadow_corners_srgb(float shadow_x, float shadow_y,
+	float shadow_width, float shadow_height, float shadow_top_left_x,
+	float shadow_top_left_y, float shadow_top_right_x, float shadow_top_right_y,
+	float shadow_bottom_right_x, float shadow_bottom_right_y, float shadow_bottom_left_x,
+	float shadow_bottom_left_y, float content_x, float content_y, float content_width,
+	float content_height, float content_top_left_x, float content_top_left_y,
+	float content_top_right_x, float content_top_right_y, float content_bottom_right_x,
+	float content_bottom_right_y, float content_bottom_left_x, float content_bottom_left_y,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y, float scroll_y,
+	float canvas_height, float blur, gg__Color color) {
+	if (shadow_width <= 0.0f || shadow_height <= 0.0f || content_width <= 0.0f
+		|| content_height <= 0.0f)
+		return;
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL)
+		return;
+	CGPathRef local_shadow = native_create_corner_rounded_rect_path(shadow_x, shadow_y,
+		shadow_width, shadow_height, shadow_top_left_x, shadow_top_left_y,
+		shadow_top_right_x, shadow_top_right_y, shadow_bottom_right_x,
+		shadow_bottom_right_y, shadow_bottom_left_x, shadow_bottom_left_y);
+	CGPathRef local_content = native_create_corner_rounded_rect_path(content_x, content_y,
+		content_width, content_height, content_top_left_x, content_top_left_y,
+		content_top_right_x, content_top_right_y, content_bottom_right_x,
+		content_bottom_right_y, content_bottom_left_x, content_bottom_left_y);
+	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
+		transform_c, -transform_d, page_x + transform_e,
+		canvas_height - page_y + scroll_y - transform_f);
+	CGPathRef canvas_shadow = CGPathCreateCopyByTransformingPath(local_shadow, &to_canvas);
+	CGPathRef canvas_content = CGPathCreateCopyByTransformingPath(local_content, &to_canvas);
+	CGContextSaveGState(context);
+	CGContextAddRect(context, CGContextGetClipBoundingBox(context));
+	CGContextAddPath(context, canvas_content);
+	CGContextEOClip(context);
+	CGColorRef cg_color = native_srgb_color(color);
+	native_fill_blurred_path(context, canvas_shadow, false, blur, cg_color);
+	CGColorRelease(cg_color);
+	CGContextRestoreGState(context);
+	CGPathRelease(canvas_content);
+	CGPathRelease(canvas_shadow);
+	CGPathRelease(local_content);
+	CGPathRelease(local_shadow);
+}
+
+void native_draw_inner_box_shadow_corners_srgb(float outer_x, float outer_y,
+	float outer_width, float outer_height, float outer_top_left_x,
+	float outer_top_left_y, float outer_top_right_x, float outer_top_right_y,
+	float outer_bottom_right_x, float outer_bottom_right_y, float outer_bottom_left_x,
+	float outer_bottom_left_y, float inner_x, float inner_y, float inner_width,
+	float inner_height, float inner_top_left_x, float inner_top_left_y,
+	float inner_top_right_x, float inner_top_right_y, float inner_bottom_right_x,
+	float inner_bottom_right_y, float inner_bottom_left_x, float inner_bottom_left_y,
+	float content_x, float content_y, float content_width, float content_height,
+	float content_top_left_x, float content_top_left_y, float content_top_right_x,
+	float content_top_right_y, float content_bottom_right_x, float content_bottom_right_y,
+	float content_bottom_left_x, float content_bottom_left_y, float clip_top_left_x,
+	float clip_top_left_y, float clip_top_right_x, float clip_top_right_y,
+	float clip_bottom_right_x, float clip_bottom_right_y, float clip_bottom_left_x,
+	float clip_bottom_left_y, float transform_a, float transform_b, float transform_c,
+	float transform_d, float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_height, float blur, gg__Color color) {
+	if (outer_width <= 0.0f || outer_height <= 0.0f || content_width <= 0.0f
+		|| content_height <= 0.0f)
+		return;
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL)
+		return;
+	CGPathRef local_outer = native_create_corner_rounded_rect_path(outer_x, outer_y,
+		outer_width, outer_height, outer_top_left_x, outer_top_left_y, outer_top_right_x,
+		outer_top_right_y, outer_bottom_right_x, outer_bottom_right_y, outer_bottom_left_x,
+		outer_bottom_left_y);
+	CGPathRef local_inner = NULL;
+	if (inner_width > 0.0f && inner_height > 0.0f) {
+		local_inner = native_create_corner_rounded_rect_path(inner_x, inner_y, inner_width,
+			inner_height, inner_top_left_x, inner_top_left_y, inner_top_right_x,
+			inner_top_right_y, inner_bottom_right_x, inner_bottom_right_y,
+			inner_bottom_left_x, inner_bottom_left_y);
+	}
+	CGPathRef local_content = native_create_corner_rounded_rect_path(content_x, content_y,
+		content_width, content_height, content_top_left_x, content_top_left_y,
+		content_top_right_x, content_top_right_y, content_bottom_right_x,
+		content_bottom_right_y, content_bottom_left_x, content_bottom_left_y);
+	CGPathRef local_clip = native_create_corner_rounded_rect_path(content_x, content_y,
+		content_width, content_height, clip_top_left_x, clip_top_left_y,
+		clip_top_right_x, clip_top_right_y, clip_bottom_right_x, clip_bottom_right_y,
+		clip_bottom_left_x, clip_bottom_left_y);
+	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
+		transform_c, -transform_d, page_x + transform_e,
+		canvas_height - page_y + scroll_y - transform_f);
+	CGPathRef canvas_outer = CGPathCreateCopyByTransformingPath(local_outer, &to_canvas);
+	CGPathRef canvas_inner = local_inner == NULL
+		? NULL : CGPathCreateCopyByTransformingPath(local_inner, &to_canvas);
+	CGPathRef canvas_content = CGPathCreateCopyByTransformingPath(local_content, &to_canvas);
+	CGPathRef canvas_clip = CGPathCreateCopyByTransformingPath(local_clip, &to_canvas);
+	CGContextSaveGState(context);
+	// ScopedCornerRadiusClip intersects the shrunk padding radii, then the Skia
+	// command itself clips to its retained content radii.
+	CGContextAddPath(context, canvas_clip);
+	CGContextClip(context);
+	CGContextAddPath(context, canvas_content);
+	CGContextClip(context);
+	CGColorRef cg_color = native_srgb_color(color);
+	CGMutablePathRef compound_path = CGPathCreateMutable();
+	CGPathAddPath(compound_path, NULL, canvas_outer);
+	if (canvas_inner != NULL)
+		CGPathAddPath(compound_path, NULL, canvas_inner);
+	native_fill_blurred_path(context, compound_path, true, blur, cg_color);
+	CGPathRelease(compound_path);
+	CGColorRelease(cg_color);
+	CGContextRestoreGState(context);
+	CGPathRelease(canvas_clip);
+	CGPathRelease(canvas_content);
+	if (canvas_inner != NULL)
+		CGPathRelease(canvas_inner);
+	CGPathRelease(canvas_outer);
+	CGPathRelease(local_clip);
+	CGPathRelease(local_content);
+	if (local_inner != NULL)
+		CGPathRelease(local_inner);
+	CGPathRelease(local_outer);
 }
 
 static CGImageRef native_copy_cg_image(gg__Image *image) {

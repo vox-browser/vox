@@ -153,3 +153,52 @@ fn test_box_shadow_layers_are_painted_back_to_front() {
 	assert resolved[1].placement == .outer
 	assert resolved[1].shadow_rect == IntRect{8, 17, 36, 46}
 }
+
+fn test_box_shadow_uses_source_border_and_padding_geometry() {
+	converter := new_device_pixel_converter(1) or { panic(err) }
+	radii := BorderRadiiData{
+		top_left: BorderRadiusData{10, 8}
+		top_right: BorderRadiusData{20, 12}
+		bottom_right: BorderRadiusData{30, 16}
+		bottom_left: BorderRadiusData{40, 20}
+	}
+	borders := BordersData{
+		top: BorderData{Color{}, .solid, 2}
+		right: BorderData{Color{}, .solid, 3}
+		bottom: BorderData{Color{}, .solid, 4}
+		left: BorderData{Color{}, .solid, 5}
+	}
+	layers := [
+		ShadowData{
+			color: Color{ r: 1 }
+			offset_x: 1
+			offset_y: 2
+			blur_radius: 3
+			spread_distance: 2
+		},
+		ShadowData{
+			color: Color{ b: 2 }
+			offset_x: 4
+			offset_y: -2
+			blur_radius: 6
+			spread_distance: 1
+			placement: .inner
+		},
+	]
+	resolved := paint_box_shadow(Rect{10, 20, 100, 50}, Rect{15, 22, 92, 44}, borders, radii, layers, converter)
+	assert resolved.len == 2
+	inner := resolved[0]
+	assert inner.placement == .inner
+	assert inner.content_rect == IntRect{15, 22, 92, 44}
+	assert inner.outer_shadow_rect == IntRect{9, 16, 112, 56}
+	assert inner.inner_shadow_rect == IntRect{20, 21, 90, 42}
+	assert inner.content_corner_radii.top_left == CornerRadius{10, 8}
+	assert inner.clip_corner_radii.top_left == CornerRadius{5, 6}
+	assert inner.clip_corner_radii.bottom_right == CornerRadius{27, 12}
+	assert inner.inner_corner_radii.top_right == CornerRadius{19, 11}
+	outer := resolved[1]
+	assert outer.placement == .outer
+	assert outer.content_rect == IntRect{10, 20, 100, 50}
+	assert outer.shadow_rect == IntRect{9, 20, 104, 54}
+	assert outer.shadow_corner_radii.bottom_left == CornerRadius{42, 22}
+}

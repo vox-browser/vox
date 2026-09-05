@@ -394,6 +394,7 @@ pub:
 	blur_radius          int
 	content_rect         IntRect
 	content_corner_radii CornerRadii
+	clip_corner_radii    CornerRadii
 	shadow_rect          IntRect
 	shadow_corner_radii  CornerRadii
 	outer_shadow_rect    IntRect
@@ -401,45 +402,52 @@ pub:
 	inner_corner_radii   CornerRadii
 }
 
-// resolve_box_shadows retains the upstream front-to-back input ordering rule:
-// returned paint operations are reversed so the back-most layer is emitted first.
-pub fn resolve_box_shadows(content_rect Rect, radii BorderRadiiData, layers []ShadowData,
+// Direct translation of ShadowPainting.cpp::paint_box_shadow(). The returned
+// operations are the source display-list payloads, including the rounded clip
+// installed around each command by BorderRadiusCornerClipper.
+pub fn paint_box_shadow(bordered_content_rect Rect, borderless_content_rect Rect,
+	borders_data BordersData, border_radii BorderRadiiData, layers []ShadowData,
 	converter DevicePixelConverter) []ResolvedShadow {
 	mut resolved := []ResolvedShadow{cap: layers.len}
+	corner_radii := border_radii.as_corners(converter)
 	for source_index := layers.len - 1; source_index >= 0; source_index-- {
 		layer := layers[source_index]
 		offset :=
 			IntPoint{converter.rounded_device_pixels(layer.offset_x), converter.rounded_device_pixels(layer.offset_y)}
 		blur := converter.rounded_device_pixels(layer.blur_radius)
 		spread := converter.rounded_device_pixels(layer.spread_distance)
-		device_content := converter.rounded_device_rect(content_rect)
-		content_corners := radii.as_corners(converter)
 		if layer.placement == .outer {
+			device_content := converter.rounded_device_rect(bordered_content_rect)
 			shadow_rect :=
 				device_content.inflated(spread, spread, spread, spread).translated(offset)
-			mut shadow_corners := content_corners
+			mut shadow_corners := corner_radii
 			shadow_corners.adjust_for_spread_distance(spread)
 			resolved << ResolvedShadow{
 				placement: layer.placement
 				color: layer.color
 				blur_radius: blur
 				content_rect: device_content
-				content_corner_radii: content_corners
+				content_corner_radii: corner_radii
+				clip_corner_radii: corner_radii
 				shadow_rect: shadow_rect
 				shadow_corner_radii: shadow_corners
 			}
 		} else {
+			device_content := converter.rounded_device_rect(borderless_content_rect)
 			mut outer_shadow_rect := device_content.translated(offset)
 			inner_shadow_rect := outer_shadow_rect.inflated(-spread, -spread, -spread, -spread)
 			outer_shadow_rect = outer_shadow_rect.inflated(blur + offset.y, blur + abs_int(offset.x), blur + abs_int(offset.y), blur + offset.x)
-			mut inner_corners := content_corners
+			mut inner_corners := corner_radii
 			inner_corners.adjust_for_spread_distance(-spread)
+			mut clip_radii := border_radii
+			clip_radii.shrink(borders_data.top.width, borders_data.right.width, borders_data.bottom.width, borders_data.left.width)
 			resolved << ResolvedShadow{
 				placement: layer.placement
 				color: layer.color
 				blur_radius: blur
 				content_rect: device_content
-				content_corner_radii: content_corners
+				content_corner_radii: corner_radii
+				clip_corner_radii: clip_radii.as_corners(converter)
 				outer_shadow_rect: outer_shadow_rect
 				inner_shadow_rect: inner_shadow_rect
 				inner_corner_radii: inner_corners
@@ -447,4 +455,11 @@ pub fn resolve_box_shadows(content_rect Rect, radii BorderRadiiData, layers []Sh
 		}
 	}
 	return resolved
+}
+
+// Compatibility entry point retained for renderer-independent callers which
+// do not distinguish the outer border box from the inner padding box.
+pub fn resolve_box_shadows(content_rect Rect, radii BorderRadiiData, layers []ShadowData,
+	converter DevicePixelConverter) []ResolvedShadow {
+	return paint_box_shadow(content_rect, content_rect, BordersData{}, radii, layers, converter)
 }

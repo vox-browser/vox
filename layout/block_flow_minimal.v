@@ -1302,6 +1302,20 @@ pub mut:
 	shadow_offset_y f64
 	shadow_spread   f64
 	outer_shadow    bool // clip the shadow source out of the original border box
+	// Source-shaped PaintOuterBoxShadow/PaintInnerBoxShadow payload. Unlike the
+	// legacy scalar fields above, these retain distinct elliptical corner radii
+	// for the content clip, shadow shape, and inner cutout.
+	shadow_content_x      f64
+	shadow_content_y      f64
+	shadow_content_width  f64
+	shadow_content_height f64
+	shadow_content_radii  BoxRadii
+	shadow_clip_radii     BoxRadii
+	shadow_inner_x        f64
+	shadow_inner_y        f64
+	shadow_inner_width    f64
+	shadow_inner_height   f64
+	shadow_inner_radii    BoxRadii
 	// The gradient for a 'fill_gradient' command (a linear-gradient background).
 	gradient                  ?LinearGradient
 	gradient_background_layer bool
@@ -1413,6 +1427,96 @@ pub:
 	spread   f64
 	color    css.Color
 	inset    bool
+}
+
+fn painting_shadow_data_from_transport(shadow BoxShadow) painting.ShadowData {
+	return painting.ShadowData{
+		color: painting.Color{shadow.color.r, shadow.color.g, shadow.color.b, shadow.color.a}
+		offset_x: shadow.offset_x
+		offset_y: shadow.offset_y
+		blur_radius: shadow.blur
+		spread_distance: shadow.spread
+		placement: if shadow.inset { .inner } else { .outer }
+	}
+}
+
+fn painting_border_radii_data_from_transport(radii BoxRadii) painting.BorderRadiiData {
+	return painting.BorderRadiiData{
+		top_left: painting.BorderRadiusData{radii.top_left.x, radii.top_left.y}
+		top_right: painting.BorderRadiusData{radii.top_right.x, radii.top_right.y}
+		bottom_right: painting.BorderRadiusData{radii.bottom_right.x, radii.bottom_right.y}
+		bottom_left: painting.BorderRadiusData{radii.bottom_left.x, radii.bottom_left.y}
+	}
+}
+
+fn painting_border_data_from_transport(border BoxEdges, colors BoxColors,
+	styles BoxBorderStyles) painting.BordersData {
+	return painting.BordersData{
+		top: painting.BorderData{painting.Color{colors.top.r, colors.top.g, colors.top.b, colors.top.a}, styles.top, border.top}
+		right: painting.BorderData{painting.Color{colors.right.r, colors.right.g, colors.right.b, colors.right.a}, styles.right, border.right}
+		bottom: painting.BorderData{painting.Color{colors.bottom.r, colors.bottom.g, colors.bottom.b, colors.bottom.a}, styles.bottom, border.bottom}
+		left: painting.BorderData{painting.Color{colors.left.r, colors.left.g, colors.left.b, colors.left.a}, styles.left, border.left}
+	}
+}
+
+// Active lowering of PaintableBox::paint_box_shadow() through the direct
+// ShadowPainting.cpp geometry translation.
+fn paintable_box_paint_box_shadow(mut commands []PaintCommand, shadows []BoxShadow,
+	border BoxEdges, colors BoxColors, styles BoxBorderStyles, radii BoxRadii,
+	border_rect LayoutRect, padding_rect LayoutRect, opacity f64) {
+	if shadows.len == 0 {
+		return
+	}
+	mut layers := []painting.ShadowData{cap: shadows.len}
+	for shadow in shadows {
+		layers << painting_shadow_data_from_transport(shadow)
+	}
+	converter := painting.new_device_pixel_converter(1.0) or { return }
+	resolved := painting.paint_box_shadow(painting.Rect{border_rect.x, border_rect.y, border_rect.width, border_rect.height}, painting.Rect{padding_rect.x, padding_rect.y, padding_rect.width, padding_rect.height}, painting_border_data_from_transport(border, colors, styles), painting_border_radii_data_from_transport(radii), layers, converter)
+	for shadow in resolved {
+		if shadow.placement == .outer {
+			commands << PaintCommand{
+				kind: 'paint_outer_box_shadow'
+				x: shadow.shadow_rect.x
+				y: shadow.shadow_rect.y
+				width: shadow.shadow_rect.width
+				height: shadow.shadow_rect.height
+				color: painting_color_string(shadow.color)
+				opacity: opacity
+				blur: shadow.blur_radius
+				corner_radii: transport_radii_from_painting(shadow.shadow_corner_radii)
+				shadow_content_x: shadow.content_rect.x
+				shadow_content_y: shadow.content_rect.y
+				shadow_content_width: shadow.content_rect.width
+				shadow_content_height: shadow.content_rect.height
+				shadow_content_radii: transport_radii_from_painting(shadow.content_corner_radii)
+				shadow_clip_radii: transport_radii_from_painting(shadow.clip_corner_radii)
+			}
+		} else {
+			commands << PaintCommand{
+				kind: 'paint_inner_box_shadow'
+				x: shadow.outer_shadow_rect.x
+				y: shadow.outer_shadow_rect.y
+				width: shadow.outer_shadow_rect.width
+				height: shadow.outer_shadow_rect.height
+				color: painting_color_string(shadow.color)
+				opacity: opacity
+				blur: shadow.blur_radius
+				corner_radii: transport_radii_from_painting(shadow.content_corner_radii)
+				shadow_content_x: shadow.content_rect.x
+				shadow_content_y: shadow.content_rect.y
+				shadow_content_width: shadow.content_rect.width
+				shadow_content_height: shadow.content_rect.height
+				shadow_content_radii: transport_radii_from_painting(shadow.content_corner_radii)
+				shadow_clip_radii: transport_radii_from_painting(shadow.clip_corner_radii)
+				shadow_inner_x: shadow.inner_shadow_rect.x
+				shadow_inner_y: shadow.inner_shadow_rect.y
+				shadow_inner_width: shadow.inner_shadow_rect.width
+				shadow_inner_height: shadow.inner_shadow_rect.height
+				shadow_inner_radii: transport_radii_from_painting(shadow.inner_corner_radii)
+			}
+		}
+	}
 }
 
 fn append_inset_shadow_commands(mut commands []PaintCommand, shadows []BoxShadow, x f64, y f64, width f64, height f64, radius f64, opacity f64) {
@@ -2212,7 +2316,6 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		} else {
 			[]f64{}
 		}
-		// box-shadow: blurred, spread rects offset behind the box, painted in list order.
 		// The resolved shadow list is immutable while recording. Share its backing
 		// store, as PaintableBox does upstream, instead of copying every layer on
 		// every repaint. The local header is only appended to for the empty-list
@@ -2221,30 +2324,6 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		if box_shadows.len == 0 {
 			if shadow := box.shadow {
 				box_shadows << shadow
-			}
-		}
-		for shadow in box_shadows {
-			if shadow.inset || empty_cell_hidden {
-				continue
-			}
-			shadow_left := border_left + shadow.offset_x - shadow.spread
-			shadow_top := border_top + shadow.offset_y - shadow.spread
-			shadow_width := border_width + 2.0 * shadow.spread
-			shadow_height := border_height + 2.0 * shadow.spread
-			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: shadow_left
-				y: shadow_top
-				width: shadow_width
-				height: shadow_height
-				color: shadow.color.serialize()
-				opacity: opacity
-				radius: clamp_radius(box.border_radius, shadow_width, shadow_height)
-				blur: shadow.blur
-				shadow_offset_x: shadow.offset_x
-				shadow_offset_y: shadow.offset_y
-				shadow_spread: shadow.spread
-				outer_shadow: true
 			}
 		}
 		background_paint_start := commands.len
@@ -2361,6 +2440,14 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				set_recording_clip_for_range(mut commands, background_paint_start, commands.len, clip)
 			}
 		}
+		if !empty_cell_hidden {
+			paintable_box_paint_box_shadow(mut commands, box_shadows, box.border, effective_border_colors(box.border_colors, box.border_color), box.border_styles, box_radii, border_rect, LayoutRect{
+				x: border_left + box.border.left
+				y: border_top + box.border.top
+				width: non_negative(border_width - box.border.left - box.border.right)
+				height: non_negative(border_height - box.border.top - box.border.bottom)
+			}, opacity)
+		}
 		foreground_replaced_start := commands.len
 		if box.replaced_image_url != '' {
 			commands << PaintCommand{
@@ -2456,13 +2543,6 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 			}
 		}
 		foreground_replaced_end := commands.len
-		if !empty_cell_hidden {
-			append_inset_shadow_commands(mut commands, box_shadows, border_left + box.border.left, border_top + box.border.top, non_negative(border_width - box.border.left - box.border.right), non_negative(border_height - box.border.top - box.border.bottom), non_negative(radius - if box.border.top < box.border.left {
-				box.border.top
-			} else {
-				box.border.left
-			}), opacity)
-		}
 		// Translate each border side through Painting's source-shaped BorderPainting paths. Matching
 		// colors are batched while each used thickness is represented independently.
 		border_start := commands.len
@@ -3894,6 +3974,45 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 		} else if command.kind == 'fill_rounded_rect' {
 			path := rounded_rect_svg_path(command.x, command.y, command.width, command.height, command.corner_radii)
 			body << '<path d="${path}" fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
+		} else if command.kind == 'paint_outer_box_shadow' {
+			margin := command.blur * 2.0
+			left := math.min(command.x, command.shadow_content_x) - margin
+			top := math.min(command.y, command.shadow_content_y) - margin
+			right := math.max(command.x + command.width, command.shadow_content_x + command.shadow_content_width) + margin
+			bottom := math.max(command.y + command.height, command.shadow_content_y + command.shadow_content_height) + margin
+			clip_id := 'outer-shadow-clip${defs.len}'
+			outside_path := rounded_rect_svg_path(left, top, right - left, bottom - top, BoxRadii{})
+			content_path := rounded_rect_svg_path(command.shadow_content_x, command.shadow_content_y, command.shadow_content_width, command.shadow_content_height, command.shadow_content_radii)
+			defs << '<clipPath id="${clip_id}" clipPathUnits="userSpaceOnUse"><path d="${outside_path} ${content_path}" clip-rule="evenodd"/></clipPath>'
+			mut filter := ''
+			if command.blur > 0 {
+				filter_id := 'outer-shadow-blur${defs.len}'
+				defs << '<filter id="${filter_id}" filterUnits="userSpaceOnUse" x="${fmt_px(left)}" y="${fmt_px(top)}" width="${fmt_px(right - left)}" height="${fmt_px(bottom - top)}"><feGaussianBlur stdDeviation="${fmt_px(f64(int(command.blur) / 2))}"/></filter>'
+				filter = ' filter="url(#${filter_id})"'
+			}
+			shadow_path := rounded_rect_svg_path(command.x, command.y, command.width, command.height, command.corner_radii)
+			body << '<path d="${shadow_path}" clip-path="url(#${clip_id})"${filter} fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/>'
+		} else if command.kind == 'paint_inner_box_shadow' {
+			content_path := rounded_rect_svg_path(command.shadow_content_x, command.shadow_content_y, command.shadow_content_width, command.shadow_content_height, command.shadow_content_radii)
+			clip_path := rounded_rect_svg_path(command.shadow_content_x, command.shadow_content_y, command.shadow_content_width, command.shadow_content_height, command.shadow_clip_radii)
+			content_clip_id := 'inner-shadow-content${defs.len}'
+			defs << '<clipPath id="${content_clip_id}" clipPathUnits="userSpaceOnUse"><path d="${content_path}"/></clipPath>'
+			scoped_clip_id := 'inner-shadow-scoped${defs.len}'
+			defs << '<clipPath id="${scoped_clip_id}" clipPathUnits="userSpaceOnUse"><path d="${clip_path}"/></clipPath>'
+			mut filter := ''
+			if command.blur > 0 {
+				filter_id := 'inner-shadow-blur${defs.len}'
+				margin := command.blur * 2.0
+				defs << '<filter id="${filter_id}" filterUnits="userSpaceOnUse" x="${fmt_px(command.shadow_content_x - margin)}" y="${fmt_px(command.shadow_content_y - margin)}" width="${fmt_px(command.shadow_content_width + margin * 2.0)}" height="${fmt_px(command.shadow_content_height + margin * 2.0)}"><feGaussianBlur stdDeviation="${fmt_px(f64(int(command.blur) / 2))}"/></filter>'
+				filter = ' filter="url(#${filter_id})"'
+			}
+			outer_path := rounded_rect_svg_path(command.x, command.y, command.width, command.height, command.corner_radii)
+			inner_path := if command.shadow_inner_width > 0 && command.shadow_inner_height > 0 {
+				rounded_rect_svg_path(command.shadow_inner_x, command.shadow_inner_y, command.shadow_inner_width, command.shadow_inner_height, command.shadow_inner_radii)
+			} else {
+				''
+			}
+			body << '<g clip-path="url(#${scoped_clip_id})"><g clip-path="url(#${content_clip_id})"><path d="${outer_path} ${inner_path}" fill-rule="evenodd"${filter} fill="${command.color}" fill-opacity="${fmt_px(command.opacity)}"/></g></g>'
 		} else if command.kind == 'fill_inset_shadow' {
 			clip_id := 'inset-clip${defs.len}'
 			corner := if command.radius > 0 {

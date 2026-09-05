@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 484
+filename-level mappings. The current semantic audit nevertheless reports 482
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 5,658 | 1,591 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 5,673 | 1,640 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 484 unmatched Painting
+  were removed; the audit currently reports 482 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -127,6 +127,16 @@ following behavioral mismatches and added focused regressions:
   `smooth_pixels` mode was removed.
 - Inner shadows retain their distinct expanded outer and spread-adjusted inner
   rectangles and radii, rather than collapsing both geometries into one rect.
+- `ShadowPainting.cpp::paint_box_shadow()` and
+  `PaintableBox::paint_box_shadow()` now drive the active block paint path.
+  Layers are recorded back-to-front after the background exactly where C++
+  records them; outer shadows use the border box while inset shadows use the
+  padding box, preserve separate elliptical radii for every shape and scoped
+  clip, and keep the source fixed-point rounding and spread adjustment. Quartz
+  replays the same outer difference clip and inner outer-minus-inner path as
+  Skia with a shadow-only blur mask; the portable SVG backend consumes the same
+  retained geometry. The legacy scalar shadow path remains only for inline
+  fragment compatibility.
 - Stacking-context painting now recursively paints nested negative, zero, and
   positive contexts in `(z-index, tree order)` order. Zero-opacity and
   non-invertible contexts suppress their complete subtrees, matching the early
@@ -405,7 +415,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 484 unmatched implementations.
+Painting: 482 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

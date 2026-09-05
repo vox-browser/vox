@@ -78,6 +78,10 @@ fn C.native_draw_rounded_rect_srgb(x f32, y f32, width f32, height f32, top_left
 
 fn C.native_draw_outer_box_shadow_srgb(source_x f32, source_y f32, source_width f32, source_height f32, source_radius f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, clip_radius f32, blur f32, color gg.Color)
 
+fn C.native_draw_outer_box_shadow_corners_srgb(shadow_x f32, shadow_y f32, shadow_width f32, shadow_height f32, shadow_top_left_x f32, shadow_top_left_y f32, shadow_top_right_x f32, shadow_top_right_y f32, shadow_bottom_right_x f32, shadow_bottom_right_y f32, shadow_bottom_left_x f32, shadow_bottom_left_y f32, content_x f32, content_y f32, content_width f32, content_height f32, content_top_left_x f32, content_top_left_y f32, content_top_right_x f32, content_top_right_y f32, content_bottom_right_x f32, content_bottom_right_y f32, content_bottom_left_x f32, content_bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, blur f32, color gg.Color)
+
+fn C.native_draw_inner_box_shadow_corners_srgb(outer_x f32, outer_y f32, outer_width f32, outer_height f32, outer_top_left_x f32, outer_top_left_y f32, outer_top_right_x f32, outer_top_right_y f32, outer_bottom_right_x f32, outer_bottom_right_y f32, outer_bottom_left_x f32, outer_bottom_left_y f32, inner_x f32, inner_y f32, inner_width f32, inner_height f32, inner_top_left_x f32, inner_top_left_y f32, inner_top_right_x f32, inner_top_right_y f32, inner_bottom_right_x f32, inner_bottom_right_y f32, inner_bottom_left_x f32, inner_bottom_left_y f32, content_x f32, content_y f32, content_width f32, content_height f32, content_top_left_x f32, content_top_left_y f32, content_top_right_x f32, content_top_right_y f32, content_bottom_right_x f32, content_bottom_right_y f32, content_bottom_left_x f32, content_bottom_left_y f32, clip_top_left_x f32, clip_top_left_y f32, clip_top_right_x f32, clip_top_right_y f32, clip_bottom_right_x f32, clip_bottom_right_y f32, clip_bottom_left_x f32, clip_bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, blur f32, color gg.Color)
+
 fn C.native_draw_image_part(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, canvas_height f32, opacity f32)
 
 fn C.native_draw_image_part_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, opacity f32, nearest_neighbor int)
@@ -2476,7 +2480,32 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 	h := bounds_bottom - y
 	matrix := normalized_paint_transform(command.transform)
 	non_axis_aligned := matrix[1] != 0 || matrix[2] != 0
-	if y + h < app.page_top() || y > f32(window_height - app.status_height()) {
+	mut cull_top := y
+	mut cull_bottom := y + h
+	if command.kind in ['paint_outer_box_shadow', 'paint_inner_box_shadow'] {
+		mut bounds_command := command
+		if command.kind == 'paint_outer_box_shadow' {
+			margin := command.blur * 2.0
+			bounds_command.x -= margin
+			bounds_command.y -= margin
+			bounds_command.width += margin * 2.0
+			bounds_command.height += margin * 2.0
+		} else {
+			// PaintInnerBoxShadow::bounding_rect() is the padding-box content rect.
+			bounds_command.x = command.shadow_content_x
+			bounds_command.y = command.shadow_content_y
+			bounds_command.width = command.shadow_content_width
+			bounds_command.height = command.shadow_content_height
+		}
+		bounds_points := transformed_rect_points(bounds_command, page_x, page_y, scroll_y)
+		cull_top = bounds_points[1]
+		cull_bottom = bounds_points[1]
+		for index := 3; index < bounds_points.len; index += 2 {
+			cull_top = math.min(cull_top, bounds_points[index])
+			cull_bottom = math.max(cull_bottom, bounds_points[index])
+		}
+	}
+	if cull_bottom < app.page_top() || cull_top > f32(window_height - app.status_height()) {
 		return
 	}
 	match command.kind {
@@ -2508,6 +2537,106 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 				app.draw_command(transformed, page_x, page_y, window_height)
 			}
 			app.ctx.scissor_rect(0, 0, app.ctx.width, app.ctx.height)
+		}
+		'paint_outer_box_shadow' {
+			fill := paint_color(command.color, command.opacity)
+			$if macos {
+				if app.ctx.native_rendering {
+					shadow := command.corner_radii
+					content := command.shadow_content_radii
+					scale_x := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
+					scale_y := math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3])
+					blur_scale := math.min(scale_x, scale_y)
+					C.native_draw_outer_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(shadow.top_left.x), f32(shadow.top_left.y), f32(shadow.top_right.x), f32(shadow.top_right.y), f32(shadow.bottom_right.x), f32(shadow.bottom_right.y), f32(shadow.bottom_left.x), f32(shadow.bottom_left.y), f32(command.shadow_content_x), f32(command.shadow_content_y), f32(command.shadow_content_width), f32(command.shadow_content_height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
+					return
+				}
+			}
+			// The portable immediate backend has no path-difference clip or blur.
+			// Preserve the visible outside region without painting over the box.
+			if !non_axis_aligned {
+				content_command := layout.PaintCommand{
+					x: command.shadow_content_x
+					y: command.shadow_content_y
+					width: command.shadow_content_width
+					height: command.shadow_content_height
+					transform: command.transform
+				}
+				content_points := transformed_rect_points(content_command, page_x, page_y, scroll_y)
+				content_left := math.min(content_points[0], content_points[4])
+				content_top := math.min(content_points[1], content_points[5])
+				content_right := math.max(content_points[0], content_points[4])
+				content_bottom := math.max(content_points[1], content_points[5])
+				if content_top > y { draw_srgb_rect(app.ctx, x, y, w, content_top - y, fill) }
+				if content_bottom < y + h {
+					draw_srgb_rect(app.ctx, x, content_bottom, w, y + h - content_bottom, fill)
+				}
+				middle_top := math.max(y, content_top)
+				middle_bottom := math.min(y + h, content_bottom)
+				if middle_bottom > middle_top {
+					if content_left > x {
+						draw_srgb_rect(app.ctx, x, middle_top, content_left - x, middle_bottom - middle_top, fill)
+					}
+					if content_right < x + w {
+						draw_srgb_rect(app.ctx, content_right, middle_top, x + w - content_right, middle_bottom - middle_top, fill)
+					}
+				}
+			}
+		}
+		'paint_inner_box_shadow' {
+			fill := paint_color(command.color, command.opacity)
+			$if macos {
+				if app.ctx.native_rendering {
+					outer := command.corner_radii
+					inner := command.shadow_inner_radii
+					content := command.shadow_content_radii
+					clip := command.shadow_clip_radii
+					scale_x := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
+					scale_y := math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3])
+					blur_scale := math.min(scale_x, scale_y)
+					C.native_draw_inner_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(outer.top_left.x), f32(outer.top_left.y), f32(outer.top_right.x), f32(outer.top_right.y), f32(outer.bottom_right.x), f32(outer.bottom_right.y), f32(outer.bottom_left.x), f32(outer.bottom_left.y), f32(command.shadow_inner_x), f32(command.shadow_inner_y), f32(command.shadow_inner_width), f32(command.shadow_inner_height), f32(inner.top_left.x), f32(inner.top_left.y), f32(inner.top_right.x), f32(inner.top_right.y), f32(inner.bottom_right.x), f32(inner.bottom_right.y), f32(inner.bottom_left.x), f32(inner.bottom_left.y), f32(command.shadow_content_x), f32(command.shadow_content_y), f32(command.shadow_content_width), f32(command.shadow_content_height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(clip.top_left.x), f32(clip.top_left.y), f32(clip.top_right.x), f32(clip.top_right.y), f32(clip.bottom_right.x), f32(clip.bottom_right.y), f32(clip.bottom_left.x), f32(clip.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
+					return
+				}
+			}
+			// Approximate the source outer-minus-inner path for the immediate
+			// backend, clipped to the padding box.
+			if !non_axis_aligned {
+				inner_command := layout.PaintCommand{
+					x: command.shadow_inner_x
+					y: command.shadow_inner_y
+					width: command.shadow_inner_width
+					height: command.shadow_inner_height
+					transform: command.transform
+				}
+				content_command := layout.PaintCommand{
+					x: command.shadow_content_x
+					y: command.shadow_content_y
+					width: command.shadow_content_width
+					height: command.shadow_content_height
+					transform: command.transform
+				}
+				inner_points := transformed_rect_points(inner_command, page_x, page_y, scroll_y)
+				content_points := transformed_rect_points(content_command, page_x, page_y, scroll_y)
+				left := math.min(content_points[0], content_points[4])
+				top := math.min(content_points[1], content_points[5])
+				right := math.max(content_points[0], content_points[4])
+				bottom := math.max(content_points[1], content_points[5])
+				inner_left := math.max(left, math.min(math.min(inner_points[0], inner_points[4]), right))
+				inner_top := math.max(top, math.min(math.min(inner_points[1], inner_points[5]), bottom))
+				inner_right := math.max(left, math.min(math.max(inner_points[0], inner_points[4]), right))
+				inner_bottom := math.max(top, math.min(math.max(inner_points[1], inner_points[5]), bottom))
+				if inner_top > top { draw_srgb_rect(app.ctx, left, top, right - left, inner_top - top, fill) }
+				if inner_bottom < bottom {
+					draw_srgb_rect(app.ctx, left, inner_bottom, right - left, bottom - inner_bottom, fill)
+				}
+				if inner_bottom > inner_top {
+					if inner_left > left {
+						draw_srgb_rect(app.ctx, left, inner_top, inner_left - left, inner_bottom - inner_top, fill)
+					}
+					if inner_right < right {
+						draw_srgb_rect(app.ctx, inner_right, inner_top, right - inner_right, inner_bottom - inner_top, fill)
+					}
+				}
+			}
 		}
 		'fill_rect' {
 			fill := paint_color(command.color, command.opacity)
