@@ -1568,24 +1568,28 @@ fn expand_flexible_grid_tracks(mut tracks []GridTrack, available_size CSSPixels,
 		} else {
 			0
 		})))
-		mut flex_factor_sum := 0.0
+		// C++ keeps the hypothetical fr size as an exact CSSPixelFraction and only lands on
+		// a pixel value when it is multiplied by a track's flex factor, where the fixed-point
+		// division truncates. Computing it in f64 and rounding to the nearest 1/64 instead
+		// puts `1fr 2fr` in 300px with a 10px gap one subpixel out.
+		mut flex_factor_sum := CSSPixels.new(0)
 		for index, track in tracks {
 			if treated_as_inflexible[index] || track.flex <= 0 {
 				leftover_space = leftover_space.minus(track.base_size)
 			} else {
-				flex_factor_sum += track.flex
+				flex_factor_sum = flex_factor_sum.plus(CSSPixels.nearest_value_for(track.flex))
 			}
 		}
-		if flex_factor_sum < 1 {
-			flex_factor_sum = 1
+		if flex_factor_sum.raw_value() < CSSPixels.new(1).raw_value() {
+			flex_factor_sum = CSSPixels.new(1)
 		}
-		flex_fraction := leftover_space.to_double() / flex_factor_sum
+		flex_fraction := leftover_space.divided_by(flex_factor_sum)
 		mut need_to_restart := false
 		for index, track in tracks {
 			if treated_as_inflexible[index] || track.flex <= 0 {
 				continue
 			}
-			scaled_fraction := CSSPixels.nearest_value_for(track.flex * flex_fraction)
+			scaled_fraction := CSSPixels.nearest_value_for(track.flex).times_fraction(flex_fraction)
 			if scaled_fraction.raw_value() < track.base_size.raw_value() {
 				treated_as_inflexible[index] = true
 				need_to_restart = true
@@ -1598,7 +1602,7 @@ fn expand_flexible_grid_tracks(mut tracks []GridTrack, available_size CSSPixels,
 			if tracks[index].flex <= 0 {
 				continue
 			}
-			scaled_fraction := CSSPixels.nearest_value_for(tracks[index].flex * flex_fraction)
+			scaled_fraction := CSSPixels.nearest_value_for(tracks[index].flex).times_fraction(flex_fraction)
 			if scaled_fraction.raw_value() > tracks[index].base_size.raw_value() {
 				tracks[index].base_size = scaled_fraction
 			}
@@ -1612,35 +1616,35 @@ fn expand_flexible_grid_tracks(mut tracks []GridTrack, available_size CSSPixels,
 // max-content contribution. Fixed tracks and gutters consume space first;
 // flexible tracks whose base size is larger than their tentative share are
 // treated as inflexible and the calculation is restarted.
-fn grid_flex_fraction_for_range(tracks []GridTrack, start int, span int, space_to_fill CSSPixels, gap CSSPixels) f64 {
+fn grid_flex_fraction_for_range(tracks []GridTrack, start int, span int, space_to_fill CSSPixels, gap CSSPixels) CSSPixelFraction {
 	first := if start > 0 { start } else { 0 }
 	last := if start + span < tracks.len { start + span } else { tracks.len }
 	if first >= last {
-		return 0
+		return CSSPixels.new(0).divided_by(CSSPixels.new(1))
 	}
 	mut treated_as_inflexible := []bool{len: tracks.len}
 	for {
 		mut leftover_space := space_to_fill.minus(gap.scaled(f64(last - first - 1)))
-		mut flex_factor_sum := 0.0
+		mut flex_factor_sum := CSSPixels.new(0)
 		for index in first .. last {
 			track := tracks[index]
 			if treated_as_inflexible[index] || track.flex <= 0 {
 				leftover_space = leftover_space.minus(track.base_size)
 			} else {
-				flex_factor_sum += track.flex
+				flex_factor_sum = flex_factor_sum.plus(CSSPixels.nearest_value_for(track.flex))
 			}
 		}
-		if flex_factor_sum < 1 {
-			flex_factor_sum = 1
+		if flex_factor_sum.raw_value() < CSSPixels.new(1).raw_value() {
+			flex_factor_sum = CSSPixels.new(1)
 		}
-		flex_fraction := leftover_space.to_double() / flex_factor_sum
+		flex_fraction := leftover_space.divided_by(flex_factor_sum)
 		mut need_to_restart := false
 		for index in first .. last {
 			track := tracks[index]
 			if treated_as_inflexible[index] || track.flex <= 0 {
 				continue
 			}
-			if CSSPixels.nearest_value_for(track.flex * flex_fraction).raw_value() < track.base_size.raw_value() {
+			if CSSPixels.nearest_value_for(track.flex).times_fraction(flex_fraction).raw_value() < track.base_size.raw_value() {
 				treated_as_inflexible[index] = true
 				need_to_restart = true
 			}
@@ -1649,7 +1653,7 @@ fn grid_flex_fraction_for_range(tracks []GridTrack, start int, span int, space_t
 			return flex_fraction
 		}
 	}
-	return 0
+	return CSSPixels.new(0).divided_by(CSSPixels.new(1))
 }
 
 fn grid_item_preferred_block_size_behaves_as_auto(item &Node, item_state &UsedValues, available_height_is_definite bool) bool {
@@ -1962,17 +1966,17 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		// fraction both from flexible tracks' base sizes and from every item
 		// crossing a flexible track. The latter is important for mixed fixed/fr
 		// spans: a 200px item over `50px 1fr` needs a 150px flexible track.
-		mut intrinsic_flex_fraction := 0.0
+		mut intrinsic_flex_fraction := CSSPixels.new(0).divided_by(CSSPixels.new(1))
 		for track in columns {
 			if track.flex <= 0 {
 				continue
 			}
 			candidate := if track.flex > 1 {
-				track.base_size.to_double() / track.flex
+				track.base_size.divided_by(CSSPixels.nearest_value_for(track.flex))
 			} else {
-				track.base_size.to_double()
+				track.base_size.divided_by(CSSPixels.new(1))
 			}
-			if candidate > intrinsic_flex_fraction {
+			if candidate.compare(intrinsic_flex_fraction) > 0 {
 				intrinsic_flex_fraction = candidate
 			}
 		}
@@ -1994,13 +1998,13 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			}
 			contribution := grid_intrinsic_outer_width_contribution(mut state, placement.item, .max_content)
 			candidate := grid_flex_fraction_for_range(columns, placement.column, placement.column_span, contribution, column_gap)
-			if candidate > intrinsic_flex_fraction {
+			if candidate.compare(intrinsic_flex_fraction) > 0 {
 				intrinsic_flex_fraction = candidate
 			}
 		}
 		for index in 0 .. columns.len {
 			if columns[index].flex > 0 {
-				columns[index].base_size = css_pixels_max(columns[index].base_size, CSSPixels.nearest_value_for(intrinsic_flex_fraction * columns[index].flex))
+				columns[index].base_size = css_pixels_max(columns[index].base_size, CSSPixels.nearest_value_for(columns[index].flex).times_fraction(intrinsic_flex_fraction))
 			}
 		}
 	}
@@ -2134,17 +2138,17 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 		// GridFormattingContext::expand_flexible_tracks(), indefinite-space
 		// branch. Include every item crossing a flexible row, rather than only
 		// the flexible rows' existing base sizes.
-		mut flex_fraction := 0.0
+		mut flex_fraction := CSSPixels.new(0).divided_by(CSSPixels.new(1))
 		for row in rows {
 			if row.flex <= 0 {
 				continue
 			}
 			candidate := if row.flex > 1 {
-				row.base_size.to_double() / row.flex
+				row.base_size.divided_by(CSSPixels.nearest_value_for(row.flex))
 			} else {
-				row.base_size.to_double()
+				row.base_size.divided_by(CSSPixels.new(1))
 			}
-			if candidate > flex_fraction {
+			if candidate.compare(flex_fraction) > 0 {
 				flex_fraction = candidate
 			}
 		}
@@ -2168,14 +2172,14 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			item_state := state.get(styled)
 			contribution := grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .max_content, container_state.has_definite_height(), row_basis, grid_track_range_size(rows, placement.row, placement.row_span, row_gap))
 			candidate := grid_flex_fraction_for_range(rows, placement.row, placement.row_span, contribution, row_gap)
-			if candidate > flex_fraction {
+			if candidate.compare(flex_fraction) > 0 {
 				flex_fraction = candidate
 			}
 		}
-		if flex_fraction > 0 {
+		if flex_fraction.numerator().raw_value() > 0 {
 			for index in 0 .. rows.len {
 				if rows[index].flex > 0 {
-					rows[index].base_size = css_pixels_max(rows[index].base_size, CSSPixels.nearest_value_for(flex_fraction * rows[index].flex))
+					rows[index].base_size = css_pixels_max(rows[index].base_size, CSSPixels.nearest_value_for(rows[index].flex).times_fraction(flex_fraction))
 				}
 			}
 		}

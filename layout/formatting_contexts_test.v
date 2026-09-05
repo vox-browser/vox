@@ -937,6 +937,20 @@ fn test_grid_formatting_context_sizes_fr_tracks_and_gap() {
 	assert two.offset.y().to_double() == 0
 }
 
+fn test_fr_track_sizing_truncates_like_a_css_pixel_fraction() {
+	// expand_flexible_tracks() keeps the hypothetical fr size as an exact CSSPixelFraction
+	// and only lands on a pixel value where it is multiplied by a track's flex factor, and
+	// that fixed-point division truncates. 290px of leftover space over three flex units is
+	// 96.6666..., which truncates to 96.65625 (6186/64) rather than rounding to 96.671875.
+	document := html.parse_document('<!doctype html><style>
+		#grid { display:grid; grid-template-columns:1fr 2fr; gap:10px; width:300px }
+		#one { height:20px } #two { height:40px }
+	</style><div id="grid"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'one').content_width().to_double() == 96.65625
+	assert used_for_id(result, 'two').offset.x().to_double() == 106.65625
+}
+
 fn test_auto_fit_collapse_looks_only_at_the_first_cell_of_a_track() {
 	// collapse_auto_fit_tracks_if_needed() asks the occupation grid whether the track's first
 	// cell is taken - is_occupied(track_index, 0) for a column - instead of scanning the whole
