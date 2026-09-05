@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 381
+filename-level mappings. The current semantic audit nevertheless reports 376
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 6,209 | 1,786 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 6,266 | 1,821 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 381 unmatched Painting
+  were removed; the audit currently reports 376 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -202,6 +202,16 @@ following behavioral mismatches and added focused regressions:
   `FloatPoint` precision, and caches one snapshot until the next dirty refresh.
   Repeated display recording, hit testing, and chrome dispatch therefore reuse
   the retained offsets instead of copying the complete frame vector per query.
+- `PaintableBox::transform_point_to_local()`, its descendants variant,
+  `transform_rect_to_viewport()`, `inverse_transform_point()`, and the
+  value-or-input convenience wrapper now form one source-shaped coordinate
+  bridge. Active box, chrome, empty-editable, and text-fragment hit testing use
+  its visual-context index, float device-scale conversion, scroll snapshot,
+  clip rejection, and fixed CSS-pixel result instead of maintaining separate
+  affine shortcuts. `AccumulatedVisualContextTree` also mirrors the inline
+  capacity of upstream's `Vector<size_t, 8>` ancestor chain, so the common
+  hit-test path does not allocate an array per candidate; deeper chains retain
+  a dynamically sized fallback.
 - `PaintableBox::nearest_scroll_frame_index()` now drives the active Layout
   bridge. Fixed paintables and ordinary descendants behind a fixed containing
   block use the root frame, while sticky descendants keep searching for their
@@ -490,7 +500,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 381 unmatched implementations.
+Painting: 376 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

@@ -644,6 +644,54 @@ fn test_typed_paint_adapter_composes_nested_transforms_while_descending() {
 	assert inner.paint_transform == [f64(2), 0, 0, 2, 10, 20]!
 }
 
+fn test_paintable_box_coordinate_bridge_uses_accumulated_visual_context() {
+	mut tree := painting.new_accumulated_visual_context_tree()
+	transform := tree.append(painting.TransformVisualData{
+		matrix: painting.Affine{
+			a: 2
+			d: 2
+		}
+	}, 0)
+	scroll := tree.append(painting.ScrollVisualData{
+		scroll_frame_index: 1
+	}, transform)
+	clip := tree.append(painting.ClipVisualData{
+		rect: painting.IntRect{0, 0, 100, 100}
+	}, scroll)
+	snapshot := painting.ScrollStateSnapshot{
+		device_offsets: [painting.Point{}, painting.Point{-4, -6}]
+	}
+	mut box := BlockBox{}
+	box.accumulated_visual_context_index = transform
+	box.accumulated_visual_context_for_descendants_idx = clip
+	local_point := paintable_box_transform_point_to_local(&box, painting.Point{40, 40}, 1, tree, snapshot) or { panic('missing local coordinate') }
+	assert local_point == painting.Point{20, 20}
+	descendant_point := paintable_box_transform_point_to_local_for_descendants(&box, painting.Point{40, 40}, 1, tree, snapshot) or {
+		panic('missing descendant coordinate')
+	}
+	assert descendant_point == painting.Point{24, 26}
+	double_density_descendant_point := paintable_box_transform_point_to_local_for_descendants(&box, painting.Point{40, 40}, 2, tree, snapshot) or {
+		panic('missing double-density descendant coordinate')
+	}
+	// Scroll snapshots are already in device pixels, so their CSS-pixel effect
+	// shrinks as the device scale increases.
+	assert double_density_descendant_point == painting.Point{22, 23}
+	assert paintable_box_inverse_transform_point(&box, painting.Point{40, 40}, 1, tree) == painting.Point{20, 20}
+	assert paintable_box_transform_rect_to_viewport(&box, LayoutRect{10, 20, 5, 10}, 1, tree, snapshot) == LayoutRect{20, 40, 10, 20}
+
+	box.accumulated_visual_context_index = scroll
+	assert paintable_box_transform_rect_to_viewport(&box, LayoutRect{10, 20, 5, 10}, 1, tree, snapshot) == LayoutRect{12, 28, 10, 20}
+	box.accumulated_visual_context_index = clip
+	assert paintable_box_transform_point_to_local(&box, painting.Point{500, 500}, 1, tree, snapshot) == none
+	assert paintable_box_transform_to_local_coordinates(&box, painting.Point{500, 500}, 1, tree, snapshot) == painting.Point{500, 500}
+
+	// The zero context is the upstream sentinel and bypasses float/device-pixel
+	// conversion entirely.
+	box.accumulated_visual_context_index = 0
+	identity_point := paintable_box_transform_point_to_local(&box, painting.Point{0.1, 0.2}, 2, tree, snapshot) or { panic('missing identity coordinate') }
+	assert identity_point == painting.Point{0.1, 0.2}
+}
+
 fn test_transform_box_uses_content_or_border_reference_for_css_boxes() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } .target { position: absolute; top: 0; width: 40px; height: 20px; padding: 5px; border: 10px solid black; transform: scale(2); transform-origin: 0 0 } #content { left: 0; transform-box: content-box } #border { left: 100px; transform-box: border-box }</style><body><div id="content" class="target"></div><div id="border" class="target"></div></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)

@@ -298,70 +298,127 @@ fn inverse_map_about_origin(point Point, matrix Affine, origin Point) ?Point {
 	return inverse.map_point(point.subtract(origin)).add(origin)
 }
 
+// AccumulatedVisualContextTree::build_ancestor_chain() uses Vector<size_t, 8>
+// upstream. Keep the common eight-node chain on the stack as well: pointer
+// movement and hit testing call this for several candidate paintables, while a
+// plain V array would allocate for every candidate.
+const inline_visual_context_ancestor_capacity = 8
+
+fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test_through_node(index int,
+	point Point, snapshot ScrollStateSnapshot) ?Point {
+	node := tree.nodes[index]
+	return match node.data {
+		PerspectiveVisualData {
+			inverse := node.data.matrix.inverse() or { return none }
+			inverse.map_point(point)
+		}
+		ScrollVisualData {
+			point.subtract(snapshot.device_offset_for_index(node.data.scroll_frame_index))
+		}
+		TransformVisualData {
+			inverse_map_about_origin(point, node.data.matrix, node.data.origin)
+		}
+		ClipVisualData {
+			if !node.data.contains(IntPoint{int(point.x), int(point.y)}) {
+				return none
+			}
+			point
+		}
+		ClipPathVisualData {
+			if !node.data.contains(point) {
+				return none
+			}
+			point
+		}
+
+		// URL-referenced SVG masks/clips are paint-time masks in
+		// StackingContext::paint, not accumulated geometric clips. Upstream hit
+		// testing therefore does not reject points outside their painted alpha.
+		SVGClipVisualData, SVGMaskVisualData, EffectsVisualData {
+			point
+		}
+	}
+}
+
 pub fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test(index int,
 	screen_point Point, snapshot ScrollStateSnapshot) ?Point {
 	if index == 0 {
 		return screen_point
 	}
-	chain := tree.ancestor_chain(index)
+	if index < 0 || index >= tree.nodes.len {
+		return none
+	}
 	mut point := screen_point
-	for reverse_index := chain.len - 1; reverse_index >= 0; reverse_index-- {
-		node := tree.nodes[chain[reverse_index]]
-		match node.data {
-			PerspectiveVisualData {
-				inverse := node.data.matrix.inverse() or { return none }
-				point = inverse.map_point(point)
-			}
-			ScrollVisualData {
-				point =
-					point.subtract(snapshot.device_offset_for_index(node.data.scroll_frame_index))
-			}
-			TransformVisualData {
-				point = inverse_map_about_origin(point, node.data.matrix, node.data.origin) or {
-					return none
-				}
-			}
-			ClipVisualData {
-				if !node.data.contains(IntPoint{int(point.x), int(point.y)}) {
-					return none
-				}
-			}
-			ClipPathVisualData {
-				if !node.data.contains(point) {
-					return none
-				}
-			}
-
-			// URL-referenced SVG masks/clips are paint-time masks in
-			// StackingContext::paint, not accumulated geometric clips. Upstream hit
-			// testing therefore does not reject points outside their painted alpha.
-			SVGClipVisualData {}
-			SVGMaskVisualData {}
-			EffectsVisualData {}
+	depth := tree.nodes[index].depth
+	if depth <= inline_visual_context_ancestor_capacity {
+		mut inline_chain := [inline_visual_context_ancestor_capacity]int{}
+		mut chain_length := 0
+		mut current := index
+		for current > 0 {
+			inline_chain[chain_length] = current
+			chain_length++
+			current = tree.nodes[current].parent_index
 		}
+		for reverse_index := chain_length - 1; reverse_index >= 0; reverse_index-- {
+			point = tree.transform_point_for_hit_test_through_node(inline_chain[reverse_index], point, snapshot) or { return none }
+		}
+		return point
+	}
+	chain := tree.ancestor_chain(index)
+	for reverse_index := chain.len - 1; reverse_index >= 0; reverse_index-- {
+		point = tree.transform_point_for_hit_test_through_node(chain[reverse_index], point, snapshot) or { return none }
 	}
 	return point
 }
 
+fn (tree AccumulatedVisualContextTree) inverse_transform_point_through_node(index int,
+	point Point) Point {
+	return match tree.nodes[index].data {
+		PerspectiveVisualData {
+			if inverse := tree.nodes[index].data.matrix.inverse() {
+				inverse.map_point(point)
+			} else {
+				point
+			}
+		}
+		TransformVisualData {
+			if transformed := inverse_map_about_origin(point, tree.nodes[index].data.matrix, tree.nodes[index].data.origin) {
+				transformed
+			} else {
+				point
+			}
+		}
+		else {
+			point
+		}
+	}
+}
+
 pub fn (tree AccumulatedVisualContextTree) inverse_transform_point(index int,
 	screen_point Point) Point {
+	if index <= 0 || index >= tree.nodes.len {
+		return screen_point
+	}
+	depth := tree.nodes[index].depth
+	if depth <= inline_visual_context_ancestor_capacity {
+		mut inline_chain := [inline_visual_context_ancestor_capacity]int{}
+		mut chain_length := 0
+		mut current := index
+		for current > 0 {
+			inline_chain[chain_length] = current
+			chain_length++
+			current = tree.nodes[current].parent_index
+		}
+		mut point := screen_point
+		for reverse_index := chain_length - 1; reverse_index >= 0; reverse_index-- {
+			point = tree.inverse_transform_point_through_node(inline_chain[reverse_index], point)
+		}
+		return point
+	}
 	mut point := screen_point
 	chain := tree.ancestor_chain(index)
 	for reverse_index := chain.len - 1; reverse_index >= 0; reverse_index-- {
-		match tree.nodes[chain[reverse_index]].data {
-			PerspectiveVisualData {
-				if inverse := tree.nodes[chain[reverse_index]].data.matrix.inverse() {
-					point = inverse.map_point(point)
-				}
-			}
-			TransformVisualData {
-				data := tree.nodes[chain[reverse_index]].data
-				if transformed := inverse_map_about_origin(point, data.matrix, data.origin) {
-					point = transformed
-				}
-			}
-			else {}
-		}
+		point = tree.inverse_transform_point_through_node(chain[reverse_index], point)
 	}
 	return point
 }

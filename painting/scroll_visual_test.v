@@ -218,3 +218,38 @@ fn test_visual_context_tree_ancestry_transform_clip_and_empty_propagation() {
 		opacity: 0.5
 	}.needs_layer()
 }
+
+fn test_visual_context_hit_test_ancestor_chain_inline_and_overflow_paths_match() {
+	mut tree := new_accumulated_visual_context_tree()
+	mut current := 0
+	for _ in 0 .. inline_visual_context_ancestor_capacity {
+		current = tree.append(TransformVisualData{
+			matrix: Affine{
+				a: 1
+				d: 1
+				e: 1
+			}
+		}, current)
+	}
+	// Eight ancestors use the source Vector<size_t, 8>-shaped stack path.
+	inline_result := tree.transform_point_for_hit_test(current, Point{20, 10}, ScrollStateSnapshot{}) or {
+		panic('missing inline-chain transform result')
+	}
+	assert inline_result == Point{12, 10}
+	assert tree.inverse_transform_point(current, Point{20, 10}) == Point{12, 10}
+
+	// The ninth ancestor exercises the dynamically sized fallback without
+	// changing transform ordering or results.
+	current = tree.append(TransformVisualData{
+		matrix: Affine{
+			a: 1
+			d: 1
+			e: 1
+		}
+	}, current)
+	overflow_result := tree.transform_point_for_hit_test(current, Point{20, 10}, ScrollStateSnapshot{}) or {
+		panic('missing overflow-chain transform result')
+	}
+	assert overflow_result == Point{11, 10}
+	assert tree.inverse_transform_point(current, Point{20, 10}) == Point{11, 10}
+}

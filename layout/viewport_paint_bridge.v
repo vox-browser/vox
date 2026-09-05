@@ -480,6 +480,98 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 	}
 }
 
+fn paintable_box_point_to_device_pixels(point painting.Point, device_pixels_per_css_pixel f64) painting.Point {
+	scale := f32(device_pixels_per_css_pixel)
+	return painting.Point{
+		x: f64(f32(point.x) * scale)
+		y: f64(f32(point.y) * scale)
+	}
+}
+
+fn paintable_box_point_to_css_pixels(point painting.Point, device_pixels_per_css_pixel f64) painting.Point {
+	scale := f32(device_pixels_per_css_pixel)
+	return painting.Point{
+		x: css.CSSPixels.nearest_value_for(f64(f32(point.x) / scale)).to_double()
+		y: css.CSSPixels.nearest_value_for(f64(f32(point.y) / scale)).to_double()
+	}
+}
+
+// Direct translation of PaintableBox::transform_point_to_local(). The active
+// bridge currently records its accumulated visual tree at one device pixel per
+// CSS pixel, but retaining the scale conversion here preserves the source API
+// and prevents callers from growing their own affine/scroll/clip shortcuts.
+fn paintable_box_transform_point_to_local(box &BlockBox, screen_position painting.Point,
+	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot) ?painting.Point {
+	if box.accumulated_visual_context_index == 0 {
+		return screen_position
+	}
+	device_position := paintable_box_point_to_device_pixels(screen_position, device_pixels_per_css_pixel)
+	result := tree.transform_point_for_hit_test(box.accumulated_visual_context_index, device_position, snapshot) or { return none }
+	return paintable_box_point_to_css_pixels(result, device_pixels_per_css_pixel)
+}
+
+// Direct translation of
+// PaintableBox::transform_point_to_local_for_descendants(). Overflow clips and
+// the box's own scroll frame are deliberately included only in this variant.
+fn paintable_box_transform_point_to_local_for_descendants(box &BlockBox,
+	screen_position painting.Point, device_pixels_per_css_pixel f64,
+	tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot) ?painting.Point {
+	if box.accumulated_visual_context_for_descendants_idx == 0 {
+		return screen_position
+	}
+	device_position := paintable_box_point_to_device_pixels(screen_position, device_pixels_per_css_pixel)
+	result := tree.transform_point_for_hit_test(box.accumulated_visual_context_for_descendants_idx, device_position, snapshot) or {
+		return none
+	}
+	return paintable_box_point_to_css_pixels(result, device_pixels_per_css_pixel)
+}
+
+// Direct translation of PaintableBox::transform_rect_to_viewport().
+fn paintable_box_transform_rect_to_viewport(box &BlockBox, rect LayoutRect,
+	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot) LayoutRect {
+	if box.accumulated_visual_context_index == 0 {
+		return rect
+	}
+	scale := f32(device_pixels_per_css_pixel)
+	device_rect := painting.Rect{
+		x: f64(f32(rect.x) * scale)
+		y: f64(f32(rect.y) * scale)
+		width: f64(f32(rect.width) * scale)
+		height: f64(f32(rect.height) * scale)
+	}
+	result := tree.transform_rect_to_viewport(box.accumulated_visual_context_index, device_rect, snapshot)
+	inverse_scale := f32(1) / scale
+	return LayoutRect{
+		x: css.CSSPixels.nearest_value_for(f64(f32(result.x) * inverse_scale)).to_double()
+		y: css.CSSPixels.nearest_value_for(f64(f32(result.y) * inverse_scale)).to_double()
+		width: css.CSSPixels.nearest_value_for(f64(f32(result.width) * inverse_scale)).to_double()
+		height: css.CSSPixels.nearest_value_for(f64(f32(result.height) * inverse_scale)).to_double()
+	}
+}
+
+// Direct translation of PaintableBox::inverse_transform_point(). Scroll and
+// clip nodes are ignored by AccumulatedVisualContextTree, as they are upstream.
+fn paintable_box_inverse_transform_point(box &BlockBox, screen_position painting.Point,
+	device_pixels_per_css_pixel f64, tree painting.AccumulatedVisualContextTree) painting.Point {
+	if box.accumulated_visual_context_index == 0 {
+		return screen_position
+	}
+	device_position := paintable_box_point_to_device_pixels(screen_position, device_pixels_per_css_pixel)
+	result := tree.inverse_transform_point(box.accumulated_visual_context_index, device_position)
+	return paintable_box_point_to_css_pixels(result, device_pixels_per_css_pixel)
+}
+
+// Direct translation of PaintableBox::transform_to_local_coordinates().
+fn paintable_box_transform_to_local_coordinates(box &BlockBox,
+	screen_position painting.Point, device_pixels_per_css_pixel f64,
+	tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot) painting.Point {
+	return paintable_box_transform_point_to_local(box, screen_position, device_pixels_per_css_pixel, tree, snapshot) or { screen_position }
+}
+
 fn viewport_assign_accumulated_visual_contexts(target voidptr) {
 	mut result := viewport_layout_result(target)
 	mut boxes_by_layout := map[u64]&BlockBox{}
@@ -1488,7 +1580,7 @@ fn compatibility_dispatch_scrollbar_pointer_event(mut box BlockBox,
 	} else {
 		painting.ScrollDirection.vertical
 	}
-	local_position := tree.transform_point_for_hit_test(box.accumulated_visual_context_index, visual_viewport_position, snapshot) or { visual_viewport_position }
+	local_position := paintable_box_transform_to_local_coordinates(box, visual_viewport_position, 1.0, tree, snapshot)
 	geometry := box.compatibility_scrollbar_geometry_input(overlay, direction, metrics, if direction == .horizontal {
 		box.horizontal_scrollbar.is_enlarged()
 	} else {
@@ -1647,9 +1739,7 @@ fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
 	position := if uses_lines_hit_test {
 		painting.Point{x, y}
 	} else {
-		tree.transform_point_for_hit_test(box.accumulated_visual_context_index, painting.Point{x, y}, snapshot) or {
-			painting.Point{x, y}
-		}
+		paintable_box_transform_to_local_coordinates(box, painting.Point{x, y}, 1.0, tree, snapshot)
 	}
 	identity := u64(voidptr(box))
 	if box.compatibility_resizer_contains(position, overlay, metrics) {
@@ -1697,7 +1787,7 @@ fn compatibility_empty_editable_hit_test(box &BlockBox, x f64, y f64,
 	if !dom_node.is_editable_or_editing_host() {
 		return none
 	}
-	local_position := tree.transform_point_for_hit_test(box.accumulated_visual_context_index, painting.Point{x, y}, snapshot) or { return none }
+	local_position := paintable_box_transform_point_to_local(box, painting.Point{x, y}, 1.0, tree, snapshot) or { return none }
 	if !box.border_box_contains_hit_test_point(local_position) {
 		return none
 	}
@@ -1721,12 +1811,11 @@ fn compatibility_hit_test_fragments(document &dom.Document, box &BlockBox, x f64
 		|| !box.pointer_events_enabled {
 		return false
 	}
-	context_index := if box.stacking_context {
-		box.accumulated_visual_context_index
+	local_position := if box.stacking_context {
+		paintable_box_transform_point_to_local(box, painting.Point{x, y}, 1.0, tree, snapshot) or { return false }
 	} else {
-		box.accumulated_visual_context_for_descendants_idx
+		paintable_box_transform_point_to_local_for_descendants(box, painting.Point{x, y}, 1.0, tree, snapshot) or { return false }
 	}
-	local_position := tree.transform_point_for_hit_test(context_index, painting.Point{x, y}, snapshot) or { return false }
 	common_ancestor_parent := if type_ == .text_cursor {
 		compatibility_text_cursor_common_ancestor_parent(document)
 	} else {
@@ -1827,7 +1916,7 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 fn compatibility_box_contains_hit_test_point(box &BlockBox, x f64, y f64,
 	stacking_context_root bool, tree painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) bool {
-	local_point := tree.transform_point_for_hit_test(box.accumulated_visual_context_index, painting.Point{x, y}, snapshot) or { return false }
+	local_point := paintable_box_transform_point_to_local(box, painting.Point{x, y}, 1.0, tree, snapshot) or { return false }
 	if stacking_context_root {
 		// StackingContext::hit_test() intentionally performs only the final
 		// absolute-border-box containment check here.

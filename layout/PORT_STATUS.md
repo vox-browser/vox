@@ -267,6 +267,14 @@ inverse-maps points through accumulated transforms, and applies `visibility`,
 `PaintableBox::hit_test()`. Ordinary paintable boxes use the translated
 normalized elliptical border-radii containment check, while stacking-context
 roots preserve `StackingContext::hit_test()`'s rectangle-only source behavior.
+The active box, chrome, empty-editable, and text-fragment paths now share direct
+translations of `PaintableBox::transform_point_to_local()` and its descendants
+variant rather than invoking the visual tree through separately maintained
+shortcuts. The same bridge retains `transform_rect_to_viewport()`,
+`inverse_transform_point()`, and `transform_to_local_coordinates()`, including
+the zero-context fast path, float device scaling, clip failure, and final
+fixed-CSS-pixel conversion. Common visual-context chains use the upstream
+eight-entry inline ancestor capacity, avoiding a heap array for each candidate.
 The native shell consumes this same
 viewport callback instead of independently flattening `BlockBox` during mouse
 movement. The final
