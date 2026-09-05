@@ -19,7 +19,7 @@ fn test_scroll_state_hierarchy_snapshot_and_clear() {
 	assert state.frames.len == 1
 }
 
-fn test_scrollbar_thumb_geometry_and_pointer_mapping() {
+fn test_scrollbar_thumb_geometry_and_source_pointer_state_machine() {
 	metrics := new_chrome_metrics(1) or { panic(err) }
 	input := ScrollbarGeometryInput{
 		direction: .vertical
@@ -36,9 +36,35 @@ fn test_scrollbar_thumb_geometry_and_pointer_mapping() {
 	assert data.thumb_rect.width == 8
 	assert data.thumb_rect.height == 49
 	assert data.thumb_rect.y > 70 && data.thumb_rect.y < 80
-	ratio, grab := scrollbar_offset_for_pointer(80, 0, 200, 50, none)
-	assert grab == 25
-	assert ratio > 0.36 && ratio < 0.37
+
+	mut scrollbar := Scrollbar.create(.vertical)
+	assert scrollbar.direction() == .vertical
+	assert !scrollbar.is_enlarged()
+	assert scrollbar.contains(Point{96, 80}, input)
+	interaction := ScrollbarInteractionInput{
+		geometry: input
+	}
+	assert scrollbar.handle_pointer_event('pointermove', 0, Point{96, 80}, interaction) == .none
+	assert scrollbar.handle_pointer_event('pointerdown', 1, Point{96, 80}, interaction) == .none
+
+	scrollbar.mouse_enter()
+	assert scrollbar.is_enlarged()
+	assert scrollbar.take_repaint_request()
+	assert !scrollbar.take_repaint_request()
+	// Clicking below the thumb uses the source's constrained half-thumb grab
+	// point and jumps directly to the bottom of this gutter.
+	assert scrollbar.handle_pointer_event('pointerdown', 0, Point{94, 180}, interaction) == .capture_input
+	assert scrollbar.take_requested_scroll_offset() or { panic('missing scrollbar offset') } == Point{0, 600}
+	assert scrollbar.take_repaint_request()
+	// The retained grab position keeps dragging even when no current hit target
+	// is present. The legacy private mouse_move path swallows that event.
+	assert scrollbar.mouse_move(Point{94, 100}, interaction) == .swallow_event
+	dragged := scrollbar.take_requested_scroll_offset() or { panic('missing dragged offset') }
+	assert dragged.y == 282.125
+	assert scrollbar.mouse_up(Point{}, 0) == .none
+	assert scrollbar.take_repaint_request()
+	scrollbar.mouse_leave()
+	assert !scrollbar.is_enlarged()
 }
 
 fn test_paintable_box_scrollbar_and_resizer_rects_preserve_source_edge_cases() {
@@ -71,17 +97,22 @@ fn test_paintable_box_scrollbar_and_resizer_rects_preserve_source_edge_cases() {
 }
 
 fn test_resize_handle_and_backing_store_state_machines() {
-	mut handle := ResizeHandle{}
+	mut handle := ResizeHandle.create()
 	assert handle.handle_pointer_event('pointerdown', 1, Point{1, 1}) == .none
 	assert handle.handle_pointer_event('pointerdown', 0, Point{2, 3}) == .capture_input
 	assert handle.is_resizing
+	assert handle.origin == Point{2, 3}
+	assert handle.last_point == Point{}
 	assert handle.handle_pointer_event('pointermove', 9, Point{4, 6}) == .capture_input
 	assert handle.last_point == Point{4, 6}
 	assert handle.handle_pointer_event('pointerup', 0, Point{5, 7}) == .none
 	assert !handle.is_resizing
-	assert resize_cursor(PhysicalResizeAxes{true, true}, false) == .se_resize
-	assert resize_cursor(PhysicalResizeAxes{true, true}, true) == .sw_resize
-	assert resize_cursor(PhysicalResizeAxes{}, false) == .ew_resize
+	assert handle.last_point == Point{5, 7}
+	assert handle.cursor(PhysicalResizeAxes{true, true}, false) == .se_resize
+	assert handle.cursor(PhysicalResizeAxes{true, true}, true) == .sw_resize
+	assert handle.cursor(PhysicalResizeAxes{}, false) == .ew_resize
+	handle.mouse_enter()
+	handle.mouse_leave()
 	mut manager := BackingStoreManager{}
 	assert manager.resize_if_needed(IntSize{800, 600}, true, true, false)
 	assert manager.allocated_size == IntSize{1056, 856}

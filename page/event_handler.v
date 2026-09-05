@@ -5,6 +5,12 @@
 // a typed InputTarget; dispatch/default-action ordering remains observable.
 module page
 
+import painting
+
+pub type ChromeWidgetPointerEventCallback = fn (voidptr, string, string, int, PixelPoint) painting.MouseAction
+
+pub type ChromeWidgetHoverCallback = fn (voidptr, string, bool)
+
 pub enum SelectionMode {
 	none
 	character
@@ -46,6 +52,10 @@ mut:
 	previous_screen       ?PixelPoint
 	focused_target_       string
 	hovered_chrome_widget string
+	captured_chrome_widget string
+	chrome_widget_callback_target voidptr = unsafe { nil }
+	chrome_widget_pointer_event_callback ChromeWidgetPointerEventCallback = unsafe { nil }
+	chrome_widget_hover_callback ChromeWidgetHoverCallback = unsafe { nil }
 	current_cursor        string = 'arrow'
 	selection_anchor      PixelPoint
 	selection_extent      PixelPoint

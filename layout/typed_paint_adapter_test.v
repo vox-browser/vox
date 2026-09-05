@@ -1279,6 +1279,59 @@ fn test_paintable_box_hit_test_chrome_uses_scrollbar_and_inflated_resizer_geomet
 	assert inline_chrome.chrome_widget_id.starts_with('resize-handle:')
 }
 
+fn test_active_scrollbar_hover_jump_drag_and_release_follow_source_state() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#scroller { width: 100px; height: 50px; overflow: auto }
+		#content { height: 200px }
+	</style><body><div id="scroller"><div id="content"></div></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	scroller := document.get_element_by_id('scroller') or { panic('missing active scroller') }
+	box := root.find_box(i64(scroller.as_node().unique_id())) or {
+		panic('missing active scroller box')
+	}
+	overlay := box.overlay or { panic('missing active scrollbar overlay') }
+	metrics := painting.new_chrome_metrics(1) or { panic(err) }
+	thin_input := box.compatibility_scrollbar_geometry_input(overlay, .vertical, metrics, false)
+	thin_rect := painting.paintable_box_absolute_scrollbar_rect(thin_input)
+	viewport := document.paintable_box() or { panic('missing active viewport') }
+	initial_hit := viewport.hit_test(thin_rect.x + thin_rect.width / 2, 10, .exact) or {
+		panic('missing active scrollbar hit')
+	}
+	assert initial_hit.chrome_widget_id.starts_with('scrollbar-vertical:')
+
+	mut result := document_layout_result(document) or { panic('missing active layout result') }
+	scrollbar_identity := initial_hit.chrome_widget_id.split(':')[1].u64()
+	assert result.chrome_widget_boxes[scrollbar_identity] != unsafe { nil }
+	result.chrome_widget_mouse_enter(initial_hit.chrome_widget_id)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	hovered_commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing hovered scrollbar display list')
+	})
+	gutter_input := box.compatibility_scrollbar_geometry_input(overlay, .vertical, metrics, true)
+	gutter_rect := painting.paintable_box_absolute_scrollbar_rect(gutter_input)
+	assert hovered_commands.any(it.kind == 'fill_rect' && it.x == gutter_rect.x
+		&& it.y == gutter_rect.y && it.width == gutter_rect.width
+		&& it.height == gutter_rect.height)
+	// Hover enlargement exposes the full 12px gutter rather than only the thin
+	// 8px overlay thumb hit area.
+	hovered_hit := viewport.hit_test(gutter_rect.x + 1, 10, .exact) or {
+		panic('missing enlarged scrollbar hit')
+	}
+	assert hovered_hit.chrome_widget_id == initial_hit.chrome_widget_id
+
+	// Clicking the track below the thumb jumps to the constrained bottom, then
+	// capture keeps routing a drag at a different point to the same scrollbar.
+	assert result.handle_scrollbar_pointer_event(initial_hit.chrome_widget_id, 'pointerdown', 0, gutter_rect.x + gutter_rect.width / 2, gutter_rect.bottom() - 1) == .capture_input
+	mut paintable := scroller.paintable_box() or { panic('missing active scroller paintable') }
+	assert paintable.scroll_offset().y() == 150
+	assert result.handle_scrollbar_pointer_event(initial_hit.chrome_widget_id, 'pointermove', 9, gutter_rect.x + gutter_rect.width / 2, 25) == .capture_input
+	assert paintable.scroll_offset().y() == 11.53125
+	assert result.handle_scrollbar_pointer_event(initial_hit.chrome_widget_id, 'pointerup', 0, gutter_rect.x + gutter_rect.width / 2, 25) == .none
+	result.chrome_widget_mouse_leave(initial_hit.chrome_widget_id)
+	assert mutable_document.document_pending_scroll_events().len == 1
+}
+
 fn test_element_scroll_replays_retained_commands_through_live_visual_context() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto; background: rgb(9 8 7) } #spacer { height: 80px } #target { height: 20px; background: rgb(1 2 3) }</style><body><div id="scroller"><div id="spacer"></div><div id="target"></div></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)

@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 36,370 | 12,951 | Present |
+| `Layout` | 50 | 19,592 | 36,539 | 13,004 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -75,8 +75,8 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `MixedContent` | 1 | 121 | 125 | 105 | Complete |
 | `NavigationTiming` | 3 | 104 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 249 | 290 | 68 | Complete |
-| `Page` | 7 | 4,298 | 2,206 | 414 | Complete |
-| `Painting` | 48 | 10,038 | 5,987 | 1,721 | Present |
+| `Page` | 7 | 4,298 | 2,275 | 475 | Complete |
+| `Painting` | 48 | 10,038 | 6,162 | 1,752 | Present |
 | `PerformanceTimeline` | 5 | 391 | 447 | 130 | Complete |
 | `PermissionsPolicy` | 1 | 98 | 86 | 21 | Complete |
 | `Platform` | 4 | 415 | 1,167 | 96 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **314,605** | **56,175** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **315,018** | **56,320** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -125,12 +125,12 @@ upstream .cpp files: 1147
 upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
-suspicious empty/default-return implementations: 595
-  candidate-name-match: 14046
-  unmatched: 1713
+suspicious empty/default-return implementations: 598
+  candidate-name-match: 14060
+  unmatched: 1700
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 320
+  consolidated-name-match: 319
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   409 Painting
+   396 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -252,6 +252,15 @@ Scrollbar layout now follows `PaintableBox::available_scrollbar_length()`,
 resizer-adjusted scrollbar lengths retain C++'s signed geometry for boxes
 smaller than the platform gripper instead of being prematurely clamped by the
 combined V helper.
+The retained scrollbar objects now also translate `Scrollbar.cpp`'s hover and
+thumb-grab state rather than calling a stateless pointer-ratio helper. Hover
+enlarges both paint and hit geometry; track presses use C++'s constrained grab
+point, captured moves retain that point, and the resulting element scroll
+offset is rounded through `CSSPixels::nearest_value_for`. Page's chrome-widget
+dispatcher separately preserves captured-before-current-target routing and the
+independent `CaptureInput`/`SwallowEvent` decisions. A retained widget index
+keeps captured moves O(1), matching C++'s direct object reference rather than
+rescanning the paint tree for every pointer event.
 Scroll-frame parent selection now directly follows
 `PaintableBox::nearest_scroll_frame_index()`: fixed paintables attach to the
 root frame, ordinary descendants stop at an intervening fixed containing block,

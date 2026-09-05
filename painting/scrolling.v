@@ -1,5 +1,6 @@
 module painting
 
+import css
 import math
 
 pub struct StickyInsets {
@@ -287,24 +288,188 @@ pub fn paintable_box_absolute_resizer_rect(padding_rect Rect, has_resizer bool,
 	return Rect{x, y, metrics.resize_gripper_size, metrics.resize_gripper_size}
 }
 
-pub fn scrollbar_offset_for_pointer(position f64, gutter_start f64, gutter_length f64,
-	thumb_length f64, grab_position ?f64) (f64, f64) {
-	if gutter_length < thumb_length || gutter_length <= 0 {
-		return 0, 0
-	}
-	relative := position - gutter_start
-	grab := grab_position or {
-		math.max(math.min(relative, thumb_length / 2.0), relative - gutter_length + thumb_length)
-	}
-
-	constrained := math.max(0.0, math.min(gutter_length - thumb_length, relative - grab))
-	return constrained / (gutter_length - thumb_length), grab
-}
-
 pub enum MouseAction {
 	none
 	capture_input
 	swallow_event
+	capture_input_and_swallow_event
+}
+
+pub fn (action MouseAction) captures_input() bool {
+	return action == .capture_input || action == .capture_input_and_swallow_event
+}
+
+pub fn (action MouseAction) swallows_event() bool {
+	return action == .swallow_event || action == .capture_input_and_swallow_event
+}
+
+pub struct ScrollbarInteractionInput {
+pub:
+	geometry        ScrollbarGeometryInput
+	visual_to_local Affine
+}
+
+// Direct state translation of Scrollbar. PaintableBox owns this state in C++;
+// callers pass its current geometry because the renderer-independent Painting
+// module cannot retain a Layout box without creating a module cycle.
+pub struct Scrollbar {
+mut:
+	direction_              ScrollDirection
+	hovered                 bool
+	thumb_grab_position     ?f64
+	requested_scroll_offset ?Point
+	repaint_requested       bool
+}
+
+pub fn Scrollbar.create(direction ScrollDirection) Scrollbar {
+	return Scrollbar{
+		direction_: direction
+	}
+}
+
+pub fn (scrollbar &Scrollbar) direction() ScrollDirection {
+	return scrollbar.direction_
+}
+
+pub fn (scrollbar &Scrollbar) is_enlarged() bool {
+	return scrollbar.hovered || scrollbar.thumb_grab_position != none
+}
+
+pub fn (scrollbar &Scrollbar) contains(position Point, geometry ScrollbarGeometryInput) bool {
+	input := ScrollbarGeometryInput{
+		...geometry
+		direction: scrollbar.direction_
+		with_gutter: scrollbar.is_enlarged()
+	}
+	return paintable_box_absolute_scrollbar_rect(input).contains(position)
+}
+
+pub fn (mut scrollbar Scrollbar) handle_pointer_event(event_type string, button int,
+	visual_viewport_position Point, input ScrollbarInteractionInput) MouseAction {
+	if event_type == 'pointermove' {
+		if scrollbar.thumb_grab_position == none {
+			return .none
+		}
+	} else if button != 0 {
+		return .none
+	}
+
+	position := input.visual_to_local.map_point(visual_viewport_position)
+	scrollbar.scroll_to_mouse_position(position, input.geometry)
+	scrollbar.repaint_requested = true
+
+	if event_type == 'pointerup' {
+		scrollbar.thumb_grab_position = none
+		return .none
+	}
+
+	return .capture_input
+}
+
+fn (mut scrollbar Scrollbar) mouse_move(position Point,
+	input ScrollbarInteractionInput) MouseAction {
+	if scrollbar.thumb_grab_position != none {
+		local_position := input.visual_to_local.map_point(position)
+		scrollbar.scroll_to_mouse_position(local_position, input.geometry)
+		return .swallow_event
+	}
+	return .none
+}
+
+fn (mut scrollbar Scrollbar) mouse_up(_ Point, _ int) MouseAction {
+	scrollbar.thumb_grab_position = none
+	scrollbar.repaint_requested = true
+	return .none
+}
+
+pub fn (mut scrollbar Scrollbar) mouse_enter() {
+	if scrollbar.hovered {
+		return
+	}
+	scrollbar.hovered = true
+	scrollbar.repaint_requested = true
+}
+
+pub fn (mut scrollbar Scrollbar) mouse_leave() {
+	if !scrollbar.hovered {
+		return
+	}
+	scrollbar.hovered = false
+	scrollbar.repaint_requested = true
+}
+
+fn (mut scrollbar Scrollbar) scroll_to_mouse_position(position Point,
+	geometry ScrollbarGeometryInput) {
+	input := ScrollbarGeometryInput{
+		...geometry
+		direction: scrollbar.direction_
+		with_gutter: scrollbar.is_enlarged()
+	}
+	scrollbar_data := paintable_box_compute_scrollbar_data(input) or {
+		panic('Scrollbar::scroll_to_mouse_position requires scrollbar data')
+	}
+	is_horizontal := scrollbar.direction_ == .horizontal
+	offset_relative_to_gutter := if is_horizontal {
+		position.x - scrollbar_data.gutter_rect.x
+	} else {
+		position.y - scrollbar_data.gutter_rect.y
+	}
+	gutter_size := if is_horizontal {
+		scrollbar_data.gutter_rect.width
+	} else {
+		scrollbar_data.gutter_rect.height
+	}
+	thumb_size := if is_horizontal {
+		scrollbar_data.thumb_rect.width
+	} else {
+		scrollbar_data.thumb_rect.height
+	}
+
+	if gutter_size < thumb_size {
+		return
+	}
+
+	if scrollbar.thumb_grab_position == none {
+		thumb_origin := if is_horizontal {
+			scrollbar_data.thumb_rect.x
+		} else {
+			scrollbar_data.thumb_rect.y
+		}
+		grab_position := if scrollbar_data.thumb_rect.contains(position) {
+			(if is_horizontal { position.x } else { position.y }) - thumb_origin
+		} else {
+			math.max(math.min(offset_relative_to_gutter, thumb_size / 2.0), offset_relative_to_gutter - gutter_size + thumb_size)
+		}
+		scrollbar.thumb_grab_position = grab_position
+	}
+
+	grab_position := scrollbar.thumb_grab_position or { return }
+	constrained_offset := math.max(0.0, math.min(gutter_size - thumb_size, offset_relative_to_gutter - grab_position))
+	scroll_position := constrained_offset / (gutter_size - thumb_size)
+	scrollable_overflow_size := if is_horizontal {
+		input.scrollable_overflow.width
+	} else {
+		input.scrollable_overflow.height
+	}
+	padding_size := if is_horizontal { input.padding_rect.width } else { input.padding_rect.height }
+	scroll_position_in_pixels := css.CSSPixels.nearest_value_for(scroll_position * (scrollable_overflow_size - padding_size)).to_double()
+	scrollbar.requested_scroll_offset = if is_horizontal {
+		Point{scroll_position_in_pixels, input.scroll_offset.y}
+	} else {
+		Point{input.scroll_offset.x, scroll_position_in_pixels}
+	}
+}
+
+pub fn (mut scrollbar Scrollbar) take_requested_scroll_offset() ?Point {
+	requested := scrollbar.requested_scroll_offset
+	scrollbar.requested_scroll_offset = none
+	return requested
+}
+
+pub fn (mut scrollbar Scrollbar) take_repaint_request() bool {
+	requested := scrollbar.repaint_requested
+	scrollbar.repaint_requested = false
+	return requested
 }
 
 pub enum ResizeCursor {
@@ -321,7 +486,19 @@ pub:
 	vertical   bool
 }
 
-pub fn resize_cursor(axes PhysicalResizeAxes, chrome_mirrored bool) ResizeCursor {
+pub struct ResizeHandle {
+pub mut:
+	is_resizing bool
+	origin      Point
+	last_point  Point
+}
+
+pub fn ResizeHandle.create() ResizeHandle {
+	return ResizeHandle{}
+}
+
+pub fn (_ &ResizeHandle) cursor(axes PhysicalResizeAxes,
+	chrome_mirrored bool) ResizeCursor {
 	if axes.vertical {
 		if axes.horizontal {
 			return if chrome_mirrored { .sw_resize } else { .se_resize }
@@ -331,12 +508,9 @@ pub fn resize_cursor(axes PhysicalResizeAxes, chrome_mirrored bool) ResizeCursor
 	return .ew_resize
 }
 
-pub struct ResizeHandle {
-pub mut:
-	is_resizing bool
-	origin      Point
-	last_point  Point
-}
+pub fn (_ &ResizeHandle) mouse_enter() {}
+
+pub fn (_ &ResizeHandle) mouse_leave() {}
 
 pub fn (mut handle ResizeHandle) handle_pointer_event(event_type string, button int,
 	position Point) MouseAction {
@@ -350,8 +524,9 @@ pub fn (mut handle ResizeHandle) handle_pointer_event(event_type string, button 
 	if !handle.is_resizing {
 		handle.is_resizing = true
 		handle.origin = position
+	} else {
+		handle.last_point = position
 	}
-	handle.last_point = position
 	if event_type == 'pointerup' {
 		handle.is_resizing = false
 		return .none

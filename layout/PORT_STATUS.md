@@ -237,6 +237,16 @@ rather than inheriting `paint()`'s transparent-context early exit. The same
 plan drives `elementsFromPoint()`, so chrome-owning elements precede descendants
 at scrollbar coordinates there as well.
 
+Each retained box now owns the same per-axis scrollbar state as
+`PaintableBox`. Hover switches overlay recording and containment from the thin
+thumb strip to the full gutter, while pointerdown, captured pointermove, and
+pointerup call the translated `Scrollbar` state machine. Track clicks use its
+constrained half-thumb grab rule, drags update the live DOM scroll offset on the
+fixed CSS-pixel grid, and repaint/scroll-state invalidation continues through
+the existing paintable callbacks rather than rebuilding layout. Widget identity
+resolves through an index retained with the hit plan, so captured pointer events
+remain O(1) instead of walking the paint tree on every move.
+
 The active compatibility paint bridge now builds long text runs with a
 capacity-sized `strings.Builder`, retains box references through paint-order
 and hit-test traversal, skips invisible hit-test candidates, and sorts stacking

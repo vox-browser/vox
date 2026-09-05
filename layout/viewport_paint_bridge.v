@@ -1241,8 +1241,14 @@ fn viewport_build_stacking_context_tree(target voidptr) {
 	result.paint_order, result.paint_steps = result.paint_tree.compatibility_paint_plan()
 	result.hit_test_steps = result.paint_tree.compatibility_hit_test_steps()
 	result.hit_test_order = []&BlockBox{cap: result.paint_order.len}
+	result.chrome_widget_boxes.clear()
 	for entry in result.paint_order {
 		result.hit_test_order << entry.box
+	}
+	for step in result.hit_test_steps {
+		if step.box.overlay != none {
+			result.chrome_widget_boxes[u64(voidptr(step.box))] = voidptr(step.box)
+		}
 	}
 	result.stacking_context_tree_is_valid = true
 }
@@ -1309,6 +1315,7 @@ fn viewport_invalidate_stacking_context(target voidptr) {
 	result.paint_steps.clear()
 	result.hit_test_steps.clear()
 	result.hit_test_order.clear()
+	result.chrome_widget_boxes.clear()
 	// The cache is indexed by the retained paint order. A rebuilt stacking tree
 	// may assign different indices even when individual box commands are stable.
 	result.paint_phase_commands.clear()
@@ -1377,6 +1384,160 @@ fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.H
 		}
 	}
 	return hit_test_state.result
+}
+
+enum CompatibilityChromeWidgetKind {
+	resize_handle
+	horizontal_scrollbar
+	vertical_scrollbar
+}
+
+struct CompatibilityChromeWidgetTarget {
+	kind     CompatibilityChromeWidgetKind
+	identity u64
+}
+
+fn compatibility_chrome_widget_target(id string) ?CompatibilityChromeWidgetTarget {
+	parts := id.split(':')
+	if parts.len != 2 {
+		return none
+	}
+	kind := match parts[0] {
+		'resize-handle' { CompatibilityChromeWidgetKind.resize_handle }
+		'scrollbar-horizontal' { CompatibilityChromeWidgetKind.horizontal_scrollbar }
+		'scrollbar-vertical' { CompatibilityChromeWidgetKind.vertical_scrollbar }
+		else {
+			return none
+		}
+	}
+	identity := parts[1].u64()
+	if identity == 0 {
+		return none
+	}
+	return CompatibilityChromeWidgetTarget{kind, identity}
+}
+
+fn compatibility_request_box_repaint(box &BlockBox) {
+	if box.node_id == 0 {
+		return
+	}
+	if node := dom.Node.from_unique_id(dom.UniqueNodeID(box.node_id)) {
+		if mut paintable := node.paintable_box() {
+			paintable.set_needs_repaint(.yes)
+		}
+	}
+}
+
+fn compatibility_apply_scrollbar_hover(mut box BlockBox,
+	kind CompatibilityChromeWidgetKind, hovered bool) {
+	match kind {
+		.horizontal_scrollbar {
+			if hovered {
+				box.horizontal_scrollbar.mouse_enter()
+			} else {
+				box.horizontal_scrollbar.mouse_leave()
+			}
+			if box.horizontal_scrollbar.take_repaint_request() {
+				compatibility_request_box_repaint(box)
+			}
+		}
+		.vertical_scrollbar {
+			if hovered {
+				box.vertical_scrollbar.mouse_enter()
+			} else {
+				box.vertical_scrollbar.mouse_leave()
+			}
+			if box.vertical_scrollbar.take_repaint_request() {
+				compatibility_request_box_repaint(box)
+			}
+		}
+		.resize_handle {
+			// ResizeHandle's source hover methods are no-ops.
+		}
+	}
+}
+
+// These methods expose the retained ChromeWidget objects across the compact
+// layout boundary. EventHandler calls leave/enter in this order whenever the
+// hit-tested widget changes, exactly like the C++ owner.
+pub fn (mut result DocumentLayoutResult) chrome_widget_mouse_enter(id string) {
+	target := compatibility_chrome_widget_target(id) or { return }
+	viewport_build_stacking_context_tree(voidptr(result))
+	box_pointer := result.chrome_widget_boxes[target.identity] or { return }
+	mut box := unsafe { &BlockBox(box_pointer) }
+	compatibility_apply_scrollbar_hover(mut box, target.kind, true)
+}
+
+pub fn (mut result DocumentLayoutResult) chrome_widget_mouse_leave(id string) {
+	target := compatibility_chrome_widget_target(id) or { return }
+	viewport_build_stacking_context_tree(voidptr(result))
+	box_pointer := result.chrome_widget_boxes[target.identity] or { return }
+	mut box := unsafe { &BlockBox(box_pointer) }
+	compatibility_apply_scrollbar_hover(mut box, target.kind, false)
+}
+
+fn compatibility_dispatch_scrollbar_pointer_event(mut box BlockBox,
+	kind CompatibilityChromeWidgetKind, event_type string, button int,
+	visual_viewport_position painting.Point, tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot, metrics painting.ChromeMetrics) painting.MouseAction {
+	if kind == .resize_handle {
+		return .none
+	}
+	overlay := box.overlay or { return .none }
+	direction := if kind == .horizontal_scrollbar {
+		painting.ScrollDirection.horizontal
+	} else {
+		painting.ScrollDirection.vertical
+	}
+	local_position := tree.transform_point_for_hit_test(box.accumulated_visual_context_index, visual_viewport_position, snapshot) or { visual_viewport_position }
+	geometry := box.compatibility_scrollbar_geometry_input(overlay, direction, metrics, if direction == .horizontal {
+		box.horizontal_scrollbar.is_enlarged()
+	} else {
+		box.vertical_scrollbar.is_enlarged()
+	})
+	interaction := painting.ScrollbarInteractionInput{
+		geometry: geometry
+	}
+	mut action := painting.MouseAction.none
+	mut requested_offset := ?painting.Point(none)
+	mut repaint_requested := false
+	if direction == .horizontal {
+		action = box.horizontal_scrollbar.handle_pointer_event(event_type, button, local_position, interaction)
+		requested_offset = box.horizontal_scrollbar.take_requested_scroll_offset()
+		repaint_requested = box.horizontal_scrollbar.take_repaint_request()
+	} else {
+		action = box.vertical_scrollbar.handle_pointer_event(event_type, button, local_position, interaction)
+		requested_offset = box.vertical_scrollbar.take_requested_scroll_offset()
+		repaint_requested = box.vertical_scrollbar.take_repaint_request()
+	}
+	if offset := requested_offset {
+		if box.node_id != 0 {
+			if node := dom.Node.from_unique_id(dom.UniqueNodeID(box.node_id)) {
+				if mut paintable := node.paintable_box() {
+					paintable.set_scroll_offset(dom.CSSPixelPoint_{
+						x_: offset.x
+						y_: offset.y
+					})
+				}
+			}
+		}
+	}
+	if repaint_requested {
+		compatibility_request_box_repaint(box)
+	}
+	return action
+}
+
+pub fn (mut result DocumentLayoutResult) handle_scrollbar_pointer_event(id string,
+	event_type string, button int, x f64, y f64) painting.MouseAction {
+	target := compatibility_chrome_widget_target(id) or { return .none }
+	viewport_refresh_scroll_state(voidptr(result))
+	viewport_build_stacking_context_tree(voidptr(result))
+	box_pointer := result.chrome_widget_boxes[target.identity] or { return .none }
+	mut box := unsafe { &BlockBox(box_pointer) }
+	snapshot := result.scroll_state.snapshot(1.0)
+	metrics := painting.new_chrome_metrics(1.0) or { return .none }
+	return compatibility_dispatch_scrollbar_pointer_event(mut box, target.kind, event_type, button, painting.Point{x, y}, result.visual_context_tree, snapshot, metrics)
 }
 
 struct CompatibilityHitTestState {
@@ -1507,8 +1668,13 @@ fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
 		if !can_scroll {
 			continue
 		}
-		input := box.compatibility_scrollbar_geometry_input(overlay, direction, metrics, false)
-		if compatibility_scrollbar_contains(position, input) {
+		scrollbar := if direction == .horizontal {
+			&box.horizontal_scrollbar
+		} else {
+			&box.vertical_scrollbar
+		}
+		input := box.compatibility_scrollbar_geometry_input(overlay, direction, metrics, scrollbar.is_enlarged())
+		if scrollbar.contains(position, input) {
 			name := if direction == .horizontal { 'horizontal' } else { 'vertical' }
 			return compatibility_hit_test_result_for_chrome(box, 'scrollbar-${name}:${identity}')
 		}

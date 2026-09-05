@@ -466,6 +466,10 @@ mut:
 	accumulated_visual_context_index               int
 	accumulated_visual_context_for_descendants_idx int
 	fixed_to_viewport                              bool
+	// PaintableBox retains one Scrollbar object per axis. Their hover/grab state
+	// survives display-list rebuilds and selects thin versus gutter geometry.
+	horizontal_scrollbar painting.Scrollbar = painting.Scrollbar.create(.horizontal)
+	vertical_scrollbar   painting.Scrollbar = painting.Scrollbar.create(.vertical)
 }
 
 // A rectangle in the layout coordinate space (document coordinates when laid out from the root).
@@ -1795,13 +1799,6 @@ fn (b &BlockBox) compatibility_scrollbar_geometry_input(overlay CompatibilityOve
 	}
 }
 
-// Direct translation of Scrollbar::contains() after the owning box has checked
-// that this axis is scrollable and scrollbar-width does not suppress chrome.
-fn compatibility_scrollbar_contains(position painting.Point,
-	input painting.ScrollbarGeometryInput) bool {
-	return painting.paintable_box_absolute_scrollbar_rect(input).contains(position)
-}
-
 // Direct translation of PaintableBox::resizer_contains(), also consumed by
 // ResizeHandle::contains(). The visible grip grows through the adjacent border
 // on the physical end side and through the bottom border.
@@ -1937,13 +1934,13 @@ fn (b &BlockBox) append_overlay_commands(mut commands []PaintCommand, metrics pa
 	if overlay.scrollbar_width != .none_ {
 		// PaintableBox::paint visits vertical before horizontal.
 		if overlay.can_scroll_vertically {
-			input := b.compatibility_scrollbar_geometry_input(overlay, .vertical, metrics, false)
+			input := b.compatibility_scrollbar_geometry_input(overlay, .vertical, metrics, b.vertical_scrollbar.is_enlarged())
 			if data := painting.paintable_box_compute_scrollbar_data(input) {
 				append_scrollbar_overlay_command(mut commands, data, overlay, opacity, .vertical, input.scroll_offset.y)
 			}
 		}
 		if overlay.can_scroll_horizontally {
-			input := b.compatibility_scrollbar_geometry_input(overlay, .horizontal, metrics, false)
+			input := b.compatibility_scrollbar_geometry_input(overlay, .horizontal, metrics, b.horizontal_scrollbar.is_enlarged())
 			if data := painting.paintable_box_compute_scrollbar_data(input) {
 				append_scrollbar_overlay_command(mut commands, data, overlay, opacity, .horizontal, input.scroll_offset.x)
 			}

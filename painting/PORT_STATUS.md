@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 409
+filename-level mappings. The current semantic audit nevertheless reports 396
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 5,987 | 1,721 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 6,162 | 1,752 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 409 unmatched Painting
+  were removed; the audit currently reports 396 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -183,6 +183,17 @@ following behavioral mismatches and added focused regressions:
   Its context-root fallback also retains the source rectangle-only containment,
   while ordinary `PaintableBox` fallback applies normalized corner radii.
   `elementFromPoint()` and `elementsFromPoint()` share this ordering.
+- `Scrollbar` is now a retained source-shaped state object rather than a
+  stateless pointer-to-ratio helper. `mouse_enter()`/`mouse_leave()` select the
+  enlarged gutter for both paint and containment, pointerdown distinguishes a
+  thumb grab from a track jump with C++'s constrained grab point, captured
+  moves reuse it, and pointerup clears it. Scroll requests land on the fixed
+  CSS-pixel grid before updating the DOM paintable, while repaint requests
+  invalidate the same owning box phase cache as upstream. The adjacent
+  `ResizeHandle` construction, no-op hover methods, cursor choice, and
+  first-press versus subsequent-move state ordering are translated as well.
+  The active bridge indexes retained widget identities when it builds the hit
+  plan, preserving C++'s direct captured-widget dispatch cost on pointer moves.
 - `PaintableBox::nearest_scroll_frame_index()` now drives the active Layout
   bridge. Fixed paintables and ordinary descendants behind a fixed containing
   block use the root frame, while sticky descendants keep searching for their
@@ -397,7 +408,7 @@ following behavioral mismatches and added focused regressions:
 | `SVGSVGPaintable.cpp` | `svg_painting.v` |
 | `ScrollFrame.cpp` | `scrolling.v` |
 | `ScrollState.cpp` | `scrolling.v` |
-| `Scrollbar.cpp` | `scrolling.v`, `../layout/block_flow_minimal.v` |
+| `Scrollbar.cpp` | `scrolling.v`, `../layout/block_flow_minimal.v`, `../layout/viewport_paint_bridge.v` |
 | `ShadowPainting.cpp` | `effects.v` |
 | `StackingContext.cpp` | `paintable.v` |
 | `TableBordersPainting.cpp` | `table_borders_painting.v` |
@@ -471,7 +482,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 409 unmatched implementations.
+Painting: 396 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

@@ -4,6 +4,8 @@
 // EventHandler, drag-and-drop, auto-scroll, and file-local helper entry points.
 module page
 
+import painting
+
 pub struct SelectionRange {
 pub:
 	start int
@@ -119,8 +121,29 @@ pub fn (mut handler EventHandler) apply_mouse_selection(anchor PixelPoint, exten
 pub fn (handler &EventHandler) paint_root() bool { return handler.paint_root_available }
 pub fn (handler &EventHandler) mutable_paint_root() bool { return handler.paint_root_available }
 
+pub fn (mut handler EventHandler) install_chrome_widget_callbacks(target voidptr,
+	pointer_event_callback ChromeWidgetPointerEventCallback,
+	hover_callback ChromeWidgetHoverCallback) {
+	handler.chrome_widget_callback_target = target
+	handler.chrome_widget_pointer_event_callback = pointer_event_callback
+	handler.chrome_widget_hover_callback = hover_callback
+}
+
 pub fn (mut handler EventHandler) update_hovered_chrome_widget(widget string) {
+	if handler.hovered_chrome_widget == widget {
+		return
+	}
+	if handler.hovered_chrome_widget != ''
+		&& handler.chrome_widget_hover_callback != unsafe { nil } {
+		handler.chrome_widget_hover_callback(handler.chrome_widget_callback_target,
+			handler.hovered_chrome_widget, false)
+	}
 	handler.hovered_chrome_widget = widget
+	if handler.hovered_chrome_widget != ''
+		&& handler.chrome_widget_hover_callback != unsafe { nil } {
+		handler.chrome_widget_hover_callback(handler.chrome_widget_callback_target,
+			handler.hovered_chrome_widget, true)
+	}
 }
 
 pub fn (handler &EventHandler) compute_mouse_event_coordinates(position PixelPoint,
@@ -133,10 +156,46 @@ pub fn (handler &EventHandler) compute_mouse_event_coordinates(position PixelPoi
 	}
 }
 
-pub fn (mut handler EventHandler) dispatch_chrome_widget_pointer_event(name string,
-	target InputTarget) EventResult {
-	handler.log('chrome:${name}', target)
-	return .handled
+// Direct translation of EventHandler::dispatch_chrome_widget_pointer_event().
+// A captured widget is offered the event before the current hit target. It
+// keeps capture only while returning CaptureInput, and SwallowEvent controls
+// whether DOM default behavior may continue.
+pub fn (mut handler EventHandler) dispatch_chrome_widget_pointer_event(target string,
+	event_type string, button int, visual_viewport_position PixelPoint) bool {
+	mut allow_default_behavior := true
+	if handler.captured_chrome_widget != '' {
+		captured := handler.captured_chrome_widget
+		action := if handler.chrome_widget_pointer_event_callback != unsafe { nil } {
+			handler.chrome_widget_pointer_event_callback(handler.chrome_widget_callback_target,
+				captured, event_type, button, visual_viewport_position)
+		} else {
+			painting.MouseAction.none
+		}
+		if action.swallows_event() {
+			allow_default_behavior = false
+		}
+		if action.captures_input() {
+			return allow_default_behavior
+		}
+		handler.captured_chrome_widget = ''
+	}
+
+	if target != '' {
+		action := if handler.chrome_widget_pointer_event_callback != unsafe { nil } {
+			handler.chrome_widget_pointer_event_callback(handler.chrome_widget_callback_target,
+				target, event_type, button, visual_viewport_position)
+		} else {
+			painting.MouseAction.none
+		}
+		if action.swallows_event() {
+			allow_default_behavior = false
+		}
+		if action.captures_input() {
+			handler.captured_chrome_widget = target
+		}
+	}
+
+	return allow_default_behavior
 }
 
 pub fn (mut handler EventHandler) dispatch_a_pointer_event_for_a_device_that_supports_hover(

@@ -26,7 +26,7 @@ inventing a graphics stack or IPC runtime.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Page/` | 7 | 4,298 | 2,183 | 395 | Complete |
+| `Page/` | 7 | 4,298 | 2,275 | 475 | Complete |
 
 The symbol-level audit accounts for all 306 implementations: 285 direct V
 owner/name matches, 10 namespace template specializations, 5 GC/binding
@@ -36,6 +36,8 @@ There are no unmatched Page symbols.
 The port covers device/CSS geometry conversion; input-event cloning and pinch
 validation; pointer/mouse/keyboard/default-action ordering, including canceled
 pointer compatibility-event suppression and unconditional mouseup cleanup;
+chrome-widget hover transitions and captured-before-current-target dispatch,
+including independent input-capture and DOM-default swallowing flags;
 mouse-selection state; drag data-store modes, effect negotiation, target
 changes, drop/end and reset; auto-scroll edge expansion, capped speed and fractional accumulation;
 writing-mode-aware element resizing; top-level/focused navigable identity;
@@ -47,9 +49,12 @@ UI handshakes, promise settlement and error checks; and move-only backing-store
 transfer.
 
 Native paint-tree traversal, DOM range mutation, PageClient IPC transport,
-platform cursor/chrome-widget operations, SDL polling, and actual scrolling are
-host integration boundaries. Their decisions and outputs are represented by
-typed inputs/results rather than empty callbacks.
+platform cursor selection, SDL polling, and actual scrolling are host
+integration boundaries. Chrome widgets cross that boundary through callbacks,
+but `update_hovered_chrome_widget()` and
+`dispatch_chrome_widget_pointer_event()` now own the exact C++ leave/enter,
+capture, release, dispatch-order, and event-swallowing decisions rather than a
+logging-only stand-in.
 
 ## Verification
 

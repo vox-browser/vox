@@ -1,5 +1,34 @@
 module page
 
+import painting
+
+struct TestChromeWidgetCallbacks {
+mut:
+	pointer_events []string
+	hover_events   []string
+}
+
+fn chrome_widget_test_pointer_callback(target voidptr, widget string, event_type string,
+	_ int, _ PixelPoint) painting.MouseAction {
+	mut state := unsafe { &TestChromeWidgetCallbacks(target) }
+	state.pointer_events << '${widget}:${event_type}'
+	if widget == 'scrollbar' && event_type == 'pointerdown' {
+		return .capture_input
+	}
+	if widget == 'scrollbar' && event_type == 'pointermove' {
+		return .capture_input_and_swallow_event
+	}
+	if widget == 'scrollbar' && event_type == 'pointerup' {
+		return .swallow_event
+	}
+	return .none
+}
+
+fn chrome_widget_test_hover_callback(target voidptr, widget string, hovered bool) {
+	mut state := unsafe { &TestChromeWidgetCallbacks(target) }
+	state.hover_events << '${if hovered { 'enter' } else { 'leave' }}:${widget}'
+}
+
 fn test_auto_scroll_edges_speed_fraction_and_text_control_constraint() {
 	viewport := PixelRect{
 		x:      0
@@ -142,4 +171,36 @@ fn test_event_handler_pointer_cancellation_and_mouseup_cleanup_match_upstream() 
 	handler.event_log.clear()
 	assert handler.handle_mousedown(InputTarget{ id: 'field' }, 1) == .handled
 	assert handler.handle_mouseup(InputTarget{ id: 'field', cancel_mouse: true }) == .handled
+}
+
+fn test_event_handler_translates_chrome_hover_capture_and_swallow_order() {
+	mut callbacks := TestChromeWidgetCallbacks{}
+	mut handler := EventHandler{}
+	handler.install_chrome_widget_callbacks(voidptr(&callbacks),
+		chrome_widget_test_pointer_callback, chrome_widget_test_hover_callback)
+
+	handler.update_hovered_chrome_widget('scrollbar')
+	handler.update_hovered_chrome_widget('scrollbar')
+	handler.update_hovered_chrome_widget('resizer')
+	handler.update_hovered_chrome_widget('')
+	assert callbacks.hover_events == ['enter:scrollbar', 'leave:scrollbar', 'enter:resizer',
+		'leave:resizer']
+
+	assert handler.dispatch_chrome_widget_pointer_event('scrollbar', 'pointerdown', 0,
+		PixelPoint{10, 20})
+	assert handler.captured_chrome_widget == 'scrollbar'
+	// Capture is dispatched before the currently hit widget. Returning both
+	// flags keeps capture and suppresses the DOM-side default path immediately.
+	assert !handler.dispatch_chrome_widget_pointer_event('resizer', 'pointermove', 9,
+		PixelPoint{30, 40})
+	assert handler.captured_chrome_widget == 'scrollbar'
+	assert callbacks.pointer_events == ['scrollbar:pointerdown', 'scrollbar:pointermove']
+
+	// Once the captured widget releases, the same event is also offered to the
+	// current target, while its SwallowEvent result remains sticky.
+	assert !handler.dispatch_chrome_widget_pointer_event('resizer', 'pointerup', 0,
+		PixelPoint{30, 40})
+	assert handler.captured_chrome_widget == ''
+	assert callbacks.pointer_events == ['scrollbar:pointerdown', 'scrollbar:pointermove',
+		'scrollbar:pointerup', 'resizer:pointerup']
 }

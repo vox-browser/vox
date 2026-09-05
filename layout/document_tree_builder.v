@@ -313,10 +313,11 @@ mut:
 	// until stacking invalidation upstream. Painting and hit testing consume
 	// retained phase plans from the same ordering; the hit plan alone keeps
 	// opacity:0 contexts targetable.
-	paint_order    []PaintOrderEntry
-	paint_steps    []CompatibilityPaintStep
-	hit_test_steps []CompatibilityPaintStep
-	hit_test_order []&BlockBox
+	paint_order         []PaintOrderEntry
+	paint_steps         []CompatibilityPaintStep
+	hit_test_steps      []CompatibilityPaintStep
+	hit_test_order      []&BlockBox
+	chrome_widget_boxes map[u64]voidptr
 	// PaintableBox retains one command vector per PaintPhase. These buckets are
 	// independent of display-list and stacking traversal lifetimes.
 	paint_phase_commands      [][]PaintCommand
