@@ -2534,6 +2534,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut form_control_kind := ''
 	mut form_control_checked := false
 	mut form_control_indeterminate := false
+	mut form_control_enabled := true
+	mut form_control_activated := false
 	mut svg_path := ''
 	mut svg_path_data := []f32{}
 	mut svg_transform := [f64(1), 0, 0, 1, 0, 0]!
@@ -2732,6 +2734,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 				input := unsafe { &dom.HTMLInputElement(styled_element) }
 				form_control_checked = input.checked()
 				form_control_indeterminate = input.indeterminate()
+				form_control_enabled = !styled_element.is_actually_disabled()
+				form_control_activated = styled_element.is_being_activated()
 			}
 		}
 	}
@@ -2858,6 +2862,10 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		form_control_kind: form_control_kind
 		form_control_checked: form_control_checked
 		form_control_indeterminate: form_control_indeterminate
+		form_control_enabled: form_control_enabled
+		form_control_activated: form_control_activated
+		form_control_color_scheme: computed.color_scheme()
+		form_control_accent_color: computed.accent_color()
 		opacity: f64(computed.opacity())
 		filter: filter
 		visible: computed.visibility() == .visible

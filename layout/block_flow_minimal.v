@@ -322,6 +322,10 @@ pub mut:
 	form_control_kind          string
 	form_control_checked       bool
 	form_control_indeterminate bool
+	form_control_enabled       bool = true
+	form_control_activated     bool
+	form_control_color_scheme  css.PreferredColorScheme
+	form_control_accent_color  ?css.Color
 	// Root backgrounds cover the viewport canvas. A transparent HTML root may receive these values
 	// from the body background according to CSS canvas-background propagation.
 	canvas_background_color  css.Color
@@ -1557,6 +1561,8 @@ fn (b &BlockBox) current_scroll_offset(fallback CompatibilityOverlayData) painti
 struct CompatibilityFormControlState {
 	checked       bool
 	indeterminate bool
+	enabled       bool = true
+	activated     bool
 }
 
 // CheckBoxPaintable and RadioButtonPaintable read HTMLInputElement state when
@@ -1571,6 +1577,8 @@ fn (b &BlockBox) current_form_control_state() CompatibilityFormControlState {
 					return CompatibilityFormControlState{
 						checked: input.checked()
 						indeterminate: input.indeterminate()
+						enabled: !element.is_actually_disabled()
+						activated: element.is_being_activated()
 					}
 				}
 			}
@@ -1579,6 +1587,8 @@ fn (b &BlockBox) current_form_control_state() CompatibilityFormControlState {
 	return CompatibilityFormControlState{
 		checked: b.form_control_checked
 		indeterminate: b.form_control_indeterminate
+		enabled: b.form_control_enabled
+		activated: b.form_control_activated
 	}
 }
 
@@ -1926,9 +1936,30 @@ fn flattened_painting_path(path painting.ClipPathVisualData) [][]f64 {
 	return result
 }
 
-fn append_painting_border_command(mut commands []PaintCommand,
+fn transport_radii_from_painting(radii painting.CornerRadii) BoxRadii {
+	return BoxRadii{
+		top_left: CornerRadius{radii.top_left.horizontal, radii.top_left.vertical}
+		top_right: CornerRadius{radii.top_right.horizontal, radii.top_right.vertical}
+		bottom_right: CornerRadius{radii.bottom_right.horizontal, radii.bottom_right.vertical}
+		bottom_left: CornerRadius{radii.bottom_left.horizontal, radii.bottom_left.vertical}
+	}
+}
+
+fn append_painting_display_command(mut commands []PaintCommand,
 	display_command painting.DisplayListCommand, opacity f64) {
 	match display_command {
+		painting.FillRoundedRect {
+			commands << PaintCommand{
+				kind: 'fill_rounded_rect'
+				x: display_command.rect.x
+				y: display_command.rect.y
+				width: display_command.rect.width
+				height: display_command.rect.height
+				color: painting_color_string(display_command.color)
+				opacity: opacity
+				corner_radii: transport_radii_from_painting(display_command.corner_radii)
+			}
+		}
 		painting.FillPath {
 			polygons := flattened_painting_path(display_command.path)
 			commands << PaintCommand{
@@ -2005,10 +2036,10 @@ fn (b &BlockBox) append_table_border_commands(mut commands []PaintCommand, opaci
 				}
 			}
 			painting.DrawLine {
-				append_painting_border_command(mut commands, display_command, opacity)
+				append_painting_display_command(mut commands, display_command, opacity)
 			}
 			painting.FillPath {
-				append_painting_border_command(mut commands, display_command, opacity)
+				append_painting_display_command(mut commands, display_command, opacity)
 			}
 			else {}
 		}
@@ -2245,73 +2276,22 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 			}
 		}
 		form_control_state := box.current_form_control_state()
-		if box.form_control_kind == 'checkbox' {
-			commands << PaintCommand{
-				kind: 'fill_rect'
+		if box.form_control_kind in ['checkbox', 'radio'] {
+			converter := painting.new_device_pixel_converter(1.0) or { return commands }
+			control_rect := converter.enclosing_device_rect(painting.Rect{
 				x: box.x
 				y: box.y
 				width: box.width
 				height: box.height
-				color: 'rgb(255 255 255)'
-				opacity: opacity
+			})
+			input_colors := painting.compute_input_colors(box.form_control_color_scheme, box.form_control_accent_color)
+			display_commands := if box.form_control_kind == 'checkbox' {
+				painting.checkbox_commands(control_rect, form_control_state.checked, form_control_state.indeterminate, form_control_state.enabled, form_control_state.activated, box.form_control_color_scheme, input_colors)
+			} else {
+				painting.radio_button_commands(control_rect, form_control_state.checked, form_control_state.enabled, form_control_state.activated, box.form_control_color_scheme, input_colors)
 			}
-			append_square_border_commands(mut commands, BoxEdges{1, 1, 1, 1}, BoxColors{css.Color{118, 118, 118, 255}, css.Color{118, 118, 118, 255}, css.Color{118, 118, 118, 255}, css.Color{118, 118, 118, 255}}, box.x, box.y, box.width, box.height, opacity)
-			if form_control_state.checked && !form_control_state.indeterminate {
-				commands << PaintCommand{
-					kind: 'fill_polygon'
-					x: box.x + 2
-					y: box.y + 2
-					width: non_negative(box.width - 4)
-					height: non_negative(box.height - 4)
-					color: 'rgb(0 0 0)'
-					opacity: opacity
-					points: [box.x + 2, box.y + box.height * 0.5, box.x + box.width * 0.42,
-						box.y + box.height - 3, box.x + box.width - 2, box.y + 2,
-						box.x + box.width - 3, box.y + 1, box.x + box.width * 0.42,
-						box.y + box.height - 5, box.x + 3, box.y + box.height * 0.5]
-				}
-			}
-			if form_control_state.indeterminate {
-				commands << PaintCommand{
-					kind: 'fill_rect'
-					x: box.x + box.width * 0.4
-					y: box.y + box.height * 0.1
-					width: box.width * 0.2
-					height: box.height * 0.8
-					color: 'rgb(0 0 0)'
-					opacity: opacity
-				}
-			}
-		} else if box.form_control_kind == 'radio' {
-			commands << PaintCommand{
-				kind: 'fill_ellipse'
-				x: box.x
-				y: box.y
-				width: box.width
-				height: box.height
-				color: 'rgb(255 255 255)'
-				opacity: opacity
-			}
-			commands << PaintCommand{
-				kind: 'stroke_ellipse'
-				x: box.x
-				y: box.y
-				width: box.width
-				height: box.height
-				color: 'rgb(118 118 118)'
-				stroke_width: 1
-				opacity: opacity
-			}
-			if form_control_state.checked {
-				commands << PaintCommand{
-					kind: 'fill_ellipse'
-					x: box.x + box.width * 0.25
-					y: box.y + box.height * 0.25
-					width: box.width * 0.5
-					height: box.height * 0.5
-					color: 'rgb(0 0 0)'
-					opacity: opacity
-				}
+			for display_command in display_commands {
+				append_painting_display_command(mut commands, display_command, opacity)
 			}
 		}
 		foreground_replaced_end := commands.len
@@ -4453,7 +4433,7 @@ fn append_translated_border_commands(mut commands []PaintCommand, border BoxEdge
 		height: int(math.round(y + height)) - top
 	}
 	for display_command in painting.paint_all_borders(rect, painting_radii_from_transport(radii), painting_borders_from_transport(border, colors, styles)) {
-		append_painting_border_command(mut commands, display_command, opacity)
+		append_painting_display_command(mut commands, display_command, opacity)
 	}
 }
 
@@ -4498,7 +4478,7 @@ fn append_translated_outline_commands(mut commands []PaintCommand, outline_width
 		height: border_height + top_inflate + bottom_inflate
 	})
 	for display_command in painting.paint_all_borders(outline_rect, painting_radii_from_transport(outline_radii), outline_borders.to_device_pixels(converter)) {
-		append_painting_border_command(mut commands, display_command, opacity)
+		append_painting_display_command(mut commands, display_command, opacity)
 	}
 }
 

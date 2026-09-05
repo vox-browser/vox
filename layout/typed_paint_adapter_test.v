@@ -1546,13 +1546,13 @@ fn test_fixed_visual_context_bypasses_viewport_scroll_for_paint_and_hit_testing(
 }
 
 fn test_checkbox_paint_reads_live_checkedness_and_invalidates_retained_commands() {
-	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><body><input id="control" type="checkbox"></body>')
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #control { accent-color: rgb(255, 0, 0) }</style><body><input id="control" type="checkbox"></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	initial_display_list := mutable_document.record_display_list() or {
 		panic('missing initial display list')
 	}
-	assert !display_list_commands(initial_display_list).any(it.kind == 'fill_polygon')
+	assert !display_list_commands(initial_display_list).any(it.kind == 'draw_svg_path')
 
 	control := document.get_element_by_id('control') or { panic('missing checkbox') }
 	mut model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(control) })
@@ -1562,12 +1562,15 @@ fn test_checkbox_paint_reads_live_checkedness_and_invalidates_retained_commands(
 	checked_display_list := mutable_document.record_display_list() or {
 		panic('missing checked display list')
 	}
-	assert display_list_commands(checked_display_list).any(it.kind == 'fill_polygon')
+	checked_commands := display_list_commands(checked_display_list)
+	assert checked_commands.any(it.kind == 'fill_rounded_rect' && it.color == 'rgb(255 0 0)')
+	assert checked_commands.any(it.kind == 'draw_svg_path' && it.color == 'rgb(255 255 255)')
 
 	model.set_indeterminate(true)
 	indeterminate_commands := root.paint_commands()
-	assert !indeterminate_commands.any(it.kind == 'fill_polygon')
-	assert indeterminate_commands.any(it.kind == 'fill_rect' && it.color == 'rgb(0 0 0)')
+	assert !indeterminate_commands.any(it.kind == 'draw_svg_path')
+	assert indeterminate_commands.any(it.kind == 'fill_rounded_rect'
+		&& it.color == 'rgb(77 77 77)')
 }
 
 fn test_document_viewport_paintable_recomputes_text_selection_states() {

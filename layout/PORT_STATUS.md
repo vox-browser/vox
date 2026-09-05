@@ -248,6 +248,13 @@ metrics through this bridge. The active painter directly follows
 thickness, underline offset/position, solid/double/dotted/dashed line placement,
 and the round-joined triangular wave path. Three focused upstream reference
 pairs render with zero differing pixels.
+Native checkbox and radio foregrounds no longer use renderer-local white
+rectangles, ellipse strokes, and an approximate tick. The typed bridge retains
+the computed color scheme and accent color while live paint reads checked,
+indeterminate, enabled, and activation state. Painting's direct
+`InputColors`/`CheckBoxPaintable`/`RadioButtonPaintable` translations emit the
+rounded layers and exact checkmark path. A focused upstream capture matches
+geometry and colors, with scale-normalized MAE 0.9256 from raster edges.
 `SVGMaskable`'s URL `<clipPath>` path is active too: attached resource geometry
 is omitted from normal child painting and retained as exact mask components.
 Target, resource, child, viewBox, and `objectBoundingBox` transforms compose at

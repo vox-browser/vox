@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 588
-  candidate-name-match: 13946
-  unmatched: 1821
+  candidate-name-match: 13950
+  unmatched: 1817
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   517 Painting
+   513 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -243,9 +243,15 @@ reconstruction. Baselines and font metrics come from committed line fragments;
 thickness and endpoints use upstream rounding; double-line offsets, native
 dotted/dashed strokes, underline position/offset, and the round-joined triangle
 wave follow the C++ switch directly. The anonymous-wrapper, minimum-thickness,
-and underline-offset upstream reference pairs are pixel-identical. Wheel
-routing follows
-the C++ containing-block fallback, including declining
+and underline-offset upstream reference pairs are pixel-identical. Native
+checkbox and radio foreground painting now uses direct translations of
+`InputColors`, `CheckBoxPaintable`, and `RadioButtonPaintable` rather than
+renderer-local white boxes and approximate paths. Theme and accent colors,
+disabled and active shading, contrast correction, device rounding, rounded
+layers, and the exact checkmark path reach the active display list. A focused
+upstream control capture has matching geometry and colors; its scale-normalized
+MAE is 0.9256, with residuals confined to rasterized edges. Wheel routing
+follows the C++ containing-block fallback, including declining
 programmatic-only hidden overflow and saturated inner scrollers. These updates
 preserve layout and per-phase command caches while refreshing visual scroll
 state and dynamic scrollbar thumbs. Uniform rounded box backgrounds now use

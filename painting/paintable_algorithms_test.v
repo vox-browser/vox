@@ -1,6 +1,7 @@
 module painting
 
 import css
+import math
 
 fn test_to_gfx_scaling_mode_matches_css_image_rendering() {
 	assert to_gfx_scaling_mode(.auto_, IntSize{200, 100}, IntSize{100, 50}) == .bilinear_mipmap
@@ -242,19 +243,58 @@ fn test_background_table_control_and_replaced_content_algorithms() {
 		dark_gray: Color{
 			r: 4
 		}
-		background: Color{
+		light_gray: Color{
 			r: 5
 		}
 	}
-	assert checkbox_commands(IntRect{0, 0, 20, 20}, true, false, true, colors).len == 2
-	indeterminate := checkbox_commands(IntRect{0, 0, 20, 20}, false, true, true, colors)
+	checked := checkbox_commands(IntRect{0, 0, 20, 20}, true, false, true, false, .light, colors)
+	assert checked.len == 2
+	assert checked[1] is FillPath
+	checkmark := checked[1] as FillPath
+	assert checkmark.winding_rule == .nonzero
+	assert math.abs(checkmark.path.polygon[0].x - 14.4) < 0.0001
+	assert math.abs(checkmark.path.polygon[0].y - 2.8) < 0.0001
+	assert math.abs(checkmark.path.polygon[5].x - 17) < 0.0001
+	assert math.abs(checkmark.path.polygon[5].y - 4.8) < 0.0001
+	indeterminate := checkbox_commands(IntRect{0, 0, 20, 20}, false, true, true, false, .light, colors)
 	assert indeterminate.len == 3
 	assert indeterminate[2] is FillRoundedRect
 	dash := indeterminate[2] as FillRoundedRect
 	assert dash.rect == IntRect{4, 8, 12, 4}
-	assert radio_button_commands(IntRect{0, 0, 13, 13}, true, true, colors).len == 3
+	assert radio_button_commands(IntRect{0, 0, 13, 13}, true, true, false, .light, colors).len == 3
+	computed_colors := compute_input_colors(.light, css.Color{255, 0, 0, 255})
+	assert computed_colors.accent == Color{255, 0, 0, 255}
+	assert computed_colors.base == Color{255, 255, 255, 255}
+	assert computed_colors.dark_gray == Color{77, 77, 77, 255}
+	assert computed_colors.gray == Color{148, 148, 148, 255}
+	assert computed_colors.mid_gray == Color{180, 180, 180, 255}
+	assert computed_colors.light_gray == Color{203, 203, 203, 255}
 	assert command_name(marker_command(.disc, IntRect{0, 0, 5, 5}, Color{})) == 'FillEllipse'
 	assert command_name(replaced_content_command(.video, 'video', IntRect{0, 0, 10, 10}, IntRect{0, 0, 10, 10}, .bilinear)) == 'DrawExternalContent'
+}
+
+fn test_native_input_control_colors_follow_active_disabled_and_contrast_paths() {
+	colors := compute_input_colors(.light, css.Color{255, 0, 0, 255})
+	active_checkbox := checkbox_commands(IntRect{0, 0, 20, 20}, true, false, true, true, .light, colors)
+	assert active_checkbox[0] is FillRoundedRect
+	assert (active_checkbox[0] as FillRoundedRect).color == Color{255, 77, 77, 255}
+
+	disabled_checkbox := checkbox_commands(IntRect{0, 0, 20, 20}, true, false, false, false, .light, colors)
+	assert disabled_checkbox[0] is FillRoundedRect
+	assert (disabled_checkbox[0] as FillRoundedRect).color == colors.mid_gray
+	assert disabled_checkbox[1] is FillPath
+	assert (disabled_checkbox[1] as FillPath).color == Color{128, 128, 128, 255}
+	// CheckBoxPaintable keeps the original when neither it nor its inverse
+	// clears the minimum contrast ratio.
+	middle_gray := Color{128, 128, 128, 255}
+	assert increase_input_color_contrast(middle_gray, middle_gray) == middle_gray
+
+	light_accent := compute_input_colors(.light, css.Color{255, 255, 255, 255})
+	radio := radio_button_commands(IntRect{0, 0, 13, 13}, true, true, false, .light, light_accent)
+	assert radio[0] is FillRoundedRect
+	assert (radio[0] as FillRoundedRect).color == light_accent.accent
+	assert radio[1] is FillRoundedRect
+	assert (radio[1] as FillRoundedRect).color == light_accent.dark_gray
 }
 
 fn test_resolve_background_layer_uses_cpp_sizing_round_and_position_order() {

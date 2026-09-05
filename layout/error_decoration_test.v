@@ -231,5 +231,6 @@ fn test_typed_document_paints_inline_backgrounds_and_native_checkboxes() {
 	assert images[0].image_url.ends_with('sprite.png')
 	assert images[0].image_position_x == '-3px'
 	assert images[0].image_position_y == '-4px'
-	assert box.paint_commands().any(it.kind == 'fill_rect' && it.color == 'rgb(255 255 255)' && it.width > 0 && it.height > 0)
+	assert box.paint_commands().any(it.kind == 'fill_rounded_rect'
+		&& it.color == 'rgb(255 255 255)' && it.width > 0 && it.height > 0)
 }

@@ -1163,52 +1163,208 @@ pub struct InputColors {
 pub:
 	accent     Color
 	base       Color
+	dark_gray  Color
 	gray       Color
 	mid_gray   Color
-	dark_gray  Color
-	background Color
+	light_gray Color
 }
 
+pub fn (colors InputColors) background_color(enabled bool) Color {
+	return if enabled { colors.base } else { colors.light_gray }
+}
+
+pub fn (colors InputColors) border_color(enabled bool) Color {
+	return if enabled { colors.gray } else { colors.mid_gray }
+}
+
+fn input_color_from_css(color css.Color) Color {
+	return Color{color.r, color.g, color.b, color.a}
+}
+
+fn mix_input_color(from Color, to Color, weight f64) Color {
+	mix_channel := fn [weight] (first f64, second f64) u8 {
+		return u8(math.round(first * (1.0 - weight) + second * weight))
+	}
+	if from.a == to.a || (from.r == to.r && from.g == to.g && from.b == to.b) {
+		return Color{
+			r: mix_channel(from.r, to.r)
+			g: mix_channel(from.g, to.g)
+			b: mix_channel(from.b, to.b)
+			a: mix_channel(from.a, to.a)
+		}
+	}
+	mixed_alpha := f64(from.a) * (1.0 - weight) + f64(to.a) * weight
+	if mixed_alpha == 0 {
+		return Color{ a: 0 }
+	}
+	premultiplied_channel := fn [from, to, weight, mixed_alpha] (first f64, second f64) u8 {
+		return u8(math.round((first * f64(from.a) * (1.0 - weight) + second * f64(to.a) * weight) / mixed_alpha))
+	}
+	return Color{
+		r: premultiplied_channel(from.r, to.r)
+		g: premultiplied_channel(from.g, to.g)
+		b: premultiplied_channel(from.b, to.b)
+		a: u8(math.round(mixed_alpha))
+	}
+}
+
+// Direct translation of Painting::InputColors::get_shade().
+fn get_shade(color Color, amount f64, color_scheme css.PreferredColorScheme) Color {
+	return mix_input_color(color, input_color_from_css(css.SystemColor.canvas(color_scheme)), amount)
+}
+
+fn input_color_inverted(color Color) Color {
+	return Color{255 - color.r, 255 - color.g, 255 - color.b, color.a}
+}
+
+fn input_color_luminosity(color Color) u8 {
+	return u8(math.round(f64(color.r) * 0.2126 + f64(color.g) * 0.7152 + f64(color.b) * 0.0722))
+}
+
+fn input_color_contrast_ratio(first Color, second Color) f64 {
+	first_luminosity := input_color_luminosity(first)
+	second_luminosity := input_color_luminosity(second)
+	darkest := f64(min_int(first_luminosity, second_luminosity)) / 255.0
+	brightest := f64(max_int(first_luminosity, second_luminosity)) / 255.0
+	return (brightest + 0.05) / (darkest + 0.05)
+}
+
+fn increase_input_color_contrast(color Color, background Color) Color {
+	if input_color_contrast_ratio(color, background) < 2 {
+		inverted := input_color_inverted(color)
+		if input_color_contrast_ratio(inverted, background) > 2 {
+			return inverted
+		}
+	}
+	return color
+}
+
+// Direct translation of Painting/InputColors.h::compute_input_colors().
+pub fn compute_input_colors(color_scheme css.PreferredColorScheme, accent_color ?css.Color) InputColors {
+	base_text_color := input_color_from_css(css.SystemColor.canvas_text(color_scheme))
+	accent := input_color_from_css(accent_color or { css.SystemColor.accent_color(color_scheme) })
+	base := get_shade(input_color_inverted(base_text_color), 0.8, color_scheme)
+	dark_gray := get_shade(base_text_color, 0.3, color_scheme)
+	gray := get_shade(dark_gray, 0.4, color_scheme)
+	mid_gray := get_shade(gray, 0.3, color_scheme)
+	light_gray := get_shade(mid_gray, 0.3, color_scheme)
+	return InputColors{
+		accent: accent
+		base: base
+		dark_gray: dark_gray
+		gray: gray
+		mid_gray: mid_gray
+		light_gray: light_gray
+	}
+}
+
+// Direct translation of CheckBoxPaintable.cpp::check_mark_path().
+fn check_mark_path(rect IntRect) ClipPathVisualData {
+	scale_x := f64(rect.width) / 100.0
+	scale_y := f64(rect.height) / 100.0
+	points := [
+		Point{f64(rect.x) + 72.0 * scale_x, f64(rect.y) + 14.0 * scale_y},
+		Point{f64(rect.x) + 37.0 * scale_x, f64(rect.y) + 64.0 * scale_y},
+		Point{f64(rect.x) + 19.0 * scale_x, f64(rect.y) + 47.0 * scale_y},
+		Point{f64(rect.x) + 8.0 * scale_x, f64(rect.y) + 58.0 * scale_y},
+		Point{f64(rect.x) + 40.0 * scale_x, f64(rect.y) + 89.0 * scale_y},
+		Point{f64(rect.x) + 85.0 * scale_x, f64(rect.y) + 24.0 * scale_y},
+	]
+	mut segments := [ClipPathSegment{
+		kind: .move_to
+		point: points[0]
+	}]
+	for point in points[1..] {
+		segments << ClipPathSegment{
+			kind: .line_to
+			point: point
+		}
+	}
+	segments << ClipPathSegment{ kind: .close_path }
+	return ClipPathVisualData{
+		segments: segments
+		polygons: [points.clone()]
+		polygon: points
+	}
+}
+
+fn int_rect_inflated_by_total(rect IntRect, width int, height int) IntRect {
+	return IntRect{
+		x: rect.x - width / 2
+		y: rect.y - height / 2
+		width: rect.width + width
+		height: rect.height + height
+	}
+}
+
+// Direct translation of CheckBoxPaintable::paint()'s foreground phase.
 pub fn checkbox_commands(rect IntRect, checked bool, indeterminate bool, enabled bool,
-	colors InputColors) []DisplayListCommand {
+	activated bool, color_scheme css.PreferredColorScheme, colors InputColors) []DisplayListCommand {
 	radius := rect.width / 5
 	mut commands := []DisplayListCommand{}
 	if checked && !indeterminate {
 		background := if enabled { colors.accent } else { colors.mid_gray }
-		commands << FillRoundedRect{rect, background, uniform_corner_radii(radius)}
+		fill := if activated && enabled {
+			get_shade(background, 0.3, color_scheme)
+		} else {
+			background
+		}
+		commands << FillRoundedRect{rect, fill, uniform_corner_radii(radius)}
+		mut tick_color := increase_input_color_contrast(colors.base, background)
+		if !enabled {
+			tick_color = get_shade(tick_color, 0.5, color_scheme)
+		}
 		commands << FillPath{
 			path_id: 'checkbox-checkmark'
 			path_bounding_rect: rect
-			color: colors.base
-			winding_rule: .even_odd
+			path: check_mark_path(rect)
+			color: tick_color
+			winding_rule: .nonzero
 		}
 		return commands
 	}
+	background := colors.background_color(enabled)
 	border_thickness := max_int(1, rect.width / 10)
-	commands << FillRoundedRect{rect, if enabled { colors.gray } else { colors.mid_gray }, uniform_corner_radii(radius)}
+	border := colors.border_color(enabled)
+	border_fill := if activated && enabled {
+		get_shade(border, 0.3, color_scheme)
+	} else {
+		border
+	}
+	commands << FillRoundedRect{rect, border_fill, uniform_corner_radii(radius)}
 	inner := rect.inflated(-border_thickness, -border_thickness, -border_thickness, -border_thickness)
-	commands << FillRoundedRect{inner, colors.background, uniform_corner_radii(max_int(0, radius - border_thickness))}
+	commands << FillRoundedRect{inner, background, uniform_corner_radii(max_int(0, radius - border_thickness))}
 	if indeterminate {
-		dash := IntRect{rect.x + int(f64(rect.width) * 0.2), rect.y + int(f64(rect.height) * 0.4), int(f64(rect.width) * 0.6), int(f64(rect.height) * 0.2)}
-		commands << FillRoundedRect{dash, colors.dark_gray, uniform_corner_radii(max_int(0, int(f64(rect.width) * 0.05)))}
+		dash := int_rect_inflated_by_total(rect, int(-0.4 * f64(rect.width)), int(-0.8 * f64(rect.height)))
+		dash_color := increase_input_color_contrast(colors.dark_gray, background)
+		commands << FillRoundedRect{dash, dash_color, uniform_corner_radii(int(0.05 * f64(rect.width)))}
 	}
 	return commands
 }
 
+// Direct translation of RadioButtonPaintable::paint()'s foreground phase.
 pub fn radio_button_commands(rect IntRect, checked bool, enabled bool,
-	colors InputColors) []DisplayListCommand {
+	activated bool, color_scheme css.PreferredColorScheme, colors InputColors) []DisplayListCommand {
 	outer := max_int(1, int(math.ceil(f64(rect.width) / 13.0)))
 	inner := max_int(2, int(math.ceil(f64(rect.width) / 4.0)))
-	fill := if enabled {
-		if checked { colors.accent } else { colors.gray }
-	} else {
+	mut background := colors.background_color(enabled)
+	radio_color := if checked { colors.accent } else { colors.gray }
+	if checked && input_color_contrast_ratio(colors.accent, background) < 2
+		&& input_color_contrast_ratio(colors.accent, colors.dark_gray) > 2 {
+		background = colors.dark_gray
+	}
+	fill := if !enabled {
 		colors.mid_gray
+	} else if activated {
+		get_shade(radio_color, 0.3, color_scheme)
+	} else {
+		radio_color
 	}
 	mut commands := [
 		DisplayListCommand(FillRoundedRect{rect, fill, uniform_corner_radii(rect.width / 2)}),
 	]
 	middle_rect := rect.inflated(-outer, -outer, -outer, -outer)
-	commands << FillRoundedRect{middle_rect, colors.background, uniform_corner_radii(middle_rect.width / 2)}
+	commands << FillRoundedRect{middle_rect, background, uniform_corner_radii(middle_rect.width / 2)}
 	if checked {
 		inner_rect := rect.inflated(-inner, -inner, -inner, -inner)
 		commands << FillRoundedRect{inner_rect, fill, uniform_corner_radii(inner_rect.width / 2)}
