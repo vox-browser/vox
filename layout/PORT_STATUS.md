@@ -228,6 +228,11 @@ of `PaintableBox::overflow_property_applies()`, `physical_resize_axes()`,
 SVG, inline, ruby, and internal-display exclusions; table-cell/caption
 exceptions; viewport/pseudo-element suppression; logical resize-axis mapping;
 and RTL/vertical writing-mode mirroring used by C++.
+Overlay geometry likewise consumes Painting's direct
+`PaintableBox::available_scrollbar_length()`, `absolute_scrollbar_rect()`,
+`compute_scrollbar_data()`, and `absolute_resizer_rect()` translations. The
+former combined helper's early clamp of undersized resizer-adjusted lengths is
+gone, preserving the source's signed rectangle until device clipping.
 The DOM mirror also preserves the layout tree's split-inline continuation chain
 in forward order. This lets `PaintableBox`'s united geometry and the CSSOM
 `offsetTop`, `offsetLeft`, `offsetWidth`, and `offsetHeight` algorithms account

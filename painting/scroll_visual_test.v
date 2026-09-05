@@ -21,14 +21,17 @@ fn test_scroll_state_hierarchy_snapshot_and_clear() {
 
 fn test_scrollbar_thumb_geometry_and_pointer_mapping() {
 	metrics := new_chrome_metrics(1) or { panic(err) }
-	data := compute_scrollbar_data(ScrollbarGeometryInput{
+	input := ScrollbarGeometryInput{
 		direction: .vertical
 		padding_rect: Rect{0, 0, 100, 200}
 		scrollable_overflow: Rect{0, 0, 100, 800}
 		scroll_offset: Point{0, 300}
 		metrics: metrics
 		with_gutter: true
-	}) or { panic('expected scrollbar') }
+	}
+	data := paintable_box_compute_scrollbar_data(input) or { panic('expected scrollbar') }
+	assert paintable_box_available_scrollbar_length(input) == 200
+	assert paintable_box_absolute_scrollbar_rect(input) == Rect{88, 0, 12, 200}
 	assert data.gutter_rect == Rect{88, 0, 12, 200}
 	assert data.thumb_rect.width == 8
 	assert data.thumb_rect.height == 49
@@ -36,6 +39,35 @@ fn test_scrollbar_thumb_geometry_and_pointer_mapping() {
 	ratio, grab := scrollbar_offset_for_pointer(80, 0, 200, 50, none)
 	assert grab == 25
 	assert ratio > 0.36 && ratio < 0.37
+}
+
+fn test_paintable_box_scrollbar_and_resizer_rects_preserve_source_edge_cases() {
+	metrics := new_chrome_metrics(1) or { panic(err) }
+	horizontal := ScrollbarGeometryInput{
+		direction: .horizontal
+		padding_rect: Rect{5, 7, 100, 50}
+		scrollable_overflow: Rect{5, 7, 200, 50}
+		metrics: metrics
+		chrome_mirrored: true
+		has_other_scrollbar: true
+	}
+	assert paintable_box_available_scrollbar_length(horizontal) == 88
+	assert paintable_box_absolute_scrollbar_rect(horizontal) == Rect{17, 49, 88, 8}
+
+	// PaintableBox does not clamp the resizer-adjusted length. Preserve that
+	// signed geometry here; later device clipping decides whether it is visible.
+	tiny_resizable := ScrollbarGeometryInput{
+		direction: .vertical
+		padding_rect: Rect{3, 4, 5, 6}
+		scrollable_overflow: Rect{3, 4, 5, 20}
+		metrics: metrics
+		has_resizer: true
+	}
+	assert paintable_box_available_scrollbar_length(tiny_resizable) == -6
+	assert paintable_box_absolute_scrollbar_rect(tiny_resizable) == Rect{0, 4, 8, -6}
+	assert paintable_box_absolute_resizer_rect(tiny_resizable.padding_rect, true, false, metrics) or { panic('expected resizer') } == Rect{-4, -2, 12, 12}
+	assert paintable_box_absolute_resizer_rect(tiny_resizable.padding_rect, true, true, metrics) or { panic('expected mirrored resizer') } == Rect{3, -2, 12, 12}
+	assert paintable_box_absolute_resizer_rect(tiny_resizable.padding_rect, false, false, metrics) == none
 }
 
 fn test_resize_handle_and_backing_store_state_machines() {

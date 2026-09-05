@@ -49,7 +49,7 @@ pub fn (mut state ScrollState) create_sticky_frame(paintable_id string, parent i
 	index := state.frames.len
 	state.frames << ScrollFrame{
 		paintable_id: paintable_id
-		is_sticky:    true
+		is_sticky: true
 		parent_index: parent
 	}
 	return index
@@ -150,7 +150,69 @@ pub:
 	has_other_scrollbar bool
 }
 
-pub fn compute_scrollbar_data(input ScrollbarGeometryInput) ?ScrollbarData {
+// Direct translation of PaintableBox::available_scrollbar_length().
+pub fn paintable_box_available_scrollbar_length(input ScrollbarGeometryInput) f64 {
+	is_horizontal := input.direction == .horizontal
+	mut full_scrollport_length := if is_horizontal {
+		input.padding_rect.width
+	} else {
+		input.padding_rect.height
+	}
+	if input.has_resizer {
+		full_scrollport_length -= input.metrics.resize_gripper_size
+	} else if input.has_other_scrollbar {
+		full_scrollport_length -= input.metrics.scroll_gutter_thickness
+	}
+	return full_scrollport_length
+}
+
+// Direct translation of PaintableBox::absolute_scrollbar_rect() after its
+// scrollability and `scrollbar-width` preconditions have been checked by the
+// active caller.
+pub fn paintable_box_absolute_scrollbar_rect(input ScrollbarGeometryInput) Rect {
+	is_horizontal := input.direction == .horizontal
+	adjusting_for_resizer := input.has_resizer
+	rect_thickness := if input.with_gutter {
+		input.metrics.scroll_gutter_thickness
+	} else {
+		input.metrics.scroll_thumb_thickness_thin + input.metrics.scroll_thumb_padding_thin
+	}
+	if is_horizontal {
+		mut width := input.padding_rect.width
+		mut x := input.padding_rect.x
+		if !adjusting_for_resizer && input.has_other_scrollbar {
+			width = math.max(0.0, width - input.metrics.scroll_gutter_thickness)
+			if input.chrome_mirrored {
+				x += input.metrics.scroll_gutter_thickness
+			}
+		} else if adjusting_for_resizer {
+			width = paintable_box_available_scrollbar_length(input)
+			if input.chrome_mirrored {
+				x += input.metrics.resize_gripper_size
+			}
+		}
+		return Rect{
+			x: x
+			y: math.max(0.0, input.padding_rect.bottom() - rect_thickness)
+			width: width
+			height: rect_thickness
+		}
+	}
+	height := if adjusting_for_resizer {
+		paintable_box_available_scrollbar_length(input)
+	} else {
+		input.padding_rect.height
+	}
+	x := if input.chrome_mirrored {
+		input.padding_rect.x
+	} else {
+		math.max(0.0, input.padding_rect.right() - rect_thickness)
+	}
+	return Rect{x, input.padding_rect.y, rect_thickness, height}
+}
+
+// Direct translation of PaintableBox::compute_scrollbar_data().
+pub fn paintable_box_compute_scrollbar_data(input ScrollbarGeometryInput) ?ScrollbarData {
 	is_horizontal := input.direction == .horizontal
 	overflow_length := if is_horizontal {
 		input.scrollable_overflow.width
@@ -165,42 +227,7 @@ pub fn compute_scrollbar_data(input ScrollbarGeometryInput) ?ScrollbarData {
 	if overflow_length <= 0 || overflow_length <= scrollport_length {
 		return none
 	}
-	mut scrollbar_rect := input.padding_rect
-	thickness := if input.with_gutter {
-		input.metrics.scroll_gutter_thickness
-	} else {
-		input.metrics.scroll_thumb_thickness_thin + input.metrics.scroll_thumb_padding_thin
-	}
-	if is_horizontal {
-		mut width := scrollbar_rect.width
-		if input.has_resizer {
-			width = math.max(0.0, width - input.metrics.resize_gripper_size)
-		} else if input.has_other_scrollbar {
-			width = math.max(0.0, width - input.metrics.scroll_gutter_thickness)
-		}
-		mut x := scrollbar_rect.x
-		if input.chrome_mirrored && (input.has_resizer || input.has_other_scrollbar) {
-			x += if input.has_resizer {
-				input.metrics.resize_gripper_size
-			} else {
-				input.metrics.scroll_gutter_thickness
-			}
-		}
-		scrollbar_rect =
-			Rect{x, math.max(0.0, scrollbar_rect.bottom() - thickness), width, thickness}
-	} else {
-		height := if input.has_resizer {
-			math.max(0.0, scrollbar_rect.height - input.metrics.resize_gripper_size)
-		} else {
-			scrollbar_rect.height
-		}
-		x := if input.chrome_mirrored {
-			scrollbar_rect.x
-		} else {
-			math.max(0.0, scrollbar_rect.right() - thickness)
-		}
-		scrollbar_rect = Rect{x, scrollbar_rect.y, thickness, height}
-	}
+	scrollbar_rect := paintable_box_absolute_scrollbar_rect(input)
 	thumb_thickness := if input.with_gutter {
 		input.metrics.scroll_thumb_thickness
 	} else {
@@ -221,25 +248,43 @@ pub fn compute_scrollbar_data(input ScrollbarGeometryInput) ?ScrollbarData {
 	mut thumb := scrollbar_rect
 	if is_horizontal {
 		thumb = Rect{
-			x:      scrollbar_rect.x + thumb_margin + thumb_offset
-			y:      scrollbar_rect.y + if input.with_gutter { thumb_margin } else { 0 }
-			width:  thumb_length
+			x: scrollbar_rect.x + thumb_margin + thumb_offset
+			y: scrollbar_rect.y + if input.with_gutter { thumb_margin } else { 0 }
+			width: thumb_length
 			height: thumb_thickness
 		}
 	} else {
 		thumb = Rect{
-			x:      scrollbar_rect.x +
-				if input.with_gutter || input.chrome_mirrored { thumb_margin } else { 0 }
-			y:      scrollbar_rect.y + thumb_margin + thumb_offset
-			width:  thumb_thickness
+			x: scrollbar_rect.x + if input.with_gutter || input.chrome_mirrored {
+				thumb_margin
+			} else {
+				0
+			}
+			y: scrollbar_rect.y + thumb_margin + thumb_offset
+			width: thumb_thickness
 			height: thumb_length
 		}
 	}
 	return ScrollbarData{
-		gutter_rect:                  if input.with_gutter { scrollbar_rect } else { Rect{} }
-		thumb_rect:                   thumb
+		gutter_rect: if input.with_gutter { scrollbar_rect } else { Rect{} }
+		thumb_rect: thumb
 		thumb_travel_to_scroll_ratio: ratio
 	}
+}
+
+// Direct translation of PaintableBox::absolute_resizer_rect().
+pub fn paintable_box_absolute_resizer_rect(padding_rect Rect, has_resizer bool,
+	chrome_mirrored bool, metrics ChromeMetrics) ?Rect {
+	if !has_resizer {
+		return none
+	}
+	x := if chrome_mirrored {
+		padding_rect.x
+	} else {
+		padding_rect.right() - metrics.resize_gripper_size
+	}
+	y := padding_rect.bottom() - metrics.resize_gripper_size
+	return Rect{x, y, metrics.resize_gripper_size, metrics.resize_gripper_size}
 }
 
 pub fn scrollbar_offset_for_pointer(position f64, gutter_start f64, gutter_length f64,

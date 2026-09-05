@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 497
+filename-level mappings. The current semantic audit nevertheless reports 493
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 5,613 | 1,559 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 5,658 | 1,591 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 497 unmatched Painting
+  were removed; the audit currently reports 493 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -139,6 +139,13 @@ following behavioral mismatches and added focused regressions:
   covers all source exclusions and table exceptions, viewport/generated
   suppression, logical-axis mapping in horizontal and vertical writing modes,
   clipped axes, and RTL/vertical chrome mirroring.
+- `PaintableBox::available_scrollbar_length()`,
+  `absolute_scrollbar_rect()`, `compute_scrollbar_data()`, and
+  `absolute_resizer_rect()` now form the active scrollbar geometry pipeline.
+  The decomposition preserves upstream's asymmetric horizontal/vertical gutter
+  adjustments and signed resizer-adjusted rectangles for undersized boxes,
+  while retaining thumb margins, minimum length, travel ratio, mirroring, and
+  gutter enlargement.
 - `TableBordersPainting.cpp` is now a dedicated source-shaped translation. It
   snaps spanned cells to shared device-pixel grid lines, emits each collapsed
   edge once, sorts intersections by border and element specificity, preserves
@@ -372,7 +379,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 497 unmatched implementations.
+Painting: 493 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

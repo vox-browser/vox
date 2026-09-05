@@ -1739,7 +1739,7 @@ fn (b &BlockBox) append_overlay_commands(mut commands []PaintCommand, metrics pa
 		scroll_offset := b.current_scroll_offset(overlay)
 		// PaintableBox::paint visits vertical before horizontal.
 		if overlay.can_scroll_vertically {
-			if data := painting.compute_scrollbar_data(painting.ScrollbarGeometryInput{
+			if data := painting.paintable_box_compute_scrollbar_data(painting.ScrollbarGeometryInput{
 				direction: .vertical
 				padding_rect: padding_rect
 				scrollable_overflow: overflow_rect
@@ -1753,7 +1753,7 @@ fn (b &BlockBox) append_overlay_commands(mut commands []PaintCommand, metrics pa
 			}
 		}
 		if overlay.can_scroll_horizontally {
-			if data := painting.compute_scrollbar_data(painting.ScrollbarGeometryInput{
+			if data := painting.paintable_box_compute_scrollbar_data(painting.ScrollbarGeometryInput{
 				direction: .horizontal
 				padding_rect: padding_rect
 				scrollable_overflow: overflow_rect
@@ -1771,18 +1771,15 @@ fn (b &BlockBox) append_overlay_commands(mut commands []PaintCommand, metrics pa
 	if !overlay.has_resizer {
 		return
 	}
-	// Translation of PaintableBox::absolute_resizer_rect() and the overlay
-	// gripper loop in PaintableBox::paint(). Device scale is one in this display
-	// list, so the rounded 12px box becomes the same 8px inner line area.
+	// Translation of the overlay gripper loop in PaintableBox::paint(). Device
+	// scale is one in this display list, so the rounded 12px box becomes the same
+	// 8px inner line area.
+	resizer_rect := painting.paintable_box_absolute_resizer_rect(padding_rect, overlay.has_resizer, overlay.chrome_mirrored, metrics) or { return }
 	padding := metrics.resize_gripper_padding
-	mut resizer_x := if overlay.chrome_mirrored {
-		padding_rect.x
-	} else {
-		padding_rect.right() - metrics.resize_gripper_size
-	}
+	mut resizer_x := resizer_rect.x
 	resizer_x += padding + if overlay.chrome_mirrored { padding / 2.0 } else { -padding / 2.0 }
-	resizer_y := padding_rect.bottom() - metrics.resize_gripper_size + padding - padding / 2.0
-	resizer_size := math.max(0.0, metrics.resize_gripper_size - 2.0 * padding)
+	resizer_y := resizer_rect.y + padding - padding / 2.0
+	resizer_size := math.max(0.0, resizer_rect.width - 2.0 * padding)
 	third := int(resizer_size) / 3
 	if third <= 0 {
 		return

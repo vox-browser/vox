@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 35,153 | 12,201 | Present |
+| `Layout` | 50 | 19,592 | 35,150 | 12,201 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -76,7 +76,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `NavigationTiming` | 3 | 104 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 249 | 290 | 68 | Complete |
 | `Page` | 7 | 4,298 | 2,206 | 414 | Complete |
-| `Painting` | 48 | 10,038 | 5,613 | 1,559 | Present |
+| `Painting` | 48 | 10,038 | 5,658 | 1,591 | Present |
 | `PerformanceTimeline` | 5 | 391 | 447 | 130 | Complete |
 | `PermissionsPolicy` | 1 | 98 | 86 | 21 | Complete |
 | `Platform` | 4 | 415 | 1,167 | 96 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **312,996** | **55,263** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **313,038** | **55,295** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -126,8 +126,8 @@ upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 11
 suspicious empty/default-return implementations: 588
-  candidate-name-match: 13966
-  unmatched: 1801
+  candidate-name-match: 13970
+  unmatched: 1797
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 312
@@ -138,7 +138,7 @@ unmatched implementations by module:
 
    707 CSS
    597 Layout
-   497 Painting
+   493 Painting
 
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -238,6 +238,12 @@ in compatibility conditionals. SVG/inline/ruby/internal-display exclusions,
 table-cell/caption exceptions, viewport and generated-content suppression,
 logical-axis mapping, and RTL/vertical chrome placement are covered as one
 source-shaped predicate matrix.
+Scrollbar layout now follows `PaintableBox::available_scrollbar_length()`,
+`absolute_scrollbar_rect()`, `compute_scrollbar_data()`, and
+`absolute_resizer_rect()` as separate source-shaped operations. In particular,
+resizer-adjusted scrollbar lengths retain C++'s signed geometry for boxes
+smaller than the platform gripper instead of being prematurely clamped by the
+combined V helper.
 The active DOM/layout bridge now retains the forward chain corresponding to
 Layout's split-inline continuation links. `PaintableBox`'s three absolute
 united-rectangle operations walk that chain and unite its nonempty border,
