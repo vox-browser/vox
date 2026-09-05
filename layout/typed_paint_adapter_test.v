@@ -1573,6 +1573,35 @@ fn test_checkbox_paint_reads_live_checkedness_and_invalidates_retained_commands(
 		&& it.color == 'rgb(77 77 77)')
 }
 
+fn test_fieldset_paint_shifts_background_and_splits_top_border_around_legend() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		fieldset { margin: 10px; width: 180px; height: 60px; padding: 8px;
+			border: 6px solid rgb(220, 0, 0); background: rgb(180, 220, 255) }
+		legend { padding: 2px 12px; border: 2px solid rgb(0, 80, 0) }
+	</style><fieldset><legend>Legend</legend><div>content</div></fieldset>')
+	_ := layout_document_typed_in_viewport(document, 240, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing fieldset display list') }
+	commands := display_list_commands(display_list)
+	background := commands.filter(it.color == 'rgb(180 220 255)')
+	assert background.len == 1
+	background_clip := background[0].recording_clip or { panic('fieldset background is not clipped') }
+	assert background_clip == LayoutRect{10, 20, 208, 78}
+	assert background[0].clip_list != unsafe { nil }
+	assert background[0].clip_list.items.last().rect == background_clip
+
+	red_borders := commands.filter(it.color == 'rgb(220 0 0)')
+	clipped_top_borders := red_borders.filter(it.recording_clip != none)
+	assert clipped_top_borders.len == 2
+	left_clip := clipped_top_borders[0].recording_clip or { panic('missing left clip') }
+	right_clip := clipped_top_borders[1].recording_clip or { panic('missing right clip') }
+	assert left_clip.x == 10 && left_clip.y == 20 && left_clip.height == 6
+	assert right_clip.y == 20 && right_clip.height == 6
+	assert left_clip.x + left_clip.width <= right_clip.x
+	assert red_borders.any(it.recording_clip == none)
+}
+
 fn test_document_viewport_paintable_recomputes_text_selection_states() {
 	document := html.parse_document('<!doctype html><body><span id="start">hello</span><span id="end">world</span></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)

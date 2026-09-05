@@ -2536,6 +2536,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut form_control_indeterminate := false
 	mut form_control_enabled := true
 	mut form_control_activated := false
+	mut fieldset_paintable := ?painting.FieldSetPaintable(none)
 	mut svg_path := ''
 	mut svg_path_data := []f32{}
 	mut svg_transform := [f64(1), 0, 0, 1, 0, 0]!
@@ -2739,6 +2740,37 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			}
 		}
 	}
+	if node.is_fieldset_box() {
+		mut legend_border_rect := ?painting.Rect(none)
+		mut legend_margin_box_height := 0.0
+		fieldset := unsafe { &FieldSetBox(node) }
+		if legend := fieldset.rendered_legend() {
+			legend_node := unsafe { &Node(legend) }
+			if legend_styled := legend_node.as_node_with_style() {
+				if legend_used := state.try_get(legend_styled) {
+					legend_position := paint_cumulative_offset(legend_node, state, legend_used)
+					legend_border_rect = painting.Rect{
+						x: legend_position.x().to_double() - legend_used.padding_left.to_double() - legend_used.border_left.to_double()
+						y: legend_position.y().to_double() - legend_used.padding_top.to_double() - legend_used.border_top.to_double()
+						width: legend_used.border_box_width().to_double()
+						height: legend_used.border_box_height().to_double()
+					}
+					legend_margin_box_height = legend_used.margin_top.to_double() + legend_used.border_box_height().to_double() + legend_used.margin_bottom.to_double()
+				}
+			}
+		}
+		fieldset_paintable = painting.FieldSetPaintable{
+			border_rect: painting.Rect{
+				x: position.x().to_double() - used.padding_left.to_double() - used.border_left.to_double()
+				y: position.y().to_double() - used.padding_top.to_double() - used.border_top.to_double()
+				width: used.border_box_width().to_double()
+				height: used.border_box_height().to_double()
+			}
+			css_border_top: used.border_top.to_double()
+			legend_margin_box_height: legend_margin_box_height
+			legend_border_rect: legend_border_rect
+		}
+	}
 	overlay := compatibility_overlay_data(node, computed, used)
 	overflow_clip := compatibility_overflow_clip(node, computed, used, position, border_radii)
 	css_clip := paintable_box_get_clip_rect(node, computed, used, position)
@@ -2866,6 +2898,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		form_control_activated: form_control_activated
 		form_control_color_scheme: computed.color_scheme()
 		form_control_accent_color: computed.accent_color()
+		fieldset_paintable: fieldset_paintable
 		opacity: f64(computed.opacity())
 		filter: filter
 		visible: computed.visibility() == .visible

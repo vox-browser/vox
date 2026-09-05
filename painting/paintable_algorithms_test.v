@@ -225,6 +225,38 @@ fn test_background_table_control_and_replaced_content_algorithms() {
 	}
 	assert resolve_table_border_conflict(later, earlier) == earlier
 	assert fieldset_effective_border_top(2, 3, 4, true) == 7
+	fieldset := FieldSetPaintable{
+		border_rect: Rect{10, 10, 208, 88}
+		css_border_top: 6
+		legend_margin_box_height: 26
+		legend_border_rect: Rect{24, 10, 80, 26}
+	}
+	assert fieldset.effective_border_top() == 26
+	assert fieldset.visual_border_box_rect() == Rect{10, 20, 208, 78}
+	converter := new_device_pixel_converter(1) or { panic(err) }
+	background_clip := fieldset.background_clip_rect(converter) or { panic('missing background clip') }
+	assert background_clip == IntRect{10, 20, 208, 78}
+	fieldset_without_legend := FieldSetPaintable{
+		border_rect: Rect{10, 10, 208, 88}
+		css_border_top: 6
+	}
+	plain_background_clip := fieldset_without_legend.background_clip_rect(converter) or {
+		panic('missing plain fieldset background clip')
+	}
+	assert plain_background_clip == IntRect{10, 10, 208, 88}
+	red_border := BorderData{Color{220, 0, 0, 255}, .solid, 6}
+	fieldset_border_commands := fieldset.paint(BordersData{
+		top: red_border
+		right: red_border
+		bottom: red_border
+		left: red_border
+	}.to_device_pixels(converter), CornerRadii{}, converter)
+	clipped_top_commands := fieldset_border_commands.filter(it.clip != none)
+	assert clipped_top_commands.len == 2
+	first_top_clip := clipped_top_commands[0].clip or { panic('missing left top clip') }
+	second_top_clip := clipped_top_commands[1].clip or { panic('missing right top clip') }
+	assert first_top_clip == IntRect{10, 20, 14, 6}
+	assert second_top_clip == IntRect{104, 20, 114, 6}
 	colors := InputColors{
 		accent: Color{
 			r: 1

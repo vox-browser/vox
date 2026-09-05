@@ -1054,15 +1054,38 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 			mut command := cached_command
 			command.transform = context.transform
 			command.fixed_to_viewport = step.box.fixed_to_viewport
-			command.has_clip = context.has_clip
-			command.clip_list = context.clip_list
-			command.visual_layer_list = context.layer_list
-			if context.has_clip {
-				command.clip_x = context.clip.x
-				command.clip_y = context.clip.y
-				command.clip_width = context.clip.width
-				command.clip_height = context.clip.height
+			if recording_clip := command.recording_clip {
+				mapped_recording_clip := compatibility_affine_map_rect(context.transform, recording_clip)
+				mut clips := []PaintClip{}
+				if context.clip_list != unsafe { nil } {
+					clips << context.clip_list.items
+				}
+				clips << PaintClip{
+					rect: recording_clip
+					transform: context.transform
+				}
+				command.has_clip = true
+				command.clip_list = &PaintClipList{ items: clips }
+				combined_clip := if context.has_clip {
+					compatibility_intersect_rects(context.clip, mapped_recording_clip)
+				} else {
+					mapped_recording_clip
+				}
+				command.clip_x = combined_clip.x
+				command.clip_y = combined_clip.y
+				command.clip_width = combined_clip.width
+				command.clip_height = combined_clip.height
+			} else {
+				command.has_clip = context.has_clip
+				command.clip_list = context.clip_list
+				if context.has_clip {
+					command.clip_x = context.clip.x
+					command.clip_y = context.clip.y
+					command.clip_width = context.clip.width
+					command.clip_height = context.clip.height
+				}
 			}
+			command.visual_layer_list = context.layer_list
 			apply_live_scrollbar_offset(mut command, step.box)
 			apply_live_background_offsets(mut command, step.box, viewport_scroll_offset)
 			commands << command

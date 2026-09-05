@@ -255,6 +255,12 @@ indeterminate, enabled, and activation state. Painting's direct
 `InputColors`/`CheckBoxPaintable`/`RadioButtonPaintable` translations emit the
 rounded layers and exact checkmark path. A focused upstream capture matches
 geometry and colors, with scale-normalized MAE 0.9256 from raster edges.
+Fieldset nodes now retain a source-shaped `FieldSetPaintable` with the absolute
+fieldset border box, CSS top-border width, and rendered legend margin/border
+geometry. Background and split top-border recorder clips remain local to their
+commands, then compose with the same accumulated transforms, overflow clips,
+and masks as ordinary visual-context clips. This replaces the generic border
+path that painted through a transparent legend.
 `SVGMaskable`'s URL `<clipPath>` path is active too: attached resource geometry
 is omitted from normal child painting and retained as exact mask components.
 Target, resource, child, viewBox, and `objectBoundingBox` transforms compose at

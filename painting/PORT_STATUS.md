@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 513
+filename-level mappings. The current semantic audit nevertheless reports 510
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 513 unmatched Painting
+  were removed; the audit currently reports 510 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -180,6 +180,17 @@ following behavioral mismatches and added focused regressions:
   rounded layers, indeterminate dash, and exact scaled path. A focused upstream
   capture matches geometry and colors; its scale-normalized MAE is 0.9256 from
   rasterized edges.
+- `FieldSetPaintable::effective_border_top()`,
+  `visual_border_box_rect()`, and its specialized border phase now replace the
+  generic box-paint shortcut. The bridge retains the rendered legend's margin
+  and border boxes, clips only the fieldset background to the shifted visual
+  border box, paints side/bottom borders there, and replays the top border in
+  the two device-rounded clips beside the legend. Phase-local recorder clips
+  compose with accumulated transforms, overflow clips, and masks without
+  affecting descendants. The retained-list regression fixes the exact
+  208-by-88 test box to a 208-by-78 visual box and verifies the two top-border
+  clips. A font-free, scale-normalized upstream capture has no channel error
+  above 1 and MAE 0.0244.
 
 ## Implementation-unit mapping
 
@@ -300,7 +311,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 513 unmatched implementations.
+Painting: 510 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

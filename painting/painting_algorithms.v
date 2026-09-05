@@ -1121,6 +1121,95 @@ pub fn fieldset_effective_border_top(border_top f64, legend_margin_height f64,
 	return math.max(border_top, legend_margin_height + legend_border_height)
 }
 
+pub struct FieldSetPaintable {
+pub:
+	border_rect              Rect
+	css_border_top           f64
+	legend_margin_box_height f64
+	legend_border_rect       ?Rect
+}
+
+pub struct FieldSetPaintCommand {
+pub:
+	command DisplayListCommand
+	clip    ?IntRect
+}
+
+// Direct translation of FieldSetPaintable::effective_border_top().
+pub fn (fieldset FieldSetPaintable) effective_border_top() f64 {
+	return fieldset_effective_border_top(fieldset.css_border_top, fieldset.legend_margin_box_height, 0, fieldset.legend_border_rect != none)
+}
+
+// Direct translation of FieldSetPaintable::visual_border_box_rect().
+pub fn (fieldset FieldSetPaintable) visual_border_box_rect() Rect {
+	allocated_border_top := fieldset.effective_border_top()
+	if allocated_border_top <= fieldset.css_border_top {
+		return fieldset.border_rect
+	}
+	removed_height := math.min((allocated_border_top - fieldset.css_border_top) / 2.0, fieldset.border_rect.height)
+	return Rect{
+		...fieldset.border_rect
+		y: fieldset.border_rect.y + removed_height
+		height: fieldset.border_rect.height - removed_height
+	}
+}
+
+// FieldSetPaintable::paint_background() clips only the resolved background;
+// shadows, borders, descendants, and outlines remain outside this clip.
+pub fn (fieldset FieldSetPaintable) background_clip_rect(converter DevicePixelConverter) ?IntRect {
+	return converter.rounded_device_rect(fieldset.visual_border_box_rect())
+}
+
+fn append_fieldset_paint_commands(mut result []FieldSetPaintCommand,
+	commands []DisplayListCommand, clip ?IntRect) {
+	for command in commands {
+		result << FieldSetPaintCommand{
+			command: command
+			clip: clip
+		}
+	}
+}
+
+// Direct translation of FieldSetPaintable::paint()'s border phase. The side
+// and bottom borders use the shifted visual box, while the top border is
+// replayed through the two clips on either side of the rendered legend.
+pub fn (fieldset FieldSetPaintable) paint(borders DeviceBordersData, radii CornerRadii,
+	converter DevicePixelConverter) []FieldSetPaintCommand {
+	legend_border_rect := fieldset.legend_border_rect or {
+		return paint_all_borders(converter.rounded_device_rect(fieldset.border_rect), radii, borders).map(FieldSetPaintCommand{
+			command: it
+		})
+	}
+	device_border_rect := converter.rounded_device_rect(fieldset.visual_border_box_rect())
+	mut result := []FieldSetPaintCommand{}
+	append_fieldset_paint_commands(mut result, paint_all_borders(device_border_rect, radii, DeviceBordersData{
+		top: DeviceBorderData{}
+		right: borders.right
+		bottom: borders.bottom
+		left: borders.left
+	}), none)
+	top_border_only := DeviceBordersData{
+		top: borders.top
+	}
+	top_commands := paint_all_borders(device_border_rect, radii, top_border_only)
+	legend_device_rect := converter.rounded_device_rect(legend_border_rect)
+	left_segment := IntRect{
+		x: device_border_rect.x
+		y: device_border_rect.y
+		width: legend_device_rect.x - device_border_rect.x
+		height: borders.top.width
+	}
+	append_fieldset_paint_commands(mut result, top_commands, left_segment)
+	right_segment := IntRect{
+		x: legend_device_rect.right()
+		y: device_border_rect.y
+		width: device_border_rect.right() - legend_device_rect.right()
+		height: borders.top.width
+	}
+	append_fieldset_paint_commands(mut result, top_commands, right_segment)
+	return result
+}
+
 pub enum MarkerKind {
 	square
 	circle

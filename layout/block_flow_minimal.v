@@ -326,6 +326,7 @@ pub mut:
 	form_control_activated     bool
 	form_control_color_scheme  css.PreferredColorScheme
 	form_control_accent_color  ?css.Color
+	fieldset_paintable         ?painting.FieldSetPaintable
 	// Root backgrounds cover the viewport canvas. A transparent HTML root may receive these values
 	// from the body background according to CSS canvas-background propagation.
 	canvas_background_color  css.Color
@@ -1325,6 +1326,10 @@ pub mut:
 	clip_width  f64
 	clip_height f64
 	clip_list   &PaintClipList = unsafe { nil }
+	// A DisplayListRecorder clip local to this command's paint phase. Unlike an
+	// accumulated visual-context clip, it does not apply to other phases or
+	// descendants (FieldSetPaintable uses this for its background and top edge).
+	recording_clip ?LayoutRect
 	// Effects and SVG masks are group operations. Retain their ancestor order so
 	// replay can emit balanced layer boundaries around the complete subtree.
 	visual_layer_list &PaintVisualLayerList = unsafe { nil }
@@ -1945,6 +1950,18 @@ fn transport_radii_from_painting(radii painting.CornerRadii) BoxRadii {
 	}
 }
 
+fn layout_rect_from_painting_int_rect(rect painting.IntRect) LayoutRect {
+	return LayoutRect{rect.x, rect.y, rect.width, rect.height}
+}
+
+fn set_recording_clip_for_range(mut commands []PaintCommand, start int, end int,
+	clip painting.IntRect) {
+	resolved := layout_rect_from_painting_int_rect(clip)
+	for index := start; index < end; index++ {
+		commands[index].recording_clip = resolved
+	}
+}
+
 fn append_painting_display_command(mut commands []PaintCommand,
 	display_command painting.DisplayListCommand, opacity f64) {
 	match display_command {
@@ -2146,6 +2163,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				outer_shadow: true
 			}
 		}
+		background_paint_start := commands.len
 		background_isolated := box.background_images.any(background_image_layer_blend_mode(it) != .normal)
 		needs_background_text_clip := box.background_color_clip == 'text'
 			&& !box.paints_canvas_background && !box.skip_background_paint && !empty_cell_hidden
@@ -2253,6 +2271,12 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		if needs_background_text_clip {
 			commands << PaintCommand{ kind: 'end_background_text_clip' }
 		}
+		if fieldset := box.fieldset_paintable {
+			converter := painting.new_device_pixel_converter(1.0) or { return commands }
+			if clip := fieldset.background_clip_rect(converter) {
+				set_recording_clip_for_range(mut commands, background_paint_start, commands.len, clip)
+			}
+		}
 		foreground_replaced_start := commands.len
 		if box.replaced_image_url != '' {
 			commands << PaintCommand{
@@ -2309,7 +2333,19 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		// for the collapsed table principal. Their shared edges are painted below.
 		if !box.table_cell && !(box.uses_collapsed_borders && box.table_inside) {
 			border_colors := effective_border_colors(box.border_colors, box.border_color)
-			append_translated_border_commands(mut commands, box.border, border_colors, box.border_styles, box_radii, border_left, border_top, border_width, border_height, opacity)
+			if fieldset := box.fieldset_paintable {
+				converter := painting.new_device_pixel_converter(1.0) or { return commands }
+				borders := painting_borders_from_transport(box.border, border_colors, box.border_styles)
+				for fieldset_command in fieldset.paint(borders, painting_radii_from_transport(box_radii), converter) {
+					command_start_index := commands.len
+					append_painting_display_command(mut commands, fieldset_command.command, opacity)
+					if clip := fieldset_command.clip {
+						set_recording_clip_for_range(mut commands, command_start_index, commands.len, clip)
+					}
+				}
+			} else {
+				append_translated_border_commands(mut commands, box.border, border_colors, box.border_styles, box_radii, border_left, border_top, border_width, border_height, opacity)
+			}
 		}
 		border_end := commands.len
 		table_border_start := commands.len
@@ -2429,6 +2465,21 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		for command_index := command_start; command_index < commands.len; command_index++ {
 			commands[command_index].transform = box.paint_transform
 			commands[command_index].paint_box_index = entry_index
+			if recording_clip := commands[command_index].recording_clip {
+				clip_transform := normalized_affine(box.paint_transform)
+				mapped_clip := compatibility_affine_map_rect(clip_transform, recording_clip)
+				commands[command_index].has_clip = true
+				commands[command_index].clip_x = mapped_clip.x
+				commands[command_index].clip_y = mapped_clip.y
+				commands[command_index].clip_width = mapped_clip.width
+				commands[command_index].clip_height = mapped_clip.height
+				commands[command_index].clip_list = &PaintClipList{
+					items: [PaintClip{
+						rect: recording_clip
+						transform: clip_transform
+					}]
+				}
+			}
 		}
 		for command_index := foreground_replaced_start; command_index < foreground_replaced_end; command_index++ {
 			commands[command_index].paint_phase = .foreground
