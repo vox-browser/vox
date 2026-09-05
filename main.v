@@ -88,6 +88,8 @@ fn C.native_draw_image_part(image &gg.Image, destination_x f32, destination_y f3
 
 fn C.native_draw_image_part_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, opacity f32, nearest_neighbor int)
 
+fn C.native_draw_repeated_image_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, opacity f32, nearest_neighbor int, repeat_x int, repeat_y int)
+
 fn C.native_begin_clip()
 
 fn C.native_begin_background_blend_group()
@@ -3176,7 +3178,8 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 				}
 			}
 			layer := resolved_layer or { return }
-			tiles := painting.background_tiles_limited(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, painting.Point{command.image_viewport_offset_x, command.image_viewport_offset_y}, clip, 4096)
+			plan := painting.background_tile_plan(layer, painting.Point{command.image_scroll_offset_x, command.image_scroll_offset_y}, painting.Point{command.image_viewport_offset_x, command.image_viewport_offset_y}, clip)
+			mut used_native_repeated_bitmap := false
 			$if macos {
 				if app.ctx.native_rendering {
 					radii := command.image_clip_radii
@@ -3185,7 +3188,38 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 					if layer.blend_mode != .normal {
 						C.native_begin_background_blend_mode(int(layer.blend_mode))
 					}
+					// BackgroundPainting records one DrawRepeatedImmutableBitmap when
+					// repetition has no `space` gaps. Submit the same shape as one
+					// Quartz tiled-image operation instead of materializing up to 4096
+					// rectangles and crossing the V/C boundary once per tile.
+					if plan.can_use_repeated_bitmap() {
+						converter := painting.new_device_pixel_converter(1.0) or { return }
+						destination := converter.rounded_device_rect(plan.first_tile)
+						device_clip := converter.rounded_device_rect(clip)
+						destination_width := if destination.width == 0 {
+							1
+						} else {
+							destination.width
+						}
+						destination_height := if destination.height == 0 {
+							1
+						} else {
+							destination.height
+						}
+						scaling_mode := painting.to_gfx_scaling_mode(command.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{destination_width, destination_height})
+						C.native_draw_repeated_image_transformed(image, f32(destination.x), f32(destination.y), f32(destination_width), f32(destination_height), f32(device_clip.x), f32(device_clip.y), f32(device_clip.width), f32(device_clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
+							1
+						} else {
+							0
+						}, if plan.repeat_x { 1 } else { 0 }, if plan.repeat_y { 1 } else { 0 })
+						used_native_repeated_bitmap = true
+					}
 				}
+			}
+			tiles := if used_native_repeated_bitmap {
+				[]painting.Rect{}
+			} else {
+				painting.background_tiles_from_plan_limited(plan, clip, 4096)
 			}
 			for tile in tiles {
 				left := math.max(tile.x, clip.x)

@@ -76,7 +76,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `NavigationTiming` | 3 | 104 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 249 | 290 | 68 | Complete |
 | `Page` | 7 | 4,298 | 2,275 | 475 | Complete |
-| `Painting` | 48 | 10,038 | 6,545 | 1,987 | Present |
+| `Painting` | 48 | 10,038 | 6,618 | 2,010 | Present |
 | `PerformanceTimeline` | 5 | 391 | 447 | 130 | Complete |
 | `PermissionsPolicy` | 1 | 98 | 86 | 21 | Complete |
 | `Platform` | 4 | 415 | 1,167 | 96 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **315,495** | **56,638** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **315,568** | **56,661** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -486,6 +486,12 @@ elliptical clip radii. The previous screen-AABB sizing and stale-scroll paths
 are gone. Non-normal URL layers now paint with all 18 translated CSS blend
 modes inside the isolated background group required by
 `BackgroundPainting.cpp`, rather than blending directly with page content.
+Background sizing and repeat positioning now remain fixed-point `CSSPixels`
+through contain/cover scaling, `round` correction, aspect restoration, and the
+source's exact first-visible-tile calculation. Ordinary repeat and round layers
+without `space` gaps replay as one device-rounded native tiled-image operation,
+matching `DrawRepeatedImmutableBitmap` instead of allocating up to 4,096 tile
+rectangles and crossing the renderer boundary once per tile.
 Typed linear, radial, and conic gradients now travel through that same ordered
 background-image list instead of a separate first-gradient shortcut. Each
 gradient is resolved only after `BackgroundPainting.cpp` determines its tile

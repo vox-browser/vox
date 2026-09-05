@@ -565,12 +565,12 @@ fn test_resolve_background_layer_uses_cpp_sizing_round_and_position_order() {
 		background_positioning_area: Rect{10, 20, 100, 50}
 		resolution_context: css.LengthResolutionContext.default()
 	}) or { panic('expected a resolved background') }
-	// 30x15 becomes 100/3 by 50/3: round fits three columns, then the auto Y
-	// dimension restores the original 2:1 aspect ratio.
-	assert resolved.image_rect.width > 33.33 && resolved.image_rect.width < 33.34
-	assert resolved.image_rect.height > 16.66 && resolved.image_rect.height < 16.67
+	// C++ converts 100/3 back to fixed-point CSSPixels by truncation, then
+	// restores the auto Y dimension with CSSPixelFraction multiplication.
+	assert resolved.image_rect.width == 33.328125
+	assert resolved.image_rect.height == 16.65625
 	assert resolved.position_x == 16.65625
-	assert resolved.position_y == 16.65625
+	assert resolved.position_y == 16.671875
 	assert resolved.repeat_x == .round
 	assert resolved.repeat_y == .no_repeat
 	assert resolved.blend_mode == .plus_lighter
@@ -652,6 +652,29 @@ fn test_background_tiles_matches_cpp_space_and_attachment_geometry() {
 	assert fixed_tiles == [Rect{40, 50, 30, 20}]
 	limited := background_tiles_limited(space_layer, Point{}, Point{}, Rect{0, 0, 100, 20}, 2)
 	assert limited == [Rect{0, 0, 30, 20}, Rect{35, 0, 30, 20}]
+	repeat_layer := ResolvedBackgroundLayer{
+		...space_layer
+		position_x: 83.328125
+		image_rect: Rect{0, 0, 33.328125, 20}
+		repeat_x: .repeat
+	}
+	plan := background_tile_plan(repeat_layer, Point{}, Point{}, Rect{0, 0, 100, 20})
+	assert plan.can_use_repeated_bitmap()
+	assert plan.first_tile == Rect{-15.671875, 0, 33.328125, 20}
+	assert plan.x_step == 33.328125
+	assert !background_tile_plan(space_layer, Point{}, Point{}, Rect{0, 0, 100, 20}).can_use_repeated_bitmap()
+
+	// The source computes horizontal `space` with doubles but vertical `space`
+	// with floats. Large valid CSS coordinates make that quirk observable.
+	large_space_layer := ResolvedBackgroundLayer{
+		...space_layer
+		background_positioning_area: Rect{0, 0, 1_000_000.015625, 1_000_000.015625}
+		image_rect: Rect{0, 0, 300_000.015625, 300_000.015625}
+		repeat_y: .space
+	}
+	large_plan := background_tile_plan(large_space_layer, Point{}, Point{}, large_space_layer.background_positioning_area)
+	assert large_plan.x_step == 350_000
+	assert large_plan.y_step == 350_000.015625
 }
 
 fn test_border_color_matches_inset_and_outset_hsv_adjustment() {

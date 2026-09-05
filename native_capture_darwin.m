@@ -3168,6 +3168,51 @@ void native_draw_image_part_transformed(gg__Image *image, float destination_x,
 		page_y, scroll_y, canvas_height, opacity, nearest_neighbor);
 }
 
+void native_draw_repeated_image_transformed(gg__Image *image,
+	float destination_x, float destination_y, float destination_width,
+	float destination_height, float clip_x, float clip_y, float clip_width,
+	float clip_height, float transform_a, float transform_b, float transform_c,
+	float transform_d, float transform_e, float transform_f, float page_x,
+	float page_y, float scroll_y, float canvas_height, float opacity,
+	int nearest_neighbor, int repeat_x, int repeat_y) {
+	if (image == NULL || image->data == NULL || destination_width <= 0.0f
+		|| destination_height <= 0.0f || clip_width <= 0.0f
+		|| clip_height <= 0.0f || (!repeat_x && !repeat_y)) {
+		return;
+	}
+	CGImageRef image_copy = native_copy_cg_image(image);
+	if (image_copy == NULL) {
+		return;
+	}
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
+		transform_c, -transform_d, page_x + transform_e,
+		canvas_height - page_y + scroll_y - transform_f);
+	CGContextSaveGState(context);
+	CGContextConcatCTM(context, to_canvas);
+	CGContextClipToRect(context, CGRectMake(clip_x, clip_y, clip_width, clip_height));
+	if (!repeat_x) {
+		CGContextClipToRect(context, CGRectMake(destination_x, clip_y,
+			destination_width, clip_height));
+	}
+	if (!repeat_y) {
+		CGContextClipToRect(context, CGRectMake(clip_x, destination_y,
+			clip_width, destination_height));
+	}
+	CGContextSetAlpha(context, MIN(MAX(opacity, 0.0f), 1.0f));
+	CGContextSetInterpolationQuality(context,
+		nearest_neighbor ? kCGInterpolationNone : kCGInterpolationHigh);
+	// Keep the same CSS-y-down to Quartz-image orientation as the single-image
+	// primitive, but tile the complete clipped extent in one Quartz operation.
+	CGContextTranslateCTM(context, destination_x,
+		destination_y + destination_height);
+	CGContextScaleCTM(context, 1.0, -1.0);
+	CGContextDrawTiledImage(context,
+		CGRectMake(0, 0, destination_width, destination_height), image_copy);
+	CGContextRestoreGState(context);
+	CGImageRelease(image_copy);
+}
+
 void native_add_svg_content_mask_image(gg__Image *image, float destination_x,
 	float destination_y, float destination_width, float destination_height,
 	float source_x, float source_y, float source_width, float source_height,

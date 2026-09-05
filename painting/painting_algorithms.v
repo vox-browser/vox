@@ -167,20 +167,22 @@ pub fn resolve_background_layer_without_intrinsic(input BackgroundLayerWithoutIn
 fn resolve_background_layer_with_natural_size(layer css.BackgroundLayerData, image_id string,
 	area Rect, resolution_context css.LengthResolutionContext,
 	natural_size css.SizeWithAspectRatio) ?ResolvedBackgroundLayer {
+	area_width := css.CSSPixels.nearest_value_for(area.width)
+	area_height := css.CSSPixels.nearest_value_for(area.height)
 	mut specified_width := ?css.CSSPixels(none)
 	mut specified_height := ?css.CSSPixels(none)
 	if layer.size_type == .length_percentage {
 		if !layer.size_x.is_auto() {
-			specified_width = layer.size_x.length_percentage().to_px(resolution_context, css.CSSPixels.nearest_value_for(area.width))
+			specified_width = layer.size_x.length_percentage().to_px(resolution_context, area_width)
 		}
 		if !layer.size_y.is_auto() {
-			specified_height = layer.size_y.length_percentage().to_px(resolution_context, css.CSSPixels.nearest_value_for(area.height))
+			specified_height = layer.size_y.length_percentage().to_px(resolution_context, area_height)
 		}
 	}
-	concrete_size := css.run_default_sizing_algorithm(specified_width, specified_height, natural_size, css.CSSPixelSize.new(css.CSSPixels.nearest_value_for(area.width), css.CSSPixels.nearest_value_for(area.height)))
-	concrete_width := concrete_size.width().to_double()
-	concrete_height := concrete_size.height().to_double()
-	if concrete_width <= 0 || concrete_height <= 0 {
+	concrete_size := css.run_default_sizing_algorithm(specified_width, specified_height, natural_size, css.CSSPixelSize.new(area_width, area_height))
+	concrete_width := concrete_size.width()
+	concrete_height := concrete_size.height()
+	if concrete_width.raw_value() <= 0 || concrete_height.raw_value() <= 0 {
 		return none
 	}
 
@@ -188,90 +190,175 @@ fn resolve_background_layer_with_natural_size(layer css.BackgroundLayerData, ima
 	mut image_height := concrete_height
 	match layer.size_type {
 		.contain {
-			ratio := math.min(area.width / concrete_width, area.height / concrete_height)
-			image_width = concrete_width * ratio
-			image_height = concrete_height * ratio
+			ratio := math.min(area_width.to_double() / concrete_width.to_double(), area_height.to_double() / concrete_height.to_double())
+			image_width = concrete_width.scaled(ratio)
+			image_height = concrete_height.scaled(ratio)
 		}
 		.cover {
-			ratio := math.max(area.width / concrete_width, area.height / concrete_height)
-			image_width = concrete_width * ratio
-			image_height = concrete_height * ratio
+			ratio := math.max(area_width.to_double() / concrete_width.to_double(), area_height.to_double() / concrete_height.to_double())
+			image_width = concrete_width.scaled(ratio)
+			image_height = concrete_height.scaled(ratio)
 		}
 		.length_percentage {}
 	}
-	if image_width <= 0 || image_height <= 0 {
+	if image_width.raw_value() <= 0 || image_height.raw_value() <= 0 {
 		return none
 	}
 
 	if layer.repeat_x == .round || layer.repeat_y == .round {
 		if layer.repeat_x == .round {
-			mut count := math.round(area.width / image_width)
-			if count <= 0 {
-				count = 1
-			}
-			image_width = area.width / count
+			count := round_background_repeat_count(area_width, image_width)
+			image_width = area_width.divided_by(count).to_css_pixels()
 		}
 		if layer.repeat_y == .round {
-			mut count := math.round(area.height / image_height)
-			if count <= 0 {
-				count = 1
-			}
-			image_height = area.height / count
+			count := round_background_repeat_count(area_height, image_height)
+			image_height = area_height.divided_by(count).to_css_pixels()
 		}
 		if layer.repeat_x != layer.repeat_y {
 			if layer.size_x.is_auto() {
-				image_width = image_height * (concrete_width / concrete_height)
+				image_width = image_height.times_fraction(concrete_width.divided_by(concrete_height))
 			}
 			if layer.size_y.is_auto() {
-				image_height = image_width * (concrete_height / concrete_width)
+				image_height = image_width.times_fraction(concrete_height.divided_by(concrete_width))
 			}
 		}
 	}
-	if image_width <= 0 || image_height <= 0 {
+	if image_width.raw_value() <= 0 || image_height.raw_value() <= 0 {
 		return none
 	}
-	space_x := area.width - image_width
-	space_y := area.height - image_height
-	position_x := layer.position_x.to_px(resolution_context, css.CSSPixels.nearest_value_for(space_x)).to_double()
-	position_y := layer.position_y.to_px(resolution_context, css.CSSPixels.nearest_value_for(space_y)).to_double()
+	space_x := area_width.minus(image_width)
+	space_y := area_height.minus(image_height)
+	position_x := layer.position_x.to_px(resolution_context, space_x)
+	position_y := layer.position_y.to_px(resolution_context, space_y)
 	return ResolvedBackgroundLayer{
 		image_id: image_id
 		attachment: background_attachment_from_css(layer.attachment)
 		clip: background_box_from_css(layer.clip)
-		position_x: position_x
-		position_y: position_y
+		position_x: position_x.to_double()
+		position_y: position_y.to_double()
 		background_positioning_area: area
-		image_rect: Rect{0, 0, image_width, image_height}
+		image_rect: Rect{0, 0, image_width.to_double(), image_height.to_double()}
 		repeat_x: repetition_from_css(layer.repeat_x)
 		repeat_y: repetition_from_css(layer.repeat_y)
 		blend_mode: blend_mode_from_css(layer.blend_mode)
 	}
 }
 
-fn repetition_step(mode Repetition, area_length f64, image_length f64) (bool, f64) {
-	if image_length <= 0 {
-		return false, 0
+// BackgroundPainting.cpp first converts the width ratio to CSSPixels, rounds
+// that fixed-point value to an integer CSS pixel, and only then divides the
+// positioning area. Preserve that order instead of rounding an f64 ratio.
+fn round_background_repeat_count(area_length css.CSSPixels,
+	image_length css.CSSPixels) css.CSSPixels {
+	ratio := area_length.divided_by(image_length).to_css_pixels()
+	rounded := css.css_pixels_round(ratio)
+	if rounded.raw_value() <= 0 {
+		return css.CSSPixels.new(1)
+	}
+	return rounded
+}
+
+struct BackgroundRepetitionAxis {
+	repeats bool
+	has_gap bool
+	step    css.CSSPixels
+}
+
+fn background_repetition_axis(mode Repetition, area_length css.CSSPixels,
+	image_length css.CSSPixels, uses_float_modulo bool) BackgroundRepetitionAxis {
+	if image_length.raw_value() <= 0 {
+		return BackgroundRepetitionAxis{}
 	}
 	return match mode {
 		.round {
-			true, image_length
+			BackgroundRepetitionAxis{true, false, image_length}
 		}
 		.repeat {
-			true, image_length
+			BackgroundRepetitionAxis{true, false, image_length}
 		}
 		.no_repeat {
-			false, image_length
+			BackgroundRepetitionAxis{false, false, image_length}
 		}
 		.space {
-			whole_images := int(area_length / image_length)
+			whole_images := area_length.divided_by(image_length).to_int()
 			if whole_images <= 1 {
-				false, image_length
+				BackgroundRepetitionAxis{false, false, image_length}
 			} else {
-				space := math.mod(area_length, image_length)
-				gap := css.CSSPixels.nearest_value_for(space / f64(whole_images - 1)).to_double()
-				true, image_length + gap
+				// BackgroundPainting.cpp preserves an observable implementation quirk:
+				// horizontal spacing uses doubles, while vertical spacing passes floats
+				// to fmod. Round both operands and the result through f32 on that path.
+				space := if uses_float_modulo {
+					f64(f32(math.mod(f64(area_length.to_float()), f64(image_length.to_float()))))
+				} else {
+					math.mod(area_length.to_double(), image_length.to_double())
+				}
+				gap := css.CSSPixels.nearest_value_for(space / f64(whole_images - 1))
+				BackgroundRepetitionAxis{true, true, image_length.plus(gap)}
 			}
 		}
+	}
+}
+
+pub struct BackgroundTilePlan {
+pub:
+	first_tile       Rect
+	repeat_x         bool
+	repeat_y         bool
+	repeat_x_has_gap bool
+	repeat_y_has_gap bool
+	x_step           f64
+	y_step           f64
+}
+
+pub fn (plan BackgroundTilePlan) can_use_repeated_bitmap() bool {
+	return (plan.repeat_x || plan.repeat_y) && !plan.repeat_x_has_gap
+		&& !plan.repeat_y_has_gap
+}
+
+fn first_visible_background_tile_position(start css.CSSPixels, step css.CSSPixels,
+	clip_start css.CSSPixels, repeats bool) css.CSSPixels {
+	if !repeats || start.compare(clip_start) <= 0 || step.raw_value() <= 0 {
+		return start
+	}
+	// This deliberately follows BackgroundPainting.cpp's fixed-point operator
+	// order: ceil the CSSPixels conversion of the fraction, multiply, then floor.
+	ratio := start.minus(clip_start).divided_by(step).to_css_pixels()
+	delta := css.css_pixels_floor(step.times(css.css_pixels_ceil(ratio)))
+	return start.minus(delta)
+}
+
+pub fn background_tile_plan(layer ResolvedBackgroundLayer, scroll_offset Point,
+	viewport_offset Point, clip Rect) BackgroundTilePlan {
+	mut area_x := css.CSSPixels.nearest_value_for(layer.background_positioning_area.x)
+	mut area_y := css.CSSPixels.nearest_value_for(layer.background_positioning_area.y)
+	area_width := css.CSSPixels.nearest_value_for(layer.background_positioning_area.width)
+	area_height := css.CSSPixels.nearest_value_for(layer.background_positioning_area.height)
+	match layer.attachment {
+		.fixed {
+			area_x = css.CSSPixels.nearest_value_for(viewport_offset.x)
+			area_y = css.CSSPixels.nearest_value_for(viewport_offset.y)
+		}
+		.local {
+			area_x = area_x.minus(css.CSSPixels.nearest_value_for(scroll_offset.x))
+			area_y = area_y.minus(css.CSSPixels.nearest_value_for(scroll_offset.y))
+		}
+		.scroll {}
+	}
+	image_width := css.CSSPixels.nearest_value_for(layer.image_rect.width)
+	image_height := css.CSSPixels.nearest_value_for(layer.image_rect.height)
+	x_axis := background_repetition_axis(layer.repeat_x, area_width, image_width, false)
+	y_axis := background_repetition_axis(layer.repeat_y, area_height, image_height, true)
+	base_x := area_x.plus(css.CSSPixels.nearest_value_for(layer.position_x))
+	base_y := area_y.plus(css.CSSPixels.nearest_value_for(layer.position_y))
+	start_x := first_visible_background_tile_position(base_x, x_axis.step, css.CSSPixels.nearest_value_for(clip.left()), x_axis.repeats)
+	start_y := first_visible_background_tile_position(base_y, y_axis.step, css.CSSPixels.nearest_value_for(clip.top()), y_axis.repeats)
+	return BackgroundTilePlan{
+		first_tile: Rect{start_x.to_double(), start_y.to_double(), image_width.to_double(), image_height.to_double()}
+		repeat_x: x_axis.repeats
+		repeat_y: y_axis.repeats
+		repeat_x_has_gap: x_axis.has_gap
+		repeat_y_has_gap: y_axis.has_gap
+		x_step: x_axis.step.to_double()
+		y_step: y_axis.step.to_double()
 	}
 }
 
@@ -287,50 +374,36 @@ pub fn background_tiles(layer ResolvedBackgroundLayer, scroll_offset Point,
 // sharing the exact positioning and stepping algorithm; zero means unlimited.
 pub fn background_tiles_limited(layer ResolvedBackgroundLayer, scroll_offset Point,
 	viewport_offset Point, clip Rect, maximum_tiles int) []Rect {
-	mut area := layer.background_positioning_area
-	match layer.attachment {
-		.fixed {
-			area = Rect{viewport_offset.x, viewport_offset.y, area.width, area.height}
-		}
-		.local {
-			area = area.translated(scroll_offset.scale(-1))
-		}
-		.scroll {}
-	}
-	base := Rect{area.x + layer.position_x, area.y + layer.position_y, layer.image_rect.width, layer.image_rect.height}
-	repeat_x, x_step := repetition_step(layer.repeat_x, area.width, base.width)
-	repeat_y, y_step := repetition_step(layer.repeat_y, area.height, base.height)
-	mut start_x := base.x
-	mut start_y := base.y
-	if repeat_x && start_x > clip.left() {
-		x_delta := math.floor(x_step * math.ceil((start_x - clip.left()) / x_step))
-		start_x -= x_delta
-	}
-	if repeat_y && start_y > clip.top() {
-		y_delta := math.floor(y_step * math.ceil((start_y - clip.top()) / y_step))
-		start_y -= y_delta
+	plan := background_tile_plan(layer, scroll_offset, viewport_offset, clip)
+	return background_tiles_from_plan_limited(plan, clip, maximum_tiles)
+}
+
+pub fn background_tiles_from_plan_limited(plan BackgroundTilePlan, clip Rect,
+	maximum_tiles int) []Rect {
+	if plan.first_tile.width <= 0 || plan.first_tile.height <= 0 {
+		return []Rect{}
 	}
 	mut tiles := []Rect{}
-	mut y := start_y
-	for {
-		mut x := start_x
-		for {
-			tile := Rect{x, y, base.width, base.height}
+	mut y := plan.first_tile.y
+	for y < clip.bottom() {
+		mut x := plan.first_tile.x
+		for x < clip.right() {
+			tile := Rect{x, y, plan.first_tile.width, plan.first_tile.height}
 			if tile.intersects(clip) {
 				tiles << tile
 				if maximum_tiles > 0 && tiles.len >= maximum_tiles {
 					return tiles
 				}
 			}
-			if !repeat_x || x + x_step >= clip.right() {
+			if !plan.repeat_x {
 				break
 			}
-			x += x_step
+			x += plan.x_step
 		}
-		if !repeat_y || y + y_step >= clip.bottom() {
+		if !plan.repeat_y {
 			break
 		}
-		y += y_step
+		y += plan.y_step
 	}
 	return tiles
 }

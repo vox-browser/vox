@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 6,545 | 1,987 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 6,618 | 2,010 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -275,11 +275,21 @@ following behavioral mismatches and added focused regressions:
   rather than a renderer-local approximation. Typed `BackgroundLayerData`
   reaches Painting intact; default sizing, contain/cover, `round` resizing and
   one-axis aspect restoration, fixed-point position resolution, `space` gaps,
-  and fixed/local/scroll attachment run in the C++ source order. Retained replay
+  and fixed/local/scroll attachment run in the C++ source order. All intermediate
+  dimensions now remain exact `CSSPixels`, including the truncating
+  `CSSPixelFraction` conversions and the source's float-only vertical `space`
+  modulo quirk. The first-visible-tile adjustment preserves the upstream
+  fixed-point conversion, ceil, multiply, and floor order. Retained replay
   refreshes local and viewport scroll offsets without rebuilding phase caches.
   The native image command resolves in CSS coordinates before applying the
   accumulated transform and clips with the layer's exact shrunken elliptical
-  radii. Compatibility tile materialization is bounded before allocation. URL
+  radii. Repeat and round layers without `space` gaps use one device-rounded
+  Quartz tiled-image command, mirroring `DrawRepeatedImmutableBitmap` instead of
+  materializing and crossing the native boundary once per tile. Compatibility
+  tile materialization remains bounded before allocation. On a four-mode
+  fractional repeat/round differential fixture, this reduced MAE against the
+  upstream browser from 9.3692 to 3.3536, RMSE from 34.4071 to 13.7805, and
+  pixels with channel error over 50 from 30,001 to 7,040. URL
   layers with any of the 18 CSS blend modes paint over the color and lower
   layers inside the isolated group required by the compositing specification;
   Quartz and the portable SVG serializer consume the same retained mode.
