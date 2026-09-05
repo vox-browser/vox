@@ -156,6 +156,13 @@ $ /Users/alex/code/v/v -enable-globals test .
 Summary for all V _test.v files: 385 passed, 385 total.
 ```
 
+Flex layout was additionally checked differentially against the upstream browser
+with `tools/layout_dump.v`: a 489-case generated corpus (directions, wrapping,
+justify/align keywords, gaps, box-model edges, order, aspect ratios, item min/max
+sizes and auto margins) plus an 80-case `align-self` matrix. Both now agree with
+`Build/release/bin/Ladybird.app --headless=layout-tree` except for two cases that
+differ by one subpixel of rounding.
+
 ## Native browser rendering
 
 The translated browser builds as `Build/v/Ladybird.app` and passes its

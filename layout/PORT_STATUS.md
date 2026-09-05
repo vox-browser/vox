@@ -49,7 +49,30 @@ row path, so a constrained cross size transfers back to the main axis.
 
 Flex and grid now build order-modified document order with C++'s distinct-order
 buckets rather than insertion-sorting every child. Equal-order children retain
-document order. Grid auto-placement also uses packed signed row/column keys for
+document order. `generate_anonymous_flex_items()` sorts those distinct keys
+descending for a reverse direction rather than reversing the item list, because
+the positioning code already lays a reverse line out from the far edge;
+`is_direction_reverse()` also counts plain `row` - not `row-reverse` - as the
+reversed one under `direction: rtl`.
+
+A differential audit against the upstream browser corrected four more flex
+divergences. An indefinite column container now runs
+`calculate_intrinsic_main_size_of_flex_container()` - the desired/chosen flex
+fraction algorithm the row axis already used - instead of summing outer
+hypothetical main sizes, which ignored flexibility and left `flex-basis: 0` items
+at zero. `calculate_cross_size_of_each_flex_line()` hands a line the container's
+inner cross size only when `is_single_line()`, which means `flex-wrap: nowrap`
+rather than "collection produced one line"; keying it on the line count removed
+the free space that `align-content` distributes. `align_all_flex_lines()` treats
+negative leftover free space as `center` for `space-around` and `space-evenly`,
+and reverses the line order for wrap-reverse and for nothing else.
+
+`align_all_flex_items_along_the_cross_axis()` consults flex-wrap in exactly one
+case: wrap-reverse swaps the cross-start and cross-end directions for `normal`
+alone, while every explicit keyword names a fixed edge of the line and the inline
+`direction` does not affect the item's own offset. `FlexCrossAlignment` therefore
+keeps `normal` distinct from an explicit `stretch` even though both stretch an
+auto-sized item. Grid auto-placement also uses packed signed row/column keys for
 its occupation set instead of formatting a string for every cell lookup. Table
 layout records the equivalent of C++'s per-column `left_offset` array once and
 uses prefix differences for spanning widths and final cell positions, removing
