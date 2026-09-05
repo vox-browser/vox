@@ -307,6 +307,7 @@ pub mut:
 	needs_repaint                     bool = true
 	stacking_context_tree_is_valid    bool
 	scroll_state                      painting.ScrollState
+	scroll_state_snapshot             painting.ScrollStateSnapshot
 	visual_context_tree               painting.AccumulatedVisualContextTree = painting.new_accumulated_visual_context_tree()
 mut:
 	// ViewportPaintable::build_stacking_context_tree() retains this sorted tree

@@ -63,22 +63,19 @@ fn viewport_refresh_scroll_state(target voidptr) {
 	if !result.needs_to_refresh_scroll_state {
 		return
 	}
+	result.needs_to_refresh_scroll_state = false
 	// Sticky frames are refreshed before ordinary frames, in creation/tree
 	// order. A nested sticky can therefore consume its parent's current offset.
-	for index in result.scroll_state.sticky_frame_indices() {
+	result.scroll_state.for_each_sticky_frame(fn [mut result] (index int, mut frame painting.ScrollFrame) {
 		nearest_scrolling_ancestor := result.scroll_state.nearest_scrolling_ancestor(index)
-		constraints := result.scroll_state.frames[index].sticky_constraints or {
-			result.scroll_state.frames[index].own_offset = painting.Point{}
-			continue
+		if nearest_scrolling_ancestor == 0 || !frame.has_sticky_constraints() {
+			return
 		}
-		if nearest_scrolling_ancestor == 0 {
-			result.scroll_state.frames[index].own_offset = painting.Point{}
-			continue
-		}
+		constraints := frame.sticky_constraints()
 
 		mut parent_sticky_offset := painting.Point{}
-		parent_index := result.scroll_state.frames[index].parent_index
-		if parent_index > 0 && result.scroll_state.frames[parent_index].is_sticky {
+		parent_index := frame.parent_index()
+		if parent_index > 0 && result.scroll_state.frame_at(parent_index).is_sticky() {
 			parent_sticky_offset = result.scroll_state.cumulative_offset(parent_index)
 		}
 		sticky_position := constraints.position_relative_to_scroll_ancestor.add(parent_sticky_offset)
@@ -91,7 +88,7 @@ fn viewport_refresh_scroll_state(target voidptr) {
 			x: containing_region.right() - constraints.border_box_size.width
 			y: containing_region.bottom() - constraints.border_box_size.height
 		}
-		live_scroll := compatibility_live_scroll_offset(result, result.scroll_state.frames[nearest_scrolling_ancestor])
+		live_scroll := compatibility_live_scroll_offset(result, result.scroll_state.frame_at(nearest_scrolling_ancestor))
 		scrollport := painting.Rect{
 			x: live_scroll.x
 			y: live_scroll.y
@@ -120,25 +117,26 @@ fn viewport_refresh_scroll_state(target voidptr) {
 				sticky_offset_x = math.max(scrollport.right() - constraints.border_box_size.width - right, minimum.x) - sticky_position.x
 			}
 		}
-		result.scroll_state.frames[index].own_offset = painting.Point{sticky_offset_x, sticky_offset_y}
-	}
+		frame.set_own_offset(painting.Point{sticky_offset_x, sticky_offset_y})
+	})
 
 	// ViewportPaintable::refresh_scroll_state() then snapshots the negated live
 	// PaintableBox offsets. Display-list phase commands do not change when a
 	// scroller moves; replay combines them with this state instead.
-	for index in result.scroll_state.scrolling_frame_indices() {
-		live := compatibility_live_scroll_offset(result, result.scroll_state.frames[index])
-		result.scroll_state.frames[index].own_offset = painting.Point{-live.x, -live.y}
-	}
-	result.needs_to_refresh_scroll_state = false
+	result.scroll_state.for_each_scroll_frame(fn [result] (_ int, mut frame painting.ScrollFrame) {
+		live := compatibility_live_scroll_offset(result, &frame)
+		frame.set_own_offset(painting.Point{-live.x, -live.y})
+	})
+	result.scroll_state_snapshot = result.scroll_state.snapshot(1.0)
 }
 
-fn compatibility_live_scroll_offset(result &DocumentLayoutResult, frame painting.ScrollFrame) painting.Point {
-	if frame.paintable_id == 'viewport' {
+fn compatibility_live_scroll_offset(result &DocumentLayoutResult, frame &painting.ScrollFrame) painting.Point {
+	paintable_box := frame.paintable_box()
+	if paintable_box == 'viewport' {
 		viewport := result.document.viewport_rect()
 		return painting.Point{viewport.x, viewport.y}
 	}
-	node_id := frame.paintable_id.i64()
+	node_id := paintable_box.i64()
 	if node_id != 0 {
 		if node := dom.Node.from_unique_id(dom.UniqueNodeID(node_id)) {
 			if paintable := node.paintable_box() {
@@ -318,7 +316,8 @@ fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_in
 			}
 		}
 	}
-	state.frames[sticky_frame_index].sticky_constraints = painting.StickyConstraints{
+	mut sticky_frame := state.frame_at(sticky_frame_index)
+	sticky_frame.set_sticky_constraints(painting.StickyConstraints{
 		position_relative_to_scroll_ancestor: painting.Point{
 			x: sticky_border_box.x - scrollport_rect.x
 			y: sticky_border_box.y - scrollport_rect.y
@@ -333,7 +332,7 @@ fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_in
 		}
 		needs_parent_offset_adjustment: needs_parent_offset_adjustment
 		insets: compatibility_sticky_insets(box, inset_percentage_basis)
-	}
+	})
 }
 
 fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]&BlockBox, mut boxes_by_scroll_frame map[int]&BlockBox, mut state painting.ScrollState) {
@@ -341,7 +340,7 @@ fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]
 	box.sticky_scroll_frame_index = 0
 	parent_index := paintable_box_nearest_scroll_frame_index(box, boxes_by_layout)
 	if box.sticky_position {
-		sticky_frame_index := state.create_sticky_frame(box.node_id.str(), parent_index)
+		sticky_frame_index := state.create_sticky_frame_for(box.node_id.str(), parent_index)
 		box.sticky_scroll_frame_index = sticky_frame_index
 		box.own_scroll_frame_index = sticky_frame_index
 		boxes_by_scroll_frame[sticky_frame_index] = unsafe { &box }
@@ -354,7 +353,7 @@ fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]
 			parent_index
 		}
 		paintable_id := if box.is_viewport_scroller { 'viewport' } else { box.node_id.str() }
-		box.own_scroll_frame_index = state.create_scroll_frame(paintable_id, scroll_parent_index)
+		box.own_scroll_frame_index = state.create_scroll_frame_for(paintable_id, scroll_parent_index)
 		boxes_by_scroll_frame[box.own_scroll_frame_index] = unsafe { &box }
 	}
 	for child_index := 0; child_index < box.children.len; child_index++ {
@@ -1215,7 +1214,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	} else {
 		result.paint_phase_command_count += result.paint_tree.refresh_paint_phase_command_cache(result.paint_order, mut result.paint_phase_commands, mut result.paint_phase_entry_valid)
 	}
-	snapshot := result.scroll_state.snapshot(1.0)
+	snapshot := result.scroll_state_snapshot
 	viewport_scroll_offset := snapshot.device_offset_for_index(result.paint_tree.own_scroll_frame_index).scale(-1)
 	result.display_list_commands = lower_visual_layers(replay_cached_paint_commands_with_visual_context(result.paint_steps, result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree, snapshot, viewport_scroll_offset))
 	result.display_list = &dom.DisplayList{
@@ -1328,7 +1327,7 @@ fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.H
 	mut result := viewport_layout_result(target)
 	viewport_refresh_scroll_state(target)
 	viewport_build_stacking_context_tree(target)
-	snapshot := result.scroll_state.snapshot(1.0)
+	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return none }
 	mut hit_test_state := CompatibilityHitTestState{}
 	// StackingContext paints chrome in the overlay phase, fragments in the
@@ -1535,7 +1534,7 @@ pub fn (mut result DocumentLayoutResult) handle_scrollbar_pointer_event(id strin
 	viewport_build_stacking_context_tree(voidptr(result))
 	box_pointer := result.chrome_widget_boxes[target.identity] or { return .none }
 	mut box := unsafe { &BlockBox(box_pointer) }
-	snapshot := result.scroll_state.snapshot(1.0)
+	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return .none }
 	return compatibility_dispatch_scrollbar_pointer_event(mut box, target.kind, event_type, button, painting.Point{x, y}, result.visual_context_tree, snapshot, metrics)
 }
@@ -1792,7 +1791,7 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 	mut result := viewport_layout_result(target)
 	viewport_refresh_scroll_state(target)
 	viewport_build_stacking_context_tree(target)
-	snapshot := result.scroll_state.snapshot(1.0)
+	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return []&dom.Element{} }
 	mut elements := []&dom.Element{}
 	for index := result.hit_test_steps.len - 1; index >= 0; index-- {

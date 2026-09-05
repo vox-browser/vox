@@ -6,6 +6,14 @@ import html
 import math
 import painting
 
+fn append_typed_scroll_frame_index(indices_pointer &[]int, index int) {
+	unsafe {
+		mut indices := *indices_pointer
+		indices << index
+		*indices_pointer = indices
+	}
+}
+
 fn typed_video_paint_fetch(_ dom.URL, _ u64) !html.MediaResourceResponse {
 	return html.MediaResourceResponse{
 		mime_type: 'video/mp4'
@@ -2177,11 +2185,21 @@ fn test_sticky_element_uses_live_scroll_frame_without_rebuilding_phase_commands(
 	assert initial_sticky_commands.len == 1
 	assert initial_sticky_commands[0].transform[5] == 0
 
-	result := document_layout_result(document) or { panic('missing layout result') }
+	mut result := document_layout_result(document) or { panic('missing layout result') }
 	// ViewportPaintable always owns the root scrolling frame; the overflow box
 	// contributes the second ordinary frame.
-	assert result.scroll_state.scrolling_frame_indices().len == 2
-	assert result.scroll_state.sticky_frame_indices().len == 1
+	mut scrolling_frame_indices := []int{}
+	mut sticky_frame_indices := []int{}
+	scrolling_frame_indices_pointer := &scrolling_frame_indices
+	sticky_frame_indices_pointer := &sticky_frame_indices
+	result.scroll_state.for_each_scroll_frame(fn [scrolling_frame_indices_pointer] (index int, mut _ painting.ScrollFrame) {
+		append_typed_scroll_frame_index(scrolling_frame_indices_pointer, index)
+	})
+	result.scroll_state.for_each_sticky_frame(fn [sticky_frame_indices_pointer] (index int, mut _ painting.ScrollFrame) {
+		append_typed_scroll_frame_index(sticky_frame_indices_pointer, index)
+	})
+	assert scrolling_frame_indices.len == 2
+	assert sticky_frame_indices.len == 1
 	retained_command_count := result.paint_phase_command_count
 
 	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
@@ -2199,8 +2217,15 @@ fn test_sticky_element_uses_live_scroll_frame_without_rebuilding_phase_commands(
 	assert result.paint_phase_command_count == retained_command_count
 
 	sticky := document.get_element_by_id('sticky') or { panic('missing sticky') }
+	snapshot_storage := result.scroll_state_snapshot.device_offsets.data
 	hit := mutable_document.element_from_point(10, 5) or { panic('missing sticky hit') }
 	assert hit.as_node().unique_id() == sticky.as_node().unique_id()
+	// ViewportPaintable retains the snapshot until scroll state is dirtied;
+	// hit testing must not allocate and copy the frame vector on every query.
+	assert result.scroll_state_snapshot.device_offsets.data == snapshot_storage
+	second_hit := mutable_document.element_from_point(10, 5) or { panic('missing repeated sticky hit') }
+	assert second_hit.as_node().unique_id() == sticky.as_node().unique_id()
+	assert result.scroll_state_snapshot.device_offsets.data == snapshot_storage
 }
 
 fn test_sticky_element_uses_the_viewport_scroll_frame() {
@@ -2216,9 +2241,19 @@ fn test_sticky_element_uses_the_viewport_scroll_frame() {
 	assert initial_sticky_commands.len == 1
 	assert initial_sticky_commands[0].transform[5] == 0
 
-	result := document_layout_result(document) or { panic('missing layout result') }
-	assert result.scroll_state.scrolling_frame_indices().len == 1
-	assert result.scroll_state.sticky_frame_indices().len == 1
+	mut result := document_layout_result(document) or { panic('missing layout result') }
+	mut scrolling_frame_indices := []int{}
+	mut sticky_frame_indices := []int{}
+	scrolling_frame_indices_pointer := &scrolling_frame_indices
+	sticky_frame_indices_pointer := &sticky_frame_indices
+	result.scroll_state.for_each_scroll_frame(fn [scrolling_frame_indices_pointer] (index int, mut _ painting.ScrollFrame) {
+		append_typed_scroll_frame_index(scrolling_frame_indices_pointer, index)
+	})
+	result.scroll_state.for_each_sticky_frame(fn [sticky_frame_indices_pointer] (index int, mut _ painting.ScrollFrame) {
+		append_typed_scroll_frame_index(sticky_frame_indices_pointer, index)
+	})
+	assert scrolling_frame_indices.len == 1
+	assert sticky_frame_indices.len == 1
 	retained_command_count := result.paint_phase_command_count
 
 	viewport := mutable_document.viewport_rect()
@@ -2279,7 +2314,7 @@ fn test_scroll_frame_parentage_stops_at_fixed_ancestors_except_for_sticky_boxes(
 		panic('missing fixed scroller box')
 	}
 	assert fixed_box.own_scroll_frame_index > 0
-	assert result.scroll_state.frames[fixed_box.own_scroll_frame_index].parent_index == 0
+	assert result.scroll_state.frame_at(fixed_box.own_scroll_frame_index).parent_index() == 0
 
 	// Construct the containing-block relationship explicitly for the boundary
 	// cases that do not arise from the compact HTML layout fixture above.
@@ -2337,9 +2372,9 @@ fn test_percentage_sticky_insets_skip_overflow_hidden_ancestors() {
 		panic('missing sticky box')
 	}
 	assert sticky_box.sticky_scroll_frame_index > 0
-	constraints := result.scroll_state.frames[sticky_box.sticky_scroll_frame_index].sticky_constraints or {
-		panic('missing sticky constraints')
-	}
+	sticky_frame := result.scroll_state.frame_at(sticky_box.sticky_scroll_frame_index)
+	assert sticky_frame.has_sticky_constraints()
+	constraints := sticky_frame.sticky_constraints()
 	// PaintableBox::nearest_scrollable_ancestor() skips the 40px-tall
 	// overflow:hidden box. The 50% inset therefore resolves against the
 	// 100px-tall outer scroll container.

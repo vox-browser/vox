@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 396
+filename-level mappings. The current semantic audit nevertheless reports 381
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 6,162 | 1,752 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 6,209 | 1,786 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 396 unmatched Painting
+  were removed; the audit currently reports 381 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -194,6 +194,14 @@ following behavioral mismatches and added focused regressions:
   first-press versus subsequent-move state ordering are translated as well.
   The active bridge indexes retained widget identities when it builds the hit
   plan, preserving C++'s direct captured-widget dispatch cost on pointer moves.
+- `ScrollFrame` and `ScrollState` now retain the source-shaped accessor,
+  mutation, sentinel, capacity-reuse, and callback iteration API. The active
+  refresh walks sticky and ordinary frames in place instead of allocating two
+  temporary index arrays. It clears the dirty flag before callbacks, preserves
+  unconstrained sticky offsets as upstream does, converts snapshots through
+  `FloatPoint` precision, and caches one snapshot until the next dirty refresh.
+  Repeated display recording, hit testing, and chrome dispatch therefore reuse
+  the retained offsets instead of copying the complete frame vector per query.
 - `PaintableBox::nearest_scroll_frame_index()` now drives the active Layout
   bridge. Fixed paintables and ordinary descendants behind a fixed containing
   block use the root frame, while sticky descendants keep searching for their
@@ -482,7 +490,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 396 unmatched implementations.
+Painting: 381 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

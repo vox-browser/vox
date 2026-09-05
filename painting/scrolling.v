@@ -22,13 +22,47 @@ pub:
 }
 
 pub struct ScrollFrame {
-pub:
-	paintable_id string
-	is_sticky    bool
-	parent_index int
-pub mut:
-	own_offset         Point
-	sticky_constraints ?StickyConstraints
+mut:
+	// `paintable_box_` is the renderer-independent identity used in place of
+	// C++'s weak PaintableBox pointer. Its access and lifetime otherwise follow
+	// ScrollFrame::paintable_box().
+	paintable_box_      string
+	sticky_             bool
+	parent_index_       int
+	own_offset_         Point
+	sticky_constraints_ ?StickyConstraints
+}
+
+pub fn (frame &ScrollFrame) paintable_box() string {
+	return frame.paintable_box_
+}
+
+pub fn (frame &ScrollFrame) is_sticky() bool {
+	return frame.sticky_
+}
+
+pub fn (frame &ScrollFrame) own_offset() Point {
+	return frame.own_offset_
+}
+
+pub fn (mut frame ScrollFrame) set_own_offset(offset Point) {
+	frame.own_offset_ = offset
+}
+
+pub fn (frame &ScrollFrame) parent_index() int {
+	return frame.parent_index_
+}
+
+pub fn (mut frame ScrollFrame) set_sticky_constraints(constraints StickyConstraints) {
+	frame.sticky_constraints_ = constraints
+}
+
+pub fn (frame &ScrollFrame) has_sticky_constraints() bool {
+	return frame.sticky_constraints_ != none
+}
+
+pub fn (frame &ScrollFrame) sticky_constraints() StickyConstraints {
+	return frame.sticky_constraints_ or { panic('sticky frame has no constraints') }
 }
 
 pub struct ScrollState {
@@ -37,31 +71,35 @@ pub mut:
 	frames []ScrollFrame = [ScrollFrame{}]
 }
 
-pub fn (mut state ScrollState) create_scroll_frame(paintable_id string, parent int) int {
+pub fn (mut state ScrollState) create_scroll_frame_for(paintable_box string, parent int) int {
 	index := state.frames.len
 	state.frames << ScrollFrame{
-		paintable_id: paintable_id
-		parent_index: parent
+		paintable_box_: paintable_box
+		parent_index_: parent
 	}
 	return index
 }
 
-pub fn (mut state ScrollState) create_sticky_frame(paintable_id string, parent int) int {
+pub fn (mut state ScrollState) create_sticky_frame_for(paintable_box string, parent int) int {
 	index := state.frames.len
 	state.frames << ScrollFrame{
-		paintable_id: paintable_id
-		is_sticky: true
-		parent_index: parent
+		paintable_box_: paintable_box
+		sticky_: true
+		parent_index_: parent
 	}
 	return index
+}
+
+pub fn (state &ScrollState) frame_at(index int) &ScrollFrame {
+	return &state.frames[index]
 }
 
 pub fn (state ScrollState) cumulative_offset(index int) Point {
 	mut offset := Point{}
 	mut current := index
 	for current > 0 && current < state.frames.len {
-		offset = offset.add(state.frames[current].own_offset)
-		current = state.frames[current].parent_index
+		offset = offset.add(state.frame_at(current).own_offset())
+		current = state.frame_at(current).parent_index()
 	}
 	return offset
 }
@@ -70,38 +108,38 @@ pub fn (state ScrollState) nearest_scrolling_ancestor(index int) int {
 	if index <= 0 || index >= state.frames.len {
 		return 0
 	}
-	mut ancestor := state.frames[index].parent_index
+	mut ancestor := state.frame_at(index).parent_index()
 	for ancestor > 0 && ancestor < state.frames.len {
-		if !state.frames[ancestor].is_sticky {
+		if !state.frame_at(ancestor).is_sticky() {
 			return ancestor
 		}
-		ancestor = state.frames[ancestor].parent_index
+		ancestor = state.frame_at(ancestor).parent_index()
 	}
 	return 0
 }
 
-pub fn (state ScrollState) scrolling_frame_indices() []int {
-	mut indices := []int{}
+pub fn (mut state ScrollState) for_each_scroll_frame(callback fn (int, mut ScrollFrame)) {
 	for index := 1; index < state.frames.len; index++ {
-		if !state.frames[index].is_sticky {
-			indices << index
+		if state.frames[index].is_sticky() {
+			continue
 		}
+		callback(index, mut state.frames[index])
 	}
-	return indices
 }
 
-pub fn (state ScrollState) sticky_frame_indices() []int {
-	mut indices := []int{}
+pub fn (mut state ScrollState) for_each_sticky_frame(callback fn (int, mut ScrollFrame)) {
 	for index := 1; index < state.frames.len; index++ {
-		if state.frames[index].is_sticky {
-			indices << index
+		if !state.frames[index].is_sticky() {
+			continue
 		}
+		callback(index, mut state.frames[index])
 	}
-	return indices
 }
 
 pub fn (mut state ScrollState) clear() {
-	state.frames = [ScrollFrame{}]
+	// Match Vector::resize_and_keep_capacity(): rebuilding a paint tree should
+	// reuse the frame allocation from the previous tree.
+	state.frames.trim(1)
 }
 
 pub struct ScrollStateSnapshot {
@@ -109,14 +147,23 @@ pub:
 	device_offsets []Point
 }
 
-pub fn (state ScrollState) snapshot(device_scale f64) ScrollStateSnapshot {
-	mut offsets := []Point{cap: state.frames.len}
-	for frame in state.frames {
-		offsets << frame.own_offset.scale(device_scale)
+pub fn ScrollStateSnapshot.create(frames []ScrollFrame, device_scale f64) ScrollStateSnapshot {
+	mut offsets := []Point{cap: frames.len}
+	scale := f32(device_scale)
+	for frame in frames {
+		offset := frame.own_offset()
+		offsets << Point{
+			x: f64(f32(offset.x) * scale)
+			y: f64(f32(offset.y) * scale)
+		}
 	}
 	return ScrollStateSnapshot{
 		device_offsets: offsets
 	}
+}
+
+pub fn (state ScrollState) snapshot(device_scale f64) ScrollStateSnapshot {
+	return ScrollStateSnapshot.create(state.frames, device_scale)
 }
 
 pub fn (snapshot ScrollStateSnapshot) device_offset_for_index(index int) Point {

@@ -1,22 +1,56 @@
 module painting
 
+fn append_scroll_frame_index(indices_pointer &[]int, index int) {
+	unsafe {
+		mut indices := *indices_pointer
+		indices << index
+		*indices_pointer = indices
+	}
+}
+
 fn test_scroll_state_hierarchy_snapshot_and_clear() {
 	mut state := ScrollState{}
-	root := state.create_scroll_frame('root', 0)
-	sticky := state.create_sticky_frame('sticky', root)
-	child := state.create_scroll_frame('child', sticky)
-	state.frames[root].own_offset = Point{-10, -20}
-	state.frames[sticky].own_offset = Point{2, 3}
-	state.frames[child].own_offset = Point{-5, 0}
+	root := state.create_scroll_frame_for('root', 0)
+	sticky := state.create_sticky_frame_for('sticky', root)
+	child := state.create_scroll_frame_for('child', sticky)
+	mut root_frame := state.frame_at(root)
+	root_frame.set_own_offset(Point{-10, -20})
+	mut sticky_frame := state.frame_at(sticky)
+	sticky_frame.set_own_offset(Point{2, 3})
+	mut child_frame := state.frame_at(child)
+	child_frame.set_own_offset(Point{-5, 0})
 	assert state.cumulative_offset(child) == Point{-13, -17}
 	assert state.nearest_scrolling_ancestor(child) == root
-	assert state.scrolling_frame_indices() == [root, child]
-	assert state.sticky_frame_indices() == [sticky]
+	mut scrolling := []int{}
+	scrolling_pointer := &scrolling
+	state.for_each_scroll_frame(fn [scrolling_pointer] (index int, mut _ ScrollFrame) {
+		append_scroll_frame_index(scrolling_pointer, index)
+	})
+	mut sticky_frames := []int{}
+	sticky_frames_pointer := &sticky_frames
+	state.for_each_sticky_frame(fn [sticky_frames_pointer] (index int, mut _ ScrollFrame) {
+		append_scroll_frame_index(sticky_frames_pointer, index)
+	})
+	assert scrolling == [root, child]
+	assert sticky_frames == [sticky]
 	snapshot := state.snapshot(2)
 	assert snapshot.device_offset_for_index(root) == Point{-20, -40}
 	assert snapshot.device_offset_for_index(99) == Point{}
+	state.for_each_scroll_frame(fn (_ int, mut frame ScrollFrame) {
+		frame.set_own_offset(frame.own_offset().add(Point{1, 1}))
+	})
+	assert state.frame_at(root).own_offset() == Point{-9, -19}
+	assert state.frame_at(child).own_offset() == Point{-4, 1}
+	root_frame.set_own_offset(Point{0.1, -0.1})
+	rounded_snapshot := state.snapshot(1.5)
+	assert rounded_snapshot.device_offset_for_index(root) == Point{
+		x: f64(f32(0.1) * f32(1.5))
+		y: f64(f32(-0.1) * f32(1.5))
+	}
+	previous_capacity := state.frames.cap
 	state.clear()
 	assert state.frames.len == 1
+	assert state.frames.cap == previous_capacity
 }
 
 fn test_scrollbar_thumb_geometry_and_source_pointer_state_machine() {
