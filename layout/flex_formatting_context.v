@@ -1436,6 +1436,13 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		indexes.reverse_in_place()
 	}
 	main_reversed := container.computed_values().flex_direction() == .column_reverse
+	// https://drafts.csswg.org/css-flexbox/#flex-wrap-property
+	// "When flex-wrap is wrap-reverse, the cross-start and cross-end directions are
+	// swapped." For a column container the cross axis is the inline one, so a right-to-left
+	// container swaps them too and the two cancel out. This is what the wrapping column path
+	// and set_flex_abspos_static_positions() already compute; the single-line path was
+	// looking at `direction` alone and ignoring wrap-reverse entirely.
+	cross_reversed := (container.computed_values().direction() == .rtl) != (container.computed_values().flex_wrap() == .wrap_reverse)
 	mut cursor := flex_physical_leading_offset(container, container.computed_values().justify_content(), main_free_space, leading, distributed_gap, items.len, false, main_reversed, absorbed_main_space)
 	max_baseline := flex_line_max_baseline(state, container, line)
 	for visual_index, item_index in indexes {
@@ -1455,10 +1462,10 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		} else if cross_free_space.raw_value() > 0 && right_margin_auto {
 			item_state.margin_right = cross_free_space
 		} else {
-			cross_delta = cross_alignment_offset(alignment, container_width, item_state.margin_box_width(), container.computed_values().direction() == .rtl)
+			cross_delta = cross_alignment_offset(alignment, container_width, item_state.margin_box_width(), cross_reversed)
 			if alignment == .baseline {
 				adjustment := max_baseline.minus(layout_box_baseline(state, item))
-				cross_delta = cross_delta.plus(if container.computed_values().direction() == .rtl {
+				cross_delta = cross_delta.plus(if cross_reversed {
 					adjustment.negated()
 				} else {
 					adjustment

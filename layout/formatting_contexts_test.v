@@ -96,6 +96,35 @@ fn test_rtl_row_counts_as_the_reverse_direction_for_order_keys() {
 	assert used_for_id(result, 'second').offset.x().to_double() == 120
 }
 
+fn test_single_line_column_flex_swaps_cross_edges_for_wrap_reverse() {
+	// "When flex-wrap is wrap-reverse, the cross-start and cross-end directions are
+	// swapped." A column container's cross axis is the inline one, so its items align to the
+	// right edge. The single-line column path derived that flag from `direction` alone, so a
+	// wrap-reverse column left every item at the cross-start edge.
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-direction:column; flex-wrap:wrap-reverse; width:240px }
+		#one { width:50px; height:20px } #two { width:70px; height:30px }
+	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'one').offset.x().to_double() == 190
+	assert used_for_id(result, 'two').offset.x().to_double() == 170
+	// The main axis is untouched: the items still stack downwards in document order.
+	assert used_for_id(result, 'one').offset.y().to_double() == 0
+	assert used_for_id(result, 'two').offset.y().to_double() == 20
+}
+
+fn test_rtl_wrap_reverse_column_cancels_both_cross_flips() {
+	// A right-to-left container swaps the inline cross edges as well, so combining it with
+	// wrap-reverse cancels out and the items sit at the left edge again.
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex; flex-direction:column; flex-wrap:wrap-reverse; direction:rtl; width:240px }
+		#one { width:50px; height:20px } #two { width:70px; height:30px }
+	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'one').offset.x().to_double() == 0
+	assert used_for_id(result, 'two').offset.x().to_double() == 0
+}
+
 fn test_flex_percentage_gaps_resolve_against_their_axis_inner_size() {
 	row_document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:flex-start;
