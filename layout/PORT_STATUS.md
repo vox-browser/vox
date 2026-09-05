@@ -429,6 +429,10 @@ CSS source order instead of being extracted as one renderer-local gradient.
 They use the no-intrinsic-dimensions branch of the translated sizing algorithm,
 resolve percentage geometry and stops against each concrete tile, and carry
 per-layer origin, clip, position, size, repeat, attachment, and blend state.
+Stop normalization, repeat expansion, and transition-hint sampling now route
+through Painting's shared `GradientPainting.cpp` translation rather than a
+duplicate Layout implementation; only the final conversion to the compact
+native transport remains in Layout.
 This path is shared by block and inline-fragment backgrounds. Portable SVG and
 native Quartz both materialize the translated repeated-tile geometry. Quartz
 now mirrors `DisplayListPlayerSkia::paint_*_gradient()` by submitting one axial,

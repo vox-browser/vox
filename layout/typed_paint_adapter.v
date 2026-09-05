@@ -746,132 +746,6 @@ mut:
 	transition_hint ?f64
 }
 
-fn interpolate_typed_gradient_color(from css.Color, to css.Color, amount f64) css.Color {
-	t := math.max(0.0, math.min(amount, 1.0))
-	return css.Color{
-		r: u8(int(math.round(f64(from.r) + (f64(to.r) - f64(from.r)) * t)))
-		g: u8(int(math.round(f64(from.g) + (f64(to.g) - f64(from.g)) * t)))
-		b: u8(int(math.round(f64(from.b) + (f64(to.b) - f64(from.b)) * t)))
-		a: u8(int(math.round(f64(from.a) + (f64(to.a) - f64(from.a)) * t)))
-	}
-}
-
-fn typed_gradient_color_stop_step(previous TypedGradientStop, next TypedGradientStop, position f64) f64 {
-	previous_position := previous.position or { return 0 }
-	next_position := next.position or { return 1 }
-	if position < previous_position {
-		return 0
-	}
-	if position > next_position {
-		return 1
-	}
-	stop_length := next_position - previous_position
-	if stop_length <= 0 {
-		return 1
-	}
-	p := (position - previous_position) / stop_length
-	hint := next.transition_hint or { return p }
-	if hint >= 1 {
-		return 0
-	}
-	if hint <= 0 {
-		return 1
-	}
-	return math.pow(p, math.log(0.5) / math.log(hint))
-}
-
-// Painting::replace_transition_hints_with_normal_color_stops(). Five sampled
-// stops reproduce the specified non-linear midpoint closely with a renderer
-// that performs ordinary linear interpolation.
-fn replace_typed_gradient_transition_hints(stops []TypedGradientStop) []TypedGradientStop {
-	if stops.len == 0 {
-		return []TypedGradientStop{}
-	}
-	mut result := [TypedGradientStop{
-		color: stops[0].color
-		position: stops[0].position
-	}]
-	for index := 1; index < stops.len; index++ {
-		stop := stops[index]
-		hint := stop.transition_hint or {
-			result << TypedGradientStop{
-				color: stop.color
-				position: stop.position
-			}
-			continue
-		}
-		previous := stops[index - 1]
-		previous_position := previous.position or { 0.0 }
-		next_position := stop.position or { previous_position }
-		distance := next_position - previous_position
-		for relative_position in [hint * 0.33, hint * 0.66, hint, hint + (1.0 - hint) * 0.33,
-			hint + (1.0 - hint) * 0.66] {
-			position := previous_position + relative_position * distance
-			amount := typed_gradient_color_stop_step(previous, stop, position)
-			result << TypedGradientStop{
-				color: interpolate_typed_gradient_color(previous.color, stop.color, amount)
-				position: position
-			}
-		}
-		result << TypedGradientStop{
-			color: stop.color
-			position: stop.position
-		}
-	}
-	return result
-}
-
-fn typed_gradient_color_at_stops(previous TypedGradientStop, next TypedGradientStop, position f64) css.Color {
-	amount := typed_gradient_color_stop_step(previous, next, position)
-	return interpolate_typed_gradient_color(previous.color, next.color, amount)
-}
-
-// Painting::expand_repeat_length(), used because the compact native transport
-// has no Skia-style repeat-length field of its own.
-fn expand_typed_repeating_gradient(stops []TypedGradientStop) []TypedGradientStop {
-	if stops.len < 2 {
-		return stops
-	}
-	first_position := stops[0].position or { return stops }
-	last_position := stops[stops.len - 1].position or { return stops }
-	repeat_length := last_position - first_position
-	if repeat_length <= 0 {
-		return stops
-	}
-	negative_repeat_count := int(math.ceil(first_position / repeat_length))
-	positive_repeat_count := int(math.ceil((1.0 - first_position) / repeat_length))
-	mut expanded := stops.clone()
-	for repeat_count := 1; repeat_count <= negative_repeat_count; repeat_count++ {
-		for source_index := stops.len - 1; source_index >= 0; source_index-- {
-			mut stop := stops[source_index]
-			stop.position = (stop.position or { 0.0 }) - repeat_length * f64(repeat_count)
-			if (stop.position or { 0.0 }) < 0 {
-				first := expanded[0]
-				stop.color = typed_gradient_color_at_stops(stop, first, 0)
-				stop.position = 0.0
-				expanded.prepend(stop)
-				break
-			}
-			expanded.prepend(stop)
-		}
-	}
-	for repeat_count := 1; repeat_count < positive_repeat_count; repeat_count++ {
-		for source in stops {
-			mut stop := source
-			stop.position = (stop.position or { 0.0 }) + repeat_length * f64(repeat_count)
-			if (stop.position or { 0.0 }) > 1 {
-				last := expanded[expanded.len - 1]
-				stop.color = typed_gradient_color_at_stops(last, stop, 1)
-				stop.position = 1.0
-				expanded << stop
-				break
-			}
-			expanded << stop
-		}
-	}
-	return expanded
-}
-
 fn typed_gradient_length_percentage_px(value css.StyleValue,
 	resolution_context css.LengthResolutionContext, basis f64) ?f64 {
 	if value.is_percentage() {
@@ -914,9 +788,10 @@ fn typed_gradient_position_as_angle(value css.StyleValue) f64 {
 	return 0
 }
 
-fn resolve_typed_gradient_stops(elements []css.ColorStopListElement, context css.ColorResolutionContext, repeating bool, resolve_position fn (css.StyleValue) f64) []GradientStop {
+fn resolve_color_stop_positions(elements []css.ColorStopListElement, context css.ColorResolutionContext,
+	repeating bool, resolve_position fn (css.StyleValue) f64) painting.ColorStopData {
 	if elements.len == 0 {
-		return []GradientStop{}
+		return painting.ColorStopData{}
 	}
 	mut resolved := []TypedGradientStop{}
 	for element in elements {
@@ -939,7 +814,7 @@ fn resolve_typed_gradient_stops(elements []css.ColorStopListElement, context css
 		}
 	}
 	if resolved.len == 0 {
-		return []GradientStop{}
+		return painting.ColorStopData{}
 	}
 	if resolved[0].position == none {
 		resolved[0].position = 0.0
@@ -995,15 +870,35 @@ fn resolve_typed_gradient_stops(elements []css.ColorStopListElement, context css
 			}
 		}
 	}
-	if repeating {
-		resolved = expand_typed_repeating_gradient(resolved)
-	}
-	resolved = replace_typed_gradient_transition_hints(resolved)
-	mut result := []GradientStop{cap: resolved.len}
+	mut result := []painting.ColorStop{cap: resolved.len}
 	for stop in resolved {
+		result << painting.ColorStop{
+			color: painting.Color{stop.color.r, stop.color.g, stop.color.b, stop.color.a}
+			position: stop.position or { 0.0 }
+			transition_hint: stop.transition_hint
+		}
+	}
+	repeat_length := if repeating && result.len > 0 {
+		?f64(result[result.len - 1].position - result[0].position)
+	} else {
+		?f64(none)
+	}
+	return painting.ColorStopData{
+		list: result
+		repeat_length: repeat_length
+		repeating: repeating
+	}
+}
+
+// The native gradient transport has no Skia repeat-length field, so expand the
+// source data at this final renderer boundary after resolving positions.
+fn gradient_stops_for_transport(data painting.ColorStopData) []GradientStop {
+	expanded := painting.expand_color_stops_for_painting(data.list, data.repeat_length)
+	mut result := []GradientStop{cap: expanded.len}
+	for stop in expanded {
 		result << GradientStop{
-			color: stop.color
-			offset: stop.position or { 0.0 }
+			color: css.Color{stop.color.r, stop.color.g, stop.color.b, stop.color.a}
+			offset: stop.position
 		}
 	}
 	return result
@@ -1017,7 +912,7 @@ fn resolved_typed_gradient_position(resolution_context css.LengthResolutionConte
 	return x, y
 }
 
-fn resolved_typed_linear_gradient(resolution_context css.LengthResolutionContext,
+fn resolve_linear_gradient_data(resolution_context css.LengthResolutionContext,
 	gradient css.LinearGradientStyleValue, width f64, height f64,
 	context css.ColorResolutionContext) LinearGradient {
 	angle := gradient.angle_degrees(css.CSSPixelSize.from_values(width, height))
@@ -1028,9 +923,10 @@ fn resolved_typed_linear_gradient(resolution_context css.LengthResolutionContext
 	gradient_length := math.abs(height * math.sin(real_angle)) + math.abs(width * math.cos(real_angle))
 	half_x := if width == 0 { 0.0 } else { direction_x * gradient_length / (2.0 * width) }
 	half_y := if height == 0 { 0.0 } else { direction_y * gradient_length / (2.0 * height) }
-	stops := resolve_typed_gradient_stops(gradient.color_stop_list_, context, gradient.is_repeating(), fn [resolution_context, gradient_length] (value css.StyleValue) f64 {
+	color_stops := resolve_color_stop_positions(gradient.color_stop_list_, context, gradient.is_repeating(), fn [resolution_context, gradient_length] (value css.StyleValue) f64 {
 		return typed_gradient_position_as_length(resolution_context, value, gradient_length)
 	})
+	stops := gradient_stops_for_transport(color_stops)
 	return LinearGradient{
 		x1: 0.5 - half_x
 		y1: 0.5 - half_y
@@ -1075,7 +971,7 @@ fn radial_extent_size(extent css.RadialExtent, center_x f64, center_y f64, width
 	}
 }
 
-fn resolved_typed_radial_gradient(resolution_context css.LengthResolutionContext,
+fn resolve_radial_gradient_data(resolution_context css.LengthResolutionContext,
 	gradient css.RadialGradientStyleValue, width f64, height f64,
 	context css.ColorResolutionContext) LinearGradient {
 	center_fraction_x, center_fraction_y := resolved_typed_gradient_position(resolution_context, gradient.position_, width, height)
@@ -1138,9 +1034,10 @@ fn resolved_typed_radial_gradient(resolution_context css.LengthResolutionContext
 	if radius_y <= 0 {
 		radius_y = 1.0 / 64.0
 	}
-	stops := resolve_typed_gradient_stops(gradient.color_stop_list_, context, gradient.is_repeating(), fn [resolution_context, radius_x] (value css.StyleValue) f64 {
+	color_stops := resolve_color_stop_positions(gradient.color_stop_list_, context, gradient.is_repeating(), fn [resolution_context, radius_x] (value css.StyleValue) f64 {
 		return typed_gradient_position_as_length(resolution_context, value, radius_x)
 	})
+	stops := gradient_stops_for_transport(color_stops)
 	return LinearGradient{
 		colors: stops.map(it.color)
 		stops: stops
@@ -1154,13 +1051,14 @@ fn resolved_typed_radial_gradient(resolution_context css.LengthResolutionContext
 	}
 }
 
-fn resolved_typed_conic_gradient(resolution_context css.LengthResolutionContext,
+fn resolve_conic_gradient_data(resolution_context css.LengthResolutionContext,
 	gradient css.ConicGradientStyleValue, width f64, height f64,
 	context css.ColorResolutionContext) LinearGradient {
 	center_x, center_y := resolved_typed_gradient_position(resolution_context, gradient.position_, width, height)
-	stops := resolve_typed_gradient_stops(gradient.color_stop_list_, context, gradient.is_repeating(), fn (value css.StyleValue) f64 {
+	color_stops := resolve_color_stop_positions(gradient.color_stop_list_, context, gradient.is_repeating(), fn (value css.StyleValue) f64 {
 		return typed_gradient_position_as_angle(value)
 	})
+	stops := gradient_stops_for_transport(color_stops)
 	return LinearGradient{
 		colors: stops.map(it.color)
 		stops: stops
@@ -1179,13 +1077,13 @@ pub fn resolve_background_gradient(source css.StyleValue, width f64, height f64,
 	resolution_context css.LengthResolutionContext,
 	color_context css.ColorResolutionContext) ?LinearGradient {
 	if gradient := source.as_linear_gradient() {
-		return resolved_typed_linear_gradient(resolution_context, gradient, width, height, color_context)
+		return resolve_linear_gradient_data(resolution_context, gradient, width, height, color_context)
 	}
 	if gradient := source.as_radial_gradient() {
-		return resolved_typed_radial_gradient(resolution_context, gradient, width, height, color_context)
+		return resolve_radial_gradient_data(resolution_context, gradient, width, height, color_context)
 	}
 	if gradient := source.as_conic_gradient() {
-		return resolved_typed_conic_gradient(resolution_context, gradient, width, height, color_context)
+		return resolve_conic_gradient_data(resolution_context, gradient, width, height, color_context)
 	}
 	return none
 }
@@ -2077,8 +1975,7 @@ fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewpo
 	layout_completed := time.sys_mono_now()
 	root_layout_node := result.root.first_child() or { return BlockBox{} }
 	mut root_box := block_box_from_typed_layout(root_layout_node, result.state)
-	paintable_box_paint_background(mut root_box, root_layout_node, result.state, viewport_width,
-		viewport_height)
+	paintable_box_paint_background(mut root_box, root_layout_node, result.state, viewport_width, viewport_height)
 
 	// The compatibility transport omits the typed Viewport node itself. Mark its
 	// root element as the owner of the mandatory viewport scroll frame so replay

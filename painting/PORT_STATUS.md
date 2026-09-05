@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 428
+filename-level mappings. The current semantic audit nevertheless reports 422
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 5,924 | 1,687 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 5,953 | 1,705 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 428 unmatched Painting
+  were removed; the audit currently reports 422 unmatched Painting
   implementations.
 
 - Device-pixel enclosing rectangles now floor the origin but ceil width and
@@ -221,6 +221,11 @@ following behavioral mismatches and added focused regressions:
   origin, clip, asymmetric elliptical radii, and blending therefore share the
   translated `BackgroundPainting.cpp` behavior for block and inline backgrounds
   in both native Quartz and portable SVG replay.
+- The active linear/radial/conic stop resolver now calls the shared
+  `GradientPainting.cpp` translation instead of maintaining a second Layout
+  interpolation and repeat-expansion implementation. Transition hints use the
+  source `Gfx::color_stop_step()` exponent, so a non-centered hint is the actual
+  50/50 color midpoint rather than a linearly weighted sample.
 - `BackgroundPainting.cpp::compute_text_clip_paths()` now crosses the active
   bridge. Its inclusive-subtree walk records shaped text runs, includes floats,
   prunes absolute/fixed subtrees, and masks the complete background color/image
@@ -424,7 +429,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 428 unmatched implementations.
+Painting: 422 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

@@ -94,13 +94,31 @@ fn test_transition_hints_expand_to_five_sampled_stops() {
 		position: 1
 		transition_hint: 0.5
 	}]
-	expanded := replace_transition_hints(stops)
+	expanded := replace_transition_hints_with_normal_color_stops(stops)
 	assert expanded.len == 7
 	assert expanded[0].color == red
 	assert expanded[3].position == 0.5
 	assert expanded[3].color.r in [127, 128]
 	assert expanded[3].color.b in [127, 128]
 	assert expanded[6].color == blue
+}
+
+fn test_transition_hint_uses_css_midpoint_exponent() {
+	stops := [ColorStop{
+		color: Color{ r: 255 }
+		position: 0
+	}, ColorStop{
+		color: Color{ b: 255 }
+		position: 1
+		transition_hint: 0.25
+	}]
+	expanded := expand_color_stops_for_painting(stops, none)
+	assert expanded.len == 7
+	// A hint marks the point where the two colors contribute equally. Plain
+	// linear interpolation would incorrectly leave this sample 75% red.
+	assert expanded[3].position == 0.25
+	assert expanded[3].color.r in [127, 128]
+	assert expanded[3].color.b in [127, 128]
 }
 
 fn test_repeating_gradient_expands_and_clamps_ends() {

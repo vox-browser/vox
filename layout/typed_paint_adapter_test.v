@@ -275,6 +275,14 @@ fn test_typed_paint_adapter_resolves_gradients_from_retained_style_values() {
 	assert resolved_linear.stops.len == 2
 	assert math.abs(resolved_linear.stops[0].offset - 0.1) < 0.001
 	assert math.abs(resolved_linear.stops[1].offset - 0.9) < 0.001
+	hinted := computed_paint_test_style('background-image: linear-gradient(red 0%, 25%, blue 100%)')
+	resolved_hint := computed_background_gradient(hinted, 100, 100, color_context) or {
+		panic('transition-hint gradient did not resolve')
+	}
+	assert resolved_hint.stops.len == 7
+	assert math.abs(resolved_hint.stops[3].offset - 0.25) < 0.001
+	assert resolved_hint.stops[3].color.r in [u8(127), 128]
+	assert resolved_hint.stops[3].color.b in [u8(127), 128]
 	// ComputedProperties.cpp converts the default `background-size: auto` entries through
 	// LengthPercentageOrAuto::from_style_value; this must remain auto rather than reaching the
 	// length-only VERIFY_NOT_REACHED path.

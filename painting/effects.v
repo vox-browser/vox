@@ -296,16 +296,32 @@ pub fn interpolate_color(first Color, second Color, amount f64) Color {
 }
 
 fn color_stop_step(first ColorStop, second ColorStop, position f64) f64 {
-	if second.position == first.position {
-		return 0
+	if position < first.position {
+		return 0.0
 	}
-	return (position - first.position) / (second.position - first.position)
+	if position > second.position {
+		return 1.0
+	}
+	stop_length := second.position - first.position
+	if stop_length <= 0 {
+		return 1.0
+	}
+	p := (position - first.position) / stop_length
+	hint := second.transition_hint or { return p }
+	if hint >= 1 {
+		return 0.0
+	}
+	if hint <= 0 {
+		return 1.0
+	}
+	return math.pow(p, math.log(0.5) / math.log(hint))
 }
 
-pub fn replace_transition_hints(stops []ColorStop) []ColorStop {
+pub fn replace_transition_hints_with_normal_color_stops(stops []ColorStop) []ColorStop {
 	if stops.len == 0 {
 		return []
 	}
+	assert stops[0].transition_hint == none
 	mut expanded := [ColorStop{ color: stops[0].color, position: stops[0].position }]
 	for index := 1; index < stops.len; index++ {
 		stop := stops[index]
@@ -331,6 +347,12 @@ pub fn replace_transition_hints(stops []ColorStop) []ColorStop {
 	return expanded
 }
 
+fn color_between_stops(position f64, current ColorStop, previous ColorStop) Color {
+	distance := current.position - previous.position
+	percentage := if distance == 0 { 0.0 } else { (position - previous.position) / distance }
+	return interpolate_color(previous.color, current.color, percentage)
+}
+
 pub fn expand_repeat_length(stops []ColorStop, repeat_length f64) []ColorStop {
 	if stops.len == 0 || repeat_length <= 0 {
 		return stops.clone()
@@ -345,8 +367,7 @@ pub fn expand_repeat_length(stops []ColorStop, repeat_length f64) []ColorStop {
 			stop.position -= repeat_length * f64(repeat)
 			if stop.position < 0 {
 				first := expanded[0]
-				amount := color_stop_step(stop, first, 0)
-				stop.color = interpolate_color(stop.color, first.color, amount)
+				stop.color = color_between_stops(0.0, stop, first)
 				stop.position = 0
 				expanded.prepend(stop)
 				break
@@ -360,8 +381,7 @@ pub fn expand_repeat_length(stops []ColorStop, repeat_length f64) []ColorStop {
 			stop.position += repeat_length * f64(repeat)
 			if stop.position > 1 {
 				last := expanded[expanded.len - 1]
-				amount := color_stop_step(last, stop, 1)
-				stop.color = interpolate_color(last.color, stop.color, amount)
+				stop.color = color_between_stops(1.0, stop, last)
 				stop.position = 1
 				expanded << stop
 				break
@@ -370,6 +390,15 @@ pub fn expand_repeat_length(stops []ColorStop, repeat_length f64) []ColorStop {
 		}
 	}
 	return expanded
+}
+
+pub fn expand_color_stops_for_painting(stops []ColorStop, repeat_length ?f64) []ColorStop {
+	expanded := if length := repeat_length {
+		expand_repeat_length(stops, length)
+	} else {
+		stops.clone()
+	}
+	return replace_transition_hints_with_normal_color_stops(expanded)
 }
 
 pub enum ShadowPlacement {
