@@ -841,6 +841,13 @@ fn flex_align_content_offsets(align css.AlignContent, free_space CSSPixels, line
 			else { align }
 		}
 	}
+	// align_all_flex_lines(): for space-around and space-evenly, "if the leftover free-space
+	// is negative this value is identical to center". Distributing the clamped, non-negative
+	// free space instead left overflowing lines at the cross-start edge rather than
+	// overflowing evenly on both sides.
+	if free_space.raw_value() < 0 && effective in [css.AlignContent.space_around, .space_evenly] {
+		return flex_divide_by_integer(free_space, 2), CSSPixels.new(0), CSSPixels.new(0)
+	}
 	return match effective {
 		.end_, .flex_end {
 			free_space, CSSPixels.new(0), CSSPixels.new(0)

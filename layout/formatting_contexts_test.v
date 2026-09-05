@@ -191,6 +191,24 @@ fn test_nowrap_container_still_stretches_its_line_to_the_definite_cross_size() {
 	assert used_for_id(result, 'two').offset.x().to_double() == 0
 }
 
+fn test_negative_align_content_free_space_falls_back_to_center() {
+	// align_all_flex_lines(): for space-around and space-evenly, "if the leftover free-space
+	// is negative this value is identical to center". Distributing the clamped, non-negative
+	// free space instead pinned overflowing lines to the cross-start edge.
+	for align in ['space-around', 'space-evenly'] {
+		document := html.parse_document('<!doctype html><style>
+			#flex { display:flex; flex-direction:column; flex-wrap:wrap; align-content:${align};
+			        width:180px; height:160px }
+			#flex > div { width:300px }
+			#one { height:20px } #two { height:30px }
+		</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
+		result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+		// One 300-wide line against a 180 container overflows by 120, so it is centred.
+		assert used_for_id(result, 'one').offset.x().to_double() == -60
+		assert used_for_id(result, 'two').offset.x().to_double() == -60
+	}
+}
+
 fn test_flex_percentage_gaps_resolve_against_their_axis_inner_size() {
 	row_document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:flex-start;
