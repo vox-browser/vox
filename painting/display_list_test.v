@@ -1,6 +1,80 @@
 module painting
 
+import css
 import platform
+
+fn test_display_list_recording_context_translates_device_and_css_geometry() {
+	mut recorder := new_display_list_recorder(new_accumulated_visual_context_tree())
+	context := new_display_list_recording_context(&recorder, Palette('test'), 1.5, ChromeMetrics{}) or { panic(err) }
+
+	css_pixels := css.CSSPixels.nearest_value_for(2.4)
+	assert context.rounded_device_pixels(css_pixels) == 4
+	assert context.floored_device_pixels(css_pixels) == 3
+	assert context.enclosing_device_pixels(css_pixels) == 4
+	point := css.CSSPixelPoint.from_values(1, 2)
+	assert context.rounded_device_point(point) == IntPoint{2, 3}
+	assert context.floored_device_point(point) == IntPoint{1, 3}
+	rect := css.CSSPixelRect.new(0.2, 1.1, 2.2, 3.1)
+	assert context.enclosing_device_rect(rect) == IntRect{0, 1, 4, 5}
+	assert context.rounded_device_rect(rect) == IntRect{0, 2, 4, 4}
+	size := css.CSSPixelSize.from_values(2.2, 3.1)
+	assert context.enclosing_device_size(size) == IntSize{4, 5}
+	assert context.rounded_device_size(size) == IntSize{3, 5}
+
+	mut quantized_recorder := new_display_list_recorder(new_accumulated_visual_context_tree())
+	mut quantized_context := new_display_list_recording_context(&quantized_recorder, Palette('test'), 3, ChromeMetrics{}) or { panic(err) }
+	// Device-to-CSS conversion constructs CSSPixels, so 1/3 is quantized to
+	// Ladybird's nearest 1/64 CSS pixel rather than retained as an f64.
+	assert quantized_context.scale_to_css_pixels(1).raw_value() == 21
+	assert quantized_context.scale_to_css_point(IntPoint{1, 2}).y().raw_value() == 43
+	assert quantized_context.scale_to_css_size(IntSize{2, 3}).width().raw_value() == 43
+	quantized_rect := quantized_context.scale_to_css_rect(IntRect{1, 2, 3, 4})
+	assert quantized_rect.x.raw_value() == 21
+	assert quantized_rect.y.raw_value() == 43
+	assert quantized_rect.width.raw_value() == 64
+	assert quantized_rect.height.raw_value() == 85
+	quantized_context.set_device_viewport_rect(IntRect{1, 2, 3, 4})
+	viewport := quantized_context.css_viewport_rect()
+	assert viewport.x.raw_value() == 21
+	assert viewport.y.raw_value() == 43
+	assert viewport.width.raw_value() == 64
+	assert viewport.height.raw_value() == 85
+}
+
+fn test_display_list_recording_context_clone_copies_only_source_state() {
+	mut first_recorder := new_display_list_recorder(new_accumulated_visual_context_tree())
+	metrics := new_chrome_metrics(2) or { panic(err) }
+	mut context := new_display_list_recording_context(&first_recorder, Palette('dark'), 2, metrics) or { panic(err) }
+	context.set_device_viewport_rect(IntRect{10, 20, 300, 400})
+	context.set_should_show_line_box_borders(true)
+	context.set_should_paint_overlay(false)
+	context.set_svg_transform(Affine{ e: 12, f: 34 })
+	context.set_draw_svg_geometry_for_clip_path(true)
+
+	mut context_recorder := context.display_list_recorder()
+	assert context_recorder.fill_rect(IntRect{1, 2, 3, 4}, Color{ r: 1 })
+	assert first_recorder.display_list.commands.len == 1
+	assert context.palette() == Palette('dark')
+	assert context.device_pixel_converter().device_pixels_per_css_pixel() == 2
+	assert context.device_pixels_per_css_pixel() == 2
+	assert context.chrome_metrics() == metrics
+
+	mut second_recorder := new_display_list_recorder(new_accumulated_visual_context_tree())
+	cloned := context.clone(&second_recorder) or { panic(err) }
+	assert cloned.paint_generation_id() == context.paint_generation_id() + 1
+	assert cloned.palette() == context.palette()
+	assert cloned.device_viewport_rect() == context.device_viewport_rect()
+	assert cloned.should_show_line_box_borders()
+	assert !cloned.should_paint_overlay()
+	// Upstream clone() deliberately does not propagate these transient SVG
+	// controls into the new recording pass.
+	assert !cloned.draw_svg_geometry_for_clip_path()
+	assert cloned.svg_transform() == Affine{}
+	mut cloned_recorder := cloned.display_list_recorder()
+	assert cloned_recorder.fill_rect(IntRect{5, 6, 7, 8}, Color{ g: 1 })
+	assert second_recorder.display_list.commands.len == 1
+	assert first_recorder.display_list.commands.len == 1
+}
 
 fn test_display_list_recorder_capture_nesting_and_empty_clip_rejection() {
 	mut tree := new_accumulated_visual_context_tree()

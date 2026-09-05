@@ -97,9 +97,9 @@ pub fn (rect Rect) translated(delta Point) Rect {
 
 pub fn (rect Rect) inflated(top f64, right f64, bottom f64, left f64) Rect {
 	return Rect{
-		x:      rect.x - left
-		y:      rect.y - top
-		width:  rect.width + left + right
+		x: rect.x - left
+		y: rect.y - top
+		width: rect.width + left + right
 		height: rect.height + top + bottom
 	}
 }
@@ -180,9 +180,9 @@ pub fn (rect IntRect) translated(delta IntPoint) IntRect {
 
 pub fn (rect IntRect) inflated(top int, right int, bottom int, left int) IntRect {
 	return IntRect{
-		x:      rect.x - left
-		y:      rect.y - top
-		width:  rect.width + left + right
+		x: rect.x - left
+		y: rect.y - top
+		width: rect.width + left + right
 		height: rect.height + top + bottom
 	}
 }
@@ -201,8 +201,7 @@ pub fn int_rect_from_two_points(first IntPoint, second IntPoint) IntRect {
 }
 
 pub struct DevicePixelConverter {
-pub:
-	device_pixels_per_css_pixel f64 = 1.0
+	scale_ f64 = 1.0
 }
 
 pub fn new_device_pixel_converter(scale f64) !DevicePixelConverter {
@@ -210,20 +209,24 @@ pub fn new_device_pixel_converter(scale f64) !DevicePixelConverter {
 		return error('device pixel scale must be finite and positive')
 	}
 	return DevicePixelConverter{
-		device_pixels_per_css_pixel: scale
+		scale_: scale
 	}
 }
 
+pub fn (converter DevicePixelConverter) device_pixels_per_css_pixel() f64 {
+	return converter.scale_
+}
+
 pub fn (converter DevicePixelConverter) rounded_device_pixels(css_pixels f64) int {
-	return int(math.round(css_pixels * converter.device_pixels_per_css_pixel))
+	return int(math.round(css_pixels * converter.scale_))
 }
 
 pub fn (converter DevicePixelConverter) enclosing_device_pixels(css_pixels f64) int {
-	return int(math.ceil(css_pixels * converter.device_pixels_per_css_pixel))
+	return int(math.ceil(css_pixels * converter.scale_))
 }
 
 pub fn (converter DevicePixelConverter) floored_device_pixels(css_pixels f64) int {
-	return int(math.floor(css_pixels * converter.device_pixels_per_css_pixel))
+	return int(math.floor(css_pixels * converter.scale_))
 }
 
 pub fn (converter DevicePixelConverter) rounded_device_point(point Point) IntPoint {
@@ -236,9 +239,9 @@ pub fn (converter DevicePixelConverter) floored_device_point(point Point) IntPoi
 
 pub fn (converter DevicePixelConverter) enclosing_device_rect(rect Rect) IntRect {
 	return IntRect{
-		x:      converter.floored_device_pixels(rect.x)
-		y:      converter.floored_device_pixels(rect.y)
-		width:  converter.enclosing_device_pixels(rect.width)
+		x: converter.floored_device_pixels(rect.x)
+		y: converter.floored_device_pixels(rect.y)
+		width: converter.enclosing_device_pixels(rect.width)
 		height: converter.enclosing_device_pixels(rect.height)
 	}
 }
@@ -257,23 +260,6 @@ pub fn (converter DevicePixelConverter) enclosing_device_size(size Size) IntSize
 
 pub fn (converter DevicePixelConverter) rounded_device_size(size Size) IntSize {
 	return IntSize{converter.rounded_device_pixels(size.width), converter.rounded_device_pixels(size.height)}
-}
-
-pub fn (converter DevicePixelConverter) scale_to_css_pixels(device_pixels int) f64 {
-	return f64(device_pixels) / converter.device_pixels_per_css_pixel
-}
-
-pub fn (converter DevicePixelConverter) scale_to_css_point(point IntPoint) Point {
-	return Point{converter.scale_to_css_pixels(point.x), converter.scale_to_css_pixels(point.y)}
-}
-
-pub fn (converter DevicePixelConverter) scale_to_css_rect(rect IntRect) Rect {
-	return Rect{
-		x:      converter.scale_to_css_pixels(rect.x)
-		y:      converter.scale_to_css_pixels(rect.y)
-		width:  converter.scale_to_css_pixels(rect.width)
-		height: converter.scale_to_css_pixels(rect.height)
-	}
 }
 
 // Affine is the 2-D projection used by hit testing and visual-context walks.

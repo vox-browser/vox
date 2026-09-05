@@ -7,7 +7,6 @@ fn test_device_pixel_converter_preserves_enclosing_and_rounding_contracts() {
 	assert converter.enclosing_device_pixels(2.4) == 4
 	assert converter.enclosing_device_rect(Rect{0.2, 1.1, 2.2, 3.1}) == IntRect{0, 1, 4, 5}
 	assert converter.rounded_device_point(Point{1, 2}) == IntPoint{2, 3}
-	assert converter.scale_to_css_pixels(3) == 2
 	if _ := new_device_pixel_converter(0) {
 		assert false
 	}
