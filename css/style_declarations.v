@@ -1370,6 +1370,29 @@ fn cssom_multiply_transform_matrices(left FloatMatrix4x4, right FloatMatrix4x4) 
 	return FloatMatrix4x4.from_values(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15])
 }
 
+// "For grid-template-columns and grid-template-rows the resolved value is the
+// used value." The grid formatting context records the final track base sizes;
+// a box that never ran one has none, and falls back to the computed value.
+fn cssom_resolved_grid_template(used_track_sizes []f64, line_names [][]string) ?&dom.StyleValue {
+	if used_track_sizes.len == 0 {
+		return none
+	}
+	mut track_size_list := GridTrackSizeList{}
+	for index in 0 .. used_track_sizes.len + 1 {
+		if index < line_names.len && line_names[index].len > 0 {
+			mut names := GridLineNames{}
+			for name in line_names[index] {
+				names.append(name)
+			}
+			track_size_list.append_line_names(names)
+		}
+		if index < used_track_sizes.len {
+			track_size_list.append_explicit_track(ExplicitGridTrack.from_grid_size(GridSize.from_size(Size.make_px(CSSPixels.nearest_value_for(used_track_sizes[index])))))
+		}
+	}
+	return dom_style_value_from_value_logic(StyleValue(GridTrackSizeListStyleValue.create(track_size_list)))
+}
+
 fn cssom_resolved_transform(computed &ComputedProperties, layout_node &dom.LayoutNode) ?&dom.StyleValue {
 	computed_value := computed.property(.transform, .yes) or { return none }
 	parsed := style_value_logic_from_dom(.transform, computed_value) or { return none }
@@ -1598,6 +1621,20 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 				return cssom_style_value_for_px(layout_node.inset_top_)
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.top())
+		}
+		.grid_template_columns {
+			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_columns_,
+				layout_node.used_grid_column_line_names_)
+			{
+				return resolved
+			}
+		}
+		.grid_template_rows {
+			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_rows_,
+				layout_node.used_grid_row_line_names_)
+			{
+				return resolved
+			}
 		}
 		.transform {
 			return cssom_resolved_transform(computed, layout_node)

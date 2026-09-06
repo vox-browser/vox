@@ -2813,3 +2813,61 @@ fn test_meter_builds_its_slider_track_and_fill() {
 	// A degenerate range would format as `nan%`; the fill keeps its auto width.
 	assert meter_fill_used_values(result, 'degenerate').content_width().to_double() == 298
 }
+
+// compute_width_for_absolutely_positioned_non_replaced_element() and
+// compute_height_for_absolutely_positioned_non_replaced_element() record the
+// solved insets on the box's used values. getComputedStyle() reports those as
+// the resolved value of top/right/bottom/left whenever the specified inset is a
+// percentage, a calculation, or `auto`, so an `auto` side has to carry the
+// distance the layout produced rather than zero.
+fn test_absolutely_positioned_boxes_record_their_solved_insets() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.box { width:200px; height:100px; position:relative }
+		#start { position:absolute; top:10px; left:5px }
+		#end { position:absolute; bottom:10px; right:5px; width:20px; height:20px }
+		#static_position { position:absolute; width:10px; height:10px }
+	</style><div class="box"><div id="start"></div><div id="end"></div><div id="static_position"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+
+	start := used_for_id(result, 'start')
+	assert start.inset_left.to_double() == 5
+	assert start.inset_top.to_double() == 10
+	// The `auto` sides carry the distance to the containing block's padding edge.
+	assert start.inset_right.to_double() == 195
+	assert start.inset_bottom.to_double() == 90
+
+	end_box := used_for_id(result, 'end')
+	assert end_box.inset_left.to_double() == 175
+	assert end_box.inset_top.to_double() == 70
+	assert end_box.inset_right.to_double() == 5
+	assert end_box.inset_bottom.to_double() == 10
+
+	// With no insets at all the static position supplies them.
+	static_position := used_for_id(result, 'static_position')
+	assert static_position.inset_left.to_double() == 0
+	assert static_position.inset_top.to_double() == 0
+	assert static_position.inset_right.to_double() == 190
+	assert static_position.inset_bottom.to_double() == 90
+}
+
+// "For grid-template-columns and grid-template-rows the resolved value is the
+// used value", so the grid formatting context records the final track base sizes
+// and the explicit line names between them.
+fn test_grid_containers_record_their_used_track_sizes() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#grid { display:grid; width:300px; grid-template-columns: [a] 1fr [b] 2fr [c]; grid-template-rows: [r1] 20px [r2] }
+	</style><div id="grid"><i></i><i></i></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	grid := used_for_id(result, 'grid')
+	assert grid.used_grid_template_columns.len == 2
+	assert grid.used_grid_template_columns[0].to_double() == 100
+	assert grid.used_grid_template_columns[1].to_double() == 200
+	assert grid.used_grid_template_rows.len == 1
+	assert grid.used_grid_template_rows[0].to_double() == 20
+	// Only the explicit names are kept; grid-template-areas' implicit
+	// `<area>-start`/`-end` names are not part of the resolved value.
+	assert grid.used_grid_column_line_names == [['a'], ['b'], ['c']]
+	assert grid.used_grid_row_line_names == [['r1'], ['r2']]
+}

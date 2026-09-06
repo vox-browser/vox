@@ -2224,6 +2224,28 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			automatic_content_height: automatic_height
 		}
 	}
+	// getComputedStyle() needs to return the resolved values of
+	// grid-template-columns and grid-template-rows, so they are saved in the
+	// state here and handed to the layout node when it is committed.
+	mut used_columns := []CSSPixels{cap: columns.len}
+	for column in columns {
+		used_columns << column.base_size
+	}
+	mut used_rows := []CSSPixels{cap: rows.len}
+	for row in rows {
+		used_rows << row.base_size
+	}
+	container_state.used_grid_template_columns = used_columns
+	container_state.used_grid_template_rows = used_rows
+	// Only *explicit* line names are serialized, so recompute the line map
+	// without the `<area>-start`/`-end` names that grid-template-areas adds.
+	empty_areas := css.GridTemplateAreas{}
+	container_state.used_grid_column_line_names = grid_lines_for_definition(container,
+		template_columns, container_width, column_gap, true, empty_areas, true)
+	container_state.used_grid_row_line_names = grid_lines_for_definition(container,
+		template_rows, row_basis, row_gap, container_state.has_definite_height(), empty_areas,
+		false)
+
 	for placement in placements {
 		styled := placement.item.as_node_with_style() or { continue }
 		mut item_state := state.get_mutable(styled)

@@ -245,6 +245,23 @@ attributes as real `ch` and `lh` lengths against the box's own font, rather than
 multiplying a raw font advance, so the advance is quantized to `CSSPixels` before
 it is scaled exactly as `CSS::Length::to_px()` does.
 
+Absolutely and fixed-positioned boxes now record their solved insets, as
+`compute_width_for_absolutely_positioned_non_replaced_element()` and
+`compute_height_for_absolutely_positioned_non_replaced_element()` do. Only
+`position: relative` had been storing them, so `getComputedStyle()` reported
+every inset of a positioned box as `0px`: the resolved value of
+top/right/bottom/left is the used one whenever the specified inset is a
+percentage, a calculation, or `auto`, and an `auto` side has to carry the
+distance the layout actually produced. Grid containers likewise record the final
+track base sizes and the explicit line names between them, which
+`LayoutState::commit()` hands to the paintable so that "for
+grid-template-columns and grid-template-rows the resolved value is the used
+value" holds; the implicit `<area>-start`/`-end` names that
+`grid-template-areas` contributes are excluded, as they are upstream. A
+1,626-reading `getComputedStyle()` differential across sizing, box model, flex,
+grid, text, transforms, filters, colours and positioning now agrees with
+upstream on every value.
+
 The upstream Layout regression corpus is exercised directly by
 `tools/layout_corpus.v`. It discovers every HTML or SVG input with a matching
 expected snapshot and compares all three upstream sections exactly: layout tree,

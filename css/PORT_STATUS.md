@@ -452,7 +452,15 @@ corrected three more divergences:
   metadata order and emitted `text-decoration: currentcolor` for an all-initial
   block.
 
-Across all five runs, 1,578 generated cases now agree with the upstream browser
+A sixth run moved from specified values to *resolved* ones: 1,626
+`getComputedStyle()` readings over four documents, covering sizing, box model,
+flex, grid, text, transforms, filters, colours and positioning across 40
+elements. It confirmed `CSSStyleProperties`' resolved-value path and corrected
+two layout-side gaps that it depends on, both recorded in
+`layout/PORT_STATUS.md`: the solved insets of absolutely positioned boxes, and
+the used track sizes of grid containers.
+
+Across all six runs, 3,204 generated cases now agree with the upstream browser
 apart from the deviation below.
 
 KNOWN DEVIATION: upstream's `serialize_an_identifier()` appends into a

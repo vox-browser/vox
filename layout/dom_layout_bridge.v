@@ -235,6 +235,18 @@ fn copy_used_box_model_to_dom_layout_node(mut placeholder dom.LayoutNode, used &
 	placeholder.inset_right_ = used.inset_right.to_double()
 	placeholder.inset_top_ = used.inset_top.to_double()
 	placeholder.inset_bottom_ = used.inset_bottom.to_double()
+	mut used_columns := []f64{cap: used.used_grid_template_columns.len}
+	for size in used.used_grid_template_columns {
+		used_columns << size.to_double()
+	}
+	mut used_rows := []f64{cap: used.used_grid_template_rows.len}
+	for size in used.used_grid_template_rows {
+		used_rows << size.to_double()
+	}
+	placeholder.used_grid_template_columns_ = used_columns
+	placeholder.used_grid_template_rows_ = used_rows
+	placeholder.used_grid_column_line_names_ = used.used_grid_column_line_names.clone()
+	placeholder.used_grid_row_line_names_ = used.used_grid_row_line_names.clone()
 }
 
 fn dom_pseudo_element_for_layout_node(pseudo_element ?css.PseudoElement) ?dom.PseudoElement {

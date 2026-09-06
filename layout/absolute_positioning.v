@@ -298,6 +298,23 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 		y = static_position.y().plus(box_state.margin_box_top())
 	}
 	box_state.set_content_offset(CSSPixelPoint.new(x, y))
+
+	// compute_width_for_absolutely_positioned_non_replaced_element() and
+	// compute_height_for_absolutely_positioned_non_replaced_element() record the
+	// solved insets on the box's used values. getComputedStyle() reports those as
+	// the resolved value of top/right/bottom/left whenever the specified inset is
+	// a percentage, a calculation, or `auto`, so an `auto` side has to carry the
+	// distance the layout actually produced rather than zero.
+	box_state.inset_left = x.minus(box_state.margin_box_left()).minus(containing_rect.x)
+	box_state.inset_right = containing_rect.x.plus(containing_width)
+		.minus(x)
+		.minus(box_state.content_width())
+		.minus(box_state.margin_box_right())
+	box_state.inset_top = y.minus(box_state.margin_box_top()).minus(containing_rect.y)
+	box_state.inset_bottom = containing_rect.y.plus(containing_height)
+		.minus(y)
+		.minus(box_state.content_height())
+		.minus(box_state.margin_box_bottom())
 }
 
 fn layout_absolutely_positioned_descendants(mut state LayoutState, root &Node) {

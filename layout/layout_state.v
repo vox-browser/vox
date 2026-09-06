@@ -58,6 +58,13 @@ pub mut:
 	line_boxes                    []LineBox
 	containing_line_box_fragment  ?LineBoxFragmentCoordinate
 	static_position_rect_         ?StaticPositionRect
+	// getComputedStyle() reports the *used* track sizes for
+	// grid-template-columns/rows, so the grid formatting context records them
+	// here and LayoutState::commit() hands them to the layout node.
+	used_grid_template_columns    []CSSPixels
+	used_grid_template_rows       []CSSPixels
+	used_grid_column_line_names   [][]string
+	used_grid_row_line_names      [][]string
 	abspos_containing_block_rect_ ?css.CSSPixelRect
 	computed_svg_path_            ?svg.Path
 	has_computed_svg_transforms_  bool
@@ -593,6 +600,10 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 	values.inset_top = source_values.inset_top
 	values.inset_bottom = source_values.inset_bottom
 	values.line_boxes = source_values.line_boxes.clone()
+	values.used_grid_template_columns = source_values.used_grid_template_columns.clone()
+	values.used_grid_template_rows = source_values.used_grid_template_rows.clone()
+	values.used_grid_column_line_names = source_values.used_grid_column_line_names.clone()
+	values.used_grid_row_line_names = source_values.used_grid_row_line_names.clone()
 	values.containing_line_box_fragment = source_values.containing_line_box_fragment
 	values.static_position_rect_ = source_values.static_position_rect_
 	values.abspos_containing_block_rect_ = source_values.abspos_containing_block_rect_

@@ -1271,6 +1271,10 @@ pub mut:
 	inset_left_                                     f64
 	inset_right_                                    f64
 	inset_top_                                      f64
+	used_grid_template_columns_                     []f64
+	used_grid_template_rows_                        []f64
+	used_grid_column_line_names_                    [][]string
+	used_grid_row_line_names_                       [][]string
 	inset_bottom_                                   f64
 	// dom<->layout bridge: opaque handle to the real layout.Node this placeholder mirrors (dom can't
 	// name the layout type). The layout module attaches these via attach_layout_nodes. See layout/dom_layout_bridge.v.
