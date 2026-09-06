@@ -508,7 +508,14 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 	computed := styled.computed_values()
 	preferred_width := computed.size_value(.width)
 	mut width := CSSPixels.new(0)
-	if preferred_width.is_min_content() {
+	if box_node.is_table_wrapper() {
+		// BlockFormattingContext::compute_width() gives a table wrapper the width
+		// its table box's own algorithm produces, before any shrink-to-fit pass.
+		// An inline-table therefore honours an intrinsic sizing keyword on the
+		// table box, which the wrapper's own max-content measure would discard.
+		width = compute_table_wrapper_content_width(mut iterator.state, box_node, mut state,
+			iterator.available_space.width.to_px_or_zero())
+	} else if preferred_width.is_min_content() {
 		width = calculate_min_content_width(mut iterator.state, box)
 	} else if preferred_width.is_max_content() {
 		width = calculate_max_content_width(mut iterator.state, box)

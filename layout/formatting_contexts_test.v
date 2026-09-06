@@ -2708,3 +2708,24 @@ fn test_floating_border_box_ratio_transfer_converts_the_inline_size_twice() {
 	assert box.content_width().to_double() == 30
 	assert box.content_height().to_double() == 20
 }
+
+// BlockFormattingContext::compute_width() gives a table wrapper the width its
+// table box's own algorithm produces. An inline-table therefore honours an
+// intrinsic sizing keyword on the table box, which the wrapper's own
+// shrink-to-fit measure would have discarded.
+fn test_inline_table_honours_intrinsic_sizing_keywords() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { width:200px; font-size:0 }
+		.k { display:inline-block }
+		.t { display:inline-table }
+	</style><div id="outer">
+		<div class="t" id="minimum" style="width:min-content"><i class="k" style="width:40px;height:10px"></i><i class="k" style="width:70px;height:10px"></i></div>
+		<div class="t" id="fit" style="width:fit-content"><i class="k" style="width:40px;height:10px"></i><i class="k" style="width:70px;height:10px"></i></div>
+		<div class="t" id="maximum" style="width:max-content"><i class="k" style="width:40px;height:10px"></i><i class="k" style="width:70px;height:10px"></i></div>
+	</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'minimum').content_width().to_double() == 70
+	assert used_for_id(result, 'fit').content_width().to_double() == 70
+	assert used_for_id(result, 'maximum').content_width().to_double() == 110
+}

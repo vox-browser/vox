@@ -212,6 +212,18 @@ A generated 344-case matrix over aspect ratios, box sizing, specified axes,
 box-model edges, and min/max constraints across block, float, absolute, image,
 and floating-image contexts went from 127 differences against upstream to 0.
 
+A table wrapper on a line now takes the width its table box's own algorithm
+produces, as `BlockFormattingContext::compute_width()` does before any
+shrink-to-fit pass. An `inline-table` therefore honours an intrinsic sizing
+keyword on the table box - `width: min-content` and `width: fit-content` resolve
+to the used min-width of the table rather than to the wrapper's max-content
+measure. One known difference remains in this area: an `inline-table` with a
+percentage width leaves the table box's own end margin at the value its width
+equation produced, while upstream reaches
+`InlineFormattingContext::dimension_box_on_line()` with a max-content constraint
+still recorded on the wrapper's used values and so treats that percentage as
+automatic. Only the dumped margin differs; every box's geometry agrees.
+
 The upstream Layout regression corpus is exercised directly by
 `tools/layout_corpus.v`. It discovers every HTML or SVG input with a matching
 expected snapshot and compares all three upstream sections exactly: layout tree,
