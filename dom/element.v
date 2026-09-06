@@ -5651,6 +5651,54 @@ pub fn (e &Element) is_svg_svg_element() bool {
 	return e.is_svg_element() && e.local_name() == 'svg'
 }
 
+// https://svgwg.org/svg2-draft/coords.html#EstablishingANewSVGViewport
+// The `svg` element and a `symbol` element instanced by a `use` element are the
+// elements that establish a new SVG viewport.
+pub fn (e &Element) is_svg_symbol_element() bool {
+	return e.is_svg_element() && e.local_name() == 'symbol'
+}
+
+// https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement
+//
+// The nearest ancestor `svg` element in the flat tree; none when this element is
+// the outermost `svg` element.
+pub fn (e &Element) owner_svg_element() ?&Element {
+	if !e.is_svg_element() {
+		return none
+	}
+	mut ancestor := e.as_node().flat_tree_parent()
+	for {
+		current := ancestor or { return none }
+		if element := current.as_element() {
+			if element.is_svg_svg_element() {
+				return element
+			}
+		}
+		ancestor = current.flat_tree_parent()
+	}
+	return none
+}
+
+// https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__viewportElement
+//
+// The nearest ancestor that establishes a new SVG viewport.
+pub fn (e &Element) viewport_element() ?&Element {
+	if !e.is_svg_element() {
+		return none
+	}
+	mut ancestor := e.as_node().parent()
+	for {
+		current := ancestor or { return none }
+		if element := current.as_element() {
+			if element.is_svg_svg_element() || element.is_svg_symbol_element() {
+				return element
+			}
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
+	return none
+}
+
 pub fn (e &Element) is_html_ol_ul_menu_element() bool {
 	name := e.local_name()
 	return name == 'ol' || name == 'ul' || name == 'menu'

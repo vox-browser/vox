@@ -693,3 +693,45 @@ fn test_form_state_pseudo_classes() {
 	checked_text.set_attribute_value('checked', '')
 	assert !checked_text.matches_default_pseudo_class()
 }
+
+// https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement
+// and #__svg__SVGElement__viewportElement.
+fn test_svg_owner_and_viewport_element() {
+	doc := Document.create(URL{'https://example.com/'})
+	mut outer := doc.create_element_ns(svg_ns, 'svg') or { panic('${err}') }
+	mut symbol := doc.create_element_ns(svg_ns, 'symbol') or { panic('${err}') }
+	mut inner := doc.create_element_ns(svg_ns, 'svg') or { panic('${err}') }
+	mut rect := doc.create_element_ns(svg_ns, 'rect') or { panic('${err}') }
+	mut group := doc.create_element_ns(svg_ns, 'g') or { panic('${err}') }
+
+	mut symbol_node := symbol.as_node()
+	symbol_node.append_child(rect.as_node()) or { panic('append failed') }
+	mut inner_node := inner.as_node()
+	inner_node.append_child(symbol_node) or { panic('append failed') }
+	mut group_node := group.as_node()
+	group_node.append_child(inner_node) or { panic('append failed') }
+	mut outer_node := outer.as_node()
+	outer_node.append_child(group_node) or { panic('append failed') }
+
+	// ownerSVGElement is the nearest ancestor `svg`, skipping the `symbol`.
+	owner := rect.owner_svg_element() or { panic('rect has no owner svg') }
+	assert owner.local_name() == 'svg'
+	assert voidptr(owner) == voidptr(inner)
+	// The outermost `svg` has none.
+	assert outer.owner_svg_element() == none
+	// The inner `svg`'s owner is the outer one.
+	inner_owner := inner.owner_svg_element() or { panic('inner has no owner svg') }
+	assert voidptr(inner_owner) == voidptr(outer)
+
+	// viewportElement stops at the `symbol`, which establishes a viewport too.
+	viewport := rect.viewport_element() or { panic('rect has no viewport element') }
+	assert voidptr(viewport) == voidptr(symbol)
+	// A group's nearest viewport is the enclosing `svg`.
+	group_viewport := group.viewport_element() or { panic('group has no viewport element') }
+	assert voidptr(group_viewport) == voidptr(outer)
+	assert outer.viewport_element() == none
+
+	// Neither applies to a non-SVG element.
+	assert mk(doc, 'div').owner_svg_element() == none
+	assert mk(doc, 'div').viewport_element() == none
+}

@@ -490,6 +490,20 @@ agreed with upstream on every case; no changes were needed.
 Across all nine runs, 3,823 generated cases now agree with the upstream browser
 apart from the deviations below.
 
+The translation audit reports 707 unmatched CSS implementations, of which 238 -
+by far the largest cluster - are `CalculatedStyleValue.cpp`/`.h`. Those are a
+*shape* difference rather than missing logic: upstream models a calculation as a
+`CalculationNode` class hierarchy of 27 subclasses, each carrying `resolve()`,
+`equals()`, `dump()`, `children()` and `with_simplified_children()`, while this
+port models it as the `CalcNode` sum type in `calc_parsing.v` with free
+functions dispatching over it. A 186-case differential over every math function
+(`min`/`max`/`clamp`/`abs`/`sign`/`hypot`/`sqrt`/`pow`/`exp`/`log`/`mod`/`rem`/
+`round` with all four rounding strategies/the trigonometric family), the numeric
+constants, infinity and NaN propagation, nested and type-invalid expressions,
+tree-counting and `progress()` functions, and unit families across seven
+properties agrees with upstream on every case. The remaining audit count for
+that file should be read as "not decomposed the same way", not "not translated".
+
 KNOWN DEVIATION: a registered custom property's initial value is substituted
 here but not upstream. With `@property --len { syntax: "<length>"; inherits:
 false; initial-value: 10px }` and `width: var(--len)` on an element that never
