@@ -918,7 +918,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 			return parser.parse_animation_play_state_value(mut tokens)
 		}
 		.border_block_end_width, .border_block_start_width, .border_bottom_width, .border_inline_end_width, .border_inline_start_width, .border_left_width, .border_right_width, .border_top_width, .outline_width {
-			return parser.parse_border_or_outline_width_value(mut tokens)
+			return parser.parse_border_or_outline_width_value(property_id, mut tokens)
 		}
 		.border_block_end_style, .border_block_start_style, .border_bottom_style, .border_inline_end_style, .border_inline_start_style, .border_left_style, .border_right_style, .border_top_style {
 			return parser.parse_line_style_value(mut tokens)
@@ -2472,11 +2472,17 @@ fn numeric_style_value_from_css_text_for_value_logic(text string) ?StyleValue {
 	return computed_interpolation_style_value_from_css_numeric_value(numeric_value)
 }
 
-fn (mut parser Parser) parse_border_or_outline_width_value(mut tokens ComponentValueStream) ?StyleValue {
+// <line-width> = <length [0,inf]> | thin | medium | thick. The generic property
+// parser rejects a length outside the declared range; a negative border or
+// outline width is therefore not a valid declaration.
+fn (mut parser Parser) parse_border_or_outline_width_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
 	if value := parser.parse_length_value(mut transaction) {
-		tokens = transaction
-		return value
+		if property_accepts_parsed_numeric_value(property_id, .length, value) {
+			tokens = transaction
+			return value
+		}
+		return none
 	}
 	return parse_keyword_as_custom_ident_for_value_logic(mut tokens, ['thin', 'medium', 'thick'])
 }
@@ -3386,7 +3392,7 @@ fn (mut parser Parser) parse_box_side_value(mut tokens ComponentValueStream, kin
 		.inset { parser.parse_inset_value(mut tokens) }
 		.border_color { parser.parse_color_value(mut tokens) }
 		.border_style { parser.parse_line_style_value(mut tokens) }
-		.border_width { parser.parse_border_or_outline_width_value(mut tokens) }
+		.border_width { parser.parse_border_or_outline_width_value(.border_top_width, mut tokens) }
 		.corner_shape { parser.parse_corner_shape_value(mut tokens) }
 	}
 }
@@ -4857,7 +4863,7 @@ fn (mut parser Parser) parse_border_edge_components(mut tokens ComponentValueStr
 		}
 		if width == none {
 			mut attempt := tokens.clone()
-			if value := parser.parse_border_or_outline_width_value(mut attempt) {
+			if value := parser.parse_border_or_outline_width_value(.border_top_width, mut attempt) {
 				width = value
 				tokens = attempt
 				continue
@@ -7962,12 +7968,13 @@ fn (mut parser Parser) parse_perspective_value(mut tokens ComponentValueStream) 
 }
 
 fn (mut parser Parser) parse_tab_size_value(mut tokens ComponentValueStream) ?StyleValue {
+	// <number> is tried before <length> so a unitless `0` stays a number.
 	mut transaction := tokens.clone()
-	if value := parser.parse_nonnegative_length_value(mut transaction) {
+	if value := parser.parse_nonnegative_number_value(mut transaction) {
 		tokens = transaction
 		return value
 	}
-	return parser.parse_nonnegative_number_value(mut tokens)
+	return parser.parse_nonnegative_length_value(mut tokens)
 }
 
 fn (mut parser Parser) parse_vertical_align_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -9487,12 +9494,13 @@ fn (mut parser Parser) parse_border_radius_value(mut tokens ComponentValueStream
 }
 
 fn (mut parser Parser) parse_border_image_outset_component_value(mut tokens ComponentValueStream) ?StyleValue {
+	// <number> is tried before <length> so a unitless `0` stays a number.
 	mut transaction := tokens.clone()
-	if value := parser.parse_nonnegative_length_value(mut transaction) {
+	if value := parser.parse_nonnegative_number_value(mut transaction) {
 		tokens = transaction
 		return value
 	}
-	return parser.parse_nonnegative_number_value(mut tokens)
+	return parser.parse_nonnegative_length_value(mut tokens)
 }
 
 fn (mut parser Parser) parse_border_image_width_component_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -9501,11 +9509,12 @@ fn (mut parser Parser) parse_border_image_width_component_value(mut tokens Compo
 		tokens = transaction
 		return value
 	}
-	if value := parser.parse_nonnegative_length_percentage_value(mut transaction) {
+	// <number> is tried before <length> so a unitless `0` stays a number.
+	if value := parser.parse_nonnegative_number_value(mut transaction) {
 		tokens = transaction
 		return value
 	}
-	return parser.parse_nonnegative_number_value(mut tokens)
+	return parser.parse_nonnegative_length_percentage_value(mut tokens)
 }
 
 fn (mut parser Parser) parse_border_image_outset_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -10380,29 +10389,52 @@ fn (mut parser Parser) parse_line_height_value(mut tokens ComponentValueStream) 
 		}
 	}
 
-	mut length_transaction := tokens.clone()
-	if value := parser.parse_length_value(mut length_transaction) {
-		tokens = length_transaction
-		return value
-	}
+	// Parser::parse_value_for_property() tries <integer>/<number> before
+	// <length> "so that 0 is not interpreted as a <length> in case both are
+	// allowed", and rejects any component outside the property's declared range.
 	mut number_transaction := tokens.clone()
 	if value := parser.parse_number_value(mut number_transaction) {
-		tokens = number_transaction
-		return value
+		if property_accepts_parsed_numeric_value(.line_height, .number, value) {
+			tokens = number_transaction
+			return value
+		}
+	}
+	mut length_transaction := tokens.clone()
+	if value := parser.parse_length_value(mut length_transaction) {
+		if property_accepts_parsed_numeric_value(.line_height, .length, value) {
+			tokens = length_transaction
+			return value
+		}
 	}
 	mut percentage_transaction := tokens.clone()
 	if value := parser.parse_percentage_value(mut percentage_transaction) {
-		tokens = percentage_transaction
-		return value
+		if property_accepts_parsed_numeric_value(.line_height, .percentage, value) {
+			tokens = percentage_transaction
+			return value
+		}
 	}
 
 	mut transaction := tokens.clone()
 	remaining_text := serialize_a_series_of_component_values(transaction.consume_remaining_component_values())
 	if value := numeric_style_value_from_css_text_for_value_logic(remaining_text) {
 		match value {
-			LengthStyleValue, NumberStyleValue, PercentageStyleValue {
-				tokens = transaction
-				return value
+			NumberStyleValue {
+				if property_accepts_parsed_numeric_value(.line_height, .number, value) {
+					tokens = transaction
+					return value
+				}
+			}
+			LengthStyleValue {
+				if property_accepts_parsed_numeric_value(.line_height, .length, value) {
+					tokens = transaction
+					return value
+				}
+			}
+			PercentageStyleValue {
+				if property_accepts_parsed_numeric_value(.line_height, .percentage, value) {
+					tokens = transaction
+					return value
+				}
 			}
 			else {}
 		}

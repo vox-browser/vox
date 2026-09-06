@@ -2921,6 +2921,9 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	if s := style_value.serialize_mask(mode) {
 		return s
 	}
+	if s := style_value.serialize_white_space(mode) {
+		return s
+	}
 	// Mirrors the upstream `default_serialize`: the remaining property-specific cases
 	// (font, background, grid, …) are not ported, so they use this default.
 	values := style_value.values_
@@ -2963,6 +2966,38 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 		return serialized[0]
 	}
 	return builder.str()
+}
+
+// `white-space` collapses back to its single-keyword form when `white-space-trim`
+// is `none` and the collapse/wrap pair matches one of the four legacy keywords.
+// Anything else falls through to the default longhand serialization.
+fn (style_value ShorthandStyleValue) serialize_white_space(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .white_space {
+		return none
+	}
+	white_space_collapse := style_value.coordinating_longhand_value(.white_space_collapse) or {
+		return none
+	}
+	text_wrap_mode := style_value.coordinating_longhand_value(.text_wrap_mode) or { return none }
+	white_space_trim := style_value.coordinating_longhand_value(.white_space_trim) or { return none }
+	if white_space_trim.serialize(mode) != 'none' {
+		return none
+	}
+	collapse := white_space_collapse.serialize(mode)
+	wrap := text_wrap_mode.serialize(mode)
+	if collapse == 'collapse' && wrap == 'wrap' {
+		return 'normal'
+	}
+	if collapse == 'preserve' && wrap == 'nowrap' {
+		return 'pre'
+	}
+	if collapse == 'preserve' && wrap == 'wrap' {
+		return 'pre-wrap'
+	}
+	if collapse == 'preserve-breaks' && wrap == 'wrap' {
+		return 'pre-line'
+	}
+	return none
 }
 
 // grid-row / grid-column serialize as `<start> [/ <end>]`, dropping the end when it

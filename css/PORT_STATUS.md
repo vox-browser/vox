@@ -357,3 +357,25 @@ The calc() serialization differential run above compares 10,915 generated
 declarations against `Build/release/bin/Ladybird.app --headless=text`; 10,913
 agree exactly and the two that differ are the documented `serialize_a_number()`
 deviation for magnitudes outside `[5e-7, 1e21)`.
+
+A second differential run of 1,067 generated declarations over colors,
+gradients, transforms, filters, shorthands, grid and flex values, lengths and
+angles across seventeen properties, keyword enums, `var()`/`env()`/`attr()`, and
+deliberately invalid values now agrees with that same binary on every case. It
+corrected four specified-value divergences:
+
+- `ColorStyleValue::serialize_hue_component()` formats the resolved hue with
+  AK's `{:.4}`, which rounds to four decimals and then drops trailing zeros, so
+  `lch(50% 40 30deg)` serializes as `lch(50 40 30)` rather than `lch(50 40
+  30.0000)`.
+- `Parser::parse_value_for_property()` tries `<integer>`/`<number>` before
+  `<length>` "so that 0 is not interpreted as a `<length>` in case both are
+  allowed". `line-height`, `tab-size`, `border-image-outset` and
+  `border-image-width` have custom parsers that were trying `<length>` first, so
+  a unitless `0` became `0px`.
+- Every parsed component is checked against the property's declared range. The
+  custom `line-height` and `<line-width>` parsers skipped that check, so a
+  negative `line-height`, `border-*-width` or `outline-width` was accepted.
+- `ShorthandStyleValue::serialize()` collapses `white-space` back to `normal`,
+  `pre`, `pre-wrap` or `pre-line` when `white-space-trim` is `none` and the
+  collapse/wrap pair matches; the port serialized the expanded longhands.

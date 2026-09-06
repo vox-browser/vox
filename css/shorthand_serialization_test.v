@@ -77,3 +77,54 @@ fn test_serialization_round_trips() {
 	assert roundtrips('url("a.png") no-repeat center', PropertyID.background)
 	assert roundtrips('row nowrap', PropertyID.flex_flow)
 }
+
+// Parser::parse_value_for_property() tries <integer>/<number> before <length>
+// "so that 0 is not interpreted as a <length> in case both are allowed". The
+// custom parsers for these properties have to keep that order.
+fn test_unitless_zero_stays_a_number_when_the_property_accepts_numbers() {
+	assert serialize_of('0', PropertyID.line_height)? == '0'
+	assert serialize_of('0.0', PropertyID.line_height)? == '0'
+	assert serialize_of('-0', PropertyID.line_height)? == '0'
+	assert serialize_of('0', PropertyID.tab_size)? == '0'
+	assert serialize_of('0', PropertyID.border_image_outset)? == '0'
+	assert serialize_of('0', PropertyID.border_image_width)? == '0'
+	// An explicit unit still produces a length.
+	assert serialize_of('0px', PropertyID.line_height)? == '0px'
+	assert serialize_of('0px', PropertyID.tab_size)? == '0px'
+	assert serialize_of('0px', PropertyID.border_image_outset)? == '0px'
+	// A property with no <number> in its valid types keeps the zero length.
+	assert serialize_of('0', PropertyID.width)? == '0px'
+	assert serialize_of('0', PropertyID.border_top_width)? == '0px'
+	assert serialize_of('0', PropertyID.margin_left)? == '0px'
+	// The border-image shorthand carries the numeric outset through.
+	assert serialize_of('none', PropertyID.border_image)? == 'none 100% / 1 / 0 stretch'
+}
+
+// Every component is checked against the property's declared range, so a
+// negative line-height, border width or outline width is not a valid value.
+fn test_declared_ranges_reject_negative_lengths() {
+	assert serialize_of('-1', PropertyID.line_height) == none
+	assert serialize_of('-1px', PropertyID.line_height) == none
+	assert serialize_of('-1px', PropertyID.border_top_width) == none
+	assert serialize_of('-1px', PropertyID.border_left_width) == none
+	assert serialize_of('-1px', PropertyID.border_block_start_width) == none
+	assert serialize_of('-1px', PropertyID.outline_width) == none
+	assert serialize_of('-1px solid', PropertyID.outline) == none
+	assert serialize_of('-1px solid red', PropertyID.border) == none
+	assert serialize_of('12px/-1 serif', PropertyID.font) == none
+	// The valid neighbours still parse.
+	assert serialize_of('1px', PropertyID.border_top_width)? == '1px'
+	assert serialize_of('thin', PropertyID.outline_width)? == 'thin'
+	assert serialize_of('12px/0 serif', PropertyID.font)? == '12px / 0 serif'
+}
+
+// ShorthandStyleValue::serialize(): `white-space` collapses back to its legacy
+// keyword when white-space-trim is `none` and the collapse/wrap pair matches.
+fn test_white_space_serializes_back_to_its_legacy_keyword() {
+	assert serialize_of('normal', PropertyID.white_space)? == 'normal'
+	assert serialize_of('pre', PropertyID.white_space)? == 'pre'
+	assert serialize_of('pre-wrap', PropertyID.white_space)? == 'pre-wrap'
+	assert serialize_of('pre-line', PropertyID.white_space)? == 'pre-line'
+	assert serialize_of('nowrap', PropertyID.white_space)? == 'nowrap'
+	assert serialize_of('break-spaces', PropertyID.white_space)? == 'break-spaces'
+}

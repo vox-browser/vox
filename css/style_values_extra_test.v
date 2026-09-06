@@ -150,3 +150,18 @@ fn test_color_function_uses_color_resolution_calculation_context() {
 	assert color.green() == 0
 	assert color.blue() == 0
 }
+
+// ColorStyleValue::serialize_hue_component() formats the resolved hue with AK's
+// `{:.4}`, which rounds to four decimals and then drops trailing zeros.
+fn test_lch_and_oklch_hues_drop_trailing_zeros() {
+	assert parse_css_value(ParsingParams{}, 'lch(50% 40 30deg)', PropertyID.color)?.css_text == 'lch(50 40 30)'
+	assert parse_css_value(ParsingParams{}, 'oklch(0.5 0.1 30)', PropertyID.color)?.css_text == 'oklch(0.5 0.1 30)'
+	assert parse_css_value(ParsingParams{}, 'lch(50% 40 30.5deg)', PropertyID.color)?.css_text == 'lch(50 40 30.5)'
+	assert parse_css_value(ParsingParams{}, 'lch(50% 40 12.75deg)', PropertyID.color)?.css_text == 'lch(50 40 12.75)'
+	// Still rounded to four decimals, and a hue below that resolution is zero.
+	assert parse_css_value(ParsingParams{}, 'lch(50% 40 30.123456deg)', PropertyID.color)?.css_text == 'lch(50 40 30.1235)'
+	assert parse_css_value(ParsingParams{}, 'lch(50% 40 0.000001deg)', PropertyID.color)?.css_text == 'lch(50 40 0)'
+	// Hues normalize into [0, 360) first.
+	assert parse_css_value(ParsingParams{}, 'lch(50% 40 -30deg)', PropertyID.color)?.css_text == 'lch(50 40 330)'
+	assert parse_css_value(ParsingParams{}, 'oklch(0.5 0.1 1turn)', PropertyID.color)?.css_text == 'oklch(0.5 0.1 0)'
+}

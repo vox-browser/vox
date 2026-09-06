@@ -235,7 +235,25 @@ fn serialize_hue_component(component StyleValue, mode SerializationMode) string 
 	resolved_value := resolve_hue(component, CalculationResolutionContext{}) or {
 		return component.serialize(mode)
 	}
-	return '${resolved_value:.4f}'
+	return serialize_hue_angle(resolved_value)
+}
+
+// ColorStyleValue::serialize_hue_component() formats the resolved hue with
+// AK's `{:.4}`, which rounds to four decimals and then drops the trailing zeros
+// and a bare decimal point - so a whole-degree hue prints as `30`, not
+// `30.0000`.
+fn serialize_hue_angle(value f64) string {
+	mut serialized := '${value:.4f}'
+	for serialized.contains('.') && serialized.ends_with('0') {
+		serialized = serialized[..serialized.len - 1]
+	}
+	if serialized.ends_with('.') {
+		serialized = serialized[..serialized.len - 1]
+	}
+	if serialized == '-0' {
+		return '0'
+	}
+	return serialized
 }
 
 fn alpha_needs_serialization(alpha StyleValue) bool {
