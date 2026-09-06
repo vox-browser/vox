@@ -262,6 +262,27 @@ value" holds; the implicit `<area>-start`/`-end` names that
 grid, text, transforms, filters, colours and positioning now agrees with
 upstream on every value.
 
+A 118-case differential over multi-column geometry, vertical writing modes with
+real text, `<col>`/`<colgroup>` tables under both border models, floats with
+`clear`, and justified text agrees with upstream on every case except two
+`<colgroup>` behaviours, where this implementation is ahead of it.
+
+KNOWN DEVIATIONS: `TableFormattingContext::compute_table_measures()` reads
+column widths only from `<col>` boxes nested inside a `<colgroup>`, and assigns
+each width to `m_columns[column_index]` alone before advancing the index by the
+column's `span`. Two cases follow from that, and this implementation handles
+both instead:
+
+- A spanning column applies its width to every column it represents, not just
+  the first. `<col span="2" style="width:70px">` over two cells sizes the table
+  to 140px here and to 82px upstream.
+- A `<colgroup>` with a `span` attribute and no `<col>` children still
+  represents that many columns, so its width applies to them.
+  `<colgroup span="2" style="width:70px">` sizes the table to 140px here and to
+  24px upstream, where the group contributes nothing at all - even though the
+  comment above that loop states that "the outer min-content width of a
+  table-column or table-column-group is max(min-width, width)".
+
 The upstream Layout regression corpus is exercised directly by
 `tools/layout_corpus.v`. It discovers every HTML or SVG input with a matching
 expected snapshot and compares all three upstream sections exactly: layout tree,

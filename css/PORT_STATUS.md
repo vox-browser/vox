@@ -477,8 +477,27 @@ matched element ids. It corrected two gaps in the selector engine:
   an input participates at all. `:valid`, `:invalid`, `:user-valid` and
   `:user-invalid` keep the FIXME, as they do need validity state.
 
-Across all seven runs, 3,364 generated cases now agree with the upstream browser
-apart from the deviation below.
+An eighth run covered the cascade itself - 243 computed readings over competing
+declarations, exercising specificity, source order between and within sheets,
+`!important`, `:is()`/`:where()`/`:not()` specificity, shorthand-versus-longhand
+order, `@layer` ordering (including `!important` inverting it), `@media`,
+`@supports`, nesting, inline styles, and `inherit`/`initial`/`unset`/`revert` -
+and a ninth covered custom properties: 216 readings over `var()` fallback chains,
+cyclic references, empty and `initial` values, shorthand substitution,
+inheritance, case sensitivity, and font-relative and percentage values. Both
+agreed with upstream on every case; no changes were needed.
+
+Across all nine runs, 3,823 generated cases now agree with the upstream browser
+apart from the deviations below.
+
+KNOWN DEVIATION: a registered custom property's initial value is substituted
+here but not upstream. With `@property --len { syntax: "<length>"; inherits:
+false; initial-value: 10px }` and `width: var(--len)` on an element that never
+sets `--len`, this implementation resolves the width to `10px`; upstream
+registers the property - `getComputedStyle().getPropertyValue("--len")` is
+`"10px"` there - but its `var()` substitution does not consult the registration,
+so the declaration is dropped and the width stays `auto`. Reproducing that would
+mean discarding correct behaviour, so it is recorded here instead.
 
 KNOWN DEVIATION: upstream's `serialize_an_identifier()` appends into a
 caller-supplied `StringBuilder` and applies its "first character" and "second
