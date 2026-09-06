@@ -230,23 +230,23 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 	}
 
 	mut definite_height := forced_height
-	if definite_height == none {
+	if definite_height == none && !use_automatic_height {
 		if resolved := resolve_content_height_for_node(mut state, styled, child_state, if height := containing_height {
 			height.to_double()
 		} else {
 			none
-		})
-		{
+		}) {
 			definite_height = css_px(resolved)
 		}
 	}
 	if resolved_height := definite_height {
-		definite_height = clamp_content_height_for_node(mut state, styled, child_state,
-			resolved_height, if height := containing_height {
-			height.to_double()
-		} else {
-			none
-		})
+		if !use_automatic_height {
+			definite_height = clamp_content_height_for_node(mut state, styled, child_state, resolved_height, if height := containing_height {
+				height.to_double()
+			} else {
+				none
+			})
+		}
 	}
 	available_height := if height := definite_height {
 		// Descendants must see a parent-resolved flex/grid/table block size as
@@ -266,12 +266,15 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 	} else {
 		inside.automatic_content_height
 	}
-	height = clamp_content_height_for_node(mut state, styled, child_state, height, if basis := containing_height {
-		basis.to_double()
-	} else {
-		none
-	})
-	if definite_height == none && height.raw_value() > inside.automatic_content_height.raw_value() {
+	if !use_automatic_height {
+		height = clamp_content_height_for_node(mut state, styled, child_state, height, if basis := containing_height {
+			basis.to_double()
+		} else {
+			none
+		})
+	}
+	if !use_automatic_height && definite_height == none
+		&& height.raw_value() > inside.automatic_content_height.raw_value() {
 		// An auto-sized independent context constrained upward by min-height is
 		// rerun with that constrained size as its available block size. Flex and
 		// grid descendants then resolve stretch/alignment against the real used

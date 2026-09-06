@@ -104,11 +104,18 @@ its row group now zeroes that row's base, reference, and final height and keeps
 it from advancing the row cursor. The row-group cursor intentionally retains
 the source's quirk of counting spacing between collapsed row boxes. Height left
 over for auto rows is converted from `CSSPixelFraction` by truncating instead of
-being recomputed and rounded through `f64`. Finally, `rowspan="0"` remains a
-one-row span because upstream's downward-growing-cell step is still a FIXME. A
-generated 752-case general table matrix and a separate 216-case collapsed-row
-matrix covering both row- and group-level collapse agree with the current C++
-layout tree on every tracked case.
+being recomputed and rounded through `f64`. Rowspans now use the same increasing-
+span intrinsic min/max contribution algorithm as columns; both paths preserve
+the source's fixed-point ratios and zero-baseline truncation. The former post-
+layout equal shortfall split has been removed. Cell `min-height` contributes to
+those row measures without clamping the automatic content height written back
+by the cell's layout pass. Intrinsic cell-height throwaway states also seed an
+external containing block even when the main table pass has not visited it yet,
+which is required for absolutely positioned descendants contained by a row.
+Finally, `rowspan="0"` remains a one-row span because upstream's downward-
+growing-cell step is still a FIXME. A generated 752-case
+general table matrix, a 216-case collapsed-row matrix, and a 576-case rowspan
+matrix agree with the current C++ table/row geometry on every tracked case.
 
 Column flex intrinsic cross sizing now follows C++'s two-pass contribution
 algorithm for single-line min/max-content sizing and multi-line min-content

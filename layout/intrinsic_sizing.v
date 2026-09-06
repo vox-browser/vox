@@ -139,7 +139,11 @@ fn populate_intrinsic_external_containing_blocks(mut throwaway LayoutState, mut 
 		candidate := unsafe { &Node(candidate_box) }
 		if !subtree_root.is_inclusive_ancestor_of(candidate) {
 			if styled := candidate.as_node_with_style() {
-				if throwaway.try_get(styled) == none && source.try_get(styled) != none {
+				if throwaway.try_get(styled) == none {
+					// The source formatting context may not have visited this
+					// external containing block yet. LayoutState::get_mutable()
+					// creates it lazily in LibWeb too; requiring an existing entry
+					// leaves positioned table rows absent while measuring a cell.
 					throwaway.populate_node_from(mut source, styled)
 				}
 			}

@@ -37,6 +37,11 @@ struct TableCellIntrinsicWidthMeasures {
 	outer_max_width CSSPixels
 }
 
+struct TableCellIntrinsicHeightMeasures {
+	outer_min_height CSSPixels
+	outer_max_height CSSPixels
+}
+
 @[heap]
 struct TableGridIntrinsicWidths {
 	grid_min                  CSSPixels
@@ -558,7 +563,7 @@ fn compute_spanning_table_column_measures(mut min_widths []CSSPixels, mut max_wi
 					min_contribution = min_contribution.plus(ratio.times(extra))
 				} else {
 					extra := css_pixels_max(CSSPixels.new(0), measures.outer_min_width.minus(baseline_border_spacing))
-					min_contribution = min_contribution.plus(extra.divided_by_float(f64(placement.column_span)))
+					min_contribution = min_contribution.plus(extra.divided_by(CSSPixels.new(placement.column_span)).to_css_pixels())
 				}
 
 				mut max_contribution := max_widths[column]
@@ -568,7 +573,7 @@ fn compute_spanning_table_column_measures(mut min_widths []CSSPixels, mut max_wi
 					max_contribution = max_contribution.plus(ratio.times(extra))
 				} else {
 					extra := css_pixels_max(CSSPixels.new(0), measures.outer_max_width.minus(baseline_border_spacing))
-					max_contribution = max_contribution.plus(extra.divided_by_float(f64(placement.column_span)))
+					max_contribution = max_contribution.plus(extra.divided_by(CSSPixels.new(placement.column_span)).to_css_pixels())
 				}
 				next_min_widths[column] = css_pixels_max(next_min_widths[column], min_contribution)
 				next_max_widths[column] = css_pixels_max(next_max_widths[column], max_contribution)
@@ -576,6 +581,67 @@ fn compute_spanning_table_column_measures(mut min_widths []CSSPixels, mut max_wi
 		}
 		min_widths = next_min_widths.clone()
 		max_widths = next_max_widths.clone()
+	}
+}
+
+// TableFormattingContext::compute_table_measures<Row>(). This is intentionally
+// the same span-by-span contribution algorithm as the column path, operating on
+// the outer intrinsic heights measured for each cell.
+fn compute_spanning_table_row_measures(mut min_heights []CSSPixels, mut max_heights []CSSPixels, placements []TableCellPlacement, cell_measures []TableCellIntrinsicHeightMeasures, spacing CSSPixels, maximum_span int) {
+	for current_span in 2 .. maximum_span + 1 {
+		mut next_min_heights := min_heights.clone()
+		mut next_max_heights := max_heights.clone()
+		for placement_index, placement in placements {
+			if placement.row_span != current_span {
+				continue
+			}
+			end_row := if placement.row + placement.row_span < min_heights.len {
+				placement.row + placement.row_span
+			} else {
+				min_heights.len
+			}
+			mut baseline_min_content_size := CSSPixels.new(0)
+			mut baseline_max_content_size := CSSPixels.new(0)
+			for row in placement.row .. end_row {
+				baseline_min_content_size = baseline_min_content_size.plus(min_heights[row])
+				baseline_max_content_size = baseline_max_content_size.plus(max_heights[row])
+			}
+			baseline_border_spacing := spacing.scaled(f64(placement.row_span - 1))
+			measures := cell_measures[placement_index]
+			for row in placement.row .. end_row {
+				mut min_contribution := min_heights[row]
+				baseline_difference := baseline_max_content_size.minus(baseline_min_content_size)
+				normalized_difference := if baseline_difference.raw_value() != 0 {
+					max_heights[row].minus(min_heights[row]).to_double() / baseline_difference.to_double()
+				} else {
+					0.0
+				}
+				clamped_difference := css_pixels_min(css_pixels_max(measures.outer_min_height.minus(baseline_min_content_size).minus(baseline_border_spacing), CSSPixels.new(0)), baseline_difference)
+				min_contribution = min_contribution.plus(clamped_difference.times_float(normalized_difference))
+				if baseline_max_content_size.raw_value() != 0 {
+					ratio := CSSPixels.nearest_value_for(max_heights[row].to_double() / baseline_max_content_size.to_double())
+					extra := css_pixels_max(CSSPixels.new(0), measures.outer_min_height.minus(baseline_max_content_size).minus(baseline_border_spacing))
+					min_contribution = min_contribution.plus(ratio.times(extra))
+				} else {
+					extra := css_pixels_max(CSSPixels.new(0), measures.outer_min_height.minus(baseline_border_spacing))
+					min_contribution = min_contribution.plus(extra.divided_by(CSSPixels.new(placement.row_span)).to_css_pixels())
+				}
+
+				mut max_contribution := max_heights[row]
+				if baseline_max_content_size.raw_value() != 0 {
+					ratio := CSSPixels.nearest_value_for(max_heights[row].to_double() / baseline_max_content_size.to_double())
+					extra := css_pixels_max(CSSPixels.new(0), measures.outer_max_height.minus(baseline_max_content_size).minus(baseline_border_spacing))
+					max_contribution = max_contribution.plus(ratio.times(extra))
+				} else {
+					extra := css_pixels_max(CSSPixels.new(0), measures.outer_max_height.minus(baseline_border_spacing))
+					max_contribution = max_contribution.plus(extra.divided_by(CSSPixels.new(placement.row_span)).to_css_pixels())
+				}
+				next_min_heights[row] = css_pixels_max(next_min_heights[row], min_contribution)
+				next_max_heights[row] = css_pixels_max(next_max_heights[row], max_contribution)
+			}
+		}
+		min_heights = next_min_heights.clone()
+		max_heights = next_max_heights.clone()
 	}
 }
 
@@ -666,7 +732,7 @@ fn compute_table_column_intrinsic_percentages(column_count int, column_definitio
 				adjusted := if zero_percentage_max_sum.raw_value() != 0 {
 					cell_contribution.times_float(nonspanning_max_widths[column].to_double() / zero_percentage_max_sum.to_double())
 				} else if zero_percentage_count > 0 {
-					cell_contribution.divided_by_float(f64(zero_percentage_count))
+					cell_contribution.divided_by(CSSPixels.new(zero_percentage_count)).to_css_pixels()
 				} else {
 					CSSPixels.new(0)
 				}
@@ -1019,6 +1085,91 @@ fn table_cell_intrinsic_width_measures(mut state LayoutState, cell &Node, collap
 	}
 }
 
+fn table_cell_intrinsic_height_measures(mut state LayoutState, cell &Node, collapsed bool, row_is_constrained bool, containing_block_height CSSPixels) TableCellIntrinsicHeightMeasures {
+	box := cell.as_box() or { return TableCellIntrinsicHeightMeasures{} }
+	styled := cell.as_node_with_style() or { return TableCellIntrinsicHeightMeasures{} }
+	computed := cell.computed_values()
+	mut measurement := UsedValues{}
+	resolve_box_model_edges(computed, mut measurement, containing_block_height.to_double())
+	if collapsed {
+		cell_state := state.get(styled)
+		measurement.border_top = cell_state.border_top
+		measurement.border_bottom = cell_state.border_bottom
+	}
+	min_content_width := calculate_min_content_width(mut state, box)
+	max_content_width := calculate_max_content_width(mut state, box)
+	min_content_height := calculate_min_content_height(mut state, box, max_content_width)
+	max_content_height := calculate_max_content_height(mut state, box, min_content_width)
+	edges := table_cell_measurement_block_edges(measurement, collapsed)
+	min_height := computed.size_value(.min_height).to_px(layout_length_resolution_context(cell), containing_block_height)
+	height := if computed.size_value(.height).is_length() {
+		computed.size_value(.height).to_px(layout_length_resolution_context(cell), containing_block_height)
+	} else {
+		CSSPixels.new(0)
+	}
+	max_height := if computed.size_value(.max_height).is_length() {
+		computed.size_value(.max_height).to_px(layout_length_resolution_context(cell), containing_block_height)
+	} else {
+		CSSPixels.max()
+	}
+	outer_min_height := css_pixels_max(min_height, min_content_height).plus(edges)
+	outer_max_height := if row_is_constrained {
+		css_pixels_max(min_height, css_pixels_max(height, min_content_height)).plus(edges)
+	} else {
+		css_pixels_max(min_height, css_pixels_max(height, css_pixels_max(min_content_height, css_pixels_min(max_height, max_content_height)))).plus(edges)
+	}
+	return TableCellIntrinsicHeightMeasures{
+		outer_min_height: outer_min_height
+		outer_max_height: outer_max_height
+	}
+}
+
+fn compute_table_row_intrinsic_measures(mut state LayoutState, rows []&Node, placements []TableCellPlacement, collapsed bool, containing_block_height CSSPixels, spacing CSSPixels) ([]CSSPixels, []CSSPixels) {
+	mut min_heights := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
+	mut max_heights := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
+	mut constrained_rows := []bool{len: rows.len}
+	for index, row in rows {
+		computed := row.computed_values()
+		min_height := computed.size_value(.min_height).to_px(layout_length_resolution_context(row), containing_block_height)
+		height := computed.size_value(.height).to_px(layout_length_resolution_context(row), containing_block_height)
+		max_height := if computed.size_value(.max_height).is_length() {
+			computed.size_value(.max_height).to_px(layout_length_resolution_context(row), containing_block_height)
+		} else {
+			CSSPixels.max()
+		}
+		min_heights[index] = css_pixels_max(min_height, height)
+		max_heights[index] = css_pixels_max(min_height, css_pixels_min(max_height, height))
+		constrained_rows[index] = computed.size_value(.height).is_length()
+	}
+	for placement in placements {
+		if placement.row < constrained_rows.len
+			&& placement.cell.computed_values().size_value(.height).is_length() {
+			constrained_rows[placement.row] = true
+		}
+	}
+	mut cell_measures := []TableCellIntrinsicHeightMeasures{cap: placements.len}
+	for placement in placements {
+		cell_measures << table_cell_intrinsic_height_measures(mut state, placement.cell, collapsed, constrained_rows[placement.row], containing_block_height)
+	}
+	for placement_index, placement in placements {
+		if placement.row_span != 1 || placement.row >= min_heights.len {
+			continue
+		}
+		measures := cell_measures[placement_index]
+		specified_height := placement.cell.computed_values().size_value(.height).to_px(layout_length_resolution_context(placement.cell), containing_block_height)
+		min_heights[placement.row] = css_pixels_max(min_heights[placement.row], css_pixels_max(measures.outer_min_height, specified_height))
+		max_heights[placement.row] = css_pixels_max(max_heights[placement.row], measures.outer_max_height)
+	}
+	mut maximum_span := 1
+	for placement in placements {
+		if placement.row_span > maximum_span {
+			maximum_span = placement.row_span
+		}
+	}
+	compute_spanning_table_row_measures(mut min_heights, mut max_heights, placements, cell_measures, spacing, maximum_span)
+	return min_heights, max_heights
+}
+
 // The anonymous table wrapper's used width is the table grid's intrinsic
 // width, not the fill-available width of an ordinary block. This is the width
 // phase of TableFormattingContext::run_until_width_calculation().
@@ -1345,6 +1496,15 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	} else {
 		table_state.content_width()
 	}
+	table_height_percentage_basis := if wrapper_state := table_state.containing_block_used_values() {
+		if containing_state := wrapper_state.containing_block_used_values() {
+			containing_state.content_height()
+		} else {
+			CSSPixels.new(0)
+		}
+	} else {
+		CSSPixels.new(0)
+	}
 	intrinsic_widths := calculate_table_grid_intrinsic_widths(mut state, table, table_width_percentage_basis)
 	rows := intrinsic_widths.rows
 	placements := intrinsic_widths.placements
@@ -1413,6 +1573,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	column_widths := distribute_table_width_to_columns(intrinsic_widths.column_min_widths, intrinsic_widths.column_max_widths, intrinsic_widths.constrained_columns, intrinsic_widths.intrinsic_percentages, intrinsic_widths.has_intrinsic_percentage, intrinsic_widths.has_originating_cells, table_state.content_width(), horizontal_spacing, fixed_mode)
 	column_offsets := table_column_offsets(column_widths, horizontal_spacing)
 	row_is_collapsed := rows.map(table_row_is_collapsed(it))
+	row_min_heights, _ := compute_table_row_intrinsic_measures(mut state, rows, placements, computed.border_collapse() == .collapse, table_height_percentage_basis, vertical_spacing)
 	mut row_heights := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
 	mut row_baselines := []CSSPixels{len: rows.len, init: CSSPixels.new(0)}
 	mut cell_baselines := []CSSPixels{len: placements.len, init: CSSPixels.new(0)}
@@ -1458,11 +1619,13 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		// the resolved padding and borders before laying out the cell contents.
 		// This is intentionally different from ordinary box height resolution.
 		mut forced_cell_height := ?CSSPixels(none)
+		mut specified_cell_height := ?CSSPixels(none)
 		cell_computed_height := placement.cell.computed_values().size_value(.height)
 		if !row_is_collapsed[placement.row]
 			&& (cell_computed_height.is_length()
 				|| (cell_computed_height.is_calculated() && !cell_computed_height.contains_percentage())) {
 			if cell_used_height := resolve_layout_size(placement.cell, cell_computed_height, table_state.content_height()) {
+				specified_cell_height = cell_used_height
 				forced_cell_height = cell_used_height.minus(table_cell_measurement_block_edges(cell_state, collapsed))
 			}
 		}
@@ -1488,38 +1651,14 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			&& !row_is_collapsed[placement.row] {
 			row_baselines[placement.row] = css_pixels_max(row_baselines[placement.row], cell_baselines[placement_index])
 		}
-		if placement.row_span == 1 && !row_is_collapsed[placement.row] {
-			row_heights[placement.row] = css_pixels_max(row_heights[placement.row], table_cell_measurement_outer_height(cell_state, collapsed))
-			cell_height := placement.cell.computed_values().size_value(.height)
-			if cell_height.is_length() || (cell_height.is_calculated() && !cell_height.contains_percentage()) {
-				if specified_height := resolve_layout_size(placement.cell, cell_height, table_state.content_height()) {
-					row_heights[placement.row] = css_pixels_max(row_heights[placement.row], specified_height)
-				}
+		if !row_is_collapsed[placement.row] {
+			if specified_height := specified_cell_height {
+				row_heights[placement.row] = css_pixels_max(row_heights[placement.row], specified_height)
 			}
-		}
-	}
-	// A spanning cell's minimum height is distributed over the rows it spans
-	// after single-row cells have established their row minima.
-	for placement in placements {
-		if placement.row_span <= 1 {
-			continue
-		}
-		styled := placement.cell.as_node_with_style() or { continue }
-		cell_state := state.get(styled)
-		mut current := vertical_spacing.scaled(f64(placement.row_span - 1))
-		for row in placement.row .. placement.row + placement.row_span {
-			if row < row_heights.len {
-				current = current.plus(row_heights[row])
+			if placement.row_span == 1 {
+				row_heights[placement.row] = css_pixels_max(row_heights[placement.row], table_cell_measurement_outer_height(cell_state, collapsed))
 			}
-		}
-		shortfall := table_cell_measurement_outer_height(cell_state, computed.border_collapse() == .collapse).minus(current)
-		if shortfall.raw_value() > 0 {
-			addition := shortfall.divided_by_float(f64(placement.row_span))
-			for row in placement.row .. placement.row + placement.row_span {
-				if row < row_heights.len {
-					row_heights[row] = row_heights[row].plus(addition)
-				}
-			}
+			row_heights[placement.row] = css_pixels_max(row_heights[placement.row], row_min_heights[placement.row])
 		}
 	}
 	// TableGrid marks a row collapsed when either the row itself or its row

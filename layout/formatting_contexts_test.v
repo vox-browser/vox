@@ -1918,6 +1918,39 @@ fn test_percentage_height_rowspan_cell_is_relaid_out_in_second_pass() {
 	assert span.padding_bottom.to_double() == 40
 }
 
+fn test_table_rowspan_height_uses_intrinsic_row_measure_contributions() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 } table { width:180px; table-layout:fixed; border-spacing:0 }
+		td { padding:2px; border:1px solid }
+	</style><table id="table"><tr id="first"><td id="span" rowspan="2"><div style="height:100px"></div></td>
+		<td><div style="height:11px"></div></td></tr><tr id="second"><td><div style="height:23px"></div></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	first := used_for_id(result, 'first')
+	second := used_for_id(result, 'second')
+	span := used_for_id(result, 'span')
+	// compute_table_measures<Row>() distributes the spanning contribution in
+	// proportion to the previous max-content row measures. The former equal
+	// shortfall split produced 47px and 59px here.
+	assert first.content_height().to_double() == 39.5
+	assert second.content_height().to_double() == 66.5
+	assert second.offset.y().to_double() == 39.5
+	assert span.content_height().to_double() == 100
+	assert used_for_id(result, 'table').content_height().to_double() == 106
+}
+
+fn test_table_cell_min_height_affects_row_measure_but_not_cell_content_height() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 } table { width:120px; table-layout:fixed; border-spacing:0 }
+		td { padding:2px; border:1px solid } #span { min-height:29px }
+	</style><table><tr><td id="span" rowspan="2"><div style="height:7px"></div></td><td><div style="height:11px"></div></td></tr>
+		<tr><td><div style="height:23px"></div></td></tr></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	span := used_for_id(result, 'span')
+	// LibWeb applies min-height to intrinsic row measures. It does not clamp
+	// the automatic content height written back by the cell's first layout pass.
+	assert span.content_height().to_double() == 7
+}
+
 fn test_table_caption_position_ignores_own_margins_at_wrapper_origin() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:200px; border-spacing:0 } caption { height:10px; margin:3px 7px; padding:5px } td { height:20px; padding:0 }
@@ -1963,6 +1996,25 @@ fn test_fixed_table_equal_distribution_truncates_css_pixel_fractions() {
 	assert widths[1].raw_value() == 6378
 	assert widths[2].raw_value() == 6378
 	assert widths[3] == CSSPixels.new(299)
+}
+
+fn test_spanning_table_measure_zero_baseline_truncates_fraction() {
+	mut minimums := []CSSPixels{len: 3, init: CSSPixels.new(0)}
+	mut maximums := []CSSPixels{len: 3, init: CSSPixels.new(0)}
+	placements := [TableCellPlacement{
+		column_span: 3
+	}]
+	measures := [TableCellIntrinsicWidthMeasures{
+		outer_min_width: CSSPixels.new(10)
+		outer_max_width: CSSPixels.new(10)
+	}]
+	compute_spanning_table_column_measures(mut minimums, mut maximums, placements, measures, CSSPixels.new(0), 3)
+	// CSSPixels(10) / 3 is a CSSPixelFraction. Converting it for each
+	// contribution truncates raw 640 / 3 to raw 213.
+	for index in 0 .. 3 {
+		assert minimums[index].raw_value() == 213
+		assert maximums[index].raw_value() == 213
+	}
 }
 
 fn test_table_wrapper_and_percentage_table_share_final_width_before_centering() {
