@@ -591,6 +591,12 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 			mark_ua_internal_layout_subtree(mut internal_child)
 		}
 		children << internal_children
+	} else if element.is_html_element() && element.local_name() == 'meter' {
+		mut internal_children := build_meter_internal_layout_children(document, element, computed)
+		for mut internal_child in internal_children {
+			mark_ua_internal_layout_subtree(mut internal_child)
+		}
+		children << internal_children
 	}
 	mut list_item_marker := ?&Node(none)
 	if box_node.is_list_item_box() {
@@ -1013,6 +1019,55 @@ fn build_progress_internal_layout_children(document &dom.Document, element &dom.
 			value = maximum
 		}
 		fill_overrides[css.PropertyID.width] = '${value / maximum * 100}%'
+	}
+	fill_style := computed_style_with_overrides(host_computed, fill_overrides)
+	mut fill := unsafe { &Node(BlockContainer.new(document, fill_element.as_node(), fill_style)) }
+	fill.set_children_are_inline(false)
+	track.append_child(fill)
+	track.set_children_are_inline(false)
+	return [track]
+}
+
+// HTMLMeterElement::create_shadow_tree_if_needed(). Its closed UA shadow root
+// has the same ::slider-track / ::slider-fill shape as <progress>; the meter's
+// Default.css rules give the track a 1px border and both children `display:
+// block; height: 100%`. update_meter_value_element() supplies the fill's width.
+fn build_meter_internal_layout_children(document &dom.Document, element &dom.Element, host_computed &css.ComputedProperties) []&Node {
+	track_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		return []
+	}
+	track_style := computed_style_with_overrides(host_computed, {
+		css.PropertyID.display:             'block'
+		css.PropertyID.height:              '100%'
+		css.PropertyID.border_top_width:    '1px'
+		css.PropertyID.border_right_width:  '1px'
+		css.PropertyID.border_bottom_width: '1px'
+		css.PropertyID.border_left_width:   '1px'
+		css.PropertyID.border_top_style:    'solid'
+		css.PropertyID.border_right_style:  'solid'
+		css.PropertyID.border_bottom_style: 'solid'
+		css.PropertyID.border_left_style:   'solid'
+	})
+	mut track := unsafe {
+		&Node(BlockContainer.new(document, track_element.as_node(), track_style))
+	}
+
+	fill_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		return []
+	}
+	mut fill_overrides := {
+		css.PropertyID.display: 'block'
+		css.PropertyID.height:  '100%'
+	}
+	meter := unsafe { &dom.HTMLMeterElement(element) }
+	minimum := html.html_meter_element_min(meter)
+	maximum := html.html_meter_element_max(meter)
+	if maximum != minimum {
+		// update_meter_value_element(): width = (value - min) / (max - min) * 100%.
+		// A degenerate range formats as `nan%`, which is not a valid declaration,
+		// so the fill keeps its automatic width.
+		position := (html.html_meter_element_value(meter) - minimum) / (maximum - minimum) * 100
+		fill_overrides[css.PropertyID.width] = '${position}%'
 	}
 	fill_style := computed_style_with_overrides(host_computed, fill_overrides)
 	mut fill := unsafe { &Node(BlockContainer.new(document, fill_element.as_node(), fill_style)) }

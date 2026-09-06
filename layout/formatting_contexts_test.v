@@ -2761,3 +2761,55 @@ fn test_over_constrained_block_keeps_the_left_edge_in_rtl() {
 	assert overflowing.offset.x().to_double() == 0
 	assert overflowing.margin_right.to_double() == -50
 }
+
+// The <meter> UA-internal children are synthesized, so they carry no id: reach
+// them positionally from the host box.
+fn meter_track_used_values(result DocumentLayoutResult, id string) &UsedValues {
+	host := layout_node_with_id(result.root, id) or { panic('missing #${id}') }
+	track := host.children()[0] or { panic('#${id} has no slider track') }
+	styled := track.as_node_with_style() or { panic('#${id} track has no style') }
+	return result.used_values_for(styled) or { panic('#${id} track has no used values') }
+}
+
+fn meter_fill_used_values(result DocumentLayoutResult, id string) &UsedValues {
+	host := layout_node_with_id(result.root, id) or { panic('missing #${id}') }
+	track := host.children()[0] or { panic('#${id} has no slider track') }
+	fill := track.children()[0] or { panic('#${id} has no slider fill') }
+	styled := fill.as_node_with_style() or { panic('#${id} fill has no style') }
+	return result.used_values_for(styled) or { panic('#${id} fill has no used values') }
+}
+
+// HTMLMeterElement::create_shadow_tree_if_needed() gives <meter> the same
+// ::slider-track / ::slider-fill pair as <progress>, and
+// update_meter_value_element() sets the fill's width to
+// (value - min) / (max - min) * 100%.
+fn test_meter_builds_its_slider_track_and_fill() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0; font-size:0 }
+		#outer { width:400px }
+	</style><div id="outer">
+		<meter id="half" value="0.5"></meter>
+		<meter id="ranged" min="10" max="20" value="12"></meter>
+		<meter id="clamped" value="3"></meter>
+		<meter id="degenerate" min="5" max="5" value="5"></meter>
+	</div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+
+	// Default UA size is 300x12 with a 1px track border, so the track content
+	// box is 298 wide and the fill takes its share of that.
+	half := used_for_id(result, 'half')
+	assert half.content_width().to_double() == 300
+	assert half.content_height().to_double() == 12
+	half_track := meter_track_used_values(result, 'half')
+	assert half_track.content_width().to_double() == 298
+	assert meter_fill_used_values(result, 'half').content_width().to_double() == 149
+
+	// min/max shift and scale the position: (12 - 10) / (20 - 10) = 20%.
+	assert meter_fill_used_values(result, 'ranged').content_width().to_double() == 59.59375
+
+	// The actual value is clamped to the maximum, so the fill is full.
+	assert meter_fill_used_values(result, 'clamped').content_width().to_double() == 298
+
+	// A degenerate range would format as `nan%`; the fill keeps its auto width.
+	assert meter_fill_used_values(result, 'degenerate').content_width().to_double() == 298
+}

@@ -234,6 +234,17 @@ edge under `direction: rtl`; a generated 60-case matrix over direction, width,
 and both inline margins now agrees with upstream on all 60, including the
 negative remainder of an over-wide child.
 
+`<meter>` now builds the same UA-internal layout subtree as `<progress>`:
+`HTMLMeterElement::create_shadow_tree_if_needed()`'s `::slider-track` and
+`::slider-fill` pair, with the meter's `Default.css` border and `height: 100%`
+rules and the fill width `update_meter_value_element()` computes as
+`(value - min) / (max - min) * 100%`. A degenerate range formats as `nan%` in
+the source, which is not a valid declaration, so the fill keeps its automatic
+width. `TextInputBox` and `TextAreaBox` also resolve their `size`/`cols`/`rows`
+attributes as real `ch` and `lh` lengths against the box's own font, rather than
+multiplying a raw font advance, so the advance is quantized to `CSSPixels` before
+it is scaled exactly as `CSS::Length::to_px()` does.
+
 The upstream Layout regression corpus is exercised directly by
 `tools/layout_corpus.v`. It discovers every HTML or SVG input with a matching
 expected snapshot and compares all three upstream sections exactly: layout tree,

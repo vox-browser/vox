@@ -186,6 +186,10 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 	// for font-size:0 text.
 	metric_size := if font.point_size == 0 { f32(1) } else { font.point_size }
 	scale := metric_size / units_per_em
+	// Gfx::Font::pixel_metrics() takes SkFont::measureText("0"), and the SkFont
+	// Ladybird builds is not sub-pixel positioned, so that advance arrives as a
+	// whole number of pixels. The checked-in Layout expectations encode it: at
+	// 16px SerenitySans `1ch` is 10px there, not the face's 9.59375px.
 	zero_advance, _ := font.glyph_metrics(u32(`0`))
 	return FontPixelMetrics{
 		size: font.point_size

@@ -768,13 +768,14 @@ pub fn TextInputBox.new(document &dom.Document, element &dom.Element, computed_v
 		BlockContainer: special_block_container_base(document, element.as_node(), computed_values)
 	}
 	box.is_text_input_box_ = true
+	// TextInputBox::compute_auto_content_box_size(). The `size` attribute is a
+	// `ch` length resolved against this box's own font, so the advance is
+	// quantized to CSSPixels before it is multiplied - not after.
 	columns := positive_integer_attribute_or_default(element, 'size', 20)
-	font := platform.Font{
-		family: 'sans-serif'
-		point_size: f32(computed_values.resolved_font_size_px())
-		weight: int(computed_values.font_weight())
-	}
-	mut width := CSSPixels.nearest_value_for(f64(columns) * f64(font.pixel_metrics().advance_of_ascii_zero))
+	box_node := unsafe { &Node(box) }
+	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns),
+		.ch))
+	// AD-HOC: 2px is inline shadow DOM padding in HTMLInputElement::create_text_input_shadow_tree()
 	mut height := computed_values.line_height().plus(CSSPixels.new(2))
 	if computed_values.writing_mode() != .horizontal_tb {
 		width, height = height, width
@@ -797,15 +798,15 @@ pub fn TextAreaBox.new(document &dom.Document, element &dom.Element, computed_va
 		BlockContainer: special_block_container_base(document, element.as_node(), computed_values)
 	}
 	box.is_textarea_box_ = true
+	// TextAreaBox::compute_auto_content_box_size(): `cols` is a `ch` length and
+	// `rows` is an `lh` length, both resolved against this box's own font.
 	columns := positive_integer_attribute_or_default(element, 'cols', 20)
 	rows := positive_integer_attribute_or_default(element, 'rows', 2)
-	font := platform.Font{
-		family: 'sans-serif'
-		point_size: f32(computed_values.resolved_font_size_px())
-		weight: int(computed_values.font_weight())
-	}
-	mut width := CSSPixels.nearest_value_for(f64(columns) * f64(font.pixel_metrics().advance_of_ascii_zero))
-	mut height := computed_values.line_height().scaled(f64(rows))
+	box_node := unsafe { &Node(box) }
+	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns),
+		.ch))
+	mut height := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(rows),
+		.lh))
 	if computed_values.writing_mode() != .horizontal_tb {
 		width, height = height, width
 	}
