@@ -1134,7 +1134,12 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 		match child {
 			RuleNode {
 				if converted_rule := parser.convert_to_rule(child.rule, .yes) {
-					if converted_rule.type_ in [.media, .supports, .layer_block] {
+					// "In addition to nested style rules, this specification allows
+					// nested group rules inside of style rules: any at-rule whose body
+					// contains style rules can be nested inside of a style rule as
+					// well." A CSSStyleRule is itself a CSSGroupingRule, so a nested
+					// style rule is accepted here too.
+					if converted_rule.type_ in css_grouping_rule_types {
 						child_rules << converted_rule
 					} else {
 						parser_report_error(ParsingError(InvalidRuleLocationError{
@@ -1854,8 +1859,8 @@ fn (mut parser RuleSelectorParser) convert_to_page_rule(page_rule AtRule) ?&CSSR
 			}
 			DeclarationList {
 				for declaration in child.declarations {
-					if descriptor := convert_to_page_descriptor_for_rule_parsing(declaration) {
-						append_descriptor(mut descriptors, descriptor)
+					if parsed := convert_to_page_descriptor_for_rule_parsing(declaration) {
+						append_page_descriptor(mut descriptors, parsed)
 					}
 				}
 			}
@@ -1944,6 +1949,26 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 		}
 	}
 	return CSSStyleProperties.create_from_declarations(properties, custom_properties)
+}
+
+// Parser::DescriptorList::append(). A shorthand descriptor is expanded into its
+// longhands before the "only the last instance of each descriptor is included"
+// rule applies, so `@page { margin: 1cm }` records four margin descriptors and a
+// later `margin-top` replaces only that one.
+fn append_page_descriptor(mut descriptors []Descriptor, parsed ParsedPageDescriptor) {
+	if !is_descriptor_shorthand(.page, parsed.descriptor.descriptor_id) {
+		append_descriptor(mut descriptors, parsed.descriptor)
+		return
+	}
+	for expanded in expand_page_margin_shorthand_descriptor_value(parsed.style_value) {
+		longhand := parse_css_descriptor_value_for_cssom(.page, expanded.descriptor_id,
+			expanded.serialized_value) or { continue }
+		append_descriptor(mut descriptors, Descriptor{
+			descriptor_id: expanded.descriptor_id
+			value: longhand.value
+			serialized_value: longhand.serialized
+		})
+	}
 }
 
 fn append_descriptor(mut descriptors []Descriptor, descriptor Descriptor) {
@@ -2463,16 +2488,24 @@ fn parse_page_selector_list_for_rule_parsing(mut tokens ParserTokenStream) ?Page
 	return parse_page_selector_list(text)
 }
 
-fn convert_to_page_descriptor_for_rule_parsing(declaration Declaration) ?Descriptor {
+struct ParsedPageDescriptor {
+	descriptor  Descriptor
+	style_value StyleValue
+}
+
+fn convert_to_page_descriptor_for_rule_parsing(declaration Declaration) ?ParsedPageDescriptor {
 	descriptor_id := descriptor_id_from_string(.page, declaration.name) or { return none }
 	value_text := parser_component_values_to_string(declaration.value).trim_space()
 	value := parse_css_descriptor_value_for_cssom(.page, descriptor_id, value_text) or {
 		return none
 	}
-	return Descriptor{
-		descriptor_id: descriptor_id
-		value: value.value
-		serialized_value: value.serialized
+	return ParsedPageDescriptor{
+		descriptor: Descriptor{
+			descriptor_id: descriptor_id
+			value: value.value
+			serialized_value: value.serialized
+		}
+		style_value: value.style_value
 	}
 }
 

@@ -95,7 +95,8 @@ fn test_font_face_unicode_ranges_use_the_component_value_parser() {
 	assert font_face.is_valid()
 	assert font_face.descriptors().font_family() == 'Test'
 	assert font_face.descriptors().src() == 'url("test.woff2")'
-	assert font_face.descriptors().unicode_range() == 'U+0400-04FF, U+1000-10FF'
+	// Gfx::UnicodeRange::to_string() formats with `U+{:X}`, without zero padding.
+	assert font_face.descriptors().unicode_range() == 'U+400-4FF, U+1000-10FF'
 	ranges := font_face.font_face().unicode_ranges()
 	assert ranges.len == 2
 	assert ranges[0] == UnicodeRange{ start: 0x400, end: 0x4ff }
@@ -323,7 +324,11 @@ fn test_page_rule_retains_descriptors_and_margin_rules() {
 	assert page.type_ == .page
 	assert page.page_selector_text() == 'chapter:left'
 	descriptors := page.page_descriptors or { panic('missing page descriptors') }
-	assert descriptors.margin() == '1cm'
+	// Parser::DescriptorList::append() expands the `margin` shorthand descriptor,
+	// so only the longhands are recorded and the shorthand reads back as empty.
+	assert descriptors.margin() == ''
+	assert descriptors.margin_top() == '1cm'
+	assert descriptors.margin_left() == '1cm'
 	assert descriptors.size() == 'a4'
 	margin_rules := page.css_rules() or { panic('missing page margin rule list') }
 	assert margin_rules.length() == 1
@@ -581,4 +586,83 @@ fn test_numeric_escapes_decode_in_selectors() {
 	// Single-character escapes keep working.
 	assert selector_text_of('.a\\ b')? == '.a\\ b'
 	assert selector_text_of('.\\@x')? == '.\\@x'
+}
+
+fn css_text_of(rule_text string) ?string {
+	rules := parse_rules(rule_text)
+	if rules.len < 1 {
+		return none
+	}
+	return rules[0].css_text()
+}
+
+// "In addition to nested style rules, this specification allows nested group
+// rules inside of style rules". CSSStyleRule is itself a CSSGroupingRule, so a
+// nested style rule is a valid child of a style rule; the port only accepted
+// @media, @supports and @layer and dropped nested style rules on the floor.
+fn test_style_rules_nest_inside_style_rules() {
+	assert css_text_of('a { & b { color: red } }')? == 'a {\n  & b { color: red; }\n}'
+	// A relative selector without a combinator gains the implicit `&`.
+	assert css_text_of('a { .x { color: red } }')? == 'a {\n  & .x { color: red; }\n}'
+	assert css_text_of('a { > b { color: red } }')? == 'a {\n  & > b { color: red; }\n}'
+	// Declarations come before the nested rules.
+	assert css_text_of('a { color: red; & > b { color: blue } }')? ==
+		'a {\n  color: red;\n  & > b { color: blue; }\n}'
+	// Nesting composes with group rules and with itself.
+	assert css_text_of('a { & b { & c { color: red } } }')? ==
+		'a {\n  & b {\n  & c { color: red; }\n}\n}'
+	assert css_text_of('a { @media screen { & b { color: red } } }')? ==
+		'a {\n  @media screen {\n  & b { color: red; }\n}\n}'
+}
+
+// CSSKeyframesRule::serialized() writes `@keyframes "{}"` with the name inserted
+// verbatim rather than through "serialize a string".
+fn test_keyframes_name_is_not_string_escaped() {
+	assert css_text_of('@keyframes a { from { opacity: 0 } }')? ==
+		'@keyframes "a" { 0% { opacity: 0; } }'
+	assert css_text_of('@keyframes \\31 a { from { opacity: 0 } }')? ==
+		'@keyframes "\\31 a" { 0% { opacity: 0; } }'
+}
+
+// CSSImportRule::serialized() performs "serialize a URL" on the rule's location,
+// which wraps it in `url(...)` with the URL serialized as a string.
+fn test_import_rule_serializes_its_url() {
+	assert css_text_of('@import url(a.css);')? == '@import url("a.css");'
+	assert css_text_of('@import url(a.css) screen;')? == '@import url("a.css") screen;'
+}
+
+// Gfx::UnicodeRange::to_string() formats each code point with `U+{:X}`, without
+// zero padding.
+fn test_unicode_range_is_not_zero_padded() {
+	assert css_text_of('@font-face { font-family: X; unicode-range: U+0-7F, U+100-1FF }')? ==
+		'@font-face { font-family: X; unicode-range: U+0-7F, U+100-1FF; }'
+	assert css_text_of('@font-face { font-family: X; unicode-range: U+41 }')? ==
+		'@font-face { font-family: X; unicode-range: U+41; }'
+}
+
+// Parser::DescriptorList::append() expands a shorthand descriptor into its
+// longhands before the "only the last instance of each descriptor" rule applies.
+fn test_page_margin_descriptor_expands_to_longhands() {
+	assert css_text_of('@page { margin: 1cm }')? ==
+		'@page { margin-top: 1cm; margin-right: 1cm; margin-bottom: 1cm; margin-left: 1cm; }'
+	assert css_text_of('@page { margin: 1cm 2cm }')? ==
+		'@page { margin-top: 1cm; margin-right: 2cm; margin-bottom: 1cm; margin-left: 2cm; }'
+	// A later longhand replaces only its own entry, and moves to the end.
+	assert css_text_of('@page { margin: 1cm; margin-top: 2cm }')? ==
+		'@page { margin-right: 1cm; margin-bottom: 1cm; margin-left: 1cm; margin-top: 2cm; }'
+	assert css_text_of('@page :left { margin: 0 }')? ==
+		'@page :left { margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; }'
+}
+
+// A custom property keeps its declared value verbatim: "set decl's original text
+// to the segment of the original source text string corresponding to the tokens
+// of decl's value", and UnresolvedStyleValue serializes that text.
+fn test_custom_property_keeps_its_original_source_text() {
+	assert css_text_of('a { --x: Foo Bar }')? == 'a { --x: Foo Bar; }'
+	assert css_text_of('a { --x: 1px  2px }')? == 'a { --x: 1px  2px; }'
+	assert css_text_of('a { --x: calc( 1px  +  2px ) }')? == 'a { --x: calc( 1px  +  2px ); }'
+	assert css_text_of("a { --x: 'a  b' }")? == "a { --x: 'a  b'; }"
+	assert css_text_of('a { --x: a /* c */ b }')? == 'a { --x: a /* c */ b; }'
+	assert css_text_of('a { --x: url( a.png ) }')? == 'a { --x: url( a.png ); }'
+	assert css_text_of('a { --x: a,  b }')? == 'a { --x: a,  b; }'
 }

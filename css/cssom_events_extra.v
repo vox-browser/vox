@@ -447,9 +447,12 @@ fn (rule &CSSRule) serialized_keyframe_rule() string {
 
 fn (rule &CSSRule) serialized_keyframes_rule() string {
 	mut builder := strings.new_builder(128)
-	builder.write_string('@keyframes ')
-	builder.write_string(serialize_a_string(rule.keyframes_name()))
-	builder.write_string(' { ')
+	// CSSKeyframesRule::serialized() writes `@keyframes "{}"` with the name
+	// inserted verbatim - it is not run through "serialize a string", so a name
+	// that already carries an escape keeps its single reverse solidus.
+	builder.write_string('@keyframes "')
+	builder.write_string(rule.keyframes_name())
+	builder.write_string('" { ')
 	if rules := rule.rules {
 		for keyframe in rules.rules {
 			builder.write_string(keyframe.css_text())

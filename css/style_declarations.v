@@ -405,7 +405,8 @@ fn parse_custom_property_value(value string) &dom.StyleValue {
 			return dom_style_value_from_value_logic(keyword)
 		}
 	}
-	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create(parser.component_values)))
+	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_original_source_text(parser.component_values,
+		value)))
 }
 
 fn cssom_style_property_as_style_property(property CSSStyleProperty) ?StyleProperty {

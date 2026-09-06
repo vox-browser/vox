@@ -405,6 +405,32 @@ A third differential run of 222 generated selectors, read back through
   whitespace that terminates the escape belongs to it. A simple selector may also
   begin with an escape, and an unquoted attribute value decodes its escapes.
 
+A fourth differential run of 128 generated rules, read back through
+`CSSRule.cssText`, corrected six more divergences:
+
+- Style rules did not nest. `CSSStyleRule` is itself a `CSSGroupingRule`, so
+  `Parser::convert_to_style_rule()` accepts a nested style rule as a child; the
+  port allowed only `@media`, `@supports` and `@layer` and dropped every nested
+  style rule. The serialization and `&`-adaptation were already translated, so
+  admitting the grouping rule types was enough: a 24-case nesting matrix and a
+  layout differential over nested rules now both agree with upstream.
+- A custom property keeps its declared value verbatim - "set decl's original
+  text to the segment of the original source text string corresponding to the
+  tokens of decl's value" - and `UnresolvedStyleValue` re-emits that text, so its
+  white space, comments and quote style survive. The port re-serialized the token
+  stream joined with single spaces, turning `--x: Foo Bar` into `--x: Foo   Bar`.
+  Its fallback now uses "serialize a series of component values" as upstream does.
+- `Parser::DescriptorList::append()` expands a shorthand descriptor into its
+  longhands, so `@page { margin: 1cm }` records four margin descriptors and reads
+  back as four longhands. Only the CSSOM `setProperty()` path had that expansion.
+- `CSSImportRule::serialized()` performs "serialize a URL" on the rule's
+  location, so `@import url(a.css)` serializes as `@import url("a.css")`.
+- `Gfx::UnicodeRange::to_string()` formats each code point with `U+{:X}`, without
+  zero padding: `U+0400-04FF` serializes back as `U+400-4FF`.
+- `CSSKeyframesRule::serialized()` writes `@keyframes "{}"` with the name
+  inserted verbatim rather than through "serialize a string", so a name carrying
+  an escape keeps its single reverse solidus.
+
 KNOWN DEVIATION: upstream's `serialize_an_identifier()` appends into a
 caller-supplied `StringBuilder` and applies its "first character" and "second
 character" tests to that builder's length rather than to a position within the

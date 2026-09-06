@@ -3858,9 +3858,9 @@ pub fn (style_value UnicodeRangeStyleValue) unicode_range() UnicodeRange {
 
 pub fn (range UnicodeRange) to_css_string() string {
 	if range.start == range.end {
-		return 'U+${range.start:04X}'
+		return 'U+${range.start:X}'
 	}
-	return 'U+${range.start:04X}-${range.end:04X}'
+	return 'U+${range.start:X}-${range.end:X}'
 }
 
 pub fn (style_value UnicodeRangeStyleValue) serialize(mode SerializationMode) string {

@@ -28,6 +28,11 @@ pub enum CSSRuleType {
 	property
 }
 
+// The rule types whose C++ class derives from CSSGroupingRule, i.e. the rules
+// that may contain style rules: CSSStyleRule, CSSPageRule, CSSLayerBlockRule,
+// and the CSSConditionRule subclasses CSSMediaRule and CSSSupportsRule.
+pub const css_grouping_rule_types = [CSSRuleType.style, .page, .layer_block, .media, .supports]
+
 pub fn (t CSSRuleType) type_for_bindings() u16 {
 	// NOTE: Types that aren't defined in the spec must return 0.
 	// To do this, Ladybird arbitrarily makes non-spec ones start at 100.
@@ -1024,7 +1029,9 @@ fn (rule &CSSRule) serialized_import_rule() string {
 	builder.write_string('@import ')
 
 	// 2. The result of performing serialize a URL on the rule's location.
-	builder.write_string(rule.url)
+	//    "To serialize a URL means to create a string represented by "url(",
+	//    followed by the serialization of the URL as a string, followed by ")"."
+	builder.write_string(serialize_a_url(rule.url))
 
 	// AD-HOC: Serialize the rule's layer if it exists.
 	if layer := rule.layer {

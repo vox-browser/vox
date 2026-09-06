@@ -5099,9 +5099,18 @@ pub struct UnresolvedStyleValue {
 pub mut:
 	tokens                          []ComponentValue
 	substitution_functions_presence SubstitutionFunctionsPresence
+	// A custom property's declared value is kept verbatim: `set decl's original
+	// text to the segment of the original source text string corresponding to
+	// the tokens of decl's value`. Serializing it re-emits that text, so its
+	// white space, comments and quote style survive the round trip.
+	original_source_text ?string
 }
 
 pub fn UnresolvedStyleValue.create(tokens []ComponentValue) UnresolvedStyleValue {
+	return UnresolvedStyleValue.create_with_original_source_text(tokens, none)
+}
+
+pub fn UnresolvedStyleValue.create_with_original_source_text(tokens []ComponentValue, original_source_text ?string) UnresolvedStyleValue {
 	mut presence := SubstitutionFunctionsPresence{}
 	for token in tokens {
 		if token.is_function() {
@@ -5114,16 +5123,16 @@ pub fn UnresolvedStyleValue.create(tokens []ComponentValue) UnresolvedStyleValue
 	return UnresolvedStyleValue{
 		tokens: tokens
 		substitution_functions_presence: presence
+		original_source_text: original_source_text
 	}
 }
 
 pub fn (style_value UnresolvedStyleValue) serialize(mode SerializationMode) string {
 	_ = mode
-	mut parts := []string{}
-	for token in style_value.tokens {
-		parts << token.to_string()
+	if original_source_text := style_value.original_source_text {
+		return original_source_text
 	}
-	return parts.join(' ')
+	return serialize_a_series_of_component_values(style_value.tokens).trim_space()
 }
 
 // https://drafts.csswg.org/css-variables/#guaranteed-invalid-value
