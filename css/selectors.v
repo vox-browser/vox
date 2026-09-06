@@ -398,7 +398,26 @@ pub fn pseudo_element_from_string(name string) PseudoElement {
 		'view-transition-old' {
 			.view_transition_old
 		}
-		// Legacy aliases generated from PseudoElements.json.
+		else {
+			aliased := aliased_pseudo_element_from_string(name)
+			if aliased != .unknown {
+				aliased
+			} else if name.to_lower().starts_with('-webkit-') {
+				PseudoElement.unknown_webkit
+			} else {
+				PseudoElement.unknown
+			}
+		}
+	}
+}
+
+// The legacy aliases generated from PseudoElements.json, kept apart from the
+// canonical names as `aliased_pseudo_element_from_string()` is upstream:
+// Parser::parse_pseudo_element_selector() consults the canonical table first and
+// only then this one, because an aliased pseudo-element keeps its authored
+// spelling when it serializes while a canonical one does not.
+pub fn aliased_pseudo_element_from_string(name string) PseudoElement {
+	return match name.to_lower() {
 		'-moz-meter-bar', '-moz-progress-bar', '-moz-range-progress', '-webkit-progress-value' {
 			.slider_fill
 		}
@@ -413,11 +432,7 @@ pub fn pseudo_element_from_string(name string) PseudoElement {
 			.placeholder
 		}
 		else {
-			if name.to_lower().starts_with('-webkit-') {
-				PseudoElement.unknown_webkit
-			} else {
-				PseudoElement.unknown
-			}
+			.unknown
 		}
 	}
 }
@@ -705,10 +720,10 @@ pub fn (simple_selector SimpleSelector) serialize() string {
 
 			// 2. If the namespace prefix maps to a namespace that is the null namespace (not in a namespace)
 			//    append "|" (U+007C) to s.
+			// NOTE: Unlike an attribute selector, the any-namespace prefix is not
+			//       serialized here; `*|div` serializes as `div` and `*|*` as `*`.
 			if qualified_name.namespace_type == .none {
 				s.write_u8(`|`)
-			} else if qualified_name.namespace_type == .any {
-				s.write_string('*|')
 			}
 
 			// 3. If this is a type selector append the serialization of the element name as an identifier to s.
@@ -794,11 +809,10 @@ pub fn (simple_selector SimpleSelector) serialize() string {
 				s.write_u8(`(`)
 				match pseudo_class.type_ {
 					.nth_child, .nth_last_child, .nth_of_type, .nth_last_of_type {
+						// Both the ANPlusB and ANPlusBOf parameter types serialize as
+						// "the result of serializing the value using the rules to
+						// serialize an <an+b> value" - the `of S` part is dropped.
 						s.write_string(pseudo_class.an_plus_b_pattern.serialize())
-						if pseudo_class.argument_selector_list.selectors.len != 0 {
-							s.write_string(' of ')
-							s.write_string(serialize_a_group_of_selectors(pseudo_class.argument_selector_list))
-						}
 					}
 					.has, .host, .is_, .where, .not_ {
 						s.write_string(serialize_a_group_of_selectors(pseudo_class.argument_selector_list))
@@ -2208,7 +2222,7 @@ fn parse_simple_selector(text string, start int) ParsedSimpleSelector {
 	if ch == `:` {
 		return parse_pseudo_selector(text, start)
 	}
-	if ch == `*` || ch == `|` || is_ident_start_byte(ch) {
+	if ch == `*` || ch == `|` || ch == `\\` || is_ident_start_byte(ch) {
 		return parse_type_or_universal_selector(text, start)
 	}
 	return ParsedSimpleSelector{
@@ -2427,7 +2441,11 @@ fn parse_attribute_value_and_case_suffix(text string) (string, AttributeCaseType
 	if !is_valid_selector_identifier(value_text) {
 		return '', AttributeCaseType.default_match, false
 	}
-	return value_text, case_type, true
+	decoded, consumed := parse_identifier(value_text, 0)
+	if consumed != value_text.len {
+		return '', AttributeCaseType.default_match, false
+	}
+	return decoded, case_type, true
 }
 
 fn parse_pseudo_selector(text string, start int) ParsedSimpleSelector {
@@ -2483,9 +2501,14 @@ fn parse_pseudo_element_selector(name string, argument string, is_function bool)
 	} else if !pseudo_element_valid_as_identifier(pseudo_element) {
 		return invalid_simple_selector('::${name}')
 	}
+	is_aliased_pseudo := aliased_pseudo_element_from_string(name) != .unknown
 	mut selector := PseudoElementSelector{
 		type_: pseudo_element
-		name: if pseudo_element == .unknown_webkit { name } else { '' }
+		name: if pseudo_element == .unknown_webkit || is_aliased_pseudo {
+			name.to_lower()
+		} else {
+			''
+		}
 	}
 	if is_function {
 		match pseudo_element {
@@ -3716,6 +3739,53 @@ fn split_selector_whitespace(text string) []string {
 	return result
 }
 
+// https://drafts.csswg.org/css-syntax/#consume-escaped-code-point
+//
+// `start` is the index just past the reverse solidus. Returns the escape's
+// decoded text and the index just past the sequence. This layer parses
+// selectors from text rather than from tokens, so the numeric form has to be
+// decoded here or `\\31 23` never becomes the identifier `123`.
+fn consume_selector_escaped_code_point(text string, start int) (string, int) {
+	mut i := start
+	mut digits := ''
+	for i < text.len && digits.len < 6 && is_ascii_hex_digit_byte(text[i]) {
+		digits += text[i].ascii_str()
+		i++
+	}
+	if digits.len > 0 {
+		// If the next input code point is whitespace, consume it as well.
+		if i < text.len && is_ascii_whitespace_byte(text[i]) {
+			i++
+		}
+		value := strconv.parse_uint(digits, 16, 32) or { 0 }
+		// A zero, surrogate, or out-of-range code point becomes U+FFFD.
+		if value == 0 || value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff) {
+			return '\ufffd', i
+		}
+		return rune(value).str(), i
+	}
+	// EOF is a parse error; return U+FFFD.
+	if i >= text.len {
+		return '\ufffd', i
+	}
+	// Anything else: the code point itself, which may be multi-byte.
+	mut end := i + 1
+	for end < text.len && (text[end] & 0xc0) == 0x80 {
+		end++
+	}
+	return text[i..end], end
+}
+
+fn is_ascii_hex_digit_byte(ch u8) bool {
+	return (ch >= `0` && ch <= `9`) || (ch >= `a` && ch <= `f`) || (ch >= `A` && ch <= `F`)
+}
+
+// Skip one escape sequence, returning the index just past it.
+fn skip_selector_escaped_code_point(text string, start int) int {
+	_, next := consume_selector_escaped_code_point(text, start)
+	return next
+}
+
 fn parse_identifier(text string, start int) (string, int) {
 	mut i := start
 	mut builder := strings.new_builder(16)
@@ -3727,8 +3797,9 @@ fn parse_identifier(text string, start int) (string, int) {
 			continue
 		}
 		if ch == `\\` && i + 1 < text.len {
-			builder.write_u8(text[i + 1])
-			i += 2
+			decoded, next := consume_selector_escaped_code_point(text, i + 1)
+			builder.write_string(decoded)
+			i = next
 			continue
 		}
 		break
@@ -3825,6 +3896,11 @@ fn last_top_level_whitespace_index(text string) ?int {
 			i++
 			continue
 		}
+		if ch == `\\` && i + 1 < text.len {
+			// The whitespace that terminates a numeric escape belongs to it.
+			i = skip_selector_escaped_code_point(text, i + 1)
+			continue
+		}
 		if ch == `"` || ch == `'` {
 			quote = ch
 		} else if is_ascii_whitespace_byte(ch) {
@@ -3856,7 +3932,7 @@ fn is_valid_selector_identifier(text string) bool {
 		if i + 1 >= text.len {
 			return false
 		}
-		i += 2
+		i = skip_selector_escaped_code_point(text, i + 1)
 	} else {
 		if i >= text.len || !is_ident_start_byte(text[i]) || (text[i] >= `0` && text[i] <= `9`) {
 			return false
@@ -3869,7 +3945,7 @@ fn is_valid_selector_identifier(text string) bool {
 			continue
 		}
 		if text[i] == `\\` && i + 1 < text.len {
-			i += 2
+			i = skip_selector_escaped_code_point(text, i + 1)
 			continue
 		}
 		return false

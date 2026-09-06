@@ -2523,7 +2523,7 @@ fn (mut parser RuleSelectorParser) parse_a_selector_list(mut tokens ParserTokenS
 	for {
 		selector_parts :=
 			parser.consume_a_list_of_component_values(mut tokens, TokenType.comma, .no)
-		selector_text := parser_component_values_to_string(selector_parts).trim_space()
+		selector_text := parser_selector_prelude_to_string(selector_parts).trim_space()
 		if selector_text.len == 0 {
 			if parsing_mode == .forgiving {
 				selectors.selectors << selector_from_text('')
@@ -2628,6 +2628,60 @@ fn declaration_contains_a_curly_block_and_non_whitespace(declaration_value []Com
 		}
 	}
 	return false
+}
+
+// Reconstruct a selector prelude as text.
+//
+// `Token::to_string()` alone is not enough: it serializes a <number> from its
+// value, so the explicit `+` in `:nth-child(2n+1)` is lost and the selector
+// arrives as the invalid `:nth-child(2n1)`. Upstream never notices, because
+// `Parser::parse_a_selector_list()` consumes the component values directly
+// instead of rebuilding text. The original source text alone is not enough
+// either: it leaves escapes undecoded, so `[\61 =b]` would not match the `a`
+// attribute. Numeric tokens cannot contain escapes and identifier-like tokens
+// cannot carry a sign, so take each from the side that preserves it.
+fn parser_selector_prelude_to_string(values []ComponentValue) string {
+	mut builder := ''
+	for value in values {
+		builder += parser_selector_prelude_component_to_string(value)
+	}
+	return builder
+}
+
+fn parser_selector_prelude_component_to_string(value ComponentValue) string {
+	match value.value {
+		Token {
+			token := value.value as Token
+			if token.type_ in [TokenType.number, .percentage, .dimension] {
+				original := token.original_source_text()
+				if original.len > 0 {
+					return original
+				}
+			}
+			return token.to_string()
+		}
+		SimpleBlock {
+			block := value.value as SimpleBlock
+			mut builder := block.token.bracket_string()
+			for item in block.value {
+				builder += parser_selector_prelude_component_to_string(item)
+			}
+			builder += block.token.bracket_mirror_string()
+			return builder
+		}
+		Function {
+			function := value.value as Function
+			mut builder := serialize_an_identifier(function.name) + '('
+			for item in function.value {
+				builder += parser_selector_prelude_component_to_string(item)
+			}
+			builder += ')'
+			return builder
+		}
+		else {
+			return value.to_string()
+		}
+	}
 }
 
 fn parser_component_values_to_string(values []ComponentValue) string {

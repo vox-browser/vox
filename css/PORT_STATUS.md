@@ -379,3 +379,38 @@ corrected four specified-value divergences:
 - `ShorthandStyleValue::serialize()` collapses `white-space` back to `normal`,
   `pre`, `pre-wrap` or `pre-line` when `white-space-trim` is `none` and the
   collapse/wrap pair matches; the port serialized the expanded longhands.
+
+A third differential run of 222 generated selectors, read back through
+`CSSStyleRule.selectorText`, corrected five more divergences:
+
+- `Token::to_string()` serializes a `<number>` from its value, so it drops the
+  explicit `+` in `:nth-child(2n+1)`. Upstream never notices, because
+  `Parser::parse_a_selector_list()` consumes the component values directly; this
+  parser rebuilds the prelude as text, so it now takes numeric tokens from their
+  original source text while identifier-like tokens keep their normalized
+  serialization. Every `An+B` form with a positive offset - `:nth-child(2n+1)`,
+  `:nth-child(-n+3)`, `:nth-child(n+1)`, `:nth-child(0n+5)` - had been rejected
+  outright.
+- A type or universal selector serializes a namespace prefix only for a named
+  namespace or the null namespace, so `*|div` is `div` and `*|*` is `*`. Only an
+  attribute selector keeps the `*|` prefix.
+- The `ANPlusBOf` parameter type serializes as the `<an+b>` value alone, so
+  `:nth-child(2n of .a)` is `:nth-child(2n)`.
+- `Parser::parse_pseudo_element_selector()` records the authored spelling of an
+  aliased pseudo-element, so `::-webkit-progress-bar` round-trips instead of
+  collapsing to `::slider-track`. The alias table is now separate from the
+  canonical one, as `aliased_pseudo_element_from_string()` is upstream.
+- Selectors are parsed from text here, so "consume an escaped code point" is
+  implemented for the numeric form: `\31 23` is the identifier `123`, and the
+  whitespace that terminates the escape belongs to it. A simple selector may also
+  begin with an escape, and an unquoted attribute value decodes its escapes.
+
+KNOWN DEVIATION: upstream's `serialize_an_identifier()` appends into a
+caller-supplied `StringBuilder` and applies its "first character" and "second
+character" tests to that builder's length rather than to a position within the
+identifier. When a caller has already written a prefix - the `.` of a class
+selector, the `#` of an ID selector - those tests never fire, so upstream emits
+`.123` for `.\31 23`, which does not re-parse to the same selector. This
+implementation follows the spec text and escapes the leading digit, exactly as
+it declines to reproduce the `serialize_a_number()` scientific-notation bug
+above.

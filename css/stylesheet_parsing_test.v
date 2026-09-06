@@ -498,3 +498,87 @@ fn test_nested_selector_absolutization_rewrites_typed_tree() {
 	assert !absolutized.contains_the_nesting_selector()
 	assert absolutized.serialize().contains('.parent')
 }
+
+fn selector_text_of(selector string) ?string {
+	rules := parse_rules('${selector} {}')
+	if rules.len != 1 {
+		return none
+	}
+	return rules[0].selector_text()
+}
+
+// Token::to_string() serializes a <number> from its value, so it drops the
+// explicit `+` in `:nth-child(2n+1)`. Upstream never notices, because
+// Parser::parse_a_selector_list() consumes the component values directly rather
+// than rebuilding the prelude as text; this parser does rebuild it, so the
+// numeric tokens have to come from their original source text.
+fn test_an_plus_b_keeps_an_explicit_plus_sign() {
+	assert selector_text_of(':nth-child(2n+1)')? == ':nth-child(2n+1)'
+	assert selector_text_of(':nth-child(2n +1)')? == ':nth-child(2n+1)'
+	assert selector_text_of(':nth-child( 2n+1 )')? == ':nth-child(2n+1)'
+	assert selector_text_of(':nth-child(+2n+1)')? == ':nth-child(2n+1)'
+	assert selector_text_of(':nth-child(-n+3)')? == ':nth-child(-n+3)'
+	assert selector_text_of(':nth-child(n+1)')? == ':nth-child(n+1)'
+	assert selector_text_of(':nth-last-of-type(-2n+3)')? == ':nth-last-of-type(-2n+3)'
+	// The An+B value is normalized on the way out.
+	assert selector_text_of(':nth-child(3n+0)')? == ':nth-child(3n)'
+	assert selector_text_of(':nth-child(0n+5)')? == ':nth-child(5)'
+	assert selector_text_of(':nth-child(-1n+2)')? == ':nth-child(-n+2)'
+	assert selector_text_of(':nth-child(2N+1)')? == ':nth-child(2n+1)'
+	// Negative offsets were already reaching the parser intact.
+	assert selector_text_of(':nth-child(2n-1)')? == ':nth-child(2n-1)'
+	// Identifier escapes still decode, which the original source text would not.
+	assert selector_text_of('[\\61 =b]')? == '[a="b"]'
+}
+
+// Selector::SimpleSelector::serialize() emits a namespace prefix only for a
+// named namespace or the null namespace. Unlike an attribute selector, the
+// any-namespace prefix of a type or universal selector is dropped.
+fn test_any_namespace_prefix_is_dropped_for_type_selectors() {
+	assert selector_text_of('*|div')? == 'div'
+	assert selector_text_of('*|*')? == '*'
+	assert selector_text_of('|div')? == '|div'
+	assert selector_text_of('div')? == 'div'
+	// An attribute selector keeps it.
+	assert selector_text_of('[*|a]')? == '[*|a]'
+	assert selector_text_of('[|a]')? == '[a]'
+}
+
+// Both the ANPlusB and ANPlusBOf parameter types serialize as "the result of
+// serializing the value using the rules to serialize an <an+b> value", so the
+// `of S` argument does not appear.
+fn test_nth_child_of_selector_is_not_serialized() {
+	assert selector_text_of(':nth-child(2n of .a)')? == ':nth-child(2n)'
+	assert selector_text_of(':nth-child(2n+1 of .a)')? == ':nth-child(2n+1)'
+	assert selector_text_of(':nth-last-child(3 of div, .b)')? == ':nth-last-child(3)'
+	// `of S` is only allowed on nth-child/nth-last-child.
+	assert selector_text_of(':nth-of-type(2n of .a)') == none
+}
+
+// Parser::parse_pseudo_element_selector() records the authored spelling of an
+// aliased pseudo-element, so it round-trips instead of collapsing to the
+// canonical name it aliases.
+fn test_aliased_pseudo_elements_keep_their_authored_name() {
+	assert selector_text_of('::-webkit-progress-bar')? == '::-webkit-progress-bar'
+	assert selector_text_of('::-webkit-meter-bar')? == '::-webkit-meter-bar'
+	assert selector_text_of('::-moz-placeholder')? == '::-moz-placeholder'
+	assert selector_text_of('::-WEBKIT-PROGRESS-BAR')? == '::-webkit-progress-bar'
+	// A canonical name serializes canonically.
+	assert selector_text_of('::slider-track')? == '::slider-track'
+	assert selector_text_of('::before')? == '::before'
+	assert selector_text_of('::BEFORE')? == '::before'
+}
+
+// A selector is parsed from text here, so "consume an escaped code point" has to
+// decode the numeric form: `\31 23` is the identifier `123`, and the whitespace
+// that terminates the escape belongs to it rather than separating tokens.
+fn test_numeric_escapes_decode_in_selectors() {
+	assert selector_text_of('\\31 23')? == '\\31 23'
+	assert selector_text_of('[a=\\31 23]')? == '[a="123"]'
+	assert selector_text_of('[a=\\31 23 i]')? == '[a="123" i]'
+	assert selector_text_of('.\\41 BC')? == '.ABC'
+	assert selector_text_of('.\\000041')? == '.A'
+	// Single-character escapes keep working.
+	assert selector_text_of('.a\\ b')? == '.a\\ b'
+	assert selector_text_of('.\\@x')? == '.\\@x'
+}
