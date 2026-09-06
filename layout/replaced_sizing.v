@@ -67,7 +67,12 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 			height = CSSPixels.new(150)
 		}
 	} else if specified_block := specified_height {
-		height = specified_block
+		// tentative_width_for_replaced_element() transfers the *used* height,
+		// and compute_height_for_replaced_element() has already applied its
+		// max-height and min-height steps by then.
+		height = apply_replaced_axis_constraints(node, computed.size_value(.min_height),
+			computed.size_value(.max_height), specified_block, available_space.height,
+			box_model, false)
 		if intrinsic_ratio := ratio {
 			width = height.times_fraction(intrinsic_ratio)
 		} else if intrinsic_width := intrinsic.width {
@@ -122,11 +127,16 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 	// the preferred size.
 	if intrinsic_ratio := ratio {
 		if specified_width == none && specified_height == none {
-			return solve_replaced_size_constraint(box, width, height, intrinsic_ratio, available_space)
+			solved := solve_replaced_size_constraint(box, width, height, intrinsic_ratio,
+				available_space)
+			width = solved.width()
+			height = solved.height()
 		}
 	}
-	width = clamp_replaced_axis(node, computed.size_value(.min_width), computed.size_value(.max_width), width, available_space.width, box_model, true)
-	height = clamp_replaced_axis(node, computed.size_value(.min_height), computed.size_value(.max_height), height, available_space.height, box_model, false)
+	width = apply_replaced_axis_constraints(node, computed.size_value(.min_width), computed.size_value(.max_width),
+		width, available_space.width, box_model, true)
+	height = apply_replaced_axis_constraints(node, computed.size_value(.min_height), computed.size_value(.max_height),
+		height, available_space.height, box_model, false)
 	return CSSPixelSize.new(width, height)
 }
 
@@ -195,6 +205,37 @@ fn replaced_axis_constraints(node &Node, minimum css.Size, maximum css.Size, inp
 fn clamp_replaced_axis(node &Node, minimum css.Size, maximum css.Size, input CSSPixels, available_size AvailableSize, box_model ReplacedBoxModel, width bool) CSSPixels {
 	min_value, max_value := replaced_axis_constraints(node, minimum, maximum, input, available_size, box_model, width)
 	return css_pixels_max(min_value, css_pixels_min(input, max_value))
+}
+
+// Steps 2 and 3 of FormattingContext::compute_width_for_replaced_element() and
+// compute_height_for_replaced_element(). The constraint is *compared* against its
+// raw computed value, but the replacement size is produced by
+// tentative_width_for_replaced_element()/tentative_height_for_replaced_element(),
+// so it passes through the same `box-sizing` conversion as the preferred size.
+// With `box-sizing: border-box` the two differ, and a violated constraint is
+// therefore not the value the box ends up with.
+fn apply_replaced_axis_constraints(node &Node, minimum css.Size, maximum css.Size, input CSSPixels, available_size AvailableSize, box_model ReplacedBoxModel, width bool) CSSPixels {
+	basis := available_size.to_px_or_zero()
+	mut used := input
+	if !should_treat_replaced_max_as_none(maximum, available_size) {
+		if specified_max := resolve_layout_size(node, maximum, basis) {
+			if used.raw_value() > specified_max.raw_value() {
+				used = resolve_replaced_content_size(node, maximum, basis, box_model, width) or {
+					used
+				}
+			}
+		}
+	}
+	if !minimum.is_auto() {
+		if specified_min := resolve_layout_size(node, minimum, basis) {
+			if used.raw_value() < specified_min.raw_value() {
+				used = resolve_replaced_content_size(node, minimum, basis, box_model, width) or {
+					used
+				}
+			}
+		}
+	}
+	return used
 }
 
 // CSS 2.2 10.4 constraint-violation table. Replaced boxes with a preferred
@@ -436,9 +477,24 @@ fn compute_size_for_block_level_replaced_element_in_normal_flow(box &Box, box_st
 	// *used* content width through the aspect ratio, so a height that came from
 	// the ratio follows the converted width.
 	ratio := box.preferred_aspect_ratio() or { return CSSPixelSize.new(width, tentative.height()) }
-	computed_height := node.computed_values().size_value(.height)
-	height_came_from_the_ratio := computed_height.is_auto()
-		|| (computed_height.contains_percentage() && !available_space.height.is_definite())
+	computed := node.computed_values()
+	computed_width := computed.size_value(.width)
+	computed_height := computed.size_value(.height)
+	width_treated_as_auto := computed_width.is_auto()
+		|| (computed_width.contains_percentage() && !available_space.width.is_definite())
+	// should_treat_height_as_auto() answers `false` for a computed `auto` height
+	// once the box has a definite inline size and a preferred aspect ratio, which
+	// is exactly the state the caller is about to assign.
+	height_treated_as_auto := computed_height.contains_percentage()
+		&& !available_space.height.is_definite()
+	// tentative_height_for_replaced_element() takes the natural height when both
+	// axes are treated as automatic; only its next branch reads the used content
+	// width, so only that one has to follow the converted inline size.
+	intrinsic := box.auto_content_box_size()
+	takes_the_natural_height := width_treated_as_auto && height_treated_as_auto
+		&& intrinsic.height != none
+	height_came_from_the_ratio := (computed_height.is_auto() || height_treated_as_auto)
+		&& !takes_the_natural_height
 	if !height_came_from_the_ratio {
 		return CSSPixelSize.new(width, tentative.height())
 	}

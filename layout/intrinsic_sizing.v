@@ -753,11 +753,18 @@ fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, u
 		return none
 	}
 	if size.contains_percentage() && containing_block_height == none {
-		// An unresolved percentage block size is treated as auto. If the box
-		// has a preferred ratio, that automatic size is transferred from the
-		// already-resolved inline size.
+		// An unresolved percentage block size is treated as auto.
+		// BlockFormattingContext::resolve_used_height_if_treated_as_auto() then
+		// transfers it from the inline size only for a box that
+		// box_is_sized_as_replaced_element() selects; every other box takes its
+		// automatic content height. A ratio alone is not enough: with both axes
+		// automatic and no natural size the box is sized as an ordinary block.
 		if ratio := box.preferred_aspect_ratio() {
-			return used_values.content_width().divided_by_fraction(ratio).to_double()
+			available_space := AvailableSpace.new(AvailableSize.make_definite(used_values.content_width()),
+				AvailableSize.make_indefinite())
+			if box_is_sized_as_replaced_element(state, unsafe { &Node(node) }, available_space) {
+				return used_values.content_width().divided_by_fraction(ratio).to_double()
+			}
 		}
 		return none
 	}

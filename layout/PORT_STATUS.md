@@ -190,15 +190,27 @@ min-width clamps applied to that width so the used margins match, while the
 clamped width itself is discarded exactly as in step 4 of `compute_width()`.
 `solve_replaced_size_constraint()` now resolves its min/max constraints straight
 from the computed values, without the box-sizing conversion the preferred size
-receives, and runs only when both axes are automatic; a specified axis clamps
-each axis on its own through the tentative-size helpers. A generated 344-case
-matrix over aspect ratios, box sizing, specified axes, box-model edges, and
-min/max constraints across block, float, absolute, image, and floating-image
-contexts went from 127 differences against upstream to 16, with no case
-regressing. The remaining 16 are a separate constraint-ordering gap:
-`compute_width_for_replaced_element()` re-applies its max-width and min-width
-steps after the constraint table, and `compute_height_for_replaced_element()`
-clamps the block size before it is transferred through the ratio.
+receives, and runs only when both axes are automatic.
+Steps 2 and 3 of `compute_width_for_replaced_element()` and
+`compute_height_for_replaced_element()` are translated as written: the used size
+is *compared* against the raw computed constraint, but a violated constraint is
+replaced by the value `tentative_width_for_replaced_element()` /
+`tentative_height_for_replaced_element()` produces, which has passed through the
+same box-sizing conversion as the preferred size. Under `box-sizing: border-box`
+the two differ, so the constraint is not the size the box ends up with. Those
+steps also run after the constraint table, and the block size is clamped before
+`tentative_width_for_replaced_element()` transfers it through the ratio.
+An unresolved percentage block size is treated as automatic, and only a box that
+`box_is_sized_as_replaced_element()` selects transfers it from the inline size; a
+box with two automatic axes takes its automatic content height, as
+`resolve_used_height_if_treated_as_auto()` does.
+`tentative_height_for_replaced_element()` also keeps its branch order: a natural
+height wins over the ratio when both axes are treated as automatic, while a
+computed `auto` height alongside a definite inline size is not treated as
+automatic and does follow the ratio.
+A generated 344-case matrix over aspect ratios, box sizing, specified axes,
+box-model edges, and min/max constraints across block, float, absolute, image,
+and floating-image contexts went from 127 differences against upstream to 0.
 
 The upstream Layout regression corpus is exercised directly by
 `tools/layout_corpus.v`. It discovers every HTML or SVG input with a matching
