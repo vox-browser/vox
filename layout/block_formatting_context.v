@@ -449,13 +449,20 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	place_block_level_element_in_normal_flow_vertically(mut box_state, y + margin_top)
 
 	box_as_node := unsafe { &Node(box) }
-	if box_as_node.is_replaced_box() {
+	available_space := AvailableSpace.new(AvailableSize.make_definite(css_px(containing_block_width)),
+		if height := containing_block_height {
+		AvailableSize.make_definite(css_px(height))
+	} else {
+		AvailableSize.make_indefinite()
+	})
+	// BlockFormattingContext::compute_width() sizes every box that
+	// box_is_sized_as_replaced_element() selects - which includes a non-replaced
+	// box with a preferred aspect ratio and one specified axis - through the
+	// replaced-element algorithm.
+	if box_is_sized_as_replaced_element(state, box_as_node, available_space) {
 		replaced_box := box_as_node.as_box() or { panic('replaced node must be a box') }
-		replaced_size := compute_replaced_size(replaced_box, AvailableSpace.new(AvailableSize.make_definite(css_px(containing_block_width)), if height := containing_block_height {
-			AvailableSize.make_definite(css_px(height))
-		} else {
-			AvailableSize.make_indefinite()
-		}))
+		replaced_size := compute_size_for_block_level_replaced_element_in_normal_flow(replaced_box,
+			box_state, available_space)
 		box_state.set_content_width(replaced_size.width())
 		box_state.set_content_height(replaced_size.height())
 		box_state.set_has_definite_width(true)
@@ -463,7 +470,9 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		// Block-level replaced boxes use their independently computed width as
 		// the input to the CSS 2.1 block width equation so auto margins are
 		// resolved exactly like non-replaced blocks.
-		resolve_auto_margins(computed, mut box_state, containing_block_width, replaced_size.width().to_double(), block_container.computed_values().direction())
+		margin_width := replaced_width_for_margin_resolution(mut state, replaced_box, box_state,
+			available_space.width, replaced_size.width())
+		resolve_auto_margins(computed, mut box_state, containing_block_width, margin_width.to_double(), block_container.computed_values().direction())
 	} else if box_as_node.is_table_wrapper() {
 		wrapper_width := compute_table_wrapper_content_width(mut state, box_as_node, mut box_state, css_px(containing_block_width))
 		box_state.set_content_width(wrapper_width)
@@ -915,10 +924,29 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 	mut container_state := state.get_mutable(block_container)
 	initial_state.set_containing_block_used_values(container_state)
 	resolve_box_model_edges(styled.computed_values(), mut initial_state, container_width.to_double())
-	mut forced_width := if box.is_table_wrapper() {
-		?CSSPixels(compute_table_wrapper_content_width(mut state, box, mut initial_state, container_width))
+	float_available_space := AvailableSpace.new(AvailableSize.make_definite(container_width),
+		if height := container_height {
+		AvailableSize.make_definite(height)
 	} else {
-		resolve_layout_content_size(box, styled.computed_values().size_value(.width), container_width, initial_state, true)
+		AvailableSize.make_indefinite()
+	})
+	// BlockFormattingContext::compute_width() runs
+	// compute_width_for_block_level_replaced_element_in_normal_flow() for a
+	// replaced-sized float and returns before the shrink-to-fit path.
+	mut forced_height := ?CSSPixels(none)
+	mut forced_width := ?CSSPixels(none)
+	if box.is_table_wrapper() {
+		forced_width = compute_table_wrapper_content_width(mut state, box, mut initial_state,
+			container_width)
+	} else if box_is_sized_as_replaced_element(state, box, float_available_space) {
+		replaced_box := box.as_box() or { panic('replaced node must be a box') }
+		replaced_size := compute_size_for_block_level_replaced_element_in_normal_flow(replaced_box,
+			initial_state, float_available_space)
+		forced_width = replaced_size.width()
+		forced_height = replaced_size.height()
+	} else {
+		forced_width = resolve_layout_content_size(box, styled.computed_values().size_value(.width),
+			container_width, initial_state, true)
 	}
 	// Replaced floats are sized by the replaced-element algorithm. Their
 	// intrinsic width must not be converted into a forced shrink-to-fit width,
@@ -929,7 +957,7 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 			forced_width = calculate_fit_content_width(mut state, box_as_box, AvailableSize.make_definite(container_width))
 		}
 	}
-	mut box_state := layout_independent_child(mut state, box, mut container_state, container_width, container_height, forced_width, none)
+	mut box_state := layout_independent_child(mut state, box, mut container_state, container_width, container_height, forced_width, forced_height)
 	container_root_offset := container_state.cumulative_offset()
 	direction := block_container.computed_values().direction()
 	side := styled.computed_values().float_()

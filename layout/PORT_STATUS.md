@@ -168,6 +168,38 @@ distribution, fixed-minimum/max-content tracks, flexible-row automatic
 minimums, max-height-limited intrinsic row contributions, maximum-size retry,
 and definite-space auto-height row maximization.
 
+Boxes with a preferred aspect ratio now enter the replaced-element sizing
+algorithm through a translated `box_is_sized_as_replaced_element()`, together
+with `should_treat_width_as_auto()` and `should_treat_height_as_auto()`. A
+non-replaced box with a ratio and one specified axis therefore transfers its
+automatic inline size through that ratio rather than stretching to its
+containing block, on the normal-flow block, floating, and absolutely positioned
+paths alike. Two axes that are both automatic keep the ordinary block sizing the
+source falls back to.
+`compute_width_for_block_level_replaced_element_in_normal_flow()` is translated
+with its ordering intact: the replaced algorithm runs before the used inline
+padding is assigned, so `box-sizing: border-box` is resolved once against the
+still-zero padding, and the resulting content width is converted a second time
+by `calculate_inner_width()` with the real padding in place. A block-level or
+floating replaced box with `box-sizing: border-box` really does lose its inline
+border and padding twice; an inline-block, flex item, or grid item does not,
+because it never enters that function. A ratio-derived height follows the
+converted inline size, as `tentative_height_for_replaced_element()` reads the
+used content width. The width equation still re-runs with the max-width and
+min-width clamps applied to that width so the used margins match, while the
+clamped width itself is discarded exactly as in step 4 of `compute_width()`.
+`solve_replaced_size_constraint()` now resolves its min/max constraints straight
+from the computed values, without the box-sizing conversion the preferred size
+receives, and runs only when both axes are automatic; a specified axis clamps
+each axis on its own through the tentative-size helpers. A generated 344-case
+matrix over aspect ratios, box sizing, specified axes, box-model edges, and
+min/max constraints across block, float, absolute, image, and floating-image
+contexts went from 127 differences against upstream to 16, with no case
+regressing. The remaining 16 are a separate constraint-ordering gap:
+`compute_width_for_replaced_element()` re-applies its max-width and min-width
+steps after the constraint table, and `compute_height_for_replaced_element()`
+clamps the block size before it is transferred through the ratio.
+
 The upstream Layout regression corpus is exercised directly by
 `tools/layout_corpus.v`. It discovers every HTML or SVG input with a matching
 expected snapshot and compares all three upstream sections exactly: layout tree,

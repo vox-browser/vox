@@ -144,10 +144,15 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 		containing_height, box_state, false)
 	preferred_width := computed.size_value(.width)
 	preferred_height := computed.size_value(.height)
-	if box.is_replaced_box() {
+	// FormattingContext::compute_width_for_absolutely_positioned_element() and
+	// compute_height_for_absolutely_positioned_element() both select the replaced
+	// algorithm through box_is_sized_as_replaced_element(), so a non-replaced box
+	// with a preferred aspect ratio and one specified axis is sized by it too.
+	abspos_available_space := AvailableSpace.new(AvailableSize.make_definite(containing_width),
+		AvailableSize.make_definite(containing_height))
+	if box_is_sized_as_replaced_element(state, box, abspos_available_space) {
 		replaced := box.as_box() or { return }
-		size := compute_replaced_size(replaced, AvailableSpace.new(AvailableSize.make_definite(containing_width),
-			AvailableSize.make_definite(containing_height)))
+		size := compute_replaced_size(replaced, abspos_available_space)
 		if forced_width == none {
 			forced_width = size.width()
 		}

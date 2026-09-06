@@ -2519,3 +2519,121 @@ fn test_independent_formatting_context_avoids_preceding_float() {
 	assert independent.offset.y().to_double() == 0
 	assert independent.content_width().to_double() == 120
 }
+
+// FormattingContext::box_is_sized_as_replaced_element(): a non-replaced box with
+// a preferred aspect ratio and a definite block size resolves its automatic
+// inline size through the ratio instead of stretching to the containing block.
+fn test_aspect_ratio_box_with_definite_height_transfers_through_the_ratio() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { width:200px }
+		#box { aspect-ratio:2/1; height:30px }
+	</style><div id="outer"><div id="box"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	box := used_for_id(result, 'box')
+	assert box.content_width().to_double() == 60
+	assert box.content_height().to_double() == 30
+}
+
+// The same selection applies to floats and to absolutely positioned boxes,
+// which upstream routes through compute_width_for_block_level_replaced_element_in_normal_flow()
+// and compute_width_for_absolutely_positioned_replaced_element() respectively.
+fn test_aspect_ratio_transfer_applies_to_floats_and_absolute_positioning() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { width:200px; height:120px; position:relative }
+		#floated { float:left; aspect-ratio:2/1; height:30px }
+		#positioned { position:absolute; aspect-ratio:2/1; height:30px }
+	</style><div id="outer"><div id="floated"></div><div id="positioned"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	floated := used_for_id(result, 'floated')
+	assert floated.content_width().to_double() == 60
+	assert floated.content_height().to_double() == 30
+	positioned := used_for_id(result, 'positioned')
+	assert positioned.content_width().to_double() == 60
+	assert positioned.content_height().to_double() == 30
+}
+
+// BlockFormattingContext::compute_width_for_block_level_replaced_element_in_normal_flow()
+// converts the replaced content width through calculate_inner_width() a second
+// time, so a block-level `box-sizing: border-box` replaced box loses its inline
+// border and padding twice. The first conversion happens before the used inline
+// padding is assigned, so it only subtracts the borders.
+fn test_block_level_replaced_border_box_width_is_converted_twice() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { width:200px }
+		#box { aspect-ratio:2/1; box-sizing:border-box; width:80px; padding:5px; border:3px solid }
+	</style><div id="outer"><div id="box"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	box := used_for_id(result, 'box')
+	// 80 - 3 - 3 = 74 with the still-zero used padding, then 74 - 3 - 5 - 3 - 5 = 58.
+	assert box.content_width().to_double() == 58
+	// The ratio-derived height follows the converted inline size.
+	assert box.content_height().to_double() == 29
+}
+
+// An inline-block is sized by the inline formatting context and never enters
+// that block-level path, so its border-box width is converted only once.
+fn test_inline_block_replaced_border_box_width_is_converted_once() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { width:200px; font-size:0 }
+		#box { display:inline-block; aspect-ratio:2/1; box-sizing:border-box; width:80px; padding:5px; border:3px solid }
+	</style><div id="outer"><div id="box"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	box := used_for_id(result, 'box')
+	assert box.content_width().to_double() == 64
+	assert box.content_height().to_double() == 32
+}
+
+// A box whose inline and block sizes are both automatic is sized as a normal
+// block, not as a replaced element, even with a preferred aspect ratio. Its
+// stretch-fit width is measured before the used inline padding exists, so the
+// padding does not shrink it.
+fn test_aspect_ratio_box_with_two_automatic_axes_uses_the_stretch_fit_width() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { width:200px }
+		#box { aspect-ratio:2/1; padding:5px }
+	</style><div id="outer"><div id="box"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	box := used_for_id(result, 'box')
+	assert box.content_width().to_double() == 200
+	assert box.content_height().to_double() == 100
+}
+
+// FormattingContext::solve_replaced_size_constraint() resolves min/max straight
+// from the computed values, without the box-sizing conversion the preferred size
+// receives.
+fn test_replaced_size_constraints_ignore_box_sizing() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { width:200px }
+		#box { aspect-ratio:2/1; box-sizing:border-box; padding:5px; border:3px solid; min-width:20px; max-width:150px }
+	</style><div id="outer"><div id="box"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	box := used_for_id(result, 'box')
+	// The constraint table clamps the stretch-fit 200 to the unconverted 150,
+	// and only the final calculate_inner_width() subtracts the 16px of edges.
+	assert box.content_width().to_double() == 134
+	assert box.content_height().to_double() == 67
+}
+
+// With one axis specified the source clamps each axis on its own through
+// tentative_width_for_replaced_element(), so the constraint passes through the
+// same box-sizing conversion as the preferred size - twice, on this path.
+fn test_specified_axis_clamps_each_axis_through_the_box_sizing_conversion() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { width:200px }
+		#box { aspect-ratio:1/3; box-sizing:border-box; height:30px; padding:5px; border:3px solid; min-width:20px; max-width:150px }
+	</style><div id="outer"><div id="box"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	box := used_for_id(result, 'box')
+	// min-width 20 becomes 14 with zero used padding, then 14 - 16 clamps to 0.
+	assert box.content_width().to_double() == 0
+	assert box.content_height().to_double() == 14
+	// The margin equation still re-runs with the clamped 4px width.
+	assert box.margin_right.to_double() == 180
+}
