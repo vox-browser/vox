@@ -1917,7 +1917,16 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			// No Popover state and whose popover visibility state is showing.
 			return element.has_attribute('popover') && element.in_top_layer()
 		}
-		.valid, .invalid_state, .user_valid, .user_invalid, .required, .optional, .default_ {
+		.required {
+			return element.matches_required_pseudo_class()
+		}
+		.optional {
+			return element.matches_optional_pseudo_class()
+		}
+		.default_ {
+			return element.matches_default_pseudo_class()
+		}
+		.valid, .invalid_state, .user_valid, .user_invalid {
 			// FIXME: Requires form-associated element constraint-validation hooks.
 			return false
 		}
@@ -2826,11 +2835,21 @@ fn selector_list_from_text(text string, relative bool) SelectorList {
 		if trimmed.len == 0 {
 			continue
 		}
-		if relative && !starts_with_combinator(trimmed) {
-			list.selectors << selector_from_text(' ${trimmed}')
-		} else {
-			list.selectors << selector_from_text(trimmed)
+		mut selector := selector_from_text(trimmed)
+		if relative {
+			// Parser::parse_complex_selector(): parse_compound_selector() leaves the
+			// leading combinator as Descendant, and only SelectorType::Standalone
+			// resets it to None. A relative selector written without an explicit
+			// combinator - `:has(.a)` - is therefore a *descendant* relative
+			// selector; leaving it as no-combinator made it match nothing.
+			compound_selectors := selector.compound_selectors()
+			if compound_selectors.len > 0 && compound_selectors[0].combinator == .no_combinator {
+				mut adapted := compound_selectors.clone()
+				adapted[0].combinator = .descendant
+				selector = selector_from_compound_selectors(adapted)
+			}
 		}
+		list.selectors << selector
 	}
 	return list
 }

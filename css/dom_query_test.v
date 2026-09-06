@@ -128,3 +128,54 @@ fn test_named_namespace_detection_recurses_into_pseudo_class_selector_lists() {
 	}
 	assert !selector_list_contains_named_namespace(wildcard)
 }
+
+fn build_has_tree(doc &dom.Document) &dom.Node {
+	// root > outer(div) > inner(section) > paragraph(p.active), and root > span.
+	// querySelectorAll() searches descendants only, so `root` itself never matches.
+	mut root := doc.create_element('div') or { panic('create failed') }
+	root.set_attribute_value('id', 'root')
+	mut outer := doc.create_element('div') or { panic('create failed') }
+	outer.set_attribute_value('id', 'outer')
+	mut inner := doc.create_element('section') or { panic('create failed') }
+	inner.set_attribute_value('id', 'inner')
+	mut paragraph := doc.create_element('p') or { panic('create failed') }
+	paragraph.set_attribute_value('id', 'paragraph')
+	paragraph.set_attribute_value('class', 'active')
+	mut span := doc.create_element('span') or { panic('create failed') }
+	span.set_attribute_value('id', 'span')
+	mut inner_node := inner.as_node()
+	inner_node.append_child(paragraph.as_node()) or { panic('append failed') }
+	mut outer_node := outer.as_node()
+	outer_node.append_child(inner_node) or { panic('append failed') }
+	mut root_node := root.as_node()
+	root_node.append_child(outer_node) or { panic('append failed') }
+	root_node.append_child(span.as_node()) or { panic('append failed') }
+	return root_node
+}
+
+fn ids_of(elements []&dom.Element) []string {
+	mut ids := []string{}
+	for element in elements {
+		ids << element.get_attribute_value('id')
+	}
+	return ids
+}
+
+// Parser::parse_complex_selector(): parse_compound_selector() leaves the leading
+// combinator as Descendant and only SelectorType::Standalone resets it to None,
+// so `:has(.a)` is a *descendant* relative selector. Leaving it as
+// no-combinator made every `:has()` written without an explicit combinator match
+// nothing.
+fn test_relative_selectors_default_to_the_descendant_combinator() {
+	doc := dom.Document.create(dom.url_about_blank())
+	root := build_has_tree(doc)
+	assert ids_of(query_selector_all(root, ':has(p)')) == ['outer', 'inner']
+	assert ids_of(query_selector_all(root, ':has(.active)')) == ['outer', 'inner']
+	assert ids_of(query_selector_all(root, 'div:has(p)')) == ['outer']
+	assert ids_of(query_selector_all(root, 'section:has(.active)')) == ['inner']
+	assert ids_of(query_selector_all(root, ':has(p, span)')) == ['outer', 'inner']
+	// An explicit combinator keeps working.
+	assert ids_of(query_selector_all(root, ':has(> p)')) == ['inner']
+	assert ids_of(query_selector_all(root, ':has(> section)')) == ['outer']
+	assert ids_of(query_selector_all(root, ':not(:has(p))')) == ['paragraph', 'span']
+}

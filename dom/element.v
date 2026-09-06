@@ -4432,6 +4432,71 @@ pub fn (e &Element) matches_unchecked_pseudo_class() bool {
 	return e.local_name() == 'option' && !e.has_attribute('selected')
 }
 
+// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-required
+//
+// The `required` attribute only *applies* to some input types, so an input of a
+// type it does not apply to is neither required nor optional.
+fn input_required_applies(e &Element) bool {
+	return to_ascii_lowercase(e.get_attribute_value('type')) in ['', 'text', 'search', 'tel',
+		'url', 'email', 'password', 'date', 'month', 'week', 'time', 'datetime-local', 'number',
+		'checkbox', 'radio', 'file']
+}
+
+pub fn (e &Element) matches_required_pseudo_class() bool {
+	if !e.is_html_element() {
+		return false
+	}
+	// - input elements that are required
+	if e.local_name() == 'input' {
+		return input_required_applies(e) && e.has_attribute('required')
+	}
+	// - select and textarea elements that have a required attribute
+	if e.local_name() in ['select', 'textarea'] {
+		return e.has_attribute('required')
+	}
+	return false
+}
+
+// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-optional
+pub fn (e &Element) matches_optional_pseudo_class() bool {
+	if !e.is_html_element() {
+		return false
+	}
+	// - input elements to which the required attribute applies that are not required
+	if e.local_name() == 'input' {
+		if input_required_applies(e) && !e.has_attribute('required') {
+			return true
+		}
+		// AD-HOC: Chromium and WebKit also match for hidden inputs (and WPT expects
+		// this). See https://github.com/whatwg/html/issues/11273
+		return to_ascii_lowercase(e.get_attribute_value('type')) == 'hidden'
+	}
+	// - select and textarea elements that do not have a required attribute
+	if e.local_name() in ['select', 'textarea'] {
+		return !e.has_attribute('required')
+	}
+	return false
+}
+
+// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-default
+pub fn (e &Element) matches_default_pseudo_class() bool {
+	if !e.is_html_element() {
+		return false
+	}
+	// - input elements to which the checked attribute applies and that have a checked attribute
+	if e.local_name() == 'input' {
+		return to_ascii_lowercase(e.get_attribute_value('type')) in ['checkbox', 'radio']
+			&& e.has_attribute('checked')
+	}
+	// - option elements that have a selected attribute
+	if e.local_name() == 'option' {
+		return e.has_attribute('selected')
+	}
+	// FIXME: Submit buttons that are default buttons of their form owner also
+	//        match; that needs the form owner's default-button lookup.
+	return false
+}
+
 pub fn (e &Element) matches_placeholder_shown_pseudo_class() bool {
 	if !e.is_html_element() || !e.has_attribute('placeholder') {
 		return false

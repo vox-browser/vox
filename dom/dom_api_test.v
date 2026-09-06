@@ -635,3 +635,61 @@ fn test_document_environment_variables_match_upstream_host_defaults() {
 	}
 	assert document.environment_variable_value(.viewport_segment_width) == none
 }
+
+// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-required
+// and #selector-optional and #selector-default. The `required` attribute only
+// *applies* to some input types, so an input of another type is neither
+// required nor optional.
+fn test_form_state_pseudo_classes() {
+	doc := Document.create(URL{'https://example.com/'})
+
+	mut text_input := doc.create_element_ns(html_ns, 'input') or { panic('${err}') }
+	text_input.set_attribute_value('type', 'text')
+	assert !text_input.matches_required_pseudo_class()
+	assert text_input.matches_optional_pseudo_class()
+	text_input.set_attribute_value('required', '')
+	assert text_input.matches_required_pseudo_class()
+	assert !text_input.matches_optional_pseudo_class()
+
+	// `required` does not apply to a button, so it is neither.
+	mut button_input := doc.create_element_ns(html_ns, 'input') or { panic('${err}') }
+	button_input.set_attribute_value('type', 'button')
+	button_input.set_attribute_value('required', '')
+	assert !button_input.matches_required_pseudo_class()
+	assert !button_input.matches_optional_pseudo_class()
+
+	// AD-HOC: a hidden input matches :optional, as Chromium and WebKit do.
+	mut hidden_input := doc.create_element_ns(html_ns, 'input') or { panic('${err}') }
+	hidden_input.set_attribute_value('type', 'hidden')
+	assert hidden_input.matches_optional_pseudo_class()
+
+	for name in ['select', 'textarea'] {
+		mut control := doc.create_element_ns(html_ns, name) or { panic('${err}') }
+		assert control.matches_optional_pseudo_class()
+		assert !control.matches_required_pseudo_class()
+		control.set_attribute_value('required', '')
+		assert control.matches_required_pseudo_class()
+		assert !control.matches_optional_pseudo_class()
+	}
+
+	assert !mk(doc, 'div').matches_required_pseudo_class()
+	assert !mk(doc, 'div').matches_optional_pseudo_class()
+
+	// :default matches a checked checkbox/radio and a selected option.
+	mut checkbox := doc.create_element_ns(html_ns, 'input') or { panic('${err}') }
+	checkbox.set_attribute_value('type', 'checkbox')
+	assert !checkbox.matches_default_pseudo_class()
+	checkbox.set_attribute_value('checked', '')
+	assert checkbox.matches_default_pseudo_class()
+
+	mut option := doc.create_element_ns(html_ns, 'option') or { panic('${err}') }
+	assert !option.matches_default_pseudo_class()
+	option.set_attribute_value('selected', '')
+	assert option.matches_default_pseudo_class()
+
+	// `checked` does not apply to a text input.
+	mut checked_text := doc.create_element_ns(html_ns, 'input') or { panic('${err}') }
+	checked_text.set_attribute_value('type', 'text')
+	checked_text.set_attribute_value('checked', '')
+	assert !checked_text.matches_default_pseudo_class()
+}

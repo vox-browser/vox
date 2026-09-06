@@ -460,7 +460,24 @@ two layout-side gaps that it depends on, both recorded in
 `layout/PORT_STATUS.md`: the solved insets of absolutely positioned boxes, and
 the used track sizes of grid containers.
 
-Across all six runs, 3,204 generated cases now agree with the upstream browser
+A seventh run left serialization behind for *matching*: 160 selectors run
+through `querySelectorAll()` against three documents, compared by the list of
+matched element ids. It corrected two gaps in the selector engine:
+
+- `Parser::parse_complex_selector()` leaves the leading combinator of a compound
+  as `Descendant` and only `SelectorType::Standalone` resets it to `None`, so a
+  relative selector written without an explicit combinator - `:has(.a)` - is a
+  *descendant* relative selector. The port left it as no-combinator, which
+  `matches_relative_selector()` rejects outright, so every `:has()` except the
+  `> `, `+ ` and `~ ` forms matched nothing.
+- `:required`, `:optional` and `:default` were stubbed out with the
+  constraint-validation FIXME even though none of them needs it: they are
+  structural checks over the `required`, `checked` and `selected` attributes,
+  with the `required`/`checked` "applies to" input-type lists deciding whether
+  an input participates at all. `:valid`, `:invalid`, `:user-valid` and
+  `:user-invalid` keep the FIXME, as they do need validity state.
+
+Across all seven runs, 3,364 generated cases now agree with the upstream browser
 apart from the deviation below.
 
 KNOWN DEVIATION: upstream's `serialize_an_identifier()` appends into a
