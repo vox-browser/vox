@@ -2803,6 +2803,25 @@ fn border_family_longhand_is_initial(id PropertyID, value StyleValue, mode Seria
 // initial value, in which case it is omitted. Returns none when the positional collapse doesn't
 // apply, and '' when a non-collapsible longhand (border-image) is non-initial — matching
 // upstream's empty serialization for that case.
+// Whether every longhand of a nested shorthand carries the same value, i.e.
+// ShorthandStyleValue::serialize()'s `all_longhands_same_value`.
+fn border_family_nested_shorthand_is_uniform(value StyleValue, mode SerializationMode) bool {
+	if value !is ShorthandStyleValue {
+		return true
+	}
+	nested := value as ShorthandStyleValue
+	if nested.values_.len < 2 {
+		return true
+	}
+	first := nested.values_[0].serialize(mode)
+	for longhand in nested.values_[1..] {
+		if longhand.serialize(mode) != first {
+			return false
+		}
+	}
+	return true
+}
+
 fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationMode) ?string {
 	if style_value.shorthand_ !in [PropertyID.border, .border_top, .border_right, .border_bottom,
 		.border_left, .border_block, .border_inline, .border_block_start, .border_block_end,
@@ -2815,6 +2834,14 @@ fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationM
 	// (`border-image` for `border`) is reset-only and must be initial.
 	if style_value.shorthand_ in [PropertyID.border, .border_block, .border_inline]
 		&& sub.len >= 3 && property_is_shorthand(sub[0]) {
+		// "`border` only has a reasonable value if all four sides are the same."
+		// A non-uniform width, style or colour serializes as the empty string, so
+		// the declaration block falls back to the nested shorthands.
+		for i in 0 .. 3 {
+			if !border_family_nested_shorthand_is_uniform(style_value.values_[i], mode) {
+				return ''
+			}
+		}
 		mut parts := []string{}
 		for i in 0 .. 3 {
 			if !border_family_longhand_is_initial(sub[i], style_value.values_[i], mode) {
@@ -2924,6 +2951,9 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	if s := style_value.serialize_white_space(mode) {
 		return s
 	}
+	if s := style_value.serialize_text_decoration(mode) {
+		return s
+	}
 	// Mirrors the upstream `default_serialize`: the remaining property-specific cases
 	// (font, background, grid, …) are not ported, so they use this default.
 	values := style_value.values_
@@ -2968,6 +2998,29 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	return builder.str()
 }
 
+// The rule here seems to be, only print what's different from the default value,
+// but if they're all default, print the line. The order is fixed - line,
+// thickness, style, colour - and is not the order the longhands are listed in.
+fn (style_value ShorthandStyleValue) serialize_text_decoration(mode SerializationMode) ?string {
+	if style_value.shorthand_ != .text_decoration {
+		return none
+	}
+	line := style_value.coordinating_longhand_value(.text_decoration_line) or { return none }
+	mut parts := []string{}
+	for property_id in [PropertyID.text_decoration_line, .text_decoration_thickness,
+		.text_decoration_style, .text_decoration_color] {
+		value := style_value.coordinating_longhand_value(property_id) or { return none }
+		serialized := value.serialize(mode)
+		if serialized != computed_interpolation_property_initial_value(property_id).css_text {
+			parts << serialized
+		}
+	}
+	if parts.len == 0 {
+		return line.serialize(mode)
+	}
+	return parts.join(' ')
+}
+
 // `white-space` collapses back to its single-keyword form when `white-space-trim`
 // is `none` and the collapse/wrap pair matches one of the four legacy keywords.
 // Anything else falls through to the default longhand serialization.
@@ -3009,8 +3062,22 @@ fn (style_value ShorthandStyleValue) serialize_grid_line(mode SerializationMode)
 	if style_value.values_.len != 2 {
 		return none
 	}
-	start := style_value.values_[0].serialize(mode)
-	end := style_value.values_[1].serialize(mode)
+	// ShorthandStyleValue::serialize() reaches each longhand by property id, not
+	// by position: Properties.json lists a shorthand's longhands alphabetically
+	// (`grid-row` is `[grid-row-end, grid-row-start]`), which is not the order
+	// they serialize in.
+	start_id := if style_value.shorthand_ == .grid_row {
+		PropertyID.grid_row_start
+	} else {
+		PropertyID.grid_column_start
+	}
+	end_id := if style_value.shorthand_ == .grid_row {
+		PropertyID.grid_row_end
+	} else {
+		PropertyID.grid_column_end
+	}
+	start := (style_value.coordinating_longhand_value(start_id) or { return none }).serialize(mode)
+	end := (style_value.coordinating_longhand_value(end_id) or { return none }).serialize(mode)
 	if end == 'auto' || start == end {
 		return start
 	}
@@ -3172,10 +3239,12 @@ fn (style_value ShorthandStyleValue) serialize_grid_area(mode SerializationMode)
 	if style_value.shorthand_ != .grid_area || style_value.values_.len != 4 {
 		return none
 	}
-	mut row_start := style_value.values_[0]
-	mut column_start := style_value.values_[1]
-	mut row_end := style_value.values_[2]
-	mut column_end := style_value.values_[3]
+	mut row_start := style_value.coordinating_longhand_value(.grid_row_start) or { return none }
+	mut column_start := style_value.coordinating_longhand_value(.grid_column_start) or {
+		return none
+	}
+	mut row_end := style_value.coordinating_longhand_value(.grid_row_end) or { return none }
+	mut column_end := style_value.coordinating_longhand_value(.grid_column_end) or { return none }
 
 	// With four explicit (non-auto) lines, serialize as-is (after collapse).
 	if !grid_placement_is_auto(row_start) && !grid_placement_is_auto(column_start) && !grid_placement_is_auto(row_end) && !grid_placement_is_auto(column_end) {

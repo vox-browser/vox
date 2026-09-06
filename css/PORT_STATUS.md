@@ -431,6 +431,30 @@ A fourth differential run of 128 generated rules, read back through
   inserted verbatim rather than through "serialize a string", so a name carrying
   an escape keeps its single reverse solidus.
 
+A fifth differential run of 163 generated declaration blocks, read back through
+`CSSStyleDeclaration.cssText`, exercised the CSSOM shorthand-reassembly loop and
+corrected three more divergences:
+
+- `ShorthandStyleValue::serialize()` reaches each longhand by property id, not by
+  position. `Properties.json` lists a shorthand's longhands alphabetically, so
+  `grid-row` is `[grid-row-end, grid-row-start]` - the reverse of the order they
+  serialize in. Reassembling `grid-row`, `grid-column` and `grid-area` from
+  separate longhand declarations used that metadata order and emitted
+  `grid-row: 2 / 1` and `grid-area: 4 / 3 / 2 / 1`.
+- "`border` only has a reasonable value if all four sides are the same." When a
+  nested width, style or colour is not uniform, the shorthand serializes as the
+  empty string so the declaration block falls back to `border-width`,
+  `border-style`, `border-color` and `border-image`. The port emitted the
+  impossible `border: 1px solid blue red red`.
+- `text-decoration` prints only what differs from the default, in the fixed order
+  line, thickness, style, colour, and prints the line when all are default. The
+  port fell through to the generic shorthand serialization, which follows the
+  metadata order and emitted `text-decoration: currentcolor` for an all-initial
+  block.
+
+Across all five runs, 1,578 generated cases now agree with the upstream browser
+apart from the deviation below.
+
 KNOWN DEVIATION: upstream's `serialize_an_identifier()` appends into a
 caller-supplied `StringBuilder` and applies its "first character" and "second
 character" tests to that builder's length rather than to a position within the

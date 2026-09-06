@@ -128,3 +128,57 @@ fn test_white_space_serializes_back_to_its_legacy_keyword() {
 	assert serialize_of('nowrap', PropertyID.white_space)? == 'nowrap'
 	assert serialize_of('break-spaces', PropertyID.white_space)? == 'break-spaces'
 }
+
+fn declaration_block_text(declarations string) ?string {
+	rules := parse_css_stylesheet_contents_with_parser('a { ${declarations} }', map[string]bool{})
+	if rules.len < 1 {
+		return none
+	}
+	declaration := rules[0].declaration or { return none }
+	return declaration.serialized()
+}
+
+// ShorthandStyleValue::serialize() reaches each longhand by property id, not by
+// position. Properties.json lists a shorthand's longhands alphabetically, so
+// `grid-row` is `[grid-row-end, grid-row-start]` - the reverse of the order they
+// serialize in. Reassembling a shorthand from separate longhand declarations
+// used that metadata order and produced `grid-row: 2 / 1`.
+fn test_grid_line_shorthands_reassemble_in_serialization_order() {
+	assert declaration_block_text('grid-row-start: 1; grid-row-end: 2')? == 'grid-row: 1 / 2;'
+	assert declaration_block_text('grid-row-end: 2; grid-row-start: 1')? == 'grid-row: 1 / 2;'
+	assert declaration_block_text('grid-column-start: 1; grid-column-end: 3')? == 'grid-column: 1 / 3;'
+	// An `auto` end line is omitted.
+	assert declaration_block_text('grid-row-start: span 2; grid-row-end: auto')? == 'grid-row: span 2;'
+	assert declaration_block_text('grid-row-start: 1; grid-row-end: 2; grid-column-start: 3; grid-column-end: 4')? ==
+		'grid-area: 1 / 3 / 2 / 4;'
+	// The directly parsed shorthand keeps working.
+	assert serialize_of('1 / 2', PropertyID.grid_row)? == '1 / 2'
+	assert serialize_of('1 / 2 / 3 / 4', PropertyID.grid_area)? == '1 / 2 / 3 / 4'
+}
+
+// "`border` only has a reasonable value if all four sides are the same." When a
+// nested width, style or colour is not uniform the shorthand serializes as the
+// empty string and the declaration block falls back to the nested shorthands.
+fn test_border_shorthand_requires_uniform_sides() {
+	assert declaration_block_text('border: 1px solid red')? ==
+		'border: 1px solid red;'
+	assert declaration_block_text('border: 1px solid red; border-top-color: blue')? ==
+		'border-width: 1px; border-style: solid; border-color: blue red red; border-image: none 100% / 1 / 0 stretch;'
+	assert declaration_block_text('border: 1px solid red; border-top-width: 2px')? ==
+		'border-width: 2px 1px 1px; border-style: solid; border-color: red; border-image: none 100% / 1 / 0 stretch;'
+	assert declaration_block_text('border: 1px solid red; border-top-style: dashed')? ==
+		'border-width: 1px; border-style: dashed solid solid; border-color: red; border-image: none 100% / 1 / 0 stretch;'
+	// A per-side border shorthand still collapses.
+	assert declaration_block_text('border-top-width: 1px; border-top-style: solid; border-top-color: red')? ==
+		'border-top: 1px solid red;'
+}
+
+// text-decoration prints only what differs from the default, in the fixed order
+// line, thickness, style, colour - and prints the line when all are default.
+fn test_text_decoration_serializes_in_its_own_order() {
+	assert declaration_block_text('text-decoration-line: none; text-decoration-style: solid; text-decoration-color: currentcolor; text-decoration-thickness: auto')? ==
+		'text-decoration: none;'
+	assert declaration_block_text('text-decoration-line: underline; text-decoration-style: solid; text-decoration-color: red; text-decoration-thickness: auto')? ==
+		'text-decoration: underline red;'
+	assert serialize_of('underline dotted red', PropertyID.text_decoration)? == 'underline dotted red'
+}
