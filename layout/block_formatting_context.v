@@ -472,12 +472,12 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		// resolved exactly like non-replaced blocks.
 		margin_width := replaced_width_for_margin_resolution(mut state, replaced_box, box_state,
 			available_space.width, replaced_size.width())
-		resolve_auto_margins(computed, mut box_state, containing_block_width, margin_width.to_double(), block_container.computed_values().direction())
+		resolve_auto_margins(computed, mut box_state, containing_block_width, margin_width.to_double())
 	} else if box_as_node.is_table_wrapper() {
 		wrapper_width := compute_table_wrapper_content_width(mut state, box_as_node, mut box_state, css_px(containing_block_width))
 		box_state.set_content_width(wrapper_width)
 		if box_state.margin_box_width().to_double() <= containing_block_width {
-			resolve_auto_margins(computed, mut box_state, containing_block_width, wrapper_width.to_double(), block_container.computed_values().direction())
+			resolve_auto_margins(computed, mut box_state, containing_block_width, wrapper_width.to_double())
 		}
 	} else {
 		compute_block_used_width_for_node(mut state, box, mut box_state, AvailableSize.make_definite(css_px(containing_block_width)))
@@ -900,7 +900,7 @@ fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut box_sta
 		} else if first_iteration {
 			node := box_state.node()
 			if resolved_width := resolve_layout_content_size(unsafe { &Node(node) }, computed.size_value(.width), container_width, box_state, true) {
-				compute_block_used_width_with_override(computed, mut box_state, remaining.to_double(), resolved_width, direction)
+				compute_block_used_width_with_override(computed, mut box_state, remaining.to_double(), resolved_width)
 			}
 		}
 		first_iteration = false

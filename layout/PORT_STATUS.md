@@ -224,6 +224,16 @@ equation produced, while upstream reaches
 still recorded on the wrapper's used values and so treats that percentage as
 automatic. Only the dumped margin differs; every box's geometry agrees.
 
+Block-level normal flow is direction-agnostic, as it is in the source. CSS 2.1
+§10.3.3 asks the *start* margin to be ignored when a box is over-constrained in a
+right-to-left containing block, but `try_compute_width()` never consults
+`direction` - it always gives the remainder to `margin-right` - and no other part
+of `BlockFormattingContext.cpp` reads `direction` either. The former
+direction-aware branch placed every fixed-width block child at the right content
+edge under `direction: rtl`; a generated 60-case matrix over direction, width,
+and both inline margins now agrees with upstream on all 60, including the
+negative remainder of an over-wide child.
+
 The upstream Layout regression corpus is exercised directly by
 `tools/layout_corpus.v`. It discovers every HTML or SVG input with a matching
 expected snapshot and compares all three upstream sections exactly: layout tree,

@@ -64,10 +64,10 @@ fn resolve_box_model_edges(computed &css.ComputedValues, mut used_values UsedVal
 // CSS 2.1 §10.3.3: compute the used content width (and resolve auto margins) of a normal-flow block-level
 // box, given its containing block's width. Assumes resolve_box_model_edges already ran.
 fn compute_block_used_width(computed &css.ComputedValues, mut used_values UsedValues, containing_block_width f64) {
-	compute_block_used_width_with_override(computed, mut used_values, containing_block_width, none, computed.direction())
+	compute_block_used_width_with_override(computed, mut used_values, containing_block_width, none)
 }
 
-fn compute_block_used_width_with_override(computed &css.ComputedValues, mut used_values UsedValues, containing_block_width f64, intrinsic_width ?CSSPixels, containing_block_direction css.Direction) {
+fn compute_block_used_width_with_override(computed &css.ComputedValues, mut used_values UsedValues, containing_block_width f64, intrinsic_width ?CSSPixels) {
 	// Non-content horizontal edges (border + padding).
 	edges := used_values.border_left.to_double() + used_values.padding_left.to_double() + used_values.padding_right.to_double() + used_values.border_right.to_double()
 
@@ -114,7 +114,7 @@ fn compute_block_used_width_with_override(computed &css.ComputedValues, mut used
 	// Resolve auto margins against the used (now definite) width — for an explicit width, or an auto width
 	// that clamping shrank below the fill.
 	if !width_is_auto || clamped != width {
-		resolve_auto_margins(computed, mut used_values, containing_block_width, clamped, containing_block_direction)
+		resolve_auto_margins(computed, mut used_values, containing_block_width, clamped)
 	}
 }
 
@@ -141,12 +141,7 @@ fn compute_block_used_width_for_node(mut state LayoutState, box &NodeWithStyle, 
 	} else if computed_width.is_fit_content() {
 		intrinsic_width = calculate_fit_content_width(mut state, box_as_box, available_width)
 	}
-	containing_block_direction := if containing := used_values.containing_block_used_values() {
-		containing.node().computed_values().direction()
-	} else {
-		box.computed_values().direction()
-	}
-	compute_block_used_width_with_override(box.computed_values(), mut used_values, available_width.to_px_or_zero().to_double(), intrinsic_width, containing_block_direction)
+	compute_block_used_width_with_override(box.computed_values(), mut used_values, available_width.to_px_or_zero().to_double(), intrinsic_width)
 
 	// calculate_inner_width() also accepts intrinsic sizing keywords for the
 	// min/max constraints. Length-percentage constraints were applied by the
@@ -165,7 +160,7 @@ fn compute_block_used_width_for_node(mut state LayoutState, box &NodeWithStyle, 
 	}
 	if clamped.raw_value() != used_values.content_width().raw_value() {
 		used_values.set_content_width(clamped)
-		resolve_auto_margins(box.computed_values(), mut used_values, available_width.to_px_or_zero().to_double(), clamped.to_double(), containing_block_direction)
+		resolve_auto_margins(box.computed_values(), mut used_values, available_width.to_px_or_zero().to_double(), clamped.to_double())
 	}
 }
 
@@ -209,7 +204,7 @@ fn content_height_for_box_sizing(computed &css.ComputedValues, used_values &Used
 
 // Resolve auto left/right margins to absorb the remaining inline space (centering when both are auto),
 // given a definite content `width` (CSS 2.1 §10.3.3).
-fn resolve_auto_margins(computed &css.ComputedValues, mut used_values UsedValues, containing_block_width f64, width f64, containing_block_direction css.Direction) {
+fn resolve_auto_margins(computed &css.ComputedValues, mut used_values UsedValues, containing_block_width f64, width f64) {
 	edges := used_values.border_left.to_double() + used_values.padding_left.to_double() + used_values.padding_right.to_double() + used_values.border_right.to_double()
 	mut margin_left_auto := property_is_auto(computed, .margin_left)
 	mut margin_right_auto := property_is_auto(computed, .margin_right)
@@ -241,12 +236,12 @@ fn resolve_auto_margins(computed &css.ComputedValues, mut used_values UsedValues
 		used_values.margin_left = css_px(remaining)
 	} else if margin_right_auto {
 		used_values.margin_right = css_px(remaining)
-	} else if containing_block_direction == .rtl {
-		// CSS 2.1 §10.3.3: when over-constrained, ignore the value for
-		// the start side (left in RTL).
-		used_values.margin_left = css_px(fixed_margin_left + remaining)
 	} else {
-		// In LTR the end side is margin-right.
+		// CSS 2.1 §10.3.3 asks the *start* margin to be ignored when the box is
+		// over-constrained in a right-to-left containing block, but
+		// BlockFormattingContext::try_compute_width() never consults the
+		// direction: it always gives the remainder to margin-right, and the
+		// whole block formatting context is direction-agnostic. Reproduce that.
 		used_values.margin_right = css_px(fixed_margin_right + remaining)
 	}
 }

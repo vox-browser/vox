@@ -2729,3 +2729,35 @@ fn test_inline_table_honours_intrinsic_sizing_keywords() {
 	assert used_for_id(result, 'fit').content_width().to_double() == 70
 	assert used_for_id(result, 'maximum').content_width().to_double() == 110
 }
+
+// BlockFormattingContext::try_compute_width() gives the leftover inline space to
+// margin-right whatever the containing block's direction is - the whole block
+// formatting context never consults `direction`. CSS 2.1 §10.3.3 asks for the
+// start margin to be ignored in a right-to-left containing block, but the
+// source does not implement that, so an over-constrained block box stays at the
+// left content edge in `direction: rtl`.
+fn test_over_constrained_block_keeps_the_left_edge_in_rtl() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { width:200px; direction:rtl }
+		#fixed { width:30px; height:20px }
+		#with_start_margin { width:30px; height:20px; margin-left:10px }
+		#overflowing { width:250px; height:20px }
+	</style><div id="outer"><div id="fixed"></div><div id="with_start_margin"></div><div id="overflowing"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+
+	fixed := used_for_id(result, 'fixed')
+	assert fixed.offset.x().to_double() == 0
+	assert fixed.margin_left.to_double() == 0
+	assert fixed.margin_right.to_double() == 170
+
+	with_start_margin := used_for_id(result, 'with_start_margin')
+	assert with_start_margin.offset.x().to_double() == 10
+	assert with_start_margin.margin_left.to_double() == 10
+	assert with_start_margin.margin_right.to_double() == 160
+
+	// A negative remainder goes to the same side.
+	overflowing := used_for_id(result, 'overflowing')
+	assert overflowing.offset.x().to_double() == 0
+	assert overflowing.margin_right.to_double() == -50
+}
