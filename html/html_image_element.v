@@ -110,8 +110,7 @@ fn (mut image HTMLImageElementModel) fire_event(name string) {
 	image.event_counts_[name]++
 	event := dom.Event.create(name, dom.EventInit{})
 	if element := image.element_ {
-		unsafe { &dom.EventTarget(element) }
-		.dispatch_event(event)
+		unsafe { &dom.EventTarget(element) }.dispatch_event(event)
 	} else {
 		image.event_target_.dispatch_event(event)
 	}
@@ -456,11 +455,13 @@ pub fn (image &HTMLImageElementModel) height() u32 {
 }
 
 pub fn (image &HTMLImageElementModel) x() int {
-	return 0
+	element := image.element_ or { return 0 }
+	return html_image_element_x(element)
 }
 
 pub fn (image &HTMLImageElementModel) y() int {
-	return 0
+	element := image.element_ or { return 0 }
+	return html_image_element_y(element)
 }
 
 pub fn (image &HTMLImageElementModel) decode() &dom.Promise {

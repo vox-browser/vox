@@ -85,6 +85,30 @@ fn test_image_failure_empty_lazy_sizes_and_animation() {
 	assert animated.current_frame_index() == 0
 }
 
+fn test_image_model_coordinates_use_attached_element_layout_geometry() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	mut image_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'img') or {
+		panic(err)
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(image_element.as_node()) or { panic(err) }
+	image := unsafe { &dom.HTMLImageElement(image_element) }
+	model := html_image_element_model_for_dom_element(image)
+	mut image_node := image_element.as_node()
+	image_node.set_layout_node(&dom.LayoutNode{
+		dom_node_: image_node
+		has_geometry_: true
+		border_box_: dom.Rect{27, 43, 80, 40}
+	})
+
+	assert model.x() == 27
+	assert model.y() == 43
+
+	synthetic_model := HTMLImageElementModel.create(document, document.base_url())
+	assert synthetic_model.x() == 0
+	assert synthetic_model.y() == 0
+}
+
 fn test_concrete_image_element_picture_source_requests_roles_and_dimensions() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
 	mut navigable := &dom.Navigable{
