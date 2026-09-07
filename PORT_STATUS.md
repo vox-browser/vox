@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/libweb_v`
-Audited: 2026-09-05
+Audited: 2026-09-08
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -124,13 +124,14 @@ upstream modules: 74
 upstream .cpp files: 1147
 upstream implementations: 18658
 quarantined name-only coverage shims: 0 files / 0 functions
-explicit semantic-divergence markers: 11
-suspicious empty/default-return implementations: 598
-  candidate-name-match: 14134
+explicit semantic-divergence markers: 8
+reviewed upstream-equivalent trivial implementations: 549
+suspicious empty/default-return implementations: 0
+  candidate-name-match: 14132
   unmatched: 1626
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 319
+  consolidated-name-match: 321
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
@@ -140,7 +141,7 @@ unmatched implementations by module:
    597 Layout
    322 Painting
 
-$ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
+$ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
 
 $ /Users/alex/code/v/v -enable-globals test css
@@ -152,9 +153,17 @@ Summary for all V _test.v files: 18 passed, 18 total.
 $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
-$ /Users/alex/code/v/v -enable-globals test .
-Summary for all V _test.v files: 385 passed, 385 total.
+$ /Users/alex/code/v/v -enable-globals test animations css dom layout
+Summary for all V _test.v files: 70 passed, 70 total.
 ```
+
+The 2026-09-08 default-body pass exhausted the suspicious-stub queue and then
+closed the ten unmatched symbols outside CSS, Layout, and Painting. It added
+document-owned animation-timeline updates, the observable constructed-sheet
+adoption callbacks, and live SVG `use` shadow trees. Consequently every
+remaining unmatched symbol is contained in the three large modules already
+under structural and differential audit; the count is not a claim that every
+one of those symbols lacks behavior.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

@@ -69,7 +69,9 @@ TRIVIAL_RETURN = re.compile(
 # no-ops visible without repeatedly returning them to the investigation queue.
 VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = frozenset(
     {
-        # NavigationTiming/PerformanceTiming.h defines these legacy getters as zero.
+        # AnimationEffect's virtual target default and the legacy
+        # NavigationTiming/PerformanceTiming getters are constants upstream.
+        ("animations/animation_effect.v", "AnimationEffect", "target"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "unload_event_start"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "unload_event_end"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "redirect_start"),

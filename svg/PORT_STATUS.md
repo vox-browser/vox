@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/SVG`
 
 Translation workspace: `~/code/libweb_v/svg`
-Audited: 2026-09-05
+Audited: 2026-09-08
 
 All 80 upstream SVG `.cpp` implementation units have audited V mappings. All 82
 headers and 76 IDL files were also cross-audited; their implemented surface is
@@ -60,7 +60,11 @@ and read-only vector accessors use borrowed slices rather than eager clones.
 Element behavior covers geometry construction for all shape elements, rounded
 rectangle radius defaulting/clamping, transform ordering, upstream accessibility
 role decisions, trimmed UTF-16 text measurement, anchor/use semantics, mask
-bounds, and cloned use trees with recursive circular-reference rejection.
+bounds, and live closed `use` shadow trees with recursive circular-reference
+rejection. Same-document instance trees refresh after loading and whenever a
+referenced SVG element or its descendants change, clear when their target is
+removed, inherit document styles, and apply `use` dimensions to cloned `svg`
+and `symbol` instance roots.
 
 Paint/filter behavior includes linked gradient inheritance with cycle guards,
 non-negative radial-radius validation, normalized stops, pattern content lookup,

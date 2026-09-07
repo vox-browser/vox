@@ -222,6 +222,10 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     # they map to the equivalent tagged-value operations.
     ("StyleValue", "__ENUMERATE_CSS_STYLE_VALUE_TYPE"): (("type_", "StyleValue"),),
     ("ComponentValue", "Token"): (("from_token", "ComponentValue"),),
+    # CSS owns ComputedProperties in the V module graph, so the SVG class
+    # overrides are dispatched together at the style-computation boundary.
+    ("SVGElement", "adjust_computed_style"): (("adjust_element_computed_style", None),),
+    ("SVGSymbolElement", "adjust_computed_style"): (("adjust_element_computed_style", None),),
     # `Error` is V's built-in error interface. The concrete protocol error is
     # therefore named WebDriverError while retaining both upstream factories.
     ("Error", "from_code"): (

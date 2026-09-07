@@ -38,10 +38,10 @@ pub fn AnimationTimeline.new() &AnimationTimeline {
 // Translation of DocumentTimeline::create/construct_impl.
 pub fn new_document_timeline(document ?&dom.Document, origin_time f64, timestamp f64) &AnimationTimeline {
 	mut timeline := &AnimationTimeline{
-		kind_:        .document
-		document_:    document
+		kind_: .document
 		origin_time_: origin_time
 	}
+	timeline.set_associated_document(document)
 	timeline.update_current_time(timestamp)
 	return timeline
 }
@@ -69,7 +69,33 @@ pub fn (timeline &AnimationTimeline) associated_document() ?&dom.Document {
 	return timeline.document_
 }
 
+fn update_animation_timeline_for_document(target voidptr, timestamp f64) {
+	if target == unsafe { nil } {
+		return
+	}
+	mut timeline := unsafe { &AnimationTimeline(target) }
+	if document := timeline.document_ {
+		timeline.set_document_active(document.is_active())
+	}
+	timeline.update_current_time(timestamp)
+}
+
+fn animation_timeline_handle(timeline &AnimationTimeline) dom.AnimationTimelineHandle {
+	return dom.AnimationTimelineHandle{
+		target: voidptr(timeline)
+		update_current_time: update_animation_timeline_for_document
+	}
+}
+
 pub fn (mut timeline AnimationTimeline) set_associated_document(document ?&dom.Document) {
+	if new_document := document {
+		mut mutable_document := unsafe { &dom.Document(new_document) }
+		mutable_document.associate_with_timeline(animation_timeline_handle(timeline))
+	}
+	if old_document := timeline.document_ {
+		mut mutable_document := unsafe { &dom.Document(old_document) }
+		mutable_document.disassociate_with_timeline(animation_timeline_handle(timeline))
+	}
 	timeline.document_ = document
 }
 

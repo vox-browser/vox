@@ -12,7 +12,7 @@ files.
 | `AbstractElement.cpp` | 236 | `shadow_mutation_misc.v` |
 | `AbstractRange.cpp` | 38 | `collections_ranges.v` |
 | `AccessibilityTreeNode.cpp` | 83 | `shadow_mutation_misc.v` |
-| `AdoptedStyleSheets.cpp` | 52 | `shadow_mutation_misc.v` |
+| `AdoptedStyleSheets.cpp` | 52 | `../css/adopted_style_sheets.v` (typed CSS boundary) |
 | `Attr.cpp` | 142 | `character_nodes.v` |
 | `CDATASection.cpp` | 28 | `character_nodes.v` |
 | `CharacterData.cpp` | 207 | `character_nodes.v` |
@@ -79,6 +79,10 @@ files.
   **1,631** direct matches, **38** checked consolidated-owner matches, and
   **150** constructors/runtime/language-only definitions. There are **zero
   unmatched definitions**.
+- Document now owns the exact associated-animation-timeline registry used by
+  the Web Animations update pass. The typed CSS boundary owns constructed
+  adopted-sheet callbacks, while Document and ShadowRoot retain their cached
+  list handles without introducing a DOM-to-CSS import cycle.
 - The independent audit replaced EventTarget's unsafe memory-shape probing with
   an authoritative Node discriminator, tags every Node/Document allocation,
   and verifies generic EventTarget dispatch plus distinct Document identity.

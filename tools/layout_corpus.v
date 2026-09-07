@@ -159,6 +159,10 @@ fn run_case(input_root string, expected_root string, relative_path string) !bool
 	}
 	navigable.traversable_navigable_ = navigable
 	document.set_cached_navigable(navigable)
+	// The corpus runs deferred fixture scripts after parsing has completed. Mark the
+	// synthetic document loaded so mutation-driven features use their normal
+	// post-load lifecycle (for example, live SVG <use> instance trees).
+	document.completely_finish_loading()
 	mut javascript_runtime := browserjs.Runtime.create()
 	defer {
 		javascript_runtime.close()

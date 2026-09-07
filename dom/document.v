@@ -2026,6 +2026,18 @@ pub fn (nc &NavigableContainer) content_navigable() ?&Navigable {
 @[heap]
 pub struct DocumentTimeline {}
 
+// Animations owns the concrete timeline objects, but Document owns the set of
+// timelines associated with it. Keep the concrete pointer and update callback
+// together so DOM can run every timeline before updating its animations
+// without introducing a dom -> animations module cycle.
+pub type AnimationTimelineUpdateCallback = fn (voidptr, f64)
+
+pub struct AnimationTimelineHandle {
+pub:
+	target              voidptr = unsafe { nil }
+	update_current_time AnimationTimelineUpdateCallback = unsafe { nil }
+}
+
 @[heap]
 pub struct Animation {
 
@@ -2356,6 +2368,7 @@ pub mut:
 	slot_assignment_                SlotAssignmentMode = .named
 	style_scope_                    StyleScope
 	adopted_style_sheets_           []&CSSStyleSheet
+	adopted_css_style_sheets_handle voidptr = unsafe { nil }
 	style_sheets_                   &StyleSheetList = unsafe { nil }
 	element_by_id_                  &ElementByIdMap = unsafe { nil }
 	onslotchange_                   ?&CallbackType
@@ -4189,6 +4202,7 @@ pub mut:
 
 	// Animations
 	default_timeline               &DocumentTimeline = unsafe { nil }
+	associated_animation_timelines []AnimationTimelineHandle
 	last_animation_frame_timestamp ?f64
 	pending_animation_event_queue  []PendingAnimationEvent
 	transition_generation          int
@@ -4283,6 +4297,7 @@ pub mut:
 	// Misc
 	shared_resource_requests_               map[string]&SharedResourceRequest
 	adopted_style_sheets                    []&CSSStyleSheet
+	adopted_css_style_sheets_handle         voidptr = unsafe { nil }
 	console_client_                         &ConsoleClient = unsafe { nil }
 	cursor_blink_timer                      &Timer = unsafe { nil }
 	active_refresh_timer                    &Timer = unsafe { nil }
@@ -4449,6 +4464,7 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(d.history_)
 	visitor.visit(d.style_computer)
 	visitor.visit(d.font_computer)
+	visitor.visit(d.adopted_css_style_sheets_handle)
 
 	// browsing_context visited again in C++ (intentional duplicate in original)
 	visitor.visit(d.applets_)
@@ -4468,6 +4484,9 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(d.visual_viewport_)
 	visitor.visit(d.latest_entry)
 	visitor.visit(d.default_timeline)
+	for timeline in d.associated_animation_timelines {
+		visitor.visit(timeline.target)
+	}
 
 	for script in d.scripts_to_execute_when_parsing_has_finished {
 		visitor.visit(script)
@@ -6777,6 +6796,7 @@ pub fn (mut d Document) completely_finish_loading() {
 	// 1. Assert: document's browsing context is non-null.
 	// 2. Set document's completely loaded time to the current time.
 	d.completely_loaded_time = true
+	d.refresh_svg_use_shadow_trees()
 
 	// NOTE: Start the active refresh timer if set.
 	if d.active_refresh_timer != unsafe { nil } {
@@ -8334,6 +8354,22 @@ pub fn (mut d Document) timeline() &DocumentTimeline {
 	return d.default_timeline
 }
 
+pub fn (mut d Document) associate_with_timeline(timeline AnimationTimelineHandle) {
+	if timeline.target == unsafe { nil } || timeline.update_current_time == unsafe { nil } {
+		return
+	}
+	for existing in d.associated_animation_timelines {
+		if existing.target == timeline.target {
+			return
+		}
+	}
+	d.associated_animation_timelines << timeline
+}
+
+pub fn (mut d Document) disassociate_with_timeline(timeline AnimationTimelineHandle) {
+	d.associated_animation_timelines = d.associated_animation_timelines.filter(it.target != timeline.target)
+}
+
 pub fn (mut d Document) append_pending_animation_event(event PendingAnimationEvent) {
 	d.pending_animation_event_queue << event
 }
@@ -8341,6 +8377,14 @@ pub fn (mut d Document) append_pending_animation_event(event PendingAnimationEve
 // https://www.w3.org/TR/web-animations-1/#update-animations-and-send-events
 pub fn (mut d Document) update_animations_and_send_events(timestamp f64) {
 	d.last_animation_frame_timestamp = timestamp
+	// Snapshot the set because updating a timeline can run animation logic that
+	// changes timeline association.
+	timelines_to_update := d.associated_animation_timelines.clone()
+	for timeline in timelines_to_update {
+		if timeline.target != unsafe { nil } && timeline.update_current_time != unsafe { nil } {
+			timeline.update_current_time(timeline.target, timestamp)
+		}
+	}
 	if hook := d.css_animation_timeline_update_hook_ {
 		if hook.callback != unsafe { nil } {
 			hook.callback(hook.target, timestamp)

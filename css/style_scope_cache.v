@@ -1027,6 +1027,13 @@ fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callb
 					callback(sheet)
 				}
 			}
+			if adopted := adopted_style_sheets_list_if_created(node) {
+				for sheet in adopted.items() {
+					if !sheet.base.disabled {
+						callback(sheet)
+					}
+				}
+			}
 			return
 		}
 	}
@@ -1042,6 +1049,13 @@ fn style_scope_for_each_active_css_style_sheet_boundary(scope &StyleScope, callb
 			continue
 		}
 		callback(sheet)
+	}
+	if adopted := adopted_style_sheets_list_if_created(unsafe { &dom.Node(document) }) {
+		for sheet in adopted.items() {
+			if !sheet.base.disabled {
+				callback(sheet)
+			}
+		}
 	}
 }
 

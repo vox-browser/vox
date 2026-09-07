@@ -130,6 +130,12 @@ pub fn AnimationEffect.new() &AnimationEffect {
 	return &AnimationEffect{}
 }
 
+// Base AnimationEffect has no target. KeyframeEffect supplies the concrete
+// target accessor, matching the virtual default in AnimationEffect.h.
+pub fn (_ &AnimationEffect) target() ?&dom.Element {
+	return none
+}
+
 pub fn parse_easing_string(value string) ?css.EasingFunction {
 	return css.parse_easing_function(value)
 }

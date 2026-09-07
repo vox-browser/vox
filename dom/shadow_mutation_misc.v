@@ -538,6 +538,7 @@ pub fn (mut shadow_root ShadowRoot) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(shadow_root.style_sheets_)
 	visitor.visit(shadow_root.element_by_id_)
 	visitor.visit(shadow_root.slot_registry_)
+	visitor.visit(shadow_root.adopted_css_style_sheets_handle)
 	for style_sheet in shadow_root.adopted_style_sheets_ {
 		visitor.visit(style_sheet)
 	}
@@ -2749,11 +2750,13 @@ fn create_svg_element(document &Document, qualified_name QualifiedName) &Element
 			}
 		}
 		'use' {
-			return unsafe {
+			mut use_element := unsafe {
 				&Element(&SVGUseElement{
 					SVGElement: new_svg_element_storage(document, qualified_name)
 				})
 			}
+			use_element.attach_a_user_agent_shadow_root(.named)
+			return use_element
 		}
 		'script' {
 			return unsafe {

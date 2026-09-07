@@ -1131,6 +1131,35 @@ fn test_shadow_root_author_stylesheet_uses_its_own_css_scope() {
 	assert (computed.property(.color, .no) or { panic('shadow color missing') }).css_text == 'rgb(255, 0, 0)'
 }
 
+fn test_svg_symbol_instance_root_adjusts_display_and_position() {
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/image.svg' })
+	mut svg_root := document.create_element_ns('http://www.w3.org/2000/svg', 'svg') or {
+		panic('${err}')
+	}
+	mut symbol := document.create_element_ns('http://www.w3.org/2000/svg', 'symbol') or {
+		panic('${err}')
+	}
+	symbol.set_attribute_value('id', 'icon')
+	mut use_element := document.create_element_ns('http://www.w3.org/2000/svg', 'use') or {
+		panic('${err}')
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(svg_root.as_node()) or { panic('${err}') }
+	mut svg_root_node := svg_root.as_node()
+	svg_root_node.append_child(symbol.as_node()) or { panic('${err}') }
+	svg_root_node.append_child(use_element.as_node()) or { panic('${err}') }
+	use_element.set_attribute_value('href', '#icon')
+
+	shadow_root := use_element.shadow_root() or { panic('use shadow root missing') }
+	clone_node := unsafe { &dom.Node(shadow_root) }.first_child() or {
+		panic('symbol instance root missing')
+	}
+	clone := clone_node.as_element() or { panic('symbol instance root is not an element') }
+	computed := StyleComputer.new(document).compute_style(dom.AbstractElement.new(clone, none))
+	assert computed.display() == Display.from_short(.inline_)
+	assert computed.position() == .static_
+}
+
 fn test_subtree_style_recompute_installs_pseudos_and_walks_shadow_tree() {
 	doc := dom.Document.create(dom.url_about_blank())
 	mut host := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }

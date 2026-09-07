@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Animations`
 
 Translation workspace: `~/code/libweb_v/animations`
-Audited: 2026-08-16
+Audited: 2026-09-08
 
 All ten upstream Animations `.cpp` implementation units have an audited V
 implementation mapping.
@@ -37,6 +37,10 @@ supplies a `ScrollMetrics` snapshot, and `KeyframeEffect` returns sampled CSS
 properties to the style layer; these typed boundaries avoid module cycles while
 preserving the upstream algorithms. `AnimationPlaybackEvent` is identified by
 the DOM event interface enum so normal event dispatch still works.
+Document and scroll timelines register with their associated document through
+the cross-module handle boundary. A document snapshots and advances every
+registered timeline before its animation update callback, and reassociation or
+disassociation updates that registry exactly once.
 
 ## Verification
 

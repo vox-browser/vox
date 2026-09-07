@@ -3,15 +3,15 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/CSS`
 
 Translation workspace: `~/code/libweb_v/css`
-Audited: 2026-09-05
+Audited: 2026-09-08
 
 Every current upstream implementation unit has a filename-level mapping, but
 that mapping is not proof that its C++ body was translated. The semantic audit
-currently reports 708 unmatched CSS implementations after quarantining the
+currently reports 707 unmatched CSS implementations after quarantining the
 name-only `upstream_*entry_points.v` facades. The inventory is 212 `.cpp` files / 66,305 LOC,
 233 `.h` files / 18,353 LOC, and 72 `.idl` files / 994 LOC. The translated
-package has 56 implementation `.v` files / 99,216 LOC and 26 test `.v` files /
-6,542 LOC. Documentation is excluded from both V LOC totals.
+package has 57 implementation `.v` files / 99,996 LOC and 27 test `.v` files /
+7,062 LOC. Documentation is excluded from both V LOC totals.
 
 ## Implementation-unit mapping
 
@@ -318,12 +318,19 @@ ProPhoto RGB, Rec.2020, HSL, HWB, LCH, and OKLCH with premultiplied alpha, all
 four hue routes, and Skia's powerless-hue thresholds and neighbor substitution.
 
 The current implementation-symbol audit inventories all 4,427 current upstream
-CSS implementations and reports 708 unmatched bodies. Name-only
+CSS implementations and reports 707 unmatched bodies. Name-only
 `upstream_*entry_points.v` records are explicitly excluded from coverage. The
 live browser path now retains typed declarations, computed values, rule-cache
 entries, and custom-property values by identity, following the upstream
 ownership model; remaining parser, calculation, CSSOM, font, style-value, and
 namespace bodies still require body-by-body review.
+
+Constructed style sheets now use a cached observable adopted-sheet list for
+both documents and shadow roots. Indexed insertion validates the constructed
+flag and constructor document, maintains owning-root identity, loads pending
+image resources, and invalidates the correct style scope; deletion reverses
+ownership. Adopted sheets participate in document and shadow-root cascade
+order instead of remaining in the DOM placeholder list.
 
 ## Boundaries
 

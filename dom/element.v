@@ -4932,6 +4932,12 @@ pub fn (e &Element) is_connected() bool {
 // https://dom.spec.whatwg.org/#concept-element-attributes-change-ext
 pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, value ?string, namespace_ ?string) {
 	if namespace_ != none {
+		if e.is_svg_element() && e.local_name() == 'use' && local_name == 'href' {
+			e.svg_use_process_the_url()
+		}
+		if e.is_svg_element() {
+			e.update_use_elements_that_reference_this()
+		}
 		return
 	}
 
@@ -5087,6 +5093,13 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 				break
 			}
 		}
+	}
+
+	if e.is_svg_element() {
+		if e.local_name() == 'use' && local_name in ['href', 'xlink:href'] {
+			e.svg_use_process_the_url()
+		}
+		e.update_use_elements_that_reference_this()
 	}
 }
 
@@ -5389,6 +5402,12 @@ pub fn (mut e Element) inserted() {
 	}
 
 	e.play_or_cancel_animations_after_display_property_change()
+	if e.is_svg_element() {
+		e.update_use_elements_that_reference_this()
+		if e.local_name() == 'use' && e.document().is_completely_loaded() {
+			e.svg_use_process_the_url()
+		}
+	}
 }
 
 pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
@@ -5417,6 +5436,13 @@ pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
 
 	e.play_or_cancel_animations_after_display_property_change()
 	e.exit_fullscreen_on_element_removal()
+	if e.is_svg_element() {
+		old_root_is_use_shadow_tree := svg_root_is_use_element_shadow_root(old_root)
+		current_root_is_use_shadow_tree := svg_root_is_use_element_shadow_root(e.as_node().root())
+		if !old_root_is_use_shadow_tree && !current_root_is_use_shadow_tree {
+			e.remove_from_use_element_that_reference_this()
+		}
+	}
 
 	// https://html.spec.whatwg.org/multipage/interactive-elements.html#the-dialog-element:html-element-removing-steps
 	// HTMLDialogElement::removed_from() runs after HTMLElement::removed_from().
@@ -5451,6 +5477,9 @@ pub fn (mut e Element) children_changed(metadata ChildrenChangedMetadata) {
 				node.set_child_needs_style_update(true)
 			}
 		}
+	}
+	if e.is_svg_element() {
+		e.update_use_elements_that_reference_this()
 	}
 }
 
@@ -5647,6 +5676,207 @@ pub fn (e &Element) is_svg_svg_element() bool {
 // elements that establish a new SVG viewport.
 pub fn (e &Element) is_svg_symbol_element() bool {
 	return e.is_svg_element() && e.local_name() == 'symbol'
+}
+
+pub fn (e &Element) is_direct_child_of_svg_use_shadow_tree() bool {
+	parent := e.as_node().parent() or { return false }
+	shadow_root := parent.as_shadow_root() or { return false }
+	host := shadow_root.host() or { return false }
+	return host.is_svg_element() && host.local_name() == 'use'
+}
+
+fn svg_root_is_use_element_shadow_root(root &Node) bool {
+	shadow_root := root.as_shadow_root() or { return false }
+	host := shadow_root.host() or { return false }
+	return host.is_svg_element() && host.local_name() == 'use'
+}
+
+fn (e &Element) svg_use_href() string {
+	if href := e.get_attribute('href') {
+		return href
+	}
+	if href := e.get_attribute_ns('http://www.w3.org/1999/xlink', 'href') {
+		return href
+	}
+	return e.get_attribute_value('xlink:href')
+}
+
+fn (e &Element) svg_use_reference_url() ?URL {
+	if !e.is_svg_element() || e.local_name() != 'use' {
+		return none
+	}
+	href := e.svg_use_href()
+	if href.len == 0 {
+		return none
+	}
+	return dom_url_parse(href, e.document().url, e.document().encoding_or_default())
+}
+
+fn (e &Element) svg_use_reference_is_same_document(reference URL) bool {
+	mut reference_without_fragment := reference
+	reference_without_fragment.set_fragment(none)
+	mut document_without_fragment := e.document().url
+	document_without_fragment.set_fragment(none)
+	return reference_without_fragment == document_without_fragment
+}
+
+pub fn (e &Element) svg_use_references_same_document() bool {
+	reference := e.svg_use_reference_url() or { return false }
+	return e.svg_use_reference_is_same_document(reference)
+}
+
+fn (e &Element) svg_use_referenced_element() ?&Element {
+	reference := e.svg_use_reference_url() or { return none }
+	fragment := reference.fragment() or { return none }
+	if !e.svg_use_reference_is_same_document(reference) {
+		return none
+	}
+	return e.document().get_element_by_id(url_percent_decode(fragment))
+}
+
+fn svg_use_target_has_cycle(target &Element, mut visiting map[i64]bool) bool {
+	key := target.as_node().unique_id().value()
+	if visiting[key] {
+		return true
+	}
+	visiting[key] = true
+	if target.is_svg_element() && target.local_name() == 'use' {
+		if referenced := target.svg_use_referenced_element() {
+			if svg_use_target_has_cycle(referenced, mut visiting) {
+				visiting.delete(key)
+				return true
+			}
+		}
+	}
+	for child in target.as_node().children_as_vector() {
+		if child_element := child.as_element() {
+			if svg_use_target_has_cycle(child_element, mut visiting) {
+				visiting.delete(key)
+				return true
+			}
+		}
+	}
+	visiting.delete(key)
+	return false
+}
+
+pub fn (e &Element) is_valid_svg_use_reference_element(target &Element) bool {
+	if !target.is_svg_element() {
+		return false
+	}
+	mut visiting := map[i64]bool{}
+	return !svg_use_target_has_cycle(target, mut visiting)
+}
+
+fn (mut e Element) svg_use_clone_element_tree_as_our_shadow_tree(target ?&Element) {
+	if !e.is_svg_element() || e.local_name() != 'use' {
+		return
+	}
+	mut shadow_root := e.attach_a_user_agent_shadow_root(.named)
+	mut shadow_node := unsafe { &Node(shadow_root) }
+	shadow_node.remove_all_children(true)
+	to_clone := target or {
+		shadow_root.set_uses_document_style_sheets(false)
+		return
+	}
+	same_document := if reference := e.svg_use_reference_url() {
+		e.svg_use_reference_is_same_document(reference)
+	} else {
+		false
+	}
+	shadow_root.set_uses_document_style_sheets(same_document)
+	if !e.is_valid_svg_use_reference_element(to_clone) {
+		return
+	}
+	clone_node := to_clone.as_node().clone_node(e.document(), true, none) or { return }
+	if mut clone_element := clone_node.as_element() {
+		if clone_element.local_name() in ['svg', 'symbol'] {
+			if e.has_attribute('width') {
+				clone_element.set_attribute_value('width', e.get_attribute_value('width'))
+			}
+			if e.has_attribute('height') {
+				clone_element.set_attribute_value('height', e.get_attribute_value('height'))
+			}
+		}
+	}
+	shadow_node.append_child(clone_node) or {}
+}
+
+fn (mut e Element) svg_use_process_the_url() {
+	target := e.svg_use_referenced_element()
+	e.svg_use_clone_element_tree_as_our_shadow_tree(target)
+}
+
+pub fn (mut e Element) svg_element_changed(svg_element &Element) {
+	if !e.is_svg_element() || e.local_name() != 'use' {
+		return
+	}
+	to_clone := e.svg_use_referenced_element() or { return }
+	if to_clone == svg_element || to_clone.as_node().is_ancestor_of(svg_element.as_node()) {
+		e.svg_use_clone_element_tree_as_our_shadow_tree(to_clone)
+	}
+}
+
+pub fn (mut e Element) svg_element_removed(svg_element &Element) {
+	if !e.is_svg_element() || e.local_name() != 'use' {
+		return
+	}
+	reference := e.svg_use_reference_url() or { return }
+	fragment := reference.fragment() or { return }
+	if !e.svg_use_reference_is_same_document(reference)
+		|| svg_element.get_attribute_value('id') != url_percent_decode(fragment) {
+		return
+	}
+	if shadow_root := e.shadow_root() {
+		mut shadow_node := unsafe { &Node(shadow_root) }
+		shadow_node.remove_all_children(true)
+	}
+}
+
+pub fn (mut e Element) update_use_elements_that_reference_this() {
+	if !e.is_svg_element() || e.local_name() == 'use' || e.id() == none || !e.is_connected()
+		|| !e.document().is_completely_loaded() || e.as_node().root().as_shadow_root() != none {
+		return
+	}
+	document_root := unsafe { &Node(e.document()) }
+	document_root.for_each_in_subtree(fn [e] (node &Node) TraversalDecision {
+		if use_element := node.as_element() {
+			if use_element.is_svg_element() && use_element.local_name() == 'use' {
+				mut mutable_use := unsafe { &Element(use_element) }
+				mutable_use.svg_element_changed(e)
+			}
+		}
+		return .@continue
+	})
+}
+
+pub fn (mut e Element) remove_from_use_element_that_reference_this() {
+	if !e.is_svg_element() || e.local_name() == 'use' || e.id() == none {
+		return
+	}
+	document_root := unsafe { &Node(e.document()) }
+	document_root.for_each_in_subtree(fn [e] (node &Node) TraversalDecision {
+		if use_element := node.as_element() {
+			if use_element.is_svg_element() && use_element.local_name() == 'use' {
+				mut mutable_use := unsafe { &Element(use_element) }
+				mutable_use.svg_element_removed(e)
+			}
+		}
+		return .@continue
+	})
+}
+
+pub fn (mut d Document) refresh_svg_use_shadow_trees() {
+	document_root := unsafe { &Node(d) }
+	document_root.for_each_in_subtree(fn (node &Node) TraversalDecision {
+		if use_element := node.as_element() {
+			if use_element.is_svg_element() && use_element.local_name() == 'use' {
+				mut mutable_use := unsafe { &Element(use_element) }
+				mutable_use.svg_use_process_the_url()
+			}
+		}
+		return .@continue
+	})
 }
 
 // https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement

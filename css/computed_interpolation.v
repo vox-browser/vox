@@ -9163,6 +9163,9 @@ fn adjust_element_computed_style(mut properties ComputedProperties, element &dom
 		if !is_outermost_svg {
 			properties.set_property_without_modifying_flags(.position, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.static_))))
 		}
+		if element.local_name() == 'symbol' && element.is_direct_child_of_svg_use_shadow_tree() {
+			properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_)))))
+		}
 		return
 	}
 	if !element.is_html_element() {

@@ -137,8 +137,9 @@ fn cascaded_properties_from_dom(placeholder &dom.CSSCascadedProperties_) ?&Casca
 @[heap]
 struct DocumentAuthorStyleSheets {
 mut:
-	// Sheets installed explicitly by CSS-aware callers (link/adopted-sheet
-	// equivalents in this port).
+	// Sheets installed explicitly by CSS-aware callers (link-sheet
+	// equivalents in this port). Constructed adopted sheets have their own
+	// observable list and are iterated after the document's ordinary sheets.
 	sheets []&CSSStyleSheet
 	// Sheets backed by <style> elements are kept separately so rebuilding the
 	// DOM-derived list neither duplicates them on every layout nor discards

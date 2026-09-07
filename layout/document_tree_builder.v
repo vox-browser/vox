@@ -918,19 +918,22 @@ fn attach_referenced_svg_resources_in_subtree(mut node Node, document &dom.Docum
 	}
 }
 
-// SVGUseElement::process_the_url()/update_shadow_tree(). The DOM translation
-// does not yet expose SVGUseElement's closed shadow root, so materialize its
-// same-document clone before the style and layout-tree passes. Keeping the
-// clone below <use> gives TreeBuilder the same instance tree that upstream
-// traverses through get_an_element_by_id() and clone_node(true).
+// SVGUseElement::process_the_url()/update_shadow_tree() normally populates the
+// use element's closed shadow root in DOM. Resolve here as well before style so
+// forward references and external decoded SVG documents are ready for the
+// first layout pass.
 fn materialize_svg_use_shadow_trees(document &dom.Document) {
 	root := unsafe { &dom.Node(document) }
 	for use_element in css.query_selector_all(root, 'use') {
 		if !use_element.is_svg_element() || use_element.local_name() != 'use' {
 			continue
 		}
+		mut destination := use_element.as_node()
+		if shadow_root := use_element.shadow_root() {
+			destination = unsafe { &dom.Node(shadow_root) }
+		}
 		mut already_materialized := false
-		for child in use_element.as_node().children_as_vector() {
+		for child in destination.children_as_vector() {
 			if child.as_element() != none {
 				already_materialized = true
 				break
@@ -958,12 +961,28 @@ fn materialize_svg_use_shadow_trees(document &dom.Document) {
 			}
 		}
 		resolved_target := target or { continue }
-		if voidptr(resolved_target) == voidptr(use_element) || !resolved_target.is_svg_element() || !svg.valid_use_reference_tag(resolved_target.local_name()) {
+		if voidptr(resolved_target) == voidptr(use_element) || !resolved_target.is_svg_element()
+			|| !svg.valid_use_reference_tag(resolved_target.local_name())
+			|| !use_element.is_valid_svg_use_reference_element(resolved_target) {
 			continue
 		}
 		clone := resolved_target.as_node().clone_node(document, true, none) or { continue }
-		mut use_node := use_element.as_node()
-		use_node.append_child(clone) or { continue }
+		if mut clone_element := clone.as_element() {
+			if clone_element.local_name() in ['svg', 'symbol'] {
+				if use_element.has_attribute('width') {
+					clone_element.set_attribute_value('width', use_element.get_attribute_value('width'))
+				}
+				if use_element.has_attribute('height') {
+					clone_element.set_attribute_value('height', use_element.get_attribute_value('height'))
+				}
+			}
+		}
+		mut destination_node := unsafe { &dom.Node(destination) }
+		destination_node.append_child(clone) or { continue }
+		if shadow_root := use_element.shadow_root() {
+			mut mutable_shadow_root := unsafe { &dom.ShadowRoot(shadow_root) }
+			mutable_shadow_root.set_uses_document_style_sheets(use_element.svg_use_references_same_document())
+		}
 	}
 }
 
@@ -2040,10 +2059,8 @@ fn create_layout_node_for_svg_element(document &dom.Document, element &dom.Eleme
 		return unsafe { &Node(InlineNode.new(document, element.as_node(), computed)) }
 	}
 	if tag_name == 'symbol' {
-		if parent := element.as_node().parent_element() {
-			if parent.is_svg_element() && parent.local_name() == 'use' {
-				return unsafe { &Node(SVGGraphicsBox.new(document, element, computed)) }
-			}
+		if element.is_direct_child_of_svg_use_shadow_tree() {
+			return unsafe { &Node(SVGGraphicsBox.new(document, element, computed)) }
 		}
 		return none
 	}

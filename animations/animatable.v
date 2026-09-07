@@ -115,21 +115,8 @@ fn compare_dom_animations(_ voidptr, a &dom.Animation, b &dom.Animation) int {
 		unsafe { &Animation(b.concrete_handle_) })
 }
 
-fn update_animations_for_dom_root(_ voidptr, root &dom.Node, timestamp f64) {
+fn update_animations_for_dom_root(_ voidptr, root &dom.Node, _timestamp f64) {
 	collected_animations := all_animations_for_dom_root(root)
-	mut updated_timelines := map[u64]bool{}
-	for animation in collected_animations {
-		if mut timeline := animation.timeline_ {
-			key := u64(voidptr(timeline))
-			if key !in updated_timelines {
-				if document := timeline.document_ {
-					timeline.set_document_active(document.is_active())
-				}
-				timeline.update_current_time(timestamp)
-				updated_timelines[key] = true
-			}
-		}
-	}
 	for animation in collected_animations {
 		mut mutable_animation := unsafe { &Animation(animation) }
 		mutable_animation.update()

@@ -105,6 +105,8 @@ fn dump_case(path string) !string {
 	}
 	navigable.traversable_navigable_ = navigable
 	document.set_cached_navigable(navigable)
+	// Fixture scripts run after parsing, like deferred scripts in a loaded document.
+	document.completely_finish_loading()
 	mut javascript_runtime := browserjs.Runtime.create()
 	defer {
 		javascript_runtime.close()

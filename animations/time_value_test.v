@@ -1,5 +1,7 @@
 module animations
 
+import dom
+
 fn test_time_value_units_and_arithmetic() {
 	time := TimeValue.milliseconds(250)
 	assert time.str() == '250.0ms'
@@ -35,4 +37,22 @@ fn test_document_and_scroll_timeline_time_values() {
 	})
 	assert scroll.current_time()!.type_ == .percentage
 	assert scroll.current_time()!.value == 50
+}
+
+fn test_document_updates_every_associated_timeline_and_honors_disassociation() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	mut first := new_document_timeline(document, 10, 100)
+	mut second := new_document_timeline(document, 20, 100)
+
+	document.update_animations_and_send_events(150)
+	assert first.current_time()!.value == 140
+	assert second.current_time()!.value == 130
+
+	second.set_associated_document(none)
+	document.update_animations_and_send_events(200)
+	assert first.current_time()!.value == 190
+	assert second.current_time()!.value == 130
 }
