@@ -161,8 +161,28 @@ fn test_document_open_window_routes_to_window_open_steps_and_preserves_proxy_ide
 	mut document, window := create_active_window('https://example.test/')!
 	assert document.is_fully_active()
 	model_proxy := window.browsing_context().window_proxy() or { panic('missing WindowProxyModel') }
+	dom_window := model_proxy.dom_proxy().window() or { panic('missing DOM WindowProxy target') }
+	assert voidptr(dom_window) == voidptr(window)
 	first := document.open_window('', '_self', '') or { panic('window open returned null') }
 	second := document.open_window('', '_self', '') or { panic('window open returned null') }
 	assert voidptr(first) == voidptr(model_proxy.dom_proxy())
 	assert voidptr(second) == voidptr(first)
+}
+
+fn test_window_proxy_retargets_both_html_and_dom_slots() {
+	first_document, first_window := create_active_window('https://example.test/first')!
+	proxy := WindowProxyModel.create(first_window)
+	assert proxy.window() == first_window
+	assert proxy.dom_proxy().window() or { panic('missing first DOM target') } == unsafe {
+		&dom.Window(first_window)
+	}
+
+	second_context := BrowsingContextModel.create(first_document, none, 'second')
+	second_window := WindowModel.create(first_document, second_context)!
+	mut mutable_proxy := proxy
+	mutable_proxy.set_window(second_window)
+	assert proxy.window() == second_window
+	assert proxy.dom_proxy().window() or { panic('missing second DOM target') } == unsafe {
+		&dom.Window(second_window)
+	}
 }

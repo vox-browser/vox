@@ -921,11 +921,12 @@ mut:
 }
 
 pub fn WindowProxyModel.create(window &WindowModel) &WindowProxyModel {
-	mut proxy := &WindowProxyModel{
+	dom_proxy := &dom.WindowProxy{}
+	dom_proxy.set_window(unsafe { &dom.Window(window) })
+	return &WindowProxyModel{
 		window_: window
+		dom_proxy_: dom_proxy
 	}
-	proxy.dom_proxy_ = &dom.WindowProxy{}
-	return proxy
 }
 
 pub fn (proxy &WindowProxyModel) dom_proxy() &dom.WindowProxy {
@@ -948,6 +949,7 @@ pub fn (proxy &WindowProxyModel) is_html_window_proxy() bool {
 
 pub fn (mut proxy WindowProxyModel) set_window(window &WindowModel) {
 	proxy.window_ = window
+	proxy.dom_proxy_.set_window(unsafe { &dom.Window(window) })
 }
 
 pub fn (proxy &WindowProxyModel) associated_browsing_context() &BrowsingContextModel {

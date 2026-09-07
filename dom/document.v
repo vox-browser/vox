@@ -1857,7 +1857,10 @@ pub mut:
 pub struct Location {}
 
 @[heap]
-pub struct WindowProxy {}
+pub struct WindowProxy {
+mut:
+	window_ ?&Window
+}
 
 @[heap]
 pub struct NavigationParams {
@@ -2617,7 +2620,12 @@ pub fn (bc &BrowsingContext) active_document() ?&Document {
 
 // WindowProxy methods
 pub fn (wp &WindowProxy) set_window(w &Window) {
-	_ = w
+	mut mutable_proxy := unsafe { &WindowProxy(wp) }
+	mutable_proxy.window_ = w
+}
+
+pub fn (wp &WindowProxy) window() ?&Window {
+	return wp.window_
 }
 
 // Window methods
