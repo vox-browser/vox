@@ -127,19 +127,19 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14132
-  unmatched: 1626
+  candidate-name-match: 14134
+  unmatched: 1611
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 321
+  consolidated-name-match: 334
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
 unmatched implementations by module:
 
-   707 CSS
-   597 Layout
-   322 Painting
+   697 CSS
+   595 Layout
+   319 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total

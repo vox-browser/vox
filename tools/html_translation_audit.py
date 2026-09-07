@@ -226,6 +226,32 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     # overrides are dispatched together at the style-computation boundary.
     ("SVGElement", "adjust_computed_style"): (("adjust_element_computed_style", None),),
     ("SVGSymbolElement", "adjust_computed_style"): (("adjust_element_computed_style", None),),
+    # Primitive calculated-value resolution receives Layout's already-derived
+    # length context explicitly in V, avoiding a CSS -> Layout module cycle.
+    ("Angle", "resolve_calculated"): (("resolve_calculated_with_context", "Angle"),),
+    ("Frequency", "resolve_calculated"): (("resolve_calculated_with_context", "Frequency"),),
+    ("Time", "resolve_calculated"): (("resolve_calculated_with_context", "Time"),),
+    # These C++ class-private helpers are module-private free functions in V;
+    # their callers and tests exercise the same algorithms directly.
+    ("CSSLayerBlockRule", "next_unique_anonymous_layer_name"): (
+        ("next_unique_anonymous_layer_name", None),
+    ),
+    ("FontComputer", "find_matching_font_weight_ascending"): (
+        ("find_matching_font_weight_ascending", None),
+    ),
+    ("FontComputer", "find_matching_font_weight_descending"): (
+        ("find_matching_font_weight_descending", None),
+    ),
+    ("Selector", "collect_ancestor_hashes"): (("selector_ancestor_hashes", None),),
+    # Renderer-independent painting keeps these algorithms on value records or
+    # as free helpers instead of mirroring the backend-owned C++ class tree.
+    ("CornerRadii", "adjust_corners_for_spread_distance"): (
+        ("adjust_for_spread_distance", "CornerRadii"),
+    ),
+    ("InputColors", "get_shade"): (("get_shade", None),),
+    ("FieldSetPaintable", "paint_background"): (
+        ("background_clip_rect", "FieldSetPaintable"),
+    ),
     # `Error` is V's built-in error interface. The concrete protocol error is
     # therefore named WebDriverError while retaining both upstream factories.
     ("Error", "from_code"): (
@@ -542,6 +568,13 @@ CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
     ("StyleComputer.cpp", "line_width_keyword_to_css_pixels"): ("computed_interpolation_line_width_keyword_to_css_pixels",),
     ("StyleComputer.cpp", "snap_a_length_as_a_border_width"): ("computed_interpolation_snap_a_length_as_a_border_width",),
     ("StyleComputer.cpp", "compute_style_value_list"): ("computed_interpolation_compute_style_value_list",),
+    ("Serialize.cpp", "needs_comment_between"): ("component_values_need_comment_between",),
+    ("StyleInvalidation.cpp", "is_stacking_context_creating_value"): (
+        "is_stacking_context_creating_value_boundary",
+    ),
+    ("StyleInvalidationData.cpp", "for_each_consecutive_simple_selector_group"): (
+        "selector_groups_for_invalidation",
+    ),
     ("StyleValues/BasicShapeStyleValue.cpp", "path_from_resolved_rect"): ("style_values_extra_path_from_resolved_rect",),
     ("StyleValues/RadialSizeStyleValue.cpp", "side_shape"): ("style_values_extra_side_shape",),
     ("StyleValues/RadialSizeStyleValue.cpp", "closest_side_shape"): ("style_values_extra_closest_side_shape",),

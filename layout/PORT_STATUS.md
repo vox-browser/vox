@@ -2,11 +2,11 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Layout`
 
-Re-audited: 2026-09-06
+Re-audited: 2026-09-08
 
 All 50 upstream Layout `.cpp` units have filename-level homes in the typed V
 Layout package. That inventory does not establish body-level parity: the
-current semantic audit reports 597 unmatched Layout implementations, and the
+current semantic audit reports 595 unmatched Layout implementations, and the
 legacy `BlockBox` renderer transport still sits between typed Layout and the
 native shell.
 
@@ -588,7 +588,11 @@ after laying out its nested text children, matching where C++ assigns
 `m_current_text_position`. A `<text>` whose characters all live in `<tspan>`s has
 an empty path, so advancing before the recursion discarded the `x`/`y` it had
 just resolved and started every child from the SVG origin. The old generic `svg_text_`
-transport has been removed. SVG `<image>` now follows `ImagePaintable`: its
+transport has been removed. `dominant-baseline: auto` now resolves through the
+computed writing mode as upstream does: alphabetic for horizontal/sideways
+text and central for vertical text until `text-orientation` is implemented.
+All explicit baseline metrics retain their font-metric offsets. SVG `<image>`
+now follows `ImagePaintable`: its
 `href`/XLink precedence, intrinsic-ratio dimension fallback, forced `contain`
 fit, computed object position, translated `image-rendering` scaling selection,
 image-rect clip, and CSS visual-context transform cross the active renderer boundary. HTML `<img>` and SVG `<image>` now both retain the typed

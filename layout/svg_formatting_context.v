@@ -434,7 +434,8 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 		}
 		else {}
 	}
-	baseline_y := context.current_text_position.y + svg_dominant_baseline_offset(computed.dominant_baseline(), font.pixel_metrics())
+	baseline_metric := resolve_dominant_baseline_metric(computed)
+	baseline_y := context.current_text_position.y + f64(dominant_baseline_offset(baseline_metric, font.pixel_metrics()))
 	path := svg_text_outline_path(text, font, x, baseline_y)
 	final_local_bounds := svg_path_bounds(path) or { svg.Rect{} }
 	mut transformed_bounds := quantize_svg_rect(transform.map_rect(final_local_bounds))
@@ -571,18 +572,6 @@ fn svg_direct_text_contents(element &dom.Element) string {
 		}
 	}
 	return text.trim(' \t\n\r\f')
-}
-
-fn svg_dominant_baseline_offset(metric ?css.BaselineMetric, font_metrics platform.FontPixelMetrics) f64 {
-	resolved := metric or { css.BaselineMetric.alphabetic }
-	return match resolved {
-		.central { f64((font_metrics.ascent - font_metrics.descent) * 0.5) }
-		.middle { f64(font_metrics.x_height * 0.5) }
-		.hanging { f64(font_metrics.ascent * 0.8) }
-		.ideographic { f64(-font_metrics.descent) }
-		.mathematical { f64(font_metrics.ascent * 0.5) }
-		else { 0.0 }
-	}
 }
 
 fn (mut context SVGFormattingContext) layout_text_path_element(graphics_box &Node, element &dom.Element, transform svg.AffineTransform, mut graphics_state UsedValues) {
