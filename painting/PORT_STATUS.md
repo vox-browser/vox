@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 319
+filename-level mappings. The current semantic audit nevertheless reports 283
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,13 +25,26 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 319 unmatched Painting
+  were removed; the audit currently reports 283 unmatched Painting
   implementations.
 
 - The audit now records the reviewed value-model decompositions for
   `InputColors::get_shade()`, corner spread adjustment, and the fieldset
   background clip. These point at the real functions used by painting rather
   than adding class-shaped coverage wrappers.
+
+- `PaintStyle.h` is now accounted for in the same explicit way. Its 23 inline
+  gradient/pattern getters and setters are direct fields on the corresponding
+  typed V records, while the three C++ factories are folded into Layout's live
+  resource resolvers. The audit validates every owner/field pair and drops the
+  mapping back to unmatched if a field moves or disappears.
+
+- The same state audit covers SVG geometry/transform handoff and retained
+  viewport/display-list state. `UsedValues` owns the computed SVG path and
+  transforms consumed by painting; `DocumentLayoutResult` owns the viewport's
+  scroll snapshot and visual-context tree; and `DisplayList` exposes its typed
+  visual-context tree directly. Ten class-shaped accessors/setters now point at
+  those live methods or fields instead of remaining shape-only gaps.
 
 - `DisplayListRecordingContext` is now translated as the central boundary for
   recorder access, palette and chrome state, device/CSS conversion, viewport
@@ -544,7 +557,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 319 unmatched implementations.
+Painting: 283 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

@@ -1,0 +1,79 @@
+import unittest
+
+import html_translation_audit as audit
+
+
+class VFieldInventoryTests(unittest.TestCase):
+    def test_collects_only_direct_struct_fields(self) -> None:
+        fields = audit.v_field_names_in_text(
+            """
+pub struct PaintStyle {
+pub mut:
+    color_space ColorSpace
+    transform   ?Affine
+    cache       map[string]Value = map[string]Value{
+        'ignored': Value{}
+    }
+    // fake_field string
+    label string = 'https://example.test/{not_a_field}'
+}
+
+// An accessor's state is often stored on a later struct.
+pub struct LaterState {
+    snapshot Snapshot
+}
+"""
+        )
+
+        self.assertEqual(
+            fields,
+            {
+                ("cache", "PaintStyle"),
+                ("color_space", "PaintStyle"),
+                ("label", "PaintStyle"),
+                ("transform", "PaintStyle"),
+                ("snapshot", "LaterState"),
+            },
+        )
+
+    def test_explicit_field_mapping_fails_open_when_target_moves(self) -> None:
+        present = {("gradient_transform", "SVGGradientPaintStyle")}
+        self.assertEqual(
+            audit.mapped_field_candidate_names(
+                "gradient_transform", "SVGGradientPaintStyle", present
+            ),
+            ("SVGGradientPaintStyle.gradient_transform",),
+        )
+        self.assertEqual(
+            audit.mapped_field_candidate_names(
+                "gradient_transform", "SVGGradientPaintStyle", set()
+            ),
+            (),
+        )
+
+    def test_multi_field_mapping_requires_every_component(self) -> None:
+        complete = {
+            ("svg_viewbox_transform_", "UsedValues"),
+            ("svg_transform_", "UsedValues"),
+        }
+        self.assertEqual(
+            audit.mapped_field_candidate_names(
+                "computed_transforms", "SVGGraphicsPaintable", complete
+            ),
+            (
+                "UsedValues.svg_viewbox_transform_",
+                "UsedValues.svg_transform_",
+            ),
+        )
+        self.assertEqual(
+            audit.mapped_field_candidate_names(
+                "computed_transforms",
+                "SVGGraphicsPaintable",
+                {("svg_viewbox_transform_", "UsedValues")},
+            ),
+            (),
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

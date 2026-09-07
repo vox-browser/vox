@@ -54,6 +54,10 @@ V_INTERFACE = re.compile(
     r"(?ms)^\s*(?:pub\s+)?interface\s+(?P<name>[A-Za-z_]\w*)\s*\{(?P<body>.*?)^\s*\}"
 )
 V_INTERFACE_METHOD = re.compile(r"(?m)^\s*(?P<name>[A-Za-z_]\w*)\s*\(")
+V_STRUCT = re.compile(
+    r"(?m)^(?:pub\s+)?struct\s+(?P<name>[A-Za-z_]\w*)(?:\[[^\]\n]+\])?\s*\{"
+)
+V_STRUCT_FIELD = re.compile(r"^\s*(?P<name>[A-Za-z_]\w*)\s+\S")
 RUNTIME_ONLY_METHODS = {"initialize", "visit_edges", "finalize"}
 # These WebIDL dictionaries enter the standalone port as typed V values. Their
 # C++ from_value() methods only inspect JS objects and manufacture callback
@@ -252,6 +256,29 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("FieldSetPaintable", "paint_background"): (
         ("background_clip_rect", "FieldSetPaintable"),
     ),
+    # SVG formatting stores the computed paint transforms and geometry beside
+    # the other used layout values. Painting consumes these same values rather
+    # than copying them into a parallel paintable-class hierarchy.
+    ("ComputedTransforms", "svg_to_viewbox_transform"): (
+        ("svg_viewbox_transform", "UsedValues"),
+    ),
+    ("ComputedTransforms", "svg_transform"): (("svg_transform", "UsedValues"),),
+    ("SVGGraphicsPaintable", "set_computed_transforms"): (
+        ("set_computed_svg_transforms", "UsedValues"),
+    ),
+    ("SVGPathPaintable", "set_computed_path"): (
+        ("set_computed_svg_path", "UsedValues"),
+    ),
+    ("SVGPathPaintable", "computed_path"): (("computed_svg_path", "UsedValues"),),
+    # Paint-server factory construction is folded into Layout's resource
+    # resolution boundary, which returns the concrete Painting value record.
+    ("SVGLinearGradientPaintStyle", "create"): (
+        ("resolve_svg_linear_gradient_paint_style", None),
+    ),
+    ("SVGRadialGradientPaintStyle", "create"): (
+        ("resolve_svg_radial_gradient_paint_style", None),
+    ),
+    ("SVGPatternPaintStyle", "create"): (("resolve_svg_pattern_paint_style", None),),
     # `Error` is V's built-in error interface. The concrete protocol error is
     # therefore named WebDriverError while retaining both upstream factories.
     ("Error", "from_code"): (
@@ -555,6 +582,50 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("ReadableByteStreamTeeBYOBReadRequest", "on_error"): (("error_tee_branches", None),),
 }
 
+# Inline C++ accessors whose state is deliberately exposed as a typed public V
+# record field. These mappings are accepted only while the named owner/field
+# exists, just as function mappings fail open when their implementation moves.
+CONSOLIDATED_FIELD_MAPPINGS: dict[
+    tuple[str, str], tuple[tuple[str, str], ...]
+] = {
+    ("SVGGradientPaintStyle", "gradient_transform"): (("gradient_transform", "SVGGradientPaintStyle"),),
+    ("SVGGradientPaintStyle", "set_gradient_transform"): (("gradient_transform", "SVGGradientPaintStyle"),),
+    ("SVGGradientPaintStyle", "spread_method"): (("spread_method", "SVGGradientPaintStyle"),),
+    ("SVGGradientPaintStyle", "set_spread_method"): (("spread_method", "SVGGradientPaintStyle"),),
+    ("SVGGradientPaintStyle", "color_stops"): (("color_stops", "SVGGradientPaintStyle"),),
+    ("SVGGradientPaintStyle", "repeat_length"): (("repeat_length", "SVGGradientPaintStyle"),),
+    ("SVGGradientPaintStyle", "color_space"): (("color_space", "SVGGradientPaintStyle"),),
+    ("SVGGradientPaintStyle", "set_color_space"): (("color_space", "SVGGradientPaintStyle"),),
+    ("SVGLinearGradientPaintStyle", "start_point"): (("start_point", "SVGLinearGradientPaintStyle"),),
+    ("SVGLinearGradientPaintStyle", "end_point"): (("end_point", "SVGLinearGradientPaintStyle"),),
+    ("SVGLinearGradientPaintStyle", "set_start_point"): (("start_point", "SVGLinearGradientPaintStyle"),),
+    ("SVGLinearGradientPaintStyle", "set_end_point"): (("end_point", "SVGLinearGradientPaintStyle"),),
+    ("SVGRadialGradientPaintStyle", "start_center"): (("start_center", "SVGRadialGradientPaintStyle"),),
+    ("SVGRadialGradientPaintStyle", "start_radius"): (("start_radius", "SVGRadialGradientPaintStyle"),),
+    ("SVGRadialGradientPaintStyle", "end_center"): (("end_center", "SVGRadialGradientPaintStyle"),),
+    ("SVGRadialGradientPaintStyle", "end_radius"): (("end_radius", "SVGRadialGradientPaintStyle"),),
+    ("SVGRadialGradientPaintStyle", "set_start_center"): (("start_center", "SVGRadialGradientPaintStyle"),),
+    ("SVGRadialGradientPaintStyle", "set_start_radius"): (("start_radius", "SVGRadialGradientPaintStyle"),),
+    ("SVGRadialGradientPaintStyle", "set_end_center"): (("end_center", "SVGRadialGradientPaintStyle"),),
+    ("SVGRadialGradientPaintStyle", "set_end_radius"): (("end_radius", "SVGRadialGradientPaintStyle"),),
+    ("SVGPatternPaintStyle", "tile_display_list"): (("tile_display_list", "SVGPatternPaintStyle"),),
+    ("SVGPatternPaintStyle", "tile_rect"): (("tile_rect", "SVGPatternPaintStyle"),),
+    ("SVGPatternPaintStyle", "pattern_transform"): (("pattern_transform", "SVGPatternPaintStyle"),),
+    # Paintable-class state that V retains on the layout result or on its
+    # renderer-independent value record instead of behind trivial accessors.
+    ("SVGGraphicsPaintable", "computed_transforms"): (
+        ("svg_viewbox_transform_", "UsedValues"),
+        ("svg_transform_", "UsedValues"),
+    ),
+    ("ViewportPaintable", "scroll_state_snapshot"): (
+        ("scroll_state_snapshot", "DocumentLayoutResult"),
+    ),
+    ("ViewportPaintable", "visual_context_tree"): (
+        ("visual_context_tree", "DocumentLayoutResult"),
+    ),
+    ("DisplayList", "visual_context_tree"): (("visual_context_tree", "DisplayList"),),
+}
+
 # Some V modules deliberately consolidate private C++ helpers into a shared
 # implementation or give them a module-specific prefix to avoid collisions.
 # These mappings are source-qualified and are accepted only while every named
@@ -712,6 +783,106 @@ def v_function_names(translation: Path) -> set[tuple[str, str | None]]:
     return functions
 
 
+def v_field_names(translation: Path) -> set[tuple[str, str]]:
+    fields: set[tuple[str, str]] = set()
+    for source in translation.rglob("*.v"):
+        if source.name.endswith("_test.v"):
+            continue
+        fields.update(v_field_names_in_text(source.read_text(errors="replace")))
+    return fields
+
+
+def strip_v_comments_and_literals(text: str) -> str:
+    """Blank V comments and literals without changing offsets or newlines."""
+    output = list(text)
+    index = 0
+    state = "code"
+    quote = ""
+    block_depth = 0
+    while index < len(text):
+        if state == "code":
+            if text.startswith("//", index):
+                output[index] = output[index + 1] = " "
+                index += 2
+                state = "line-comment"
+                continue
+            if text.startswith("/*", index):
+                output[index] = output[index + 1] = " "
+                index += 2
+                state = "block-comment"
+                block_depth = 1
+                continue
+            if text[index] in {'"', "'", "`"}:
+                quote = text[index]
+                output[index] = " "
+                index += 1
+                state = "literal"
+                continue
+            index += 1
+            continue
+
+        if state == "line-comment":
+            if text[index] == "\n":
+                state = "code"
+            else:
+                output[index] = " "
+            index += 1
+            continue
+
+        if state == "block-comment":
+            if text.startswith("/*", index):
+                output[index] = output[index + 1] = " "
+                block_depth += 1
+                index += 2
+                continue
+            if text.startswith("*/", index):
+                output[index] = output[index + 1] = " "
+                block_depth -= 1
+                index += 2
+                if block_depth == 0:
+                    state = "code"
+                continue
+            if text[index] != "\n":
+                output[index] = " "
+            index += 1
+            continue
+
+        if text[index] == "\\" and index + 1 < len(text):
+            output[index] = " "
+            if text[index + 1] != "\n":
+                output[index + 1] = " "
+            index += 2
+            continue
+        character = text[index]
+        output[index] = "\n" if character == "\n" else " "
+        index += 1
+        if character == quote:
+            state = "code"
+
+    return "".join(output)
+
+
+def v_field_names_in_text(text: str) -> set[tuple[str, str]]:
+    sanitized = strip_v_comments_and_literals(text)
+
+    fields: set[tuple[str, str]] = set()
+    for struct_match in V_STRUCT.finditer(sanitized):
+        owner = struct_match.group("name")
+        opening = struct_match.end() - 1
+        closing = matching_closing_brace(sanitized, opening)
+        if closing is None:
+            continue
+        depth = 0
+        for line in sanitized[opening + 1 : closing].splitlines():
+            if depth == 0:
+                if field_match := V_STRUCT_FIELD.match(line):
+                    field_name = field_match.group("name")
+                    if field_name not in {"pub", "mut"}:
+                        fields.add((field_name, owner))
+            depth += line.count("{") - line.count("}")
+    return fields
+
+
 def camel_to_snake(name: str) -> str:
     # Preserve the HTML prefix as its own word. The generic acronym rule sees
     # HTMLBRElement as the single acronym HTMLBR and produces htmlbr_element,
@@ -756,9 +927,21 @@ def free_function_candidate_names(
     return tuple(sorted({name for name, _ in functions if name == v_name}))
 
 
+def mapped_field_candidate_names(
+    method_name: str, class_name: str, fields: set[tuple[str, str]]
+) -> tuple[str, ...]:
+    mappings = CONSOLIDATED_FIELD_MAPPINGS.get((class_name, method_name), ())
+    if not mappings or any(mapping not in fields for mapping in mappings):
+        return ()
+    return tuple(f"{owner}.{name}" for name, owner in mappings)
+
+
 def method_inventory(
-    upstream_html: Path, functions: set[tuple[str, str | None]]
+    upstream_html: Path,
+    functions: set[tuple[str, str | None]],
+    fields: set[tuple[str, str]] | None = None,
 ) -> list[UpstreamMethod]:
+    fields = fields or set()
     inventory: list[UpstreamMethod] = []
     for source in sorted(upstream_html.rglob("*.cpp")):
         text = strip_cpp_comments(source.read_text(errors="replace"))
@@ -773,9 +956,13 @@ def method_inventory(
             mapped_candidates = tuple(
                 name for name, owner in mapped_methods if (name, owner) in functions
             )
+            mapped_field_candidates = mapped_field_candidate_names(method_name, class_name, fields)
             if mapped_methods and len(mapped_candidates) == len(mapped_methods):
                 candidates = mapped_candidates
                 disposition = "consolidated-name-match"
+            elif mapped_field_candidates:
+                candidates = mapped_field_candidates
+                disposition = "value-record-field-match"
             elif class_name in NAMESPACE_TEMPLATE_CLASSES:
                 disposition = "namespace-template-specialization"
             elif method_name == "requires":
@@ -940,7 +1127,9 @@ def qualified_header_template_inventory(upstream_html: Path) -> list[UpstreamMet
 
 
 def header_inline_inventory(
-    upstream_html: Path, functions: set[tuple[str, str | None]]
+    upstream_html: Path,
+    functions: set[tuple[str, str | None]],
+    fields: set[tuple[str, str]] | None = None,
 ) -> list[UpstreamMethod]:
     """Inventory methods implemented inline at class scope in HTML headers.
 
@@ -949,6 +1138,7 @@ def header_inline_inventory(
     implementation to translate. Class-scope brace tracking keeps control-flow
     statements inside an inline method from being mistaken for more methods.
     """
+    fields = fields or set()
     inventory: list[UpstreamMethod] = []
     for source in sorted(upstream_html.rglob("*.h")):
         text = strip_cpp_comments(source.read_text(errors="replace"))
@@ -995,9 +1185,15 @@ def header_inline_inventory(
                                 for name, owner in mapped_methods
                                 if (name, owner) in functions
                             )
+                            mapped_field_candidates = mapped_field_candidate_names(
+                                method_name, class_name, fields
+                            )
                             if mapped_methods and len(mapped_candidates) == len(mapped_methods):
                                 candidates = mapped_candidates
                                 disposition = "consolidated-name-match"
+                            elif mapped_field_candidates:
+                                candidates = mapped_field_candidates
+                                disposition = "value-record-field-match"
                             elif method_name == "requires":
                                 disposition = "language-template-trait"
                             elif class_name in LANGUAGE_TEMPLATE_TRAIT_CLASSES:
@@ -1066,8 +1262,9 @@ def main() -> int:
     if not upstream_html.is_dir():
         raise SystemExit(f"upstream HTML directory does not exist: {upstream_html}")
     functions = v_function_names(args.translation)
-    inventory = method_inventory(upstream_html, functions)
-    inventory.extend(header_inline_inventory(upstream_html, functions))
+    fields = v_field_names(args.translation)
+    inventory = method_inventory(upstream_html, functions, fields)
+    inventory.extend(header_inline_inventory(upstream_html, functions, fields))
     inventory.extend(free_function_inventory(upstream_html, functions))
     inventory.extend(qualified_header_template_inventory(upstream_html))
     inventory.sort(key=lambda method: (method.source, method.line, method.class_name, method.name))

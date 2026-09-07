@@ -944,6 +944,17 @@ def all_v_function_names(
     return functions, sorted(quarantined_files), quarantined_functions
 
 
+def all_v_field_names(translation: Path) -> set[tuple[str, str]]:
+    fields: set[tuple[str, str]] = set()
+    for source in translation.rglob("*.v"):
+        if source.name.endswith("_test.v") or is_unreviewed_coverage_shim(source):
+            continue
+        if any(part in EXCLUDED_TRANSLATION_DIRECTORIES for part in source.parts):
+            continue
+        fields.update(html_audit.v_field_names_in_text(source.read_text(errors="replace")))
+    return fields
+
+
 def semantic_divergence_inventory(translation: Path) -> list[dict[str, object]]:
     markers: list[dict[str, object]] = []
     for source in sorted(translation.rglob("*.v")):
@@ -1100,9 +1111,10 @@ def suspicious_trivial_implementation_inventory(translation: Path) -> list[dict[
 def module_inventory(
     upstream_module: Path,
     functions: set[tuple[str, str | None]],
+    fields: set[tuple[str, str]] | None = None,
 ) -> list[html_audit.UpstreamMethod]:
-    inventory = html_audit.method_inventory(upstream_module, functions)
-    inventory.extend(html_audit.header_inline_inventory(upstream_module, functions))
+    inventory = html_audit.method_inventory(upstream_module, functions, fields)
+    inventory.extend(html_audit.header_inline_inventory(upstream_module, functions, fields))
     inventory.extend(html_audit.free_function_inventory(upstream_module, functions))
     inventory.extend(html_audit.qualified_header_template_inventory(upstream_module))
     inventory.sort(key=lambda method: (method.source, method.line, method.class_name, method.name))
@@ -1116,6 +1128,7 @@ def main() -> int:
         raise SystemExit(f"upstream LibWeb directory does not exist: {upstream_root}")
 
     functions, quarantined_files, quarantined_functions = all_v_function_names(args.translation)
+    fields = all_v_field_names(args.translation)
     semantic_markers = semantic_divergence_inventory(args.translation)
     suspicious_trivial_implementations, verified_trivial_implementations = (
         trivial_implementation_inventories(args.translation)
@@ -1129,7 +1142,7 @@ def main() -> int:
         cpp_files = len(list(upstream_module.rglob("*.cpp")))
         if cpp_files == 0:
             continue
-        inventory = module_inventory(upstream_module, functions)
+        inventory = module_inventory(upstream_module, functions, fields)
         dispositions = collections.Counter(method.disposition for method in inventory)
         unmatched_by_class = collections.Counter(
             method.class_name for method in inventory if method.disposition == "unmatched"
