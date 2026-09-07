@@ -668,6 +668,221 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ),
         ("webaudio/context.v", "AudioContext", "output_timestamp"),
         ("webdriver/action_algorithms.v", None, "dispatch_pause_action"),
+        # These animation, clipboard, cookie-store, and credential constructors
+        # translate the upstream allocation/default-state setup directly.
+        ("animations/animation_effect.v", "AnimationEffect", "new"),
+        ("animations/animation_timeline.v", "AnimationTimeline", "new"),
+        ("clipboard/clipboard.v", "ClipboardReadPromise", "pending"),
+        ("clipboard/clipboard.v", "ClipboardTextPromise", "pending"),
+        ("clipboard/clipboard.v", "ClipboardVoidPromise", "pending"),
+        ("clipboard/clipboard_item.v", "ClipboardItemDataPromise", "pending"),
+        ("clipboard/clipboard_item.v", "ClipboardBlobPromise", "pending"),
+        ("clipboard/clipboard_item.v", "ClipboardItem", "create_empty"),
+        ("clipboard/system_clipboard.v", "SystemClipboardBackend", "create"),
+        ("cookiestore/cookie_backend.v", "CookieStoreBackend", "create"),
+        ("cookiestore/cookie_store.v", "CookieItemPromise", "pending"),
+        ("cookiestore/cookie_store.v", "CookieListPromise", "pending"),
+        ("cookiestore/cookie_store.v", "CookieVoidPromise", "pending"),
+        (
+            "credentialmanagement/credentials_container.v",
+            "CredentialsContainer",
+            "construct_impl",
+        ),
+        # These CSS factories and sentinels have meaningful zero-value state.
+        # The style-scope boundary mutates the same reference stored in its map,
+        # so the upstream insert-or-assign step has no separate V operation.
+        (
+            "css/computed_interpolation.v",
+            None,
+            "computed_interpolation_empty_style_value",
+        ),
+        ("css/computed_values.v", "InitialValues", "column_count"),
+        ("css/css.v", "Number", "new"),
+        ("css/css.v", "LengthOrAuto", "make_auto"),
+        ("css/css.v", "LengthPercentageOrAuto", "make_auto"),
+        ("css/descriptors.v", "CSSDescriptors", "update_style_attribute"),
+        ("css/grid_values.v", "GridTrackSizeList", "make_none"),
+        ("css/misc_values.v", "Filter", "make_none"),
+        ("css/more_style_values.v", "FitContentStyleValue", "create"),
+        (
+            "css/style_declarations.v",
+            None,
+            "css_style_properties_empty_dom_style_value",
+        ),
+        ("css/style_scope_cache.v", None, "style_scope_store_has_result_cache_boundary"),
+        ("css/style_values_core.v", "NumericType", "new"),
+        ("css/syntax_highlighter.v", "SyntaxHighlighter", "create"),
+        ("css/transforms.v", "FloatMatrix4x4", "identity"),
+        ("css/transforms.v", "DOMMatrix", "create"),
+        # Collection, promise, and unique-ID defaults translate upstream state;
+        # pointer-backed V node IDs have no separate directory to release from.
+        ("dom/collections_ranges.v", "NodeList", "new"),
+        ("dom/collections_ranges.v", "HTMLCollection", "empty"),
+        ("dom/document.v", "Promise", "create"),
+        ("dom/node.v", None, "deallocate_unique_id"),
+        # The flat editing model has no transparent wrapper positions, so it has
+        # no distinct next or previous equivalent boundary point to return.
+        ("editing/upstream_algorithms.v", None, "next_equivalent_point"),
+        ("editing/upstream_algorithms.v", None, "previous_equivalent_point"),
+        # Binding constructors below allocate records whose V field defaults
+        # carry the same initial state as their current upstream counterparts.
+        ("encoding/text_encoder.v", "TextEncoder", "construct_impl"),
+        ("encoding/text_encoder_stream.v", "TextEncoderStream", "construct_impl"),
+        ("fetch/runtime.v", "FetchController", "create"),
+        ("fetch/runtime.v", "FetchTimingInfo", "create"),
+        ("fetch/runtime.v", "FetchRecord", "finalize"),
+        ("fetch/runtime_operations.v", "FetchControllerHolder", "create"),
+        ("fileapi/blob_url_store.v", "BlobURLStore", "create"),
+        ("fileapi/file_reader.v", "FileReader", "create"),
+        ("fileapi/file_reader.v", "FileReaderSync", "create"),
+        ("fileapi/filelist.v", "FileList", "create"),
+        # LegacyLenientSetter fullscreen assignments are specified no-ops.
+        ("fullscreen/fullscreen.v", None, "set_document_fullscreen_enabled"),
+        ("fullscreen/fullscreen.v", None, "set_document_fullscreen"),
+        ("gamepad/navigator_gamepad.v", "NavigatorGamepadPartial", "new"),
+        # Geometry create() is the internal empty-object deserialization path;
+        # zero-valued coordinates and dimensions are its required initial state.
+        ("geometry/dom_point.v", "DOMPointReadOnly", "create"),
+        ("geometry/dom_point.v", "DOMPoint", "create"),
+        ("geometry/dom_rect.v", "DOMRectReadOnly", "create"),
+        ("geometry/dom_rect.v", "DOMRect", "create"),
+        # These HTML hooks are allocation, embedding-boundary, base-class, or
+        # explicitly implementation-defined no-op behavior upstream.
+        ("html/canvas_inline_mixins.v", "CanvasTransform", "flush_transform"),
+        ("html/canvas_path.v", "CanvasPath", "create"),
+        ("html/canvas_rendering_algorithms.v", None, "image_is_not_origin_clean"),
+        ("html/drag_data_store.v", "DragDataStore", "create"),
+        ("html/event_loop.v", "ParallelQueue", "create"),
+        ("html/external.v", "External", "create"),
+        ("html/focus.v", "FocusManager", "create"),
+        (
+            "html/form_associated_element.v",
+            "FormAssociatedElement",
+            "form_associated_element_was_inserted",
+        ),
+        (
+            "html/form_associated_element.v",
+            "FormAssociatedElement",
+            "form_associated_element_was_removed",
+        ),
+        (
+            "html/form_associated_element.v",
+            "FormAssociatedElement",
+            "form_associated_element_was_moved",
+        ),
+        (
+            "html/form_associated_element.v",
+            "FormAssociatedElement",
+            "form_associated_element_attribute_changed",
+        ),
+        ("html/image_bitmap.v", "ImageBitmap", "create"),
+        ("html/import_map.v", None, "ignore_import_map_warning"),
+        ("html/navigable.v", None, "navigable_noop_presentation_callback"),
+        ("html/navigation_objects.v", "NavigationDestination", "create"),
+        ("html/navigator.v", "WorkerNavigator", "create"),
+        ("html/path2d.v", "Path2D", "create"),
+        ("html/select_item.v", None, "encode_select_item_separator"),
+        ("html/storage_history.v", "StorageHub", "create"),
+        ("html/storage_history.v", "Storage", "reorder"),
+        ("html/syntax_highlighter.v", "HTMLSyntaxHighlighter", "create"),
+        ("html/text_metrics.v", "TextMetrics", "create"),
+        ("html/xml_serializer.v", "XMLSerializer", "construct_impl"),
+        ("http/header_list.v", "HeaderList", "create"),
+        # IndexedDB delegates queue state to DatabaseData; the remaining
+        # internal/internals entries translate allocation or exact defaults.
+        ("indexeddb/internal_operations.v", "ConnectionQueueHandler", "the"),
+        ("indexeddb/internal_operations.v", "MutationLog", "create"),
+        (
+            "internals/internal_animation_timeline.v",
+            "InternalAnimationTimeline",
+            "update_current_time",
+        ),
+        (
+            "internals/internal_animation_timeline.v",
+            "InternalAnimationTimeline",
+            "duration",
+        ),
+        ("internals/xr_testing.v", "FakeXRDevice", "create"),
+        ("internals/xr_testing.v", "XRTest", "create"),
+        # Layout and loader entries translate default state or platform
+        # boundaries whose upstream result is represented by that state.
+        ("layout/block_flow_minimal.v", None, "solid_box_border_styles"),
+        ("layout/layout_state.v", "LayoutState", "new"),
+        ("loader/content_filter.v", "ContentFilter", "create"),
+        ("loader/proxy_mappings.v", "ProxyMappings", "create"),
+        (
+            "mediasourceextensions/media_source.v",
+            "MediaSourceHandle",
+            "create_internal",
+        ),
+        ("page/page_client.v", "PageClient", "create"),
+        ("page/page_entry_points.v", "Page", "pdf_viewer_supported"),
+        # ResizeHandle enter/leave are empty virtual overrides upstream.
+        ("painting/scrolling.v", "ResizeHandle", "create"),
+        ("painting/scrolling.v", "ResizeHandle", "mouse_enter"),
+        ("painting/scrolling.v", "ResizeHandle", "mouse_leave"),
+        ("permissionspolicy/autoplay_allowlist.v", "AutoplayAllowlist", "new"),
+        ("platform/event_loop_plugin.v", "EventLoopPlugin", "new"),
+        ("platform/timer.v", "Timer", "create"),
+        ("serviceworker/registration.v", "RegistrationStore", "create"),
+        ("speech/synthesis.v", "SpeechSynthesisVoice", "create"),
+        ("storageapi/storage_models.v", "StorageShed", "create"),
+        ("storageapi/storage_models.v", "StorageManager", "create"),
+        # Stream release steps return immediately upstream; the no-op algorithms
+        # are intentional callback implementations used by the stream machinery.
+        ("streams/pipe_tee_transfer.v", "MessagePort", "create"),
+        (
+            "streams/readable_controller_operations.v",
+            "ReadableStreamDefaultController",
+            "release_steps",
+        ),
+        ("streams/readable_controller_operations.v", None, "no_op_start_algorithm"),
+        ("streams/readable_controller_operations.v", None, "no_op_pull_algorithm"),
+        ("streams/readable_controller_operations.v", None, "no_op_cancel_algorithm"),
+        ("streams/writable_operations.v", None, "no_op_write_algorithm"),
+        ("streams/writable_operations.v", None, "no_op_close_algorithm"),
+        ("streams/writable_operations.v", None, "no_op_abort_algorithm"),
+        # These SVG methods remain explicit constants/no-ops in current
+        # upstream: GaussianBlur edge mode, the text origin FIXME, and the
+        # standalone decoded-image PageClient embedding defaults.
+        ("svg/element_operations.v", "Element", "edge_mode"),
+        ("svg/element_operations.v", "Element", "get_start_position_of_char"),
+        ("svg/specialized_operations.v", "SVGPageClient", "is_svg_page_client"),
+        ("svg/specialized_operations.v", "SVGPageClient", "is_connection_open"),
+        ("svg/specialized_operations.v", "SVGPageClient", "screen_rect"),
+        (
+            "svg/specialized_operations.v",
+            "SVGPageClient",
+            "report_finished_handling_input_event",
+        ),
+        ("svg/specialized_operations.v", "SVGPageClient", "request_file"),
+        # Remaining entries are stateless factories or exact lifecycle/default
+        # hooks whose upstream realm/GC state has no distinct V representation.
+        ("trustedtypes/factory_csp.v", "TrustedTypePolicyFactory", "create"),
+        ("urlpattern/pattern_types.v", None, "default_pattern_options"),
+        ("webdriver/client_execute_entry_points.v", "Client", "new"),
+        ("webidl/observable_array.v", "ObservableArray", "create"),
+        ("webvtt/vtt_region.v", "VTTRegion", "construct_impl"),
+        ("webxr/webxr.v", "XRSystem", "create"),
+        ("worker/web_worker_client.v", "WebWorkerClient", "die"),
+        ("xpath/evaluator.v", "XPathEvaluator", "construct"),
+        # These remain explicit upstream defaults: SVGGraphicsElement returns
+        # new identity DOMMatrix objects, non-fetch navigation returns null,
+        # and SVGImageElement's visibility hook is an empty override.
+        ("html/navigable.v", None, "attempt_to_create_a_non_fetch_scheme_document"),
+        ("svg/element_operations.v", "Element", "get_ctm"),
+        ("svg/element_operations.v", "Element", "get_screen_ctm"),
+        ("svg/element_operations.v", "Element", "set_visible_in_viewport"),
+        # SourceLocation cannot capture a V caller through a normal function;
+        # current_at preserves explicit sites. MediaSourceHandle's marker and
+        # EGL configuration are standalone runtime/platform-boundary behavior.
+        ("html/source_location.v", "SourceLocation", "current"),
+        (
+            "mediasourceextensions/media_source.v",
+            "MediaSourceHandle",
+            "is_transferable",
+        ),
+        ("webgl/native_context_operations.v", None, "get_egl_config"),
     }
 )
 
