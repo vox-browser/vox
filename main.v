@@ -33,6 +33,7 @@ import storageapi
 import time
 import url
 import webvtt
+import xpath
 import x.json2
 
 #flag darwin -framework CoreImage
@@ -3849,6 +3850,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 
 fn main() {
 	link_translated_modules()
+	xpath.install_dom_xpath_bridge()
 	$if macos {
 		C.native_prevent_app_nap()
 	}

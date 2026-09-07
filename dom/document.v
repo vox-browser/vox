@@ -18,9 +18,20 @@ import url as liburl
 import viewtransition
 import webidl
 
+pub type XPathCreateExpressionCallback = fn (string, ?&XPathNSResolver) !&XPathExpression
+
+pub type XPathEvaluateCallback = fn (string, &Node, ?&XPathNSResolver, u16, ?&XPathResult) !&XPathResult
+
+pub struct XPathBridge {
+pub:
+	create_expression XPathCreateExpressionCallback = unsafe { nil }
+	evaluate          XPathEvaluateCallback = unsafe { nil }
+}
+
 __global (
 	dom_all_navigables   = []&Navigable{}
 	dom_url_record_cache = map[string]liburl.URL{}
+	dom_xpath_bridge     &XPathBridge
 )
 
 // Simple color representation
@@ -2518,14 +2529,113 @@ pub mut:
 	children_ []&AccessibilityTreeNode
 }
 
-@[heap]
-pub struct XPathExpression {}
+pub type XPathNamespaceResolver = fn (string) ?string
+
+pub type XPathExpressionEvaluateCallback = fn (voidptr, &Node, u16, ?&XPathResult) !&XPathResult
+
+pub enum XPathResultType as u16 {
+	any                     = 0
+	number                  = 1
+	string                  = 2
+	boolean                 = 3
+	unordered_node_iterator = 4
+	ordered_node_iterator   = 5
+	unordered_node_snapshot = 6
+	ordered_node_snapshot   = 7
+	any_unordered_node      = 8
+	first_ordered_node      = 9
+}
 
 @[heap]
-pub struct XPathResult {}
+pub struct XPathExpression {
+pub:
+	target            voidptr
+	expression        string
+	evaluate_callback XPathExpressionEvaluateCallback = unsafe { nil }
+}
+
+pub fn (expression &XPathExpression) evaluate(context_node &Node, type_ u16, result ?&XPathResult) !&XPathResult {
+	if expression.target == unsafe { nil } || expression.evaluate_callback == unsafe { nil } {
+		return error('NotSupportedError: XPath expression evaluator is not installed')
+	}
+	return expression.evaluate_callback(expression.target, context_node, type_, result)
+}
 
 @[heap]
-pub struct XPathNSResolver {}
+pub struct XPathResult {
+pub mut:
+	target                  voidptr
+	result_type_            XPathResultType
+	number_value_           f64
+	string_value_           string
+	boolean_value_          bool
+	invalid_iterator_state_ bool
+	nodes                    []&Node
+	iterator_index           int
+}
+
+pub fn (result &XPathResult) result_type() XPathResultType {
+	return result.result_type_
+}
+
+pub fn (result &XPathResult) number_value() f64 {
+	return result.number_value_
+}
+
+pub fn (result &XPathResult) string_value() string {
+	return result.string_value_
+}
+
+pub fn (result &XPathResult) boolean_value() bool {
+	return result.boolean_value_
+}
+
+pub fn (result &XPathResult) invalid_iterator_state() bool {
+	return result.invalid_iterator_state_
+}
+
+pub fn (result &XPathResult) single_node_value() ?&Node {
+	if result.nodes.len == 0 {
+		return none
+	}
+	return result.nodes[0]
+}
+
+pub fn (result &XPathResult) snapshot_length() u32 {
+	return u32(result.nodes.len)
+}
+
+pub fn (mut result XPathResult) iterate_next() ?&Node {
+	if result.iterator_index >= result.nodes.len {
+		return none
+	}
+	node := result.nodes[result.iterator_index]
+	result.iterator_index++
+	return node
+}
+
+pub fn (result &XPathResult) snapshot_item(index int) ?&Node {
+	if index < 0 || index >= result.nodes.len {
+		return none
+	}
+	return result.nodes[index]
+}
+
+@[heap]
+pub struct XPathNSResolver {
+pub:
+	callback_ ?XPathNamespaceResolver
+}
+
+pub fn XPathNSResolver.create(callback XPathNamespaceResolver) &XPathNSResolver {
+	return &XPathNSResolver{
+		callback_: callback
+	}
+}
+
+pub fn (resolver &XPathNSResolver) callback() XPathNamespaceResolver {
+	return resolver.callback_ or { panic('XPathNSResolver has no callback') }
+}
 
 @[heap]
 pub struct DOMRectReadOnly {}
@@ -3415,19 +3525,27 @@ pub fn editing_exec_command(d &Document, command string, value string) bool {
 	return false
 }
 
-// XPath stubs
+// XPath lives in its own package and imports DOM nodes, so Document reaches it
+// through this narrow callback bridge instead of forming a package cycle.
+pub fn install_xpath_bridge(create_expression XPathCreateExpressionCallback, evaluate XPathEvaluateCallback) {
+	dom_xpath_bridge = &XPathBridge{
+		create_expression: create_expression
+		evaluate:          evaluate
+	}
+}
+
 pub fn xpath_create_expression(expression string, resolver ?&XPathNSResolver) !&XPathExpression {
-	_ = expression
-	_ = resolver
-	return &XPathExpression{}
+	if dom_xpath_bridge == unsafe { nil } || dom_xpath_bridge.create_expression == unsafe { nil } {
+		return error('NotSupportedError: XPath evaluator is not installed')
+	}
+	return dom_xpath_bridge.create_expression(expression, resolver)
 }
 
 pub fn xpath_evaluate(expression string, context_node &Node, resolver ?&XPathNSResolver, type_ u16, result ?&XPathResult) !&XPathResult {
-	_ = expression
-	_ = context_node
-	_ = resolver
-	_ = type_
-	return result or { &XPathResult{} }
+	if dom_xpath_bridge == unsafe { nil } || dom_xpath_bridge.evaluate == unsafe { nil } {
+		return error('NotSupportedError: XPath evaluator is not installed')
+	}
+	return dom_xpath_bridge.evaluate(expression, context_node, resolver, type_, result)
 }
 
 pub const max_int = 2147483647
