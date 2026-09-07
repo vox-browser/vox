@@ -344,8 +344,12 @@ fn serenity_sans_face() ?&ttf.TTF_File {
 			continue
 		}
 		bytes := os.read_bytes(path) or { continue }
+		// External construction with the current V compiler does not apply these
+		// vlib field defaults, but TTF_File.init() writes all 12 PANOSE bytes.
 		mut face := &ttf.TTF_File{
-			buf: bytes
+			buf:          bytes
+			panose_array: []u8{len: 12, init: 0}
+			width_scale:  1.0
 		}
 		face.init()
 		platform_serenity_sans_face = face
