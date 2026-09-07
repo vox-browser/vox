@@ -1307,6 +1307,8 @@ pub type ViewportPaintableHitTestCallback = fn (voidptr, f64, f64, HitTestType) 
 
 pub type ViewportPaintableHitTestAllCallback = fn (voidptr, f64, f64) []&Element
 
+pub type DisplayListDumpCallback = fn (voidptr) string
+
 // Painting is downstream of DOM, so the concrete viewport paintable and
 // display list are retained behind callbacks instead of introducing a module
 // cycle. Layout/Painting installs these callbacks when it commits a layout.
@@ -1338,6 +1340,7 @@ pub struct DisplayList {
 pub:
 	concrete_handle voidptr = unsafe { nil }
 	command_count_  int
+	dump_callback   DisplayListDumpCallback = unsafe { nil }
 }
 
 // CSS stubs
@@ -3076,6 +3079,9 @@ pub fn (dl &DisplayList) command_count() int {
 }
 
 pub fn (dl &DisplayList) dump() string {
+	if dl.concrete_handle != unsafe { nil } && dl.dump_callback != unsafe { nil } {
+		return dl.dump_callback(dl.concrete_handle)
+	}
 	return ''
 }
 

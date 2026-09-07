@@ -1322,9 +1322,71 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	result.display_list = &dom.DisplayList{
 		concrete_handle: target
 		command_count_: result.display_list_commands.len
+		dump_callback: viewport_display_list_dump
 	}
 	result.needs_repaint = false
 	return result.display_list
+}
+
+fn display_list_command_nesting_change(kind string) int {
+	return match kind {
+		'begin_background_blend_group', 'begin_background_text_clip', 'begin_css_filter_layer',
+		'begin_svg_mask_layer' {
+			1
+		}
+		'end_background_blend_group', 'end_background_text_clip', 'end_css_filter_layer',
+		'end_svg_mask_layer' {
+			-1
+		}
+		else { 0 }
+	}
+}
+
+fn append_display_list_command_dump(command PaintCommand, mut builder strings.Builder) {
+	builder.write_string(command.kind)
+	if command.x != 0 || command.y != 0 || command.width != 0 || command.height != 0 {
+		builder.write_string(' rect=[${command.x},${command.y} ${command.width}x${command.height}]')
+	}
+	if command.color != '' {
+		builder.write_string(' color=${command.color}')
+	}
+	if command.text != '' {
+		builder.write_string(' text=${command.text}')
+	}
+	if command.image_url != '' {
+		builder.write_string(' image=${command.image_url}')
+	}
+}
+
+fn viewport_display_list_dump(target voidptr) string {
+	result := viewport_layout_result(target)
+	mut builder := strings.new_builder(256 + result.display_list_commands.len * 48)
+	builder.write_string('AccumulatedVisualContext Tree:\n')
+	for index := 1; index < result.visual_context_tree.nodes.len; index++ {
+		node := result.visual_context_tree.nodes[index]
+		for _ in 0 .. node.depth {
+			builder.write_string('  ')
+		}
+		builder.writeln('[${index}] ${result.visual_context_tree.dump(index)}')
+	}
+
+	builder.write_string('\nDisplayList:\n')
+	mut indent := 0
+	for command in result.display_list_commands {
+		nesting_change := display_list_command_nesting_change(command.kind)
+		if nesting_change < 0 && indent > 0 {
+			indent--
+		}
+		for _ in 0 .. indent {
+			builder.write_string('  ')
+		}
+		append_display_list_command_dump(command, mut builder)
+		builder.write_u8(`\n`)
+		if nesting_change > 0 {
+			indent++
+		}
+	}
+	return builder.str()
 }
 
 fn viewport_build_stacking_context_tree(target voidptr) {

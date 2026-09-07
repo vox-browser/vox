@@ -178,6 +178,18 @@ fn test_css_filter_is_lowered_once_around_the_complete_subtree() {
 	assert filtered_parts == 2
 }
 
+fn test_document_display_list_dump_uses_retained_paint_commands() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 40px; height: 20px; background: rgb(12 34 56) }</style><body><div id="target"></div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	dump_text := mutable_document.dump_display_list()
+
+	assert dump_text.starts_with('AccumulatedVisualContext Tree:\n')
+	assert dump_text.contains('\nDisplayList:\n')
+	assert dump_text.contains('fill_rect')
+	assert dump_text.contains('color=rgb(12 34 56)')
+}
+
 fn test_backdrop_filter_records_cpp_background_phase_command() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { margin: 10px; width: 80px; height: 40px; padding: 4px; border: 3px solid black; border-radius: 10px 20px 30px 40px / 5px 10px 15px 20px; background: rgb(12 34 56); backdrop-filter: blur(3px) contrast(150%); box-shadow: 1px 2px 3px red }</style><body><div id="target"></div></body>')
 	root := layout_document_typed_in_viewport(document, 180, 120)
