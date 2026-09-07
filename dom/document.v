@@ -1726,6 +1726,14 @@ pub:
 	parse_xml_document          DocumentXMLDocumentParseCallback = unsafe { nil }
 }
 
+pub type DocumentEditingExecCommandCallback = fn (voidptr, &Document, string, string) bool
+
+pub struct DocumentEditingCommandHook {
+pub:
+	target       voidptr
+	exec_command DocumentEditingExecCommandCallback = unsafe { nil }
+}
+
 // Opaque view of one CSS::BackgroundLayerData entry. CSS owns the typed
 // ComputedProperties object; retaining that address and the coordinated-layer
 // index avoids serializing the value through text at the DOM/CSS cycle boundary.
@@ -3517,12 +3525,12 @@ pub fn (mut d Document) dispatch_event_simple(event_name string, bubbles bool) {
 	document_node.dispatch_event_simple(event_name, bubbles)
 }
 
-// Editing stub
 pub fn editing_exec_command(d &Document, command string, value string) bool {
-	_ = d
-	_ = command
-	_ = value
-	return false
+	hook := d.editing_command_hook_ or { return false }
+	if hook.target == unsafe { nil } || hook.exec_command == unsafe { nil } {
+		return false
+	}
+	return hook.exec_command(hook.target, d, command, value)
 }
 
 // XPath lives in its own package and imports DOM nodes, so Document reaches it
@@ -4264,6 +4272,7 @@ pub mut:
 	selector_query_cache                       map[string]?SelectorList
 	selector_query_hook_                       ?DocumentSelectorQueryHook
 	html_fragment_parsing_hook_                ?DocumentHTMLFragmentParsingHook
+	editing_command_hook_                      ?DocumentEditingCommandHook
 	form_control_selected_text_callback_       DocumentFormControlSelectedTextCallback = unsafe { nil }
 	form_control_input_events_target_callback_ DocumentFormControlInputEventsTargetCallback = unsafe { nil }
 	theme_color_hook_                          ?DocumentThemeColorHook
@@ -5548,6 +5557,14 @@ pub fn (d &Document) selector_query_hook() ?DocumentSelectorQueryHook {
 
 pub fn (mut d Document) set_html_fragment_parsing_hook(hook DocumentHTMLFragmentParsingHook) {
 	d.html_fragment_parsing_hook_ = hook
+}
+
+pub fn (mut d Document) set_editing_command_hook(hook DocumentEditingCommandHook) {
+	d.editing_command_hook_ = hook
+}
+
+pub fn (d &Document) editing_command_hook() ?DocumentEditingCommandHook {
+	return d.editing_command_hook_
 }
 
 pub fn (d &Document) html_fragment_parsing_hook() ?DocumentHTMLFragmentParsingHook {

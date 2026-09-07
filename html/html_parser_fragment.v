@@ -1,6 +1,7 @@
 module html
 
 import dom
+import editing
 import encoding
 
 fn dom_html_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots) ![]&dom.Node {
@@ -135,6 +136,7 @@ pub fn install_document_fragment_parsing_hook(document &dom.Document) {
 	install_document_accessibility_role_hook(document)
 	install_document_csp_hook(document)
 	install_document_fullscreen_hook(document)
+	editing.install_dom_editing_bridge(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_html_fragment_parsing_hook(dom.DocumentHTMLFragmentParsingHook{
 		parse_fragment: dom_html_fragment_parse_callback
