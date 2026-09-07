@@ -506,8 +506,6 @@ pub fn (_ &SvgViewport) unsuspend_redraw_all() {}
 
 pub fn (_ &SvgViewport) force_redraw() {}
 
-pub fn (_ &SvgViewport) deselect_all() {}
-
 pub fn (_ &SvgViewport) check_intersection(_ Rect, _ Rect) bool {
 	return false
 }

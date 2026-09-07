@@ -2268,36 +2268,24 @@ pub fn AbortSignal.timeout(milliseconds u64) !&AbortSignal {
 	// 1. Let signal be a new AbortSignal object.
 	mut signal := AbortSignal.construct_impl()!
 
-	// 2. Let global be signal's relevant global object.
-	global := relevant_global_object_for_abort_signal(signal)
-
-	// 3. Run steps after a timeout given global, "AbortSignal-timeout", milliseconds, and the following step:
-	run_steps_after_a_timeout_for_abort_signal(global, signal, milliseconds)
+	// 2-3. Run steps after a timeout. The standalone timer does not require a
+	// realm-global task queue; it schedules the abort directly below.
+	run_steps_after_a_timeout_for_abort_signal(signal, milliseconds)
 
 	// 4. Return signal.
 	return signal
 }
 
-fn relevant_global_object_for_abort_signal(signal &AbortSignal) &Window {
-	// C++: HTML::relevant_global_object(signal).
-	_ = signal
-	return &Window{}
-}
-
-fn run_steps_after_a_timeout_for_abort_signal(global &Window, signal &AbortSignal, milliseconds u64) {
-	// C++ delegates to WindowOrWorkerGlobalScope::run_steps_after_a_timeout.
-	_ = global
+fn run_steps_after_a_timeout_for_abort_signal(signal &AbortSignal, milliseconds u64) {
 	spawn abort_signal_timeout_task(signal, milliseconds)
 }
 
 fn abort_signal_timeout_task(signal &AbortSignal, milliseconds u64) {
 	time.sleep(milliseconds * time.millisecond)
-	queue_abort_signal_timeout_task(relevant_global_object_for_abort_signal(signal), signal)
+	queue_abort_signal_timeout_task(signal)
 }
 
-fn queue_abort_signal_timeout_task(global &Window, signal &AbortSignal) {
-	// C++ queues a global task on the timer task source.
-	_ = global
+fn queue_abort_signal_timeout_task(signal &AbortSignal) {
 	mut mutable_signal := unsafe { &AbortSignal(signal) }
 	mutable_signal.signal_abort(timeout_error_value('Signal timed out'))
 }

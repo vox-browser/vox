@@ -2002,10 +2002,6 @@ pub fn (nc &NavigableContainer) content_navigable() ?&Navigable {
 	return nc.content_navigable_
 }
 
-// Animation stubs
-@[heap]
-pub struct AnimationTimeline {}
-
 @[heap]
 pub struct DocumentTimeline {}
 
@@ -3126,43 +3122,6 @@ pub fn (ro &ResizeObserver) has_skipped_observations() bool {
 	return ro.target != unsafe { nil } && ro.has_skipped != unsafe { nil } && ro.has_skipped(ro.target)
 }
 
-// AnimationTimeline methods
-pub fn (at &AnimationTimeline) update_current_time(timestamp f64) {
-	_ = timestamp
-}
-
-pub fn (at &AnimationTimeline) associated_animations() []&Animation {
-	return []
-}
-
-// Animation methods
-pub fn (a &Animation) update() {}
-
-pub fn (a &Animation) is_replaceable() bool {
-	return false
-}
-
-pub fn (a &Animation) replace_state() AnimationReplaceState {
-	return .active
-}
-
-pub fn (a &Animation) effect() ?&AnimationEffect {
-	return none
-}
-
-pub enum AnimationReplaceState {
-	active
-	removed
-	persisted
-}
-
-@[heap]
-pub struct AnimationEffect {}
-
-pub fn (ae &AnimationEffect) target() ?&Element {
-	return none
-}
-
 // FormAssociatedElement methods
 pub fn (fae &FormAssociatedElement) element_id_changed() {
 	if fae.target != unsafe { nil } && fae.element_id_changed_callback != unsafe { nil } {
@@ -3472,10 +3431,6 @@ fn relevant_global_object_for_doc(doc &Document) &Window {
 	return window
 }
 
-fn message_port_for_each_stub(callback fn (voidptr)) {
-	_ = callback
-}
-
 fn as_navigable_container(node &Node) ?&NavigableContainer {
 	for navigable in dom_all_navigables {
 		container := navigable.container() or { continue }
@@ -3490,8 +3445,12 @@ fn as_navigable_container(node &Node) ?&NavigableContainer {
 
 // css module functions
 fn css_invalidate_style(doc &Document, reason CssStyleInvalidationReason) {
-	_ = doc
-	_ = reason
+	mapped_reason := match reason {
+		.base_url_changed { StyleInvalidationReason.base_url_changed }
+		.hover_changed, .style_sheet_changed, .dom_mutation { StyleInvalidationReason.style_change }
+	}
+	mut document_node := unsafe { &Node(doc) }
+	document_node.invalidate_style(mapped_reason)
 }
 
 fn html_entry_global_associated_document(document &Document) &Document {
@@ -3514,11 +3473,6 @@ fn html_perform_url_and_history_update_steps(document &Document, url URL) ! {
 		return
 	}
 	hook.update_url_and_history(document, url)!
-}
-
-fn css_user_agent_style_sheet_source(url string) ?string {
-	_ = url
-	return none
 }
 
 enum CssStyleInvalidationReason {
@@ -4050,7 +4004,6 @@ pub mut:
 	last_modified_ ?string
 
 	// Animations
-	associated_animation_timelines []&AnimationTimeline
 	default_timeline               &DocumentTimeline = unsafe { nil }
 	last_animation_frame_timestamp ?f64
 	pending_animation_event_queue  []PendingAnimationEvent
@@ -4372,9 +4325,6 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 		visitor.visit(slot)
 	}
 
-	for tl in d.associated_animation_timelines {
-		visitor.visit(tl)
-	}
 	visitor.visit(d.list_of_available_images)
 
 	for fae in d.form_associated_elements_with_form_attribute {
@@ -8191,14 +8141,6 @@ pub fn (mut d Document) timeline() &DocumentTimeline {
 	return d.default_timeline
 }
 
-pub fn (mut d Document) associate_with_timeline(tl &AnimationTimeline) {
-	d.associated_animation_timelines << tl
-}
-
-pub fn (mut d Document) disassociate_with_timeline(tl &AnimationTimeline) {
-	d.associated_animation_timelines = d.associated_animation_timelines.filter(it != tl)
-}
-
 pub fn (mut d Document) append_pending_animation_event(event PendingAnimationEvent) {
 	d.pending_animation_event_queue << event
 }
@@ -8216,13 +8158,8 @@ pub fn (mut d Document) update_animations_and_send_events(timestamp f64) {
 			hook.update_animations(hook.target, unsafe { &Node(&d) }, timestamp)
 		}
 	}
-	// 1. Update the current time of all timelines associated with doc.
-	for tl in d.associated_animation_timelines {
-		tl.update_current_time(timestamp)
-		for anim in tl.associated_animations() {
-			anim.update()
-		}
-	}
+	// 1. The animations bridge above updates each concrete timeline and its
+	// associated animations without duplicating their state in DOM.
 	// 2. Remove replaced animations for doc.
 	d.remove_replaced_animations()
 
@@ -9700,8 +9637,9 @@ pub fn (d &Document) get_style_sheet_source(identifier &StyleSheetIdentifier) ?s
 			none
 		}
 		.user_agent {
-			url := identifier.url or { return none }
-			css_user_agent_style_sheet_source(url)
+			// The CSS bridge above owns the embedded user-agent sheets. A DOM-only
+			// document has no CSS source to return.
+			none
 		}
 		.user_style {
 			none

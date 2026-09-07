@@ -4462,10 +4462,6 @@ pub fn (sr &ShadowRoot) style_scope() &StyleScope {
 	return &sr.style_scope_
 }
 
-pub fn (ss &StyleScope) str() string {
-	return ''
-}
-
 pub fn (ss &StyleScope) may_have_has_selectors() bool {
 	if ss.may_have_has_selectors_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
 		return ss.may_have_has_selectors_callback(ss.css_handle)

@@ -3148,11 +3148,6 @@ pub fn (array &ObservableArray) items() []&CSSStyleSheet {
 	return array.values
 }
 
-pub fn create_adopted_style_sheets_list(document_or_shadow_root &Node) &ObservableArray {
-	_ = document_or_shadow_root
-	return &ObservableArray{}
-}
-
 pub struct DocumentLoadEventDelayer {
 mut:
 	document &Document = unsafe { nil }

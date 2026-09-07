@@ -62,3 +62,12 @@ fn test_relayout_svg_root_delegates_to_layout_implementation() {
 	relayout_svg_root(root)
 	assert root.relayout_callback == unsafe { nil }
 }
+
+fn test_respond_to_base_url_changes_invalidates_document_style() {
+	mut document := Document.create(url_about_blank())
+	document.set_needs_full_style_update(false)
+
+	document.respond_to_base_url_changes()
+
+	assert document.needs_full_style_update()
+}

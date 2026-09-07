@@ -613,14 +613,6 @@ pub fn (element &Element) should_include_in_accessibility_tree() bool {
 	return element.includes_in_accessibility_tree()
 }
 
-pub fn (_ &Element) owner_svg_element() ?Element {
-	return none
-}
-
-pub fn (_ &Element) viewport_element() ?Element {
-	return none
-}
-
 pub fn (element &Element) requires_svg_container() bool {
 	return element.tag != 'svg'
 }
