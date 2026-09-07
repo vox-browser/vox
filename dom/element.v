@@ -176,15 +176,6 @@ pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, 
 	mutable_element.run_attribute_change_steps(a.local_name_, old_value, new_value, a.namespace_uri_)
 }
 
-pub struct DOMTokenList_ {
-pub mut:
-	tokens []string
-}
-
-pub fn (mut d DOMTokenList_) associated_attribute_changed(value string) {
-	_ = value
-}
-
 pub struct ShadowRootInit {
 pub mut:
 	mode            ShadowRootMode
