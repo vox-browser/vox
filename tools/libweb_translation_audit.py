@@ -501,6 +501,173 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("html/html_media_element.v", None, "media_element_noop_video_selected"),
         ("html/html_media_element.v", "HTMLMediaElement", "is_focusable"),
         ("html/html_media_element.v", "HTMLMediaElement", "is_html_media_element"),
+        # Animation timeline capability and identity methods are literal
+        # constants upstream. Optional-none is the upstream unresolved duration.
+        ("animations/document_timeline.v", "DocumentTimeline", "duration"),
+        (
+            "animations/document_timeline.v",
+            "DocumentTimeline",
+            "can_convert_a_timeline_time_to_an_origin_relative_time",
+        ),
+        ("animations/keyframe_effect.v", "KeyframeEffect", "is_keyframe_effect"),
+        ("animations/scroll_timeline.v", "ScrollTimeline", "is_progress_based"),
+        (
+            "animations/scroll_timeline.v",
+            "ScrollTimeline",
+            "can_convert_a_timeline_time_to_an_origin_relative_time",
+        ),
+        # These binding overrides are exact inline constants/defaults.
+        ("bindings/audio_constructor.v", "AudioConstructor", "has_constructor"),
+        ("bindings/image_constructor.v", "ImageConstructor", "has_constructor"),
+        ("bindings/option_constructor.v", "OptionConstructor", "has_constructor"),
+        (
+            "bindings/platform_object.v",
+            "PlatformObject",
+            "eligible_for_own_property_enumeration_fast_path",
+        ),
+        ("bindings/platform_object.v", "PlatformObject", "extract_an_origin"),
+        (
+            "bindings/principal_host_defined.v",
+            "PrincipalHostDefined",
+            "is_principal_host_defined",
+        ),
+        (
+            "bindings/synthetic_host_defined.v",
+            "SyntheticHostDefined",
+            "is_synthetic_host_defined",
+        ),
+        # CSSOM setters/defaults and the gradient predicates match upstream;
+        # visit_edges and parse logging have no executable V-runtime work.
+        ("css/cssom_events_extra.v", "CSSRule", "set_key_text"),
+        ("css/cssom_rules.v", "CSSRule", "set_css_text"),
+        ("css/descriptors.v", "CSSDescriptors", "get_property_priority"),
+        ("css/image_color_values.v", "RadialGradientStyleValue", "is_paintable"),
+        ("css/image_color_values.v", "ConicGradientStyleValue", "is_paintable"),
+        ("css/parser_core.v", None, "log_parse_error"),
+        ("css/parser_rules_selectors.v", None, "parser_log_parse_error"),
+        ("css/properties_data.v", "CascadedProperties", "visit_edges"),
+        ("css/selectors.v", None, "is_has_allowed_pseudo_element"),
+        ("css/style_scope_cache.v", "MatchingRule", "visit_edges"),
+        ("css/style_scope_cache.v", "RuleCache", "visit_edges"),
+        ("css/syntax_highlighter.v", "SyntaxHighlighter", "is_navigatable"),
+        # DOM binding/GC hooks and concrete type predicates are exact defaults.
+        ("dom/document.v", "ViewportPaintable", "is_viewport_paintable"),
+        ("dom/element.v", "CSSCountersSet_", "visit_edges"),
+        ("dom/element.v", "Element", "initialize"),
+        ("dom/node.v", "Node", "has_loaded_icon"),
+        ("dom/node_inline_algorithms.v", "Node", "is_dom_node"),
+        ("dom/ui_events.v", "UIEvent", "which"),
+        ("dom/ui_events.v", "MouseEvent", "is_mouse_event"),
+        ("dom/ui_events.v", "PointerEvent", "is_pointer_event"),
+        # These EME checks and the legacy fullscreen unscopable flag are still
+        # explicit constants in the current upstream implementation.
+        ("encryptedmediaextensions/algorithms.v", None, "supports_container"),
+        (
+            "encryptedmediaextensions/key_system.v",
+            "ClearKeySystem",
+            "definitely_supports_playback",
+        ),
+        ("fullscreen/fullscreen.v", None, "document_fullscreen_is_unscopable"),
+        # HTML type/focus/capability overrides below are literal constants in
+        # their concrete upstream classes. Local callback bodies encode the
+        # specified always/continue/no-action behavior at constructor sites.
+        (
+            "html/canvas_rendering_context_2d.v",
+            "CanvasRenderingContext2D",
+            "is_canvas_rendering_context_2d",
+        ),
+        ("html/close_watcher.v", None, "close_watcher_always_enabled"),
+        ("html/close_watcher.v", None, "close_watcher_continue_cancel_action"),
+        ("html/close_watcher.v", None, "close_watcher_empty_action"),
+        ("html/decoded_image_data.v", "AnimatedDecodedImageData", "is_animated"),
+        ("html/environments.v", "WorkerEnvironmentSettingsObject", "responsible_document"),
+        ("html/external.v", "External", "add_search_provider"),
+        ("html/external.v", "External", "is_search_provider_installed"),
+        ("html/form_controls_collections.v", None, "form_collection_never_sort"),
+        ("html/form_elements.v", "HTMLButtonElementModel", "default_tab_index_value"),
+        ("html/form_elements.v", "HTMLButtonElementModel", "has_activation_behavior"),
+        ("html/html_image_element.v", "HTMLImageElementModel", "is_html_image_element"),
+        (
+            "html/html_image_element.v",
+            "HTMLImageElementModel",
+            "supports_dimension_attributes",
+        ),
+        (
+            "html/html_text_area_element.v",
+            "HTMLTextAreaElementModel",
+            "is_html_textarea_element",
+        ),
+        (
+            "html/html_text_area_element.v",
+            "HTMLTextAreaElementModel",
+            "default_tab_index_value",
+        ),
+        ("html/interactive_elements.v", None, "html_dialog_element_is_focusable"),
+        (
+            "html/interactive_elements.v",
+            None,
+            "html_summary_element_has_activation_behavior",
+        ),
+        ("html/legacy_elements.v", "HTMLFrameElementModel", "default_tab_index_value"),
+        ("html/legacy_elements.v", None, "html_frame_element_default_tab_index_value"),
+        (
+            "html/media_elements.v",
+            "HTMLVideoElementModel",
+            "supports_dimension_attributes",
+        ),
+        ("html/meter_progress_elements.v", None, "html_progress_element_is_labelable"),
+        ("html/meter_progress_elements.v", None, "html_meter_element_is_labelable"),
+        ("html/navigator_id.v", "NavigatorIDMixin", "vendor_sub"),
+        ("html/scripting_runtime.v", "Script", "is_script"),
+        ("html/scripting_runtime.v", "ClassicScript", "is_classic_script"),
+        ("html/scripting_runtime.v", "ModuleScript", "is_module_script"),
+        (
+            "html/scripting_runtime.v",
+            "JavaScriptModuleScript",
+            "is_javascript_module_script",
+        ),
+        ("html/shared_resource_request.v", "ImageRequest", "prepare_for_presentation"),
+        (
+            "html/serialized_environment_settings_object.v",
+            "EnvironmentSettingsSnapshot",
+            "responsible_document",
+        ),
+        ("html/syntax_highlighter.v", "HTMLSyntaxHighlighter", "is_identifier"),
+        ("html/syntax_highlighter.v", "HTMLSyntaxHighlighter", "is_navigatable"),
+        ("html/html_tokenizer.v", "HTMLTokenizer", "will_switch_to"),
+        ("html/html_tokenizer.v", "HTMLTokenizer", "will_reconsume_in"),
+        ("html/traversable_navigable.v", "TraversableNavigable", "is_traversable"),
+        (
+            "html/workers.v",
+            "WorkerGlobalScope",
+            "is_universal_global_scope_mixin",
+        ),
+        (
+            "html/workers.v",
+            "ShadowRealmGlobalScope",
+            "is_universal_global_scope_mixin",
+        ),
+        # Remaining media/painting/timing constants are direct upstream bodies.
+        (
+            "mediasourceextensions/media_source.v",
+            "MediaSource",
+            "can_construct_in_dedicated_worker",
+        ),
+        ("notificationsapi/notification.v", "Notification", "max_actions"),
+        ("painting/svg_painting.v", "SVGPaintable", "is_svg_paintable"),
+        ("serviceworker/container.v", "ServiceWorkerContainer", "controller"),
+        ("usertiming/user_timing.v", "PerformanceMark", "max_buffer_size"),
+        ("usertiming/user_timing.v", "PerformanceMeasure", "max_buffer_size"),
+        ("webaudio/audio_algorithms.v", "ConstantSourceNode", "number_of_inputs"),
+        ("webaudio/audio_algorithms.v", "OscillatorNode", "number_of_inputs"),
+        ("webaudio/audio_algorithms.v", "AudioBufferSourceNode", "number_of_inputs"),
+        (
+            "webaudio/audio_algorithms.v",
+            "MediaElementAudioSourceNode",
+            "number_of_inputs",
+        ),
+        ("webaudio/context.v", "AudioContext", "output_timestamp"),
+        ("webdriver/action_algorithms.v", None, "dispatch_pause_action"),
     }
 )
 
