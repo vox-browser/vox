@@ -16,7 +16,7 @@ pub:
 }
 
 pub fn validate(source webidl.BufferSource) bool {
-	compile_module(webidl.get_buffer_source_copy(source)) or { return false }
+	compile_a_webassembly_module(webidl.get_buffer_source_copy(source)) or { return false }
 	return true
 }
 

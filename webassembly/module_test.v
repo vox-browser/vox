@@ -49,6 +49,29 @@ fn wasm_module_bytes() []u8 {
 	]
 }
 
+fn deny_wasm_byte_compilation() ! {
+	return error('WebAssembly.CompileError: Blocked by Content Security Policy')
+}
+
+fn test_host_policy_is_checked_before_compiling_wasm_bytes() {
+	set_host_ensure_can_compile_wasm_bytes_hook(deny_wasm_byte_compilation)
+	defer {
+		set_host_ensure_can_compile_wasm_bytes_hook(none)
+	}
+
+	if _ := compile(webidl.BufferSource.array_buffer(wasm_module_bytes())) {
+		assert false
+	} else {
+		assert err.msg() == 'WebAssembly.CompileError: Blocked by Content Security Policy'
+	}
+	assert !validate(webidl.BufferSource.array_buffer(wasm_module_bytes()))
+}
+
+fn test_clearing_host_policy_restores_wasm_compilation() {
+	set_host_ensure_can_compile_wasm_bytes_hook(none)
+	assert validate(webidl.BufferSource.array_buffer(wasm_module_bytes()))
+}
+
 fn test_module_validation_import_export_and_custom_sections() {
 	source := webidl.BufferSource.array_buffer(wasm_module_bytes())
 	assert validate(source)

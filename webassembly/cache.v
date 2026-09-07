@@ -10,8 +10,11 @@ module webassembly
 
 import webidl
 
+pub type HostEnsureCanCompileWasmBytesHook = fn () !
+
 __global (
-	webassembly_global_cache &WebAssemblyCache
+	webassembly_global_cache                 &WebAssemblyCache
+	host_ensure_can_compile_wasm_bytes_hook_ HostEnsureCanCompileWasmBytesHook = unsafe { nil }
 )
 
 pub struct AbstractMachine {
@@ -157,6 +160,7 @@ pub fn (mut cache WebAssemblyCache) abstract_machine() &AbstractMachine {
 }
 
 pub fn compile_a_webassembly_module(bytes []u8) !&Module {
+	host_ensure_can_compile_wasm_bytes()!
 	module_ := compile_module(bytes)!
 	mut cache := get_cache()
 	cache.add_compiled_module(module_)
@@ -178,8 +182,16 @@ pub fn to_js_value(value WasmValue) !webidl.Value {
 }
 
 pub fn host_ensure_can_compile_wasm_bytes() ! {
-	// CSP enforcement is supplied by the embedding realm. With no realm in the
-	// standalone API, compilation is permitted exactly as validate/compile do.
+	// The native implementation asks the current Realm's CSP policy. The V
+	// runtime exposes that realm lookup as a host hook while keeping the actual
+	// allow/deny decision on every compilation path in this module.
+	if host_ensure_can_compile_wasm_bytes_hook_ != unsafe { nil } {
+		host_ensure_can_compile_wasm_bytes_hook_()!
+	}
+}
+
+pub fn set_host_ensure_can_compile_wasm_bytes_hook(hook ?HostEnsureCanCompileWasmBytesHook) {
+	host_ensure_can_compile_wasm_bytes_hook_ = hook or { unsafe { nil } }
 }
 
 pub fn asynchronously_compile_webassembly_module(bytes []u8) !&Module {
