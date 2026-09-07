@@ -466,15 +466,27 @@ pub fn (element &Element) values() string {
 	return element.attributes['values'] or { '' }
 }
 
-pub fn (_ &Element) content_rect() ?Rect {
-	return none
+pub fn (element &Element) content_rect() ?Rect {
+	if !element.is_image_available() {
+		return none
+	}
+	width := element.intrinsic_width() or { return none }
+	height := element.intrinsic_height() or { return none }
+	return Rect{ width: width, height: height }
 }
 
-pub fn (_ &Element) current_image_bitmap() ?string {
-	return none
+pub fn (element &Element) current_image_bitmap() ?string {
+	if !element.is_image_available() {
+		return none
+	}
+	// The standalone SVG layer identifies decoded bitmaps by their source URL;
+	// raster bytes are exposed by current_image_bitmap_sized().
+	return element.image_resource.href
 }
 
-pub fn (_ &Element) process_href() {}
+pub fn (mut element Element) process_href() {
+	element.process_the_url()
+}
 
 pub fn (element &Element) stop_color() u32 {
 	return parse_svg_color(element.attributes['stop-color'] or { 'black' }) or { u32(0xff000000) }
@@ -629,15 +641,9 @@ pub fn (element &Element) cloned() Element {
 	return clone_element_tree(*element)
 }
 
-pub fn (_ &Element) adjust_computed_style() {}
-
 pub fn (_ &Element) global_event_handlers_to_event_target() string {
 	return 'EventTarget'
 }
-
-pub fn (_ &Element) remove_from_use_element_that_reference_this() {}
-
-pub fn (_ &Element) update_use_elements_that_reference_this() {}
 
 pub fn (element &Element) is_parser_inserted() bool {
 	return (element.attributes['_parser_inserted'] or { '' }) == 'true'
@@ -664,16 +670,22 @@ pub fn (element &Element) is_direct_child_of_use_shadow_tree() bool {
 	return (element.attributes['_use_shadow_child'] or { '' }) == 'true'
 }
 
-pub fn (_ &Element) current_frame_index() int {
-	return 0
+pub fn (element &Element) current_frame_index() int {
+	return element.current_frame_index_
 }
 
-pub fn (_ &Element) intrinsic_width() ?f64 {
-	return none
+pub fn (element &Element) intrinsic_width() ?f64 {
+	if data := element.decoded_image_data_ {
+		return data.intrinsic_width()
+	}
+	return element.image_resource.intrinsic_width
 }
 
-pub fn (_ &Element) intrinsic_height() ?f64 {
-	return none
+pub fn (element &Element) intrinsic_height() ?f64 {
+	if data := element.decoded_image_data_ {
+		return data.intrinsic_height()
+	}
+	return element.image_resource.intrinsic_height
 }
 
 pub fn (element &Element) intrinsic_aspect_ratio() ?f64 {
@@ -682,29 +694,58 @@ pub fn (element &Element) intrinsic_aspect_ratio() ?f64 {
 	return if height == 0 { none } else { width / height }
 }
 
-pub fn (_ &Element) is_image_available() bool {
-	return false
+pub fn (element &Element) is_image_available() bool {
+	return element.image_resource.state == .ready && element.decoded_image_data_ != none
 }
 
 pub fn (_ &Element) set_visible_in_viewport(_ bool) {}
 
-pub fn (_ &Element) animate() {}
-
-pub fn (_ &Element) decoded_image_data() ?DecodedImageData {
-	return none
+pub fn (mut element Element) animate() {
+	data := element.decoded_image_data_ or { return }
+	if data.frame_count <= 1 {
+		return
+	}
+	element.current_frame_index_ = (element.current_frame_index_ + 1) % data.frame_count
 }
 
-pub fn (_ &Element) current_image_bitmap_sized(_ int, _ int) []u8 {
-	return []
+pub fn (element &Element) decoded_image_data() ?DecodedImageData {
+	return element.decoded_image_data_
 }
 
-pub fn (_ &Element) default_image_bitmap_sized(_ int, _ int) []u8 {
-	return []
+pub fn (element &Element) current_image_bitmap_sized(_ int, _ int) []u8 {
+	data := element.decoded_image_data_ or { return [] }
+	return data.surface()
 }
 
-pub fn (_ &Element) fetch_the_document() {}
+pub fn (element &Element) default_image_bitmap_sized(width int, height int) []u8 {
+	return element.current_image_bitmap_sized(width, height)
+}
 
-pub fn (_ &Element) process_the_url() {}
+pub fn (mut element Element) fetch_the_document() {
+	hook := element.image_fetch_decode_hook_ or { return }
+	data := hook(element.image_resource.href) or {
+		element.image_resource.state = .failed
+		return
+	}
+	element.set_decoded_image_data(data)
+}
+
+pub fn (mut element Element) process_the_url() {
+	element.decoded_image_data_ = none
+	element.current_frame_index_ = 0
+	element.image_resource.update_href(element.href())
+	if element.image_resource.state == .loading {
+		element.fetch_the_document()
+	}
+}
+
+pub fn (mut element Element) set_decoded_image_data(data DecodedImageData) {
+	element.decoded_image_data_ = data
+	element.current_frame_index_ = 0
+	element.image_resource.intrinsic_width = data.intrinsic_width()
+	element.image_resource.intrinsic_height = data.intrinsic_height()
+	element.image_resource.state = .ready
+}
 
 pub fn (_ &Element) to_html_element() string {
 	return 'img'
@@ -743,10 +784,6 @@ pub fn (element &Element) would_create_circular_reference(document map[string]El
 pub fn (element &Element) would_create_circular_reference_impl(document map[string]Element) bool {
 	return element.would_create_circular_reference(document)
 }
-
-pub fn (_ &Element) svg_element_changed() {}
-
-pub fn (_ &Element) svg_element_removed() {}
 
 pub fn (element &Element) text_positioning() TextPositioning {
 	return svg.text_positioning(element.attributes)

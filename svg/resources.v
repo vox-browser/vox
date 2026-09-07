@@ -1,5 +1,7 @@
 module svg
 
+pub type ImageFetchDecodeHook = fn (string) !DecodedImageData
+
 pub enum ResourceState {
 	unavailable
 	loading
@@ -110,10 +112,14 @@ pub fn clone_element_tree(element Element) Element {
 		cloned_children << clone_element_tree(child)
 	}
 	return Element{
-		tag: element.tag
-		attributes: element.attributes.clone()
-		children: cloned_children
-		text: element.text
+		tag:                      element.tag
+		attributes:               element.attributes.clone()
+		children:                 cloned_children
+		text:                     element.text
+		image_resource:           element.image_resource
+		decoded_image_data_:       element.decoded_image_data_
+		current_frame_index_:      element.current_frame_index_
+		image_fetch_decode_hook_: element.image_fetch_decode_hook_
 	}
 }
 
@@ -139,9 +145,12 @@ pub fn (mut script ScriptResource) process() ?string {
 
 pub struct DecodedImageData {
 pub:
-	viewbox ?ViewBox
-	width   ?f64
-	height  ?f64
+	viewbox               ?ViewBox
+	width                 ?f64
+	height                ?f64
+	surface_bytes         []u8
+	display_list_commands []string
+	frame_count           int = 1
 }
 
 pub fn (image DecodedImageData) intrinsic_width() ?f64 {

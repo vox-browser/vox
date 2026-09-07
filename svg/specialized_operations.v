@@ -307,22 +307,23 @@ pub fn DecodedImageData.create(viewbox ?ViewBox, width ?f64, height ?f64) Decode
 	return DecodedImageData{ viewbox: viewbox, width: width, height: height }
 }
 
-// Rendering is supplied by the painting package. Do not fabricate a zero-filled
-// bitmap in the SVG translation when no painting surface exists.
-pub fn (_ &DecodedImageData) surface() []u8 {
-	return []
+// The host renderer stores the resulting raster and retained display list on
+// this portable decoded-image record. Empty data still represents a document
+// for which no painting surface has been produced.
+pub fn (image &DecodedImageData) surface() []u8 {
+	return image.surface_bytes.clone()
 }
 
 pub fn (image &DecodedImageData) render_to_surface() []u8 {
 	return image.surface()
 }
 
-pub fn (_ &DecodedImageData) record_display_list() []string {
-	return []
+pub fn (image &DecodedImageData) record_display_list() []string {
+	return image.display_list_commands.clone()
 }
 
-pub fn (_ &DecodedImageData) paint() []u8 {
-	return []
+pub fn (image &DecodedImageData) paint() []u8 {
+	return image.surface()
 }
 
 pub fn (_ &DecodedImageData) svg_document() string {
