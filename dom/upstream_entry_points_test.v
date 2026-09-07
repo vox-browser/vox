@@ -105,6 +105,23 @@ fn test_live_range_registry_follows_boundaries_across_documents() {
 	assert !Range.live_ranges().contains(range_)
 }
 
+fn test_range_constructor_uses_the_realm_windows_document() {
+	document := Document.create(url_about_blank())
+	window := &Window{
+		associated_document_: document
+	}
+	mut range_ := Range.construct_impl(window)
+
+	assert range_.start_container() == unsafe { &Node(document) }
+	assert range_.start_offset() == 0
+	assert range_.end_container() == unsafe { &Node(document) }
+	assert range_.end_offset() == 0
+	assert Range.live_ranges().contains(range_)
+
+	range_.finalize()
+	assert !Range.live_ranges().contains(range_)
+}
+
 fn test_upstream_document_and_named_element_algorithms() {
 	mut document := Document.create(url_about_blank())
 	document.set_ready_for_post_load_tasks(true)

@@ -2223,8 +2223,8 @@ pub fn Range.create_from_boundary_points(start_container &Node, start_offset int
 	return range
 }
 
-pub fn Range.construct_impl() &Range {
-	return &Range{}
+pub fn Range.construct_impl(window &Window) &Range {
+	return Range.create_from_window(window)
 }
 
 pub fn (mut r Range) finalize() {
