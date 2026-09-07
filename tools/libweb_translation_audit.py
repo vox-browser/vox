@@ -64,6 +64,75 @@ TRIVIAL_RETURN = re.compile(
     r"map\[[^\]]+\][A-Za-z_]\w*\{\}|&?[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?\{\})$"
 )
 
+# These implementations were compared directly with the current upstream body.
+# Keeping the exact source/owner/name tuple here makes reviewed constants and
+# no-ops visible without repeatedly returning them to the investigation queue.
+VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = frozenset(
+    {
+        # NavigationTiming/PerformanceTiming.h defines these legacy getters as zero.
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "unload_event_start"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "unload_event_end"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "redirect_start"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "redirect_end"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "fetch_start"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "domain_lookup_start"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "domain_lookup_end"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "connect_start"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "connect_end"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "secure_connection_start"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "request_start"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "response_start"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "response_end"),
+        ("navigationtiming/navigation_timing.v", "PerformanceTiming", "dom_loading"),
+        # Every unit in these generated non-length dimensions is absolute.
+        ("css/css.v", None, "angle_units_are_compatible"),
+        ("css/css.v", None, "frequency_units_are_compatible"),
+        ("css/css.v", None, "flex_units_are_compatible"),
+        ("css/css.v", None, "resolution_units_are_compatible"),
+        ("css/css.v", None, "time_units_are_compatible"),
+        # CSS Typed OM specifies that these is2D setters do nothing.
+        ("css/transforms.v", "CSSPerspective", "set_is_2d"),
+        ("css/transforms.v", "CSSSkew", "set_is_2d"),
+        ("css/transforms.v", "CSSSkewX", "set_is_2d"),
+        ("css/transforms.v", "CSSSkewY", "set_is_2d"),
+        # DOM base-class defaults and the Attr specified compatibility getter.
+        ("dom/character_nodes.v", "Attr", "specified"),
+        ("dom/element.v", "Element", "is_implicitly_potentially_render_blocking"),
+        ("dom/shadow_mutation_misc.v", "Element", "contributes_a_script_blocking_style_sheet"),
+        ("dom/events.v", "EventTarget", "has_activation_behavior"),
+        ("dom/events.v", "EventTarget", "activation_behavior"),
+        ("dom/events.v", "EventTarget", "legacy_pre_activation_behavior"),
+        ("dom/events.v", "EventTarget", "legacy_cancelled_activation_behavior"),
+        ("dom/events.v", "EventTarget", "legacy_cancelled_activation_behavior_was_not_called"),
+        ("dom/events.v", "EventTarget", "is_universal_global_scope_mixin"),
+        # HTMLInputElement and HTMLSelectElement override these with constants upstream.
+        ("html/html_input_element.v", "HTMLInputElementModel", "is_html_input_element"),
+        ("html/html_input_element.v", "HTMLInputElementModel", "current_frame_index"),
+        ("html/html_input_element.v", "HTMLInputElementModel", "has_activation_behavior"),
+        ("html/html_input_element.v", "HTMLInputElementModel", "is_listed"),
+        ("html/html_input_element.v", "HTMLInputElementModel", "is_submittable"),
+        ("html/html_input_element.v", "HTMLInputElementModel", "is_resettable"),
+        (
+            "html/html_input_element.v",
+            "HTMLInputElementModel",
+            "is_autocapitalize_and_autocorrect_inheriting",
+        ),
+        ("html/html_input_element.v", "HTMLInputElementModel", "default_tab_index_value"),
+        ("html/html_select_element.v", "HTMLSelectElementModel", "is_html_select_element"),
+        ("html/html_select_element.v", "HTMLSelectElementModel", "is_listed"),
+        ("html/html_select_element.v", "HTMLSelectElementModel", "is_submittable"),
+        ("html/html_select_element.v", "HTMLSelectElementModel", "is_resettable"),
+        (
+            "html/html_select_element.v",
+            "HTMLSelectElementModel",
+            "is_autocapitalize_and_autocorrect_inheriting",
+        ),
+        ("html/html_select_element.v", "HTMLSelectElementModel", "is_labelable"),
+        ("html/html_select_element.v", "HTMLSelectElementModel", "default_tab_index_value"),
+        ("html/html_select_element.v", "HTMLSelectElementModel", "has_activation_behavior"),
+    }
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -207,14 +276,18 @@ def _v_function_body(text: str, function: re.Match[str]) -> tuple[int, int] | No
     return body_start, index - 1
 
 
-def suspicious_trivial_implementation_inventory(translation: Path) -> list[dict[str, object]]:
+def trivial_implementation_inventories(
+    translation: Path,
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     """Find silent empty/default-return bodies that name coverage misses.
 
     This is intentionally an investigation queue, not an automatic assertion
-    of divergence: a handful of upstream methods are legitimately constant or
-    no-op. Each result must still be compared with the corresponding C++ body.
+    of divergence: some upstream methods are legitimately constant or no-op.
+    Each result must still be compared with the corresponding C++ body. Exact
+    matches already reviewed that way are returned separately.
     """
     findings: list[dict[str, object]] = []
+    verified: list[dict[str, object]] = []
     for source in sorted(translation.rglob("*.v")):
         if source.name.endswith("_test.v") or is_unreviewed_coverage_shim(source):
             continue
@@ -250,16 +323,23 @@ def suspicious_trivial_implementation_inventory(translation: Path) -> list[dict[
                 receiver_type = receiver.split()[-1].lstrip("&?")
                 owner = receiver_type.split(".")[-1]
             line = text.count("\n", 0, function.start()) + 1
-            findings.append(
-                {
-                    "source": source.relative_to(translation).as_posix(),
-                    "line": line,
-                    "owner": owner,
-                    "name": function.group("name"),
-                    "body": "\n".join(statements),
-                }
-            )
-    return findings
+            finding = {
+                "source": source.relative_to(translation).as_posix(),
+                "line": line,
+                "owner": owner,
+                "name": function.group("name"),
+                "body": "\n".join(statements),
+            }
+            key = (finding["source"], owner, finding["name"])
+            if key in VERIFIED_TRIVIAL_IMPLEMENTATIONS:
+                verified.append(finding)
+            else:
+                findings.append(finding)
+    return findings, verified
+
+
+def suspicious_trivial_implementation_inventory(translation: Path) -> list[dict[str, object]]:
+    return trivial_implementation_inventories(translation)[0]
 
 
 def module_inventory(
@@ -282,7 +362,9 @@ def main() -> int:
 
     functions, quarantined_files, quarantined_functions = all_v_function_names(args.translation)
     semantic_markers = semantic_divergence_inventory(args.translation)
-    suspicious_trivial_implementations = suspicious_trivial_implementation_inventory(args.translation)
+    suspicious_trivial_implementations, verified_trivial_implementations = (
+        trivial_implementation_inventories(args.translation)
+    )
     modules: dict[str, dict[str, object]] = {}
     all_methods: list[dict[str, object]] = []
     total_dispositions: collections.Counter[str] = collections.Counter()
@@ -321,6 +403,7 @@ def main() -> int:
         "quarantined_coverage_shim_files": quarantined_files,
         "quarantined_coverage_shim_functions": quarantined_functions,
         "semantic_divergence_markers": semantic_markers,
+        "verified_trivial_implementations": verified_trivial_implementations,
         "suspicious_trivial_implementations": suspicious_trivial_implementations,
         "dispositions": dict(sorted(total_dispositions.items())),
         "modules": modules,
@@ -337,6 +420,7 @@ def main() -> int:
             f"{len(quarantined_files)} files / {quarantined_functions} functions"
         )
         print(f"explicit semantic-divergence markers: {len(semantic_markers)}")
+        print(f"reviewed upstream-equivalent trivial implementations: {len(verified_trivial_implementations)}")
         print(
             "suspicious empty/default-return implementations: "
             f"{len(suspicious_trivial_implementations)}"
