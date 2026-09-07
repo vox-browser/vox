@@ -1391,11 +1391,10 @@ pub fn (model &NavigableModel) allowed_by_sandboxing_to_navigate(target &Navigab
 }
 
 pub fn (model &NavigableModel) snapshot_target_snapshot_params() TargetSnapshotParams {
-	// Creation flags contributed by iframe sandbox attributes are represented
-	// by the source snapshot flag set until NavigableContainerModel is linked
-	// directly to DOM elements.
-	_ = model
-	return TargetSnapshotParams{}
+	context := model.active_browsing_context() or { return TargetSnapshotParams{} }
+	return TargetSnapshotParams{
+		sandboxing_flags: determine_the_creation_sandboxing_flags(context, model.container())
+	}
 }
 
 pub fn (model &NavigableModel) viewport_scroll_offset() css.CSSPixelPoint {

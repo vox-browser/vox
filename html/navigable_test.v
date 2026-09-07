@@ -77,7 +77,7 @@ fn navigable_test_top_level(url string, target_name string) !(&dom.Document, &Wi
 }
 
 fn test_navigable_initialization_hierarchy_and_target_choice() {
-	parent_document, mut parent_window, parent_model := navigable_test_top_level('https://example.test/', 'top')!
+	mut parent_document, mut parent_window, parent_model := navigable_test_top_level('https://example.test/', 'top')!
 	assert parent_model.id() != ''
 	assert parent_model.active_document()? == parent_document
 	assert parent_model.target_name() == 'top'
@@ -105,6 +105,16 @@ fn test_navigable_initialization_hierarchy_and_target_choice() {
 	assert child_model.traversable_navigable() == parent_model
 	assert child_host.container()? == container.as_node()
 	assert child_host.container_document()? == parent_document
+	mut iframe_model := html_iframe_element_model_for_dom_element(unsafe { &dom.HTMLIFrameElement(container) })
+	iframe_model.set_sandbox('allow-scripts allow-forms')
+	parent_document.set_active_sandboxing_flag_set(dom.SandboxingFlagSet{
+		sandboxed_document_domain: true
+	})
+	child_snapshot := child_model.snapshot_target_snapshot_params()
+	assert child_snapshot.sandboxing_flags.contains(.sandboxed_navigation)
+	assert child_snapshot.sandboxing_flags.contains(.sandboxed_document_domain)
+	assert !child_snapshot.sandboxing_flags.contains(.sandboxed_scripts)
+	assert !child_snapshot.sandboxing_flags.contains(.sandboxed_forms)
 	child_document.set_cached_navigable(none)
 	assert child_document.as_node().navigable()? == child_host
 	assert child_document.cached_navigable()? == child_host
@@ -122,6 +132,19 @@ fn test_navigable_initialization_hierarchy_and_target_choice() {
 	blank_choice := mutable_parent_model.choose_a_navigable('_blank', true)!
 	assert blank_choice.navigable != none
 	assert blank_choice.window_type == .new_with_no_opener
+}
+
+fn test_top_level_target_snapshot_uses_popup_sandboxing_flags() {
+	_, window, model := navigable_test_top_level('https://example.test/', 'top')!
+	mut context := unsafe { &BrowsingContextModel(window.browsing_context()) }
+	context.set_popup_sandboxing_flag_set(SandboxingFlagSet{
+		bits: u32(SandboxingFlag.sandboxed_scripts) | u32(SandboxingFlag.sandboxed_forms)
+	})
+
+	snapshot := model.snapshot_target_snapshot_params()
+	assert snapshot.sandboxing_flags.contains(.sandboxed_scripts)
+	assert snapshot.sandboxing_flags.contains(.sandboxed_forms)
+	assert !snapshot.sandboxing_flags.contains(.sandboxed_origin)
 }
 
 fn test_navigable_history_cross_document_fragment_reload_and_javascript_url() {
