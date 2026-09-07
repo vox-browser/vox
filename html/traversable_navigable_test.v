@@ -127,3 +127,19 @@ fn test_top_level_traversable_registry_creation_and_deactivation() {
 	unsafe { assert traversable_deactivation_completed }
 	traversable.destroy_top_level_traversable()
 }
+
+fn test_top_level_traversable_status_follows_the_host_parent() {
+	mut traversable := TraversableNavigable.create_a_new_top_level_traversable('')!
+	assert traversable.is_top_level_traversable()
+
+	parent := &dom.Navigable{}
+	mut child := &dom.Navigable{
+		parent_: parent
+	}
+	traversable.set_host_navigable(child)
+	assert !traversable.is_top_level_traversable()
+
+	child.parent_ = none
+	assert traversable.is_top_level_traversable()
+	traversable.destroy_top_level_traversable()
+}

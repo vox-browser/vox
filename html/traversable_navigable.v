@@ -172,7 +172,8 @@ pub fn TraversableNavigable.create_a_fresh_top_level_traversable(initial_navigat
 }
 
 pub fn (traversable &TraversableNavigable) is_top_level_traversable() bool {
-	return true
+	host := traversable.host_navigable_ or { return true }
+	return host.parent() == none
 }
 
 pub fn (traversable &TraversableNavigable) current_session_history_step() int {
