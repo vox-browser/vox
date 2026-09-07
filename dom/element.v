@@ -5699,6 +5699,17 @@ pub fn (e &Element) viewport_element() ?&Element {
 	return none
 }
 
+// https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__deselectAll
+//
+// Equivalent to calling document.getSelection().removeAllRanges().
+pub fn (e &Element) deselect_all() {
+	if !e.is_svg_svg_element() {
+		return
+	}
+	mut selection := e.document().get_selection() or { return }
+	selection.remove_all_ranges()
+}
+
 pub fn (e &Element) is_html_ol_ul_menu_element() bool {
 	name := e.local_name()
 	return name == 'ol' || name == 'ul' || name == 'menu'

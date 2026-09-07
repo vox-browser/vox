@@ -735,3 +735,26 @@ fn test_svg_owner_and_viewport_element() {
 	assert mk(doc, 'div').owner_svg_element() == none
 	assert mk(doc, 'div').viewport_element() == none
 }
+
+// https://svgwg.org/svg2-draft/struct.html#__svg__SVGSVGElement__deselectAll
+fn test_svg_deselect_all_removes_the_document_selection() {
+	mut doc := Document.create(URL{'https://example.com/'})
+	doc.set_browsing_context(&BrowsingContext{})
+	mut svg := doc.create_element_ns(svg_ns, 'svg') or { panic('${err}') }
+	mut rect := doc.create_element_ns(svg_ns, 'rect') or { panic('${err}') }
+	mut doc_node := unsafe { &Node(doc) }
+	doc_node.append_child(svg.as_node()) or { panic('append failed') }
+	mut svg_node := svg.as_node()
+	svg_node.append_child(rect.as_node()) or { panic('append failed') }
+
+	mut selection := doc.get_selection() or { panic('document has no selection') }
+	selection.collapse(rect.as_node(), 0) or { panic('${err}') }
+	assert selection.range_count() == 1
+
+	// This API only exists on SVGSVGElement; the consolidated Element owner
+	// therefore guards against calls through other element types.
+	rect.deselect_all()
+	assert selection.range_count() == 1
+	svg.deselect_all()
+	assert selection.range_count() == 0
+}
