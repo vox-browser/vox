@@ -105,6 +105,50 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("dom/events.v", "EventTarget", "legacy_cancelled_activation_behavior"),
         ("dom/events.v", "EventTarget", "legacy_cancelled_activation_behavior_was_not_called"),
         ("dom/events.v", "EventTarget", "is_universal_global_scope_mixin"),
+        # DOM core headers define these identity and base-class hooks inline.
+        ("dom/inline_state.v", "Element", "is_dom_element"),
+        ("dom/inline_state.v", "Element", "supports_dimension_attributes"),
+        ("dom/inline_state.v", "Element", "is_presentational_hint"),
+        ("dom/inline_state.v", "Element", "apply_presentational_hints"),
+        ("dom/inline_state.v", "Element", "did_receive_focus"),
+        ("dom/inline_state.v", "Element", "did_lose_focus"),
+        ("dom/inline_state.v", "Element", "computed_properties_changed"),
+        ("dom/inline_state.v", "Event", "is_dom_event"),
+        ("dom/inline_state.v", "EventTarget", "is_dom_event_target"),
+        ("dom/inline_state.v", "ShadowRoot", "is_shadow_root"),
+        ("dom/inline_state.v", "Document", "is_dom_document"),
+        # These DOM lifecycle bodies only install WebIDL prototypes and call
+        # binding/runtime base initializers, which this V layer does not have.
+        ("dom/character_nodes.v", "Attr", "initialize"),
+        ("dom/character_nodes.v", "CharacterData", "initialize"),
+        ("dom/character_nodes.v", "Text", "initialize"),
+        ("dom/character_nodes.v", "Comment", "initialize"),
+        ("dom/character_nodes.v", "CDATASection", "finalize"),
+        ("dom/character_nodes.v", "CDATASection", "initialize"),
+        ("dom/character_nodes.v", "ProcessingInstruction", "initialize"),
+        ("dom/character_nodes.v", "DocumentType", "initialize"),
+        ("dom/character_nodes.v", "DocumentFragment", "initialize"),
+        # Event constructors below only default-initialize translated state;
+        # initialize remains a WebIDL prototype hook upstream.
+        ("dom/events.v", None, "js_undefined"),
+        ("dom/events.v", "Event", "initialize"),
+        ("dom/events.v", "DOMEventListener", "new"),
+        ("dom/events.v", "EventTarget", "construct_impl"),
+        ("dom/events.v", "EventTarget", "new"),
+        ("dom/events.v", "AbortSignal", "construct_impl"),
+        ("dom/events.v", "AbortSignal", "new"),
+        ("dom/events.v", "AbortController", "initialize"),
+        # Mutation/ShadowRoot/DOMImplementation/XMLDocument initialization is
+        # binding-only; the other bodies are exact header defaults. The V
+        # invalidator keys pending work by node ID, so it has no GC edge to visit.
+        ("dom/shadow_mutation_misc.v", "MutationRecord", "initialize"),
+        ("dom/shadow_mutation_misc.v", "MutationObserver", "initialize"),
+        ("dom/shadow_mutation_misc.v", "TransientRegisteredObserver", "is_transient"),
+        ("dom/shadow_mutation_misc.v", "ShadowRoot", "initialize"),
+        ("dom/shadow_mutation_misc.v", "StyleInvalidator", "visit_edges"),
+        ("dom/shadow_mutation_misc.v", "DOMImplementation", "initialize"),
+        ("dom/shadow_mutation_misc.v", "DOMImplementation", "has_feature"),
+        ("dom/shadow_mutation_misc.v", "XMLDocument", "initialize"),
         # HTMLInputElement and HTMLSelectElement override these with constants upstream.
         ("html/html_input_element.v", "HTMLInputElementModel", "is_html_input_element"),
         ("html/html_input_element.v", "HTMLInputElementModel", "current_frame_index"),
@@ -234,6 +278,22 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("svg/value_operations.v", "Transform", "set_rotate"),
         ("svg/value_operations.v", "Transform", "set_skew_x"),
         ("svg/value_operations.v", "Transform", "set_skew_y"),
+        # SVGSVGElement currently implements these as constants, empty lists,
+        # identity objects, or compatibility no-ops upstream.
+        ("svg/specialized_operations.v", "SvgViewport", "set_current_scale"),
+        ("svg/specialized_operations.v", "SvgViewport", "current_translate"),
+        ("svg/specialized_operations.v", "SvgViewport", "is_svg_container"),
+        ("svg/specialized_operations.v", "SvgViewport", "requires_svg_container"),
+        ("svg/specialized_operations.v", "SvgViewport", "unsuspend_redraw"),
+        ("svg/specialized_operations.v", "SvgViewport", "unsuspend_redraw_all"),
+        ("svg/specialized_operations.v", "SvgViewport", "force_redraw"),
+        ("svg/specialized_operations.v", "SvgViewport", "check_intersection"),
+        ("svg/specialized_operations.v", "SvgViewport", "check_enclosure"),
+        ("svg/specialized_operations.v", "SvgViewport", "get_intersection_list"),
+        ("svg/specialized_operations.v", "SvgViewport", "get_enclosure_list"),
+        ("svg/specialized_operations.v", "SvgViewport", "create_svg_matrix"),
+        ("svg/specialized_operations.v", "SvgViewport", "create_svg_point"),
+        ("svg/specialized_operations.v", "SvgViewport", "create_svg_rect"),
         # BiquadFilterNode's frequency response hook is an explicit upstream no-op.
         ("webaudio/nodes.v", "BiquadFilterNode", "get_frequency_response"),
         # Reviewed DOM defaults and current pointer/view-transition placeholders.
@@ -249,6 +309,44 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("html/pdf_viewer_plugins.v", "PluginArray", "refresh"),
         ("speech/synthesis.v", "SpeechSynthesis", "cancel"),
         ("html/html_media_element.v", "HTMLMediaElement", "stalled"),
+        # Navigator exposes these exact current upstream compatibility defaults.
+        ("html/navigator.v", "NavigatorOnLineMixin", "on_line"),
+        ("html/navigator.v", "Navigator", "on_line"),
+        ("html/navigator.v", "Navigator", "cookie_enabled"),
+        ("html/navigator.v", "Navigator", "java_enabled"),
+        ("html/navigator.v", "Navigator", "max_touch_points"),
+        # Current HTML element headers/bodies define these identity, focus,
+        # activation, and script-blocking defaults exactly as below.
+        ("html/document_elements.v", "HTMLStyleElementModel", "create"),
+        (
+            "html/document_elements.v",
+            "HTMLStyleElementModel",
+            "contributes_a_script_blocking_style_sheet",
+        ),
+        (
+            "html/document_elements.v",
+            None,
+            "html_style_element_contributes_a_script_blocking_style_sheet",
+        ),
+        ("html/document_elements.v", None, "html_area_element_default_tab_index_value"),
+        ("html/document_elements.v", None, "html_anchor_element_has_activation_behavior"),
+        ("html/document_elements.v", None, "html_anchor_element_default_tab_index_value"),
+        ("html/document_elements.v", None, "html_label_element_has_activation_behavior"),
+        ("html/embedded_content_elements.v", "NavigableContainerModel", "is_navigable_container"),
+        (
+            "html/embedded_content_elements.v",
+            "HTMLIFrameElementModel",
+            "supports_dimension_attributes",
+        ),
+        ("html/embedded_content_elements.v", None, "html_iframe_element_default_tab_index_value"),
+        ("html/embedded_content_elements.v", "HTMLObjectElementModel", "is_listed"),
+        (
+            "html/embedded_content_elements.v",
+            "HTMLObjectElementModel",
+            "is_html_object_element",
+        ),
+        ("html/embedded_content_elements.v", "HTMLObjectElementModel", "current_frame_index"),
+        ("html/embedded_content_elements.v", None, "html_object_element_default_tab_index_value"),
         # CSS guaranteed-invalid and pending-substitution values serialize empty upstream.
         ("css/parser_core.v", "GuaranteedInvalidValue", "to_string"),
         ("css/parser_core.v", "GuaranteedInvalidValue", "original_source_text"),
@@ -318,6 +416,24 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("html/window_context.v", "WindowModel", "is_universal_global_scope_mixin"),
         ("html/window_context.v", "WindowModel", "is_html_window"),
         ("html/window_context.v", "WindowModel", "blur"),
+        # Screen orientation and animation constructors/identity hooks mirror
+        # the current upstream defaults; initialize is binding-only.
+        ("css/screen_animation.v", "Screen", "create"),
+        ("css/screen_animation.v", "ScreenOrientation", "create"),
+        ("css/screen_animation.v", "ScreenOrientation", "unlock"),
+        ("css/screen_animation.v", "ScreenOrientation", "angle"),
+        ("css/screen_animation.v", "KeyframeEffect", "create"),
+        ("css/screen_animation.v", "CSSAnimation", "is_css_animation"),
+        ("css/screen_animation.v", "CSSTransition", "initialize"),
+        ("css/screen_animation.v", "CSSTransition", "is_css_transition"),
+        # Font collection construction and JS-set notification are exact; the
+        # remaining entries are the deliberate no-platform-plugin fallbacks.
+        ("css/font_face_values.v", "FontFaceSet", "on_set_modified_from_js"),
+        ("css/font_face_values.v", "FontCascadeList", "create"),
+        ("css/font_face_values.v", None, "platform_load_font_from_url_boundary"),
+        ("css/font_face_values.v", None, "platform_load_font_from_bytes_boundary"),
+        ("css/font_face_values.v", None, "platform_symbol_font_names_boundary"),
+        ("css/font_face_values.v", None, "platform_typefaces_with_family_name_boundary"),
     }
 )
 
