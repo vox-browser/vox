@@ -71,3 +71,50 @@ fn test_respond_to_base_url_changes_invalidates_document_style() {
 
 	assert document.needs_full_style_update()
 }
+
+struct ViewTransitionCallbackObservation {
+mut:
+	calls int
+}
+
+fn test_document_view_transition_runs_callback_and_frame_lifecycle() {
+	mut document := Document.create(url_about_blank())
+	document.visibility_state = .visible
+	observation := &ViewTransitionCallbackObservation{}
+	callback := &CallbackType{
+		call_no_args: fn [observation] () JSValue {
+			mut mutable_observation := unsafe { &ViewTransitionCallbackObservation(observation) }
+			mutable_observation.calls++
+			return js_undefined()
+		}
+	}
+
+	transition := document.start_view_transition(callback)
+	assert transition.phase() == .pending_capture
+	assert document.get_active_view_transition()? == transition
+
+	document.perform_pending_transition_operations()
+	assert observation.calls == 1
+	assert transition.phase() == .animating
+	assert !document.rendering_suppression_for_view_transitions
+
+	document.perform_pending_transition_operations()
+	assert transition.phase() == .done
+	assert document.get_active_view_transition() == none
+}
+
+fn test_document_view_transition_skips_hidden_and_replaced_transitions() {
+	mut hidden_document := Document.create(url_about_blank())
+	hidden_document.visibility_state = .hidden
+	hidden := hidden_document.start_view_transition(none)
+	assert hidden.phase() == .done
+	assert hidden_document.get_active_view_transition() == none
+
+	mut document := Document.create(url_about_blank())
+	document.visibility_state = .visible
+	first := document.start_view_transition(none)
+	second := document.start_view_transition(none)
+	assert first.phase() == .done
+	assert second.phase() == .pending_capture
+	assert document.get_active_view_transition()? == second
+}

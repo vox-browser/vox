@@ -15,6 +15,8 @@ import strings
 import time as vtime
 import httpcookie
 import url as liburl
+import viewtransition
+import webidl
 
 __global (
 	dom_all_navigables   = []&Navigable{}
@@ -2395,6 +2397,7 @@ pub mut:
 pub struct CallbackType {
 pub mut:
 	handle_event      ?fn (&Event, ?&EventTarget) JSValue
+	call_no_args      ?fn () JSValue
 	accept_node       ?fn (&Node) int
 	mutation_callback ?fn ([]&MutationRecord, &MutationObserver)
 	// The callback object's associated Realm global. DOM cannot import HTML's
@@ -2404,7 +2407,12 @@ pub mut:
 }
 
 @[heap]
-pub struct ViewTransition {}
+pub struct ViewTransition {
+mut:
+	transition_          &viewtransition.ViewTransition = unsafe { nil }
+	transition_document_ &viewtransition.TransitionDocument = unsafe { nil }
+	document_            &Document = unsafe { nil }
+}
 
 @[heap]
 pub struct Page {
@@ -2877,17 +2885,67 @@ pub fn (p &HTMLParser) insert_eof() {
 
 // ViewTransition methods
 pub fn (vt &ViewTransition) phase() ViewTransitionPhase {
-	return .done
+	if vt.transition_ == unsafe { nil } {
+		return .done
+	}
+	return match vt.transition_.phase {
+		.pending_capture { .pending_capture }
+		.update_callback_called { .update_callback_called }
+		.animating { .animating }
+		.done { .done }
+	}
 }
 
-pub fn (vt &ViewTransition) setup_view_transition() {}
+fn (vt &ViewTransition) sync_document_state() {
+	if vt.document_ == unsafe { nil } || vt.transition_document_ == unsafe { nil } {
+		return
+	}
+	mut document := unsafe { &Document(vt.document_) }
+	document.rendering_suppression_for_view_transitions = vt.transition_document_.rendering_suppression
+	document.show_view_transition_tree = vt.transition_document_.show_view_transition_tree
+	if vt.phase() == .done && document.active_view_transition == vt {
+		document.active_view_transition = unsafe { nil }
+	}
+}
 
-pub fn (vt &ViewTransition) handle_transition_frame() {}
+pub fn (vt &ViewTransition) setup_view_transition() {
+	if vt.transition_ == unsafe { nil } || vt.transition_document_ == unsafe { nil } {
+		return
+	}
+	mut transition := unsafe { &viewtransition.ViewTransition(vt.transition_) }
+	transition.setup_view_transition()
+	mut transition_document := unsafe { &viewtransition.TransitionDocument(vt.transition_document_) }
+	// The DOM event-loop bridge consumes the task queued by setup before the
+	// next rendering opportunity, as HTML's DOM-manipulation task source does.
+	transition_document.drain_dom_tasks()
+	vt.sync_document_state()
+}
 
-pub fn (vt &ViewTransition) skip_the_view_transition() {}
+pub fn (vt &ViewTransition) handle_transition_frame() {
+	if vt.transition_ == unsafe { nil } {
+		return
+	}
+	mut transition := unsafe { &viewtransition.ViewTransition(vt.transition_) }
+	// Animation objects for the generated pseudo-elements are not exposed to
+	// DOM yet. With none registered, upstream completes the transition here.
+	transition.handle_transition_frame(false)
+	vt.sync_document_state()
+}
+
+pub fn (vt &ViewTransition) skip_the_view_transition() {
+	if vt.transition_ == unsafe { nil } {
+		return
+	}
+	mut transition := unsafe { &viewtransition.ViewTransition(vt.transition_) }
+	transition.skip_the_view_transition(webidl.string_value('AbortError: View transition was skipped'))
+	mut transition_document := unsafe { &viewtransition.TransitionDocument(vt.transition_document_) }
+	transition_document.drain_dom_tasks()
+	vt.sync_document_state()
+}
 
 pub enum ViewTransitionPhase {
 	pending_capture
+	update_callback_called
 	animating
 	done
 }
@@ -8935,9 +8993,45 @@ pub fn (mut d Document) set_onfullscreenerror(value ?&CallbackType) {
 
 // --- View transitions ---
 
+fn js_value_to_webidl_value(value JSValue) webidl.Value {
+	return match value.kind {
+		.undefined { webidl.undefined_value() }
+		.null_ { webidl.null_value() }
+		.boolean { webidl.boolean_value(value.boolean_data) }
+		.number { webidl.number_value(value.number_data) }
+		.string { webidl.string_value(value.string_data) }
+		.object { webidl.platform_object_value() }
+	}
+}
+
 // https://drafts.csswg.org/css-view-transitions-1/#dom-document-startviewtransition
 pub fn (mut d Document) start_view_transition(update_callback ?&CallbackType) &ViewTransition {
-	vt := &ViewTransition{}
+	viewport := d.viewport_rect()
+	transition_document := &viewtransition.TransitionDocument{
+		snapshot_width:  viewport.width
+		snapshot_height: viewport.height
+	}
+	inner := viewtransition.ViewTransition.create(transition_document)
+	if callback := update_callback {
+		if call := callback.call_no_args {
+			mut mutable_inner := unsafe { &viewtransition.ViewTransition(inner) }
+			mutable_inner.set_update_callback(fn [call] () !&webidl.Promise {
+				return webidl.create_resolved_promise(js_value_to_webidl_value(call()))
+			})
+		}
+	}
+	vt := &ViewTransition{
+		transition_:          inner
+		transition_document_: transition_document
+		document_:            d
+	}
+	if d.visibility_state == .hidden {
+		vt.skip_the_view_transition()
+		return vt
+	}
+	if d.active_view_transition != unsafe { nil } {
+		d.active_view_transition.skip_the_view_transition()
+	}
 	d.active_view_transition = vt
 	return vt
 }
