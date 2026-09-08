@@ -307,8 +307,13 @@ following behavioral mismatches and added focused regressions:
   invalidate the same owning box phase cache as upstream. The adjacent
   `ResizeHandle` construction, no-op hover methods, cursor choice, and
   first-press versus subsequent-move state ordering are translated as well.
-  The active bridge indexes retained widget identities when it builds the hit
-  plan, preserving C++'s direct captured-widget dispatch cost on pointer moves.
+  The active bridge now dispatches resize events through that state machine
+  and Page's translated `ElementResizeAction` instead of discarding them. It
+  resolves min/max sizes against the containing padding box, converts
+  border-box drags back to content-box declarations, and retains active state
+  across the relayout caused by each inline-style update. Chrome IDs use stable
+  DOM node identities, so captured scrollbars and resizers remain addressable
+  after the compatibility paint tree is rebuilt.
 - `ScrollFrame` and `ScrollState` now retain the source-shaped accessor,
   mutation, sentinel, capacity-reuse, and callback iteration API. The active
   refresh walks sticky and ordinary frames in place instead of allocating two

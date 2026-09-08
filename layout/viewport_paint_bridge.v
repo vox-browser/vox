@@ -3,6 +3,7 @@ module layout
 import css
 import dom
 import math
+import page
 import painting
 import platform
 import strings
@@ -1834,8 +1835,8 @@ fn viewport_build_stacking_context_tree(target voidptr) {
 		result.hit_test_order << entry.box
 	}
 	for step in result.hit_test_steps {
-		if step.box.overlay != none {
-			result.chrome_widget_boxes[u64(voidptr(step.box))] = voidptr(step.box)
+		if step.box.overlay != none && step.box.node_id != 0 {
+			result.chrome_widget_boxes[u64(step.box.node_id)] = voidptr(step.box)
 		}
 	}
 	result.stacking_context_tree_is_valid = true
@@ -2064,12 +2065,146 @@ pub fn (mut result DocumentLayoutResult) chrome_widget_mouse_leave(id string) {
 	compatibility_apply_scrollbar_hover(mut box, target.kind, false)
 }
 
-fn compatibility_dispatch_scrollbar_pointer_event(mut box BlockBox,
+struct CompatibilityResizeHandleState {
+mut:
+	handle painting.ResizeHandle = painting.ResizeHandle.create()
+	action ?page.ElementResizeAction
+}
+
+fn compatibility_resize_mode(value css.Resize) page.ResizeMode {
+	return match value {
+		.none_ { .none }
+		.both { .both }
+		.horizontal { .horizontal }
+		.vertical { .vertical }
+		.inline_ { .inline }
+		.block { .block }
+	}
+}
+
+fn compatibility_resize_writing_mode(value css.WritingMode) page.WritingMode {
+	return match value {
+		.horizontal_tb { .horizontal_tb }
+		.vertical_rl { .vertical_rl }
+		.vertical_lr { .vertical_lr }
+		.sideways_rl { .sideways_rl }
+		.sideways_lr { .sideways_lr }
+	}
+}
+
+// ElementResizeAction::handle_pointer_move() resolves min/max percentages
+// against the containing block's padding box, not the resized box itself.
+fn compatibility_resize_reference_size(mut result DocumentLayoutResult,
+	box &BlockBox) ?painting.Size {
+	if box.layout_handle == unsafe { nil } {
+		return none
+	}
+	node := unsafe { &Node(box.layout_handle) }
+	containing_block := node.containing_block() or { return none }
+	mut boxes_by_layout := map[u64]&BlockBox{}
+	collect_compatibility_boxes(mut result.paint_tree, mut boxes_by_layout)
+	containing_box := boxes_by_layout[u64(voidptr(containing_block))] or { return none }
+	padding_rect := containing_box.compatibility_absolute_padding_rect()
+	return painting.Size{padding_rect.width, padding_rect.height}
+}
+
+fn compatibility_resize_constraints(mut result DocumentLayoutResult,
+	box &BlockBox, layout_node &dom.LayoutNode, computed &css.ComputedValues) page.ResizeConstraints {
+	mut min_width := ?f64(none)
+	mut max_width := ?f64(none)
+	mut min_height := ?f64(none)
+	mut max_height := ?f64(none)
+	if reference := compatibility_resize_reference_size(mut result, box) {
+		if !computed.min_width().is_auto() {
+			min_width = computed.min_width().to_px_for_layout_node(layout_node, css.CSSPixels.nearest_value_for(reference.width)).to_double()
+		}
+		if !computed.max_width().is_none() {
+			max_width = computed.max_width().to_px_for_layout_node(layout_node, css.CSSPixels.nearest_value_for(reference.width)).to_double()
+		}
+		if !computed.min_height().is_auto() {
+			min_height = computed.min_height().to_px_for_layout_node(layout_node, css.CSSPixels.nearest_value_for(reference.height)).to_double()
+		}
+		if !computed.max_height().is_none() {
+			max_height = computed.max_height().to_px_for_layout_node(layout_node, css.CSSPixels.nearest_value_for(reference.height)).to_double()
+		}
+	}
+	return page.ResizeConstraints{
+		mode: compatibility_resize_mode(computed.resize())
+		writing_mode: compatibility_resize_writing_mode(computed.writing_mode())
+		rtl: computed.direction() == .rtl
+		min_width: min_width
+		max_width: max_width
+		min_height: min_height
+		max_height: max_height
+		content_box: computed.box_sizing() == .content_box
+		horizontal_noncontent: box.padding.left + box.padding.right + box.border.left + box.border.right
+		vertical_noncontent: box.padding.top + box.padding.bottom + box.border.top + box.border.bottom
+	}
+}
+
+// ResizeHandle::handle_pointer_event() owns the capture state while
+// ElementResizeAction applies each accepted position to element.style.
+fn compatibility_dispatch_resize_handle_pointer_event(mut result DocumentLayoutResult,
+	box &BlockBox, event_type string, button int,
+	visual_viewport_position painting.Point) painting.MouseAction {
+	if box.node_id == 0 || box.layout_handle == unsafe { nil } {
+		return .none
+	}
+	node := unsafe { &Node(box.layout_handle) }
+	dom_node := node.dom_node() or { return .none }
+	element := dom_node.as_element() or { return .none }
+	dom_layout_node := dom_node.layout_node() or { return .none }
+	mut state := result.resize_handle_states[box.node_id] or {
+		CompatibilityResizeHandleState{}
+	}
+	was_resizing := state.handle.is_resizing
+	event_is_accepted := if event_type == 'pointermove' {
+		was_resizing
+	} else {
+		button == 0
+	}
+	action_result := state.handle.handle_pointer_event(event_type, button, visual_viewport_position)
+	if !was_resizing && state.handle.is_resizing {
+		border_box := box.border_box()
+		state.action = page.ElementResizeAction{
+			pointer_down_origin: page.PixelPoint{
+				x: visual_viewport_position.x
+				y: visual_viewport_position.y
+			}
+			initial_border_size: page.PixelSize{
+				width: border_box.width
+				height: border_box.height
+			}
+		}
+	} else if was_resizing && event_is_accepted {
+		if action := state.action {
+			constraints := compatibility_resize_constraints(mut result, box, dom_layout_node, node.computed_values())
+			if size := action.handle_pointer_move(page.PixelPoint{
+				x: visual_viewport_position.x
+				y: visual_viewport_position.y
+			}, constraints) {
+				style := css.inline_style(element)
+				style.set_property('width', '${size.width:.2f}px')
+				style.set_property('height', '${size.height:.2f}px')
+			}
+		}
+	}
+	if !state.handle.is_resizing {
+		state.action = none
+		result.resize_handle_states.delete(box.node_id)
+	} else {
+		result.resize_handle_states[box.node_id] = state
+	}
+	return action_result
+}
+
+fn compatibility_dispatch_scrollbar_pointer_event(mut result DocumentLayoutResult,
+	mut box BlockBox,
 	kind CompatibilityChromeWidgetKind, event_type string, button int,
 	visual_viewport_position painting.Point, tree painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot, metrics painting.ChromeMetrics) painting.MouseAction {
 	if kind == .resize_handle {
-		return .none
+		return compatibility_dispatch_resize_handle_pointer_event(mut result, &box, event_type, button, visual_viewport_position)
 	}
 	overlay := box.overlay or { return .none }
 	direction := if kind == .horizontal_scrollbar {
@@ -2125,7 +2260,7 @@ pub fn (mut result DocumentLayoutResult) handle_scrollbar_pointer_event(id strin
 	mut box := unsafe { &BlockBox(box_pointer) }
 	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return .none }
-	return compatibility_dispatch_scrollbar_pointer_event(mut box, target.kind, event_type, button, painting.Point{x, y}, result.visual_context_tree, snapshot, metrics)
+	return compatibility_dispatch_scrollbar_pointer_event(mut result, mut box, target.kind, event_type, button, painting.Point{x, y}, result.visual_context_tree, snapshot, metrics)
 }
 
 struct CompatibilityHitTestState {
@@ -2238,7 +2373,10 @@ fn compatibility_hit_test_chrome(box &BlockBox, x f64, y f64,
 	} else {
 		paintable_box_transform_to_local_coordinates(box, painting.Point{x, y}, 1.0, tree, snapshot)
 	}
-	identity := u64(voidptr(box))
+	if box.node_id == 0 {
+		return none
+	}
+	identity := u64(box.node_id)
 	if box.compatibility_resizer_contains(position, overlay, metrics) {
 		return compatibility_hit_test_result_for_chrome(box, 'resize-handle:${identity}')
 	}

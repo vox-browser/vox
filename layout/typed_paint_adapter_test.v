@@ -1573,6 +1573,72 @@ fn test_active_scrollbar_hover_jump_drag_and_release_follow_source_state() {
 	assert mutable_document.document_pending_scroll_events().len == 1
 }
 
+fn test_active_resize_handle_updates_inline_size_and_survives_relayout() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#resizable { width: 100px; height: 50px; padding: 5px; border: 2px solid; overflow: auto; resize: both; min-width: 120px; max-height: 100px }
+	</style><body><div id="resizable"></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 200)
+	element := document.get_element_by_id('resizable') or { panic('missing resizable element') }
+	node_id := element.as_node().unique_id().value()
+	box := root.find_box(node_id) or { panic('missing resizable box') }
+	overlay := box.overlay or { panic('missing resize overlay') }
+	metrics := painting.new_chrome_metrics(1) or { panic(err) }
+	resizer_rect := painting.paintable_box_absolute_resizer_rect(box.compatibility_absolute_padding_rect(), overlay.has_resizer, overlay.chrome_mirrored, metrics) or {
+		panic('missing resize handle rect')
+	}
+	start_x := resizer_rect.right() - 1
+	start_y := resizer_rect.bottom() - 1
+	viewport := document.paintable_box() or { panic('missing resize viewport') }
+	hit := viewport.hit_test(start_x, start_y, .exact) or { panic('missing resize handle hit') }
+	assert hit.chrome_widget_id == 'resize-handle:${node_id}'
+
+	mut result := document_layout_result(document) or { panic('missing resize layout result') }
+	assert result.handle_scrollbar_pointer_event(hit.chrome_widget_id, 'pointermove', 9, start_x + 1, start_y + 1) == .none
+	assert result.handle_scrollbar_pointer_event(hit.chrome_widget_id, 'pointerdown', 1, start_x, start_y) == .none
+	assert result.handle_scrollbar_pointer_event(hit.chrome_widget_id, 'pointerdown', 0, start_x, start_y) == .capture_input
+	assert result.handle_scrollbar_pointer_event(hit.chrome_widget_id, 'pointermove', 9, start_x + 30, start_y + 40) == .capture_input
+	style := css.inline_style(element)
+	// The drag works in border-box dimensions, honors max-height, then converts
+	// back to content-box width/height before updating the inline declaration.
+	assert style.get_property_value('width') == '150px'
+	assert style.get_property_value('height') == '86px'
+	assert result.handle_scrollbar_pointer_event(hit.chrome_widget_id, 'pointerdown', 1, start_x + 100, start_y + 100) == .none
+	assert style.get_property_value('width') == '150px'
+	assert style.get_property_value('height') == '86px'
+	active_state := result.resize_handle_states[node_id] or {
+		panic('missing active resize state')
+	}
+	assert active_state.handle.is_resizing
+	assert active_state.action != none
+
+	// Applying the inline declaration schedules layout. The next frame replaces
+	// every compatibility BlockBox, but capture keeps its stable DOM-node ID and
+	// the original pointer-down border size.
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.update_layout(.debugging)
+	mut updated_result := document_layout_result(document) or {
+		panic('missing updated resize layout result')
+	}
+	updated_box := updated_result.paint_tree.find_box(node_id) or {
+		panic('missing updated resizable box')
+	}
+	updated_overlay := updated_box.overlay or { panic('missing updated resize overlay') }
+	updated_resizer_rect := painting.paintable_box_absolute_resizer_rect(updated_box.compatibility_absolute_padding_rect(), updated_overlay.has_resizer, updated_overlay.chrome_mirrored, metrics) or {
+		panic('missing updated resize handle rect')
+	}
+	updated_viewport := document.paintable_box() or { panic('missing updated resize viewport') }
+	updated_hit := updated_viewport.hit_test(updated_resizer_rect.right() - 1, updated_resizer_rect.bottom() - 1, .exact) or {
+		panic('missing updated resize handle hit')
+	}
+	assert updated_hit.chrome_widget_id == hit.chrome_widget_id
+	assert updated_result.handle_scrollbar_pointer_event(hit.chrome_widget_id, 'pointermove', 9, start_x + 50, start_y + 50) == .capture_input
+	assert style.get_property_value('width') == '170px'
+	assert style.get_property_value('height') == '86px'
+	assert updated_result.handle_scrollbar_pointer_event(hit.chrome_widget_id, 'pointerup', 0, start_x + 50, start_y + 50) == .none
+	assert node_id !in updated_result.resize_handle_states
+}
+
 fn test_element_scroll_replays_retained_commands_through_live_visual_context() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 100px; height: 50px; overflow: auto; background: rgb(9 8 7) } #spacer { height: 80px } #target { height: 20px; background: rgb(1 2 3) }</style><body><div id="scroller"><div id="spacer"></div><div id="target"></div></div></body>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)

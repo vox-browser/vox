@@ -416,6 +416,17 @@ rather than inheriting `paint()`'s transparent-context early exit. The same
 plan drives `elementsFromPoint()`, so chrome-owning elements precede descendants
 at scrollbar coordinates there as well.
 
+The chrome input bridge now routes resize-handle pointer events through
+Painting's retained `ResizeHandle` state machine and Page's
+`ElementResizeAction`. Primary-button press captures input, uncaptured moves and
+non-primary presses are ignored, subsequent moves update the element's inline
+width and height with writing-mode/direction, min/max, and box-sizing rules, and
+pointerup applies the final position before releasing capture. Active state is
+copied across the layout invalidation caused by the style mutation, while
+stable DOM-node chrome IDs keep the captured widget connected to its rebuilt
+`BlockBox`. A focused regression performs a drag, forces relayout mid-capture,
+continues the drag, and verifies final release.
+
 Inspector selection now reaches that same retained display list. Box highlights
 unite continuation content, padding, border, and margin rectangles and append
 the size tooltip; text highlights emit each fragment outline and baseline.
@@ -762,8 +773,8 @@ Verified through 2026-09-08:
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
 
-$ /Users/alex/code/v/v_old -enable-globals test .
-Summary for all V _test.v files: 385 passed, 385 total.
+$ /Users/alex/code/v/v -enable-globals test .
+Summary for all V _test.v files: 392 passed, 392 total.
 
 $ /Users/alex/code/v/v -enable-globals test layout
 Summary for all V _test.v files: 19 passed, 19 total.

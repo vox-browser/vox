@@ -319,6 +319,11 @@ mut:
 	hit_test_steps      []CompatibilityPaintStep
 	hit_test_order      []&BlockBox
 	chrome_widget_boxes map[u64]voidptr
+	// PaintableBox owns an active ResizeHandle whose ElementResizeAction survives the
+	// layout/style invalidations caused by each drag step. Compatibility paint
+	// boxes are rebuilt on every layout pass, so retain that state by the stable
+	// DOM node identity on the committed document result instead.
+	resize_handle_states map[i64]CompatibilityResizeHandleState
 	// PaintableBox retains one command vector per PaintPhase. These buckets are
 	// independent of display-list and stacking traversal lifetimes.
 	paint_phase_commands      [][]PaintCommand
@@ -336,6 +341,11 @@ mut:
 
 fn document_layout_update_callback(target voidptr, document &dom.Document, viewport_width f64, viewport_height f64, needs_layout_tree_rebuild bool) voidptr {
 	_ = target
+	resize_handle_states := if previous := document_layout_result(document) {
+		previous.resize_handle_states.clone()
+	} else {
+		map[i64]CompatibilityResizeHandleState{}
+	}
 	result := run_document_layout_with_current_style(document, viewport_width, viewport_height, needs_layout_tree_rebuild) or {
 		return unsafe { nil }
 	}
@@ -345,6 +355,7 @@ fn document_layout_update_callback(target voidptr, document &dom.Document, viewp
 		state: result.state
 		document: document
 		paint_tree: paint_tree
+		resize_handle_states: resize_handle_states
 	}
 	install_document_painting_bridge(document, result_ptr)
 	return voidptr(result_ptr)
