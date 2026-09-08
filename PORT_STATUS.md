@@ -128,17 +128,17 @@ explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14170
-  unmatched: 200
+  unmatched: 100
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1110
-  consolidated-name-match: 1530
+  consolidated-name-match: 1619
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
-  value-record-field-match: 178
+  value-record-field-match: 189
 unmatched implementations by module:
 
-   196 CSS
+    96 CSS
      4 Layout
      0 Painting
 
@@ -273,6 +273,13 @@ length contexts, UA style scopes, easing functions, and concrete color fields.
 The generated WebIDL self-upcast is classified as a binding-runtime artifact.
 CSS falls from 296 to 196 without adding facade implementations, and the full
 suite passes 392/392 at this checkpoint.
+
+The 100 checkpoint reconciles another 100 reviewed CSS shapes: typed parser
+wrappers and calculation construction, CSS Syntax rule and declaration parsing,
+descriptor and Typed OM conversions, rule-subclass records, and per-variant
+style-value equality. Known implementation boundaries remain visible rather
+than being classified through adjacent code. CSS falls from 196 to 96 without
+adding audit-only facades, and the full suite passes 392/392 at this checkpoint.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

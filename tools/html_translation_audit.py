@@ -2001,6 +2001,140 @@ CONSOLIDATED_METHOD_MAPPINGS[("TypeSyntaxNode", "create")] = (
     ("create_type", "SyntaxNode"),
 )
 
+# Parser is split by responsibility in V: RuleSelectorParser owns CSS Syntax
+# and rule/declaration conversion, while Parser owns typed value parsing. The
+# wrapper methods which convert a parsed StyleValue into one of C++'s small
+# Variant aliases disappear because the V callers retain the StyleValue sum.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("Parser", "parse_declaration_value"): (("parse_declaration_value", None),),
+    ("Parser", "parse_angle_percentage"): (("parse_angle_percentage_value", "Parser"),),
+    ("Parser", "parse_flex"): (("parse_flex_value", "Parser"),),
+    ("Parser", "parse_frequency"): (("parse_frequency_value", "Parser"),),
+    ("Parser", "parse_frequency_percentage"): (
+        ("parse_frequency_percentage_value", "Parser"),
+    ),
+    ("Parser", "parse_integer"): (("parse_integer_value", "Parser"),),
+    ("Parser", "parse_length_percentage"): (("parse_length_percentage_value", "Parser"),),
+    ("Parser", "parse_number_percentage"): (("parse_number_percentage_value", "Parser"),),
+    ("Parser", "parse_resolution"): (("parse_resolution_value", "Parser"),),
+    ("Parser", "parse_time"): (("parse_time_value", "Parser"),),
+    ("Parser", "parse_time_percentage"): (("parse_time_percentage_value", "Parser"),),
+    ("Parser", "parse_lab_color_value"): (("parse_lab_like_color_value", "Parser"),),
+    ("Parser", "parse_oklab_color_value"): (("parse_lab_like_color_value", "Parser"),),
+    ("Parser", "parse_lch_color_value"): (("parse_lch_like_color_value", "Parser"),),
+    ("Parser", "parse_oklch_color_value"): (("parse_lch_like_color_value", "Parser"),),
+    ("Parser", "parse_symbol_value"): (("parse_symbol_value", None),),
+    ("Parser", "parse_nonnegative_integer_symbol_pair_value"): (
+        ("parse_nonnegative_integer_symbol_pair_value", None),
+    ),
+    ("Parser", "parse_url_function"): (("parse_url_function", None),),
+    ("Parser", "parse_grid_minmax"): (("parse_grid_minmax_kinds", "Parser"),),
+    ("Parser", "parse_calculated_value"): (("parse_calculated_value", None),),
+    ("Parser", "parse_a_calc_function_node"): (("parse_calc_function_node", "Parser"),),
+    ("Parser", "convert_to_calculation_node"): (("parse_a_calculation", "Parser"),),
+    ("Parser", "resolve_unresolved_style_value"): (
+        ("resolve_unresolved_style_value_for_property_with_context", None),
+    ),
+    ("Parser", "consume_a_simple_block_and_do_nothing"): (
+        ("parser_consume_a_simple_block", None),
+    ),
+    ("Parser", "consume_a_function_and_do_nothing"): (
+        ("parser_consume_a_function", None),
+    ),
+    ("Parser", "parse_a_blocks_contents"): (
+        ("consume_a_blocks_contents", "RuleSelectorParser"),
+    ),
+    ("Parser", "parse_as_supports_condition"): (
+        ("parse_supports_declaration_from_parser_tokens", None),
+    ),
+    ("Parser", "parse_as_property_declaration_block"): (
+        ("parse_css_property_declaration_block_with_params", None),
+    ),
+    ("Parser", "parse_as_descriptor_declaration_block"): (
+        ("parse_css_descriptor_declaration_block", None),
+    ),
+    ("Parser", "is_valid_in_the_current_context"): (
+        ("is_valid_declaration_in_the_current_context", "RuleSelectorParser"),
+        ("is_valid_at_rule_in_the_current_context", "RuleSelectorParser"),
+        ("is_valid_qualified_rule_in_the_current_context", "RuleSelectorParser"),
+    ),
+    ("Parser", "extract_property"): (("convert_to_style_declaration", "RuleSelectorParser"),),
+    ("Parser", "convert_to_style_property"): (
+        ("convert_to_style_declaration", "RuleSelectorParser"),
+    ),
+    ("Parser", "parse_as_css_value"): (("parse_css_value_for_property", "Parser"),),
+    ("Parser", "parse_as_descriptor_value"): (("parse_descriptor_value", "Parser"),),
+    ("Parser", "parse_according_to_syntax_node"): (
+        ("parse_according_to_syntax_node", None),
+    ),
+    ("Parser", "parse_with_a_syntax"): (("parse_with_a_syntax", None),),
+})
+
+# Rule subclasses become one CSSRule record in V. Their accessors either use a
+# shared operation or expose the field belonging to that discriminator. Typed
+# indexed-property conversion similarly becomes an identity conversion because
+# the V API already accepts the narrowed sum type instead of a raw JS value.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("CSSFontFeatureValuesMap", "map_entries"): (
+        ("to_ordered_hash_map", "CSSFontFeatureValuesMap"),
+    ),
+    ("CSSGroupingRule", "css_rules_for_bindings"): (("css_rules", "CSSRule"),),
+    ("CSSKeyframesRule", "set_name"): (("set_keyframes_name", "CSSRule"),),
+    ("CSSMediaRule", "evaluate"): (("evaluate_media", "CSSRule"),),
+    ("CSSStyleSheet", "construct_impl"): (("css_style_sheet_construct", None),),
+    ("Subresource", "set_loading_state"): (("set_loading_state", "CSSRule"),),
+    ("CSSTransformComponent", "set_is_2d"): (
+        ("set_is_2d", "CSSMatrixComponent"),
+        ("set_is_2d", "CSSPerspective"),
+        ("set_is_2d", "CSSRotate"),
+        ("set_is_2d", "CSSScale"),
+        ("set_is_2d", "CSSSkew"),
+        ("set_is_2d", "CSSSkewX"),
+        ("set_is_2d", "CSSSkewY"),
+        ("set_is_2d", "CSSTranslate"),
+    ),
+    ("MediaList", "item_value"): (("item", "MediaList"),),
+    ("ParsedFontFace", "parent_rule"): (("parent_rule_ref", "ParsedFontFace"),),
+    ("PropertyNameAndID", "to_string"): (("name", "PropertyNameAndID"),),
+    ("TouchActionData", "none"): (("none_", "TouchActionData"),),
+})
+
+# C++'s per-subclass virtual equality bodies become V's exhaustive StyleValue
+# sum equality. Keep this list explicit so new upstream equality algorithms do
+# not acquire coverage merely because they happen to share the method name.
+for _style_value_equality_owner, _style_value_equality_name in (
+    ("AngleStyleValue", "equals"),
+    ("ColorFunctionStyleValue", "equals"),
+    ("ColorInterpolationMethodStyleValue", "properties_equal"),
+    ("ColorMixStyleValue", "equals"),
+    ("ColorSchemeStyleValue", "properties_equal"),
+    ("CustomIdentStyleValue", "properties_equal"),
+    ("FitContentStyleValue", "equals"),
+    ("FlexStyleValue", "equals"),
+    ("FontStyleStyleValue", "equals"),
+    ("FrequencyStyleValue", "equals"),
+    ("GuaranteedInvalidStyleValue", "properties_equal"),
+    ("HSLColorStyleValue", "equals"),
+    ("HWBColorStyleValue", "equals"),
+    ("IntegerStyleValue", "equals"),
+    ("LCHLikeColorStyleValue", "equals"),
+    ("LabLikeColorStyleValue", "equals"),
+    ("LengthStyleValue", "equals"),
+    ("LightDarkStyleValue", "equals"),
+    ("LinearGradientStyleValue", "equals"),
+    ("NumberStyleValue", "equals"),
+    ("PendingSubstitutionStyleValue", "properties_equal"),
+    ("PercentageStyleValue", "equals"),
+    ("RGBColorStyleValue", "equals"),
+    ("RadialGradientStyleValue", "equals"),
+    ("RatioStyleValue", "properties_equal"),
+    ("ResolutionStyleValue", "equals"),
+    ("TimeStyleValue", "equals"),
+):
+    CONSOLIDATED_METHOD_MAPPINGS[(_style_value_equality_owner, _style_value_equality_name)] = (
+        ("equals", "StyleValue"),
+    )
+
 # BasicShape's C++ nested variant classes are standalone tagged records in V.
 # Path construction is dispatched by BasicShapeStyleValue; the expensive shape
 # geometry remains split into the concrete helpers named below.
@@ -2306,6 +2440,21 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
         ("custom_properties", "CSSStyleProperties"),
     ),
     ("CSSDescriptors", "descriptors"): (("descriptors", "CSSDescriptors"),),
+    # Rule subclasses and computed-value wrappers are discriminated records.
+    ("CSSFontFaceRule", "parent_style_sheet_for_subresource"): (
+        ("parent_style_sheet", "CSSRule"),
+    ),
+    ("CSSKeyframeRule", "key"): (("keyframe_key", "CSSRule"),),
+    ("CSSNestedDeclarations", "declaration"): (("declaration", "CSSRule"),),
+    ("CSSPageRule", "descriptors"): (("page_descriptors", "CSSRule"),),
+    ("CSSRule", "type"): (("type_", "CSSRule"),),
+    ("CSSStyleRule", "declaration"): (("declaration", "CSSRule"),),
+    ("CSSStyleValue", "associated_property"): (("associated_property", "CSSStyleValue"),),
+    ("SVGPaint", "m_value"): (("value_", "SVGPaint"),),
+    ("StyleSheet", "parent_style_sheet"): (("parent_style_sheet", "StyleSheet"),),
+    ("StyleSheetList", "document_or_shadow_root"): (
+        ("document_or_shadow_root", "StyleSheetList"),
+    ),
     # The C++ calculation-node accessors become fields on V's tagged records.
     ("CalculatedStyleValue", "calculation"): (("node", "CalculatedStyleValue"),),
     ("SumCalculationNode", "children"): (("children", "CalcSum"),),
@@ -2524,6 +2673,36 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    ("CSSDescriptors.cpp", "is_shorthand"): ("is_descriptor_shorthand",),
+    ("CSSDescriptors.cpp", "for_each_expanded_longhand"): (
+        "for_each_expanded_descriptor_longhand",
+    ),
+    # Numeric and indexed WebIDL conversions operate on already-narrowed V sum
+    # types, but retain the same validation/reification algorithms.
+    ("CSSNumericValue.cpp", "to_om_numeric_base_type"): ("base_type_name",),
+    ("CSSNumericValue.cpp", "reify_a_numeric_value"): (
+        "css_numeric_value_reify_component_value",
+    ),
+    ("CSSPerspective.cpp", "to_internal"): ("to_internal_css_perspective_value",),
+    ("CSSTransformValue.cpp", "transform_component_from_js_value"): (
+        "transform_component_from_value",
+    ),
+    ("CSSUnparsedValue.cpp", "unparsed_segment_from_js_value"): (
+        "unparsed_segment_from_indexed_value",
+    ),
+    ("Parser/RuleContext.cpp", "rule_context_type_for_at_rule"): (
+        "rule_context_type_for_at_rule_local",
+    ),
+    ("PropertyName.h", "is_invalid_custom_property_name_string"): (
+        "is_invalid_custom_property_name_string_local",
+    ),
+    ("PropertyName.h", "is_a_valid_css_property"): ("from_name",),
+    ("Selector.cpp", "component_value_contains_nesting_selector"): (
+        "selector_contains_nesting_uncached",
+    ),
+    ("Serialize.h", "serialize_a_comma_separated_list"): (
+        "serialize_a_comma_separated_string_list",
+    ),
     ("CSSStyleProperties.cpp", "style_value_for_length_percentage"): (
         "cssom_style_value_for_length_percentage",
     ),

@@ -7,7 +7,7 @@ Audited: 2026-09-08
 
 Every current upstream implementation unit has a filename-level mapping, but
 that mapping is not proof that its C++ body was translated. The semantic audit
-currently reports 196 unmatched CSS implementations after quarantining the
+currently reports 96 unmatched CSS implementations after quarantining the
 name-only `upstream_*entry_points.v` facades. The inventory is 212 `.cpp` files / 66,305 LOC,
 233 `.h` files / 18,353 LOC, and 72 `.idl` files / 994 LOC. The translated
 package has 57 implementation `.v` files / 99,996 LOC and 27 test `.v` files /
@@ -318,7 +318,7 @@ ProPhoto RGB, Rec.2020, HSL, HWB, LCH, and OKLCH with premultiplied alpha, all
 four hue routes, and Skia's powerless-hue thresholds and neighbor substitution.
 
 The current implementation-symbol audit inventories all 4,427 current upstream
-CSS implementations and reports 196 unmatched bodies. Name-only
+CSS implementations and reports 96 unmatched bodies. Name-only
 `upstream_*entry_points.v` records are explicitly excluded from coverage. The
 live browser path now retains typed declarations, computed values, rule-cache
 entries, and custom-property values by identity, following the upstream
@@ -372,6 +372,13 @@ easing variants, and concrete color-record accessors. The sole generated
 WebIDL self-upcast is a binding-runtime artifact. CSS falls from 296 to 196
 without adding class-shaped or audit-only facades.
 
+The 100 checkpoint reconciles another 100 reviewed shapes: typed parser
+wrappers and calculation construction, CSS Syntax rule and declaration parsing,
+descriptor and Typed OM conversions, rule-subclass records, and per-variant
+style-value equality. Known implementation boundaries remain visible rather
+than being classified through adjacent code. CSS falls from 196 to 96 without
+adding class-shaped or audit-only facades.
+
 Constructed style sheets now use a cached observable adopted-sheet list for
 both documents and shadow roots. Indexed insertion validates the constructed
 flag and constructor document, maintains owning-root identity, loads pending
@@ -401,7 +408,7 @@ $ python3 tools/libweb_translation_audit.py
 upstream modules: 74
 upstream implementations: 18658
 unmatched implementations by module:
-   196 CSS
+    96 CSS
 
 $ /Users/alex/code/v/v -enable-globals test .
 Summary for all V _test.v files: 392 passed, 392 total.
@@ -544,7 +551,7 @@ agreed with upstream on every case; no changes were needed.
 Across all nine runs, 3,823 generated cases now agree with the upstream browser
 apart from the deviations below.
 
-The translation audit reports 196 unmatched CSS implementations. The
+The translation audit reports 96 unmatched CSS implementations. The
 `CalculatedStyleValue.cpp`/`.h` cluster now has zero unmatched bodies: upstream
 models a calculation as a `CalculationNode` class hierarchy of 27 subclasses,
 while this port models it as the `CalcNode` sum type in `calc_parsing.v` with
