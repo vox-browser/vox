@@ -128,17 +128,17 @@ explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14170
-  unmatched: 600
+  unmatched: 500
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 1217
+  consolidated-name-match: 1302
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
-  value-record-field-match: 92
+  value-record-field-match: 107
 unmatched implementations by module:
 
-   596 CSS
+   496 CSS
      4 Layout
      0 Painting
 
@@ -241,6 +241,13 @@ maps to V's live `CalcNode` sum type, its typed record fields, and the parser,
 simplifier, resolver, serializer, equality, and Typed OM reification paths.
 This reduces the calculation cluster from 238 to 138 and CSS from 696 to 596
 without adding class-shaped facade functions. The full suite passes 392/392 at
+this checkpoint.
+
+The 500 checkpoint reconciles the next 100 calculation-tree bodies: inversion,
+rounding, the inverse and remaining trigonometric functions, exponential and
+stepped functions, and calculation-result arithmetic. These map to the same
+live `CalcNode` fields and resolver/simplifier paths, reducing the calculation
+cluster from 138 to 38 and CSS from 596 to 496. The full suite passes 392/392 at
 this checkpoint.
 
 Flex and grid layout were additionally checked differentially against the upstream

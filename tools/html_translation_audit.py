@@ -1665,6 +1665,19 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
         ("resolve_calc_random", None),
     ),
     ("RandomCalculationNode", "equals"): (("equals", "StyleValue"),),
+    ("CalculationResult", "from_value"): (("resolve_calc_leaf", None),),
+    ("CalculationResult", "add"): (("calc_result_add", None),),
+    ("CalculationResult", "subtract"): (
+        ("calc_result_add", None),
+        ("simplify_calc_negate", None),
+    ),
+    ("CalculationResult", "multiply_by"): (("calc_result_multiply", None),),
+    ("CalculationResult", "divide_by"): (
+        ("calc_result_multiply", None),
+        ("inverted", "NumericType"),
+    ),
+    ("CalculationResult", "negate"): (("resolve_calc_node", None),),
+    ("CalculationResult", "invert"): (("resolve_calc_node", None),),
 })
 
 _CALC_OPERATOR_METHOD_TARGETS: dict[str, dict[str, tuple[tuple[str, str | None], ...]]] = {
@@ -1692,6 +1705,14 @@ _CALC_OPERATOR_METHOD_TARGETS: dict[str, dict[str, tuple[tuple[str, str | None],
         "equals": (("equals", "StyleValue"),),
         "reify": (("reify_calc_node", None),),
     },
+    "InvertCalculationNode": {
+        "create": (("simplify_calc_invert", None),),
+        "contains_percentage": (("numeric_type", "CalcNode"),),
+        "with_simplified_children": (("simplify_calc_invert", None),),
+        "dump": (("serialize_a_calculation_tree", None),),
+        "equals": (("equals", "StyleValue"),),
+        "reify": (("reify_calc_node", None),),
+    },
 }
 for _owner_name, _method_mappings in _CALC_OPERATOR_METHOD_TARGETS.items():
     for _method_name, _targets in _method_mappings.items():
@@ -1699,7 +1720,11 @@ for _owner_name, _method_mappings in _CALC_OPERATOR_METHOD_TARGETS.items():
 
 for _owner_name in (
     "AbsCalculationNode", "SignCalculationNode", "SinCalculationNode",
-    "CosCalculationNode",
+    "CosCalculationNode", "TanCalculationNode", "AsinCalculationNode",
+    "AcosCalculationNode", "AtanCalculationNode", "Atan2CalculationNode",
+    "PowCalculationNode", "SqrtCalculationNode", "LogCalculationNode",
+    "ExpCalculationNode", "RoundCalculationNode", "ModCalculationNode",
+    "RemCalculationNode",
 ):
     CONSOLIDATED_METHOD_MAPPINGS.update({
         (_owner_name, "create"): (("build_calc_function", None),),
@@ -1858,10 +1883,25 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
     ("ProductCalculationNode", "children"): (("children", "CalcProduct"),),
     ("NegateCalculationNode", "children"): (("children", "CalcNegate"),),
     ("NegateCalculationNode", "child"): (("children", "CalcNegate"),),
+    ("InvertCalculationNode", "children"): (("children", "CalcInvert"),),
+    ("InvertCalculationNode", "child"): (("children", "CalcInvert"),),
     ("AbsCalculationNode", "children"): (("children", "CalcFunction"),),
     ("SignCalculationNode", "children"): (("children", "CalcFunction"),),
     ("SinCalculationNode", "children"): (("children", "CalcFunction"),),
     ("CosCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("TanCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("AsinCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("AcosCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("AtanCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("Atan2CalculationNode", "children"): (("children", "CalcFunction"),),
+    ("PowCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("SqrtCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("LogCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("ExpCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("RoundCalculationNode", "rounding_strategy"): (("strategy", "CalcFunction"),),
+    ("RoundCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("ModCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("RemCalculationNode", "children"): (("children", "CalcFunction"),),
     ("RandomCalculationNode", "children"): (("children", "CalcRandom"),),
     ("SVGGradientPaintStyle", "gradient_transform"): (("gradient_transform", "SVGGradientPaintStyle"),),
     ("SVGGradientPaintStyle", "set_gradient_transform"): (("gradient_transform", "SVGGradientPaintStyle"),),

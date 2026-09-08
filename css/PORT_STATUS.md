@@ -7,7 +7,7 @@ Audited: 2026-09-08
 
 Every current upstream implementation unit has a filename-level mapping, but
 that mapping is not proof that its C++ body was translated. The semantic audit
-currently reports 596 unmatched CSS implementations after quarantining the
+currently reports 496 unmatched CSS implementations after quarantining the
 name-only `upstream_*entry_points.v` facades. The inventory is 212 `.cpp` files / 66,305 LOC,
 233 `.h` files / 18,353 LOC, and 72 `.idl` files / 994 LOC. The translated
 package has 57 implementation `.v` files / 99,996 LOC and 27 test `.v` files /
@@ -318,7 +318,7 @@ ProPhoto RGB, Rec.2020, HSL, HWB, LCH, and OKLCH with premultiplied alpha, all
 four hue routes, and Skia's powerless-hue thresholds and neighbor substitution.
 
 The current implementation-symbol audit inventories all 4,427 current upstream
-CSS implementations and reports 596 unmatched bodies. Name-only
+CSS implementations and reports 496 unmatched bodies. Name-only
 `upstream_*entry_points.v` records are explicitly excluded from coverage. The
 live browser path now retains typed declarations, computed values, rule-cache
 entries, and custom-property values by identity, following the upstream
@@ -340,6 +340,12 @@ shape difference. Common node operations, numeric leaves, sum/product/negation,
 `CalcNode` fields and the parser, simplifier, resolver, serializer, equality,
 and Typed OM reification functions. No compatibility facade was added; removing
 any mapped function or field makes the corresponding upstream body unmatched.
+
+The 500 checkpoint reconciles another 100 bodies from that hierarchy:
+inversion, rounding, inverse and remaining trigonometric functions,
+exponential and stepped functions, and calculation-result arithmetic. The 38
+calculation bodies still visible are the min/max/clamp/hypot and non-math node
+shapes; no parallel class hierarchy or audit-only facade has been introduced.
 
 Constructed style sheets now use a cached observable adopted-sheet list for
 both documents and shadow roots. Indexed insertion validates the constructed
@@ -370,7 +376,7 @@ $ python3 tools/libweb_translation_audit.py
 upstream modules: 74
 upstream implementations: 18658
 unmatched implementations by module:
-   596 CSS
+   496 CSS
 
 $ /Users/alex/code/v/v -enable-globals test css
 Summary for all V _test.v files: 26 passed, 26 total.
@@ -513,8 +519,8 @@ agreed with upstream on every case; no changes were needed.
 Across all nine runs, 3,823 generated cases now agree with the upstream browser
 apart from the deviations below.
 
-The translation audit reports 596 unmatched CSS implementations, of which 138 -
-by far the largest cluster - are `CalculatedStyleValue.cpp`/`.h`. Those are a
+The translation audit reports 496 unmatched CSS implementations, of which 38 -
+the largest remaining cluster - are `CalculatedStyleValue.cpp`/`.h`. Those are a
 *shape* difference rather than missing logic: upstream models a calculation as a
 `CalculationNode` class hierarchy of 27 subclasses, each carrying `resolve()`,
 `equals()`, `dump()`, `children()` and `with_simplified_children()`, while this
