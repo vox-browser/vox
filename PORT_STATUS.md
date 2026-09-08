@@ -128,19 +128,19 @@ explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14134
-  unmatched: 1575
+  unmatched: 1522
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 342
+  consolidated-name-match: 377
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
-  value-record-field-match: 28
+  value-record-field-match: 46
 unmatched implementations by module:
 
    697 CSS
    595 Layout
-   283 Painting
+   230 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total

@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-05
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 283
+filename-level mappings. The current semantic audit nevertheless reports 230
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 283 unmatched Painting
+  were removed; the audit currently reports 230 unmatched Painting
   implementations.
 
 - The audit now records the reviewed value-model decompositions for
@@ -45,6 +45,21 @@ following behavioral mismatches and added focused regressions:
   scroll snapshot and visual-context tree; and `DisplayList` exposes its typed
   visual-context tree directly. Ten class-shaped accessors/setters now point at
   those live methods or fields instead of remaining shape-only gaps.
+
+- `PaintableFragment`'s class-shaped accessors now resolve to the live embedded
+  value record and its DOM-aware `TextFragment` bridge. Selection lookup and
+  rectangle construction remain executable functions, while geometry, glyph,
+  orientation, text, shadow, and decoration accessors validate their exact
+  backing fields. The audit deliberately leaves `paintable()` unmatched because
+  V derives that object through the retained layout/DOM handle.
+
+- SVG mask/clip accounting now follows the two active resource-lowering
+  functions. They cover resource lookup, masking/clip area, target/resource
+  transforms, alpha/luminance conversion, subtree recording, and the thin
+  graphics/foreign-object delegators. Background-layer resolution, display-list
+  bounds, border-radius normalization, table-cell collection, synchronous
+  backing-store allocation, and shadow conversion also point to their tested
+  renamed or decomposed implementations.
 
 - `DisplayListRecordingContext` is now translated as the central boundary for
   recorder access, palette and chrome state, device/CSS conversion, viewport
@@ -557,7 +572,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 283 unmatched implementations.
+Painting: 230 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

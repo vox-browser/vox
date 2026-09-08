@@ -270,6 +270,59 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
         ("set_computed_svg_path", "UsedValues"),
     ),
     ("SVGPathPaintable", "computed_path"): (("computed_svg_path", "UsedValues"),),
+    # PaintableFragment's DOM-dependent selection lookup remains at Layout's
+    # DOM bridge, while the renderer-independent record owns range geometry.
+    ("PaintableFragment", "selection_range_for_text_control"): (
+        ("selection_range_for_text_control", None),
+    ),
+    ("PaintableFragment", "selection_rect"): (("selection_rect", None),),
+    # V resolves computed shadow lengths into the transport record before
+    # converting that record to Painting's renderer-independent ShadowData.
+    ("ShadowData", "from_css"): (
+        ("computed_shadow_transport", None),
+        ("painting_shadow_data_from_transport", None),
+    ),
+    # Backing-store allocation is synchronous in the standalone renderer, so
+    # resize policy and allocation are one tested state transition.
+    ("BackingStoreManager", "reallocate_backing_stores"): (
+        ("resize_if_needed", "BackingStoreManager"),
+    ),
+    ("BackingStoreManager", "resize_backing_stores_if_needed"): (
+        ("resize_if_needed", "BackingStoreManager"),
+    ),
+    # C++'s explicit boolean conversion is an ordinary predicate in V.
+    ("CornerRadius", "bool"): (("is_present", "CornerRadius"),),
+    ("BorderRadiusData", "bool"): (("is_present", "BorderRadiusData"),),
+    # SVG mask/clip resources are resolved while lowering the typed Layout
+    # tree. Each function below finds the attached resource, computes its area
+    # and target transform, converts mask type, and records the subtree.
+    ("SVGMaskable", "get_svg_mask_area"): (("svg_url_mask_for_box", None),),
+    ("SVGMaskable", "get_svg_mask_type"): (("svg_url_mask_for_box", None),),
+    ("SVGMaskable", "calculate_svg_mask_display_list"): (
+        ("svg_url_mask_for_box", None),
+    ),
+    ("SVGMaskable", "get_svg_clip_area"): (("svg_url_clip_path_for_box", None),),
+    ("SVGMaskable", "calculate_svg_clip_display_list"): (
+        ("svg_url_clip_path_for_box", None),
+    ),
+    ("SVGMaskable", "target_svg_transform"): (
+        ("svg_url_mask_for_box", None),
+        ("svg_url_clip_path_for_box", None),
+    ),
+    ("SVGGraphicsPaintable", "dom_node_of_svg"): (("dom_node", "Node"),),
+    ("SVGGraphicsPaintable", "get_mask_area"): (("svg_url_mask_for_box", None),),
+    ("SVGGraphicsPaintable", "get_mask_type"): (("svg_url_mask_for_box", None),),
+    ("SVGGraphicsPaintable", "calculate_mask"): (("svg_url_mask_for_box", None),),
+    ("SVGGraphicsPaintable", "get_clip_area"): (("svg_url_clip_path_for_box", None),),
+    ("SVGGraphicsPaintable", "calculate_clip"): (("svg_url_clip_path_for_box", None),),
+    ("SVGForeignObjectPaintable", "dom_node_of_svg"): (("dom_node", "Node"),),
+    ("SVGForeignObjectPaintable", "get_mask_area"): (("svg_url_mask_for_box", None),),
+    ("SVGForeignObjectPaintable", "get_mask_type"): (("svg_url_mask_for_box", None),),
+    ("SVGForeignObjectPaintable", "calculate_mask"): (("svg_url_mask_for_box", None),),
+    ("SVGForeignObjectPaintable", "get_clip_area"): (("svg_url_clip_path_for_box", None),),
+    ("SVGForeignObjectPaintable", "calculate_clip"): (
+        ("svg_url_clip_path_for_box", None),
+    ),
     # Paint-server factory construction is folded into Layout's resource
     # resolution boundary, which returns the concrete Painting value record.
     ("SVGLinearGradientPaintStyle", "create"): (
@@ -624,6 +677,37 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
         ("visual_context_tree", "DocumentLayoutResult"),
     ),
     ("DisplayList", "visual_context_tree"): (("visual_context_tree", "DisplayList"),),
+    # PaintableFragment is a value record in V. The active layout bridge keeps
+    # DOM/layout-only state on TextFragment and embeds the renderer-independent
+    # PaintableFragment for geometry, glyph, and selection operations.
+    ("PaintableFragment", "layout_node"): (("layout_handle", "TextFragment"),),
+    ("PaintableFragment", "start_offset"): (("start_offset", "PaintableFragment"),),
+    ("PaintableFragment", "length_in_code_units"): (
+        ("length_in_code_units", "PaintableFragment"),
+    ),
+    ("PaintableFragment", "baseline"): (("baseline", "PaintableFragment"),),
+    ("PaintableFragment", "offset"): (("offset", "PaintableFragment"),),
+    ("PaintableFragment", "set_offset"): (("offset", "PaintableFragment"),),
+    ("PaintableFragment", "size"): (("size", "PaintableFragment"),),
+    ("PaintableFragment", "shadows"): (("text_shadows", "TextFragment"),),
+    ("PaintableFragment", "set_shadows"): (("text_shadows", "TextFragment"),),
+    ("PaintableFragment", "glyph_run"): (("glyph_run", "PaintableFragment"),),
+    ("PaintableFragment", "orientation"): (("orientation", "PaintableFragment"),),
+    ("PaintableFragment", "width"): (("size", "PaintableFragment"),),
+    ("PaintableFragment", "height"): (("size", "PaintableFragment"),),
+    ("PaintableFragment", "text"): (("text", "TextFragment"),),
+    ("PaintableFragment", "text_decoration_thickness"): (
+        ("decoration_thickness", "TextFragment"),
+    ),
+    ("PaintableFragment", "set_text_decoration_thickness"): (
+        ("decoration_thickness", "TextFragment"),
+    ),
+    ("PaintableFragment", "has_trailing_whitespace"): (
+        ("has_trailing_whitespace", "PaintableFragment"),
+    ),
+    ("ExternalContentSource", "current_bitmap"): (
+        ("bitmap_id", "ExternalContentSource"),
+    ),
 }
 
 # Some V modules deliberately consolidate private C++ helpers into a shared
@@ -632,6 +716,31 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    # Shadow placement is folded into the live CSS-to-painting transport
+    # conversion rather than exposed as a one-line enum helper.
+    ("ShadowData.h", "shadow_placement_from_css"): (
+        "painting_shadow_data_from_transport",
+    ),
+    ("DisplayList.cpp", "command_bounding_rectangle"): ("command_bounding_rect",),
+    ("Paintable.cpp", "normalize_border_radii_data"): (
+        "paintable_box_border_radii_data",
+    ),
+    ("TableBordersPainting.cpp", "collect_cell_boxes"): ("collect_table_cells",),
+    ("BackgroundPainting.cpp", "resolve_background_layers"): (
+        "resolve_background_layer",
+        "resolve_background_layer_without_intrinsic",
+    ),
+    ("SVGMaskable.cpp", "first_child_layout_node_of_type"): (
+        "svg_url_mask_for_box",
+        "svg_url_clip_path_for_box",
+    ),
+    ("SVGMaskable.cpp", "get_mask_box"): ("svg_url_mask_for_box",),
+    ("SVGMaskable.cpp", "get_clip_box"): ("svg_url_clip_path_for_box",),
+    ("SVGMaskable.cpp", "mask_type_to_gfx_mask_kind"): ("svg_url_mask_for_box",),
+    ("SVGMaskable.cpp", "paint_mask_or_clip_to_display_list"): (
+        "svg_url_mask_for_box",
+        "svg_url_clip_path_for_box",
+    ),
     ("Interpolation.cpp", "slerp"): ("interpolation_slerp",),
     ("Interpolation.cpp", "length_percentage_or_auto_to_style_value"): ("interpolation_length_percentage_or_auto_to_style_value",),
     ("StyleComputer.cpp", "filter_namespace_rule"): ("style_scope_filter_namespace_rule",),
