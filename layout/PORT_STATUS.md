@@ -416,6 +416,14 @@ rather than inheriting `paint()`'s transparent-context early exit. The same
 plan drives `elementsFromPoint()`, so chrome-owning elements precede descendants
 at scrollbar coordinates there as well.
 
+Inspector selection now reaches that same retained display list. Box highlights
+unite continuation content, padding, border, and margin rectangles and append
+the size tooltip; text highlights emit each fragment outline and baseline.
+Only scroll, transform, and perspective visual contexts survive into this
+overlay, so ancestor overflow, clip paths, masks, and effects cannot hide it.
+Changing the DOM highlight invalidates the assembled list without discarding
+the ordinary per-phase paint caches.
+
 Each retained box now owns the same per-axis scrollbar state as
 `PaintableBox`. Hover switches overlay recording and containment from the thin
 thumb strip to the full gutter, while pointerdown, captured pointermove, and
@@ -737,7 +745,7 @@ decoded-bitmap `feImage` graph execution.
 
 ## Verification
 
-Verified through 2026-09-06:
+Verified through 2026-09-08:
 
 ```text
 $ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
@@ -747,7 +755,7 @@ $ /Users/alex/code/v/v_old -enable-globals test .
 Summary for all V _test.v files: 385 passed, 385 total.
 
 $ /Users/alex/code/v/v -enable-globals test layout
-Summary for all V _test.v files: 18 passed, 18 total.
+Summary for all V _test.v files: 19 passed, 19 total.
 
 $ /Users/alex/code/v/v -enable-globals test css
 Summary for all V _test.v files: 26 passed, 26 total.

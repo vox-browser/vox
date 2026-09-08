@@ -4,6 +4,7 @@ import css
 import dom
 import math
 import painting
+import platform
 import strings
 
 // The concrete painting state owned by a committed DocumentLayoutResult is
@@ -1495,6 +1496,7 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	snapshot := result.scroll_state_snapshot
 	viewport_scroll_offset := snapshot.device_offset_for_index(result.paint_tree.own_scroll_frame_index).scale(-1)
 	result.display_list_commands = lower_visual_layers(replay_cached_paint_commands_with_visual_context(result.paint_steps, result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree, snapshot, viewport_scroll_offset))
+	result.display_list_commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree, snapshot)
 	result.display_list = &dom.DisplayList{
 		concrete_handle: target
 		command_count_: result.display_list_commands.len
@@ -1502,6 +1504,227 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	}
 	result.needs_repaint = false
 	return result.display_list
+}
+
+struct CompatibilityInspectorBoxRects {
+mut:
+	found         bool
+	content       LayoutRect
+	padding       LayoutRect
+	border        LayoutRect
+	margin        LayoutRect
+	context_index int
+	fixed         bool
+}
+
+fn compatibility_inspector_rects_for_box(box &BlockBox) CompatibilityInspectorBoxRects {
+	content := LayoutRect{box.x, box.y, box.width, box.height}
+	padding := LayoutRect{
+		x: box.x - box.padding.left
+		y: box.y - box.padding.top
+		width: box.width + box.padding.left + box.padding.right
+		height: box.height + box.padding.top + box.padding.bottom
+	}
+	border := LayoutRect{
+		x: padding.x - box.border.left
+		y: padding.y - box.border.top
+		width: padding.width + box.border.left + box.border.right
+		height: padding.height + box.border.top + box.border.bottom
+	}
+	margin := LayoutRect{
+		x: border.x - box.margin.left
+		y: border.y - box.margin.top
+		width: border.width + box.margin.left + box.margin.right
+		height: border.height + box.margin.top + box.margin.bottom
+	}
+	return CompatibilityInspectorBoxRects{
+		found: true
+		content: content
+		padding: padding
+		border: border
+		margin: margin
+		context_index: box.accumulated_visual_context_index
+		fixed: box.fixed_to_viewport
+	}
+}
+
+fn compatibility_collect_inspector_box_rects(box &BlockBox, layout_handle voidptr,
+	mut result CompatibilityInspectorBoxRects) {
+	if box.layout_handle == layout_handle {
+		current := compatibility_inspector_rects_for_box(box)
+		if result.found {
+			result.content = rect_union(result.content, current.content)
+			result.padding = rect_union(result.padding, current.padding)
+			result.border = rect_union(result.border, current.border)
+			result.margin = rect_union(result.margin, current.margin)
+		} else {
+			result = current
+		}
+	}
+	for index in 0 .. box.children.len {
+		compatibility_collect_inspector_box_rects(&box.children[index], layout_handle, mut result)
+	}
+}
+
+fn compatibility_apply_inspector_context(mut commands []PaintCommand,
+	context CompatibilityFlattenedVisualContext, fixed bool) {
+	for mut command in commands {
+		command.transform = context.transform
+		command.fixed_to_viewport = fixed
+		// Paintable::paint_inspector_overlay() keeps scroll, transform, and
+		// perspective nodes but deliberately excludes clips and effects.
+		command.has_clip = false
+		command.clip_list = unsafe { nil }
+		command.visual_layer_list = unsafe { nil }
+	}
+}
+
+fn compatibility_inspector_rect_commands(rect LayoutRect, fill string,
+	outline string) []PaintCommand {
+	return [
+		PaintCommand{
+			kind: 'fill_rect'
+			x: rect.x
+			y: rect.y
+			width: rect.width
+			height: rect.height
+			color: fill
+		},
+		PaintCommand{
+			kind: 'stroke_rounded_rect'
+			x: rect.x
+			y: rect.y
+			width: rect.width
+			height: rect.height
+			color: outline
+			stroke_width: 1
+		},
+	]
+}
+
+// PaintableBox::paint_inspector_overlay_internal(). The palette-backed tooltip
+// roles cross the compatibility boundary as their conventional UI colors.
+fn compatibility_paint_box_inspector_overlay(layout_node &Node,
+	rects CompatibilityInspectorBoxRects) []PaintCommand {
+	mut commands := []PaintCommand{}
+	commands << compatibility_inspector_rect_commands(rects.margin, '#ffff0064', '#ffff00')
+	commands << compatibility_inspector_rect_commands(rects.padding, '#00ffff64', '#00ffff')
+	commands << compatibility_inspector_rect_commands(rects.border, '#00800064', '#008000')
+	commands << compatibility_inspector_rect_commands(rects.content, '#ff00ff64', '#ff00ff')
+	// The compatibility renderer has a built-in SerenitySans fallback even when
+	// an embedder has not installed FontPlugin (as in focused Layout tests).
+	// That is the deterministic equivalent of Gfx::FontDatabase's 12px default
+	// font used by the upstream inspector tooltip.
+	font := platform.Font{
+		family: 'sans-serif'
+		point_size: 12
+	}
+	label := '${layout_node.debug_description()} ${rects.border.width}x${rects.border.height} @ ${rects.border.x},${rects.border.y}'
+	run := platform.shape_text(0, 0, label, &font, .ltr)
+	metrics := font.pixel_metrics()
+	label_rect := LayoutRect{
+		x: rects.border.x
+		y: rects.border.y + rects.border.height
+		width: css.CSSPixels.nearest_value_for(f64(run.width())).to_double() + 4
+		height: f64(metrics.size) + 4
+	}
+	commands << PaintCommand{
+		kind: 'fill_rect'
+		x: label_rect.x
+		y: label_rect.y
+		width: label_rect.width
+		height: label_rect.height
+		color: '#ffffe1'
+	}
+	commands << PaintCommand{
+		kind: 'stroke_rounded_rect'
+		x: label_rect.x
+		y: label_rect.y
+		width: label_rect.width
+		height: label_rect.height
+		color: '#808080'
+		stroke_width: 1
+	}
+	commands << PaintCommand{
+		kind: 'draw_text'
+		x: label_rect.x + 2
+		y: label_rect.y
+		width: f64(run.width())
+		height: label_rect.height
+		color: '#000000'
+		text: label
+		font_size: 12
+		glyph_run: run
+		glyph_translation_x: label_rect.x + 2
+		glyph_translation_y: label_rect.y + 2 + f64(metrics.ascent)
+		glyph_orientation: .horizontal
+	}
+	return commands
+}
+
+// PaintableWithLines::paint_text_fragment_debug_highlight().
+fn paint_text_fragment_debug_highlight(fragment painting.PaintableFragment) []PaintCommand {
+	rect := fragment.absolute_rect()
+	baseline_y := rect.y + fragment.baseline
+	return [
+		PaintCommand{
+			kind: 'stroke_rounded_rect'
+			x: rect.x
+			y: rect.y
+			width: rect.width
+			height: rect.height
+			color: '#008000'
+			stroke_width: 1
+		},
+		PaintCommand{
+			kind: 'draw_line'
+			color: '#ff0000'
+			stroke_width: 1
+			points: [rect.x, baseline_y, rect.x + rect.width - 1, baseline_y]
+		},
+	]
+}
+
+fn compatibility_collect_text_inspector_overlay(box &BlockBox, layout_handle voidptr,
+	tree painting.AccumulatedVisualContextTree, snapshot painting.ScrollStateSnapshot,
+	mut commands []PaintCommand) {
+	for line in box.lines {
+		for fragment in line.fragments {
+			if fragment.layout_handle != layout_handle {
+				continue
+			}
+			mut fragment_commands := paint_text_fragment_debug_highlight(fragment.paintable_fragment)
+			context := flatten_compatibility_visual_context(tree, box.accumulated_visual_context_index, snapshot)
+			compatibility_apply_inspector_context(mut fragment_commands, context, box.fixed_to_viewport)
+			commands << fragment_commands
+		}
+	}
+	for child in box.children {
+		compatibility_collect_text_inspector_overlay(child, layout_handle, tree, snapshot, mut commands)
+	}
+}
+
+// Paintable::paint_inspector_overlay().
+fn (root &BlockBox) paint_inspector_overlay(document &dom.Document,
+	tree painting.AccumulatedVisualContextTree,
+	snapshot painting.ScrollStateSnapshot) []PaintCommand {
+	layout_node := document.highlighted_layout_node() or { return []PaintCommand{} }
+	layout_handle := layout_node.real_layout_handle()
+	if layout_handle == unsafe { nil } {
+		return []PaintCommand{}
+	}
+	mut rects := CompatibilityInspectorBoxRects{}
+	compatibility_collect_inspector_box_rects(root, layout_handle, mut rects)
+	if rects.found {
+		source_node := unsafe { &Node(layout_handle) }
+		mut commands := compatibility_paint_box_inspector_overlay(source_node, rects)
+		context := flatten_compatibility_visual_context(tree, rects.context_index, snapshot)
+		compatibility_apply_inspector_context(mut commands, context, rects.fixed)
+		return commands
+	}
+	mut commands := []PaintCommand{}
+	compatibility_collect_text_inspector_overlay(root, layout_handle, tree, snapshot, mut commands)
+	return commands
 }
 
 fn display_list_command_nesting_change(kind string) int {

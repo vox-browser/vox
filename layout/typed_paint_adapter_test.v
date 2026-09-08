@@ -1192,6 +1192,62 @@ fn test_label_activation_recomputes_click_offset_for_control_paintable() {
 	assert observation.offset_y == 32
 }
 
+fn test_highlighted_node_records_box_and_text_inspector_overlays_without_clipping() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #clip { width: 25px; height: 25px; overflow: hidden } #target { box-sizing: content-box; width: 20px; height: 10px; margin: 7px; border: 3px solid; padding: 5px; transform: translate(11px, 13px); background: white }</style><body><div id="clip"><div id="target">text</div></div></body>')
+	root := layout_document_typed_in_viewport(document, 240, 140)
+	target := document.get_element_by_id('target') or { panic('missing highlighted target') }
+	target_box := root.find_box(i64(target.as_node().unique_id())) or {
+		panic('missing highlighted target box')
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	initial := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing initial display list')
+	})
+	assert !initial.any(it.color in ['#ffff0064', '#00ffff64', '#00800064', '#ff00ff64'])
+
+	mutable_document.set_highlighted_node(target.as_node(), none)
+	box_commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing box inspector display list')
+	})
+	box_overlay := box_commands.filter(it.color in ['#ffff0064', '#00ffff64', '#00800064', '#ff00ff64',
+		'#ffff00', '#00ffff', '#008000', '#ff00ff', '#ffffe1', '#808080']
+		|| (it.kind == 'draw_text' && it.text.contains('#target')))
+	assert box_overlay.len == 11
+	content := box_overlay.filter(it.kind == 'fill_rect' && it.color == '#ff00ff64')[0]
+	assert content.x == target_box.x
+	assert content.y == target_box.y
+	assert content.width == target_box.width
+	assert content.height == target_box.height
+	assert box_overlay.all(!it.has_clip && it.clip_list == unsafe { nil }
+		&& it.visual_layer_list == unsafe { nil })
+	assert box_overlay.all(it.transform == [f64(1), 0, 0, 1, 11, 13]!)
+	assert box_overlay.any(it.kind == 'draw_text' && it.text.contains('#target'))
+	mut result := document_layout_result(document) or { panic('missing layout result') }
+	assert !result.needs_repaint
+	mutable_document.set_highlighted_node(target.as_node(), none)
+	assert !result.needs_repaint
+
+	text_node := target.as_node().first_child() or { panic('missing highlighted text') }
+	mutable_document.set_highlighted_node(text_node, none)
+	text_commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing text inspector display list')
+	})
+	text_overlay := text_commands.filter((it.kind == 'stroke_rounded_rect' && it.color == '#008000')
+		|| (it.kind == 'draw_line' && it.color == '#ff0000'))
+	assert text_overlay.len == 2
+	assert text_overlay.all(!it.has_clip && it.clip_list == unsafe { nil }
+		&& it.visual_layer_list == unsafe { nil })
+	assert text_overlay.all(it.transform == [f64(1), 0, 0, 1, 11, 13]!)
+	assert text_overlay[1].points[1] == text_overlay[1].points[3]
+
+	mutable_document.set_highlighted_node(none, none)
+	cleared := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing cleared inspector display list')
+	})
+	assert !cleared.any(it.color in ['#ffff0064', '#00ffff64', '#00800064', '#ff00ff64'])
+	assert !cleared.any(it.kind == 'draw_line' && it.color == '#ff0000')
+}
+
 fn test_paintable_with_lines_text_cursor_hit_tests_empty_editing_host() {
 	document := html.parse_document('<!doctype html><style>
 		html, body, p { margin: 0 }

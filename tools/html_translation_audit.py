@@ -275,6 +275,18 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ),
     ("SVGPathPaintable", "paint"): (("flat_paint_commands", "BlockBox"),),
     ("SVGPathPaintable", "dom_node"): (("dom_node", "Node"),),
+    ("Paintable", "paint_inspector_overlay"): (
+        ("paint_inspector_overlay", "BlockBox"),
+    ),
+    ("PaintableBox", "paint_inspector_overlay_internal"): (
+        ("compatibility_paint_box_inspector_overlay", None),
+    ),
+    ("PaintableWithLines", "paint_text_fragment_debug_highlight"): (
+        ("paint_text_fragment_debug_highlight", None),
+    ),
+    ("TextPaintable", "paint_inspector_overlay_internal"): (
+        ("paint_text_fragment_debug_highlight", None),
+    ),
     # PaintableFragment's DOM-dependent selection lookup remains at Layout's
     # DOM bridge, while the renderer-independent record owns range geometry.
     ("PaintableFragment", "selection_range_for_text_control"): (

@@ -7640,9 +7640,31 @@ pub fn (d &Document) get_inspected_node() ?&Node {
 	return d.inspected_node
 }
 
+fn optional_pseudo_elements_equal(left ?PseudoElement, right ?PseudoElement) bool {
+	if left_value := left {
+		if right_value := right {
+			return left_value == right_value
+		}
+		return false
+	}
+	if _ := right {
+		return false
+	}
+	return true
+}
+
 pub fn (mut d Document) set_highlighted_node(node ?&Node, pseudo ?PseudoElement) {
-	d.highlighted_node = node or { unsafe { nil } }
+	new_node := node or { unsafe { nil } }
+	if voidptr(d.highlighted_node) == voidptr(new_node)
+		&& optional_pseudo_elements_equal(d.highlighted_pseudo_element, pseudo) {
+		return
+	}
+	d.highlighted_node = new_node
 	d.highlighted_pseudo_element = pseudo
+	// The retained compatibility display list owns the inspector overlay outside
+	// individual phase caches, so invalidating its assembled list covers both
+	// the old and new highlighted paintables.
+	d.set_needs_repaint()
 }
 
 pub fn (d &Document) get_highlighted_node() ?&Node {

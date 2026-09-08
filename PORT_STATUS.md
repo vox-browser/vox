@@ -46,7 +46,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `CookieStore` | 2 | 900 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 369 | 405 | 293 | Complete |
 | `Crypto` | 6 | 13,297 | 3,287 | 1,006 | Complete |
-| `DOM` | 57 | 26,465 | 36,804 | 2,250 | Complete |
+| `DOM` | 57 | 26,465 | 36,826 | 2,250 | Complete |
 | `DOMURL` | 4 | 1,016 | 754 | 336 | Complete |
 | `Editing` | 4 | 7,980 | 3,074 | 741 | Complete |
 | `Encoding` | 4 | 438 | 705 | 244 | Complete |
@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 36,643 | 13,105 | Present |
+| `Layout` | 50 | 19,592 | 36,866 | 13,161 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **315,578** | **56,679** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **315,823** | **56,735** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -128,10 +128,10 @@ explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14136
-  unmatched: 1433
+  unmatched: 1429
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 428
+  consolidated-name-match: 432
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
@@ -140,7 +140,7 @@ unmatched implementations by module:
 
    697 CSS
    595 Layout
-   141 Painting
+   137 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -149,7 +149,7 @@ $ /Users/alex/code/v/v -enable-globals test css
 Summary for all V _test.v files: 26 passed, 26 total.
 
 $ /Users/alex/code/v/v -enable-globals test layout
-Summary for all V _test.v files: 18 passed, 18 total.
+Summary for all V _test.v files: 19 passed, 19 total.
 
 $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
@@ -285,6 +285,13 @@ Scrollbar layout now follows `PaintableBox::available_scrollbar_length()`,
 resizer-adjusted scrollbar lengths retain C++'s signed geometry for boxes
 smaller than the platform gripper instead of being prematurely clamped by the
 combined V helper.
+Inspector highlighting now records after the ordinary phase stream as well.
+Box paintables unite continuation content, padding, border, and margin geometry,
+draw the upstream yellow/cyan/green/magenta overlay plus its size tooltip, and
+text paintables outline every matching fragment with its red baseline. The
+overlay retains scroll, transform, and perspective state while deliberately
+discarding clip paths, overflow clips, masks, and effects; changing or clearing
+the highlighted DOM node invalidates only the assembled retained display list.
 The retained scrollbar objects now also translate `Scrollbar.cpp`'s hover and
 thumb-grab state rather than calling a stateless pointer-ratio helper. Hover
 enlarges both paint and hit geometry; track presses use C++'s constrained grab

@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-08
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 146
+filename-level mappings. The current semantic audit nevertheless reports 137
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 141 unmatched Painting
+  were removed; the audit currently reports 137 unmatched Painting
   implementations.
 
 - `PaintableBox`'s layout-owned geometry and metadata now audit against the
@@ -119,6 +119,13 @@ following behavioral mismatches and added focused regressions:
   or the first line-fragment origin for an inline paintable. Label activation
   uses it after updating layout to recompute cloned control-click offsets,
   including the current viewport scroll position.
+
+- The active display-list bridge now translates `Paintable::paint_inspector_overlay()`,
+  `PaintableBox::paint_inspector_overlay_internal()`, and
+  `TextPaintable::paint_inspector_overlay_internal()`. Box-model continuation
+  unions, tooltip text, fragment bounds and baselines are recorded after normal
+  painting with transforms and scrolling retained but clipping and effects
+  removed, matching the inspector's deliberately unclipped overlay context.
 - Equal table-border conflicts prefer the earlier left/top edge; indeterminate
   checkbox dash geometry and the resize cursor fallback follow their native
   implementations.
@@ -596,7 +603,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 141 unmatched implementations.
+Painting: 137 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)
