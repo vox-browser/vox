@@ -1295,6 +1295,111 @@ CONSOLIDATED_METHOD_MAPPINGS[("BorderConflictFinder", "get_col_element")] = (
     ("resolved_collapsed_table_cell_border", None),
 )
 
+# C++ expresses layout-node kinds through subclasses, covariant dom_node()
+# accessors, and virtual paintable factories. V embeds those subclasses in one
+# typed Node prefix: the common accessors and predicates perform the equivalent
+# dispatch, while the typed paint adapter materializes the specialized
+# paintables in one tree pass. Keep this reconciliation limited to the reviewed
+# node classes below; data-bearing methods that are not covered by the common
+# representation remain unmatched.
+for _owner_name in (
+    "AudioBox", "VideoBox", "ReplacedBox", "FieldSetBox", "SVGSVGBox",
+    "SVGClipBox", "SVGForeignObjectBox", "SVGGeometryBox", "SVGGraphicsBox",
+    "SVGMaskBox", "SVGPatternBox", "SVGImageBox", "SVGTextBox",
+    "SVGTextPathBox", "SVGBox", "LegendBox", "ListItemBox", "TextInputBox",
+    "TextAreaBox", "BreakNode", "CanvasBox", "Viewport",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[(_owner_name, "dom_node")] = (
+        ("dom_node", "Node"),
+    )
+
+for _owner_name in (
+    "AudioBox", "VideoBox", "ReplacedBox", "SVGSVGBox", "BreakNode",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[(_owner_name, "can_have_children")] = (
+        ("can_have_children", "Node"),
+    )
+
+_NODE_KIND_METHODS: dict[str, str] = {
+    "BlockContainer": "is_block_container",
+    "Box": "is_box",
+    "BreakNode": "is_break_node",
+    "FieldSetBox": "is_fieldset_box",
+    "InlineNode": "is_inline_node",
+    "LegendBox": "is_legend_box",
+    "ListItemBox": "is_list_item_box",
+    "ReplacedBox": "is_replaced_box",
+    "SVGBox": "is_svg_box",
+    "SVGClipBox": "is_svg_clip_box",
+    "SVGForeignObjectBox": "is_svg_foreign_object_box",
+    "SVGGeometryBox": "is_svg_geometry_box",
+    "SVGGraphicsBox": "is_svg_graphics_box",
+    "SVGMaskBox": "is_svg_mask_box",
+    "SVGPatternBox": "is_svg_pattern_box",
+    "SVGSVGBox": "is_svg_svg_box",
+    "TableWrapper": "is_table_wrapper",
+    "TextAreaBox": "is_textarea_box",
+    "Viewport": "is_viewport",
+}
+for _owner_name, _method_name in _NODE_KIND_METHODS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[(_owner_name, _method_name)] = (
+        (_method_name, "Node"),
+    )
+
+CONSOLIDATED_METHOD_MAPPINGS[("Node", "is_node_with_style")] = (
+    ("as_node_with_style", "Node"),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("Node", "is_node_with_style_and_box_model_metrics")] = (
+    ("as_node_with_style_and_box_model_metrics", "Node"),
+)
+
+for _owner_name in ("AudioBox", "ReplacedBox", "TextInputBox", "TextAreaBox"):
+    CONSOLIDATED_METHOD_MAPPINGS[(_owner_name, "has_auto_content_box_size")] = (
+        ("has_auto_content_box_size", "Box"),
+    )
+
+CONSOLIDATED_METHOD_MAPPINGS[("Box", "compute_auto_content_box_size")] = (
+    ("natural_size", "Box"),
+)
+for _owner_name in ("CanvasBox", "CheckBox", "RadioButton", "TextInputBox", "TextAreaBox"):
+    CONSOLIDATED_METHOD_MAPPINGS[(_owner_name, "compute_auto_content_box_size")] = (
+        ("new", _owner_name),
+    )
+
+# Creation of ordinary and specialized paintables is centralized here. SVG
+# resource boxes use their retained clip/mask/pattern collectors because they
+# deliberately do not enter the normal BlockBox descendant list.
+for _owner_name in (
+    "AudioBox", "VideoBox", "FieldSetBox", "SVGSVGBox",
+    "SVGForeignObjectBox", "SVGGeometryBox", "SVGGraphicsBox", "SVGImageBox",
+    "SVGTextBox", "SVGTextPathBox", "CanvasBox", "CheckBox", "RadioButton",
+    "Viewport", "Box", "BlockContainer",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[(_owner_name, "create_paintable")] = (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    )
+CONSOLIDATED_METHOD_MAPPINGS[("SVGClipBox", "create_paintable")] = (
+    ("collect_svg_clip_path_components", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("SVGMaskBox", "create_paintable")] = (
+    ("collect_svg_mask_paint_operations", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("SVGPatternBox", "create_paintable")] = (
+    ("resolve_svg_pattern_paint_style", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("BlockContainer", "paintable_with_lines")] = (
+    ("text_lines_from_typed_layout", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("Box", "paintable_box")] = (
+    ("block_box_from_typed_layout_with_ancestor", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("InlineNode", "create_paintable_for_line_with_index")] = (
+    ("text_lines_from_typed_layout", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("SVGSVGBox", "natural_size")] = (
+    ("negotiate_svg_natural_metrics", None),
+)
+
 # Inline C++ accessors whose state is deliberately exposed as a typed public V
 # record field. These mappings are accepted only while the named owner/field
 # exists, just as function mappings fail open when their implementation moves.

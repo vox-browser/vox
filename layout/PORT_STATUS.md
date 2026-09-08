@@ -6,7 +6,7 @@ Re-audited: 2026-09-08
 
 All 50 upstream Layout `.cpp` units have filename-level homes in the typed V
 Layout package. That inventory does not establish body-level parity: the
-current semantic audit reports 171 unmatched Layout implementations, and the
+current semantic audit reports 71 unmatched Layout implementations, and the
 legacy `BlockBox` renderer transport still sits between typed Layout and the
 native shell.
 
@@ -23,6 +23,14 @@ replaced-with-children, generic sizing dispatch, tree construction, and their
 local state helpers; every mapping points at the active implementation rather
 than a name-only facade. This reduced Layout's structural audit remainder from
 595 to 171 without duplicating already-tested logic.
+
+The node-hierarchy pass then reconciled the covariant DOM accessors, virtual
+type predicates, intrinsic-size hooks, and paintable factories that V expresses
+through its embedded `Node` prefix and centralized typed paint adapter. It also
+closed a real behavioral gap: `VideoBox` natural size now reads the media
+model's live video dimensions, including an aspect ratio when both dimensions
+are positive, even when called through the common `Box` path. The audit moved
+from 171 to 71 unmatched Layout implementations at that checkpoint.
 
 ## Translated coverage
 

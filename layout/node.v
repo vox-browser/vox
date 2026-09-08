@@ -1224,6 +1224,17 @@ pub fn (mut n Box) reset_cached_intrinsic_sizes() {
 }
 
 pub fn (n &Box) natural_size() css.SizeWithAspectRatio {
+	// C++ dispatches this virtual call to VideoBox::natural_size(), whose
+	// dimensions are live media metadata rather than constructor-time state.
+	// Preserve that behavior even though V represents the hierarchy by
+	// embedding concrete boxes in this common record.
+	if dom_node := n.dom_node() {
+		if element := dom_node.as_element() {
+			if element.is_html_element() && element.local_name() == 'video' {
+				return unsafe { &VideoBox(n) }.natural_size()
+			}
+		}
+	}
 	return n.natural_size_
 }
 

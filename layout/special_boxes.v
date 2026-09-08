@@ -838,6 +838,19 @@ pub fn VideoBox.new(document &dom.Document, element &dom.Element, computed_value
 	return box
 }
 
+// Layout::VideoBox::natural_size(). Video dimensions remain live because
+// metadata can arrive after the retained layout node has been constructed.
+pub fn (box &VideoBox) natural_size() css.SizeWithAspectRatio {
+	dom_node := box.dom_node() or { return css.SizeWithAspectRatio{} }
+	element := dom_node.as_element() or { return css.SizeWithAspectRatio{} }
+	if !element.is_html_element() || element.local_name() != 'video' {
+		return css.SizeWithAspectRatio{}
+	}
+	video := unsafe { &dom.HTMLVideoElement(element) }
+	model := html.html_video_element_model_for_dom_element(video)
+	return size_with_optional_aspect_ratio(CSSPixels.new(int(model.video_width())), CSSPixels.new(int(model.video_height())))
+}
+
 @[heap]
 pub struct TextInputBox {
 	BlockContainer
