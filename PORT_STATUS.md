@@ -127,8 +127,8 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14135
-  unmatched: 1434
+  candidate-name-match: 14136
+  unmatched: 1433
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 428
@@ -140,7 +140,7 @@ unmatched implementations by module:
 
    697 CSS
    595 Layout
-   142 Painting
+   141 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -183,6 +183,11 @@ text-control cursors scroll their nearest overflow ancestor or the viewport.
 It also restored `SVGPathPaintable::hit_test()`'s raw path-bounds gate: stroke
 inflation still contributes layout and paint bounds but cannot make the
 inflated margin win `elementFromPoint()`.
+
+`Paintable::box_type_agnostic_position()` now crosses the active DOM/Layout
+bridge as well, reducing Painting from 142 to 141. Label activation updates
+layout and uses that content-box origin plus the live viewport scroll offset to
+recompute a cloned control click's `offsetX`/`offsetY`, as upstream requires.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

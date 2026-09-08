@@ -44,6 +44,7 @@ fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &Docu
 		mutable_paintable.repaint_callback_target = voidptr(result)
 		mutable_paintable.set_needs_repaint_callback = layout_paintable_set_needs_repaint
 		mutable_paintable.scroll_ancestor_to_offset_into_view_callback = layout_paintable_scroll_ancestor_to_offset_into_view
+		mutable_paintable.box_type_agnostic_position_callback = layout_paintable_box_type_agnostic_position
 	}
 	for child in node.children_ {
 		install_layout_paintable_repaint_callbacks(child, result)
@@ -850,6 +851,31 @@ fn layout_paintable_scroll_ancestor_to_offset_into_view(target voidptr, layout_h
 		}
 		containing_block = ancestor.containing_block()
 	}
+}
+
+// Paintable::box_type_agnostic_position(). Boxes report their content origin;
+// inline paintables fall back to the first fragment in their line container.
+fn layout_paintable_box_type_agnostic_position(target voidptr,
+	layout_handle voidptr) dom.CSSPixelPoint_ {
+	if layout_handle == unsafe { nil } {
+		return dom.CSSPixelPoint_{}
+	}
+	mut result := viewport_layout_result(target)
+	mut boxes_by_layout := map[u64]&BlockBox{}
+	collect_compatibility_boxes(mut result.paint_tree, mut boxes_by_layout)
+	if box := boxes_by_layout[u64(layout_handle)] {
+		return dom.CSSPixelPoint_{ x_: box.x, y_: box.y }
+	}
+	source_node := unsafe { &Node(layout_handle) }
+	containing_block := source_node.containing_block() or { return dom.CSSPixelPoint_{} }
+	box := boxes_by_layout[u64(voidptr(containing_block))] or { return dom.CSSPixelPoint_{} }
+	for line in box.lines {
+		if line.fragments.len > 0 {
+			rect := line.fragments[0].paintable_fragment.absolute_rect()
+			return dom.CSSPixelPoint_{ x_: rect.x, y_: rect.y }
+		}
+	}
+	return dom.CSSPixelPoint_{}
 }
 
 fn viewport_invalidate_layout_paint_cache(mut result DocumentLayoutResult, layout_handle voidptr) {

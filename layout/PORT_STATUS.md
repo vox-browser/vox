@@ -507,6 +507,11 @@ SVG path candidates additionally apply `SVGPathPaintable::hit_test()`'s
 transformed raw-path bounding quad before this shared traversal. The surrounding
 stroke-inflated layout box therefore cannot win a hit outside the source path
 bounds.
+The DOM/Layout paintable bridge also exposes
+`Paintable::box_type_agnostic_position()`: boxes return the retained content
+origin and inline paintables use their line container's first fragment. The
+HTML label activation path consumes this after a layout update to rewrite the
+cloned control click's offsets relative to the control.
 The DOM mirror also preserves the layout tree's split-inline continuation chain
 in forward order. This lets `PaintableBox`'s united geometry and the CSSOM
 `offsetTop`, `offsetLeft`, `offsetWidth`, and `offsetHeight` algorithms account

@@ -212,6 +212,8 @@ pub type PaintableSetNeedsRepaintCallback = fn (voidptr, voidptr, InvalidateDisp
 
 pub type PaintableScrollAncestorToOffsetCallback = fn (voidptr, voidptr, int)
 
+pub type PaintableBoxTypeAgnosticPositionCallback = fn (voidptr, voidptr) CSSPixelPoint_
+
 @[heap]
 pub struct Paintable {
 pub mut:
@@ -222,6 +224,7 @@ pub mut:
 	repaint_callback_target                      voidptr = unsafe { nil }
 	set_needs_repaint_callback                   PaintableSetNeedsRepaintCallback = unsafe { nil }
 	scroll_ancestor_to_offset_into_view_callback PaintableScrollAncestorToOffsetCallback = unsafe { nil }
+	box_type_agnostic_position_callback          PaintableBoxTypeAgnosticPositionCallback = unsafe { nil }
 }
 
 pub enum SelectionState {
@@ -260,6 +263,14 @@ pub fn (p &Paintable) scroll_ancestor_to_offset_into_view(offset int) {
 		&& p.scroll_ancestor_to_offset_into_view_callback != unsafe { nil } {
 		p.scroll_ancestor_to_offset_into_view_callback(p.repaint_callback_target, p.layout_handle, offset)
 	}
+}
+
+pub fn (p &Paintable) box_type_agnostic_position() CSSPixelPoint_ {
+	if p.repaint_callback_target != unsafe { nil }
+		&& p.box_type_agnostic_position_callback != unsafe { nil } {
+		return p.box_type_agnostic_position_callback(p.repaint_callback_target, p.layout_handle)
+	}
+	return CSSPixelPoint_{}
 }
 
 @[heap]

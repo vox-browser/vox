@@ -11,8 +11,9 @@ module html
 import aria
 import color
 import dom
+import math
 
-pub type BaseAllowedHook = fn(dom.URL) bool
+pub type BaseAllowedHook = fn (dom.URL) bool
 
 @[heap]
 pub struct HTMLBaseElementModel {
@@ -429,7 +430,7 @@ pub mut:
 	disabled bool
 }
 
-pub type StyleParseHook = fn(string) !
+pub type StyleParseHook = fn (string) !
 
 @[heap]
 pub struct HTMLStyleElementModel {
@@ -1004,21 +1005,31 @@ pub fn html_label_element_activation_behavior(label &dom.HTMLLabelElement, event
 	if event.interface_ == .mouse_event {
 		mouse_event := unsafe { &dom.MouseEvent(event) }
 		mut click_event := mouse_event.clone()
+		mut document := unsafe { &dom.Document(control.document()) }
+		document.update_layout(.html_label_element_activation_behavior)
+		if paintable := control.as_node().paintable() {
+			if document.navigable() != none {
+				viewport := document.viewport_rect()
+				page_x := mouse_event.client_x() + viewport.x
+				page_y := mouse_event.client_y() + viewport.y
+				box_position := paintable.box_type_agnostic_position()
+				click_event.set_offset_x(math.round(page_x - box_position.x()))
+				click_event.set_offset_y(math.round(page_y - box_position.y()))
+			}
+		}
 		click_event.set_bubbles(true)
 		click_event.set_cancelable(true)
 		click_event.set_composed(true)
 		click_event.set_is_trusted(event.is_trusted())
 		base_event := unsafe { &dom.Event(click_event) }
-		unsafe { &dom.EventTarget(control.as_node()) }
-		.dispatch_event(base_event)
+		unsafe { &dom.EventTarget(control.as_node()) }.dispatch_event(base_event)
 	} else {
 		click_event := dom.Event.create('click', dom.EventInit{
 			bubbles: true
 			cancelable: true
 			composed: true
 		})
-		unsafe { &dom.EventTarget(control.as_node()) }
-		.dispatch_event(click_event)
+		unsafe { &dom.EventTarget(control.as_node()) }.dispatch_event(click_event)
 	}
 	mutable_label.click_in_progress_ = false
 	mut document := unsafe { &dom.Document(control.document()) }
@@ -1139,8 +1150,7 @@ pub fn (output &HTMLOutputElementModel) html_for() []string {
 
 pub fn (output &HTMLOutputElementModel) default_value() string {
 	return output.default_value_override_ or {
-		unsafe { &dom.Element(output.element) }
-		.as_node().descendant_text_content()
+		unsafe { &dom.Element(output.element) }.as_node().descendant_text_content()
 	}
 }
 

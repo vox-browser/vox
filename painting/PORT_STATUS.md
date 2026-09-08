@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 142 unmatched Painting
+  were removed; the audit currently reports 141 unmatched Painting
   implementations.
 
 - `PaintableBox`'s layout-owned geometry and metadata now audit against the
@@ -115,6 +115,10 @@ following behavioral mismatches and added focused regressions:
   boxes created for split inline continuations keep a separate principal-inline
   fallback identity, matching `PaintableBox::hit_test_continuation()` without
   changing their paint or cache ownership.
+- `Paintable::box_type_agnostic_position()` reports a box's live content origin
+  or the first line-fragment origin for an inline paintable. Label activation
+  uses it after updating layout to recompute cloned control-click offsets,
+  including the current viewport scroll position.
 - Equal table-border conflicts prefer the earlier left/top edge; indeterminate
   checkbox dash geometry and the resize cursor fallback follow their native
   implementations.
@@ -592,7 +596,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 142 unmatched implementations.
+Painting: 141 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

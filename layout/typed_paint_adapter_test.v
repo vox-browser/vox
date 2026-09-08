@@ -1143,6 +1143,55 @@ fn test_selection_scrolls_cursor_into_viewport() {
 	assert document.viewport_rect().y > 0
 }
 
+struct LabelClickPositionObservation {
+mut:
+	offset_x f64
+	offset_y f64
+	called   bool
+}
+
+fn test_label_activation_recomputes_click_offset_for_control_paintable() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } label { position: absolute; left: 100px; top: 80px } input { appearance: none; position: absolute; box-sizing: content-box; left: 30px; top: 20px; width: 80px; height: 20px; padding: 5px; border: 3px solid }</style><body><label id="label" for="control">Caption</label><input id="control"></body>')
+	mut mutable_document := unsafe { &dom.Document(document) }
+	host := &dom.Navigable{
+		active_document_: document
+	}
+	_ := html.NavigableModel.create(host, none) or { panic(err) }
+	mutable_document.set_cached_navigable(host)
+	_ = layout_document_typed_in_viewport(document, 240, 140)
+	label_element := document.get_element_by_id('label') or { panic('missing label') }
+	control := document.get_element_by_id('control') or { panic('missing control') }
+	paintable := control.as_node().paintable() or { panic('missing control paintable') }
+	assert paintable.box_type_agnostic_position() == dom.CSSPixelPoint_{ x_: 38, y_: 28 }
+
+	observation := &LabelClickPositionObservation{}
+	listener := dom.IDLEventListener.create(&dom.CallbackType{
+		handle_event: fn [observation] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mouse := unsafe { &dom.MouseEvent(event) }
+			mut mutable_observation := unsafe { &LabelClickPositionObservation(observation) }
+			mutable_observation.offset_x = mouse.offset_x()
+			mutable_observation.offset_y = mouse.offset_y()
+			mutable_observation.called = true
+			return dom.js_undefined()
+		}
+	})
+	unsafe { &dom.EventTarget(control.as_node()) }.add_event_listener_without_options('click', listener)
+	click := dom.MouseEvent.create('click', dom.MouseEventInit{
+		UIEventInit: dom.UIEventInit{
+			EventInit: dom.EventInit{}
+			detail: 1
+		}
+		client_x: 70
+		client_y: 60
+		offset_x: 999
+		offset_y: 999
+	})
+	html.html_label_element_activation_behavior(unsafe { &dom.HTMLLabelElement(label_element) }, unsafe { &dom.Event(click) })
+	assert observation.called
+	assert observation.offset_x == 32
+	assert observation.offset_y == 32
+}
+
 fn test_paintable_with_lines_text_cursor_hit_tests_empty_editing_host() {
 	document := html.parse_document('<!doctype html><style>
 		html, body, p { margin: 0 }
