@@ -5583,6 +5583,21 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
+			if property_id in [.grid_template_rows, .grid_template_columns] {
+				from_value := style_value_logic_from_dom(property_id, from) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+				to_value := style_value_logic_from_dom(property_id, to) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+				if from_value is GridTrackSizeListStyleValue && to_value is GridTrackSizeListStyleValue {
+					interpolated := interpolate_grid_track_size_list(calculation_context, from_value.grid_track_size_list(), to_value.grid_track_size_list(), delta) or {
+						return interpolate_discrete(from, to, delta, allow_discrete)
+					}
+					return dom_style_value_from_value_logic(StyleValue(GridTrackSizeListStyleValue.create(interpolated)))
+				}
+				return interpolate_discrete(from, to, delta, allow_discrete)
+			}
 			if property_id == .visibility {
 				// https://drafts.csswg.org/web-animations-1/#animating-visibility
 				// For the visibility property, visible is interpolated as a discrete step where values of p between 0 and 1 map to visible and other values of p map to the closer endpoint.
@@ -5707,6 +5722,142 @@ pub fn interpolate_length_percentage_or_auto(calculation_context InterpolationCa
 	return none
 }
 
+struct ExpandedGridTracksAndLines {
+mut:
+	tracks     []ExplicitGridTrack
+	line_names []?GridLineNames
+}
+
+fn append_expanded_grid_track(mut result ExpandedGridTracksAndLines, track ExplicitGridTrack, line_names ?GridLineNames) {
+	result.tracks << track
+	result.line_names << line_names
+}
+
+fn expand_grid_tracks_and_lines(list GridTrackSizeList) ExpandedGridTracksAndLines {
+	mut result := ExpandedGridTracksAndLines{}
+	mut current_track := ?ExplicitGridTrack(none)
+	mut current_line_names := ?GridLineNames(none)
+	for component in list.list() {
+		match component {
+			GridLineNames {
+				assert current_line_names == none
+				current_line_names = component
+			}
+			ExplicitGridTrack {
+				if track := current_track {
+					append_expanded_grid_track(mut result, track, current_line_names)
+					current_line_names = none
+				}
+				current_track = component
+			}
+		}
+		if track := current_track {
+			if line_names := current_line_names {
+				append_expanded_grid_track(mut result, track, line_names)
+				current_track = none
+				current_line_names = none
+			}
+		}
+	}
+	if track := current_track {
+		append_expanded_grid_track(mut result, track, current_line_names)
+	}
+	return result
+}
+
+fn append_grid_track_with_line_names(mut list GridTrackSizeList, track ExplicitGridTrack, line_names ?GridLineNames) {
+	list.append_explicit_track(track)
+	if names := line_names {
+		list.append_line_names(names)
+	}
+}
+
+fn interpolate_grid_css_size(calculation_context InterpolationCalculationContext, from Size, to Size, delta f64) Size {
+	if from.is_length_percentage() && to.is_length_percentage() {
+		if interpolated := interpolate_length_percentage(calculation_context, from.length_percentage(), to.length_percentage(), delta) {
+			return Size.make_length_percentage(interpolated)
+		}
+	}
+	if from.type_() != to.type_() {
+		return if delta < 0.5 { from } else { to }
+	}
+	if from.is_fit_content() && to.is_fit_content() {
+		from_available_space := from.fit_content_available_space() or {
+			return if delta < 0.5 { from } else { to }
+		}
+		to_available_space := to.fit_content_available_space() or {
+			return if delta < 0.5 { from } else { to }
+		}
+		if interpolated := interpolate_length_percentage(calculation_context, from_available_space, to_available_space, delta) {
+			return Size.make_fit_content(interpolated)
+		}
+	}
+	return if delta < 0.5 { from } else { to }
+}
+
+fn interpolate_grid_size(calculation_context InterpolationCalculationContext, from GridSize, to GridSize, delta f64) GridSize {
+	if from.is_flexible_length() || to.is_flexible_length() {
+		if from.is_flexible_length() && to.is_flexible_length() {
+			return GridSize.from_flex(Flex.make_fr(interpolate_raw(from.flex_factor(), to.flex_factor(), delta, none)))
+		}
+	} else {
+		return GridSize.from_size(interpolate_grid_css_size(calculation_context, from.css_size(), to.css_size(), delta))
+	}
+	return if delta < 0.5 { from } else { to }
+}
+
+fn interpolate_grid_track_size_list(calculation_context InterpolationCalculationContext, from GridTrackSizeList, to GridTrackSizeList, delta f64) ?GridTrackSizeList {
+	expanded_from := expand_grid_tracks_and_lines(from)
+	expanded_to := expand_grid_tracks_and_lines(to)
+	if expanded_from.tracks.len != expanded_to.tracks.len {
+		return none
+	}
+
+	mut result := GridTrackSizeList{}
+	for i in 0 .. expanded_from.tracks.len {
+		from_track := expanded_from.tracks[i]
+		to_track := expanded_to.tracks[i]
+		line_names := if delta < 0.5 {
+			expanded_from.line_names[i]
+		} else {
+			expanded_to.line_names[i]
+		}
+
+		if from_track.is_repeat() || to_track.is_repeat() {
+			if !from_track.is_repeat() || !to_track.is_repeat() {
+				return none
+			}
+			from_repeat := from_track.repeat()
+			to_repeat := to_track.repeat()
+			if !from_repeat.is_fixed() || !to_repeat.is_fixed()
+				|| from_repeat.repeat_count() != to_repeat.repeat_count()
+				|| from_repeat.grid_track_size_list().track_list().len != to_repeat.grid_track_size_list().track_list().len {
+				return none
+			}
+			interpolated_tracks := interpolate_grid_track_size_list(calculation_context, from_repeat.grid_track_size_list(), to_repeat.grid_track_size_list(), delta) or {
+				return none
+			}
+			track := ExplicitGridTrack.from_repeat(GridRepeat.new(from_repeat.type_(), interpolated_tracks, from_repeat.repeat_count()))
+			append_grid_track_with_line_names(mut result, track, line_names)
+		} else if from_track.is_minmax() && to_track.is_minmax() {
+			from_minmax := from_track.minmax()
+			to_minmax := to_track.minmax()
+			track := ExplicitGridTrack.from_minmax(GridMinMax.new(interpolate_grid_size(calculation_context, from_minmax.min_grid_size(), to_minmax.min_grid_size(), delta), interpolate_grid_size(calculation_context, from_minmax.max_grid_size(), to_minmax.max_grid_size(), delta)))
+			append_grid_track_with_line_names(mut result, track, line_names)
+		} else if from_track.is_default() && to_track.is_default() {
+			track := ExplicitGridTrack.from_grid_size(interpolate_grid_size(calculation_context, from_track.grid_size(), to_track.grid_size(), delta))
+			append_grid_track_with_line_names(mut result, track, line_names)
+		} else {
+			append_grid_track_with_line_names(mut result, if delta < 0.5 {
+				from_track
+			} else {
+				to_track
+			}, line_names)
+		}
+	}
+	return result
+}
+
 fn interpolation_length_percentage_to_style_value(value LengthPercentage) StyleValue {
 	if value.is_length() {
 		return StyleValue(LengthStyleValue.create(value.length()))
@@ -5732,7 +5883,56 @@ fn interpolation_calculation_operand(value StyleValue) string {
 	return serialized
 }
 
+fn get_value_type_of_numeric_style_value(value StyleValue, calculation_context CalculationContext) ?ValueType {
+	return match value {
+		AngleStyleValue { ValueType.angle }
+		FrequencyStyleValue { ValueType.frequency }
+		IntegerStyleValue { ValueType.integer }
+		LengthStyleValue { ValueType.length }
+		NumberStyleValue { ValueType.number }
+		PercentageStyleValue {
+			calculation_context.percentages_resolve_as or { ValueType.percentage }
+		}
+		ResolutionStyleValue { ValueType.resolution }
+		TimeStyleValue { ValueType.time }
+		CalculatedStyleValue {
+			numeric_type := value.numeric_type() or { return none }
+			percentages_resolve_as := calculation_context.percentages_resolve_as
+			if numeric_type.matches_angle_percentage(percentages_resolve_as) {
+				ValueType.angle
+			} else if numeric_type.matches_frequency_percentage(percentages_resolve_as) {
+				ValueType.frequency
+			} else if numeric_type.matches_length_percentage(percentages_resolve_as) {
+				ValueType.length
+			} else if numeric_type.matches_resolution(percentages_resolve_as) {
+				ValueType.resolution
+			} else if numeric_type.matches_number(percentages_resolve_as) {
+				if calculation_context.resolve_numbers_as_integers {
+					ValueType.integer
+				} else {
+					ValueType.number
+				}
+			} else if numeric_type.matches_percentage() {
+				percentages_resolve_as or { ValueType.percentage }
+			} else if numeric_type.matches_time_percentage(percentages_resolve_as) {
+				ValueType.time
+			} else {
+				return none
+			}
+		}
+		else {
+			return none
+		}
+	}
+}
+
 fn interpolate_mixed_style_value(calculation_context InterpolationCalculationContext, from StyleValue, to StyleValue, delta f64) ?StyleValue {
+	numeric_context := CalculationContext.for_property(PropertyNameAndID.from_id(calculation_context.property))
+	from_type := get_value_type_of_numeric_style_value(from, numeric_context) or { return none }
+	to_type := get_value_type_of_numeric_style_value(to, numeric_context) or { return none }
+	if from_type != to_type {
+		return none
+	}
 	if delta == 0 {
 		return from
 	}
@@ -6433,6 +6633,320 @@ fn interpolation_slerp(from []f64, to []f64, delta f64) []f64 {
 	return result
 }
 
+struct InterpolationDecomposedMatrix {
+	translation FloatVector3
+	scale       FloatVector3
+	skew        FloatVector3
+	rotation    []f64
+	perspective []f64
+}
+
+fn interpolation_float_matrix_rows(matrix FloatMatrix4x4) [4][4]f64 {
+	return [
+		[matrix.m11, matrix.m12, matrix.m13, matrix.m14]!,
+		[matrix.m21, matrix.m22, matrix.m23, matrix.m24]!,
+		[matrix.m31, matrix.m32, matrix.m33, matrix.m34]!,
+		[matrix.m41, matrix.m42, matrix.m43, matrix.m44]!,
+	]!
+}
+
+fn interpolation_float_matrix_from_rows(rows [4][4]f64) FloatMatrix4x4 {
+	return FloatMatrix4x4.from_values(rows[0][0], rows[0][1], rows[0][2], rows[0][3], rows[1][0], rows[1][1], rows[1][2], rows[1][3], rows[2][0], rows[2][1], rows[2][2], rows[2][3], rows[3][0], rows[3][1], rows[3][2], rows[3][3])
+}
+
+fn interpolation_inverse_matrix(rows [4][4]f64) ?[4][4]f64 {
+	mut augmented := [4][8]f64{}
+	for row in 0 .. 4 {
+		for column in 0 .. 4 {
+			augmented[row][column] = rows[row][column]
+			augmented[row][column + 4] = if row == column { 1 } else { 0 }
+		}
+	}
+
+	for column in 0 .. 4 {
+		mut pivot_row := column
+		for row in column + 1 .. 4 {
+			if math.abs(augmented[row][column]) > math.abs(augmented[pivot_row][column]) {
+				pivot_row = row
+			}
+		}
+		if math.abs(augmented[pivot_row][column]) < 1e-12 {
+			return none
+		}
+		if pivot_row != column {
+			for entry in 0 .. 8 {
+				temporary := augmented[column][entry]
+				augmented[column][entry] = augmented[pivot_row][entry]
+				augmented[pivot_row][entry] = temporary
+			}
+		}
+
+		pivot := augmented[column][column]
+		for entry in 0 .. 8 {
+			augmented[column][entry] /= pivot
+		}
+		for row in 0 .. 4 {
+			if row == column {
+				continue
+			}
+			factor := augmented[row][column]
+			for entry in 0 .. 8 {
+				augmented[row][entry] -= factor * augmented[column][entry]
+			}
+		}
+	}
+
+	mut inverse := [4][4]f64{}
+	for row in 0 .. 4 {
+		for column in 0 .. 4 {
+			inverse[row][column] = augmented[row][column + 4]
+		}
+	}
+	return inverse
+}
+
+fn interpolation_vector_dot(a FloatVector3, b FloatVector3) f64 {
+	return a.x * b.x + a.y * b.y + a.z * b.z
+}
+
+fn interpolation_vector_cross(a FloatVector3, b FloatVector3) FloatVector3 {
+	return FloatVector3{
+		x: a.y * b.z - a.z * b.y
+		y: a.z * b.x - a.x * b.z
+		z: a.x * b.y - a.y * b.x
+	}
+}
+
+fn interpolation_combine_vectors(a FloatVector3, b FloatVector3, a_scale f64, b_scale f64) FloatVector3 {
+	return FloatVector3{
+		x: a_scale * a.x + b_scale * b.x
+		y: a_scale * a.y + b_scale * b.y
+		z: a_scale * a.z + b_scale * b.z
+	}
+}
+
+fn interpolation_vector_divided(vector FloatVector3, divisor f64) FloatVector3 {
+	return FloatVector3{
+		x: vector.x / divisor
+		y: vector.y / divisor
+		z: vector.z / divisor
+	}
+}
+
+fn interpolation_decompose_matrix(matrix FloatMatrix4x4) ?InterpolationDecomposedMatrix {
+	mut rows := interpolation_float_matrix_rows(matrix)
+	if rows[3][3] == 0 {
+		return none
+	}
+	normalization := rows[3][3]
+	for row in 0 .. 4 {
+		for column in 0 .. 4 {
+			rows[row][column] /= normalization
+		}
+	}
+
+	mut perspective_matrix := rows
+	for column in 0 .. 3 {
+		perspective_matrix[3][column] = 0
+	}
+	perspective_matrix[3][3] = 1
+	inverse_perspective := interpolation_inverse_matrix(perspective_matrix) or { return none }
+
+	mut perspective := [f64(0), 0, 0, 1]
+	if rows[3][0] != 0 || rows[3][1] != 0 || rows[3][2] != 0 {
+		bottom_side := [rows[3][0], rows[3][1], rows[3][2], rows[3][3]]
+		perspective = []f64{len: 4}
+		for row in 0 .. 4 {
+			for column in 0 .. 4 {
+				perspective[row] += inverse_perspective[column][row] * bottom_side[column]
+			}
+		}
+	}
+
+	translation := FloatVector3{
+		x: rows[0][3]
+		y: rows[1][3]
+		z: rows[2][3]
+	}
+	mut basis := [
+		FloatVector3{ x: rows[0][0], y: rows[1][0], z: rows[2][0] },
+		FloatVector3{ x: rows[0][1], y: rows[1][1], z: rows[2][1] },
+		FloatVector3{ x: rows[0][2], y: rows[1][2], z: rows[2][2] },
+	]!
+
+	mut scale := FloatVector3{}
+	mut skew := FloatVector3{}
+	scale.x = basis[0].length()
+	if scale.x == 0 {
+		return none
+	}
+	basis[0] = interpolation_vector_divided(basis[0], scale.x)
+
+	skew.x = interpolation_vector_dot(basis[0], basis[1])
+	basis[1] = interpolation_combine_vectors(basis[1], basis[0], 1, -skew.x)
+	scale.y = basis[1].length()
+	if scale.y == 0 {
+		return none
+	}
+	basis[1] = interpolation_vector_divided(basis[1], scale.y)
+	skew.x /= scale.y
+
+	skew.y = interpolation_vector_dot(basis[0], basis[2])
+	basis[2] = interpolation_combine_vectors(basis[2], basis[0], 1, -skew.y)
+	skew.z = interpolation_vector_dot(basis[1], basis[2])
+	basis[2] = interpolation_combine_vectors(basis[2], basis[1], 1, -skew.z)
+	scale.z = basis[2].length()
+	if scale.z == 0 {
+		return none
+	}
+	basis[2] = interpolation_vector_divided(basis[2], scale.z)
+	skew.y /= scale.z
+	skew.z /= scale.z
+
+	if interpolation_vector_dot(basis[0], interpolation_vector_cross(basis[1], basis[2])) < 0 {
+		scale.x = -scale.x
+		scale.y = -scale.y
+		scale.z = -scale.z
+		for index in 0 .. 3 {
+			basis[index].x = -basis[index].x
+			basis[index].y = -basis[index].y
+			basis[index].z = -basis[index].z
+		}
+	}
+
+	mut rotation := [
+		0.5 * math.sqrt(math.max(1 + basis[0].x - basis[1].y - basis[2].z, 0)),
+		0.5 * math.sqrt(math.max(1 - basis[0].x + basis[1].y - basis[2].z, 0)),
+		0.5 * math.sqrt(math.max(1 - basis[0].x - basis[1].y + basis[2].z, 0)),
+		0.5 * math.sqrt(math.max(1 + basis[0].x + basis[1].y + basis[2].z, 0)),
+	]
+	if basis[2].y > basis[1].z {
+		rotation[0] = -rotation[0]
+	}
+	if basis[0].z > basis[2].x {
+		rotation[1] = -rotation[1]
+	}
+	if basis[1].x > basis[0].y {
+		rotation[2] = -rotation[2]
+	}
+	// Browser coordinates are left-handed because positive Y points down.
+	rotation[2] = -rotation[2]
+
+	return InterpolationDecomposedMatrix{
+		translation: translation
+		scale: scale
+		skew: skew
+		rotation: rotation
+		perspective: perspective
+	}
+}
+
+fn interpolation_recompose_matrix(values InterpolationDecomposedMatrix) FloatMatrix4x4 {
+	mut rows := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
+	for column in 0 .. 4 {
+		rows[3][column] = values.perspective[column]
+	}
+	translation := [values.translation.x, values.translation.y, values.translation.z]
+	for row in 0 .. 4 {
+		for column in 0 .. 3 {
+			rows[row][3] += translation[column] * rows[row][column]
+		}
+	}
+
+	x := values.rotation[0]
+	y := values.rotation[1]
+	z := values.rotation[2]
+	w := values.rotation[3]
+	mut rotation := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
+	rotation[0][0] = 1 - 2 * (y * y + z * z)
+	rotation[1][0] = 2 * (x * y - z * w)
+	rotation[2][0] = 2 * (x * z + y * w)
+	rotation[0][1] = 2 * (x * y + z * w)
+	rotation[1][1] = 1 - 2 * (x * x + z * z)
+	rotation[2][1] = 2 * (y * z - x * w)
+	rotation[0][2] = 2 * (x * z - y * w)
+	rotation[1][2] = 2 * (y * z + x * w)
+	rotation[2][2] = 1 - 2 * (x * x + y * y)
+	mut recomposed := cssom_multiply_transform_matrices(interpolation_float_matrix_from_rows(rows), interpolation_float_matrix_from_rows(rotation))
+
+	if values.skew.z != 0 {
+		mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
+		skew[1][2] = values.skew.z
+		recomposed = cssom_multiply_transform_matrices(recomposed, interpolation_float_matrix_from_rows(skew))
+	}
+	if values.skew.y != 0 {
+		mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
+		skew[0][2] = values.skew.y
+		recomposed = cssom_multiply_transform_matrices(recomposed, interpolation_float_matrix_from_rows(skew))
+	}
+	if values.skew.x != 0 {
+		mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
+		skew[0][1] = values.skew.x
+		recomposed = cssom_multiply_transform_matrices(recomposed, interpolation_float_matrix_from_rows(skew))
+	}
+
+	mut result := interpolation_float_matrix_rows(recomposed)
+	scales := [values.scale.x, values.scale.y, values.scale.z]
+	for column in 0 .. 3 {
+		for row in 0 .. 4 {
+			result[row][column] *= scales[column]
+		}
+	}
+	return interpolation_float_matrix_from_rows(result)
+}
+
+fn interpolate_matrices(from FloatMatrix4x4, to FloatMatrix4x4, delta f64) ?FloatMatrix4x4 {
+	from_values := interpolation_decompose_matrix(from) or { return none }
+	to_values := interpolation_decompose_matrix(to) or { return none }
+	rotation := interpolation_slerp(from_values.rotation, to_values.rotation, delta)
+	mut perspective := []f64{len: 4}
+	for index in 0 .. 4 {
+		perspective[index] = interpolate_raw(from_values.perspective[index], to_values.perspective[index], delta, none)
+	}
+	return interpolation_recompose_matrix(InterpolationDecomposedMatrix{
+		translation: FloatVector3{
+			x: interpolate_raw(from_values.translation.x, to_values.translation.x, delta, none)
+			y: interpolate_raw(from_values.translation.y, to_values.translation.y, delta, none)
+			z: interpolate_raw(from_values.translation.z, to_values.translation.z, delta, none)
+		}
+		scale: FloatVector3{
+			x: interpolate_raw(from_values.scale.x, to_values.scale.x, delta, none)
+			y: interpolate_raw(from_values.scale.y, to_values.scale.y, delta, none)
+			z: interpolate_raw(from_values.scale.z, to_values.scale.z, delta, none)
+		}
+		skew: FloatVector3{
+			x: interpolate_raw(from_values.skew.x, to_values.skew.x, delta, none)
+			y: interpolate_raw(from_values.skew.y, to_values.skew.y, delta, none)
+			z: interpolate_raw(from_values.skew.z, to_values.skew.z, delta, none)
+		}
+		rotation: rotation
+		perspective: perspective
+	})
+}
+
+fn matrix_to_style_value_vector(matrix FloatMatrix4x4) StyleValueVector {
+	mut values := []StyleValue{cap: 16}
+	for index in 0 .. 16 {
+		values << StyleValue(NumberStyleValue.create(matrix.at(index % 4, index / 4)))
+	}
+	return values
+}
+
+fn interpolate_transform_matrix_suffix(from []TransformationStyleValue, to []TransformationStyleValue, start_index int, prefix []StyleValue, delta f64) ?StyleValue {
+	mut from_matrix := FloatMatrix4x4.identity()
+	mut to_matrix := FloatMatrix4x4.identity()
+	for index in start_index .. from.len {
+		from_component := from[index].to_matrix(none) or { return none }
+		to_component := to[index].to_matrix(none) or { return none }
+		from_matrix = cssom_multiply_transform_matrices(from_matrix, from_component)
+		to_matrix = cssom_multiply_transform_matrices(to_matrix, to_component)
+	}
+	interpolated := interpolate_matrices(from_matrix, to_matrix, delta) or { return none }
+	mut result := prefix.clone()
+	result << StyleValue(TransformationStyleValue.create(.transform, .matrix3d, matrix_to_style_value_vector(interpolated)))
+	return StyleValue(StyleValueList.create(result, .space, .yes))
+}
+
 fn interpolation_axis_angle_to_quaternion(axis FloatVector3, angle f64) []f64 {
 	normalized := if axis.length() > 1e-5 {
 		axis.normalized()
@@ -6791,29 +7305,47 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 		function := from_transform.transform_function()
 		if function != to_transform.transform_function() || function in [.matrix, .matrix3d,
 			.perspective] {
-			return interpolate_discrete(from, to, delta, allow_discrete)
+			matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
+				return interpolate_discrete(from, to, delta, allow_discrete)
+			}
+			return dom_style_value_from_value_logic(matrix_result)
 		}
 		from_values := from_transform.values()
 		to_values := to_transform.values()
 		if from_values.len != to_values.len {
-			return interpolate_discrete(from, to, delta, allow_discrete)
+			matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
+				return interpolate_discrete(from, to, delta, allow_discrete)
+			}
+			return dom_style_value_from_value_logic(matrix_result)
 		}
 
 		mut values := []StyleValue{cap: from_values.len}
 		if function == .rotate3d {
 			// Equal axes need no matrix decomposition: only the angle changes.
 			if from_values.len != 4 || !from_values[0].equals(to_values[0]) || !from_values[1].equals(to_values[1]) || !from_values[2].equals(to_values[2]) {
-				return interpolate_discrete(from, to, delta, allow_discrete)
+				matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+				return dom_style_value_from_value_logic(matrix_result)
 			}
 			values << from_values[0]
 			values << from_values[1]
 			values << from_values[2]
 			values << (interpolate_style_value(calculation_context, from_values[3], to_values[3], delta, .no) or { return interpolate_discrete(from, to, delta, allow_discrete) })
 		} else {
+			mut interpolation_failed := false
 			for value_index in 0 .. from_values.len {
-				values << (interpolate_style_value(calculation_context, from_values[value_index], to_values[value_index], delta, .no) or {
+				value := interpolate_style_value(calculation_context, from_values[value_index], to_values[value_index], delta, .no) or {
+					interpolation_failed = true
+					break
+				}
+				values << value
+			}
+			if interpolation_failed {
+				matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
 					return interpolate_discrete(from, to, delta, allow_discrete)
-				})
+				}
+				return dom_style_value_from_value_logic(matrix_result)
 			}
 		}
 		result << StyleValue(TransformationStyleValue.create(.transform, function, values))
@@ -7124,6 +7656,113 @@ pub fn composite_value(property_id PropertyID, underlying_value &dom.StyleValue,
 	return dom_style_value_from_value_logic(composited)
 }
 
+fn add_length_percentages(calculation_context InterpolationCalculationContext, a LengthPercentage, b LengthPercentage) ?LengthPercentage {
+	if a.is_length() && b.is_length() && a.length().unit() == b.length().unit() {
+		return LengthPercentage.from_length(Length.new(a.length().raw_value() + b.length().raw_value(), a.length().unit()))
+	}
+	if a.is_percentage() && b.is_percentage() {
+		return LengthPercentage.from_percentage(Percentage.new(a.percentage().value() + b.percentage().value()))
+	}
+
+	a_value := interpolation_length_percentage_to_style_value(a)
+	b_value := interpolation_length_percentage_to_style_value(b)
+	composited := composite_mixed_style_value(calculation_context.property, a_value, b_value) or {
+		return none
+	}
+	if composited is LengthStyleValue || composited is PercentageStyleValue
+		|| composited is CalculatedStyleValue {
+		return LengthPercentage.from_style_value_logic(composited)
+	}
+	return none
+}
+
+fn composite_grid_css_size(calculation_context InterpolationCalculationContext, underlying Size, animated Size) ?Size {
+	if underlying.is_length_percentage() && animated.is_length_percentage() {
+		composited := add_length_percentages(calculation_context, underlying.length_percentage(), animated.length_percentage()) or {
+			return none
+		}
+		return Size.make_length_percentage(composited)
+	}
+	if underlying.is_fit_content() && animated.is_fit_content() {
+		underlying_available_space := underlying.fit_content_available_space() or { return none }
+		animated_available_space := animated.fit_content_available_space() or { return none }
+		composited := add_length_percentages(calculation_context, underlying_available_space, animated_available_space) or {
+			return none
+		}
+		return Size.make_fit_content(composited)
+	}
+	return none
+}
+
+fn composite_grid_size(calculation_context InterpolationCalculationContext, underlying GridSize, animated GridSize) ?GridSize {
+	if underlying.is_flexible_length() && animated.is_flexible_length() {
+		return GridSize.from_flex(Flex.make_fr(underlying.flex_factor() + animated.flex_factor()))
+	}
+	if !underlying.is_flexible_length() && !animated.is_flexible_length() {
+		composited := composite_grid_css_size(calculation_context, underlying.css_size(), animated.css_size()) or {
+			return none
+		}
+		return GridSize.from_size(composited)
+	}
+	return none
+}
+
+fn composite_grid_track_size_list(calculation_context InterpolationCalculationContext, underlying GridTrackSizeList, animated GridTrackSizeList) ?GridTrackSizeList {
+	expanded_underlying := expand_grid_tracks_and_lines(underlying)
+	expanded_animated := expand_grid_tracks_and_lines(animated)
+	if expanded_underlying.tracks.len != expanded_animated.tracks.len {
+		return none
+	}
+
+	mut result := GridTrackSizeList{}
+	for i in 0 .. expanded_underlying.tracks.len {
+		underlying_track := expanded_underlying.tracks[i]
+		animated_track := expanded_animated.tracks[i]
+		line_names := expanded_animated.line_names[i]
+
+		if underlying_track.is_repeat() || animated_track.is_repeat() {
+			if !underlying_track.is_repeat() || !animated_track.is_repeat() {
+				return none
+			}
+			underlying_repeat := underlying_track.repeat()
+			animated_repeat := animated_track.repeat()
+			if !underlying_repeat.is_fixed() || !animated_repeat.is_fixed()
+				|| underlying_repeat.repeat_count() != animated_repeat.repeat_count()
+				|| underlying_repeat.grid_track_size_list().track_list().len != animated_repeat.grid_track_size_list().track_list().len {
+				return none
+			}
+			tracks := composite_grid_track_size_list(calculation_context, underlying_repeat.grid_track_size_list(), animated_repeat.grid_track_size_list()) or {
+				return none
+			}
+			track := ExplicitGridTrack.from_repeat(GridRepeat.new(underlying_repeat.type_(), tracks, underlying_repeat.repeat_count()))
+			append_grid_track_with_line_names(mut result, track, line_names)
+			continue
+		}
+
+		if underlying_track.is_minmax() && animated_track.is_minmax() {
+			underlying_minmax := underlying_track.minmax()
+			animated_minmax := animated_track.minmax()
+			min_size := composite_grid_size(calculation_context, underlying_minmax.min_grid_size(), animated_minmax.min_grid_size()) or {
+				animated_minmax.min_grid_size()
+			}
+			max_size := composite_grid_size(calculation_context, underlying_minmax.max_grid_size(), animated_minmax.max_grid_size()) or {
+				animated_minmax.max_grid_size()
+			}
+			append_grid_track_with_line_names(mut result, ExplicitGridTrack.from_minmax(GridMinMax.new(min_size, max_size)), line_names)
+			continue
+		}
+
+		if underlying_track.is_default() && animated_track.is_default() {
+			if grid_size := composite_grid_size(calculation_context, underlying_track.grid_size(), animated_track.grid_size()) {
+				append_grid_track_with_line_names(mut result, ExplicitGridTrack.from_grid_size(grid_size), line_names)
+				continue
+			}
+		}
+		append_grid_track_with_line_names(mut result, animated_track, line_names)
+	}
+	return result
+}
+
 fn composite_mixed_style_value(property_id PropertyID, underlying StyleValue, animated StyleValue) ?StyleValue {
 	serialization := 'calc((${interpolation_calculation_operand(underlying)}) + (${interpolation_calculation_operand(animated)}))'
 	if parsed := parse_css_value_logic(property_id, serialization) {
@@ -7161,6 +7800,17 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 		FrequencyStyleValue {
 			if animated is FrequencyStyleValue && underlying.frequency().unit() == animated.frequency().unit() {
 				StyleValue(FrequencyStyleValue.create(Frequency.new(underlying.raw_value() + animated.raw_value(), underlying.frequency().unit())))
+			} else {
+				none
+			}
+		}
+		GridTrackSizeListStyleValue {
+			if animated is GridTrackSizeListStyleValue {
+				context := InterpolationCalculationContext.for_property(property_id)
+				list := composite_grid_track_size_list(context, underlying.grid_track_size_list(), animated.grid_track_size_list()) or {
+					return none
+				}
+				StyleValue(GridTrackSizeListStyleValue.create(list))
 			} else {
 				none
 			}

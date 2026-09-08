@@ -3480,8 +3480,8 @@ pub fn (style_value StyleValueList) serialize(mode SerializationMode) string {
 	first_value := style_value.values_[0]
 	if style_value.separator_ != .comma && style_value.collapsible_ == .yes {
 		mut all_equal := true
-		for value in style_value.values_ {
-			if value != first_value {
+		for index in 1 .. style_value.values_.len {
+			if !style_value.values_[index].equals(first_value) {
 				all_equal = false
 				break
 			}
@@ -3570,7 +3570,15 @@ pub fn (style_value StyleValueList) to_string() string {
 }
 
 pub fn (style_value StyleValueList) properties_equal(other StyleValueList) bool {
-	return style_value == other
+	if style_value.separator_ != other.separator_ || style_value.values_.len != other.values_.len {
+		return false
+	}
+	for index, value in style_value.values_ {
+		if !value.equals(other.values_[index]) {
+			return false
+		}
+	}
+	return true
 }
 
 // --- SuperellipseStyleValue ---
@@ -3930,6 +3938,14 @@ pub fn (range UnicodeRange) to_css_string() string {
 		return 'U+${range.start:X}'
 	}
 	return 'U+${range.start:X}-${range.end:X}'
+}
+
+pub fn serialize_unicode_ranges(ranges []UnicodeRange) string {
+	mut serialized_ranges := []string{cap: ranges.len}
+	for range_ in ranges {
+		serialized_ranges << range_.to_css_string()
+	}
+	return serialized_ranges.join(', ')
 }
 
 pub fn (style_value UnicodeRangeStyleValue) serialize(mode SerializationMode) string {

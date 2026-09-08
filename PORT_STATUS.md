@@ -281,6 +281,18 @@ style-value equality. Known implementation boundaries remain visible rather
 than being classified through adjacent code. CSS falls from 196 to 96 without
 adding audit-only facades, and the full suite passes 392/392 at this checkpoint.
 
+The zero checkpoint closes the final 100 reviewed implementations. Direct
+translations cover stylesheet invalidation and font/image ownership, numeric
+and transform interpolation (including matrix decomposition), grid-track
+interpolation and composition, descriptor conversion, Unicode-range
+serialization, meter matching, color/style-value operations, list markers, and
+text font selection. The remaining C++ ownership accessors, template artifacts,
+record fields, and decomposed algorithms are classified only where the active V
+path supplies the same responsibility. The audit now accounts for all 18,658
+upstream implementations with 0 unmatched, 0 suspicious trivial bodies, and 0
+quarantined coverage shims. Focused matrix/grid regressions and the full suite
+pass 392/392 at this checkpoint.
+
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,
 wrapping, justify/align keywords, gaps, box-model edges, order, aspect ratios,

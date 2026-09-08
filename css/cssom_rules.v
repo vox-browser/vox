@@ -141,7 +141,7 @@ pub mut:
 @[heap]
 pub struct CSSStyleProperties {
 pub mut:
-	properties        []CSSStyleProperty
+	properties []CSSStyleProperty
 	// CSSStyleProperties stores custom declarations as StyleProperty objects in
 	// upstream, preserving the parsed UnresolvedStyleValue token graph and its
 	// pointer identity through the cascade.
@@ -246,7 +246,7 @@ pub fn (mut rule_list CSSRuleList) insert_a_css_rule_from_text(rule string, inde
 		if nested == .yes {
 			// - Set declarations to the results of performing parse a CSS declaration block, on argument rule.
 			declarations := parse_css_property_declaration_block_with_params(ParsingParams{
-				rule_context:        rule_list.rule_context()
+				rule_context: rule_list.rule_context()
 				declared_namespaces: declared_namespaces.clone()
 			}, rule)
 
@@ -299,7 +299,11 @@ pub fn (mut rule_list CSSRuleList) insert_a_css_rule(new_rule &CSSRule, index u3
 		}
 		.namespace_rule {
 			rule_is_disallowed = rule_list.has_rule_of_type_at_or_after_index(.import_rule, index)
-				|| rule_list.has_rule_of_type_other_than_specified_before_index([CSSRuleType.import_rule, .namespace_rule, .layer_statement], index)
+				|| rule_list.has_rule_of_type_other_than_specified_before_index([
+					CSSRuleType.import_rule,
+					.namespace_rule,
+					.layer_statement,
+				], index)
 		}
 		else {
 			rule_is_disallowed = rule_list.has_rule_of_type_at_or_after_index(.import_rule, index)
@@ -384,8 +388,8 @@ pub fn (rule_list &CSSRuleList) for_each_effective_rule(order TraversalOrder, ca
 			.layer_block, .media, .page, .style, .supports {
 				rule.for_each_effective_rule(order, callback)
 			}
-			.counter_style, .font_face, .font_feature_values, .keyframe, .keyframes,
-			.layer_statement, .margin, .namespace_rule, .nested_declarations, .property {}
+			.counter_style, .font_face, .font_feature_values, .keyframe, .keyframes, .layer_statement, .margin, .namespace_rule, .nested_declarations, .property {
+			}
 		}
 
 		if order == .postorder {
@@ -444,8 +448,8 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 					}
 				}
 			}
-			.counter_style, .font_face, .font_feature_values, .keyframe, .keyframes,
-			.layer_statement, .margin, .namespace_rule, .nested_declarations, .property, .page {}
+			.counter_style, .font_face, .font_feature_values, .keyframe, .keyframes, .layer_statement, .margin, .namespace_rule, .nested_declarations, .property, .page {
+			}
 		}
 	}
 
@@ -587,9 +591,9 @@ pub fn CSSRule.create_import(url string, document ?&dom.Document, layer ?string,
 
 pub fn CSSRule.create_namespace(prefix ?string, namespace_uri string) &CSSRule {
 	return &CSSRule{
-		type_:         .namespace_rule
+		type_: .namespace_rule
 		namespace_uri: namespace_uri
-		prefix:        prefix or { '' }
+		prefix: prefix or { '' }
 	}
 }
 
@@ -882,8 +886,7 @@ pub fn (mut rule CSSRule) insert_rule(rule_text string, index u32) !u32 {
 
 		// The insertRule(rule, index) method must return the result of invoking insert a CSS rule rule into the child CSS
 		// rules at index, with the nested flag set.
-		result := rules.insert_a_css_rule_from_text(rule_text, index, .yes,
-			parent_sheet.declared_namespaces())!
+		result := rules.insert_a_css_rule_from_text(rule_text, index, .yes, parent_sheet.declared_namespaces())!
 
 		// AD-HOC: The spec doesn't say where to set the parent rule, so we'll do it here.
 		if mut inserted_rule := rules.item(usize(index)) {
@@ -1023,6 +1026,7 @@ fn (rule &CSSRule) serialized_supports_rule() string {
 // https://www.w3.org/TR/cssom/#serialize-a-css-rule
 fn (rule &CSSRule) serialized_import_rule() string {
 	mut builder := strings.new_builder(128)
+
 	// The result of concatenating the following:
 
 	// 1. The string "@import" followed by a single SPACE (U+0020).
@@ -1285,8 +1289,7 @@ pub fn (mut rule CSSRule) set_selector_text(selector_text string) {
 	mut parsed_selectors := ?SelectorList(none)
 	if rule.parent_style_rule() != none {
 		// AD-HOC: If we're a nested style rule, then we need to parse the selector as relative and then adapt it with implicit &s.
-		parsed_selectors = parse_selector_for_nested_style_rule_with_parser(selector_text,
-			declared_namespaces)
+		parsed_selectors = parse_selector_for_nested_style_rule_with_parser(selector_text, declared_namespaces)
 	} else {
 		parsed_selectors = parse_selector_with_parser(selector_text, declared_namespaces)
 	}
@@ -1388,7 +1391,7 @@ pub mut:
 
 pub fn StyleSheet.create(media &MediaList) StyleSheet {
 	return StyleSheet{
-		media:        media
+		media: media
 		origin_clean: true
 	}
 }
@@ -1438,9 +1441,10 @@ pub mut:
 	disallow_modification            bool
 	did_match                        ?bool
 
-	critical_subresources []&CSSRule
-	pending_image_values  []&dom.StyleValue
-	source_text_          ?string
+	critical_subresources   []&CSSRule
+	pending_image_values    []&dom.StyleValue
+	associated_font_loaders []&FontLoader
+	source_text_            ?string
 }
 
 pub struct CSSStyleSheetInit {
@@ -1453,8 +1457,8 @@ pub mut:
 
 pub fn CSSStyleSheet.create(rules &CSSRuleList, media &MediaList, location ?string) &CSSStyleSheet {
 	mut sheet := &CSSStyleSheet{
-		base:            StyleSheet.create(media)
-		rules:           rules
+		base: StyleSheet.create(media)
+		rules: rules
 		namespace_rules: map[string]&CSSRule{}
 	}
 	sheet.base.location = location
@@ -1581,7 +1585,7 @@ pub fn (mut sheet CSSStyleSheet) set_media(media string) {
 pub fn (sheet &CSSStyleSheet) make_parsing_params() ParsingParams {
 	if document := sheet.owning_document() {
 		return ParsingParams{
-			document:            document
+			document: document
 			declared_namespaces: sheet.declared_namespaces()
 		}
 	}
@@ -1838,6 +1842,23 @@ pub fn (sheet &CSSStyleSheet) owning_document() ?&dom.Document {
 	}
 
 	return none
+}
+
+pub fn (mut sheet CSSStyleSheet) register_pending_image_value(value &dom.StyleValue) {
+	sheet.pending_image_values << value
+}
+
+pub fn (mut sheet CSSStyleSheet) add_associated_font_loader(font_loader &FontLoader) {
+	sheet.associated_font_loaders << font_loader
+}
+
+pub fn (sheet &CSSStyleSheet) has_associated_font_loader(font_loader &FontLoader) bool {
+	for loader in sheet.associated_font_loaders {
+		if loader == font_loader {
+			return true
+		}
+	}
+	return false
 }
 
 pub fn (mut sheet CSSStyleSheet) load_pending_image_resources(document &dom.Document) {
@@ -2113,6 +2134,60 @@ pub fn (list &StyleSheetList) document() &dom.Document {
 	return list.document_or_shadow_root.document()
 }
 
+fn build_invalidation_set_for_stylesheet(sheet &CSSStyleSheet) InvalidationSet {
+	mut invalidation_set := InvalidationSet{}
+	mut throwaway_data := StyleInvalidationData.new()
+	mut rules := []&CSSRule{}
+	rules_ptr := &rules
+	sheet.for_each_effective_style_producing_rule(fn [rules_ptr] (rule &CSSRule) {
+		unsafe {
+			mut collected := *rules_ptr
+			collected << rule
+			*rules_ptr = collected
+		}
+	})
+
+	for rule in rules {
+		if invalidation_set.needs_invalidate_whole_subtree() {
+			break
+		}
+		if rule.type_ != .style {
+			continue
+		}
+		mut mutable_rule := unsafe { &CSSRule(rule) }
+		for selector in mutable_rule.absolutized_selectors().selectors {
+			compound_selectors := selector.compound_selectors()
+			if compound_selectors.len == 0 {
+				continue
+			}
+			rightmost := compound_selectors[compound_selectors.len - 1]
+			mut rightmost_set := InvalidationSet{}
+			for simple in rightmost.simple_selectors {
+				build_invalidation_sets_for_simple_selector(simple_selector_for_invalidation(simple), mut rightmost_set, .no, mut throwaway_data, .no)
+			}
+			if !rightmost_set.has_properties() {
+				invalidation_set.set_needs_invalidate_whole_subtree()
+				break
+			}
+			invalidation_set.include_all_from(rightmost_set)
+		}
+	}
+	return invalidation_set
+}
+
+fn invalidate_elements_matching_invalidation_set(root &dom.Node, invalidation_set InvalidationSet) {
+	match_set := invalidation_set_to_dom(invalidation_set)
+	root.for_each_in_inclusive_subtree(fn [match_set] (node &dom.Node) dom.TraversalDecision {
+		if element := node.as_element() {
+			if element.includes_properties_from_invalidation_set(match_set) {
+				mut mutable_element := unsafe { &dom.Element(element) }
+				mutable_element.set_needs_style_update(true)
+			}
+		}
+		return .@continue
+	})
+}
+
 fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 	mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
 	mutable_sheet.add_owning_document_or_shadow_root(list.document_or_shadow_root)
@@ -2153,9 +2228,23 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 		return
 	}
 
-	mut mutable_root := unsafe { &dom.Node(list.document_or_shadow_root) }
 	invalidate_css_style_scope_for_node(list.document_or_shadow_root)
-	mutable_root.invalidate_style(dom.StyleInvalidationReason.style_change)
+	if list.document_or_shadow_root.entire_subtree_needs_style_update() {
+		return
+	}
+
+	invalidation_set := build_invalidation_set_for_stylesheet(sheet)
+	mut invalidation_root := list.document_or_shadow_root
+	if shadow_root := list.document_or_shadow_root.as_shadow_root() {
+		host := shadow_root.host() or { return }
+		invalidation_root = host.as_node()
+	}
+	if invalidation_set.needs_invalidate_whole_subtree() {
+		mut mutable_root := unsafe { &dom.Node(invalidation_root) }
+		mutable_root.invalidate_style(dom.StyleInvalidationReason.style_change)
+	} else {
+		invalidate_elements_matching_invalidation_set(invalidation_root, invalidation_set)
+	}
 }
 
 fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
@@ -2313,14 +2402,12 @@ pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistrat
 				return error('SyntaxError: Invalid initial value')
 			}
 		}
-	}
-	// Otherwise, if initialValue is not present, throw a SyntaxError and exit this algorithm.
-	else if definition.initial_value == none {
+		// Otherwise, if initialValue is not present, throw a SyntaxError and exit this algorithm.
+	} else if definition.initial_value == none {
 		// Otherwise, if initialValue is not present, throw a SyntaxError and exit this algorithm.
 		return error('SyntaxError: Initial value must be provided for non-universal syntax')
-	}
-	// Otherwise, parse initialValue according to syntax definition.
-	else if initial_value := definition.initial_value {
+		// Otherwise, parse initialValue according to syntax definition.
+	} else if initial_value := definition.initial_value {
 		initial_value_component_values := parse_component_values_for_value_logic(initial_value)
 		parsed_initial_value := parse_with_a_syntax(initial_value_component_values, maybe_syntax)
 		if parsed_initial_value.type_() == .guaranteed_invalid {
@@ -2338,8 +2425,8 @@ pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistrat
 	//    an initial value of parsed initial value, and an inherit flag of inherit flag.
 	return CustomPropertyRegistration{
 		property_name: definition.name
-		syntax:        definition.syntax
-		inherit:       definition.inherits
+		syntax: definition.syntax
+		inherit: definition.inherits
 		initial_value: definition.initial_value
 	}
 }
@@ -2360,8 +2447,8 @@ pub fn register_property_for_document(mut document dom.Document, definition Prop
 
 	document.registered_property_set[registration.property_name] = dom.CustomPropertyRegistration{
 		initial_value: registration.initial_value
-		syntax:        registration.syntax
-		inherits:      registration.inherit
+		syntax: registration.syntax
+		inherits: registration.inherit
 	}
 
 	return registration

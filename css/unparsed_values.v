@@ -170,6 +170,80 @@ fn parse_as_list_of_component_values_for_unparsed_value(value string) []Componen
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#cssvariablereferencevalue
+fn reify_a_var_reference(function Function) ?CSSVariableReferenceValue {
+	arguments := parse_according_to_argument_grammar(.var_, function.value) or { return none }
+	if arguments !is DeclarationValueList {
+		return none
+	}
+	declaration_values := arguments as DeclarationValueList
+
+	mut name_tokens := ParserTokenStream.from_values(declaration_values.first())
+	name_tokens.discard_whitespace()
+	name_token := name_tokens.consume_a_token()
+	name_tokens.discard_whitespace()
+	if name_tokens.has_next_token() || !name_token.is(.ident)
+		|| !is_a_custom_property_name_string(name_token.token().ident()) {
+		return none
+	}
+
+	mut fallback := ?&CSSUnparsedValue(none)
+	if fallback_values := declaration_values.get(1) {
+		fallback = reify_a_list_of_component_values(fallback_values)
+	}
+	return CSSVariableReferenceValue.create(name_token.token().ident(), fallback)
+}
+
+fn flush_unserialized_component_values(mut unserialized []ComponentValue, mut reified []CSSUnparsedSegment) {
+	if unserialized.len == 0 {
+		return
+	}
+	reified << CSSUnparsedSegment(serialize_a_series_of_component_values(unserialized))
+	unserialized.clear()
+}
+
+fn reify_component_values(source_values []ComponentValue, mut unserialized []ComponentValue, mut reified []CSSUnparsedSegment) {
+	for component_value in source_values {
+		if component_value.is_function_named('var') {
+			if variable_reference := reify_a_var_reference(component_value.function()) {
+				flush_unserialized_component_values(mut unserialized, mut reified)
+				reified << CSSUnparsedSegment(variable_reference)
+				continue
+			}
+		}
+
+		if component_value.is_function() {
+			function := component_value.function()
+			unserialized << ComponentValue.from_token(function.name_token)
+			reify_component_values(function.value, mut unserialized, mut reified)
+			unserialized << ComponentValue.from_token(function.end_token)
+			continue
+		}
+
+		if component_value.is_block() {
+			block := component_value.block()
+			unserialized << ComponentValue.from_token(block.token)
+			reify_component_values(block.value, mut unserialized, mut reified)
+			unserialized << ComponentValue.from_token(block.end_token)
+			continue
+		}
+
+		unserialized << component_value
+	}
+}
+
+fn reify_a_list_of_component_values(component_values []ComponentValue) &CSSUnparsedValue {
+	mut unserialized := []ComponentValue{}
+	mut reified := []CSSUnparsedSegment{}
+	reify_component_values(component_values, mut unserialized, mut reified)
+	flush_unserialized_component_values(mut unserialized, mut reified)
+	return CSSUnparsedValue.create(reified)
+}
+
+pub fn (style_value UnresolvedStyleValue) reify(associated_property string) &CSSUnparsedValue {
+	_ = associated_property
+	return reify_a_list_of_component_values(style_value.tokens)
+}
+
 pub struct CSSVariableReferenceValue {
 pub mut:
 	variable_ string

@@ -831,6 +831,14 @@ fn test_additive_composition_uses_typed_css_values() {
 		css_text: 'blur(2px)'
 	}, .add) or { panic('filter-list composition failed') }
 	assert filters.css_text == 'blur(1px) blur(2px)'
+
+	grid_tracks := composite_value(.grid_template_columns, &dom.StyleValue{
+		css_text: '10px 1fr'
+	}, &dom.StyleValue{
+		css_text: '20px 2fr'
+	}, .add) or { panic('grid-track composition failed') }
+	assert grid_tracks.css_text == '30px 3fr'
+
 	assert composite_value(.opacity, &dom.StyleValue{
 		css_text: '0.25'
 	}, &dom.StyleValue{
@@ -862,6 +870,31 @@ fn test_transform_interpolation_matches_primitives_and_pads_none() {
 		css_text: 'rotateZ(90deg)'
 	}, 0.5, .no) or { panic('rotation primitive interpolation failed') }
 	assert rotation.css_text == 'rotate(45deg)'
+
+	matrix_interpolation := interpolate_transform(element, context, &dom.StyleValue{
+		css_text: 'matrix(1, 0, 0, 1, 0, 0)'
+	}, &dom.StyleValue{
+		css_text: 'matrix(1, 0, 0, 1, 10, 20)'
+	}, 0.5, .no) or { panic('matrix interpolation failed') }
+	matrix_value := parse_css_value_logic(.transform, matrix_interpolation.css_text) or {
+		panic('interpolated matrix did not parse')
+	}
+	assert matrix_value is StyleValueList
+	matrix_list := matrix_value as StyleValueList
+	assert matrix_list.size() == 1
+	assert matrix_list.value_at(0, false) is TransformationStyleValue
+	matrix := (matrix_list.value_at(0, false) as TransformationStyleValue).to_matrix(none) or {
+		panic('interpolated matrix did not resolve')
+	}
+	assert math.abs(matrix.m14 - 5) < 1e-9
+	assert math.abs(matrix.m24 - 10) < 1e-9
+
+	grid_tracks := interpolate_property(element, .grid_template_columns, &dom.StyleValue{
+		css_text: '10px 1fr'
+	}, &dom.StyleValue{
+		css_text: '30px 3fr'
+	}, 0.5, .no) or { panic('grid-track interpolation failed') }
+	assert grid_tracks.css_text == '20px 2fr'
 }
 
 fn test_ratio_parser_resolves_number_calculations() {

@@ -70,6 +70,26 @@ BINDING_RUNTIME_METHODS = {
     # C++ needs this self-upcast for its generated WebIDL property mixin. V's
     # CSSStyleProperties record implements those entry points directly.
     ("CSSStyleProperties", "generated_style_properties_to_css_style_properties"),
+    # Parser/FontComputer/Screen retain their owner through JS realm and Window
+    # edges in C++. V passes the document dependency explicitly and does not
+    # reproduce those GC ownership accessors in the typed engine.
+    ("FontComputer", "document"),
+    ("Parser", "window"),
+    ("Parser", "realm"),
+    ("Screen", "window"),
+    ("Client", "image_style_value_finalize"),
+}
+RUNTIME_ONLY_FREE_FUNCTIONS = {
+    # The standalone parser has no process-global internal JS realm; its
+    # parsing document and URL context are carried by ParsingParams instead.
+    ("Parser/Helpers.cpp", "internal_css_realm"),
+}
+LANGUAGE_ARTIFACT_METHODS = {
+    # These are constructor initializer-list and macro-parameter fragments
+    # which the deliberately lightweight header scanner sees as methods.
+    ("FitContentStyleValue", "StyleValue"),
+    ("URLStyleValue", "StyleValueWithDefaultOperators"),
+    ("StyleValue", "snake_case"),
 }
 NAMESPACE_TEMPLATE_CLASSES = {"IPC"}
 # C++ customization points whose behavior is supplied by V's built-in map,
@@ -2097,6 +2117,71 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
     ("ParsedFontFace", "parent_rule"): (("parent_rule_ref", "ParsedFontFace"),),
     ("PropertyNameAndID", "to_string"): (("name", "PropertyNameAndID"),),
     ("TouchActionData", "none"): (("none_", "TouchActionData"),),
+    # MutableComputedValues stores content in C++; V computes the same typed
+    # content data directly from the retained property map when Layout asks.
+    ("MutableComputedValues", "set_content"): (("content", "ComputedProperties"),),
+    # Font stylesheet ownership and the JS promise wrapper are decomposed from
+    # the same font loading algorithms in the typed V model.
+    ("FontComputer", "load_fonts_from_sheet"): (("load_fonts_from_css_rules", "FontComputer"),),
+    ("FontComputer", "unload_fonts_from_sheet"): (("unload_fonts_from_css_rules", "FontComputer"),),
+    ("FontFace", "font_status_promise"): (("font_status_promise_ref", "FontFaceObject"),),
+    # C++ hash traits become the exact serialized keys consumed by V maps.
+    ("FontWeightRange", "hash"): (("id", "FontWeightRange"),),
+    ("OwnFontFaceKey", "hash"): (("id", "OwnFontFaceKey"),),
+    ("HasResultCacheKeyTraits", "hash"): (("has_result_cache_key", None),),
+    # Callback iteration over NumericType's sparse exponents is represented by
+    # enumerating the base types and reading each optional exponent.
+    ("NumericType", "for_each_type_and_exponent"): (
+        ("numeric_base_types", None),
+        ("exponent", "NumericType"),
+    ),
+    # Parser's generic callback form and vendor-prefix predicate have concrete
+    # specialized equivalents at the active property parser boundary.
+    ("Parser", "parse_comma_separated_value_list"): (
+        ("parse_simple_comma_separated_value_list", "Parser"),
+    ),
+    ("Parser", "has_ignored_vendor_prefix"): (("has_ignored_vendor_prefix_local", None),),
+    # C++ keeps the radius/filter operations on differently named nested
+    # classes; V gives those value records unambiguous owners.
+    ("BorderRadiusStyleValue", "horizontal_radius"): (("horizontal_radius_", "BorderRadiusStyleValue"),),
+    ("BorderRadiusStyleValue", "vertical_radius"): (("vertical_radius_", "BorderRadiusStyleValue"),),
+    ("Blur", "resolved_radius"): (("resolved_radius", "FilterOperationBlur"),),
+    ("HueRotate", "angle_degrees"): (("angle_degrees", "FilterOperationHueRotate"),),
+    ("Color", "resolved_amount"): (("resolved_amount", "FilterOperationColor"),),
+    ("PendingSubstitutionStyleValue", "original_shorthand_value"): (
+        ("original_shorthand_value_ref", "PendingSubstitutionStyleValue"),
+    ),
+    # Abstract image Typed-OM reification constructs the V image wrapper.
+    ("AbstractImageStyleValue", "reify"): (("create", "CSSImageValue"),),
+    ("ColorFunctionStyleValue", "is_color_function"): (("is_color_function", "StyleValue"),),
+    ("ColorResolutionContext", "for_layout_node_with_style"): (
+        ("color_resolution_context_for_layout_node", None),
+    ),
+    # Gradient image resolution lives at the Layout boundary because only
+    # Layout knows the concrete tile size. The resulting typed command is
+    # submitted through the corresponding renderer-independent recorder call.
+    ("LinearGradientStyleValue", "resolve_for_size"): (("resolve_linear_gradient_data", None),),
+    ("LinearGradientStyleValue", "paint"): (
+        ("resolve_background_gradient", None),
+        ("fill_rect_with_linear_gradient", "DisplayListRecorder"),
+    ),
+    ("RadialGradientStyleValue", "resolve_size"): (("radial_extent_size", None),),
+    ("RadialGradientStyleValue", "resolve_for_size"): (("resolve_radial_gradient_data", None),),
+    ("RadialGradientStyleValue", "paint"): (
+        ("resolve_background_gradient", None),
+        ("fill_rect_with_radial_gradient", "DisplayListRecorder"),
+    ),
+    ("ConicGradientStyleValue", "resolve_for_size"): (("resolve_conic_gradient_data", None),),
+    ("ConicGradientStyleValue", "paint"): (
+        ("resolve_background_gradient", None),
+        ("fill_rect_with_conic_gradient", "DisplayListRecorder"),
+    ),
+    # CSS ImageStyleValue painting is consumed by the retained image paintable;
+    # decoded bitmap geometry/scaling is performed by this active paint method.
+    ("ImageStyleValue", "paint"): (("paint", "ImagePaintable"),),
+    # The C++ CRTP helper forwards equality to each value's properties_equal;
+    # V's exhaustive StyleValue equality is the corresponding sum dispatch.
+    ("StyleValueWithDefaultOperators", "equals"): (("equals", "StyleValue"),),
 })
 
 # C++'s per-subclass virtual equality bodies become V's exhaustive StyleValue
@@ -2130,6 +2215,10 @@ for _style_value_equality_owner, _style_value_equality_name in (
     ("RatioStyleValue", "properties_equal"),
     ("ResolutionStyleValue", "equals"),
     ("TimeStyleValue", "equals"),
+    ("ConicGradientStyleValue", "equals"),
+    ("StringStyleValue", "properties_equal"),
+    ("TreeCountingFunctionStyleValue", "equals"),
+    ("URLStyleValue", "properties_equal"),
 ):
     CONSOLIDATED_METHOD_MAPPINGS[(_style_value_equality_owner, _style_value_equality_name)] = (
         ("equals", "StyleValue"),
@@ -2392,6 +2481,10 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
     ("TypeSyntaxNode", "value_type"): (("value_type", "SyntaxNode"),),
     ("AlternativesSyntaxNode", "children"): (("children", "SyntaxNode"),),
     ("StylePropertyMap", "declarations"): (("declaration", "MutableStylePropertyMap"),),
+    # Parser and NumericType hold these values directly instead of exposing
+    # one-line accessors/mutators around the record fields.
+    ("Parser", "document"): (("document", "ParsingParams"),),
+    ("NumericType", "set_percent_hint"): (("percent_hint", "NumericType"),),
     # Import and namespace subclasses are discriminated CSSRule records in V.
     ("CSSImportRule", "url"): (("url", "CSSRule"),),
     ("CSSImportRule", "loaded_style_sheet"): (("loaded_style_sheet", "CSSRule"),),
@@ -2434,6 +2527,16 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
     ),
     ("LabLikeColorStyleValue", "alpha"): (
         ("alpha_", "LabColorStyleValue"), ("alpha_", "OKLabColorStyleValue"),
+    ),
+    # Gradient color-stop accessors are direct reads of the concrete V records.
+    ("LinearGradientStyleValue", "color_stop_list"): (
+        ("color_stop_list_", "LinearGradientStyleValue"),
+    ),
+    ("RadialGradientStyleValue", "color_stop_list"): (
+        ("color_stop_list_", "RadialGradientStyleValue"),
+    ),
+    ("ConicGradientStyleValue", "color_stop_list"): (
+        ("color_stop_list_", "ConicGradientStyleValue"),
     ),
     ("CSSStyleProperties", "properties"): (("properties", "CSSStyleProperties"),),
     ("CSSStyleProperties", "custom_properties"): (
@@ -2865,6 +2968,28 @@ CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
     ),
     ("Interpolation.cpp", "slerp"): ("interpolation_slerp",),
     ("Interpolation.cpp", "length_percentage_or_auto_to_style_value"): ("interpolation_length_percentage_or_auto_to_style_value",),
+    # Interpolation's large C++ visitor is split into property entry points and
+    # recursive StyleValue-sum dispatch in V.
+    ("Interpolation.cpp", "with_keyword_values_resolved"): ("with_keyword_values_resolved_boundary",),
+    ("Interpolation.cpp", "interpolate_scale"): ("interpolate_scale_property",),
+    ("Interpolation.cpp", "interpolate_translate"): ("interpolate_translate_property",),
+    ("Interpolation.cpp", "interpolate_rotate"): ("interpolate_rotate_property",),
+    ("Interpolation.cpp", "interpolate_mixed_value"): ("interpolate_mixed_style_value",),
+    ("Interpolation.cpp", "interpolate_value_impl"): ("interpolate_style_value_impl",),
+    ("Interpolation.cpp", "composite_raw_values"): ("composite_style_value",),
+    ("Interpolation.cpp", "composite_mixed_value"): ("composite_mixed_style_value",),
+    ("FontComputer.cpp", "style_value_references_font_family"): ("computed_font_cache_key_references_family",),
+    ("FontFace.cpp", "load_vector_font"): ("platform_load_font_from_bytes_boundary",),
+    # The V parser performs these tiny file-local operations directly at their
+    # only active consumer rather than retaining generic callback wrappers.
+    ("Parser/GradientParsing.cpp", "consume_if_starts_with"): ("parse_linear_gradient_function",),
+    ("SelectorEngine.cpp", "for_each_matching_attribute"): ("matching_attributes",),
+    # Color-space enum conversion and radial-corner geometry retain the same
+    # exhaustive match and Euclidean-distance algorithms under clearer names.
+    ("StyleValues/ColorFunctionStyleValue.cpp", "color_type_from_string_view"): ("color_type_from_color_space",),
+    ("StyleValues/ColorFunctionStyleValue.cpp", "string_view_from_color_type"): ("color_space_from_color_type",),
+    ("StyleValues/RadialSizeStyleValue.cpp", "closest_corner_distance"): ("style_values_extra_corner_distance",),
+    ("StyleValues/RadialSizeStyleValue.cpp", "farthest_corner_distance"): ("style_values_extra_corner_distance",),
     ("StyleComputer.cpp", "filter_namespace_rule"): ("style_scope_filter_namespace_rule",),
     ("StyleComputer.cpp", "is_roundabout_selector_bucketable_as_something_simpler"): ("style_scope_is_roundabout_selector_bucketable_as_something_simpler",),
     ("StyleComputer.cpp", "line_width_keyword_to_css_pixels"): ("computed_interpolation_line_width_keyword_to_css_pixels",),
@@ -3200,6 +3325,8 @@ def method_inventory(
                 disposition = "language-template-trait"
             elif class_name in LANGUAGE_TEMPLATE_TRAIT_CLASSES:
                 disposition = "language-template-trait"
+            elif (class_name, method_name) in LANGUAGE_ARTIFACT_METHODS:
+                disposition = "language-template-trait"
             elif method_name == class_name or method_name == "~" + class_name:
                 disposition = "language-constructor-or-destructor"
             elif method_name in RUNTIME_ONLY_METHODS or (class_name, method_name) in BINDING_RUNTIME_METHODS:
@@ -3318,6 +3445,8 @@ def free_function_inventory(
                 candidates = free_function_candidate_names(function_name, functions)
                 if function_name.startswith("operator"):
                     disposition = "language-operator"
+                elif (source_path, function_name) in RUNTIME_ONLY_FREE_FUNCTIONS:
+                    disposition = "gc-or-binding-runtime"
                 elif mapped_names and len(mapped_candidates) == len(mapped_names):
                     candidates = mapped_candidates
                     disposition = "consolidated-name-match"
@@ -3428,6 +3557,8 @@ def header_inline_inventory(
                             elif method_name == "requires":
                                 disposition = "language-template-trait"
                             elif class_name in LANGUAGE_TEMPLATE_TRAIT_CLASSES:
+                                disposition = "language-template-trait"
+                            elif (class_name, method_name) in LANGUAGE_ARTIFACT_METHODS:
                                 disposition = "language-template-trait"
                             elif method_name == class_name or method_name == "~" + class_name:
                                 disposition = "language-constructor-or-destructor"

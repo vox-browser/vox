@@ -4173,6 +4173,21 @@ pub fn (style_value StyleValue) has_color() bool {
 	}
 }
 
+pub fn (style_value StyleValue) is_abstract_image() bool {
+	return match style_value {
+		ImageStyleValue, LinearGradientStyleValue, ConicGradientStyleValue, RadialGradientStyleValue {
+			true
+		}
+		else {
+			false
+		}
+	}
+}
+
+pub fn (style_value StyleValue) is_color_function() bool {
+	return style_value is ColorFunctionStyleValue
+}
+
 pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleValue {
 	return match style_value {
 		AddFunctionStyleValue { style_value.absolutized(context) }
@@ -4197,9 +4212,13 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		HWBColorStyleValue { StyleValue(style_value.absolutized(context)) }
 		ImageStyleValue { StyleValue(style_value.absolutized(context)) }
 		LengthStyleValue { StyleValue(style_value.absolutized(context)) }
+		LabColorStyleValue { StyleValue(style_value.absolutized(context)) }
+		LCHColorStyleValue { StyleValue(style_value.absolutized(context)) }
 		LightDarkStyleValue { style_value.absolutized(context) }
 		LinearGradientStyleValue { StyleValue(style_value.absolutized(context)) }
 		KeywordStyleValue { style_value.absolutized(context) }
+		OKLabColorStyleValue { StyleValue(style_value.absolutized(context)) }
+		OKLCHColorStyleValue { StyleValue(style_value.absolutized(context)) }
 		OpenTypeTaggedStyleValue { style_value.absolutized(context) }
 		PositionStyleValue { style_value.absolutized(context) }
 		RadialGradientStyleValue { StyleValue(style_value.absolutized(context)) }
@@ -4387,6 +4406,9 @@ pub fn (style_value StyleValue) reify(associated_property string) CSSStyleValue 
 	if style_value is StyleValueList {
 		return style_value.reify(associated_property)
 	}
+	if style_value is UnresolvedStyleValue {
+		return CSSStyleValue.from_unparsed(style_value.reify(associated_property))
+	}
 	return CSSStyleValue.create(associated_property, style_value)
 }
 
@@ -4408,7 +4430,39 @@ pub fn (style_value StyleValue) subdivide_into_iterations(property PropertyNameA
 }
 
 pub fn (style_value StyleValue) equals(other StyleValue) bool {
-	return style_value == other
+	return match style_value {
+		ImageStyleValue {
+			if other is ImageStyleValue {
+				style_value.equals(other)
+			} else {
+				false
+			}
+		}
+		UnresolvedStyleValue {
+			if other is UnresolvedStyleValue {
+				style_value.equals(other)
+			} else {
+				false
+			}
+		}
+		StyleValueList {
+			if other is StyleValueList {
+				style_value.properties_equal(other)
+			} else {
+				false
+			}
+		}
+		TransformationStyleValue {
+			if other is TransformationStyleValue {
+				style_value.properties_equal(other)
+			} else {
+				false
+			}
+		}
+		else {
+			style_value == other
+		}
+	}
 }
 
 pub fn int_from_style_value(style_value StyleValue) i64 {
@@ -5050,6 +5104,14 @@ pub fn (style_value ColorStyleValue) color() Color {
 	return style_value.color_
 }
 
+pub fn (style_value ColorStyleValue) color_type() ConcreteColorType {
+	return .rgb
+}
+
+pub fn (style_value ColorStyleValue) color_syntax() ColorSyntax {
+	return .legacy
+}
+
 pub fn (style_value ColorStyleValue) serialize(mode SerializationMode) string {
 	_ = mode
 	return style_value.color_.serialize()
@@ -5075,6 +5137,17 @@ pub fn (style_value CustomIdentStyleValue) serialize(mode SerializationMode) str
 	return serialize_an_identifier(style_value.custom_ident_)
 }
 
+pub fn (style_value CustomIdentStyleValue) tokenize() []ComponentValue {
+	return [
+		ComponentValue.from_token(Token.create_ident(style_value.custom_ident_, style_value.custom_ident_)),
+	]
+}
+
+pub fn (style_value CustomIdentStyleValue) reify(associated_property string) CSSStyleValue {
+	_ = associated_property
+	return CSSStyleValue.from_keyword(CSSKeywordValue.create(style_value.custom_ident_))
+}
+
 pub struct StringStyleValue {
 pub mut:
 	string_value_ string
@@ -5093,6 +5166,12 @@ pub fn (style_value StringStyleValue) string_value() string {
 pub fn (style_value StringStyleValue) serialize(mode SerializationMode) string {
 	_ = mode
 	return serialize_a_string(style_value.string_value_)
+}
+
+pub fn (style_value StringStyleValue) tokenize() []ComponentValue {
+	return [
+		ComponentValue.from_token(Token.create_string(style_value.string_value_, style_value.serialize(.normal))),
+	]
 }
 
 pub struct UnresolvedStyleValue {
@@ -5133,6 +5212,10 @@ pub fn (style_value UnresolvedStyleValue) serialize(mode SerializationMode) stri
 		return original_source_text
 	}
 	return serialize_a_series_of_component_values(style_value.tokens).trim_space()
+}
+
+pub fn (style_value UnresolvedStyleValue) equals(other UnresolvedStyleValue) bool {
+	return style_value.tokens == other.tokens
 }
 
 // https://drafts.csswg.org/css-variables/#guaranteed-invalid-value
@@ -5240,6 +5323,7 @@ pub enum CSSStyleValueKind {
 	keyword
 	numeric
 	transform
+	unparsed
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#cssstylevalue
@@ -5251,6 +5335,7 @@ pub mut:
 	keyword_value_      ?CSSKeywordValue
 	numeric_value_      ?CSSNumericValue
 	transform_value_    ?CSSTransformValue
+	unparsed_value_     ?&CSSUnparsedValue
 }
 
 pub fn CSSStyleValue.create(associated_property string, source_value StyleValue) CSSStyleValue {
@@ -5286,6 +5371,13 @@ pub fn CSSStyleValue.from_transform(value CSSTransformValue) CSSStyleValue {
 	return CSSStyleValue{
 		kind_: .transform
 		transform_value_: value
+	}
+}
+
+pub fn CSSStyleValue.from_unparsed(value &CSSUnparsedValue) CSSStyleValue {
+	return CSSStyleValue{
+		kind_: .unparsed
+		unparsed_value_: value
 	}
 }
 
@@ -5374,6 +5466,9 @@ pub fn (value CSSStyleValue) to_string() !string {
 	if transform_value := value.transform_value_ {
 		return transform_value.to_string()!
 	}
+	if unparsed_value := value.unparsed_value_ {
+		return unparsed_value.to_string()!
+	}
 	{
 		// the serialization is specified in section 6.7 Serialization from CSSOM Values below.
 	}
@@ -5397,6 +5492,9 @@ pub fn (value CSSStyleValue) create_an_internal_representation(property Property
 	}
 	if transform_value := value.transform_value_ {
 		return transform_value.create_an_internal_representation(property, perform_type_check)!
+	}
+	if unparsed_value := value.unparsed_value_ {
+		return unparsed_value.create_an_internal_representation(property, perform_type_check)!
 	}
 	return error('Missing CSSStyleValue.create_an_internal_representation() overload')
 }

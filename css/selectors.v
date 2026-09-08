@@ -424,8 +424,7 @@ pub fn aliased_pseudo_element_from_string(name string) PseudoElement {
 		'-moz-range-thumb', '-webkit-slider-thumb' {
 			.slider_thumb
 		}
-		'-moz-range-track', '-webkit-meter-bar', '-webkit-progress-bar',
-		'-webkit-slider-runnable-track' {
+		'-moz-range-track', '-webkit-meter-bar', '-webkit-progress-bar', '-webkit-slider-runnable-track' {
 			.slider_track
 		}
 		'-moz-placeholder', '-webkit-input-placeholder' {
@@ -586,10 +585,10 @@ pub fn (pattern ANPlusBPattern) serialize() string {
 	// - A is 1: Append "n" to result.
 	if pattern.step_size == 1 {
 		result.write_u8(`n`)
-	// - A is -1: Append "-n" to result.
+		// - A is -1: Append "-n" to result.
 	} else if pattern.step_size == -1 {
 		result.write_string('-n')
-	// - A is non-zero: Serialize A and append it to result, then append "n" to result.
+		// - A is non-zero: Serialize A and append it to result, then append "n" to result.
 	} else if pattern.step_size != 0 {
 		result.write_string('${pattern.step_size}n')
 	}
@@ -598,7 +597,7 @@ pub fn (pattern ANPlusBPattern) serialize() string {
 	// - B is greater than zero: Append "+" to result, then append the serialization of B to result.
 	if pattern.offset > 0 {
 		result.write_string('+${pattern.offset}')
-	// - B is less than zero: Append the serialization of B to result.
+		// - B is less than zero: Append the serialization of B to result.
 	} else if pattern.offset < 0 {
 		result.write_string('${pattern.offset}')
 	}
@@ -920,16 +919,16 @@ pub mut:
 // by-value graph makes every Selector copy recursively retain/copy its arrays.
 pub struct SelectorData {
 pub mut:
-	text                              string
-	compound_selectors                []CompoundSelector
-	specificity                       ?u32
-	pseudo_element                    ?PseudoElementSelector
-	sibling_invalidation_distance     ?int
-	can_use_fast_matches              bool
-	can_use_ancestor_filter           bool
-	contains_the_nesting_selector     bool
-	contained_pseudo_classes          PseudoClassBitmap
-	ancestor_hashes                   [8]u32
+	text                          string
+	compound_selectors            []CompoundSelector
+	specificity                   ?u32
+	pseudo_element                ?PseudoElementSelector
+	sibling_invalidation_distance ?int
+	can_use_fast_matches          bool
+	can_use_ancestor_filter       bool
+	contains_the_nesting_selector bool
+	contained_pseudo_classes      PseudoClassBitmap
+	ancestor_hashes               [8]u32
 }
 
 // Kept as traversal entry points for the declared-value fallback cache. Parsed
@@ -1218,8 +1217,7 @@ pub fn (selector Selector) specificity() u32 {
 
 	// Due to storage limitations, implementations may have limitations on the size of A, B, or C.
 	// If so, values higher than the limit must be clamped to that limit, and not overflow.
-	specificity := (selector_min_u32(ids, 0xff) << ids_shift) + (selector_min_u32(classes,
-		0xff) << classes_shift) + (selector_min_u32(tag_names, 0xff) << tag_names_shift)
+	specificity := (selector_min_u32(ids, 0xff) << ids_shift) + (selector_min_u32(classes, 0xff) << classes_shift) + (selector_min_u32(tag_names, 0xff) << tag_names_shift)
 	if selector.data_ != unsafe { nil } {
 		mut data := unsafe { &SelectorData(selector.data_) }
 		data.specificity = specificity
@@ -1562,7 +1560,8 @@ fn matches_simple(component SimpleSelector, element &dom.Element, shadow_host ?&
 			if component.type_ == .tag_name {
 				// See https://html.spec.whatwg.org/multipage/semantics-other.html#case-sensitivity-of-selectors
 				if element.document() != unsafe { nil } && element.document().document_type() == .html && element.namespace_uri() or {
-					''} == selector_html_namespace {
+					''
+				} == selector_html_namespace {
 					if qualified_name.name.lowercase_name != element.local_name() {
 						return false
 					}
@@ -1753,8 +1752,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			return matches_indeterminate_pseudo_class(element)
 		}
 		.high_value, .low_value, .optimal_value, .suboptimal_value, .even_less_good_value {
-			// FIXME: Requires HTMLMeterElement value-state hooks.
-			return false
+			return matches_optimal_value_pseudo_class(element, pseudo_class.type_)
 		}
 		.defined {
 			return element.is_defined()
@@ -3310,8 +3308,12 @@ fn has_matching_descendant_for_relative(selector Selector, node &dom.Node, shado
 }
 
 // https://drafts.csswg.org/selectors-4/#relational
+fn has_result_cache_key(selector Selector, anchor &dom.Element) string {
+	return '${selector.text()}\x00${anchor.as_node().unique_id()}'
+}
+
 fn matches_has_pseudo_class(selector Selector, anchor &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode) bool {
-	cache_key := '${selector.text()}\0${anchor.as_node().unique_id()}'
+	cache_key := has_result_cache_key(selector, anchor)
 	if cached := context.has_result_cache[cache_key] {
 		return cached == .matched
 	}
@@ -3346,6 +3348,20 @@ fn matches_indeterminate_pseudo_class(element &dom.Element) bool {
 	return false
 }
 
+fn matches_optimal_value_pseudo_class(element &dom.Element, desired_state PseudoClass) bool {
+	if !element.is_html_element() || element.local_name() != 'meter' {
+		return false
+	}
+
+	meter := unsafe { &dom.HTMLMeterElement(element) }
+	return match desired_state {
+		.optimal_value { meter.cached_value_state_ == 0 }
+		.suboptimal_value { meter.cached_value_state_ == 1 }
+		.even_less_good_value { meter.cached_value_state_ == 2 }
+		else { false }
+	}
+}
+
 enum SelectorCaseSensitivity {
 	case_sensitive
 	case_insensitive
@@ -3364,7 +3380,8 @@ fn matches_attribute(attribute SelectorAttribute, style_sheet_for_rule ?&CSSStyl
 		.default_match {
 			// See: https://html.spec.whatwg.org/multipage/semantics-other.html#case-sensitivity-of-selectors
 			if element.document() != unsafe { nil } && element.document().is_html_document() && element.namespace_uri() or {
-				''} == selector_html_namespace && attribute.qualified_name.namespace_type == .default_ && attribute_name in selector_html_case_insensitive_attribute_names() {
+				''
+			} == selector_html_namespace && attribute.qualified_name.namespace_type == .default_ && attribute_name in selector_html_case_insensitive_attribute_names() {
 				SelectorCaseSensitivity.case_insensitive
 			} else {
 				SelectorCaseSensitivity.case_sensitive
@@ -3779,13 +3796,13 @@ fn consume_selector_escaped_code_point(text string, start int) (string, int) {
 		value := strconv.parse_uint(digits, 16, 32) or { 0 }
 		// A zero, surrogate, or out-of-range code point becomes U+FFFD.
 		if value == 0 || value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff) {
-			return '\ufffd', i
+			return '�', i
 		}
 		return rune(value).str(), i
 	}
 	// EOF is a parse error; return U+FFFD.
 	if i >= text.len {
-		return '\ufffd', i
+		return '�', i
 	}
 	// Anything else: the code point itself, which may be multi-byte.
 	mut end := i + 1

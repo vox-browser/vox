@@ -589,7 +589,8 @@ pub fn transform_function_metadata(function TransformFunction) TransformFunction
 			.matrix {
 				[transform_parameter(.number, true), transform_parameter(.number, true),
 					transform_parameter(.number, true), transform_parameter(.number, true),
-					transform_parameter(.number, true), transform_parameter(.number, true)]}
+					transform_parameter(.number, true), transform_parameter(.number, true)]
+			}
 			.matrix3d {
 				[transform_parameter(.number, true), transform_parameter(.number, true),
 					transform_parameter(.number, true), transform_parameter(.number, true),
@@ -598,40 +599,54 @@ pub fn transform_function_metadata(function TransformFunction) TransformFunction
 					transform_parameter(.number, true), transform_parameter(.number, true),
 					transform_parameter(.number, true), transform_parameter(.number, true),
 					transform_parameter(.number, true), transform_parameter(.number, true),
-					transform_parameter(.number, true), transform_parameter(.number, true)]}
+					transform_parameter(.number, true), transform_parameter(.number, true)]
+			}
 			.perspective {
-				[transform_parameter(.length_none, true)]}
+				[transform_parameter(.length_none, true)]
+			}
 			.translate {
 				[transform_parameter(.length_percentage, true),
-					transform_parameter(.length_percentage, false)]}
+					transform_parameter(.length_percentage, false)]
+			}
 			.translate3d {
 				[transform_parameter(.length_percentage, true),
 					transform_parameter(.length_percentage, true),
-					transform_parameter(.length, true)]}
+					transform_parameter(.length, true)]
+			}
 			.translate_x, .translate_y {
-				[transform_parameter(.length_percentage, true)]}
+				[transform_parameter(.length_percentage, true)]
+			}
 			.translate_z {
-				[transform_parameter(.length, true)]}
+				[transform_parameter(.length, true)]
+			}
 			.scale {
 				[transform_parameter(.number_percentage, true),
-					transform_parameter(.number_percentage, false)]}
+					transform_parameter(.number_percentage, false)]
+			}
 			.scale3d {
 				[transform_parameter(.number_percentage, true),
 					transform_parameter(.number_percentage, true),
-					transform_parameter(.number_percentage, true)]}
+					transform_parameter(.number_percentage, true)]
+			}
 			.scale_x, .scale_y, .scale_z {
-				[transform_parameter(.number_percentage, true)]}
+				[transform_parameter(.number_percentage, true)]
+			}
 			.rotate {
-				[transform_parameter(.angle, true)]}
+				[transform_parameter(.angle, true)]
+			}
 			.rotate3d {
 				[transform_parameter(.number, true), transform_parameter(.number, true),
-					transform_parameter(.number, true), transform_parameter(.angle, true)]}
+					transform_parameter(.number, true), transform_parameter(.angle, true)]
+			}
 			.rotate_x, .rotate_y, .rotate_z {
-				[transform_parameter(.angle, true)]}
+				[transform_parameter(.angle, true)]
+			}
 			.skew {
-				[transform_parameter(.angle, true), transform_parameter(.angle, false)]}
+				[transform_parameter(.angle, true), transform_parameter(.angle, false)]
+			}
 			.skew_x, .skew_y {
-				[transform_parameter(.angle, true)]}
+				[transform_parameter(.angle, true)]
+			}
 		}
 	}
 }
@@ -2280,12 +2295,10 @@ pub fn resolve_transform_2d_matrix(element &dom.Element, text string, reference_
 	mut length_context := LengthResolutionContext.for_document(element.document())
 	font_size := CSSPixels.nearest_value_for(computed_font_size_px(element, author_rules))
 	length_context.font_metrics = computed_interpolation_font_metrics_for_size(font_size)
-	length_context.font_metrics.line_height = CSSPixels.nearest_value_for(computed_line_height_px(element,
-		author_rules))
+	length_context.font_metrics.line_height = CSSPixels.nearest_value_for(computed_line_height_px(element, author_rules))
 	root_size := CSSPixels.nearest_value_for(root_font_size_px(element, author_rules))
 	length_context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_size)
-	return resolve_transform_style_value_2d_matrix(parsed, reference_width, reference_height,
-		length_context)
+	return resolve_transform_style_value_2d_matrix(parsed, reference_width, reference_height, length_context)
 }
 
 // Paintable::compute_transform() consumes the already-computed typed value and
@@ -3041,5 +3054,13 @@ pub fn (style_value TransformationStyleValue) absolutized(computation_context Co
 }
 
 pub fn (style_value TransformationStyleValue) properties_equal(other TransformationStyleValue) bool {
-	return style_value.property_ == other.property_ && style_value.transform_function_ == other.transform_function_ && style_value.values_ == other.values_
+	if style_value.property_ != other.property_ || style_value.transform_function_ != other.transform_function_ || style_value.values_.len != other.values_.len {
+		return false
+	}
+	for index, value in style_value.values_ {
+		if !value.equals(other.values_[index]) {
+			return false
+		}
+	}
+	return true
 }

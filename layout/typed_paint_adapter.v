@@ -2807,7 +2807,22 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	svg_clip = svg_url_clip_path_for_box(node, state, used)
 	svg_mask = svg_url_mask_for_box(node, state, used)
 	if marker := node.as_list_item_marker_box() {
-		if marker.text() == none {
+		if marker_styled := node.as_node_with_style() {
+			if list_style_image := marker_styled.list_style_image() {
+				if image := list_style_image.as_image() {
+					source := image.url_.url()
+					replaced_image_url = if styled_element := paint_element {
+						styled_element.document().encoding_parse_and_serialize_url(source) or { source }
+					} else {
+						source
+					}
+					replaced_image_size = '100% 100%'
+					replaced_image_position_x = '0%'
+					replaced_image_position_y = '0%'
+				}
+			}
+		}
+		if replaced_image_url == '' && marker.text() == none {
 			marker_shape = marker.list_style_type_.name
 		}
 	}

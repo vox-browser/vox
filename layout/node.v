@@ -87,6 +87,15 @@ pub fn (mut n Node) append_child(child &Node) {
 	mut mutable_child := unsafe { &Node(child) }
 	mutable_child.parent_ = n
 	n.children_ << child
+	mutable_child.inserted_into(n)
+}
+
+pub fn (n &Node) is_label() bool {
+	return false
+}
+
+pub fn (mut n Node) inserted_into(parent &Node) {
+	_ = parent
 }
 
 fn (mut n Node) replace_children(children []&Node) {
@@ -906,8 +915,24 @@ pub fn recompute_containing_blocks(root &Node) {
 pub struct NodeWithStyle {
 	Node
 pub mut:
-	computed_values_ &css.ComputedValues = unsafe { nil }
-	layout_index_    u32
+	computed_values_  &css.ComputedValues = unsafe { nil }
+	list_style_image_ ?css.StyleValue
+	layout_index_     u32
+}
+
+fn materialize_list_style_image(computed_values &css.ComputedProperties, document &dom.Document) ?css.StyleValue {
+	mut value := computed_values.typed_property_value(.list_style_image) or { return none }
+	if !value.is_abstract_image() {
+		return none
+	}
+	match mut value {
+		css.ImageStyleValue {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			value.load_any_resources(mut mutable_document)
+		}
+		else {}
+	}
+	return value
 }
 
 pub fn NodeWithStyle.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &NodeWithStyle {
@@ -918,6 +943,7 @@ pub fn NodeWithStyle.new(document &dom.Document, dom_node ?&dom.Node, computed_v
 			has_style_: true
 		}
 		computed_values_: css.resolve_computed_values_for_document(computed_values, document)
+		list_style_image_: materialize_list_style_image(computed_values, document)
 	}
 }
 
@@ -925,12 +951,18 @@ pub fn (n &NodeWithStyle) computed_values() &css.ComputedValues {
 	return n.computed_values_
 }
 
+pub fn (n &NodeWithStyle) list_style_image() ?css.StyleValue {
+	return n.list_style_image_
+}
+
 pub fn (mut n NodeWithStyle) set_computed_values(computed_values &css.ComputedProperties) {
 	n.computed_values_ = css.resolve_computed_values_for_document(computed_values, n.document_)
+	n.list_style_image_ = materialize_list_style_image(computed_values, n.document_)
 }
 
 pub fn (mut n NodeWithStyle) apply_style(computed_style &css.ComputedProperties) {
 	n.computed_values_ = css.resolve_computed_values_for_document(computed_style, n.document_)
+	n.list_style_image_ = materialize_list_style_image(computed_style, n.document_)
 	n.propagate_style_to_anonymous_wrappers()
 	if metrics := unsafe { &Node(n) }.as_node_with_style_and_box_model_metrics() {
 		metrics.propagate_style_along_continuation(computed_style)

@@ -2974,8 +2974,12 @@ pub mut:
 	slope       int
 }
 
+pub fn (weight FontWeightRange) id() string {
+	return '${weight.min}-${weight.max}'
+}
+
 pub fn (key FontFaceKey) id() string {
-	return '${key.family_name.to_lower()}|${key.weight.min}-${key.weight.max}|${key.slope}'
+	return '${key.family_name.to_lower()}|${key.weight.id()}|${key.slope}'
 }
 
 pub struct OwnFontFaceKey {
@@ -2999,6 +3003,10 @@ pub fn (key OwnFontFaceKey) as_font_face_key() FontFaceKey {
 		weight: key.weight
 		slope: key.slope
 	}
+}
+
+pub fn (key OwnFontFaceKey) id() string {
+	return key.as_font_face_key().id()
 }
 
 fn font_face_key_for_parsed_font_face(font_face ParsedFontFace) FontFaceKey {

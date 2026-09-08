@@ -1756,7 +1756,13 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 		return marker
 	}
 	list_style_type := unsafe { &css.ComputedValues(list_item_computed) }.computed_list_style_type()
-	if list_style_type.kind == .none_ {
+	list_style_image := list_item_computed.typed_property_value(.list_style_image)
+	has_list_style_image := if image := list_style_image {
+		image.is_abstract_image()
+	} else {
+		false
+	}
+	if list_style_type.kind == .none_ && !has_list_style_image {
 		return none
 	}
 	marker := ListItemMarkerBox.new(document, list_style_type, list_item_computed.list_style_position(), element, marker_computed)

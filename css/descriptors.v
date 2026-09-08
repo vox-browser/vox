@@ -75,6 +75,19 @@ fn parse_css_descriptor_for_cssom(at_rule_id AtRuleID, descriptor_id DescriptorI
 	}).value
 }
 
+pub fn (mut parser Parser) convert_to_descriptor(at_rule_id AtRuleID, declaration Declaration) ?Descriptor {
+	descriptor_id := descriptor_id_from_string(at_rule_id, declaration.name) or { return none }
+	mut tokens := ComponentValueStream.new(declaration.value)
+	style_value := parser.parse_descriptor_value_tokens(at_rule_id, descriptor_id, mut tokens) or {
+		return none
+	}
+	return Descriptor{
+		descriptor_id:    descriptor_id
+		value:            dom_style_value_from_value_logic(style_value)
+		serialized_value: style_value.serialize(.normal)
+	}
+}
+
 // A non-spec base class for descriptor-list classes.
 @[heap]
 pub struct CSSDescriptors {

@@ -92,6 +92,13 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("css/css.v", None, "flex_units_are_compatible"),
         ("css/css.v", None, "resolution_units_are_compatible"),
         ("css/css.v", None, "time_units_are_compatible"),
+        # Layout::Node defines these as an exact false default and no-op tree
+        # insertion hook upstream; append_child still invokes the hook.
+        ("layout/node.v", "Node", "is_label"),
+        ("layout/node.v", "Node", "inserted_into"),
+        # Every concrete linear gradient is paintable; resolution can still
+        # reject invalid geometry later at the paint boundary.
+        ("css/image_color_values.v", "LinearGradientStyleValue", "is_paintable"),
         # CSS Typed OM specifies that these is2D setters do nothing.
         ("css/transforms.v", "CSSPerspective", "set_is_2d"),
         ("css/transforms.v", "CSSSkew", "set_is_2d"),

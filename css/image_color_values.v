@@ -631,6 +631,14 @@ pub fn OKLabColorStyleValue.create(l StyleValue, a StyleValue, b StyleValue, alp
 	}
 }
 
+pub fn (style_value OKLabColorStyleValue) absolutized(context ComputationContext) OKLabColorStyleValue {
+	return OKLabColorStyleValue.create(style_value.l_.absolutized(context), style_value.a_.absolutized(context), style_value.b_.absolutized(context), style_value.alpha_.absolutized(context))
+}
+
+pub fn (style_value LabColorStyleValue) absolutized(context ComputationContext) LabColorStyleValue {
+	return LabColorStyleValue.create(style_value.l_.absolutized(context), style_value.a_.absolutized(context), style_value.b_.absolutized(context), style_value.alpha_.absolutized(context))
+}
+
 pub fn (style_value OKLabColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	_ = color_resolution_context
 	l_val := resolve_with_reference_value(style_value.l_, 1.0, CalculationResolutionContext{}) or {
@@ -733,6 +741,14 @@ pub fn OKLCHColorStyleValue.create(l StyleValue, c StyleValue, h StyleValue, alp
 		h_: h
 		alpha_: alpha or { StyleValue(NumberStyleValue.create(1)) }
 	}
+}
+
+pub fn (style_value LCHColorStyleValue) absolutized(context ComputationContext) LCHColorStyleValue {
+	return LCHColorStyleValue.create(style_value.l_.absolutized(context), style_value.c_.absolutized(context), style_value.h_.absolutized(context), style_value.alpha_.absolutized(context))
+}
+
+pub fn (style_value OKLCHColorStyleValue) absolutized(context ComputationContext) OKLCHColorStyleValue {
+	return OKLCHColorStyleValue.create(style_value.l_.absolutized(context), style_value.c_.absolutized(context), style_value.h_.absolutized(context), style_value.alpha_.absolutized(context))
 }
 
 pub fn (style_value LCHColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
@@ -1566,6 +1582,10 @@ pub fn (style_value ImageStyleValue) serialize(mode SerializationMode) string {
 	return style_value.url_.to_string()
 }
 
+pub fn (style_value ImageStyleValue) equals(other ImageStyleValue) bool {
+	return style_value.url_.equals(other.url_)
+}
+
 pub fn (style_value ImageStyleValue) natural_width() ?CSSPixels {
 	if image_data := style_value.image_data() {
 		if width := image_data.intrinsic_width() {
@@ -1831,6 +1851,10 @@ fn side_or_corner_to_string(value LinearGradientSideOrCorner) string {
 
 pub fn (style_value LinearGradientStyleValue) is_repeating() bool {
 	return style_value.repeating_ == .yes
+}
+
+pub fn (style_value LinearGradientStyleValue) is_paintable() bool {
+	return true
 }
 
 pub fn (style_value LinearGradientStyleValue) interpolation_method() ColorInterpolationMethod {
