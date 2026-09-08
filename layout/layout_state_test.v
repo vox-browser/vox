@@ -2,6 +2,7 @@ module layout
 
 import dom
 import css
+import painting
 
 // LayoutState stores per-box UsedValues; UsedValues computes the box-model boxes from content + edges.
 fn test_layout_state_used_values() {
@@ -38,6 +39,35 @@ fn test_layout_state_used_values() {
 
 	found := state.try_get(box) or { panic('used values should exist after get_mutable') }
 	assert voidptr(found) == voidptr(uv)
+}
+
+fn test_layout_state_collapsed_borders_use_rounded_half_width() {
+	mut values := UsedValues{}
+	values.set_content_width(CSSPixels.nearest_value_for(100))
+	values.set_content_height(CSSPixels.nearest_value_for(50))
+	values.margin_left = CSSPixels.nearest_value_for(5)
+	values.margin_top = CSSPixels.nearest_value_for(7)
+	values.border_left = CSSPixels.nearest_value_for(5)
+	values.border_right = CSSPixels.nearest_value_for(3)
+	values.border_top = CSSPixels.nearest_value_for(1)
+	values.border_bottom = CSSPixels.nearest_value_for(2)
+	values.padding_left = CSSPixels.nearest_value_for(10)
+	values.padding_right = CSSPixels.nearest_value_for(11)
+	values.padding_top = CSSPixels.nearest_value_for(12)
+	values.padding_bottom = CSSPixels.nearest_value_for(13)
+
+	assert values.border_box_width().to_double() == 129
+	assert values.border_box_height().to_double() == 78
+	values.set_override_borders_data(painting.BordersDataWithElementKind{})
+	assert values.use_collapsing_borders_model()
+	assert values.border_left_collapsed().to_double() == 3
+	assert values.border_right_collapsed().to_double() == 2
+	assert values.border_top_collapsed().to_double() == 1
+	assert values.border_bottom_collapsed().to_double() == 1
+	assert values.border_box_width().to_double() == 126
+	assert values.border_box_height().to_double() == 77
+	assert values.margin_box_left().to_double() == 18
+	assert values.margin_box_top().to_double() == 20
 }
 
 // cumulative_offset sums a box's offset up the containing-block chain.

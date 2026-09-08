@@ -53,11 +53,11 @@ pub mut:
 	// Flex/Grid call FormattingContext::compute_inset() with the resolved
 	// item's containing-area size. Preserve that explicit percentage basis for
 	// the final relative-inset pass instead of substituting the parent box.
-	relative_inset_basis_width_   ?CSSPixels
-	relative_inset_basis_height_  ?CSSPixels
-	line_boxes                    []LineBox
-	containing_line_box_fragment  ?LineBoxFragmentCoordinate
-	static_position_rect_         ?StaticPositionRect
+	relative_inset_basis_width_  ?CSSPixels
+	relative_inset_basis_height_ ?CSSPixels
+	line_boxes                   []LineBox
+	containing_line_box_fragment ?LineBoxFragmentCoordinate
+	static_position_rect_        ?StaticPositionRect
 	// getComputedStyle() reports the *used* track sizes for
 	// grid-template-columns/rows, so the grid formatting context records them
 	// here and LayoutState::commit() hands them to the layout node.
@@ -71,7 +71,6 @@ pub mut:
 	svg_viewbox_transform_        svg.AffineTransform
 	svg_transform_                svg.AffineTransform
 	svg_rendering_disabled_       bool
-	use_collapsing_borders_model_ bool
 	override_borders_data_        ?painting.BordersDataWithElementKind
 	table_cell_coordinates_       ?painting.TableCellCoordinates
 	scrollable_overflow_rect_     ?css.CSSPixelRect
@@ -87,15 +86,39 @@ pub fn (u &UsedValues) containing_block_used_values() ?&UsedValues {
 }
 
 pub fn (u &UsedValues) use_collapsing_borders_model() bool {
-	return u.use_collapsing_borders_model_
+	return u.override_borders_data_ != none
 }
 
 pub fn (u &UsedValues) override_borders_data() ?painting.BordersDataWithElementKind {
 	return u.override_borders_data_
 }
 
+pub fn (mut u UsedValues) set_override_borders_data(override_borders_data painting.BordersDataWithElementKind) {
+	u.override_borders_data_ = override_borders_data
+}
+
 pub fn (u &UsedValues) table_cell_coordinates() ?painting.TableCellCoordinates {
 	return u.table_cell_coordinates_
+}
+
+pub fn (mut u UsedValues) set_table_cell_coordinates(table_cell_coordinates painting.TableCellCoordinates) {
+	u.table_cell_coordinates_ = table_cell_coordinates
+}
+
+pub fn (mut u UsedValues) set_grid_template_columns(columns []CSSPixels) {
+	u.used_grid_template_columns = columns.clone()
+}
+
+pub fn (u &UsedValues) grid_template_columns() []CSSPixels {
+	return u.used_grid_template_columns
+}
+
+pub fn (mut u UsedValues) set_grid_template_rows(rows []CSSPixels) {
+	u.used_grid_template_rows = rows.clone()
+}
+
+pub fn (u &UsedValues) grid_template_rows() []CSSPixels {
+	return u.used_grid_template_rows
 }
 
 pub fn (u &UsedValues) scrollable_overflow_rect() ?css.CSSPixelRect {
@@ -417,20 +440,52 @@ pub fn (u &UsedValues) svg_rendering_disabled() bool {
 }
 
 // --- Margin box (margin + border + padding + content) ---
+fn (u &UsedValues) border_left_collapsed() CSSPixels {
+	return if u.use_collapsing_borders_model() {
+		css.css_pixels_round(u.border_left.divided_by_float(2.0))
+	} else {
+		u.border_left
+	}
+}
+
+fn (u &UsedValues) border_right_collapsed() CSSPixels {
+	return if u.use_collapsing_borders_model() {
+		css.css_pixels_round(u.border_right.divided_by_float(2.0))
+	} else {
+		u.border_right
+	}
+}
+
+fn (u &UsedValues) border_top_collapsed() CSSPixels {
+	return if u.use_collapsing_borders_model() {
+		css.css_pixels_round(u.border_top.divided_by_float(2.0))
+	} else {
+		u.border_top
+	}
+}
+
+fn (u &UsedValues) border_bottom_collapsed() CSSPixels {
+	return if u.use_collapsing_borders_model() {
+		css.css_pixels_round(u.border_bottom.divided_by_float(2.0))
+	} else {
+		u.border_bottom
+	}
+}
+
 pub fn (u &UsedValues) margin_box_left() CSSPixels {
-	return css_pixels_sum([u.margin_left, u.border_left, u.padding_left])
+	return css_pixels_sum([u.margin_left, u.border_left_collapsed(), u.padding_left])
 }
 
 pub fn (u &UsedValues) margin_box_right() CSSPixels {
-	return css_pixels_sum([u.margin_right, u.border_right, u.padding_right])
+	return css_pixels_sum([u.margin_right, u.border_right_collapsed(), u.padding_right])
 }
 
 pub fn (u &UsedValues) margin_box_top() CSSPixels {
-	return css_pixels_sum([u.margin_top, u.border_top, u.padding_top])
+	return css_pixels_sum([u.margin_top, u.border_top_collapsed(), u.padding_top])
 }
 
 pub fn (u &UsedValues) margin_box_bottom() CSSPixels {
-	return css_pixels_sum([u.margin_bottom, u.border_bottom, u.padding_bottom])
+	return css_pixels_sum([u.margin_bottom, u.border_bottom_collapsed(), u.padding_bottom])
 }
 
 pub fn (u &UsedValues) margin_box_width() CSSPixels {
@@ -443,19 +498,19 @@ pub fn (u &UsedValues) margin_box_height() CSSPixels {
 
 // --- Border box (border + padding + content) ---
 pub fn (u &UsedValues) border_box_left() CSSPixels {
-	return css_pixels_sum([u.border_left, u.padding_left])
+	return css_pixels_sum([u.border_left_collapsed(), u.padding_left])
 }
 
 pub fn (u &UsedValues) border_box_right() CSSPixels {
-	return css_pixels_sum([u.border_right, u.padding_right])
+	return css_pixels_sum([u.border_right_collapsed(), u.padding_right])
 }
 
 pub fn (u &UsedValues) border_box_top() CSSPixels {
-	return css_pixels_sum([u.border_top, u.padding_top])
+	return css_pixels_sum([u.border_top_collapsed(), u.padding_top])
 }
 
 pub fn (u &UsedValues) border_box_bottom() CSSPixels {
-	return css_pixels_sum([u.border_bottom, u.padding_bottom])
+	return css_pixels_sum([u.border_bottom_collapsed(), u.padding_bottom])
 }
 
 pub fn (u &UsedValues) border_box_width() CSSPixels {

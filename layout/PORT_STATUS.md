@@ -6,7 +6,7 @@ Re-audited: 2026-09-08
 
 All 50 upstream Layout `.cpp` units have filename-level homes in the typed V
 Layout package. That inventory does not establish body-level parity: the
-current semantic audit reports 595 unmatched Layout implementations, and the
+current semantic audit reports 171 unmatched Layout implementations, and the
 legacy `BlockBox` renderer transport still sits between typed Layout and the
 native shell.
 
@@ -15,6 +15,14 @@ The symbol-level audit excludes the former class-shaped
 porting its body is not translation coverage. The live path uses typed layout
 nodes and dense `LayoutState` storage, but each unmatched method still requires
 comparison with the current upstream body.
+
+The September semantic reconciliation accounts for formatting-context logic
+that the V port decomposes into spec-named free functions rather than the C++
+class method boundaries. It covers flex, grid, table, block, inline, SVG,
+replaced-with-children, generic sizing dispatch, tree construction, and their
+local state helpers; every mapping points at the active implementation rather
+than a name-only facade. This reduced Layout's structural audit remainder from
+595 to 171 without duplicating already-tested logic.
 
 ## Translated coverage
 
@@ -26,6 +34,12 @@ sizing, aspect-ratio constraint solving, line construction and breaking,
 generated content and counters, list markers, relative positioning, overflow,
 SVG natural metrics and transforms, typed used-value state, layout/DOM bridging,
 debug dumps, and the typed layout-to-renderer adapter used by the executable.
+
+Collapsed-table cell geometry now derives its collapsing-border mode from the
+presence of resolved override border data, as upstream does. Margin- and
+border-box metrics use rounded half-widths for those shared borders, including
+odd pixel widths. Table-cell coordinates, override borders, and resolved grid
+tracks are installed through the translated `UsedValues` accessors.
 
 Flex and grid percentage gaps now use the same axis-specific containing-block
 bases as C++: flex main/cross gaps follow the current flex direction, while grid

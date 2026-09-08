@@ -2235,16 +2235,13 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 	for row in rows {
 		used_rows << row.base_size
 	}
-	container_state.used_grid_template_columns = used_columns
-	container_state.used_grid_template_rows = used_rows
+	container_state.set_grid_template_columns(used_columns)
+	container_state.set_grid_template_rows(used_rows)
 	// Only *explicit* line names are serialized, so recompute the line map
 	// without the `<area>-start`/`-end` names that grid-template-areas adds.
 	empty_areas := css.GridTemplateAreas{}
-	container_state.used_grid_column_line_names = grid_lines_for_definition(container,
-		template_columns, container_width, column_gap, true, empty_areas, true)
-	container_state.used_grid_row_line_names = grid_lines_for_definition(container,
-		template_rows, row_basis, row_gap, container_state.has_definite_height(), empty_areas,
-		false)
+	container_state.used_grid_column_line_names = grid_lines_for_definition(container, template_columns, container_width, column_gap, true, empty_areas, true)
+	container_state.used_grid_row_line_names = grid_lines_for_definition(container, template_rows, row_basis, row_gap, container_state.has_definite_height(), empty_areas, false)
 
 	for placement in placements {
 		styled := placement.item.as_node_with_style() or { continue }

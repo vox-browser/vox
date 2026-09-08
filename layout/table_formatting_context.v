@@ -334,16 +334,15 @@ fn resolve_collapsed_table_borders(mut state LayoutState, table &Node, rows []&N
 	for placement in placements {
 		styled := placement.cell.as_node_with_style() or { continue }
 		mut cell_state := state.get_mutable(styled)
-		cell_state.table_cell_coordinates_ = painting.TableCellCoordinates{
+		cell_state.set_table_cell_coordinates(painting.TableCellCoordinates{
 			row_index: placement.row
 			column_index: placement.column
 			row_span: placement.row_span
 			column_span: placement.column_span
-		}
+		})
 		if table.computed_values().border_collapse() != .collapse {
 			continue
 		}
-		cell_state.use_collapsing_borders_model_ = true
 		left := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .left)
 		right := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .right)
 		top := resolved_collapsed_table_cell_border(table, rows, placements_by_coordinate, row_groups_by_index, column_definitions_by_index, column_count, placement, .top)
@@ -352,12 +351,12 @@ fn resolve_collapsed_table_borders(mut state LayoutState, table &Node, rows []&N
 		cell_state.border_right = CSSPixels.nearest_value_for(right.border_data.width)
 		cell_state.border_top = CSSPixels.nearest_value_for(top.border_data.width)
 		cell_state.border_bottom = CSSPixels.nearest_value_for(bottom.border_data.width)
-		cell_state.override_borders_data_ = painting.BordersDataWithElementKind{
+		cell_state.set_override_borders_data(painting.BordersDataWithElementKind{
 			left: painting.BorderDataWithElementKind{left.border_data, left.element_kind}
 			right: painting.BorderDataWithElementKind{right.border_data, right.element_kind}
 			top: painting.BorderDataWithElementKind{top.border_data, top.element_kind}
 			bottom: painting.BorderDataWithElementKind{bottom.border_data, bottom.element_kind}
-		}
+		})
 	}
 }
 

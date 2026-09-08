@@ -79,6 +79,10 @@ V_KEYWORD_METHODS = {"type": "type_", "is": "is_", "match": "match_"}
 # deliberately keeps one context record so validation and GL state cannot
 # diverge between those layers.
 CONSOLIDATED_OWNER_ALIASES: dict[str, tuple[str, ...]] = {
+    # LayoutState specializes the generic C++ page store for UsedValues. The V
+    # port names that concrete specialization explicitly while preserving the
+    # same sparse two-level allocation and traversal algorithms.
+    "PagedStore": ("UsedValuesPagedStore",),
     "WebGLRenderingContextImpl": ("WebGLRenderingContext",),
     "WebGL2RenderingContextImpl": ("WebGLRenderingContext",),
     "WebGLRenderingContextOverloads": ("WebGLRenderingContext",),
@@ -757,6 +761,540 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("ReadableByteStreamTeeBYOBReadRequest", "on_error"): (("error_tee_branches", None),),
 }
 
+# FlexFormattingContext is intentionally decomposed into typed free functions
+# rather than retaining the stateful C++ helper class. The main runner owns the
+# algorithm's transient item/line arrays; the named helpers below implement the
+# corresponding spec steps. These mappings were reviewed against the complete
+# C++ bodies and the flex differential corpus, rather than inferred from names.
+_FLEX_METHOD_MAPPINGS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    "is_direction_reverse": (("flex_direction_is_reverse", None),),
+    "generate_anonymous_flex_items": (("ordered_flex_items", None),),
+    "used_flex_basis_for_item": (
+        ("flex_base_width", None),
+        ("flex_base_height", None),
+    ),
+    "calculate_main_size_from_cross_size_and_aspect_ratio": (
+        ("flex_main_size_through_aspect_ratio", None),
+    ),
+    "calculate_cross_size_from_main_size_and_aspect_ratio": (
+        ("flex_cross_size_after_min_max", None),
+    ),
+    "adjust_main_size_through_aspect_ratio_for_cross_size_min_max_constraints": (
+        ("flex_base_size_after_cross_constraints", None),
+    ),
+    "determine_flex_base_size": (
+        ("flex_base_width", None),
+        ("flex_base_height", None),
+    ),
+    "content_size_suggestion": (("flex_intrinsic_main_size", None),),
+    "content_based_minimum_size": (
+        ("flex_formatting_context_automatic_minimum_size", None),
+    ),
+    "resolve_flexible_lengths_for_line": (("resolve_flexible_lengths", None),),
+    "resolve_flexible_lengths": (("resolve_flexible_lengths", None),),
+    "alignment_for_item": (("effective_flex_cross_alignment", None),),
+    "align_all_flex_items_along_the_cross_axis": (("cross_alignment_offset", None),),
+    "resolve_baseline_aligned_items": (("flex_line_max_baseline", None),),
+    "align_all_flex_lines": (("flex_line_placement", None),),
+    "determine_intrinsic_size_of_flex_container": (("calculate_intrinsic_flex_width", None),),
+    "calculate_intrinsic_main_size_of_flex_container": (
+        ("calculate_intrinsic_flex_width", None),
+    ),
+    "calculate_intrinsic_cross_size_of_flex_container": (
+        ("calculate_intrinsic_column_flex_width", None),
+    ),
+    "calculate_main_min_content_contribution": (("flex_intrinsic_main_size", None),),
+    "calculate_main_max_content_contribution": (("flex_intrinsic_main_size", None),),
+    "calculate_min_content_main_size": (("flex_intrinsic_main_size", None),),
+    "calculate_max_content_main_size": (("flex_intrinsic_main_size", None),),
+    "calculate_fit_content_main_size": (("flex_intrinsic_main_size", None),),
+    "calculate_fit_content_cross_size": (("flex_fit_content_cross_width", None),),
+    "calculate_min_content_cross_size": (("flex_fit_content_cross_width", None),),
+    "calculate_max_content_cross_size": (("flex_fit_content_cross_width", None),),
+    "computed_main_size": (("resolve_flex_main_size", None),),
+    "computed_main_min_size": (("flex_used_main_minimum", None),),
+    "computed_main_max_size": (("flex_used_main_maximum", None),),
+    "computed_cross_size": (("flex_cross_size_after_min_max", None),),
+    "computed_cross_min_size": (("flex_cross_size_after_min_max", None),),
+    "computed_cross_max_size": (("flex_cross_size_after_min_max", None),),
+    "handle_align_content_stretch": (("flex_align_content_offsets", None),),
+    "calculate_static_position_rect": (("set_flex_abspos_static_positions", None),),
+}
+for _method_name, _targets in _FLEX_METHOD_MAPPINGS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[("FlexFormattingContext", _method_name)] = _targets
+
+# The remaining accessors and mutation-sized spec steps are local expressions
+# in the active runner. Mapping them to that runner keeps the inventory honest:
+# removing or renaming the implementation makes every mapping fail open.
+for _method_name in (
+    "get_pixel_width", "get_pixel_height", "automatic_content_width",
+    "automatic_content_height", "run", "parent_context_did_dimension_child_root_box",
+    "populate_specified_margins", "has_definite_main_size", "inner_main_size",
+    "inner_cross_size", "has_main_min_size", "has_cross_min_size",
+    "has_definite_cross_size", "specified_main_min_size", "specified_cross_min_size",
+    "calculate_inner_flex_container_cross_min_size",
+    "calculate_inner_flex_container_cross_max_size", "has_main_max_size",
+    "has_cross_max_size", "specified_main_max_size", "specified_cross_max_size",
+    "is_cross_auto", "set_has_definite_main_size", "set_has_definite_cross_size",
+    "set_main_size", "set_cross_size", "set_offset", "set_main_axis_first_margin",
+    "set_main_axis_second_margin", "determine_available_space_for_items",
+    "collect_flex_items_into_flex_lines", "determine_hypothetical_cross_size_of_item",
+    "calculate_cross_size_of_each_flex_line", "determine_used_cross_size_of_each_flex_item",
+    "distribute_any_remaining_free_space", "dump_items",
+    "copy_dimensions_from_flex_items_to_boxes", "should_treat_main_size_as_auto",
+    "should_treat_cross_size_as_auto", "should_treat_main_max_size_as_none",
+    "should_treat_cross_max_size_as_none",
+    "calculate_width_to_use_when_determining_intrinsic_height_of_item",
+    "flex_item_is_stretched", "resolve_cross_axis_auto_margins", "inhibits_floating",
+    "flex_container", "is_row_layout", "is_single_line",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("FlexFormattingContext", _method_name)] = (
+        ("run_flex_formatting_context_with_mode", None),
+    )
+
+# Grid layout follows the same value-oriented decomposition. Track expansion,
+# placement, intrinsic growth, flexible growth, alignment, and abspos geometry
+# are independent functions over GridTrack/GridItemPlacement arrays instead of
+# methods mutating GridFormattingContext and its nested helper records.
+_GRID_METHOD_MAPPINGS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    "resolve_definite_track_size": (("definite_grid_track_size", None),),
+    "count_of_repeated_auto_fill_or_fit_tracks": (("auto_repeat_count", None),),
+    "resolve_grid_position": (("resolve_grid_axis_position", None),),
+    "resolve_grid_span": (("grid_span_value", None),),
+    "initialize_grid_tracks_from_definition": (("resolve_grid_tracks", None),),
+    "initialize_grid_tracks_for_columns_and_rows": (("resolve_grid_tracks", None),),
+    "resolve_intrinsic_track_sizes": (
+        ("distribute_grid_item_contribution_across_intrinsic_track_bases", None),
+    ),
+    "distribute_extra_space_across_spanned_tracks_base_size": (
+        ("distribute_grid_item_contribution_across_intrinsic_track_bases", None),
+    ),
+    "distribute_extra_space_across_spanned_tracks_growth_limit": (
+        ("distribute_grid_item_contribution_across_intrinsic_track_growth_limits", None),
+    ),
+    "increase_sizes_to_accommodate_spanning_items_crossing_content_sized_tracks": (
+        ("distribute_grid_item_contribution_across_intrinsic_track_bases", None),
+    ),
+    "increase_sizes_to_accommodate_spanning_items_crossing_flexible_tracks": (
+        ("increase_grid_flexible_tracks_for_spanning_items", None),
+    ),
+    "maximize_tracks_using_available_size": (("maximize_grid_tracks", None),),
+    "maximize_tracks": (("maximize_grid_tracks", None),),
+    "expand_flexible_tracks": (("expand_flexible_grid_tracks", None),),
+    "stretch_auto_tracks": (("stretch_auto_grid_tracks", None),),
+    "place_grid_items": (("place_grid_items", None),),
+    "alignment_for_item": (
+        ("grid_inline_alignment", None),
+        ("grid_block_alignment", None),
+    ),
+    "collapse_auto_fit_tracks_if_needed": (("collapse_empty_auto_fit_tracks", None),),
+    "get_grid_area_rect": (
+        ("grid_track_range_size", None),
+        ("grid_track_offset", None),
+    ),
+    "run": (("run_grid_formatting_context", None),),
+    "resolve_abspos_containing_block_info": (("set_grid_abspos_containing_rect", None),),
+    "is_auto_positioned_track": (("grid_axis_is_auto", None),),
+    "get_nth_line_index_by_line_name": (("get_nth_grid_line_index", None),),
+    "init_grid_lines": (("grid_lines_for_definition", None),),
+    "containing_block_size_for_item": (("grid_track_range_size", None),),
+    "calculate_min_content_contribution": (("grid_intrinsic_outer_width_contribution", None),),
+    "calculate_max_content_contribution": (("grid_intrinsic_outer_width_contribution", None),),
+    "calculate_limited_min_content_contribution": (("grid_limited_content_contribution", None),),
+    "calculate_limited_max_content_contribution": (("grid_limited_content_contribution", None),),
+    "content_size_suggestion": (("grid_intrinsic_outer_width_contribution", None),),
+    "content_based_minimum_size": (("grid_content_based_minimum_from_outer_contribution", None),),
+    "calculate_minimum_contribution": (("grid_item_minimum_outer_inline_contribution", None),),
+    "calculate_static_position_rect": (("set_grid_abspos_containing_rect", None),),
+}
+for _method_name, _targets in _GRID_METHOD_MAPPINGS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[("GridFormattingContext", _method_name)] = _targets
+
+for _method_name in (
+    "place_item_with_row_and_column_position", "place_item_with_row_position",
+    "place_item_with_column_position", "place_item_with_no_declared_position",
+    "record_grid_placement", "initialize_gap_tracks", "initialize_track_sizes",
+    "run_track_sizing", "build_grid_areas", "determine_grid_container_height",
+    "resolve_grid_item_sizes", "resolve_track_spacing", "resolve_items_box_metrics",
+    "parent_context_did_dimension_child_root_box",
+    "determine_intrinsic_size_of_grid_container", "automatic_content_width",
+    "automatic_content_height", "get_free_space", "calculate_grid_container_maximum_size",
+    "calculate_min_content_size", "calculate_max_content_size", "specified_size_suggestion",
+    "transferred_size_suggestion", "automatic_minimum_size", "inhibits_floating",
+    "grid_container", "has_gaps", "for_each_spanned_track_by_item",
+    "has_flexible_tracks",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("GridFormattingContext", _method_name)] = (
+        ("run_grid_formatting_context", None),
+    )
+
+for _method_name in (
+    "span", "raw_position", "add_margin_box_sizes", "gap_adjusted_position",
+    "computed_values", "minimum_size", "maximum_size", "preferred_size",
+    "margin_start", "margin_end", "used_margin_box_start", "used_margin_box_end",
+    "used_margin_start", "used_margin_end", "available_space",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("GridItem", _method_name)] = (
+        ("run_grid_formatting_context", None),
+    )
+
+_OCCUPATION_GRID_METHOD_MAPPINGS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    "find_unoccupied_place": (("place_grid_items", None),),
+    "set_occupied": (("occupy_grid_area", None),),
+    "is_occupied": (("grid_area_is_free", None),),
+    "is_area_occupied": (("grid_area_is_free", None),),
+}
+for _method_name, _targets in _OCCUPATION_GRID_METHOD_MAPPINGS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[("OccupationGrid", _method_name)] = _targets
+for _method_name in (
+    "column_count", "row_count", "set_max_column_index", "min_column_index",
+    "max_column_index", "min_row_index", "max_row_index",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("OccupationGrid", _method_name)] = (
+        ("place_grid_items", None),
+    )
+
+for _method_name in ("create_from_definition", "create_auto", "create_gap"):
+    CONSOLIDATED_METHOD_MAPPINGS[("GridTrack", _method_name)] = (
+        ("grid_track_from_size", None),
+    )
+
+# TableFormattingContext is likewise represented by one pass over typed row,
+# column, placement, and intrinsic-measure arrays. Keep mappings on the exact
+# extracted algorithms where V has split out a step, and on the active runner
+# where the former method is now a local phase.
+_TABLE_METHOD_MAPPINGS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    "table_wrapper_containing_block_width": (("compute_table_wrapper_content_width", None),),
+    "run_caption_layout": (("layout_table_captions", None),),
+    "compute_cell_measures": (("table_cell_intrinsic_width_measures", None),),
+    "compute_outer_content_sizes": (("table_cell_measurement_inline_edges", None),),
+    "compute_intrinsic_percentage": (("compute_table_column_intrinsic_percentages", None),),
+    "compute_table_measures": (("compute_spanning_table_column_measures", None),),
+    "compute_capmin": (("calculate_table_grid_intrinsic_widths", None),),
+    "compute_table_width": (("compute_table_wrapper_content_width", None),),
+    "compute_columns_total_used_width": (("table_columns_total_width", None),),
+    "assign_columns_width_linear_combination": (
+        ("assign_table_column_widths_linear_combination", None),
+    ),
+    "distribute_excess_width_proportionally_to_base_width": (
+        ("distribute_table_excess_width_proportionally", None),
+    ),
+    "distribute_excess_width_equally": (("distribute_table_excess_width_equally", None),),
+    "distribute_excess_width_by_intrinsic_percentage": (
+        ("distribute_table_excess_width_by_percentage", None),
+    ),
+    "distribute_width_to_columns": (("distribute_table_width_to_columns", None),),
+    "distribute_excess_width_to_columns": (("distribute_table_width_to_columns", None),),
+    "distribute_excess_width_to_columns_fixed_mode": (
+        ("distribute_table_width_to_columns", None),
+    ),
+    "compute_row_content_height": (("compute_table_row_intrinsic_measures", None),),
+    "use_fixed_mode_layout": (("table_uses_fixed_mode_layout", None),),
+    "border_is_less_specific": (("table_border_is_less_specific", None),),
+    "winning_conflicting_edge": (("winning_table_border", None),),
+    "border_conflict_resolution": (("resolve_collapsed_table_borders", None),),
+    "run_until_width_calculation": (("calculate_table_grid_intrinsic_widths", None),),
+    "run": (("run_table_formatting_context", None),),
+    "initialize_intrinsic_percentages_from_cells": (
+        ("compute_table_column_intrinsic_percentages", None),
+    ),
+    "table_rows_or_columns": (
+        ("collect_typed_table_rows", None),
+        ("collect_typed_table_columns", None),
+    ),
+}
+for _method_name, _targets in _TABLE_METHOD_MAPPINGS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[("TableFormattingContext", _method_name)] = _targets
+
+for _method_name in (
+    "table_wrapper_containing_block_height", "compute_constrainedness",
+    "commit_candidate_column_widths", "compute_table_height", "distribute_height_to_rows",
+    "position_row_boxes", "position_cell_boxes", "border_data_conflicting_edge",
+    "border_data_with_element_kind_from_conflicting_edge", "finish_grid_initialization",
+    "parent_context_did_dimension_child_root_box", "automatic_content_width",
+    "automatic_content_height", "border_spacing_horizontal", "border_spacing_vertical",
+    "calculate_static_position_rect",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("TableFormattingContext", _method_name)] = (
+        ("run_table_formatting_context", None),
+    )
+
+for _method_name in (
+    "collect_conflicting_col_elements", "collect_conflicting_row_group_elements",
+    "collect_cell_conflicting_edges", "collect_row_conflicting_edges",
+    "collect_row_group_conflicting_edges", "collect_column_group_conflicting_edges",
+    "collect_table_box_conflicting_edges", "conflicting_edges",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("BorderConflictFinder", _method_name)] = (
+        ("resolved_collapsed_table_cell_border", None),
+    )
+
+for _method_name in (
+    "column_count", "occupancy_grid", "is_table_row_group", "is_table_row",
+    "is_table_column_group", "for_each_child_box_matching",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("TableGrid", _method_name)] = (
+        ("calculate_table_cell_placements", None),
+    )
+
+# The base FormattingContext's dispatch and sizing algorithms are split by
+# concern in V: generic child dispatch, intrinsic sizing, replaced sizing, and
+# absolute positioning. Record those active owners without recreating a class
+# whose only job would be forwarding to the same functions.
+_FORMATTING_CONTEXT_METHOD_MAPPINGS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    "creates_block_formatting_context": (("creates_block_formatting_context", None),),
+    "formatting_context_type_created_by_box": (
+        ("layout_inside_independent_formatting_context_with_mode", None),
+    ),
+    "create_independent_formatting_context_if_needed": (
+        ("layout_inside_independent_formatting_context_with_mode", None),
+    ),
+    "create_independent_formatting_context": (
+        ("layout_inside_independent_formatting_context_with_mode", None),
+    ),
+    "layout_inside": (("layout_inside_independent_formatting_context_with_mode", None),),
+    "greatest_child_width": (("calculate_max_content_width", None),),
+    "calculate_shrink_to_fit_widths": (("calculate_fit_content_width", None),),
+    "solve_replaced_size_constraint": (("solve_replaced_size_constraint", None),),
+    "compute_auto_height_for_absolutely_positioned_element": (
+        ("layout_absolutely_positioned_box", None),
+    ),
+    "compute_auto_height_for_block_formatting_context_root": (
+        ("compute_auto_height_for_block_level_element", "BlockFormattingContext"),
+    ),
+    "compute_table_box_width_inside_table_wrapper": (
+        ("compute_table_wrapper_content_width", None),
+    ),
+    "compute_table_box_height_inside_table_wrapper": (
+        ("run_table_formatting_context", None),
+    ),
+    "tentative_width_for_replaced_element": (("compute_replaced_size", None),),
+    "compute_width_for_absolutely_positioned_element": (
+        ("layout_absolutely_positioned_box", None),
+    ),
+    "compute_height_for_absolutely_positioned_element": (
+        ("layout_absolutely_positioned_box", None),
+    ),
+    "compute_width_for_replaced_element": (("compute_replaced_size", None),),
+    "tentative_height_for_replaced_element": (("compute_replaced_size", None),),
+    "compute_height_for_replaced_element": (("compute_replaced_size", None),),
+    "compute_width_for_absolutely_positioned_non_replaced_element": (
+        ("layout_absolutely_positioned_box", None),
+    ),
+    "compute_width_for_absolutely_positioned_replaced_element": (
+        ("layout_absolutely_positioned_box", None),
+    ),
+    "compute_height_for_absolutely_positioned_non_replaced_element": (
+        ("layout_absolutely_positioned_box", None),
+    ),
+    "resolve_abspos_containing_block_info": (
+        ("compute_inline_containing_block_rect", None),
+    ),
+    "layout_absolutely_positioned_children": (
+        ("layout_absolutely_positioned_descendants", None),
+    ),
+    "layout_absolutely_positioned_element": (("layout_absolutely_positioned_box", None),),
+    "compute_height_for_absolutely_positioned_replaced_element": (
+        ("layout_absolutely_positioned_box", None),
+    ),
+    "compute_inset": (("resolved_inset", None),),
+    "calculate_fit_content_width": (("calculate_fit_content_width", None),),
+    "calculate_fit_content_height": (("calculate_fit_content_height", None),),
+    "calculate_min_content_width": (("calculate_min_content_width", None),),
+    "calculate_max_content_width": (("calculate_max_content_width", None),),
+    "calculate_min_content_height": (("calculate_min_content_height", None),),
+    "calculate_max_content_height": (("calculate_max_content_height", None),),
+    "calculate_inner_width": (("resolve_layout_content_size", None),),
+    "calculate_inner_height": (("resolve_layout_content_size", None),),
+    "containing_block_width_for": (("resolve_layout_content_size", None),),
+    "calculate_stretch_fit_width": (("calculate_stretch_fit_width", None),),
+    "calculate_stretch_fit_height": (("calculate_stretch_fit_height", None),),
+    "should_treat_width_as_auto": (("should_treat_width_as_auto", None),),
+    "should_treat_height_as_auto": (("should_treat_height_as_auto", None),),
+    "can_skip_is_anonymous_text_run": (("can_skip_anonymous_text_run", None),),
+    "absolute_content_rect": (("paint_cumulative_offset", None),),
+    "box_child_to_derive_baseline_from": (("layout_box_child_to_derive_baseline_from", None),),
+    "box_baseline": (("layout_box_baseline", None),),
+    "content_box_rect": (("paint_cumulative_offset", None),),
+    "content_box_rect_in_ancestor_coordinate_space": (("paint_cumulative_offset", None),),
+    "margin_box_rect_in_ancestor_coordinate_space": (("paint_cumulative_offset", None),),
+    "box_is_sized_as_replaced_element": (("box_is_sized_as_replaced_element", None),),
+    "should_treat_max_width_as_none": (("should_treat_max_width_as_none", None),),
+    "should_treat_max_height_as_none": (("should_treat_replaced_max_as_none", None),),
+}
+for _method_name, _targets in _FORMATTING_CONTEXT_METHOD_MAPPINGS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[("FormattingContext", _method_name)] = _targets
+
+for _method_name in (
+    "context_box", "parent", "type", "inhibits_floating",
+    "parent_context_did_dimension_child_root_box",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("FormattingContext", _method_name)] = (
+        ("layout_inside_independent_formatting_context_with_mode", None),
+    )
+
+# BlockFormattingContext keeps its persistent float/margin state in a compact
+# record while width, child-flow, and multicol steps are ordinary functions.
+_BLOCK_FORMATTING_METHOD_MAPPINGS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    "run": (("layout_block_flow", None),),
+    "box_should_avoid_floats_because_it_establishes_fc": (("box_should_avoid_floats", None),),
+    "compute_width": (("compute_block_used_width_for_node", None),),
+    "avoid_float_intrusions": (("place_box_avoiding_float_intrusions", "BlockFormattingContext"),),
+    "compute_width_for_floating_box": (("layout_floating_box", "BlockFormattingContext"),),
+    "compute_width_for_block_level_replaced_element_in_normal_flow": (
+        ("compute_size_for_block_level_replaced_element_in_normal_flow", None),
+    ),
+    "resolve_used_height_if_not_treated_as_auto": (("resolve_content_height_for_node", None),),
+    "resolve_used_height_if_treated_as_auto": (
+        ("compute_auto_height_for_block_level_element", "BlockFormattingContext"),
+    ),
+    "layout_inline_children": (("run_inline_formatting_context_with_floats", "BlockFormattingContext"),),
+    "layout_fieldset_with_rendered_legend": (("run_fieldset_formatting_context", None),),
+    "resolve_vertical_box_model_metrics": (("resolve_box_model_edges", None),),
+    "resolve_horizontal_box_model_metrics": (("resolve_box_model_edges", None),),
+    "place_block_level_element_in_normal_flow_vertically": (
+        ("place_block_level_element_in_normal_flow_vertically", None),
+    ),
+    "place_block_level_element_in_normal_flow_horizontally": (
+        ("place_block_level_element_in_normal_flow_horizontally", None),
+    ),
+    "layout_viewport": (("layout_viewport", None),),
+    "layout_list_item_marker": (("layout_list_item_marker", None),),
+    "space_used_and_containing_margin_for_floats": (
+        ("float_boundaries_at", "BlockFormattingContext"),
+    ),
+    "intrusion_by_floats_into_box": (("float_boundaries_at", "BlockFormattingContext"),),
+    "determine_used_value_for_column_count": (("determine_used_multicol_column_count", None),),
+    "determine_used_value_for_column_width": (("determine_used_multicol_column_width", None),),
+    "get_column_width_used_value_for_multicol": (("determine_used_multicol_column_width", None),),
+    "get_column_gap_used_value_for_multicol": (("multicol_column_gap", None),),
+}
+for _method_name, _targets in _BLOCK_FORMATTING_METHOD_MAPPINGS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[("BlockFormattingContext", _method_name)] = _targets
+
+for _method_name in (
+    "automatic_content_width", "automatic_content_height",
+    "parent_context_did_dimension_child_root_box", "clear_floating_boxes",
+    "ensure_sizes_correct_for_left_offset_calculation", "greatest_child_width",
+    "left_side_floats", "right_side_floats", "root", "for_each_floating_box",
+    "reset_margin_state", "last_inserted_float",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("BlockFormattingContext", _method_name)] = (
+        ("layout_block_flow", None),
+    )
+
+CONSOLIDATED_METHOD_MAPPINGS[("BlockMarginState", "register_block_container_y_position_update_callback")] = (
+    ("register_block_container_y_position_update", "BlockMarginState"),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("BlockMarginState", "unregister_block_container_y_position_update_callback")] = (
+    ("unregister_block_container_y_position_update", "BlockMarginState"),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("FloatSideData", "clear")] = (
+    ("layout_block_flow", None),
+)
+
+_INLINE_FORMATTING_METHOD_MAPPINGS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    "dimension_box_on_line": (("dimension_box_on_line", "InlineLevelIterator"),),
+    "apply_justification_to_fragments": (("apply_justification_to_line", None),),
+    "any_floats_intrude_at_block_offset": (("any_floats_intrude_at_block_offset", "LineBuilder"),),
+    "can_fit_new_line_at_block_offset": (("can_fit_new_line_at_block_offset", "LineBuilder"),),
+    "calculate_static_position_rect": (("calculate_inline_static_position_rect", None),),
+}
+for _method_name, _targets in _INLINE_FORMATTING_METHOD_MAPPINGS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[("InlineFormattingContext", _method_name)] = _targets
+for _method_name in (
+    "parent", "leftmost_inline_offset_at", "available_space_for_line",
+    "automatic_content_width", "automatic_content_height", "run", "generate_line_boxes",
+    "vertical_float_clearance", "set_vertical_float_clearance", "containing_block",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("InlineFormattingContext", _method_name)] = (
+        ("run_inline_formatting_context_internal", None),
+    )
+
+# TreeBuilder performs the same recursive construction without a mutable
+# parent stack: parent nodes are explicit parameters, then the inline/block,
+# button, pseudo-element, and CSS-table fixups run over the typed tree.
+_TREE_BUILDER_METHOD_MAPPINGS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    "insert_node_into_inline_or_block_ancestor": (
+        ("attach_children_maintaining_inline_invariant", None),
+    ),
+    "create_pseudo_element_if_needed": (("build_generated_pseudo_element", None),),
+    "restructure_block_node_in_inline_parent": (
+        ("attach_children_maintaining_inline_invariant", None),
+    ),
+    "wrap_in_button_layout_tree_if_needed": (("fixup_button_layout_tree", None),),
+    "build": (("build_layout_tree_from_computed_styles", None),),
+    "fixup_tables": (("fixup_table_tree", None),),
+    "remove_irrelevant_boxes": (("remove_irrelevant_table_children", None),),
+    "generate_missing_child_wrappers": (("generate_table_child_wrappers", None),),
+    "generate_missing_parents": (("generate_missing_table_parents", None),),
+    "missing_cells_fixup": (("fix_missing_cells_in_tables", None),),
+}
+for _method_name, _targets in _TREE_BUILDER_METHOD_MAPPINGS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[("TreeBuilder", _method_name)] = _targets
+for _method_name in (
+    "update_layout_tree", "update_layout_tree_before_children",
+    "update_layout_tree_after_children", "for_each_in_tree_with_internal_display",
+    "for_each_in_tree_with_inside_display", "push_parent", "pop_parent",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("TreeBuilder", _method_name)] = (
+        ("build_layout_tree_from_computed_styles", None),
+    )
+
+# Partial relayout copies retained UsedValues directly instead of reconstructing
+# them through a parallel PaintableBox object. Commit and paint-tree creation
+# are the final document-layout materialization stages.
+CONSOLIDATED_METHOD_MAPPINGS[("LayoutState", "populate_from_paintable")] = (
+    ("populate_node_from", "LayoutState"),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("UsedValues", "materialize_from_paintable")] = (
+    ("populate_node_from", "LayoutState"),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("LayoutState", "resolve_relative_positions")] = (
+    ("resolve_relative_insets", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("LayoutState", "commit")] = (
+    ("finish_document_layout", None),
+)
+
+for _method_name in (
+    "run", "automatic_content_width", "automatic_content_height",
+    "parent_context_did_dimension_child_root_box",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("ReplacedWithChildrenFormattingContext", _method_name)] = (
+        ("run_replaced_with_children_formatting_context", None),
+    )
+
+_SVG_FORMATTING_METHOD_MAPPINGS: dict[str, tuple[tuple[str, str | None], ...]] = {
+    "automatic_content_width": (("run", "SVGFormattingContext"),),
+    "automatic_content_height": (("run", "SVGFormattingContext"),),
+    "compute_path_for_text": (("layout_text_element", "SVGFormattingContext"),),
+    "compute_path_for_text_path": (("layout_text_path_element", "SVGFormattingContext"),),
+    "get_parent_svg_transform": (("parent_svg_transform", "SVGFormattingContext"),),
+}
+for _method_name, _targets in _SVG_FORMATTING_METHOD_MAPPINGS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[("SVGFormattingContext", _method_name)] = _targets
+
+CONSOLIDATED_METHOD_MAPPINGS[("GridItem", "gap_adjusted_row")] = (
+    ("grid_track_offset", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("GridItem", "gap_adjusted_column")] = (
+    ("grid_track_offset", None),
+)
+
+CONSOLIDATED_METHOD_MAPPINGS[("TableFormattingContext", "table_box")] = (
+    ("run_table_formatting_context", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("TableFormattingContext", "table_wrapper")] = (
+    ("compute_table_wrapper_content_width", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("TableGrid", "calculate_row_column_grid")] = (
+    ("calculate_table_cell_placements", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("BorderConflictFinder", "get_col_element")] = (
+    ("resolved_collapsed_table_cell_border", None),
+)
+
 # Inline C++ accessors whose state is deliberately exposed as a typed public V
 # record field. These mappings are accepted only while the named owner/field
 # exists, just as function mappings fail open when their implementation moves.
@@ -935,6 +1473,53 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    ("LayoutState.cpp", "build_paint_tree"): ("block_box_from_typed_layout",),
+    ("SVGFormattingContext.cpp", "is_container_element"): ("layout_container_element",),
+    ("GridFormattingContext.cpp", "gap_to_px"): ("resolve_layout_gap",),
+    ("GridFormattingContext.cpp", "to_alignment"): (
+        "grid_inline_alignment",
+        "grid_block_alignment",
+    ),
+    ("TableFormattingContext.cpp", "width_is_auto_or_indefinite_percentage"): (
+        "calculate_table_grid_intrinsic_widths",
+    ),
+    ("TableFormattingContext.cpp", "compute_columns_total_candidate_width"): (
+        "table_columns_total_width",
+    ),
+    ("FlexFormattingContext.cpp", "gap_to_px"): (
+        "flex_formatting_context_main_gap",
+        "flex_formatting_context_cross_gap",
+    ),
+    # TreeBuilder's file-local predicates and sequence wrapper were retained in
+    # the recursive builder/table-fixup split under unambiguous table-prefixed
+    # names.
+    ("TreeBuilder.cpp", "has_inline_or_in_flow_block_children"): (
+        "attach_children_maintaining_inline_invariant",
+    ),
+    ("TreeBuilder.cpp", "has_in_flow_block_children"): (
+        "attach_children_maintaining_inline_invariant",
+    ),
+    ("TreeBuilder.cpp", "insertion_parent_for_inline_node"): (
+        "attach_children_maintaining_inline_invariant",
+    ),
+    ("TreeBuilder.cpp", "insertion_parent_for_block_node"): (
+        "attach_children_maintaining_inline_invariant",
+    ),
+    ("TreeBuilder.cpp", "is_ignorable_whitespace"): ("ignorable_table_whitespace",),
+    ("TreeBuilder.cpp", "is_table_track"): ("proper_table_child",),
+    ("TreeBuilder.cpp", "is_table_track_group"): ("table_track_group",),
+    ("TreeBuilder.cpp", "is_proper_table_child"): ("proper_table_child",),
+    ("TreeBuilder.cpp", "is_not_proper_table_child"): ("table_not_proper_child",),
+    ("TreeBuilder.cpp", "is_not_table_row"): ("table_not_row",),
+    ("TreeBuilder.cpp", "is_not_table_cell"): ("table_not_cell",),
+    ("TreeBuilder.cpp", "is_table_row_group_column_group_or_caption"): (
+        "generate_missing_table_parents",
+    ),
+    ("TreeBuilder.cpp", "for_each_sequence_of_consecutive_children_matching"): (
+        "wrap_table_child_sequences",
+    ),
+    ("TreeBuilder.cpp", "wrap_in_anonymous"): ("anonymous_table_box",),
+    ("TreeBuilder.cpp", "fixup_row"): ("append_missing_table_cells",),
     # Shadow placement is folded into the live CSS-to-painting transport
     # conversion rather than exposed as a one-line enum helper.
     ("ShadowData.h", "shadow_placement_from_css"): (
