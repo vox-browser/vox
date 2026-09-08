@@ -1430,6 +1430,7 @@ fn test_basic_shape_interpolation_and_composition() {
 
 	assert interpolate_test_property(element, .clip_path, 'circle(10px at 20% 30%)', 'circle(30px at 40% 50%)', 0.5) == 'circle(20px at 30% 40%)'
 	assert interpolate_test_property(element, .clip_path, 'circle(10px)', 'circle(30px at 70% 90%)', 0.5) == 'circle(20px at 60% 70%)'
+	assert interpolate_test_property(element, .clip_path, 'circle(10px)', 'circle(20px)', -2) == 'circle(0px)'
 	assert interpolate_test_property(element, .clip_path, 'ellipse(10px 20px at 10% 20%)', 'ellipse(30px 40px at 30% 60%)', 0.5) == 'ellipse(20px 30px at 20% 40%)'
 	assert interpolate_test_property(element, .clip_path, 'polygon(evenodd, 0% 0%, 100% 0%, 100% 100%)', 'polygon(evenodd, 20% 40%, 80% 20%, 60% 80%)', 0.5) == 'polygon(evenodd, 10% 20%, 90% 10%, 80% 90%)'
 	mixed := interpolate_test_property(element, .clip_path, 'circle(10px)', 'circle(30%)', 0.5)

@@ -6181,8 +6181,10 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		BasicShapeStyleValue {
 			if to is BasicShapeStyleValue {
-				mut basic_shape_context := InterpolationCalculationContext.for_property(calculation_context.property)
-				basic_shape_context.percentages_resolve_as = ValueType.length
+				basic_shape_context := InterpolationCalculationContext{
+					property: calculation_context.property
+					percentages_resolve_as: ValueType.length
+				}
 				from_basic_shape := from as BasicShapeStyleValue
 				to_basic_shape := to as BasicShapeStyleValue
 				from_shape := from_basic_shape.basic_shape()
@@ -6276,7 +6278,10 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		BorderRadiusRectStyleValue {
 			if to is BorderRadiusRectStyleValue {
-				mut border_radius_rect_context := calculation_context
+				mut border_radius_rect_context := InterpolationCalculationContext{
+					property: calculation_context.property
+					percentages_resolve_as: ValueType.length
+				}
 				border_radius_rect_context.accepted_type_ranges[.length] = AcceptedTypeRange{
 					min: 0
 					max: math.max_f64
@@ -6404,6 +6409,14 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		RadialSizeStyleValue {
 			if to is RadialSizeStyleValue {
+				mut radial_size_context := InterpolationCalculationContext{
+					property: calculation_context.property
+					percentages_resolve_as: ValueType.length
+				}
+				radial_size_context.accepted_type_ranges[.length] = AcceptedTypeRange{
+					min: 0
+					max: math.max_f64
+				}
 				from_components := from.components()
 				to_components := to.components()
 				for component in from_components {
@@ -6424,8 +6437,8 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 					from_x
 				}
 				to_y := if to_components.len > 1 { to_components[1] as StyleValue } else { to_x }
-				x := interpolate_style_value_impl(calculation_context, from_x, to_x, delta, allow_discrete) or { return none }
-				y := interpolate_style_value_impl(calculation_context, from_y, to_y, delta, allow_discrete) or { return none }
+				x := interpolate_style_value(radial_size_context, from_x, to_x, delta, allow_discrete) or { return none }
+				y := interpolate_style_value(radial_size_context, from_y, to_y, delta, allow_discrete) or { return none }
 				if from_components.len == 1 && to_components.len == 1 {
 					StyleValue(RadialSizeStyleValue.create([
 						RadialSizeStyleValueComponent(x),
