@@ -1409,6 +1409,15 @@ fn test_custom_property_interpolation_matches_css_animation_rules() {
 	assert interpolate_test_property(element, .translate, 'none', '20px 40px', 0.5) == '10px 20px'
 	assert interpolate_test_property(element, .rotate, 'none', '90deg', 0.5) == '45deg'
 	assert interpolate_test_property(element, .font_style, 'normal', 'oblique 20deg', 0.5) == 'oblique 10deg'
+	italic_font_style := dom_style_value_from_value_logic(parse_css_value_logic(.font_style, 'italic') or { panic('could not parse italic font style') })
+	angled_oblique_font_style := dom_style_value_from_value_logic(parse_css_value_logic(.font_style, 'oblique 20deg') or { panic('could not parse angled oblique font style') })
+	assert (interpolate_property(element, .font_style, italic_font_style, angled_oblique_font_style, 0.25, .yes) or {
+		panic('could not discretely interpolate italic font style')
+	}).css_text == 'italic'
+	assert (interpolate_property(element, .font_style, italic_font_style, angled_oblique_font_style, 0.75, .yes) or {
+		panic('could not discretely interpolate oblique font style')
+	}).css_text == 'oblique'
+	assert interpolate_property(element, .font_style, italic_font_style, angled_oblique_font_style, 0.75, .no) == none
 	assert interpolate_test_property(element, .font_variation_settings, '"wght" 100', '"wght" 900', 0.5) == '"wght" 500'
 	assert interpolate_test_property(element, .filter, 'none', 'blur(10px)', 0.5) == 'blur(5px)'
 	assert interpolate_test_property(element, .filter, 'blur(6px)', 'blur(10px)', -2) == 'blur(0px)'

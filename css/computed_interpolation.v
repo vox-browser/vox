@@ -6318,21 +6318,26 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		FontStyleStyleValue {
 			if to is FontStyleStyleValue {
-				if from.font_style() != to.font_style() {
-					return interpolate_discrete_style_value(from, to, delta, allow_discrete)
+				font_style := if from.font_style() == to.font_style() {
+					from.font_style()
+				} else {
+					if allow_discrete == .no {
+						return none
+					}
+					if delta >= 0.5 { to.font_style() } else { from.font_style() }
 				}
 				from_angle := from.angle()
 				to_angle := to.angle()
 				if from_angle != none && to_angle != none {
-					mut angle_context := calculation_context
+					mut angle_context := InterpolationCalculationContext{}
 					angle_context.accepted_type_ranges[.angle] = AcceptedTypeRange{
 						min: -90
 						max: 90
 					}
 					angle := interpolate_style_value_impl(angle_context, from_angle, to_angle, delta, allow_discrete) or { return none }
-					StyleValue(FontStyleStyleValue.create(from.font_style(), angle))
+					StyleValue(FontStyleStyleValue.create(font_style, angle))
 				} else {
-					StyleValue(FontStyleStyleValue.create(from.font_style(), none))
+					StyleValue(FontStyleStyleValue.create(font_style, none))
 				}
 			} else {
 				none
