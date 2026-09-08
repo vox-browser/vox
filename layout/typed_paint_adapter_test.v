@@ -123,6 +123,24 @@ fn test_typed_paint_adapter_uses_computed_enums_and_lengths() {
 	assert computed_font_is_monospace(computed)
 }
 
+fn test_typed_paint_adapter_treats_grid_item_with_z_index_as_positioned() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #grid { display: grid } #item { z-index: 7 } #ordinary { z-index: 9 }</style><body><div id="grid"><div id="item"></div></div><div id="ordinary"></div></body>')
+	root := layout_document_typed_in_viewport(document, 200, 120)
+	item := document.get_element_by_id('item') or { panic('missing grid item') }
+	item_box := root.find_box(i64(item.as_node().unique_id())) or { panic('missing grid item box') }
+	assert item_box.positioned
+	assert item_box.z_index == 7
+	assert !item_box.z_index_auto
+
+	ordinary := document.get_element_by_id('ordinary') or { panic('missing ordinary box') }
+	ordinary_box := root.find_box(i64(ordinary.as_node().unique_id())) or {
+		panic('missing ordinary paint box')
+	}
+	assert !ordinary_box.positioned
+	assert ordinary_box.z_index == 0
+	assert ordinary_box.z_index_auto
+}
+
 fn test_css_filter_resolver_uses_retained_computed_operations() {
 	computed := computed_paint_test_style('color: rgb(9 10 11); filter: blur(3px) drop-shadow(2px -1px 4px currentColor) contrast(150%) hue-rotate(.25turn)')
 	values := css.resolve_computed_values(computed)

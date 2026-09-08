@@ -2581,6 +2581,14 @@ fn svg_url_mask_for_box(node &Node, state &LayoutState,
 // StackingContext composes transforms while descending the paintable tree.
 // Carry the accumulated matrix through construction too, instead of copying a
 // complete child subtree once for every transformed ancestor.
+//
+// Paintable's cached positioned bit has one painting-specific exception to
+// Layout::Node::is_positioned(): a grid item with a non-auto z-index behaves as
+// positioned for stacking even when its computed position remains static.
+fn paintable_is_positioned(node &Node, computed &css.ComputedValues) bool {
+	return node.is_positioned() || (node.is_grid_item() && computed.z_index() != none)
+}
+
 fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, ancestor_paint_transform [6]f64) BlockBox {
 	styled := node.as_node_with_style() or { return BlockBox{} }
 	used := state.try_get(styled) or { return BlockBox{} }
@@ -2656,7 +2664,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut svg_stroke_opacity := 1.0
 	mut z_index := 0
 	mut z_index_auto := true
-	positioned := node.is_positioned()
+	positioned := paintable_is_positioned(node, computed)
 	floating := node.is_floating()
 	inline_or_replaced := node.is_inline() || node.is_replaced_box()
 	mut stacking_context := node.establishes_stacking_context()
@@ -2706,7 +2714,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		}
 		background_gradient = computed_background_gradient(computed, used.border_box_width().to_double(), used.border_box_height().to_double(), color_context)
 		background_images = computed_background_image_layers(styled_element, computed, color_context)
-		if node.is_positioned() {
+		if positioned {
 			if computed_z_index := computed.z_index() {
 				z_index = computed_z_index
 				z_index_auto = false

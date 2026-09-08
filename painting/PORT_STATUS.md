@@ -3,10 +3,10 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Painting`
 
 Translation workspace: `~/code/libweb_v/painting`
-Audited: 2026-09-05
+Audited: 2026-09-08
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 230
+filename-level mappings. The current semantic audit nevertheless reports 146
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -25,8 +25,25 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 230 unmatched Painting
+  were removed; the audit currently reports 146 unmatched Painting
   implementations.
+
+- `PaintableBox`'s layout-owned geometry and metadata now audit against the
+  live `UsedValues` and `BlockBox` state rather than its former C++ accessor
+  shape. This covers box metrics, absolute coordinates, filters, grid tracks,
+  table-cell borders, scrollbars and scroll-frame ancestry, accumulated visual
+  contexts, stacking invalidation, outlines, overflow, and per-phase command
+  caching. Factories, default SVG mask/clip hooks, and the remaining large paint
+  and hit-test bodies deliberately remain unmatched.
+
+- Base `Paintable`, `PaintableWithLines`, and `ViewportPaintable` accessors and
+  workflows now point to the active typed-node, line transport, stacking plan,
+  display-list replay, and visual-context functions. Line fragments retain
+  decoration metrics, shadows, selection spans, cursor ordering, and their
+  per-line identity. Comparing the cached `Paintable::is_positioned` rule also
+  exposed and fixed a real paint-order gap: a static grid item with non-auto
+  `z-index` now carries its stack level, without making an ordinary static box
+  positioned.
 
 - The audit now records the reviewed value-model decompositions for
   `InputColors::get_shade()`, corner spread adjustment, and the fieldset
@@ -572,7 +589,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 230 unmatched implementations.
+Painting: 146 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

@@ -323,6 +323,108 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("SVGForeignObjectPaintable", "calculate_clip"): (
         ("svg_url_clip_path_for_box", None),
     ),
+    # Base Paintable accessors stay on the typed Layout node while V lowers
+    # that node directly into its renderer-independent paint transport. The
+    # debug description is likewise assembled from the retained paintable
+    # class and layout-node descriptions instead of a GC class instance.
+    ("Paintable", "debug_description"): (
+        ("layout_debug_paintable_class", None),
+        ("layout_debug_node_description", None),
+    ),
+    ("Paintable", "document"): (("document", "Node"),),
+    ("Paintable", "containing_block"): (("containing_block", "Node"),),
+    ("Paintable", "computed_values"): (("computed_values", "Node"),),
+    ("Paintable", "dom_node"): (("dom_node", "Node"),),
+    ("Paintable", "navigable"): (("navigable", "Node"),),
+    ("Paintable", "is_positioned"): (("paintable_is_positioned", None),),
+    ("Paintable", "is_fixed_position"): (("is_fixed_position", "Node"),),
+    ("Paintable", "is_sticky_position"): (("is_sticky_position", "Node"),),
+    ("Paintable", "is_floating"): (("is_floating", "Node"),),
+    ("Paintable", "is_inline"): (("is_inline", "Node"),),
+    ("Paintable", "display"): (("display", "Node"),),
+    ("Paintable", "selection_style"): (("selection_style", None),),
+    # PaintableWithLines' foreground phase is emitted from the flattened line
+    # transport: selection spans and shadows precede glyphs/decorations, then
+    # the cursor is appended, matching the C++ phase body.
+    ("PaintableWithLines", "paint"): (
+        ("text_fragment_commands", None),
+        ("paint_cursor", None),
+        ("collect_compatibility_node_as_stacking_context_steps", "BlockBox"),
+    ),
+    ("PaintableWithLines", "add_fragment"): (
+        ("text_lines_from_typed_layout", None),
+    ),
+    ("PaintableWithLines", "line_index"): (
+        ("layout_debug_inline_line_indices", None),
+    ),
+    # The viewport owns the retained stacking plan and display-list assembly in
+    # DocumentLayoutResult. Its scroll-frame pass is folded into accumulated
+    # visual-context assignment so both trees are rebuilt atomically.
+    ("ViewportPaintable", "build_stacking_context_tree"): (
+        ("viewport_build_stacking_context_tree", None),
+        ("compatibility_paint_plan", "BlockBox"),
+    ),
+    ("ViewportPaintable", "paint_all_phases"): (
+        ("viewport_record_display_list", None),
+        ("replay_cached_paint_commands_with_visual_context", None),
+    ),
+    ("ViewportPaintable", "assign_scroll_frames"): (
+        ("assign_compatibility_scroll_frames", None),
+        ("viewport_assign_accumulated_visual_contexts", None),
+    ),
+    # PaintableBox's layout-owned geometry remains in UsedValues until the
+    # active BlockBox transport is built. These are the same setters/getters,
+    # with size and point values decomposed into their two scalar operations.
+    ("PaintableBox", "layout_node_with_style_and_box_metrics"): (
+        ("as_node_with_style_and_box_model_metrics", "Node"),
+    ),
+    ("PaintableBox", "set_offset"): (
+        ("set_content_x", "UsedValues"),
+        ("set_content_y", "UsedValues"),
+    ),
+    ("PaintableBox", "content_size"): (("content_size", "UsedValues"),),
+    ("PaintableBox", "set_content_size"): (
+        ("set_content_width", "UsedValues"),
+        ("set_content_height", "UsedValues"),
+    ),
+    ("PaintableBox", "set_content_width"): (("set_content_width", "UsedValues"),),
+    ("PaintableBox", "set_content_height"): (("set_content_height", "UsedValues"),),
+    ("PaintableBox", "content_width"): (("content_width", "UsedValues"),),
+    ("PaintableBox", "content_height"): (("content_height", "UsedValues"),),
+    ("PaintableBox", "border_box_width"): (("border_box_width", "UsedValues"),),
+    ("PaintableBox", "border_box_height"): (("border_box_height", "UsedValues"),),
+    ("PaintableBox", "has_non_invertible_css_transform"): (
+        ("has_noninvertible_paint_transform", "BlockBox"),
+    ),
+    ("PaintableBox", "set_has_non_invertible_css_transform"): (
+        ("has_noninvertible_paint_transform", "BlockBox"),
+    ),
+    ("PaintableBox", "override_borders_data"): (
+        ("override_borders_data", "UsedValues"),
+    ),
+    ("PaintableBox", "table_cell_coordinates"): (
+        ("table_cell_coordinates", "UsedValues"),
+    ),
+    ("PaintableBox", "is_paintable_box"): (("is_paintable_box", "Paintable"),),
+    ("PaintableBox", "compute_absolute_rect"): (("absolute_rect", "PaintableBox"),),
+    ("PaintableBox", "remove_element_kind_from_borders_data"): (
+        ("remove_element_kind_from_borders_data", None),
+    ),
+    ("PaintableBox", "set_needs_repaint"): (("set_needs_repaint", "Paintable"),),
+    # Sticky insets are recomputed directly from retained computed style when
+    # assigning scroll frames; V does not maintain a second nullable copy.
+    ("PaintableBox", "sticky_insets"): (("compatibility_sticky_insets", None),),
+    ("PaintableBox", "set_sticky_insets"): (("compatibility_sticky_insets", None),),
+    # The enclosing frame is calculated, then stored as the parent of the new
+    # scroll frame instead of being duplicated on BlockBox.
+    ("PaintableBox", "set_enclosing_scroll_frame_index"): (
+        ("paintable_box_nearest_scroll_frame_index", None),
+        ("create_scroll_frame_for", "ScrollState"),
+    ),
+    ("PaintableBox", "enclosing_scroll_frame_index"): (
+        ("paintable_box_nearest_scroll_frame_index", None),
+        ("create_scroll_frame_for", "ScrollState"),
+    ),
     # Paint-server factory construction is folded into Layout's resource
     # resolution boundary, which returns the concrete Painting value record.
     ("SVGLinearGradientPaintStyle", "create"): (
@@ -708,6 +810,103 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
     ("ExternalContentSource", "current_bitmap"): (
         ("bitmap_id", "ExternalContentSource"),
     ),
+    # Paintable's visibility and stacking bits are retained on each BlockBox.
+    # The opaque layout handle replaces the GC reference and lets DOM repaint
+    # invalidation recover the exact typed Layout::Node.
+    ("Paintable", "is_visible"): (
+        ("visible", "BlockBox"),
+        ("opacity", "BlockBox"),
+    ),
+    ("Paintable", "has_stacking_context"): (("stacking_context", "BlockBox"),),
+    ("Paintable", "layout_node"): (("layout_handle", "BlockBox"),),
+    # The former flat fragment vector is grouped by line in the active paint
+    # transport. Both accessors expose that retained collection, and the type
+    # discriminator is stored beside it for cursor-phase dispatch.
+    ("PaintableWithLines", "fragments"): (("lines", "BlockBox"),),
+    ("PaintableWithLines", "is_paintable_with_lines"): (
+        ("paintable_with_lines", "BlockBox"),
+    ),
+    # PaintableBox's remaining value state is carried directly by the active
+    # BlockBox or by layout's UsedValues record. Mappings with several fields
+    # require every component of the former C++ aggregate to remain present.
+    ("PaintableBox", "box_model"): (
+        ("margin", "BlockBox"),
+        ("border", "BlockBox"),
+        ("padding", "BlockBox"),
+    ),
+    ("PaintableBox", "absolute_x"): (("x", "BlockBox"),),
+    ("PaintableBox", "absolute_y"): (("y", "BlockBox"),),
+    ("PaintableBox", "absolute_position"): (("x", "BlockBox"), ("y", "BlockBox")),
+    ("PaintableBox", "has_css_transform"): (("own_paint_transform", "BlockBox"),),
+    ("PaintableBox", "set_override_borders_data"): (
+        ("override_borders_data_", "UsedValues"),
+    ),
+    ("PaintableBox", "set_table_cell_coordinates"): (
+        ("table_cell_coordinates_", "UsedValues"),
+    ),
+    ("PaintableBox", "set_filter"): (("filter", "BlockBox"),),
+    ("PaintableBox", "filter"): (("filter", "BlockBox"),),
+    ("PaintableBox", "set_used_values_for_grid_template_columns"): (
+        ("used_grid_template_columns", "UsedValues"),
+    ),
+    ("PaintableBox", "used_values_for_grid_template_columns"): (
+        ("used_grid_template_columns", "UsedValues"),
+    ),
+    ("PaintableBox", "set_used_values_for_grid_template_rows"): (
+        ("used_grid_template_rows", "UsedValues"),
+    ),
+    ("PaintableBox", "used_values_for_grid_template_rows"): (
+        ("used_grid_template_rows", "UsedValues"),
+    ),
+    ("PaintableBox", "set_own_scroll_frame_index"): (
+        ("own_scroll_frame_index", "BlockBox"),
+    ),
+    ("PaintableBox", "own_scroll_frame_index"): (
+        ("own_scroll_frame_index", "BlockBox"),
+    ),
+    ("PaintableBox", "set_accumulated_visual_context"): (
+        ("accumulated_visual_context_index", "BlockBox"),
+    ),
+    ("PaintableBox", "accumulated_visual_context_index"): (
+        ("accumulated_visual_context_index", "BlockBox"),
+    ),
+    ("PaintableBox", "set_accumulated_visual_context_for_descendants"): (
+        ("accumulated_visual_context_for_descendants_idx", "BlockBox"),
+    ),
+    ("PaintableBox", "accumulated_visual_context_for_descendants_index"): (
+        ("accumulated_visual_context_for_descendants_idx", "BlockBox"),
+    ),
+    ("PaintableBox", "scrollbar"): (
+        ("horizontal_scrollbar", "BlockBox"),
+        ("vertical_scrollbar", "BlockBox"),
+    ),
+    ("PaintableBox", "ensure_scrollbar"): (
+        ("horizontal_scrollbar", "BlockBox"),
+        ("vertical_scrollbar", "BlockBox"),
+    ),
+    ("PaintableBox", "set_stacking_context"): (("stacking_context", "BlockBox"),),
+    ("PaintableBox", "invalidate_stacking_context"): (
+        ("stacking_context_tree_is_valid", "DocumentLayoutResult"),
+    ),
+    ("PaintableBox", "set_overflow_data"): (
+        ("scrollable_overflow_rect_", "UsedValues"),
+        ("has_scrollable_overflow_", "UsedValues"),
+    ),
+    ("PaintableBox", "outline_offset"): (("outline_offset", "BlockBox"),),
+    # Upstream caches a vector per box/phase. The active V bridge flattens those
+    # vectors into phase buckets plus per-entry validity bits on the layout
+    # result, retaining the same selective invalidation behavior.
+    ("PaintableBox", "has_cached_commands"): (
+        ("paint_phase_commands", "DocumentLayoutResult"),
+        ("paint_phase_entry_valid", "DocumentLayoutResult"),
+    ),
+    ("PaintableBox", "cached_commands"): (
+        ("paint_phase_commands", "DocumentLayoutResult"),
+    ),
+    ("PaintableBox", "set_cached_commands"): (
+        ("paint_phase_commands", "DocumentLayoutResult"),
+        ("paint_phase_entry_valid", "DocumentLayoutResult"),
+    ),
 }
 
 # Some V modules deliberately consolidate private C++ helpers into a shared
@@ -724,6 +923,20 @@ CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
     ("DisplayList.cpp", "command_bounding_rectangle"): ("command_bounding_rect",),
     ("Paintable.cpp", "normalize_border_radii_data"): (
         "paintable_box_border_radii_data",
+    ),
+    # Text decoration metrics and resolved shadows are attached while committed
+    # line fragments are lowered, before the foreground span painter consumes
+    # them. This is the same work as the former pre-paint mutation pass.
+    ("PaintableWithLines.cpp", "resolve_text_fragment_properties"): (
+        "computed_text_decoration_thickness",
+        "computed_text_shadows",
+        "text_lines_from_typed_layout",
+    ),
+    ("ViewportPaintable.cpp", "effective_css_clip_rect"): (
+        "paintable_box_get_clip_rect",
+    ),
+    ("ViewportPaintable.cpp", "compute_clip_data"): (
+        "compatibility_overflow_clip",
     ),
     ("TableBordersPainting.cpp", "collect_cell_boxes"): ("collect_table_cells",),
     ("BackgroundPainting.cpp", "resolve_background_layers"): (

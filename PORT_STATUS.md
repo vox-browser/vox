@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 36,633 | 13,087 | Present |
+| `Layout` | 50 | 19,592 | 36,643 | 13,105 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **315,568** | **56,661** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **315,578** | **56,679** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -128,19 +128,19 @@ explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14134
-  unmatched: 1522
+  unmatched: 1438
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 377
+  consolidated-name-match: 425
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
-  value-record-field-match: 46
+  value-record-field-match: 82
 unmatched implementations by module:
 
    697 CSS
    595 Layout
-   230 Painting
+   146 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -165,6 +165,16 @@ adoption callbacks, and live SVG `use` shadow trees. Consequently every
 remaining unmatched symbol is contained in the three large modules already
 under structural and differential audit; the count is not a claim that every
 one of those symbols lacks behavior.
+
+The Painting state pass then reduced that module from 230 to 146 unmatched
+implementations without adding class-shaped facades. It tied `PaintableBox`
+geometry, scroll/visual-context state, table metadata, and phase caches to the
+live `UsedValues`, `BlockBox`, and `DocumentLayoutResult` records; mapped the
+base `Paintable`, line-fragment, and viewport operations to their active
+lowering and replay functions; and fixed the one behavioral discrepancy found
+during comparison. Static grid items with a non-auto `z-index` are now treated
+as positioned by the paint transport, while ordinary static boxes remain in
+their normal paint group.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,
