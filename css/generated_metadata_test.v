@@ -1426,6 +1426,36 @@ fn test_custom_property_interpolation_matches_css_animation_rules() {
 	assert interpolate_test_property(element, .filter, 'drop-shadow(0px 0px red)', 'drop-shadow(10px 20px blue)', 0.5) == 'drop-shadow(rgb(128 0 128) 5px 10px)'
 }
 
+fn test_nested_style_value_interpolation_uses_component_fallback() {
+	doc := dom.Document.create(dom.url_about_blank())
+	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+
+	background_from := parse_css_value_logic(.background_size, '10px auto') or {
+		panic('could not parse initial background size')
+	}
+	background_to := parse_css_value_logic(.background_size, '20px 30px') or {
+		panic('could not parse final background size')
+	}
+	assert background_from is StyleValueList
+	assert background_to is StyleValueList
+	background := interpolate_style_value(InterpolationCalculationContext.for_property(.background_size), (background_from as StyleValueList).value_at(0, false), (background_to as StyleValueList).value_at(0, false), 0.75, .yes) or {
+		panic('could not interpolate background-size components')
+	}
+	assert background.serialize(.normal) == '17.5px 30px'
+
+	border_from := dom_style_value_from_value_logic(parse_css_value_logic(.border_image_slice, '10 20') or { panic('could not parse initial border image slice') })
+	border_to := dom_style_value_from_value_logic(parse_css_value_logic(.border_image_slice, '30% 40') or { panic('could not parse final border image slice') })
+	border := interpolate_property(element, .border_image_slice, border_from, border_to, 0.75, .yes) or { panic('could not interpolate border image slice components') }
+	assert border.css_text == '30% 35'
+
+	feature := composite_value(.font_feature_settings, &dom.StyleValue{
+		css_text: '"kern" 0'
+	}, &dom.StyleValue{
+		css_text: '"kern" 1'
+	}, .add) or { panic('could not compose OpenType feature values') }
+	assert feature.css_text == '"kern" 1'
+}
+
 fn test_basic_shape_interpolation_and_composition() {
 	doc := dom.Document.create(dom.url_about_blank())
 	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }

@@ -6158,8 +6158,8 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		BackgroundSizeStyleValue {
 			if to is BackgroundSizeStyleValue {
-				x := interpolate_style_value_impl(calculation_context, from.size_x(), to.size_x(), delta, allow_discrete) or { return none }
-				y := interpolate_style_value_impl(calculation_context, from.size_y(), to.size_y(), delta, allow_discrete) or { return none }
+				x := interpolate_style_value(calculation_context, from.size_x(), to.size_x(), delta, allow_discrete) or { return none }
+				y := interpolate_style_value(calculation_context, from.size_y(), to.size_y(), delta, allow_discrete) or { return none }
 				StyleValue(BackgroundSizeStyleValue.create(x, y))
 			} else {
 				none
@@ -6170,10 +6170,10 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				if from.fill() != to.fill() {
 					return none
 				}
-				top := interpolate_style_value_impl(calculation_context, from.top(), to.top(), delta, allow_discrete) or { return none }
-				right := interpolate_style_value_impl(calculation_context, from.right(), to.right(), delta, allow_discrete) or { return none }
-				bottom := interpolate_style_value_impl(calculation_context, from.bottom(), to.bottom(), delta, allow_discrete) or { return none }
-				left := interpolate_style_value_impl(calculation_context, from.left(), to.left(), delta, allow_discrete) or { return none }
+				top := interpolate_style_value(calculation_context, from.top(), to.top(), delta, allow_discrete) or { return none }
+				right := interpolate_style_value(calculation_context, from.right(), to.right(), delta, allow_discrete) or { return none }
+				bottom := interpolate_style_value(calculation_context, from.bottom(), to.bottom(), delta, allow_discrete) or { return none }
+				left := interpolate_style_value(calculation_context, from.left(), to.left(), delta, allow_discrete) or { return none }
 				StyleValue(BorderImageSliceStyleValue.create(top, right, bottom, left, from.fill()))
 			} else {
 				none
@@ -6385,7 +6385,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				if from.tag() != to.tag() {
 					return none
 				}
-				value := interpolate_style_value_impl(calculation_context, from.value(), to.value(), delta, allow_discrete) or { return none }
+				value := interpolate_style_value(calculation_context, from.value(), to.value(), delta, allow_discrete) or { return none }
 				StyleValue(OpenTypeTaggedStyleValue.create(.font_variation_settings, from.tag(), value))
 			} else {
 				none
@@ -6401,8 +6401,8 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		PositionStyleValue {
 			if to is PositionStyleValue {
-				x := interpolate_style_value_impl(calculation_context, StyleValue(from.edge_x()), StyleValue(to.edge_x()), delta, allow_discrete) or { return none }
-				y := interpolate_style_value_impl(calculation_context, StyleValue(from.edge_y()), StyleValue(to.edge_y()), delta, allow_discrete) or { return none }
+				x := interpolate_style_value(calculation_context, StyleValue(from.edge_x()), StyleValue(to.edge_x()), delta, allow_discrete) or { return none }
+				y := interpolate_style_value(calculation_context, StyleValue(from.edge_y()), StyleValue(to.edge_y()), delta, allow_discrete) or { return none }
 				if x is EdgeStyleValue && y is EdgeStyleValue {
 					StyleValue(PositionStyleValue.create(x, y))
 				} else {
@@ -8330,7 +8330,7 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 		OpenTypeTaggedStyleValue {
 			if animated is OpenTypeTaggedStyleValue && underlying.tag() == animated.tag() {
 				value := composite_style_value(property_id, underlying.value(), animated.value(), operation) or { return none }
-				StyleValue(OpenTypeTaggedStyleValue.create(underlying.mode_, underlying.tag(), value))
+				StyleValue(OpenTypeTaggedStyleValue.create(.font_variation_settings, underlying.tag(), value))
 			} else {
 				none
 			}
