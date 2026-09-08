@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/HTML`
 
 Translation workspace: `~/code/libweb_v/html`
-Audited: 2026-09-04
+Audited: 2026-09-08
 
 All 261 upstream HTML `.cpp` implementation units have a V implementation
 mapping. The audit deliberately ignores this status file when checking mappings,
@@ -34,16 +34,16 @@ itself.
 | `HTML/SyntaxHighlighter` | 1 | 206 | Complete |
 | **Total** | **261** | **73,434** | **Complete** |
 
-The translated module contains 147 implementation files (56,330 LOC) and 106
-test files (11,899 LOC), containing 538 V test functions. Several V files
+The translated module contains 147 implementation files (56,368 LOC) and 107
+test files (11,937 LOC), containing 545 V test functions. Several V files
 consolidate tightly coupled C++ classes, while parser and state-machine code is
 split by responsibility; file and test counts are therefore not expected to
 match one-to-one with the upstream layout.
 
-The symbol audit inventories 4,226 upstream implementations from both `.cpp`
+The symbol audit inventories 3,985 upstream implementations from both `.cpp`
 and inline header definitions. Its current result has zero unmatched entries:
-3,378 direct candidate matches, 53 reviewed consolidated matches, 319 GC or
-binding-runtime hooks, 403 language constructors/destructors, 62 namespace
+3,313 direct candidate matches, 53 reviewed consolidated matches, 317 GC or
+binding-runtime hooks, 229 language constructors/destructors, 62 namespace
 template specializations, nine language template traits, and two language
 operators. It also inventories 1,067 upstream HTML/WPT test inputs so changes to
 the upstream corpus remain visible even though those JavaScript/browser tests
@@ -56,11 +56,11 @@ HTML verification:
 ```text
 $ python3 tools/html_translation_audit.py
 upstream .cpp files: 261
-upstream methods: 4226
+upstream methods: 3985
 unmatched methods by class:
 
-$ /Users/alex/code/v/v_old -enable-globals test html
-Summary for all V _test.v files: 106 passed, 106 total.
+$ /Users/alex/code/v/v -enable-globals test html
+Summary for all V _test.v files: 107 passed, 107 total.
 ```
 
 Focused coverage includes the HTML tokenizer/tree builder, foreign and fragment
@@ -75,6 +75,12 @@ ResizeObserver fixed-point loop. It determines proximity for the filtered
 `content-visibility:auto` paintable cache, repeats after an initially relevant
 element, gathers and broadcasts resize observations until stable, then resumes
 pending transitions and intersection observations.
+
+Viewport resizing now crosses the active BackingStoreManager boundary. A
+resize restarts its single-shot shrink timer, allocates a DPR-scaled store with
+the source's temporary cushion, and publishes the new front/back IDs to the
+PageClient and rendering-thread queues. The timer callback later reallocates at
+the exact viewport size.
 
 Responsive image source selection now delegates `sizes` to CSS's translated
 component-value, media-condition, calculation, and viewport-length algorithms.

@@ -1,5 +1,15 @@
 module painting
 
+struct BackingStoreShrinkRecorder {
+mut:
+	calls int
+}
+
+fn record_backing_store_shrink(target voidptr) {
+	mut recorder := unsafe { &BackingStoreShrinkRecorder(target) }
+	recorder.calls++
+}
+
 fn append_scroll_frame_index(indices_pointer &[]int, index int) {
 	unsafe {
 		mut indices := *indices_pointer
@@ -155,6 +165,18 @@ fn test_resize_handle_and_backing_store_state_machines() {
 	assert manager.allocated_size == IntSize{700, 500}
 	assert manager.front_bitmap_id == 3
 	assert manager.back_bitmap_id == 4
+
+	mut recorder := &BackingStoreShrinkRecorder{}
+	mut timed_manager := BackingStoreManager.create(voidptr(recorder), record_backing_store_shrink)
+	assert timed_manager.resize_timer_interval() == 3000
+	assert !timed_manager.resize_timer_is_active()
+	timed_manager.restart_resize_timer()
+	assert timed_manager.resize_timer_is_active()
+	timed_manager.fire_resize_timer()
+	assert !timed_manager.resize_timer_is_active()
+	assert recorder.calls == 1
+	timed_manager.fire_resize_timer()
+	assert recorder.calls == 1
 }
 
 fn test_visual_context_tree_ancestry_transform_clip_and_empty_propagation() {

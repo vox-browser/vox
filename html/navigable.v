@@ -139,6 +139,11 @@ mut:
 	is_svg_page_                         bool
 }
 
+fn navigable_backing_store_shrink_callback(target voidptr) {
+	mut model := unsafe { &NavigableModel(target) }
+	model.resize_backing_stores_if_needed(false)
+}
+
 fn same_navigable_model(a &NavigableModel, b &NavigableModel) bool {
 	return voidptr(a) == voidptr(b)
 }
@@ -212,6 +217,7 @@ pub fn NavigableModel.create(host &dom.Navigable, context ?&BrowsingContextModel
 		event_handler_: &page.EventHandler{}
 		rendering_thread_: RenderingThread.create(navigable_noop_presentation_callback)
 	}
+	model.backing_store_manager_ = painting.BackingStoreManager.create(voidptr(model), navigable_backing_store_shrink_callback)
 	connect_navigable_model_to_host(model)
 	html_all_navigable_models << model
 	if value := context {
@@ -1415,6 +1421,34 @@ pub fn (model &NavigableModel) viewport_rect() css.CSSPixelRect {
 	return css.CSSPixelRect.new(rect.x, rect.y, rect.width, rect.height)
 }
 
+fn (mut model NavigableModel) resize_backing_stores_if_needed(resizing bool) bool {
+	viewport := model.viewport_size()
+	device_scale := if page_ := model.page() {
+		page_.device_pixels_per_css_pixel()
+	} else {
+		1.0
+	}
+	device_viewport := painting.IntSize{
+		width: int(viewport.width().to_double() * device_scale)
+		height: int(viewport.height().to_double() * device_scale)
+	}
+	mut manager := model.backing_store_manager_
+	if !manager.resize_if_needed(device_viewport, resizing, model.is_top_level_traversable(), model.is_svg_page_) {
+		return false
+	}
+	front_id := int(manager.front_bitmap_id)
+	back_id := int(manager.back_bitmap_id)
+	if page_ := model.page() {
+		page_.client_page_did_allocate_backing_stores(front_id, back_id)
+	}
+	model.rendering_thread_.update_backing_stores(&RenderingSurface{
+		id: front_id
+	}, &RenderingSurface{
+		id: back_id
+	}, front_id, back_id)
+	return true
+}
+
 fn (mut model NavigableModel) scroll_offset_did_change() {
 	if mut document := model.active_document() {
 		// DOM currently exposes dispatch rather than the pending-scroll-event
@@ -1453,9 +1487,13 @@ pub fn (mut model NavigableModel) set_viewport_size(size css.CSSPixelSize) {
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_viewport_rect(dom.Rect{old_rect.x, old_rect.y, width, height})
+	if !model.is_svg_page_ {
+		model.backing_store_manager_.restart_resize_timer()
+		model.resize_backing_stores_if_needed(true)
+		model.pending_set_browser_zoom_request_ = false
+	}
 	mutable_document.set_needs_repaint()
 	mutable_document.inform_all_viewport_clients_about_the_current_viewport_rect()
-	model.pending_set_browser_zoom_request_ = false
 	model.needs_repaint_ = true
 }
 

@@ -171,6 +171,18 @@ fn page_did_change_title_callback(target voidptr, title string) {
 	model.client_.page_did_change_title(title)
 }
 
+fn page_device_pixel_scale_callback(target voidptr) f64 {
+	model := unsafe { &Page(target) }
+	return model.device_scale
+}
+
+fn page_did_allocate_backing_stores_callback(target voidptr, front_id int, back_id int) {
+	mut model := unsafe { &Page(target) }
+	front_store := SharedBackingStore.create([])
+	back_store := SharedBackingStore.create([])
+	model.client_.page_did_allocate_backing_stores(i32(front_id), front_store, i32(back_id), back_store)
+}
+
 pub fn Page.create(device_scale f64) !&Page {
 	if device_scale <= 0 || math.is_nan(device_scale) || math.is_inf(device_scale, 0) {
 		return error('device pixel scale must be finite and positive')
@@ -183,6 +195,8 @@ pub fn Page.create(device_scale f64) !&Page {
 		did_create_document_callback: page_did_create_document_callback
 		did_update_resource_count_callback: page_did_update_resource_count_callback
 		did_change_title_callback: page_did_change_title_callback
+		device_pixel_scale_callback: page_device_pixel_scale_callback
+		did_allocate_backing_stores_callback: page_did_allocate_backing_stores_callback
 	}
 	return model
 }

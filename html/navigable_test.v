@@ -5,6 +5,8 @@ import css
 import dom
 import fetch
 import http
+import page
+import painting
 
 __global (
 	navigable_test_observer_completions = 0
@@ -248,6 +250,42 @@ fn test_navigable_sandbox_viewport_selection_observers_and_rendering() {
 	assert navigable_test_paints == 2
 	assert navigable_test_screenshots == 1
 	assert model.has_a_rendering_opportunity()
+}
+
+fn test_navigable_viewport_resize_grows_then_shrinks_device_backing_stores() {
+	mut document := dom.Document.create(dom.URL{'https://example.test/'})
+	document.set_origin(document.url.origin())
+	document.populate_with_html_head_and_body()!
+	page_model := page.Page.create(2.0)!
+	document.set_page(unsafe { &dom.Page(page_model) })
+	window := WindowModel.create_top_level(document, none, 'backing-store')!
+	mut model := unsafe { &NavigableModel(window.navigable_model()) }
+	document.set_viewport_rect(dom.Rect{0, 0, 320, 200})
+
+	model.set_viewport_size(css.CSSPixelSize.from_values(640, 480))
+	mut manager := model.backing_store_manager()
+	assert manager.allocated_size == painting.IntSize{1536, 1216}
+	assert manager.front_bitmap_id == 1
+	assert manager.back_bitmap_id == 2
+	assert manager.resize_timer_is_active()
+	assert manager.resize_timer_interval() == 3000
+	assert model.rendering_thread().pending_command_count() == 1
+	assert page_model.client().events.last().name == 'allocate-backing-stores'
+	assert page_model.client().events.last().text == '1:2'
+
+	manager.fire_resize_timer()
+	assert !manager.resize_timer_is_active()
+	assert manager.allocated_size == painting.IntSize{1280, 960}
+	assert manager.front_bitmap_id == 3
+	assert manager.back_bitmap_id == 4
+	assert model.rendering_thread().pending_command_count() == 2
+	assert page_model.client().events.last().text == '3:4'
+
+	// An unchanged viewport is the source's early-return path: it neither grows
+	// the stores nor restarts a timer that has already fired.
+	model.set_viewport_size(css.CSSPixelSize.from_values(640, 480))
+	assert !manager.resize_timer_is_active()
+	assert model.rendering_thread().pending_command_count() == 2
 }
 
 fn test_navigable_fetch_redirect_policy_and_url_history_algorithms() {

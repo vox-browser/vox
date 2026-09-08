@@ -2,6 +2,7 @@ module painting
 
 import css
 import math
+import platform
 
 pub struct StickyInsets {
 pub:
@@ -581,12 +582,66 @@ pub fn (mut handle ResizeHandle) handle_pointer_event(event_type string, button 
 	return .capture_input
 }
 
+pub type BackingStoreShrinkCallback = fn (voidptr)
+
+@[heap]
 pub struct BackingStoreManager {
 pub mut:
 	allocated_size  IntSize
 	front_bitmap_id u64
 	back_bitmap_id  u64
 	next_bitmap_id  u64 = 1
+mut:
+	backing_store_shrink_timer &platform.Timer = unsafe { nil }
+	shrink_callback_target     voidptr = unsafe { nil }
+	shrink_callback            BackingStoreShrinkCallback = unsafe { nil }
+	has_shrink_callback        bool
+}
+
+// Direct translation of BackingStoreManager's single-shot shrink timer. The
+// callback keeps Painting independent of HTML::Navigable while preserving the
+// source ownership: restarting and firing the timer remain manager operations.
+pub fn BackingStoreManager.create(callback_target voidptr,
+	callback BackingStoreShrinkCallback) &BackingStoreManager {
+	mut manager := &BackingStoreManager{
+		shrink_callback_target: callback_target
+		shrink_callback: callback
+		has_shrink_callback: true
+	}
+	manager_pointer := voidptr(manager)
+	manager.backing_store_shrink_timer = platform.Timer.create_single_shot(3000, fn [manager_pointer] () {
+		mut mutable_manager := unsafe { &BackingStoreManager(manager_pointer) }
+		if mutable_manager.has_shrink_callback {
+			mutable_manager.shrink_callback(mutable_manager.shrink_callback_target)
+		}
+	})
+	return manager
+}
+
+pub fn (mut manager BackingStoreManager) restart_resize_timer() {
+	if manager.backing_store_shrink_timer != unsafe { nil } {
+		manager.backing_store_shrink_timer.restart()
+	}
+}
+
+// Timer scheduling belongs to the host. This is its deterministic timeout edge
+// and is also used by tests in the same way as Platform::Timer::fire().
+pub fn (mut manager BackingStoreManager) fire_resize_timer() {
+	if manager.backing_store_shrink_timer != unsafe { nil } {
+		manager.backing_store_shrink_timer.fire()
+	}
+}
+
+pub fn (manager &BackingStoreManager) resize_timer_is_active() bool {
+	return manager.backing_store_shrink_timer != unsafe { nil }
+		&& manager.backing_store_shrink_timer.is_active()
+}
+
+pub fn (manager &BackingStoreManager) resize_timer_interval() int {
+	if manager.backing_store_shrink_timer == unsafe { nil } {
+		return 0
+	}
+	return manager.backing_store_shrink_timer.interval()
 }
 
 pub fn (mut manager BackingStoreManager) resize_if_needed(viewport IntSize, resizing bool,

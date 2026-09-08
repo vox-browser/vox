@@ -67,7 +67,7 @@ files.
 
 - Upstream inventory: **57 `.cpp` / 26,465 LOC**, **67 `.h` / 6,636 LOC**,
   **37 `.idl` / 1,076 LOC**; **34,177 LOC total**.
-- Physical V implementation assigned only here: **34,457 LOC** across 16
+- Physical V implementation assigned only here: **34,472 LOC** across 16
   implementation files. `upstream_node_entry_points.v`,
   `upstream_inline_entry_points.v`, and `upstream_algorithm_entry_points.v`
   cover the adjacent inline headers, mixins, and file-local algorithms that do
@@ -87,6 +87,9 @@ files.
   top-layer contents, and descendant view-transition captures in addition to
   viewport proximity. The viewport paintable bridge retains the post-layout
   cache consumed by HTML's rendering update.
+- The opaque Page boundary now supplies device-pixel scale and backing-store
+  allocation callbacks, allowing Navigable resizing to remain typed without a
+  DOM-to-Page module dependency.
 - The independent audit replaced EventTarget's unsafe memory-shape probing with
   an authoritative Node discriminator, tags every Node/Document allocation,
   and verifies generic EventTarget dispatch plus distinct Document identity.

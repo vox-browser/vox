@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-08
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 134
+filename-level mappings. The current semantic audit nevertheless reports 133
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 6,667 | 2,043 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 6,722 | 2,065 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 134 unmatched Painting
+  were removed; the audit currently reports 133 unmatched Painting
   implementations.
 
 - `PaintableBox`'s layout-owned geometry and metadata now audit against the
@@ -51,6 +51,13 @@ following behavioral mismatches and added focused regressions:
   relevant determination, avoiding a full paint-tree traversal per frame. The
   same fixed-point loop now delivers active ResizeObserver observations before
   transitions and intersection observations.
+
+- `BackingStoreManager::restart_resize_timer()` now owns the translated
+  three-second single-shot timer. `NavigableModel::set_viewport_size()` grows
+  stores with the source's 256-device-pixel resize cushion, then the timeout
+  shrinks them to the exact DPR-scaled viewport. Reallocation advances the
+  front/back bitmap IDs and hands both stores to PageClient and RenderingThread;
+  top-level and SVG guards match the upstream manager.
 
 - The audit now records the reviewed value-model decompositions for
   `InputColors::get_shade()`, corner spread adjustment, and the fieldset
@@ -618,7 +625,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 134 unmatched implementations.
+Painting: 133 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

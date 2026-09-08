@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Page`
 
 Translation workspace: `~/code/libweb_v/page`
-Audited: 2026-08-29
+Audited: 2026-09-08
 
 All seven upstream implementation units and their headers are represented. The
 translation keeps browser-process and painting integration behind typed records:
@@ -26,7 +26,7 @@ inventing a graphics stack or IPC runtime.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Page/` | 7 | 4,298 | 2,275 | 475 | Complete |
+| `Page/` | 7 | 4,298 | 2,289 | 475 | Complete |
 
 The symbol-level audit accounts for all 306 implementations: 285 direct V
 owner/name matches, 10 namespace template specializations, 5 GC/binding
@@ -47,6 +47,11 @@ style invalidation; multi-document find-in-page navigation with fragment-excludi
 document URL resets; fullscreen FIFO,
 UI handshakes, promise settlement and error checks; and move-only backing-store
 transfer.
+
+The DOM-facing Page bridge now exposes the configured device-pixel scale and
+forwards backing-store allocation IDs to PageClient. This lets the
+Navigable-to-Painting manager boundary preserve Retina sizing and allocation
+notification without coupling DOM to the concrete Page model.
 
 Native paint-tree traversal, DOM range mutation, PageClient IPC transport,
 platform cursor selection, SDL polling, and actual scrolling are host

@@ -46,7 +46,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `CookieStore` | 2 | 900 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 369 | 405 | 293 | Complete |
 | `Crypto` | 6 | 13,297 | 3,287 | 1,006 | Complete |
-| `DOM` | 57 | 26,465 | 36,826 | 2,250 | Complete |
+| `DOM` | 57 | 26,465 | 36,841 | 2,250 | Complete |
 | `DOMURL` | 4 | 1,016 | 754 | 336 | Complete |
 | `Editing` | 4 | 7,980 | 3,074 | 741 | Complete |
 | `Encoding` | 4 | 438 | 705 | 244 | Complete |
@@ -60,7 +60,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Gamepad` | 6 | 1,382 | 756 | 274 | Complete |
 | `Geolocation` | 4 | 511 | 416 | 176 | Complete |
 | `Geometry` | 8 | 2,157 | 2,062 | 1,008 | Complete |
-| `HTML` | 261 | 73,434 | 56,330 | 11,899 | Complete |
+| `HTML` | 261 | 73,434 | 56,368 | 11,937 | Complete |
 | `HighResolutionTime` | 2 | 521 | 435 | 195 | Complete |
 | `IndexedDB` | 18 | 6,449 | 4,364 | 682 | Complete |
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
@@ -75,8 +75,8 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `MixedContent` | 1 | 121 | 125 | 105 | Complete |
 | `NavigationTiming` | 3 | 104 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 249 | 290 | 68 | Complete |
-| `Page` | 7 | 4,298 | 2,275 | 475 | Complete |
-| `Painting` | 48 | 10,038 | 6,667 | 2,043 | Present |
+| `Page` | 7 | 4,298 | 2,289 | 475 | Complete |
+| `Painting` | 48 | 10,038 | 6,722 | 2,065 | Present |
 | `PerformanceTimeline` | 5 | 391 | 447 | 130 | Complete |
 | `PermissionsPolicy` | 1 | 98 | 86 | 21 | Complete |
 | `Platform` | 4 | 415 | 1,167 | 96 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **316,006** | **56,807** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **316,128** | **56,867** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -127,8 +127,8 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14138
-  unmatched: 1426
+  candidate-name-match: 14139
+  unmatched: 1425
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 433
@@ -140,7 +140,7 @@ unmatched implementations by module:
 
    697 CSS
    595 Layout
-   134 Painting
+   133 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -206,6 +206,14 @@ undetermined box is initially relevant; it also runs the translated
 ResizeObserver gather/broadcast loop to a fixed point. Relevance now includes
 focused and selected contents, top-layer descendants, and view-transition
 captures as well as viewport proximity.
+
+The backing-store lifecycle pass reduces Painting from 134 to 133. Navigable
+viewport changes now restart the source's three-second single-shot timer and
+grow device-pixel backing stores with a 256-pixel resize cushion. When the
+timer fires, the stores shrink to the exact viewport; each allocation publishes
+fresh bitmap IDs to PageClient and the rendering thread. The DOM/Page bridge
+supplies the actual device scale, and SVG or child navigables retain the source
+early-return behavior.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

@@ -2451,10 +2451,12 @@ mut:
 @[heap]
 pub struct Page {
 pub:
-	target                             voidptr = unsafe { nil }
-	did_create_document_callback       fn (voidptr, &Document) = unsafe { nil }
-	did_update_resource_count_callback fn (voidptr, int) = unsafe { nil }
-	did_change_title_callback          fn (voidptr, string) = unsafe { nil }
+	target                               voidptr = unsafe { nil }
+	did_create_document_callback         fn (voidptr, &Document) = unsafe { nil }
+	did_update_resource_count_callback   fn (voidptr, int) = unsafe { nil }
+	did_change_title_callback            fn (voidptr, string) = unsafe { nil }
+	device_pixel_scale_callback          fn (voidptr) f64 = unsafe { nil }
+	did_allocate_backing_stores_callback fn (voidptr, int, int) = unsafe { nil }
 mut:
 	last_changed_title_ string
 	title_change_count_ int
@@ -11184,6 +11186,19 @@ pub fn (mut p Page) client_page_did_change_title(title string) {
 	p.title_change_count_++
 	if p.target != unsafe { nil } && p.did_change_title_callback != unsafe { nil } {
 		p.did_change_title_callback(p.target, title)
+	}
+}
+
+pub fn (p &Page) device_pixels_per_css_pixel() f64 {
+	if p.target != unsafe { nil } && p.device_pixel_scale_callback != unsafe { nil } {
+		return p.device_pixel_scale_callback(p.target)
+	}
+	return 1.0
+}
+
+pub fn (p &Page) client_page_did_allocate_backing_stores(front_id int, back_id int) {
+	if p.target != unsafe { nil } && p.did_allocate_backing_stores_callback != unsafe { nil } {
+		p.did_allocate_backing_stores_callback(p.target, front_id, back_id)
 	}
 }
 
