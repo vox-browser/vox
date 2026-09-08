@@ -7828,6 +7828,14 @@ fn filter_style_value_saturating_channel_add(a u8, b u8) u8 {
 	return u8(sum)
 }
 
+fn filter_style_value_accumulate_colors(underlying ?StyleValue, animated ?StyleValue) ?StyleValue {
+	underlying_value := underlying or { return animated }
+	animated_value := animated or { return animated }
+	underlying_color := underlying_value.to_color(ColorResolutionContext{}) or { return animated }
+	animated_color := animated_value.to_color(ColorResolutionContext{}) or { return animated }
+	return StyleValue(ColorStyleValue.create_from_color(Color.rgba(filter_style_value_saturating_channel_add(underlying_color.red(), animated_color.red()), filter_style_value_saturating_channel_add(underlying_color.green(), animated_color.green()), filter_style_value_saturating_channel_add(underlying_color.blue(), animated_color.blue()), filter_style_value_saturating_channel_add(underlying_color.alpha(), animated_color.alpha())), .legacy, none))
+}
+
 fn filter_style_value_accumulate_filter(underlying FilterStyleValue, animated FilterStyleValue) ?FilterStyleValue {
 	return match underlying {
 		FilterOperationBlur {
@@ -7874,16 +7882,7 @@ fn filter_style_value_accumulate_filter(underlying FilterStyleValue, animated Fi
 		}
 		FilterOperationDropShadow {
 			if animated is FilterOperationDropShadow {
-				mut accumulated_color := animated.color
-				if underlying_color_value := underlying.color {
-					if animated_color_value := animated.color {
-						if underlying_color := underlying_color_value.to_color(ColorResolutionContext{}) {
-							if animated_color := animated_color_value.to_color(ColorResolutionContext{}) {
-								accumulated_color = StyleValue(ColorStyleValue.create(Color.rgba(filter_style_value_saturating_channel_add(underlying_color.red(), animated_color.red()), filter_style_value_saturating_channel_add(underlying_color.green(), animated_color.green()), filter_style_value_saturating_channel_add(underlying_color.blue(), animated_color.blue()), filter_style_value_saturating_channel_add(underlying_color.alpha(), animated_color.alpha()))))
-							}
-						}
-					}
-				}
+				accumulated_color := filter_style_value_accumulate_colors(underlying.color, animated.color)
 				FilterStyleValue(FilterOperationDropShadow{
 					offset_x: filter_style_value_add_lengths(underlying.offset_x, animated.offset_x)
 					offset_y: filter_style_value_add_lengths(underlying.offset_y, animated.offset_y)

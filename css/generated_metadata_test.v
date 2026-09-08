@@ -837,6 +837,12 @@ fn test_additive_composition_uses_typed_css_values() {
 		css_text: 'blur(2px)'
 	}, .add) or { panic('filter-list composition failed') }
 	assert filters.css_text == 'blur(1px) blur(2px)'
+	accumulated_shadow := composite_value(.filter, &dom.StyleValue{
+		css_text: 'drop-shadow(1px 2px red)'
+	}, &dom.StyleValue{
+		css_text: 'drop-shadow(3px 4px blue)'
+	}, .accumulate) or { panic('drop-shadow accumulation failed') }
+	assert accumulated_shadow.css_text == 'drop-shadow(rgb(255, 0, 255) 4px 6px)'
 
 	grid_tracks := composite_value(.grid_template_columns, &dom.StyleValue{
 		css_text: '10px 1fr'
