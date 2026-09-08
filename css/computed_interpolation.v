@@ -7362,7 +7362,7 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 					} else {
 						none
 					}
-					color: StyleValue(ColorStyleValue.create(interpolate_css_color(from_color, to_color, delta, color_syntax)))
+					color: StyleValue(ColorStyleValue.create_from_color(interpolate_css_color(from_color, to_color, delta, color_syntax), .modern, none))
 				})
 			} else {
 				none
@@ -7465,7 +7465,7 @@ pub fn interpolate_box_shadow(element &dom.Element, calculation_context Interpol
 			}
 		}
 		placement := if delta >= 0.5 { to_shadow.placement() } else { from_shadow.placement() }
-		result << StyleValue(ShadowStyleValue.create(from_shadow.shadow_type(), StyleValue(ColorStyleValue.create(color)), offset_x, offset_y, blur_radius, spread_distance, placement))
+		result << StyleValue(ShadowStyleValue.create(from_shadow.shadow_type(), StyleValue(ColorStyleValue.create_from_color(color, .modern, none)), offset_x, offset_y, blur_radius, spread_distance, placement))
 	}
 
 	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(result, .comma, .yes)))

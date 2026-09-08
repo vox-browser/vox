@@ -753,6 +753,7 @@ fn test_box_shadow_interpolation_uses_typed_shadow_components() {
 	interpolated := interpolate_box_shadow(element, InterpolationCalculationContext.for_property(.box_shadow), from, to, 0.5, .no) or {
 		panic('box-shadow interpolation failed')
 	}
+	assert interpolated.css_text == 'rgb(128, 0, 128) 5px 10px 15px 20px inset'
 	parsed := parse_css_value_logic(.box_shadow, interpolated.css_text) or {
 		panic('interpolated box-shadow did not parse')
 	}
@@ -1423,7 +1424,7 @@ fn test_custom_property_interpolation_matches_css_animation_rules() {
 	assert interpolate_test_property(element, .filter, 'blur(6px)', 'blur(10px)', -2) == 'blur(0px)'
 	assert interpolate_test_property(element, .filter, 'opacity(0.2)', 'opacity(0.8)', 2) == 'opacity(1)'
 	assert interpolate_test_property(element, .filter, 'brightness(1)', 'brightness(2)', -2) == 'brightness(0)'
-	assert interpolate_test_property(element, .filter, 'drop-shadow(0px 0px red)', 'drop-shadow(10px 20px blue)', 0.5) == 'drop-shadow(rgb(128 0 128) 5px 10px)'
+	assert interpolate_test_property(element, .filter, 'drop-shadow(0px 0px red)', 'drop-shadow(10px 20px blue)', 0.5) == 'drop-shadow(rgb(128, 0, 128) 5px 10px)'
 }
 
 fn test_nested_style_value_interpolation_uses_component_fallback() {
