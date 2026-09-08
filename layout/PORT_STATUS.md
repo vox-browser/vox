@@ -503,6 +503,10 @@ The active hit-test bridge also translates
 chain, `PaintableBox::hit_test_continuation()` walks back to the principal
 inline paintable and returns that element only after the block descendants
 decline the hit.
+SVG path candidates additionally apply `SVGPathPaintable::hit_test()`'s
+transformed raw-path bounding quad before this shared traversal. The surrounding
+stroke-inflated layout box therefore cannot win a hit outside the source path
+bounds.
 The DOM mirror also preserves the layout tree's split-inline continuation chain
 in forward order. This lets `PaintableBox`'s united geometry and the CSSOM
 `offsetTop`, `offsetLeft`, `offsetWidth`, and `offsetHeight` algorithms account
@@ -633,6 +637,10 @@ they walk the hit paintable's containing blocks, skip programmatic-only
 `overflow:hidden`, and fall back outward when an inner scroller reaches its
 clamped edge. Focused regressions cover vertical, horizontal, nested, sticky,
 fixed, hidden-overflow, retained-replay, scrollbar, and hit-test behavior. The
+selection and text-control paths also translate
+`Paintable::scroll_ancestor_to_offset_into_view()`: retained UTF-16 fragment
+geometry locates the caret, then the typed containing-block chain scrolls the
+nearest overflow box or root viewport without rebuilding layout. The
 overlay phase now consumes Painting's translated `compute_scrollbar_data()` and
 ports `PaintableBox::paint()`'s vertical/horizontal scrollbar order, initial and
 custom colors, RTL/vertical chrome mirroring, `scrollbar-width:none`, current

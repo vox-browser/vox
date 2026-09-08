@@ -1098,6 +1098,51 @@ fn test_paintable_with_lines_hit_testing_returns_text_node_and_utf16_cursor_inde
 	assert (beyond.horizontal_distance or { panic('missing cursor horizontal distance') }) == 12
 }
 
+fn test_selection_scrolls_cursor_into_nearest_overflow_ancestor() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #scroller { width: 90px; height: 30px; overflow: auto } #target { margin: 0; width: 70px; line-height: 20px }</style><body><div id="scroller"><p id="target" contenteditable>one two three four five six seven eight nine ten</p></div></body>')
+	_ = layout_document_typed_in_viewport(document, 240, 140)
+	scroller := document.get_element_by_id('scroller') or { panic('missing scroller') }
+	target := document.get_element_by_id('target') or { panic('missing editable target') }
+	text_node := target.as_node().first_child() or { panic('missing editable text node') }
+	assert scroller.el_scroll_offset().y() == 0
+
+	mut selection := document.get_selection() or { panic('missing selection') }
+	selection.collapse(text_node, text_node.length()) or { panic(err) }
+	selection.scroll_focus_into_view()
+	assert scroller.el_scroll_offset().y() > 0
+}
+
+fn test_textarea_scrolls_its_anonymous_cursor_into_view() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } textarea { display: block; box-sizing: border-box; width: 90px; height: 34px; overflow: auto; line-height: 20px }</style><body><textarea id="control">one two three four five six seven eight nine ten</textarea></body>')
+	control := document.get_element_by_id('control') or { panic('missing textarea') }
+	mut textarea := html.HTMLTextAreaElementModel.create(unsafe { &dom.HTMLTextAreaElement(control) })
+	textarea.create_shadow_tree_if_needed()
+	_ = layout_document_typed_in_viewport(document, 240, 140)
+	assert control.el_scroll_offset().y() == 0
+
+	textarea.text.scroll_cursor_into_view()
+	assert control.el_scroll_offset().y() > 0
+}
+
+fn test_selection_scrolls_cursor_into_viewport() {
+	document := html.parse_document('<!doctype html><style>html, body, p { margin: 0 } p { width: 80px; line-height: 20px }</style><body><p id="target" contenteditable>one two three four five six seven eight nine ten eleven twelve</p></body>')
+	mut mutable_document := unsafe { &dom.Document(document) }
+	host := &dom.Navigable{
+		active_document_: document
+	}
+	_ := html.NavigableModel.create(host, none) or { panic(err) }
+	mutable_document.set_cached_navigable(host)
+	_ = layout_document_typed_in_viewport(document, 100, 40)
+	target := document.get_element_by_id('target') or { panic('missing viewport target') }
+	text_node := target.as_node().first_child() or { panic('missing viewport text') }
+	assert document.viewport_rect().y == 0
+
+	mut selection := document.get_selection() or { panic('missing viewport selection') }
+	selection.collapse(text_node, text_node.length()) or { panic(err) }
+	selection.scroll_focus_into_view()
+	assert document.viewport_rect().y > 0
+}
+
 fn test_paintable_with_lines_text_cursor_hit_tests_empty_editing_host() {
 	document := html.parse_document('<!doctype html><style>
 		html, body, p { margin: 0 }
@@ -1618,6 +1663,29 @@ fn test_svg_paths_retain_exact_geometry_and_stroke_style_for_native_replay() {
 	assert command.stroke_linecap == 1
 	assert command.stroke_linejoin == 2
 	assert command.stroke_miterlimit == 7
+}
+
+fn test_svg_path_hit_testing_rejects_stroke_inflation_outside_transformed_path_bounds() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display: block }</style><svg width="200" height="100" viewBox="0 0 100 50"><path id="target" transform="translate(10 5)" d="M 10 10 H 20 V 20 H 10 Z" fill="none" stroke="blue" stroke-width="10"/></svg>')
+	root := layout_document_typed_in_viewport(document, 240, 140)
+	target := document.get_element_by_id('target') or { panic('missing SVG path') }
+	target_box := root.find_box(i64(target.as_node().unique_id())) or {
+		panic('missing SVG path paint box')
+	}
+	assert target_box.has_svg_path
+	assert target_box.svg_path_bounding_box == painting.Rect{10, 10, 10, 10}
+	assert target_box.svg_transform == [f64(2), 0, 0, 2, 20, 10]!
+
+	mut mutable_document := unsafe { &dom.Document(document) }
+	inside_bounds_hit := mutable_document.element_from_point(45, 35) or {
+		panic('missing hit inside transformed path bounds')
+	}
+	assert inside_bounds_hit.as_node().unique_id() == target.as_node().unique_id()
+	stroke_margin_hit := mutable_document.element_from_point(45, 25) or {
+		panic('missing fallback hit outside path bounds')
+	}
+	assert stroke_margin_hit.as_node().unique_id() != target.as_node().unique_id()
+	assert mutable_document.elements_from_point(45, 25).all(it.as_node().unique_id() != target.as_node().unique_id())
 }
 
 fn test_svg_linear_gradient_paints_retain_linked_resource_algorithms() {

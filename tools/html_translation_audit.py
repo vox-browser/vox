@@ -270,6 +270,11 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
         ("set_computed_svg_path", "UsedValues"),
     ),
     ("SVGPathPaintable", "computed_path"): (("computed_svg_path", "UsedValues"),),
+    ("SVGPathPaintable", "hit_test"): (
+        ("svg_path_bounding_box_contains_hit_test_point", "BlockBox"),
+    ),
+    ("SVGPathPaintable", "paint"): (("flat_paint_commands", "BlockBox"),),
+    ("SVGPathPaintable", "dom_node"): (("dom_node", "Node"),),
     # PaintableFragment's DOM-dependent selection lookup remains at Layout's
     # DOM bridge, while the renderer-independent record owns range geometry.
     ("PaintableFragment", "selection_range_for_text_control"): (

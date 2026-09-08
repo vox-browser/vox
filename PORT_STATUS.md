@@ -127,11 +127,11 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14134
-  unmatched: 1438
+  candidate-name-match: 14135
+  unmatched: 1434
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 425
+  consolidated-name-match: 428
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
@@ -140,7 +140,7 @@ unmatched implementations by module:
 
    697 CSS
    595 Layout
-   146 Painting
+   142 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -175,6 +175,14 @@ lowering and replay functions; and fixed the one behavioral discrepancy found
 during comparison. Static grid items with a non-auto `z-index` are now treated
 as positioned by the paint transport, while ordinary static boxes remain in
 their normal paint group.
+
+The next active-path pass reduced Painting from 146 to 142. It translated
+`Paintable::scroll_ancestor_to_offset_into_view()` through the retained text
+fragments and typed containing-block chain, so DOM selections and anonymous
+text-control cursors scroll their nearest overflow ancestor or the viewport.
+It also restored `SVGPathPaintable::hit_test()`'s raw path-bounds gate: stroke
+inflation still contributes layout and paint bounds but cannot make the
+inflated margin win `elementFromPoint()`.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

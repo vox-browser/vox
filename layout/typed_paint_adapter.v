@@ -2642,8 +2642,10 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut form_control_enabled := true
 	mut form_control_activated := false
 	mut fieldset_paintable := ?painting.FieldSetPaintable(none)
+	mut has_svg_path := false
 	mut svg_path := ''
 	mut svg_path_data := []f32{}
+	mut svg_path_bounding_box := painting.Rect{}
 	mut svg_transform := [f64(1), 0, 0, 1, 0, 0]!
 	mut svg_points := []f64{}
 	mut svg_fill_color := ''
@@ -2739,7 +2741,11 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		multiply_affine(ancestor_paint_transform, paint_transform)
 	}
 	if path := used.computed_svg_path() {
+		has_svg_path = true
 		svg_path = path.serialize()
+		if path_bounds := svg_path_bounds(path) {
+			svg_path_bounding_box = painting.Rect{path_bounds.x, path_bounds.y, path_bounds.width, path_bounds.height}
+		}
 		exact_path := html.canvas_gfx_path_from_svg_path(path)
 		exact_visual_path := painting_clip_path_from_canvas_path(exact_path, if computed.fill_rule() == .evenodd {
 			painting.WindingRule.even_odd
@@ -3149,8 +3155,10 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		layout_handle: voidptr(node)
 		children: children
 		lines: lines
+		has_svg_path: has_svg_path
 		svg_path: svg_path
 		svg_path_data: svg_path_data
+		svg_path_bounding_box: svg_path_bounding_box
 		svg_transform: svg_transform
 		svg_points: svg_points
 		svg_fill_color: svg_fill_color

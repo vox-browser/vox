@@ -437,8 +437,10 @@ pub mut:
 	// SVGPathPaintable transport. The path remains in SVG user coordinates;
 	// transform maps it into document CSS pixels. points is the flattened
 	// endpoint representation used by the native shell's immediate renderer.
+	has_svg_path               bool
 	svg_path                   string
 	svg_path_data              []f32
+	svg_path_bounding_box      painting.Rect
 	svg_transform              [6]f64
 	svg_points                 []f64
 	svg_fill_color             string
@@ -614,9 +616,32 @@ fn (b &BlockBox) border_box_contains_hit_test_point(point painting.Point) bool {
 	return b.border_radii_data().contains(point, painting.Rect{border_box.x, border_box.y, border_box.width, border_box.height})
 }
 
+// SVGPathPaintable::hit_test() first checks the transformed bounding quad of
+// the raw path. Its layout box includes stroke inflation, so the ordinary
+// PaintableBox containment check alone admits points which upstream rejects.
+fn (b &BlockBox) svg_path_bounding_box_contains_hit_test_point(point painting.Point) bool {
+	if !b.has_svg_path {
+		return true
+	}
+	matrix := normalized_affine(b.svg_transform)
+	determinant := matrix[0] * matrix[3] - matrix[1] * matrix[2]
+	if determinant == 0 {
+		return false
+	}
+	translated_x := point.x - matrix[4]
+	translated_y := point.y - matrix[5]
+	local_point := painting.Point{
+		x: (matrix[3] * translated_x - matrix[2] * translated_y) / determinant
+		y: (-matrix[1] * translated_x + matrix[0] * translated_y) / determinant
+	}
+	return b.svg_path_bounding_box.contains(local_point)
+}
+
 fn (b &BlockBox) contains_hit_test_point(x f64, y f64) bool {
+	mut local_point := painting.Point{x, y}
 	if affine_is_compact_identity(b.paint_transform) {
-		return b.border_box_contains_hit_test_point(painting.Point{x, y})
+		return b.svg_path_bounding_box_contains_hit_test_point(local_point)
+			&& b.border_box_contains_hit_test_point(local_point)
 	}
 	matrix := normalized_affine(b.paint_transform)
 	determinant := matrix[0] * matrix[3] - matrix[1] * matrix[2]
@@ -625,9 +650,12 @@ fn (b &BlockBox) contains_hit_test_point(x f64, y f64) bool {
 	}
 	translated_x := x - matrix[4]
 	translated_y := y - matrix[5]
-	local_x := (matrix[3] * translated_x - matrix[2] * translated_y) / determinant
-	local_y := (-matrix[1] * translated_x + matrix[0] * translated_y) / determinant
-	return b.border_box_contains_hit_test_point(painting.Point{local_x, local_y})
+	local_point = painting.Point{
+		x: (matrix[3] * translated_x - matrix[2] * translated_y) / determinant
+		y: (-matrix[1] * translated_x + matrix[0] * translated_y) / determinant
+	}
+	return b.svg_path_bounding_box_contains_hit_test_point(local_point)
+		&& b.border_box_contains_hit_test_point(local_point)
 }
 
 fn hit_test_paint_order(order []&BlockBox, x f64, y f64) ?i64 {

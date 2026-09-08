@@ -210,15 +210,18 @@ pub const document_position_implementation_specific = u16(32)
 
 pub type PaintableSetNeedsRepaintCallback = fn (voidptr, voidptr, InvalidateDisplayList)
 
+pub type PaintableScrollAncestorToOffsetCallback = fn (voidptr, voidptr, int)
+
 @[heap]
 pub struct Paintable {
 pub mut:
-	needs_repaint              bool
-	is_box                     bool
-	selection_state            SelectionState
-	layout_handle              voidptr = unsafe { nil }
-	repaint_callback_target    voidptr = unsafe { nil }
-	set_needs_repaint_callback PaintableSetNeedsRepaintCallback = unsafe { nil }
+	needs_repaint                                bool
+	is_box                                       bool
+	selection_state                              SelectionState
+	layout_handle                                voidptr = unsafe { nil }
+	repaint_callback_target                      voidptr = unsafe { nil }
+	set_needs_repaint_callback                   PaintableSetNeedsRepaintCallback = unsafe { nil }
+	scroll_ancestor_to_offset_into_view_callback PaintableScrollAncestorToOffsetCallback = unsafe { nil }
 }
 
 pub enum SelectionState {
@@ -250,6 +253,13 @@ pub fn (mut p Paintable) set_selection_state(state SelectionState) {
 	// paintable's containing block. The downstream callback retains the source
 	// Layout::Node and performs that same targeted cache invalidation.
 	p.set_needs_repaint(.yes)
+}
+
+pub fn (p &Paintable) scroll_ancestor_to_offset_into_view(offset int) {
+	if p.repaint_callback_target != unsafe { nil }
+		&& p.scroll_ancestor_to_offset_into_view_callback != unsafe { nil } {
+		p.scroll_ancestor_to_offset_into_view_callback(p.repaint_callback_target, p.layout_handle, offset)
+	}
 }
 
 @[heap]

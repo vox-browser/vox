@@ -550,5 +550,7 @@ pub fn (selection &Selection) scroll_focus_into_view() {
 	}
 	mut document := unsafe { &Document(selection.document_) }
 	document.update_layout(.scroll_cursor_into_view)
-	// The translated paint layer does not yet expose Paintable's offset-scrolling hook.
+	focus := selection.focus_node() or { return }
+	paintable := focus.paintable() or { return }
+	paintable.scroll_ancestor_to_offset_into_view(selection.focus_offset())
 }

@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 146 unmatched Painting
+  were removed; the audit currently reports 142 unmatched Painting
   implementations.
 
 - `PaintableBox`'s layout-owned geometry and metadata now audit against the
@@ -126,6 +126,9 @@ following behavioral mismatches and added focused regressions:
   become paint-time alpha masks with exact per-component geometry, transforms,
   clip rules, union semantics, empty-resource suppression, and a bounded native
   raster cache. They do not constrain hit testing, matching `StackingContext`.
+  Ordinary SVG path hit testing separately applies the transformed raw-path
+  bounding quad before the shared box traversal, so stroke-inflated layout
+  bounds cannot select a path from outside that quad.
 - URL `<mask>` path content now retains the nested display-list order, normal
   fill/stroke paints and opacity, `paint-order`, group-opacity layers,
   `maskContentUnits`, masking area, and alpha/luminance mask type. Balanced
@@ -589,7 +592,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 146 unmatched implementations.
+Painting: 142 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

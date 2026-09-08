@@ -63,7 +63,8 @@ fn form_element_nearest_ancestor(element &dom.Element, local_name string) ?&dom.
 fn form_element_find_form_by_id(root &dom.Node, id string) ?&dom.HTMLFormElement {
 	if candidate := root.as_element() {
 		if candidate.is_html_element() && candidate.local_name() == 'form' && candidate.id() or {
-			''} == id {
+			''
+		} == id {
 			return unsafe { &dom.HTMLFormElement(candidate) }
 		}
 	}
@@ -564,7 +565,7 @@ pub mut:
 	has_scheduled_selectionchange_event bool
 	text_node_                          ?&dom.Text
 	did_edit_target_                    voidptr
-	did_edit_callback_                  ?fn(voidptr, string, ?string)
+	did_edit_callback_                  ?fn (voidptr, string, ?string)
 }
 
 fn form_associated_text_control_cursor_position(target voidptr) ?&dom.Position {
@@ -793,8 +794,7 @@ pub fn (mut text FormAssociatedTextControlElement) set_the_selection_range(start
 			document := element.document()
 			queue_a_task(.user_interaction, main_thread_event_loop(), document, fn [element] () {
 				select_event := dom.Event.create('select', dom.EventInit{ bubbles: true })
-				unsafe { &dom.EventTarget(element.as_node()) }
-				.dispatch_event(select_event)
+				unsafe { &dom.EventTarget(element.as_node()) }.dispatch_event(select_event)
 			})
 		}
 		text.selection_was_changed(source)
@@ -889,6 +889,11 @@ pub fn (text &FormAssociatedTextControlElement) scroll_cursor_into_view() {
 	}
 	mut document := text.control.element.document()
 	document.update_layout(.scroll_cursor_into_view)
+	// The layout bridge materializes the control's anonymous editing text rather
+	// than exposing the UA-shadow Text node as its principal paintable. Route
+	// through the host paintable while preserving the same selection offset.
+	paintable := text.control.element.as_node().paintable() or { return }
+	paintable.scroll_ancestor_to_offset_into_view(int(text.selection_end_))
 }
 
 pub fn (mut text FormAssociatedTextControlElement) selection_was_changed(source SelectionSource) {
@@ -901,8 +906,7 @@ pub fn (mut text FormAssociatedTextControlElement) selection_was_changed(source 
 			mut mutable_text := unsafe { &FormAssociatedTextControlElement(text_pointer) }
 			mutable_text.has_scheduled_selectionchange_event = false
 			event := dom.Event.create('selectionchange', dom.EventInit{ bubbles: true })
-			unsafe { &dom.EventTarget(element.as_node()) }
-			.dispatch_event(event)
+			unsafe { &dom.EventTarget(element.as_node()) }.dispatch_event(event)
 		})
 	}
 	if text_node := text.text_node_ {

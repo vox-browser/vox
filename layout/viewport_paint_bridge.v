@@ -43,6 +43,7 @@ fn install_layout_paintable_repaint_callbacks(node &dom.LayoutNode, result &Docu
 		mut mutable_paintable := unsafe { &dom.Paintable(paintable) }
 		mutable_paintable.repaint_callback_target = voidptr(result)
 		mutable_paintable.set_needs_repaint_callback = layout_paintable_set_needs_repaint
+		mutable_paintable.scroll_ancestor_to_offset_into_view_callback = layout_paintable_scroll_ancestor_to_offset_into_view
 	}
 	for child in node.children_ {
 		install_layout_paintable_repaint_callbacks(child, result)
@@ -702,6 +703,155 @@ fn layout_paintable_set_needs_repaint(target voidptr, layout_handle voidptr, sho
 	document.invalidate_display_list()
 }
 
+fn compatibility_cursor_rect_for_layout_handle(box &BlockBox, layout_handle voidptr,
+	offset int) ?painting.Rect {
+	for line in box.lines {
+		for fragment in line.fragments {
+			if fragment.layout_handle != layout_handle {
+				continue
+			}
+			start := fragment.paintable_fragment.start_offset
+			end := start + fragment.paintable_fragment.length_in_code_units
+			if offset >= start && offset <= end {
+				return fragment.paintable_fragment.range_rect(.start_and_end, offset, offset)
+			}
+		}
+	}
+	for child in box.children {
+		if rect := compatibility_cursor_rect_for_layout_handle(child, layout_handle, offset) {
+			return rect
+		}
+	}
+	return none
+}
+
+fn compatibility_cursor_rect_in_box(box &BlockBox, offset int) ?painting.Rect {
+	for line in box.lines {
+		for fragment in line.fragments {
+			start := fragment.paintable_fragment.start_offset
+			end := start + fragment.paintable_fragment.length_in_code_units
+			if offset >= start && offset <= end {
+				return fragment.paintable_fragment.range_rect(.start_and_end, offset, offset)
+			}
+		}
+	}
+	for child in box.children {
+		if rect := compatibility_cursor_rect_in_box(child, offset) {
+			return rect
+		}
+	}
+	return none
+}
+
+fn compatibility_absolute_padding_box_rect(box &BlockBox) LayoutRect {
+	if box.is_viewport_scroller {
+		return LayoutRect{ width: box.viewport_width, height: box.viewport_height }
+	}
+	return LayoutRect{
+		x: box.x - box.padding.left
+		y: box.y - box.padding.top
+		width: box.width + box.padding.left + box.padding.right
+		height: box.height + box.padding.top + box.padding.bottom
+	}
+}
+
+fn compatibility_scroll_box_to_rect(mut result DocumentLayoutResult, box &BlockBox,
+	rect painting.Rect) {
+	scrollport := compatibility_absolute_padding_box_rect(box)
+	mut current_x := 0.0
+	mut current_y := 0.0
+	mut paintable_box := ?&dom.PaintableBox(none)
+	if box.is_viewport_scroller {
+		viewport := result.document.viewport_rect()
+		current_x = viewport.x
+		current_y = viewport.y
+	} else if box.layout_handle != unsafe { nil } {
+		layout_node := unsafe { &Node(box.layout_handle) }
+		if dom_node := layout_node.dom_node() {
+			paintable_box = dom_node.paintable_box()
+			if value := paintable_box {
+				current := value.scroll_offset()
+				current_x = current.x()
+				current_y = current.y()
+			}
+		}
+	}
+	mut target_x := current_x
+	mut target_y := current_y
+	content_left := rect.x - scrollport.x
+	content_top := rect.y - scrollport.y
+	content_right := content_left + rect.width
+	content_bottom := content_top + rect.height
+	if content_right > current_x + scrollport.width {
+		target_x = content_right - scrollport.width
+	} else if content_left < current_x {
+		target_x = content_left
+	}
+	if content_bottom > current_y + scrollport.height {
+		target_y = content_bottom - scrollport.height
+	} else if content_top < current_y {
+		target_y = content_top
+	}
+	requested := dom.CSSPixelPoint_{ x_: target_x, y_: target_y }
+	if box.is_viewport_scroller {
+		if navigable := result.document.navigable() {
+			navigable.perform_scroll_of_viewport_scrolling_box(requested)
+		}
+	} else if mut value := paintable_box {
+		value.set_scroll_offset(requested)
+	}
+}
+
+// Paintable::scroll_ancestor_to_offset_into_view(). The retained text fragment
+// supplies the cursor rectangle; the typed containing-block chain selects the
+// first box with scrollable overflow, including overflow:hidden containers.
+fn layout_paintable_scroll_ancestor_to_offset_into_view(target voidptr, layout_handle voidptr,
+	offset int) {
+	if layout_handle == unsafe { nil } {
+		return
+	}
+	mut result := viewport_layout_result(target)
+	mut boxes_by_layout := map[u64]&BlockBox{}
+	collect_compatibility_boxes(mut result.paint_tree, mut boxes_by_layout)
+	source_node := unsafe { &Node(layout_handle) }
+	mut form_text_control := false
+	if dom_node := source_node.dom_node() {
+		if element := dom_node.as_element() {
+			form_text_control = element.is_html_element()
+				&& element.local_name() in ['input', 'textarea']
+		}
+	}
+	cursor_rect := if form_text_control {
+		source_box := boxes_by_layout[u64(layout_handle)] or { return }
+		compatibility_cursor_rect_in_box(source_box, offset) or { return }
+	} else {
+		compatibility_cursor_rect_for_layout_handle(result.paint_tree, layout_handle, offset) or {
+			return
+		}
+	}
+	mut containing_block := if form_text_control {
+		source_node.as_box()
+	} else {
+		source_node.containing_block()
+	}
+	for containing_block != none {
+		ancestor := containing_block or { break }
+		mut ancestor_box := ?&BlockBox(none)
+		if ancestor.is_viewport() {
+			ancestor_box = &result.paint_tree
+		} else if box := boxes_by_layout[u64(voidptr(ancestor))] {
+			ancestor_box = box
+		}
+		if box := ancestor_box {
+			if box.has_scrollable_overflow || ancestor.is_viewport() {
+				compatibility_scroll_box_to_rect(mut result, box, cursor_rect)
+				return
+			}
+		}
+		containing_block = ancestor.containing_block()
+	}
+}
+
 fn viewport_invalidate_layout_paint_cache(mut result DocumentLayoutResult, layout_handle voidptr) {
 	if layout_handle == unsafe { nil } {
 		return
@@ -1330,12 +1480,10 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 
 fn display_list_command_nesting_change(kind string) int {
 	return match kind {
-		'begin_background_blend_group', 'begin_background_text_clip', 'begin_css_filter_layer',
-		'begin_svg_mask_layer' {
+		'begin_background_blend_group', 'begin_background_text_clip', 'begin_css_filter_layer', 'begin_svg_mask_layer' {
 			1
 		}
-		'end_background_blend_group', 'end_background_text_clip', 'end_css_filter_layer',
-		'end_svg_mask_layer' {
+		'end_background_blend_group', 'end_background_text_clip', 'end_css_filter_layer', 'end_svg_mask_layer' {
 			-1
 		}
 		else { 0 }
@@ -1989,6 +2137,9 @@ fn compatibility_box_contains_hit_test_point(box &BlockBox, x f64, y f64,
 	stacking_context_root bool, tree painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot) bool {
 	local_point := paintable_box_transform_point_to_local(box, painting.Point{x, y}, 1.0, tree, snapshot) or { return false }
+	if !box.svg_path_bounding_box_contains_hit_test_point(local_point) {
+		return false
+	}
 	if stacking_context_root {
 		// StackingContext::hit_test() intentionally performs only the final
 		// absolute-border-box containment check here.
