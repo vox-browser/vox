@@ -1678,6 +1678,23 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
     ),
     ("CalculationResult", "negate"): (("resolve_calc_node", None),),
     ("CalculationResult", "invert"): (("resolve_calc_node", None),),
+    ("MinCalculationNode", "reify"): (("reify_calc_node", None),),
+    ("MaxCalculationNode", "reify"): (("reify_calc_node", None),),
+    ("ClampCalculationNode", "reify"): (("reify_calc_node", None),),
+    ("NonMathFunctionCalculationNode", "create"): (
+        ("resolve_to_calculation_node", "TreeCountingFunctionStyleValue"),
+    ),
+    ("NonMathFunctionCalculationNode", "contains_percentage"): (
+        ("numeric_type", "CalcNode"),
+    ),
+    ("NonMathFunctionCalculationNode", "with_simplified_children"): (
+        ("simplify_calc", None),
+    ),
+    ("NonMathFunctionCalculationNode", "children"): (("numeric_type", "CalcNode"),),
+    ("NonMathFunctionCalculationNode", "dump"): (
+        ("serialize_a_calculation_tree", None),
+    ),
+    ("NonMathFunctionCalculationNode", "equals"): (("equals", "StyleValue"),),
 })
 
 _CALC_OPERATOR_METHOD_TARGETS: dict[str, dict[str, tuple[tuple[str, str | None], ...]]] = {
@@ -1724,7 +1741,8 @@ for _owner_name in (
     "AcosCalculationNode", "AtanCalculationNode", "Atan2CalculationNode",
     "PowCalculationNode", "SqrtCalculationNode", "LogCalculationNode",
     "ExpCalculationNode", "RoundCalculationNode", "ModCalculationNode",
-    "RemCalculationNode",
+    "RemCalculationNode", "MinCalculationNode", "MaxCalculationNode",
+    "ClampCalculationNode", "HypotCalculationNode",
 ):
     CONSOLIDATED_METHOD_MAPPINGS.update({
         (_owner_name, "create"): (("build_calc_function", None),),
@@ -1734,6 +1752,95 @@ for _owner_name in (
         (_owner_name, "dump"): (("serialize_function", "CalcFunction"),),
         (_owner_name, "equals"): (("equals", "StyleValue"),),
     })
+
+# CalculatedOr<Self, T> and PercentageOr<T> are C++ template mixins. V uses
+# concrete tagged records for every instantiated value family, so require each
+# concrete operation to remain present when reconciling the shared template
+# bodies and map the per-family C++ out-of-line methods to their exact V path.
+_CALCULATED_OR_OWNERS = (
+    "AngleOrCalculated", "FlexOrCalculated", "FrequencyOrCalculated",
+    "IntegerOrCalculated", "LengthOrCalculated", "LengthOrAutoOrCalculated",
+    "NumberOrCalculated", "PercentageOrCalculated", "ResolutionOrCalculated",
+    "TimeOrCalculated",
+)
+for _method_name in (
+    "is_calculated", "value", "as_style_value", "calculated", "resolved",
+    "serialize", "to_string",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("CalculatedOr", _method_name)] = tuple(
+        (_method_name, _owner_name) for _owner_name in _CALCULATED_OR_OWNERS
+    )
+CONSOLIDATED_METHOD_MAPPINGS[("CalculatedOr", "resolve_calculated")] = tuple(
+    ("resolved", _owner_name) for _owner_name in _CALCULATED_OR_OWNERS
+)
+CONSOLIDATED_METHOD_MAPPINGS[("CalculatedOr", "create_style_value")] = tuple(
+    ("as_style_value", _owner_name) for _owner_name in _CALCULATED_OR_OWNERS
+)
+
+_CALCULATED_OR_RESOLVERS = {
+    "AngleOrCalculated": "resolve_angle",
+    "FlexOrCalculated": "resolve_flex",
+    "FrequencyOrCalculated": "resolve_frequency",
+    "IntegerOrCalculated": "resolve_integer",
+    "LengthOrCalculated": "resolve_length",
+    "LengthOrAutoOrCalculated": "resolve_length",
+    "NumberOrCalculated": "resolve_number",
+    "PercentageOrCalculated": "resolve_percentage",
+    "ResolutionOrCalculated": "resolve_resolution",
+    "TimeOrCalculated": "resolve_time",
+}
+for _owner_name, _resolver_name in _CALCULATED_OR_RESOLVERS.items():
+    CONSOLIDATED_METHOD_MAPPINGS[(_owner_name, "resolve_calculated")] = (
+        (_resolver_name, "CalculatedStyleValue"),
+    )
+    CONSOLIDATED_METHOD_MAPPINGS[(_owner_name, "create_style_value")] = (
+        ("as_style_value", _owner_name),
+    )
+
+_PERCENTAGE_OR_OWNERS = (
+    "AnglePercentage", "FrequencyPercentage", "LengthPercentage",
+    "TimePercentage", "NumberPercentage",
+)
+for _method_name in (
+    "is_percentage", "is_calculated", "contains_percentage", "percentage",
+    "calculated", "resolved", "serialize", "to_string",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("PercentageOr", _method_name)] = tuple(
+        (_method_name, _owner_name) for _owner_name in _PERCENTAGE_OR_OWNERS
+    )
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("PercentageOr", "to_px"): (("to_px", "LengthPercentage"),),
+    ("PercentageOr", "is_t"): (
+        ("is_angle", "AnglePercentage"),
+        ("is_frequency", "FrequencyPercentage"),
+        ("is_length", "LengthPercentage"),
+        ("is_time", "TimePercentage"),
+        ("is_number", "NumberPercentage"),
+    ),
+    ("PercentageOr", "get_t"): (
+        ("angle", "AnglePercentage"),
+        ("frequency", "FrequencyPercentage"),
+        ("length", "LengthPercentage"),
+        ("time", "TimePercentage"),
+        ("number", "NumberPercentage"),
+    ),
+    ("ColumnCount", "make_auto"): (("column_count", "InitialValues"),),
+    ("ColumnCount", "make_integer"): (("set_column_count", "MutableComputedValues"),),
+    ("ColumnCount", "is_auto"): (("column_count", "ComputedValues"),),
+    ("ColumnCount", "value"): (("column_count", "ComputedValues"),),
+    ("BooleanNotExpression", "create"): (("create_not", "BooleanExpression"),),
+    ("BooleanExpressionInParens", "create"): (
+        ("create_in_parens", "BooleanExpression"),
+    ),
+    ("BooleanAndExpression", "create"): (("create_and", "BooleanExpression"),),
+    ("BooleanOrExpression", "create"): (("create_or", "BooleanExpression"),),
+    ("ConstantBooleanExpression", "create"): (
+        ("create_constant", "BooleanExpression"),
+    ),
+    ("StyleValue", "as_abstract_image"): (
+        ("style_value_from_css_image_source_for_value_logic", None),
+    ),
+})
 
 # The base Box hook is invoked while V lowers committed UsedValues into a
 # BlockBox. ImageProvider's C++ base class is split between ImageBox's retained
@@ -1902,7 +2009,27 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
     ("RoundCalculationNode", "children"): (("children", "CalcFunction"),),
     ("ModCalculationNode", "children"): (("children", "CalcFunction"),),
     ("RemCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("MinCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("MaxCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("ClampCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("HypotCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("NonMathFunctionCalculationNode", "function"): (
+        ("style_value", "CalcTreeCounting"),
+    ),
     ("RandomCalculationNode", "children"): (("children", "CalcRandom"),),
+    # C++ exposes iterator pairs and stylesheet state through inline methods;
+    # V exposes the same retained collections directly on typed records.
+    ("CSSRuleList", "begin"): (("rules", "CSSRuleList"),),
+    ("CSSRuleList", "end"): (("rules", "CSSRuleList"),),
+    ("Subresource", "loading_state"): (("loading_state", "CSSRule"),),
+    ("CSSStyleSheet", "owner_rule"): (("owner_rule", "CSSStyleSheet"),),
+    ("CSSStyleSheet", "owning_documents_or_shadow_roots"): (
+        ("owning_documents_or_shadow_roots", "CSSStyleSheet"),
+    ),
+    ("CSSStyleSheet", "default_namespace_rule"): (
+        ("default_namespace_rule", "CSSStyleSheet"),
+    ),
+    ("CSSStyleSheet", "import_rules"): (("import_rules", "CSSStyleSheet"),),
     ("SVGGradientPaintStyle", "gradient_transform"): (("gradient_transform", "SVGGradientPaintStyle"),),
     ("SVGGradientPaintStyle", "set_gradient_transform"): (("gradient_transform", "SVGGradientPaintStyle"),),
     ("SVGGradientPaintStyle", "spread_method"): (("spread_method", "SVGGradientPaintStyle"),),

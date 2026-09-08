@@ -128,17 +128,17 @@ explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14170
-  unmatched: 500
+  unmatched: 400
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 1302
+  consolidated-name-match: 1387
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
-  value-record-field-match: 107
+  value-record-field-match: 122
 unmatched implementations by module:
 
-   496 CSS
+   396 CSS
      4 Layout
      0 Painting
 
@@ -249,6 +249,13 @@ stepped functions, and calculation-result arithmetic. These map to the same
 live `CalcNode` fields and resolver/simplifier paths, reducing the calculation
 cluster from 138 to 38 and CSS from 596 to 496. The full suite passes 392/392 at
 this checkpoint.
+
+The 400 checkpoint closes the final 38 calculation-tree shapes, then reconciles
+the concrete V records replacing the `CalculatedOr` and `PercentageOr` C++
+templates, boolean-expression factories, optional column counts, rule-list
+iteration, and reviewed stylesheet/image accessors. The pending-image and
+associated-font stylesheet lifecycle hooks remain explicitly unmatched. CSS
+falls from 496 to 396, and the full suite passes 392/392 at this checkpoint.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

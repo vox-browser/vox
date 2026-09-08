@@ -7,7 +7,7 @@ Audited: 2026-09-08
 
 Every current upstream implementation unit has a filename-level mapping, but
 that mapping is not proof that its C++ body was translated. The semantic audit
-currently reports 496 unmatched CSS implementations after quarantining the
+currently reports 396 unmatched CSS implementations after quarantining the
 name-only `upstream_*entry_points.v` facades. The inventory is 212 `.cpp` files / 66,305 LOC,
 233 `.h` files / 18,353 LOC, and 72 `.idl` files / 994 LOC. The translated
 package has 57 implementation `.v` files / 99,996 LOC and 27 test `.v` files /
@@ -318,7 +318,7 @@ ProPhoto RGB, Rec.2020, HSL, HWB, LCH, and OKLCH with premultiplied alpha, all
 four hue routes, and Skia's powerless-hue thresholds and neighbor substitution.
 
 The current implementation-symbol audit inventories all 4,427 current upstream
-CSS implementations and reports 496 unmatched bodies. Name-only
+CSS implementations and reports 396 unmatched bodies. Name-only
 `upstream_*entry_points.v` records are explicitly excluded from coverage. The
 live browser path now retains typed declarations, computed values, rule-cache
 entries, and custom-property values by identity, following the upstream
@@ -346,6 +346,13 @@ inversion, rounding, inverse and remaining trigonometric functions,
 exponential and stepped functions, and calculation-result arithmetic. The 38
 calculation bodies still visible are the min/max/clamp/hypot and non-math node
 shapes; no parallel class hierarchy or audit-only facade has been introduced.
+
+The 400 checkpoint closes those final 38 calculation bodies and accounts for
+the concrete records replacing the `CalculatedOr` and `PercentageOr` template
+mixins. It also maps boolean-expression factories, optional column-count state,
+rule-list iteration, and reviewed stylesheet/image accessors to their live V
+functions and fields. Pending image registration and associated font-loader
+retention remain unmatched rather than being masked by adjacent lifecycle code.
 
 Constructed style sheets now use a cached observable adopted-sheet list for
 both documents and shadow roots. Indexed insertion validates the constructed
@@ -376,7 +383,7 @@ $ python3 tools/libweb_translation_audit.py
 upstream modules: 74
 upstream implementations: 18658
 unmatched implementations by module:
-   496 CSS
+   396 CSS
 
 $ /Users/alex/code/v/v -enable-globals test css
 Summary for all V _test.v files: 26 passed, 26 total.
@@ -519,19 +526,17 @@ agreed with upstream on every case; no changes were needed.
 Across all nine runs, 3,823 generated cases now agree with the upstream browser
 apart from the deviations below.
 
-The translation audit reports 496 unmatched CSS implementations, of which 38 -
-the largest remaining cluster - are `CalculatedStyleValue.cpp`/`.h`. Those are a
-*shape* difference rather than missing logic: upstream models a calculation as a
-`CalculationNode` class hierarchy of 27 subclasses, each carrying `resolve()`,
-`equals()`, `dump()`, `children()` and `with_simplified_children()`, while this
-port models it as the `CalcNode` sum type in `calc_parsing.v` with free
-functions dispatching over it. A 186-case differential over every math function
+The translation audit reports 396 unmatched CSS implementations. The
+`CalculatedStyleValue.cpp`/`.h` cluster now has zero unmatched bodies: upstream
+models a calculation as a `CalculationNode` class hierarchy of 27 subclasses,
+while this port models it as the `CalcNode` sum type in `calc_parsing.v` with
+free functions dispatching over it. The reconciliation is backed by a 186-case
+differential over every math function
 (`min`/`max`/`clamp`/`abs`/`sign`/`hypot`/`sqrt`/`pow`/`exp`/`log`/`mod`/`rem`/
 `round` with all four rounding strategies/the trigonometric family), the numeric
 constants, infinity and NaN propagation, nested and type-invalid expressions,
 tree-counting and `progress()` functions, and unit families across seven
-properties agrees with upstream on every case. The remaining audit count for
-that file should be read as "not decomposed the same way", not "not translated".
+properties; every case agrees with upstream.
 
 KNOWN DEVIATION: a registered custom property's initial value is substituted
 here but not upstream. With `@property --len { syntax: "<length>"; inherits:
