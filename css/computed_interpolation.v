@@ -7110,7 +7110,13 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 	return match from {
 		FilterOperationBlur {
 			if to is FilterOperationBlur {
-				radius := interpolate_style_value(calculation_context, from.radius, to.radius, delta, allow_discrete) or { return none }
+				mut blur_context := calculation_context
+				blur_context.accepted_type_ranges = calculation_context.accepted_type_ranges.clone()
+				blur_context.accepted_type_ranges[.length] = AcceptedTypeRange{
+					min: 0
+					max: math.max_f64
+				}
+				radius := interpolate_style_value(blur_context, from.radius, to.radius, delta, allow_discrete) or { return none }
 				FilterStyleValue(FilterOperationBlur{
 					radius: radius
 				})
@@ -7130,9 +7136,20 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 		}
 		FilterOperationColor {
 			if to is FilterOperationColor {
-				amount := interpolate_style_value(calculation_context, from.amount, to.amount, delta, allow_discrete) or { return none }
+				operation := if delta >= 0.5 { to.operation } else { from.operation }
+				mut filter_context := calculation_context
+				filter_context.accepted_type_ranges = calculation_context.accepted_type_ranges.clone()
+				filter_context.accepted_type_ranges[.number] = AcceptedTypeRange{
+					min: 0
+					max: if operation in [.grayscale, .invert, .opacity, .sepia] {
+						1
+					} else {
+						math.max_f64
+					}
+				}
+				amount := interpolate_style_value(filter_context, from.amount, to.amount, delta, allow_discrete) or { return none }
 				FilterStyleValue(FilterOperationColor{
-					operation: if delta >= 0.5 { to.operation } else { from.operation }
+					operation: operation
 					amount: amount
 				})
 			} else {
@@ -7148,11 +7165,19 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 				to_radius := to.radius or { zero }
 				interpolated_radius := interpolate_style_value(calculation_context, from_radius, to_radius, delta, allow_discrete) or { return none }
 				transparent := StyleValue(ColorStyleValue.create(Color.rgba(0, 0, 0, 0)))
-				from_color := (from.color or { transparent }).to_color(color_context) or {
+				from_color_value := from.color or { transparent }
+				to_color_value := to.color or { transparent }
+				from_color := from_color_value.to_color(color_context) or {
 					Color.rgba(0, 0, 0, 0)
 				}
-				to_color := (to.color or { transparent }).to_color(color_context) or {
+				to_color := to_color_value.to_color(color_context) or {
 					Color.rgba(0, 0, 0, 0)
+				}
+				color_syntax := if interpolation_color_syntax(from_color_value) == .modern
+					|| interpolation_color_syntax(to_color_value) == .modern {
+					ColorSyntax.modern
+				} else {
+					ColorSyntax.legacy
 				}
 				FilterStyleValue(FilterOperationDropShadow{
 					offset_x: x
@@ -7162,7 +7187,7 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 					} else {
 						none
 					}
-					color: StyleValue(ColorStyleValue.create(interpolate_css_color(from_color, to_color, delta, .modern)))
+					color: StyleValue(ColorStyleValue.create(interpolate_css_color(from_color, to_color, delta, color_syntax)))
 				})
 			} else {
 				none
@@ -7171,6 +7196,16 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 		URL {
 			none
 		}
+	}
+}
+
+fn interpolation_color_syntax(value StyleValue) ColorSyntax {
+	return match value {
+		RGBColorStyleValue { value.color_syntax_ }
+		HSLColorStyleValue { value.color_syntax_ }
+		HWBColorStyleValue { value.color_syntax_ }
+		KeywordStyleValue, ColorStyleValue { .legacy }
+		else { .modern }
 	}
 }
 
@@ -7238,12 +7273,20 @@ pub fn interpolate_box_shadow(element &dom.Element, calculation_context Interpol
 			return none
 		}
 
-		from_color := from_shadow.color().to_color(color_context)
-		to_color := to_shadow.color().to_color(color_context)
+		from_color_value := from_shadow.color()
+		to_color_value := to_shadow.color()
+		from_color := from_color_value.to_color(color_context)
+		to_color := to_color_value.to_color(color_context)
 		mut color := Color.black()
 		if resolved_from := from_color {
 			if resolved_to := to_color {
-				color = interpolate_css_color(resolved_from, resolved_to, delta, .modern)
+				color_syntax := if interpolation_color_syntax(from_color_value) == .modern
+					|| interpolation_color_syntax(to_color_value) == .modern {
+					ColorSyntax.modern
+				} else {
+					ColorSyntax.legacy
+				}
+				color = interpolate_css_color(resolved_from, resolved_to, delta, color_syntax)
 			}
 		}
 		placement := if delta >= 0.5 { to_shadow.placement() } else { from_shadow.placement() }

@@ -766,6 +766,12 @@ fn test_box_shadow_interpolation_uses_typed_shadow_components() {
 	assert shadow.blur_radius().serialize(.normal) == '15px'
 	assert shadow.spread_distance().serialize(.normal) == '20px'
 	assert shadow.placement() == .inner
+	shadow_color := shadow.color().to_color(ColorResolutionContext{}) or {
+		panic('interpolated shadow color did not resolve')
+	}
+	assert shadow_color.red() == 128
+	assert shadow_color.green() == 0
+	assert shadow_color.blue() == 128
 
 	// `none` is a zero-item list and is padded with a transparent zero shadow.
 	from_none := &dom.StyleValue{
@@ -1384,4 +1390,8 @@ fn test_custom_property_interpolation_matches_css_animation_rules() {
 	assert interpolate_test_property(element, .font_style, 'normal', 'oblique 20deg', 0.5) == 'oblique 10deg'
 	assert interpolate_test_property(element, .font_variation_settings, '"wght" 100', '"wght" 900', 0.5) == '"wght" 500'
 	assert interpolate_test_property(element, .filter, 'none', 'blur(10px)', 0.5) == 'blur(5px)'
+	assert interpolate_test_property(element, .filter, 'blur(6px)', 'blur(10px)', -2) == 'blur(0px)'
+	assert interpolate_test_property(element, .filter, 'opacity(0.2)', 'opacity(0.8)', 2) == 'opacity(1)'
+	assert interpolate_test_property(element, .filter, 'brightness(1)', 'brightness(2)', -2) == 'brightness(0)'
+	assert interpolate_test_property(element, .filter, 'drop-shadow(0px 0px red)', 'drop-shadow(10px 20px blue)', 0.5) == 'drop-shadow(rgb(128 0 128) 5px 10px)'
 }
