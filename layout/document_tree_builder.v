@@ -438,6 +438,15 @@ fn run_document_layout_with_current_style(document &dom.Document, viewport_width
 fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64) ?DocumentLayoutResult {
 	mut timing_checkpoint := initial_checkpoint
 	viewport := root.as_viewport() or { return none }
+	// ImagePaintable::reset_for_relayout() refreshes image availability and alt
+	// text before geometry consumes the replaced element's natural dimensions.
+	root.for_each_in_inclusive_subtree(fn (node &Node) dom.TraversalDecision {
+		if image_box := node.as_image_box() {
+			mut mutable_image_box := unsafe { &ImageBox(image_box) }
+			mutable_image_box.reset_for_relayout()
+		}
+		return .@continue
+	})
 	// TreeBuilder upstream associates each DOM node with its Layout::Node as it
 	// is created. Install the opaque bridge before layout as well, so algorithms
 	// which run during layout (notably list-item ordinal resolution) observe the

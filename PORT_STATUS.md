@@ -66,7 +66,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `Infra` | 3 | 405 | 207 | 63 | Complete |
 | `Internals` | 7 | 951 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 36,866 | 13,161 | Present |
+| `Layout` | 50 | 19,592 | 37,000 | 13,200 | Present |
 | `Loader` | 5 | 887 | 1,111 | 349 | Complete |
 | `MathML` | 5 | 292 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
@@ -76,7 +76,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `NavigationTiming` | 3 | 104 | 291 | 45 | Complete |
 | `NotificationsAPI` | 1 | 249 | 290 | 68 | Complete |
 | `Page` | 7 | 4,298 | 2,275 | 475 | Complete |
-| `Painting` | 48 | 10,038 | 6,618 | 2,010 | Present |
+| `Painting` | 48 | 10,038 | 6,667 | 2,043 | Present |
 | `PerformanceTimeline` | 5 | 391 | 447 | 130 | Complete |
 | `PermissionsPolicy` | 1 | 98 | 86 | 21 | Complete |
 | `Platform` | 4 | 415 | 1,167 | 96 | Complete |
@@ -111,7 +111,7 @@ root-level LibWeb `.cpp` support units are mapped separately in
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 534 | 414 | 124 | Complete |
 | `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **315,823** | **56,735** | **72 complete, 3 present, 0 untranslated** |
+| **Total** | **1,147** | **316,400** | **316,006** | **56,807** | **72 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -128,10 +128,10 @@ explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14136
-  unmatched: 1429
+  unmatched: 1428
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 432
+  consolidated-name-match: 433
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
@@ -140,7 +140,7 @@ unmatched implementations by module:
 
    697 CSS
    595 Layout
-   137 Painting
+   136 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -188,6 +188,14 @@ inflated margin win `elementFromPoint()`.
 bridge as well, reducing Painting from 142 to 141. Label activation updates
 layout and uses that content-box origin plus the live viewport scroll offset to
 recompute a cloned control click's `offsetX`/`offsetY`, as upstream requires.
+
+The inspector-overlay pass then reduced Painting from 141 to 137. The broken
+HTML image branch now reduces it to 136: `ImagePaintable` outlines the content
+rectangle and centers the live `alt` text with the default 12px font when its
+provider is unavailable. Retained layout trees refresh provider availability,
+selected source, intrinsic dimensions, and alternative text before relayout,
+so a failed image can transition to changed fallback text or decoded content
+without rebuilding the tree.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

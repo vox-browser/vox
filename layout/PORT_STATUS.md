@@ -616,6 +616,12 @@ image-rect clip, and CSS visual-context transform cross the active renderer boun
 `ImagePaintable` inputs and run object fitting, fixed-point positioning, scaling
 selection, and border-shrunken corner clipping in the translated paint method;
 they no longer detour through the renderer's CSS-background string resolver.
+Unavailable HTML images retain the same paintable and use its other foreground
+branch: a black content-box outline plus centered, computed-color `alt` text in
+the default 12px font. The retained `ImageBox` refreshes selected source,
+provider availability, intrinsic dimensions, and the live `alt` attribute
+before each relayout, allowing fallback text and decoded content to replace one
+another without a layout-tree rebuild.
 The same bitmap operation is retained in
 SVG mask display-list order and participates in alpha/luminance conversion and
 nested group opacity. Canvas boxes likewise retain a dedicated

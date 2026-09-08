@@ -6,7 +6,7 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-08
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 137
+filename-level mappings. The current semantic audit nevertheless reports 136
 unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
@@ -16,7 +16,7 @@ path/mask/paint-server behavior.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Painting/` | 48 | 10,038 | 6,618 | 2,010 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
+| `Painting/` | 48 | 10,038 | 6,667 | 2,043 | Present; table, overlay, SVG paint servers, masks, and filters integrated |
 
 ## Independent fidelity audit
 
@@ -25,7 +25,7 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 137 unmatched Painting
+  were removed; the audit currently reports 136 unmatched Painting
   implementations.
 
 - `PaintableBox`'s layout-owned geometry and metadata now audit against the
@@ -172,6 +172,14 @@ following behavioral mismatches and added focused regressions:
   allocation and string parsing from every replaced-image paint. SVG images
   nested in masks and pattern tiles consume this same result instead of the
   renderer-local `contained_image_destination()` shortcut.
+- The other `ImagePaintable::paint()` foreground branch is active for broken
+  HTML images. It draws the source black outline around the content rectangle,
+  shapes nonempty `alt` text with the default 12px font, centers the retained
+  glyph run, and uses the element's computed text color. Before every retained-
+  tree relayout, the image box refreshes provider availability, current source,
+  intrinsic dimensions, and live alternative text; tests cover failed-image,
+  changed-alt, and subsequently available-image states. The audit maps that
+  layout-owned refresh to `ImagePaintable::reset_for_relayout()`.
 - `CanvasPaintable::paint()` is now a direct foreground-phase translation
   instead of a test-only helper that incorrectly classified canvas content as
   `DrawScaledBitmap`. The typed layout bridge presents an existing canvas
@@ -603,7 +611,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 137 unmatched implementations.
+Painting: 136 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

@@ -2261,6 +2261,18 @@ fn set_recording_clip_for_range(mut commands []PaintCommand, start int, end int,
 fn append_painting_display_command(mut commands []PaintCommand,
 	display_command painting.DisplayListCommand, opacity f64) {
 	match display_command {
+		painting.DrawRect {
+			commands << PaintCommand{
+				kind: 'stroke_rounded_rect'
+				x: display_command.rect.x
+				y: display_command.rect.y
+				width: display_command.rect.width
+				height: display_command.rect.height
+				color: painting_color_string(display_command.color)
+				opacity: opacity
+				stroke_width: 1
+			}
+		}
 		painting.FillRect {
 			commands << PaintCommand{
 				kind: 'fill_rect'
@@ -2627,7 +2639,33 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 			}, opacity)
 		}
 		foreground_replaced_start := commands.len
-		if box.replaced_image_url != '' {
+		mut renders_replaced_image_as_alt_text := false
+		if image_paintable := box.replaced_image_paintable {
+			renders_replaced_image_as_alt_text = image_paintable.renders_as_alt_text
+			if alt_text_paint := image_paintable.paint_alt_text(painting.new_device_pixel_converter(1.0) or {
+				panic(err)
+			}) {
+				append_painting_display_command(mut commands, alt_text_paint.outline, opacity)
+				if glyph_run := alt_text_paint.glyph_run.glyph_run {
+					commands << PaintCommand{
+						kind: 'draw_text'
+						x: alt_text_paint.glyph_run.translation.x
+						y: f64(alt_text_paint.glyph_run.rect.y) + (f64(alt_text_paint.glyph_run.rect.height) - alt_text_paint.font_size) / 2.0
+						width: f64(glyph_run.width())
+						height: alt_text_paint.font_size
+						color: painting_color_string(alt_text_paint.glyph_run.color)
+						text: alt_text_paint.text
+						font_size: alt_text_paint.font_size
+						glyph_run: glyph_run
+						glyph_translation_x: alt_text_paint.glyph_run.translation.x
+						glyph_translation_y: alt_text_paint.glyph_run.translation.y
+						glyph_orientation: alt_text_paint.glyph_run.orientation
+						opacity: opacity
+					}
+				}
+			}
+		}
+		if box.replaced_image_url != '' && !renders_replaced_image_as_alt_text {
 			commands << PaintCommand{
 				kind: if box.replaced_image_paintable != none {
 					'draw_replaced_image'

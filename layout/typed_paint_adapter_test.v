@@ -2000,6 +2000,45 @@ fn test_svg_text_reuses_svg_path_painting_instead_of_generic_text_commands() {
 	assert paths[0].stroke_width == 2
 }
 
+fn test_broken_image_paints_and_refreshes_alt_text_fallback() {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}img{display:block;width:100px;height:30px;color:rgb(10 20 30)}</style><img id="target" src="missing.png" alt="fallback">')
+	mut target := document.get_element_by_id('target') or { panic('missing image') }
+	image := unsafe { &dom.HTMLImageElement(target) }
+	mut root := layout_document_typed_in_viewport(document, 240, 140)
+	mut commands := root.paint_commands()
+	mut text_commands := commands.filter(it.kind == 'draw_text' && it.text == 'fallback')
+	assert text_commands.len == 1
+	assert text_commands[0].color == css.Color{10, 20, 30, 255}.serialize()
+	assert text_commands[0].font_size == 12
+	assert text_commands[0].glyph_run != none
+	assert text_commands[0].glyph_translation_x > 0
+	assert text_commands[0].glyph_translation_y > 0
+	outline_commands := commands.filter(it.kind == 'stroke_rounded_rect'
+		&& it.color == css.Color{}.serialize() && it.x == 0 && it.y == 0 && it.width == 100
+		&& it.height == 30 && it.stroke_width == 1)
+	assert outline_commands.len == 1
+	assert commands.all(it.kind != 'draw_replaced_image')
+
+	target.set_attribute_value('alt', 'updated fallback')
+	html.html_image_element_form_associated_element_attribute_changed(image, 'alt', 'fallback', 'updated fallback', none)
+	root = layout_document_typed_in_viewport(document, 240, 140)
+	commands = root.paint_commands()
+	assert commands.filter(it.kind == 'draw_text' && it.text == 'updated fallback').len == 1
+	assert commands.all(it.kind != 'draw_text' || it.text != 'fallback')
+
+	valid_png := 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+X9HkWQAAAABJRU5ErkJggg=='
+	target.set_attribute_value('src', valid_png)
+	html.html_image_element_form_associated_element_attribute_changed(image, 'src', 'missing.png', valid_png, none)
+	mut target_node := unsafe { &dom.Node(target.as_node()) }
+	target_node.set_needs_layout_update(.html_image_element_update_the_image_data)
+	root = layout_document_typed_in_viewport(document, 240, 140)
+	commands = root.paint_commands()
+	assert commands.all(it.kind != 'draw_text' || it.text != 'updated fallback')
+	images := commands.filter(it.kind == 'draw_replaced_image')
+	assert images.len == 1
+	assert images[0].image_url == valid_png
+}
+
 fn test_svg_image_uses_image_paintable_contain_sizing_and_resolved_href() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="100" viewBox="0 0 100 50"><image x="10" y="5" width="60" height="30" transform="translate(3 4)" href="https://example.test/picture.png" style="object-position:25% 75%;image-rendering:pixelated"/></svg>')
 	root := layout_document_typed_in_viewport(document, 240, 140)

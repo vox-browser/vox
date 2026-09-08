@@ -256,6 +256,9 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("FieldSetPaintable", "paint_background"): (
         ("background_clip_rect", "FieldSetPaintable"),
     ),
+    # The retained V layout tree owns provider state until it is converted to
+    # renderer-independent ImagePaintable data for each paint-tree rebuild.
+    ("ImagePaintable", "reset_for_relayout"): (("reset_for_relayout", "ImageBox"),),
     # SVG formatting stores the computed paint transforms and geometry beside
     # the other used layout values. Painting consumes these same values rather
     # than copying them into a parallel paintable-class hierarchy.

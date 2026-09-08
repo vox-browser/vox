@@ -2627,6 +2627,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut replaced_image_size := ''
 	mut replaced_image_position_x := '50%'
 	mut replaced_image_position_y := '50%'
+	mut replaced_image_renders_as_alt_text := false
+	mut replaced_image_alt_text := ''
 	mut replaced_image_paintable := ?painting.ImagePaintable(none)
 	mut canvas_bitmap := ?&dom.ImmutableBitmap_(none)
 	mut canvas_paintable := ?painting.CanvasPaintable(none)
@@ -2810,7 +2812,12 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		}
 	}
 	if image_box := node.as_image_box() {
-		if !image_box.renders_as_alt_text() && image_box.source() != '' {
+		replaced_image_renders_as_alt_text = image_box.renders_as_alt_text()
+		if replaced_image_renders_as_alt_text {
+			if image_element := element {
+				replaced_image_alt_text = image_element.get_attribute_value('alt')
+			}
+		} else if image_box.source() != '' {
 			source := image_box.source()
 			replaced_image_url = if styled_element := element {
 				styled_element.document().encoding_parse_and_serialize_url(source) or { source }
@@ -2838,7 +2845,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			replaced_image_position_y = object_position.offset_y.to_string()
 		}
 	}
-	if replaced_image_url != '' {
+	if replaced_image_url != '' || node.is_image_box() {
 		replaced_image_paintable = painting.ImagePaintable{
 			image_rect: painting.Rect{
 				x: position.x().to_double()
@@ -2863,6 +2870,9 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			resolution_context: computed.length_resolution_context()
 			image_rendering: computed.image_rendering()
 			is_svg_image: node.is_svg_image_box()
+			renders_as_alt_text: replaced_image_renders_as_alt_text
+			alt_text: replaced_image_alt_text
+			alt_text_color: painting.Color{text_color.r, text_color.g, text_color.b, text_color.a}
 		}
 	}
 	if tag_name == 'canvas' {

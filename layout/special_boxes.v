@@ -180,6 +180,48 @@ fn image_alt_text_natural_size(alt string) css.SizeWithAspectRatio {
 	return size_with_optional_aspect_ratio(width, height)
 }
 
+fn image_source_selected_from_attributes(element &dom.Element) string {
+	mut source := element.get_attribute_value('src')
+	srcset := element.get_attribute_value('srcset')
+	if srcset.len == 0 {
+		return source
+	}
+	sizes := element.get_attribute_value('sizes').trim_space().to_lower()
+	source_size := if sizes.ends_with('px') {
+		sizes[..sizes.len - 2].f64()
+	} else {
+		100.0
+	}
+	source_set := html.create_source_set(source, srcset, source_size)
+	if !source_set.is_empty() {
+		source = source_set.select_an_image_source().source.url
+	}
+	return source
+}
+
+fn available_html_image_natural_size(element &dom.Element) ?css.SizeWithAspectRatio {
+	if !element.as_node().is_html_image_element() {
+		return none
+	}
+	image := unsafe { &dom.HTMLImageElement(element) }
+	if !html.html_image_element_is_image_available(image) {
+		return none
+	}
+	mut result := css.SizeWithAspectRatio{}
+	if width := html.html_image_element_intrinsic_width(image) {
+		result.width = CSSPixels.nearest_value_for(width)
+	}
+	if height := html.html_image_element_intrinsic_height(image) {
+		result.height = CSSPixels.nearest_value_for(height)
+	}
+	if ratio := html.html_image_element_intrinsic_aspect_ratio(image) {
+		if ratio > 0 {
+			result.aspect_ratio = css.CSSPixelFraction.new(CSSPixels.nearest_value_for(ratio), CSSPixels.new(1))
+		}
+	}
+	return result
+}
+
 pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties) &ImageBox {
 	alt := element.get_attribute_value('alt')
 	mut box := &ImageBox{
@@ -187,22 +229,21 @@ pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_value
 		renders_as_alt_text_: true
 	}
 	box.is_image_box_ = true
-	mut source := element.get_attribute_value('src')
-	srcset := element.get_attribute_value('srcset')
-	if srcset.len > 0 {
-		sizes := element.get_attribute_value('sizes').trim_space().to_lower()
-		source_size := if sizes.ends_with('px') {
-			sizes[..sizes.len - 2].f64()
-		} else {
-			100.0
-		}
-		source_set := html.create_source_set(source, srcset, source_size)
-		if !source_set.is_empty() {
-			source = source_set.select_an_image_source().source.url
+	mut source := image_source_selected_from_attributes(element)
+	if element.as_node().is_html_image_element() {
+		image := unsafe { &dom.HTMLImageElement(element) }
+		if html.html_image_element_is_image_available(image) {
+			current_source := html.html_image_element_current_src(image)
+			if current_source != '' {
+				source = current_source
+			}
 		}
 	}
 	box.source_ = source
-	if intrinsic_size := image_intrinsic_size_for_source(document, source) {
+	if intrinsic_size := available_html_image_natural_size(element) {
+		box.renders_as_alt_text_ = false
+		box.natural_size_ = intrinsic_size
+	} else if intrinsic_size := image_intrinsic_size_for_source(document, source) {
 		box.renders_as_alt_text_ = false
 		box.natural_size_ = intrinsic_size
 	} else {
@@ -716,6 +757,45 @@ pub fn (mut box ImageBox) dom_node_did_update_alt_text() {
 	box.auto_content_box_size_ = box.natural_size_
 }
 
+// ImagePaintable::reset_for_relayout() refreshes image availability and the
+// live alt attribute whenever the retained layout tree is laid out again. V
+// keeps that provider-facing state on ImageBox until the paint tree is rebuilt.
+pub fn (mut box ImageBox) reset_for_relayout() {
+	mut source := box.source_
+	mut alt := ''
+	mut provider_natural_size := ?css.SizeWithAspectRatio(none)
+	if dom_node := box.dom_node() {
+		if element := dom_node.as_element() {
+			source = image_source_selected_from_attributes(element)
+			alt = element.get_attribute_value('alt')
+			provider_natural_size = available_html_image_natural_size(element)
+			if provider_natural_size != none && element.as_node().is_html_image_element() {
+				image := unsafe { &dom.HTMLImageElement(element) }
+				current_source := html.html_image_element_current_src(image)
+				if current_source != '' {
+					source = current_source
+				}
+			}
+		}
+	}
+	old_source := box.source_
+	box.source_ = source
+	if natural_size := provider_natural_size {
+		box.renders_as_alt_text_ = false
+		box.natural_size_ = natural_size
+	} else if intrinsic_size := image_intrinsic_size_for_source(box.document_, source) {
+		box.renders_as_alt_text_ = false
+		box.natural_size_ = intrinsic_size
+	} else {
+		box.renders_as_alt_text_ = true
+		box.natural_size_ = image_alt_text_natural_size(alt)
+	}
+	if source != old_source {
+		box.svg_image_document_ = svg_image_document_for_source(box.document_, source)
+	}
+	box.auto_content_box_size_ = box.natural_size_
+}
+
 pub fn (box &ImageBox) svg_image_document() ?&dom.Document {
 	return box.svg_image_document_
 }
@@ -773,8 +853,7 @@ pub fn TextInputBox.new(document &dom.Document, element &dom.Element, computed_v
 	// quantized to CSSPixels before it is multiplied - not after.
 	columns := positive_integer_attribute_or_default(element, 'size', 20)
 	box_node := unsafe { &Node(box) }
-	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns),
-		.ch))
+	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns), .ch))
 	// AD-HOC: 2px is inline shadow DOM padding in HTMLInputElement::create_text_input_shadow_tree()
 	mut height := computed_values.line_height().plus(CSSPixels.new(2))
 	if computed_values.writing_mode() != .horizontal_tb {
@@ -803,10 +882,8 @@ pub fn TextAreaBox.new(document &dom.Document, element &dom.Element, computed_va
 	columns := positive_integer_attribute_or_default(element, 'cols', 20)
 	rows := positive_integer_attribute_or_default(element, 'rows', 2)
 	box_node := unsafe { &Node(box) }
-	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns),
-		.ch))
-	mut height := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(rows),
-		.lh))
+	mut width := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(columns), .ch))
+	mut height := resolve_font_dependent_length_for_node(box_node, css.Length.new(f64(rows), .lh))
 	if computed_values.writing_mode() != .horizontal_tb {
 		width, height = height, width
 	}
