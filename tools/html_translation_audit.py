@@ -1870,6 +1870,117 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
     ),
 })
 
+# Media features and @supports leaves are separate BooleanExpression subclasses
+# in C++. V retains their discriminator, operands, serialized text, and match
+# result on one tagged BooleanExpression record. Parsing constructs that record
+# directly, and the shared methods dispatch on its kind.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("MediaFeatureValue", "to_string"): (
+        ("serialize", "StyleValue"),
+        ("supports_component_values_to_string", None),
+    ),
+    ("MediaFeatureValue", "is_same_type"): (
+        ("compare_media_feature_values", None),
+    ),
+    ("MediaFeature", "to_string"): (("to_string", "BooleanExpression"),),
+    ("MediaFeature", "evaluate"): (("evaluate_media_feature", None),),
+    ("MediaFeature", "compare"): (("compare_media_feature_values", None),),
+    ("MediaFeature", "dump"): (("dump", "BooleanExpression"),),
+    ("MediaFeature", "boolean"): (("create_media_feature", "BooleanExpression"),),
+    ("MediaFeature", "plain"): (("create_media_feature", "BooleanExpression"),),
+    ("MediaFeature", "min"): (("create_media_feature", "BooleanExpression"),),
+    ("MediaFeature", "max"): (("create_media_feature", "BooleanExpression"),),
+    ("MediaFeature", "half_range"): (("create_media_feature", "BooleanExpression"),),
+    ("MediaFeature", "range"): (("create_media_feature", "BooleanExpression"),),
+    ("PseudoElementSelector", "is_known_pseudo_element_type"): (
+        ("is_known_pseudo_element_type", None),
+    ),
+    ("Declaration", "create"): (
+        ("create_supports_declaration", "BooleanExpression"),
+    ),
+    ("Declaration", "evaluate"): (("evaluate", "BooleanExpression"),),
+    ("Declaration", "to_string"): (("to_string", "BooleanExpression"),),
+    ("Declaration", "dump"): (("dump", "BooleanExpression"),),
+    ("Selector", "evaluate"): (("evaluate", "BooleanExpression"),),
+    ("Selector", "to_string"): (("to_string", "BooleanExpression"),),
+    ("Selector", "dump"): (("dump", "BooleanExpression"),),
+    ("FontTech", "create"): (("create_supports_font_tech", "BooleanExpression"),),
+    ("FontTech", "evaluate"): (("evaluate", "BooleanExpression"),),
+    ("FontTech", "dump"): (("dump", "BooleanExpression"),),
+    ("FontFormat", "create"): (
+        ("create_supports_font_format", "BooleanExpression"),
+    ),
+    ("FontFormat", "evaluate"): (("evaluate", "BooleanExpression"),),
+    ("FontFormat", "to_string"): (("to_string", "BooleanExpression"),),
+    ("FontFormat", "dump"): (("dump", "BooleanExpression"),),
+    ("Supports", "matches"): (("matches_condition", "Supports"),),
+    # The audit flattens Supports::Selector and CSS::Selector to the same owner
+    # key. Require both active constructors so either C++ create() body remains
+    # covered by the pair of concrete V selector representations.
+    ("Selector", "create"): (
+        ("create_selector", None),
+        ("create_supports_selector", "BooleanExpression"),
+    ),
+})
+
+# Parser::TokenStream's RAII StateTransaction becomes the explicit mark stack
+# on ParserTokenStream. The selector parser is decomposed around textual spans,
+# but preserves the same complex/compound/simple, qualified-name, pseudo, An+B,
+# and page-selector algorithms.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("StateTransaction", "create_child"): (("mark", "ParserTokenStream"),),
+    ("StateTransaction", "commit"): (("discard_a_mark", "ParserTokenStream"),),
+    ("TokenStream", "of_single_token"): (("from_values", "ParserTokenStream"),),
+    ("TokenStream", "current_token"): (("peek_token", "ParserTokenStream"),),
+    ("TokenStream", "begin_transaction"): (("mark", "ParserTokenStream"),),
+    ("TokenStream", "dump_all_tokens"): (("dump_string", "ParserTokenStream"),),
+    ("TokenStream", "make_eof"): (("create_eof_token", "Tokenizer"),),
+    ("Parser", "parse_as_pseudo_element_selector"): (("parse_pseudo_selector", None),),
+    ("Parser", "parse_complex_selector"): (("parse_complex_selector", None),),
+    ("Parser", "parse_compound_selector"): (("parse_complex_selector", None),),
+    ("Parser", "parse_selector_combinator"): (("parse_complex_selector", None),),
+    ("Parser", "parse_selector_qualified_name"): (
+        ("parse_type_or_universal_selector", None),
+        ("parse_attribute_selector", None),
+    ),
+    ("Parser", "parse_attribute_simple_selector"): (("parse_attribute_selector", None),),
+    ("Parser", "parse_pseudo_simple_selector"): (("parse_pseudo_selector", None),),
+    ("Parser", "parse_simple_selector"): (("parse_simple_selector", None),),
+    ("Parser", "parse_a_n_plus_b_pattern"): (("parse_an_plus_b", None),),
+    ("Parser", "parse_as_page_selector_list"): (("parse_page_selector_list", None),),
+    ("Parser", "parse_a_page_selector_list"): (
+        ("parse_a_page_selector_list_translated", None),
+    ),
+})
+
+# The six C++ SyntaxNode subclasses are one tagged SyntaxNode in V.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("UniversalSyntaxNode", "create"): (("create_universal", "SyntaxNode"),),
+    ("IdentSyntaxNode", "create"): (("create_ident", "SyntaxNode"),),
+    ("IdentSyntaxNode", "ident"): (("ident", "SyntaxNode"),),
+    ("TypeSyntaxNode", "type_name"): (("type_name", "SyntaxNode"),),
+    ("MultiplierSyntaxNode", "create"): (("create_multiplier", "SyntaxNode"),),
+    ("MultiplierSyntaxNode", "child"): (("child", "SyntaxNode"),),
+    ("CommaSeparatedMultiplierSyntaxNode", "create"): (
+        ("create_comma_separated_multiplier", "SyntaxNode"),
+    ),
+    ("CommaSeparatedMultiplierSyntaxNode", "child"): (("child", "SyntaxNode"),),
+    ("AlternativesSyntaxNode", "create"): (("create_alternatives", "SyntaxNode"),),
+})
+
+# V's tagged ParsingError union has one exhaustive, length-delimited key
+# function in place of eleven identical per-record Traits::hash bodies.
+for _parsing_error_owner in (
+    "UnknownPropertyError", "UnknownRuleError", "UnknownMediaFeatureError",
+    "UnknownPseudoClassOrElementError", "InvalidPropertyError",
+    "InvalidValueError", "InvalidRuleError", "InvalidQueryError",
+    "InvalidSelectorError", "InvalidPseudoClassOrElementError",
+    "InvalidRuleLocationError",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[(_parsing_error_owner, "hash")] = (
+        ("parsing_error_key", None),
+    )
+
 # DisplayListPlayerSkia is the native raster backend in C++. The standalone V
 # package ends at renderer-independent commands and a deterministic playback
 # plan; concrete draw operations are recorded by DisplayListRecorder and
@@ -1984,6 +2095,36 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
 CONSOLIDATED_FIELD_MAPPINGS: dict[
     tuple[str, str], tuple[tuple[str, str], ...]
 ] = {
+    # MediaFeature's C++ tagged union is flattened onto BooleanExpression, and
+    # MediaFeatureValue's variant discriminator is explicit in its active local
+    # value record. Each predicate remains a checked read of that discriminator.
+    ("MediaFeatureValue", "is_ident"): (("kind", "MediaFeatureValueLocal"),),
+    ("MediaFeatureValue", "is_length"): (("kind", "MediaFeatureValueLocal"),),
+    ("MediaFeatureValue", "is_integer"): (("kind", "MediaFeatureValueLocal"),),
+    ("MediaFeatureValue", "is_ratio"): (("kind", "MediaFeatureValueLocal"),),
+    ("MediaFeatureValue", "is_resolution"): (("kind", "MediaFeatureValueLocal"),),
+    ("MediaFeatureValue", "is_unknown"): (("kind", "MediaFeatureValueLocal"),),
+    ("MediaFeature", "m_type"): (("media_feature_kind", "BooleanExpression"),),
+    ("MediaFeature", "value"): (("media_feature_value", "BooleanExpression"),),
+    # Selector variants are explicit fields rather than a nested C++ Variant.
+    ("PseudoElementSelector", "m_type"): (("type_", "PseudoElementSelector"),),
+    ("PseudoElementSelector", "type"): (("type_", "PseudoElementSelector"),),
+    ("PseudoElementSelector", "pt_name_selector"): (
+        ("pt_name_selector", "PseudoElementSelector"),
+    ),
+    ("PseudoElementSelector", "compound_selector"): (
+        ("compound_selector", "PseudoElementSelector"),
+    ),
+    ("PseudoElementSelector", "ident_list"): (("ident_list", "PseudoElementSelector"),),
+    ("SimpleSelector", "attribute"): (("attribute", "SimpleSelector"),),
+    ("SimpleSelector", "pseudo_class"): (("pseudo_class", "SimpleSelector"),),
+    ("SimpleSelector", "pseudo_element"): (("pseudo_element", "SimpleSelector"),),
+    ("SimpleSelector", "name"): (("name", "SimpleSelector"),),
+    ("SimpleSelector", "lowercase_name"): (("lowercase_name", "SelectorName"),),
+    ("SimpleSelector", "qualified_name"): (("qualified_name", "SimpleSelector"),),
+    ("TokenStream", "current_index"): (("index", "ParserTokenStream"),),
+    ("TypeSyntaxNode", "value_type"): (("value_type", "SyntaxNode"),),
+    ("AlternativesSyntaxNode", "children"): (("children", "SyntaxNode"),),
     # The C++ calculation-node accessors become fields on V's tagged records.
     ("CalculatedStyleValue", "calculation"): (("node", "CalculatedStyleValue"),),
     ("SumCalculationNode", "children"): (("children", "CalcSum"),),
@@ -2202,6 +2343,9 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    ("Parser/SelectorParsing.cpp", "create_invalid_selector"): (
+        "invalid_simple_selector",
+    ),
     # The virtual C++ calculation tree is decomposed into typed V operations.
     # Three add_the_types overloads intentionally share the same mapping.
     ("StyleValues/CalculatedStyleValue.cpp", "add_the_types"): ("added_to",),

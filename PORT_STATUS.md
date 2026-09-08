@@ -128,17 +128,17 @@ explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14170
-  unmatched: 400
+  unmatched: 300
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 1387
+  consolidated-name-match: 1458
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
-  value-record-field-match: 122
+  value-record-field-match: 151
 unmatched implementations by module:
 
-   396 CSS
+   296 CSS
      4 Layout
      0 Painting
 
@@ -256,6 +256,15 @@ templates, boolean-expression factories, optional column counts, rule-list
 iteration, and reviewed stylesheet/image accessors. The pending-image and
 associated-font stylesheet lifecycle hooks remain explicitly unmatched. CSS
 falls from 496 to 396, and the full suite passes 392/392 at this checkpoint.
+
+The 300 checkpoint reconciles the next 100 CSS bodies with the active V model:
+media-feature and `@supports` leaf classes fold into `BooleanExpression`,
+selector variants expose typed record fields and parse through the decomposed
+complex/simple selector routines, token-stream transactions use the explicit
+mark stack, syntax subclasses use one tagged `SyntaxNode`, and eleven error
+record hash methods share the exhaustive `ParsingError` key function. CSS falls
+from 396 to 296 without adding facade implementations, and the full suite
+passes 392/392 at this checkpoint.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,
