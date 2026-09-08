@@ -129,6 +129,10 @@ pub fn (mut handler EventHandler) install_chrome_widget_callbacks(target voidptr
 	handler.chrome_widget_hover_callback = hover_callback
 }
 
+pub fn (handler &EventHandler) has_captured_chrome_widget() bool {
+	return handler.captured_chrome_widget != ''
+}
+
 pub fn (mut handler EventHandler) update_hovered_chrome_widget(widget string) {
 	if handler.hovered_chrome_widget == widget {
 		return

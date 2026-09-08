@@ -53,10 +53,12 @@ forwards backing-store allocation IDs to PageClient. This lets the
 Navigable-to-Painting manager boundary preserve Retina sizing and allocation
 notification without coupling DOM to the concrete Page model.
 
-Native paint-tree traversal, DOM range mutation, PageClient IPC transport,
-platform cursor selection, SDL polling, and actual scrolling are host
-integration boundaries. Chrome widgets cross that boundary through callbacks,
-but `update_hovered_chrome_widget()` and
+Native paint-tree traversal, DOM range mutation, PageClient IPC transport, and
+SDL polling remain host integration boundaries. Chrome widgets cross that
+boundary through callbacks; the native browser now installs the callbacks for
+mouse down/move/up, preserves captured widget identity across layout rebuilds,
+and applies resize cursors through the platform window. Within Page,
+`update_hovered_chrome_widget()` and
 `dispatch_chrome_widget_pointer_event()` now own the exact C++ leave/enter,
 capture, release, dispatch-order, and event-swallowing decisions rather than a
 logging-only stand-in.

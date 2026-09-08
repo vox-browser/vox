@@ -2065,6 +2065,27 @@ pub fn (mut result DocumentLayoutResult) chrome_widget_mouse_leave(id string) {
 	compatibility_apply_scrollbar_hover(mut box, target.kind, false)
 }
 
+// EventHandler::update_cursor() gives a ChromeWidget's cursor precedence over
+// the owning paintable's CSS cursor. Scrollbars inherit that cursor, while a
+// ResizeHandle derives its physical cursor from resize, writing-mode and the
+// mirrored chrome edge.
+pub fn (mut result DocumentLayoutResult) chrome_widget_cursor(id string) ?painting.ResizeCursor {
+	target := compatibility_chrome_widget_target(id) or { return none }
+	if target.kind != .resize_handle {
+		return none
+	}
+	viewport_build_stacking_context_tree(voidptr(result))
+	box_pointer := result.chrome_widget_boxes[target.identity] or { return none }
+	box := unsafe { &BlockBox(box_pointer) }
+	if box.layout_handle == unsafe { nil } {
+		return none
+	}
+	node := unsafe { &Node(box.layout_handle) }
+	styled := node.as_node_with_style() or { return none }
+	overlay := box.overlay or { return none }
+	return painting.ResizeHandle.create().cursor(paintable_box_physical_resize_axes(node, styled.computed_values()), overlay.chrome_mirrored)
+}
+
 struct CompatibilityResizeHandleState {
 mut:
 	handle painting.ResizeHandle = painting.ResizeHandle.create()

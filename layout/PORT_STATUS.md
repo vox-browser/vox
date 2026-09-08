@@ -425,7 +425,11 @@ pointerup applies the final position before releasing capture. Active state is
 copied across the layout invalidation caused by the style mutation, while
 stable DOM-node chrome IDs keep the captured widget connected to its rebuilt
 `BlockBox`. A focused regression performs a drag, forces relayout mid-capture,
-continues the drag, and verifies final release.
+continues the drag, and verifies final release. The native `BrowserApp` now
+feeds mouse down/move/up through this Page-to-Layout bridge, adopts geometry
+after resize-triggered layout, and maps the handle's physical axis to the
+platform resize cursor. Its boundary regression begins outside Layout, drags
+beyond the old box, observes the new inline size, and releases capture.
 
 Inspector selection now reaches that same retained display list. Box highlights
 unite continuation content, padding, border, and margin rectangles and append

@@ -1594,6 +1594,9 @@ fn test_active_resize_handle_updates_inline_size_and_survives_relayout() {
 	assert hit.chrome_widget_id == 'resize-handle:${node_id}'
 
 	mut result := document_layout_result(document) or { panic('missing resize layout result') }
+	assert result.chrome_widget_cursor(hit.chrome_widget_id) or {
+		panic('missing resize cursor')
+	} == .se_resize
 	assert result.handle_scrollbar_pointer_event(hit.chrome_widget_id, 'pointermove', 9, start_x + 1, start_y + 1) == .none
 	assert result.handle_scrollbar_pointer_event(hit.chrome_widget_id, 'pointerdown', 1, start_x, start_y) == .none
 	assert result.handle_scrollbar_pointer_event(hit.chrome_widget_id, 'pointerdown', 0, start_x, start_y) == .capture_input

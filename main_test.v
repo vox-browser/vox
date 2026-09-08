@@ -1,9 +1,11 @@
 module main
 
 import css
+import dom
 import html
 import layout
 import os
+import page
 import painting
 
 fn test_parse_launch_options_keeps_interactive_defaults() {
@@ -200,4 +202,60 @@ fn test_cached_status_is_replaced_without_relayout() {
 fn test_address_for_display_handles_a_narrow_toolbar() {
 	assert address_for_display('file:///tmp/example.html', 0, false, 0) == ''
 	assert address_for_display('file:///tmp/example.html', 0, true, -4) == ''
+}
+
+fn test_native_chrome_pointer_bridge_resizes_across_layout_updates() {
+	mut document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#resizable { width: 100px; height: 50px; overflow: auto; resize: both }
+	</style><body><div id="resizable"></div></body>')
+	mut page_model := page.Page.create(1) or { panic(err) }
+	document.set_page(unsafe { &dom.Page(page_model) })
+	root := layout.layout_document_typed_in_viewport(document, 320, 200)
+	element := document.get_element_by_id('resizable') or { panic('missing resizable element') }
+	node_id := element.as_node().unique_id().value()
+	box := root.find_box(node_id) or { panic('missing resizable box') }
+	overlay := box.overlay or { panic('missing resizer overlay') }
+	metrics := painting.new_chrome_metrics(1) or { panic(err) }
+	border_rect := box.border_box()
+	resizer_rect := painting.paintable_box_absolute_resizer_rect(painting.Rect{
+		x: border_rect.x
+		y: border_rect.y
+		width: border_rect.width
+		height: border_rect.height
+	}, overlay.has_resizer, overlay.chrome_mirrored, metrics) or {
+		panic('missing resize handle rect')
+	}
+	start_x := resizer_rect.right() - 1
+	start_y := resizer_rect.bottom() - 1
+
+	mut app := BrowserApp{
+		page_model: page_model
+		document: document
+		root_box: root
+		viewport_width: 320
+		viewport_height: 200
+	}
+	app.install_chrome_widget_input_bridge()
+	pointer_down := app.dispatch_chrome_pointer_event_at_viewport_point('pointerdown', 0, start_x, start_y)
+	assert pointer_down.target == 'resize-handle:${node_id}'
+	assert pointer_down.handled
+	assert pointer_down.cursor or { panic('missing native resize cursor') } == .se_resize
+	assert page_model.event_handler.has_captured_chrome_widget()
+
+	// The moved point is outside the old box, so only Page's captured-widget
+	// route can deliver it. The resulting inline style triggers a fresh layout.
+	pointer_move := app.dispatch_chrome_pointer_event_at_viewport_point('pointermove', 0, start_x + 30, start_y + 20)
+	assert pointer_move.target == ''
+	assert pointer_move.handled
+	style := css.inline_style(element)
+	assert style.get_property_value('width') == '130px'
+	assert style.get_property_value('height') == '70px'
+	assert page_model.event_handler.has_captured_chrome_widget()
+	resized_box := app.root_box.find_box(node_id) or { panic('resized box was not adopted') }
+	assert resized_box.border_box().width == 130
+
+	pointer_up := app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', 0, start_x + 30, start_y + 20)
+	assert pointer_up.handled
+	assert !page_model.event_handler.has_captured_chrome_widget()
 }

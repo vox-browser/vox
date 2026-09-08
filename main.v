@@ -28,6 +28,7 @@ import painting
 import platform
 import referrerpolicy
 import selection
+import sokol.sapp
 import sri
 import storageapi
 import time
@@ -274,6 +275,16 @@ mut:
 	snapshot_hold       bool
 	snapshot_hold_until i64
 	use_document_font   bool
+	// gg invokes click_fn after event_fn for the same mouse-down event. Chrome
+	// widget presses run through Page::EventHandler in event_fn and must not also
+	// enter the browser's compact DOM-click fallback.
+	suppress_next_click_for_chrome bool
+}
+
+struct ChromePointerDispatchResult {
+	target  string
+	handled bool
+	cursor  ?painting.ResizeCursor
 }
 
 struct LaunchOptions {
@@ -1125,6 +1136,116 @@ fn (app &BrowserApp) page_top() f32 {
 
 fn (app &BrowserApp) status_height() int {
 	return int(status_bar_height)
+}
+
+fn browser_chrome_widget_pointer_event_callback(target voidptr, id string, event_type string,
+	button int, position page.PixelPoint) painting.MouseAction {
+	mut app := unsafe { &BrowserApp(target) }
+	if app.document == unsafe { nil } {
+		return .none
+	}
+	mut result := layout.document_layout_result(app.document) or { return .none }
+	return result.handle_scrollbar_pointer_event(id, event_type, button, position.x, position.y)
+}
+
+fn browser_chrome_widget_hover_callback(target voidptr, id string, hovered bool) {
+	mut app := unsafe { &BrowserApp(target) }
+	if app.document == unsafe { nil } {
+		return
+	}
+	mut result := layout.document_layout_result(app.document) or { return }
+	if hovered {
+		result.chrome_widget_mouse_enter(id)
+	} else {
+		result.chrome_widget_mouse_leave(id)
+	}
+}
+
+fn (mut app BrowserApp) install_chrome_widget_input_bridge() {
+	if app.page_model == unsafe { nil } {
+		return
+	}
+	app.page_model.event_handler.install_chrome_widget_callbacks(voidptr(&app), browser_chrome_widget_pointer_event_callback, browser_chrome_widget_hover_callback)
+}
+
+fn chrome_pointer_layout_reason(event_type string) dom.UpdateLayoutReason {
+	return match event_type {
+		'pointerdown' { .event_handler_handle_mouse_down }
+		'pointerup' { .event_handler_handle_mouse_up }
+		else { .event_handler_handle_mouse_move }
+	}
+}
+
+fn (app &BrowserApp) hit_test_at_viewport_point(x f64, y f64) ?dom.HitTestResult {
+	if app.document == unsafe { nil } {
+		return none
+	}
+	viewport := app.document.paintable_box() or { return none }
+	return viewport.hit_test(x, y, .exact)
+}
+
+fn (mut app BrowserApp) adopt_current_document_geometry() {
+	result := layout.document_layout_result(app.document) or { return }
+	app.root_box = result.paint_tree
+	root_rect := app.root_box.border_box()
+	app.content_height = if root_rect.y + root_rect.height > f64(app.viewport_height) {
+		root_rect.y + root_rect.height
+	} else {
+		f64(app.viewport_height)
+	}
+	app.set_scroll_y(app.scroll_y, app.viewport_height + app.chrome_height())
+}
+
+// EventHandler updates layout before hit testing chrome, sends captured input
+// before the current target, and updates layout again after the widget mutates
+// scroll/style state. This is the native-browser boundary for the translated
+// Scrollbar and ResizeHandle state machines.
+fn (mut app BrowserApp) dispatch_chrome_pointer_event_at_viewport_point(event_type string,
+	button int, x f64, y f64) ChromePointerDispatchResult {
+	if app.document == unsafe { nil } || app.page_model == unsafe { nil } {
+		return ChromePointerDispatchResult{}
+	}
+	mut document := unsafe { &dom.Document(app.document) }
+	reason := chrome_pointer_layout_reason(event_type)
+	document.update_layout(reason)
+	hit := app.hit_test_at_viewport_point(x, y)
+	target := if value := hit { value.chrome_widget_id } else { '' }
+	mut cursor := ?painting.ResizeCursor(none)
+	if target != '' {
+		if mut result := layout.document_layout_result(app.document) {
+			cursor = result.chrome_widget_cursor(target)
+		}
+	}
+	mut handler := app.page_model.event_handler
+	had_capture := handler.has_captured_chrome_widget()
+	handler.update_hovered_chrome_widget(target)
+	_ = handler.dispatch_chrome_widget_pointer_event(target, event_type, button, page.PixelPoint{
+		x: x
+		y: y
+	})
+	handled := target != '' || had_capture || handler.has_captured_chrome_widget()
+	if handled {
+		// ResizeHandle updates element.style during dispatch; Scrollbar updates the
+		// retained scroll state. Commit those mutations before the next frame.
+		document.update_layout(.event_handler_dispatch_chrome_widget_event)
+		app.adopt_current_document_geometry()
+	}
+	return ChromePointerDispatchResult{
+		target: target
+		handled: handled
+		cursor: cursor
+	}
+}
+
+fn mouse_cursor_for_resize_handle(cursor ?painting.ResizeCursor) sapp.MouseCursor {
+	value := cursor or { return .arrow }
+	return match value {
+		.ew_resize { .resize_ew }
+		.ns_resize { .resize_ns }
+		.se_resize { .resize_nwse }
+		.sw_resize { .resize_nesw }
+		.none { .arrow }
+	}
 }
 
 fn (mut app BrowserApp) relayout(window_width int, window_height int) {
@@ -3677,6 +3798,10 @@ fn (app &BrowserApp) link_at_point(mouse_x f32, mouse_y f32) ?string {
 }
 
 fn (mut app BrowserApp) handle_click(x f32, y f32) {
+	if app.suppress_next_click_for_chrome {
+		app.suppress_next_click_for_chrome = false
+		return
+	}
 	if y >= 12 && y <= 46 {
 		if x >= 12 && x < 48 {
 			app.history_go(-1)
@@ -3727,6 +3852,15 @@ fn (mut app BrowserApp) handle_click(x f32, y f32) {
 
 fn (mut app BrowserApp) handle_event(event &gg.Event) {
 	match event.typ {
+		.mouse_down {
+			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointerdown', int(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
+			// gg follows event_fn with click_fn for mouse-down. Upstream does not
+			// run mousedown default actions when the hit target is browser chrome.
+			app.suppress_next_click_for_chrome = result.target != ''
+		}
+		.mouse_up {
+			_ = app.dispatch_chrome_pointer_event_at_viewport_point('pointerup', int(event.mouse_button), f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
+		}
 		.mouse_scroll {
 			delta_x := -f64(event.scroll_x) * 42.0
 			delta_y := -f64(event.scroll_y) * 42.0
@@ -3738,7 +3872,19 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 			app.relayout(event.window_width, event.window_height)
 		}
 		.mouse_move {
-			app.hovered_link = app.link_at_point(event.mouse_x, event.mouse_y) or { '' }
+			result := app.dispatch_chrome_pointer_event_at_viewport_point('pointermove', 0, f64(event.mouse_x), f64(event.mouse_y - app.page_top()))
+			sapp.set_mouse_cursor(mouse_cursor_for_resize_handle(result.cursor))
+			app.hovered_link = if result.handled {
+				''
+			} else {
+				app.link_at_point(event.mouse_x, event.mouse_y) or { '' }
+			}
+		}
+		.mouse_leave {
+			if app.page_model != unsafe { nil } {
+				app.page_model.event_handler.update_hovered_chrome_widget('')
+			}
+			sapp.set_mouse_cursor(.arrow)
 		}
 		else {}
 	}
@@ -3880,6 +4026,7 @@ fn main() {
 		viewport_width: options.width
 		viewport_height: initial_viewport_height
 	}
+	app.install_chrome_widget_input_bridge()
 	if markup != '' {
 		app.install_loaded_page(LoadedPage{
 			url: initial_url
