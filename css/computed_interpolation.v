@@ -5463,13 +5463,15 @@ pub enum InterpolableValueType {
 
 pub struct InterpolationCalculationContext {
 pub mut:
-	property             PropertyID
-	accepted_type_ranges map[InterpolableValueType]AcceptedTypeRange
+	property               PropertyID
+	percentages_resolve_as ?ValueType
+	accepted_type_ranges   map[InterpolableValueType]AcceptedTypeRange
 }
 
 pub fn InterpolationCalculationContext.for_property(property PropertyID) InterpolationCalculationContext {
+	calculation_context := CalculationContext.for_property(PropertyNameAndID.from_id(property))
 	mut accepted_type_ranges := map[InterpolableValueType]AcceptedTypeRange{}
-	for value_type, accepted_range in property_accepted_type_ranges(property) {
+	for value_type, accepted_range in calculation_context.accepted_type_ranges {
 		match value_type {
 			.angle {
 				accepted_type_ranges[.angle] = accepted_range
@@ -5491,6 +5493,7 @@ pub fn InterpolationCalculationContext.for_property(property PropertyID) Interpo
 	}
 	return InterpolationCalculationContext{
 		property: property
+		percentages_resolve_as: calculation_context.percentages_resolve_as
 		accepted_type_ranges: accepted_type_ranges
 	}
 }
@@ -5949,7 +5952,10 @@ fn get_value_type_of_numeric_style_value(value StyleValue, calculation_context C
 }
 
 fn interpolate_mixed_style_value(calculation_context InterpolationCalculationContext, from StyleValue, to StyleValue, delta f64) ?StyleValue {
-	numeric_context := CalculationContext.for_property(PropertyNameAndID.from_id(calculation_context.property))
+	mut numeric_context := CalculationContext.for_property(PropertyNameAndID.from_id(calculation_context.property))
+	if percentages_resolve_as := calculation_context.percentages_resolve_as {
+		numeric_context.percentages_resolve_as = percentages_resolve_as
+	}
 	from_type := get_value_type_of_numeric_style_value(from, numeric_context) or { return none }
 	to_type := get_value_type_of_numeric_style_value(to, numeric_context) or { return none }
 	if from_type != to_type {
@@ -5979,8 +5985,15 @@ fn interpolate_mixed_style_value(calculation_context InterpolationCalculationCon
 	// This helper interpolates a numeric component, which may be nested inside a
 	// list-valued property such as grid-template-columns. Parsing the calculation
 	// as the whole property would wrap it in that property's list style value.
-	numeric := CSSNumericValue.parse(serialization) or { return none }
-	return numeric.create_an_internal_representation(PropertyNameAndID.from_id(calculation_context.property), .no) or { none }
+	mut parser := Parser.from_css_text(serialization)
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	value := parser.parse_calculated_value_with_context(mut tokens, numeric_context, true) or {
+		return none
+	}
+	if tokens.has_more_tokens() {
+		return none
+	}
+	return value
 }
 
 pub fn interpolate_discrete_style_value(from StyleValue, to StyleValue, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
@@ -6072,6 +6085,40 @@ fn superellipse_parameter_from_interpolation_value(value f64) f64 {
 	return if value < 0.5 { -parameter } else { parameter }
 }
 
+fn interpolate_basic_shape_circle(calculation_context InterpolationCalculationContext, from BasicShapeCircle, to BasicShapeCircle, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
+	radius := interpolate_style_value_impl(calculation_context, from.radius, to.radius, delta, .no) or { return none }
+	if from.position == none && to.position == none {
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeCircle{
+			radius: radius
+		})))
+	}
+	center := StyleValue(PositionStyleValue.create_computed_center())
+	from_position := from.position or { center }
+	to_position := to.position or { center }
+	position := interpolate_style_value(calculation_context, from_position, to_position, delta, allow_discrete) or { return none }
+	return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeCircle{
+		radius: radius
+		position: position
+	})))
+}
+
+fn interpolate_basic_shape_ellipse(calculation_context InterpolationCalculationContext, from BasicShapeEllipse, to BasicShapeEllipse, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
+	radius := interpolate_style_value_impl(calculation_context, from.radius, to.radius, delta, .no) or { return none }
+	if from.position == none && to.position == none {
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeEllipse{
+			radius: radius
+		})))
+	}
+	center := StyleValue(PositionStyleValue.create_computed_center())
+	from_position := from.position or { center }
+	to_position := to.position or { center }
+	position := interpolate_style_value(calculation_context, from_position, to_position, delta, allow_discrete) or { return none }
+	return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeEllipse{
+		radius: radius
+		position: position
+	})))
+}
+
 fn interpolate_style_value_impl(calculation_context InterpolationCalculationContext, from StyleValue, to StyleValue, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
 	if from.type_() != to.type_() || from.is_calculated() || to.is_calculated() {
 		// Handle mixed percentages and dimensions by constructing the same weighted
@@ -6082,15 +6129,21 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 	if from.type_() == .color {
 		// Boundary: DOM/layout color resolution context is unavailable to this CSS-side helper, so unresolved colors use the default context.
 		color_resolution_context := ColorResolutionContext{}
+		color_syntax := if interpolation_color_syntax(from) == .modern
+			|| interpolation_color_syntax(to) == .modern {
+			ColorSyntax.modern
+		} else {
+			ColorSyntax.legacy
+		}
 		from_color := from.to_color(color_resolution_context)
 		to_color := to.to_color(color_resolution_context)
 		mut interpolated_color := Color.black()
 		if resolved_from_color := from_color {
 			if resolved_to_color := to_color {
-				interpolated_color = interpolate_css_color(resolved_from_color, resolved_to_color, delta, .modern)
+				interpolated_color = interpolate_css_color(resolved_from_color, resolved_to_color, delta, color_syntax)
 			}
 		}
-		return StyleValue(ColorStyleValue.create(interpolated_color))
+		return StyleValue(ColorStyleValue.create_from_color(interpolated_color, .modern, none))
 	}
 
 	return match from {
@@ -6122,6 +6175,88 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				bottom := interpolate_style_value_impl(calculation_context, from.bottom(), to.bottom(), delta, allow_discrete) or { return none }
 				left := interpolate_style_value_impl(calculation_context, from.left(), to.left(), delta, allow_discrete) or { return none }
 				StyleValue(BorderImageSliceStyleValue.create(top, right, bottom, left, from.fill()))
+			} else {
+				none
+			}
+		}
+		BasicShapeStyleValue {
+			if to is BasicShapeStyleValue {
+				mut basic_shape_context := InterpolationCalculationContext.for_property(calculation_context.property)
+				basic_shape_context.percentages_resolve_as = ValueType.length
+				from_basic_shape := from as BasicShapeStyleValue
+				to_basic_shape := to as BasicShapeStyleValue
+				from_shape := from_basic_shape.basic_shape()
+				to_shape := to_basic_shape.basic_shape()
+				mut interpolated_shape := ?BasicShape(none)
+				match from_shape {
+					BasicShapeInset {
+						if to_shape !is BasicShapeInset {
+							return none
+						}
+						from_inset := from_shape as BasicShapeInset
+						to_inset := to_shape as BasicShapeInset
+						top := interpolate_style_value(basic_shape_context, from_inset.top, to_inset.top, delta, allow_discrete) or { return none }
+						right := interpolate_style_value(basic_shape_context, from_inset.right, to_inset.right, delta, allow_discrete) or { return none }
+						bottom := interpolate_style_value(basic_shape_context, from_inset.bottom, to_inset.bottom, delta, allow_discrete) or { return none }
+						left := interpolate_style_value(basic_shape_context, from_inset.left, to_inset.left, delta, allow_discrete) or { return none }
+						border_radius := interpolate_style_value(basic_shape_context, from_inset.border_radius, to_inset.border_radius, delta, allow_discrete) or {
+							return none
+						}
+						interpolated_shape = BasicShape(BasicShapeInset{
+							top: top
+							right: right
+							bottom: bottom
+							left: left
+							border_radius: border_radius
+						})
+					}
+					BasicShapeCircle {
+						if to_shape !is BasicShapeCircle {
+							return none
+						}
+						from_circle := from_shape as BasicShapeCircle
+						to_circle := to_shape as BasicShapeCircle
+						return interpolate_basic_shape_circle(basic_shape_context, from_circle, to_circle, delta, allow_discrete)
+					}
+					BasicShapeEllipse {
+						if to_shape !is BasicShapeEllipse {
+							return none
+						}
+						from_ellipse := from_shape as BasicShapeEllipse
+						to_ellipse := to_shape as BasicShapeEllipse
+						return interpolate_basic_shape_ellipse(basic_shape_context, from_ellipse, to_ellipse, delta, allow_discrete)
+					}
+					BasicShapePolygon {
+						if to_shape !is BasicShapePolygon {
+							return none
+						}
+						from_polygon := from_shape as BasicShapePolygon
+						to_polygon := to_shape as BasicShapePolygon
+						if from_polygon.fill_rule != to_polygon.fill_rule
+							|| from_polygon.points.len != to_polygon.points.len {
+							return none
+						}
+						mut points := []BasicShapePolygonPoint{cap: from_polygon.points.len}
+						for index, from_point in from_polygon.points {
+							to_point := to_polygon.points[index]
+							x := interpolate_style_value(basic_shape_context, from_point.x, to_point.x, delta, allow_discrete) or { return none }
+							y := interpolate_style_value(basic_shape_context, from_point.y, to_point.y, delta, allow_discrete) or { return none }
+							points << BasicShapePolygonPoint{
+								x: x
+								y: y
+							}
+						}
+						interpolated_shape = BasicShape(BasicShapePolygon{
+							fill_rule: from_polygon.fill_rule
+							points: points
+						})
+					}
+					else {
+						return none
+					}
+				}
+				shape := interpolated_shape or { return none }
+				StyleValue(BasicShapeStyleValue.create(shape))
 			} else {
 				none
 			}
@@ -7935,6 +8070,44 @@ fn composite_mixed_style_value(property_id PropertyID, underlying StyleValue, an
 	}
 }
 
+fn composite_basic_shape_circle(property_id PropertyID, underlying BasicShapeCircle, animated BasicShapeCircle, operation CompositeOperation) ?StyleValue {
+	radius := composite_style_value(property_id, underlying.radius, animated.radius, operation) or {
+		return none
+	}
+	if underlying.position == none && animated.position == none {
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeCircle{
+			radius: radius
+		})))
+	}
+	center := StyleValue(PositionStyleValue.create_computed_center())
+	underlying_position := underlying.position or { center }
+	animated_position := animated.position or { center }
+	position := composite_style_value(property_id, underlying_position, animated_position, operation) or { return none }
+	return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeCircle{
+		radius: radius
+		position: position
+	})))
+}
+
+fn composite_basic_shape_ellipse(property_id PropertyID, underlying BasicShapeEllipse, animated BasicShapeEllipse, operation CompositeOperation) ?StyleValue {
+	radius := composite_style_value(property_id, underlying.radius, animated.radius, operation) or {
+		return none
+	}
+	if underlying.position == none && animated.position == none {
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeEllipse{
+			radius: radius
+		})))
+	}
+	center := StyleValue(PositionStyleValue.create_computed_center())
+	underlying_position := underlying.position or { center }
+	animated_position := animated.position or { center }
+	position := composite_style_value(property_id, underlying_position, animated_position, operation) or { return none }
+	return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapeEllipse{
+		radius: radius
+		position: position
+	})))
+}
+
 fn composite_style_value(property_id PropertyID, underlying StyleValue, animated StyleValue, operation CompositeOperation) ?StyleValue {
 	if operation == .replace {
 		return none
@@ -7947,6 +8120,86 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 		AngleStyleValue {
 			if animated is AngleStyleValue && underlying.angle().unit() == animated.angle().unit() {
 				StyleValue(AngleStyleValue.create(Angle.new(underlying.raw_value() + animated.raw_value(), underlying.angle().unit())))
+			} else {
+				none
+			}
+		}
+		BasicShapeStyleValue {
+			if animated is BasicShapeStyleValue {
+				underlying_basic_shape := underlying as BasicShapeStyleValue
+				animated_basic_shape := animated as BasicShapeStyleValue
+				underlying_shape := underlying_basic_shape.basic_shape()
+				animated_shape := animated_basic_shape.basic_shape()
+				mut composited_shape := ?BasicShape(none)
+				match underlying_shape {
+					BasicShapeInset {
+						if animated_shape !is BasicShapeInset {
+							return none
+						}
+						underlying_inset := underlying_shape as BasicShapeInset
+						animated_inset := animated_shape as BasicShapeInset
+						top := composite_style_value(property_id, underlying_inset.top, animated_inset.top, operation) or { return none }
+						right := composite_style_value(property_id, underlying_inset.right, animated_inset.right, operation) or { return none }
+						bottom := composite_style_value(property_id, underlying_inset.bottom, animated_inset.bottom, operation) or { return none }
+						left := composite_style_value(property_id, underlying_inset.left, animated_inset.left, operation) or { return none }
+						border_radius := composite_style_value(property_id, underlying_inset.border_radius, animated_inset.border_radius, operation) or {
+							return none
+						}
+						composited_shape = BasicShape(BasicShapeInset{
+							top: top
+							right: right
+							bottom: bottom
+							left: left
+							border_radius: border_radius
+						})
+					}
+					BasicShapeCircle {
+						if animated_shape !is BasicShapeCircle {
+							return none
+						}
+						underlying_circle := underlying_shape as BasicShapeCircle
+						animated_circle := animated_shape as BasicShapeCircle
+						return composite_basic_shape_circle(property_id, underlying_circle, animated_circle, operation)
+					}
+					BasicShapeEllipse {
+						if animated_shape !is BasicShapeEllipse {
+							return none
+						}
+						underlying_ellipse := underlying_shape as BasicShapeEllipse
+						animated_ellipse := animated_shape as BasicShapeEllipse
+						return composite_basic_shape_ellipse(property_id, underlying_ellipse, animated_ellipse, operation)
+					}
+					BasicShapePolygon {
+						if animated_shape !is BasicShapePolygon {
+							return none
+						}
+						underlying_polygon := underlying_shape as BasicShapePolygon
+						animated_polygon := animated_shape as BasicShapePolygon
+						if underlying_polygon.fill_rule != animated_polygon.fill_rule
+							|| underlying_polygon.points.len != animated_polygon.points.len {
+							return none
+						}
+						mut points := []BasicShapePolygonPoint{cap: underlying_polygon.points.len}
+						for index, underlying_point in underlying_polygon.points {
+							animated_point := animated_polygon.points[index]
+							x := composite_style_value(property_id, underlying_point.x, animated_point.x, operation) or { return none }
+							y := composite_style_value(property_id, underlying_point.y, animated_point.y, operation) or { return none }
+							points << BasicShapePolygonPoint{
+								x: x
+								y: y
+							}
+						}
+						composited_shape = BasicShape(BasicShapePolygon{
+							fill_rule: underlying_polygon.fill_rule
+							points: points
+						})
+					}
+					else {
+						return none
+					}
+				}
+				shape := composited_shape or { return none }
+				StyleValue(BasicShapeStyleValue.create(shape))
 			} else {
 				none
 			}
@@ -8038,6 +8291,17 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 				none
 			}
 		}
+		BorderRadiusRectStyleValue {
+			if animated is BorderRadiusRectStyleValue {
+				top_left := composite_style_value(property_id, underlying.top_left(), animated.top_left(), operation) or { return none }
+				top_right := composite_style_value(property_id, underlying.top_right(), animated.top_right(), operation) or { return none }
+				bottom_right := composite_style_value(property_id, underlying.bottom_right(), animated.bottom_right(), operation) or { return none }
+				bottom_left := composite_style_value(property_id, underlying.bottom_left(), animated.bottom_left(), operation) or { return none }
+				StyleValue(BorderRadiusRectStyleValue.create(top_left, top_right, bottom_right, bottom_left))
+			} else {
+				none
+			}
+		}
 		EdgeStyleValue {
 			if animated is EdgeStyleValue && underlying.offset_ != none && animated.offset_ != none {
 				offset := composite_style_value(property_id, underlying.offset(), animated.offset(), operation) or { return none }
@@ -8062,6 +8326,49 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 					StyleValue(PositionStyleValue.create(x, y))
 				} else {
 					none
+				}
+			} else {
+				none
+			}
+		}
+		RadialSizeStyleValue {
+			if animated is RadialSizeStyleValue {
+				underlying_components := underlying.components()
+				animated_components := animated.components()
+				for component in underlying_components {
+					if component is RadialExtentComponent {
+						return none
+					}
+				}
+				for component in animated_components {
+					if component is RadialExtentComponent {
+						return none
+					}
+				}
+				underlying_x := underlying_components[0] as StyleValue
+				animated_x := animated_components[0] as StyleValue
+				if underlying_components.len == 1 && animated_components.len == 1 {
+					value := composite_style_value(property_id, underlying_x, animated_x, operation) or { return none }
+					StyleValue(RadialSizeStyleValue.create([
+						RadialSizeStyleValueComponent(value),
+					]))
+				} else {
+					underlying_y := if underlying_components.len > 1 {
+						underlying_components[1] as StyleValue
+					} else {
+						underlying_x
+					}
+					animated_y := if animated_components.len > 1 {
+						animated_components[1] as StyleValue
+					} else {
+						animated_x
+					}
+					x := composite_style_value(property_id, underlying_x, animated_x, operation) or { return none }
+					y := composite_style_value(property_id, underlying_y, animated_y, operation) or { return none }
+					StyleValue(RadialSizeStyleValue.create([
+						RadialSizeStyleValueComponent(x),
+						RadialSizeStyleValueComponent(y),
+					]))
 				}
 			} else {
 				none

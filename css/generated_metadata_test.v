@@ -1384,6 +1384,17 @@ fn test_computed_value_flag_helpers_match_computed_values_contract() {
 fn test_custom_property_interpolation_matches_css_animation_rules() {
 	doc := dom.Document.create(dom.url_about_blank())
 	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	assert interpolate_test_property(element, .color, 'red', 'blue', 0.5) == 'rgb(128, 0, 128)'
+	interpolated_color := interpolate_property(element, .color, &dom.StyleValue{
+		css_text: 'red'
+	}, &dom.StyleValue{
+		css_text: 'blue'
+	}, 0.5, .no) or { panic('legacy color interpolation failed') }
+	interpolated_color_value := style_value_logic_from_dom(.color, interpolated_color) or {
+		panic('interpolated color did not round-trip')
+	}
+	assert interpolated_color_value is RGBColorStyleValue
+	assert (interpolated_color_value as RGBColorStyleValue).color_syntax() == .modern
 	assert interpolate_test_property(element, .opacity, '0.2', '0.8', 2) == '1'
 	assert interpolate_test_property(element, .width, '10px', '20px', -2) == '0px'
 	assert interpolate_test_property(element, .margin_left, '10px', '20px', -2) == '-10px'
@@ -1398,4 +1409,73 @@ fn test_custom_property_interpolation_matches_css_animation_rules() {
 	assert interpolate_test_property(element, .filter, 'opacity(0.2)', 'opacity(0.8)', 2) == 'opacity(1)'
 	assert interpolate_test_property(element, .filter, 'brightness(1)', 'brightness(2)', -2) == 'brightness(0)'
 	assert interpolate_test_property(element, .filter, 'drop-shadow(0px 0px red)', 'drop-shadow(10px 20px blue)', 0.5) == 'drop-shadow(rgb(128 0 128) 5px 10px)'
+}
+
+fn test_basic_shape_interpolation_and_composition() {
+	doc := dom.Document.create(dom.url_about_blank())
+	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	parsed_circle := parse_css_value_logic(.clip_path, 'circle(10px at 20% 30%)') or {
+		panic('circle with position did not parse')
+	}
+	assert parsed_circle.serialize(.normal) == 'circle(10px at 20% 30%)'
+	assert parsed_circle is BasicShapeStyleValue
+	parsed_shape := (parsed_circle as BasicShapeStyleValue).basic_shape()
+	assert parsed_shape is BasicShapeCircle
+	assert (parsed_shape as BasicShapeCircle).position != none
+	assert parsed_circle.absolutized(ComputationContext{}).serialize(.normal) == 'circle(10px at 20% 30%)'
+	round_tripped_circle := style_value_logic_from_dom(.clip_path, dom_style_value_from_value_logic(parsed_circle)) or { panic('circle did not round-trip') }
+	round_tripped_shape := (round_tripped_circle as BasicShapeStyleValue).basic_shape()
+	assert (round_tripped_shape as BasicShapeCircle).position != none
+	assert interpolate_test_property(element, .object_position, '20% 30%', '40% 50%', 0.5) == '30% 40%'
+
+	assert interpolate_test_property(element, .clip_path, 'circle(10px at 20% 30%)', 'circle(30px at 40% 50%)', 0.5) == 'circle(20px at 30% 40%)'
+	assert interpolate_test_property(element, .clip_path, 'circle(10px)', 'circle(30px at 70% 90%)', 0.5) == 'circle(20px at 60% 70%)'
+	assert interpolate_test_property(element, .clip_path, 'ellipse(10px 20px at 10% 20%)', 'ellipse(30px 40px at 30% 60%)', 0.5) == 'ellipse(20px 30px at 20% 40%)'
+	assert interpolate_test_property(element, .clip_path, 'polygon(evenodd, 0% 0%, 100% 0%, 100% 100%)', 'polygon(evenodd, 20% 40%, 80% 20%, 60% 80%)', 0.5) == 'polygon(evenodd, 10% 20%, 90% 10%, 80% 90%)'
+	mixed := interpolate_test_property(element, .clip_path, 'circle(10px)', 'circle(30%)', 0.5)
+	assert mixed == 'circle(calc(15% + 5px))'
+
+	composited_circle := composite_value(.clip_path, &dom.StyleValue{
+		css_text: 'circle(10px at 20% 30%)'
+	}, &dom.StyleValue{
+		css_text: 'circle(5px at 40% 10%)'
+	}, .add) or { panic('circle composition failed') }
+	assert composited_circle.css_text == 'circle(15px at 60% 40%)'
+	composited_ellipse := composite_value(.clip_path, &dom.StyleValue{
+		css_text: 'ellipse(10px 20px at 20% 30%)'
+	}, &dom.StyleValue{
+		css_text: 'ellipse(5px 10px at 40% 10%)'
+	}, .add) or { panic('ellipse composition failed') }
+	assert composited_ellipse.css_text == 'ellipse(15px 30px at 60% 40%)'
+	composited_polygon := composite_value(.clip_path, &dom.StyleValue{
+		css_text: 'polygon(0% 0%, 20% 40%, 50% 60%)'
+	}, &dom.StyleValue{
+		css_text: 'polygon(10% 20%, 30% 40%, 25% 10%)'
+	}, .add) or { panic('polygon composition failed') }
+	assert composited_polygon.css_text == 'polygon(10% 20%, 50% 80%, 75% 70%)'
+
+	// inset() exercises both basic-shape and four-corner border-radius composition.
+	composited_inset := composite_value(.clip_path, &dom.StyleValue{
+		css_text: 'inset(1px 2px 3px 4px round 1px 2px 3px 4px / 5px 6px 7px 8px)'
+	}, &dom.StyleValue{
+		css_text: 'inset(10px 20px 30px 40px round 2px 3px 4px 5px / 6px 7px 8px 9px)'
+	}, .add) or { panic('inset composition failed') }
+	assert composited_inset.css_text == 'inset(11px 22px 33px 44px round 3px 5px 7px 9px / 11px 13px 15px 17px)'
+
+	underlying_radial_size := StyleValue(RadialSizeStyleValue.create([
+		RadialSizeStyleValueComponent(StyleValue(LengthStyleValue.create(Length.make_px(10)))),
+	]))
+	animated_radial_size := StyleValue(RadialSizeStyleValue.create([
+		RadialSizeStyleValueComponent(StyleValue(LengthStyleValue.create(Length.make_px(20)))),
+		RadialSizeStyleValueComponent(StyleValue(LengthStyleValue.create(Length.make_px(30)))),
+	]))
+	composited_radial_size := composite_style_value(.background_image, underlying_radial_size, animated_radial_size, .add) or { panic('radial-size composition failed') }
+	assert composited_radial_size.serialize(.normal) == '30px 40px'
+
+	radial_extent := StyleValue(RadialSizeStyleValue.create([
+		RadialSizeStyleValueComponent(RadialExtentComponent{
+			extent: .closest_side
+		}),
+	]))
+	assert composite_style_value(.background_image, radial_extent, animated_radial_size, .add) == none
 }
