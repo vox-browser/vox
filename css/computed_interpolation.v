@@ -5466,6 +5466,7 @@ pub mut:
 	property               PropertyID
 	percentages_resolve_as ?ValueType
 	accepted_type_ranges   map[InterpolableValueType]AcceptedTypeRange
+	color_resolution       ?ColorResolutionContext
 }
 
 pub fn InterpolationCalculationContext.for_property(property PropertyID) InterpolationCalculationContext {
@@ -6127,8 +6128,10 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 	}
 
 	if from.type_() == .color {
-		// Boundary: DOM/layout color resolution context is unavailable to this CSS-side helper, so unresolved colors use the default context.
-		color_resolution_context := ColorResolutionContext{}
+		// The element-aware entry points install the layout color context used during style interpolation.
+		color_resolution_context := calculation_context.color_resolution or {
+			ColorResolutionContext{}
+		}
 		color_syntax := if interpolation_color_syntax(from) == .modern
 			|| interpolation_color_syntax(to) == .modern {
 			ColorSyntax.modern
@@ -6622,26 +6625,34 @@ pub fn interpolate_repeatable_style_value_list(calculation_context Interpolation
 }
 
 pub fn interpolate_value(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	_ = element
+	mut context := calculation_context
+	if layout_node := element.as_node().unsafe_layout_node() {
+		context.color_resolution = color_resolution_context_for_layout_node(layout_node)
+	}
 	from_value := style_value_logic_from_dom(calculation_context.property, from) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
 	to_value := style_value_logic_from_dom(calculation_context.property, to) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	interpolated := interpolate_style_value(calculation_context, from_value, to_value, delta, allow_discrete) or { return none }
+	interpolated := interpolate_style_value(context, from_value, to_value, delta, allow_discrete) or {
+		return none
+	}
 	return dom_style_value_from_value_logic(interpolated)
 }
 
 pub fn interpolate_repeatable_list(element &dom.Element, calculation_context InterpolationCalculationContext, from &dom.StyleValue, to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
-	_ = element
+	mut context := calculation_context
+	if layout_node := element.as_node().unsafe_layout_node() {
+		context.color_resolution = color_resolution_context_for_layout_node(layout_node)
+	}
 	from_value := style_value_logic_from_dom(calculation_context.property, from) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
 	to_value := style_value_logic_from_dom(calculation_context.property, to) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
-	interpolated := interpolate_repeatable_style_value_list(calculation_context, from_value, to_value, delta, allow_discrete) or { return none }
+	interpolated := interpolate_repeatable_style_value_list(context, from_value, to_value, delta, allow_discrete) or { return none }
 	return dom_style_value_from_value_logic(interpolated)
 }
 

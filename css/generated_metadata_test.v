@@ -1457,6 +1457,24 @@ fn test_nested_style_value_interpolation_uses_component_fallback() {
 	assert feature.css_text == '"kern" 1'
 }
 
+fn test_color_interpolation_uses_the_elements_color_resolution_context() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	element.set_attribute_value('style', 'color-scheme: dark')
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(element.as_node()) or { panic('${err}') }
+	mut abstract_element := dom.AbstractElement.new(element, none)
+	computed := StyleComputer.new(doc).compute_style(abstract_element)
+	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
+	layout_node := &dom.LayoutNode{
+		dom_node_: element.as_node()
+	}
+	mut node := element.as_node()
+	node.set_layout_node(layout_node)
+
+	assert interpolate_test_property(element, .background_color, 'light-dark(red, green)', 'light-dark(blue, white)', 0) == 'rgb(0, 128, 0)'
+}
+
 fn test_basic_shape_interpolation_and_composition() {
 	doc := dom.Document.create(dom.url_about_blank())
 	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
