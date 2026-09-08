@@ -5468,8 +5468,30 @@ pub mut:
 }
 
 pub fn InterpolationCalculationContext.for_property(property PropertyID) InterpolationCalculationContext {
+	mut accepted_type_ranges := map[InterpolableValueType]AcceptedTypeRange{}
+	for value_type, accepted_range in property_accepted_type_ranges(property) {
+		match value_type {
+			.angle {
+				accepted_type_ranges[.angle] = accepted_range
+			}
+			.length {
+				accepted_type_ranges[.length] = accepted_range
+			}
+			.percentage {
+				accepted_type_ranges[.percentage] = accepted_range
+			}
+			.number {
+				accepted_type_ranges[.number] = accepted_range
+			}
+			.integer {
+				accepted_type_ranges[.integer] = accepted_range
+			}
+			else {}
+		}
+	}
 	return InterpolationCalculationContext{
 		property: property
+		accepted_type_ranges: accepted_type_ranges
 	}
 }
 

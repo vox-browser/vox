@@ -1384,6 +1384,10 @@ fn test_computed_value_flag_helpers_match_computed_values_contract() {
 fn test_custom_property_interpolation_matches_css_animation_rules() {
 	doc := dom.Document.create(dom.url_about_blank())
 	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	assert interpolate_test_property(element, .opacity, '0.2', '0.8', 2) == '1'
+	assert interpolate_test_property(element, .width, '10px', '20px', -2) == '0px'
+	assert interpolate_test_property(element, .margin_left, '10px', '20px', -2) == '-10px'
+	assert interpolate_test_property(element, .column_count, '2', '4', -1) == '1'
 	assert interpolate_test_property(element, .scale, 'none', '2 4', 0.5) == '1.5 2.5'
 	assert interpolate_test_property(element, .translate, 'none', '20px 40px', 0.5) == '10px 20px'
 	assert interpolate_test_property(element, .rotate, 'none', '90deg', 0.5) == '45deg'
