@@ -846,6 +846,22 @@ fn test_additive_composition_uses_typed_css_values() {
 	}, .replace) == none
 }
 
+fn transform_interpolation_test_matrix(value &dom.StyleValue) FloatMatrix4x4 {
+	parsed := parse_css_value_logic(.transform, value.css_text) or {
+		panic('interpolated transform did not parse')
+	}
+	if parsed is TransformationStyleValue {
+		return parsed.to_matrix(none) or { panic('interpolated transform did not resolve') }
+	}
+	if parsed is StyleValueList && parsed.size() == 1 {
+		item := parsed.value_at(0, false)
+		if item is TransformationStyleValue {
+			return item.to_matrix(none) or { panic('interpolated transform did not resolve') }
+		}
+	}
+	panic('interpolated value was not a single transform')
+}
+
 fn test_transform_interpolation_matches_primitives_and_pads_none() {
 	doc := dom.Document.create(dom.url_about_blank())
 	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
@@ -869,7 +885,37 @@ fn test_transform_interpolation_matches_primitives_and_pads_none() {
 	}, &dom.StyleValue{
 		css_text: 'rotateZ(90deg)'
 	}, 0.5, .no) or { panic('rotation primitive interpolation failed') }
-	assert rotation.css_text == 'rotate(45deg)'
+	assert rotation.css_text == 'rotate3d(0, 0, 1, 45deg)'
+
+	mixed_scale := interpolate_transform(element, context, &dom.StyleValue{
+		css_text: 'scaleX(2)'
+	}, &dom.StyleValue{
+		css_text: 'scaleZ(3)'
+	}, 0.5, .no) or { panic('3D scale primitive interpolation failed') }
+	assert mixed_scale.css_text == 'scale3d(1.5, 1, 2)'
+
+	mixed_translate := interpolate_transform(element, context, &dom.StyleValue{
+		css_text: 'translateY(10px)'
+	}, &dom.StyleValue{
+		css_text: 'translateZ(30px)'
+	}, 0.5, .no) or { panic('3D translate primitive interpolation failed') }
+	assert mixed_translate.css_text == 'translate3d(0px, 5px, 15px)'
+
+	axis_rotation := interpolate_transform(element, context, &dom.StyleValue{
+		css_text: 'rotate3d(1, 0, 0, 30deg)'
+	}, &dom.StyleValue{
+		css_text: 'rotate3d(0, 1, 0, 60deg)'
+	}, 0.5, .no) or { panic('3D rotation interpolation failed') }
+	axis_matrix := transform_interpolation_test_matrix(axis_rotation)
+	assert math.abs(axis_matrix.m11 - 0.863873) < 1e-6
+	assert math.abs(axis_matrix.m21 - 0.070465) < 1e-6
+	assert math.abs(axis_matrix.m31 + 0.498757) < 1e-6
+	assert math.abs(axis_matrix.m12 - 0.070465) < 1e-6
+	assert math.abs(axis_matrix.m22 - 0.963525) < 1e-6
+	assert math.abs(axis_matrix.m32 - 0.258176) < 1e-6
+	assert math.abs(axis_matrix.m13 - 0.498757) < 1e-6
+	assert math.abs(axis_matrix.m23 + 0.258176) < 1e-6
+	assert math.abs(axis_matrix.m33 - 0.827397) < 1e-6
 
 	matrix_interpolation := interpolate_transform(element, context, &dom.StyleValue{
 		css_text: 'matrix(1, 0, 0, 1, 0, 0)'

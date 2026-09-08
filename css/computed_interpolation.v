@@ -7297,14 +7297,34 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 	for i in 0 .. from_transformations.len {
 		mut from_transform := from_transformations[i]
 		mut to_transform := to_transformations[i]
-		if interpolation_is_2d_primitive_transform(from_transform.transform_function()) && interpolation_is_2d_primitive_transform(to_transform.transform_function()) {
+		from_function := from_transform.transform_function()
+		to_function := to_transform.transform_function()
+		if from_function in [.matrix, .matrix3d, .perspective]
+			|| to_function in [.matrix, .matrix3d, .perspective] {
+			matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
+				return interpolate_discrete(from, to, delta, allow_discrete)
+			}
+			return dom_style_value_from_value_logic(matrix_result)
+		}
+
+		if interpolation_is_2d_transform(from_function) && interpolation_is_2d_transform(to_function) {
 			from_transform = interpolation_convert_to_2d_primitive(from_transform)
 			to_transform = interpolation_convert_to_2d_primitive(to_transform)
+		} else if interpolation_is_3d_transform(from_function) || interpolation_is_3d_transform(to_function) {
+			if !interpolation_is_3d_primitive(from_function) {
+				from_transform = interpolation_convert_to_3d_primitive(from_transform) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+			}
+			if !interpolation_is_3d_primitive(to_function) {
+				to_transform = interpolation_convert_to_3d_primitive(to_transform) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+			}
 		}
 
 		function := from_transform.transform_function()
-		if function != to_transform.transform_function() || function in [.matrix, .matrix3d,
-			.perspective] {
+		if function != to_transform.transform_function() {
 			matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
 				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
@@ -7319,34 +7339,28 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 			return dom_style_value_from_value_logic(matrix_result)
 		}
 
-		mut values := []StyleValue{cap: from_values.len}
 		if function == .rotate3d {
-			// Equal axes need no matrix decomposition: only the angle changes.
-			if from_values.len != 4 || !from_values[0].equals(to_values[0]) || !from_values[1].equals(to_values[1]) || !from_values[2].equals(to_values[2]) {
-				matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
-					return interpolate_discrete(from, to, delta, allow_discrete)
-				}
-				return dom_style_value_from_value_logic(matrix_result)
+			rotation := interpolation_rotation_transform(from_transform, to_transform, delta, .no) or {
+				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
-			values << from_values[0]
-			values << from_values[1]
-			values << from_values[2]
-			values << (interpolate_style_value(calculation_context, from_values[3], to_values[3], delta, .no) or { return interpolate_discrete(from, to, delta, allow_discrete) })
-		} else {
-			mut interpolation_failed := false
-			for value_index in 0 .. from_values.len {
-				value := interpolate_style_value(calculation_context, from_values[value_index], to_values[value_index], delta, .no) or {
-					interpolation_failed = true
-					break
-				}
-				values << value
+			result << StyleValue(TransformationStyleValue.create(.transform, .rotate3d, rotation.values()))
+			continue
+		}
+
+		mut values := []StyleValue{cap: from_values.len}
+		mut interpolation_failed := false
+		for value_index in 0 .. from_values.len {
+			value := interpolate_style_value(calculation_context, from_values[value_index], to_values[value_index], delta, .no) or {
+				interpolation_failed = true
+				break
 			}
-			if interpolation_failed {
-				matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
-					return interpolate_discrete(from, to, delta, allow_discrete)
-				}
-				return dom_style_value_from_value_logic(matrix_result)
+			values << value
+		}
+		if interpolation_failed {
+			matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
+				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
+			return dom_style_value_from_value_logic(matrix_result)
 		}
 		result << StyleValue(TransformationStyleValue.create(.transform, function, values))
 	}
@@ -7380,9 +7394,22 @@ fn interpolation_extend_transform_list(mut values []TransformationStyleValue, ot
 	}
 }
 
-fn interpolation_is_2d_primitive_transform(function TransformFunction) bool {
-	return function in [.rotate, .rotate_z, .scale, .scale_x, .scale_y, .translate, .translate_x,
-		.translate_y]
+fn interpolation_is_2d_primitive(function TransformFunction) bool {
+	return function in [.rotate, .scale, .translate]
+}
+
+fn interpolation_is_2d_transform(function TransformFunction) bool {
+	return interpolation_is_2d_primitive(function)
+		|| function in [.scale_x, .scale_y, .translate_x, .translate_y]
+}
+
+fn interpolation_is_3d_primitive(function TransformFunction) bool {
+	return function in [.rotate3d, .scale3d, .translate3d]
+}
+
+fn interpolation_is_3d_transform(function TransformFunction) bool {
+	return interpolation_is_2d_transform(function) || interpolation_is_3d_primitive(function)
+		|| function in [.rotate_x, .rotate_y, .rotate_z, .scale_z, .translate_z]
 }
 
 fn interpolation_convert_to_2d_primitive(transform TransformationStyleValue) TransformationStyleValue {
@@ -7390,7 +7417,7 @@ fn interpolation_convert_to_2d_primitive(transform TransformationStyleValue) Tra
 	zero := StyleValue(LengthStyleValue.create(Length.make_px(0)))
 	one := StyleValue(NumberStyleValue.create(1))
 	return match transform.transform_function() {
-		.rotate, .rotate_z {
+		.rotate {
 			TransformationStyleValue.create(.transform, .rotate, [values[0]])
 		}
 		.scale {
@@ -7421,6 +7448,51 @@ fn interpolation_convert_to_2d_primitive(transform TransformationStyleValue) Tra
 		}
 		else {
 			transform
+		}
+	}
+}
+
+fn interpolation_convert_to_3d_primitive(original_transform TransformationStyleValue) ?TransformationStyleValue {
+	transform := if interpolation_is_2d_transform(original_transform.transform_function()) {
+		interpolation_convert_to_2d_primitive(original_transform)
+	} else {
+		original_transform
+	}
+	values := transform.values()
+	zero_number := StyleValue(NumberStyleValue.create(0))
+	one_number := StyleValue(NumberStyleValue.create(1))
+	zero_length := StyleValue(LengthStyleValue.create(Length.make_px(0)))
+
+	return match transform.transform_function() {
+		.rotate, .rotate_z {
+			TransformationStyleValue.create(.transform, .rotate3d, [zero_number, zero_number,
+				one_number, values[0]])
+		}
+		.rotate_x {
+			TransformationStyleValue.create(.transform, .rotate3d, [one_number, zero_number,
+				zero_number, values[0]])
+		}
+		.rotate_y {
+			TransformationStyleValue.create(.transform, .rotate3d, [zero_number, one_number,
+				zero_number, values[0]])
+		}
+		.scale {
+			TransformationStyleValue.create(.transform, .scale3d, [values[0], values[1], one_number])
+		}
+		.scale_z {
+			TransformationStyleValue.create(.transform, .scale3d, [one_number, one_number, values[0]])
+		}
+		.translate {
+			TransformationStyleValue.create(.transform, .translate3d, [values[0], values[1],
+				zero_length])
+		}
+		.translate_z {
+			TransformationStyleValue.create(.transform, .translate3d, [zero_length, zero_length,
+				values[0]])
+		}
+		else {
+			matrix := transform.to_matrix(none) or { return none }
+			TransformationStyleValue.create(.transform, .matrix3d, matrix_to_style_value_vector(matrix))
 		}
 	}
 }
