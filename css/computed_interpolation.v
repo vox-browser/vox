@@ -5939,15 +5939,24 @@ fn interpolate_mixed_style_value(calculation_context InterpolationCalculationCon
 	if delta == 1 {
 		return to
 	}
+	if from is PercentageStyleValue && to.is_dimension() && to !is PercentageStyleValue {
+		dimension_component := to.as_dimension().raw_value() * delta
+		if dimension_component == 0 {
+			return StyleValue(PercentageStyleValue.create(Percentage.new(from.raw_value() * (1.0 - delta))))
+		}
+	} else if to is PercentageStyleValue && from.is_dimension()
+		&& from !is PercentageStyleValue {
+		dimension_component := from.as_dimension().raw_value() * (1.0 - delta)
+		if dimension_component == 0 {
+			return StyleValue(PercentageStyleValue.create(Percentage.new(to.raw_value() * delta)))
+		}
+	}
 	from_weight := serialize_a_number(1.0 - delta)
 	to_weight := serialize_a_number(delta)
 	serialization := 'calc(${from_weight} * (${interpolation_calculation_operand(from)}) + ${to_weight} * (${interpolation_calculation_operand(to)}))'
-	if parsed := parse_css_value_logic(calculation_context.property, serialization) {
-		return parsed
-	}
-	// Component interpolation (for example a translate() argument) does not form
-	// a complete value of the surrounding property. Reify the numeric
-	// calculation directly when whole-property parsing is therefore inapplicable.
+	// This helper interpolates a numeric component, which may be nested inside a
+	// list-valued property such as grid-template-columns. Parsing the calculation
+	// as the whole property would wrap it in that property's list style value.
 	numeric := CSSNumericValue.parse(serialization) or { return none }
 	return numeric.create_an_internal_representation(PropertyNameAndID.from_id(calculation_context.property), .no) or { none }
 }
@@ -7836,10 +7845,25 @@ fn composite_grid_track_size_list(calculation_context InterpolationCalculationCo
 }
 
 fn composite_mixed_style_value(property_id PropertyID, underlying StyleValue, animated StyleValue) ?StyleValue {
-	serialization := 'calc((${interpolation_calculation_operand(underlying)}) + (${interpolation_calculation_operand(animated)}))'
-	if parsed := parse_css_value_logic(property_id, serialization) {
-		return parsed
+	calculation_context := CalculationContext.for_property(PropertyNameAndID.from_id(property_id))
+	underlying_type := get_value_type_of_numeric_style_value(underlying, calculation_context) or {
+		return none
 	}
+	animated_type := get_value_type_of_numeric_style_value(animated, calculation_context) or {
+		return none
+	}
+	if underlying_type != animated_type {
+		return none
+	}
+	if underlying is PercentageStyleValue && animated.is_dimension()
+		&& animated !is PercentageStyleValue && animated.as_dimension().raw_value() == 0 {
+		return underlying
+	}
+	if animated is PercentageStyleValue && underlying.is_dimension()
+		&& underlying !is PercentageStyleValue && underlying.as_dimension().raw_value() == 0 {
+		return animated
+	}
+	serialization := 'calc((${interpolation_calculation_operand(underlying)}) + (${interpolation_calculation_operand(animated)}))'
 	numeric := CSSNumericValue.parse(serialization) or { return none }
 	return numeric.create_an_internal_representation(PropertyNameAndID.from_id(property_id), .no) or {
 		none

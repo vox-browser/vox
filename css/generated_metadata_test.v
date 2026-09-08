@@ -943,6 +943,46 @@ fn test_transform_interpolation_matches_primitives_and_pads_none() {
 	assert grid_tracks.css_text == '20px 2fr'
 }
 
+fn test_grid_track_interpolation_handles_mixed_values_and_repeats() {
+	doc := dom.Document.create(dom.url_about_blank())
+	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+
+	mixed := interpolate_property(element, .grid_template_columns, &dom.StyleValue{
+		css_text: '10px 20px 30px'
+	}, &dom.StyleValue{
+		css_text: '20% 30% 40px'
+	}, 0.4, .yes) or { panic('mixed grid-track interpolation failed') }
+	assert mixed.css_text == 'calc(8% + 6px) calc(12% + 12px) 34px'
+
+	zero_dimension := interpolate_property(element, .grid_template_columns, &dom.StyleValue{
+		css_text: '0px'
+	}, &dom.StyleValue{
+		css_text: '20%'
+	}, 0.5, .yes) or { panic('zero-dimension grid-track interpolation failed') }
+	assert zero_dimension.css_text == '10%'
+
+	repeated := interpolate_property(element, .grid_template_columns, &dom.StyleValue{
+		css_text: '1fr repeat(2, 2fr auto 30px) 1fr'
+	}, &dom.StyleValue{
+		css_text: '2fr repeat(2, 3fr 30px 40px) 2fr'
+	}, 0.6, .yes) or { panic('repeated grid-track interpolation failed') }
+	assert repeated.css_text == '1.6fr repeat(2, 2.6fr 30px 36px) 1.6fr'
+
+	incompatible := interpolate_property(element, .grid_template_columns, &dom.StyleValue{
+		css_text: '1fr repeat(2, 2fr 30px) 1fr'
+	}, &dom.StyleValue{
+		css_text: '2fr repeat(2, 3fr 40px 50px) 2fr'
+	}, 0.4, .yes) or { panic('incompatible grid-track interpolation failed') }
+	assert incompatible.css_text == '1fr repeat(2, 2fr 30px) 1fr'
+
+	composited := composite_value(.grid_template_columns, &dom.StyleValue{
+		css_text: '10px'
+	}, &dom.StyleValue{
+		css_text: '20%'
+	}, .add) or { panic('mixed grid-track composition failed') }
+	assert composited.css_text == 'calc(20% + 10px)'
+}
+
 fn test_ratio_parser_resolves_number_calculations() {
 	value := parse_css_value_logic(.aspect_ratio, 'calc(1 + 1) / calc(2 * 2)') or {
 		panic('calculated ratio did not parse')
