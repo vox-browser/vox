@@ -151,6 +151,18 @@ fn test_node_with_style_resolves_computed_values_once_per_style_application() {
 	assert inherited.width().is_auto()
 }
 
+fn test_node_has_css_transform_includes_individual_transform_properties() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut node := NodeWithStyle.new(document, none, css.ComputedProperties.new())
+	assert !node.has_css_transform()
+
+	mut values := unsafe { &css.MutableComputedValues(node.computed_values()) }
+	values.set_translate(css.TransformationData{
+		property_id: .translate
+	})
+	assert node.has_css_transform()
+}
+
 fn test_first_available_font_uses_computed_font_cascade() {
 	document := dom.Document.create(dom.url_about_blank())
 	mut computed := css.ComputedProperties.new()

@@ -83,6 +83,11 @@ CONSOLIDATED_OWNER_ALIASES: dict[str, tuple[str, ...]] = {
     # port names that concrete specialization explicitly while preserving the
     # same sparse two-level allocation and traversal algorithms.
     "PagedStore": ("UsedValuesPagedStore",),
+    # C++ nests this iterator below TextNode and gives it the generic
+    # ChunkIterator name. V makes the ownership explicit; all source-shaped
+    # iterator methods except the still-missing contextual font lookup retain
+    # their upstream names.
+    "ChunkIterator": ("TextNodeChunkIterator",),
     "WebGLRenderingContextImpl": ("WebGLRenderingContext",),
     "WebGL2RenderingContextImpl": ("WebGLRenderingContext",),
     "WebGLRenderingContextOverloads": ("WebGLRenderingContext",),
@@ -1399,6 +1404,205 @@ CONSOLIDATED_METHOD_MAPPINGS[("InlineNode", "create_paintable_for_line_with_inde
 CONSOLIDATED_METHOD_MAPPINGS[("SVGSVGBox", "natural_size")] = (
     ("negotiate_svg_natural_metrics", None),
 )
+
+# The retained V layout tree does not build the parallel GC paintable lists
+# owned by C++ Layout::Node. A single DOM bridge lowers that typed tree into the
+# active renderer-independent paint transport on every layout. The mappings
+# below cover only those list/factory operations; lifecycle hooks with no V
+# equivalent intentionally remain visible to the audit.
+for _method_name in (
+    "add_paintable", "clear_paintables", "create_paintable",
+    "first_paintable", "paintables",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("Node", _method_name)] = (
+        ("materialize_dom_paintables", None),
+    )
+
+# Computed-style propagation and anonymous table-wrapper construction are
+# operations on ComputedProperties in V rather than virtual NodeWithStyle
+# methods. The common Node prefix supplies the type and scrolling queries.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("NodeWithStyle", "propagate_non_inherit_values"): (
+        ("inherit_from_for_layout", "ComputedProperties"),
+    ),
+    ("NodeWithStyle", "create_anonymous_wrapper"): (
+        ("create_anonymous_block_wrapper", None),
+    ),
+    ("NodeWithStyle", "reset_table_box_computed_values_used_by_wrapper_to_init_values"): (
+        ("take_properties_for_table_wrapper", "ComputedProperties"),
+    ),
+    ("NodeWithStyle", "transfer_table_box_computed_values_to_wrapper_computed_values"): (
+        ("take_properties_for_table_wrapper", "ComputedProperties"),
+    ),
+    ("NodeWithStyle", "is_scroll_container"): (("is_scroll_container", "Node"),),
+    ("NodeWithStyle", "mutable_computed_values"): (
+        ("set_computed_values", "NodeWithStyle"),
+    ),
+    ("NodeWithStyle", "background_layers"): (("background_layers", "ComputedValues"),),
+    ("NodeWithStyle", "is_body"): (("is_body", "Node"),),
+    ("NodeWithStyle", "is_node_with_style"): (("as_node_with_style", "Node"),),
+})
+
+# FlexItem and FlexLine are temporary C++ algorithm records. V keeps the same
+# values in per-line vectors local to the flex runner: margin-box arithmetic is
+# performed while measuring/placing each line and factor sums while resolving
+# flexible lengths.
+for _method_name in (
+    "hypothetical_cross_size_with_margins", "outer_hypothetical_main_size",
+    "outer_target_main_size", "outer_flex_base_size",
+    "add_main_margin_box_sizes", "add_cross_margin_box_sizes",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("FlexItem", _method_name)] = (
+        ("run_flex_formatting_context", None),
+    )
+for _method_name in (
+    "sum_of_flex_factor_of_unfrozen_items",
+    "sum_of_scaled_flex_shrink_factor_of_unfrozen_items",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("FlexLine", _method_name)] = (
+        ("resolve_flexible_lengths", None),
+    )
+
+# More layout subclasses collapsed into Node's tagged prefix. Content sizing
+# and image/font-provider behavior not represented by these common operations
+# remain unmatched for later behavioral translation.
+for _owner_name in ("NavigableContainerViewport", "TextNode"):
+    CONSOLIDATED_METHOD_MAPPINGS[(_owner_name, "dom_node")] = (("dom_node", "Node"),)
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("NavigableContainerViewport", "create_paintable"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("TextNode", "grapheme_segmenter"): (("text_grapheme_boundaries", None),),
+    ("TextNode", "line_segmenter"): (("text_line_boundaries", None),),
+    ("TextNode", "create_paintable"): (("text_lines_from_typed_layout", None),),
+    ("TextNode", "is_text_node"): (("is_text_node", "Node"),),
+    ("ImageBox", "natural_size"): (("natural_size", "Box"),),
+    ("ImageBox", "create_paintable"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("ImageBox", "image_provider"): (("reset_for_relayout", "ImageBox"),),
+    ("ListItemMarkerBox", "create_paintable"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("ListItemMarkerBox", "is_list_item_marker_box"): (
+        ("is_list_item_marker_box", "Node"),
+    ),
+    ("ListItemMarkerBox", "can_have_children"): (("can_have_children", "Node"),),
+    ("NodeWithStyleAndBoxModelMetrics", "set_continuation_of_node"): (
+        ("clone_inline_node_as_continuation", None),
+    ),
+    ("NodeWithStyleAndBoxModelMetrics", "is_node_with_style_and_box_model_metrics"): (
+        ("as_node_with_style_and_box_model_metrics", "Node"),
+    ),
+    ("UsedValues", "add_floating_descendant"): (
+        ("layout_floating_box", "BlockFormattingContext"),
+    ),
+    ("UsedValues", "floating_descendants"): (
+        ("layout_floating_box", "BlockFormattingContext"),
+    ),
+    ("Item", "border_box_width"): (("border_box_width", "InlineLevelItem"),),
+    ("LineBuilder", "current_block_offset"): (
+        ("current_block_offset_value", "LineBuilder"),
+    ),
+})
+
+# C++ allocates a subclass for each paintable kind. V lowers layout nodes into
+# BlockBox/SVGPaintable value records and selects the concrete renderer helper
+# while emitting commands. These mappings tie the reviewed factory, accessor,
+# reset, and kind-discriminator methods to that live lowering/painting path.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("SVGForeignObjectPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("SVGForeignObjectPaintable", "layout_box"): (("layout_box", "SVGPaintable"),),
+    ("SVGForeignObjectPaintable", "hit_test"): (("viewport_hit_test", None),),
+    ("SVGForeignObjectPaintable", "paint"): (("flat_paint_commands", "BlockBox"),),
+    ("SVGSVGPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("SVGSVGPaintable", "paint_svg_box"): (("paint_commands", "SVGPaintable"),),
+    ("SVGSVGPaintable", "paint_descendants"): (("paint_svg_descendants", None),),
+    ("SVGSVGPaintable", "is_svg_svg_paintable"): (
+        ("layout_debug_paintable_class", None),
+    ),
+    ("FieldSetPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("FieldSetPaintable", "layout_box"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("NavigableContainerViewportPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("NavigableContainerViewportPaintable", "is_navigable_container_viewport_paintable"): (
+        ("layout_debug_paintable_class", None),
+    ),
+    ("NavigableContainerViewportPaintable", "navigable_container"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("PaintableWithLines", "create"): (("text_lines_from_typed_layout", None),),
+    ("PaintableWithLines", "reset_for_relayout"): (
+        ("text_lines_from_typed_layout", None),
+    ),
+    ("SVGGraphicsPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("SVGGraphicsPaintable", "reset_for_relayout"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("SVGGraphicsPaintable", "is_svg_graphics_paintable"): (
+        ("layout_debug_paintable_class", None),
+    ),
+    ("SVGPathPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("SVGPathPaintable", "reset_for_relayout"): (
+        ("set_computed_svg_path", "UsedValues"),
+    ),
+    ("SVGPathPaintable", "is_svg_path_paintable"): (
+        ("layout_debug_paintable_class", None),
+    ),
+    ("TextPaintable", "create"): (("text_lines_from_typed_layout", None),),
+    ("TextPaintable", "layout_node"): (("text_lines_from_typed_layout", None),),
+    ("TextPaintable", "is_text_paintable"): (("layout_debug_paintable_class", None),),
+    ("ViewportPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("ViewportPaintable", "reset_for_relayout"): (
+        ("viewport_build_stacking_context_tree", None),
+    ),
+    ("CheckBoxPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("CheckBoxPaintable", "paint"): (("checkbox_commands", None),),
+    ("ImagePaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("MarkerPaintable", "create"): (("flat_paint_commands", "BlockBox"),),
+    ("MarkerPaintable", "layout_box"): (("flat_paint_commands", "BlockBox"),),
+    ("RadioButtonPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("RadioButtonPaintable", "paint"): (("radio_button_commands", None),),
+    ("SVGClipPaintable", "create"): (("collect_svg_clip_path_components", None),),
+    ("SVGClipPaintable", "forms_unconnected_subtree"): (
+        ("collect_svg_clip_path_components", None),
+    ),
+    ("SVGMaskPaintable", "create"): (("collect_svg_mask_paint_operations", None),),
+    ("SVGMaskPaintable", "forms_unconnected_subtree"): (
+        ("collect_svg_mask_paint_operations", None),
+    ),
+    ("SVGPatternPaintable", "create"): (("resolve_svg_pattern_paint_style", None),),
+    ("SVGPatternPaintable", "forms_unconnected_subtree"): (
+        ("resolve_svg_pattern_paint_style", None),
+    ),
+    ("VideoPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("CanvasPaintable", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+})
 
 # Inline C++ accessors whose state is deliberately exposed as a typed public V
 # record field. These mappings are accepted only while the named owner/field

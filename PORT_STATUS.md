@@ -127,11 +127,11 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14155
-  unmatched: 900
+  candidate-name-match: 14166
+  unmatched: 800
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 942
+  consolidated-name-match: 1031
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
@@ -139,8 +139,8 @@ suspicious empty/default-return implementations: 0
 unmatched implementations by module:
 
    697 CSS
-    71 Layout
-   132 Painting
+    15 Layout
+    88 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -217,6 +217,14 @@ timer fires, the stores shrink to the exact viewport; each allocation publishes
 fresh bitmap IDs to PageClient and the rendering thread. The DOM/Page bridge
 supplies the actual device scale, and SVG or child navigables retain the source
 early-return behavior.
+
+The 800 checkpoint reconciles the remaining reviewed Layout node/iterator/flex
+record shapes and 44 specialized paintable factories, accessors, resets, and
+kind discriminators with the active typed lowering path. It also translates
+`Layout::css_clamp()` into the flex algorithm, preserving CSS's permitted
+maximum-below-minimum ordering, and makes `Node::has_css_transform()` account
+for the individual `rotate`, `translate`, and `scale` properties. The full
+suite passes 392/392 at this checkpoint.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

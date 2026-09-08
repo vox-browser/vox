@@ -41,6 +41,12 @@ fn flex_divide_by_integer(value CSSPixels, divisor int) CSSPixels {
 	return CSSPixels.from_raw(value.raw_value() / divisor)
 }
 
+// CSS permits a maximum smaller than the minimum. Keep the ordering from
+// Layout::css_clamp() instead of using a clamp helper that rejects that case.
+fn css_clamp(value CSSPixels, minimum CSSPixels, maximum CSSPixels) CSSPixels {
+	return css_pixels_max(minimum, css_pixels_min(value, maximum))
+}
+
 // FlexFormattingContext::is_direction_reverse(). In a right-to-left container the physical
 // meaning of `row` and `row-reverse` swaps, so there it is plain `row` that counts as
 // reversed and `row-reverse` that does not.
@@ -507,7 +513,7 @@ fn flex_used_main_maximum(mut state LayoutState, item &Node, item_state &UsedVal
 }
 
 fn flex_hypothetical_main_size(base CSSPixels, minimum CSSPixels, maximum CSSPixels) CSSPixels {
-	return css_pixels_max(CSSPixels.new(0), css_pixels_max(minimum, css_pixels_min(base, maximum)))
+	return css_pixels_max(CSSPixels.new(0), css_clamp(base, minimum, maximum))
 }
 
 fn flex_abs_pixels(value CSSPixels) CSSPixels {
@@ -636,7 +642,7 @@ fn resolve_flexible_lengths(mut state LayoutState, line FlexLine, container_main
 				deferred_minimums[index] = false
 			}
 			original := targets[index]
-			targets[index] = css_pixels_max(CSSPixels.new(0), css_pixels_max(minimums[index], css_pixels_min(targets[index], line.maximums[index])))
+			targets[index] = css_pixels_max(CSSPixels.new(0), css_clamp(targets[index], minimums[index], line.maximums[index]))
 			if targets[index].raw_value() > original.raw_value() {
 				min_violations[index] = true
 			} else if targets[index].raw_value() < original.raw_value() {
@@ -742,7 +748,7 @@ fn flex_intrinsic_main_size_of_column_container(mut state LayoutState, items []&
 		item_state := state.get(styled)
 		minimum := flex_used_main_minimum(mut state, item, item_state, false, none, false)
 		maximum := flex_used_main_maximum(mut state, item, item_state, false, none)
-		result = css_pixels_max(minimum, css_pixels_min(result, maximum))
+		result = css_clamp(result, minimum, maximum)
 		total = total.plus(result).plus(edges[index])
 	}
 

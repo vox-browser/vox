@@ -453,6 +453,14 @@ pub fn (n &Node) is_sticky_position() bool {
 	return styled.computed_values().position() == .sticky
 }
 
+// Node::has_css_transform(). Individual transform properties count even when
+// the transform-list shorthand itself is empty.
+pub fn (n &Node) has_css_transform() bool {
+	computed := n.computed_values()
+	return computed.transformations().len > 0 || computed.rotate() != none
+		|| computed.translate() != none || computed.scale() != none
+}
+
 // NodeWithStyle::is_scroll_container(). The viewport intentionally behaves as a scroll container
 // even though its computed overflow is visible.
 pub fn (n &Node) is_scroll_container() bool {

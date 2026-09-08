@@ -6,7 +6,7 @@ Re-audited: 2026-09-08
 
 All 50 upstream Layout `.cpp` units have filename-level homes in the typed V
 Layout package. That inventory does not establish body-level parity: the
-current semantic audit reports 71 unmatched Layout implementations, and the
+current semantic audit reports 15 unmatched Layout implementations, and the
 legacy `BlockBox` renderer transport still sits between typed Layout and the
 native shell.
 
@@ -31,6 +31,17 @@ closed a real behavioral gap: `VideoBox` natural size now reads the media
 model's live video dimensions, including an aspect ratio when both dimensions
 are positive, even when called through the common `Box` path. The audit moved
 from 171 to 71 unmatched Layout implementations at that checkpoint.
+
+The next node-state pass reduced Layout from 71 to 15. It ties the remaining
+reviewed paintable-list operations, text segmentation, flex temporary-record
+arithmetic, anonymous/table wrapper propagation, continuations, and node-kind
+accessors to their active V implementations. `Node::has_css_transform()` now
+also includes the individual `rotate`, `translate`, and `scale` properties, and
+the source-shaped `css_clamp()` helper is used by flex sizing with CSS's defined
+maximum-below-minimum behavior. The remaining 15 stay visible because they are
+behavioral work: image-provider hooks, nested viewport natural sizing, the
+contextual space-font lookup, list-style images, insertion/label hooks, and two
+layout geometry callbacks.
 
 ## Translated coverage
 
