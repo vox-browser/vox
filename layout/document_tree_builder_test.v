@@ -670,3 +670,23 @@ fn test_svg_elements_create_their_concrete_layout_node_types_without_html_wrappe
 	assert tree_builder_node_with_id(foreign, 'html-child') != none
 	assert tree_builder_node_with_id(svg_root, 'definition') == none
 }
+
+fn test_document_layout_caches_only_paintable_boxes_with_auto_content_visibility() {
+	document := html.parse_document('<!doctype html><style>#near, #far { content-visibility: auto } #gone { content-visibility: auto; display: none }</style><div id="near"></div><div id="ordinary"></div><div id="far"></div><div id="gone"></div>')
+	_ = run_document_layout(document, 800, 600) or { panic('layout failed') }
+	viewport_paintable := document.paintable() or { panic('no viewport paintable') }
+	paintable_boxes := viewport_paintable.paintable_boxes_with_auto_content_visibility()
+	assert paintable_boxes.len == 2
+	assert (paintable_boxes[0].dom_node_.as_element() or { panic('first box has no element') }).id() or {
+		''
+	} == 'near'
+	assert (paintable_boxes[1].dom_node_.as_element() or { panic('second box has no element') }).id() or {
+		''
+	} == 'far'
+
+	// The getter is a readonly-span equivalent: mutating the returned slice must
+	// not alter the cache owned by the viewport paintable.
+	mut returned_boxes := paintable_boxes.clone()
+	returned_boxes.clear()
+	assert viewport_paintable.paintable_boxes_with_auto_content_visibility().len == 2
+}

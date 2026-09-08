@@ -1343,6 +1343,8 @@ pub:
 	invalidate_stacking_context_callback        ViewportPaintableVoidCallback = unsafe { nil }
 	hit_test_callback                           ViewportPaintableHitTestCallback = unsafe { nil }
 	hit_test_all_callback                       ViewportPaintableHitTestAllCallback = unsafe { nil }
+mut:
+	paintable_boxes_with_auto_content_visibility_ []&PaintableBox
 }
 
 @[heap]
@@ -3144,6 +3146,16 @@ pub fn (vp &ViewportPaintable) selection() ?&Selection {
 
 pub fn (vp &ViewportPaintable) is_viewport_paintable() bool {
 	return true
+}
+
+// ViewportPaintable retains this filtered list after layout so the HTML event
+// loop does not have to traverse the complete paint tree every frame.
+pub fn (mut vp ViewportPaintable) set_paintable_boxes_with_auto_content_visibility(paintable_boxes []&PaintableBox) {
+	vp.paintable_boxes_with_auto_content_visibility_ = paintable_boxes.clone()
+}
+
+pub fn (vp &ViewportPaintable) paintable_boxes_with_auto_content_visibility() []&PaintableBox {
+	return vp.paintable_boxes_with_auto_content_visibility_.clone()
 }
 
 pub fn (vp &ViewportPaintable) recompute_selection_states(range &Range) {

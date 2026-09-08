@@ -386,6 +386,46 @@ fn test_focus_updates_active_element_and_invalidates_style() {
 	assert doc.focused_area() == none
 }
 
+fn test_content_visibility_relevance_includes_focus_top_layer_and_captured_descendants() {
+	mut doc := Document.create(url_about_blank())
+	mut root := mk(doc, 'div')
+	mut child := mk(doc, 'section')
+	mut grandchild := mk(doc, 'span')
+	text := doc.create_text_node('selected')
+	mut document_node := unsafe { &Node(doc) }
+	append(mut document_node, root.as_node())
+	mut root_node := root.as_node()
+	append(mut root_node, child.as_node())
+	mut child_node := child.as_node()
+	append(mut child_node, grandchild.as_node())
+	mut grandchild_node := grandchild.as_node()
+	append(mut grandchild_node, text.as_node())
+
+	assert !root.is_relevant_to_the_user()
+	doc.set_focused_area(grandchild.as_node())
+	assert root.is_relevant_to_the_user()
+	doc.set_focused_area(none)
+	doc.set_browsing_context(&BrowsingContext{
+		active_document_: doc
+	})
+	mut selection := doc.get_selection() or { panic('document has no selection') }
+	selection.collapse(text.as_node(), 0) or { panic('${err}') }
+	assert root.is_relevant_to_the_user()
+	selection.remove_all_ranges()
+
+	child.set_in_top_layer(true)
+	assert root.is_relevant_to_the_user()
+	child.set_in_top_layer(false)
+	grandchild.set_captured_in_a_view_transition(true)
+	assert root.is_relevant_to_the_user()
+	grandchild.set_captured_in_a_view_transition(false)
+
+	// Capture makes an ancestor relevant only through a descendant; capturing
+	// the content-visibility element itself is not one of the upstream cases.
+	root.set_captured_in_a_view_transition(true)
+	assert !root.is_relevant_to_the_user()
+}
+
 fn test_hovered_node_identity_handles_null_transitions() {
 	mut doc := Document.create(url_about_blank())
 	first := mk(doc, 'div')

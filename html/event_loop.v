@@ -467,7 +467,46 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 	}
 	for document in documents {
 		mut mutable_document := unsafe { &dom.Document(document) }
-		mutable_document.update_layout(.html_event_loop_rendering_update)
+		// Recalculate layout until every initially visible
+		// content-visibility:auto box has had its proximity determined, and until
+		// ResizeObserver delivery reaches a fixed point. The viewport paintable
+		// owns the filtered box list populated by Document::update_layout().
+		mut resize_observer_depth := 0
+		for {
+			mutable_document.update_layout(.html_event_loop_rendering_update)
+
+			mut had_initial_visible_content_visibility_determination := false
+			if document.document_element() != none {
+				if paintable := document.paintable() {
+					for paintable_box in paintable.paintable_boxes_with_auto_content_visibility() {
+						dom_node := paintable_box.dom_node_
+						if dom_node == unsafe { nil } {
+							continue
+						}
+						mut element := dom_node.as_element() or { continue }
+						check_for_initial_determination := element.proximity_to_the_viewport() == .not_determined
+							&& !element.is_relevant_to_the_user()
+						element.determine_proximity_to_the_viewport()
+						if check_for_initial_determination && element.is_relevant_to_the_user() {
+							had_initial_visible_content_visibility_determination = true
+						}
+					}
+				}
+			}
+			if had_initial_visible_content_visibility_determination {
+				continue
+			}
+
+			mutable_document.gather_active_observations_at_depth(resize_observer_depth)
+			if mutable_document.has_active_resize_observations() {
+				resize_observer_depth = mutable_document.broadcast_active_resize_observations()
+				continue
+			}
+			break
+		}
+		// Upstream's resize-loop error delivery remains a FIXME, but execute the
+		// skipped-observation check at the same point in the rendering pipeline.
+		_ = mutable_document.has_skipped_resize_observations()
 		mutable_document.perform_pending_transition_operations()
 		mutable_document.update_layout(.html_event_loop_rendering_update)
 		mutable_document.run_the_update_intersection_observations_steps(frame_timestamp)

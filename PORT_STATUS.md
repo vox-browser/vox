@@ -127,8 +127,8 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14136
-  unmatched: 1428
+  candidate-name-match: 14138
+  unmatched: 1426
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
   consolidated-name-match: 433
@@ -140,7 +140,7 @@ unmatched implementations by module:
 
    697 CSS
    595 Layout
-   136 Painting
+   134 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -196,6 +196,16 @@ provider is unavailable. Retained layout trees refresh provider availability,
 selected source, intrinsic dimensions, and alternative text before relayout,
 so a failed image can transition to changed fallback text or decoded content
 without rebuilding the tree.
+
+The viewport content-visibility pass reduces Painting from 136 to 134. Layout
+now caches the committed `PaintableBox` objects whose used
+`content-visibility` is `auto`, and `ViewportPaintable` exposes the source-shaped
+setter and readonly accessor used by the HTML rendering loop. That loop performs
+initial viewport-proximity determinations and repeats layout when a previously
+undetermined box is initially relevant; it also runs the translated
+ResizeObserver gather/broadcast loop to a fixed point. Relevance now includes
+focused and selected contents, top-layer descendants, and view-transition
+captures as well as viewport proximity.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

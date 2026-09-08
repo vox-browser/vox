@@ -743,6 +743,11 @@ non-atomic `InlineNode` ancestor walk as `LayoutState::commit()`, so direct bloc
 text no longer repaints the block's background, border, radii, or box shadow as
 an invented inline box.
 
+Each committed document paint tree now collects the concrete paintable boxes
+whose used `content-visibility` is `auto` and installs that filtered cache on
+the viewport bridge. The HTML rendering loop can therefore update proximity
+without traversing the entire retained tree on every frame.
+
 The remaining integration gap is replacing the compatibility
 `BlockBox`/`PaintCommand` transport with Painting's typed paintables and
 display-list recorder, including interactive scrollbar enlargement/snapshot

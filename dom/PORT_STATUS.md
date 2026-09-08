@@ -83,6 +83,10 @@ files.
   the Web Animations update pass. The typed CSS boundary owns constructed
   adopted-sheet callbacks, while Document and ShadowRoot retain their cached
   list handles without introducing a DOM-to-CSS import cycle.
+- Content-visibility relevance now includes focused and selected subtrees,
+  top-layer contents, and descendant view-transition captures in addition to
+  viewport proximity. The viewport paintable bridge retains the post-layout
+  cache consumed by HTML's rendering update.
 - The independent audit replaced EventTarget's unsafe memory-shape probing with
   an authoritative Node discriminator, tags every Node/Document allocation,
   and verifies generic EventTarget dispatch plus distinct Document identity.

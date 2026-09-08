@@ -4367,7 +4367,43 @@ pub fn (mut e Element) determine_proximity_to_the_viewport() {
 }
 
 pub fn (mut e Element) is_relevant_to_the_user() bool {
-	return e.proximity_to_the_viewport_ == .close_to_the_viewport
+	// The element is relevant when it is close to the viewport.
+	if e.proximity_to_the_viewport_ == .close_to_the_viewport {
+		return true
+	}
+
+	// Focus or selection anywhere in the element's subtree also keeps its
+	// contents relevant, independent of viewport proximity.
+	document := e.document()
+	if focused_area := document.focused_area() {
+		if e.as_node().is_inclusive_ancestor_of(focused_area) {
+			return true
+		}
+	}
+	if selection := document.get_selection() {
+		if selection.contains_node(e.as_node(), true) {
+			return true
+		}
+	}
+
+	// Top-layer elements and descendants captured by a view transition are
+	// rendered even when their containing content-visibility box is offscreen.
+	return element_subtree_has_relevant_contents(e, e)
+}
+
+fn element_subtree_has_relevant_contents(root &Element, element &Element) bool {
+	if element.in_top_layer()
+		|| (voidptr(element) != voidptr(root) && element.captured_in_a_view_transition()) {
+		return true
+	}
+	for child in element.as_node().children {
+		if child_element := child.as_element() {
+			if element_subtree_has_relevant_contents(root, child_element) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // https://drafts.csswg.org/css-contain-2/#skips-its-contents

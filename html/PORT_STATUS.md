@@ -70,6 +70,12 @@ browsing contexts and cross-origin access, event loop and messaging, classic
 and module-script fetching, workers and scripting environments, structured
 serialization, rendering-thread command ordering, and syntax highlighting.
 
+The rendering update now executes the source content-visibility and
+ResizeObserver fixed-point loop. It determines proximity for the filtered
+`content-visibility:auto` paintable cache, repeats after an initially relevant
+element, gathers and broadcasts resize observations until stable, then resumes
+pending transitions and intersection observations.
+
 Responsive image source selection now delegates `sizes` to CSS's translated
 component-value, media-condition, calculation, and viewport-length algorithms.
 Picture-source media matching uses the same `MediaQuery.evaluate()` path, and

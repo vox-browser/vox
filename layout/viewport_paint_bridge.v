@@ -13,7 +13,7 @@ import strings
 // downstream layout or painting modules.
 fn install_document_painting_bridge(document &dom.Document, result &DocumentLayoutResult) {
 	target := voidptr(result)
-	paintable := &dom.ViewportPaintable{
+	mut paintable := &dom.ViewportPaintable{
 		target: target
 		set_needs_to_refresh_scroll_state_callback: viewport_set_needs_to_refresh_scroll_state
 		refresh_scroll_state_callback: viewport_refresh_scroll_state
@@ -30,12 +30,40 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 		hit_test_callback: viewport_hit_test
 		hit_test_all_callback: viewport_hit_test_all
 	}
+	paintable.set_paintable_boxes_with_auto_content_visibility(collect_paintable_boxes_with_auto_content_visibility(result.root))
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_viewport_paintable(paintable)
 	if viewport := document.layout_node() {
 		if root := viewport.root_layout_node() {
 			install_layout_paintable_repaint_callbacks(root, result)
 		}
+	}
+}
+
+// Document::update_layout() builds this cache after committing paintables.
+// Keep the concrete PaintableBox wrappers at the DOM/Painting cycle boundary;
+// the HTML event loop can then perform proximity checks without walking the
+// whole retained layout tree on every rendering opportunity.
+fn collect_paintable_boxes_with_auto_content_visibility(root &Node) []&dom.PaintableBox {
+	mut paintable_boxes := []&dom.PaintableBox{}
+	collect_paintable_boxes_with_auto_content_visibility_in_subtree(root, mut paintable_boxes)
+	return paintable_boxes
+}
+
+fn collect_paintable_boxes_with_auto_content_visibility_in_subtree(node &Node, mut paintable_boxes []&dom.PaintableBox) {
+	if styled := node.as_node_with_style() {
+		if styled.computed_values().content_visibility() == .auto_ {
+			if dom_node := node.dom_node() {
+				if element := dom_node.as_element() {
+					if paintable_box := element.paintable_box() {
+						paintable_boxes << paintable_box
+					}
+				}
+			}
+		}
+	}
+	for child in node.children() {
+		collect_paintable_boxes_with_auto_content_visibility_in_subtree(child, mut paintable_boxes)
 	}
 }
 

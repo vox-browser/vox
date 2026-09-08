@@ -7,6 +7,35 @@ mut:
 	values []string
 }
 
+struct RenderingResizeObserverState {
+mut:
+	gathered_depths []int
+	broadcasts      int
+	active          bool
+}
+
+fn rendering_resize_observer_gather(target voidptr, depth int) {
+	mut state := unsafe { &RenderingResizeObserverState(target) }
+	state.gathered_depths << depth
+	state.active = state.broadcasts == 0
+}
+
+fn rendering_resize_observer_broadcast(target voidptr) int {
+	mut state := unsafe { &RenderingResizeObserverState(target) }
+	state.broadcasts++
+	state.active = false
+	return 7
+}
+
+fn rendering_resize_observer_has_active(target voidptr) bool {
+	state := unsafe { &RenderingResizeObserverState(target) }
+	return state.active
+}
+
+fn rendering_resize_observer_has_skipped(_ voidptr) bool {
+	return false
+}
+
 fn test_task_queue_runs_runnable_tasks_in_order() {
 	mut event_loop := EventLoop.create(.window)
 	mut calls := &EventLoopTestCalls{}
@@ -182,5 +211,78 @@ fn test_event_loop_exact_source_spin_registration_realm_and_pause_algorithms() {
 	event_loop.unpause(handle)
 	assert !event_loop.execution_paused()
 	assert event_loop.compute_deadline() >= 0
+	event_loop.unregister_document(document)
+}
+
+fn test_rendering_updates_content_visibility_proximity_and_resize_observers_to_a_fixed_point() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut html_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut far_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(html_element.as_node()) or { panic('${err}') }
+	mut html_node := html_element.as_node()
+	html_node.append_child(far_element.as_node()) or { panic('${err}') }
+
+	mut close_box := &dom.PaintableBox{
+		Paintable: dom.Paintable{
+			is_box: true
+		}
+		dom_node_: html_element.as_node()
+		scrollable_overflow_rect_: dom.CSSPixelRect_{
+			x_: 25
+			y_: 25
+			width_: 20
+			height_: 20
+		}
+	}
+	mut far_box := &dom.PaintableBox{
+		Paintable: dom.Paintable{
+			is_box: true
+		}
+		dom_node_: far_element.as_node()
+		scrollable_overflow_rect_: dom.CSSPixelRect_{
+			x_: 500
+			y_: 500
+			width_: 20
+			height_: 20
+		}
+	}
+	html_node.set_paintable(unsafe { &dom.Paintable(close_box) })
+	mut far_node := far_element.as_node()
+	far_node.set_paintable(unsafe { &dom.Paintable(far_box) })
+	mut viewport_paintable := &dom.ViewportPaintable{}
+	viewport_paintable.set_paintable_boxes_with_auto_content_visibility([close_box, far_box])
+	document.set_viewport_paintable(viewport_paintable)
+	document.set_viewport_rect(dom.Rect{0, 0, 100, 100})
+	document.update_the_visibility_state(.visible)
+
+	mut navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
+
+	mut resize_state := &RenderingResizeObserverState{}
+	document.register_resize_observer(&dom.ResizeObserver{
+		target: voidptr(resize_state)
+		gather_at_depth: rendering_resize_observer_gather
+		broadcast: rendering_resize_observer_broadcast
+		has_active: rendering_resize_observer_has_active
+		has_skipped: rendering_resize_observer_has_skipped
+	})
+
+	mut event_loop := EventLoop.create(.window)
+	event_loop.register_document(document)
+	event_loop.update_the_rendering()
+
+	assert html_element.proximity_to_the_viewport() == .close_to_the_viewport
+	assert far_element.proximity_to_the_viewport() == .far_away_from_the_viewport
+	assert resize_state.gathered_depths == [0, 7]
+	assert resize_state.broadcasts == 1
 	event_loop.unregister_document(document)
 }
