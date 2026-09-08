@@ -67,6 +67,9 @@ BINDING_RUNTIME_METHODS = {
     ("Transformer", "from_value"),
     ("UnderlyingSink", "from_value"),
     ("UnderlyingSource", "from_value"),
+    # C++ needs this self-upcast for its generated WebIDL property mixin. V's
+    # CSSStyleProperties record implements those entry points directly.
+    ("CSSStyleProperties", "generated_style_properties_to_css_style_properties"),
 }
 NAMESPACE_TEMPLATE_CLASSES = {"IPC"}
 # C++ customization points whose behavior is supplied by V's built-in map,
@@ -1981,6 +1984,135 @@ for _parsing_error_owner in (
         ("parsing_error_key", None),
     )
 
+# The remaining syntax-node implementation bodies dispatch through the same
+# tagged SyntaxNode used by the parser and header factories above.
+for _syntax_owner in (
+    "UniversalSyntaxNode", "TypeSyntaxNode", "IdentSyntaxNode",
+    "MultiplierSyntaxNode", "CommaSeparatedMultiplierSyntaxNode",
+    "AlternativesSyntaxNode",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[(_syntax_owner, "to_string")] = (
+        ("to_string", "SyntaxNode"),
+    )
+    CONSOLIDATED_METHOD_MAPPINGS[(_syntax_owner, "dump")] = (
+        ("dump", "SyntaxNode"),
+    )
+CONSOLIDATED_METHOD_MAPPINGS[("TypeSyntaxNode", "create")] = (
+    ("create_type", "SyntaxNode"),
+)
+
+# BasicShape's C++ nested variant classes are standalone tagged records in V.
+# Path construction is dispatched by BasicShapeStyleValue; the expensive shape
+# geometry remains split into the concrete helpers named below.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("Inset", "to_path"): (("style_values_extra_inset_to_path", None),),
+    ("Inset", "serialize"): (("serialize", "BasicShapeInset"),),
+    ("Xywh", "serialize"): (("serialize", "BasicShapeXywh"),),
+    ("Rect", "serialize"): (("serialize", "BasicShapeRect"),),
+    ("Circle", "to_path"): (("style_values_extra_circle_to_path", None),),
+    ("Circle", "serialize"): (("serialize", "BasicShapeCircle"),),
+    ("Ellipse", "to_path"): (("style_values_extra_ellipse_to_path", None),),
+    ("Ellipse", "serialize"): (("serialize", "BasicShapeEllipse"),),
+    ("Polygon", "to_path"): (("style_values_extra_polygon_to_path", None),),
+    ("Polygon", "serialize"): (("serialize", "BasicShapePolygon"),),
+    ("Path", "to_path"): (("to_path", "BasicShapeStyleValue"),),
+})
+
+# CSSOM computed-value conversion and the Typed OM mutable property map share
+# their translated algorithms with style_declarations.v rather than mirroring
+# the C++ class/file boundary.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("CSSStyleProperties", "convert_declarations_to_specified_order"): (
+        ("convert_declarations_to_specified_order", None),
+    ),
+    ("StylePropertyMap", "create"): (("create", "MutableStylePropertyMap"),),
+    ("StylePropertyMap", "set"): (("set", "MutableStylePropertyMap"),),
+    ("StylePropertyMap", "append"): (("append", "MutableStylePropertyMap"),),
+    ("StylePropertyMap", "delete_"): (("delete_", "MutableStylePropertyMap"),),
+    ("StylePropertyMap", "clear"): (("clear", "MutableStylePropertyMap"),),
+})
+
+# AbstractImageStyleValue virtual defaults are encoded by CSSImageSource's sum
+# type dispatch. Concrete URLs retain intrinsic metadata and resource loading;
+# gradients resolve only after Layout supplies their final tile size.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("AbstractImageStyleValue", "natural_width"): (
+        ("style_values_extra_image_natural_size", None),
+    ),
+    ("AbstractImageStyleValue", "natural_height"): (
+        ("style_values_extra_image_natural_size", None),
+    ),
+    ("AbstractImageStyleValue", "natural_aspect_ratio"): (
+        ("style_values_extra_image_natural_size", None),
+    ),
+    ("AbstractImageStyleValue", "load_any_resources"): (
+        ("load_any_resources", "ImageStyleValue"),
+    ),
+    ("AbstractImageStyleValue", "resolve_for_size"): (
+        ("resolve_background_gradient", None),
+    ),
+    ("AbstractImageStyleValue", "color_if_single_pixel_bitmap"): (
+        ("color_if_single_pixel_bitmap", "ImageStyleValue"),
+    ),
+})
+
+# Color component resolution/serialization is shared by every concrete V color
+# record. The C++ base member bodies therefore map to these module-private
+# helpers, while has_color() dispatches over the StyleValue sum type.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("ColorStyleValue", "resolve_hue"): (("resolve_hue", None),),
+    ("ColorStyleValue", "resolve_with_reference_value"): (
+        ("resolve_with_reference_value", None),
+    ),
+    ("ColorStyleValue", "resolve_alpha"): (("resolve_alpha", None),),
+    ("ColorStyleValue", "serialize_color_component"): (
+        ("serialize_color_component", None),
+    ),
+    ("ColorStyleValue", "serialize_alpha_component"): (
+        ("serialize_alpha_component", None),
+    ),
+    ("ColorStyleValue", "serialize_hue_component"): (
+        ("serialize_hue_component", None),
+    ),
+    ("ColorStyleValue", "has_color"): (("has_color", "StyleValue"),),
+})
+
+# Length contexts are CSS-owned in V; Layout supplies its retained computed
+# metrics through dom.LayoutNode without introducing a CSS -> Layout cycle.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("ResolutionContext", "for_element"): (("for_element", "LengthResolutionContext"),),
+    ("ResolutionContext", "for_window"): (("for_window", "LengthResolutionContext"),),
+    ("ResolutionContext", "for_document"): (("for_document", "LengthResolutionContext"),),
+    ("ResolutionContext", "for_layout_node"): (
+        ("for_layout_node", "LengthResolutionContext"),
+    ),
+    ("Length", "to_px_slow_case"): (("to_px_slow_case_for_layout_node", "Length"),),
+    ("CountingBloomFilter", "bucket1"): (("hash1", "CountingBloomFilter"),),
+    ("CountingBloomFilter", "bucket2"): (("hash2", "CountingBloomFilter"),),
+})
+
+# StyleScope's four process-wide UA sheets are selected by one cached lookup in
+# V, and its nullable cache accessors make validity explicit to callers.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("StyleScope", "node"): (("node_ref", "StyleScope"),),
+    ("StyleScope", "author_rule_cache"): (("author_rule_caches", "StyleScope"),),
+    ("StyleScope", "user_rule_cache"): (("user_rule_caches", "StyleScope"),),
+    ("StyleScope", "user_agent_rule_cache"): (
+        ("user_agent_rule_caches", "StyleScope"),
+    ),
+})
+
+# EasingStyleValue's nested C++ Function variant is an explicit V sum type.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("Linear", "serialize"): (("serialize", "EasingLinear"),),
+    ("Linear", "to_string"): (("serialize", "EasingLinear"),),
+    ("CubicBezier", "serialize"): (("serialize", "EasingCubicBezier"),),
+    ("CubicBezier", "to_string"): (("serialize", "EasingCubicBezier"),),
+    ("Steps", "serialize"): (("serialize", "EasingSteps"),),
+    ("Steps", "to_string"): (("serialize", "EasingSteps"),),
+    ("Function", "serialize"): (("serialize", "EasingStyleValueFunction"),),
+})
+
 # DisplayListPlayerSkia is the native raster backend in C++. The standalone V
 # package ends at renderer-independent commands and a deterministic playback
 # plan; concrete draw operations are recorded by DisplayListRecorder and
@@ -2125,6 +2257,55 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
     ("TokenStream", "current_index"): (("index", "ParserTokenStream"),),
     ("TypeSyntaxNode", "value_type"): (("value_type", "SyntaxNode"),),
     ("AlternativesSyntaxNode", "children"): (("children", "SyntaxNode"),),
+    ("StylePropertyMap", "declarations"): (("declaration", "MutableStylePropertyMap"),),
+    # Import and namespace subclasses are discriminated CSSRule records in V.
+    ("CSSImportRule", "url"): (("url", "CSSRule"),),
+    ("CSSImportRule", "loaded_style_sheet"): (("loaded_style_sheet", "CSSRule"),),
+    ("CSSImportRule", "internal_layer_name"): (("layer_internal", "CSSRule"),),
+    ("CSSImportRule", "parent_style_sheet_for_subresource"): (
+        ("parent_style_sheet", "CSSRule"),
+    ),
+    ("CSSNamespaceRule", "set_namespace_uri"): (("namespace_uri", "CSSRule"),),
+    ("CSSNamespaceRule", "set_prefix"): (("prefix", "CSSRule"),),
+    # Color base-class properties are embedded directly by each concrete sum
+    # variant. Require both modern/legacy variants for shared abstract bases.
+    ("HSLColorStyleValue", "h"): (("h_", "HSLColorStyleValue"),),
+    ("HSLColorStyleValue", "s"): (("s_", "HSLColorStyleValue"),),
+    ("HSLColorStyleValue", "l"): (("l_", "HSLColorStyleValue"),),
+    ("HSLColorStyleValue", "alpha"): (("alpha_", "HSLColorStyleValue"),),
+    ("HWBColorStyleValue", "h"): (("h_", "HWBColorStyleValue"),),
+    ("HWBColorStyleValue", "w"): (("w_", "HWBColorStyleValue"),),
+    ("HWBColorStyleValue", "b"): (("b_", "HWBColorStyleValue"),),
+    ("HWBColorStyleValue", "alpha"): (("alpha_", "HWBColorStyleValue"),),
+    ("LCHLikeColorStyleValue", "l"): (
+        ("l_", "LCHColorStyleValue"), ("l_", "OKLCHColorStyleValue"),
+    ),
+    ("LCHLikeColorStyleValue", "c"): (
+        ("c_", "LCHColorStyleValue"), ("c_", "OKLCHColorStyleValue"),
+    ),
+    ("LCHLikeColorStyleValue", "h"): (
+        ("h_", "LCHColorStyleValue"), ("h_", "OKLCHColorStyleValue"),
+    ),
+    ("LCHLikeColorStyleValue", "alpha"): (
+        ("alpha_", "LCHColorStyleValue"), ("alpha_", "OKLCHColorStyleValue"),
+    ),
+    ("LabLikeColorStyleValue", "l"): (
+        ("l_", "LabColorStyleValue"), ("l_", "OKLabColorStyleValue"),
+    ),
+    ("LabLikeColorStyleValue", "a"): (
+        ("a_", "LabColorStyleValue"), ("a_", "OKLabColorStyleValue"),
+    ),
+    ("LabLikeColorStyleValue", "b"): (
+        ("b_", "LabColorStyleValue"), ("b_", "OKLabColorStyleValue"),
+    ),
+    ("LabLikeColorStyleValue", "alpha"): (
+        ("alpha_", "LabColorStyleValue"), ("alpha_", "OKLabColorStyleValue"),
+    ),
+    ("CSSStyleProperties", "properties"): (("properties", "CSSStyleProperties"),),
+    ("CSSStyleProperties", "custom_properties"): (
+        ("custom_properties", "CSSStyleProperties"),
+    ),
+    ("CSSDescriptors", "descriptors"): (("descriptors", "CSSDescriptors"),),
     # The C++ calculation-node accessors become fields on V's tagged records.
     ("CalculatedStyleValue", "calculation"): (("node", "CalculatedStyleValue"),),
     ("SumCalculationNode", "children"): (("children", "CalcSum"),),
@@ -2343,6 +2524,25 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    ("CSSStyleProperties.cpp", "style_value_for_length_percentage"): (
+        "cssom_style_value_for_length_percentage",
+    ),
+    ("CSSStyleProperties.cpp", "style_value_for_length_percentage_or_auto"): (
+        "cssom_style_value_for_length_percentage_or_auto",
+    ),
+    ("CSSStyleProperties.cpp", "style_value_for_size"): (
+        "cssom_style_value_for_size",
+    ),
+    ("CSSStyleProperties.cpp", "style_value_for_shadow"): (
+        "cssom_style_value_for_shadow",
+    ),
+    ("CSSStyleProperties.cpp", "resolve_color_style_value"): (
+        "cssom_resolve_color_style_value",
+    ),
+    ("StyleScope.cpp", "default_stylesheet"): ("user_agent_default_style_sheet",),
+    ("StyleScope.cpp", "quirks_mode_stylesheet"): ("user_agent_default_style_sheet",),
+    ("StyleScope.cpp", "mathml_stylesheet"): ("user_agent_default_style_sheet",),
+    ("StyleScope.cpp", "svg_stylesheet"): ("user_agent_default_style_sheet",),
     ("Parser/SelectorParsing.cpp", "create_invalid_selector"): (
         "invalid_simple_selector",
     ),
