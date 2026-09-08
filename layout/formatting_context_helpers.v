@@ -6,6 +6,22 @@ module layout
 
 import css
 
+// FormattingContext.cpp's file-local margin_box_rect(). Negative margins do
+// not extend this local rectangle beyond the content box.
+fn margin_box_rect(used_values &UsedValues) css.CSSPixelRect {
+	zero := CSSPixels.new(0)
+	left := css_pixels_max(used_values.margin_box_left(), zero)
+	top := css_pixels_max(used_values.margin_box_top(), zero)
+	right := css_pixels_max(used_values.margin_box_right(), zero)
+	bottom := css_pixels_max(used_values.margin_box_bottom(), zero)
+	return css.CSSPixelRect{
+		x: left.negated()
+		y: top.negated()
+		width: left.plus(used_values.content_width()).plus(right)
+		height: top.plus(used_values.content_height()).plus(bottom)
+	}
+}
+
 // The inline ancestor whose per-line paintable owns a line-box fragment.
 // Atomic inline ancestors terminate the search because their descendants are
 // painted through the atomic box instead.
@@ -153,8 +169,7 @@ fn compute_relative_inset_for_node(node &NodeWithStyle, mut used_values UsedValu
 	}
 
 	left, right := resolve_relative_inset_axis(node, .left, .right, width_basis, false)
-	top, bottom := resolve_relative_inset_axis(node, .top, .bottom, height_basis,
-		used_values.relative_inset_basis_height_ == none
+	top, bottom := resolve_relative_inset_axis(node, .top, .bottom, height_basis, used_values.relative_inset_basis_height_ == none
 		&& !containing_block_used_values.has_definite_height())
 	used_values.inset_left = left
 	used_values.inset_right = right
@@ -182,8 +197,7 @@ fn resolve_relative_insets(mut state LayoutState, root &Node) {
 // optional content width/height. This is the shared parent/child handshake used
 // by flex, grid, table, and replaced-with-children formatting contexts.
 fn layout_independent_child(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, forced_height ?CSSPixels) &UsedValues {
-	return layout_independent_child_with_height_mode(mut state, child, mut containing_state,
-		containing_width, containing_height, forced_width, forced_height, false)
+	return layout_independent_child_with_height_mode(mut state, child, mut containing_state, containing_width, containing_height, forced_width, forced_height, false)
 }
 
 // TableFormattingContext::compute_table_height() initially uses a definite
@@ -191,8 +205,7 @@ fn layout_independent_child(mut state LayoutState, child &Node, mut containing_s
 // with the independent formatting context's automatic height. The authored
 // height remains a row minimum and vertical alignment supplies the difference.
 fn layout_independent_child_using_automatic_height(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, available_content_height ?CSSPixels) &UsedValues {
-	return layout_independent_child_with_height_mode(mut state, child, mut containing_state,
-		containing_width, containing_height, forced_width, available_content_height, true)
+	return layout_independent_child_with_height_mode(mut state, child, mut containing_state, containing_width, containing_height, forced_width, available_content_height, true)
 }
 
 fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, forced_height ?CSSPixels, use_automatic_height bool) &UsedValues {
@@ -225,8 +238,7 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 		// 2.1 normal-flow block equation that expands the ignored end margin to
 		// fill the containing block.
 	} else {
-		compute_block_used_width_for_node(mut state, styled, mut child_state,
-			AvailableSize.make_definite(containing_width))
+		compute_block_used_width_for_node(mut state, styled, mut child_state, AvailableSize.make_definite(containing_width))
 	}
 
 	mut definite_height := forced_height
@@ -257,8 +269,7 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 	} else {
 		AvailableSize.make_indefinite()
 	}
-	inside := layout_inside_independent_formatting_context(mut state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()),
-		available_height))
+	inside := layout_inside_independent_formatting_context(mut state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()), available_height))
 	mut height := if use_automatic_height {
 		inside.automatic_content_height
 	} else if resolved := definite_height {
@@ -281,8 +292,7 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 		// size rather than the unconstrained measurement. The root box itself
 		// remains indefinite: min-height does not make percentage child heights
 		// definite.
-		layout_inside_independent_formatting_context(mut state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()),
-			AvailableSize.make_definite(height)))
+		layout_inside_independent_formatting_context(mut state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()), AvailableSize.make_definite(height)))
 	}
 	child_state.set_content_height(height)
 	if definite_height != none {
@@ -380,8 +390,7 @@ fn layout_box_baseline(state &LayoutState, box &Node) CSSPixels {
 			child_state := state.try_get(child_styled) or { return box_state.margin_box_height() }
 			child_offset_from_margin_edge :=
 				child_state.offset.y().minus(child_state.margin_box_top())
-			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline(state,
-				child))
+			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline(state, child))
 		}
 	}
 

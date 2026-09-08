@@ -245,3 +245,27 @@ fn test_layout_state_populate_node_from_copies_values_without_ancestor_chain() {
 	assert voidptr(containing) == voidptr(copied)
 	assert containing.content_width().to_double() == 321
 }
+
+fn test_margin_box_rect_ignores_negative_margin_extensions() {
+	mut used := UsedValues{}
+	used.set_content_width(CSSPixels.new(100))
+	used.set_content_height(CSSPixels.new(50))
+	used.margin_left = CSSPixels.new(-12)
+	used.border_left = CSSPixels.new(2)
+	used.padding_left = CSSPixels.new(3)
+	used.margin_right = CSSPixels.new(7)
+	used.border_right = CSSPixels.new(5)
+	used.padding_right = CSSPixels.new(4)
+	used.margin_top = CSSPixels.new(6)
+	used.border_top = CSSPixels.new(1)
+	used.padding_top = CSSPixels.new(2)
+	used.margin_bottom = CSSPixels.new(-9)
+	used.border_bottom = CSSPixels.new(3)
+	used.padding_bottom = CSSPixels.new(4)
+
+	rect := margin_box_rect(used)
+	assert rect.x.to_double() == 0
+	assert rect.y.to_double() == -9
+	assert rect.width.to_double() == 116
+	assert rect.height.to_double() == 59
+}

@@ -81,3 +81,10 @@ fn test_text_node_chunk_iterator_preserves_break_across_text_type_boundary() {
 	assert word_after.view == 'content'
 	assert iterator.next() == none
 }
+
+fn test_non_breaking_space_is_context_dependent_interword_text() {
+	assert is_interword_space(u32(` `))
+	assert is_interword_space(0x00a0)
+	assert !is_interword_space(u32(`\t`))
+	assert text_type_for_code_point(0x00a0) == .context_dependent
+}

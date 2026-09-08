@@ -54,11 +54,35 @@ fn test_video_box_natural_size_tracks_live_media_metadata() {
 	assert updated.height?.to_double() == 1080
 }
 
+fn test_navigable_container_viewport_uses_svg_natural_size_and_committed_viewport() {
+	host_document := dom.Document.create(dom.url_about_blank())
+	object_element := host_document.create_element_ns('http://www.w3.org/1999/xhtml', 'object')!
+	viewport := NavigableContainerViewport.new(host_document, object_element, css.ComputedProperties.new())
+
+	mut content_document := dom.Document.create(dom.url_about_blank())
+	mut svg_root := content_document.create_element_ns('http://www.w3.org/2000/svg', 'svg')!
+	svg_root.set_attribute_value('width', '640')
+	svg_root.set_attribute_value('height', '360')
+	content_document.append_child(svg_root)
+	mut mutable_viewport := unsafe { &NavigableContainerViewport(viewport) }
+	mutable_viewport.content_document_ = content_document
+
+	base_box := unsafe { &Box(viewport) }
+	natural := base_box.natural_size()
+	assert natural.width?.to_double() == 640
+	assert natural.height?.to_double() == 360
+	assert natural.aspect_ratio?.numerator().to_double() == 640
+	assert natural.aspect_ratio?.denominator().to_double() == 360
+
+	viewport.did_set_content_size(css.CSSPixelSize.from_values(320, 180))
+	assert content_document.viewport_rect().width == 320
+	assert content_document.viewport_rect().height == 180
+}
+
 fn test_marker_custom_image_counter_style_set_matches_upstream() {
 	disc := css.CounterStyle.disc()
 	for name in ['square', 'circle', 'disc', 'disclosure-closed', 'disclosure-open'] {
-		style := css.CounterStyle.create(name, disc.algorithm(), disc.negative_sign(),
-			disc.prefix(), disc.suffix(), disc.range(), 'decimal', disc.pad())
+		style := css.CounterStyle.create(name, disc.algorithm(), disc.negative_sign(), disc.prefix(), disc.suffix(), disc.range(), 'decimal', disc.pad())
 		assert ListItemMarkerBox.counter_style_is_rendered_with_custom_image(style)
 	}
 	assert !ListItemMarkerBox.counter_style_is_rendered_with_custom_image(css.CounterStyle.decimal())

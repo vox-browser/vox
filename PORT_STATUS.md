@@ -127,20 +127,20 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14166
-  unmatched: 800
+  candidate-name-match: 14170
+  unmatched: 700
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 1031
+  consolidated-name-match: 1127
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
   value-record-field-match: 82
 unmatched implementations by module:
 
-   697 CSS
-    15 Layout
-    88 Painting
+   696 CSS
+     4 Layout
+     0 Painting
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
 Layout corpus: 904 passed, 0 failed, 904 total
@@ -225,6 +225,15 @@ kind discriminators with the active typed lowering path. It also translates
 maximum-below-minimum ordering, and makes `Node::has_css_transform()` account
 for the individual `rotate`, `translate`, and `scale` properties. The full
 suite passes 392/392 at this checkpoint.
+
+The 700 checkpoint completes Painting's structural reconciliation against the
+renderer-independent command, recording, playback, typed-lowering, and native
+resource boundaries, taking Painting from 88 unmatched implementations to
+zero. Layout falls from 15 to 4 after translating nested SVG viewport natural
+metrics and committed child-viewport sizing, the local margin-box geometry
+helper, and inter-word NBSP classification; the active image-provider paths are
+also explicitly accounted for. The full suite passes 392/392 at this
+checkpoint.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

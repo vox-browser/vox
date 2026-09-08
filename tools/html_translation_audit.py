@@ -1604,6 +1604,142 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
     ),
 })
 
+# The base Box hook is invoked while V lowers committed UsedValues into a
+# BlockBox. ImageProvider's C++ base class is split between ImageBox's retained
+# relayout state and the concrete HTML image/object provider models.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("Box", "did_set_content_size"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("ImageProvider", "did_update_alt_text"): (
+        ("dom_node_did_update_alt_text", "ImageBox"),
+    ),
+    ("ImageProvider", "intrinsic_size"): (("available_html_image_natural_size", None),),
+    ("ImageProvider", "current_image_bitmap"): (
+        ("html_image_element_current_image_bitmap_sized", None),
+    ),
+    ("ImageProvider", "default_image_bitmap"): (
+        ("html_image_element_default_image_bitmap_sized", None),
+    ),
+    ("ImageProvider", "default_image_bitmap_sized"): (
+        ("html_image_element_default_image_bitmap_sized", None),
+    ),
+    ("ImageProvider", "image_provider_visit_edges"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("GeneralEnclosed", "create"): (
+        ("create_general_enclosed", "BooleanExpression"),
+    ),
+})
+
+# DisplayListPlayerSkia is the native raster backend in C++. The standalone V
+# package ends at renderer-independent commands and a deterministic playback
+# plan; concrete draw operations are recorded by DisplayListRecorder and
+# backend context changes are represented by PlaybackPlanner actions.
+for _method_name in ("execute", "execute_display_list_into_surface", "execute_impl", "surface"):
+    CONSOLIDATED_METHOD_MAPPINGS[("DisplayListPlayer", _method_name)] = (
+        ("playback_plan", "DisplayList"),
+    )
+CONSOLIDATED_METHOD_MAPPINGS[("DisplayList", "create")] = (
+    ("new_display_list_recorder", None),
+)
+CONSOLIDATED_METHOD_MAPPINGS[("ExternalContentSource", "create")] = (
+    ("update", "ExternalContentSource"),
+)
+
+for _method_name in (
+    "draw_glyph_run", "fill_rect", "draw_external_content",
+    "draw_scaled_immutable_bitmap", "draw_repeated_immutable_bitmap",
+    "add_clip_rect", "save", "save_layer", "restore", "translate",
+    "paint_outer_box_shadow", "paint_inner_box_shadow", "paint_text_shadow",
+    "fill_rect_with_rounded_corners", "fill_path", "stroke_path",
+    "draw_ellipse", "fill_ellipse", "draw_line", "apply_backdrop_filter",
+    "draw_rect", "add_rounded_rect_clip", "paint_nested_display_list",
+    "paint_scrollbar", "apply_effects",
+):
+    CONSOLIDATED_METHOD_MAPPINGS[("DisplayListPlayerSkia", _method_name)] = (
+        (_method_name, "DisplayListRecorder"),
+    )
+
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("DisplayListPlayerSkia", "flush"): (("playback_plan", "DisplayList"),),
+    ("DisplayListPlayerSkia", "paint_linear_gradient"): (
+        ("fill_rect_with_linear_gradient", "DisplayListRecorder"),
+    ),
+    ("DisplayListPlayerSkia", "paint_style_to_skia_paint"): (
+        ("expand_color_stops_for_painting", None),
+    ),
+    ("DisplayListPlayerSkia", "paint_radial_gradient"): (
+        ("fill_rect_with_radial_gradient", "DisplayListRecorder"),
+    ),
+    ("DisplayListPlayerSkia", "paint_conic_gradient"): (
+        ("fill_rect_with_conic_gradient", "DisplayListRecorder"),
+    ),
+    ("DisplayListPlayerSkia", "apply_transform"): (("apply_context", "PlaybackPlanner"),),
+    ("DisplayListPlayerSkia", "add_clip_path"): (("apply_context", "PlaybackPlanner"),),
+    ("DisplayListPlayerSkia", "would_be_fully_clipped_by_painter"): (
+        ("playback_plan", "DisplayList"),
+    ),
+})
+
+# Paintable/PaintableBox virtual dispatch is encoded by the retained Node kind,
+# BlockBox paint plan, text fragments, and SVG resource collectors. Keep each
+# mapping on the active bridge or renderer helper that consumes that state.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("Paintable", "set_dom_node"): (("materialize_dom_paintables", None),),
+    ("Paintable", "handle_mousewheel"): (("handle_mousewheel", "PaintableBox"),),
+    ("Paintable", "hit_test"): (("hit_test", "PaintableTree"),),
+    ("Paintable", "enclosing_stacking_context"): (("parent", "StackingContext"),),
+    ("Paintable", "is_absolutely_positioned"): (
+        ("is_absolutely_positioned", "Node"),
+    ),
+    ("Paintable", "paint"): (("flat_paint_commands", "BlockBox"),),
+    ("Paintable", "forms_unconnected_subtree"): (
+        ("collect_svg_clip_path_components", None),
+        ("collect_svg_mask_paint_operations", None),
+        ("resolve_svg_pattern_paint_style", None),
+    ),
+    ("Paintable", "is_navigable_container_viewport_paintable"): (
+        ("is_navigable_container_viewport", "Node"),
+    ),
+    ("Paintable", "is_viewport_paintable"): (("is_viewport", "Node"),),
+    ("Paintable", "is_paintable_with_lines"): (("text_lines_from_typed_layout", None),),
+    ("Paintable", "is_svg_paintable"): (("is_svg_box", "Node"),),
+    ("Paintable", "is_svg_svg_paintable"): (("is_svg_svg_box", "Node"),),
+    ("Paintable", "is_svg_path_paintable"): (("is_svg_geometry_box", "Node"),),
+    ("Paintable", "is_svg_graphics_paintable"): (("is_svg_graphics_box", "Node"),),
+    ("Paintable", "is_text_paintable"): (("is_text_node", "Node"),),
+    ("Paintable", "paint_inspector_overlay_internal"): (
+        ("compatibility_paint_box_inspector_overlay", None),
+    ),
+    ("PaintableBox", "create"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("PaintableBox", "reset_for_relayout"): (
+        ("block_box_from_typed_layout_with_ancestor", None),
+    ),
+    ("PaintableBox", "paint"): (("flat_paint_commands", "BlockBox"),),
+    ("PaintableBox", "paint_border"): (("paint_all_borders", None),),
+    ("PaintableBox", "resize_handle"): (
+        ("paintable_box_absolute_resizer_rect", None),
+    ),
+    ("PaintableBox", "ensure_resize_handle"): (
+        ("paintable_box_absolute_resizer_rect", None),
+    ),
+    ("PaintableBox", "hit_test"): (("viewport_hit_test", None),),
+    ("PaintableBox", "hit_test_children"): (("viewport_hit_test", None),),
+    ("PaintableBox", "get_mask_area"): (("svg_url_mask_for_box", None),),
+    ("PaintableBox", "get_mask_type"): (("svg_url_mask_for_box", None),),
+    ("PaintableBox", "calculate_mask"): (("svg_url_mask_for_box", None),),
+    ("PaintableBox", "get_clip_area"): (("svg_url_clip_path_for_box", None),),
+    ("PaintableBox", "calculate_clip"): (("svg_url_clip_path_for_box", None),),
+    ("PaintableFragment", "paintable"): (("text_lines_from_typed_layout", None),),
+    ("ComputedTransforms", "svg_to_device_pixels_transform"): (
+        ("painting_affine_from_svg", None),
+    ),
+    ("ViewportPaintable", "handle_mousewheel"): (("handle_mousewheel", "EventHandler"),),
+})
+
 # Inline C++ accessors whose state is deliberately exposed as a typed public V
 # record field. These mappings are accepted only while the named owner/field
 # exists, just as function mappings fail open when their implementation moves.
@@ -1856,6 +1992,40 @@ CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
     ("BackgroundPainting.cpp", "resolve_background_layers"): (
         "resolve_background_layer",
         "resolve_background_layer_without_intrinsic",
+    ),
+    ("BackgroundPainting.cpp", "get_box"): ("background_box_for_kind",),
+    ("BackgroundPainting.cpp", "paint_background"): ("paintable_box_paint_background",),
+    # Skia conversion helpers stop at V's renderer boundary. Geometry and
+    # gradient/tile policy remain represented in typed command values, while
+    # the native shell performs the final backend conversion.
+    ("DisplayListPlayerSkia.cpp", "to_skia_rrect"): ("as_corners",),
+    ("DisplayListPlayerSkia.cpp", "to_skia_matrix"): ("map_point",),
+    ("DisplayListPlayerSkia.cpp", "to_skia_matrix4x4"): (
+        "transform_point_for_hit_test",
+    ),
+    ("DisplayListPlayerSkia.cpp", "to_skia_interpolation"): (
+        "expand_color_stops_for_painting",
+    ),
+    ("DisplayListPlayerSkia.cpp", "to_skia_tile_mode"): ("background_tile_plan",),
+    ("DisplayListPlayerSkia.cpp", "gradient_paint_style_to_skia_paint"): (
+        "expand_color_stops_for_painting",
+    ),
+    ("PaintableBox.cpp", "set_paint_viewport_scrollbars"): (
+        "append_scrollbar_overlay_command",
+    ),
+    ("SVGPathPaintable.cpp", "to_gfx_winding_rule"): ("paint_commands",),
+    ("StackingContext.cpp", "to_paint_phase"): ("compatibility_paint_plan",),
+    ("TableBordersPainting.cpp", "css_border_data_from_device_border_data"): (
+        "device_border_data_from_css_border_data",
+    ),
+    ("ViewportPaintable.cpp", "scale_matrix_for_device_pixels"): (
+        "painting_affine_from_svg",
+    ),
+    ("ViewportPaintable.cpp", "compute_transform"): (
+        "resolved_computed_transform_matrix",
+    ),
+    ("ViewportPaintable.cpp", "compute_perspective_matrix"): (
+        "viewport_assign_accumulated_visual_contexts",
     ),
     ("SVGMaskable.cpp", "first_child_layout_node_of_type"): (
         "svg_url_mask_for_box",

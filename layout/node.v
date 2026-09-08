@@ -1241,6 +1241,9 @@ pub fn (n &Box) natural_size() css.SizeWithAspectRatio {
 			if element.is_html_element() && element.local_name() == 'video' {
 				return unsafe { &VideoBox(n) }.natural_size()
 			}
+			if n.is_navigable_container_viewport() {
+				return unsafe { &NavigableContainerViewport(n) }.natural_size()
+			}
 		}
 	}
 	return n.natural_size_

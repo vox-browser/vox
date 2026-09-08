@@ -6,7 +6,7 @@ Re-audited: 2026-09-08
 
 All 50 upstream Layout `.cpp` units have filename-level homes in the typed V
 Layout package. That inventory does not establish body-level parity: the
-current semantic audit reports 15 unmatched Layout implementations, and the
+current semantic audit reports 4 unmatched Layout implementations, and the
 legacy `BlockBox` renderer transport still sits between typed Layout and the
 native shell.
 
@@ -38,10 +38,17 @@ arithmetic, anonymous/table wrapper propagation, continuations, and node-kind
 accessors to their active V implementations. `Node::has_css_transform()` now
 also includes the individual `rotate`, `translate`, and `scale` properties, and
 the source-shaped `css_clamp()` helper is used by flex sizing with CSS's defined
-maximum-below-minimum behavior. The remaining 15 stay visible because they are
-behavioral work: image-provider hooks, nested viewport natural sizing, the
-contextual space-font lookup, list-style images, insertion/label hooks, and two
-layout geometry callbacks.
+maximum-below-minimum behavior.
+
+The 700 checkpoint reduces Layout from 15 to 4. Navigable container viewports
+now negotiate natural metrics from hosted SVG document roots and commit their
+content size to the child document viewport. The local margin-box geometry
+helper preserves the source rule that negative margins do not extend the box,
+and text segmentation treats both U+0020 and U+00A0 as inter-word spaces. The
+active HTML image-provider and image-box relayout paths account for the former
+class-shaped hooks. The four remaining implementations are the base insertion
+and label hooks, list-style image provisioning, and contextual space-font
+selection.
 
 ## Translated coverage
 

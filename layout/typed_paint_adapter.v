@@ -2952,6 +2952,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	if node.is_navigable_container_viewport() && used.content_width().to_double() > 0
 		&& used.content_height().to_double() > 0 {
 		viewport := unsafe { &NavigableContainerViewport(node) }
+		viewport.did_set_content_size(used.content_size())
 		nested_viewport_document = viewport.content_document()
 		nested_viewport_paintable = painting.NavigableContainerViewportPaintable{
 			viewport_rect: painting.Rect{

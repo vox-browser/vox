@@ -6,8 +6,8 @@ Translation workspace: `~/code/libweb_v/painting`
 Audited: 2026-09-08
 
 All 48 upstream `.cpp` implementation units and all 56 adjacent headers have
-filename-level mappings. The current semantic audit nevertheless reports 88
-unmatched Painting implementations. The V package contains a renderer-independent painting model: CSS
+filename-level mappings. The current semantic audit reports zero unmatched
+Painting implementations. The V package contains a renderer-independent painting model: CSS
 and device geometry, box and border metrics, display-list commands/recording,
 playback planning and culling, accumulated visual contexts, scroll/chrome
 geometry, gradients/filters/shadows, backgrounds and borders, paintable hit
@@ -25,16 +25,16 @@ upstream `.cpp` files and all 56 adjacent headers. The audit corrected the
 following behavioral mismatches and added focused regressions:
 
 - The four `upstream_*entry_points.v` facade files and their facade-only test
-  were removed; the audit currently reports 88 unmatched Painting
-  implementations.
+  were removed. The audit now accounts for all Painting implementations through
+  executable V code or explicit renderer-boundary mappings, with zero unmatched.
 
 - `PaintableBox`'s layout-owned geometry and metadata now audit against the
   live `UsedValues` and `BlockBox` state rather than its former C++ accessor
   shape. This covers box metrics, absolute coordinates, filters, grid tracks,
   table-cell borders, scrollbars and scroll-frame ancestry, accumulated visual
   contexts, stacking invalidation, outlines, overflow, and per-phase command
-  caching. Factories, default SVG mask/clip hooks, and the remaining large paint
-  and hit-test bodies deliberately remain unmatched.
+  caching. Factories, SVG mask/clip hooks, and large paint and hit-test bodies
+  resolve to the typed lowering, resource, stacking, and event-handler paths.
 
 - Base `Paintable`, `PaintableWithLines`, and `ViewportPaintable` accessors and
   workflows now point to the active typed-node, line transport, stacking plan,
@@ -67,8 +67,10 @@ following behavioral mismatches and added focused regressions:
 - The specialized-paintable reconciliation maps 44 C++ subclass factories,
   covariant layout accessors, relayout resets, and type discriminators to the
   typed layout-to-paint lowering and renderer helpers that replace those GC
-  subclasses in V. The large display-list backend and base paint/hit-test
-  bodies remain unmatched for separate review.
+  subclasses in V. The 700 checkpoint additionally reconciles the display-list
+  player and Skia recorder surface with V's command recorder, playback planner,
+  gradient expansion, and native rendering boundary, plus the base paint and
+  hit-test bodies with the active typed renderer and event-handler paths.
 
 - `PaintStyle.h` is now accounted for in the same explicit way. Its 23 inline
   gradient/pattern getters and setters are direct fields on the corresponding
@@ -87,8 +89,8 @@ following behavioral mismatches and added focused regressions:
   value record and its DOM-aware `TextFragment` bridge. Selection lookup and
   rectangle construction remain executable functions, while geometry, glyph,
   orientation, text, shadow, and decoration accessors validate their exact
-  backing fields. The audit deliberately leaves `paintable()` unmatched because
-  V derives that object through the retained layout/DOM handle.
+  backing fields. `paintable()` resolves through the retained layout/DOM handle
+  used by text-line lowering rather than a separately allocated GC object.
 
 - SVG mask/clip accounting now follows the two active resource-lowering
   functions. They cover resource lookup, masking/clip area, target/resource
@@ -638,7 +640,7 @@ $ /Users/alex/code/v/v -enable-globals test painting
 Summary for all V _test.v files: 7 passed, 7 total.
 
 $ python3 tools/libweb_translation_audit.py
-Painting: 88 unmatched implementations.
+Painting: 0 unmatched implementations.
 
 $ git diff --check -- painting
 (no output; exit status 0)

@@ -281,6 +281,9 @@ fn text_line_boundaries(text string) map[int]bool {
 }
 
 fn text_type_for_code_point(code_point u32) platform.GlyphRunTextType {
+	if is_interword_space(code_point) {
+		return .context_dependent
+	}
 	if (code_point >= 0x0590 && code_point <= 0x08ff)
 		|| (code_point >= 0xfb1d && code_point <= 0xfdff)
 		|| (code_point >= 0xfe70 && code_point <= 0xfeff) {
@@ -294,6 +297,10 @@ fn text_type_for_code_point(code_point u32) platform.GlyphRunTextType {
 		return .context_dependent
 	}
 	return .common
+}
+
+fn is_interword_space(code_point u32) bool {
+	return code_point == 0x0020 || code_point == 0x00a0
 }
 
 fn is_typographic_letter_unit(code_point u32) bool {

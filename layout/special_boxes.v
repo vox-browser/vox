@@ -104,6 +104,35 @@ pub fn (box &NavigableContainerViewport) content_document() &dom.Document {
 	return box.content_document_
 }
 
+// NavigableContainerViewport::natural_size(). Only an object embedding an SVG
+// document contributes that document's negotiated natural dimensions.
+pub fn (box &NavigableContainerViewport) natural_size() css.SizeWithAspectRatio {
+	dom_node := box.dom_node() or { return css.SizeWithAspectRatio{} }
+	element := dom_node.as_element() or { return css.SizeWithAspectRatio{} }
+	if !element.is_html_element() || element.local_name() != 'object' {
+		return css.SizeWithAspectRatio{}
+	}
+	root := box.content_document_.document_element() or { return css.SizeWithAspectRatio{} }
+	if !root.is_svg_svg_element() {
+		return css.SizeWithAspectRatio{}
+	}
+	return negotiate_svg_natural_metrics(root)
+}
+
+// The C++ paintable calls this hook after copying committed content geometry.
+// V lowers directly from UsedValues, so update the hosted document at that
+// same boundary in the typed paint adapter.
+pub fn (box &NavigableContainerViewport) did_set_content_size(size css.CSSPixelSize) {
+	old_rect := box.content_document_.viewport_rect()
+	mut document := unsafe { &dom.Document(box.content_document_) }
+	document.set_viewport_rect(dom.Rect{
+		x: old_rect.x
+		y: old_rect.y
+		width: size.width().to_double()
+		height: size.height().to_double()
+	})
+}
+
 @[heap]
 pub struct CheckBox {
 	ReplacedBox
