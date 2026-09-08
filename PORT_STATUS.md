@@ -128,17 +128,17 @@ explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 549
 suspicious empty/default-return implementations: 0
   candidate-name-match: 14170
-  unmatched: 700
+  unmatched: 600
   language-constructor-or-destructor: 1182
   gc-or-binding-runtime: 1109
-  consolidated-name-match: 1127
+  consolidated-name-match: 1217
   namespace-template-specialization: 152
   language-operator: 71
   language-template-trait: 65
-  value-record-field-match: 82
+  value-record-field-match: 92
 unmatched implementations by module:
 
-   696 CSS
+   596 CSS
      4 Layout
      0 Painting
 
@@ -234,6 +234,14 @@ metrics and committed child-viewport sizing, the local margin-box geometry
 helper, and inter-word NBSP classification; the active image-provider paths are
 also explicitly accounted for. The full suite passes 392/392 at this
 checkpoint.
+
+The 600 checkpoint reconciles 100 methods from the previously differential-
+tested CSS calculation cluster. Upstream's virtual calculation-node hierarchy
+maps to V's live `CalcNode` sum type, its typed record fields, and the parser,
+simplifier, resolver, serializer, equality, and Typed OM reification paths.
+This reduces the calculation cluster from 238 to 138 and CSS from 696 to 596
+without adding class-shaped facade functions. The full suite passes 392/392 at
+this checkpoint.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,

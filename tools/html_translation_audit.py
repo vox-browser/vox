@@ -1604,6 +1604,112 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
     ),
 })
 
+# CalculatedStyleValue.cpp models a calculation as a deep virtual class tree;
+# V keeps the same typed operations on a CalcNode sum type. This first
+# reconciliation slice covers the common node infrastructure, numeric leaves,
+# sum/product/negation, random(), and abs/sign/sin/cos. Each target below is an
+# active parser, simplifier, resolver, serializer, equality, or Typed OM path.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("CalculationNode", "from_style_value"): (
+        ("calculation_node_from_numeric_primitive", None),
+        ("calculation_node_from_calc", None),
+    ),
+    ("CalculationNode", "is_operator_node"): (("serialize_a_calculation_tree", None),),
+    ("CalculationNode", "is_math_function_node"): (("serialize_a_calculation_tree", None),),
+    ("CalculationNode", "is_calc_operator_node"): (("serialize_a_calculation_tree", None),),
+    ("CalculationNode", "run_operation_if_possible"): (("resolve_calc_node", None),),
+    ("CalculationNode", "reify"): (("reify_calc_node", None),),
+    ("CalculatedStyleValue", "equals"): (("equals", "StyleValue"),),
+    ("CalculatedStyleValue", "reify"): (("reify_calc_node", None),),
+    ("CalculatedStyleValue", "resolves_to_angle_percentage"): (
+        ("matches_angle_percentage", "NumericType"),
+    ),
+    ("CalculatedStyleValue", "resolves_to_flex"): (("matches_flex", "NumericType"),),
+    ("CalculatedStyleValue", "resolves_to_frequency"): (
+        ("matches_frequency", "NumericType"),
+    ),
+    ("CalculatedStyleValue", "resolves_to_frequency_percentage"): (
+        ("matches_frequency_percentage", "NumericType"),
+    ),
+    ("CalculatedStyleValue", "resolves_to_resolution"): (
+        ("matches_resolution", "NumericType"),
+    ),
+    ("CalculatedStyleValue", "resolves_to_time"): (("matches_time", "NumericType"),),
+    ("CalculatedStyleValue", "resolves_to_time_percentage"): (
+        ("matches_time_percentage", "NumericType"),
+    ),
+    ("CalculatedStyleValue", "resolves_to_dimension"): (
+        ("matches_dimension", "NumericType"),
+    ),
+    ("NumericCalculationNode", "from_keyword"): (("calc_constant_from_ident", None),),
+    ("NumericCalculationNode", "serialize_value"): (
+        ("serialize_numeric_value", "CalcNumeric"),
+    ),
+    ("NumericCalculationNode", "value_to_string"): (("serialize_leaf", "CalcNumeric"),),
+    ("NumericCalculationNode", "is_in_canonical_unit"): (
+        ("is_canonical", "CalcNumeric"),
+    ),
+    ("NumericCalculationNode", "infinite_or_nan_value"): (
+        ("non_finite_keyword", "CalcNumeric"),
+    ),
+    ("NumericCalculationNode", "is_negative"): (("serialize_calc_sum", None),),
+    ("NumericCalculationNode", "negated"): (("simplify_calc_negate", None),),
+    ("NumericCalculationNode", "equals"): (("equals", "StyleValue"),),
+    ("NumericCalculationNode", "reify"): (("reify_calc_node", None),),
+    ("NumericCalculationNode", "with_simplified_children"): (
+        ("canonicalize_calc_leaf", None),
+    ),
+    ("NumericCalculationNode", "children"): (("numeric_type", "CalcNode"),),
+    ("RandomCalculationNode", "with_simplified_children"): (("simplify_calc", None),),
+    ("RandomCalculationNode", "run_operation_if_possible"): (
+        ("resolve_calc_random", None),
+    ),
+    ("RandomCalculationNode", "equals"): (("equals", "StyleValue"),),
+})
+
+_CALC_OPERATOR_METHOD_TARGETS: dict[str, dict[str, tuple[tuple[str, str | None], ...]]] = {
+    "SumCalculationNode": {
+        "create": (("simplify_calc_sum", None),),
+        "contains_percentage": (("numeric_type", "CalcNode"),),
+        "with_simplified_children": (("simplify_calc_sum", None),),
+        "dump": (("serialize_calc_sum", None),),
+        "equals": (("equals", "StyleValue"),),
+        "reify": (("reify_calc_node", None),),
+    },
+    "ProductCalculationNode": {
+        "create": (("simplify_calc_product", None),),
+        "contains_percentage": (("numeric_type", "CalcNode"),),
+        "with_simplified_children": (("simplify_calc_product", None),),
+        "dump": (("serialize_calc_product", None),),
+        "equals": (("equals", "StyleValue"),),
+        "reify": (("reify_calc_node", None),),
+    },
+    "NegateCalculationNode": {
+        "create": (("simplify_calc_negate", None),),
+        "contains_percentage": (("numeric_type", "CalcNode"),),
+        "with_simplified_children": (("simplify_calc_negate", None),),
+        "dump": (("serialize_a_calculation_tree", None),),
+        "equals": (("equals", "StyleValue"),),
+        "reify": (("reify_calc_node", None),),
+    },
+}
+for _owner_name, _method_mappings in _CALC_OPERATOR_METHOD_TARGETS.items():
+    for _method_name, _targets in _method_mappings.items():
+        CONSOLIDATED_METHOD_MAPPINGS[(_owner_name, _method_name)] = _targets
+
+for _owner_name in (
+    "AbsCalculationNode", "SignCalculationNode", "SinCalculationNode",
+    "CosCalculationNode",
+):
+    CONSOLIDATED_METHOD_MAPPINGS.update({
+        (_owner_name, "create"): (("build_calc_function", None),),
+        (_owner_name, "contains_percentage"): (("numeric_type", "CalcNode"),),
+        (_owner_name, "with_simplified_children"): (("simplify_calc_function", None),),
+        (_owner_name, "run_operation_if_possible"): (("resolve_calc_function", None),),
+        (_owner_name, "dump"): (("serialize_function", "CalcFunction"),),
+        (_owner_name, "equals"): (("equals", "StyleValue"),),
+    })
+
 # The base Box hook is invoked while V lowers committed UsedValues into a
 # BlockBox. ImageProvider's C++ base class is split between ImageBox's retained
 # relayout state and the concrete HTML image/object provider models.
@@ -1746,6 +1852,17 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
 CONSOLIDATED_FIELD_MAPPINGS: dict[
     tuple[str, str], tuple[tuple[str, str], ...]
 ] = {
+    # The C++ calculation-node accessors become fields on V's tagged records.
+    ("CalculatedStyleValue", "calculation"): (("node", "CalculatedStyleValue"),),
+    ("SumCalculationNode", "children"): (("children", "CalcSum"),),
+    ("ProductCalculationNode", "children"): (("children", "CalcProduct"),),
+    ("NegateCalculationNode", "children"): (("children", "CalcNegate"),),
+    ("NegateCalculationNode", "child"): (("children", "CalcNegate"),),
+    ("AbsCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("SignCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("SinCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("CosCalculationNode", "children"): (("children", "CalcFunction"),),
+    ("RandomCalculationNode", "children"): (("children", "CalcRandom"),),
     ("SVGGradientPaintStyle", "gradient_transform"): (("gradient_transform", "SVGGradientPaintStyle"),),
     ("SVGGradientPaintStyle", "set_gradient_transform"): (("gradient_transform", "SVGGradientPaintStyle"),),
     ("SVGGradientPaintStyle", "spread_method"): (("spread_method", "SVGGradientPaintStyle"),),
@@ -1918,6 +2035,24 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    # The virtual C++ calculation tree is decomposed into typed V operations.
+    # Three add_the_types overloads intentionally share the same mapping.
+    ("StyleValues/CalculatedStyleValue.cpp", "add_the_types"): ("added_to",),
+    ("StyleValues/CalculatedStyleValue.cpp", "multiply_the_types"): ("multiplied_by",),
+    ("StyleValues/CalculatedStyleValue.cpp", "simplify_children_vector"): ("simplify_calc",),
+    ("StyleValues/CalculatedStyleValue.cpp", "simplify_child"): ("simplify_calc",),
+    ("StyleValues/CalculatedStyleValue.cpp", "simplify_2_children"): ("simplify_calc",),
+    ("StyleValues/CalculatedStyleValue.cpp", "clamp_and_censor_numeric_value"): ("clamp_and_censor",),
+    ("StyleValues/CalculatedStyleValue.cpp", "serialize_a_math_function"): ("serialize_top",),
+    ("StyleValues/CalculatedStyleValue.cpp", "numeric_type_from_calculated_style_value"): ("numeric_type",),
+    ("StyleValues/CalculatedStyleValue.cpp", "try_get_value_with_canonical_unit"): ("resolve_calc_leaf",),
+    ("StyleValues/CalculatedStyleValue.cpp", "try_get_number"): ("resolve_calc_node",),
+    ("StyleValues/CalculatedStyleValue.cpp", "run_min_or_max_operation_if_possible"): ("resolve_calc_function",),
+    ("StyleValues/CalculatedStyleValue.cpp", "run_sin_cos_or_tan_operation_if_possible"): ("resolve_calc_function",),
+    ("StyleValues/CalculatedStyleValue.cpp", "run_asin_acos_or_atan_operation_if_possible"): ("resolve_calc_function",),
+    ("StyleValues/CalculatedStyleValue.cpp", "run_mod_or_rem_operation_if_possible"): ("calc_mod_or_rem",),
+    ("StyleValues/CalculatedStyleValue.cpp", "find_numeric_child_with_same_unit"): ("simplify_calc_sum",),
+    ("StyleValues/CalculatedStyleValue.cpp", "simplify_a_calculation_tree"): ("simplify_calc_with_resolution",),
     ("LayoutState.cpp", "build_paint_tree"): ("block_box_from_typed_layout",),
     ("SVGFormattingContext.cpp", "is_container_element"): ("layout_container_element",),
     ("GridFormattingContext.cpp", "gap_to_px"): ("resolve_layout_gap",),
