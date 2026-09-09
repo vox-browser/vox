@@ -73,7 +73,7 @@ fn C.native_draw_document_text_srgb(x f32, y f32, text string, color gg.Color, s
 
 fn C.native_draw_document_text_shadow_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int, blur f32)
 
-fn C.native_draw_document_glyph_run_srgb(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, color gg.Color, blur f32, shadow_only int) int
+fn C.native_draw_document_glyph_run_srgb(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, color gg.Color, blur f32, shadow_only int) int
 
 fn C.native_begin_background_text_clip(canvas_width f32, canvas_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32)
 
@@ -86,6 +86,8 @@ fn C.native_finish_background_text_clip()
 fn C.native_end_background_text_clip()
 
 fn C.native_draw_polygon_srgb(points &f32, point_count int, canvas_height f32, color gg.Color)
+
+fn C.native_draw_solid_line_srgb(from_x f32, from_y f32, to_x f32, to_y f32, thickness f32, canvas_width f32, canvas_height f32, color gg.Color) int
 
 fn C.native_draw_rounded_rect_srgb(x f32, y f32, width f32, height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, color gg.Color)
 
@@ -110,6 +112,10 @@ fn C.native_end_background_blend_group()
 fn C.native_begin_background_blend_mode(mode int)
 
 fn C.native_end_background_blend_mode()
+
+fn C.native_begin_css_effect_layer(opacity f32, blend_mode int)
+
+fn C.native_end_css_effect_layer()
 
 fn C.native_add_corner_rounded_clip(x f32, y f32, width f32, height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32)
 
@@ -1544,7 +1550,7 @@ fn paint_color(serialized string, opacity f64) gg.Color {
 }
 
 fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_y f32,
-	scroll_y f64, canvas_height f32, glyph_color gg.Color, blur f32, shadow_only bool) bool {
+	scroll_y f64, canvas_width f32, canvas_height f32, glyph_color gg.Color, blur f32, shadow_only bool) bool {
 	$if macos {
 		glyph_run := command.glyph_run or { return false }
 		if command.glyph_orientation != .horizontal {
@@ -1557,7 +1563,7 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 		}
 		matrix := normalized_paint_transform(command.transform)
 		unsafe {
-			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_height, glyph_color, blur, int(shadow_only)) != 0
+			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, glyph_color, blur, int(shadow_only)) != 0
 		}
 	}
 	return false
@@ -2475,7 +2481,35 @@ fn add_native_css_filter(filter painting.GfxFilter, transform [6]f64, page_x f32
 	add_native_svg_filter_graph(filter, transform, page_x, page_y)
 }
 
-fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, page_y f32, window_height int) {
+fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x f32, page_y f32, window_height int) {
+	mut command := source_command
+	$if macos {
+		if app.ctx.native_rendering {
+			if command.group_opacity > 0 {
+				command.opacity /= command.group_opacity
+			} else {
+				// The enclosing zero-opacity group suppresses every pixel. Its leaf
+				// alpha is unobservable, and using one avoids a division by zero.
+				command.opacity = 1
+			}
+		}
+	}
+	if command.kind == 'begin_css_effect_layer' {
+		$if macos {
+			if app.ctx.native_rendering {
+				C.native_begin_css_effect_layer(f32(command.visual_layer.opacity), int(command.visual_layer.blend_mode))
+			}
+		}
+		return
+	}
+	if command.kind == 'end_css_effect_layer' {
+		$if macos {
+			if app.ctx.native_rendering {
+				C.native_end_css_effect_layer()
+			}
+		}
+		return
+	}
 	if command.kind == 'begin_background_text_clip' {
 		$if macos {
 			if app.ctx.native_rendering {
@@ -2987,8 +3021,14 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 			if command.points.len >= 4 {
 				from_x, from_y := paint_screen_point(command, command.points[0], command.points[1], page_x, page_y, scroll_y)
 				to_x, to_y := paint_screen_point(command, command.points[2], command.points[3], page_x, page_y, scroll_y)
+				line_color := paint_color(command.color, command.opacity)
+				$if macos {
+					if app.ctx.native_rendering && command.line_style !in ['dotted', 'dashed'] && C.native_draw_solid_line_srgb(from_x, from_y, to_x, to_y, f32(command.stroke_width), f32(app.ctx.width), f32(app.ctx.height), line_color) != 0 {
+						return
+					}
+				}
 				app.ctx.draw_line_with_config(from_x, from_y, to_x, to_y, gg.PenConfig{
-					color: paint_color(command.color, command.opacity)
+					color: line_color
 					line_type: match command.line_style {
 						'dotted' { gg.PenLineType.dotted }
 						'dashed' { gg.PenLineType.dashed }
@@ -3583,7 +3623,7 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 				text_color := paint_color(command.color, command.opacity)
 				$if macos {
 					if app.ctx.native_rendering {
-						if native_draw_retained_glyph_run(command, page_x, page_y, scroll_y, f32(app.ctx.height), text_color, 0, false) {
+						if native_draw_retained_glyph_run(command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), text_color, 0, false) {
 							return
 						}
 						if app.use_document_font {
@@ -3609,7 +3649,7 @@ fn (mut app BrowserApp) draw_command(command layout.PaintCommand, page_x f32, pa
 				shadow_color := paint_color(command.color, command.opacity)
 				$if macos {
 					if app.ctx.native_rendering {
-						if native_draw_retained_glyph_run(command, page_x, page_y, scroll_y, f32(app.ctx.height), shadow_color, f32(command.blur * font_scale), true) {
+						if native_draw_retained_glyph_run(command, page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), shadow_color, f32(command.blur * font_scale), true) {
 							return
 						}
 						if app.use_document_font {

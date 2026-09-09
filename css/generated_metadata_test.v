@@ -615,6 +615,7 @@ fn test_computed_values_composite_initial_values_match_upstream() {
 	assert InitialValues.column_gap().is_normal
 	assert InitialValues.transition_delay().to_seconds() == 0
 	assert InitialValues.outline_width().to_double() == 3
+	assert InitialValues.text_underline_offset().to_double() == 2
 	assert InitialValues.rx().is_auto()
 
 	position := Position{

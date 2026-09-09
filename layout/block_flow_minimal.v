@@ -413,7 +413,8 @@ pub mut:
 	skip_background_paint    bool
 	// `opacity` is this box's own opacity (0..1) in the tree; in a paint-order entry it holds the
 	// cumulative opacity (this box's times its ancestors').
-	opacity f64 = 1.0
+	opacity        f64 = 1.0
+	mix_blend_mode painting.CompositingAndBlendingOperator
 	// Painting::ResolvedCSSFilter retained from computed style. The visual-context
 	// builder converts this to a device filter before display-list replay.
 	filter          painting.ResolvedCSSFilter
@@ -1302,16 +1303,19 @@ pub:
 }
 
 pub enum PaintVisualLayerKind {
+	css_effect
 	css_filter
 	svg_mask
 }
 
 pub struct PaintVisualLayer {
 pub:
-	kind      PaintVisualLayerKind
-	scope_id  u64
-	filter    ?painting.GfxFilter
-	mask_clip PaintClip
+	kind       PaintVisualLayerKind
+	scope_id   u64
+	opacity    f64 = 1.0
+	blend_mode painting.CompositingAndBlendingOperator
+	filter     ?painting.GfxFilter
+	mask_clip  PaintClip
 }
 
 pub struct PaintVisualLayerList {
@@ -1410,7 +1414,12 @@ pub mut:
 	glyph_translation_y f64
 	glyph_orientation   painting.Orientation
 	opacity             f64 = 1.0 // the box's cumulative opacity (this box × its ancestors')
-	radius              f64 // corner radius for a rounded 'fill_rect' (0 = square)
+	// Product of the retained CSS effect layers surrounding this command. The
+	// native player divides it out of `opacity`, because those layers composite
+	// the complete subtree atomically. Portable backends keep the historical
+	// flattened-alpha fallback until they gain offscreen effect surfaces.
+	group_opacity f64 = 1.0
+	radius        f64 // corner radius for a rounded 'fill_rect' (0 = square)
 	// Retained used corner radii for `fill_rounded_rect`. This mirrors Painting's
 	// FillRoundedRect command instead of discarding elliptical/per-corner radii into vertices.
 	corner_radii    BoxRadii

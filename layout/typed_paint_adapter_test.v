@@ -196,6 +196,36 @@ fn test_css_filter_is_lowered_once_around_the_complete_subtree() {
 	assert filtered_parts == 2
 }
 
+fn test_css_opacity_is_lowered_as_one_retained_subtree_effect() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #faded { opacity: .4 } .part { width: 40px; height: 20px } </style><body><div id="faded"><div class="part" style="background:red"></div><div class="part" style="background:blue"></div></div></body>')
+	_ = layout_document_typed_in_viewport(document, 160, 120)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	commands := display_list_commands(mutable_document.record_display_list() or {
+		panic('missing display list')
+	})
+	effect_begins := commands.filter(it.kind == 'begin_css_effect_layer')
+	effect_ends := commands.filter(it.kind == 'end_css_effect_layer')
+	assert effect_begins.len == 1
+	assert effect_ends.len == 1
+	assert math.abs(effect_begins[0].visual_layer.opacity - 0.4) < 0.0001
+	mut inside_effect := false
+	mut faded_parts := 0
+	for command in commands {
+		if command.kind == 'begin_css_effect_layer' {
+			inside_effect = true
+		} else if command.kind == 'end_css_effect_layer' {
+			inside_effect = false
+		} else if command.kind == 'fill_rect'
+			&& command.color in ['rgb(255 0 0)', 'rgb(0 0 255)'] {
+			assert inside_effect
+			assert math.abs(command.opacity - 0.4) < 0.0001
+			assert math.abs(command.group_opacity - 0.4) < 0.0001
+			faded_parts++
+		}
+	}
+	assert faded_parts == 2
+}
+
 fn test_document_display_list_dump_uses_retained_paint_commands() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 40px; height: 20px; background: rgb(12 34 56) }</style><body><div id="target"></div></body>')
 	_ = layout_document_typed_in_viewport(document, 160, 120)

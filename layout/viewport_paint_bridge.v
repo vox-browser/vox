@@ -465,9 +465,12 @@ fn assign_compatibility_visual_contexts(mut box BlockBox, visual_parent ?&BlockB
 			is_sticky: true
 		}, own_state)
 	}
-	if filter := box.filter.to_gfx_filter(1.0) {
+	gfx_filter := box.filter.to_gfx_filter(1.0)
+	if box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none {
 		own_state = tree.append(painting.EffectsVisualData{
-			filter: filter
+			opacity: box.opacity
+			blend_mode: box.mix_blend_mode
+			filter: gfx_filter
 		}, own_state)
 	}
 	if !affine_is_compact_identity(box.own_paint_transform) {
@@ -1006,13 +1009,14 @@ fn viewport_invalidate_all_paint_caches(target voidptr) {
 
 struct CompatibilityFlattenedVisualContext {
 mut:
-	transform  [6]f64 = [f64(1), 0, 0, 1, 0, 0]!
-	has_clip   bool
-	clip       LayoutRect
-	clips      []PaintClip
-	clip_list  &PaintClipList = unsafe { nil }
-	layers     []PaintVisualLayer
-	layer_list &PaintVisualLayerList = unsafe { nil }
+	transform     [6]f64 = [f64(1), 0, 0, 1, 0, 0]!
+	has_clip      bool
+	clip          LayoutRect
+	clips         []PaintClip
+	clip_list     &PaintClipList = unsafe { nil }
+	layers        []PaintVisualLayer
+	layer_list    &PaintVisualLayerList = unsafe { nil }
+	group_opacity f64 = 1.0
 }
 
 fn compatibility_affine_map_rect(matrix [6]f64, rect LayoutRect) LayoutRect {
@@ -1324,6 +1328,15 @@ fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualCont
 			}
 		}
 		painting.EffectsVisualData {
+			if node.data.opacity < 1.0 || node.data.blend_mode != .normal {
+				flattened.layers << PaintVisualLayer{
+					kind: .css_effect
+					scope_id: u64(index)
+					opacity: node.data.opacity
+					blend_mode: node.data.blend_mode
+				}
+				flattened.group_opacity *= node.data.opacity
+			}
 			if filter := node.data.filter {
 				flattened.layers << PaintVisualLayer{
 					kind: .css_filter
@@ -1360,6 +1373,7 @@ fn paint_clip_is_svg_layer_mask(clip PaintClip) bool {
 
 fn compatibility_begin_visual_layer_kind(layer PaintVisualLayer) string {
 	return match layer.kind {
+		.css_effect { 'begin_css_effect_layer' }
 		.css_filter { 'begin_css_filter_layer' }
 		.svg_mask { 'begin_svg_mask_layer' }
 	}
@@ -1367,6 +1381,7 @@ fn compatibility_begin_visual_layer_kind(layer PaintVisualLayer) string {
 
 fn compatibility_end_visual_layer_kind(layer PaintVisualLayer) string {
 	return match layer.kind {
+		.css_effect { 'end_css_effect_layer' }
 		.css_filter { 'end_css_filter_layer' }
 		.svg_mask { 'end_svg_mask_layer' }
 	}
@@ -1500,6 +1515,7 @@ fn replay_cached_paint_commands_with_visual_context(steps []CompatibilityPaintSt
 				}
 			}
 			command.visual_layer_list = context.layer_list
+			command.group_opacity = context.group_opacity
 			apply_live_scrollbar_offset(mut command, step.box)
 			apply_live_background_offsets(mut command, step.box, viewport_scroll_offset)
 			commands << command
@@ -1758,10 +1774,10 @@ fn (root &BlockBox) paint_inspector_overlay(document &dom.Document,
 
 fn display_list_command_nesting_change(kind string) int {
 	return match kind {
-		'begin_background_blend_group', 'begin_background_text_clip', 'begin_css_filter_layer', 'begin_svg_mask_layer' {
+		'begin_background_blend_group', 'begin_background_text_clip', 'begin_css_effect_layer', 'begin_css_filter_layer', 'begin_svg_mask_layer' {
 			1
 		}
-		'end_background_blend_group', 'end_background_text_clip', 'end_css_filter_layer', 'end_svg_mask_layer' {
+		'end_background_blend_group', 'end_background_text_clip', 'end_css_effect_layer', 'end_css_filter_layer', 'end_svg_mask_layer' {
 			-1
 		}
 		else { 0 }

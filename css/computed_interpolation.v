@@ -2263,12 +2263,14 @@ pub fn (c &ComputedProperties) text_rendering() TextRendering {
 }
 
 pub fn (c &ComputedProperties) text_underline_offset() CSSPixels {
-	value := c.property(.text_underline_offset, .yes) or { return CSSPixels{} }
+	value := c.property(.text_underline_offset, .yes) or {
+		return InitialValues.text_underline_offset()
+	}
 	if computed_interpolation_style_value_keyword(value) or { Keyword.invalid } == .auto {
-		return CSSPixels{}
+		return InitialValues.text_underline_offset()
 	}
 	parsed := style_value_logic_from_dom(.text_underline_offset, value) or {
-		return CSSPixels{}
+		return InitialValues.text_underline_offset()
 	}
 	return Length.from_style_value_logic(parsed, Length.make_css_px(c.font_size())).absolute_length_to_px()
 }

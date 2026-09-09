@@ -3172,6 +3172,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		form_control_accent_color: computed.accent_color()
 		fieldset_paintable: fieldset_paintable
 		opacity: f64(computed.opacity())
+		mix_blend_mode: painting.mix_blend_mode_to_compositing_and_blending_operator(painting.blend_mode_from_css(computed.mix_blend_mode()))
 		filter: filter
 		backdrop_filter: backdrop_filter
 		visible: computed.visibility() == .visible

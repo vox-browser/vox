@@ -6,6 +6,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+extern int ladybird_v_skia_configure_font(const char *path, int slot);
+extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
+	const uint16_t *glyphs, const double *packed_positions, int glyph_count,
+	float font_size, int font_weight, int emoji_face, float baseline_x,
+	float baseline_y, float transform_a, float transform_b, float transform_c,
+	float transform_d, float transform_e, float transform_f, float page_x,
+	float page_y, float scroll_y, float canvas_width, float canvas_height,
+	uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+extern int ladybird_v_skia_draw_solid_line(CGContextRef destination,
+	float from_x, float from_y, float to_x, float to_y, float thickness,
+	float canvas_width, float canvas_height, uint8_t red, uint8_t green,
+	uint8_t blue, uint8_t alpha);
+#endif
+
 static NSString *native_capture_string(string value) {
 	return [[NSString alloc] initWithBytes:value.str
 	                              length:(NSUInteger)value.len
@@ -104,6 +119,9 @@ static NSFont *native_document_font(float size, int bold, int italic, int monosp
 
 void native_configure_document_font(string path_value) {
 	NSString *path = native_capture_string(path_value);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_configure_font([path fileSystemRepresentation], 0);
+#endif
 	CGDataProviderRef provider = CGDataProviderCreateWithFilename([path fileSystemRepresentation]);
 	if (provider == NULL) {
 		return;
@@ -132,6 +150,9 @@ void native_configure_document_font(string path_value) {
 
 void native_configure_document_bold_font(string path_value) {
 	NSString *path = native_capture_string(path_value);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_configure_font([path fileSystemRepresentation], 1);
+#endif
 	CGDataProviderRef provider = CGDataProviderCreateWithFilename([path fileSystemRepresentation]);
 	if (provider == NULL) {
 		return;
@@ -149,6 +170,9 @@ void native_configure_document_bold_font(string path_value) {
 
 void native_configure_emoji_font(string path_value) {
 	NSString *path = native_capture_string(path_value);
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	ladybird_v_skia_configure_font([path fileSystemRepresentation], 2);
+#endif
 	CGDataProviderRef provider = CGDataProviderCreateWithFilename([path fileSystemRepresentation]);
 	if (provider == NULL) {
 		return;
@@ -416,6 +440,50 @@ void native_end_background_blend_mode(void) {
 	}
 }
 
+static CGBlendMode native_compositing_operator(int mode) {
+	switch (mode) {
+	case 1: return kCGBlendModeDestinationIn;
+	case 2: return kCGBlendModeMultiply;
+	case 3: return kCGBlendModeScreen;
+	case 4: return kCGBlendModeOverlay;
+	case 5: return kCGBlendModeDarken;
+	case 6: return kCGBlendModeLighten;
+	case 7: return kCGBlendModeColorDodge;
+	case 8: return kCGBlendModeColorBurn;
+	case 9: return kCGBlendModeHardLight;
+	case 10: return kCGBlendModeSoftLight;
+	case 11: return kCGBlendModeDifference;
+	case 12: return kCGBlendModeExclusion;
+	case 13: return kCGBlendModeHue;
+	case 14: return kCGBlendModeSaturation;
+	case 15: return kCGBlendModeColor;
+	case 16: return kCGBlendModeLuminosity;
+	case 17: return kCGBlendModePlusDarker;
+	case 18: return kCGBlendModePlusLighter;
+	default: return kCGBlendModeNormal;
+	}
+}
+
+void native_begin_css_effect_layer(float opacity, int blend_mode) {
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL) {
+		return;
+	}
+	CGContextSaveGState(context);
+	CGContextSetAlpha(context, opacity);
+	CGContextSetBlendMode(context, native_compositing_operator(blend_mode));
+	CGContextBeginTransparencyLayer(context, NULL);
+}
+
+void native_end_css_effect_layer(void) {
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context == NULL) {
+		return;
+	}
+	CGContextEndTransparencyLayer(context);
+	CGContextRestoreGState(context);
+}
+
 static CGColorRef native_srgb_color(gg__Color color) {
 	static CGColorSpaceRef color_space;
 	static dispatch_once_t once_token;
@@ -454,7 +522,7 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 	float font_size, int font_weight, int emoji_face, float baseline_x, float baseline_y,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
-	float scroll_y, float canvas_height, CGColorRef color, float blur,
+	float scroll_y, float canvas_width, float canvas_height, CGColorRef color, float blur,
 	int shadow_only) {
 	if (context == NULL || glyphs == NULL || packed_positions == NULL
 		|| glyph_count <= 0) {
@@ -466,6 +534,22 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 	if (graphics_font == NULL) {
 		return 0;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (!shadow_only && blur <= 0.0f) {
+		const CGFloat *components = CGColorGetComponents(color);
+		if (components != NULL && CGColorGetNumberOfComponents(color) == 4
+			&& ladybird_v_skia_draw_glyph_run(context, glyphs, packed_positions,
+				glyph_count, font_size, font_weight, emoji_face, baseline_x,
+				baseline_y, transform_a, transform_b, transform_c, transform_d,
+				transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
+				canvas_height, (uint8_t)lrint(components[0] * 255.0),
+				(uint8_t)lrint(components[1] * 255.0),
+				(uint8_t)lrint(components[2] * 255.0),
+				(uint8_t)lrint(components[3] * 255.0))) {
+			return 1;
+		}
+	}
+#endif
 	CTFontRef font = CTFontCreateWithGraphicsFont(graphics_font,
 		MAX(font_size, 0.0f), NULL, NULL);
 	if (font == NULL) {
@@ -581,14 +665,14 @@ int native_draw_document_glyph_run_srgb(const uint16_t *glyphs,
 	const double *positions, int glyph_count, float font_size, int font_weight, int emoji_face,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
-	float page_x, float page_y, float scroll_y, float canvas_height,
+	float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height,
 	gg__Color color, float blur, int shadow_only) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	CGColorRef cg_color = native_srgb_color(color);
 	int did_draw = native_draw_retained_glyph_run(context, glyphs, positions, glyph_count,
 		font_size, font_weight, emoji_face, baseline_x, baseline_y, transform_a, transform_b,
 		transform_c, transform_d, transform_e, transform_f, page_x, page_y,
-		scroll_y, canvas_height, cg_color, blur, shadow_only);
+		scroll_y, canvas_width, canvas_height, cg_color, blur, shadow_only);
 	CGColorRelease(cg_color);
 	return did_draw;
 }
@@ -613,6 +697,18 @@ void native_draw_polygon_srgb(const float *points, int point_count, float canvas
 	CGContextClosePath(context);
 	CGContextFillPath(context);
 	CGColorRelease(cg_color);
+}
+
+int native_draw_solid_line_srgb(float from_x, float from_y, float to_x, float to_y,
+	float thickness, float canvas_width, float canvas_height, gg__Color color) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (ladybird_v_skia_draw_solid_line(context, from_x, from_y, to_x, to_y,
+		thickness, canvas_width, canvas_height, color.r, color.g, color.b, color.a)) {
+		return 1;
+	}
+#endif
+	return 0;
 }
 
 static void native_add_elliptical_arc(CGMutablePathRef path, CGFloat center_x,
@@ -2545,7 +2641,8 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	int did_draw = native_draw_retained_glyph_run(native_background_text_clip_build_context,
 		glyphs, positions, glyph_count, font_size, font_weight, emoji_face, baseline_x,
 		baseline_y, transform_a, transform_b, transform_c, transform_d,
-		transform_e, transform_f, page_x, page_y, scroll_y, canvas_height,
+		transform_e, transform_f, page_x, page_y, scroll_y,
+		(float)CGBitmapContextGetWidth(native_background_text_clip_build_context), canvas_height,
 		white, 0.0f, 0);
 	CGColorRelease(white);
 	return did_draw;

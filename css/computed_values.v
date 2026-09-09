@@ -104,6 +104,10 @@ pub fn InitialValues.outline_width() CSSPixels {
 	return CSSPixels.new(3)
 }
 
+pub fn InitialValues.text_underline_offset() CSSPixels {
+	return CSSPixels.new(2)
+}
+
 pub fn InitialValues.cx() LengthPercentage {
 	return LengthPercentage.from_length(Length.make_px(0))
 }
