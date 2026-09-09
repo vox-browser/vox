@@ -31,7 +31,19 @@ fn test_platform_generic_font_aliases_are_available() {
 	$if macos {
 		assert system_font_family_available('Serif')
 		assert system_font_family_available('Monospace')
-		metrics := (&Font{family: 'Serif', point_size: 16}).pixel_metrics()
+		assert system_font_family_available('Helvetica')
+		assert system_font_family_available('Lucida Grande')
+		assert system_font_family_available('Tahoma')
+		assert system_font_family_available('Georgia')
+		assert font_path_for_family('Helvetica', 400)? == '/System/Library/Fonts/Supplemental/Arial.ttf'
+		assert font_path_for_family('Lucida Grande', 400)? == '/System/Library/Fonts/LucidaGrande.ttc'
+		assert font_path_for_family('Tahoma', 400)? == '/System/Library/Fonts/Supplemental/Tahoma.ttf'
+		assert font_path_for_family('Tahoma', 700)? == '/System/Library/Fonts/Supplemental/Tahoma Bold.ttf'
+		assert (&Font{ family: 'Helvetica', weight: 400 }).face_index() == 0
+		assert (&Font{ family: 'Helvetica', weight: 700 }).face_index() == 0
+		helvetica_metrics := (&Font{ family: 'Helvetica', point_size: 16 }).pixel_metrics()
+		assert helvetica_metrics.ascent > 0
+		metrics := (&Font{ family: 'Serif', point_size: 16 }).pixel_metrics()
 		assert metrics.ascent == 12
 		assert metrics.descent == 4
 	}

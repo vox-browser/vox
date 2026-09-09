@@ -1,0 +1,921 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<TITLE>zlib Home Site</TITLE>
+<STYLE TYPE="text/css">
+  P { margin-bottom: 0em }	<!-- http://www.w3.org/TR/REC-CSS2/box.html -->
+</STYLE>
+<!--  Copyright (c) 1996-2023 Greg Roelofs, Mark Adler & Jean-loup Gailly.  -->
+</HEAD>
+
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000FF" VLINK="#00A000">
+<H1 ALIGN="center">
+ <IMG WIDTH=369 HEIGHT=204 ALIGN="middle" SRC="images/zlib3d-b1.png" 
+  ALT="zlib">
+</H1>
+<!-- 
+   H4 ALIGN="center"
+    IMG WIDTH=42 HEIGHT=44 ALIGN="middle" SRC="images/happyicon.png" 
+     ALT="[happy face, because it's so darned useful!]"
+   /H4 
+ -->
+<H3 ALIGN="center">
+ A Massively Spiffy Yet Delicately Unobtrusive Compression Library<BR>
+ (Also Free, Not to Mention Unencumbered by Patents)
+</H3>
+<H4 ALIGN="center">
+ (<I>Not</I> Related to the Linux zlibc Compressing File-I/O Library)
+</H4>
+
+<P>
+<HR>
+
+<P>
+Welcome to the <B>zlib</B> home page, web pages originally created by 
+Greg Roelofs
+and maintained by <a rel="me" href="https://fosstodon.org/@madler">Mark Adler</a>.
+If this page seems suspiciously similar to the 
+<A HREF="http://www.libpng.org/pub/png/">PNG Home Page</A>, rest assured
+that the similarity is <I>completely</I> coincidental.  No, really.
+<P>
+<B>zlib</B> was written by
+<A HREF="http://gailly.net/">Jean-loup Gailly</A> (compression) and
+<A HREF="http://en.wikipedia.org/wiki/Mark_Adler">Mark Adler</A>
+(decompression).
+<P>
+
+<CENTER>
+    Current release:
+
+    <P>
+    <FONT SIZE="+2"><B> zlib 1.3.2</B></FONT>
+    <p>February 17, 2026
+</CENTER>
+<p>
+
+<!-- <FONT COLOR="#cc0000"> -->
+Version 1.3.2 has these key updates from 1.3.1:
+<ul>
+<li>Address findings of the
+    <a href="https://7asecurity.com/blog/2026/02/zlib-7asecurity-audit/">
+    7ASecurity audit</a> of zlib.
+	<ul>
+	<li>Check for negative lengths in crc32_combine functions.
+	<li>Copy only the initialized window contents in inflateCopy.
+	<li>Prevent the use of insecure functions without an explicit request.
+	<li>Add compressBound_z and deflateBound_z functions for large values.
+	<li>Use atomics to build inflate fixed tables once.
+	<li>Add --undefined option to ./configure for UBSan checker.
+	<li>Copy only the initialized deflate state in deflateCopy.
+	<li>Zero inflate state on allocation.
+	<li>Add compress_z and uncompress_z functions.
+	</ul>
+<li>Complete rewrite of cmake support.
+<li>Remove untgz from contrib.
+<li>Vectorize the CRC-32 calculation on the s390x.
+<li>Remove vstudio projects in lieu of cmake-generated projects.
+<li>Add zipAlreadyThere() to minizip zip.c to help avoid duplicates.
+<li>Add deflateUsed() function to get the used bits in the last byte.
+<li>Fix bug in inflatePrime() for 16-bit ints.
+<li>Add a "G" option to force gzip, disabling transparency in gzread().
+<li>Return all available uncompressed data on error in gzread.c.
+<li>Support non-blocking devices in the gz* routines.
+</ul>
+<p>
+Version 1.3.1 has these key updates from 1.3:
+<ul>
+<li>Reject overflows of zip header fields in minizip.
+<li>Fix bug in inflateSync() for data held in bit buffer.
+<li>Add LIT_MEM define to use more memory for a small deflate speedup.
+<li>Fix decision on the emission of Zip64 end records in minizip.
+<li>Add bounds checking to ERR_MSG() macro, used by zError().
+<li>Neutralize zip file traversal attacks in miniunz.
+<li>Fix a bug in ZLIB_DEBUG compiles in check_match().
+</ul>
+<p>
+You can also look at the complete <a href="https://www.zlib.net/ChangeLog.txt">Change Log</a>.
+<P>
+
+<HR>
+
+<P>
+<DL>
+    <DD>
+    Canonical URL:
+    <A HREF="https://zlib.net/"><b>https://zlib.net/</b></A> (US)
+    </DD>
+</DL>
+
+<P>
+<HR>
+
+<P>
+<IMG WIDTH=159 HEIGHT=183 ALIGN="right" SRC="images/zlib_ddj.png" 
+ ALT="[DDJ's zlib image]">
+
+<B>zlib</B> is designed to be a <A HREF="https://www.zlib.net/zlib_license.html">free</A>,
+general-purpose, legally unencumbered -- that is, not covered by any patents
+-- lossless data-compression library for use on virtually any computer hardware
+and operating system.  The zlib data format is itself portable across
+platforms.  Unlike the LZW compression method used in Unix <I>compress</I>(1)
+and in the GIF image format, the compression method currently used in zlib
+essentially never expands the data.  (LZW can double or triple the file size in
+extreme cases.)  zlib's memory footprint is also independent of the input data
+and can be reduced, if necessary, at some cost in compression.  A more precise,
+technical discussion of both points is available on <A HREF="https://www.zlib.net/zlib_tech.html">
+another page</A>.
+
+<P>
+<B>zlib</B> was written by
+<!-- was "http://www.teaser.fr/~jlgailly/" -->
+<A HREF="http://gailly.net/">Jean-loup Gailly</A> (compression) and
+<A HREF="http://en.wikipedia.org/wiki/Mark_Adler">Mark Adler</A>
+(decompression).  Jean-loup is also the primary author of
+<A HREF="http://www.gzip.org/"><I>gzip</I></A>(1), the author of the <A HREF=
+"http://www.faqs.org/faqs/compression-faq/">comp.compression FAQ list</A> and
+the former maintainer of <A HREF="http://www.info-zip.org/pub/infozip/">
+Info-ZIP</A>'s <A HREF="http://www.info-zip.org/pub/infozip/Zip.html">Zip</A>;
+Mark is also the author of gzip's and
+<A HREF="http://www.info-zip.org/pub/infozip/UnZip.html">UnZip</A>'s main
+decompression routines and was the original author of Zip.  Not surprisingly,
+the compression algorithm used in zlib is essentially the same as that in
+gzip and Zip, namely, the `deflate' method that originated in
+<A HREF="http://www.pkware.com/">PKWARE</A>'s PKZIP 2.x.
+
+<P>
+Mark can be reached via e-mail at
+<img src="zlib-email.png" align="bottom" alt="zlib email address">.
+Please read the <a href="https://www.zlib.net/zlib_faq.html"><b>FAQ</b></a> and
+the <a href="https://www.zlib.net/manual.html"><b>manual</b></a> before asking for help.
+Nearly all of the questions we get already have an
+answer in the <i>zlib</i> documentation. Questions on the usage of zlib are
+best answered on <a href="https://stackoverflow.com">Stack Overflow</a>.
+zlib development contributions and issues are best addressed on
+<a href="https://github.com/madler/zlib">zlib's GitHub repository</a>.
+
+<P>
+The deflate and zlib specifications both achieved official Internet RFC status in May 1996,
+and zlib itself was adopted in version 1.1 of the Java Development Kit (JDK), both as a
+<A HREF=
+"https://docs.oracle.com/javase/8/docs/api/java/util/zip/package-summary.html">
+raw class</A> and as a component of the <A HREF=
+"https://docs.oracle.com/javase/8/docs/technotes/guides/jar/jarGuide.html">JAR archive
+format</A>.
+
+<P>
+The lovely zlib-vise image above was provided courtesy of Bruce Gardner, art
+director of <A HREF="http://www.ddj.com/">Dr. Dobb's Journal</A>.  It
+appears in Mark Nelson's article in the January 1997 issue (see below).
+
+<P>
+<HR>
+
+<P>
+The current release is publicly available here:
+
+<P>
+<DL>
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <B>zlib</B> source code, version 1.3.2, tar.gz format (1468K,
+    SHA-256 hash <tt>bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16</tt>):
+
+    <P>
+    <DL>
+        <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+        <A HREF="https://www.zlib.net/zlib-1.3.2.tar.gz"
+        >US (zlib.net)</A> (<a href="https://www.zlib.net/zlib-1.3.2.tar.gz.asc">GPG signature</a>)
+        </DD>
+		
+        <!-- <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+        <A HREF="http://prdownloads.sourceforge.net/libpng/zlib-1.3.tar.gz?download"
+        >Pick a mirror (prdownloads.sourceforge.net)</A>
+        </DD> -->
+    </DL>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <B>zlib</B> source code, version 1.3.2, tar.xz format (1289K,
+    SHA-256 hash <tt>d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3</tt>):
+
+    <P>
+    <DL>
+        <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+        <A HREF="https://www.zlib.net/zlib-1.3.2.tar.xz"
+        >US (zlib.net)</A> (<a href="https://www.zlib.net/zlib-1.3.2.tar.xz.asc">GPG signature</a>)
+        </DD>
+
+        <!-- <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+        <A HREF="http://prdownloads.sourceforge.net/libpng/zlib-1.3.tar.xz?download"
+        >Pick a mirror (prdownloads.sourceforge.net)</A>
+        </DD> -->
+    </DL>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <B>zlib</B> source code, version 1.3.2, zipfile format (1579K,
+    SHA-256 hash <tt>e8bf55f3017aa181690990cb58a994e77885da140609fc8f94abe9b65d2cae28</tt>):
+
+    <P>
+    <DL>
+        <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+        <A HREF="https://www.zlib.net/zlib132.zip"
+        >US (zlib.net)</A> (<a href="https://www.zlib.net/zlib132.zip.asc">GPG signature</a>)
+        </DD>
+
+        <!-- <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+        <A HREF="http://prdownloads.sourceforge.net/libpng/zlib13.zip?download"
+        >Pick a mirror (prdownloads.sourceforge.net)</A>
+        </DD> -->
+    </DL>
+    </DD>
+
+
+<!--
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <B>zlib</B> compiled DLL, version 1.2.11, zipfile format (xxK,
+    SHA256 checksum ):
+    <P>
+    <DL>
+        <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+        <A HREF="http://zlib.net/zlib1211-dll.zip"
+        >US (zlib.net)</A>
+        </DD>
+
+        <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+        <A HREF="http://prdownloads.sourceforge.net/libpng/zlib1211-dll.zip?download"
+        >Pick a mirror (prdownloads.sourceforge.net)</A>
+        </DD>
+    </DL>
+    </DD>
+-->
+
+</DL>
+
+<P>
+
+Permalink for the most recent release:
+
+<P>
+<DL>
+    <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+        <A HREF="https://www.zlib.net/current/zlib.tar.gz"
+        >https://zlib.net/current/zlib.tar.gz</A>
+    </DD>
+</DL>
+
+Note that zlib is an integral part of 
+<A HREF="http://www.libpng.org/pub/png/pngcode.html">libpng</A> and
+has been tested extensively as part of many
+<A HREF="http://www.libpng.org/pub/png/pngapps.html">PNG-supporting
+applications</A>.
+
+<P>
+<HR>
+
+<P>
+<H3>zlib Information</H3>
+
+<DL>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="https://www.zlib.net/zlib_faq.html"><b>zlib Frequently Asked Questions</b></A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="http://zlib.net/mailman/listinfo/zlib-announce_madler.net">
+       Zlib-announce mailing list</A>
+        <DL>
+            <DD>
+	    New versions of zlib are announced on this list.
+            </DD>
+        </DL>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="http://zlib.net/mailman/listinfo/zlib-devel_madler.net">
+       Zlib-devel mailing list</A>
+        <DL>
+            <DD>
+	    Please do not send questions or comments about zlib to
+	    this mailing list. Send those directly to the authors at
+		<img src="zlib-email.png" alt="zlib email address">
+	    after checking the <a
+	    href="https://www.zlib.net/zlib_faq.html">FAQ</a> and
+	    the <a
+	    href="https://www.zlib.net/manual.html">manual</a>, of course.  The zlib-devel list is for the development of
+	    zlib&mdash;members are contributors to and testers of new versions of zlib.
+            </DD>
+        </DL>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="https://www.zlib.net/manual.html">zlib Manual</A>
+    <!-- HTML'd by Francis S. Lin, b7506051 &#64; csie.ntu.edu.tw -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="https://www.zlib.net/zlib_how.html">zlib Usage Example</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="https://www.zlib.net/zlib_tech.html">zlib Technical Details</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    zlib-related specifications:
+    <ul>
+    <li><a href="http://tools.ietf.org/html/rfc1950">RFC 1950 ZLIB Compressed Data Format Specification version 3.3</a>
+    <li><a href="http://tools.ietf.org/html/rfc1951">RFC 1951 DEFLATE Compressed Data Format Specification version 1.3</a>
+    <li><a href="http://tools.ietf.org/html/rfc1952">RFC 1952 GZIP file format specification version 4.3</a>
+    </ul>
+    </DD>
+
+    <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+        <A HREF="https://github.com/madler/infgen/">Deflate stream disassembler.</A>
+        <tt>infgen.c</tt> produces a readable description of a gzip, zlib, or
+        raw deflate stream.
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="https://www.zlib.net/feldspar.html">zlib's Deflate Algorithm</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="http://www.bolet.org/~pornin/deflate-flush.html">zlib's deflate flush modes</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="https://www.zlib.net/zlib_license.html">zlib License</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="https://www.zlib.net/fossils">All released versions of zlib</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+    <A HREF="https://github.com/madler/zlib">zlib on github</A>
+    </DD>
+</DL>
+
+<H3>CRC (Cyclic Redundancy Check) Bonus Information</H3>
+
+<DL>
+
+    <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * ">
+        <A HREF="https://www.zlib.net/crc_v3.txt">Ross Williams' classic "A Painless Guide to CRC Error Detection Algorithms"</A>
+    </DD>
+
+    <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * "> <A
+        HREF="https://github.com/madler/crcany">Code to generate any CRC, with a list of CRC
+        descriptions.</A> <tt>crcany.c</tt> can take a description of a CRC and
+        compute that CRC efficiently.  It includes bit-wise, table-driven
+        byte-wise, and table-driven word-wise CRC algorithms.
+    </DD>
+
+    <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * "> <A
+        HREF="https://github.com/madler/spoof">Code to modify a message so that it generates the
+        desired CRC.</A> <tt>spoof.c</tt> takes an abbreviated description of
+        the CRC, the exclusive-or of the current CRC of the message and the
+        desired CRC, the length of the message, and a list of bit locations in
+        a message, and tells you which of those bits should be inverted in the
+        message to get the desired CRC.  Note that it does not need the message
+        itself, due to the linearity property of CRCs.
+    </DD>
+
+</DL>
+
+<H3>ZIP File Processing Bonus Software</H3>
+
+<DL>
+
+    <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * "> <A
+        HREF="https://github.com/madler/sunzip">Code to read a zip file as a stream and extract
+        its contents.</A>  <tt>sunzip.c</tt> will read a zip file from stdin
+        and extract the files therein that use compression methods 0, 8, 9, or
+        12 (stored, deflate, deflate64, or bzip2).  It accepts Zip64 input.
+    </DD>
+
+    <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_red.png" ALT=" * "> <A
+        HREF="https://www.zlib.net/zipknit17.tar.gz">Code to merge multiple zip files into a single
+        zip file.</A> <tt>zipknit.c</tt> accepts Zip64 input files, and will
+        create Zip64 output if the combined size of the merged zip file
+        warrants it. All compression formats are permitted, since no
+        decompression or recompression is performed.  Encrypted entries are
+        permitted, and pass through unscathed.
+    </DD>
+
+</DL>
+
+<P>
+<HR>
+
+<H3>Related External Links</H3>
+
+<DL>
+<!--
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_orange2.png" ALT=" * ">
+    <A HREF="contrib/index.html">unofficial (contributed) patches and binaries</A>
+    (not tested by zlib team)
+    </DD>
+-->
+
+<!--
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_orange2.png" ALT=" * ">
+    <A HREF="contrib/zlib113-masm6.1-match.asm">match.asm for i686 and
+    MASM 6.x</A> (port of <TT>contrib/asm686/match.S</TT>)
+     - - by Dan Higdon, hdan &#64; kinesoft.com, and Chuck Walbourn,
+         chuckw &#64; kinesoft.com; match.S by Brian Raiter - -
+    </DD>
+ -->
+
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    zlib for Linux, both <A HREF=
+    "http://rpmfind.net/linux/rpm2html/search.php?query=zlib">shared</A> and
+    <A HREF="http://rpmfind.net/linux/rpm2html/search.php?query=zlib-devel"
+    >static plus headers</A> (RPM format, many
+    architectures)
+    <!-- i386, SPARC, Alpha, PPC, MIPS, m68k, [CygWin32] -->
+    <!-- was "http://rufus.w3.org/linux/RPM/zlib.html"
+         and "http://rufus.w3.org/linux/RPM/zlib-devel.html" -->
+    <!-- UPDATED 20010421 -->
+    </DD>
+
+    <!-- out of date since using 1.2.3
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://hpux.connect.org.uk/hppd/hpux/Misc/zlib-1.2.3/">zlib for
+    HP-UX 10.20 and 11.00</A> (shared library and headers)
+        <DL>
+            <DD>
+            (alternatively here:  <A HREF="ftp://ftp.thewrittenword.com/packages/by-architecture/hppa1.1-hp-hpux10.20/zlib-1.2.3"
+            >HP-UX 10.20</A> and <A HREF="ftp://ftp.thewrittenword.com/packages/by-architecture/hppa1.1-hp-hpux11.00/zlib-1.2.3"
+            >HP-UX 11.00</A>)
+            </DD>
+        </DL>
+    </DD>
+    -->
+
+    <!-- really out of date since using 1.1.4
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://freeware.sgi.com/Installable/libz-1.1.4.html">zlib
+    for SGI Irix 6.x</A> (shared library and headers)
+        <DL>
+            <DD>
+            (alternatively <A HREF="ftp://ftp.thewrittenword.com/packages/free/by-architecture/mips-sgi-irix6.2/zlib-1.1.3/"
+            >Irix 6.2</A> and <A HREF="ftp://ftp.thewrittenword.com/packages/free/by-architecture/mips-sgi-irix6.5/zlib-1.1.3/"
+            >Irix 6.5</A> binaries)
+            </DD>
+        </DL>
+    </DD>
+    -->
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <a href="http://www.ibiblio.org/pub/packages/solaris/sparc/">
+    zlib for Solaris</a> (alternate)
+    </DD>
+
+    <!--
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="ftp://ftp.thewrittenword.com/packages/by-architecture/alpha-dec-osf4.0d/zlib-1.1.4/"
+    >zlib for Digital Unix 4.0</A>
+    </DD>
+    -->
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+     zlib for macOS (Mac OS X): zlib is already included as part of macOS
+    <!-- maintained by Chris Pepper, pepper &#64; mail.reppep.com -->
+    <!-- was "http://port.mosxsw.com/zlib/" -->
+    <!-- beta/etc info from Oliver Eikemeier, eikemeier &#64; secude.com, 20001120 -->
+    <!-- UPDATED 20001121 -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://palmzlib.sourceforge.net/">zlib for Palm Pilot</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.kallisys.com/newton/zlib/">zlib for Newton OS</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.tenik.co.jp/~adachi/wince/">zlib for Windows CE</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.winimage.com/zLibDll/">zlib for Windows
+    9x/NT/2000/XP/2003</A> (DLL version, plus related utilities)
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://gnuwin32.sourceforge.net/packages/zlib.htm">
+    zlib for Windows 9x/NT</A> (DLL and static version)
+    </DD>
+    
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.codeplex.com/DotNetZip">
+    DotNetZip</A> zip file manipulation for .NET, and more (including replacements for the
+    buggy Microsoft GZipStream and DeflateStream classes)
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.componentace.com/zlib_.NET.htm">
+    zlib for .NET in C#</A>
+    </DD>
+    <!-- link provided by kevin &#64; componentace.com -->
+
+    <DD>
+        <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+            <A HREF="http://zlibnet.codeplex.com/">
+                zlib DLL wrapper for .NET in C#</A>
+            </DD>
+    <!-- link provided by Gunnar Dalsnes, hardon &#64; online.no -->
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://xceed.com/Zip_Net_Intro.html?SrcUrl=zlib.net">
+    Zip for .NET</A>
+    </DD>
+    <!-- link provided by KosmatosO &#64; xceed.com -->
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    Mark Nelson's <A HREF="https://www.zlib.net/nelson/">ZlibTool article</A> (January 1997)
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.cs.unc.edu/Research/compgeom/gzstream/">
+    zlib C++ wrapper</a> for the <code>gz*</code> functions.
+    <!-- maintained by Lutz Kettner kettner &#64; cs.unc.edu -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.boost.org/libs/iostreams/doc/home.html">
+    C++ zlib and gzip filters</a> in an iostream framework.
+    <!-- maintained by Jonathan Turkanis turkanis &#64; kangaroologic.com -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="https://marknelson.us/posts/1997/01/01/zlib-engine.html">zlib
+    32-bit OCX</A>
+    (C++ source and binaries for use with Visual Basic&nbsp;4.x or
+    Delphi&nbsp;2.0)
+        <DL>
+            <DD>
+            (unsupported <A HREF="https://www.zlib.net/ZlibOCX2.dll"
+            >VB5 binary</A> also available)
+            </DD>
+        </DL>
+    <!-- written by Mark Nelson markn &#64; ieee.org -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.base2ti.com/zlib.htm"
+     >zlib Delphi 5 interface</A>
+        <DL>
+            <DD>
+            (includes compiled object files and corresponding C++ Builder 5
+            project files)
+            </DD>
+        </DL>
+    <!-- maintained by Brent Sherwood brent.sherwood &#64; base2ti.com -->
+    <!-- also in contrib/zlib113-delphi5.zip on zlib home site -->
+    <!-- was "http://www.base2ti.com/downloads/delphi-objects.shtm" -->
+    <!-- NEW 20000614 -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.cpan.org/modules/by-module/Compress/"
+     >zlib Perl interface</A> (source code; look for Compress-Zlib*.tar.gz)
+    <!-- maintained by Paul Marquess pmarquess  &#64; bfsec.bt.co.uk" -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://docs.python.org/library/zlib.html">zlib Python
+     interface</A> (online manual; part of the standard library as of
+     Python&nbsp;1.5)
+    <!-- info from Jeremy Hylton, jeremy &#64; cnri.reston.va.us -->
+    <!-- was ftp://ftp.python.org/pub/python/contrib/Encoding/ ,
+     maintained by Andrew M. Kuchling amk &#64; magnet.com -->
+    </DD>
+
+    <!--
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.westend.com/~kupries/doc/trf/">zlib Tcl
+     interface</A> (online manual; see the <A HREF=
+     "http://www.westend.com/~kupries/doc/trf/trf_where.html">Download</A> link)
+     maintained by Andreas Kupries a.kupries &#64; westend.com
+    </DD>
+     -->
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://mkextensions.sourceforge.net/">zlib Tcl
+     interface</A> mkZiplib
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://hackage.haskell.org/package/zlib/">zlib Haskell
+     interface</A>
+    <!-- Henk-Jan van Tuyl <hjgtuyl &#64; chello.nl> -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * "> <A HREF=
+  "https://docs.oracle.com/javase/8/docs/api/java/util/zip/package-summary.html"
+     >zlib Java interface</A> (see also <A HREF=
+     "https://docs.oracle.com/javase/8/docs/technotes/guides/jar/jarGuide.html">JAR format</A>)
+    <!-- maintained by David A. Connelly dac &#64; eng.sun.com -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.jcraft.com/jzlib/">zlib reimplementation in pure
+     Java</A>
+<!-- IMG WIDTH=36 HEIGHT=13 SRC="images/new-red.png" ALT="[New!]" ALIGN="bottom" -->
+        <DL>
+            <DD>
+            (not tested by us, but looks like a good alternative to
+            java.util.zip)
+            </DD>
+        </DL>
+    <!-- maintained by Atsuhiko Yamanaka/JCraft ymnk &#64; jcraft.com -->
+    </DD>
+
+    <!-- <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="https://marknelson.us/">Mark Nelson</A>'s
+    <A HREF="https://marknelson.us/posts/1997/12/01/cup-of-zip.html"
+    >JavaZip article</A> (with source code) (December 1997)
+    </DD>
+    -->
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://code.google.com/p/jzran">Random access for gzip archives, for Java</A>
+    <!-- Eugene Kirpichov < ekirpichov &#64; gmail.com> -->
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.winimage.com/">Gilles Vollant</A>'s zlib-based
+    <A HREF="http://www.winimage.com/zLibDll/unzip.html">mini-zip and
+    mini-unzip</A>
+    <!-- "info &#64; winimage.com" -->
+        <DL>
+            <DD>
+            (see also Info-ZIP's <A HREF=
+            "http://www.info-zip.org/pub/infozip/UnZip.html">UnZip</A>,
+            which optionally can be compiled with zlib)
+            </DD>
+        </DL>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.eskimo.com/~scottlu/">Scott Ludwig</A>'s zlib-based
+    <A HREF="http://www.eskimo.com/~scottlu/win/"
+    >CExe executable compressor</A> for Win32
+    </DD>
+
+<!-- missing in action ...
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_yellow.png" ALT=" * ">
+    <A HREF="http://www.uni-karlsruhe.de/~unk6/">Gilbert Baumann</A>'s <A HREF=
+    "http://www.uni-karlsruhe.de/~unk6/closure/">inflate implementation in
+    Common Lisp</A>
+        <DL>
+            <DD>
+            (file <TT>src/net/deflate.lisp</TT> in Closure source archive)
+            </DD>
+        </DL>
+    </DD>
+-->
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+    <A HREF="http://optipng.sourceforge.net/pngtech/"
+    >zlib technical issues, including spec errors</A>
+    <!-- NEW 20010420 -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+    <A HREF="https://www.hanshq.net/zip.html"
+    >Zip Files: History, Explanation and Implementation</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+    <A HREF="http://oku.edu.mie-u.ac.jp/~okumura/compression/zlib.html"
+    >zlib information in Japanese</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+    <A HREF="http://zlib.net.ru/"
+    >zlib information in Russian</A>
+    <!-- by Mykola Onyshchuk, onyshchuk &#64; gmail.com -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_green.png" ALT=" * ">
+    <A HREF="https://books.google.com/books/about/Real_World_Scanning_and_Halftones.html?id=Yr01lLfnQ54C"><I>Real World Scanning and Halftones</I></A>
+    (second edition includes a section on zlib)
+    <!-- from Glenn Fleishman, glenn&#64;popco.com; also:
+     "(Adobe uses zlib in their ZIP implementation in Acrobat 3.0)" -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    Markus Oberhumer's
+    <A HREF="http://www.oberhumer.com/opensource/lzo/"
+    >LZO `real-time' data compression library</A>
+        <DL>
+            <DD>
+            (not tested by us, but looks like a good alternative if you need
+            more speed and less compression)
+            </DD>
+        </DL>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="http://code.google.com/p/lz4/"
+    >lz4, a very fast compression algorithm</A>
+        <DL>
+            <DD>
+            (not tested by us, but looks like an even better alternative if you need
+            more speed and less compression)
+            </DD>
+        </DL>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="https://github.com/facebook/zstd"
+    >Zstandard, a better compression algorithm</A>
+        <DL>
+            <DD>
+            (not tested by us, but appears to be a better alternative to zlib
+             in both dimensions of compression and speed, as well as
+             decompression speed)
+            </DD>
+        </DL>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="http://sources.redhat.com/bzip2/"
+    >libbzip2</A>
+        <DL>
+            <DD>
+            (not tested by us, but looks like a good alternative if you need
+            more compression and less speed)
+            <!-- uses much more memory, too -->
+            </DD>
+        </DL>
+    <!-- NEW 20010131 -->
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="http://www.ietf.org/rfc/rfc1979.txt">PPP Deflate Protocol</A>
+    (RFC 1979)
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="http://www.info-zip.org/pub/infozip/">Info-ZIP Home Page</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="http://www.libpng.org/pub/png/">Portable Network Graphics (PNG)
+    Home Page</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="http://www.gzip.org/"><I>gzip</I> Home Page</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="http://zlib.net/pigz/"><I>pigz</I> (parallel gzip) Home Page</A>
+    </DD>
+
+<!-- gone
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="http://www.internz.com/compression-pointers.html">Compression
+    Pointers</A>
+    </DD>
+-->
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="http://datacompression.info">DataCompression.info</A>
+    </DD>
+
+    <DD>
+    <IMG WIDTH=10 HEIGHT=10 SRC="images/li_blue.png" ALT=" * ">
+    <A HREF="http://www.faqs.org/faqs/compression-faq/"
+    >comp.compression Frequently Asked Questions list</A>
+    </DD>
+
+    <!-- http://www.appwatch.com/Linux/App/73/data.html -->
+
+</DL>
+
+<P>
+<HR>
+<I>Send comments or questions about <B>zlib</B> to the authors at
+<img src="zlib-email.png" alt="zlib email address">&nbsp;
+after checking the <a href="https://www.zlib.net/zlib_faq.html"><b>FAQ</b></a> and the
+<a href="https://www.zlib.net/manual.html"><b>manual</b></a>.
+<BR>
+Please report broken links to
+<img src="madler-email.png" alt="Mark's email address">
+(<a href="https://madler.net/madler/pgp.html">PGP key</a>).</I>
+<p>
+<I>This page last updated <B>Feb 17<sup>th</sup>, 2026</B>.</I>
+<HR>
+
+<TABLE WIDTH="100%" BORDER=0 CELLPADDING=0>
+  <TR>
+    <TD ALIGN="left">
+      <FONT SIZE="-1">
+      Web page copyright &#169; 1996-2026
+      Greg Roelofs,
+      <A HREF="http://gailly.net">Jean-loup Gailly</A> and
+      <A HREF="http://en.wikipedia.org/wiki/Mark_Adler">Mark Adler</A>.<BR>
+      zlib software copyright &#169; 1995-2026
+      <A HREF="http://gailly.net/">Jean-loup Gailly</A> and
+      <A HREF="http://en.wikipedia.org/wiki/Mark_Adler">Mark Adler</A>.
+      </FONT>
+    </TD>
+    <TD ALIGN="right" VALIGN="top">
+      <FONT SIZE="-1">
+      <i>zlib.org</i> domain name donated by Andrew Green.
+      </FONT>
+    </TD>
+  </TR>
+</TABLE>
+
+</BODY>
+</HTML>

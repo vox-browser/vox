@@ -56,6 +56,9 @@ pub:
 	family     string
 	point_size f32
 	weight     int = 400
+	// A decoded @font-face source. System fonts leave this empty and resolve
+	// through the family cascade.
+	source_path string
 }
 
 pub struct FontPixelMetrics {
@@ -125,6 +128,46 @@ fn font_table_offset(bytes []u8, wanted string) ?int {
 	return none
 }
 
+// x.ttf reads a standalone sfnt directory at byte zero. A TrueType collection
+// keeps each face's directory elsewhere while its table offsets remain absolute,
+// so copying only the selected directory to byte zero makes that same reader
+// consume the requested collection face without touching shared table data.
+fn outline_bytes_for_face(bytes []u8, face_index int) ?[]u8 {
+	if bytes.len < 4 || bytes[..4].bytestr() != 'ttcf' {
+		if face_index != 0 {
+			return none
+		}
+		return bytes
+	}
+	face_count := int(font_u32_at(bytes, 8)?)
+	if face_index < 0 || face_index >= face_count {
+		return none
+	}
+	directory_offset := int(font_u32_at(bytes, 12 + face_index * 4)?)
+	table_count := int(font_u16_at(bytes, directory_offset + 4)?)
+	directory_length := 12 + table_count * 16
+	if directory_offset < 0 || directory_offset + directory_length > bytes.len {
+		return none
+	}
+	mut adapted := bytes.clone()
+	copy(mut adapted[..directory_length], bytes[directory_offset..directory_offset + directory_length])
+	// Apple's collection faces carry a version-1 `kern` table. x.ttf only
+	// understands the OpenType version-0 form and asserts while reading any
+	// other version. HarfBuzz remains the source of truth for shaped kerning,
+	// so hide this one unsupported table from the outline/metrics reader.
+	for index in 0 .. table_count {
+		record := 12 + index * 16
+		if adapted[record..record + 4].bytestr() != 'kern' {
+			continue
+		}
+		table_offset := int(font_u32_at(adapted, record + 8)?)
+		if font_u16_at(adapted, table_offset)? != 0 {
+			adapted[record] = `K`
+		}
+	}
+	return adapted
+}
+
 // Gfx::Font::pixel_metrics(). Skia selects the OS/2 typo metrics when the
 // USE_TYPO_METRICS bit is present, otherwise the hhea metrics. SerenitySans
 // uses typo metrics (819/-205/94 at 1024 units per em).
@@ -133,7 +176,7 @@ pub fn (font &Font) pixel_metrics() FontPixelMetrics {
 	// calls it hundreds of thousands of times per document. Memoize on the exact
 	// f32 bit pattern plus weight so repeat sizes are O(1).
 	point_size_bits := unsafe { *(&u32(&font.point_size)) }
-	key := '${font.family.to_lower()}|${font.weight}|${point_size_bits}'
+	key := '${font.family.to_lower()}|${font.source_path}|${font.weight}|${point_size_bits}'
 	if cached := platform_pixel_metrics_cache[key] {
 		return cached
 	}
@@ -143,7 +186,7 @@ pub fn (font &Font) pixel_metrics() FontPixelMetrics {
 }
 
 fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
-	face := font_face(font.family, font.weight) or {
+	face := font_face(font) or {
 		return FontPixelMetrics{
 			size: font.point_size
 			x_height: font.point_size * 0.5
@@ -219,7 +262,7 @@ pub fn (font &Font) glyph_width(code_point u32) f32 {
 // callers map y_max to the visual top and y_min to the visual bottom around
 // the text baseline.
 pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
-	face := font_face(font.family, font.weight) or { return FontGlyphBounds{} }
+	face := font_face(font) or { return FontGlyphBounds{} }
 	if glyph_index < 0 || glyph_index > 0xffff {
 		return FontGlyphBounds{}
 	}
@@ -238,7 +281,7 @@ pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
 // the font's point size but retain TrueType's positive-up Y axis; Path::text()
 // callers position them relative to the CSS baseline and invert Y there.
 pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
-	face := font_face(font.family, font.weight)?
+	face := font_face(font)?
 	if glyph_index < 0 || glyph_index > 0xffff {
 		return none
 	}
@@ -273,11 +316,11 @@ pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
 }
 
 fn (font &Font) glyph_metrics(code_point u32) (f32, int) {
-	face := font_face(font.family, font.weight) or { return font.point_size * 0.5, int(code_point) }
+	face := font_face(font) or { return font.point_size * 0.5, int(code_point) }
 	units_per_em := f32(face.units_per_em)
 	// The raw advance and glyph index are point-size independent, so cache them
 	// per code point and only scale by the requested size here.
-	cache_key := '${font.family.to_lower()}|${font.weight}|${code_point}'
+	cache_key := '${font.family.to_lower()}|${font.source_path}|${font.weight}|${code_point}'
 	if entry := platform_glyph_units_cache[cache_key] {
 		return f32(entry.advance_units) * font.point_size / units_per_em, entry.glyph_index
 	}
@@ -316,28 +359,31 @@ pub fn (font &Font) glyph_advance_and_index(code_point u32) (f32, int) {
 
 fn (font &Font) reset_kerning() {
 	_ = font
-	face := font_face(font.family, font.weight) or { return }
+	face := font_face(font) or { return }
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
 	mutable_face.reset_kern()
 }
 
 fn (font &Font) kerning_for_glyph(glyph_index int) f32 {
-	face := font_face(font.family, font.weight) or { return 0 }
+	face := font_face(font) or { return 0 }
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
 	kerning, _ := mutable_face.next_kern(glyph_index)
 	return f32(kerning) * font.point_size / f32(mutable_face.units_per_em)
 }
 
-fn font_face(family string, weight int) ?&ttf.TTF_File {
-	path := font_path_for_family(family, weight)?
-	if face := platform_font_faces[path] {
+fn font_face(font &Font) ?&ttf.TTF_File {
+	path := font.font_path()?
+	face_index := font.face_index()
+	cache_key := '${path}|${face_index}'
+	if face := platform_font_faces[cache_key] {
 		return face
 	}
-	if platform_font_face_attempted[path] {
+	if platform_font_face_attempted[cache_key] {
 		return none
 	}
-	platform_font_face_attempted[path] = true
-	bytes := os.read_bytes(path) or { return none }
+	platform_font_face_attempted[cache_key] = true
+	raw_bytes := os.read_bytes(path) or { return none }
+	bytes := outline_bytes_for_face(raw_bytes, face_index)?
 	// External construction with the current V compiler does not apply these
 	// vlib field defaults, but TTF_File.init() writes all 12 PANOSE bytes.
 	mut face := &ttf.TTF_File{
@@ -346,13 +392,23 @@ fn font_face(family string, weight int) ?&ttf.TTF_File {
 		width_scale: 1.0
 	}
 	face.init()
-	platform_font_faces[path] = face
+	platform_font_faces[cache_key] = face
 	return face
 }
 
 pub fn system_font_family_available(family string) bool {
 	$if macos {
 		path := match family.to_lower() {
+			// Collection indices are selected alongside these paths by
+			// Font.face_index().
+			'lucida grande', 'lucida sans unicode', 'lucida sans' {
+				'/System/Library/Fonts/LucidaGrande.ttc'
+			}
+			'helvetica' { '/System/Library/Fonts/Supplemental/Arial.ttf' }
+			'helvetica neue' { '/System/Library/Fonts/HelveticaNeue.ttc' }
+			'gill sans', 'gill sans std' { '/System/Library/Fonts/Supplemental/GillSans.ttc' }
+			'tahoma' { '/System/Library/Fonts/Supplemental/Tahoma.ttf' }
+			'georgia' { '/System/Library/Fonts/Supplemental/Georgia.ttf' }
 			'verdana' { '/System/Library/Fonts/Supplemental/Verdana.ttf' }
 			'geneva' { '/System/Library/Fonts/Geneva.ttf' }
 			'courier', 'courier new', 'monospace', 'uimonospace' {

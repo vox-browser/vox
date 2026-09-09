@@ -278,6 +278,14 @@ descriptors and margin child rules. `SyntaxHighlighter::rehighlight_text()` and
 invalidation-set serialization now retain the arrays produced while walking
 their inputs.
 
+The browser path now also registers and unregisters parsed `@font-face` rules
+when document stylesheets change. Relative sources resolve against their owning
+stylesheet, local TrueType files retain the decoded face path through computed
+style and layout, and HarfBuzz plus native Skia replay consume that same face.
+System TrueType collections retain their selected face index across outline
+metrics, shaping, and replay; network and WOFF decoding remain explicit
+platform boundaries.
+
 Layout style application now resolves the hot `ComputedValues` fields once, in
 the dependency order used by `Layout::NodeWithStyle::apply_style()`, instead of
 re-decoding the retained property graph on each layout query. The translated

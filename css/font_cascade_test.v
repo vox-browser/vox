@@ -65,3 +65,45 @@ fn test_computed_font_list_uses_computed_font_properties_and_caches_result() {
 		assert font.typeface.family_name == 'Serif'
 	}
 }
+
+fn test_local_true_type_font_loader_retains_its_source_file() {
+	$if macos {
+		computer := FontComputer.create()
+		mut loader := FontLoader.create(computer, 'Fixture Face', [], [
+			URL.from_url('file:///System/Library/Fonts/Supplemental/Arial.ttf'),
+		], none)
+		font := loader.font_with_point_size(12, FontVariationSettings{}, ShapeFeatures{}) or {
+			panic('local TrueType face did not load')
+		}
+		assert font.typeface.family_name == 'Fixture Face'
+		assert font.typeface.source_path == '/System/Library/Fonts/Supplemental/Arial.ttf'
+	}
+}
+
+fn test_font_face_source_resolves_against_its_stylesheet() {
+	descriptors := CSSFontFaceDescriptors.create([]FontFaceDescriptor{})
+	font_face_rule := CSSFontFaceRule.create(descriptors)
+	wrapper := CSSRule.create_font_face_rule(font_face_rule)
+	sheet := CSSStyleSheet.create(CSSRuleList.create([wrapper]), MediaList.create_empty(),
+		'file:///tmp/site/css/main.css')
+	assert font_face_rule.parent_style_sheet? == sheet
+	resolved := resolve_font_face_source_url(URL.from_url('../fonts/example.ttf'), font_face_rule)
+	assert resolved == 'file:///tmp/site/fonts/example.ttf'
+}
+
+fn test_stylesheet_font_face_rules_register_local_true_type_loaders() {
+	$if macos {
+		sheet := parse_css_stylesheet_with_parser("@font-face { font-family: Fixture; src: url('Arial.ttf') format('truetype'); }",
+			'file:///System/Library/Fonts/Supplemental/main.css')
+		mut computer := FontComputer.create()
+		set := FontFaceSet.create()
+		computer.load_fonts_from_css_rules(sheet.css_rules().rules, set)
+		assert computer.loaded_fonts.len == 1
+		for _, loaders in computer.loaded_fonts {
+			assert loaders.len == 1
+			typeface := loaders[0].typeface or { panic('font face was not loaded') }
+			assert typeface.family_name == 'Fixture'
+			assert typeface.source_path == '/System/Library/Fonts/Supplemental/Arial.ttf'
+		}
+	}
+}

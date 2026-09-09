@@ -1,0 +1,542 @@
+/*  pmwiki-core.css
+**  Copyright 2009-2024 Petko Yotov www.pmwiki.org/petko
+**  Copyright 2004-2009 Patrick R. Michaud pmichaud@pobox.com
+**  Copyright 2006 Hagan Fox
+**  
+**  This file is part of PmWiki; you can redistribute it and/or modify
+**  it under the terms of the GNU General Public License as published
+**  by the Free Software Foundation; either version 2 of the License, or
+**  (at your option) any later version.  See pmwiki.php for full details.
+**  
+**  These styles are intended to replace inline core styles pushed to 
+**  $HTMLStylesFmt, a path towards a better Content-Security-Policy.
+**  Likely to be reused by different skins. They also use CSS variables 
+**  where possible to make it easier for skins to redefine them,
+**  and dark theme colors.
+**/
+
+
+/* colors: light + dark themes */
+:root {
+  --pmc-text: #000;
+  --pmc-bg: #fff;
+  --pmc-bg1: #f8f8f8;
+  
+  --pmc-gray: #808080;
+  --pmc-gray1: #eee;
+  --pmc-gray2: #ccc;
+  
+  --pmc-yellow: #ff0;
+  --pmc-yellow1: #ffc;
+  --pmc-yellow2: #ff9;
+  
+  --pmc-green: #080;
+  --pmc-green1: #cfc;
+  --pmc-green2: #9f9;
+  
+  --pmc-blue: #00f;
+  --pmc-blue1: #ccf;
+  --pmc-shadow: rgba(0,0,0,0.25);
+}
+
+@media screen {
+  html.pmDarkTheme { 
+    color-scheme: dark;
+    --pmc-text: #ddd;
+    --pmc-bg: #121212;
+    --pmc-bg1: #242424;
+    
+    --pmc-gray: #808080;
+    --pmc-gray1: #212121;
+    --pmc-gray2: #303030;
+    
+    --pmc-yellow: #394000;
+    --pmc-yellow1: #282b00;
+    --pmc-yellow2: #573900;
+    
+    --pmc-green: #6ad355;
+    --pmc-green1: #204e25;
+    --pmc-green2: #034008;
+    
+    --pmc-blue: #eba4ff;
+    --pmc-blue1: #6e709d;
+    --pmc-shadow: rgba(255, 255, 255, 0.75);
+  }
+}
+
+:root {
+  /* spacing */
+  --pm-indent-size: 40px;
+  --pm-lineheight: 1.33em;
+  --pm-vspace-mtop: var(--pm-lineheight);
+  --pm-framepadding: 4px;
+  
+  /* sizes */
+  --pm-smaller: 0.8em;
+  --pm-diff-smaller: 0.66em;
+  
+  /* links */
+  --pm-createlink-bbottom: 1px dotted var(--pmc-gray);
+  
+  /* tables, borders */
+  --pm-markuptable-border: 2px dotted var(--pmc-blue1);
+  --pm-markuptable-separator: 1px solid var(--pmc-blue1);
+  --pm-markuptable-padding: 10px;
+  --pm-frameborder: 1px solid var(--pmc-gray2);
+  --pm-frameradius: 0;
+
+  --pm-recipecheck-color: var(--pmc-text);
+  --pm-recipecheck-ok: var(--pmc-green1);
+  --pm-recipecheck-check: var(--pmc-yellow1);
+
+
+  --pm-faq-indent: 2em;
+  --pm-faq-qmargin: 1em 0 0.75em 0;
+  --pm-faqtoc-qmargin: 0.5em 0 0.5em 20px;
+  --pm-toc-fsize: var(--pm-smaller);
+  --pm-toc-maxheight: 40vh;
+  --pm-toc-indent: 1em;
+  
+  --pm-timeborder: 1px dotted inherit;
+  --pm-boxshadow: 2px 2px 6px -4px var(--pmc-shadow);
+}
+
+/* pmwiki.php */
+ul, ol, pre, dl, p { 
+  margin-top:0px; 
+  margin-bottom:0px;
+}
+code.escaped { 
+  white-space: pre; 
+  text-indent: 0;
+}
+.vspace { 
+  margin-top: var(--pm-vspace-mtop); 
+}
+.indent { 
+  margin-left: var(--pm-indent-size); 
+}
+.outdent { 
+  margin-left: var(--pm-indent-size); 
+  text-indent: calc( -1 * var(--pm-indent-size) ); 
+}
+
+a.createlinktext { 
+  text-decoration: none; 
+  border-bottom: var(--pm-createlink-bbottom);
+}
+
+a.createlink { 
+  text-decoration: none; 
+  position: relative; 
+  top: -0.5em;
+  font-weight: bold; 
+  font-size: smaller; 
+  border-bottom: none;
+}
+img { 
+  border:0px;
+}
+
+details.inclpages {
+  display: inline-block;
+}
+
+/* simuledit.php + %note% is in the documentation */
+.editconflict, .note { 
+  color: var(--pmc-green); 
+  font-style: italic; 
+}
+.note a {
+  color: inherit;
+}
+.editconflict { 
+  margin: var(--pm-vspace-mtop) 0;
+}
+
+/* vardoc.php */
+a.varlink { 
+  text-decoration: none;
+}
+
+/* urlapprove.php */
+.apprlink { 
+  font-size: var(--pm-smaller);
+}
+
+/* stdmarkup.php */
+time[title] {
+  border-bottom: var(--pm-timeborder);
+}
+
+div.faq p, div.faq pre {
+  margin-left: var(--pm-faq-indent);
+}
+div.faq p.question {
+  margin: var(--pm-faq-qmargin);
+  font-weight: bold;
+}
+
+div.faqtoc div.faq * {
+  display: none;
+}
+div.faqtoc div.faq p.question {
+  display: block;
+  font-weight: normal;
+  margin: var(--pm-faqtoc-qmargin);
+  line-height: normal;
+}
+div.faqtoc div.faq p.question * {
+  display: inline;
+}
+
+.clearboth { 
+  clear: both; 
+}
+
+summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+
+/* tables */
+table.markup {
+  border: var(--pm-markuptable-border);
+  width: 90%;
+}
+td.markup1, td.markup2 {
+  padding-left: var(--pm-markuptable-padding);
+  padding-right: var(--pm-markuptable-padding);
+}
+td.markup1 pre {
+  white-space: pre-wrap;
+}
+table.vert td.markup1 {
+  border-bottom: var(--pm-markuptable-separator);
+}
+table.horiz td.markup1 {
+  width: 23em;
+  border-right: var(--pm-markuptable-separator);
+}
+table.markup caption {
+  text-align: left;
+}
+
+table.sortable th:not(.nosort) { 
+  cursor: pointer;
+}
+table.sortable th:not(.right)::after {
+  color: transparent;
+  content: "\00A0\025B8";
+}
+table.sortable th.dir-u:not(.right)::after {
+  color: inherit;
+  content: "\00A0\025BE";
+}
+table.sortable th.dir-d:not(.right)::after {
+  color: inherit;
+  content: "\00A0\025B4";
+}
+
+table.sortable th.right::before {
+  color: transparent;
+  content: "\025B8\00A0";
+}
+table.sortable th.dir-u.right::before {
+  color: inherit;
+  content: "\025BE\00A0";
+}
+table.sortable th.dir-d.right::before {
+  color: inherit;
+  content: "\025B4\00A0";
+}
+
+table.sortable th.nosort::before, 
+table.sortable th.nosort::after {
+  display:none;
+}
+table.sortable th.right:hover::before,
+table.sortable th:hover::after {
+  color: inherit;
+}
+
+.center {
+  text-align: center;
+}
+
+/* In HTML5 only styles are valid for alignment */
+table.center { margin-left: auto; margin-right: auto; }
+table.right  { margin-left: auto; }
+table.left   { margin-right: auto; }
+td.left,   th.left   { text-align: left;}
+td.center, th.center { text-align: center;}
+td.right,  th.right  { text-align: right;}
+td.top,    th.top    { vertical-align: top;}
+td.bottom, th.bottom { vertical-align: bottom;}
+td.middle, th.middle { vertical-align: middle;}
+
+table.simpletable {
+  border-collapse: collapse;
+}
+table.simpletable tbody:first-child tr:nth-child(odd),
+table.simpletable thead + tbody tr:nth-child(even) {
+  background-color: var(--pmc-gray1);
+}
+table.simpletable th {
+  background-color: var(--pmc-gray2);
+}
+table.simpletable th, table.simpletable td {
+  border: 1px solid var(--pmc-gray);
+}
+
+.noPmTOC, .PmTOCdiv:empty {
+  display: none;
+}
+.PmTOCdiv {
+  display: inline-block;
+  font-size: var(--pm-smaller);
+  margin-bottom: var(--pm-lineheight);
+}
+.PmTOCdiv summary {
+  font-weight: bold;
+}
+.PmTOCtable {
+  max-height: var(--pm-toc-maxheight);
+  overflow: auto;
+}
+.PmTOCdiv a {
+  text-decoration: none;
+  display: block;
+}
+.pmtoc-indent1 {
+  margin-left: var(--pm-toc-indent);
+}
+.pmtoc-indent2 {
+  margin-left: calc( 2 * var(--pm-toc-indent));
+}
+.pmtoc-indent3 {
+  margin-left: calc( 3 * var(--pm-toc-indent));
+}
+.pmtoc-indent4 {
+  margin-left: calc( 4 * var(--pm-toc-indent));
+}
+.pmtoc-indent5 {
+  margin-left: calc( 5 * var(--pm-toc-indent));
+}
+.pmtoc-indent6 {
+  margin-left: calc( 6 * var(--pm-toc-indent));
+}
+.pmtoc-indent7 {
+  margin-left: calc( 7 * var(--pm-toc-indent));
+}
+.back-arrow {
+  text-decoration: none;
+  font-weight: normal;
+  font-size: 1rem;
+  vertical-align: top;
+}
+.back-arrow:after {
+  content: "^";
+}
+@media print {
+  .PmTOCtable {
+    max-height: none;
+    overflow: visible;
+    line-height: var(--pm-lineheight);
+  }
+  .PmTOCdiv:not([open]) {
+    display:none;
+  }
+}
+
+
+/* xlpage-utf-8.php */
+.rtl, .rtl * {
+  direction: rtl; 
+  unicode-bidi: bidi-override;
+}
+.ltr, .ltr * {
+  direction: ltr; 
+  unicode-bidi: bidi-override;
+}
+.rtl .indent, .rtl.indent, .rtl .outdent, .rtl.outdent {
+  margin-left: 0; 
+  margin-right: var(--pm-indent-size);
+}
+
+/* diag.php */
+table.recipecheck { 
+  border: var(--pm-frameborder);
+  padding: 4px;
+}
+table.recipecheck tr.ok {
+  color: var(--pm-recipecheck-color);
+  background-color: var(--pm-recipecheck-ok);
+}
+table.recipecheck tr.check {
+  color: var(--pm-recipecheck-color);
+  background-color: var(--pm-recipecheck-check);
+}
+
+
+/* pagerev.php */
+.diffbox {
+  border-left: 1px solid var(--pm-nnn);
+  margin-top: var(--pm-lineheight);
+}
+.diffauthor, .diffchangesum {
+  font-weight: bold;
+}
+.difftime {
+  font-size: var(--pm-diff-smaller);
+  background-color: var(--pm-gray3);
+}
+.difftype {
+  clear: both;
+  font-size: var(--pm-diff-smaller);
+  font-weight: bold;
+}
+.diffadd {
+  border-left: 5px solid var(--pmc-green2);
+  padding-left: 5px;
+}
+.diffdel {
+  border-left: 5px solid var(--pmc-yellow2);
+  padding-left: 5px;
+}
+.diffrestore {
+  clear: both;
+  font-size: 66%;
+  margin: 1.5em 0px;
+}
+.diffmarkup {
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+.diffmarkup del {
+  background: var(--pmc-yellow2);
+  text-decoration: none;
+}
+.diffmarkup ins {
+  background: var(--pmc-green2);
+  text-decoration: none;
+}
+.rcplus {
+  cursor:pointer; 
+  opacity: 0.3;
+}
+.rcplus:hover {
+  opacity: 1;
+}
+.rcreload {
+  opacity: 0.3;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.rcnew {
+  background-color: var(--pmc-yellow1);
+}
+
+
+/* utils.php */
+.pmcopycode {
+  cursor: pointer;
+  display: block;
+  border-radius: 0.2em;
+  opacity: 0.2;
+  position: relative;
+  z-index: 2;
+}
+.pmcopycode::before {
+  content: "+";
+  display: block;
+  width: 0.8em;
+  height: 0.8em;
+  line-height: 0.8em;
+  text-align: center;
+}
+.pmcopycode.copied::before {
+  content: "\2714"; /*check*/
+}
+.pmcopycode.copied {
+  background-color: var(--pmc-green2);
+}
+pre:hover .pmcopycode {
+  opacity: 1;
+}
+
+var.labelvalue[data-value]:before {
+  content: attr(data-value);
+  margin: 0 .5em;
+}
+
+
+/* wikistyles.php */
+.frame {
+  border: var(--pm-frameborder);
+  border-radius: var(--pm-frameradius);
+  padding: var(--pm-framepadding);
+  background-color: var(--pmc-bg1);
+}
+.lfloat {
+  float: left;
+  margin-right: 0.5em;
+}
+.rfloat {
+  float: right;
+  margin-left: 0.5em;
+}
+
+
+
+
+/* Cookbook:DarkColorScheme */
+
+
+@media screen {
+  html.pmDarkTheme img:not([data-darksrc]), html.pmDarkTheme video:not([data-darksrc]) {
+    filter: brightness(.8) saturate(.8) contrast(1.1);
+  }
+  html.pmDarkTheme .onlyLightTheme,
+  html:not(.pmDarkTheme) .onlyDarkTheme {
+    display: none;
+  }
+}
+@media print {
+  .onlyDarkTheme {
+    display: none;
+  }
+}
+
+.pmToggleDarkTheme {
+  cursor: pointer;
+  padding: 0 .2em;
+}
+
+.pmToggleDarkTheme:before {
+  content: "\25ea";
+  opacity: 67%;
+  font-size: 6mm;
+}
+
+.pmToggleDarkTheme:hover:before {
+  opacity: 100%;
+}
+
+.darkThemeLabel {
+  box-shadow: var(--pm-boxshadow);
+}
+
+.darkThemeLabel mark {
+  padding: .2em .5em;
+  color: inherit;
+  background-color: inherit;
+  filter: invert(.8);
+  font-weight: bold;
+}
+
+html:not(.pmDarkToggleEnabled) .pmToggleDarkTheme:empty {
+  display:none;
+}
+

@@ -1,0 +1,402 @@
+<!--
+  $Id: ncurses.html,v 1.85 2023/03/11 22:01:54 tom Exp $
+  -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+<head>
+  <meta name="generator" content=
+  "HTML Tidy for HTML5 for Linux version 5.6.0">
+  <title>NCURSES &ndash; New Curses</title>
+  <link rel="author" href="mailto:dickey@invisible-island.net">
+  <meta http-equiv="Content-Type" content=
+  "text/html; charset=us-ascii">
+  <meta name="keywords" content=
+  "ncurses, curses, terminfo, termcap">
+  <meta name="description" content=
+  "Thomas Dickey is the maintainer/developer of ncurses. This page gives some background and pointers to ncurses resources.">
+  <link rel="SHORTCUT ICON" href="../img/icons/vile.ico" type=
+  "image/x-icon">
+  <link rel="stylesheet" href="../css/simplestyle.css" type=
+  "text/css">
+  <style type="text/css">
+  @import "../css/simplenavXX.css" all;
+  </style>
+  <meta name="viewport" content=
+  "width=device-width, initial-scale=1">
+</head>
+<body>
+  <hr>
+
+  <p><a href="https://invisible-island.net/">http://invisible-island.net/</a><br>
+  Copyright &copy; 1996-2022,2023 by Thomas E. Dickey</p>
+
+  <hr>
+
+  <h1 class="no-header">NCURSES &ndash; New Curses</h1>
+
+  <div class="nav">
+    <ul>
+      <li class="nav-top"><a href="https://invisible-island.net/ncurses/ncurses.html">(top)</a></li>
+
+      <li>
+        <a href="index.html#synopsis">Synopsis</a>
+        <ul>
+          <li><a href="https://invisible-island.net/ncurses/announce.html">Stable release</a></li>
+
+          <li><a href="https://invisible-island.net/ncurses/ncurses.faq.html">FAQ</a></li>
+        </ul>
+      </li>
+
+      <li>
+        <a href="index.html#history">History</a>
+        <ul>
+          <li><a href="index.html#basics">Foundations...</a></li>
+
+          <li><a href="index.html#involved">My Involvement</a></li>
+
+          <li><a href="index.html#changes">Change-logs</a></li>
+        </ul>
+      </li>
+
+      <li>
+        <a href="index.html#ncurses_subsets">Subsets and otherwise</a>
+        <ul>
+          <li><a href="https://invisible-island.net/ncurses/INSTALL.html">INSTALL</a></li>
+
+          <li><a href="https://invisible-island.net/ncurses/ncurses-Ada95.html">Ada95
+          binding</a></li>
+
+          <li><a href="https://invisible-island.net/ncurses/ncurses-examples.html">test/sample
+          programs</a></li>
+
+          <li><a href="https://invisible-island.net/ncurses/tack.html">tack</a></li>
+        </ul>
+      </li>
+
+      <li>
+        <a href="index.html#downloads">Download</a>
+        <ul>
+          <li><a href="index.html#download_ncurses">Download ncurses</a></li>
+
+          <li><a href="index.html#download_tack">Download tack</a></li>
+
+          <li><a href="index.html#download_database">Terminal Database</a></li>
+
+          <li><a href="index.html#download_mingw">MinGW Port</a></li>
+        </ul>
+      </li>
+
+      <li>
+        <a href="index.html#resources">Other Resources</a>
+        <ul>
+          <li><a href="index.html#packages">Packages</a></li>
+
+          <li><a href="index.html#misc_links">Comments</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <h2 id="synopsis-h2"><a name="synopsis" id=
+  "synopsis">Synopsis</a></h2>
+
+  <p>See the ncurses release <a href=
+  "https://invisible-island.net/ncurses/announce.html">announcement</a> or the <a href=
+  "https://invisible-island.net/ncurses/ncurses.faq.html">FAQ</a></p>
+
+  <h2 id="history-h2"><a name="history" id="history">History</a></h2>
+
+  <h3><a id="basics" name="basics">Foundations...</a></h3>
+
+  <p>Ncurses has an involved history:</p>
+
+  <ul>
+    <li>The package was originated as <strong>pcurses</strong>,
+    written by Pavel Curtis around 1982, maintained by various
+    people through 1986.</li>
+
+    <li>It was later polished (e.g., ANSI prototypes, reformatted,
+    some bug fixes, but still essentially the same package). and
+    re-issued as ncurses 1.8.1 in late 1993 by Zeyd Ben-Halim.</li>
+
+    <li>Subsequent work (through 1.8.8) was driven by Eric Raymond,
+    who eradicated previous signs of authorship with the current
+    copyright notice between 1.8.7 and 1.8.8, early 1995.</li>
+
+    <li>Later, this extended to incorporating the forms and menus
+    libraries written by Juergen Pfeifer, and a panel library
+    written by Warren Tucker. Adding these libraries almost doubled
+    the size of the package.</li>
+
+    <li>There are even a few chunks from BSD curses (in <a href=
+    "https://invisible-island.net/ncurses/man/tset.1.html">tset</a> and part of the logic which reads
+    termcap data for <a href=
+    "https://invisible-island.net/ncurses/man/curs_termcap.3x.html">tgetent</a>).</li>
+  </ul>
+
+  <p><strong>Ncurses</strong> is the work of dozens of people. Some
+  are listed in the credits.</p>
+
+  <h3><a id="involved" name="involved">My Involvement</a></h3>
+
+  <p>My involvement with ncurses dates back to the 1.8.1 release. I
+  was looking for an avenue to make a SystemV-based curses support
+  resizable windows (e.g., in an xterm). This is easily achievable
+  with BSD-curses, but not with the distributed versions of SystemV
+  curses. Ncurses 1.8.1 was too immature (dumped core, was not
+  portable, etc).</p>
+
+  <p>I revisited it in mid-1994, after an initial pass of making
+  <a href="https://invisible-island.net/ded/ded.html">ded</a> auto-configured. Ncurses 1.8.5
+  was advertised as 100% SVr4 compatible. I designed a minimal
+  interface for <strong>resizeterm</strong>, proposing it to Zeyd,
+  who promised it would be in 1.8.6 (it wasn't). Coming back to
+  1.8.7, I found that the color support was broken (specifically
+  for <a href="https://invisible-island.net/add/add.html">add</a>, which I had colorized using
+  PDCurses with MS-DOS). Since the package is useless to me unless
+  it implements faithfully the SVr4 interface, I approached Eric in
+  early 1995 with my growing list of problems. For more
+  information, see the discussion of the <a href=
+  "https://invisible-island.net/ncurses/ncurses-license.html">ncurses license</a>.</p>
+
+  <p>Since then, I've corrected the implementation of color,
+  terminal modes, implemented resizing, as well as the
+  configuration scripts, and resolved numerous reliability and
+  portability issues.</p>
+
+  <p>There is further work to do: the screen optimization has not
+  been rigorously tested, there are interesting problems to work
+  out with internationalization, etc.</p>
+
+  <h3><a id="changes" name="changes">Change-logs</a></h3>
+
+  <p>Here are links to the changelog for ncurses:</p>
+
+  <ul>
+    <li><a href="https://invisible-island.net/ncurses/NEWS.html">the changelog in html form
+    (very large)</a></li>
+
+    <li><a href="https://invisible-island.net/ncurses/NEWS.gz">NEWS.gz (gzip'd copy of the
+    actual changelog)</a></li>
+  </ul>
+
+  <hr>
+
+  <h2 id="ncurses_subsets-h2"><a name="ncurses_subsets" id=
+  "ncurses_subsets">Subsets of the Distribution</a></h2>
+
+  <p>See the <a href="https://invisible-island.net/ncurses/INSTALL.html"><tt>INSTALL</tt></a>
+  file in the sources for an explanation of the configure script's
+  options.</p>
+
+  <p>Starting with release 5.8, the source includes scripts which
+  automate the process of building tarballs of useful subsets.
+  These are</p>
+
+  <ul>
+    <li><a href="https://invisible-island.net/ncurses/ncurses-Ada95.html">Ada95 binding</a></li>
+
+    <li><a href="https://invisible-island.net/ncurses/ncurses-examples.html">test/sample
+    programs</a></li>
+  </ul>
+
+  <p>The <a href="https://invisible-island.net/ncurses/tack.html">tack</a> program is commonly
+  distributed with ncurses, though it is not part of ncurses.</p>
+
+  <hr>
+
+  <h2 id="downloads-h2"><a name="downloads" id=
+  "downloads">Download</a></h2>
+
+  <h3 id="download_ncurses-h3"><a name="download_ncurses" id=
+  "download_ncurses">Download ncurses</a></h3>
+
+  <ul>
+    <li><a href="https://invisible-island.net/datafiles/release/ncurses.tar.gz">Stable release
+    source</a> (gzip'd tar)</li>
+
+    <li><a href="https://invisible-island.net/datafiles/current/ncurses.tar.gz">Development
+    ncurses source</a> (gzip'd tar)</li>
+
+    <li><a href="https://invisible-island.net/ncurses/dev-patches.zip">Development ncurses
+    patches since previous release</a> (zip)</li>
+
+    <li><a href=
+    "http://invisible-island.net/archives/ncurses/6.4/">Development
+    rollup and incremental diff's</a> (primary site)</li>
+
+    <li><a href=
+    "http://invisible-mirror.net/archives/ncurses/6.4/">Development
+    rollup and incremental diff's</a> (mirror site)</li>
+  </ul>
+
+  <hr>
+
+  <h3 id="download_tack-h3"><a name="download_tack" id=
+  "download_tack">Download tack</a></h3>
+
+  <ul>
+    <li><a href="https://invisible-island.net/datafiles/release/tack.tar.gz">Stable release
+    source</a> (gzip'd tar)</li>
+
+    <li><a href="https://invisible-island.net/datafiles/current/tack.tar.gz">Development
+    source</a> (gzip'd tar)</li>
+  </ul>
+
+  <hr>
+
+  <h3 id="download_database-h3"><a name="download_database" id=
+  "download_database">Terminal Database</a></h3>
+
+  <p>The current terminfo/termcap sources are available via http.
+  They require tic/infocmp from ncurses 6.2 or later, since they
+  use a feature which was broken in previous releases.</p>
+
+  <p>Here are links to a browsable version of the terminfo
+  database:</p>
+
+  <ul>
+    <li>
+      <a href="https://invisible-island.net/ncurses/terminfo.src.html">The terminfo
+      database</a>
+      <ul>
+        <li><a href="https://invisible-island.net/ncurses/terminfo.src-sections.html">Sections
+        of the database</a></li>
+
+        <li><a href="https://invisible-island.net/ncurses/terminfo.src-history.html">An index
+        of the history-section</a></li>
+      </ul>
+    </li>
+
+    <li>
+      <a href="https://invisible-island.net/ncurses/terminfo.ti.html">The terminfo database</a>
+      (colored/large)
+      <ul>
+        <li><a href="https://invisible-island.net/ncurses/terminfo.ti-sections.html">Sections
+        of the database</a></li>
+
+        <li><a href="https://invisible-island.net/ncurses/terminfo.ti-history.html">An index of
+        the history-section</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <p>and here are the database files (see <a href=
+  "https://invisible-island.net/ncurses/ncurses.faq.html#compatible_tic"><em>Is ncurses
+  terminfo compatible with my system?</em></a> in the FAQ):</p>
+
+  <ul>
+    <li><a href="https://invisible-island.net/datafiles/current/terminfo.src.gz">Development
+    terminfo source (gzip'd text via http)</a></li>
+
+    <li><a href="https://invisible-island.net/datafiles/current/termcap.src.gz">Development
+    termcap source (gzip'd text via http)</a></li>
+  </ul>
+
+  <p>You may also find the discussion of <a href=
+  "https://invisible-island.net/ncurses/tctest.html">tctest</a> useful.</p>
+
+  <p><a href="https://invisible-island.net/xterm/xterm.html">XTerm</a> has its own <a href=
+  "https://invisible-island.net/xterm/terminfo.html">terminfo file</a> and <a href=
+  "https://invisible-island.net/xterm/termcap.html">termcap</a> files, which are not part of
+  ncurses (see <a href=
+  "https://invisible-island.net/xterm/xterm.faq.html#xterm_terminfo"><em>What
+  <code>$TERM</code> should I use?</em></a>). I adapt parts of
+  xterm's terminfo file for ncurses, and use <a href=
+  "https://invisible-island.net/ncurses/man/infocmp.1m.html"><code>infocmp</code></a> (in a script) to
+  check for mismatches. Some packagers simply append xterm's file
+  to the ncurses terminal database, which creates more problems
+  than it solves.</p>
+
+  <h3 id="download_mingw-h3"><a name="download_mingw" id=
+  "download_mingw">MinGW Port</a></h3>
+
+  <p>Beginning with <a href="https://invisible-island.net/ncurses/announce-5.8.html">ncurses 5.8</a>,
+  ncurses has been ported to Win32 console using MinGW. I have
+  built it both on Windows7 as well as via cross-compiling from
+  FreeBSD, Fedora and Debian. From the latter, I make occasional
+  builds which you may find useful:</p>
+
+  <ul>
+    <li><a href="https://invisible-island.net/datafiles/release/mingw32.zip">32-bit</a></li>
+
+    <li><a href="https://invisible-island.net/datafiles/release/mingw64.zip">64-bit</a></li>
+  </ul>
+
+  <h2><a name="resources" id="resources">Other Resources</a></h2>
+
+  <p>Stable releases are mentioned on <a>gnu.org</a>.</p>
+
+  <p>Development versions are announced on the
+  <em>bug-ncurses@gnu.org</em> mailing list. Here are pointers to
+  repositories built from the development patches (as well as
+  selected releases):</p>
+
+  <ul>
+    <li><a href=
+    "https://github.com/ThomasDickey/ncurses-snapshots/">development
+    since ncurses 1.9.9e</a> (see <a href=
+    "https://invisible-island.net/personal/git-exports.html">discussion</a>).</li>
+
+    <li><a href=
+    "http://ncurses.scripts.mit.edu/?p=ncurses.git">development
+    starting with ncurses 5.6</a> (see <a href=
+    "https://lists.gnu.org/archive/html/bug-ncurses/2018-01/msg00054.html">
+    mailing list</a>)</li>
+  </ul>
+
+  <h3><a name="packages" id="packages">Packages</a></h3>
+
+  <ul>
+    <li><a href=
+    "https://web.archive.org/web/20140517204556/http://oswatershed.org/pkg/ncurses">
+    OS<em>Watershed</em>.org</a> (archived 2014)</li>
+
+    <li><a href=
+    "http://rpmfind.net/linux/rpm2html/search.php?query=ncurses">Linux
+    RPMs</a></li>
+
+    <li><a href=
+    "https://www.archlinux.org/packages/core/x86_64/ncurses/">Arch
+    Linux</a></li>
+
+    <li><a href=
+    "http://packages.debian.org/search?keywords=ncurses">Debian</a></li>
+
+    <li><a href=
+    "http://packages.gentoo.org/package/sys-libs/ncurses">Gentoo</a></li>
+
+    <li><a href=
+    "http://packages.ubuntu.com/search?keywords=ncurses">Ubuntu</a></li>
+
+    <li><a href=
+    "http://svnweb.freebsd.org/base/head/lib/ncurses/">FreeBSD
+    base</a></li>
+
+    <li><a href="http://pkgsrc.se/devel/ncurses">devel/ncurses</a>
+    and <a href=
+    "http://pkgsrc.se/devel/ncursesw">devel/ncursesw</a> NetBSD
+    pkgsrc</li>
+
+    <li><a href=
+    "http://www.macports.org/ports.php?by=library&amp;substr=ncurses">
+    MacPorts</a></li>
+
+    <li><a href=
+    "http://unixpackages.com/packages/package-matrix?frm-page=9">UNIX
+    Packages</a> (around page 9 of the Package Matrix)</li>
+
+    <li><a href=
+    "http://www.opencsw.org/packages/ncurses/">OpenCSW</a></li>
+  </ul>
+
+  <h3><a name="misc_links" id="misc_links">Comments</a></h3>
+
+  <ul>
+    <li><a href=
+    "http://www.c-for-dummies.com/ncurses/">Programmer's Guide to
+    NCurses</a><br>
+    I helped with this, as the technical editor.</li>
+  </ul>
+</body>
+</html>

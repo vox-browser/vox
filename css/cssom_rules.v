@@ -651,6 +651,9 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 
 	rule.clear_caches()
 	rule.parent_style_sheet = parent_style_sheet
+	if mut font_face_rule := rule.font_face_rule {
+		font_face_rule.set_parent_style_sheet(parent_style_sheet)
+	}
 	if declaration := rule.declaration {
 		mut declaration_with_base := unsafe { &CSSStyleProperties(declaration) }
 		base_url := if sheet := parent_style_sheet {

@@ -9,7 +9,7 @@
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
-	const char *font_path, const uint16_t *glyphs, const double *packed_positions, int glyph_count,
+	const char *font_path, int face_index, const uint16_t *glyphs, const double *packed_positions, int glyph_count,
 	float font_size, int font_weight, int emoji_face, float baseline_x,
 	float baseline_y, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
@@ -536,7 +536,7 @@ static void native_configure_glyph_rasterization(CGContextRef context) {
 // AppKit to shape the source string again and preserves arbitrary CSS affine
 // transforms.
 static int native_draw_retained_glyph_run(CGContextRef context,
-	const char *font_path, const uint16_t *glyphs, const double *packed_positions, int glyph_count,
+	const char *font_path, int face_index, const uint16_t *glyphs, const double *packed_positions, int glyph_count,
 	float font_size, int font_weight, int emoji_face, float baseline_x, float baseline_y,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
@@ -556,7 +556,7 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 	if (!shadow_only && blur <= 0.0f) {
 		const CGFloat *components = CGColorGetComponents(color);
 		if (components != NULL && CGColorGetNumberOfComponents(color) == 4
-			&& ladybird_v_skia_draw_glyph_run(context, font_path, glyphs, packed_positions,
+			&& ladybird_v_skia_draw_glyph_run(context, font_path, face_index, glyphs, packed_positions,
 				glyph_count, font_size, font_weight, emoji_face, baseline_x,
 				baseline_y, transform_a, transform_b, transform_c, transform_d,
 				transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
@@ -684,12 +684,12 @@ int native_draw_document_glyph_run_srgb(const uint16_t *glyphs,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
 	float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height,
-	string font_path_value,
+	string font_path_value, int face_index,
 	gg__Color color, float blur, int shadow_only) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	NSString *font_path = native_capture_string(font_path_value);
 	CGColorRef cg_color = native_srgb_color(color);
-	int did_draw = native_draw_retained_glyph_run(context, [font_path fileSystemRepresentation], glyphs, positions, glyph_count,
+	int did_draw = native_draw_retained_glyph_run(context, [font_path fileSystemRepresentation], face_index, glyphs, positions, glyph_count,
 		font_size, font_weight, emoji_face, baseline_x, baseline_y, transform_a, transform_b,
 		transform_c, transform_d, transform_e, transform_f, page_x, page_y,
 		scroll_y, canvas_width, canvas_height, cg_color, blur, shadow_only);
@@ -2664,14 +2664,14 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
 	float page_x, float page_y, float scroll_y, float canvas_height,
-	string font_path_value) {
+	string font_path_value, int face_index) {
 	if (native_background_text_clip_build_context == NULL) {
 		return 0;
 	}
 	CGColorRef white = CGColorCreateGenericRGB(1.0, 1.0, 1.0, 1.0);
 	NSString *font_path = native_capture_string(font_path_value);
 	int did_draw = native_draw_retained_glyph_run(native_background_text_clip_build_context,
-		[font_path fileSystemRepresentation], glyphs, positions, glyph_count, font_size, font_weight, emoji_face, baseline_x,
+		[font_path fileSystemRepresentation], face_index, glyphs, positions, glyph_count, font_size, font_weight, emoji_face, baseline_x,
 		baseline_y, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, page_x, page_y, scroll_y,
 		(float)CGBitmapContextGetWidth(native_background_text_clip_build_context), canvas_height,

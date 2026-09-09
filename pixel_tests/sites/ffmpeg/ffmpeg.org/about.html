@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>
+About FFmpeg</title>
+    <link rel="stylesheet" href="css/font-awesome.min.css" />
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/simple-sidebar.css" />
+    <link rel="stylesheet" href="css/style.min.css" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <!--[if lt IE 9]>
+      
+      
+    <![endif]-->
+
+    <link href="https://ffmpeg.org/main.rss" rel="alternate" type="application/rss+xml" title="ffmpeg.org" />
+    <link rel="shortcut icon" href="favicon.ico" />
+  </head>
+  <body>
+
+    <div id="wrapper">
+
+      <nav id="sidebar-wrapper">
+        <ul class="sidebar-nav">
+          <li class="sidebar-brand"><a href="https://ffmpeg.org/">
+              <img src="img/ffmpeg3d_white_20.png" alt="FFmpeg" />
+              FFmpeg</a>
+          </li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="https://ffmpeg.org/index.html#news">News</a></li>
+          <li><a href="https://ffmpeg.org/download.html">Download</a></li>
+          <li><a href="https://ffmpeg.org/documentation.html">Documentation</a></li>
+          <li><a href="https://ffmpeg.org/community.html">Community</a>
+            <ul>
+              <li><a href="https://ffmpeg.org/community.html#Code-of-Conduct">Code of Conduct</a></li>
+              <li><a href="https://ffmpeg.org/contact.html#MailingLists">Mailing Lists</a></li>
+              <li><a href="https://ffmpeg.org/contact.html#IRCChannels">IRC</a></li>
+              <li><a href="https://ffmpeg.org/contact.html#Forums">Forums</a></li>
+              <li><a href="https://ffmpeg.org/bugreports.html">Bug Reports</a></li>
+              <li><a href="https://trac.ffmpeg.org">Wiki</a></li>
+              <li><a href="https://trac.ffmpeg.org/wiki/Conferences">Conferences</a></li>
+            </ul>
+          </li>
+          <li><a href="https://ffmpeg.org/developer.html">Developers</a>
+            <ul>
+              <li><a href="https://ffmpeg.org/download.html#get-sources">Source Code</a>
+              <li><a href="https://ffmpeg.org/developer.html#Introduction">Contribute</a></li>
+              <li><a href="http://fate.ffmpeg.org">FATE</a></li>
+              <li><a href="http://coverage.ffmpeg.org">Code Coverage</a></li>
+              <li><a href="https://ffmpeg.org/spi.html">Funding through SPI</a></li>
+            </ul>
+          </li>
+          <li><a href="about.html#">More</a>
+            <ul>
+              <li><a href="https://ffmpeg.org/donations.html">
+                  Donate<span style="color: #e55; font-size: 0.8em; margin-left: -10px"><i class="fa fa-heart"></i></span></a></li>
+              <li><a href="https://ffmpeg.org/consulting.html">Hire Developers</a></li>
+              <li><a href="https://ffmpeg.org/contact.html">Contact</a></li>
+              <li><a href="https://ffmpeg.org/security.html">Security</a></li>
+              <li><a href="https://ffmpeg.org/legal.html">Legal</a></li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+
+      <div id="page-content-wrapper">
+        <header class="content-header">
+          <h1>
+            <a id="menu-toggle" href="about.html#" class="btn btn-success"><i class="fa fa-reorder"></i></a>
+About FFmpeg          </h1>
+        </header>
+      <div class="page-content inset">
+<p class="with-icon">
+  <span class="pull-left"><i class="fa fa-5x fa-play-circle"></i></span>
+  FFmpeg is the leading multimedia framework, able to <strong>decode</strong>, <strong>encode</strong>, <strong>
+    transcode</strong>, <strong>mux</strong>, <strong>demux</strong>, <strong>stream</strong>, <strong>filter</strong> and <strong>play</strong> pretty much anything
+  that humans and machines have created. It supports the most obscure
+  ancient formats up to the cutting edge. No matter if they were
+  designed by some standards committee, the community or a corporation. It is
+  also highly portable: FFmpeg compiles, runs, and passes our testing infrastructure
+  <a href="http://fate.ffmpeg.org">FATE</a> across Linux, Mac OS X,
+  Microsoft Windows, the BSDs, Solaris, etc. under a wide variety of build
+  environments, machine architectures, and configurations.
+</p>
+
+<p class="info">It contains libavcodec, libavutil, libavformat, libavfilter, libavdevice,
+  libswscale and libswresample which can be used by applications.
+  As well as ffmpeg, ffplay and ffprobe which can be used by
+  end users for <strong>transcoding</strong> and <strong>playing</strong>.
+</p>
+
+<p class="with-icon">
+  <span class="pull-left"><i class="fa fa-5x fa-code-fork"></i></span>
+  The FFmpeg project tries to provide the best technically possible
+  solution for developers of applications and end users alike. To achieve
+  this we combine the best free software options available. We slightly
+  favor our own code to keep the dependencies on other libs low and to
+  maximize code sharing between parts of FFmpeg.
+  Wherever the question of "best" cannot be answered we support both
+  options so the end user can choose.
+</p>
+
+<p class="info">Everyone is welcome in FFmpeg and all contributions are welcome too.
+  We are happy to receive patches, pull requests, bug reports, donations
+  or any other type of contribution.
+</p>
+
+<p class="with-icon">
+  <span class="pull-left"><i class="fa fa-5x fa-lock"></i></span>
+  Security is a high priority and code review is always done with
+  security in mind. Though due to the very large amounts of code touching
+  untrusted data security issues are unavoidable and thus we provide
+  as quick as possible updates to our last stable releases when
+  new security issues are found.
+</p>
+
+<h3>
+  <span class="pull-right">
+    <i class="fa fa-wrench"></i> &nbsp;
+  </span>
+  FFmpeg Tools</h3>
+
+<br><br>
+
+<div class="row">
+  <div class="col-md-6">
+    <a href="https://ffmpeg.org/ffmpeg.html" class="well well-with-icon">
+      <span class="pull-left"><i class="fa fa-5x fa-fw fa-terminal"></i></span>
+      <h3><strong>ffmpeg</strong></h3>
+      <p>A <strong>command line tool</strong> to convert multimedia files
+        between formats</p>
+    </a>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6">
+    <a href="https://ffmpeg.org/ffplay.html" class="well well-with-icon">
+      <span class="pull-left"><i class="fa fa-5x fa-fw fa-play"></i></span>
+      <h3><strong>ffplay</strong></h3>
+      <p>A simple media player based on SDL and the FFmpeg libraries</p>
+    </a>
+  </div>
+  <div class="col-md-6">
+    <a href="https://ffmpeg.org/ffprobe.html" class="well well-with-icon">
+      <span class="pull-left"><i class="fa fa-5x fa-fw fa-bar-chart-o"></i></span>
+      <h3><strong>ffprobe</strong></h3>
+      <p>A simple multimedia stream analyzer</p>
+    </a>
+  </div>
+</div>
+
+<h3>
+  <span class="pull-right">
+    <i class="fa fa-cogs"></i> &nbsp;
+  </span>
+  FFmpeg Libraries for developers</h3>
+
+<br><br>
+
+<ul class="list-group list-group-big">
+  <li class="list-group-item"><strong><a href="https://ffmpeg.org/libavutil.html">libavutil</a></strong> is a library containing functions for
+    simplifying programming, including random number generators, data
+    structures, mathematics routines, core multimedia utilities, and much
+    more.</li>
+
+  <li class="list-group-item"><strong><a href="https://ffmpeg.org/libavcodec.html">libavcodec</a></strong> is a library containing decoders and encoders
+    for audio/video codecs.</li>
+
+  <li class="list-group-item"><strong><a href="https://ffmpeg.org/libavformat.html">libavformat</a></strong> is a library containing demuxers and
+    muxers for multimedia container formats.</li>
+
+  <li class="list-group-item"><strong><a href="https://ffmpeg.org/libavdevice.html">libavdevice</a></strong> is a library containing input and output
+    devices for grabbing from and rendering to many common multimedia
+    input/output software frameworks, including Video4Linux, Video4Linux2,
+    VfW, and ALSA.</li>
+
+  <li class="list-group-item"><strong><a href="https://ffmpeg.org/libavfilter.html">libavfilter</a></strong> is a library containing media filters.</li>
+
+  <li class="list-group-item"><strong><a href="https://ffmpeg.org/libswscale.html">libswscale</a></strong> is a library performing highly optimized image
+    scaling and color space/pixel format conversion operations.</li>
+
+  <li class="list-group-item"><strong><a href="https://ffmpeg.org/libswresample.html">libswresample</a></strong> is a library performing highly optimized
+    audio resampling, rematrixing and sample format conversion operations.</li>
+</ul>
+
+          <p class="text-right"><small>Hosting provided by <a href="https://telepoint.bg">telepoint.bg</a></small></p>
+        </div> <!-- page-content-inset -->
+      </div> <!-- page-content-wrapper -->
+    </div> <!-- wrapper -->
+
+    
+    
+
+    <!-- Custom JavaScript for the Menu Toggle -->
+    
+
+  </body>
+</html>

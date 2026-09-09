@@ -42,16 +42,16 @@ sk_sp<SkFontMgr> s_font_manager;
 sk_sp<SkTypeface> s_typefaces[FontSlotCount];
 std::unordered_map<std::string, sk_sp<SkTypeface>> s_path_typefaces;
 
-SkTypeface* select_typeface(char const* path, int font_weight, int emoji_face)
+SkTypeface* select_typeface(char const* path, int face_index, int font_weight, int emoji_face)
 {
     if (path && *path) {
-        auto key = std::string(path);
+        auto key = std::string(path) + "#" + std::to_string(face_index);
         if (auto found = s_path_typefaces.find(key); found != s_path_typefaces.end())
             return found->second.get();
         if (!s_font_manager)
             s_font_manager = SkFontMgr_New_CoreText(nullptr);
         if (s_font_manager) {
-            auto typeface = s_font_manager->makeFromFile(path, 0);
+            auto typeface = s_font_manager->makeFromFile(path, face_index);
             if (typeface) {
                 auto* result = typeface.get();
                 s_path_typefaces.emplace(std::move(key), std::move(typeface));
@@ -159,14 +159,14 @@ extern "C" int ladybird_v_skia_configure_font(char const* path, int slot)
 }
 
 extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
-    char const* font_path, uint16_t const* glyphs, double const* packed_positions, int glyph_count,
+    char const* font_path, int face_index, uint16_t const* glyphs, double const* packed_positions, int glyph_count,
     float font_size, int font_weight, int emoji_face, float baseline_x,
     float baseline_y, float transform_a, float transform_b, float transform_c,
     float transform_d, float transform_e, float transform_f, float page_x,
     float page_y, float scroll_y, float canvas_width, float canvas_height,
     uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
 {
-    auto* typeface = select_typeface(font_path, font_weight, emoji_face);
+    auto* typeface = select_typeface(font_path, face_index, font_weight, emoji_face);
     if (!destination || !typeface || !glyphs || !packed_positions || glyph_count <= 0
         || canvas_width <= 0 || canvas_height <= 0)
         return 0;

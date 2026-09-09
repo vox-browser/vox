@@ -1,0 +1,788 @@
+/* $NetBSD: global.css,v 1.142 2026/04/01 22:04:50 kim Exp $ */
+
+/* Remember to keep htdocs/globals.css and wikisrc/globals.css in sync. */
+/* See https://wiki.NetBSD.org/wiki/cvs/. */
+
+/* ##### Common Styles ##### */
+
+body {
+  background-color: #fff;
+  font-family: sans-serif;
+  font-size: 16px;
+  letter-spacing: 0;
+  color: #34495e;
+  max-width: 1200px;
+  margin-left: 0;
+  margin-right: auto;
+}
+
+::selection {
+  color: white;
+  background-color: #d43900;
+}
+
+acronym, .titleTip {
+  border-bottom: 1px dotted rgb(61,92,122);
+  cursor: help;
+  margin: 0;
+  padding: 0 0 0.4px 0;
+}
+
+a:link {
+  color: #d43900;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a:visited {
+  color: #884444;
+  text-decoration: none;
+}
+
+a:visited:hover {
+  text-decoration: underline;
+}
+
+h1, h2, h3, h4, h5 {
+  line-height: 1em;
+}
+
+h1 {
+  font-size: 32px;
+}
+
+h2 {
+  font-size: 28px;
+}
+
+h3 {
+  font-size: 24px;
+}
+
+h4 {
+  font-size: 20px;
+}
+
+pre {
+  white-space: pre-wrap;
+}
+
+.doNotDisplay {
+  display: none !important;
+}
+
+#skiplink {
+  position: absolute;
+  left: -99999px;
+}
+
+#skiplink:active, #skiplink:focus {
+  position: initial;
+}
+
+/* ##### Header ##### */
+
+.topNavigation {
+  color: #555555;
+  margin: 0;
+  padding: 0.5ex 5px;
+  border-bottom: 1px dotted #777777;
+}
+
+.topNavigation span {
+  color: #b84e0d;
+}
+
+.topNavigation small {
+  font-size: 80%;
+}
+
+.topNavigation a:link {
+  color: #555555;
+  text-decoration: none;
+  margin: 0;
+  padding: 0 0.25ex 0 0;
+}
+
+.topNavigation a:hover {
+  text-decoration: underline;
+}
+
+.topNavigation a:visited {
+  color: #555555;
+  text-decoration: none;
+}
+
+.topNavigation a:visited:hover {
+  color: #000000;
+  text-decoration: underline;
+}
+
+#name, #slogan {
+  display: none;
+}
+
+#logo img {
+  display: block;
+  margin: auto;
+}
+
+#navBar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
+}
+
+#navBar a {
+  font-weight: 600;
+  display: block;
+  color: #34495e;
+  padding: 0.3em;
+}
+
+#navBar ul {
+  width: 100%;
+  margin: 0 0 0 1em;
+  padding: 0;
+  padding-bottom: 4.5em;
+  list-style: none outside none;
+  display: inline;
+  display: flex;
+}
+
+#navBar > ul > li > a {
+  color: #d43900;
+}
+
+#navBar > ul > li:last-child {
+  border-bottom: 0;
+}
+
+/* ##### Content ##### */
+
+.title {
+  display: block;
+}
+
+.sideBarLeft p {
+  clear: both;
+}
+
+img.icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#content {
+  position: relative;
+  top: 8px;
+  margin: 0;
+  min-height: 100%;
+  max-width: 1000px;
+}
+
+#mainContent {
+  max-width: 95%;
+  margin: 0 auto;
+}
+
+#content p {
+  margin: 1em 0 1.5em 0;
+  padding: 0;
+}
+
+#content p,
+#content li {
+  line-height: 1.3em;
+}
+
+#platinumDonorLogo {
+  text-align: left;
+  width: 150px;
+  padding-left: 1em;
+}
+
+.donation input[type=number], .donation select {
+  border:1px solid black;
+  width: 3em;
+  text-align: right;
+}
+
+.donation input[type=image] {
+  vertical-align: middle;
+  margin: 2px 0;
+}
+
+sect1 > div.titlepage > h2.title {
+  clear: both;
+}
+
+#fundraiser {
+  /* Reserve some room before hitting the corners. Linux+GNOME seems to render a larger font */
+  font-size: 13px;
+  text-align: center;
+  display: block;
+  width: 100%;
+  padding: 0 0 1em 0;
+}
+
+#fundraiser-amount {
+  margin: 0 auto;
+}
+
+#fundraiser-amount {
+  height: 10px;
+  border: 1px solid #d43900;
+  border-radius: 10px;
+}
+
+#fundraiser-raised {
+  box-sizing: border-box;
+  background: #d43900;
+  height: 10px;
+  border: 1px solid #d43900;
+  border-radius: 10px 0 0 10px;
+}
+
+.buttons {
+  text-align: center;
+  margin-top: 2em;
+  line-height: 3em;
+}
+
+.buttons img, .buttons form {
+  margin: 1ex;
+}
+
+#news ul {
+  list-style-type: none;
+  padding: 0;
+  padding-left: 1em;
+  margin: 0;
+  margin-top: 1em;
+}
+
+#news li {
+  margin: 0;
+  padding: 0;
+  padding-bottom: 1em;
+}
+
+#news li a {
+  font-style: normal;
+}
+
+.more {
+  margin: 0;
+  padding: 0.5em 0;
+}
+
+span.more {
+  font-weight: bold;
+}
+
+.more a, .more li a {
+  color: #d43900;
+  background-color: transparent;
+  font-weight: bold;
+  text-decoration: none;
+  margin: 0;
+}
+
+.more a:hover {
+  text-decoration: underline;
+}
+
+.rowOfBoxes {
+  clear: both;
+}
+
+.filler {  /* use with an empty <p> element to add padding to the end of a text box */
+  border: 1px solid white;
+}
+ 
+.noBorderOnLeft {
+  border-left: none;
+}
+
+.dividingBorderAbove {
+  border-top: 1px solid rgb(204,204,204);
+}
+
+.greyLink a {
+  color: #777777;
+  text-decoration: none;
+}
+
+.greyLink a:hover {
+  text-decoration: underline
+}
+
+.greyLink a:visited {
+  color: #777777;
+  text-decoration: none;
+}
+
+.greyLink a:visited:hover {
+  color: #777777;
+  text-decoration: underline;
+}
+
+/* ##### Footer ##### */
+  
+#footer {
+  position: relative;
+  color: #777777;
+  text-align: center;
+  left: 250px;
+  transition: left .25s ease-out;
+  bottom: 5px;
+  max-width: 1000px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+#footer a {
+  color: #777777;
+  background-color: transparent;
+  text-decoration: underline;
+}
+
+#footer a:hover {
+  text-decoration: none;
+}
+
+#footerContent {
+  padding: 2ex 10px;
+
+}
+
+#footerLogo {
+  z-index: 1;
+  position: relative;
+  float: right;
+  text-align: right;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: table;
+}
+
+img.sponsor {
+  height: 3em;
+  display: table-cell;
+  padding: 0 1em;
+}
+
+#hackathonBox {
+  background: #d43900;
+  color: #ffffff;
+  margin: 1em 2em;
+  padding: 1em 2em;
+  text-align: left;
+}
+
+#hackathonBox a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+#warnBox {
+  font-weight: bold;
+  background: #d43900;
+  color: #ffffff;
+  margin: 5px 5px;
+  padding: 5px 5px;
+  text-align: center;
+}
+
+#warnBox a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+/* #### Overrides from the old NetBSD.css stylesheet ### */
+
+table {
+  font-size: 100%; /* keeps font size the same as in the body */
+  Border-Width: 0.0em;
+}
+
+table td {
+  padding: 3pt;
+  text-justify: none;
+}
+
+.centered {
+  Width: 90%;
+  Margin-Left: auto;
+  Margin-Right: auto;
+}
+
+.strikethrough {
+  Text-Decoration: line-through;
+}
+
+.programlisting, .screen {
+  Background-Color: #f5f5f5;
+  Line-Height: 1.2em;
+  Border-Color: #d4d4d4;
+  Border-Style: solid;
+  Border-Width: thin;
+  Margin-Left: auto;
+  Margin-Right: auto;
+  Padding: 5pt;
+  Width: 90%;
+}
+
+
+tr {
+  Vertical-Align: top;
+}
+
+td {
+  Vertical-Align: top;
+}
+
+th, td.theader {
+  Font-Weight: bold;
+  Vertical-Align: middle;
+  Padding: 5pt;
+}
+
+#content table:not([border='0'], .no-border) th {
+  border: 1px solid #ddd;
+}
+#content table:not([border='0'], .no-border) td:not(:empty) {
+  border: 1px solid #ddd;
+}
+#content table:not([border], .no-border) {
+  border-collapse: collapse;
+}
+#content table.no-border {
+  border: none;
+}
+
+table.developerslist td {
+  White-space: nowrap;
+  vertical-align: middle;
+}
+
+table.developerslist td.developerslistwrap {
+  White-space: normal;
+  background-color: #eeeeee;
+}
+
+table.developerslist td.developerslistname {
+  background-color: #f1f1f1;
+}
+
+table.developerslist td.developerslistdata {
+  background-color: #e8e8e8;
+}
+
+table.portmaintainers {
+  border: none;
+  border-collapse: collapse;
+}
+
+.email-obfuscate {
+  font-size: 0;
+}
+
+.center {
+  Vertical-Align: middle;
+  Text-Align: center;
+}
+
+tt.filename {
+  Line-Height: 1.3em;
+  Color: #884444;
+}
+
+tt.varname {
+  Line-Height: 1.3em;
+  Color: #2222AA;
+}
+
+.note {
+  Background-Color: #f5f5f5;
+  Border-Color: #d4d4d4;
+  Border-Style: solid;
+  Border-Width: thin;
+  Padding: 5pt;
+}
+
+.head {
+  Font-family: sans-serif;
+  Font-size: 120%;
+  Font-weight: bold;
+  Color: #777777;
+}
+
+.subhead {
+  Font-family: sans-serif;
+  Font-size: 90%;
+  Font-weight: bold;
+  Color: #777777;
+}
+
+.newsindex {
+  Font-family: sans-serif;
+  Font-size: 80%;
+  Font-weight: normal;
+}
+
+.webtoc {
+  Font-Family: sans-serif;
+}
+
+.foothome {
+  Line-Height: 1em;
+  Vertical-Align: middle;
+}
+
+.footfeed {
+  Line-Height: 1em;
+}
+
+.footcopy {
+  Line-Height: 1em;
+}
+
+.foottag {
+  Line-Height: 1em;
+}
+
+.pkgname {
+  Font-Family: sans-serif;
+  Font-Style: Italic;
+  Text-Decoration: none;
+  Line-Height: 1.3em;
+}
+
+.gnatspr {
+  Font-Weight: bold;
+}
+
+.warning {
+  Color: red;
+}
+
+/* The NetBSD Guide, The pkgsrc guide and other books. */
+
+body > .book,
+body > .preface,
+body > .part,
+body > .chapter,
+body > .appendix {
+  margin: 2em;
+}
+
+/* end books */
+
+table.build-results > tbody > tr > th[rowspan] {
+  text-align: left;
+  vertical-align: top;
+  padding: 8pt;
+}
+
+table.build-results > tbody > tr > td {
+  text-align: right;
+}
+
+table.build-results > tbody > tr:first-child > td {
+  padding-top: 8pt;
+}
+
+table.build-results > tbody > tr:last-child > td {
+  padding-bottom: 8pt;
+}
+
+table.build-results > tbody > tr > td {
+  padding: 0 8pt;
+}
+
+table.build-results > tbody {
+  font-family: "Ubuntu Mono", "DejaVu Sans Mono", "Lucida Console", Courier, monospace;
+}
+
+table.build-results td.all-ok {
+  color: #888;
+}
+
+table.build-results td.fails {
+  color: #d00;
+}
+
+table.build-results td.good {
+  color: #0b0;
+}
+
+table.build-results td.partial {
+  color: #080;
+}
+
+#navBar {
+  font-size: inherit;
+  min-width: inherit;
+}
+
+#navBar ul li {
+  display: block;
+}
+
+#navBar ul li a {
+  padding-left: 10px;
+}
+
+#navBar ul li ul {
+  font-size: inherit;
+  position: relative;
+  left: 0%;
+  display: initial;
+}
+
+#navBar ul li ul li a {
+  padding-left: 30px;
+  border-left: none;
+  border-right: none;
+}
+
+#navBar ul li a:hover {
+  background-color: #d43900;
+  color: #fff;
+  text-decoration: none;
+}
+
+/* hamburger menu wizardry */
+#navBar ul {
+  display: inline-block;
+  margin: 0 !important;
+}
+
+label.menuicon {
+  z-index: 9;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  padding: 10px;
+  box-sizing: border-box;
+  background-color: hsla(0,0%,100%,.8);
+  cursor: pointer;
+}
+
+label.menuicon:hover {
+  opacity: 0.4;
+}
+
+.menuicon span {
+  display: block;
+  width: 16px;
+  height: 2px;
+  margin-bottom: 4px;
+  background-color: #d43900;
+}
+
+.donationLinks {
+  list-style-type: none;
+  padding-left: 1.5em;
+}
+
+.donationLinks img {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.twoThirds {
+  max-width: 1000px;
+}
+
+#projectLogo {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+#hamburger {
+  display: none;
+}
+
+#navBar {
+  width: 250px;
+  border-right: 1px solid rgba(0,0,0,.07);
+}
+
+#hamburger:checked ~ #navBar {
+  transform: TranslateX(-250px);
+}
+
+label.menuicon {
+  width: 250px;
+}
+
+#hamburger:checked ~ label.menuicon {
+  width: initial;
+}
+
+#content {
+  left: 250px;
+  transition: left .25s ease-out;
+}
+
+#hamburger:checked ~ #content {
+  left: 0;
+}
+
+#hamburger:checked ~ #footer {
+  left: 0;
+}
+
+@media print {
+  .menuicon {
+    display: none !important;
+  }
+}
+
+/* mobile overrides, reverse notion of hamburger icon */
+@media only screen and (max-width: 800px) {
+	#navBar {
+	  position: fixed;
+	  left: -250px;
+	  overflow-y: auto;
+	}
+
+	#footerLogo {
+ 	  flex-wrap: wrap;	   
+ 	}
+
+	#hamburger:checked ~ #navBar {
+	  transform: TranslateX(250px);
+	}
+
+	label.menuicon {
+	  width: initial;
+	}
+
+	#hamburger:checked ~ label.menuicon {
+	  width: 250px;
+	}
+
+	#content, #footer {
+	  left: 0;
+	  transition: left .25s ease;
+	}
+
+	#hamburger:checked ~ #content {
+	  left: 250px;
+	}
+
+	#hamburger:checked ~ #footer {
+	  left: 250px;
+	}
+}
+/* end mobile */

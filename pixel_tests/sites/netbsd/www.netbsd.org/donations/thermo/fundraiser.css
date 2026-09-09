@@ -1,0 +1,9 @@
+#fundraiser::before {
+  content: "$12,663 raised of $50,000 goal";
+}
+#fundraiser-raised {
+  width: 25%;
+}
+#fundraiser-amount {
+  width: 90%;
+}

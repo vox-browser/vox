@@ -146,6 +146,30 @@ pub fn document_font_path(weight int) ?string {
 	return font_path_for_family('Default', weight)
 }
 
+// Resolve the exact file retained by a CSS @font-face before consulting the
+// installed family cascade.
+pub fn (font &Font) font_path() ?string {
+	if font.source_path != '' && os.is_file(font.source_path) {
+		return font.source_path
+	}
+	return font_path_for_family(font.family, font.weight)
+}
+
+// CSS weight selects the regular or bold member of the macOS collections used
+// by the pages under test. Standalone and downloaded faces always use index 0.
+pub fn (font &Font) face_index() int {
+	if font.source_path != '' {
+		return 0
+	}
+	$if macos {
+		if font.family.to_lower() in ['lucida grande', 'lucida sans unicode', 'lucida sans',
+			'helvetica neue', 'gill sans', 'gill sans std'] {
+			return if font.weight >= 600 { 1 } else { 0 }
+		}
+	}
+	return 0
+}
+
 // Resolve the concrete face selected for a CSS family. Layout metrics,
 // HarfBuzz shaping, and native replay all use this path, so retained glyph IDs
 // can never be interpreted through a different typeface.
@@ -187,6 +211,18 @@ pub fn font_path_for_family(family string, weight int) ?string {
 	$if macos {
 		lower_family := family.to_lower()
 		regular_path := match lower_family {
+			// Font.face_index() selects the regular or bold collection member.
+			'lucida grande', 'lucida sans unicode', 'lucida sans' {
+				'/System/Library/Fonts/LucidaGrande.ttc'
+			}
+
+			// Browser replay is configured around Arial-compatible metrics. Keep
+			// Helvetica on that face as the C++ macOS reference does here.
+			'helvetica' { '/System/Library/Fonts/Supplemental/Arial.ttf' }
+			'helvetica neue' { '/System/Library/Fonts/HelveticaNeue.ttc' }
+			'gill sans', 'gill sans std' { '/System/Library/Fonts/Supplemental/GillSans.ttc' }
+			'tahoma' { '/System/Library/Fonts/Supplemental/Tahoma.ttf' }
+			'georgia' { '/System/Library/Fonts/Supplemental/Georgia.ttf' }
 			'verdana' { '/System/Library/Fonts/Supplemental/Verdana.ttf' }
 			'geneva' { '/System/Library/Fonts/Geneva.ttf' }
 			'courier', 'courier new', 'monospace', 'uimonospace' {
@@ -237,26 +273,28 @@ pub fn font_path_for_family(family string, weight int) ?string {
 	return regular_path
 }
 
-fn document_harfbuzz_face(family string, weight int) ?voidptr {
-	path := font_path_for_family(family, weight)?
-	if face := harfbuzz_document_faces[path] {
+fn document_harfbuzz_face(font &Font) ?voidptr {
+	path := font.font_path()?
+	face_index := font.face_index()
+	cache_key := '${path}|${face_index}'
+	if face := harfbuzz_document_faces[cache_key] {
 		return face
 	}
-	if harfbuzz_document_attempted[path] {
+	if harfbuzz_document_attempted[cache_key] {
 		return none
 	}
-	harfbuzz_document_attempted[path] = true
+	harfbuzz_document_attempted[cache_key] = true
 	blob := C.hb_blob_create_from_file_or_fail(path.str)
 	if blob == unsafe { nil } {
 		return none
 	}
-	face := C.hb_face_create(blob, 0)
+	face := C.hb_face_create(blob, u32(face_index))
 	if face == unsafe { nil } {
 		C.hb_blob_destroy(blob)
 		return none
 	}
-	harfbuzz_document_blobs[path] = blob
-	harfbuzz_document_faces[path] = face
+	harfbuzz_document_blobs[cache_key] = blob
+	harfbuzz_document_faces[cache_key] = face
 	return face
 }
 
@@ -331,7 +369,7 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 	if uses_emoji {
 		face = emoji_harfbuzz_face()?
 	} else {
-		face = document_harfbuzz_face(font.family, font.weight)?
+		face = document_harfbuzz_face(font)?
 	}
 	hb_font := C.hb_font_create(face)
 	if hb_font == unsafe { nil } {

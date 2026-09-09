@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html><head>
+<title>musl libc</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="shortcut icon" href="musl5.svg" type="image/png">
+<link rel="stylesheet" href="main.css" type="text/css">
+<link rel="me" href="https://social.treehouse.systems/@musl">
+</head>
+<body>
+<h1>musl libc</h1>
+
+<p><strong>musl</strong> is an implementation of the C standard library built on top
+of the Linux system call API, including interfaces defined in the base
+language standard, POSIX, and widely agreed-upon extensions. <strong>musl</strong>
+is <em>lightweight</em>, <em>fast</em>, <em>simple</em>, <em>free</em>, and strives to be
+<em>correct</em> in the sense of standards-conformance and safety.</p>
+
+<p>New to musl libc? Read more <a href="https://musl.libc.org/about.html">about musl</a> or visit the
+<a href="https://wiki.musl-libc.org">community wiki</a>.</p>
+
+<p><strong>SECURITY ADVISORY: All releases through 1.2.6 are affected by
+<a href="https://www.openwall.com/lists/musl/2026/04/10/3">CVE-2026-40200</a> on
+32-bit archs, and should be
+<a href="https://www.openwall.com/lists/musl/2026/04/10/3/1">patched</a>.</strong></p>
+
+<p><strong>SECURITY ADVISORY: All releases through 1.2.6 are affected by
+<a href="https://www.openwall.com/lists/oss-security/2026/04/09/19">CVE-2026-6042</a>.
+Users who may have <code>iconv</code> exposed to untrusted data should
+<a href="https://www.openwall.com/lists/musl/2026/04/03/2/1">patch</a> to avoid a
+denial of service.</strong></p>
+
+<p><strong>SECURITY ADVISORY: All releases through 1.2.5 are affected by
+<a href="https://www.openwall.com/lists/musl/2025/02/13/1">CVE-2025-26519</a> and
+should be patched
+(<a href="https://www.openwall.com/lists/musl/2025/02/13/1/1">1</a>,
+<a href="https://www.openwall.com/lists/musl/2025/02/13/1/2">2</a>) or
+upgraded.</strong></p>
+
+<p><strong>SECURITY ADVISORY: All releases through 1.2.1 are affected by
+<a href="https://www.openwall.com/lists/musl/2020/11/19/1">CVE-2020-28928</a> and
+should be
+<a href="https://www.openwall.com/lists/musl/2020/11/19/1/1">patched</a> or
+upgraded to a later version.</strong></p>
+
+<p><strong>Users of 32-bit systems upgrading from 1.1.x to the 1.2 series
+should read the <a href="https://musl.libc.org/time64.html">time64 release notes</a> regarding 64-bit
+<code>time_t</code> and how it affects compatibility with an existing
+environment.</strong></p>
+
+<h2>Source Code</h2>
+
+<ul>
+<li><a href="https://git.musl-libc.org/cgit/musl">Official git repository</a></li>
+<li>Latest release: <a href="https://musl.libc.org/releases/musl-1.2.6.tar.gz">musl-1.2.6.tar.gz</a>
+(<a href="https://musl.libc.org/releases/musl-1.2.6.tar.gz.asc">sig</a>)</li>
+<li><a href="https://musl.libc.org/releases.html">Release history</a></li>
+<li>Automated cross toolchain builder:
+<a href="https://github.com/richfelker/musl-cross-make">musl-cross-make</a></li>
+</ul>
+
+<h2>Documentation</h2>
+
+<ul>
+<li><a href="https://musl.libc.org/manual.html">Official manual</a> (WIP)</li>
+<li><a href="https://wiki.musl-libc.org">Community wiki</a></li>
+</ul>
+
+<h2>Support</h2>
+
+<p>Public support for musl is available via the <a href="https://www.openwall.com/lists/musl/">mailing
+list</a> and
+<a href="ircs://libera.chat:6697/musl"><code>#musl</code></a> on the <a href="https://libera.chat">Libera.Chat IRC
+network</a>. Subscription details and further
+private/commercial support options can be found on musl's <a href="https://musl.libc.org/support.html">support
+page</a>.</p>
+
+<h2>Sponsors</h2>
+
+<p>Development and maintenance of musl is funded by many generous
+sponsors pledging through <a href="https://www.patreon.com/musl">Patreon</a> and
+<a href="https://github.com/sponsors/richfelker">GitHub Sponsors</a>. One-time
+donations can also be accepted via
+<a href="https://www.paypal.com/paypalme2/richfelker">Paypal</a>.</p>
+
+<p>Special thanks goes out to individual project sponsors, who have
+pledged at the $150/month level or higher:</p>
+
+<ul>
+<li>Andrew Kelley</li>
+<li>Jeremiah Gowdy</li>
+<li>Julien Voisin</li>
+</ul>
+
+<p>and to <a href="https://www.openwall.com/">Openwall</a> for infrastructure
+donations for the project mailing list.</p>
+
+<p>Work on musl has also been sponsored by:</p>
+
+<ul>
+<li><a href="https://ziglang.org/">The Zig Programming Language</a></li>
+<li><a href="https://www.coresemi.io/">Core Semiconductor</a></li>
+<li><a href="https://www.pantacor.com">Pantacor</a></li>
+<li>Other anonymous sponsors</li>
+</ul>
+
+<p>Want to support musl and have your company/organization credited as a
+sponsor? Contact <code>sponsorship AT musl-libc DOT org</code>.</p>
+</body></html>

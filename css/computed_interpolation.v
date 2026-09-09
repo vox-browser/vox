@@ -9559,6 +9559,7 @@ pub mut:
 	css_transition_storage_                &CSSTransitionStorage = unsafe { nil }
 	document_timeline_                     &AnimationTimeline = unsafe { nil }
 	font_computer_                         &FontComputer = unsafe { nil }
+	font_face_set_                         &FontFaceSet = unsafe { nil }
 	registered_counter_styles_             map[string]CounterStyle
 	has_registered_counter_styles_         bool
 	animation_time_ms_                     f64
@@ -9574,6 +9575,7 @@ pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
 		css_transition_storage_: &CSSTransitionStorage{}
 		document_timeline_: AnimationTimeline.document_timeline(document, 0.0, initial_timeline_time)
 		font_computer_: FontComputer.create()
+		font_face_set_: FontFaceSet.create()
 	}
 }
 
@@ -11153,6 +11155,7 @@ fn computed_interpolation_font_metrics_for_style(computed_properties &ComputedPr
 		family: computed_font.typeface.family_name
 		point_size: computed_font.point_size / 0.75
 		weight: int(computed_font.variations.weight)
+		source_path: computed_font.typeface.source_path
 	}
 	metrics := font.pixel_metrics()
 	return LengthFontMetrics{

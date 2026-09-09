@@ -465,6 +465,15 @@ pub fn sync_document_style_elements(document &dom.Document) {
 		}
 		parsed << sheet
 	}
+	style_computer := css_style_computer_for(document)
+	mut font_computer := unsafe { &FontComputer(style_computer.font_computer_) }
+	for old_sheet in holder.embedded_sheets {
+		font_computer.unload_fonts_from_css_rules(old_sheet.css_rules().rules)
+	}
+	for new_sheet in parsed {
+		font_computer.load_fonts_from_css_rules(new_sheet.css_rules().rules,
+			style_computer.font_face_set_)
+	}
 	unsafe {
 		holder.embedded_sources = sources.clone()
 		holder.embedded_sheets = parsed

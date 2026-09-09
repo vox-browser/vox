@@ -1,0 +1,11 @@
+body { display: flex; flex-wrap: wrap; font-family: sans; }
+header { flex-basis: 100%; flex-shrink: 0; }
+article { flex-basis: 60%; padding-left: 1em; }
+footer { flex-basis: 100%; flex-shrink: 0; }
+header nav { display: flex; justify-content: space-between; }
+nav a, header a { text-decoration: none ; color: inherit; }
+header h1 span { margin-left: 1em; font-size: 50%; font-style: italic; }
+body > nav { flex-basis: content; padding-right: 1vw; min-width: 16em; }
+nav ul { display: flex; flex-direction: column; list-style-type: none; list-style-position: outside; padding-left: 0;  }
+nav li ul { padding-left: 0.6em }
+footer { display: flex; justify-content: space-between; }

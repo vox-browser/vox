@@ -1,0 +1,116 @@
+body {
+	font-family: Tahoma, Georgia, "Times New Roman", Times, serif;
+}
+
+h1,h2,h3,h4 {
+	font-family: Helvetica, Geneva, Arial, SunSans-Regular, sans-serif;
+}
+
+pre,
+code,
+kbd,
+samp,
+tt{
+	font-family: "PT Mono", "Consolas", "Courier New", monospace;
+	font-size:1em;
+}
+
+*.no-header {
+	visibility:hidden;
+	overflow:hidden;
+	float:left;
+	clear: both;
+	width: 1px;
+	height: 1px;
+}
+
+*.small-caps {
+	font-variant: small-caps;
+}
+
+*.code-block,
+*.code-block100,
+*.code-block120 {
+	font-family: "PT Mono", "Consolas", "Courier New", monospace;
+	font-size: 10pt;
+	padding-left: 0em;
+	padding-right: 0em;
+	color: black;
+	background-color: rgb(215,215,215);
+	opacity: 0.7;
+}
+
+@media only screen and (min-width: 640pt) {
+*.code-block {
+	width: 480pt;
+}
+}
+
+@media only screen and (min-width: 750pt) {
+*.code-block100 {
+	width: 600pt;
+}
+}
+
+@media only screen and (min-width: 900pt) {
+*.code-block120 {
+	width: 720pt;
+}
+}
+
+*.code-block:hover,
+*.code-block100:hover,
+*.code-block120:hover {
+	opacity: 1;
+}
+
+*.bad-stuff {
+	list-style: none;
+	padding: 0 0 0 1.3em;
+	*list-style: disc;
+	*padding: 0 0 0 1.3em;
+}
+
+*.bad-stuff li {
+	overflow: visible;
+	padding-left: 1.1em;
+	position: relative;
+}
+
+*.bad-stuff li:before {
+	content: '\2639';
+	left: 0;
+	position: absolute;
+}
+
+pre {
+	white-space: pre-wrap;       /* CSS 3 */
+	white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+	white-space: -pre-wrap;      /* Opera 4-6 */
+	white-space: -o-pre-wrap;    /* Opera 7 */
+	word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+*.funcsynopsis>p {
+	margin-left: 3em;
+}
+
+*.funcsynopsis>p:first-of-type {
+	text-indent: -3em;
+}
+
+img { max-width: 100%; height: auto; }
+
+@viewport {
+	width: device-width;
+	user-zoom: zoom;
+	min-zoom: 1;
+	zoom: 1;
+}
+
+@-ms-viewport {
+	width: device-width;
+	user-zoom: zoom;
+	min-zoom: 1;
+	zoom: 1;
+}

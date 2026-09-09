@@ -60,11 +60,38 @@ browsers capture the same content.
 | `pgl-yoyo` | [pgl.yoyo.org](https://pgl.yoyo.org/) |
 | `knuth` | [Donald Knuth](https://www-cs-faculty.stanford.edu/~knuth/) |
 
+A second 20-page batch was frozen on the same date and with the same script
+and resource treatment:
+
+| Case | Original page |
+| --- | --- |
+| `openbsd` | [OpenBSD](https://www.openbsd.org/) |
+| `netbsd` | [NetBSD](https://www.netbsd.org/) |
+| `musl` | [musl libc](https://musl.libc.org/) |
+| `libexpat` | [Expat](https://libexpat.github.io/) |
+| `zlib` | [zlib](https://www.zlib.net/) |
+| `libpng` | [libpng](https://libpng.org/pub/png/) |
+| `libjpeg-turbo` | [libjpeg-turbo](https://www.libjpeg-turbo.org/) |
+| `busybox` | [BusyBox About](https://busybox.net/about.html) |
+| `ffmpeg` | [FFmpeg About](https://ffmpeg.org/about.html) |
+| `delorie` | [Delorie Software](https://www.delorie.com/) |
+| `paul-graham` | [Paul Graham](https://paulgraham.com/) |
+| `cat-v` | [cat-v](https://cat-v.org/) |
+| `toybox` | [Toybox](https://landley.net/toybox/) |
+| `daring-fireball` | [Daring Fireball Colophon](https://daringfireball.net/colophon/) |
+| `better-motherfucking-website` | [Better Motherfucking Website](http://bettermotherfuckingwebsite.com/) |
+| `idlewords` | [Idle Words](https://idlewords.com/) |
+| `stallman` | [Richard Stallman](https://stallman.org/) |
+| `cr-yp-to` | [cr.yp.to](https://cr.yp.to/) |
+| `ncurses` | [ncurses](https://invisible-island.net/ncurses/) |
+| `teensy-elf` | [Teensy ELF](https://www.muppetlabs.com/~breadbox/software/tiny/teensy.html) |
+
 The expected PNGs were captured at the viewport sizes in `cases.tsv` with the
 release build at `../3rd/ladybird/Build/release/bin/Ladybird.app`. They are
-macOS references because both browsers use the installed Arial and Verdana
-faces. Regenerate them only when intentionally adopting a new upstream render;
-review the resulting diff images before updating a ceiling.
+macOS references because both browsers use the same installed font files,
+including the selected faces in macOS TrueType collections. Regenerate them
+only when intentionally adopting a new upstream render; review the resulting
+diff images before updating a ceiling.
 
 The ceilings intentionally bound four image-wide measurements. Some text-heavy
 pages retain sizeable raw pixel counts because the V replay path rasterizes

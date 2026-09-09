@@ -389,6 +389,7 @@ pub fn (n &Node) first_available_font() &platform.Font {
 		family: computed_font.typeface.family_name
 		point_size: computed_font.point_size / 0.75
 		weight: int(computed_font.variations.weight)
+		source_path: computed_font.typeface.source_path
 	}
 }
 

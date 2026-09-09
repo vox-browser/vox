@@ -4,9 +4,11 @@ import dom
 import fetch
 import math
 import mimesniff
+import os
 import platform
 import strconv
 import strings
+import url as liburl
 import webidl
 
 // This file ports Ladybird's LibWeb/CSS font-face, font-feature-values, and
@@ -2313,7 +2315,8 @@ fn (face &FontFaceObject) load_first_available_url() ?PlatformTypeface {
 			continue
 		}
 		url := source.url or { URL.from_url(source.value) }
-		if typeface := platform_load_font_from_url_boundary(url.url()) {
+		resolved_url := resolve_font_face_source_url(url, face.css_font_face_rule)
+		if typeface := platform_load_font_from_url_boundary(resolved_url, face.family_) {
 			return typeface
 		}
 	}
@@ -2858,6 +2861,7 @@ pub mut:
 	weight_     int = 400
 	width_      int = 100
 	slope_      int
+	source_path string
 }
 
 pub struct PlatformFont {
@@ -2907,6 +2911,7 @@ pub fn (list &FontCascadeList) is_empty() bool {
 
 fn platform_font_equals(left PlatformFont, right PlatformFont) bool {
 	return left.typeface.family_name == right.typeface.family_name
+		&& left.typeface.source_path == right.typeface.source_path
 		&& left.typeface.weight_ == right.typeface.weight_
 		&& left.typeface.width_ == right.typeface.width_
 		&& left.typeface.slope_ == right.typeface.slope_
@@ -3092,7 +3097,11 @@ pub fn (mut loader FontLoader) font_with_point_size(point_size f32, variations F
 		if loader.urls.len != 0 {
 			loader.start_loading_next_url()
 		}
-		return none
+		// The V file-resource boundary completes synchronously. Consume its
+		// result now; network-backed loading still returns none here.
+		if loader.typeface == none {
+			return none
+		}
 	}
 	typeface := loader.typeface or { return none }
 	return PlatformFont{
@@ -3118,7 +3127,7 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 	url := loader.urls[0]
 	loader.urls.delete(0)
 
-	typeface := platform_load_font_from_url_boundary(url.url())
+	typeface := platform_load_font_from_url_boundary(url.url(), loader.family_name_)
 	if typeface == none && loader.urls.len != 0 {
 		loader.start_loading_next_url()
 		return
@@ -3275,7 +3284,9 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 	mut urls := []URL{}
 	for source in font_face.sources() {
 		if source.kind == .url {
-			urls << (source.url or { URL.from_url(source.value) })
+			font_url := source.url or { URL.from_url(source.value) }
+			resolved_url := resolve_font_face_source_url(font_url, font_face.parent_rule_ref())
+			urls << URL.new(resolved_url, font_url.type_, font_url.request_url_modifiers())
 		}
 	}
 
@@ -4651,10 +4662,30 @@ fn font_face_key_from_id(id string) FontFaceKey {
 	}
 }
 
-fn platform_load_font_from_url_boundary(url string) ?PlatformTypeface {
-	_ = url
-	// Boundary for fetch + font decoding. Returning none keeps load failure explicit until platform font APIs exist.
-	return none
+fn platform_load_font_from_url_boundary(raw_url string, family_name string) ?PlatformTypeface {
+	// Frozen pixel fixtures use file: resources. Mirror FontLoader::try_load_font's
+	// TrueType branch for those deterministic local sources; HTTP fetching and
+	// WOFF/WOFF2 decoding remain asynchronous platform boundaries.
+	parsed := liburl.parse(raw_url) or { return none }
+	if parsed.scheme != 'file' {
+		return none
+	}
+	path := liburl.percent_decode(parsed.serialize_path()).bytestr()
+	data := os.read_bytes(path) or { return none }
+	if data.len < 4 || data[0] != 0 || data[1] != 1 || data[2] != 0 || data[3] != 0 {
+		return none
+	}
+	return PlatformTypeface{
+		family_name: family_name
+		source_path: path
+	}
+}
+
+fn resolve_font_face_source_url(source URL, parent_rule ?&CSSFontFaceRule) string {
+	rule := parent_rule or { return source.url() }
+	sheet := rule.parent_style_sheet or { return source.url() }
+	base_url := sheet.base_url or { sheet.base.location or { return source.url() } }
+	return resolve_css_url_with_base(source.url(), base_url) or { source.url() }
 }
 
 fn platform_load_font_from_bytes_boundary(data []u8) ?PlatformTypeface {

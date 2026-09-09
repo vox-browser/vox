@@ -1,0 +1,220 @@
+/*sticky footer*/
+
+html,
+body {
+  height: 100%;
+  font-size: 15px;
+}
+
+.footnote {
+  font-size: 13px;
+}
+
+/* Wrapper for page content to push down footer */
+#wrap {
+  width: 100%;
+  min-height: 100%;
+  height: auto !important;
+  height: 100%;
+  /* Negative indent footer by its height */
+  margin: 0 auto -81px;
+  /* Pad bottom by footer height */
+  padding: 0 0 81px;
+}
+
+.pagination {
+  margin-top: auto;
+  margin-bottom: auto;
+  vertical-align: middle;
+}
+
+/* Set the fixed height of the footer here */
+#footer {
+  /*
+   *firefox, 'important' highest priority, ignore following overwriting
+   */
+  min-height: 60px;
+  height: auto !important;
+  /*
+   *IE wont recognize 'important' and 'min-height,
+   *it will auto adjust height
+   */
+  height: 60px;
+  border-width: 0;
+  border-radius: 0;
+  margin-top: 21px;
+  margin-bottom: 0;
+}
+
+#footer #footer-text {
+  font-size: 14px;
+  float: none;
+  margin: 20px 0;
+}
+
+/*
+ *force footer-text within one line,
+ * better display for blank page
+ */
+@media (max-width: 410px) {
+  #footer #footer-text #bootstrap { display: none; }
+}
+
+@media (max-width: 290px) {
+  #footer #footer-text #theme { display: none; }
+}
+
+@media (max-width: 180px) {
+  #footer #footer-text #engine { display: none; }
+}
+
+#navbar {
+  /*margin-bottom: 0;*/
+  border-radius: 0;
+  font-size: 17px;
+  border-width: 0;
+}
+
+#navbar .navbar-header {
+  height: 60px;
+}
+
+#navbar .navbar-header .navbar-brand {
+  font-size: 17px;
+  line-height: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  height: 100%;
+}
+
+#navbar .navbar-header .navbar-toggle {
+  margin-top: 13px;
+  margin-bottom: 13px;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  border-width: 1px;
+  height: 34px;
+}
+
+#navbar .navbar-nav > li > a {
+  line-height: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  height: 100%;
+}
+@media (max-width: 767px) {
+  #navbar .navbar-nav >li > a {
+    font-size: 16px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+
+#navbar .dropdown-menu {
+  font-size: 15px;
+}
+
+#navbar .navbar-form {
+  /*border-width: 1px 0 1px 0;*/
+  height: 60px;
+  font-size: 15px;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+#navbar .navbar-form .form-control {
+  border-width: 2px;
+  padding: 6px;
+  height: 40px;
+  width: 170px;
+}
+@media (max-width: 767px) {
+  #navbar .navbar-form .form-control {
+    width: 100%;
+  }
+}
+
+#navbar .navbar-collapse {
+  border-width: 0;
+}
+
+@media (min-width: 768px) {
+  #menuitem-list {
+    margin-right:0;
+  }
+}
+
+#navbar .navbar-collapse .navbar-nav {
+  border-width: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.page-header {
+  margin: 0;
+  margin-bottom: 21px;
+  padding: 0;
+}
+
+h1 {font-size: 1.8em;}
+h2 {font-size: 1.5em;}
+h3 {font-size: 1.3em;}
+h4 {font-size: 1.2em;}
+h5 {font-size: 1.1em;}
+h6 {font-size: 1.0em;}
+
+#home_article_list h1 {font-size: 1.6em}
+#home_article_list h2 {font-size: 1.4em}
+#home_article_list h3 {font-size: 1.2em}
+#home_article_list h4 {font-size: 1.1em}
+#home_article_list h5 {font-size: 1.0em}
+#home_article_list h6 {font-size: 1.0em}
+
+#article_info {
+  font-size: 1.0em;
+}
+
+.panel-body > .panel-group:last-child {
+  margin-bottom: 0;
+}
+
+blockquote {
+  font-size: 1.0em;
+
+}
+
+blockquote p {
+  font-size: 100%;
+}
+
+.pagination {
+  font-size: 1.2em;
+}
+
+td.code {
+    width:100%;
+}
+
+p {
+  text-align: justify;
+  /*margin: 20px 0 0 0;*/
+  /*word-break: break-all;*/
+  /*hyphens: auto;*/
+  /*-ms-hyphens: auto;*/
+  /*-webkit-hyphens: auto;*/
+  /*-moz-hyphens: auto;*/
+}
+
+img {
+  max-width: 100%;
+}
+
+
+/* BEGIN Expat */
+a {
+    color:#8c1e26;
+}
+
+/* END Expat */

@@ -1,0 +1,20 @@
+@media (orientation: landscape) {
+	body {
+		margin-left: 10%;
+		margin-right: 10%;
+	}
+}
+
+h1::before {
+	content: "";
+	background-image: url(musl4.svg);
+	width: 46px;
+	height: 90px;
+	display: inline-block;
+	margin-right: -10px;
+}
+
+code {
+	background-color: #e8e8e8;
+	padding: 2px 4px 2px 4px;
+}

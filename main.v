@@ -73,13 +73,13 @@ fn C.native_draw_document_text_srgb(x f32, y f32, text string, color gg.Color, s
 
 fn C.native_draw_document_text_shadow_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int, blur f32)
 
-fn C.native_draw_document_glyph_run_srgb(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, color gg.Color, blur f32, shadow_only int) int
+fn C.native_draw_document_glyph_run_srgb(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, face_index int, color gg.Color, blur f32, shadow_only int) int
 
 fn C.native_begin_background_text_clip(canvas_width f32, canvas_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32)
 
 fn C.native_add_background_text_clip_run(x f32, y f32, text string, size f32, bold int, italic int, monospace int)
 
-fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, font_path string) int
+fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, font_path string, face_index int) int
 
 fn C.native_finish_background_text_clip()
 
@@ -1565,10 +1565,10 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 		font_path := if glyph_run.face() == .emoji {
 			platform.emoji_font_path() or { '' }
 		} else {
-			platform.font_path_for_family(glyph_run.font().family, glyph_run.font().weight) or { '' }
+			glyph_run.font().font_path() or { '' }
 		}
 		unsafe {
-			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_color, blur, int(shadow_only)) != 0
+			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_run.font().face_index(), glyph_color, blur, int(shadow_only)) != 0
 		}
 	}
 	return false
@@ -2558,10 +2558,10 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							font_path := if glyph_run.face() == .emoji {
 								platform.emoji_font_path() or { '' }
 							} else {
-								platform.font_path_for_family(glyph_run.font().family, glyph_run.font().weight) or { '' }
+								glyph_run.font().font_path() or { '' }
 							}
 							unsafe {
-								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.height), font_path) != 0
+								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.height), font_path, glyph_run.font().face_index()) != 0
 							}
 						}
 					}

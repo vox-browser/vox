@@ -50,6 +50,7 @@ fn text_node_chunk_platform_font(font css.PlatformFont) &platform.Font {
 		family: font.typeface.family_name
 		point_size: font.point_size / 0.75
 		weight: int(font.variations.weight)
+		source_path: font.typeface.source_path
 	}
 }
 
