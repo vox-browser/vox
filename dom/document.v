@@ -2457,6 +2457,7 @@ pub:
 	did_change_title_callback            fn (voidptr, string) = unsafe { nil }
 	device_pixel_scale_callback          fn (voidptr) f64 = unsafe { nil }
 	did_allocate_backing_stores_callback fn (voidptr, int, int) = unsafe { nil }
+	preferred_color_scheme_callback      fn (voidptr) string = unsafe { nil }
 mut:
 	last_changed_title_ string
 	title_change_count_ int
@@ -5220,6 +5221,13 @@ pub fn (d &Document) get_page() &Page {
 pub fn (mut d Document) set_page(page &Page) {
 	d.page_ = page
 	page.client_page_did_create_new_document(d)
+}
+
+pub fn (d &Document) preferred_color_scheme() string {
+	if d.page_ == unsafe { nil } {
+		return 'auto'
+	}
+	return d.page_.preferred_color_scheme()
 }
 
 // --- Colors ---
@@ -11194,6 +11202,13 @@ pub fn (p &Page) device_pixels_per_css_pixel() f64 {
 		return p.device_pixel_scale_callback(p.target)
 	}
 	return 1.0
+}
+
+pub fn (p &Page) preferred_color_scheme() string {
+	if p.target != unsafe { nil } && p.preferred_color_scheme_callback != unsafe { nil } {
+		return p.preferred_color_scheme_callback(p.target)
+	}
+	return 'auto'
 }
 
 pub fn (p &Page) client_page_did_allocate_backing_stores(front_id int, back_id int) {

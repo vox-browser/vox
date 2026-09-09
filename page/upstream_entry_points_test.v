@@ -24,6 +24,19 @@ fn test_upstream_page_client_and_page_state_entry_points() {
 	assert p.is_in_tooltip_area()
 	assert p.current_cursor() == 'pointer'
 	assert p.web_exposed_screen_area() == PixelRect{x: 10, y: 20, width: 400, height: 300}
+
+	client.preferred_color_scheme_ = 'dark'
+	client.preferred_contrast_ = 'more'
+	client.preferred_motion_ = 'reduce'
+	assert p.preferred_color_scheme() == 'dark'
+	assert p.preferred_contrast() == 'more'
+	assert p.preferred_motion() == 'reduce'
+	client.preferred_color_scheme_ = 'auto'
+	client.palette_is_dark_ = true
+	assert p.palette() == 'dark'
+	assert p.preferred_color_scheme() == 'dark'
+	client.palette_is_dark_ = false
+	assert p.preferred_color_scheme() == 'light'
 }
 
 fn test_upstream_page_input_and_dialog_entry_points_route_existing_state_machines() {

@@ -507,10 +507,8 @@ pub fn ColorResolutionContext.for_computed_properties(computed &ComputedProperti
 }
 
 fn color_resolution_context_for_computed_properties(computed &ComputedProperties, document &dom.Document, calculation_resolution_context CalculationResolutionContext) ColorResolutionContext {
-	// The page preference hook is not exposed by the DOM port yet. `auto` lets
-	// the document/element color-scheme lists select their first supported
-	// scheme, falling back to the CSS initial light scheme.
-	scheme := computed.color_scheme(.auto_, document.supported_color_schemes())
+	preferred_scheme := preferred_color_scheme_from_string(document.preferred_color_scheme())
+	scheme := computed.color_scheme(preferred_scheme, document.supported_color_schemes())
 	initial_color := SystemColor.canvas_text(scheme)
 	initial_accent := SystemColor.accent_color(scheme)
 	base_context := ColorResolutionContext{

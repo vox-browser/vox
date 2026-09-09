@@ -3,6 +3,10 @@ module css
 import dom
 import math
 
+fn dark_page_preference_for_test(_ voidptr) string {
+	return 'dark'
+}
+
 fn test_logical_alias_metadata_covers_generated_properties() {
 	assert property_is_logical_alias(.margin_inline_start)
 	assert property_is_logical_alias(.border_block_end_color)
@@ -1164,6 +1168,32 @@ fn test_layout_node_resolution_context_uses_installed_element_and_root_styles() 
 	assert current_color.r == 1 && current_color.g == 2 && current_color.b == 3
 	accent_color := color_context.accent_color or { panic('accent color missing') }
 	assert accent_color.r == 4 && accent_color.g == 5 && accent_color.b == 6
+}
+
+fn test_color_resolution_uses_the_page_preferred_color_scheme() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut page_target := 0
+	dom_page := &dom.Page{
+		target: unsafe { voidptr(&page_target) }
+		preferred_color_scheme_callback: dark_page_preference_for_test
+	}
+	doc.set_page(dom_page)
+	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	element.set_attribute_value('style', 'color-scheme: light dark; color: light-dark(rgb(1 2 3), rgb(4 5 6))')
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(element.as_node()) or { panic('${err}') }
+
+	mut computer := StyleComputer.new(doc)
+	recompute_style_for_subtree(mut computer, element.as_node())
+	layout_node := &dom.LayoutNode{
+		dom_node_: element.as_node()
+	}
+	context := color_resolution_context_for_layout_node(layout_node)
+	assert (context.color_scheme or { PreferredColorScheme.light }) == .dark
+	color := context.current_color or { panic('current color missing') }
+	assert color.r == 4 && color.g == 5 && color.b == 6
 }
 
 fn test_unresolved_css_functions_record_dom_style_dependencies() {

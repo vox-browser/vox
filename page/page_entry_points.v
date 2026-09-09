@@ -18,7 +18,7 @@ pub enum PageDragEventType {
 
 pub fn (p &Page) client() &PageClient { return p.client_ }
 
-pub fn (_ &Page) palette() string { return 'default' }
+pub fn (p &Page) palette() string { return if p.client_.palette_is_dark() { 'dark' } else { 'default' } }
 
 pub fn (p &Page) web_exposed_screen_area() PixelRect {
 	return p.device_to_css_rect(PixelRect{
@@ -33,9 +33,15 @@ pub fn (p &Page) web_exposed_available_screen_area() PixelRect {
 	return p.web_exposed_screen_area()
 }
 
-pub fn (_ &Page) preferred_color_scheme() string { return 'auto' }
-pub fn (_ &Page) preferred_contrast() string { return 'auto' }
-pub fn (_ &Page) preferred_motion() string { return 'auto' }
+pub fn (p &Page) preferred_color_scheme() string {
+	preferred_scheme := p.client_.preferred_color_scheme()
+	if preferred_scheme == 'auto' {
+		return if p.client_.palette_is_dark() { 'dark' } else { 'light' }
+	}
+	return preferred_scheme
+}
+pub fn (p &Page) preferred_contrast() string { return p.client_.preferred_contrast() }
+pub fn (p &Page) preferred_motion() string { return p.client_.preferred_motion() }
 
 pub fn (p &Page) device_to_css_size(size PixelSize) PixelSize {
 	return PixelSize{width: size.width / p.device_scale, height: size.height / p.device_scale}

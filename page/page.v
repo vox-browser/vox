@@ -176,6 +176,11 @@ fn page_device_pixel_scale_callback(target voidptr) f64 {
 	return model.device_scale
 }
 
+fn page_preferred_color_scheme_callback(target voidptr) string {
+	model := unsafe { &Page(target) }
+	return model.preferred_color_scheme()
+}
+
 fn page_did_allocate_backing_stores_callback(target voidptr, front_id int, back_id int) {
 	mut model := unsafe { &Page(target) }
 	front_store := SharedBackingStore.create([])
@@ -197,6 +202,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		did_change_title_callback: page_did_change_title_callback
 		device_pixel_scale_callback: page_device_pixel_scale_callback
 		did_allocate_backing_stores_callback: page_did_allocate_backing_stores_callback
+		preferred_color_scheme_callback: page_preferred_color_scheme_callback
 	}
 	return model
 }
