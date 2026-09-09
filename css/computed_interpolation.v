@@ -5532,17 +5532,17 @@ pub fn interpolate_raw_int(from int, to int, delta f64, accepted_type_range ?Acc
 }
 
 fn with_keyword_values_resolved_boundary(element &dom.Element, property_id PropertyID, value &dom.StyleValue) &dom.StyleValue {
-	if computed_interpolation_style_value_is_initial(value) || computed_interpolation_style_value_is_revert(value) || computed_interpolation_style_value_is_revert_layer(value) || (computed_interpolation_style_value_is_unset(value) && !computed_interpolation_is_inherited_property(property_id)) {
+	if typed := typed_style_value_logic_from_dom(value) {
+		if typed is GuaranteedInvalidStyleValue {
+			return computed_interpolation_property_initial_value(property_id)
+		}
+	}
+	if computed_interpolation_style_value_is_initial(value)
+		|| computed_interpolation_style_value_is_unset(value) {
 		return computed_interpolation_property_initial_value(property_id)
 	}
-	if computed_interpolation_style_value_is_inherit(value) || (computed_interpolation_style_value_is_unset(value) && computed_interpolation_is_inherited_property(property_id)) {
-		abstract_element := dom.AbstractElement.new(element, none)
-		if parent := parent_computed_properties(abstract_element) {
-			return parent.property(property_id, .yes) or {
-				computed_interpolation_property_initial_value(property_id)
-			}
-		}
-		return computed_interpolation_property_initial_value(property_id)
+	if computed_interpolation_style_value_is_inherit(value) {
+		return StyleComputer.get_non_animated_inherit_value(property_id, dom.AbstractElement.new(element, none))
 	}
 	return unsafe { value }
 }

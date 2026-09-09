@@ -1475,6 +1475,34 @@ fn test_color_interpolation_uses_the_elements_color_resolution_context() {
 	assert interpolate_test_property(element, .background_color, 'light-dark(red, green)', 'light-dark(blue, white)', 0) == 'rgb(0, 128, 0)'
 }
 
+fn test_animation_keyword_resolution_matches_upstream_boundaries() {
+	doc := dom.Document.create(dom.url_about_blank())
+	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	zero := dom_style_value_from_value_logic(parse_css_value_logic(.opacity, '0') or {
+		panic('could not parse zero opacity')
+	})
+	guaranteed_invalid := dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
+	assert (interpolate_property(element, .opacity, guaranteed_invalid, zero, 0.5, .no) or {
+		panic('could not interpolate guaranteed-invalid as the initial value')
+	}).css_text == '0.5'
+
+	unset := dom_style_value_from_value_logic(parse_css_value_logic(.opacity, 'unset') or {
+		panic('could not parse unset opacity')
+	})
+	assert (interpolate_property(element, .opacity, unset, zero, 0.25, .no) or {
+		panic('could not interpolate unset as the initial value')
+	}).css_text == '0.75'
+
+	for keyword in ['revert', 'revert-layer'] {
+		keyword_value := dom_style_value_from_value_logic(parse_css_value_logic(.opacity, keyword) or {
+			panic('could not parse ${keyword} opacity')
+		})
+		assert (interpolate_property(element, .opacity, keyword_value, zero, 0.25, .yes) or {
+			panic('could not discretely interpolate ${keyword}')
+		}).css_text == keyword
+	}
+}
+
 fn test_basic_shape_interpolation_and_composition() {
 	doc := dom.Document.create(dom.url_about_blank())
 	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
