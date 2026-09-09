@@ -27,6 +27,7 @@ pub mut:
 	preferred_contrast_     string = 'auto'
 	preferred_motion_       string = 'auto'
 	palette_is_dark_        bool
+	zoom_level_             f64 = 1
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }
@@ -35,6 +36,7 @@ pub fn (client &PageClient) palette_is_dark() bool { return client.palette_is_da
 pub fn (client &PageClient) preferred_color_scheme() string { return client.preferred_color_scheme_ }
 pub fn (client &PageClient) preferred_contrast() string { return client.preferred_contrast_ }
 pub fn (client &PageClient) preferred_motion() string { return client.preferred_motion_ }
+pub fn (client &PageClient) zoom_level() f64 { return client.zoom_level_ }
 
 fn (mut client PageClient) record(name string, text string) {
 	client.events << ClientEvent{name: name, text: text}

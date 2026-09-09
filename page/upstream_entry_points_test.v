@@ -37,6 +37,11 @@ fn test_upstream_page_client_and_page_state_entry_points() {
 	assert p.preferred_color_scheme() == 'dark'
 	client.palette_is_dark_ = false
 	assert p.preferred_color_scheme() == 'light'
+	client.zoom_level_ = 2
+	metrics := p.chrome_metrics()
+	assert metrics.scroll_thumb_min_length == 12
+	assert metrics.scroll_gutter_thickness == 6
+	assert metrics.resize_gripper_size == 6
 }
 
 fn test_upstream_page_input_and_dialog_entry_points_route_existing_state_machines() {

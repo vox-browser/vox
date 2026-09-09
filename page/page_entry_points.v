@@ -5,10 +5,7 @@
 // page.v and event_handler.v.
 module page
 
-pub struct ChromeMetrics {
-pub:
-	window_rect PixelRect
-}
+import painting
 
 pub enum PageDragEventType {
 	start
@@ -47,8 +44,8 @@ pub fn (p &Page) device_to_css_size(size PixelSize) PixelSize {
 	return PixelSize{width: size.width / p.device_scale, height: size.height / p.device_scale}
 }
 
-pub fn (p &Page) chrome_metrics() ChromeMetrics {
-	return ChromeMetrics{window_rect: p.web_exposed_screen_area()}
+pub fn (p &Page) chrome_metrics() painting.ChromeMetrics {
+	return painting.new_chrome_metrics(p.client_.zoom_level()) or { panic(err) }
 }
 
 pub fn (mut p Page) handle_mouseup(target ?InputTarget, _ PixelPoint, _ u32, _ u32,
