@@ -106,22 +106,40 @@ pub fn (mut p Page) did_update_window_rect() {
 	}
 }
 
-pub fn (mut p Page) alert_closed() { p.close_dialog(true, none) }
-pub fn (mut p Page) confirm_closed(accepted bool) { p.close_dialog(accepted, none) }
-pub fn (mut p Page) prompt_closed(response ?string) { p.close_dialog(response != none, response) }
+pub fn (mut p Page) alert_closed() {
+	if p.pending_dialog_ == .alert { p.close_dialog(true, none) }
+}
+pub fn (mut p Page) confirm_closed(accepted bool) {
+	if p.pending_dialog_ == .confirm { p.close_dialog(accepted, none) }
+}
+pub fn (mut p Page) prompt_closed(response ?string) {
+	if p.pending_dialog_ == .prompt { p.close_dialog(response != none, response) }
+}
 
 pub fn (mut p Page) dismiss_dialog(on_closed fn ()) {
-	p.close_dialog(false, none)
-	on_closed()
+	p.on_pending_dialog_closed_ = on_closed
+	match p.pending_dialog_ {
+		.alert { p.client_.page_did_request_accept_dialog() }
+		.confirm, .prompt { p.client_.page_did_request_dismiss_dialog() }
+		.none {}
+	}
 }
 
 pub fn (mut p Page) accept_dialog(on_closed fn ()) {
-	p.close_dialog(true, none)
-	on_closed()
+	p.on_pending_dialog_closed_ = on_closed
+	if p.pending_dialog_ != .none {
+		p.client_.page_did_request_accept_dialog()
+	}
 }
 
 pub fn (mut p Page) on_pending_dialog_closed() {
+	p.pending_dialog_ = .none
+	p.pending_dialog_text_ = none
 	p.client_events << ClientEvent{name: 'pending-dialog-closed'}
+	if on_closed := p.on_pending_dialog_closed_ {
+		p.on_pending_dialog_closed_ = none
+		on_closed()
+	}
 }
 
 pub fn (mut p Page) color_picker_update(value ?string, final bool) {

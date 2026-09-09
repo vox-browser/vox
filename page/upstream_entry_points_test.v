@@ -1,5 +1,10 @@
 module page
 
+struct DialogCloseRecorder {
+mut:
+	closed bool
+}
+
 fn test_upstream_page_client_and_page_state_entry_points() {
 	mut p := Page.create(2)!
 	mut client := p.client()
@@ -59,6 +64,16 @@ fn test_upstream_page_input_and_dialog_entry_points_route_existing_state_machine
 	p.confirm_closed(true)
 	assert !p.has_pending_dialog()
 	assert p.pending_dialog_response() or { '' } == 'true'
+
+	assert p.request_dialog(.confirm, 'Dismiss?', '')
+	mut recorder := &DialogCloseRecorder{}
+	p.dismiss_dialog(fn [mut recorder] () { recorder.closed = true })
+	assert p.has_pending_dialog()
+	assert !recorder.closed
+	assert p.client().events.last().name == 'dismiss-dialog'
+	p.confirm_closed(false)
+	assert !p.has_pending_dialog()
+	assert recorder.closed
 }
 
 fn test_upstream_event_helper_selection_focus_and_auto_scroll_entry_points() {

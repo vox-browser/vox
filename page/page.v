@@ -137,6 +137,7 @@ mut:
 	pending_dialog_text_           ?string
 	pending_dialog_default_        string
 	pending_dialog_response_       ?string
+	on_pending_dialog_closed_      ?fn ()
 	pending_non_blocking_dialog_   PendingNonBlockingDialog
 	pending_non_blocking_target_   string
 	next_clipboard_request_id      u64
@@ -361,11 +362,10 @@ pub fn (mut p Page) close_dialog(accepted bool, response ?string) bool {
 		}
 		else {}
 	}
-	p.pending_dialog_ = .none
-	p.pending_dialog_text_ = none
 	p.client_events << ClientEvent{
 		name: 'dialog-closed'
 	}
+	p.on_pending_dialog_closed()
 	return true
 }
 
