@@ -14,6 +14,7 @@ pub enum WebGLParameterKind {
 	string_
 	integers
 	numbers
+	booleans
 	object
 }
 
@@ -26,6 +27,7 @@ pub:
 	text     string
 	integers []i64
 	numbers  []f64
+	booleans []bool
 	object   GLuint
 }
 
@@ -520,8 +522,90 @@ pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, p
 	}
 }
 
-pub fn (context &WebGLRenderingContext) get_parameter(pname GLenum) WebGLParameterValue {
-	return context.generic_parameters_[pname] or { WebGLParameterValue{} }
+pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLParameterValue {
+	match pname {
+		active_texture {
+			return WebGLParameterValue{kind: .integer, integer: context.active_texture_}
+		}
+		array_buffer_binding, element_array_buffer_binding {
+			target := if pname == array_buffer_binding { array_buffer } else { element_array_buffer }
+			handle := context.bound_buffers[target] or { return WebGLParameterValue{} }
+			return WebGLParameterValue{kind: .object, object: handle}
+		}
+		framebuffer_binding {
+			return if context.bound_framebuffer == 0 { WebGLParameterValue{} } else { WebGLParameterValue{kind: .object, object: context.bound_framebuffer} }
+		}
+		renderbuffer_binding {
+			return if context.bound_renderbuffer == 0 { WebGLParameterValue{} } else { WebGLParameterValue{kind: .object, object: context.bound_renderbuffer} }
+		}
+		texture_binding_2d, texture_binding_cube_map {
+			target := if pname == texture_binding_2d { texture_2d } else { texture_cube_map }
+			handle := context.bound_textures[target] or { return WebGLParameterValue{} }
+			return WebGLParameterValue{kind: .object, object: handle}
+		}
+		current_program {
+			program := context.current_program or { return WebGLParameterValue{} }
+			return WebGLParameterValue{kind: .object, object: program.object.handle_}
+		}
+		blend, cull_face, depth_test, dither, polygon_offset_fill, sample_alpha_to_coverage,
+		sample_coverage, scissor_test, stencil_test {
+			return WebGLParameterValue{kind: .boolean, boolean: context.is_enabled(pname)}
+		}
+		blend_color {
+			return WebGLParameterValue{kind: .numbers, numbers: context.blend_color_[..].map(f64(it))}
+		}
+		color_clear_value {
+			return WebGLParameterValue{kind: .numbers, numbers: context.clear_color_[..].map(f64(it))}
+		}
+		color_writemask {
+			return WebGLParameterValue{kind: .booleans, booleans: context.color_mask_[..].clone()}
+		}
+		depth_clear_value {
+			return WebGLParameterValue{kind: .number, number: context.clear_depth_}
+		}
+		depth_range {
+			return WebGLParameterValue{kind: .numbers, numbers: context.depth_range_[..].clone()}
+		}
+		depth_writemask {
+			return WebGLParameterValue{kind: .boolean, boolean: context.depth_mask_}
+		}
+		line_width {
+			return WebGLParameterValue{kind: .number, number: context.line_width_}
+		}
+		scissor_box {
+			return WebGLParameterValue{kind: .integers, integers: context.scissor_[..].map(i64(it))}
+		}
+		viewport {
+			return WebGLParameterValue{kind: .integers, integers: context.viewport_[..].map(i64(it))}
+		}
+		stencil_clear_value {
+			return WebGLParameterValue{kind: .integer, integer: context.clear_stencil_}
+		}
+		pack_alignment {
+			return WebGLParameterValue{kind: .integer, integer: context.pack_alignment_}
+		}
+		unpack_alignment {
+			return WebGLParameterValue{kind: .integer, integer: context.unpack_alignment_}
+		}
+		compressed_texture_formats {
+			return WebGLParameterValue{kind: .integers, integers: context.enabled_compressed_texture_formats_.map(i64(it))}
+		}
+		unpack_flip_y_webgl {
+			return WebGLParameterValue{kind: .boolean, boolean: context.unpack_flip_y_}
+		}
+		unpack_premultiply_alpha_webgl {
+			return WebGLParameterValue{kind: .boolean, boolean: context.unpack_premultiply_alpha_}
+		}
+		unpack_colorspace_conversion_webgl {
+			return WebGLParameterValue{kind: .integer, integer: context.unpack_colorspace_conversion_}
+		}
+		else {}
+	}
+	if value := context.generic_parameters_[pname] {
+		return value
+	}
+	context.set_error(invalid_enum)
+	return WebGLParameterValue{}
 }
 
 pub fn (mut context WebGLRenderingContext) get_renderbuffer_parameter(_ GLenum, pname GLenum) WebGLParameterValue {

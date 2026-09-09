@@ -52,10 +52,12 @@ mut:
 	unpack_flip_y_                      bool
 	unpack_premultiply_alpha_           bool
 	unpack_colorspace_conversion_       GLenum = browser_default_webgl
-	active_texture_                     GLenum
+	active_texture_                     GLenum = texture0
 	blend_color_                        [4]f32
 	line_width_                         f32 = 1.0
 	depth_range_                        [2]f64 = [f64(0), 1]!
+	pack_alignment_                     int = 4
+	unpack_alignment_                   int = 4
 	generic_parameters_                 map[GLenum]WebGLParameterValue
 	uniform_values_                     map[GLuint][]f32
 	vertex_attrib_values_               map[GLuint][]f32
@@ -72,6 +74,9 @@ pub fn WebGLRenderingContext.new(version WebGLVersion, attributes WebGLContextAt
 		version: version
 		attributes: attributes
 		native: native
+		enabled_capabilities: {
+			dither: true
+		}
 	}
 }
 
@@ -152,6 +157,7 @@ pub fn (mut context WebGLRenderingContext) reset_to_default_state() {
 	context.bound_textures.clear()
 	context.current_program = none
 	context.enabled_capabilities.clear()
+	context.enabled_capabilities[dither] = true
 	context.enabled_vertex_attributes.clear()
 	context.clear_color_ = [f32(0), 0, 0, 0]!
 	context.clear_depth_ = 1
@@ -161,6 +167,9 @@ pub fn (mut context WebGLRenderingContext) reset_to_default_state() {
 	context.unpack_flip_y_ = false
 	context.unpack_premultiply_alpha_ = false
 	context.unpack_colorspace_conversion_ = browser_default_webgl
+	context.active_texture_ = texture0
+	context.pack_alignment_ = 4
+	context.unpack_alignment_ = 4
 }
 
 pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {
@@ -491,6 +500,18 @@ pub fn (mut context WebGLRenderingContext) set_uniform(location ?&WebGLUniformLo
 
 pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter int) {
 	match pname {
+		pack_alignment, unpack_alignment {
+			if parameter !in [1, 2, 4, 8] {
+				context.set_error(invalid_value)
+				return
+			}
+			if pname == pack_alignment {
+				context.pack_alignment_ = parameter
+			} else {
+				context.unpack_alignment_ = parameter
+			}
+			context.native.dispatch('pixel_storei', pname, parameter)
+		}
 		unpack_flip_y_webgl {
 			context.unpack_flip_y_ = parameter != 0
 		}
