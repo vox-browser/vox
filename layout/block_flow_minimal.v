@@ -171,6 +171,7 @@ pub:
 	background_color  css.Color
 	background_images []BackgroundImageLayer
 	border            BoxEdges
+	padding           BoxEdges
 	border_color      css.Color
 	border_colors     BoxColors
 	border_styles     BoxBorderStyles = solid_box_border_styles()
@@ -253,6 +254,7 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 			background_color: it.background_color
 			background_images: it.background_images.clone()
 			border: it.border
+			padding: it.padding
 			border_color: it.border_color
 			border_colors: it.border_colors
 			border_styles: it.border_styles
@@ -3776,10 +3778,11 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) []PaintComman
 			j++
 		}
 		last := fragments[j - 1]
-		left := first.x - first.border.left
-		top := first.y - first.border.top
-		width := last.x + last.width - first.x + first.border.left + first.border.right
-		height := first.height + first.border.top + first.border.bottom
+		left := first.x - first.padding.left - first.border.left
+		top := first.y - first.padding.top - first.border.top
+		width := last.x + last.width - first.x + first.padding.left + first.padding.right + first.border.left + first.border.right
+		height := first.height + first.padding.top + first.padding.bottom + first.border.top + first.border.bottom
+		border_rect := LayoutRect{left, top, width, height}
 		fragment_radii := effective_box_radii(first.border_radii, first.border_radius, width, height)
 		uniform_circle_radii := box_radii_are_uniform_circles(fragment_radii)
 		radius := if uniform_circle_radii { fragment_radii.top_left.x } else { 0.0 }
@@ -3853,7 +3856,9 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) []PaintComman
 		}
 		for layer_index := first.background_images.len - 1; layer_index >= 0; layer_index-- {
 			layer := first.background_images[layer_index]
-			if command := background_layer_command(layer, LayoutRect{left, top, width, height}, LayoutRect{left, top, width, height}, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_) {
+			origin := inline_background_box_rect(first, layer.origin, border_rect)
+			clip := inline_background_box_rect(first, layer.clip, border_rect)
+			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_) {
 				commands << command
 			}
 		}
@@ -3866,6 +3871,28 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) []PaintComman
 		i = j
 	}
 	return commands
+}
+
+fn inline_background_box_rect(fragment TextFragment, box_name string, border LayoutRect) LayoutRect {
+	return match box_name.trim_space().to_lower() {
+		'content-box' {
+			LayoutRect{
+				x: border.x + fragment.border.left + fragment.padding.left
+				y: border.y + fragment.border.top + fragment.padding.top
+				width: non_negative(border.width - fragment.border.left - fragment.border.right - fragment.padding.left - fragment.padding.right)
+				height: non_negative(border.height - fragment.border.top - fragment.border.bottom - fragment.padding.top - fragment.padding.bottom)
+			}
+		}
+		'padding-box' {
+			LayoutRect{
+				x: border.x + fragment.border.left
+				y: border.y + fragment.border.top
+				width: non_negative(border.width - fragment.border.left - fragment.border.right)
+				height: non_negative(border.height - fragment.border.top - fragment.border.bottom)
+			}
+		}
+		else { border }
+	}
 }
 
 fn append_text_decoration_draw_line(mut commands []PaintCommand, from painting.IntPoint, to painting.IntPoint, color string, thickness int, style string, opacity f64) {

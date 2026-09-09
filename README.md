@@ -127,6 +127,16 @@ small non-windowed build/startup check is available as:
 Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
 ```
 
+Compare the V browser against checked-in upstream C++ screenshots of the
+confirmed Example Domain, Hacker News, and old Reddit pages with:
+
+```sh
+./compare_site_pixels.sh
+```
+
+The fixtures, reference provenance, metric ceilings, and per-site invocation
+are documented in [`pixel_tests/README.md`](pixel_tests/README.md).
+
 This bundle is distinct from `~/code/3rd/ladybird/Build/.../Ladybird.app`, which
 is the upstream C++ application. The V-native application does not yet provide
 the full generated Web-IDL JavaScript surface, multi-process isolation, tabs,

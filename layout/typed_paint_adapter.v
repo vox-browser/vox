@@ -3297,6 +3297,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			mut text_underline_offset := 0.0
 			mut text_underline_position := 'auto'
 			mut border := BoxEdges{}
+			mut padding := BoxEdges{}
 			mut radius := 0.0
 			mut radii := BoxRadii{}
 			mut inline_shadow := ?BoxShadow(none)
@@ -3344,6 +3345,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				if inline_styled := inline_owner.as_node_with_style() {
 					if inline_used := state.try_get(inline_styled) {
 						border = BoxEdges{inline_used.border_top.to_double(), inline_used.border_right.to_double(), inline_used.border_bottom.to_double(), inline_used.border_left.to_double()}
+						padding = BoxEdges{inline_used.padding_top.to_double(), inline_used.padding_right.to_double(), inline_used.padding_bottom.to_double(), inline_used.padding_left.to_double()}
 					}
 				}
 			}
@@ -3372,6 +3374,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				background_color: background
 				background_images: background_images
 				border: border
+				padding: padding
 				border_color: border_color
 				border_colors: border_colors
 				border_styles: border_styles

@@ -196,13 +196,37 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 			// InlineFormattingContext asks its parent BFC for automatic width so
 			// floated inline-level children participate. The standalone intrinsic
 			// context has no parent object, so include those children explicitly.
+			// In max-content sizing, adjacent floats occupy one row and contribute
+			// their combined width. This is what lets an auto-width abspos menu made
+			// entirely of floated list items shrink-wrap to the whole menu rather
+			// than to its widest item.
 			mut automatic_width := result.automatic_content_width
+			mut left_floating_width := CSSPixels.new(0)
+			mut right_floating_width := CSSPixels.new(0)
 			for child in box_node.children() {
 				if !child.is_floating() {
 					continue
 				}
 				child_box := child.as_box() or { continue }
-				automatic_width = css_pixels_max(automatic_width, intrinsic_outer_width_contribution(mut throwaway, child_box, constraint))
+				contribution := intrinsic_outer_width_contribution(mut throwaway, child_box, constraint)
+				if constraint == .max_content {
+					clear := child.computed_values().clear()
+					direction := box_node.computed_values().direction()
+					if clear_applies_to_float(clear, .left, direction) {
+						left_floating_width = CSSPixels.new(0)
+					}
+					if clear_applies_to_float(clear, .right, direction) {
+						right_floating_width = CSSPixels.new(0)
+					}
+					if float_side_is_left(child.computed_values().float_(), direction) {
+						left_floating_width = left_floating_width.plus(contribution)
+					} else {
+						right_floating_width = right_floating_width.plus(contribution)
+					}
+					automatic_width = css_pixels_max(automatic_width, left_floating_width.plus(right_floating_width))
+				} else {
+					automatic_width = css_pixels_max(automatic_width, contribution)
+				}
 			}
 			return clamp_to_max_dimension_value(automatic_width)
 		}
@@ -760,8 +784,7 @@ fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, u
 		// automatic content height. A ratio alone is not enough: with both axes
 		// automatic and no natural size the box is sized as an ordinary block.
 		if ratio := box.preferred_aspect_ratio() {
-			available_space := AvailableSpace.new(AvailableSize.make_definite(used_values.content_width()),
-				AvailableSize.make_indefinite())
+			available_space := AvailableSpace.new(AvailableSize.make_definite(used_values.content_width()), AvailableSize.make_indefinite())
 			if box_is_sized_as_replaced_element(state, unsafe { &Node(node) }, available_space) {
 				return used_values.content_width().divided_by_fraction(ratio).to_double()
 			}

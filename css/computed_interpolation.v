@@ -11142,6 +11142,28 @@ fn computed_interpolation_font_metrics_for_size(font_size CSSPixels) LengthFontM
 	return result
 }
 
+// Build the font-relative length context from the face selected by the
+// element's computed font cascade. This mirrors Length::FontMetrics in
+// upstream: ex/ch/cap units use the selected face, not the generic fallback
+// used while the font properties themselves are still being computed.
+fn computed_interpolation_font_metrics_for_style(computed_properties &ComputedProperties, font_computer &FontComputer) LengthFontMetrics {
+	mut mutable_properties := unsafe { &ComputedProperties(computed_properties) }
+	computed_font := mutable_properties.first_available_computed_font(font_computer)
+	font := platform.Font{
+		family: computed_font.typeface.family_name
+		point_size: computed_font.point_size / 0.75
+		weight: int(computed_font.variations.weight)
+	}
+	metrics := font.pixel_metrics()
+	return LengthFontMetrics{
+		font_size: computed_properties.font_size()
+		x_height: CSSPixels.nearest_value_for(f64(metrics.x_height))
+		cap_height: CSSPixels.nearest_value_for(f64(metrics.ascent))
+		zero_advance: CSSPixels.nearest_value_for(f64(metrics.advance_of_ascii_zero))
+		line_height: computed_properties.line_height()
+	}
+}
+
 fn computed_interpolation_root_font_size(inheritance_parent ?dom.AbstractElement) CSSPixels {
 	parent := inheritance_parent or { return StyleComputer.default_user_font_size() }
 	root := parent.document().document_element() or {
@@ -13249,10 +13271,7 @@ pub fn (s &StyleComputer) viewport_rect() CSSPixelRect {
 }
 
 pub fn (s &StyleComputer) calculate_root_element_font_metrics(computed_properties &ComputedProperties) LengthFontMetrics {
-	_ = s
-	mut metrics := computed_interpolation_font_metrics_for_size(computed_properties.font_size())
-	metrics.line_height = computed_properties.line_height()
-	return metrics
+	return computed_interpolation_font_metrics_for_style(computed_properties, s.font_computer_)
 }
 
 fn style_computer_css_wide_keyword_from_declaration_text(value string) ?Keyword {
@@ -13332,8 +13351,8 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 			if parent := current.element_to_inherit_style_from() {
 				if dom_computed := parent.computed_properties() {
 					if inherited := computed_properties_from_dom(dom_computed) {
-						font_metrics = computed_interpolation_font_metrics_for_size(inherited.font_size())
-						font_metrics.line_height = inherited.line_height()
+						font_metrics = computed_interpolation_font_metrics_for_style(inherited,
+							s.font_computer_)
 					}
 				}
 			}
@@ -13348,7 +13367,8 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 		}
 	}
 
-	mut font_metrics := computed_interpolation_font_metrics_for_size(computed_properties.font_size())
+	mut font_metrics := computed_interpolation_font_metrics_for_style(computed_properties,
+		s.font_computer_)
 	mut root_font_metrics := s.root_element_font_metrics
 	if property_id == .line_height {
 		// Line-height is the one font-adjacent property that resolves em units

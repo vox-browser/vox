@@ -3331,6 +3331,30 @@ fn test_typed_text_box_decorations_only_come_from_inline_paintables() {
 	assert inline_backgrounds[0].paint_phase == .foreground
 }
 
+fn test_typed_inline_background_image_uses_padding_box_origin() {
+	document := html.parse_document('<!doctype html><style>
+		html, body, p { margin:0 }
+		#inline { padding:3px 5px 4px 17px; border:2px solid transparent;
+			background-image:url("data:image/png;base64,AA=="); background-repeat:no-repeat }
+	</style><body><p id="paragraph"><a id="inline">headline</a></p></body>')
+	root := layout_document_typed_in_viewport(document, 240, 100)
+	inline := document.get_element_by_id('inline') or { panic('missing inline') }
+	paragraph := document.get_element_by_id('paragraph') or { panic('missing paragraph') }
+	paragraph_box := root.find_box(i64(paragraph.as_node().unique_id())) or {
+		panic('missing paragraph paint box')
+	}
+	inline_id := i64(inline.as_node().unique_id())
+	fragment := paragraph_box.lines[0].fragments.filter(it.inline_node_id == inline_id)[0]
+	commands := root.paint_commands().filter(it.kind == 'draw_background_image')
+	assert commands.len == 1
+	// The fragment starts at the content edge. background-origin defaults to
+	// padding-box, while background-clip defaults to border-box.
+	assert commands[0].x == fragment.x - 17
+	assert commands[0].y == fragment.y - 3
+	assert commands[0].image_clip_x == fragment.x - 19
+	assert commands[0].image_clip_y == fragment.y - 5
+}
+
 fn test_typed_table_cell_radii_reach_the_active_table_border_phase() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } table { border-spacing: 0 } td { width: 30px; height: 20px; padding: 0; border: 3px solid rgb(70 80 90); border-radius: 8px 5px }</style><body><table><tr><td></td></tr></table></body>')
 	root := layout_document_typed_in_viewport(document, 200, 100)

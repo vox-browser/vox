@@ -672,6 +672,40 @@ fn test_wrapped_column_flex_max_content_cross_size_sums_flex_lines() {
 	assert calculate_max_content_width(mut measurement_state, flex_box).to_double() == 90
 }
 
+fn test_abspos_max_content_width_sums_adjacent_floats() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 }
+		#root { position:relative; width:500px }
+		#menu { position:absolute; left:0; top:0 }
+		#menu > div { float:left; height:10px }
+		#one { width:40px } #two { width:50px } #three { width:60px }
+	</style><div id="root"><div id="menu"><div id="one">a</div><div id="two">b</div><div id="three">c</div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+
+	// An auto-width abspos box shrink-wraps to its max-content width. Adjacent
+	// floats share that max-content row, so their outer widths add up.
+	assert used_for_id(result, 'menu').content_width().to_double() == 150
+	assert used_for_id(result, 'one').offset.x().to_double() == 0
+	assert used_for_id(result, 'two').offset.x().to_double() == 40
+	assert used_for_id(result, 'three').offset.x().to_double() == 90
+}
+
+fn test_font_relative_width_uses_selected_face_metrics() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin:0 }
+		#target { float:left; width:6.1ex; font-family:Verdana, Arial, sans-serif;
+			font-size:small; font-weight:bold }
+	</style><div id="target"></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	target := layout_node_with_id(result.root, 'target') or { panic('missing #target') }
+	font_metrics := target.first_available_font().pixel_metrics()
+	x_height := CSSPixels.nearest_value_for(f64(font_metrics.x_height))
+
+	// Font-relative lengths are absolutized during the computed-value pass.
+	// Their metric must come from the selected face, just as text shaping does.
+	assert used_for_id(result, 'target').content_width() == x_height.times_float(6.1)
+}
+
 fn test_flex_content_basis_uses_definite_cross_size_and_aspect_ratio() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; width:200px }
