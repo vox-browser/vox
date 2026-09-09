@@ -76,6 +76,30 @@ fn test_upstream_page_input_and_dialog_entry_points_route_existing_state_machine
 	assert recorder.closed
 }
 
+fn test_page_owns_one_non_blocking_picker_and_ignores_mismatched_responses() {
+	mut p := Page.create(1)!
+	p.did_request_color_picker('color-input', '#123456')
+	assert p.pending_non_blocking_dialog_ == .color_picker
+	assert p.client().events.last().name == 'request-color-picker'
+
+	p.file_picker_closed([])
+	assert p.pending_non_blocking_dialog_ == .color_picker
+	assert p.client_events.filter(it.name == 'file-picker-closed').len == 0
+
+	p.color_picker_update('#abcdef', true)
+	assert p.pending_non_blocking_dialog_ == .none
+	assert p.client_events.last().name == 'color-picker-update'
+
+	p.did_request_file_picker('file-input', '.png', true)
+	assert p.pending_non_blocking_dialog_ == .file_picker
+	assert p.client().events.last().name == 'request-file-picker'
+	p.did_request_select_dropdown('select', PixelPoint{x: 10, y: 20}, 100, ['one'])
+	assert p.pending_non_blocking_dialog_ == .file_picker
+	assert p.client().events.last().name == 'request-file-picker'
+	p.file_picker_closed([])
+	assert p.pending_non_blocking_dialog_ == .none
+}
+
 fn test_upstream_event_helper_selection_focus_and_auto_scroll_entry_points() {
 	assert find_paragraph_range('one\ntwo\nthree', 5) == SelectionRange{start: 4, end: 7}
 	edge := compute_effective_auto_scroll_edge(PixelRect{x: 50, y: 50, width: 100, height: 100},

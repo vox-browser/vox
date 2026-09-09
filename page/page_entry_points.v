@@ -142,18 +142,44 @@ pub fn (mut p Page) on_pending_dialog_closed() {
 	}
 }
 
+pub fn (mut p Page) did_request_color_picker(target string, current_color string) {
+	if p.request_non_blocking_dialog(.color_picker, target) {
+		p.client_.page_did_request_color_picker(current_color)
+	}
+}
+
 pub fn (mut p Page) color_picker_update(value ?string, final bool) {
+	if p.pending_non_blocking_dialog_ != .color_picker {
+		return
+	}
 	if final { p.close_non_blocking_dialog(.color_picker) }
 	if actual := value { p.client_events << ClientEvent{name: 'color-picker-update', text: actual} }
 }
 
+pub fn (mut p Page) did_request_file_picker(target string, filter string, multiple bool) {
+	if p.request_non_blocking_dialog(.file_picker, target) {
+		p.client_.page_did_request_file_picker(filter, multiple)
+	}
+}
+
 pub fn (mut p Page) file_picker_closed(files []SelectedFile) {
-	p.close_non_blocking_dialog(.file_picker)
+	if p.close_non_blocking_dialog(.file_picker) == none {
+		return
+	}
 	p.client_events << ClientEvent{name: 'file-picker-closed', text: files.len.str()}
 }
 
+pub fn (mut p Page) did_request_select_dropdown(target string, position PixelPoint,
+	minimum_width f64, items []string) {
+	if p.request_non_blocking_dialog(.select, target) {
+		p.client_.page_did_request_select_dropdown(position, minimum_width, items)
+	}
+}
+
 pub fn (mut p Page) select_dropdown_closed(selected ?u32) {
-	p.close_non_blocking_dialog(.select)
+	if p.close_non_blocking_dialog(.select) == none {
+		return
+	}
 	p.client_events << ClientEvent{
 		name: 'select-dropdown-closed'
 		text: if value := selected { value.str() } else { '' }
