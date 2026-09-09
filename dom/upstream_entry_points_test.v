@@ -224,3 +224,43 @@ fn test_scroll_into_view_uses_committed_paintable_overflow() {
 	assert window.scroll_x() == 0
 	assert window.scroll_y() == 230
 }
+
+fn test_element_scroll_routes_viewport_branches_and_resolves_promises() {
+	mut document := Document.create(url_about_blank())
+	document.set_document_type(.html)
+	document.populate_with_html_head_and_body() or { panic(err) }
+	document.set_browsing_context(&BrowsingContext{
+		active_document_: document
+	})
+	mut window := &Window{
+		associated_document_: document
+	}
+	document.set_window(window)
+
+	mut root := document.document_element() or { panic('missing document element') }
+	initial_scroll := window.scroll(4, 5)
+	assert initial_scroll.state() == .fulfilled
+	root_scroll := root.el_scroll(17, 23)
+	assert root_scroll.state() == .fulfilled
+	assert window.scroll_x() == 4
+	assert window.scroll_y() == 23
+
+	document.set_quirks_mode(.yes)
+	mut body := unsafe { &Element(document.body() or { panic('missing body') }) }
+	body_scroll := body.el_scroll(9, 11)
+	assert body_scroll.state() == .fulfilled
+	assert window.scroll_x() == 9
+	assert window.scroll_y() == 11
+
+	root_scroll_in_quirks_mode := root.el_scroll(31, 37)
+	assert root_scroll_in_quirks_mode.state() == .fulfilled
+	assert window.scroll_x() == 9
+	assert window.scroll_y() == 11
+
+	mut inactive_document := Document.create(url_about_blank())
+	mut detached := inactive_document.create_element_ns(namespace_html_uri, 'div') or {
+		panic(err)
+	}
+	inactive_scroll := detached.el_scroll(1, 2)
+	assert inactive_scroll.state() == .fulfilled
+}

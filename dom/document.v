@@ -2860,7 +2860,7 @@ pub fn (w &Window) scroll_y() f64 {
 pub fn (mut w Window) scroll(x f64, y f64) &Promise {
 	w.scroll_x_ = x
 	w.scroll_y_ = y
-	return &Promise{}
+	return Promise.resolved(js_undefined())
 }
 
 // Navigable methods

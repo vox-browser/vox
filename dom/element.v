@@ -3416,14 +3416,23 @@ pub fn (mut e Element) el_scroll(x_ f64, y_ f64) &Promise {
 	y := normalize_non_finite(y_)
 	doc := e.document()
 	if doc == unsafe { nil } || !doc.is_active() {
-		return &Promise{}
+		return Promise.resolved(js_undefined())
 	}
+	mut window := e.document_window() or { return Promise.resolved(js_undefined()) }
 	if e.is_document_element() && doc.in_quirks_mode() {
-		return &Promise{}
+		return Promise.resolved(js_undefined())
 	}
+	if x == 0 && y == 0 && e.el_scroll_offset().is_zero() && !e.is_document_body_element(doc)
+		&& !e.is_document_element() {
+		return Promise.resolved(js_undefined())
+	}
+	mut document := unsafe { &Document(doc) }
+	document.update_layout(.element_scroll)
 	if e.is_document_element() {
-		// Would invoke window.scroll()
-		return &Promise{}
+		return window.scroll(window.scroll_x(), y)
+	}
+	if e.is_document_body_element(doc) && doc.in_quirks_mode() && !e.is_potentially_scrollable() {
+		return window.scroll(x, y)
 	}
 	if mut pb := e.paintable_box() {
 		mut offset := pb.scroll_offset()
@@ -3431,7 +3440,7 @@ pub fn (mut e Element) el_scroll(x_ f64, y_ f64) &Promise {
 		offset.set_y(y)
 		pb.set_scroll_offset(offset)
 	}
-	return &Promise{}
+	return Promise.resolved(js_undefined())
 }
 
 pub fn (mut e Element) scroll_by(x_ f64, y_ f64) &Promise {
