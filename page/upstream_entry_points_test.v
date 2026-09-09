@@ -17,13 +17,15 @@ fn test_upstream_page_client_and_page_state_entry_points() {
 	p.set_current_cursor('pointer')
 	p.set_window_position(PixelPoint{x: 20, y: 40})
 	p.set_window_size(PixelSize{width: 800, height: 600})
+	client.screen_rect_ = PixelRect{x: 5, y: 10, width: 1920, height: 1080}
 	assert !p.is_scripting_enabled()
 	assert !p.should_block_pop_ups()
 	assert p.is_webdriver_active()
 	assert p.is_hovering_link()
 	assert p.is_in_tooltip_area()
 	assert p.current_cursor() == 'pointer'
-	assert p.web_exposed_screen_area() == PixelRect{x: 10, y: 20, width: 400, height: 300}
+	assert p.web_exposed_screen_area() == PixelRect{x: 5, y: 10, width: 1920, height: 1080}
+	assert p.web_exposed_available_screen_area() == PixelRect{x: 5, y: 10, width: 1920, height: 1080}
 
 	client.preferred_color_scheme_ = 'dark'
 	client.preferred_contrast_ = 'more'

@@ -18,12 +18,7 @@ pub fn (p &Page) client() &PageClient { return p.client_ }
 pub fn (p &Page) palette() string { return if p.client_.palette_is_dark() { 'dark' } else { 'default' } }
 
 pub fn (p &Page) web_exposed_screen_area() PixelRect {
-	return p.device_to_css_rect(PixelRect{
-		x: p.window_position_.x
-		y: p.window_position_.y
-		width: p.window_size_.width
-		height: p.window_size_.height
-	})
+	return p.client_.screen_rect()
 }
 
 pub fn (p &Page) web_exposed_available_screen_area() PixelRect {
