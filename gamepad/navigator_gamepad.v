@@ -39,6 +39,10 @@ pub fn (mut navigator NavigatorGamepadPartial) get_gamepads() ![]?&Gamepad {
 	return navigator.gamepads_.clone()
 }
 
+pub fn (navigator &NavigatorGamepadPartial) gamepads() []?&Gamepad {
+	return navigator.gamepads_.clone()
+}
+
 pub fn (mut navigator NavigatorGamepadPartial) select_an_unused_gamepad_index() int {
 	for index, slot in navigator.gamepads_ {
 		if slot == none { return index }

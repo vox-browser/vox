@@ -92,6 +92,7 @@ fn test_message_close_error_events_binary_modes_and_gc_rules() {
 	socket.on_message([u8(1), 2], false)
 	assert socket.events.last().blob?.raw_bytes() == [u8(1), 2]
 	socket.set_binary_type('arraybuffer')
+	assert socket.binary_type() == 'arraybuffer'
 	socket.on_message([u8(3), 4], false)
 	assert socket.events.last().bytes? == [u8(3), 4]
 	socket.on_error()

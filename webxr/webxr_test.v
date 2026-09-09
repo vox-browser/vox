@@ -1,5 +1,7 @@
 module webxr
 
+fn record_end_event(_ &XRSessionEvent) {}
+
 fn test_support_and_request_match_current_platform_boundary() {
 	mut xr_system := &XRSystem{}
 	assert xr_system.is_session_supported(.inline).value? == true
@@ -44,6 +46,8 @@ fn test_exact_session_promise_and_creation_entry_points() {
 	mut xr_system := XRSystem.create()
 	mut session := XRSession.create(xr_system)
 	assert session.mode == .inline
+	session.set_onend(record_end_event)
+	assert session.onend() != none
 	session.set_promise_resolved(true)
 	assert session.promise_resolved()
 

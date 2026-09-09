@@ -138,6 +138,10 @@ pub fn (mut session XRSession) set_onend(handler ?EndEventHandler) {
 	session.onend_ = handler
 }
 
+pub fn (session &XRSession) onend() ?EndEventHandler {
+	return session.onend_
+}
+
 pub fn (mut session XRSession) begin_operation() ! {
 	if session.ended_ {
 		return error('InvalidStateError: Session ended')

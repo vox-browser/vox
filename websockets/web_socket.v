@@ -176,6 +176,10 @@ pub fn (mut socket WebSocket) set_binary_type(value string) {
 	socket.binary_type = value
 }
 
+pub fn (socket &WebSocket) binary_type() string {
+	return socket.binary_type
+}
+
 pub fn (mut socket WebSocket) close(code ?u16, reason ?string) ! {
 	if close_code := code {
 		if close_code != 1000 && (close_code < 3000 || close_code > 4999) {

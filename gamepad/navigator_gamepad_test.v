@@ -69,6 +69,7 @@ fn test_get_gamepads_exposes_all_connected_pads_at_current_time() {
 	mut navigator := NavigatorGamepadPartial.new()
 	device := new_standard_virtual_device(7, 'late exposure')
 	pad := navigator.handle_gamepad_connected(device, 1) or { panic('not connected') }
+	assert navigator.gamepads().len == 1
 	assert !pad.exposed()
 	navigator.has_gamepad_gesture_ = true
 	navigator.now_ = 42.5
