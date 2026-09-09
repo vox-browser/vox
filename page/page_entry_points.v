@@ -100,9 +100,13 @@ pub fn (p &Page) top_level_browsing_context() string {
 }
 
 pub fn (mut p Page) did_update_window_rect() {
-	p.client_events << ClientEvent{
-		name: 'window-rect-updated'
-		text: '${p.window_position_.x},${p.window_position_.y},${p.window_size_.width},${p.window_size_.height}'
+	if observer := p.window_rect_observer_ {
+		observer(PixelRect{
+			x: p.window_position_.x
+			y: p.window_position_.y
+			width: p.window_size_.width
+			height: p.window_size_.height
+		})
 	}
 }
 
@@ -277,7 +281,9 @@ pub fn (p &Page) window_position() PixelPoint { return p.window_position_ }
 pub fn (mut p Page) set_window_position(value PixelPoint) { p.window_position_ = value }
 pub fn (p &Page) window_size() PixelSize { return p.window_size_ }
 pub fn (mut p Page) set_window_size(value PixelSize) { p.window_size_ = value }
-pub fn (mut p Page) set_window_rect_observer(value bool) { p.window_rect_observer_ = value }
+pub fn (mut p Page) set_window_rect_observer(observer ?fn (PixelRect)) {
+	p.window_rect_observer_ = observer
+}
 pub fn (p &Page) has_pending_dialog() bool { return p.pending_dialog_ != .none }
 pub fn (p &Page) pending_dialog_text() ?string { return p.pending_dialog_text_ }
 pub fn (_ &Page) pdf_viewer_supported() bool { return false }

@@ -5,6 +5,11 @@ mut:
 	closed bool
 }
 
+struct WindowRectRecorder {
+mut:
+	values []PixelRect
+}
+
 fn test_upstream_page_client_and_page_state_entry_points() {
 	mut p := Page.create(2)!
 	mut client := p.client()
@@ -49,6 +54,19 @@ fn test_upstream_page_client_and_page_state_entry_points() {
 	assert metrics.scroll_thumb_min_length == 12
 	assert metrics.scroll_gutter_thickness == 6
 	assert metrics.resize_gripper_size == 6
+}
+
+fn test_window_rect_observer_receives_the_current_device_pixel_rect() {
+	mut p := Page.create(2)!
+	mut recorder := &WindowRectRecorder{}
+	p.set_window_rect_observer(fn [mut recorder] (rect PixelRect) { recorder.values << rect })
+	p.set_window_position(PixelPoint{x: 20, y: 40})
+	p.set_window_size(PixelSize{width: 800, height: 600})
+	p.did_update_window_rect()
+	assert recorder.values == [PixelRect{x: 20, y: 40, width: 800, height: 600}]
+	p.set_window_rect_observer(none)
+	p.did_update_window_rect()
+	assert recorder.values.len == 1
 }
 
 fn test_upstream_page_input_and_dialog_entry_points_route_existing_state_machines() {

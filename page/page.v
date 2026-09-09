@@ -132,7 +132,7 @@ mut:
 	current_cursor_                string = 'arrow'
 	window_position_               PixelPoint
 	window_size_                   PixelSize
-	window_rect_observer_          bool
+	window_rect_observer_          ?fn (PixelRect)
 	pending_dialog_                PendingDialog
 	pending_dialog_text_           ?string
 	pending_dialog_default_        string
