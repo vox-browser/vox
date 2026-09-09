@@ -53,6 +53,7 @@ pub mut:
 	font_              &Font = unsafe { nil }
 	text_type_         GlyphRunTextType
 	face_              GlyphRunFace
+	width_             f32
 	space_width        f32
 	glyph_indices_     []u16
 	glyph_positions_   []f64
@@ -66,9 +67,11 @@ pub fn GlyphRun.new(font &Font, text_type GlyphRunTextType, glyphs []Glyph) &Gly
 pub fn GlyphRun.new_with_face(font &Font, text_type GlyphRunTextType, glyphs []Glyph,
 	face GlyphRunFace) &GlyphRun {
 	mut space_width := f32(font.point_size * 0.5)
+	mut width := f32(0)
 	mut glyph_indices := []u16{cap: glyphs.len}
 	mut glyph_positions := []f64{cap: glyphs.len * 2}
 	for glyph in glyphs {
+		width += glyph.advance
 		if glyph.code_point == u32(` `) {
 			space_width = glyph.advance
 		}
@@ -80,6 +83,7 @@ pub fn GlyphRun.new_with_face(font &Font, text_type GlyphRunTextType, glyphs []G
 		font_:            font
 		text_type_:       text_type
 		face_:            face
+		width_:           width
 		glyphs_:          glyphs.clone()
 		space_width:      space_width
 		glyph_indices_:   glyph_indices
@@ -158,14 +162,7 @@ pub fn (run &GlyphRun) glyph_width(code_unit u16) f32 {
 }
 
 pub fn (run &GlyphRun) width() f32 {
-	mut width := f32(0)
-	for glyph in run.glyphs_ {
-		candidate := glyph.position.x + glyph.advance
-		if candidate > width {
-			width = candidate
-		}
-	}
-	return width
+	return run.width_
 }
 
 // Gfx::shape_text()'s layout-facing contract. Native HarfBuzz/CoreText

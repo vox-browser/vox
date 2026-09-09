@@ -9,7 +9,7 @@
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
-	const uint16_t *glyphs, const double *packed_positions, int glyph_count,
+	const char *font_path, const uint16_t *glyphs, const double *packed_positions, int glyph_count,
 	float font_size, int font_weight, int emoji_face, float baseline_x,
 	float baseline_y, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
@@ -19,6 +19,24 @@ extern int ladybird_v_skia_draw_solid_line(CGContextRef destination,
 	float from_x, float from_y, float to_x, float to_y, float thickness,
 	float canvas_width, float canvas_height, uint8_t red, uint8_t green,
 	uint8_t blue, uint8_t alpha);
+extern int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
+	float x, float y, float width, float height, float top_left_x,
+	float top_left_y, float top_right_x, float top_right_y, float bottom_right_x,
+	float bottom_right_y, float bottom_left_x, float bottom_left_y,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height, uint8_t red,
+	uint8_t green, uint8_t blue, uint8_t alpha, int fill, float thickness,
+	int anti_alias);
+extern int ladybird_v_skia_draw_svg_path(CGContextRef destination,
+	const float *data, int segment_count, int even_odd,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height,
+	uint8_t fill_red, uint8_t fill_green, uint8_t fill_blue, uint8_t fill_alpha,
+	int has_fill, uint8_t stroke_red, uint8_t stroke_green, uint8_t stroke_blue,
+	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
+	int line_join, float miter_limit);
 #endif
 
 static NSString *native_capture_string(string value) {
@@ -518,7 +536,7 @@ static void native_configure_glyph_rasterization(CGContextRef context) {
 // AppKit to shape the source string again and preserves arbitrary CSS affine
 // transforms.
 static int native_draw_retained_glyph_run(CGContextRef context,
-	const uint16_t *glyphs, const double *packed_positions, int glyph_count,
+	const char *font_path, const uint16_t *glyphs, const double *packed_positions, int glyph_count,
 	float font_size, int font_weight, int emoji_face, float baseline_x, float baseline_y,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
@@ -538,7 +556,7 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 	if (!shadow_only && blur <= 0.0f) {
 		const CGFloat *components = CGColorGetComponents(color);
 		if (components != NULL && CGColorGetNumberOfComponents(color) == 4
-			&& ladybird_v_skia_draw_glyph_run(context, glyphs, packed_positions,
+			&& ladybird_v_skia_draw_glyph_run(context, font_path, glyphs, packed_positions,
 				glyph_count, font_size, font_weight, emoji_face, baseline_x,
 				baseline_y, transform_a, transform_b, transform_c, transform_d,
 				transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
@@ -666,10 +684,12 @@ int native_draw_document_glyph_run_srgb(const uint16_t *glyphs,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
 	float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height,
+	string font_path_value,
 	gg__Color color, float blur, int shadow_only) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	NSString *font_path = native_capture_string(font_path_value);
 	CGColorRef cg_color = native_srgb_color(color);
-	int did_draw = native_draw_retained_glyph_run(context, glyphs, positions, glyph_count,
+	int did_draw = native_draw_retained_glyph_run(context, [font_path fileSystemRepresentation], glyphs, positions, glyph_count,
 		font_size, font_weight, emoji_face, baseline_x, baseline_y, transform_a, transform_b,
 		transform_c, transform_d, transform_e, transform_f, page_x, page_y,
 		scroll_y, canvas_width, canvas_height, cg_color, blur, shadow_only);
@@ -927,7 +947,7 @@ void native_add_path_clip(const float *data, int segment_count, int even_odd,
 void native_draw_svg_path_srgb(const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
-	float scroll_y, float canvas_height, gg__Color fill_color, int has_fill,
+	float scroll_y, float canvas_width, float canvas_height, gg__Color fill_color, int has_fill,
 	gg__Color stroke_color, int has_stroke, float stroke_width, int line_cap,
 	int line_join, float miter_limit) {
 	if (data == NULL || segment_count <= 0 || (!has_fill && !has_stroke)) {
@@ -937,6 +957,16 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	if (context == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (ladybird_v_skia_draw_svg_path(context, data, segment_count, even_odd,
+		transform_a, transform_b, transform_c, transform_d, transform_e,
+		transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
+		fill_color.r, fill_color.g, fill_color.b, fill_color.a, has_fill,
+		stroke_color.r, stroke_color.g, stroke_color.b, stroke_color.a, has_stroke,
+		stroke_width, line_cap, line_join, miter_limit)) {
+		return;
+	}
+#endif
 	CGMutablePathRef path = native_create_path_from_data(data, segment_count);
 	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
 		transform_c, -transform_d, page_x + transform_e,
@@ -2633,13 +2663,15 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	const double *positions, int glyph_count, float font_size, int font_weight, int emoji_face,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
-	float page_x, float page_y, float scroll_y, float canvas_height) {
+	float page_x, float page_y, float scroll_y, float canvas_height,
+	string font_path_value) {
 	if (native_background_text_clip_build_context == NULL) {
 		return 0;
 	}
 	CGColorRef white = CGColorCreateGenericRGB(1.0, 1.0, 1.0, 1.0);
+	NSString *font_path = native_capture_string(font_path_value);
 	int did_draw = native_draw_retained_glyph_run(native_background_text_clip_build_context,
-		glyphs, positions, glyph_count, font_size, font_weight, emoji_face, baseline_x,
+		[font_path fileSystemRepresentation], glyphs, positions, glyph_count, font_size, font_weight, emoji_face, baseline_x,
 		baseline_y, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, page_x, page_y, scroll_y,
 		(float)CGBitmapContextGetWidth(native_background_text_clip_build_context), canvas_height,
@@ -3071,7 +3103,8 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 	float bottom_right_x, float bottom_right_y, float bottom_left_x, float bottom_left_y,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y, float scroll_y,
-	float canvas_height, gg__Color color) {
+	float canvas_width, float canvas_height, gg__Color color, int fill, float thickness,
+	int anti_alias) {
 	if (width <= 0.0 || height <= 0.0) {
 		return;
 	}
@@ -3079,6 +3112,16 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 	if (context == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (ladybird_v_skia_draw_rounded_rect(context, x, y, width, height,
+		top_left_x, top_left_y, top_right_x, top_right_y, bottom_right_x,
+		bottom_right_y, bottom_left_x, bottom_left_y, transform_a, transform_b,
+		transform_c, transform_d, transform_e, transform_f, page_x, page_y,
+		scroll_y, canvas_width, canvas_height, color.r, color.g, color.b, color.a,
+		fill, thickness, anti_alias)) {
+		return;
+	}
+#endif
 	CGPathRef local_path = native_create_corner_rounded_rect_path(x, y, width, height,
 		top_left_x, top_left_y, top_right_x, top_right_y, bottom_right_x,
 		bottom_right_y, bottom_left_x, bottom_left_y);
@@ -3090,9 +3133,15 @@ void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 		canvas_height - page_y + scroll_y - transform_f);
 	CGPathRef canvas_path = CGPathCreateCopyByTransformingPath(local_path, &to_canvas);
 	CGColorRef cg_color = native_srgb_color(color);
-	CGContextSetFillColorWithColor(context, cg_color);
 	CGContextAddPath(context, canvas_path);
-	CGContextFillPath(context);
+	if (fill) {
+		CGContextSetFillColorWithColor(context, cg_color);
+		CGContextFillPath(context);
+	} else {
+		CGContextSetStrokeColorWithColor(context, cg_color);
+		CGContextSetLineWidth(context, MAX(thickness, 0.0f));
+		CGContextStrokePath(context);
+	}
 	CGColorRelease(cg_color);
 	CGPathRelease(canvas_path);
 	CGPathRelease(local_path);

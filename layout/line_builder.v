@@ -18,17 +18,17 @@ pub enum ForcedLineBreak {
 @[heap]
 pub struct LineBuilder {
 mut:
-	layout_state                     &LayoutState    = unsafe { nil }
+	layout_state                     &LayoutState = unsafe { nil }
 	containing_block                 &BlockContainer = unsafe { nil }
-	containing_block_used_values     &UsedValues     = unsafe { nil }
-	available_width_for_current_line AvailableSize   = AvailableSize.make_indefinite()
-	available_width                  AvailableSize   = AvailableSize.make_indefinite()
+	containing_block_used_values     &UsedValues = unsafe { nil }
+	available_width_for_current_line AvailableSize = AvailableSize.make_indefinite()
+	available_width                  AvailableSize = AvailableSize.make_indefinite()
 	current_block_offset             CSSPixels
 	max_height_on_current_line       CSSPixels
 	text_indent                      CSSPixels
 	text_indent_hanging              bool
 	text_indent_each_line            bool
-	direction                        css.Direction   = .ltr
+	direction                        css.Direction = .ltr
 	writing_mode                     css.WritingMode = .horizontal_tb
 	last_line_needs_update           bool
 	parent_block_context             ?&BlockFormattingContext
@@ -38,8 +38,7 @@ mut:
 }
 
 pub fn LineBuilder.new(mut layout_state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, available_width AvailableSize, direction css.Direction, writing_mode css.WritingMode) &LineBuilder {
-	return LineBuilder.new_with_block_context(mut layout_state, containing_block,
-		containing_block_used_values, available_width, direction, writing_mode, none)
+	return LineBuilder.new_with_block_context(mut layout_state, containing_block, containing_block_used_values, available_width, direction, writing_mode, none)
 }
 
 fn LineBuilder.new_with_block_context(mut layout_state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, available_width AvailableSize, direction css.Direction, writing_mode css.WritingMode, parent_block_context ?&BlockFormattingContext) &LineBuilder {
@@ -56,17 +55,16 @@ fn LineBuilder.new_with_block_context(mut layout_state LayoutState, containing_b
 		CSSPixels.nearest_value_for(f64(font_metrics.advance_of_ascii_zero))
 	context.font_metrics.line_height = computed.line_height()
 	mut builder := &LineBuilder{
-		layout_state:                 layout_state
-		containing_block:             containing_block
+		layout_state: layout_state
+		containing_block: containing_block
 		containing_block_used_values: containing_block_used_values
-		available_width:              available_width
-		text_indent:                  indent.length_percentage.to_px(context,
-			containing_block_used_values.content_width())
-		text_indent_hanging:          indent.hanging
-		text_indent_each_line:        indent.each_line
-		direction:                    direction
-		writing_mode:                 writing_mode
-		parent_block_context:         parent_block_context
+		available_width: available_width
+		text_indent: indent.length_percentage.to_px(context, containing_block_used_values.content_width())
+		text_indent_hanging: indent.hanging
+		text_indent_each_line: indent.each_line
+		direction: direction
+		writing_mode: writing_mode
+		parent_block_context: parent_block_context
 		containing_block_root_offset: containing_block_used_values.cumulative_offset()
 	}
 	builder.begin_new_line(false, true, .no)
@@ -81,8 +79,7 @@ pub fn (mut builder LineBuilder) break_line(forced_break ForcedLineBreak, next_i
 	builder.update_last_line()
 	mut break_count := 0
 	for {
-		builder.containing_block_used_values.line_boxes << LineBox.new(builder.direction,
-			builder.writing_mode)
+		builder.containing_block_used_values.line_boxes << LineBox.new(builder.direction, builder.writing_mode)
 		builder.begin_new_line(true, break_count == 0, forced_break)
 		break_count++
 		if !builder.any_floats_intrude_at_block_offset(builder.current_block_offset) {
@@ -148,8 +145,7 @@ fn (mut builder LineBuilder) begin_new_line(increment_y bool, is_first_break_in_
 
 fn (mut builder LineBuilder) ensure_last_line_box() &LineBox {
 	if builder.containing_block_used_values.line_boxes.len == 0 {
-		builder.containing_block_used_values.line_boxes << LineBox.new(builder.direction,
-			builder.writing_mode)
+		builder.containing_block_used_values.line_boxes << LineBox.new(builder.direction, builder.writing_mode)
 	}
 	last_index := builder.containing_block_used_values.line_boxes.len - 1
 	return &builder.containing_block_used_values.line_boxes[last_index]
@@ -159,11 +155,8 @@ pub fn (mut builder LineBuilder) append_box(box &Box, leading_size CSSPixels, tr
 	styled := unsafe { &NodeWithStyle(box) }
 	mut box_state := builder.layout_state.get_mutable(styled)
 	mut line_box := builder.ensure_last_line_box()
-	line_box.add_fragment(unsafe { &Node(box) }, 0, 0, leading_size, trailing_size, leading_margin,
-		trailing_margin, box_state.content_width(), box_state.content_height(),
-		box_state.border_box_top(), box_state.border_box_bottom(), none)
-	builder.max_height_on_current_line = css_pixels_max(builder.max_height_on_current_line,
-		box_state.margin_box_height())
+	line_box.add_fragment(unsafe { &Node(box) }, 0, 0, leading_size, trailing_size, leading_margin, trailing_margin, box_state.content_width(), box_state.content_height(), box_state.border_box_top(), box_state.border_box_bottom(), none)
+	builder.max_height_on_current_line = css_pixels_max(builder.max_height_on_current_line, box_state.margin_box_height())
 	box_state.containing_line_box_fragment = LineBoxFragmentCoordinate{
 		line_box_index: builder.containing_block_used_values.line_boxes.len - 1
 		fragment_index: line_box.fragments_.len - 1
@@ -172,11 +165,8 @@ pub fn (mut builder LineBuilder) append_box(box &Box, leading_size CSSPixels, tr
 
 pub fn (mut builder LineBuilder) append_text_chunk(text_node &TextNode, offset_in_node int, length_in_node int, leading_size CSSPixels, trailing_size CSSPixels, leading_margin CSSPixels, trailing_margin CSSPixels, content_width CSSPixels, content_height CSSPixels, glyph_run &platform.GlyphRun) {
 	mut line_box := builder.ensure_last_line_box()
-	line_box.add_fragment(unsafe { &Node(text_node) }, offset_in_node, length_in_node,
-		leading_size, trailing_size, leading_margin, trailing_margin, content_width,
-		content_height, CSSPixels.new(0), CSSPixels.new(0), glyph_run)
-	builder.max_height_on_current_line = css_pixels_max(builder.max_height_on_current_line,
-		line_box.block_length())
+	line_box.add_fragment(unsafe { &Node(text_node) }, offset_in_node, length_in_node, leading_size, trailing_size, leading_margin, trailing_margin, content_width, content_height, CSSPixels.new(0), CSSPixels.new(0), glyph_run)
+	builder.max_height_on_current_line = css_pixels_max(builder.max_height_on_current_line, line_box.block_length())
 }
 
 pub fn (mut builder LineBuilder) break_if_needed(next_item_width CSSPixels) bool {
@@ -259,8 +249,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		fragment_computed := fragment.layout_node_.computed_values()
 		mut fragment_baseline := CSSPixels.new(0)
 		if fragment.layout_node_.is_text_node() {
-			fragment_baseline = font_baseline_for_line_height(layout_font_metrics_for_node(fragment.layout_node_),
-				fragment_computed.line_height())
+			fragment_baseline = font_baseline_for_line_height(layout_font_metrics_for_node(fragment.layout_node_), fragment_computed.line_height())
 		} else {
 			fragment_baseline = layout_box_baseline(builder.layout_state, fragment.layout_node_)
 		}
@@ -340,8 +329,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			}
 		} else {
 			font_metrics := layout_font_metrics_for_node(fragment.layout_node_)
-			typographic_height := CSSPixels.nearest_value_for(f64(font_metrics.ascent +
-				font_metrics.descent))
+			typographic_height := CSSPixels.nearest_value_for(f64(font_metrics.ascent + font_metrics.descent))
 			leading := fragment_computed.line_height().minus(typographic_height)
 			half_leading := CSSPixels.from_raw(leading.raw_value() / 2)
 			ascent := CSSPixels.nearest_value_for(f64(font_metrics.ascent))
@@ -382,9 +370,7 @@ pub fn (mut builder LineBuilder) recalculate_available_space() {
 	builder.next_float_bottom = none
 	if context := builder.parent_block_context {
 		if builder.available_width.is_definite() {
-			left, right, next_bottom := context.float_boundaries_at(builder.current_block_offset,
-				CSSPixels.new(1), builder.available_width.to_px_or_zero(), builder.direction,
-				builder.containing_block_root_offset)
+			left, right, next_bottom := context.float_boundaries_at(builder.current_block_offset, CSSPixels.new(1), builder.available_width.to_px_or_zero(), builder.direction, builder.containing_block_root_offset)
 			width := right.minus(left)
 			builder.available_width_for_current_line = AvailableSize.make_definite(if width.raw_value() > 0 {
 				width
@@ -407,8 +393,7 @@ fn (builder &LineBuilder) float_edges_at_block_offset(block_offset CSSPixels) (C
 	available_width := builder.available_width.to_px_or_zero()
 	context := builder.parent_block_context or { return CSSPixels.new(0), available_width }
 
-	left, right, _ := context.float_boundaries_at(block_offset, CSSPixels.new(1), available_width,
-		builder.direction, builder.containing_block_root_offset)
+	left, right, _ := context.float_boundaries_at(block_offset, CSSPixels.new(1), available_width, builder.direction, builder.containing_block_root_offset)
 	return left, right
 }
 
@@ -479,13 +464,7 @@ fn layout_font_metrics_for_node(node &Node) platform.FontPixelMetrics {
 	if text := node.as_text_node() {
 		return text.font_for_rendering().pixel_metrics()
 	}
-	computed := node.computed_values()
-	font := platform.Font{
-		family:     'sans-serif'
-		point_size: f32(computed.resolved_font_size_px())
-		weight:     int(computed.font_weight())
-	}
-	return font.pixel_metrics()
+	return node.first_available_font().pixel_metrics()
 }
 
 // ComputedValues stores font-relative lengths in their typed form. Resolve

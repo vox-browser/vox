@@ -342,14 +342,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		}
 		glyph_run := platform.shape_text(f32(x), f32(letter_spacing), shaped_text, chunk.font,
 			text_type)
-		// The translated GlyphRun stores absolute glyph positions, so width()
-		// already includes the initial tab-stop offset when glyphs follow the
-		// tab. A tab-only chunk has no glyph from which to recover that offset.
-		chunk_width := CSSPixels.nearest_value_for(if glyph_run.glyphs().len == 0 {
-			x
-		} else {
-			f64(glyph_run.width())
-		})
+		chunk_width := CSSPixels.nearest_value_for(f64(glyph_run.width()) + x)
 		is_empty_editable := chunk.length == 0 && text_node_is_inside_mutable_control(text_node)
 		is_generated_empty_string := is_empty_editable
 			|| (current.is_generated_for_pseudo_element() && chunk.length == 0)

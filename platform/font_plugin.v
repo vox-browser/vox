@@ -11,13 +11,11 @@ import math
 import x.ttf
 
 __global (
-	platform_document_face           &ttf.TTF_File
-	platform_document_face_attempted bool
-	platform_bold_face               &ttf.TTF_File
-	platform_bold_attempted          bool
-	platform_font_plugin             &FontPlugin
-	platform_pixel_metrics_cache     = map[u64]FontPixelMetrics{}
-	platform_glyph_units_cache       = map[u64]GlyphUnitsEntry{}
+	platform_font_faces          = map[string]&ttf.TTF_File{}
+	platform_font_face_attempted = map[string]bool{}
+	platform_font_plugin         &FontPlugin
+	platform_pixel_metrics_cache = map[string]FontPixelMetrics{}
+	platform_glyph_units_cache   = map[string]GlyphUnitsEntry{}
 )
 
 // GlyphUnitsEntry memoizes a glyph's point-size-independent metrics: the raw
@@ -135,7 +133,7 @@ pub fn (font &Font) pixel_metrics() FontPixelMetrics {
 	// calls it hundreds of thousands of times per document. Memoize on the exact
 	// f32 bit pattern plus weight so repeat sizes are O(1).
 	point_size_bits := unsafe { *(&u32(&font.point_size)) }
-	key := (u64(point_size_bits) << 32) | u64(u32(font.weight))
+	key := '${font.family.to_lower()}|${font.weight}|${point_size_bits}'
 	if cached := platform_pixel_metrics_cache[key] {
 		return cached
 	}
@@ -145,7 +143,7 @@ pub fn (font &Font) pixel_metrics() FontPixelMetrics {
 }
 
 fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
-	face := document_font_face(font.weight) or {
+	face := font_face(font.family, font.weight) or {
 		return FontPixelMetrics{
 			size: font.point_size
 			x_height: font.point_size * 0.5
@@ -216,7 +214,7 @@ pub fn (font &Font) glyph_width(code_point u32) f32 {
 // callers map y_max to the visual top and y_min to the visual bottom around
 // the text baseline.
 pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
-	face := document_font_face(font.weight) or { return FontGlyphBounds{} }
+	face := font_face(font.family, font.weight) or { return FontGlyphBounds{} }
 	if glyph_index < 0 || glyph_index > 0xffff {
 		return FontGlyphBounds{}
 	}
@@ -235,7 +233,7 @@ pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
 // the font's point size but retain TrueType's positive-up Y axis; Path::text()
 // callers position them relative to the CSS baseline and invert Y there.
 pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
-	face := document_font_face(font.weight)?
+	face := font_face(font.family, font.weight)?
 	if glyph_index < 0 || glyph_index > 0xffff {
 		return none
 	}
@@ -270,11 +268,11 @@ pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
 }
 
 fn (font &Font) glyph_metrics(code_point u32) (f32, int) {
-	face := document_font_face(font.weight) or { return font.point_size * 0.5, int(code_point) }
+	face := font_face(font.family, font.weight) or { return font.point_size * 0.5, int(code_point) }
 	units_per_em := f32(face.units_per_em)
 	// The raw advance and glyph index are point-size independent, so cache them
 	// per code point and only scale by the requested size here.
-	cache_key := (u64(u32(font.weight)) << 32) | u64(code_point)
+	cache_key := '${font.family.to_lower()}|${font.weight}|${code_point}'
 	if entry := platform_glyph_units_cache[cache_key] {
 		return f32(entry.advance_units) * font.point_size / units_per_em, entry.glyph_index
 	}
@@ -313,35 +311,27 @@ pub fn (font &Font) glyph_advance_and_index(code_point u32) (f32, int) {
 
 fn (font &Font) reset_kerning() {
 	_ = font
-	face := document_font_face(font.weight) or { return }
+	face := font_face(font.family, font.weight) or { return }
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
 	mutable_face.reset_kern()
 }
 
 fn (font &Font) kerning_for_glyph(glyph_index int) f32 {
-	face := document_font_face(font.weight) or { return 0 }
+	face := font_face(font.family, font.weight) or { return 0 }
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
 	kerning, _ := mutable_face.next_kern(glyph_index)
 	return f32(kerning) * font.point_size / f32(mutable_face.units_per_em)
 }
 
-fn document_font_face(weight int) ?&ttf.TTF_File {
-	bold := weight >= 600
-	if bold && platform_bold_face != unsafe { nil } {
-		return platform_bold_face
+fn font_face(family string, weight int) ?&ttf.TTF_File {
+	path := font_path_for_family(family, weight)?
+	if face := platform_font_faces[path] {
+		return face
 	}
-	if !bold && platform_document_face != unsafe { nil } {
-		return platform_document_face
-	}
-	if (bold && platform_bold_attempted) || (!bold && platform_document_face_attempted) {
+	if platform_font_face_attempted[path] {
 		return none
 	}
-	if bold {
-		platform_bold_attempted = true
-	} else {
-		platform_document_face_attempted = true
-	}
-	path := document_font_path(weight)?
+	platform_font_face_attempted[path] = true
 	bytes := os.read_bytes(path) or { return none }
 	// External construction with the current V compiler does not apply these
 	// vlib field defaults, but TTF_File.init() writes all 12 PANOSE bytes.
@@ -351,12 +341,27 @@ fn document_font_face(weight int) ?&ttf.TTF_File {
 		width_scale: 1.0
 	}
 	face.init()
-	if bold {
-		platform_bold_face = face
-	} else {
-		platform_document_face = face
-	}
+	platform_font_faces[path] = face
 	return face
+}
+
+pub fn system_font_family_available(family string) bool {
+	$if macos {
+		path := match family.to_lower() {
+			'verdana' { '/System/Library/Fonts/Supplemental/Verdana.ttf' }
+			'geneva' { '/System/Library/Fonts/Geneva.ttf' }
+			'courier', 'courier new' {
+				'/System/Library/Fonts/Supplemental/Courier New.ttf'
+			}
+			'times', 'times new roman' {
+				'/System/Library/Fonts/Supplemental/Times New Roman.ttf'
+			}
+			'arial' { '/System/Library/Fonts/Supplemental/Arial.ttf' }
+			else { '' }
+		}
+		return path != '' && os.is_file(path)
+	}
+	return false
 }
 
 pub fn (font &Font) is_emoji_font() bool {

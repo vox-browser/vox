@@ -643,23 +643,61 @@ fn update_live_ranges_for_text_split(node &Node, new_node &Node, parent &Node, o
 	}
 }
 
-enum UnicodeBidiClass {
+pub enum UnicodeBidiClass {
 	left_to_right
-	right_to_left_arabic
 	right_to_left
-	other
+	european_number
+	european_number_separator
+	european_number_terminator
+	arabic_number
+	common_number_separator
+	block_separator
+	segment_separator
+	white_space_neutral
+	other_neutral
+	left_to_right_embedding
+	left_to_right_override
+	right_to_left_arabic
+	right_to_left_embedding
+	right_to_left_override
+	pop_directional_format
+	dir_non_spacing_mark
+	boundary_neutral
+	first_strong_isolate
+	left_to_right_isolate
+	right_to_left_isolate
+	pop_directional_isolate
 }
 
-fn unicode_bidirectional_class(code_point u32) UnicodeBidiClass {
+pub fn unicode_bidirectional_class(code_point u32) UnicodeBidiClass {
 	// LibUnicode::bidirectional_class() is a direct mapping from ICU's
-	// u_charDirection(). Only the three strong classes are consumed by the
-	// HTML directionality algorithms here; preserve every other ICU class as
-	// `other` without inventing range tables.
+	// u_charDirection(). Keep the complete mapping here so DOM directionality
+	// and Layout text-run segmentation consume the same Unicode property.
 	return match C.u_charDirection(i32(code_point)) {
 		0 { .left_to_right } // U_LEFT_TO_RIGHT
 		1 { .right_to_left } // U_RIGHT_TO_LEFT
+		2 { .european_number } // U_EUROPEAN_NUMBER
+		3 { .european_number_separator } // U_EUROPEAN_NUMBER_SEPARATOR
+		4 { .european_number_terminator } // U_EUROPEAN_NUMBER_TERMINATOR
+		5 { .arabic_number } // U_ARABIC_NUMBER
+		6 { .common_number_separator } // U_COMMON_NUMBER_SEPARATOR
+		7 { .block_separator } // U_BLOCK_SEPARATOR
+		8 { .segment_separator } // U_SEGMENT_SEPARATOR
+		9 { .white_space_neutral } // U_WHITE_SPACE_NEUTRAL
+		10 { .other_neutral } // U_OTHER_NEUTRAL
+		11 { .left_to_right_embedding } // U_LEFT_TO_RIGHT_EMBEDDING
+		12 { .left_to_right_override } // U_LEFT_TO_RIGHT_OVERRIDE
 		13 { .right_to_left_arabic } // U_RIGHT_TO_LEFT_ARABIC
-		else { .other }
+		14 { .right_to_left_embedding } // U_RIGHT_TO_LEFT_EMBEDDING
+		15 { .right_to_left_override } // U_RIGHT_TO_LEFT_OVERRIDE
+		16 { .pop_directional_format } // U_POP_DIRECTIONAL_FORMAT
+		17 { .dir_non_spacing_mark } // U_DIR_NON_SPACING_MARK
+		18 { .boundary_neutral } // U_BOUNDARY_NEUTRAL
+		19 { .first_strong_isolate } // U_FIRST_STRONG_ISOLATE
+		20 { .left_to_right_isolate } // U_LEFT_TO_RIGHT_ISOLATE
+		21 { .right_to_left_isolate } // U_RIGHT_TO_LEFT_ISOLATE
+		22 { .pop_directional_isolate } // U_POP_DIRECTIONAL_ISOLATE
+		else { .boundary_neutral }
 	}
 }
 

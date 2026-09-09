@@ -586,6 +586,18 @@ fn test_typed_background_images_keep_gradient_url_layer_order_and_geometry() {
 	assert svg.contains('<clipPath id="gradient-clip')
 }
 
+fn test_svg_background_image_retains_its_isolated_document_for_nested_painting() {
+	source := 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2216%22%20viewBox%3D%220%200%2032%2016%22%3E%3Cpath%20d%3D%22M2%2027L16-2L30%2027Z%22%20fill%3D%22%23999%22%2F%3E%3C%2Fsvg%3E'
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}#arrow{width:10px;height:10px;background:url("${source}") no-repeat;background-size:10px}</style><div id="arrow"></div>')
+	root := layout_document_typed_in_viewport(document, 80, 60)
+	backgrounds := root.paint_commands().filter(it.kind == 'draw_background_image')
+	assert backgrounds.len == 1
+	assert backgrounds[0].background_svg_document != none
+	assert backgrounds[0].image_intrinsic_width == 32
+	assert backgrounds[0].image_intrinsic_height == 16
+	assert backgrounds[0].image_size.starts_with('10px')
+}
+
 fn test_typed_background_clip_text_reaches_the_group_mask() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 180px; height: 50px; color: transparent; font-size: 24px; background-color: red; background-image: linear-gradient(90deg, yellow, blue); background-clip: text }</style><body><div id="target">Clipped words</div></body>')
 	root := layout_document_typed_in_viewport(document, 240, 100)
@@ -1101,9 +1113,16 @@ fn test_paintable_with_lines_hit_testing_returns_text_node_and_utf16_cursor_inde
 		panic('missing hit-test paint box')
 	}
 	assert target_box.lines.len == 1
-	assert target_box.lines[0].fragments.len == 1
-	fragment := target_box.lines[0].fragments[0]
-	assert fragment.paintable_fragment.length_in_code_units == 5
+	// The emoji has the Common bidi class and is therefore its own shaping run
+	// between the two LTR runs. Hit testing still addresses the shared DOM text
+	// node in UTF-16 code units across all three fragments.
+	assert target_box.lines[0].fragments.len == 3
+	assert target_box.lines[0].fragments.map(it.paintable_fragment.length_in_code_units) == [
+		1,
+		2,
+		2,
+	]
+	fragment := target_box.lines[0].fragments[1]
 	fragment_rect := fragment.paintable_fragment.absolute_rect()
 	inside_point := painting.Point{fragment_rect.x + fragment_rect.width / 2, fragment_rect.y + fragment_rect.height / 2}
 	viewport := document.paintable_box() or { panic('missing viewport paintable') }
@@ -1118,12 +1137,14 @@ fn test_paintable_with_lines_hit_testing_returns_text_node_and_utf16_cursor_inde
 
 	mut selection := document.get_selection() or { panic('missing hit-test selection') }
 	selection.collapse(text_node, 2) or { panic(err) }
-	beyond_x := fragment_rect.right() + 12
+	last_fragment := target_box.lines[0].fragments.last()
+	last_fragment_rect := last_fragment.paintable_fragment.absolute_rect()
+	beyond_x := last_fragment_rect.right() + 12
 	beyond := viewport.hit_test(beyond_x, inside_point.y, .text_cursor) or {
 		panic('missing nearest text cursor hit')
 	}
 	assert beyond.node == text_node
-	assert beyond.index_in_node == fragment.paintable_fragment.start_offset + fragment.paintable_fragment.length_in_code_units
+	assert beyond.index_in_node == last_fragment.paintable_fragment.start_offset + last_fragment.paintable_fragment.length_in_code_units
 	assert (beyond.vertical_distance or { panic('missing cursor vertical distance') }) == 0
 	assert (beyond.horizontal_distance or { panic('missing cursor horizontal distance') }) == 12
 }
@@ -1477,6 +1498,31 @@ fn test_typed_paint_adapter_transports_custom_scrollbar_and_resizer_overlay() {
 	moved_thumbs := root.paint_commands().filter(it.kind == 'fill_rounded_rect' && it.color == css.Color{1, 2, 3, 255}.serialize())
 	assert moved_thumbs.len == 1
 	assert moved_thumbs[0].y > thumbs[0].y
+}
+
+fn test_typed_paint_adapter_transports_viewport_scrollbars_with_viewport_geometry() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #content { width: 804px; height: 1221px }</style><body><div id="content"></div></body>')
+	root := layout_document_typed_in_viewport(document, 800, 600)
+	assert root.is_viewport_scroller
+	assert root.compatibility_absolute_padding_rect() == painting.Rect{0, 0, 800, 600}
+	overlay := root.overlay or { panic('missing viewport overlay transport') }
+	assert overlay.can_scroll_horizontally
+	assert overlay.can_scroll_vertically
+	assert overlay.scrollable_overflow.width == 804
+	assert overlay.scrollable_overflow.height == 1221
+
+	thumbs := root.paint_commands().filter(it.kind == 'fill_rounded_rect'
+		&& it.scrollbar_axis != '')
+	assert thumbs.len == 2
+	vertical := thumbs.filter(it.scrollbar_axis == 'vertical')[0]
+	assert vertical.x == 792
+	assert vertical.y == 2
+	assert vertical.width == 6
+	assert vertical.height == 293
+	horizontal := thumbs.filter(it.scrollbar_axis == 'horizontal')[0]
+	assert horizontal.x == 2
+	assert horizontal.y == 592
+	assert horizontal.height == 6
 }
 
 fn test_paintable_box_hit_test_chrome_uses_scrollbar_and_inflated_resizer_geometry() {
@@ -2136,6 +2182,24 @@ fn test_broken_image_paints_and_refreshes_alt_text_fallback() {
 	images := commands.filter(it.kind == 'draw_replaced_image')
 	assert images.len == 1
 	assert images[0].image_url == valid_png
+}
+
+fn test_svg_html_image_paints_its_isolated_document_as_a_nested_display_list() {
+	source := 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2218%22%20height%3D%2218%22%20viewBox%3D%220%200%2018%2018%22%3E%3Cpath%20d%3D%22M0%200H18V18H0Z%22%20fill%3D%22%23ff6600%22%2F%3E%3C%2Fsvg%3E'
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}img{display:block;width:18px;height:18px;border:1px solid white}</style><img src="${source}">')
+	root := layout_document_typed_in_viewport(document, 80, 60)
+	commands := root.paint_commands()
+	assert commands.all(it.kind != 'draw_replaced_image')
+	nested := commands.filter(it.kind == 'paint_nested_display_list')
+	assert nested.len == 1
+	assert nested[0].x == 1
+	assert nested[0].y == 1
+	assert nested[0].width == 18
+	assert nested[0].height == 18
+	assert nested[0].nested_viewport_commands.any(it.kind == 'draw_svg_path'
+		&& it.color == css.Color{255, 102, 0, 255}.serialize())
+	assert commands.any(it.kind == 'draw_svg_path'
+		&& it.color == css.Color{255, 255, 255, 255}.serialize())
 }
 
 fn test_svg_image_uses_image_paintable_contain_sizing_and_resolved_href() {

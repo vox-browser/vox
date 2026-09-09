@@ -2033,6 +2033,19 @@ fn test_table_wrapper_and_percentage_table_share_final_width_before_centering() 
 	assert table.offset.x().to_double() == 0
 }
 
+fn test_legacy_center_does_not_shift_an_oversized_table_before_the_containing_block() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:8px } table { min-width:796px; border-spacing:0 }
+	</style><center><table id="table"><tr><td></td></tr></table></center>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table_node := layout_node_with_id(result.root, 'table') or { panic('missing table') }
+	wrapper_node := table_node.parent() or { panic('table has no wrapper') }
+	wrapper_styled := wrapper_node.as_node_with_style() or { panic('wrapper has no style') }
+	wrapper := result.used_values_for(wrapper_styled) or { panic('missing wrapper values') }
+	assert wrapper.content_width().to_double() == 796
+	assert wrapper.offset.x().to_double() == 0
+}
+
 fn test_empty_table_row_is_retained_when_the_grid_has_no_columns() {
 	document := html.parse_document('<!doctype html><style>
 		table { height:100px; padding:10px; border:1px solid; }

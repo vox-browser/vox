@@ -1172,9 +1172,14 @@ fn computed_background_image_layers(element &dom.Element, computed &css.Computed
 		} else if gradient_source == none {
 			continue
 		}
+		svg_document := svg_image_document_for_source(element.document(), resolved_url)
+		intrinsic_width, intrinsic_height := background_svg_intrinsic_dimensions(element.document(), resolved_url, svg_document != none)
 		repeat_x, repeat_y := parsed_background_repeat(computed_coordinated_background_value(computed, .background_repeat, index, 'repeat'))
 		layers << BackgroundImageLayer{
 			url: resolved_url
+			svg_document: svg_document
+			intrinsic_width: intrinsic_width
+			intrinsic_height: intrinsic_height
 			gradient_source: gradient_source
 			gradient_context: color_context
 			repeat_x: repeat_x
@@ -1998,6 +2003,11 @@ fn renderer_box_from_document_layout_result(result &DocumentLayoutResult, viewpo
 	root_box.is_viewport_scroller = true
 	root_box.viewport_width = viewport_width
 	root_box.viewport_height = viewport_height
+	if viewport_styled := result.root.as_node_with_style() {
+		if viewport_used := result.state.try_get(viewport_styled) {
+			root_box.overlay = compatibility_overlay_data(result.root, viewport_styled.computed_values(), viewport_used)
+		}
+	}
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
 		eprintln('Ladybird V timing:     renderer_adapter ${(time.sys_mono_now() - layout_completed) / 1_000_000} ms')
 	}
@@ -2849,6 +2859,32 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			object_position := computed.object_position()
 			replaced_image_position_x = object_position.offset_x.to_string()
 			replaced_image_position_y = object_position.offset_y.to_string()
+		}
+		// SVGDecodedImageData::paint() does not flatten an SVG image through the
+		// platform image decoder. It records the isolated SVG document at the
+		// replaced element's concrete size and nests that display list here.
+		if svg_document := image_box.svg_image_document() {
+			nested_viewport_document = svg_document
+			nested_viewport_paintable = painting.NavigableContainerViewportPaintable{
+				viewport_rect: painting.Rect{
+					x: position.x().to_double()
+					y: position.y().to_double()
+					width: used.content_width().to_double()
+					height: used.content_height().to_double()
+				}
+				border_radii: painting.BorderRadiiData{
+					top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
+					top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
+					bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
+					bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
+				}
+				border_widths: painting.PixelBox{
+					top: used.border_top.to_double()
+					right: used.border_right.to_double()
+					bottom: used.border_bottom.to_double()
+					left: used.border_left.to_double()
+				}
+			}
 		}
 	}
 	if node.is_svg_image_box() {

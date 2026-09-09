@@ -73,13 +73,13 @@ fn C.native_draw_document_text_srgb(x f32, y f32, text string, color gg.Color, s
 
 fn C.native_draw_document_text_shadow_srgb(x f32, y f32, text string, color gg.Color, size f32, bold int, italic int, monospace int, blur f32)
 
-fn C.native_draw_document_glyph_run_srgb(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, color gg.Color, blur f32, shadow_only int) int
+fn C.native_draw_document_glyph_run_srgb(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, color gg.Color, blur f32, shadow_only int) int
 
 fn C.native_begin_background_text_clip(canvas_width f32, canvas_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32)
 
 fn C.native_add_background_text_clip_run(x f32, y f32, text string, size f32, bold int, italic int, monospace int)
 
-fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32) int
+fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, font_path string) int
 
 fn C.native_finish_background_text_clip()
 
@@ -89,7 +89,7 @@ fn C.native_draw_polygon_srgb(points &f32, point_count int, canvas_height f32, c
 
 fn C.native_draw_solid_line_srgb(from_x f32, from_y f32, to_x f32, to_y f32, thickness f32, canvas_width f32, canvas_height f32, color gg.Color) int
 
-fn C.native_draw_rounded_rect_srgb(x f32, y f32, width f32, height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, color gg.Color)
+fn C.native_draw_rounded_rect_srgb(x f32, y f32, width f32, height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, color gg.Color, fill int, thickness f32, anti_alias int)
 
 fn C.native_draw_outer_box_shadow_srgb(source_x f32, source_y f32, source_width f32, source_height f32, source_radius f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, clip_radius f32, blur f32, color gg.Color)
 
@@ -121,7 +121,7 @@ fn C.native_add_corner_rounded_clip(x f32, y f32, width f32, height f32, top_lef
 
 fn C.native_add_path_clip(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32)
 
-fn C.native_draw_svg_path_srgb(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32)
+fn C.native_draw_svg_path_srgb(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32)
 
 fn C.native_draw_svg_linear_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
 
@@ -405,7 +405,7 @@ fn configure_browser_layout_font() bool {
 			path = '/System/Library/Fonts/Supplemental/Arial.ttf'
 		}
 		if os.is_file(path) {
-			os.setenv('LADYBIRD_LAYOUT_TEST_FONT', path, true)
+			os.setenv('LADYBIRD_BROWSER_DEFAULT_FONT', path, true)
 			// Glyph indices are face-specific. Configure the same face for native
 			// display-list replay even when the browser is using its default Arial
 			// path, rather than enabling retained replay only for an explicit
@@ -1562,8 +1562,13 @@ fn native_draw_retained_glyph_run(command layout.PaintCommand, page_x f32, page_
 			return false
 		}
 		matrix := normalized_paint_transform(command.transform)
+		font_path := if glyph_run.face() == .emoji {
+			platform.emoji_font_path() or { '' }
+		} else {
+			platform.font_path_for_family(glyph_run.font().family, glyph_run.font().weight) or { '' }
+		}
 		unsafe {
-			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, glyph_color, blur, int(shadow_only)) != 0
+			return C.native_draw_document_glyph_run_srgb(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(command.glyph_translation_x), f32(command.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), canvas_width, canvas_height, font_path, glyph_color, blur, int(shadow_only)) != 0
 		}
 	}
 	return false
@@ -1606,7 +1611,7 @@ fn draw_rounded_fill(ctx &gg.Context, x f32, y f32, width f32, height f32, radiu
 			if used_radius > height / 2 {
 				used_radius = height / 2
 			}
-			C.native_draw_rounded_rect_srgb(x, y, width, height, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, 1, 0, 0, 1, 0, 0, 0, 0, 0, f32(ctx.height), fill_color)
+			C.native_draw_rounded_rect_srgb(x, y, width, height, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, 1, 0, 0, 1, 0, 0, 0, 0, 0, f32(ctx.width), f32(ctx.height), fill_color, 1, 0, 1)
 			return
 		}
 	}
@@ -2550,8 +2555,13 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 						positions := glyph_run.glyph_positions()
 						if run.glyph_orientation == .horizontal && glyphs.len > 0
 							&& positions.len == glyphs.len * 2 {
+							font_path := if glyph_run.face() == .emoji {
+								platform.emoji_font_path() or { '' }
+							} else {
+								platform.font_path_for_family(glyph_run.font().family, glyph_run.font().weight) or { '' }
+							}
 							unsafe {
-								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.height)) != 0
+								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.height), font_path) != 0
 							}
 						}
 					}
@@ -2892,7 +2902,11 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			$if macos {
 				if app.ctx.native_rendering && !command.outer_shadow && command.radius > 0 {
 					used_radius := f32(clamp(command.radius, 0.0, math.min(command.width, command.height) / 2.0))
-					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), fill)
+					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' {
+						1
+					} else {
+						0
+					})
 					return
 				}
 			}
@@ -2924,7 +2938,11 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			$if macos {
 				if app.ctx.native_rendering {
 					radii := command.corner_radii
-					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), fill)
+					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, 0, if command.scrollbar_axis == '' {
+						1
+					} else {
+						0
+					})
 					return
 				}
 			}
@@ -2953,6 +2971,13 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 		}
 		'stroke_rounded_rect' {
 			stroke := paint_color(command.color, command.opacity)
+			$if macos {
+				if app.ctx.native_rendering && command.points.len < 4 {
+					used_radius := f32(command.radius)
+					C.native_draw_rounded_rect_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, used_radius, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), stroke, 0, f32(command.stroke_width), 1)
+					return
+				}
+			}
 			if command.points.len >= 4 {
 				mut points := []f32{cap: command.points.len}
 				for index := 0; index + 1 < command.points.len; index += 2 {
@@ -3324,9 +3349,15 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 		'draw_background_image' {
-			image := app.background_image(command.image_url) or { return }
-			intrinsic_width := f32(image.width)
-			intrinsic_height := f32(image.height)
+			mut image := &gg.Image{}
+			mut intrinsic_width := f32(command.image_intrinsic_width)
+			mut intrinsic_height := f32(command.image_intrinsic_height)
+			if command.background_svg_document == none || intrinsic_width <= 0
+				|| intrinsic_height <= 0 {
+				image = app.background_image(command.image_url) or { return }
+				intrinsic_width = f32(image.width)
+				intrinsic_height = f32(image.height)
+			}
 			if intrinsic_width <= 0 || intrinsic_height <= 0 || command.width <= 0
 				|| command.height <= 0 || command.image_clip_width <= 0
 				|| command.image_clip_height <= 0 {
@@ -3407,7 +3438,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					// repetition has no `space` gaps. Submit the same shape as one
 					// Quartz tiled-image operation instead of materializing up to 4096
 					// rectangles and crossing the V/C boundary once per tile.
-					if plan.can_use_repeated_bitmap() {
+					if plan.can_use_repeated_bitmap() && command.background_svg_document == none {
 						converter := painting.new_device_pixel_converter(1.0) or { return }
 						destination := converter.rounded_device_rect(plan.first_tile)
 						device_clip := converter.rounded_device_rect(clip)
@@ -3437,6 +3468,35 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				painting.background_tiles_from_plan_limited(plan, clip, 4096)
 			}
 			for tile in tiles {
+				if svg_document := command.background_svg_document {
+					converter := painting.new_device_pixel_converter(1.0) or { return }
+					rounded_destination := converter.rounded_device_rect(tile)
+					destination := painting.IntRect{
+						x: rounded_destination.x
+						y: rounded_destination.y
+						width: if rounded_destination.width == 0 {
+							1
+						} else {
+							rounded_destination.width
+						}
+						height: if rounded_destination.height == 0 {
+							1
+						} else {
+							rounded_destination.height
+						}
+					}
+					if nested_layout := layout.run_document_layout(svg_document, f64(destination.width), f64(destination.height)) {
+						_ = nested_layout
+						mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
+						if nested_display_list := mutable_svg_document.record_display_list() {
+							for nested_command in layout.display_list_commands(nested_display_list) {
+								transformed := layout.paint_command_for_nested_viewport(nested_command, command.transform, painting.IntPoint{destination.x, destination.y}, command.opacity)
+								app.draw_command(transformed, page_x, page_y, window_height)
+							}
+						}
+					}
+					continue
+				}
 				left := math.max(tile.x, clip.x)
 				top := math.max(tile.y, clip.y)
 				right_edge := math.min(tile.right(), clip.right())
@@ -3530,7 +3590,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								1
 							} else {
 								0
-							}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), fill, if command.color.len > 0 {
+							}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, if command.color.len > 0 {
 								1
 							} else {
 								0
@@ -3557,7 +3617,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 										1
 									} else {
 										0
-									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), fill, 1, stroke, 0, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit))
+									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, stroke, 0, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit))
 								}
 							}
 						} else if command.stroke_width > 0 {
@@ -3573,7 +3633,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 										1
 									} else {
 										0
-									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), fill, 0, stroke, 1, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit))
+									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 0, stroke, 1, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit))
 								}
 							}
 						}

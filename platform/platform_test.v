@@ -82,6 +82,9 @@ fn test_glyph_run_retains_packed_replay_data_and_slices_without_rebasing() {
 	assert run.face() == .emoji
 	assert run.glyph_indices() == [u16(7), 11]
 	assert run.glyph_positions() == [f64(2.5), -0.25, 6.5, 0.75]
+	// Gfx::GlyphRun retains the sum of advances as its logical width. Glyph
+	// ink offsets can be negative and must not shorten that width.
+	assert run.width() == 9
 	run.glyphs_ << Glyph{
 		glyph_index: 13
 		position: GlyphPosition{11.5, 0}
@@ -93,6 +96,7 @@ fn test_glyph_run_retains_packed_replay_data_and_slices_without_rebasing() {
 	assert run.glyph_positions() == [f64(2.5), -0.25, 6.5, 0.75, 11.5, 0]
 	slice := run.slice(1, 1)
 	assert slice.face() == .emoji
+	assert slice.width() == 5
 	assert slice.glyph_indices() == [u16(11)]
 	// Gfx::GlyphRun::slice() retains the original position so a partial text
 	// shadow stays aligned with the unsliced foreground run.

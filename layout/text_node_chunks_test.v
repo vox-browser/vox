@@ -23,8 +23,7 @@ fn make_chunk_test_text_node(document &dom.Document, text string, style &css.Com
 
 fn test_text_node_chunk_iterator_splits_words_and_collapsible_space() {
 	document := dom.Document.create(dom.url_about_blank())
-	style := chunk_test_style(document,
-		'display:block; white-space-collapse:collapse; text-wrap-mode:wrap; font-size:20px')
+	style := chunk_test_style(document, 'display:block; white-space-collapse:collapse; text-wrap-mode:wrap; font-size:20px')
 	text_node := make_chunk_test_text_node(document, 'one   two', style)
 	mut iterator := TextNodeChunkIterator.new(text_node, true, false)
 	first := iterator.next() or { panic('first chunk') }
@@ -40,16 +39,19 @@ fn test_text_node_chunk_iterator_splits_words_and_collapsible_space() {
 
 fn test_text_node_chunk_iterator_preserves_utf16_offsets_and_newline() {
 	document := dom.Document.create(dom.url_about_blank())
-	style := chunk_test_style(document,
-		'display:block; white-space-collapse:preserve; text-wrap-mode:wrap')
+	style := chunk_test_style(document, 'display:block; white-space-collapse:preserve; text-wrap-mode:wrap')
 	text_node := make_chunk_test_text_node(document, 'A😀\nB', style)
 	mut iterator := TextNodeChunkIterator.new(text_node, true, true)
 	first := iterator.next() or { panic('text chunk') }
+	emoji := iterator.next() or { panic('emoji chunk') }
 	newline := iterator.next() or { panic('newline chunk') }
 	last := iterator.next() or { panic('last chunk') }
-	assert first.view == 'A😀'
+	assert first.view == 'A'
 	assert first.start == 0
-	assert first.length == 3
+	assert first.length == 1
+	assert emoji.view == '😀'
+	assert emoji.start == 1
+	assert emoji.length == 2
 	assert newline.has_breaking_newline
 	assert newline.start == 3
 	assert newline.length == 1
@@ -87,4 +89,13 @@ fn test_non_breaking_space_is_context_dependent_interword_text() {
 	assert is_interword_space(0x00a0)
 	assert !is_interword_space(u32(`\t`))
 	assert text_type_for_code_point(0x00a0) == .context_dependent
+}
+
+fn test_text_type_uses_unicode_bidirectional_class() {
+	assert text_type_for_code_point(0x2013) == .common // EN DASH, ON
+	assert text_type_for_code_point(0x2019) == .common // RIGHT SINGLE QUOTATION MARK, ON
+	assert text_type_for_code_point(0x0661) == .context_dependent // ARABIC-INDIC DIGIT ONE, AN
+	assert text_type_for_code_point(0x037e) == .common // GREEK QUESTION MARK, ON
+	assert text_type_for_code_point(0x03b1) == .ltr // GREEK SMALL LETTER ALPHA, L
+	assert text_type_for_code_point(0x05d0) == .rtl // HEBREW LETTER ALEF, R
 }

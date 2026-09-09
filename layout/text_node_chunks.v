@@ -5,6 +5,7 @@
 module layout
 
 import css
+import dom
 import platform
 
 // TextNode::Chunk and TextNode::ChunkIterator split rendered text at font,
@@ -360,20 +361,33 @@ fn text_line_boundaries(text string) map[int]bool {
 }
 
 fn text_type_for_code_point(code_point u32) platform.GlyphRunTextType {
-	if is_interword_space(code_point) {
-		return .context_dependent
+	if code_point < 0x80 {
+		if (code_point >= u32(`A`) && code_point <= u32(`Z`))
+			|| (code_point >= u32(`a`) && code_point <= u32(`z`)) {
+			return .ltr
+		}
+		if code_point in u32(0x09) .. u32(0x0e)
+			|| code_point in u32(0x1c) .. u32(0x21)
+			|| code_point in [u32(`#`), u32(`$`), u32(`%`), u32(`+`), u32(`,`), u32(`-`), u32(`.`),
+				u32(`/`), u32(`:`)]
+			|| code_point in u32(`0`) .. u32(`:`) {
+			return .context_dependent
+		}
+		return .common
 	}
-	if (code_point >= 0x0590 && code_point <= 0x08ff)
-		|| (code_point >= 0xfb1d && code_point <= 0xfdff)
-		|| (code_point >= 0xfe70 && code_point <= 0xfeff) {
-		return .rtl
-	}
-	if (code_point >= u32(`A`) && code_point <= u32(`Z`)) || (code_point >= u32(`a`)
-		&& code_point <= u32(`z`)) || code_point >= 0x80 {
-		return .ltr
-	}
-	if is_ascii_space_code_point(code_point) || (code_point >= u32(`0`) && code_point <= u32(`9`)) {
-		return .context_dependent
+	match dom.unicode_bidirectional_class(code_point) {
+		.white_space_neutral, .block_separator, .segment_separator, .common_number_separator, .dir_non_spacing_mark, .arabic_number, .european_number, .european_number_separator, .european_number_terminator {
+			return .context_dependent
+		}
+		.boundary_neutral, .other_neutral, .first_strong_isolate, .pop_directional_format, .pop_directional_isolate {
+			return .common
+		}
+		.left_to_right, .left_to_right_embedding, .left_to_right_isolate, .left_to_right_override {
+			return .ltr
+		}
+		.right_to_left, .right_to_left_arabic, .right_to_left_embedding, .right_to_left_isolate, .right_to_left_override {
+			return .rtl
+		}
 	}
 	return .common
 }

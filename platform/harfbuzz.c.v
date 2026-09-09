@@ -7,7 +7,9 @@ module platform
 import os
 
 #pkgconfig harfbuzz
+
 #include <hb.h>
+
 #include <hb-ot.h>
 
 struct C.hb_glyph_info_t {
@@ -27,24 +29,43 @@ struct C.hb_glyph_position_t {
 }
 
 fn C.hb_blob_create_from_file_or_fail(file_name &char) voidptr
+
 fn C.hb_blob_destroy(blob voidptr)
+
 fn C.hb_face_create(blob voidptr, index u32) voidptr
+
 fn C.hb_face_destroy(face voidptr)
+
 fn C.hb_font_create(face voidptr) voidptr
+
 fn C.hb_font_destroy(font voidptr)
+
 fn C.hb_ot_font_set_funcs(font voidptr)
+
 fn C.hb_font_set_scale(font voidptr, x_scale int, y_scale int)
+
 fn C.hb_font_set_ptem(font voidptr, ptem f32)
+
 fn C.hb_buffer_create() voidptr
+
 fn C.hb_buffer_destroy(buffer voidptr)
+
 fn C.hb_buffer_add_utf8(buffer voidptr, text &char, text_length int, item_offset u32, item_length int)
+
 fn C.hb_buffer_add_utf16(buffer voidptr, text &u16, text_length int, item_offset u32, item_length int)
+
 fn C.hb_buffer_set_direction(buffer voidptr, direction int)
+
 fn C.hb_script_from_string(text &char, length int) u32
+
 fn C.hb_buffer_set_script(buffer voidptr, script u32)
+
 fn C.hb_buffer_guess_segment_properties(buffer voidptr)
+
 fn C.hb_shape(font voidptr, buffer voidptr, features voidptr, feature_count u32)
+
 fn C.hb_buffer_get_glyph_infos(buffer voidptr, length &u32) &C.hb_glyph_info_t
+
 fn C.hb_buffer_get_glyph_positions(buffer voidptr, length &u32) &C.hb_glyph_position_t
 
 const harfbuzz_direction_ltr = 4
@@ -52,15 +73,12 @@ const harfbuzz_direction_rtl = 5
 const harfbuzz_text_shaping_resolution = f32(64)
 
 __global (
-	harfbuzz_layout_test_blob      voidptr
-	harfbuzz_layout_test_face      voidptr
-	harfbuzz_layout_test_attempted bool
-	harfbuzz_bold_blob             voidptr
-	harfbuzz_bold_face             voidptr
-	harfbuzz_bold_attempted        bool
-	harfbuzz_emoji_blob            voidptr
-	harfbuzz_emoji_face            voidptr
-	harfbuzz_emoji_attempted       bool
+	harfbuzz_document_blobs     = map[string]voidptr{}
+	harfbuzz_document_faces     = map[string]voidptr{}
+	harfbuzz_document_attempted = map[string]bool{}
+	harfbuzz_emoji_blob         voidptr
+	harfbuzz_emoji_face         voidptr
+	harfbuzz_emoji_attempted    bool
 )
 
 fn bundled_font_path(file_name string) ?string {
@@ -71,8 +89,7 @@ fn bundled_font_path(file_name string) ?string {
 		}
 	}
 	repository_root := os.dir(os.dir(@FILE))
-	path := os.join_path(repository_root, '..', '3rd', 'ladybird', 'Base', 'res', 'fonts',
-		file_name)
+	path := os.join_path(repository_root, '..', '3rd', 'ladybird', 'Base', 'res', 'fonts', file_name)
 	if os.is_file(path) {
 		return path
 	}
@@ -87,6 +104,16 @@ pub fn emoji_font_path() ?string {
 
 fn configured_document_font_path() ?string {
 	if configured := os.getenv_opt('LADYBIRD_LAYOUT_TEST_FONT') {
+		if os.is_file(configured) {
+			return configured
+		}
+	}
+	if configured := os.getenv_opt('LADYBIRD_BROWSER_FONT') {
+		if os.is_file(configured) {
+			return configured
+		}
+	}
+	if configured := os.getenv_opt('LADYBIRD_BROWSER_DEFAULT_FONT') {
 		if os.is_file(configured) {
 			return configured
 		}
@@ -116,6 +143,74 @@ fn bold_font_path_candidates(regular_path string) []string {
 // for the file-backed HarfBuzz boundary so glyph IDs and advances are retained
 // from the same face that native replay uses.
 pub fn document_font_path(weight int) ?string {
+	return font_path_for_family('Default', weight)
+}
+
+// Resolve the concrete face selected for a CSS family. Layout metrics,
+// HarfBuzz shaping, and native replay all use this path, so retained glyph IDs
+// can never be interpreted through a different typeface.
+pub fn font_path_for_family(family string, weight int) ?string {
+	if configured := os.getenv_opt('LADYBIRD_LAYOUT_TEST_FONT') {
+		if os.is_file(configured) {
+			if weight >= 600 {
+				if bold := os.getenv_opt('LADYBIRD_LAYOUT_TEST_BOLD_FONT') {
+					if os.is_file(bold) {
+						return bold
+					}
+				}
+				for candidate in bold_font_path_candidates(configured) {
+					if os.is_file(candidate) {
+						return candidate
+					}
+				}
+			}
+			return configured
+		}
+	}
+	if configured := os.getenv_opt('LADYBIRD_BROWSER_FONT') {
+		if os.is_file(configured) {
+			if weight >= 600 {
+				if bold := os.getenv_opt('LADYBIRD_BROWSER_BOLD_FONT') {
+					if os.is_file(bold) {
+						return bold
+					}
+				}
+				for candidate in bold_font_path_candidates(configured) {
+					if os.is_file(candidate) {
+						return candidate
+					}
+				}
+			}
+			return configured
+		}
+	}
+	$if macos {
+		lower_family := family.to_lower()
+		regular_path := match lower_family {
+			'verdana' { '/System/Library/Fonts/Supplemental/Verdana.ttf' }
+			'geneva' { '/System/Library/Fonts/Geneva.ttf' }
+			'courier', 'courier new', 'monospace', 'uimonospace' {
+				'/System/Library/Fonts/Supplemental/Courier New.ttf'
+			}
+			'times', 'times new roman', 'serif', 'uiserif' {
+				'/System/Library/Fonts/Supplemental/Times New Roman.ttf'
+			}
+			'arial', 'default', 'sansserif', 'uisansserif', 'ui-rounded', 'uirounded' {
+				configured_document_font_path()?
+			}
+			else { '' }
+		}
+		if regular_path != '' && os.is_file(regular_path) {
+			if weight >= 600 {
+				for candidate in bold_font_path_candidates(regular_path) {
+					if os.is_file(candidate) {
+						return candidate
+					}
+				}
+			}
+			return regular_path
+		}
+	}
 	regular_path := configured_document_font_path()?
 	if weight < 600 {
 		return regular_path
@@ -138,37 +233,15 @@ pub fn document_font_path(weight int) ?string {
 	return regular_path
 }
 
-fn layout_test_harfbuzz_face(weight int) ?voidptr {
-	if weight >= 600 {
-		if harfbuzz_bold_face != unsafe { nil } {
-			return harfbuzz_bold_face
-		}
-		if harfbuzz_bold_attempted {
-			return none
-		}
-		harfbuzz_bold_attempted = true
-		path := document_font_path(weight)?
-		blob := C.hb_blob_create_from_file_or_fail(path.str)
-		if blob == unsafe { nil } {
-			return none
-		}
-		face := C.hb_face_create(blob, 0)
-		if face == unsafe { nil } {
-			C.hb_blob_destroy(blob)
-			return none
-		}
-		harfbuzz_bold_blob = blob
-		harfbuzz_bold_face = face
+fn document_harfbuzz_face(family string, weight int) ?voidptr {
+	path := font_path_for_family(family, weight)?
+	if face := harfbuzz_document_faces[path] {
 		return face
 	}
-	if harfbuzz_layout_test_face != unsafe { nil } {
-		return harfbuzz_layout_test_face
-	}
-	if harfbuzz_layout_test_attempted {
+	if harfbuzz_document_attempted[path] {
 		return none
 	}
-	harfbuzz_layout_test_attempted = true
-	path := document_font_path(weight)?
+	harfbuzz_document_attempted[path] = true
 	blob := C.hb_blob_create_from_file_or_fail(path.str)
 	if blob == unsafe { nil } {
 		return none
@@ -178,8 +251,8 @@ fn layout_test_harfbuzz_face(weight int) ?voidptr {
 		C.hb_blob_destroy(blob)
 		return none
 	}
-	harfbuzz_layout_test_blob = blob
-	harfbuzz_layout_test_face = face
+	harfbuzz_document_blobs[path] = blob
+	harfbuzz_document_faces[path] = face
 	return face
 }
 
@@ -207,7 +280,7 @@ fn emoji_harfbuzz_face() ?voidptr {
 }
 
 fn is_emoji_code_point(code_point u32) bool {
-	return code_point in u32(0x1f000)..u32(0x1fb00) || code_point in u32(0x2600)..u32(0x2800)
+	return code_point in u32(0x1f000) .. u32(0x1fb00) || code_point in u32(0x2600) .. u32(0x2800)
 }
 
 // FontComputer appends the layout-test Noto Emoji face to every font cascade.
@@ -223,7 +296,7 @@ fn text_uses_emoji_fallback(text string) bool {
 			continue
 		}
 		if code_point in [u32(0x200d), u32(0xfe0e), u32(0xfe0f)]
-			|| code_point in u32(0x1f3fb)..u32(0x1f400) {
+			|| code_point in u32(0x1f3fb) .. u32(0x1f400) {
 			continue
 		}
 		return false
@@ -254,7 +327,7 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 	if uses_emoji {
 		face = emoji_harfbuzz_face()?
 	} else {
-		face = layout_test_harfbuzz_face(font.weight)?
+		face = document_harfbuzz_face(font.family, font.weight)?
 	}
 	hb_font := C.hb_font_create(face)
 	if hb_font == unsafe { nil } {
@@ -306,13 +379,13 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 			}
 		}
 		glyphs << Glyph{
-			code_point:           info.codepoint
-			glyph_index:          int(info.codepoint)
-			position:             GlyphPosition{
+			code_point: info.codepoint
+			glyph_index: int(info.codepoint)
+			position: GlyphPosition{
 				x: point_x + f32(position.x_offset) / harfbuzz_text_shaping_resolution
 				y: f32(position.y_offset) / harfbuzz_text_shaping_resolution
 			}
-			advance:              advance
+			advance: advance
 			length_in_code_units: length_in_code_units
 		}
 		point_x += advance

@@ -336,7 +336,7 @@ fn place_block_level_element_in_normal_flow_horizontally(mut box_state UsedValue
 	box_node := unsafe { &Node(box_state.node()) }
 	if containing_block := box_node.containing_block() {
 		text_align := containing_block.computed_values().text_align()
-		if text_align == .libweb_center {
+		if text_align == .libweb_center && box_state.content_width().to_double() <= available_width {
 			x = css_px(available_width / 2.0 - box_state.content_width().to_double() / 2.0)
 		} else if text_align == .libweb_right {
 			x = css_px(available_width - box_state.content_width().to_double() - box_state.margin_box_left().to_double())

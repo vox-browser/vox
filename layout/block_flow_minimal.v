@@ -68,6 +68,9 @@ pub:
 pub struct BackgroundImageLayer {
 pub:
 	url                string
+	svg_document       ?&dom.Document
+	intrinsic_width    f64
+	intrinsic_height   f64
 	gradient_source    ?css.StyleValue
 	gradient_context   css.ColorResolutionContext
 	repeat_x           string
@@ -1471,6 +1474,9 @@ pub mut:
 	stroke_opacity         f64 = 1.0
 	// `draw_background_image` payload. Intrinsic dimensions are resolved by the image renderer.
 	image_url                string
+	background_svg_document  ?&dom.Document
+	image_intrinsic_width    f64
+	image_intrinsic_height   f64
 	image_repeat_x           string
 	image_repeat_y           string
 	image_size               string
@@ -1785,6 +1791,9 @@ fn background_layer_command(layer BackgroundImageLayer, origin LayoutRect, clip 
 		radius: radius
 		points: points
 		image_url: layer.url
+		background_svg_document: layer.svg_document
+		image_intrinsic_width: layer.intrinsic_width
+		image_intrinsic_height: layer.intrinsic_height
 		image_repeat_x: layer.repeat_x
 		image_repeat_y: layer.repeat_y
 		image_size: layer.size
@@ -1852,6 +1861,12 @@ fn (b &BlockBox) current_scroll_offset(fallback CompatibilityOverlayData) painti
 }
 
 fn (b &BlockBox) compatibility_absolute_padding_rect() painting.Rect {
+	if b.is_viewport_scroller {
+		return painting.Rect{
+			width: b.viewport_width
+			height: b.viewport_height
+		}
+	}
 	return painting.Rect{
 		x: b.x - b.padding.left
 		y: b.y - b.padding.top
@@ -1943,28 +1958,37 @@ fn lightened_paint_color(color css.Color) css.Color {
 }
 
 fn append_scrollbar_overlay_command(mut commands []PaintCommand, data painting.ScrollbarData, overlay CompatibilityOverlayData, opacity f64, direction painting.ScrollDirection, recorded_scroll_offset f64) {
+	// PaintableBox rounds both retained scrollbar rectangles at the recorder
+	// boundary. Leaving the proportional thumb length fractional shifts the
+	// antialiased end cap even when all surrounding layout geometry is exact.
+	converter := painting.new_device_pixel_converter(1.0) or { return }
+	rounded_gutter := converter.rounded_device_rect(data.gutter_rect)
+	gutter := painting.Rect{rounded_gutter.x, rounded_gutter.y, rounded_gutter.width, rounded_gutter.height}
+	rounded_thumb := converter.rounded_device_rect(data.thumb_rect)
+	thumb := painting.Rect{rounded_thumb.x, rounded_thumb.y, rounded_thumb.width, rounded_thumb.height}
 	// Scrollbar::is_enlarged() is false until pointer interaction enlarges it,
 	// so the ordinary overlay has no gutter. Preserve the gutter path for data
 	// produced by that translated geometry helper as the interaction layer grows.
-	if data.gutter_rect.width > 0 && data.gutter_rect.height > 0 {
+	if gutter.width > 0 && gutter.height > 0 {
 		commands << PaintCommand{
 			kind: 'fill_rect'
-			x: data.gutter_rect.x
-			y: data.gutter_rect.y
-			width: data.gutter_rect.width
-			height: data.gutter_rect.height
+			x: gutter.x
+			y: gutter.y
+			width: gutter.width
+			height: gutter.height
 			color: overlay.scrollbar_track_color.serialize()
 			opacity: opacity
 		}
 	}
-	thumb := data.thumb_rect
 	mut thumb_color := overlay.scrollbar_thumb_color
-	if data.gutter_rect.width <= 0 && data.gutter_rect.height <= 0 && overlay.default_scrollbar_colors {
+	if gutter.width <= 0 && gutter.height <= 0 && overlay.default_scrollbar_colors {
 		// DisplayListPlayerSkia lowers only the initial thin thumb to alpha 128.
 		thumb_color.a = 128
 	}
 	// SkRRect normalizes the player's width/2 radius against the short axis.
-	radius := math.min(thumb.width, thumb.height) / 2.0
+	// DisplayListPlayerSkia constructs the rrect with width/2; SkRRect itself
+	// scales oversized horizontal radii for a short horizontal scrollbar.
+	radius := thumb.width / 2.0
 	radii := BoxRadii{
 		top_left: CornerRadius{radius, radius}
 		top_right: CornerRadius{radius, radius}
@@ -2674,7 +2698,8 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				}
 			}
 		}
-		if box.replaced_image_url != '' && !renders_replaced_image_as_alt_text {
+		if box.replaced_image_url != '' && !renders_replaced_image_as_alt_text
+			&& box.nested_viewport_document == none {
 			commands << PaintCommand{
 				kind: if box.replaced_image_paintable != none {
 					'draw_replaced_image'
@@ -8352,9 +8377,14 @@ fn parse_background_image_layers(element &dom.Element, author_rules []&css.CSSRu
 		}
 		source := parsed.url_.url()
 		resolved_url := element.document().encoding_parse_and_serialize_url(source) or { source }
+		svg_document := svg_image_document_for_source(element.document(), resolved_url)
+		intrinsic_width, intrinsic_height := background_svg_intrinsic_dimensions(element.document(), resolved_url, svg_document != none)
 		repeat_x, repeat_y := parsed_background_repeat(coordinated_background_value(element, .background_repeat, index, 'repeat', author_rules))
 		layers << BackgroundImageLayer{
 			url: resolved_url
+			svg_document: svg_document
+			intrinsic_width: intrinsic_width
+			intrinsic_height: intrinsic_height
 			repeat_x: repeat_x
 			repeat_y: repeat_y
 			size: coordinated_background_value(element, .background_size, index, 'auto', author_rules)

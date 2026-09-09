@@ -455,6 +455,35 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 	return size_with_optional_aspect_ratio(CSSPixels.new(image.width), CSSPixels.new(image.height))
 }
 
+// SVG backgrounds are painted from an isolated document instead of through
+// the bitmap decoder. Keep their natural size available to background sizing,
+// including for data: URLs that stb_image cannot decode.
+fn background_svg_intrinsic_dimensions(document &dom.Document, source string, is_svg bool) (f64, f64) {
+	if !is_svg {
+		return 0, 0
+	}
+	intrinsic := image_intrinsic_size_for_source(document, source) or { return 0, 0 }
+	mut width := f64(0)
+	mut height := f64(0)
+	if natural_width := intrinsic.width {
+		width = natural_width.to_double()
+	}
+	if natural_height := intrinsic.height {
+		height = natural_height.to_double()
+	}
+	if ratio := intrinsic.aspect_ratio {
+		if width > 0 && height <= 0 {
+			height = width / ratio.to_double()
+		} else if height > 0 && width <= 0 {
+			width = height * ratio.to_double()
+		} else if width <= 0 && height <= 0 {
+			width = ratio.numerator().to_double()
+			height = ratio.denominator().to_double()
+		}
+	}
+	return width, height
+}
+
 fn xml_start_tag_attribute(tag string, requested_name string) ?string {
 	mut position := 0
 	for position < tag.len && tag[position] != `<` {

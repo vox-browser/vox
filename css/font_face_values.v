@@ -4,6 +4,7 @@ import dom
 import fetch
 import math
 import mimesniff
+import platform
 import strconv
 import strings
 import webidl
@@ -4680,8 +4681,19 @@ fn platform_symbol_font_names_boundary() []string {
 }
 
 fn platform_typefaces_with_family_name_boundary(family_name string) []PlatformTypeface {
-	_ = family_name
-	return []
+	if !platform.system_font_family_available(family_name) {
+		return []
+	}
+	return [
+		PlatformTypeface{
+			family_name: family_name
+			weight_: 400
+		},
+		PlatformTypeface{
+			family_name: family_name
+			weight_: 700
+		},
+	]
 }
 
 fn platform_generic_font_name_boundary(generic_family string) string {
