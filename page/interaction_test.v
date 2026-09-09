@@ -130,6 +130,7 @@ fn test_event_handler_drops_input_during_drag_and_orders_pointer_mouse_click() {
 	target := InputTarget{
 		id: 'button'
 		is_focusable: true
+		is_editable: true
 	}
 	assert handler.handle_mousedown(target, 1) == .handled
 	assert handler.handle_mouseup(target) == .handled
@@ -142,7 +143,7 @@ fn test_event_handler_drops_input_during_drag_and_orders_pointer_mouse_click() {
 
 	handler.event_log.clear()
 	assert handler.handle_keydown(65, u32(`a`), 0, false, false) == .handled
-	assert handler.event_log.map(it.name) == ['keydown', 'beforeinput', 'input']
+	assert handler.event_log.map(it.name) == ['keydown', 'keypress', 'beforeinput', 'input']
 }
 
 fn test_event_handler_pointer_cancellation_and_mouseup_cleanup_match_upstream() {
@@ -219,6 +220,14 @@ fn test_event_handler_key_classification_matches_upstream_filters() {
 	assert is_enter_key_or_interoperable_enter_key_combo(13, 0)
 	assert is_enter_key_or_interoperable_enter_key_combo(13, dom.modifier_ctrl)
 	assert !is_enter_key_or_interoperable_enter_key_combo(13, dom.modifier_alt)
+
+	mut handler := EventHandler{}
+	handler.run_mousedown_default_actions(InputTarget{ id: 'button', is_focusable: true })
+	assert handler.handle_keydown(65, u32(`a`), 0, false, false) == .accepted
+	assert handler.event_log.map(it.name) == ['keydown', 'keypress']
+	assert handler.handle_paste('text') == .dropped
+	assert handler.handle_keyup(true, false) == .dropped
+	assert handler.event_log.map(it.name) == ['keydown', 'keypress']
 }
 
 fn test_event_handler_translates_chrome_hover_capture_and_swallow_order() {

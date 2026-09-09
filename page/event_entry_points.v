@@ -289,6 +289,7 @@ pub fn (mut handler EventHandler) initiate_paragraph_selection(position PixelPoi
 pub fn (mut handler EventHandler) run_mousedown_default_actions(target InputTarget) EventResult {
 	if target.is_focusable {
 		handler.focused_target_ = target.id
+		handler.focused_target_state = target
 	}
 	return .handled
 }
@@ -344,13 +345,14 @@ pub fn (mut handler EventHandler) focus_candidate_for_position(candidates []Inpu
 		(current_index + delta % focusable.len + focusable.len) % focusable.len
 	}
 	handler.focused_target_ = focusable[index].id
+	handler.focused_target_state = focusable[index]
 	return true
 }
 
 pub fn (mut handler EventHandler) fire_keyboard_event(name string, key int,
 	code_point u32, modifiers u32, repeat bool, cancelled bool) EventResult {
 	return if name == 'keyup' {
-		handler.handle_keyup(cancelled)
+		handler.handle_keyup(repeat, cancelled)
 	} else {
 		handler.handle_keydown(key, code_point, modifiers, repeat, cancelled)
 	}

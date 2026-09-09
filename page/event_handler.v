@@ -5,6 +5,7 @@
 // a typed InputTarget; dispatch/default-action ordering remains observable.
 module page
 
+import dom
 import painting
 
 pub type ChromeWidgetPointerEventCallback = fn (voidptr, string, string, int, PixelPoint) painting.MouseAction
@@ -51,6 +52,7 @@ mut:
 	prevent_mouse_event                  bool
 	previous_screen                      ?PixelPoint
 	focused_target_                      string
+	focused_target_state                 ?InputTarget
 	hovered_chrome_widget                string
 	captured_chrome_widget               string
 	chrome_widget_callback_target        voidptr = unsafe { nil }
@@ -121,6 +123,7 @@ pub fn (mut handler EventHandler) handle_mousedown(target ?InputTarget, click_co
 	}
 	if value.is_focusable {
 		handler.focused_target_ = value.id
+		handler.focused_target_state = value
 	}
 	return .handled
 }
@@ -212,65 +215,77 @@ pub fn (mut handler EventHandler) handle_mousewheel(target ?InputTarget) EventRe
 }
 
 pub fn (mut handler EventHandler) handle_keydown(key int, code_point u32, modifiers u32, repeat bool, cancelled bool) EventResult {
-	_ = modifiers
 	_ = repeat
 	if !handler.active_document {
 		return .dropped
 	}
-	handler.log('keydown', if handler.focused_target_ != '' {
-		InputTarget{
-			id: handler.focused_target_
-		}
-	} else {
-		none
-	})
+	target := handler.focused_target()
+	handler.log('keydown', target)
 	if cancelled {
 		return .cancelled
 	}
-	// Tab, Return, Backspace/Delete and navigation keys have UA default actions.
-	if key in [8, 9, 13, 33, 34, 35, 36, 37, 38, 39, 40, 46] {
+	if produces_character_value(key, code_point)
+		|| is_enter_key_or_interoperable_enter_key_combo(key, modifiers) {
+		handler.log('keypress', target)
+	}
+	// Tab traversal is performed by the document-backed caller in upstream.
+	if key == 9 && modifiers & dom.modifier_ctrl == 0 {
 		return .handled
 	}
-	if code_point != 0 && code_point != 27 {
-		handler.log('beforeinput', if handler.focused_target_ != '' {
-			InputTarget{
-				id: handler.focused_target_
+	if focused := target {
+		if focused.is_editable {
+			if key == 8 {
+				handler.log('beforeinput:deleteContentBackward', focused)
+				return .handled
 			}
-		} else {
-			none
-		})
-		handler.log('input', if handler.focused_target_ != '' {
-			InputTarget{
-				id: handler.focused_target_
+			if key == 46 {
+				handler.log('beforeinput:deleteContentForward', focused)
+				return .handled
 			}
-		} else {
-			none
-		})
+			if key in [13, 35, 36, 37, 38, 39, 40] {
+				return .handled
+			}
+			if !should_ignore_keydown_event(int(code_point), modifiers) {
+				handler.log('beforeinput', focused)
+				handler.log('input', focused)
+				return .handled
+			}
+		}
+	}
+	// Without an editing target these keys perform viewport scrolling.
+	if key in [35, 36] || (key in [33, 34, 37, 38, 39, 40] && modifiers == 0) {
 		return .handled
 	}
 	return .accepted
 }
 
-pub fn (mut handler EventHandler) handle_keyup(cancelled bool) EventResult {
-	if !handler.active_document {
+fn (handler &EventHandler) focused_target() ?InputTarget {
+	if target := handler.focused_target_state {
+		if target.id == handler.focused_target_ {
+			return target
+		}
+	}
+	if handler.focused_target_ != '' {
+		return InputTarget{ id: handler.focused_target_ }
+	}
+	return none
+}
+
+pub fn (mut handler EventHandler) handle_keyup(repeat bool, cancelled bool) EventResult {
+	if !handler.active_document || repeat {
 		return .dropped
 	}
-	handler.log('keyup', if handler.focused_target_ != '' {
-		InputTarget{
-			id: handler.focused_target_
-		}
-	} else {
-		none
-	})
+	handler.log('keyup', handler.focused_target())
 	return if cancelled { .cancelled } else { .accepted }
 }
 
 pub fn (mut handler EventHandler) handle_paste(text string) EventResult {
-	if !handler.active_document || handler.focused_target_ == '' || text == '' {
+	if !handler.active_document || text == '' {
 		return .dropped
 	}
-	target := InputTarget{
-		id: handler.focused_target_
+	target := handler.focused_target() or { return .dropped }
+	if !target.is_editable {
+		return .dropped
 	}
 	handler.log('beforeinput:insertFromPaste', target)
 	handler.log('input:insertFromPaste', target)
