@@ -31,6 +31,94 @@ pub:
 	object   GLuint
 }
 
+fn integer_parameter(value i64) WebGLParameterValue {
+	return WebGLParameterValue{ kind: .integer, integer: value }
+}
+
+fn number_parameter(value f64) WebGLParameterValue {
+	return WebGLParameterValue{ kind: .number, number: value }
+}
+
+fn boolean_parameter(value bool) WebGLParameterValue {
+	return WebGLParameterValue{ kind: .boolean, boolean: value }
+}
+
+fn default_webgl_parameters() map[GLenum]WebGLParameterValue {
+	mut parameters := map[GLenum]WebGLParameterValue{}
+	parameters[blend_dst_alpha] = integer_parameter(gl_zero)
+	parameters[blend_dst_rgb] = integer_parameter(gl_zero)
+	parameters[blend_equation_alpha] = integer_parameter(func_add)
+	parameters[blend_equation_rgb] = integer_parameter(func_add)
+	parameters[blend_src_alpha] = integer_parameter(gl_one)
+	parameters[blend_src_rgb] = integer_parameter(gl_one)
+	parameters[cull_face_mode] = integer_parameter(back)
+	parameters[depth_func] = integer_parameter(less)
+	parameters[front_face] = integer_parameter(ccw)
+	parameters[generate_mipmap_hint] = integer_parameter(dont_care)
+	parameters[polygon_offset_factor] = number_parameter(0)
+	parameters[polygon_offset_units] = number_parameter(0)
+	parameters[sample_coverage_value] = number_parameter(1)
+	parameters[sample_coverage_invert] = boolean_parameter(false)
+	parameters[stencil_func] = integer_parameter(always)
+	parameters[stencil_value_mask] = integer_parameter(-1)
+	parameters[stencil_fail] = integer_parameter(keep)
+	parameters[stencil_pass_depth_fail] = integer_parameter(keep)
+	parameters[stencil_pass_depth_pass] = integer_parameter(keep)
+	parameters[stencil_ref] = integer_parameter(0)
+	parameters[stencil_writemask] = integer_parameter(-1)
+	parameters[stencil_back_func] = integer_parameter(always)
+	parameters[stencil_back_value_mask] = integer_parameter(-1)
+	parameters[stencil_back_fail] = integer_parameter(keep)
+	parameters[stencil_back_pass_depth_fail] = integer_parameter(keep)
+	parameters[stencil_back_pass_depth_pass] = integer_parameter(keep)
+	parameters[stencil_back_ref] = integer_parameter(0)
+	parameters[stencil_back_writemask] = integer_parameter(-1)
+	return parameters
+}
+
+fn clamp_unit(value f32) f32 {
+	return if value < 0 {
+		f32(0)
+	} else if value > 1 { f32(1) } else { value }
+}
+
+fn valid_comparison_function(value GLenum) bool {
+	return value in [never, less, equal, lequal, greater, notequal, gequal, always]
+}
+
+fn valid_stencil_operation(value GLenum) bool {
+	return value in [keep, gl_zero, replace, incr, incr_wrap, decr, decr_wrap, invert]
+}
+
+fn (context &WebGLRenderingContext) valid_blend_equation(value GLenum) bool {
+	return value in [func_add, func_subtract, func_reverse_subtract]
+		|| (value in [gl_min, gl_max]
+			&& (context.version == .webgl2 || context.extension_enabled('EXT_blend_minmax')))
+}
+
+fn valid_blend_source_factor(value GLenum) bool {
+	return value in [gl_zero, gl_one, src_color, one_minus_src_color, src_alpha, one_minus_src_alpha,
+		dst_alpha, one_minus_dst_alpha, dst_color, one_minus_dst_color, src_alpha_saturate,
+		constant_color, one_minus_constant_color, constant_alpha, one_minus_constant_alpha]
+}
+
+fn valid_blend_destination_factor(value GLenum) bool {
+	return value != src_alpha_saturate && valid_blend_source_factor(value)
+}
+
+fn uses_constant_color(value GLenum) bool {
+	return value in [constant_color, one_minus_constant_color]
+}
+
+fn uses_constant_alpha(value GLenum) bool {
+	return value in [constant_alpha, one_minus_constant_alpha]
+}
+
+fn incompatible_constant_blend_factors(source GLenum, destination GLenum) bool {
+	return (uses_constant_color(source) && uses_constant_alpha(destination))
+		|| (uses_constant_alpha(source) && uses_constant_color(destination))
+}
+
 pub enum WebGLExportFormat {
 	bgra8
 	rgba8
@@ -228,23 +316,62 @@ pub fn (mut context WebGLRenderingContext) bind_texture(target GLenum, texture ?
 }
 
 pub fn (mut context WebGLRenderingContext) blend_color(red f32, green f32, blue f32, alpha f32) {
-	context.blend_color_ = [red, green, blue, alpha]!
+	context.blend_color_ = [clamp_unit(red), clamp_unit(green), clamp_unit(blue), clamp_unit(alpha)]!
 	context.command('blend_color', i64(red), i64(green), i64(blue), i64(alpha))
 }
 
 pub fn (mut context WebGLRenderingContext) blend_equation(mode GLenum) {
+	if !context.valid_blend_equation(mode) {
+		context.set_error(invalid_enum)
+		return
+	}
+	context.generic_parameters_[blend_equation_rgb] = integer_parameter(mode)
+	context.generic_parameters_[blend_equation_alpha] = integer_parameter(mode)
 	context.command('blend_equation', mode)
 }
 
 pub fn (mut context WebGLRenderingContext) blend_equation_separate(rgb GLenum, alpha GLenum) {
+	if !context.valid_blend_equation(rgb) || !context.valid_blend_equation(alpha) {
+		context.set_error(invalid_enum)
+		return
+	}
+	context.generic_parameters_[blend_equation_rgb] = integer_parameter(rgb)
+	context.generic_parameters_[blend_equation_alpha] = integer_parameter(alpha)
 	context.command('blend_equation_separate', rgb, alpha)
 }
 
 pub fn (mut context WebGLRenderingContext) blend_func(source GLenum, destination GLenum) {
+	if !valid_blend_source_factor(source) || !valid_blend_destination_factor(destination) {
+		context.set_error(invalid_enum)
+		return
+	}
+	if incompatible_constant_blend_factors(source, destination) {
+		context.set_error(invalid_operation)
+		return
+	}
+	context.generic_parameters_[blend_src_rgb] = integer_parameter(source)
+	context.generic_parameters_[blend_src_alpha] = integer_parameter(source)
+	context.generic_parameters_[blend_dst_rgb] = integer_parameter(destination)
+	context.generic_parameters_[blend_dst_alpha] = integer_parameter(destination)
 	context.command('blend_func', source, destination)
 }
 
 pub fn (mut context WebGLRenderingContext) blend_func_separate(source_rgb GLenum, destination_rgb GLenum, source_alpha GLenum, destination_alpha GLenum) {
+	if !valid_blend_source_factor(source_rgb) || !valid_blend_destination_factor(destination_rgb)
+		|| !valid_blend_source_factor(source_alpha)
+		|| !valid_blend_destination_factor(destination_alpha) {
+		context.set_error(invalid_enum)
+		return
+	}
+	if incompatible_constant_blend_factors(source_rgb, destination_rgb)
+		|| incompatible_constant_blend_factors(source_alpha, destination_alpha) {
+		context.set_error(invalid_operation)
+		return
+	}
+	context.generic_parameters_[blend_src_rgb] = integer_parameter(source_rgb)
+	context.generic_parameters_[blend_dst_rgb] = integer_parameter(destination_rgb)
+	context.generic_parameters_[blend_src_alpha] = integer_parameter(source_alpha)
+	context.generic_parameters_[blend_dst_alpha] = integer_parameter(destination_alpha)
 	context.command('blend_func_separate', source_rgb, destination_rgb, source_alpha, destination_alpha)
 }
 
@@ -270,6 +397,11 @@ pub fn (mut context WebGLRenderingContext) copy_tex_sub_image2d(target GLenum, l
 }
 
 pub fn (mut context WebGLRenderingContext) cull_face(mode GLenum) {
+	if mode !in [front, back, front_and_back] {
+		context.set_error(invalid_enum)
+		return
+	}
+	context.generic_parameters_[cull_face_mode] = integer_parameter(mode)
 	context.command('cull_face', mode)
 }
 
@@ -358,6 +490,11 @@ pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram)
 }
 
 pub fn (mut context WebGLRenderingContext) depth_func(function GLenum) {
+	if !valid_comparison_function(function) {
+		context.set_error(invalid_enum)
+		return
+	}
+	context.generic_parameters_[depth_func] = integer_parameter(function)
 	context.command('depth_func', function)
 }
 
@@ -382,6 +519,11 @@ pub fn (mut context WebGLRenderingContext) flush() {
 }
 
 pub fn (mut context WebGLRenderingContext) front_face(mode GLenum) {
+	if mode !in [cw, ccw] {
+		context.set_error(invalid_enum)
+		return
+	}
+	context.generic_parameters_[front_face] = integer_parameter(mode)
 	context.command('front_face', mode)
 }
 
@@ -390,6 +532,14 @@ pub fn (mut context WebGLRenderingContext) generate_mipmap(target GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) hint(target GLenum, mode GLenum) {
+	valid_target := target == generate_mipmap_hint
+		|| (target == fragment_shader_derivative_hint
+			&& (context.version == .webgl2 || context.extension_enabled('OES_standard_derivatives')))
+	if !valid_target || mode !in [dont_care, fastest, nicest] {
+		context.set_error(invalid_enum)
+		return
+	}
+	context.generic_parameters_[target] = integer_parameter(mode)
 	context.command('hint', target, mode)
 }
 
@@ -525,86 +675,96 @@ pub fn (mut context WebGLRenderingContext) get_buffer_parameter(target GLenum, p
 pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLParameterValue {
 	match pname {
 		active_texture {
-			return WebGLParameterValue{kind: .integer, integer: context.active_texture_}
+			return WebGLParameterValue{ kind: .integer, integer: context.active_texture_ }
 		}
 		array_buffer_binding, element_array_buffer_binding {
-			target := if pname == array_buffer_binding { array_buffer } else { element_array_buffer }
+			target := if pname == array_buffer_binding {
+				array_buffer
+			} else {
+				element_array_buffer
+			}
 			handle := context.bound_buffers[target] or { return WebGLParameterValue{} }
-			return WebGLParameterValue{kind: .object, object: handle}
+			return WebGLParameterValue{ kind: .object, object: handle }
 		}
 		framebuffer_binding {
-			return if context.bound_framebuffer == 0 { WebGLParameterValue{} } else { WebGLParameterValue{kind: .object, object: context.bound_framebuffer} }
+			return if context.bound_framebuffer == 0 {
+				WebGLParameterValue{}
+			} else {
+				WebGLParameterValue{ kind: .object, object: context.bound_framebuffer }
+			}
 		}
 		renderbuffer_binding {
-			return if context.bound_renderbuffer == 0 { WebGLParameterValue{} } else { WebGLParameterValue{kind: .object, object: context.bound_renderbuffer} }
+			return if context.bound_renderbuffer == 0 {
+				WebGLParameterValue{}
+			} else {
+				WebGLParameterValue{ kind: .object, object: context.bound_renderbuffer }
+			}
 		}
 		texture_binding_2d, texture_binding_cube_map {
 			target := if pname == texture_binding_2d { texture_2d } else { texture_cube_map }
 			handle := context.bound_textures[target] or { return WebGLParameterValue{} }
-			return WebGLParameterValue{kind: .object, object: handle}
+			return WebGLParameterValue{ kind: .object, object: handle }
 		}
 		current_program {
 			program := context.current_program or { return WebGLParameterValue{} }
-			return WebGLParameterValue{kind: .object, object: program.object.handle_}
+			return WebGLParameterValue{ kind: .object, object: program.object.handle_ }
 		}
-		blend, cull_face, depth_test, dither, polygon_offset_fill, sample_alpha_to_coverage,
-		sample_coverage, scissor_test, stencil_test {
-			return WebGLParameterValue{kind: .boolean, boolean: context.is_enabled(pname)}
+		blend, cull_face, depth_test, dither, polygon_offset_fill, sample_alpha_to_coverage, sample_coverage, scissor_test, stencil_test {
+			return WebGLParameterValue{ kind: .boolean, boolean: context.is_enabled(pname) }
 		}
 		blend_color {
-			return WebGLParameterValue{kind: .numbers, numbers: context.blend_color_[..].map(f64(it))}
+			return WebGLParameterValue{ kind: .numbers, numbers: context.blend_color_[..].map(f64(it)) }
 		}
 		color_clear_value {
-			return WebGLParameterValue{kind: .numbers, numbers: context.clear_color_[..].map(f64(it))}
+			return WebGLParameterValue{ kind: .numbers, numbers: context.clear_color_[..].map(f64(it)) }
 		}
 		color_writemask {
-			return WebGLParameterValue{kind: .booleans, booleans: context.color_mask_[..].clone()}
+			return WebGLParameterValue{ kind: .booleans, booleans: context.color_mask_[..].clone() }
 		}
 		depth_clear_value {
-			return WebGLParameterValue{kind: .number, number: context.clear_depth_}
+			return WebGLParameterValue{ kind: .number, number: context.clear_depth_ }
 		}
 		depth_range {
-			return WebGLParameterValue{kind: .numbers, numbers: context.depth_range_[..].clone()}
+			return WebGLParameterValue{ kind: .numbers, numbers: context.depth_range_[..].clone() }
 		}
 		depth_writemask {
-			return WebGLParameterValue{kind: .boolean, boolean: context.depth_mask_}
+			return WebGLParameterValue{ kind: .boolean, boolean: context.depth_mask_ }
 		}
 		line_width {
-			return WebGLParameterValue{kind: .number, number: context.line_width_}
+			return WebGLParameterValue{ kind: .number, number: context.line_width_ }
 		}
 		scissor_box {
-			return WebGLParameterValue{kind: .integers, integers: context.scissor_[..].map(i64(it))}
+			return WebGLParameterValue{ kind: .integers, integers: context.scissor_[..].map(i64(it)) }
 		}
 		viewport {
-			return WebGLParameterValue{kind: .integers, integers: context.viewport_[..].map(i64(it))}
+			return WebGLParameterValue{ kind: .integers, integers: context.viewport_[..].map(i64(it)) }
 		}
 		stencil_clear_value {
-			return WebGLParameterValue{kind: .integer, integer: context.clear_stencil_}
+			return WebGLParameterValue{ kind: .integer, integer: context.clear_stencil_ }
 		}
 		pack_alignment {
-			return WebGLParameterValue{kind: .integer, integer: context.pack_alignment_}
+			return WebGLParameterValue{ kind: .integer, integer: context.pack_alignment_ }
 		}
 		unpack_alignment {
-			return WebGLParameterValue{kind: .integer, integer: context.unpack_alignment_}
+			return WebGLParameterValue{ kind: .integer, integer: context.unpack_alignment_ }
 		}
 		compressed_texture_formats {
-			return WebGLParameterValue{kind: .integers, integers: context.enabled_compressed_texture_formats_.map(i64(it))}
+			return WebGLParameterValue{ kind: .integers, integers: context.enabled_compressed_texture_formats_.map(i64(it)) }
 		}
 		unpack_flip_y_webgl {
-			return WebGLParameterValue{kind: .boolean, boolean: context.unpack_flip_y_}
+			return WebGLParameterValue{ kind: .boolean, boolean: context.unpack_flip_y_ }
 		}
 		unpack_premultiply_alpha_webgl {
-			return WebGLParameterValue{kind: .boolean, boolean: context.unpack_premultiply_alpha_}
+			return WebGLParameterValue{ kind: .boolean, boolean: context.unpack_premultiply_alpha_ }
 		}
 		unpack_colorspace_conversion_webgl {
-			return WebGLParameterValue{kind: .integer, integer: context.unpack_colorspace_conversion_}
+			return WebGLParameterValue{ kind: .integer, integer: context.unpack_colorspace_conversion_ }
 		}
 		else {}
 	}
 	if context.version == .webgl2 {
 		match pname {
-			copy_read_buffer, copy_write_buffer, pixel_pack_buffer_binding,
-			pixel_unpack_buffer_binding, uniform_buffer_binding, transform_feedback_buffer_binding {
+			copy_read_buffer, copy_write_buffer, pixel_pack_buffer_binding, pixel_unpack_buffer_binding, uniform_buffer_binding, transform_feedback_buffer_binding {
 				target := match pname {
 					copy_read_buffer { copy_read_buffer }
 					copy_write_buffer { copy_write_buffer }
@@ -614,34 +774,38 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 					else { transform_feedback_buffer }
 				}
 				handle := context.bound_buffers[target] or { return WebGLParameterValue{} }
-				return WebGLParameterValue{kind: .object, object: handle}
+				return WebGLParameterValue{ kind: .object, object: handle }
 			}
 			transform_feedback_binding {
 				feedback := context.current_transform_feedback or { return WebGLParameterValue{} }
-				return WebGLParameterValue{kind: .object, object: feedback.object.handle_}
+				return WebGLParameterValue{ kind: .object, object: feedback.object.handle_ }
 			}
 			transform_feedback_active {
-				feedback := context.current_transform_feedback or { return WebGLParameterValue{kind: .boolean} }
-				return WebGLParameterValue{kind: .boolean, boolean: feedback.active_}
+				feedback := context.current_transform_feedback or { return WebGLParameterValue{ kind: .boolean } }
+				return WebGLParameterValue{ kind: .boolean, boolean: feedback.active_ }
 			}
 			transform_feedback_paused {
-				feedback := context.current_transform_feedback or { return WebGLParameterValue{kind: .boolean} }
-				return WebGLParameterValue{kind: .boolean, boolean: feedback.paused_}
+				feedback := context.current_transform_feedback or { return WebGLParameterValue{ kind: .boolean } }
+				return WebGLParameterValue{ kind: .boolean, boolean: feedback.paused_ }
 			}
 			rasterizer_discard {
-				return WebGLParameterValue{kind: .boolean, boolean: context.is_enabled(pname)}
+				return WebGLParameterValue{ kind: .boolean, boolean: context.is_enabled(pname) }
 			}
 			sampler_binding {
 				unit := GLuint(context.active_texture_ - texture0)
 				handle := context.bound_samplers[unit] or { return WebGLParameterValue{} }
-				return WebGLParameterValue{kind: .object, object: handle}
+				return WebGLParameterValue{ kind: .object, object: handle }
 			}
 			vertex_array_binding {
 				array := context.current_vertex_array or { return WebGLParameterValue{} }
-				return WebGLParameterValue{kind: .object, object: array.object.handle_}
+				return WebGLParameterValue{ kind: .object, object: array.object.handle_ }
 			}
 			else {}
 		}
+	}
+	if pname == fragment_shader_derivative_hint
+		&& (context.version == .webgl2 || context.extension_enabled('OES_standard_derivatives')) {
+		return context.generic_parameters_[pname] or { integer_parameter(dont_care) }
 	}
 	if value := context.generic_parameters_[pname] {
 		return value
@@ -788,6 +952,8 @@ pub fn (mut context WebGLRenderingContext) line_width(width f32) {
 }
 
 pub fn (mut context WebGLRenderingContext) polygon_offset(factor f32, units f32) {
+	context.generic_parameters_[polygon_offset_factor] = number_parameter(factor)
+	context.generic_parameters_[polygon_offset_units] = number_parameter(units)
 	context.command('polygon_offset', i64(factor), i64(units))
 }
 
@@ -807,30 +973,94 @@ pub fn (mut context WebGLRenderingContext) renderbuffer_storage(target GLenum, i
 }
 
 pub fn (mut context WebGLRenderingContext) sample_coverage(value f32, invert bool) {
+	context.generic_parameters_[sample_coverage_value] = number_parameter(clamp_unit(value))
+	context.generic_parameters_[sample_coverage_invert] = boolean_parameter(invert)
 	context.command('sample_coverage', i64(value), i64(invert))
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_func(function GLenum, reference int, mask GLuint) {
+	if !valid_comparison_function(function) {
+		context.set_error(invalid_enum)
+		return
+	}
+	context.generic_parameters_[stencil_func] = integer_parameter(function)
+	context.generic_parameters_[stencil_back_func] = integer_parameter(function)
+	context.generic_parameters_[stencil_ref] = integer_parameter(reference)
+	context.generic_parameters_[stencil_back_ref] = integer_parameter(reference)
+	context.generic_parameters_[stencil_value_mask] = integer_parameter(i64(i32(mask)))
+	context.generic_parameters_[stencil_back_value_mask] = integer_parameter(i64(i32(mask)))
 	context.command('stencil_func', function, reference, mask)
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_func_separate(face GLenum, function GLenum, reference int, mask GLuint) {
+	if face !in [front, back, front_and_back] || !valid_comparison_function(function) {
+		context.set_error(invalid_enum)
+		return
+	}
+	if face in [front, front_and_back] {
+		context.generic_parameters_[stencil_func] = integer_parameter(function)
+		context.generic_parameters_[stencil_ref] = integer_parameter(reference)
+		context.generic_parameters_[stencil_value_mask] = integer_parameter(i64(i32(mask)))
+	}
+	if face in [back, front_and_back] {
+		context.generic_parameters_[stencil_back_func] = integer_parameter(function)
+		context.generic_parameters_[stencil_back_ref] = integer_parameter(reference)
+		context.generic_parameters_[stencil_back_value_mask] = integer_parameter(i64(i32(mask)))
+	}
 	context.command('stencil_func_separate', face, function, reference, mask)
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_mask(mask GLuint) {
+	context.generic_parameters_[stencil_writemask] = integer_parameter(i64(i32(mask)))
+	context.generic_parameters_[stencil_back_writemask] = integer_parameter(i64(i32(mask)))
 	context.command('stencil_mask', mask)
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_mask_separate(face GLenum, mask GLuint) {
+	if face !in [front, back, front_and_back] {
+		context.set_error(invalid_enum)
+		return
+	}
+	if face in [front, front_and_back] {
+		context.generic_parameters_[stencil_writemask] = integer_parameter(i64(i32(mask)))
+	}
+	if face in [back, front_and_back] {
+		context.generic_parameters_[stencil_back_writemask] = integer_parameter(i64(i32(mask)))
+	}
 	context.command('stencil_mask_separate', face, mask)
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_op(fail GLenum, depth_fail GLenum, pass GLenum) {
+	if !valid_stencil_operation(fail) || !valid_stencil_operation(depth_fail)
+		|| !valid_stencil_operation(pass) {
+		context.set_error(invalid_enum)
+		return
+	}
+	context.generic_parameters_[stencil_fail] = integer_parameter(fail)
+	context.generic_parameters_[stencil_back_fail] = integer_parameter(fail)
+	context.generic_parameters_[stencil_pass_depth_fail] = integer_parameter(depth_fail)
+	context.generic_parameters_[stencil_back_pass_depth_fail] = integer_parameter(depth_fail)
+	context.generic_parameters_[stencil_pass_depth_pass] = integer_parameter(pass)
+	context.generic_parameters_[stencil_back_pass_depth_pass] = integer_parameter(pass)
 	context.command('stencil_op', fail, depth_fail, pass)
 }
 
 pub fn (mut context WebGLRenderingContext) stencil_op_separate(face GLenum, fail GLenum, depth_fail GLenum, pass GLenum) {
+	if face !in [front, back, front_and_back] || !valid_stencil_operation(fail)
+		|| !valid_stencil_operation(depth_fail) || !valid_stencil_operation(pass) {
+		context.set_error(invalid_enum)
+		return
+	}
+	if face in [front, front_and_back] {
+		context.generic_parameters_[stencil_fail] = integer_parameter(fail)
+		context.generic_parameters_[stencil_pass_depth_fail] = integer_parameter(depth_fail)
+		context.generic_parameters_[stencil_pass_depth_pass] = integer_parameter(pass)
+	}
+	if face in [back, front_and_back] {
+		context.generic_parameters_[stencil_back_fail] = integer_parameter(fail)
+		context.generic_parameters_[stencil_back_pass_depth_fail] = integer_parameter(depth_fail)
+		context.generic_parameters_[stencil_back_pass_depth_pass] = integer_parameter(pass)
+	}
 	context.command('stencil_op_separate', face, fail, depth_fail, pass)
 }
 

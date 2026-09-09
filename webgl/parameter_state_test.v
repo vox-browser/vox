@@ -12,8 +12,17 @@ fn test_get_parameter_reflects_tracked_webgl_state() {
 	assert context.get_parameter(depth_clear_value).number == 1
 	assert context.get_parameter(depth_writemask).boolean
 	assert context.get_parameter(pack_alignment).integer == 4
+	assert context.get_parameter(blend_equation_rgb).integer == func_add
+	assert context.get_parameter(blend_src_alpha).integer == gl_one
+	assert context.get_parameter(cull_face_mode).integer == back
+	assert context.get_parameter(depth_func).integer == less
+	assert context.get_parameter(front_face).integer == ccw
+	assert context.get_parameter(sample_coverage_value).number == 1
+	assert context.get_parameter(stencil_func).integer == always
+	assert context.get_parameter(stencil_writemask).integer == -1
 
 	context.clear_color(0.25, 0.5, 0.75, 1)
+	context.blend_color(-1, 0.5, 2, 1)
 	context.color_mask(true, false, true, false)
 	context.depth_range(0.2, 0.8)
 	context.viewport(1, 2, 300, 200)
@@ -21,8 +30,20 @@ fn test_get_parameter_reflects_tracked_webgl_state() {
 	context.disable(dither)
 	context.enable(blend)
 	context.pixel_storei(unpack_alignment, 1)
+	context.blend_equation_separate(func_subtract, func_reverse_subtract)
+	context.blend_func_separate(0x0302, 0x0303, 0x0304, 0x0305)
+	context.cull_face(front)
+	context.depth_func(gequal)
+	context.front_face(cw)
+	context.hint(generate_mipmap_hint, nicest)
+	context.polygon_offset(1.25, -2.5)
+	context.sample_coverage(0.75, true)
+	context.stencil_func_separate(front, notequal, 7, 0xf0)
+	context.stencil_mask_separate(back, 0x0f)
+	context.stencil_op_separate(front, replace, incr, decr_wrap)
 
 	assert context.get_parameter(color_clear_value).numbers == [0.25, 0.5, 0.75, 1.0]
+	assert context.get_parameter(blend_color).numbers == [0.0, 0.5, 1.0, 1.0]
 	assert context.get_parameter(color_writemask).booleans == [true, false, true, false]
 	assert context.get_parameter(depth_range).numbers == [0.2, 0.8]
 	assert context.get_parameter(viewport).integers == [i64(1), 2, 300, 200]
@@ -30,6 +51,75 @@ fn test_get_parameter_reflects_tracked_webgl_state() {
 	assert !context.get_parameter(dither).boolean
 	assert context.get_parameter(blend).boolean
 	assert context.get_parameter(unpack_alignment).integer == 1
+	assert context.get_parameter(blend_equation_rgb).integer == func_subtract
+	assert context.get_parameter(blend_equation_alpha).integer == func_reverse_subtract
+	assert context.get_parameter(blend_src_rgb).integer == 0x0302
+	assert context.get_parameter(blend_dst_alpha).integer == 0x0305
+	assert context.get_parameter(cull_face_mode).integer == front
+	assert context.get_parameter(depth_func).integer == gequal
+	assert context.get_parameter(front_face).integer == cw
+	assert context.get_parameter(generate_mipmap_hint).integer == nicest
+	assert context.get_parameter(polygon_offset_factor).number == 1.25
+	assert context.get_parameter(polygon_offset_units).number == -2.5
+	assert context.get_parameter(sample_coverage_value).number == 0.75
+	assert context.get_parameter(sample_coverage_invert).boolean
+	assert context.get_parameter(stencil_func).integer == notequal
+	assert context.get_parameter(stencil_ref).integer == 7
+	assert context.get_parameter(stencil_value_mask).integer == 0xf0
+	assert context.get_parameter(stencil_back_writemask).integer == 0x0f
+	assert context.get_parameter(stencil_fail).integer == replace
+	assert context.get_parameter(stencil_pass_depth_fail).integer == incr
+	assert context.get_parameter(stencil_pass_depth_pass).integer == decr_wrap
+}
+
+fn test_reset_restores_native_backed_parameter_defaults() {
+	mut context := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, [])
+	context.blend_equation(func_subtract)
+	context.cull_face(front)
+	context.sample_coverage(-2, true)
+	context.stencil_mask(0x1234)
+	assert context.get_parameter(sample_coverage_value).number == 0
+
+	context.reset_to_default_state()
+	assert context.get_parameter(blend_equation_rgb).integer == func_add
+	assert context.get_parameter(cull_face_mode).integer == back
+	assert context.get_parameter(sample_coverage_value).number == 1
+	assert !context.get_parameter(sample_coverage_invert).boolean
+	assert context.get_parameter(stencil_writemask).integer == -1
+}
+
+fn test_invalid_native_state_enums_do_not_change_tracked_values() {
+	mut context := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, [])
+	context.cull_face(0xdead)
+	assert context.get_parameter(cull_face_mode).integer == back
+	assert context.get_error() == invalid_enum
+	context.depth_func(0xdead)
+	assert context.get_parameter(depth_func).integer == less
+	assert context.get_error() == invalid_enum
+	context.stencil_op(front, keep, keep)
+	assert context.get_parameter(stencil_fail).integer == keep
+	assert context.get_error() == invalid_enum
+	context.blend_func(0xdead, gl_zero)
+	assert context.get_parameter(blend_src_rgb).integer == gl_one
+	assert context.get_error() == invalid_enum
+	context.blend_func(constant_color, constant_alpha)
+	assert context.get_parameter(blend_src_rgb).integer == gl_one
+	assert context.get_error() == invalid_operation
+}
+
+fn test_blend_minmax_and_derivative_hint_follow_version_and_extension_gates() {
+	mut webgl1 := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, [])
+	webgl1.blend_equation(gl_min)
+	assert webgl1.get_parameter(blend_equation_rgb).integer == func_add
+	assert webgl1.get_error() == invalid_enum
+	assert webgl1.get_parameter(fragment_shader_derivative_hint).kind == .none
+	assert webgl1.get_error() == invalid_enum
+
+	mut webgl2 := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
+	webgl2.blend_equation(gl_max)
+	webgl2.hint(fragment_shader_derivative_hint, fastest)
+	assert webgl2.get_parameter(blend_equation_rgb).integer == gl_max
+	assert webgl2.get_parameter(fragment_shader_derivative_hint).integer == fastest
 }
 
 fn test_get_parameter_returns_live_object_bindings_and_rejects_unknown_names() {

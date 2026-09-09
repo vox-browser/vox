@@ -77,6 +77,7 @@ pub fn WebGLRenderingContext.new(version WebGLVersion, attributes WebGLContextAt
 		enabled_capabilities: {
 			dither: true
 		}
+		generic_parameters_: default_webgl_parameters()
 	}
 }
 
@@ -170,6 +171,10 @@ pub fn (mut context WebGLRenderingContext) reset_to_default_state() {
 	context.active_texture_ = texture0
 	context.pack_alignment_ = 4
 	context.unpack_alignment_ = 4
+	context.blend_color_ = [f32(0), 0, 0, 0]!
+	context.line_width_ = 1
+	context.depth_range_ = [f64(0), 1]!
+	context.generic_parameters_ = default_webgl_parameters()
 }
 
 pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {
@@ -556,7 +561,7 @@ pub fn (mut context WebGLRenderingContext) disable_vertex_attrib_array(index GLu
 }
 
 pub fn (mut context WebGLRenderingContext) clear_color(red f32, green f32, blue f32, alpha f32) {
-	context.clear_color_ = [red, green, blue, alpha]!
+	context.clear_color_ = [clamp_unit(red), clamp_unit(green), clamp_unit(blue), clamp_unit(alpha)]!
 	context.native.dispatch('clear_color', i64(red), i64(green), i64(blue), i64(alpha))
 }
 
