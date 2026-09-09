@@ -446,6 +446,16 @@ pub fn html_script_element_execute_script(element &dom.HTMLScriptElement) {
 	model.execute_script()
 }
 
+pub fn html_script_element_is_ready_to_be_parser_executed(element &dom.HTMLScriptElement) bool {
+	model := html_script_element_model_for_dom_element(element)
+	return model.is_ready_to_be_parser_executed()
+}
+
+pub fn html_script_element_parser_execute_ready_script(element &dom.HTMLScriptElement) {
+	mut model := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(element)) }
+	model.parser_execute_ready_script()
+}
+
 pub fn html_script_element_children_changed(element &dom.HTMLScriptElement, metadata dom.ChildrenChangedMetadata) {
 	mut dom_element := script_dom_element(element)
 	dom_element.children_changed(metadata)

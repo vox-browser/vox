@@ -4888,6 +4888,22 @@ pub fn (mut d Document) update_readiness(readiness_value DocumentReadyState) {
 	d.dispatch_event_simple(event_readystatechange_, false)
 }
 
+pub fn (mut d Document) mark_dom_content_loaded_event_start() {
+	d.load_timing_info.dom_content_loaded_event_start_time = current_high_resolution_time(relevant_global_object_for_doc(d))
+}
+
+pub fn (mut d Document) mark_dom_content_loaded_event_end() {
+	d.load_timing_info.dom_content_loaded_event_end_time = current_high_resolution_time(relevant_global_object_for_doc(d))
+}
+
+pub fn (mut d Document) mark_load_event_start() {
+	d.load_timing_info.load_event_start_time = current_high_resolution_time(relevant_global_object_for_doc(d))
+}
+
+pub fn (mut d Document) mark_load_event_end() {
+	d.load_timing_info.load_event_end_time = current_high_resolution_time(relevant_global_object_for_doc(d))
+}
+
 // --- Selection ---
 
 // https://w3c.github.io/selection-api/#dom-document-getselection
@@ -6742,6 +6758,11 @@ pub fn (mut d Document) add_script_to_execute_in_order_as_soon_as_possible(scrip
 	d.scripts_to_execute_in_order_as_soon_as_possible << script
 }
 
+pub fn (d &Document) has_scripts_to_execute_as_soon_as_possible() bool {
+	return d.scripts_to_execute_as_soon_as_possible.len > 0
+		|| d.scripts_to_execute_in_order_as_soon_as_possible.len > 0
+}
+
 // --- Editable ---
 pub fn (mut d Document) set_editable(editable bool) {
 	d.editable = editable
@@ -6849,6 +6870,10 @@ pub fn (mut d Document) set_page_showing(page_showing bool) {
 	}
 	d.page_showing = page_showing
 	d.notify_each_document_observer_page_showing()
+}
+
+pub fn (d &Document) document_page_showing() bool {
+	return d.page_showing
 }
 
 // https://html.spec.whatwg.org/multipage/interaction.html#dom-document-hidden

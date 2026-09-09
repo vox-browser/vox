@@ -361,6 +361,22 @@ pub fn (event_loop &EventLoop) running_rendering_task() bool {
 	return event_loop.running_rendering_task
 }
 
+// Spin the event loop while an algorithm waits for a condition that can be
+// satisfied by queued work. The browser host can continue waiting when there
+// is no runnable work; the standalone runtime yields back to its caller.
+pub fn (mut event_loop EventLoop) spin_until(goal_condition fn() bool) {
+	event_loop.perform_a_microtask_checkpoint()
+	for !goal_condition() {
+		mut queue := event_loop.task_queue_
+		task := queue.take_first_runnable() or { break }
+		event_loop.currently_running_task_ = task
+		task.execute()
+		event_loop.currently_running_task_ = none
+		event_loop.perform_a_microtask_checkpoint()
+	}
+	event_loop.schedule()
+}
+
 // Run tasks from one task source while the embedding platform waits for the
 // supplied goal condition. In the standalone V runtime, exhausting the source
 // queue yields to the caller instead of entering a host event-loop wait.

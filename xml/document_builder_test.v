@@ -1,6 +1,12 @@
 module xml
 
 import dom
+import html
+
+struct XMLLifecycleObservation {
+mut:
+	events []string
+}
 
 fn test_document_builder_builds_namespaces_character_data_and_readiness() {
 	document := build_document('<?xml version="1.0"?><root xmlns="urn:root" xmlns:x="urn:x"><x:item a="1">A &amp; B<![CDATA[<c>]]></x:item><!--tail--></root>', dom.URL{
@@ -83,4 +89,38 @@ fn test_xml_document_builder_listener_entry_points() {
 	assert item.namespace_uri()? == 'urn:item'
 	assert item.get_attribute_ns('http://www.w3.org/XML/1998/namespace', 'lang')? == 'en'
 	assert item.as_node().text_content()? == 'hello world<raw>'
+}
+
+fn test_xml_document_builder_queues_browsing_context_lifecycle_events() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/data.xml' })
+	window := html.WindowModel.create_top_level(document, none, 'xml-lifecycle')!
+	observation := &XMLLifecycleObservation{}
+	listener := dom.IDLEventListener.create(&dom.CallbackType{
+		handle_event: fn [observation] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut mutable_observation := unsafe { &XMLLifecycleObservation(observation) }
+			mutable_observation.events << event.type_name()
+			return dom.js_undefined()
+		}
+	})
+	document_target := unsafe { &dom.EventTarget(document) }
+	document_target.add_event_listener_without_options('DOMContentLoaded', listener)
+	window.this_impl().add_event_listener_without_options('load', listener)
+	window.this_impl().add_event_listener_without_options('pageshow', listener)
+
+	mut builder := XMLDocumentBuilder.create(document, .enabled)
+	builder.set_source('<root/>')!
+	builder.parse_with_listener()!
+	assert document.readiness() == .interactive
+	assert document.document_ready_for_post_load_tasks()
+	assert observation.events.len == 0
+
+	mut event_loop := html.main_thread_event_loop()
+	for document.readiness() != .complete {
+		event_loop.process()
+	}
+	assert observation.events == ['DOMContentLoaded', 'load', 'pageshow']
+	assert document.is_completely_loaded()
+
+	document.destroy()
+	document.finalize()
 }
