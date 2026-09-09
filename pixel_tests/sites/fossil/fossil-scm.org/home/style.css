@@ -1,0 +1,2508 @@
+/* This CSS file holds the default implementations for all of fossil's
+   CSS classes. When /style.css is requested, the rules in this file
+   are emitted first, followed by (1) page-specific CSS (if any) and
+   (2) skin-specific CSS.
+*/
+body {
+  z-index: 0 /* Used by robot.c:robot_proofofwork() and href.js */;
+}
+div.sidebox {
+  float: right;
+  background-color: white;
+  border-width: medium;
+  border-style: double;
+  margin: 10px;
+}
+div.sideboxTitle {
+  display: inline;
+  font-weight: bold;
+}
+div.sideboxDescribed {
+  display: inline;
+  font-weight: bold;
+}
+span.disabled {
+  color: red;
+}
+table.timelineTable {
+  border-spacing: 0px 2px;
+}
+.timelineDate {
+  white-space: nowrap;
+}
+span.timelineDisabled {
+  font-style: italic;
+  font-size: small;
+}
+tr.timelineCurrent {
+  padding: .1em .2em;
+  border: 1px dashed #446979;
+  box-shadow: 1px 1px 4px 1px rgba(0, 0, 0, 0.5);
+}
+.timelineSelected {
+  padding: .1em .2em;
+  border: 2px solid lightgray;
+  background-color: #ffc;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+}
+.timelineSecondary {
+  background-color: #cff;
+}
+tr.timelineSelected td {
+  border-radius: 0;
+  border-width: 0;
+}
+tr.timelineCurrent td {
+  border-radius: 0;
+  border-width: 0;
+}
+span.timelineLeaf {
+  font-weight: bold;
+}
+span.timelineHash {
+  font-weight: bold;
+}
+span.timelineHistDsp {
+  font-weight: bold;
+}
+td.timelineTime {
+  vertical-align: top;
+  text-align: right;
+  white-space: nowrap;
+}
+td.timelineGraph {
+  width: 20px;
+  text-align: left;
+  vertical-align: top;
+}
+span.timelineCompactComment {
+  cursor: pointer;
+}
+span.timelineEllipsis {
+  cursor: pointer;
+}
+.timelineModernCell, .timelineColumnarCell, .timelineDetailCell {
+  vertical-align: top;
+  text-align: left;
+  padding: 0.75em;
+  border-radius: 1em;
+}
+.timelineModernCell[id], .timelineColumnarCell[id], .timelineDetailCell[id] {
+  background-color: #efefef;
+}
+.timelineModernDetail {
+  font-size: 80%;
+  text-align: right;
+  float: right;
+  opacity: 0.75;
+  margin-top: 0.5em;
+  margin-left: 1em;
+}
+.tl-canvas {
+  margin: 0 6px 0 10px;
+}
+.tl-rail {
+  width: 18px;
+}
+.tl-mergeoffset {
+  width: 2px;
+}
+.tl-nodemark {
+  margin-top: 5px;
+}
+.tl-node {
+  width: 10px;
+  height: 10px;
+  border: 1px solid #000;
+  background: #fff;
+  cursor: pointer;
+}
+.tl-node.leaf:after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 4px;
+  height: 4px;
+  background: #000;
+}
+.tl-node.closed-leaf svg {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 10px;
+  height: 10px;
+  color: #000;
+}
+.tl-node.sel:after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 6px;
+  height: 6px;
+  background: red;
+}
+.tl-arrow {
+  width: 0;
+  height: 0;
+  transform: scale(.999);
+  border: 0 solid transparent;
+}
+.tl-arrow.u {
+  margin-top: -1px;
+  border-width: 0 3px;
+  border-bottom: 7px solid #000;
+}
+.tl-arrow.u.sm {
+  border-bottom: 5px solid #000;
+}
+.tl-line {
+  background: #000;
+  width: 2px;
+}
+.tl-arrow.merge {
+  height: 1px;
+  border-width: 2px 0;
+}
+.tl-arrow.merge.l {
+  border-right: 3px solid #000;
+}
+.tl-arrow.merge.r {
+  border-left: 3px solid #000;
+}
+.tl-line.merge {
+  width: 1px;
+}
+.tl-arrow.cherrypick {
+  height: 1px;
+  border-width: 2px 0;
+}
+.tl-arrow.cherrypick.l {
+  border-right: 3px solid #000;
+}
+.tl-arrow.cherrypick.r {
+  border-left: 3px solid #000;
+}
+.tl-line.cherrypick.h {
+  width: 0px;
+  border-top: 1px dashed #000;
+  border-left: 0px dashed #000;
+  background: rgba(255,255,255,0);
+}
+.tl-line.cherrypick.v {
+  width: 0px;
+  border-top: 0px dashed #000;
+  border-left: 1px dashed #000;
+  background: rgba(255,255,255,0);
+}
+.tl-arrow.warp {
+  margin-left: 1px;
+  border-width: 3px 0;
+  border-left: 7px solid #600000;
+}
+.tl-line.warp {
+  background: #600000;
+}
+.tl-line.dotted.v {
+  width: 0px;
+  border-left-width: 2px;
+  border-left-style: dotted;
+  background: rgba(255,255,255,0);
+}
+.tl-tooltip {
+  text-align: center;
+  padding: 5px 1em;
+  border: 1px solid black;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 100;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.75);
+}
+
+span.tagDsp {
+  font-weight: bold;
+}
+span.wikiError {
+  font-weight: bold;
+  color: red;
+}
+span.infoTagCancelled {
+  font-weight: bold;
+  text-decoration: line-through;
+}
+span.infoTag {
+  font-weight: bold;
+}
+span.wikiTagCancelled {
+  text-decoration: line-through;
+}
+div.columns {
+  padding: 0 2em 0 2em;
+  max-width: 1000px;
+}
+div.columns > ul {
+  margin: 0;
+  padding: 0 0 0 1em;
+}
+div.columns > ul li:first-child {
+  margin-top:0px;
+}
+.columns li {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+body.help .columns li {
+  white-space: nowrap /* keep command name aliases from wrapping */;
+}
+.filetree {
+  margin: 1em 0;
+  line-height: 1.5;
+}
+.filetree > ul {
+  display: inline-block;
+}
+.filetree ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.filetree ul.collapsed {
+  display: none;
+}
+.filetree ul ul {
+  position: relative;
+  margin: 0 0 0 21px;
+}
+.filetree li {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+.filetree li li:before {
+  content: '';
+  position: absolute;
+  top: -.8em;
+  left: -14px;
+  width: 14px;
+  height: 1.5em;
+  border-left: 2px solid #aaa;
+  border-bottom: 2px solid #aaa;
+}
+.filetree li > ul:before {
+  content: '';
+  position: absolute;
+  top: -1.5em;
+  bottom: 0;
+  left: -35px;
+  border-left: 2px solid #aaa;
+}
+.filetree li.last > ul:before {
+  display: none;
+}
+.filetree a {
+  position: relative;
+  z-index: 1;
+  display: table-cell;
+  min-height: 16px;
+  padding-left: 21px;
+  background-image: url("data:image/gif;base64,R0lGODlhEAAQAJEAAP\/\/\/y\
+EhIf\/\/\/wAAACH5BAEHAAIALAAAAAAQABAAAAIvlIKpxqcfmgOUvoaqDSCxrEEfF14GqFX\
+ImJZsu73wepJzVMNxrtNTj3NATMKhpwAAOw==");
+  background-position: center left;
+  background-repeat: no-repeat;
+}
+ul.browser {
+  list-style-type: none;
+  padding: 10px;
+  margin: 0px;
+  white-space: nowrap;
+}
+ul.browser li.file {
+  padding-top: 2px;
+}
+ul.browser li.file > a {
+  padding-left: 20px;
+  background-repeat: no-repeat;
+  background-position: 0px center;
+  background-image: url("data:image/gif;base64,R0lGODlhEAAQAJEAAP\/\/\/\
+yEhIf\/\/\/wAAACH5BAEHAAIALAAAAAAQABAAAAIvlIKpxqcfmgOUvoaqDSCxrEEfF14Gq\
+FXImJZsu73wepJzVMNxrtNTj3NATMKhpwAAOw==");
+}
+ul.browser li.dir {
+  padding-top: 2px;
+}
+ul.browser li.dir > a {
+  padding-left: 20px;
+  background-image: url("data:image/gif;base64,R0lGODlhEAAQAJEAAP/WVCIiI\
+v\/\/\/wAAACH5BAEHAAIALAAAAAAQABAAAAInlI9pwa3XYniCgQtkrAFfLXkiFo1jaXpo+\
+jUs6b5Z/K4siDu5RPUFADs=");
+  background-repeat: no-repeat;
+  background-position: 0px center;
+}
+div.filetreeline {
+  display: table;
+  width: 100%;
+  white-space: nowrap;
+}
+.filetree .dir > div.filetreeline > a {
+  background-image: url("data:image/gif;base64,R0lGODlhEAAQAJEAAP/WVCIiI\
+v\/\/\/wAAACH5BAEHAAIALAAAAAAQABAAAAInlI9pwa3XYniCgQtkrAFfLXkiFo1jaXpo\
++jUs6b5Z/K4siDu5RPUFADs=");
+}
+div.filetreeage {
+ display: table-cell;
+ padding-left: 1.5em;
+ text-align: right;
+ width: 8em;
+}
+div.filetreesize {
+ display: table-cell;
+ padding-left: 1em;
+ text-align: right;
+ width: 7em;
+}
+div.filetreeline:hover {
+ background-color: #eee;
+}
+table.login_out {
+  text-align: left;
+  margin-right: 10px;
+  margin-left: 10px;
+  margin-top: 10px;
+}
+div.captcha {
+  text-align: center;
+  padding: 1ex;
+}
+table.captcha {
+  margin: auto;
+  padding: 10px;
+  border-width: 4px;
+  border-style: double;
+  border-color: black;
+}
+pre.captcha {
+  font-size: 50%;
+}
+td.login_out_label {
+  text-align: center;
+}
+span.loginError {
+  color: red;
+}
+span.note {
+  font-weight: bold;
+}
+span.textareaLabel {
+  font-weight: bold;
+}
+table.usetupLayoutTable {
+  outline-style: none;
+  padding: 0;
+  margin: 25px;
+}
+td.usetupColumnLayout {
+  vertical-align: top
+}
+table.usetupUserList {
+  outline-style: double;
+  outline-width: 1px;
+  padding: 10px;
+}
+th.usetupListUser {
+  text-align: right;
+  padding-right: 20px;
+}
+th.usetupListCap {
+  text-align: center;
+  padding-right: 15px;
+}
+th.usetupListCon {
+  text-align: left;
+}
+td.usetupListUser {
+  text-align: right;
+  padding-right: 20px;
+  white-space:nowrap;
+}
+td.usetupListCap {
+  text-align: center;
+  padding-right: 15px;
+}
+td.usetupListCon {
+  text-align: left
+}
+div.ueditCapBox {
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+td.usetupEditLabel {
+  text-align: right;
+  vertical-align: top;
+  white-space: nowrap;
+}
+span.ueditInheritNobody {
+  color: green;
+  padding: .2em;
+}
+span.ueditInheritDeveloper {
+  color: red;
+  padding: .2em;
+}
+span.ueditInheritReader {
+  color: black;
+  padding: .2em;
+}
+span.ueditInheritAnonymous {
+  color: blue;
+  padding: .2em;
+}
+span.capability {
+  font-weight: bold;
+}
+span.usertype {
+  font-weight: bold;
+}
+span.usertype:before {
+  content:"'";
+}
+span.usertype:after {
+  content:"'";
+}
+p.missingPriv {
+ color: blue;
+}
+span.wikiruleHead {
+  font-weight: bold;
+}
+td.tktDspLabel {
+  text-align: right;
+}
+td.tktDspValue {
+  text-align: left;
+  vertical-align: top;
+  background-color: #d0d0d0;
+}
+td.tktTlOpen {
+  color: #800;
+}
+td.tktTlClosed {
+  color: #888;
+}
+span.tktError {
+  color: red;
+  font-weight: bold;
+}
+table.rpteditex {
+  float: right;
+  margin: 0;
+  padding: 0;
+  width: 125px;
+  text-align: center;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+table.report {
+  border: 1px solid #999;
+  margin: 1em 0 1em 0;
+  cursor: pointer;
+}
+td.rpteditex {
+  border-width: thin;
+  border-color: #000000;
+  border-style: solid;
+}
+div.endContent {
+  clear: both;
+}
+p.generalError {
+  color: red;
+}
+p.tktsetupError {
+  color: red;
+  font-weight: bold;
+}
+p.xfersetupError {
+  color: red;
+  font-weight: bold;
+}
+p.thmainError {
+  color: red;
+  font-weight: bold;
+}
+span.thTrace {
+  color: red;
+}
+p.reportError {
+  color: red;
+  font-weight: bold;
+}
+blockquote.reportError {
+  color: red;
+  font-weight: bold;
+}
+p.noMoreShun {
+  color: blue;
+}
+p.shunned {
+  color: blue;
+}
+span.brokenlink {
+  color: red;
+}
+ul.filelist {
+  margin-top: 3px;
+  line-height: 100%;
+}
+ul.filelist li {
+  padding-top: 1px;
+}
+
+/* Rules governing diff layout and colors */
+table.diff {
+  width: 100%;
+  border-spacing: 0;
+  border-radius: 5px;
+  border: 1px solid black;
+  overflow: hidden; /* Prevent background from overlapping rounded borders. */
+  font-size: 80%;
+}
+table.diff td.diffln{
+  padding: 0;
+}
+table.diff td.diffln > pre{
+  padding: 0 0.25em 0 0.5em;
+  margin: 0;
+}
+table.diff td {
+  vertical-align: top;
+  padding: 0;
+  overflow: hidden /*work around inner PRE slight overflow/overlap*/;
+}
+table.diff pre {
+  margin: 0 0 0 0;
+  padding: 0 0.5em;
+  line-height: 1.275/*for mobile: forum post e6f4ee7de98b55c0*/;
+  text-size-adjust: none
+  /* ^^^ attempt to keep mobile from inflating some text */;
+}
+table.diff pre > ins,
+table.diff pre > del {
+  /* Fill platform-dependent color gaps caused by
+     inflated line-height */
+  padding: 0.062em 0 0.062em 0;
+}
+table.diff pre > ins > *,
+table.diff pre > del > *{
+  /* Avoid odd-looking color swatches in conjunction with
+     (table.diff pre > ins/del) padding */
+  padding: inherit;
+}
+table.diff td.diffln > pre {
+  padding: 0 0.35em 0 0.5em;
+}
+table.diff td > pre {
+  box-sizing: border-box;
+  /* Workaround for "slight wiggle" when using mouse-wheel in some FF
+     versions, apparently caused by the increased line-height forcing
+     these elements to be a *tick* larger than they should be but not
+     large enough to force a scroll bar to show up. */
+  overflow-y: hidden;
+}
+tr.diffskip.jchunk {
+  /* jchunk gets added from JS to diffskip rows when they are
+     plugged into the /jchunk route. */
+  background-color: aliceblue;
+  padding: 0;
+}
+tr.diffskip.jchunk > td {
+  padding: 0.25em 0.5em;
+  margin: 0;
+}
+tr.diffskip.jchunk:hover {
+  /*background-color: rgba(127,127,127,0.5);
+  cursor: pointer;*/
+}
+tr.diffskip > td.chunkctrl {
+  text-align: left;
+}
+tr.diffskip > td.chunkctrl > div {
+  display: flex;
+  align-items: center;
+}
+tr.diffskip > td.chunkctrl > div > span.error {
+  padding: 0.25em 0.5em;
+  border-radius: 0.5em;
+}
+tr.diffskip > td.chunkctrl .jcbutton
+/* class name .button breaks w/ some skins! */ {
+  min-width: 3.5ex;
+  max-width: 3.5ex;
+  text-align: center;
+  display: inline-block;
+  padding: 0.1em 1em;
+  margin: 0 1em 0 0;
+  background-color: rgba(127,127,127,0.2);
+  border-style: outset;
+  border-width: 0;
+  border-radius: 0.5em;
+  opacity: 0.7;
+}
+tr.diffskip > td.chunkctrl .jcbutton.up:not(.down){
+  /* Simulate an arrow pointing up */
+  border-radius: 3em 3em 0.25em 0.25em;
+}
+tr.diffskip > td.chunkctrl .jcbutton.down:not(.up){
+  /* Simulate an arrow pointing down */
+  border-radius: 0.25em 0.25em 3em 3em;
+}
+tr.diffskip > td.chunkctrl .jcbutton > span {
+  /* In order to increase the glyph size w/o increasing the em-based
+     button size or border-radius, we need an extra layer of DOM
+     element for the glyph. */
+  font-size: 150%;
+}
+tr.diffskip > td.chunkctrl .jcbutton.up > span::before {
+  content: '⇡';
+}
+tr.diffskip > td.chunkctrl .jcbutton.down > span::before {
+  content: '⇣';
+}
+tr.diffskip > td.chunkctrl .jcbutton.up.down > span::before {
+  content: '⇡⇣';
+}
+tr.diffskip > td.chunkctrl .jcbutton:hover {
+  cursor: pointer;
+  opacity: 1;
+  filter: contrast(1);
+}
+tr.diffchunk {
+  display: grid;
+  gap: 0px 0px;
+  grid-template-rows: 1fr;
+}
+table.splitdiff tr.diffchunk {
+  grid-template-columns: auto 1fr auto auto 1fr;
+  grid-template-areas: "difflnl difftxtl diffsep difflnr difftxtr";
+}
+table.udiff tr.diffchunk {
+  grid-template-columns: auto auto auto 1fr;
+  grid-template-areas: "difflnl difflnr diffsep difftxtu";
+}
+td.difflnl { grid-area: difflnl; }
+td.difflnr { grid-area: difflnr; }
+td.difftxtu { grid-area: difftxtu; }
+td.difftxtl  { grid-area: difftxtl; }
+td.difftxtr  { grid-area: difftxtr; }
+td.diffln {
+  width: fit-content;
+  text-align: right;
+  padding: 0 1em 0 0;
+}
+td.difflne {
+  padding-bottom: 0.4em;
+}
+td.diffsep {
+  width: fit-content;
+  padding: 0 0.3em 0 0.5em;
+  grid-area: diffsep;
+}
+td.difftxt pre {
+  overflow-x: auto;
+}
+td.diffln ins {
+  background-color: #a0e4b2;
+  text-decoration: none;
+}
+td.diffln del {
+  background-color: #ffc0c0;
+  text-decoration: none;
+}
+td.difftxt del {
+  background-color: #ffe8e8;
+  text-decoration: none;
+}
+td.difftxt del > del {
+  background-color: #ffc0c0;
+  text-decoration: none;
+  font-weight: bold;
+}
+td.difftxt del > del.edit {
+  background-color: #c0c0ff;
+  text-decoration: none;
+  font-weight: bold;
+}
+td.difftxt ins {
+  background-color: #dafbe1;
+  text-decoration: none;
+}
+td.difftxt ins > ins {
+  background-color: #a0e4b2;
+  text-decoration: none;
+  font-weight: bold;
+}
+td.difftxt ins > ins.edit {
+  background-color: #c0c0ff;
+  text-decoration: none;
+  font-weight: bold;
+}
+body.tkt div.content li > table.udiff {
+  margin-left: 1.5em;
+  margin-top: 0.5em;
+}
+body.tkt div.content ol.tkt-changes > li:target > p > span {
+  border-bottom: 3px solid gold;
+}
+body.tkt div.content ol.tkt-changes > li:target > ol {
+  border-left: 1px solid gold;
+}
+body.tkt .tktCommentArea {
+  display: flex;
+  flex-direction: column;
+}
+body.tkt .newest-first-controls {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+}
+body.tkt .tktCommentArea.reverse {
+  flex-direction: column-reverse;
+}
+body.cpage-ckout .file-change-line,
+body.cpage-info .file-change-line,
+body.cpage-vinfo .file-change-line,
+body.cpage-ci .file-change-line,
+body.cpage-vdiff .file-change-line {
+  margin-top: 16px;
+  margin-bottom: 16px;
+  margin-right: 1em /* keep it from nudging right up against the scrollbar-reveal zone */;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+span.modpending {
+  color: #b03800;
+  font-style: italic;
+}
+pre.th1result {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+pre.th1error {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: red;
+}
+pre.textPlain {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.statistics-report-graph-line {
+  border: 2px solid #446979;
+  background-color: #446979;
+}
+.statistics-report-graph-extra {
+  border: 2px dashed #446979;
+  border-left-style: none;
+}
+.statistics-report-table-events th {
+  padding: 0 1em 0 1em;
+}
+.statistics-report-table-events td {
+  padding: 0.1em 1em 0.1em 1em;
+}
+.statistics-report-row-year {
+  text-align: left;
+}
+.statistics-report-week-number-label {
+  text-align: right;
+  font-size: 0.8em;
+}
+.statistics-report-week-of-year-list {
+  font-size: 0.8em;
+}
+#usetupEditCapability {
+  font-weight: bold;
+}
+table.adminLogTable {
+  text-align: left;
+}
+.adminLogTable .adminTime {
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.fileage table {
+  border-spacing: 0;
+}
+.fileage tr:hover {
+  background-color: #eee;
+}
+.fileage td {
+  vertical-align: top;
+  text-align: left;
+  border-top: 1px solid #ddd;
+  padding-top: 3px;
+}
+.fileage td:first-child {
+  white-space: nowrap;
+}
+.fileage td:nth-child(2) {
+  padding-left: 1em;
+  padding-right: 1em;
+}
+.fileage td:nth-child(3) {
+  word-wrap: break-word;
+  max-width: 50%;
+}
+.brlist table {
+  border-spacing: 0;
+}
+.brlist table th {
+  text-align: left;
+  padding: 0px 1em 0.5ex 0px;
+  vertical-align: bottom;
+}
+.brlist table td {
+  padding: 0px 2em 0px 0px;
+  white-space: nowrap;
+}
+th.sort:after {
+  margin-left: .4em;
+  cursor: pointer;
+  text-shadow: 0 0 0 #000; 
+}
+th.sort.none:after {
+  content: '\2666';
+}
+th.sort.asc:after {
+  content: '\2193';
+}
+th.sort.desc:after {
+  content: '\2191';
+}
+span.snippet>mark {
+  background-color: inherit;
+  font-weight: bold;
+}
+div.searchForm {
+  text-align: center;
+}
+p.searchEmpty {
+  font-style: italic;
+}
+.clutter {
+  display: none;
+}
+table.label-value th {
+  vertical-align: top;
+  text-align: right;
+  padding: 0.2ex 1ex;
+}
+table.forum_post {
+  margin-top: 1ex;
+  margin-bottom: 1ex;
+  margin-left: 0;
+  margin-right: 0;
+  border-spacing: 0;
+}
+span.forum_author {
+  color: #888;
+  font-size: 75%;
+}
+span.forum_author::after {
+  content: " | ";
+}
+span.forum_age {
+  color: #888;
+  font-size: 85%;
+}
+span.forum_buttons {
+  font-size: 85%;
+}
+span.forum_buttons::before {
+  color: #888;
+  content: " | ";
+}
+span.forum_npost {
+  color: #888;
+  font-size: 75%;
+}
+table.forumeditform td {
+  vertical-align: top;
+  border-collapse: collapse;
+  padding: 1px;
+}
+div.forum_body p {
+  margin-top: 0;
+}
+div.forum-editor-widget{
+  display: flex;
+  flex-direction: column;
+}
+div.forum-editor-widget > textarea {
+  max-width: initial;
+}
+td.form_label {
+  vertical-align: top;
+  text-align: right;
+}
+.debug {
+  background-color: #ffc;
+  border: 2px solid #ff0;
+}
+div.forumEdit {
+  border: 1px solid black;
+  padding-left: 1ex;
+  padding-right: 1ex;
+}
+div.forumTimeline {
+  border: 1px solid black;
+  padding-left: 1ex;
+  padding-right: 1ex;
+  max-width: 50em;
+  overflow: auto;
+}
+div.forumTimeline code {
+  white-space: pre-wrap;
+}
+div.markdown code {
+  white-space: pre-wrap;
+}
+div.forumTime {
+  border: 1px solid black;
+  padding-left: 1ex;
+  padding-right: 1ex;
+  margin-top: 1ex;
+  display: flex;
+  flex-direction: column;
+}
+div.forumClosed {
+}
+div.forumClosed > .forumPostBody {
+  opacity: 0.7;
+}
+div.forumClosed > .forumPostHdr::before {
+  content: "[CLOSED] ";
+}
+/*div.forumClosed > div.forumPostBody {
+  filter: blur(5px);
+}*/
+div.forumpost-closure-warning {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  border-style: solid;
+  padding: 0.25em 0.5em;
+  background: #f4f400bb;
+  /*font-weight: bold;*/
+}
+div.forumpost-closure-warning input[type=submit] {
+  padding: 0.25em;
+}
+div.forumpost-single-controls {
+  /* UI controls along the bottom of a single post
+  ** in the thread view. */
+}
+.forum div > form {
+  margin: 0.5em 0;
+  display: inline-block;
+}
+body.cpage-forumedit div > form,
+body.cpage-forume2 div > form{
+  width: 100%;
+}
+.forum div > form > * {
+  margin-bottom: 0.35em;
+}
+.forum-post-collapser {
+  /* Common style for the bottom-of-post and right-of-post
+     expand/collapse widgets. */
+  font-size: 0.8em;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 0 0 0.5em 0.5em;
+  background-color: rgba(0, 0, 0, 0.05);
+  opacity: 0.8;
+  cursor: pointer;
+}
+.forum-post-collapser.bottom {
+  margin: 0 0 0.4em 0;
+  height: 1.75em;
+  line-height: 1.75em;
+  /* ^^^ Those sizes are finely tuned for the current selection of
+     arrow characters. If those change, these should, too. Remember that
+     FF/Chrome simply do not agree on alignment with most values :/.  */
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.forum-post-collapser.bottom > span {
+  margin: 0 1em 0 1em;
+  vertical-align: middle;
+}
+.forum-post-collapser.bottom > span::before {
+  content: "⇣⇣⇣";
+}
+.forum-post-collapser.bottom.expanded > span::before {
+  content: "⇡⇡⇡" /*reminder: FF/Chrome cannot agree on alignment of ⮝*/;
+}
+div.forumPostBody{
+  max-height: 50em;
+  overflow: auto;
+}
+div.forumPostBody.with-expander {
+  display: flex;
+  flex-direction: row;
+  overflow: auto;
+}
+div.forumPostBody.with-expander:not(.expanded) > :first-child {
+  overflow-y: hidden;
+}
+div.forumPostBody.with-expander > *:first-child {
+  /* Main content DIV/PRE */
+  overflow: auto;
+  flex: 10 1 auto;
+}
+div.forumPostBody.with-expander.expanded > *:first-child {
+  margin-bottom: 0.5em /* try to suppress scroll bar */;
+}
+div.forumPostBody.with-expander .forum-post-collapser.right {
+  /* "Tap zone" for expansion of the post, sits to the right of the
+     post's content. */
+  flex: 1 10 auto;
+  min-width: 1.25em;
+  max-width: 1.25em;
+  margin: 0 0 0 0.2em;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  border-radius: 0.1em;
+  cursor: pointer;
+  border-bottom: 0;
+  border-radius: 0 0.5em 0 0;
+}
+div.forumPostBody.with-expander .forum-post-collapser.right > span:before {
+  content: "⇣";
+}
+div.forumPostBody.with-expander.expanded .forum-post-collapser.right > span:before {
+  content: "⇡";
+}
+div.forumPostBody.expanded {
+  max-height: initial;
+}
+div.forumPostBody.shrunken {
+  /* When an expandable post is un-expanded, it is shrunkend down
+     to this size instead of its original size. */
+  max-height: 8em;
+}
+span.forumPostReplyTitle {
+  /* thread title part of the page header when replying to a post */
+  font-style: italic;
+}
+
+div.forumSel {
+  background-color: #cef;
+}
+div.forumObs {
+  color: #bbb;
+}
+
+div.setup_forum-column {
+  display: flex;
+  flex-direction: column;
+}
+
+body.forum span.forum-status-selection {
+  white-space: nowrap;
+}
+
+body.cpage-forum div.forumPosts tr[data-status] td.status {
+  /* Add a gap before the "X posts spanning Y time" labels,
+  ** which sometimes wrap and look odd without this gap. */
+  padding-left: 1em;
+}
+body.cpage-forum div.forumPosts tr[data-status="open"] {
+}
+body.cpage-forum div.forumPosts tr[data-status="resolved"] {
+}
+
+body.cpage-setup_forum > .content table {
+  margin-bottom: 1em;
+}
+body.cpage-setup_forum > .content table.bordered {
+  border: 1px solid;
+  border-radius: 0.25em;
+}
+body.cpage-setup_forum > .content table td,
+body.cpage-setup_forum > .content table th {
+  text-align: left;
+}
+body.cpage-setup_forum table.forum-settings-list > tbody > tr > td {
+  min-width: 2em;
+}
+
+#capabilitySummary {
+  text-align: center;
+}
+#capabilitySummary td {
+  padding-left: 3ex;
+  padding-right: 3ex;
+}
+#capabilitySummary th {
+  padding-left: 1ex;
+  padding-right: 1ex;
+}
+.capsumOff {
+  background-color: #bbb;
+}
+.capsumRead {
+  background-color: #bfb;
+}
+.capsumWrite {
+  background-color: #ffb;
+}
+label {
+  white-space: nowrap;
+}
+label[for] {
+  cursor: pointer;
+}
+button.copy-button,
+button.copy-button:hover,
+button.copy-button:focus,
+button.copy-button:active {
+  width: 14px;
+  height: 14px;
+/*Note: .24em is slightly smaller than the average width of a normal space.*/
+  margin: -2px .24em 0 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  font-size: inherit; /* Required for horizontal spacing. */
+  vertical-align: middle;
+  user-select: none;
+  cursor: pointer;
+}
+button.copy-button-flipped,
+button.copy-button-flipped:hover,
+button.copy-button-flipped:focus,
+button.copy-button-flipped:active {
+  margin: -2px 0 0 .24em;
+}
+button.copy-button span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' \
+viewBox='0,0,14,14'%3E%3Cpath style='fill:black;opacity:0' \
+d='M14,14H0V0h14v14z'/%3E%3Cpath style='fill:rgb(240,240,240)' \
+d='M1,0h6.6l2,2h1l3.4,3.4v8.6h-10v-2h-3z'/%3E%3Cpath style='fill:rgb(64,64,64)' \
+d='M2,1h5l3,3v7h-8z'/%3E%3Cpath style='fill:rgb(248,248,248)' \
+d='M3,2h3.6l2.4,2.4v5.6h-6z'/%3E%3Cpath style='fill:rgb(80,128,208)' \
+d='M4,5h4v1h-4zm0,2h4v1h-4z'/%3E%3Cpath style='fill:rgb(64,64,64)' \
+d='M5,3h5l3,3v7h-8z'/%3E%3Cpath style='fill:rgb(248,248,248)' \
+d='M10,4.4v1.6h1.6zm-4,-0.6h3v3h-3zm0,3h6v5.4h-6z'/%3E%3Cpath style='fill:rgb(80,128,208)' \
+d='M7,8h4v1h-4zm0,2h4v1h-4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+}
+button.copy-button:enabled:active span {
+  background-size: 90%;
+}
+button.copy-button:disabled span {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+.nobr {
+  white-space: nowrap;
+}
+.accordion {
+  cursor: pointer;
+}
+.accordion_btn {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: .5em;
+  vertical-align: middle;
+}
+/* Note: the order of the next 3 entries should be
+   maintained for the hierarchical cascade to work. */
+.accordion > .accordion_btn_plus {
+  display: none;
+}
+.accordion_closed > .accordion_btn_minus {
+  display: none;
+}
+.accordion_closed > .accordion_btn_plus {
+  display: inline-block;
+}
+.accordion_panel {
+  overflow-y: clip;
+  transition: max-height 0.25s ease-out;
+}
+.error {
+  color: darkred;
+  background: yellow;
+}
+.warning {
+  color: black;
+  background: yellow;
+}
+.hidden, .initially-hidden {
+  /* The framework-wide way of hiding elements is to assign them th
+     .hidden class. To make them visible again, remove it. The
+     !important qualifiers are unfortunate but sometimes necessary
+     when hidden element has other classes which specify
+     visibility-related options. The .initially-hidden class is for
+     pages which need to show, e.g., a progress widget while a large
+     WASM blob loads. Elements aside from that load-time widget can be
+     made .initially-hidden and then have that class removed once the
+     long-running startup process is done. See /pikchrshow for an
+     example. */
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important;
+}
+input {
+  max-width: 95%;
+}
+textarea {
+  max-width: 95%;
+}
+img {
+  max-width: 100%;
+}
+hr {
+  /* Needed to keep /dir README.txt from floating right in some skins */
+  clear: both;
+}
+
+/**
+  .tab-xxx: styles for fossil.tabs.js.
+*/
+.tab-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.tab-container > #fossil-status-bar {
+  margin-top: 0;
+}
+.tab-container > .tabs {
+  padding: 0.25em;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  border-width: 1px;
+  border-style: outset;
+  border-color: inherit;
+}
+.tab-container > .tabs > .tab-panel {
+  align-self: stretch;
+  flex: 10 1 auto;
+  display: block;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.tab-container > .tab-bar {
+  display: flex;
+  flex-direction: row;
+  flex: 1 10 auto;
+  align-self: stretch;
+  flex-wrap: wrap;
+}
+.tab-container > .tab-bar > .tab-button {
+  display: inline-block;
+  border-radius: 0.25em 0.25em 0 0;
+  margin: 0 0.1em;
+  padding: 0.25em 0.75em;
+  align-self: baseline;
+  border-color: inherit;
+  border-width: 1px;
+  border-bottom: none;
+  border-top-style: inset;
+  border-left-style: inset;
+  border-right-style: inset;
+  cursor: pointer;
+  opacity: 0.6;
+}
+.tab-container > .tab-bar > .tab-button.selected {
+  text-decoration: underline;
+  opacity: 1.0;
+  border-top-style: outset;
+  border-left-style: outset;
+  border-right-style: outset;
+}
+
+/**
+   The flex-xxx classes can be used to create basic flexbox layouts
+   through the application of classes to the containing/contained
+   objects.
+*/
+.flex-container {
+    display: flex;
+}
+.flex-container.flex-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+.flex-container .flex-grow {
+  flex-grow: 10;
+  flex-shrink: 0;
+}
+.flex-container .flex-shrink {
+  flex-grow: 0;
+  flex-shrink: 10;
+}
+.flex-container.flex-row.stretch {
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: stretch;
+  margin: 0;
+}
+.flex-container.flex-column {
+  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+.flex-container.flex-column.stretch {
+  align-items: stretch;
+  margin: 0;
+}
+.flex-container.child-gap-small > * {
+  margin: 0.25em;
+}
+#fossil-status-bar {
+  display: block;
+  border-width: 1px;
+  border-style: inset;
+  border-color: inherit;
+  min-height: 1.5em;
+  font-size: 1.2em;
+  padding: 0.2em;
+  margin: 0.25em 0;
+  flex: 0 0 auto;
+}
+.font-size-80 {
+  font-size: 80%;
+}
+.font-size-100 {
+  font-size: 100%;
+}
+.font-size-125 {
+  font-size: 125%;
+}
+.font-size-150 {
+  font-size: 150%;
+}
+.font-size-175 {
+  font-size: 175%;
+}
+.font-size-200 {
+  font-size: 200%;
+}
+
+/**
+   .input-with-label is intended to be a wrapper element which contain
+   both a LABEL tag and an INPUT or SELECT control.  The wrapper is
+   "necessary", as opposed to placing the INPUT in the LABEL, so that
+   we can include multiple INPUT elements (e.g. a set of radio
+   buttons). Note that these elements must sometimes be BLOCK elements
+   (e.g. DIV) so that certain nesting constructs are legal.
+*/
+.input-with-label {
+  border: 1px inset rgba(128, 128, 128, 0.5);
+  border-radius: 0.25em;
+  padding: 0.1em;
+  margin: 0 0.5em;
+  display: inline-block
+           /* We would really like flex layout but changing that
+              currently introduces a good deal of UI breakage
+              to chase down. The advantage would be better alignment
+              of the contained elements. */;
+  cursor: default;
+  white-space: nowrap;
+}
+.submenu .input-with-label {
+  border: none;
+}
+.input-with-label > * {
+  vertical-align: middle;
+}
+.input-with-label > label {
+  display: inline; /* some skins set label display to block! */
+  cursor: pointer;
+  white-space: nowrap;
+}
+.input-with-label > input {
+  margin: 0;
+}
+.input-with-label > button {
+  margin: 0;
+}
+.input-with-label > select {
+  margin: 0;
+}
+.input-with-label > input[type=text] {
+  margin: 0;
+}
+.input-with-label > textarea {
+  margin: 0;
+}
+/* Browsers are unfortunately inconsistent in how they
+   align checkboxes and radio buttons, even if they're
+   given the same vertical-align value. 'middle' seems to
+   be the least bad option, rather than the ideal. */
+.input-with-label > input[type=checkbox] {
+  vertical-align: middle;
+}
+.input-with-label > input[type=radio] {
+  vertical-align: middle;
+}
+.input-with-label > label {
+  font-weight: initial;
+  margin: 0 0.25em 0 0.25em;
+  vertical-align: middle;
+}
+
+table.numbered-lines {
+  width: 100%;
+  table-layout: fixed /* required to keep ultra-wide code from exceeding
+                         window width, and instead force a scrollbar
+                         on them. */;
+}
+table.numbered-lines > tbody > tr {
+  line-height: 1.35;
+  white-space: pre;
+}
+table.numbered-lines > tbody > tr > td {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: inherit;
+  margin: 0;
+  vertical-align: top;
+  padding: 0.25em 0 0 0 /*prevents slight overlap at top */;
+}
+table.numbered-lines td.line-numbers {
+  width: 4.5em;
+}
+table.numbered-lines td.line-numbers > pre {
+  margin: 0.25em/*must match top PADDING of td.file-content
+                  > pre > code*/ 0 0 0;
+  padding: 0;
+  line-height: inherit;
+  font-size: inherit;
+  font-family: inherit;
+}
+table.numbered-lines td.line-numbers span {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  line-height: inherit;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: pre;
+  margin-right: 2px/*keep selection from nudging the right column */;
+  text-align: right;
+}
+table.numbered-lines td.line-numbers span:hover {
+  background-color: rgba(112, 112, 112, 0.25);
+}
+table.numbered-lines td.file-content {
+  padding-left: 0.25em;
+}
+table.numbered-lines td.file-content > pre,
+table.numbered-lines td.file-content > pre > code {
+  margin: 0;
+  padding: 0;
+  line-height: inherit;
+  font-size: inherit;
+  font-family: inherit;
+  white-space: pre;
+  display: block/*necessary for certain skins!*/;
+}
+table.numbered-lines td.file-content > pre {
+}
+table.numbered-lines td.file-content > pre > code {
+  overflow: auto;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  padding-top: 0.25em/*any top padding here must match the top MARGIN of
+                       td.line-numbers's first span child or the
+                       lines/code will get misaligned. */;
+  padding-bottom: 0.25em/*prevents a slight overlap at bottom from
+                          triggering a scroller*/;
+}
+table.numbered-lines td.file-content > pre > code > * {
+  /* Defense against syntax highlighters indirectly messing up these
+     properties... */
+  line-height: inherit;
+  font-size: inherit;
+  font-family: inherit;
+}
+table.numbered-lines td.line-numbers span.selected-line/*replacement*/ {
+  font-weight: bold;
+  color: blue;
+  background-color: #d5d5ff;
+  border: 1px blue solid;
+  border-top-width: 0;
+  border-bottom-width: 0;
+  padding: 0;
+  margin: 0;
+}
+table.numbered-lines td.line-numbers span.selected-line.start {
+  border-top-width: 1px;
+  margin-top: -1px/*restore alignment*/;
+}
+table.numbered-lines td.line-numbers span.selected-line.end {
+  border-bottom-width: 1px;
+  margin-top: -1px/*restore alignment*/;
+}
+table.numbered-lines td.line-numbers span.selected-line.start.end {
+  margin-top: -2px/*restore alignment*/;
+}
+
+.fossil-tooltip {
+  text-align: center;
+  padding: 0.2em 1em;
+  border: 1px solid black;
+  border-radius: 0.5em;
+  position: absolute;
+  display: inline-block;
+  z-index: 19/*below default skin's hamburger popup*/;
+  box-shadow: -0.15em 0.15em 0.2em rgba(0, 0, 0, 0.75);
+  background-color: inherit;
+  color: inherit;
+}
+.fossil-PopupWidget {
+  /* This class is ALWAYS set on every fossil.PopupWidget instance, in
+     addition to client/app-configured classes. It should not get any
+     style - it is only used for DOM element selecting/filtering
+     purposes. */
+}
+.fossil-toast-message {
+  /* "toast"-style popup message.
+     See fossil.popupwidget:toast() */
+  position: absolute;
+  display: block;
+  z-index: 1001;
+  text-align: left;
+  padding: 0.15em 0.5em;
+  margin: 0;
+  font-size: 1em;
+  border-width: 1px;
+  border-style: solid;
+  border-color: rgba( 127, 127, 127, 0.75 );
+  border-radius: 0.25em;
+  background-color: rgba(20, 20, 20, 1)
+  /* problem: if we inherit the color it may either be
+     transparent or inherit translucency via the
+     skin, leaving it unreadable. Since we set the bg
+     color we must also set the fg color. */;
+  color: rgba(235, 235, 235, 0.9);
+}
+.fossil-PopupWidget a,
+.fossil-PopupWidget a:visited {
+  color: initial;
+}
+.fossil-toast-message.error,
+.fossil-toast-message.warning {
+  background: yellow;
+}
+.fossil-toast-message.error {
+  font-weight: bold;
+  color: darkred;
+  border-color: darkred;
+}
+.fossil-toast-message.warning {
+  color: black;
+}
+
+blockquote.file-content {
+  /* file content block in the /file page */
+  margin: 0 1em;
+}
+
+/* Generic sidebar styling inherited by skins that don't make their own
+ * arrangements. */
+.markdown blockquote, p.blockquote, .sidebar {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-left: 3px solid #777;
+  padding: 0.1em 1em;
+}
+.sidebar {
+  /* Generic form that can be applied to any block element. */
+  font-size: 90%;
+}
+div.sidebar {
+  /* Special exception for div-type sidebars, where there is no p
+   * wrapper inside to give us the extra padding we want. */
+  padding: 1em;
+}
+div.sidebar:not(.no-label):before {
+  content: "Sidebar: ";
+  font-weight: bold;
+}
+
+
+/**
+   Circular "help" buttons intended to be placed to the right of
+   another element and hold text text for it. These typically get
+   initialized automatically at page startup via
+   fossil.popupwidget.js, and can be manually initialized/created
+   using window.fossil.helpButtonlets.setup/create(). All of their
+   child content (plain text and/or DOM elements) gets moved out of
+   the DOM and shown in a singleton popup when they are clicked. They
+   may be SPAN elements if their children are all inline elements,
+   otherwise they must be DIVs (block elements) so that nesting of
+   block-element content is legal.
+*/
+.help-buttonlet {
+  display: inline-block;
+  min-width: 1em;
+  max-width: 1em;
+  min-height: 1em;
+  max-height: 1em;
+  cursor: pointer;
+  margin: 0 0 0 0.35em;
+  background-image: /* white question mark on blue circular background */
+    url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' \
+viewBox='0 0 15.867574 15.867574'%3e%3ccircle cx='7.9337869' cy='7.9337869' r='7.9337869' \
+style='fill:%23f0f0f0;stroke-width:1' /%3e%3ccircle cx='7.9337869' cy='7.9337869' \
+r='6.9662519' style='fill:%23404040;stroke-width:1' /%3e%3ccircle cx='7.9337869' \
+cy='7.9337869' r='5.9987168' style='fill:%235080d0;stroke-width:1' /%3e%3cpath \
+d='M 9.2253789,9.8629486 H 6.5997716 v -0.356384 q 0,-0.5963983 0.2400139,-1.0546067 \
+0.240014,-0.4654816 1.0109681,-1.1782504 L 8.316235,6.8518647 Q 8.7308046,6.473661 \
+8.9199065,6.1390961 9.1162816,5.8045312 9.1162816,5.4699662 q 0,-0.5091205 -0.3491113,-0.7927734 \
+-0.3491111,-0.2909259 -0.9746021,-0.2909259 -0.5891252,0 -1.2728012,0.247287 \
+-0.6836761,0.240014 -1.4255375,0.720042 V 3.0698267 q 0.8800513,-0.3054724 1.6073661,-0.4509353 \
+0.7273151,-0.145463 1.403718,-0.145463 1.7746486,0 2.7056104,0.727315 0.930965,0.720042 \
+0.930965,2.1092135 0,0.7127686 -0.283654,1.2800746 -0.283652,0.5600324 -0.967329,1.2073428 \
+L 10.025425,8.2119439 Q 9.530851,8.6628792 9.3781148,8.9392588 9.2253789,9.2083654 \
+9.2253789,9.535657 Z M 6.5997716,10.939376 h 2.6256073 v 2.589241 H 6.5997716 Z' \
+style='fill:%23f8f8f8;stroke-width:1.35412836' /%3e%3c/svg%3e ");
+  background-repeat: no-repeat;
+  background-position: center;
+  /* When not using a background image, this additional style works
+     reasonably well along with a ::before content of "?": */
+  /*border-width: 1px;
+  border-style: outset;
+  border-radius: 0.5em;
+  font-size: 100%;
+  font-family: monspace;
+  font-weight: 700;
+  overflow: hidden;
+  background-color: rgba(54, 54, 255,1);
+  color: rgb(255, 255, 255);
+  text-align: center;
+  line-height: 1; */
+}
+/*.help-buttonlet::before {
+  content: "?";
+}*/
+/**
+   We really want to hide all help text via CSS but CSS cannot select
+   TEXT nodes. Thus we move them out of the way programmatically
+   during initialization.
+*/
+.help-buttonlet > *{}
+
+/**
+   CSS class for PopupWidget which wraps .help-buttonlet content.
+   They also have class fossil-tooltip. We need an overly-exact
+   selector here to be certain that this class's style overrides
+   that of fossil-tooltip.
+*/
+.fossil-tooltip.help-buttonlet-content {
+  cursor: default;
+  text-align: left;
+  border-style: outset;
+}
+
+noscript > .error {
+  /* Part of the style_emit_noscript_for_js_page() interface. */
+  padding: 1em;
+  font-size: 150%;
+}
+
+/************************************************************
+ pikchr...
+ DOM structure:
+  <DIV.pikchr-wrapper>
+    <DIV.pikchr-svg>
+      <SVG.pikchr>...</SVG>
+    </DIV.pikchr-svg>
+    <DIV.pikchr-src>
+     <PRE>pikchr source code</PRE>
+     <SPAN class='hidden'><A>link to open pikchr in /pikchrshow</A></SPAN>
+     <!-- ^^^ is unhidden and activated by JS code -->
+    </DIV.pikchr-src>
+  </DIV.pikchr-wrapper>
+
+************************************************************/
+div.pikchr-wrapper {/*outer wrapper elem for a pikchr construct*/}
+div.pikchr-svg {/*wrapper for SVG.pikchr element*/}
+svg.pikchr {/*pikchr SVG*/
+  width: 100%/*necessary for SOME SVGs for Chrome!*/;
+}
+
+div.pikchr-src {
+  /*Wrapper for source code view of a pikchr (see fossil.pikchr.js)*/
+  display: flex;
+  flex-direction: column;
+}
+div.pikchr-src > pre {
+  /*Source code for a pikchr*/
+  box-sizing: border-box;
+  text-align: left;
+}
+div.pikchr-src > span {
+  /*Wrapper for a link to open a pikchr in /pikchrshow*/
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  font-size: 85%;
+}
+div.pikchr-src > span::before {
+  content: "[";
+}
+div.pikchr-src > span::after {
+  content: "]";
+}
+/* The .source-inline class tells the .source class that the
+   source view, when enabled, should be "inline" (same position
+   as the graphic), else the sources are shifted to the left as
+   if they were "plain text". */
+div.pikchr-wrapper.center:not(.source),
+div.pikchr-wrapper.center.source.source-inline{
+  text-align: center;
+  /* Reminder for The Future: this impl also works:
+
+      display: grid; place-items: center;
+
+     and does not require setting display:inline-block on the relevant
+     child items, but caniuse.com/css-grid suggests that some
+     still-seemingly-legitimate browsers don't support grid mode. */
+}
+div.pikchr-wrapper.center > div.pikchr-svg {
+  width: 100%/*necessary for Chrome!*/;
+}
+div.pikchr-wrapper.center:not(.source) > div.pikchr-src,
+div.pikchr-wrapper.center:not(.source) > div.pikchr-svg,
+/* ^^^ Centered non-source-view elements */
+div.pikchr-wrapper.center.source.source-inline div.pikchr-src,
+div.pikchr-wrapper.center.source.source-inline > div.pikchr-svg
+/* ^^^ Centered inline-source-view elements */{
+  display:inline-block/*allows parent text-align to do the alignment*/;
+  /* ^^^^ Browser incompatibility: inline-block causes the centered
+     pikchr to shrink to the point of illegiblity in Chrome. The
+     closest match on Chrome seems to be using 'unset', which centers
+     by virtue of stretching it to the width of the window. Similarly,
+     using {display: grid; place-items: center} centers and sizes well
+     on FF but Chrome shrinks it in the same way. */
+}
+div.pikchr-wrapper.indent:not(.source),
+div.pikchr-wrapper.indent.source.source-inline{
+  margin-left: 4em;
+}
+div.pikchr-wrapper.float-left:not(.source),
+div.pikchr-wrapper.float-left.source.source-inline {
+  float: left;
+  padding: 1em 2em;
+}
+div.pikchr-wrapper.float-right:not(.source),
+div.pikchr-wrapper.float-right.source.source-inline{
+  float: right;
+  padding: 1em 2em;
+}
+
+/* For pikchr-wrapper.source mode, toggle pre.pikchr-src and
+   svg.pikchr visibility... */
+div.pikchr-wrapper.source > div.pikchr-src {
+  /* Source code  ^^^^^^^ is visible, else it is hidden */
+}
+div.pikchr-wrapper:not(.source) > div.pikchr-src {
+  /* Hide sources when image is being shown. */
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important;
+}
+div.pikchr-wrapper.source > div.pikchr-svg {
+  /* Hide image when sources are being shown. */
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important;
+}
+
+
+/* An icon element intended for use as a button/menu for
+   accessing app-specific settings. */
+.settings-icon {
+  /* Icon source: https://de.wikipedia.org/wiki/Datei:OOjs_UI_icon_settings.svg
+     MIT License. */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg \
+xmlns='http://www.w3.org/2000/svg' width='24' height='24' \
+viewBox='0, 0, 24, 24'%3e%3cg id='settings'%3e%3cpath id='gear' \
+d='M3 4h3v2h-3zM12 4h9v2h-9zM8 3h2c.552 0 1 .448 1 1v2c0 .552-.448 1-1 1h-2c-.552 \
+0-1-.448-1-1v-2c0-.552.448-1 1-1zM3 11h9v2h-9zM18 11h3v2h-3zM14 10h2c.552 0 1 .448 \
+1 1v2c0 .552-.448 1-1 1h-2c-.552 0-1-.448-1-1v-2c0-.552.448-1 1-1zM3 18h6v2h-6zM15 \
+18h6v2h-6zM11 17h2c.552 0 1 .448 1 1v2c0 .552-.448 1-1 1h-2c-.552 \
+0-1-.448-1-1v-2c0-.552.448-1 1-1z'/%3e%3c/g%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: center;
+  display: inline-block;
+  min-height: 1em;
+  max-height: 1em;
+  min-width: 1em;
+  max-width: 1em;
+  margin: 0;
+  padding: 0.2em/*needed to avoid image truncation*/;
+  border: 1px solid rgba(0,0,0,0.0)/*avoid resize when hover style kicks in*/;
+  cursor: pointer;
+  border-radius: 0.25em;
+}
+.settings-icon:hover {
+  border: 1px outset rgba(127,127,127,1);
+}
+body.fossil-dark-style .settings-icon {
+  filter: invert(100%);
+}
+
+body.branch .brlist > table > tbody > tr:hover:not(.selected),
+body.branch .brlist > table > tbody > tr.selected {
+  background-color: #ffc;
+}
+body.branch .brlist > table > tbody td:first-child > input {
+  cursor: pointer;
+}
+body.branch .brlist > table > tbody > tr > td:nth-child(1) {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+body.branch .submenu > a.timeline-link {
+  display: none;
+}
+body.branch .submenu > a.timeline-link.selected {
+  display: inline;
+}
+
+/* Candidate fonts for various forms of monospaced text. Collected here
+ * to avoid repeating this long list of fonts. */
+code, kbd, pre, samp, tt, var,
+    div.markdown ol.footnotes > li.fn-joined > sup.fn-joined,
+    table.numbered-lines > tbody > tr,
+    tr.diffskip > td.chunkctrl,
+    #fossil-status-bar,
+    .monospace {
+  font-family: "MesloLGSDZ Nerd Font Mono",     /* 2025 hotness */
+               "Source Code Pro",               /* 2012 hotness */
+               "Menlo", "Monaco", "SF Mono",    /* Safari reverted to Courier in 2022 */
+               monospace;                       /* let OS/browser default take over */
+}
+
+div.markdown > ol.footnotes {
+  font-size: 90%;
+}
+div.markdown > ol.footnotes > li {
+  margin-bottom: 0.5em;
+}
+div.markdown ol.footnotes > li.fn-joined > sup.fn-joined {
+  color: gray;
+}
+div.markdown ol.footnotes > li.fn-joined > sup.fn-joined::after {
+  content: "(joined from multiple locations) ";
+}
+div.markdown ol.footnotes > li.fn-misreference {
+  margin-top:    0.75em;
+  margin-bottom: 0.75em;
+}
+div.markdown ol.footnotes > li.fn-toodeep > i,
+div.markdown ol.footnotes > li.fn-misreference,
+div.markdown ol.footnotes > li.fn-unreferenced {
+  color: gray;
+}
+div.markdown ol.footnotes > li.fn-misreference > span {
+  color: red;
+}
+div.markdown ol.footnotes > li.fn-misreference > span::after {
+  content: " (use of undefined label).";
+}
+div.markdown ol.footnotes > li.fn-unreferenced {
+  padding-left: 0.5em;
+}
+div.markdown ol.footnotes > li.fn-unreferenced > code {
+  color: red;
+}
+div.markdown ol.footnotes > li.fn-unreferenced > i::after {
+  content: " was defined but is not referenced";
+}
+div.markdown ol.footnotes > li.fn-toodeep > i::after {
+  content: " depth of nesting of inline footnotes exceeded the limit";
+}
+div.markdown ol.footnotes > li.fn-toodeep > pre,
+div.markdown ol.footnotes > li.fn-unreferenced > pre {
+  color: gray;
+  font-size: 85%;
+  padding-left: 0.5em;
+  margin-top:  0.25em;
+  border-left: 2px solid red;
+}
+div.markdown ol.footnotes > li.fn-toodeep > pre {
+  margin-left: 0.5em;
+}
+div.markdown > ol.footnotes > li > .fn-backrefs {
+  margin-right: 0.5em;
+  font-weight: bold;
+}
+div.markdown > ol.footnotes > li > .fn-backrefs > a,
+div.markdown sup.noteref > a {
+  padding-left:  2px;
+  padding-right: 2px;
+}
+div.markdown sup.noteref.misref,
+div.markdown sup.noteref.misref > a {
+  color: red;
+  font-size: 90%;
+}
+div.markdown sup.noteref > a:target,
+div.markdown span.notescope:target > sup.noteref > a,
+div.markdown span.notescope:hover  > sup.noteref > a,
+div.markdown > ol.footnotes > li > .fn-backrefs > a:target {
+  background: gold;
+}
+div.markdown span.notescope:hover,
+div.markdown span.notescope:target {
+  border-bottom: 2px solid gold;
+}
+
+/* Cause <dd> elements to be aligned complete to the
+** right of their <dt> on help pages. */
+dl.helpOptions {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 1rem;
+}
+dl.helpOptions > dt {
+  grid-column: 1;
+}
+dl.helpOptions > dd {
+  grid-column: 2;
+  margin: 0;
+}
+div.helpPage blockquote {
+  margin-left: 0.2em;
+}
+
+/* .attach* = styles for file attachments */
+section.attachlist {}
+details.attachlist > summary {
+  cursor: pointer;
+}
+/* .Attacher is the top container element used by the JS Attacher
+   class in fossil.attach.js. */
+.Attacher {
+  margin-bottom: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+}
+.Attacher.reverse {
+  flex-direction: column-reverse;
+}
+.Attacher .attach-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 0.75em;
+  border: 1px dashed #ccc;
+  border-radius: 0.25em;
+  background-color: #fafafa;
+}
+.Attacher .error {
+  padding: 0.5em;
+  background-color: #d32f2f;
+  color: #fff;
+}
+.Attacher .error a {
+  color: inherit;
+  text-decoration: underline;
+}
+body.fossil-dark-style .Attacher .attach-row {
+  background-color: initial;
+}
+.Attacher .attach-dropzone {
+  padding: 1em;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  border-radius: 0.25em;
+  transition: background-color 0.15s linear;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+}
+body.fossil-dark-style .Attacher .attach-dropzone{
+  background: initial;
+}
+.Attacher .attach-dropzone.populated {
+  background-color: #f1f8e9;
+  border-color: #8bc34a;
+  border-style: solid;
+  text-align: left;
+}
+body.fossil-dark-style .Attacher .attach-dropzone.populated{
+  background-color: initial;
+}
+.Attacher .attach-dropzone.dragover {
+  background-color: #e1f5fe;
+  color: black;
+  border-color: #03a9f4;
+}
+body.fossil-dark-style .Attacher .attach-dropzone.dragover{
+  background-color: #e1f5fe;
+  border-color: #03a9f4;
+}
+.Attacher .thumbnail {
+  max-width: 10em;
+  max-height: 10em;
+  margin: 0 1em;
+}
+.Attacher .attach-row-info{
+  font-family: monospace;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+.Attacher .attach-filename {}
+.Attacher .attach-size {/*size and mimetype*/}
+.Attacher .attach-desc {
+  max-width: initial;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 4em;
+  padding: 0.5em;
+  font-family: inherit;
+  resize: vertical;
+}
+.Attacher .attach-row-remove {
+  align-self: center;
+  padding: 0.25em 0.75em;
+  margin-left: 1em;
+  background-color: #d32f2f;
+  color: #fff;
+  border: none;
+  border-radius: 0.25em;
+  cursor: pointer;
+  font-weight: bold;
+}
+.Attacher .attach-row-remove:hover {
+  background-color: #b71c1c;
+}
+.Attacher .attach-controls {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+.Attacher .attach-controls .attach-add-button {
+  padding: 0.5em 1em;
+  cursor: pointer;
+  flex-grow: 2;
+  line-height: initial/*work around an inherited alignment quirk*/;
+}
+
+/* .animate-X and their associated @keyframes are used by various
+   widgets to animate their comings and goings. */
+.animate-entrance {
+  animation: slideFadeIn 0.25s linear forwards;
+  transform-origin: top;
+  overflow: hidden /*prevent content bleeding during expansion*/;
+}
+.animate-exit {
+  animation: slideFadeOut 0.25s linear forwards;
+  transform-origin: top;
+  overflow: hidden;
+}
+@keyframes slideFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-1em/*must match slideFadeOut*/);
+    max-height: 0;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 100em /*a value safely larger than the widget*/;
+  }
+}
+@keyframes slideFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 100em /*must match slideFadeIn*/;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-1em/*must match slideFadeIn*/);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+/* Objects in the "desktoponly" class are invisible on mobile */
+@media screen and (max-width: 600px) {
+  .desktoponly {
+    display: none;
+  }
+}
+/* Float sidebars to the right of the main content only if there's room. */
+@media screen and (min-width: 600px) {
+  .sidebar {
+    float: right;
+    max-width: 33%;
+    margin-left: 1em;
+  }
+}
+/* Objects in the "wideonly" class are invisible only on wide-screen desktops */
+@media screen and (max-width: 1200px) {
+  .wideonly {
+    display: none;
+  }
+}
+
+/***********************************************************
+** Skin-specific CSS for this repository
+***********************************************************/
+/* Overall page style; vi: filetype=css
+ */
+
+body {
+  margin: 0 auto;
+  background-color: white;
+  font-family: sans-serif;
+  font-size: 14pt;
+}
+
+a {
+  color: #4183C4;
+  text-decoration: none;
+}
+a:hover {
+  color: #4183C4;
+  text-decoration: underline;
+}
+
+
+/* Page title, above menu bars */
+
+.title {
+  color: #4183C4;
+  float: left;
+}
+.title h1 {
+  display: inline;
+}
+.title h1:after {
+  content: " / ";
+  color: #777;
+  font-weight: normal;
+}
+.status {
+  float: right;
+  font-size: 0.7em;
+}
+
+
+/* Main menu and optional sub-menu */
+
+.mainmenu {
+  font-size: 0.8em;
+  clear: both;
+  background: #eaeaea linear-gradient(#fafafa, #eaeaea) repeat-x;
+  border: 1px solid #eaeaea;
+  border-radius: 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  z-index: 21;  /* just above hbdrop */
+}
+.mainmenu a {
+  text-decoration: none;
+  color: #777;
+  border-right: 1px solid #eaeaea;
+}
+.mainmenu a.active,
+.mainmenu a:hover {
+  color: #000;
+  border-bottom: 2px solid #D26911;
+}
+nav#hbdrop {
+  background-color: white;
+  border: 1px solid black;
+  border-top: white;
+  border-radius: 0 0 0.5em 0.5em;
+  display: none;
+  font-size: 80%;
+  left: 2em;
+  width: 90%;
+  padding-right: 1em;
+  position: absolute;
+  z-index: 20;  /* just below mainmenu, but above timeline bubbles */
+}
+
+.submenu {
+  font-size: .7em;
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+}
+.submenu a, .submenu label {
+  padding: 10px 11px;
+  text-decoration: none;
+  color: #777;
+}
+.submenu label {
+  white-space: nowrap;
+}
+.submenu a:hover, .submenu label:hover {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  color: #000;
+}
+span.submenuctrl, span.submenuctrl input, select.submenuctrl {
+  color: #777;
+}
+span.submenuctrl {
+  white-space: nowrap;
+}
+
+
+/* Main document area; elements common to most pages. */
+
+.content {
+  padding-top: 10px;
+  font-size: 0.8em;
+  color: #444;
+}
+.content blockquote {
+  padding: 0 15px;
+}
+.content h1 {
+  font-size: 1.25em;
+}
+.content h2 {
+  font-size: 1.15em;
+}
+.content h3 {
+  font-size: 1.05em;
+}
+
+.section {
+  font-size: 1em;
+  font-weight: bold;
+  background-color: #f5f5f5;
+  border: 1px solid #d8d8d8;
+  border-radius: 3px 3px 0 0;
+  padding: 9px 10px 10px;
+  margin: 10px 0;
+}
+.sectionmenu {
+  border: 1px solid #d8d8d8;
+  border-radius: 0 0 3px 3px;
+  border-top: 0;
+  margin-top: -10px;
+  margin-bottom: 10px;
+  padding: 10px;
+}
+.sectionmenu a {
+  display: inline-block;
+  margin-right: 1em;
+}
+
+hr {
+  color: #eee;
+}
+
+
+/* Page footer */
+
+footer {
+  border-top: 1px solid #ccc;
+  padding: 10px;
+  font-size: 0.7em;
+  margin-top: 10px;
+  color: #ccc;
+}
+
+/* Forum */
+
+.forum a:visited {
+  color: #6A7F94;
+}
+
+.forum blockquote {
+  background-color: rgba(65, 131, 196, 0.1);
+  border-left: 3px solid #254769;
+  padding: .1em 1em;
+}
+
+
+/* Markdown and Wiki-formatted pages: /wiki, /doc, /file... */
+
+.doc > .content table {
+  background-color: rgba(0, 0, 0, 0.05);
+  border: 1px solid #aaa;
+  border-radius: 0.5em;
+  border-spacing: 0;
+  padding: 6px;
+}
+.doc > .content th {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 4px;
+  padding-right: 6px;
+  text-align: left;
+}
+.doc > .content tr > th {
+  background-color: #eee;
+}
+.doc > .content tr:nth-child(odd) {
+  background-color: #e8e8e8;
+}
+.doc > .content td {
+  padding-bottom: 4px;
+  padding-right: 6px;
+  text-align: left;
+}
+
+
+/* Tickets */
+
+table.report {
+  cursor: auto;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  margin: 1em 0;
+}
+.report td, .report th {
+ border: 0;
+ font-size: .8em;
+ padding: 10px;
+}
+.report td:first-child {
+  border-top-left-radius: 5px;
+}
+.report tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 5px;
+}
+.report td:last-child {
+  border-top-right-radius: 5px;
+}
+.report tbody tr:last-child {
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+.report tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 5px;
+}
+.report th {
+  cursor: pointer;
+}
+.report thead+tbody tr:hover {
+  background-color: #f5f9fc !important;
+}
+
+td.tktDspLabel {
+  width: 70px;
+  text-align: right;
+  overflow: hidden;
+}
+td.tktDspValue {
+  text-align: left;
+  vertical-align: top;
+  background-color: #f8f8f8;
+  border: 1px solid #ccc;
+}
+td.tktDspValue pre {
+  white-space: pre-wrap;
+}
+
+
+/* Timeline */
+
+span.timelineDetail {
+  font-size: 90%;
+}
+div.timelineDate {
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+
+/* Miscellaneous UI elements */
+
+.fossil-tooltip.help-buttonlet-content {
+  background-color: lightyellow;
+}
+
+
+/* Exceptions for specific screen sizes */
+
+@media screen and (max-width: 600px) {
+  /* Spacing for mobile */
+  body {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .title {
+    padding-top: 0px;
+    padding-bottom: 0px;
+  }
+  .status {padding-top: 0px;}
+  .mainmenu a {
+    padding: 8px 10px;
+  }
+  .mainmenu {
+    padding: 10px;
+  }
+}
+@media screen and (min-width: 600px) {
+  /* Spacing for desktop */
+  body {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .title {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .status {padding-top: 30px;}
+  .mainmenu a {
+    padding: 8px 20px;
+  }
+  .mainmenu {
+    padding: 10px;
+  }
+}

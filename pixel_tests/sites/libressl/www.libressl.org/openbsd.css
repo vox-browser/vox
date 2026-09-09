@@ -1,0 +1,346 @@
+/* $OpenBSD: openbsd.css,v 1.12 2022/01/04 16:43:45 tj Exp $ */
+
+:root {
+	--red:   #E00000;
+	--green: #008100;
+	--blue:  #0000E0;
+	--buildhead: #E0E0E0;
+}
+
+:link {
+	color: #23238E;
+}
+
+:visited {
+	color: #008088;
+}
+
+body {
+	background-color: #FFFFFF;
+	color: #111111;
+	margin: 15px auto;
+	padding: 0 10px;
+}
+
+code {
+	white-space: nowrap;
+}
+
+@media (min-width: 800px) {
+	body {
+		max-width: 85%;
+	}
+}
+
+tt {
+	white-space: pre;
+}
+
+.cmdbox {
+	background: #F5F5F5;
+	border: 1px solid #AAAAAA;
+	overflow: auto;
+	padding: 10px;
+}
+
+.zebra {
+	background: #F5F5F5;
+	border: 1px solid #AAAAAA;
+	border-collapse: collapse;
+}
+
+.zebra tr:nth-child(odd) {
+	background: #E5E5E5;
+}
+
+.zebra td {
+	border: 1px solid #AAAAAA;
+	padding: 7px;
+}
+
+#OpenBSD {
+	color: #E00000;
+}
+
+#OpenBSD :link i, #OpenBSD :visited i {
+	color: #0000FF;
+}
+
+#OpenBSD :link b, #OpenBSD :visited b {
+	color: #000084;
+}
+
+#OpenBSD small {
+	font-weight: normal;
+	float: right;
+}
+
+/* sidebar layout */
+
+#project-main body {
+	height: 100%;
+	max-width: 100%;
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	top: 0;
+	display: table;
+	padding: 0;
+	margin: 0;
+}
+
+#project-main nav,
+#project-main article,
+#project-main figure,
+#project-main aside {
+	display: table-cell;
+	padding: 4px;
+}
+
+#project-main nav,
+#project-main figure {
+	border-right: 11px solid;
+	background-color: #6BBDD6;
+	border-color: #007B9C;
+}
+
+#project-main nav header {
+	margin: 0;
+	font-size: 15pt;
+	font-weight: bolder;
+	white-space: nowrap;
+}
+
+#project-main nav ul {
+	margin-top: 0;
+	margin-bottom: 1em;
+	padding-left: 0;
+}
+
+#project-main nav li {
+	list-style-type: none;
+	list-style-position: inside;
+	margin-left: 0.5em;
+}
+
+#project-main article h2 {
+	margin: 0;
+	text-align: center;
+}
+
+#callout {
+	color: #23238E;
+	font-weight: normal;
+	text-align: center;
+}
+
+.not-openbsd #callout {
+	color: #0000A0;
+	font-weight: normal;
+}
+
+#project-main main,
+#project-main footer {
+	display: table-row;
+}
+
+#project-main nav {
+	vertical-align: top;
+}
+
+#project-main figure,
+#project-main aside {
+	vertical-align: bottom;
+}
+
+/* errataXX.html */
+
+#errata strong {
+	color: var(--green);
+}
+
+/* XX.html */
+
+#release #OpenBSD + table {
+	border-spacing: 0;
+	margin-bottom: 1.5em;
+}
+
+#release #OpenBSD + table td {
+	vertical-align: top;
+}
+
+#release #OpenBSD + table > tbody > tr > td {
+	padding-left: 1.4em;
+}
+
+#release #OpenBSD + table ul {
+	margin-left: 0;
+	padding-left: 0;
+}
+
+#release #OpenBSD + table ul li {
+	margin-left: 0;
+	padding-left: 0;
+}
+
+#release cite.isbn {
+	color: var(--red);
+	font-style: normal;
+}
+
+#release code.reldir {
+	color: var(--red);
+	font-family: serif;
+}
+
+#release table.signify {
+	font-family: monospace;
+}
+
+#release table.signify td {
+	padding: 0;
+}
+
+#release h3 {
+	color: var(--blue);
+}
+
+#release #quickinstall h3 {
+	color: var(--red);
+}
+
+#release kbd {
+	font-weight: bolder;
+}
+
+#release #new li p {
+	margin-bottom: 0;
+}
+
+#release #new li p + p {
+	margin-top: 0;
+}
+
+#release #new li + li {
+	margin-top: 1em;
+}
+
+#release #new li li + li {
+	margin-top: 0;
+}
+
+#release #new li li ul {
+	margin-bottom: 0;
+}
+
+#release #quickinstall p:first-child {
+	margin-left: 0;
+}
+
+#release #quickinstall p {
+	margin-left: 2.5em;
+}
+
+#release #quickinstall blockquote {
+	margin-left: 4.5em;
+}
+
+/* platform pages */
+
+#platform #OpenBSD + hr + table {
+	margin-bottom: 0;
+}
+#platform #OpenBSD + hr + table tr {
+	margin-left: 0;
+}
+
+#platform #OpenBSD + hr + table td {
+	vertical-align: top;
+	padding-left: 0;
+	padding-bottom: 0;
+}
+
+#platform #OpenBSD + hr + table p {
+	margin-top: 0;
+}
+
+#platform #OpenBSD + hr + table p:last-child {
+	margin-bottom: 0;
+}
+
+#platform h3 {
+	color: var(--blue);
+}
+
+/* redefine colors for dark mode */
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--red:   #E05434;
+		--green: #20B700;
+		--blue:  #A7C1E5;
+		--buildhead: #474749;
+	}
+
+	:link {
+		color: #BAD7FF;
+	}
+
+	:visited {
+		color: #F6BAFF;
+	}
+
+	body {
+		background-color: #1E1F21;
+		color: #EEEFF1;
+	}
+
+	.cmdbox {
+		background: #000000;
+		color: #FFFFFF;
+	}
+
+	.zebra {
+		background: #202020;
+	}
+
+	.zebra tr:nth-child(odd) {
+		background: #2C2C2C;
+	}
+
+	#OpenBSD :link {
+		text-decoration-color: #CF4229;
+	}
+
+	#OpenBSD :link i, #OpenBSD :visited i {
+		color: #F2CA30;
+	}
+
+	#OpenBSD :link b, #OpenBSD :visited b {
+		color: #CF4229;
+	}
+
+	#OpenBSD {
+		color: #EEEFF1;
+	}
+
+	#faq #OpenBSD small :link {
+		text-decoration-color: #BAD7FF;
+	}
+
+	#project-main nav,
+	#project-main figure {
+		background-color: #202F51;
+		border-color: #97BADB;
+	}
+
+	#callout {
+		color: #E05434;
+	}
+
+	.not-openbsd #callout {
+		color: #E05434;
+	}
+}

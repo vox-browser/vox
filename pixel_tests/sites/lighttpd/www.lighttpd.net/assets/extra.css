@@ -1,0 +1,61 @@
+/*@font-face {
+	font-family: "<font>";
+	src: "...";
+}*/
+
+:root {
+	--md-text-font: "Roboto";
+	--md-code-font: "Roboto Mono";
+}
+
+/*
+add "shadow" left border for highlighted lines as demonstrated
+by https://squidfunk.github.io/mkdocs-material/reference/code-blocks/
+public mkdocs-material-9.1.18 doesn't include it, it uses 
+only md-code-hl-color for background-color, no box-shadow.
+*/
+:root, [data-md-color-scheme=default] {
+	--md-code-hl-color: #4287ff; /* original: #ffff0080; */
+	--md-code-hl-color--light: #4287ff1a;
+}
+
+@media screen {
+	[data-md-color-scheme=slate]
+	{
+		--md-code-hl-color: #2977ff; /* original: #4287ff26; */
+		--md-code-hl-color--light: #2977ff1a;
+	}
+}
+
+.highlight .hll {
+	background-color: var(--md-code-hl-color--light);
+	box-shadow: 2px 0 0 0 var(--md-code-hl-color) inset;
+}
+
+dt {
+	font-weight: bold;
+}
+
+table.benchmark td {
+	text-align: right;
+	font-family: monospace;
+	border-left: 1px solid black;
+}
+
+table.benchmark th {
+	background-color: #E87830;
+}
+
+table.benchmark {
+	border: 1px solid black;
+	width: 100%;
+}
+
+/* always show logo above sidebar nav */
+.md-nav__title .md-nav__button {
+	display: inline;
+}
+.md-nav__title .md-nav__button.md-logo img {
+	height: 170px;
+	width: 170px;
+}

@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.26">
+<link rel="icon" type="image/png" href="../images/tukaani_32x32.png">
+<title>XZ Utils</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body class="article">
+<div class="navigation">
+<p><a href="https://tukaani.org/">tukaani.org</a> &#187; XZ Utils</p>
+<hr>
+</div>
+<main>
+<div id="header">
+<h1>XZ Utils</h1>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="index.html#_introduction">Introduction</a></li>
+<li><a href="index.html#_documentation">Documentation</a></li>
+<li><a href="index.html#_security_issues">Security issues</a>
+<ul class="sectlevel2">
+<li><a href="index.html#_cve_2026_34743_buffer_overflow_in_lzma_index_append">CVE-2026-34743: Buffer overflow in lzma_index_append()</a></li>
+<li><a href="index.html#_cve_2025_31115_threaded_xz_decoder_frees_memory_too_early">CVE-2025-31115: Threaded .xz decoder frees memory too early</a></li>
+<li><a href="index.html#_argument_injection_on_windows">CVE-2024-47611: Argument injection on Windows</a></li>
+<li><a href="index.html#_cve_2024_3094_liblzma_backdoor">CVE-2024-3094: liblzma backdoor</a></li>
+<li><a href="index.html#_cve_2022_1271_xzgrep_filename_handling">CVE-2022-1271: xzgrep filename handling</a></li>
+<li><a href="index.html#_cve_2020_22916_a_bogus_cve">CVE-2020-22916: A bogus CVE</a></li>
+</ul>
+</li>
+<li><a href="index.html#_source_packages">Source packages</a>
+<ul class="sectlevel2">
+<li><a href="index.html#_stable">Stable</a></li>
+<li><a href="index.html#_old_releases">Old releases</a></li>
+</ul>
+</li>
+<li><a href="index.html#_development">Development</a>
+<ul class="sectlevel2">
+<li><a href="index.html#_building_from_xz_git">Building from xz.git</a>
+<ul class="sectlevel3">
+<li><a href="index.html#_minimum_autotools_and_cmake_versions">Minimum Autotools and CMake versions</a></li>
+<li><a href="index.html#_optional_dependencies">Optional dependencies</a></li>
+</ul>
+</li>
+<li><a href="index.html#_future_build_system_plans">Future build system plans</a></li>
+</ul>
+</li>
+<li><a href="index.html#_bindings">Bindings</a></li>
+<li><a href="index.html#_binary_packages">Binary packages</a>
+<ul class="sectlevel2">
+<li><a href="index.html#_windows">Windows</a></li>
+</ul>
+</li>
+<li><a href="index.html#_supported_platforms">Supported platforms</a></li>
+<li><a href="index.html#_licensing">Licensing</a></li>
+<li><a href="index.html#_reporting_bugs">Reporting bugs</a></li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="_introduction"><a class="anchor" href="index.html#_introduction"></a>Introduction</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>XZ Utils are a complete C99 implementation of the .xz file format.
+XZ Utils were originally written for POSIX systems
+but have been ported to a few non-POSIX systems as well.</p>
+</div>
+<div class="paragraph">
+<p>The core of the XZ Utils compression code is based on
+<a href="https://7-zip.org/sdk.html">LZMA SDK</a>
+but it has been modified significantly to be suitable for XZ Utils.</p>
+</div>
+<div class="paragraph">
+<p>XZ Utils consist of several components:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>liblzma</strong> is a compression library with an API similar to that of zlib.</p>
+</li>
+<li>
+<p><strong>xz</strong> is a command line tool with syntax similar to that of gzip.</p>
+</li>
+<li>
+<p><strong>xzdec</strong> is a decompression-only tool smaller than the full-featured xz tool.</p>
+</li>
+<li>
+<p>A set of shell scripts (<strong>xzgrep</strong>, <strong>xzdiff</strong>, etc.) have been adapted
+from gzip to ease viewing, grepping, and comparing compressed files.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_documentation"><a class="anchor" href="index.html#_documentation"></a>Documentation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Man pages with keyword indexes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://tukaani.org/xz/man/xz.1.html">xz(1)</a></p>
+</li>
+<li>
+<p><a href="https://tukaani.org/xz/man/xzgrep.1.html">xzgrep(1)</a></p>
+</li>
+<li>
+<p><a href="https://tukaani.org/xz/man/xzdiff.1.html">xzdiff(1)</a> and xzcmp(1)</p>
+</li>
+<li>
+<p><a href="https://tukaani.org/xz/man/xzless.1.html">xzless(1)</a></p>
+</li>
+<li>
+<p><a href="https://tukaani.org/xz/man/xzmore.1.html">xzmore(1)</a></p>
+</li>
+<li>
+<p><a href="https://tukaani.org/xz/man/xzdec.1.html">xzdec(1)</a></p>
+</li>
+<li>
+<p><a href="https://tukaani.org/xz/man/lzmainfo.1.html">lzmainfo(1)</a></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><a href="https://tukaani.org/xz/liblzma-api/files.html">liblzma API documentation</a>
+was generated using <a href="https://doxygen.nl/">Doxygen</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_security_issues"><a class="anchor" href="index.html#_security_issues"></a>Security issues</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_cve_2026_34743_buffer_overflow_in_lzma_index_append"><a class="anchor" href="index.html#_cve_2026_34743_buffer_overflow_in_lzma_index_append"></a>CVE-2026-34743: Buffer overflow in lzma_index_append()</h3>
+<div class="paragraph">
+<p>In XZ Utils 5.8.2 and older,
+<a href="https://tukaani.org/xz/index-append-overflow.html">a buffer overflow can occur in lzma_index_append()</a>
+under conditions that likely don&#8217;t exist in any real-world application.</p>
+</div>
+<div class="paragraph">
+<p>The bug was reported and discovered by Cantina using their AppSec agent, Apex.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cve_2025_31115_threaded_xz_decoder_frees_memory_too_early"><a class="anchor" href="index.html#_cve_2025_31115_threaded_xz_decoder_frees_memory_too_early"></a>CVE-2025-31115: Threaded .xz decoder frees memory too early</h3>
+<div class="paragraph">
+<p>In XZ Utils 5.3.3alpha to 5.8.0,
+<a href="https://tukaani.org/xz/threaded-decoder-early-free.html">the multithreaded .xz decoder
+in liblzma has a bug</a>
+where invalid input can at least result in a crash.</p>
+</div>
+<div class="paragraph">
+<p>Thanks to Harri K. Koskinen for discovering and reporting this issue.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_argument_injection_on_windows"><a class="anchor" href="index.html#_argument_injection_on_windows"></a>CVE-2024-47611: Argument injection on Windows</h3>
+<div class="paragraph">
+<p>When built for native Windows (mingw-w64 or MSVC),
+the command line tools from XZ Utils 5.6.2 and older have a
+<a href="https://tukaani.org/xz/argument-injection.html">command line argument injection vulnerability</a>.
+Command line tools built for Cygwin or MSYS2 are unaffected.
+liblzma is unaffected.</p>
+</div>
+<div class="paragraph">
+<p>This issue was discovered by
+Orange Tsai and splitline from DEVCORE Research Team.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cve_2024_3094_liblzma_backdoor"><a class="anchor" href="index.html#_cve_2024_3094_liblzma_backdoor"></a>CVE-2024-3094: liblzma backdoor</h3>
+<div class="paragraph">
+<p>XZ Utils 5.6.0 (2024-02-24) and 5.6.1 (2024-03-09) release tarballs
+contain a backdoor that was inserted by a malicious co-maintainer.
+It was
+<a href="https://www.openwall.com/lists/oss-security/2024/03/29/4">discovered by Andres Freund</a>
+and made public on 2024-03-29.
+The incident is known as
+<a href="https://www.cve.org/CVERecord?id=CVE-2024-3094">CVE-2024-3094</a>.</p>
+</div>
+<div class="paragraph">
+<p>This is still being investigated.
+See the <a href="https://tukaani.org/xz-backdoor/">XZ Utils backdoor</a> page
+for more information and also the
+<a href="https://tukaani.org/xz-backdoor/review.html">XZ Utils review notes</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cve_2022_1271_xzgrep_filename_handling"><a class="anchor" href="index.html#_cve_2022_1271_xzgrep_filename_handling"></a>CVE-2022-1271: xzgrep filename handling</h3>
+<div class="paragraph">
+<p><a href="https://www.cve.org/CVERecord?id=CVE-2022-1271">CVE-2022-1271</a>
+is also known as
+<a href="https://www.zerodayinitiative.com/advisories/ZDI-22-619/">ZDI-CAN-16587</a>.</p>
+</div>
+<div class="paragraph">
+<p>Malicious filenames can make <strong>xzgrep</strong> to write to arbitrary files
+or (with a GNU sed extension) lead to arbitrary code execution.
+A patch to fix it was made public on 2022-04-07.
+The patch applies to 4.999.9beta, 5.0.0 to 5.2.5, 5.3.1alpha, and 5.3.2alpha.
+Newer XZ Utils releases include an improved fix for the problem.</p>
+</div>
+<div class="paragraph">
+<p><a href="https://tukaani.org/xz/xzgrep-ZDI-CAN-16587.patch" class="bare">xzgrep-ZDI-CAN-16587.patch</a>&#8201;&#8212;&#8201;<a href="https://tukaani.org/xz/xzgrep-ZDI-CAN-16587.patch.sig">signature</a></p>
+</div>
+<div class="paragraph">
+<p>The vulnerability was discovered
+by cleemy desu wayo working with Trend Micro Zero Day Initiative.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cve_2020_22916_a_bogus_cve"><a class="anchor" href="index.html#_cve_2020_22916_a_bogus_cve"></a>CVE-2020-22916: A bogus CVE</h3>
+<div class="paragraph">
+<p><a href="https://www.cve.org/CVERecord?id=CVE-2020-22916">CVE-2020-22916</a> is bogus;
+it&#8217;s not a security issue or a bug.</p>
+</div>
+<div class="paragraph">
+<p>The report had
+<a href="https://tukaani.org/xz/CVE-2020-22916-bogus.lzma">a corrupt .lzma file</a>
+which uses a tiny 256-byte dictionary.
+So decompression needs very little memory.
+The reporter claimed that decompressing it &#8220;could cause endless output&#8221;.</p>
+</div>
+<div class="paragraph">
+<p>Both XZ Utils and the long-deprecated LZMA Utils
+produce 114,881,179 bytes of output from the file before reporting an error.
+This is not &#8220;endless output&#8221;.
+The decompression speed is good too.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_source_packages"><a class="anchor" href="index.html#_source_packages"></a>Source packages</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>See the <a href="https://git.tukaani.org/?p=xz.git;a=blob;f=NEWS">NEWS</a> file
+for a summary of changes between versions.</p>
+</div>
+<div class="paragraph">
+<p>The releases have been signed with
+<a href="https://tukaani.org/misc/lasse_collin_pubkey.txt">Lasse Collin&#8217;s OpenPGP key</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="_stable"><a class="anchor" href="index.html#_stable"></a>Stable</h3>
+<div class="paragraph">
+<p>XZ Utils 5.8.3 fix a minor security issue
+that affects all stable XZ Utils releases.
+See the <a href="https://tukaani.org/xz/index-append-overflow.html">security advisory</a> for details.</p>
+</div>
+<table class="tableblock frame-all grid-rows stripes-even fit-content">
+<caption class="title">5.8.3 (2026-03-31)</caption>
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.gz">xz-5.8.3.tar.gz</a></p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">2707&#160;KiB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.gz.sig">signature</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.bz2">xz-5.8.3.tar.bz2</a></p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">1982&#160;KiB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.bz2.sig">signature</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.xz">xz-5.8.3.tar.xz</a></p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">1512&#160;KiB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.xz.sig">signature</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top" colspan="2"><p class="tableblock">xz-5.8.3.tar</p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.sig">signature</a></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>XZ Utils source packages are also available on
+<a href="https://codeberg.org/tukaani/xz/releases">Codeberg</a>
+and
+<a href="https://sourceforge.net/projects/lzmautils/files/">Sourceforge</a>.</p>
+</div>
+<div class="paragraph">
+<p>It is fine to build packages from the Git repository
+instead of using the release tarballs.
+Use either a tag that matches a release (v5.x.x) or
+the latest commit of a stable branch (v5.x).
+See the <em>Development</em> section below.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_old_releases"><a class="anchor" href="index.html#_old_releases"></a>Old releases</h3>
+<div class="paragraph">
+<p>Source and binary packages of the
+<a href="https://tukaani.org/xz/old.html">old XZ Utils releases</a>
+are available on a separate page.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_development"><a class="anchor" href="index.html#_development"></a>Development</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The primary <a href="https://github.com/tukaani-project/xz">Git repository</a>
+is on GitHub:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre class="nowrap">git clone https://github.com/tukaani-project/xz</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The repository is mirrored (with some delay) to
+<a href="https://codeberg.org/tukaani/xz">Codeberg</a>
+and
+<a href="https://git.tukaani.org/?p=xz.git">git.tukaani.org</a> as well.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>master</strong> branch contains the latest development code.</p>
+</div>
+<div class="paragraph">
+<p>Maintenance status of the stable branches:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>v5.8</strong>: maintained</p>
+</li>
+<li>
+<p><strong>v5.6</strong>: critical fixes only (no new releases)</p>
+</li>
+<li>
+<p><strong>v5.4</strong>: critical fixes only (no new releases)</p>
+</li>
+<li>
+<p><strong>v5.2</strong>: critical fixes only (no new releases)</p>
+</li>
+<li>
+<p><strong>v5.0</strong>: unmaintained</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The other branches on GitHub are temporary development branches
+which also see force pushes.
+These branches aren&#8217;t mirrored to git.tukaani.org.</p>
+</div>
+<div class="sect2">
+<h3 id="_building_from_xz_git"><a class="anchor" href="index.html#_building_from_xz_git"></a>Building from xz.git</h3>
+<div class="paragraph">
+<p>Two multi-platform build systems are supported:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The <strong>GNU Autotools</strong>-based build is old,
+feature complete, and the most tested.
+Apart from Windows, DOS, and OpenVMS, the Autotools-based build is
+the most likely to work on less common or old platforms.
+Run <code>./autogen.sh</code> to generate the <code>configure</code> script and other files.</p>
+</li>
+<li>
+<p><strong>CMake</strong>-based build became feature complete in June 2024.
+However, it hasn&#8217;t received as much testing as the Autotools-based build.
+See the notes at the top of
+<a href="https://git.tukaani.org/?p=xz.git;a=blob;f=CMakeLists.txt">CMakeLists.txt</a>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Special cases: OpenVMS and DOS builds use different build systems.
+See the file <a href="https://git.tukaani.org/?p=xz.git;a=blob;f=INSTALL">INSTALL</a>.</p>
+</div>
+<div class="sect3">
+<h4 id="_minimum_autotools_and_cmake_versions"><a class="anchor" href="index.html#_minimum_autotools_and_cmake_versions"></a>Minimum Autotools and CMake versions</h4>
+<div class="paragraph">
+<p>For <strong>GNU Autotools</strong>,
+it is recommended to use the latest versions.
+The minimum versions required are old though:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Autoconf 2.69</p>
+</li>
+<li>
+<p>Automake 1.12</p>
+</li>
+<li>
+<p>gettext 0.19.6</p>
+</li>
+<li>
+<p>Libtool 2.4</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For the <strong>CMake</strong> build, version 3.20 or greater is required.
+Translation support also requires that GNU gettext-tools are installed.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_optional_dependencies"><a class="anchor" href="index.html#_optional_dependencies"></a>Optional dependencies</h4>
+<div class="paragraph">
+<p><a href="https://po4a.org/">po4a</a> is needed for translated documentation (man pages).</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Autotools: To build without po4a,
+pass <code>--no-po4a</code> as the argument to <code>autogen.sh</code>.</p>
+</li>
+<li>
+<p>CMake: Run the shell script <code>po4a/update-po</code> to generate the translated
+man pages inside the source tree (thus the source tree will have extra files;
+it won&#8217;t stay completely clean).
+If the translated man pages exist in the source tree,
+<code>make install</code> will install them
+if translation support was enabled (<code>XZ_NLS</code>).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><a href="https://doxygen.nl/">Doxygen</a> can be used
+to generate liblzma API documentation in HTML format
+which <code>make install</code> will also install.
+Doxygen usage is disabled by default.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Autotools: Pass <code>--enable-doxygen</code> as an argument to <code>configure</code>.</p>
+</li>
+<li>
+<p>CMake: Pass <code>-DXZ_DOXYGEN=ON</code> as an argument to <code>cmake</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_future_build_system_plans"><a class="anchor" href="index.html#_future_build_system_plans"></a>Future build system plans</h3>
+<div class="paragraph">
+<p>People have wished for <a href="https://mesonbuild.com/">Meson</a> support and
+work on it has been started.</p>
+</div>
+<div class="paragraph">
+<p>While dropping Autotools is tempting,
+there are use cases where Autotools have benefits still:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Easier bootstrapping on modern operating systems.
+<a href="https://muon.build/">muon</a> might make this
+easier with Meson-based build though.</p>
+</li>
+<li>
+<p>Better support for old or obscure operating systems.
+As time goes on, these get less and less important though.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bindings"><a class="anchor" href="index.html#_bindings"></a>Bindings</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.python.org/3/library/lzma.html">Python</a></p>
+</li>
+<li>
+<p>Perl:
+<a href="https://metacpan.org/dist/IO-Compress-Lzma">IO-Compress-Lzma</a>
+and
+<a href="https://metacpan.org/dist/Compress-Raw-Lzma">Compress-Raw-Lzma</a></p>
+</li>
+<li>
+<p><a href="https://hackage.haskell.org/package/lzma">Haskell</a></p>
+</li>
+<li>
+<p><a href="https://github.com/delphiunderground/xz-examples-delphi">Delphi and Free Pascal</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_binary_packages"><a class="anchor" href="index.html#_binary_packages"></a>Binary packages</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Many free software operating systems already provide easy-to-install
+XZ Utils binaries.
+It doesn&#8217;t make sense to provide links to all those here.</p>
+</div>
+<div class="sect2">
+<h3 id="_windows"><a class="anchor" href="index.html#_windows"></a>Windows</h3>
+<div class="paragraph">
+<p>The 5.8.3 binaries have been built
+with GCC 15.2.0 and mingw-w64 13.0.0 against UCRT.
+They should work on Windows 10 and later.
+They might work on older Windows versions if UCRT has been installed.</p>
+</div>
+<div class="paragraph">
+<p>It&#8217;s unknown if new binary releases will be made in the future.</p>
+</div>
+<table class="tableblock frame-all grid-rows stripes-even fit-content">
+<caption class="title">5.8.3 (2026-03-31)</caption>
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3-windows.zip">xz-5.8.3-windows.zip</a></p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">1066&#160;KiB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3-windows.zip.sig">signature</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3-windows.7z">xz-5.8.3-windows.7z</a></p></td>
+<td class="tableblock halign-right valign-top"><p class="tableblock">654&#160;KiB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3-windows.7z.sig">signature</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_supported_platforms"><a class="anchor" href="index.html#_supported_platforms"></a>Supported platforms</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Below is an incomplete and somewhat vague (version numbers mostly missing)
+list of operating systems on which XZ Utils should work.
+Compiler(s) or toolchains are mentioned in parenthesis.
+GCC refers to GCC 3 or later.
+If Clang/LLVM is available for the operating system then it should work too.
+Additions and corrections are welcome.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>GNU/Linux (GCC, Clang, ICC, ICX, XL C)</p>
+</li>
+<li>
+<p>GNU/Hurd (GCC)</p>
+</li>
+<li>
+<p>DragonflyBSD</p>
+</li>
+<li>
+<p>FreeBSD</p>
+</li>
+<li>
+<p>MirBSD</p>
+</li>
+<li>
+<p>NetBSD</p>
+</li>
+<li>
+<p>OpenBSD</p>
+</li>
+<li>
+<p>MINIX 3.3.0 and later
+<sup class="footnote" id="_footnote_see-install">[<a id="_footnoteref_1" class="footnote" href="index.html#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</li>
+<li>
+<p>Haiku</p>
+</li>
+<li>
+<p>SerenityOS</p>
+</li>
+<li>
+<p>AROS and AmigaOS</p>
+</li>
+<li>
+<p>macOS / Mac OS X / Darwin</p>
+</li>
+<li>
+<p>Solaris 10, 11 (GCC, Sun Studio / Oracle Developer Studio)
+<sup class="footnoteref">[<a class="footnote" href="index.html#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</li>
+<li>
+<p>AIX (GCC, XL C) <sup class="footnoteref">[<a class="footnote" href="index.html#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</li>
+<li>
+<p>z/OS UNIX System Services (XL C) <sup class="footnoteref">[<a class="footnote" href="index.html#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</li>
+<li>
+<p>QNX</p>
+</li>
+<li>
+<p>HP-UX (GCC, HP ANSI C) <sup class="footnote" id="_footnote_hp-ux">[<a id="_footnoteref_2" class="footnote" href="index.html#_footnotedef_2" title="View footnote.">2</a>]</sup></p>
+</li>
+<li>
+<p>OpenVMS (HP C compiler) <sup class="footnoteref">[<a class="footnote" href="index.html#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</li>
+<li>
+<p>OpenVOS 17 (GCC)</p>
+</li>
+<li>
+<p>Windows 2000 and later (GCC or Clang/LLVM with mingw-w64,
+GCC/Cygwin, Visual Studio 2015 or later) <sup class="footnoteref">[<a class="footnote" href="index.html#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</li>
+<li>
+<p>DOS e.g. FreeDOS and MS-DOS (GCC/DJGPP) <sup class="footnoteref">[<a class="footnote" href="index.html#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>XZ Utils have or had support for the following operating systems
+but recent releases might not work anymore.
+If the latest XZ Utils don&#8217;t work,
+try XZ Utils 5.4.7 or an even older release.
+Support for obsolete operating systems and versions
+might be retained or restored if it is easy to do.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Solaris 9 and older
+<sup class="footnote" id="_footnote_solaris-c99">[<a id="_footnoteref_3" class="footnote" href="index.html#_footnotedef_3" title="View footnote.">3</a>]</sup></p>
+</li>
+<li>
+<p>IRIX (MIPSpro) <sup class="footnoteref">[<a class="footnote" href="index.html#_footnotedef_1" title="View footnote.">1</a>]</sup></p>
+</li>
+<li>
+<p>Tru64 (GCC, Compaq C compiler)
+<sup class="footnote" id="_footnote_tru64-c99">[<a id="_footnoteref_4" class="footnote" href="index.html#_footnotedef_4" title="View footnote.">4</a>]</sup></p>
+</li>
+<li>
+<p>SCO OpenServer 5 (GCC 3.4.6, 4.2.4)
+<sup class="footnote" id="_footnote_disable-threads">[<a id="_footnoteref_5" class="footnote" href="index.html#_footnotedef_5" title="View footnote.">5</a>]</sup></p>
+</li>
+<li>
+<p>Windows 95/98/98SE/ME, NT4, Interix
+(pre-W2k support was disabled after XZ Utils 5.4.x)</p>
+</li>
+<li>
+<p>OS/2, eComStation (GCC)</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_licensing"><a class="anchor" href="index.html#_licensing"></a>Licensing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>From the version 5.5.2beta onwards,
+the core components of XZ Utils are under the
+<a href="https://git.tukaani.org/?p=xz.git;a=blob;f=COPYING.0BSD">BSD Zero Clause License</a>
+(0BSD).
+The earlier versions that were released as public domain
+obviously remain in the public domain.</p>
+</div>
+<div class="paragraph">
+<p>Some parts of XZ Utils (for example,
+scripts from GNU gzip and some build system files)
+are under different free software licenses such as
+GNU LGPLv2.1, GNU GPLv2, or GNU GPLv3.</p>
+</div>
+<div class="paragraph">
+<p>See the file <a href="https://git.tukaani.org/?p=xz.git;a=blob;f=COPYING">COPYING</a>
+for more details.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_reporting_bugs"><a class="anchor" href="index.html#_reporting_bugs"></a>Reporting bugs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Bugs can be reported on
+<a href="https://github.com/tukaani-project/xz/issues">GitHub</a>
+or via <a href="https://tukaani.org/contact.html">email or IRC</a>.
+If a security issue has been discovered,
+please report it privately via email (encrypted if possible)
+or use the <em>Report a vulnerability</em> button in the
+<a href="https://github.com/tukaani-project/xz/security">security section on GitHub</a>.</p>
+</div>
+<div class="paragraph">
+<p>Bugs in translations should be reported to the appropriate translation team.
+See the <code>Language-Team</code> and <code>Last-Translator</code> fields in the PO file header.
+A few translations include the bug reporting address at the bottom
+of <code>xz --help</code> too.
+See also the
+<a href="https://translationproject.org/domain/xz.html">xz</a> (command line tools) and
+<a href="https://translationproject.org/domain/xz-man.html">xz-man</a> (man pages)
+domains in the Translation Project.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnotedef_1">
+<a href="index.html#_footnoteref_1">1</a>. See also the platform-specific notes in the <a href="https://git.tukaani.org/?p=xz.git;a=blob;f=INSTALL">INSTALL</a> file.
+</div>
+<div class="footnote" id="_footnotedef_2">
+<a href="index.html#_footnoteref_2">2</a>. 2010-09-22: It was reported that HP ANSI C compiler crashes when compiling XZ Utils on PA-RISC. On Itanium there were no problems.
+</div>
+<div class="footnote" id="_footnotedef_3">
+<a href="index.html#_footnoteref_3">3</a>. On Solaris 8 and 9 one may need to pass <code>ac_cv_prog_cc_c99=</code> to <code>configure</code> if using Sun Studio.
+</div>
+<div class="footnote" id="_footnotedef_4">
+<a href="index.html#_footnoteref_4">4</a>. With the native compiler <code>CC=cc</code> one may need to pass <code>ac_cv_prog_cc_c99=</code> to <code>configure</code>.
+</div>
+<div class="footnote" id="_footnotedef_5">
+<a href="index.html#_footnoteref_5">5</a>. On SCO OpenServer 5, use <code>--disable-threads</code> when running <code>configure</code>.
+</div>
+</div>
+</main>
+<div class="navigation">
+<hr>
+<p><a href="https://tukaani.org/">tukaani.org</a> &#187; XZ Utils</p>
+</div>
+</body>
+</html>

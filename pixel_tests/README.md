@@ -86,6 +86,35 @@ and resource treatment:
 | `ncurses` | [ncurses](https://invisible-island.net/ncurses/) |
 | `teensy-elf` | [Teensy ELF](https://www.muppetlabs.com/~breadbox/software/tiny/teensy.html) |
 
+A third 20-page batch was frozen on the same date. Executable script elements
+were removed and visible resources were localized as above. Query-bearing QEMU
+resource names were normalized for local files. Fossil and lighttpd's
+network-origin CSP meta policies were removed because they reject those same
+localized `file:` resources in the C++ browser.
+
+| Case | Original page |
+| --- | --- |
+| `openssh` | [OpenSSH](https://www.openssh.com/) |
+| `libressl` | [LibreSSL](https://www.libressl.org/) |
+| `mandoc` | [mandoc](https://mandoc.bsd.lv/) |
+| `tinycc` | [Tiny C Compiler](https://bellard.org/tcc/) |
+| `libarchive` | [libarchive](https://www.libarchive.org/) |
+| `libuv` | [libuv](https://libuv.org/) |
+| `ninja` | [Ninja](https://ninja-build.org/) |
+| `valgrind` | [Valgrind](https://valgrind.org/) |
+| `hare` | [Hare](https://harelang.org/) |
+| `qemu` | [QEMU](https://www.qemu.org/) |
+| `textfiles` | [TEXTFILES.COM](https://www.textfiles.com/) |
+| `fossil` | [Fossil](https://fossil-scm.org/home/doc/trunk/www/index.wiki) |
+| `xz` | [XZ Utils](https://tukaani.org/xz/) |
+| `man7` | [Linux man-pages](https://man7.org/linux/man-pages/) |
+| `danluu` | [Dan Luu](https://danluu.com/) |
+| `nullprogram` | [null program](https://nullprogram.com/) |
+| `drew-devault` | [Drew DeVault](https://drewdevault.com/) |
+| `tim-berners-lee` | [Tim Berners-Lee](https://www.w3.org/People/Berners-Lee/) |
+| `jemalloc` | [jemalloc](https://jemalloc.net/) |
+| `lighttpd` | [lighttpd](https://www.lighttpd.net/) |
+
 The expected PNGs were captured at the viewport sizes in `cases.tsv` with the
 release build at `../3rd/ladybird/Build/release/bin/Ladybird.app`. They are
 macOS references because both browsers use the same installed font files,

@@ -1,0 +1,363 @@
+/*
+	Linear by TEMPLATED
+    templated.co @templatedco
+    Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
+*/
+
+/*********************************************************************************/
+/* Grid                                                                          */
+/*********************************************************************************/
+
+	.row > * {
+		padding: 15px 0 0 0;
+		float: none;
+		margin-left: auto !important;
+		margin-right: auto !important;
+	}
+	.row + .row > * {
+		padding-top: 15px;
+	}
+
+/*********************************************************************************/
+/* Basic                                                                         */
+/*********************************************************************************/
+
+	.only-desktop, .not-mobile
+	{
+		display: none !important;
+	}
+
+	body,input,textarea,select
+	{
+		line-height: 1.5em;
+		font-size: 10.5pt;
+		letter-spacing: 0;
+	}
+
+	body
+	{
+		background: url(../images/qemu_head_200_faint.png) no-repeat fixed center center;
+	}
+		body.homepage
+		{
+			background-position: center 200px;
+			background-attachment: scroll;
+		}
+		body.fixed
+		{
+			background-position: center 80px;
+			background-attachment: fixed;
+		}
+
+	#featured
+	{
+		padding-top: 250px;
+	}
+	@media (min-width:500px) {
+		body
+		{
+			background-image: url(../images/qemu_head_400_faint.png);
+		}
+		#featured
+		{
+			padding-top: 50px;
+		}
+	}
+
+	section,
+	article
+	{
+		clear: both;
+		margin: 2em 0 2em 0;
+	}
+
+	.container
+	{
+		padding: 0em 1em;
+	}
+
+	header
+	{
+		margin-bottom: 1.6em;
+	}
+
+		header .byline
+		{
+			font-size: 1.2em;
+		}
+
+	.button
+	{
+		display: block;
+		width: 100%;
+		text-align: center;
+	}
+
+	.homepage h1
+	{
+		font-size: 3em;
+		padding-top: 0.6em;
+	}
+
+	h1, .homepage h2
+	{
+		font-size: 2em;
+	}
+
+	h2, .homepage h3
+	{
+		font-size: 1.6em;
+	}
+
+	h3, h4, h5, h6
+	{
+		font-size: 1.5em;
+	}
+
+/*********************************************************************************/
+/* UI                                                                            */
+/*********************************************************************************/
+
+	#titleBar
+	{
+		width: 100%;
+		background: #161616;
+		height: 44px;
+		overflow: hidden;
+		position: fixed;
+		margin-top: -44px;
+		z-index: 2;
+	}
+
+		body.js {
+			padding-top: 44px;
+		}
+
+		#titleBar .title
+		{
+			color: #fff;
+			text-align: center;
+			line-height: 44px;
+			font-weight: 300;
+			text-decoration: none;
+			display: block;
+			position: absolute;
+			left: 0;
+			top: 0;
+			width: 100%;
+			z-index: 1;
+		}
+
+		button[aria-controls="nav"]
+		{
+			float: left;
+			position: relative;
+			left: 0;
+			top: 0;
+			width: 80px;
+			height: 44px;
+			cursor: pointer;
+			z-index: 2;
+			background: transparent;
+			border: 0px;
+			color: #808080;
+		}
+
+			button[aria-controls="nav"] > span.fa
+			{
+				width: 20px;
+				height: 12px;
+				position: absolute;
+				left: 12px;
+				top: 10px;
+			}
+
+			button[aria-controls="nav"]:active
+			{
+				color: #c0c0c0;
+			}
+	#nav
+	{
+		padding: 0em;
+		background: #1f1f1f;
+	}
+
+		#titleBar + #nav {
+			position: fixed;
+			margin-left: -80%;
+			width: 80%;
+			height: 100%;
+			z-index: 2;
+			left: 0;
+			top: 0;
+		}
+
+	#titleBar.open + #nav {
+		margin-left: 0;
+	}
+
+	#titleBar.open > div {
+		margin-left: 80%;
+	}
+
+		#nav > ul 
+		{
+			margin: 0em;
+			padding: 0.3em;
+		}
+
+		#nav > ul > li
+		{
+			border-top: 1px solid white;
+			margin: 0;
+			padding: 0.3em;
+			color: #ffffff;
+		}
+
+		#nav > ul > li:first-child
+		{
+			border-top: 0px;
+		}
+
+		#nav > ul > li > a,
+		#nav > ul > li > span
+		{
+			display: block;
+			padding: 0 1em 0 1em;
+			letter-spacing: 1px;
+			color: inherit;
+			text-align: left;
+		}
+
+/*********************************************************************************/
+/* Header                                                                        */
+/*********************************************************************************/
+
+	#header {
+		height: 9em;
+	}
+
+	#header h1 {
+		margin-bottom: 0.2em;
+	}
+
+/*********************************************************************************/
+/* Logo                                                                          */
+/*********************************************************************************/
+
+
+/*********************************************************************************/
+/* Columns                                                                       */
+/*********************************************************************************/
+
+	#main
+	{
+		margin-left: 0%;
+		width: 100%;
+	}
+
+	#sidebar
+	{
+		margin-left: 0%;
+		width: 100%;
+	}
+
+/*********************************************************************************/
+/* Main                                                                          */
+/*********************************************************************************/
+
+	#main
+	{
+		padding: 2em 0em 1em 0em;
+	}
+
+/*********************************************************************************/
+/* Sidebar                                                                       */
+/*********************************************************************************/
+
+	#sidebar
+	{
+		clear: left;
+	}
+
+	#sidebar h1
+	{
+		font-size: 1.6em;
+	}
+
+/*********************************************************************************/
+/* Featured                                                                      */
+/*********************************************************************************/
+
+	#featured
+	{
+		padding-bottom: 3em;
+	}
+
+	#featured h3
+	{
+		padding: 0.5em 0em;
+		font-size: 1.4em;
+		margin: 0em;
+	}
+	#featured h3+p
+	{
+		margin-top: 0em;
+	}
+
+	#featured .pennant a
+	{
+		cursor: inherit;
+	}
+
+	#featured .pennant img
+	{
+		object-position: bottom;
+		background-position: bottom; /* for IE polyfill */
+	}
+	@media (orientation: landscape) {
+		#featured .pennant img
+		{
+			height: 70vh;
+		}
+	}
+
+/*********************************************************************************/
+/* Welcome                                                                       */
+/*********************************************************************************/
+
+	#welcome
+	{
+		padding: 4em 0em 3em 0em;
+	}
+
+/*********************************************************************************/
+/* Horizontal menu                                                               */
+/*********************************************************************************/
+	.horiz-menu > ul
+	{
+		display: none !important;
+	}
+	.horiz-menu > article
+	{
+		display: block !important;
+		border: 1px solid #000000;
+		padding: 1em;
+		margin-bottom: 1em;
+	}
+	.horiz-menu > article > header
+	{
+		display: block !important;
+	}
+	.horiz-menu pre
+	{
+		border: 0px;
+	}
+
+/*********************************************************************************/
+/* Releases                                                                      */
+/*********************************************************************************/
+
+	#releases ul > li {
+		width: 48%;
+	}

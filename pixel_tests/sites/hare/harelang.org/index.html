@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+	<meta name="generator" content="Hugo 0.160.1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The Hare programming language</title>
+    <link rel="icon" type="image/png" href="mascot.png">
+    <meta property="og:image" content="https://harelang.org/mascot.png">
+    
+    <link rel="stylesheet" href="main.min.48c508ec2be78774a23774752e076a54903e68dc118b99b5baaf80169132bdbb.css">
+  </head>
+  <body>
+    <nav>
+  <a href="index.html">
+    <img
+      src="mascot.png"
+      alt="An inked drawing of Harriet the Hare mascot, a fuzzy rabbit"
+      width="128" height="128" />
+  </a>
+  <h1>The Hare programming language</h1>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="https://harelang.org/documentation/">Documentation</a></li>
+    <li><a href="https://harelang.org/tutorial">Tutorials</a></li>
+    <li><a href="https://harelang.org/blog">Blog</a></li>
+    <li><a href="https://harelang.org/documentation/community/">Community</a></li>
+    <li><a href="https://harelang.org/specification">Specification</a></li>
+    <li><a href="https://docs.harelang.org">Standard library</a></li>
+    <li><a href="https://sr.ht/~sircmpwn/hare">Source code</a></li>
+  </ul>
+</nav>
+
+    <main>
+      <p>
+      Hare is a systems programming language designed to be simple, stable, and
+      robust. Hare uses a static type system, manual memory management, and a
+      minimal runtime. It is well-suited to writing operating systems, system tools,
+      compilers, networking software, and other low-level, high performance tasks.
+
+      
+      <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-hare" data-lang="hare"><span class="line"><span class="cl"><span class="kn">use</span><span class="w"> </span><span class="n">fmt</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">export</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">const</span><span class="w"> </span><span class="n">greetings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="s">&#34;Hello, world!&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="s">&#34;¡Hola Mundo!&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="s">&#34;Γειά σου Κόσμε!&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="s">&#34;Привіт, світе!&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="s">&#34;こんにちは世界！&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">];</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">let</span><span class="w"> </span><span class="n">greeting</span><span class="w"> </span><span class="p">..</span><span class="w"> </span><span class="n">greetings</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="n">fmt</span><span class="o">::</span><span class="n">println</span><span class="p">(</span><span class="n">greeting</span><span class="p">)</span><span class="o">!</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="p">};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">};</span><span class="w">
+</span></span></span></code></pre></div>
+
+      <h2>Getting started</h2>
+      <p>
+      Read the <a href="https://harelang.org/documentation/install/">installation steps</a> to get Hare
+      for your system, then read the <a href="https://harelang.org/tutorial">tutorial</a>. To see if Hare
+      is available for your system, consult the
+      <a href="https://harelang.org/documentation/install/#supported-platforms">supported platforms list</a>.
+      To find projects and libraries written in Hare, check out the
+      <a href="https://harelang.org/project-library">project library</a>.
+
+      
+      <h2>Latest news</h2>
+      <div class="latest-news">
+        <p>
+          February 13, 2026 by Drew DeVault
+        </p>
+        <h3>
+          <a href="https://harelang.org/blog/2026-02-13-hare-0.26.0-released/" class="blog-link">
+            Hare 0.26.0 released
+          </a>
+        </h3>
+      </div>
+      
+
+      <h2>Who's behind Hare?</h2>
+
+      <p>
+      <a href="https://harelang.org/who">Twelve maintainers and about a hundred contributors</a>.
+
+      <h2>Supporting Hare</h2>
+
+      <p>
+      We have an <a href="https://opencollective.com/hare">Open Collective</a> for
+      donations and commercial sponsorships.
+
+      <p>
+      Hare fits on a 3½" floppy disc &mdash; these will be available for purchase when
+      Hare 1.0 is released!
+
+    </main>
+    
+<footer>
+  <p>harelang.org</p>
+  <p>
+    <a href="index.html">Home</a> &middot;
+    <a href="https://harelang.org/sitemap/">Sitemap</a> &middot;
+    <a href="https://git.sr.ht/~sircmpwn/harelang.org">Source</a>
+  </p>
+</footer>
+
+  </body>
+</html>

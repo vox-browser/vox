@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<title>null program</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="alternate" type="application/atom+xml" href="https://nullprogram.com/feed/" title="Atom Feed"/>
+<link rel="pgpkey" type="application/pgp-keys" href="https://nullprogram.com/0xAFD1503A8C8FF42A.pgp"/>
+<link rel="stylesheet" href="css/full.css"/>
+
+<main lang="en">
+
+<article class="many">
+  <h2><a href="https://nullprogram.com/blog/2026/05/06/">Concurrent, atomic MSI hash tables</a></h2>
+  <time datetime="2026-05-06">
+    May 06, 2026
+  </time>
+  <div class="print-only url">
+    nullprogram.com/blog/2026/05/06/
+  </div>
+
+  <blockquote class="excerpt" cite="/blog/2026/05/06/">
+    <p>Readers will be familiar with <a href="https://nullprogram.com/blog/2022/08/08/">Mask-Step-Index (MSI) hash tables</a>, a
+technique for building fast, open-addressed hash tables in <a href="https://nullprogram.com/blog/2025/01/19/#flat-hash-map">a dozen lines
+of code</a>. If multiple threads or processes access an MSI table with
+at least one still inserting elements, care must be taken to avoid data
+races. This article will show how to add atomic operations to MSI tables
+in order to support different concurrency constraints.</p>
+
+
+  </blockquote>
+  <div class="read-more">[<a href="https://nullprogram.com/blog/2026/05/06/">…</a>]</div>
+
+  <ul class="tags">
+    
+    <li><a href="https://nullprogram.com/tags/c/">c</a></li>
+    
+  </ul>
+  <ol class="references print-only"></ol>
+</article>
+
+<article class="many">
+  <h2><a href="https://nullprogram.com/blog/2026/04/26/">I have officially retired from Emacs</a></h2>
+  <time datetime="2026-04-26">
+    April 26, 2026
+  </time>
+  <div class="print-only url">
+    nullprogram.com/blog/2026/04/26/
+  </div>
+
+  <blockquote class="excerpt" cite="/blog/2026/04/26/">
+    <p>This article was discussed <a href="https://old.reddit.com/r/emacs/comments/1svziwa">on reddit</a> and <a href="https://news.ycombinator.com/item?id=47906651">on Hacker News</a>.</p>
+
+<p>This past Tuesday I typed <code class="language-plaintext highlighter-rouge">C-x C-c</code> in Emacs for the last time after 20
+years of daily use. Though <a href="https://nullprogram.com/blog/2017/04/01/">nearly half that time</a> was gradually
+retiring it, switching to modal editing, then to Vim. Emacs is a platform,
+and I’d grown accustomed to its applications, especially those I built
+myself. There was no particular hurry, so replacements came slowly. With
+my <a href="https://nullprogram.com/blog/2026/03/29/">newly-acquired superpowers</a> I could knock out the last two pieces
+in a few days’ work, namely <a href="https://nullprogram.com/blog/2009/06/23/"><code class="language-plaintext highlighter-rouge">M-x calc</code></a> with <strong><a href="https://github.com/skeeto/stackcalc">stackcalc</a></strong> and
+<a href="https://nullprogram.com/blog/2013/09/04/">Elfeed</a> with <strong><a href="https://github.com/skeeto/Elfeed2">Elfeed2</a></strong>. I’m especially excited about the
+latter because it already exceeds the original. Both are multi-platform,
+native C++ GUI applications using native UI components.</p>
+
+
+  </blockquote>
+  <div class="read-more">[<a href="https://nullprogram.com/blog/2026/04/26/">…</a>]</div>
+
+  <ul class="tags">
+    
+    <li><a href="https://nullprogram.com/tags/ai/">ai</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/cpp/">cpp</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/emacs/">emacs</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/elfeed/">elfeed</a></li>
+    
+  </ul>
+  <ol class="references print-only"></ol>
+</article>
+
+<article class="many">
+  <h2><a href="https://nullprogram.com/blog/2026/04/25/">My brave new code-signing world</a></h2>
+  <time datetime="2026-04-25">
+    April 25, 2026
+  </time>
+  <div class="print-only url">
+    nullprogram.com/blog/2026/04/25/
+  </div>
+
+  <blockquote class="excerpt" cite="/blog/2026/04/25/">
+    <p>The new <a href="https://github.com/skeeto/w64devkit">w64devkit</a> release two weeks ago is the first to be code-signed
+with my identity, verified by Microsoft’s certificate chain. Currently
+only the release packaging is signed — the self-extracting archive <em>and</em>
+its payload — but I will soon code-sign individual EXEs and DLLs within
+the distribution. In fact, <em>all</em> Windows builds of my project releases
+have been code-signed the past two weeks, including <a href="https://nullprogram.com/blog/2026/04/07/">dcmake</a>, and so
+should everything going forward. My signing identity builds reputation
+with each download, so users will have an easier time with SmartScreen,
+and security software generally. <a href="https://learn.microsoft.com/en-us/azure/artifact-signing/overview">Azure Artifact Signing</a> creates the
+actual signature, but the rest is done with new infrastructure I built
+myself, <strong><a href="https://github.com/skeeto/aas-sign">aas-sign</a></strong>. As is often the case, the existing options were
+deficient for my needs, so I had to build it myself.</p>
+
+
+  </blockquote>
+  <div class="read-more">[<a href="https://nullprogram.com/blog/2026/04/25/">…</a>]</div>
+
+  <ul class="tags">
+    
+    <li><a href="https://nullprogram.com/tags/ai/">ai</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/cpp/">cpp</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/crypto/">crypto</a></li>
+    
+  </ul>
+  <ol class="references print-only"></ol>
+</article>
+
+<article class="many">
+  <h2><a href="https://nullprogram.com/blog/2026/04/07/">dcmake: a new CMake debugger UI</a></h2>
+  <time datetime="2026-04-07">
+    April 07, 2026
+  </time>
+  <div class="print-only url">
+    nullprogram.com/blog/2026/04/07/
+  </div>
+
+  <blockquote class="excerpt" cite="/blog/2026/04/07/">
+    <p>CMake has a <a href="https://cmake.org/cmake/help/latest/manual/cmake.1.html#cmdoption-cmake-debugger"><code class="language-plaintext highlighter-rouge">--debugger</code> mode</a> since <a href="https://cmake.org/cmake/help/latest/release/3.27.html#debugger">3.27</a> (July 2023),
+allowing software to manipulate it interactively through the <a href="https://microsoft.github.io/debug-adapter-protocol/">Debugger
+Adaptor Protocol</a> (DAP), an HTTP-like protocol passing JSON messages.
+Debugger front-ends can start, stop, step, breakpoint, query variables,
+etc. a live CMake. When I came across this mode, I immediately conceived a
+project putting it to use. Thanks to <a href="https://nullprogram.com/blog/2026/03/29/">recent leaps in software engineering
+productivity</a>, I had a working prototype in 30 minutes, and by the
+end of that same day, a complete, multi-platform, native, GUI application.
+I named it <strong><a href="https://github.com/skeeto/dcmake">dcmake</a></strong> (“debugger for CMake”). I’ve tested it on macOS,
+Windows, and Linux. Despite only being couple days old, it’s one of the
+coolest things I’ve ever built. Prior to 2026, I estimate it would have
+taken me a month to get the tool to this point.</p>
+
+
+  </blockquote>
+  <div class="read-more">[<a href="https://nullprogram.com/blog/2026/04/07/">…</a>]</div>
+
+  <ul class="tags">
+    
+    <li><a href="https://nullprogram.com/tags/cpp/">cpp</a></li>
+    
+  </ul>
+  <ol class="references print-only"></ol>
+</article>
+
+<article class="many">
+  <h2><a href="https://nullprogram.com/blog/2026/03/29/">2026 has been the most pivotal year in my career… and it's only March</a></h2>
+  <time datetime="2026-03-29">
+    March 29, 2026
+  </time>
+  <div class="print-only url">
+    nullprogram.com/blog/2026/03/29/
+  </div>
+
+  <blockquote class="excerpt" cite="/blog/2026/03/29/">
+    <p>In February I left my employer after nearly two decades of service. In the
+moment I was optimistic, yet unsure I made the right choice. Dust settled,
+I’m now absolutely sure I chose correctly. I’m happier and better for it.
+There were multiple factors, but it’s not mere chance it coincides with
+these early months of <a href="https://shumer.dev/something-big-is-happening">the automation of software engineering</a>. I
+left an employer that is <em>years behind</em> adopting AI to one actively
+supporting and encouraging it. As of March, in my professional capacity
+<strong>I no longer write code myself</strong>. My current situation was unimaginable
+to me only a year ago. Like it or not, this is the future of software
+engineering. Turns out I like it, and having tasted the future I don’t
+want to go back to the old ways.</p>
+
+
+  </blockquote>
+  <div class="read-more">[<a href="https://nullprogram.com/blog/2026/03/29/">…</a>]</div>
+
+  <ul class="tags">
+    
+    <li><a href="https://nullprogram.com/tags/ai/">ai</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/c/">c</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/cpp/">cpp</a></li>
+    
+  </ul>
+  <ol class="references print-only"></ol>
+</article>
+
+<article class="many">
+  <h2><a href="https://nullprogram.com/blog/2026/01/19/">Frankenwine: Multiple personas in a Wine process</a></h2>
+  <time datetime="2026-01-19">
+    January 19, 2026
+  </time>
+  <div class="print-only url">
+    nullprogram.com/blog/2026/01/19/
+  </div>
+
+  <blockquote class="excerpt" cite="/blog/2026/01/19/">
+    <p>I came across a recent article on <a href="https://gpfault.net/posts/drunk-exe.html">making Linux system calls from a Wine
+process</a>. Windows programs running under Wine are still normal Linux
+processes and may interact with the Linux kernel like any other process.
+None of this was surprising, and the demonstration works just as I expect.
+Still, it got the wheels spinning and I realized an <em>almost</em> practical
+application: build <a href="https://nullprogram.com/blog/2023/01/18/">my pkg-config implementation</a> such that on Windows
+<code class="language-plaintext highlighter-rouge">pkg-config.exe</code> behaves as a native pkg-config, but when run under Wine
+this same binary takes the persona of a Linux program and becomes a cross
+toolchain pkg-config, bypassing Win32 and talking directly with the Linux
+kernel. <a href="https://justine.lol/cosmopolitan/">Cosmopolitan Libc</a> cleverly does this out-of-the-box, but
+in this article we’ll mash together a couple existing sources with a bit
+of glue.</p>
+
+
+  </blockquote>
+  <div class="read-more">[<a href="https://nullprogram.com/blog/2026/01/19/">…</a>]</div>
+
+  <ul class="tags">
+    
+    <li><a href="https://nullprogram.com/tags/c/">c</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/win32/">win32</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/linux/">linux</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/x86/">x86</a></li>
+    
+  </ul>
+  <ol class="references print-only"></ol>
+</article>
+
+<article class="many">
+  <h2><a href="https://nullprogram.com/blog/2026/01/01/">WebAssembly as a Python extension platform</a></h2>
+  <time datetime="2026-01-01">
+    January 01, 2026
+  </time>
+  <div class="print-only url">
+    nullprogram.com/blog/2026/01/01/
+  </div>
+
+  <blockquote class="excerpt" cite="/blog/2026/01/01/">
+    <p>Software above some complexity level tends to sport an extension language,
+becoming a kind of software platform itself. Lua fills this role well, and
+of course there’s JavaScript for web technologies. <a href="https://nullprogram.com/blog/2025/04/04/">WebAssembly</a>
+generalizes this, and any Wasm-targeting programming language can extend a
+Wasm-hosting application. It has more friction than supplying a script in
+a text file, but extension authors can write in their language of choice,
+and use more polished development tools — debugging, <a href="https://nullprogram.com/blog/2025/02/05/">testing</a>, etc.
+— than typically available for a typical extension language. Python is
+traditionally extended through native code behind a C interface, but it’s
+recently become practical to extend Python with Wasm. That is we can ship
+an architecture-independent Wasm blob inside a Python library, and use it
+without requiring a native toolchain on the host system. Let’s discuss two
+different use cases and their pitfalls.</p>
+
+
+  </blockquote>
+  <div class="read-more">[<a href="https://nullprogram.com/blog/2026/01/01/">…</a>]</div>
+
+  <ul class="tags">
+    
+    <li><a href="https://nullprogram.com/tags/c/">c</a></li>
+    
+  </ul>
+  <ol class="references print-only"></ol>
+</article>
+
+<article class="many">
+  <h2><a href="https://nullprogram.com/blog/2025/12/31/">Freestyle linked lists tricks</a></h2>
+  <time datetime="2025-12-31">
+    December 31, 2025
+  </time>
+  <div class="print-only url">
+    nullprogram.com/blog/2025/12/31/
+  </div>
+
+  <blockquote class="excerpt" cite="/blog/2025/12/31/">
+    <p>Linked lists are a data structure basic building block, with especially
+flexible allocation behavior. They’re not just a useful starting point,
+but sometimes a sound foundation for future growth. I’m going to start
+with the beginner stuff, then <em>without disrupting the original linked
+list</em>, enhance it with new capabilities.</p>
+
+
+  </blockquote>
+  <div class="read-more">[<a href="https://nullprogram.com/blog/2025/12/31/">…</a>]</div>
+
+  <ul class="tags">
+    
+    <li><a href="https://nullprogram.com/tags/c/">c</a></li>
+    
+  </ul>
+  <ol class="references print-only"></ol>
+</article>
+
+<article class="many">
+  <h2><a href="https://nullprogram.com/blog/2025/12/23/">Unix "find" expressions compiled to bytecode</a></h2>
+  <time datetime="2025-12-23">
+    December 23, 2025
+  </time>
+  <div class="print-only url">
+    nullprogram.com/blog/2025/12/23/
+  </div>
+
+  <blockquote class="excerpt" cite="/blog/2025/12/23/">
+    <p>In preparation for a future project, I was thinking about at the <a href="https://pubs.opengroup.org/onlinepubs/9799919799/utilities/find.html">unix
+<code class="language-plaintext highlighter-rouge">find</code> utility</a>. It operates a file system hierarchies, with basic
+operations selected and filtered using a specialized expression language.
+Users compose operations using unary and binary operators, grouping with
+parentheses for precedence. <code class="language-plaintext highlighter-rouge">find</code> may apply the expression to a great
+many files, so compiling it into a bytecode, resolving as much as possible
+ahead of time, and minimizing the per-element work, seems like a prudent
+implementation strategy. With some thought, I worked out a technique to do
+so, which was simpler than I expected, and I’m pleased with the results. I
+was later surprised all the real world <code class="language-plaintext highlighter-rouge">find</code> implementations I examined
+use <a href="https://craftinginterpreters.com/a-tree-walk-interpreter.html">tree-walk interpreters</a> instead. This article describes how my
+compiler works, with a runnable example, and lists ideas for improvements.</p>
+
+
+  </blockquote>
+  <div class="read-more">[<a href="https://nullprogram.com/blog/2025/12/23/">…</a>]</div>
+
+  <ul class="tags">
+    
+    <li><a href="https://nullprogram.com/tags/c/">c</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/compsci/">compsci</a></li>
+    
+  </ul>
+  <ol class="references print-only"></ol>
+</article>
+
+<article class="many">
+  <h2><a href="https://nullprogram.com/blog/2025/12/12/">Closures as Win32 window procedures</a></h2>
+  <time datetime="2025-12-12">
+    December 12, 2025
+  </time>
+  <div class="print-only url">
+    nullprogram.com/blog/2025/12/12/
+  </div>
+
+  <blockquote class="excerpt" cite="/blog/2025/12/12/">
+    <p>Back in 2017 I wrote <a href="https://nullprogram.com/blog/2017/01/08/">about a technique for creating closures in C</a>
+using <a href="https://nullprogram.com/blog/2015/03/19/">JIT-compiled</a> wrapper. It’s neat, though rarely necessary in
+real programs, so I don’t think about it often. I applied it to <code class="language-plaintext highlighter-rouge">qsort</code>,
+which <a href="https://nullprogram.com/blog/2023/02/11/">sadly</a> accepts no context pointer. More practical would be
+working around <a href="https://nullprogram.com/blog/2023/12/17/">insufficient custom allocator interfaces</a>, to
+create allocation functions at run-time bound to a particular allocation
+region. I’ve learned a lot since I last wrote about this subject, and <a href="https://lowkpro.com/blog/creating-c-closures-from-lua-closures.html">a
+recent article</a> had me thinking about it again, and how I could do
+better than before. In this article I will enhance Win32 window procedure
+callbacks with a fifth argument, allowing us to more directly pass extra
+context. I’m using <a href="https://github.com/skeeto/w64devkit">w64devkit</a> on x64, but the everything here should
+work out-of-the-box with any x64 toolchain that speaks GNU assembly.</p>
+
+
+  </blockquote>
+  <div class="read-more">[<a href="https://nullprogram.com/blog/2025/12/12/">…</a>]</div>
+
+  <ul class="tags">
+    
+    <li><a href="https://nullprogram.com/tags/c/">c</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/win32/">win32</a></li>
+    
+    <li><a href="https://nullprogram.com/tags/x86/">x86</a></li>
+    
+  </ul>
+  <ol class="references print-only"></ol>
+</article>
+
+
+</main>
+
+<header>
+  <div class="container">
+    <div class="portrait identity"></div>
+    <h1 class="site-title identity"><a href="index.html">null program</a></h1>
+    <h2 class="full-name identity">Chris Wellons</h2>
+    <address class="identity">
+      <div><a id="email" href="mailto&#x3a;wellons&#x40;nullprogram&#x2e;com">wellons&#x40;nullprogram&#x2e;com</a> (<a rel="publickey" type="application/pgp-keys" href="https://nullprogram.com/0xAFD1503A8C8FF42A.pgp">PGP</a>)</div>
+      <div><a id="public-inbox" href="mailto:~skeeto/public-inbox@lists.sr.ht">~skeeto/public-inbox@lists.sr.ht</a> (<a href="https://lists.sr.ht/~skeeto/public-inbox">view</a>)</div>
+    </address>
+    <nav>
+      <ul>
+        <li class="nav index"><a href="https://nullprogram.com/index/">Index</a></li>
+        <li class="nav tags"><a href="https://nullprogram.com/tags/">Tags</a></li>
+        <li class="nav feed"><a href="https://nullprogram.com/feed/">Feed</a></li>
+        <li class="nav about"><a href="https://nullprogram.com/about/">About</a></li>
+        <li class="nav tools"><a href="https://nullprogram.com/tools/">Tools</a></li>
+        <li class="nav toys"><a href="https://nullprogram.com/toys/">Toys</a></li>
+        <li class="nav github"><a href="https://github.com/skeeto">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<footer>
+  <p>
+    All information on this blog, unless otherwise noted, is
+    hereby released into the public domain, with no rights
+    reserved.
+  </p>
+</footer>

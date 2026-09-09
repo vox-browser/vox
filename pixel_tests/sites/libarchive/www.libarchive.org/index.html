@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8'>
+<link href="style.css" rel="stylesheet" type="text/css">
+<title>
+libarchive - C library and command-line tools for reading and writing tar, cpio, zip, ISO, and other archive formats @ GitHub </title>
+</head>
+<body>
+<a href="https://github.com/libarchive/libarchive"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"/></a>
+<div id="container">
+<!--  <div class="download">
+    <a href="https://github.com/libarchive/libarchive/zipball/master">
+    <img border="0" width="90" src="https://github.com/images/modules/download/zip.png"></a>
+    <a href="https://github.com/libarchive/libarchive/tarball/master">
+    <img border="0" width="90" src="https://github.com/images/modules/download/tar.png"></a>
+  </div>
+-->
+  <h1>libarchive</h1>
+  <div class="description">
+     Multi-format archive and compression library
+  </div>
+  <p>
+     The source distribution includes the libarchive library, the bsdtar and bsdcpio command-line programs, full test suite, and documentation.
+    <ul>
+      <li>Stable release: <a href="https://github.com/libarchive/libarchive/releases/tag/v3.8.9">3.8.9</a> (Jul 28, 2026)
+       <a href="https://www.libarchive.org/downloads/libarchive-3.8.9.tar.xz" rel="nofollow">tar.xz</a>
+       <a href="https://www.libarchive.org/downloads/libarchive-3.8.9.tar.gz" rel="nofollow">tar.gz</a>
+       <a href="https://www.libarchive.org/downloads/libarchive-3.8.9.zip" rel="nofollow">zip</a>
+      <li>Current Development Sources:
+       <a href="https://github.com/libarchive/libarchive/tarball/master" rel="nofollow">Tar.gz of github master branch</a>
+       <a href="https://github.com/libarchive/libarchive/zipball/master" rel="nofollow">Zip of github master branch</a></li>
+      <li><a href="https://www.libarchive.org/downloads/" rel="nofollow">Legacy releases</a>
+    </ul>
+  </p>
+  <p>
+     The libarchive library features:
+    <ul>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/LibarchiveFormats">Support for a variety of archive and compression formats</a>. </li>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/FormatDetection">Robust automatic format detection</a>, including archive/compression combinations such as tar.gz. </li>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/ZeroCopy">Zero-copy internal architecture</a> for high performance. </li>
+      <li>Streaming architecture eliminates all limits on size of archive, limits on entry sizes depend on particular formats. </li>
+      <li>Carefully factored code to minimize bloat when programs are statically linked. </li>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/LibarchiveAddingTest">Growing test suite</a> to verify correctness of new ports. </li>
+      <li>Works on most POSIX-like systems (including FreeBSD, Linux, Solaris, etc.) </li>
+      <li>Supports Windows, including Cygwin, MinGW, and Visual Studio. </li>
+    </ul>
+  </p>
+  <p>
+     The <a href="https://www.freebsd.org/cgi/man.cgi?query=bsdtar&sektion=1&format=html">bsdtar</a> and <a href="https://www.freebsd.org/cgi/man.cgi?query=bsdcpio&sektion=1&format=html">bsdcpio</a> command-line u1tilities are feature- and performance-competitive with other tar and cpio implementations:
+    <ul>
+      <li>Reads a variety of formats, including tar, pax, cpio, zip, xar, lha, ar, cab, mtree, rar, and ISO images. </li>
+      <li>Writes tar, pax, cpio, zip, xar, ar, ISO, mtree, and shar archives. </li>
+      <li>Automatically handles archives compressed with gzip, bzip2, lzip, xz, lzma, or compress. </li>
+      <li>Unique format conversion feature. </li>
+    </ul>
+  </p>
+  <p>
+     Documentation Links:
+    <ul>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/BuildInstructions">Build Instructions</a></li>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/Examples">Examples of using the library</a></li>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/LibarchiveFormats">Formats supported by the library</a></li>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/ManualPages">Manpages included in the distribution</a></li>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/LibarchiveUsers">Libarchive Users</a></li>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/ReleaseNotes">Release Notes</a></li>
+      <li><a href="https://github.com/libarchive/libarchive/wiki/WishList">Ideas for people who want to contribute</a></li>
+    </ul>
+  </p>
+  <h2>License</h2>
+  <p>
+    <a href="https://raw.githubusercontent.com/libarchive/libarchive/master/COPYING">New BSD License</a>
+  </p>
+  <h2>Issue Tracker</h2>
+  <p>
+    The issue tracker for libarchive is <a href="https://github.com/libarchive/libarchive/issues">hosted on GitHub</a>. <br/>
+    To report a general issue, use the issue tracker. For pull requests, use <a href="https://github.com/libarchive/libarchive/pulls">GitHub's pull request feature</a>.
+  </p>
+  <h2>Contiuous Build</h2>
+  <li>
+  <a href="https://github.com/libarchive/libarchive/actions" rel="nofollow">GitHub Actions</a> (Ubuntu, macOS, Windows)
+  </li>
+  <li>
+  <a href="https://cirrus-ci.com/github/libarchive/libarchive" rel="nofollow">Cirrus CI</a> (FreeBSD)
+  </li>
+  <li>
+  <a href="https://copr.fedorainfracloud.org/coprs/g/libarchive/snapshots/builds" rel="nofollow">Fedora copr</a> (Fedora, EPEL)
+  </li>
+  <li>
+  <a href="https://my.cdash.org/index.php?project=libarchive" rel="nofollow">CDash (big endian)</a>
+  </li>
+  <h2>Mailing Lists</h2>
+  <li>
+  <a href="https://groups.google.com/group/libarchive-announce" rel="nofollow">libarchive-announce</a>
+  </li>
+  <li>
+  <a href="https://groups.google.com/group/libarchive-discuss" rel="nofollow">libarchive-discuss</a>
+  </li>
+  <li>
+  <a href="https://groups.google.com/group/libarchive-commits" rel="nofollow">libarchive-commits</a>
+  </li>
+  <h2>Download</h2>
+  <p>
+    Downloads for all releases are available at the downloads page (<a href="https://www.libarchive.org/downloads/" rel="nofollow">downloads</a>).
+  </p>
+  <p>
+     You can download this project in either <a href="https://github.com/libarchive/libarchive/zipball/master">zip</a> or <a href="https://github.com/libarchive/libarchive/tarball/master">tar formats.
+  </p>
+  <p>
+    You can also clone the project with <a href="https://git-scm.com">Git</a>
+    by running:
+    <pre>
+      $ git clone https://github.com/libarchive/libarchive
+    </pre>
+  </p>
+  <div class="footer">
+     get the source code on GitHub : <a href="https://github.com/libarchive/libarchive">libarchive/libarchive</a>
+  </div>
+</div>
+</body>
+</html>

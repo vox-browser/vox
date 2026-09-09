@@ -1,0 +1,117 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <title> TCC : Tiny C Compiler</title>
+</head>
+<body>
+<img src="tcc-logo.png">
+<div><b><font size="+3">Tiny C Compiler</font></b></div>
+<h2>News</h2>
+
+[Note: I am no longer working on TCC. Check the mailing list to get up
+to date information.]
+
+<h2>Features</h2>
+<ul>
+
+<li> <B>SMALL!</B> You can compile and execute C code everywhere, for
+  example on rescue disks (about 100KB for x86 TCC executable,
+  including C preprocessor, C compiler, assembler and linker).</li>
+
+<li> <B>FAST!</B> tcc generates x86 code. No byte code
+  overhead. Compile, assemble and link several times <A
+  HREF="index.html#speed">faster</A> than <TT>GCC</TT>.</li>
+
+<li> <B>UNLIMITED!</B> Any C dynamic library can be used directly. TCC is
+  heading toward full <B>ISOC99</B> compliance. TCC can of course compile
+  itself.</li>
+
+<li> <B>SAFE!</B> tcc includes an optional <b>memory and bound
+checker</b>. Bound checked code can be mixed freely with standard
+code.
+
+<li> Compile and execute C source directly. No linking or assembly
+  necessary. Full C preprocessor and GNU-like assembler
+  included. </li>
+
+<li> C script supported : just add <TT>'#!/usr/local/bin/tcc -run'</TT> at the first
+  line of your C source, and execute it directly from the command
+  line.</li>
+
+<li> With <CODE>libtcc</CODE>, you can use TCC as a backend for dynamic code
+generation. </li>
+
+</ul>
+
+<h2>Compilation Speed</h2>
+<A NAME="speed"></A>
+<TABLE BORDER=1>
+
+Compilation speed for the <A
+HREF="http://links.twibright.com/download.php">Links
+Browser project</A>. There are 76936 lines (including
+headers). 1950947 lines (67.2 MBytes) are compiled because the same headers are
+included in many files. TinyCC is about <b>9 times</b> faster than
+GCC.
+<p>
+<TR><TD>Compiler</TD><TD>Time(s)</TD><TD>lines/second</TD><TD>MBytes/second</TD>
+
+<tr> <td>TinyCC 0.9.22</td> <td>2.27</td> <td>859000</td> <td>29.6</td>
+
+<tr> <td>GCC 3.2 -O0</td> <td>20.0</td> <td>98000</td> <td>3.4</td>
+
+</TABLE>
+<br>
+Measures were done on a 2.4 GHz Pentium 4. Real time is measured. Compilation
+time includes compilation, assembly and linking.
+<p>
+More up to date tests are available:
+<a href="http://lists.nongnu.org/archive/html/tinycc-devel/2013-02/msg00056.html">1<a/>,
+<a href="http://lists.nongnu.org/archive/html/tinycc-devel/2013-02/msg00039.html">2</a>,
+<a href="http://lists.nongnu.org/archive/html/tinycc-devel/2013-02/msg00043.html">3</a>,
+<a href="http://lists.nongnu.org/archive/html/tinycc-devel/2013-01/msg00007.html">4</a>.
+
+<h2><A HREF="https://bellard.org/tcc/tcc-doc.html">Online Documentation</A></h2>
+
+<h2>You want to help ?</h2>
+Here are some suggestions:
+<ul>
+<li> Report bugs to the mailing list (and eventually fix them).</li>
+</ul>
+
+<h2>Links</h2>
+<UL>
+<li><A
+HREF="https://lists.nongnu.org/mailman/listinfo/tinycc-devel">TinyCC mailing list</A></li>
+<li><a href="https://repo.or.cz/w/tinycc.git">git repository</a></li>
+<li>[For reference: old <a href="http://savannah.gnu.org/projects/tinycc">Savannah project page</a> and <a href="http://download.savannah.gnu.org/releases/tinycc/">releases</a>]</li>
+<li><A HREF="https://bellard.org/otcc/">OTCC - The smallest self
+compiling pseudo C compiler</A></li>
+<li><A HREF="https://bellard.org/ffasn1/">FFASN1</a> - My small but powerful ASN.1 compiler.</li>
+<li><A HREF="http://llvm.org/">LLVM Compiler Infrastructure</li>
+<li><A HREF="http://smarteiffel.loria.fr/">SmartEiffel</A> - With TCC you can compile your Eiffel code faster
+<li><A HREF="http://gcc.gnu.org/">The GNU C Compiler</A></li>
+<li><A HREF="http://www.cs.princeton.edu/software/lcc/">The LCC Compiler</A></li>
+<li><A HREF="http://sdcc.sourceforge.net/">The Small Device C Compiler</A></li>
+<li><A HREF="http://cyclone.thelanguage.org/">Cyclone</A>, A Safe Dialect of C</li>
+<li><A HREF="http://www.digitalmars.com/d/">The D language</A>
+<li><A HREF="http://www.lysator.liu.se/c/"> Programming in C </A></li>
+<li>The <A HREF="http://rigaux.org/language-study/scripting-language/">Scriptometer</A> evaluates various scripting
+languages (including TCC).</li>
+</UL>
+
+<h2>License</h2>
+
+TCC is distributed under the GNU Lesser General Public License. 
+
+<hr>
+Copyright (c) 2001-2018 Fabrice Bellard <hr>
+
+Fabrice Bellard - <A
+HREF="https://bellard.org/">
+https://bellard.org/ </A> - <A
+HREF="index.html"> https://bellard.org/tcc/ </A>
+
+</body>
+</html>

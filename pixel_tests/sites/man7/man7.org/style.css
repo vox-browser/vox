@@ -1,0 +1,311 @@
+/* General Styles */
+html, body {    
+    background-color: #fcfcfc;
+    font-family: sans-serif;
+    font-size: 100%;
+    color: #181818;
+}
+
+body {
+    margin-top: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+h1, h2, h3, h4, h5, h5 {
+    font-family: helvetica, sans-serif;
+    font-weight: normal;
+    margin-left: 8px;
+    margin-right: 8px;
+    color: #008000;
+    margin-top: 25px;
+}
+
+h1 {
+/*
+    font-size: 18px;
+*/
+}
+
+h2 {
+/*
+    font-size: 16px;
+*/
+}
+
+h3 {
+    color: #006000;
+    font-style: italic;
+}
+
+p {
+    margin-left: 8px;
+    margin-right: 8px;
+    margin-bottom: 0.5em;
+}
+
+p {
+    max-width: 750px;
+}
+
+table {
+    max-width: 750px;
+}
+
+hr {
+    max-width: 750px;
+    margin: 8px;
+}
+
+.note-quote p {
+    max-width: 650px;
+    margin-left: 50px;
+}
+
+.review-quote blockquote {
+    max-width: 650px;
+    margin-left: 80px;
+}
+
+.review-quote p {
+    border: dashed rgb(250,100,100);
+    background-color: rgb(230,255,230);
+    border-width: 1px;
+    padding: 10px;
+    margin-top: 30px;
+    max-width: 730px;
+
+}
+
+
+li {
+    max-width: 710px;
+}
+
+p.copyright-text {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+pre {
+    margin-left: 8px;
+}
+
+li {
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+ul.list-wide li {
+    margin-bottom: 12px;
+}
+
+a {
+    color: #1030ff;
+    text-decoration: none;
+}
+
+a:visited {
+    color: #4080dd;
+}
+
+a:hover, a:focus, a:active {
+    color: red;
+    background-color: #ffe0e0;
+    text-decoration: underline;
+}
+
+/* Preamble */
+
+
+/* End of Interfaces */
+
+a.func {
+    color: red;
+    text-decoration: none;
+}
+a.manpage {
+    color: red;
+    text-decoration: none;
+}
+a.file {
+    color: red;
+    text-decoration: none;
+}
+
+div.lmargin {
+    margin-left: 8px;
+}
+
+pre.code {
+    background-color: #f4f0f4;
+//    font-family: monospace, courier;
+    font-size: 110%;
+    margin-left: 0px;
+    margin-right: 60px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border: 1px solid #AADDAA;
+}
+
+div.nav-bar {
+    padding-left:8px;
+    padding-right:8px;
+    padding-top:3px;
+    padding-bottom:3px;
+    background-color: #e8e8e8;
+}
+
+div.footer {
+    padding-left:8px;
+    padding-right:8px;
+    padding-top:3px;
+    padding-bottom:3px;
+    background-color: #e8e8e8;
+}
+
+hr.nav-end {
+    height:0px;
+    margin-top:0px; 
+    color: #0000ff;
+    border-color:#ffffff;
+    width:100%;
+}
+
+hr.start-footer, hr.end-footer {
+    height:0px;
+    margin-top:0px; 
+    margin-bottom:0px; 
+    color: #0000ff;
+    border-color:#ffffff;
+    width:100%;
+}
+
+p.indented {
+    margin-left: 100px;
+}
+
+
+p.training-text {
+    margin-top: 0px;
+    margin-left: 0px;
+    margin-bottom: 0px;
+
+    font-weight: bold;
+    font-size: 15px;
+}
+
+strong, span.hl {
+    font-weight: bold;
+    color: #303030;
+}
+
+a.training-link:hover, a.training-link:visited, a.training-link:link, a.training-link:active {
+    color: #008000;
+}
+
+a.training-link:hover, a.training-link:active {
+    text-decoration: underline;
+    background-color: #ffd0d0;
+}
+
+/*
+a.training-link {
+    color: #228822;
+}
+*/
+
+p.nav-text {
+    margin-top: 0px;
+    margin-left: 0px;
+    margin-bottom: 0px;
+}
+
+p.nav-text, p.copyright-text {
+    font-size: 15px;
+}
+
+.footer p {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+.cmd {
+    font-family: monospace;
+    color: darkgreen;
+}
+
+.code {
+    color: darkgreen;
+}
+
+.const {
+    font-family: monospace;
+    color: #330000;
+}
+
+.email {
+    font-family: monospace;
+    color: #000080;
+}
+
+.envvar {
+    font-family: monospace;
+    color: #330000;
+}
+
+.func {
+    font-family: serif;
+    font-style: italic;
+    color: #330000;
+}
+
+.man-page {
+    font-family: serif;
+    font-style: italic;
+    color: darkblue;
+}
+
+.pathname {
+    font-family: monospace;
+    color: darkgreen;
+}
+
+.url {
+    font-family: serif;
+    font-style: italic;
+    color: #440064;
+}
+
+.var {
+    font-family: serif;
+    font-style: italic;
+    color: #330000;
+}
+
+.t-del {
+    text-decoration: line-through;
+    border-bottom: 3px double #ff0000;
+    background-color: #ffcccc;
+}
+
+.t-add {
+    border-bottom: 3px double #00ff00;
+    background-color: #ccffcc;
+}
+
+hr.errata-expl {
+    border: 1px solid;
+    color: #006600;
+    height: 2px;
+    width: 90%;
+}
+
+hr.prod-comment {
+    border: 0.3px solid;
+    color: #4040aa;
+    height: 0px;
+    width: 90%;
+}

@@ -1,0 +1,190 @@
+/* 
+NOTE: any changes in here should be reflected in 
+      the xml stylesheet /docs/lib/vg-stylesheet.css
+Colours:
+ page border:     #3d3d3d  very dark brown
+ text color:      #202020  almost black 
+ inner box bg:    #bdbdbd  med. gray
+ leaf nav menu:   #336699  med. blue
+ leaf nav menu a: #aaaaaa pale gray
+
+ menu a:link:    #74240f  dark brown
+ menu a:hover:   #888800  greeny-gold
+ gray a:link:    #aaaaaa  pale grey
+ gray a:hover:   #1974b2  med. turquoise
+*/
+
+/* */
+@import URL(vg_basic.css); 
+
+/* default link colours 
+a, a:link, a:visited, a:active { color: #74240f; }
+a:hover { color: #888800; }
+*/
+
+body {
+ margin:           2px;
+ padding:          0px;
+ background-color: #3d3d3d;
+}
+
+body, td { font-size: 95%; }
+
+/* -- main page borders -- */
+div.outer-box {
+ padding:    19px;
+ background: #ffffff url("../images/outer-box-bg.gif") repeat-x;
+}
+div.inner-box {
+ border:     1px solid #bdbdbd;
+ min-height: 800px;
+ background-color: #ffffff;
+}
+
+/* brown ruler */
+div.hr_brown { 
+  height:  3px; 
+  background:#ffffff url("../images/hr_brown.png") repeat-x; }
+div.hr_brown hr { display:none; }
+
+/* -- footer ruler + links -- */
+div.hr_gray { 
+ height:  3px; 
+ background:#ffffff url("../images/hr_gray.png") repeat-x; }
+div.hr_gray hr { display:none; }
+
+.gray { font-size: 80%; }
+.gray, .gray a { color: #aaaaaa; }
+.gray a:hover { color: #888800; }
+
+/* front page image */
+#index-page {
+ background-image:  url("../images/st-george-dragon.png");
+ background-repeat: no-repeat;
+ background-position: top center;
+}
+
+/* front page menu stuff */
+#menu { line-height: 100%; }
+
+#menu ul {
+ list-style: none;
+ padding-left: 0px;
+}
+#menu li {
+ padding:     2px 0px 0px 6px;
+ white-space: nowrap;
+}
+#menu li.hdr {
+ color:         #74240f;
+ font-weight:   bold;
+ padding:       2px 0px 3px 6px;
+ background:    #fffbc9;
+ border-top:    1px solid #ffde84; 
+ border-bottom: 1px solid #ffde84; 
+}
+#menu li a {
+	/*color: #74240f;*/
+ text-decoration: none;
+}
+#menu li a:hover {
+ color: #888800;
+ text-decoration: underline;
+}
+
+/* leaf page nav stuff */
+.topnav {
+ font-size:   97%;
+ border:      1px solid #ffde84; 
+ padding:     2px 3px 2px 3px;
+ background:  #fffbc9;
+}
+div.subnav { margin: 6px; }
+.crumb { 
+ font-size:   97%; 
+ color:       #74240f;
+ padding:     0px 4px 0px 4px;  
+ white-space: nowrap;
+}
+.topnav a, .subnav a, .topnav a:link { text-decoration: none; }
+.topnav a:hover, .subnav a:hover { text-decoration: underline; }
+
+/* -- leaf page lists -- */
+#leaf-page ul  { 
+ margin:     0px 4px 16px 16px;
+ padding:    0px;
+ list-style: url("../images/li-brown.png"); 
+}
+#leaf-page ul li { 
+	margin-bottom: 10px;
+}
+#leaf-page ul ul	{ 
+ list-style-type:  none; 
+ list-style-image: none; 
+ margin-left:      0px; 
+}
+
+#pagemenu ul        {
+ list-style: none;
+ margin:     0px;
+ padding:    0px 0px 0px 0px;
+}
+#pagemenu li        {
+ background:  url("../images/navsep.png") no-repeat center right;
+ float:       left;
+ margin:      0px;
+ padding:     2px 8px 3px 8px;
+ white-space: nowrap;
+}
+
+/* green stuff */
+.green {
+ color:      #0f7355;
+ /*padding:    0px 8px 0px 8px; */
+ border:     1px solid #0f7355;
+ background: #edf7f4;
+ background-color: #edf7f4;
+}
+.green a:link, .green a:active, .green a:visited { color: #0a4d39; }
+.green a:hover { color: #888800; }
+
+dt { color: #0f7355; }
+dl.spaced dd { 
+	margin-left: 1.5em; 
+	padding-bottom: 0.8em;
+}
+
+
+/* survey styles */
+#survey p.survey { color: #74240f; }
+#survey h3 { margin-bottom: 5px; }
+#survey pre { margin-top: 0px; }
+#survey dt { color: #74240f; font-weight: bold; }
+
+table.form th { 
+ background:    #fffbc9; 
+ font-weight:   bold; 
+ border-top:    1px solid #ffde84; 
+ border-bottom: 1px solid #ffde84; 
+}
+/*table.form td { border-top: 1px solid #ffde84; }*/
+/*table.form-sub td { border:  none; }*/
+
+
+/* -------------------------------------------------- */
+/* don't have extra space above/below 1st p in qanda 'question'
+   cells */
+tr.question p {
+ margin-top:     0px; 
+ margin-bottom: 0px;
+}
+
+
+/* release styles */
+#release h3 { color: #0f7355; }
+#release p { margin-top: 0.4em; }
+#release .md5sum { color: #0f2d73; }
+
+/* over-ride imported css font size */
+table.nav td { font-size: 95%; }
+table.nav th { font-size: 110%; }

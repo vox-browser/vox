@@ -1,0 +1,4789 @@
+<!DOCTYPE html>
+<!-- vim: set ts=2 sw=2 noet: -->
+<html>
+	<head id="head">
+		<meta charset="utf-8">
+		<meta name="viewport" content="initial-scale=1">
+		<title>Drew DeVault&apos;s blog</title>
+		<link type="text/css" rel="stylesheet" href="main.css">
+		<link rel="alternate" type="application/rss+xml" title="RSS" href="https://drewdevault.com/blog/index.xml">
+		<link rel="icon" type="image/png" href="avatar.png">
+		
+		
+
+	</head>
+	<body id="body">
+		<nav class="site-nav">
+			<h1>
+				<a href="index.html">Drew DeVault</a>
+			</h1>
+			<ul>
+				<li>
+					<a href="https://drewdevault.com/talks/">Talks</a>
+				</li>
+
+				<li>
+					<a href="https://drewdevault.com/about/">About</a>
+				</li>
+
+				<li>
+					<a href="https://drewdevault.com/blog/index.xml">RSS</a>
+				</li>
+			</ul>
+		</nav>
+
+		
+	<main>
+		<p>Hello! I’m a software engineer and I write here about free and open source software, politics, ethics, and philosophy. I’m the founder & maintainer of several open source projects, notably <a href="https://sourcehut.org" target="_blank">SourceHut</a>, the <a href="https://harelang.org" target="_blank">Hare programming language</a>, and <a href="https://vim-classic.org" target="_blank">Vim Classic</a>, and I started but no longer work on several more that you might have heard of, such as <a href="https://swaywm.org" target="_blank">sway</a>, <a href="https://gitlab.freedesktop.org/wlroots/wlroots" target="_blank">wlroots</a>, <a href="https://aerc-mail.org" target="_blank">aerc</a>, and many others.</p><h2>Find me online</h2><ul><li>SourceHut: <a href="https://sr.ht/~sircmpwn" target="_blank">~sircmpwn</a></li><li>Fediverse: <a href="https://social.freebitcoin.gay/@drew" target="_blank">@drew@social.freebitcoin.gay</a></li><li>Email me: <a href="mailto:drew@ddevault.org" target="_blank">drew@ddevault.org</a> (<a href="https://drewdevault.com/publickey.txt" target="_blank">PGP key</a>)</li><li>IRC: ddevault on most networks</li></ul><h2>Solidarity with</h2><ul><li><img class="icon " src="antifa.svg"> Antifascism</li><li>🇵🇸 Free Palestine</li><li>🏳️‍⚧️ Trans rights</li><li>♀️ Women’s rights</li></ul><p>See also:</p><ul><li><a href="https://drewdevault.com/time/">Deep time</a></li><li><a href="https://drewdevault.com/dynlib/">Dynamic linking bad</a></li><li><a href="https://drewdevault.com/weird-guys/">Weird little guys of FOSS</a></li></ul>
+
+		<h1>Drew DeVault&apos;s blog</h1>
+
+		<section class="articles">
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 23, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/AI-in-Linux/">AI in Linux</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 05, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Circus-freaks-of-FOSS/">The circus freaks of open source</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 02, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Vim-Classic-8.3.0/">Vim Classic 8.3.0 released</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 20, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/New-design/">New blog design</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 15, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/LLM-policy-for-Rust/">Add an LLM policy for rust-lang/rust</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 01, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/I-cant-cancel-Copilot/">I can&apos;t cancel GitHub Copilot</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 21, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Addressing-harassment/">Addressing the harassment</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 19, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Rewrite-with-zine/">Rewrote my blog with Zine</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 28, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/rsync-without-rsync/">tar: a slop-free alternative to rsync</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 25, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Forking-vim/">A eulogy for Vim</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 29, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Cult-of-TDD-and-LLMs/">The cults of TDD and GenAI</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 12, 2026</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Hermes-from-the-ground-up/">Redesigning my microkernel from the ground up</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 08, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/OpenAI-employees-are-you-okay/">OpenAI employees… are you okay?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 22, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Whats-up-with-FUTO/">What&apos;s up with FUTO?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 24, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Cloudflare-and-fascists/">Cloudflare bankrolls fascists</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 17, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/An-impossible-future-for-JS/">A better future for JavaScript that won&apos;t happen</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 20, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Hare-and-Wren/">Embedding Wren in Hare</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 08, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Whats-new-with-himitsu/">What&apos;s new with Himitsu 0.9?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 30, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Speak-the-truth/">Just speak the truth</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 09, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Unionize-or-die/">Unionize or die</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 05, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/BA-on-border-disputes/">The British Airways position on various border disputes</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 20, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Tech-sector-restistance/">Resistance from the tech sector</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 04, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Price-perspective/">A Firefox addon for putting prices into perspective</a>
+					</div>
+				</div>
+			
+		
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 17, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Stop-externalizing-your-costs-on-me/">Please stop externalizing your costs directly into my face</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 13, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/On-intellectual-property/">A holistic perspective on intellectual property, part 1</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 23, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Transparency-and-governance-FOSDEM/">Join us to discuss transparency and governance at FOSDEM &apos;25</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 20, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/FOSDEM-protest/">FOSDEM &apos;25 protest</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 16, 2025</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/No-Billionares-at-FOSDEM-please/">No billionaires at FOSDEM</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 25, 2024</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Neurodivergence-and-accountability-in-free-software/">Neurodivergence and accountability in free software</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 30, 2024</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Rust-in-Linux-revisited/">Rust for Linux revisited</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 16, 2024</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/So-you-want-to-compete-with-FOSS/">So you want to compete with or replace open source</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 24, 2024</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Bunnix/">Writing a Unix clone in about a month</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 19, 2024</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Copyleft-is-not-restrictive/">Copyleft licenses are not “restrictive”</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 09, 2024</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/FDO-conduct-enforcement/">FDO&apos;s conduct enforcement actions regarding Vaxry</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 26, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Prusa-is-floundering/">Why Prusa is floundering, and how you can avoid their fate</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 25, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/RMS-on-sex/">Richard Stallman&apos;s political discourse on sex</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 09, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Can-I-be-on-your-podcast/">Can I be on your podcast?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 31, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/On-real-names/">On &quot;real name&quot; policies</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 13, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Going-off-script/">Going off-script</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 29, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-forbidden-topics/">The forbidden topics</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 17, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Hyprland-toxicity/">Hyprland is a toxic community</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 29, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/AI-crap/">AI crap</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 09, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Hello-from-Ares/">Hello from Ares!</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 31, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-rc-shell-and-whitespace/">The rc shell and its excellent handling of whitespace</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 25, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Alpine-does-not-make-news/">Alpine Linux does not make the news</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 04, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Dont-sign-a-CLA-2/">Seriously, don&apos;t sign a CLA</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 30, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Social-and-parasocial-media/">Social media and &quot;parasocial media&quot;</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 29, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Burnout-2/">Burnout and the quiet failures of the hacker community</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 19, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Reforming-the-free-software-message/">Reforming the free software message</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 16, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Mobile-linux-retrospective/">Throwing in the towel on mobile Linux</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 12, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-to-go-to-war/">How to go to war with your employer</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 01, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Burnout/">Burnout</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 24, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Who-leads-us/">Who should lead us?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 18, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/A-new-shell-for-Unix/">rc: a new shell for Unix</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 11, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-FSF-is-dying/">The Free Software Foundation is dying</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 08, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Drivers-and-mercury/">Writing Helios drivers in the Mercury driver environment</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 09, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Comment-or-no-comment/">When to comment that code</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 20, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Helios-aarch64/">Porting Helios to aarch64 for my FOSDEM talk, part one</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 30, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Should-private-platforms-engage-in-censorship/">Should private platforms engage in censorship?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 24, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/FOSDEM/">My plans at FOSDEM: SourceHut, Hare, and Helios</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 22, 2023</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/A-new-focus/">Setting a new focus for my blog</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 01, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/I-shall-toil-quietly/">I shall toil at a reduced volume</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 26, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Hare-codegen-v2/">Codegen in Hare v2</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 12, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/In-praise-of-Plan-9/">In praise of Plan 9</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 27, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Kernel-hacking-with-Hare-part-3/">Notes from kernel hacking in Hare, part 3: serial driver</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 18, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/TOTP-is-easy/">TOTP for 2FA is incredibly easy to implement. So what&apos;s your excuse?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 15, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-October-2022/">Status update, October 2022</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 12, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/In-praise-of-ffmpeg/">In praise of ffmpeg</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 03, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Does-Rust-belong-in-Linux/">Does Rust belong in the Linux kernel?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 02, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Kernel-hacking-with-Hare-part-2/">Notes from kernel hacking in Hare, part 2: multi-threading</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 16, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Open-source-matters/">The phrase &quot;open source&quot; (still) matters</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 15, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-September-2022/">Status update, September 2022</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 07, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Kernel-hacking-with-Hare-part-1/">Notes from kernel hacking in Hare, part 1</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 02, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/In-praise-of-qemu/">In praise of qemu</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 28, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/powerctl-a-hare-case-study/">powerctl: A small case study in Hare for systems programming</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 25, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/pmOS-on-xiaomi-poco-f1/">A review of postmarketOS on the Xiaomi Poco F1</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 18, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/PINE64-let-us-down/">PINE64 has let its community down</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 16, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-August-2022/">Status update, August 2022</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 10, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Organizing-my-thoughts/">How I wish I could organize my thoughts</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 26, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Conciseness/">Conciseness</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 25, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Open-hardware-graveyard/">The past and future of open hardware</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 25, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Code-review-with-aerc/">Code review at the speed of email</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 18, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-July-2022/">Status update, July 2022</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 09, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Fediverse-toxicity/">The Fediverse can be pretty toxic</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 01, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Porting-DOOM-to-Helios/">Porting Doom to Helios</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 23, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Copilot-GPL-washing/">GitHub Copilot and open source laundering</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 20, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Himitsu/">Introducing the Himitsu keyring &amp; password manager for Unix</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 15, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-June-2022/">Status update, June 2022</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 13, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/helios/">The Helios microkernel</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 30, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/bleh/">bleh</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 25, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Google-has-been-DDoSing-sourcehut/">Google has been DDoSing SourceHut for over a year</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 16, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-May-2022/">Status update, May 2022</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 14, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/generating-ioctls/">A Hare code generator for finding ioctl numbers</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 12, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Supply-chain-when-will-we-learn/">When will we learn?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 09, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/hare-ssh/">Implementing an SSH agent in Hare</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 25, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Announcing-Hare/">Announcing the Hare programming language</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 15, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-April-2022/">Status update, April 2022</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 01, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/git-snail-mail/">Announcing git snail-mail</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 29, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/free-software-free-infrastructure/">It is important for free software to use free software infrastructure</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 24, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Netherlands-update/">The Netherlands so far</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 15, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-March-2022/">Status update, March 2022</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 14, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/It-takes-a-village/">It takes a village</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 13, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Why-am-I-working-in-private/">Why am I building a programming language in private?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 01, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Open-source-is-defined-by-the-OSD/">Open Source is defined by the OSI&apos;s Open Source Definition</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 19, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Plaid-is-an-evil-nightmare-product/">Plaid is an evil nightmare product from Security Hell</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 15, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-February-2022/">Status update, February 2022</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 13, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Framing-accessibility-in-broader-terms/">Framing accessibility in broader terms</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 07, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Free-software-licenses-MIT/">Free software licenses explained: MIT</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 28, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Implementing-mime-in-xxxx/">Implementing a MIME database in XXXX</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 18, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Pine64s-weird-priorities/">Pine64 should re-evaluate their community priorities</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 17, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-January-2022/">Status update, January 2022</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 15, 2022</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-RISC-V-experience/">The RISC-V experience</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 30, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Language-design-considerations/">Breaking down a small language design proposal</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 28, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Dont-use-Discord-for-FOSS/">Please don&apos;t use Discord for FOSS projects</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 25, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Use-me-as-a-resource/">Please use me as a resource</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 23, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Sustainable-creativity-post-copyright/">Sustainable creativity in a world without copyright</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 18, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Commercial-forks-of-FOSS-projects/">On commercial forks of FOSS projects</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 15, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-December-2021/">Status update, December 2021</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 14, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Linux-Mint-and-elementary-OS/">Impressions of Linux Mint &amp; elementary OS</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 05, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/What-desktop-Linux-needs/">What desktop Linux needs to succeed in the mainstream</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 05, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-new-Linux-users-succeed/">How new Linux users can increase their odds of success</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 26, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/postmarketos/">postmarketOS revolutionizes smartphone hacking</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 24, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/A-philosophy-for-instant-messaging/">My philosophy for productive instant messaging</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 16, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Python-stop-screwing-distros-over/">Python: Please stop screwing over Linux distros</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 16, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Cash-for-leftpad/">I will pay you cash to delete your npm module</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 15, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-November-2021/">Status update, November 2021</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 05, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Apollo-federation-2-gaslighting/">Breaking down Apollo Federation&apos;s anti-FOSS corporate gaslighting</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 26, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/stalebot/">GitHub stale bot considered harmful</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 22, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Smarter-every-day-and-4privacy/">How SmarterEveryDay&apos;s 4privacy can, and cannot, meet its goals</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 17, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Reliability/">Software developers have stopped caring about reliability</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 15, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-October-2021/">Status update, October 2021</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 05, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Reflection/">How reflection works in Hare</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 27, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Let-distros-do-their-job/">Developers: Let distros do their job</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 23, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Nitter-and-other-internet-reclamation-projects/">Nitter and other Internet reclamation projects</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 15, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-September-2021/">Status update, September 2021</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 11, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/visurf-announcement/">visurf, a web browser based on NetSurf</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 15, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-August-2021/">Status update, August 2021</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 11, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Debugging-your-new-PL/">Tips for debugging your new programming language</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 10, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Apple-CSAM-scanning/">Police to begin regular, warrant-free searches of homes for child abuse material</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 06, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/goproxy-breaks-go/">proxy.golang.org allows many Go packages to be silently broken</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 05, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/In-praise-of-Postgres/">In praise of PostgreSQL</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 28, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-next-YAML/">My wish-list for the next YAML</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 15, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-July-2021/">Status update, July 2021</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 04, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Is-GitHub-a-derivative-work/">Is GitHub a derivative work of GPL&apos;d software?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 03, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-does-IRC-federate/">How does IRC&apos;s federation model compare to ActivityPub?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 27, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/You-cant-capture-the-nuance/">You can&apos;t capture the nuance of my form fields</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 24, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/finger-client/">A finger client</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 15, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-June-2021/">Status update, June 2021</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 14, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Provided-as-is-without-warranty/">Provided &quot;as is&quot;, without warranty of any kind</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 07, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-Netherlands/">I will be moving to the Netherlands</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 30, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Come-build-your-project/">Build your project in our new language</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 24, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/io_uring-finger-server/">Using io_uring to make a high-performance... finger server</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 19, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-to-write-release-notes/">How to write release notes</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 17, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/aerc-with-mbsync-postfix/">aerc, mbsync, and postfix for maximum comfy offline email</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 16, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-May-2021/">Status update, May 2021</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 14, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Pinebook-Pro-review/">Pinebook Pro review</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 08, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Try-not-to-make-unlikable-software/">I try not to make unlikable software (and features)</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 07, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/godocs.io-six-months-later/">godocs.io six months later</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 06, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Praise-for-Alpine-Linux/">In praise of Alpine Linux</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 26, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Cryptocurrency-is-a-disaster/">Cryptocurrency is an abject disaster</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 22, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Our-self-hosted-parser-design/">Parsers all the way down: writing a self-hosting parser</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 15, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-April-2021/">Status update, April 2021</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 12, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/DCO/">The Developer Certificate of Origin is a great alternative to a CLA</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 07, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-next-chat-app/">What should the next chat app look like?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 02, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Go-is-a-great-language/">Go is a great programming language</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 29, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-worlds-dumbest-IRC-bot/">The world&apos;s stupidest IRC bot</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 23, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Open-sourcing-video-games/">The complete guide for open sourcing video games</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 19, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/A-new-systems-language/">We are building a new systems programming language</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 15, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-March-2021/">Status update, March 2021</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 06, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Corporate-surveillance-murder/">The corporate surveillance machine is killing people</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 03, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/To-make-money-in-FOSS-build-a-business/">To make money in FOSS, build a business first</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 25, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Gmail-is-a-huge-source-of-spam/">Gmail is a huge source of spam</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 21, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/On-the-traits-of-good-replacements/">A great alternative is rarely fatter than what it aims to replace</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 09, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-to-make-your-downstreams-happy/">How to make your downstream users happy</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 28, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Use-open-platforms-or-else/">Use open platforms — or else</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 20, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/FOSS-is-to-surrender-your-monopoly/">Open source means surrendering your monopoly over commercial exploitation</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 19, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Spooky-code-at-a-distance/">Spooky action at a distance</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 19, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Elasticsearch-does-not-belong-to-Elastic/">Elasticsearch does not belong to Elastic</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 07, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/History-will-not-remember-us-fondly/">History will not remember us fondly</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 04, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/A-culture-of-stability-and-reliability/">Fostering a culture that values stability and reliability</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 01, 2021</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Megacorps-are-not-your-dream-job/">A megacorp is not your dream job</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 25, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-to-design-a-new-programming-language/">How to design a new programming language from scratch</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 18, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/godocs.io/">godocs.io is now available</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 15, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-December-2020/">Status update, December 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 12, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Shell-literacy/">Become shell literate</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 04, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Analytics-and-informed-consent/">Web analytics should at least meet the standards of informed consent</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 20, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/A-few-ways-to-make-money-in-FOSS/">A few ways to make money in FOSS</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 17, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Better-than-DuckDuckGo/">We can do better than DuckDuckGo</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 15, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-November-2020/">Status update, November 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 06, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Utility-vs-usability/">Utility vs usability</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 01, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/What-is-Gemini-anyway/">What is this Gemini thing anyway, and why am I excited about it?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 23, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Im-handing-wlroots-and-sway-to-Simon/">I&apos;m handing over maintenance of wlroots and sway to Simon Ser</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 22, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Firefox-the-embarassment-of-FOSS/">Firefox: The Jewel^WEmbarassment of Open Source</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 15, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-October-2020/">Status update, October 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 09, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Four-principles-of-software-engineering/">Four principles of software engineering</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 01, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Spamtoberfest/">Spamtoberfest</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 25, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/A-story-of-two-libcs/">A tale of two libcs</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 21, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Gemini-TOFU/">TOFU recommendations for Gemini</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 20, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-potential-of-federation/">The unrealized potential of federation</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 15, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-September-2020/">Status update, September 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 02, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Linux-development-is-profoundly-distributed/">Linux development is distributed - profoundly so</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 02, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Linux-development-is-profoundly-distribute/">Linux development is distributed - profoundly so</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 27, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Microsoft-plays-their-hand/">Embrace, extend, and finally extinguish - Microsoft plays their hand</a>
+					</div>
+				</div>
+			
+		
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 17, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Engineers-solve-problems/">Software engineers solve problems</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 16, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update/">Status update, August 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 13, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Web-browsers-need-to-stop/">Web browsers need to stop</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 10, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-to-contribute-to-FOSS/">I want to contribute to your project, how do I start?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 01, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/pkg-go-dev-sucks/">pkg.go.dev is more concerned with Google&apos;s interests than good engineering</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 27, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Anti-AGPL-propaganda/">The falsehoods of anti-AGPL propaganda</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 15, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-July-2020/">Status update, July 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 14, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/March-2nd-1943/">March 2nd, 1943</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 26, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Vendor-purpose-OS/">General-purpose OS, special-purpose OS, and now: vendor-purpose OS</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 21, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/BARE-message-encoding/">Introducing the BARE message encoding</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 15, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-June-2020/">Status update, June 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 12, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Can-we-talk-about-client-side-certs/">Can we talk about client-side certificates?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 06, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Add-a-contrib-directory/">Add a &quot;contrib&quot; directory to your projects</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 15, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-May-2020/">Status update, May 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 05, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/We-are-complicit-in-our-employers-deeds/">We are complicit in our employer&apos;s deeds</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 22, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-to-store-data-forever/">How to store data forever</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 20, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Configuring-aerc-for-git/">Configuring aerc for git via email</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 15, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-April-2020/">Status update, April 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 06, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/My-weird-branchless-git-workflow/">My unorthodox, branchless git workflow</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 25, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Designing-a-replacement-part-for-my-truck/">Designing and 3D printing a new part for my truck</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 18, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Reckless-limitless-scope/">The reckless, infinite scope of web browsers</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 13, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/GitHub-notifications/">GitHub&apos;s new notifications: a case of regressive design</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 07, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Open-letter-to-Senator-Casey/">An open letter to Senator Bob Casey on end-to-end encryption</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 03, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Abiopause/">The Abiopause</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 21, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Thoughts-on-performance/">Thoughts on performance &amp; optimization</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 18, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Fucking-laptops/">Fucking laptops</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 15, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-February-2020/">Status update, February 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 06, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Dependencies-and-maintainers/">Dependencies and maintainers</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 27, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/KnightOS-was-interesting/">KnightOS was an interesting operating system</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 21, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Stress-and-happiness/">The happinesses and stresses of full-time FOSS work</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 17, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Effective-project-governance/">A philosophy of project governance</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 15, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-January-2020/">Status update, January 2020</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 08, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Re-Slow/">Following up on &quot;Hello world&quot;</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 04, 2020</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Slow/">Hello world</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 30, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/dotfiles/">Managing my dotfiles as a git repository</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 18, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/PinePhone-review/">PinePhone review</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-December-2019/">Status update, December 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 09, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Developers-shouldnt-distribute/">Developers shouldn&apos;t distribute their own software</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 29, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/dotorg/">Take action to save .org and prosecute those who sold out the internet</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 26, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Avoid-traumatic-changes/">Software developers should avoid traumatic changes</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 20, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/China/">China</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-November-2019/">Status update, November 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 30, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Line-printer-shell-hack/">An old-school shell hack on a line printer</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-October-2019/">Status update, October 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 12, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/how-to-fuck-up-releases/">How to fuck up software releases</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 10, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/RaptorCS-redemption/">RaptorCS&apos;s redemption: the POWER9 machine works</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 07, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/HDCP-in-Weston/">Why Collabora really added Digital Restrictions Management to Weston</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 23, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/RaptorCS-Blackbird-a-horror-story/">RaptorCS POWER9 Blackbird PC review</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 17, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-wrong-words-but-the-right-ideas/">Don&apos;t sacrifice the right ideas to win the right words</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-September-2019/">Status update, September 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 08, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Enough-to-decide/">How I decide between many programming languages</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 02, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Interactive-SSH-programs/">Building interactive SSH applications</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 19, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Introducing-shell-access-for-builds/">Shell access for builds.sr.ht CI</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-August-2019/">Status update, August 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 09, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/DRM-leasing-and-VR-for-Wayland/">DRM leasing: VR for Wayland</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 29, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/FOSS-contributor-tracks/">FOSS contributor tracks</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-July-2019/">Status update, July 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 08, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Announcing-annotations-for-sourcehut/">Announcing code annotations for SourceHut</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 01, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Absence-of-features-in-IRC/">Absence of certain features in IRC considered a feature</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-June-2019/">Status update, June 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 13, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/My-journey-from-MIT-to-GPL/">My personal journey from MIT to GPL</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 03, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Announcing-aerc-0.1.0/">Initial pre-release of aerc: an email client for your terminal</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 24, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/What-is-a-fork/">What is a fork, really, and how GitHub changed its meaning</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-May-2019/">Status update, May 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 13, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Git-email-webcast/">Webcast: Reviewing git &amp; mercurial patches with email</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 01, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Announcing-wio/">Announcing Wio: A clone of Plan 9&apos;s Rio for Wayland</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 29, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Shut-up-and-get-back-to-work-style/">The &quot;shut up and get back to work&quot; coding style guide</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 23, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Using-cage-for-a-seamless-RDP-Wayland-desktop/">Using Cage for a seamless remote Wayland session</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 19, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Your-VPN-is-a-serious-choice/">Choosing a VPN service is a serious decision</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-April-2019/">Status update, April 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Announcing-first-class-hg-support-on-sourcehut/">Announcing first-class Mercurial support on Sourcehut</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 02, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/NewPipe-represents-the-best-of-FOSS/">NewPipe represents the best of FOSS</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 25, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Rust-is-not-a-good-C-replacement/">Rust is not a good C replacement</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Status-update-March-2019/">Status update, March 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 11, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Sway-1.0-released/">Announcing the release of sway 1.0</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 04, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/sourcehut-design/">Sourcehut&apos;s spartan approach to web design</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 25, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Using-git-with-discipline/">Tips for a disciplined git workflow</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 18, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Generics-arent-ready-for-Go/">Generics aren&apos;t ready for Go</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 10, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Wayland-misconceptions-debunked/">Wayland misconceptions debunked</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 05, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/FOSDEM-recap/">My experiences at FOSDEM 2019</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 30, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Why-I-built-sr.ht-with-Flask/">Why I chose Flask to build sr.ht&apos;s mini-services</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 23, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Why-I-use-old-hardware/">Why I use old hardware</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 15, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Im-doing-FOSS-full-time/">I&apos;m going to work full-time on free software</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 13, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Backups-and-redundancy-at-sr.ht/">Backups &amp; redundancy at sr.ht</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 01, 2019</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Patches-welcome/">Patches welcome</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 28, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Anatomy-of-a-shell/">Anatomy of a shell</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 20, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Porting-Alpine-Linux-to-RISC-V/">Porting Alpine Linux to RISC-V</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 04, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-to-abandon-a-FLOSS-project/">How to abandon a FLOSS project</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 15, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/sr.ht-general-availability/">sr.ht, the hacker&apos;s forge, now open for public alpha</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 30, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Its-not-okay-to-pretend-youre-open-source/">It&apos;s not okay to pretend your software is open source</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 29, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-does-virtual-memory-work/">How does virtual memory work?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 20, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Sway-1.0-highlights/">Sway 1.0-beta.1 release highlights</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 08, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Go-1.11/">Go 1.11 got me to stop ignoring Go</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 05, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Dont-sign-a-CLA/">Don&apos;t sign a CLA</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 30, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Sway-wlroots-at-XDC-2018/">Sway &amp; wlroots at XDC 2018</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 10, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Getting-started-with-qemu/">Getting started with qemu</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 04, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Conservative-web-development/">Conservative web development</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 26, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Self-hosted-livestreaming/">How to make a self-hosted video livestream</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 22, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Commons-clause-will-destroy-open-source/">The Commons Clause will destroy open source</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 08, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Signal/">I don&apos;t trust Signal</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 05, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Local-mail-server/">Setting up a local dev mail server</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 29, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Wayland-shells/">Writing a Wayland compositor with wlroots: shells</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 23, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Git-is-already-distributed/">Git is already federated &amp; decentralized</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 17, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Input-handling-in-wlroots/">Input handling in wlroots</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 09, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Simple-correct-fast/">Simple, correct, fast: in that order</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 02, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Email-driven-git/">The advantages of an email-driven git workflow</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 27, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/My-lets-encrypt-setup/">A quick review of my Let&apos;s Encrypt setup</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 05, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Should-you-move-to-sr.ht/">Should you move from GitHub to sr.ht</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 01, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-I-maintain-FOSS-projects/">How I maintain FOSS projects</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 29, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Embedding-files-in-C/">Embedding files in C programs with koio</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 27, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Why-rewrite-wlc/">Why did we replace wlc?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 13, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/scdoc/">Introducing scdoc, a man page generator</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 04, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Redirecting-stderr-of-running-process/">Redirecting stderr of a running process</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 03, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Google-embraces-extends-extinguishes/">Google embraces, extends, and extinguishes</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 28, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/KDE-Sprint-retrospective/">Sway reporting in from KDE&apos;s Berlin development sprint</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 24, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Decentralize-decentralize-decentralize/">Achtung! Decentralize, decentralize, decentralize!</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 17, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Hack-everything-without-fear/">Hack everything without fear</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 10, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-to-write-an-IRC-bot/">How to write an IRC bot</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 24, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-road-to-sustainable-FOSS/">The path to sustainably working on FOSS full-time</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 22, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Writing-a-wayland-compositor-part-2/">Writing a Wayland Compositor, Part 2: Rigging up the server</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 17, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Writing-a-Wayland-compositor-1/">Writing a Wayland Compositor, Part 1: Hello wlroots</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 13, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-last-years/">The last years</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 05, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Introduction-to-POSIX-shell/">Introduction to POSIX shell</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 27, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Sway-and-client-side-decorations/">Sway and client side decorations</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 10, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Learn-your-package-manager/">Learn about your package manager</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 02, 2018</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-case-against-fork/">fork is not my favorite syscall</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 28, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/wlroots-whitepaper-available/">wlroots whitepaper available</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 16, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Firefox-is-on-a-slippery-slope/">Firefox is on a slippery slope</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 02, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/History-of-intelligent-observation/">A history of emergent intelligence</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 24, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Phone-maintenance/">On taking good care of your phone</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 13, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Portability-matters/">Portability matters</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 26, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Fuck-you-nvidia/">Nvidia sucks and I&apos;m sick of it</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 09, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Future-of-sway/">The future of Wayland, and sway&apos;s role in it</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 13, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Analyzing-HN/">Analyzing HN moderation &amp; censorship</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 08, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Complicated/">Killing ants with nuclear weapons</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 13, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/When-not-to-use-a-regex/">When not to use a regex</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 09, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/State-of-Sway-August-2017/">State of Sway August 2017</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 19, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Archive-it-or-miss-it/">Archive it or you will miss it</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 10, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Introduction-to-Wayland/">An introduction to Wayland</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 05, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Limited-generics-in-C/">Limited &quot;generics&quot; in C without macros or UB</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 11, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Rotating-passwords/">Rotating passwords in bulk in the wake of security events</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 05, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Building-a-real-Linux-distro/">Building a &quot;real&quot; Linux distro</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 29, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/State-of-sway-April-2017/">State of Sway April 2017</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 13, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/MSG_PEEK-is-more-common-than-you-think-CVE-2016-10229/">MSG_PEEK is pretty common, CVE-2016-10229 is worse than you think</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 15, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-I-learned-to-stop-worrying-and-love-C/">Principles for C programming</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 22, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/cozy-devnotes-machine-specs/">Compiler devnotes: Machine specs</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 30, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Lessons-to-learn-from-C/">Lessons to learn from C</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 13, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-problem-with-Python-3/">The only problem with Python 3&apos;s str is that you don&apos;t grok it</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 06, 2017</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Actually-you-CAN-do-it/">Actually, you CAN do it</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 27, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/State-of-sway/">State of Sway December 2016 - secure your Wayland desktop, get paid to work on Sway</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 06, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/A-broad-intro-to-networking/">A broad intro to networking</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 24, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Electron-considered-harmful/">Electron considered harmful</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 16, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Getting-on-without-Google/">Getting on without Google</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 05, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Losing-faith-in-America/">I&apos;m losing faith in America</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 17, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Use-the-right-tool/">Using the right tool for the job</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 09, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/What-motivates-the-authors-of-the-software-you-use/">What motivates the authors of the software you use?</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 02, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Sway-0.9-in-retro/">Sway 0.9 &amp; One year of Sway</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 19, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Using-Wl-wrap-for-mocking-in-C/">Using -Wl,--wrap for mocking in C</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 29, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Privacy-as-a-hobby/">Life, liberty, and the pursuit of privacy</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 28, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Understanding-pointers/">Understanding pointers</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">May 11, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/In-Memoriam-Mozilla/">In Memoriam - Mozilla</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 20, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/State-of-sway-April-2016/">State of Sway - April 2016</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 12, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/How-to-write-a-better-bloom-filter-in-C/">How to write a better bloom filter in C</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 11, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Please-use-text-plain-for-emails/">Please use text/plain for email</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 22, 2016</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Integrating-a-VT220-into-my-life/">Integrating a VT220 into my life</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 20, 2015</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/State-of-sway-December-2015/">State of Sway - December 2015</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 11, 2015</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Bring-more-tor-into-your-life/">Bring more Tor into your life</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 01, 2015</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Please-stop-using-slack/">Please don&apos;t use Slack for FOSS projects</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 20, 2015</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/A-practical-understanding-of-Flux/">A practical understanding of Flux</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">April 19, 2015</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Hooks/">Hooks - running stuff on Github hooks</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">October 10, 2014</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-profitability-of-online-services/">On the profitability of image hosting websites</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">September 02, 2014</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Process-scheduling-in-KnightOS/">Process scheduling and multitasking in KnightOS</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 28, 2014</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Python-datetime-sucks/">Python&apos;s datetime sucks</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">June 07, 2014</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Why-Go-error-handling-doesnt-sit-right-with-me/">Go&apos;s error handling doesn&apos;t sit right with me</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 25, 2014</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Hacking-on-your-TI-calculator/">Hacking on your TI calculator</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 02, 2014</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/The-worst-bugs/">The bug that hides from breakpoints</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 24, 2013</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Music-syncing-on-Android/">Custom Music Syncing on Android</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 19, 2013</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/You-dont-need-jQuery/">You don&apos;t need jQuery</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 01, 2012</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Installing-Windows-8-super-user-guide/">Installing Windows 8 - Super-User Guide</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 10, 2012</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/LibMinecraft-and-PartyCraft/">LibMinecraft and Partycraft</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 03, 2012</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Minecraft-on-Mango/">Minecraft on Mango</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 01, 2011</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Miners-guild-site/">Miners&apos; Guild Site</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">November 29, 2011</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Umbraco-certification/">Umbraco Certification</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 31, 2011</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Free-software-abounds/">Free Software Abounds</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">August 07, 2011</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Cheap-gameboy-fix/">The Cheap Way To Fix a GameBoy Game</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 23, 2011</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Creating-an-IDE/">Creating an Integrated Development Environment</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">July 23, 2011</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/On-the-use-of-internet-filtering/">On the Use of Internet Filtering</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 07, 2011</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Redmond-with-the-Insiders/">Redmond with the Microsoft Student Insiders</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">March 05, 2011</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Post-Session-WP7-at-RMTT/">Post-Session: Windows Phone 7 @ RMTT</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">February 25, 2011</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Rocky-Mountain-Tech-Trifecta/">Rocky Mountain Tech Trifecta</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">January 27, 2011</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Colorado-Springs-Give-Camp/">Colorado Springs Give Camp</a>
+					</div>
+				</div>
+			
+		
+			
+				<div class="article">
+					<div class="byline">
+						<div class="date">December 11, 2010</div>
+						<div class="tags"></div>
+					</div>
+					<div class="link">
+						<a href="https://drewdevault.com/blog/Everything-you-want-out-of-WP7/">Everything you want out of WP7</a>
+					</div>
+				</div>
+			
+		</section>
+	</main>
+
+	</body>
+</html>

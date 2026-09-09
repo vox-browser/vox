@@ -51,7 +51,28 @@ SkTypeface* select_typeface(char const* path, int face_index, int font_weight, i
         if (!s_font_manager)
             s_font_manager = SkFontMgr_New_CoreText(nullptr);
         if (s_font_manager) {
-            auto typeface = s_font_manager->makeFromFile(path, face_index);
+            char const* collection_family = nullptr;
+            if (std::strcmp(path, "/System/Library/Fonts/HelveticaNeue.ttc") == 0)
+                collection_family = "Helvetica Neue";
+            else if (std::strcmp(path, "/System/Library/Fonts/LucidaGrande.ttc") == 0)
+                collection_family = "Lucida Grande";
+            else if (std::strcmp(path, "/System/Library/Fonts/Supplemental/GillSans.ttc") == 0)
+                collection_family = "Gill Sans";
+
+            // Keep the collection index attached to the font data explicitly.
+            // The CoreText file helper can reopen a TTC as its default face,
+            // which makes retained glyph IDs from another face render as
+            // unrelated characters (most visibly for Helvetica Neue Bold).
+            // CoreText can also silently return the collection's default face
+            // for a valid non-zero index. Resolve the three macOS collections
+            // emitted by platform::Font through the system manager first.
+            auto typeface = collection_family && face_index != 0
+                ? s_font_manager->matchFamilyStyle(collection_family, SkFontStyle::Bold())
+                : nullptr;
+            if (!typeface) {
+                auto data = SkData::MakeFromFileName(path);
+                typeface = data ? s_font_manager->makeFromData(std::move(data), face_index) : nullptr;
+            }
             if (typeface) {
                 auto* result = typeface.get();
                 s_path_typefaces.emplace(std::move(key), std::move(typeface));

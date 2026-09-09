@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <link rel="canonical" href="index.html">
+  <link rel="stylesheet" href="index.css" type="text/css" media="all">
+  <title>mandoc | Unix manpage compiler</title>
+</head>
+
+<body>
+<p class="head">
+  <a href="https://www.openbsd.org/"><img src="puffy.gif" alt="Puffy"
+     width="100" height="91" style="float: right"></a>
+  <strong>mandoc</strong> (<a href="https://mandoc.bsd.lv/history.html">formerly</a>
+    <strong>mdocml</strong>) &mdash;
+    Unix manpage compiler &mdash;
+    current version 1.14.6 (September 23, 2021)
+</p>
+
+<h1>The mandoc Unix manpage compiler toolset</h1>
+<p>
+  <span class="nm">mandoc</span> is a suite of tools compiling
+  <a href="https://mandoc.bsd.lv/man/mdoc.7.html">mdoc</a>,
+  the roff macro language of choice for BSD manual pages, and
+  <a href="https://mandoc.bsd.lv/man/man.7.html">man</a>,
+  the predominant language of Linux and historical Unix manuals.
+  It is small, ISO C,
+  <a class="external"
+  href="https://www.isc.org/downloads/software-support-policy/isc-license/"
+  >ISC</a>-licensed,
+  and quite fast.
+  The main component of the toolset is the
+  <a href="https://mandoc.bsd.lv/man/mandoc.1.html">mandoc</a>
+  utility program, based on the
+  <a href="https://mandoc.bsd.lv/man/mandoc.3.html">libmandoc</a>
+  validating compiler, to format output for UTF-8 and ASCII Unix terminals,
+  HTML 5, and markdown.
+</p>
+<p>
+  <span class="nm">mandoc</span> has predominantly been developed
+  on OpenBSD and is both an
+  <a href="https://www.openbsd.org/">OpenBSD</a>
+  and a
+  <a href="https://bsd.lv/">BSD.lv</a>
+  project.
+  We strive to support all interested free operating systems, in particular
+  <a class="external" href="https://www.freebsd.org/">FreeBSD</a>,
+  <a class="external" href="https://www.netbsd.org/">NetBSD</a>,
+  <a class="external" href="https://www.dragonflybsd.org/">DragonFly</a>,
+  <a class="external" href="https://illumos.org/">illumos</a>,
+  <a class="external" href="https://www.minix3.org/">Minix 3</a>,
+  both <a class="external" href="https://www.gnu.org/">GNU</a>- and
+  <a class="external" href="https://www.musl-libc.org/">musl</a>-based
+  <a class="external" href="https://www.kernel.org/">Linux</a>
+  distributions, and a few non-free systems like macOS, SUN Solaris
+  and IRIX, as well as all systems running the
+  <a class="external" href="https://www.pkgsrc.org/">pkgsrc</a>
+  portable package build system.
+  To support <span class="nm">mandoc</span> development,
+  consider donating to the
+  <a href="https://www.openbsdfoundation.org/">OpenBSD foundation</a>.
+</p>
+
+<h2>News</h2>
+<ul>
+  <li>September 23, 2021:
+    Version 1.14.6 was released with many bug fixes, several improvements of
+    automatic tagging, and the new <a href="https://mandoc.bsd.lv/man/mdoc.7.html">mdoc(7)</a> .Tg
+    macro.  For details, see the <a href="https://mandoc.bsd.lv/NEWS">release notes</a>.</li>
+  <li>March 10, 2019:
+    Version 1.14.5 was released with improvements to 
+    <a href="https://mandoc.bsd.lv/man/tbl.7.html">tbl(7)</a> output, HTML rendering,
+    low-level <a href="https://mandoc.bsd.lv/man/roff.7.html">roff(7)</a> handling
+    and with many bugfixes.</li>
+  <li>December 23, 2018:
+    The <a class="external" href="https://www.gnu.org/software/groff/">GNU
+    troff</a> project released groff-1.22.4
+    with many incremental improvements, including
+    several that enhance compatibility with recent mandoc.</li>
+  <li>September 22, 2018:
+    Ingo Schwarze gave a talk about <a class="external"
+    href="https://2018.eurobsdcon.org/talks-speakers/#IngoSchwarze"
+    >man.cgi(8) and LibreSSL</a> during
+    <a class="external" href="https://2018.eurobsdcon.org/">EuroBSDCon</a>.</li>
+  <li>June 8, 2018:
+    Ingo Schwarze gave <a class="external"
+    href="https://www.bsdcan.org/2018/schedule/events/958.en.html">a talk</a>
+    about <span class="nm">mandoc</span> during
+    <a class="external" href="https://www.bsdcan.org/2018/">BSDCan</a>.</li>
+</ul>
+
+<h2>Documentation and help</h2>
+<ul>
+  <li>For users:
+    <a href="https://mandoc.bsd.lv/man/mandoc.1.html">mandoc(1)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/man.1.html">man(1)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/apropos.1.html">apropos(1)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/man.conf.5.html">man.conf(5)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/makewhatis.8.html">makewhatis(8)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/man.cgi.8.html">man.cgi(8)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/mandocd.8.html">mandocd(8)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/catman.8.html">catman(8)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/soelim.1.html">soelim(1)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/demandoc.1.html">demandoc(1)</a></li>
+  <li>For authors:
+    <a href="https://mandoc.bsd.lv/man/mdoc.7.html">mdoc(7)</a> &amp;
+    <a href="https://mandoc.bsd.lv/mdoc/">extended documentation</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/man.7.html">man(7)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/roff.7.html">roff(7)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/mandoc_char.7.html">mandoc_char(7)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/tbl.7.html">tbl(7)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/eqn.7.html">eqn(7)</a> &mdash;
+    <a href="https://manpages.bsd.lv/">Practical UNIX manuals</a></li>
+  <li>For programmers:
+    <a href="https://mandoc.bsd.lv/man/mandoc.3.html">mandoc(3)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/mandoc_escape.3.html">mandoc_escape(3)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/mandoc_malloc.3.html">mandoc_malloc(3)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/mchars_alloc.3.html">mchars_alloc(3)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/mandoc.db.5.html">mandoc.db(5)</a> &mdash;
+    <a href="https://www.openbsd.org/faq/ports/specialtopics.html#Mandoc"
+    >OpenBSD porting guide</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/mandoc_headers.3.html">mandoc_headers(3)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/mandoc_html.3.html">mandoc_html(3)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/mansearch.3.html">mansearch(3)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/man.cgi.3.html">man.cgi(3)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/tbl.3.html">tbl(3)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/man/man.options.1.html">man.options(1)</a> &mdash;
+    <a href="https://mandoc.bsd.lv/cgi-bin/cvsweb/TODO?rev=HEAD">TODO</a>
+    list</li>
+  <li>Commented <a href="https://mandoc.bsd.lv/man/">documentation index</a> &mdash;
+    Online manual page portals:
+    <a href="https://man.bsd.lv">man.bsd.lv</a> &mdash;
+    <a href="https://man.openbsd.org/">OpenBSD</a> &mdash;
+    <!-- FreeBSD does not appear to use mandoc HTML output right now.
+    <a class="external"
+       href="https://www.freebsd.org/cgi/man.cgi">FreeBSD</a> &mdash;
+       -->
+    <a class="external"
+       href="https://manpages.debian.org/">Debian</a> &ndash;
+    <a class="external" href="https://man.archlinux.org/">Arch</a> &ndash;
+    <a class="external" href="https://man.voidlinux.org/">Void</a> Linux</li>
+  <li><a href="https://mandoc.bsd.lv/contact.html">Contact</a>
+    the <span class="nm">mandoc</span> developers,
+    for example for bug reports or for questions.</li>
+</ul>
+
+<h2>Availability and installation</h2>
+<ul>
+  <li><a href="https://mandoc.bsd.lv/ports.html">Systems already including mandoc</a>:
+    No manual installation is required on these systems.</li>
+  <li><a href="https://mandoc.bsd.lv/snapshots/mandoc.tar.gz">Newest release tarball</a> &mdash;
+    <a href="https://mandoc.bsd.lv/snapshots/">archive of release tarballs</a> &mdash;
+    <a href="https://mandoc.bsd.lv/LICENSE">copyright and license</a> &mdash;
+    <a href="https://mandoc.bsd.lv/INSTALL">instructions for manual installation</a></li>
+  <li><a href="https://mandoc.bsd.lv/cgi-bin/cvsweb/">CVS web interface</a> &mdash;
+    <a href="https://mandoc.bsd.lv/anoncvs.html">Anonymous CVS access</a></li>
+</ul>
+
+<h2>Related information</h2>
+<ul>
+  <li><a href="https://mandoc.bsd.lv/NEWS">release notes</a> &mdash;
+      <a href="https://mandoc.bsd.lv/devhistory.html">development history</a> &mdash;
+      <a href="https://mandoc.bsd.lv/porthistory.html">porting history</a> &mdash;
+      <a href="https://mandoc.bsd.lv/ChangeLog">ChangeLog</a> &mdash;
+      commented <a href="https://mandoc.bsd.lv/history.html">history index</a></li>
+  <li><a href="https://mandoc.bsd.lv/press.html">Publications and media coverage</a>
+      concerning <span class="nm">mandoc</span></li>
+  <li><a href="https://manpages.bsd.lv/history.html">History
+      of UNIX manpages</a></li>
+  <li><a href="https://mandoc.bsd.lv/libmandoc.html">Programs using libmandoc</a> and
+      <a href="https://mandoc.bsd.lv/css.html">projects using their own CSS code</a>
+      maintained by third parties</li>
+  <li><a href="https://mandoc.bsd.lv/pod2mdoc/">pod2mdoc</a> &mdash; a utility to convert 
+      <a class="external"
+         href="https://perldoc.perl.org/perlpod.html">perlpod(1)</a>
+      documents to <a href="https://mandoc.bsd.lv/man/mdoc.7.html">mdoc(7)</a></li>
+  <li><a href="https://mandoc.bsd.lv/texi2mdoc/">texi2mdoc</a> &mdash; a utility to convert 
+      <a class="external"
+         href="https://www.gnu.org/software/texinfo/">GNU Texinfo</a>
+      documents to <a href="https://mandoc.bsd.lv/man/mdoc.7.html">mdoc(7)</a></li>
+  <li><a href="https://mandoc.bsd.lv/docbook2mdoc/">docbook2mdoc</a> &mdash;
+      a utility to convert documents from the commercial
+      <a class="external" href="https://docbook.org/">OASIS DocBook</a>
+      format to <a href="https://mandoc.bsd.lv/man/mdoc.7.html">mdoc(7)</a></li>
+  <li><a class="external" href="https://github.com/Debian/debiman"
+      >debiman</a> &mdash; static website generator for manual page
+      web servers, using <span class="nm">mandoc</span> as the HTML
+      generation engine</li>
+  <li><a class="external"
+         href="https://gitlab.archlinux.org/archlinux/archmanweb"
+      >archmanweb</a> &mdash; manual page web server built on Django,
+      PostgreSQL, mandoc, and pyalpm</li>
+  <li><a href="https://mandoc.bsd.lv/cvsweb/">CVSweb</a> &mdash; the CGI software
+      behind the CVS web interface listed above</li>
+  <li><a href="https://mandoc.bsd.lv/pta/">pta</a> &mdash; the plain text accounting program</li>
+  <li>Additional <a href="https://mandoc.bsd.lv/links.html">web links</a></li>
+</ul>
+
+<p class="foot">
+  Copyright &copy; 2008, 2009, 2010, 2011 
+  <a href="https://kristaps.bsd.lv">Kristaps Dzonsons</a>, 
+  &copy; 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021 Ingo Schwarze,
+  $Date: 2026/08/09 15:20:15 $
+  <br/>
+  This server is running <a href="https://bsd.plumbing/">httpd</a>
+  on <a href="https://www.openbsd.org/">OpenBSD</a>
+  in the <a href="http://www.nycbug.org/">NYC*BUG</a> rack
+  sponsored and hosted by <a href="https://www.nyi.net/">New York Internet</a>.
+  Thanks for all that!
+</p>
+</body>
+</html>

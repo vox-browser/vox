@@ -1180,6 +1180,34 @@ fn test_real_pipeline_matches_author_stylesheet() {
 	assert child_color == card_color
 }
 
+fn test_document_style_sheet_selection_keeps_alternates_disabled() {
+	active_persistent, preferred_after_persistent := document_style_sheet_is_active('',
+		false, false, '')
+	assert active_persistent
+	assert preferred_after_persistent == ''
+
+	active_dark, preferred_dark := document_style_sheet_is_active('dark', false, false,
+		preferred_after_persistent)
+	assert active_dark
+	assert preferred_dark == 'dark'
+
+	active_light, preferred_after_light := document_style_sheet_is_active('light', true,
+		false, preferred_dark)
+	assert !active_light
+	assert preferred_after_light == 'dark'
+
+	active_same_set, _ := document_style_sheet_is_active('DARK', true, false,
+		preferred_after_light)
+	assert active_same_set
+	active_untitled_alternate, _ := document_style_sheet_is_active('', true, false,
+		preferred_after_light)
+	assert !active_untitled_alternate
+	disabled, preferred_after_disabled := document_style_sheet_is_active('other', false,
+		true, '')
+	assert !disabled
+	assert preferred_after_disabled == ''
+}
+
 // The dom-side CSSDisplay_ predicates (is_contents/is_inline_outside/is_flow_inside) are now mirrored
 // from the real CSS::Display via the bridge, instead of always returning false.
 fn test_display_predicates_mirrored_to_dom() {

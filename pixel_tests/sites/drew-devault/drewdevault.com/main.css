@@ -1,0 +1,857 @@
+/* vim: set ts=2 sw=2 et: */
+/* By Oskar Wickström\nLicensed under the MIT License (https://github.com/owickstrom/the-proportional-web/blob/main/LICENSE.md)\n*/
+/* alegreya-sc-regular - latin_latin-ext */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Alegreya SC';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/alegreya-sc-v28-latin_latin-ext-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* alegreya-sc-italic - latin_latin-ext */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Alegreya SC';
+  font-style: italic;
+  font-weight: 400;
+  src: url('fonts/alegreya-sc-v28-latin_latin-ext-italic.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* alegreya-sc-500 - latin_latin-ext */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Alegreya SC';
+  font-style: normal;
+  font-weight: 500;
+  src: url('fonts/alegreya-sc-v28-latin_latin-ext-500.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* alegreya-sc-500italic - latin_latin-ext */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Alegreya SC';
+  font-style: italic;
+  font-weight: 500;
+  src: url('fonts/alegreya-sc-v28-latin_latin-ext-500italic.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* alegreya-sc-700italic - latin_latin-ext */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Alegreya SC';
+  font-style: italic;
+  font-weight: 700;
+  src: url('fonts/alegreya-sc-v28-latin_latin-ext-700italic.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* alegreya-sc-800 - latin_latin-ext */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Alegreya SC';
+  font-style: normal;
+  font-weight: 800;
+  src: url('fonts/alegreya-sc-v28-latin_latin-ext-800.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* src/reset.css */
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+img,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+tt,
+var,
+b,
+u,
+i,
+center,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td,
+article,
+aside,
+canvas,
+details,
+embed,
+figure,
+figcaption,
+footer,
+header,
+hgroup,
+menu,
+nav,
+output,
+ruby,
+section,
+summary,
+time,
+mark,
+audio,
+video {
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+menu,
+nav,
+section {
+  display: block;
+}
+body {
+  line-height: 1;
+}
+blockquote,
+q {
+  quotes: none;
+}
+blockquote:before,
+blockquote:after,
+q:before,
+q:after {
+  content: "";
+  content: none;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* src/base.css */
+:root {
+  --font-family: "Alegreya", serif;
+  --font-family-code: "Courier Prime", monospace;
+  --line-height: 1.20rem;
+  --border-thickness: 1.5px;
+  --text-color: #000;
+  --background-color: #fff;
+  --horizontal-margin: 3ch;
+  --body-inner-width: 66ch;
+  --body-max-width: calc(var(--body-inner-width) + var(--horizontal-margin) * 2);
+  --font-weight-normal: 450;
+  --font-weight-medium: 600;
+  --font-weight-bold: 800;
+  font-family: var(--font-family);
+  font-optical-sizing: auto;
+  font-weight: var(--font-weight-normal);
+  font-style: normal;
+  font-variant-numeric: oldstyle-nums;
+  font-feature-settings: "onum";
+}
+* {
+  box-sizing: border-box;
+}
+
+/* src/headings.css */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--font-weight-normal);
+  margin: calc(var(--line-height) * 2) 0 var(--line-height);
+  line-height: var(--line-height);
+}
+.header-section-number {
+  font-family: "Alegreya", serif;
+  font-size: .875rem;
+  font-weight: 500;
+  font-variant: initial;
+  letter-spacing: 0;
+  margin-right: .5ch;
+  font-style: normal;
+}
+body h1,
+h2#toc-title {
+  font-family: "Alegreya SC", serif;
+  font-variant: titling-caps;
+  font-size: 1.25rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: var(--line-height) 0 calc(var(--line-height) - var(--border-thickness));
+  border-bottom: var(--border-thickness) solid var(--text-color);
+}
+h1 .header-section-number {
+  display: none;
+}
+h2 {
+  font-family: "Alegreya SC", serif;
+  font-size: 1.25rem;
+  font-variant: all-small-caps;
+  font-weight: 450;
+  line-height: var(--line-height);
+  letter-spacing: 0.125em;
+}
+h3 {
+  font-style: italic;
+  margin: var(--line-height) 0;
+}
+h4 {
+}
+
+/* src/tables.css */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: calc(var(--line-height) * -0.5) 0 calc(var(--line-height) * 1.5);
+  padding: 0;
+}
+th,
+td {
+  padding: calc(var(--line-height) / 2) .5ch;
+  line-height: var(--line-height);
+  vertical-align: top;
+  text-align: left;
+}
+th {
+  font-size: 1.125em;
+  font-variant: all-small-caps;
+  font-weight: 500;
+  letter-spacing: 0.075em;
+}
+thead tr:last-child th {
+  border-bottom: var(--border-thickness) solid var(--text-color);
+}
+
+/* src/blockquotes.css */
+blockquote {
+  padding: 0;
+  margin: var(--line-height) 3ch;
+}
+blockquote p {
+  text-indent: 0;
+  white-space: normal;
+}
+blockquote p:first-of-type:before {
+  display: inline;
+  content: "\201c";
+}
+blockquote p:last-of-type::after {
+  display: inline;
+  content: "\201d";
+}
+blockquote footer {
+  order: 9999;
+  margin-top: var(--line-height);
+  font-style: normal;
+}
+blockquote footer > * {
+  margin: 0;
+}
+blockquote .author {
+  font-family: "Alegreya SC", serif;
+  font-size: 1.125em;
+  font-variant: all-small-caps;
+  font-weight: 450;
+  line-height: var(--line-height);
+  letter-spacing: 0.075em;
+  height: 1rem;
+  line-height: 1rem;
+}
+blockquote cite {
+  font-style: italic;
+  margin: 0;
+  line-height: var(--line-height);
+}
+blockquote .year {
+  display: block;
+}
+
+/* src/details.css */
+details {
+  margin: var(--line-height) 0;
+  padding: var(--line-height) 0;
+  border-top: var(--border-thickness) solid transparent;
+  border-bottom: var(--border-thickness) solid transparent;
+}
+details:open {
+  border-top-color: var(--text-color);
+  border-bottom-color: var(--text-color);
+}
+summary {
+  font-weight: var(--font-weight-normal);
+  font-style: italic;
+  cursor: pointer;
+}
+details[open] summary {
+  margin-bottom: var(--line-height);
+}
+details ::marker {
+  content: "";
+}
+details summary::before {
+  display: inline-block;
+  content: "\bb";
+  margin: 0 .5ch 0 0;
+  font-style: normal;
+}
+details[open] summary::before {
+  transform: rotate(90deg);
+}
+details :last-child {
+  margin-bottom: 0;
+}
+
+/* src/asides.css */
+aside {
+  position: relative;
+  font-size: 0.875rem;
+  line-height: var(--line-height);
+  margin: var(--line-height) 0;
+}
+aside:before {
+  display: inline-block;
+  content: "\2767";
+  font-size: 1rem;
+  height: .875rem;
+  margin-right: .5ch;
+  line-height: var(--line-height);
+}
+@media screen and (min-width: 95ch) {
+  aside {
+    position: absolute;
+    width: 20ch;
+    top: anchor(top);
+    left: 100%;
+    margin: 0;
+    text-align: left;
+  }
+  aside:before {
+    display: none;
+  }
+  p + aside + p {
+    margin-top: 0;
+    text-indent: 3ch;
+  }
+}
+
+/* src/figures.css */
+figure {
+  margin: calc(var(--line-height) * 2) var(--horizontal-margin);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+figure > *:first-child {
+  margin-top: 0;
+}
+figure > *:last-child {
+  margin-bottom: 0;
+}
+figcaption {
+  display: block;
+  margin-top: var(--line-height);
+  text-align: center;
+}
+figcaption .author {
+  font-family: "Alegreya SC", serif;
+  font-size: 1.125em;
+  font-variant: all-small-caps;
+  font-weight: 450;
+  line-height: var(--line-height);
+  letter-spacing: 0.075em;
+  height: 1rem;
+  line-height: 1rem;
+}
+figcaption cite {
+  font-style: italic;
+  margin: 0;
+  line-height: var(--line-height);
+}
+figure pre {
+  margin: 0;
+}
+
+/* src/elements.css */
+hr {
+  position: relative;
+  display: block;
+  height: var(--line-height);
+  margin: calc(var(--line-height) * 1.5) 0;
+  border: none;
+  color: var(--text-color);
+}
+hr:before {
+  display: block;
+  content: "";
+  position: absolute;
+  top: calc(var(--line-height) / 2);
+  left: 0;
+  width: 100%;
+  border-top: var(--border-thickness) solid var(--text-color);
+  height: 0;
+}
+hr:after {
+  display: inline-block;
+  content: "\2767";
+  position: absolute;
+  top: 0;
+  left: calc(50% - 1ch);
+  width: 2ch;
+  text-align: center;
+  font-size: 2rem;
+  background: var(--background-color);
+}
+a {
+  text-decoration-thickness: var(--border-thickness);
+}
+a:link,
+a:visited {
+  color: var(--text-color);
+}
+p {
+  margin: var(--line-height) 0 0;
+}
+h1 + p,
+h2 + p,
+h3 + p,
+h4 + p,
+hr + p {
+  text-indent: 0;
+}
+strong {
+  font-weight: var(--font-weight-bold);
+}
+em {
+  font-style: italic;
+}
+abbr {
+  font-size: 1.125em;
+  font-variant: all-small-caps;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+sub {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+  vertical-align: sub;
+  line-height: 0;
+  width: calc(1ch / 0.75);
+  font-size: .75rem;
+}
+p {
+  text-wrap: pretty;
+  hyphens: auto;
+  hyphenate-limit-chars: 3;
+}
+img,
+video {
+  display: block;
+  width: 100%;
+  object-fit: contain;
+  overflow: hidden;
+}
+img {
+  font-style: italic;
+  color: var(--text-color);
+}
+pre {
+  margin: var(--line-height) 0;
+  overflow-x: auto;
+  background: #d8d8d8;
+}
+pre,
+code {
+  font-family: var(--font-family-code);
+  font-weight: 450;
+}
+code {
+  font-size: .95em;
+  letter-spacing: -0.025em;
+}
+li::marker {
+  line-height: 0;
+}
+
+/* src/layout.css */
+html {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  align-items: left;
+  background: var(--background-color);
+  color: var(--text-color);
+}
+body {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: var(--line-height) var(--horizontal-margin);
+  max-width: var(--body-max-width);
+  line-height: var(--line-height);
+  overflow-x: hidden;
+}
+@media screen and (min-width: 112ch) {
+  html {
+    align-items: center;
+  }
+
+  pre {
+    margin: 1rem -5rem;
+    padding: 0.5rem 1rem;
+  }
+}
+@media screen and (max-width: 480px) {
+  :root {
+    font-size: 14px;
+  }
+  body {
+    padding: var(--line-height) 1.5ch;
+  }
+}
+.toc-section-number {
+  height: 1rem;
+  font-size: .875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  margin-right: .5ch;
+  font-style: normal;
+}
+#TOC > ul {
+  padding: 0;
+}
+#TOC ul li:before {
+  content: "";
+  margin: 0;
+}
+#TOC a {
+  display: block;
+  height: var(--line-height);
+  text-decoration: none;
+}
+#TOC a:hover {
+  text-decoration: underline;
+}
+@media print {
+  body {
+    max-width: initial;
+  }
+  body > h1,
+  img {
+    break-before: page;
+  }
+}
+
+/* src/header.css */
+header {
+  margin: calc(var(--line-height) * 3) 0;
+}
+header h1 {
+  font-family: "Alegreya SC", serif;
+  font-variant: all-small-caps;
+  font-size: 2.5rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  line-height: calc(2 * var(--line-height));
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+header .subtitle {
+  font-size: 1.25rem;
+  line-height: calc(2 * var(--line-height));
+  margin: calc(var(--line-height) * .5) 0;
+}
+header p {
+  text-indent: 0;
+  text-align: left;
+}
+
+/* src/extras.css */
+.canonical-name {
+  font-family: "Alegreya SC", serif;
+  font-size: 1.125em;
+  font-variant: all-small-caps;
+  font-weight: 450;
+  line-height: var(--line-height);
+  letter-spacing: 0.075em;
+}
+
+/* src/index.css */
+
+.site-nav {
+  display: flex;
+  border-bottom: 2px solid black;
+  padding-bottom: 1rem;
+}
+
+.site-nav h1 {
+  border-bottom: none;
+  flex-grow: 1;
+  margin: 0;
+  padding: 0;
+}
+
+.site-nav h1 a {
+  text-decoration: none;
+}
+
+.site-nav ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.site-nav li {
+  list-style: none;
+  margin-left: 1rem;
+}
+
+.site-nav li:first-child {
+  margin-left: 0;
+}
+
+.profile {
+  display: block;
+  max-width: 80%;
+  margin: 0 auto;
+}
+
+.next-prev {
+  display: grid;
+  grid-template-columns: auto;
+  margin-top: 1rem;
+
+  .prev {
+    grid-column: 1;
+  }
+
+  .next {
+    grid-column: 2;
+    text-align: right;
+  }
+}
+
+.footnote-backref {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.icon {
+  display: inline;
+  position: relative;
+  top: 4px;
+  width: 18px;
+  height: 18px;
+}
+
+.articles .date:not(:first-child) {
+  margin-top: 1rem;
+}
+
+.alert {
+  .heading {
+    display: block;
+    margin: 0;
+    padding: 1rem;
+    font-size: 20px;
+    background: #8B0000;
+    color: white;
+  }
+
+  p {
+    margin: 0;
+    padding: 1rem 0;
+    border-bottom: 2px solid #8B0000;
+  }
+}
+
+/* Syntax highlighting */
+pre {
+  .include {
+    color: #800;
+  }
+
+  .keyword, .repeat, .type_qualifier, .keyword_function {
+    color: #008;
+  }
+
+  .type, .type, .type {
+    color: #44F;
+  }
+
+  .string {
+    color: #484;
+    font-style: italic;
+  }
+
+  .comment {
+    color: #333;
+  font-style: italic;
+  }
+
+  .gi {
+    color: green;
+  }
+
+  .gd {
+    color: red;
+  }
+
+  .gu {
+    color: blue;
+  }
+
+  .variable {
+    color: black;
+  }
+
+  .function_builtin {
+    color: #008;
+  }
+}
+
+ol, ul {
+  padding-left: 1rem;
+}
+
+sup {
+  position: relative;
+  top: -8px;
+  vertical-align: baseline;
+}
+
+.byline {
+  margin-bottom: 1rem;
+  display: flex;
+}
+
+.articles .article {
+  margin-bottom: 1rem;
+}
+
+.articles .byline {
+  margin-bottom: 0;
+}
+
+.byline .tags {
+  flex-grow: 1;
+  text-align: right;
+  color: #666;
+}
+
+iframe {
+  margin-top: 1rem;
+}
+
+small {
+  font-size: 0.8rem;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-color: #eee;
+    --background-color: #222;
+  }
+  a { color: #ddd; }
+  a:hover { color: #aaa; }
+  code, pre { background: #222; color: white; }
+  .site-nav { border-bottom-color: #ddd; }
+  .byline .tags { color: #aaa; }
+  hr:after { background: var(--background-color); }
+
+  .include,
+  .keyword, .repeat, .type_qualifier, .keyword_function,
+  .type, .type, .type,
+  .string,
+  .comment,
+  .gi, .gd, .gu, .variable, .function_builtin {
+    filter: invert(100%);
+  }
+}
+
+.weird-guy {
+  h2 {
+    margin: 0;
+    padding: 0;
+  }
+
+  img {
+    max-width: 30%;
+    float: right;
+    padding-left: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .source {
+    top: -0.3em;
+    font-size: 80%;
+    position: relative;
+    text-decoration: none;
+  }
+
+  a:not(.source) {
+    text-decoration-style: dotted;
+  }
+}
+
+.weird-guy + * {
+  clear: both;
+}
+
+.weirdos details {
+  margin: 0;
+  padding: 0;
+  border: none;
+}

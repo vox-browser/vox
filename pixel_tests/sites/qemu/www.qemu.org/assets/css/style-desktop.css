@@ -1,0 +1,209 @@
+/*
+	Linear by TEMPLATED
+    templated.co @templatedco
+    Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
+*/
+
+/*********************************************************************************/
+/* Grid                                                                          */
+/*********************************************************************************/
+
+@import url(cells.css);
+
+	.row > * {
+		padding-left: 50px;
+	}
+	.row > *:first-child {
+		padding-left: 0px;
+	}
+	.row + .row {
+		padding-top: 50px;
+	}
+
+/*********************************************************************************/
+/* Basic                                                                         */
+/*********************************************************************************/
+
+	.only-mobile, .not-desktop
+	{
+		display: none !important;
+	}
+
+	body
+	{
+		/* 90% transparent */
+		background: url(../images/qemu_head_200.png) no-repeat fixed 2em 80px;
+		background-color: #FFF;
+	}
+
+	body.homepage
+	{
+		/* 90% transparent */
+		background: url(../images/qemu_head_400_faint.png) no-repeat fixed center 60%;
+		background-color: #FFF;
+	}
+
+	body,input,textarea,select
+	{
+	}
+
+	.homepage h1
+	{
+		font-size: 7em;
+		letter-spacing: -0.05em;
+	}
+
+	.homepage h2
+	{
+		font-size: 2.2em;
+	}
+
+	h1
+	{
+		font-size: 3em;
+	}
+
+	header
+	{
+		margin-bottom: 2em;
+	}
+
+		header .byline
+		{
+			font-size: 1.7em;
+		}
+
+/*********************************************************************************/
+/* Header                                                                        */
+/*********************************************************************************/
+
+	#header
+	{
+		padding: 5em 0 2em 0;
+	}
+
+/*********************************************************************************/
+/* Main                                                                          */
+/*********************************************************************************/
+
+	#main,#sidebar {
+		margin-top: 5em;
+	}
+
+	#sidebar h1
+	{
+		font-size: 2.4em;
+		letter-spacing: 0em;
+		line-height: 1.2em;
+		margin-top: -0.2em;
+	}
+
+/*********************************************************************************/
+/* Featured                                                                      */
+/*********************************************************************************/
+
+	#featured
+	{
+		padding: 3em 0em 1em 0em;
+	}
+
+	#featured p
+	{
+		line-height: 1.5em;
+		font-size: 1.2em;
+	}
+
+	.\31 u img { height:  6vw; }
+	.\32 u img { height: 12vw; }
+	.\33 u img { height: 18vw; }
+	.\34 u img { height: 24vw; }
+	.\36 u img { height: 36vw; }
+	.\37 u img { height: 42vw; }
+	.\38 u img { height: 48vw; }
+	.\39 u img { height: 54vw; }
+	.\31 0u img { height: 60vw; }
+	.\31 1u img { height: 66vw; }
+	.\31 2u img { height: 72vw; }
+
+
+/*********************************************************************************/
+/* Nav                                                                           */
+/*********************************************************************************/
+
+	#titleBar
+	{
+		display: none !important;
+	}
+
+	#nav
+	{
+		display: block !important;
+		z-index: 2;
+		position: fixed;
+		background: #802400;
+		background: -webkit-linear-gradient(top, #802400 0%,#800800 100%);
+		background: linear-gradient(to bottom, #802400 0%,#800800 100%);
+		left: 0;
+		top: 0;
+		width: 100%;
+	}
+
+		#nav > ul
+		{
+			text-align: right;
+			margin: 0;
+			padding: 0;
+		}
+
+		#nav > ul > li
+		{
+			display: inline-block;
+			margin: 0;
+			padding: 0.5em 0.4em 0.5em 0em;
+			color: #FFF;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			font-size: 1.1em;
+		}
+
+		#nav a
+		{
+			text-decoration: none;
+			color: inherit;
+		}
+
+		#nav > ul > li > a,
+		#nav > ul > li > span
+		{
+			display: inline-block;
+			padding: 3px 0.5em 3px 0.5em;
+		}
+
+		#nav > ul > li:hover > a,
+		#nav > ul > li:hover > span
+		{
+			border-bottom: 3px solid #F0A833;
+			padding-bottom: 0px;
+		}
+
+		#nav li.current a
+		{
+			font-weight: 500;
+		}
+
+		#nav > ul > li.donations
+		{
+			display: block;
+			float: left;
+		}
+
+		#nav > ul > li > ul
+		{
+			display: none;
+		}
+
+
+/* Colorbox customization */
+
+	body #cboxTitle { height: 50px; bottom: 24px; color: #000000; text-align: left; }
+	body #cboxMiddleLeft, body #cboxMiddleRight, body #cboxContent { padding-bottom: 50px; box-sizing: content-box; }

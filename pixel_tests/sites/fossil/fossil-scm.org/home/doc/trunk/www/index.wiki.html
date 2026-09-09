@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<base href="">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fossil: A Coherent Software Configuration Management System</title>
+<link rel="alternate" type="application/rss+xml" title="RSS Feed"  href="https://fossil-scm.org/home/timeline.rss">
+<link rel="stylesheet" href="../../../style.css" type="text/css">
+</head>
+<body class="doc rpage-doc cpage-doc">
+<header>
+  <div class="title"><h1>Fossil</h1>A Coherent Software Configuration Management System</div>
+  <div class="status">
+    <a href='https://fossil-scm.org/home/login'>Login</a>
+
+  </div>
+</header>
+<nav class="mainmenu" title="Main Menu">
+  <a id='hbbtn' href='https://fossil-scm.org/home/sitemap' aria-label='Site Map'>&#9776;</a><a href='index.wiki.html' class='active '>Home</a>
+<a href='https://fossil-scm.org/home/timeline' class=''>Timeline</a>
+<a href='https://fossil-scm.org/home/doc/trunk/www/permutedindex.html' class=''>Docs</a>
+<a href='https://fossil-scm.org/forum/forum' class=''>Forum</a>
+<a href='https://fossil-scm.org/home/uv/download.html' class='desktoponly'>Download</a>
+
+</nav>
+<nav id="hbdrop" class='hbdrop' title="sitemap"></nav>
+<div class="content"><span id="debugMsg"></span>
+
+
+<h3>What Is It?</h3>
+
+<div class="nomargins" style="float:right;border:2px solid #446979;padding:0 15px 10px 0;margin:0 50px 0 10px">
+<ul>
+<li> <a href="https://fossil-scm.org/home/uv/download.html">Download</a>
+</li><li> <a href="https://fossil-scm.org/home/doc/trunk/www/quickstart.wiki">Quick Start</a>
+</li><li> <a href="https://fossil-scm.org/home/doc/trunk/www/build.wiki">Install</a>
+</li><li> <a href="https://fossil-scm.org/forum">Support/Forum </a>
+</li><li> <a href="https://fossil-scm.org/home/doc/trunk/www/hints.wiki">Tips &amp; Hints</a>
+</li><li> <a href="https://fossil-scm.org/home/doc/trunk/www/changes.wiki">Change Log</a>
+</li><li> <a href="https://fossil-scm.org/home/doc/trunk/COPYRIGHT-BSD2.txt">License</a>
+</li><li> <a href="https://fossil-scm.org/home/doc/trunk/www/userlinks.wiki">User Links</a>
+</li><li> <a href="https://fossil-scm.org/home/doc/trunk/www/hacker-howto.wiki">Hacker How-To</a>
+</li><li> <a href="https://fossil-scm.org/home/doc/trunk/www/fossil-v-git.wiki">Fossil vs. Git</a>
+</li><li> <a href="https://fossil-scm.org/home/doc/trunk/www/permutedindex.html">Doc Index</a>
+</li></ul>
+<p style="text-align:center"><img src="fossil3.gif" alt="Fossil logo" /></p>
+</div>
+
+<p>Fossil is a simple, high-reliability, distributed
+<a href="https://en.wikipedia.org/wiki/Software_configuration_management">SCM</a>
+system with these advanced features:
+
+<ol><li value="1"><b>Project Management</b> —
+      In addition to doing <a href="https://fossil-scm.org/home/doc/trunk/www/concepts.wiki">distributed version control</a>
+      like Git and Mercurial,
+      Fossil also supports <a href="https://fossil-scm.org/home/doc/trunk/www/bugtheory.wiki">bug tracking</a>,
+      <a href="https://fossil-scm.org/home/doc/trunk/www/wikitheory.wiki">wiki</a>, <a href="https://fossil-scm.org/home/doc/trunk/www/forum.wiki">forum</a>,
+      <a href="https://fossil-scm.org/home/doc/trunk/www/alerts.md">email alerts</a>, <a href="https://fossil-scm.org/home/doc/trunk/www/chat.md">chat</a>, and
+      <a href="https://fossil-scm.org/home/doc/trunk/www/event.wiki">technotes</a>.</li></ol>
+
+<ol><li value="2"><b>Built-in Web Interface</b> —
+      Fossil has a built-in, <a href="https://fossil-scm.org/home/skins">themeable</a>, <a href="https://fossil-scm.org/home/doc/trunk/www/serverext.wiki">extensible</a>,
+      and intuitive <a href="https://fossil-scm.org/home/doc/trunk/www/webui.wiki">web interface</a>
+      with a rich variety of information pages
+      (<a href="https://fossil-scm.org/home/doc/trunk/www/webpage-ex.md">examples</a>) promoting situational awareness.
+      <br /><br />
+      This entire website is just a running instance of Fossil.
+      The pages you see here are all <a href="https://fossil-scm.org/home/doc/trunk/www/wikitheory.wiki">wiki</a> or
+      <a href="https://fossil-scm.org/home/doc/trunk/www/embeddeddoc.wiki">embedded documentation</a> or (in the case of
+      the <a href="https://fossil-scm.org/home/uv/download.html">download</a> page)
+      <a href="https://fossil-scm.org/home/doc/trunk/www/unvers.wiki">unversioned files</a>.
+      When you clone Fossil from one of its
+      <a href="https://fossil-scm.org/home/doc/trunk/www/selfhost.wiki">self-hosting repositories</a>,
+      you get more than just source code — you get this entire website.</li></ol>
+
+<ol><li value="3"><b>All-in-one</b> —
+      Fossil is a single self-contained, stand-alone executable.
+      To install, simply download a
+      <a href="https://fossil-scm.org/home/uv/download.html">precompiled binary</a>
+      for Linux, Mac, or Windows and put it on your $PATH.
+      <a href="https://fossil-scm.org/home/doc/trunk/www/build.wiki">Easy-to-compile source code</a> is also available.</li></ol>
+
+<ol><li value="4"><b>Self-host Friendly</b> — Stand up a project website
+      in minutes using <a href="https://fossil-scm.org/home/doc/trunk/www/server/">a variety of techniques</a>.
+      Fossil is CPU and memory efficient. Most projects can be
+      hosted comfortably on a $5/month VPS or a Raspberry Pi.
+      You can also set up an automatic
+      <a href="https://fossil-scm.org/home/doc/trunk/www/mirrortogithub.md">GitHub mirror</a>.</li></ol>
+
+<ol><li value="5"><b>Simple Networking</b> —
+      Fossil uses ordinary HTTPS (or SSH if you prefer)
+      for network communications, so it works fine from behind
+      firewalls and <a href="https://fossil-scm.org/home/doc/trunk/www/quickstart.wiki#proxy">proxies</a>.
+      The protocol is
+      <a href="https://fossil-scm.org/home/doc/trunk/www/stats.wiki">bandwidth efficient</a> to the point that Fossil can be
+      used comfortably over dial-up, weak 3G, or airliner Wifi.</li></ol>
+
+<ol><li value="6"><b>Autosync</b> —
+      Fossil supports <a href="https://fossil-scm.org/home/doc/trunk/www/concepts.wiki#workflow">"autosync" mode</a>
+      which helps to keep projects moving
+      forward by reducing the amount of needless
+      <a href="https://fossil-scm.org/home/doc/trunk/www/branching.wiki">forking and merging</a> often
+      associated with distributed projects.</li></ol>
+
+<ol><li value="7"><b>Robust &amp; Reliable</b> —
+      Fossil stores content using an <a href="https://fossil-scm.org/home/doc/trunk/www/fileformat.wiki">enduring file format</a>
+      in an SQLite database so that transactions are
+      atomic even if interrupted by a power loss or system crash.
+      Automatic <a href="https://fossil-scm.org/home/doc/trunk/www/selfcheck.wiki">self-checks</a> verify that all aspects of
+      the repository are consistent prior to each commit.</li></ol>
+
+<ol><li value="8"><b>Free and Open-Source</b> — <a href="https://fossil-scm.org/home/doc/trunk/COPYRIGHT-BSD2.txt">2-clause BSD license</a>.</li></ol>
+
+<hr />
+<h3>Latest Release: 2.28 (<a href="https://fossil-scm.org/home/timeline?c=version-2.28">2026-03-11</a>)</h3>
+
+<ul><li><a href="https://fossil-scm.org/home/uv/download.html">Download</a>
+</li><li><a href="https://fossil-scm.org/home/doc/trunk/www/changes.wiki#v2_28">Change Summary</a>
+</li><li><a href="https://fossil-scm.org/home/timeline?p=version-2.28&amp;d=version-2.27&amp;y=ci">Check-ins in version 2.28</a>
+</li><li><a href="https://fossil-scm.org/home/timeline?df=version-2.28&amp;y=ci">Check-ins derived from the 2.28 release</a>
+</li><li><a href="https://fossil-scm.org/home/timeline?t=release">Timeline of all past releases</a></li></ul>
+
+<hr />
+<h3>Quick Start</h3>
+
+<ol><li value="1"><a href="https://fossil-scm.org/home/uv/download.html">Download</a> or install using a package manager or
+      <a href="https://fossil-scm.org/home/doc/trunk/www/build.wiki">compile from sources</a>.
+</li><li value="2"><tt>fossil init</tt> <i>REPOSITORY-DIR/new-repository</i>
+</li><li value="3"><tt>fossil open</tt> <i>REPOSITORY-DIR/new-repository</i>
+</li><li value="4"><tt>fossil add</tt> <i>files-or-directories</i>
+</li><li value="5"><tt>fossil commit -m</tt> "<i>commit message</i>"
+</li><li value="6"><tt>fossil ui</tt>
+</li><li value="7">Repeat steps 4, 5, and 6, in any order, as necessary.
+      See the <a href="https://fossil-scm.org/home/doc/trunk/www/quickstart.wiki">Quick Start Guide</a> for more detail.
+</li></ol>
+
+
+</div>
+<footer>
+This page was generated in about
+0.011s by
+Fossil 2.29 [d04ad10377] 2026-08-28 11:49:43
+</footer>
+
+
+</body>
+</html>

@@ -392,6 +392,26 @@ fn sync_shadow_style_sheets_in_subtree(document &dom.Document, node &dom.Node) {
 	}
 }
 
+// CSSOM's "add a CSS style sheet" steps select one preferred titled set.
+// Untitled persistent sheets stay active, while an alternate sheet is disabled
+// until its title is the selected set. The local-file bridge has no separate
+// StyleSheetList object to perform those steps, so preserve the same decision
+// while collecting DOM-owned sheets.
+fn document_style_sheet_is_active(title string, is_alternate bool, disabled bool,
+	preferred_title string) (bool, string) {
+	if disabled {
+		return false, preferred_title
+	}
+	mut preferred := preferred_title
+	if title != '' && !is_alternate && preferred == '' {
+		preferred = title
+	}
+	if title == '' {
+		return !is_alternate, preferred
+	}
+	return preferred != '' && title.to_lower() == preferred.to_lower(), preferred
+}
+
 // Synchronize the document's CSS-owned author-sheet list with its <style>
 // elements. The HTML module cannot construct CSSStyleSheet objects without an
 // import cycle, so this is the module boundary corresponding to
@@ -401,10 +421,17 @@ pub fn sync_document_style_elements(document &dom.Document) {
 	sync_shadow_style_sheets_in_subtree(document, root)
 	base_url := document.base_url().to_string()
 	mut style_sources := []DocumentStyleSource{}
+	mut preferred_title := ''
 	for element in query_selector_all(root, '*') {
 		if element.local_name() == 'style' {
 			type_ := element.get_attribute_value('type').trim_space().to_lower()
 			if type_.len > 0 && type_ != 'text/css' {
+				continue
+			}
+			active, selected_title := document_style_sheet_is_active(element.get_attribute_value('title'),
+				false, false, preferred_title)
+			preferred_title = selected_title
+			if !active {
 				continue
 			}
 			css_text := element.as_node().text_content() or { '' }
@@ -418,7 +445,13 @@ pub fn sync_document_style_elements(document &dom.Document) {
 			}
 		} else if element.local_name() == 'link' {
 			relations := element.get_attribute_value('rel').to_lower().fields()
-			if 'stylesheet' !in relations || element.has_attribute('disabled') {
+			if 'stylesheet' !in relations {
+				continue
+			}
+			active, selected_title := document_style_sheet_is_active(element.get_attribute_value('title'),
+				'alternate' in relations, element.has_attribute('disabled'), preferred_title)
+			preferred_title = selected_title
+			if !active {
 				continue
 			}
 			href := element.get_attribute_value('href')

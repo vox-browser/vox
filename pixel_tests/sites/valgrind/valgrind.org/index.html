@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+ <title>Valgrind Home</title>
+ <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+ <meta http-equiv="Content-Style-Type" content="text/css"/>
+ <style type="text/css">@import url('css/valgrind.css');</style>
+ <link rel="stylesheet" type="text/css" href="css/valgrind.css" />
+ <link rel="shortcut icon" href="favicon.ico" />
+ <link rel="icon" href="favicon.ico" type="image/x-icon" />
+ <meta name="description" content="Official Home Page for valgrind, a suite of tools for debugging and profiling. Automatically detect memory management and threading bugs, and perform detailed profiling.  The current stable version is valgrind-3.27.1."/>
+ <meta name="keywords" content="Valgrind Memcheck Cachegrind Callgrind Massif Helgrind memory-management uninitialised memory memory leaks passing uninitialised memory overlapping pointers misuses of the POSIX pthreads"/>
+</head>
+
+<!-- dont we all just wish IE && Netscape 4.x to /dev/null -->
+<body topmargin="0" leftmargin="0" marginwidth="0" marginheight="0" 
+      bgcolor="#ffffff" text="#202020" 
+      link="#000099" alink="#0000ff" vlink="#000099">
+
+<div class="outer-box">
+<div class="inner-box">
+
+<table width="100%" cellspacing="0" cellpadding="12" border="0">
+<tr>
+ <td valign="top" width="1%">
+  <div id="menu">
+    <ul>
+     <li class="hdr">Information</li>
+     <li><a href="https://valgrind.org/info/about.html">About</a></li>
+     <li><a href="https://valgrind.org/info/news.html">News</a></li>
+     <li><a href="https://valgrind.org/info/tools.html">Tool Suite</a></li>
+     <li><a href="https://valgrind.org/info/platforms.html">Supported Platforms</a></li>
+     <li><a href="https://valgrind.org/info/developers.html">The Developers</a></li>
+    </ul>
+    <ul>
+     <li class="hdr">Source Code</li>
+     <li><a href="https://valgrind.org/downloads/current.html">Current Releases</a></li>
+     <li><a href="https://valgrind.org/downloads/old.html">Release Archive</a></li>
+     <li><a href="https://valgrind.org/downloads/variants.html">Variants / Patches</a></li>
+     <li><a href="https://valgrind.org/downloads/repository.html">Code Repository</a></li>
+     <li><a href="https://valgrind.org/downloads/guis.html">GUIs and IDEs</a></li>
+    </ul>
+    <ul>
+     <li class="hdr">Documentation</li>
+     <li><a href="https://valgrind.org/docs/manual/index.html">Table of Contents</a></li>
+     <li><a href="https://valgrind.org/docs/manual/QuickStart.html">Quick Start</a></li>
+     <li><a href="https://valgrind.org/docs/manual/FAQ.html">FAQ</a></li>
+     <li><a href="https://valgrind.org/docs/manual/manual.html">User Manual</a></li>
+     <li><a href="https://valgrind.org/docs/download_docs.html">Download Manual</a></li>
+     <li><a href="https://valgrind.org/docs/pubs.html">Research Papers</a></li>
+    </ul>
+    <ul>
+     <li class="hdr">Contact</li>
+     <li><a href="https://valgrind.org/support/mailing_lists.html">Mailing Lists and IRC</a></li>
+     <li><a href="https://valgrind.org/support/bug_reports.html">Bug Reports</a></li>
+     <li><a href="https://valgrind.org/support/features.html">Feature Requests</a></li>
+     <li><a href="https://valgrind.org/support/summary.html">Contact Summary</a></li>
+     <li><a href="https://valgrind.org/support/consultants.html">Commercial Support</a></li>
+    </ul>
+    <ul>
+     <li class="hdr">How to Help</li>
+     <li><a href="https://valgrind.org/help/contributing.html">Contributing</a></li>
+     <li><a href="https://valgrind.org/help/projects.html">Project Suggestions</a></li>
+    </ul>
+    <ul>
+     <li class="hdr">Gallery</li>
+     <li><a href="https://valgrind.org/gallery/users.html">Projects / Users</a></li>
+     <li><a href="https://valgrind.org/gallery/press_media.html">Press / Media</a></li>
+     <li><a href="https://valgrind.org/gallery/awards.html">Awards</a></li>
+     <li><a href="https://valgrind.org/gallery/surveys.html">Surveys</a></li>
+     <li><a href="https://valgrind.org/gallery/artwork.html">Artwork / Clothing</a></li>
+    </ul>
+   </div> </td>
+ <td valign="top" width="99%">
+  <div id="index-page">
+<p align="center">
+<img src="images/valgrind-100.png" width="335" height="97" alt="Valgrind logo" title="Valgrind logo" border="0" />
+</p>
+
+<p><img src="images/spacer.gif" width="3" height="135" border="0" alt="spacer"/></p>
+
+
+<h3 align="center">
+Current release: <a href="https://valgrind.org/downloads/current.html#current">valgrind-3.27.1</a>
+</h3>
+
+<p>&nbsp;</p>
+
+<p>Valgrind is an instrumentation framework for building dynamic analysis 
+tools.  There are Valgrind tools that can automatically detect many memory 
+management and threading bugs, and profile your programs in detail.  You can 
+also use Valgrind to build new tools.
+</p>
+
+<p>The Valgrind distribution currently includes seven production-quality
+tools: a memory error detector, two thread error detectors, a cache
+and branch-prediction profiler, a call-graph generating cache and
+branch-prediction profiler, and two different heap profilers.  It also includes
+an experimental SimPoint basic block vector generator.  It runs on the following
+platforms: X86/Linux, AMD64/Linux, ARM32/Linux, ARM64/Linux, 
+PPC32/Linux, PPC64BE/Linux, PPC64LE/Linux, S390X/Linux, MIPS32/Linux, 
+MIPS64/Linux, RISCV64/Linux, X86/Solaris, AMD64/Solaris, ARM/Android 
+(2.3.x and later), ARM64/Android, X86/Android (4.0 and later), 
+MIPS32/Android, X86/FreeBSD, AMD64/FreeBSD, ARM64/FreeBSD,
+X86/Darwin and AMD64/Darwin (macOS supported up to version 13 Ventura).</p>
+
+<p>Valgrind is <a href="https://opensource.org/">Open Source</a> / 
+<a href="http://www.gnu.org/philosophy/free-sw.html">Free Software</a>,
+and is freely available under the 
+<a href="http://www.gnu.org/licenses/gpl-3.0.html">GNU General Public License, version 3</a>.</p>
+<br />
+
+
+<table class="green" width="100%" cellspacing="0" cellpadding="5" border="1">
+<tr><td>
+
+<h2 align="center">Recent News</h2>
+<ul>
+ <li><p>20 May 2026: valgrind-3.27.1   is available.  This release supports:
+   X86/Linux, AMD64/Linux, ARM32/Linux,
+   ARM64/Linux, PPC32/Linux, PPC64BE/Linux, PPC64LE/Linux, S390X/Linux,
+   MIPS32/Linux, MIPS64/Linux, RISCV64/Linux, ARM/Android, ARM64/Android,
+   MIPS32/Android, X86/Android, X86/Solaris, AMD64/Solaris,
+   X86/FreeBSD, AMD64/FreeBSD, ARM64/FreeBSD
+   X86/MacOSX 10.12 and AMD64/MacOSX 10.12.
+   For more details see the <a href="https://valgrind.org/docs/manual/dist.news.html">release notes</a>.
+ </p></li>
+ <li><p>21 Jul 2023: Valgrind was picked for a
+   <a href="https://futo.org/">FUTO</a>
+   <a href="https://www.youtube.com/watch?v=aYzzOfQehPg">Microgrant</a>,
+   which has been donated to <a href="http://sourceware.org/">Sourceware</a>
+   through the
+   <a href="https://sfconservancy.org/">Software Freedom Conservancy</a> for
+   maintaining and expanding the infrastructure for Valgrind and other
+   Free Software core toolchain and developer tools projects.
+ </p></li>
+ <li><p>27 Jul 2022: <a href="https://nnethercote.github.io/2022/07/27/twenty-years-of-valgrind.html">Twenty years of Valgrind</a>.
+ </p></li>
+ <li><p>Valgrind source code repository migrated from Subversion to git SCM
+   at <a href="https://sourceware.org/git/?p=valgrind.git">sourceware.org</a>.
+ </p></li>
+</ul>
+<br />
+
+</td></tr>
+</table>
+  </div>
+  </td>
+ </tr>    <!-- end contents -->
+ <tr>
+  <td class="gray" colspan="2" align="center">
+  <div class="hr_gray"><hr/></div><br />
+  <p>Copyright &copy; 2000-2026 
+     <a href="https://valgrind.org/info/developers.html">Valgrind&trade; Developers</a></p>
+
+  <div style="text-align:left">
+   <div>Hosting kindly provided by <a href="https://sourceware.org/">sourceware.org</a></div>
+   <div><a href="http://www.anybrowser.org/campaign/"><i>Best Viewed With A(ny) Browser</i></a></div>
+   <br />
+  </div>
+
+  </td>
+ </tr>
+</table>
+
+</div>
+</div>
+
+</body>
+</html>

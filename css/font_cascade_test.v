@@ -66,6 +66,22 @@ fn test_computed_font_list_uses_computed_font_properties_and_caches_result() {
 	}
 }
 
+fn test_quoted_system_font_family_selects_named_face() {
+	$if macos {
+		mut computed := ComputedProperties.new()
+		computed.set_property_without_modifying_flags(.font_family, &dom.StyleValue{
+			css_text: '"Helvetica Neue", Helvetica, Arial, sans-serif'
+		})
+		computed.set_property_without_modifying_flags(.font_weight, &dom.StyleValue{
+			css_text: '700'
+		})
+		computer := FontComputer.create()
+		font := computed.first_available_computed_font(computer)
+		assert font.typeface.family_name == 'Helvetica Neue'
+		assert font.variations.weight == 700
+	}
+}
+
 fn test_local_true_type_font_loader_retains_its_source_file() {
 	$if macos {
 		computer := FontComputer.create()
