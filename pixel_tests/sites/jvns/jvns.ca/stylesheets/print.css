@@ -1,0 +1,22 @@
+@media print {
+    #wrap > header, footer, .header-nav, .footer-nav {
+        display: none;
+    } 
+
+    body {
+        font: 13pt Georgia, "Times New Roman", Times, serif;
+    }
+
+    a:link, a:visited, a {
+        background: transparent;
+        color: #222;
+        text-decoration: underline;
+        text-align: left;
+    }
+
+    .mono, pre, code, tt, p code, li code {
+        font-family: Menlo, Monaco, "Andale Mono", "lucida console", "Courier New", monospace; 
+    }
+}
+
+

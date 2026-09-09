@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright (C) oberhumer.com GmbH. All Rights Reserved.
+-->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+
+<head>
+  <title>oberhumer.com: LZO real-time data compression library</title>
+  <meta name="description" content="LZO real-time data compression library" />
+  <meta name="keywords" content= "LZO, compress, compression, data compression, datacompression, real-time, real time, library, fast, archiver, communication, packer, fast compression, real-time compression, realtime compression, fast data compression, fast datacompression, fast compress, opensource, oberhumer.com" />
+  <link rel="stylesheet" href="../../content/css/fonts.css" type="text/css" />
+  <link rel="stylesheet" href="../../content/css/main.css" title="main.css" type="text/css" />
+  <link rel="alternate stylesheet" href="../../content/css/empty.css" title="empty.css" type="text/css" />
+  <link rel="alternate stylesheet" href="../../content/css/test01.css" title="test01.css" type="text/css" />
+  <link rel="icon" href="https://www.oberhumer.com/favicon.ico" type="image/x-icon" />
+  <link rel="shortcut icon" href="https://www.oberhumer.com/favicon.ico" type="image/x-icon" />
+  <link rev="made" href="mailto:webmaster@oberhumer.com" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="pragma" content="no-cache" />
+  <meta name="author" content="oberhumer.com GmbH &lt;webmaster@oberhumer.com&gt;" />
+  <meta name="MSSmartTagsPreventParsing" content="TRUE" />
+  <meta name="revisit-after" content="9999 days" />
+  <meta name="robots" content="none" />
+  </head>
+<body id="www-oberhumer-com">
+
+
+<div class="body_div_1" align="center"><div class="body_div_2">
+
+<div align="center"><table class="toptop"><tr><td>
+
+<table class="topnav" align="right">
+<tr class="topnav" align="right">
+  <td align="right"><a class="inactive" href="https://www.oberhumer.com/"><span class="inactive">Home</span></a></td>
+  <td align="right"><a class="inactive" href="https://www.oberhumer.com/products/lzo-professional/"><span class="inactive">Products</span></a></td>
+  <td align="right"><a class="active" href="https://www.oberhumer.com/opensource/"><span class="active">OpenSource</span></a></td>
+  <td align="right"><a class="inactive" href="https://www.oberhumer.com/company/"><span class="inactive">Company</span></a></td>
+</tr>
+</table>
+
+</td></tr><tr><td>
+
+<table class="topimg"><tr>
+  <td>&nbsp;</td>
+  <td class="td2" align="right">LZO</td>
+</tr></table>
+
+</td></tr></table></div>
+
+
+<div class="main_div">
+<table class="main_table" width="100%"><tr>
+<td width="100%" valign="top">
+
+
+<div align="center">
+  <p><font size="+3">Version 2.10<br /></font></p>
+  01 Mar 2017<br />
+  <br />
+  Copyright (C) 1996 - 2017<br />
+  Markus F.X.J. Oberhumer
+  <br /> <br />
+  <p align="center">
+    <a href="index.html#news">[News]</a>
+    <a href="index.html#abstract">[Abstract]</a>
+    <a href="index.html#download">[Download]</a>
+    <a href="index.html#minilzo">[miniLZO]</a>
+    <a href="index.html#links">[Links]</a>
+  </p>
+</div>
+<br />
+
+
+<h3><a name="patches"><font size="+3">P</font>atches</a></h3>
+
+<ul class="ulw">
+  <li>Fix a potential 1-byte overrun in LZO1F safe decompressor:
+  </li>
+  <code>
+<pre>
+diff --git a/src/lzo1f_d.ch b/src/lzo1f_d.ch
+index e86027b..e3353c8 100644
+--- a/src/lzo1f_d.ch
++++ b/src/lzo1f_d.ch
+@@ -58,8 +58,10 @@ DO_DECOMPRESS  ( const lzo_bytep in , lzo_uint  in_len,
+     while (TEST_IP_AND_TEST_OP)
+     {
+         t = *ip++;
+-        if (t > 31)
++        if (t > 31) {
++            NEED_IP(1);
+             goto match;
++        }
+
+         /* a literal run */
+         if (t == 0)
+</pre>
+  </code>
+  <li>By XananasX7 and David Korczynski from Ada Logics.
+  </li>
+</ul>
+
+
+<h3><a name="news"><font size="+3">N</font>ews</a></h3>
+
+<ul class="ulw">
+  <li>LZO 2.10 has been released; a small update that fixes various build issues.
+  </li>
+</ul>
+
+
+<h3><a name="abstract"><font size="+3">K</font>ey Facts</a></h3>
+
+<ul class="ulw">
+  <li>LZO is a portable lossless data compression library written in ANSI C.
+  </li>
+  <li>Offers pretty fast compression and *<em>extremely</em>* fast decompression.
+  </li>
+  <li>One of the fastest compression and decompression algorithms
+  around. See the ratings for <a href="https://www.oberhumer.com/opensource/lzop/">lzop</a> in the famous
+  <a href="http://compression.ca/act/act-summary.html">Archive Comparison
+  Test</a>&nbsp;.
+  </li>
+  <li>Includes slower compression levels achieving a quite
+    competitive compression ratio while still decompressing at this very
+    high speed.
+  </li>
+  <li>Distributed under the terms of the
+    <a href="https://www.oberhumer.com/opensource/gpl.html">GNU General Public License</a> (GPL v2+).
+    Commercial licenses are available through our
+    <a href="https://www.oberhumer.com/products/lzo-professional/">LZO Professional</a> license program.
+  </li>
+</ul>
+
+
+<h3><a name="download"><font size="+3">D</font>ownload</a></h3>
+
+<dl>
+  <dd>
+    <p>LZO is distributed as portable ANSI C source code.
+    </p>
+  </dd>
+
+  <dd>
+    <p><a href="https://www.oberhumer.com/opensource/lzo/download/lzo-2.10.tar.gz">Download LZO</a>
+    (source code, 587 kB, SHA1: 4924676a9bae5db58ef129dc1cebce3baa3c4b5d).
+    </p>
+  </dd>
+</dl>
+
+
+<h3><a name="minilzo">mini<font size="+2">LZO</font></a></h3>
+
+<dl>
+  <dd>
+    <p>miniLZO is a very lightweight <b>subset</b> of the LZO library
+    intended for easy inclusion with your application.
+    It is <b>generated automatically</b> from the LZO source code and
+    contains the most important LZO functions.</p>
+  </dd>
+
+  <dd>
+    <p>Very easy to use - it only takes a few <b>minutes</b> to add data compression to your application!</p>
+  </dd>
+
+  <dd>
+    <p><a href="https://www.oberhumer.com/opensource/lzo/download/minilzo-2.10.tar.gz">Download miniLZO</a>
+    (source code, 62 kB, SHA1: c7432708d49017a3f0b4f44c99d336f8a1be84f5).
+    </p>
+  </dd>
+</dl>
+
+
+<h3><a name="links"><font size="+3">R</font>elated links</a></h3>
+
+<ul class="ulw">
+  <li><a href="https://www.oberhumer.com/products/lzo-professional/">LZO Professional</a>
+  is our commercial LZO license program.
+  </li>
+
+  <li>If you need better compression you should take a look at the
+  excellent <a href="http://www.zlib.net/">zlib library</a>. zlib is slower and needs
+  more memory, though.
+  </li>
+
+  <li>For even better compression consider using <i>libbzip2</i> which is
+  distributed with the <a href="http://www.bzip.org/">bzip2 file
+  compressor</a>.
+  </li>
+
+  <li>The file compressor application <a href="https://www.oberhumer.com/opensource/lzop/">lzop</a>
+  uses LZO - it is very similar to <a href="http://www.gzip.org/">gzip</a>
+  but much faster.
+  </li>
+</ul>
+
+
+
+</td>
+
+<td width="15"><p style="width:15px; min-width:15px;">&nbsp;</p></td>
+
+
+</tr></table>
+</div>
+
+<hr />
+<div class="copyright" align="center">
+Copyright &copy; 2026 oberhumer.com GmbH. All Rights Reserved.<br />
+<a href="https://www.oberhumer.com/company/terms_of_use.php">Terms of Use</a>
+|
+<a href="https://www.oberhumer.com/company/data_protection.php">Data Protection</a>
+|
+<a id="sitemap_toggle" href="https://www.oberhumer.com/sitemap.php">Sitemap</a>
+</div>
+<br />
+
+
+
+</div></div>
+</body>
+</html>

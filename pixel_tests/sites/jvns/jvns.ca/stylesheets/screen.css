@@ -1,0 +1,871 @@
+@charset "UTF-8";
+/* http://meyerweb.com/eric/tools/css/reset/ 
+ * v2.0 | 20110126
+ * License: none (public domain) */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+  box-sizing: border-box;
+}
+
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+  display: block;
+}
+
+body {
+  line-height: 1;
+}
+
+ol, ul {
+  list-style: none;
+}
+
+blockquote, q {
+  quotes: none;
+}
+
+blockquote:before, blockquote:after,
+q:before, q:after {
+  content: "";
+  content: none;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/*Rounded corners from https://gist.github.com/victorbstan/889463*/
+/* non highlighted code colors */
+.heading, #wrap > header h1 {
+  font-family: "Montserrat", sans-serif;
+}
+
+.sans {
+  font-family: "PT Sans", "Helvetica Neue", Arial, sans-serif;
+}
+
+.serif, body {
+  font-family: "PT Serif", Georgia, Times, "Times New Roman", serif;
+}
+
+.mono, p code, li code, pre, code, tt {
+  font-family: Menlo, Monaco, "Andale Mono", "lucida console", "Courier New", monospace;
+}
+
+a {
+  text-decoration: none;
+  color: #CC4B00;
+}
+
+h1 a {
+  color: #FF5E00;
+}
+
+body {
+  line-height: 1.25em;
+  color: #000000;
+}
+
+#wrap > header h1 {
+  font-family: "PT Sans", "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  /* needed to make it smaller for Arial to work */
+  font-size: 4em;
+}
+
+#wrap > header h2 {
+  font-family: "Alegreya", "PT Serif", serif;
+}
+
+@media only screen and (min-width: 992px) {
+  /*body { font-size: 1.15em; }*/
+}
+nav, .pagination, .header-links {
+  font-family: "Montserrat", sans-serif;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+article h1, article h2, article h3, article h4, article h5, article h6 {
+  font-family: "Montserrat", sans-serif;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+  margin-top: 1.35em;
+  line-height: 1.15em;
+}
+article h1 a, article h2 a, article h3 a, article h4 a, article h5 a, article h6 a {
+  color: #000000;
+}
+
+section h1 {
+  font-family: "Montserrat", sans-serif;
+  font-weight: bold;
+}
+section h1 a {
+  color: #000000;
+}
+
+h1 {
+  font-size: 1.7em;
+}
+
+h2, section h1 {
+  font-size: 1.5em;
+}
+
+h3, section h2, section section h1 {
+  font-size: 1.3em;
+}
+
+h4, section h3, section section h2, section section section h1 {
+  font-size: 1em;
+}
+
+h5, section h4, section section h3 {
+  font-size: 0.9em;
+}
+
+h6, section h5, section section h4, section section section h3 {
+  font-size: 0.8em;
+}
+
+.meta {
+  font-family: "Montserrat", sans-serif;
+  font-weight: bold;
+}
+
+main > * {
+  margin: 0;
+}
+
+main > * + * {
+  margin-top: 0.75em;
+}
+
+p, article blockquote, ul, ol, article img, small {
+  margin-bottom: 0.75em;
+}
+
+li {
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+}
+
+ul {
+  list-style-type: circle;
+  margin-left: 2em;
+}
+
+ol {
+  list-style-type: decimal;
+  margin-left: 2em;
+}
+
+sup, sub {
+  font-size: 0.75em;
+  position: relative;
+  display: inline-block;
+  padding: 0 0.2em;
+  line-height: 0.8em;
+}
+
+sup {
+  top: -0.5em;
+}
+
+sub {
+  bottom: -0.5em;
+}
+
+a[rev=footnote] {
+  font-size: 0.75em;
+  padding: 0 0.3em;
+  line-height: 1;
+}
+
+q {
+  font-style: italic;
+}
+q:before {
+  content: "“";
+}
+q:after {
+  content: "”";
+}
+
+em, dfn {
+  font-style: italic;
+}
+
+strong, dfn {
+  font-weight: bold;
+}
+
+del, s {
+  text-decoration: line-through;
+}
+
+abbr, acronym {
+  border-bottom: 1px dotted;
+  cursor: help;
+}
+
+hr {
+  margin-bottom: 0.2em;
+}
+
+small {
+  font-size: 0.8em;
+}
+
+big {
+  font-size: 1.2em;
+}
+
+article blockquote {
+  font-style: italic;
+  /*  position: relative;
+    font-size: 1.2em;
+    line-height: 1.5em;*/
+  padding-left: 1em;
+  border-left: 4px solid rgba(51, 51, 51, 0.5);
+}
+article blockquote cite {
+  font-style: italic;
+}
+article blockquote cite a {
+  color: #333333 !important;
+  word-wrap: break-word;
+}
+article blockquote cite:before {
+  content: "—";
+  padding-right: 0.3em;
+  padding-left: 0.3em;
+  color: #333333;
+}
+@media only screen and (min-width: 992px) {
+  article blockquote {
+    padding-left: 1.5em;
+    border-left-width: 4px;
+  }
+}
+
+.pullquote-right:before,
+.pullquote-left:before {
+  /* Reset metrics. */
+  padding: 0;
+  border: none;
+  /* Content */
+  content: attr(data-pullquote);
+  /* Pull out to the right, modular scale based margins. */
+  float: right;
+  width: 45%;
+  margin: 0.5em 0 1em 1.5em;
+  /* Baseline correction */
+  position: relative;
+  top: 7px;
+  font-size: 1.4em;
+  line-height: 1.45em;
+}
+
+.pullquote-left:before {
+  /* Make left pullquotes align properly. */
+  float: left;
+  margin: 0.5em 1.5em 1em 0;
+}
+
+/* @extend this to force long lines of continuous text to wrap */
+.force-wrap {
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+pre {
+  background-color: #f7f7f7;
+  border: 1px solid #cccccc;
+  line-height: 1.45em;
+  font-size: 13px;
+  padding: 0.8em 1em;
+  color: #1a1a1a;
+  overflow: auto;
+}
+pre::-webkit-scrollbar {
+  height: 0.5em;
+  background: #c4c4c4;
+}
+pre::-webkit-scrollbar-thumb:horizontal {
+  background: #FF7E3E;
+  -webkit-border-radius: 4px;
+  border-radius: 4px;
+}
+
+p code, li code {
+  display: inline-block;
+  white-space: no-wrap;
+  background-color: #f7f7f7;
+  font-size: 0.8em;
+  line-height: 1.5em;
+  border: 1px solid #cccccc;
+  padding: 0 2px;
+  margin: -1px 0px;
+}
+p pre code, li pre code {
+  font-size: 1em !important;
+  background: none;
+  border: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  margin: 0px;
+  padding: 0px;
+  background-color: #82868E;
+  color: #000000;
+  background-image: url("noise.png");
+  scroll-behavior: smooth;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
+#wrap {
+  width: 70%;
+  max-width: 45em;
+  margin: 0 auto;
+  position: relative;
+  min-height: 100%;
+  /*border: 1px red solid;*/
+  height: auto;
+}
+@media screen and (max-width: 865px) {
+  #wrap {
+    width: 100%;
+  }
+}
+
+#main {
+  min-height: 100%;
+  height: auto;
+}
+@media screen and (min-width: 531px) {
+  #main {
+    border-right-width: 35px;
+    border-right-style: solid;
+    border-right-color: #FF5E00;
+    padding-left: 35px;
+    -moz-border-image: url("stripes.png") 0 35 0 0 repeat;
+    /* Old firefox */
+    -webkit-border-image: url("stripes.png") 0 35 0 0 repeat;
+    /* Safari */
+    -o-border-image: url("stripes.png") 0 35 0 0 repeat;
+    /* Opera */
+    border-image: url("stripes.png") 0 35 0 0 repeat;
+  }
+}
+
+#content {
+  height: auto;
+  min-height: 100%;
+}
+
+#wrap > header {
+  background-color: #ffffff;
+  border-top-right-radius: 10px;
+  -webkit-border-top-right-radius: 10px;
+  -moz-border-radius-topright: 10px;
+  /*box-shadow: 0 0 0em $shadow;*/
+  display: block;
+  position: relative;
+  min-height: 140px;
+}
+@media screen and (min-width: 531px) {
+  #wrap > header {
+    border-left-width: 35px;
+    border-left-color: #FF5E00;
+    border-left-style: solid;
+    -moz-border-image: url("stripes.png") 0 0 0 35 repeat;
+    /* Old firefox */
+    -webkit-border-image: url("stripes.png") 0 0 0 35 repeat;
+    /* Safari */
+    -o-border-image: url("stripes.png") 0 0 0 35 repeat;
+    /* Opera */
+    border-image: url("stripes.png") 0 0 0 35 repeat;
+    margin-right: 35px;
+  }
+}
+#wrap > header hgroup {
+  padding: 3em 0em 2em 2em;
+  display: inline-block;
+}
+@media screen and (min-width: 866px) {
+  #wrap > header {
+    display: flex;
+    justify-content: space-between;
+  }
+  #wrap > header hgroup {
+    padding: 3em 0em 2em 2em;
+  }
+}
+@media screen and (max-width: 531px) {
+  #wrap > header hgroup {
+    font-size: 0.75em;
+  }
+}
+#wrap > header .header-links {
+  list-style-type: none;
+  margin: 0px;
+}
+#wrap > header .header-links a {
+  color: #000000;
+}
+@media screen and (min-width: 866px) {
+  #wrap > header .header-links {
+    text-align: right;
+    display: inline-block;
+    right: 0px;
+    top: 0px;
+    margin: 1em 35px 1em 0px;
+  }
+  #wrap > header .header-links li {
+    margin: 0px;
+    padding: 0px;
+  }
+}
+@media screen and (max-width: 865px) and (min-width: 531px) {
+  #wrap > header .header-links {
+    display: block;
+    position: relative;
+    margin-left: 2em;
+    padding: 0.25em 0em;
+  }
+  #wrap > header .header-links li {
+    display: inline;
+  }
+  #wrap > header .header-links li + li:before {
+    content: "/";
+    margin-right: 0.25em;
+  }
+  #wrap > header .header-links span + span:before {
+    content: "/";
+    margin-right: 0.25em;
+  }
+}
+@media screen and (max-width: 531px) {
+  #wrap > header .header-links {
+    display: block;
+    position: relative;
+    padding: 0.25em 0.5em 0 1em;
+  }
+  #wrap > header .header-links li {
+    display: inline;
+  }
+  #wrap > header .header-links li + li:before {
+    content: "/";
+    margin-right: 0.25em;
+  }
+  #wrap > header .header-links span {
+    font-size: 1.15em;
+    display: block;
+  }
+}
+
+nav {
+  /*box-shadow: 0 0 0em $shadow;*/
+  color: #ffffff;
+  background-color: #FF7E3E;
+  z-index: 1500;
+  height: 35px;
+  padding: 0.5em 35px;
+}
+@media screen and (max-width: 531px) {
+  nav {
+    padding: 0.5em 15px;
+  }
+}
+nav li, nav form, nav fieldset, nav ul {
+  display: inline;
+}
+nav a {
+  color: #ffffff;
+}
+nav ul {
+  margin: 0px;
+}
+nav ul li + li:before {
+  /*content: '\2605';*/
+  /*unfortunately the unicode star is inconsistently supported, so here's an svg one instead.
+  Ideally, some sort of svg icon thing might be better?*/
+  content: url("star.svg");
+  padding: 0 0.5em 0 0.25em;
+  fill: #ffffff;
+  vertical-align: middle;
+  position: relative;
+  top: 0.1em;
+}
+
+.header-nav {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+@media screen and (min-width: 531px) {
+  .header-nav {
+    margin: 0px 35px;
+    clear: both;
+    position: relative;
+  }
+  .header-nav:before {
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    position: absolute;
+    left: -35px;
+    top: 0px;
+    border: 35px solid;
+    border-color: #FF7E3E transparent transparent transparent;
+  }
+  .header-nav:after {
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    position: absolute;
+    right: -35px;
+    bottom: 0px;
+    border: 35px solid;
+    border-color: transparent transparent #FF7E3E transparent;
+  }
+}
+
+.post-tags {
+  text-align: center;
+}
+
+.post-tag {
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 75%;
+}
+
+.date {
+  font-weight: bold;
+  font-size: 75%;
+}
+
+.footer-nav {
+  text-align: center;
+}
+@media screen and (min-width: 531px) {
+  .footer-nav {
+    margin: 0px 35px;
+    clear: both;
+    position: relative;
+  }
+  .footer-nav:before {
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    position: absolute;
+    right: -35px;
+    top: 0px;
+    border: 35px solid;
+    border-color: #FF7E3E transparent transparent transparent;
+  }
+  .footer-nav:after {
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    position: absolute;
+    left: -35px;
+    bottom: 0px;
+    border: 35px solid;
+    border-color: transparent transparent #FF7E3E transparent;
+  }
+}
+
+article {
+  background-color: #ffffff;
+  padding: 2em 2.5em;
+  min-height: 100%;
+  height: auto;
+  border-bottom-left-radius: 10px;
+  -webkit-border-bottom-left-radius: 10px;
+  -moz-border-radius-bottomleft: 10px;
+  /*box-shadow: 0 0 0em $shadow;*/
+}
+@media screen and (max-width: 531px) {
+  article {
+    padding: 2em 1.5em;
+  }
+}
+article > header {
+  border-bottom: 1px #000000 solid;
+  margin-bottom: 1em;
+}
+article > header h1 {
+  margin-bottom: 0px;
+  margin-top: 0px;
+}
+article .meta {
+  font-weight: normal;
+  margin-bottom: 0;
+}
+@media screen and (max-width: 531px) {
+  article a {
+    word-break: break-word;
+  }
+}
+article ul {
+  list-style-type: circle;
+  margin-left: 2em;
+}
+article > footer {
+  display: block;
+  position: relative;
+  margin-top: 1.5em;
+  padding-top: 0.5em;
+  border-top: 1px #000000 solid;
+}
+article > footer .meta {
+  position: relative;
+}
+article > footer .meta .basic-alignment {
+  display: inline-block;
+  width: 50%;
+  display: block;
+  min-height: 2.5em;
+}
+article > footer .meta .left {
+  position: relative;
+  left: 0px;
+  padding-left: 0px;
+}
+article > footer .meta .left:before {
+  content: "«";
+  width: 0px;
+  height: 0px;
+  position: absolute;
+  left: -0.8em;
+}
+article > footer .meta .right {
+  text-align: right;
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  padding-right: 0px;
+}
+article > footer .meta .right:before {
+  content: "»";
+  width: 0px;
+  height: 0px;
+  position: absolute;
+  right: -0.3em;
+}
+
+.article-list {
+  display: grid;
+  grid-template-columns: fit-content(200px) 1fr;
+  grid-row-gap: 2px;
+  grid-column-gap: 3px;
+}
+.article-list .star {
+  margin-left: -0.3em;
+  color: orange;
+  line-height: 1rem;
+}
+.article-list time {
+  padding-right: 1em;
+  color: #444;
+  font-size: 14px;
+}
+.article-list a {
+  color: black;
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
+}
+
+.article-list.with-favourites {
+  grid-template-columns: fit-content(200px) fit-content(200px) 1fr;
+}
+
+article + article {
+  margin-top: 0.55em;
+  border-top-left-radius: 10px;
+  -webkit-border-top-left-radius: 10px;
+  -moz-border-radius-topleft: 10px;
+}
+
+article:last-of-type {
+  border-bottom-left-radius: 0;
+  -webkit-border-bottom-left-radius: 0;
+  -moz-border-radius-bottomleft: 0;
+}
+
+section {
+  background-color: #ffffff;
+  padding: 0em 3em 2em 3em;
+}
+
+#wrap > footer {
+  border-bottom-left-radius: 10px;
+  -webkit-border-bottom-left-radius: 10px;
+  -moz-border-radius-bottomleft: 10px;
+  /*box-shadow: 0 0 0em $shadow;*/
+  padding: 1em 2em;
+  text-align: center;
+  background-color: #ffffff;
+  position: relative;
+  bottom: 0px;
+}
+@media screen and (min-width: 531px) {
+  #wrap > footer {
+    margin: 0px 35px;
+  }
+}
+#wrap > footer span {
+  display: block;
+}
+
+.sharing {
+  text-align: center;
+  margin: 0em auto 0.5em;
+}
+
+img {
+  max-width: 100%;
+}
+
+#skiptocontent a {
+  padding: 6px;
+  position: absolute;
+  top: -40px;
+  left: 0px;
+  color: white;
+  border-right: 1px solid white;
+  border-bottom: 1px solid white;
+  border-bottom-right-radius: 8px;
+  background: #cd4f10;
+  -webkit-transition: top 0.5s ease-out;
+  transition: top 0.5s ease-out;
+  z-index: 100;
+}
+
+#skiptocontent a:focus {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  outline-color: transparent;
+  -webkit-transition: top 0.05s ease-in;
+  transition: top 0.05s ease-in;
+}
+
+.stack > * + * {
+  margin-top: 1rem;
+}
+
+.til-card {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid #eee;
+  background-color: white;
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s;
+  margin-bottom: 1rem;
+}
+.til-card h3 {
+  margin-top: 0;
+  font-size: 1rem;
+}
+.til-card h3 a, .til-card h3 time {
+  display: block;
+}
+.til-card time {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: normal;
+}
+.til-card .til-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.til-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.til-content {
+  color: #1f2937;
+  margin: 0.75rem 0;
+}
+
+.til-images {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.til-images.two-images {
+  grid-template-columns: 1fr 1fr;
+}
+
+.til-image-wrapper {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background-color: #f3f4f6;
+}
+
+.til-image {
+  width: 100%;
+  height: 12rem;
+  object-fit: cover;
+}
+
+/* heading links */
+.post-heading {
+  position: relative;
+}
+
+.post-heading:hover::before {
+  content: "#";
+  position: absolute;
+  left: -0.75em;
+  top: 0;
+  color: #ffa67a;
+}
+
+/*# sourceMappingURL=screen.css.map */

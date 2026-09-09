@@ -1,0 +1,1610 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title> Less </title>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+
+<table cellpadding=6 cellspacing=4 align="center">
+<tr>
+<h1><center> Less </center></h1> 
+</tr>
+<tr>
+<td> <a href="https://www.greenwoodsoftware.com/less/index.html"> Home </a> </td>
+<td> <a href="https://www.greenwoodsoftware.com/less/faq.html"> FAQ </a> </td>
+<td> <a href="https://www.greenwoodsoftware.com/less/download.html"> Download </a> </td>
+<td> <a href="https://github.com/gwsw/less/issues"> Bugs and Enhancement Requests </a> </td>
+<td> <a href="https://www.greenwoodsoftware.com/less/less-announce.html"> Mailing List and Atom Feed </a> </td>
+</tr>
+</table>
+
+<hr>
+
+<!-- ================================================================== -->
+
+<h2>Welcome to the less home page!</h2>
+<P>
+<B>Less</B> is a free, open-source file pager.
+It can be found on most versions of Linux, Unix and Mac OS,
+as well as on many other operating systems.
+</P>
+
+<!-- ================================================================== -->
+
+<HR>
+<TABLE CELLPADDING="16">
+<TR VALIGN="TOP">
+
+<TD WIDTH="30%" HEIGHT=1>
+
+<h2>Releases</h2>
+<P>
+The current released version is less-704.
+It was released for general use on 6&nbsp;June 2026.
+</P>
+
+<P>
+The current beta version is less-710.
+It was released for general use on 9&nbsp;Sep 2026.
+</P>
+
+<UL>
+<LI> <A HREF="https://www.greenwoodsoftware.com/less/news.704.html">Information about less-704</A>
+<LI> <A HREF="https://www.greenwoodsoftware.com/less/news.710.html">Information about less-710</A>
+<LI><A HREF="https://www.greenwoodsoftware.com/less/old.html">Information about older versions</A>
+</UL>
+
+</TD>
+<TD ROWSPAN=2>
+
+<h2>News</h2>
+
+<TABLE CELLPADDING="7">
+
+<!-- ======== NEWS ITEM ======== -->
+<tr valign="top"><td>
+<B>9&nbsp;Sep 2026</B>
+</td><td>
+<font size="+1">
+less-710 has been released for beta testing.
+</font>
+<br>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<br>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.710.html">here</a>.
+      <p>
+      This release fixes a few issues found in less-709:
+      <ul>
+      <li>Fix display of mark letters with -J when a long line is marked.</li>
+      <li>Fix memory leak when using the ${...} syntax in a lesskey file.</li>
+      <li>Fix reading one byte beyond the end of a string if input contains an ESC followed by a NUL byte.</li>
+      <li>Fix reading one byte beyond the end of a string when using a malformed lesskey binary file.</li>
+      </ul>
+      </p>
+</td></tr>
+
+<!-- ======== NEWS ITEM ======== -->
+<tr valign="top"><td>
+<B>20&nbsp;Aug 2026</B>
+</td><td>
+<font size="+1">
+less-709 has been released for beta testing.
+</font>
+<br>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<br>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.709.html">here</a>.
+</td></tr>
+
+<!-- ======== NEWS ITEM ======== -->
+<tr valign="top"><td>
+<B>6&nbsp;June 2026</B>
+</td><td>
+<font size="+1">
+less-704 has been released for general use.
+</font>
+<br>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<br>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.704.html">here</a>.
+<br>
+It is recommended that anyone using less-702 should upgrade to less-704.
+</td></tr>
+
+<!-- ======== NEWS ITEM ======== -->
+<tr valign="top"><td>
+<B>31&nbsp;May 2026</B>
+</td><td>
+<font size="+1">
+less-704 has been released for beta testing.
+</font>
+<br>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<br>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.704.html">here</a>.
+<br>
+  This release fixes three security issues found in less-702
+  (<a href="https://github.com/gwsw/less/issues/779">github #779</a>,
+  <a href="https://github.com/gwsw/less/issues/781">github #781</a>), and
+  <a href="https://github.com/gwsw/less/issues/784">github #784</a>).
+</td></tr>
+
+<!-- ======== NEWS ITEM ======== -->
+<tr valign="top"><td>
+<B>22&nbsp;May 2026</B>
+</td><td>
+<font size="+1">
+less-702 has been released for general use.
+</font>
+<br>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<br>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.702.html">here</a>.
+</td></tr>
+
+<!-- ======== NEWS ITEM ======== -->
+<tr valign="top"><td>
+<B>14&nbsp;May 2026</B>
+</td><td>
+<font size="+1">
+less-701 has been released for beta testing.
+</font>
+<br>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<br>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.701.html">here</a>.
+<br>
+      This release fixes some issues found in less-700 (
+<a href="https://github.com/gwsw/less/issues/768">github #768</a>,
+<a href="https://github.com/gwsw/less/issues/771">github #771</a>,
+<a href="https://github.com/gwsw/less/issues/772">github #772</a>, and
+<a href="https://github.com/gwsw/less/issues/775">github #775</a>).
+      <br> &nbsp; <br>
+      Also, the mechanism to create handlers for OSC 8 hyperlinks has
+      been changed yet again.
+      The semantics of <code>LESS_OSC8_OPEN_xxx</code> have been changed
+      so that it is no longer necessary to append %o or %O to the end of 
+      the command, nor to backslash-escape prompt metacharacters.
+</td></tr>
+
+<!-- ======== NEWS ITEM ======== -->
+<tr valign="top"><td>
+<B>30&nbsp;Apr 2026</B>
+</td><td>
+<font size="+1">
+less-700 has been released for beta testing.
+</font>
+<br>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<br>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.700.html">here</a>.
+<br>
+      This release fixes some issues found in less-696 (
+<a href="https://github.com/gwsw/less/issues/754">github #754</a>,
+<a href="https://github.com/gwsw/less/issues/757">github #757</a>,
+<a href="https://github.com/gwsw/less/issues/759">github #759</a>,
+<a href="https://github.com/gwsw/less/issues/760">github #760</a>, and
+<a href="https://github.com/gwsw/less/issues/761">github #761</a>).
+      <br> &nbsp; <br>
+      Also, the mechanism to create handlers for OSC 8 hyperlinks has
+      been changed.
+      Instead of using an environment variable named <code>LESS_OSC8_xxx</code>,
+      you should use <code>LESS_OSC8_OPEN_xxx</code>. <code>LESS_OSC8_xxx</code> is no longer
+      supported, and the semantics of <code>LESS_OSC8_OPEN_xxx</code> are different 
+      than those of <code>LESS_OSC8_xxx</code>. See the man page for details.
+</td></tr>
+
+<!-- ======== NEWS ITEM ======== -->
+<tr valign="top"><td>
+<B>5&nbsp;Apr 2026</B>
+</td><td>
+<font size="+1">
+less-696 has been released for beta testing.
+</font>
+<br>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<br>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.696.html">here</a>.
+</td></tr>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>8&nbsp;Feb 2026</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-692 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.692.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>29&nbsp;Jan 2026</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-692 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.692.html">here</a>.
+<br>
+      This release fixes some bugs found in less-691 (
+<a href="https://github.com/gwsw/less/issues/707">github #707</a>,
+<a href="https://github.com/gwsw/less/issues/708">github #708</a>,
+<a href="https://github.com/gwsw/less/issues/709">github #709</a>, and
+<a href="https://github.com/gwsw/less/issues/710">github #710</a>
+), reverts the HOME and END keys to their pre-691 behavior (
+<a href="https://github.com/gwsw/less/issues/658">github #658</a>
+) and allows lesskey assignment of separate functions to carriage return and newline (
+<a href="https://github.com/gwsw/less/issues/703">github #703</a>
+).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>20&nbsp;Jan 2026</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-691 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.691.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>10&nbsp;Jan 2026</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-691 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.691.html">here</a>.
+<br>
+This release fixes some issues with the mingw build.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>2&nbsp;Jan 2026</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-690 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.690.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>14&nbsp;Oct 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-685 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.685.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>5&nbsp;Oct 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-685 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.685.html">here</a>.
+<br>
+These are the changes in this release:
+<ul>
+<li> With --incsearch, make a failed search return to the original column as well as the original line.</li>
+<li> Fix some problems reported by valgrind (<a href="https://github.com/gwsw/less/issues/659">github #659</a>, <a href="https://github.com/gwsw/less/issues/660">github #660</a>, <a href="https://github.com/gwsw/less/issues/661">github #661</a>).</li>
+</ul>
+</ul>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>18&nbsp;Sep 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-684 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.684.html">here</a>.
+<br>
+These are the changes in this release:
+<ul>
+<li> Allow mixing of option arguments and filename arguments on the command line unless POSIXLY_CORRECT is set (<a href="https://github.com/gwsw/less/issues/653">github #653</a>).</li>
+<li> Add LESS_TERMCAP_SUSPEND and LESS_TERMCAP_RESUME (<a href="https://github.com/gwsw/less/issues/654">github #654</a>).</li>
+<li> Fix some problems building for z/OS (<a href="https://github.com/gwsw/less/issues/656">github #656</a>).</li>
+</ul>
+</ul>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>8&nbsp;Sep 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-683 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.683.html">here</a>.
+</ul>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>19&nbsp;Jun 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-679 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.679.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>30&nbsp;May 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-679 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.679.html">here</a>.
+<BR>
+This release fixes two bugs found in less-678: 
+(<a href="https://github.com/gwsw/less/issues/626">#626</a>
+and
+<a href="https://github.com/gwsw/less/issues/628">#628</a>).
+</ul>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>17&nbsp;May 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-678 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.678.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>2&nbsp;May 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-678 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.678.html">here</a>.
+<BR>
+This release fixes an issue with the &amp; command
+(<a href="https://github.com/gwsw/less/issues/618">github #618</a>) 
+and allows outputting raw tabs with -r 
+(<a href="https://github.com/gwsw/less/issues/620">github #620</a>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>17&nbsp;Apr 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+Atom feed is now available for announcements of releases.
+</FONT>
+<BR>
+I am testing a new Atom feed which will be used to announce releases of less.
+The feed address is <a href="https://greenwoodsoftware.com/less/feed">https://greenwoodsoftware.com/less/feed</a>.
+For now, releases will be announced both in the old mailing list
+and in the Atom feed.
+If you have any comments on the Atom feed,
+you may send email to <a href="mailto:markn@greenwoodsoftware.com">markn@greenwoodsoftware.com</a>
+or open an issue at <a href="https://github.com/gwsw/less/issues">https://github.com/gwsw/less/issues</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>17&nbsp;Apr 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-676 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.676.html">here</a>.
+<BR>
+This release adds the ESC-b command and fixes a couple of bugs related to
+the display of OSC 8 hyperlinks.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>24&nbsp;Mar 2025</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-674 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.674.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>17&nbsp;Oct 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-668 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.668.html">here</a>.
+<BR>
+This release fixes bugs found in less-661 but introduces no new features.
+It is recommended that anyone currently using less-661 should upgrade to less-668.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>9&nbsp;Oct 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-668 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.668.html">here</a>.
+<BR>
+This release fixes one problem found in less-667
+(<A HREF="https://github.com/gwsw/less/issues/576">#576</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>2&nbsp;Oct 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-667 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.667.html">here</a>.
+<BR>
+This release fixes one problem found in less-666
+(<A HREF="https://github.com/gwsw/less/issues/573">#573</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>21&nbsp;Sep 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-666 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.666.html">here</a>.
+<BR>
+This release fixes one problem found in less-665
+(<A HREF="https://github.com/gwsw/less/issues/568">#568</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>6&nbsp;Sep 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-665 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.665.html">here</a>.
+<BR>
+This release fixes three problems found in less-663
+(<A HREF="https://github.com/gwsw/less/issues/561">#561</A>,
+<A HREF="https://github.com/gwsw/less/issues/562">#562</A> and
+<A HREF="https://github.com/gwsw/less/issues/563">#563</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>17&nbsp;Aug 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-663 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.663.html">here</a>.
+<BR>
+This release fixes several problems found in less-661
+(<A HREF="https://github.com/gwsw/less/issues/539">#539</A>,
+<A HREF="https://github.com/gwsw/less/issues/544">#544</A>,
+<A HREF="https://github.com/gwsw/less/issues/545">#545</A>,
+<A HREF="https://github.com/gwsw/less/issues/547">#547</A>,
+<A HREF="https://github.com/gwsw/less/issues/551">#551</A>,
+<A HREF="https://github.com/gwsw/less/issues/553">#553</A>,
+<A HREF="https://github.com/gwsw/less/issues/554">#554</A>,
+<A HREF="https://github.com/gwsw/less/issues/556">#556</A> and 
+<A HREF="https://github.com/gwsw/less/issues/558">#558</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>30&nbsp;Jun 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-661 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.661.html">here</a>.
+<BR>
+This release fixes two minor problems in less-658:
+a typo in the help file, and an error in the "waiting for data" message.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>16&nbsp;June 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-658 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.658.html">here</a>.
+<BR>
+This release fixes two problems found in less-657
+(<A HREF="https://github.com/gwsw/less/issues/526">#526</A> and
+<A HREF="https://github.com/gwsw/less/issues/529">#529</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>1&nbsp;June 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-657 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.657.html">here</a>.
+<BR>
+This release fixes one problem found in less-656
+(<A HREF="https://github.com/gwsw/less/issues/521">#521</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>24&nbsp;May 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-656 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.656.html">here</a>.
+<BR>
+This release fixes one problem found in less-655
+(<A HREF="https://github.com/gwsw/less/issues/515">#515</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>18&nbsp;May 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-655 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.655.html">here</a>.
+<BR>
+This release fixes a few problems found in less-654
+(<A HREF="https://github.com/gwsw/less/issues/507">#507</A>,
+<A HREF="https://github.com/gwsw/less/issues/508">#508</A>, and
+<A HREF="https://github.com/gwsw/less/issues/509">#509</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>2&nbsp;May 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-654 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.654.html">here</a>.
+<BR>
+This release fixes a few problems found in less-653
+(<A HREF="https://github.com/gwsw/less/issues/495">#495</A>,
+<A HREF="https://github.com/gwsw/less/issues/497">#497</A>, and
+<A HREF="https://github.com/gwsw/less/issues/503">#503</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>20&nbsp;Mar 2024</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-653 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.653.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>12&nbsp;Aug 2023</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-643 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.643.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>22&nbsp;Jul 2023</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-643 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.643.html">here</a>.
+<BR>
+This release fixes a few problems found in less-639
+(<A HREF="https://github.com/gwsw/less/issues/344">#344</A>,
+<A HREF="https://github.com/gwsw/less/issues/398">#398</A>,
+<A HREF="https://github.com/gwsw/less/issues/399">#399</A>,
+<A HREF="https://github.com/gwsw/less/issues/401">#401</A>,
+<A HREF="https://github.com/gwsw/less/issues/403">#403</A> and
+<A HREF="https://github.com/gwsw/less/issues/405">#405</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>1&nbsp;Jul 2023</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-639 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.639.html">here</a>.
+<BR>
+This release fixes a few problems found in less-635
+(<A HREF="https://github.com/gwsw/less/issues/372">#372</A>,
+<A HREF="https://github.com/gwsw/less/issues/378">#378</A>,
+<A HREF="https://github.com/gwsw/less/issues/379">#379</A>,
+<A HREF="https://github.com/gwsw/less/issues/386">#386</A> and
+<A HREF="https://github.com/gwsw/less/issues/395">#395</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>2&nbsp;Jun 2023</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-635 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.635.html">here</a>.
+<BR>
+This release fixes a few problems found in less-633
+(<A HREF="https://github.com/gwsw/less/issues/368">#368</A>,
+<A HREF="https://github.com/gwsw/less/issues/373">#373</A> and 
+<A HREF="https://github.com/gwsw/less/issues/374">#374</A>).
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>3&nbsp;May 2023</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-633 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.633.html">here</a>.
+<BR>
+This release fixes a problem building less-632 on certain systems
+(<A HREF="https://github.com/gwsw/less/issues/365">#365</A>).
+There is no functional difference between less-632 and less-633.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>30&nbsp;Apr 2023</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-632 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.632.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>7&nbsp;Apr 2023</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-632 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.632.html">here</a>.
+<BR>
+This release fixes issues
+<A HREF="https://github.com/gwsw/less/issues/293">#293</A>,
+<A HREF="https://github.com/gwsw/less/issues/345">#345</A>,
+<A HREF="https://github.com/gwsw/less/issues/350">#350</A>,
+and
+<A HREF="https://github.com/gwsw/less/issues/358">#358</A>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>27&nbsp;Feb 2023</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-629 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.629.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>2&nbsp;Sep 2022</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-608 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.608.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>23&nbsp;Jul 2022</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-608 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.608.html">here</a>.
+<BR>
+This release fixes issues
+<A HREF="https://github.com/gwsw/less/issues/247">#247</A>,
+<A HREF="https://github.com/gwsw/less/issues/265">#265</A>,
+<A HREF="https://github.com/gwsw/less/issues/271">#271</A>,
+and
+<A HREF="https://github.com/gwsw/less/issues/273">#273</A>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>15&nbsp;Mar 2022</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-603 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.603.html">here</a>.
+<BR>
+This release fixes issues
+<A HREF="https://github.com/gwsw/less/issues/244">#244</A>,
+<A HREF="https://github.com/gwsw/less/issues/249">#249</A>,
+<A HREF="https://github.com/gwsw/less/issues/250">#250</A>,
+and
+<A HREF="https://github.com/gwsw/less/issues/255">#255</A>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>7&nbsp;Jan 2022</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-600 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.600.html">here</a>.
+<BR>
+This release fixes issues
+<A HREF="https://github.com/gwsw/less/issues/231">#231</A>,
+<A HREF="https://github.com/gwsw/less/issues/232">#232</A>,
+<A HREF="https://github.com/gwsw/less/issues/233">#233</A>,
+<A HREF="https://github.com/gwsw/less/issues/234">#234</A>,
+<A HREF="https://github.com/gwsw/less/issues/236">#236</A>,
+<A HREF="https://github.com/gwsw/less/issues/238">#238</A>,
+<A HREF="https://github.com/gwsw/less/issues/239">#239</A>,
+and
+<A HREF="https://github.com/gwsw/less/issues/241">#241</A>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>7&nbsp;Dec 2021</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-598 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.598.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>10&nbsp;Jul 2021</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-590 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.590.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>3&nbsp;Jun 2021</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-590 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.590.html">here</a>.
+<BR>
+This fixes bug
+<A HREF="https://github.com/gwsw/less/issues/177">#177</A>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>29&nbsp;May 2021</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-589 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.589.html">here</a>.
+<BR>
+This fixes bugs 
+<A HREF="https://github.com/gwsw/less/issues/171">#171</A>,
+<A HREF="https://github.com/gwsw/less/issues/175">#175</A> and
+<A HREF="https://github.com/gwsw/less/issues/176">#176</A>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>28&nbsp;Apr 2021</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-581.2 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.581.html">here</a>.
+<BR>
+This fixes a bug found in less-581 where
+the terminal was sometimes left in mouse-reporting mode after exiting less.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>18&nbsp;Apr 2021</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-581 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.581.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>7&nbsp;Apr 2021</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-581 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.581.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>4&nbsp;Mar 2021</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-580 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.580.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>21&nbsp;Oct 2020</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-563 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.563.html">here</a>.
+<BR>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>31&nbsp;Aug 2020</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-563 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.563.html">here</a>.
+<BR>
+This release fixes a crash on MacOS and some other systems.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>20&nbsp;May 2020</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-562 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.562.html">here</a>.
+<BR>
+There are only two small changes from less-561:
+<UL>
+<LI> The Unicode tables have been updated.
+<LI> The man pages have some formatting changes.
+</UL>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>11&nbsp;May 2020</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-561 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.561.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>28&nbsp;Mar 2020</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-557 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.557.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>11&nbsp;Jun 2019</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-551 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.551.html">here</a>.
+<BR>
+less-551 is the same as less-550 except for a few documentation changes.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>3&nbsp;Jun 2019</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-550 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.550.html">here</a>.
+<BR>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>17&nbsp;Feb 2019</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-550 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.550.html">here</a>.
+<BR>
+This fixes two nasty problems found in less-549:
+<ul>
+<li> Win32 builds did not work.
+<li> Sometimes the terminal was left in mouse-reporting mode after exiting less.
+</ul>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>14&nbsp;Feb 2019</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-549 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.549.html">here</a>.
+<BR>
+This fixes a few problems found in less-548:
+<ul>
+<li> Support extended X11 mouse reporting, to work in windows wider than 224 columns.
+<li> Disable mouse reporting while entering multi-character commands.
+<li> Avoid sending duplicate mouse init sequences.
+<li> Update Unicode tables.
+<li> Fix bug in setting single-quote mark.
+<li> Fix some Win32 bugs.
+</ul>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>8&nbsp;Feb 2019</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-548 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.548.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>16&nbsp;Feb 2018</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-530 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.530.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>14&nbsp;Nov 2017</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-529 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.529.html">here</a>.
+<BR>
+This version displays Unicode formatting characters (including BOM)
+in hex if the -U flag is set.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>2&nbsp;Nov 2017</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-527 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.527.html">here</a>.
+<BR>
+This version changes the new M command to take a mark letter, making it similar to the m command,
+except the M command marks the bottom line on the screen rather than top line.
+This version also adds a command ESC-m to remove a mark, 
+fixes a bug that caused an erroneous binary file warning when viewing a UTF-8 file containing SGR sequences,
+and now correctly handles the keypad Enter key.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>25&nbsp;Sep 2017</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-520 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.520.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>29&nbsp;Mar 2017</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-487 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.487.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>25&nbsp;Oct 2016</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-487 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.487.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>16&nbsp;Oct 2015</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-481 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.481.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>2&nbsp;Sep 2015</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-481 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.481.html">here</a>.
+<BR>
+This version fixes a bug in no-regex searches,
+fixes a bug with the -g option, and supports MSVC v1900.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>6&nbsp;Jul 2015</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-479 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.479.html">here</a>.
+<BR>
+This version fixes overly strict checking of LESSOPEN which prevented 
+double percent escapes from working.
+It also gives the configure script execute permission.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>22&nbsp;Jun 2015</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-478 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.478.html">here</a>.
+<BR>
+This version fixes several bugs found in less-471.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>14&nbsp;Dec 2014</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-471 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.471.html">here</a>.
+<BR>
+This version fixes a couple of bugs related to the + command line 
+option, and allows LESSHISTFILE to be set to "-" at compile time.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>6&nbsp;Oct 2014</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-470 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.470.html">here</a>.
+<BR>
+This version fixes a regression which caused commands defined in a 
+lesskey file to be immediately executed, even if the "extra" string
+did not complete the command.
+It also fixes a bug with GNU regex and removes some compiler warnings.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>18&nbsp;Sep 2014</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-468 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.468.html">here</a>.
+<BR>
+This version fixes a typo in 467 that prevented compilation.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>18&nbsp;Sep 2014</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-467 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.467.html">here</a>.
+<BR>
+This version fixes a few bugs found in less-466.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>23&nbsp;Aug 2014</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-466 has been released for beta testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.466.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>24&nbsp;Apr 2013</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-458 has been released for general use.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.458.html">here</a>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>4&nbsp;Apr 2013</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-458 is available for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.458.html">here</a>.
+<BR>
+This version fixes a minor display bug which could occur when
+using the up/down arrow on the command line.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>9&nbsp;Dec 2012</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-457 is available for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.457.html">here</a>.
+<BR>
+This version completely reverts option string parsing,
+to avoid incompatibilities with previous versions of less.
+The new option string syntax is available if and only if
+the new --use-backslash option appears first.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>8&nbsp;Nov 2012</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-456 is available for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.456.html">here</a>.
+<BR>
+This version changes option string parsing to avoid
+unnecessary incompatibility with previous versions of less.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>4&nbsp;Nov 2012</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-455 is available for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.455.html">here</a>.
+<BR>
+This version fixes bugs in less-451,
+and fixes minor bugs found in less-453 and less-454.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>4&nbsp;Sep 2012</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-451 has been released for general use.
+</FONT>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>21&nbsp;Jul 2012</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-451 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.451.html">here</a>.
+<BR>
+This version fixes one typo that affects the MS-DOS (Windows) build.
+For non-MS-DOS builds, less-451 is identical to less-450.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>15&nbsp;Jul 2012</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-450 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.450.html">here</a>.
+<BR>
+This version fixes a few bugs found in less-449.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>26&nbsp;Jun 2012</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-449 has been released for BETA testing.
+</FONT>
+<BR>
+You can download it <a href="https://www.greenwoodsoftware.com/less/download.html">here</a>.
+<BR>
+The release notes are <a href="https://www.greenwoodsoftware.com/less/news.449.html">here</a>.
+<BR>
+If you find any problems, please report them to
+<A HREF="mailto:bug-less@gnu.org">bug-less@gnu.org</A>.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>9&nbsp;Jun 2011</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-444 has been released for general use.
+</FONT>
+<BR>
+This release fixes two bugs found in less-443.
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>10&nbsp;Apr 2011</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-443 has been released for general use.
+</FONT>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>28&nbsp;Feb 2011</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-441 is available for BETA testing.
+</FONT>
+<BR>
+<P>
+less-441 changes the search behavior so that the new -A
+option introduced in less-440 is now the default.
+The -A option now changes the behavior to the old, pre-440, behavior.
+</P>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>5&nbsp;Jan 2011</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-440 is available for BETA testing.
+</FONT>
+<P>
+less-440 fixes a bug in less-438 and, at the risk of some feature creep,
+adds one much requested feature.
+The -A option changes search behavior so that an initial search
+includes the entire displayed screen and does not skip the first
+line as is currently done.
+Non-initial searches (for example, the "n" command) continue to 
+skip the first (target) line to allow searches to proceed past 
+the current screen.
+</P>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>31&nbsp;Dec 2010</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-438 is available for BETA testing.
+</FONT>
+</TD></TR>
+
+<!-- ======== NEWS ITEM ======== -->
+<TR VALIGN="TOP"><TD>
+<B>25&nbsp;Jul 2009</B>
+</TD><TD>
+<FONT SIZE="+1">
+less-436 has been released for general use.
+</FONT>
+</TD></TR>
+
+
+<HR>
+
+</body>
+
+</html>
+

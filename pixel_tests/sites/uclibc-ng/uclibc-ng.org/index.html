@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="generator" content="Hugo 0.131.0">
+	
+	<title>Welcome to uClibc-ng! - Embedded C library</title>
+
+	
+	<link rel="stylesheet" href="../fonts.googleapis.com/css%3Ffamily=Roboto.css">
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/strange-case.css" rel="stylesheet">
+	
+
+	
+	
+	<!--[if lt IE 9]>
+	
+	
+	<![endif]-->
+
+	
+	<link href="https://uclibc-ng.org/index.xml" rel="alternate" type="application/rss+xml" title="uClibc-ng" />
+</head>
+<body class="scheme-darkbrown">
+
+
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-4 col-md-3 col-lg-3 sidebar">
+
+			
+	<div class="sidebar-content">
+
+		<p><img src="img/puppy.png" alt="Logo"></p>
+
+		<a href="index.html"><h1>uClibc-ng</h1></a>
+		<p>Embedded C library</p>
+
+		
+
+		<ul class="sidebar-menus">
+			
+				<li>&#187; <a href="https://gogs.waldemar-brodkorb.de/oss/uclibc-ng">Project site</a> </li>
+			
+				<li>&#187; <a href="https://downloads.uclibc-ng.org/releases/">Downloads</a> </li>
+			
+				<li>&#187; <a href="https://uclibc-ng.org/docs/">Documentation</a> </li>
+			
+				<li>&#187; <a href="https://mailman.openadk.org/mailman3/postorius/lists/devel.uclibc-ng.org/">Mailinglist</a> </li>
+			
+				<li>&#187; <a href="https://patchwork.ozlabs.org/project/uclibc-ng/list/">Patchwork</a> </li>
+			
+				<li>&#187; <a href="https://www.paypal.me/wbx">Donation</a> </li>
+			
+		</ul>
+
+		<p class="copyright">&copy; 2026. All rights reserved. </p>
+		<p class="attr">Powered by <a href="http://gohugo.io">Hugo</a> &amp; <a href="https://github.com/ExchangeRate-API/strange-case">Strange Case</a> (inspired by <a href="https://github.com/poole/hyde">Hyde</a>).</p>
+
+	</div>
+
+
+			</div>
+			<div class="col-sm-7 col-sm-offset-4 col-md-6 col-md-offset-3 col-lg-5 col-lg-offset-3 content">
+				<div class="post">
+					<h1 id="uclibc-ng---embedded-c-library">uClibc-ng - <strong>Embedded C library</strong></h1>
+<h1 id="what-is-it">What is it?</h1>
+<p>uClibc-ng is a small C library for developing embedded Linux systems. It is
+much smaller than the GNU C Library, but nearly all applications supported by
+glibc also work perfectly with uClibc-ng.</p>
+<p>Porting applications from glibc to uClibc-ng typically involves just
+recompiling the source code. uClibc-ng supports shared libraries and threading.
+It currently runs on standard Linux and MMU-less (also known as uClinux)
+systems with support for Aarch64, Alpha, ARC, <a href="https://uclibc-ng.org/arm">ARM</a>, AVR32, Blackfin, CRIS, C-Sky, C6X, FR-V,
+H8/300, HPPA, i386, IA64, KVX, LM32, Loongarch, M68K/Coldfire, Metag, Microblaze, MIPS, MIPS64,
+NDS32, NIOS2, OpenRISC, PowerPC, RISCV32, RISCV64, Sparc, Sparc64, SuperH, Tile, X86_64 and XTENSA processors.
+Alpha, FR-V, HPPA, IA64, LM32, Loongarch, NIOS2, Tile and Sparc64 are experimental and need more testing.</p>
+<h1 id="news">News</h1>
+<p>FreeWRT 2.0 rolling release includes latest uClibc-ng! Check it out at <a href="https://www.freewrt.de">https://www.freewrt.de</a></p>
+<h1 id="latest-release">Latest Release</h1>
+<p>1.0.59 (Codename Pülleken alkoholfrei) released 08.08.2026.</p>
+<p><a href="https://downloads.uclibc-ng.org/releases/1.0.59/uClibc-ng-1.0.59.tar.xz">https://downloads.uclibc-ng.org/releases/1.0.59/uClibc-ng-1.0.59.tar.xz</a></p>
+<p>GPG signature: <a href="https://downloads.uclibc-ng.org/releases/1.0.59/uClibc-ng-1.0.59.tar.xz.asc">https://downloads.uclibc-ng.org/releases/1.0.59/uClibc-ng-1.0.59.tar.xz.asc</a></p>
+<p>SHA256: 86c6f15971bfb14156850f2e36906dac5a69df7b3e688216d1aea09d2db54174</p>
+<p>Older releases:
+<a href="https://downloads.uclibc-ng.org/releases/">https://downloads.uclibc-ng.org/releases/</a></p>
+<h1 id="talks-about-uclibc-ng">Talks about uClibc-ng</h1>
+<p>ELCE 2017, uClibc Today: Still Makes Sense - Alexey Brodkin, Synopsys</p>
+<p>Youtube video: <a href="https://www.youtube.com/watch?v=aCble1knyyI">https://www.youtube.com/watch?v=aCble1knyyI</a></p>
+<p>Slide: <a href="http://events.linuxfoundation.org/sites/events/files/slides/uclibc-still-makes-sense-brodkin-elce2017.pdf">http://events.linuxfoundation.org/sites/events/files/slides/uclibc-still-makes-sense-brodkin-elce2017.pdf</a></p>
+<h1 id="projects-using-uclibc-ng">Projects using uClibc-ng</h1>
+<ul>
+<li>OpenADK <a href="https://openadk.org">https://openadk.org</a></li>
+<li>Buildroot <a href="http://www.buildroot.org">http://www.buildroot.org</a></li>
+<li>Crosstool-NG <a href="http://crosstool-ng.org">http://crosstool-ng.org</a></li>
+<li>FreeWRT <a href="https://www.freewrt.de">https://www.freewrt.de</a></li>
+<li>L4RE <a href="https://github.com/kernkonzept/l4re-core">https://github.com/kernkonzept/l4re-core</a></li>
+<li>Freetz-NG <a href="https://freetz-ng.github.io/freetz-ng/">https://freetz-ng.github.io/freetz-ng/</a></li>
+<li>Optware-ng <a href="https://github.com/Optware/Optware-ng">https://github.com/Optware/Optware-ng</a></li>
+<li>Entware-ng <a href="https://github.com/Entware-ng/Entware-ng">https://github.com/Entware-ng/Entware-ng</a></li>
+<li>Bering-uClibc <a href="http://bering-uclibc.zetam.org/wiki/Bering-uClibc_6.x">http://bering-uclibc.zetam.org/wiki/Bering-uClibc_6.x</a></li>
+</ul>
+<p>and others.</p>
+<h1 id="development">Development</h1>
+<p>Get the source via the following command:</p>
+<ul>
+<li>git clone <a href="https://git.uclibc-ng.org/git/uclibc-ng.git">https://git.uclibc-ng.org/git/uclibc-ng.git</a></li>
+</ul>
+<p>GIT is mirrored here:</p>
+<ul>
+<li><a href="https://github.com/wbx-github/uclibc-ng">https://github.com/wbx-github/uclibc-ng</a></li>
+</ul>
+<h1 id="testing">Testing</h1>
+<p>uClibc-ng project maintains a separate testsuite to do regular testing
+of any source code changes.</p>
+<p>Get the source via the following command:</p>
+<ul>
+<li>git clone <a href="https://git.uclibc-ng.org/git/uclibc-ng-test.git">https://git.uclibc-ng.org/git/uclibc-ng-test.git</a></li>
+</ul>
+<p>GIT is mirrored here:</p>
+<ul>
+<li><a href="https://github.com/wbx-github/uclibc-ng-test">https://github.com/wbx-github/uclibc-ng-test</a></li>
+</ul>
+<p>Reports running the testsuite for releases can be found here:</p>
+<p><a href="https://downloads.uclibc-ng.org/reports">https://downloads.uclibc-ng.org/reports</a></p>
+<h1 id="contact">Contact</h1>
+<ul>
+<li>You can chat with us via IRC #uclibc-ng @ irc.oftc.net</li>
+<li>You can subscribe to the developer mailinglist and sent an e-mail to <a href="https://uclibc-ng.org/cdn-cgi/l/email-protection#2e4a4b584b426e5b4d42474c4d03404900415c49"><span class="__cf_email__" data-cfemail="ee8a8b988b82ae9b8d82878c8dc38089c0819c89">[email&#160;protected]</span></a></li>
+<li>If you have any comments, patches or criticism you can also send directly an e-mail to wbx at uclibc-ng dot org</li>
+</ul>
+<h1 id="history">History</h1>
+<p>uClibc-ng is a spin-off of uClibc (from Erik Andersen) from
+<a href="http://www.uclibc.org">http://www.uclibc.org</a>. Our main goal is to provide regulary a stable and tested
+release to make embedded system developers happy.</p>
+<p>The first release 1.0.0 with the code name Leffe Blonde was made while visiting
+Fosdem 2015. It was prepared in a hotel room in Brussels on 1 February 2015. All releases are
+prepared while drinking a pair of belgian or german beer since then.</p>
+<p>The idea to fork uClibc started in July 2014 and was discussed on the Buildroot
+and OpenWrt mailinglists.</p>
+<h1 id="thanks">Thanks</h1>
+<p>Thanks to following companies or people for hardware donations:</p>
+<ul>
+<li>Arcturus Networks Inc. - Blackfin + Coldfire Development Boards</li>
+<li>Cadence Design Systems, Inc. - Xilinx Kintex 7 FPGA KC705 incl. Daughterboard</li>
+<li>Andes Technology Corporation - FPGA Development Board for NDS32</li>
+<li>Soldrun Ltd. - Clearfog ARM Board</li>
+<li>Rob Wehrli - Hitachi EDOSK2674 H8S development board and t-shirt</li>
+<li>Dmitry Bondar - c6745-som a Texas Instruments C6745 DSP with development board</li>
+<li>Guo Ren - c-sky gx6605s development board</li>
+<li>Synopsys Inc. - Designware ARC HS Development Kit</li>
+</ul>
+<h1 id="donations">Donations</h1>
+<p>If you want to help the project with money to compensate costs for hosting and
+hardware, please use following link <a href="https://www.paypal.me/wbx">https://www.paypal.me/wbx</a></p>
+<p>Have fun!</p>
+
+				</div>
+			</div>
+			<div class="col-sm-1 col-md-3 col-md-4">
+			</div>
+		</div>
+	</div>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

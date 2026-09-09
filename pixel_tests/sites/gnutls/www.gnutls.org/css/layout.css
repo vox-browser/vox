@@ -1,0 +1,548 @@
+
+/*
+layout.css -- css stylesheet used on www.gnu.org
+
+Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 Free Software Foundation
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+*/
+
+/* NOTE: Changes to this file will affect the entire site, often in
+unexpected ways. Please mail patches to www-discuss@gnu.org rather
+than commit changes directly. */
+
+html, body{
+        padding: 0;
+        margin: 0;
+	background-color: #fff;
+        color: #35382a;
+	text-align: inherit;
+        font-size: 100%;
+}
+
+a[href] { color: blue }
+a[href]:visited { color: purple }
+a[href]:active, a[href]:hover { color: red }
+
+/* For the note saying the page is a translation. */
+.trans-disclaimer {
+   text-align: center;
+   font-weight: bold;
+   text-decoration: underline;
+}
+
+/* For outdated translations  */
+#outdated {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em ;
+  padding: 0.5em;
+  border:2px solid red;
+  background: #FFFFCC;
+}
+#outdated p { margin: 0.2em; }
+/* In the out-of-date notice, we use <br> elements to separate
+   translatable texts from automatically generated items. */
+#outdated br { display: none }
+
+/* the urgent div should be enabled when we have something urgent to
+appear on every page - these typically come from johns, peterb or rms
+at the fsf */
+
+#urgent{
+
+background-color:#ff3;
+line-height: 3em;
+font-size: 0.9em;
+text-align: center;
+border-bottom: 5px solid #333;
+ }
+
+#urgent a, #urgent a:visited{
+color: blue; text-decoration: underline !important;
+}
+
+#urgent a:hover{ background-color: red; }
+
+  #wrapper{
+  margin: 0;
+  background-color: transparent;
+  padding: 0em;
+  position: relative;
+  }
+
+a:hover{ color: red; }
+
+/* This specifies the basic width of our web pages.  Don't change it
+   without discussion on www-discuss.  The magic 74.92 is for
+   consistency with fsf.org.  */
+.inner { margin: auto; width: 99%; max-width:74.92em; }
+
+#logo{background:none;border:0;float: left;margin:0em;padding:0;}
+#logo:lang(ar) {background:none; float: right;}
+
+#logo a { display:block;text-decoration:none;overflow:hidden;border:0;margin:0;padding:0;padding-top:101px;height:0px !important;width:550px;cursor:pointer;}
+
+#fsf-logo{ position: absolute; top: 0; right: 25px; }
+
+#links{ display: none !important; }
+
+#links{ position: absolute; top: 5px; right: 1em; border-left: 1px
+ solid #333; padding-left: 1em;height: 90px; overflow: hidden; }
+
+#links ul{ padding-left: 1em; padding-top: 1em; }
+
+#links li { line-height: 1.6em; font-size: 0.9em; }
+
+#content { background-color: #fff;  padding-bottom: 1.8em;  margin-top: 0.5em; text-align: left; }
+
+#header { background-color: #fff; text-align: left; }
+
+#content .home { margin-bottom: 10px; }
+
+#content:lang(ar), #content:lang(fa), #searcher:lang(he) {text-align: right;}
+
+#navigation{ background-color: #bd0000; border-bottom: 5px solid #333; clear: both; }
+
+#navigation:after{ clear: both; content: ""; display: block; height: 0px; visibility: hidden; width: 0px; }
+
+#navigation ul{font-size: 0.8em; margin: 1.1em auto; padding-top: 1.1em }
+
+#navigation li{display: inline; }
+
+#navigation li a {color: white; text-decoration: none; font-weight: bold; padding: .9em;}
+
+#navigation li a:hover{ background-color: maroon; color: yellow;  }
+
+#joinfsftab a{color: yellow !important}
+
+#content h2 {
+ background-color: transparent; color: #520000; font-size: 2em;
+ margin-bottom: 0.3em; font-weight:bold; text-align: center; margin: 0; margin-bottom: 12px; }
+
+#content h3, #content h4, #content h5, #content h6 {line-height: 1.5em;}
+
+#content h3{ font-size: 1.6em; }
+
+#content h4{ font-size: 1.3em; }
+
+#content h5{ font-size: 1.1em; }
+
+#content h6{ font-size: 1em; }
+
+.caption{ color: #3465a4; font-size: 1.5em !important; margin:0; }
+
+.netscape4{
+  display: none !important;
+  height: 0;
+}
+
+#translations{ background-color: #fff; 
+ padding: 0; line-height: 1.6em; color: #000; }
+
+#translations h3, #translations h4{ font-size: 1em; font-weight: bold; margin-bottom: 0.5em; padding: 0; }
+
+#translations li { direction: ltr; display: inline-block;
+ padding-left: 0.25em; padding-right: 0.25em; }
+
+/* Highlight the link to the original page */
+#translations li:first-child { font-size: 1.1em; font-weight: bold; }
+#translations li:first-child a { color: #008 !important; }
+
+#translations  a{ color: blue !important; }
+
+#footer { background-color: #fff; border-top: 5px solid #444; padding:1em; color: #000; margin-top: 1em; }
+
+#footer a{ color: blue; }
+
+#footer p{ margin-bottom: 0.7em; }
+
+#footer, #translations { font-size: 0.9em; }
+
+.announcement{ font-size: 1.1em; font-weight: bold; padding-left: 1em; margin-left: 1em; border-left: 1em solid #eee; margin-bottom: 1em; }
+
+img{ border: 0; }
+
+#rms-image{
+width: 200px;
+height: 219px;
+float: right;
+margin-left: 1em; margin-bottom: 1em;
+border: 1px solid #ddd;
+background-image: none;
+}
+
+.lyrics{background-color: #eee; font-style: italic; width: 25em; padding: 2em; border: 2px solid #e5e5e5; margin-left: 2em;}
+
+  #gplv3-dogear{
+    position: absolute;
+    top: -1px;
+    left: -1px;
+ }
+
+  #gplv3-dogear h3{margin: 0;}
+
+  #gplv3-dogear a{
+    background-image: none;
+    border: 0;
+    display: block;
+    text-decoration: none;
+    overflow: hidden;
+    height: 0px !important;
+    width: 64px;
+    padding: 0;
+    padding-top: 64px;
+    cursor: pointer;
+
+ }
+
+.nocenter{ text-align: left; }
+
+#print-this-article p{ text-align: center; }
+
+#content ul, #fsf-campaigns ul{ list-style: square; margin-left: 1.4em; }
+
+#content ol{ list-style: decimal; margin-left: 1.9em; }
+
+#content li, #fsf-campaigns li, #content dd, #content p, #content pre, #content dt, #content code, #content address{
+   line-height: 1.3em; }
+
+address{ margin-bottom: 1em; }
+
+/* separate the "term" from subsequent "description" */
+dt { margin-bottom: 1em; }
+/* separate the "description" from subsequent list item
+   when the final <dd> child is an anonymous box */
+dd { margin-bottom: 2em; }
+/* separate anonymous box (used to be the first element in <dd>)
+   from subsequent <p> */
+dd p { margin-top: 1em; }
+
+#bottom-links{ background-color: #fff; font-size: 0.8em;}
+
+#bottom-links li{ display: inline; margin-right: 1em; line-height: 2em; }
+
+#backtotop{ padding-bottom: 1em; background-color: #fff; }
+
+#backtotop p{ text-align: right; }
+
+blockquote{ margin: 1em; font-style: italic; }
+
+#toplinks{font-size: 80%; padding: 4px; z-index: 999; top: 0; left: 0; }
+
+#toplinks a{ font-weight: bold; color: #888; } 
+
+#toplinks a:hover, #toplinks a:active{color: blue;}
+
+.center{ text-align:center; }
+
+.big{ font-size: 130%; padding-top: 0.7em; }
+
+.inline-list li { display: inline }
+
+#searcher{ float: right; margin-right: 1em; line-height: 3em; color: white; text-transform: uppercase; font-weight: bold; background-color: maroon; padding-left: 1em; padding-right: 1em;}
+
+#searcher:lang(ar), #searcher:lang(fa), #searcher:lang(he) {float: left;}
+
+#searcher, #searcher input{ font-size: 0.8em; }
+
+.highlight, .highlight-para{background-color: #ff6;}
+
+#takeactionhomepage{ 
+
+   background-color: #fdb144;
+   color: black; 
+   margin-bottom: 0.5em;
+   font-size: 90%;
+   padding: 1em;
+}
+
+#takeactionhomepage h1{text-align: center !important; border: 0 !important; color: black; font-size: 2em !important; padding-top: 0.2em;}
+
+#takeactionhomepage ul{list-style: none !important; text-align: center; margin: 0 !important; padding: 0 !important; }
+
+#takeactionhomepage li{line-height: 1.3em; list-style: none !important;}
+
+#fssbox {text-align: center; float: right; font-size: 80%;}
+#fssbox:lang(ar) {float: left;}
+
+#fssbox p{ margin-bottom: 0px;}
+
+#content h2 a{color: yellow !important;}
+
+acronym, abbr {border-bottom: 1px dotted #111;}
+
+.pad {margin-bottom: 1em;}
+
+.layout-table * { border: 0; }
+
+#fpnav ul{list-style: none; margin: 0 !important; padding: 0 !important;}
+
+#fpnav li{display: block; text-align: left; margin-right: 1em; font-size: 0.9em;}
+
+#fpnav li a{display: block; padding-top: 6px; padding-bottom: 6px;}
+
+#fpnav li a:hover{text-decoration: none; background-color: yellow;}
+
+.pad td{padding-left: 1em; padding-right: 1em;}
+
+.imgright{ float: right; margin: 12px; }
+
+.imgleft { float: left; margin: 12px; }
+
+.c { text-align: center; }
+
+.listing,
+.stx table {
+    /* The default table for document listings. Contains name, document types, modification times etc in a file-browser-like fashion */
+    border-collapse: collapse;
+    border-left: 1px solid #666666;
+    border-bottom: 1px solid #666666;
+    margin: 1em 0em 1em 0em;
+}
+.listing th,
+.stx table th {
+    background: #d40;
+    color: white;
+    font-weight: bold !important;
+    border-top: 1px solid #666666;
+    border-bottom: 1px solid #666666;
+    border-right: 1px solid #666666;
+    font-weight: normal;
+    padding: 1em;
+}
+
+.listing td a { display: block; }
+
+.listing .top {
+    border-top: 1px solid #666666;
+    text-align: right ! important;
+    padding: 0em 0em 1em 0em;
+}
+.listing .odd {
+    /*every second line should be shaded */
+    background-color: transparent;
+}
+.listing .even {
+    background-color: #ededed;
+}
+.listing .listingCheckbox {
+    text-align: center;
+}
+.listing td,
+.stx table td {
+    border-right: 1px solid #666666;
+    padding: 1em;
+    text-align: center;
+                line-height: 1.3em
+}
+.listing a:hover {
+    text-decoration: underline;
+}
+.listing img {
+    vertical-align: middle;
+}
+
+.listing { width: 100%; }
+
+#fsf-links { margin: 1em auto; border: 1px solid #ccc; padding: 5px; }
+
+#fsf-links li a{ color: #555; text-decoration: none; }
+
+#fsf-links ul li { 
+  list-style: none;
+  padding: 0.3em 0.7em;
+  font-weight: bold;
+  display: inline-block;
+}
+
+#fsf-links li{ font-size: 13px }
+
+#fsf-links li a:hover{ color: #0063DC; }
+
+#fsf-links ul { padding: 0; margin: 0; text-align: center; }
+
+.button { border: 3px solid #999;
+    border-left-color: #ccc;
+    border-top-color: #ccc;
+    font-weight: bold;
+    margin-bottom: 10px;
+    -moz-border-radius: 0.4em;
+    -khtml-border-radius: 0.4em;
+ }
+
+.button a{ display: block;  text-decoration: none; color: #333; padding: 0.25em;}
+
+.button a:hover{ color: red;}
+
+.large { font-size: 36px; background-color: #aacb50; }
+
+.small { font-size: 22px; background-color: #89b1bd; }
+
+.emph-box { background-color: #ececec; border: 0px solid #ccc; padding: 12px; }
+.emph-box:target { background-color: #ff8; }
+
+.emph-box p { font-size: 0.9em }
+
+.emph-box h4 { text-align: center; font-size: 28px !important; margin-bottom: 12px;}
+
+#windows7sins { width: 310px; text-align: center; float: right; margin: 12px; }
+
+.highlight-para { padding: 1em; }
+
+/* This is used in pages of lists, such as gnu-linux.faq.html,
+   to give readers a hint that they can link directly to a given item.
+   We make it less obtrusive than the item heading it follows.  */
+.anchor-reference-id { font-size: 70%; font-weight: normal; }
+
+/* emacs-page */
+/* Items specific to education */
+
+/* definitions for /education-specific navigation bar */
+ul#edu-navigation {
+  text-align: center;
+  /* the selected colors are the same as for h2 */
+  background-color: #3465a4;
+  color: white;
+  /* right and left extents should be the same as for h2;
+     the top separation is determined via h2 margin-bottom */
+  margin: 0;
+  margin-bottom: 1.7em;
+}
+
+#edu-navigation li {
+  display: inline;
+  list-style-type: none;
+}
+
+#edu-navigation li a {
+  /* font size and padding are set to make the navigation bar
+     remain a single line when window is 921 pixels or wider */
+  font-size: 12.8px;
+  padding: 0 10px;
+  display: inline-block;
+  background-color: #3465a4;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+#edu-navigation li a:hover, #edu-navigation li.active a {
+  background-color: #006;
+  color: yellow;
+}
+
+/* let edu-navigation bar approach closer to h2 */
+div#education-content h2 { margin-bottom: 1px; }
+
+/* breadcrumb for /education */
+p.edu-breadcrumb {
+  line-height: 150% !important;
+  padding-left: 10px;
+}
+
+/* styles for subsections of /education "Case Studies" */
+
+div.edu-cases {
+  border-top: 5px ridge #3465a4;
+  border-bottom: 5px ridge #3465a4;
+  margin-right: 4em;
+  margin-left: 4em;
+  margin-bottom: 1em;
+}
+
+/* make h3 for edu-cases look like h4 for other pages */
+div.edu-cases h3 {
+  font-size: 1.3em !important;
+  margin: 0;
+}
+
+div.edu-cases ul, div.edu-cases ol {
+  padding-left: 3em;
+  margin-right: 3em;
+}
+
+/* End items specific to education */
+
+/* GnuTLS tables */
+table.transparent {
+	border-width: 0px;
+	border-spacing: 2px;
+	border-style: none;
+	border-color: white;
+	border-collapse: separate;
+	background-color: white;
+}
+table.transparent th {
+	border-width: 0px;
+	padding: 1px;
+	border-style: inset;
+	border-color: gray;
+	background-color: white;
+	-moz-border-radius: ;
+}
+table.transparent td {
+	border-width: 0px;
+	padding: 1px;
+	border-style: inset;
+	border-color: gray;
+	background-color: white;
+	-moz-border-radius: ;
+}
+table.news-transparent {
+	border-width: 3px;
+	border-spacing: 5px;
+	border-style: none;
+	border-color: #ccbcbc;
+	border-collapse: separate;
+	background-color: transparent;
+}
+table.news-transparent th {
+	border-width: 0px;
+	padding: 1px;
+	border-style: inset;
+	border-color: gray;
+	background-color: transparent;
+	-moz-border-radius: ;
+}
+table.news-transparent td {
+	border-width: 1px;
+	padding: 3px;
+	border-style: solid;
+	border-color: #e0d7d7;
+	background-color: transparent;
+	-moz-border-radius: ;
+}
+table.news {
+	border-width: 0px;
+	border-spacing: 2px;
+	border-style: none;
+	border-color: white;
+	border-collapse: separate;
+	background-color: #e5e5e5;
+}
+table.news th {
+	border-width: 0px;
+        padding:10px 5px;
+	border-style: inset;
+	border-color: gray;
+	background-color: #ccbcbc;
+	-moz-border-radius: ;
+}
+table.news td {
+	border-width: 0px;
+        padding:10px 5px;
+	border-style: inset;
+	border-color: gray;
+	background-color: #e0d7d7;
+	-moz-border-radius: ;
+}

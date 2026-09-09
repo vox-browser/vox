@@ -1,0 +1,383 @@
+/* who cares */
+
+body {
+  color: black;
+  background-color: white;
+  font-family: verdana, helvetica, arial, sans-serif;
+  font-size: 84%;  /* Enables font size scaling in MSIE */
+  margin: 0;
+  padding: 0;
+}
+
+
+/* # Header # */
+.superHeader {
+  color: black;
+  background-color: white;
+  height: 1.6em;
+}
+
+.superHeader img {
+  vertical-align: bottom;
+}
+
+.superHeader a {
+  color: blue;
+  background-color: transparent;
+  text-decoration: none;
+  font-size: 91%;
+  margin: 0;
+  padding: 0 0.5ex 0 0.25ex;
+}
+.superHeader a:hover {
+  text-decoration: none;
+  color: purple;
+  background-color: white;
+}
+
+.superHeader div {
+  position: absolute;
+  top: 0.40ex;
+}
+
+.superHeader .left { left: 0.4em; }
+.superHeader .right { right: 0.4em; }
+
+.midHeader {
+  color: black;
+  background-color: white;
+  border: solid 0 white;
+  border-width: 1px 0 0;
+}
+
+.headerTitle {
+  color: black;
+  font-family: klavika, verdana, helvetica, arial, sans-serif;
+  font-size: 233%;
+  font-weight: normal;
+  margin: 0 0 0 4mm;
+  padding: 0.25ex 0;
+}
+#headerSubTitle {
+  font-size: 50%;
+  font-style: italic;
+  margin-left: 1em;
+}
+
+.headerTitle a {
+  color: blue;
+  text-decoration: none;
+}
+.headerTitle a:hover {
+  color: purple;
+  background-color: white;
+  text-decoration: none;
+}
+
+.subHeader {
+  display: none;
+  color: black;
+  background-color: white;
+  margin: 0;
+  padding: 1ex 1ex 1ex 1.5mm;
+}
+
+.subHeader a {
+  color: blue;
+  background-color: transparent;
+  text-decoration: none;
+  font-weight: bold;
+  margin: 0;
+  padding: 0 0.75ex 0 0.5ex;
+}  
+.subHeader a:hover {
+  color: purple;
+  background-color: white;
+  text-decoration: none;
+}
+
+.superHeader .highlight, .subHeader .highlight {
+  color: black;
+  background-color: transparent;
+}
+
+
+/* # Side # */
+#side-bar {
+  width: 16em;
+  float: left;
+  clear: left;
+  border-right: 1px solid white;
+}
+
+#side-bar div {
+  border-bottom: 1px solid white;
+}
+
+.sideBarTitle {
+  color: black;
+  font-weight: bold;
+  margin: 0 0 0.5em 2mm;
+  padding: 1em 0 0 0;
+}
+
+#side-bar ul {
+  list-style-type: none;
+  list-style-position: outside;
+  margin: 0;
+  padding: 0 0 0.3em 0;
+}
+
+li ul {
+  padding-left: 1.0em !important;
+}
+
+#side-bar li {
+  margin: 0;
+  padding: 0.1ex 0;  /* Circumvents a rendering bug (?) in MSIE 6.0  XXX should move to iehacks.css, this causes an ugly gap */
+}
+
+#side-bar a {
+  color: blue;
+  background-color: transparent;
+  text-decoration: none;
+  text-transform: none;
+  margin: 0;
+  padding: 0.35em 1ex 0.35em 2mm;
+  display: block;
+  font-weight: bold!important;
+  font-size: 104%;
+  border-left: black solid 0.2em;
+}
+
+.thisPage, .thisPage a {
+  color: black!important;
+  background-color: #D8DFEA;
+  padding-left: 5mm;
+}
+
+#side-bar a:hover {
+  color: purple;
+  background-color: white;
+  border-left: black solid 0.2em;
+  text-decoration: none;
+}
+
+.sideBarText {
+  line-height: 1.5em;
+  margin: 0 0 1em 0;
+  padding: 0 1.5ex 0 2.5mm;
+  display: block;
+}
+
+#side-bar .sideBarText a {
+  margin: 0;
+  padding: 0;
+  display: inline;
+}
+
+#side-bar .sideBarText a:hover {
+  color: purple;
+  background-color: transparent;
+  text-decoration: none;
+}
+
+.lighterBackground {
+  color: inherit;
+  background-color: white;
+}
+
+
+/* # Main Copy # */
+#main-copy {
+  max-width: 70em;
+  color: black;
+  background-color: transparent;
+  text-align: justify;
+  line-height: 1.5em;
+  margin: 0em 0 0 16em;
+  padding: 0.5mm 5mm 5mm 5mm;
+  border-left: 1px solid white;
+}
+
+#bodyText {
+  margin: 0 0 0 15.5em;
+  padding: 2mm 5mm 2mm 5mm;
+}
+
+#main-copy p {
+  margin: 1em 1ex 1em 1ex !important; /* Need !important so troff-generated pages don't look totally squezed */
+  padding: 0;
+}
+
+#main-copy a {
+  color: black;
+  background-color: transparent;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+#main-copy a:hover {
+  text-decoration: none;
+  color: purple;
+  background-color: white;
+}
+
+#main-copy h1, #main-copy h2 {
+  color: black;
+  background-color: transparent;
+  font-size: 145.5%;
+  font-weight: bold;
+  margin: 2em 0 0 0;
+  padding: 0.5ex 0 0.5ex 0.6ex;
+  border-bottom: 2px solid black;
+}
+
+#main-copy h2 {
+  font-size: 115.5%;
+  border-bottom: 1px solid black;
+}
+
+#main-copy .topOfPage {
+  color: black;
+  background-color: transparent;
+  font-size: 91%;
+  font-weight: bold;
+  text-decoration: none;
+  margin: 3ex 1ex 0 0;
+  padding: 0;
+  float: right;
+}
+
+dl {
+  margin: 1em 1ex 2em 1ex;
+  padding: 0;
+}
+
+dt {
+  font-weight: bold;
+  margin: 0 0 0 0;
+  padding: 0;
+}
+
+dd {
+  margin: 0 0 2em 2em;
+  padding: 0;
+}
+
+
+/* # Footer # */
+#footer {
+  color: black;
+  background: white;
+  font-size: 91%;
+  margin: 0;
+  padding: 1em 2.5mm .15em 2.5mm;
+  clear: both;
+  border: solid 0 white;
+  border-width: 1px 0 1px 0;
+}
+
+#footer .left {
+  text-align: left;
+  line-height: 1.45em;
+  float: left;
+  clear: left;
+}
+
+#footer .right {
+  text-align: right;
+  line-height: 1.45em;
+}
+
+#footer a {
+  color: blue;
+  background-color: transparent;
+  text-decoration: none;
+}
+
+#footer a:hover {
+  text-decoration: none;
+  color: purple;
+  background-color: white;
+}
+
+
+/* GENERAL */
+
+table {
+  background-color: none;
+  border: none;
+}
+th {
+  background-color: none;
+  border: none;
+   text-align: center;
+}
+td {
+  background-color: none;
+  border: none;
+}
+
+hr {
+  border-width: 0px 0px 0.1em 0px;
+  border-color: black;
+}
+
+acronym, .titleTip {
+  border-bottom: 1px solid black;
+  cursor: help;
+  margin: 0;
+  padding: 0 0 0.4px 0;
+}
+
+pre {
+  margin-left: 2em; 
+  font-size: 1.2em;
+}
+
+blockquote {
+  border-left: 1px solid black;
+  font-style: italic;
+}
+
+.smallCaps {
+  font-size: 110%;
+  font-variant: small-caps;
+}
+
+.doNotDisplay { display: none; }
+
+
+.notify_errors,
+.notify_notes,
+.notify_success { padding: .8em; margin-bottom: 1em; border: 2px solid black; }
+ 
+.notify_errors { background: #FBE3E4; color: #8a1f11; border-color: #FBC2C4; }
+.notify_notes { background: #FFF6BF; color: #514721; border-color: #FFD324; }
+.notify_success { background: #E6EFC2; color: #264409; border-color: #C6D880; }
+.notify_errors a { color: #8a1f11; }
+.notify_notes a { color: #514721; }
+.notify_success a { color: #264409; }
+
+
+/* # Page/Handler specific # */
+h1.dir-list-head, ul.dir-list {
+  text-transform: none;
+  font-weight: bold;
+}
+ul.sitemap-list a {
+}
+
+/* # Junk: should move elsewhere # */
+/* S-pam */
+.gpam { text-align: center; }
+.gpam table, .gpam th, .gpam td { border: none; }
+
+
+/* fixed-width fonts */
+pre, code, blockquote {
+	flex-basis: 100%;
+	white-space: pre-wrap;
+	font-family: Courier, 'Lucida Console','Courier New', Serif;
+}

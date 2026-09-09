@@ -1,0 +1,31 @@
+
+body {
+	background-color: rgb(95%,95%,100%);
+}
+
+body,td,p,div,a,li,ul,a:link,a:active,a:visited {
+	font-family: sans-serif;
+	color: black;
+}
+
+h1,h2,h3,h4 {
+	font-family: sans-serif;
+	color: rgb(0%,30%,70%);
+}
+
+ul {
+	line-height: 1.5em;
+}
+
+a:link {
+	color: rgb(0%,30%,80%);
+}
+
+a:active {
+	color: rgb(100%,0%,0%);
+}
+
+a:visited {
+	color: rgb(40%,0%,30%);
+}
+

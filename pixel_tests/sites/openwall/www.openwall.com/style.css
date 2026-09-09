@@ -1,0 +1,141 @@
+a {
+ text-decoration: none;
+}
+a:hover {
+ text-decoration: underline;
+ color: #C21800;
+}
+dl {
+ display: block;
+}
+dl dt, dl dt a:hover {
+ background: none no-repeat scroll 0 0 #C21800;
+ color: #000000;
+ display: block;
+ font-size: 12pt;
+ padding-left: 2px;
+}
+dl dt, dl dt a {
+ background: none no-repeat scroll 0 0 #1A1A1A;
+ color: #FFFFFF;
+ display: block;
+ font-size: 12pt;
+ padding-left: 2px;
+}
+dl dd, dl dd a {
+ background: none no-repeat scroll 0 0 #E0E0E0;
+ display: block;
+ font-size: 11pt;
+ line-height: 120%;
+ margin-left: 0;
+ padding: 4px 0 0 6px;
+}
+dl dd a:hover {
+ background: none no-repeat scroll 0 0 #F0F0F0;
+ display: block;
+ font-size: 11pt;
+ line-height: 120%;
+ margin-left: 0;
+ padding: 4px 0 0 6px;
+}
+.logo {
+ clear: both;
+ float: left;
+}
+h1 {
+ margin: 8px;
+ padding: 0;
+}
+.nav {
+ background-color: #FFFFFF;
+ float: left;
+ font-family: arial,sans-serif;
+ margin: 0 0 13px 18px;
+ position: relative;
+}
+.nav ul {
+ list-style-type: none;
+ margin: 0;
+ padding: 0;
+}
+.nav li {
+ float: left;
+ position: relative;
+ width: 130px;
+}
+.nav a, .nav a:visited {
+ background-color: #1A1A1A;
+ border-left: 1px solid #555555;
+ color: #FFFFFF;
+ display: block;
+ font-size: 13px;
+ line-height: 31px;
+ padding-left: 10px;
+ padding-top: 2px;
+ text-decoration: none;
+ width: 245px;
+}
+.nav ul ul {
+ height: 0;
+ left: 0;
+ position: absolute;
+ top: 31px;
+ visibility: hidden;
+ width: 245px;
+ z-index: 1;
+}
+.nav ul ul ul {
+ left: 245px;
+ top: -1px;
+ width: 245px;
+}
+.nav a:hover, .nav ul ul a:hover {
+ background: none repeat scroll 0 0 #C21800;
+ color: #000000;
+}
+.nav *:hover > a, .nav ul ul *:hover > a {
+ background-color: #444444;
+ color: #FFFFFF;
+}
+.nav *:hover > a, .nav ul ul *:hover > a.heading {
+ background-color: #C21800;
+ color: #000000;
+}
+.nav ul li:hover ul, .nav ul a:hover ul {
+ visibility: visible;
+}
+.nav ul *:hover ul ul {
+ visibility: hidden;
+}
+.nav ul *:hover ul *:hover ul {
+ visibility: visible;
+}
+.nav ul ul ul a, .nav ul ul ul a:visited {
+ background-color: #444444;
+}
+.nav ul ul ul a:hover {
+ background: none no-repeat scroll 0 0 #8F8F8F;
+}
+.nav ul ul ul {
+ left: 255px;
+ top: -1px;
+ width: 245px;
+}
+#last-li a {
+ width: 120px;
+}
+.nav ul li#last-li ul li a {
+ width: 245px;
+}
+#narrow-li-1 ul li a {
+ width: 120px;
+}
+#narrow-li-2 ul li a {
+ width: 120px;
+}
+div.news-item {
+ border: 1px dashed #737373;
+}
+div.news-item:hover {
+ border: 1px solid #737373;
+}

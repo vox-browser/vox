@@ -1,0 +1,270 @@
+@charset "utf-8";
+
+/* Variables for light & dark modes. */
+
+:root {
+	--nano-content-bg-color: #fff;
+	--nano-content-fg-color: #440077;
+	--nano-inverted-bg-color: #407;
+	--nano-inverted-fg-color: #fff;
+	--nano-a-color: #407;
+	--nano-a-visited-color: #51188E;
+	--nano-a-active-color: #F00;
+	--nano-a-inverted-color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+:root {
+	--nano-content-bg-color: #111;
+	--nano-content-fg-color: #cc88ff;
+	--nano-inverted-bg-color: #9200ff;
+	--nano-inverted-fg-color: #fff;
+	--nano-a-color: #c8f;
+	--nano-a-visited-color: #b7f;
+	--nano-a-active-color: #F00;
+	--nano-a-inverted-color: #fff;
+}
+}
+
+body {
+	color: var(--nano-content-fg-color);
+	background-color: var(--nano-content-bg-color);
+}
+.inverted {
+	color: var(--nano-inverted-fg-color);
+	background-color: var(--nano-inverted-bg-color);
+}
+
+a {
+	color: var(--nano-a-color);
+}
+a:visited {
+	color: var(--nano-a-visited-color);
+}
+a:active {
+	color: var(--nano-a-active-color);
+}
+
+#header {
+	margin-bottom: 1em;
+}
+
+#footer {
+	margin-top: 1em;
+}
+
+.inverted a {
+	color: var(--nano-a-inverted-color);
+}
+
+tt {
+	text-wrap-mode: nowrap;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+.onecolumn {
+	float: left;
+	width: 45%;
+	padding: 5%;
+}
+
+.width-60 {
+	width: 60%;
+}
+.width-80 {
+	width: 80%;
+}
+.width-100 {
+	width: 100%;
+}
+
+table {
+	border-spacing: 0px;
+	border-collapse: separate;
+	table-layout: fixed;
+}
+
+table#homepage {
+	padding-top: 2em;
+	padding-bottom: 2em;
+}
+
+table#top td,
+div#bottom .indented {
+	padding-left: 1ch;
+	padding-right: 1ch;
+}
+
+table#docs,
+table#download {
+	width: 80%;
+}
+
+div#news {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+div#news div.title {
+	flex-basis: 100%;
+	flex-grow: 1;
+	flex-shrink: 0;
+	margin-top: 2em;
+	text-align: center;
+}
+div#news div.details,
+div#news ul.details {
+	flex-basis: 100%;
+	flex-grow: 1;
+	flex-shrink: 0;
+	max-width: 570px;
+	margin-top: 1em;
+	margin-bottom: 0;
+	padding-right: 0.5em;
+}
+div#news div.details {
+	padding-left: 0.5em;
+}
+div#news ul.details {
+	padding-left: 1em;
+}
+
+div#history {}
+div#history div.title {
+	margin-left: 2em;
+	margin-top: 2em;
+}
+div#history ul.details {
+	display: inline-block;
+	margin-bottom: 0;
+	margin-left: 2em;
+	margin-top: 1em;
+	padding-left: 1em;
+}
+
+div.who {
+	display: flex;
+	flex-wrap: wrap;
+	white-space: nowrap;
+}
+span.who-1 {
+	flex-basis: 100%;
+	flex-grow: 1;
+	flex-shrink: 0;
+}
+span.who-2 {
+	flex-basis: 50%;
+	flex-grow: 1;
+	flex-shrink: 0;
+	max-width: 50%;
+}
+span.who-3 {
+	flex-basis: 33%;
+	flex-grow: 1;
+	flex-shrink: 0;
+	max-width: 33%;
+}
+span.who-5 {
+	flex-basis: 20%;
+	flex-grow: 1;
+	flex-shrink: 0;
+	max-width: 20%;
+}
+
+div#bottom {
+	display: flex;
+	flex-wrap: wrap;
+}
+div#bottom span.menuitem {
+	flex-basis: 25%;
+	flex-grow: 1;
+	flex-shrink: 0;
+	line-height: 1em;
+	white-space: nowrap;
+}
+
+#screenshots img {
+	max-width: 100%;
+}
+
+/* Mobile (i.e. phones) */
+@media only screen and (max-width: 768px) {
+body {
+	margin: 0px;
+}
+
+blockquote {
+	margin: 1em 0 1em 0;
+}
+
+table#top td,
+div#bottom .indented {
+	padding-left: 0.5ch;
+	padding-right: 0.5ch;
+}
+
+div#bottom span.menuitem {
+	font-size: large;
+	line-height: inherit;
+}
+
+table#docs,
+table#download {
+	width: 100%;
+}
+
+div#history div.title,
+div#history ul.details {
+	margin-left: 1em;
+}
+
+span.who-2,
+span.who-3,
+span.who-5 {
+	flex-basis: 33%;
+	max-width: inherit;
+	padding-left: 1em;
+}
+
+#screenshots ul {
+	padding-left: 0;
+}
+}
+
+@media only screen and (max-width: 600px) {
+span.who-2,
+span.who-3,
+span.who-5 {
+	flex-basis: 50%;
+}
+
+div#bottom span.menuitem {
+	flex-basis: 50%;
+	line-height: 1.5em;
+}
+
+div#history div.title,
+div#history ul.details {
+	margin-left: 0.5em;
+}
+}
+
+/* These breaks depend on the current font-size which is 16px by default. */
+@media only screen and (max-width: 600px) {
+table#homepage {
+	font-size: x-small;
+}
+}
+@media only screen and (max-width: 500px) {
+table#homepage {
+	font-size: xx-small;
+}
+}
+@media only screen and (max-width: 400px) {
+table#homepage {
+	font-size: 60%;
+}
+}

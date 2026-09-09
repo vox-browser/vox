@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<title>Apache Subversion</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="manifest" href="site.webmanifest">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="stylesheet" href="style/site.css" type="text/css" media="all">
+<meta name="theme-color" content="#98b0d4">
+</head>
+
+<body>
+<div id="site-banner">
+<div style="font-style: italic;" 
+     id="site-banner-apachelogo">
+  <a href="https://www.apache.org/"
+  ><img src="../apache.org/foundation/press/kit/asf_logo_wide.svg"
+        height="80"
+        alt="Apache Software Foundation" /></a>
+</div>
+<a href="index.html">
+  <img src="images/svn-name-banner.svg"
+       width="379" height="80"
+       alt="[S] Subversion"
+       id="site-banner-svnlogo" /></a>
+</div> <!-- #site-banner -->
+
+<div id="site-nav">
+    <label for="hamburger">&#9776;</label>
+    <input type="checkbox" id="hamburger"/>
+  <nav id="site-nav-menu">
+  <p>About Subversion
+    <ul>
+      <li><a href="https://subversion.apache.org/news.html">News</a></li>
+      <li><a href="https://subversion.apache.org/features.html">Features</a></li>
+      <li><a href="https://subversion.apache.org/docs/">Documentation</a></li>
+      <li><a href="https://subversion.apache.org/faq.html">FAQ</a></li>
+      <li><a href="https://subversion.apache.org/roadmap.html">Roadmap</a></li>
+      <li><a href="https://subversion.apache.org/security/">Security</a></li>
+      <li><a href="https://subversion.apache.org/quick-start.html">Quick Start</a></li>
+      <li><a href="https://subversion.apache.org/blog/">Blog</a></li>
+    </ul>
+  </p>
+  <p>Getting Subversion
+      <ul>
+      <li><a href="https://subversion.apache.org/packages.html">Binary Packages</a></li>
+      <li><a href="https://subversion.apache.org/download.cgi">Source Download</a></li>
+      <li><a href="https://subversion.apache.org/docs/release-notes/">Release Notes</a></li>
+    </ul>
+  </p>
+  <p>Community
+    <ul>
+      <li><a href="https://subversion.apache.org/mailing-lists.html">Mailing Lists</a></li>
+      <li><a href="https://subversion.apache.org/reporting-issues.html">Reporting Issues</a></li>
+      <li><a href="https://cwiki.apache.org/confluence/display/SVN/">Wiki</a></li>
+      <li><a href="https://subversion.apache.org/contributing.html">Getting Involved</a></li>
+      <li><a href="https://subversion.apache.org/source-code.html">Source Code</a></li>
+      <li><a class="linkaway"
+             href="https://apache.org/foundation/policies/conduct.html">Code of Conduct</a></li>
+    </ul>
+  </p>
+  <p>About the <acronym title="Apache Software Foundation">ASF</acronym>
+    <ul>
+      <li><a class="linkaway"
+             href="https://www.apache.org/licenses/">License</a></li>
+      <li><a class="linkaway"
+             href="https://www.apache.org/foundation/sponsorship.html">Donate</a></li>
+      <li><a class="linkaway"
+             href="https://www.apache.org/foundation/thanks.html">Thanks</a></li>
+    </ul>
+  </p>
+
+<p id="site-search">
+  <form action="https://www.google.com/search" method="get"
+        style="margin-top: 10px; margin-bottom: 10px; display: inline;">
+  <div style="display: inline;">
+    <input value="subversion.apache.org" name="sitesearch" type="hidden" />
+    <input name="q" id="query" type="text" placeholder="Search..."
+           style="width: 10em"
+           />
+    <input name="Search" value="Go" type="submit"/>
+  </div>
+  </form>
+</p> <!-- #site-search -->
+
+<p id="site-apachecon-block">
+  <p><a href="https://www.apache.org/events/current-event.html"
+    ><img src="../www.apache.org/events/current-event-125x125.png"
+          alt="ApacheCon"
+  /></a></p>
+</p> <!-- #site-apachecon-block -->
+
+<p id="site-svnbook-block">
+<p>Read the official Subversion
+   documentation <a href="https://svnbook.red-bean.com/" class="linkaway nopadding">online</a>!</p>
+<p><a href="https://svnbook.red-bean.com/"
+      ><img src="images/svnbook-cover.jpg"
+            alt="Version Control With Subversion"/></a></p>
+</p> <!-- #site-svnbook-block -->
+
+<p id="copyright">
+<p>Copyright &#169; 2026 <a href="https://www.apache.org/" class="nopadding">The Apache
+   Software Foundation</a>, Licensed under
+   the <a href="https://www.apache.org/licenses/LICENSE-2.0" class="nopadding">Apache
+   License, Version 2.0</a>.  Apache, Apache Subversion, and
+   the Apache logo are trademarks of The Apache Software
+   Foundation.  Subversion and the Apache Subversion logo are
+   registered trademarks of The Apache Software Foundation.</p>
+<p><a href="https://privacy.apache.org/policies/privacy-policy-public.html"
+   class="nopadding">Privacy policy</a></p>
+</p> <!-- #copyright -->
+</nav>
+</div> <!-- #site-nav -->
+
+<div id="site-content">
+<div id="site-notice">
+
+<!-- PUT SITE-WIDE NOTICES HERE AS NECESSARY -->
+
+</div> <!-- #site-notice -->
+
+
+<h1>Apache<span class="ss">&reg;</span> Subversion<span class="ss">&reg;</span></h1>
+<p style="text-align: center; font-weight: bold;
+          font-style: italic; margin-top: -2em; margin-bottom: 2em;"
+  >"Enterprise-class centralized version control for the masses"</p>
+
+<p>Welcome to <strong>subversion.apache.org</strong>, the online home
+   of the
+   Apache<span class="ss">&reg;</span> Subversion<span class="ss">&reg;</span>
+   software project.  Subversion is an open
+   source version control system.  Founded in 2000 by CollabNet, Inc., the
+   Subversion project and software have seen incredible success over
+   the past decade.  Subversion has enjoyed and continues to enjoy
+   widespread adoption in both the open source arena and the corporate
+   world.</p>
+
+<p>Subversion is developed as a project of the
+   <a href="https://www.apache.org/">Apache Software Foundation</a>, and as
+   such is part of a rich community of developers and users.  We're always
+   in need of individuals with a wide range of skills, and we invite you
+   to participate in the development of Apache Subversion.  Here's
+   <a href="https://subversion.apache.org/contributing.html">how to get started</a>.</p>
+
+<p>For helpful hints about how to get the most out of your visit to
+   this site, see the <a href="index.html#site-overview">About This Site</a>
+   section below.</p>
+
+
+<div class="h2" id="vision">
+<h2>Our Vision
+  <a class="sectionlink" href="index.html#vision"
+    title="Link to this section"></a>
+</h2>
+
+<p>Subversion exists to be universally recognized and adopted
+   as an open-source, centralized version control system characterized
+   by its reliability as a safe haven for valuable data; the
+   simplicity of its model and usage; and its ability to support the
+   needs of a wide variety of users and projects, from individuals to
+   large-scale enterprise operations.</p>
+
+</div> <!-- #vision -->
+
+
+<div class="h2" id="news">
+<h2>News
+  <a class="sectionlink" href="index.html#news"
+    title="Link to this section"></a>
+</h2>
+
+<!-- In general, we'll keep only the most recent 3 or 4 news items here. -->
+
+<div class="h3" id="news-20260720"> 
+<h3>2026-07-20 &mdash; Apache Subversion 1.15.0-rc3 Released
+ <a class="sectionlink" href="index.html#news-20260720"
+ title="Link to this section"></a> 
+</h3> 
+ 
+<p>We are pleased to announce the release of Apache Subversion 1.15.0-rc3. This
+ release is not intended for production use, but is provided as a milestone
+ to encourage wider testing and feedback from intrepid users and maintainers.
+ Please see the
+ <a href="https://lists.apache.org/thread/h9p7ofbcoky7z3khxzfxj4vw78yxkcly">release
+ announcement</a> for more information about this release, and the
+ <a href="https://subversion.apache.org/docs/release-notes/1.15.html">release notes</a> and 
+ <a href="https://svn.apache.org/repos/asf/subversion/tags/1.15.0-rc3/CHANGES"
+ >change log</a> for information about what will eventually be
+ in the 1.15.0 release.</p> 
+ 
+<p>To get this release from the nearest mirror, please visit our
+ <a href="https://subversion.apache.org/download.cgi#pre-releases">download page</a>.</p> 
+ 
+</div> <!-- #news-20260720 -->
+
+<div class="h3" id="news-20241208"> 
+<h3>2024-12-08 &mdash; Apache Subversion 1.14.5 Released
+ <a class="sectionlink" href="index.html#news-20241208"
+ title="Link to this section"></a> 
+</h3> 
+ 
+<p>We are pleased to announce the release of Apache Subversion 1.14.5.</p>
+<p>
+This release contains a fix for a security issue:
+ <a href="https://subversion.apache.org/security/CVE-2024-46901-advisory.txt">CVE-2024-46901</a>
+</p>
+<p>
+ This is the most complete Subversion release to date, and we encourage
+ users of Subversion to upgrade as soon as reasonable.
+ Please see the
+ <a href="https://lists.apache.org/thread/jz1j48zrpryw8600n0x7kssvyq90y1fs"
+ >release announcement</a> and the 
+ <a href="https://subversion.apache.org/docs/release-notes/1.14"
+ >release notes</a> for more information about this release.</p> 
+ 
+<p>To get this release from the nearest mirror, please visit our
+ <a href="https://subversion.apache.org/download.cgi#recommended-release">download page</a>.</p> 
+ 
+</div> <!-- #news-20241208 --> 
+
+<div class="h3" id="news-20241008"> 
+<h3>2024-10-08 &mdash; Apache Subversion 1.14.4 Released
+ <a class="sectionlink" href="index.html#news-20241008"
+ title="Link to this section"></a> 
+</h3> 
+ 
+<p>We are pleased to announce the release of Apache Subversion 1.14.4.</p>
+<p>
+This release contains a fix for a security issue:
+ <a href="https://subversion.apache.org/security/CVE-2024-45720-advisory.txt">CVE-2024-45720</a>
+</p>
+<p>
+ This is the most complete Subversion release to date, and we encourage
+ users of Subversion to upgrade as soon as reasonable.
+ Please see the
+ <a href="https://lists.apache.org/thread/glvmq598wv71thrd9vmbm0q5w6n3124w"
+ >release announcement</a> and the
+ <a href="https://subversion.apache.org/docs/release-notes/1.14"
+ >release notes</a> for more information about this release.</p> 
+ 
+<p>To get this release from the nearest mirror, please visit our
+ <a href="https://subversion.apache.org/download.cgi#recommended-release">download page</a>.</p> 
+ 
+</div> <!-- #news-20241008 --> 
+
+<p style="font-style: italic; text-align:
+   right;">[Click <a href="https://subversion.apache.org/news.html">here</a> to see all News
+   items.]</p>
+
+</div> <!-- #news -->
+
+
+<div class="h2" id="site-overview">
+<h2>About This Site
+  <a class="sectionlink" href="index.html#site-overview"
+    title="Link to this section"></a>
+</h2>
+
+<p>This website is the central source of information about Subversion
+   and the community which gives it life.  Here, you'll find resources
+   that are useful to existing and potential Subversion users and
+   developers alike.  Want to read about Subversion's features?  Need
+   to download the latest Subversion release?  Perhaps you've thought
+   of a great enhancement and you're wondering how to share the idea
+   with the developers?  This site will help you do all that.</p>
+
+<p>Who is this site <em>not</em> aimed at?  Well, there are many
+   third-party tools which exist as part of the greater Subversion
+   ecosystem, but aren't part of the core project itself.  Subversion
+   clients such as TortoiseSVN, or Subversion's integrations into
+   various IDE's such as Eclipse and NetBeans, or the pure Java
+   implementation of Subversion called SVNKit &mdash; these are all
+   valuable pieces of the Subversion story, but each is managed as its
+   own project outside of the core Subversion offering.  This site
+   really isn't so much about those projects.</p>
+
+<p>The sections below provide a high-level overview of how this
+   website is organized, making reference to
+   the <a href="index.html#site-nav-menu">navigation menu</a> you should find on
+   the left-hand side of each page of the website.</p>
+
+<div class="h3" id="site-overview-about">
+<h3>The "About Subversion" Section
+  <a class="sectionlink" href="index.html#site-overview-about"
+    title="Link to this section"></a>
+</h3>
+
+<p>The "About Subversion" section of the website is Information
+   Central.  You can read the latest Subversion
+   <a href="https://subversion.apache.org/news.html">News</a>, learn about Subversion's rich set
+   of <a href="https://subversion.apache.org/features.html">Features</a>, and consult various
+   sources of <a href="https://subversion.apache.org/docs/">Documentation</a> about Subversion and
+   the processes that govern that interactions of the Subversion
+   community.  There's a <a href="https://subversion.apache.org/faq.html">Frequently Asked
+   Questions (FAQ)</a> page, as well as some forward-looking material
+   in the form of a feature <a href="https://subversion.apache.org/roadmap.html">Roadmap</a>.</p>
+
+</div> <!-- #site-overview-about -->
+
+<div class="h3" id="site-overview-getting">
+<h3>The "Getting Subversion" Section
+  <a class="sectionlink" href="index.html#site-overview-getting"
+    title="Link to this section"></a>
+</h3>
+
+<p>Learning about Subversion is great, but the real fun is in applying
+   that knowledge.  The "Getting Subversion" section of the website is
+   all about making sure Subversion finds it way into your hands.
+   This community releases source code archives of the various
+   Subversion versions, which you can get via
+   the <a href="https://subversion.apache.org/source-code.html">Source Code</a> menu.  (That's also
+   a good place to look for instructions on checking out Subversion's
+   source code from the repository in which it lives.)  But if you'd
+   rather not deal with building Subversion yourself, there are a
+   number of places where you can get precompiled
+   <a href="https://subversion.apache.org/packages.html">Binary Packages</a> of Subversion, built
+   for various platforms.</p>
+
+</div> <!-- #site-overview-getting -->
+
+<div class="h3" id="site-overview-community">
+<h3>The "Community" Section
+  <a class="sectionlink" href="index.html#site-overview-community"
+    title="Link to this section"></a>
+</h3>
+
+<p>The other sections of the website are primarily about getting
+   &mdash; the "Community" section is where you interact and give.
+   Here, you'll learn about the <a href="https://subversion.apache.org/mailing-lists.html">Mailing
+   Lists</a> where Subversion-related discussions occur and about
+   the <a href="https://subversion.apache.org/reporting-issues.html">Issue Tracker</a> where bugs and
+   enhancement requests are reported.  We'll tell you about the
+   various ways you can be <a href="https://subversion.apache.org/contributing.html">Getting
+   Involved</a> with the project.</p>
+
+</div> <!-- #site-overview-community -->
+
+<div class="h3" id="site-overview-asf">
+<h3>The "About the ASF" Section
+  <a class="sectionlink" href="index.html#site-overview-asf"
+    title="Link to this section"></a>
+</h3>
+
+<!-- see https://www.apache.org/foundation/marks/pmcs -->
+<p>The rest of this site is about Subversion &mdash; but Subversion doesn't
+   operate in a vacuum.  It is part of the <a href="https://www.apache.org/"
+   >Apache Software Foundation (ASF)</a>, which &mdash; in addition to the
+   servers that run this site and our mailing lists &mdash; provides financial,
+   technical, and legal backing.  The "About the ASF" section contains links
+   that relate to the <a href="https://www.apache.org/foundation/"
+   >the Foundation</a> as a whole.  It lists our
+   <a href="https://www.apache.org/foundation/thanks.html">sponsors</a> and
+   allows you to <a href="https://www.apache.org/foundation/sponsorship.html"
+   >donate</a> if you wish.</p>
+
+</div> <!-- #site-overview-asf -->
+
+</div> <!-- #site-overview -->
+
+</div> <!-- #site-content -->
+</body>
+</html>

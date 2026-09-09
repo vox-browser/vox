@@ -1,0 +1,10 @@
+##BEGIN DH BIT##
+User-agent: *
+crawl-delay: 10
+
+##END DH BIT##
+
+User-agent: GPTBot
+Crawl-delay: 864
+
+Sitemap: https://beej.us/sitemap.xml

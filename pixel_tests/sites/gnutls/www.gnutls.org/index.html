@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="icon" type="image/png" href="graphics/gnutls-logo-icon.png">
+<meta name="DC.title" content="gnutls.org">
+<title>GnuTLS</title>
+<!-- start of banner.html -->
+<!-- start of head-include-2.html -->
+<link rel="stylesheet" href="css/combo.css" media="screen">
+<link rel="stylesheet" href="css/layout.css" media="screen">
+<link rel="stylesheet" href="css/mini.css" media="handheld">
+<link rel="stylesheet" href="css/print.css" media="print">
+<!-- end of head-include-2.html -->
+</head>
+<body>
+<!--<div id="null-wrapper"> -->
+<!-- begin of body-include-2 -->
+      <div id="header">
+        <div class="inner" style="position: relative;">
+<table width="100%" class="transparent" summary="">
+	<tr><td>
+		<a href="https://www.gnutls.org/gnutls-logo.html">
+		<img alt="Gnutls Logo" src="graphics/gnutls-logo.png" align="Left" border="0" width="94" height="86">
+		</a>
+	</td>
+	<td>
+		<h1>The GnuTLS Transport Layer Security Library</h1>
+	</td>
+	</tr>
+	</table>
+	</div>
+      </div>
+<div id="navigation">
+ <div class="inner">
+  <ul>
+   <li id="joinfsftab"><a href="https://www.gnutls.org/index.html">Overview</a></li>
+   <li id="tab"><a href="https://www.gnutls.org/news.html">News</a></li>
+<!-- <li id="tab"><a href="soc.html">Summer of code</a></li>
+ -->
+   <li id="tab"><a href="https://www.gnutls.org/download.html">Download</a></li>
+   <li id="tab"><a href="https://www.gnutls.org/support.html">Help/Bugs</a></li>
+   <li id="tab"><a href="https://gitlab.com/gnutls/gnutls/blob/master/README.md">Development (gitlab)</a></li>
+   <li id="tab"><a href="https://www.gnutls.org/documentation.html">Documentation</a></li>
+   <li id="tab"><a href="https://www.gnutls.org/security-new.html">Security advisories</a></li>
+   <li id="tab"><a href="https://www.gnutls.org/contrib.html">Authors</a></li>
+</ul>
+ </div><!-- /inner -->
+</div><!-- /navigation -->
+<div id="content" class="inner">
+<table class="transparent" border="0" cellspacing="1" width="100%" summary="">
+<tr><td>
+  <p>
+    Welcome to <i>GnuTLS</i> project pages
+  </p>
+<ul>
+  <li><a name="overview"><b>Overview</b></a>
+    <p> GnuTLS is a secure communications library implementing the <a href="https://datatracker.ietf.org/wg/tls/charter/">SSL, TLS and DTLS protocols</a>
+        and technologies around them. It provides a simple C language application programming interface (API)
+        to access the secure communications protocols as well as APIs to parse and
+        write X.509, PKCS #12, and other required structures.</p>
+        <p>The project strives to provide a secure communications back-end,
+        <a href="https://gnutls.org/manual/html_node/Simple-client-example-with-X_002e509-certificate-support.html#Simple-client-example-with-X_002e509-certificate-support">simple
+        to use</a> and integrated with the rest of the base Linux
+        libraries. A back-end designed to work and be secure out of the box,
+        keeping the complexity of TLS and PKI out of application code.
+        </p></li>
+  <li><a name="features"><b>Features</b></a>
+    <ul>
+      <li>Support for TLS 1.3, 1.2, 1.1, 1.0 protocols, and (optionally) SSL 3.0</li>
+      <li>Support for <a href="https://tools.ietf.org/html/rfc6347">DTLS 1.2</a>, and DTLS 1.0, protocols</li>
+      <li>Support for certificate path validation, as well as <a href="https://www.gnutls.org/manual/html_node/Verifying-a-certificate-using-DANE.html#Verifying-a-certificate-using-DANE">DANE</a> and <a href="https://www.gnutls.org/manual/html_node/Verifying-a-certificate-using-trust-on-first-use-authentication.html#Verifying-a-certificate-using-trust-on-first-use-authentication">trust on first use</a>.</li>
+      <li>Support for the <a href="https://www.gnutls.org/manual/html_node/OCSP-certificate-status-checking.html">Online Certificate Status Protocol (OCSP)</a>.</li>
+      <li>Support for public key methods, including RSA and Elliptic curves, as well as password and key authentication methods such as <a href="https://www.gnutls.org/manual/html_node/Authentication-using-SRP.html#Authentication-using-SRP">SRP</a> and <a href="https://www.gnutls.org/manual/html_node/Authentication-using-PSK.html#Authentication-using-PSK">PSK</a> protocols.</li>
+      <li>Support for all the strong encryption algorithms, including AES and Camellia.
+      <li>Support for CPU-assisted cryptography with VIA padlock and AES-NI instruction sets.
+      <li>Support for cryptographic accelerator drivers via <a href="http://www.cryptodev-linux.org/">/dev/crypto</a>.
+      <li>Supports natively <a href="https://www.gnutls.org/manual/html_node/Smart-cards-and-HSMs.html#Smart-cards-and-HSMs">HSMs and cryptographic tokens</a>, via PKCS #11 and the <a href="https://www.gnutls.org/manual/html_node/Trusted-Platform-Module.html#Trusted-Platform-Module">Trusted Platform Module (TPM)</a>.</li>
+      <li>Runs on most Unix platforms and Windows.</li>
+    </ul>
+  </li>
+  <li><a name="license"><b>License</b></a>
+    <p>The core library licensed under
+      the <a href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">GNU
+      Lesser General Public License version 2.1</a> (LGPLv2.1+). The
+      LGPL license is compatible with a wide range of free licenses,
+      and even permit you to use GnuTLS in non-free proprietary
+      programs. </p> </li>
+</ul>
+<ul>
+  <li><a name="documentation"><b>Documentation:</b></a>
+    <p>
+    You can obtain <a href="https://www.lulu.com/shop/nikos-mavrogiannopoulos-and-simon-josefsson/the-gnutls-manual/paperback/product-18963264.html">
+    GnuTLS' manual at lulu.com</a> or download
+    <a href="https://www.gnutls.org/documentation.html">any of the electronic formats</a>.
+    </p>
+</ul>
+  <p>
+  For more information on GnuTLS features, see the <a
+  href="https://en.wikipedia.org/wiki/Comparison_of_TLS_Implementations">
+  wikipedia article comparing different TLS implementations</a>.
+</p>
+</td>
+<td>
+<div class="emph-box">
+<div align="center">
+  News flashes &nbsp;
+<a href="https://twitter.com/GnuTLS" class="twitter-follow-button" data-show-count="false">Follow @GnuTLS</a>
+         
+<table class="news-transparent" width="95%" summary="">
+  <tr>
+<td><div class="emph-box" id="2026-04-29">2026-04-29</div></td>
+<td>
+<p>
+Released <a href="https://lists.gnutls.org/pipermail/gnutls-help/2026-April/004922.html">GnuTLS 3.8.13</a>,
+a bug-fix, security, and enhancement release on the 3.8.x branch.
+</p>
+<p>
+Added the security advisories: <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-1">GNUTLS-SA-2026-04-29-1</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-2">GNUTLS-SA-2026-04-29-2</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-3">GNUTLS-SA-2026-04-29-3</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-4">GNUTLS-SA-2026-04-29-4</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-5">GNUTLS-SA-2026-04-29-5</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-6">GNUTLS-SA-2026-04-29-6</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-7">GNUTLS-SA-2026-04-29-7</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-8">GNUTLS-SA-2026-04-29-8</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-9">GNUTLS-SA-2026-04-29-9</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-10">GNUTLS-SA-2026-04-29-10</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-11">GNUTLS-SA-2026-04-29-11</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-12">GNUTLS-SA-2026-04-29-12</a>, and <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-04-29-13">GNUTLS-SA-2026-04-29-13</a>.
+</p>
+</td>
+</tr>
+<tr>
+<td><div class="emph-box" id="2026-02-09">2026-02-09</div></td>
+<td>
+<p>
+Released <a href="https://lists.gnutls.org/pipermail/gnutls-help/2026-February/004914.html">GnuTLS 3.8.12</a>,
+a bug-fix, security, and enhancement release on the 3.8.x branch.
+</p>
+<p>
+Added the security advisories: <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-02-09-1">GNUTLS-SA-2026-02-09-1</a> and <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2026-02-09-2">GNUTLS-SA-2026-02-09-2</a>.
+</p>
+</td>
+</tr>
+<tr>
+<td><div class="emph-box" id="2025-11-18">2025-11-18</div></td>
+<td>
+<p>
+Released <a href="https://lists.gnupg.org/pipermail/gnutls-help/2025-November/004906.html">GnuTLS 3.8.11</a>
+a bug-fix, security, and enhancement release on the 3.8.x branch.
+</p>
+<p>
+Added the security advisories: <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2025-11-18">GNUTLS-SA-2025-11-18</a>.
+</p>
+</td>
+</tr>
+<tr>
+<td><div class="emph-box" id="2025-07-08">2025-07-08</div></td>
+<td>
+<p>
+Released <a href="https://lists.gnupg.org/pipermail/gnutls-help/2025-July/004883.html">GnuTLS 3.8.10</a>
+a bug-fix, security, and enhancement release on the 3.8.x branch.
+</p>
+<p>
+Added the security advisories: <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2025-07-08-1">GNUTLS-SA-2025-07-08-1</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2025-07-08-2">GNUTLS-SA-2025-07-08-2</a>, <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2025-07-08-3">GNUTLS-SA-2025-07-08-3</a>, and <a href="https://www.gnutls.org/security-new.html#GNUTLS-SA-2025-07-08-4">GNUTLS-SA-2025-07-08-4</a>.
+</p>
+</td>
+</tr>
+</table>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<!-- <p id="backtotop"><a href="#header">back to top</a></p>  -->
+</div>
+<!-- end server/footer-text.html -->
+<div id="footer">
+<table width="100%" class="transparent" summary="">
+<tr>
+<td>
+<p>
+Please send broken links and other corrections or suggestions to
+<a href="mailto:bugs@gnutls.org"><em>bugs@gnutls.org</em></a>.
+</p>
+<!--
+<p>
+Copyright © 2011-2015 Free Software Foundation, Inc.<br>
+Copyright © 2012-2017 Nikos Mavrogiannopoulos<br>
+Verbatim copying and distribution of this entire article are permitted worldwide, without royalty, in any medium, provided this notice, and the copyright notice, are preserved.<br>
+</p>
+-->
+</td>
+</tr>
+</table>
+</div>
+</body>
+</html>

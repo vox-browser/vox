@@ -1,0 +1,21 @@
+body {
+    font-family: sans-serif;
+    background: #888;
+    color: black;
+}
+
+#full-page {
+    max-width: 45em;
+    margin: 4ex auto 4ex auto;
+    background: #eee;
+    padding: 4ex 7% 6ex 7%;
+    border-radius: 3px;
+    box-shadow: 5px 5px 12px black;
+}
+
+pre {
+    line-height: 1em;
+}
+
+@media (max-width: 512px) {
+}

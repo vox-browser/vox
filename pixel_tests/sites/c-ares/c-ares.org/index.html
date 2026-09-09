@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>c-ares: a modern asynchronous DNS resolver | c-ares is a modern DNS (stub) resolver library, written in C. It provides interfaces for asynchronous queries while trying to abstract the intricacies of the underlying DNS protocol. It was originally intended for applications which need to perform DNS queries without blocking, or need to perform multiple DNS queries in parallel.</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="c-ares: a modern asynchronous DNS resolver" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="c-ares is a modern DNS (stub) resolver library, written in C. It provides interfaces for asynchronous queries while trying to abstract the intricacies of the underlying DNS protocol. It was originally intended for applications which need to perform DNS queries without blocking, or need to perform multiple DNS queries in parallel." />
+<meta property="og:description" content="c-ares is a modern DNS (stub) resolver library, written in C. It provides interfaces for asynchronous queries while trying to abstract the intricacies of the underlying DNS protocol. It was originally intended for applications which need to perform DNS queries without blocking, or need to perform multiple DNS queries in parallel." />
+<link rel="canonical" href="index.html" />
+<meta property="og:url" content="https://c-ares.org/" />
+<meta property="og:site_name" content="c-ares: a modern asynchronous DNS resolver" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="c-ares: a modern asynchronous DNS resolver" />
+
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://c-ares.org/feed.xml" title="c-ares: a modern asynchronous DNS resolver" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="index.html"><img height=45 alt="c-ares" src="assets/c-ares-logo.svg"></img></a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="https://c-ares.org/docs.html">Docs</a><a class="page-link" href="https://c-ares.org/features/">Features</a><a class="page-link" href="https://github.com/c-ares/c-ares"target="_blank" rel="noopener noreferrer">GitHub</a><a class="page-link" href="https://c-ares.org/license.html">License</a><a class="page-link" href="https://c-ares.org/mailarchive.html">Mail Archive</a><a class="page-link" href="https://c-ares.org/why.html">Why</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post">
+
+  <header class="post-header">
+    <h1 class="post-title"></h1>
+  </header>
+
+  <div class="post-content">
+    <ul>
+  <li><a href="index.html#download">Download</a></li>
+  <li><a href="index.html#features">Features</a>
+    <ul>
+      <li><a href="index.html#supported-rfcs-and-proposals">Supported RFCs and Proposals</a></li>
+    </ul>
+  </li>
+  <li><a href="index.html#communication">Communication</a>
+    <ul>
+      <li><a href="index.html#issues-and-feature-requests">Issues and Feature Requests</a></li>
+      <li><a href="index.html#discussions">Discussions</a></li>
+      <li><a href="index.html#security-vulnerabilities">Security Vulnerabilities</a></li>
+    </ul>
+  </li>
+  <li><a href="index.html#source-code">Source code</a></li>
+  <li><a href="index.html#who-is-c-ares">Who is c-ares?</a></li>
+</ul>
+
+<p><strong>c-ares</strong> is a modern DNS (stub) resolver library, written in C. It provides
+interfaces for asynchronous queries while trying to abstract the intricacies of
+the underlying DNS protocol.  It was originally intended for applications which
+need to perform DNS queries without blocking, or need to perform multiple DNS
+queries in parallel.</p>
+
+<p>One of the goals of c-ares is to be a better DNS resolver than is provided by
+your system, regardless of which system you use.  We recommend using
+the c-ares library in all network applications even if the initial goal of
+asynchronous resolution is not necessary to your application.</p>
+
+<p>c-ares will build with any C89 compiler and is <a href="https://c-ares.org/license.html">MIT licensed</a>,
+which makes it suitable for both free and commercial software. c-ares runs on
+Linux, FreeBSD, OpenBSD, MacOS, Solaris, AIX, Windows, Android, iOS and many
+more operating systems.</p>
+
+<p>c-ares has a strong focus on security, implementing safe parsers and data
+builders used throughout the code, thus avoiding many of the common pitfalls
+of other C libraries.  Through automated testing with our extensive testing
+framework, c-ares is constantly validated with a range of static and dynamic
+analyzers, as well as being constantly fuzzed by <a href="https://github.com/google/oss-fuzz" target="_blank">OSS Fuzz</a>.</p>
+
+<p>While c-ares has been around for over 20 years, it has been actively maintained
+both in regards to the latest DNS RFCs as well as updated to follow the latest
+best practices in regards to C coding standards.</p>
+
+<h2 id="download">Download</h2>
+
+<p><a href="https://github.com/c-ares/c-ares/releases/download/v1.34.8/c-ares-1.34.8.tar.gz">c-ares 1.34.8</a>
+(7-jul-2026)
+<a href="https://github.com/c-ares/c-ares/releases/download/v1.34.8/c-ares-1.34.8.tar.gz.asc">GPG</a>
+<a href="https://c-ares.org/changelog.html">Changelog</a></p>
+
+<p>You can also <a href="https://c-ares.org/download">download old packages</a></p>
+
+<h3 id="pgp--gpg-signatures">PGP / GPG Signatures</h3>
+
+<p>Valid PGP / GPG signing keys for packages are:</p>
+<ul>
+  <li>Daniel Stenberg &lt;daniel@haxx.se&gt; - <a href="https://keyserver.ubuntu.com/pks/lookup?op=get&amp;search=0x27edeaf22f3abceb50db9a125cc908fdb71e12c2">27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2</a></li>
+  <li>Brad House &lt;brad@brad-house.com&gt; - <a href="https://keyserver.ubuntu.com/pks/lookup?op=get&amp;search=0xda7d64e4c82c6294cb73a20e22e3d13b5411b7ca">DA7D64E4C82C6294CB73A20E22E3D13B5411B7CA</a></li>
+</ul>
+
+<h3 id="slsa-provenance">SLSA Provenance</h3>
+<p>This project generates <a href="https://slsa.dev/">SLSA</a> provenance for its releases!
+This enables you to verify the integrity of the downloaded artifacts and ensure
+that the release was generated from the intended repository.</p>
+
+<p>To verify the provenance of the release, please follow the instructions <a href="https://github.com/slsa-framework/slsa-github-generator#verify-provenance">here</a>.</p>
+
+<p>Example:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ curl -sO https://github.com/c-ares/c-ares/releases/download/v1.34.3/c-ares-1.34.3.intoto.jsonl
+$ curl -sO https://github.com/c-ares/c-ares/releases/download/v1.34.3/c-ares-1.34.3.tar.gz
+$ slsa-verifier verify-artifact c-ares-1.34.3.tar.gz \
+    --provenance-path c-ares-1.34.3.intoto.jsonl \
+    --source-uri github.com/c-ares/c-ares \
+    --source-tag v1.34.3
+Verified signature against tlog entry index 147812470 at URL: https://rekor.sigstore.dev/api/v1/log/entries/108e9186e8c5677a9bfd5bc5181d05ada688a805f9a59cfd082dec27cb6d6567f85b7382eea39dc5
+Verified build using builder "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@refs/tags/v2.0.0" at commit c29e75d54c3743783d51a609980495cf553b4bca
+Verifying artifact c-ares-1.34.3.tar.gz: PASSED
+
+PASSED: SLSA verification passed
+</code></pre></div></div>
+
+<h2 id="features">Features</h2>
+
+<p>See <a href="https://c-ares.org/features">Features</a></p>
+
+<h3 id="supported-rfcs-and-proposals">Supported RFCs and Proposals</h3>
+<ul>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc1035">RFC1035</a>.
+Initial/Base DNS RFC</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc2671">RFC2671</a>,
+<a href="https://datatracker.ietf.org/doc/html/rfc6891">RFC6891</a>.
+EDNS0 option (meta-RR)</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc3596">RFC3596</a>.
+IPv6 Address. <code class="language-plaintext highlighter-rouge">AAAA</code> Record.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc2782">RFC2782</a>.
+Server Selection. <code class="language-plaintext highlighter-rouge">SRV</code> Record.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc3403">RFC3403</a>.
+Naming Authority Pointer. <code class="language-plaintext highlighter-rouge">NAPTR</code> Record.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc6698">RFC6698</a>.
+DNS-Based Authentication of Named Entities (DANE) Transport Layer Security (TLS) Protocol.
+<code class="language-plaintext highlighter-rouge">TLSA</code> Record.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc9460">RFC9460</a>.
+General Purpose Service Binding, Service Binding type for use with HTTPS.
+<code class="language-plaintext highlighter-rouge">SVCB</code> and <code class="language-plaintext highlighter-rouge">HTTPS</code> Records.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc7553">RFC7553</a>.
+Uniform Resource Identifier. <code class="language-plaintext highlighter-rouge">URI</code> Record.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc6844">RFC6844</a>.
+Certification Authority Authorization. <code class="language-plaintext highlighter-rouge">CAA</code> Record.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc2535">RFC2535</a>,
+<a href="https://datatracker.ietf.org/doc/html/rfc2931">RFC2931</a>.
+<code class="language-plaintext highlighter-rouge">SIG0</code> Record. Only basic parser, not full implementation.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc4034">RFC4034</a>.
+Resource Records for the DNS Security Extensions (DNSSEC).
+<code class="language-plaintext highlighter-rouge">DS</code>, <code class="language-plaintext highlighter-rouge">DNSKEY</code>, <code class="language-plaintext highlighter-rouge">RRSIG</code>, and <code class="language-plaintext highlighter-rouge">NSEC</code> Records. Parsing and writing only; no
+DNSSEC validation is performed.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc5155">RFC5155</a>.
+DNS Security (DNSSEC) Hashed Authenticated Denial of Existence.
+<code class="language-plaintext highlighter-rouge">NSEC3</code> and <code class="language-plaintext highlighter-rouge">NSEC3PARAM</code> Records.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc4255">RFC4255</a>.
+Using DNS to Securely Publish Secure Shell (SSH) Key Fingerprints.
+<code class="language-plaintext highlighter-rouge">SSHFP</code> Record.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc7873">RFC7873</a>,
+<a href="https://datatracker.ietf.org/doc/html/rfc9018">RFC9018</a>.
+DNS Cookie off-path dns poisoning and amplification mitigation.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/draft-vixie-dnsext-dns0x20-00">draft-vixie-dnsext-dns0x20-00</a>.
+DNS 0x20 query name case randomization to prevent cache poisioning attacks.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc7686">RFC7686</a>.
+Reject queries for <code class="language-plaintext highlighter-rouge">.onion</code> domain names with <code class="language-plaintext highlighter-rouge">NXDOMAIN</code>.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc2606">RFC2606</a>,
+<a href="https://datatracker.ietf.org/doc/html/rfc6761">RFC6761</a>.
+Special case treatment for <code class="language-plaintext highlighter-rouge">localhost</code>/<code class="language-plaintext highlighter-rouge">.localhost</code>.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc2308">RFC2308</a>,
+<a href="https://datatracker.ietf.org/doc/html/rfc9520">RFC9520</a>.
+Negative Caching of DNS Resolution Failures.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc6724">RFC6724</a>.
+IPv6 address sorting as used by <code class="language-plaintext highlighter-rouge">ares_getaddrinfo()</code>.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc7413">RFC7413</a>.
+TCP FastOpen (TFO) for 0-RTT TCP Connection Resumption.</li>
+  <li><a href="https://datatracker.ietf.org/doc/html/rfc3986">RFC3986</a>.
+Uniform Resource Identifier (URI). Used for server configuration.</li>
+</ul>
+
+<h2 id="communication">Communication</h2>
+
+<h3 id="issues-and-feature-requests">Issues and Feature requests</h3>
+
+<p>Please report to our <a href="https://github.com/c-ares/c-ares/issues" target="_blank">GitHub Issues</a> page.</p>
+
+<h3 id="discussions">Discussions</h3>
+
+<p>Please use
+<a href="https://github.com/c-ares/c-ares/discussions/categories/q-a" target="_blank">GitHub Discussions</a>
+or the <a href="https://lists.haxx.se/mailman/listinfo/c-ares" target="_blank">Mailing List</a>.
+Mailing list archive <a href="https://lists.haxx.se/pipermail/c-ares/" target="_blank">here</a>.
+Please, do not mail volunteers privately about c-ares.</p>
+
+<h3 id="security-vulnerabilities">Security Vulnerabilities</h3>
+
+<p>Security Vulnerabilities reporting and disclosure are treated according to our
+<a href="https://c-ares.org/security.html">security policy and procedure</a>, please read that page if you
+plan on submitting a security vulnerability.</p>
+
+<p>Previous security vulnerabilities are listed <a href="https://c-ares.org/vulns.html">here</a>.</p>
+
+<h2 id="source-code">Source code</h2>
+
+<p>Browse the git repository on <a href="https://github.com/c-ares/c-ares" target="_blank">GitHub</a>.</p>
+
+<p>Check out from git like this:</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git clone https://github.com/c-ares/c-ares.git
+</code></pre></div></div>
+
+<h2 id="who-is-c-ares">Who is c-ares?</h2>
+
+<p>Contributions have been made by <a href="https://github.com/c-ares/c-ares/blob/master/AUTHORS" target="_blank">these friendly people</a>.</p>
+
+<p>c-ares is being used by:</p>
+<ul>
+  <li><a href="https://curl.haxx.se/libcurl/" target="_blank">libcurl</a></li>
+  <li><a href="https://www.wireshark.org/" target="_blank">Wireshark</a></li>
+  <li><a href="https://nodejs.org/" target="_blank">NodeJS</a></li>
+  <li><a href="https://www.unrealircd.com/" target="_blank">UnrealIRCd</a></li>
+  <li><a href="http://www.bzflag.org/" target="_blank">BZFlag</a></li>
+  <li><a href="http://xymon.sourceforge.net/" target="_blank">Xymon</a></li>
+  <li><a href="http://www.25thandclement.com/~william/projects/libevnet.html" target="_blank">libevnet</a></li>
+  <li><a href="http://glite.web.cern.ch/glite/" target="_blank">gLite</a></li>
+  <li><a href="https://aria2.github.io/" target="_blank">aria2</a></li>
+  <li><a href="http://sipsak.org/" target="_blank">sipsak</a></li>
+  <li><a href="http://secondlife.com/" target="_blank">Second Life</a></li>
+  <li><a href="https://arrow.apache.org/" target="_blank">Apache Arrow</a></li>
+  <li><a href="https://github.com/fractal-programming" target="_blank">Fractal Programming</a>
+… and more</li>
+</ul>
+
+<p>Please let us know if you use it!</p>
+
+
+  </div>
+
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+  <div class="wrapper">
+    <div style="text-align: center;"><ul class="social-media-list"><li><a href="https://github.com/c-ares"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">c-ares</span></a></li></ul>
+&copy; 2024 the c-ares project and its contributors
+    </div>
+  </div>
+
+</footer>
+</body>
+
+</html>

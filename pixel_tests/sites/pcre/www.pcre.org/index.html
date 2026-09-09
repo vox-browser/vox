@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "DTD/xhtml11-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title>PCRE - Perl Compatible Regular Expressions</title>
+  <meta name="title" content="PCRE - Perl Compatible Regular Expressions" />
+  <meta name="description" content="The PCRE library is a set of functions that implement regular expression pattern matching using the same syntax and semantics as Perl 5. PCRE has its own native API as well as a set of wrapper functions that correspond to the POSIX regular expression API." />
+  <meta name="keywords" content="pcre, regex, regexp, regular expression, perl, perlre, philip hazel" />
+  <link rel="shortcut icon" href="favicon.ico" />
+  <link rel="stylesheet" href="style.css">
+ </head>
+ <body>
+
+  <h1>PCRE - Perl Compatible Regular Expressions</h1>
+
+  <p>The PCRE library is a set of functions that implement regular
+   expression pattern matching using the same syntax and semantics as
+   Perl&nbsp;5. PCRE has its own native API, as well as a set of
+   wrapper functions that correspond to the POSIX regular expression
+   API. The PCRE library is free, even for building proprietary
+   software.</p>
+
+  <p>PCRE was originally written for the
+   <a href="https://www.exim.org/">Exim MTA</a>,
+   but is now used by many high-profile open source projects, including
+   <a href="https://httpd.apache.org/">Apache</a>,
+   <a href="http://www.php.net/">PHP</a>,
+   <a href="https://www.kde.org/">KDE</a>,
+   <a href="http://www.postfix.org/">Postfix</a>, and
+   <a href="https://nmap.org/">Nmap</a>.
+   PCRE has also found its way into some well known commercial products, like
+   <a href="https://www.apple.com/safari/">Apple Safari</a>, and is widely used in <a href="https://www.dotcom-monitor.com/">website monitoring</a> and <a href="https://www.loadview-testing.com/learn/load-testing/">load testing</a> tools for its ability to perform complex pattern matching in HTTP responses and validate content structure.
+   <br><br>Some other interesting projects using PCRE include
+   <a href="http://www.hypermail-project.org/">Hypermail</a>,
+   <a href="https://leafnode.sourceforge.io/">Leafnode</a>,
+   <a href="https://www.wenlin.com/">Wenlin</a>, and
+   <a href="https://8th-dev.com/">8th</a>.</p>
+
+
+  <h2>Versions</h2>
+
+  <p>There are two major versions of the PCRE library. The current
+   version, PCRE2,
+   <a href="https://lists.exim.org/lurker/message/20150105.162835.0666407a.en.html">released in 2015,</a>
+   is now at version <b>10.47</b>.</p>
+
+  <p>The older, but still widely deployed PCRE library, originally
+   released in 1997, is at version <b>8.45</b>. This version of PCRE is
+    now at end of life, and is no longer being actively maintained. Version
+    8.45 is expected to be the final release of the older PCRE library,
+    and new projects should use PCRE2 instead. However, it's still found in various legacy systems and some platforms, including certain services that continue to use the original PCRE for compatibility reasons.</p>
+
+
+  <h2>Download</h2>
+
+  <p>You can download the current release of the PCRE2 library on <a href="https://github.com/PCRE2Project/pcre2">GitHub</a>:</p>
+
+  <ul>
+   <li><b><a href="https://github.com/PCRE2Project/pcre2/releases">https://github.com/PCRE2Project/pcre2/releases</a></b></li>
+  </ul>
+
+  <p>You can also download the older, unmaintained PCRE library from
+   an <i>unofficial</i> mirror at
+   <a href="https://sourceforge.net/projects/pcre/files/">SourceForge</a>:</p>
+
+  <ul>
+   <li><a href="https://sourceforge.net/projects/pcre/files/">https://sourceforge.net/projects/pcre/files/</a></li>
+  </ul>
+
+  <p>You can check out the PCRE2 source code via Git:</p>
+
+  <blockquote><code>git clone https://github.com/PCRE2Project/pcre2.git</code></blockquote>
+
+  <p>Note that the former <tt>ftp.pcre.org</tt> FTP site is no longer
+    available, and that PCRE2 releases will no longer be kept up to date
+    on SourceForge. Any scripts that download PCRE source code should use
+    HTTPS or Git from GitHub.</p>
+
+  <h3>Contributed Ports</h3>
+
+  <p>If you just need the command-line PCRE or PCRE2 tools on Windows,
+   precompiled binary versions are available at this
+   <a href="http://www.rexegg.com/pcregrep-pcretest.html">Rexegg page</a>.</p>
+
+  <p>A PCRE2 port for z/OS, a mainframe operating system which uses
+   EBCDIC as its default character encoding, can be found at
+   <a href="http://www.cbttape.org/">http://www.cbttape.org/</a>
+   <a href="http://www.cbttape.org/ftp/cbt/CBT939.zip">(File 939)</a>.</p>
+   
+   <p>PCRE is also still commonly found in environments where resource constraints or legacy compatibility are priorities. For example, some services continue to support the original PCRE version, offering it alongside popular web servers like <a href="https://nginx.org/">Nginx</a>, as well as some <a href="https://webhostingbuddy.com/best/non-profit-web-hosting/">nonprofit web hosting</a> platforms, and database systems like <a href="https://www.mysql.com/">MySQL</a> as part of a lightweight solution for users requiring basic regex functionality in shared hosting setups.</p>
+
+
+
+
+  <h2>Documentation</h2>
+
+  <p>You can read
+   <a href="https://www.pcre.org/current/doc/html/">PCRE2 HTML documentation</a>, or the
+   <a href="https://www.pcre.org/pcre2.txt">text version of the PCRE2 man pages</a>.
+   For Perl&nbsp;5 regular expression syntax, read the
+   <a href="http://perldoc.perl.org/perlre.html">Perl
+    regular expressions man page</a>.</p>
+
+  <p>The distribution itself also contains a
+   <a href="https://www.pcre.org/readme.txt">README</a> and the BSD
+   <a href="https://www.pcre.org/licence.txt">LICENCE</a>.
+   If you are upgrading, read the
+   <a href="https://www.pcre.org/news.txt">NEWS</a> and <a href="https://www.pcre.org/changelog.txt">ChangeLog</a>
+   files.</p>
+
+  <p>You can also browse the
+   <a href="https://www.pcre.org/original/doc/html/">older PCRE HTML documentation</a>,
+   <a href="https://www.pcre.org/original/pcre.txt">text version of the older PCRE man pages</a>,
+   and the <a href="https://www.pcre.org/original/readme.txt">original README</a> or
+   and the <a href="https://www.pcre.org/original/changelog.txt">original ChangeLog</a> files.</p>
+
+  <p>Details on PCRE, and, in particular, comparisons to Perl's regular
+   expression semantics, can also be found in the community authored
+   <a href="https://en.wikipedia.org/wiki/PCRE">Wikipedia entry on PCRE</a>.</p>
+
+  <p>There is a curated summary of changes with each PCRE release,
+   copies of documentation from older releases, and other useful
+   information from the third party authored
+   <a href="http://www.rexegg.com/pcre-documentation.html">RexEgg
+   PCRE Documentation and Change Log page</a>.</p>
+
+  <h2>Contact</h2>
+
+  <p>To report a problem with the PCRE2 library, or to make a feature
+   request, please visit the
+   <a href="https://github.com/PCRE2Project/pcre2/issues">PCRE GitHub issues
+   tracker.</a> Note that bugs in the legacy PCRE release are unlikely to
+   be looked at or fixed; and please don't use the SourceForge bug tracking
+   system, as it is not normally monitored.</p>
+
+  <p>There is a mailing list for active PCRE developers at
+   <a href="mailto:pcre2-dev@googlegroups.com">pcre2-dev@googlegroups.com</a>,
+   and you can
+   <a href="https://groups.google.com/g/pcre2-dev">browse the list archives</a>.
+   For a limited time you may also be able to browse the
+   <a href="https://lists.exim.org/lurker/list/pcre-dev.html">archives of the
+   historical pcre-dev@exim.org list</a> as well.</p>
+
+  <p>The PCRE library was written by Philip Hazel.</p>
+
+  <p>Please note that neither this website nor the SourceForge
+   download repositories are maintained by Philip. Please report
+   website or SourceForge PCRE project problems to
+   <a href="mailto:webmaster@pcre.org">webmaster@pcre.org</a>.</p>
+
+
+  <br /><hr noshade="noshade" size="1" />
+  <p style="padding-top: 0px; margin-top: 0px"><i><a
+   href="mailto:webmaster@pcre.org">webmaster@pcre.org</a></i></p>
+
+ </body>
+</html>

@@ -1,0 +1,24 @@
+@font-face {
+  font-family: 'PT Sans';
+  font-style: italic;
+  font-weight: 400;
+  src: url(../fonts.gstatic.com/s/ptsans/v18/jizYRExUiTo99u79D0e0x8mN.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'PT Sans';
+  font-style: italic;
+  font-weight: 700;
+  src: url(../fonts.gstatic.com/s/ptsans/v18/jizdRExUiTo99u79D0e8fOydLxUY.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'PT Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url(../fonts.gstatic.com/s/ptsans/v18/jizaRExUiTo99u79D0KEwA.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'PT Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: url(../fonts.gstatic.com/s/ptsans/v18/jizfRExUiTo99u79B_mh0O6tKA.ttf) format('truetype');
+}

@@ -1,0 +1,240 @@
+html {
+  font-family: sans-serif;
+  margin: 1em auto;
+  max-width: 45em;
+  background-color: #F3EEC3;
+  color: #1D194E;
+}
+
+p {
+  line-height: 1.4em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #2F2A3D;
+}
+
+h1 {
+  text-align: center;
+}
+
+h2 {
+  margin-top: 1em;
+  margin-bottom: 0.3em;
+}
+
+.round-box h2 {
+  border-bottom: none;
+}
+
+sup {
+  line-height: 0;
+}
+
+img {
+  vertical-align: middle;
+}
+
+table {
+  margin-bottom: 20px;
+}
+
+th {
+  text-align: left;
+}
+
+th,
+td {
+  vertical-align: baseline;
+}
+
+table,
+th,
+td {
+  border: 1px solid #1E1E24;
+}
+
+tr.even td {
+  background-color: #ddc;
+}
+
+.no-border {
+  border: none;
+}
+
+table.no-border th,
+table.no-border td {
+  border: none;
+}
+
+table.full-width {
+  width: 100%;
+}
+
+.front-page-group table {
+  width: 100%;
+}
+
+h1#logo {
+  font-family: serif;
+  font-style: italic;
+  font-size: 6em;
+  margin-top: 0.3em;
+  margin-bottom: 0.3em;
+}
+
+a:link {
+  color: #1D194E;
+}
+
+a:visited {
+  color: #551a8b;
+}
+
+a.offsite:link {
+  text-decoration: none;
+  border-bottom: 1px dashed #588B8B;
+}
+
+a.offsite:visited {
+  text-decoration: none;
+  border-bottom: 1px dashed #551a8b;
+}
+
+.blog-posts li {
+  margin-left: -2rem;
+}
+
+.blog-posts ul {
+  list-style-type: none;
+}
+
+.blog-posts .more {
+  color: grey;
+  margin-left: 0.5rem;
+}
+
+.date {
+  color: grey;
+  font-size: 80%;
+}
+
+.center {
+  text-align: center;
+}
+
+.sidenote {
+  text-align: right;
+}
+
+.blue-box {
+  background-color: #87CAD1;
+}
+
+.gray-box {
+  background-color: #B9C1B4;
+}
+
+.green-box {
+  background-color: #87D68D;
+}
+
+.orange-box {
+  background-color: #F7A072;
+}
+
+.red-box {
+  background-color: pink;
+}
+
+.round-box {
+  border-radius: 15px;
+  padding: 3px 20px 3px 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.menu {
+  align-items: center;
+  columns: 2;
+  line-height: 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu a {
+  margin: 0;
+  padding: 0;
+  text-decoration: none;
+}
+
+.menu li {
+  border-bottom: 5px solid transparent;
+  font-weight: bold;
+  font-size: 1.4rem;
+  margin: 0;
+  padding: 0;
+}
+
+.menu li.active {
+  border-bottom: 5px solid #38BEC9;
+  color: #38BEC9;
+  width: max-content;
+}
+
+@media (min-width: 600px) {
+  .menu {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .menu li {
+    display: inline-block;
+  }
+}
+
+/* Syntax highlighting: */
+
+code.colorize span.default {
+  color: black;
+}
+
+code.colorize span.symbol {
+  color: blue;
+}
+
+code.colorize span.string {
+  color: green;
+}
+
+code.colorize span.character {
+  color: green;
+}
+
+code.colorize span.comment {
+  color: gray;
+}
+
+/* Monochromatic Color gradient from <https://www.colorhexa.com/ff0000> */
+code.colorize span.paren1 {
+  color: #b30000;
+}
+code.colorize span.paren2 {
+  color: #cc0000;
+}
+code.colorize span.paren3 {
+  color: #e60000;
+}
+code.colorize span.paren4 {
+  color: #ff0000;
+}
+code.colorize span.paren5 {
+  color: #ff1a1a;
+}
+code.colorize span.paren6 {
+  color: #ff3333;
+}
+code.colorize span.paren7 {
+  color: #ff4d4d;
+}

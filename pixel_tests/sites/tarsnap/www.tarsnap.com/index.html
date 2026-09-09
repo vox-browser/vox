@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en-GB-oxendict">
+<head>
+<title>Tarsnap - Encrypted, deduplicated command-line backup for Linux, BSD, and macOS</title>
+<link rel="stylesheet" type="text/css" title="Default style" href="tarsnap.min.css">
+<link rel="canonical" href="index.html">
+<link rel="icon" href="images/favicon-64.png" sizes="64x64" type="image/png">
+<link rel="icon" href="images/favicon-128.png" sizes="128x128" type="image/png">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="description" content="Tarsnap is a command-line backup tool for UNIX with client-side encryption and block-level deduplication. Pay per byte stored, no monthly minimums. Runs on Linux, BSD, and macOS.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--[if lt IE 9]>
+  
+<![endif]-->
+</head>
+<body>
+<header>
+<h1><a href="index.html"><img src="images/header.png" alt="Tarsnap - Online backups for the truly paranoid"></a></h1>
+<a href="index.html#nav" style="display: none">Navigation menu</a>
+</header>
+<div class="nonbanner">
+<main>
+<div class="twocol">
+  <div class="column expand-vertical">
+    <section>
+      <h3 class="doc">Online backups for the truly paranoid</h3>
+      <div class="boxcontents no-justify">
+	<p>
+	  Tarsnap is a secure and efficient command-line online backup service
+	  for Linux, FreeBSD, NetBSD, OpenBSD, macOS, and other UNIX-like
+	  operating systems:
+	</p>
+	<ul class="compact-list">
+	  <li>
+	    <strong class="main">Encryption</strong>: your data can only be
+	    accessed with your personal keys.
+	    <aside class="narrow">
+	      We can't access your data even if we wanted to!
+	    </aside>
+	  </li><li>
+	    <strong class="main">Source code</strong>: the client code is
+	    available.
+	    <aside class="narrow">
+	      You don't need to trust us; you can check the encryption
+	      yourself!
+	    </aside>
+	  </li><li>
+	    <strong class="main">Deduplication</strong>: only the unique data
+	    between your current files and encrypted archives is uploaded.
+	    <aside class="narrow">
+	      This reduces the bandwidth and storage required, saving you
+	      money!
+	    </aside>
+	  </li>
+	</ul>
+
+	<p>
+	  Cygwin and the Windows Subsystem for Linux are also supported.
+	</p>
+	<div class="center">
+	  <div class="button">
+	    <a class="register-button" href="https://www.tarsnap.com/gettingstarted.html">
+	      Start using Tarsnap now!</a>
+	  </div>
+	</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="column expand-vertical">
+    <section>
+      <h3 class="doc">Tarsnap pricing</h3>
+      <div class="boxcontents no-justify">
+	<p>
+	  Tarsnap uses a prepaid model based on actual usage:
+	</p>
+	<table class="pricing">
+	  <tr>
+	    <th>Storage:</th>
+	    <td>
+	      250 picodollars / byte-month of
+	      <span class="nowrap">encoded data</span>
+	      <br>($0.25 / GB-month)
+	    </td>
+	  </tr>
+	  <tr>
+	    <th>Bandwidth:</th>
+	    <td>
+	      250 picodollars / byte of
+	      <span class="nowrap">encoded data</span>
+	      <br>($0.25 / GB)
+	    </td>
+	  </tr>
+	</table>
+	<aside class="narrow">
+	  "Encoded data" are the actual bytes stored or transmitted after data
+	  deduplication, compression, and encryption.
+	</aside>
+	<p>
+	  There are no other fees &mdash; Tarsnap has no fixed costs or
+	  minimum monthly fees.
+	</p>
+	<aside class="narrow">
+	  You pay for what you use, nothing more.
+	</aside>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="onecol">
+  <section>
+    <h3 class="doc">Why use Tarsnap?</h3>
+    <div class="boxcontents no-justify">
+      <div class="contain-float">
+	<img src="images/tarsnap-overview.svg" class="image-overview"
+	 title="Dataflow chart of a typical backup with Tarsnap"
+	 alt  ="Dataflow chart of a typical backup with Tarsnap"
+	 onerror="this.onerror=null;
+		  this.src='images/tarsnap-overview.png';
+		  this.style.width='531px';
+		  this.style.height='480px';">
+	<p>
+	  Consider a typical backup scenario:
+	</p>
+	<ul class="compact-list column-min-width">
+	  <li>
+	    Alice begins a backup, which takes a complete snapshot of her
+	    files.
+	    <aside class="narrow">
+	      She does not need to decide whether to do a "full backup" or
+	      "incremental backup".
+	      <a href="https://www.tarsnap.com/flexibility.html">[Why?]</a>
+	    </aside>
+	  </li>
+	  <li>
+	    Tarsnap automatically finds the unique data within her files.
+	    <aside class="narrow">
+	      Only this data is uploaded and stored.
+	      <a href="https://www.tarsnap.com/efficiency.html">[How?]</a>
+	    </aside>
+	  </li>
+	  <li>
+	    Alice pays less than $5/month.
+	    <aside class="narrow">
+	      Even though she has thousands of daily backups, adding up to
+	      several terabytes of non-unique data.
+	      <a href="https://www.tarsnap.com/utility.html">[Why?]</a>
+	    </aside>
+	  </li>
+	  <li>
+	    Alice's data is secure.
+	    <aside class="narrow">
+	      Even if an attacker (Mallory) breaks into Tarsnap's storage, he
+	      lacks her private keys and thus cannot read or modify her
+	      data.
+	      <a href="https://www.tarsnap.com/security.html">[Why?]</a>
+	    </aside>
+	  </li>
+	</ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="onecol">
+  <section>
+    <h3>Latest Tarsnap release</h3>
+    <div class="boxcontents">
+      <h4>Tarsnap 1.0.41 (March 21, 2025)</h4>
+      <p>
+	Changes in this version compared to 1.0.40:
+      </p>
+      <ul>
+	<li>
+	  <code>tarsnap</code> now has mitigations to defend against
+	  information leakage via chunking: Chunks are padded using the PADME
+	  scheme, and small-alphabet cycles are prohibited in chunking to
+	  block a chosen-plaintext attack.  For more details on the attack,
+	  see <a href="https://www.daemonology.net/blog/2025-03-21-Chunking-attacks-on-Tarsnap.html">the author's blog post</a>
+	  and the paper <a href="https://eprint.iacr.org/2025/532">Chunking Attacks on File Backup Services using Content-Defined Chunking</a>
+	  which is available on the Cryptology ePrint Archive.
+	</li><li>
+	  <code>tarsnap -c</code> now accepts <code>--dry-run-metadata</code>,
+	  which simulates creating an archive without reading any file data.
+	  This is significantly faster than a regular <code>--dry-run</code>,
+	  and is suitable for checking which filesystem entries will be
+	  archived (with <code>-v</code>) or checking the total archive size
+	  (with <code>--totals</code> or <code>--progress-bytes</code>).
+	</li><li>
+	  <code>tarsnap</code> now accepts <code>--noatime</code> with
+	  <code>-c</code> mode, which requests that the operating system does
+	  not update atime when reading files or directories.  Not supported by
+	  all operating systems or filesystems.
+	</li><li>
+	  If the server-side state was modified and <code>tarsnap</code> exits
+	  with an error, it will now have an exit code of 2.
+	</li><li>
+	  <code>tarsnap</code> will read a config file in
+	  <code>$XDG_CONFIG_HOME/tarsnap/tarsnap.conf</code>; or
+	  <code>~/.config/tarsnap/tarsnap.conf</code> if
+	  <code>$XDG_CONFIG_HOME</code> is not set.  The previous config file
+	  <code>~/.tarsnaprc</code> is still supported, and will not be
+	  deprecated.
+	</li><li>
+	  <code>tarsnap</code> now accepts <code>--null-input</code> as a
+	  synonym for <code>--null</code>.  For compatibility reasons,
+	  <code>--null</code> is still supported, and will not be deprecated.
+	</li><li>
+	  <code>tarsnap</code> now accepts <code>--null-output</code>, which
+	  causes <code>--list-archives</code> to separate each archive name
+	  with a null character (like <code>`find -print0`</code>).  If one or
+	  more <code>-v</code> arguments are specified, multiple null
+	  characters are used to separate fields; see the man page for details.
+	</li><li>
+	  <code>tarsnap</code> now accepts <code>--null-output</code> with
+	  <code>-x</code> and <code>-t</code>, which causes them to separate
+	  each filename with a null character.  If there are multiple fields on
+	  a line, null characters are used instead of spaces; see the man page
+	  for details.
+	</li><li>
+	  <code>tarsnap</code> now accepts <code>--null-output</code> with
+	  <code>--print-stats</code>, which causes it to separate fields and
+	  lines with null character(s); see the man page for details.
+	</li><li>
+	  <code>tarsnap</code> now accepts <code>--hashes</code>, which causes
+	  <code>--list-archives</code> to print hashes of archive names.  If
+	  one or more <code>-v</code> arguments are specified, it will print
+	  other metadata (as per <code>--list-archives</code>).  This option is
+	  intended for the GUI and is not needed for command-line usage.
+	</li><li>
+	  <code>tarsnap</code> now accepts <code>-f TAPEHASH</code> with
+	  <code>--list-archives --hashes</code>, which prints metadata about
+	  the specified archive(s).  Multiple <code>-f</code> options may be
+	  specified.  This option is intended for the GUI and is not needed for
+	  command-line usage.
+	</li><li>
+	  Fixed a problem with strict aliasing if somebody compiled with gcc11
+	  or higher using <code>-O3</code>, does not have SSE2, and is using a
+	  passphrase-protected keyfile.
+	</li>
+      </ul>
+      <p>
+	As usual, there are also lots of minor build fixes, harmless bug
+	fixes, and code cleanups.
+      </p>
+      <p>
+	You can see all of the changes between 1.0.40 and this version in our
+	<a href="https://github.com/Tarsnap/tarsnap">
+	  tarsnap git repository</a>.
+      </p>
+      <div class="center">
+	<div class="button">
+	  <a class="register-button" href="https://www.tarsnap.com/download.html">
+	    Download Tarsnap now!</a>
+	</div>
+      </div>
+    </div>
+  </section>
+</div>
+</main>
+<div class="leftmargin">
+<nav id="nav">
+<ul><li><a class="current" href="https://www.tarsnap.com/index.html">Tarsnap</a>
+<ul><li><a href="https://www.tarsnap.com/news.html">News</a></li>
+<li><a href="https://www.tarsnap.com/about.html">About</a></li>
+<li><a href="https://www.tarsnap.com/testimonials.html">Testimonials</a></li>
+<li><a href="https://www.tarsnap.com/legal.html">Legal</a>
+</li><li><a href="https://www.tarsnap.com/infrastructure.html">Infrastructure</a></li>
+<li><a href="https://www.tarsnap.com/bugbounty.html">Bug Bounty</a>
+</li></ul></li><li><a href="https://www.tarsnap.com/design.html">Design</a>
+</li><li><a href="https://www.tarsnap.com/download.html">Download</a>
+</li><li><a href="https://www.tarsnap.com/documentation.html">Documentation</a>
+</li><li><a href="https://www.tarsnap.com/technical.html">Technical details</a>
+</li><li><a href="https://www.tarsnap.com/open-source.html">Open Source</a>
+</li><li><a href="https://www.tarsnap.com/support.html">Support</a>
+</li><li><a href="https://www.tarsnap.com/account.html">Accounts</a>
+</li></ul></nav>
+</div>
+</div>
+</body></html>

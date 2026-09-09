@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>bzip2 : Home</title>
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+ <meta http-equiv="Content-Style-Type" content="text/css"/>
+ <link rel="stylesheet" type="text/css" href="css/bzip.css">
+ <link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
+ <link rel="icon" href="favicon.ico" type="image/x-icon" />
+ <meta name="description" content="Official Home Page for bzip2, the high-quality, open-source data compressor. The current stable version is bzip2 1.0.8.">
+ <meta name="keywords" content="bzip2, libbzip2, data compression software, compressor, lossless data compression, burrows-wheeler transform, portable, high-quality block-sorting file compressor">
+</head>
+
+<!-- dont we all just wish IE && Netscape 4.x to /dev/null -->
+<body topmargin="0" leftmargin="0" marginwidth="0" marginheight="0" 
+      bgcolor="#fefefe" text="#202020" 
+      link="#336699" alink="#336699" vlink="#336699">
+
+<table width="100%" cellspacing="0" cellpadding="8" border="0">
+ <tr>
+  <td width="15%">
+ <img src="images/bzip2-logo.png" width="244" height="96" alt="bzip2" title="bzip2" border="0" align="left" />
+  </td>
+  <td align="center" valign="middle">
+    <b>[ &lt;Home&gt; | <a href="https://sourceware.org/bzip2/docs.html">Documentation</a> | <a href="https://sourceware.org/bzip2/downloads.html">Downloads</a> ]</b>
+  </td>
+ </tr>
+ <tr>    <!-- start page contents -->
+  <td colspan="2" valign="top" width="100%">
+<h1>bzip2 and libbzip2</h1>
+
+The current stable version is bzip2 1.0.8.
+
+<h2>What is bzip2?</h2>
+
+<p>bzip2 is a freely available, patent free (see below),
+high-quality data compressor. It typically compresses files to
+within 10% to 15% of the best available techniques (the PPM
+family of statistical compressors), whilst being around twice as
+fast at compression and six times faster at decompression.</p>
+
+<p>The current version can be found on the
+<a href="https://sourceware.org/bzip2/downloads.html">Downloads</a> page.</p>
+
+<p>Please reports bugs in <a href="https://sourceware.org/bugzilla/buglist.cgi?product=bzip2">Bugzilla</a> or on the <a href="https://sourceware.org/ml/bzip2-devel/">bzip2-devel</a> mailinglist.</p>
+
+<p>To subscribe to the bzip2 development list send email to
+<a href="mailto:bzip2-devel-subscribe@sourceware.org">bzip2-devel-subscribe@sourceware.org</a>. You do not have to be subscribed to sent messages to the list.
+</p>
+
+<h2>Why would I want to use it?</h2>
+
+<ul>
+
+  <li>Because it compresses well.  So it packs more stuff into
+  your overfull disk drives, distribution CDs, 
+  backup tapes, USB sticks, etc.  And/or it reduces your
+  customer download times, long distance network
+  traffic, etc.
+  It's not the world's fastest compressor, but it's still fast
+  enough to be very useful.</li>
+
+  <li>Because it's open-source (BSD-style license), and, as far
+  as I know, patent-free.  (To the best of my knowledge. I can't
+  afford to do a full patent search, so I can't guarantee
+  this. Caveat emptor). So you can use it for whatever you
+  like. Naturally, the source code is part of the
+  distribution.</li>
+
+  <li>Because it supports (limited) recovery from media
+  errors. If you are trying to restore compressed data from a
+  backup tape or disk, and that data contains some errors, bzip2
+  may still be able to decompress those parts of the file which
+  are undamaged.</li>
+
+  <li>Because you already know how to use it. bzip2's command
+  line flags are similar to those of GNU Gzip, so if you know how
+  to use gzip, you know how to use bzip2.</li>
+
+  <li>Because it's very portable. It should run on any 32 or
+  64-bit machine with an ANSI C compiler. The distribution should
+  compile unmodified on Unix and Win32 systems.  Earlier versions
+  have been ported with little difficulty to a large number of
+  weird and wonderful systems.</li>
+
+</ul>
+
+
+<p>The code is organised as a library with a programming
+interface.  The bzip2 program itself is a client of the library.
+You can use the library in your own programs, to directly read
+and write .bz2 files, or even just to compress data in memory
+using the bzip2 algorithms.</p>
+
+  </td>    <!-- end page contents -->
+ </tr>
+ <tr>
+  <td colspan="2" align="center">
+    <div class="hr_blue"><hr/></div>
+     <div>Copyright &copy; 1996 - 2019&nbsp;&nbsp;<a href="mailto:jseward@acm.org">jseward@acm.org</a></div>
+  </td>
+ </tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,322 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>
+libffi
+</title>
+<link rel="stylesheet" type="text/css" href="style.css"></head>
+
+
+<body>
+
+<h1>libffi</h1>
+A Portable Foreign Function Interface Library
+<hr>
+
+<b>libffi-3.4.5</b> was released on February 15, 2024. You can download it from github
+here: <a href="https://github.com/libffi/libffi/releases/download/v3.4.5/libffi-3.4.5.tar.gz">https://github.com/libffi/libffi/releases/download/v3.4.5/libffi-3.4.5.tar.gz</a>.
+
+<p>
+
+libffi is Free Software.  It has a very <a href="http://github.com/libffi/libffi/blob/master/LICENSE">liberal
+license</a>.
+
+</p><h2>What is libffi?</h2>
+
+Compilers for high level languages generate code that follows certain
+conventions. These conventions are necessary, in part, for separate
+compilation to work. One such convention is the "calling
+convention". The "calling convention" is a set of assumptions made by
+the compiler about where function arguments will be found on entry to
+a function. A "calling convention" also specifies where the return
+value for a function is found.
+
+<p>
+
+Some programs may not know at the time of compilation what arguments
+are to be passed to a function. For instance, an interpreter may be
+told at run-time about the number and types of arguments used to call
+a given function. Libffi can be used in such programs to provide a
+bridge from the interpreter program to compiled code.
+
+</p><p>
+
+The libffi library provides a portable, high level programming
+interface to various calling conventions. This allows a programmer to
+call any function specified by a call interface description at
+run-time.
+
+</p><p>
+
+FFI stands for Foreign Function Interface. A foreign function
+interface is the popular name for the interface that allows code
+written in one language to call code written in another language. The
+libffi library really only provides the lowest, machine dependent
+layer of a fully featured foreign function interface. A layer must
+exist above libffi that handles type conversions for values passed
+between the two languages.
+
+</p><h2>Who uses it?</h2>
+
+The libffi library is useful to anyone trying to build a bridge
+between interpreted and natively compiled code.  Some notable users
+include:
+<ul>
+<li><b><a href="http://python.org/">CPython</a></b> - the default,
+  most-widely used implementation of the <b>Python</b> programming language
+  uses libffi in
+  the standard <a href="http://docs.python.org/library/ctypes.html">ctypes</a>
+  library.</li>
+<li><b><a href="http://openjdk.org/">OpenJDK</a></b> - the open-source
+  implementation of the <b>Java</b> Platform Standard Edition uses libffi to
+  bridge between the interpreter and native code
+  for <a href="http://today.java.net/pub/a/today/2009/05/21/zero-and-shark-openjdk-port.html">some
+  platforms</a>.</li>
+<li><b><a href="https://wiki.mozilla.org/JSctypes">js-ctypes</a></b>
+    - a foreign function interface for <b>javascript</b> that Mozilla will be
+    shipping in <a href="https://developer.mozilla.org/en/Firefox_3.6_for_developers">Firefox 3.6</a>.</li>
+<li><b><a href="http://developer.android.com/guide/basics/what-is-android.html">Dalvik</a></b>
+    - Dalvik is the virtual machine which runs the Java platform
+    on <b>Android</b> mobile devices.  libffi is used on Android ports
+    for which no custom bridging code has been written.</li>
+<li><b><a href="https://jna.dev.java.net/">Java Native Access (JNA)</a></b>
+    - the JNI-free way to call native code from <b>Java</b>.</li>
+<li><b><a href="http://wiki.github.com/ffi/ffi">Ruby-FFI</a></b>
+    - a Foreign Function Interface extension for <b>Ruby</b>.</li>
+<li><b><a href="http://repo.or.cz/w/fsbv.git">fsbv</a></b> - Foreign
+  Structure By Value is a foreign function interface library for
+  <b>Common Lisp</b> that extends the standard CFFI package to include
+  support for passing structure arguments by value.</li>
+<li><b><a href="http://github.com/parmanoir/jscocoa">JSCocoa</a></b> - call
+  Objective-C code from <b>javascript</b> on Mac OSX and the iPhone
+  (via the <a href="http://github.com/parmanoir/libffi-iphone">libffi-iphone</a> port).  
+</li><li><b><a href="http://pyobjc.sourceforge.net/">PyObjC</a></b> - call
+  Objective-C code from <b>Python</b> on Mac OSX.  
+</li><li><b><a href="http://rubycocoa.sourceforge.net/">RubyCocoa</a></b> - call
+  Objective-C code from <b>Ruby</b> on Mac OSX.
+</li><li><b><a href="https://www.haskell.org/ghc/">The Glasgow Haskell Compiler</a></b> - call C
+  code from this popular <b>Haskell</b> implementation.
+</li><li><b><a href="https://racket-lang.org/">Racket</a></b> - call C
+  code from this popular <b>Scheme</b> implementation.
+</li><li><b><a href="http://gcc.gnu.org/">gcj</a></b> - the runtime library
+  for the GNU Compiler for the Java Programming Language uses libffi
+  to handle calls back and forth between interpreted and natively
+  compiled code.  gcj is part of the <b>GCC</b>, the GNU Compiler Collection.
+</li></ul>
+
+<h2>Supported Platforms</h2>
+
+Libffi has been ported to many different platforms.  For specific
+configuration details and testing status, please refer to the README
+file.
+
+At the time of release, the following basic configurations have been
+tested:
+
+</p><center>
+<table border="1" cellpadding="4">
+<thead>
+<tr>
+<th>Architecture</th><th>Operating System</th>
+</tr>
+</thead>
+<tbody>
+<tr><td> AArch64 (ARM64) </td><td> iOS              </td></tr>
+<tr><td> AArch64         </td><td> Linux            </td></tr>
+<tr><td> AArch64         </td><td> Windows          </td></tr>
+<tr><td> Alpha           </td><td> Linux            </td></tr>
+<tr><td> Alpha           </td><td> Tru64            </td></tr>
+<tr><td> ARC             </td><td> Linux            </td></tr>
+<tr><td> ARM             </td><td> Linux            </td></tr>
+<tr><td> ARM             </td><td> iOS              </td></tr>
+<tr><td> ARM             </td><td> Windows          </td></tr>
+<tr><td> AVR32           </td><td> Linux            </td></tr>
+<tr><td> Blackfin        </td><td> uClinux          </td></tr>
+<tr><td> CSKY            </td><td> Linux            </td></tr>
+<tr><td> HPPA            </td><td> HPUX             </td></tr>
+<tr><td> IA-64           </td><td> Linux            </td></tr>
+<tr><td> KVX             </td><td> Linux            </td></tr>
+<tr><td> LoongArch64     </td><td> Linux            </td></tr>
+<tr><td> M68K            </td><td> FreeMiNT         </td></tr>
+<tr><td> M68K            </td><td> Linux            </td></tr>
+<tr><td> M68K            </td><td> RTEMS            </td></tr>
+<tr><td> M88K            </td><td> OpenBSD/mvme88k  </td></tr>
+<tr><td> Meta            </td><td> Linux            </td></tr>
+<tr><td> MicroBlaze      </td><td> Linux            </td></tr>
+<tr><td> MIPS            </td><td> IRIX             </td></tr>
+<tr><td> MIPS            </td><td> Linux            </td></tr>
+<tr><td> MIPS            </td><td> RTEMS            </td></tr>
+<tr><td> MIPS64          </td><td> Linux            </td></tr>
+<tr><td> Moxie           </td><td> Bare metal       </td></tr>
+<tr><td> Nios II         </td><td> Linux            </td></tr>
+<tr><td> OpenRISC        </td><td> Linux            </td></tr>
+<tr><td> PowerPC 32-bit  </td><td> AIX              </td></tr>
+<tr><td> PowerPC 64-bit  </td><td> AIX              </td></tr>
+<tr><td> PowerPC         </td><td> AMIGA            </td></tr>
+<tr><td> PowerPC         </td><td> Linux            </td></tr>
+<tr><td> PowerPC         </td><td> Mac OSX          </td></tr>
+<tr><td> PowerPC         </td><td> FreeBSD          </td></tr>
+<tr><td> PowerPC 64-bit  </td><td> FreeBSD          </td></tr>
+<tr><td> PowerPC 64-bit  </td><td> Linux ELFv1      </td></tr>
+<tr><td> PowerPC 64-bit  </td><td> Linux ELFv2      </td></tr>
+<tr><td> RISC-V 32-bit   </td><td> Linux            </td></tr>
+<tr><td> RISC-V 64-bit   </td><td> Linux            </td></tr>
+<tr><td> S390            </td><td> Linux            </td></tr>
+<tr><td> S390X           </td><td> Linux            </td></tr>
+<tr><td> SPARC           </td><td> Linux            </td></tr>
+<tr><td> SPARC           </td><td> Solaris          </td></tr>
+<tr><td> SPARC           </td><td> Solaris          </td></tr>
+<tr><td> SPARC64         </td><td> Linux            </td></tr>
+<tr><td> SPARC64         </td><td> FreeBSD          </td></tr>
+<tr><td> SPARC64         </td><td> Solaris          </td></tr>
+<tr><td> TILE-Gx/TILEPro </td><td> Linux            </td></tr>
+<tr><td> VAX             </td><td> OpenBSD/vax      </td></tr>
+<tr><td> X86             </td><td> FreeBSD          </td></tr>
+<tr><td> X86             </td><td> GNU HURD         </td></tr>
+<tr><td> X86             </td><td> Interix          </td></tr>
+<tr><td> X86             </td><td> kFreeBSD         </td></tr>
+<tr><td> X86             </td><td> Linux            </td></tr>
+<tr><td> X86             </td><td> Mac OSX          </td></tr>
+<tr><td> X86             </td><td> OpenBSD          </td></tr>
+<tr><td> X86             </td><td> OS/2             </td></tr>
+<tr><td> X86             </td><td> Solaris          </td></tr>
+<tr><td> X86             </td><td> Solaris          </td></tr>
+<tr><td> X86             </td><td> Windows/Cygwin   </td></tr>
+<tr><td> X86             </td><td> Windows/MingW    </td></tr>
+<tr><td> X86-64          </td><td> FreeBSD          </td></tr>
+<tr><td> X86-64          </td><td> Linux            </td></tr>
+<tr><td> X86-64          </td><td> Linux/x32        </td></tr>
+<tr><td> X86-64          </td><td> OpenBSD          </td></tr>
+<tr><td> X86-64          </td><td> Solaris          </td></tr>
+<tr><td> X86-64          </td><td> Windows/Cygwin   </td></tr>
+<tr><td> X86-64          </td><td> Windows/MingW    </td></tr>
+<tr><td> X86-64          </td><td> Mac OSX          </td></tr>
+<tr><td> Xtensa          </td><td> Linux            </td></tr>
+</tbody>
+</table>
+</center>
+<p>
+Please send additional platform test results to
+<a href="mailto:libffi-discuss@sourceware.org">libffi-discuss@sourceware.org</a>
+and feel free to update the wiki page above.
+
+</p><h2>How to get it</h2>
+
+You can download the latest version from github
+here: <a href="https://github.com/libffi/libffi/releases/download/v3.4.5/libffi-3.4.5.tar.gz">https://github.com/libffi/libffi/releases/download/v3.4.5/libffi-3.4.5.tar.gz</a>.
+
+<p>
+
+You can also check out the very latest version from the development
+git repository at <a href="http://github.com/libffi/libffi">http://github.com/libffi/libffi</a>.
+Here's how:
+</p><pre>  git clone git://github.com/libffi/libffi.git
+</pre>
+
+You can also <a href="http://github.com/libffi/libffi">
+browse the sources</a> at <a href="http://github.com/libffi/libffi">http://github.com/libffi/libffi</a>.
+
+<h2>Mailing lists</h2>
+
+For such a small piece of software, there are plenty of mailing lists
+available.
+
+<ul>
+<li><a href="http://sourceware.org/mailman/listinfo/libffi-announce/"><tt>libffi-announce</tt></a> is a 
+    low volume mailing list for libffi release announcements
+</li><li><a href="http://sourceware.org/mailman/listinfo/libffi-discuss/"><tt>libffi-discuss</tt></a> is a 
+    mailing list for asking questions, reporting bugs, etc.
+</li></ul>
+
+<p>
+
+</p><h2>Authors and Credits</h2>
+
+libffi was originally written by <a href="http://moxielogic.org/blog"><b>Anthony Green</b></a>
+
+<p>
+The developers of the GNU Compiler Collection project have made
+innumerable valuable contributions.  See this ChangeLog files in the
+source distribution for details.
+
+</p><p>
+Some of the ideas behind libffi were inspired by Gianni Mariani's free
+gencall library for Silicon Graphics machines.
+
+</p><p>
+The closure mechanism was designed and implemented by Kresten Krab
+Thorup.
+
+</p><p>
+Major processor architecture ports were contributed by the following
+developers:
+
+</p><pre>    aarch64             Marcus Shawcroft, James Greenhalgh
+    alpha               Richard Henderson
+    arc                 Hackers at Synopsis
+    arm                 Raffaele Sena
+    avr32               Bradley Smith
+    blackfin            Alexandre Keunecke I. de Mendonca
+    cris                Simon Posnjak, Hans-Peter Nilsson
+    csky                Ma Jun, Zhang Wenmeng
+    frv                 Anthony Green
+    ia64                Hans Boehm
+    kvx                 Yann Sionneau
+    loongarch64         Cheng Lulu, Xi Ruoyao, Xu Hao,
+                        Zhang Wenlong, Pan Xuefeng
+    m32r                Kazuhiro Inaoka
+    m68k                Andreas Schwab
+    m88k                Miod Vallat
+    metag               Hackers at Imagination Technologies
+    microblaze          Nathan Rossi
+    mips                Anthony Green, Casey Marshall
+    mips64              David Daney
+    moxie               Anthony Green
+    nios ii             Sandra Loosemore
+    openrisc            Sebastian Macke
+    pa                  Randolph Chung, Dave Anglin, Andreas Tobler
+    powerpc             Geoffrey Keating, Andreas Tobler,
+                        David Edelsohn, John Hornkvist
+    powerpc64           Jakub Jelinek
+    riscv               Michael Knyszek, Andrew Waterman, Stef O'Rear
+    s390                Gerhard Tonn, Ulrich Weigand
+    sh                  Kaz Kojima
+    sh64                Kaz Kojima
+    sparc               Anthony Green, Gordon Irlam
+    tile-gx/tilepro     Walter Lee
+    vax                 Miod Vallat
+    x86                 Anthony Green, Jon Beniston
+    x86-64              Bo Thorsen
+    xtensa              Chris Zankel
+</pre>
+
+<p>
+Jesper Skov and Andrew Haley both did more than their fair share of
+stepping through the code and tracking down bugs.
+
+</p><p>
+Thanks also to Tom Tromey for bug fixes, documentation and
+configuration help.
+
+</p><p>
+Thanks to Jim Blandy, who provided some useful feedback on the libffi
+interface.
+
+</p><p>
+Andreas Tobler has done a tremendous amount of work on the testsuite.
+
+</p><p>
+Alex Oliva solved the executable page problem for SElinux.
+
+</p><p>
+The list above is almost certainly incomplete and inaccurate.  I'm
+happy to make corrections or additions upon request.
+
+</p><p>
+If you have a problem, or have found a bug, please file and issue on
+our issue tracker at <a href="https://github.com/libffi/libffi/issues">https://github.com/libffi/libffi/issues</a>
+
+The author can be reached at <a href="mailto:green@moxielogic.com">green@moxielogic.com</a>.
+
+
+
+</p></body></html>

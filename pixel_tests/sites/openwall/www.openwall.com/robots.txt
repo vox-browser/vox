@@ -1,0 +1,29 @@
+User-agent: dotbot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: mixnode.com
+Disallow: /
+
+User-agent: ZumBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: LTX71
+Disallow: /
+
+User-Agent: The Knowledge AI
+Disallow: /
+
+User-Agent: Exabot
+Disallow: /
+
+User-agent: *
+Disallow: /cgi/

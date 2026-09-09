@@ -1,0 +1,43 @@
+# contact sourcemaster@sourceware.org for questions.
+# see https://www.robotstxt.org/robotstxt.html
+# for information about the file format.
+
+User-agent: *
+Disallow: /cygwin/snapshots
+Disallow: /cygwin/packages/
+Disallow: /cgi-bin/
+Disallow: /cgi/
+Disallow: /git/
+Disallow: /cgit/
+Disallow: /viewvc
+Disallow: /viewcvs
+Disallow: /bugzilla/buglist.cgi
+Disallow: /bugzilla//buglist.cgi
+Disallow: /bugzilla/show_bug.cgi*ctype=xml
+Disallow: /bugzilla/attachment.cgi
+Disallow: /bugzilla/showdependencygraph.cgi
+Disallow: /bugzilla/showdependencytree.cgi
+Disallow: /bugzilla/enter_bug.cgi
+Disallow: /bugzilla/show_activity.cgi
+Disallow: /*/wiki/*?action=*
+Disallow: /*/wiki/*?diffs=*
+Disallow: /*/wiki/*?highlight=*
+Disallow: /*/wiki/*?calparms=*
+Crawl-Delay: 60
+
+# Rogue robot blacklist
+User-agent: Test Crawler
+Disallow: /
+ 
+User-agent: DigExt
+Disallow: /
+ 
+User-agent: DigExt
+Disallow: /ml/
+ 
+User-agent: CW Crawler
+Disallow: /
+ 
+User-agent: Scooter
+Disallow: /ml/
+ 

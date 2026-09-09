@@ -1,0 +1,358 @@
+/*
+** High-level HTML Defaults
+*/
+
+body {
+  background-color: white;
+  margin: 0;
+  font-family: Tahoma, Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.2em;
+}
+img {
+  border: 0;
+}
+table {
+  border: 0;
+  border-collapse: collapse;
+}
+td, th {
+  border: 1px gray solid;
+  font-size: 10pt;
+  padding: 0.5em;
+}
+tr {
+  vertical-align: top;
+}
+table.noborder td, table.noborder th {
+  border: none;
+}
+th {
+  background-color: rgb(200,210,250);
+}
+table td.divider {
+  background-color: rgb(220,225,250);
+  font-weight: bold;
+  text-align: center;
+}
+a {
+  color: rgb(50,50,210);
+}
+a:visited {
+  color: rgb(140,0,160);
+}
+a:hover {
+  color: rgb(120,120,210);
+}
+ul {
+  margin: 0;
+}
+pre {
+  border-color: #888;
+  border-style: dotted solid solid dotted;
+  border-width: 1px 2px 2px 1px;
+  padding: 0.25em;
+  margin: 0 2em;
+  font-size: 90%;
+  overflow-x: auto;
+}
+/*
+** Page Elements
+*/
+
+#site-banner {
+  padding: 8px;
+  background: white url("../images/banner-gradient.jpg") repeat-x;
+  background-position: bottom;
+}
+#site-banner a {
+  text-decoration: none;
+}
+#site-apachecon-block,
+#site-svnbook-block {
+  text-align: center;
+}
+#site-apachecon-block img,
+#site-svnbook-block img {
+  border-style: solid;
+  border-color: #555;
+  border-width: 1px 2px 2px 1px;
+}
+/* Only do absolute positioning for screen media types. */
+@media screen {
+  #site-nav {
+    float: left;
+    width: 15em;
+    border-top: solid 10px #aece5b;
+    background-color: #d6e3b2;
+  }
+  #site-nav-menu {
+    padding-left: 7px;
+  }
+  #site-nav-menu a {
+    padding-left: 10px;
+    color: blue;
+  }
+
+  /* Used for some links in site-nav.html that shouldn't be padded, eg the Subversion book */
+  #site-nav-menu a.nopadding {
+      padding-left: 0px;
+  }
+
+  #site-nav label, #hamburger { display: none; }
+
+  #site-search {
+    padding: 0.5em;
+  }
+  #copyright {
+    font-size: 80%;
+  }
+  #copyright,
+  #site-apachecon-block,
+  #site-svnbook-block {
+    padding: 0 0.5em;
+    margin-top: 2em;
+    border-top: 4px solid white;
+  }
+  #site-search, #site-thanks-block {
+    padding: 0 0.5em;
+    margin: 1em 0;
+  }
+  #site-content {
+    border-top: solid 10px rgb(147,176,218);
+    margin-left: 15.1em;
+    right: 0px;
+    padding: 1em 2em;
+  }
+  #site-banner-apachelogo {
+    text-align: right;
+    width: 379px;
+    height: 80px; 
+    float: right;
+  }
+  #site-banner-svnlogo {
+    width: 400px;
+    height: 80px;
+  }
+  @media screen and (max-width: 815px) {
+    #site-nav {
+      width: 100%;
+      border-top: solid 10px rgb(147,176,218); /* #93b0da */
+      background-color: #d6e3b2;
+    }
+    #site-nav-menu {
+      background-color: #d6e3b2;
+    }
+    #site-nav-menu a {
+      box-sizing: border-box;
+      float: none;
+      text-decoration: none;
+    }
+    #site-nav label {
+      display: inline-block;
+      color: white;
+      background: #d6e3b2;
+      font-style: normal;
+      font-size: 1.2em;
+      padding: 10px;
+    }
+    #site-nav-menu { display: none; }
+    #site-nav input:checked + #site-nav-menu { display: block; }
+
+    #site-content { margin-left: 0px; }
+    #site-banner-apachelogo {
+      text-align: left;
+      float: none;
+      width: 322px;
+      height: 68px; 
+    }
+    #site-banner-svnlogo {
+      width: 340px;
+      height: 68px;
+    }
+    /* Allow wordbreak in tt and a because of some very long "words", ie links, in for example HACKING */
+    tt, a {
+      overflow-wrap: break-word;
+    }
+  }
+  
+}
+/* In print media, we only really want the #site-content stuff. */
+@media print {
+  #site-banner, #site-notice, #site-nav {
+    display: none;
+  }
+  a {
+    text-decoration: none;
+  }
+}
+#site-nav ul {
+  list-style: none;
+  padding-left: 0em;
+}
+#site-nav li {
+  line-height: 1.4em;
+}
+#site-nav ul ul {
+  padding-left: 2em;
+}
+
+/*
+** Headings
+*/
+
+h1, h2, h3, h4 {
+  font-weight: normal;
+  font-style: normal;
+  margin-top: 1.5em;
+  line-height: 1em;
+}
+h1 {
+  font-size: 200%;
+  text-align: center;
+  margin: 1.5em 0;
+}
+h2 {
+  font-size: 160%;
+  background: url('../images/corner-white.png') no-repeat #aece5b;
+  padding: 0.25em;
+}
+h3 {
+  font-size: 125%;
+  background: url('../images/corner-white.png') no-repeat rgb(147,176,218);
+  padding: 0.25em;
+}
+h4 {
+  font-size: 115%;
+  text-decoration: underline;
+}
+.h3 {
+  margin-left: 2em;
+}
+
+/*
+** Other Customizations
+*/
+
+#site-content :target {
+  background-color: #e8e8e8;
+}
+.centered {
+  margin-left: auto;
+  margin-right: auto;
+}
+.notice {
+  background-color: yellow;
+  margin: 0.5em 5em;
+  padding: 0 0.5em;
+  border-style: solid;
+  border-color: black;
+  border-width: 1px 2px 2px 1px;
+}
+span.notice {
+  margin: 0.5em 0em;
+}
+.todo {
+  background: url('../images/todo.png') no-repeat;
+  padding: 3px 30px;
+  color: red;
+}
+.footer {
+  border-style: solid;
+  border-color: black;
+  border-width: 1px 0 0 0;
+  font-size: small;
+  margin-top: 4em;
+}
+.bigpoint {
+  background: rgb(255,240,170);
+  border: 1px solid black;
+  text-align: center;
+  margin: 0 4.2em;
+  font-size: 120%;
+  line-height: 1.2em;
+}
+.experimental-feature {
+    background-color: #f8ecde;
+}
+@media screen {
+  .linkaway {
+    padding-right: 12px;
+    background-image: url('../images/linkaway.gif');
+    background-position: top right;
+    background-repeat: no-repeat;
+  }
+}
+ul.nobullet {
+  list-style: none;
+  padding-left: 0em;
+}
+ul.topmenu {
+  padding: 0px;
+  line-height: 2em;
+}
+ul.topmenu li {
+  padding: 0 2px;
+  margin: 0;
+  display: inline;
+  border: 1px solid black;
+  border-bottom: none;
+}
+ul.topmenu li a {
+  text-decoration: none;
+}
+table.task-table td {
+  vertical-align: middle;
+}
+table.task-table td.divider {
+  background-color: rgb(245,235,160);
+}
+table.task-table .task-level-1 .task-name {
+  padding-left: 36px;
+}
+table.task-table .task-level-2 .task-name {
+  padding-left: 60px;
+}
+table.task-table .completed .task-name {
+  background: url('../images/green-light.png') no-repeat 2px 50%;
+}
+table.task-table .in-progress .task-name {
+  background: url('../images/yellow-light.png') no-repeat 2px 50%;
+}
+table.task-table .explored .task-name {
+  background: url('../images/orange-light.png') no-repeat 2px 50%;
+}
+table.task-table .not-started .task-name {
+  background: url('../images/red-light.png') no-repeat 2px 50%;
+}
+table.task-table .deferred .task-name {
+  background: url('../images/green-ellipsis-light.png') no-repeat 2px 50%;
+}
+td.success {
+  background: #b7e1cd;
+}
+td.warning {
+  background: #fce8b2;
+}
+td.danger {
+  background: #f4c7c3;
+}
+.ss {
+  font-size: 50%;
+  vertical-align: super;
+}
+
+/*
+ * Hide class="sectionlink", except when an enclosing heading
+ * has the :hover property.
+ */
+.sectionlink {
+  display: none;
+}
+.sectionlink::before {
+  content: '\00B6'
+}
+:hover > .sectionlink {
+  display: inline;
+}
+

@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta name="generator" content="Hugo 0.55.1" />
+	<title>memcached - a distributed memory object caching system</title>
+	<meta name="description" content="memcached" />
+	<meta name="authors" content="Dormando" />
+	<meta http-equiv="content-language" content="en" />
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+	<link rel="icon" href="https://memcached.org/favicon.png" type="image/png" />
+	<link rel="stylesheet" href="blueprint/screen.css" type="text/css" media="screen, projection" />
+  <link rel="stylesheet" href="blueprint/print.css" type="text/css" media="print" />
+  
+	<link rel="stylesheet" href="stylesheets/style.css" type="text/css" media="screen, projection" />
+    <link rel="alternate" type="application/rss+xml" href="https://memcached.org/blog/index.xml" title="Blog RSS Feed" />
+	
+</head>
+
+<body>
+
+<div class="container showgrids">
+
+  <div class="span-21 header">
+    <a href="index.html"><img alt="memcached - a distributed memory object caching system" src="images/memcached_banner75.jpg" /></a>
+  </div>
+
+  <div class="span-21 navbar rounded">
+    <div id="toc">
+        <ul class="a-index">
+      	<li id="m-index"><a href="index.html">Home</a></li>
+      	<li id="m-about"><a href="https://memcached.org/about">About</a></li>
+        <li id="m-downloads"><a href="https://memcached.org/downloads">Downloads</a></li>
+        <li id="m-blog"><a href="https://memcached.org/blog">Blog</a></li>
+        <li id="m-mail"><a href="https://groups.google.com/group/memcached">Mailing List</a></li>
+        <li id="m-wiki"><a href="https://docs.memcached.org">Docs</a></li>
+        <li id="m-bugs"><a href="https://github.com/memcached/memcached/issues">Bugs</a></li>
+        <li id="m-sponsor"><a href="https://github.com/sponsors/dormando">Sponsor Us!</a></li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="span-21">
+    <br/>
+  </div>
+<div class="span-9">
+  <div id="mc-is" class="rounded">
+    <h3>What is Memcached?</h3>
+
+      <p><strong>Free &amp; open source, high-performance, distributed memory object caching system</strong>, generic in nature, but intended for use in speeding up dynamic web applications by alleviating database load.</p>
+
+      <p>Memcached is an in-memory key-value store for small chunks of arbitrary data (strings, objects) from results of database calls, API calls, or page
+        rendering.</p>
+
+      <p><strong>Memcached is simple yet powerful</strong>. Its simple design promotes quick deployment, ease of development, and solves many problems facing large data caches. Its API is available for most popular languages.</p>
+      </div>
+
+    </div>
+
+    <div class="span-5">
+      <div id="using-mc">
+        <h3>Supported by</h3>
+        &nbsp;<a href="https://www.netflix.com"><img src="images/netflix_logo_mc.png" alt="Netflix" /></a>
+
+      </div>
+    </div>
+
+    <div class="span-7 last">
+      <div id="download-source" class="rounded">
+<h3>Download Memcached</h3> 
+<div class="inner rounded">
+  <div class="center pad">
+    The latest stable memcached release is 
+    <div id="current-release">
+        <div id="ver">v1.6.45</div>
+    </div>
+    <a href="https://github.com/memcached/memcached/wiki/ReleaseNotes1645">release notes</a>
+    <small>(2026-7-9)</small>
+  </div>
+	<table><tr><td>
+	  <div class="center">
+		  <img width="60" src="images/tar.png" alt="Tar.Gz Download" /><br/>
+          <a href="https://www.memcached.org/files/memcached-1.6.45.tar.gz">tar.gz</a><br/>
+	  </div>
+	</td></tr></table>
+	<div class="center">
+	  <a href="https://github.com/memcached/memcached/wiki/DevelopmentRepos">Source and Development</a>
+	</div>
+</div>
+</div>
+
+    </div>
+
+    <div class="span-21">
+      <h2 class="section-start rounded">Quick Example</h2>
+    </div>
+
+    <div class="span-11">
+      <div class="example">
+        <h3>Cache Results</h3>
+        
+<pre>function get_foo(foo_id)
+    foo = memcached_get("foo:" . foo_id)
+    return foo if defined foo
+
+    foo = fetch_foo_from_database(foo_id)
+    memcached_set("foo:" . foo_id, foo)
+    return foo
+end
+</pre>
+
+      </div>
+    </div>
+
+    <div class="span-10 last">
+      <div class="example">
+        <h3>Play with telnet</h3>
+        
+<pre>$ telnet localhost 11211
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+get foo
+VALUE foo 0 2
+hi
+END
+stats
+STAT pid 8861
+(etc)
+</pre>
+
+      </div>
+    </div>
+
+    <br style="clear:both;" />
+    <br style="clear:both;" />
+    
+    <div class="span-21">
+      <h2 class="section-start rounded">Got a Question?</h2>
+    </div>
+
+    <div class="span-7">
+      <h3 class="title">Chat</h3>
+      <p>If you are curious about something, feel free to ask
+        on the support chats -
+        <a href="https://discord.gg/AuD7kJTdvS">join the Discord Chat</a></p>
+    </div>
+    
+    <div class="span-7">
+      <h3 class="title">Documentation</h3>
+      <p>
+        Many common questions are answered at the 
+        <a href="https://docs.memcached.org">Documentation Site</a>.
+      </p>
+    </div>
+    
+    <div class="span-7 last">
+      <h3 class="title">Email</h3>
+        <p>Please feel free to bug us on the 
+          <a href="http://groups.google.com/group/memcached">memcached mailing list</a>.</p>
+    </div>
+    
+    <div class="span-21">
+      <div id="tip">
+        Interested in business support, or sponsoring memcached's development?
+        <a href="https://www.cacheforge.com">Cache Forge</a>
+      </div>
+    </div>
+
+
+  <div class="span-21">
+    <br/><br/>
+  </div>
+  
+  <div class="span-21 footer rounded">
+  	<div class="menu">
+        This page is maintained by Dormando. Logo/Banner images are Copyright (c) 2009-2018
+        Dormando, and may not be used without permission.
+  		<br/>
+        Layout forked from Scott Chacon and Petr Baudis' <a href="http://git-scm.com">git-scm.com</a>
+  		<p>Please contact the mailing list with suggestions and comments.</p>
+	  </div>
+  </div>
+ 
+</div>
+
+</body>
+</html>

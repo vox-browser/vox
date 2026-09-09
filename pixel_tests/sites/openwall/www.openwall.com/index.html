@@ -1,0 +1,412 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+<TITLE>Openwall - bringing security into open computing environments</TITLE>
+<link href="style.css" type="text/css" rel="stylesheet">
+<META name="keywords" content="Openwall, openwall, security, article, presentation, services, free software, Unix, Owl, Linux, John the Ripper, password cracker, password security, password hashing, hashing, password encryption, yescrypt, crypt, crypt_blowfish, Blowfish, pam_passwdqc, PAM, password strength, password checking, password policy, tcb, PHP, scanlogd, port scan, port scans, popa3d, POP3, blists, msulogin, sulogin, phpass, kernel patch, non-executable stack, Solar Designer">
+<META name="description" content="Information Security software for open computing environments, related publications, and professional services">
+<link rel="shortcut icon" href="favicon.ico">
+</HEAD>
+
+<BODY bgcolor="#E0E0E0" text="black" link="blue" alink="red" vlink="navy">
+
+
+<table bgcolor="#ffffff" width="100%" border="0" cellspacing="0" cellpadding="0">
+<tr>
+
+<td>
+<a href="index.html"><img class="logo" src="logo.png" border="0" width="182" height="80" alt="Openwall"></a>
+<td width="100%">
+<div class="nav">
+<ul>
+<li><a href="index.html">Products</a>
+<ul>
+<li><a href="https://www.openwall.com/Owl/">Openwall GNU/*/Linux &nbsp; <i>server OS</i></a>
+<li><a href="https://www.openwall.com/lkrg/">Linux Kernel Runtime Guard</a>
+<li><a href="https://www.openwall.com/john/">John the Ripper &nbsp; <i>password cracker</i></a>
+<ul>
+<li><a href="https://www.openwall.com/john/">Free &amp; Open Source for any platform</a>
+<li><a href="https://www.openwall.com/john/cloud/">in the cloud</a>
+<li><a href="https://www.openwall.com/john/pro/linux/">Pro for Linux</a>
+<li><a href="https://www.openwall.com/john/pro/macosx/">Pro for macOS</a>
+</ul>
+<li><a href="https://www.openwall.com/wordlists/">Wordlists &nbsp; <i>for password cracking</i></a>
+<li><a href="https://www.openwall.com/passwdqc/">passwdqc &nbsp; <i>policy enforcement</i></a>
+<ul>
+<li><a href="https://www.openwall.com/passwdqc/">Free &amp; Open Source for Unix</a>
+<li><a href="https://www.openwall.com/passwdqc/windows/">Pro for Windows (Active Directory)</a>
+</ul>
+<li><a href="https://www.openwall.com/yescrypt/">yescrypt &nbsp; <i>KDF &amp; password hashing</i></a>
+<li><a href="https://www.openwall.com/yespower/">yespower &nbsp; <i>Proof-of-Work (PoW)</i></a>
+<li><a href="https://www.openwall.com/crypt/">crypt_blowfish &nbsp; <i>password hashing</i></a>
+<li><a href="https://www.openwall.com/phpass/">phpass &nbsp; <i>ditto in PHP</i></a>
+<li><a href="https://www.openwall.com/tcb/">tcb &nbsp; <i>better password shadowing</i></a>
+<li><a href="https://www.openwall.com/pam/">Pluggable Authentication Modules</a>
+<li><a href="https://www.openwall.com/scanlogd/">scanlogd &nbsp; <i>port scan detector</i></a>
+<li><a href="https://www.openwall.com/popa3d/">popa3d &nbsp; <i>tiny POP3 daemon</i></a>
+<li><a href="https://www.openwall.com/blists/">blists &nbsp; <i>web interface to mailing lists</i></a>
+<li><a href="https://www.openwall.com/msulogin/">msulogin &nbsp; <i>single user mode login</i></a>
+<li><a href="https://www.openwall.com/php_mt_seed/">php_mt_seed &nbsp; <i>mt_rand() cracker</i></a>
+</ul>
+<li><a href="https://www.openwall.com/services/">Services</a>
+<li id="narrow-li-1"><a>Publications</a>
+<ul>
+<li><a href="https://www.openwall.com/articles/">Articles</a>
+<li><a href="https://www.openwall.com/presentations/">Presentations</a>
+</ul>
+<li><a>Resources</a>
+<ul>
+<li><a href="https://www.openwall.com/lists/">Mailing lists</a>
+<li><a href="https://openwall.info/wiki/">Community wiki</a>
+<li><a href="https://github.com/openwall">Source code repositories (GitHub)</a>
+<li><a href="https://www.openwall.com/mirrors/">File archive &amp; mirrors</a>
+<li><a href="https://www.openwall.com/signatures/">How to verify digital signatures</a>
+<li><a href="https://www.openwall.com/ove/">OVE IDs</a>
+</ul>
+<li id="last-li"><a href="https://www.openwall.com/news">What's new</a>
+</ul>
+</div>
+
+
+</table>
+
+<TABLE bgcolor="#B4D0DC" width="100%" border="0" cellspacing="0" cellpadding="1">
+<TR><TD>
+<TABLE width="100%" border="0" cellspacing="0" cellpadding="2">
+<TR><TD bgcolor="#ECF8FF">
+<a href="https://twitter.com/openwall">
+Follow @Openwall on Twitter for new release announcements and other news</a>
+
+</TABLE>
+</TABLE>
+
+<P>
+
+Software you can find here (<a href="index.html#news">what's new?</a>):
+<P>
+<UL>
+<li><a href="https://www.openwall.com/Owl/">Openwall GNU/*/Linux security-enhanced Linux distribution for servers</a>
+<li><a href="https://www.openwall.com/lkrg/">Linux Kernel Runtime Guard</a>
+(on its own website)
+<br>&nbsp;
+<LI><A HREF="https://www.openwall.com/john/">John the Ripper password cracker for Linux, Mac, Windows, ...
+</A><BR>(and <A HREF="https://www.openwall.com/wordlists/">wordlists</A> for use with it and with other tools)
+<br>&nbsp;
+<li><a href="https://www.openwall.com/passwdqc/">passwdqc - password strength checking and enforcement for servers</a><br>
+(and more <A HREF="https://www.openwall.com/pam/">PAM modules</A>)
+<LI><A HREF="https://www.openwall.com/yescrypt/">yescrypt - modern password-based KDF and password hashing</A>
+<LI><A HREF="https://www.openwall.com/yespower/">yespower - proof-of-work (PoW) scheme</A>
+<LI><A HREF="https://www.openwall.com/crypt/">crypt_blowfish - bcrypt password hashing for C/C++ programs and servers</A>
+<LI><A HREF="https://www.openwall.com/phpass/">phpass - password hashing for PHP applications</A>
+<li><a href="https://www.openwall.com/tcb/">tcb suite - our alternative password shadowing scheme</a>
+<br>&nbsp;
+<li><a href="https://www.openwall.com/scanlogd/">scanlogd port scan detection tool</a>
+<li><a href="https://www.openwall.com/popa3d/">popa3d tiny POP3 server designed with security in mind</a>
+<li><a href="https://www.openwall.com/blists/">blists web interface to mailing list archives that works off indexed mbox files</a>
+<li><a href="https://www.openwall.com/msulogin/">msulogin single user mode login program</a>
+<br>&nbsp;
+<li><a href="https://www.openwall.com/php_mt_seed/">php_mt_seed - PHP mt_rand() seed cracker</a>
+</UL>
+
+<P>
+Openwall software releases and other related files are also available from the
+<A HREF="https://download.openwall.net">Openwall file archive</A> and its
+<A HREF="https://www.openwall.com/mirrors/">mirrors</A>.
+You are encouraged to use the mirrors, but be sure to verify the
+<A HREF="https://www.openwall.com/signatures/">signatures</A> on software you download.
+<P>
+The more experienced users and software developers can browse through the source code for most pieces of Openwall software
+along with revision history information for each source file in our
+<a href="https://github.com/openwall">GitHub organization</a>.
+<P>
+We publish <A HREF="https://www.openwall.com/articles/">articles</A>,
+make <A HREF="https://www.openwall.com/presentations/">presentations</A>, and
+offer <A HREF="https://www.openwall.com/services/">professional services</A>.
+<P>
+We also maintain a
+<A HREF="https://www.openwall.com/wordlists/">wordlists collection</A>
+for use with password crackers such as
+<A HREF="https://www.openwall.com/john/">John the Ripper</A>
+and with password recovery utilities.
+<P>
+Finally, we host community resources such as
+<A HREF="https://www.openwall.com/lists/">mailing lists</A> and
+<A HREF="https://openwall.info/wiki/">wiki</A>
+for users of Openwall software
+and for other Open Source and computer security folks.
+<p id="list">
+If you would like to be notified of updates to this website and the packages
+hosted here, please subscribe to the announcement mailing list
+by entering your e-mail address below or by sending an empty message to
+<b>&lt;announce-subscribe at lists.openwall.com&gt;</b>.
+You will be required to confirm your subscription by "replying"
+to the automated confirmation request that will be sent to you.
+You will be able to unsubscribe at any time and we will not use your e-mail
+address for any other purpose or share it with a third party.
+The list traffic is very low (typically 1 to 5 messages a month).
+You can <A HREF="https://www.openwall.com/lists/announce/">review past announcements here</A>.
+<p id="news">
+<FORM action="https://www.openwall.com/cgi/subscribe.cgi" method=POST>
+<INPUT type=hidden name=list value=announce>
+Your e-mail address:
+<INPUT type=text name=email size=40>
+<INPUT type=submit value="Subscribe">
+<INPUT type=submit name=unsub value="Unsubscribe">
+</FORM>
+<p>
+You can also
+<a href="https://twitter.com/openwall">follow us on Twitter</a>.
+<P>
+<div class="news-item">
+<font size="-2">April 23, 2026</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 1.0.1 <a href="https://www.openwall.com/lists/announce/2026/04/23/1">is out</a>,
+adds support for Linux 6.19 and 7.0, contains hardening changes and bug fixes.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">March 5, 2026</font><br>
+<a href="https://www.openwall.com/passwdqc/">passwdqc</a> 2.1.0 <a href="https://www.openwall.com/lists/announce/2026/03/05/1">is out</a>,
+adding built-in common passwords list.
+We effectively include top 100k of HIBPv8 overlap with RockYou, optimized and compressed to under 200 KB embedded in program binary.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">September 20, 2025</font><br>
+We've just
+<a href="https://www.openwall.com/lists/announce/2025/09/20/1">published the slides</a> of Solar Designer's Nullcon Berlin 2025 talk
+<a href="https://www.openwall.com/presentations/NullconBerlin2025-LKRG/">Linux Kernel Runtime Guard (LKRG) 1.0</a>.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">September 2, 2025</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 1.0.0 <a href="https://www.openwall.com/lists/announce/2025/09/02/1">is out</a>,
+adds support for Linux 6.13+ (tested to 6.17-rc4), forward-edge CFI (Intel CET IBT, KCFI), ..., reduces performance overhead, shrinks the codebase by ~2500 lines.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">October 23, 2024</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.9.9 <a href="https://www.openwall.com/lists/announce/2024/10/23/1">is out</a>,
+adding support for new Linux kernels 6.11+, 6.10.10+, 5.10.220+, as well as new CentOS Stream 9 (upcoming RHEL 9.5).
+</div>
+<p>
+<div class="news-item">
+<font size="-2">August 21, 2024</font><br>
+<a href="https://www.openwall.com/lists/announce/2024/08/21/1">Announcing yescrypt-go</a>,
+our pure Go reimplementation of <a href="https://www.openwall.com/yescrypt/">yescrypt</a> key derivation function (KDF) and password hashing scheme.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">May 14, 2024</font><br>
+We've just
+<a href="https://www.openwall.com/lists/announce/2024/05/14/1">published the slides</a> of Solar Designer's OffensiveCon 2024 keynote talk
+<a href="https://www.openwall.com/presentations/OffensiveCon2024-Password-Cracking/">Password cracking: past, present, future</a>.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">March 4, 2024</font><br>
+We've just
+<a href="https://www.openwall.com/lists/announce/2024/03/04/1">published the slides</a> of Solar Designer's talk
+<a href="https://www.openwall.com/presentations/BSidesZagreb2024-Linux-remote-logging/">Linux kernel remote logging: approaches, challenges, implementation</a> from BSidesZagreb 2024.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">February 28, 2024</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.9.8 <a href="https://www.openwall.com/lists/announce/2024/02/28/1">is out</a>,
+adding a remote kernel message logging capability.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">September 14, 2023</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.9.7 <a href="https://www.openwall.com/lists/announce/2023/09/14/1">is out</a>,
+adding support for Linux 6.4 to 6.5.x and hopefully beyond, as well as for new RHEL 9.1 and 9.2 kernels.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">June 25, 2023</font><br>
+<a href="https://www.openwall.com/passwdqc/">passwdqc</a> 2.0.3 <a href="https://www.openwall.com/lists/announce/2023/06/25/1">is out</a>,
+adding Cygwin support, pkg-config file, and assorted minor changes.
+<br>
+Also available is a corresponding update of <a href="https://www.openwall.com/passwdqc/windows/">passwdqc for Windows</a>,
+adding password policy bypass for system-generated passwords for KRBTGT accounts.
+<br>
+Finally, the pre-generated leaked password filter files have been updated (quite a while ago) to include HIBP v8,
+encoding the 847+ million unique passwords (from billions of accounts) in a 3.3 GiB (3.5 GB) file.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">June 21, 2023</font><br>
+We've just published the
+<a href="https://www.openwall.com/presentations/SSTIC-BSidesLjubljana2023-oss-security/">slides</a> of
+<a href="https://www.openwall.com/lists/announce/2023/06/21/1">Solar Designer's opening keynote talk at SSTIC and its revision at BSidesLjubljana</a>,
+entitled "15+ years of <a href="https://www.openwall.com/lists/oss-security/">oss-security</a>".
+</div>
+<p>
+<div class="news-item">
+<font size="-2">March 2, 2023</font><br>
+<a href="https://www.openwall.com/john/cloud/">John the Ripper in the cloud</a> has been <a href="https://www.openwall.com/lists/announce/2023/03/02/1">updated</a>
+to use the latest JtR jumbo on freshly updated Amazon Linux 2 with a newer NVIDIA GPU driver.
+Many new AWS instance types are now supported.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">December 14, 2022</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.9.6 <a href="https://www.openwall.com/lists/announce/2022/12/14/1">is out</a>,
+adding support for Linux 6.1, RHEL 8.7, current CentOS Stream 9 (upcoming RHEL 9.2),
+along with a variety of other changes for portability, robustness, and extra security checks.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">August 1, 2022</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.9.5 <a href="https://www.openwall.com/lists/announce/2022/08/01/1">is out</a>,
+adding support for new longterm kernels 5.10.133+ and reworked support for OverlayFS (Docker).
+</div>
+<p>
+<div class="news-item">
+<font size="-2">July 22, 2022</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.9.4 <a href="https://www.openwall.com/lists/announce/2022/07/22/1">is out</a>,
+featuring more consistent log messages suitable for both automated analysis and human consumption,
+as well as adding support for more longterm Linux kernels and for the OpenRC init system.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">April 21, 2022</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.9.3 <a href="https://www.openwall.com/lists/announce/2022/04/21/1">is out</a>,
+adding support for latest Linux kernels,
+latest CentOS Stream 8/9 and upcoming RHEL 8.6+, openSUSE Leap, and loading into older Xen PV guests.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">December 29, 2021</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.9.2 <a href="https://www.openwall.com/lists/announce/2021/12/29/1">is out</a>,
+adding support for new Linux kernels, and assorted bug fixes and enhancements.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">April 27, 2021</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.9.1 <a href="https://www.openwall.com/lists/announce/2021/04/27/1">is out</a>,
+addressing various issues reported against the 0.9.0 release.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">April 12, 2021</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.9.0 <a href="https://www.openwall.com/lists/announce/2021/04/12/1">is out</a>,
+with support for new Linux kernels, optionally building LKRG in kernel tree,
+Continuous Integration (boot tests in VMs, including with Ubuntu's daily updated mainline kernels), and much more.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">April 4, 2021</font><br>
+<a href="https://www.openwall.com/passwdqc/">passwdqc</a> 2.0.2 <a href="https://www.openwall.com/lists/announce/2021/04/04/1">is out</a>,
+improving the formatting of auto-generated policy descriptions and adding the libpasswdqc(3) manual page.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">March 10, 2021</font><br>
+Two minor updates:<br>
+<a href="https://www.openwall.com/passwdqc/">passwdqc</a>
+<a href="https://www.openwall.com/lists/announce/2021/03/10/1">2.0.1</a> offers improved auto-generated password/passphrase policy descriptions.
+<br>
+<a href="https://www.openwall.com/scanlogd/">scanlogd</a>
+<a href="https://www.openwall.com/lists/announce/2021/03/10/2">2.2.8</a> builds cleanly with recent glibc.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">February 18, 2021</font><br>
+<a href="https://www.openwall.com/passwdqc/">passwdqc</a> 2.0.0 <a href="https://www.openwall.com/lists/announce/2021/02/18/1">is out</a>,
+adding support for external wordlist, denylist, and binary filter files (improved cuckoo filters).
+</div>
+<p>
+<div class="news-item">
+<font size="-2">January 11, 2021</font><br>
+After 10 years since the previous release, we've just
+<a href="https://www.openwall.com/lists/announce/2021/01/11/1">released</a>
+version 1.2 of
+<a href="https://www.openwall.com/tcb/">tcb</a>,
+implementation of our alternative password shadowing scheme.
+Changes include libxcrypt and recent glibc support, translated (non-English) messages support, and dropping of NIS/NIS+ support.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">August 18, 2020</font><br>
+We've just
+<a href="https://www.openwall.com/lists/announce/2020/08/18/1">republished</a> the slides of
+<a href="https://www.openwall.com/presentations/OSTconf2020-LKRG-In-A-Nutshell/">LKRG in a nutshell</a>, which we presented a few days ago at OSTconf.
+<br><br>
+We've
+<a href="https://www.openwall.com/lists/announce/2020/08/18/2">started consolidating our Git repositories</a> under the newly setup
+<a href="https://github.com/openwall">Openwall organization on GitHub</a>.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">August 10, 2020</font><br>
+We've just
+<a href="https://www.openwall.com/lists/announce/2020/08/10/1">launched</a>
+<a href="https://www.openwall.com/john/cloud/">Openwall Password Recovery and Password Security Auditing Bundle</a> in AWS Marketplace.
+Start your password recovery or audit in AWS cloud in minutes,
+complete it within our 5-day free trial or support our Open Source project afterwards.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">July 8, 2020</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.8.1 is an <a href="https://www.openwall.com/lists/announce/2020/07/08/1">important bug fix release</a>.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">June 25, 2020</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.8 <a href="https://www.openwall.com/lists/announce/2020/06/25/1">is out</a>,
+adding support for latest Linux kernels, 32-bit ARM (LKRG 0.7 already had 64-bit), Raspberry Pi 3 &amp; 4, improving scalability,
+performance, and tradeoffs, adding the notion of profiles, new documentation, Phoronix Test Suite benchmarks, and much more.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">December 25, 2019</font><br>
+<a href="https://www.openwall.com/passwdqc/">passwdqc</a> 1.4.0 <a href="https://www.openwall.com/lists/announce/2019/12/25/1">is out</a>,
+adding optional non-English messages and Linux-PAM audit support.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">July 21, 2019</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.7 <a href="https://www.openwall.com/lists/announce/2019/07/21/1">is out</a>,
+adding experimental support for ARM64 (AArch64) and grsecurity,
+support for Linux kernels 5.1 and 5.2 (and hopefully beyond),
+greater SMEP enforcement, and much more.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">June 30, 2019</font><br>
+<a href="https://www.openwall.com/yescrypt/">yescrypt</a> KDF and password hashing scheme <a href="https://www.openwall.com/lists/announce/2019/06/30/1">updated to 1.1.0 and included in Fedora and ALT Linux via libxcrypt</a>.<br>
+<a href="https://www.openwall.com/yespower/">yespower</a> PoW scheme <a href="https://www.openwall.com/lists/announce/2019/06/30/2">updated to 1.0.1</a>.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">May 14, 2019</font><br>
+<a href="https://www.openwall.com/john/">John the Ripper</a> 1.9.0-jumbo-1 <a href="https://www.openwall.com/lists/announce/2019/05/14/1">is out</a>.
+</div>
+<p>
+<div class="news-item">
+<font size="-2">April 12, 2019</font><br>
+<a href="https://www.openwall.com/john/">John the Ripper</a> 1.9.0 core <a href="https://www.openwall.com/lists/announce/2019/04/12/1">is out</a>.
+Stay tuned for the 1.9.0-jumbo-1 release and announcement, which will be "the real one".
+</div>
+<p>
+<div class="news-item">
+<font size="-2">February 19, 2019</font><br>
+<a href="https://www.openwall.com/lkrg/">LKRG</a> 0.6 <a href="https://www.openwall.com/lists/announce/2019/02/19/1">is out</a>,
+adding experimental poor man's Control Flow Integrity support and much more.
+</div>
+
+<p>
+<a href="https://www.openwall.com/news#archive">News archive (since 2001)</a>
+<P>
+<FORM action="https://www.openwall.com/cgi/qc-202402.cgi" method=POST>
+<INPUT type=hidden name=page value="/">
+Quick Comment:
+<INPUT type=text name=qc size=64>
+<INPUT type=submit value="Send">
+</FORM>
+
+<p align=right>
+<font size="-2">16857489</font>
+
+</BODY>
+</HTML>

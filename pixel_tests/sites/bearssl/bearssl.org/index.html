@@ -1,0 +1,188 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge,chrome=1">
+
+<!-- BEGIN HEADER USER CONTENTS -->
+
+    <title>BearSSL - Main</title>
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+
+<!-- END HEADER USER CONTENTS -->
+
+    <meta http-equiv="Copyright" content="&copy; Thomas Pornin 2016" />
+    <meta http-equiv="Content-Language" content="EN" />
+    <meta name="Language" content="EN" />
+    <meta http-equiv="Robots" content="Index,Follow,NoImageIndex,NoImageClick,NoArchive" />
+    <meta name="viewport" content="width=960, initial-scale=0.33, maximum-scale=1">
+    <link rel="apple-touch-icon" href="https://bearssl.org/apple-touch-icon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/main.css">
+    <!--[if lt IE 7]>
+      
+    <![endif]-->
+    <!--[if lte IE 9]>
+      <link rel="stylesheet" href="css/iefix.css">
+    <![endif]-->
+  </head>
+  <body>
+    <div id="all">
+      <!--[if lte IE 9]>
+        <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience and security!</p>
+      <![endif]-->
+      <div id="header" data-role="header">
+        <div id="header-mood"></div>
+        <div id="header-left"></div>
+        <div id="header-center"><a href="https://www.bearssl.org" alt="BearSSL - a smaller SSL/TLS library"><div id="header-banner"></div></a></div>
+        <div id="header-right"></div>
+        <div id="header-padlock"></div>
+        <div id="header-vbar"></div>
+      </div>
+      <div id="main">
+        <div id="TOC" data-role="index">
+
+<!-- BEGIN TOC -->
+
+<ul>
+<li><a href="https://bearssl.org/index.html">Main</a></li>
+</ul><hr /><ul>
+<li><ul>
+<li><a href="index.html#overview">Overview</a></li>
+<li><a href="index.html#status">Status</a></li>
+<li><a href="index.html#download-and-installation">Download and Installation</a></li>
+<li><a href="index.html#legal-details">Legal Details</a></li>
+<li><a href="index.html#documentation">Documentation</a></li>
+<li><a href="index.html#features">Features</a><ul>
+<li><a href="index.html#already-implemented">Already Implemented</a></li>
+<li><a href="index.html#not-yet-implemented">Not Yet Implemented</a></li>
+</ul></li>
+<li><a href="index.html#contact">Contact</a></li>
+</ul>
+</li></ul><hr /><ul>
+<li><a href="https://bearssl.org/apidoc/index.html">API Documentation</a></li>
+<li><a href="https://bearssl.org/gitweb/?p=BearSSL;a=summary">Browse Source Code</a></li>
+<li><a href="https://bearssl.org/changelog.html">Change Log</a></li>
+<li><a href="https://bearssl.org/goals.html">Project Goals</a></li>
+<li><a href="https://bearssl.org/naming.html">On Naming Things</a></li>
+<li><a href="https://bearssl.org/support.html">Supported Crypto</a></li>
+<li><a href="https://bearssl.org/todo.html">Roadmap and Status</a></li>
+<li><a href="https://bearssl.org/oop.html">OOP in C</a></li>
+<li><a href="https://bearssl.org/api1.html">API Overview</a></li>
+<li><a href="https://bearssl.org/x509.html">X.509 Certificates</a></li>
+<li><a href="https://bearssl.org/constanttime.html">Constant-Time Crypto</a></li>
+<li><a href="https://bearssl.org/ctmul.html">Constant-Time Mul</a></li>
+<li><a href="https://bearssl.org/speed.html">Speed Benchmarks</a></li>
+<li><a href="https://bearssl.org/sizes.html">Size Calculator</a></li>
+<li><a href="https://bearssl.org/boarssl.html">BoarSSL and Twrch</a></li>
+<li><a href="https://bearssl.org/tls13.html">TLS 1.3 Status</a></li>
+<li><a href="https://bearssl.org/bigint.html">Big Integer Design</a></li>
+<li><a href="https://bearssl.org/misc.html">Extra Information</a></li>
+<li><a href="https://bearssl.org/contrib.html">Contribute</a></li>
+</ul>
+
+<!-- END TOC -->
+
+        </div>
+        <div id="main_inner" data-role="content">
+
+<!-- BEGIN CONTENTS -->
+
+<h1 id="overview">Overview</h1>
+<p>BearSSL is an implementation of the SSL/TLS protocol (<a href="https://tools.ietf.org/html/rfc5246">RFC 5246</a>) written in C. It aims at offering the following features:</p>
+<ul>
+<li><p><strong>Be correct and secure.</strong> In particular, insecure protocol versions and choices of algorithms are not supported, by design; cryptographic algorithm implementations are <em>constant-time</em> by default.</p></li>
+<li><p><strong>Be small</strong>, both in RAM and code footprint. For instance, a minimal server implementation may fit in about 20 kilobytes of compiled code and 25 kilobytes of RAM.</p></li>
+<li><p><strong>Be highly portable</strong>. BearSSL targets not only “big” operating systems like Linux and Windows, but also small embedded systems and even special contexts like bootstrap code.</p></li>
+<li><p><strong>Be feature-rich and extensible</strong>. SSL/TLS has many defined cipher suites and extensions; BearSSL should implement most of them, and allow extra algorithm implementations to be added afterwards, possibly from third parties.</p></li>
+</ul>
+<h1 id="status">Status</h1>
+<p>Current version is 0.6. It is now considered <strong>beta-quality</strong> software: it successfully passes <a href="https://bearssl.org/boarssl.html">extensive test suites</a>, and while not all intended features are present, new features <em>should</em> imply no breaking changes in API or ABI<a href="index.html#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>. There is no such thing as bug-free code, and I won’t claim that there is none in BearSSL; only that I looked real hard. Use in production applications is, in any case, at your own risk.</p>
+<p>The versioning scheme is “major.minor.patch”. Backward compatibility, both at source and binary levels, should be maintained within the same major version; this means that, for instance, version 2.17 may contain more features than 2.14, but application code written for version 2.14 should be compilable with version 2.17, and code which was compiled against version 2.14 should be linkable against version 2.17. Such guarantees are not offered across major version numbers.</p>
+<p>The “major 0” line explicitly <em>denies</em> any such guarantee. It is expected that successive 0.x versions will be incompatible with each other: API will change as some features are stabilised.</p>
+<p>The “patch” component of a version number is for fixes that maintain compatibility and do not add any feature.</p>
+<h1 id="download-and-installation">Download and Installation</h1>
+<p>The source code is available as a Git repository, cloneable through the following command:</p>
+<pre><code>git clone https://www.bearssl.org/git/BearSSL</code></pre>
+<p>Installation instructions are contained therein.</p>
+<p>BearSSL source code for released versions can also be downloaded as an archive: <a href="https://bearssl.org/bearssl-0.6.tar.gz" class="uri">bearssl-0.6.tar.gz</a></p>
+<p>Older releases can be obtained from the <a href="https://bearssl.org/changelog.html">change log</a>.</p>
+<p>Finally, the source tree can be explored through a <a href="https://bearssl.org/gitweb/?p=BearSSL;a=summary">Gitweb-powered interface</a>.</p>
+<p><strong>Updates</strong> first appear in the Git repository, so cloning it is the right way to follow day-to-day development. Versions are “released” when some specific milestones are reached.</p>
+<h1 id="legal-details">Legal Details</h1>
+<p>The whole of BearSSL is published under the MIT License. It basically means the following:</p>
+<ul>
+<li><p>You can use and reuse the library as you wish, and modify it, and integrate it in your own code, and distribute it as is or in any modified form, and so on.</p></li>
+<li><p>The only obligation that the license terms put upon you is that you acknowledge and make it clear that if anything breaks, it is not my fault, and I am not liable for anything, regardless of the type and amount of collateral damage. The license terms say that the copyright notice “shall be included in all copies or substantial portions of the Software”: this is how the disclaimer is “made explicit”. Basically, I have put it in every source file, so just keep it there.</p></li>
+</ul>
+<p>Apart from the usage license, BearSSL implements cryptographic algorithms for which import, export, distribution and usage is subject to many subtleties that depend on the jurisdiction. A classic survey is available <a href="http://www.cryptolaw.org/">there</a>, but of course these things tend to change over time, as the law makers try to keep pace with the unrelenting scientific and technological progress.</p>
+<p>BearSSL was written in Canada and is distributed from a server located on Canadian soil. It is my understanding, as a normal citizen (and certainly <em>not</em> a professional of the law), that BearSSL falls under the “open source exception” which makes its distribution under its current form fully compliant to Canadian law. Note, though, that if you download it from another country, you are not only exporting BearSSL from Canada but also importing it into that other country, and additional laws may apply. This is, in crude terms, your legal problem, not mine; I am not doing the export (and subsequent import), you are.</p>
+<h1 id="documentation">Documentation</h1>
+<p>API documentation, at the function call level, is published <a href="https://bearssl.org/apidoc/index.html">there</a>. This is generated with <a href="http://www.doxygen.org/">Doxygen</a> from comments in a specific format in the header files (located in the <code>inc/</code> subdirectory in the source archive).</p>
+<p>Detailed documentation, on library usage, API structure, design, and generally how it was done and why, is of paramount importance to the security of the library. Indeed, it is extremely hard to show whether any piece of code does its intended job correctly, and the only practical way known so far is to have a clear, well-documented design and specification, and have many people look at it.</p>
+<p>Therefore, there is an ongoing effort to accumulate such documents. Right now, they are available <a href="https://bearssl.org/goals.html">there</a> and more will be added over time.</p>
+<h1 id="features">Features</h1>
+<p>This section gives a short list of features of BearSSL, some already implemented, others planned for a future version. See also the <a href="https://bearssl.org/todo.html">roadmap</a>.</p>
+<h2 id="already-implemented">Already Implemented</h2>
+<ul>
+<li><p>A <strong>static linking model</strong> in which only algorithms that are actually used get pulled into the linked binary. This is done through appropriate usage of function pointers; there is no need to recompile BearSSL with specific preprocessor options to obtain such a trimming.</p></li>
+<li><p>A <strong>state-machine API</strong> in which data is pushed into or retrieved from a context structure, without needing callback functions for I/O. This structure makes it easier to use BearSSL for non-stream mediums (e.g. to use “messages” as part of the EAP authentication framework), and to run several concurrent connections in a mono-threaded context (with a central <code>poll()</code> or <code>select()</code> to manage actual I/O operations).</p>
+<p>A simplified stream-like API with callbacks for low-level I/O is still provided as an optional wrapper.</p></li>
+<li><p><strong>No dynamic allocation whatsoever</strong>. There is not a single <code>malloc()</code> call in all the library. In fact, the whole of BearSSL requires only <code>memcpy()</code>, <code>memmove()</code>, <code>memcmp()</code> and <code>strlen()</code> from the underlying C library. This makes it utterly portable even in the most special, OS-less situations. (On “big” systems, BearSSL will automatically use a couple more system calls to access the OS-provided clock and random number generator.)</p>
+<p>On big desktop and server OS, this feature still offers an interesting characteristic: immunity to memory leaks and memory-based DoS attacks. Outsiders cannot make BearSSL allocate megabytes of RAM since BearSSL does not actually know how to allocate RAM at all.</p></li>
+<li><p><strong>Client and server</strong> are both implemented.</p></li>
+<li><p><strong>TLS 1.0, TLS 1.1 and TLS 1.2</strong> are supported. By design, SSL 2.0 and SSL 3.0 are <em>not</em> supported, since these earlier protocol versions have irreparable vulnerabilities.</p></li>
+<li><p><strong>RSA, ECDH and ECDHE key exchange</strong> are supported. The ECDHE key exchange offers “Forward Secrecy”, a desirable property by which actual key exchange secrets are transient and destroyed after usage, thereby presumably immune to ulterior theft in case of full machine compromise.</p>
+<p>By design, DHE is not supported: it has no real advantage over ECDHE, and ECDHE is faster. More importantly, it is hard to ensure that DHE is used properly, since the protocol does not allow the server to document the proper range for DH private keys.</p></li>
+<li><p>Minimal <strong>X.509 certificate validation</strong> is implemented. While the engine does not support all the bells and whistles of X.509 validation, it still enforces the basics: subject/issuer DN matching, notBefore/notAfter dates, basic constraints, and key usage extension. Optionally, the client will also verify that the server’s certificate contains the intended dNSName (in the Subject Alt Name extension, or in the Common Name if the SAN extension is missing); this check can handle a “wildcard” at the start of a name.</p>
+<p>RSA and ECDSA signatures are supported, with all the “classical” hash functions (SHA-1, and the SHA-2 family from SHA-224 to SHA-512). There again, MD5 is voluntarily excluded.</p>
+<p>The validation engine “fails safe” in that it rejects any certificate that triggers an unsupported feature in a critical extension. However, it must be noted that the minimal engine does not implement revocation checks.</p></li>
+<li><p><strong>Client certificates</strong> are supported both on the client side and the server side. RSA signatures, ECDSA signatures, and full static ECDH authentication methods can be used.</p></li>
+<li><p>For size-constrained clients, a <strong>known key model</strong> is provided, in which the client already knows by some out-of-band mechanism the public key of the server, thereby skipping any validation step and avoding the need to embed the X.509 validation engine.</p></li>
+<li><p><strong>AES/GCM, AES/CCM, AES/CBC, 3DES/CBC and ChaCha20+Poly1305</strong> encryption algorithms are supported. Several implementations are provided for each algorithm, incarnating various trade-offs between performance and code size. The implementations selected by default are <em>constant-time</em>: they make no memory access whose address depends on secret data, and they make no conditional jump based on secret data. These implementations are thus immune to side-channel attacks that exploit these kinds of leak.</p>
+<p><strong>AES-NI opcodes</strong> on recent x86 CPU are used to run both AES and GHASH (the MAC part of GCM) with much improved performance on systems that support these opcodes. Similary, the AES hardware support on <strong>POWER8 systems</strong> are leveraged for improved performance.</p>
+<p>The <strong>RSA and elliptic curve</strong> implementations are also constant-time. They should also properly react to invalid input data (e.g. an input point which is not actually a curve point). Elliptic curves secp256r1 (P-256), secp384r1 (P-384) and secp521r1 (P-521) are supported; Curve25519 is also supported (for ECDHE key exchange).</p></li>
+<li><p><strong>RSA and EC key pair generation</strong> is implemented. This allows for on-board generation of such secrets, which is considered a better idea for security than external generation and import. Note that RSA key generation is expensive.</p></li>
+<li><p>A simple <strong>session cache</strong> is provided, for handling abbreviated handshakes when a client comes back. The cache needs 100 bytes of RAM per remembered session. Both the client and server codes handle session resumption.</p></li>
+<li><p><strong>Secure Renegotiation</strong> (<a href="https://tools.ietf.org/html/rfc5746">RFC 5746</a>) is implemented. Renegotiations are rejected if that extension is not supported by the peer. A configurable flag also allows rejecting all renegotiations.</p></li>
+<li><p><strong>Maximum Fragment Length extension</strong> is used by the client code to negociate a smaller maximum record size. This allows running with even less RAM; unfortunately, as the extension is defined in <a href="https://tools.ietf.org/html/rfc6066">RFC 6066</a>, only the client may use that extension effectively, so a RAM-constrained server cannot ask for smaller records.</p></li>
+<li><p><strong>ALPN extension</strong> (<a href="https://tools.ietf.org/html/rfc7301">RFC 7301</a>). This is needed for proper interaction with HTTP/2.</p></li>
+</ul>
+<h2 id="not-yet-implemented">Not Yet Implemented</h2>
+<ul>
+<li><p>Additional algorithm implementations are planned. In particular:</p>
+<ul>
+<li><p>Optimised implementations for ARM processors, especially small ARM (like the Cortex-M0 line) which are notoriously challenged in that respect.</p></li>
+<li><p>Better big integer code for generic EC; the current implementations are constant-time and portable, but somewhat slow.</p></li>
+<li><p>Support for EdDSA (this still needs some clearer view of future standardisation, in particular symbolic identifiers). EdDSA for <em>client</em> authentication, and EdDSA for signing certificates, are problematic features in the context of BearSSL (they require buffering potentially large amounts of data); but for server-side authentication, EdDSA support should be doable.</p></li>
+</ul></li>
+<li><p>Extra functions to make BearSSL a more generic cryptographic library. In particular, production of signed certificate requests and self-signed certificates are needed for safe usage of some applications: ideally, a SSL server should generate its own private key, not have it imported (key pair generation is now implemented).</p></li>
+<li><p><a href="https://tools.ietf.org/html/rfc6347">DTLS</a>. Since BearSSL already works as a state machine, interface with a packet-based transport medium should be relatively easy; but DTLS still has a few features that need some specific code.</p></li>
+<li><p>TLS-1.3, when it is specified as a RFC (I don’t want to chase drafts and have compatibility breaks due to changing specifications; RFC are immutable, so I wait for the RFC).</p></li>
+<li><p>Documentation. Lots of documentation. Since it is extremely difficult, and mostly impossible in the general case, to prove that any significant piece of code is correct, we should rely on the next best thing, which is thorough documentation, both for the API usage (man pages for all functions…) and for the complete internal design.</p>
+<p>This Web site will be enriched over time, with new documents, as I write them.</p></li>
+</ul>
+<h1 id="contact">Contact</h1>
+<p>Any comment or suggestion may be sent to me (Thomas Pornin) at: <a href="mailto:pornin@bolet.org">&lt;pornin@bolet.org&gt;</a></p>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>That’s a lie. I already broke that promise after version 0.5; moreover, adding the support of TLS 1.3 will imply some changes in the layout and size of the SSL context structures, thus breaking binary compatibility. I will do my best effort not to break <em>source</em> compatibility, though.<a href="index.html#fnref1">↩</a></p></li>
+</ol>
+</div>
+
+<!-- END CONTENTS -->
+
+        </div>
+      </div>
+    </div>       
+    <div id="footer" data-role="footer">
+      <a href="https://twitter.com/BearSSLnews" target="_blank" alt="Follow BearSSL on Twitter!"><div id="footer-twitter"></div></a>
+      <div id="footer-text"><p>&copy; <strong>Thomas Pornin 2018</strong><br />Please report any problem with this web site to: <a href="mailto:pornin@bolet.org?subject=BearSSL web site"><code>&lt;pornin@bolet.org&gt;</code></a></div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+# robots.txt for http://www.netlib.org/
+# see <http://web.nexor.co.uk/mak/doc/robots/norobots.html>
+# for an explanation.
+
+Crawl-delay: 10
+
+User-agent: MOMspider            # The Multi-Owner Maintenance Spider
+Disallow: /cgi-bin/              #     Script files
+Disallow: /confdb/               #     conferences database
+
+
+User-agent: *
+Disallow: /cgi-bin/
+Disallow: /admin/
+Disallow: /tex/

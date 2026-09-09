@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+
+<title>The Postfix Home Page</title>
+
+<meta name="google-site-verification" content="Nx2UG7gprc0LCFx3AGqDBJD-dZXkMJFYwMjlC7qYZPg">
+<meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
+<link rel='stylesheet' type='text/css' href='postfix.css'>
+
+</head>
+
+<div id='left'>
+
+<p> <img src="mysza.gif" width="130" height="91" alt="[LOGO]"> </p>
+
+<p class='navhead'>QUICK LINKS</p>
+
+    <p class='nav'><a href="https://www.postfix.org/start.html">Home</a> </p>
+
+    <p class='nav'><a href="https://www.postfix.org/announcements.html">Announcements</a> </p>
+
+<!--     <p class='nav'><a href="non-english.html">Non-English Info</a> </p> -->
+
+    <p class='nav'><a href="https://www.postfix.org/features.html">Feature overview </a> </p>
+
+    <p class='nav'><a href="https://www.postfix.org/web-sites.html">Web sites (text)</a> </p>
+
+    <p class='nav'><a href="https://www.postfix.org/download.html">Download (source)</a> </p>
+
+    <p class='nav'><a href="https://www.postfix.org/lists.html">Mailing lists</a> </p>
+
+    <p class='nav'><a href="https://www.postfix.org/press.html">Press and Interviews</a> </p>
+
+    <p class='nav'><a href="https://www.postfix.org/documentation.html">Documentation</a> </p>
+
+    <!-- <p class='nav'><a href="docs.html">Howtos and FAQs</a> </p> -->
+
+    <p class='nav'><a href="https://www.postfix.org/addon.html">Add-on Software</a> </p>
+
+    <p class='nav'><a href="https://www.postfix.org/packages.html">Packages and Ports</a> </p>
+
+    <p class='nav'><a href="https://www.postfix.org/mirror.html">Becoming a mirror site</a> </p>
+
+<p class='navhead'></p>
+
+    <form method="get" action="https://www.google.com/search">
+    <p class='nav'>
+	<input size="-1" type="submit" value="Search"><br>
+	<input type="text" name="q" size="16" maxlength="255" value=""> 
+	<input type="hidden" name="sitesearch" value="www.postfix.org">
+    </p>
+    </form>
+
+</div>
+
+<div id='main'>
+
+<h1> The Postfix Home Page</h1>
+
+<blockquote><p><i> All programmers are optimists </i> -- Frederick P.
+Brooks, Jr.  </p></blockquote>
+
+<p> First of all, thank you for your interest in the Postfix project.
+</p>
+
+<p> What is Postfix? It is <a
+href="http://www.porcupine.org/wietse/">Wietse Venema's</a> mail
+server that started life at <a href="https://www.research.ibm.com">IBM
+research</a> as an alternative to the widely-used <a
+href="https://www.sendmail.org/">Sendmail</a> program.  After eight
+years at Google, <i>Wietse continues to maintain Postfix</i>. </p>
+
+<p> Postfix attempts to be fast, easy to administer, and secure.
+The outside has a definite Sendmail-ish flavor, but the inside is
+completely different.  </p>
+
+<!--
+
+<h2> Newsflash </h2>
+
+<p> SMTP Smuggling Attack: an email spoofing attack was published
+a few days before Christmas 2023, before people had an opportunity
+to update their Postfix and other mail systems. Updates are now
+available for all supported Postfix stable releases. More at <a
+href="smtp-smuggling.html"> smtp-smuggling.html</a>.  </p>
+
+<p> A recent twitter post reveals the existence of an exploit for Postfix,
+in a collection of what appear to be NSA break-in tools. </p>
+ 
+<a href="https://twitter.com/JulianAssange/status/850870683831648256">
+https://twitter.com/JulianAssange/status/850870683831648256</a>
+ 
+<p> This is an exploit for Postfix 2.0 - 2.2, for a bug that was
+fixed 11 years ago in Postfix 2.2.11 and later. </p>
+ 
+<p> There was a memory corruption bug in a Postfix workaround for
+a Sendmail bug (CERT advisory CA-2003-07, remote buffer overflow
+in Sendmail when message headers contain lots of comment text before
+or after an email address). </p>
+ 
+<p> Technical details: the Postfix strip_address() function, which 
+removes large comments from a mail header, called the printable()
+function on a string that wasn't null-terminated. This caused the
+printable() function to scribble past the end of malloc()ed memory,
+corrupting the memory heap. </p>
+
+<p> Running the exploit against Postfix versions less than 11 years
+old results in odd-looking email messages in the super-user's
+mailbox, and warning messages in the maillog file (warning: stripping
+too many comments from address: &lt;long character string&gt;).
+</p>
+
+<p>As of July 2015, all supported Postfix releases have new TLS
+default settings that no longer enable export-grade ciphers, and
+no longer enable the SSLv2 and SSLv3 protocols. These ciphers and
+protocols have little if any legitimate use today, and have instead
+become a vehicle for downgrade attacks.  See the <a
+href="announcements/postfix-3.0.2.html">announcement</a> for more.
+</p>
+
+<p>Logjam Attack: this has mostly the same countermeasure as FREAK:
+disable EXPORT ciphers on the SMTP server side, as described under
+the next bullet. </p>
+
+<p>FREAK Attack: To protect vulnerable clients execute as root
+"<tt>postconf smtpd_tls_exclude_ciphers=EXPORT; postfix reload</tt>".
+This command removes EXPORT ciphers with opportunistic as well as
+mandatory TLS.  The impact of this attack was already low because
+each Postfix SMTP server process computes its own own "ephemeral"
+RSA key and terminates after a limited time. </p>
+
+<p>GHOST Attack: Postfix does not call gethostbyname() since 2005.
+There is no Postfix code that invokes this function unless Postfix
+is specifically built for operating systems from more than 10 years
+ago (this requires the compile-time option "<tt>-DNO_IPV6</tt>").
+</p>
+
+-->
+<h2> About this website </h2>
+
+<p> This website has information about the Postfix source code
+distribution. Built from source code, Postfix can run on UNIX-like
+systems including AIX, BSD, HP-UX, Linux, MacOS X, Solaris, and
+more. </p>
+
+<p> Postfix is also distributed as ready-to-run code by operating
+system vendors, appliance vendors, and other providers.  Their
+versions may have small differences with the software that is
+described on this website.  </p>
+
+</div>
+
+</body></html>

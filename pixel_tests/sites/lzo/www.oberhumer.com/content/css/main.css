@@ -1,0 +1,176 @@
+/*---------------------------------------------------------------------------##
+##  Copyright (C) oberhumer.com GmbH. All Rights Reserved.
+##---------------------------------------------------------------------------*/
+
+body,table,tr,th,td,div,p,h1,h2,h3,h4,h5,h6,ul,ol,li {
+font-family: "Open Sans", "Noto Sans", Helvetica, Arial, sans-serif;
+font-size:12px;
+line-height:1.4em;
+}
+h1 { font-size:18px;}
+h2 { font-size:16px;}
+h3 { font-size:13px;}
+.h3_initial { font-size:32px;}
+html {
+height:100%;
+overflow-y:scroll;
+}
+body {
+color:#000000;
+background-color:#ffffff;
+margin:0px;padding:0px;
+height:100%;
+}
+div {
+border:none;margin:0px;padding:0px;
+}
+a:link { color:#0000ff;}
+a:visited { color:#660099;}
+a:active { color:#ff0000;}
+dd p { margin-top:0px;margin-bottom:10px;}
+span.nobreak { white-space:nowrap;}
+ul.uld { list-style-type:disc;}
+ul.uld li { margin-bottom:2px;}
+ul.ulw { list-style-type:disc;}
+ul.ulw li { margin-bottom:8px;}
+div.body_div_1 {
+margin:0px;
+padding:0px 0px 10px 0px;
+width:100%;
+}
+div.body_div_2 {
+background-color:#fbfbff;
+margin:0px;
+padding:0px 20px 0px 20px;
+width:950px;
+}
+div.main_div {
+margin:20px 10px 20px 10px;
+padding:0px;
+width:930px;
+text-align:left;
+}
+table.main_table {
+margin:0px;padding:0px;
+border:none;
+border-collapse:collapse;
+empty-cells:show;
+}
+table.main_table td {
+margin:0px;padding:0px;
+}
+div.autoindex tr { font-family:monospace;line-height:1.4em;}
+div.autoindex th { font-family:monospace;line-height:1.4em;}
+div.autoindex td { font-family:monospace;line-height:1.4em;}
+div.underconstruction { font-size:10px;font-style:italic;}
+div.s01a_1 {
+margin:0px;padding:0px;
+width:100%;
+}
+div.s01a_2 {
+background-image:url(../images/schatten01a/1030/obenschatten.png);
+background-repeat:no-repeat;
+margin:0px;padding:0px;
+width:1030px;height:20px;
+}
+div.s01a_3 {
+background-image:url(../images/schatten01a/1030/linksrechtsschatten.png);
+background-repeat:repeat-y;
+margin:0px;padding:0px;
+width:1030px;
+}
+div.s01a_4 {
+background-color:#fbfbff;
+margin:0px 20px 0px 20px;
+padding:0px 20px 0px 20px;
+width:950px;
+}
+div.s01a_5 {
+background-image:url(../images/schatten01a/1030/untenschatten.png);
+background-repeat:no-repeat;
+margin:0px;padding:0px;
+width:1030px;height:20px;
+}
+div.s01b_1 {
+margin:0px;padding:0px;
+width:100%;
+}
+div.s01b_2 {
+background-image:url(../images/schatten01b/1030/obenschatten.png);
+background-repeat:no-repeat;
+margin:0px;padding:0px;
+width:1030px;height:20px;
+}
+div.s01b_3 {
+background-image:url(../images/schatten01b/1030/linksrechtsschatten.png);
+background-repeat:repeat-y;
+margin:0px;padding:0px;
+width:1030px;
+}
+div.s01b_4 {
+background-color:#fbfbff;
+margin:0px 20px 0px 20px;
+padding:0px 20px 0px 20px;
+width:950px;
+}
+div.s01b_5 {
+background-image:url(../images/schatten01b/1030/untenschatten.png);
+background-repeat:no-repeat;
+margin:0px;padding:0px;
+width:1030px;height:20px;
+}
+table.toptop {
+margin:0px;padding:0px;
+border:none;
+border-collapse:collapse;
+empty-cells:show;
+}
+table.toptop td {
+margin:0px;padding:0px;
+}
+table.toptop table {
+margin:0px;padding:0px;
+border:none;
+border-collapse:collapse;
+empty-cells:show;
+}
+tr.topnav a {
+display:block;
+margin:2px 0px 2px 4px;
+padding:0px 20px 0px 20px;
+height:32px;
+color:#000000;
+text-decoration:none;
+}
+tr.topnav a.active { background-color:#f0f080;font-weight:bold;}
+tr.topnav a.active:hover { background-color:#e0e060;}
+tr.topnav a.inactive { background-color:#f0f0f0;}
+tr.topnav a.inactive:hover { background-color:#e0e0f0;}
+tr.topnav span.active { display:block;color:#000000;margin:0px;padding-top:1px;}
+tr.topnav span.inactive { display:block;color:#000000;margin:0px;padding-top:15px;}
+table.topimg {
+background:url(../images/Hauptbild_0990x169_Logo_01b.jpg) no-repeat;
+width:950px;height:169px;
+empty-cells:show;
+}
+table.topimg .td1 {
+color:#ffffff;
+vertical-align:bottom;
+font-size:48px;
+padding:0px 0px 10px 20px;
+}
+table.topimg .td2 {
+color:#2726a5;
+vertical-align:bottom;
+font-size:48px;
+padding:0px 20px 10px 0px;
+}
+table.sitemap {
+border:none;margin:0px;padding:0px;
+width:100%;
+empty-cells:show;
+}
+table.sitemap td { vertical-align:bottom;}
+table.sitemap tr.tr2 { height:34px;}
+table.sitemap td.td2 { height:34px;font-weight:bold;}
+table.sitemap td.tdclose { height:34px;font-size:13px;font-weight:bold;}

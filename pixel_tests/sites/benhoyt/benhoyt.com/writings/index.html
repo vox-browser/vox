@@ -1,0 +1,394 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+
+<head>
+ <title>Technical Writing</title>
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+
+ <meta name="description" content="Ben Hoyt is an experienced software engineer at Canonical. He and his wife and three daughters live in Christchurch, New Zealand.">
+ <meta name="keywords" content="Ben Hoyt, Benjamin Hoyt, Ben, Hoyt, software, engineer, Canonical, Compass, Jetsetter, Oyster.com, TripAdvisor, Brush Technology, Ben Hoyt's CV, Ben Hoyt's resume">
+
+ <meta name="author" content="Ben Hoyt">
+
+ <link rel="shortcut icon" type="image/png" href="../images/favicon.png">
+
+ <link rel="alternate" type="application/rss+xml" href="https://benhoyt.com/writings/rss.xml" title="RSS feed">
+
+ <style type="text/css">
+body { background: white; color: #301800; font-family: Georgia, "Bitstream Charter", "Times New Roman", serif; font-size: 17px; line-height: 1.6; word-spacing: 0.1em; margin: 0 auto; max-width: 1000px; }
+#menu { margin: 0 auto; width: 92.5%; height: 5.5em; border-bottom: 1px solid #d0c8c0; }
+#menu .site-title { float: left; font-size: 225%; color: #d0c8c0; letter-spacing: 0.15em; padding: 0.45em 0; text-transform: uppercase; margin-left: -0.05em; }
+#menu .site-title a, #menu .site-title a:hover { color: #d0c8c0; text-decoration: none; }
+#menu ul.links { float: right; list-style-type: none; font-size: 80%; margin-top: 2.8em; }
+#menu ul.links li { display: inline; margin: 0 0 0 0.5em; padding: 0; }
+#menu a { border: none; color: #c04000; }
+#menu a:hover { border-bottom: 1px solid; }
+#content { margin: 2em auto; width: 92.5%; max-width: 700px; }
+h1, h2, p, ul, details { margin: 1em 0; }
+p.gap { margin-top: 1.8em; }
+p.subtitle { margin-top: 0; font-style: italic; }
+a { text-decoration: none; border-bottom: 1px dotted; }
+a:hover { border-bottom: 1px solid; }
+a:link { color: #e87000; }
+a:visited { color: #c04000; }
+h1 a, h2 a { border-bottom: none; }
+h1 a:hover, h1 a:link, h1 a:visited, h2 a:hover, h2 a:link, h2 a:visited { color: #301800; }
+h1, h2 { font-weight: normal; letter-spacing: 0.02em; }
+h2 { font-variant: small-caps; }
+h1 { margin: 0 0 0 -0.05em; font-size: 200%; }
+h2 { margin: 1.8em 0 -0.2em 0; font-size: 160%; }
+h3 { margin: 1.5em 0 -0.5em 0; font-size: 100%; }
+ul { padding: 0; list-style-type: disc; }
+li { padding: 0; margin-left: 1.2em; margin-bottom: 0.5em; }
+ol li { margin-left: -0.7em; }
+blockquote { font-size: 90%; margin: 2em 0; padding: 0 1.5em; border-left: 1px dotted #301800; }
+.smallcaps { font-variant: small-caps; }
+pre { overflow-x: auto; }
+code { font-size: 92.5%; word-spacing: 0; }
+.print-only { display: none; }
+img { max-width: 100%; }
+img.right { float: right; width: 40%; margin: 1.5em 0 1.5em 2em; }
+img.screenshot { box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px; border-radius: 5px; }
+.right-callout { float: right; width: 13em; font-size: 75%; font-style: italic; padding: 0.5em 0 0.5em 1.5em; border-left: 1px dotted #301800; margin-left: 1.5em; }
+table { border-collapse: collapse; }
+th { text-align: left; padding-right: 2rem; }
+td { padding-right: 2em; }
+@media (max-width: 750px) {
+body { font-size: 15px; }
+#menu ul.links { font-size: 75%; }
+}
+@media (max-width: 615px) {
+body { font-size: 13px; }
+#menu { height: 7.5em; }
+#menu .site-title { float: none; }
+#menu ul.links { float: none; margin: -0.5em 0 0 -0.8em; }
+h1 { margin-top: 0.5em 0; }
+}
+@media print {
+.no-print { display: none; }
+.print-only { display: block; }
+a:link, a:visited { color: #301800; }
+}
+.highlight .hll { background-color: #ffffcc }
+div.highlight { margin: 1em 0; }
+pre.highlight { background: #f8f8f8; padding: 0.3em 0.6em; margin: 0; }
+.highlight .c { color: #aaaaaa; font-style: italic }
+.highlight .k { color: #0000aa }
+.highlight .ch { color: #aaaaaa; font-style: italic }
+.highlight .cm { color: #aaaaaa; font-style: italic }
+.highlight .cp { color: #4c8317 }
+.highlight .cpf { color: #aaaaaa; font-style: italic }
+.highlight .c1 { color: #aaaaaa; font-style: italic }
+.highlight .cs { color: #0000aa; font-style: italic }
+.highlight .gd { color: #aa0000 }
+.highlight .ge { font-style: italic }
+.highlight .gr { color: #aa0000 }
+.highlight .gh { color: #000080; font-weight: bold }
+.highlight .gi { color: #00aa00 }
+.highlight .go { color: #888888 }
+.highlight .gp { color: #555555 }
+.highlight .gs { font-weight: bold }
+.highlight .gu { color: #800080; font-weight: bold }
+.highlight .gt { color: #aa0000 }
+.highlight .kc { color: #0000aa }
+.highlight .kd { color: #0000aa }
+.highlight .kn { color: #0000aa }
+.highlight .kp { color: #0000aa }
+.highlight .kr { color: #0000aa }
+.highlight .kt { color: #00aaaa }
+.highlight .m { color: #009999 }
+.highlight .s { color: #aa5500 }
+.highlight .na { color: #1e90ff }
+.highlight .nb { color: #00aaaa }
+.highlight .nc { color: #00aa00; }
+.highlight .no { color: #aa0000 }
+.highlight .nd { color: #888888 }
+.highlight .ni { color: #880000; font-weight: bold }
+.highlight .nf { color: #00aa00 }
+.highlight .nn { color: #00aaaa; }
+.highlight .nt { color: #1e90ff; font-weight: bold }
+.highlight .nv { color: #aa0000 }
+.highlight .ow { color: #0000aa }
+.highlight .w { color: #bbbbbb }
+.highlight .mb { color: #009999 }
+.highlight .mf { color: #009999 }
+.highlight .mh { color: #009999 }
+.highlight .mi { color: #009999 }
+.highlight .mo { color: #009999 }
+.highlight .sa { color: #aa5500 }
+.highlight .sb { color: #aa5500 }
+.highlight .sc { color: #aa5500 }
+.highlight .dl { color: #aa5500 }
+.highlight .sd { color: #aa5500 }
+.highlight .s2 { color: #aa5500 }
+.highlight .se { color: #aa5500 }
+.highlight .sh { color: #aa5500 }
+.highlight .si { color: #aa5500 }
+.highlight .sx { color: #aa5500 }
+.highlight .sr { color: #009999 }
+.highlight .s1 { color: #aa5500 }
+.highlight .ss { color: #0000aa }
+.highlight .bp { color: #00aaaa }
+.highlight .fm { color: #00aa00 }
+.highlight .vc { color: #aa0000 }
+.highlight .vg { color: #aa0000 }
+.highlight .vi { color: #aa0000 }
+.highlight .vm { color: #aa0000 }
+.highlight .il { color: #009999 }
+ </style>
+</head>
+
+<body>
+
+<div id="container">
+
+<div id="menu">
+
+ <div class="site-title"><a href="https://benhoyt.com/">Ben Hoyt</a></div>
+
+ 
+ <ul class="links no-print">
+  <li><a href="https://benhoyt.com/" title="Go to the home page">Home</a></li>
+  <li><a href="https://benhoyt.com/cv/" title="Go to my Resume/CV">Resume/CV</a></li>
+  <li><a href="https://benhoyt.com/projects/" title="Projects I&#39;ve authored">Projects</a></li>
+  <li><b>Tech Writing</b></li>
+  <li><a href="https://benhoyt.com/writings/non-tech/" title="Stuff I&#39;ve written">Non-Tech</a></li>
+  <li><a href="mailto:benhoyt@gmail.com" title="Email me">Email</a></li>
+ </ul>
+
+ <ul class="links print-only">
+  <li><a href="https://benhoyt.com/">benhoyt.com</a>
+  <li><a href="mailto:benhoyt@gmail.com">benhoyt@gmail.com</a></li>
+ </ul>
+</div>
+
+<div id="content">
+<div style="float: right; font-size: 80%;">
+  <p><a href="https://benhoyt.com/writings/rss.xml">RSS feed</a></p>
+</div>
+
+<h1 id="technical-writing">Technical Writing</h1>
+
+<p>Below are the programming-related articles I’ve written (see also my <a href="https://benhoyt.com/writings/non-tech/"><strong>non-technical writings</strong></a>). The list includes the guest contributions I’ve written for LWN.net, and tech blog articles for several of the companies I’ve worked for.</p>
+
+<h2 id="y2026">2026</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/updating-gifty-with-ai/">Updating a side project with AI</a> describes how (despite my skepticism) I used an AI coding agent to make a big update to my Gifty Weddings website in 275 small increments.</li>
+  <li><a href="https://benhoyt.com/writings/indecisive-ai-agent/">Fun with an indecisive AI coding agent</a>, in which Claude Opus can’t make up its mind about how to fix a bug, and flip-flops 25 times. (April)</li>
+  <li><a href="https://benhoyt.com/writings/dependencies/">Every dependency you add is a supply chain attack waiting to happen.</a> (April)</li>
+</ul>
+
+<h2 id="y2025">2025</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/jubilant/">Jubilant</a> is a Python library with some unique design choices: <code class="language-plaintext highlighter-rouge">subprocess.run</code> to wrap a CLI and code generation to convert Go structs to Python dataclasses. (December)</li>
+</ul>
+
+<h2 id="y2024">2024</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/go-version-performance-2024/">Go version performance (2024 edition)</a> uses GoAWK to show how the speed of Go programs has improved from version 1.0 through to 1.22. (April)</li>
+  <li><a href="https://benhoyt.com/writings/go-1brc/">The One Billion Row Challenge in Go</a> presents my nine Go solutions to this problem, which range in running time from 1m45s down to 3.4s. (March)</li>
+  <li><a href="https://benhoyt.com/writings/flyio-and-tigris/">Switching from S3 to Tigris on Fly.io</a> describes how I moved my side project from using Amazon S3 for file hosting to using Tigris. (February)</li>
+  <li><a href="https://benhoyt.com/writings/stray-pointers-interview/"><em>Stray Pointers</em> interview</a>: Jim Lawless interviewed me on his podcast (this is a transcription). We discuss Forth, C, CGI, Python, Go, and AWK. (January)</li>
+</ul>
+
+<h2 id="y2023">2023</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/markov-chain/">Generate text using a simple Markov chain</a> algorithm in Python for fun and almost certainly no profit. (November)</li>
+  <li><a href="https://benhoyt.com/writings/how-to-apply/">How (not) to apply for a software job</a> gives advice for writing a software job application and resume/CV. (September)</li>
+  <li><a href="https://benhoyt.com/writings/awk-make/">The AWK book’s 60-line version of Make</a> discusses the minimal Make program in <em>The AWK Programming Language</em> and my Python port of it. (September)</li>
+  <li><a href="https://benhoyt.com/writings/wordstar-diamond/">Using the WordStar diamond in 2023</a> explains the “Wordstar diamond” and how you can still use these key bindings from the 1970s on modern systems. (August)</li>
+  <li><a href="https://benhoyt.com/writings/name-before-type/">Name before type</a> explains why a variables’s name should come first in declarations, for example <code class="language-plaintext highlighter-rouge">age int</code> instead of <code class="language-plaintext highlighter-rouge">int age</code>. (August)</li>
+  <li><a href="https://benhoyt.com/writings/go-servemux-enhancements/">The proposal to enhance Go’s HTTP router</a> looks at Jonathan Amsterdam’s proposal to enhance <code class="language-plaintext highlighter-rouge">http.ServeMux</code> to match HTTP methods and wildcard paths. (July)</li>
+  <li><a href="https://benhoyt.com/writings/gogit/">Gogit</a> is just enough of a Git client to create a repo, commit, and push itself to GitHub, written in a scripting style. (July)</li>
+  <li><a href="https://benhoyt.com/writings/short-names/">Names should be as short as possible while still being clear</a> is my variable naming philosophy. (July)</li>
+  <li><a href="https://benhoyt.com/writings/python-api-file-structure/">File structure != API</a> shows how decoupling file structure from a Python package’s API makes it nicer to use. (June)</li>
+  <li><a href="https://benhoyt.com/writings/python-api-design/">Designing Pythonic library APIs</a> describes principles I’ve found useful for designing good Python library APIs. (June)</li>
+  <li><a href="https://benhoyt.com/writings/flyio/">From Go on EC2 to Fly.io</a> is about how I moved my Go-based side projects from Amazon EC2 to Fly.io, simplified deployment, and saved $9 a month. (February)</li>
+</ul>
+
+<h2 id="y2022">2022</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/goawk-coverage/">Code coverage for your AWK programs</a> describes GoAWK’s code coverage support, which was contributed by Ukranian developer Volodymyr Gubarkov. (December)</li>
+  <li><a href="https://benhoyt.com/writings/io-is-no-longer-the-bottleneck/">I/O is no longer the bottleneck</a> in 2022, and hasn’t been for a while. Disk I/O is fast, and this article provides some numbers. (November)</li>
+  <li><a href="https://benhoyt.com/writings/micropledge/">microPledge</a> was the Kickstarter-like startup we launched in 2007. This is a discussion of why it failed and what we learned. (November)</li>
+  <li><a href="https://benhoyt.com/writings/rob-pike-regex/">Rob Pike’s simple C regex matcher in Go</a> looks at my translation of Pike’s elegant regex matcher from C to Go. (August)</li>
+  <li><a href="https://benhoyt.com/writings/tools-i-use-to-build-my-website/">Tools I use to build my website</a> describes how I build <code class="language-plaintext highlighter-rouge">benhoyt.com</code> with GitHub Pages, Jekyll, a simple HTML+CSS layout, Sublime Text, and Sublime Merge. (August)</li>
+  <li><a href="https://benhoyt.com/writings/goawk-csv/">Modernizing AWK by adding CSV support</a> discusses why and how I added proper CSV support to GoAWK, my POSIX-compatible AWK interpreter. (May)</li>
+  <li><a href="https://benhoyt.com/writings/prig/">Prig</a> is for Processing Records In Go. It’s a text processing tool like AWK, but it uses Go as the scripting language. (February)</li>
+  <li><a href="https://benhoyt.com/writings/go-version-performance/">Go version performance</a> charts how much the performance of Go has improved from version 1.2 through to 1.18 – in its compiler, runtime, and libraries. (February)</li>
+  <li><a href="https://benhoyt.com/writings/goawk-compiler-vm/">Optimizing GoAWK</a> describes how I made GoAWK faster by switching from tree-walking to a bytecode compiler with a virtual machine interpreter. (February)</li>
+</ul>
+
+<h2 id="y2021">2021</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/awkgo/">AWKGo, an AWK-to-Go compiler</a> describes a simple compiler that translates a subset of the AWK text processing language into Go source code. (November)</li>
+  <li><a href="https://benhoyt.com/writings/web-service-stdlib/">Improving the Go RESTful API tutorial</a> describes my re-implementation of the code from an official Go tutorial, making it more robust and maintainable. (November)</li>
+  <li><a href="https://benhoyt.com/writings/simple-lists/">Simple Lists</a> describes a tiny to-do list app I wrote the old-school way: server-side Go that renders HTML, and no JavaScript. (October)</li>
+  <li><a href="https://benhoyt.com/writings/python-pattern-matching/">Structural pattern matching in Python 3.10</a> is a critical but informative look at this new feature, with real-world code examples. (September)</li>
+  <li><a href="https://benhoyt.com/writings/mugo/">Mugo</a> is a toy, single-pass compiler for a tiny subset of Go – just enough to compile itself. It compiles to x86-64 assembly on Linux. (April)</li>
+  <li><a href="https://benhoyt.com/writings/hash-table-in-c/">How to implement a hash table</a> explains how to implement a simple hash table data structure, with code and examples in the C programming language. (March)</li>
+  <li><a href="https://benhoyt.com/writings/count-words/">Performance comparison</a> of counting and sorting word frequencies in various languages: Python, Go, C++, C, AWK, Forth, Rust, and others. (March)</li>
+  <li><a href="https://benhoyt.com/writings/the-small-web-is-beautiful/">The small web is beautiful</a>: a vision for the “small web”, small software, and small architectures. Also, a bonus rant about microservices. (March)</li>
+  <li><a href="https://benhoyt.com/writings/go-readdir/">Coming in Go 1.16: ReadDir and DirEntry</a>: A look at the new <code class="language-plaintext highlighter-rouge">os.ReadDir</code> function coming in Go 1.16, with a comparison to <code class="language-plaintext highlighter-rouge">os.scandir</code> in Python. (January)</li>
+</ul>
+
+<h2 id="y2020">2020</h2>
+
+<ul>
+  <li><a href="https://lwn.net/Articles/829242/">Fuzzing in Go</a> is an overview of fuzz testing and the go-fuzz tool, as well as a look at the recent draft design for including fuzz testing in the <code class="language-plaintext highlighter-rouge">go</code> tool. (August, LWN.net)</li>
+  <li><a href="https://lwn.net/Articles/828748/">Searching code with Sourcegraph</a> looks at Sourcegraph, a code search and code intelligence tool. (August, LWN.net)</li>
+  <li><a href="https://benhoyt.com/writings/go-routing/">Different approaches to HTTP routing in Go</a> compares routing techniques, including five custom approaches and three using third-party routing libraries. (July)</li>
+  <li><a href="https://lwn.net/Articles/827215/">Go filesystems and file embedding</a> presents the draft designs for a filesystem interface and a standard way to embed files in a Go binary. (July, LWN.net)</li>
+  <li><a href="https://lwn.net/Articles/826575/">The sad, slow-motion death of Do Not Track</a> talks about the valiant but almost-dead 10-year effort to prevent tracking with the “<code class="language-plaintext highlighter-rouge">DNT: 1</code>” header. (July, LWN.net)</li>
+  <li><a href="https://lwn.net/Articles/826134/">What’s new in Lua 5.4</a> covers exactly that. (July, LWN.net)</li>
+  <li><a href="https://lwn.net/Articles/825507/">An overview of Hugo</a>, a flexible static website generator written in Go and optimized for speed. (July, LWN.net)</li>
+  <li><a href="https://lwn.net/Articles/824716/">Generics for Go</a> gives some background, the current state, and potential timeline for including generics in the Go programming language. (July, LWN.net)</li>
+  <li><a href="https://lwn.net/Articles/824294/">More alternatives to Google Analytics</a> looks at some heavier replacements for Google Analytics, as well as the GoAccess log-based analytics tool. (June, LWN.net)</li>
+  <li><a href="https://lwn.net/Articles/822568/">Lightweight Google Analytics alternatives</a> discusses what Google Analytics tracks, and presents two lightweight alternatives: GoatCounter and Plausible. (June, LWN.net)</li>
+  <li><a href="https://benhoyt.com/writings/go-intro/">Intro to Go</a> is a brief introduction to Go for programmers who haven’t used Go before: Why use it? The standard library. And the language itself. (June)</li>
+  <li><a href="https://benhoyt.com/writings/zzt-in-go/">ZZT in Go</a> describes my port of Adrian Siekierka’s “Reconstruction of ZZT” to Go, done in a semi-automated way using a Pascal-to-Go converter. (May)</li>
+  <li><a href="https://lwn.net/Articles/821358/">Testing in Go: philosophy and tools</a> describes the minimalist philosophy of testing in Go and the built-in testing tools. (May, LWN.net)</li>
+  <li><a href="https://lwn.net/Articles/820829/">The state of the AWK</a> surveys the AWK landscape, looks at new features in GNU Awk, and discusses why AWK is still relevant in 2020. (May, LWN.net)</li>
+  <li><a href="https://lwn.net/Articles/820217/">What’s coming in Go 1.15</a> is an overview of what’s coming in the Go 1.15 final release in August 2020. (May, LWN.net)</li>
+  <li><a href="https://benhoyt.com/writings/dont-sanitize-do-escape/">Don’t sanitize input</a> shows why you shouldn’t try to sanitize user input; instead, escape output correctly. (February)</li>
+  <li><a href="https://benhoyt.com/writings/seo-for-software-engineers/">SEO for Software Engineers</a> goes over the basics of Search Engine Optimization, written for software developers. (February, Compass.com)</li>
+</ul>
+
+<h2 id="y2019">2019</h2>
+
+<ul>
+  <li><a href="https://medium.com/compass-true-north/fast-cloudfront-log-queries-using-aws-athena-and-serverless-ef117393c5a6">Fast Cloudfront log queries</a> shows how to use AWS Lambda to partition your Cloudfront logs for faster querying via Athena. (December, Compass.com)</li>
+  <li><a href="https://benhoyt.com/writings/learning-elm/">Learning Elm</a> describes how I ported a medium-sized web frontend from React to Elm and had fun with a pure functional language in the process. (October)</li>
+  <li><a href="https://benhoyt.com/writings/replacing-google-analytics/">Replacing Google Analytics with GoAccess</a> describes how I replaced Google tracking with simple log-based analytics on my personal website. (April)</li>
+</ul>
+
+<h2 id="y2018">2018</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/goawk/">GoAWK</a> is an AWK interpreter written in Go, and this article describes how I wrote it, tested it, and measured and improved its performance. (November)</li>
+  <li><a href="https://benhoyt.com/writings/loxlox/">LoxLox</a> is an interpreter for <em>Crafting Interpreters’</em> Lox programming language written in Lox! (October)</li>
+  <li><a href="https://benhoyt.com/writings/writing-good-commit-messages/">Writing good commit messages</a> looks at why quality commit messages are important and how to write them. (September, Compass.com)</li>
+</ul>
+
+<h2 id="y2017">2017</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/littlelang/">Littlelang</a> is a dynamically-typed programming language I designed and wrote an interpreter for in Go (and in littlelang itself!). (December)</li>
+  <li><a href="https://benhoyt.com/writings/learning-go/">Learning Go</a> describes how I learnt the basics of Go (its good parts as well as a few quirks) by porting a medium-sized web backend from Python. (November)</li>
+  <li><a href="https://benhoyt.com/writings/python-pentomino/">Pentomino puzzle solver</a> uses Python code generation to find all 2339 tilings of the 12 free pentominoes on a 6x10 board. Based on my dad’s Forth version. (July)</li>
+  <li><a href="https://benhoyt.com/writings/pyast64/">pyast64</a> is a toy (but working) compiler that turns Python syntax into x86-64 assembly using Python’s built-in AST module. (June)</li>
+  <li><a href="https://benhoyt.com/writings/pygit/">pygit</a> implements just enough of a Git client (in 500 lines of Python) to create a repo, commit, and push itself to GitHub. (April)</li>
+  <li><a href="https://benhoyt.com/writings/language-speed/">Two kinds of speed</a> responds to dynamic-typing dislike with some reasons I think dynamically typed languages like Python are still a good idea. (April)</li>
+  <li><a href="https://benhoyt.com/writings/duplicate-image-detection/">Duplicate image detection with perceptual hashing in Python</a> describes a simple algorithm to detect duplicate or very similar images. (March, Jetsetter.com)</li>
+  <li><a href="https://benhoyt.com/writings/gifty/">Developing GiftyWeddings.com</a> explains how I got started with my wedding gift registry website and also describes the 2016 revamp I gave the site. (January)</li>
+</ul>
+
+<h2 id="y2016">2016</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/scandir/">Contributing os.scandir() to Python</a> describes my experience contributing a medium-sized feature to the Python 3.5 standard library. (August)</li>
+</ul>
+
+<h2 id="y2015">2015</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/using-ansible-to-restore-developer-sanity/">Using Ansible to restore developer sanity</a> talks about how we went from a deployment including 28 manual steps to a single Ansible command. (July, Oyster.com)</li>
+</ul>
+
+<h2 id="y2013">2013</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/save-ram-with-python-slots/">Saving 9 GB of RAM with Python’s __slots__</a> describes the huge memory savings we got using <code class="language-plaintext highlighter-rouge">__slots__</code> on a single class. (November, Oyster.com)</li>
+  <li><a href="https://benhoyt.com/writings/card-number/">Yes, my credit card number <em>does</em> have spaces!</a> rants about payment forms that don’t allow you to type the spaces in your credit card number. (July, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/openssl-python-windows/">OpenSSL hangs CPU with Python &lt;= 2.7.3 on Windows</a> details a serious bug in an older version of OpenSSL that causes O(N<sup>2</sup>) behaviour. (April, Oyster.com)</li>
+  <li><a href="https://benhoyt.com/writings/pythons-garbage-collector/">An arm wrestle with Python’s garbage collector</a> describes how we eliminated 4.5 second stop-the-world GC pauses. (January, Oyster.com)</li>
+  <li><a href="https://benhoyt.com/writings/masterminds-of-programming/">Masterminds of Programming</a> reviews an excellent book that interviews the creators of 17 important programming languages. (January, Brush.co.nz)</li>
+</ul>
+
+<h2 id="y2012">2012</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/async-await-protothreads-cpp/">C#’s async/await compared to protothreads in C++</a> looks at how two very different async constructs unroll to state machines in a similar way. (November, Brush.co.nz)</li>
+</ul>
+
+<h2 id="y2011">2011</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/cherrypy-ctypes-and-being-explicit/">CherryPy, ctypes, and being explicit</a> details a bug in CherryPy on Windows due to lack of <code class="language-plaintext highlighter-rouge">ctypes</code> argument types. (October, Oyster.com)</li>
+  <li><a href="https://benhoyt.com/writings/how-our-photo-search-engine-really-works/">How our photo search engine really works</a> describes how I wrote Oyster’s photo search engine. (July, Oyster.com)</li>
+  <li><a href="https://benhoyt.com/writings/cpp-embedded/">Should you use C++ for an embedded project?</a> asks some hard questions about C versus C++ in small embedded systems. (January, Brush.co.nz)</li>
+</ul>
+
+<h2 id="y2010">2010</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/cpp-2/">C++ for C programmers, part 2 of 2</a> introduces the object-oriented features of C++, for C programmers. (August, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/cpp-1/">C++ for C programmers, part 1 of 2</a> introduces the non-OO features of C++, for C programmers. (May, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/not-linux-yet/">Why I’m not moving to Linux just yet</a> gave the reasons I wasn’t about to switch to Linux in 2010, notably poor font rendering and inconsistent UI. (April, Brush.co.nz)</li>
+</ul>
+
+<h2 id="y2009">2009</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/wikireader/">Go Forth and WikiReadit</a> asks Christopher Hall, one of the main software developers of the WikiReader, why he chose Forth for testing and sub-apps. (December, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/xmacros/">Code generation with X-Macros in C</a> describes X Macros, a little-known but very useful way to use the C preprocessor to initialize code and data. (August, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/scene/">Blast from the demoscene past</a> recalls the demoscene and two reasons that kind of coding still matters today. (June, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/knuth/">Knuth, goto, Python, and OOP</a> shows how Donald Knuth predicted modules, Python-like use of indentation, and object-oriented programming. (April, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/inih/">Cracking an INI file with a jackhammer</a> looks at some bloated INI file parsers in C and C++, then introduces my own, <code class="language-plaintext highlighter-rouge">inih</code>. (February, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/raii-acdc/">RAII, AC/DC, and the “with” statement</a> explains RAII in C++, and why it’s a terrible acronym. (February, Brush.co.nz)</li>
+</ul>
+
+<h2 id="y2008">2008</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/helvetica/">Helvetica: can a font be a film?</a> talks about Arial versus Helvetica, and about the film <em>Helvetica</em>. (September, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/protothreads/">Protothreads and C++</a> introduces my port of Adam Dunkels’ protothreads to C++. (July, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/adobe-reader-9/">Thank you, Adobe Reader 9!</a> is satire about how bloated Adobe Reader had become, even in 2008. (July, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/snappy-software/">Can modern software be snappy?</a> discusses how software is slower and more bloated than ever, despite increasingly powerful computers. (June, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/soap-is-dirty/">SOAP won’t make you clean</a> talks about horribly complex SOAP APIs. (February, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/soft404s/">Link rot, soft 404s, and DecentURL</a> describes a method for detecting “soft 404s”, not-found pages which don’t return HTTP 404. (January, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/ten-python-quirkies/">Ten quirky things about Python</a> lists, um, ten quirky things about Python. (January, Brush.co.nz)</li>
+</ul>
+
+<h2 id="y2007">2007</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/recursive-decent/">Recursive decent parsing [sic]</a> shows how to turn a simple BNF grammar into code. (November, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/ten-things-about-c/">Ten things I love &amp;&amp; hate about C</a> has a pretty self-explanatory title. (October, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/nobraces/">nobraces: Python indentation for C</a> is a fun program that allows you to use Python-like indentation in C. (September, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/learning-to-write/">Learning to write from Mr Green</a> talks about clear writing versus business jargon. (September, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/the-case-for-case-sensitivity/">The Case for case sensitivity</a> counters Jeff Atwood’s diatribe against case sensitivity in programming languages. (July, Brush.co.nz)</li>
+  <li><a href="https://benhoyt.com/writings/how-did-you-learn-to-program/">How did you learn to program?</a> describes how I got into programming as a teenager. (June, Brush.co.nz)</li>
+</ul>
+
+<h2 id="y1997">1997</h2>
+
+<ul>
+  <li><a href="https://benhoyt.com/writings/forth-lookup-tables/">Lookup Tables</a> is an article about lookup tables in Forth that I co-authored with Hans Bezemer when I was 16. My first published technical writing. (September)</li>
+</ul>
+
+<h2 id="copyright">Copyright</h2>
+
+<p>Unless it says otherwise in the individual document, the works above are © Ben Hoyt under a <a href="http://creativecommons.org/licenses/by-nc-nd/3.0/">Creative Commons BY-NC-ND</a> license, which basically means you can copy and share them freely, as long as you link back to <a href="https://benhoyt.com/">benhoyt.com</a>, don’t make money with them, and don’t alter the content. Enjoy!</p>
+
+<div style="margin-top: 4em; padding: 0.1em 1.25em; background: #f0e8e0; font-weight: normal;" class="no-print">
+  <p>I hope you enjoyed this hand-written article. I might code with AI, but I don’t write with it.</p>
+  <p><b>I’d love it if you <a href="https://github.com/sponsors/benhoyt/">sponsored me on GitHub</a></b> – it will motivate me to work on my open source projects and write more good content. Thanks!</p>
+</div>
+
+
+</div>
+
+</div>
+
+
+
+</body>
+</html>

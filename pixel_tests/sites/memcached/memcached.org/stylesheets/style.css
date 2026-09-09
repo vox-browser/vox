@@ -1,0 +1,59 @@
+
+body { 
+    background:#fff;
+    color: #333; 
+}
+a { color: #000; }
+.center { text-align: center; }
+.pad { padding: 5px; }
+
+#toc { padding: 10px; font-size: 120%; }
+#toc ul { display: inline; }
+#toc ul li { display: inline; margin-left: 15px; margin-right: 15px;}
+#toc ul li a { color: #298D84; }
+
+ul.a-index li#m-index a, ul.a-about li#m-about a, 
+ul.a-documentation li#m-documentation a, ul.a-downloads li#m-downloads a, 
+ul.a-blog li#m-blog a,
+ul.a-tools li#m-tools a { font-weight: bold; color: #EEEEEE; text-decoration: none;}
+
+ul#about-list li { padding: 5px; }
+ul#about-list li strong { color: #6E212E; }
+
+.header h1 { text-align: center; }
+.navbar { text-align: center; background: #514845;}
+.footer { text-align: center; background: #EEEEEE;}
+.menu { padding: 10px; }
+#header { min-height: 106px;}
+
+h2.section-start { text-align:center; background: #514845; color: #EEEEEE; }
+h3.title { background: #eee; padding: 5px;}
+
+.inner { background: #EEEEEE; padding-bottom: 10px;}
+.example { background: #eee; padding: 10px; }
+
+#current-release #ver { font-size: 200%; color: #514845; font-weight: bold; }
+#current-release small { font-size: 80% !important; color: #888;}
+#tip { text-align:center; padding: 20px 10px; font-size: 200%;}
+
+#mc-is { padding: 10px; margin-bottom: 15px; background: #DBDBDB;}
+#mc-is h3 { color: #514845; font-size: 200%; font-weight: bold;}
+
+#mc-about h2 { color: #514845; font-weight: bold; padding: 5px;}
+
+#download-source { padding: 10px; padding-bottom:15px; background: #B5463F; }
+#download-source h3 { color: #fff; font-weight: bold; text-align: center;}
+#download-source h3 small { color: #eee; font-weight: normal; font-size: 70%;}
+
+#using-mc h3 { color: #2A707B; font-weight: bold;}
+#using-mc ul { font-size: 120%; color: #2A707B;}
+#using-mc a { color: #2A707B; }
+
+table tr td { vertical-align: top;}
+
+table.data-table tr td { vertical-align: top;}
+table.data-table tr td h3 { background: #B5463F; color: #fff; padding: 5px; }
+
+table#authors tr td { font-size: 120%; }                                                                                 
+
+.rounded { -moz-border-radius: 8px; -webkit-border-radius: 8px; }

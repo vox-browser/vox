@@ -1,0 +1,5017 @@
+<!DOCTYPE html>
+
+
+<html class="no-js" lang="en">
+<head>
+	<meta name="generator" content="Hugo 0.135.0">
+<meta charset="utf-8">
+<title>Julia Evans</title>
+<meta name="author" content="Julia Evans">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="description" content="Julia Evans">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta property="og:title" content='Julia Evans'>
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://jvns.ca/" />
+<meta property="og:site_name" content="Julia Evans" />
+
+<link rel="canonical" href="index.html">
+<link href="favicon.ico" rel="icon">
+
+<link href="stylesheets/screen.css" rel="preload" type="text/css" as="style">
+
+<link href="stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+<link href="stylesheets/print.css" media="print" rel="stylesheet" type="text/css">
+
+
+<link href="https://jvns.ca/atom.xml" rel="alternate" title="Julia Evans" type="application/atom+xml">
+
+ 
+<link rel="stylesheet" href="../cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css" integrity="sha384-vKruj+a13U8yHIkAyGgK1J3ArTLzrFGBbBc0tDp4ad/EyewESeXE/Iv67Aj8gKZ0" crossorigin="anonymous">
+
+
+
+
+ 
+</head>
+<body>
+<div id="skiptocontent">
+  <a href="index.html#main">Skip to main content</a>
+</div>
+<div id="wrap">
+<header role="banner">
+<hgroup>
+<h1><a href="index.html">Julia Evans</a></h1>
+</hgroup>
+<ul class="header-links">
+<li><a href="https://jvns.ca/about">About</a></li>
+<li><a href="https://jvns.ca/talks">Talks</a></li>
+<li><a href="https://jvns.ca/projects/">Projects</a></li>
+<li><a rel="me" href="https://social.jvns.ca/@b0rk">Mastodon</a></li>
+<li><a href="https://bsky.app/profile/b0rk.jvns.ca">Bluesky</a></li>
+<li><a href="https://github.com/jvns">Github</a></li>
+</ul>
+</header>
+<nav role="navigation" class="header-nav"><ul class="main-navigation">
+<li><a href="https://jvns.ca/categories/favorite/">Favorites</a></li>
+<li><a href="https://jvns.ca/til/">TIL</a></li>
+<li><a href="https://wizardzines.com">Zines</a></li>
+<li class="subscription" data-subscription="rss"><a href="https://jvns.ca/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+</ul>
+</nav>
+<div id="main">
+<div id="content">
+
+
+<div>
+<article class="hentry" role="article">
+
+<p>
+Hey! I'm Julia. Welcome to my blog. Here's every post I've ever written, organized by category.
+Enjoy! You can subscribe to a <a href="https://jvns.ca/newsletter">weekly digest of these blog posts</a>.
+</p>
+
+<p>
+I publish computer zines at <a href="https://wizardzines.com">Wizard Zines</a>.
+</p>
+   
+
+<h3> Most recent 10 posts </h3>
+
+<p class="article-list">
+
+
+<time datetime="" pubdate>Jul 21 2026</time>
+<a href="https://jvns.ca/blog/2026/07/21/more-nice-django-things/">Some more things about Django I&#39;ve been enjoying</a>
+
+<time datetime="" pubdate>Jul 17 2026</time>
+<a href="https://jvns.ca/blog/2026/07/17/learning-about-running-sqlite/">Learning a few things about running SQLite</a>
+
+<time datetime="" pubdate>May 15 2026</time>
+<a href="https://jvns.ca/blog/2026/05/15/moving-away-from-tailwind--and-learning-to-structure-my-css-/">Moving away from Tailwind, and learning to structure my CSS</a>
+
+<time datetime="" pubdate>May 4 2026</time>
+<a href="https://jvns.ca/blog/2026/05/04/css-colour-palettes/">Links to CSS colour palettes</a>
+
+<time datetime="" pubdate>May 2 2026</time>
+<a href="https://jvns.ca/blog/2026/05/02/testing-vue-components-in-the-browser/">Testing Vue components in the browser</a>
+
+<time datetime="" pubdate>Mar 10 2026</time>
+<a href="https://jvns.ca/blog/2026/03/10/examples-for-the-tcpdump-and-dig-man-pages/">Examples for the tcpdump and dig man pages</a>
+
+<time datetime="" pubdate>Feb 18 2026</time>
+<a href="https://jvns.ca/blog/2026/02/18/man-pages/">Notes on clarifying man pages</a>
+
+<time datetime="" pubdate>Jan 27 2026</time>
+<a href="https://jvns.ca/blog/2026/01/27/some-notes-on-starting-to-use-django/">Some notes on starting to use Django</a>
+
+<time datetime="" pubdate>Jan 8 2026</time>
+<a href="https://jvns.ca/blog/2026/01/08/a-data-model-for-git/">A data model for Git (and other docs updates)</a>
+
+<time datetime="" pubdate>Oct 10 2025</time>
+<a href="https://jvns.ca/blog/2025/10/10/notes-on-switching-to-helix-from-vim/">Notes on switching to Helix from vim</a>
+
+
+</p>
+
+<p>
+and all posts by category: (or see <a href="https://jvns.ca/popular">popular posts</a>)
+</p>
+
+
+
+
+  
+  
+  <h3 id="uncategorized"><a href="index.html#uncategorized"> Uncategorized </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Jul 2026</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2026/07/21/more-nice-django-things/">Some more things about Django I&#39;ve been enjoying</a>
+    
+    <time datetime="" pubdate>Jul 2026</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2026/07/17/learning-about-running-sqlite/">Learning a few things about running SQLite</a>
+    
+    <time datetime="" pubdate>May 2026</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2026/05/15/moving-away-from-tailwind--and-learning-to-structure-my-css-/">Moving away from Tailwind, and learning to structure my CSS</a>
+    
+    <time datetime="" pubdate>May 2026</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2026/05/04/css-colour-palettes/">Links to CSS colour palettes</a>
+    
+    <time datetime="" pubdate>May 2026</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2026/05/02/testing-vue-components-in-the-browser/">Testing Vue components in the browser</a>
+    
+    <time datetime="" pubdate>Mar 2026</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2026/03/10/examples-for-the-tcpdump-and-dig-man-pages/">Examples for the tcpdump and dig man pages</a>
+    
+    <time datetime="" pubdate>Feb 2026</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2026/02/18/man-pages/">Notes on clarifying man pages</a>
+    
+    <time datetime="" pubdate>Jan 2026</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2026/01/27/some-notes-on-starting-to-use-django/">Some notes on starting to use Django</a>
+    
+    <time datetime="" pubdate>Jan 2026</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2026/01/08/a-data-model-for-git/">A data model for Git (and other docs updates)</a>
+    
+    <time datetime="" pubdate>Oct 2025</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2025/10/10/notes-on-switching-to-helix-from-vim/">Notes on switching to Helix from vim</a>
+    
+    <time datetime="" pubdate>Jun 2025</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2025/06/24/new-zine--the-secret-rules-of-the-terminal/">New zine: The Secret Rules of the Terminal</a>
+    
+    <time datetime="" pubdate>Jun 2025</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2025/06/10/how-to-compile-a-c-program/">Using `make` to compile C programs (for non-C-programmers)</a>
+    
+  </p>
+
+  
+  
+  <h3 id="cool-computer-tools---features---ideas"><a href="index.html#cool-computer-tools---features---ideas"> Cool computer tools / features / ideas </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Sep 2024</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/09/27/some-go-web-dev-notes/">Some Go web dev notes</a>
+    
+    <time datetime="" pubdate>Sep 2024</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/09/12/reasons-i--still--love-fish/">Reasons I still love the fish shell</a>
+    
+    <time datetime="" pubdate>Aug 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/08/08/what-helps-people-get-comfortable-on-the-command-line-/">What helps people get comfortable on the command line?</a>
+    
+    <time datetime="" pubdate>Jul 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/07/10/lima--a-nice-way-to-run-linux-vms-on-mac/">Lima: a nice way to run Linux VMs on Mac</a>
+    
+    <time datetime="" pubdate>Jul 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/07/09/monitoring-small-web-services/">Monitoring tiny web services</a>
+    
+    <time datetime="" pubdate>Jun 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/06/28/some-notes-on-bubblewrap/">Notes on running containers with bubblewrap</a>
+    
+    <time datetime="" pubdate>May 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/05/12/sqlite-utils--a-nice-way-to-import-data-into-sqlite/">sqlite-utils: a nice way to import data into SQLite for analysis</a>
+    
+    <time datetime="" pubdate>Apr 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/04/12/a-list-of-new-ish--command-line-tools/">A list of new(ish) command line tools</a>
+    
+    <time datetime="" pubdate>Feb 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/02/20/things-that-used-to-be-hard-and-are-now-easy/">Things that used to be hard and are now easy</a>
+    
+    <time datetime="" pubdate>Jan 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/01/24/hosting-my-static-sites-with-nginx/">Hosting my static sites with nginx</a>
+    
+    <time datetime="" pubdate>Nov 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/11/15/esbuild-vue/">Some notes on using esbuild</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/23/firecracker--start-a-vm-in-less-than-a-second/">Firecracker: start a VM in less than a second</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/12/day-36--server-sent-events-are-cool--and-a-fun-bug/">Server-sent events: a simple way to stream events from a server</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/04/docker-compose-is-nice/">Docker Compose: a nice way to set up a dev environment</a>
+    
+    <time datetime="" pubdate>Oct 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/10/26/ninja--a-simple-way-to-do-builds/">ninja: a simple way to do builds</a>
+    
+    <time datetime="" pubdate>Aug 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/08/18/implementing--focus-and-reply--for-fastmail/">Implementing &#39;focus and reply&#39; for Fastmail with JMAP</a>
+    
+    <time datetime="" pubdate>Jul 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/07/11/scanimage--scan-from-the-command-line/">scanimage: scan from the command line!</a>
+    
+    <time datetime="" pubdate>Jun 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/06/28/entr/">entr: rerun your build when files change</a>
+    
+    <time datetime="" pubdate>Jan 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/01/05/paperwm/">PaperWM: tiled window management for GNOME</a>
+    
+    <time datetime="" pubdate>Oct 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/10/28/sqlite-is-really-easy-to-compile/">SQLite is really easy to compile</a>
+    
+    <time datetime="" pubdate>Mar 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/03/26/what-are-monoidal-categories/">Why are monoidal categories interesting?</a>
+    
+    <time datetime="" pubdate>Nov 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/11/01/tailwind--write-css-without-the-css/">Tailwind: style your site without writing any CSS!</a>
+    
+    <time datetime="" pubdate>Sep 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/09/08/an-awesome-new-python-profiler--py-spy-/">An awesome new Python profiler: py-spy!</a>
+    
+    <time datetime="" pubdate>May 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/05/11/batch-editing-files-with-ed/">Batch editing files with ed</a>
+    
+    <time datetime="" pubdate>Nov 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/11/13/glitch--write-small-web-projects-easily/">Glitch: write fun small web projects instantly</a>
+    
+    <time datetime="" pubdate>Nov 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/11/12/binder--an-awesome-tool-for-hosting-jupyter-notebooks/">Binder: an awesome tool for hosting Jupyter notebooks</a>
+    
+    <time datetime="" pubdate>Sep 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/09/10/vim-sessions/">Cool vim feature: sessions!</a>
+    
+    <time datetime="" pubdate>Sep 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/09/09/data-structure--the-treap-/">Data structure: the treap!</a>
+    
+    <time datetime="" pubdate>Jun 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/06/26/vue-js-fun/">a tiny whack-a-mole game</a>
+    
+    <time datetime="" pubdate>Jun 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/06/11/log-structured-storage/">Log-structured storage</a>
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/30/using-strict-transport-security/">Using the Strict-Transport-Security header</a>
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/23/the-fish-shell-is-awesome/">The fish shell is awesome</a>
+    
+    <time datetime="" pubdate>May 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/05/13/homu-plus-highfive-making-less-work-for-open-source-maintainers/">homu &#43; highfive: awesome bots that make open source projects easier</a>
+    
+    <time datetime="" pubdate>Apr 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/04/24/how-regular-expressions-go-fast/">you can take the derivative of a regular expression?!</a>
+    
+    <time datetime="" pubdate>Mar 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/03/16/tcpdump-is-amazing/">tcpdump is amazing</a>
+    
+    <time datetime="" pubdate>Feb 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/02/20/measuring-cpu-time-with-clock-gettime/">How to measure your CPU time: clock_gettime!</a>
+    
+    <time datetime="" pubdate>Jan 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/01/23/fast-integer-sets-with-roaring-bitmaps/">Fast integer sets with Roaring Bitmaps (and, making friends with your modern CPU)</a>
+    
+    <time datetime="" pubdate>Jan 2016</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/01/23/sendfile-a-new-to-me-system-call/">Sendfile (a system call for web developers to know about!)</a>
+    
+    <time datetime="" pubdate>Oct 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/10/31/papers-are-amazing-profiling-threaded-programs-with-coz/">PAPERS ARE AMAZING: Profiling threaded programs with Coz</a>
+    
+    <time datetime="" pubdate>Nov 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/11/27/ld-preload-is-super-fun-and-easy/">LD_PRELOAD is super fun. And easy!</a>
+    
+  </p>
+
+  
+  
+  <h3 id="things-i-built"><a href="index.html#things-i-built"> Things I built </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Oct 2024</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/10/27/asn-ip-address-memory/">Using less memory to look up IP addresses in Mess With DNS</a>
+    
+    <time datetime="" pubdate>Aug 2024</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/08/19/migrating-mess-with-dns-to-use-powerdns/">Migrating Mess With DNS to use PowerDNS</a>
+    
+    <time datetime="" pubdate>Dec 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/12/04/mounting-git-commits-as-folders-with-nfs/">Mounting git commits as folders with NFS</a>
+    
+    <time datetime="" pubdate>Jul 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/07/08/open-sourcing-the-nginx-playground/">Open sourcing the nginx playground</a>
+    
+    <time datetime="" pubdate>May 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/05/25/new-playground--memory-spy/">New playground: memory spy</a>
+    
+    <time datetime="" pubdate>May 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/05/12/introducing-implement-dns-in-a-weekend/">Introducing &#34;Implement DNS in a Weekend&#34;</a>
+    
+    <time datetime="" pubdate>Apr 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/04/19/new-playground-integer-exposed/">New playground: integer.exposed</a>
+    
+    <time datetime="" pubdate>Apr 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/04/17/a-list-of-programming-playgrounds/">A list of programming playgrounds</a>
+    
+    <time datetime="" pubdate>Mar 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/03/08/tiny-programs/">Some tiny personal programs I&#39;ve written</a>
+    
+    <time datetime="" pubdate>Dec 2021</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/12/15/mess-with-dns/">New tool: Mess with DNS!</a>
+    
+    <time datetime="" pubdate>Sep 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/09/24/new-tool--an-nginx-playground/">New tool: an nginx playground</a>
+    
+    <time datetime="" pubdate>Apr 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/04/16/notes-on-debugging-puzzles/">Notes on building debugging puzzles</a>
+    
+    <time datetime="" pubdate>Mar 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/03/31/dnspeep-tool/">A tool to spy on your DNS queries: dnspeep</a>
+    
+    <time datetime="" pubdate>Feb 2021</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/02/24/a-little-tool-to-make-dns-queries/">A little tool to make DNS queries</a>
+    
+  </p>
+
+  
+  
+  <h3 id="git"><a href="index.html#git"> Git </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Apr 2024</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/04/10/notes-on-git-error-messages/">Notes on git&#39;s error messages</a>
+    
+    <time datetime="" pubdate>Mar 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/03/28/git-poll-results/">Some Git poll results</a>
+    
+    <time datetime="" pubdate>Mar 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/03/22/the-current-branch-in-git/">The &#34;current branch&#34; in git</a>
+    
+    <time datetime="" pubdate>Mar 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/03/08/how-head-works-in-git/">How HEAD works in git</a>
+    
+    <time datetime="" pubdate>Feb 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/02/16/popular-git-config-options/">Popular git config options</a>
+    
+    <time datetime="" pubdate>Feb 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/02/01/dealing-with-diverged-git-branches/">Dealing with diverged git branches</a>
+    
+    <time datetime="" pubdate>Jan 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/01/26/inside-git/">Inside .git</a>
+    
+    <time datetime="" pubdate>Jan 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/01/05/do-we-think-of-git-commits-as-diffs--snapshots--or-histories/">Do we think of git commits as diffs, snapshots, and/or histories?</a>
+    
+    <time datetime="" pubdate>Nov 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/11/23/branches-intuition-reality/">git branches: intuition &amp; reality</a>
+    
+    <time datetime="" pubdate>Nov 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/11/10/how-cherry-pick-and-revert-work/">How git cherry-pick and revert use 3-way merge</a>
+    
+    <time datetime="" pubdate>Nov 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/11/06/rebasing-what-can-go-wrong-/">git rebase: what can go wrong?</a>
+    
+    <time datetime="" pubdate>Nov 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/11/01/confusing-git-terminology/">Confusing git terminology</a>
+    
+    <time datetime="" pubdate>Oct 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/10/20/some-miscellaneous-git-facts/">Some miscellaneous git facts</a>
+    
+    <time datetime="" pubdate>Sep 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/09/14/in-a-git-repository--where-do-your-files-live-/">In a git repository, where do your files live?</a>
+    
+  </p>
+
+  
+  
+  <h3 id="nix"><a href="index.html#nix"> Nix </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Jan 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/01/01/some-notes-on-nixos/">Some notes on NixOS</a>
+    
+    <time datetime="" pubdate>Nov 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/11/11/notes-on-nix-flakes/">Some notes on nix flakes</a>
+    
+    <time datetime="" pubdate>Mar 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/03/03/how-do-nix-builds-work-/">How do Nix builds work?</a>
+    
+    <time datetime="" pubdate>Feb 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/02/28/some-notes-on-using-nix/">Some notes on using nix</a>
+    
+  </p>
+
+  
+  
+  <h3 id="dns"><a href="index.html#dns"> DNS </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Jul 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/07/28/why-is-dns-still-hard-to-learn/">Why is DNS still hard to learn?</a>
+    
+    <time datetime="" pubdate>Nov 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/11/06/making-a-dns-query-in-ruby-from-scratch/">Making a DNS query in Ruby from scratch</a>
+    
+    <time datetime="" pubdate>Sep 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/09/12/why-do-domain-names-end-with-a-dot-/">Why do domain names sometimes end with a dot?</a>
+    
+    <time datetime="" pubdate>Feb 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/02/14/some-dns-terminology/">The multiple meanings of &#34;nameserver&#34; and &#34;DNS resolver&#34;</a>
+    
+    <time datetime="" pubdate>Feb 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/02/01/a-dns-resolver-in-80-lines-of-go/">A toy DNS resolver</a>
+    
+    <time datetime="" pubdate>Jan 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/01/15/some-ways-dns-can-break/">Some ways DNS can break</a>
+    
+    <time datetime="" pubdate>Jan 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/01/05/why-might-you-run-your-own-dns-server-/">Why might you run your own DNS server?</a>
+    
+    <time datetime="" pubdate>Dec 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/12/06/dns-doesn-t-propagate/">DNS &#34;propagation&#34; is actually caches expiring</a>
+    
+    <time datetime="" pubdate>Jun 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/how-updating-dns-works/">What happens when you update your DNS?</a>
+    
+  </p>
+
+  
+  
+  <h3 id="terminals"><a href="index.html#terminals"> Terminals </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Mar 2025</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2025/03/07/escape-code-standards/">Standards for ANSI escape codes</a>
+    
+    <time datetime="" pubdate>Feb 2025</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2025/02/13/how-to-add-a-directory-to-your-path/">How to add a directory to your PATH</a>
+    
+    <time datetime="" pubdate>Feb 2025</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2025/02/05/some-terminal-frustrations/">Some terminal frustrations</a>
+    
+    <time datetime="" pubdate>Jan 2025</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2025/01/11/getting-a-modern-terminal-setup/">What&#39;s involved in getting a &#34;modern&#34; terminal setup?</a>
+    
+    <time datetime="" pubdate>Dec 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/11/26/terminal-rules/">&#34;Rules&#34; that terminal programs follow</a>
+    
+    <time datetime="" pubdate>Nov 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/11/29/why-pipes-get-stuck-buffering/">Why pipes sometimes get &#34;stuck&#34;: buffering</a>
+    
+    <time datetime="" pubdate>Oct 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/10/31/ascii-control-characters/">ASCII control characters in my terminal</a>
+    
+    <time datetime="" pubdate>Oct 2024</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/10/01/terminal-colours/">Terminal colours are tricky</a>
+    
+    <time datetime="" pubdate>Jul 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/07/08/readline/">Entering text in the terminal is complicated</a>
+    
+    <time datetime="" pubdate>Jul 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/07/03/reasons-to-use-job-control/">Reasons to use your shell&#39;s job control</a>
+    
+    <time datetime="" pubdate>Jul 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/07/20/pseudoterminals/">What happens when you press a key in your terminal?</a>
+    
+  </p>
+
+  
+  
+  <h3 id="computer-networking"><a href="index.html#computer-networking"> Computer networking </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Sep 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/09/06/send-network-packets-python-tun-tap/">How to send raw network packets in Python with tun/tap</a>
+    
+    <time datetime="" pubdate>Jul 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/07/28/toy-remote-login-server/">A toy remote login server</a>
+    
+    <time datetime="" pubdate>Jan 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/01/29/reasons-for-servers-to-support-ipv6/">Reasons for servers to support IPv6</a>
+    
+    <time datetime="" pubdate>Sep 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/09/06/how-to-put-an-html-page-on-the-internet/">How to put an HTML page on the internet</a>
+    
+    <time datetime="" pubdate>Feb 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/02/10/a-few-networking-tool-comics/">Networking tool comics!</a>
+    
+    <time datetime="" pubdate>Nov 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/11/18/c---destructors---really-useful/">An example of how C&#43;&#43; destructors are useful in Envoy</a>
+    
+    <time datetime="" pubdate>Oct 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/10/27/envoy-basics/">Some Envoy basics</a>
+    
+    <time datetime="" pubdate>Sep 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/09/03/editing-my-blog-s-http-headers-with-cloudflare-workers/">Editing my blog&#39;s HTTP headers with Cloudflare workers</a>
+    
+    <time datetime="" pubdate>Jul 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/07/24/ip-addresses-routing/">IP addresses &amp; routing</a>
+    
+    <time datetime="" pubdate>Jul 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/07/12/netdev-day-2--moving-away-from--as-fast-as-possible/">netdev day 2: moving away from &#34;as fast as possible&#34; in networking code</a>
+    
+    <time datetime="" pubdate>Jul 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/07/11/netdev-day-1--ipsec/">netdev day 1: IPsec!</a>
+    
+    <time datetime="" pubdate>Jun 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/06/19/what-i-use-wireshark-for/">How I use Wireshark</a>
+    
+    <time datetime="" pubdate>Mar 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/03/05/things-ive-learned-networking/">A few things I&#39;ve learned about computer networking</a>
+    
+    <time datetime="" pubdate>Sep 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/09/05/finding-out-where-packets-are-being-dropped/">Finding out if/why a server is dropping packets</a>
+    
+    <time datetime="" pubdate>Sep 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/09/03/network-interfaces/">What&#39;s a network interface?</a>
+    
+    <time datetime="" pubdate>Jun 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/06/07/iptables-basics/">Iptables basics</a>
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/08/netdev-conference-day-3/">netdev conference, day 3</a>
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/07/netdev-conference-day-2/">netdev conference, day 2</a>
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/07/xdp-bpf-tutorial/">How to filter packets super fast: XDP &amp; eBPF!</a>
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/06/netdev-2-1/">netdev conference, day 1</a>
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/01/slow-down-your-internet-with-tc/">Slow down your internet with tc</a>
+    
+    <time datetime="" pubdate>Feb 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/02/07/mtu/">How big can a packet get?</a>
+    
+    <time datetime="" pubdate>Jan 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/01/31/whats-tls/">Dissecting an SSL certificate</a>
+    
+    <time datetime="" pubdate>Dec 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/12/21/what-s-interesting-about-udp/">What&#39;s interesting about UDP?</a>
+    
+    <time datetime="" pubdate>Aug 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/08/24/find-out-where-youre-dropping-packets/">Why do UDP packets get dropped?</a>
+    
+    <time datetime="" pubdate>Jul 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/07/14/whats-sni/">How do HTTP requests get sent to the right place?</a>
+    
+    <time datetime="" pubdate>Jun 2016</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/06/30/why-do-we-use-the-linux-kernels-tcp-stack/">Why do we use the Linux kernel&#39;s TCP stack?</a>
+    
+    <time datetime="" pubdate>May 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/05/06/what-are-ssl-ciphers-and-session-keys/">What are SSL ciphers &amp; session keys?</a>
+    
+    <time datetime="" pubdate>Apr 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/04/29/cdns-arent-just-for-caching/">CDNs aren&#39;t just for caching</a>
+    
+  </p>
+
+  
+  
+  <h3 id="how-a-computer-thing-works"><a href="index.html#how-a-computer-thing-works"> How a computer thing works </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Aug 2024</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/08/06/go-structs-copied-on-assignment/">Go structs are copied on assignment (and other things about Go I&#39;d missed)</a>
+    
+    <time datetime="" pubdate>Aug 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/08/11/some-notes-on-mastodon/">Notes on using a single-person Mastodon server</a>
+    
+    <time datetime="" pubdate>Aug 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/08/03/behind--hello-world/">Behind &#34;Hello World&#34; on Linux</a>
+    
+    <time datetime="" pubdate>Mar 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/03/23/a-toy-version-of-tls/">Implementing a toy version of TLS 1.3</a>
+    
+    <time datetime="" pubdate>Mar 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/03/10/how-to-use-undocumented-web-apis/">How to use undocumented web APIs</a>
+    
+    <time datetime="" pubdate>Feb 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/02/23/getaddrinfo-is-kind-of-weird/">Some things about getaddrinfo that surprised me</a>
+    
+    <time datetime="" pubdate>Jan 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/01/11/how-to-find-a-domain-s-authoritative-nameserver/">How to find a domain&#39;s authoritative nameservers</a>
+    
+    <time datetime="" pubdate>Dec 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/12/04/how-to-use-dig/">How to use dig</a>
+    
+    <time datetime="" pubdate>Nov 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/11/04/how-do-you-tell-if-a-problem-is-caused-by-dns/">How do you tell if a problem is caused by DNS?</a>
+    
+    <time datetime="" pubdate>Oct 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/10/05/tools-to-look-at-bgp-routes/">Tools to explore BGP</a>
+    
+    <time datetime="" pubdate>Sep 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/09/10/hashmaps-make-things-fast/">Quadratic algorithms are slow (and hashmaps are fast)</a>
+    
+    <time datetime="" pubdate>May 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/05/17/how-to-look-at-the-stack-in-gdb/">How to look at the stack with gdb</a>
+    
+    <time datetime="" pubdate>May 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/05/11/what-s-the-osi-model-/">The OSI model doesn&#39;t map well to TCP/IP</a>
+    
+    <time datetime="" pubdate>Apr 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/04/29/why-strace-doesnt-work-in-docker/">Why strace doesn&#39;t work in Docker</a>
+    
+    <time datetime="" pubdate>Mar 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/03/15/writing-shaders-with-signed-distance-functions/">Getting started with shaders: signed distance functions!</a>
+    
+    <time datetime="" pubdate>Dec 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/12/26/whats-a-server/">&#34;server&#34; is hard to define</a>
+    
+    <time datetime="" pubdate>Dec 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/how-tracking-pixels-work/">How tracking pixels work</a>
+    
+    <time datetime="" pubdate>Nov 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/11/18/how-containers-work--overlayfs/">How containers work: overlayfs</a>
+    
+    <time datetime="" pubdate>Oct 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/10/03/sql-queries-don-t-start-with-select/">SQL queries don&#39;t start with SELECT</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/04/how-does-gdb-call-functions/">How does gdb call functions?</a>
+    
+    <time datetime="" pubdate>Nov 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/11/20/groups/">How do groups work on Linux?</a>
+    
+    <time datetime="" pubdate>Jun 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/06/03/async-io-on-linux--select--poll--and-epoll/">Async IO on Linux: select, poll, and epoll</a>
+    
+    <time datetime="" pubdate>Feb 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/02/08/weird-unix-things-cd/">Weird unix thing: &#39;cd //&#39;</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/04/exec-will-eat-your-brain/">What happens when you start a process on Linux?</a>
+    
+    <time datetime="" pubdate>Aug 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/08/10/how-does-gdb-work/">How does gdb work?</a>
+    
+    <time datetime="" pubdate>Jun 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/06/13/should-you-be-scared-of-signals/">Should you be scared of Unix signals?</a>
+    
+    <time datetime="" pubdate>Mar 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/03/29/thread-pools-part-ii-i-love-blocking/">I conquered thread pools! For today, at least.</a>
+    
+    <time datetime="" pubdate>Mar 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/03/27/thread-pools-how-do-i-use-them/">Thread pools! How do I use them?</a>
+    
+    <time datetime="" pubdate>Feb 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/02/27/a-few-notes-on-the-stack/">What is &#34;the stack&#34;?</a>
+    
+    <time datetime="" pubdate>Nov 2015</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/11/27/why-rubys-timeout-is-dangerous-and-thread-dot-raise-is-terrifying/">Why Ruby’s Timeout is dangerous (and Thread.raise is terrifying)</a>
+    
+    <time datetime="" pubdate>Nov 2015</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/11/21/why-you-should-understand-a-little-about-tcp/">Why you should understand (a little) about TCP</a>
+    
+    <time datetime="" pubdate>Mar 2015</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/03/05/how-the-locate-command-works-and-lets-rewrite-it-in-one-minute/"> How the locate command works (and let&#39;s write a faster version in one minute!)</a>
+    
+    <time datetime="" pubdate>Feb 2015</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/02/22/how-gzip-uses-huffman-coding/">How gzip uses Huffman coding</a>
+    
+    <time datetime="" pubdate>Dec 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/12/14/fun-with-threads/">Diving into concurrency: trying out mutexes and atomics</a>
+    
+    <time datetime="" pubdate>Oct 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/10/02/how-does-sqlite-work-part-2-btrees/">How does SQLite work? Part 2: btrees! (or: disk seeks are slow don&#39;t do them!)</a>
+    
+    <time datetime="" pubdate>Sep 2014</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/09/27/how-does-sqlite-work-part-1-pages/">How does SQLite work? Part 1: pages!</a>
+    
+    <time datetime="" pubdate>Sep 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/09/06/how-to-read-an-executable/">How is a binary executable organized? Let&#39;s explore it!</a>
+    
+    <time datetime="" pubdate>Aug 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/08/12/what-happens-if-you-write-a-tcp-stack-in-python/">What happens if you write a TCP stack in Python?</a>
+    
+    <time datetime="" pubdate>May 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/05/15/diving-into-hdfs/">Diving into HDFS</a>
+    
+    <time datetime="" pubdate>Feb 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/02/10/three-steps-to-learning-gdb/">Three steps to learning GDB</a>
+    
+  </p>
+
+  
+  
+  <h3 id="binary-representations-of-things"><a href="index.html#binary-representations-of-things"> binary representations of things </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Mar 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/03/06/possible-reasons-8-bit-bytes/">Some possible reasons for 8-bit bytes</a>
+    
+    <time datetime="" pubdate>Feb 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/02/08/why-does-0-1-plus-0-2-equal-0-30000000000000004/">Why does 0.1 &#43; 0.2 = 0.30000000000000004?</a>
+    
+    <time datetime="" pubdate>Jan 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/01/18/examples-of-problems-with-integers/">Examples of problems with integers</a>
+    
+    <time datetime="" pubdate>Jan 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/01/13/examples-of-floating-point-problems/">Examples of floating point problems</a>
+    
+  </p>
+
+  
+  
+  <h3 id="javascript"><a href="index.html#javascript"> Javascript </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Nov 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/11/18/how-to-import-a-javascript-library/">Importing a frontend Javascript library without a build system</a>
+    
+    <time datetime="" pubdate>Feb 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/02/16/writing-javascript-without-a-build-system/">Writing Javascript without a build system</a>
+    
+    <time datetime="" pubdate>Jun 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/06/19/a-little-bit-of-plain-javascript-can-do-a-lot/">A little bit of plain Javascript can do a lot</a>
+    
+  </p>
+
+  
+  
+  <h3 id="kubernetes---containers"><a href="index.html#kubernetes---containers"> Kubernetes / containers </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Oct 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/10/10/operating-a-kubernetes-network/">Operating a Kubernetes network</a>
+    
+    <time datetime="" pubdate>Oct 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/10/05/reasons-kubernetes-is-cool/">Reasons Kubernetes is cool</a>
+    
+    <time datetime="" pubdate>Aug 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/08/05/how-kubernetes-certificates-work/">How Kubernetes certificate authorities work</a>
+    
+    <time datetime="" pubdate>Jul 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/07/30/a-couple-useful-ideas-from-google/">Cherry picking commits &amp; shell scripting in golang</a>
+    
+    <time datetime="" pubdate>Jul 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/07/27/how-does-the-kubernetes-scheduler-work/">How does the Kubernetes scheduler work?</a>
+    
+    <time datetime="" pubdate>Jun 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/06/04/learning-about-kubernetes/">A few things I&#39;ve learned about Kubernetes</a>
+    
+    <time datetime="" pubdate>Feb 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/02/17/mystery-swap/">Swapping, memory limits, and cgroups</a>
+    
+    <time datetime="" pubdate>Dec 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/12/22/container-networking/">A container networking overview</a>
+    
+    <time datetime="" pubdate>Nov 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/11/03/what-happens-when-you-run-a-rkt-container/">What happens when you run a rkt container?</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/26/running-container-without-docker/">Running containers without Docker</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/10/what-even-is-a-container/">What even is a container: namespaces and cgroups</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/02/a-list-of-container-software/">A list of Linux container software</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/02/i-just-want-to-run-a-container/">&#34;I just want to run a container!&#34;</a>
+    
+    <time datetime="" pubdate>Sep 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/09/15/whats-up-with-containers-docker-and-rkt/">Some questions about Docker and rkt</a>
+    
+    <time datetime="" pubdate>Nov 2015</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/11/09/docker-is-amazing/">Docker is amazing</a>
+    
+  </p>
+
+  
+  
+  <h3 id="zines---comics"><a href="index.html#zines---comics"> Zines / comics </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Jun 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/04/25/new-zine--how-git-works-/">New zine: How Git Works!</a>
+    
+    <time datetime="" pubdate>Jun 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/06/23/new-zine--how-integers-and-floats-work/">New zine: How Integers and Floats Work</a>
+    
+    <time datetime="" pubdate>Feb 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/02/11/print-copies-of-the-pocket-guide-to-debugging-have-arrived/">Print copies of The Pocket Guide to Debugging have arrived</a>
+    
+    <time datetime="" pubdate>Dec 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/12/21/new-zine--the-pocket-guide-to-debugging/">New zine: The Pocket Guide to Debugging</a>
+    
+    <time datetime="" pubdate>May 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/05/10/pages-that-didn-t-make-it-into--how-dns-works-/">Pages that didn&#39;t make it into &#34;How DNS Works&#34;</a>
+    
+    <time datetime="" pubdate>Apr 2022</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/04/26/new-zine--how-dns-works-/">New zine: How DNS Works!</a>
+    
+    <time datetime="" pubdate>Oct 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/10/02/all-my-zines-are-now-available-in-print/">All my zines are now available in print!</a>
+    
+    <time datetime="" pubdate>Jun 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/06/02/you-can-now-buy-print-version-of-my-zines-/">You can now buy print version of my zines!</a>
+    
+    <time datetime="" pubdate>May 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/05/02/publishing-comics/">I put all of my comics online!</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/22/new-zine--hell-yes--css-/">New zine: Hell Yes! CSS!</a>
+    
+    <time datetime="" pubdate>Aug 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/08/22/print-run-manager-zine/">Wizard Zines&#39; first print run: Help! I have a Manager!</a>
+    
+    <time datetime="" pubdate>Aug 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/08/10/some-more-css-comics/">Some more CSS comics</a>
+    
+    <time datetime="" pubdate>Jul 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/07/25/some-comics-about-css/">Some CSS comics</a>
+    
+    <time datetime="" pubdate>Apr 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/04/27/new-zine-how-containers-work/">New zine: How Containers Work!</a>
+    
+    <time datetime="" pubdate>Feb 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/02/03/new-zine--become-a-select-star/">New zine: Become a SELECT Star!</a>
+    
+    <time datetime="" pubdate>Oct 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/10/21/print-collection-of-my-first-7-zines/">Your Linux Toolbox: a box set of my free zines</a>
+    
+    <time datetime="" pubdate>Sep 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/09/12/new-zine-on-http/">New zine: HTTP: Learn your browser&#39;s language!</a>
+    
+    <time datetime="" pubdate>Mar 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/03/15/new-zine--bite-size-networking-/">New zine: Bite Size Networking!</a>
+    
+    <time datetime="" pubdate>Oct 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/10/27/new-zine--oh-shit--git-/">New zine: Oh shit, git!</a>
+    
+    <time datetime="" pubdate>Sep 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/09/22/new-zine--help--i-have-a-manager/">New zine: Help! I have a manager!</a>
+    
+    <time datetime="" pubdate>Aug 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/08/05/new-zine--bite-size-command-line/">New zine: Bite Size Command Line!</a>
+    
+    <time datetime="" pubdate>Apr 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/04/16/new-perf-zine/">New zine: Profiling &amp; tracing with perf!!</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/01/new-zine--so-you-want-to-be-a-wizard/">New zine: So you want to be a wizard</a>
+    
+    <time datetime="" pubdate>Nov 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/11/25/linux-comics--zine-edition/">Linux comics: a small zine</a>
+    
+    <time datetime="" pubdate>Jul 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/07/09/linux-tracing-zine/">Linux tracing zine</a>
+    
+    <time datetime="" pubdate>May 2017</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/05/14/learn-tcpdump-zine/">&#34;Let&#39;s learn tcpdump&#34; zine: now available for everyone</a>
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/29/new-zine--let-s-learn-tcpdump/">New zine: let&#39;s learn tcpdump!</a>
+    
+    <time datetime="" pubdate>Jan 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/networking-zine-launch/">New zine: &#34;Networking! ACK!&#34;</a>
+    
+    <time datetime="" pubdate>Jan 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/01/20/a-tiny-zine-about-machine-learning/">A tiny zine about machine learning</a>
+    
+    <time datetime="" pubdate>Nov 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/11/27/more-linux-drawings/">More drawings about computers</a>
+    
+    <time datetime="" pubdate>Nov 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/11/10/a-few-drawings-about-linux/">A few drawings about Linux</a>
+    
+    <time datetime="" pubdate>Sep 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/09/07/new-zine-linux-debugging-tools-youll-love/">New zine: Linux debugging tools you&#39;ll love</a>
+    
+    <time datetime="" pubdate>Jul 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/07/23/a-few-sketches/">A few sketches</a>
+    
+    <time datetime="" pubdate>Apr 2015</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/04/14/strace-zine/">A zine about strace</a>
+    
+  </p>
+
+  
+  
+  <h3 id="exercises"><a href="index.html#exercises"> Exercises </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Jun 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/06/14/questions-to-help-you-learn/">Questions to help people decide what to learn</a>
+    
+    <time datetime="" pubdate>Dec 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/twitter-memes-challenge/">Challenge: find Twitter memes with suffix arrays</a>
+    
+    <time datetime="" pubdate>Dec 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/12/03/solutions-to-the-tiny-window-manager-challenge/">Solutions to the tiny window manager challenge</a>
+    
+    <time datetime="" pubdate>Nov 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/11/25/challenge--make-a-bouncy-window-manager/">Challenge: Write a bouncy window manager</a>
+    
+    <time datetime="" pubdate>Nov 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/11/20/what-makes-a-programming-exercise-good/">What makes a programming exercise good?</a>
+    
+    <time datetime="" pubdate>Sep 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/09/30/notes-on-building-sql-exercises/">Notes on building SQL exercises</a>
+    
+    <time datetime="" pubdate>Aug 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/08/30/git-exercises--navigate-a-repository/">git exercises: navigate a repository</a>
+    
+    <time datetime="" pubdate>Aug 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/08/27/curl-exercises/">curl exercises</a>
+    
+  </p>
+
+  
+  
+  <h3 id="on-writing-words"><a href="index.html#on-writing-words"> On writing words </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Aug 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/08/07/tactics-for-writing-in-public/">Some tactics for writing in public</a>
+    
+    <time datetime="" pubdate>Jun 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/06/05/some-blogging-myths/">Some blogging myths</a>
+    
+    <time datetime="" pubdate>Sep 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/09/20/teaching-by-filling-in-knowledge-gaps/">Teaching by filling in knowledge gaps</a>
+    
+    <time datetime="" pubdate>Aug 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/confusing-explanations/">Patterns in confusing explanations</a>
+    
+    <time datetime="" pubdate>Jul 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/07/08/writing-great-examples/">Write good examples by starting with real code</a>
+    
+  </p>
+
+  
+  
+  <h3 id="on-writing-comics---zines"><a href="index.html#on-writing-comics---zines"> On writing comics / zines </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Mar 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/03/31/zine-feedback-site/">Building a custom site for zine feedback</a>
+    
+    <time datetime="" pubdate>Dec 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/12/05/how-i-write-useful-programming-comics/">How I write useful programming comics</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/07/a-new-way-i-m-getting-feedback-on-my-zines--beta-readers-/">A new way I&#39;m getting feedback on my zines: beta readers!</a>
+    
+    <time datetime="" pubdate>Aug 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/08/12/some-possible-future-zines/">Some possible future zines</a>
+    
+    <time datetime="" pubdate>Aug 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/08/08/handwritten-font/">An attempt to make a font look more handwritten</a>
+    
+    <time datetime="" pubdate>Nov 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/11/18/some-notes-on-vector-drawing-apps/">Some notes on vector drawing apps</a>
+    
+    <time datetime="" pubdate>Oct 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/10/28/some-research-on-shipping-print-zines/">Some research on shipping print zines</a>
+    
+    <time datetime="" pubdate>Oct 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/10/01/zine-revenue-2019/">Zine revenue for 2019</a>
+    
+    <time datetime="" pubdate>Sep 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/09/13/a-year-explaining-computer-things/">Taking a year to explain computer things</a>
+    
+    <time datetime="" pubdate>Sep 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/09/01/ways-to-write-zines-without-fancy-tools/">How to write zines with simple tools</a>
+    
+    <time datetime="" pubdate>Dec 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/12/09/how-do-you-document-a-tech-project-with-comics/">How do you document a tech project with comics?</a>
+    
+    <time datetime="" pubdate>Oct 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/10/28/when-does-teaching-with-comics-work-well/">When does teaching with comics work well?</a>
+    
+    <time datetime="" pubdate>Sep 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/09/23/why-sell-zines/">Why sell zines?</a>
+    
+    <time datetime="" pubdate>Sep 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/teach-tech-with-cartoons/">How to teach technical concepts with cartoons</a>
+    
+    <time datetime="" pubdate>May 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/05/14/handwritten-books/">Handwritten books</a>
+    
+    <time datetime="" pubdate>Jan 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/01/17/an-idea-for-a-programming-book/">An idea for a programming book</a>
+    
+    <time datetime="" pubdate>Nov 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/11/14/why-cute-drawings/">Why cute drawings?</a>
+    
+    <time datetime="" pubdate>Aug 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/08/29/how-i-made-a-zine/">How (and why) I made a zine</a>
+    
+  </p>
+
+  
+  
+  <h3 id="conferences"><a href="index.html#conferences"> Conferences </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Feb 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/02/16/--con-2019--submit-a-talk-/">!!Con 2019: submit a talk!</a>
+    
+    <time datetime="" pubdate>Dec 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/12/23/systems-we-love/">Systems We Love 2016</a>
+    
+    <time datetime="" pubdate>Jul 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/07/03/polyconf-2016/">PolyConf 2016</a>
+    
+    <time datetime="" pubdate>Dec 2015</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/12/07/women-in-machine-learning-2015-fun/">Women in Machine Learning 2015 (fun!!!)</a>
+    
+    <time datetime="" pubdate>Apr 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/04/15/adacamp-montreal-2015/">AdaCamp Montreal 2015</a>
+    
+    <time datetime="" pubdate>Jan 2015</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/01/12/data-day-texas-2015/">Data Day Texas 2015</a>
+    
+    <time datetime="" pubdate>Nov 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/11/27/pydata-nyc-i-gave-a-machine-learning-talk-yay/">PyData NYC (I gave a machine learning talk! yay!)</a>
+    
+    <time datetime="" pubdate>Sep 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/09/20/strange-loop-2014/">Strange Loop 2014</a>
+    
+    <time datetime="" pubdate>Jun 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/06/22/con-talks-are-up/">!!Con talks are up</a>
+    
+    <time datetime="" pubdate>Apr 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/04/13/pycon/">♥ PyCon</a>
+    
+    <time datetime="" pubdate>Jan 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/01/22/cusec-equals-fun/">CUSEC = fun</a>
+    
+    <time datetime="" pubdate>Sep 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/09/12/pydata-boston-2013/">PyData Boston 2013</a>
+    
+    <time datetime="" pubdate>Apr 2013</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/04/07/open-data-exchange-2013/">Open Data Exchange 2013</a>
+    
+    <time datetime="" pubdate>Jan 2013</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/2013/01/27/all_girl_hack_night_2/">Montreal All-Girl Hack Night #2: now with cookies</a>
+    
+    <time datetime="" pubdate>Dec 2012</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/2012/12/16/all_girl_hack_night/">Montreal All-Girl Hack Night #1: AMAZING</a>
+    
+  </p>
+
+  
+  
+  <h3 id="organizing-conferences"><a href="index.html#organizing-conferences"> Organizing conferences </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Jun 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/06/06/make-better-conference-talks/">Ideas for making better conference talks &amp; conferences</a>
+    
+    <time datetime="" pubdate>Mar 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/03/06/you-can-choose-who-submits-talks-to-your-conference/">You can choose who submits talks to your conference</a>
+    
+    <time datetime="" pubdate>Jun 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/06/06/should-my-conference-do-anonymous-review/">Should my conference do anonymous review?</a>
+    
+    <time datetime="" pubdate>May 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/05/28/anonymous-talk-submission-equals-amazing/">Anonymous talk review is amazing.</a>
+    
+  </p>
+
+  
+  
+  <h3 id="businesses---marketing"><a href="index.html#businesses---marketing"> Businesses / marketing </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Oct 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/10/28/a-few-things-i-ve-learned-about-email-marketing/">A few things I&#39;ve learned about email marketing</a>
+    
+    <time datetime="" pubdate>Jul 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/07/05/saturday-comics/">saturday comics: a weekly mailing list of programming comics</a>
+    
+    <time datetime="" pubdate>Jan 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/01/29/marketing-thoughts/">A few early marketing thoughts</a>
+    
+    <time datetime="" pubdate>Sep 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/09/01/who-pays-to-educate-developers-/">Who pays to educate developers?</a>
+    
+    <time datetime="" pubdate>Aug 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/08/14/i-started-a-company-/">I started a corporation!</a>
+    
+  </p>
+
+  
+  
+  <h3 id="statistics---machine-learning---data-analysis"><a href="index.html#statistics---machine-learning---data-analysis"> Statistics / machine learning / data analysis </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/30/implement-char-rnn-in-pytorch/">An attempt at implementing char-rnn with PyTorch</a>
+    
+    <time datetime="" pubdate>Dec 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/12/29/some-initial-nonparametric-statistics-notes/">Some nonparametric statistics math</a>
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/17/statistics-for-programmers/">Some good &#34;Statistics for programmers&#34; resources</a>
+    
+    <time datetime="" pubdate>Feb 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/02/12/neural-style/">How do these &#34;neural network style transfer&#34; tools work?</a>
+    
+    <time datetime="" pubdate>May 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/05/19/a-few-reasons-to-be-skeptical-of-machine-learning-results/">A few reasons to be skeptical of machine learning</a>
+    
+    <time datetime="" pubdate>Apr 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/04/10/why-i-dont-like-black-boxes/">Looking inside machine learning black boxes</a>
+    
+    <time datetime="" pubdate>Jan 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/01/02/winning-the-bias-variance-tradeoff/">Winning the bias-variance tradeoff</a>
+    
+    <time datetime="" pubdate>Dec 2015</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/12/24/how-to-trick-a-neural-network-into-thinking-a-panda-is-a-vulture/">How to trick a neural network into thinking a panda is a vulture</a>
+    
+    <time datetime="" pubdate>Sep 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/09/06/is-machine-learning-safe-to-use/">Is machine learning safe to use?</a>
+    
+    <time datetime="" pubdate>Jul 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/07/04/bootstrap-confidence-intervals/">Some easy statistics: Bootstrap confidence intervals</a>
+    
+    <time datetime="" pubdate>Feb 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/02/06/a-a-testing/">A/A testing</a>
+    
+    <time datetime="" pubdate>Nov 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/11/17/fun-with-machine-learning-logistic-regression/">Fun with machine learning: logistic regression!</a>
+    
+    <time datetime="" pubdate>Nov 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/11/16/fun-with-machine-learning-making-sure-your-model-actually-works/">Fun with machine learning: does your model actually work?</a>
+    
+    <time datetime="" pubdate>Jul 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/07/11/fun-with-stats-how-big-of-a-sample-size-do-i-need/">Fun with stats: How big of a sample size do I need?</a>
+    
+    <time datetime="" pubdate>Jun 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/06/19/machine-learning-isnt-kaggle-competitions/">Machine learning isn&#39;t Kaggle competitions</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/22/cooking-with-pandas/">A pandas cookbook</a>
+    
+    <time datetime="" pubdate>Feb 2013</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/02/27/graphing-bike-path-data-with-ipython-notebook-and-pandas/">Graphing bike path data with IPython Notebook and pandas</a>
+    
+  </p>
+
+  
+  
+  <h3 id="year-in-review"><a href="index.html#year-in-review"> Year in review </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Dec 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/12/31/2023--year-in-review/">2023: Year in review</a>
+    
+    <time datetime="" pubdate>Jan 2023</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/01/10/some-business-graphs-for-2022/">Some business graphs for 2022</a>
+    
+    <time datetime="" pubdate>Dec 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/12/31/2021--year-in-review/">2021: Year in review</a>
+    
+    <time datetime="" pubdate>Dec 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/12/31/2020--year-in-review/">2020: Year in review</a>
+    
+    <time datetime="" pubdate>Dec 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019-year-in-review/">2019: Year in review</a>
+    
+    <time datetime="" pubdate>Dec 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/12/23/2018--year-in-review/">2018: Year in review</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/31/2017--year-in-review/">2017: Year in review</a>
+    
+    <time datetime="" pubdate>Dec 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/12/21/2016--year-in-review/">2016: Year in review</a>
+    
+    <time datetime="" pubdate>Dec 2015</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/12/26/2015-year-in-review/">2015: Year in review</a>
+    
+  </p>
+
+  
+  
+  <h3 id="talks"><a href="index.html#talks"> Talks </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Oct 2023</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/10/06/new-talk--making-hard-things-easy/">New talk: Making Hard Things Easy</a>
+    
+    <time datetime="" pubdate>May 2023</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2023/05/08/new-talk-learning-dns-in-10-years/">New talk: Learning DNS in 10 years</a>
+    
+    <time datetime="" pubdate>Dec 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/12/15/new-talk--high-reliability-infrastructure-migrations/">New talk: High Reliability Infrastructure Migrations</a>
+    
+    <time datetime="" pubdate>Sep 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/09/18/build-impossible-programs/">Build impossible programs</a>
+    
+    <time datetime="" pubdate>Mar 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/so-you-want-to-be-a-wizard/">So you want to be a wizard</a>
+    
+  </p>
+
+  
+  
+  <h3 id="infrastructure---operations-engineering"><a href="index.html#infrastructure---operations-engineering"> Infrastructure / operations engineering </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Nov 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/11/11/understand-the-software-you-use-in-production/">Some notes on running new software in production</a>
+    
+    <time datetime="" pubdate>Jun 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/06/18/operate-your-software/">What can developers learn from being on call?</a>
+    
+    <time datetime="" pubdate>Mar 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/03/26/bash-quirks/">Bash scripting quirks &amp; safety tips</a>
+    
+    <time datetime="" pubdate>Nov 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/11/16/ideas-about-how-to-use-aws/">Ideas about how to use AWS</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/31/service-discovery-at-stripe/">Service discovery at Stripe</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/21/consistency-vs-availability/">Consistency vs availability (wat?)</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/16/whats-devops/">What&#39;s devops?</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/15/operations-for-software-developers-for-beginners/">Operations for software developers for beginners</a>
+    
+    <time datetime="" pubdate>Mar 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/03/20/how-do-you-do-capacity-planning/">How do you do capacity planning?</a>
+    
+    <time datetime="" pubdate>Feb 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/02/12/why-i-love-log-files/">Why I love log files</a>
+    
+    <time datetime="" pubdate>Feb 2016</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/02/09/til-clock-skew-exists/">TIL: clock skew exists</a>
+    
+    <time datetime="" pubdate>Dec 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/12/21/fear-makes-you-a-worse-programmer/">Fear makes you a worse programmer</a>
+    
+  </p>
+
+  
+  
+  <h3 id="career---work"><a href="index.html#career---work"> Career / work </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Mar 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/learn-how-things-work/">Get better at programming by learning how things work</a>
+    
+    <time datetime="" pubdate>Mar 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/things-your-manager-might-not-know/">Things your manager might not know</a>
+    
+    <time datetime="" pubdate>Jul 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/07/14/when-your-coworker-does-great-work-tell-their-manager/">When your coworker does great work, tell their manager</a>
+    
+    <time datetime="" pubdate>Jun 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/06/30/tell-candidates-what-to-expect-from-your-job-interviews/">Tell candidates what to expect from your job interviews</a>
+    
+    <time datetime="" pubdate>Feb 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/compensation-questions/">Questions you can ask about compensation</a>
+    
+    <time datetime="" pubdate>Jun 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/brag-documents/">Get your work recognized: write a brag document</a>
+    
+    <time datetime="" pubdate>Oct 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/senior-engineer/">What&#39;s a senior engineer&#39;s job?</a>
+    
+    <time datetime="" pubdate>Sep 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/09/30/some-possible-career-goals/">Some possible career goals</a>
+    
+    <time datetime="" pubdate>Mar 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/03/28/open-source-sabbatical---awesome/">Open source sabbatical = awesome</a>
+    
+    <time datetime="" pubdate>Feb 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/02/10/positive-constructive-feedback/">Writing performance reviews with positive constructive feedback</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/02/taking-a-sabbatical-to-work-on-ruby-profiling-tools/">Taking a sabbatical to work on Ruby profiling tools</a>
+    
+    <time datetime="" pubdate>Sep 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/09/03/telling-people-what-you-re-working-on/">Telling people what you&#39;re working on</a>
+    
+    <time datetime="" pubdate>Mar 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/03/17/career-narrative/">Writing down my career</a>
+    
+    <time datetime="" pubdate>Feb 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/02/16/hiring---opportunity/">Hiring &amp; opportunity</a>
+    
+    <time datetime="" pubdate>Jan 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/01/24/choosing-the-best-thing/">Choosing the &#34;best software&#34;</a>
+    
+    <time datetime="" pubdate>Sep 2016</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/09/19/getting-things-done/">Getting things done</a>
+    
+    <time datetime="" pubdate>Sep 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/09/12/how-i-got-a-cs-degree-without-learning-what-a-system-call-is/">How I got a CS degree without learning what a system call is</a>
+    
+    <time datetime="" pubdate>Aug 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/08/16/release-it-then-build-it/">Release it, then build it</a>
+    
+    <time datetime="" pubdate>Aug 2016</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/08/16/how-do-you-work-on-something-important/">How do you decide what to work on?</a>
+    
+    <time datetime="" pubdate>May 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/05/29/three-ways-to-solve-hard-programming-problems/">Three ways to solve hard programming problems</a>
+    
+    <time datetime="" pubdate>Jan 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/01/06/talking-about-stock-options/">Talking about stock options = awesome</a>
+    
+    <time datetime="" pubdate>Dec 2015</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/12/30/do-the-math-on-your-stock-options/">Things you should know about stock options before negotiating an offer</a>
+    
+    <time datetime="" pubdate>Mar 2015</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/03/06/1-1-topic-ideas/">1:1 topic ideas</a>
+    
+    <time datetime="" pubdate>Feb 2015</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/02/17/how-i-learned-to-program-in-10-years/">How I learned to program in 10 years</a>
+    
+    <time datetime="" pubdate>Apr 2014</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/04/27/stopping-to-think/">Stopping to think</a>
+    
+    <time datetime="" pubdate>Apr 2014</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/04/08/growing/">Becoming a better developer (it&#39;s not just writing more programs)</a>
+    
+    <time datetime="" pubdate>Feb 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/02/03/sounding-confident-in-interviews/">Sounding confident in interviews</a>
+    
+    <time datetime="" pubdate>Jan 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/01/16/what-my-technical-interviews-have-looked-like/">What my technical interviews have looked like</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          ★
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/30/questions-im-asking-in-interviews/">Questions I&#39;m asking in interviews</a>
+    
+  </p>
+
+  
+  
+  <h3 id="working-with-others---communication"><a href="index.html#working-with-others---communication"> Working with others / communication </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/16/making-small-culture-changes/">Making small culture changes</a>
+    
+    <time datetime="" pubdate>Jan 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/01/13/how-do-you-make-an-awesome-team/">How do you make an awesome team?</a>
+    
+    <time datetime="" pubdate>Jun 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/06/03/learning-to-like-design-documents/">Learning to like design documents</a>
+    
+    <time datetime="" pubdate>Mar 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/03/28/senior-engineering-and-fantasy-heroes/">Senior engineering &amp; fantasy heroes</a>
+    
+    <time datetime="" pubdate>Dec 2014</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/12/29/on-reading-the-source-code-not-the-docs/">On reading the source code, not the docs</a>
+    
+    <time datetime="" pubdate>Aug 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/08/05/pair-programming-is-amazing-except-when-its-not/">Pair programming is amazing! Except... when it&#39;s not.</a>
+    
+    <time datetime="" pubdate>Mar 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/03/01/pair-programming/">Pair programming</a>
+    
+  </p>
+
+  
+  
+  <h3 id="remote-work"><a href="index.html#remote-work"> Remote work </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Feb 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/02/18/working-remotely--4-years-in/">Working remotely, 4 years in</a>
+    
+    <time datetime="" pubdate>Dec 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/12/31/surviving-meetings-while-remote/">Surviving meetings while remote</a>
+    
+    <time datetime="" pubdate>Oct 2014</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/10/22/working-remote-8-months-in/">Working remote, 8 months in (seeing humans is important!)</a>
+    
+    <time datetime="" pubdate>Jun 2014</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/06/06/working-remote/">Working remote, 3 months in</a>
+    
+    <time datetime="" pubdate>Mar 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/03/29/reports-from-remote-land-remote-pairing-works-great/">Reports from remote-land: remote pairing works great!</a>
+    
+  </p>
+
+  
+  
+  <h3 id="talks-transcripts---podcasts"><a href="index.html#talks-transcripts---podcasts"> Talks transcripts / podcasts </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Aug 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/08/11/a-few-recent-podcasts/">A few recent podcasts</a>
+    
+    <time datetime="" pubdate>Apr 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/04/16/rbspy-talk/">Talk: Building a Ruby profiler</a>
+    
+    <time datetime="" pubdate>Mar 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/03/05/codenewbie-networking-podcast/">How does the internet work? podcast</a>
+    
+    <time datetime="" pubdate>Sep 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/09/17/strange-loop-talk/">A swiss army knife of debugging tools: talk &amp; transcript</a>
+    
+    <time datetime="" pubdate>May 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/05/21/a-few-notes-from-my-pydata-berlin-keynote/">Notes from my PyData Berlin keynote</a>
+    
+    <time datetime="" pubdate>Jan 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/01/14/a-few-notes-on-my-cusec-talk/">A few notes on my CUSEC talk</a>
+    
+    <time datetime="" pubdate>Jul 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/07/17/ruby-rogues/">Ruby Rogues podcast: systems programming tricks!</a>
+    
+  </p>
+
+  
+  
+  <h3 id="on-blogging---speaking"><a href="index.html#on-blogging---speaking"> On blogging / speaking </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Nov 2024</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/11/09/new-microblog/">New microblog with TILs</a>
+    
+    <time datetime="" pubdate>Oct 2024</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/10/07/some-notes-on-upgrading-hugo/">Some notes on upgrading Hugo</a>
+    
+    <time datetime="" pubdate>May 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/05/24/blog-about-what-you-ve-struggled-with/">Blog about what you&#39;ve struggled with</a>
+    
+    <time datetime="" pubdate>May 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/05/08/metaphors-in-man-pages/">Metaphors in man pages</a>
+    
+    <time datetime="" pubdate>Feb 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/02/17/organizing-this-blog-into-categories/">Organizing this blog into categories</a>
+    
+    <time datetime="" pubdate>Mar 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/03/24/rustconf-talks/">Talks I&#39;d love to see at RustConf</a>
+    
+    <time datetime="" pubdate>Feb 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/02/20/measuring-blog-success/">Measuring a blog&#39;s success: focus on conversations, not page views</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/28/making-a-weekly-newsletter/">How I set up an automatic weekly blog digest</a>
+    
+    <time datetime="" pubdate>Mar 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/03/20/blogging-principles/">Blogging principles I use</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/09/switching-to-hugo/">Switching to Hugo</a>
+    
+    <time datetime="" pubdate>May 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/05/22/how-do-you-write-blog-posts/">&#34;advice&#34; for aspiring tech bloggers</a>
+    
+    <time datetime="" pubdate>Dec 2014</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/12/19/reproducing-awesomeness/">Reproducing awesomeness</a>
+    
+    <time datetime="" pubdate>Oct 2014</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/10/08/how-to-set-up-a-blog-in-5-minutes/">How to set up a blog in 5 minutes</a>
+    
+    <time datetime="" pubdate>Jul 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/07/25/fork-my-talks/">Open sourced talks!</a>
+    
+    <time datetime="" pubdate>Jan 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/01/12/public-speaking/">You should give talks. They will be awesome. Here&#39;s why!</a>
+    
+    <time datetime="" pubdate>Feb 2013</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/02/24/trying-out-octopress/">Trying out Octopress</a>
+    
+  </p>
+
+  
+  
+  <h3 id="on-learning"><a href="index.html#on-learning"> On learning </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Mar 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/03/13/celebrate-tiny-learning-milestones/">Celebrate tiny learning milestones</a>
+    
+    <time datetime="" pubdate>Oct 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/10/21/how-to-get-useful-answers-to-your-questions/">How to get useful answers to your questions</a>
+    
+    <time datetime="" pubdate>Sep 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/09/01/learning-skills-you-can-practice/">How to teach yourself hard things</a>
+    
+    <time datetime="" pubdate>Sep 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/answer-questions-well/">How to answer questions in a helpful way</a>
+    
+    <time datetime="" pubdate>Aug 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/08/06/learning-at-work/">Learning at work</a>
+    
+    <time datetime="" pubdate>Jan 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/01/04/rules-of-programming-experiments/">Rules of programming experiments</a>
+    
+    <time datetime="" pubdate>Dec 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/good-questions/">How to ask good questions</a>
+    
+    <time datetime="" pubdate>Aug 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/08/31/asking-questions/">Asking good questions is hard (but worth it)</a>
+    
+    <time datetime="" pubdate>Apr 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/04/30/building-expertise-at-work/">How does knowledge get locked up in people&#39;s heads?</a>
+    
+    <time datetime="" pubdate>Jun 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/06/13/asking-questions-is-a-superpower/">Asking questions is a superpower</a>
+    
+    <time datetime="" pubdate>Apr 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/04/04/ask-if-you-have-questions-isnt-enough/">&#34;Ask if you have questions&#34; isn&#39;t enough</a>
+    
+  </p>
+
+  
+  
+  <h3 id="rust"><a href="index.html#rust"> Rust </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Dec 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/12/02/a-couple-of-rust-error-messages/">A couple of Rust error messages</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/13/rust-in-2018--way-easier-to-use/">Rust in 2018: it&#39;s way easier to use!</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/24/my-first-rust-macro/">My first Rust macro</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/23/segfault-debugging/">Debugging a segfault in my Rust program</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/21/bindgen-is-awesome/">Bindgen: awesome Rust tool for generating C bindings</a>
+    
+    <time datetime="" pubdate>Nov 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/11/27/rust-ref/">What&#39;s a reference in Rust?</a>
+    
+    <time datetime="" pubdate>Sep 2016</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/09/11/rustconf-keynote/">Learning systems programming with Rust</a>
+    
+    <time datetime="" pubdate>May 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/05/12/a-second-try-at-using-rust/">A second try at using Rust</a>
+    
+    <time datetime="" pubdate>Jan 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/01/18/calling-c-from-rust/">Calling C from Rust</a>
+    
+    <time datetime="" pubdate>Jan 2016</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/01/10/why-i-rust/">Why I ❤ Rust</a>
+    
+    <time datetime="" pubdate>Mar 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/03/21/my-rust-os-will-never-be-finished/">My Rust OS will never be finished (and it&#39;s a success!)</a>
+    
+    <time datetime="" pubdate>Mar 2014</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/03/12/the-rust-os-story/">Writing an OS in Rust in tiny steps (Steps 1-5)</a>
+    
+    <time datetime="" pubdate>Jan 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/01/03/what-my-kernel-doesnt-do/">Some things my kernel can&#39;t do</a>
+    
+  </p>
+
+  
+  
+  <h3 id="linux-debugging---tracing-tools"><a href="index.html#linux-debugging---tracing-tools"> Linux debugging / tracing tools </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Apr 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/04/03/what-problems-do-people-solve-with-strace/">What problems do people solve with strace?</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/27/a-perf-cheat-sheet/">A perf cheat sheet</a>
+    
+    <time datetime="" pubdate>Jul 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/07/05/linux-tracing-systems/">Linux tracing systems &amp; how they fit together</a>
+    
+    <time datetime="" pubdate>Jun 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/06/28/notes-on-bpf---ebpf/">Notes on BPF &amp; eBPF</a>
+    
+    <time datetime="" pubdate>Jun 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/06/26/3-screencasts/">3 short screencasts (/proc, tcpdump, strace)</a>
+    
+    <time datetime="" pubdate>Mar 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/03/19/getting-started-with-ftrace/">ftrace: trace your kernel functions!</a>
+    
+    <time datetime="" pubdate>Jul 2016</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/07/03/debugging-tools-i-love/">Linux debugging tools I love</a>
+    
+    <time datetime="" pubdate>Jun 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/06/15/using-ltrace-to-debug-a-memory-leak/">Using ltrace to debug a memory leak</a>
+    
+    <time datetime="" pubdate>Jun 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/06/07/strace-y/">A useful new strace feature</a>
+    
+    <time datetime="" pubdate>May 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/05/06/a-workshop-on-strace-and-tcpdump/">A workshop on strace &amp; tcpdump</a>
+    
+    <time datetime="" pubdate>Mar 2016</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/03/12/how-does-perf-work-and-some-questions/">How does perf work? (in which we read the Linux kernel source)</a>
+    
+    <time datetime="" pubdate>Feb 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/02/24/perf-top-my-new-best-friend/">perf top: an awesome way to spy on CPU usage</a>
+    
+    <time datetime="" pubdate>Apr 2015</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/04/06/a-few-spy-tools-for-your-operating-system-other-than-strace/">A few spy tools for your operating system (other than strace!)</a>
+    
+    <time datetime="" pubdate>Mar 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/03/30/seeing-system-calls-with-perf-instead-of-strace/">Seeing system calls with perf instead of strace</a>
+    
+    <time datetime="" pubdate>Dec 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/12/10/spying-on-hadoop-with-strace/">Spying on Hadoop with strace</a>
+    
+    <time datetime="" pubdate>May 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/05/13/profiling-with-perf/">I can spy on my CPU cycles with perf!</a>
+    
+    <time datetime="" pubdate>Apr 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/04/20/debug-your-programs-like-theyre-closed-source/">Debug your programs like they&#39;re closed source!</a>
+    
+    <time datetime="" pubdate>Mar 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/03/10/debugging-shared-library-problems-with-strace/">Debugging shared library problems with strace</a>
+    
+    <time datetime="" pubdate>Feb 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/02/27/more-practical-uses-for-strace/">More practical uses for strace!</a>
+    
+    <time datetime="" pubdate>Feb 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/02/26/using-strace-to-avoid-reading-ruby-code/">Using strace to avoid reading Ruby code</a>
+    
+    <time datetime="" pubdate>Feb 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/02/17/spying-on-ssh-with-strace/">Spying on ssh with strace</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/22/fun-with-strace/">Understanding how killall works using strace</a>
+    
+  </p>
+
+  
+  
+  <h3 id="debugging"><a href="index.html#debugging"> Debugging </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Dec 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/12/08/a-debugging-manifesto/">A debugging manifesto</a>
+    
+    <time datetime="" pubdate>Dec 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/12/07/tips-for-analyzing-logs/">Tips for analyzing logs</a>
+    
+    <time datetime="" pubdate>Aug 2022</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2022/08/30/a-way-to-categorize-debugging-skills/">Some ways to get better at debugging</a>
+    
+    <time datetime="" pubdate>Sep 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/09/16/debugging-in-a-repl-is-fun/">Debugging by starting a REPL at a breakpoint is fun</a>
+    
+    <time datetime="" pubdate>Jun 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/06/08/reasons-why-bugs-might-feel-impossible/">Reasons why bugs might feel &#34;impossible&#34;</a>
+    
+    <time datetime="" pubdate>Apr 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/debugging-attitude-matters/">When debugging, your attitude matters</a>
+    
+    <time datetime="" pubdate>Jun 2019</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2019/06/23/a-few-debugging-resources/">What does debugging a program look like?</a>
+    
+    <time datetime="" pubdate>Nov 2015</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/11/22/how-i-got-better-at-debugging/">How I got better at debugging</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/28/coding-strategies/">Coding strategies</a>
+    
+  </p>
+
+  
+  
+  <h3 id="debugging-stories"><a href="index.html#debugging-stories"> Debugging stories </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Nov 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/11/17/debugging-a-weird--file-not-found--error/">Debugging a weird &#39;file not found&#39; error</a>
+    
+    <time datetime="" pubdate>Mar 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/03/31/reverse-engineering-notability-format/">Reverse engineering the Notability file format</a>
+    
+    <time datetime="" pubdate>Sep 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/09/03/debugging-netlink-requests/">Debugging netlink requests</a>
+    
+    <time datetime="" pubdate>May 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/05/10/a-small-website-bug-story/">A small website mystery</a>
+    
+    <time datetime="" pubdate>May 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/05/13/erlang-seems-really-complicated/">Investigating Erlang by reading its system calls</a>
+    
+    <time datetime="" pubdate>Mar 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/03/04/whats-up-with-ruby-http-libraries/">Surprises in Ruby HTTP libraries</a>
+    
+    <time datetime="" pubdate>Mar 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/03/15/nancy-drew-and-the-case-of-the-slow-program/">Nancy Drew and the Case of the Slow Program</a>
+    
+  </p>
+
+  
+  
+  <h3 id="fan-posts-about-awesome-work-by-other-people"><a href="index.html#fan-posts-about-awesome-work-by-other-people"> Fan posts about awesome work by other people </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Jun 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/06/17/allison-parrish/">Awesome NLP tutorials by Allison Parrish</a>
+    
+    <time datetime="" pubdate>May 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/05/02/like-zines-about-computers--you-might-love-bubblesort-zines/">Like zines about computers? You might love Bubblesort Zines</a>
+    
+    <time datetime="" pubdate>Feb 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/02/02/a-magical-machine-learning-tool/">A magical machine learning art tool</a>
+    
+    <time datetime="" pubdate>Nov 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/11/19/a-critique-of-the-cap-theorem/">&#34;A Critique of the CAP Theorem&#34;</a>
+    
+    <time datetime="" pubdate>Apr 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/04/09/some-of-my-favorite-blogs/">Some of my favorite blogs</a>
+    
+    <time datetime="" pubdate>Feb 2014</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/02/13/a-few-blogs-i-really-like/">A few blogs I really like</a>
+    
+    <time datetime="" pubdate>Sep 2013</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/09/25/julia-seranos-excluded/">Julia Serano&#39;s &#39;Excluded&#39;</a>
+    
+    <time datetime="" pubdate>Mar 2013</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/03/04/transit-maps-1941-vs-2011/">Transit maps: 1941 vs 2011</a>
+    
+  </p>
+
+  
+  
+  <h3 id="inclusion"><a href="index.html#inclusion"> Inclusion </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Apr 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/04/27/no-feigning-surprise/">No feigning surprise</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/21/a-litmus-test-for-job-descriptions/">A litmus test for job descriptions</a>
+    
+    <time datetime="" pubdate>Mar 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/03/06/women-only-spaces-are-a-hack/">Women-only spaces are a hack</a>
+    
+    <time datetime="" pubdate>Jul 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/07/25/an-argument-for-hiring-junior-developers/">An argument for hiring junior developers</a>
+    
+    <time datetime="" pubdate>Dec 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/12/28/programming-doesnt-belong-to-men-it-belongs-to-me/">Programming doesn&#39;t belong to men (it belongs to me)</a>
+    
+    <time datetime="" pubdate>Nov 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/11/11/the-best-thing-ive-ever-read-about-women-in-technology/">What women in technology really think (150 of them, at least)</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/27/guys-guys-guys/">When is &#34;guys&#34; gender neutral? I did a survey!</a>
+    
+  </p>
+
+  
+  
+  <h3 id="not-about-computers"><a href="index.html#not-about-computers"> not about computers </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Apr 2024</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2024/04/01/making-crochet-cacti/">Making crochet cacti</a>
+    
+  </p>
+
+  
+  
+  <h3 id="rbspy"><a href="index.html#rbspy"> rbspy </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Mar 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/03/26/rbspy-docs/">Documentation site for rbspy!</a>
+    
+    <time datetime="" pubdate>Feb 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/02/24/an-ltrace-clone-using-ebpf/">Prototyping an ltrace clone using eBPF</a>
+    
+    <time datetime="" pubdate>Feb 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/02/19/profiler-week-6-7--more-experiments--and-a--record--subcommand-/">Profiler week 6/7: more experiments, and a `report` subcommand!</a>
+    
+    <time datetime="" pubdate>Feb 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/02/06/profiler-week-5/">Profiler week 5: Mac support, experiments profiling memory allocations</a>
+    
+    <time datetime="" pubdate>Feb 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/02/05/rust-bcc/">Writing eBPF tracing tools in Rust</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/31/spying-on-a-ruby-process-s-memory-allocations/">Spying on a Ruby process&#39;s memory allocations with eBPF</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/29/profiler-week-4/">Profiler week 4: callgrind support, containers, Mac progress!</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/28/mac-freeze/">I think I found a Mac kernel bug?</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/26/spy-container/">How do you spy on a program running in a container?</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/26/mac-memory-maps/">How do you read the memory maps of a Mac process?</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/22/profiler-week-3--refactoring--better-testing--and-an-alpha-release/">Profiler week 3: refactoring, better testing, and an alpha release!</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/15/profiler-week-2--support-for-1-9-3----2-5-0--and-line-numbers/">Profiler week 2: support for 1.9.3 -&gt; 2.5.0, and line numbers!</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/15/should-i-pause-a-ruby-process-to-collect-its-stack/">Should I pause a Ruby process to collect its stack?</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/09/resolving-symbol-addresses/">Profiler adventures: resolving symbol addresses is hard!</a>
+    
+    <time datetime="" pubdate>Jan 2018</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/01/08/profiler-week-1--testing---handling-stripped-binaries/">Profiler week 1: testing &amp; profiling stripped binaries</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/20/how-are-ruby-s-headers-different-from-python-s-headers-/">How are Ruby&#39;s headers different from Python&#39;s headers?</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/19/how-much-does-the-ruby-abi-change-/">How often do Ruby&#39;s stack struct definitions change?</a>
+    
+    <time datetime="" pubdate>Dec 2017</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/12/17/how-do-ruby---python-profilers-work-/">How do Ruby &amp; Python profilers work?</a>
+    
+    <time datetime="" pubdate>Jun 2016</time>
+    <span class="star">
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/06/12/a-weird-system-call-process-vm-readv/">How to spy on a Ruby program</a>
+    
+  </p>
+
+  
+  
+  <h3 id="performance"><a href="index.html#performance"> Performance </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Sep 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/09/24/profiling-go-with-pprof/">Profiling Go programs with pprof</a>
+    
+    <time datetime="" pubdate>Dec 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/12/03/how-much-memory-is-my-process-using-/">How much memory is my process using?</a>
+    
+    <time datetime="" pubdate>Jul 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/07/23/rigorous-benchmarking-in-reasonable-time/">Benchmarking correctly is hard (and techniques for doing it better)</a>
+    
+    <time datetime="" pubdate>May 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/05/01/the-etsy-site-performance-report/">The Etsy site performance report is amazing</a>
+    
+    <time datetime="" pubdate>Apr 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/04/23/some-links-on-java-garbage-collection/">Some links on Java garbage collection</a>
+    
+    <time datetime="" pubdate>Apr 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/04/22/java-garbage-collection-can-be-really-slow/">Java garbage collection can be really slow</a>
+    
+    <time datetime="" pubdate>Mar 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/03/23/io-matters/">I/O matters.</a>
+    
+    <time datetime="" pubdate>Feb 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/02/10/have-high-expectations-for-computers/">Have high expectations for your computers</a>
+    
+    <time datetime="" pubdate>Feb 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/02/07/cpu-load-averages/">How CPU load averages work (and using them to triage webserver performance!)</a>
+    
+    <time datetime="" pubdate>Jan 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/01/03/java-isnt-slow/">Java isn&#39;t slow</a>
+    
+    <time datetime="" pubdate>Sep 2015</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/09/10/a-millisecond-isnt-fast-and-how-we-fixed-it/">A millisecond isn&#39;t fast (and how we made it 100x faster)</a>
+    
+    <time datetime="" pubdate>May 2014</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/05/12/computers-are-fast/">Computers are *fast*!</a>
+    
+  </p>
+
+  
+  
+  <h3 id="open-source"><a href="index.html#open-source"> Open source </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Aug 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/08/06/contributing-to-open-source/">Figuring out how to contribute to open source</a>
+    
+    <time datetime="" pubdate>Oct 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/10/26/a-few-questions-about-open-source/">A few questions about open source</a>
+    
+    <time datetime="" pubdate>Apr 2015</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2015/04/12/learning-at-open-source-sprints/">Learning at open source sprints (no preparation required)</a>
+    
+    <time datetime="" pubdate>Apr 2014</time>
+    <span class="star">
+      
+          ★
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/04/26/i-dont-feel-guilty-about-not-contributing-to-open-source/">Don&#39;t feel guilty about not contributing to open source</a>
+    
+  </p>
+
+  
+  
+  <h3 id="linux-systems-stuff"><a href="index.html#linux-systems-stuff"> Linux systems stuff </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Apr 2018</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2018/04/28/debugging-a-segfault-on-linux/">How to get a core dump for a segfault on Linux</a>
+    
+    <time datetime="" pubdate>Nov 2016</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/11/21/things-to-learn-about-linux/">Things to learn about Linux</a>
+    
+    <time datetime="" pubdate>Jan 2016</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2016/01/18/guessing-linux-kernel-registers/">Guessing Linux kernel registers</a>
+    
+    <time datetime="" pubdate>Sep 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/09/18/you-can-be-a-kernel-hacker/">You can be a kernel hacker!</a>
+    
+    <time datetime="" pubdate>Mar 2014</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/03/23/recovering-files-using-slash-proc-and-other-useful-facts/">Recovering files using /proc (and spying, too!)</a>
+    
+    <time datetime="" pubdate>Jan 2014</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/01/04/4-paths-to-being-a-kernel-hacker/">4 paths to being a kernel hacker</a>
+    
+  </p>
+
+  
+  
+  <h3 id="recurse-center-2020"><a href="index.html#recurse-center-2020"> Recurse Center 2020 </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Feb 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/02/10/day-57--fighting-with-github-actions/">Day 57: Trying to set up GitHub Actions</a>
+    
+    <time datetime="" pubdate>Feb 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/02/09/day-56--a-little-webassembly/">Day 56: A little WebAssembly</a>
+    
+    <time datetime="" pubdate>Feb 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/02/04/day-53--configuring-nginx/">Day 53: a little nginx, IPv6, and wireguard</a>
+    
+    <time datetime="" pubdate>Feb 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/02/04/day-52--out-of-memory-errors/">Day 52: testing how many Firecracker VMs I can run</a>
+    
+    <time datetime="" pubdate>Feb 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/02/02/day-51--made-a-couple-of-puzzles/">Day 51: Fixed my logging and made a couple of puzzles</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/30/day-50--building-some-tarballs-for-puzzles/">Day 50: Building some tarballs for puzzles, and trying to make a kernel boot faster</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/29/day-49--making-the-vms-boot-faster/">Day 49: making the VMs boot faster</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/28/day-48--another-go-program/">Day 48: Another Go program, and a little vim configuration</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/27/day-47--using-device-mapper-to-manage-firecracker-images/">Day 47: Using device mapper to manage Firecracker images</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/26/day-46--debugging-an-iptables-problem/">Day 46: debugging an iptables problem</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/22/day-44--got-some-vms-to-start-in-firecracker/">Day 44: Building my VMs with Docker</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/21/day-43--building-vm-images/">Day 43: Building VM images</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/20/day-42--writing-a-go-program-to-manage-firecracker-vms/">Day 42: Writing a Go program to manage Firecracker VMs</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/19/day-41--trying-to-understand-what-a-bridge-is/">Day 41: Trying to understand what a bridge is</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/16/day-40--screen-flickering---a-talk-about-containers/">Day 40: screen flickering &amp; a talk about containers</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/15/day-39--customizing-gotty-s-terminal/">Day 39: Customizing gotty&#39;s terminal</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/14/day-38--modifying-gotty-to-serve-many-different-terminal-applications-at-once/">Day 38: Modifying gotty to serve many different terminal applications at once</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/13/day-37--a-new-laptop-and-a-little-vue/">Day 37: A new laptop and a little Vue</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/09/day-35--launching-my-vms-more-reliably/">Day 35: Launching my VMs more reliably</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/08/some-extra-daily-blog-posts/">Daily blog posts about my time at RC</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/08/day-34--learning-about-qemu/">Day 34: Learning about qemu</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/07/day-33--a-login-bug--a-git-trick--and-generating-yaml-files/">Day 33: pairing is magic and beautiful git diffs</a>
+    
+    <time datetime="" pubdate>Jan 2021</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2021/01/07/day-32--a-rails-model-that-doesn-t-use-the-database-with-activehash/">Day 32: A Rails model that doesn&#39;t use the database with ActiveHash</a>
+    
+    <time datetime="" pubdate>Dec 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/12/10/day-24--a-short-talk-about-blogging-myths/">Day 24: a short talk about blogging myths, and a debugging tip</a>
+    
+    <time datetime="" pubdate>Dec 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/12/10/day-23--some-rails-testing/">Day 23: a little Rails testing</a>
+    
+    <time datetime="" pubdate>Dec 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/12/08/day-22--getting-oauth-to-work-in-rails/">Day 22: getting OAuth to work in Rails</a>
+    
+    <time datetime="" pubdate>Dec 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/12/08/day-21--wrangling-systemd/">Day 21: wrangling systemd &amp; setting up git deploys to a VM</a>
+    
+    <time datetime="" pubdate>Dec 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/12/05/day-19--clustering-faces-using-an-autoencoder/">Day 19: Clustering faces (poorly) using an autoencoder</a>
+    
+    <time datetime="" pubdate>Dec 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/12/05/day-20--trying-to-run-a-rails-app-in-google-cloud-run/">Day 20: trying to figure out how Google Cloud IAM works</a>
+    
+    <time datetime="" pubdate>Dec 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/12/03/day-18--some-answers-to-autoencoder-questions/">Day 18: an answer to an autoencoder question</a>
+    
+    <time datetime="" pubdate>Dec 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/12/01/day-17--trying-to-wrap-my-head-around-autoencoders/">Day 17: trying to wrap my head around autoencoders</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/26/day-13--bptt---staring-at-graphs-a-lot/">Day 13: BPTT, and debugging why a model isn&#39;t training is hard</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/23/day-11--learning-about-learning-rates/">Day 11: learning about learning rates</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/20/day-10--training-an-rnn-to-count-to-three/">Day 10: Training an RNN to count to three</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/19/day-9--generating-a-lot-of-nonsense-with-an-rnn/">Day 9: Generating a lot of nonsense with an RNN</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/18/how-to-do-hard-projects--start-with-something-that-works/">Day 8: Start with something that works</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/16/day-5--lots-of-faces-with-sketch-rnn/">Day 5: drawing lots of faces with sketch-rnn</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/15/simple-explanations-without-sounding-condescending/">How do you write simple explanations without sounding condescending?</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/11/day-3--an-infinitely-tall-fridge/">Day 3: an infinitely tall fridge</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/10/day-2--rails-associations---dragging-divs-around/">Day 2: Rails associations &amp; dragging divs around</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/09/day-1--a-little-rails-/">Day 1: a confusing Rails error message</a>
+    
+    <time datetime="" pubdate>Nov 2020</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2020/11/05/i-m-doing-another-recurse-center-batch-/">I&#39;m doing another Recurse Center batch!</a>
+    
+  </p>
+
+  
+  
+  <h3 id="recurse-center-2013"><a href="index.html#recurse-center-2013"> Recurse Center 2013 </a></h3>
+
+  <p class="article-list with-favourites">
+    
+    <time datetime="" pubdate>Sep 2017</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2017/09/17/how-i-spent-my-time-at-the-recurse-center/">How I spent my time at the Recurse Center</a>
+    
+    <time datetime="" pubdate>Jun 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/06/29/how-i-did-hacker-school/">How I did Hacker School: ignoring things I understand and doing the impossible</a>
+    
+    <time datetime="" pubdate>Mar 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/03/10/help/">Hacker School&#39;s Secret Strategy for Being Super Productive (or: Help.)</a>
+    
+    <time datetime="" pubdate>Feb 2014</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2014/02/15/how-was-hacker-school/">&#34;How was Hacker School?&#34;</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/20/day-46-never-graduate/">Day 46: Never Graduate</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/19/day-45-reading-elf-headers/">Day 45: I now have Rust code for executing executables!</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/17/day-44-gdb-is-great/">Day 44: qemu &#43; gdb = so great</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/16/day-43-hopefully-the-last-day-spent-fixing-linker-problems/">Day 43: SOMETHING IS ERASING MY PROGRAM WHILE IT’S RUNNING (oh wait oops)</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/13/day-42-how-to-run-an-elf-executable-i-dont-know/">Day 42: How to run a simple ELF executable, from scratch (I don&#39;t know)</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/12/day-41-linkers-are-still-upsetting/">Day 41: Linkers are upsetting</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/10/day-39-i-wrote-a-malloc/">Day 39: Writing malloc wrong, for fun</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/10/day-40-12-things-i-learned-today-about-linkers/">Day 40: 12 things I learned today about linkers.</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/10/day-40-learning-about-linkers/">Day 40: Linkers are amazing.</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/06/day-38-after-7-days/">Day 38: After 6 days, I have problems that I can&#39;t understand at all</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/04/day-37-how-a-keyboard-works/">Day 37: After 5 days, my OS doesn&#39;t crash when I press a key</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/03/day-36-programming-without-malloc/">Day 36: On programming without malloc</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/02/types-in-rust/">Day 35: Types in Rust, for beginners</a>
+    
+    <time datetime="" pubdate>Dec 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/12/01/how-to-call-rust-from-assembly/">How to call Rust from assembly, and vice versa</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/30/videos-from-pydata-nyc-are-up/">Videos from PyData NYC are up!</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          ★
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/29/what-happens-when-you-run-a-unix-program/">What happens when you run &#39;Hello, world&#39;</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/29/writing-an-os-using-rustboot-and-rust-core/">Writing a kernel using rustboot &amp; rust-core</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/27/day-34b-wrapping-up-the-tcp-stack/">Day 34b: Writing curl using my TCP stack</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/26/day-34-the-tiniest-operating-system/">Day 34: The tiniest operating system</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/25/day-33-how-to-make-music-with-clojurescript/">Day 33: How to make music with ClojureScript</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/21/day-32-magical-orchestra/">Day 32: Magical Orchestra!!!</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/20/day-31-logic-programming-pretty-music/">Day 31: Binary trees with core.logic!</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/19/day-30-making-music-in-clojure-with-overtone/">Day 30: Making music in Clojure with Overtone. Clojure bugs with laziness! Fun!</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/18/day-29-trying-out-emacs/">Day 29: Trying out Emacs!</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/15/day-28-more-git-workflow-pictures/">Day 28: Made a git workflow visualization webapp!</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/13/day-27-magic-testing-functions/">Day 27: Automatically testing changes in state! Visualizing my Git workflow! Floats!</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/12/day-25-ack-all-the-things/">Day 25: ACK all the things</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/12/day-26-trying-to-describe-the-tcp-state-machine/">Day 26: Trying to describe the TCP state machine in a readable way. Failing.</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/12/women-in-technology-workshop-at-pydata-nyc/">Women in Technology workshop at PyData NYC</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/07/day-24-unit-testing-this-tcp-library/">Day 24: Unit testing this TCP library</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/06/day-22-got-some-tcp-packets-back/">Day 22: Got some TCP packets back!</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/06/day-23-started-writing-a-socket-library/">Day 23: Started writing a TCP stack in Python</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/06/nyc-python-talk-slides/">NYC Python talk</a>
+    
+    <time datetime="" pubdate>Nov 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/11/05/day-21-trying-to-tcp/">Day 21: Trying to TCP</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/31/day-19-i-might-understand-why-networking-is-hard/">Day 19: A few reasons why networking is hard</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          ★
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/31/day-20-scapy-and-traceroute/">Day 20: Traceroute in 15 lines of code using Scapy</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/29/day-18-in-ur-connection/">Day 18: ARP cache poisoning (or: In ur connection, sniffing ur packets)</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/28/day-17-buffer-overflows/">Day 17: How to write a buffer overflow exploit</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          ★
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/24/day-16-gzip-plus-poetry-equals-awesome/">Day 16: gzip &#43; poetry = awesome</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/24/do-rails-programmers-use-node-visualizing-correlations-in-command-usage/">Do Rails programmers use node.js? Visualizing correlations in command usage</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/23/day-15-how-gzip-works/">Day 15: How a .gz file is structured, redux</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/22/day-14-apparently-i-should-write-tests/">Day 14: When it&#39;s hard to write tests, that&#39;s when I should be testing</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/21/day-13-off-by-one-errors/">Day 13: Off by one errors</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/17/day-12-julia-reflects-on-julia/">Day 12: Why Julia likes Julia</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/16/day-10-goals/">Day 10: Goals. Goals? Maybe I need to be *reading* more code?</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/16/day-11-how-does-gzip-work/">Day 11: How does gzip work?</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/14/day-9-bytecode-is-made-of-bytes/">Day 9: Bytecode is made of bytes! CPython isn&#39;t scary!</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/12/day-8-julia-writes-julia-and-open-source/">Day 8: Julia writes Julia! And remembers that open source is hard.</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/09/day-7-an-echo-server-in-clojure/">Day 7: An echo server in Clojure</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/08/day-6-i-wrote-a-rootkit/">Day 6: I wrote a rootkit!</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/07/day-5-i-wrote-a-kernel-module/">Day 5: I wrote a kernel module!!!</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/06/where-to-find-the-bixi-xml-data-feed/">Where to find bike sharing systems&#39; data feeds</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/04/day-4-processes-vs-threads/">Day 4: Processes vs threads, and kernel modules!</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/02/day-3-what-does-the-linux-kernel-even-do/">Day 3: What does the Linux kernel even do?</a>
+    
+    <time datetime="" pubdate>Oct 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/10/01/day-2-netcat-fun/">Day 2: netcat fun!</a>
+    
+    <time datetime="" pubdate>Sep 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/09/30/hacker-school-day-2-what-does-a-shell-even-do/">Day 1: What does a shell even do?</a>
+    
+    <time datetime="" pubdate>Sep 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/09/30/hacker-school-day-1-messing-around-with-the-stack-in-c/">Hacker School Day 1: Messing around with the stack in C</a>
+    
+    <time datetime="" pubdate>Sep 2013</time>
+    <span class="star">
+      
+          
+      
+    </span>
+    <a href="https://jvns.ca/blog/2013/09/26/hacker-school-day-4-c-unit-testing/">Hacker School Day -4: unit testing in C. checkmk!</a>
+    
+  </p>
+
+
+</article>
+</div>
+
+	</div>
+</div>
+<nav role="navigation" class="footer-nav"> <a href="index.html">Archives</a>
+</nav>
+<footer role="contentinfo"><span class="credit">&copy; Julia Evans. </span>
+  <span>If you like this, you may like <a href="https://web.archive.org/web/20181228051203/http://www.uliaea.ca/">Ulia Ea</a> or, more seriously, this list of <a href="https://jvns.ca/blogroll">blogs I love</a> or some <a href="https://jvns.ca/bookshelf">books I've read</a>. <br> 
+<p class="rc-scout__text"><i class="rc-scout__logo"></i>
+You might also like the <a class="rc-scout__link" href="https://www.recurse.com/scout/click?t=546ea46360584b522270b8c3e5d830f8">Recurse Center</a>, my very favorite programming community <a href="https://jvns.ca/categories/hackerschool/">(my posts about it)</a></p>
+</span>
+<style class="rc-scout__style" type="text/css">.rc-scout{display:block;padding:0;border:0;margin:0;}.rc-scout__text{display:block;padding:0;border:0;margin:0;height:100%;font-size:100%;}.rc-scout__logo{display:inline-block;padding:0;border:0;margin:0;width:0.85em;height:0.85em;background:no-repeat center url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2012%2015%22%3E%3Crect%20x%3D%220%22%20y%3D%220%22%20width%3D%2212%22%20height%3D%2210%22%20fill%3D%22%23000%22%3E%3C%2Frect%3E%3Crect%20x%3D%221%22%20y%3D%221%22%20width%3D%2210%22%20height%3D%228%22%20fill%3D%22%23fff%22%3E%3C%2Frect%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%228%22%20height%3D%226%22%20fill%3D%22%23000%22%3E%3C%2Frect%3E%3Crect%20x%3D%222%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%2361ae24%22%3E%3C%2Frect%3E%3Crect%20x%3D%224%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%2361ae24%22%3E%3C%2Frect%3E%3Crect%20x%3D%226%22%20y%3D%223%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%2361ae24%22%3E%3C%2Frect%3E%3Crect%20x%3D%223%22%20y%3D%225%22%20width%3D%222%22%20height%3D%221%22%20fill%3D%22%2361ae24%22%3E%3C%2Frect%3E%3Crect%20x%3D%226%22%20y%3D%225%22%20width%3D%222%22%20height%3D%221%22%20fill%3D%22%2361ae24%22%3E%3C%2Frect%3E%3Crect%20x%3D%224%22%20y%3D%229%22%20width%3D%224%22%20height%3D%223%22%20fill%3D%22%23000%22%3E%3C%2Frect%3E%3Crect%20x%3D%221%22%20y%3D%2211%22%20width%3D%2210%22%20height%3D%224%22%20fill%3D%22%23000%22%3E%3C%2Frect%3E%3Crect%20x%3D%220%22%20y%3D%2212%22%20width%3D%2212%22%20height%3D%223%22%20fill%3D%22%23000%22%3E%3C%2Frect%3E%3Crect%20x%3D%222%22%20y%3D%2213%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%23fff%22%3E%3C%2Frect%3E%3Crect%20x%3D%223%22%20y%3D%2212%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%23fff%22%3E%3C%2Frect%3E%3Crect%20x%3D%224%22%20y%3D%2213%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%23fff%22%3E%3C%2Frect%3E%3Crect%20x%3D%225%22%20y%3D%2212%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%23fff%22%3E%3C%2Frect%3E%3Crect%20x%3D%226%22%20y%3D%2213%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%23fff%22%3E%3C%2Frect%3E%3Crect%20x%3D%227%22%20y%3D%2212%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%23fff%22%3E%3C%2Frect%3E%3Crect%20x%3D%228%22%20y%3D%2213%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%23fff%22%3E%3C%2Frect%3E%3Crect%20x%3D%229%22%20y%3D%2212%22%20width%3D%221%22%20height%3D%221%22%20fill%3D%22%23fff%22%3E%3C%2Frect%3E%3C%2Fsvg%3E');}.rc-scout__link:link,.rc-scout__link:visited{color:#61ae24;text-decoration:underline;}.rc-scout__link:hover,.rc-scout__link:active{color:#4e8b1d;}</style>
+</footer>
+
+</div>
+</body>
+</html>
+	

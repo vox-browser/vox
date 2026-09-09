@@ -1,0 +1,74 @@
+/*
+ * This is a separate file rather than embedded because it allows us to
+ * suppress non-working CSS from IE8, etc.
+ */
+
+@media only screen and (min-width: 500px) {
+body {
+	margin-left: 28%;
+}
+
+/* DocBook classes */
+*.title,
+*.subtitle,
+*.authorgroup,
+*.funcsynopsis,
+*.informaltable,
+*.itemizedlist,
+*.note,
+*.orderedlist,
+*.programlisting,
+*.variablelist,
+blockquote,
+p,li,dd {
+      max-width:760px;
+}
+*.nav {
+	margin-left: -28%;
+	width: 26%;
+	position: fixed;
+	top: 0;
+	overflow: auto;
+	height: 100%;
+}
+}
+
+@media only screen and (min-width: 784px) {
+body {
+	margin-left: 15em;
+}
+*.nav {
+	margin-left: -15em;
+	width: 14em;
+	position: fixed;
+	top: 0;
+	overflow: auto;
+	height: 100%;
+}
+}
+
+div.book>div.nav {
+	padding-left: 0.5em;
+}
+
+*.nav ul {
+	list-style-type: none;
+	padding-left: 1em;
+}
+
+*.nav-break {
+	margin-top:  10px;
+}
+*.nav-top
+{
+	color: #FFF;
+	background-color: #ccc;
+	text-decoration:none;
+	text-transform:uppercase;
+	font-style:italic;
+}
+
+*.menu-nav ul
+{
+	text-decoration:none;
+}

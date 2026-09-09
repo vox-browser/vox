@@ -1,0 +1,15 @@
+#  ______________
+# |              |
+# |  NO LLM PLZ  |
+# \______________/
+#
+
+User-agent: *
+Disallow:
+Sitemap: https://jvns.ca/sitemap.xml
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /

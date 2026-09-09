@@ -1,0 +1,138 @@
+body {
+  font-family: georgia, serif;
+  font-size: large;
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 40em;
+  overflow-wrap: break-word;
+  padding: 0 1em;
+}
+h1, h2, h3, h4, h5, h6 {
+  margin: 1.25em 0 0.25em 0;
+  line-height: 1.2;
+}
+main h1 + div {
+  margin: 0.5em 0;
+}
+a:empty:before {
+  content: "#";
+}
+a:empty {
+  visibility: hidden;
+  padding-left: 0.25em;
+}
+:hover > a:empty {
+  visibility: visible;
+}
+blockquote, pre, kbd, .highlight {
+  background: #eee;
+}
+blockquote {
+  border-left: thick solid #ccc;
+}
+pre {
+  overflow: auto;
+}
+blockquote, pre, .highlight {
+  margin: 1em 0;
+  padding: 0.5em;
+}
+blockquote > *:first-child, .highlight > *:first-child {
+  margin-top: 0;
+}
+blockquote > *:last-child, .highlight > *:last-child {
+  margin-bottom: 0;
+}
+pre, code, samp, kbd, .mono {
+  font-family: monospace,monospace;
+  font-size: 0.9em;
+}
+pre code, pre samp, pre kbd, .mono kbd {
+  font-size: 1.0em;
+}
+code, samp kbd {
+  color: #050;
+}
+samp {
+  color: #730;
+}
+pre .cursor {
+  background: #730;
+  color: #eee;
+}
+kbd {
+  border: thin solid #ccc;
+  box-shadow: 0 0.15em 0.15em #ccc;
+  border-radius: 0.2em;
+  padding: 0.1em 0.2em;
+}
+samp kbd {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+ul.blog {
+  margin-top: 1.5em;
+  list-style-type: none;
+  padding: 0;
+}
+ul.blog li {
+  margin: 1em 0;
+}
+hr {
+  margin: 1.5em auto;
+  border: 0;
+  border-bottom: 0.15em dotted #999;
+}
+footer {
+  text-align: center;
+}
+footer nav a {
+  margin-right: 1.5em;
+  line-height: 2.5;
+}
+footer nav a:last-child  {
+  margin-right: 0;
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #111;
+    color: #bbb;
+  }
+  a:link {
+    color: #9bf;
+  }
+  a:visited {
+    color: #a9f;
+  }
+  a:focus, a:hover {
+    color: #9cf;
+  }
+  a:active {
+    color: #f99;
+  }
+  blockquote, pre, kbd, .highlight {
+    background: #000;
+    box-shadow: 0 0 0.5em #333;
+  }
+  blockquote {
+    border-left-color: #333;
+  }
+  code, pre kbd {
+    color: #9c6;
+  }
+  samp {
+    color: #db0;
+  }
+  pre .cursor {
+    background: #db0;
+    color: #000;
+  }
+  kbd {
+    border-color: #333;
+    box-shadow: 0 0.15em 0.15em #333;
+  }
+  hr {
+    border-bottom-color: #666;
+  }
+}

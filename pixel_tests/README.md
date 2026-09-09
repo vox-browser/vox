@@ -115,6 +115,53 @@ localized `file:` resources in the C++ browser.
 | `jemalloc` | [jemalloc](https://jemalloc.net/) |
 | `lighttpd` | [lighttpd](https://www.lighttpd.net/) |
 
+A fourth 40-page batch was frozen on 2026-09-10. As with the earlier batches,
+scripts were removed and all resources that affect the captured viewport were
+localized:
+
+| Case | Original page |
+| --- | --- |
+| `pcre` | [PCRE](https://www.pcre.org/) |
+| `libffi` | [libffi](https://sourceware.org/libffi/) |
+| `bzip2` | [bzip2](https://sourceware.org/bzip2/) |
+| `c-ares` | [c-ares](https://c-ares.org/) |
+| `openwall` | [Openwall](https://www.openwall.com/) |
+| `cloc` | [cloc](https://cloc.sourceforge.net/) |
+| `nano` | [GNU nano](https://www.nano-editor.org/) |
+| `less` | [less](https://www.greenwoodsoftware.com/less/) |
+| `lynx` | [Lynx](https://lynx.invisible-island.net/) |
+| `links` | [Links](https://links.twibright.com/) |
+| `w3m` | [w3m](https://w3m.sourceforge.net/) |
+| `rsync` | [rsync](https://rsync.samba.org/) |
+| `opensmtpd` | [OpenSMTPD](https://www.opensmtpd.org/) |
+| `openntpd` | [OpenNTPD](https://www.openntpd.org/) |
+| `postfix` | [Postfix](https://www.postfix.org/) |
+| `exim` | [Exim](https://www.exim.org/) |
+| `haproxy` | [HAProxy](https://www.haproxy.org/) |
+| `memcached` | [Memcached](https://memcached.org/) |
+| `bearssl` | [BearSSL](https://bearssl.org/) |
+| `gnutls` | [GnuTLS](https://www.gnutls.org/) |
+| `libtomcrypt` | [LibTomCrypt](https://www.libtom.net/) |
+| `nghttp2` | [nghttp2](https://nghttp2.org/) |
+| `uclibc-ng` | [uClibc-ng](https://uclibc-ng.org/) |
+| `ninefront` | [9front](https://9front.org/) |
+| `plan9` | [Plan 9](https://9p.io/plan9/) |
+| `cgit` | [cgit](https://git.zx2c4.com/cgit/about/) |
+| `subversion` | [Apache Subversion](https://subversion.apache.org/) |
+| `schemers` | [Schemers.org](https://www.schemers.org/) |
+| `lobsters` | [Lobsters](https://lobste.rs/) |
+| `susam` | [Susam Pal](https://susam.net/) |
+| `beej` | [Beej's Bit Bucket](https://beej.us/) |
+| `sive` | [Derek Sivers](https://sive.rs/) |
+| `jvns` | [Julia Evans](https://jvns.ca/) |
+| `250bpm` | [250bpm](https://250bpm.com/) |
+| `benhoyt` | [Ben Hoyt](https://benhoyt.com/writings/) |
+| `tarsnap` | [Tarsnap](https://www.tarsnap.com/) |
+| `pigz` | [pigz](https://www.zlib.net/pigz/) |
+| `lzo` | [LZO](https://www.oberhumer.com/opensource/lzo/) |
+| `ijg` | [Independent JPEG Group](https://www.ijg.org/) |
+| `netlib` | [Netlib](https://www.netlib.org/) |
+
 The expected PNGs were captured at the viewport sizes in `cases.tsv` with the
 release build at `../3rd/ladybird/Build/release/bin/Ladybird.app`. They are
 macOS references because both browsers use the same installed font files,

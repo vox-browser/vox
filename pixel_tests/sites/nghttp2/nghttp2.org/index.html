@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Nghttp2: HTTP/2 C Library - nghttp2.org</title>
+  <meta name="author" content="Tatsuhiro Tsujikawa">
+
+  
+  <meta name="description" content="Nghttp2: HTTP/2 C Library Feb 16th, 2015 11:16 pm nghttp2 is an implementation of
+HTTP/2 and its header
+compression algorithm HPACK in
+C. The &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="index.html">
+  <link href="favicon.png" rel="icon">
+  <link href="stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="https://nghttp2.org/atom.xml" rel="alternate" title="nghttp2.org" type="application/atom+xml">
+  
+  
+  
+  
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="../fonts.googleapis.com/css%3Ffamily=PT+Serif:regular,italic,bold,bolditalic.css" rel="stylesheet" type="text/css">
+<link href="../fonts.googleapis.com/css%3Ffamily=PT+Sans:regular,italic,bold,bolditalic.css" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="index.html">nghttp2.org</a></h1>
+  
+    <h2>HTTP/2 C library and tools</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="https://nghttp2.org/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site://nghttp2.org" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="index.html">Top</a></li>
+  <li><a href="https://nghttp2.org/blog/">Blog</a></li>
+  <li><a href="https://nghttp2.org/blog/archives">Archives</a></li>
+  <li><a href="https://nghttp2.org/documentation/">Documentation</a></li>
+  <li><a href="https://nghttp2.org/httpbin">Httpbin</a></li>
+  <li><a href="https://github.com/nghttp2/nghttp2/releases">Releases</a></li>
+  <li><a href="https://github.com/nghttp2/nghttp2">Source Code</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article role="article">
+  
+  <header>
+    <h1 class="entry-title">Nghttp2: HTTP/2 C Library</h1>
+    <p class="meta">
+
+
+
+
+<time class='entry-date' datetime='2015-02-16T23:16:00+09:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>11:16 pm</span></time></p>
+  </header>
+  
+  <p>nghttp2 is an implementation of
+<a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a> and its header
+compression algorithm <a href="https://tools.ietf.org/html/rfc7541">HPACK</a> in
+C.</p>
+
+<p>The framing layer of HTTP/2 is implemented as a form of reusable C
+library.  On top of that, we have implemented HTTP/2 <a href="https://nghttp2.org/documentation/nghttp.1.html">client</a>, <a href="https://nghttp2.org/documentation/nghttpd.1.html">server</a>
+and <a href="https://nghttp2.org/documentation/nghttpx.1.html">proxy</a>.
+We have also developed <a href="https://nghttp2.org/documentation/h2load.1.html">load test and benchmarking tool</a> for HTTP/2.</p>
+
+<p>We have participated in httpbis working group since HTTP/2 draft-04,
+which is the first implementation draft.  Since then we have updated
+nghttp2 library constantly to latest specification and nghttp2 is now
+one of the most mature <a href="https://github.com/http2/http2-spec/wiki/Implementations">HTTP/2 implementations</a>.</p>
+
+<p>All C APIs are <a href="https://nghttp2.org/documentation/apiref.html">fully documented</a>.</p>
+
+<p>HTTP/2 utilizes header compression method called <a href="https://tools.ietf.org/html/rfc7541">HPACK</a>.  We offer
+HPACK encoder and decoder are available as <a href="https://nghttp2.org/documentation/tutorial-hpack.html">public API</a>.</p>
+
+  
+    <footer>
+      <p class="meta">
+        
+        
+
+
+
+
+<time class='entry-date' datetime='2015-02-16T23:16:00+09:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>11:16 pm</span></time>
+        
+      </p>
+      
+        <div class="sharing">
+  
+  <a href="https://twitter.com/share" class="twitter-share-button" data-url="//nghttp2.org/index.html" data-via="" data-counturl="//nghttp2.org/index.html" >Tweet</a>
+  
+  
+  
+</div>
+
+      
+    </footer>
+  
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="https://nghttp2.org/blog/2026/07/29/nghttp2-v1-70-0/">Nghttp2 v1.70.0</a>
+      </li>
+    
+      <li class="post">
+        <a href="https://nghttp2.org/blog/2026/04/19/nghttp2-v1-69-0/">Nghttp2 v1.69.0</a>
+      </li>
+    
+      <li class="post">
+        <a href="https://nghttp2.org/blog/2026/03/18/nghttp2-v1-68-1/">Nghttp2 v1.68.1</a>
+      </li>
+    
+      <li class="post">
+        <a href="https://nghttp2.org/blog/2025/10/25/nghttp2-v1-68-0/">Nghttp2 v1.68.0</a>
+      </li>
+    
+      <li class="post">
+        <a href="https://nghttp2.org/blog/2025/09/15/nghttp2-v1-67-1/">Nghttp2 v1.67.1</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2026 - Tatsuhiro Tsujikawa -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
