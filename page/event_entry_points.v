@@ -14,6 +14,8 @@ pub:
 	end   int
 }
 
+pub type InputEventData = string | u32
+
 pub struct MouseEventCoordinates {
 pub:
 	client   PixelPoint
@@ -123,7 +125,49 @@ pub fn is_enter_key_or_interoperable_enter_key_combo(key int, modifiers u32) boo
 }
 
 pub fn target_ranges_for_input_event(range ?SelectionRange) []SelectionRange {
-	return if actual := range { [actual] } else { []SelectionRange{} }
+	if actual := range {
+		if actual.start != actual.end {
+			return [actual]
+		}
+	}
+	return []SelectionRange{}
+}
+
+pub fn (mut handler EventHandler) set_input_selection_range(range ?SelectionRange) {
+	handler.input_selection_range_ = range
+}
+
+pub fn (mut handler EventHandler) input_event(event_name string, input_type string,
+	code_point_or_string InputEventData) EventResult {
+	if !handler.active_document {
+		return .dropped
+	}
+
+	mut data := ?string(none)
+	match code_point_or_string {
+		u32 {
+			if !utf8.is_control(rune(code_point_or_string)) {
+				data = rune(code_point_or_string).str()
+			}
+		}
+		string {
+			data = code_point_or_string
+		}
+	}
+	target := handler.focused_target()
+	handler.event_log << InputDispatch{
+		name:          event_name
+		target:        if value := target { value.id } else { '' }
+		input_type:    input_type
+		data:          data
+		target_ranges: target_ranges_for_input_event(handler.input_selection_range_)
+	}
+	if focused := target {
+		if focused.cancel_keyboard {
+			return .cancelled
+		}
+	}
+	return .accepted
 }
 
 pub fn spin_event_loop_until_dialog_closed(p &Page) bool {

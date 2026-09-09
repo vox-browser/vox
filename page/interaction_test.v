@@ -230,6 +230,36 @@ fn test_event_handler_key_classification_matches_upstream_filters() {
 	assert handler.event_log.map(it.name) == ['keydown', 'keypress']
 }
 
+fn test_event_handler_input_event_dispatches_payload_and_target_ranges() {
+	mut handler := EventHandler{}
+	handler.run_mousedown_default_actions(InputTarget{
+		id:            'editor'
+		is_focusable:  true
+		cancel_keyboard: true
+	})
+	handler.set_input_selection_range(SelectionRange{ start: 2, end: 5 })
+	assert handler.input_event('beforeinput', 'insertText', u32(`A`)) == .cancelled
+	dispatch := handler.event_log.last()
+	assert dispatch.name == 'beforeinput'
+	assert dispatch.target == 'editor'
+	assert dispatch.input_type == 'insertText'
+	assert dispatch.data? == 'A'
+	assert dispatch.target_ranges == [SelectionRange{ start: 2, end: 5 }]
+
+	handler.set_input_selection_range(SelectionRange{ start: 3, end: 3 })
+	assert handler.input_event('input', 'insertLineBreak', u32(`\n`)) == .cancelled
+	assert handler.event_log.last().data == none
+	assert handler.event_log.last().target_ranges.len == 0
+
+	mut fallback := EventHandler{}
+	assert fallback.input_event('input', 'insertText', 'text') == .accepted
+	assert fallback.event_log.last().target == ''
+	assert fallback.event_log.last().data? == 'text'
+	fallback.set_document_state(false, true)
+	assert fallback.input_event('input', 'insertText', 'ignored') == .dropped
+	assert fallback.event_log.len == 1
+}
+
 fn test_event_handler_translates_chrome_hover_capture_and_swallow_order() {
 	mut callbacks := TestChromeWidgetCallbacks{}
 	mut handler := EventHandler{}

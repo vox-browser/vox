@@ -33,8 +33,11 @@ pub:
 
 pub struct InputDispatch {
 pub:
-	name   string
-	target string
+	name          string
+	target        string
+	input_type    string
+	data          ?string
+	target_ranges []SelectionRange
 }
 
 @[heap]
@@ -61,6 +64,7 @@ mut:
 	current_cursor                       string = 'arrow'
 	selection_anchor                     PixelPoint
 	selection_extent                     PixelPoint
+	input_selection_range_               ?SelectionRange
 }
 
 pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root bool) {
