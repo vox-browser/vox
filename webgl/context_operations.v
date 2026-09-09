@@ -286,7 +286,10 @@ pub fn (mut context WebGLRenderingContext) bind_renderbuffer(target GLenum, rend
 }
 
 pub fn (mut context WebGLRenderingContext) bind_texture(target GLenum, texture ?&WebGLTexture) {
-	if target !in [texture_2d, texture_cube_map] {
+	if target !in [texture_2d, texture_cube_map, texture_3d, texture_2d_array] || (target in [
+		texture_3d,
+		texture_2d_array,
+	] && context.version != .webgl2) {
 		context.set_error(invalid_enum)
 		return
 	}
@@ -764,6 +767,11 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 	}
 	if context.version == .webgl2 {
 		match pname {
+			texture_binding_3d, texture_binding_2d_array {
+				target := if pname == texture_binding_3d { texture_3d } else { texture_2d_array }
+				handle := context.bound_textures[target] or { return WebGLParameterValue{} }
+				return WebGLParameterValue{ kind: .object, object: handle }
+			}
 			pack_row_length, pack_skip_rows, pack_skip_pixels, unpack_row_length, unpack_skip_rows, unpack_skip_pixels, unpack_skip_images, unpack_image_height {
 				return context.generic_parameters_[pname] or { integer_parameter(0) }
 			}
