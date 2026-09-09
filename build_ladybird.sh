@@ -22,7 +22,7 @@ fi
 
 mkdir -p "$binary_dir"
 cp "$repo_dir/packaging/Info.plist" "$bundle_dir/Contents/Info.plist"
-extra_cflags="-DLARGE_CONFIG"
+extra_cflags=""
 extra_ldflags=""
 upstream_dir=${LADYBIRD_SOURCE_DIR:-"$repo_dir/../3rd/ladybird"}
 skia_root="$upstream_dir/Build/release/vcpkg_installed/arm64-osx-dynamic"
@@ -36,14 +36,12 @@ if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/includ
     extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_SKIA_TEXT"
     extra_ldflags="-L$build_dir -lLadybirdVSkiaText -Wl,-rpath,$build_dir -Wl,-rpath,$skia_root/lib -lc++"
 fi
-# The translated LibWeb image plus Cocoa needs more static-root ranges than Boehm's default
-# configuration. LARGE_CONFIG raises that supported table limit while retaining normal GC.
 if [ -n "$extra_ldflags" ]; then
-    "$v_compiler" -enable-globals -prod -gc boehm_full_opt -cflags "$extra_cflags" \
-        -ldflags "$extra_ldflags" -o "$binary_dir/Ladybird" "$repo_dir/main.v"
+	"$v_compiler" -enable-globals -prod -gc none -cflags "$extra_cflags" \
+		-ldflags "$extra_ldflags" -o "$binary_dir/Ladybird" "$repo_dir/main.v"
 else
-    "$v_compiler" -enable-globals -prod -gc boehm_full_opt -cflags "$extra_cflags" \
-        -o "$binary_dir/Ladybird" "$repo_dir/main.v"
+	"$v_compiler" -enable-globals -prod -gc none -cflags "$extra_cflags" \
+		-o "$binary_dir/Ladybird" "$repo_dir/main.v"
 fi
 
 if command -v codesign >/dev/null 2>&1; then
