@@ -8,6 +8,10 @@ fn pid(name string) PropertyID {
 	return property_id_from_string(name) or { panic('unknown property ${name}') }
 }
 
+fn dark_page_preference_for_computed_color_test(_ voidptr) string {
+	return 'dark'
+}
+
 fn test_property_metadata() {
 	// Inherited-by-default flags (from Properties.json).
 	assert is_inherited_property(pid('color'))
@@ -232,6 +236,24 @@ fn test_computed_color() {
 	plain := el_with(doc, 'p', 'style', '')
 	assert (computed_color(plain, pid('color'), no_author) or { panic('pc') }).serialize() == 'rgb(0 0 0)'
 	assert (computed_color(plain, pid('background-color'), no_author) or { panic('pb') }).serialize() == 'rgb(0 0 0 / 0)'
+}
+
+fn test_computed_color_uses_the_page_and_element_color_scheme() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut page_target := 0
+	doc.set_page(&dom.Page{
+		target: unsafe { voidptr(&page_target) }
+		preferred_color_scheme_callback: dark_page_preference_for_computed_color_test
+	})
+	mut element := doc.create_element_ns(html_ns, 'div') or { panic('${err}') }
+	element.set_attribute_value('style', 'color-scheme: light dark; color: CanvasText; background-color: light-dark(rgb(1 2 3), rgb(4 5 6))')
+
+	no_author := []&CSSRule{}
+	assert computed_color(element, pid('color'), no_author) or { panic('color') } == SystemColor.canvas_text(.dark)
+	background := computed_color(element, pid('background-color'), no_author) or {
+		panic('background color')
+	}
+	assert background == Color{4, 5, 6, 255}
 }
 
 fn test_user_agent_default_display() {
