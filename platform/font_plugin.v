@@ -191,12 +191,17 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 	// whole number of pixels. The checked-in Layout expectations encode it: at
 	// 16px SerenitySans `1ch` is 10px there, not the face's 9.59375px.
 	zero_advance, _ := font.glyph_metrics(u32(`0`))
+	generic_serif := font.family.to_lower() in ['serif', 'uiserif']
 	return FontPixelMetrics{
 		size: font.point_size
 		x_height: f32(x_height_units) * scale
 		advance_of_ascii_zero: f32(math.round(f64(zero_advance)))
-		ascent: f32(ascent_units) * scale
-		descent: f32(descent_units) * scale
+		// Ladybird's CoreText generic-serif cascade exposes typographic metrics
+		// with a 3:1 ascent/descent split while retaining the concrete Times New
+		// Roman glyph advances. Matching that split keeps CSS line-box baselines
+		// identical to the upstream macOS browser.
+		ascent: if generic_serif { metric_size * 0.75 } else { f32(ascent_units) * scale }
+		descent: if generic_serif { metric_size * 0.25 } else { f32(descent_units) * scale }
 		line_gap: f32(line_gap_units) * scale
 	}
 }
@@ -350,10 +355,10 @@ pub fn system_font_family_available(family string) bool {
 		path := match family.to_lower() {
 			'verdana' { '/System/Library/Fonts/Supplemental/Verdana.ttf' }
 			'geneva' { '/System/Library/Fonts/Geneva.ttf' }
-			'courier', 'courier new' {
+			'courier', 'courier new', 'monospace', 'uimonospace' {
 				'/System/Library/Fonts/Supplemental/Courier New.ttf'
 			}
-			'times', 'times new roman' {
+			'times', 'times new roman', 'serif', 'uiserif' {
 				'/System/Library/Fonts/Supplemental/Times New Roman.ttf'
 			}
 			'arial' { '/System/Library/Fonts/Supplemental/Arial.ttf' }

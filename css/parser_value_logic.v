@@ -7293,7 +7293,6 @@ fn (mut parser Parser) parse_font_family_value(mut tokens ComponentValueStream) 
 	if families.len == 0 {
 		return none
 	}
-
 	tokens = transaction
 	return StyleValue(StyleValueList.create(families, .comma, .yes))
 }
@@ -7306,14 +7305,17 @@ fn (mut parser Parser) parse_font_family_item(mut tokens ComponentValueStream) ?
 		if peek.is(.ident) {
 			ident := to_ascii_lowercase(peek.token().ident())
 			if is_generic_font_family_name(ident) {
+				tokens.consume()
+				tokens.consume_whitespace()
+				if tokens.has_more_tokens() {
+					return none
+				}
 				if keyword := keyword_from_string(ident) {
-					tokens.consume()
-					tokens.consume_whitespace()
-					if tokens.has_more_tokens() {
-						return none
-					}
 					return StyleValue(KeywordStyleValue.create(keyword))
 				}
+				// Some generic family names, such as system-ui and fangsong, are not
+				// represented in the generated CSS keyword enum.
+				return StyleValue(CustomIdentStyleValue.create(ident))
 			}
 		}
 	}

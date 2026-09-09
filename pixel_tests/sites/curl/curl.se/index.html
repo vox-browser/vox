@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>curl</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+<link rel="stylesheet" type="text/css" href="curl.css">
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="icon" href="logo/curl-symbol.svg" type="image/svg+xml">
+<link rel="alternate" type="application/rss+xml" title="curl Releases" href="https://github.com/curl/curl/releases.atom">
+<style type="text/css">
+.sponsors {
+  padding: 5px 5px 5px 5px;
+  border: 2px black solid;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+  background: #e0e0e0;
+}
+.logo {
+  max-width: 80%;
+  margin: 20px 0px 0px 0px;
+}
+.sponsors a:hover, .logo:hover {
+  background: transparent;
+}
+.sidebar-box {
+  padding: 5px;
+  margin-bottom: 20px;
+  border: 2px black solid;
+  border-radius: 10px;
+  background: #e0e0e0;
+}
+td {
+  vertical-align: top;
+}
+.left {
+  font-weight: bold;
+  padding: 4px 4px 4px 4px;
+  font-size: 110%;
+}
+.right {
+  padding: 4px 4px 4px 4px;
+}
+.l {
+  background: #093754;
+  border: 0px;
+  padding: 15px;
+}
+.r {
+  background: #0f564d;
+  border: 0px;
+}
+.supports {
+  color: #f0f0f0;
+  font-size: 90%;
+  padding: 0 0 0 0;
+}
+@media (prefers-color-scheme: dark) {
+  .sidebar-box {
+    border-color: #999;
+    background: #404040;
+  }
+  .sponsors {
+    border-color: #999;
+    background: #404040;
+  }
+}
+</style>
+</head>
+<body>
+<div class="main">
+<nav class="sitenav" aria-label="Primary navigation">
+<a class="curlsymbol sitenav-home" href="index.html" aria-label="curl home">
+  <img src="logo/curl-white-symbol.svg" alt="">
+</a>
+<input class="sitenav-state" type="checkbox" id="sitenav-state"> <label class="sitenav-toggle" for="sitenav-state">  <span class="sitenav-toggle-icon" aria-hidden="true"></span>  <span>Menu</span> </label>
+<ul class="sitenav-list">
+  <li class="sitenav-item">  <details class="sitenav-disclosure" name="sitenav-submenus">  <summary class="sitenav-summary">  <span class="sitenav-label">Download</span>  </summary>  <ul class="sitenav-submenu">
+        <li><a class="sitenav-overview" href="https://curl.se/download.html">Download overview</a></li>
+        <li><a href="https://github.com/curl/curl">Browse source</a></li>
+        <li><a href="https://curl.se/ch/">Changelog</a></li>
+        <li><a href="https://curl.se/rc/">Release candidates</a></li>
+        <li><a href="https://curl.se/docs/releases.html">Release log</a></li>
+        <li><a href="https://curl.se/tiny/">tiny-curl</a></li>
+  </ul>  </details> </li>
+  <li class="sitenav-item">  <details class="sitenav-disclosure" name="sitenav-submenus">  <summary class="sitenav-summary">  <span class="sitenav-label">Documentation</span>  </summary>  <ul class="sitenav-submenu">
+        <li><a class="sitenav-overview" href="https://curl.se/docs/">Documentation overview</a></li>
+        <li class="sitenav-subgroup">
+          <a href="https://curl.se/docs/projdocs.html">Project</a>
+          <ul class="sitenav-submenu-nested">
+            <li><a href="https://curl.se/docs/faq.html">FAQ</a></li>
+            <li><a href="https://curl.se/docs/help-us.html">Help us</a></li>
+            <li><a href="https://curl.se/docs/knownbugs.html">Known bugs</a></li>
+            <li><a href="https://curl.se/docs/knownrisks.html">Known risks</a></li>
+            <li><a href="https://curl.se/docs/todo.html">TODO</a></li>
+          </ul>
+        </li>
+        <li class="sitenav-subgroup">
+          <a href="https://curl.se/docs/protdocs.html">Protocols</a>
+          <ul class="sitenav-submenu-nested">
+            <li><a href="https://curl.se/docs/caextract.html">CA bundle</a></li>
+            <li><a href="https://curl.se/docs/http-cookies.html">HTTP Cookies</a></li>
+            <li><a href="https://curl.se/docs/sslcerts.html">SSL Certs</a></li>
+          </ul>
+        </li>
+        <li class="sitenav-subgroup">
+          <a href="https://curl.se/docs/reldocs.html">Releases</a>
+          <ul class="sitenav-submenu-nested">
+            <li><a href="https://curl.se/docs/releases.html">Release log</a></li>
+            <li><a href="https://curl.se/docs/versions.html">Version numbers</a></li>
+          </ul>
+        </li>
+        <li class="sitenav-subgroup">
+          <a href="https://curl.se/docs/secdocs.html">Security</a>
+          <ul class="sitenav-submenu-nested">
+            <li><a href="https://curl.se/docs/security.html">curl CVEs</a></li>
+            <li><a href="https://curl.se/docs/vulnerabilities.html">Vulnerability table</a></li>
+          </ul>
+        </li>
+        <li class="sitenav-subgroup">
+          <a href="https://curl.se/docs/tooldocs.html">curl tool</a>
+          <ul class="sitenav-submenu-nested">
+            <li><a href="https://curl.se/docs/manpage.html">man page</a></li>
+            <li><a href="https://curl.se/docs/tutorial.html">Tutorial</a></li>
+            <li><a href="https://curl.se/docs/httpscripting.html">HTTP scripting</a></li>
+          </ul>
+        </li>
+        <li><a href="https://curl.se/trurl/">trurl</a></li>
+        <li><a href="https://curl.se/wcurl/">wcurl</a></li>
+        <li><a href="https://curl.se/docs/videos/">Videos</a></li>
+        <li><a href="https://curl.se/docs/whodocs.html">Who and Why</a></li>
+  </ul>  </details> </li>
+  <li class="sitenav-item">  <details class="sitenav-disclosure" name="sitenav-submenus">  <summary class="sitenav-summary">  <span class="sitenav-label">libcurl</span>  </summary>  <ul class="sitenav-submenu">
+        <li><a class="sitenav-overview" href="https://curl.se/libcurl/">libcurl overview</a></li>
+        <li><a href="https://curl.se/libcurl/c/">API</a></li>
+        <li><a href="https://curl.se/libcurl/c/example.html">Examples</a></li>
+        <li><a href="https://curl.se/libcurl/features.html">Features</a></li>
+        <li><a href="https://curl.se/mail/list.cgi?list=curl-library">Mailing list</a></li>
+        <li><a href="https://curl.se/libcurl/c/symbols-in-versions.html">Symbols</a></li>
+        <li><a href="https://curl.se/libcurl/using/">Using libcurl</a></li>
+        <li><a href="https://curl.se/libcurl/c/libcurl-tutorial.html">Tutorial</a></li>
+  </ul>  </details> </li>
+  <li class="sitenav-item">  <details class="sitenav-disclosure" name="sitenav-submenus">  <summary class="sitenav-summary">  <span class="sitenav-label">Get Help</span>  </summary>  <ul class="sitenav-submenu">
+        <li><a class="sitenav-overview" href="https://curl.se/gethelp.html">Get Help overview</a></li>
+        <li><a href="https://lists.haxx.se/listinfo/curl-library">curl-library</a></li>
+        <li><a href="https://lists.haxx.se/listinfo/curl-users">curl-users</a></li>
+        <li><a href="https://curl.se/docs/irc.html">IRC / chat</a></li>
+        <li><a href="https://curl.se/mail/">Mailing lists</a></li>
+        <li><a href="https://curl.se/book.html">Everything curl [book]</a></li>
+        <li><a href="https://curl.se/docs/videos/">Video presentations</a></li>
+        <li><a href="https://github.com/curl/curl/issues">Report a bug</a></li>
+        <li><a href="https://curl.se/dev/vuln-disclosure.html">Report security issue</a></li>
+        <li><a href="https://curl.se/support.html">Paid support</a></li>
+  </ul>  </details> </li>
+  <li class="sitenav-item">  <details class="sitenav-disclosure" name="sitenav-submenus">  <summary class="sitenav-summary">  <span class="sitenav-label">Development</span>  </summary>  <ul class="sitenav-submenu">
+        <li><a class="sitenav-overview" href="https://curl.se/dev/">Development overview</a></li>
+        <li><a href="https://curl.se/dev/builds.html">Autobuilds</a></li>
+        <li><a href="https://curl.se/dev/code-review.html">Code review</a></li>
+        <li><a href="https://curl.se/dev/code-style.html">Code style</a></li>
+        <li><a href="https://curl.se/dev/contribute.html">Contribute</a></li>
+        <li><a href="https://curl.se/dashboard.html">Dashboard</a></li>
+        <li><a href="https://curl.se/dev/dependencies.html">Dependencies</a></li>
+        <li><a href="https://curl.se/dev/deprecate.html">Deprecate</a></li>
+        <li><a href="https://curl.se/dev/release-notes.html">Release Notes</a></li>
+        <li><a href="https://curl.se/dev/release-procedure.html">Release Procedure</a></li>
+        <li><a href="https://curl.se/dev/roadmap.html">Roadmap</a></li>
+        <li><a href="https://curl.se/dev/runtests.html">Run Tests</a></li>
+        <li><a href="https://curl.se/rfc/">Specifications</a></li>
+        <li><a href="https://curl.se/dev/testcurl.html">Test curl</a></li>
+        <li><a href="https://curl.se/dev/tests-overview.html">Tests Overview</a></li>
+        <li><a href="https://curl.se/dev/vuln-disclosure.html">Vulnerability Disclosure Policy</a></li>
+  </ul>  </details> </li>
+</ul>
+</nav>
+<div class="contents">
+<center><img src="logo/curl-30-years.svg" alt="curl 30 years, 1996 - 2026" style="width:90%; padding-top: 8px;">
+</center>
+<p style="font-size: 160%; text-align: center; margin: auto; width: 70%; padding-top: 20px;">
+  <b>command line tool and library</b> for transferring data with URLs
+<div style="float: right; max-width: 10em; margin-left: 40px;">
+  <div class="sponsors">
+  <b>Top&nbsp;Sponsors</b>
+  <a href="https://curl.se/sponsors.html">
+  <img class="logo" src="pix/haxx.svg" alt="Haxx">
+  <img class="logo" src="pix/wolfssl.svg" alt="wolfSSL">
+  <img class="logo" src="pix/fastly.svg" alt="Fastly">
+  <img class="logo" src="pix/top/github.svg" alt="GitHub">
+  <img class="logo" src="pix/teamviewer2.svg" alt="TeamViewer">
+  </a>
+ </div>
+ <div class="sidebar-box">
+   <img style="filter: grayscale(100%); float: right;" src="pix/user.svg" width="30%">
+   <a href="https://curl.se/support.html">
+   Commercial support available</a>
+   <div style="clear: both;"></div>
+ </div>
+ <div class="sidebar-box">
+  <a href="https://everything.curl.dev/">Everything curl</a> is a free ebook
+  about curl and libcurl
+  <p align="center">
+  <a href="https://everything.curl.dev/"><img src="pix/everything-curl.jpg"
+  alt="Everything curl" width="80%"></a>
+ </div>
+ <div class="sidebar-box">
+   <img style="filter: grayscale(100%); float: right;" src="pix/cash.svg" width="40%">
+   <a href="https://curl.se/donation.html">
+   Sponsor curl financially</a>
+   <div style="clear: both;"></div>
+ </div>
+ <div class="sidebar-box">
+   Video: <a href="https://youtu.be/V5vZWHP-RqU">mastering the curl command line tool</a>
+   <p align="center">
+   <a href="https://youtu.be/V5vZWHP-RqU"><img src="pix/mastering.jpg" width="80%"></a>
+ </div>
+</div>
+<h2> What is curl used for? </h2>
+<p>
+curl is used in command lines or scripts to transfer data. curl is
+also <b>libcurl</b>, used in cars, television sets, routers, printers, audio
+equipment, mobile phones, tablets, medical devices, settop boxes, computer
+games, media players and is the Internet transfer engine for countless
+software applications in over <i>twenty billion installations</i>.
+<p>
+curl is used daily by virtually every Internet-using human on the globe.
+<h2> curl supports </h2>
+<table class="supports" cellpadding="0" cellspacing="0">
+<tr class="l"><td class="left">Protocols</td>
+  <td class="right"> DICT, FILE, FTP, FTPS, GOPHER, GOPHERS, HTTP, HTTPS,
+IMAP, IMAPS, LDAP, LDAPS, MQTT, MQTTS, POP3, POP3S, RTSP, SCP,
+SFTP, SMB, SMBS, SMTP, SMTPS, TELNET, TFTP, WS, WSS </td></tr>
+<tr class="r"><td class="left">Proxies</td>
+<td class="right"> SOCKS4, SOCKS5, HTTP, HTTPS (HTTP/1 and HTTP/2), tunneling,
+via unix domain sockets, haproxy, SOCKS+HTTP proxy chain</td></tr>
+<tr class="l"><td class="left">HTTP</td>
+<td class="right">GET, POST, PUT, HEAD, multipart formpost, HTTP/0.9,
+HTTP/1.0, HTTP/1.1, HTTP/2 (h2c, h2, prior knowledge), HTTP/3 (dual connect
+h1/h2 + h3 or h3-only), HSTS, Alt-Svc, cookies, PSL, etags, transfer
+compression, ranges, custom headers, custom method, follow redirects</td></tr>
+<tr class="r"><td class="left">FTP</td>
+<td class="right">IPv6 (EPRT, EPSV), STLS, upload/download, append, range,
+passive/active, kerberos, directory listing, custom commands</td></tr>
+<tr class="l"><td class="left">SCP + SFTP</td>
+<td class="right">known hosts, md5/sha256 fingerprint, compression,
+upload/download, directory listing</td></tr>
+<tr class="r"><td class="left">TLS</td>
+<td class="right"> 1.0 - 1.3, mutual authentication, STARTTLS, OCSP stapling,
+ECH, False Start, key pinning, PQC ready, session resumption, early data,
+export/import sessions</td></tr>
+<tr class="l"><td class="left">QUIC</td>
+  <td class="right">
+0RTT handshakes
+</td></tr>
+<tr class="r"><td class="left">Auth</td>
+<td class="right">Basic, Plain, Digest, CRAM-MD5, SCRAM-SHA, NTLM, Negotiate,
+Kerberos, Bearer tokens, AWS Sigv4, SASL, .netrc</td></tr>
+<tr class="l"><td class="left">HTTP&nbsp;compression</td>
+<td class="right">gzip, brotli and zstd</td></tr>
+<tr class="r"><td class="left">Name resolving</td>
+<td class="right">DNS-over-HTTPS, custom address for host, name+port redirect,
+custom DNS servers, DNS caching, HTTPS RR</td></tr>
+<tr class="l"><td class="left">Connection</td>
+<td class="right">connection reuse, Interface binding, Happy Eyeballs,
+IPv4/IPv6-only, unix domain sockets, TCP keepalive, TCP Fast Open, TCP
+Nodelay, MPTCP, VLAN priority, IP Type Of Service</td></tr>
+<tr class="r"><td class="left">Transfers</td>
+<td class="right">transfer rate limiting, request rate limiting, stall
+detection, retries, timeouts</td></tr>
+<tr class="l"><td class="left">URLs</td>
+<td class="right">Unlimited amount, parallel and serial transfers,
+globbing</td></tr>
+<tr class="r"><td class="left">Output</td>
+<td class="right">IDN hostnames, custom info from transfer, metadata as JSON,
+per content-disposition, libcurl source code, bold headers</td></tr>
+</table>
+<h2> Who makes curl? </h2>
+<p>
+curl is free and <a href="https://curl.se/docs/copyright.html" title="curl and libcurl are
+licensed under a MIT/X derivate license">open source</a> software and exists
+thanks to <a href="https://curl.se/docs/thanks.html" title="over 3,000 named
+contributors">thousands of contributors</a> and our
+awesome <a href="https://curl.se/sponsors.html">sponsors</a>. The curl
+project <a title="Adheres to the Core Intrastructure Initiative's listed best
+practices at Gold level"
+href="https://bestpractices.coreinfrastructure.org/projects/63">follows well
+established open source best practices</a>. You too
+can <a href="https://curl.se/docs/help-us.html">help us</a> improve!
+<h2> What is the latest curl? </h2>
+<p>
+The most recent stable version is <b>8.22.0</b>, released on 2026-09-02.
+Currently, 76 of the listed <a href="https://curl.se/download.html" title="Binary download packages for your platform!">downloads</a> are of the latest version.
+<h2> Where is the code? </h2>
+<p>
+ Check out the latest <a href="https://github.com/curl/curl" title="git clone
+ the curl code">source code from GitHub</a>.
+</div>
+</div>
+</body>
+</html>

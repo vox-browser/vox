@@ -2513,6 +2513,18 @@ fn test_floats_are_positioned_at_available_edges_and_clearance_moves_blocks_belo
 	assert cleared.offset.y().to_double() == 40
 }
 
+fn test_auto_width_float_is_clamped_by_max_width() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#container { width:300px }
+		#float { float:right; max-width:100px; white-space:nowrap }
+	</style><div id="container"><div id="float">content wider than the maximum</div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	floating := used_for_id(result, 'float')
+	assert floating.content_width().to_double() == 100
+	assert floating.offset.x().to_double() == 200
+}
+
 fn test_inline_lines_wrap_through_float_intrusion_bands() {
 	document := html.parse_document('<!doctype html><style>
 		#container { width:100px }

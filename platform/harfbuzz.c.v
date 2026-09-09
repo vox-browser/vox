@@ -201,7 +201,11 @@ pub fn font_path_for_family(family string, weight int) ?string {
 			else { '' }
 		}
 		if regular_path != '' && os.is_file(regular_path) {
-			if weight >= 600 {
+			// CoreText's generic serif cascade keeps Times New Roman's regular
+			// advances and synthesizes bold. Preserve those advances for Layout;
+			// the Skia replay bridge applies emboldening when the face itself is
+			// not bold.
+			if weight >= 600 && lower_family !in ['serif', 'uiserif'] {
 				for candidate in bold_font_path_candidates(regular_path) {
 					if os.is_file(candidate) {
 						return candidate

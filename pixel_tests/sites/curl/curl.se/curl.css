@@ -1,0 +1,1097 @@
+body {
+  background-color: white;
+  font-family: arial, helvetica, ariel, sans-serif;
+  font-size: 20px;
+  color: black;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+a {
+  text-decoration: none;
+  color: #4040ff;
+}
+
+a:hover {
+  text-decoration: none;
+  color: #ffffff;
+  background-color: #093754;
+}
+
+img:hover {
+  background-color: #ffffff;
+}
+
+/* the curl-style blue main page titles
+.pagetitle, h1.libtitle, .newstitle {
+  border-style: solid;
+  border-width: thin;
+  border-color: black;
+
+  background-color: #e0e0ff;
+  font-family: arial, helvetica, ariel, sans-serif;
+  color: #0000ff;
+
+  font-size: 150%;
+  font-weight: bold;
+  padding: 0px 4px 0px 4px;
+}
+*/
+
+.title {
+  color: #000000;
+  background-color: #f0f0ff;
+  font-family: arial, helvetica, ariel, sans-serif;
+  font-size: 120%;
+}
+
+h1 {
+  border-bottom: solid 1px black;
+  margin-top: 1em;
+}
+
+.subtitle {
+  font-weight: bold;
+}
+
+tr.tabletop {
+  color: #000000;
+  background-color: #f0f0ff;
+}
+
+.tabletop a {
+  color: #ffffff;
+}
+
+.buildfail {
+  color: #000000;
+  background-color: #ff8080;
+}
+
+.buildserverprob {
+  color: #000000;
+  background-color: #ffff00;
+}
+
+.buildfine {
+  color: #000000;
+  background-color: #00ff00;
+}
+
+.compile, .changetable {
+  border: outset 2px #ffffff;
+}
+
+.news {
+  border: outset 2px #8080ff;
+}
+
+table.secbox {
+  border: outset 2px #8080ff;
+  background-color: #e0e0ff;
+}
+
+table.latestmail {
+  border: outset 2px #8080ff;
+  font-size: 100%;
+}
+
+td.newsdate {
+  text-align: right;
+}
+
+code {
+  color: #2020a0;
+  text-wrap: wrap;
+}
+
+pre {
+  min-width: fit-content;
+  padding-left: 8px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  background-color: #f0f0f0;
+}
+
+pre code {
+  display: inline-block;
+}
+
+.warning {
+  font-size: 14pt;
+  color: #000000;
+  background-color: #ff8080;
+}
+
+/* like used for important news items */
+.alert {
+  color: #ffffff;
+  background-color: #f00000;
+  padding: 4px 4px 4px 4px;
+}
+
+a.alert {
+  text-decoration: underline;
+}
+
+/* the one in the download database */
+td.desc {
+  color: #000000;
+  background: #e0e0ff;
+}
+
+/* used in the download table for a single OS */
+td.ostitle {
+  color: #000000;
+  background-color: #ffffff;
+  font-family: arial, helvetica, ariel, sans-serif;
+  font-size: 120%;
+  font-weight: bold;
+  padding: 4px 4px 4px 4px;
+  margin: 0px 0px 0px 0px;
+  border-top: 1px solid black;
+  border-left: 1px solid black;
+}
+
+.oslogo {
+  padding: 4px;
+  margin: 0px;
+  background-color: white;
+  border-top: 1px solid black;
+}
+
+td.oslogo img, img.oslogo {
+  height: 30px;
+}
+
+/* download page */
+.latest2 {
+  color: #000000;
+  background-color: #ffff44;
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  margin: 0px 0px 0px 0px;
+  padding: 1px 0px 1px 0px;
+}
+/* download page */
+.older2 {
+  color: #000000;
+  background-color: #ffffff;
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  margin: 0px 0px 0px 0px;
+  padding: 1px 0px 1px 0px;
+}
+
+.col1 {
+  border-left: 1px solid black;
+  margin: 0px 0px 0px 0px;
+  border-bottom: none;
+  border-top: none;
+}
+
+.col2, .col3, .col4, .col5, .col6 {
+  margin: 0px 0px 0px 0px;
+  padding: 0px 4px 0px 4px;
+}
+
+.osend {
+  border-top: 1px solid black;
+  margin: 0px 0px 10px 0px;
+}
+
+.download2 {
+  background-color: #e0e0e0;
+  padding: 10px 10px 10px 10px;
+}
+
+/* used on the version number lines in the verdiff.cgi script */
+span.version {
+  font-weight: bold;
+  font-size: 120%;
+  border-style: solid;
+  border-width: thin;
+  border-color: black;
+  padding: 4px 4px 4px 4px;
+}
+
+/* used on the who/date lines in the verdiff.cgi script */
+span.whodate {
+  font-weight: bold;
+}
+
+tr.odd {
+  background-color: #e0e0e0;
+}
+
+tr.hide {
+  color: #000000;
+  background-color: #a0a0a0;
+}
+
+/* a non-selected item in the main menu */
+.menuitem {
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 0px 1em 0px 0px;
+  font-family: sans-serif;
+  color: #ffffff;
+}
+
+/* a non-selected item in the main menu, with the mouse hovering */
+.menuitem:hover {
+  text-decoration: none;
+  color: #d0d0d0;
+}
+
+/* a selected item in the main menu */
+.itemselect {
+  font-family: sans-serif;
+  font-size: 110%;
+  text-decoration: none;
+  padding: 0px 1em 0px 0px;
+  font-weight: bold;
+  color: #eaeaea;
+}
+
+/* the top menu box */
+.menu {
+  width: 100%;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-color: #093754;
+  background-origin: content-box;
+  text-align: center;
+  padding-top: .3em;
+  padding-bottom: .3em;
+  padding-left: .3em;
+  padding-right: .3em;
+  line-height: 130%;
+  font-size: 26px;
+}
+
+.curlsymbol {
+  cursor: pointer;
+}
+
+.curlsymbol img {
+  display: block;
+  width: 41px;
+}
+
+/* unset the default img:hover, and add hover-effect */
+.curlsymbol img:hover {
+  background-color: unset !important;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+}
+
+/* ------------------------------------------------------------------------ */
+/* site header navigation */
+
+.sitenav {
+  box-sizing: border-box;
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  min-height: 47px;
+  padding: 1.5px 3.2em;
+  background-color: #093754;
+  color: #ffffff;
+  font-family: sans-serif;
+  font-size: 24px;
+  line-height: 1.3;
+}
+
+.sitenav *,
+.sitenav *::before,
+.sitenav *::after {
+  box-sizing: border-box;
+}
+
+.sitenav-home {
+  position: absolute;
+  top: 50%;
+  left: .45em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 2px;
+  transform: translateY(-50%);
+}
+
+.sitenav-home:hover {
+  background-color: transparent;
+}
+
+.sitenav-state,
+.sitenav-toggle {
+  display: none;
+}
+
+.sitenav-list,
+.sitenav-submenu,
+.sitenav-submenu-nested {
+  margin-top: 0;
+  margin-bottom: 0;
+  list-style: none;
+}
+
+.sitenav-list {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+.sitenav-item {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.sitenav-item:focus-within {
+  z-index: 102;
+}
+
+.sitenav-disclosure {
+  height: 100%;
+}
+
+.sitenav-summary,
+.sitenav-link,
+.sitenav > .sitenav-list > .sitenav-item > .menuitem,
+.sitenav > .sitenav-list > .sitenav-item > .itemselect {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  padding: .3em .6em;
+  border: 0;
+  background-color: transparent;
+  color: #ffffff;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sitenav-summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.sitenav-summary::marker {
+  content: "";
+}
+
+.sitenav-summary::-webkit-details-marker {
+  display: none;
+}
+
+.sitenav-summary:hover,
+.sitenav-disclosure[open] > .sitenav-summary,
+.sitenav-link:hover,
+.sitenav > .sitenav-list > .sitenav-item > .menuitem:hover,
+.sitenav > .sitenav-list > .sitenav-item > .itemselect:hover {
+  background-color: #0c486d;
+  color: #d0d0d0;
+}
+
+.sitenav-summary:focus-visible,
+.sitenav-link:focus-visible,
+.sitenav > .sitenav-list > .sitenav-item > .menuitem:focus-visible,
+.sitenav > .sitenav-list > .sitenav-item > .itemselect:focus-visible,
+.sitenav-home:focus-visible {
+  outline: 3px solid #ffd75e;
+  outline-offset: -3px;
+}
+
+.sitenav > .sitenav-list > .sitenav-item > .itemselect {
+  font-weight: bold;
+}
+
+.sitenav-submenu {
+  box-sizing: border-box;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 100;
+  min-width: 10em;
+  max-width: min(24em, calc(100vw - 1em));
+  max-height: calc(100vh - 4em);
+  margin: 0;
+  padding: .35em 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  color: #093754;
+  font-size: 80%;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.sitenav-list > .sitenav-item:nth-last-child(-n+2) > .sitenav-disclosure > .sitenav-submenu {
+  right: 0;
+  left: auto;
+}
+
+.sitenav-submenu li,
+.sitenav-submenu-nested li {
+  margin: 0;
+  padding: 0;
+}
+
+.sitenav-submenu a {
+  box-sizing: border-box;
+  display: block;
+  min-height: 36px;
+  padding: .3em .65em;
+  color: #093754;
+  overflow-wrap: anywhere;
+  text-align: left;
+  text-decoration: none;
+}
+
+.sitenav-submenu a:hover {
+  background-color: #f1f1f1;
+  color: #093754;
+}
+
+.sitenav-submenu a:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid #093754;
+  outline-offset: -3px;
+}
+
+.sitenav-overview,
+.sitenav-subgroup > a {
+  font-weight: bold;
+}
+
+.sitenav-overview {
+  border-bottom: 1px solid #c7d3db;
+}
+
+.sitenav-submenu-divider {
+  border-top: 1px solid #c7d3db;
+  margin-top: .25em !important;
+  padding-top: .25em !important;
+}
+
+.sitenav-submenu-nested {
+  margin: 0;
+  padding: 0 0 .2em .8em;
+  font-size: 85%;
+}
+
+.sitenav-submenu-nested a {
+  font-weight: normal;
+}
+
+.relatedbox {
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  color: #000000;
+  float: right;
+  text-align: left;
+  padding: 10px;
+  margin: 10px;
+  background: white;
+  font-size: 24px;
+}
+
+div.oslinks {
+  clear: right;
+  border-color: black;
+  border-width: 1px;
+  border-style: outset;
+  color: #000000;
+  float: right;
+  text-align: right;
+  padding: 2px 2px 2px 2px;
+  background: white;
+  font-size: 80%;
+}
+
+div.pollbox {
+  border-color: black;
+  border-width: 2px;
+  border-style: outset;
+  font-size: 80%;
+  color: #000000;
+  float: right;
+  text-align: left;
+  padding: 0px 2px 0px 2px;
+  background: #ffffe0;
+}
+
+div.featurewindow {
+  float: right;
+  width: 10em;
+  margin-left: 20px;
+}
+
+img.featurewindowsign {
+  width: 15em;
+}
+
+p.ingres {
+  width: 80%;
+  font-family: arial, helvetica, ariel, sans-serif;
+  font-style: italic;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+div.quote {
+  border-style: solid;
+  border-width: thin;
+  border-color: black;
+  padding: 12px 12px 2px 12px;
+
+  background-color: #f0f0ff;
+  width: 90%;
+  margin-left: 5%;
+  margin-right: 5%;
+}
+
+div.yellowbox {
+  border-style: outset;
+  border-width: 3px;
+  border-color: black;
+  padding: 2px 2px 2px 2px;
+  background-color: #fffff0;
+}
+
+.bindingbox {
+  float: right;
+  border: solid 1px #000000;
+  background-color: #ffffff;
+  padding: 2px 2px 2px 2px;
+}
+
+.bottomad {
+  border: solid 1px #000000;
+  background-color: #e0e0e0;
+  padding: 5px 5px 5px 5px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.main {
+}
+
+/* the "bread crumbs" below the top menu */
+.where {
+  padding-top: .5em;
+}
+
+.contents {
+  padding-top: 0px;
+  margin-top: 0px;
+  max-width: 50em;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media screen and (max-width: 640px) {
+  .contents {
+    margin-left: 5px;
+    margin-right: 5px;
+  }
+}
+
+@media screen and (min-width: 1001px) {
+  /* Extend the open summary behind its submenu for outside-click dismissal. */
+  .sitenav-disclosure[open] > .sitenav-summary::after {
+    position: fixed;
+    inset: 47px 0 0;
+    z-index: 99;
+    content: "";
+    cursor: default;
+  }
+}
+
+@media screen and (min-width: 1001px) and (hover: hover) {
+  /*
+   * This CSS-only preview creates a semantic incongruence: a hovered submenu
+   * is visible while <details> remains closed, so screen readers continue to
+   * announce it as collapsed. The tradeoff applies only during committed,
+   * direct use of a mouse or another hover-capable pointer. Moving the pointer
+   * away removes the preview; clicking opens <details>, aligns the visual and
+   * semantic states, and keeps the submenu visible. Keyboard and touch continue
+   * to use native disclosure behavior. Suppress previews while any disclosure
+   * is explicitly open.
+   */
+  .sitenav-list:not(:has(.sitenav-disclosure[open]))
+    .sitenav-disclosure:not([open]):hover::details-content {
+    content-visibility: visible;
+  }
+}
+
+/* Final site-navigation breakpoint: the widest section menu needs this room. */
+@media screen and (max-width: 1000px) {
+  .sitenav {
+    display: grid;
+    grid-template-columns: minmax(44px, 1fr) auto;
+    align-items: center;
+    min-height: 47px;
+    padding: 1.5px .4em;
+    font-size: 22px;
+  }
+
+  .sitenav-home {
+    position: static;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    transform: none;
+  }
+
+  .sitenav-state {
+    position: fixed;
+    top: 0;
+    right: 0;
+    display: block;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    border: 0;
+    white-space: nowrap;
+  }
+
+  .sitenav-toggle {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: .35em .55em;
+    border: 1px solid rgba(255,255,255,.55);
+    border-radius: 3px;
+    color: #ffffff;
+    cursor: pointer;
+    font: inherit;
+    gap: .45em;
+  }
+
+  .sitenav-toggle:hover,
+  .sitenav-state:checked + .sitenav-toggle {
+    background-color: #0c486d;
+  }
+
+  .sitenav-state:focus-visible + .sitenav-toggle {
+    outline: 3px solid #ffd75e;
+    outline-offset: 2px;
+  }
+
+  /* Extend the menu toggle behind the menu for outside-click dismissal. */
+  .sitenav-state:checked + .sitenav-toggle::after {
+    position: fixed;
+    inset: 47px 0 0;
+    z-index: 1;
+    content: "";
+    cursor: default;
+  }
+
+  .sitenav-toggle-icon,
+  .sitenav-toggle-icon::before,
+  .sitenav-toggle-icon::after {
+    display: block;
+    width: 1em;
+    height: 2px;
+    background-color: currentColor;
+    transition: transform 150ms ease, opacity 150ms ease;
+  }
+
+  .sitenav-toggle-icon {
+    position: relative;
+  }
+
+  .sitenav-toggle-icon::before,
+  .sitenav-toggle-icon::after {
+    position: absolute;
+    left: 0;
+    content: "";
+  }
+
+  .sitenav-toggle-icon::before {
+    transform: translateY(-.32em);
+  }
+
+  .sitenav-toggle-icon::after {
+    transform: translateY(.32em);
+  }
+
+  .sitenav-state:checked + .sitenav-toggle .sitenav-toggle-icon {
+    background-color: transparent;
+  }
+
+  .sitenav-state:checked + .sitenav-toggle .sitenav-toggle-icon::before {
+    transform: rotate(45deg);
+  }
+
+  .sitenav-state:checked + .sitenav-toggle .sitenav-toggle-icon::after {
+    transform: rotate(-45deg);
+  }
+
+  .sitenav-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    display: none;
+    width: 100%;
+    max-height: calc(100vh - 47px);
+    max-height: calc(100dvh - 47px);
+    padding: .25em .4em .4em;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background-color: #093754;
+    box-shadow: 0 8px 16px rgba(0,0,0,.2);
+    overscroll-behavior-y: contain;
+  }
+
+  .sitenav-state:checked ~ .sitenav-list {
+    display: block;
+    z-index: 2;
+  }
+
+  .sitenav-item {
+    border-top: 1px solid rgba(255,255,255,.22);
+  }
+
+  .sitenav-disclosure {
+    height: auto;
+  }
+
+  .sitenav-summary,
+  .sitenav-link,
+  .sitenav > .sitenav-list > .sitenav-item > .menuitem,
+  .sitenav > .sitenav-list > .sitenav-item > .itemselect {
+    width: 100%;
+    min-height: 44px;
+    padding: .45em .55em;
+  }
+
+  .sitenav-submenu,
+  .sitenav-list > .sitenav-item:nth-last-child(-n+2) > .sitenav-disclosure > .sitenav-submenu {
+    position: static;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    max-height: none;
+    padding: .2em 0 .4em .6em;
+    overflow: visible;
+    box-shadow: inset 3px 0 0 #c7d3db;
+    font-size: 90%;
+  }
+
+  .sitenav-submenu a {
+    min-height: 44px;
+    padding: .55em .7em;
+  }
+
+  .sitenav-submenu-nested {
+    padding-left: .65em;
+  }
+}
+/* Filtering menus on the autobuild page */
+.filtermenu {
+  /* Hidden by default, made visible in Javascript when applicable */
+  /* Set to "inline" when enabling to put the select box to the right of the text */
+  display: none;
+}
+
+/* Input elements in the filtering menus */
+.inputbox {
+  width: 6em;
+  background: #ffffff;
+}
+
+th.narrow {
+  width: 15%;
+}
+
+table.download {
+  margin-left: 1em;
+  font-size: 120%;
+}
+
+td.download {
+  padding-right: 10px;
+}
+
+/* ------------------------------------------------------------------------ */
+/* drop-down menu magic */
+
+/* Dropdown Button */
+.dropbtn {
+  background-color: #093754;
+  color: white;
+  padding-right: 1em;
+  /*font-size: 16px; */
+  border: none;
+  cursor: pointer;
+}
+
+/* The container <div> - needed to position the dropdown content */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Dropdown Content (Hidden by Default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 10em;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 100;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+  color: #093754;
+  padding: 4px;
+  text-decoration: none;
+  display: block;
+  font-size: 80%;
+  text-align: left;
+}
+
+/* Change color of dropdown links on hover */
+.dropdown-content a:hover {background-color: #f1f1f1}
+
+/* Show the dropdown menu on hover */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* Change the background color of the dropdown button when the dropdown content is shown */
+.dropdown:hover .dropbtn {
+  color: #c0c0c0;
+}
+
+/* Search background removal */
+.gsc-control-cse {
+  background-color: inherit !important;
+  border: 0 !important;
+}
+
+/* Download edit page copy button */
+.copybutton {
+  font-size: large;
+}
+
+/* Commercial support box */
+.commbox {
+  border: 3px dotted green; padding: 5px 5px 5px 5px;
+}
+
+/* Search box */
+a.sitesearch:hover {
+  background-color: #ffffff;
+}
+
+/* Large notify header */
+.badge {
+  text-align: center;
+  font-size: 140%;
+  padding: 8px;
+  background: #ffe0e0;
+}
+
+
+p.level0 {
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+p.level1 {
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+/* DARK MODE PROPERTIES */
+/* These will override all settings above */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #212121;
+    /* Try to keep it a bit light but not too grey,
+       so it does not impact people with accessibility needs */
+    color: #fbfbfb;
+  }
+
+  .badge {
+    background: #40403c
+  }
+
+  img[alt="curl logo"] {
+    filter: brightness(1.75);
+  }
+
+  a {
+    color: #0096fa;
+  }
+
+  img:hover {
+    background-color: #2c2c2c;
+  }
+
+  h1 {
+    border-color: white;
+  }
+
+  .dropdown-content {
+    background-color: #4c4c4c;
+  }
+
+  .dropdown-content a {
+    color: #fafafa;
+  }
+
+  .dropdown-content a:hover {
+    background-color: #606060;
+  }
+
+  .sitenav-submenu {
+    background-color: #4c4c4c;
+    color: #fafafa;
+  }
+
+  .sitenav-submenu a {
+    color: #fafafa;
+  }
+
+  .sitenav-submenu a:hover {
+    background-color: #606060;
+    color: #ffffff;
+  }
+
+  .sitenav-submenu a:focus-visible {
+    outline-color: #ffd75e;
+  }
+
+  .sitenav-overview,
+  .sitenav-submenu-divider {
+    border-color: #858585;
+  }
+
+  .relatedbox {
+    background-color: #313131;
+    color: white;
+  }
+
+  tr.tabletop {
+    background-color: #252525;
+    color: white;
+  }
+
+  td.desc {
+    background-color: #6A6A79;
+    color: white;
+  }
+
+  td.ostitle, .older2 {
+    color: white;
+    background-color: #212121;
+    border-bottom: 1px #999 solid;
+  }
+
+  .download2, div.quote {
+    background-color: #2c2c2c;
+  }
+
+  td.oslogo {
+    background-color: white;
+  }
+
+  tr.odd {
+    background-color: #313131;
+  }
+
+  div.oslinks {
+    background: #2c2c2c;
+  }
+
+  .dash {
+    filter: invert(0.86) hue-rotate(100deg);
+  }
+  .dash:hover {
+    /* becomes a dark color with the filter above applied */
+    background-color: #f8f8f8;
+  }
+
+  /* Search fix hacks */
+  .gsc-webResult.gsc-result, .gsc-results .gsc-imageResult {
+    background-color: #212121 !important;
+  }
+
+  .gsc-webResult.gsc-result {
+    border: 0 !important;
+  }
+
+  .gsc-results {
+    background-color: #252525 !important;
+  }
+
+  .gsc-above-wrapper-area {
+    border: 0 !important;
+  }
+
+  .gsc-results .gsc-cursor-box .gsc-cursor-page {
+    color: white !important;
+    background-color: #252525 !important;
+  }
+
+  div.sourceCode {
+    background-color: unset !important;
+  }
+  code, pre {
+    color: #aaaaff;
+    background-color: #111111 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sitenav-toggle-icon,
+  .sitenav-toggle-icon::before,
+  .sitenav-toggle-icon::after {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .sitenav-toggle {
+    border-color: ButtonText;
+  }
+
+  .sitenav-state:focus-visible + .sitenav-toggle,
+  .sitenav-summary:focus-visible,
+  .sitenav-link:focus-visible,
+  .sitenav > .sitenav-list > .sitenav-item > .menuitem:focus-visible,
+  .sitenav > .sitenav-list > .sitenav-item > .itemselect:focus-visible,
+  .sitenav-home:focus-visible,
+  .sitenav-submenu a:focus-visible {
+    outline-color: Highlight;
+  }
+
+  .sitenav-submenu {
+    border: 1px solid CanvasText;
+    box-shadow: none;
+  }
+}

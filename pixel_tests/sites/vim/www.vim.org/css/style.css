@@ -1,0 +1,294 @@
+body, td, p  {
+	font-family: arial,helvetica,sans-serif;
+	font-family: arial,helvetica,sans-serif;
+}
+
+th {
+	font-family: arial,helvetica,sans-serif;
+	font-weight: bold;
+	text-align: left;
+}
+
+em {
+	font-weight: bold;
+	font-style: italic;
+}
+
+.darkbg {
+	background-color: #007f00;
+}
+
+.lightbg {
+	background-color: #cccc99;
+}
+
+.sidebar {
+	font-family: arial,helvetica,sans-serif;
+	background-color: #f0f0dd;
+	font-size: small;
+}
+
+.topheader {
+	font-family: arial,helvetica,sans-serif;
+	font-size: large;
+	font-weight: bold;
+	background-color: #cccc99;
+}
+
+.sidebarheader {
+	font-family: arial,helvetica,sans-serif;
+	font-size: small;
+	font-weight: bold;
+}
+.download {
+	padding: 5px 0 8px 5px;
+	background-color: #0d0;
+}
+
+.newsdate {
+	font-style: italic;
+	color: #6666cc;
+	font-size:small;
+}
+
+pre,code {
+	font-family: "andale mono", "monotype.com", "courier new", monospace;
+}
+
+h1 {
+	font-family: arial,helvetica,sans-serif;
+	font-size: medium;
+	font-weight: bold;
+	color: #000066;
+}
+
+.txth1 {
+	font-family: arial,helvetica,sans-serif;
+	font-size: medium;
+	font-weight: bold;
+	color: #000066;
+}
+a.txth1 {
+	color: inherit;
+	text-decoration: none;
+}
+a.txth1:hover {
+	text-decoration: underline;
+}
+
+h2 {
+	font-family: arial,helvetica,sans-serif;
+	font-size: small;
+	font-weight: bold;
+	color: #000066;
+}
+
+.txth2 {
+	font-family: arial,helvetica,sans-serif;
+	font-size: small;
+	font-weight: bold;
+	color: #000066;
+}
+
+h3 {
+	font-family: arial,helvetica,sans-serif;
+	font-size: x-small;
+	font-weight: bold;
+	color: #000066;
+}
+
+.txth3 {
+	font-family: arial,helvetica,sans-serif;
+	font-size: x-small;
+	font-weight: bold;
+	color: #000066;
+}
+
+.httpslink {
+	margin-left: 20px;
+	color: #00e;
+}
+
+small {
+	font-family: arial,helvetica,sans-serif;
+	font-size: 75%;
+}
+
+.align-middle {
+	vertical-align: middle;
+}
+
+a.small {
+	font-family: arial,helvetica,sans-serif;
+	font-size: 75%;
+	text-decoration: none;
+    color: #000066
+}
+
+.style1 {
+	color: #666666
+}
+
+input {
+	font-family: arial,helvetica,sans-serif;
+}
+
+textarea {
+    font-family: arial, helvetica, sans-serif; 
+    width: 100%; 
+}
+
+.prompt {
+	font-family: arial,helvetica,sans-serif;
+	font-weight: bold;
+}
+
+.errortext {
+	font-family: arial,helvetica,sans-serif;
+	color: #cc0000
+}
+
+.errorheader {
+	font-family: arial,helvetica,sans-serif;
+	color: #cc0000;
+	font-size: medium;
+}
+
+.tableheader {
+	font-family: arial,helvetica,sans-serif;
+	font-weight: bold;
+	background-color: #CCCC99;
+}
+
+.rowodd {
+	font-family: arial,helvetica,sans-serif;
+	background-color: #F0F0DD;
+}
+
+.roweven {
+	font-family: arial,helvetica,sans-serif;
+	background-color: #CCCC99;
+}
+
+tr.tableheader th {
+	font-family: arial,helvetica,sans-serif;
+	background-color: #CCCC99;
+	text-align: center;
+}
+
+
+td.checker {
+	background-color: #007f00;
+	background-image: url(../images/checkerboard.gif);
+}
+
+.example {
+	background-color: #EEFFCC;
+	border-color: #88AA66;
+	border-style: solid none;
+	border-width: 1px medium;
+	padding: 5px;
+}
+
+.donatebutton {
+	font-size: 16px;
+	padding: 8px 12px;
+	background-color: green;
+	color: white;
+	border: 2px solid;
+	border-radius: 12px;
+	border-color: green;
+	margin-top: -12px;
+}
+
+.donatebutton:hover {
+	background-color: #ddd;
+	color: black;
+}
+
+.ImageBorder {
+	border: 3px solid grey;
+	border-radius: 8px;
+}
+
+/* --- Security Acknowledgement Styles --- */
+.security-acknowledgement {
+  max-width: 720px;
+  margin: 1.5rem auto;
+  padding: 1rem;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  background: #fafafa;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #222;
+}
+
+.security-acknowledgement header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.security-acknowledgement h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.security-acknowledgement p {
+  margin-top: 0.75rem;
+  line-height: 1.45;
+}
+
+.security-acknowledgement a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.security-acknowledgement .security-note {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.security-acknowledgement footer {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.security-acknowledgement time {
+  color: #666;
+  font-size: 0.88rem;
+}
+
+.btn-security {
+  display: inline-block;
+  padding: 0.45rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.btn-security:hover {
+  background: #f0f0f0;
+  border-color: #ccc;
+}
+
+.security-icon {
+  flex: 0 0 28px;
+  color: #444;
+}
+
+/* --- Vim 9.2 Release announcement --- */
+/* Copy Button Styling */
+.announcement-container {
+    max-width: 920px;
+}
+

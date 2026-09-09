@@ -4671,6 +4671,12 @@ pub fn (style_value KeywordStyleValue) to_color(color_resolution_context ColorRe
 		.highlighttext {
 			return SystemColor.highlight_text(scheme)
 		}
+		.activetext {
+			return SystemColor.active_text(scheme)
+		}
+		.linktext, .libweb_link, .libweb_palette_link {
+			return SystemColor.link_text(scheme)
+		}
 		.mark {
 			return SystemColor.mark(scheme)
 		}
@@ -4683,6 +4689,9 @@ pub fn (style_value KeywordStyleValue) to_color(color_resolution_context ColorRe
 		.selecteditemtext {
 			return SystemColor.selected_item_text(scheme)
 		}
+		.visitedtext, .libweb_palette_visited_link {
+			return SystemColor.visited_text(scheme)
+		}
 		.libweb_buttonfacedisabled {
 			return SystemColor.button_face(scheme).with_alpha(128)
 		}
@@ -4692,8 +4701,9 @@ pub fn (style_value KeywordStyleValue) to_color(color_resolution_context ColorRe
 		else {}
 	}
 
-	// Boundary: C++ resolves link colors and -libweb-palette-* colors through the document/page palette.
-	// The V ColorResolutionContext does not carry a Document yet, so it follows the C++ no-document fallback.
+	// Boundary: The remaining -libweb-palette-* colors resolve through the
+	// document/page palette. ColorResolutionContext does not carry a Document
+	// yet, so those follow the C++ no-document fallback.
 	if style_value.has_color() {
 		return Color.black()
 	}

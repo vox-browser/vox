@@ -27,6 +27,16 @@ fn test_font_plugin_fallbacks_and_layout_mode() {
 	assert layout.symbol_font_names() == ['Noto Emoji']
 }
 
+fn test_platform_generic_font_aliases_are_available() {
+	$if macos {
+		assert system_font_family_available('Serif')
+		assert system_font_family_available('Monospace')
+		metrics := (&Font{family: 'Serif', point_size: 16}).pixel_metrics()
+		assert metrics.ascent == 12
+		assert metrics.descent == 4
+	}
+}
+
 fn test_bold_document_font_candidates_preserve_family_naming() {
 	assert bold_font_path_candidates('/Fonts/Arial.ttf') == ['/Fonts/Arial Bold.ttf']
 	assert bold_font_path_candidates('/Fonts/Example-Regular.ttf') == [

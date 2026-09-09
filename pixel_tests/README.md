@@ -32,8 +32,41 @@ in `cases.tsv` is exceeded.
   rejects automated requests. Its allowance records the remaining text and
   image rasterization delta after layout parity.
 
+The following pages were frozen from their original sites on 2026-09-09. Their
+executable script elements were removed and their visible styles, fonts, and
+images were localized. Lua's animated logo is fixed at its first frame so both
+browsers capture the same content.
+
+| Case | Original page |
+| --- | --- |
+| `never-ssl` | [NeverSSL](http://neverssl.com/) |
+| `cern` | [The first website](https://info.cern.ch/) |
+| `motherfucking-website` | [motherfuckingwebsite.com](https://motherfuckingwebsite.com/) |
+| `best-motherfucking-website` | [thebestmotherfucking.website](https://thebestmotherfucking.website/) |
+| `httpbin-html` | [httpbin HTML sample](https://httpbin.org/html) |
+| `nginx` | [nginx.org](https://nginx.org/) |
+| `sqlite` | [sqlite.org](https://www.sqlite.org/index.html) |
+| `lua` | [lua.org](https://www.lua.org/) |
+| `kernel` | [kernel.org](https://www.kernel.org/) |
+| `suckless` | [suckless.org](https://suckless.org/) |
+| `wiby` | [wiby.me](https://wiby.me/) |
+| `npr-text` | [NPR text](https://text.npr.org/) |
+| `curl` | [curl.se](https://curl.se/) |
+| `vim` | [vim.org](https://www.vim.org/) |
+| `git-scm` | [git-scm.com](https://git-scm.com/) |
+| `css-zen-garden` | [CSS Zen Garden](https://www.csszengarden.com/) |
+| `space-jam-1996` | [Space Jam 1996](https://www.spacejam.com/1996/) |
+| `bellard` | [bellard.org](https://bellard.org/) |
+| `pgl-yoyo` | [pgl.yoyo.org](https://pgl.yoyo.org/) |
+| `knuth` | [Donald Knuth](https://www-cs-faculty.stanford.edu/~knuth/) |
+
 The expected PNGs were captured at the viewport sizes in `cases.tsv` with the
 release build at `../3rd/ladybird/Build/release/bin/Ladybird.app`. They are
 macOS references because both browsers use the installed Arial and Verdana
 faces. Regenerate them only when intentionally adopting a new upstream render;
 review the resulting diff images before updating a ceiling.
+
+The ceilings intentionally bound four image-wide measurements. Some text-heavy
+pages retain sizeable raw pixel counts because the V replay path rasterizes
+glyph edges differently; the checked-in pairs were also reviewed for matching
+layout, wrapping, colors, and visible assets.

@@ -151,6 +151,14 @@ fn test_color_function_uses_color_resolution_calculation_context() {
 	assert color.blue() == 0
 }
 
+fn test_link_system_colors_resolve_without_a_document_palette() {
+	light := ColorResolutionContext{color_scheme: PreferredColorScheme.light}
+	dark := ColorResolutionContext{color_scheme: PreferredColorScheme.dark}
+	assert KeywordStyleValue.create(.linktext).to_color(light)? == SystemColor.link_text(.light)
+	assert KeywordStyleValue.create(.visitedtext).to_color(light)? == SystemColor.visited_text(.light)
+	assert KeywordStyleValue.create(.activetext).to_color(dark)? == SystemColor.active_text(.dark)
+}
+
 // ColorStyleValue::serialize_hue_component() formats the resolved hue with AK's
 // `{:.4}`, which rounds to four decimals and then drops trailing zeros.
 fn test_lch_and_oklch_hues_drop_trailing_zeros() {

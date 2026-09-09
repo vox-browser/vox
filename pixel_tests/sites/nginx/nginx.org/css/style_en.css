@@ -1,0 +1,471 @@
+body {
+    background: white;
+    color: black;
+    font-family: sans-serif;
+    line-height: 1.4em;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+#banner {
+    background: black;
+    color: #F2F2F2;
+    line-height: 1.2em;
+    padding: .3em 1em .3em 1em;
+    box-shadow: 0 5px 10px black;
+}
+
+#banner a {
+    color: #00B140;
+}
+
+#main {
+    text-align: left;
+    margin: 0 auto;
+    min-width: 32em;
+    max-width: 66em;
+}
+
+#menu {
+    float: right;
+    width: 13em;
+    padding: 0;
+    border-left: 2px solid #DDD;
+}
+.nav ul{
+    margin:0;
+    padding:20px;
+}
+.nav h1{
+    padding:0 20px;
+}
+.nav ul li{
+    list-style-type:none;
+    padding:0;
+    margin:0;
+}
+
+#content {
+    margin-right: 13.5em;
+    padding: 0 2.5em 0 1.5em;
+}
+
+h1 {
+    display: block;
+    font-size: 3em;
+    text-align: left;
+    margin: 0.5rem 0 0 0;
+}
+
+h1 img {
+    width: 100%;
+}
+
+h2 {
+    font-size: 2rem;
+    line-height: 2.25rem;
+    margin: 1rem 0 .5rem 0;
+    overflow-wrap: break-word;
+}
+
+h4 {
+    font-size: 1.5rem;
+    margin: 2rem 0 .5rem 0;
+}
+/* Center field override */
+center h4 {
+    text-align: left!important;
+}
+
+h5 {
+    font-size: 1.25rem;
+    text-align: center;
+    margin: 0.25rem 0 0 0;
+}
+
+p {
+    text-align: justify;
+    margin-bottom: 0;
+}
+
+table.news p {
+    margin-top: 0;
+}
+
+table.news td {
+    vertical-align: baseline;
+}
+
+table.news .date {
+    text-align: right;
+    padding: 0.75rem 0.5rem 0 0;
+    white-space: nowrap;
+}
+
+table.donors td {
+    vertical-align: baseline;
+}
+
+table.donors li {
+    text-align: left;
+}
+
+/* News Archive button */
+.dropbtn {
+    background-color: #808080;
+    color: white;
+    padding: 0.3rem;
+    font-size: 1rem;
+    border: 1px solid #606060;
+}
+.dropdown {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 0.5em;
+}
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f0f0f0;
+    min-width: 160px;
+    box-shadow: 0px 8px 12px 0px #909090;
+    z-index: 1;
+}
+.dropdown-content a {
+    padding: 0.33em;
+    text-decoration: none;
+    display: block;
+}
+.dropdown-content a:hover {background-color: #a0a0a0;}
+.dropdown:hover .dropdown-content {display: block;}
+.dropdown:hover .dropbtn {background-color: #909090;}
+
+div.directive {
+    background: #F2F2F2;
+    line-height: 1em;
+    margin: 1em 0 1em -1em;
+    padding: .7em .7em .7em 1em;
+    border-top: 2px solid #DDD;
+    width:100%;
+}
+
+div.directive th {
+    padding-left: 0;
+    padding-right: .5em;
+    vertical-align: baseline;
+    text-align: left;
+    font-weight: normal;
+}
+
+div.directive td {
+    vertical-align: baseline;
+}
+
+div.directive pre {
+    padding: 0;
+    margin: 0;
+}
+
+div.directive code {
+    background: none!important;
+    padding: 0!important;
+    border: none;
+}
+
+div.directive p {
+    margin: .5em 0 0 .1em;
+    font-size: .8em;
+}
+
+a.notrans {
+    color: #808080;
+    text-decoration:none;
+}
+
+span.initial {
+    font-size: 200%;
+    float: left;
+    padding-right: 10pt;
+}
+
+ul, ol {
+    margin: .5em 0 1em 1em;
+    padding: 0 .5em;
+}
+
+ol {
+    list-style-position: inside;
+}
+
+li {
+    padding: .5em 0 0 1px;
+}
+
+.compact li {
+    padding-top: 0;
+}
+
+dl {
+    margin: .5em 0 1em 0;
+}
+
+dt {
+    margin: 1em 0 0 0!important;
+    font-size: 0.9rem;
+}
+
+.compact dt {
+    margin-bottom: .2em;
+}
+
+dd {
+    margin: 0.25rem 0 1.5rem 1rem;
+    padding-left: 1px;
+    text-align: justify;
+}
+
+td.list {
+    background: #f2f2f2;
+}
+
+blockquote {
+    margin: 0.5rem 0 0 0;
+    padding: 0;
+}
+
+li blockquote, dd blockquote {
+    margin: .7em 0;
+}
+
+blockquote.note {
+    padding: 0.5rem;
+    border: 1px dotted #999;
+    line-height: 1.2em;
+    text-align: justify;
+}
+
+pre {
+    border: 0;
+    display: block;
+    margin: 1em 0;
+    padding: 0.6em 1em;
+    overflow-x: auto;
+    line-height: 1.05rem;
+}
+
+code,.legacy{
+    font-size: 100%;
+    padding: 3px 7px;
+    overflow-x: scroll;
+    background: #eee;
+}
+
+pre code{
+    background: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+blockquote pre {
+    background-color: #f8f8f8!important;
+    color: #222!important;
+    margin: 0;
+    border: 1px solid #ddd;
+}
+
+blockquote.terminal pre{
+    background-color: #444!important;
+    color: #fff!important;
+}
+
+blockquote.example {
+    line-height: 1em;
+}
+
+sup {
+    font-size: 50%;
+}
+
+.video {
+    position: relative;
+    padding-bottom: 56.25%;
+    overflow: hidden;
+}
+
+.video iframe, .video object, .video embed {
+    position: absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+}
+
+@media screen and (max-width:750px) {
+    #main {
+        padding: 20px;
+        min-width: inherit;
+    }
+    #main #content {
+        width: 100%!important;
+        padding: 0;
+        border: none;
+    }
+
+    #banner-content {
+        max-width: 70vw;
+    }
+
+    #menu {
+        text-align: left;
+    }
+
+    /* Menu Mobile */
+    :root {
+        --white: #f9f9f9;
+        --black: #000;
+        --gray: #85888C;
+        --green: #b6d7a8;
+        color-scheme: light dark;
+    } /* variables*/
+
+    /* Nav menu */
+    .nav {
+        width: 15rem;
+        height: 100%;
+        max-height: 0;
+        position: fixed;
+        top: 50px;
+        right: 0;
+        border-left: 1px solid #909090;
+        background-color: var(--white);
+        overflow: hidden;
+        transition: .5s ease-in-out;
+    }
+    .nav ul {
+        margin: 0;
+        padding: 20px;
+    }
+    .nav h1 {
+        padding: 0 20px;
+    }
+    .nav ul li {
+        list-style-type: none;
+        padding:0;
+        margin:0;
+    }
+
+    .hamb {
+        cursor: pointer;
+        float: right;
+        position: absolute;
+        top: 0;
+        right: 0.25em;
+        width: 3.5em;
+        padding-top: 1.5em;
+        z-index: 1100;
+    }
+    .hamb-line {
+        background: var(--green);
+        display: block;
+        position: relative;
+        height: 0.3em;
+        width: 2.75em;
+        border-radius:3px;
+    }
+    .hamb-line::before,.hamb-line::after {
+        background: var(--green);
+        content: '';
+        display: block;
+        height: 100%;
+        position: absolute;
+        transition: all .2s ease-in-out;
+        width: 100%;
+        border-radius:3px;
+    }
+    .hamb-line::before{
+        top: 10px;
+    }
+    .hamb-line::after{
+        top: -10px;
+    }
+    .side-menu {
+        display: none;
+    } /* Hide checkbox */
+    .side-menu:checked ~ .nav{
+        max-height: 100%;
+        top: 50px;
+
+    }
+    .side-menu:checked ~ .hamb .hamb-line {
+        background: transparent;
+    }
+    .side-menu:checked ~ .hamb .hamb-line::before {
+        transform: rotate(-45deg);
+        top: 0;
+    }
+    .side-menu:checked ~ .hamb .hamb-line::after {
+        transform: rotate(45deg);
+        top: 0;
+    }
+
+    code {
+        white-space: pre-line;
+    }
+}
+
+@media screen and (min-width:750px){
+    .side-menu,.hamb-line {
+        display: none;
+    }
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+	body {
+		background-color: #1c262d;
+        color:#eee;
+	}
+    h1,h2,h3,h4,h5,h6,p {
+        color: #eee;
+    }
+    a {
+        color: #55A4F1;
+        text-decoration: underline;
+    }
+    a:visited {
+        color: #8b79c0!important;
+    }
+    .nav {
+        background:var(--black);
+    }
+    #menu a {
+        color: #55A4F1;
+    }
+    blockquote pre {
+        color: #ddd!important;
+        background: #0f1b29!important;
+        border: 1px solid #132235;
+    }
+    div.directive {
+        background: #0c1622!important;
+        border-top: 2px solid #203c5e!important;
+    }
+    code {
+        background:#0c1622;
+        color: #ddd!important;
+    }
+    .lightimage {
+        display: none!important;
+    }
+    .darkimageWrapper, .darkimage {
+        display: block!important;
+    }
+    .dropbtn {background-color: #202020;}
+    .dropdown-content {
+        background-color: #404040;
+        box-shadow: 0px 8px 12px 0px #101010;
+    }
+    .dropdown-content a:hover {background-color: #242424;}
+    .dropdown:hover .dropbtn {background-color: #202020;}
+}

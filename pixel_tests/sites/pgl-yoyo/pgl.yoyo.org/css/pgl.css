@@ -1,0 +1,107 @@
+/* tag defaults */
+
+body,table,td,p,input,select,ul,li,th {
+	font-family:	calibri, droid sans, verdana, sans-serif;
+	font-size:	12px;
+	}
+
+code,tt,pre,address,textarea {
+	font-family: inconsolata, lucida console, monospace;
+	font-size: 12px;
+	}
+
+
+a:link				{ text-decoration: underline; }
+a:visited			{ color: #110033; }
+a:link:hover, a:visited:hover	{ color: #800000; text-decoration: none; }
+
+ul		{ list-style-position: outside; marker-offset: 4px; margin-left: 10px; margin-top: 0px; line-height: 14px; page-break-after: avoid; padding-left: 1em; }
+li		{ list-style-image: url(../images/icons/li.png); background-color: transparent; }
+select		{ background-color: #F0F0F0; }
+
+
+/* misc classes used all over */
+
+form		{ padding: 0px; margin: 0px; border: 0px; }
+td.formtag	{ display: none; }
+
+td.footnote     { color: #222266; padding-top: 0px; font-size: 10px; }
+sup.footnote    { color: red; font-weight: bold; font-size: 8px; }
+
+body.nomargin	{ margin: 0px; padding: 0px; }
+
+.small		{ font-size: 9pt; }
+.verysmall	{ font-size: 9px; }
+.fixed		{ font-family: inconsolata, lucida console, monospace; }
+
+.big		{ font-size: 14px; }
+
+.maxwidth	{ width: 100%; }
+
+
+/* standard colours */
+
+.green          { color: #008000; }
+.red            { color: #800000; }
+.blue           { color: #000080; }
+.yellow         { color: #808000; }
+.brightyellow	{ color: yellow; }
+.lightbrown	{ color: #F9F8EF; }
+.lightblue	{ color: #E3E9F2; }
+
+a.green:visited	{ color: #004000; }
+a.blue:visited	{ color: #000040; }
+a.red:visited	{ color: #400000; }
+
+a.green:hover	{ color: #00A000; }
+a.blue:hover	{ color: #0000A0; }
+a.red:hover	{ color: #A00000; }
+
+
+
+/* classes for admin forms */
+
+table.edit			{ border: 1px solid #444; empty-cells: show; }
+td.edithead			{ background-color: #336699; font-weight: bold; color: white; white-space: pre; padding: 4px; vertical-align: top; }
+td.editcell			{ background-color: white; width: 100%; border-right: 1px solid #CCC; }
+td.editcelltop			{ background-color: #DDD; width: 100%; border-bottom: 1px solid #444; text-align: center; }
+td.editcellselect		{ background-color: white; }
+td.submit			{ background-color: #EEE; border-top: 1px solid #CCC; }
+td.editcell, td.editcellselect	{ padding-top: 1px; padding-bottom: 1px; }
+td.editheadsep, td.editcellsep	{ padding: 0px; height: 2px; }
+td.editheadsep			{ background-color: #DDD; }
+td.editcellsep			{ background-color: white; }
+td.nobr				{ white-space: nowrap; }
+
+input.edit, textarea.edit	{ width: 100%; }
+input.editsmall, textarea.edit	{ }
+
+
+
+/* classes for tables listing things */
+
+td.listcelldate, td.listcelledit, td.listcellid, td.listcell {
+	vertical-align: top;
+	}
+
+td.listhead, td.listheadid {
+	background-color:	#336699;
+	vertical-align:		top;
+	font-weight:		bold;
+	color:			white;
+	white-space:		pre;
+	padding:		4px;
+	border-bottom:		1px solid #444;
+	}
+
+table.list			{ border: 1px solid #444; empty-cells: show; }
+td.listheadid, td.listcellid	{ text-align: right; }
+td.listnextprev			{ border-bottom: 1px solid #AAA; padding: 2px; background-color: #F0F0F0; }
+td.listcelldate			{ text-align: center; font: 10px lucida console, monospace; border-right: 1px solid #CCC; }
+td.listcelledit			{ background-color: #EEE; white-space: nowrap; font-size: 9px; text-align: center; }
+td.listcellid			{ background-color: #EEE; border-right: 1px solid #AAA; }
+td.listcell			{ border-right: 1px solid #CCC; }
+td.listcellnoline		{ }
+
+a.listhead, a.listhead:hover	{ color: #EEE; font-weight: bold; text-decoration: underline; }
+a.listhead:hover		{ color: #CCC; text-decoration: none; }

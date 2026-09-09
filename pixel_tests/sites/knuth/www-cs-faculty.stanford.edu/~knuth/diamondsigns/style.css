@@ -1,0 +1,7 @@
+body {background-color: #F8F4E7; color: #552800;}
+a.link {color:#0000A0;}
+a.visited {color: #A000A0;}
+a.active {color: #00A000;}
+img.thumb {height: 100px; width: 100px;}
+img.big {height: 900px; width: 900px;}
+img.xref {vertical-align: middle; padding-left:6px; padding-right:10px;}

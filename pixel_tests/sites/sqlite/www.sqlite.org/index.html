@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html><head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link href="sqlite.css" rel="stylesheet">
+<title>SQLite Home Page</title>
+<!-- path= -->
+</head>
+<body>
+<div class=nosearch>
+<a href="index.html">
+<img class="logo" src="images/sqlite370_banner.svg" alt="SQLite" border="0">
+</a>
+<div><!-- IE hack to prevent disappearing logo --></div>
+<div class="tagline desktoponly">
+Small. Fast. Reliable.<br>Choose any three.
+</div>
+<div class="menu mainmenu">
+<ul>
+<li><a href="index.html">Home</a>
+<li class='mobileonly'><a href="javascript:void(0)" onclick='toggle_div("submenu")'>Menu</a>
+<li class='wideonly'><a href='https://www.sqlite.org/about.html'>About</a>
+<li class='desktoponly'><a href="https://www.sqlite.org/docs.html">Documentation</a>
+<li class='desktoponly'><a href="https://www.sqlite.org/download.html">Download</a>
+<li class='wideonly'><a href='https://www.sqlite.org/copyright.html'>License</a>
+<li class='desktoponly'><a href="https://www.sqlite.org/support.html">Support</a>
+<li class='desktoponly'><a href="https://www.sqlite.org/prosupport.html">Purchase</a>
+<li class='search' id='search_menubutton'>
+<a href="javascript:void(0)" onclick='toggle_search()'>Search</a>
+</ul>
+</div>
+<div class="menu submenu" id="submenu">
+<ul>
+<li><a href='https://www.sqlite.org/about.html'>About</a>
+<li><a href='https://www.sqlite.org/docs.html'>Documentation</a>
+<li><a href='https://www.sqlite.org/download.html'>Download</a>
+<li><a href='https://www.sqlite.org/support.html'>Support</a>
+<li><a href='https://www.sqlite.org/prosupport.html'>Purchase</a>
+</ul>
+</div>
+<div class="searchmenu" id="searchmenu">
+<form method="GET" action="https://www.sqlite.org/search">
+<select name="s" id="searchtype">
+<option value="d">Search Documentation</option>
+<option value="c">Search Changelog</option>
+</select>
+<input type="text" name="q" id="searchbox" value="">
+<input type="submit" value="Go">
+</form>
+</div>
+</div>
+
+
+
+<div class="rightsidebar desktoponly border2px">
+<h3 align="center">Common Links</h3>
+<ul class=nounderline>
+<li> <a href="https://www.sqlite.org/features.html">Features</a> </li>
+<li> <a href="https://www.sqlite.org/whentouse.html">When to use SQLite</a> </li>
+<li> <a href="https://www.sqlite.org/quickstart.html">Getting Started</a> </li>
+<li> <a href="https://sqlite.org/fiddle">Try it live!</li>
+<li> <a href="https://www.sqlite.org/lang.html">SQL Syntax</a>
+<ul>
+<li> <a href="https://www.sqlite.org/pragma.html#toc">Pragmas</a>
+<li> <a href="https://www.sqlite.org/lang_corefunc.html">SQL functions</a>
+<li> <a href="https://www.sqlite.org/lang_datefunc.html">Date &amp; time functions</a>
+<li> <a href="https://www.sqlite.org/lang_aggfunc.html#aggfunclist">Aggregate functions</a>
+<li> <a href="https://www.sqlite.org/windowfunctions.html#biwinfunc">Window functions</a>
+<li> <a href="https://www.sqlite.org/lang_mathfunc.html">Math functions</a>
+<li> <a href="https://www.sqlite.org/json1.html">JSON functions</a>
+</ul>
+</li>
+<li> <a href="https://www.sqlite.org/c3ref/intro.html">C/C++ Interface Spec</a>
+<ul>
+<li> <a href="https://www.sqlite.org/cintro.html">Introduction</a>
+<li> <a href="https://www.sqlite.org/c3ref/funclist.html">List of C-language APIs</a>
+</ul>
+</li>
+<li> <a href="https://www.sqlite.org/tclsqlite.html">The TCL Interface Spec</a>
+<li> <a href="https://www.sqlite.org/quirks.html">Quirks and Gotchas</a> </li>
+<li> <a href="https://www.sqlite.org/faq.html">Frequently Asked Questions</a> </li>
+<li> <a href="https://www.sqlite.org/src/timeline">Commit History</a> </li>
+<li> <a href="https://www.sqlite.org/chronology.html">Prior Releases</a>
+<li> <a href="https://www.sqlite.org/src/wiki?name=Bug+Reports">Bugs</a> </li>
+<li> <a href="https://www.sqlite.org/news.html">News</a> </li>
+</ul>
+
+</div>
+
+<p>SQLite is a C-language library that implements a
+<a href="https://www.sqlite.org/footprint.html">small</a>,
+<a href="https://www.sqlite.org/fasterthanfs.html">fast</a>,
+<a href="https://www.sqlite.org/selfcontained.html">self-contained</a>,
+<a href="https://www.sqlite.org/hirely.html">high-reliability</a>,
+<a href="https://www.sqlite.org/fullsql.html">full-featured</a>,
+SQL database engine.
+SQLite is the <a href="https://www.sqlite.org/mostdeployed.html">most used</a> database engine in the world.
+SQLite is built into all mobile phones and most computers and
+comes bundled inside countless other applications that people
+use every day.
+<a href="https://www.sqlite.org/about.html">More Information...</a>
+
+<p>
+SQLite <a href="https://sqlite.org/src">source code</a>
+is in the <a href="https://www.sqlite.org/copyright.html">public-domain</a> and is free to
+everyone to use for any purpose.
+
+<h3>Latest Release</h3>
+<a href="https://www.sqlite.org/releaselog/3_53_4.html">Version 3.53.4</a> (2026-07-24).
+<a class="button" href="https://www.sqlite.org/download.html">Download</a>
+<a class="button" href="https://www.sqlite.org/chronology.html">Prior Releases</a>
+
+<div class="mobileonly">
+<h3>Common Links</h3>
+<ul class=nounderline>
+<li> <a href="https://www.sqlite.org/features.html">Features</a> </li>
+<li> <a href="https://www.sqlite.org/whentouse.html">When to use SQLite</a> </li>
+<li> <a href="https://www.sqlite.org/quickstart.html">Getting Started</a> </li>
+<li> <a href="https://sqlite.org/fiddle">Try it live!</li>
+<li> <a href="https://www.sqlite.org/lang.html">SQL Syntax</a>
+<ul>
+<li> <a href="https://www.sqlite.org/pragma.html#toc">Pragmas</a>
+<li> <a href="https://www.sqlite.org/lang_corefunc.html">SQL functions</a>
+<li> <a href="https://www.sqlite.org/lang_datefunc.html">Date &amp; time functions</a>
+<li> <a href="https://www.sqlite.org/lang_aggfunc.html#aggfunclist">Aggregate functions</a>
+<li> <a href="https://www.sqlite.org/windowfunctions.html#biwinfunc">Window functions</a>
+<li> <a href="https://www.sqlite.org/lang_mathfunc.html">Math functions</a>
+<li> <a href="https://www.sqlite.org/json1.html">JSON functions</a>
+</ul>
+</li>
+<li> <a href="https://www.sqlite.org/c3ref/intro.html">C/C++ Interface Spec</a>
+<ul>
+<li> <a href="https://www.sqlite.org/cintro.html">Introduction</a>
+<li> <a href="https://www.sqlite.org/c3ref/funclist.html">List of C-language APIs</a>
+</ul>
+</li>
+<li> <a href="https://www.sqlite.org/tclsqlite.html">The TCL Interface Spec</a>
+<li> <a href="https://www.sqlite.org/quirks.html">Quirks and Gotchas</a> </li>
+<li> <a href="https://www.sqlite.org/faq.html">Frequently Asked Questions</a> </li>
+<li> <a href="https://www.sqlite.org/src/timeline">Commit History</a> </li>
+<li> <a href="https://www.sqlite.org/chronology.html">Prior Releases</a>
+<li> <a href="https://www.sqlite.org/src/wiki?name=Bug+Reports">Bugs</a> </li>
+<li> <a href="https://www.sqlite.org/news.html">News</a> </li>
+</ul>
+
+</div>
+
+<h3>Sponsors</h3>
+
+<p>SQLite is made possible in part by sponsors and
+<a href="https://www.sqlite.org/consortium.html">SQLite Consortium</a> members, including:</p>
+<a name="sponsors"></a>
+<style>
+#sponsors {
+  margin:auto;
+  width:80%;
+}
+.onesponsor a img {
+  width:200px;
+  max-width:200px;
+  padding:1ex;
+}
+</style>
+<div id="sponsors"></div>
+
+<br clear="both">
+<p align="center"><small><i>This page was last updated on 2026-08-14 19:21:30Z </small></i></p>
+

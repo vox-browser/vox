@@ -1,0 +1,637 @@
+/** Fifty shades of Tux
+ * A black, white and yellow css for kernel.org based on normalize.css
+ * MIT License
+ * Benoît Monin [benoit.monin gmx.fr]
+ */
+
+@import "normalize.css";
+
+/**
+ * To use Google-hosted versions, use the following instead of @font-face
+ * definitions below.
+ *
+ * @import "https://fonts.googleapis.com/css?family=Oxygen";
+ * @import "https://fonts.googleapis.com/css?family=Oswald:400";
+ *
+ * We use locally-stored copies to avoid slowdowns in places like mainland
+ * China, where all access to Google is really slow.
+ */
+@font-face {
+    font-family: 'oswald';
+    src: url('../fonts/oswald-regular-webfont.eot');
+    src: url('../fonts/oswald-regular-webfont.eot%3F') format('embedded-opentype'),
+         url('../fonts/oswald-regular-webfont.woff2') format('woff2'),
+         url('../fonts/oswald-regular-webfont.woff') format('woff'),
+         url('../fonts/oswald-regular-webfont.ttf') format('truetype'),
+         url('../fonts/oswald-regular-webfont.svg') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'oxygen';
+    src: url('../fonts/oxygen-regular-webfont.eot');
+    src: url('../fonts/oxygen-regular-webfont.eot%3F') format('embedded-opentype'),
+         url('../fonts/oxygen-regular-webfont.woff2') format('woff2'),
+         url('../fonts/oxygen-regular-webfont.woff') format('woff'),
+         url('../fonts/oxygen-regular-webfont.ttf') format('truetype'),
+         url('../fonts/oxygen-regular-webfont.svg') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body {
+    font-family: oxygen,sans-serif;
+    background: #F0EDE3;
+    color: #33290A;
+}
+
+#banner {
+    text-align: center;
+    background: #FFFFFF;
+    margin: 0em auto;
+    padding: 1em;
+    width: 50em;
+    border: thin solid;
+    border-color: #DDDACF #CCC8B8 #BBB59F;
+    box-shadow: 0 0.1em 0.3em #CCC8B8;
+    border-bottom-right-radius: 0.5em;
+    border-bottom-left-radius: 0.5em;
+}
+#tux-gear {
+    width: 6.5em;
+    height: 7.5em;
+    background-image: url('../images/logos/tux.png');
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    float: right;
+}
+#banner h1 {
+    margin: 28px 0 47px .05em;
+    text-shadow: 3px 3px 0 #F8F4EE;
+    font-size: 3em;
+}
+#banner h1 > a {
+    color: #2C1D00;
+    transition: none;
+}
+#banner ul {
+    padding: 0;
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: bold;
+    list-style: none;
+}
+#banner li {
+    display: inline;
+    padding: 0 1em;
+}
+#banner li > a {
+    color: #B39223;
+    white-space: nowrap;
+    font-size: 90%;
+}
+#banner li > a:hover,
+#banner li > a:active {
+        color: #4C3D00;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: oswald,helvetica,sans-serif;
+}
+
+a {
+    color: #3357D6;
+    text-decoration: none;
+    transition: color 0.25s;
+}
+
+a:visited {
+    color: #865796;
+    text-decoration: none;
+}
+
+a:hover,
+a:active {
+    color: #B39223;
+    text-decoration: none;
+}
+
+abbr[title] {
+    border: none;
+}
+
+hr {
+    border: none;
+}
+
+#protocols {
+    float: left;
+    width: 25em;
+    margin: 1.3em 0 4em 2em;
+}
+#protocols th {
+    text-align: left;
+}
+
+#latest {
+    float: right;
+    background: #FFD133;
+    box-shadow: -0.1em -0.3em 0.5em #B39223 inset;
+    color: #4C3D00;
+    border-radius: 0.5em;
+    margin: 1em 2.2em 4em 0;
+}
+#latest td {
+    text-align: right;
+    vertical-align: top;
+}
+#latest_label {
+    font-size: 1.25em;
+    padding: 0.75em 1.25em .3em 0;
+}
+#latest_button {
+    padding: 0 0 0.75em 0;
+}
+#latest_button > a {
+    display: block;
+}
+#latest_button img {
+    vertical-align: middle;
+    padding-right: 1.25em;
+    opacity: 0.7;
+    filter: alpha(opacity=70);
+}
+#latest_link {
+    font-size: 2.75em;
+    font-weight: bold;
+    padding: .35em 0.25em 0 0.5em;
+    min-width: 2em;
+}
+#latest_link > a {
+    color: #4C3D00;
+    display: block;
+    text-align: right;
+}
+
+#releases {
+    clear:both;
+    width: 100%;
+    margin-bottom: 0.25em;
+}
+#releases tr:nth-child(2n+1) {
+    background-color: #F7F6F1;
+}
+
+.post-info {
+    float: right;
+    text-align: center;
+    background: #F0EDE3;
+    color: #827A5E;
+    border: thin solid #CCC8B8;
+    box-shadow: 0 0.1em 0.2em #CCC8B8 inset;
+    border-radius: 0.5em;
+    padding: 0.5em 1em;
+    margin: 0 0 1em 1em;
+    font-size: 80%;
+}
+.post-info p {
+    margin: 0.25em 0 0;
+}
+#featured .post-info {
+    margin-top: 1.25em;
+}
+
+.literal-block {
+    background: #f3f3f3;
+    border: thin solid #ccc;
+    border-radius: 0.3em;
+    padding: 0.5em;
+    font-size: 90%;
+}
+
+#featured,
+#content {
+    background: #FFFFFF;
+    margin: 1.5em auto;
+    padding: 1.85em 1em;
+    width: 50em;
+    border: thin solid;
+    border-color: #DDDACF #CCC8B8 #BBB59F;
+    box-shadow: 0 0.1em 0.3em #CCC8B8;
+    border-radius: 0.5em;
+}
+
+article h1 {
+    color: #33290A;
+    margin: 0 0 .9em 0;
+}
+article h1 > a {
+    color: #33290A !important;
+    transition: none;
+}
+
+table.docutils {
+    margin: 0 auto;
+    width: 80%;
+}
+table.docutils > caption {
+    margin: 0.5em 0;
+    text-align: left;
+    font-weight: bold;
+}
+
+a.readmore {
+    font-style: italic;
+    color: #6A84E0;
+}
+a.readmore:hover,
+a.readmore:active {
+    color: #B39F5C;
+}
+
+#content > h1 {
+    text-align: center;
+    margin: 0 0 1em;
+}
+
+.paginator {
+    text-align: center;
+    color: #9e9678;
+    margin: 0;
+}
+
+#posts-list {
+    list-style: none;
+    padding: 0;
+}
+#posts-list > li {
+    border-bottom: medium dotted #F0EDE3;
+    padding-bottom: 1em;
+    margin-top: 1em;
+}
+#posts-list > li:last-child {
+    border: none;
+}
+
+#extras {
+    margin: 1.5em auto;
+    width: 52em;
+}
+#extras > div {
+    background: #FFFFFF;
+    border: thin solid;
+    border-color: #DDDACF #CCC8B8 #BBB59F;
+    box-shadow: 0 0.1em 0.3em #CCC8B8;
+    border-radius: 0.5em;
+    height: 8.5em;
+}
+#extras > .blogroll {
+    float: left;
+    width: 34em;
+    padding: .5em 1em 0 1em;
+}
+#extras > .blogroll li {
+    width: 33%;
+    float: left;
+}
+#extras > .social {
+    float: right;
+    width: 12em;
+    padding: .5em 1em 0 1em;
+}
+#extras h2 {
+    margin: 0.5em 0 1em 0;
+}
+#extras ul {
+    list-style: none;
+    padding: 0;
+}
+
+#contentinfo {
+    clear: both;
+    text-align: center;
+    color: #827A5E;
+    margin: 2em auto;
+    padding-top: 3.5em;
+    width: 53em;
+}
+#about {
+    font-size: 80%;
+}
+#donors {
+    margin-top: 1.5em;
+}
+#donors img {
+    vertical-align: middle;
+    margin: 0 0.5em;
+}
+img.align-left {
+    float: left;
+    padding: 0 1em 0 0;
+}
+dt {
+    font-weight: bold;
+}
+
+#logo-akamai {
+    padding-bottom: 22px;
+}
+
+/* Mobile nav: hidden on desktop. The toggle, overlay and drawer all
+   live inside #mobile-banner, so hiding it hides the whole control. */
+#mobile-banner { display: none; }
+
+@media screen and (max-width: 848px) {
+    #banner {
+        display: none;
+    }
+    /* The checkbox is the actual control, so it stays reachable by
+       keyboard; only its rendering is suppressed. The labels are
+       pointer affordances and are hidden from assistive tech. */
+    .mobile-nav-checkbox {
+        display: block;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+    .mobile-nav-checkbox:focus-visible ~ .hamburger-btn,
+    .mobile-nav-checkbox:focus-visible:checked ~ #mobile-drawer .close-btn svg {
+        outline: 2px solid #3357D6;
+        outline-offset: 2px;
+        border-radius: 0.2em;
+    }
+    /* While open the drawer paints over the hamburger, so the ring
+       would be hidden; show it on the close control instead. */
+    .mobile-nav-checkbox:focus-visible:checked ~ .hamburger-btn {
+        outline: none;
+    }
+    #mobile-banner {
+        display: flex;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: #FFFFFF;
+        padding: 0.5em 1em;
+        border-bottom: thin solid #CCC8B8;
+        box-shadow: 0 0.1em 0.3em #CCC8B8;
+    }
+    #mobile-tux-gear {
+        width: 2.5em;
+        height: 3em;
+        background-image: url('../images/logos/tux.png');
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+        flex-shrink: 0;
+    }
+    #mobile-banner .mobile-site-title {
+        flex: 1;
+        margin: 0 0.5em;
+        font-family: oswald,helvetica,sans-serif;
+        font-weight: bold;
+        font-size: 1.4em;
+        line-height: 1.1;
+        text-shadow: 2px 2px 0 #F8F4EE;
+    }
+    #mobile-banner .mobile-site-title > a {
+        color: #2C1D00;
+        transition: none;
+    }
+    .hamburger-btn {
+        cursor: pointer;
+        flex-shrink: 0;
+        padding: 0.25em;
+    }
+    .hamburger-btn svg {
+        display: block;
+    }
+    #mobile-drawer {
+        display: block;
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 200px;
+        max-width: 75vw;
+        height: 100%;
+        background: #FFFFFF;
+        z-index: 1002;
+        transform: translateX(100%);
+        /* visibility keeps the off-screen links out of the tab order
+           while closed; it is delayed so the slide-out still animates. */
+        visibility: hidden;
+        transition: transform 0.3s ease, visibility 0s linear 0.3s;
+        overflow-y: auto;
+        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
+    }
+    #mobile-drawer ul {
+        list-style: none;
+        padding: 1em;
+        margin: 0;
+    }
+    #mobile-drawer li {
+        padding: 0.75em 0;
+        border-bottom: thin solid #F0EDE3;
+    }
+    #mobile-drawer li:last-child {
+        border-bottom: none;
+    }
+    #mobile-drawer li > a {
+        font-family: oswald, helvetica, sans-serif;
+        font-size: 1.1em;
+        color: #B39223;
+    }
+    #mobile-drawer li > a:hover,
+    #mobile-drawer li > a:active {
+        color: #4C3D00;
+    }
+    #drawer-tux {
+        width: 4em;
+        height: 5em;
+        margin: 1.5em auto 1em;
+        background-image: url('../images/logos/tux.png');
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+    }
+    .close-btn {
+        display: block;
+        cursor: pointer;
+        text-align: right;
+        padding: 1em;
+    }
+    .close-btn svg {
+        display: inline-block;
+    }
+    .nav-overlay {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1001;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    }
+    #mobile-nav-toggle:checked ~ #mobile-drawer {
+        transform: translateX(0);
+        visibility: visible;
+        transition: transform 0.3s ease, visibility 0s;
+    }
+    #mobile-nav-toggle:checked ~ .nav-overlay {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.3s ease, visibility 0s;
+    }
+    /* Drop the slide and fade, but keep the visibility swap so the
+       closed drawer stays out of the tab order. */
+    @media (prefers-reduced-motion: reduce) {
+        #mobile-drawer,
+        #mobile-nav-toggle:checked ~ #mobile-drawer,
+        .nav-overlay,
+        #mobile-nav-toggle:checked ~ .nav-overlay {
+            transition: none;
+        }
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        line-height: 1.1;
+    }
+    #protocols {
+        margin: 1em 0;
+        width: auto;
+    }
+    #latest {
+        margin-right: 0;
+    }
+    #releases {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    #releases td:nth-child(3) {
+        white-space: nowrap;
+        padding: 0 0.75em;
+    }
+    #featured,
+    #content {
+        width: auto;
+        margin: 1em;
+        padding: 1em;
+    }
+    table.docutils {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        border-collapse: collapse;
+    }
+    table.docutils th,
+    table.docutils td {
+        white-space: nowrap;
+        padding: 0 5px;
+        border: 1px solid #ccc;
+    }
+    table.docutils > caption {
+        padding-left: 5px;
+    }
+    pre,
+    .literal-block {
+        white-space: pre;
+        overflow-x: auto;
+    }
+
+    #extras {
+        width: auto;
+        margin: 1em;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1em;
+    }
+    #extras > div {
+        height: auto;
+    }
+    #extras > .blogroll {
+        float: none;
+        width: 100%;
+        padding: 0.5em 1em;
+        box-sizing: border-box;
+    }
+    #extras > .blogroll ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25em 1em;
+    }
+    #extras > .blogroll li {
+        width: auto;
+        float: none;
+        flex: 1 1 30%;
+    }
+    #extras > .social {
+        float: none;
+        width: 100%;
+        padding: 0.5em 1em;
+        box-sizing: border-box;
+    }
+    #extras > .social ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5em;
+    }
+    #extras > .social li {
+        flex: 1 1 30%;
+    }
+
+    #contentinfo {
+        width: auto;
+        margin: 1em;
+        padding-top: 2em;
+    }
+    #donors {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 1em;
+    }
+    #donors br {
+        display: none;
+    }
+    #donors img {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+@media screen and (max-width: 550px) {
+    #extras > .blogroll li {
+        flex: 1 1 45%;
+    }
+    #extras > .social ul {
+        display: block;
+        columns: 2;
+    }
+    #extras > .social li {
+        flex: none;
+    }
+}
+
+@media screen and (max-width: 400px) {
+    #extras > .blogroll li {
+        flex: 1 1 100%;
+    }
+    #extras > .social ul {
+        columns: 1;
+    }
+}

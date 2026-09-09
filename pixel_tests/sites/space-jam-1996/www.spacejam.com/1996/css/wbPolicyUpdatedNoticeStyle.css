@@ -1,0 +1,38 @@
+div.wbPolicyUpdatedDivStyle {
+    border-radius: 7px;
+    background-color: #000000;
+    color:#FFFFFF;
+    border: solid 1px #999;
+    bottom: 7px;
+    font-size: 12px;
+    left: 5px;
+    line-height: 18px;
+    padding: 7px;
+    position: fixed;
+    max-width: 45%;
+    width: auto;
+    z-index: 1002;
+    font-family: Montserrat, Arial, Helvetica, sans-serif;
+}
+
+.wb-policy-updated-div-body a{
+	color:#e80000;
+	
+}
+
+
+div.wbPolicyUpdatedDivCloseStyle {
+    cursor: pointer;
+    float: right;
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    font-weight: bold;
+    font-size: 28px;
+    line-height: 12px;
+    margin-left: 5px;
+}
+
+div.wbPolicyUpdatedDivBodyStyle {
+    margin: 0px 20px 0px 0px;
+}

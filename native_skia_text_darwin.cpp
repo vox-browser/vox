@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -178,6 +179,13 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     SkFont font(sk_ref_sp(typeface), std::max(font_size, 0.0f));
     // This is the only non-default setting in Gfx::Font::skia_font().
     font.setSubpixel(true);
+    // The generic-serif cascade deliberately retains Times New Roman's regular
+    // advances for bold text. Give only that regular face synthetic weight;
+    // some file-backed real bold faces do not report their weight through the
+    // CoreText SkTypeface and must not be emboldened a second time.
+    if (!emoji_face && font_weight >= 600 && font_path
+        && std::strcmp(font_path, "/System/Library/Fonts/Supplemental/Times New Roman.ttf") == 0)
+        font.setEmbolden(true);
 
     SkTextBlobBuilder builder;
     auto const& run = builder.allocRunPos(font, glyph_count);

@@ -962,6 +962,15 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 			forced_width = calculate_fit_content_width(mut state, box_as_box, AvailableSize.make_definite(container_width))
 		}
 	}
+	// CSS 2.1 §10.3.5 applies max-width and then min-width to the
+	// shrink-to-fit result (and to a specified float width). Replaced floats
+	// already apply these constraints as part of compute_replaced_size().
+	if width := forced_width {
+		if !box.is_replaced_box() {
+			forced_width = clamp_layout_content_size(box, width, container_width, initial_state,
+				true)
+		}
+	}
 	mut box_state := layout_independent_child(mut state, box, mut container_state, container_width, container_height, forced_width, forced_height)
 	container_root_offset := container_state.cumulative_offset()
 	direction := block_container.computed_values().direction()

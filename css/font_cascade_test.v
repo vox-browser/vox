@@ -2,6 +2,17 @@ module css
 
 import dom
 
+fn test_system_ui_generic_font_family_list_parses() {
+	parsed := parse_css_value_logic(.font_family, 'system-ui, sans-serif') or {
+		panic('failed to parse a valid generic font-family list')
+	}
+	assert parsed is StyleValueList
+	list := parsed as StyleValueList
+	assert list.values().len == 2
+	assert list.values()[0].serialize(.normal) == 'system-ui'
+	assert list.values()[1].serialize(.normal) == 'sans-serif'
+}
+
 fn test_font_cascade_selects_unicode_range_then_fallback() {
 	mut list := FontCascadeList.create()
 	list.add(PlatformFont{
@@ -50,4 +61,7 @@ fn test_computed_font_list_uses_computed_font_properties_and_caches_result() {
 	font := computed.first_available_computed_font(computer)
 	assert font.point_size == 15
 	assert font.variations.weight == 700
+	$if macos {
+		assert font.typeface.family_name == 'Serif'
+	}
 }
