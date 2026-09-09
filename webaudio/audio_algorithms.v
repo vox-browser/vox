@@ -543,6 +543,10 @@ pub fn (node OscillatorNode) detune() AudioParam {
 	return node.detune
 }
 
+pub fn (node OscillatorNode) type_() OscillatorType {
+	return node.type_
+}
+
 pub fn (_ OscillatorNode) number_of_inputs() u32 {
 	return 0
 }
@@ -572,6 +576,10 @@ pub fn (source AudioBufferSourceNode) playback_rate() AudioParam {
 
 pub fn (source AudioBufferSourceNode) detune() AudioParam {
 	return source.detune
+}
+
+pub fn (source AudioBufferSourceNode) buffer() ?AudioBuffer {
+	return source.buffer
 }
 
 pub fn (mut source AudioBufferSourceNode) set_loop(value bool) {
@@ -619,6 +627,14 @@ pub fn ScriptProcessorNode.create(mut context BaseAudioContext, buffer_size i32,
 
 pub fn (processor ScriptProcessorNode) onaudioprocess() bool {
 	return processor.onaudioprocess
+}
+
+pub fn (processor ScriptProcessorNode) buffer_size() i32 {
+	return processor.buffer_size
+}
+
+pub fn (processor ScriptProcessorNode) channel_count() u32 {
+	return processor.input_channels
 }
 
 pub fn (mut processor ScriptProcessorNode) set_onaudioprocess(value bool) {
@@ -772,6 +788,22 @@ pub fn (node PannerNode) cone_outer_angle() f64 {
 
 pub fn (mut node PannerNode) set_cone_outer_angle(value f64) {
 	node.cone_outer_angle = value
+}
+
+pub fn (node PannerNode) ref_distance() f64 {
+	return node.ref_distance
+}
+
+pub fn (node PannerNode) max_distance() f64 {
+	return node.max_distance
+}
+
+pub fn (node PannerNode) rolloff_factor() f64 {
+	return node.rolloff_factor
+}
+
+pub fn (node PannerNode) cone_outer_gain() f64 {
+	return node.cone_outer_gain
 }
 
 // OfflineAudioContext and its completion event.

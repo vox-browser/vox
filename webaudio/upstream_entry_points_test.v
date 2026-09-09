@@ -12,12 +12,14 @@ fn test_upstream_buffer_parameter_and_node_entry_points() {
 	assert parameter.min_value() == -1
 	assert parameter.max_value() == 1
 	assert parameter.context() == context.id
+	assert parameter.automation_rate() == .a_rate
 
 	mut source := context.allocate_node(.gain, 1, 1, AudioNodeOptions{}, 2, .max, .speakers)!
 	mut destination := context.allocate_node(.gain, 1, 1, AudioNodeOptions{}, 2, .max, .speakers)!
 	source.connect(mut destination, 0, 0)!
 	assert source.output_connection_records().len == 1
 	assert destination.input_connection_records().len == 1
+	assert source.channel_count() == 2
 	source.destination_output_input_disconnect(mut destination, 0, 0)!
 	assert source.output_connection_records().len == 0
 	assert destination.input_connection_records().len == 0
@@ -56,6 +58,10 @@ fn test_upstream_concrete_node_and_analyser_entry_points() {
 	assert gain.gain().default_value() == 1
 
 	mut analyser := AnalyserNode.construct_impl(mut context, AnalyserOptions{ fft_size: 32 })!
+	assert analyser.fft_size() == 32
+	assert analyser.min_decibels() == -100
+	assert analyser.max_decibels() == -30
+	assert analyser.smoothing_time_constant() == 0.8
 	windowed := analyser.apply_a_blackman_window([]f32{len: 32, init: 1})
 	assert windowed.len == 32
 	assert apply_a_fourier_transform(windowed) == []f32{len: 32}
@@ -81,10 +87,28 @@ fn test_upstream_panner_and_offline_completion_entry_points() {
 	panner.set_distance_model(.linear)
 	panner.set_cone_inner_angle(180)
 	panner.set_cone_outer_angle(270)
+	panner.set_ref_distance(2)!
+	panner.set_max_distance(200)!
+	panner.set_rolloff_factor(0.5)!
+	panner.set_cone_outer_gain(0.25)!
 	assert panner.panning_model() == .hrtf
 	assert panner.distance_model() == .linear
 	assert panner.cone_inner_angle() == 180
 	assert panner.cone_outer_angle() == 270
+	assert panner.ref_distance() == 2
+	assert panner.max_distance() == 200
+	assert panner.rolloff_factor() == 0.5
+	assert panner.cone_outer_gain() == 0.25
+
+	mut oscillator := OscillatorNode.construct_impl(mut base, OscillatorOptions{})!
+	assert oscillator.type_() == .sine
+	buffer := new_audio_buffer(1, 2, 44_100)!
+	mut source := AudioBufferSourceNode.construct_impl(mut base, AudioBufferSourceOptions{})!
+	source.set_buffer(buffer)!
+	assert source.buffer()?.length == 2
+	processor := ScriptProcessorNode.create(mut base, 256, 1, 1)!
+	assert processor.buffer_size() == 256
+	assert processor.channel_count() == 1
 
 	mut offline := OfflineAudioContext.construct_impl(94, OfflineAudioContextOptions{
 		number_of_channels: 2

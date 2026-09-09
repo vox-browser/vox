@@ -222,6 +222,11 @@ pub fn (p &Page) top_level_traversable_is_initialized() bool {
 	return p.top_level_traversable_ != ''
 }
 
+pub fn (p &Page) top_level_traversable() string {
+	assert p.top_level_traversable_is_initialized()
+	return p.top_level_traversable_
+}
+
 pub fn (p &Page) focused_navigable() string {
 	return if p.focused_navigable_ != '' { p.focused_navigable_ } else { p.top_level_traversable_ }
 }
@@ -470,6 +475,10 @@ pub fn (mut p Page) set_user_style(source string) {
 	}
 }
 
+pub fn (p &Page) user_style() ?string {
+	return p.user_style_
+}
+
 pub fn (mut p Page) clear_selection() {
 	p.selected_match = none
 }
@@ -675,4 +684,8 @@ pub fn (mut p Page) set_viewport_is_fullscreen(value bool) {
 	p.viewport_fullscreen_ = value
 	p.fullscreen_ipc_sent_ = false
 	p.process_pending_fullscreen_operations()
+}
+
+pub fn (p &Page) viewport_is_fullscreen() bool {
+	return p.viewport_fullscreen_
 }

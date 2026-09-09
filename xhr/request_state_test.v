@@ -120,6 +120,8 @@ fn test_response_state_events_headers_and_text() {
 fn test_abort_timeout_credentials_and_gc_lifetime() {
 	mut request := XMLHttpRequest.construct(.window, 'https://example.test/')
 	request.set_with_credentials(true)!
+	assert request.with_credentials()
+	assert request.upload() == request.upload_object
 	request.open('POST', '/x', true, none, none)!
 	request.listeners['abort'] = true
 	request.send_text('x')!

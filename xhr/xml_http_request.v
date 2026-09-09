@@ -115,6 +115,22 @@ pub fn (request &XMLHttpRequest) ready_state() u16 {
 	return u16(request.state)
 }
 
+pub fn (request &XMLHttpRequest) timeout() u32 {
+	return request.timeout_ms
+}
+
+pub fn (request &XMLHttpRequest) with_credentials() bool {
+	return request.with_credentials_
+}
+
+pub fn (request &XMLHttpRequest) response_type() ResponseType {
+	return request.response_type_
+}
+
+pub fn (request &XMLHttpRequest) upload() &XMLHttpRequestUpload {
+	return request.upload_object
+}
+
 pub fn (mut request XMLHttpRequest) dispatch_state_change() {
 	request.dispatch('readystatechange', 0, 0)
 }

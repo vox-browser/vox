@@ -31,6 +31,7 @@ fn test_arraybuffer_blob_json_document_and_response_cache() {
 fn test_response_type_mime_and_synchronous_window_restrictions() {
 	mut request := XMLHttpRequest.construct(.window, 'https://example.test/')
 	request.set_timeout(10)!
+	assert request.timeout() == 10
 	if _ := request.open('GET', '/x', false, none, none) {
 		assert false
 	} else {
@@ -38,7 +39,7 @@ fn test_response_type_mime_and_synchronous_window_restrictions() {
 	}
 	mut worker := XMLHttpRequest.construct(.worker, 'https://example.test/')
 	worker.set_response_type(.document)!
-	assert worker.response_type_ == .empty
+	assert worker.response_type() == .empty
 	request = XMLHttpRequest.construct(.window, 'https://example.test/')
 	request.override_mime_type('invalid')!
 	assert request.override_mime_type_? == 'application/octet-stream'

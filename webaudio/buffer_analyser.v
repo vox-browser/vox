@@ -127,6 +127,22 @@ pub fn (analyser AnalyserNode) frequency_bin_count() u32 {
 	return analyser.fft_size / 2
 }
 
+pub fn (analyser AnalyserNode) fft_size() u32 {
+	return analyser.fft_size
+}
+
+pub fn (analyser AnalyserNode) min_decibels() f64 {
+	return analyser.min_decibels
+}
+
+pub fn (analyser AnalyserNode) max_decibels() f64 {
+	return analyser.max_decibels
+}
+
+pub fn (analyser AnalyserNode) smoothing_time_constant() f64 {
+	return analyser.smoothing_time_constant
+}
+
 pub fn (mut analyser AnalyserNode) set_fft_size(size u32) ! {
 	if size < 32 || size > 32768 || size & (size - 1) != 0 {
 		return error('IndexSizeError: fftSize is not a power of 2 between 32 and 32768')

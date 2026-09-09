@@ -5,6 +5,7 @@ import dom
 fn test_page_identity_geometry_dialogs_and_clipboard_correlation() {
 	mut p := Page.create(2)!
 	p.set_top_level_traversable('top')!
+	assert p.top_level_traversable() == 'top'
 	assert p.focused_navigable() == 'top'
 	mut replacement_failed := false
 	p.set_top_level_traversable('replacement') or {
@@ -30,6 +31,8 @@ fn test_page_identity_geometry_dialogs_and_clipboard_correlation() {
 	assert p.request_non_blocking_dialog(.file_picker, 'input-7')
 	assert p.close_non_blocking_dialog(.select) == none
 	assert p.close_non_blocking_dialog(.file_picker) or { '' } == 'input-7'
+	p.set_user_style('body { color: green; }')
+	assert p.user_style()? == 'body { color: green; }'
 
 	first := p.request_clipboard_entries()
 	second := p.request_clipboard_entries()
@@ -111,12 +114,14 @@ fn test_fullscreen_queue_waits_for_ui_and_preserves_fifo() {
 	assert enter.state == .pending
 	assert p.client_events.last().name == 'request-fullscreen-window'
 	p.set_viewport_is_fullscreen(true)
+	assert p.viewport_is_fullscreen()
 	assert enter.state == .fulfilled
 
 	exit_promise := p.enqueue_fullscreen_exit('doc', true)
 	assert exit_promise.state == .pending
 	assert p.client_events.last().name == 'request-exit-fullscreen'
 	p.set_viewport_is_fullscreen(false)
+	assert !p.viewport_is_fullscreen()
 	assert exit_promise.state == .fulfilled
 
 	bad := p.enqueue_fullscreen_enter('doc', 'x', 'other-doc', true, 'already-failed')

@@ -135,6 +135,10 @@ pub fn (mut parameter AudioParam) set_automation_rate(rate AutomationRate) ! {
 	parameter.automation_rate = rate
 }
 
+pub fn (parameter AudioParam) automation_rate() AutomationRate {
+	return parameter.automation_rate
+}
+
 // Automation scheduling is not yet implemented upstream. These fluent calls
 // deliberately preserve its no-op/self-return behavior.
 pub fn (mut parameter AudioParam) set_value_at_time(_ f32, _ f64) &AudioParam {
@@ -221,6 +225,10 @@ pub fn (mut node AudioNode) set_channel_count(count u32) ! {
 		return error('NotSupportedError: Invalid channel count')
 	}
 	node.channel_count = count
+}
+
+pub fn (node AudioNode) channel_count() u32 {
+	return node.channel_count
 }
 
 pub fn (mut node AudioNode) initialize_options(options AudioNodeOptions, default_count u32, default_mode ChannelCountMode, default_interpretation ChannelInterpretation) ! {
