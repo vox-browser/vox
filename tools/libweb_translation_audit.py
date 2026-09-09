@@ -1003,6 +1003,12 @@ def _skip_v_quoted_or_commented(text: str, index: int) -> int | None:
 
 
 def _v_function_body(text: str, function: re.Match[str]) -> tuple[int, int] | None:
+    # `fn C.name(...) ReturnType` declares a foreign function. It never has a V
+    # body, and the following declaration may contain braces (for example a map
+    # initializer) before another `fn` gives the generic scanner a stop point.
+    if function.group("associated") == "C":
+        return None
+
     # V_FUNCTION ends immediately after the opening parameter parenthesis.
     # Find its mate first so braces inside default expressions cannot be
     # mistaken for the implementation body.
