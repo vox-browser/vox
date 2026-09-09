@@ -76,6 +76,7 @@ static NSView *native_browser_view(void) {
 
 static NSString *native_document_font_name;
 static CGFontRef native_document_glyph_font;
+static CGFontRef native_document_bold_glyph_font;
 static CGFontRef native_emoji_glyph_font;
 
 static NSFont *native_document_font(float size, int bold, int italic, int monospace) {
@@ -127,6 +128,23 @@ void native_configure_document_font(string path_value) {
 		CFRelease(postscript_name);
 	}
 	CGFontRelease(font);
+}
+
+void native_configure_document_bold_font(string path_value) {
+	NSString *path = native_capture_string(path_value);
+	CGDataProviderRef provider = CGDataProviderCreateWithFilename([path fileSystemRepresentation]);
+	if (provider == NULL) {
+		return;
+	}
+	CGFontRef font = CGFontCreateWithDataProvider(provider);
+	CGDataProviderRelease(provider);
+	if (font == NULL) {
+		return;
+	}
+	if (native_document_bold_glyph_font != NULL) {
+		CGFontRelease(native_document_bold_glyph_font);
+	}
+	native_document_bold_glyph_font = font;
 }
 
 void native_configure_emoji_font(string path_value) {
@@ -413,6 +431,18 @@ static CGColorRef native_srgb_color(gg__Color color) {
 	return CGColorCreate(color_space, components);
 }
 
+static void native_configure_glyph_rasterization(CGContextRef context) {
+	CGContextSetShouldAntialias(context, true);
+	CGContextSetAllowsFontSmoothing(context, true);
+	CGContextSetShouldSmoothFonts(context, true);
+	CGContextSetAllowsFontSubpixelPositioning(context, true);
+	CGContextSetShouldSubpixelPositionFonts(context, true);
+	// SkFont retains the exact HarfBuzz positions. Do not let CoreGraphics snap
+	// those positions to its own subpixel grid during display-list replay.
+	CGContextSetAllowsFontSubpixelQuantization(context, true);
+	CGContextSetShouldSubpixelQuantizeFonts(context, false);
+}
+
 // DisplayListPlayerSkia replays the glyph IDs and positions retained by
 // Gfx::GlyphRun. Keep those values in glyph space here as well: its positive-Y
 // axis is the font's ascent direction, while the CSS transform's positive-Y
@@ -421,7 +451,7 @@ static CGColorRef native_srgb_color(gg__Color color) {
 // transforms.
 static int native_draw_retained_glyph_run(CGContextRef context,
 	const uint16_t *glyphs, const double *packed_positions, int glyph_count,
-	float font_size, int emoji_face, float baseline_x, float baseline_y,
+	float font_size, int font_weight, int emoji_face, float baseline_x, float baseline_y,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
 	float scroll_y, float canvas_height, CGColorRef color, float blur,
@@ -430,8 +460,9 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 		|| glyph_count <= 0) {
 		return 0;
 	}
-	CGFontRef graphics_font = emoji_face
-		? native_emoji_glyph_font : native_document_glyph_font;
+	CGFontRef graphics_font = emoji_face ? native_emoji_glyph_font
+		: (font_weight >= 600 && native_document_bold_glyph_font != NULL
+			? native_document_bold_glyph_font : native_document_glyph_font);
 	if (graphics_font == NULL) {
 		return 0;
 	}
@@ -452,7 +483,7 @@ static int native_draw_retained_glyph_run(CGContextRef context,
 		transform_a, -transform_b, -transform_c, transform_d,
 		origin_x, origin_y);
 	CGContextSaveGState(context);
-	CGContextSetShouldAntialias(context, true);
+	native_configure_glyph_rasterization(context);
 	CGContextSetFillColorWithColor(context, color);
 	if (shadow_only && blur > 0.0f) {
 		CGRect clip_bounds = CGContextGetClipBoundingBox(context);
@@ -547,7 +578,7 @@ void native_draw_document_text_shadow_srgb(float x, float y, string value,
 }
 
 int native_draw_document_glyph_run_srgb(const uint16_t *glyphs,
-	const double *positions, int glyph_count, float font_size, int emoji_face,
+	const double *positions, int glyph_count, float font_size, int font_weight, int emoji_face,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
 	float page_x, float page_y, float scroll_y, float canvas_height,
@@ -555,7 +586,7 @@ int native_draw_document_glyph_run_srgb(const uint16_t *glyphs,
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	CGColorRef cg_color = native_srgb_color(color);
 	int did_draw = native_draw_retained_glyph_run(context, glyphs, positions, glyph_count,
-		font_size, emoji_face, baseline_x, baseline_y, transform_a, transform_b,
+		font_size, font_weight, emoji_face, baseline_x, baseline_y, transform_a, transform_b,
 		transform_c, transform_d, transform_e, transform_f, page_x, page_y,
 		scroll_y, canvas_height, cg_color, blur, shadow_only);
 	CGColorRelease(cg_color);
@@ -2503,7 +2534,7 @@ void native_add_background_text_clip_run(float x, float y, string value,
 }
 
 int native_add_background_glyph_clip_run(const uint16_t *glyphs,
-	const double *positions, int glyph_count, float font_size, int emoji_face,
+	const double *positions, int glyph_count, float font_size, int font_weight, int emoji_face,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
 	float page_x, float page_y, float scroll_y, float canvas_height) {
@@ -2512,7 +2543,7 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	}
 	CGColorRef white = CGColorCreateGenericRGB(1.0, 1.0, 1.0, 1.0);
 	int did_draw = native_draw_retained_glyph_run(native_background_text_clip_build_context,
-		glyphs, positions, glyph_count, font_size, emoji_face, baseline_x,
+		glyphs, positions, glyph_count, font_size, font_weight, emoji_face, baseline_x,
 		baseline_y, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, page_x, page_y, scroll_y, canvas_height,
 		white, 0.0f, 0);
@@ -3631,33 +3662,29 @@ void schedule_native_screenshot(string output_path) {
 		NSView *view = native_browser_view();
 		[view displayIfNeeded];
 		NSRect bounds = [view bounds];
-		NSBitmapImageRep *bitmap = [view bitmapImageRepForCachingDisplayInRect:bounds];
-		if (bitmap == nil) {
-			CGFloat scale = [[view window] backingScaleFactor];
-			if (scale <= 0.0) {
-				scale = 1.0;
-			}
-			NSInteger pixels_wide = (NSInteger)llround(bounds.size.width * scale);
-			NSInteger pixels_high = (NSInteger)llround(bounds.size.height * scale);
-			if (pixels_wide <= 0 || pixels_high <= 0) {
-				fprintf(stderr, "Ladybird V: invalid screenshot dimensions %.0fx%.0f at scale %.2f\n",
-				        bounds.size.width, bounds.size.height, scale);
-				[NSApp terminate:nil];
-				return;
-			}
-			bitmap = [[NSBitmapImageRep alloc]
-				initWithBitmapDataPlanes:NULL
-				              pixelsWide:pixels_wide
-				              pixelsHigh:pixels_high
-				           bitsPerSample:8
-				         samplesPerPixel:4
-				                hasAlpha:YES
-				                isPlanar:NO
-				          colorSpaceName:NSDeviceRGBColorSpace
-				             bytesPerRow:pixels_wide * 4
-				            bitsPerPixel:32];
-			[bitmap setSize:bounds.size];
+		// Headless Ladybird paints one device pixel per CSS pixel. Capture the native
+		// viewer at the same scale instead of snapshotting its Retina backing store
+		// and resampling it afterwards; resampling changes every antialiased edge.
+		NSInteger pixels_wide = (NSInteger)llround(bounds.size.width);
+		NSInteger pixels_high = (NSInteger)llround(bounds.size.height);
+		if (pixels_wide <= 0 || pixels_high <= 0) {
+			fprintf(stderr, "Ladybird V: invalid screenshot dimensions %.0fx%.0f\n",
+			        bounds.size.width, bounds.size.height);
+			[NSApp terminate:nil];
+			return;
 		}
+		NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc]
+			initWithBitmapDataPlanes:NULL
+			              pixelsWide:pixels_wide
+			              pixelsHigh:pixels_high
+			           bitsPerSample:8
+			         samplesPerPixel:4
+			                hasAlpha:YES
+			                isPlanar:NO
+			          colorSpaceName:NSDeviceRGBColorSpace
+			             bytesPerRow:pixels_wide * 4
+			            bitsPerPixel:32];
+		[bitmap setSize:bounds.size];
 		if (bitmap == nil) {
 			fprintf(stderr, "Ladybird V: could not allocate a bitmap for the window screenshot\n");
 			[NSApp terminate:nil];

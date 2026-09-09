@@ -27,6 +27,18 @@ fn test_font_plugin_fallbacks_and_layout_mode() {
 	assert layout.symbol_font_names() == ['Noto Emoji']
 }
 
+fn test_bold_document_font_candidates_preserve_family_naming() {
+	assert bold_font_path_candidates('/Fonts/Arial.ttf') == ['/Fonts/Arial Bold.ttf']
+	assert bold_font_path_candidates('/Fonts/Example-Regular.ttf') == [
+		'/Fonts/Example-Bold.ttf',
+		'/Fonts/Example-Regular Bold.ttf',
+	]
+	assert bold_font_path_candidates('/Fonts/Example Regular.otf') == [
+		'/Fonts/Example Bold.otf',
+		'/Fonts/Example Regular Bold.otf',
+	]
+}
+
 fn test_font_exposes_scaled_true_type_glyph_contours_for_svg_paths() {
 	font := &Font{
 		family: 'sans-serif'

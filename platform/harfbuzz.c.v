@@ -55,6 +55,9 @@ __global (
 	harfbuzz_layout_test_blob      voidptr
 	harfbuzz_layout_test_face      voidptr
 	harfbuzz_layout_test_attempted bool
+	harfbuzz_bold_blob             voidptr
+	harfbuzz_bold_face             voidptr
+	harfbuzz_bold_attempted        bool
 	harfbuzz_emoji_blob            voidptr
 	harfbuzz_emoji_face            voidptr
 	harfbuzz_emoji_attempted       bool
@@ -82,7 +85,7 @@ pub fn emoji_font_path() ?string {
 	return bundled_font_path('NotoEmoji.ttf')
 }
 
-fn layout_test_font_path() ?string {
+fn configured_document_font_path() ?string {
 	if configured := os.getenv_opt('LADYBIRD_LAYOUT_TEST_FONT') {
 		if os.is_file(configured) {
 			return configured
@@ -91,7 +94,73 @@ fn layout_test_font_path() ?string {
 	return bundled_font_path('SerenitySans-Regular.ttf')
 }
 
-fn layout_test_harfbuzz_face() ?voidptr {
+fn bold_font_path_candidates(regular_path string) []string {
+	extension := os.file_ext(regular_path)
+	if extension == '' {
+		return []
+	}
+	stem := regular_path[..regular_path.len - extension.len]
+	mut candidates := []string{}
+	if stem.ends_with('-Regular') {
+		candidates << stem[..stem.len - '-Regular'.len] + '-Bold' + extension
+	}
+	if stem.ends_with(' Regular') {
+		candidates << stem[..stem.len - ' Regular'.len] + ' Bold' + extension
+	}
+	candidates << stem + ' Bold' + extension
+	return candidates
+}
+
+// Return the concrete face used for document shaping. Gfx::FontDatabase picks
+// a real bold face before falling back to synthetic bold; mirror that lookup
+// for the file-backed HarfBuzz boundary so glyph IDs and advances are retained
+// from the same face that native replay uses.
+pub fn document_font_path(weight int) ?string {
+	regular_path := configured_document_font_path()?
+	if weight < 600 {
+		return regular_path
+	}
+	if configured := os.getenv_opt('LADYBIRD_LAYOUT_TEST_BOLD_FONT') {
+		if os.is_file(configured) {
+			return configured
+		}
+	}
+	if configured := os.getenv_opt('LADYBIRD_BROWSER_BOLD_FONT') {
+		if os.is_file(configured) {
+			return configured
+		}
+	}
+	for candidate in bold_font_path_candidates(regular_path) {
+		if os.is_file(candidate) {
+			return candidate
+		}
+	}
+	return regular_path
+}
+
+fn layout_test_harfbuzz_face(weight int) ?voidptr {
+	if weight >= 600 {
+		if harfbuzz_bold_face != unsafe { nil } {
+			return harfbuzz_bold_face
+		}
+		if harfbuzz_bold_attempted {
+			return none
+		}
+		harfbuzz_bold_attempted = true
+		path := document_font_path(weight)?
+		blob := C.hb_blob_create_from_file_or_fail(path.str)
+		if blob == unsafe { nil } {
+			return none
+		}
+		face := C.hb_face_create(blob, 0)
+		if face == unsafe { nil } {
+			C.hb_blob_destroy(blob)
+			return none
+		}
+		harfbuzz_bold_blob = blob
+		harfbuzz_bold_face = face
+		return face
+	}
 	if harfbuzz_layout_test_face != unsafe { nil } {
 		return harfbuzz_layout_test_face
 	}
@@ -99,7 +168,7 @@ fn layout_test_harfbuzz_face() ?voidptr {
 		return none
 	}
 	harfbuzz_layout_test_attempted = true
-	path := layout_test_font_path()?
+	path := document_font_path(weight)?
 	blob := C.hb_blob_create_from_file_or_fail(path.str)
 	if blob == unsafe { nil } {
 		return none
@@ -185,7 +254,7 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 	if uses_emoji {
 		face = emoji_harfbuzz_face()?
 	} else {
-		face = layout_test_harfbuzz_face()?
+		face = layout_test_harfbuzz_face(font.weight)?
 	}
 	hb_font := C.hb_font_create(face)
 	if hb_font == unsafe { nil } {

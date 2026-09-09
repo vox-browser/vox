@@ -355,6 +355,8 @@ fn test_example_domain_layout_matches_browser_viewport() {
 	assert heading_runs.len == 1
 	assert heading_runs[0].font_size == 24
 	assert heading_runs[0].bold
+	heading_glyph_run := heading_runs[0].glyph_run or { panic('missing heading glyph run') }
+	assert heading_glyph_run.font().weight == 700
 
 	heading_box := root_box.find_box(i64(heading.as_node().unique_id())) or {
 		panic('no heading box')

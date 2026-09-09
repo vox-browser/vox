@@ -11,18 +11,19 @@ import math
 import x.ttf
 
 __global (
-	platform_serenity_sans_face      &ttf.TTF_File
-	platform_serenity_sans_attempted bool
+	platform_document_face           &ttf.TTF_File
+	platform_document_face_attempted bool
+	platform_bold_face               &ttf.TTF_File
+	platform_bold_attempted          bool
 	platform_font_plugin             &FontPlugin
-	platform_pixel_metrics_cache     = map[u32]FontPixelMetrics{}
-	platform_glyph_units_cache       = map[u32]GlyphUnitsEntry{}
+	platform_pixel_metrics_cache     = map[u64]FontPixelMetrics{}
+	platform_glyph_units_cache       = map[u64]GlyphUnitsEntry{}
 )
 
 // GlyphUnitsEntry memoizes a glyph's point-size-independent metrics: the raw
-// advance width in font design units and the resolved glyph index. Both depend
-// only on the code point for the fixed layout face, so the per-size advance is
-// recovered by scaling the stored units, avoiding a fresh cmap/hmtx lookup on
-// every measurement.
+// advance width in font design units and the resolved glyph index. The cache is
+// keyed by code point and requested weight so regular and bold faces cannot
+// reuse one another's metrics.
 struct GlyphUnitsEntry {
 	advance_units int
 	glyph_index   int
@@ -130,10 +131,11 @@ fn font_table_offset(bytes []u8, wanted string) ?int {
 // USE_TYPO_METRICS bit is present, otherwise the hhea metrics. SerenitySans
 // uses typo metrics (819/-205/94 at 1024 units per em).
 pub fn (font &Font) pixel_metrics() FontPixelMetrics {
-	// pixel_metrics is a pure function of the point size for the fixed layout
-	// face, yet Layout calls it hundreds of thousands of times per document.
-	// Memoize on the exact f32 bit pattern so repeat sizes are O(1).
-	key := unsafe { *(&u32(&font.point_size)) }
+	// pixel_metrics is a pure function of point size and face weight, yet Layout
+	// calls it hundreds of thousands of times per document. Memoize on the exact
+	// f32 bit pattern plus weight so repeat sizes are O(1).
+	point_size_bits := unsafe { *(&u32(&font.point_size)) }
+	key := (u64(point_size_bits) << 32) | u64(u32(font.weight))
 	if cached := platform_pixel_metrics_cache[key] {
 		return cached
 	}
@@ -143,7 +145,7 @@ pub fn (font &Font) pixel_metrics() FontPixelMetrics {
 }
 
 fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
-	face := serenity_sans_face() or {
+	face := document_font_face(font.weight) or {
 		return FontPixelMetrics{
 			size: font.point_size
 			x_height: font.point_size * 0.5
@@ -214,7 +216,7 @@ pub fn (font &Font) glyph_width(code_point u32) f32 {
 // callers map y_max to the visual top and y_min to the visual bottom around
 // the text baseline.
 pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
-	face := serenity_sans_face() or { return FontGlyphBounds{} }
+	face := document_font_face(font.weight) or { return FontGlyphBounds{} }
 	if glyph_index < 0 || glyph_index > 0xffff {
 		return FontGlyphBounds{}
 	}
@@ -233,7 +235,7 @@ pub fn (font &Font) glyph_bounds(glyph_index int) FontGlyphBounds {
 // the font's point size but retain TrueType's positive-up Y axis; Path::text()
 // callers position them relative to the CSS baseline and invert Y there.
 pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
-	face := serenity_sans_face()?
+	face := document_font_face(font.weight)?
 	if glyph_index < 0 || glyph_index > 0xffff {
 		return none
 	}
@@ -268,11 +270,12 @@ pub fn (font &Font) glyph_outline(glyph_index int) ?FontGlyphOutline {
 }
 
 fn (font &Font) glyph_metrics(code_point u32) (f32, int) {
-	face := serenity_sans_face() or { return font.point_size * 0.5, int(code_point) }
+	face := document_font_face(font.weight) or { return font.point_size * 0.5, int(code_point) }
 	units_per_em := f32(face.units_per_em)
 	// The raw advance and glyph index are point-size independent, so cache them
 	// per code point and only scale by the requested size here.
-	if entry := platform_glyph_units_cache[code_point] {
+	cache_key := (u64(u32(font.weight)) << 32) | u64(code_point)
+	if entry := platform_glyph_units_cache[cache_key] {
 		return f32(entry.advance_units) * font.point_size / units_per_em, entry.glyph_index
 	}
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
@@ -281,7 +284,7 @@ fn (font &Font) glyph_metrics(code_point u32) (f32, int) {
 	// never index that cache with the full Unicode scalar value.
 	if code_point > 0xffff {
 		advance, _ := mutable_face.get_horizontal_metrics(0)
-		platform_glyph_units_cache[code_point] = GlyphUnitsEntry{
+		platform_glyph_units_cache[cache_key] = GlyphUnitsEntry{
 			advance_units: advance
 			glyph_index: 0
 		}
@@ -289,7 +292,7 @@ fn (font &Font) glyph_metrics(code_point u32) (f32, int) {
 	}
 	glyph_index := mutable_face.map_code(int(code_point))
 	advance, _ := mutable_face.get_horizontal_metrics(glyph_index)
-	platform_glyph_units_cache[code_point] = GlyphUnitsEntry{
+	platform_glyph_units_cache[cache_key] = GlyphUnitsEntry{
 		advance_units: advance
 		glyph_index: int(glyph_index)
 	}
@@ -310,52 +313,50 @@ pub fn (font &Font) glyph_advance_and_index(code_point u32) (f32, int) {
 
 fn (font &Font) reset_kerning() {
 	_ = font
-	face := serenity_sans_face() or { return }
+	face := document_font_face(font.weight) or { return }
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
 	mutable_face.reset_kern()
 }
 
 fn (font &Font) kerning_for_glyph(glyph_index int) f32 {
-	face := serenity_sans_face() or { return 0 }
+	face := document_font_face(font.weight) or { return 0 }
 	mut mutable_face := unsafe { &ttf.TTF_File(face) }
 	kerning, _ := mutable_face.next_kern(glyph_index)
 	return f32(kerning) * font.point_size / f32(mutable_face.units_per_em)
 }
 
-fn serenity_sans_face() ?&ttf.TTF_File {
-	if platform_serenity_sans_face != unsafe { nil } {
-		return platform_serenity_sans_face
+fn document_font_face(weight int) ?&ttf.TTF_File {
+	bold := weight >= 600
+	if bold && platform_bold_face != unsafe { nil } {
+		return platform_bold_face
 	}
-	if platform_serenity_sans_attempted {
+	if !bold && platform_document_face != unsafe { nil } {
+		return platform_document_face
+	}
+	if (bold && platform_bold_attempted) || (!bold && platform_document_face_attempted) {
 		return none
 	}
-	platform_serenity_sans_attempted = true
-	mut candidates := []string{}
-	if configured := os.getenv_opt('LADYBIRD_LAYOUT_TEST_FONT') {
-		candidates << configured
+	if bold {
+		platform_bold_attempted = true
+	} else {
+		platform_document_face_attempted = true
 	}
-	if source_root := os.getenv_opt('LADYBIRD_SOURCE_ROOT') {
-		candidates << os.join_path(source_root, 'Base', 'res', 'fonts', 'SerenitySans-Regular.ttf')
+	path := document_font_path(weight)?
+	bytes := os.read_bytes(path) or { return none }
+	// External construction with the current V compiler does not apply these
+	// vlib field defaults, but TTF_File.init() writes all 12 PANOSE bytes.
+	mut face := &ttf.TTF_File{
+		buf: bytes
+		panose_array: []u8{len: 12, init: 0}
+		width_scale: 1.0
 	}
-	repository_root := os.dir(os.dir(@FILE))
-	candidates << os.join_path(repository_root, '..', '3rd', 'ladybird', 'Base', 'res', 'fonts', 'SerenitySans-Regular.ttf')
-	for path in candidates {
-		if !os.is_file(path) {
-			continue
-		}
-		bytes := os.read_bytes(path) or { continue }
-		// External construction with the current V compiler does not apply these
-		// vlib field defaults, but TTF_File.init() writes all 12 PANOSE bytes.
-		mut face := &ttf.TTF_File{
-			buf:          bytes
-			panose_array: []u8{len: 12, init: 0}
-			width_scale:  1.0
-		}
-		face.init()
-		platform_serenity_sans_face = face
-		return face
+	face.init()
+	if bold {
+		platform_bold_face = face
+	} else {
+		platform_document_face = face
 	}
-	return none
+	return face
 }
 
 pub fn (font &Font) is_emoji_font() bool {
