@@ -169,6 +169,8 @@ fn test_get_parameter_exposes_webgl2_bindings_and_transform_feedback_state() {
 	context.bind_sampler(0, sampler)
 	array := context.create_vertex_array()
 	context.bind_vertex_array(array)
+	context.pixel_storei(pack_row_length, 16)
+	context.pixel_storei(unpack_skip_images, 3)
 
 	assert context.get_parameter(copy_read_buffer).object == copy_buffer.object.handle_
 	assert context.get_parameter(pixel_pack_buffer_binding).object == pack_buffer.object.handle_
@@ -179,8 +181,21 @@ fn test_get_parameter_exposes_webgl2_bindings_and_transform_feedback_state() {
 	assert context.get_parameter(transform_feedback_paused).boolean
 	assert context.get_parameter(sampler_binding).object == sampler.object.handle_
 	assert context.get_parameter(vertex_array_binding).object == array.object.handle_
+	assert context.get_parameter(pack_row_length).integer == 16
+	assert context.get_parameter(unpack_skip_images).integer == 3
+	assert context.get_parameter(pack_skip_pixels).integer == 0
 
 	mut webgl1 := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, [])
 	assert webgl1.get_parameter(transform_feedback_active).kind == .none
 	assert webgl1.get_error() == invalid_enum
+	webgl1.pixel_storei(pack_row_length, 4)
+	assert webgl1.get_error() == invalid_enum
+}
+
+fn test_webgl2_pixel_store_rejects_negative_values_without_changing_state() {
+	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
+	context.pixel_storei(unpack_row_length, 12)
+	context.pixel_storei(unpack_row_length, -1)
+	assert context.get_parameter(unpack_row_length).integer == 12
+	assert context.get_error() == invalid_value
 }

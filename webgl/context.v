@@ -530,8 +530,20 @@ pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter 
 			}
 			context.unpack_colorspace_conversion_ = GLenum(parameter)
 		}
-		else {
+		pack_row_length, pack_skip_rows, pack_skip_pixels, unpack_row_length, unpack_skip_rows, unpack_skip_pixels, unpack_skip_images, unpack_image_height {
+			if context.version != .webgl2 {
+				context.set_error(invalid_enum)
+				return
+			}
+			if parameter < 0 {
+				context.set_error(invalid_value)
+				return
+			}
+			context.generic_parameters_[pname] = integer_parameter(parameter)
 			context.native.dispatch('pixel_storei', pname, parameter)
+		}
+		else {
+			context.set_error(invalid_enum)
 		}
 	}
 }

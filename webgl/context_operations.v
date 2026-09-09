@@ -764,6 +764,9 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 	}
 	if context.version == .webgl2 {
 		match pname {
+			pack_row_length, pack_skip_rows, pack_skip_pixels, unpack_row_length, unpack_skip_rows, unpack_skip_pixels, unpack_skip_images, unpack_image_height {
+				return context.generic_parameters_[pname] or { integer_parameter(0) }
+			}
 			copy_read_buffer, copy_write_buffer, pixel_pack_buffer_binding, pixel_unpack_buffer_binding, uniform_buffer_binding, transform_feedback_buffer_binding {
 				target := match pname {
 					copy_read_buffer { copy_read_buffer }
