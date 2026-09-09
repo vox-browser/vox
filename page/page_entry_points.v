@@ -106,6 +106,30 @@ pub fn (mut p Page) did_update_window_rect() {
 	}
 }
 
+pub fn (mut p Page) did_request_alert(message string) bool {
+	if !p.request_dialog(.alert, message, '') {
+		return false
+	}
+	p.client_.page_did_request_alert(message)
+	return true
+}
+
+pub fn (mut p Page) did_request_confirm(message string) bool {
+	if !p.request_dialog(.confirm, message, '') {
+		return false
+	}
+	p.client_.page_did_request_confirm(message)
+	return true
+}
+
+pub fn (mut p Page) did_request_prompt(message string, default_value string) bool {
+	if !p.request_dialog(.prompt, message, default_value) {
+		return false
+	}
+	p.client_.page_did_request_prompt(message, default_value)
+	return true
+}
+
 pub fn (mut p Page) alert_closed() {
 	if p.pending_dialog_ == .alert { p.close_dialog(true, none) }
 }
@@ -208,6 +232,12 @@ pub fn (p &Page) for_each_canvas_element(callback fn (u64)) {
 
 pub fn (mut p Page) present_all_canvas_element_surfaces() {
 	p.client_events << ClientEvent{name: 'present-canvas-surfaces', text: p.canvas_elements_.len.str()}
+}
+
+pub fn (mut p Page) did_request_media_context_menu(id u64, position PixelPoint, target string,
+	modifiers u32, details string) {
+	p.media_context_element_ = id
+	p.client_.page_did_request_media_context_menu(position, target, modifiers, details)
 }
 
 pub fn (mut p Page) toggle_media_play_state() { p.toggle_media_property('play') }

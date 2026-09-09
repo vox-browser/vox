@@ -58,9 +58,10 @@ fn test_upstream_page_input_and_dialog_entry_points_route_existing_state_machine
 	assert p.handle_mouseup(target, PixelPoint{}, 0, 0, 0) == .handled
 	assert p.event_handler.event_log.map(it.name) == ['pointerdown', 'mousedown', 'pointerup',
 		'mouseup', 'click']
-	assert p.request_dialog(.confirm, 'Continue?', '')
+	assert p.did_request_confirm('Continue?')
 	assert p.has_pending_dialog()
 	assert p.pending_dialog_text() or { '' } == 'Continue?'
+	assert p.client().events.last().name == 'request-confirm'
 	p.confirm_closed(true)
 	assert !p.has_pending_dialog()
 	assert p.pending_dialog_response() or { '' } == 'true'
@@ -134,4 +135,13 @@ fn test_upstream_drag_and_backing_store_entry_points() {
 	mut store := SharedBackingStore.create([u8(1), 2, 3])
 	assert store.bitmap() == [u8(1), 2, 3]
 	assert store.release_iosurface_port()! == [u8(1), 2, 3]
+}
+
+fn test_media_context_menu_request_records_the_target_and_notifies_the_client() {
+	mut p := Page.create(1)!
+	p.register_media_element(42, MediaElementState{})
+	p.did_request_media_context_menu(42, PixelPoint{x: 3, y: 4}, 'video', 2, 'menu')
+	assert p.media_context_menu_element() or { 0 } == 42
+	assert p.client().events.last().name == 'request-media-context-menu'
+	assert p.client().events.last().text == 'video:2:menu'
 }
