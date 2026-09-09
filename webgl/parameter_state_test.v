@@ -59,3 +59,38 @@ fn test_pixel_store_alignment_rejects_values_outside_the_webgl_set() {
 	assert context.get_parameter(pack_alignment).integer == 4
 	assert context.get_error() == invalid_value
 }
+
+fn test_get_parameter_exposes_webgl2_bindings_and_transform_feedback_state() {
+	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
+	copy_buffer := context.create_buffer()
+	pack_buffer := context.create_buffer()
+	uniform_buffer_object := context.create_buffer()
+	feedback_buffer := context.create_buffer()
+	context.bind_buffer(copy_read_buffer, copy_buffer)
+	context.bind_buffer(pixel_pack_buffer, pack_buffer)
+	context.bind_buffer(uniform_buffer, uniform_buffer_object)
+	context.bind_buffer(transform_feedback_buffer, feedback_buffer)
+
+	feedback := context.create_transform_feedback()
+	context.bind_transform_feedback(transform_feedback, feedback)
+	context.begin_transform_feedback(0x0004)
+	context.pause_transform_feedback()
+	sampler := context.create_sampler()
+	context.bind_sampler(0, sampler)
+	array := context.create_vertex_array()
+	context.bind_vertex_array(array)
+
+	assert context.get_parameter(copy_read_buffer).object == copy_buffer.object.handle_
+	assert context.get_parameter(pixel_pack_buffer_binding).object == pack_buffer.object.handle_
+	assert context.get_parameter(uniform_buffer_binding).object == uniform_buffer_object.object.handle_
+	assert context.get_parameter(transform_feedback_buffer_binding).object == feedback_buffer.object.handle_
+	assert context.get_parameter(transform_feedback_binding).object == feedback.object.handle_
+	assert context.get_parameter(transform_feedback_active).boolean
+	assert context.get_parameter(transform_feedback_paused).boolean
+	assert context.get_parameter(sampler_binding).object == sampler.object.handle_
+	assert context.get_parameter(vertex_array_binding).object == array.object.handle_
+
+	mut webgl1 := WebGLRenderingContext.new(.webgl1, WebGLContextAttributes{}, [])
+	assert webgl1.get_parameter(transform_feedback_active).kind == .none
+	assert webgl1.get_error() == invalid_enum
+}

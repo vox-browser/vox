@@ -601,6 +601,48 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 		}
 		else {}
 	}
+	if context.version == .webgl2 {
+		match pname {
+			copy_read_buffer, copy_write_buffer, pixel_pack_buffer_binding,
+			pixel_unpack_buffer_binding, uniform_buffer_binding, transform_feedback_buffer_binding {
+				target := match pname {
+					copy_read_buffer { copy_read_buffer }
+					copy_write_buffer { copy_write_buffer }
+					pixel_pack_buffer_binding { pixel_pack_buffer }
+					pixel_unpack_buffer_binding { pixel_unpack_buffer }
+					uniform_buffer_binding { uniform_buffer }
+					else { transform_feedback_buffer }
+				}
+				handle := context.bound_buffers[target] or { return WebGLParameterValue{} }
+				return WebGLParameterValue{kind: .object, object: handle}
+			}
+			transform_feedback_binding {
+				feedback := context.current_transform_feedback or { return WebGLParameterValue{} }
+				return WebGLParameterValue{kind: .object, object: feedback.object.handle_}
+			}
+			transform_feedback_active {
+				feedback := context.current_transform_feedback or { return WebGLParameterValue{kind: .boolean} }
+				return WebGLParameterValue{kind: .boolean, boolean: feedback.active_}
+			}
+			transform_feedback_paused {
+				feedback := context.current_transform_feedback or { return WebGLParameterValue{kind: .boolean} }
+				return WebGLParameterValue{kind: .boolean, boolean: feedback.paused_}
+			}
+			rasterizer_discard {
+				return WebGLParameterValue{kind: .boolean, boolean: context.is_enabled(pname)}
+			}
+			sampler_binding {
+				unit := GLuint(context.active_texture_ - texture0)
+				handle := context.bound_samplers[unit] or { return WebGLParameterValue{} }
+				return WebGLParameterValue{kind: .object, object: handle}
+			}
+			vertex_array_binding {
+				array := context.current_vertex_array or { return WebGLParameterValue{} }
+				return WebGLParameterValue{kind: .object, object: array.object.handle_}
+			}
+			else {}
+		}
+	}
 	if value := context.generic_parameters_[pname] {
 		return value
 	}
