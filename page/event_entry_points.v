@@ -4,6 +4,8 @@
 // EventHandler, drag-and-drop, auto-scroll, and file-local helper entry points.
 module page
 
+import dom
+import encoding.utf8
 import painting
 
 pub struct SelectionRange {
@@ -31,29 +33,44 @@ pub fn compute_effective_auto_scroll_edge(scrollport PixelRect,
 	return effective_auto_scroll_edge(scrollport, viewport)
 }
 
-pub fn scrollport_rect_in_viewport(scrollport PixelRect) PixelRect { return scrollport }
+pub fn scrollport_rect_in_viewport(scrollport PixelRect) PixelRect {
+	return scrollport
+}
 
 pub fn compute_auto_scroll_speed(mouse PixelPoint, edge PixelRect) PixelPoint {
 	return auto_scroll_speed(mouse, edge)
 }
 
-pub fn is_in_form_associated_text_control(target InputTarget) bool { return target.is_editable }
-pub fn auto_scroll_paintable(target InputTarget) bool { return target.has_scrollable_box }
-
-pub fn containing_block_padding_box_size(rect PixelRect) PixelSize {
-	return PixelSize{width: rect.width, height: rect.height}
+pub fn is_in_form_associated_text_control(target InputTarget) bool {
+	return target.is_editable
 }
 
-pub fn dom_node_for_event_dispatch(target InputTarget) string { return target.id }
-pub fn parent_element_for_event_dispatch(parent_id string) string { return parent_id }
-pub fn css_to_gfx_cursor(cursor string) string { return cursor }
+pub fn auto_scroll_paintable(target InputTarget) bool {
+	return target.has_scrollable_box
+}
+
+pub fn containing_block_padding_box_size(rect PixelRect) PixelSize {
+	return PixelSize{ width: rect.width, height: rect.height }
+}
+
+pub fn dom_node_for_event_dispatch(target InputTarget) string {
+	return target.id
+}
+
+pub fn parent_element_for_event_dispatch(parent_id string) string {
+	return parent_id
+}
+
+pub fn css_to_gfx_cursor(cursor string) string {
+	return cursor
+}
 
 pub fn resolve_cursor(css_cursor string, fallback string) string {
 	return if css_cursor == '' || css_cursor == 'auto' { fallback } else { css_cursor }
 }
 
 pub fn compute_mouse_event_offset(position PixelPoint, padding_origin PixelPoint) PixelPoint {
-	return PixelPoint{x: position.x - padding_origin.x, y: position.y - padding_origin.y}
+	return PixelPoint{ x: position.x - padding_origin.x, y: position.y - padding_origin.y }
 }
 
 pub fn dispatch_event_to_nested_navigable(mut handler EventHandler, target InputTarget,
@@ -63,12 +80,18 @@ pub fn dispatch_event_to_nested_navigable(mut handler EventHandler, target Input
 }
 
 pub fn find_paragraph_range(text string, offset int) SelectionRange {
-	clamped := if offset < 0 { 0 } else if offset > text.len { text.len } else { offset }
+	clamped := if offset < 0 {
+		0
+	} else if offset > text.len { text.len } else { offset }
 	mut start := clamped
-	for start > 0 && text[start - 1] != `\n` { start-- }
+	for start > 0 && text[start - 1] != `\n` {
+		start--
+	}
 	mut end := clamped
-	for end < text.len && text[end] != `\n` { end++ }
-	return SelectionRange{start: start, end: end}
+	for end < text.len && text[end] != `\n` {
+		end++
+	}
+	return SelectionRange{ start: start, end: end }
 }
 
 pub fn set_user_selection(mut handler EventHandler, mode SelectionMode) {
@@ -84,28 +107,36 @@ pub fn set_node_and_ancestors_being_activated(mut handler EventHandler, target I
 	handler.log(if value { 'activation-on' } else { 'activation-off' }, target)
 }
 
-pub fn should_ignore_keydown_event(key int, modifiers u32) bool {
-	return key == 0 || (key == 9 && modifiers & 0x4 != 0)
+pub fn should_ignore_keydown_event(code_point int, modifiers u32) bool {
+	return code_point == 0 || code_point == 27
+		|| modifiers & (dom.modifier_ctrl | dom.modifier_alt | dom.modifier_super) != 0
 }
 
-pub fn produces_character_value(key int, code_point u32) bool {
-	return code_point != 0 && key !in [8, 9, 13, 27, 46]
+pub fn produces_character_value(_ int, code_point u32) bool {
+	character := rune(code_point)
+	return code_point != 0 && !utf8.is_control(character) && !utf8.is_space(character)
 }
 
-pub fn is_enter_key_or_interoperable_enter_key_combo(key int, _ u32) bool { return key == 13 }
+pub fn is_enter_key_or_interoperable_enter_key_combo(key int, modifiers u32) bool {
+	return key == 13
+		&& (modifiers == 0 || modifiers & (dom.modifier_shift | dom.modifier_ctrl) != 0)
+}
 
 pub fn target_ranges_for_input_event(range ?SelectionRange) []SelectionRange {
 	return if actual := range { [actual] } else { []SelectionRange{} }
 }
 
-pub fn spin_event_loop_until_dialog_closed(p &Page) bool { return !p.has_pending_dialog() }
+pub fn spin_event_loop_until_dialog_closed(p &Page) bool {
+	return !p.has_pending_dialog()
+}
 
-pub fn copy_send_right(mut store SharedBackingStore) ![]u8 { return store.release() }
+pub fn copy_send_right(mut store SharedBackingStore) ![]u8 {
+	return store.release()
+}
 
 pub fn (mut handler EventHandler) process_auto_scroll(scrollport PixelRect, viewport PixelRect,
 	selecting bool, paintable bool, is_text_control bool) ?ScrollTick {
-	return handler.auto_scroll.perform_tick(scrollport, viewport, selecting, paintable,
-		is_text_control)
+	return handler.auto_scroll.perform_tick(scrollport, viewport, selecting, paintable, is_text_control)
 }
 
 pub fn (mut handler EventHandler) update_mouse_selection(position PixelPoint) {
@@ -118,8 +149,13 @@ pub fn (mut handler EventHandler) apply_mouse_selection(anchor PixelPoint, exten
 	handler.log('selection', none)
 }
 
-pub fn (handler &EventHandler) paint_root() bool { return handler.paint_root_available }
-pub fn (handler &EventHandler) mutable_paint_root() bool { return handler.paint_root_available }
+pub fn (handler &EventHandler) paint_root() bool {
+	return handler.paint_root_available
+}
+
+pub fn (handler &EventHandler) mutable_paint_root() bool {
+	return handler.paint_root_available
+}
 
 pub fn (mut handler EventHandler) install_chrome_widget_callbacks(target voidptr,
 	pointer_event_callback ChromeWidgetPointerEventCallback,
@@ -139,14 +175,12 @@ pub fn (mut handler EventHandler) update_hovered_chrome_widget(widget string) {
 	}
 	if handler.hovered_chrome_widget != ''
 		&& handler.chrome_widget_hover_callback != unsafe { nil } {
-		handler.chrome_widget_hover_callback(handler.chrome_widget_callback_target,
-			handler.hovered_chrome_widget, false)
+		handler.chrome_widget_hover_callback(handler.chrome_widget_callback_target, handler.hovered_chrome_widget, false)
 	}
 	handler.hovered_chrome_widget = widget
 	if handler.hovered_chrome_widget != ''
 		&& handler.chrome_widget_hover_callback != unsafe { nil } {
-		handler.chrome_widget_hover_callback(handler.chrome_widget_callback_target,
-			handler.hovered_chrome_widget, true)
+		handler.chrome_widget_hover_callback(handler.chrome_widget_callback_target, handler.hovered_chrome_widget, true)
 	}
 }
 
@@ -170,8 +204,7 @@ pub fn (mut handler EventHandler) dispatch_chrome_widget_pointer_event(target st
 	if handler.captured_chrome_widget != '' {
 		captured := handler.captured_chrome_widget
 		action := if handler.chrome_widget_pointer_event_callback != unsafe { nil } {
-			handler.chrome_widget_pointer_event_callback(handler.chrome_widget_callback_target,
-				captured, event_type, button, visual_viewport_position)
+			handler.chrome_widget_pointer_event_callback(handler.chrome_widget_callback_target, captured, event_type, button, visual_viewport_position)
 		} else {
 			painting.MouseAction.none
 		}
@@ -186,8 +219,7 @@ pub fn (mut handler EventHandler) dispatch_chrome_widget_pointer_event(target st
 
 	if target != '' {
 		action := if handler.chrome_widget_pointer_event_callback != unsafe { nil } {
-			handler.chrome_widget_pointer_event_callback(handler.chrome_widget_callback_target,
-				target, event_type, button, visual_viewport_position)
+			handler.chrome_widget_pointer_event_callback(handler.chrome_widget_callback_target, target, event_type, button, visual_viewport_position)
 		} else {
 			painting.MouseAction.none
 		}
@@ -229,7 +261,9 @@ pub fn (mut handler EventHandler) run_activation_behavior(target InputTarget) Ev
 }
 
 pub fn (mut handler EventHandler) maybe_show_context_menu(target ?InputTarget) EventResult {
-	if target == none { return .dropped }
+	if target == none {
+		return .dropped
+	}
 	handler.log('contextmenu', target)
 	return .handled
 }
@@ -253,7 +287,9 @@ pub fn (mut handler EventHandler) initiate_paragraph_selection(position PixelPoi
 }
 
 pub fn (mut handler EventHandler) run_mousedown_default_actions(target InputTarget) EventResult {
-	if target.is_focusable { handler.focused_target_ = target.id }
+	if target.is_focusable {
+		handler.focused_target_ = target.id
+	}
 	return .handled
 }
 
@@ -262,8 +298,9 @@ pub fn (mut handler EventHandler) handle_drag_and_drop_event(type_ PageDragEvent
 	requested_effect DragEffect) EventResult {
 	return match type_ {
 		.start { handler.drag_and_drop.handle_drag_start(files, cancelled, requested_effect) }
-		.move { handler.drag_and_drop.handle_drag_move(target, cancelled, false, false,
-			requested_effect) }
+		.move {
+			handler.drag_and_drop.handle_drag_move(target, cancelled, false, false, requested_effect)
+		}
 		.end { handler.drag_and_drop.handle_drag_end(cancelled, false, requested_effect) }
 	}
 }
@@ -284,14 +321,28 @@ pub fn (mut handler EventHandler) focus_previous_element(candidates []InputTarge
 
 pub fn (mut handler EventHandler) focus_candidate_for_position(candidates []InputTarget,
 	delta int) bool {
-	mut focusable := []InputTarget{}
-	for candidate in candidates { if candidate.is_focusable { focusable << candidate } }
-	if focusable.len == 0 { return false }
-	mut index := 0
-	for i, candidate in focusable {
-		if candidate.id == handler.focused_target_ { index = i; break }
+	if !handler.active_document {
+		return false
 	}
-	index = (index + delta + focusable.len) % focusable.len
+	mut focusable := []InputTarget{}
+	for candidate in candidates {
+		if candidate.is_focusable { focusable << candidate }
+	}
+	if focusable.len == 0 {
+		return false
+	}
+	mut current_index := -1
+	for i, candidate in focusable {
+		if candidate.id == handler.focused_target_ {
+			current_index = i
+			break
+		}
+	}
+	index := if current_index < 0 {
+		if delta < 0 { focusable.len - 1 } else { 0 }
+	} else {
+		(current_index + delta % focusable.len + focusable.len) % focusable.len
+	}
 	handler.focused_target_ = focusable[index].id
 	return true
 }
@@ -327,21 +378,29 @@ pub fn (_ &EventHandler) compute_mouse_event_page_offset(position PixelPoint) Pi
 
 pub fn (handler &EventHandler) compute_mouse_event_movement(position PixelPoint) PixelPoint {
 	previous := handler.previous_screen or { return PixelPoint{} }
-	return PixelPoint{x: position.x - previous.x, y: position.y - previous.y}
+	return PixelPoint{ x: position.x - previous.x, y: position.y - previous.y }
 }
 
 pub fn (_ &EventHandler) target_for_mouse_position(position PixelPoint,
 	targets []PositionedTarget) ?InputTarget {
-	for candidate in targets { if candidate.rect.contains(position) { return candidate.target } }
+	for candidate in targets {
+		if candidate.rect.contains(position) {
+			return candidate.target
+		}
+	}
 	return none
 }
 
-pub fn (_ &EventHandler) word_segmenter() string { return 'unicode-word-segmenter' }
+pub fn (_ &EventHandler) word_segmenter() string {
+	return 'unicode-word-segmenter'
+}
 
 pub fn (mut handler DragAndDropEventHandler) handle_drag_leave(target DragTarget) {
 	handler.dispatch('dragleave', target, none, false, .none)
 	if current := handler.current_target_ {
-		if current == target { handler.current_target_ = none }
+		if current == target {
+			handler.current_target_ = none
+		}
 	}
 }
 
@@ -360,7 +419,11 @@ pub fn (handler &DragAndDropEventHandler) allow_text_drop(target DragTarget) boo
 }
 
 pub fn (_ &AutoScrollHandler) find_scrollable_ancestor(targets []InputTarget) ?InputTarget {
-	for target in targets { if target.has_scrollable_box { return target } }
+	for target in targets {
+		if target.has_scrollable_box {
+			return target
+		}
+	}
 	return none
 }
 
@@ -373,4 +436,6 @@ pub fn (mut store SharedBackingStore) release_iosurface_port() ![]u8 {
 	return store.release()
 }
 
-pub fn (store &SharedBackingStore) bitmap() []u8 { return store.bytes() }
+pub fn (store &SharedBackingStore) bitmap() []u8 {
+	return store.bytes()
+}

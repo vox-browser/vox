@@ -1,5 +1,6 @@
 module page
 
+import dom
 import painting
 
 struct TestChromeWidgetCallbacks {
@@ -31,22 +32,22 @@ fn chrome_widget_test_hover_callback(target voidptr, widget string, hovered bool
 
 fn test_auto_scroll_edges_speed_fraction_and_text_control_constraint() {
 	viewport := PixelRect{
-		x:      0
-		y:      0
-		width:  200
+		x: 0
+		y: 0
+		width: 200
 		height: 100
 	}
 	scrollport := PixelRect{
-		x:      0
-		y:      0
-		width:  200
+		x: 0
+		y: 0
+		width: 200
 		height: 100
 	}
 	edge := effective_auto_scroll_edge(scrollport, viewport)
 	assert edge == PixelRect{
-		x:      32
-		y:      32
-		width:  136
+		x: 32
+		y: 32
+		width: 136
 		height: 36
 	}
 	assert auto_scroll_speed(PixelPoint{ x: -100, y: 50 }, edge).x == -5000
@@ -78,26 +79,26 @@ fn test_resize_axes_writing_mode_constraints_and_content_box() {
 			y: 50
 		}
 		initial_border_size: PixelSize{
-			width:  100
+			width: 100
 			height: 80
 		}
 	}
 	size := action.handle_pointer_move(PixelPoint{ x: 80, y: 90 }, ResizeConstraints{
-		mode:                  .both
-		min_width:             120
-		max_height:            100
-		content_box:           true
+		mode: .both
+		min_width: 120
+		max_height: 100
+		content_box: true
 		horizontal_noncontent: 20
-		vertical_noncontent:   10
+		vertical_noncontent: 10
 	}) or { panic('expected size') }
 	assert size == PixelSize{
-		width:  110
+		width: 110
 		height: 90
 	}
 
 	rtl := action.handle_pointer_move(PixelPoint{ x: 70, y: 90 }, ResizeConstraints{
 		mode: .inline
-		rtl:  true
+		rtl: true
 	}) or { panic('expected RTL resize') }
 	assert rtl.width == 80
 	assert rtl.height == 80
@@ -112,7 +113,7 @@ fn test_drag_and_drop_modes_effect_negotiation_and_reset() {
 	assert handler.event_log[0].mode == .read_write
 
 	target := DragTarget{
-		id:               'editor'
+		id: 'editor'
 		allows_text_drop: true
 	}
 	assert handler.handle_drag_move(target, false, false, true, .move) == .handled
@@ -127,7 +128,7 @@ fn test_drag_and_drop_modes_effect_negotiation_and_reset() {
 fn test_event_handler_drops_input_during_drag_and_orders_pointer_mouse_click() {
 	mut handler := EventHandler{}
 	target := InputTarget{
-		id:           'button'
+		id: 'button'
 		is_focusable: true
 	}
 	assert handler.handle_mousedown(target, 1) == .handled
@@ -147,8 +148,8 @@ fn test_event_handler_drops_input_during_drag_and_orders_pointer_mouse_click() {
 fn test_event_handler_pointer_cancellation_and_mouseup_cleanup_match_upstream() {
 	mut handler := EventHandler{}
 	cancelled_pointer := InputTarget{
-		id:             'button'
-		is_focusable:   true
+		id: 'button'
+		is_focusable: true
 		cancel_pointer: true
 	}
 	assert handler.handle_mousedown(cancelled_pointer, 1) == .cancelled
@@ -162,22 +163,68 @@ fn test_event_handler_pointer_cancellation_and_mouseup_cleanup_match_upstream() 
 	handler.event_log.clear()
 	assert handler.handle_mousedown(InputTarget{ id: 'editor' }, 1) == .handled
 	handler.start_selection(.character)
-	assert handler.handle_mouseup(none) == .dropped
+	// A press followed by release outside the hit-tested content is delivered
+	// at the document fallback target so the page can finish a drag.
+	assert handler.handle_mouseup(none) == .handled
 	assert !handler.is_handling_mouse_selection()
-	// Early mouseup cleanup cleared the preceding press target/click count.
-	assert handler.handle_mouseup(InputTarget{ id: 'editor' }) == .handled
+	// Mouseup cleanup cleared the preceding press target/click count.
+	assert handler.handle_mouseup(InputTarget{ id: 'editor' }) == .dropped
 	assert 'click' !in handler.event_log.map(it.name)
 
 	handler.event_log.clear()
 	assert handler.handle_mousedown(InputTarget{ id: 'field' }, 1) == .handled
 	assert handler.handle_mouseup(InputTarget{ id: 'field', cancel_mouse: true }) == .handled
+
+	handler.event_log.clear()
+	assert handler.handle_mousedown(InputTarget{ id: 'drag-source' }, 1) == .handled
+	assert handler.handle_mouseup(none) == .handled
+	assert handler.event_log.map(it.name) == ['pointerdown', 'mousedown', 'pointerup', 'mouseup']
+
+	handler.event_log.clear()
+	assert handler.handle_mousedown(InputTarget{ id: 'zero-click' }, 0) == .handled
+	assert handler.handle_mouseup(InputTarget{ id: 'zero-click' }) == .dropped
+	assert handler.event_log.map(it.name) == ['pointerdown', 'mousedown']
+}
+
+fn test_event_handler_focus_traversal_starts_at_the_correct_end_and_honors_document_state() {
+	candidates := [
+		InputTarget{ id: 'ignored' },
+		InputTarget{ id: 'first', is_focusable: true },
+		InputTarget{ id: 'second', is_focusable: true },
+	]
+	mut next := EventHandler{}
+	assert next.focus_next_element(candidates)
+	assert next.focused_target_ == 'first'
+	assert next.focus_next_element(candidates)
+	assert next.focused_target_ == 'second'
+	assert next.focus_next_element(candidates)
+	assert next.focused_target_ == 'first'
+
+	mut previous := EventHandler{}
+	assert previous.focus_previous_element(candidates)
+	assert previous.focused_target_ == 'second'
+	previous.set_document_state(false, true)
+	assert !previous.focus_previous_element(candidates)
+}
+
+fn test_event_handler_key_classification_matches_upstream_filters() {
+	assert should_ignore_keydown_event(0, 0)
+	assert should_ignore_keydown_event(27, 0)
+	assert should_ignore_keydown_event(int(`a`), dom.modifier_ctrl)
+	assert !should_ignore_keydown_event(int(`a`), dom.modifier_shift)
+	assert produces_character_value(0, u32(`A`))
+	assert produces_character_value(0, u32(`$`))
+	assert !produces_character_value(0, u32(` `))
+	assert !produces_character_value(0, u32(`\n`))
+	assert is_enter_key_or_interoperable_enter_key_combo(13, 0)
+	assert is_enter_key_or_interoperable_enter_key_combo(13, dom.modifier_ctrl)
+	assert !is_enter_key_or_interoperable_enter_key_combo(13, dom.modifier_alt)
 }
 
 fn test_event_handler_translates_chrome_hover_capture_and_swallow_order() {
 	mut callbacks := TestChromeWidgetCallbacks{}
 	mut handler := EventHandler{}
-	handler.install_chrome_widget_callbacks(voidptr(&callbacks),
-		chrome_widget_test_pointer_callback, chrome_widget_test_hover_callback)
+	handler.install_chrome_widget_callbacks(voidptr(&callbacks), chrome_widget_test_pointer_callback, chrome_widget_test_hover_callback)
 
 	handler.update_hovered_chrome_widget('scrollbar')
 	handler.update_hovered_chrome_widget('scrollbar')
@@ -186,21 +233,34 @@ fn test_event_handler_translates_chrome_hover_capture_and_swallow_order() {
 	assert callbacks.hover_events == ['enter:scrollbar', 'leave:scrollbar', 'enter:resizer',
 		'leave:resizer']
 
-	assert handler.dispatch_chrome_widget_pointer_event('scrollbar', 'pointerdown', 0,
-		PixelPoint{10, 20})
+	assert handler.dispatch_chrome_widget_pointer_event('scrollbar', 'pointerdown', 0, PixelPoint{10, 20})
 	assert handler.captured_chrome_widget == 'scrollbar'
 	// Capture is dispatched before the currently hit widget. Returning both
 	// flags keeps capture and suppresses the DOM-side default path immediately.
-	assert !handler.dispatch_chrome_widget_pointer_event('resizer', 'pointermove', 9,
-		PixelPoint{30, 40})
+	assert !handler.dispatch_chrome_widget_pointer_event('resizer', 'pointermove', 9, PixelPoint{30, 40})
 	assert handler.captured_chrome_widget == 'scrollbar'
 	assert callbacks.pointer_events == ['scrollbar:pointerdown', 'scrollbar:pointermove']
 
 	// Once the captured widget releases, the same event is also offered to the
 	// current target, while its SwallowEvent result remains sticky.
-	assert !handler.dispatch_chrome_widget_pointer_event('resizer', 'pointerup', 0,
-		PixelPoint{30, 40})
+	assert !handler.dispatch_chrome_widget_pointer_event('resizer', 'pointerup', 0, PixelPoint{30, 40})
 	assert handler.captured_chrome_widget == ''
 	assert callbacks.pointer_events == ['scrollbar:pointerdown', 'scrollbar:pointermove',
 		'scrollbar:pointerup', 'resizer:pointerup']
+
+	handler.update_hovered_chrome_widget('resizer')
+	handler.update_cursor('pointer')
+	handler.track_the_effective_position_of_the_legacy_mouse_pointer(PixelPoint{ x: 5, y: 6 })
+	assert handler.handle_mouseleave() == .handled
+	assert handler.hovered_chrome_widget == ''
+	assert handler.current_cursor == 'arrow'
+	assert handler.previous_screen == none
+	assert callbacks.hover_events.last() == 'leave:resizer'
+}
+
+fn test_event_handler_cancelled_pointermove_suppresses_compatibility_mousemove() {
+	mut handler := EventHandler{}
+	target := InputTarget{ id: 'target', cancel_pointer: true }
+	assert handler.handle_mousemove(target, PixelPoint{ x: 4, y: 5 }) == .cancelled
+	assert handler.event_log.map(it.name) == ['pointermove']
 }

@@ -43,22 +43,22 @@ pub mut:
 	auto_scroll   AutoScrollHandler
 	event_log     []InputDispatch
 mut:
-	active_document       bool = true
-	paint_root_available  bool = true
-	selection_mode_       SelectionMode
-	mousedown_target_     string
-	mousedown_click_count int
-	prevent_mouse_event   bool
-	previous_screen       ?PixelPoint
-	focused_target_       string
-	hovered_chrome_widget string
-	captured_chrome_widget string
-	chrome_widget_callback_target voidptr = unsafe { nil }
+	active_document                      bool = true
+	paint_root_available                 bool = true
+	selection_mode_                      SelectionMode
+	mousedown_target_                    string
+	mousedown_click_count                int
+	prevent_mouse_event                  bool
+	previous_screen                      ?PixelPoint
+	focused_target_                      string
+	hovered_chrome_widget                string
+	captured_chrome_widget               string
+	chrome_widget_callback_target        voidptr = unsafe { nil }
 	chrome_widget_pointer_event_callback ChromeWidgetPointerEventCallback = unsafe { nil }
-	chrome_widget_hover_callback ChromeWidgetHoverCallback = unsafe { nil }
-	current_cursor        string = 'arrow'
-	selection_anchor      PixelPoint
-	selection_extent      PixelPoint
+	chrome_widget_hover_callback         ChromeWidgetHoverCallback = unsafe { nil }
+	current_cursor                       string = 'arrow'
+	selection_anchor                     PixelPoint
+	selection_extent                     PixelPoint
 }
 
 pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root bool) {
@@ -76,6 +76,9 @@ pub fn (mut handler EventHandler) start_selection(mode SelectionMode) {
 
 pub fn (mut handler EventHandler) stop_updating_selection() {
 	handler.selection_mode_ = .none
+	handler.selection_anchor = PixelPoint{}
+	handler.selection_extent = PixelPoint{}
+	handler.auto_scroll.deactivate()
 }
 
 pub fn (mut handler EventHandler) clear_mousedown_tracking() {
@@ -89,7 +92,7 @@ fn (handler &EventHandler) should_ignore_device_input_event() bool {
 
 fn (mut handler EventHandler) log(name string, target ?InputTarget) {
 	handler.event_log << InputDispatch{
-		name:   name
+		name: name
 		target: if value := target { value.id } else { '' }
 	}
 }
@@ -129,10 +132,27 @@ pub fn (mut handler EventHandler) handle_mouseup(target ?InputTarget) EventResul
 		handler.clear_mousedown_tracking()
 		handler.stop_updating_selection()
 	}
-	if handler.should_ignore_device_input_event() || !handler.paint_root_available || target == none {
+	if handler.should_ignore_device_input_event() || !handler.paint_root_available {
 		return .dropped
 	}
-	value := target or { return .dropped }
+	if handler.mousedown_click_count <= 0 {
+		return .dropped
+	}
+	if target == none {
+		// Upstream still dispatches pointerup/mouseup at the document root after
+		// a pressed pointer leaves the window, so pages can end a drag.
+		if handler.mousedown_target_ == '' {
+			return .dropped
+		}
+		fallback := InputTarget{ id: handler.mousedown_target_ }
+		handler.log('pointerup', fallback)
+		if !handler.prevent_mouse_event {
+			handler.log('mouseup', fallback)
+		}
+		handler.prevent_mouse_event = false
+		return .handled
+	}
+	value := target
 	handler.log('pointerup', value)
 	if !handler.prevent_mouse_event {
 		handler.log('mouseup', value)
@@ -153,6 +173,9 @@ pub fn (mut handler EventHandler) handle_mousemove(target ?InputTarget, screen P
 	handler.previous_screen = screen
 	value := target or { return .dropped }
 	handler.log('pointermove', value)
+	if value.cancel_pointer {
+		return .cancelled
+	}
 	if !handler.prevent_mouse_event {
 		handler.log('mousemove', value)
 	}
@@ -163,8 +186,13 @@ pub fn (mut handler EventHandler) handle_mouseleave() EventResult {
 	if handler.should_ignore_device_input_event() || !handler.paint_root_available {
 		return .dropped
 	}
-	handler.log('pointerout', none)
-	handler.log('pointerleave', none)
+	handler.update_hovered_chrome_widget('')
+	handler.update_cursor('arrow')
+	if handler.mousedown_target_ == '' {
+		handler.log('pointerout', none)
+		handler.log('pointerleave', none)
+		handler.previous_screen = none
+	}
 	return .handled
 }
 
