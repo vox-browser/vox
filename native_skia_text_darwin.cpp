@@ -87,10 +87,21 @@ SkTypeface* select_typeface(char const* path, int face_index, int font_weight, i
 }
 
 int composite_pixels(CGContextRef destination, std::vector<uint32_t> const& pixels,
-    int width, int height, float canvas_width, float canvas_height)
+    int width, int height, float destination_x, float destination_y,
+    float destination_width, float destination_height)
 {
-    auto provider = CGDataProviderCreateWithData(nullptr, pixels.data(),
-        pixels.size() * sizeof(uint32_t), nullptr);
+    // A drawRect: CGContext may retain the image in a display list and replay it
+    // later during the Core Animation transaction. Give the provider its own
+    // copy instead of pointing it at a vector which dies when this call returns.
+    auto data = CFDataCreate(kCFAllocatorDefault,
+        reinterpret_cast<UInt8 const*>(pixels.data()),
+        static_cast<CFIndex>(pixels.size() * sizeof(uint32_t)));
+    if (!data)
+        return 0;
+    auto provider = CGDataProviderCreateWithCFData(data);
+    CFRelease(data);
+    if (!provider)
+        return 0;
     auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     auto image = CGImageCreate(static_cast<size_t>(width), static_cast<size_t>(height),
         8, 32, static_cast<size_t>(width) * sizeof(uint32_t), color_space,
@@ -104,10 +115,18 @@ int composite_pixels(CGContextRef destination, std::vector<uint32_t> const& pixe
 
     CGContextSaveGState(destination);
     CGContextSetInterpolationQuality(destination, kCGInterpolationNone);
-    CGContextDrawImage(destination, CGRectMake(0.0, 0.0, canvas_width, canvas_height), image);
+    CGContextDrawImage(destination,
+        CGRectMake(destination_x, destination_y, destination_width, destination_height), image);
     CGContextRestoreGState(destination);
     CGImageRelease(image);
     return 1;
+}
+
+int composite_canvas_pixels(CGContextRef destination, std::vector<uint32_t> const& pixels,
+    int width, int height, float canvas_width, float canvas_height)
+{
+    return composite_pixels(destination, pixels, width, height,
+        0.0f, 0.0f, canvas_width, canvas_height);
 }
 
 SkPath path_from_serialized_segments(float const* data, int segment_count)
@@ -192,11 +211,6 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
         || canvas_width <= 0 || canvas_height <= 0)
         return 0;
 
-    auto width = static_cast<int>(std::ceil(canvas_width));
-    auto height = static_cast<int>(std::ceil(canvas_height));
-    if (width <= 0 || height <= 0)
-        return 0;
-
     SkFont font(sk_ref_sp(typeface), std::max(font_size, 0.0f));
     // This is the only non-default setting in Gfx::Font::skia_font().
     font.setSubpixel(true);
@@ -221,6 +235,31 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
 
     SkPaint paint;
     paint.setColor(SkColorSetARGB(alpha, red, green, blue));
+    auto matrix = SkMatrix::MakeAll(
+        transform_a, transform_c, page_x + transform_e,
+        transform_b, transform_d, page_y - scroll_y + transform_f,
+        0.0f, 0.0f, 1.0f);
+
+    // The old bridge allocated and recorded one canvas-sized transparent image
+    // for every glyph run. A text-heavy page consequently made AppKit replay
+    // hundreds of full-window images before its first composited frame. Keep
+    // Skia's raster origin integer-aligned, but restrict the surface to the
+    // transformed run bounds (plus an antialiasing guard pixel).
+    auto local_bounds = blob->bounds();
+    local_bounds.offset(baseline_x, baseline_y);
+    auto device_bounds = matrix.mapRect(local_bounds);
+    constexpr float antialiasing_guard = 2.0f;
+    auto left = std::max(0, static_cast<int>(std::floor(device_bounds.left() - antialiasing_guard)));
+    auto top = std::max(0, static_cast<int>(std::floor(device_bounds.top() - antialiasing_guard)));
+    auto right = std::min(static_cast<int>(std::ceil(canvas_width)),
+        static_cast<int>(std::ceil(device_bounds.right() + antialiasing_guard)));
+    auto bottom = std::min(static_cast<int>(std::ceil(canvas_height)),
+        static_cast<int>(std::ceil(device_bounds.bottom() + antialiasing_guard)));
+    auto width = right - left;
+    auto height = bottom - top;
+    if (width <= 0 || height <= 0)
+        return 1;
+
     std::vector<uint32_t> pixels(static_cast<size_t>(width) * static_cast<size_t>(height));
     auto image_info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
@@ -231,13 +270,13 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
 
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
-    auto matrix = SkMatrix::MakeAll(
-        transform_a, transform_c, page_x + transform_e,
-        transform_b, transform_d, page_y - scroll_y + transform_f,
-        0.0f, 0.0f, 1.0f);
+    matrix.setTranslateX(matrix.getTranslateX() - static_cast<float>(left));
+    matrix.setTranslateY(matrix.getTranslateY() - static_cast<float>(top));
     canvas->setMatrix(matrix);
     canvas->drawTextBlob(blob, baseline_x, baseline_y, paint);
-    return composite_pixels(destination, pixels, width, height, canvas_width, canvas_height);
+    return composite_pixels(destination, pixels, width, height,
+        static_cast<float>(left), canvas_height - static_cast<float>(bottom),
+        static_cast<float>(width), static_cast<float>(height));
 }
 
 extern "C" int ladybird_v_skia_draw_solid_line(CGContextRef destination,
@@ -263,7 +302,7 @@ extern "C" int ladybird_v_skia_draw_solid_line(CGContextRef destination,
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
     canvas->drawLine(from_x, from_y, to_x, to_y, paint);
-    return composite_pixels(destination, pixels, width, height, canvas_width, canvas_height);
+    return composite_canvas_pixels(destination, pixels, width, height, canvas_width, canvas_height);
 }
 
 extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
@@ -312,7 +351,7 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         paint.setStrokeWidth(thickness);
     }
     canvas->drawRRect(rounded_rect, paint);
-    return composite_pixels(destination, pixels, width, height, canvas_width, canvas_height);
+    return composite_canvas_pixels(destination, pixels, width, height, canvas_width, canvas_height);
 }
 
 extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
@@ -368,5 +407,5 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
         canvas->drawPath(path, paint);
     }
 
-    return composite_pixels(destination, pixels, width, height, canvas_width, canvas_height);
+    return composite_canvas_pixels(destination, pixels, width, height, canvas_width, canvas_height);
 }
