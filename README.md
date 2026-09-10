@@ -99,12 +99,18 @@ lines. Upstream counts include each module's subdirectories.
 | `XPath` | 438 | 626 | 407 | 83 |
 | **Total** | **316,400** | **403,612** | **263,954** | **41,167** |
 
-Build the V-native translated-engine viewer with:
+Build the optimized V-native translated-engine browser as a macOS application
+bundle with:
 
 ```sh
-./build_ladybird.sh
+./build-prod-browser.sh
 open Build/v/Ladybird.app
 ```
+
+The production builder uses `-enable-globals -prod -gc none`, integrates the
+upstream Skia text bridge when its release dependencies are available, writes
+`Build/v/Ladybird.app`, and ad-hoc signs the bundle. `build_ladybird.sh` remains
+as a compatibility alias for existing tooling.
 
 The application provides a native single-tab browser chrome with back/forward,
 reload, home, an editable address/search field, link navigation, loading and
