@@ -28,6 +28,12 @@ struct C.hb_glyph_position_t {
 	var_      u32
 }
 
+struct HarfBuzzScaledFont {
+	face  voidptr
+	scale int
+	font  voidptr
+}
+
 fn C.hb_blob_create_from_file_or_fail(file_name &char) voidptr
 
 fn C.hb_blob_destroy(blob voidptr)
@@ -76,6 +82,9 @@ __global (
 	harfbuzz_document_blobs     = map[string]voidptr{}
 	harfbuzz_document_faces     = map[string]voidptr{}
 	harfbuzz_document_attempted = map[string]bool{}
+	harfbuzz_family_paths       = map[string]string{}
+	harfbuzz_family_attempted   = map[string]bool{}
+	harfbuzz_scaled_fonts       = []HarfBuzzScaledFont{}
 	harfbuzz_emoji_blob         voidptr
 	harfbuzz_emoji_face         voidptr
 	harfbuzz_emoji_attempted    bool
@@ -174,6 +183,20 @@ pub fn (font &Font) face_index() int {
 // HarfBuzz shaping, and native replay all use this path, so retained glyph IDs
 // can never be interpreted through a different typeface.
 pub fn font_path_for_family(family string, weight int) ?string {
+	cache_key := '${family.to_lower()}|${weight}'
+	if path := harfbuzz_family_paths[cache_key] {
+		return path
+	}
+	if harfbuzz_family_attempted[cache_key] {
+		return none
+	}
+	harfbuzz_family_attempted[cache_key] = true
+	path := resolve_font_path_for_family(family, weight) or { return none }
+	harfbuzz_family_paths[cache_key] = path
+	return path
+}
+
+fn resolve_font_path_for_family(family string, weight int) ?string {
 	if configured := os.getenv_opt('LADYBIRD_LAYOUT_TEST_FONT') {
 		if os.is_file(configured) {
 			if weight >= 600 {
@@ -273,6 +296,28 @@ pub fn font_path_for_family(family string, weight int) ?string {
 	return regular_path
 }
 
+fn scaled_harfbuzz_font(face voidptr, point_size f32) ?voidptr {
+	scale := int(point_size * harfbuzz_text_shaping_resolution)
+	for cached in harfbuzz_scaled_fonts {
+		if cached.face == face && cached.scale == scale {
+			return cached.font
+		}
+	}
+	font := C.hb_font_create(face)
+	if font == unsafe { nil } {
+		return none
+	}
+	C.hb_ot_font_set_funcs(font)
+	C.hb_font_set_scale(font, scale, scale)
+	C.hb_font_set_ptem(font, point_size)
+	harfbuzz_scaled_fonts << HarfBuzzScaledFont{
+		face: face
+		scale: scale
+		font: font
+	}
+	return font
+}
+
 fn document_harfbuzz_face(font &Font) ?voidptr {
 	path := font.font_path()?
 	face_index := font.face_index()
@@ -330,6 +375,9 @@ fn is_emoji_code_point(code_point u32) bool {
 // Gfx::shape_text(). This port currently carries one Font per chunk, so make
 // the same cascade selection at the platform boundary for emoji-only chunks.
 fn text_uses_emoji_fallback(text string) bool {
+	if text.is_ascii() {
+		return false
+	}
 	mut found_emoji := false
 	for character in text.runes() {
 		code_point := u32(character)
@@ -371,26 +419,25 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 	} else {
 		face = document_harfbuzz_face(font)?
 	}
-	hb_font := C.hb_font_create(face)
-	if hb_font == unsafe { nil } {
-		return none
-	}
-	C.hb_ot_font_set_funcs(hb_font)
-	scale := int(font.point_size * harfbuzz_text_shaping_resolution)
-	C.hb_font_set_scale(hb_font, scale, scale)
-	C.hb_font_set_ptem(hb_font, font.point_size)
+	hb_font := scaled_harfbuzz_font(face, font.point_size)?
 	buffer := C.hb_buffer_create()
 	if buffer == unsafe { nil } {
-		C.hb_font_destroy(hb_font)
 		return none
 	}
-	mut utf16_units := utf16_code_units(text)
-	if text.is_ascii() {
+	is_ascii := text.is_ascii()
+	mut utf16_units := []u16{}
+	text_length_in_code_units := if is_ascii {
+		text.len
+	} else {
+		utf16_units = utf16_code_units(text)
+		utf16_units.len
+	}
+	if is_ascii {
 		C.hb_buffer_add_utf8(buffer, text.str, text.len, 0, -1)
 	} else if utf16_units.len > 0 {
 		C.hb_buffer_add_utf16(buffer, utf16_units.data, utf16_units.len, 0, -1)
 	}
-	if text.is_ascii() {
+	if is_ascii {
 		C.hb_buffer_set_script(buffer, C.hb_script_from_string(c'Latn', 4))
 		C.hb_buffer_set_direction(buffer, harfbuzz_direction_ltr)
 	} else {
@@ -412,7 +459,7 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 		position := unsafe { positions[index] }
 		advance := f32(position.x_advance) / harfbuzz_text_shaping_resolution + letter_spacing
 		starting_offset := int(info.cluster)
-		mut length_in_code_units := utf16_units.len - starting_offset
+		mut length_in_code_units := text_length_in_code_units - starting_offset
 		for following_index in index + 1 .. int(glyph_count) {
 			following_offset := int(unsafe { infos[following_index] }.cluster)
 			if following_offset != starting_offset {
@@ -433,7 +480,6 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, text string, font
 		point_x += advance
 	}
 	C.hb_buffer_destroy(buffer)
-	C.hb_font_destroy(hb_font)
 	return GlyphRun.new_with_face(font, text_type, glyphs, if uses_emoji {
 		.emoji
 	} else {

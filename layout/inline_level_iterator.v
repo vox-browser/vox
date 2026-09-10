@@ -63,9 +63,9 @@ mut:
 @[heap]
 pub struct InlineLevelIterator {
 mut:
-	state                          &LayoutState    = unsafe { nil }
+	state                          &LayoutState = unsafe { nil }
 	containing_block               &BlockContainer = unsafe { nil }
-	containing_block_used_values   &UsedValues     = unsafe { nil }
+	containing_block_used_values   &UsedValues = unsafe { nil }
 	current_node                   ?&Node
 	next_node                      ?&Node
 	layout_mode                    LayoutMode
@@ -83,13 +83,13 @@ mut:
 
 pub fn InlineLevelIterator.new(mut state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext) &InlineLevelIterator {
 	mut iterator := &InlineLevelIterator{
-		state:                        state
-		containing_block:             containing_block
+		state: state
+		containing_block: containing_block
 		containing_block_used_values: containing_block_used_values
-		next_node:                    unsafe { &Node(containing_block) }.first_child()
-		layout_mode:                  layout_mode
-		available_space:              available_space
-		parent_block_context:         parent_block_context
+		next_node: unsafe { &Node(containing_block) }.first_child()
+		layout_mode: layout_mode
+		available_space: available_space
+		parent_block_context: parent_block_context
 	}
 	iterator.skip_to_next()
 	iterator.generate_all_items()
@@ -135,8 +135,7 @@ pub fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_width() CSSP
 				break
 			}
 			text_node := node.as_text_node() or { break }
-			view := utf16_substring_for_line_box(text_node.text_for_rendering(),
-				next_item.offset_in_node, next_item.length_in_node)
+			view := utf16_substring_for_line_box(text_node.text_for_rendering(), next_item.offset_in_node, next_item.length_in_node)
 			if string_is_ascii_whitespace(view) {
 				break
 			}
@@ -150,8 +149,7 @@ fn (mut iterator InlineLevelIterator) enter_node_with_box_model_metrics(node &No
 	mut leading := iterator.extra_leading_metrics or { InlineExtraBoxMetrics{} }
 	styled := unsafe { &NodeWithStyle(node) }
 	mut used_values := iterator.state.get_mutable(styled)
-	resolve_box_model_edges(styled.computed_values(), mut used_values,
-		iterator.containing_block_used_values.content_width().to_double())
+	resolve_box_model_edges(styled.computed_values(), mut used_values, iterator.containing_block_used_values.content_width().to_double())
 	leading.margin = leading.margin.plus(used_values.margin_left)
 	leading.border = leading.border.plus(used_values.border_left)
 	leading.padding = leading.padding.plus(used_values.padding_left)
@@ -216,8 +214,7 @@ fn (iterator &InlineLevelIterator) stack_ends_with_node(node &Node) bool {
 
 fn (mut iterator InlineLevelIterator) compute_next() {
 	current := iterator.next_node or { return }
-	mut next := iterator.next_inline_node_in_pre_order(current,
-		unsafe { &Node(iterator.containing_block) })
+	mut next := iterator.next_inline_node_in_pre_order(current, unsafe { &Node(iterator.containing_block) })
 	for {
 		candidate := next or { break }
 		// Referenced masks beneath a foreignObject belong to its surrounding SVG
@@ -229,8 +226,7 @@ fn (mut iterator InlineLevelIterator) compute_next() {
 		if candidate.is_inline() || candidate.is_out_of_flow() {
 			break
 		}
-		next = iterator.next_inline_node_in_pre_order(candidate,
-			unsafe { &Node(iterator.containing_block) })
+		next = iterator.next_inline_node_in_pre_order(candidate, unsafe { &Node(iterator.containing_block) })
 	}
 	iterator.next_node = next
 }
@@ -305,8 +301,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			}
 		}
 		computed := text_node.Node.computed_values()
-		letter_spacing := resolved_text_spacing_for_node(unsafe { &Node(text_node) },
-			.letter_spacing).to_double()
+		letter_spacing := resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .letter_spacing).to_double()
 		word_spacing :=
 			resolved_text_spacing_for_node(unsafe { &Node(text_node) }, .word_spacing).to_double()
 		mut shaped_text := chunk.view
@@ -316,8 +311,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			tab_width := if tab_size.is_length {
 				resolve_font_dependent_length_for_node(unsafe { &Node(text_node) }, tab_size.length).to_double()
 			} else {
-				tab_size.number * (f64(chunk.font.glyph_width(u32(` `))) + word_spacing +
-					letter_spacing)
+				tab_size.number * (f64(chunk.font.glyph_width(u32(` `))) + word_spacing + letter_spacing)
 			}
 			accumulated := iterator.accumulated_width_for_tabs.to_double()
 			mut stop_distance := if accumulated > 0 && tab_width > 0 {
@@ -340,22 +334,21 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			shaped_text = string_from_utf16_code_units_for_line_box(units[tab_count..])
 			x = stop_distance
 		}
-		glyph_run := platform.shape_text(f32(x), f32(letter_spacing), shaped_text, chunk.font,
-			text_type)
+		glyph_run := platform.shape_text(f32(x), f32(letter_spacing), shaped_text, chunk.font, text_type)
 		chunk_width := CSSPixels.nearest_value_for(f64(glyph_run.width()) + x)
 		is_empty_editable := chunk.length == 0 && text_node_is_inside_mutable_control(text_node)
 		is_generated_empty_string := is_empty_editable
 			|| (current.is_generated_for_pseudo_element() && chunk.length == 0)
 		mut item := InlineLevelItem{
-			type_:                     .text
-			node:                      current
-			glyph_run:                 glyph_run
-			offset_in_node:            chunk.start
-			length_in_node:            chunk.length
-			width:                     chunk_width
+			type_: .text
+			node: current
+			glyph_run: glyph_run
+			offset_in_node: chunk.start
+			length_in_node: chunk.length
+			width: chunk_width
 			is_collapsible_whitespace: context.should_collapse_whitespace && chunk.is_all_whitespace
 				&& !is_generated_empty_string
-			can_break_before:          iterator.previous_chunk_can_break_after
+			can_break_before: iterator.previous_chunk_can_break_after
 		}
 		iterator.previous_chunk_can_break_after = chunk.can_break_after
 		iterator.add_extra_box_model_metrics_to_item(mut item, is_first_chunk, is_last_chunk)
@@ -366,21 +359,21 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		iterator.skip_to_next()
 		return InlineLevelItem{
 			type_: .absolutely_positioned_element
-			node:  current
+			node: current
 		}
 	}
 	if current.is_floating() {
 		iterator.skip_to_next()
 		return InlineLevelItem{
 			type_: .floating_element
-			node:  current
+			node: current
 		}
 	}
 	if current.is_break_node() {
 		iterator.skip_to_next()
 		return InlineLevelItem{
 			type_: .forced_break
-			node:  current
+			node: current
 		}
 	}
 	if current.is_list_item_marker_box() || !current.is_box() {
@@ -393,15 +386,15 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 	styled := current.as_node_with_style() or { return none }
 	box_state := iterator.state.get(styled)
 	mut item := InlineLevelItem{
-		type_:         .element
-		node:          current
-		width:         box_state.content_width()
+		type_: .element
+		node: current
+		width: box_state.content_width()
 		padding_start: box_state.padding_left
-		padding_end:   box_state.padding_right
-		border_start:  box_state.border_left
-		border_end:    box_state.border_right
-		margin_start:  box_state.margin_left
-		margin_end:    box_state.margin_right
+		padding_end: box_state.padding_right
+		border_start: box_state.border_left
+		border_end: box_state.border_right
+		margin_start: box_state.margin_left
+		margin_end: box_state.margin_right
 	}
 	iterator.add_extra_box_model_metrics_to_item(mut item, true, true)
 	iterator.skip_to_next()
@@ -413,26 +406,33 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	white_space_collapse := computed.white_space_collapse()
 	should_wrap_lines := computed.text_wrap_mode() == .wrap
 	should_respect_linebreaks := white_space_collapse in [.preserve, .preserve_breaks, .break_spaces]
-	mut chunk_iterator := TextNodeChunkIterator.new(text_node, should_wrap_lines,
-		should_respect_linebreaks)
 	mut chunks := []TextNodeChunk{}
-	for {
-		chunk := chunk_iterator.next() or { break }
-		chunks << chunk
-	}
-	// InlineLevelIterator::generate_next_item() synthesizes one empty chunk for
-	// mutable form-control editing text. The V DOM does not materialize the
-	// closed UA shadow root, so TreeBuilder records that fact on its equivalent
-	// internal TextNode.
-	if chunks.len == 0 && text_node.text_for_rendering().len == 0
-		&& text_node_is_inside_mutable_control(text_node) {
-		chunks << chunk_iterator.create_empty_chunk()
+	if cached := text_node.cached_inline_chunks_ {
+		// The cached chunks are immutable after construction; sharing their
+		// backing array avoids copying it for each intrinsic-sizing pass.
+		chunks = unsafe { cached }
+	} else {
+		mut chunk_iterator := TextNodeChunkIterator.new(text_node, should_wrap_lines, should_respect_linebreaks)
+		for {
+			chunk := chunk_iterator.next() or { break }
+			chunks << chunk
+		}
+		// InlineLevelIterator::generate_next_item() synthesizes one empty chunk for
+		// mutable form-control editing text. The V DOM does not materialize the
+		// closed UA shadow root, so TreeBuilder records that fact on its equivalent
+		// internal TextNode.
+		if chunks.len == 0 && text_node.text_for_rendering().len == 0
+			&& text_node_is_inside_mutable_control(text_node) {
+			chunks << chunk_iterator.create_empty_chunk()
+		}
+		mut mutable_text_node := unsafe { &TextNode(text_node) }
+		mutable_text_node.cached_inline_chunks_ = chunks
 	}
 	iterator.text_node_context = &InlineTextNodeContext{
-		chunks:                     chunks
-		should_collapse_whitespace: chunk_iterator.should_collapse_whitespace()
-		should_wrap_lines:          should_wrap_lines
-		should_respect_linebreaks:  should_respect_linebreaks
+		chunks: chunks
+		should_collapse_whitespace: white_space_collapse in [.collapse, .preserve_breaks]
+		should_wrap_lines: should_wrap_lines
+		should_respect_linebreaks: should_respect_linebreaks
 	}
 }
 
@@ -488,9 +488,7 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 		size := compute_replaced_size(box, iterator.available_space)
 		state.set_content_width(size.width())
 		state.set_content_height(size.height())
-		result := layout_inside_independent_formatting_context_with_mode(mut iterator.state,
-			unsafe { &Node(box) }, mut state, iterator.layout_mode, AvailableSpace.new(AvailableSize.make_definite(size.width()),
-			AvailableSize.make_definite(size.height())))
+		result := layout_inside_independent_formatting_context_with_mode(mut iterator.state, unsafe { &Node(box) }, mut state, iterator.layout_mode, AvailableSpace.new(AvailableSize.make_definite(size.width()), AvailableSize.make_definite(size.height())))
 		if box_node.is_replaced_box() && box_node.can_have_children()
 			&& !box.has_auto_content_box_size()
 			&& styled.computed_values().size_value(.height).is_auto() {
@@ -506,8 +504,7 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 		// its table box's own algorithm produces, before any shrink-to-fit pass.
 		// An inline-table therefore honours an intrinsic sizing keyword on the
 		// table box, which the wrapper's own max-content measure would discard.
-		width = compute_table_wrapper_content_width(mut iterator.state, box_node, mut state,
-			iterator.available_space.width.to_px_or_zero())
+		width = compute_table_wrapper_content_width(mut iterator.state, box_node, mut state, iterator.available_space.width.to_px_or_zero())
 	} else if preferred_width.is_min_content() {
 		width = calculate_min_content_width(mut iterator.state, box)
 	} else if preferred_width.is_max_content() {
@@ -528,32 +525,25 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 			width = maximum
 		}
 	} else {
-		width = resolve_layout_content_size(unsafe { &Node(box) }, preferred_width,
-			iterator.available_space.width.to_px_or_zero(), state, true) or { CSSPixels.new(0) }
+		width = resolve_layout_content_size(unsafe { &Node(box) }, preferred_width, iterator.available_space.width.to_px_or_zero(), state, true) or { CSSPixels.new(0) }
 	}
-	width = clamp_layout_content_size(unsafe { &Node(box) }, width,
-		iterator.available_space.width.to_px_or_zero(), state, true)
+	width = clamp_layout_content_size(unsafe { &Node(box) }, width, iterator.available_space.width.to_px_or_zero(), state, true)
 	state.set_content_width(width)
 
 	preferred_height := computed.size_value(.height)
 	mut definite_height := ?CSSPixels(none)
 	if !preferred_height.is_auto() && (!preferred_height.contains_percentage()
 		|| iterator.available_space.height.is_definite()) {
-		if resolved := resolve_layout_content_size(unsafe { &Node(box) }, preferred_height,
-			iterator.available_space.height.to_px_or_zero(), state, false)
-		{
-			definite_height = clamp_layout_content_size(unsafe { &Node(box) }, resolved,
-				iterator.available_space.height.to_px_or_zero(), state, false)
+		if resolved := resolve_layout_content_size(unsafe { &Node(box) }, preferred_height, iterator.available_space.height.to_px_or_zero(), state, false) {
+			definite_height = clamp_layout_content_size(unsafe { &Node(box) }, resolved, iterator.available_space.height.to_px_or_zero(), state, false)
 		}
 	} else if preferred_height.is_auto() && box.preferred_aspect_ratio() != none {
 		if resolved := resolve_content_height_for_node(mut iterator.state, styled, state, if iterator.available_space.height.is_definite() {
 			iterator.available_space.height.to_px_or_zero().to_double()
 		} else {
 			none
-		})
-		{
-			definite_height = clamp_layout_content_size(unsafe { &Node(box) }, css_px(resolved),
-				iterator.available_space.height.to_px_or_zero(), state, false)
+		}) {
+			definite_height = clamp_layout_content_size(unsafe { &Node(box) }, css_px(resolved), iterator.available_space.height.to_px_or_zero(), state, false)
 		}
 	}
 	available_height := if height := definite_height {
@@ -563,9 +553,7 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 	} else {
 		AvailableSize.make_indefinite()
 	}
-	inside := layout_inside_independent_formatting_context_with_mode(mut iterator.state,
-		unsafe { &Node(box) }, mut state, iterator.layout_mode, AvailableSpace.new(AvailableSize.make_definite(width),
-		available_height))
+	inside := layout_inside_independent_formatting_context_with_mode(mut iterator.state, unsafe { &Node(box) }, mut state, iterator.layout_mode, AvailableSpace.new(AvailableSize.make_definite(width), available_height))
 	if definite_height == none {
 		mut automatic_content_height := inside.automatic_content_height
 		// FormattingContext::formatting_context_type_created_by_box() selects a
@@ -575,12 +563,10 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 		if computed.display().is_math_inside() {
 			if parent_context := iterator.parent_block_context {
 				mut mutable_parent := unsafe { &BlockFormattingContext(parent_context) }
-				automatic_content_height = mutable_parent.compute_auto_height_for_block_level_element(mut iterator.state,
-					styled)
+				automatic_content_height = mutable_parent.compute_auto_height_for_block_level_element(mut iterator.state, styled)
 			}
 		}
-		automatic_height := clamp_layout_content_size(unsafe { &Node(box) },
-			automatic_content_height, iterator.available_space.height.to_px_or_zero(), state, false)
+		automatic_height := clamp_layout_content_size(unsafe { &Node(box) }, automatic_content_height, iterator.available_space.height.to_px_or_zero(), state, false)
 		state.set_content_height(automatic_height)
 	}
 }

@@ -13345,6 +13345,9 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 		.font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight,
 		.font_width, .math_depth, .text_rendering]
 	if font_computation_property {
+		if cached := s.cached_font_computation_context {
+			return cached
+		}
 		// StyleComputer::get_computation_context_for_property() deliberately
 		// resolves font-relative units against the inheritance parent. The
 		// partially built current style may contain the temporary 13px value used
@@ -13354,13 +13357,12 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 			if parent := current.element_to_inherit_style_from() {
 				if dom_computed := parent.computed_properties() {
 					if inherited := computed_properties_from_dom(dom_computed) {
-						font_metrics = computed_interpolation_font_metrics_for_style(inherited,
-							s.font_computer_)
+						font_metrics = computed_interpolation_font_metrics_for_style(inherited, s.font_computer_)
 					}
 				}
 			}
 		}
-		return ComputationContext{
+		context := ComputationContext{
 			length_resolution_context: LengthResolutionContext{
 				viewport_rect: s.viewport_rect_
 				font_metrics: font_metrics
@@ -13368,10 +13370,19 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 			}
 			abstract_element: abstract_element
 		}
+		mut mutable_s := unsafe { &StyleComputer(s) }
+		mutable_s.cached_font_computation_context = context
+		return context
 	}
 
-	mut font_metrics := computed_interpolation_font_metrics_for_style(computed_properties,
-		s.font_computer_)
+	if property_id == .line_height {
+		if cached := s.cached_line_height_computation_context {
+			return cached
+		}
+	} else if cached := s.cached_generic_computation_context {
+		return cached
+	}
+	mut font_metrics := computed_interpolation_font_metrics_for_style(computed_properties, s.font_computer_)
 	mut root_font_metrics := s.root_element_font_metrics
 	if property_id == .line_height {
 		// Line-height is the one font-adjacent property that resolves em units
@@ -13409,7 +13420,7 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 			}
 		}
 	}
-	return ComputationContext{
+	context := ComputationContext{
 		length_resolution_context: LengthResolutionContext{
 			viewport_rect: s.viewport_rect_
 			font_metrics: font_metrics
@@ -13417,4 +13428,11 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 		}
 		abstract_element: abstract_element
 	}
+	mut mutable_s := unsafe { &StyleComputer(s) }
+	if property_id == .line_height {
+		mutable_s.cached_line_height_computation_context = context
+	} else {
+		mutable_s.cached_generic_computation_context = context
+	}
+	return context
 }

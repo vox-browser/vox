@@ -1618,6 +1618,7 @@ pub mut:
 	text_for_rendering_valid_ bool
 	font_for_rendering_       ?&platform.Font
 	is_empty_editable_        bool
+	cached_inline_chunks_     ?[]TextNodeChunk
 }
 
 pub fn (n &TextNode) font_for_rendering() &platform.Font {
@@ -1660,6 +1661,7 @@ pub fn (n &TextNode) text_for_rendering() string {
 pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.text_for_rendering_valid_ = false
 	n.text_for_rendering_ = ''
+	n.cached_inline_chunks_ = none
 }
 
 fn (mut n TextNode) compute_text_for_rendering() {

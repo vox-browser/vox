@@ -99,3 +99,12 @@ fn test_text_type_uses_unicode_bidirectional_class() {
 	assert text_type_for_code_point(0x03b1) == .ltr // GREEK SMALL LETTER ALPHA, L
 	assert text_type_for_code_point(0x05d0) == .rtl // HEBREW LETTER ALEF, R
 }
+
+fn test_ascii_grapheme_boundaries_keep_crlf_together() {
+	assert text_grapheme_boundaries('a\r\nb') == [0, 1, 3, 4]
+}
+
+fn test_common_latin_punctuation_uses_code_point_boundaries() {
+	assert text_grapheme_boundaries('a –’b') == [0, 1, 2, 3, 4, 5]
+	assert text_grapheme_boundaries('áb') == [0, 2, 3]
+}

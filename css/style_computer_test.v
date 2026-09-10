@@ -20,6 +20,29 @@ fn test_abstract_element_equality_uses_dom_identity() {
 	assert !abstract_elements_equal(dom.AbstractElement.new(first, .before), dom.AbstractElement.new(first, .after))
 }
 
+fn test_property_computation_contexts_are_cached_per_style_pass() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(element.as_node()) or { panic('${err}') }
+	abstract_element := dom.AbstractElement.new(element, none)
+	computer := css_style_computer_for(document)
+	computed := computer.compute_style(abstract_element)
+
+	assert computer.computation_context_cache_is_empty()
+	_ = computer.get_computation_context_for_property(.font_size, computed, abstract_element)
+	assert computer.cached_font_computation_context != none
+	_ = computer.get_computation_context_for_property(.line_height, computed, abstract_element)
+	assert computer.cached_line_height_computation_context != none
+	_ = computer.get_computation_context_for_property(.width, computed, abstract_element)
+	assert computer.cached_generic_computation_context != none
+
+	computer.clear_computation_context_caches()
+	assert computer.computation_context_cache_is_empty()
+}
+
 // declaration_style_properties re-types a serialized CSSStyleProperties declaration into the typed
 // StyleProperty list the cascade iterates over, mirroring Ladybird's CSSStyleProperties::properties().
 fn test_declaration_style_properties() {
@@ -1181,29 +1204,23 @@ fn test_real_pipeline_matches_author_stylesheet() {
 }
 
 fn test_document_style_sheet_selection_keeps_alternates_disabled() {
-	active_persistent, preferred_after_persistent := document_style_sheet_is_active('',
-		false, false, '')
+	active_persistent, preferred_after_persistent := document_style_sheet_is_active('', false, false, '')
 	assert active_persistent
 	assert preferred_after_persistent == ''
 
-	active_dark, preferred_dark := document_style_sheet_is_active('dark', false, false,
-		preferred_after_persistent)
+	active_dark, preferred_dark := document_style_sheet_is_active('dark', false, false, preferred_after_persistent)
 	assert active_dark
 	assert preferred_dark == 'dark'
 
-	active_light, preferred_after_light := document_style_sheet_is_active('light', true,
-		false, preferred_dark)
+	active_light, preferred_after_light := document_style_sheet_is_active('light', true, false, preferred_dark)
 	assert !active_light
 	assert preferred_after_light == 'dark'
 
-	active_same_set, _ := document_style_sheet_is_active('DARK', true, false,
-		preferred_after_light)
+	active_same_set, _ := document_style_sheet_is_active('DARK', true, false, preferred_after_light)
 	assert active_same_set
-	active_untitled_alternate, _ := document_style_sheet_is_active('', true, false,
-		preferred_after_light)
+	active_untitled_alternate, _ := document_style_sheet_is_active('', true, false, preferred_after_light)
 	assert !active_untitled_alternate
-	disabled, preferred_after_disabled := document_style_sheet_is_active('other', false,
-		true, '')
+	disabled, preferred_after_disabled := document_style_sheet_is_active('other', false, true, '')
 	assert !disabled
 	assert preferred_after_disabled == ''
 }

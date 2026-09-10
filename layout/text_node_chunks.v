@@ -33,7 +33,7 @@ pub struct TextNodeChunkIterator {
 	view                   string
 	code_units             []u16
 	grapheme_boundaries    []int
-	line_boundaries        map[int]bool
+	line_boundaries        []bool
 	word_break             css.WordBreak
 	font                   &platform.Font = unsafe { nil }
 	font_cascade_fonts     []&platform.Font
@@ -41,6 +41,7 @@ pub struct TextNodeChunkIterator {
 	last_resort_font       ?&platform.Font
 pub mut:
 	current_index            int
+	grapheme_boundary_index  int = 1
 	peek_queue               []TextNodeChunk
 	last_non_whitespace_font ?&platform.Font
 }
@@ -124,11 +125,13 @@ pub fn (iterator &TextNodeChunkIterator) create_empty_chunk() TextNodeChunk {
 	}
 }
 
-fn (iterator &TextNodeChunkIterator) next_grapheme_boundary() int {
-	for boundary in iterator.grapheme_boundaries {
-		if boundary > iterator.current_index {
-			return boundary
-		}
+fn (mut iterator TextNodeChunkIterator) next_grapheme_boundary() int {
+	for iterator.grapheme_boundary_index < iterator.grapheme_boundaries.len
+		&& iterator.grapheme_boundaries[iterator.grapheme_boundary_index] <= iterator.current_index {
+		iterator.grapheme_boundary_index++
+	}
+	if iterator.grapheme_boundary_index < iterator.grapheme_boundaries.len {
+		return iterator.grapheme_boundaries[iterator.grapheme_boundary_index]
 	}
 	return iterator.code_units.len
 }
@@ -155,7 +158,8 @@ fn (iterator &TextNodeChunkIterator) is_at_line_break_opportunity() bool {
 			}
 		}
 	}
-	return iterator.current_index in iterator.line_boundaries
+	return iterator.current_index >= 0 && iterator.current_index < iterator.line_boundaries.len
+		&& iterator.line_boundaries[iterator.current_index]
 }
 
 fn (iterator &TextNodeChunkIterator) font_for_code_point(code_point u32) &platform.Font {
@@ -330,6 +334,46 @@ fn (mut iterator TextNodeChunkIterator) try_commit_chunk(start int, end int, has
 }
 
 fn text_grapheme_boundaries(text string) []int {
+	if text.is_ascii() {
+		mut boundaries := []int{cap: text.len + 1}
+		boundaries << 0
+		for index in 0 .. text.len {
+			// UAX #29 GB3 keeps CRLF in a single extended grapheme cluster.
+			if text[index] == `\r` && index + 1 < text.len && text[index + 1] == `\n` {
+				continue
+			}
+			boundaries << index + 1
+		}
+		return boundaries
+	}
+	// Latin text with common spacing and punctuation characters has one
+	// grapheme per code point. Avoid the substantially more expensive general
+	// UAX #29 tables for this common case, while retaining the full segmenter
+	// for combining marks, joiners, emoji, and complex scripts.
+	code_points := text.runes()
+	mut has_only_simple_graphemes := true
+	for code_point in code_points {
+		if code_point >= 0x80
+			&& !(code_point >= 0xa0 && code_point <= 0x2ff)
+			&& !(code_point >= 0x2000 && code_point <= 0x200b)
+			&& !(code_point >= 0x2010 && code_point <= 0x2029) {
+			has_only_simple_graphemes = false
+			break
+		}
+	}
+	if has_only_simple_graphemes {
+		mut boundaries := []int{cap: code_points.len + 1}
+		boundaries << 0
+		mut offset := 0
+		for index, code_point in code_points {
+			offset += if code_point > 0xffff { 2 } else { 1 }
+			if code_point == `\r` && index + 1 < code_points.len && code_points[index + 1] == `\n` {
+				continue
+			}
+			boundaries << offset
+		}
+		return boundaries
+	}
 	mut boundaries := []int{cap: text.runes().len + 1}
 	boundaries << 0
 	mut offset := 0
@@ -340,9 +384,9 @@ fn text_grapheme_boundaries(text string) []int {
 	return boundaries
 }
 
-fn text_line_boundaries(text string) map[int]bool {
+fn text_line_boundaries(text string) []bool {
 	units := utf16_code_units_for_line_box(text)
-	mut boundaries := map[int]bool{}
+	mut boundaries := []bool{len: units.len + 1}
 	mut index := 0
 	for index < units.len {
 		code_point := code_point_at_utf16(units, index)
@@ -422,7 +466,7 @@ fn string_is_ascii_whitespace(text string) bool {
 	if text == '' {
 		return false
 	}
-	for character in text.runes() {
+	for character in text.bytes() {
 		if !is_ascii_space_code_point(u32(character)) {
 			return false
 		}
