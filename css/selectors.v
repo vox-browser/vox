@@ -104,22 +104,27 @@ pub enum PseudoClass {
 
 pub struct PseudoClassBitmap {
 pub mut:
-	values map[PseudoClass]bool
+	words [2]u64
 }
 
 pub fn (bitmap PseudoClassBitmap) get(pseudo_class PseudoClass) bool {
-	return bitmap.values[pseudo_class] or { false }
+	index := int(pseudo_class)
+	return bitmap.words[index / 64] & (u64(1) << (index % 64)) != 0
 }
 
 pub fn (mut bitmap PseudoClassBitmap) set(pseudo_class PseudoClass, value bool) {
-	bitmap.values[pseudo_class] = value
+	index := int(pseudo_class)
+	mask := u64(1) << (index % 64)
+	if value {
+		bitmap.words[index / 64] |= mask
+	} else {
+		bitmap.words[index / 64] &= ~mask
+	}
 }
 
 pub fn (mut bitmap PseudoClassBitmap) merge(other PseudoClassBitmap) {
-	for pseudo_class, value in other.values {
-		if value {
-			bitmap.values[pseudo_class] = true
-		}
+	for index in 0 .. bitmap.words.len {
+		bitmap.words[index] |= other.words[index]
 	}
 }
 

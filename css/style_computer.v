@@ -574,7 +574,11 @@ fn pseudo_element_supports_property(pseudo_element dom.PseudoElement, property_i
 // properties (`--*`, kept separately in `custom_properties`) are not included; entries whose name
 // isn't a known property, or whose value fails to parse, are skipped.
 fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty {
-	mut result := []StyleProperty{}
+	if cached := declaration.typed_properties_cache_ {
+		return unsafe { cached }
+	}
+	mut result := []StyleProperty{cap: declaration.properties.len}
+	mut importance_mask := u8(0)
 	for property in declaration.properties {
 		property_id := property_id_from_string(property.name) or { continue }
 		mut value := &dom.StyleValue(unsafe { nil })
@@ -589,7 +593,11 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 			value: value
 			important: if property.important { Important.yes } else { Important.no }
 		}
+		importance_mask |= if property.important { u8(2) } else { u8(1) }
 	}
+	mut mutable_declaration := unsafe { &CSSStyleProperties(declaration) }
+	mutable_declaration.typed_properties_cache_ = result
+	mutable_declaration.typed_importance_mask_ = importance_mask
 	return result
 }
 
@@ -655,11 +663,16 @@ fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, prope
 // resolve_cascade_declaration_value(); CascadedProperties performs the final custom-property pass.
 fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, declaration &CSSStyleProperties, cascade_origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
 	pseudo_element := abstract_element.pseudo_element()
+	properties := declaration_style_properties(declaration)
+	importance_bit := if important == .yes { u8(2) } else { u8(1) }
+	if declaration.typed_importance_mask_ & importance_bit == 0 {
+		return
+	}
 	// CSSStyleProperties retains an unresolved shorthand and pending-substitution
 	// placeholders for its longhands. Once the shorthand has resolved and set a
 	// longhand, a later placeholder must not overwrite that real value.
 	mut seen_properties := []u8{len: int(PropertyID.mask) + 1}
-	for property in declaration_style_properties(declaration) {
+	for property in properties {
 		// OPTIMIZATION: only cascade the requested properties, when a set was given.
 		if properties_to_cascade.len > 0 && property.property_id !in properties_to_cascade && !property_is_shorthand(property.property_id) {
 			continue
@@ -677,6 +690,31 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 			typed is PendingSubstitutionStyleValue
 		} else {
 			false
+		}
+		if computed_interpolation_is_longhand_property(property.property_id) {
+			longhand_id := property.property_id
+			if seen_properties[int(longhand_id)] != 0 && property_value_is_pending {
+				continue
+			}
+			seen_properties[int(longhand_id)] = 1
+			mut physical_property_id := longhand_id
+			if property_is_logical_alias(longhand_id) {
+				context := logical_alias_mapping_context or { continue }
+				physical_property_id = map_logical_alias_to_physical_property(longhand_id,
+					context)
+			}
+
+			if opaque_is_revert(longhand_id, resolved_property_value) {
+				cascaded_properties.revert_property(physical_property_id, important,
+					cascade_origin)
+			} else if opaque_is_revert_layer(longhand_id, resolved_property_value) {
+				cascaded_properties.revert_layer_property(physical_property_id, important,
+					layer_name)
+			} else {
+				cascaded_properties.set_property(physical_property_id, resolved_property_value,
+					important, cascade_origin, layer_name, voidptr(declaration))
+			}
+			continue
 		}
 		for longhand in expand_property_longhands(property.property_id, resolved_property_value) {
 			if properties_to_cascade.len > 0 && longhand.id !in properties_to_cascade {
@@ -756,8 +794,7 @@ fn logical_alias_normalize_value(abstract_element dom.AbstractElement, property_
 // display-change animation replay, and generated pseudo styles all run here.
 pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractElement) &ComputedProperties {
 	mut did_change_custom_properties := false
-	_, computed := s.recompute_style_with_invalidation(mut abstract_element,
-		&did_change_custom_properties)
+	_, computed := s.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
 	return computed
 }
 
@@ -771,9 +808,7 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 		invalidation.relayout = true
 	}
 	for property_id in computed_interpolation_longhand_property_ids() {
-		invalidation = required_invalidation_after_style_change_or(invalidation,
-			compute_property_invalidation(property_id, old_style.property(property_id, .no),
-			new_style.property(property_id, .no)))
+		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_style.property(property_id, .no), new_style.property(property_id, .no)))
 	}
 	return invalidation
 }
@@ -794,8 +829,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		had_list_marker = previous.display().is_list_item()
 	}
 	old_display_is_none := if previous := old_style { previous.display().is_none() } else { true }
-	computed := s.compute_style_tracking_custom_property_changes(abstract_element,
-		did_change_custom_properties)
+	computed := s.compute_style_tracking_custom_property_changes(abstract_element, did_change_custom_properties)
 	mut invalidation := if previous := old_style {
 		compute_required_invalidation(previous, computed, s.font_computer())
 	} else {
@@ -835,13 +869,11 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		scope := css_style_scope_for(pseudo_abstract)
 		mut new_pseudo_style := ?&ComputedProperties(none)
 		if scope.has_candidate_rule_for_pseudo_element(pseudo_abstract, css_pseudo_element) {
-			new_pseudo_style = s.compute_pseudo_element_style_if_needed_tracking_custom_property_changes(pseudo_abstract,
-				did_change_custom_properties)
+			new_pseudo_style = s.compute_pseudo_element_style_if_needed_tracking_custom_property_changes(pseudo_abstract, did_change_custom_properties)
 		}
 		if pseudo_style := new_pseudo_style {
 			if previous := old_pseudo_style {
-				invalidation = required_invalidation_after_style_change_or(invalidation,
-					compute_required_invalidation(previous, pseudo_style, s.font_computer()))
+				invalidation = required_invalidation_after_style_change_or(invalidation, compute_required_invalidation(previous, pseudo_style, s.font_computer()))
 			} else {
 				invalidation = required_invalidation_after_style_change_full()
 			}
@@ -922,10 +954,8 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 		}
 
 		if computed.is_animated_property_inherited(property_id) || property_id !in animated_values {
-			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id,
-				abstract_element) {
-				computed.set_animated_property(property_id, animated_inherit.value,
-					animated_inherit.is_result_of_transition, .yes)
+			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id, abstract_element) {
+				computed.set_animated_property(property_id, animated_inherit.value, animated_inherit.is_result_of_transition, .yes)
 			} else if property_id in animated_values {
 				computed.remove_animated_property(property_id)
 			}
@@ -933,9 +963,7 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 
 		new_value := StyleComputer.get_non_animated_inherit_value(property_id, abstract_element)
 		computed.set_property(property_id, new_value, .yes, .no)
-		invalidation = required_invalidation_after_style_change_or(invalidation,
-			compute_property_invalidation(property_id, old_value, computed.property(property_id,
-			.no)))
+		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_value, computed.property(property_id, .no)))
 	}
 
 	if invalidation.is_none() && values_affected_by_inherited_style.len == 0 {
@@ -944,9 +972,7 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 
 	s.compute_property_values(mut computed, *abstract_element)
 	for property_id, old_value in values_affected_by_inherited_style {
-		invalidation = required_invalidation_after_style_change_or(invalidation,
-			compute_property_invalidation(property_id, old_value, computed.property(property_id,
-			.no)))
+		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_value, computed.property(property_id, .no)))
 	}
 	if invalidation.is_none() {
 		return invalidation
@@ -974,8 +1000,7 @@ fn animated_property_maps_invalidation(old_values map[PropertyID]&dom.StyleValue
 		if old_value == none && new_value == none {
 			continue
 		}
-		invalidation = required_invalidation_after_style_change_or(invalidation,
-			compute_property_invalidation(property_id, old_value, new_value))
+		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_value, new_value))
 	}
 	return invalidation
 }
@@ -988,19 +1013,16 @@ fn (s &StyleComputer) recompute_inherited_style_for_animated_descendants(node &d
 		if element_invalidation.is_none() {
 			return invalidation
 		}
-		invalidation = required_invalidation_after_style_change_or(invalidation,
-			element_invalidation)
+		invalidation = required_invalidation_after_style_change_or(invalidation, element_invalidation)
 		if shadow_root := element.shadow_root() {
-			invalidation = required_invalidation_after_style_change_or(invalidation,
-				s.recompute_inherited_style_for_animated_descendants(unsafe { &dom.Node(shadow_root) }))
+			invalidation = required_invalidation_after_style_change_or(invalidation, s.recompute_inherited_style_for_animated_descendants(unsafe { &dom.Node(shadow_root) }))
 		}
 	}
 
 	mut child := node.first_child()
 	for {
 		current := child or { break }
-		invalidation = required_invalidation_after_style_change_or(invalidation,
-			s.recompute_inherited_style_for_animated_descendants(current))
+		invalidation = required_invalidation_after_style_change_or(invalidation, s.recompute_inherited_style_for_animated_descendants(current))
 		child = current.next_sibling()
 	}
 	return invalidation
@@ -1053,8 +1075,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			for existing in style_computer.css_animation_storage_.animations_for(target_element) {
 				mut animation := existing
 				if animation.sample_at(style_computer.animation_time_ms_) != none {
-					style_computer.collect_animation_into(target_element, voidptr(animation.effect_),
-						mut computed)
+					style_computer.collect_animation_into(target_element, voidptr(animation.effect_), mut computed)
 				}
 			}
 		}
@@ -1062,22 +1083,19 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			for existing in style_computer.css_transition_storage_.transitions_for(target_element) {
 				mut transition := existing
 				if transition.sample_at(style_computer.animation_time_ms_) != none {
-					style_computer.collect_animation_into(target_element,
-						voidptr(transition.keyframe_effect_), mut computed)
+					style_computer.collect_animation_into(target_element, voidptr(transition.keyframe_effect_), mut computed)
 				}
 			}
 		}
 
-		mut invalidation := animated_property_maps_invalidation(old_animated_values,
-			computed.animated_property_values())
+		mut invalidation := animated_property_maps_invalidation(old_animated_values, computed.animated_property_values())
 		if invalidation.is_none() {
 			continue
 		}
 		mut child := target_node.first_child()
 		for {
 			current := child or { break }
-			invalidation = required_invalidation_after_style_change_or(invalidation,
-				style_computer.recompute_inherited_style_for_animated_descendants(current))
+			invalidation = required_invalidation_after_style_change_or(invalidation, style_computer.recompute_inherited_style_for_animated_descendants(current))
 			child = current.next_sibling()
 		}
 
@@ -1167,16 +1185,14 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 		should_recompute := needs_full_style_update || node.needs_style_update()
 			|| parent_display_changed
 			|| (recompute_elements_depending_on_custom_properties
-			&& (element.style_uses_var_css_function() || element.style_uses_inherit_css_function()))
+				&& (element.style_uses_var_css_function() || element.style_uses_inherit_css_function()))
 			|| needs_style_update_due_to_if_media
 		if should_recompute {
 			mut abstract_element := dom.AbstractElement.new(element, none)
-			node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element,
-				&did_change_custom_properties)
+			node_invalidation, _ = style_computer.recompute_style_with_invalidation(mut abstract_element, &did_change_custom_properties)
 		} else if needs_inherited_style_update {
 			mut abstract_element := dom.AbstractElement.new(element, none)
-			node_invalidation = style_computer.recompute_inherited_style_with_invalidation(mut
-				abstract_element)
+			node_invalidation = style_computer.recompute_inherited_style_with_invalidation(mut abstract_element)
 		}
 		if dom_computed := element.el_computed_properties() {
 			if computed := computed_properties_from_dom(dom_computed) {
@@ -1225,12 +1241,9 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 				shadow_node := unsafe { &dom.Node(shadow_root) }
 				if needs_full_style_update || shadow_node.needs_style_update()
 					|| shadow_node.child_needs_style_update() {
-					subtree_invalidation := update_style_recursively(mut style_computer,
-						shadow_node, children_need_inherited_style_update,
-						recompute_custom_property_dependents, children_need_full_style_recompute)
+					subtree_invalidation := update_style_recursively(mut style_computer, shadow_node, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute)
 					if !is_display_none {
-						invalidation = required_invalidation_after_style_change_or(invalidation,
-							subtree_invalidation)
+						invalidation = required_invalidation_after_style_change_or(invalidation, subtree_invalidation)
 					}
 				}
 			}
@@ -1242,12 +1255,9 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 			if needs_full_style_update || current.needs_style_update()
 				|| children_need_inherited_style_update || current.child_needs_style_update()
 				|| recompute_custom_property_dependents || children_need_full_style_recompute {
-				subtree_invalidation := update_style_recursively(mut style_computer,
-					current, children_need_inherited_style_update, recompute_custom_property_dependents,
-					children_need_full_style_recompute)
+				subtree_invalidation := update_style_recursively(mut style_computer, current, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute)
 				if !is_display_none {
-					invalidation = required_invalidation_after_style_change_or(invalidation,
-						subtree_invalidation)
+					invalidation = required_invalidation_after_style_change_or(invalidation, subtree_invalidation)
 				}
 			}
 			child = current.next_sibling()
@@ -1282,15 +1292,13 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 
 	mut style_computer := css_style_computer_for(document)
 	viewport := document.viewport_rect()
-	style_computer.set_viewport_rect(CSSPixelRect.new(viewport.x, viewport.y, viewport.width,
-		viewport.height))
+	style_computer.set_viewport_rect(CSSPixelRect.new(viewport.x, viewport.y, viewport.width, viewport.height))
 	evaluate_media_rules_for_document(document)
 	style_computer.reset_has_result_cache()
 	style_computer.reset_ancestor_filter()
 	mutable_document.build_registered_properties_cache()
 	mutable_document.build_counter_style_cache()
-	return update_style_recursively(mut style_computer, unsafe { &dom.Node(document) },
-		false, false, false)
+	return update_style_recursively(mut style_computer, unsafe { &dom.Node(document) }, false, false, false)
 }
 
 // The computed value of `property_id` for `element`, serialized from the retained StyleComputer result.

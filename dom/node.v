@@ -777,13 +777,7 @@ pub fn (n &Node) has_child_nodes() bool {
 }
 
 pub fn (n &Node) index() int {
-	parent := n.parent() or { return 0 }
-	for i, child in parent.children {
-		if child == n {
-			return i
-		}
-	}
-	return 0
+	return if n.parent_ == unsafe { nil } { 0 } else { n.index_in_parent_ }
 }
 
 pub fn (n &Node) previous_sibling() ?&Node {
@@ -3716,6 +3710,7 @@ pub fn (mut n Node) append_child_impl(node &Node) {
 	}
 	mut mutable_node := unsafe { &Node(node) }
 	mutable_node.parent_ = n
+	mutable_node.index_in_parent_ = n.children.len
 	n.children << node
 }
 
@@ -3725,22 +3720,29 @@ pub fn (mut n Node) insert_before_impl(node &Node, child ?&Node) {
 		return
 	}
 
-	mut index := n.children.len
-	for i, existing in n.children {
-		if existing == child_node {
-			index = i
-			break
-		}
-	}
+	index := child_node.index_in_parent_
 	mut mutable_node := unsafe { &Node(node) }
 	mutable_node.parent_ = n
 	n.children.insert(index, node)
+	for child_index := index; child_index < n.children.len; child_index++ {
+		mut current := unsafe { &Node(n.children[child_index]) }
+		current.index_in_parent_ = child_index
+	}
 }
 
 pub fn (mut n Node) remove_child_impl(node &Node) {
-	n.children = n.children.filter(it != node)
+	index := node.index_in_parent_
+	if index < 0 || index >= n.children.len || n.children[index] != node {
+		return
+	}
+	n.children.delete(index)
 	mut mutable_node := unsafe { &Node(node) }
 	mutable_node.parent_ = unsafe { nil }
+	mutable_node.index_in_parent_ = -1
+	for child_index := index; child_index < n.children.len; child_index++ {
+		mut current := unsafe { &Node(n.children[child_index]) }
+		current.index_in_parent_ = child_index
+	}
 }
 
 pub fn (n &Node) is_child_allowed(node &Node) bool {

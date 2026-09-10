@@ -125,6 +125,30 @@ fn test_glyph_run_retains_packed_replay_data_and_slices_without_rebasing() {
 	assert slice.glyph_positions() == [f64(6.5), 0.75]
 }
 
+fn test_glyph_run_layout_clone_has_independent_mutable_storage() {
+	font := &Font{
+		family: 'sans-serif'
+		point_size: 16
+	}
+	original := GlyphRun.new_with_face(font, .rtl, [Glyph{
+		glyph_index: 7
+		position: GlyphPosition{2.5, -0.25}
+		advance: 4
+	}], .emoji)
+	mut clone := original.clone_for_layout()
+	clone.glyphs_[0].position.x = 99
+	clone.glyph_indices_[0] = 42
+	clone.glyph_positions_[0] = 88
+
+	assert original.glyphs_[0].position.x == 2.5
+	assert original.glyph_indices()[0] == 7
+	assert original.glyph_positions()[0] == 2.5
+	assert clone.font() == font
+	assert clone.text_type() == .rtl
+	assert clone.face() == .emoji
+	assert clone.width() == original.width()
+}
+
 fn test_timer_state_and_single_shot_fire() {
 	mut timer := Timer.create_single_shot(10, no_op)
 	assert timer.interval() == 10

@@ -58,6 +58,15 @@ fn test_text_node_chunk_iterator_preserves_utf16_offsets_and_newline() {
 	assert last.start == 4
 }
 
+fn test_line_box_utf16_helpers_preserve_ascii_and_surrogate_offsets() {
+	assert utf16_code_units_for_line_box('plain text') == [u16(112), 108, 97, 105, 110, 32, 116,
+		101, 120, 116]
+	assert utf16_substring_for_line_box('plain text', 6, 4) == 'text'
+	assert utf16_substring_for_line_box('plain text', -2, 5) == 'plain'
+	assert utf16_substring_for_line_box('A😀B', 1, 2) == '😀'
+	assert utf16_substring_for_line_box('A😀B', 3, 1) == 'B'
+}
+
 fn test_text_node_chunk_iterator_break_all_splits_typographic_units() {
 	document := dom.Document.create(dom.url_about_blank())
 	style := chunk_test_style(document, 'display:block; word-break:break-all; text-wrap-mode:wrap')

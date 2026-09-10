@@ -107,6 +107,23 @@ pub fn (run &GlyphRun) glyphs() []Glyph {
 	return run.glyphs_
 }
 
+// Layout merges adjacent text chunks by mutating the destination GlyphRun.
+// Intrinsic sizing can nevertheless reuse the considerably more expensive
+// HarfBuzz result as long as every consumer gets independent mutable storage.
+pub fn (run &GlyphRun) clone_for_layout() &GlyphRun {
+	return &GlyphRun{
+		glyphs_:            run.glyphs_.clone()
+		font_:              run.font_
+		text_type_:         run.text_type_
+		face_:              run.face_
+		width_:             run.width_
+		space_width:        run.space_width
+		glyph_indices_:     run.glyph_indices_.clone()
+		glyph_positions_:   run.glyph_positions_.clone()
+		replay_data_dirty_: run.replay_data_dirty_
+	}
+}
+
 // Packed retained playback data. CGPoint uses two f64 values on macOS, so the
 // position buffer can cross the V/CoreGraphics boundary without rebuilding it
 // on every paint.

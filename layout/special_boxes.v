@@ -413,9 +413,11 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 		if data.len >= 6 && data[..3].bytestr() == 'GIF' && !gif_image_data_is_decodable(data) {
 			return none
 		}
-		image := stbi.load_from_memory(data.data, data.len) or {
-			dimensions := encoded_image_dimensions(data) or { return none }
+		if dimensions := encoded_image_dimensions(data) {
 			return size_with_optional_aspect_ratio(CSSPixels.new(dimensions.width), CSSPixels.new(dimensions.height))
+		}
+		image := stbi.load_from_memory(data.data, data.len) or {
+			return none
 		}
 		defer {
 			image.free()
@@ -442,9 +444,11 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 	if data_for_validation.len >= 6 && data_for_validation[..3].bytestr() == 'GIF' && !gif_image_data_is_decodable(data_for_validation) {
 		return none
 	}
-	image := stbi.load(path) or {
-		dimensions := encoded_image_dimensions(data_for_validation) or { return none }
+	if dimensions := encoded_image_dimensions(data_for_validation) {
 		return size_with_optional_aspect_ratio(CSSPixels.new(dimensions.width), CSSPixels.new(dimensions.height))
+	}
+	image := stbi.load(path) or {
+		return none
 	}
 	defer {
 		image.free()
@@ -585,6 +589,10 @@ fn little_endian_u32(data []u8, offset int) u32 {
 
 fn big_endian_u32(data []u8, offset int) u32 {
 	return (u32(data[offset]) << 24) | (u32(data[offset + 1]) << 16) | (u32(data[offset + 2]) << 8) | u32(data[offset + 3])
+}
+
+fn big_endian_u16(data []u8, offset int) int {
+	return (int(data[offset]) << 8) | int(data[offset + 1])
 }
 
 // LibGfx's GIFImageDecoderPlugin does not make an image available unless its
@@ -756,7 +764,64 @@ fn encoded_image_dimensions(data []u8) ?ImageDimensions {
 			}
 		}
 	}
-	return webp_image_dimensions(data)
+	if dimensions := webp_image_dimensions(data) {
+		return dimensions
+	}
+	return jpeg_image_dimensions(data)
+}
+
+// JPEG decoders expose frame metadata before decoding the entropy-coded pixel
+// stream. Layout only needs that metadata, so avoid fully decoding large local
+// photographs while constructing an ImageBox.
+fn jpeg_image_dimensions(data []u8) ?ImageDimensions {
+	if data.len < 4 || data[0] != 0xff || data[1] != 0xd8 {
+		return none
+	}
+	mut offset := 2
+	for offset < data.len {
+		for offset < data.len && data[offset] != 0xff {
+			offset++
+		}
+		for offset < data.len && data[offset] == 0xff {
+			offset++
+		}
+		if offset >= data.len {
+			return none
+		}
+		marker := data[offset]
+		offset++
+		if marker == 0xd9 || marker == 0xda {
+			return none
+		}
+		if marker == 0x01 || (marker >= 0xd0 && marker <= 0xd8) {
+			continue
+		}
+		if offset + 2 > data.len {
+			return none
+		}
+		segment_length := big_endian_u16(data, offset)
+		if segment_length < 2 || offset + segment_length > data.len {
+			return none
+		}
+		is_start_of_frame := marker in [u8(0xc0), 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca,
+			0xcb, 0xcd, 0xce, 0xcf]
+		if is_start_of_frame {
+			if segment_length < 7 {
+				return none
+			}
+			height := big_endian_u16(data, offset + 3)
+			width := big_endian_u16(data, offset + 5)
+			if width > 0 && height > 0 {
+				return ImageDimensions{
+					width: width
+					height: height
+				}
+			}
+			return none
+		}
+		offset += segment_length
+	}
+	return none
 }
 
 // stb_image deliberately does not decode WebP. Preserve the HTML image's

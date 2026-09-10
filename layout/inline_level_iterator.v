@@ -23,6 +23,7 @@ pub:
 	offset_in_node            int
 	length_in_node            int
 	is_collapsible_whitespace bool
+	is_all_whitespace         bool
 	can_break_before          bool
 pub mut:
 	width         CSSPixels
@@ -55,6 +56,15 @@ mut:
 	should_wrap_lines          bool
 	should_respect_linebreaks  bool
 	last_known_direction       ?platform.GlyphRunTextType
+}
+
+struct IntrinsicTextShapeCacheEntry {
+	initial_x      f32
+	letter_spacing f32
+	text           string
+	font           &platform.Font = unsafe { nil }
+	text_type      platform.GlyphRunTextType
+	glyph_run      &platform.GlyphRun = unsafe { nil }
 }
 
 // InlineLevelIterator is pre-generated exactly like LibWeb's iterator: next()
@@ -134,9 +144,7 @@ pub fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_width() CSSP
 			if next_item.type_ != .text || next_item.is_collapsible_whitespace {
 				break
 			}
-			text_node := node.as_text_node() or { break }
-			view := utf16_substring_for_line_box(text_node.text_for_rendering(), next_item.offset_in_node, next_item.length_in_node)
-			if string_is_ascii_whitespace(view) {
+			if next_item.is_all_whitespace {
 				break
 			}
 		}
@@ -334,7 +342,8 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			shaped_text = string_from_utf16_code_units_for_line_box(units[tab_count..])
 			x = stop_distance
 		}
-		glyph_run := platform.shape_text(f32(x), f32(letter_spacing), shaped_text, chunk.font, text_type)
+		glyph_run := iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing),
+			shaped_text, chunk.font, text_type)
 		chunk_width := CSSPixels.nearest_value_for(f64(glyph_run.width()) + x)
 		is_empty_editable := chunk.length == 0 && text_node_is_inside_mutable_control(text_node)
 		is_generated_empty_string := is_empty_editable
@@ -348,6 +357,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			width: chunk_width
 			is_collapsible_whitespace: context.should_collapse_whitespace && chunk.is_all_whitespace
 				&& !is_generated_empty_string
+			is_all_whitespace: chunk.is_all_whitespace
 			can_break_before: iterator.previous_chunk_can_break_after
 		}
 		iterator.previous_chunk_can_break_after = chunk.can_break_after
@@ -399,6 +409,30 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 	iterator.add_extra_box_model_metrics_to_item(mut item, true, true)
 	iterator.skip_to_next()
 	return item
+}
+
+fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, initial_x f32, letter_spacing f32, text string, font &platform.Font, text_type platform.GlyphRunTextType) &platform.GlyphRun {
+	for cached in text_node.cached_intrinsic_text_shapes_ {
+		if cached.initial_x == initial_x && cached.letter_spacing == letter_spacing
+			&& cached.text == text && voidptr(cached.font) == voidptr(font)
+			&& cached.text_type == text_type {
+			return cached.glyph_run.clone_for_layout()
+		}
+	}
+
+	run := platform.shape_text(initial_x, letter_spacing, text, font, text_type)
+	if iterator.layout_mode == .intrinsic_sizing {
+		mut mutable_text_node := unsafe { &TextNode(text_node) }
+		mutable_text_node.cached_intrinsic_text_shapes_ << IntrinsicTextShapeCacheEntry{
+			initial_x: initial_x
+			letter_spacing: letter_spacing
+			text: text
+			font: font
+			text_type: text_type
+			glyph_run: run.clone_for_layout()
+		}
+	}
+	return run
 }
 
 fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {

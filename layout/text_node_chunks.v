@@ -57,6 +57,9 @@ fn text_node_chunk_platform_font(font css.PlatformFont) &platform.Font {
 
 pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, should_respect_linebreaks bool) &TextNodeChunkIterator {
 	view := text_node.text_for_rendering()
+	mut code_units := utf16_code_units_for_line_box(view)
+	mut mutable_text_node := unsafe { &TextNode(text_node) }
+	mutable_text_node.cached_utf16_code_units_ = code_units
 	font_cascade := text_node.Node.computed_values().font_list()
 	mut font_cascade_fonts := []&platform.Font{cap: font_cascade.fonts.len}
 	mut font_cascade_ranges := [][]css.UnicodeRange{cap: font_cascade.fonts.len}
@@ -77,9 +80,9 @@ pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, sh
 			.preserve_breaks,
 		]
 		view: view
-		code_units: utf16_code_units_for_line_box(view)
+		code_units: code_units
 		grapheme_boundaries: text_grapheme_boundaries(view)
-		line_boundaries: text_line_boundaries(view)
+		line_boundaries: text_line_boundaries_from_code_units(code_units)
 		word_break: text_node.Node.computed_values().word_break()
 		font: text_node.font_for_rendering()
 		font_cascade_fonts: font_cascade_fonts
@@ -315,7 +318,11 @@ fn (mut iterator TextNodeChunkIterator) try_commit_chunk(start int, end int, has
 	if length <= 0 {
 		return none
 	}
-	view := utf16_substring_for_line_box(iterator.view, start, length)
+	view := if iterator.view.is_ascii() {
+		utf16_substring_for_line_box(iterator.view, start, length)
+	} else {
+		utf16_substring_from_code_units_for_line_box(iterator.code_units, start, length)
+	}
 	is_all_whitespace := string_is_ascii_whitespace(view)
 	if !is_all_whitespace {
 		iterator.last_non_whitespace_font = font
@@ -386,6 +393,10 @@ fn text_grapheme_boundaries(text string) []int {
 
 fn text_line_boundaries(text string) []bool {
 	units := utf16_code_units_for_line_box(text)
+	return text_line_boundaries_from_code_units(units)
+}
+
+fn text_line_boundaries_from_code_units(units []u16) []bool {
 	mut boundaries := []bool{len: units.len + 1}
 	mut index := 0
 	for index < units.len {

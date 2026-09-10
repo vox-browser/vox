@@ -132,6 +132,21 @@ fn test_document_preload_resources_are_resolved_deduplicated_and_ordered() {
 	]
 }
 
+fn test_local_documents_do_not_block_on_remote_images() {
+	document := html.parse_document('<html><head>
+		<link rel="stylesheet" href="https://cdn.example/site.css">
+		<script src="https://cdn.example/site.js"></script>
+		</head><body>
+		<img src="https://tracker.example/badge.png">
+		<svg><image href="https://tracker.example/svg-badge.png"/></svg>
+		</body></html>')
+	urls := document_preload_resource_urls(document, 'file:///tmp/saved-page/index.html')
+	assert urls == [
+		'https://cdn.example/site.css',
+		'https://cdn.example/site.js',
+	]
+}
+
 fn test_svg_image_contain_destination_preserves_ratio_and_object_position() {
 	x, y, width, height := contained_image_destination(10, 20, 100, 100, 200, 100, '25%', '75%')
 	assert x == 10

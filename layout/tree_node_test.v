@@ -33,9 +33,17 @@ fn test_tree_node_mutation_and_tree_order() {
 	replacement := Node.new(document, none)
 	root.replace_child(replacement, first)
 	assert first.parent() == none
+	assert first.index_in_parent_ == -1
+	assert replacement.index() == 0
 	assert layout_nodes_same(root.first_child() or { panic('missing') }, replacement)
 	root.remove_child(second)
 	assert second.parent() == none
+	assert second.index_in_parent_ == -1
+
+	prepended := Node.new(document, none)
+	root.prepend_child(prepended)
+	assert prepended.index() == 0
+	assert replacement.index() == 1
 }
 
 fn test_tree_node_skip_children_traversal() {

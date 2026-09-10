@@ -55,9 +55,38 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 		math_depth_:                     computed.math_depth()
 		math_style_:                     math_style_to_dom(computed.math_style())
 		view_transition_name_:           computed.view_transition_name()
-		attempted_pseudo_class_matches_: computed.attempted_pseudo_class_matches()
+		attempted_pseudo_class_matches_: attempted_pseudo_class_matches_to_dom(computed)
 		css_handle:                      voidptr(computed)
 	}
+}
+
+fn attempted_pseudo_class_matches_to_dom(computed &ComputedProperties) u8 {
+	mut mask := u8(0)
+	if computed.has_attempted_match_against_pseudo_class(.hover) {
+		mask |= u8(1) << int(dom.PseudoClass.hover)
+	}
+	if computed.has_attempted_match_against_pseudo_class(.active) {
+		mask |= u8(1) << int(dom.PseudoClass.active)
+	}
+	if computed.has_attempted_match_against_pseudo_class(.focus) {
+		mask |= u8(1) << int(dom.PseudoClass.focus)
+	}
+	if computed.has_attempted_match_against_pseudo_class(.focus_within) {
+		mask |= u8(1) << int(dom.PseudoClass.focus_within)
+	}
+	if computed.has_attempted_match_against_pseudo_class(.focus_visible) {
+		mask |= u8(1) << int(dom.PseudoClass.focus_visible)
+	}
+	if computed.has_attempted_match_against_pseudo_class(.target) {
+		mask |= u8(1) << int(dom.PseudoClass.target)
+	}
+	if computed.has_attempted_match_against_pseudo_class(.visited) {
+		mask |= u8(1) << int(dom.PseudoClass.visited)
+	}
+	if computed.has_attempted_match_against_pseudo_class(.link) {
+		mask |= u8(1) << int(dom.PseudoClass.link)
+	}
+	return mask
 }
 
 // css -> dom enum translations for the layout-facing computed fields mirrored above.

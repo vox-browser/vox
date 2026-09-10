@@ -27,7 +27,7 @@ pub mut:
 	block_length_            CSSPixels
 	border_box_top_          CSSPixels
 	baseline_                CSSPixels
-	direction_               css.Direction   = .ltr
+	direction_               css.Direction = .ltr
 	writing_mode_            css.WritingMode = .horizontal_tb
 	insert_position_         f32
 	current_insert_direction css.Direction = .ltr
@@ -36,17 +36,17 @@ pub mut:
 
 pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units int, inline_offset CSSPixels, block_offset CSSPixels, inline_length CSSPixels, block_length CSSPixels, border_box_top CSSPixels, direction css.Direction, writing_mode css.WritingMode, glyph_run ?&platform.GlyphRun) LineBoxFragment {
 	mut fragment := LineBoxFragment{
-		layout_node_:          layout_node
-		start_:                start
+		layout_node_: layout_node
+		start_: start
 		length_in_code_units_: length_in_code_units
-		inline_offset_:        inline_offset
-		block_offset_:         block_offset
-		inline_length_:        inline_length
-		block_length_:         block_length
-		border_box_top_:       border_box_top
-		direction_:            direction
-		writing_mode_:         writing_mode
-		glyph_run_:            glyph_run
+		inline_offset_: inline_offset
+		block_offset_: block_offset
+		inline_length_: inline_length
+		block_length_: block_length
+		border_box_top_: border_box_top
+		direction_: direction
+		writing_mode_: writing_mode
+		glyph_run_: glyph_run
 	}
 	if run := glyph_run {
 		fragment.current_insert_direction = fragment.resolve_glyph_run_direction(run.text_type())
@@ -137,22 +137,55 @@ pub fn (fragment &LineBoxFragment) border_box_top() CSSPixels {
 
 pub fn (fragment &LineBoxFragment) text() ?string {
 	text_node := fragment.layout_node_.as_text_node() or { return none }
-	return utf16_substring_for_line_box(text_node.text_for_rendering(), fragment.start_,
-		fragment.length_in_code_units_)
+	value := text_node.text_for_rendering()
+	if value.is_ascii() {
+		return utf16_substring_for_line_box(value, fragment.start_, fragment.length_in_code_units_)
+	}
+	if units := text_node.cached_utf16_code_units_ {
+		return utf16_substring_from_code_units_for_line_box(units, fragment.start_, fragment.length_in_code_units_)
+	}
+	return utf16_substring_for_line_box(value, fragment.start_, fragment.length_in_code_units_)
+}
+
+fn (fragment &LineBoxFragment) code_unit_at(relative_index int) ?u16 {
+	if relative_index < 0 || relative_index >= fragment.length_in_code_units_ {
+		return none
+	}
+	text_node := fragment.layout_node_.as_text_node() or { return none }
+	absolute_index := fragment.start_ + relative_index
+	value := text_node.text_for_rendering()
+	if value.is_ascii() {
+		if absolute_index < 0 || absolute_index >= value.len {
+			return none
+		}
+		return u16(value[absolute_index])
+	}
+	if units := text_node.cached_utf16_code_units_ {
+		if absolute_index < 0 || absolute_index >= units.len {
+			return none
+		}
+		return units[absolute_index]
+	}
+	units := utf16_code_units_for_line_box(value)
+	if absolute_index < 0 || absolute_index >= units.len {
+		return none
+	}
+	return units[absolute_index]
 }
 
 pub fn (fragment &LineBoxFragment) ends_in_whitespace() bool {
 	if fragment.length_in_code_units_ == 0 {
 		return false
 	}
-	text := fragment.text() or { return false }
-	units := utf16_code_units_for_line_box(text)
-	return units.len > 0 && is_ascii_space_code_unit(units[units.len - 1])
+	last := fragment.code_unit_at(fragment.length_in_code_units_ - 1) or { return false }
+	return is_ascii_space_code_unit(last)
 }
 
 pub fn (fragment &LineBoxFragment) is_justifiable_whitespace() bool {
-	text := fragment.text() or { return false }
-	return text == ' '
+	if fragment.length_in_code_units_ != 1 {
+		return false
+	}
+	return fragment.code_unit_at(0) or { return false } == u16(` `)
 }
 
 pub fn (fragment &LineBoxFragment) is_atomic_inline() bool {
@@ -271,16 +304,16 @@ pub mut:
 	block_length_             CSSPixels
 	bottom_                   CSSPixels
 	baseline_                 CSSPixels
-	direction_                css.Direction   = .ltr
+	direction_                css.Direction = .ltr
 	writing_mode_             css.WritingMode = .horizontal_tb
-	original_available_width_ AvailableSize   = AvailableSize.make_indefinite()
+	original_available_width_ AvailableSize = AvailableSize.make_indefinite()
 	has_break_                bool
 	has_forced_break_         bool
 }
 
 pub fn LineBox.new(direction css.Direction, writing_mode css.WritingMode) LineBox {
 	return LineBox{
-		direction_:    direction
+		direction_: direction
 		writing_mode_: writing_mode
 	}
 }
@@ -342,9 +375,7 @@ pub fn (mut line LineBox) add_fragment(layout_node &Node, start int, length int,
 	}
 	if !did_merge {
 		inline_offset := line.inline_length_.plus(leading_margin).plus(leading_size)
-		line.fragments_ << LineBoxFragment.new(layout_node, start, length, inline_offset,
-			CSSPixels.new(0), content_width, content_height, border_box_top, line.direction_,
-			line.writing_mode_, glyph_run)
+		line.fragments_ << LineBoxFragment.new(layout_node, start, length, inline_offset, CSSPixels.new(0), content_width, content_height, border_box_top, line.direction_, line.writing_mode_, glyph_run)
 	}
 	line.inline_length_ =
 		line.inline_length_.plus(leading_margin).plus(leading_size).plus(content_width).plus(trailing_size).plus(trailing_margin)
@@ -398,17 +429,16 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 	}
 
 	mut last_fragment := &line.fragments_[fragment_index]
-	last_text := last_fragment.text() or {
+	if last_fragment.layout_node_.as_text_node() == none {
 		if should_remove == .yes && trailing_whitespace_width.raw_value() > 0 {
 			last_fragment.set_has_trailing_whitespace(true)
 		}
 		return whitespace_width
 	}
-	units := utf16_code_units_for_line_box(last_text)
-	mut last_text_length := units.len
+	mut last_text_length := last_fragment.length_in_code_units_
 	for last_text_length > 0 {
 		last_text_length--
-		last_character := units[last_text_length]
+		last_character := last_fragment.code_unit_at(last_text_length) or { break }
 		if !is_ascii_space_code_unit(last_character) {
 			break
 		}
@@ -418,8 +448,7 @@ fn (mut line LineBox) calculate_or_trim_trailing_whitespace(should_remove Remove
 			last_character_width =
 				CSSPixels.nearest_value_for(run.font().glyph_width(last_character))
 		}
-		last_character_width = last_character_width.plus(resolved_text_spacing_for_node(last_fragment.layout_node_,
-			.letter_spacing))
+		last_character_width = last_character_width.plus(resolved_text_spacing_for_node(last_fragment.layout_node_, .letter_spacing))
 		whitespace_width = whitespace_width.plus(last_character_width)
 		trailing_whitespace_width = trailing_whitespace_width.plus(last_character_width)
 		if should_remove == .yes {
@@ -464,7 +493,14 @@ fn is_ascii_space_code_unit(code_unit u16) bool {
 }
 
 fn utf16_code_units_for_line_box(value string) []u16 {
-	mut code_units := []u16{}
+	if value.is_ascii() {
+		mut code_units := []u16{len: value.len}
+		for index in 0 .. value.len {
+			code_units[index] = u16(value[index])
+		}
+		return code_units
+	}
+	mut code_units := []u16{cap: value.len}
 	for character in value.runes() {
 		code_point := u32(character)
 		if code_point <= 0xffff {
@@ -479,6 +515,20 @@ fn utf16_code_units_for_line_box(value string) []u16 {
 }
 
 fn string_from_utf16_code_units_for_line_box(code_units []u16) string {
+	mut all_ascii := true
+	for code_unit in code_units {
+		if code_unit > 0x7f {
+			all_ascii = false
+			break
+		}
+	}
+	if all_ascii {
+		mut bytes := []u8{len: code_units.len}
+		for index, code_unit in code_units {
+			bytes[index] = u8(code_unit)
+		}
+		return bytes.bytestr()
+	}
 	mut builder := strings.new_builder(code_units.len)
 	mut index := 0
 	for index < code_units.len {
@@ -500,7 +550,23 @@ fn string_from_utf16_code_units_for_line_box(code_units []u16) string {
 }
 
 fn utf16_substring_for_line_box(value string, start int, length int) string {
+	if value.is_ascii() {
+		safe_start := if start < 0 {
+			0
+		} else if start > value.len {
+			value.len
+		} else {
+			start
+		}
+		requested_end := safe_start + if length < 0 { 0 } else { length }
+		safe_end := if requested_end > value.len { value.len } else { requested_end }
+		return value[safe_start..safe_end]
+	}
 	units := utf16_code_units_for_line_box(value)
+	return utf16_substring_from_code_units_for_line_box(units, start, length)
+}
+
+fn utf16_substring_from_code_units_for_line_box(units []u16, start int, length int) string {
 	safe_start := if start < 0 {
 		0
 	} else if start > units.len {

@@ -145,12 +145,16 @@ pub mut:
 	// CSSStyleProperties stores custom declarations as StyleProperty objects in
 	// upstream, preserving the parsed UnresolvedStyleValue token graph and its
 	// pointer identity through the cascade.
-	custom_properties map[string]StyleProperty
-	parent_rule       ?&CSSRule
-	computed          bool
-	readonly          bool
-	updating          bool
-	owner_node        ?dom.AbstractElement
+	custom_properties       map[string]StyleProperty
+	parent_rule             ?&CSSRule
+	computed                bool
+	readonly                bool
+	updating                bool
+	owner_node              ?dom.AbstractElement
+	typed_properties_cache_ ?[]StyleProperty
+	// Bit 0 is present for normal declarations and bit 1 for !important ones.
+	// It is populated together with typed_properties_cache_.
+	typed_importance_mask_ u8
 }
 
 pub fn CSSStyleProperties.create() &CSSStyleProperties {

@@ -20,6 +20,8 @@ import time
 // objects and DOM-owned opaque handles cross explicit typed adapters below.
 pub const computed_properties_normal_line_height_scale = 1.15
 
+const computed_property_flag_byte_count = (number_of_longhand_properties + 7) / 8
+
 // --- Small support records for layout/rendering and DOM integration adapters ---
 pub struct ComputedColor {
 pub mut:
@@ -1285,6 +1287,11 @@ __global computed_interpolation_computation_order_cache = []PropertyID{}
 // typed values in the same enum-indexed shape instead of paying a hash lookup
 // for every property of every styled element.
 __global computed_interpolation_initial_value_cache = []&dom.StyleValue{}
+__global (
+	computed_interpolation_initial_values_complete        bool
+	computed_interpolation_default_work_cache            = []u8{}
+	computed_interpolation_default_computed_value_cache   = []&dom.StyleValue{}
+)
 
 fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
@@ -1414,16 +1421,16 @@ pub enum WithAnimationsApplied {
 pub struct ComputedProperties {
 pub mut:
 	property_values_                        []&dom.StyleValue
-	property_important_                     []u8
-	property_inherited_                     []u8
-	animated_property_inherited_            []u8
-	animated_property_result_of_transition_ []u8
+	property_important_                     [computed_property_flag_byte_count]u8
+	property_inherited_                     [computed_property_flag_byte_count]u8
+	animated_property_inherited_            [computed_property_flag_byte_count]u8
+	animated_property_result_of_transition_ [computed_property_flag_byte_count]u8
 	animated_property_values_               map[PropertyID]&dom.StyleValue
 	display_before_box_type_transformation_ Display = Display.new()
 	cached_computed_font_list_              ?&FontCascadeList
 	cached_first_available_computed_font_   ?&PlatformFont
 	line_height_                            ?CSSPixels
-	attempted_pseudo_class_matches_         map[string]bool
+	attempted_pseudo_class_matches_         PseudoClassBitmap
 	// Lengths whose computed value remains viewport- or root-font-relative
 	// need the same style-computation context when Layout resolves their used
 	// value. LibWeb carries that context through the layout node; retaining it
@@ -1625,10 +1632,33 @@ pub type MutableComputedValues = ComputedValues
 pub fn ComputedProperties.new() &ComputedProperties {
 	return &ComputedProperties{
 		property_values_: []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
-		property_important_: []u8{len: (number_of_longhand_properties + 7) / 8}
-		property_inherited_: []u8{len: (number_of_longhand_properties + 7) / 8}
-		animated_property_inherited_: []u8{len: (number_of_longhand_properties + 7) / 8}
-		animated_property_result_of_transition_: []u8{len: (number_of_longhand_properties + 7) / 8}
+		animated_property_values_: map[PropertyID]&dom.StyleValue{}
+	}
+}
+
+fn computed_properties_with_initial_values() &ComputedProperties {
+	// The generated C++ ComputedProperties constructor starts from generated
+	// initial values. Parsing and assigning the same 313 values one property at
+	// a time for every element is needless work in V; build the immutable value
+	// pointer template once and clone its dense array for each computed style.
+	if !computed_interpolation_initial_values_complete {
+		computed_interpolation_default_work_cache = []u8{len: number_of_longhand_properties}
+		computed_interpolation_default_computed_value_cache = []&dom.StyleValue{
+			len: number_of_longhand_properties,
+			init: unsafe { nil }
+		}
+		for property_id in computed_interpolation_longhand_property_ids() {
+			computed_interpolation_property_initial_value(property_id)
+			index := int(property_id) - int(first_longhand_property_id())
+			if computed_interpolation_is_inherited_property(property_id)
+				|| property_requires_computation_with_initial_value(property_id) {
+				computed_interpolation_default_work_cache[index] = 1
+			}
+		}
+		computed_interpolation_initial_values_complete = true
+	}
+	return &ComputedProperties{
+		property_values_: computed_interpolation_initial_value_cache.clone()
 		animated_property_values_: map[PropertyID]&dom.StyleValue{}
 	}
 }
@@ -1802,7 +1832,7 @@ pub fn (c &ComputedProperties) is_animated_property_result_of_transition(propert
 	return c.animated_property_result_of_transition_[index / 8] & (u8(1) << (index % 8)) != 0
 }
 
-fn set_computed_property_flag(mut flags []u8, property_id PropertyID, enabled bool) {
+fn set_computed_property_flag(mut flags [computed_property_flag_byte_count]u8, property_id PropertyID, enabled bool) {
 	index := int(property_id) - int(first_longhand_property_id())
 	mask := u8(1) << (index % 8)
 	if enabled {
@@ -1865,7 +1895,9 @@ pub fn (mut c ComputedProperties) remove_animated_property(property_id PropertyI
 pub fn (c &ComputedProperties) property(property_id PropertyID, return_animated_value WithAnimationsApplied) ?&dom.StyleValue {
 	computed_interpolation_verify_longhand_property(property_id)
 	// Important properties override animated but not transitioned properties.
-	if (!c.is_property_important(property_id) || c.is_animated_property_result_of_transition(property_id)) && return_animated_value == .yes {
+	if return_animated_value == .yes
+		&& (!c.is_property_important(property_id)
+		|| c.is_animated_property_result_of_transition(property_id)) {
 		if animated_value := c.animated_property_values_[property_id] {
 			return animated_value
 		}
@@ -5423,16 +5455,12 @@ pub fn ComputedProperties.font_fallback(monospace bool, bold bool, point_size f3
 	}
 }
 
-pub fn (c &ComputedProperties) has_attempted_match_against_pseudo_class(pseudo_class CSSPseudoClass) bool {
-	return c.attempted_pseudo_class_matches_[pseudo_class_name(pseudo_class)] or { false }
+pub fn (c &ComputedProperties) has_attempted_match_against_pseudo_class(pseudo_class PseudoClass) bool {
+	return c.attempted_pseudo_class_matches_.get(pseudo_class)
 }
 
-pub fn (mut c ComputedProperties) set_attempted_pseudo_class_matches(results map[string]bool) {
-	c.attempted_pseudo_class_matches_ = results.clone()
-}
-
-pub fn (c &ComputedProperties) attempted_pseudo_class_matches() map[string]bool {
-	return c.attempted_pseudo_class_matches_.clone()
+pub fn (mut c ComputedProperties) set_attempted_pseudo_class_matches(results PseudoClassBitmap) {
+	c.attempted_pseudo_class_matches_ = results
 }
 
 // --- Interpolation ---
@@ -9615,7 +9643,11 @@ pub mut:
 
 pub fn StyleComputer.get_animated_inherit_value(property_id PropertyID, abstract_element dom.AbstractElement) ?AnimatedInheritValue {
 	parent := parent_computed_properties(abstract_element) or { return none }
-	animated_value := parent.animated_property_values()[property_id] or { return none }
+	// This lookup runs once for every inherited property on every descendant.
+	// The public accessor returns an owning copy for API callers; style
+	// computation only needs one entry and must not clone the entire animation
+	// map (usually empty) dozens of times per element.
+	animated_value := parent.animated_property_values_[property_id] or { return none }
 	return AnimatedInheritValue{
 		value: animated_value
 		is_result_of_transition: if parent.is_animated_property_result_of_transition(property_id) {
@@ -10029,7 +10061,7 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 }
 
 pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) &ComputedProperties {
-	mut properties := ComputedProperties.new()
+	mut properties := computed_properties_with_initial_values()
 	properties.viewport_rect_ = s.viewport_rect_
 	properties.root_font_size_px_ = s.root_element_font_metrics.font_size.to_double()
 	properties.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
@@ -10046,21 +10078,45 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	}
 
 	for property_id in computed_interpolation_property_computation_order() {
+		property_index := int(property_id) - int(first_longhand_property_id())
+		has_cascaded_property := cascaded_properties.contained_properties_cache_[int(property_id)] != 0
+		if !has_cascaded_property
+			&& computed_interpolation_default_work_cache[property_index] == 0 {
+			continue
+		}
+		is_inherited_property := computed_interpolation_is_inherited_property(property_id)
+		// A non-inherited property's default is computed from the same generated
+		// initial value on every element. Cache that typed result after the first
+		// element; inherited defaults remain element-dependent through their parent.
+		can_reuse_default_computed_value := !has_cascaded_property && !is_inherited_property
+			&& property_requires_computation_with_initial_value(property_id)
+		if can_reuse_default_computed_value {
+			cached_default := computed_interpolation_default_computed_value_cache[property_index]
+			if cached_default != unsafe { nil } {
+				properties.property_values_[property_index] = cached_default
+				continue
+			}
+		}
 		mut value := ?&dom.StyleValue(none)
 		mut requires_computation := false
+		cascaded_style_property := if has_cascaded_property {
+			cascaded_properties.style_property(property_id)
+		} else {
+			?StyleProperty(none)
+		}
 
-		if cascaded_style_property := cascaded_properties.style_property(property_id) {
-			if cascaded_style_property.important == .yes {
+		if active_cascaded_property := cascaded_style_property {
+			if active_cascaded_property.important == .yes {
 				properties.set_property_important(property_id, .yes)
 			}
-			value = cascaded_style_property.value
+			value = active_cascaded_property.value
 			requires_computation = property_requires_computation_with_cascaded_value(property_id)
 		}
 		if property_id == .font_size && value == none && recascaded_font_size != none {
 			continue
 		}
 
-		mut should_inherit := value == none && computed_interpolation_is_inherited_property(property_id)
+		mut should_inherit := value == none && is_inherited_property
 
 		// https://www.w3.org/TR/css-cascade-4/#inherit
 		// If the cascaded value of a property is the inherit keyword, the property’s specified and computed values are the inherited value.
@@ -10071,7 +10127,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		// https://www.w3.org/TR/css-cascade-4/#inherit-initial
 		// If the cascaded value of a property is the unset keyword, then if it is an inherited property, this is treated as inherit, and if it is not, this is treated as initial.
 		if style_value := value {
-			should_inherit = should_inherit || (computed_interpolation_style_value_is_unset(style_value) && computed_interpolation_is_inherited_property(property_id))
+			should_inherit = should_inherit || (computed_interpolation_style_value_is_unset(style_value) && is_inherited_property)
 		}
 
 		// https://www.w3.org/TR/css-color-4/#resolving-other-colors
@@ -10114,6 +10170,9 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			style_value
 		}
 		properties.set_property_without_modifying_flags(property_id, computed_value)
+		if can_reuse_default_computed_value {
+			computed_interpolation_default_computed_value_cache[property_index] = computed_value
+		}
 	}
 
 	// The root element establishes the root font metrics used by rem/rlh for every
@@ -11967,13 +12026,7 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 	mut computed_properties := s.compute_properties(mutable_abstract_element, mut cascaded_properties)
 	_, compute_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	css_style_profile_compute_ns += compute_elapsed
-	mut attempted_matches_by_name := map[string]bool{}
-	for pseudo_class, attempted in attempted_pseudo_class_matches.values {
-		if attempted {
-			attempted_matches_by_name[selector_pseudo_class_name(pseudo_class)] = true
-		}
-	}
-	computed_properties.set_attempted_pseudo_class_matches(attempted_matches_by_name)
+	computed_properties.set_attempted_pseudo_class_matches(attempted_pseudo_class_matches)
 	if did_change := did_change_custom_properties {
 		new_custom_property_data := abstract_element.custom_property_data()
 		if old_custom_property_data != new_custom_property_data

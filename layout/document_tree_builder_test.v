@@ -87,6 +87,32 @@ fn test_run_document_layout() {
 	assert div2_uv.offset.y().to_double() == 30.0
 }
 
+fn test_tree_dump_layout_does_not_build_renderer_transport() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	mut html_el := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut body := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'body') or {
+		panic('${err}')
+	}
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(html_el.as_node()) or { panic('${err}') }
+	mut html_node := html_el.as_node()
+	html_node.append_child(body.as_node()) or { panic('${err}') }
+
+	result := run_document_layout_for_tree_dump(doc, 320, 200) or {
+		panic('layout produced no result')
+	}
+	assert result.paint_tree.tag_name == ''
+	assert result.paint_tree.width == 0
+	assert result.paint_tree.height == 0
+	tree_text := dump_current_document_layout_tree(doc) or {
+		panic('layout tree was not retained')
+	}
+	assert tree_text.contains('Viewport')
+	assert tree_text.contains('BlockContainer <html>')
+}
+
 // A DOM text node becomes a Layout::TextNode carrying offset-preserving rendered text.
 fn test_text_node_layout() {
 	mut doc := dom.Document.create(dom.url_about_blank())
@@ -192,7 +218,8 @@ fn test_anonymous_block_wrapping_for_mixed_content() {
 	wrapper_style := wrapper.as_node_with_style() or { panic('wrapper has no style') }
 	assert wrapper_style.computed_values().display().is_block_outside()
 	assert (wrapper_style.computed_values().property(.margin_top, .yes) or {
-		panic('missing margin-top')}).css_text != '33px'
+		panic('missing margin-top')
+	}).css_text != '33px'
 	assert (wrapper_style.computed_values().property(.color, .yes) or { panic('missing color') }).css_text == (div_box.computed_values().property(.color, .yes) or { panic('missing parent color') }).css_text
 	wrapper_child := wrapper.first_child() or { panic('no wrapper child') }
 	assert wrapper_child.is_text_node()
@@ -354,7 +381,8 @@ fn test_display_type_selects_literal_layout_node_subclass() {
 	assert fieldset_node.is_fieldset_box()
 	assert html_field_set_element_layout_node(fieldset_node) != none
 	assert creates_block_formatting_context(fieldset_node.as_node_with_style() or {
-		panic('fieldset has no style')})
+		panic('fieldset has no style')
+	})
 
 	legend := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'legend') or {
 		panic('${err}')
@@ -433,11 +461,13 @@ fn test_before_and_after_pseudo_elements_generate_layout_content_in_tree_order()
 	assert target.child_count() == 3
 	assert target.children()[0].is_generated_for_before_pseudo_element()
 	assert (target.children()[0].first_child() or { panic('before has no text') }).as_text_node() or {
-		panic('before child is not text')}.text_for_rendering() == 'before'
+		panic('before child is not text')
+	}.text_for_rendering() == 'before'
 	assert target.children()[1].as_text_node() or { panic('middle is not text') }.text_for_rendering() == 'middle'
 	assert target.children()[2].is_generated_for_after_pseudo_element()
 	assert (target.children()[2].first_child() or { panic('after has no text') }).as_text_node() or {
-		panic('after child is not text')}.text_for_rendering() == 'after'
+		panic('after child is not text')
+	}.text_for_rendering() == 'after'
 	attach_layout_nodes(root)
 	target_element := document.get_element_by_id('target') or { panic('no target element') }
 	assert target_element.as_node().accessible_name(document, .yes)! == 'before middleafter'
@@ -463,9 +493,11 @@ fn test_generated_inline_content_is_laid_out_inside_mixed_content_wrappers() {
 	assert before_generated.display().is_flow_inside()
 	assert (before_generated.first_child() or { panic('before child') }).display().is_inline_outside()
 	assert (before_generated.first_child() or { panic('before text') }).as_text_node() or {
-		panic('before text node')}.text_for_rendering() == 'before'
+		panic('before text node')
+	}.text_for_rendering() == 'before'
 	assert (after_generated.first_child() or { panic('after text') }).as_text_node() or {
-		panic('after text node')}.text_for_rendering() == 'after'
+		panic('after text node')
+	}.text_for_rendering() == 'after'
 	before_used := result.used_values_for(before_wrapper.as_node_with_style() or {
 		panic('before wrapper style')
 	}) or { panic('before wrapper used values') }
@@ -648,7 +680,8 @@ fn test_block_inside_inline_creates_before_and_after_inline_continuations() {
 	}
 	assert middle_metrics.continuation_of_node() != none
 	assert layout_nodes_same(unsafe {
-		&Node(metrics.continuation_of_node() or { panic('continuation has no source') })}, middle_wrapper)
+		&Node(metrics.continuation_of_node() or { panic('continuation has no source') })
+	}, middle_wrapper)
 }
 
 fn test_svg_elements_create_their_concrete_layout_node_types_without_html_wrappers() {

@@ -1297,19 +1297,20 @@ fn finalize_grid_track_growth_limits(mut tracks []GridTrack) {
 // In particular, an auto-sized item spanning a flexible track has the usual
 // zero automatic minimum unless it spans exactly one auto-minimum track.
 fn grid_item_minimum_outer_inline_contribution(mut state LayoutState, item &Node, tracks []GridTrack, start int, span int, gap CSSPixels) CSSPixels {
-	min_content_contribution := grid_intrinsic_outer_width_contribution(mut state, item, .min_content)
 	preferred := item.computed_values().size_value(.width)
 	if !preferred.is_auto() && !preferred.contains_percentage() && !preferred.is_fit_content() {
-		return min_content_contribution
+		return grid_intrinsic_outer_width_contribution(mut state, item, .min_content)
 	}
 	minimum := item.computed_values().size_value(.min_width)
 	if minimum.is_min_content() {
-		return min_content_contribution
+		return grid_intrinsic_outer_width_contribution(mut state, item, .min_content)
 	}
 	if minimum.is_max_content() {
 		return grid_intrinsic_outer_width_contribution(mut state, item, .max_content)
 	}
-	styled := item.as_node_with_style() or { return min_content_contribution }
+	styled := item.as_node_with_style() or {
+		return grid_intrinsic_outer_width_contribution(mut state, item, .min_content)
+	}
 	item_state := state.get(styled)
 	edges := flex_or_grid_item_outer_inline_edges(item_state)
 	if minimum.is_auto() {
@@ -1323,7 +1324,10 @@ fn grid_item_minimum_outer_inline_contribution(mut state LayoutState, item &Node
 		}
 		if spans_auto_track && !flex_item_is_scroll_container(item)
 			&& (span == 1 || !spans_flexible_track) {
-			return grid_content_based_minimum_from_outer_contribution(item, item_state, tracks, start, span, gap, min_content_contribution, true)
+			min_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
+				item, .min_content)
+			return grid_content_based_minimum_from_outer_contribution(item, item_state,
+				tracks, start, span, gap, min_content_contribution, true)
 		}
 		return edges
 	}
@@ -1335,7 +1339,7 @@ fn grid_item_minimum_outer_inline_contribution(mut state LayoutState, item &Node
 	if resolved := resolve_layout_content_size(item, minimum, containing_width, item_state, true) {
 		return resolved.plus(edges)
 	}
-	return min_content_contribution
+	return grid_intrinsic_outer_width_contribution(mut state, item, .min_content)
 }
 
 // GridFormattingContext::increase_sizes_to_accommodate_spanning_items_crossing_flexible_tracks().
@@ -1727,13 +1731,14 @@ fn grid_item_outer_block_content_contribution(mut state LayoutState, item &Node,
 
 fn grid_item_minimum_outer_block_contribution(mut state LayoutState, item &Node, item_state &UsedValues, tracks []GridTrack, start int, span int, available_height_is_definite bool, percentage_basis CSSPixels, gap CSSPixels) CSSPixels {
 	spanned_track_size := grid_track_range_size(tracks, start, span, gap)
-	min_content_contribution := grid_item_outer_block_content_contribution(mut state, item, item_state, .min_content, available_height_is_definite, percentage_basis, spanned_track_size)
 	if !grid_item_preferred_block_size_behaves_as_auto(item, item_state, available_height_is_definite) {
-		return min_content_contribution
+		return grid_item_outer_block_content_contribution(mut state, item, item_state,
+			.min_content, available_height_is_definite, percentage_basis, spanned_track_size)
 	}
 	minimum := item.computed_values().size_value(.min_height)
 	if minimum.is_min_content() {
-		return min_content_contribution
+		return grid_item_outer_block_content_contribution(mut state, item, item_state,
+			.min_content, available_height_is_definite, percentage_basis, spanned_track_size)
 	}
 	if minimum.is_max_content() {
 		return grid_item_outer_block_content_contribution(mut state, item, item_state, .max_content, available_height_is_definite, percentage_basis, spanned_track_size)
@@ -1750,14 +1755,19 @@ fn grid_item_minimum_outer_block_contribution(mut state LayoutState, item &Node,
 		}
 		if spans_auto_track && !flex_item_is_scroll_container(item)
 			&& (span == 1 || !spans_flexible_track) {
-			return grid_content_based_minimum_from_outer_contribution(item, item_state, tracks, start, span, gap, min_content_contribution, false)
+			min_content_contribution := grid_item_outer_block_content_contribution(mut state,
+				item, item_state, .min_content, available_height_is_definite, percentage_basis,
+				spanned_track_size)
+			return grid_content_based_minimum_from_outer_contribution(item, item_state,
+				tracks, start, span, gap, min_content_contribution, false)
 		}
 		return edges
 	}
 	if resolved := resolve_layout_content_size(item, minimum, percentage_basis, item_state, false) {
 		return resolved.plus(edges)
 	}
-	return min_content_contribution
+	return grid_item_outer_block_content_contribution(mut state, item, item_state, .min_content,
+		available_height_is_definite, percentage_basis, spanned_track_size)
 }
 
 fn grid_should_treat_max_height_as_none(state &LayoutState, container &Node, available_height AvailableSize) bool {

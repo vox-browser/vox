@@ -17,6 +17,18 @@ mut:
 	targets           []CSSPixels
 }
 
+fn new_flex_line(capacity int) FlexLine {
+	return FlexLine{
+		items: []&Node{cap: capacity}
+		bases: []CSSPixels{cap: capacity}
+		minimums: []CSSPixels{cap: capacity}
+		deferred_minimums: []bool{cap: capacity}
+		maximums: []CSSPixels{cap: capacity}
+		hypotheticals: []CSSPixels{cap: capacity}
+		targets: []CSSPixels{cap: capacity}
+	}
+}
+
 enum FlexCrossAlignment {
 	// `normal` is kept apart from an explicit `stretch` even though both stretch an
 	// auto-sized item: only `normal` follows a wrap-reverse container's swapped cross-start
@@ -62,10 +74,9 @@ fn ordered_flex_items(container &Node) []&Node {
 	// FlexFormattingContext::generate_anonymous_flex_items() groups children by
 	// `order` and sorts only the distinct keys. Avoid insertion-sorting the
 	// growing item array, which made equal-order containers quadratic.
-	mut order_item_buckets := [][]&Node{}
-	mut bucket_indices := map[int]int{}
-	mut keys := []int{}
-	mut item_count := 0
+	mut items := []&Node{cap: container.children().len}
+	mut first_order := 0
+	mut all_same_order := true
 	parent := container.parent()
 	is_button_wrapper := if candidate := parent {
 		node_uses_button_layout(candidate)
@@ -85,14 +96,31 @@ fn ordered_flex_items(container &Node) []&Node {
 			mutable_child.set_flex_item(true)
 		}
 		order := child.computed_values().order()
+		if items.len == 0 {
+			first_order = order
+		} else if order != first_order {
+			all_same_order = false
+		}
+		items << child
+	}
+	// Almost all real-world flex containers leave every item at the initial
+	// `order: 0`. Preserve their source order without allocating a map, a key
+	// array, and nested bucket arrays for every container.
+	if all_same_order {
+		return items
+	}
+	mut order_item_buckets := [][]&Node{}
+	mut bucket_indices := map[int]int{}
+	mut keys := []int{}
+	for item in items {
+		order := item.computed_values().order()
 		bucket_number := bucket_indices[order] or {
 			order_item_buckets << []&Node{}
 			keys << order
 			bucket_indices[order] = order_item_buckets.len
 			order_item_buckets.len
 		}
-		order_item_buckets[bucket_number - 1] << child
-		item_count++
+		order_item_buckets[bucket_number - 1] << item
 	}
 	// C++ sorts the distinct order keys descending for a reverse direction rather than
 	// reversing the item list, because the positioning code already lays a reverse line out
@@ -103,14 +131,14 @@ fn ordered_flex_items(container &Node) []&Node {
 	} else {
 		keys.sort()
 	}
-	mut items := []&Node{cap: item_count}
+	mut ordered_items := []&Node{cap: items.len}
 	for key in keys {
 		bucket_number := bucket_indices[key] or { continue }
 		for item in order_item_buckets[bucket_number - 1] {
-			items << item
+			ordered_items << item
 		}
 	}
-	return items
+	return ordered_items
 }
 
 // FlexFormattingContext::main_gap()/cross_gap(). Percentages resolve against
@@ -1234,17 +1262,17 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		hypotheticals << flex_hypothetical_main_size(bases[index], minimum, maximum)
 	}
 
-	mut lines := []FlexLine{}
-	mut line := FlexLine{}
-	mut occupied := CSSPixels.new(0)
 	wraps := container.computed_values().flex_wrap() != .nowrap
+	mut lines := []FlexLine{cap: if wraps { 4 } else { 1 }}
+	mut line := new_flex_line(if wraps { 8 } else { items.len })
+	mut occupied := CSSPixels.new(0)
 	for index, item in items {
 		outer := hypotheticals[index].plus(edges[index])
 		addition := if line.items.len > 0 { outer.plus(column_gap) } else { outer }
 		if wraps && line.items.len > 0
 			&& occupied.plus(addition).raw_value() > container_width.raw_value() {
 			lines << line
-			line = FlexLine{}
+			line = new_flex_line(8)
 			occupied = CSSPixels.new(0)
 		}
 		line.items << item
@@ -1260,10 +1288,10 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	}
 
 	mut automatic_width := CSSPixels.new(0)
-	mut line_cross_sizes := []CSSPixels{}
+	mut line_cross_sizes := []CSSPixels{cap: lines.len}
 	for line_index in 0 .. lines.len {
 		mut current_line := lines[line_index]
-		mut line_edges := []CSSPixels{}
+		mut line_edges := []CSSPixels{cap: current_line.items.len}
 		for item in current_line.items {
 			styled := item.as_node_with_style() or { continue }
 			item_state := state.get(styled)
@@ -1331,7 +1359,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	mut placement := flex_line_placement(container.computed_values().align_content(), available_cross_size, total_cross_size, lines.len, wrap_reverse)
 	distributed_cross_space := placement.gap_size
 
-	mut line_order := []int{}
+	mut line_order := []int{cap: lines.len}
 	for index in 0 .. lines.len {
 		line_order << index
 	}
@@ -1383,7 +1411,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			leading, distributed_gap = flex_justify_offsets(container.computed_values().justify_content(), main_free_space, current_line.items.len)
 		}
 		mut cursor := flex_physical_leading_offset(container, container.computed_values().justify_content(), main_free_space, leading, distributed_gap, current_line.items.len, true, main_reversed, absorbed_main_space)
-		mut indexes := []int{}
+		mut indexes := []int{cap: current_line.items.len}
 		for index in 0 .. current_line.items.len {
 			indexes << index
 		}
@@ -1493,9 +1521,9 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	row_gap := flex_formatting_context_main_gap(container, container_height or {
 		CSSPixels.new(0)
 	}, false)
-	mut bases := []CSSPixels{}
-	mut edges := []CSSPixels{}
-	mut contributions := []CSSPixels{}
+	mut bases := []CSSPixels{cap: items.len}
+	mut edges := []CSSPixels{cap: items.len}
+	mut contributions := []CSSPixels{cap: items.len}
 	for item in items {
 		styled := item.as_node_with_style() or { continue }
 		mut item_state := state.get_mutable(styled)
@@ -1534,10 +1562,10 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		contributions << laid_out.margin_box_height()
 	}
 	skip_automatic_minimum := should_skip_automatic_minimum_size_clamp(state, container, container_state, layout_mode, items, bases, false, available_space.height.to_px_or_zero())
-	mut minimums := []CSSPixels{}
-	mut deferred_minimums := []bool{}
-	mut maximums := []CSSPixels{}
-	mut hypotheticals := []CSSPixels{}
+	mut minimums := []CSSPixels{cap: items.len}
+	mut deferred_minimums := []bool{cap: items.len}
+	mut maximums := []CSSPixels{cap: items.len}
+	mut hypotheticals := []CSSPixels{cap: items.len}
 	for index, item in items {
 		styled := item.as_node_with_style() or { continue }
 		item_state := state.get(styled)
@@ -1624,7 +1652,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	if !absorbed_main_space {
 		leading, distributed_gap = flex_justify_offsets(container.computed_values().justify_content(), main_free_space, items.len)
 	}
-	mut indexes := []int{}
+	mut indexes := []int{cap: items.len}
 	for index in 0 .. items.len {
 		indexes << index
 	}
@@ -1718,15 +1746,15 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		hypotheticals << flex_hypothetical_main_size(base, minimum, maximum)
 	}
 
-	mut lines := []FlexLine{}
-	mut line := FlexLine{}
+	mut lines := []FlexLine{cap: 4}
+	mut line := new_flex_line(8)
 	mut occupied := CSSPixels.new(0)
 	for index, item in items {
 		outer := hypotheticals[index].plus(main_edges[index])
 		addition := if line.items.len > 0 { outer.plus(row_gap) } else { outer }
 		if line.items.len > 0 && occupied.plus(addition).raw_value() > main_size.raw_value() {
 			lines << line
-			line = FlexLine{}
+			line = new_flex_line(8)
 			occupied = CSSPixels.new(0)
 		}
 		line.items << item

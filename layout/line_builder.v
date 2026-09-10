@@ -472,6 +472,9 @@ fn layout_font_metrics_for_node(node &Node) platform.FontPixelMetrics {
 // StyleComputer's font-metric resolution in upstream (notably `ch` for text
 // spacing and tab-size).
 fn resolve_font_dependent_length_for_node(node &Node, length css.Length) CSSPixels {
+	if length.is_absolute() {
+		return length.absolute_length_to_px()
+	}
 	mut context := css.LengthResolutionContext.for_document(node.document())
 	computed := node.computed_values()
 	metrics := layout_font_metrics_for_node(node)

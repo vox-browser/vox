@@ -8,13 +8,7 @@ module layout
 import dom
 
 pub fn (n &Node) index() int {
-	parent := n.parent() or { return 0 }
-	for index, child in parent.children_ {
-		if layout_nodes_same(child, n) {
-			return index
-		}
-	}
-	return 0
+	return if n.parent_ == none { 0 } else { n.index_in_parent_ }
 }
 
 pub fn (n &Node) root() &Node {
@@ -90,6 +84,10 @@ pub fn (mut n Node) prepend_child(child &Node) {
 	mut mutable_child := unsafe { &Node(child) }
 	mutable_child.parent_ = &n
 	n.children_.prepend(child)
+	for index, current in n.children_ {
+		mut mutable_current := unsafe { &Node(current) }
+		mutable_current.index_in_parent_ = index
+	}
 }
 
 pub fn (mut n Node) insert_before(child &Node, reference ?&Node) {
@@ -99,7 +97,12 @@ pub fn (mut n Node) insert_before(child &Node, reference ?&Node) {
 		assert layout_nodes_same(reference_node.parent() or { return }, &n)
 		mut mutable_child := unsafe { &Node(child) }
 		mutable_child.parent_ = &n
-		n.children_.insert(reference_node.index(), child)
+		index := reference_node.index()
+		n.children_.insert(index, child)
+		for child_index := index; child_index < n.children_.len; child_index++ {
+			mut current := unsafe { &Node(n.children_[child_index]) }
+			current.index_in_parent_ = child_index
+		}
 		return
 	}
 	n.append_child(child)
@@ -112,6 +115,11 @@ pub fn (mut n Node) remove_child(child &Node) {
 	n.children_.delete(index)
 	mut mutable_child := unsafe { &Node(child) }
 	mutable_child.parent_ = none
+	mutable_child.index_in_parent_ = -1
+	for child_index := index; child_index < n.children_.len; child_index++ {
+		mut current := unsafe { &Node(n.children_[child_index]) }
+		current.index_in_parent_ = child_index
+	}
 }
 
 pub fn (mut n Node) replace_child(new_child &Node, old_child &Node) {
@@ -123,8 +131,10 @@ pub fn (mut n Node) replace_child(new_child &Node, old_child &Node) {
 	n.children_[index] = new_child
 	mut mutable_new_child := unsafe { &Node(new_child) }
 	mutable_new_child.parent_ = &n
+	mutable_new_child.index_in_parent_ = index
 	mut mutable_old_child := unsafe { &Node(old_child) }
 	mutable_old_child.parent_ = none
+	mutable_old_child.index_in_parent_ = -1
 }
 
 pub fn (mut n Node) remove() {

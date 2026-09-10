@@ -66,6 +66,7 @@ fn test_declaration_style_properties() {
 	props := declaration_style_properties(declaration)
 	// The unknown property is skipped.
 	assert props.len == 2
+	assert declaration.typed_importance_mask_ == 3
 
 	color_id := property_id_from_string('color') or { panic('no color id') }
 	width_id := property_id_from_string('width') or { panic('no width id') }
@@ -75,6 +76,13 @@ fn test_declaration_style_properties() {
 	assert props[1].important == Important.no
 	// Values are opaque dom.StyleValues carrying the serialized text.
 	assert props[1].value.css_text == '10px'
+	assert declaration_style_properties(declaration)[0].value == props[0].value
+
+	blue := parse_css_value_logic(.color, 'blue') or { panic('blue') }
+	declaration.set_a_css_declaration(.color, dom_style_value_from_value_logic(blue), .no)
+	refreshed := declaration_style_properties(declaration)
+	assert refreshed[0].value.css_text == 'blue'
+	assert declaration.typed_importance_mask_ == 1
 }
 
 // cascade_declarations over an element's inline style: direct properties are set and shorthands are
@@ -928,6 +936,22 @@ fn test_computed_style_records_attempted_pseudo_class_matches() {
 	doc.needs_full_style_update = true
 	doc.update_style()
 	assert item.affected_by_pseudo_class(.hover)
+}
+
+fn test_pseudo_class_bitmap_handles_both_words_and_merge() {
+	mut first := PseudoClassBitmap{}
+	first.set(.hover, true)
+	first.set(.heading, true)
+	assert first.get(.hover)
+	assert first.get(.heading)
+	assert !first.get(.focus)
+
+	mut second := PseudoClassBitmap{}
+	second.set(.focus, true)
+	first.merge(second)
+	assert first.get(.focus)
+	first.set(.hover, false)
+	assert !first.get(.hover)
 }
 
 fn test_typed_view_transition_name_reaches_dom_element_algorithm() {

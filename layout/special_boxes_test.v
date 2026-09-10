@@ -13,6 +13,21 @@ fn test_gif_decoder_rejects_a_truncated_lzw_stream() {
 	assert gif_image_data_is_decodable(complete)
 }
 
+fn test_encoded_image_dimensions_reads_png_and_jpeg_metadata() {
+	png := [u8(0x89), `P`, `N`, `G`, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, `I`, `H`, `D`, `R`, 0,
+		0, 2, 128, 0, 0, 1, 224]
+	png_size := encoded_image_dimensions(png) or { panic('PNG dimensions') }
+	assert png_size.width == 640
+	assert png_size.height == 480
+
+	jpeg := [u8(0xff), 0xd8, 0xff, 0xe0, 0, 4, 0, 0, 0xff, 0xc2, 0, 11, 8, 0x01, 0xe0, 0x02, 0x80,
+		3, 1, 0x11, 0, 0xff, 0xd9]
+	jpeg_size := encoded_image_dimensions(jpeg) or { panic('JPEG dimensions') }
+	assert jpeg_size.width == 640
+	assert jpeg_size.height == 480
+	assert encoded_image_dimensions([u8(0xff), 0xd8, 0xff, 0xc0, 0, 4]) == none
+}
+
 fn test_image_box_recomputes_alt_text_natural_size_after_dom_update() {
 	document := dom.Document.create(dom.url_about_blank())
 	mut image_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'img')!

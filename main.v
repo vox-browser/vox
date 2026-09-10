@@ -272,6 +272,7 @@ mut:
 	resource_cache                      map[string]PreloadedResource
 	screenshot_path                     string
 	screenshot_scheduled                bool
+	layout_tree_only                    bool
 	document_presented                  bool
 	refresh_not_before                  i64
 	snapshot_visible                    bool
@@ -768,6 +769,11 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 	root := unsafe { &dom.Node(document) }
 	mut urls := []string{}
 	mut seen := map[string]bool{}
+	// A local page can contain absolute tracking badges or other remote images.
+	// Those images are not render-blocking, and waiting for them here makes a
+	// saved page's first layout depend on the network. Styles and scripts remain
+	// eligible below because they can affect the initial document state.
+	preload_remote_images := !base_url.starts_with('file://')
 	for link in css.query_selector_all(root, 'link[rel][href]') {
 		if link.get_attribute_value('rel').to_lower().split(' ').filter(it != '').all(it != 'stylesheet') {
 			continue
@@ -797,36 +803,38 @@ fn document_preload_resource_urls(document &dom.Document, base_url string) []str
 			}
 		}
 	}
-	for image in css.query_selector_all(root, 'img[src]') {
-		resource_url := resolve_document_reference(image.get_attribute_value('src'), base_url)
-		if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
-			seen[resource_url] = true
-			urls << resource_url
-			if urls.len == max_preloaded_resources {
-				return urls
+	if preload_remote_images {
+		for image in css.query_selector_all(root, 'img[src]') {
+			resource_url := resolve_document_reference(image.get_attribute_value('src'), base_url)
+			if (resource_url.starts_with('http://') || resource_url.starts_with('https://')) && resource_url !in seen {
+				seen[resource_url] = true
+				urls << resource_url
+				if urls.len == max_preloaded_resources {
+					return urls
+				}
 			}
 		}
-	}
-	// SVGImageElement performs the same image fetch as HTMLImageElement. Include
-	// both SVG 2 href and the legacy XLink spelling before layout/replay so mask
-	// caches are never populated from a temporarily unavailable remote image.
-	for image in css.query_selector_all(root, 'image') {
-		mut source := ''
-		if image.has_attribute('href') {
-			source = image.get_attribute_value('href').trim_space()
-		} else {
-			source = image.get_attribute_value('xlink:href').trim_space()
-		}
-		if source == '' {
-			continue
-		}
-		resource_url := resolve_document_reference(source, base_url)
-		if (resource_url.starts_with('http://') || resource_url.starts_with('https://'))
-			&& resource_url !in seen {
-			seen[resource_url] = true
-			urls << resource_url
-			if urls.len == max_preloaded_resources {
-				return urls
+		// SVGImageElement performs the same image fetch as HTMLImageElement. Include
+		// both SVG 2 href and the legacy XLink spelling before layout/replay so mask
+		// caches are never populated from a temporarily unavailable remote image.
+		for image in css.query_selector_all(root, 'image') {
+			mut source := ''
+			if image.has_attribute('href') {
+				source = image.get_attribute_value('href').trim_space()
+			} else {
+				source = image.get_attribute_value('xlink:href').trim_space()
+			}
+			if source == '' {
+				continue
+			}
+			resource_url := resolve_document_reference(source, base_url)
+			if (resource_url.starts_with('http://') || resource_url.starts_with('https://'))
+				&& resource_url !in seen {
+				seen[resource_url] = true
+				urls << resource_url
+				if urls.len == max_preloaded_resources {
+					return urls
+				}
 			}
 		}
 	}
@@ -1274,6 +1282,19 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 		1
 	}
 	mut layout_checkpoint := time.sys_mono_now()
+	if app.layout_tree_only {
+		// The dump reads the retained typed tree directly. Building the separate
+		// renderer transport here would add a full unused tree traversal.
+		_ = layout.run_document_layout_for_tree_dump(app.document, f64(viewport_width), f64(viewport_height)) or { return }
+		debug_timing_checkpoint('  layout_tree', layout_checkpoint)
+		app.root_box = layout.BlockBox{}
+		app.paint_commands = []layout.PaintCommand{}
+		app.paint_commands_have_backdrop_filter = false
+		app.content_height = f64(viewport_height)
+		app.viewport_width = viewport_width
+		app.viewport_height = viewport_height
+		return
+	}
 	app.root_box = layout.layout_document_typed_in_viewport(app.document, f64(viewport_width), f64(viewport_height))
 	layout_checkpoint = debug_timing_checkpoint('  layout_tree', layout_checkpoint)
 	mut mutable_document := unsafe { &dom.Document(app.document) }
@@ -4103,6 +4124,7 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 }
 
 fn main() {
+	main_started := time.sys_mono_now()
 	link_translated_modules()
 	xpath.install_dom_xpath_bridge()
 	$if macos {
@@ -4114,6 +4136,7 @@ fn main() {
 		exit(2)
 	}
 	initial_url, markup, source_label := initial_document(options.source)
+	debug_timing_checkpoint('startup', main_started)
 	initial_viewport_height := if options.height > int(toolbar_height + status_bar_height) {
 		options.height - int(toolbar_height + status_bar_height)
 	} else {
@@ -4130,6 +4153,7 @@ fn main() {
 		navigation_results: chan NavigationResult{ cap: 4 }
 		resource_cache: map[string]PreloadedResource{}
 		screenshot_path: options.screenshot
+		layout_tree_only: options.headless_layout_tree
 		use_document_font: use_document_font
 		viewport_width: options.width
 		viewport_height: initial_viewport_height
@@ -4172,11 +4196,14 @@ fn main() {
 		return
 	}
 	if options.headless_layout_tree {
+		mut dump_checkpoint := time.sys_mono_now()
 		layout_tree := layout.dump_current_document_layout_tree(app.document) or {
 			eprintln('Ladybird V: no layout tree was produced')
 			exit(1)
 		}
+		dump_checkpoint = debug_timing_checkpoint('layout_tree_dump', dump_checkpoint)
 		println(layout_tree)
+		debug_timing_checkpoint('layout_tree_write', dump_checkpoint)
 		return
 	}
 

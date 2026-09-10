@@ -539,11 +539,15 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	// BlockFormattingContext::layout_block_level_box(): flex containers whose
 	// used height is auto have a max-content automatic block size. Resolve that
 	// size before creating the independent flex formatting context, just as the
-	// upstream parent BFC does. The value remains indefinite for percentage
-	// resolution; set_content_height() deliberately does not change that flag.
+	// upstream parent BFC does. Nested flex containers participate in this pass:
+	// their cached max-content heights make the containing flex box's measured
+	// height exact and are reused by the normal layout. The value remains
+	// indefinite for percentage resolution; set_content_height() deliberately
+	// does not change that flag.
 	if definite_content_height == none && box_as_node.display().is_flex_inside() {
 		if flex_box := box_as_node.as_box() {
-			box_state.set_content_height(calculate_max_content_height(mut state, flex_box, css_px(content_width)))
+			box_state.set_content_height(calculate_max_content_height(mut state, flex_box,
+				css_px(content_width)))
 		}
 	}
 	// Anonymous block wrappers pass through the containing block's available

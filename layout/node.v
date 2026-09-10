@@ -14,8 +14,9 @@ import platform
 pub struct Node {
 pub mut:
 	// Tree structure.
-	parent_   ?&Node
-	children_ []&Node
+	parent_          ?&Node
+	index_in_parent_ int = -1
+	children_        []&Node
 	// Layout::Node members (Layout/Node.h).
 	document_                          &dom.Document = unsafe { nil }
 	dom_node_                          ?&dom.Node
@@ -86,6 +87,7 @@ pub fn layout_nodes_same(a &Node, b &Node) bool {
 pub fn (mut n Node) append_child(child &Node) {
 	mut mutable_child := unsafe { &Node(child) }
 	mutable_child.parent_ = n
+	mutable_child.index_in_parent_ = n.children_.len
 	n.children_ << child
 	mutable_child.inserted_into(n)
 }
@@ -102,11 +104,13 @@ fn (mut n Node) replace_children(children []&Node) {
 	for old_child in n.children_ {
 		mut mutable_old_child := unsafe { &Node(old_child) }
 		mutable_old_child.parent_ = none
+		mutable_old_child.index_in_parent_ = -1
 	}
 	n.children_ = children.clone()
-	for child in n.children_ {
+	for index, child in n.children_ {
 		mut mutable_child := unsafe { &Node(child) }
 		mutable_child.parent_ = n
+		mutable_child.index_in_parent_ = index
 	}
 }
 
@@ -142,26 +146,18 @@ pub fn (n &Node) last_child() ?&Node {
 
 pub fn (n &Node) next_sibling() ?&Node {
 	parent := n.parent_ or { return none }
-	for i, child in parent.children_ {
-		if layout_nodes_same(child, n) {
-			if i + 1 < parent.children_.len {
-				return parent.children_[i + 1]
-			}
-			return none
-		}
+	index := n.index_in_parent_
+	if index >= 0 && index + 1 < parent.children_.len {
+		return parent.children_[index + 1]
 	}
 	return none
 }
 
 pub fn (n &Node) previous_sibling() ?&Node {
 	parent := n.parent_ or { return none }
-	for i, child in parent.children_ {
-		if layout_nodes_same(child, n) {
-			if i > 0 {
-				return parent.children_[i - 1]
-			}
-			return none
-		}
+	index := n.index_in_parent_
+	if index > 0 && index < parent.children_.len {
+		return parent.children_[index - 1]
 	}
 	return none
 }
@@ -1619,6 +1615,8 @@ pub mut:
 	font_for_rendering_       ?&platform.Font
 	is_empty_editable_        bool
 	cached_inline_chunks_     ?[]TextNodeChunk
+	cached_utf16_code_units_  ?[]u16
+	cached_intrinsic_text_shapes_ []IntrinsicTextShapeCacheEntry
 }
 
 pub fn (n &TextNode) font_for_rendering() &platform.Font {
@@ -1662,6 +1660,8 @@ pub fn (mut n TextNode) invalidate_text_for_rendering() {
 	n.text_for_rendering_valid_ = false
 	n.text_for_rendering_ = ''
 	n.cached_inline_chunks_ = none
+	n.cached_utf16_code_units_ = none
+	n.cached_intrinsic_text_shapes_.clear()
 }
 
 fn (mut n TextNode) compute_text_for_rendering() {

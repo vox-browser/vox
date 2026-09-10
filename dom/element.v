@@ -463,7 +463,7 @@ pub mut:
 	math_depth_                     int
 	math_style_                     CSSMathStyle_ = .normal
 	view_transition_name_           ?string
-	attempted_pseudo_class_matches_ map[string]bool
+	attempted_pseudo_class_matches_ u8
 	// dom<->css bridge: opaque handle to the real css.ComputedProperties this placeholder mirrors.
 	// The CSS module (which owns the type) sets/reads it via unsafe cast; dom cannot name the type
 	// because it cannot import css. See css/dom_css_bridge.v.
@@ -511,17 +511,7 @@ pub fn (c &CSSComputedProperties_) view_transition_name() ?string {
 }
 
 pub fn (c &CSSComputedProperties_) has_attempted_match_against_pseudo_class(pseudo_class PseudoClass) bool {
-	name := match pseudo_class {
-		.hover { 'hover' }
-		.active { 'active' }
-		.focus { 'focus' }
-		.focus_within { 'focus-within' }
-		.focus_visible { 'focus-visible' }
-		.target { 'target' }
-		.visited { 'visited' }
-		.link { 'link' }
-	}
-	return c.attempted_pseudo_class_matches_[name] or { false }
+	return c.attempted_pseudo_class_matches_ & (u8(1) << int(pseudo_class)) != 0
 }
 
 pub struct CSSDisplay_ {

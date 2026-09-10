@@ -339,8 +339,8 @@ mut:
 	cursor_cache_initialized   bool
 }
 
-fn document_layout_update_callback(target voidptr, document &dom.Document, viewport_width f64, viewport_height f64, needs_layout_tree_rebuild bool) voidptr {
-	_ = target
+fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewport_width f64,
+	viewport_height f64, needs_layout_tree_rebuild bool, build_paint_tree bool) voidptr {
 	resize_handle_states := if previous := document_layout_result(document) {
 		previous.resize_handle_states.clone()
 	} else {
@@ -349,7 +349,11 @@ fn document_layout_update_callback(target voidptr, document &dom.Document, viewp
 	result := run_document_layout_with_current_style(document, viewport_width, viewport_height, needs_layout_tree_rebuild) or {
 		return unsafe { nil }
 	}
-	paint_tree := renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
+	paint_tree := if build_paint_tree {
+		renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
+	} else {
+		BlockBox{}
+	}
 	result_ptr := &DocumentLayoutResult{
 		root: result.root
 		state: result.state
@@ -357,11 +361,34 @@ fn document_layout_update_callback(target voidptr, document &dom.Document, viewp
 		paint_tree: paint_tree
 		resize_handle_states: resize_handle_states
 	}
-	install_document_painting_bridge(document, result_ptr)
+	if build_paint_tree {
+		install_document_painting_bridge(document, result_ptr)
+	}
 	return voidptr(result_ptr)
 }
 
+fn document_layout_update_callback(target voidptr, document &dom.Document, viewport_width f64,
+	viewport_height f64, needs_layout_tree_rebuild bool) voidptr {
+	_ = target
+	return document_layout_update_callback_with_paint_tree(document, viewport_width, viewport_height, needs_layout_tree_rebuild, true)
+}
+
+fn document_layout_tree_update_callback(target voidptr, document &dom.Document, viewport_width f64,
+	viewport_height f64, needs_layout_tree_rebuild bool) voidptr {
+	_ = target
+	return document_layout_update_callback_with_paint_tree(document, viewport_width, viewport_height, needs_layout_tree_rebuild, false)
+}
+
 pub fn install_document_layout_hook(document &dom.Document) {
+	install_document_layout_hook_with_callback(document, document_layout_update_callback)
+}
+
+fn install_document_layout_tree_hook(document &dom.Document) {
+	install_document_layout_hook_with_callback(document, document_layout_tree_update_callback)
+}
+
+fn install_document_layout_hook_with_callback(document &dom.Document,
+	callback dom.DocumentLayoutUpdateCallback) {
 	// Document owns its StyleComputer before update_layout() can enter the
 	// layout callback upstream. Establish that side of the module boundary here
 	// as well, so the first update performs Document::update_style() rather than
@@ -371,7 +398,7 @@ pub fn install_document_layout_hook(document &dom.Document) {
 	html.install_document_csp_hook(document)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_layout_update_hook(dom.DocumentLayoutUpdateHook{
-		callback: document_layout_update_callback
+		callback: callback
 	})
 }
 
@@ -390,6 +417,19 @@ pub fn (result &DocumentLayoutResult) used_values_for(box &NodeWithStyle) ?&Used
 // formatting context handles block, inline, flex, grid, table, SVG, fieldset,
 // and replaced content.
 pub fn run_document_layout(document &dom.Document, viewport_width f64, viewport_height f64) ?DocumentLayoutResult {
+	return run_document_layout_with_renderer_mode(document, viewport_width, viewport_height, true)
+}
+
+// The layout-tree command serializes the retained typed tree and never consumes
+// the compatibility BlockBox paint transport. Avoid materializing that second
+// tree solely to discard it after the dump.
+pub fn run_document_layout_for_tree_dump(document &dom.Document, viewport_width f64,
+	viewport_height f64) ?DocumentLayoutResult {
+	return run_document_layout_with_renderer_mode(document, viewport_width, viewport_height, false)
+}
+
+fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width f64,
+	viewport_height f64, build_paint_tree bool) ?DocumentLayoutResult {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	old_viewport := mutable_document.viewport_rect()
 	viewport_changed := old_viewport.x != 0 || old_viewport.y != 0
@@ -411,7 +451,11 @@ pub fn run_document_layout(document &dom.Document, viewport_width f64, viewport_
 	}
 	prepare_document_for_layout(document)
 	css.sync_document_style_elements(document)
-	install_document_layout_hook(document)
+	if build_paint_tree {
+		install_document_layout_hook(document)
+	} else {
+		install_document_layout_tree_hook(document)
+	}
 	if mutable_document.layout_engine_handle() == unsafe { nil } || viewport_changed {
 		mutable_document.set_needs_full_style_update(true)
 		mutable_document.set_needs_full_layout_tree_update(true)
@@ -681,8 +725,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	// participate in the block/inline child classification of list contents.
 	if marker := list_item_marker {
 		mut mutable_marker := unsafe { &Node(marker) }
-		box_node.children_.prepend(mutable_marker)
-		mutable_marker.parent_ = box_node
+		box_node.prepend_child(mutable_marker)
 	}
 	fixup_fieldset_content_box(mut box_node, document)
 	fixup_button_layout_tree(mut box_node, document)
@@ -930,11 +973,13 @@ fn attach_referenced_svg_resources_in_subtree(mut node Node, document &dom.Docum
 			}
 		}
 	}
-	// Include newly appended resources in this snapshot so references within a
-	// mask, clip path, or pattern are resolved recursively as upstream builds it.
-	mut children := node.children_.clone()
-	for mut child in children {
+	// Iterate the live list so newly appended resources are resolved recursively
+	// without cloning every child array in the document.
+	mut child_index := 0
+	for child_index < node.children_.len {
+		mut child := node.children_[child_index]
 		attach_referenced_svg_resources_in_subtree(mut child, document, style_computer, mut builder_state)
+		child_index++
 	}
 }
 
@@ -1702,8 +1747,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	if node.is_list_item_box() {
 		if marker := build_list_item_marker(document, element, computed, mut builder_state) {
 			mut mutable_marker := unsafe { &Node(marker) }
-			node.children_.prepend(mutable_marker)
-			mutable_marker.parent_ = node
+			node.prepend_child(mutable_marker)
 			mut list_item := unsafe { &ListItemBox(node) }
 			list_item.set_marker(mutable_marker)
 		}

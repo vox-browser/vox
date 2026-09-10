@@ -90,10 +90,15 @@ fn test_insert_remove_replace() {
 	assert rn.child_count() == 3
 	assert (a.as_node().next_sibling() or { panic('no sib') }).is_same_node(b.as_node())
 	assert (c.as_node().previous_sibling() or { panic('no sib') }).is_same_node(b.as_node())
+	assert a.as_node().index() == 0
+	assert b.as_node().index() == 1
+	assert c.as_node().index() == 2
 
 	rn.remove_child(b.as_node()) or { panic('${err}') }
 	assert rn.child_count() == 2
 	assert b.as_node().parent() == none
+	assert b.as_node().index_in_parent_ == -1
+	assert c.as_node().index() == 1
 	assert rn.is_inclusive_ancestor_of(a.as_node())
 	assert !rn.is_inclusive_ancestor_of(b.as_node())
 

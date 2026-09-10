@@ -181,13 +181,8 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 				node := item.node or { continue }
 				text_node := node.as_text_node() or { continue }
 				if text_node.Node.computed_values().text_wrap_mode() == .wrap {
-					mut is_whitespace := item.is_collapsible_whitespace
+					is_whitespace := item.is_all_whitespace
 					mut next_width := CSSPixels.new(0)
-					if !is_whitespace {
-						view := utf16_substring_for_line_box(text_node.text_for_rendering(),
-							item.offset_in_node, item.length_in_node)
-						is_whitespace = string_is_ascii_whitespace(view)
-					}
 					if is_whitespace {
 						next_width = iterator.next_non_whitespace_sequence_width()
 					}

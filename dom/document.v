@@ -411,10 +411,11 @@ mut:
 pub struct Node {
 	EventTarget
 pub mut:
-	node_type NodeType
-	document_ &Document = unsafe { nil }
-	parent_   &Node = unsafe { nil }
-	children  []&Node
+	node_type        NodeType
+	document_        &Document = unsafe { nil }
+	parent_          &Node = unsafe { nil }
+	index_in_parent_ int = -1
+	children         []&Node
 
 	child_nodes_ &NodeList = unsafe { nil }
 	layout_node_ &LayoutNode = unsafe { nil }

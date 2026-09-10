@@ -405,8 +405,7 @@ fn parse_custom_property_value(value string) &dom.StyleValue {
 			return dom_style_value_from_value_logic(keyword)
 		}
 	}
-	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_original_source_text(parser.component_values,
-		value)))
+	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_original_source_text(parser.component_values, value)))
 }
 
 fn cssom_style_property_as_style_property(property CSSStyleProperty) ?StyleProperty {
@@ -420,6 +419,11 @@ fn cssom_style_property_as_style_property(property CSSStyleProperty) ?StylePrope
 		property_id: property_id
 		value: value
 	}
+}
+
+fn (mut properties CSSStyleProperties) clear_typed_properties_cache() {
+	properties.typed_properties_cache_ = none
+	properties.typed_importance_mask_ = 0
 }
 
 fn cssom_expanded_longhands_for_shorthand(shorthand PropertyID) []PropertyID {
@@ -975,6 +979,7 @@ pub fn (mut properties CSSStyleProperties) set_property_style_value(property Pro
 		properties.invalidate_owners(.style_sheet_changed)
 		return
 	}
+	properties.clear_typed_properties_cache()
 
 	property_id := property.id() or { return }
 	typed := style_value_logic_from_dom(property_id, style_value) or {
@@ -1036,6 +1041,7 @@ fn (mut properties CSSStyleProperties) set_a_css_declaration_with_serialized(pro
 				if property.important == new_property.important && property.value == new_property.value {
 					return false
 				}
+				properties.clear_typed_properties_cache()
 				properties.properties[index] = new_property
 				return true
 			}
@@ -1045,6 +1051,7 @@ fn (mut properties CSSStyleProperties) set_a_css_declaration_with_serialized(pro
 		}
 	}
 
+	properties.clear_typed_properties_cache()
 	properties.properties << new_property
 	return true
 }
@@ -1071,6 +1078,7 @@ pub fn (mut properties CSSStyleProperties) remove_property_internal(property Pro
 		property_name := string_from_property_id(property.id() or { PropertyID.color })
 		for index, existing in properties.properties {
 			if existing.name == property_name {
+				properties.clear_typed_properties_cache()
 				removed_value = existing.value
 				properties.properties.delete(index)
 				removed = true
@@ -1097,6 +1105,7 @@ pub fn (mut properties CSSStyleProperties) set_css_text(css_text string) ! {
 
 // CSSStyleProperties::empty_the_declarations().
 pub fn (mut properties CSSStyleProperties) empty_the_declarations() {
+	properties.clear_typed_properties_cache()
 	properties.properties.clear()
 	properties.custom_properties.clear()
 }
@@ -1105,6 +1114,7 @@ pub fn (mut properties CSSStyleProperties) empty_the_declarations() {
 // specified order, expanding shorthands and retaining only the winner at its
 // specified relative position.
 pub fn (mut properties CSSStyleProperties) set_the_declarations(property_values []StyleProperty, custom_property_values map[string]StyleProperty) {
+	properties.clear_typed_properties_cache()
 	properties.properties = css_style_properties_to_cssom_properties(convert_declarations_to_specified_order(property_values))
 	properties.custom_properties.clear()
 	for name, property in custom_property_values {
@@ -1123,6 +1133,7 @@ pub fn (mut properties CSSStyleProperties) set_declarations_from_text(css_text s
 		ParsingParams{}
 	}
 	parsed := parse_css_property_declaration_block_for_style_properties(context, css_text)
+	properties.clear_typed_properties_cache()
 	properties.properties = parsed.properties.clone()
 	properties.custom_properties = parsed.custom_properties.clone()
 }
@@ -1623,16 +1634,12 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 			return cssom_style_value_for_length_percentage_or_auto(inset.top())
 		}
 		.grid_template_columns {
-			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_columns_,
-				layout_node.used_grid_column_line_names_)
-			{
+			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_columns_, layout_node.used_grid_column_line_names_) {
 				return resolved
 			}
 		}
 		.grid_template_rows {
-			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_rows_,
-				layout_node.used_grid_row_line_names_)
-			{
+			if resolved := cssom_resolved_grid_template(layout_node.used_grid_template_rows_, layout_node.used_grid_row_line_names_) {
 				return resolved
 			}
 		}
