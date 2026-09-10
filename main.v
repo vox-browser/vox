@@ -270,6 +270,8 @@ mut:
 	navigation_generation               int
 	background_image_ids                map[string]int
 	resource_cache                      map[string]PreloadedResource
+	background_resource_results         chan PreloadedResource
+	background_resource_pending         map[string]bool
 	screenshot_path                     string
 	screenshot_scheduled                bool
 	layout_tree_only                    bool
@@ -578,6 +580,14 @@ fn browser_cache_root() string {
 	return os.join_path(os.cache_dir(), 'ladybird-v')
 }
 
+// Capturing an NSView snapshot forces Cocoa to synchronously repaint the full
+// retained display list and encode a PNG on the main thread. Keep the
+// experimental snapshot cache opt-in until it can copy the presented Metal
+// surface without delaying browser interactivity.
+fn browser_snapshot_cache_enabled() bool {
+	return os.getenv('LADYBIRD_ENABLE_SNAPSHOT_CACHE') != ''
+}
+
 fn browser_cache_entry_path(cache_root string, category string, resource_url string) string {
 	return os.join_path(cache_root, category, sha256.hexhash(resource_url))
 }
@@ -672,6 +682,11 @@ fn fetch_page(address string, base string) !LoadedPage {
 		url: resolved
 		method: .get
 		user_agent: 'Ladybird V/0.1'
+		// The current pooled HTTP/2 client can leave a stream waiting indefinitely
+		// after ALPN succeeds. Browser navigation must remain bounded and responsive.
+		enable_http2: false
+		read_timeout: 10 * time.second
+		write_timeout: 10 * time.second
 		validate: true
 		verify: tls_ca_bundle()
 	)!
@@ -709,6 +724,9 @@ fn fetch_text_resource(reference string, base string) !string {
 		url: resolved
 		method: .get
 		user_agent: 'Ladybird V/0.1'
+		enable_http2: false
+		read_timeout: 10 * time.second
+		write_timeout: 10 * time.second
 		validate: true
 		verify: tls_ca_bundle()
 	)!
@@ -730,6 +748,13 @@ fn fetch_resource_in_background(resource_url string, results chan PreloadedResou
 	results <- PreloadedResource{
 		url: resource_url
 		body: body
+	}
+}
+
+fn fetch_background_resource_in_background(resource_url string, results chan PreloadedResource) {
+	fetch_resource_in_background(resource_url, results)
+	$if macos {
+		C.native_wake_browser()
 	}
 }
 
@@ -2105,6 +2130,7 @@ fn (app &BrowserApp) background_image_bytes(image_url string) ![]u8 {
 		if resource.error == '' {
 			return resource.body.bytes()
 		}
+		return error(resource.error)
 	}
 	if image_url.starts_with('data:') {
 		comma := image_url.index(',') or { return error('Malformed data URL') }
@@ -2120,19 +2146,33 @@ fn (app &BrowserApp) background_image_bytes(image_url string) ![]u8 {
 		return os.read_bytes(path)
 	}
 	if image_url.starts_with('http://') || image_url.starts_with('https://') {
-		response := vhttp.fetch(
-			url: image_url
-			method: .get
-			user_agent: 'Ladybird V/0.1'
-			validate: true
-			verify: tls_ca_bundle()
-		)!
-		if response.status_code < 200 || response.status_code >= 400 {
-			return error('HTTP ${response.status_code}')
-		}
-		return response.body.bytes()
+		return error('remote image has not finished loading')
 	}
 	return os.read_bytes(image_url)
+}
+
+fn (mut app BrowserApp) request_background_resource(image_url string) {
+	if image_url in app.resource_cache || image_url in app.background_resource_pending {
+		return
+	}
+	app.background_resource_pending[image_url] = true
+	spawn fetch_background_resource_in_background(image_url, app.background_resource_results)
+}
+
+fn (mut app BrowserApp) poll_background_resources() {
+	for {
+		select {
+			resource := <-app.background_resource_results {
+				app.background_resource_pending.delete(resource.url)
+				if app.resource_cache.len < max_cached_resources || resource.url in app.resource_cache {
+					app.resource_cache[resource.url] = resource
+				}
+			}
+			else {
+				return
+			}
+		}
+	}
 }
 
 fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
@@ -2140,6 +2180,12 @@ fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
 		image := app.ctx.get_cached_image_by_idx(image_id)
 		if image.ok {
 			return image
+		}
+	}
+	if image_url.starts_with('http://') || image_url.starts_with('https://') {
+		if image_url !in app.resource_cache {
+			app.request_background_resource(image_url)
+			return none
 		}
 	}
 	mut image := if image_url.starts_with('file://') {
@@ -3799,11 +3845,15 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 }
 
 fn (mut app BrowserApp) draw() {
+	app.poll_background_resources()
 	refresh_ready := app.refresh_not_before == 0 || time.sys_mono_now() >= app.refresh_not_before
 	if app.document == unsafe { nil } || (app.document_presented && refresh_ready) {
 		app.refresh_not_before = 0
 		app.poll_navigation()
 	}
+	report_first_paint := debug_timing_enabled() && app.document != unsafe { nil }
+		&& !app.document_presented
+	mut paint_checkpoint := time.sys_mono_now()
 	window := browser_window_size()
 	content_viewport_height := window.height - app.chrome_height()
 	if window.width > 0 && (window.width != app.viewport_width || content_viewport_height != app.viewport_height) {
@@ -3831,6 +3881,9 @@ fn (mut app BrowserApp) draw() {
 	page_y := app.page_top()
 	for command in app.paint_commands {
 		app.draw_command(command, 0, page_y, window.height)
+	}
+	if report_first_paint {
+		paint_checkpoint = debug_timing_checkpoint('first_paint_replay (${app.paint_commands.len} commands)', paint_checkpoint)
 	}
 	$if macos {
 		if app.ctx.native_rendering
@@ -3885,6 +3938,9 @@ fn (mut app BrowserApp) draw() {
 		app.ctx.draw_text(12, status_y + 4, footer, color: gg.rgb(203, 213, 225), size: 12)
 	}
 	app.ctx.end()
+	if report_first_paint {
+		debug_timing_checkpoint('first_paint_total', paint_checkpoint)
+	}
 	if app.document != unsafe { nil } {
 		app.document_presented = true
 		$if macos {
@@ -3894,7 +3950,8 @@ fn (mut app BrowserApp) draw() {
 				app.snapshot_visible = false
 				app.snapshot_hold = false
 			}
-			if !app.snapshot_cached && !app.load_status.starts_with('Cached') && !app.load_status.starts_with('Loading ') {
+			if browser_snapshot_cache_enabled() && !app.snapshot_cached
+				&& !app.load_status.starts_with('Cached') && !app.load_status.starts_with('Loading ') {
 				app.snapshot_cached = true
 				C.native_cache_browser_snapshot(cached_snapshot_path(app.address))
 			}
@@ -3907,6 +3964,9 @@ fn (mut app BrowserApp) draw() {
 }
 
 fn (app &BrowserApp) element_at_window_point(mouse_x f32, mouse_y f32) ?&dom.Element {
+	if app.document == unsafe { nil } {
+		return none
+	}
 	if mouse_y < app.page_top() || mouse_y >= f32(browser_window_size().height - app.status_height()) {
 		return none
 	}
@@ -4167,6 +4227,8 @@ fn main() {
 		page_model: page_model
 		navigation_results: chan NavigationResult{ cap: 4 }
 		resource_cache: map[string]PreloadedResource{}
+		background_resource_results: chan PreloadedResource{ cap: max_cached_resources }
+		background_resource_pending: map[string]bool{}
 		screenshot_path: options.screenshot
 		layout_tree_only: options.headless_layout_tree
 		use_document_font: use_document_font

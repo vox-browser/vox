@@ -214,6 +214,37 @@ fn test_cached_status_is_replaced_without_relayout() {
 	assert app.status == 'HTTP 200 · 35000 bytes · 525 paints · 1200×1219 CSS px'
 }
 
+fn test_browser_snapshot_cache_is_opt_in() {
+	previous := os.getenv_opt('LADYBIRD_ENABLE_SNAPSHOT_CACHE')
+	os.unsetenv('LADYBIRD_ENABLE_SNAPSHOT_CACHE')
+	defer {
+		if value := previous {
+			os.setenv('LADYBIRD_ENABLE_SNAPSHOT_CACHE', value, true)
+		} else {
+			os.unsetenv('LADYBIRD_ENABLE_SNAPSHOT_CACHE')
+		}
+	}
+	assert !browser_snapshot_cache_enabled()
+	os.setenv('LADYBIRD_ENABLE_SNAPSHOT_CACHE', '1', true)
+	assert browser_snapshot_cache_enabled()
+}
+
+fn test_remote_background_image_bytes_never_fetches_on_the_paint_thread() {
+	app := BrowserApp{
+		resource_cache: map[string]PreloadedResource{}
+	}
+	app.background_image_bytes('https://example.com/background.png') or {
+		assert err.msg() == 'remote image has not finished loading'
+		return
+	}
+	assert false, 'an uncached remote image must not perform a synchronous fetch'
+}
+
+fn test_hit_testing_before_the_first_document_is_safe() {
+	app := BrowserApp{}
+	assert app.element_at_window_point(10, 10) == none
+}
+
 fn test_address_for_display_handles_a_narrow_toolbar() {
 	assert address_for_display('file:///tmp/example.html', 0, false, 0) == ''
 	assert address_for_display('file:///tmp/example.html', 0, true, -4) == ''
