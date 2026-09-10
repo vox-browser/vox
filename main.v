@@ -387,16 +387,24 @@ fn schedule_native_screenshot(path string) {
 	C.schedule_native_screenshot(path)
 }
 
-fn configure_browser_layout_font() bool {
+fn configure_browser_layout_font(configure_native_replay bool) bool {
 	$if macos {
-		if emoji_path := platform.emoji_font_path() {
-			C.native_configure_emoji_font(emoji_path)
+		// Headless layout-tree output never replays glyphs through the native
+		// painter. Avoid opening the same font files in Cocoa solely to discard
+		// that state when the process exits; HarfBuzz still receives the exact
+		// document path below for layout metrics and shaping.
+		if configure_native_replay {
+			if emoji_path := platform.emoji_font_path() {
+				C.native_configure_emoji_font(emoji_path)
+			}
 		}
 		layout_test_font := os.getenv('LADYBIRD_LAYOUT_TEST_FONT')
 		if layout_test_font != '' {
-			C.native_configure_document_font(layout_test_font)
-			if bold_path := platform.document_font_path(700) {
-				C.native_configure_document_bold_font(bold_path)
+			if configure_native_replay {
+				C.native_configure_document_font(layout_test_font)
+				if bold_path := platform.document_font_path(700) {
+					C.native_configure_document_bold_font(bold_path)
+				}
 			}
 			return true
 		}
@@ -407,13 +415,15 @@ fn configure_browser_layout_font() bool {
 		}
 		if os.is_file(path) {
 			os.setenv('LADYBIRD_BROWSER_DEFAULT_FONT', path, true)
-			// Glyph indices are face-specific. Configure the same face for native
-			// display-list replay even when the browser is using its default Arial
-			// path, rather than enabling retained replay only for an explicit
-			// LADYBIRD_BROWSER_FONT override.
-			C.native_configure_document_font(path)
-			if bold_path := platform.document_font_path(700) {
-				C.native_configure_document_bold_font(bold_path)
+			if configure_native_replay {
+				// Glyph indices are face-specific. Configure the same face for native
+				// display-list replay even when the browser is using its default Arial
+				// path, rather than enabling retained replay only for an explicit
+				// LADYBIRD_BROWSER_FONT override.
+				C.native_configure_document_font(path)
+				if bold_path := platform.document_font_path(700) {
+					C.native_configure_document_bold_font(bold_path)
+				}
 			}
 			return use_document_font
 		}
@@ -1101,11 +1111,7 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 	return json_string_property(state, 'navigate')
 }
 
-fn run_document_javascript(document &dom.Document, current_url string, preloaded map[string]PreloadedResource, runtime &browserjs.Runtime, mut messages []string) ?string {
-	sources := script_sources(document, current_url, preloaded, mut messages)
-	if sources.len == 0 {
-		return none
-	}
+fn run_document_javascript(document &dom.Document, current_url string, sources []string, runtime &browserjs.Runtime, mut messages []string) ?string {
 	result := runtime.evaluate(javascript_program(javascript_initial_state(document, current_url), sources)) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
@@ -1372,9 +1378,15 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	checkpoint = debug_timing_checkpoint('install_styles', checkpoint)
 	if app.js_runtime != unsafe { nil } {
 		app.js_runtime.close()
+		app.js_runtime = unsafe { nil }
 	}
-	app.js_runtime = browserjs.Runtime.create()
-	javascript_navigation := run_document_javascript(app.document, loaded.url, preloaded_resources, app.js_runtime, mut app.js_messages)
+	sources := script_sources(app.document, loaded.url, preloaded_resources, mut app.js_messages)
+	javascript_navigation := if sources.len > 0 {
+		app.js_runtime = browserjs.Runtime.create()
+		run_document_javascript(app.document, loaded.url, sources, app.js_runtime, mut app.js_messages)
+	} else {
+		none
+	}
 	checkpoint = debug_timing_checkpoint('run_javascript', checkpoint)
 	app.page_model.load(loaded.url)
 	if add_history {
@@ -4127,14 +4139,17 @@ fn main() {
 	main_started := time.sys_mono_now()
 	link_translated_modules()
 	xpath.install_dom_xpath_bridge()
-	$if macos {
-		C.native_prevent_app_nap()
-	}
-	use_document_font := configure_browser_layout_font()
 	options := parse_launch_options(os.args[1..]) or {
 		eprintln('Ladybird V: ${err.msg()}')
 		exit(2)
 	}
+	needs_native_font_replay := !options.headless_smoke && !options.headless_layout_tree
+	$if macos {
+		if needs_native_font_replay {
+			C.native_prevent_app_nap()
+		}
+	}
+	use_document_font := configure_browser_layout_font(needs_native_font_replay)
 	initial_url, markup, source_label := initial_document(options.source)
 	debug_timing_checkpoint('startup', main_started)
 	initial_viewport_height := if options.height > int(toolbar_height + status_bar_height) {

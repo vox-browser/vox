@@ -182,7 +182,7 @@ fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_comp
 	document_style := style_computer.create_document_style()
 	mut viewport := unsafe { &Node(Viewport.new(document, document_style)) }
 	mut builder_state := TreeBuilderState{
-		registered_counter_styles: css.registered_counter_styles_for_document(document)
+		registered_counter_styles: map[string]css.CounterStyle{}
 	}
 	if root_element_box := build_layout_box_for_element(document, root_element, style_computer, mut builder_state) {
 		propagate_overflow_to_viewport(root_element_box, mut viewport)
@@ -1712,6 +1712,9 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	if computed.display().is_none() {
 		return none
 	}
+	if builder_state.registered_counter_styles.len == 0 {
+		builder_state.registered_counter_styles = css.registered_counter_styles_for_document(document)
+	}
 	css.resolve_computed_values_for_document(computed, document)
 	abstract_element := dom.AbstractElement.new(element, dom_pseudo)
 	initial_quote_nesting_level := builder_state.quote_nesting_level
@@ -1768,6 +1771,9 @@ fn build_backdrop_pseudo_element(document &dom.Document, element &dom.Element, m
 }
 
 fn build_list_item_marker(document &dom.Document, element &dom.Element, list_item_computed &css.ComputedProperties, mut builder_state TreeBuilderState) ?&Node {
+	if builder_state.registered_counter_styles.len == 0 {
+		builder_state.registered_counter_styles = css.registered_counter_styles_for_document(document)
+	}
 	marker_computed := css.computed_properties_for_pseudo_element(element, .marker) or {
 		list_item_computed.clone_for_anonymous_block()
 	}

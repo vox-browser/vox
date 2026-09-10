@@ -397,7 +397,7 @@ pub fn resolve_computed_values_for_document(style &ComputedProperties, document 
 	mutable_values.set_text_shadow(computed_values_shadow(style, .text_shadow, context))
 	mutable_values.set_box_shadow(computed_values_shadow(style, .box_shadow, context))
 	mutable_values.set_scrollbar_color(computed_values_scrollbar_color(style, context))
-	mutable_values.set_list_style_type(style.list_style_type(registered_counter_styles_for_document(document)))
+	mutable_values.set_list_style_type(style.list_style_type(document))
 
 	mut left := values.border_left()
 	left.color = color_from_computed_value(style.color_or_fallback(.border_left_color, context, ComputedColor.rgba(color.r, color.g, color.b, color.a)))

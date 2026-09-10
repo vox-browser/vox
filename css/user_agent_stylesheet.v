@@ -1,27 +1,19 @@
 module css
 
-// The user-agent (default) stylesheet, embedded verbatim from Ladybird's CSS/Default.css. It is
-// parsed once at program start into the rules that make up the lowest-priority (UA) cascade origin,
-// so unstyled elements get their default styles (div { display: block }, head { display: none }, ...).
+// The user-agent (default) stylesheet, embedded verbatim from Ladybird's CSS/Default.css.
 const user_agent_stylesheet_source = $embed_file('ua_default.css').to_string()
 const user_agent_quirks_mode_stylesheet_source = $embed_file('ua_quirks_mode.css').to_string()
 const user_agent_mathml_stylesheet_source = $embed_file('ua_mathml_default.css').to_string()
 const user_agent_svg_stylesheet_source = $embed_file('ua_svg_default.css').to_string()
-
-const user_agent_stylesheet_rules = parse_css_stylesheet_contents_with_params(ParsingParams{
-	is_ua_style_sheet: .yes
-}, user_agent_stylesheet_source)
-
-// The parsed user-agent stylesheet rules (cached).
-pub fn user_agent_rules() []&CSSRule {
-	return user_agent_stylesheet_rules
-}
+const user_agent_counter_styles_marker = '/* https://w3c.github.io/predefined-counter-styles/ */'
+const user_agent_cascade_stylesheet_source = user_agent_stylesheet_source.all_before(user_agent_counter_styles_marker)
+const user_agent_counter_stylesheet_source = user_agent_stylesheet_source.all_after(user_agent_counter_styles_marker)
 
 // The parsed user-agent CSSStyleSheet, built once at startup and shared by every StyleScope's UA rule
 // cache (the sheet is identical for all documents), so documents don't each re-parse Default.css.
 const user_agent_default_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
 	is_ua_style_sheet: .yes
-}, user_agent_stylesheet_source, none)
+}, user_agent_cascade_stylesheet_source, none)
 const user_agent_quirks_mode_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
 	is_ua_style_sheet: .yes
 }, user_agent_quirks_mode_stylesheet_source, none)
@@ -31,6 +23,27 @@ const user_agent_mathml_stylesheet = parse_css_stylesheet_with_params(ParsingPar
 const user_agent_svg_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
 	is_ua_style_sheet: .yes
 }, user_agent_svg_stylesheet_source, none)
+
+__global user_agent_counter_stylesheet &CSSStyleSheet
+
+// The predefined counter styles occupy most of Default.css, but do not
+// participate in selector matching. Parse them only when a document actually
+// needs a non-trivial list marker or generated counter.
+fn user_agent_counter_style_sheet() &CSSStyleSheet {
+	if user_agent_counter_stylesheet == unsafe { nil } {
+		user_agent_counter_stylesheet = parse_css_stylesheet_with_params(ParsingParams{
+			is_ua_style_sheet: .yes
+		}, user_agent_counter_stylesheet_source, none)
+	}
+	return user_agent_counter_stylesheet
+}
+
+// Compatibility callers need the same default-UA rules as StyleScope. Reuse
+// the sheet's list instead of parsing the 90 KiB Default.css source a second
+// time during every process startup.
+pub fn user_agent_rules() []&CSSRule {
+	return user_agent_default_stylesheet.css_rules().rules
+}
 
 // The shared parsed user-agent stylesheet for `url`, or none if that sheet isn't embedded.
 pub fn user_agent_default_style_sheet(url string) ?&CSSStyleSheet {

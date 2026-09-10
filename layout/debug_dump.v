@@ -164,7 +164,7 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 		viewport := unsafe { &NavigableContainerViewport(node) }
 		if styled := node.as_node_with_style() {
 			if used := state.try_get(styled) {
-				if nested := run_document_layout(viewport.content_document(),
+				if nested := run_document_layout_for_tree_dump(viewport.content_document(),
 					used.content_width().to_double(), used.content_height().to_double())
 				{
 					append_typed_layout_node(nested.root, nested.state, depth + 1, mut lines)
@@ -188,7 +188,7 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 					}
 					mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
 					mutable_svg_document.set_viewport_rect(dom.Rect{0, 0, width, height})
-					if svg_result := run_document_layout(svg_document, width, height) {
+					if svg_result := run_document_layout_for_tree_dump(svg_document, width, height) {
 						lines << '${'  '.repeat(depth + 1)}(SVG-as-image isolated context)'
 						append_typed_layout_node(svg_result.root, svg_result.state, depth + 1, mut
 							lines)

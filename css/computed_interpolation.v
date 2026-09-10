@@ -1236,8 +1236,13 @@ fn computed_interpolation_is_longhand_property(property_id PropertyID) bool {
 }
 
 fn computed_interpolation_verify_longhand_property(property_id PropertyID) {
-	if !computed_interpolation_is_longhand_property(property_id) {
-		panic('PropertyID ${property_id} is not a translated longhand property')
+	// All internal call sites traffic in generated longhand IDs. Keep the guard in
+	// development and test builds, but do not repeat it for every property lookup
+	// in optimized browser builds.
+	$if !prod {
+		if !computed_interpolation_is_longhand_property(property_id) {
+			panic('PropertyID ${property_id} is not a translated longhand property')
+		}
 	}
 }
 
@@ -1314,6 +1319,12 @@ fn computed_interpolation_property_initial_value(property_id PropertyID) &dom.St
 
 fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 	computed_interpolation_verify_longhand_property(property_id)
+	ensure_computed_interpolation_inherited_cache()
+	index := int(property_id) - int(first_longhand_property_id())
+	return computed_interpolation_inherited_cache[index] != 0
+}
+
+fn ensure_computed_interpolation_inherited_cache() {
 	if !computed_interpolation_inherited_cache_initialized {
 		computed_interpolation_inherited_cache = []u8{len: number_of_longhand_properties}
 		for index in 0 .. number_of_longhand_properties {
@@ -1325,8 +1336,6 @@ fn computed_interpolation_is_inherited_property(property_id PropertyID) bool {
 		}
 		computed_interpolation_inherited_cache_initialized = true
 	}
-	index := int(property_id) - int(first_longhand_property_id())
-	return computed_interpolation_inherited_cache[index] != 0
 }
 
 __global (
@@ -1670,29 +1679,35 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 // which CSS applies through the anonymous box even though they are formally
 // non-inherited.
 pub fn (c &ComputedProperties) clone_for_anonymous_block() &ComputedProperties {
-	mut clone := ComputedProperties.new()
+	// Anonymous table/flex wrappers are frequent on real pages. Start from the
+	// already parsed initial-value template, then copy only inherited slots.
+	// The old path visited and assigned all 313 longhands for every wrapper.
+	mut clone := computed_properties_with_initial_values()
 	clone.viewport_rect_ = c.viewport_rect_
 	clone.root_font_size_px_ = c.root_font_size_px_
 	clone.root_line_height_px_ = c.root_line_height_px_
-	for property_id in computed_interpolation_longhand_property_ids() {
-		mut value := computed_interpolation_property_initial_value(property_id)
-		mut inherited := ComputedPropertyInheritance.no
-		if computed_interpolation_is_inherited_property(property_id) {
-			if inherited_value := c.property(property_id, .no) {
-				value = inherited_value
-				inherited = .yes
-			}
+	ensure_computed_interpolation_inherited_cache()
+	for index, inherited in computed_interpolation_inherited_cache {
+		if inherited == 0 {
+			continue
 		}
-		clone.set_property(property_id, value, inherited, .no)
+		value := c.property_values_[index]
+		if value != unsafe { nil } {
+			clone.property_values_[index] = value
+		}
+		clone.property_inherited_[index / 8] |= u8(1) << (index % 8)
 	}
 	for property_id in [PropertyID.text_decoration_line, .text_decoration_thickness,
 		.text_decoration_color, .text_decoration_style] {
-		if value := c.property(property_id, .no) {
-			clone.set_property_without_modifying_flags(property_id, value)
+		index := int(property_id) - int(first_longhand_property_id())
+		value := c.property_values_[index]
+		if value != unsafe { nil } {
+			clone.property_values_[index] = value
 		}
 	}
 	display := Display.from_outside_inside(.block, .flow)
-	clone.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(display))))
+	display_index := int(PropertyID.display) - int(first_longhand_property_id())
+	clone.property_values_[display_index] = dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(display)))
 	clone.display_before_box_type_transformation_ = display
 	return clone
 }
@@ -3046,19 +3061,19 @@ pub fn (c &ComputedProperties) text_wrap_style() TextWrapStyle {
 	}
 }
 
-pub fn (c &ComputedProperties) list_style_type(registered_counter_styles map[string]CounterStyle) ListStyleType {
+pub fn (c &ComputedProperties) list_style_type(document &dom.Document) ListStyleType {
 	value := c.property(.list_style_type, .yes) or {
 		return ListStyleType{
 			kind: .counter_style
 			name: 'disc'
-			counter_style: registered_counter_styles['disc'] or { CounterStyle.disc() }
+			counter_style: CounterStyle.disc()
 		}
 	}
 	parsed := style_value_logic_from_dom(.list_style_type, value) or {
 		return ListStyleType{
 			kind: .counter_style
 			name: 'disc'
-			counter_style: registered_counter_styles['disc'] or { CounterStyle.disc() }
+			counter_style: CounterStyle.disc()
 		}
 	}
 	if parsed.to_keyword() == .none_ {
@@ -3073,16 +3088,31 @@ pub fn (c &ComputedProperties) list_style_type(registered_counter_styles map[str
 		}
 	}
 	if parsed is CounterStyleStyleValue {
+		name := parsed.serialize(.normal)
+		mut counter_style := ?CounterStyle(none)
+		match name {
+			'disc' {
+				counter_style = CounterStyle.disc()
+			}
+			'decimal' {
+				counter_style = CounterStyle.decimal()
+			}
+			else {
+				if resolved := registered_counter_styles_for_document(document)[name] {
+					counter_style = resolved
+				}
+			}
+		}
 		return ListStyleType{
 			kind: .counter_style
-			name: parsed.serialize(.normal)
-			counter_style: parsed.resolve_counter_style(registered_counter_styles)
+			name: name
+			counter_style: counter_style
 		}
 	}
 	return ListStyleType{
 		kind: .counter_style
 		name: 'disc'
-		counter_style: registered_counter_styles['disc'] or { CounterStyle.disc() }
+		counter_style: CounterStyle.disc()
 	}
 }
 

@@ -1147,6 +1147,7 @@ fn build_registered_counter_styles_for_document(document &dom.Document) map[stri
 		length_resolution_context: LengthResolutionContext.for_document(document)
 	}
 	scope := css_style_scope_for_document(document)
+	collect_counter_style_definitions_from_sheet(user_agent_counter_style_sheet(), context, definitions_ptr)
 	for origin in [CascadeOrigin.user_agent, .user] {
 		for sheet in scope.stylesheets_for_cascade_origin(origin) {
 			collect_counter_style_definitions_from_sheet(sheet, context, definitions_ptr)
@@ -1209,6 +1210,12 @@ fn rebuild_registered_counter_styles_for_document(document &dom.Document) {
 	mut style_computer := css_style_computer_for(document)
 	style_computer.registered_counter_styles_ = build_registered_counter_styles_for_document(document)
 	style_computer.has_registered_counter_styles_ = true
+}
+
+pub fn invalidate_registered_counter_styles_for_document(document &dom.Document) {
+	mut style_computer := css_style_computer_for(document)
+	style_computer.registered_counter_styles_ = map[string]CounterStyle{}
+	style_computer.has_registered_counter_styles_ = false
 }
 
 pub fn registered_counter_styles_for_document(document &dom.Document) map[string]CounterStyle {

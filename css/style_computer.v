@@ -1297,7 +1297,7 @@ fn update_style_for_document_from_upstream(document &dom.Document) RequiredInval
 	style_computer.reset_has_result_cache()
 	style_computer.reset_ancestor_filter()
 	mutable_document.build_registered_properties_cache()
-	mutable_document.build_counter_style_cache()
+	invalidate_registered_counter_styles_for_document(document)
 	return update_style_recursively(mut style_computer, unsafe { &dom.Node(document) }, false, false, false)
 }
 
