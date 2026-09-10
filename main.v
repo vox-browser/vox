@@ -269,6 +269,7 @@ mut:
 	navigation_results                  chan NavigationResult
 	navigation_generation               int
 	pending_navigation                  ?PendingNavigation
+	pending_cached_page                 ?PendingCachedPage
 	background_image_ids                map[string]int
 	resource_cache                      map[string]PreloadedResource
 	background_resource_results         chan PreloadedResource
@@ -277,6 +278,7 @@ mut:
 	screenshot_scheduled                bool
 	layout_tree_only                    bool
 	document_presented                  bool
+	initial_window_frame_presented      bool
 	refresh_not_before                  i64
 	snapshot_visible                    bool
 	snapshot_cached                     bool
@@ -336,6 +338,12 @@ struct PendingNavigation {
 	generation      int
 	add_history     bool
 	had_cached_page bool
+}
+
+struct PendingCachedPage {
+	loaded      LoadedPage
+	add_history bool
+	generation  int
 }
 
 struct PreloadedResource {
@@ -1475,25 +1483,43 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	app.status = app.load_status
 	app.navigation_generation++
 	app.pending_navigation = none
+	app.pending_cached_page = none
 	if app.ctx != unsafe { nil } {
 		generation := app.navigation_generation
 		mut defer_until_first_paint := !app.document_presented
 		mut network_add_history := add_history
 		mut had_cached_page := false
 		if cached := read_cached_page(resolved) {
-			snapshot_path := cached_snapshot_path(resolved)
+			mut defer_cached_install := false
 			$if macos {
-				if os.is_file(snapshot_path) {
-					C.native_show_cached_snapshot(snapshot_path)
-					app.snapshot_visible = true
-					// Hold the raster across the cached rebuild AND the refresh
-					// rebuild, capped by a safety deadline in case the network
-					// never answers.
-					app.snapshot_hold = true
-					app.snapshot_hold_until = time.sys_mono_now() + 8_000_000_000
-				}
+				defer_cached_install = !app.initial_window_frame_presented
+					&& app.document == unsafe { nil }
 			}
-			app.install_loaded_page(cached, add_history)
+			if defer_cached_install {
+				// Parsing and laying out a cached document before NSApplication enters
+				// its run loop delays the first composited window by an entire frame's
+				// worth of engine work. Retain the cache hit, present the lightweight
+				// browser chrome, then install it on the following draw.
+				app.pending_cached_page = PendingCachedPage{
+					loaded: cached
+					add_history: add_history
+					generation: generation
+				}
+			} else {
+				snapshot_path := cached_snapshot_path(resolved)
+				$if macos {
+					if os.is_file(snapshot_path) {
+						C.native_show_cached_snapshot(snapshot_path)
+						app.snapshot_visible = true
+						// Hold the raster across the cached rebuild AND the refresh
+						// rebuild, capped by a safety deadline in case the network
+						// never answers.
+						app.snapshot_hold = true
+						app.snapshot_hold_until = time.sys_mono_now() + 8_000_000_000
+					}
+				}
+				app.install_loaded_page(cached, add_history)
+			}
 			had_cached_page = true
 			defer_until_first_paint = true
 			network_add_history = false
@@ -1532,6 +1558,15 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 		return
 	}
 	app.install_loaded_page(loaded, add_history)
+}
+
+fn (mut app BrowserApp) install_pending_cached_page() {
+	pending := app.pending_cached_page or { return }
+	app.pending_cached_page = none
+	if pending.generation != app.navigation_generation {
+		return
+	}
+	app.install_loaded_page(pending.loaded, pending.add_history)
 }
 
 fn (mut app BrowserApp) start_pending_navigation() {
@@ -3891,6 +3926,10 @@ fn address_for_display(address string, cursor int, active bool, max_characters i
 }
 
 fn (mut app BrowserApp) draw() {
+	if app.initial_window_frame_presented && app.document == unsafe { nil }
+		&& app.pending_cached_page != none {
+		app.install_pending_cached_page()
+	}
 	app.poll_background_resources()
 	refresh_ready := app.refresh_not_before == 0 || time.sys_mono_now() >= app.refresh_not_before
 	if app.document == unsafe { nil } || (app.document_presented && refresh_ready) {
@@ -3984,6 +4023,17 @@ fn (mut app BrowserApp) draw() {
 		app.ctx.draw_text(12, status_y + 4, footer, color: gg.rgb(203, 213, 225), size: 12)
 	}
 	app.ctx.end()
+	if !app.initial_window_frame_presented {
+		app.initial_window_frame_presented = true
+		if app.pending_cached_page != none {
+			// Let AppKit commit the inexpensive chrome-only frame before doing the
+			// cached DOM/style/layout work on the next browser frame.
+			$if macos {
+				C.native_wake_browser_after(16)
+			}
+			return
+		}
+	}
 	if report_first_paint {
 		debug_timing_checkpoint('first_paint_total', paint_checkpoint)
 	}
