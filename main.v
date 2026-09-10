@@ -268,6 +268,7 @@ mut:
 	hovered_link                        string
 	navigation_results                  chan NavigationResult
 	navigation_generation               int
+	pending_navigation                  ?PendingNavigation
 	background_image_ids                map[string]int
 	resource_cache                      map[string]PreloadedResource
 	background_resource_results         chan PreloadedResource
@@ -329,6 +330,14 @@ struct NavigationResult {
 	error           string
 }
 
+struct PendingNavigation {
+	resolved        string
+	base            string
+	generation      int
+	add_history     bool
+	had_cached_page bool
+}
+
 struct PreloadedResource {
 	url   string
 	body  string
@@ -381,6 +390,10 @@ fn debug_timing_checkpoint(label string, previous u64) u64 {
 	now := time.sys_mono_now()
 	if debug_timing_enabled() {
 		eprintln('Ladybird V timing: ${label} ${(now - previous) / 1_000_000} ms')
+		// stderr can become fully buffered when a profiler or benchmark captures it.
+		// Flush each opt-in checkpoint so launch-to-first-paint measurements reflect
+		// when the phase completed rather than when the buffer happened to fill.
+		C.fflush(C.stderr)
 	}
 	return now
 }
@@ -539,7 +552,14 @@ fn resolve_url(reference string, base string) string {
 		return (url.parse_with_base(trimmed, &base_url) or { return trimmed }).serialize(false)
 	}
 	if !trimmed.contains(' ') && (trimmed.contains('.') || trimmed.starts_with('localhost')) {
-		return 'https://${trimmed}'
+		with_scheme := 'https://${trimmed}'
+		// Canonicalize synthesized URLs too. In particular, an HTTP(S) origin's
+		// empty path serializes as `/`; successful responses use that form, so a
+		// bare-host launch must use it for the same disk-cache key.
+		if parsed := url.parse(with_scheme) {
+			return parsed.serialize(false)
+		}
+		return with_scheme
 	}
 	return 'https://duckduckgo.com/html/?q=${url.percent_encode(trimmed, .application_x_www_form_urlencoded, true)}'
 }
@@ -1454,8 +1474,10 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	app.load_status = 'Loading ${resolved}'
 	app.status = app.load_status
 	app.navigation_generation++
+	app.pending_navigation = none
 	if app.ctx != unsafe { nil } {
 		generation := app.navigation_generation
+		mut defer_until_first_paint := !app.document_presented
 		mut network_add_history := add_history
 		mut had_cached_page := false
 		if cached := read_cached_page(resolved) {
@@ -1473,6 +1495,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 			}
 			app.install_loaded_page(cached, add_history)
 			had_cached_page = true
+			defer_until_first_paint = true
 			network_add_history = false
 			app.refresh_not_before = time.sys_mono_now() + 500_000_000
 			$if macos {
@@ -1482,7 +1505,21 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 		if app.navigation_generation != generation {
 			return
 		}
-		spawn fetch_page_in_background(resolved, base, generation, network_add_history, had_cached_page, app.navigation_results)
+		pending := PendingNavigation{
+			resolved: resolved
+			base: base
+			generation: generation
+			add_history: network_add_history
+			had_cached_page: had_cached_page
+		}
+		if defer_until_first_paint {
+			// Starting Foundation/TLS work while Cocoa creates its first window can
+			// serialize framework initialization for over a second. Present either
+			// cached content or the loading chrome first, then refresh in parallel.
+			app.pending_navigation = pending
+		} else {
+			spawn fetch_page_in_background(pending.resolved, pending.base, pending.generation, pending.add_history, pending.had_cached_page, app.navigation_results)
+		}
 		return
 	}
 	loaded := fetch_page(resolved, base) or {
@@ -1495,6 +1532,15 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 		return
 	}
 	app.install_loaded_page(loaded, add_history)
+}
+
+fn (mut app BrowserApp) start_pending_navigation() {
+	pending := app.pending_navigation or { return }
+	app.pending_navigation = none
+	if pending.generation != app.navigation_generation {
+		return
+	}
+	spawn fetch_page_in_background(pending.resolved, pending.base, pending.generation, pending.add_history, pending.had_cached_page, app.navigation_results)
 }
 
 fn (mut app BrowserApp) poll_navigation() {
@@ -3957,6 +4003,10 @@ fn (mut app BrowserApp) draw() {
 			}
 		}
 	}
+	// `navigate()` deliberately holds initial network work until Cocoa has
+	// presented this first frame. This keeps TLS/framework initialization from
+	// delaying the window and gives cached pages an immediate first paint.
+	app.start_pending_navigation()
 	if app.screenshot_path != '' && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') {
 		app.screenshot_scheduled = true
 		schedule_native_screenshot(app.screenshot_path)
@@ -4211,7 +4261,7 @@ fn main() {
 	}
 	use_document_font := configure_browser_layout_font(needs_native_font_replay)
 	initial_url, markup, source_label := initial_document(options.source)
-	debug_timing_checkpoint('startup', main_started)
+	mut main_checkpoint := debug_timing_checkpoint('startup', main_started)
 	initial_viewport_height := if options.height > int(toolbar_height + status_bar_height) {
 		options.height - int(toolbar_height + status_bar_height)
 	} else {
@@ -4219,6 +4269,7 @@ fn main() {
 	}
 	defer_remote_navigation := markup == '' && !options.headless_smoke && !options.headless_layout_tree
 	page_model := page.Page.create(1.0) or { panic(err) }
+	main_checkpoint = debug_timing_checkpoint('startup_page_model', main_checkpoint)
 	mut app := &BrowserApp{
 		markup: markup
 		source_label: source_label
@@ -4235,7 +4286,9 @@ fn main() {
 		viewport_width: options.width
 		viewport_height: initial_viewport_height
 	}
+	main_checkpoint = debug_timing_checkpoint('startup_browser_state', main_checkpoint)
 	app.install_chrome_widget_input_bridge()
+	main_checkpoint = debug_timing_checkpoint('startup_input_bridge', main_checkpoint)
 	if markup != '' {
 		app.install_loaded_page(LoadedPage{
 			url: initial_url
@@ -4309,8 +4362,10 @@ fn main() {
 		}
 		user_data: app
 	)
+	main_checkpoint = debug_timing_checkpoint('startup_context', main_checkpoint)
 	if defer_remote_navigation {
 		app.navigate(initial_url, true)
 	}
+	debug_timing_checkpoint('startup_navigation', main_checkpoint)
 	app.ctx.run()
 }

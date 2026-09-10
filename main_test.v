@@ -53,6 +53,23 @@ fn test_parse_launch_options_rejects_invalid_dimensions() {
 	assert false, 'a non-positive window dimension must be rejected'
 }
 
+fn test_resolve_url_canonicalizes_bare_host_for_cache_keys() {
+	assert resolve_url('news.ycombinator.com', '') == 'https://news.ycombinator.com/'
+	assert resolve_url('example.com/path', '') == 'https://example.com/path'
+}
+
+fn test_stale_pending_navigation_is_discarded_before_network_start() {
+	mut app := BrowserApp{
+		navigation_generation: 2
+		pending_navigation: PendingNavigation{
+			resolved: 'https://example.com/'
+			generation: 1
+		}
+	}
+	app.start_pending_navigation()
+	assert app.pending_navigation == none
+}
+
 fn test_native_text_draw_y_converts_layout_line_box_to_cocoa_position() {
 	assert native_text_draw_y(90, 28) == 104
 	assert native_text_draw_y(134, 18) == 138
