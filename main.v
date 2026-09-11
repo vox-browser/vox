@@ -1441,6 +1441,10 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 		none
 	}
 	checkpoint = debug_timing_checkpoint('run_javascript', checkpoint)
+	if cookie_blocker_enabled_by_default {
+		hide_cookie_banners(app.document)
+	}
+	checkpoint = debug_timing_checkpoint('cookie_blocker', checkpoint)
 	app.page_model.load(loaded.url)
 	if add_history {
 		if app.history_index + 1 < app.history.len {

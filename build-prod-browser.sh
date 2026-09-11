@@ -73,13 +73,15 @@ fi
 zoneinfo_exclude='@vlib/time/zoneinfo.native.v'
 
 echo "Building Ladybird V with: -enable-globals -prod -gc none"
+# Root browser features are split across main.v and companion module files.
+cd "$repo_dir"
 if [ -n "$extra_ldflags" ]; then
     "$v_compiler" -exclude "$zoneinfo_exclude" -enable-globals -prod -gc none \
         -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
-        -o "$binary_dir/Ladybird" "$repo_dir/main.v"
+        -o "$binary_dir/Ladybird" .
 else
     "$v_compiler" -exclude "$zoneinfo_exclude" -enable-globals -prod -gc none \
-        -o "$binary_dir/Ladybird" "$repo_dir/main.v"
+        -o "$binary_dir/Ladybird" .
 fi
 
 if command -v codesign >/dev/null 2>&1; then
