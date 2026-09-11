@@ -127,6 +127,30 @@ fn test_layout_snapshot_uses_current_upstream_sections() {
 	assert !sections[1].contains('[children:')
 }
 
+fn test_layout_tree_dump_includes_scrollable_overflow() {
+	mut doc := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#scroller { width: 100px; height: 50px; overflow: auto }
+		#content { width: 200px; height: 100px }
+	</style><div id="scroller"><div id="content"></div></div>')
+	tree := dump_document_layout_tree(doc, 320, 200) or {
+		panic('layout tree was not produced')
+	}
+	scroller_line := tree.split_into_lines().filter(it.contains('<div#scroller>'))[0]
+	assert scroller_line.ends_with(' overflow: [0,0 200x100]')
+}
+
+fn test_layout_tree_dump_includes_viewport_overflow() {
+	mut doc := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#content { width: 400px; height: 300px }
+	</style><div id="content"></div>')
+	tree := dump_document_layout_tree(doc, 320, 200) or {
+		panic('layout tree was not produced')
+	}
+	assert tree.split_into_lines()[0].ends_with(' overflow: [0,0 400x300]')
+}
+
 // A DOM text node becomes a Layout::TextNode carrying offset-preserving rendered text.
 fn test_text_node_layout() {
 	mut doc := dom.Document.create(dom.url_about_blank())

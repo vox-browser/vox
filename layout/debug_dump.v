@@ -157,6 +157,18 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 	if node.is_navigable_container_viewport() {
 		line += ' (url: about:blank)'
 	}
+	// LayoutTest asks Painting for scrollable overflow while serializing each
+	// layout node. The upstream query measures lazily; V commits the same data
+	// at the end of layout, so expose the retained rectangle here.
+	if styled := node.as_node_with_style() {
+		if used := state.try_get(styled) {
+			if used.has_scrollable_overflow() {
+				if overflow_rect := used.scrollable_overflow_rect() {
+					line += ' overflow: ${layout_debug_css_rect(overflow_rect)}'
+				}
+			}
+		}
+	}
 	lines << line
 
 	if node.is_navigable_container_viewport() {
