@@ -523,6 +523,45 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 	return options
 }
 
+const local_file_read_attempts = 5
+
+// A file can be momentarily interrupted while Finder, iCloud Drive, or another
+// document provider finishes making it available. Retrying EINTR keeps a normal
+// `open Ladybird.app --args /path/to/document.html` launch from needlessly
+// showing the error document.
+fn read_local_file(path string) !string {
+	for attempt in 0 .. local_file_read_attempts {
+		contents := os.read_file(path) or {
+			if !err.msg().contains('Interrupted system call') || attempt + 1 == local_file_read_attempts {
+				return err
+			}
+			time.sleep(100 * time.millisecond)
+			continue
+		}
+		return contents
+	}
+	return error('could not read local file')
+}
+
+// `open Ladybird.app --args report.html` is launched by LaunchServices, which
+// does not retain the terminal's working directory. For the development bundle,
+// fall back to the checkout containing Build/v so relative local documents keep
+// the same useful meaning they have when the executable is run directly.
+fn bundled_workspace_relative_file_path(source string, executable_path string) ?string {
+	if os.is_abs_path(source) {
+		return none
+	}
+	mut workspace_root := os.dir(executable_path)
+	for _ in 0 .. 5 {
+		workspace_root = os.dir(workspace_root)
+	}
+	candidate := os.join_path(workspace_root, source)
+	if os.is_file(candidate) {
+		return candidate
+	}
+	return none
+}
+
 fn initial_document(argument string) (string, string, string) {
 	if argument == '' {
 		return 'about:home', demo_markup, 'built-in translated-engine demo'
@@ -531,11 +570,17 @@ fn initial_document(argument string) (string, string, string) {
 		return 'about:srcdoc', argument, 'command-line HTML'
 	}
 	mut file_name := argument
-	if file_name.starts_with('file://') {
-		file_name = file_name['file://'.len..]
+	is_file_url := file_name.starts_with('file://')
+	if is_file_url {
+		file_name = url.percent_decode(file_name['file://'.len..]).bytestr()
+	}
+	if !is_file_url && !os.is_file(file_name) {
+		if workspace_path := bundled_workspace_relative_file_path(file_name, os.executable()) {
+			file_name = workspace_path
+		}
 	}
 	if os.is_file(file_name) {
-		markup := os.read_file(file_name) or {
+		markup := read_local_file(file_name) or {
 			return 'about:error', '<h1>Could not read file</h1><p>${html_escape(err.msg())}</p>', file_name
 		}
 		real_path := os.real_path(file_name)
@@ -694,8 +739,8 @@ fn fetch_page(address string, base string) !LoadedPage {
 		}
 	}
 	if resolved.starts_with('file://') {
-		file_name := resolved['file://'.len..]
-		markup := os.read_file(file_name)!
+		file_name := url.percent_decode(resolved['file://'.len..]).bytestr()
+		markup := read_local_file(file_name)!
 		return LoadedPage{
 			url: resolved
 			markup: markup
@@ -741,7 +786,7 @@ fn fetch_text_resource(reference string, base string) !string {
 	resolved := resolve_document_reference(reference, base)
 	if resolved.starts_with('file://') {
 		path := url.percent_decode(resolved['file://'.len..]).bytestr()
-		return os.read_file(path)
+		return read_local_file(path)
 	}
 	if resolved.starts_with('http://') || resolved.starts_with('https://') {
 		if cached := read_cached_resource(resolved) {
@@ -1667,11 +1712,26 @@ fn (mut app BrowserApp) set_scroll_y(requested f64, window_height int) {
 // EventHandler::handle_mousewheel() offers the wheel delta to the hit
 // paintable and then each containing block. Only when every element declines
 // it does the viewport consume the vertical delta.
+fn layout_node_is_document_viewport_scroller(document &dom.Document, layout_node &dom.LayoutNode) bool {
+	// The typed layout tree has a viewport node above <html>. The latter owns
+	// the DOM-facing PaintableBox, but its scroll offset is not the viewport
+	// scroll offset used by native replay. Let BrowserApp consume this wheel
+	// input as viewport scrolling instead of having <html> swallow it.
+	document_element := document.document_element() or { return false }
+	node := layout_node.dom_node() or { return false }
+	return node.unique_id() == document_element.as_node().unique_id()
+}
+
 fn (mut app BrowserApp) scroll_element_at_window_point(mouse_x f32, mouse_y f32, delta_x f64, delta_y f64) bool {
 	target := app.element_at_window_point(mouse_x, mouse_y) or { return false }
 	mut current := target.as_node().layout_node()
 	for current != none {
 		layout_node := current or { break }
+		if app.document != unsafe { nil }
+			&& layout_node_is_document_viewport_scroller(app.document, layout_node) {
+			current = layout_node.containing_block()
+			continue
+		}
 		for paintable in layout_node.paintables() {
 			if !paintable.is_paintable_box() {
 				continue

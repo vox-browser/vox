@@ -122,6 +122,22 @@ int composite_pixels(CGContextRef destination, std::vector<uint32_t> const& pixe
     return 1;
 }
 
+float raster_scale_for_context(CGContextRef context)
+{
+    // AppKit presents an NSView in point-sized user space even when its backing
+    // store has two device pixels per point. The Skia bridge creates its own
+    // raster surfaces, so it must explicitly match that device-space density;
+    // otherwise Core Graphics has to stretch a 1x glyph bitmap over the Retina
+    // backing store. Derive the scale from the destination context rather than
+    // the window so intentionally 1x screenshot contexts remain pixel-stable.
+    auto horizontal = CGContextConvertSizeToDeviceSpace(context, CGSizeMake(1.0, 0.0));
+    auto vertical = CGContextConvertSizeToDeviceSpace(context, CGSizeMake(0.0, 1.0));
+    auto scale_x = std::hypot(horizontal.width, horizontal.height);
+    auto scale_y = std::hypot(vertical.width, vertical.height);
+    auto scale = std::max(scale_x, scale_y);
+    return std::isfinite(scale) && scale > 0.0 ? static_cast<float>(scale) : 1.0f;
+}
+
 struct RasterRegion {
     int left { 0 };
     int top { 0 };
@@ -131,6 +147,25 @@ struct RasterRegion {
     int width() const { return right - left; }
     int height() const { return bottom - top; }
 };
+
+int raster_dimension(int logical_dimension, float scale)
+{
+    return std::max(1, static_cast<int>(std::ceil(
+        static_cast<float>(logical_dimension) * scale)));
+}
+
+SkMatrix raster_matrix(SkMatrix const& logical_matrix, RasterRegion const& region,
+    float scale_x, float scale_y)
+{
+    return SkMatrix::MakeAll(
+        logical_matrix.getScaleX() * scale_x,
+        logical_matrix.getSkewX() * scale_x,
+        (logical_matrix.getTranslateX() - static_cast<float>(region.left)) * scale_x,
+        logical_matrix.getSkewY() * scale_y,
+        logical_matrix.getScaleY() * scale_y,
+        (logical_matrix.getTranslateY() - static_cast<float>(region.top)) * scale_y,
+        logical_matrix.getPerspX(), logical_matrix.getPerspY(), 1.0f);
+}
 
 bool clipped_raster_region(SkRect const& bounds, float canvas_width,
     float canvas_height, float guard, RasterRegion& region)
@@ -144,14 +179,6 @@ bool clipped_raster_region(SkRect const& bounds, float canvas_width,
     region.bottom = std::min(static_cast<int>(std::ceil(canvas_height)),
         static_cast<int>(std::ceil(bounds.bottom() + guard)));
     return region.width() > 0 && region.height() > 0;
-}
-
-int composite_region_pixels(CGContextRef destination, std::vector<uint32_t> const& pixels,
-    RasterRegion const& region, float canvas_height)
-{
-    return composite_pixels(destination, pixels, region.width(), region.height(),
-        static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
-        static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
 
 SkPath path_from_serialized_segments(float const* data, int segment_count)
@@ -277,21 +304,26 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     if (!clipped_raster_region(device_bounds, canvas_width, canvas_height, 2.0f, region))
         return 1;
 
-    std::vector<uint32_t> pixels(static_cast<size_t>(region.width()) * static_cast<size_t>(region.height()));
-    auto image_info = SkImageInfo::Make(region.width(), region.height(), kBGRA_8888_SkColorType,
+    auto destination_scale = raster_scale_for_context(destination);
+    auto raster_width = raster_dimension(region.width(), destination_scale);
+    auto raster_height = raster_dimension(region.height(), destination_scale);
+    auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
+    auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
+    auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto row_bytes = static_cast<size_t>(region.width()) * sizeof(uint32_t);
+    auto row_bytes = static_cast<size_t>(raster_width) * sizeof(uint32_t);
     auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(), row_bytes);
     if (!surface)
         return 0;
 
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
-    matrix.setTranslateX(matrix.getTranslateX() - static_cast<float>(region.left));
-    matrix.setTranslateY(matrix.getTranslateY() - static_cast<float>(region.top));
-    canvas->setMatrix(matrix);
+    canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
     canvas->drawTextBlob(blob, baseline_x, baseline_y, paint);
-    return composite_region_pixels(destination, pixels, region, canvas_height);
+    return composite_pixels(destination, pixels, raster_width, raster_height,
+        static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+        static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
 
 extern "C" int ladybird_v_skia_draw_solid_line(CGContextRef destination,
@@ -312,20 +344,30 @@ extern "C" int ladybird_v_skia_draw_solid_line(CGContextRef destination,
         return 1;
     SkPaint paint;
     paint.setAntiAlias(true);
-    paint.setStrokeWidth(thickness);
+    auto destination_scale = raster_scale_for_context(destination);
+    auto raster_width = raster_dimension(region.width(), destination_scale);
+    auto raster_height = raster_dimension(region.height(), destination_scale);
+    auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
+    auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
+    paint.setStrokeWidth(thickness * std::max(raster_scale_x, raster_scale_y));
     paint.setColor(SkColorSetARGB(alpha, red, green, blue));
-    std::vector<uint32_t> pixels(static_cast<size_t>(region.width()) * static_cast<size_t>(region.height()));
-    auto image_info = SkImageInfo::Make(region.width(), region.height(), kBGRA_8888_SkColorType,
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
+    auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto row_bytes = static_cast<size_t>(region.width()) * sizeof(uint32_t);
+    auto row_bytes = static_cast<size_t>(raster_width) * sizeof(uint32_t);
     auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(), row_bytes);
     if (!surface)
         return 0;
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
-    canvas->translate(-static_cast<float>(region.left), -static_cast<float>(region.top));
-    canvas->drawLine(from_x, from_y, to_x, to_y, paint);
-    return composite_region_pixels(destination, pixels, region, canvas_height);
+    canvas->drawLine(
+        (from_x - static_cast<float>(region.left)) * raster_scale_x,
+        (from_y - static_cast<float>(region.top)) * raster_scale_y,
+        (to_x - static_cast<float>(region.left)) * raster_scale_x,
+        (to_y - static_cast<float>(region.top)) * raster_scale_y, paint);
+    return composite_pixels(destination, pixels, raster_width, raster_height,
+        static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+        static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
 
 extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
@@ -369,21 +411,26 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             canvas_height, anti_alias ? 2.0f : 0.0f, region))
         return 1;
 
-    std::vector<uint32_t> pixels(static_cast<size_t>(region.width()) * static_cast<size_t>(region.height()));
-    auto image_info = SkImageInfo::Make(region.width(), region.height(), kBGRA_8888_SkColorType,
+    auto destination_scale = raster_scale_for_context(destination);
+    auto raster_width = raster_dimension(region.width(), destination_scale);
+    auto raster_height = raster_dimension(region.height(), destination_scale);
+    auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
+    auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
+    auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-    auto row_bytes = static_cast<size_t>(region.width()) * sizeof(uint32_t);
+    auto row_bytes = static_cast<size_t>(raster_width) * sizeof(uint32_t);
     auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(), row_bytes);
     if (!surface)
         return 0;
 
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
-    matrix.setTranslateX(matrix.getTranslateX() - static_cast<float>(region.left));
-    matrix.setTranslateY(matrix.getTranslateY() - static_cast<float>(region.top));
-    canvas->setMatrix(matrix);
+    canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
     canvas->drawRRect(rounded_rect, paint);
-    return composite_region_pixels(destination, pixels, region, canvas_height);
+    return composite_pixels(destination, pixels, raster_width, raster_height,
+        static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+        static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
 
 extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
@@ -426,19 +473,22 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
             canvas_height, 2.0f, region))
         return 1;
 
-    std::vector<uint32_t> pixels(static_cast<size_t>(region.width()) * static_cast<size_t>(region.height()));
-    auto image_info = SkImageInfo::Make(region.width(), region.height(), kBGRA_8888_SkColorType,
+    auto destination_scale = raster_scale_for_context(destination);
+    auto raster_width = raster_dimension(region.width(), destination_scale);
+    auto raster_height = raster_dimension(region.height(), destination_scale);
+    auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
+    auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
+    auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(),
-        static_cast<size_t>(region.width()) * sizeof(uint32_t));
+        static_cast<size_t>(raster_width) * sizeof(uint32_t));
     if (!surface)
         return 0;
 
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
-    matrix.setTranslateX(matrix.getTranslateX() - static_cast<float>(region.left));
-    matrix.setTranslateY(matrix.getTranslateY() - static_cast<float>(region.top));
-    canvas->setMatrix(matrix);
+    canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
     if (has_fill) {
         SkPaint paint;
         paint.setAntiAlias(true);
@@ -459,5 +509,7 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
         canvas->drawPath(path, paint);
     }
 
-    return composite_region_pixels(destination, pixels, region, canvas_height);
+    return composite_pixels(destination, pixels, raster_width, raster_height,
+        static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+        static_cast<float>(region.width()), static_cast<float>(region.height()));
 }

@@ -53,6 +53,34 @@ fn test_parse_launch_options_rejects_invalid_dimensions() {
 	assert false, 'a non-positive window dimension must be rejected'
 }
 
+fn test_initial_document_loads_a_percent_encoded_file_url() {
+	path := os.join_path(os.temp_dir(), 'ladybird-v local document ${os.getpid()}.html')
+	os.write_file(path, '<title>Local report</title><p>Loaded</p>') or { panic(err) }
+	defer {
+		os.rm(path) or {}
+	}
+	encoded_path := path.replace(' ', '%20')
+	page_url, markup, source_label := initial_document('file://${encoded_path}')
+	assert page_url == 'file://${os.real_path(path)}'
+	assert markup == '<title>Local report</title><p>Loaded</p>'
+	assert source_label == os.real_path(path)
+}
+
+fn test_bundled_workspace_relative_file_path_resolves_relative_document_arguments() {
+	workspace_root := os.join_path(os.temp_dir(), 'ladybird-v-workspace-${os.getpid()}')
+	path := os.join_path(workspace_root, 'uk.html')
+	os.mkdir_all(workspace_root) or { panic(err) }
+	os.write_file(path, '<p>Ukraine report</p>') or { panic(err) }
+	defer {
+		os.rmdir_all(workspace_root) or {}
+	}
+	executable_path := os.join_path(workspace_root, 'Build', 'v', 'Ladybird.app', 'Contents', 'MacOS', 'Ladybird')
+	resolved := bundled_workspace_relative_file_path('uk.html', executable_path) or {
+		panic('relative document was not found from the bundle workspace')
+	}
+	assert resolved == path
+}
+
 fn test_resolve_url_canonicalizes_bare_host_for_cache_keys() {
 	assert resolve_url('news.ycombinator.com', '') == 'https://news.ycombinator.com/'
 	assert resolve_url('example.com/path', '') == 'https://example.com/path'
@@ -142,6 +170,22 @@ fn test_backdrop_filter_canvas_detection_descends_into_nested_viewports() {
 			]
 		},
 	])
+}
+
+fn test_document_root_paintable_is_not_treated_as_an_element_wheel_scroller() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #content { height: 1000px }</style><body><div id="content"></div></body>')
+	_ = layout.layout_document_typed_in_viewport(document, 320, 200)
+	document_element := document.document_element() or { panic('missing document element') }
+	root_layout_node := document_element.as_node().layout_node() or {
+		panic('missing document-root layout node')
+	}
+	assert layout_node_is_document_viewport_scroller(document, root_layout_node)
+
+	content := document.get_element_by_id('content') or { panic('missing content') }
+	content_layout_node := content.as_node().layout_node() or {
+		panic('missing content layout node')
+	}
+	assert !layout_node_is_document_viewport_scroller(document, content_layout_node)
 }
 
 fn test_document_preload_resources_are_resolved_deduplicated_and_ordered() {
