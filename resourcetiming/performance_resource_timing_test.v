@@ -70,3 +70,15 @@ fn test_cache_transfer_delivery_and_missing_connection_branches() {
 	assert render_blocking_status_type_from_string('non-blocking')! == .non_blocking
 	assert RenderBlockingStatusType.blocking.str() == 'blocking'
 }
+
+fn test_create_retains_base_entry_and_render_blocking_state() {
+	context := &ResourceTimingContext{}
+	entry := PerformanceResourceTiming.create('style.css', 12.5, 3.25, FetchTimingInfo{
+		render_blocking: true
+	}, context)
+	assert entry.performance_entry().name == 'style.css'
+	assert entry.performance_entry().start_time == 12.5
+	assert entry.performance_entry().duration == 3.25
+	assert entry.is_render_blocking()
+	assert entry.render_blocking_status() == .blocking
+}

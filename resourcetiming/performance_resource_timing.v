@@ -84,23 +84,27 @@ mut:
 	context_            &ResourceTimingContext = unsafe { nil }
 }
 
+pub fn PerformanceResourceTiming.create(name string, start_time f64, duration f64, timing_info FetchTimingInfo, context &ResourceTimingContext) &PerformanceResourceTiming {
+	return &PerformanceResourceTiming{
+		performance_entry_: &performancetimeline.PerformanceEntry{
+			name: name
+			entry_type: 'resource'
+			start_time: start_time
+			duration: duration
+			available: .yes
+			max_buffer_size: u64(250)
+		}
+		timing_info_: timing_info
+		context_: context
+	}
+}
+
 pub fn PerformanceResourceTiming.mark_resource_timing(mut context ResourceTimingContext, timing_info FetchTimingInfo, requested_url string, initiator_type string, cache_mode ?fetch.CacheState, body_info fetch.BodyInfo, response_status u16, delivery_type string) &PerformanceResourceTiming {
 	converted_start := convert_fetch_timestamp(timing_info.start_time, context)
 	converted_end := convert_fetch_timestamp(timing_info.end_time, context)
-	base := &performancetimeline.PerformanceEntry{
-		name: requested_url
-		entry_type: 'resource'
-		start_time: converted_start
-		duration: converted_end - converted_start
-		available: .yes
-		max_buffer_size: u64(250)
-	}
-	mut entry := &PerformanceResourceTiming{
-		performance_entry_: base
-		context_: context
-	}
+	mut entry := PerformanceResourceTiming.create(requested_url, converted_start, converted_end - converted_start, timing_info, context)
 	entry.setup_the_resource_timing_entry(initiator_type, requested_url, timing_info, cache_mode, body_info, response_status, delivery_type)
-	context.timeline.add_entry(base)
+	context.timeline.add_entry(entry.performance_entry_)
 	context.resource_entries << entry
 	return entry
 }
@@ -257,8 +261,12 @@ pub fn (entry &PerformanceResourceTiming) response_status() u16 {
 	return entry.response_status_
 }
 
+pub fn (entry &PerformanceResourceTiming) is_render_blocking() bool {
+	return entry.timing_info_.render_blocking
+}
+
 pub fn (entry &PerformanceResourceTiming) render_blocking_status() RenderBlockingStatusType {
-	return if entry.timing_info_.render_blocking { .blocking } else { .non_blocking }
+	return if entry.is_render_blocking() { .blocking } else { .non_blocking }
 }
 
 pub fn (entry &PerformanceResourceTiming) content_type() string {
