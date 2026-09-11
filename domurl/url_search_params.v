@@ -86,7 +86,7 @@ fn percent_decode(input string) string {
 		}
 	}
 	decoder := encoding.TextDecoder.create()
-	return decoder.decode(output, encoding.TextDecodeOptions{}) or { '\ufffd' }
+	return decoder.decode(output, encoding.TextDecodeOptions{}) or { '�' }
 }
 
 // https://url.spec.whatwg.org/#concept-urlencoded-serializer
@@ -136,7 +136,7 @@ pub fn url_decode(input string) []QueryParam {
 		space_decoded_value := value.replace('+', ' ')
 		// 5. UTF-8 decode the percent-decoding of name and value.
 		output << QueryParam{
-			name:  percent_decode(space_decoded_name)
+			name: percent_decode(space_decoded_name)
 			value: percent_decode(space_decoded_value)
 		}
 	}
@@ -206,7 +206,7 @@ pub fn URLSearchParams.from_sequence(init [][]string) !&URLSearchParams {
 		}
 		// b. Append a name-value pair.
 		list << QueryParam{
-			name:  pair[0]
+			name: pair[0]
 			value: pair[1]
 		}
 	}
@@ -218,7 +218,7 @@ pub fn URLSearchParams.from_record(init map[string]string) &URLSearchParams {
 	mut list := []QueryParam{}
 	for name, value in init {
 		list << QueryParam{
-			name:  name
+			name: name
 			value: value
 		}
 	}
@@ -226,6 +226,10 @@ pub fn URLSearchParams.from_record(init map[string]string) &URLSearchParams {
 }
 
 pub fn URLSearchParams.construct_impl(init URLSearchParamsInit) !&URLSearchParams {
+	return URLSearchParams.create_from_init(init)
+}
+
+pub fn URLSearchParams.create_from_init(init URLSearchParamsInit) !&URLSearchParams {
 	match init {
 		[][]string {
 			return URLSearchParams.from_sequence(init)
@@ -259,7 +263,7 @@ pub fn (params &URLSearchParams) size() int {
 pub fn (mut params URLSearchParams) append(name string, value string) {
 	// 1. Append a new name-value pair to list.
 	params.list << QueryParam{
-		name:  name
+		name: name
 		value: value
 	}
 	// 2. Update this.
@@ -327,7 +331,7 @@ pub fn (mut params URLSearchParams) set(name string, value string) {
 		if entry.name == name {
 			if !found {
 				new_list << QueryParam{
-					name:  name
+					name: name
 					value: value
 				}
 				found = true
@@ -340,7 +344,7 @@ pub fn (mut params URLSearchParams) set(name string, value string) {
 	// 2. Otherwise append a new pair.
 	if !found {
 		new_list << QueryParam{
-			name:  name
+			name: name
 			value: value
 		}
 	}
@@ -370,6 +374,10 @@ pub fn (mut params URLSearchParams) sort() {
 
 // https://url.spec.whatwg.org/#dom-urlsearchparams-tostring
 pub fn (params &URLSearchParams) to_string() string {
+	return params.serialize_to_byte_string()
+}
+
+pub fn (params &URLSearchParams) serialize_to_byte_string() string {
 	return url_encode(params.list)
 }
 
@@ -413,10 +421,17 @@ pub mut:
 }
 
 pub fn URLSearchParamsIterator.create(params &URLSearchParams, kind URLSearchParamsIteratorKind) &URLSearchParamsIterator {
-	return &URLSearchParamsIterator{
+	iterator := &URLSearchParamsIterator{
 		params: params
-		kind:   kind
+		kind: kind
 	}
+	return set_url_search_params_iterator_prototype(iterator)
+}
+
+// The C++ binding assigns a realm-specific JS prototype here. V iterators are
+// statically typed, so creation itself establishes the equivalent interface.
+fn set_url_search_params_iterator_prototype(iterator &URLSearchParamsIterator) &URLSearchParamsIterator {
+	return iterator
 }
 
 pub fn (mut iterator URLSearchParamsIterator) next() URLSearchParamsIteratorValue {
@@ -440,7 +455,7 @@ pub fn (mut iterator URLSearchParamsIterator) next() URLSearchParamsIteratorValu
 		}
 		.key_value {
 			URLSearchParamsIteratorValue{
-				key:   entry.name
+				key: entry.name
 				value: entry.value
 			}
 		}

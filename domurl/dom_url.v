@@ -23,21 +23,19 @@ pub struct DOMURL {
 mut:
 	record liburl.URL
 pub mut:
-	query_object &URLSearchParams
+	query_object ?&URLSearchParams
 }
 
-pub fn DOMURL.create(record liburl.URL, query &URLSearchParams) &DOMURL {
+pub fn DOMURL.create(record liburl.URL) &DOMURL {
 	return &DOMURL{
-		record:       record
-		query_object: query
+		record: record
 	}
 }
 
 pub fn DOMURL.initialize_a_url(record liburl.URL) &DOMURL {
-	mut query := URLSearchParams.from_string(record.query or { '' })
-	url := DOMURL.create(record, query)
-	query.bind_url(url)
-	return url
+	// Upstream defers allocating and parsing searchParams until its getter is
+	// first used. This matters when href/search are changed without observing it.
+	return DOMURL.create(record)
 }
 
 fn initialize_a_url(record liburl.URL) &DOMURL {
@@ -45,6 +43,10 @@ fn initialize_a_url(record liburl.URL) &DOMURL {
 }
 
 pub fn DOMURL.construct_impl(input string, base ?string) !&DOMURL {
+	return DOMURL.create_from_url(input, base)
+}
+
+pub fn DOMURL.create_from_url(input string, base ?string) !&DOMURL {
 	record := parse_api_url(input, base) or { return error('TypeError: Invalid URL') }
 	return initialize_a_url(record)
 }
@@ -65,7 +67,12 @@ pub fn (url &DOMURL) href() string {
 pub fn (mut url DOMURL) set_href(value string) ! {
 	record := parse_api_url(value, none) or { return error('TypeError: Invalid URL') }
 	url.record = record
-	url.query_object.list = url_decode(record.query or { '' })
+	if mut query := url.query_object {
+		query.list.clear()
+		if record_query := record.query {
+			query.list = url_decode(record_query)
+		}
+	}
 }
 
 pub fn (url &DOMURL) to_json() string {
@@ -156,12 +163,16 @@ pub fn (url &DOMURL) search() string {
 pub fn (mut url DOMURL) set_search(value string) {
 	if value == '' {
 		url.record = url.record.with_query(none)
-		url.query_object.list.clear()
+		if mut query := url.query_object {
+			query.list.clear()
+		}
 		return
 	}
 	input := if value.starts_with('?') { value[1..] } else { value }
 	url.record = url.record.with_query(input)
-	url.query_object.list = url_decode(url.record.query or { '' })
+	if mut query := url.query_object {
+		query.list = url_decode(input)
+	}
 }
 
 fn (mut url DOMURL) set_query_from_params(query ?string) {
@@ -179,7 +190,14 @@ pub fn (mut url DOMURL) set_query(query ?string) {
 }
 
 pub fn (url &DOMURL) search_params() &URLSearchParams {
-	return url.query_object
+	if query := url.query_object {
+		return query
+	}
+	mut mutable_url := unsafe { &DOMURL(url) }
+	mut query := URLSearchParams.from_string(url.record.query or { '' })
+	query.bind_url(mutable_url)
+	mutable_url.query_object = query
+	return query
 }
 
 pub fn (url &DOMURL) hash() string {
@@ -234,6 +252,25 @@ pub fn DOMURL.revoke_object_url_from_store(value string, environment fileapi.Blo
 	store.remove_entry(value)
 }
 
+fn finish_parsing(parsed_url ?liburl.URL) ?liburl.URL {
+	// Blob URL entry snapshots live in FileAPI's translated BlobURLStore. The
+	// URL record itself remains unchanged at this boundary, matching the
+	// fallback path used by URL::origin when no embedded snapshot is present.
+	return parsed_url
+}
+
+pub fn parse_from_byte_string(input string, base_url ?liburl.URL, encoding ?string) ?liburl.URL {
+	_ = encoding
+	if base := base_url {
+		return finish_parsing(liburl.parse_with_base(input, &base))
+	}
+	return finish_parsing(liburl.parse(input))
+}
+
+pub fn parse(input string, base_url ?liburl.URL, encoding ?string) ?liburl.URL {
+	return parse_from_byte_string(input, base_url, encoding)
+}
+
 @[heap]
 pub struct Origin {
 mut:
@@ -252,10 +289,18 @@ pub:
 
 pub type OriginInput = OriginDOMURLSource | OriginObjectSource | string
 
-pub fn Origin.construct_impl() &Origin {
+pub fn Origin.create(record liburl.Origin) &Origin {
 	return &Origin{
-		record: liburl.Origin.create_opaque(.standard)
+		record: record
 	}
+}
+
+pub fn Origin.create_opaque() &Origin {
+	return Origin.create(liburl.Origin.create_opaque(.standard))
+}
+
+pub fn Origin.construct_impl() &Origin {
+	return Origin.create_opaque()
 }
 
 pub fn Origin.from_string(value string) !&Origin {
@@ -263,30 +308,37 @@ pub fn Origin.from_string(value string) !&Origin {
 }
 
 pub fn Origin.from(value OriginInput) !&Origin {
+	if record := extract_origin_from_platform_object(value) {
+		return Origin.create(record)
+	}
 	match value {
 		string {
-			url := DOMURL.construct_impl(value, none)!
-			return url.extract_an_origin()
+			parsed_url := liburl.parse(value) or { return error('TypeError: Value is not a valid Origin') }
+			return Origin.create(parsed_url.origin())
 		}
 		OriginDOMURLSource {
-			return value.value.extract_an_origin()
+			return error('TypeError: Value is not a valid Origin')
 		}
 		OriginObjectSource {
-			return value.value.extract_an_origin()
+			return error('TypeError: Value is not a valid Origin')
 		}
+	}
+}
+
+fn extract_origin_from_platform_object(value OriginInput) ?liburl.Origin {
+	return match value {
+		OriginDOMURLSource { value.value.record.origin() }
+		OriginObjectSource { value.value.record }
+		string { none }
 	}
 }
 
 pub fn (url &DOMURL) extract_an_origin() &Origin {
-	return &Origin{
-		record: url.record.origin()
-	}
+	return Origin.create(url.record.origin())
 }
 
 pub fn (origin &Origin) extract_an_origin() &Origin {
-	return &Origin{
-		record: origin.record
-	}
+	return Origin.create(origin.record)
 }
 
 pub fn (origin &Origin) opaque() bool {

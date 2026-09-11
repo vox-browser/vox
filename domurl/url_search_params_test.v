@@ -27,8 +27,7 @@ fn test_url_decode_edge_cases() {
 }
 
 fn test_url_encode_serializer() {
-	tuples := [QueryParam{'a', '1'}, QueryParam{'x y', '&='},
-		QueryParam{'keep', '*-._'}]
+	tuples := [QueryParam{'a', '1'}, QueryParam{'x y', '&='}, QueryParam{'keep', '*-._'}]
 	// Space → '+', reserved chars percent-encoded, *-._ kept as-is.
 	assert url_encode(tuples) == 'a=1&x+y=%26%3D&keep=*-._'
 }
@@ -183,10 +182,39 @@ fn test_url_search_params_iterator_is_live() {
 	assert iterator.next().done
 }
 
+fn test_dom_url_lazy_search_params_and_new_factories() {
+	record := parse_from_byte_string('https://example.test/path?a=1', none, none) or {
+		panic('parse failed')
+	}
+	mut url := DOMURL.create(record)
+	assert url.query_object == none
+	url.set_search('?b=2')
+	assert url.query_object == none
+	params := url.search_params()
+	assert params.get('b')? == '2'
+	assert url.query_object != none
+
+	created := DOMURL.create_from_url('/next', 'https://example.test/base')!
+	assert created.href() == 'https://example.test/next'
+	parsed := parse('/utf8', record, 'utf-8') or { panic('parse failed') }
+	assert parsed.serialize(false) == 'https://example.test/utf8'
+}
+
+fn test_origin_and_search_params_binding_factories() {
+	opaque := Origin.create_opaque()
+	assert opaque.opaque()
+	copied_origin := Origin.create(opaque.record)
+	assert copied_origin.is_same_origin(opaque)
+	params := URLSearchParams.create_from_init(URLSearchParamsInit('?a=1&b=2'))!
+	assert params.serialize_to_byte_string() == 'a=1&b=2'
+	iterator := URLSearchParamsIterator.create(params, .key)
+	assert set_url_search_params_iterator_prototype(iterator) == iterator
+}
+
 fn test_urlencoded_parser_replaces_invalid_utf8() {
 	params := url_decode('bad=%FF&truncated=%E2%82')
-	assert params[0].value == '\ufffd'
-	assert params[1].value == '\ufffd'
+	assert params[0].value == '�'
+	assert params[1].value == '�'
 }
 
 fn test_dom_url_setters_validate_normalize_and_percent_encode() {
@@ -232,8 +260,8 @@ fn test_blob_url_origin_and_store_integration() {
 	blob := fileapi.Blob.create('payload'.bytes(), 'text/plain')
 	mut store := fileapi.BlobURLStore.create()
 	environment := fileapi.BlobURLEnvironment{
-		id:          'document'
-		origin:      'https://example.com'
+		id: 'document'
+		origin: 'https://example.com'
 		storage_key: 'partition'
 	}
 	value := DOMURL.create_object_url_for_blob(blob, environment, mut store)!
@@ -241,8 +269,8 @@ fn test_blob_url_origin_and_store_integration() {
 	assert url.origin() == 'https://example.com'
 	assert store.resolve(value) != none
 	unauthorized := fileapi.BlobURLEnvironment{
-		id:          'other'
-		origin:      'https://example.com'
+		id: 'other'
+		origin: 'https://example.com'
 		storage_key: 'other-partition'
 	}
 	DOMURL.revoke_object_url_from_store(value, unauthorized, mut store)
@@ -317,8 +345,7 @@ fn test_dom_url_internal_component_entry_points() {
 
 fn test_dom_url_create_initialize_and_origin_from_entry_points() {
 	record := parse_api_url('https://example.com/path?x=1', none) or { panic('parse failed') }
-	mut query := URLSearchParams.from_string(record.query or { '' })
-	created := DOMURL.create(record, query)
+	created := DOMURL.create(record)
 	assert created.href() == 'https://example.com/path?x=1'
 	initialized := DOMURL.initialize_a_url(record)
 	assert initialized.search_params().get('x')? == '1'
