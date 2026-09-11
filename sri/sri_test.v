@@ -15,6 +15,11 @@ fn test_apply_algorithm_supports_384_and_512() {
 }
 
 fn test_apply_algorithm_rejects_unknown() {
+	assert is_supported_hash_function('sha256')
+	assert is_supported_hash_function('sha384')
+	assert is_supported_hash_function('sha512')
+	assert !is_supported_hash_function('sha1')
+	assert !is_supported_hash_function('SHA256')
 	if _ := apply_algorithm_to_bytes('md5', 'abc'.bytes()) {
 		assert false, 'md5 must not be supported'
 	}
@@ -48,11 +53,11 @@ fn test_parse_metadata_filters_unsupported_and_empty() {
 fn test_get_strongest_prefers_higher_strength() {
 	set := [
 		Metadata{
-			algorithm:    'sha256'
+			algorithm: 'sha256'
 			base64_value: 'a'
 		},
 		Metadata{
-			algorithm:    'sha512'
+			algorithm: 'sha512'
 			base64_value: 'b'
 		},
 	]
@@ -65,11 +70,11 @@ fn test_get_strongest_prefers_higher_strength() {
 fn test_get_strongest_keeps_equal_strength() {
 	set := [
 		Metadata{
-			algorithm:    'sha256'
+			algorithm: 'sha256'
 			base64_value: 'a'
 		},
 		Metadata{
-			algorithm:    'sha256'
+			algorithm: 'sha256'
 			base64_value: 'b'
 		},
 	]

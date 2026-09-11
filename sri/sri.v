@@ -25,6 +25,15 @@ pub:
 // https://w3c.github.io/webappsec-subresource-integrity/#hash-functions
 const supported_hash_functions = ['sha256', 'sha384', 'sha512']
 
+pub fn is_supported_hash_function(algorithm string) bool {
+	for supported_hash_function in supported_hash_functions {
+		if algorithm == supported_hash_function {
+			return true
+		}
+	}
+	return false
+}
+
 // https://w3c.github.io/webappsec-subresource-integrity/#getprioritizedhashfunction
 fn get_prioritized_hash_function(a string, b string) string {
 	if a == b {
@@ -76,14 +85,14 @@ pub fn parse_metadata(metadata string) []Metadata {
 			base64_value = hash_expr_token_list[1]
 		}
 		// 7. If algorithm is not a recognized hash function, continue.
-		if algorithm !in supported_hash_functions {
+		if !is_supported_hash_function(algorithm) {
 			continue
 		}
 		// 8-9. Append «["alg" → algorithm, "val" → base64-value]» to result.
 		result << Metadata{
-			algorithm:    algorithm
+			algorithm: algorithm
 			base64_value: base64_value
-			options:      ''
+			options: ''
 		}
 	}
 	// 3. Return result.
