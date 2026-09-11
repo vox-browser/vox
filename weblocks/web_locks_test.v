@@ -154,3 +154,16 @@ fn test_navigator_returns_the_environment_lock_manager() {
 	navigator := NavigatorLocks.create(environment)
 	assert navigator.locks() == navigator.locks()
 }
+
+fn test_lock_request_and_manager_source_accessors() {
+	mut manager := web_locks_test_manager()
+	promise := LockPromise.pending()
+	request := manager.request_lock(promise, hold_lock, 'resource', .shared, false, false, none)
+	assert request.client_id() == 'client-1'
+	assert request.manager() == manager
+	assert request.promise() == promise
+	assert request.signal() == none
+	assert request.callback()(none).state == .pending
+	assert manager.relevant_realm() == manager.environment
+	assert manager.relevant_global_impl() == manager.environment
+}

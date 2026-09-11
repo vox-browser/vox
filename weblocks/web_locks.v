@@ -229,13 +229,13 @@ pub fn (lock_data &LockData) waiting_promise() &LockPromise {
 @[heap]
 pub struct LockRequest {
 pub:
-	client_id    string
-	manager      &LockManager
+	client_id_   string
+	manager_     &LockManager
 	name_        string
 	mode_        LockMode
-	callback     LockGrantedCallback @[required]
-	promise      &LockPromise
-	signal       ?&dom.AbortSignal
+	callback_    LockGrantedCallback @[required]
+	promise_     &LockPromise
+	signal_      ?&dom.AbortSignal
 	if_available bool
 	steal        bool
 mut:
@@ -248,6 +248,26 @@ pub fn (request &LockRequest) name() string {
 
 pub fn (request &LockRequest) mode() LockMode {
 	return request.mode_
+}
+
+pub fn (request &LockRequest) client_id() string {
+	return request.client_id_
+}
+
+pub fn (request &LockRequest) manager() &LockManager {
+	return request.manager_
+}
+
+pub fn (request &LockRequest) callback() LockGrantedCallback {
+	return request.callback_
+}
+
+pub fn (request &LockRequest) promise() &LockPromise {
+	return request.promise_
+}
+
+pub fn (request &LockRequest) signal() ?&dom.AbortSignal {
+	return request.signal_
 }
 
 pub fn (request &LockRequest) abort_algorithm_id() ?u64 {
@@ -315,6 +335,14 @@ pub fn (manager &LockManager) lock_request_queue_map() map[string][]&LockRequest
 
 pub fn (manager &LockManager) pending_lock_count(name string) int {
 	return (manager.lock_request_queue_map_[name] or { []&LockRequest{} }).len
+}
+
+pub fn (manager &LockManager) relevant_realm() &LockEnvironment {
+	return manager.environment
+}
+
+pub fn (manager &LockManager) relevant_global_impl() &LockEnvironment {
+	return manager.environment
 }
 
 // https://w3c.github.io/web-locks/#lock-task-queue
@@ -424,13 +452,13 @@ pub fn (mut manager LockManager) query() &LockQueryPromise {
 // https://w3c.github.io/web-locks/#request-a-lock
 pub fn (mut manager LockManager) request_lock(promise &LockPromise, callback LockGrantedCallback, name string, mode LockMode, if_available bool, steal bool, signal ?&dom.AbortSignal) &LockRequest {
 	mut request := &LockRequest{
-		client_id: manager.environment.client_id
-		manager: manager
+		client_id_: manager.environment.client_id
+		manager_: manager
 		name_: name
 		mode_: mode
-		callback: callback
-		promise: promise
-		signal: signal
+		callback_: callback
+		promise_: promise
+		signal_: signal
 		if_available: if_available
 		steal: steal
 	}
@@ -490,11 +518,11 @@ pub fn (mut manager LockManager) process_lock_request_queue(name string) {
 		queue.delete(0)
 		waiting := LockPromise.pending()
 		lock_data := &LockData{
-			client_id: request.client_id
+			client_id: request.client_id_
 			manager: manager
 			mode_: request.mode_
 			name_: request.name_
-			released_promise: request.promise
+			released_promise: request.promise_
 			waiting_promise: waiting
 		}
 		manager.held_lock_set_ << lock_data
@@ -508,15 +536,15 @@ pub fn (mut manager LockManager) process_lock_request_queue(name string) {
 }
 
 fn (mut manager LockManager) invoke_callback(request &LockRequest, lock_data &LockData, null_lock bool) {
-	mut released := unsafe { &LockPromise(request.promise) }
+	mut released := unsafe { &LockPromise(request.promise_) }
 	released.callback_invocations_++
 	released.last_callback_had_lock_ = !null_lock
 	if null_lock {
-		result := request.callback(none)
+		result := request.callback_(none)
 		manager.apply_callback_result(mut released, result, unsafe { nil })
 		return
 	}
-	if signal := request.signal {
+	if signal := request.signal_ {
 		if signal.aborted() {
 			manager.queue_web_locks_task(WebLocksTask{
 				kind: .release_lock
@@ -529,7 +557,7 @@ fn (mut manager LockManager) invoke_callback(request &LockRequest, lock_data &Lo
 			mutable_signal.remove_abort_algorithm(algorithm_id)
 		}
 	}
-	result := request.callback(Lock.create(lock_data))
+	result := request.callback_(Lock.create(lock_data))
 	mut waiting := unsafe { &LockPromise(lock_data.waiting_promise) }
 	manager.apply_callback_result(mut waiting, result, lock_data)
 }
@@ -596,7 +624,7 @@ pub fn (lock_data &LockData) release_lock() {
 
 // https://w3c.github.io/web-locks/#abort-the-request
 pub fn (mut request LockRequest) abort_request() {
-	mut manager := unsafe { &LockManager(request.manager) }
+	mut manager := unsafe { &LockManager(request.manager_) }
 	mut queue := get_lock_request_queue(manager.lock_request_queue_map_, request.name_)
 	queue = queue.filter(it != request)
 	manager.lock_request_queue_map_[request.name_] = queue
@@ -605,12 +633,12 @@ pub fn (mut request LockRequest) abort_request() {
 
 // https://w3c.github.io/web-locks/#signal-to-abort-the-request
 pub fn (mut request LockRequest) signal_to_abort_request(signal &dom.AbortSignal) {
-	mut manager := unsafe { &LockManager(request.manager) }
+	mut manager := unsafe { &LockManager(request.manager_) }
 	manager.queue_web_locks_task(WebLocksTask{
 		kind: .abort_request
 		request: request
 	})
-	mut promise := unsafe { &LockPromise(request.promise) }
+	mut promise := unsafe { &LockPromise(request.promise_) }
 	promise.reject(signal.reason().to_string_value())
 }
 
@@ -619,7 +647,7 @@ pub fn (request &LockRequest) is_grantable(queue []&LockRequest) bool {
 	if queue.len > 0 && queue[0] != request {
 		return false
 	}
-	held := request.manager.held_lock_set_
+	held := request.manager_.held_lock_set_
 	if request.mode_ == .exclusive {
 		return !held.any(it.name_ == request.name_)
 	}
@@ -634,7 +662,7 @@ pub fn (manager &LockManager) snapshot_lock_state(mut promise LockQueryPromise) 
 			pending << LockInfo{
 				name: request.name_
 				mode: request.mode_
-				client_id: request.client_id
+				client_id: request.client_id_
 			}
 		}
 	}
