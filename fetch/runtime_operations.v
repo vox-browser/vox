@@ -246,10 +246,11 @@ pub fn (mut record FetchRecord) set_fetch_controller(controller ?&FetchControlle
 pub fn (mut pending PendingResponse) run_callback() {
 	response := pending.response_ or { return }
 	callback := pending.callback_ or { return }
-	queue_fetch_task(fn [pending, response, callback] () {
+	pending_pointer := unsafe { &PendingResponse(pending) }
+	queue_fetch_task(fn [pending_pointer, response, callback] () {
 		callback(response)
-		mut request := pending.request
-		request.remove_pending_response(pending)
+		mut request := pending_pointer.request
+		request.remove_pending_response(pending_pointer)
 	})
 }
 
