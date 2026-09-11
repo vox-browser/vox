@@ -256,6 +256,7 @@ pub:
 	power_preference                 WebGLPowerPreference = .default_
 	fail_if_major_performance_caveat bool
 	desynchronized                   bool
+	xr_compatible                    bool
 }
 
 pub struct ContextAttributeInput {
@@ -269,6 +270,7 @@ pub:
 	power_preference                 ?string
 	fail_if_major_performance_caveat ?bool
 	desynchronized                   ?bool
+	xr_compatible                    ?bool
 }
 
 // convert_value_to_context_attributes_dictionary preserves WebIDL defaults
@@ -297,6 +299,7 @@ pub fn convert_context_attributes(input ?ContextAttributeInput) !WebGLContextAtt
 		power_preference: power
 		fail_if_major_performance_caveat: attributes.fail_if_major_performance_caveat or { false }
 		desynchronized: attributes.desynchronized or { false }
+		xr_compatible: attributes.xr_compatible or { false }
 	}
 }
 

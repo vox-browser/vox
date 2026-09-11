@@ -1,5 +1,7 @@
 module webxr
 
+import webgl
+
 fn record_end_event(_ &XRSessionEvent) {}
 
 fn test_support_and_request_match_current_platform_boundary() {
@@ -47,7 +49,11 @@ fn test_exact_session_promise_and_creation_entry_points() {
 	mut session := XRSession.create(xr_system)
 	assert session.mode == .inline
 	session.set_onend(record_end_event)
-	assert session.onend() != none
+	if _ := session.onend() {
+		assert true
+	} else {
+		assert false
+	}
 	session.set_promise_resolved(true)
 	assert session.promise_resolved()
 
@@ -80,6 +86,11 @@ fn test_exact_session_event_and_system_entry_points() {
 	})!
 	assert event.session() == session
 	assert constructed.session() == session
+	assert XRSessionEvent.session_offset() > 0
+	timestamped := XRSessionEvent.create_with_timestamp('end', XRSessionEventInit{
+		session: session
+	}, 42)!
+	assert timestamped.time_stamp == 42
 
 	xr_system.set_pending_immersive_session(true)
 	assert xr_system.pending_immersive_session()
@@ -87,4 +98,46 @@ fn test_exact_session_event_and_system_entry_points() {
 	assert xr_system.active_immersive_session()? == session
 	xr_system.set_active_immersive_session(none)
 	assert xr_system.active_immersive_session() == none
+	assert xr_system.is_session_mode_supported(.inline)
+	assert !xr_system.is_session_mode_supported(.immersive_ar)
+	marker := voidptr(0x1234)
+	global_system := XRSystem.create_with_global_object(marker)
+	assert global_system.relevant_global_object() == marker
+}
+
+fn webxr_test_context() &webgl.WebGLRenderingContext {
+	return &webgl.WebGLRenderingContext{
+		version: .webgl1
+		attributes: webgl.WebGLContextAttributes{}
+		native: unsafe { nil }
+	}
+}
+
+fn test_webgl_layer_validates_session_and_context_state() {
+	mut xr_system := XRSystem.create()
+	inline_session := XRSession.create_with_mode(xr_system, .inline)
+	mut context := webxr_test_context()
+	layer := XRWebGLLayer.create(inline_session, context, XRWebGLLayerInit{})!
+	assert layer.session == inline_session
+	assert layer.context == context
+
+	immersive_session := XRSession.create_with_mode(xr_system, .immersive_vr)
+	XRWebGLLayer.create(immersive_session, context, XRWebGLLayerInit{}) or {
+		assert err.msg().contains('not XR-compatible')
+	}
+	context.set_xr_compatible(true)
+	assert context.xr_compatible()
+	immersive_layer := XRWebGLLayer.create(immersive_session, context, XRWebGLLayerInit{})!
+	assert immersive_layer.session.is_immersive()
+	immersive_session.update_render_state(XRRenderStateInit{})
+
+	context.lose_context('test')
+	XRWebGLLayer.create(inline_session, context, XRWebGLLayerInit{}) or {
+		assert err.msg().contains('context has been lost')
+	}
+	mut ended_session := XRSession.create(xr_system)
+	ended_session.shut_down()
+	XRWebGLLayer.create(ended_session, context, XRWebGLLayerInit{}) or {
+		assert err.msg().contains('XRSession has ended')
+	}
 }

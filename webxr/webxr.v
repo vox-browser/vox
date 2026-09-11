@@ -1,10 +1,13 @@
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of WebXR/XRSession, XRSessionEvent and XRSystem. Device discovery,
-// permission prompting and native tracking/rendering remain platform boundaries,
-// matching the corresponding upstream FIXMEs.
+// Translation of WebXR/XRLayer, XRRenderState, XRSession, XRSessionEvent,
+// XRSystem, and XRWebGLLayer. Device discovery, permission prompting and native
+// tracking/rendering remain platform boundaries, matching upstream FIXMEs.
 module webxr
+
+import dom
+import webgl
 
 pub enum XRSessionMode {
 	inline
@@ -16,6 +19,32 @@ pub struct XRSessionInit {
 pub:
 	required_features ?[]string
 	optional_features ?[]string
+}
+
+pub struct XRRenderStateInit {
+pub:
+	depth_near                    f64
+	depth_far                     f64
+	passthrough_fully_obscured    ?bool
+	inline_vertical_field_of_view ?f64
+}
+
+@[heap]
+pub struct XRRenderState {}
+
+@[heap]
+pub struct XRLayer {
+	dom.EventTarget
+}
+
+pub struct XRWebGLLayerInit {
+pub:
+	antialias                bool = true
+	depth                    bool = true
+	stencil                  bool
+	alpha                    bool = true
+	ignore_depth_values      bool
+	framebuffer_scale_factor f64 = 1.0
 }
 
 pub enum XRException {
@@ -70,12 +99,12 @@ pub struct XRSession {
 pub:
 	mode XRSessionMode
 mut:
-	owner             &XRSystem = unsafe { nil }
-	promise_resolved_ bool
-	ended_            bool
-	outstanding       int
+	owner                 &XRSystem = unsafe { nil }
+	promise_resolved_     bool
+	ended_                bool
+	outstanding           int
 	outstanding_promises_ []&XRPromise
-	onend_            ?EndEventHandler
+	onend_                ?EndEventHandler
 }
 
 pub fn XRSession.create(xr_system &XRSystem) &XRSession {
@@ -84,7 +113,7 @@ pub fn XRSession.create(xr_system &XRSystem) &XRSession {
 
 pub fn XRSession.create_with_mode(xr_system &XRSystem, mode XRSessionMode) &XRSession {
 	return &XRSession{
-		mode:  mode
+		mode: mode
 		owner: xr_system
 	}
 }
@@ -125,6 +154,14 @@ pub fn (session &XRSession) promise_resolved() bool {
 pub fn (session &XRSession) ended() bool {
 	return session.ended_
 }
+
+pub fn (session &XRSession) is_immersive() bool {
+	return session.mode != .inline
+}
+
+// Current upstream exposes updateRenderState but still leaves its algorithm as
+// an explicit stub.
+pub fn (_ &XRSession) update_render_state(_ XRRenderStateInit) {}
 
 pub fn (session &XRSession) outstanding_operation_count() int {
 	return session.outstanding + session.outstanding_promises_.len
@@ -190,7 +227,7 @@ pub fn (mut session XRSession) shut_down() {
 	}
 	if handler := session.onend_ {
 		event := XRSessionEvent{
-			type_:    'end'
+			type_: 'end'
 			session_: session
 		}
 		handler(&event)
@@ -205,7 +242,8 @@ pub:
 @[heap]
 pub struct XRSessionEvent {
 pub:
-	type_ string
+	type_      string
+	time_stamp f64
 mut:
 	session_ &XRSession = unsafe { nil }
 }
@@ -215,7 +253,19 @@ pub fn XRSessionEvent.new(type_ string, init XRSessionEventInit) !XRSessionEvent
 		return error('XRSessionEventInit.session is required')
 	}
 	return XRSessionEvent{
-		type_:   type_
+		type_: type_
+		time_stamp: dom.current_event_timestamp()
+		session_: init.session
+	}
+}
+
+pub fn XRSessionEvent.create_with_timestamp(type_ string, init XRSessionEventInit, time_stamp f64) !XRSessionEvent {
+	if isnil(init.session) {
+		return error('XRSessionEventInit.session is required')
+	}
+	return XRSessionEvent{
+		type_: type_
+		time_stamp: time_stamp
 		session_: init.session
 	}
 }
@@ -232,21 +282,40 @@ pub fn (event &XRSessionEvent) session() &XRSession {
 	return event.session_
 }
 
+pub fn XRSessionEvent.session_offset() usize {
+	return usize(__offsetof(XRSessionEvent, session_))
+}
+
 @[heap]
 pub struct XRSystem {
 mut:
+	relevant_global_object_    voidptr
 	pending_immersive_session_ bool
 	active_immersive_session_  ?&XRSession
-	inline_sessions           []&XRSession
+	inline_sessions            []&XRSession
 }
 
 pub fn XRSystem.create() &XRSystem {
 	return &XRSystem{}
 }
 
+pub fn XRSystem.create_with_global_object(global_object voidptr) &XRSystem {
+	return &XRSystem{
+		relevant_global_object_: global_object
+	}
+}
+
+pub fn (system &XRSystem) relevant_global_object() voidptr {
+	return system.relevant_global_object_
+}
+
+pub fn (_ &XRSystem) is_session_mode_supported(mode XRSessionMode) bool {
+	return mode == .inline
+}
+
 pub fn (system &XRSystem) is_session_supported(mode XRSessionMode) BoolPromiseResult {
 	return BoolPromiseResult{
-		value: mode == .inline
+		value: system.is_session_mode_supported(mode)
 	}
 }
 
@@ -309,4 +378,34 @@ pub fn (mut system XRSystem) remove_session(session &XRSession) {
 		}
 	}
 	system.remove_inline_session(session)
+}
+
+@[heap]
+pub struct XRWebGLLayer {
+	XRLayer
+pub:
+	session &XRSession
+	context &webgl.WebGLRenderingContext
+	init    XRWebGLLayerInit
+}
+
+// https://immersive-web.github.io/webxr/#dom-xrwebgllayer-xrwebgllayer
+pub fn XRWebGLLayer.create(session &XRSession, context &webgl.WebGLRenderingContext, init XRWebGLLayerInit) !&XRWebGLLayer {
+	if session.ended() {
+		return error('InvalidStateError: The XRSession has ended.')
+	}
+	if context.is_context_lost() {
+		return error('InvalidStateError: The context has been lost.')
+	}
+	if session.is_immersive() && !context.xr_compatible() {
+		return error('InvalidStateError: The XRSession is immersive but the context is not XR-compatible.')
+	}
+	return &XRWebGLLayer{
+		XRLayer: XRLayer{
+			EventTarget: dom.EventTarget{}
+		}
+		session: session
+		context: context
+		init: init
+	}
 }

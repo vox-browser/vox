@@ -16,6 +16,7 @@ mut:
 	next_handle                         GLuint = 1
 	error_                              GLenum
 	context_lost_                       bool
+	xr_compatible_                      bool
 	enabled_extensions                  map[string]&WebGLExtension
 	enabled_compressed_texture_formats_ []GLenum
 	buffers                             map[GLuint]&WebGLBuffer
@@ -78,6 +79,7 @@ pub fn WebGLRenderingContext.new(version WebGLVersion, attributes WebGLContextAt
 			dither: true
 		}
 		generic_parameters_: default_webgl_parameters()
+		xr_compatible_: attributes.xr_compatible
 	}
 }
 
@@ -115,6 +117,14 @@ pub fn (context &WebGLRenderingContext) get_context_attributes() ?WebGLContextAt
 
 pub fn (context &WebGLRenderingContext) is_context_lost() bool {
 	return context.context_lost_
+}
+
+pub fn (context &WebGLRenderingContext) xr_compatible() bool {
+	return context.xr_compatible_
+}
+
+pub fn (mut context WebGLRenderingContext) set_xr_compatible(xr_compatible bool) {
+	context.xr_compatible_ = xr_compatible
 }
 
 pub fn (mut context WebGLRenderingContext) lose_context(status_message string) WebGLContextEvent {
