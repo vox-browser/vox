@@ -29,28 +29,33 @@ fn test_webidl_enum_names() {
 
 fn test_mime_and_configuration_validation() {
 	assert is_valid_audio_mime_type('audio/ogg; codecs=opus')
-	assert is_valid_audio_mime_type('application/ogg')
+	assert is_valid_audio_mime_type('audio/aac')
+	assert !is_valid_audio_mime_type('application/ogg')
 	assert !is_valid_audio_mime_type('video/mp4')
-	assert is_valid_video_mime_type('video/mp4')
+	assert is_valid_video_mime_type('video/mp4; codecs="avc1.42E01E"')
 	assert !is_valid_video_mime_type('audio/mp4')
+	assert !is_valid_video_mime_type('video/webm')
+	assert !is_valid_video_mime_type('video/webm; codecs="vp09.00.10.08, vp8"')
+	assert !is_valid_video_mime_type('video/webm; codecs=opus')
+	assert !is_valid_audio_mime_type('application/ogg; codecs=theora')
 	assert !MediaConfiguration{}.is_valid_media_configuration()
 	assert !video('video/mp4', 0).is_valid_video_configuration()
 	assert !video('video/mp4', math.nan()).is_valid_video_configuration()
-	assert video('video/mp4', 60).is_valid_video_configuration()
+	assert video('video/mp4; codecs="avc1.42E01E"', 60).is_valid_video_configuration()
 }
 
 fn test_decode_support_matches_html_media_subtype_registry() {
 	base := MediaConfiguration{
-		video: video('video/webm', 24)
+		video: video('video/webm; codecs="vp09.00.10.08"', 24)
 		audio: AudioConfiguration{
-			content_type: 'audio/ogg'
+			content_type: 'audio/webm; codecs=opus'
 		}
 	}
 	assert is_able_to_decode_media(MediaDecodingConfiguration{
 		MediaConfiguration: base
 		type_: .media_source
 	})
-	assert !is_able_to_decode_media(MediaDecodingConfiguration{
+	assert is_able_to_decode_media(MediaDecodingConfiguration{
 		MediaConfiguration: base
 		type_: .file
 	})
@@ -60,6 +65,17 @@ fn test_decode_support_matches_html_media_subtype_registry() {
 		}
 		type_: .media_source
 	})
+	assert media_decoding_capabilities(MediaDecodingConfiguration{
+		MediaConfiguration: base
+		type_: .media_source
+	})? == DecoderCapabilities{
+		smooth: true
+		power_efficient: false
+	}
+	assert media_decoding_capabilities(MediaDecodingConfiguration{
+		MediaConfiguration: base
+		type_: .webrtc
+	}) == none
 }
 
 fn test_decoding_info_rejects_invalid_and_resolves_on_media_task() {
@@ -74,7 +90,7 @@ fn test_decoding_info_rejects_invalid_and_resolves_on_media_task() {
 	mut sessions := ['temporary']
 	valid := MediaDecodingConfiguration{
 		MediaConfiguration: MediaConfiguration{
-			video: video('video/mp4', 30)
+			video: video('video/mp4; codecs="avc1.42E01E"', 30)
 		}
 		type_: .media_source
 		key_system_configuration: MediaCapabilitiesKeySystemConfiguration{
@@ -90,7 +106,7 @@ fn test_decoding_info_rejects_invalid_and_resolves_on_media_task() {
 	assert promise.state() == dom.PromiseState.fulfilled
 	info := promise.value() or { panic('missing decoding info') }
 	assert info.supported
-	assert !info.smooth
+	assert info.smooth
 	assert !info.power_efficient
 
 	key_system := internal_info.configuration.key_system_configuration or {

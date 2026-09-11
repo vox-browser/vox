@@ -11,6 +11,54 @@ import html
 import math
 import mimesniff
 
+enum MediaTrackType {
+	audio
+	video
+}
+
+enum MediaContainer {
+	isobmff
+	matroska
+	webm
+	ogg
+	mpeg_audio
+	adts
+	flac
+	wav
+}
+
+enum MediaCodec {
+	vp8
+	vp9
+	h264
+	h265
+	mp3
+	aac
+	av1
+	theora
+	vorbis
+	opus
+	flac
+	pcm_u8
+	pcm_s16
+	pcm_s24
+	pcm_s32
+	pcm_f32
+	alaw
+	mulaw
+}
+
+struct ParsedMediaCodec {
+	kind            MediaCodec
+	fully_specified bool
+}
+
+pub struct DecoderCapabilities {
+pub:
+	smooth          bool
+	power_efficient bool
+}
+
 pub enum MediaDecodingType {
 	file
 	media_source
@@ -265,47 +313,286 @@ pub fn (configuration MediaDecodingConfiguration) clone() MediaDecodingConfigura
 		}
 		type_: configuration.type_
 		key_system_configuration: if value := configuration.key_system_configuration {
-			clone_key_system_configuration(value)} else {
-			none}
-	}
-}
-
-pub fn is_valid_audio_mime_type(value string) bool {
-	mime_type := mimesniff.MimeType.parse(value) or { return false }
-	return mime_type.type_() == 'audio' || mime_type.type_() == 'application'
-}
-
-pub fn is_valid_video_mime_type(value string) bool {
-	mime_type := mimesniff.MimeType.parse(value) or { return false }
-	return mime_type.type_() == 'video' || mime_type.type_() == 'application'
-}
-
-pub fn is_able_to_decode_media(configuration MediaDecodingConfiguration) bool {
-	if configuration.type_ != .media_source {
-		return false
-	}
-	if video := configuration.video {
-		mime_type := mimesniff.MimeType.parse(video.content_type) or { return false }
-		if mime_type.subtype() !in ['webm', 'mp4', 'mpeg', 'ogg'] {
-			return false
+			clone_key_system_configuration(value)
+		} else {
+			none
 		}
 	}
-	if audio := configuration.audio {
-		mime_type := mimesniff.MimeType.parse(audio.content_type) or { return false }
-		if mime_type.subtype() !in ['flac', 'mp3', 'mpeg', 'ogg', 'wav', 'webm'] {
+}
+
+fn container_from_mime_type(type_ string, subtype string) ?MediaContainer {
+	if type_ !in ['audio', 'video', 'application'] {
+		return none
+	}
+	return match subtype {
+		'mp4' { MediaContainer.isobmff }
+		'webm' {
+			if type_ == 'application' { none } else { MediaContainer.webm }
+		}
+		'matroska', 'x-matroska' {
+			if type_ == 'application' { none } else { MediaContainer.matroska }
+		}
+		'ogg' { MediaContainer.ogg }
+		'mpeg', 'mp3', 'x-mp3' {
+			if type_ == 'audio' { MediaContainer.mpeg_audio } else { none }
+		}
+		'aac' {
+			if type_ == 'audio' { MediaContainer.adts } else { none }
+		}
+		'flac' {
+			if type_ == 'audio' { MediaContainer.flac } else { none }
+		}
+		'wav', 'wave', 'x-wav' {
+			if type_ == 'audio' { MediaContainer.wav } else { none }
+		}
+		else { none }
+	}
+}
+
+fn codec_track_type(codec MediaCodec) MediaTrackType {
+	return match codec {
+		.vp8, .vp9, .h264, .h265, .av1, .theora { .video }
+		else { .audio }
+	}
+}
+
+fn is_decimal_string(value string) bool {
+	if value == '' {
+		return false
+	}
+	for ch in value.bytes() {
+		if ch < `0` || ch > `9` {
 			return false
 		}
 	}
 	return true
 }
 
+fn is_hex_string(value string) bool {
+	if value == '' {
+		return false
+	}
+	for ch in value.bytes() {
+		if !((ch >= `0` && ch <= `9`) || (ch >= `a` && ch <= `f`)
+			|| (ch >= `A` && ch <= `F`)) {
+			return false
+		}
+	}
+	return true
+}
+
+fn parse_media_codec(value string) ?ParsedMediaCodec {
+	return match value {
+		'vp8', 'vp8.0' { ParsedMediaCodec{ kind: .vp8, fully_specified: true } }
+		'vp9', 'vp9.0' { ParsedMediaCodec{ kind: .vp9, fully_specified: true } }
+		'mp3' { ParsedMediaCodec{ kind: .mp3, fully_specified: true } }
+		'theora' { ParsedMediaCodec{ kind: .theora, fully_specified: true } }
+		'vorbis' { ParsedMediaCodec{ kind: .vorbis, fully_specified: true } }
+		'opus', 'Opus' { ParsedMediaCodec{ kind: .opus, fully_specified: true } }
+		'flac', 'fLaC' { ParsedMediaCodec{ kind: .flac, fully_specified: true } }
+		'pcm-u8' { ParsedMediaCodec{ kind: .pcm_u8, fully_specified: true } }
+		'pcm-s16' { ParsedMediaCodec{ kind: .pcm_s16, fully_specified: true } }
+		'pcm-s24' { ParsedMediaCodec{ kind: .pcm_s24, fully_specified: true } }
+		'pcm-s32' { ParsedMediaCodec{ kind: .pcm_s32, fully_specified: true } }
+		'pcm-f32' { ParsedMediaCodec{ kind: .pcm_f32, fully_specified: true } }
+		'alaw' { ParsedMediaCodec{ kind: .alaw, fully_specified: true } }
+		'ulaw' { ParsedMediaCodec{ kind: .mulaw, fully_specified: true } }
+		else {
+			parts := value.split('.')
+			if parts.len == 1 {
+				if value in ['avc1', 'avc3'] {
+					return ParsedMediaCodec{ kind: .h264, fully_specified: false }
+				}
+				return none
+			}
+			match parts[0] {
+				'avc1', 'avc3' {
+					if parts.len == 2 && parts[1].len == 6 && is_hex_string(parts[1]) {
+						return ParsedMediaCodec{ kind: .h264, fully_specified: true }
+					}
+				}
+				'hev1', 'hvc1' {
+					if parts[1..].all(is_decimal_string) {
+						return ParsedMediaCodec{ kind: .h265, fully_specified: true }
+					}
+				}
+				'vp09' {
+					if parts.len >= 4 && parts[1..].all(is_decimal_string) {
+						return ParsedMediaCodec{ kind: .vp9, fully_specified: true }
+					}
+				}
+				'av01' {
+					if parts.len >= 4 {
+						return ParsedMediaCodec{ kind: .av1, fully_specified: true }
+					}
+				}
+				'mp4a' {
+					if parts[1..].all(fn (part string) bool {
+						return is_decimal_string(part) || is_hex_string(part)
+					}) {
+						kind := if parts[1].to_lower() in ['69', '6b'] {
+							MediaCodec.mp3
+						} else {
+							MediaCodec.aac
+						}
+						return ParsedMediaCodec{ kind: kind, fully_specified: parts.len >= 3 }
+					}
+				}
+				else {}
+			}
+			none
+		}
+	}
+}
+
+fn check_mime_type_validity(mime_type mimesniff.MimeType, media MediaTrackType) bool {
+	media_name := if media == .audio { 'audio' } else { 'video' }
+	if mime_type.type_() != media_name && mime_type.type_() != 'application' {
+		return false
+	}
+	container := container_from_mime_type(mime_type.type_(), mime_type.subtype()) or {
+		return true
+	}
+	parameters := mime_type.parameters()
+	if container in [.adts, .flac] {
+		return parameters.len == 0
+	}
+	if parameters.len != 1 || 'codecs' !in parameters {
+		return false
+	}
+	codec_strings := parameters['codecs'].split(',')
+	if codec_strings.len != 1 {
+		return false
+	}
+	codec := parse_media_codec(codec_strings[0].trim_space()) or { return false }
+	return codec_track_type(codec.kind) == media
+}
+
+pub fn is_valid_audio_mime_type(value string) bool {
+	mime_type := mimesniff.MimeType.parse(value) or { return false }
+	return check_mime_type_validity(mime_type, .audio)
+}
+
+pub fn is_valid_video_mime_type(value string) bool {
+	mime_type := mimesniff.MimeType.parse(value) or { return false }
+	return check_mime_type_validity(mime_type, .video)
+}
+
+fn codec_supported_in_container(container MediaContainer, codec MediaCodec) bool {
+	return match container {
+		.webm { codec in [.vp8, .vp9, .av1, .vorbis, .opus] }
+		.matroska {
+			codec !in [.alaw, .mulaw]
+		}
+		.isobmff { codec in [.vp8, .vp9, .h264, .h265, .mp3, .aac, .av1, .opus, .flac] }
+		.ogg { codec in [.theora, .vorbis, .opus, .flac] }
+		.mpeg_audio { codec == .mp3 }
+		.adts { codec == .aac }
+		.flac { codec == .flac }
+		.wav { codec in [.pcm_u8, .pcm_s16, .pcm_s24, .pcm_s32, .pcm_f32, .alaw, .mulaw] }
+	}
+}
+
+fn file_decoding_capabilities(content_type string) ?DecoderCapabilities {
+	mime_type := mimesniff.MimeType.parse(content_type) or { return none }
+	container := container_from_mime_type(mime_type.type_(), mime_type.subtype()) or { return none }
+	if mime_type.type_() == 'application' && container == .isobmff {
+		return none
+	}
+	parameters := mime_type.parameters()
+	if 'codecs' !in parameters {
+		if container !in [.adts, .flac] {
+			return none
+		}
+		return DecoderCapabilities{ smooth: true, power_efficient: false }
+	}
+	codec_strings := parameters['codecs'].split(',')
+	if codec_strings.len == 0 {
+		return none
+	}
+	for codec_string in codec_strings {
+		codec := parse_media_codec(codec_string.trim_space()) or { return none }
+		if !codec.fully_specified || !codec_supported_in_container(container, codec.kind) {
+			return none
+		}
+		if mime_type.type_() == 'audio' && codec_track_type(codec.kind) != .audio {
+			return none
+		}
+	}
+	return DecoderCapabilities{ smooth: true, power_efficient: false }
+}
+
+fn media_source_decoding_capabilities(content_type string) ?DecoderCapabilities {
+	mime_type := mimesniff.MimeType.parse(content_type) or { return none }
+	if mime_type.type_() !in ['audio', 'video'] || mime_type.subtype() !in ['webm', 'mp4'] {
+		return none
+	}
+	parameters := mime_type.parameters()
+	if 'codecs' !in parameters {
+		return none
+	}
+	container := if mime_type.subtype() == 'webm' {
+		MediaContainer.webm
+	} else {
+		MediaContainer.isobmff
+	}
+	codec_strings := parameters['codecs'].split(',')
+	if codec_strings.len == 0 {
+		return none
+	}
+	for codec_string in codec_strings {
+		codec := parse_media_codec(codec_string.trim_space()) or { return none }
+		if !codec.fully_specified || !codec_supported_in_container(container, codec.kind) {
+			return none
+		}
+		if mime_type.type_() == 'audio' && codec_track_type(codec.kind) != .audio {
+			return none
+		}
+	}
+	return DecoderCapabilities{ smooth: true, power_efficient: false }
+}
+
+fn check_mime_type_support(content_type string, decoding_type MediaDecodingType) ?DecoderCapabilities {
+	if decoding_type == .webrtc {
+		return none
+	}
+	if decoding_type == .media_source {
+		return media_source_decoding_capabilities(content_type)
+	}
+	return file_decoding_capabilities(content_type)
+}
+
+pub fn media_decoding_capabilities(configuration MediaDecodingConfiguration) ?DecoderCapabilities {
+	mut result := DecoderCapabilities{ smooth: true, power_efficient: true }
+	if video := configuration.video {
+		capabilities := check_mime_type_support(video.content_type, configuration.type_) or { return none }
+		result = DecoderCapabilities{
+			smooth: result.smooth && capabilities.smooth
+			power_efficient: result.power_efficient && capabilities.power_efficient
+		}
+	}
+	if audio := configuration.audio {
+		capabilities := check_mime_type_support(audio.content_type, configuration.type_) or { return none }
+		result = DecoderCapabilities{
+			smooth: result.smooth && capabilities.smooth
+			power_efficient: result.power_efficient && capabilities.power_efficient
+		}
+	}
+	return result
+}
+
+pub fn is_able_to_decode_media(configuration MediaDecodingConfiguration) bool {
+	return media_decoding_capabilities(configuration) != none
+}
+
 pub fn create_a_media_capabilities_decoding_info(configuration MediaDecodingConfiguration) MediaCapabilitiesDecodingInfo {
 	cloned := configuration.clone()
+	capabilities := media_decoding_capabilities(cloned)
 	return MediaCapabilitiesDecodingInfo{
 		MediaCapabilitiesInfo: MediaCapabilitiesInfo{
-			supported: is_able_to_decode_media(cloned)
-			smooth: false
-			power_efficient: false
+			supported: capabilities != none
+			smooth: if value := capabilities { value.smooth } else { false }
+			power_efficient: if value := capabilities { value.power_efficient } else { false }
 		}
 		configuration: cloned
 	}
@@ -365,7 +652,7 @@ pub fn MediaCapabilities.create(event_loop ?&html.EventLoop) &MediaCapabilities 
 	}
 }
 
-pub type MediaCapabilitiesTaskSteps = fn()
+pub type MediaCapabilitiesTaskSteps = fn ()
 
 // https://w3c.github.io/media-capabilities/#queue-a-media-capabilities-task
 pub fn queue_a_media_capabilities_task(event_loop ?&html.EventLoop, steps MediaCapabilitiesTaskSteps) {
