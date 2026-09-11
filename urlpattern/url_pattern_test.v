@@ -95,6 +95,49 @@ fn test_exec_records_string_base_url_input() {
 	assert result.result.inputs.len == 2
 }
 
+fn test_binding_and_internal_url_pattern_conversions() {
+	init := URLPatternInit{
+		protocol: 'https'
+		hostname: 'example.test'
+		pathname: '/items/:id'
+		base_url: 'https://base.test/'
+	}
+	internal := to_internal_url_pattern_init(init)
+	bindings := to_bindings_url_pattern_init(internal)
+	assert bindings.protocol or { '' } == 'https'
+	assert bindings.hostname or { '' } == 'example.test'
+	assert bindings.pathname or { '' } == '/items/:id'
+	assert bindings.base_url or { '' } == 'https://base.test/'
+	assert to_internal_optional_string(none) == none
+	assert to_internal_ignore_case(URLPatternOptions{
+		ignore_case: true
+	})
+
+	input := to_internal_url_pattern_input(URLPatternInput(init))
+	assert input is URLPatternInit
+	component := to_bindings_url_pattern_component_result(URLPatternComponentResult{
+		input: '/items/42'
+		groups: {
+			'id': '42'
+		}
+	})
+	assert component.input == '/items/42'
+	assert component.groups['id'] == '42'
+}
+
+fn test_exec_converts_internal_result_to_binding_result() {
+	pattern := create_url_pattern(URLPatternInput(URLPatternInit{
+		pathname: '/items/:id'
+	}), none, URLPatternOptions{})!
+	execution := pattern.exec(URLPatternInput(URLPatternInit{
+		pathname: '/items/42'
+	}), none)!
+	assert execution.matched
+	assert execution.result.pathname.input == '/items/42'
+	assert execution.result.pathname.groups['id'] == '42'
+	assert execution.result.inputs.len == 1
+}
+
 fn test_wpt_pathname_modifier_matrix() {
 	cases := [
 		['/foo/:bar?', '/foo', 'true'],

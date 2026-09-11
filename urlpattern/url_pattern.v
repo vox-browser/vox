@@ -51,6 +51,70 @@ pub:
 	result  URLPatternResult
 }
 
+fn to_internal_optional_string(value ?string) ?string {
+	if string_value := value {
+		return string_value.clone()
+	}
+	return none
+}
+
+fn to_internal_url_pattern_init(init URLPatternInit) URLPatternInit {
+	return URLPatternInit{
+		protocol: to_internal_optional_string(init.protocol)
+		username: to_internal_optional_string(init.username)
+		password: to_internal_optional_string(init.password)
+		hostname: to_internal_optional_string(init.hostname)
+		port: to_internal_optional_string(init.port)
+		pathname: to_internal_optional_string(init.pathname)
+		search: to_internal_optional_string(init.search)
+		hash: to_internal_optional_string(init.hash)
+		base_url: to_internal_optional_string(init.base_url)
+	}
+}
+
+fn to_internal_url_pattern_input(input URLPatternInput) URLPatternInput {
+	return match input {
+		string { URLPatternInput(input.clone()) }
+		URLPatternInit { URLPatternInput(to_internal_url_pattern_init(input)) }
+	}
+}
+
+fn to_internal_ignore_case(options URLPatternOptions) bool {
+	return options.ignore_case
+}
+
+fn to_bindings_url_pattern_init(init URLPatternInit) URLPatternInit {
+	return to_internal_url_pattern_init(init)
+}
+
+fn to_bindings_url_pattern_component_result(result URLPatternComponentResult) URLPatternComponentResult {
+	return URLPatternComponentResult{
+		input: result.input.clone()
+		groups: result.groups.clone()
+	}
+}
+
+fn to_bindings_url_pattern_result(result URLPatternResult) URLPatternResult {
+	mut inputs := []URLPatternInput{cap: result.inputs.len}
+	for input in result.inputs {
+		inputs << match input {
+			string { URLPatternInput(input.clone()) }
+			URLPatternInit { URLPatternInput(to_bindings_url_pattern_init(input)) }
+		}
+	}
+	return URLPatternResult{
+		inputs: inputs
+		protocol: to_bindings_url_pattern_component_result(result.protocol)
+		username: to_bindings_url_pattern_component_result(result.username)
+		password: to_bindings_url_pattern_component_result(result.password)
+		hostname: to_bindings_url_pattern_component_result(result.hostname)
+		port: to_bindings_url_pattern_component_result(result.port)
+		pathname: to_bindings_url_pattern_component_result(result.pathname)
+		search: to_bindings_url_pattern_component_result(result.search)
+		hash: to_bindings_url_pattern_component_result(result.hash)
+	}
+}
+
 @[heap]
 pub struct URLPattern {
 	protocol_component CompiledPatternComponent
@@ -73,22 +137,28 @@ pub fn URLPattern.construct_impl(input URLPatternInput, base_url ?string, option
 
 // https://urlpattern.spec.whatwg.org/#url-pattern-create
 pub fn URLPattern.create(input URLPatternInput, base_url ?string, options URLPatternOptions) !&URLPattern {
+	return create_url_pattern(input, base_url, options)
+}
+
+fn create_url_pattern(input URLPatternInput, base_url ?string, options URLPatternOptions) !&URLPattern {
+	internal_input := to_internal_url_pattern_input(input)
+	internal_base_url := to_internal_optional_string(base_url)
 	mut init := PatternInitRecord{}
-	match input {
+	match internal_input {
 		string {
-			init = parse_constructor_string(input)!
-			if base_url == none && init.protocol == none {
+			init = parse_constructor_string(internal_input)!
+			if internal_base_url == none && init.protocol == none {
 				return error('TypeError: relative URLPattern constructor must provide one of baseURL or protocol')
 			}
-			if value := base_url {
+			if value := internal_base_url {
 				init.base_url = value
 			}
 		}
 		URLPatternInit {
-			if base_url != none {
+			if internal_base_url != none {
 				return error('TypeError: constructor with URLPatternInit must not provide baseURL')
 			}
-			init = pattern_init_record(input)
+			init = pattern_init_record(internal_input)
 		}
 	}
 	mut processed := process_url_pattern_init(init, .pattern, none, none, none, none, none, none, none, none)!
@@ -136,10 +206,10 @@ pub fn URLPattern.create(input URLPatternInput, base_url ?string, options URLPat
 	}, hostname_pattern_options())!
 	port_component := compile_pattern_component(port_string, .port, default_pattern_options())!
 	case_options := PatternCompileOptions{
-		ignore_case: options.ignore_case
+		ignore_case: to_internal_ignore_case(options)
 	}
 	pathname_component := if protocol_component_matches_special_scheme(&protocol_component) {
-		compile_pattern_component(processed.pathname or { '*' }, .pathname, pathname_pattern_options(options.ignore_case))!
+		compile_pattern_component(processed.pathname or { '*' }, .pathname, pathname_pattern_options(to_internal_ignore_case(options)))!
 	} else {
 		compile_pattern_component(processed.pathname or { '*' }, .opaque_pathname, case_options)!
 	}
@@ -259,7 +329,7 @@ fn prepare_url_pattern_match_input(input URLPatternInput, base_url ?string) !URL
 }
 
 pub fn (pattern &URLPattern) test(input URLPatternInput, base_url ?string) !bool {
-	prepared := prepare_url_pattern_match_input(input, base_url)!
+	prepared := prepare_url_pattern_match_input(to_internal_url_pattern_input(input), to_internal_optional_string(base_url))!
 	if !prepared.valid {
 		return false
 	}
@@ -267,24 +337,25 @@ pub fn (pattern &URLPattern) test(input URLPatternInput, base_url ?string) !bool
 }
 
 pub fn (pattern &URLPattern) exec(input URLPatternInput, base_url ?string) !URLPatternExecResult {
-	prepared := prepare_url_pattern_match_input(input, base_url)!
+	prepared := prepare_url_pattern_match_input(to_internal_url_pattern_input(input), to_internal_optional_string(base_url))!
 	if !prepared.valid {
 		return URLPatternExecResult{}
 	}
 	matches := pattern.match_components(prepared.components) or { return URLPatternExecResult{} }
+	bindings_result := to_bindings_url_pattern_result(URLPatternResult{
+		inputs: prepared.inputs
+		protocol: component_result(matches[0])
+		username: component_result(matches[1])
+		password: component_result(matches[2])
+		hostname: component_result(matches[3])
+		port: component_result(matches[4])
+		pathname: component_result(matches[5])
+		search: component_result(matches[6])
+		hash: component_result(matches[7])
+	})
 	return URLPatternExecResult{
 		matched: true
-		result: URLPatternResult{
-			inputs: prepared.inputs
-			protocol: component_result(matches[0])
-			username: component_result(matches[1])
-			password: component_result(matches[2])
-			hostname: component_result(matches[3])
-			port: component_result(matches[4])
-			pathname: component_result(matches[5])
-			search: component_result(matches[6])
-			hash: component_result(matches[7])
-		}
+		result: bindings_result
 	}
 }
 
