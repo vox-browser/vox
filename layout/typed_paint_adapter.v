@@ -9,6 +9,7 @@ import html
 import math
 import os
 import painting
+import platform
 import svg
 import time
 
@@ -116,6 +117,66 @@ fn paintable_box_is_chrome_mirrored(computed &css.ComputedProperties) bool {
 		|| writing_mode in [.vertical_rl, .sideways_rl]
 }
 
+fn is_canvas_background_source(node &Node) bool {
+	if node.is_root_element() {
+		return true
+	}
+	if !node.is_body() {
+		return false
+	}
+	mut ancestor := node.parent()
+	for ancestor != none {
+		current := ancestor or { break }
+		if current.is_root_element() {
+			root_computed := current.computed_values()
+			body_computed := node.computed_values()
+			return root_computed.contain().is_empty() && body_computed.contain().is_empty()
+				&& root_computed.background_layers().len == 0
+				&& root_computed.background_color().a == 0
+		}
+		ancestor = current.parent()
+	}
+	return false
+}
+
+// Paintable.cpp::effective_scrollbar_background_color(). Start with the
+// propagated canvas background, then composite non-canvas ancestor
+// backgrounds from the root towards the scroll container.
+fn effective_scrollbar_background_color(node &Node) css.Color {
+	canvas := node.document().background_color()
+	mut background := css.Color{canvas.r, canvas.g, canvas.b, canvas.a}
+	mut ancestors := []&Node{}
+	mut current := ?&Node(node)
+	for current != none {
+		ancestor := current or { break }
+		ancestors << ancestor
+		current = ancestor.parent()
+	}
+	for index := ancestors.len - 1; index >= 0; index-- {
+		ancestor := ancestors[index]
+		if is_canvas_background_source(ancestor) {
+			continue
+		}
+		if styled := ancestor.as_node_with_style() {
+			color := styled.computed_values().background_color()
+			if color.a != 0 {
+				background = background.blend(color)
+			}
+		}
+	}
+	return background
+}
+
+fn automatic_scrollbar_colors(node &Node) (css.Color, css.Color) {
+	background := effective_scrollbar_background_color(node)
+	black_thumb := css.Color{0, 0, 0, 128}
+	white_thumb := css.Color{255, 255, 255, 128}
+	black_contrast := background.contrast_ratio(background.blend(black_thumb))
+	white_contrast := background.contrast_ratio(background.blend(white_thumb))
+	thumb := if black_contrast >= white_contrast { black_thumb } else { white_thumb }
+	return thumb, css.Color{thumb.r, thumb.g, thumb.b, 25}
+}
+
 fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used &UsedValues) ?CompatibilityOverlayData {
 	overflow := used.scrollable_overflow_rect() or { return none }
 	padding_width := used.content_width().to_double() + used.padding_left.to_double() + used.padding_right.to_double()
@@ -133,7 +194,9 @@ fn compatibility_overlay_data(node &Node, computed &css.ComputedProperties, used
 	mut track_color := css.Color{212, 208, 200, 192}
 	mut default_colors := true
 	colors := unsafe { &css.ComputedValues(computed) }.computed_scrollbar_color()
-	if !colors.auto_ {
+	if colors.auto_ {
+		thumb_color, track_color = automatic_scrollbar_colors(node)
+	} else {
 		thumb_color = compatibility_scrollbar_color(colors.thumb)
 		track_color = compatibility_scrollbar_color(colors.track)
 		default_colors = false
@@ -1195,6 +1258,78 @@ fn computed_background_image_layers(element &dom.Element, computed &css.Computed
 		}
 	}
 	return layers
+}
+
+// CSS mask-image uses the same decoded-image provider as backgrounds, but its
+// pixels are composited into an alpha mask around the element's complete paint
+// subtree. Retain URL layers as mask image operations so animated resources are
+// sampled at replay time and all consumers share the provider's frame timing.
+fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties,
+	border_rect painting.Rect, node &Node) ?painting.SVGMaskVisualData {
+	value := computed.typed_property_value(.mask_image) or { return none }
+	values := if list := value.as_value_list() {
+		if list.separator() == .comma { list.values() } else { [value] }
+	} else {
+		[value]
+	}
+	base_url := if dom_value := computed.property(.mask_image, .yes) {
+		dom_value.base_url
+	} else {
+		?string(none)
+	}
+	mut operations := []painting.SVGMaskPaintOperation{}
+	for item in values {
+		image := item.as_image() or {
+			// A transparent gradient contributes no coverage. Other generated
+			// mask images remain available for the subsequent gradient slice.
+			continue
+		}
+		source := image.url_.url()
+		resolved_url := if base := base_url {
+			if parsed := dom.dom_url_parse(source, dom.URL{base}, '') {
+				parsed.to_string()
+			} else {
+				source
+			}
+		} else {
+			element.document().encoding_parse_and_serialize_url(source) or { source }
+		}
+		if resolved_url == '' {
+			continue
+		}
+		operations << painting.SVGMaskPaintOperation{
+			kind: .image
+			image_url: resolved_url
+			image_rect: border_rect
+			image_position_x: '0%'
+			image_position_y: '0%'
+			image_rendering: computed.image_rendering()
+			image_paintable: painting.ImagePaintable{
+				image_rect: border_rect
+				object_fit: .fill
+				object_position: css.Position{}
+				resolution_context: computed.length_resolution_context()
+				image_rendering: computed.image_rendering()
+			}
+			transform: painting.Affine{}
+		}
+	}
+	if operations.len == 0 {
+		return none
+	}
+	bounding_rect := compatibility_enclosing_int_rect(LayoutRect{
+		x: border_rect.x
+		y: border_rect.y
+		width: border_rect.width
+		height: border_rect.height
+	})
+	return painting.SVGMaskVisualData{
+		bounding_rect: bounding_rect
+		mask_type: .alpha
+		operations: operations
+		cache_key: svg_mask_visual_cache_key(bounding_rect, .alpha, operations)
+		scope_id: svg_resource_scope_id(node, 3)
+	}
 }
 
 fn computed_text_decoration_thickness(computed &css.ComputedProperties, font_size f64) f64 {
@@ -2670,6 +2805,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut svg_stroke_radial_gradient := ?painting.SVGRadialGradientPaintStyle(none)
 	mut svg_stroke_pattern := ?&painting.SVGPatternPaintStyle(none)
 	mut svg_stroke_width := 0.0
+	mut svg_non_scaling_stroke := false
 	mut svg_stroke_first := false
 	mut svg_stroke_linecap := 0
 	mut svg_stroke_linejoin := 0
@@ -2799,6 +2935,9 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		}
 		diagonal := math.sqrt(used.content_width().to_double() * used.content_width().to_double() + used.content_height().to_double() * used.content_height().to_double())
 		svg_stroke_width = computed.length_percentage_to_px(.stroke_width, diagonal) or { 1.0 }
+		if svg_element := paint_element {
+			svg_non_scaling_stroke = svg_element.get_attribute_value('vector-effect').trim_space().to_lower() == 'non-scaling-stroke'
+		}
 		svg_stroke_first = svg_mask_stroke_precedes_fill(computed.paint_order())
 		svg_stroke_linecap = match computed.stroke_linecap() {
 			.butt { 0 }
@@ -2816,6 +2955,11 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	}
 	svg_clip = svg_url_clip_path_for_box(node, state, used)
 	svg_mask = svg_url_mask_for_box(node, state, used)
+	if svg_mask == none {
+		if target_element := paint_element {
+			svg_mask = css_mask_image_for_box(target_element, computed, border_box_bounds, node)
+		}
+	}
 	if marker := node.as_list_item_marker_box() {
 		if marker_styled := node.as_node_with_style() {
 			if list_style_image := marker_styled.list_style_image() {
@@ -2865,12 +3009,26 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		// replaced element's concrete size and nests that display list here.
 		if svg_document := image_box.svg_image_document() {
 			nested_viewport_document = svg_document
+			natural_size := image_box.natural_size()
+			default_size := css.CSSPixelSize.new(used.content_width(), used.content_height())
+			concrete_size := css.run_default_sizing_algorithm(none, none, natural_size, default_size)
+			nested_rect_device := painting.get_replaced_box_painting_area(painting.Rect{
+				x: position.x().to_double()
+				y: position.y().to_double()
+				width: used.content_width().to_double()
+				height: used.content_height().to_double()
+			}, painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()}, computed.object_fit(), computed.object_position(), computed.length_resolution_context(), painting.new_device_pixel_converter(1.0) or { panic(err) })
 			nested_viewport_paintable = painting.NavigableContainerViewportPaintable{
 				viewport_rect: painting.Rect{
 					x: position.x().to_double()
 					y: position.y().to_double()
 					width: used.content_width().to_double()
 					height: used.content_height().to_double()
+				}
+				nested_rect: if fitted := nested_rect_device {
+					painting.Rect{f64(fitted.x), f64(fitted.y), f64(fitted.width), f64(fitted.height)}
+				} else {
+					none
 				}
 				border_radii: painting.BorderRadiiData{
 					top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
@@ -2897,6 +3055,10 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		}
 	}
 	if replaced_image_url != '' || node.is_image_box() {
+		mut replaced_intrinsic_size := ?css.SizeWithAspectRatio(none)
+		if image_box := node.as_box() {
+			replaced_intrinsic_size = image_box.natural_size()
+		}
 		replaced_image_paintable = painting.ImagePaintable{
 			image_rect: painting.Rect{
 				x: position.x().to_double()
@@ -2921,6 +3083,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			resolution_context: computed.length_resolution_context()
 			image_rendering: computed.image_rendering()
 			is_svg_image: node.is_svg_image_box()
+			intrinsic_size: replaced_intrinsic_size
 			renders_as_alt_text: replaced_image_renders_as_alt_text
 			alt_text: replaced_image_alt_text
 			alt_text_color: painting.Color{text_color.r, text_color.g, text_color.b, text_color.a}
@@ -2997,6 +3160,9 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 					left: used.border_left.to_double()
 				}
 				image_rendering: computed.image_rendering()
+				object_fit: computed.object_fit()
+				object_position: computed.object_position()
+				resolution_context: computed.length_resolution_context()
 			}
 		}
 	}
@@ -3112,6 +3278,10 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 					if marker_styled := marker_node.as_node_with_style() {
 						if marker_used := state.try_get(marker_styled) {
 							marker_position := paint_cumulative_offset(marker_node, state, marker_used)
+							font := marker_node.first_available_font()
+							font_metrics := font.pixel_metrics()
+							marker_baseline := font_baseline_for_line_height(font_metrics, marker.computed_values().line_height()).to_double()
+							glyph_run := platform.shape_text(0, 0, marker_text, font, .context_dependent)
 							lines.prepend(TextLine{
 								x: marker_position.x().to_double()
 								y: marker_position.y().to_double()
@@ -3125,7 +3295,22 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 										height: marker_used.content_height().to_double()
 										text: marker_text.trim_right(' ')
 										color: text_color
-										font_size: marker.computed_values().resolved_font_size_px()
+										font_size: f64(font.point_size)
+										bold: font.weight >= 600
+										baseline: marker_baseline
+										baseline_set: true
+										font_metrics_set: true
+										font_ascent: f64(font_metrics.ascent)
+										font_descent: f64(font_metrics.descent)
+										font_x_height: f64(font_metrics.x_height)
+										glyph_height: f64(font_metrics.size)
+										paintable_fragment: painting.PaintableFragment{
+											glyph_run: glyph_run
+											baseline: marker_baseline
+											font_ascent: f64(font_metrics.ascent)
+											font_descent: f64(font_metrics.descent)
+											orientation: .horizontal
+										}
 									},
 								]
 							})
@@ -3234,6 +3419,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		svg_stroke_radial_gradient: svg_stroke_radial_gradient
 		svg_stroke_pattern: svg_stroke_pattern
 		svg_stroke_width: svg_stroke_width
+		svg_non_scaling_stroke: svg_non_scaling_stroke
 		svg_stroke_first: svg_stroke_first
 		svg_stroke_linecap: svg_stroke_linecap
 		svg_stroke_linejoin: svg_stroke_linejoin
@@ -3278,9 +3464,21 @@ fn typed_block_descendants(node &Node, state &LayoutState, ancestor_paint_transf
 
 fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &LayoutState, container_position css.CSSPixelPoint) []TextLine {
 	mut lines := []TextLine{}
-	for line_box in used.line_boxes {
+	for line_index, line_box in used.line_boxes {
 		mut fragments := []TextFragment{}
-		for fragment in line_box.fragments_ {
+		mut first_fragment_continues_previous_line := false
+		if line_index > 0 && used.line_boxes[line_index - 1].fragments_.len > 0
+			&& line_box.fragments_.len > 0 {
+			previous := used.line_boxes[line_index - 1].fragments_.last()
+			first_fragment_continues_previous_line = voidptr(previous.layout_node_) == voidptr(line_box.fragments_.first().layout_node_)
+		}
+		mut last_fragment_continues_next_line := false
+		if line_index + 1 < used.line_boxes.len && line_box.fragments_.len > 0
+			&& used.line_boxes[line_index + 1].fragments_.len > 0 {
+			next := used.line_boxes[line_index + 1].fragments_.first()
+			last_fragment_continues_next_line = voidptr(line_box.fragments_.last().layout_node_) == voidptr(next.layout_node_)
+		}
+		for fragment_index, fragment in line_box.fragments_ {
 			text := fragment.text() or { continue }
 			computed := fragment.layout_node_.computed_values()
 			font_metrics := fragment.layout_node_.first_available_font().pixel_metrics()
@@ -3300,6 +3498,10 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			mut padding := BoxEdges{}
 			mut radius := 0.0
 			mut radii := BoxRadii{}
+			mut outline_width := 0.0
+			mut outline_offset := 0.0
+			mut outline_color := css.Color{}
+			mut outline_style := painting.LineStyle.none
 			mut inline_shadow := ?BoxShadow(none)
 			mut inline_shadows := []BoxShadow{}
 			mut inline_node_id := i64(0)
@@ -3338,6 +3540,15 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				border_styles = computed_border_styles(owner_computed)
 				radii = paintable_box_border_radii_data(owner_computed, fragment.width(), fragment.height())
 				radius = radii.top_left.x
+				if outline := paintable_box_outline_data(owner_computed) {
+					outline_width = outline.top.width
+					outline_style = outline.top.line_style
+					outline_color = css.Color{outline.top.color.r, outline.top.color.g, outline.top.color.b, outline.top.color.a}
+				}
+				outline_offset_value := owner_computed.typed_property_value(.outline_offset) or {
+					css.StyleValue(css.LengthStyleValue.create(css.Length.make_px(0)))
+				}
+				outline_offset = owner_computed.resolve_length_percentage_value_px(outline_offset_value, 0) or { 0.0 }
 				inline_shadows = computed_box_shadows(owner_computed)
 				if inline_shadows.len > 0 {
 					inline_shadow = inline_shadows[0]
@@ -3371,6 +3582,9 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				text_run_id: text_run_identity(fragment.layout_node_)
 				shape_as_run: resolved_text_spacing_for_node(fragment.layout_node_, .letter_spacing).raw_value() == 0 && resolved_text_spacing_for_node(fragment.layout_node_, .word_spacing).raw_value() == 0
 				inline_node_id: inline_node_id
+				fragment_left_edge_away: fragment_index == 0 && first_fragment_continues_previous_line
+				fragment_right_edge_away: fragment_index == line_box.fragments_.len - 1
+					&& last_fragment_continues_next_line
 				background_color: background
 				background_images: background_images
 				border: border
@@ -3380,6 +3594,10 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				border_styles: border_styles
 				border_radius: radius
 				border_radii: radii
+				outline_width: outline_width
+				outline_offset: outline_offset
+				outline_color: outline_color
+				outline_style: outline_style
 				shadow: inline_shadow
 				shadows: inline_shadows
 				decoration: text_decoration_string(computed.text_decoration_line())

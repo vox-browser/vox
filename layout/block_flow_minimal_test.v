@@ -2205,6 +2205,53 @@ fn test_inline_border_side_colors_reach_the_display_list() {
 	assert borders.map(it.color) == ['rgb(0 128 0)', 'rgb(0 0 255)', 'rgb(0 0 0)', 'rgb(255 0 0)']
 }
 
+fn test_fragmented_inline_omits_away_borders_and_corner_radii() {
+	fragment := TextFragment{
+		x: 20
+		y: 10
+		width: 30
+		height: 12
+		text: 'continued'
+		inline_node_id: 1
+		fragment_left_edge_away: true
+		border: BoxEdges{2, 3, 4, 5}
+		border_colors: BoxColors{
+			top: css.Color{255, 0, 0, 255}
+			right: css.Color{0, 128, 0, 255}
+			bottom: css.Color{0, 0, 255, 255}
+			left: css.Color{0, 0, 0, 255}
+		}
+		border_radii: BoxRadii{
+			top_left: CornerRadius{5, 5}
+			top_right: CornerRadius{5, 5}
+			bottom_right: CornerRadius{5, 5}
+			bottom_left: CornerRadius{5, 5}
+		}
+		border_radius: 5
+	}
+	fragment_commands := inline_fragment_commands([fragment], 1)
+	mut commands := fragment_commands.decorations.clone()
+	commands << fragment_commands.outlines
+	borders := commands.filter(it.kind == 'draw_svg_path')
+	assert borders.len == 3
+	assert borders.map(it.color) == ['rgb(0 128 0)', 'rgb(0 0 255)', 'rgb(255 0 0)']
+	assert borders.all(it.x == 20)
+	assert borders.all(it.corner_radii.top_left == CornerRadius{})
+	assert borders.all(it.corner_radii.bottom_left == CornerRadius{})
+
+	middle := TextFragment{
+		...fragment
+		fragment_right_edge_away: true
+	}
+	middle_commands := inline_fragment_commands([middle], 1)
+	mut middle_all_commands := middle_commands.decorations.clone()
+	middle_all_commands << middle_commands.outlines
+	middle_borders := middle_all_commands.filter(it.kind == 'draw_svg_path')
+	assert middle_borders.len == 2
+	assert middle_borders.map(it.color) == ['rgb(0 0 255)', 'rgb(255 0 0)']
+	assert middle_borders.all(it.corner_radii == BoxRadii{})
+}
+
 // Background paints first, then borders.
 fn test_paint_background_then_border() {
 	doc := dom.Document.create(dom.url_about_blank())
@@ -2879,6 +2926,12 @@ fn test_double_and_dotted_text_decoration_emit_their_distinct_geometry() {
 		width: 30
 		height: 20
 		font_size: 20
+		baseline: 15
+		baseline_set: true
+		font_metrics_set: true
+		font_ascent: 15
+		font_descent: 5
+		glyph_height: 20
 		color: css.Color{0, 0, 0, 255}
 		decoration: 'underline'
 		decoration_color: css.Color{255, 0, 0, 255}
@@ -2889,6 +2942,8 @@ fn test_double_and_dotted_text_decoration_emit_their_distinct_geometry() {
 	double_commands := decoration_commands(double_fragment, 1)
 	assert double_commands.len == 2
 	assert double_commands.all(it.kind == 'draw_line' && it.stroke_width == 2)
+	// The first underline stroke is centered half a thickness below the baseline edge.
+	assert double_commands[0].points[1] == 16
 	assert double_commands[1].points[1] - double_commands[0].points[1] == 3
 
 	dotted_fragment := TextFragment{
@@ -2945,7 +3000,7 @@ fn test_spelling_and_grammar_error_decorations_use_upstream_ua_styles() {
 	}, 1)
 	assert grammar.len == 1
 	assert grammar[0].kind == 'draw_svg_path'
-	assert grammar[0].stroke_color == 'rgb(0 100 0)'
+	assert grammar[0].stroke_color == 'rgb(0 128 0)'
 	assert grammar[0].stroke_width == 1
 }
 
@@ -3071,7 +3126,8 @@ fn test_reversed_ordered_list_attribute_markers() {
 	for child in box.children {
 		markers << child.lines[0].fragments[0].text
 	}
-	assert markers == ['5.', '4.', '5.', '4.', '3.']
+	// CSS reversed counters derive their implicit start from the first counter-set pin.
+	assert markers == ['7.', '6.', '5.', '4.', '3.']
 }
 
 fn test_ordered_list_invalid_integer_attributes_are_ignored() {
@@ -4476,18 +4532,25 @@ fn test_inline_background_border_and_shadow_paint() {
 	backgrounds := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(255 165 0)' && it.radius > 0)
 	assert backgrounds.len == 1
 	assert backgrounds[0].x == fragments[0].x - 2.0
-	assert backgrounds[0].width == fragments[1].x + fragments[1].width - fragments[0].x + 4.0
+	expected_background_rect := painting.new_device_pixel_converter(1.0) or { panic('${err}') }.rounded_device_rect(painting.Rect{
+		x: fragments[0].x - 2.0
+		y: fragments[0].y - 2.0
+		width: fragments[1].x + fragments[1].width - fragments[0].x + 4.0
+		height: fragments[0].height + 4.0
+	})
+	assert backgrounds[0].width == expected_background_rect.width
 	assert backgrounds[0].radius == 6.0
 	borders := commands.filter(it.kind == 'draw_svg_path' && it.color == 'rgb(0 128 0)')
 	assert borders.len == 1
 	assert borders[0].path.contains('A 6 6')
 	assert borders[0].fill_even_odd
-	shadows := commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(0 100 0)')
+	shadows := commands.filter(it.kind == 'paint_outer_box_shadow' && it.color == 'rgb(0 100 0)')
 	assert shadows.len == 1
 	assert shadows[0].blur == 4.0
-	assert shadows[0].outer_shadow
-	assert shadows[0].shadow_offset_x == 4.0
-	assert shadows[0].shadow_offset_y == 4.0
+	assert shadows[0].x == fragments[0].x + 2.0
+	assert shadows[0].y == fragments[0].y + 2.0
+	assert shadows[0].shadow_content_x == fragments[0].x - 2.0
+	assert shadows[0].shadow_content_y == fragments[0].y - 2.0
 	text_commands := commands.filter(it.kind == 'draw_text')
 	assert text_commands.len == 1
 	assert text_commands[0].text == 'two words'

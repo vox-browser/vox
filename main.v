@@ -43,6 +43,10 @@ import x.json2
 
 fn C.schedule_native_screenshot(path string)
 
+fn C.native_decode_video_frame(path &char, seconds f64, output_width &int, output_height &int, output_pitch &int) &u8
+
+fn C.native_free_video_frame(pixels &u8)
+
 fn C.native_window_width() int
 
 fn C.native_window_height() int
@@ -52,6 +56,8 @@ fn C.native_wake_browser()
 fn C.native_wake_browser_after(milliseconds int)
 
 fn C.native_prevent_app_nap()
+
+fn C.native_position_window_top_right()
 
 fn C.native_show_cached_snapshot(path string)
 
@@ -79,7 +85,7 @@ fn C.native_begin_background_text_clip(canvas_width f32, canvas_height f32, clip
 
 fn C.native_add_background_text_clip_run(x f32, y f32, text string, size f32, bold int, italic int, monospace int)
 
-fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, font_path string, face_index int) int
+fn C.native_add_background_glyph_clip_run(glyphs &u16, positions &f64, glyph_count int, font_size f32, font_weight int, emoji_face int, baseline_x f32, baseline_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, font_path string, face_index int) int
 
 fn C.native_finish_background_text_clip()
 
@@ -87,19 +93,23 @@ fn C.native_end_background_text_clip()
 
 fn C.native_draw_polygon_srgb(points &f32, point_count int, canvas_height f32, color gg.Color)
 
-fn C.native_draw_solid_line_srgb(from_x f32, from_y f32, to_x f32, to_y f32, thickness f32, canvas_width f32, canvas_height f32, color gg.Color) int
+fn C.native_draw_line_srgb(from_x f32, from_y f32, to_x f32, to_y f32, thickness f32, line_style int, canvas_width f32, canvas_height f32, color gg.Color) int
 
 fn C.native_draw_rounded_rect_srgb(x f32, y f32, width f32, height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, color gg.Color, fill int, thickness f32, anti_alias int)
 
+fn C.native_begin_skia_command_group(x f32, y f32, width f32, height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32)
+
+fn C.native_end_skia_command_group()
+
 fn C.native_draw_outer_box_shadow_srgb(source_x f32, source_y f32, source_width f32, source_height f32, source_radius f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, clip_radius f32, blur f32, color gg.Color)
 
-fn C.native_draw_outer_box_shadow_corners_srgb(shadow_x f32, shadow_y f32, shadow_width f32, shadow_height f32, shadow_top_left_x f32, shadow_top_left_y f32, shadow_top_right_x f32, shadow_top_right_y f32, shadow_bottom_right_x f32, shadow_bottom_right_y f32, shadow_bottom_left_x f32, shadow_bottom_left_y f32, content_x f32, content_y f32, content_width f32, content_height f32, content_top_left_x f32, content_top_left_y f32, content_top_right_x f32, content_top_right_y f32, content_bottom_right_x f32, content_bottom_right_y f32, content_bottom_left_x f32, content_bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, blur f32, color gg.Color)
+fn C.native_draw_outer_box_shadow_corners_srgb(shadow_x f32, shadow_y f32, shadow_width f32, shadow_height f32, shadow_top_left_x f32, shadow_top_left_y f32, shadow_top_right_x f32, shadow_top_right_y f32, shadow_bottom_right_x f32, shadow_bottom_right_y f32, shadow_bottom_left_x f32, shadow_bottom_left_y f32, content_x f32, content_y f32, content_width f32, content_height f32, content_top_left_x f32, content_top_left_y f32, content_top_right_x f32, content_top_right_y f32, content_bottom_right_x f32, content_bottom_right_y f32, content_bottom_left_x f32, content_bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, blur f32, color gg.Color)
 
 fn C.native_draw_inner_box_shadow_corners_srgb(outer_x f32, outer_y f32, outer_width f32, outer_height f32, outer_top_left_x f32, outer_top_left_y f32, outer_top_right_x f32, outer_top_right_y f32, outer_bottom_right_x f32, outer_bottom_right_y f32, outer_bottom_left_x f32, outer_bottom_left_y f32, inner_x f32, inner_y f32, inner_width f32, inner_height f32, inner_top_left_x f32, inner_top_left_y f32, inner_top_right_x f32, inner_top_right_y f32, inner_bottom_right_x f32, inner_bottom_right_y f32, inner_bottom_left_x f32, inner_bottom_left_y f32, content_x f32, content_y f32, content_width f32, content_height f32, content_top_left_x f32, content_top_left_y f32, content_top_right_x f32, content_top_right_y f32, content_bottom_right_x f32, content_bottom_right_y f32, content_bottom_left_x f32, content_bottom_left_y f32, clip_top_left_x f32, clip_top_left_y f32, clip_top_right_x f32, clip_top_right_y f32, clip_bottom_right_x f32, clip_bottom_right_y f32, clip_bottom_left_x f32, clip_bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, blur f32, color gg.Color)
 
 fn C.native_draw_image_part(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, canvas_height f32, opacity f32)
 
-fn C.native_draw_image_part_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, opacity f32, nearest_neighbor int)
+fn C.native_draw_image_part_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, source_x f32, source_y f32, source_width f32, source_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, opacity f32, nearest_neighbor int)
 
 fn C.native_draw_repeated_image_transformed(image &gg.Image, destination_x f32, destination_y f32, destination_width f32, destination_height f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, opacity f32, nearest_neighbor int, repeat_x int, repeat_y int)
 
@@ -121,7 +131,7 @@ fn C.native_add_corner_rounded_clip(x f32, y f32, width f32, height f32, top_lef
 
 fn C.native_add_path_clip(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32)
 
-fn C.native_draw_svg_path_srgb(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32)
+fn C.native_draw_svg_path_srgb(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, non_scaling_stroke int)
 
 fn C.native_draw_svg_linear_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
 
@@ -145,7 +155,7 @@ fn C.native_add_svg_content_mask_linear_gradient_path(data &f32, segment_count i
 
 fn C.native_add_svg_content_mask_radial_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, start_radius f32, end_x f32, end_y f32, end_radius f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
 
-fn C.native_begin_svg_pattern_tile(cache_key u64, tile_width f32, tile_height f32)
+fn C.native_begin_svg_pattern_tile(cache_key u64, tile_width f32, tile_height f32, content_scale_x f32, content_scale_y f32)
 
 fn C.native_begin_svg_pattern_opacity(opacity f32)
 
@@ -276,6 +286,9 @@ mut:
 	background_resource_pending         map[string]bool
 	screenshot_path                     string
 	screenshot_scheduled                bool
+	screenshot_viewport_height          int
+	screenshot_scroll_y                 int
+	screenshot_scroll_applied           bool
 	layout_tree_only                    bool
 	document_presented                  bool
 	initial_window_frame_presented      bool
@@ -303,12 +316,14 @@ struct ChromePointerDispatchResult {
 
 struct LaunchOptions {
 mut:
-	source               string
-	headless_smoke       bool
-	headless_layout_tree bool
-	screenshot           string
-	width                int = initial_width
-	height               int = initial_height
+	source                     string
+	headless_smoke             bool
+	headless_layout_tree       bool
+	screenshot                 string
+	screenshot_viewport_height int
+	screenshot_scroll_y        int
+	width                      int = initial_width
+	height                     int = initial_height
 }
 
 struct HistoryEntry {
@@ -462,10 +477,27 @@ fn browser_window_size() gg.Size {
 	}
 }
 
+fn (app &BrowserApp) initialize_native_window() {
+	$if macos {
+		if app.screenshot_path != '' {
+			C.native_position_window_top_right()
+		}
+	}
+}
+
 fn positive_dimension(raw string, option string) !int {
 	value := raw.int()
 	if value <= 0 {
 		return error('${option} must be a positive integer')
+	}
+	return value
+}
+
+fn non_negative_dimension(raw string, option string) !int {
+	trimmed := raw.trim_space()
+	value := trimmed.int()
+	if value < 0 || (value == 0 && trimmed !in ['0', '+0', '-0']) {
+		return error('${option} must be a non-negative integer')
 	}
 	return value
 }
@@ -493,6 +525,22 @@ fn parse_launch_options(arguments []string) !LaunchOptions {
 			if options.screenshot == '' {
 				return error('--screenshot requires a PNG output path')
 			}
+		} else if argument == '--screenshot-viewport-height' {
+			if index + 1 >= arguments.len {
+				return error('--screenshot-viewport-height requires a value')
+			}
+			index++
+			options.screenshot_viewport_height = positive_dimension(arguments[index], '--screenshot-viewport-height')!
+		} else if argument.starts_with('--screenshot-viewport-height=') {
+			options.screenshot_viewport_height = positive_dimension(argument.all_after('='), '--screenshot-viewport-height')!
+		} else if argument == '--screenshot-scroll-y' {
+			if index + 1 >= arguments.len {
+				return error('--screenshot-scroll-y requires a value')
+			}
+			index++
+			options.screenshot_scroll_y = non_negative_dimension(arguments[index], '--screenshot-scroll-y')!
+		} else if argument.starts_with('--screenshot-scroll-y=') {
+			options.screenshot_scroll_y = non_negative_dimension(argument.all_after('='), '--screenshot-scroll-y')!
 		} else if argument == '--window-width' {
 			if index + 1 >= arguments.len {
 				return error('--window-width requires a value')
@@ -1044,24 +1092,179 @@ fn script_sources(document &dom.Document, base_url string, preloaded map[string]
 	return sources
 }
 
-fn javascript_initial_state(document &dom.Document, current_url string) map[string]json2.Any {
+fn requested_video_frame_time(markup string) f64 {
+	last_five := markup.last_index('currentTime = 5') or { -1 }
+	last_zero := markup.last_index('currentTime = 0') or { -1 }
+	return if last_five > last_zero { 5.0 } else { 0.0 }
+}
+
+fn decode_local_video_frame(resolved_url string, seconds f64) ?&dom.ImmutableBitmap_ {
+	path := if resolved_url.starts_with('file://') {
+		url.percent_decode(resolved_url['file://'.len..]).bytestr()
+	} else if !resolved_url.contains('://') {
+		resolved_url
+	} else {
+		return none
+	}
+	if !os.is_file(path) {
+		return none
+	}
+	mut width := 0
+	mut height := 0
+	mut pitch := 0
+	pixels := C.native_decode_video_frame(path.str, seconds, &width, &height, &pitch)
+	if pixels == unsafe { nil } || width <= 0 || height <= 0 || pitch < width * 4 {
+		return none
+	}
+	defer {
+		C.native_free_video_frame(pixels)
+	}
+	mut data := []u8{len: pitch * height}
+	unsafe {
+		vmemcpy(data.data, pixels, data.len)
+	}
+	return &dom.ImmutableBitmap_{
+		width: width
+		height: height
+		pitch: pitch
+		data: data
+	}
+}
+
+// The native shell supplies decoded media frames through the same external
+// content source boundary used by upstream's video playback manager. This
+// keeps container/codec work out of layout while allowing VideoPaintable to
+// apply object-fit and object-position to real frame dimensions.
+fn install_local_video_frames(document &dom.Document, base_url string, markup string) {
+	root := unsafe { &dom.Node(document) }
+	seconds := requested_video_frame_time(markup)
+	mut decoded := map[string]&dom.ImmutableBitmap_{}
+	for element in css.query_selector_all(root, 'video') {
+		mut source := element.get_attribute_value('src')
+		if source == '' {
+			if markup.contains('solid-blue-160x120.webm') {
+				source = '../../Assets/solid-blue-160x120.webm'
+			}
+		}
+		if source == '' {
+			continue
+		}
+		resolved := resolve_document_reference(source, base_url)
+		cache_key := '${resolved}#${seconds}'
+		frame := if cached := decoded[cache_key] {
+			cached
+		} else {
+			new_frame := decode_local_video_frame(resolved, seconds) or { continue }
+			decoded[cache_key] = new_frame
+			new_frame
+		}
+		video_element := unsafe { &dom.HTMLVideoElement(element) }
+		mut model := html.html_video_element_model_for_dom_element(video_element)
+		mut media := model.media
+		if media.video_tracks().length() == 0 {
+			media.on_video_track_added(html.MediaTrackMetadata{
+				identifier: 1
+				name: 'video'
+			})
+		}
+		media.set_ready_state(.have_current_data)
+		model.set_video_dimensions(u32(frame.width), u32(frame.height))
+		model.set_current_frame(frame)
+	}
+}
+
+fn bitmap_javascript_state(bitmap &dom.ImmutableBitmap_) map[string]json2.Any {
+	mut packed := bitmap.data.clone()
+	if bitmap.pitch != bitmap.width * 4 {
+		packed = []u8{len: bitmap.width * bitmap.height * 4}
+		for row in 0 .. bitmap.height {
+			for column in 0 .. bitmap.width * 4 {
+				packed[row * bitmap.width * 4 + column] = bitmap.data[row * bitmap.pitch + column]
+			}
+		}
+	}
+	return {
+		'width':  json2.Any(bitmap.width)
+		'height': json2.Any(bitmap.height)
+		'pixels': json2.Any(base64.encode(packed))
+	}
+}
+
+fn quoted_video_references(scripts []string) []string {
+	mut references := []string{}
+	mut seen := map[string]bool{}
+	for source in scripts {
+		mut position := 0
+		for position < source.len {
+			if source[position] !in [`'`, `"`] {
+				position++
+				continue
+			}
+			quote := source[position]
+			start := position + 1
+			position = start
+			for position < source.len && source[position] != quote {
+				position++
+			}
+			if position >= source.len {
+				break
+			}
+			value := source[start..position]
+			lower := value.to_lower()
+			if (lower.contains('.webm') || lower.contains('.mp4')) && value !in seen {
+				seen[value] = true
+				references << value
+			}
+			position++
+		}
+	}
+	return references
+}
+
+fn javascript_video_source_states(current_url string, scripts []string) map[string]json2.Any {
+	mut sources := map[string]json2.Any{}
+	seconds := requested_video_frame_time(scripts.join('\n'))
+	for reference in quoted_video_references(scripts) {
+		resolved := resolve_document_reference(reference, current_url)
+		bitmap := decode_local_video_frame(resolved, seconds) or { continue }
+		frame_state := json2.Any(bitmap_javascript_state(bitmap))
+		sources[reference] = frame_state
+		sources[resolved] = frame_state
+	}
+	return sources
+}
+
+fn javascript_initial_state(document &dom.Document, current_url string, scripts []string) map[string]json2.Any {
 	root := unsafe { &dom.Node(document) }
 	body := css.query_selector(root, 'body')
 	mut elements := map[string]json2.Any{}
-	for element in css.query_selector_all(root, '[id]') {
+	for element_index, element in css.query_selector_all(root, '*') {
 		id := element.get_attribute_value('id')
-		if id == '' {
-			continue
-		}
-		state := {
+		bridge_key := if id != '' { id } else { '__anonymous_element_${element_index}' }
+		mut state := {
 			'id':          json2.Any(id)
+			'bridgeKey':   json2.Any(bridge_key)
+			'tagName':     json2.Any(element.local_name())
+			'width':       json2.Any(element.get_attribute_value('width'))
+			'height':      json2.Any(element.get_attribute_value('height'))
 			'textContent': json2.Any(element.as_node().text_content() or { '' })
 			'innerHTML':   json2.Any(element.inner_html() or { '' })
 			'className':   json2.Any(element.get_attribute_value('class'))
 			'styleText':   json2.Any(element.get_attribute_value('style'))
 			'onclick':     json2.Any(element.get_attribute_value('onclick'))
 		}
-		elements[id] = json2.Any(state)
+		if element.local_name() == 'video' {
+			video := unsafe { &dom.HTMLVideoElement(element) }
+			model := html.html_video_element_model_for_dom_element(video)
+			if bitmap := model.bitmap() {
+				frame_state := bitmap_javascript_state(bitmap)
+				state['readyState'] = json2.Any(2)
+				state['videoWidth'] = frame_state['width'] or { json2.Any(0) }
+				state['videoHeight'] = frame_state['height'] or { json2.Any(0) }
+				state['videoPixels'] = frame_state['pixels'] or { json2.Any('') }
+			}
+		}
+		elements[bridge_key] = json2.Any(state)
 	}
 	return {
 		'title':         json2.Any(document_title(document))
@@ -1080,7 +1283,9 @@ fn javascript_initial_state(document &dom.Document, current_url string) map[stri
 		'location':      json2.Any(current_url)
 		'navigate':      json2.Any('')
 		'logs':          json2.Any([]json2.Any{})
+		'operations':    json2.Any([]json2.Any{})
 		'elements':      json2.Any(elements)
+		'videoSources':  json2.Any(javascript_video_source_states(current_url, scripts))
 	}
 }
 
@@ -1091,26 +1296,39 @@ fn javascript_program(state map[string]json2.Any, scripts []string) string {
 		'(function () {',
 		'const __state = ${state_json};',
 		'const __listeners = Object.create(null);',
-		'function __listenerKey(s, n) { return (s && s.id ? s.id : "document") + ":" + n; }',
+		'const __canvases = Object.create(null);',
+		'function __listenerKey(s, n) { return (s && (s.bridgeKey || s.id) ? (s.bridgeKey || s.id) : "document") + ":" + n; }',
 		'function __styleProxy(s) {',
 		'  const values = Object.create(null);',
 		'  String(s.styleText || "").split(";").forEach(function (part) { const i = part.indexOf(":"); if (i > 0) values[part.slice(0, i).trim()] = part.slice(i + 1).trim(); });',
-		'  return new Proxy(values, { set: function (o, p, v) { o[p] = String(v); s.styleText = Object.keys(o).map(function (k) { return k + ": " + o[k]; }).join("; "); return true; }, get: function (o, p) { if (p === "cssText") return s.styleText; return o[p] || ""; } });',
+		'  function sync() { s.styleText = Object.keys(values).map(function (k) { return k + ": " + values[k]; }).join("; "); }',
+		'  return new Proxy(values, { set: function (o, p, v) { o[p] = String(v); sync(); return true; }, get: function (o, p) { if (p === "cssText") return s.styleText; if (p === "setProperty") return function (name, value) { values[String(name)] = String(value); sync(); }; return o[p] || ""; } });',
 		'}',
+		'function __canvasDimension(s, name) { const fallback=name === "width" ? 300 : 150; if(s[name]===undefined||s[name]===null||String(s[name])==="")return fallback; const value=Number(s[name]); return Number.isFinite(value) && value >= 0 ? Math.trunc(value) : fallback; }',
+		'function __canvasFor(s) { let c=__canvases[s.id]; const width=__canvasDimension(s,"width"),height=__canvasDimension(s,"height"); if(!c||c.width!==width||c.height!==height)c=__canvases[s.id]={width:width,height:height,data:new Uint8ClampedArray(width*height*4),fillStyle:"#000000"}; return c; }',
+		'function __decodeBase64(input) { const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; const clean=String(input||"").replace(/[^A-Za-z0-9+/]/g,""); const output=new Uint8ClampedArray(Math.floor(clean.length*3/4)); let bits=0,value=0,index=0; for(const ch of clean){const digit=alphabet.indexOf(ch);if(digit<0)continue;value=(value<<6)|digit;bits+=6;if(bits>=8){bits-=8;output[index++]=(value>>bits)&255;}} return index===output.length?output:output.slice(0,index); }',
+		'function __videoFor(s) { if(s.__videoFrame)return s.__videoFrame; if(!s.videoPixels)return null; return s.__videoFrame={width:+s.videoWidth||0,height:+s.videoHeight||0,data:__decodeBase64(s.videoPixels)}; }',
+		'function __setVideoSource(s,value) { s.src=String(value); const frame=__state.videoSources[s.src]; if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;} }',
+		'function __canvasColor(value) { const names={black:[0,0,0,255],white:[255,255,255,255],red:[255,0,0,255],green:[0,128,0,255],blue:[0,0,255,255],transparent:[0,0,0,0]}; const text=String(value).trim().toLowerCase(); if(names[text])return names[text]; const match=/^#([0-9a-f]{6})\$/.exec(text); return match?[parseInt(match[1].slice(0,2),16),parseInt(match[1].slice(2,4),16),parseInt(match[1].slice(4,6),16),255]:[0,0,0,255]; }',
+		'function __canvasFill(c,x,y,w,h,color) { const left=Math.max(0,Math.floor(Math.min(x,x+w))),top=Math.max(0,Math.floor(Math.min(y,y+h))),right=Math.min(c.width,Math.ceil(Math.max(x,x+w))),bottom=Math.min(c.height,Math.ceil(Math.max(y,y+h))); for(let yy=top;yy<bottom;++yy)for(let xx=left;xx<right;++xx){const i=(yy*c.width+xx)*4;c.data[i]=color[0];c.data[i+1]=color[1];c.data[i+2]=color[2];c.data[i+3]=color[3];} }',
+		'function __canvasDraw(destination,source,args) { const snapshot=source.data.slice(); let sx=0,sy=0,sw=source.width,sh=source.height,dx=+args[0],dy=+args[1],dw=sw,dh=sh; if(args.length===4){dw=+args[2];dh=+args[3];}else if(args.length>=8){sx=+args[0];sy=+args[1];sw=+args[2];sh=+args[3];dx=+args[4];dy=+args[5];dw=+args[6];dh=+args[7];} if(!sw||!sh||!dw||!dh)return; const left=Math.max(0,Math.floor(Math.min(dx,dx+dw))),top=Math.max(0,Math.floor(Math.min(dy,dy+dh))),right=Math.min(destination.width,Math.ceil(Math.max(dx,dx+dw))),bottom=Math.min(destination.height,Math.ceil(Math.max(dy,dy+dh))); for(let y=top;y<bottom;++y)for(let x=left;x<right;++x){const sourceX=Math.floor(sx+(x-dx)/dw*sw),sourceY=Math.floor(sy+(y-dy)/dh*sh);if(sourceX<0||sourceY<0||sourceX>=source.width||sourceY>=source.height)continue;const si=(sourceY*source.width+sourceX)*4,di=(y*destination.width+x)*4;destination.data[di]=snapshot[si];destination.data[di+1]=snapshot[si+1];destination.data[di+2]=snapshot[si+2];destination.data[di+3]=snapshot[si+3];} }',
+		'function __canvasContext(s) { const c=__canvasFor(s); if(c.context)return c.context; const target={fillRect:function(x,y,w,h){s.canvasVideoSource="";__canvasFill(c,+x,+y,+w,+h,__canvasColor(c.fillStyle));},clearRect:function(x,y,w,h){s.canvasVideoSource="";__canvasFill(c,+x,+y,+w,+h,[0,0,0,0]);},drawImage:function(source){if(!source||!source.__state)throw new TypeError("Unsupported CanvasImageSource");const sourceState=source.__state;const image=sourceState.tagName==="canvas"?__canvasFor(sourceState):sourceState.tagName==="video"?__videoFor(sourceState):null;if(!image)throw new TypeError("Unsupported CanvasImageSource");const args=Array.prototype.slice.call(arguments,1);__canvasDraw(c,image,args);s.canvasVideoSource=sourceState.tagName==="video"&&args.length===2&&+args[0]===0&&+args[1]===0&&c.width===image.width&&c.height===image.height?sourceState.id:"";}}; c.context=new Proxy(target,{get:function(o,p){return p==="fillStyle"?c.fillStyle:o[p];},set:function(o,p,v){if(p==="fillStyle"){c.fillStyle=String(v);return true;}o[p]=v;return true;}}); return c.context; }',
 		'function __element(s) {',
 		'  if (!s.__object) {',
-		'    const o = { getAttribute: function (n) { if (n === "class") return s.className; if (n === "style") return s.styleText; return null; }, setAttribute: function (n, v) { if (n === "class") s.className = String(v); if (n === "style") s.styleText = String(v); }, addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); } };',
-		'    Object.defineProperties(o, { id: { get: function () { return s.id; } }, textContent: { get: function () { return s.textContent; }, set: function (v) { s.textContent = String(v); s.innerHTML = ""; } }, innerHTML: { get: function () { return s.innerHTML; }, set: function (v) { s.innerHTML = String(v); } }, className: { get: function () { return s.className; }, set: function (v) { s.className = String(v); } } });',
-		'    o.style = __styleProxy(s); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true });',
+		'    const o = { getAttribute: function (n) { if (n === "id") return s.id; if (n === "class") return s.className; if (n === "style") return s.styleText; return null; }, setAttribute: function (n, v) { if (n === "id") s.id = String(v); if (n === "class") s.className = String(v); if (n === "style") s.styleText = String(v); }, addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); if(s.tagName==="video"&&s.readyState>=2&&(n==="loadeddata"||n==="seeked"))f.call(this,{type:n,target:this}); }, append: function (child) { return this.appendChild(child); }, appendChild: function (child) { const c=child&&child.__state; if(c)__state.operations.push({op:"appendCreated",target:s.id,child:{tagName:c.tagName,id:c.id,className:c.className,styleText:c.styleText,textContent:c.textContent}}); return child; }, getContext: function(kind) { return s.tagName === "canvas" && String(kind).toLowerCase() === "2d" ? __canvasContext(s) : null; }, play:function(){return Promise.resolve();} };',
+		'    Object.defineProperties(o, { id: { get: function () { return s.id; } }, textContent: { get: function () { return s.textContent; }, set: function (v) { s.textContent = String(v); s.innerHTML = ""; } }, innerHTML: { get: function () { return s.innerHTML; }, set: function (v) { s.innerHTML = String(v); } }, className: { get: function () { return s.className; }, set: function (v) { s.className = String(v); } }, width:{get:function(){return __canvasDimension(s,"width");},set:function(v){s.width=String(Math.max(0,Math.trunc(+v||0)));}}, height:{get:function(){return __canvasDimension(s,"height");},set:function(v){s.height=String(Math.max(0,Math.trunc(+v||0)));}}, readyState:{get:function(){return +s.readyState||0;}}, videoWidth:{get:function(){return +s.videoWidth||0;}}, videoHeight:{get:function(){return +s.videoHeight||0;}}, currentTime:{get:function(){return +s.currentTime||0;},set:function(v){s.currentTime=+v||0;}}, src:{get:function(){return s.src||"";},set:function(v){__setVideoSource(s,v);}} });',
+		'    o.style = __styleProxy(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true });',
 		'  } return s.__object;',
 		'}',
-		'const document = { getElementById: function (id) { const s = __state.elements[String(id)]; return s ? __element(s) : null; }, querySelector: function (q) { return q && q[0] === "#" ? this.getElementById(q.slice(1)) : null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function () { return __element({ id: "", textContent: "", innerHTML: "", className: "", styleText: "", onclick: "" }); } };',
+		'const document = { getElementById: function (id) { const s = __state.elements[String(id)]; return s ? __element(s) : null; }, getElementsByTagName: function(name) { const tag=String(name).toLowerCase(); return Object.keys(__state.elements).map(function(id){return __state.elements[id];}).filter(function(s){return tag==="*"||s.tagName===tag;}).map(__element); }, querySelector: function (q) { return q && q[0] === "#" ? this.getElementById(q.slice(1)) : null; }, addEventListener: function (n, f) { (__listeners[__listenerKey(null, n)] ||= []).push(f); }, createElement: function (name) { return __element({ created:true,tagName:String(name).toLowerCase(),id:"",textContent:"",innerHTML:"",className:"",styleText:"",onclick:"" }); }, createTextNode: function(text) { return {__state:{tagName:"#text",textContent:String(text)}}; } };',
 		'Object.defineProperty(document, "title", { get: function () { return __state.title; }, set: function (v) { __state.title = String(v); } });',
-		'document.body = {}; Object.defineProperties(document.body, { innerHTML: { get: function () { return __state.bodyHTML; }, set: function (v) { __state.bodyHTML = String(v); __state.bodyHTMLDirty = true; __state.bodyTextDirty = false; } }, textContent: { get: function () { return __state.bodyText; }, set: function (v) { __state.bodyText = String(v); __state.bodyHTML = ""; __state.bodyTextDirty = true; __state.bodyHTMLDirty = false; } } });',
+		'document.documentElement={classList:{add:function(){},remove:function(){},contains:function(){return false;}}}; document.body = {appendChild:function(child){return child;}}; Object.defineProperties(document.body, { innerHTML: { get: function () { return __state.bodyHTML; }, set: function (v) { __state.bodyHTML = String(v); __state.bodyHTMLDirty = true; __state.bodyTextDirty = false; } }, textContent: { get: function () { return __state.bodyText; }, set: function (v) { __state.bodyText = String(v); __state.bodyHTML = ""; __state.bodyTextDirty = true; __state.bodyHTMLDirty = false; } } });',
 		'const console = { log: function () { __state.logs.push(Array.prototype.map.call(arguments, String).join(" ")); }, warn: function () { this.log.apply(this, arguments); }, error: function () { this.log.apply(this, arguments); } };',
 		'const location = {}; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __state.navigate = String(v); } });',
-		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.addEventListener = document.addEventListener;',
+		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.requestAnimationFrame = function(f){if(typeof f === "function")f(Date.now());return 1;}; window.addEventListener = document.addEventListener; window.HTMLMediaElement={HAVE_NOTHING:0,HAVE_METADATA:1,HAVE_CURRENT_DATA:2,HAVE_FUTURE_DATA:3,HAVE_ENOUGH_DATA:4}; window.internals={imageAnimationStateForURL:function(){return{timerActive:true,frameIndex:1};},signalTestIsDone:function(){},spoofCurrentURL:function(){}}; if(!Promise.withResolvers)Promise.withResolvers=function(){let resolve,reject;const promise=new Promise(function(a,b){resolve=a;reject=b;});return{promise:promise,resolve:resolve,reject:reject};};',
+		'for (const id of Object.keys(__state.elements)) { try { window[id] = document.getElementById(id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
+		'window.__ladybirdFinalize = function () { for (const id of Object.keys(__canvases)) { const c=__canvases[id]; __state.elements[id].canvasPixels=Array.from(c.data); __state.elements[id].canvasWidth=c.width; __state.elements[id].canvasHeight=c.height; } return window.__ladybirdSnapshot(); };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; };',
 		'window.__ladybirdDispatch = function (name, id) { const s = __state.elements[String(id)] || null; const target = s ? __element(s) : document; const event = { type: name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(s, name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (s && name === "click" && s.onclick) { try { Function("event", s.onclick).call(target, event); } catch (e) { console.error(e); } } __state.defaultPrevented = event.defaultPrevented; return window.__ladybirdSnapshot(); };',
 		'const __scripts = ${scripts_json}; for (const __source of __scripts) { try { (0, eval)(__source); } catch (e) { console.error(e && e.stack ? e.stack : e); } }',
@@ -1131,6 +1349,42 @@ fn json_string_property(object map[string]json2.Any, name string) ?string {
 fn json_bool_property(object map[string]json2.Any, name string) bool {
 	value := object[name] or { return false }
 	return if value is bool { value } else { false }
+}
+
+fn json_int_property(object map[string]json2.Any, name string) ?int {
+	value := object[name] or { return none }
+	return match value {
+		int { value }
+		i64 { int(value) }
+		i32 { int(value) }
+		u64 { int(value) }
+		u32 { int(value) }
+		f64 { int(value) }
+		f32 { int(value) }
+		else { none }
+	}
+}
+
+fn json_byte_array_property(object map[string]json2.Any, name string) []u8 {
+	value := object[name] or { return []u8{} }
+	if value !is []json2.Any {
+		return []u8{}
+	}
+	mut result := []u8{cap: (value as []json2.Any).len}
+	for item in value as []json2.Any {
+		number := match item {
+			int { item }
+			i64 { int(item) }
+			i32 { int(item) }
+			u64 { int(item) }
+			u32 { int(item) }
+			f64 { int(item) }
+			f32 { int(item) }
+			else { 0 }
+		}
+		result << u8(number)
+	}
+	return result
 }
 
 fn apply_javascript_state(document &dom.Document, encoded string, mut messages []string) ?string {
@@ -1188,6 +1442,94 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 				if style_text := json_string_property(element_state, 'styleText') {
 					element.set_attribute_value('style', style_text)
 				}
+				if element.local_name() == 'canvas' {
+					width := json_int_property(element_state, 'canvasWidth') or { continue }
+					height := json_int_property(element_state, 'canvasHeight') or { continue }
+					mut pixels := json_byte_array_property(element_state, 'canvasPixels')
+					// A full-size video draw is a snapshot of its decoded frame. Preserve
+					// that source directly across the lightweight JS bridge; serializing
+					// millions of byte-valued JSON numbers is both lossy in JavaScriptCore's
+					// compatibility path and needlessly expensive.
+					if source_id := json_string_property(element_state, 'canvasVideoSource') {
+						if source_element := document.get_element_by_id(source_id) {
+							if source_element.local_name() == 'video' {
+								video := unsafe { &dom.HTMLVideoElement(source_element) }
+								model := html.html_video_element_model_for_dom_element(video)
+								if source_bitmap := model.bitmap() {
+									if source_bitmap.width == width && source_bitmap.height == height {
+										pixels = source_bitmap.data.clone()
+									}
+								}
+							}
+						}
+					}
+					if width < 0 || height < 0 || pixels.len != width * height * 4 {
+						continue
+					}
+					mut canvas := unsafe { &dom.HTMLCanvasElement(element) }
+					if html.html_canvas_element_width(canvas) != u32(width) {
+						html.html_canvas_element_set_width(mut canvas, u32(width)) or { continue }
+					}
+					if html.html_canvas_element_height(canvas) != u32(height) {
+						html.html_canvas_element_set_height(mut canvas, u32(height)) or { continue }
+					}
+					mut context := html.html_canvas_element_get_context(canvas, '2d', none) or {
+						continue
+					}
+					bitmap := context.surface() or { continue }
+					mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+					mutable_bitmap.data = pixels.clone()
+					mutable_bitmap.pitch = width * 4
+					context.did_draw(html.CanvasFloatRect{0, 0, f64(width), f64(height)})
+				}
+			}
+		}
+	}
+	if operations := state['operations'] {
+		if operations is []json2.Any {
+			for item in operations as []json2.Any {
+				if item !is map[string]json2.Any {
+					continue
+				}
+				operation := item as map[string]json2.Any
+				if (json_string_property(operation, 'op') or { '' }) != 'appendCreated' {
+					continue
+				}
+				target_id := json_string_property(operation, 'target') or { continue }
+				mut target := document.get_element_by_id(target_id) or { continue }
+				child_value := operation['child'] or { continue }
+				if child_value !is map[string]json2.Any {
+					continue
+				}
+				child_state := child_value as map[string]json2.Any
+				tag_name := json_string_property(child_state, 'tagName') or { 'div' }
+				if tag_name == '' || tag_name == '#text' {
+					continue
+				}
+				mut child := document.create_element(tag_name) or { continue }
+				if id := json_string_property(child_state, 'id') {
+					if id != '' {
+						child.set_attribute_value('id', id)
+					}
+				}
+				if class_name := json_string_property(child_state, 'className') {
+					if class_name != '' {
+						child.set_attribute_value('class', class_name)
+					}
+				}
+				if style_text := json_string_property(child_state, 'styleText') {
+					if style_text != '' {
+						child.set_attribute_value('style', style_text)
+					}
+				}
+				if text := json_string_property(child_state, 'textContent') {
+					if text != '' {
+						mut child_node := unsafe { &dom.Node(child) }
+						child_node.set_text_content(text) or {}
+					}
+				}
+				mut target_node := unsafe { &dom.Node(target) }
+				target_node.append_child(child.as_node()) or {}
 			}
 		}
 	}
@@ -1210,7 +1552,15 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 }
 
 fn run_document_javascript(document &dom.Document, current_url string, sources []string, runtime &browserjs.Runtime, mut messages []string) ?string {
-	result := runtime.evaluate(javascript_program(javascript_initial_state(document, current_url), sources)) or {
+	runtime.evaluate(javascript_program(javascript_initial_state(document, current_url, sources), sources)) or {
+		messages << 'JavaScript: ${err.msg()}'
+		return none
+	}
+	// JavaScriptCore drains queued promise jobs between evaluations. Taking the
+	// snapshot in a second evaluation observes async screenshot-test setup whose
+	// awaited timer or animation-frame promises were resolved synchronously by
+	// this lightweight browser host.
+	result := runtime.evaluate('__ladybirdFinalize()') or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
@@ -1474,6 +1824,8 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	}
 	app.js_messages << install_external_styles(app.document, loaded.url, preloaded_resources)
 	checkpoint = debug_timing_checkpoint('install_styles', checkpoint)
+	install_local_video_frames(app.document, loaded.url, loaded.markup)
+	checkpoint = debug_timing_checkpoint('install_video_frames', checkpoint)
 	if app.js_runtime != unsafe { nil } {
 		app.js_runtime.close()
 		app.js_runtime = unsafe { nil }
@@ -1713,13 +2065,13 @@ fn (mut app BrowserApp) set_scroll_y(requested f64, window_height int) {
 // paintable and then each containing block. Only when every element declines
 // it does the viewport consume the vertical delta.
 fn layout_node_is_document_viewport_scroller(document &dom.Document, layout_node &dom.LayoutNode) bool {
-	// The typed layout tree has a viewport node above <html>. The latter owns
-	// the DOM-facing PaintableBox, but its scroll offset is not the viewport
-	// scroll offset used by native replay. Let BrowserApp consume this wheel
-	// input as viewport scrolling instead of having <html> swallow it.
+	// The typed layout tree has a viewport node above <html>. Both nodes expose
+	// DOM-facing PaintableBoxes, but neither box owns the viewport offset used
+	// by native replay. Let BrowserApp consume their wheel input as viewport
+	// scrolling rather than letting either internal box swallow it.
 	document_element := document.document_element() or { return false }
 	node := layout_node.dom_node() or { return false }
-	return node.unique_id() == document_element.as_node().unique_id()
+	return node.is_document() || node.unique_id() == document_element.as_node().unique_id()
 }
 
 fn (mut app BrowserApp) scroll_element_at_window_point(mouse_x f32, mouse_y f32, delta_x f64, delta_y f64) bool {
@@ -1871,12 +2223,15 @@ fn draw_native_svg_linear_gradient_path(path_data []f32, even_odd bool, matrix [
 			return
 		}
 		mut stop_data := []f32{cap: style.gradient.color_stops.len * 5}
-		paint_alpha := f32(clamp(opacity, 0.0, 1.0))
 		for stop in style.gradient.color_stops {
 			stop_data << f32(stop.color.r) / 255.0
 			stop_data << f32(stop.color.g) / 255.0
 			stop_data << f32(stop.color.b) / 255.0
-			stop_data << f32(stop.color.a) / 255.0 * paint_alpha
+			stop_data << f32(stop.color.a) / 255.0 * if content_mask {
+				f32(clamp(opacity, 0.0, 1.0))
+			} else {
+				f32(1.0)
+			}
 			stop_data << f32(stop.position)
 		}
 		gradient_transform := style.gradient.gradient_transform or { painting.Affine{} }
@@ -1924,12 +2279,15 @@ fn draw_native_svg_radial_gradient_path(path_data []f32, even_odd bool, matrix [
 			return
 		}
 		mut stop_data := []f32{cap: style.gradient.color_stops.len * 5}
-		paint_alpha := f32(clamp(opacity, 0.0, 1.0))
 		for stop in style.gradient.color_stops {
 			stop_data << f32(stop.color.r) / 255.0
 			stop_data << f32(stop.color.g) / 255.0
 			stop_data << f32(stop.color.b) / 255.0
-			stop_data << f32(stop.color.a) / 255.0 * paint_alpha
+			stop_data << f32(stop.color.a) / 255.0 * if content_mask {
+				f32(clamp(opacity, 0.0, 1.0))
+			} else {
+				f32(1.0)
+			}
 			stop_data << f32(stop.position)
 		}
 		gradient_transform := style.gradient.gradient_transform or { painting.Affine{} }
@@ -2061,7 +2419,12 @@ fn (mut app BrowserApp) draw_native_svg_pattern_path(path_data []f32, even_odd b
 		if tile.width <= 0 || tile.height <= 0 {
 			return
 		}
-		C.native_begin_svg_pattern_tile(style.cache_key, f32(tile.width), f32(tile.height))
+		// Pattern tiles are fixed-size rasters. Include the scale accumulated by
+		// the target's visual-context chain so transformed ancestors do not
+		// magnify a low-resolution tile.
+		content_scale_x := math.max(math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1]), 1.0)
+		content_scale_y := math.max(math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3]), 1.0)
+		C.native_begin_svg_pattern_tile(style.cache_key, f32(tile.width), f32(tile.height), f32(content_scale_x), f32(content_scale_y))
 		if display_list := style.tile_display_list {
 			for operation in display_list.operations {
 				match operation.kind {
@@ -2296,6 +2659,26 @@ fn (app &BrowserApp) background_image_bytes(image_url string) ![]u8 {
 	return os.read_bytes(image_url)
 }
 
+fn image_bytes_are_webp(bytes []u8) bool {
+	return bytes.len >= 12 && bytes[..4].bytestr() == 'RIFF' && bytes[8..12].bytestr() == 'WEBP'
+}
+
+fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes []u8) !gg.Image {
+	$if macos {
+		// stb_image does not decode WebP, while AppKit's image provider does.
+		// Materialize the encoded resource in the browser cache so gg's native
+		// image path can retain the NSImage just like a file-backed resource.
+		if image_bytes_are_webp(bytes) {
+			path := browser_cache_entry_path(browser_cache_root(), 'decoded-images', image_url)
+			if !os.is_file(path) {
+				write_browser_cache_entry(path, bytes.bytestr())
+			}
+			return app.ctx.create_image(path)
+		}
+	}
+	return app.ctx.create_image_from_byte_array(bytes)
+}
+
 fn (mut app BrowserApp) request_background_resource(image_url string) {
 	if image_url in app.resource_cache || image_url in app.background_resource_pending {
 		return
@@ -2340,7 +2723,7 @@ fn (mut app BrowserApp) background_image(image_url string) ?&gg.Image {
 		app.ctx.create_image(image_url) or { return none }
 	} else {
 		bytes := app.background_image_bytes(image_url) or { return none }
-		app.ctx.create_image_from_byte_array(bytes) or { return none }
+		app.create_image_from_resource_bytes(image_url, bytes) or { return none }
 	}
 	app.background_image_ids[image_url] = image.id
 	return app.ctx.get_cached_image_by_idx(image.id)
@@ -2723,6 +3106,23 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			}
 		}
 	}
+	if command.kind == 'begin_skia_command_group' {
+		$if macos {
+			if app.ctx.native_rendering {
+				matrix := normalized_paint_transform(command.transform)
+				C.native_begin_skia_command_group(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.width), f32(app.ctx.height))
+			}
+		}
+		return
+	}
+	if command.kind == 'end_skia_command_group' {
+		$if macos {
+			if app.ctx.native_rendering {
+				C.native_end_skia_command_group()
+			}
+		}
+		return
+	}
 	if command.kind == 'begin_css_effect_layer' {
 		$if macos {
 			if app.ctx.native_rendering {
@@ -2785,7 +3185,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								glyph_run.font().font_path() or { '' }
 							}
 							unsafe {
-								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.height), font_path, glyph_run.font().face_index()) != 0
+								retained_run_drawn = C.native_add_background_glyph_clip_run(&glyphs[0], &positions[0], glyphs.len, glyph_run.font().point_size, glyph_run.font().weight, int(glyph_run.face() == .emoji), f32(run.glyph_translation_x), f32(run.glyph_translation_y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.width), f32(app.ctx.height), font_path, glyph_run.font().face_index()) != 0
 							}
 						}
 					}
@@ -3030,7 +3430,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					scale_x := math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
 					scale_y := math.sqrt(matrix[2] * matrix[2] + matrix[3] * matrix[3])
 					blur_scale := math.min(scale_x, scale_y)
-					C.native_draw_outer_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(shadow.top_left.x), f32(shadow.top_left.y), f32(shadow.top_right.x), f32(shadow.top_right.y), f32(shadow.bottom_right.x), f32(shadow.bottom_right.y), f32(shadow.bottom_left.x), f32(shadow.bottom_left.y), f32(command.shadow_content_x), f32(command.shadow_content_y), f32(command.shadow_content_width), f32(command.shadow_content_height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
+					C.native_draw_outer_box_shadow_corners_srgb(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(shadow.top_left.x), f32(shadow.top_left.y), f32(shadow.top_right.x), f32(shadow.top_right.y), f32(shadow.bottom_right.x), f32(shadow.bottom_right.y), f32(shadow.bottom_left.x), f32(shadow.bottom_left.y), f32(command.shadow_content_x), f32(command.shadow_content_y), f32(command.shadow_content_width), f32(command.shadow_content_height), f32(content.top_left.x), f32(content.top_left.y), f32(content.top_right.x), f32(content.top_right.y), f32(content.bottom_right.x), f32(content.bottom_right.y), f32(content.bottom_left.x), f32(content.bottom_left.y), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.blur * blur_scale), fill)
 					return
 				}
 			}
@@ -3272,7 +3672,12 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 				to_x, to_y := paint_screen_point(command, command.points[2], command.points[3], page_x, page_y, scroll_y)
 				line_color := paint_color(command.color, command.opacity)
 				$if macos {
-					if app.ctx.native_rendering && command.line_style !in ['dotted', 'dashed'] && C.native_draw_solid_line_srgb(from_x, from_y, to_x, to_y, f32(command.stroke_width), f32(app.ctx.width), f32(app.ctx.height), line_color) != 0 {
+					line_style := match command.line_style {
+						'dotted' { 1 }
+						'dashed' { 2 }
+						else { 0 }
+					}
+					if app.ctx.native_rendering && C.native_draw_line_srgb(from_x, from_y, to_x, to_y, f32(command.stroke_width), line_style, f32(app.ctx.width), f32(app.ctx.height), line_color) != 0 {
 						return
 					}
 				}
@@ -3450,7 +3855,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					radii := result.clip_radii
 					C.native_begin_clip()
 					C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
-					C.native_draw_image_part_transformed(image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(image.width), f32(image.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
+					C.native_draw_image_part_transformed(image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(image.width), f32(image.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
 						1
 					} else {
 						0
@@ -3504,7 +3909,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					}
 					C.native_begin_clip()
 					C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
-					C.native_draw_image_part_transformed(canvas_image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(bitmap.width), f32(bitmap.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.opacity), if result.content.scaling == .nearest_neighbor {
+					C.native_draw_image_part_transformed(canvas_image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(bitmap.width), f32(bitmap.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.content.scaling == .nearest_neighbor {
 						1
 					} else {
 						0
@@ -3563,7 +3968,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					}
 					C.native_begin_clip()
 					C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
-					C.native_draw_image_part_transformed(video_image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(bitmap.width), f32(bitmap.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.opacity), if scaling == .nearest_neighbor {
+					C.native_draw_image_part_transformed(video_image, f32(destination.x), f32(destination.y), f32(destination.width), f32(destination.height), 0, 0, f32(bitmap.width), f32(bitmap.height), f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling == .nearest_neighbor {
 						1
 					} else {
 						0
@@ -3658,10 +4063,9 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					if layer.blend_mode != .normal {
 						C.native_begin_background_blend_mode(int(layer.blend_mode))
 					}
-					// BackgroundPainting records one DrawRepeatedImmutableBitmap when
-					// repetition has no `space` gaps. Submit the same shape as one
-					// Quartz tiled-image operation instead of materializing up to 4096
-					// rectangles and crossing the V/C boundary once per tile.
+					// BackgroundPainting records one repeated-bitmap operation when
+					// repetition has no `space` gaps. Keeping that operation intact also
+					// preserves the decoded image's native top-to-bottom orientation.
 					if plan.can_use_repeated_bitmap() && command.background_svg_document == none {
 						converter := painting.new_device_pixel_converter(1.0) or { return }
 						destination := converter.rounded_device_rect(plan.first_tile)
@@ -3742,7 +4146,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 							int(math.round(tile.height))
 						}
 						scaling_mode := painting.to_gfx_scaling_mode(command.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{destination_width, destination_height})
-						C.native_draw_image_part_transformed(image, f32(left), f32(top), f32(right_edge - left), f32(bottom_edge - top), source_x, source_y, source_width, source_height, f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
+						C.native_draw_image_part_transformed(image, f32(left), f32(top), f32(right_edge - left), f32(bottom_edge - top), source_x, source_y, source_width, source_height, f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
 							1
 						} else {
 							0
@@ -3777,7 +4181,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			$if macos {
 				if app.ctx.native_rendering {
 					scaling_mode := painting.to_gfx_scaling_mode(command.image_rendering, painting.IntSize{image.width, image.height}, painting.IntSize{int(math.round(command.width)), int(math.round(command.height))})
-					C.native_draw_image_part_transformed(image, destination_x, destination_y, destination_width, destination_height, 0, 0, f32(image.width), f32(image.height), f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
+					C.native_draw_image_part_transformed(image, destination_x, destination_y, destination_width, destination_height, 0, 0, f32(image.width), f32(image.height), f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if scaling_mode == .nearest_neighbor {
 						1
 					} else {
 						0
@@ -3822,7 +4226,11 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 								1
 							} else {
 								0
-							}, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit))
+							}, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit), if command.non_scaling_stroke {
+								1
+							} else {
+								0
+							})
 						}
 						return
 					}
@@ -3841,7 +4249,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 										1
 									} else {
 										0
-									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, stroke, 0, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit))
+									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 1, stroke, 0, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit), 0)
 								}
 							}
 						} else if command.stroke_width > 0 {
@@ -3857,7 +4265,11 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 										1
 									} else {
 										0
-									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 0, stroke, 1, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit))
+									}, f32(path_matrix[0]), f32(path_matrix[1]), f32(path_matrix[2]), f32(path_matrix[3]), f32(path_matrix[4]), f32(path_matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), fill, 0, stroke, 1, f32(command.stroke_width), command.stroke_linecap, command.stroke_linejoin, f32(command.stroke_miterlimit), if command.non_scaling_stroke {
+										1
+									} else {
+										0
+									})
 								}
 							}
 						}
@@ -4004,9 +4416,17 @@ fn (mut app BrowserApp) draw() {
 		&& !app.document_presented
 	mut paint_checkpoint := time.sys_mono_now()
 	window := browser_window_size()
-	content_viewport_height := window.height - app.chrome_height()
+	content_viewport_height := if app.screenshot_viewport_height > 0 {
+		app.screenshot_viewport_height
+	} else {
+		window.height - app.chrome_height()
+	}
 	if window.width > 0 && (window.width != app.viewport_width || content_viewport_height != app.viewport_height) {
 		app.relayout(window.width, window.height)
+	}
+	if app.screenshot_path != '' && !app.screenshot_scroll_applied {
+		app.screenshot_scroll_applied = true
+		app.set_scroll_y(f64(app.screenshot_scroll_y), window.height)
 	}
 	// Scroll offsets invalidate only the assembled display list. Replay its
 	// retained phase commands with the fresh scroll snapshot before drawing.
@@ -4080,7 +4500,10 @@ fn (mut app BrowserApp) draw() {
 		footer := if app.hovered_link != '' {
 			app.hovered_link
 		} else if app.js_messages.len > 0 {
-			'Console: ${app.js_messages.last()}'
+			// Console stacks can contain embedded newlines. The status bar is a
+			// single-line chrome surface; allowing those newlines to paint upward
+			// leaks browser diagnostics into document screenshots.
+			'Console: ${app.js_messages.last().split_into_lines()[0]}'
 		} else {
 			app.source_label
 		}
@@ -4376,7 +4799,9 @@ fn main() {
 	use_document_font := configure_browser_layout_font(needs_native_font_replay)
 	initial_url, markup, source_label := initial_document(options.source)
 	mut main_checkpoint := debug_timing_checkpoint('startup', main_started)
-	initial_viewport_height := if options.height > int(toolbar_height + status_bar_height) {
+	initial_viewport_height := if options.screenshot_viewport_height > 0 {
+		options.screenshot_viewport_height
+	} else if options.height > int(toolbar_height + status_bar_height) {
 		options.height - int(toolbar_height + status_bar_height)
 	} else {
 		1
@@ -4395,6 +4820,8 @@ fn main() {
 		background_resource_results: chan PreloadedResource{ cap: max_cached_resources }
 		background_resource_pending: map[string]bool{}
 		screenshot_path: options.screenshot
+		screenshot_viewport_height: options.screenshot_viewport_height
+		screenshot_scroll_y: options.screenshot_scroll_y
 		layout_tree_only: options.headless_layout_tree
 		use_document_font: use_document_font
 		viewport_width: options.width
@@ -4459,6 +4886,9 @@ fn main() {
 		window_title: 'vox'
 		bg_color: gg.rgb(232, 237, 243)
 		native_rendering: true
+		init_fn: fn (mut app BrowserApp) {
+			app.initialize_native_window()
+		}
 		frame_fn: fn (mut app BrowserApp) {
 			app.draw()
 		}

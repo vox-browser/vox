@@ -5,25 +5,40 @@
 #include <CoreGraphics/CoreGraphics.h>
 
 #include "include/core/SkCanvas.h"
+#include "include/core/SkBlendMode.h"
+#include "include/core/SkBlurTypes.h"
 #include "include/core/SkColor.h"
+#include "include/core/SkColorFilter.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkData.h"
 #include "include/core/SkFont.h"
+#include "include/core/SkFontArguments.h"
 #include "include/core/SkFontMgr.h"
 #include "include/core/SkImageInfo.h"
+#include "include/core/SkImage.h"
+#include "include/core/SkMaskFilter.h"
 #include "include/core/SkMatrix.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPath.h"
 #include "include/core/SkRRect.h"
 #include "include/core/SkSurface.h"
+#include "include/core/SkStream.h"
 #include "include/core/SkTextBlob.h"
 #include "include/core/SkTypeface.h"
+#include "include/core/SkSamplingOptions.h"
+#include "include/effects/SkImageFilters.h"
+#include "include/effects/SkDashPathEffect.h"
+#include "include/effects/SkGradientShader.h"
+#include "include/ports/SkFontMgr_fontconfig.h"
+#include "include/ports/SkFontScanner_FreeType.h"
 #include "include/ports/SkFontMgr_mac_ct.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -42,15 +57,25 @@ sk_sp<SkFontMgr> s_font_manager;
 sk_sp<SkTypeface> s_typefaces[FontSlotCount];
 std::unordered_map<std::string, sk_sp<SkTypeface>> s_path_typefaces;
 
+sk_sp<SkFontMgr> font_manager()
+{
+    if (!s_font_manager) {
+        auto* layout_test_font = std::getenv("LADYBIRD_LAYOUT_TEST_FONT");
+        s_font_manager = layout_test_font && *layout_test_font
+            ? SkFontMgr_New_FontConfig(nullptr, SkFontScanner_Make_FreeType())
+            : SkFontMgr_New_CoreText(nullptr);
+    }
+    return s_font_manager;
+}
+
 SkTypeface* select_typeface(char const* path, int face_index, int font_weight, int emoji_face)
 {
     if (path && *path) {
         auto key = std::string(path) + "#" + std::to_string(face_index);
         if (auto found = s_path_typefaces.find(key); found != s_path_typefaces.end())
             return found->second.get();
-        if (!s_font_manager)
-            s_font_manager = SkFontMgr_New_CoreText(nullptr);
-        if (s_font_manager) {
+        auto manager = font_manager();
+        if (manager) {
             char const* collection_family = nullptr;
             if (std::strcmp(path, "/System/Library/Fonts/HelveticaNeue.ttc") == 0)
                 collection_family = "Helvetica Neue";
@@ -67,11 +92,16 @@ SkTypeface* select_typeface(char const* path, int face_index, int font_weight, i
             // for a valid non-zero index. Resolve the three macOS collections
             // emitted by platform::Font through the system manager first.
             auto typeface = collection_family && face_index != 0
-                ? s_font_manager->matchFamilyStyle(collection_family, SkFontStyle::Bold())
+                ? manager->matchFamilyStyle(collection_family, SkFontStyle::Bold())
                 : nullptr;
             if (!typeface) {
                 auto data = SkData::MakeFromFileName(path);
-                typeface = data ? s_font_manager->makeFromData(std::move(data), face_index) : nullptr;
+                if (data) {
+                    SkFontArguments arguments;
+                    arguments.setCollectionIndex(face_index);
+                    typeface = manager->makeFromStream(
+                        std::make_unique<SkMemoryStream>(std::move(data)), arguments);
+                }
             }
             if (typeface) {
                 auto* result = typeface.get();
@@ -181,6 +211,20 @@ bool clipped_raster_region(SkRect const& bounds, float canvas_width,
     return region.width() > 0 && region.height() > 0;
 }
 
+struct RasterCommandGroup {
+    CGContextRef destination { nullptr };
+    float canvas_height { 0.0f };
+    RasterRegion region;
+    int raster_width { 0 };
+    int raster_height { 0 };
+    float scale_x { 1.0f };
+    float scale_y { 1.0f };
+    std::vector<uint32_t> pixels;
+    sk_sp<SkSurface> surface;
+};
+
+std::unique_ptr<RasterCommandGroup> s_raster_command_group;
+
 SkPath path_from_serialized_segments(float const* data, int segment_count)
 {
     SkPath path;
@@ -232,6 +276,62 @@ SkPath path_from_serialized_segments(float const* data, int segment_count)
 
 } // namespace
 
+extern "C" int ladybird_v_skia_begin_command_group(CGContextRef destination,
+    float x, float y, float width, float height, float transform_a,
+    float transform_b, float transform_c, float transform_d, float transform_e,
+    float transform_f, float page_x, float page_y, float scroll_y,
+    float canvas_width, float canvas_height)
+{
+    if (!destination || s_raster_command_group || width <= 0 || height <= 0
+        || canvas_width <= 0 || canvas_height <= 0)
+        return 0;
+    auto matrix = SkMatrix::MakeAll(
+        transform_a, transform_c, page_x + transform_e,
+        transform_b, transform_d, page_y - scroll_y + transform_f,
+        0.0f, 0.0f, 1.0f);
+    RasterRegion region;
+    if (!clipped_raster_region(matrix.mapRect(SkRect::MakeXYWH(x, y, width, height)),
+            canvas_width, canvas_height, 2.0f, region))
+        return 0;
+
+    auto destination_scale = std::getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")
+        ? 1.0f
+        : raster_scale_for_context(destination);
+    auto group = std::make_unique<RasterCommandGroup>();
+    group->destination = destination;
+    group->canvas_height = canvas_height;
+    group->region = region;
+    group->raster_width = raster_dimension(region.width(), destination_scale);
+    group->raster_height = raster_dimension(region.height(), destination_scale);
+    group->scale_x = static_cast<float>(group->raster_width)
+        / static_cast<float>(region.width());
+    group->scale_y = static_cast<float>(group->raster_height)
+        / static_cast<float>(region.height());
+    group->pixels.resize(static_cast<size_t>(group->raster_width)
+        * static_cast<size_t>(group->raster_height));
+    auto image_info = SkImageInfo::Make(group->raster_width, group->raster_height,
+        kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    group->surface = SkSurfaces::WrapPixels(image_info, group->pixels.data(),
+        static_cast<size_t>(group->raster_width) * sizeof(uint32_t));
+    if (!group->surface)
+        return 0;
+    group->surface->getCanvas()->clear(SK_ColorTRANSPARENT);
+    s_raster_command_group = std::move(group);
+    return 1;
+}
+
+extern "C" int ladybird_v_skia_end_command_group(CGContextRef destination)
+{
+    if (!s_raster_command_group || s_raster_command_group->destination != destination)
+        return 0;
+    auto group = std::move(s_raster_command_group);
+    return composite_pixels(destination, group->pixels, group->raster_width,
+        group->raster_height, static_cast<float>(group->region.left),
+        group->canvas_height - static_cast<float>(group->region.bottom),
+        static_cast<float>(group->region.width()),
+        static_cast<float>(group->region.height()));
+}
+
 extern "C" int ladybird_v_skia_configure_font(char const* path, int slot)
 {
     if (!path || slot < 0 || slot >= FontSlotCount)
@@ -239,11 +339,13 @@ extern "C" int ladybird_v_skia_configure_font(char const* path, int slot)
     auto data = SkData::MakeFromFileName(path);
     if (!data)
         return 0;
-    if (!s_font_manager)
-        s_font_manager = SkFontMgr_New_CoreText(nullptr);
-    if (!s_font_manager)
+    auto manager = font_manager();
+    if (!manager)
         return 0;
-    auto typeface = s_font_manager->makeFromData(std::move(data), 0);
+    SkFontArguments arguments;
+    arguments.setCollectionIndex(0);
+    auto typeface = manager->makeFromStream(
+        std::make_unique<SkMemoryStream>(std::move(data)), arguments);
     if (!typeface)
         return 0;
     s_typefaces[slot] = std::move(typeface);
@@ -266,13 +368,11 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
     SkFont font(sk_ref_sp(typeface), std::max(font_size, 0.0f));
     // This is the only non-default setting in Gfx::Font::skia_font().
     font.setSubpixel(true);
-    // The generic-serif cascade deliberately retains Times New Roman's regular
-    // advances for bold text. Give only that regular face synthetic weight;
-    // some file-backed real bold faces do not report their weight through the
-    // CoreText SkTypeface and must not be emboldened a second time.
-    if (!emoji_face && font_weight >= 600 && font_path
-        && std::strcmp(font_path, "/System/Library/Fonts/Supplemental/Times New Roman.ttf") == 0)
-        font.setEmbolden(true);
+    // Platform::FontPlugin forces normal hinting in layout-test mode so the
+    // compositor produces deterministic screenshot glyphs on every host.
+    if (auto* layout_test_font = std::getenv("LADYBIRD_LAYOUT_TEST_FONT");
+        layout_test_font && *layout_test_font)
+        font.setHinting(SkFontHinting::kNormal);
 
     SkTextBlobBuilder builder;
     auto const& run = builder.allocRunPos(font, glyph_count);
@@ -326,13 +426,35 @@ extern "C" int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
 
-extern "C" int ladybird_v_skia_draw_solid_line(CGContextRef destination,
+extern "C" int ladybird_v_skia_draw_line(CGContextRef destination,
     float from_x, float from_y, float to_x, float to_y, float thickness,
-    float canvas_width, float canvas_height, uint8_t red, uint8_t green,
-    uint8_t blue, uint8_t alpha)
+    int line_style, float canvas_width, float canvas_height, uint8_t red,
+    uint8_t green, uint8_t blue, uint8_t alpha)
 {
     if (!destination || thickness <= 0 || canvas_width <= 0 || canvas_height <= 0)
         return 0;
+    auto length = std::hypot(to_x - from_x, to_y - from_y);
+    float dash_interval = 0.0f;
+    if (line_style == 1 && length > 0.0f) {
+        auto dot_count = std::floor(length / (thickness * 2.0f));
+        if (dot_count > 0.0f) {
+            dash_interval = length / dot_count;
+            auto direction_x = (to_x - from_x) / length;
+            auto direction_y = (to_y - from_y) / length;
+            to_x += direction_x * (dash_interval / 2.0f);
+            to_y += direction_y * (dash_interval / 2.0f);
+        }
+    } else if (line_style == 2 && length > 0.0f) {
+        auto extended_length = length + thickness;
+        auto dash_count = std::floor(extended_length / thickness / 4.0f) * 2.0f + 1.0f;
+        dash_interval = extended_length / dash_count;
+        auto direction_x = (to_x - from_x) / length;
+        auto direction_y = (to_y - from_y) / length;
+        from_x -= direction_x * (thickness / 2.0f);
+        from_y -= direction_y * (thickness / 2.0f);
+        to_x += direction_x * (thickness / 2.0f);
+        to_y += direction_y * (thickness / 2.0f);
+    }
     auto half_stroke = thickness * 0.5f;
     RasterRegion region;
     if (!clipped_raster_region(SkRect::MakeLTRB(
@@ -349,8 +471,17 @@ extern "C" int ladybird_v_skia_draw_solid_line(CGContextRef destination,
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
-    paint.setStrokeWidth(thickness * std::max(raster_scale_x, raster_scale_y));
+    auto raster_scale = std::max(raster_scale_x, raster_scale_y);
+    paint.setStrokeWidth(thickness * raster_scale);
     paint.setColor(SkColorSetARGB(alpha, red, green, blue));
+    if (line_style == 1 && dash_interval > 0.0f) {
+        SkScalar intervals[] = { 0.0f, dash_interval * raster_scale };
+        paint.setPathEffect(SkDashPathEffect::Make(intervals, 0.0f));
+        paint.setStrokeCap(SkPaint::kRound_Cap);
+    } else if (line_style == 2 && dash_interval > 0.0f) {
+        SkScalar intervals[] = { dash_interval * raster_scale, dash_interval * raster_scale };
+        paint.setPathEffect(SkDashPathEffect::Make(intervals, 0.0f));
+    }
     std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
     auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
@@ -368,6 +499,214 @@ extern "C" int ladybird_v_skia_draw_solid_line(CGContextRef destination,
     return composite_pixels(destination, pixels, raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
+}
+
+extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
+    uint8_t const* source_pixels, int image_width, int image_height,
+    int image_pitch, float destination_x, float destination_y,
+    float destination_width, float destination_height, float source_x,
+    float source_y, float source_width, float source_height, float clip_x,
+    float clip_y, float clip_width, float clip_height, float transform_a,
+    float transform_b, float transform_c, float transform_d, float transform_e,
+    float transform_f, float page_x, float page_y, float scroll_y,
+    float canvas_width, float canvas_height, float opacity, int nearest_neighbor)
+{
+    if (!destination || !source_pixels || image_width <= 0 || image_height <= 0
+        || image_pitch < image_width * 4 || destination_width <= 0
+        || destination_height <= 0 || source_width <= 0 || source_height <= 0
+        || clip_width <= 0 || clip_height <= 0 || canvas_width <= 0
+        || canvas_height <= 0)
+        return 0;
+
+    auto matrix = SkMatrix::MakeAll(
+        transform_a, transform_c, page_x + transform_e,
+        transform_b, transform_d, page_y - scroll_y + transform_f,
+        0.0f, 0.0f, 1.0f);
+    auto local_destination = SkRect::MakeXYWH(destination_x, destination_y,
+        destination_width, destination_height);
+    auto local_clip = SkRect::MakeXYWH(clip_x, clip_y, clip_width, clip_height);
+    auto device_bounds = matrix.mapRect(local_destination);
+    auto device_clip = matrix.mapRect(local_clip);
+    if (!device_bounds.intersect(device_clip))
+        return 1;
+    RasterRegion region;
+    if (!clipped_raster_region(device_bounds, canvas_width, canvas_height, 0.0f,
+            region))
+        return 1;
+
+    auto source_info = SkImageInfo::Make(image_width, image_height,
+        kRGBA_8888_SkColorType, kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    SkPixmap source_pixmap(source_info, source_pixels,
+        static_cast<size_t>(image_pitch));
+    auto source_image = SkImages::RasterFromPixmapCopy(source_pixmap);
+    if (!source_image)
+        return 0;
+
+    auto destination_scale = raster_scale_for_context(destination);
+    auto raster_width = raster_dimension(region.width(), destination_scale);
+    auto raster_height = raster_dimension(region.height(), destination_scale);
+    auto raster_scale_x = static_cast<float>(raster_width)
+        / static_cast<float>(region.width());
+    auto raster_scale_y = static_cast<float>(raster_height)
+        / static_cast<float>(region.height());
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
+        * static_cast<size_t>(raster_height));
+    auto image_info = SkImageInfo::Make(raster_width, raster_height,
+        kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(),
+        static_cast<size_t>(raster_width) * sizeof(uint32_t));
+    if (!surface)
+        return 0;
+
+    auto* canvas = surface->getCanvas();
+    canvas->clear(SK_ColorTRANSPARENT);
+    canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x,
+        raster_scale_y));
+    canvas->clipRect(local_clip, true);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setAlphaf(std::clamp(opacity, 0.0f, 1.0f));
+    auto source_rect = SkRect::MakeXYWH(source_x, source_y, source_width,
+        source_height);
+    auto sampling = nearest_neighbor == 1
+        ? SkSamplingOptions(SkFilterMode::kNearest)
+        : SkSamplingOptions(SkFilterMode::kLinear);
+    canvas->drawImageRect(source_image.get(), source_rect, local_destination,
+        sampling, &paint, SkCanvas::kStrict_SrcRectConstraint);
+    return composite_pixels(destination, pixels, raster_width, raster_height,
+        static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+        static_cast<float>(region.width()), static_cast<float>(region.height()));
+}
+
+extern "C" int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
+    CGImageRef source, float canvas_width, float canvas_height, float scale,
+    float offset_x, float offset_y, float standard_deviation, uint8_t red,
+    uint8_t green, uint8_t blue, uint8_t alpha)
+{
+    if (!destination || !source || canvas_width <= 0 || canvas_height <= 0
+        || scale <= 0)
+        return 0;
+    auto width = static_cast<int>(CGImageGetWidth(source));
+    auto height = static_cast<int>(CGImageGetHeight(source));
+    if (width <= 0 || height <= 0)
+        return 0;
+
+    auto source_pitch = static_cast<size_t>(width) * 4;
+    std::vector<uint8_t> source_pixels(source_pitch * static_cast<size_t>(height));
+    auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto decode = CGBitmapContextCreate(source_pixels.data(), width, height, 8,
+        source_pitch, color_space,
+        static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast)
+            | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big));
+    CGColorSpaceRelease(color_space);
+    if (!decode)
+        return 0;
+    CGContextSetBlendMode(decode, kCGBlendModeCopy);
+    CGContextDrawImage(decode, CGRectMake(0, 0, width, height), source);
+    CGContextRelease(decode);
+    for (size_t offset = 0; offset < source_pixels.size(); offset += 4) {
+        auto source_alpha = source_pixels[offset + 3];
+        if (source_alpha != 0 && source_alpha != 255) {
+            source_pixels[offset] = static_cast<uint8_t>(std::min(255,
+                (source_pixels[offset] * 255 + source_alpha / 2) / source_alpha));
+            source_pixels[offset + 1] = static_cast<uint8_t>(std::min(255,
+                (source_pixels[offset + 1] * 255 + source_alpha / 2) / source_alpha));
+            source_pixels[offset + 2] = static_cast<uint8_t>(std::min(255,
+                (source_pixels[offset + 2] * 255 + source_alpha / 2) / source_alpha));
+        }
+    }
+
+    auto source_info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType,
+        kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto source_image = SkImages::RasterFromPixmapCopy(
+        SkPixmap(source_info, source_pixels.data(), source_pitch));
+    if (!source_image)
+        return 0;
+
+    std::vector<uint32_t> output_pixels(static_cast<size_t>(width)
+        * static_cast<size_t>(height));
+    auto output_info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::WrapPixels(output_info, output_pixels.data(),
+        static_cast<size_t>(width) * sizeof(uint32_t));
+    if (!surface)
+        return 0;
+
+    auto* canvas = surface->getCanvas();
+    canvas->clear(SK_ColorTRANSPARENT);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setImageFilter(SkImageFilters::DropShadow(offset_x * scale,
+        offset_y * scale, std::max(standard_deviation, 0.0f) * scale,
+        std::max(standard_deviation, 0.0f) * scale,
+        SkColorSetARGB(alpha, red, green, blue), nullptr));
+    canvas->drawImage(source_image.get(), 0, 0, SkSamplingOptions(), &paint);
+    return composite_pixels(destination, output_pixels, width, height, 0, 0,
+        canvas_width, canvas_height);
+}
+
+extern "C" int ladybird_v_skia_draw_masked_image(CGContextRef destination,
+    CGImageRef content, CGImageRef mask, float destination_x,
+    float destination_y, float destination_width, float destination_height)
+{
+    if (!destination || !content || !mask || destination_width <= 0
+        || destination_height <= 0)
+        return 0;
+    auto width = static_cast<int>(CGImageGetWidth(content));
+    auto height = static_cast<int>(CGImageGetHeight(content));
+    if (width <= 0 || height <= 0 || CGImageGetWidth(mask) != static_cast<size_t>(width)
+        || CGImageGetHeight(mask) != static_cast<size_t>(height))
+        return 0;
+
+    auto decode_image = [width, height](CGImageRef image) -> sk_sp<SkImage> {
+        auto pitch = static_cast<size_t>(width) * 4;
+        std::vector<uint8_t> pixels(pitch * static_cast<size_t>(height));
+        auto color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        auto context = CGBitmapContextCreate(pixels.data(), width, height, 8,
+            pitch, color_space, static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast)
+                | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big));
+        CGColorSpaceRelease(color_space);
+        if (!context)
+            return nullptr;
+        CGContextSetBlendMode(context, kCGBlendModeCopy);
+        CGContextDrawImage(context, CGRectMake(0, 0, width, height), image);
+        CGContextRelease(context);
+        for (size_t offset = 0; offset < pixels.size(); offset += 4) {
+            auto alpha = pixels[offset + 3];
+            if (alpha != 0 && alpha != 255) {
+                pixels[offset] = static_cast<uint8_t>(std::min(255,
+                    (pixels[offset] * 255 + alpha / 2) / alpha));
+                pixels[offset + 1] = static_cast<uint8_t>(std::min(255,
+                    (pixels[offset + 1] * 255 + alpha / 2) / alpha));
+                pixels[offset + 2] = static_cast<uint8_t>(std::min(255,
+                    (pixels[offset + 2] * 255 + alpha / 2) / alpha));
+            }
+        }
+        auto info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType,
+            kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+        return SkImages::RasterFromPixmapCopy(SkPixmap(info, pixels.data(), pitch));
+    };
+    auto content_image = decode_image(content);
+    auto mask_image = decode_image(mask);
+    if (!content_image || !mask_image)
+        return 0;
+
+    std::vector<uint32_t> output_pixels(static_cast<size_t>(width)
+        * static_cast<size_t>(height));
+    auto output_info = SkImageInfo::Make(width, height, kBGRA_8888_SkColorType,
+        kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::WrapPixels(output_info, output_pixels.data(),
+        static_cast<size_t>(width) * sizeof(uint32_t));
+    if (!surface)
+        return 0;
+    auto* canvas = surface->getCanvas();
+    canvas->clear(SK_ColorTRANSPARENT);
+    canvas->drawImage(content_image.get(), 0, 0);
+    SkPaint mask_paint;
+    mask_paint.setBlendMode(SkBlendMode::kDstIn);
+    canvas->drawImage(mask_image.get(), 0, 0, SkSamplingOptions(), &mask_paint);
+    return composite_pixels(destination, output_pixels, width, height,
+        destination_x, destination_y, destination_width, destination_height);
 }
 
 extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
@@ -402,6 +741,15 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(thickness);
     }
+    if (s_raster_command_group
+        && s_raster_command_group->destination == destination) {
+        auto& group = *s_raster_command_group;
+        auto* canvas = group.surface->getCanvas();
+        canvas->setMatrix(raster_matrix(matrix, group.region, group.scale_x,
+            group.scale_y));
+        canvas->drawRRect(rounded_rect, paint);
+        return 1;
+    }
     SkRect paint_bounds_storage;
     auto local_bounds = paint.canComputeFastBounds()
         ? paint.computeFastBounds(rounded_rect.rect(), &paint_bounds_storage)
@@ -411,7 +759,9 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
             canvas_height, anti_alias ? 2.0f : 0.0f, region))
         return 1;
 
-    auto destination_scale = raster_scale_for_context(destination);
+    auto destination_scale = std::getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")
+        ? 1.0f
+        : raster_scale_for_context(destination);
     auto raster_width = raster_dimension(region.width(), destination_scale);
     auto raster_height = raster_dimension(region.height(), destination_scale);
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
@@ -433,6 +783,93 @@ extern "C" int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
         static_cast<float>(region.width()), static_cast<float>(region.height()));
 }
 
+extern "C" int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
+    float shadow_x, float shadow_y, float shadow_width, float shadow_height,
+    float shadow_top_left_x, float shadow_top_left_y, float shadow_top_right_x,
+    float shadow_top_right_y, float shadow_bottom_right_x,
+    float shadow_bottom_right_y, float shadow_bottom_left_x,
+    float shadow_bottom_left_y, float content_x, float content_y,
+    float content_width, float content_height, float content_top_left_x,
+    float content_top_left_y, float content_top_right_x,
+    float content_top_right_y, float content_bottom_right_x,
+    float content_bottom_right_y, float content_bottom_left_x,
+    float content_bottom_left_y, float transform_a, float transform_b,
+    float transform_c, float transform_d, float transform_e, float transform_f,
+    float page_x, float page_y, float scroll_y, float canvas_width,
+    float canvas_height, float blur, uint8_t red, uint8_t green, uint8_t blue,
+    uint8_t alpha)
+{
+    if (!destination || shadow_width <= 0 || shadow_height <= 0
+        || content_width <= 0 || content_height <= 0 || canvas_width <= 0
+        || canvas_height <= 0)
+        return 0;
+
+    auto make_rounded_rect = [](float x, float y, float width, float height,
+                                 float top_left_x, float top_left_y,
+                                 float top_right_x, float top_right_y,
+                                 float bottom_right_x, float bottom_right_y,
+                                 float bottom_left_x, float bottom_left_y) {
+        SkVector radii[4] {
+            { std::max(top_left_x, 0.0f), std::max(top_left_y, 0.0f) },
+            { std::max(top_right_x, 0.0f), std::max(top_right_y, 0.0f) },
+            { std::max(bottom_right_x, 0.0f), std::max(bottom_right_y, 0.0f) },
+            { std::max(bottom_left_x, 0.0f), std::max(bottom_left_y, 0.0f) },
+        };
+        SkRRect result;
+        result.setRectRadii(SkRect::MakeXYWH(x, y, width, height), radii);
+        return result;
+    };
+    auto shadow = make_rounded_rect(shadow_x, shadow_y, shadow_width,
+        shadow_height, shadow_top_left_x, shadow_top_left_y, shadow_top_right_x,
+        shadow_top_right_y, shadow_bottom_right_x, shadow_bottom_right_y,
+        shadow_bottom_left_x, shadow_bottom_left_y);
+    auto content = make_rounded_rect(content_x, content_y, content_width,
+        content_height, content_top_left_x, content_top_left_y,
+        content_top_right_x, content_top_right_y, content_bottom_right_x,
+        content_bottom_right_y, content_bottom_left_x, content_bottom_left_y);
+    auto matrix = SkMatrix::MakeAll(
+        transform_a, transform_c, page_x + transform_e,
+        transform_b, transform_d, page_y - scroll_y + transform_f,
+        0.0f, 0.0f, 1.0f);
+
+    auto blur_guard = std::max(blur, 0.0f) * 2.0f + 2.0f;
+    auto local_bounds = shadow.rect().makeOutset(blur_guard, blur_guard);
+    RasterRegion region;
+    if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
+            canvas_height, 0.0f, region))
+        return 1;
+
+    auto destination_scale = std::getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS")
+        ? 1.0f
+        : raster_scale_for_context(destination);
+    auto raster_width = raster_dimension(region.width(), destination_scale);
+    auto raster_height = raster_dimension(region.height(), destination_scale);
+    auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
+    auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
+        * static_cast<size_t>(raster_height));
+    auto image_info = SkImageInfo::Make(raster_width, raster_height,
+        kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(),
+        static_cast<size_t>(raster_width) * sizeof(uint32_t));
+    if (!surface)
+        return 0;
+
+    auto* canvas = surface->getCanvas();
+    canvas->clear(SK_ColorTRANSPARENT);
+    canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
+    canvas->clipRRect(content, SkClipOp::kDifference, true);
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setColor(SkColorSetARGB(alpha, red, green, blue));
+    paint.setMaskFilter(SkMaskFilter::MakeBlur(kNormal_SkBlurStyle,
+        std::max(blur, 0.0f) / 2.0f));
+    canvas->drawRRect(shadow, paint);
+    return composite_pixels(destination, pixels, raster_width, raster_height,
+        static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+        static_cast<float>(region.width()), static_cast<float>(region.height()));
+}
+
 extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     float const* data, int segment_count, int even_odd,
     float transform_a, float transform_b, float transform_c, float transform_d,
@@ -440,8 +877,8 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     float scroll_y, float canvas_width, float canvas_height,
     uint8_t fill_red, uint8_t fill_green, uint8_t fill_blue, uint8_t fill_alpha,
     int has_fill, uint8_t stroke_red, uint8_t stroke_green, uint8_t stroke_blue,
-    uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
-    int line_join, float miter_limit)
+	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
+	int line_join, float miter_limit, int non_scaling_stroke)
 {
     if (!destination || !data || segment_count <= 0 || (!has_fill && !has_stroke)
         || canvas_width <= 0 || canvas_height <= 0)
@@ -454,8 +891,43 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 
     auto path = path_from_serialized_segments(data, segment_count);
     path.setFillType(even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
-    auto local_bounds = path.getBounds();
-    if (has_stroke && stroke_width > 0.0f) {
+	auto local_bounds = path.getBounds();
+	SkPath transformed_stroke_path;
+	if (non_scaling_stroke && has_stroke)
+		path.transform(matrix, &transformed_stroke_path);
+	auto draw_path = [&](SkCanvas* canvas, RasterRegion const& region,
+	                     float scale_x, float scale_y) {
+		canvas->setMatrix(raster_matrix(matrix, region, scale_x, scale_y));
+		if (has_fill) {
+			SkPaint paint;
+			paint.setAntiAlias(true);
+			paint.setColor(SkColorSetARGB(fill_alpha, fill_red, fill_green, fill_blue));
+			canvas->drawPath(path, paint);
+		}
+		if (has_stroke && stroke_width > 0.0f) {
+			if (non_scaling_stroke)
+				canvas->setMatrix(raster_matrix(SkMatrix::I(), region, scale_x, scale_y));
+			SkPaint paint;
+			paint.setAntiAlias(true);
+			paint.setStyle(SkPaint::kStroke_Style);
+			paint.setStrokeWidth(stroke_width);
+			paint.setColor(SkColorSetARGB(stroke_alpha, stroke_red, stroke_green, stroke_blue));
+			paint.setStrokeCap(line_cap == 1 ? SkPaint::kRound_Cap
+				: line_cap == 2 ? SkPaint::kSquare_Cap : SkPaint::kButt_Cap);
+			paint.setStrokeJoin(line_join == 1 ? SkPaint::kRound_Join
+				: line_join == 2 ? SkPaint::kBevel_Join : SkPaint::kMiter_Join);
+			paint.setStrokeMiter(std::max(miter_limit, 1.0f));
+			canvas->drawPath(non_scaling_stroke ? transformed_stroke_path : path, paint);
+		}
+	};
+	if (s_raster_command_group
+		&& s_raster_command_group->destination == destination) {
+		auto& group = *s_raster_command_group;
+		draw_path(group.surface->getCanvas(), group.region, group.scale_x,
+			group.scale_y);
+		return 1;
+	}
+	if (has_stroke && stroke_width > 0.0f && !non_scaling_stroke) {
         SkPaint bounds_paint;
         bounds_paint.setStyle(SkPaint::kStroke_Style);
         bounds_paint.setStrokeWidth(stroke_width);
@@ -468,8 +940,17 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
         if (bounds_paint.canComputeFastBounds())
             local_bounds.join(bounds_paint.computeFastBounds(path.getBounds(), &stroke_bounds));
     }
-    RasterRegion region;
-    if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
+	auto device_bounds = matrix.mapRect(local_bounds);
+	if (has_stroke && stroke_width > 0.0f && non_scaling_stroke) {
+		SkPaint bounds_paint;
+		bounds_paint.setStyle(SkPaint::kStroke_Style);
+		bounds_paint.setStrokeWidth(stroke_width);
+		SkRect stroke_bounds;
+		if (bounds_paint.canComputeFastBounds())
+			device_bounds.join(bounds_paint.computeFastBounds(transformed_stroke_path.getBounds(), &stroke_bounds));
+	}
+	RasterRegion region;
+	if (!clipped_raster_region(device_bounds, canvas_width,
             canvas_height, 2.0f, region))
         return 1;
 
@@ -488,28 +969,176 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 
     auto* canvas = surface->getCanvas();
     canvas->clear(SK_ColorTRANSPARENT);
-    canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
-    if (has_fill) {
-        SkPaint paint;
-        paint.setAntiAlias(true);
-        paint.setColor(SkColorSetARGB(fill_alpha, fill_red, fill_green, fill_blue));
-        canvas->drawPath(path, paint);
+    draw_path(canvas, region, raster_scale_x, raster_scale_y);
+
+    return composite_pixels(destination, pixels, raster_width, raster_height,
+        static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
+        static_cast<float>(region.width()), static_cast<float>(region.height()));
+}
+
+static SkTileMode svg_gradient_tile_mode(int spread_method)
+{
+    switch (spread_method) {
+    case 1:
+        return SkTileMode::kRepeat;
+    case 2:
+        return SkTileMode::kMirror;
+    default:
+        return SkTileMode::kClamp;
     }
-    if (has_stroke && stroke_width > 0.0f) {
-        SkPaint paint;
-        paint.setAntiAlias(true);
+}
+
+template<typename MakeShader>
+static int draw_svg_gradient_path(CGContextRef destination, float const* data,
+    int segment_count, int even_odd, float transform_a, float transform_b,
+    float transform_c, float transform_d, float transform_e, float transform_f,
+    float page_x, float page_y, float scroll_y, float canvas_width,
+    float canvas_height, int stroke, float stroke_width, int line_cap,
+    int line_join, float miter_limit, float gradient_a, float gradient_b,
+    float gradient_c, float gradient_d, float gradient_e, float gradient_f,
+    int spread_method, int linear_color_space, float const* stop_data,
+    int stop_count, float opacity, MakeShader make_shader)
+{
+    if (!destination || !data || segment_count <= 0 || !stop_data
+        || stop_count <= 0 || canvas_width <= 0 || canvas_height <= 0)
+        return 0;
+
+    auto path = path_from_serialized_segments(data, segment_count);
+    path.setFillType(even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
+    auto local_bounds = path.getBounds();
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    if (stroke) {
+        if (stroke_width <= 0)
+            return 1;
         paint.setStyle(SkPaint::kStroke_Style);
         paint.setStrokeWidth(stroke_width);
-        paint.setColor(SkColorSetARGB(stroke_alpha, stroke_red, stroke_green, stroke_blue));
         paint.setStrokeCap(line_cap == 1 ? SkPaint::kRound_Cap
             : line_cap == 2 ? SkPaint::kSquare_Cap : SkPaint::kButt_Cap);
         paint.setStrokeJoin(line_join == 1 ? SkPaint::kRound_Join
             : line_join == 2 ? SkPaint::kBevel_Join : SkPaint::kMiter_Join);
         paint.setStrokeMiter(std::max(miter_limit, 1.0f));
-        canvas->drawPath(path, paint);
+        SkRect stroke_bounds;
+        if (paint.canComputeFastBounds())
+            local_bounds = paint.computeFastBounds(local_bounds, &stroke_bounds);
     }
 
+    auto gradient_stop_count = stop_count == 1 ? 2 : stop_count;
+    std::vector<SkColor4f> colors(static_cast<size_t>(gradient_stop_count));
+    std::vector<SkScalar> positions(static_cast<size_t>(gradient_stop_count));
+    for (int index = 0; index < gradient_stop_count; ++index) {
+        auto source_index = stop_count == 1 ? 0 : index;
+        auto const* stop = stop_data + source_index * 5;
+        colors[static_cast<size_t>(index)] = {
+            std::clamp(stop[0], 0.0f, 1.0f),
+            std::clamp(stop[1], 0.0f, 1.0f),
+            std::clamp(stop[2], 0.0f, 1.0f),
+            std::clamp(stop[3], 0.0f, 1.0f),
+        };
+        positions[static_cast<size_t>(index)] = stop_count == 1
+            ? static_cast<float>(index)
+            : std::clamp(stop[4], 0.0f, 1.0f);
+    }
+
+    auto gradient_matrix = SkMatrix::MakeAll(
+        gradient_a, gradient_c, gradient_e,
+        gradient_b, gradient_d, gradient_f,
+        0.0f, 0.0f, 1.0f);
+    auto shader = make_shader(colors, positions,
+        svg_gradient_tile_mode(spread_method), gradient_matrix);
+    if (!shader)
+        return 0;
+    paint.setShader(std::move(shader));
+    paint.setAlphaf(std::clamp(opacity, 0.0f, 1.0f));
+    if (linear_color_space)
+        paint.setColorFilter(SkColorFilters::LinearToSRGBGamma());
+
+    auto matrix = SkMatrix::MakeAll(
+        transform_a, transform_c, page_x + transform_e,
+        transform_b, transform_d, page_y - scroll_y + transform_f,
+        0.0f, 0.0f, 1.0f);
+    RasterRegion region;
+    if (!clipped_raster_region(matrix.mapRect(local_bounds), canvas_width,
+            canvas_height, 2.0f, region))
+        return 1;
+    auto destination_scale = raster_scale_for_context(destination);
+    auto raster_width = raster_dimension(region.width(), destination_scale);
+    auto raster_height = raster_dimension(region.height(), destination_scale);
+    auto raster_scale_x = static_cast<float>(raster_width)
+        / static_cast<float>(region.width());
+    auto raster_scale_y = static_cast<float>(raster_height)
+        / static_cast<float>(region.height());
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width)
+        * static_cast<size_t>(raster_height));
+    auto image_info = SkImageInfo::Make(raster_width, raster_height,
+        kBGRA_8888_SkColorType, kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(),
+        static_cast<size_t>(raster_width) * sizeof(uint32_t));
+    if (!surface)
+        return 0;
+    auto* canvas = surface->getCanvas();
+    canvas->clear(SK_ColorTRANSPARENT);
+    canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
+    canvas->drawPath(path, paint);
     return composite_pixels(destination, pixels, raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));
+}
+
+extern "C" int ladybird_v_skia_draw_svg_linear_gradient_path(
+    CGContextRef destination, float const* data, int segment_count, int even_odd,
+    float transform_a, float transform_b, float transform_c, float transform_d,
+    float transform_e, float transform_f, float page_x, float page_y,
+    float scroll_y, float canvas_width, float canvas_height, int stroke,
+    float stroke_width, int line_cap, int line_join, float miter_limit,
+    float start_x, float start_y, float end_x, float end_y, float gradient_a,
+    float gradient_b, float gradient_c, float gradient_d, float gradient_e,
+    float gradient_f, int spread_method, int linear_color_space,
+    float const* stop_data, int stop_count, float opacity)
+{
+    return draw_svg_gradient_path(destination, data, segment_count, even_odd,
+        transform_a, transform_b, transform_c, transform_d, transform_e,
+        transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
+        stroke, stroke_width, line_cap, line_join, miter_limit, gradient_a,
+        gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
+        spread_method, linear_color_space, stop_data, stop_count, opacity,
+        [=](std::vector<SkColor4f> const& colors,
+            std::vector<SkScalar> const& positions, SkTileMode tile_mode,
+            SkMatrix const& gradient_matrix) {
+            SkPoint points[] { { start_x, start_y }, { end_x, end_y } };
+            SkGradientShader::Interpolation interpolation;
+            return SkGradientShader::MakeLinear(points, colors.data(), nullptr,
+                positions.data(), static_cast<int>(colors.size()), tile_mode,
+                interpolation, &gradient_matrix);
+        });
+}
+
+extern "C" int ladybird_v_skia_draw_svg_radial_gradient_path(
+    CGContextRef destination, float const* data, int segment_count, int even_odd,
+    float transform_a, float transform_b, float transform_c, float transform_d,
+    float transform_e, float transform_f, float page_x, float page_y,
+    float scroll_y, float canvas_width, float canvas_height, int stroke,
+    float stroke_width, int line_cap, int line_join, float miter_limit,
+    float start_x, float start_y, float start_radius, float end_x, float end_y,
+    float end_radius, float gradient_a, float gradient_b, float gradient_c,
+    float gradient_d, float gradient_e, float gradient_f, int spread_method,
+    int linear_color_space, float const* stop_data, int stop_count, float opacity)
+{
+    return draw_svg_gradient_path(destination, data, segment_count, even_odd,
+        transform_a, transform_b, transform_c, transform_d, transform_e,
+        transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
+        stroke, stroke_width, line_cap, line_join, miter_limit, gradient_a,
+        gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
+        spread_method, linear_color_space, stop_data, stop_count, opacity,
+        [=](std::vector<SkColor4f> const& colors,
+            std::vector<SkScalar> const& positions, SkTileMode tile_mode,
+            SkMatrix const& gradient_matrix) {
+            SkGradientShader::Interpolation interpolation;
+            return SkGradientShader::MakeTwoPointConical(
+                SkPoint::Make(start_x, start_y), std::max(start_radius, 0.0f),
+                SkPoint::Make(end_x, end_y), std::max(end_radius, 0.0f),
+                colors.data(), nullptr, positions.data(),
+                static_cast<int>(colors.size()), tile_mode, interpolation,
+                &gradient_matrix);
+        });
 }

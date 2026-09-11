@@ -98,6 +98,18 @@ fn test_svg_geometry_reaches_the_renderer_with_viewbox_transform_and_paint() {
 	assert output.contains('stroke="rgb(0 0 255)"')
 }
 
+fn test_svg_non_scaling_stroke_is_retained_for_device_space_painting() {
+	document := html.parse_document('<!doctype html><style>body{margin:0}</style><svg width="400" height="200" viewBox="0 0 1 1" preserveAspectRatio="none"><path d="M0,.5 L1,.5" fill="none" stroke="red" vector-effect="non-scaling-stroke"/></svg>')
+	root := layout.layout_document_typed_in_viewport(document, 400, 200)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	assert paths[0].path_transform[0] == 400
+	assert paths[0].path_transform[3] == 200
+	assert paths[0].stroke_width == 1
+	assert paths[0].non_scaling_stroke
+	assert root.render_svg(400, 200).contains('vector-effect="non-scaling-stroke"')
+}
+
 fn test_symbol_list_markers_are_painted_as_geometry() {
 	document :=
 		html.parse_document('<!doctype html><style>html, body { margin:0 }</style><ul><li>disc</li></ul>')

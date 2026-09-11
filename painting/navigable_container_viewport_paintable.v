@@ -5,6 +5,7 @@ module painting
 pub struct NavigableContainerViewportPaintable {
 pub:
 	viewport_rect Rect
+	nested_rect   ?Rect
 	border_radii  BorderRadiiData
 	border_widths PixelBox
 }
@@ -28,6 +29,8 @@ pub fn (paintable NavigableContainerViewportPaintable) paint(converter DevicePix
 	return NavigableContainerViewportPaintResult{
 		clip_rect: clip_rect
 		clip_radii: clip_radii.as_corners(converter)
-		nested_rect: converter.enclosing_device_rect(paintable.viewport_rect)
+		nested_rect: converter.enclosing_device_rect(paintable.nested_rect or {
+			paintable.viewport_rect
+		})
 	}
 }

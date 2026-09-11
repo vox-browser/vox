@@ -28,7 +28,7 @@ fn make_inline_iterator(document &dom.Document, container &BlockContainer, width
 fn test_inline_level_iterator_generates_text_and_collapsible_space_items() {
 	document := dom.Document.create(dom.url_about_blank())
 	style := inline_iterator_test_style(document, 'div',
-		'display:block; font-size:20px; white-space-collapse:collapse')
+		'display:block; font:20px SerenitySans; white-space-collapse:collapse')
 	mut container := BlockContainer.new(document, none, style)
 	container.set_children_are_inline(true)
 	dom_text := document.create_text_node('one   two')

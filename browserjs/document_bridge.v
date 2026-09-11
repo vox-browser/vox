@@ -142,14 +142,21 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'const __state = ${state_json};',
 		'const __listeners = Object.create(null);',
 		'const __objects = []; let __lastRectElement = null;',
+		'const __canvases = Object.create(null);',
 		'function __listenerKey(s, n) { return (s && s.id ? s.id : "document") + ":" + n; }',
 		'function __cssName(p) { return String(p).replace(/[A-Z]/g, function (c) { return "-" + c.toLowerCase(); }); }',
 		'function __styleProxy(s) {',
 		'  const values = Object.create(null);',
 		'  String(s.styleText || "").split(";").forEach(function (part) { const i = part.indexOf(":"); if (i > 0) values[part.slice(0, i).trim()] = part.slice(i + 1).trim(); });',
 		'  function sync() { s.styleText = Object.keys(values).map(function (k) { return k + ": " + values[k]; }).join("; "); s.attributes.style = s.styleText; s.attributesDirty = true; }',
-		'  return new Proxy(values, { set: function (o, p, v) { if (p === "cssText") { s.styleText = String(v); s.attributes.style = s.styleText; s.attributesDirty = true; return true; } o[__cssName(p)] = String(v); sync(); return true; }, get: function (o, p) { if (p === "cssText") return s.styleText; return o[__cssName(p)] || ""; } });',
+		'  return new Proxy(values, { set: function (o, p, v) { if (p === "cssText") { s.styleText = String(v); s.attributes.style = s.styleText; s.attributesDirty = true; return true; } o[__cssName(p)] = String(v); sync(); return true; }, get: function (o, p) { if (p === "cssText") return s.styleText; if (p === "setProperty") return function (name, value) { values[String(name)] = String(value); sync(); }; return o[__cssName(p)] || ""; } });',
 		'}',
+		'function __canvasDimension(s, name) { const fallback = name === "width" ? 300 : 150; const value = Number(s.attributes[name]); return Number.isFinite(value) && value >= 0 ? Math.trunc(value) : fallback; }',
+		'function __canvasFor(s) { let c = __canvases[s.index]; const width = __canvasDimension(s, "width"), height = __canvasDimension(s, "height"); if (!c || c.width !== width || c.height !== height) c = __canvases[s.index] = { width: width, height: height, data: new Uint8ClampedArray(width * height * 4), fillStyle: "#000000" }; return c; }',
+		'function __canvasColor(value) { const names = { black:[0,0,0,255], white:[255,255,255,255], red:[255,0,0,255], green:[0,128,0,255], blue:[0,0,255,255], transparent:[0,0,0,0] }; const text = String(value).trim().toLowerCase(); if (names[text]) return names[text]; let m = /^#([0-9a-f]{6})\$/.exec(text); if (m) return [parseInt(m[1].slice(0,2),16),parseInt(m[1].slice(2,4),16),parseInt(m[1].slice(4,6),16),255]; m = /^rgba?\\(\\s*(\\d+)\\s*[, ]\\s*(\\d+)\\s*[, ]\\s*(\\d+)(?:\\s*[,/]\\s*([0-9.]+))?\\s*\\)\$/.exec(text); if (m) return [+m[1],+m[2],+m[3],m[4] === undefined ? 255 : Math.round(+m[4] * 255)]; return [0,0,0,255]; }',
+		'function __canvasFill(c, x, y, w, h, color) { const left = Math.max(0,Math.floor(Math.min(x,x+w))), top = Math.max(0,Math.floor(Math.min(y,y+h))), right = Math.min(c.width,Math.ceil(Math.max(x,x+w))), bottom = Math.min(c.height,Math.ceil(Math.max(y,y+h))); for (let yy=top; yy<bottom; ++yy) for (let xx=left; xx<right; ++xx) { const i=(yy*c.width+xx)*4; c.data[i]=color[0]; c.data[i+1]=color[1]; c.data[i+2]=color[2]; c.data[i+3]=color[3]; } }',
+		'function __canvasDraw(destination, source, args) { const snapshot = source.data.slice(); let sx=0,sy=0,sw=source.width,sh=source.height,dx=+args[0],dy=+args[1],dw=sw,dh=sh; if (args.length === 4) { dw=+args[2]; dh=+args[3]; } else if (args.length >= 8) { sx=+args[0]; sy=+args[1]; sw=+args[2]; sh=+args[3]; dx=+args[4]; dy=+args[5]; dw=+args[6]; dh=+args[7]; } if (!sw || !sh || !dw || !dh) return; const left=Math.max(0,Math.floor(Math.min(dx,dx+dw))),top=Math.max(0,Math.floor(Math.min(dy,dy+dh))),right=Math.min(destination.width,Math.ceil(Math.max(dx,dx+dw))),bottom=Math.min(destination.height,Math.ceil(Math.max(dy,dy+dh))); for(let y=top;y<bottom;++y) for(let x=left;x<right;++x){ const u=(x-dx)/dw,v=(y-dy)/dh,sourceX=Math.floor(sx+u*sw),sourceY=Math.floor(sy+v*sh); if(sourceX<0||sourceY<0||sourceX>=source.width||sourceY>=source.height)continue; const si=(sourceY*source.width+sourceX)*4,di=(y*destination.width+x)*4; destination.data[di]=snapshot[si];destination.data[di+1]=snapshot[si+1];destination.data[di+2]=snapshot[si+2];destination.data[di+3]=snapshot[si+3]; } }',
+		'function __canvasContext(s) { const c=__canvasFor(s); if(c.context)return c.context; const target={ fillRect:function(x,y,w,h){__canvasFill(c,+x,+y,+w,+h,__canvasColor(c.fillStyle));}, clearRect:function(x,y,w,h){__canvasFill(c,+x,+y,+w,+h,[0,0,0,0]);}, drawImage:function(source){if(!source||!source.__state||source.__state.tagName!=="canvas")throw new TypeError("Unsupported CanvasImageSource");__canvasDraw(c,__canvasFor(source.__state),Array.prototype.slice.call(arguments,1));}, getImageData:function(x,y,w,h){const output=new Uint8ClampedArray(Math.max(0,Math.trunc(w))*Math.max(0,Math.trunc(h))*4);for(let yy=0;yy<h;++yy)for(let xx=0;xx<w;++xx){const sourceX=Math.trunc(x)+xx,sourceY=Math.trunc(y)+yy,di=(yy*w+xx)*4;if(sourceX<0||sourceY<0||sourceX>=c.width||sourceY>=c.height)continue;const si=(sourceY*c.width+sourceX)*4;output[di]=c.data[si];output[di+1]=c.data[si+1];output[di+2]=c.data[si+2];output[di+3]=c.data[si+3];}return{data:output,width:w,height:h};} }; c.context=new Proxy(target,{get:function(o,p){if(p==="fillStyle")return c.fillStyle;return o[p];},set:function(o,p,v){if(p==="fillStyle"){c.fillStyle=String(v);return true;}o[p]=v;return true;}});return c.context; }',
 		'function __setAttribute(s, n, v) { n = String(n).toLowerCase(); s.attributes[n] = String(v); s.attributesDirty = true; if (n === "id") s.id = String(v); if (n === "class") s.className = String(v); if (n === "style") s.styleText = String(v); }',
 		'function __removeAttribute(s, n) { n = String(n).toLowerCase(); delete s.attributes[n]; s.attributesDirty = true; }',
 		'function __isDescendant(s, ancestor) { for (let p = s.parentIndex; p >= 0; p = __state.nodes[p].parentIndex) if (p === ancestor) return true; return false; }',
@@ -168,14 +175,15 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'    insertAdjacentHTML: function (position, value) { __state.operations.push({ op: "insertAdjacentHTML", target: s.index, position: String(position), html: String(value) }); },',
 		'    showModal: function () { __state.operations.push({ op: "showModal", target: s.index }); },',
 		'    show: function () { __state.operations.push({ op: "showDialog", target: s.index }); },',
+		'    getContext: function (kind) { if (s.tagName === "canvas" && String(kind).toLowerCase() === "2d") return __canvasContext(s); return null; },',
 		'    getBoundingClientRect: function () { __lastRectElement = s.index; return s.rect || { x: 0, y: 0, width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 }; },',
 		'    querySelector: function (q) { const found = __state.nodes.find(function (n) { return __isDescendant(n, s.index) && __matches(n, q); }); return found ? __element(found) : null; },',
 		'    querySelectorAll: function (q) { return __state.nodes.filter(function (n) { return __isDescendant(n, s.index) && __matches(n, q); }).map(__element); }',
 		'  };',
 		'  target.style = __styleProxy(s); Object.defineProperty(target, "__state", { value: s });',
 		'  const proxy = new Proxy(target, {',
-		'    get: function (o, p) { if (p in o) return o[p]; if (p === "id") return s.id; if (p === "tagName") return String(s.tagName).toUpperCase(); if (p === "textContent" || p === "innerText") return s.textContent; if (p === "innerHTML") return s.innerHTML; if (p === "className") return s.className; if (p === "offsetLeft") return Math.trunc((s.rect && s.rect.offsetLeft) || 0); if (p === "offsetTop") return Math.trunc((s.rect && s.rect.offsetTop) || 0); if (p === "offsetWidth") return Math.trunc((s.rect && s.rect.width) || 0); if (p === "offsetHeight") return Math.trunc((s.rect && s.rect.height) || 0); if (p === "selectedIndex") return s.selectedIndex === undefined ? -1 : s.selectedIndex; if (["multiple", "hidden", "controls"].indexOf(p) >= 0) return Object.prototype.hasOwnProperty.call(s.attributes, p); if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) return s.attributes[p] || ""; return undefined; },',
-		'    set: function (o, p, v) { if (p === "textContent" || p === "innerText") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "innerHTML") { s.innerHTML = String(v); s.innerHTMLDirty = true; return true; } if (p === "className") { s.className = String(v); __setAttribute(s, "class", v); return true; } if (p === "selectedIndex") { s.selectedIndex = Number(v); __state.operations.push({ op: "selectedIndex", target: s.index, value: s.selectedIndex }); return true; } if (["multiple", "hidden", "controls"].indexOf(p) >= 0) { if (v) __setAttribute(s, p, ""); else __removeAttribute(s, p); return true; } if (p === "value" && s.tagName === "textarea") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "value" && s.tagName === "input") { s.value = String(v); __state.operations.push({ op: "inputValue", target: s.index, value: s.value }); return true; } if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) { __setAttribute(s, p, v); return true; } o[p] = v; return true; }',
+		'    get: function (o, p) { if (p in o) return o[p]; if (p === "id") return s.id; if (p === "tagName") return String(s.tagName).toUpperCase(); if (p === "textContent" || p === "innerText") return s.textContent; if (p === "innerHTML") return s.innerHTML; if (p === "className") return s.className; if (p === "offsetLeft") return Math.trunc((s.rect && s.rect.offsetLeft) || 0); if (p === "offsetTop") return Math.trunc((s.rect && s.rect.offsetTop) || 0); if (p === "offsetWidth") return Math.trunc((s.rect && s.rect.width) || 0); if (p === "offsetHeight") return Math.trunc((s.rect && s.rect.height) || 0); if (p === "selectedIndex") return s.selectedIndex === undefined ? -1 : s.selectedIndex; if (["multiple", "hidden", "controls"].indexOf(p) >= 0) return Object.prototype.hasOwnProperty.call(s.attributes, p); if (s.tagName === "canvas" && (p === "width" || p === "height")) return __canvasDimension(s,p); if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) return s.attributes[p] || ""; return undefined; },',
+		'    set: function (o, p, v) { if (p === "textContent" || p === "innerText") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "innerHTML") { s.innerHTML = String(v); s.innerHTMLDirty = true; return true; } if (p === "className") { s.className = String(v); __setAttribute(s, "class", v); return true; } if (p === "selectedIndex") { s.selectedIndex = Number(v); __state.operations.push({ op: "selectedIndex", target: s.index, value: s.selectedIndex }); return true; } if (["multiple", "hidden", "controls"].indexOf(p) >= 0) { if (v) __setAttribute(s, p, ""); else __removeAttribute(s, p); return true; } if (p === "value" && s.tagName === "textarea") { s.textContent = String(v); s.innerHTML = ""; s.textContentDirty = true; return true; } if (p === "value" && s.tagName === "input") { s.value = String(v); __state.operations.push({ op: "inputValue", target: s.index, value: s.value }); return true; } if (["type", "value", "placeholder", "src", "width", "height"].indexOf(p) >= 0) { __setAttribute(s, p, v); if(s.tagName === "canvas" && (p === "width" || p === "height")){delete __canvases[s.index];__canvasFor(s);} return true; } o[p] = v; return true; }',
 		'  }); __objects[s.index] = proxy; return proxy;',
 		'}',
 		'const document = {',
@@ -194,6 +202,7 @@ fn bridge_program(state map[string]json2.Any, scripts []string) string {
 		'const window = globalThis; window.window = window; window.document = document; window.console = console; window.location = location; window.alert = function (v) { console.log(v); }; window.setTimeout = function (f) { if (typeof f === "function") f(); return 1; }; window.addEventListener = document.addEventListener; window.getComputedStyle = function (element) { return element ? element.style : {}; }; window.internals = { click: function () { if (__lastRectElement !== null) __state.operations.push({ op: "click", target: __lastRectElement }); } };',
 		'for (const id of Object.keys(__state.elements)) { try { window[id] = document.getElementById(id); } catch (_) {} }',
 		'window.__ladybirdSnapshot = function () { return JSON.stringify(__state); };',
+		'window.__ladybirdFinalize = function () { for (const __index of Object.keys(__canvases)) { const c=__canvases[__index]; __state.operations.push({op:"canvasPixels",target:Number(__index),width:c.width,height:c.height,pixels:Array.from(c.data)}); } return window.__ladybirdSnapshot(); };',
 		'const __scripts = ${scripts_json}; for (const __source of __scripts) { try { (0, eval)(__source); } catch (e) { console.error(e && e.stack ? e.stack : e); } }',
 		'for (const __name of ["DOMContentLoaded", "load"]) { const target = document; const event = { type: __name, target: target, defaultPrevented: false, preventDefault: function () { this.defaultPrevented = true; } }; for (const listener of (__listeners[__listenerKey(null, __name)] || [])) { try { listener.call(target, event); } catch (e) { console.error(e); } } if (__name === "load" && typeof window.onload === "function") { try { window.onload.call(window, event); } catch (e) { console.error(e); } } }',
 		'return window.__ladybirdSnapshot();',
@@ -228,6 +237,28 @@ fn bridge_int_property(object map[string]json2.Any, name string) ?int {
 	}
 }
 
+fn bridge_byte_array_property(object map[string]json2.Any, name string) []u8 {
+	value := object[name] or { return []u8{} }
+	if value !is []json2.Any {
+		return []u8{}
+	}
+	mut result := []u8{cap: (value as []json2.Any).len}
+	for item in value as []json2.Any {
+		number := match item {
+			int { item }
+			i64 { int(item) }
+			i32 { int(item) }
+			u64 { int(item) }
+			u32 { int(item) }
+			f64 { int(item) }
+			f32 { int(item) }
+			else { 0 }
+		}
+		result << u8(number)
+	}
+	return result
+}
+
 // Attribute::handle_attribute_changes() invokes the concrete HTML element's
 // attribute_changed() override after the generic Element steps. The DOM module
 // cannot import HTML in V, so replay that second half at this bridge boundary.
@@ -256,6 +287,9 @@ fn bridge_html_attribute_changed(element &dom.Element, name string, old_value ?s
 				mut model := html.HTMLSelectElementModel.create(unsafe { &dom.HTMLSelectElement(element) })
 				model.form_associated_element_attribute_changed(name, value)
 			}
+		}
+		'canvas' {
+			html.html_canvas_element_attribute_changed(unsafe { &dom.HTMLCanvasElement(element) }, name, old_value, value, none)
 		}
 		else {}
 	}
@@ -427,6 +461,35 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 						})
 						model.set_value(bridge_string_property(operation, 'value') or { '' }) or {}
 					}
+					'canvasPixels' {
+						if target.local_name() != 'canvas' {
+							continue
+						}
+						width := bridge_int_property(operation, 'width') or { continue }
+						height := bridge_int_property(operation, 'height') or { continue }
+						if width < 0 || height < 0 {
+							continue
+						}
+						mut canvas := unsafe { &dom.HTMLCanvasElement(target) }
+						if html.html_canvas_element_width(canvas) != u32(width) {
+							html.html_canvas_element_set_width(mut canvas, u32(width)) or { continue }
+						}
+						if html.html_canvas_element_height(canvas) != u32(height) {
+							html.html_canvas_element_set_height(mut canvas, u32(height)) or { continue }
+						}
+						mut context := html.html_canvas_element_get_context(canvas, '2d', none) or {
+							continue
+						}
+						pixels := bridge_byte_array_property(operation, 'pixels')
+						if pixels.len != width * height * 4 {
+							continue
+						}
+						bitmap := context.surface() or { continue }
+						mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+						mutable_bitmap.data = pixels.clone()
+						mutable_bitmap.pitch = width * 4
+						context.did_draw(html.CanvasFloatRect{0, 0, f64(width), f64(height)})
+					}
 					'click' {
 						target_id := target.get_attribute_value('popovertarget')
 						if target_id.len > 0 {
@@ -479,7 +542,9 @@ pub fn run_inline_document_scripts(document &dom.Document, current_url string, r
 	}
 	viewport := document.viewport_rect()
 	layout.run_document_layout(document, viewport.width, viewport.height) or {}
-	encoded :=
-		runtime.evaluate(bridge_program(bridge_initial_state(document, current_url), sources))!
+	runtime.evaluate(bridge_program(bridge_initial_state(document, current_url), sources))!
+	// Promise reactions queued by inline scripts run at JavaScriptCore's next
+	// evaluation checkpoint. Snapshot once that queue has drained.
+	encoded := runtime.evaluate('__ladybirdFinalize()')!
 	apply_bridge_state(document, encoded)!
 }

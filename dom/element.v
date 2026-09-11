@@ -4463,9 +4463,9 @@ pub fn (e &Element) matches_unchecked_pseudo_class() bool {
 // The `required` attribute only *applies* to some input types, so an input of a
 // type it does not apply to is neither required nor optional.
 fn input_required_applies(e &Element) bool {
-	return to_ascii_lowercase(e.get_attribute_value('type')) in ['', 'text', 'search', 'tel',
-		'url', 'email', 'password', 'date', 'month', 'week', 'time', 'datetime-local', 'number',
-		'checkbox', 'radio', 'file']
+	return to_ascii_lowercase(e.get_attribute_value('type')) in ['', 'text', 'search', 'tel', 'url',
+		'email', 'password', 'date', 'month', 'week', 'time', 'datetime-local', 'number', 'checkbox',
+		'radio', 'file']
 }
 
 pub fn (e &Element) matches_required_pseudo_class() bool {
@@ -4765,7 +4765,20 @@ fn (e &Element) ol_starting_value() int {
 
 	// 2. If the ol element has a reversed attribute, then return the number of owned li elements.
 	if e.has_attribute('reversed') {
-		return e.number_of_owned_list_items()
+		items := e.numbered_items_owned_by_list_owner()
+		// A valid li[value] is a counter-set pin. CSS reversed counters derive their implicit
+		// initial value by counting back from the first pin, rather than from the item count.
+		// This deliberately differs from the removed HTML ordinal model.
+		for index, item in items {
+			if item.is_html_li_element() {
+				if value := item.get_attribute('value') {
+					if parsed := parse_html_integer(value) {
+						return parsed + index
+					}
+				}
+			}
+		}
+		return items.len
 	}
 
 	// 3. Return 1.
@@ -5874,11 +5887,12 @@ pub fn (mut e Element) update_use_elements_that_reference_this() {
 		return
 	}
 	document_root := unsafe { &Node(e.document()) }
-	document_root.for_each_in_subtree(fn [e] (node &Node) TraversalDecision {
+	changed_element := unsafe { &Element(e) }
+	document_root.for_each_in_subtree(fn [changed_element] (node &Node) TraversalDecision {
 		if use_element := node.as_element() {
 			if use_element.is_svg_element() && use_element.local_name() == 'use' {
 				mut mutable_use := unsafe { &Element(use_element) }
-				mutable_use.svg_element_changed(e)
+				mutable_use.svg_element_changed(changed_element)
 			}
 		}
 		return .@continue
@@ -5890,11 +5904,12 @@ pub fn (mut e Element) remove_from_use_element_that_reference_this() {
 		return
 	}
 	document_root := unsafe { &Node(e.document()) }
-	document_root.for_each_in_subtree(fn [e] (node &Node) TraversalDecision {
+	removed_element := unsafe { &Element(e) }
+	document_root.for_each_in_subtree(fn [removed_element] (node &Node) TraversalDecision {
 		if use_element := node.as_element() {
 			if use_element.is_svg_element() && use_element.local_name() == 'use' {
 				mut mutable_use := unsafe { &Element(use_element) }
-				mutable_use.svg_element_removed(e)
+				mutable_use.svg_element_removed(removed_element)
 			}
 		}
 		return .@continue

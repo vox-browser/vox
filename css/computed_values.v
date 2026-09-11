@@ -354,10 +354,13 @@ fn computed_values_scrollbar_color(style &ComputedProperties, context ColorResol
 // document's used color scheme, so callers which own a layout document use
 // this entry point after the geometry-only materialization above.
 pub fn resolve_computed_values_for_document(style &ComputedProperties, document &dom.Document) &ComputedValues {
-	values := resolve_computed_values(style)
-	mut mutable_values := unsafe { &MutableComputedValues(values) }
 	mut computed_style := unsafe { &ComputedProperties(style) }
 	font_list := computed_style.computed_font_list(css_style_computer_for(document).font_computer())
+	// `line-height: normal` is derived from the selected font's ascent and
+	// descent, so make that face available before resolving layout-facing slots.
+	_ = computed_style.first_available_computed_font(css_style_computer_for(document).font_computer())
+	values := resolve_computed_values(style)
+	mut mutable_values := unsafe { &MutableComputedValues(values) }
 	mutable_values.set_font_list(font_list)
 	mut context := ColorResolutionContext.for_computed_properties(style, document)
 	color := context.current_color or { Color{0, 0, 0, 255} }

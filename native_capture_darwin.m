@@ -6,6 +6,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef LADYBIRD_V_HAS_FFMPEG
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/imgutils.h>
+#include <libswscale/swscale.h>
+#include <libyuv/convert_argb.h>
+#endif
+
+#ifdef LADYBIRD_V_HAS_RUST_YUV
+extern bool ladybird_v_yuv_u8_to_rgba(const uint8_t *y_plane,
+	uint32_t y_stride, const uint8_t *u_plane, uint32_t u_stride,
+	const uint8_t *v_plane, uint32_t v_stride, uint32_t width,
+	uint32_t height, bool subsampling_x, bool subsampling_y, uint8_t *dst,
+	uint32_t dst_stride, uint8_t range, uint8_t matrix);
+#endif
+
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern int ladybird_v_skia_configure_font(const char *path, int slot);
 extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
@@ -15,10 +31,10 @@ extern int ladybird_v_skia_draw_glyph_run(CGContextRef destination,
 	float transform_d, float transform_e, float transform_f, float page_x,
 	float page_y, float scroll_y, float canvas_width, float canvas_height,
 	uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
-extern int ladybird_v_skia_draw_solid_line(CGContextRef destination,
+extern int ladybird_v_skia_draw_line(CGContextRef destination,
 	float from_x, float from_y, float to_x, float to_y, float thickness,
-	float canvas_width, float canvas_height, uint8_t red, uint8_t green,
-	uint8_t blue, uint8_t alpha);
+	int line_style, float canvas_width, float canvas_height, uint8_t red,
+	uint8_t green, uint8_t blue, uint8_t alpha);
 extern int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
 	float x, float y, float width, float height, float top_left_x,
 	float top_left_y, float top_right_x, float top_right_y, float bottom_right_x,
@@ -28,6 +44,21 @@ extern int ladybird_v_skia_draw_rounded_rect(CGContextRef destination,
 	float scroll_y, float canvas_width, float canvas_height, uint8_t red,
 	uint8_t green, uint8_t blue, uint8_t alpha, int fill, float thickness,
 	int anti_alias);
+extern int ladybird_v_skia_draw_outer_box_shadow(CGContextRef destination,
+	float shadow_x, float shadow_y, float shadow_width, float shadow_height,
+	float shadow_top_left_x, float shadow_top_left_y, float shadow_top_right_x,
+	float shadow_top_right_y, float shadow_bottom_right_x,
+	float shadow_bottom_right_y, float shadow_bottom_left_x,
+	float shadow_bottom_left_y, float content_x, float content_y,
+	float content_width, float content_height, float content_top_left_x,
+	float content_top_left_y, float content_top_right_x,
+	float content_top_right_y, float content_bottom_right_x,
+	float content_bottom_right_y, float content_bottom_left_x,
+	float content_bottom_left_y, float transform_a, float transform_b,
+	float transform_c, float transform_d, float transform_e, float transform_f,
+	float page_x, float page_y, float scroll_y, float canvas_width,
+	float canvas_height, float blur, uint8_t red, uint8_t green, uint8_t blue,
+	uint8_t alpha);
 extern int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 	const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
@@ -36,8 +67,230 @@ extern int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 	uint8_t fill_red, uint8_t fill_green, uint8_t fill_blue, uint8_t fill_alpha,
 	int has_fill, uint8_t stroke_red, uint8_t stroke_green, uint8_t stroke_blue,
 	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
-	int line_join, float miter_limit);
+	int line_join, float miter_limit, int non_scaling_stroke);
+extern int ladybird_v_skia_draw_svg_linear_gradient_path(
+	CGContextRef destination, const float *data, int segment_count, int even_odd,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height, int stroke,
+	float stroke_width, int line_cap, int line_join, float miter_limit,
+	float start_x, float start_y, float end_x, float end_y, float gradient_a,
+	float gradient_b, float gradient_c, float gradient_d, float gradient_e,
+	float gradient_f, int spread_method, int linear_color_space,
+	const float *stop_data, int stop_count, float opacity);
+extern int ladybird_v_skia_draw_svg_radial_gradient_path(
+	CGContextRef destination, const float *data, int segment_count, int even_odd,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height, int stroke,
+	float stroke_width, int line_cap, int line_join, float miter_limit,
+	float start_x, float start_y, float start_radius, float end_x, float end_y,
+	float end_radius, float gradient_a, float gradient_b, float gradient_c,
+	float gradient_d, float gradient_e, float gradient_f, int spread_method,
+	int linear_color_space, const float *stop_data, int stop_count, float opacity);
+extern int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
+	const uint8_t *pixels, int image_width, int image_height, int image_pitch,
+	float destination_x, float destination_y, float destination_width,
+	float destination_height, float source_x, float source_y, float source_width,
+	float source_height, float clip_x, float clip_y, float clip_width,
+	float clip_height, float transform_a, float transform_b, float transform_c,
+	float transform_d, float transform_e, float transform_f, float page_x,
+	float page_y, float scroll_y, float canvas_width, float canvas_height,
+	float opacity, int nearest_neighbor);
+extern int ladybird_v_skia_draw_drop_shadow(CGContextRef destination,
+	CGImageRef source, float canvas_width, float canvas_height, float scale,
+	float offset_x, float offset_y, float standard_deviation, uint8_t red,
+	uint8_t green, uint8_t blue, uint8_t alpha);
+extern int ladybird_v_skia_draw_masked_image(CGContextRef destination,
+	CGImageRef content, CGImageRef mask, float destination_x,
+	float destination_y, float destination_width, float destination_height);
+extern int ladybird_v_skia_begin_command_group(CGContextRef destination,
+	float x, float y, float width, float height, float transform_a,
+	float transform_b, float transform_c, float transform_d, float transform_e,
+	float transform_f, float page_x, float page_y, float scroll_y,
+	float canvas_width, float canvas_height);
+extern int ladybird_v_skia_end_command_group(CGContextRef destination);
 #endif
+
+// Decode the first video frame at or after `seconds` into tightly packed RGBA.
+// The caller owns the returned buffer and releases it with
+// native_free_video_frame(). LibWeb retains the copied pixels in its external
+// video content source, keeping FFmpeg entirely behind the browser host edge.
+uint8_t *native_decode_video_frame(const char *path, double seconds,
+	int *output_width, int *output_height, int *output_pitch) {
+	if (output_width != NULL)
+		*output_width = 0;
+	if (output_height != NULL)
+		*output_height = 0;
+	if (output_pitch != NULL)
+		*output_pitch = 0;
+#ifndef LADYBIRD_V_HAS_FFMPEG
+	(void)path;
+	(void)seconds;
+	return NULL;
+#else
+	if (path == NULL || output_width == NULL || output_height == NULL
+	    || output_pitch == NULL)
+		return NULL;
+	AVFormatContext *format = NULL;
+	AVCodecContext *codec = NULL;
+	AVPacket *packet = NULL;
+	AVFrame *frame = NULL;
+	struct SwsContext *converter = NULL;
+	uint8_t *pixels = NULL;
+	int video_stream = -1;
+	if (avformat_open_input(&format, path, NULL, NULL) < 0
+	    || avformat_find_stream_info(format, NULL) < 0)
+		goto cleanup;
+	video_stream = av_find_best_stream(format, AVMEDIA_TYPE_VIDEO, -1, -1,
+		NULL, 0);
+	if (video_stream < 0)
+		goto cleanup;
+	AVStream *stream = format->streams[video_stream];
+	const AVCodec *decoder = avcodec_find_decoder(stream->codecpar->codec_id);
+	if (decoder == NULL)
+		goto cleanup;
+	codec = avcodec_alloc_context3(decoder);
+	if (codec == NULL || avcodec_parameters_to_context(codec, stream->codecpar) < 0
+	    || avcodec_open2(codec, decoder, NULL) < 0)
+		goto cleanup;
+	if (seconds > 0.0) {
+		int64_t timestamp = (int64_t)floor(seconds / av_q2d(stream->time_base));
+		if (av_seek_frame(format, video_stream, timestamp, AVSEEK_FLAG_BACKWARD) >= 0)
+			avcodec_flush_buffers(codec);
+	}
+	packet = av_packet_alloc();
+	frame = av_frame_alloc();
+	if (packet == NULL || frame == NULL)
+		goto cleanup;
+	for (;;) {
+		int read_result = av_read_frame(format, packet);
+		if (read_result < 0) {
+			avcodec_send_packet(codec, NULL);
+		} else if (packet->stream_index == video_stream) {
+			avcodec_send_packet(codec, packet);
+		}
+		av_packet_unref(packet);
+		for (;;) {
+			int receive_result = avcodec_receive_frame(codec, frame);
+			if (receive_result < 0)
+				break;
+			double frame_seconds = frame->best_effort_timestamp == AV_NOPTS_VALUE
+				? seconds
+				: frame->best_effort_timestamp * av_q2d(stream->time_base);
+			if (frame_seconds + 0.000001 < seconds) {
+				av_frame_unref(frame);
+				continue;
+			}
+			int width = frame->width;
+			int height = frame->height;
+			if (width <= 0 || height <= 0)
+				goto cleanup;
+			int pitch = width * 4;
+			pixels = malloc((size_t)pitch * (size_t)height);
+			if (pixels == NULL)
+				goto cleanup;
+			// Gfx::YUVData converts unspecified VP9 matrix metadata as limited
+			// BT.709. Use the identical Rust yuv conversion entry point so the
+			// native frame has exactly the same RGBA values as upstream.
+			if (frame->format == AV_PIX_FMT_YUV420P
+			    && frame->color_range != AVCOL_RANGE_JPEG
+			    && (frame->colorspace == AVCOL_SPC_UNSPECIFIED
+			        || frame->colorspace == AVCOL_SPC_BT709)) {
+#ifdef LADYBIRD_V_HAS_RUST_YUV
+				if (ladybird_v_yuv_u8_to_rgba(frame->data[0], frame->linesize[0],
+					frame->data[1], frame->linesize[1], frame->data[2],
+					frame->linesize[2], width, height, true, true, pixels,
+					pitch, 0, 0)) {
+					*output_width = width;
+					*output_height = height;
+					*output_pitch = pitch;
+					goto cleanup;
+				}
+#else
+				if (H420ToABGR(frame->data[0], frame->linesize[0],
+					frame->data[1], frame->linesize[1], frame->data[2],
+					frame->linesize[2], pixels, pitch, width, height) == 0) {
+					*output_width = width;
+					*output_height = height;
+					*output_pitch = pitch;
+					goto cleanup;
+				}
+#endif
+			}
+			converter = sws_getContext(width, height, (enum AVPixelFormat)frame->format,
+				width, height, AV_PIX_FMT_RGBA, SWS_BILINEAR, NULL, NULL, NULL);
+			if (converter == NULL)
+				goto cleanup;
+			int colorspace = SWS_CS_DEFAULT;
+			switch (frame->colorspace) {
+			case AVCOL_SPC_BT709:
+				colorspace = SWS_CS_ITU709;
+				break;
+			case AVCOL_SPC_FCC:
+				colorspace = SWS_CS_FCC;
+				break;
+			case AVCOL_SPC_SMPTE240M:
+				colorspace = SWS_CS_SMPTE240M;
+				break;
+			case AVCOL_SPC_BT2020_NCL:
+			case AVCOL_SPC_BT2020_CL:
+				colorspace = SWS_CS_BT2020;
+				break;
+			case AVCOL_SPC_BT470BG:
+			case AVCOL_SPC_SMPTE170M:
+				colorspace = SWS_CS_ITU601;
+				break;
+			case AVCOL_SPC_UNSPECIFIED:
+			default:
+				// Gfx::YUVData uses BT.709 when CICP matrix metadata is
+				// absent, so the browser host must not use swscale's
+				// BT.601 default for an unspecified VP9 stream.
+				colorspace = SWS_CS_ITU709;
+				break;
+			}
+			const int *coefficients = sws_getCoefficients(colorspace);
+			if (coefficients != NULL) {
+				sws_setColorspaceDetails(converter, coefficients,
+					frame->color_range == AVCOL_RANGE_JPEG, coefficients, 1,
+					0, 1 << 16, 1 << 16);
+			}
+			uint8_t *destination[] = { pixels, NULL, NULL, NULL };
+			int strides[] = { pitch, 0, 0, 0 };
+			if (sws_scale(converter, (const uint8_t *const *)frame->data,
+				frame->linesize, 0, height, destination, strides) <= 0)
+				goto cleanup;
+			*output_width = width;
+			*output_height = height;
+			*output_pitch = pitch;
+			goto cleanup;
+		}
+		if (read_result < 0)
+			break;
+	}
+
+cleanup:
+	if (converter != NULL)
+		sws_freeContext(converter);
+	if (frame != NULL)
+		av_frame_free(&frame);
+	if (packet != NULL)
+		av_packet_free(&packet);
+	if (codec != NULL)
+		avcodec_free_context(&codec);
+	if (format != NULL)
+		avformat_close_input(&format);
+	if (*output_width <= 0 || *output_height <= 0) {
+		free(pixels);
+		return NULL;
+	}
+	return pixels;
+#endif
+}
+
+void native_free_video_frame(uint8_t *pixels) {
+	free(pixels);
+}
 
 static NSString *native_capture_string(string value) {
 	return [[NSString alloc] initWithBytes:value.str
@@ -48,6 +301,31 @@ static NSString *native_capture_string(string value) {
 static NSView *native_cached_browser_view;
 static NSImageView *native_cached_snapshot_view;
 static id<NSObject> native_activity_token;
+
+// Automated pixel tests keep a real window alive while AppKit renders its
+// content view. Put that temporary window out of the center of the workspace,
+// while keeping it fully visible on whichever display Sokol selected.
+void native_position_window_top_right(void) {
+	NSWindow *window = [NSApp mainWindow];
+	if (window == nil) {
+		window = [NSApp keyWindow];
+	}
+	if (window == nil) {
+		return;
+	}
+	NSScreen *screen = [window screen];
+	if (screen == nil) {
+		screen = [NSScreen mainScreen];
+	}
+	if (screen == nil) {
+		return;
+	}
+	NSRect visible_frame = [screen visibleFrame];
+	NSRect window_frame = [window frame];
+	NSPoint origin = NSMakePoint(NSMaxX(visible_frame) - NSWidth(window_frame),
+		NSMaxY(visible_frame) - NSHeight(window_frame));
+	[window setFrameOrigin:origin];
+}
 
 // Keep the run loop lively even when the window is occluded or not frontmost.
 // Without this, App Nap throttles the process, stalling both page loads in
@@ -306,7 +584,31 @@ void native_cache_browser_snapshot(string path_value) {
 		NSView *view = native_browser_view();
 		[view displayIfNeeded];
 		NSRect bounds = [view bounds];
-		NSBitmapImageRep *bitmap = [view bitmapImageRepForCachingDisplayInRect:bounds];
+		NSBitmapImageRep *bitmap = nil;
+		// LibWeb screenshot references use one device pixel per CSS pixel. A
+		// Retina cacheDisplay bitmap followed by an image-tool resize changes
+		// Skia's discrete coverage and blur kernels, so create the test surface at
+		// its final logical resolution from the outset.
+		if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
+			NSInteger pixels_wide = (NSInteger)llround(bounds.size.width);
+			NSInteger pixels_high = (NSInteger)llround(bounds.size.height);
+			if (pixels_wide > 0 && pixels_high > 0) {
+				bitmap = [[NSBitmapImageRep alloc]
+					initWithBitmapDataPlanes:NULL
+					              pixelsWide:pixels_wide
+					              pixelsHigh:pixels_high
+					           bitsPerSample:8
+					         samplesPerPixel:4
+					                hasAlpha:YES
+					                isPlanar:NO
+					          colorSpaceName:NSDeviceRGBColorSpace
+					             bytesPerRow:pixels_wide * 4
+					            bitsPerPixel:32];
+				[bitmap setSize:bounds.size];
+			}
+		} else {
+			bitmap = [view bitmapImageRepForCachingDisplayInRect:bounds];
+		}
 		if (bitmap == nil) {
 			CGFloat scale = [[view window] backingScaleFactor];
 			if (scale <= 0.0) {
@@ -719,12 +1021,14 @@ void native_draw_polygon_srgb(const float *points, int point_count, float canvas
 	CGColorRelease(cg_color);
 }
 
-int native_draw_solid_line_srgb(float from_x, float from_y, float to_x, float to_y,
-	float thickness, float canvas_width, float canvas_height, gg__Color color) {
+int native_draw_line_srgb(float from_x, float from_y, float to_x, float to_y,
+	float thickness, int line_style, float canvas_width, float canvas_height,
+	gg__Color color) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
-	if (ladybird_v_skia_draw_solid_line(context, from_x, from_y, to_x, to_y,
-		thickness, canvas_width, canvas_height, color.r, color.g, color.b, color.a)) {
+	if (ladybird_v_skia_draw_line(context, from_x, from_y, to_x, to_y,
+		thickness, line_style, canvas_width, canvas_height, color.r, color.g,
+		color.b, color.a)) {
 		return 1;
 	}
 #endif
@@ -949,7 +1253,7 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	float transform_e, float transform_f, float page_x, float page_y,
 	float scroll_y, float canvas_width, float canvas_height, gg__Color fill_color, int has_fill,
 	gg__Color stroke_color, int has_stroke, float stroke_width, int line_cap,
-	int line_join, float miter_limit) {
+	int line_join, float miter_limit, int non_scaling_stroke) {
 	if (data == NULL || segment_count <= 0 || (!has_fill && !has_stroke)) {
 		return;
 	}
@@ -957,13 +1261,20 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	if (context == NULL) {
 		return;
 	}
+	CGFloat host_scale = [[native_browser_view() window] backingScaleFactor];
+	if (!isfinite(host_scale) || host_scale <= 0.0)
+		host_scale = 1.0;
+	// Skia and CoreGraphics place a half-device-pixel host-space stroke on
+	// opposite sides of the coverage tie. A tiny device-space bias matches the
+	// recorder's inclusive edge without changing a visible stroke dimension.
+	float resolved_stroke_width = non_scaling_stroke ? stroke_width / host_scale + 2.0f / 512.0f : stroke_width;
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 	if (ladybird_v_skia_draw_svg_path(context, data, segment_count, even_odd,
 		transform_a, transform_b, transform_c, transform_d, transform_e,
 		transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
 		fill_color.r, fill_color.g, fill_color.b, fill_color.a, has_fill,
 		stroke_color.r, stroke_color.g, stroke_color.b, stroke_color.a, has_stroke,
-		stroke_width, line_cap, line_join, miter_limit)) {
+		resolved_stroke_width, line_cap, line_join, miter_limit, non_scaling_stroke)) {
 		return;
 	}
 #endif
@@ -971,6 +1282,35 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
 		transform_c, -transform_d, page_x + transform_e,
 		canvas_height - page_y + scroll_y - transform_f);
+	if (non_scaling_stroke && has_stroke) {
+		if (has_fill) {
+			CGColorRef fill = native_srgb_color(fill_color);
+			CGContextSaveGState(context);
+			CGContextConcatCTM(context, to_canvas);
+			CGContextAddPath(context, path);
+			CGContextSetFillColorWithColor(context, fill);
+			CGContextDrawPath(context, even_odd ? kCGPathEOFill : kCGPathFill);
+			CGContextRestoreGState(context);
+			CGColorRelease(fill);
+		}
+		CGPathRef transformed_path = CGPathCreateCopyByTransformingPath(path, &to_canvas);
+		CGColorRef stroke = native_srgb_color(stroke_color);
+		CGContextSaveGState(context);
+		CGContextAddPath(context, transformed_path);
+		CGContextSetStrokeColorWithColor(context, stroke);
+		CGContextSetLineWidth(context, MAX(resolved_stroke_width, 0.0));
+		CGContextSetLineCap(context, line_cap == 1 ? kCGLineCapRound
+			: line_cap == 2 ? kCGLineCapSquare : kCGLineCapButt);
+		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
+			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
+		CGContextSetMiterLimit(context, MAX(miter_limit, 1.0));
+		CGContextStrokePath(context);
+		CGContextRestoreGState(context);
+		CGColorRelease(stroke);
+		CGPathRelease(transformed_path);
+		CGPathRelease(path);
+		return;
+	}
 	CGContextSaveGState(context);
 	CGContextConcatCTM(context, to_canvas);
 	CGContextAddPath(context, path);
@@ -1145,6 +1485,18 @@ void native_draw_svg_linear_gradient_path(const float *data, int segment_count,
 	float gradient_f, int spread_method, int linear_color_space,
 	const float *stop_data, int stop_count, float opacity) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	float canvas_width = (float)[native_browser_view() bounds].size.width;
+	if (ladybird_v_skia_draw_svg_linear_gradient_path(context, data,
+		segment_count, even_odd, transform_a, transform_b, transform_c,
+		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+		canvas_width, canvas_height, stroke, stroke_width, line_cap, line_join,
+		miter_limit, start_x, start_y, end_x, end_y, gradient_a, gradient_b,
+		gradient_c, gradient_d, gradient_e, gradient_f, spread_method,
+		linear_color_space, stop_data, stop_count, opacity)) {
+		return;
+	}
+#endif
 	native_draw_svg_linear_gradient_path_in_context(context, data, segment_count,
 		even_odd, transform_a, transform_b, transform_c, transform_d, transform_e,
 		transform_f, page_x, page_y, scroll_y, canvas_height, stroke, stroke_width,
@@ -1311,6 +1663,18 @@ void native_draw_svg_radial_gradient_path(const float *data, int segment_count,
 	float gradient_d, float gradient_e, float gradient_f, int spread_method,
 	int linear_color_space, const float *stop_data, int stop_count, float opacity) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	float canvas_width = (float)[native_browser_view() bounds].size.width;
+	if (ladybird_v_skia_draw_svg_radial_gradient_path(context, data,
+		segment_count, even_odd, transform_a, transform_b, transform_c,
+		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+		canvas_width, canvas_height, stroke, stroke_width, line_cap, line_join,
+		miter_limit, start_x, start_y, start_radius, end_x, end_y, end_radius,
+		gradient_a, gradient_b, gradient_c, gradient_d, gradient_e, gradient_f,
+		spread_method, linear_color_space, stop_data, stop_count, opacity)) {
+		return;
+	}
+#endif
 	native_draw_svg_radial_gradient_path_in_context(context, data, segment_count,
 		even_odd, transform_a, transform_b, transform_c, transform_d, transform_e,
 		transform_f, page_x, page_y, scroll_y, canvas_height, stroke, stroke_width,
@@ -1494,12 +1858,24 @@ static int native_prepare_svg_mask(unsigned long long input_key, int content_mas
 	return 1;
 }
 
-static CGFloat native_svg_mask_backing_scale(void) {
+static CGFloat native_window_backing_scale(void) {
 	CGFloat scale = [[native_browser_view() window] backingScaleFactor];
 	if (scale <= 0.0) {
 		scale = 1.0;
 	}
 	return scale;
+}
+
+static CGFloat native_svg_mask_backing_scale(void) {
+	// Screenshot references are logical-pixel Skia surfaces. Building nested
+	// masks, patterns, and filter layers at the Retina window scale and then
+	// shrinking the captured view applies a second sampling kernel and changes
+	// edge coverage. Keep those intermediate surfaces at the reference scale;
+	// interactive windows still use their native backing density.
+	if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
+		return 1.0;
+	}
+	return native_window_backing_scale();
 }
 
 #define NATIVE_CSS_FILTER_MAX_DEPTH 64
@@ -2505,7 +2881,23 @@ void native_end_css_filter_layer(void) {
 		CGRect source_rect = CGRectMake(0, 0,
 			CGImageGetWidth(source_image), CGImageGetHeight(source_image));
 		CGImageRef filtered_image = NULL;
-		if (layer.operation_count == 0 && layer.graph_node_count == 0) {
+		int rendered_with_skia = 0;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		if (layer.operation_count == 1 && layer.graph_node_count == 0
+			&& layer.operations[0].kind == 1 && layer.destination != NULL) {
+			NativeCSSFilterOperation operation = layer.operations[0];
+			rendered_with_skia = ladybird_v_skia_draw_drop_shadow(layer.destination,
+				source_image, layer.canvas_width, layer.canvas_height, layer.scale,
+				operation.first, operation.second, operation.third,
+				(uint8_t)lrintf(operation.red * 255.0f),
+				(uint8_t)lrintf(operation.green * 255.0f),
+				(uint8_t)lrintf(operation.blue * 255.0f),
+				(uint8_t)lrintf(operation.alpha * 255.0f));
+		}
+#endif
+		if (rendered_with_skia) {
+			// The bridge composited the Skia filter result directly.
+		} else if (layer.operation_count == 0 && layer.graph_node_count == 0) {
 			filtered_image = CGImageRetain(source_image);
 		} else {
 			native_initialize_css_filter_renderer();
@@ -2598,12 +2990,19 @@ static CGRect native_svg_mask_canvas_rect(float area_x, float area_y,
 }
 
 static CGContextRef native_background_text_clip_build_context;
+static CGContextRef native_background_text_content_context;
+static CGContextRef native_background_text_destination;
 static CGImageRef native_background_text_clip_image;
 static CGRect native_background_text_clip_rect;
 static int native_background_text_clip_active;
 
 void native_begin_background_text_clip(float canvas_width, float canvas_height,
 	float clip_x, float clip_y, float clip_width, float clip_height) {
+	if (native_background_text_content_context != NULL) {
+		CGContextRelease(native_background_text_content_context);
+		native_background_text_content_context = NULL;
+	}
+	native_background_text_destination = NULL;
 	if (native_background_text_clip_build_context != NULL) {
 		CGContextRelease(native_background_text_clip_build_context);
 		native_background_text_clip_build_context = NULL;
@@ -2663,20 +3062,23 @@ int native_add_background_glyph_clip_run(const uint16_t *glyphs,
 	const double *positions, int glyph_count, float font_size, int font_weight, int emoji_face,
 	float baseline_x, float baseline_y, float transform_a, float transform_b,
 	float transform_c, float transform_d, float transform_e, float transform_f,
-	float page_x, float page_y, float scroll_y, float canvas_height,
+	float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height,
 	string font_path_value, int face_index) {
 	if (native_background_text_clip_build_context == NULL) {
 		return 0;
 	}
-	CGColorRef white = CGColorCreateGenericRGB(1.0, 1.0, 1.0, 1.0);
+	// Upstream records text-mask glyphs in black. Skia's text contrast/gamma
+	// adjustment is paint-color dependent even though DestinationIn later uses
+	// only alpha, so using white here produces a substantially heavier edge.
+	CGColorRef black = CGColorCreateGenericRGB(0.0, 0.0, 0.0, 1.0);
 	NSString *font_path = native_capture_string(font_path_value);
 	int did_draw = native_draw_retained_glyph_run(native_background_text_clip_build_context,
 		[font_path fileSystemRepresentation], face_index, glyphs, positions, glyph_count, font_size, font_weight, emoji_face, baseline_x,
 		baseline_y, transform_a, transform_b, transform_c, transform_d,
 		transform_e, transform_f, page_x, page_y, scroll_y,
-		(float)CGBitmapContextGetWidth(native_background_text_clip_build_context), canvas_height,
-		white, 0.0f, 0);
-	CGColorRelease(white);
+		canvas_width, canvas_height,
+		black, 0.0f, 0);
+	CGColorRelease(black);
 	return did_draw;
 }
 
@@ -2691,6 +3093,33 @@ void native_finish_background_text_clip(void) {
 	if (destination == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (native_background_text_clip_image != NULL
+		&& !CGRectIsEmpty(native_background_text_clip_rect)) {
+		size_t width = CGImageGetWidth(native_background_text_clip_image);
+		size_t height = CGImageGetHeight(native_background_text_clip_image);
+		CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+		native_background_text_content_context = CGBitmapContextCreate(NULL, width,
+			height, 8, width * 4, color_space,
+			kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+		CGColorSpaceRelease(color_space);
+		if (native_background_text_content_context != NULL) {
+			CGFloat scale_x = width / native_background_text_clip_rect.size.width;
+			CGFloat scale_y = height / native_background_text_clip_rect.size.height;
+			CGContextScaleCTM(native_background_text_content_context, scale_x, scale_y);
+			CGContextTranslateCTM(native_background_text_content_context,
+				-native_background_text_clip_rect.origin.x,
+				-native_background_text_clip_rect.origin.y);
+			native_background_text_destination = destination;
+			[NSGraphicsContext saveGraphicsState];
+			[NSGraphicsContext setCurrentContext:[NSGraphicsContext
+				graphicsContextWithCGContext:native_background_text_content_context
+				flipped:NO]];
+			native_background_text_clip_active = 2;
+			return;
+		}
+	}
+#endif
 	CGContextSaveGState(destination);
 	if (native_background_text_clip_image != NULL
 		&& !CGRectIsEmpty(native_background_text_clip_rect)) {
@@ -2710,6 +3139,33 @@ void native_finish_background_text_clip(void) {
 
 void native_end_background_text_clip(void) {
 	if (!native_background_text_clip_active) {
+		return;
+	}
+	if (native_background_text_clip_active == 2) {
+		CGContextFlush(native_background_text_content_context);
+		CGImageRef content = CGBitmapContextCreateImage(
+			native_background_text_content_context);
+		CGContextRelease(native_background_text_content_context);
+		native_background_text_content_context = NULL;
+		[NSGraphicsContext restoreGraphicsState];
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+		if (content != NULL && native_background_text_clip_image != NULL
+			&& native_background_text_destination != NULL) {
+			ladybird_v_skia_draw_masked_image(native_background_text_destination,
+				content, native_background_text_clip_image,
+				native_background_text_clip_rect.origin.x,
+				native_background_text_clip_rect.origin.y,
+				native_background_text_clip_rect.size.width,
+				native_background_text_clip_rect.size.height);
+		}
+#endif
+		if (content != NULL) CGImageRelease(content);
+		if (native_background_text_clip_image != NULL) {
+			CGImageRelease(native_background_text_clip_image);
+			native_background_text_clip_image = NULL;
+		}
+		native_background_text_destination = NULL;
+		native_background_text_clip_active = 0;
 		return;
 	}
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
@@ -3098,6 +3554,34 @@ void native_add_corner_rounded_clip(float x, float y, float width, float height,
 	CGPathRelease(local_path);
 }
 
+void native_begin_skia_command_group(float x, float y, float width, float height,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context != NULL) {
+		ladybird_v_skia_begin_command_group(context, x, y, width, height,
+			transform_a, transform_b, transform_c, transform_d, transform_e,
+			transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height);
+	}
+#else
+	(void)x; (void)y; (void)width; (void)height;
+	(void)transform_a; (void)transform_b; (void)transform_c; (void)transform_d;
+	(void)transform_e; (void)transform_f; (void)page_x; (void)page_y;
+	(void)scroll_y; (void)canvas_width; (void)canvas_height;
+#endif
+}
+
+void native_end_skia_command_group(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
+	if (context != NULL) {
+		ladybird_v_skia_end_command_group(context);
+	}
+#endif
+}
+
 void native_draw_rounded_rect_srgb(float x, float y, float width, float height,
 	float top_left_x, float top_left_y, float top_right_x, float top_right_y,
 	float bottom_right_x, float bottom_right_y, float bottom_left_x, float bottom_left_y,
@@ -3225,13 +3709,26 @@ void native_draw_outer_box_shadow_corners_srgb(float shadow_x, float shadow_y,
 	float content_bottom_right_y, float content_bottom_left_x, float content_bottom_left_y,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y, float scroll_y,
-	float canvas_height, float blur, gg__Color color) {
+	float canvas_width, float canvas_height, float blur, gg__Color color) {
 	if (shadow_width <= 0.0f || shadow_height <= 0.0f || content_width <= 0.0f
 		|| content_height <= 0.0f)
 		return;
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	if (context == NULL)
 		return;
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (ladybird_v_skia_draw_outer_box_shadow(context, shadow_x, shadow_y,
+		shadow_width, shadow_height, shadow_top_left_x, shadow_top_left_y,
+		shadow_top_right_x, shadow_top_right_y, shadow_bottom_right_x,
+		shadow_bottom_right_y, shadow_bottom_left_x, shadow_bottom_left_y,
+		content_x, content_y, content_width, content_height, content_top_left_x,
+		content_top_left_y, content_top_right_x, content_top_right_y,
+		content_bottom_right_x, content_bottom_right_y, content_bottom_left_x,
+		content_bottom_left_y, transform_a, transform_b, transform_c, transform_d,
+		transform_e, transform_f, page_x, page_y, scroll_y, canvas_width,
+		canvas_height, blur, color.r, color.g, color.b, color.a))
+		return;
+#endif
 	CGPathRef local_shadow = native_create_corner_rounded_rect_path(shadow_x, shadow_y,
 		shadow_width, shadow_height, shadow_top_left_x, shadow_top_left_y,
 		shadow_top_right_x, shadow_top_right_y, shadow_bottom_right_x,
@@ -3337,12 +3834,81 @@ void native_draw_inner_box_shadow_corners_srgb(float outer_x, float outer_y,
 	CGPathRelease(local_outer);
 }
 
+// NSBitmapImageRep does not advance animated image frames merely because it is
+// drawn into a retained browser display list. Keep one timeline per shared
+// NSImage so every CSS consumer observes the same current frame.
+static void native_update_animated_image_frame(NSImage *image) {
+	if (image == nil)
+		return;
+	NSBitmapImageRep *animated_representation = nil;
+	for (NSImageRep *representation in image.representations) {
+		if ([representation isKindOfClass:[NSBitmapImageRep class]]) {
+			NSNumber *frame_count = [(NSBitmapImageRep *)representation valueForProperty:NSImageFrameCount];
+			if (frame_count.integerValue > 1) {
+				animated_representation = (NSBitmapImageRep *)representation;
+				break;
+			}
+		}
+	}
+	if (animated_representation == nil)
+		return;
+	NSInteger frame_count = [[animated_representation valueForProperty:NSImageFrameCount] integerValue];
+	// The screenshot JavaScript host resolves its image-animation checkpoint at
+	// frame 1. Keep native decoding at the same checkpoint; otherwise the capture
+	// delay can wrap a looping GIF back to frame 0 after the test has completed.
+	if (getenv("LADYBIRD_SCREENSHOT_DELAY_SECONDS") != NULL) {
+		[animated_representation setProperty:NSImageCurrentFrame withValue:@(MIN(1, frame_count - 1))];
+		return;
+	}
+	static NSMutableDictionary<NSValue *, NSNumber *> *animation_start_times;
+	static dispatch_once_t once;
+	dispatch_once(&once, ^{
+		animation_start_times = [[NSMutableDictionary alloc] init];
+	});
+	NSValue *key = [NSValue valueWithPointer:(__bridge void *)image];
+	NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+	NSNumber *stored_start = animation_start_times[key];
+	if (stored_start == nil) {
+		stored_start = @(now);
+		animation_start_times[key] = stored_start;
+	}
+	NSMutableArray<NSNumber *> *durations = [NSMutableArray arrayWithCapacity:(NSUInteger)frame_count];
+	NSTimeInterval total_duration = 0.0;
+	for (NSInteger frame = 0; frame < frame_count; ++frame) {
+		[animated_representation setProperty:NSImageCurrentFrame withValue:@(frame)];
+		NSTimeInterval duration = [[animated_representation valueForProperty:NSImageCurrentFrameDuration] doubleValue];
+		if (!isfinite(duration) || duration <= 0.0)
+			duration = 0.1;
+		[durations addObject:@(duration)];
+		total_duration += duration;
+	}
+	if (total_duration <= 0.0)
+		return;
+	NSTimeInterval elapsed = MAX(0.0, now - stored_start.doubleValue);
+	NSInteger loop_count = [[animated_representation valueForProperty:NSImageLoopCount] integerValue];
+	if (loop_count > 0 && elapsed >= total_duration * loop_count) {
+		[animated_representation setProperty:NSImageCurrentFrame withValue:@(frame_count - 1)];
+		return;
+	}
+	NSTimeInterval cycle_position = fmod(elapsed, total_duration);
+	NSInteger selected_frame = frame_count - 1;
+	for (NSInteger frame = 0; frame < frame_count; ++frame) {
+		if (cycle_position < durations[(NSUInteger)frame].doubleValue) {
+			selected_frame = frame;
+			break;
+		}
+		cycle_position -= durations[(NSUInteger)frame].doubleValue;
+	}
+	[animated_representation setProperty:NSImageCurrentFrame withValue:@(selected_frame)];
+}
+
 static CGImageRef native_copy_cg_image(gg__Image *image) {
 	if (image == NULL || image->data == NULL || image->width <= 0 || image->height <= 0) {
 		return NULL;
 	}
 	if (image->path.len > 0) {
 		NSImage *native_image = (__bridge NSImage *)image->data;
+		native_update_animated_image_frame(native_image);
 		CGImageRef cg_image = [native_image CGImageForProposedRect:NULL context:nil hints:nil];
 		return cg_image == NULL ? NULL : CGImageCreateCopy(cg_image);
 	}
@@ -3365,13 +3931,68 @@ static CGImageRef native_copy_cg_image(gg__Image *image) {
 	return cg_image;
 }
 
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+static int native_draw_cg_image_part_with_skia(CGContextRef destination,
+	CGImageRef source_image, gg__Image *image, float destination_x,
+	float destination_y, float destination_width, float destination_height,
+	float source_x, float source_y, float source_width, float source_height,
+	float clip_x, float clip_y, float clip_width, float clip_height,
+	float transform_a, float transform_b, float transform_c, float transform_d,
+	float transform_e, float transform_f, float page_x, float page_y,
+	float scroll_y, float canvas_width, float canvas_height, float opacity,
+	int nearest_neighbor) {
+	size_t width = CGImageGetWidth(source_image);
+	size_t height = CGImageGetHeight(source_image);
+	if (width == 0 || height == 0 || width > INT_MAX / 4 || height > SIZE_MAX / (width * 4))
+		return 0;
+	size_t pitch = width * 4;
+	uint8_t *pixels = calloc(height, pitch);
+	if (pixels == NULL)
+		return 0;
+	CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+	CGContextRef decode = CGBitmapContextCreate(pixels, width, height, 8, pitch,
+		color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+	CGColorSpaceRelease(color_space);
+	if (decode == NULL) {
+		free(pixels);
+		return 0;
+	}
+	// A bitmap context stores its first row at the CSS top after this flip.
+	CGContextTranslateCTM(decode, 0, height);
+	CGContextScaleCTM(decode, 1, -1);
+	CGContextSetBlendMode(decode, kCGBlendModeCopy);
+	CGContextDrawImage(decode, CGRectMake(0, 0, width, height), source_image);
+	CGContextRelease(decode);
+	// Skia receives unpremultiplied RGBA, matching decoded ImageBitmap storage.
+	for (size_t offset = 0; offset < height * pitch; offset += 4) {
+		uint8_t alpha = pixels[offset + 3];
+		if (alpha != 0 && alpha != 255) {
+			pixels[offset] = (uint8_t)MIN(255, (pixels[offset] * 255 + alpha / 2) / alpha);
+			pixels[offset + 1] = (uint8_t)MIN(255, (pixels[offset + 1] * 255 + alpha / 2) / alpha);
+			pixels[offset + 2] = (uint8_t)MIN(255, (pixels[offset + 2] * 255 + alpha / 2) / alpha);
+		}
+	}
+	float scale_x = image->width > 0 ? (float)width / image->width : 1.0f;
+	float scale_y = image->height > 0 ? (float)height / image->height : 1.0f;
+	int drawn = ladybird_v_skia_draw_rgba_image(destination, pixels, (int)width,
+		(int)height, (int)pitch, destination_x, destination_y, destination_width,
+		destination_height, source_x * scale_x, source_y * scale_y,
+		source_width * scale_x, source_height * scale_y, clip_x, clip_y,
+		clip_width, clip_height, transform_a, transform_b, transform_c,
+		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+		canvas_width, canvas_height, opacity, nearest_neighbor);
+	free(pixels);
+	return drawn;
+}
+#endif
+
 static void native_draw_image_part_in_context(CGContextRef context, gg__Image *image,
 	float destination_x, float destination_y, float destination_width,
 	float destination_height, float source_x, float source_y, float source_width,
 	float source_height, float clip_x, float clip_y, float clip_width,
 	float clip_height, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
-	float page_y, float scroll_y, float canvas_height, float opacity,
+	float page_y, float scroll_y, float canvas_width, float canvas_height, float opacity,
 	int nearest_neighbor) {
 	if (context == NULL || image == NULL || image->data == NULL
 		|| destination_width <= 0 || destination_height <= 0
@@ -3379,10 +4000,34 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		|| clip_width <= 0 || clip_height <= 0) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (image->path.len == 0 && image->nr_channels == 4
+	    && ladybird_v_skia_draw_rgba_image(context, image->data, image->width,
+	        image->height, image->width * 4, destination_x, destination_y,
+	        destination_width, destination_height, source_x, source_y,
+	        source_width, source_height, clip_x, clip_y, clip_width,
+	        clip_height, transform_a, transform_b, transform_c, transform_d,
+	        transform_e, transform_f, page_x, page_y, scroll_y,
+	        canvas_width, canvas_height,
+	        opacity, nearest_neighbor)) {
+		return;
+	}
+#endif
 	CGImageRef image_copy = native_copy_cg_image(image);
 	if (image_copy == NULL) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (native_draw_cg_image_part_with_skia(context, image_copy, image,
+		destination_x, destination_y, destination_width, destination_height,
+		source_x, source_y, source_width, source_height, clip_x, clip_y,
+		clip_width, clip_height, transform_a, transform_b, transform_c,
+		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+		canvas_width, canvas_height, opacity, nearest_neighbor)) {
+		CGImageRelease(image_copy);
+		return;
+	}
+#endif
 	CGFloat pixel_scale_x = (CGFloat)CGImageGetWidth(image_copy) / image->width;
 	CGFloat pixel_scale_y = (CGFloat)CGImageGetHeight(image_copy) / image->height;
 	CGRect source_rect = CGRectMake(source_x * pixel_scale_x,
@@ -3400,8 +4045,9 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 	CGContextConcatCTM(context, to_canvas);
 	CGContextClipToRect(context, CGRectMake(clip_x, clip_y, clip_width, clip_height));
 	CGContextSetAlpha(context, MIN(MAX(opacity, 0.0f), 1.0f));
-	CGContextSetInterpolationQuality(context,
-		nearest_neighbor ? kCGInterpolationNone : kCGInterpolationHigh);
+	CGContextSetInterpolationQuality(context, nearest_neighbor == 1
+		? kCGInterpolationNone
+		: nearest_neighbor == 2 ? kCGInterpolationLow : kCGInterpolationHigh);
 	// Quartz images use y-up image space. Flip only the destination image inside
 	// the surrounding CSS y-down transform so its first decoded row stays on top.
 	CGContextTranslateCTM(context, destination_x, destination_y + destination_height);
@@ -3424,11 +4070,13 @@ void native_draw_image_part(gg__Image *image, float destination_x, float destina
 		native_draw_image_part_in_context(context, image, destination_x, destination_y,
 			destination_width, destination_height, source_x, source_y, source_width,
 			source_height, destination_x, destination_y, destination_width,
-			destination_height, 1, 0, 0, 1, 0, 0, 0, 0, 0, canvas_height,
+			destination_height, 1, 0, 0, 1, 0, 0, 0, 0, 0,
+			destination_x + destination_width, canvas_height,
 			opacity, 1);
 		return;
 	}
 	NSImage *native_image = (__bridge NSImage *)image->data;
+	native_update_animated_image_frame(native_image);
 	NSRect destination = NSMakeRect(destination_x,
 		canvas_height - destination_y - destination_height, destination_width, destination_height);
 	// CSS image coordinates start at the top-left. NSImage source rectangles use
@@ -3449,13 +4097,13 @@ void native_draw_image_part_transformed(gg__Image *image, float destination_x,
 	float clip_x, float clip_y, float clip_width, float clip_height,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
-	float scroll_y, float canvas_height, float opacity, int nearest_neighbor) {
+	float scroll_y, float canvas_width, float canvas_height, float opacity, int nearest_neighbor) {
 	CGContextRef context = [[NSGraphicsContext currentContext] CGContext];
 	native_draw_image_part_in_context(context, image, destination_x, destination_y,
 		destination_width, destination_height, source_x, source_y, source_width,
 		source_height, clip_x, clip_y, clip_width, clip_height, transform_a,
 		transform_b, transform_c, transform_d, transform_e, transform_f, page_x,
-		page_y, scroll_y, canvas_height, opacity, nearest_neighbor);
+		page_y, scroll_y, canvas_width, canvas_height, opacity, nearest_neighbor);
 }
 
 void native_draw_repeated_image_transformed(gg__Image *image,
@@ -3491,7 +4139,7 @@ void native_draw_repeated_image_transformed(gg__Image *image,
 	}
 	CGContextSetAlpha(context, MIN(MAX(opacity, 0.0f), 1.0f));
 	CGContextSetInterpolationQuality(context,
-		nearest_neighbor ? kCGInterpolationNone : kCGInterpolationHigh);
+		nearest_neighbor ? kCGInterpolationNone : kCGInterpolationMedium);
 	// Keep the same CSS-y-down to Quartz-image orientation as the single-image
 	// primitive, but tile the complete clipped extent in one Quartz operation.
 	CGContextTranslateCTM(context, destination_x,
@@ -3518,7 +4166,8 @@ void native_add_svg_content_mask_image(gg__Image *image, float destination_x,
 		source_x, source_y, source_width, source_height, clip_x, clip_y,
 		clip_width, clip_height, transform_a, transform_b, transform_c,
 		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
-		canvas_height, 1.0f, nearest_neighbor);
+		(float)CGBitmapContextGetWidth(native_svg_clip_build_context),
+		canvas_height, 1.0f, nearest_neighbor ? 1 : 2);
 }
 
 #define NATIVE_SVG_PATTERN_CACHE_SIZE 8
@@ -3551,15 +4200,23 @@ static CGContextRef native_svg_pattern_context(void) {
 }
 
 void native_begin_svg_pattern_tile(unsigned long long input_key, float tile_width,
-	float tile_height) {
+	float tile_height, float content_scale_x, float content_scale_y) {
 	if (native_svg_pattern_stack_depth >= NATIVE_SVG_PATTERN_STACK_SIZE) {
 		return;
 	}
 	NativeSVGPatternBuild build = { 0 };
 	build.width = tile_width;
 	build.height = tile_height;
-	CGFloat scale = native_svg_mask_backing_scale();
-	uint64_t key = native_svg_clip_hash_float((uint64_t)input_key, (float)scale);
+	CGFloat backing_scale = native_svg_mask_backing_scale();
+	content_scale_x = isfinite(content_scale_x) && content_scale_x > 0.0f
+		? content_scale_x : 1.0f;
+	content_scale_y = isfinite(content_scale_y) && content_scale_y > 0.0f
+		? content_scale_y : 1.0f;
+	CGFloat scale_x = backing_scale * content_scale_x;
+	CGFloat scale_y = backing_scale * content_scale_y;
+	uint64_t key = native_svg_clip_hash_float((uint64_t)input_key, (float)backing_scale);
+	key = native_svg_clip_hash_float(key, content_scale_x);
+	key = native_svg_clip_hash_float(key, content_scale_y);
 	key = native_svg_clip_hash_float(key, tile_width);
 	key = native_svg_clip_hash_float(key, tile_height);
 	build.key = key;
@@ -3578,14 +4235,14 @@ void native_begin_svg_pattern_tile(unsigned long long input_key, float tile_widt
 		native_svg_pattern_stack[native_svg_pattern_stack_depth++] = build;
 		return;
 	}
-	size_t width = (size_t)MAX(1.0, ceil(tile_width * scale));
-	size_t height = (size_t)MAX(1.0, ceil(tile_height * scale));
+	size_t width = (size_t)MAX(1.0, ceil(tile_width * scale_x));
+	size_t height = (size_t)MAX(1.0, ceil(tile_height * scale_y));
 	CGColorSpaceRef color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
 	build.context = CGBitmapContextCreate(NULL, width, height, 8, width * 4,
 		color_space, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
 	CGColorSpaceRelease(color_space);
 	if (build.context != NULL) {
-		CGContextScaleCTM(build.context, scale, scale);
+		CGContextScaleCTM(build.context, scale_x, scale_y);
 		CGContextSetShouldAntialias(build.context, true);
 		CGContextSetInterpolationQuality(build.context, kCGInterpolationHigh);
 	}
@@ -3622,6 +4279,18 @@ void native_add_svg_pattern_path(const float *data, int segment_count,
 		|| (!has_fill && !has_stroke)) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	NativeSVGPatternBuild const *build =
+		&native_svg_pattern_stack[native_svg_pattern_stack_depth - 1];
+	if (ladybird_v_skia_draw_svg_path(context, data, segment_count, even_odd,
+		transform_a, transform_b, transform_c, transform_d, transform_e,
+		transform_f, 0, 0, 0, build->width, canvas_height, fill_color.r,
+		fill_color.g, fill_color.b, fill_color.a, has_fill, stroke_color.r,
+		stroke_color.g, stroke_color.b, stroke_color.a, has_stroke, stroke_width,
+		line_cap, line_join, miter_limit, 0)) {
+		return;
+	}
+#endif
 	CGMutablePathRef path = native_create_path_from_data(data, segment_count);
 	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
 		transform_c, -transform_d, transform_e, canvas_height - transform_f);
@@ -3704,7 +4373,8 @@ void native_add_svg_pattern_image(gg__Image *image, float destination_x,
 		destination_x, destination_y, destination_width, destination_height,
 		source_x, source_y, source_width, source_height, clip_x, clip_y, clip_width,
 		clip_height, transform_a, transform_b, transform_c, transform_d,
-		transform_e, transform_f, 0, 0, 0, canvas_height, opacity,
+		transform_e, transform_f, 0, 0, 0,
+		(float)CGBitmapContextGetWidth(native_svg_pattern_context()), canvas_height, opacity,
 		nearest_neighbor);
 }
 
@@ -3787,8 +4457,15 @@ void native_finish_svg_pattern_path(const float *data, int segment_count,
 		CGContextClip(destination);
 	}
 	CGContextSetAlpha(destination, fminf(fmaxf(opacity, 0.0f), 1.0f));
-	CGContextSetInterpolationQuality(destination, kCGInterpolationHigh);
+	// The tile surface already includes both the backing scale and the target's
+	// accumulated content scale. Replay it without a second interpolation pass.
+	CGContextSetInterpolationQuality(destination, kCGInterpolationNone);
 	CGContextConcatCTM(destination, pattern_transform);
+	// CGImage rows have the opposite vertical convention from the Skia tile
+	// surface. Reflect each repeating cell around its own center so asymmetric
+	// edge coverage and non-symmetric pattern content retain SVG y-down order.
+	CGContextTranslateCTM(destination, 0, 2.0f * tile_y + tile_height);
+	CGContextScaleCTM(destination, 1, -1);
 	CGContextDrawTiledImage(destination,
 		CGRectMake(tile_x, tile_y, tile_width, tile_height), image);
 	CGContextRestoreGState(destination);

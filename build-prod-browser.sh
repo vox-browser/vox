@@ -54,17 +54,40 @@ extra_ldflags=""
 upstream_dir=${LADYBIRD_SOURCE_DIR:-"$repo_dir/../3rd/ladybird"}
 vcpkg_triplet=${LADYBIRD_VCPKG_TRIPLET:-$default_vcpkg_triplet}
 skia_root="$upstream_dir/Build/release/vcpkg_installed/$vcpkg_triplet"
+rust_cargo=${RUST_CARGO:-}
+if [ -z "$rust_cargo" ]; then
+    if command -v cargo >/dev/null 2>&1; then
+        rust_cargo=$(command -v cargo)
+    elif [ -x /opt/homebrew/opt/rustup/bin/cargo ]; then
+        rust_cargo=/opt/homebrew/opt/rustup/bin/cargo
+    fi
+fi
+if [ -n "$rust_cargo" ]; then
+    rust_target_dir="$build_dir/rust-yuv"
+    PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$rust_target_dir" \
+        "$rust_cargo" build --quiet --release --locked \
+        --manifest-path "$repo_dir/native_yuv_rust/Cargo.toml"
+    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_RUST_YUV"
+    extra_ldflags="$extra_ldflags -L$rust_target_dir/release -lladybird_v_yuv"
+fi
 if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/include" ]; then
     bridge_library="$build_dir/libLadybirdVSkiaText.dylib"
     clang++ -std=c++20 -O2 -fPIC -dynamiclib -x objective-c++ \
-        -I"$skia_root/include/skia" "$repo_dir/native_skia_text_darwin.cpp" \
+		-I"$skia_root/include/skia" -I"$skia_root/include" \
+		"$repo_dir/native_skia_text_darwin.cpp" \
         -L"$skia_root/lib" -lskia \
         -framework CoreFoundation -framework CoreGraphics -framework Foundation \
         -Wl,-rpath,"$skia_root/lib" \
         -Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib \
         -o "$bridge_library"
-    extra_cflags="-DLADYBIRD_V_HAS_SKIA_TEXT"
-    extra_ldflags="-L$build_dir -lLadybirdVSkiaText -Wl,-rpath,$build_dir -Wl,-rpath,$skia_root/lib -lc++"
+    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_SKIA_TEXT"
+    extra_ldflags="$extra_ldflags -L$build_dir -lLadybirdVSkiaText -Wl,-rpath,$build_dir -Wl,-rpath,$skia_root/lib -lc++"
+fi
+if [ -f "$skia_root/lib/libavformat.dylib" ] && [ -f "$skia_root/include/libavformat/avformat.h" ]; then
+    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_FFMPEG -I$skia_root/include"
+    # Adding the vcpkg include root also selects that ICU's versioned C API
+    # declarations in the LibUnicode bridges, so link its matching runtime.
+    extra_ldflags="$extra_ldflags -L$skia_root/lib -lavformat -lavcodec -lswscale -lavutil -lyuv -licuuc -Wl,-rpath,$skia_root/lib"
 fi
 
 # This V checkout currently selects both the C and native `time.zoneinfo`

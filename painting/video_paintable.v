@@ -11,10 +11,13 @@ pub enum VideoRepresentation {
 
 pub struct VideoPaintable {
 pub:
-	video_rect      Rect
-	border_radii    BorderRadiiData
-	border_widths   PixelBox
-	image_rendering css.ImageRendering
+	video_rect         Rect
+	border_radii       BorderRadiiData
+	border_widths      PixelBox
+	image_rendering    css.ImageRendering
+	object_fit         css.ObjectFit
+	object_position    css.Position
+	resolution_context css.LengthResolutionContext
 }
 
 pub struct VideoPaintResult {
@@ -37,19 +40,21 @@ pub fn (paintable VideoPaintable) paint(representation VideoRepresentation, bitm
 	content := match representation {
 		.video_frame, .first_video_frame {
 			source_size := bitmap_size or { IntSize{video_rect.width, video_rect.height} }
+			destination := get_replaced_box_painting_area(paintable.video_rect, Size{f64(source_size.width), f64(source_size.height)}, paintable.object_fit, paintable.object_position, paintable.resolution_context, converter) or { return none }
 			DisplayListCommand(DrawExternalContent{
-				destination: video_rect
+				destination: destination
 				source_id: bitmap_id
-				scaling: to_gfx_scaling_mode(paintable.image_rendering, source_size, IntSize{video_rect.width, video_rect.height})
+				scaling: to_gfx_scaling_mode(paintable.image_rendering, source_size, IntSize{destination.width, destination.height})
 			})
 		}
 		.poster_frame {
 			source_size := bitmap_size or { return none }
+			destination := get_replaced_box_painting_area(paintable.video_rect, Size{f64(source_size.width), f64(source_size.height)}, paintable.object_fit, paintable.object_position, paintable.resolution_context, converter) or { return none }
 			DisplayListCommand(DrawScaledBitmap{
-				destination: video_rect
+				destination: destination
 				clip_rect: video_rect
 				bitmap_id: bitmap_id
-				scaling: to_gfx_scaling_mode(paintable.image_rendering, source_size, IntSize{video_rect.width, video_rect.height})
+				scaling: to_gfx_scaling_mode(paintable.image_rendering, source_size, IntSize{destination.width, destination.height})
 			})
 		}
 		.transparent_black {

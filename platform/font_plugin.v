@@ -170,7 +170,8 @@ fn outline_bytes_for_face(bytes []u8, face_index int) ?[]u8 {
 
 // Gfx::Font::pixel_metrics(). Skia selects the OS/2 typo metrics when the
 // USE_TYPO_METRICS bit is present, otherwise the hhea metrics. SerenitySans
-// uses typo metrics (819/-205/94 at 1024 units per em).
+// uses typo metrics (819/-205/94 at 1024 units per em) in the deterministic
+// screenshot environment.
 pub fn (font &Font) pixel_metrics() FontPixelMetrics {
 	// pixel_metrics is a pure function of point size and face weight, yet Layout
 	// calls it hundreds of thousands of times per document. Memoize on the exact
@@ -199,6 +200,15 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 	mut ascent_units := face.ascent
 	mut descent_units := i16(-face.descent)
 	mut line_gap_units := face.line_gap
+	// Start from the hhea values explicitly. x.ttf exposes OS/2 typo values in
+	// its convenience fields for fonts that opt into them, so table selection
+	// must not depend on that parser detail.
+	if hhea := font_table_offset(face.buf, 'hhea') {
+		ascent_units = font_i16_at(face.buf, hhea + 4) or { ascent_units }
+		hhea_descent := font_i16_at(face.buf, hhea + 6) or { i16(-descent_units) }
+		descent_units = i16(-hhea_descent)
+		line_gap_units = font_i16_at(face.buf, hhea + 8) or { line_gap_units }
+	}
 	mut x_height_units := i16(face.units_per_em / 2)
 	mut has_os2_x_height := false
 	if os2 := font_table_offset(face.buf, 'OS/2') {
@@ -234,7 +244,11 @@ fn (font &Font) pixel_metrics_uncached() FontPixelMetrics {
 	// whole number of pixels. The checked-in Layout expectations encode it: at
 	// 16px SerenitySans `1ch` is 10px there, not the face's 9.59375px.
 	zero_advance, _ := font.glyph_metrics(u32(`0`))
+	// CoreText's generic-serif selection exposes a 3:1 typographic split while
+	// retaining Times New Roman glyph advances. File-backed layout-test fonts
+	// instead use their concrete OpenType metrics above.
 	generic_serif := font.family.to_lower() in ['serif', 'uiserif']
+		&& os.getenv('LADYBIRD_LAYOUT_TEST_FONT') == '' && font.source_path == ''
 	return FontPixelMetrics{
 		size: font.point_size
 		x_height: f32(x_height_units) * scale

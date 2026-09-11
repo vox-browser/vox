@@ -80,6 +80,24 @@ pub fn (c Color) contrast_ratio(other Color) f64 {
 	return (brightest + 0.05) / (darkest + 0.05)
 }
 
+// LibGfx::Color::blend(): composite source over this destination using the
+// integer unpremultiplied-alpha arithmetic used by the native renderer.
+pub fn (c Color) blend(source Color) Color {
+	if c.a == 0 || source.a == 255 {
+		return source
+	}
+	if source.a == 0 {
+		return c
+	}
+	d := 255 * (int(c.a) + int(source.a)) - int(c.a) * int(source.a)
+	return Color{
+		r: u8((int(c.r) * int(c.a) * (255 - int(source.a)) + int(source.r) * 255 * int(source.a)) / d)
+		g: u8((int(c.g) * int(c.a) * (255 - int(source.a)) + int(source.g) * 255 * int(source.a)) / d)
+		b: u8((int(c.b) * int(c.a) * (255 - int(source.a)) + int(source.b) * 255 * int(source.a)) / d)
+		a: u8(d / 255)
+	}
+}
+
 pub fn (c Color) darkened(amount f64) Color {
 	return Color.rgba(u8(int(f64(c.red()) * amount)), u8(int(f64(c.green()) * amount)), u8(int(f64(c.blue()) * amount)), c.alpha())
 }

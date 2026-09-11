@@ -38,6 +38,13 @@ fn user_agent_counter_style_sheet() &CSSStyleSheet {
 	return user_agent_counter_stylesheet
 }
 
+// Predefined @counter-style rules are split out of the selector-bearing UA
+// sheet so normal cascade startup stays cheap. Marker generation still needs
+// that second sheet rather than the selector-only user_agent_rules() list.
+pub fn user_agent_counter_style_rules() []&CSSRule {
+	return user_agent_counter_style_sheet().css_rules().rules
+}
+
 // Compatibility callers need the same default-UA rules as StyleScope. Reuse
 // the sheet's list instead of parsing the 90 KiB Default.css source a second
 // time during every process startup.

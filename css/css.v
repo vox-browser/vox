@@ -3444,10 +3444,12 @@ pub fn run_default_sizing_algorithm(specified_width ?CSSPixels, specified_height
 		if aspect_ratio := natural.aspect_ratio {
 			if !aspect_ratio.might_be_saturated() {
 				if width := specified_width {
-					return CSSPixelSize.new(width, CSSPixels.nearest_value_for(width.to_double() / aspect_ratio.to_double()))
+					// Keep this as one fixed-point division. Multiplying by the
+					// reciprocal first loses a raw CSS-pixel unit for tall images.
+					return CSSPixelSize.new(width, width.divided_by_fraction(aspect_ratio))
 				}
 				if height := specified_height {
-					return CSSPixelSize.new(CSSPixels.nearest_value_for(height.to_double() * aspect_ratio.to_double()), height)
+					return CSSPixelSize.new(height.times_fraction(aspect_ratio), height)
 				}
 			}
 		}

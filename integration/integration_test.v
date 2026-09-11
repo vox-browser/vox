@@ -325,7 +325,7 @@ fn test_inline_author_style_paints_over_parsed_document() {
 	// Borders go through the translated painting display list, which paints all four edges as
 	// one filled path (upstream's paint_all_borders), not as a stroked rounded rect.
 	assert commands.filter(it.kind == 'draw_svg_path' && it.color == 'rgb(0 128 0)').len == 1
-	assert commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(0 100 0)').len == 1
+	assert commands.filter(it.kind == 'paint_outer_box_shadow' && it.color == 'rgb(0 100 0)').len == 1
 }
 
 // Regression for example.com and the native browser host: vw/vh use the actual content viewport,
@@ -982,7 +982,7 @@ fn test_list_markers_over_parsed_document() {
 // fragment width reflects the widened glyph advances.
 fn test_letter_spacing_over_parsed_document() {
 	doc :=
-		html.parse_document('<html><head><style>p { font-size: 20px; letter-spacing: 5px }</style></head><body><p>hi</p></body></html>')
+		html.parse_document('<html><head><style>p { font: 20px SerenitySans; letter-spacing: 5px }</style></head><body><p>hi</p></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	p := css.query_selector(root, 'p') or { panic('no p') }
@@ -1336,7 +1336,7 @@ fn test_list_style_type_over_parsed_document() {
 // laid out as its own box (with its size), painted alongside the text.
 fn test_inline_block_over_parsed_document() {
 	doc :=
-		html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; font-size: 20px } .badge { display: inline-block; width: 50px; height: 24px; background-color: rgb(200, 0, 0) }</style></head><body><p>x<span class="badge" id="b"></span>y</p></body></html>')
+		html.parse_document('<html><head><style>body { margin: 0 } p { margin: 0; font: 20px SerenitySans } .badge { display: inline-block; width: 50px; height: 24px; background-color: rgb(200, 0, 0) }</style></head><body><p>x<span class="badge" id="b"></span>y</p></body></html>')
 	root_box := layout.layout_document(doc, 600)
 	root := unsafe { &dom.Node(doc) }
 	badge := css.query_selector(root, '#b') or { panic('no #b') }

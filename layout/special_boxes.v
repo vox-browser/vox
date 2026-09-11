@@ -955,6 +955,10 @@ pub fn VideoBox.new(document &dom.Document, element &dom.Element, computed_value
 	mut box := &VideoBox{
 		ReplacedBox: replaced_box_base(document, element, computed_values)
 	}
+	// Video metadata is live. Do not cache the empty ReplacedBox default as an
+	// auto content size; Box::compute_auto_content_box_size() delegates to this
+	// box's natural_size() on every sizing pass.
+	box.has_auto_content_box_size_ = false
 	// VideoBox::can_have_children() has the same controls-shadow-root boundary
 	// as AudioBox.
 	box.replaced_can_have_children_ = element.shadow_root() != none

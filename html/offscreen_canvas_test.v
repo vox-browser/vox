@@ -76,6 +76,59 @@ fn test_offscreen_canvas_image_data_draw_image_blob_and_transfer() {
 	assert received.height() == 2
 }
 
+fn test_offscreen_canvas_draw_image_snapshots_an_overlapping_self_source() {
+	mut canvas := OffscreenCanvas.create(4, 1) or { panic(err) }
+	mut context := canvas.get_context(.canvas_2d, none) or { panic(err) }
+	bitmap := canvas.bitmap() or { panic('missing bitmap') }
+	mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+	mutable_bitmap.data = [
+		u8(255),
+		0,
+		0,
+		255,
+		u8(0),
+		0,
+		255,
+		255,
+		u8(0),
+		255,
+		0,
+		255,
+		u8(255),
+		255,
+		255,
+		255,
+	]
+	mut image := ImageBitmap.create()
+	image.set_bitmap(bitmap)
+	context.draw_image_internal(CanvasDrawImageRequest{
+		image: ImageBitmapCanvasSource{ value: image }
+		source_width: 3
+		source_height: 1
+		destination_x: 1
+		destination_width: 3
+		destination_height: 1
+	}) or { panic(err) }
+	assert bitmap.data == [
+		u8(255),
+		0,
+		0,
+		255,
+		u8(255),
+		0,
+		0,
+		255,
+		u8(0),
+		0,
+		255,
+		255,
+		u8(0),
+		255,
+		0,
+		255,
+	]
+}
+
 fn test_offscreen_canvas_paths_transform_winding_and_clip() {
 	mut canvas := OffscreenCanvas.create(12, 8) or { panic(err) }
 	mut context := canvas.get_context(.canvas_2d, none) or { panic(err) }

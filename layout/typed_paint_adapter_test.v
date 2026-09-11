@@ -620,6 +620,18 @@ fn test_typed_background_clip_text_reaches_the_group_mask() {
 	assert target.render_svg(240, 100).contains('<g mask="url(#background-text-mask')
 }
 
+fn test_fieldset_background_clip_text_collects_each_glyph_run_once() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } fieldset { padding: 20px; border: 6px solid black; font-size: 40px; background: linear-gradient(#6d98cc, #8a64e5); background-clip: text; color: transparent } legend { color: black }</style><body><fieldset id="target"><legend>Legend</legend>Hello fieldset text</fieldset></body>')
+	root := layout_document_typed_in_viewport(document, 800, 600)
+	target_element := document.get_element_by_id('target') or { panic('missing fieldset') }
+	target := root.find_box(i64(target_element.as_node().unique_id())) or {
+		panic('missing fieldset box')
+	}
+	begin_commands := target.paint_commands().filter(it.kind == 'begin_background_text_clip')
+	assert begin_commands.len == 1
+	assert begin_commands[0].text_clip_runs.map(it.text) == ['Legend', 'Hello fieldset text']
+}
+
 fn test_body_background_is_propagated_to_canvas_and_not_painted_twice() {
 	document := html.parse_document('<!doctype html><style>html { background: transparent } body { margin: 20px; width: 100px; height: 40px; background: rgb(12 34 56) }</style><body id="body"></body>')
 	root := layout_document_typed_in_viewport(document, 320, 200)
@@ -1392,7 +1404,7 @@ fn test_split_inline_cssom_offsets_use_the_united_continuation_chain() {
 	assert html.html_element_offset_top(html_bold) == 8
 	assert html.html_element_offset_left(html_bold) == 8
 	assert html.html_element_offset_width(html_bold) == 784
-	assert html.html_element_offset_height(html_bold) == 54
+	assert html.html_element_offset_height(html_bold) == 48
 }
 
 fn test_paintable_box_chrome_predicates_follow_layout_type_and_writing_mode() {
@@ -1498,6 +1510,21 @@ fn test_typed_paint_adapter_transports_custom_scrollbar_and_resizer_overlay() {
 	moved_thumbs := root.paint_commands().filter(it.kind == 'fill_rounded_rect' && it.color == css.Color{1, 2, 3, 255}.serialize())
 	assert moved_thumbs.len == 1
 	assert moved_thumbs[0].y > thumbs[0].y
+}
+
+fn test_typed_paint_adapter_adapts_automatic_scrollbar_colors_to_backgrounds() {
+	document := html.parse_document('<!doctype html><style>html,body{margin:0;background:white}.scroller{width:96px;height:140px;overflow:scroll}.content{width:180px;height:300px}.light{background:rgb(244 241 232)}.dark{background:rgb(74 88 98)}</style><body><div id="light" class="scroller light"><div class="content"></div></div><div id="dark" class="scroller dark"><div class="content"></div></div></body>')
+	root := layout_document_typed_in_viewport(document, 320, 400)
+	light := document.get_element_by_id('light') or { panic('missing light scroller') }
+	dark := document.get_element_by_id('dark') or { panic('missing dark scroller') }
+	light_overlay := root.find_box(i64(light.as_node().unique_id())) or { panic('missing light box') }.overlay or { panic('missing light overlay') }
+	dark_overlay := root.find_box(i64(dark.as_node().unique_id())) or { panic('missing dark box') }.overlay or { panic('missing dark overlay') }
+	assert light_overlay.default_scrollbar_colors
+	assert light_overlay.scrollbar_thumb_color == css.Color{0, 0, 0, 128}
+	assert light_overlay.scrollbar_track_color == css.Color{0, 0, 0, 25}
+	assert dark_overlay.default_scrollbar_colors
+	assert dark_overlay.scrollbar_thumb_color == css.Color{255, 255, 255, 128}
+	assert dark_overlay.scrollbar_track_color == css.Color{255, 255, 255, 25}
 }
 
 fn test_typed_paint_adapter_transports_viewport_scrollbars_with_viewport_geometry() {
@@ -2092,6 +2119,24 @@ fn test_svg_mask_path_retains_pattern_instead_of_url_fallback() {
 	pattern := operation.fill_pattern or { panic('missing mask fill pattern') }
 	assert pattern.tile_rect == painting.Rect{0, 0, 20, 20}
 	assert (pattern.tile_display_list or { panic('missing mask pattern display list') }).operations.len == 1
+}
+
+fn test_css_mask_image_url_wraps_the_complete_box_paint_as_an_alpha_mask() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #target { width: 160px; height: 160px; background: red; mask-image: linear-gradient(transparent, transparent), url("https://example.test/mask.gif"); mask-size: 160px 160px; mask-repeat: no-repeat; }</style><div id="target"></div>')
+	_ = layout_document_typed_in_viewport(document, 200, 200)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	mask_commands := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_commands.len == 1
+	mask := mask_commands[0].mask_clip
+	assert !mask.mask_luminance
+	assert mask.rect == LayoutRect{0, 0, 160, 160}
+	images := mask.mask_operations.filter(it.kind == .image)
+	assert images.len == 1
+	assert images[0].image_url == 'https://example.test/mask.gif'
+	paintable := images[0].image_paintable or { panic('missing CSS mask ImagePaintable') }
+	assert paintable.object_fit == .fill
+	assert paintable.image_rect == painting.Rect{0, 0, 160, 160}
 }
 
 fn test_svg_mask_path_retains_linear_gradient_instead_of_url_fallback() {
@@ -2864,7 +2909,7 @@ fn test_checkbox_paint_reads_live_checkedness_and_invalidates_retained_commands(
 	indeterminate_commands := root.paint_commands()
 	assert !indeterminate_commands.any(it.kind == 'draw_svg_path')
 	assert indeterminate_commands.any(it.kind == 'fill_rounded_rect'
-		&& it.color == 'rgb(77 77 77)')
+		&& it.color == 'rgb(76 76 76)')
 }
 
 fn test_fieldset_paint_shifts_background_and_splits_top_border_around_legend() {
@@ -2881,18 +2926,16 @@ fn test_fieldset_paint_shifts_background_and_splits_top_border_around_legend() {
 	background := commands.filter(it.color == 'rgb(180 220 255)')
 	assert background.len == 1
 	background_clip := background[0].recording_clip or { panic('fieldset background is not clipped') }
-	assert background_clip == LayoutRect{10, 20, 208, 78}
+	assert background_clip == LayoutRect{10, 19, 208, 79}
 	assert background[0].clip_list != unsafe { nil }
 	assert background[0].clip_list.items.last().rect == background_clip
 
 	red_borders := commands.filter(it.color == 'rgb(220 0 0)')
 	clipped_top_borders := red_borders.filter(it.recording_clip != none)
-	assert clipped_top_borders.len == 2
-	left_clip := clipped_top_borders[0].recording_clip or { panic('missing left clip') }
-	right_clip := clipped_top_borders[1].recording_clip or { panic('missing right clip') }
-	assert left_clip.x == 10 && left_clip.y == 20 && left_clip.height == 6
-	assert right_clip.y == 20 && right_clip.height == 6
-	assert left_clip.x + left_clip.width <= right_clip.x
+	assert clipped_top_borders.len == 0
+	top_border_runs := red_borders.filter(it.kind == 'fill_rect' && it.y == 19 && it.height == 6)
+	assert top_border_runs.len == 2
+	assert top_border_runs[0].x + top_border_runs[0].width <= top_border_runs[1].x
 	assert red_borders.any(it.recording_clip == none)
 }
 
@@ -3329,6 +3372,31 @@ fn test_typed_text_box_decorations_only_come_from_inline_paintables() {
 	inline_backgrounds := commands.filter(it.color == 'rgb(44 55 66)')
 	assert inline_backgrounds.len == 1
 	assert inline_backgrounds[0].paint_phase == .foreground
+}
+
+fn test_typed_wrapped_inline_marks_only_fragmented_horizontal_edges_away() {
+	document := html.parse_document('<!doctype html><style>html,body,p{margin:0}p{width:100px}span{border:2px solid red}</style><body><p id="paragraph"><span id="inline">one two three four five six seven eight nine ten</span></p></body>')
+	root := layout_document_typed_in_viewport(document, 200, 200)
+	paragraph := document.get_element_by_id('paragraph') or { panic('missing paragraph') }
+	inline := document.get_element_by_id('inline') or { panic('missing inline') }
+	box := root.find_box(i64(paragraph.as_node().unique_id())) or { panic('missing paragraph box') }
+	inline_id := i64(inline.as_node().unique_id())
+	mut line_fragments := [][]TextFragment{}
+	for line in box.lines {
+		owned := line.fragments.filter(it.inline_node_id == inline_id)
+		if owned.len > 0 {
+			line_fragments << owned
+		}
+	}
+	assert line_fragments.len > 1
+	assert !line_fragments.first().first().fragment_left_edge_away
+	assert line_fragments.first().last().fragment_right_edge_away
+	for index := 1; index < line_fragments.len - 1; index++ {
+		assert line_fragments[index].first().fragment_left_edge_away
+		assert line_fragments[index].last().fragment_right_edge_away
+	}
+	assert line_fragments.last().first().fragment_left_edge_away
+	assert !line_fragments.last().last().fragment_right_edge_away
 }
 
 fn test_typed_inline_background_image_uses_padding_box_origin() {

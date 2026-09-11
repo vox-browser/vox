@@ -80,13 +80,13 @@ pub fn GlyphRun.new_with_face(font &Font, text_type GlyphRunTextType, glyphs []G
 		glyph_positions << f64(glyph.position.y)
 	}
 	return &GlyphRun{
-		font_:            font
-		text_type_:       text_type
-		face_:            face
-		width_:           width
-		glyphs_:          glyphs.clone()
-		space_width:      space_width
-		glyph_indices_:   glyph_indices
+		font_: font
+		text_type_: text_type
+		face_: face
+		width_: width
+		glyphs_: glyphs.clone()
+		space_width: space_width
+		glyph_indices_: glyph_indices
 		glyph_positions_: glyph_positions
 	}
 }
@@ -112,14 +112,14 @@ pub fn (run &GlyphRun) glyphs() []Glyph {
 // HarfBuzz result as long as every consumer gets independent mutable storage.
 pub fn (run &GlyphRun) clone_for_layout() &GlyphRun {
 	return &GlyphRun{
-		glyphs_:            run.glyphs_.clone()
-		font_:              run.font_
-		text_type_:         run.text_type_
-		face_:              run.face_
-		width_:             run.width_
-		space_width:        run.space_width
-		glyph_indices_:     run.glyph_indices_.clone()
-		glyph_positions_:   run.glyph_positions_.clone()
+		glyphs_: run.glyphs_.clone()
+		font_: run.font_
+		text_type_: run.text_type_
+		face_: run.face_
+		width_: run.width_
+		space_width: run.space_width
+		glyph_indices_: run.glyph_indices_.clone()
+		glyph_positions_: run.glyph_positions_.clone()
 		replay_data_dirty_: run.replay_data_dirty_
 	}
 }
@@ -182,6 +182,173 @@ pub fn (run &GlyphRun) width() f32 {
 	return run.width_
 }
 
+struct GlyphInkExtent {
+	band_top    f64
+	band_bottom f64
+mut:
+	left  f64 = math.inf(1)
+	right f64 = math.inf(-1)
+}
+
+fn (mut extent GlyphInkExtent) expand(x f64) {
+	extent.left = math.min(extent.left, x)
+	extent.right = math.max(extent.right, x)
+}
+
+fn (extent &GlyphInkExtent) overlaps_band(top f64, bottom f64) bool {
+	return extent.band_top <= bottom && top <= extent.band_bottom
+}
+
+fn (mut extent GlyphInkExtent) expand_points_inside(points []FontGlyphOutlinePoint) {
+	for point in points {
+		y := -f64(point.y)
+		if extent.band_top < y && y < extent.band_bottom {
+			extent.expand(f64(point.x))
+		}
+	}
+}
+
+fn (mut extent GlyphInkExtent) add_line(p0 FontGlyphOutlinePoint, p1 FontGlyphOutlinePoint) {
+	x0 := f64(p0.x)
+	y0 := -f64(p0.y)
+	x1 := f64(p1.x)
+	y1 := -f64(p1.y)
+	if !extent.overlaps_band(math.min(y0, y1), math.max(y0, y1)) {
+		return
+	}
+	if y1 != y0 {
+		for offset in [extent.band_top, extent.band_bottom] {
+			t := (offset - y0) / (y1 - y0)
+			if t >= 0 && t < 1 {
+				extent.expand(x0 + t * (x1 - x0))
+			}
+		}
+	}
+	extent.expand_points_inside([p0, p1])
+}
+
+fn quadratic_roots_in_unit_interval(a f64, b f64, c f64) []f64 {
+	mut roots := []f64{cap: 2}
+	if a == 0 {
+		if b != 0 {
+			t := -c / b
+			if t >= 0 && t <= 1 {
+				roots << t
+			}
+		}
+		return roots
+	}
+	discriminant := b * b - 4.0 * a * c
+	if discriminant < 0 {
+		return roots
+	}
+	q := -0.5 * (b + math.copysign(math.sqrt(discriminant), b))
+	first := q / a
+	if first >= 0 && first <= 1 {
+		roots << first
+	}
+	if q != 0 {
+		second := c / q
+		if second >= 0 && second <= 1 {
+			roots << second
+		}
+	}
+	return roots
+}
+
+fn (mut extent GlyphInkExtent) add_quadratic(p0 FontGlyphOutlinePoint, p1 FontGlyphOutlinePoint, p2 FontGlyphOutlinePoint) {
+	x0 := f64(p0.x)
+	y0 := -f64(p0.y)
+	x1 := f64(p1.x)
+	y1 := -f64(p1.y)
+	x2 := f64(p2.x)
+	y2 := -f64(p2.y)
+	if !extent.overlaps_band(math.min(y0, math.min(y1, y2)), math.max(y0, math.max(y1, y2))) {
+		return
+	}
+	a := y0 - 2.0 * y1 + y2
+	b := 2.0 * (y1 - y0)
+	for offset in [extent.band_top, extent.band_bottom] {
+		for t in quadratic_roots_in_unit_interval(a, b, y0 - offset) {
+			u := 1.0 - t
+			extent.expand(u * u * x0 + 2.0 * u * t * x1 + t * t * x2)
+		}
+	}
+	extent.expand_points_inside([p0, p1, p2])
+}
+
+fn outline_midpoint(first FontGlyphOutlinePoint, second FontGlyphOutlinePoint) FontGlyphOutlinePoint {
+	return FontGlyphOutlinePoint{
+		x: (first.x + second.x) * 0.5
+		y: (first.y + second.y) * 0.5
+		on_curve: true
+	}
+}
+
+// LibGfx::glyph_run_glyph_intercepts(). Return the horizontal ink intervals where the shaped
+// glyph outlines cross a band in blob-local coordinates. TrueType contours contain quadratic
+// off-curve control points; consecutive controls imply an on-curve midpoint.
+pub fn (run &GlyphRun) glyph_intercepts(scale f32, y_top f32, y_bottom f32) []f32 {
+	if !(scale > 0) || math.is_nan(scale) || scale == f32(math.inf(1)) {
+		return []f32{}
+	}
+	mut intervals := []f32{}
+	for glyph in run.glyphs_ {
+		outline := run.font_.glyph_outline(glyph.glyph_index) or { continue }
+		mut extent := GlyphInkExtent{
+			band_top: (f64(y_top) - f64(glyph.position.y) * f64(scale)) / f64(scale)
+			band_bottom: (f64(y_bottom) - f64(glyph.position.y) * f64(scale)) / f64(scale)
+		}
+		for contour in outline.contours {
+			if contour.len < 2 {
+				continue
+			}
+			first := contour[0]
+			last := contour[contour.len - 1]
+			mut current := if first.on_curve {
+				first
+			} else if last.on_curve {
+				last
+			} else {
+				outline_midpoint(last, first)
+			}
+			start := current
+			mut index := if first.on_curve { 1 } else { 0 }
+			mut consumed := if first.on_curve { 1 } else { 0 }
+			for consumed < contour.len {
+				point := contour[index % contour.len]
+				if point.on_curve {
+					extent.add_line(current, point)
+					current = point
+					index++
+					consumed++
+					continue
+				}
+				next := contour[(index + 1) % contour.len]
+				if next.on_curve {
+					extent.add_quadratic(current, point, next)
+					current = next
+					index += 2
+					consumed += 2
+				} else {
+					midpoint := outline_midpoint(point, next)
+					extent.add_quadratic(current, point, midpoint)
+					current = midpoint
+					index++
+					consumed++
+				}
+			}
+			extent.add_line(current, start)
+		}
+		if extent.left < extent.right {
+			origin_x := f64(glyph.position.x) * f64(scale)
+			intervals << f32(extent.left * f64(scale) + origin_x)
+			intervals << f32(extent.right * f64(scale) + origin_x)
+		}
+	}
+	return intervals
+}
+
 // Gfx::shape_text()'s layout-facing contract. Native HarfBuzz/CoreText
 // shaping belongs behind the platform font provider; this deterministic
 // fallback preserves glyph positions, UTF-16 lengths, letter spacing and run
@@ -203,12 +370,12 @@ pub fn shape_text(initial_x f32, letter_spacing f32, text string, font &Font, te
 		x += f32(math.round(f64(font.kerning_for_glyph(glyph_index)) * 64.0) / 64.0)
 		advance := f32(math.round(f64(base_advance) * 64.0) / 64.0) + letter_spacing
 		glyphs << Glyph{
-			code_point:           code_point
-			glyph_index:          glyph_index
-			position:             GlyphPosition{
+			code_point: code_point
+			glyph_index: glyph_index
+			position: GlyphPosition{
 				x: x
 			}
-			advance:              advance
+			advance: advance
 			length_in_code_units: if code_point > 0xffff { 2 } else { 1 }
 		}
 		x += advance
@@ -216,8 +383,7 @@ pub fn shape_text(initial_x f32, letter_spacing f32, text string, font &Font, te
 	if text_type == .rtl {
 		width := x - initial_x
 		for index in 0 .. glyphs.len {
-			glyphs[index].position.x = initial_x + width - (glyphs[index].position.x - initial_x) -
-				glyphs[index].advance
+			glyphs[index].position.x = initial_x + width - (glyphs[index].position.x - initial_x) - glyphs[index].advance
 		}
 	}
 	// Avoid leaking negative zero through the fixed-point conversion used by

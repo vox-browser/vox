@@ -1302,7 +1302,10 @@ pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
 	if n.has_auto_content_box_size_ {
 		return n.auto_content_box_size_
 	}
-	return n.natural_size_
+	// Box::compute_auto_content_box_size() falls back to the virtual
+	// natural_size() result. In particular, VideoBox metadata is live and is
+	// not stored in the embedded Box record.
+	return n.natural_size()
 }
 
 // Box::preferred_aspect_ratio(). Size containment suppresses natural metrics,
@@ -1619,13 +1622,13 @@ pub fn (mut viewport Viewport) invalidate_text_blocks_cache() {
 pub struct TextNode {
 	Node
 pub mut:
-	source_text_              string
-	text_for_rendering_       string
-	text_for_rendering_valid_ bool
-	font_for_rendering_       ?&platform.Font
-	is_empty_editable_        bool
-	cached_inline_chunks_     ?[]TextNodeChunk
-	cached_utf16_code_units_  ?[]u16
+	source_text_                  string
+	text_for_rendering_           string
+	text_for_rendering_valid_     bool
+	font_for_rendering_           ?&platform.Font
+	is_empty_editable_            bool
+	cached_inline_chunks_         ?[]TextNodeChunk
+	cached_utf16_code_units_      ?[]u16
 	cached_intrinsic_text_shapes_ []IntrinsicTextShapeCacheEntry
 }
 

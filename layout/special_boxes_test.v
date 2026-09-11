@@ -62,11 +62,17 @@ fn test_video_box_natural_size_tracks_live_media_metadata() {
 	assert initial.height?.to_double() == 360
 	assert initial.aspect_ratio?.numerator().to_double() == 640
 	assert initial.aspect_ratio?.denominator().to_double() == 360
+	initial_auto_size := base_box.auto_content_box_size()
+	assert initial_auto_size.width?.to_double() == 640
+	assert initial_auto_size.height?.to_double() == 360
 
 	model.set_video_dimensions(1920, 1080)
 	updated := base_box.natural_size()
 	assert updated.width?.to_double() == 1920
 	assert updated.height?.to_double() == 1080
+	updated_auto_size := base_box.auto_content_box_size()
+	assert updated_auto_size.width?.to_double() == 1920
+	assert updated_auto_size.height?.to_double() == 1080
 }
 
 fn test_navigable_container_viewport_uses_svg_natural_size_and_committed_viewport() {

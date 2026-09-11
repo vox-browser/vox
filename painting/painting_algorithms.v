@@ -893,6 +893,12 @@ fn paint_border(mut commands []DisplayListCommand, mut segments []ClipPathSegmen
 	borders DeviceBordersData, border_rect IntRect, last bool) {
 	border := borders.for_edge(edge)
 	if border.width <= 0 || border.line_style in [.none, .hidden] {
+		// A zero-width edge can still be the last member of a same-color run.
+		// Flush paths accumulated from earlier visible edges before returning.
+		if last && segments.len > 0 {
+			flush_border_path(mut commands, mut segments, border_rect, border_color(edge,
+				borders))
+		}
 		return
 	}
 	color := border_color(edge, borders)
@@ -1264,7 +1270,6 @@ pub fn (fieldset FieldSetPaintable) paint(borders DeviceBordersData, radii Corne
 	top_border_only := DeviceBordersData{
 		top: borders.top
 	}
-	top_commands := paint_all_borders(device_border_rect, radii, top_border_only)
 	legend_device_rect := converter.rounded_device_rect(legend_border_rect)
 	left_segment := IntRect{
 		x: device_border_rect.x
@@ -1272,13 +1277,32 @@ pub fn (fieldset FieldSetPaintable) paint(borders DeviceBordersData, radii Corne
 		width: legend_device_rect.x - device_border_rect.x
 		height: borders.top.width
 	}
-	append_fieldset_paint_commands(mut result, top_commands, left_segment)
 	right_segment := IntRect{
 		x: legend_device_rect.right()
 		y: device_border_rect.y
 		width: device_border_rect.right() - legend_device_rect.right()
 		height: borders.top.width
 	}
+	// The native transport cannot express the Rust recorder's intersect-plus-
+	// difference inline clip stack. For the overwhelmingly common square solid
+	// edge, record the two visible runs directly; this is pixel-identical to
+	// clipping the complete top border and avoids replaying two identical path
+	// commands through independently allocated clip lists.
+	if borders.top.line_style == .solid && radii == CornerRadii{} {
+		for segment in [left_segment, right_segment] {
+			if segment.width > 0 && segment.height > 0 {
+				result << FieldSetPaintCommand{
+					command: FillRect{
+						rect: segment
+						color: borders.top.color
+					}
+				}
+			}
+		}
+		return result
+	}
+	top_commands := paint_all_borders(device_border_rect, radii, top_border_only)
+	append_fieldset_paint_commands(mut result, top_commands, left_segment)
 	append_fieldset_paint_commands(mut result, top_commands, right_segment)
 	return result
 }
@@ -1412,7 +1436,11 @@ fn input_color_from_css(color css.Color) Color {
 
 fn mix_input_color(from Color, to Color, weight f64) Color {
 	mix_channel := fn [weight] (first f64, second f64) u8 {
-		return u8(math.round(first * (1.0 - weight) + second * weight))
+		// LibGfx::Color::mixed_with performs its interpolation in f32 and uses
+		// Rust's round_ties_even conversion. Preserve both details at the V
+		// boundary; ordinary round() biases every exact x.5 shade upward.
+		value := f32(first) + (f32(second) - f32(first)) * f32(weight)
+		return u8(math.round_to_even(f64(value)))
 	}
 	if from.a == to.a || (from.r == to.r && from.g == to.g && from.b == to.b) {
 		return Color{
@@ -1422,18 +1450,23 @@ fn mix_input_color(from Color, to Color, weight f64) Color {
 			a: mix_channel(from.a, to.a)
 		}
 	}
-	mixed_alpha := f64(from.a) * (1.0 - weight) + f64(to.a) * weight
+	mixed_alpha := f32(from.a) + (f32(to.a) - f32(from.a)) * f32(weight)
 	if mixed_alpha == 0 {
 		return Color{ a: 0 }
 	}
 	premultiplied_channel := fn [from, to, weight, mixed_alpha] (first f64, second f64) u8 {
-		return u8(math.round((first * f64(from.a) * (1.0 - weight) + second * f64(to.a) * weight) / mixed_alpha))
+		alpha := f32(from.a)
+		other_alpha := f32(to.a)
+		a := f32(first) * alpha
+		b := f32(second) * other_alpha
+		value := (a + (b - a) * f32(weight)) / mixed_alpha
+		return u8(math.round_to_even(f64(value)))
 	}
 	return Color{
 		r: premultiplied_channel(from.r, to.r)
 		g: premultiplied_channel(from.g, to.g)
 		b: premultiplied_channel(from.b, to.b)
-		a: u8(math.round(mixed_alpha))
+		a: u8(math.round_to_even(f64(mixed_alpha)))
 	}
 }
 
@@ -1446,15 +1479,23 @@ fn input_color_inverted(color Color) Color {
 	return Color{255 - color.r, 255 - color.g, 255 - color.b, color.a}
 }
 
-fn input_color_luminosity(color Color) u8 {
-	return u8(math.round(f64(color.r) * 0.2126 + f64(color.g) * 0.7152 + f64(color.b) * 0.0722))
+fn input_color_relative_luminance(color Color) f64 {
+	linear_channel := fn (channel u8) f64 {
+		value := f64(channel) / 255.0
+		return if value <= 0.04045 {
+			value / 12.92
+		} else {
+			math.pow((value + 0.055) / 1.055, 2.4)
+		}
+	}
+	return linear_channel(color.r) * 0.2126 + linear_channel(color.g) * 0.7152 + linear_channel(color.b) * 0.0722
 }
 
 fn input_color_contrast_ratio(first Color, second Color) f64 {
-	first_luminosity := input_color_luminosity(first)
-	second_luminosity := input_color_luminosity(second)
-	darkest := f64(min_int(first_luminosity, second_luminosity)) / 255.0
-	brightest := f64(max_int(first_luminosity, second_luminosity)) / 255.0
+	first_luminosity := input_color_relative_luminance(first)
+	second_luminosity := input_color_relative_luminance(second)
+	darkest := math.min(first_luminosity, second_luminosity)
+	brightest := math.max(first_luminosity, second_luminosity)
 	return (brightest + 0.05) / (darkest + 0.05)
 }
 
@@ -1489,15 +1530,17 @@ pub fn compute_input_colors(color_scheme css.PreferredColorScheme, accent_color 
 
 // Direct translation of CheckBoxPaintable.cpp::check_mark_path().
 fn check_mark_path(rect IntRect) ClipPathVisualData {
-	scale_x := f64(rect.width) / 100.0
-	scale_y := f64(rect.height) / 100.0
+	// The upstream Gfx path and transform are f32. Keep the multiply/add order at
+	// that precision so Skia sees the same edge coordinates for small controls.
+	scale_x := f32(rect.width) / f32(100.0)
+	scale_y := f32(rect.height) / f32(100.0)
 	points := [
-		Point{f64(rect.x) + 72.0 * scale_x, f64(rect.y) + 14.0 * scale_y},
-		Point{f64(rect.x) + 37.0 * scale_x, f64(rect.y) + 64.0 * scale_y},
-		Point{f64(rect.x) + 19.0 * scale_x, f64(rect.y) + 47.0 * scale_y},
-		Point{f64(rect.x) + 8.0 * scale_x, f64(rect.y) + 58.0 * scale_y},
-		Point{f64(rect.x) + 40.0 * scale_x, f64(rect.y) + 89.0 * scale_y},
-		Point{f64(rect.x) + 85.0 * scale_x, f64(rect.y) + 24.0 * scale_y},
+		Point{f64(f32(rect.x) + f32(72.0) * scale_x), f64(f32(rect.y) + f32(14.0) * scale_y)},
+		Point{f64(f32(rect.x) + f32(37.0) * scale_x), f64(f32(rect.y) + f32(64.0) * scale_y)},
+		Point{f64(f32(rect.x) + f32(19.0) * scale_x), f64(f32(rect.y) + f32(47.0) * scale_y)},
+		Point{f64(f32(rect.x) + f32(8.0) * scale_x), f64(f32(rect.y) + f32(58.0) * scale_y)},
+		Point{f64(f32(rect.x) + f32(40.0) * scale_x), f64(f32(rect.y) + f32(89.0) * scale_y)},
+		Point{f64(f32(rect.x) + f32(85.0) * scale_x), f64(f32(rect.y) + f32(24.0) * scale_y)},
 	]
 	mut segments := [ClipPathSegment{
 		kind: .move_to
@@ -1526,6 +1569,19 @@ fn int_rect_inflated_by_total(rect IntRect, width int, height int) IntRect {
 	}
 }
 
+// CheckBoxPaintable and RadioButtonPaintable paint a centered square inside
+// the element's box. Center before converting to device pixels so fractional
+// CSS geometry is enclosed as a single rectangle, matching the recorder.
+pub fn centered_form_control_rect(outer_rect Rect, converter DevicePixelConverter) IntRect {
+	size := math.min(outer_rect.width, outer_rect.height)
+	return converter.enclosing_device_rect(Rect{
+		x: outer_rect.x + (outer_rect.width - size) / 2.0
+		y: outer_rect.y + (outer_rect.height - size) / 2.0
+		width: size
+		height: size
+	})
+}
+
 // Direct translation of CheckBoxPaintable::paint()'s foreground phase.
 pub fn checkbox_commands(rect IntRect, checked bool, indeterminate bool, enabled bool,
 	activated bool, color_scheme css.PreferredColorScheme, colors InputColors) []DisplayListCommand {
@@ -1548,7 +1604,7 @@ pub fn checkbox_commands(rect IntRect, checked bool, indeterminate bool, enabled
 			path_bounding_rect: rect
 			path: check_mark_path(rect)
 			color: tick_color
-			winding_rule: .nonzero
+			winding_rule: .even_odd
 		}
 		return commands
 	}
@@ -1578,7 +1634,7 @@ pub fn radio_button_commands(rect IntRect, checked bool, enabled bool,
 	inner := max_int(2, int(math.ceil(f64(rect.width) / 4.0)))
 	mut background := colors.background_color(enabled)
 	radio_color := if checked { colors.accent } else { colors.gray }
-	if checked && input_color_contrast_ratio(colors.accent, background) < 2
+	if checked && enabled && input_color_contrast_ratio(colors.accent, background) < 2
 		&& input_color_contrast_ratio(colors.accent, colors.dark_gray) > 2 {
 		background = colors.dark_gray
 	}

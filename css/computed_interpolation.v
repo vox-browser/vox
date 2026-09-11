@@ -5280,8 +5280,21 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 			return c.font_size().times_float(number)
 		}
 	}
-	// ComputedProperties::line_height(): `normal` is rounded to an integer
-	// CSS pixel after applying the engine's 1.15 scale.
+	// Since upstream 0e6db9d9, `normal` is the sum of the selected face's
+	// independently rounded ascent and descent. The font list is materialized
+	// before layout-facing values in resolve_computed_values_for_document().
+	if computed_font := c.cached_first_available_computed_font_ {
+		font := platform.Font{
+			family: computed_font.typeface.family_name
+			point_size: computed_font.point_size / 0.75
+			weight: int(computed_font.variations.weight)
+			source_path: computed_font.typeface.source_path
+		}
+		metrics := font.pixel_metrics()
+		return CSSPixels.new(int(math.round_to_even(f64(metrics.ascent))) + int(math.round_to_even(f64(metrics.descent))))
+	}
+	// Geometry-only callers do not own a document font resolver. Retain the
+	// former scale as their deterministic fallback.
 	return CSSPixels.new(int(math.round_to_even(c.font_size().to_double() * computed_properties_normal_line_height_scale)))
 }
 

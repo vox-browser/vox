@@ -619,6 +619,10 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(reque
 		return
 	}
 	mut mutable_destination := unsafe { &dom.ImmutableBitmap_(destination) }
+	// CanvasDrawImage resolves the source at draw time. Snapshot the bytes so
+	// self-draws and overlapping source/destination rectangles cannot observe
+	// pixels written earlier in the same operation.
+	source_pixels := source.data.clone()
 	left, top, right, bottom := canvas_clamped_rectangle(request.destination_x, request.destination_y, request.destination_width, request.destination_height, destination.width, destination.height)
 	for destination_y := top; destination_y < bottom; destination_y++ {
 		for destination_x := left; destination_x < right; destination_x++ {
@@ -632,10 +636,10 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(reque
 			source_offset := source_y * source.pitch + source_x * 4
 			destination_offset := destination_y * mutable_destination.pitch + destination_x * 4
 			color := dom.Color{
-				r: source.data[source_offset]
-				g: source.data[source_offset + 1]
-				b: source.data[source_offset + 2]
-				a: source.data[source_offset + 3]
+					r: source_pixels[source_offset]
+					g: source_pixels[source_offset + 1]
+					b: source_pixels[source_offset + 2]
+					a: source_pixels[source_offset + 3]
 			}
 			canvas_composite_pixel(mut mutable_destination.data, destination_offset, color, context.drawing_state.global_alpha, context.drawing_state.current_compositing_and_blending_operator)
 		}

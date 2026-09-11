@@ -44,6 +44,8 @@ fn test_line_builder_wraps_and_aligns_fragments() {
 	assert values.line_boxes.len == 2
 	assert values.line_boxes[0].fragments_[0].inline_offset().to_double() == 10
 	assert values.line_boxes[1].fragments_[0].inline_offset().to_double() == 10
+	fragment_metrics := layout_font_metrics_for_node(values.line_boxes[0].fragments_[0].layout_node_)
+	assert values.line_boxes[0].fragments_[0].block_length() == normal_line_height_for_font_metrics(fragment_metrics)
 	assert values.line_boxes[0].height().to_double() == 24
 	assert values.line_boxes[1].bottom().to_double() == 48
 }

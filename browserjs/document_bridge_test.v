@@ -67,3 +67,48 @@ fn test_document_bridge_input_type_uses_one_shadow_tree_and_password_text_flag()
 		assert !snapshot.contains('"hunter2"')
 	}
 }
+
+fn test_document_bridge_canvas_draw_image_snapshots_cross_canvas_and_self_sources() {
+	$if darwin {
+		mut document := html.parse_document('<canvas id="a" width="4" height="2"></canvas><canvas id="b" width="4" height="2"></canvas><script>const ca=a.getContext("2d"),cb=b.getContext("2d");ca.fillStyle="red";ca.fillRect(0,0,4,2);cb.drawImage(a,0,0);ca.fillStyle="blue";ca.fillRect(0,0,2,2);ca.drawImage(a,2,0);</script>')
+		document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+		mut runtime := Runtime.create()
+		defer {
+			runtime.close()
+		}
+		run_inline_document_scripts(document, 'about:blank', runtime)!
+
+		a_element := bridge_test_element(document, '#a')
+		b_element := bridge_test_element(document, '#b')
+		a_bitmap := html.html_canvas_element_present_existing_surface(unsafe {
+			&dom.HTMLCanvasElement(a_element)
+		}) or { panic('missing canvas A surface') }
+		b_bitmap := html.html_canvas_element_present_existing_surface(unsafe {
+			&dom.HTMLCanvasElement(b_element)
+		}) or { panic('missing canvas B surface') }
+		// B captured A while it was entirely red.
+		assert b_bitmap.data[..4] == [u8(255), 0, 0, 255]
+		assert b_bitmap.data[12..16] == [u8(255), 0, 0, 255]
+		// A's self-draw samples the pre-draw state, so its blue left half is
+		// copied to the right half instead of being read incrementally.
+		assert a_bitmap.data[..4] == [u8(0), 0, 255, 255]
+		assert a_bitmap.data[12..16] == [u8(0), 0, 255, 255]
+	}
+}
+
+fn test_document_bridge_applies_async_created_elements_and_set_property_styles() {
+	$if darwin {
+		mut document := html.parse_document('<div id="host"></div><script>Promise.resolve().then(() => { const child = document.createElement("div"); child.className = "late"; child.style.setProperty("mask-image", "linear-gradient(black, black)"); host.appendChild(child); });</script>')
+		document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+		mut runtime := Runtime.create()
+		defer {
+			runtime.close()
+		}
+		run_inline_document_scripts(document, 'about:blank', runtime)!
+
+		child := bridge_test_element(document, '.late')
+		parent := child.parent_element() or { panic('missing host parent') }
+		assert parent.get_attribute_value('id') == 'host'
+		assert child.get_attribute_value('style') == 'mask-image: linear-gradient(black, black)'
+	}
+}

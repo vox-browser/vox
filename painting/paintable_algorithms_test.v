@@ -94,7 +94,24 @@ fn test_image_paintable_translates_object_fit_position_rounding_and_clip() {
 	svg := paintable.paint('svg', IntRect{0, 0, 200, 50}, converter) or {
 		panic('expected SVG image paint')
 	}
-	assert svg.bitmap.destination == IntRect{10, 58, 100, 25}
+	assert svg.bitmap.destination == IntRect{10, 20, 100, 100}
+
+	paintable = ImagePaintable{
+		...paintable
+		object_fit: .none_
+		is_svg_image: false
+		object_position: css.Position{
+			offset_x: css.LengthPercentage.from_percentage(css.Percentage.new(50))
+			offset_y: css.LengthPercentage.from_percentage(css.Percentage.new(50))
+		}
+		intrinsic_size: css.SizeWithAspectRatio{
+			aspect_ratio: css.CSSPixelFraction.new(css.CSSPixels.new(5), css.CSSPixels.new(3))
+		}
+	}
+	ratio_only := paintable.paint('svg-ratio', IntRect{0, 0, 100, 100}, converter) or {
+		panic('expected aspect-ratio-only image paint')
+	}
+	assert ratio_only.bitmap.destination == IntRect{10, 40, 100, 60}
 }
 
 fn test_image_paintable_paints_broken_image_alt_text() {
@@ -386,11 +403,11 @@ fn test_background_table_control_and_replaced_content_algorithms() {
 		left: red_border
 	}.to_device_pixels(converter), CornerRadii{}, converter)
 	clipped_top_commands := fieldset_border_commands.filter(it.clip != none)
-	assert clipped_top_commands.len == 2
-	first_top_clip := clipped_top_commands[0].clip or { panic('missing left top clip') }
-	second_top_clip := clipped_top_commands[1].clip or { panic('missing right top clip') }
-	assert first_top_clip == IntRect{10, 20, 14, 6}
-	assert second_top_clip == IntRect{104, 20, 114, 6}
+	assert clipped_top_commands.len == 0
+	top_border_runs := fieldset_border_commands.filter(it.command is FillRect)
+	assert top_border_runs.len == 2
+	assert (top_border_runs[0].command as FillRect).rect == IntRect{10, 20, 14, 6}
+	assert (top_border_runs[1].command as FillRect).rect == IntRect{104, 20, 114, 6}
 	colors := InputColors{
 		accent: Color{
 			r: 1
@@ -417,7 +434,8 @@ fn test_background_table_control_and_replaced_content_algorithms() {
 	assert checked.len == 2
 	assert checked[1] is FillPath
 	checkmark := checked[1] as FillPath
-	assert checkmark.winding_rule == .nonzero
+	assert checkmark.color == Color{255, 255, 255, 255}
+	assert checkmark.winding_rule == .even_odd
 	assert math.abs(checkmark.path.polygon[0].x - 14.4) < 0.0001
 	assert math.abs(checkmark.path.polygon[0].y - 2.8) < 0.0001
 	assert math.abs(checkmark.path.polygon[5].x - 17) < 0.0001
@@ -428,13 +446,17 @@ fn test_background_table_control_and_replaced_content_algorithms() {
 	dash := indeterminate[2] as FillRoundedRect
 	assert dash.rect == IntRect{4, 8, 12, 4}
 	assert radio_button_commands(IntRect{0, 0, 13, 13}, true, true, false, .light, colors).len == 3
+	control_converter := new_device_pixel_converter(1) or { panic(err) }
+	assert centered_form_control_rect(Rect{10, 20, 30, 20}, control_converter) == IntRect{15, 20, 20, 20}
+	assert centered_form_control_rect(Rect{10, 20, 20, 30}, control_converter) == IntRect{10, 25, 20, 20}
+	assert centered_form_control_rect(Rect{0.25, 0.25, 20.5, 10.5}, control_converter) == IntRect{5, 0, 11, 11}
 	computed_colors := compute_input_colors(.light, css.Color{255, 0, 0, 255})
 	assert computed_colors.accent == Color{255, 0, 0, 255}
 	assert computed_colors.base == Color{255, 255, 255, 255}
-	assert computed_colors.dark_gray == Color{77, 77, 77, 255}
+	assert computed_colors.dark_gray == Color{76, 76, 76, 255}
 	assert computed_colors.gray == Color{148, 148, 148, 255}
 	assert computed_colors.mid_gray == Color{180, 180, 180, 255}
-	assert computed_colors.light_gray == Color{203, 203, 203, 255}
+	assert computed_colors.light_gray == Color{202, 202, 202, 255}
 	assert command_name(marker_command(.disc, IntRect{0, 0, 5, 5}, Color{})) == 'FillEllipse'
 	closed_marker := marker_command(.disclosure_closed, IntRect{10, 20, 8, 6}, Color{})
 	assert closed_marker is FillPath
@@ -559,13 +581,15 @@ fn test_native_input_control_colors_follow_active_disabled_and_contrast_paths() 
 	colors := compute_input_colors(.light, css.Color{255, 0, 0, 255})
 	active_checkbox := checkbox_commands(IntRect{0, 0, 20, 20}, true, false, true, true, .light, colors)
 	assert active_checkbox[0] is FillRoundedRect
-	assert (active_checkbox[0] as FillRoundedRect).color == Color{255, 77, 77, 255}
+	assert (active_checkbox[0] as FillRoundedRect).color == Color{255, 76, 76, 255}
 
 	disabled_checkbox := checkbox_commands(IntRect{0, 0, 20, 20}, true, false, false, false, .light, colors)
 	assert disabled_checkbox[0] is FillRoundedRect
 	assert (disabled_checkbox[0] as FillRoundedRect).color == colors.mid_gray
 	assert disabled_checkbox[1] is FillPath
-	assert (disabled_checkbox[1] as FillPath).color == Color{128, 128, 128, 255}
+	assert (disabled_checkbox[1] as FillPath).color == Color{255, 255, 255, 255}
+	disabled_radio := radio_button_commands(IntRect{0, 0, 20, 20}, true, false, false, .light, colors)
+	assert (disabled_radio[1] as FillRoundedRect).color == colors.light_gray
 	// CheckBoxPaintable keeps the original when neither it nor its inverse
 	// clears the minimum contrast ratio.
 	middle_gray := Color{128, 128, 128, 255}

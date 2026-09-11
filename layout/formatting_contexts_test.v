@@ -1888,19 +1888,19 @@ fn test_collapsed_table_row_has_zero_height_and_does_not_advance_row_cursor() {
 	collapsed := used_for_id(result, 'collapsed')
 	last := used_for_id(result, 'last')
 	collapsed_cell := used_for_id(result, 'collapsed-cell')
-	assert table.content_height().to_double() == 74
-	assert group.content_height().to_double() == 64
-	assert first.content_height().to_double() == 24
+	assert table.content_height().to_double() == 72
+	assert group.content_height().to_double() == 62
+	assert first.content_height().to_double() == 22
 	assert first.offset.y().to_double() == 5
 	assert collapsed.content_height().to_double() == 0
-	assert collapsed.offset.y().to_double() == 34
+	assert collapsed.offset.y().to_double() == 32
 	assert last.content_height().to_double() == 30
-	assert last.offset.y().to_double() == 34
+	assert last.offset.y().to_double() == 32
 	// Collapsed cells are still laid out. Positioning applies the signed
 	// alignment difference against their zero-height row.
-	assert collapsed_cell.content_height().to_double() == 18
-	assert collapsed_cell.padding_top.to_double() == -10
-	assert collapsed_cell.padding_bottom.to_double() == -10
+	assert collapsed_cell.content_height().to_double() == 16
+	assert collapsed_cell.padding_top.to_double() == -9
+	assert collapsed_cell.padding_bottom.to_double() == -9
 }
 
 fn test_collapsed_table_row_group_preserves_upstream_group_spacing_quirk() {
@@ -2242,13 +2242,46 @@ fn test_inline_abspos_auto_insets_follow_previous_inline_fragment() {
 	assert absolute.offset.y().to_double() > 0
 }
 
+fn test_baseline_aligned_inline_block_keeps_the_containing_strut_descent() {
+	document := html.parse_document('<!doctype html><style>
+		#container { width:100px; font:16px/16px SerenitySans }
+		#atomic { display:inline-block; width:10px; height:30px }
+	</style><div id="container"><span id="atomic"></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	container := used_for_id(result, 'container')
+	container_node := layout_node_with_id(result.root, 'container') or { panic('missing container') }
+	computed := container_node.computed_values()
+	metrics := layout_font_metrics_for_node(container_node)
+	baseline := font_baseline_for_line_height(metrics, computed.line_height())
+	expected_height := CSSPixels.new(30).plus(computed.line_height().minus(baseline))
+	assert container.content_height().raw_value() == expected_height.raw_value()
+}
+
+fn test_normal_heading_line_height_uses_selected_font_typo_metrics() {
+	document := html.parse_document('<!doctype html><style>h3 { font-family: SerenitySans }</style><h3 id="heading">heading</h3>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	heading := layout_node_with_id(result.root, 'heading') or { panic('missing heading') }
+	assert heading.computed_values().font_size().to_double() == 18.71875
+	font := heading.first_available_font()
+	metrics := font.pixel_metrics()
+	assert font.point_size == f32(18.71875)
+	// The platform wrapper exposes the selected face under its logical fallback family,
+	// while retaining the concrete SerenitySans resource and metrics.
+	assert font.family == 'Default'
+	assert (font.font_path() or { '' }).ends_with('/3rd/ladybird/Base/res/fonts/SerenitySans-Regular.ttf')
+	assert metrics.ascent == f32(14.971344)
+	assert metrics.descent == f32(3.747406)
+	// normal rounds the two values independently, just like SkFont-backed LibGfx.
+	assert heading.computed_values().line_height().to_double() == 19
+}
+
 fn test_abspos_static_position_is_converted_to_actual_containing_block_space() {
 	document :=
 		html.parse_document('<!doctype html>foo <div id="absolute" style="position:absolute">bar</div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	absolute := used_for_id(result, 'absolute')
 	assert absolute.cumulative_offset().x().to_double() == 8
-	assert absolute.cumulative_offset().y().to_double() == 26
+	assert absolute.cumulative_offset().y().to_double() == 24
 }
 
 fn test_flex_abspos_static_position_uses_main_and_cross_alignment() {
@@ -2563,7 +2596,7 @@ fn test_line_break_skips_crossing_opposite_float_bands() {
 			}
 		}
 	}
-	assert text_y or { panic('missing text fragment') } == 40
+	assert text_y or { panic('missing text fragment') } == 42
 }
 
 fn test_independent_formatting_context_avoids_preceding_float() {

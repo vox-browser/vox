@@ -38,6 +38,15 @@ fn test_css_pixel_fraction_preserves_ratio() {
 	assert CSSPixels.new(10).divided_by(CSSPixels.new(4)).compare(ratio) == 0
 }
 
+fn test_default_sizing_uses_single_step_aspect_ratio_division() {
+	ratio := CSSPixelFraction.new(CSSPixels.new(600), CSSPixels.new(1670))
+	result := run_default_sizing_algorithm(CSSPixels.new(800), none, SizeWithAspectRatio{
+		aspect_ratio: ratio
+	}, CSSPixelSize.from_values(300, 150))
+	assert result.width().raw_value() == 51_200
+	assert result.height().raw_value() == 142_506
+}
+
 fn test_css_pixel_geometry_helpers() {
 	rect := CSSPixelRect.new(10, 20, 30, 40)
 	assert rect.right() == CSSPixels.new(40)

@@ -182,10 +182,11 @@ fn test_scrollbar_overlay_uses_translated_geometry_and_paints_after_outline() {
 	thumb := commands[1]
 	assert thumb.kind == 'fill_rounded_rect'
 	assert math.abs(thumb.x - 102.0) < 0.001
-	assert math.abs(thumb.y - 31.2) < 0.001
+	// Scrollbar geometry crosses the recorder boundary in device pixels.
+	assert math.abs(thumb.y - 31.0) < 0.001
 	assert math.abs(thumb.width - 6.0) < 0.001
 	assert math.abs(thumb.height - 32.0) < 0.001
-	assert thumb.color == css.Color{64, 64, 64, 128}.serialize()
+	assert thumb.color == css.Color{64, 64, 64, 192}.serialize()
 	assert commands[2].kind == 'stroke_rounded_rect'
 }
 

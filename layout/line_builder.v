@@ -5,6 +5,7 @@
 module layout
 
 import css
+import math
 import platform
 
 pub enum ForcedLineBreak {
@@ -244,6 +245,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		layout_font_metrics_for_node(unsafe { &Node(builder.containing_block) })
 	strut_baseline := font_baseline_for_line_height(container_font_metrics, computed.line_height())
 	mut line_box_baseline := strut_baseline
+	mut should_align_strut_to_line_box_baseline := false
 	for index in 0 .. line_box.fragments_.len {
 		mut fragment := &line_box.fragments_[index]
 		fragment_computed := fragment.layout_node_.computed_values()
@@ -263,12 +265,24 @@ pub fn (mut builder LineBuilder) update_last_line() {
 					fragment_baseline.plus(fragment_computed.line_height().scaled(vertical_align.percentage().as_fraction()))
 			}
 		}
+		if fragment_baseline.raw_value() > line_box_baseline.raw_value()
+			&& !fragment.layout_node_.is_text_node()
+			&& fragment_computed.vertical_align_length_percentage() == none
+			&& fragment_computed.vertical_align() == .baseline {
+			display := fragment_computed.display()
+			should_align_strut_to_line_box_baseline = display.is_inline_block()
+				|| (display.is_inline_outside() && display.is_flex_inside())
+		}
 		line_box_baseline = css_pixels_max(line_box_baseline, fragment_baseline)
 	}
 
 	strut_top := builder.current_block_offset
 	mut uppermost_box_top := strut_top
-	mut lowermost_box_bottom := builder.current_block_offset.plus(computed.line_height())
+	mut lowermost_box_bottom := if should_align_strut_to_line_box_baseline {
+		builder.current_block_offset.plus(line_box_baseline).plus(computed.line_height().minus(strut_baseline))
+	} else {
+		builder.current_block_offset.plus(computed.line_height())
+	}
 	for index in 0 .. line_box.fragments_.len {
 		mut fragment := &line_box.fragments_[index]
 		fragment_inline_offset := inline_offset.plus(fragment.inline_offset())
@@ -350,6 +364,19 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		}
 		uppermost_box_top = css_pixels_min(uppermost_box_top, top_of_inline_box)
 		lowermost_box_bottom = css_pixels_max(lowermost_box_bottom, bottom_of_inline_box)
+
+		// Text is initially aligned using its computed line height so that it
+		// contributes the right bounds to the line box. Anchor its paint box to
+		// the selected font's normal metrics afterwards, matching upstream's
+		// horizontal-writing-mode fragment geometry.
+		if fragment.layout_node_.is_text_node() && builder.writing_mode == .horizontal_tb {
+			font_metrics := layout_font_metrics_for_node(fragment.layout_node_)
+			font_box_height := normal_line_height_for_font_metrics(font_metrics)
+			font_baseline := font_baseline_for_line_height(font_metrics, font_box_height)
+			fragment.set_block_offset(fragment.block_offset().plus(fragment.baseline()).minus(font_baseline))
+			fragment.set_baseline(font_baseline)
+			fragment.set_block_length(font_box_height)
+		}
 	}
 	line_box.block_length_ = lowermost_box_bottom.minus(uppermost_box_top)
 	line_box.bottom_ = builder.current_block_offset.plus(line_box.block_length_)
@@ -498,6 +525,11 @@ fn font_baseline_for_line_height(font_metrics platform.FontPixelMetrics, line_he
 		CSSPixels.nearest_value_for(f64(font_metrics.ascent + font_metrics.descent))
 	half_leading := CSSPixels.from_raw(line_height.minus(typographic_height).raw_value() / 2)
 	return ascent.plus(half_leading)
+}
+
+fn normal_line_height_for_font_metrics(font_metrics platform.FontPixelMetrics) CSSPixels {
+	return CSSPixels.new(int(math.round_to_even(f64(font_metrics.ascent))) +
+		int(math.round_to_even(f64(font_metrics.descent))))
 }
 
 fn css_pixels_min(a CSSPixels, b CSSPixels) CSSPixels {

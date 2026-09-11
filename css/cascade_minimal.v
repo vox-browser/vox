@@ -372,10 +372,16 @@ pub fn cascaded_value_with_ua(element &dom.Element, property_id PropertyID, auth
 	// fallback; installed computed state was produced by the canonical document
 	// cascade and takes precedence regardless of that compatibility argument.
 	abstract_element := dom.AbstractElement.new(element, none)
-	if dom_computed := abstract_element.computed_properties() {
-		if computed := computed_properties_from_dom(dom_computed) {
-			if value := computed.property(property_id, .yes) {
-				return value.css_text
+	// A retained style is canonical only after its invalidation bit has been
+	// cleared by StyleComputer. Detached compatibility-layout fixtures can gain
+	// inline style or a parent after their initial style was installed; reading
+	// that stale object would suppress both the new declaration and inheritance.
+	if !element.as_node().needs_style_update() {
+		if dom_computed := abstract_element.computed_properties() {
+			if computed := computed_properties_from_dom(dom_computed) {
+				if value := computed.property(property_id, .yes) {
+					return value.css_text
+				}
 			}
 		}
 	}

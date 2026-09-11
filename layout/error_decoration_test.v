@@ -7,7 +7,7 @@ fn test_error_decoration_shorthands_reach_the_paint_pipeline() {
 	document := dom.Document.create(dom.url_about_blank())
 	for decoration, expected_color in {
 		'spelling-error': 'rgb(255 0 0)'
-		'grammar-error':  'rgb(0 100 0)'
+		'grammar-error':  'rgb(0 128 0)'
 	} {
 		mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or {
 			panic(err)

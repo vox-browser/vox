@@ -15,7 +15,7 @@ fn inline_context_test_style(document &dom.Document, declarations string) &css.C
 fn test_inline_formatting_context_wraps_words_into_line_boxes() {
 	document := dom.Document.create(dom.url_about_blank())
 	style := inline_context_test_style(document,
-		'display:block; width:80px; font-size:20px; line-height:24px')
+		'display:block; width:80px; font:20px/24px SerenitySans')
 	mut container := BlockContainer.new(document, none, style)
 	container.set_children_are_inline(true)
 	dom_text := document.create_text_node('four four four')
@@ -39,7 +39,7 @@ fn test_inline_formatting_context_wraps_words_into_line_boxes() {
 fn test_inline_formatting_context_collapses_source_indentation() {
 	document := dom.Document.create(dom.url_about_blank())
 	style := inline_context_test_style(document,
-		'display:block; width:300px; font-size:20px; line-height:24px')
+		'display:block; width:300px; font:20px/24px SerenitySans')
 	mut container := BlockContainer.new(document, none, style)
 	container.set_children_are_inline(true)
 	first_dom_text := document.create_text_node('Hello   ')

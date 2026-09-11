@@ -167,18 +167,24 @@ pub:
 	rtl                   bool
 	// Paint style of the inline element that generated this word. Words with the same non-zero node
 	// id are joined into one inline box on each line before their text is painted.
-	inline_node_id    i64
-	background_color  css.Color
-	background_images []BackgroundImageLayer
-	border            BoxEdges
-	padding           BoxEdges
-	border_color      css.Color
-	border_colors     BoxColors
-	border_styles     BoxBorderStyles = solid_box_border_styles()
-	border_radius     f64
-	border_radii      BoxRadii
-	shadow            ?BoxShadow
-	shadows           []BoxShadow
+	inline_node_id           i64
+	fragment_left_edge_away  bool
+	fragment_right_edge_away bool
+	background_color         css.Color
+	background_images        []BackgroundImageLayer
+	border                   BoxEdges
+	padding                  BoxEdges
+	border_color             css.Color
+	border_colors            BoxColors
+	border_styles            BoxBorderStyles = solid_box_border_styles()
+	border_radius            f64
+	border_radii             BoxRadii
+	outline_width            f64
+	outline_offset           f64
+	outline_color            css.Color
+	outline_style            painting.LineStyle = .none
+	shadow                   ?BoxShadow
+	shadows                  []BoxShadow
 	// The resolved text-decoration covering this word.
 	decoration           string = 'none'
 	decoration_color     css.Color
@@ -459,6 +465,7 @@ pub mut:
 	svg_stroke_radial_gradient ?painting.SVGRadialGradientPaintStyle
 	svg_stroke_pattern         ?&painting.SVGPatternPaintStyle
 	svg_stroke_width           f64
+	svg_non_scaling_stroke     bool
 	svg_stroke_first           bool
 	svg_stroke_linecap         int
 	svg_stroke_linejoin        int
@@ -1466,6 +1473,7 @@ pub mut:
 	fill_pattern           ?&painting.SVGPatternPaintStyle
 	stroke_pattern         ?&painting.SVGPatternPaintStyle
 	stroke_width           f64
+	non_scaling_stroke     bool
 	stroke_first           bool
 	fill_even_odd          bool
 	stroke_linecap         int
@@ -1982,11 +1990,7 @@ fn append_scrollbar_overlay_command(mut commands []PaintCommand, data painting.S
 			opacity: opacity
 		}
 	}
-	mut thumb_color := overlay.scrollbar_thumb_color
-	if gutter.width <= 0 && gutter.height <= 0 && overlay.default_scrollbar_colors {
-		// DisplayListPlayerSkia lowers only the initial thin thumb to alpha 128.
-		thumb_color.a = 128
-	}
+	thumb_color := overlay.scrollbar_thumb_color
 	// SkRRect normalizes the player's width/2 radius against the short axis.
 	// DisplayListPlayerSkia constructs the rrect with width/2; SkRRect itself
 	// scales oversized horizontal radii for a short horizontal scrollbar.
@@ -2755,7 +2759,10 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		}
 		if nested_viewport_paintable := box.nested_viewport_paintable {
 			if hosted_document := box.nested_viewport_document {
-				nested_layout := run_document_layout(hosted_document, box.width, box.height) or {
+				nested_rect := nested_viewport_paintable.nested_rect or {
+					nested_viewport_paintable.viewport_rect
+				}
+				nested_layout := run_document_layout(hosted_document, nested_rect.width, nested_rect.height) or {
 					DocumentLayoutResult{}
 				}
 				if nested_layout.root != unsafe { nil } {
@@ -2763,10 +2770,10 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 					if nested_display_list := mutable_hosted_document.record_display_list() {
 						commands << PaintCommand{
 							kind: 'paint_nested_display_list'
-							x: box.x
-							y: box.y
-							width: box.width
-							height: box.height
+							x: nested_rect.x
+							y: nested_rect.y
+							width: nested_rect.width
+							height: nested_rect.height
 							opacity: opacity
 							nested_viewport_commands: display_list_commands(nested_display_list).clone()
 							nested_viewport_paintable: nested_viewport_paintable
@@ -2778,21 +2785,32 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		form_control_state := box.current_form_control_state()
 		if box.form_control_kind in ['checkbox', 'radio'] {
 			converter := painting.new_device_pixel_converter(1.0) or { return commands }
-			control_rect := converter.enclosing_device_rect(painting.Rect{
+			control_rect := painting.centered_form_control_rect(painting.Rect{
 				x: box.x
 				y: box.y
 				width: box.width
 				height: box.height
-			})
+			}, converter)
 			input_colors := painting.compute_input_colors(box.form_control_color_scheme, box.form_control_accent_color)
 			display_commands := if box.form_control_kind == 'checkbox' {
 				painting.checkbox_commands(control_rect, form_control_state.checked, form_control_state.indeterminate, form_control_state.enabled, form_control_state.activated, box.form_control_color_scheme, input_colors)
 			} else {
 				painting.radio_button_commands(control_rect, form_control_state.checked, form_control_state.enabled, form_control_state.activated, box.form_control_color_scheme, input_colors)
 			}
+			// A control is one upstream display-list replay unit. Keep its overlapping
+			// antialiased primitives on one Skia surface so intermediate 8-bit Cocoa
+			// composites cannot round the shared edges independently.
+			commands << PaintCommand{
+				kind: 'begin_skia_command_group'
+				x: control_rect.x
+				y: control_rect.y
+				width: control_rect.width
+				height: control_rect.height
+			}
 			for display_command in display_commands {
 				append_painting_display_command(mut commands, display_command, opacity)
 			}
+			commands << PaintCommand{ kind: 'end_skia_command_group' }
 		}
 		foreground_replaced_end := commands.len
 		// Translate each border side through Painting's source-shaped BorderPainting paths. Matching
@@ -2848,6 +2866,7 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				stroke_radial_gradient: box.svg_stroke_radial_gradient
 				stroke_pattern: box.svg_stroke_pattern
 				stroke_width: box.svg_stroke_width
+				non_scaling_stroke: box.svg_non_scaling_stroke
 				stroke_first: box.svg_stroke_first
 				stroke_linecap: box.svg_stroke_linecap
 				stroke_linejoin: box.svg_stroke_linejoin
@@ -2869,8 +2888,17 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				}
 			}
 		}
+		mut inline_outlines := [][]PaintCommand{cap: box.lines.len}
 		for line in box.lines {
-			commands << inline_fragment_commands(line.fragments, opacity)
+			fragment_commands := inline_fragment_commands(line.fragments, opacity)
+			commands << fragment_commands.decorations
+			inline_outlines << fragment_commands.outlines
+		}
+		for line_index, line in box.lines {
+			// Inline outlines and glyphs retain their per-line order after every
+			// line's border phase has completed. This keeps a following line's
+			// border from covering the previous line's outline at overlaps.
+			commands << inline_outlines[line_index]
 			commands << text_fragment_commands(line.fragments, opacity)
 		}
 		if box.paintable_with_lines {
@@ -3764,8 +3792,15 @@ fn compute_text_clip_paths(box &BlockBox) []PaintTextClipRun {
 // Paint the decorating boxes generated by inline elements before their text. Consecutive word
 // fragments from the same element are joined, so the background/border also covers collapsed spaces
 // between words. A wrapping inline gets one decorating box per line.
-fn inline_fragment_commands(fragments []TextFragment, opacity f64) []PaintCommand {
+struct InlineFragmentPaintCommands {
+mut:
+	decorations []PaintCommand
+	outlines    []PaintCommand
+}
+
+fn inline_fragment_commands(fragments []TextFragment, opacity f64) InlineFragmentPaintCommands {
 	mut commands := []PaintCommand{}
+	mut outlines := []PaintCommand{}
 	mut i := 0
 	for i < fragments.len {
 		first := fragments[i]
@@ -3778,12 +3813,57 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) []PaintComman
 			j++
 		}
 		last := fragments[j - 1]
-		left := first.x - first.padding.left - first.border.left
-		top := first.y - first.padding.top - first.border.top
-		width := last.x + last.width - first.x + first.padding.left + first.padding.right + first.border.left + first.border.right
-		height := first.height + first.padding.top + first.padding.bottom + first.border.top + first.border.bottom
+		effective_border := BoxEdges{
+			top: first.border.top
+			right: if last.fragment_right_edge_away { 0.0 } else { first.border.right }
+			bottom: first.border.bottom
+			left: if first.fragment_left_edge_away { 0.0 } else { first.border.left }
+		}
+		decorating_fragment := TextFragment{
+			...first
+			border: effective_border
+		}
+		unrounded_border_rect := painting.Rect{
+			x: first.x - first.padding.left - effective_border.left
+			y: first.y - first.padding.top - first.border.top
+			width: last.x + last.width - first.x + first.padding.left + first.padding.right + effective_border.left + effective_border.right
+			height: first.height + first.padding.top + first.padding.bottom + first.border.top + first.border.bottom
+		}
+		converter := painting.new_device_pixel_converter(1.0) or { return InlineFragmentPaintCommands{} }
+		device_border_rect := converter.rounded_device_rect(unrounded_border_rect)
+		left := f64(device_border_rect.x)
+		top := f64(device_border_rect.y)
+		width := f64(device_border_rect.width)
+		height := f64(device_border_rect.height)
 		border_rect := LayoutRect{left, top, width, height}
-		fragment_radii := effective_box_radii(first.border_radii, first.border_radius, width, height)
+		specified_radii := BoxRadii{
+			top_left: if first.fragment_left_edge_away {
+				CornerRadius{}
+			} else {
+				first.border_radii.top_left
+			}
+			top_right: if last.fragment_right_edge_away {
+				CornerRadius{}
+			} else {
+				first.border_radii.top_right
+			}
+			bottom_right: if last.fragment_right_edge_away {
+				CornerRadius{}
+			} else {
+				first.border_radii.bottom_right
+			}
+			bottom_left: if first.fragment_left_edge_away {
+				CornerRadius{}
+			} else {
+				first.border_radii.bottom_left
+			}
+		}
+		fragment_radii := effective_box_radii(specified_radii, if first.fragment_left_edge_away
+			|| last.fragment_right_edge_away {
+			0.0
+		} else {
+			first.border_radius
+		}, width, height)
 		uniform_circle_radii := box_radii_are_uniform_circles(fragment_radii)
 		radius := if uniform_circle_radii { fragment_radii.top_left.x } else { 0.0 }
 		mut fragment_shadows := unsafe { first.shadows }
@@ -3792,28 +3872,8 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) []PaintComman
 				fragment_shadows << shadow
 			}
 		}
-		for shadow in fragment_shadows {
-			if shadow.inset {
-				continue
-			}
-			shadow_width := width + 2.0 * shadow.spread
-			shadow_height := height + 2.0 * shadow.spread
-			commands << PaintCommand{
-				kind: 'fill_rect'
-				x: left + shadow.offset_x - shadow.spread
-				y: top + shadow.offset_y - shadow.spread
-				width: shadow_width
-				height: shadow_height
-				color: shadow.color.serialize()
-				opacity: opacity
-				radius: clamp_radius(first.border_radius, shadow_width, shadow_height)
-				blur: shadow.blur
-				shadow_offset_x: shadow.offset_x
-				shadow_offset_y: shadow.offset_y
-				shadow_spread: shadow.spread
-				outer_shadow: true
-			}
-		}
+		outer_shadows := fragment_shadows.filter(!it.inset)
+		paintable_box_paint_box_shadow(mut commands, outer_shadows, effective_border, first.border_colors, first.border_styles, fragment_radii, border_rect, border_rect, opacity)
 		background_isolated := first.background_images.any(background_image_layer_blend_mode(it) != .normal)
 		if background_isolated {
 			commands << PaintCommand{ kind: 'begin_background_blend_group' }
@@ -3856,8 +3916,8 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) []PaintComman
 		}
 		for layer_index := first.background_images.len - 1; layer_index >= 0; layer_index-- {
 			layer := first.background_images[layer_index]
-			origin := inline_background_box_rect(first, layer.origin, border_rect)
-			clip := inline_background_box_rect(first, layer.clip, border_rect)
+			origin := inline_background_box_rect(decorating_fragment, layer.origin, border_rect)
+			clip := inline_background_box_rect(decorating_fragment, layer.clip, border_rect)
 			if command := background_layer_command(layer, origin, clip, fragment_radii, opacity, radius, []f64{}, painting.Point{}, .auto_) {
 				commands << command
 			}
@@ -3865,12 +3925,16 @@ fn inline_fragment_commands(fragments []TextFragment, opacity f64) []PaintComman
 		if background_isolated {
 			commands << PaintCommand{ kind: 'end_background_blend_group' }
 		}
-		append_inset_shadow_commands(mut commands, fragment_shadows, left + first.border.left, top + first.border.top, non_negative(width - first.border.left - first.border.right), non_negative(height - first.border.top - first.border.bottom), non_negative(radius - first.border.top), opacity)
+		append_inset_shadow_commands(mut commands, fragment_shadows, left + effective_border.left, top + effective_border.top, non_negative(width - effective_border.left - effective_border.right), non_negative(height - effective_border.top - effective_border.bottom), non_negative(radius - effective_border.top), opacity)
 		border_colors := effective_border_colors(first.border_colors, first.border_color)
-		append_translated_border_commands(mut commands, first.border, border_colors, first.border_styles, fragment_radii, left, top, width, height, opacity)
+		append_translated_border_commands(mut commands, effective_border, border_colors, first.border_styles, fragment_radii, left, top, width, height, opacity)
+		append_translated_outline_commands(mut outlines, first.outline_width, first.outline_offset, first.outline_color, first.outline_style, fragment_radii, left, top, width, height, opacity)
 		i = j
 	}
-	return commands
+	return InlineFragmentPaintCommands{
+		decorations: commands
+		outlines: outlines
+	}
 }
 
 fn inline_background_box_rect(fragment TextFragment, box_name string, border LayoutRect) LayoutRect {
@@ -3975,33 +4039,31 @@ fn append_text_decoration_style(mut commands []PaintCommand, line string, start 
 	mut line_end := end
 	match style {
 		'double' {
+			// Two parallel lines with a 1px gap, expanding away from the text.
+			step := thickness + 1
 			match line {
-				'overline' {
-					line_start = painting.IntPoint{line_start.x, line_start.y - thickness - 1}
-					line_end = painting.IntPoint{line_end.x, line_end.y - thickness - 1}
-				}
 				'line-through' {
-					line_start = painting.IntPoint{line_start.x, line_start.y - thickness / 2}
-					line_end = painting.IntPoint{line_end.x, line_end.y - thickness / 2}
+					line_start = painting.IntPoint{line_start.x, line_start.y - step / 2}
+					line_end = painting.IntPoint{line_end.x, line_end.y - step / 2}
 				}
 				else {}
 			}
 			append_text_decoration_draw_line(mut commands, line_start, line_end, color, thickness, 'solid', opacity)
-			append_text_decoration_draw_line(mut commands, painting.IntPoint{line_start.x, line_start.y + thickness + 1}, painting.IntPoint{line_end.x, line_end.y + thickness + 1}, color, thickness, 'solid', opacity)
+			second_y := if line == 'overline' { line_start.y - step } else { line_start.y + step }
+			append_text_decoration_draw_line(mut commands, painting.IntPoint{line_start.x, second_y}, painting.IntPoint{line_end.x, second_y}, color, thickness, 'solid', opacity)
 		}
 		'wavy' {
+			// The wave oscillates around its center. Move that center away from the text so its near
+			// peaks do not overlap the glyphs.
+			wave_offset := thickness / 2 + 1
 			match line {
 				'underline' {
-					line_start = painting.IntPoint{line_start.x, line_start.y + thickness + 1}
-					line_end = painting.IntPoint{line_end.x, line_end.y + thickness + 1}
+					line_start = painting.IntPoint{line_start.x, line_start.y + wave_offset}
+					line_end = painting.IntPoint{line_end.x, line_end.y + wave_offset}
 				}
 				'overline' {
-					line_start = painting.IntPoint{line_start.x, line_start.y - thickness - 1}
-					line_end = painting.IntPoint{line_end.x, line_end.y - thickness - 1}
-				}
-				'line-through' {
-					line_start = painting.IntPoint{line_start.x, line_start.y - thickness / 2}
-					line_end = painting.IntPoint{line_end.x, line_end.y - thickness / 2}
+					line_start = painting.IntPoint{line_start.x, line_start.y - wave_offset}
+					line_end = painting.IntPoint{line_end.x, line_end.y - wave_offset}
 				}
 				else {}
 			}
@@ -4038,6 +4100,68 @@ fn append_text_decoration_style(mut commands []PaintCommand, line string, start 
 	}
 }
 
+struct TextDecorationSegment {
+	start_x int
+	end_x   int
+}
+
+// CSS Text Decoration 4 skip-ink. LibGfx returns one horizontal ink interval per shaped glyph;
+// dilating those intervals creates the visible gaps around descenders and overline intersections.
+fn text_decoration_skip_ink_segments(fragment TextFragment, line string, start_x int, end_x int, line_y int, thickness int) []TextDecorationSegment {
+	if line !in ['underline', 'overline'] {
+		return [TextDecorationSegment{
+			start_x: start_x
+			end_x: end_x
+		}]
+	}
+	glyph_run := fragment.paintable_fragment.glyph_run or {
+		return [TextDecorationSegment{
+			start_x: start_x
+			end_x: end_x
+		}]
+	}
+	blob_origin_x := fragment.x
+	blob_origin_y := fragment.y + fragment.baseline
+	half_thickness := f64(thickness) / 2.0
+	y_top := f32(f64(line_y) - half_thickness - blob_origin_y)
+	y_bottom := f32(f64(line_y) + half_thickness - blob_origin_y)
+	intervals := glyph_run.glyph_intercepts(1, y_top, y_bottom)
+	if intervals.len == 0 {
+		return [TextDecorationSegment{
+			start_x: start_x
+			end_x: end_x
+		}]
+	}
+	dilation := math.max(fragment.font_size / 20.0, 2.0)
+	mut segments := []TextDecorationSegment{}
+	mut current_x := int(math.round(fragment.x))
+	mut index := 0
+	for index + 1 < intervals.len {
+		gap_start := int(math.floor(f64(intervals[index]) + blob_origin_x - dilation))
+		gap_end := int(math.ceil(f64(intervals[index + 1]) + blob_origin_x + dilation))
+		segment_start := if current_x > start_x { current_x } else { start_x }
+		segment_end := if gap_start < end_x { gap_start } else { end_x }
+		if segment_start < segment_end {
+			segments << TextDecorationSegment{
+				start_x: segment_start
+				end_x: segment_end
+			}
+		}
+		if gap_end > current_x {
+			current_x = gap_end
+		}
+		index += 2
+	}
+	segment_start := if current_x > start_x { current_x } else { start_x }
+	if segment_start < end_x {
+		segments << TextDecorationSegment{
+			start_x: segment_start
+			end_x: end_x
+		}
+	}
+	return segments
+}
+
 // Direct translation of PaintableWithLines.cpp::paint_text_decoration().
 fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 	if fragment.decoration == '' || fragment.decoration == 'none' {
@@ -4046,7 +4170,6 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 	mut glyph_height := fragment.glyph_height
 	mut font_ascent := fragment.font_ascent
 	mut font_descent := fragment.font_descent
-	mut font_x_height := fragment.font_x_height
 	if !fragment.font_metrics_set {
 		font := &platform.Font{
 			family: if fragment.mono { 'monospace' } else { 'sans-serif' }
@@ -4057,7 +4180,6 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 		glyph_height = f64(metrics.size)
 		font_ascent = f64(metrics.ascent)
 		font_descent = f64(metrics.descent)
-		font_x_height = f64(metrics.x_height)
 	}
 	typographic_height := font_ascent + font_descent
 	baseline := if fragment.baseline_set {
@@ -4065,7 +4187,7 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 	} else {
 		font_ascent + (fragment.height - typographic_height) / 2.0
 	}
-	mut color := if fragment.decoration_color_set {
+	base_color := if fragment.decoration_color_set {
 		fragment.decoration_color.serialize()
 	} else {
 		fragment.color.serialize()
@@ -4075,24 +4197,32 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 	} else {
 		math.max(glyph_height * 0.1, 1.0)
 	}
-	mut thickness := int(math.round(css_thickness))
-	mut style := if fragment.decoration_style == '' { 'solid' } else { fragment.decoration_style }
-	mut underline_offset := fragment.text_underline_offset
 	mut commands := []PaintCommand{}
 	for input_line in fragment.decoration.fields() {
 		mut line := input_line
+		mut color := base_color
+		mut line_thickness := css_thickness
+		mut thickness := int(math.round(line_thickness))
+		mut style := if fragment.decoration_style == '' {
+			'solid'
+		} else {
+			fragment.decoration_style
+		}
+		mut underline_offset := fragment.text_underline_offset
 		if line == 'spelling-error' {
 			color = 'rgb(255 0 0)'
+			line_thickness = 1
 			thickness = 1
 			style = 'wavy'
 			line = 'underline'
-			underline_offset = 0
+			underline_offset = 2
 		} else if line == 'grammar-error' {
-			color = 'rgb(0 100 0)'
+			color = 'rgb(0 128 0)'
+			line_thickness = 1
 			thickness = 1
 			style = 'wavy'
 			line = 'underline'
-			underline_offset = 0
+			underline_offset = 2
 		}
 		if line == 'none' || line == 'blink' {
 			return commands
@@ -4105,21 +4235,27 @@ fn paint_text_decoration(fragment TextFragment, opacity f64) []PaintCommand {
 				} else {
 					baseline
 				}
-				line_y = fragment.y + position + underline_offset
+				// The position denotes the near edge of the stroke; painting consumes its center.
+				line_y = fragment.y + position + underline_offset + line_thickness / 2.0
 			}
 			'overline' {
-				line_y = fragment.y + baseline - glyph_height
+				line_y = fragment.y + baseline - glyph_height - line_thickness / 2.0
 			}
 			'line-through' {
-				line_y = fragment.y + baseline - font_x_height * 0.5
+				// Gfx stores point size in typographic points while this adapter carries CSS pixels.
+				line_y = fragment.y + baseline - fragment.font_size * 0.75 * 0.5
 			}
 			else {
 				continue
 			}
 		}
-		start := painting.IntPoint{int(math.round(fragment.x)), int(math.round(line_y))}
-		end := painting.IntPoint{int(math.round(fragment.x + fragment.width)), int(math.round(line_y))}
-		append_text_decoration_style(mut commands, line, start, end, color, thickness, style, opacity)
+		start_x := int(math.round(fragment.x))
+		end_x := int(math.round(fragment.x + fragment.width))
+		rounded_y := int(math.round(line_y))
+		segments := text_decoration_skip_ink_segments(fragment, line, start_x, end_x, rounded_y, thickness)
+		for segment in segments {
+			append_text_decoration_style(mut commands, line, painting.IntPoint{segment.start_x, rounded_y}, painting.IntPoint{segment.end_x, rounded_y}, color, thickness, style, opacity)
+		}
 	}
 	return commands
 }
@@ -4236,7 +4372,7 @@ fn counter_style_registry(author_rules []&css.CSSRule) map[string]css.CounterSty
 
 	mut definitions := map[string]css.CounterStyleDefinition{}
 	mut definition_order := []string{}
-	for rule in css.user_agent_rules() {
+	for rule in css.user_agent_counter_style_rules() {
 		if counter_rule := rule.counter_style_rule_value() {
 			if definition := css.CounterStyleDefinition.from_counter_style_rule(counter_rule, css.ComputationContext{}) {
 				definitions[definition.name()] = definition
@@ -4361,6 +4497,28 @@ fn list_item_ordinal(element &dom.Element, author_rules []&css.CSSRule) int {
 		if start := parent.get_attribute('start') {
 			if parsed := parse_list_integer(start) {
 				ordinal = parsed
+			}
+		} else if is_reversed {
+			// A reversed() list-item counter has an implicit initial value. A counter-set from an
+			// li[value] pins the sequence, so count backwards from the first valid pin rather than
+			// merely using the number of list items. This is the CSS counter result used by current
+			// Ladybird (for example: 7, 6, 5, 4, 3 for five items with value=5 on the third).
+			mut preceding_items := 0
+			for child in parent.as_node().children_as_vector() {
+				if el := child.as_element() {
+					if css.cascaded_value_with_ua(el, display_id, author_rules) != 'list-item' {
+						continue
+					}
+					if el.local_name() == 'li' {
+						if value := el.get_attribute('value') {
+							if parsed := parse_list_integer(value) {
+								ordinal = parsed + preceding_items
+								break
+							}
+						}
+					}
+					preceding_items++
+				}
 			}
 		}
 	}
@@ -4986,7 +5144,12 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 				2 { 'bevel' }
 				else { 'miter' }
 			}
-			body << '<path d="${escape_xml(command.path)}" transform="matrix(${fmt_px(path_matrix[0])} ${fmt_px(path_matrix[1])} ${fmt_px(path_matrix[2])} ${fmt_px(path_matrix[3])} ${fmt_px(path_matrix[4])} ${fmt_px(path_matrix[5])})" fill="${fill}" fill-rule="${fill_rule}" fill-opacity="${fmt_px(command.opacity * command.fill_opacity)}" stroke="${stroke}" stroke-opacity="${fmt_px(command.opacity * command.stroke_opacity)}" stroke-width="${fmt_px(command.stroke_width)}" stroke-linecap="${linecap}" stroke-linejoin="${linejoin}" stroke-miterlimit="${fmt_px(command.stroke_miterlimit)}"${paint_order}/>'
+			vector_effect := if command.non_scaling_stroke {
+				' vector-effect="non-scaling-stroke"'
+			} else {
+				''
+			}
+			body << '<path d="${escape_xml(command.path)}" transform="matrix(${fmt_px(path_matrix[0])} ${fmt_px(path_matrix[1])} ${fmt_px(path_matrix[2])} ${fmt_px(path_matrix[3])} ${fmt_px(path_matrix[4])} ${fmt_px(path_matrix[5])})" fill="${fill}" fill-rule="${fill_rule}" fill-opacity="${fmt_px(command.opacity * command.fill_opacity)}" stroke="${stroke}" stroke-opacity="${fmt_px(command.opacity * command.stroke_opacity)}" stroke-width="${fmt_px(command.stroke_width)}" stroke-linecap="${linecap}" stroke-linejoin="${linejoin}" stroke-miterlimit="${fmt_px(command.stroke_miterlimit)}"${paint_order}${vector_effect}/>'
 		}
 		if body.len > body_start && !affine_is_identity(command.transform) {
 			matrix := normalized_affine(command.transform)

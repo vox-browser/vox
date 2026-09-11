@@ -37,6 +37,26 @@ fn test_parse_launch_options_accepts_screenshot_output() {
 	assert options.source == 'https://example.com'
 }
 
+fn test_parse_launch_options_accepts_a_tall_screenshot_viewport_override() {
+	options := parse_launch_options([
+		'--screenshot-viewport-height',
+		'4700',
+		'--screenshot=/tmp/example.png',
+		'page.html',
+	]) or { panic(err) }
+	assert options.screenshot_viewport_height == 4700
+	assert options.height == initial_height
+}
+
+fn test_parse_launch_options_accepts_a_screenshot_scroll_offset() {
+	options := parse_launch_options([
+		'--screenshot-scroll-y=3612',
+		'--screenshot=/tmp/example.png',
+		'page.html',
+	]) or { panic(err) }
+	assert options.screenshot_scroll_y == 3612
+}
+
 fn test_parse_launch_options_rejects_empty_screenshot_output() {
 	parse_launch_options(['--screenshot=']) or {
 		assert err.msg().contains('PNG output path')
@@ -180,6 +200,10 @@ fn test_document_root_paintable_is_not_treated_as_an_element_wheel_scroller() {
 		panic('missing document-root layout node')
 	}
 	assert layout_node_is_document_viewport_scroller(document, root_layout_node)
+	viewport_layout_node := root_layout_node.containing_block() or {
+		panic('missing synthetic viewport layout node')
+	}
+	assert layout_node_is_document_viewport_scroller(document, viewport_layout_node)
 
 	content := document.get_element_by_id('content') or { panic('missing content') }
 	content_layout_node := content.as_node().layout_node() or {
