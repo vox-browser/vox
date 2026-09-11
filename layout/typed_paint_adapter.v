@@ -9,7 +9,6 @@ import html
 import math
 import os
 import painting
-import platform
 import svg
 import time
 
@@ -2958,6 +2957,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut svg_stroke_radial_gradient := ?painting.SVGRadialGradientPaintStyle(none)
 	mut svg_stroke_pattern := ?&painting.SVGPatternPaintStyle(none)
 	mut svg_stroke_width := 0.0
+	mut svg_stroke_dasharray := []f64{}
+	mut svg_stroke_dashoffset := 0.0
 	mut svg_non_scaling_stroke := false
 	mut svg_stroke_first := false
 	mut svg_stroke_linecap := 0
@@ -3091,6 +3092,9 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		diagonal := math.sqrt(used.content_width().to_double() * used.content_width().to_double() + used.content_height().to_double() * used.content_height().to_double())
 		svg_stroke_width = computed.length_percentage_to_px(.stroke_width, diagonal) or { 1.0 }
 		if svg_element := paint_element {
+			element_model := svg_element_model(svg_element)
+			svg_stroke_dasharray = element_model.stroke_dasharray().map(f64(it))
+			svg_stroke_dashoffset = element_model.stroke_dashoffset() or { 0.0 }
 			svg_non_scaling_stroke = svg_element.get_attribute_value('vector-effect').trim_space().to_lower() == 'non-scaling-stroke'
 		}
 		svg_stroke_first = svg_mask_stroke_precedes_fill(computed.paint_order())
@@ -3537,6 +3541,8 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		svg_stroke_radial_gradient: svg_stroke_radial_gradient
 		svg_stroke_pattern: svg_stroke_pattern
 		svg_stroke_width: svg_stroke_width
+		svg_stroke_dasharray: svg_stroke_dasharray
+		svg_stroke_dashoffset: svg_stroke_dashoffset
 		svg_non_scaling_stroke: svg_non_scaling_stroke
 		svg_stroke_first: svg_stroke_first
 		svg_stroke_linecap: svg_stroke_linecap

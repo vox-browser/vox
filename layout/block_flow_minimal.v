@@ -465,6 +465,8 @@ pub mut:
 	svg_stroke_radial_gradient ?painting.SVGRadialGradientPaintStyle
 	svg_stroke_pattern         ?&painting.SVGPatternPaintStyle
 	svg_stroke_width           f64
+	svg_stroke_dasharray       []f64
+	svg_stroke_dashoffset      f64
 	svg_non_scaling_stroke     bool
 	svg_stroke_first           bool
 	svg_stroke_linecap         int
@@ -1473,6 +1475,8 @@ pub mut:
 	fill_pattern           ?&painting.SVGPatternPaintStyle
 	stroke_pattern         ?&painting.SVGPatternPaintStyle
 	stroke_width           f64
+	stroke_dasharray       []f64
+	stroke_dashoffset      f64
 	non_scaling_stroke     bool
 	stroke_first           bool
 	fill_even_odd          bool
@@ -2866,6 +2870,8 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 				stroke_radial_gradient: box.svg_stroke_radial_gradient
 				stroke_pattern: box.svg_stroke_pattern
 				stroke_width: box.svg_stroke_width
+				stroke_dasharray: box.svg_stroke_dasharray
+				stroke_dashoffset: box.svg_stroke_dashoffset
 				non_scaling_stroke: box.svg_non_scaling_stroke
 				stroke_first: box.svg_stroke_first
 				stroke_linecap: box.svg_stroke_linecap
@@ -5149,7 +5155,12 @@ pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 			} else {
 				''
 			}
-			body << '<path d="${escape_xml(command.path)}" transform="matrix(${fmt_px(path_matrix[0])} ${fmt_px(path_matrix[1])} ${fmt_px(path_matrix[2])} ${fmt_px(path_matrix[3])} ${fmt_px(path_matrix[4])} ${fmt_px(path_matrix[5])})" fill="${fill}" fill-rule="${fill_rule}" fill-opacity="${fmt_px(command.opacity * command.fill_opacity)}" stroke="${stroke}" stroke-opacity="${fmt_px(command.opacity * command.stroke_opacity)}" stroke-width="${fmt_px(command.stroke_width)}" stroke-linecap="${linecap}" stroke-linejoin="${linejoin}" stroke-miterlimit="${fmt_px(command.stroke_miterlimit)}"${paint_order}${vector_effect}/>'
+			dasharray := if command.stroke_dasharray.len > 0 {
+				' stroke-dasharray="${command.stroke_dasharray.map(fmt_px(it)).join(' ')}" stroke-dashoffset="${fmt_px(command.stroke_dashoffset)}"'
+			} else {
+				''
+			}
+			body << '<path d="${escape_xml(command.path)}" transform="matrix(${fmt_px(path_matrix[0])} ${fmt_px(path_matrix[1])} ${fmt_px(path_matrix[2])} ${fmt_px(path_matrix[3])} ${fmt_px(path_matrix[4])} ${fmt_px(path_matrix[5])})" fill="${fill}" fill-rule="${fill_rule}" fill-opacity="${fmt_px(command.opacity * command.fill_opacity)}" stroke="${stroke}" stroke-opacity="${fmt_px(command.opacity * command.stroke_opacity)}" stroke-width="${fmt_px(command.stroke_width)}" stroke-linecap="${linecap}" stroke-linejoin="${linejoin}" stroke-miterlimit="${fmt_px(command.stroke_miterlimit)}"${dasharray}${paint_order}${vector_effect}/>'
 		}
 		if body.len > body_start && !affine_is_identity(command.transform) {
 			matrix := normalized_affine(command.transform)

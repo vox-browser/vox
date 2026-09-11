@@ -878,7 +878,8 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
     uint8_t fill_red, uint8_t fill_green, uint8_t fill_blue, uint8_t fill_alpha,
     int has_fill, uint8_t stroke_red, uint8_t stroke_green, uint8_t stroke_blue,
 	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
-	int line_join, float miter_limit, int non_scaling_stroke)
+	int line_join, float miter_limit, int non_scaling_stroke,
+	double const* dash_data, int dash_count, double dash_offset)
 {
     if (!destination || !data || segment_count <= 0 || (!has_fill && !has_stroke)
         || canvas_width <= 0 || canvas_height <= 0)
@@ -917,6 +918,14 @@ extern "C" int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 			paint.setStrokeJoin(line_join == 1 ? SkPaint::kRound_Join
 				: line_join == 2 ? SkPaint::kBevel_Join : SkPaint::kMiter_Join);
 			paint.setStrokeMiter(std::max(miter_limit, 1.0f));
+			if (dash_data && dash_count > 0) {
+				std::vector<SkScalar> intervals;
+				intervals.reserve(static_cast<size_t>(dash_count));
+				for (int index = 0; index < dash_count; ++index)
+					intervals.push_back(static_cast<SkScalar>(dash_data[index]));
+				paint.setPathEffect(SkDashPathEffect::Make(
+					{ intervals.data(), intervals.size() }, static_cast<SkScalar>(dash_offset)));
+			}
 			canvas->drawPath(non_scaling_stroke ? transformed_stroke_path : path, paint);
 		}
 	};

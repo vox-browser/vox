@@ -67,7 +67,8 @@ extern int ladybird_v_skia_draw_svg_path(CGContextRef destination,
 	uint8_t fill_red, uint8_t fill_green, uint8_t fill_blue, uint8_t fill_alpha,
 	int has_fill, uint8_t stroke_red, uint8_t stroke_green, uint8_t stroke_blue,
 	uint8_t stroke_alpha, int has_stroke, float stroke_width, int line_cap,
-	int line_join, float miter_limit, int non_scaling_stroke);
+	int line_join, float miter_limit, int non_scaling_stroke,
+	const double *dash_data, int dash_count, double dash_offset);
 extern int ladybird_v_skia_draw_svg_linear_gradient_path(
 	CGContextRef destination, const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
@@ -1253,7 +1254,8 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 	float transform_e, float transform_f, float page_x, float page_y,
 	float scroll_y, float canvas_width, float canvas_height, gg__Color fill_color, int has_fill,
 	gg__Color stroke_color, int has_stroke, float stroke_width, int line_cap,
-	int line_join, float miter_limit, int non_scaling_stroke) {
+	int line_join, float miter_limit, int non_scaling_stroke,
+	const double *dash_data, int dash_count, double dash_offset) {
 	if (data == NULL || segment_count <= 0 || (!has_fill && !has_stroke)) {
 		return;
 	}
@@ -1274,7 +1276,8 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 		transform_f, page_x, page_y, scroll_y, canvas_width, canvas_height,
 		fill_color.r, fill_color.g, fill_color.b, fill_color.a, has_fill,
 		stroke_color.r, stroke_color.g, stroke_color.b, stroke_color.a, has_stroke,
-		resolved_stroke_width, line_cap, line_join, miter_limit, non_scaling_stroke)) {
+		resolved_stroke_width, line_cap, line_join, miter_limit, non_scaling_stroke,
+		dash_data, dash_count, dash_offset)) {
 		return;
 	}
 #endif
@@ -1304,6 +1307,8 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
 			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
 		CGContextSetMiterLimit(context, MAX(miter_limit, 1.0));
+		if (dash_data != NULL && dash_count > 0)
+			CGContextSetLineDash(context, dash_offset, dash_data, dash_count);
 		CGContextStrokePath(context);
 		CGContextRestoreGState(context);
 		CGColorRelease(stroke);
@@ -1329,6 +1334,8 @@ void native_draw_svg_path_srgb(const float *data, int segment_count, int even_od
 		CGContextSetLineJoin(context, line_join == 1 ? kCGLineJoinRound
 			: line_join == 2 ? kCGLineJoinBevel : kCGLineJoinMiter);
 		CGContextSetMiterLimit(context, MAX(miter_limit, 1.0));
+		if (dash_data != NULL && dash_count > 0)
+			CGContextSetLineDash(context, dash_offset, dash_data, dash_count);
 	}
 	CGPathDrawingMode mode;
 	if (has_fill && has_stroke) {
@@ -4287,7 +4294,7 @@ void native_add_svg_pattern_path(const float *data, int segment_count,
 		transform_f, 0, 0, 0, build->width, canvas_height, fill_color.r,
 		fill_color.g, fill_color.b, fill_color.a, has_fill, stroke_color.r,
 		stroke_color.g, stroke_color.b, stroke_color.a, has_stroke, stroke_width,
-		line_cap, line_join, miter_limit, 0)) {
+		line_cap, line_join, miter_limit, 0, NULL, 0, 0)) {
 		return;
 	}
 #endif

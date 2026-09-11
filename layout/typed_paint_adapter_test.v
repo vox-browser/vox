@@ -1999,6 +1999,18 @@ fn test_nested_svg_viewport_and_element_transforms_are_interleaved_at_paint_time
 	assert target_box.svg_transform == [f64(40), 0, 0, 40, 60, 0]!
 }
 
+fn test_svg_stroke_dashes_remain_in_user_units_until_paint() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="200" height="100" viewBox="0 0 100 50"><path d="M 0 10 H 100" fill="none" stroke="green" stroke-width="2" stroke-dasharray="3" stroke-dashoffset="1"/></svg>')
+	root := layout_document_typed_in_viewport(document, 220, 120)
+	paths := root.paint_commands().filter(it.kind == 'draw_svg_path')
+	assert paths.len == 1
+	assert paths[0].stroke_dasharray == [f64(3), 3]
+	assert paths[0].stroke_dashoffset == 1
+	serialized := root.render_svg(220, 120)
+	assert serialized.contains('stroke-dasharray="3 3"')
+	assert serialized.contains('stroke-dashoffset="1"')
+}
+
 fn test_svg_linear_gradient_paints_retain_linked_resource_algorithms() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="200" height="100" viewBox="0 0 100 50"><defs><linearGradient id="wrong"><stop stop-color="black"/></linearGradient><linearGradient id="base" gradientUnits="userSpaceOnUse" x1="10%" y1="20%" x2="90%" y2="80%" spreadMethod="reflect" gradientTransform="translate(3 4)" color-interpolation="linearRGB"><stop offset="70%" stop-color="rgb(10 20 30)" stop-opacity=".5"/><stop offset="20%" stop-color="rgb(40 50 60)"/></linearGradient><linearGradient id="derived" href="#base" xlink:href="#wrong" x2="50%" color-interpolation="linearRGB"/></defs><rect x="10" y="5" width="80" height="40" fill="url(#derived) magenta" stroke="url(#base) cyan" stroke-width="3" paint-order="stroke fill"/></svg>')
 	root := layout_document_typed_in_viewport(document, 240, 140)
