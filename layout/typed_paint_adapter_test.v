@@ -2939,7 +2939,7 @@ fn test_fieldset_paint_shifts_background_and_splits_top_border_around_legend() {
 	assert red_borders.any(it.recording_clip == none)
 }
 
-fn test_geometric_list_markers_use_translated_marker_paint_commands() {
+fn test_list_markers_paint_as_generated_text() {
 	document := html.parse_document('<!doctype html><style>
 		html, body { margin: 0 }
 		ul { margin: 0 0 0 32px; padding: 0; color: rgb(20, 60, 180) }
@@ -2954,12 +2954,10 @@ fn test_geometric_list_markers_use_translated_marker_paint_commands() {
 	display_list := mutable_document.record_display_list() or { panic('missing marker display list') }
 	commands := display_list_commands(display_list)
 	markers := commands.filter(it.color == 'rgb(20 60 180)')
-	assert markers.any(it.kind == 'fill_rect')
-	assert markers.any(it.kind == 'stroke_ellipse' && it.stroke_width == 1)
-	assert markers.any(it.kind == 'fill_ellipse')
-	triangle_markers := markers.filter(it.kind == 'draw_svg_path')
-	assert triangle_markers.len == 2
-	assert triangle_markers.all(it.path_data.len > 0 && it.fill_even_odd)
+	text_markers := markers.filter(it.kind == 'draw_text')
+	assert text_markers.len == 5
+	assert text_markers.all(it.text.len > 0)
+	assert !markers.any(it.kind in ['fill_rect', 'stroke_ellipse', 'fill_ellipse', 'draw_svg_path'])
 }
 
 fn test_document_viewport_paintable_recomputes_text_selection_states() {

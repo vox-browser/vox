@@ -3270,56 +3270,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		}
 	}
 
-	mut lines := text_lines_from_typed_layout(node, used, state, position)
-	if list_item := node.as_list_item_box() {
-		if marker_node := list_item.marker() {
-			if marker := marker_node.as_list_item_marker_box() {
-				if marker_text := marker.text() {
-					if marker_styled := marker_node.as_node_with_style() {
-						if marker_used := state.try_get(marker_styled) {
-							marker_position := paint_cumulative_offset(marker_node, state, marker_used)
-							font := marker_node.first_available_font()
-							font_metrics := font.pixel_metrics()
-							marker_baseline := font_baseline_for_line_height(font_metrics, marker.computed_values().line_height()).to_double()
-							glyph_run := platform.shape_text(0, 0, marker_text, font, .context_dependent)
-							lines.prepend(TextLine{
-								x: marker_position.x().to_double()
-								y: marker_position.y().to_double()
-								width: marker_used.content_width().to_double()
-								height: marker_used.content_height().to_double()
-								fragments: [
-									TextFragment{
-										x: marker_position.x().to_double()
-										y: marker_position.y().to_double()
-										width: marker_used.content_width().to_double()
-										height: marker_used.content_height().to_double()
-										text: marker_text.trim_right(' ')
-										color: text_color
-										font_size: f64(font.point_size)
-										bold: font.weight >= 600
-										baseline: marker_baseline
-										baseline_set: true
-										font_metrics_set: true
-										font_ascent: f64(font_metrics.ascent)
-										font_descent: f64(font_metrics.descent)
-										font_x_height: f64(font_metrics.x_height)
-										glyph_height: f64(font_metrics.size)
-										paintable_fragment: painting.PaintableFragment{
-											glyph_run: glyph_run
-											baseline: marker_baseline
-											font_ascent: f64(font_metrics.ascent)
-											font_descent: f64(font_metrics.descent)
-											orientation: .horizontal
-										}
-									},
-								]
-							})
-						}
-					}
-				}
-			}
-		}
-	}
+	lines := text_lines_from_typed_layout(node, used, state, position)
 	display := computed.display()
 	uses_collapsed_borders := computed.border_collapse() == .collapse
 	mut table_cell_borders := used.override_borders_data()
