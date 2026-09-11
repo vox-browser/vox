@@ -83,6 +83,28 @@ pub:
 	actions             []NotificationAction
 }
 
+// Internal notification options after the WebIDL dictionary has crossed the
+// structured-clone boundary. Upstream now performs this conversion before the
+// notification creation algorithm so constructor validation has the required
+// observable ordering.
+pub struct SerializedNotificationOptions {
+pub:
+	direction           NotificationDirection = .auto
+	language            string
+	body                string
+	navigate            ?string
+	tag                 string
+	image               ?string
+	icon                ?string
+	badge               ?string
+	timestamp           ?u64
+	renotify            bool
+	silent              ?bool
+	require_interaction bool
+	data                html.SerializationRecord
+	actions             []NotificationAction
+}
+
 pub struct ConceptNotificationAction {
 pub:
 	name           string
@@ -120,58 +142,79 @@ pub fn create_a_notification(title string, options NotificationOptions, origin d
 }
 
 pub fn Notification.create_a_notification(title string, options NotificationOptions, origin dom.Origin, base_url dom.URL, fallback_timestamp u64) !ConceptNotification {
+	serialized_options := Notification.options_from_bindings(options)!
+	return create_a_notification_from_serialized(title, serialized_options, origin, base_url, fallback_timestamp)
+}
+
+pub fn Notification.options_from_bindings(options NotificationOptions) !SerializedNotificationOptions {
+	return SerializedNotificationOptions{
+		direction: options.dir
+		language: options.lang
+		body: options.body
+		navigate: options.navigate
+		tag: options.tag
+		image: options.image
+		icon: options.icon
+		badge: options.badge
+		timestamp: options.timestamp
+		renotify: options.renotify
+		silent: options.silent
+		require_interaction: options.require_interaction
+		data: html.structured_serialize_for_storage(options.data)!
+		actions: options.actions.clone()
+	}
+}
+
+fn create_a_notification_from_serialized(title string, options SerializedNotificationOptions, origin dom.Origin, base_url dom.URL, fallback_timestamp u64) !ConceptNotification {
 	if options.renotify && options.tag == '' {
 		return error('TypeError: options["tag"] cannot be empty when renotify is true')
 	}
-	serialized_data := html.structured_serialize_for_storage(options.data)!
 	mut actions := []ConceptNotificationAction{}
 	for action in options.actions {
 		actions << ConceptNotificationAction{
-			name:           action.action
-			title:          action.title
+			name: action.action
+			title: action.title
 			navigation_url: if value := action.navigate {
 				complete_url(value, base_url)
 			} else {
 				none
 			}
-			icon_url:       if value := action.icon { complete_url(value, base_url) } else { none }
+			icon_url: if value := action.icon { complete_url(value, base_url) } else { none }
 		}
 	}
 	return ConceptNotification{
-		title:                          title
-		direction:                      options.dir
-		language:                       options.lang
-		body:                           options.body
-		navigation_url:                 if value := options.navigate {
+		title: title
+		direction: options.direction
+		language: options.language
+		body: options.body
+		navigation_url: if value := options.navigate {
 			complete_url(value, base_url)
 		} else {
 			none
 		}
-		tag:                            options.tag
-		data:                           html.SerializationRecord{
-			data: serialized_data.data.clone()
-		}
-		timestamp:                      options.timestamp or { fallback_timestamp }
-		origin:                         origin
-		renotify_preference:            options.renotify
-		silent_preference:              options.silent
+		tag: options.tag
+		data: options.data
+		timestamp: options.timestamp or { fallback_timestamp }
+		origin: origin
+		renotify_preference: options.renotify
+		silent_preference: options.silent
 		require_interaction_preference: options.require_interaction
-		image_url:                      if value := options.image {
+		image_url: if value := options.image {
 			complete_url(value, base_url)
 		} else {
 			none
 		}
-		icon_url:                       if value := options.icon {
+		icon_url: if value := options.icon {
 			complete_url(value, base_url)
 		} else {
 			none
 		}
-		badge_url:                      if value := options.badge {
+		badge_url: if value := options.badge {
 			complete_url(value, base_url)
 		} else {
 			none
 		}
-		actions:                        actions
+		actions: actions
 	}
 }
 
@@ -187,8 +230,8 @@ pub fn create_a_notification_with_a_settings_object(title string, options Notifi
 }
 
 pub fn Notification.create_a_notification_with_a_settings_object(title string, options NotificationOptions, settings NotificationSettings) !ConceptNotification {
-	return Notification.create_a_notification(title, options, settings.origin, settings.api_base_url,
-		u64(math.round(settings.current_wall_time)))
+	serialized_options := Notification.options_from_bindings(options)!
+	return create_a_notification_from_serialized(title, serialized_options, settings.origin, settings.api_base_url, u64(math.round(settings.current_wall_time)))
 }
 
 @[heap]
@@ -199,19 +242,29 @@ mut:
 }
 
 pub fn Notification.construct(title string, options NotificationOptions, settings NotificationSettings, relevant_global_is_service_worker bool) !&Notification {
-	return Notification.construct_impl(title, options, settings, relevant_global_is_service_worker)
+	return Notification.create_for_constructor(title, options, settings, relevant_global_is_service_worker)
 }
 
 pub fn Notification.construct_impl(title string, options NotificationOptions, settings NotificationSettings, relevant_global_is_service_worker bool) !&Notification {
-	if relevant_global_is_service_worker {
-		return error('TypeError: relevant global object is a ServiceWorkerGlobalScope')
-	}
+	return Notification.create_for_constructor(title, options, settings, relevant_global_is_service_worker)
+}
+
+pub fn Notification.create_for_constructor(title string, options NotificationOptions, settings NotificationSettings, relevant_global_is_service_worker bool) !&Notification {
+	// Constructor actions are rejected before attempting structured serialization.
 	if options.actions.len != 0 {
 		return error('TypeError: options actions is not empty')
 	}
-	concept := Notification.create_a_notification_with_a_settings_object(title, options, settings)!
+	serialized_options := Notification.options_from_bindings(options)!
+	return Notification.create_with_global_scope(title, serialized_options, settings, relevant_global_is_service_worker)
+}
+
+pub fn Notification.create_with_global_scope(title string, options SerializedNotificationOptions, settings NotificationSettings, relevant_global_is_service_worker bool) !&Notification {
+	if relevant_global_is_service_worker {
+		return error('TypeError: relevant global object is a ServiceWorkerGlobalScope')
+	}
+	concept := create_a_notification_from_serialized(title, options, settings.origin, settings.api_base_url, u64(math.round(settings.current_wall_time)))!
 	return &Notification{
-		EventTarget:   dom.EventTarget{}
+		EventTarget: dom.EventTarget{}
 		notification_: concept
 	}
 }
@@ -225,7 +278,15 @@ pub fn (notification &Notification) title() string {
 }
 
 pub fn (notification &Notification) dir() NotificationDirection {
+	return notification.notification_direction()
+}
+
+pub fn (notification &Notification) direction() NotificationDirection {
 	return notification.notification_.direction
+}
+
+pub fn (notification &Notification) notification_direction() NotificationDirection {
+	return notification.direction()
 }
 
 pub fn (notification &Notification) lang() string {
@@ -257,29 +318,37 @@ pub fn (notification &Notification) require_interaction() bool {
 }
 
 pub fn (notification &Notification) navigate() string {
-	return if url := notification.notification_.navigation_url { url.serialize() } else { '' }
+	return Notification.serialize_url_for_bindings(notification.notification_.navigation_url)
 }
 
 pub fn (notification &Notification) image() string {
-	return if url := notification.notification_.image_url { url.serialize() } else { '' }
+	return Notification.serialize_url_for_bindings(notification.notification_.image_url)
 }
 
 pub fn (notification &Notification) icon() string {
-	return if url := notification.notification_.icon_url { url.serialize() } else { '' }
+	return Notification.serialize_url_for_bindings(notification.notification_.icon_url)
 }
 
 pub fn (notification &Notification) badge() string {
-	return if url := notification.notification_.badge_url { url.serialize() } else { '' }
+	return Notification.serialize_url_for_bindings(notification.notification_.badge_url)
 }
 
 pub fn (notification &Notification) actions() []NotificationAction {
 	mut actions := []NotificationAction{}
 	for entry in notification.notification_.actions {
 		actions << NotificationAction{
-			action:   entry.name
-			title:    entry.title
-			navigate: if url := entry.navigation_url { url.serialize() } else { none }
-			icon:     if url := entry.icon_url { url.serialize() } else { none }
+			action: entry.name
+			title: entry.title
+			navigate: if entry.navigation_url == none {
+				none
+			} else {
+				Notification.serialize_url_for_bindings(entry.navigation_url)
+			}
+			icon: if entry.icon_url == none {
+				none
+			} else {
+				Notification.serialize_url_for_bindings(entry.icon_url)
+			}
 		}
 	}
 	return actions
@@ -287,4 +356,15 @@ pub fn (notification &Notification) actions() []NotificationAction {
 
 pub fn (notification &Notification) data() dom.JSValue {
 	return html.structured_deserialize(notification.notification_.data) or { dom.js_null() }
+}
+
+pub fn (notification &Notification) serialized_data() html.SerializationRecord {
+	return html.SerializationRecord{
+		data: notification.notification_.data.data.clone()
+	}
+}
+
+pub fn Notification.serialize_url_for_bindings(url ?dom.URL) string {
+	resolved := url or { return '' }
+	return resolved.serialize()
 }
