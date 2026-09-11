@@ -101,7 +101,7 @@ pub type UpdateCallback = fn () !&webidl.Promise
 @[heap]
 pub struct ViewTransition {
 pub:
-	document                     &TransitionDocument
+	document_                    &TransitionDocument
 	ready_promise                &webidl.Promise
 	update_callback_done_promise &webidl.Promise
 	finished_promise             &webidl.Promise
@@ -120,12 +120,12 @@ pub fn ViewTransition.create(document &TransitionDocument) &ViewTransition {
 	mut finished := webidl.create_promise()
 	finished.mark_as_handled()
 	transition := &ViewTransition{
-		document:                     document
-		ready_promise:                webidl.create_promise()
+		document_: document
+		ready_promise: webidl.create_promise()
 		update_callback_done_promise: webidl.create_promise()
-		finished_promise:             finished
-		phase:                        .pending_capture
-		named_elements:               map[string]&CapturedElement{}
+		finished_promise: finished
+		phase: .pending_capture
+		named_elements: map[string]&CapturedElement{}
 	}
 	mut mutable_document := unsafe { &TransitionDocument(document) }
 	if active := mutable_document.active_transition {
@@ -136,6 +136,21 @@ pub fn ViewTransition.create(document &TransitionDocument) &ViewTransition {
 	}
 	mutable_document.active_transition = transition
 	return transition
+}
+
+fn serialize_css_pixel(value f64) string {
+	if value == f64(int(value)) {
+		return '${int(value)}'
+	}
+	return '${value}'
+}
+
+pub fn make_translation_transform(x f64, y f64) string {
+	return 'translate(${serialize_css_pixel(x)}px, ${serialize_css_pixel(y)}px)'
+}
+
+pub fn (transition &ViewTransition) document() &TransitionDocument {
+	return transition.document_
 }
 
 // https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-updatecallbackdone
@@ -164,7 +179,7 @@ pub fn (mut transition ViewTransition) skip_transition() {
 }
 
 pub fn (mut transition ViewTransition) setup_view_transition() {
-	mut document := transition.document
+	mut document := transition.document_
 	// Setup flushes callbacks left by an earlier transition before capture.
 	document.flush_the_update_callback_queue()
 	transition.capture_the_old_state() or {
@@ -173,21 +188,21 @@ pub fn (mut transition ViewTransition) setup_view_transition() {
 	}
 	document.rendering_suppression = true
 	document.dom_tasks << DomTask{
-		type_:      .setup_transition
+		type_: .setup_transition
 		transition: &transition
 	}
 }
 
 pub fn (mut transition ViewTransition) capture_the_old_state() ! {
-	if transition.document.snapshot_width > f64(0x7fffffff)
-		|| transition.document.snapshot_height > f64(0x7fffffff) {
+	if transition.document_.snapshot_width > f64(0x7fffffff)
+		|| transition.document_.snapshot_height > f64(0x7fffffff) {
 		return error('snapshot containing block is too large')
 	}
 	mut used := map[string]bool{}
 	mut captured := []&TransitionElement{}
-	transition.initial_snapshot_width = transition.document.snapshot_width
-	transition.initial_snapshot_height = transition.document.snapshot_height
-	for item in transition.document.elements {
+	transition.initial_snapshot_width = transition.document_.snapshot_width
+	transition.initial_snapshot_height = transition.document_.snapshot_height
+	for item in transition.document_.elements {
 		if item.ancestor_skips {
 			continue
 		}
@@ -210,24 +225,24 @@ pub fn (mut transition ViewTransition) capture_the_old_state() ! {
 		mut mutable_item := unsafe { &TransitionElement(item) }
 		mutable_item.captured = true
 		transition.named_elements[name] = &CapturedElement{
-			old_image:  item.image
-			old_width:  if item.is_document_element {
-				transition.document.snapshot_width
+			old_image: item.image
+			old_width: if item.is_document_element {
+				transition.document_.snapshot_width
 			} else {
 				item.width
 			}
 			old_height: if item.is_document_element {
-				transition.document.snapshot_height
+				transition.document_.snapshot_height
 			} else {
 				item.height
 			}
 			// Current upstream still captures an identity translate here.
-			old_transform:       'translate(0px, 0px)'
-			old_writing_mode:    item.writing_mode
-			old_direction:       item.direction
-			old_mix_blend_mode:  item.mix_blend_mode
+			old_transform: make_translation_transform(0, 0)
+			old_writing_mode: item.writing_mode
+			old_direction: item.direction
+			old_mix_blend_mode: item.mix_blend_mode
 			old_backdrop_filter: item.backdrop_filter
-			old_color_scheme:    item.color_scheme
+			old_color_scheme: item.color_scheme
 		}
 	}
 	for item in captured {
@@ -238,7 +253,7 @@ pub fn (mut transition ViewTransition) capture_the_old_state() ! {
 
 pub fn (mut transition ViewTransition) capture_the_new_state() ! {
 	mut used := map[string]bool{}
-	for item in transition.document.elements {
+	for item in transition.document_.elements {
 		if item.ancestor_skips {
 			continue
 		}
@@ -262,7 +277,7 @@ pub fn (mut transition ViewTransition) activate_view_transition() {
 	if transition.phase == .done {
 		return
 	}
-	mut document := transition.document
+	mut document := transition.document_
 	document.rendering_suppression = false
 	if transition.initial_snapshot_width or { -1 } != document.snapshot_width || transition.initial_snapshot_height or {
 		-1
@@ -291,34 +306,34 @@ pub fn (mut transition ViewTransition) activate_view_transition() {
 }
 
 pub fn (mut transition ViewTransition) setup_transition_pseudo_elements() {
-	mut document := transition.document
+	mut document := transition.document_
 	document.show_view_transition_tree = true
 	transition.pseudo_elements.clear()
 	for name, capture in transition.named_elements {
 		group_index := transition.pseudo_elements.len
 		transition.pseudo_elements << PseudoElement{
-			type_:                .group
+			type_: .group
 			view_transition_name: name
 		}
 		image_pair_index := transition.pseudo_elements.len
 		transition.pseudo_elements << PseudoElement{
-			type_:                .image_pair
+			type_: .image_pair
 			view_transition_name: name
-			parent_index:         group_index
+			parent_index: group_index
 		}
 		if old_image := capture.old_image {
 			transition.pseudo_elements << PseudoElement{
-				type_:                .old
+				type_: .old
 				view_transition_name: name
-				parent_index:         image_pair_index
-				content:              old_image
+				parent_index: image_pair_index
+				content: old_image
 			}
 		}
 		if capture.new_element != none {
 			transition.pseudo_elements << PseudoElement{
-				type_:                .new_
+				type_: .new_
 				view_transition_name: name
-				parent_index:         image_pair_index
+				parent_index: image_pair_index
 			}
 		}
 		mut mutable_capture := unsafe { &CapturedElement(capture) }
@@ -349,7 +364,7 @@ pub fn (mut transition ViewTransition) setup_transition_pseudo_elements() {
 }
 
 pub fn (mut transition ViewTransition) update_pseudo_element_styles() ! {
-	mut document := transition.document
+	mut document := transition.document_
 	for name, capture in transition.named_elements {
 		mut width := capture.old_width
 		mut height := capture.old_height
@@ -400,7 +415,7 @@ pub fn (mut transition ViewTransition) schedule_the_update_callback() {
 		return
 	}
 	transition.update_callback_scheduled = true
-	mut document := transition.document
+	mut document := transition.document_
 	document.update_callback_queue << transition
 	// Upstream queues a DOM-manipulation task to flush the queue. The setup
 	// task also flushes synchronously, so that later task is intentionally
@@ -435,7 +450,8 @@ pub fn (mut document TransitionDocument) run_next_dom_task() bool {
 }
 
 pub fn (mut document TransitionDocument) drain_dom_tasks() {
-	for document.run_next_dom_task() {}
+	for document.run_next_dom_task() {
+	}
 }
 
 pub fn (mut document TransitionDocument) flush_the_update_callback_queue() {
@@ -512,7 +528,7 @@ pub fn (mut transition ViewTransition) skip_the_view_transition(reason webidl.Va
 	if int(transition.phase) < int(Phase.update_callback_called) {
 		transition.schedule_the_update_callback()
 	}
-	mut document := transition.document
+	mut document := transition.document_
 	document.rendering_suppression = false
 	if active := document.active_transition {
 		if active == transition {
@@ -543,9 +559,9 @@ pub fn (mut transition ViewTransition) handle_transition_frame(has_active_animat
 		finished.resolve(webidl.undefined_value())
 		return
 	}
-	if transition.initial_snapshot_width or { -1 } != transition.document.snapshot_width || transition.initial_snapshot_height or {
+	if transition.initial_snapshot_width or { -1 } != transition.document_.snapshot_width || transition.initial_snapshot_height or {
 		-1
-	} != transition.document.snapshot_height {
+	} != transition.document_.snapshot_height {
 		transition.skip_the_view_transition(webidl.string_value('InvalidStateError: snapshot containing block changed'))
 		return
 	}
@@ -555,7 +571,7 @@ pub fn (mut transition ViewTransition) handle_transition_frame(has_active_animat
 }
 
 pub fn (mut transition ViewTransition) clear_view_transition() {
-	mut document := transition.document
+	mut document := transition.document_
 	active := document.active_transition or { return }
 	if active != transition {
 		return

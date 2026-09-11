@@ -12,18 +12,20 @@ fn rejected_update() !&webidl.Promise {
 
 fn test_setup_uses_dom_task_then_activates_and_finishes() {
 	old_element := &TransitionElement{
-		id:                   'hero-old'
+		id: 'hero-old'
 		view_transition_name: 'hero'
-		width:                100
-		height:               50
-		image:                'old pixels'
+		width: 100
+		height: 50
+		image: 'old pixels'
 	}
 	mut document := &TransitionDocument{
-		elements:        [old_element]
-		snapshot_width:  800
+		elements: [old_element]
+		snapshot_width: 800
 		snapshot_height: 600
 	}
 	mut transition := ViewTransition.create(document)
+	assert transition.document() == document
+	assert make_translation_transform(12.5, -4) == 'translate(12.5px, -4px)'
 	assert transition.ready() == transition.ready_promise
 	assert transition.update_callback_done() == transition.update_callback_done_promise
 	assert transition.finished() == transition.finished_promise
@@ -35,11 +37,11 @@ fn test_setup_uses_dom_task_then_activates_and_finishes() {
 	assert document.dom_tasks.len == 1
 
 	new_element := &TransitionElement{
-		id:                   'hero-new'
+		id: 'hero-new'
 		view_transition_name: 'hero'
-		width:                120
-		height:               60
-		image:                'new pixels'
+		width: 120
+		height: 60
+		image: 'new pixels'
 	}
 	document.elements = [new_element]
 	assert document.run_next_dom_task()
@@ -67,7 +69,7 @@ fn test_setup_uses_dom_task_then_activates_and_finishes() {
 
 fn test_old_capture_checks_size_duplicates_ancestry_and_root_geometry() {
 	mut oversized_document := &TransitionDocument{
-		snapshot_width:  f64(0x80000000)
+		snapshot_width: f64(0x80000000)
 		snapshot_height: 1
 	}
 	mut oversized := ViewTransition.create(oversized_document)
@@ -77,16 +79,16 @@ fn test_old_capture_checks_size_duplicates_ancestry_and_root_geometry() {
 	assert oversized.initial_snapshot_width == none
 
 	a := &TransitionElement{
-		id:                   'a'
+		id: 'a'
 		view_transition_name: 'same'
 	}
 	b := &TransitionElement{
-		id:                   'b'
+		id: 'b'
 		view_transition_name: 'same'
 	}
 	mut duplicate_document := &TransitionDocument{
-		elements:        [a, b]
-		snapshot_width:  10
+		elements: [a, b]
+		snapshot_width: 10
 		snapshot_height: 10
 	}
 	mut duplicate := ViewTransition.create(duplicate_document)
@@ -98,22 +100,22 @@ fn test_old_capture_checks_size_duplicates_ancestry_and_root_geometry() {
 	assert !b.captured
 
 	root := &TransitionElement{
-		id:                   'root'
+		id: 'root'
 		view_transition_name: 'root'
-		width:                7
-		height:               8
-		transform:            'translate(22px, 33px)'
-		is_document_element:  true
-		skips_contents:       true
+		width: 7
+		height: 8
+		transform: 'translate(22px, 33px)'
+		is_document_element: true
+		skips_contents: true
 	}
 	child := &TransitionElement{
-		id:                   'child'
+		id: 'child'
 		view_transition_name: 'child'
-		ancestor_skips:       true
+		ancestor_skips: true
 	}
 	mut root_document := &TransitionDocument{
-		elements:        [root, child]
-		snapshot_width:  640
+		elements: [root, child]
+		snapshot_width: 640
 		snapshot_height: 480
 	}
 	mut root_transition := ViewTransition.create(root_document)
@@ -129,16 +131,16 @@ fn test_old_capture_checks_size_duplicates_ancestry_and_root_geometry() {
 
 fn test_capture_failure_skips_but_callback_still_runs() {
 	a := &TransitionElement{
-		id:                   'a'
+		id: 'a'
 		view_transition_name: 'same'
 	}
 	b := &TransitionElement{
-		id:                   'b'
+		id: 'b'
 		view_transition_name: 'same'
 	}
 	mut document := &TransitionDocument{
-		elements:        [a, b]
-		snapshot_width:  10
+		elements: [a, b]
+		snapshot_width: 10
 		snapshot_height: 10
 	}
 	mut transition := ViewTransition.create(document)
@@ -153,12 +155,12 @@ fn test_capture_failure_skips_but_callback_still_runs() {
 
 fn test_callback_rejection_and_snapshot_change_reject_transition() {
 	element := &TransitionElement{
-		id:                   'x'
+		id: 'x'
 		view_transition_name: 'x'
 	}
 	mut document := &TransitionDocument{
-		elements:        [element]
-		snapshot_width:  20
+		elements: [element]
+		snapshot_width: 20
 		snapshot_height: 20
 	}
 	mut transition := ViewTransition.create(document)
@@ -172,8 +174,8 @@ fn test_callback_rejection_and_snapshot_change_reject_transition() {
 	assert transition.finished_promise.is_rejected()
 
 	mut second_document := &TransitionDocument{
-		elements:        [element]
-		snapshot_width:  20
+		elements: [element]
+		snapshot_width: 20
 		snapshot_height: 20
 	}
 	mut second := ViewTransition.create(second_document)
@@ -186,13 +188,13 @@ fn test_callback_rejection_and_snapshot_change_reject_transition() {
 
 fn test_pending_callback_resumes_at_explicit_promise_boundary() {
 	element := &TransitionElement{
-		id:                   'pending'
+		id: 'pending'
 		view_transition_name: 'pending'
-		image:                'old'
+		image: 'old'
 	}
 	mut document := &TransitionDocument{
-		elements:        [element]
-		snapshot_width:  20
+		elements: [element]
+		snapshot_width: 20
 		snapshot_height: 20
 	}
 	mut pending := webidl.create_promise()
@@ -214,26 +216,26 @@ fn test_pending_callback_resumes_at_explicit_promise_boundary() {
 fn test_pseudo_rules_update_in_place_and_clear_only_owned_rules() {
 	preexisting_group_rule := ':root::view-transition-group(card) { width: 30.0px; height: 40.0px; transform: transform; writing-mode: writing_mode; direction: direction; text-orientation: text_orientation; mix-blend-mode: mix_blend_mode; backdrop-filter: backdrop_filter; color-scheme: color_scheme; }'
 	old_element := &TransitionElement{
-		id:                   'old'
+		id: 'old'
 		view_transition_name: 'card'
-		width:                10
-		height:               20
-		image:                'old image'
+		width: 10
+		height: 20
+		image: 'old image'
 	}
 	mut document := &TransitionDocument{
-		elements:            [old_element]
-		snapshot_width:      200
-		snapshot_height:     100
+		elements: [old_element]
+		snapshot_width: 200
+		snapshot_height: 100
 		dynamic_style_rules: ['unrelated author/platform rule', preexisting_group_rule]
 	}
 	mut transition := ViewTransition.create(document)
 	transition.setup_view_transition()
 	mut new_element := &TransitionElement{
-		id:                   'new'
+		id: 'new'
 		view_transition_name: 'card'
-		width:                30
-		height:               40
-		image:                'new image'
+		width: 30
+		height: 40
+		image: 'new image'
 	}
 	document.elements = [new_element]
 	document.run_next_dom_task()
@@ -264,13 +266,13 @@ fn test_pseudo_rules_update_in_place_and_clear_only_owned_rules() {
 
 fn test_new_only_and_old_only_animation_rules() {
 	new_only_element := &TransitionElement{
-		id:                   'new-only'
+		id: 'new-only'
 		view_transition_name: 'new-only'
-		image:                none
+		image: none
 	}
 	mut new_only_document := &TransitionDocument{
-		elements:        [new_only_element]
-		snapshot_width:  1
+		elements: [new_only_element]
+		snapshot_width: 1
 		snapshot_height: 1
 	}
 	mut new_only := ViewTransition.create(new_only_document)
@@ -280,13 +282,13 @@ fn test_new_only_and_old_only_animation_rules() {
 	assert (new_capture.image_animation_name_rule or { '' }).contains('fade-in')
 
 	old_only_element := &TransitionElement{
-		id:                   'old-only'
+		id: 'old-only'
 		view_transition_name: 'old-only'
-		image:                'old image'
+		image: 'old image'
 	}
 	mut old_only_document := &TransitionDocument{
-		elements:        [old_only_element]
-		snapshot_width:  1
+		elements: [old_only_element]
+		snapshot_width: 1
 		snapshot_height: 1
 	}
 	mut old_only := ViewTransition.create(old_only_document)
@@ -299,7 +301,7 @@ fn test_new_only_and_old_only_animation_rules() {
 
 fn test_skip_and_replacement_are_idempotent_and_preserve_active_transition() {
 	mut document := &TransitionDocument{
-		snapshot_width:  1
+		snapshot_width: 1
 		snapshot_height: 1
 	}
 	mut first := ViewTransition.create(document)
