@@ -8,8 +8,9 @@ module storageapi
 
 pub struct StorageOrigin {
 pub:
-	serialized string
-	opaque     bool
+	serialized  string
+	opaque      bool
+	opaque_file bool
 }
 
 pub struct StorageEnvironment {
@@ -45,7 +46,16 @@ pub fn obtain_a_storage_key_for_non_storage_purposes(environment StorageEnvironm
 }
 
 pub fn obtain_a_storage_key(environment StorageEnvironment) ?StorageKey {
-	key := obtain_a_storage_key_for_non_storage_purposes(environment)
+	mut key := obtain_a_storage_key_for_non_storage_purposes(environment)
+	// file: URLs have opaque origins, but current Ladybird deliberately gives
+	// them one shared storage origin for compatibility with other browsers.
+	if key.origin.opaque_file {
+		key = StorageKey{
+			origin: StorageOrigin{
+				serialized: 'file://'
+			}
+		}
+	}
 	if key.origin.opaque || environment.storage_disabled {
 		return none
 	}
@@ -73,15 +83,18 @@ pub type StorageClearHook = fn (endpoint StorageEndpointType, storage_key string
 
 pub type StorageRemoveHook = fn (endpoint StorageEndpointType, storage_key string, key string)
 
-// PageClient-facing operations used by a local storage bottle. Session
-// bottles remain entirely within the translated storage shed.
+pub type StorageUsageHook = fn (storage_key string) u64
+
+// PageClient-facing operations used by both local and session bottles. Current
+// Ladybird keeps both storage sheds in the browser process.
 pub struct StorageHost {
 pub:
-	keys   StorageKeysHook   @[required]
-	get    StorageGetHook    @[required]
-	set    StorageSetHook    @[required]
-	clear  StorageClearHook  @[required]
+	keys   StorageKeysHook @[required]
+	get    StorageGetHook @[required]
+	set    StorageSetHook @[required]
+	clear  StorageClearHook @[required]
 	remove StorageRemoveHook @[required]
+	usage  ?StorageUsageHook
 }
 
 @[heap]
@@ -99,11 +112,11 @@ mut:
 
 pub fn StorageBottle.create(type_ StorageType, endpoint StorageEndpointType, key StorageKey, quota ?u64, host ?&StorageHost) &StorageBottle {
 	return &StorageBottle{
-		type_:       type_
-		endpoint:    endpoint
+		type_: type_
+		endpoint: endpoint
 		storage_key: key
-		quota_:      quota
-		host:        host
+		quota_: quota
+		host: host
 	}
 }
 
@@ -116,37 +129,29 @@ pub fn (bottle &StorageBottle) quota() ?u64 {
 }
 
 pub fn (bottle &StorageBottle) size() int {
-	if bottle.type_ == .local {
-		if host := bottle.host {
-			return host.keys(bottle.endpoint, bottle.storage_key.to_string()).len
-		}
+	if host := bottle.host {
+		return host.keys(bottle.endpoint, bottle.storage_key.to_string()).len
 	}
 	return bottle.map_.len
 }
 
 pub fn (bottle &StorageBottle) keys() []string {
-	if bottle.type_ == .local {
-		if host := bottle.host {
-			return host.keys(bottle.endpoint, bottle.storage_key.to_string())
-		}
+	if host := bottle.host {
+		return host.keys(bottle.endpoint, bottle.storage_key.to_string())
 	}
 	return bottle.key_order_.clone()
 }
 
 pub fn (bottle &StorageBottle) get(key string) ?string {
-	if bottle.type_ == .local {
-		if host := bottle.host {
-			return host.get(bottle.endpoint, bottle.storage_key.to_string(), key)
-		}
+	if host := bottle.host {
+		return host.get(bottle.endpoint, bottle.storage_key.to_string(), key)
 	}
 	return bottle.map_[key] or { none }
 }
 
 pub fn (mut bottle StorageBottle) set(key string, value string) StorageSetResult {
-	if bottle.type_ == .local {
-		if host := bottle.host {
-			return host.set(bottle.endpoint, bottle.storage_key.to_string(), key, value)
-		}
+	if host := bottle.host {
+		return host.set(bottle.endpoint, bottle.storage_key.to_string(), key, value)
 	}
 	old_value := bottle.map_[key] or { '' }
 	had_old_value := key in bottle.map_
@@ -247,22 +252,18 @@ pub fn (mut bottle SessionStorageBottle) remove(key string) {
 }
 
 pub fn (mut bottle StorageBottle) clear() {
-	if bottle.type_ == .local {
-		if host := bottle.host {
-			host.clear(bottle.endpoint, bottle.storage_key.to_string())
-			return
-		}
+	if host := bottle.host {
+		host.clear(bottle.endpoint, bottle.storage_key.to_string())
+		return
 	}
 	bottle.map_.clear()
 	bottle.key_order_.clear()
 }
 
 pub fn (mut bottle StorageBottle) remove(key string) {
-	if bottle.type_ == .local {
-		if host := bottle.host {
-			host.remove(bottle.endpoint, bottle.storage_key.to_string(), key)
-			return
-		}
+	if host := bottle.host {
+		host.remove(bottle.endpoint, bottle.storage_key.to_string(), key)
+		return
 	}
 	if key in bottle.map_ {
 		bottle.map_.delete(key)
@@ -283,8 +284,7 @@ pub fn StorageBucket.create(type_ StorageType, key StorageKey, host ?&StorageHos
 	mut bucket := &StorageBucket{}
 	for endpoint in registered_endpoints() {
 		if endpoint.type_ == type_ {
-			bucket.bottles[int(endpoint.identifier)] = StorageBottle.create(type_,
-				endpoint.identifier, key, endpoint.quota, host)
+			bucket.bottles[int(endpoint.identifier)] = StorageBottle.create(type_, endpoint.identifier, key, endpoint.quota, host)
 		}
 	}
 	return bucket
@@ -300,12 +300,19 @@ pub fn (bucket &StorageBucket) bottle_map() map[int]&StorageBottle {
 
 @[heap]
 pub struct StorageShelf {
+pub:
+	type_       StorageType
+	storage_key StorageKey
 mut:
 	buckets map[string]&StorageBucket
+	host    ?&StorageHost
 }
 
 pub fn StorageShelf.create(type_ StorageType, key StorageKey, host ?&StorageHost) &StorageShelf {
 	return &StorageShelf{
+		type_: type_
+		storage_key: key
+		host: host
 		buckets: {
 			'default': StorageBucket.create(type_, key, host)
 		}
@@ -320,6 +327,29 @@ pub fn (shelf &StorageShelf) bucket_map() map[string]&StorageBucket {
 	return shelf.buckets.clone()
 }
 
+pub fn (shelf &StorageShelf) storage_usage() u64 {
+	host := shelf.host or { return 0 }
+	usage := host.usage or { return 0 }
+	return usage(shelf.storage_key.to_string())
+}
+
+pub fn (shelf &StorageShelf) storage_quota() u64 {
+	mut quota := u64(0)
+	for _, bottle in shelf.default_bucket().bottle_map() {
+		if bottle_quota := bottle.quota() {
+			quota += bottle_quota
+		}
+	}
+	return quota
+}
+
+pub fn obtain_a_local_storage_shelf(environment StorageEnvironment, host ?&StorageHost) ?&StorageShelf {
+	key := obtain_a_storage_key(environment) or { return none }
+	return StorageShelf.create(.local, key, host)
+}
+
+// Compatibility test double for callers that need an isolated in-memory shed;
+// current obtain-a-bottle algorithms below construct browser-host proxies.
 @[heap]
 pub struct StorageShed {
 mut:
@@ -344,15 +374,62 @@ pub fn (mut shed StorageShed) obtain_a_storage_bottle_map(environment StorageEnv
 	return shelf.default_bucket().bottle(endpoint)
 }
 
-pub fn obtain_a_session_storage_bottle_map(mut shed StorageShed, environment StorageEnvironment, identifier StorageEndpointType, host ?&StorageHost) ?&StorageBottle {
-	return shed.obtain_a_storage_bottle_map(environment, identifier, host)
+pub fn obtain_a_storage_bottle_map(type_ StorageType, environment StorageEnvironment, identifier StorageEndpointType, host ?&StorageHost) ?&StorageBottle {
+	key := obtain_a_storage_key(environment) or { return none }
+	endpoint := registered_endpoints().filter(it.identifier == identifier && it.type_ == type_)
+	if endpoint.len != 1 {
+		return none
+	}
+	return StorageBottle.create(type_, identifier, key, endpoint[0].quota, host)
+}
+
+pub fn obtain_a_local_storage_bottle_map(environment StorageEnvironment, identifier StorageEndpointType, host ?&StorageHost) ?&StorageBottle {
+	return obtain_a_storage_bottle_map(.local, environment, identifier, host)
+}
+
+pub fn obtain_a_session_storage_bottle_map(environment StorageEnvironment, identifier StorageEndpointType, host ?&StorageHost) ?&StorageBottle {
+	return obtain_a_storage_bottle_map(.session, environment, identifier, host)
 }
 
 @[heap]
-pub struct StorageManager {}
+pub struct StorageManager {
+mut:
+	environment_ ?StorageEnvironment
+	host_        ?&StorageHost
+}
 
 pub fn StorageManager.create() &StorageManager {
 	return &StorageManager{}
+}
+
+pub fn StorageManager.create_for_environment(environment StorageEnvironment, host ?&StorageHost) &StorageManager {
+	return &StorageManager{
+		environment_: environment
+		host_: host
+	}
+}
+
+pub struct StorageEstimate {
+pub:
+	usage ?u64
+	quota ?u64
+}
+
+pub fn (_ &StorageManager) queue_a_storage_task(steps fn ()) {
+	steps()
+}
+
+pub fn (manager &StorageManager) estimate() !StorageEstimate {
+	environment := manager.environment_ or {
+		return error('TypeError: Failed to obtain local storage shelf.')
+	}
+	shelf := obtain_a_local_storage_shelf(environment, manager.host_) or {
+		return error('TypeError: Failed to obtain local storage shelf.')
+	}
+	return StorageEstimate{
+		usage: shelf.storage_usage()
+		quota: shelf.storage_quota()
+	}
 }
 
 @[heap]

@@ -2,7 +2,7 @@ module storageapi
 
 fn session_environment(origin string) StorageEnvironment {
 	return StorageEnvironment{
-		origin:          StorageOrigin{
+		origin: StorageOrigin{
 			serialized: origin
 		}
 		creation_origin: StorageOrigin{
@@ -23,11 +23,20 @@ fn test_storage_key_origin_and_failure_rules() {
 	assert obtain_a_storage_key(StorageEnvironment{
 		origin: StorageOrigin{
 			serialized: 'null'
-			opaque:     true
+			opaque: true
 		}
 	}) == none
+	file_key := obtain_a_storage_key(StorageEnvironment{
+		origin: StorageOrigin{
+			serialized: 'opaque-file:one'
+			opaque: true
+			opaque_file: true
+		}
+	}) or { panic('file origins should be storage-capable') }
+	assert file_key.to_string() == 'file://'
+	assert !file_key.origin.opaque
 	assert obtain_a_storage_key(StorageEnvironment{
-		origin:           StorageOrigin{
+		origin: StorageOrigin{
 			serialized: 'https://example.test'
 		}
 		storage_disabled: true
@@ -102,6 +111,11 @@ mut:
 }
 
 __global exact_storage_host_state = &ExactStorageHostState{}
+__global exact_storage_task_ran = false
+
+fn exact_storage_task() {
+	exact_storage_task_ran = true
+}
 
 fn exact_storage_keys(_ StorageEndpointType, _ string) []string {
 	return exact_storage_host_state.map_.keys()
@@ -128,6 +142,14 @@ fn exact_storage_remove(_ StorageEndpointType, _ string, key string) {
 	exact_storage_host_state.map_.delete(key)
 }
 
+fn exact_storage_usage(_ string) u64 {
+	mut usage := u64(0)
+	for key, value in exact_storage_host_state.map_ {
+		usage += u64(key.len + value.len)
+	}
+	return usage
+}
+
 fn test_exact_storage_bottle_bucket_shelf_and_shed_entry_points() {
 	key := StorageKey{
 		origin: StorageOrigin{
@@ -151,11 +173,12 @@ fn test_exact_storage_bottle_bucket_shelf_and_shed_entry_points() {
 
 	exact_storage_host_state.map_.clear()
 	host := &StorageHost{
-		keys:   exact_storage_keys
-		get:    exact_storage_get
-		set:    exact_storage_set
-		clear:  exact_storage_clear
+		keys: exact_storage_keys
+		get: exact_storage_get
+		set: exact_storage_set
+		clear: exact_storage_clear
 		remove: exact_storage_remove
+		usage: exact_storage_usage
 	}
 	mut local := LocalStorageBottle.create(key, local_storage_quota, host)
 	assert local.set('a', 'one').old_value == none
@@ -172,11 +195,60 @@ fn test_exact_storage_bottle_bucket_shelf_and_shed_entry_points() {
 	assert int(StorageEndpointType.session_storage) in bucket.bottle_map()
 	shelf := StorageShelf.create(.session, key, none)
 	assert 'default' in shelf.bucket_map()
-	mut shed := StorageShed.create()
 	environment := session_environment('https://exact.test')
-	first := obtain_a_session_storage_bottle_map(mut shed, environment, .session_storage,
-		none) or { panic('missing session bottle') }
-	second := obtain_a_session_storage_bottle_map(mut shed, environment, .session_storage,
-		none) or { panic('missing repeated session bottle') }
-	assert voidptr(first) == voidptr(second)
+	assert obtain_a_session_storage_bottle_map(environment, .session_storage, none) != none
+}
+
+fn test_current_storage_bottles_proxy_both_local_and_session_data_to_the_host() {
+	exact_storage_host_state.map_.clear()
+	host := &StorageHost{
+		keys: exact_storage_keys
+		get: exact_storage_get
+		set: exact_storage_set
+		clear: exact_storage_clear
+		remove: exact_storage_remove
+		usage: exact_storage_usage
+	}
+	environment := session_environment('https://current.test')
+	mut local := obtain_a_local_storage_bottle_map(environment, .local_storage, host) or {
+		panic('missing local bottle')
+	}
+	assert local.set('local', 'one').error == .none
+	assert local.get('local')? == 'one'
+
+	mut session := obtain_a_session_storage_bottle_map(environment, .session_storage, host) or {
+		panic('missing session bottle')
+	}
+	assert session.set('session', 'two').error == .none
+	assert session.get('session')? == 'two'
+	assert session.keys().len == 2
+	assert obtain_a_storage_bottle_map(.local, environment, .session_storage, host) == none
+}
+
+fn test_storage_manager_estimate_uses_host_usage_and_registered_local_quota() {
+	exact_storage_host_state.map_ = {
+		'a': '1234'
+	}
+	host := &StorageHost{
+		keys: exact_storage_keys
+		get: exact_storage_get
+		set: exact_storage_set
+		clear: exact_storage_clear
+		remove: exact_storage_remove
+		usage: exact_storage_usage
+	}
+	manager := StorageManager.create_for_environment(session_environment('https://estimate.test'), host)
+	exact_storage_task_ran = false
+	manager.queue_a_storage_task(exact_storage_task)
+	assert exact_storage_task_ran
+	estimate := manager.estimate()!
+	assert estimate.usage? == 5
+	assert estimate.quota? == local_storage_quota
+
+	unconfigured := StorageManager.create()
+	if _ := unconfigured.estimate() {
+		assert false
+	} else {
+		assert err.msg().contains('Failed to obtain local storage shelf')
+	}
 }
