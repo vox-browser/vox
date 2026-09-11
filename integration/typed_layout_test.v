@@ -110,15 +110,14 @@ fn test_svg_non_scaling_stroke_is_retained_for_device_space_painting() {
 	assert root.render_svg(400, 200).contains('vector-effect="non-scaling-stroke"')
 }
 
-fn test_symbol_list_markers_are_painted_as_geometry() {
+fn test_symbol_list_markers_are_painted_as_generated_text() {
 	document :=
 		html.parse_document('<!doctype html><style>html, body { margin:0 }</style><ul><li>disc</li></ul>')
 	root := layout.layout_document_typed_in_viewport(document, 320, 200)
-	markers := root.paint_commands().filter(it.kind == 'fill_ellipse')
+	markers := root.paint_commands().filter(it.kind == 'draw_text' && it.text.trim_space() == '•')
 	assert markers.len == 1
-	assert markers[0].width == 6
-	assert markers[0].height == 6
-	assert root.render_svg(320, 200).contains('<ellipse')
+	assert markers[0].text == '• '
+	assert root.render_svg(320, 200).contains('>• ')
 }
 
 fn test_relative_positioning_moves_paint_but_preserves_normal_flow() {

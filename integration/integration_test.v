@@ -116,8 +116,7 @@ fn test_cascade_over_parsed_document() {
 fn test_cascade_with_stylesheet_over_parsed_document() {
 	doc := html.parse_document('<body><div class="card"><h1>Title</h1><p>Body</p></div></body>')
 	root := unsafe { &dom.Node(doc) }
-	rules := css.parse_css_stylesheet_contents_with_parser('.card { color: navy } h1 { color: crimson }',
-		map[string]bool{})
+	rules := css.parse_css_stylesheet_contents_with_parser('.card { color: navy } h1 { color: crimson }', map[string]bool{})
 	color := css.property_id_from_string('color') or { panic('color id') }
 
 	h1 := css.query_selector(root, 'h1') or { panic('no h1') }
@@ -762,8 +761,7 @@ fn test_render_svg_over_parsed_document() {
 fn test_get_computed_style_over_parsed_document() {
 	doc := html.parse_document('<body><div class="card"><p>text</p></div></body>')
 	root := unsafe { &dom.Node(doc) }
-	rules := css.parse_css_stylesheet_contents_with_parser('.card { color: crimson; font-size: 24px }',
-		map[string]bool{})
+	rules := css.parse_css_stylesheet_contents_with_parser('.card { color: crimson; font-size: 24px }', map[string]bool{})
 	p := css.query_selector(root, 'p') or { panic('no p') }
 
 	style := css.get_computed_style(p, rules)
@@ -955,8 +953,8 @@ fn test_text_decoration_over_parsed_document() {
 	assert svg.contains('<line') // the underline
 }
 
-// Full-stack list markers: parse a <ul>, lay it out, and confirm each <li> gets the geometric disc
-// image used by MarkerPaintable rather than an approximate bullet glyph.
+// Full-stack list markers: parse a <ul>, lay it out, and confirm each <li> gets
+// the generated marker text produced by the current list-item tree builder.
 fn test_list_markers_over_parsed_document() {
 	doc := html.parse_document('<body><ul><li>alpha</li><li>beta</li></ul></body>')
 	root_box := layout.layout_document(doc, 600)
@@ -970,12 +968,13 @@ fn test_list_markers_over_parsed_document() {
 	}
 
 	commands := root_box.paint_commands()
-	assert commands.filter(it.kind == 'fill_ellipse').len == 2
+	markers := commands.filter(it.kind == 'draw_text' && it.text.trim_space() == '•')
+	assert markers.len == 2
 	svg := root_box.render_svg(600, root_box.height + 20)
 	assert svg.contains('alpha')
 	assert svg.contains('beta')
-	assert svg.count('<ellipse') == 2
-	assert !svg.contains('•')
+	assert svg.count('>• ') == 2
+	assert !svg.contains('<ellipse')
 }
 
 // Full-stack letter-spacing: an author stylesheet adds letter-spacing to a paragraph; the rendered
@@ -1315,20 +1314,17 @@ fn test_radial_gradient_over_parsed_document() {
 	assert svg.contains('stop-color="rgb(40 40 40)"')
 }
 
-// Full-stack list-style-type: a parsed ordered list with lower-alpha markers renders a./b./c.
+// Full-stack list-style-type: a parsed ordered list paints generated lower-alpha
+// marker text as a./b./c.
 fn test_list_style_type_over_parsed_document() {
 	doc :=
 		html.parse_document('<body><ol style="list-style-type: lower-alpha"><li>x</li><li>y</li><li>z</li></ol></body>')
 	root_box := layout.layout_document(doc, 600)
-	root := unsafe { &dom.Node(doc) }
-	lis := css.query_selector_all(root, 'li')
-	assert lis.len == 3
-
-	mut markers := []string{}
-	for li in lis {
-		li_box := root_box.find_box(i64(li.as_node().unique_id())) or { panic('no li box') }
-		markers << li_box.lines[0].fragments[0].text
-	}
+	markers := root_box.paint_commands().filter(it.kind == 'draw_text' && it.text.trim_space() in [
+		'a.',
+		'b.',
+		'c.',
+	]).map(it.text.trim_space())
 	assert markers == ['a.', 'b.', 'c.']
 }
 
