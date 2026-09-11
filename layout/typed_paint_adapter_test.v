@@ -2719,6 +2719,18 @@ fn test_object_bounding_box_svg_mask_content_uses_target_geometry() {
 	assert paths.len == 1
 	// root viewBox scale(2) * target object bounding box(100x80 at 10,5)
 	assert paths[0].transform == [f64(200), 0, 0, 160, 20, 10]!
+	assert mask.rect == LayoutRect{-1, -6, 241, 192}
+}
+
+fn test_svg_mask_areas_resolve_in_target_user_space() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" viewBox="0 0 100 100"><defs><mask id="user"><circle cx="50" cy="50" r="35"/></mask><mask id="object" maskContentUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".35"/></mask></defs><rect id="lower" y="55" width="45" height="45"/><rect id="right" x="55" width="45" height="45"/><use mask="url(#user)" href="#lower"/><use mask="url(#object)" href="#right"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 240, 240)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	masks := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer').map(it.mask_clip)
+	assert masks.len == 2
+	assert masks[0].rect == LayoutRect{-9, 101, 108, 108}
+	assert masks[1].rect == LayoutRect{101, -9, 108, 108}
 }
 
 fn test_sticky_element_uses_live_scroll_frame_without_rebuilding_phase_commands() {

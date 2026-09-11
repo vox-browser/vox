@@ -2815,10 +2815,53 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 	}
 }
 
+fn svg_target_user_space_object_bounding_box(target_used &UsedValues) svg.Rect {
+	if path := target_used.computed_svg_path() {
+		return svg_path_bounds(path) or { svg.Rect{} }
+	}
+	return svg.Rect{
+		x: target_used.offset.x().to_double()
+		y: target_used.offset.y().to_double()
+		width: target_used.content_width().to_double()
+		height: target_used.content_height().to_double()
+	}
+}
+
+fn resolve_svg_masking_area(mask_element &dom.Element, target_bounds svg.Rect,
+	viewport painting.Size) svg.Rect {
+	mask_x := svg.parse_number_percentage(mask_element.get_attribute_value('x')) or {
+		svg.percentage(-10)
+	}
+	mask_y := svg.parse_number_percentage(mask_element.get_attribute_value('y')) or {
+		svg.percentage(-10)
+	}
+	mask_width := svg.parse_number_percentage(mask_element.get_attribute_value('width')) or {
+		svg.percentage(120)
+	}
+	mask_height := svg.parse_number_percentage(mask_element.get_attribute_value('height')) or {
+		svg.percentage(120)
+	}
+	if svg.parse_units(mask_element.get_attribute_value('maskUnits')) or {
+		svg.Units.object_bounding_box
+	} == .object_bounding_box {
+		return svg.Rect{
+			x: target_bounds.x + mask_x.value * target_bounds.width
+			y: target_bounds.y + mask_y.value * target_bounds.height
+			width: mask_width.value * target_bounds.width
+			height: mask_height.value * target_bounds.height
+		}
+	}
+	return svg.Rect{
+		x: mask_x.resolve_relative_to(viewport.width)
+		y: mask_y.resolve_relative_to(viewport.height)
+		width: mask_width.resolve_relative_to(viewport.width)
+		height: mask_height.resolve_relative_to(viewport.height)
+	}
+}
+
 // SVGMaskable::get_svg_mask_area()/calculate_svg_mask_display_list(): retain
 // the mask resource's normal SVG foreground painting, its layer boundaries,
-// and the mask-type conversion. SVGMaskElement::resolve_masking_area() still
-// intentionally follows upstream's current 20% inflation TODO.
+// and the mask-type conversion.
 fn svg_url_mask_for_box(node &Node, state &LayoutState,
 	target_used &UsedValues) ?painting.SVGMaskVisualData {
 	mut resource := ?&Node(none)
@@ -2830,7 +2873,7 @@ fn svg_url_mask_for_box(node &Node, state &LayoutState,
 	}
 	mask_box := resource or { return none }
 	mask_styled := mask_box.as_node_with_style() or { return none }
-	mask_used := state.try_get(mask_styled) or { return none }
+	_ = state.try_get(mask_styled) or { return none }
 	mask_element := svg_element_for_layout_node(mask_box) or { return none }
 	resource_transform := target_used.svg_transform().multiply(svg.element_transform(svg_element_model(mask_element)))
 	object_bounding_box_units := svg.parse_units(mask_element.get_attribute_value('maskContentUnits')) or {
@@ -2838,14 +2881,10 @@ fn svg_url_mask_for_box(node &Node, state &LayoutState,
 	} == .object_bounding_box
 	mut collection := SVGMaskPaintCollection{}
 	collect_svg_mask_paint_operations(mask_box, state, resource_transform, true, object_bounding_box_units, mut collection)
-	position := paint_cumulative_offset(mask_box, state, mask_used)
-	resource_border_rect := svg.Rect{
-		x: position.x().to_double() - mask_used.padding_left.to_double() - mask_used.border_left.to_double()
-		y: position.y().to_double() - mask_used.padding_top.to_double() - mask_used.border_top.to_double()
-		width: mask_used.border_box_width().to_double()
-		height: mask_used.border_box_height().to_double()
-	}
-	mask_area := svg.resolve_masking_area(resource_border_rect)
+	target_bounds := svg_target_user_space_object_bounding_box(target_used)
+	viewport := svg_paint_viewport_size(node, state)
+	user_space_mask_area := resolve_svg_masking_area(mask_element, target_bounds, viewport)
+	mask_area := svg_path_transform_to_page(node, state).map_rect(user_space_mask_area)
 	bounding_rect := compatibility_enclosing_int_rect(LayoutRect{
 		x: mask_area.x
 		y: mask_area.y
