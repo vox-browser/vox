@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of MathMLElement.cpp, MathMLMiElement.cpp, and
-// MathMLMspaceElement.cpp. The DOM binding layer is represented by a typed
-// element record; the observable presentational-hint algorithms are complete.
+// Translation of MathMLElement.cpp, MathMLAnchorElement.cpp,
+// MathMLMiElement.cpp, and MathMLMspaceElement.cpp. The DOM binding layer is
+// represented by typed element records; the observable element algorithms are
+// complete.
 module mathml
 
 import css
@@ -108,6 +109,245 @@ pub fn (mut element MathMLElement) set_nonce(nonce string) {
 
 pub fn (element &MathMLElement) global_event_handlers_to_event_target(_ string) &dom.EventTarget {
 	return element.event_target_
+}
+
+// MathMLAnchorElement includes HTML's HyperlinkElementUtils mixin. Keep its URL
+// record next to the typed MathML element while sharing the translated DOM URL
+// parser and component operations with HTML anchors.
+@[heap]
+pub struct MathMLAnchorElement {
+	MathMLElement
+mut:
+	document_url_ dom.URL
+	url_          ?dom.URL
+}
+
+pub fn MathMLAnchorElement.create(document_url dom.URL) &MathMLAnchorElement {
+	return &MathMLAnchorElement{
+		MathMLElement: MathMLElement{
+			local_name: 'a'
+			attributes: map[string]string{}
+			event_target_: &dom.EventTarget{}
+		}
+		document_url_: document_url
+	}
+}
+
+pub fn (mut element MathMLAnchorElement) set_attribute(name string, value string) {
+	element.MathMLElement.set_attribute(name, value)
+	if name == 'href' {
+		element.url_ = none
+	}
+}
+
+pub fn (mut element MathMLAnchorElement) remove_attribute(name string) {
+	element.MathMLElement.remove_attribute(name)
+	if name == 'href' {
+		element.url_ = none
+	}
+}
+
+pub fn (mut element MathMLAnchorElement) set_document_url(document_url dom.URL) {
+	element.document_url_ = document_url
+	element.url_ = none
+}
+
+// The two const/non-const C++ overloads collapse into this V entry point.
+pub fn (element &MathMLAnchorElement) hyperlink_element_utils_element() &MathMLElement {
+	return &element.MathMLElement
+}
+
+pub fn (mut element MathMLAnchorElement) reinitialize_url() {
+	if url := element.url_ {
+		if url.scheme() == 'blob' && url.has_an_opaque_path() {
+			return
+		}
+	}
+	element.set_the_url()
+}
+
+// https://w3c.github.io/mathml-core/#dfn-set-the-url
+pub fn (mut element MathMLAnchorElement) set_the_url() {
+	element.url_ = none
+	href := element.attributes['href'] or { return }
+	if url := dom.dom_url_parse(href, element.document_url_, 'UTF-8') {
+		element.url_ = url
+	}
+}
+
+// https://w3c.github.io/mathml-core/#dfn-update-href
+pub fn (mut element MathMLAnchorElement) update_href() {
+	url := element.url_ or { return }
+	element.MathMLElement.set_attribute('href', url.serialize())
+}
+
+fn (mut element MathMLAnchorElement) current_url() ?dom.URL {
+	element.reinitialize_url()
+	return element.url_
+}
+
+fn (mut element MathMLAnchorElement) replace_url(url dom.URL) {
+	element.url_ = url
+	element.update_href()
+}
+
+// https://w3c.github.io/mathml-core/#dom-mathmlanchorelement-href
+pub fn (mut element MathMLAnchorElement) href() string {
+	url := element.current_url() or { return element.attributes['href'] or { '' } }
+	return url.serialize()
+}
+
+pub fn (mut element MathMLAnchorElement) set_href(href string) {
+	element.set_attribute('href', href)
+}
+
+pub fn (mut element MathMLAnchorElement) origin() string {
+	url := element.current_url() or { return '' }
+	return url.origin().serialize()
+}
+
+pub fn (mut element MathMLAnchorElement) protocol() string {
+	url := element.current_url() or { return ':' }
+	return '${url.scheme()}:'
+}
+
+pub fn (mut element MathMLAnchorElement) set_protocol(protocol string) {
+	url := element.current_url() or { return }
+	element.replace_url(url.with_protocol(protocol))
+}
+
+pub fn (mut element MathMLAnchorElement) username() string {
+	url := element.current_url() or { return '' }
+	return url.username()
+}
+
+pub fn (mut element MathMLAnchorElement) set_username(username string) {
+	url := element.current_url() or { return }
+	if !url.cannot_have_a_username_or_password_or_port() {
+		element.replace_url(url.with_username(username))
+	}
+}
+
+pub fn (mut element MathMLAnchorElement) password() string {
+	url := element.current_url() or { return '' }
+	return url.password()
+}
+
+pub fn (mut element MathMLAnchorElement) set_password(password string) {
+	url := element.current_url() or { return }
+	if !url.cannot_have_a_username_or_password_or_port() {
+		element.replace_url(url.with_password(password))
+	}
+}
+
+pub fn (mut element MathMLAnchorElement) host() string {
+	url := element.current_url() or { return '' }
+	if url.host() == none {
+		return ''
+	}
+	port := url.port() or { return url.serialized_host() }
+	return '${url.serialized_host()}:${port}'
+}
+
+pub fn (mut element MathMLAnchorElement) set_host(host string) {
+	url := element.current_url() or { return }
+	if !url.has_an_opaque_path() {
+		element.replace_url(url.with_host(host))
+	}
+}
+
+pub fn (mut element MathMLAnchorElement) hostname() string {
+	url := element.current_url() or { return '' }
+	return if url.host() == none { '' } else { url.serialized_host() }
+}
+
+pub fn (mut element MathMLAnchorElement) set_hostname(hostname string) {
+	url := element.current_url() or { return }
+	if !url.has_an_opaque_path() {
+		element.replace_url(url.with_hostname(hostname))
+	}
+}
+
+pub fn (mut element MathMLAnchorElement) port() string {
+	url := element.current_url() or { return '' }
+	port := url.port() or { return '' }
+	return port.str()
+}
+
+pub fn (mut element MathMLAnchorElement) set_port(port string) {
+	url := element.current_url() or { return }
+	if !url.cannot_have_a_username_or_password_or_port() {
+		element.replace_url(url.with_port(port))
+	}
+}
+
+pub fn (mut element MathMLAnchorElement) pathname() string {
+	url := element.current_url() or { return '' }
+	return url.serialize_path()
+}
+
+pub fn (mut element MathMLAnchorElement) set_pathname(pathname string) {
+	url := element.current_url() or { return }
+	if !url.has_an_opaque_path() {
+		element.replace_url(url.with_pathname(pathname))
+	}
+}
+
+pub fn (mut element MathMLAnchorElement) search() string {
+	url := element.current_url() or { return '' }
+	query := url.query() or { return '' }
+	return if query == '' { '' } else { '?${query}' }
+}
+
+pub fn (mut element MathMLAnchorElement) set_search(search string) {
+	url := element.current_url() or { return }
+	if search == '' {
+		element.replace_url(url.with_query(none))
+		return
+	}
+	input := if search.starts_with('?') { search#[1..] } else { search }
+	element.replace_url(url.with_query(input))
+}
+
+pub fn (mut element MathMLAnchorElement) hash() string {
+	url := element.current_url() or { return '' }
+	fragment := url.fragment() or { return '' }
+	return if fragment == '' { '' } else { '#${fragment}' }
+}
+
+pub fn (mut element MathMLAnchorElement) set_hash(hash string) {
+	mut url := element.current_url() or { return }
+	if hash == '' {
+		url.set_fragment(none)
+	} else {
+		input := if hash.starts_with('#') { hash#[1..] } else { hash }
+		url.set_fragment(input)
+	}
+	element.replace_url(url)
+}
+
+pub fn (element &MathMLAnchorElement) target() string {
+	return element.attributes['target'] or { '' }
+}
+
+pub fn (mut element MathMLAnchorElement) set_target(target string) {
+	element.set_attribute('target', target)
+}
+
+pub fn (element &MathMLAnchorElement) hreflang() string {
+	return element.attributes['hreflang'] or { '' }
+}
+
+pub fn (mut element MathMLAnchorElement) set_hreflang(hreflang string) {
+	element.set_attribute('hreflang', hreflang)
+}
+
+pub fn (element &MathMLAnchorElement) type_() string {
+	return element.attributes['type'] or { '' }
+}
+
+pub fn (mut element MathMLAnchorElement) set_type(type_ string) {
+	element.set_attribute('type', type_)
 }
 
 // https://www.w3.org/TR/html-aria/#el-math

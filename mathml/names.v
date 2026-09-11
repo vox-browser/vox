@@ -13,6 +13,7 @@ pub const attribute_names = [
 	'dir',
 	'displaystyle',
 	'height',
+	'href',
 	'mathbackground',
 	'mathcolor',
 	'mathsize',
@@ -22,6 +23,7 @@ pub const attribute_names = [
 ]
 
 pub const tag_names = [
+	'a',
 	'annotation',
 	'annotation-xml',
 	'maction',

@@ -1,10 +1,75 @@
 module mathml
 
+import dom
+
 fn test_names_are_complete() {
-	assert attribute_names.len == 11
-	assert tag_names.len == 32
-	assert tag_names[1] == 'annotation-xml'
+	assert attribute_names.len == 12
+	assert attribute_names[5] == 'href'
+	assert tag_names.len == 33
+	assert tag_names[0] == 'a'
+	assert tag_names[2] == 'annotation-xml'
 	assert tag_names#[-1] == 'semantics'
+}
+
+fn test_mathml_anchor_href_resolves_and_falls_back_to_raw_attribute() {
+	mut anchor := MathMLAnchorElement.create(dom.URL{
+		value: 'https://example.test/math/page.html'
+	})
+	assert anchor.href() == ''
+	anchor.set_href('../next?q=1#result')
+	assert anchor.href() == 'https://example.test/next?q=1#result'
+	assert anchor.attribute('href')? == '../next?q=1#result'
+
+	anchor.set_href('http://[:::')
+	assert anchor.href() == 'http://[:::'
+	anchor.remove_attribute('href')
+	assert anchor.href() == ''
+}
+
+fn test_mathml_anchor_exposes_hyperlink_components_and_reflected_attributes() {
+	mut anchor := MathMLAnchorElement.create(dom.URL{
+		value: 'https://base.example/'
+	})
+	anchor.set_href('https://user:pass@example.test:8443/a?x=1#old')
+	assert anchor.origin() == 'https://example.test:8443'
+	assert anchor.protocol() == 'https:'
+	assert anchor.username() == 'user'
+	assert anchor.password() == 'pass'
+	assert anchor.host() == 'example.test:8443'
+	assert anchor.hostname() == 'example.test'
+	assert anchor.port() == '8443'
+	assert anchor.pathname() == '/a'
+	assert anchor.search() == '?x=1'
+	assert anchor.hash() == '#old'
+
+	anchor.set_protocol('http')
+	anchor.set_hostname('other.example')
+	anchor.set_port('9000')
+	anchor.set_pathname('/translated')
+	anchor.set_search('?done=yes')
+	anchor.set_hash('#ready')
+	assert anchor.href() == 'http://user:pass@other.example:9000/translated?done=yes#ready'
+	assert anchor.attribute('href')? == anchor.href()
+
+	anchor.set_target('_blank')
+	anchor.set_hreflang('en')
+	anchor.set_type('text/html')
+	assert anchor.target() == '_blank'
+	assert anchor.hreflang() == 'en'
+	assert anchor.type_() == 'text/html'
+	assert anchor.hyperlink_element_utils_element().local_name == 'a'
+}
+
+fn test_mathml_anchor_re_resolves_when_its_document_url_changes() {
+	mut anchor := MathMLAnchorElement.create(dom.URL{
+		value: 'https://first.example/one/'
+	})
+	anchor.set_href('relative')
+	assert anchor.href() == 'https://first.example/one/relative'
+	anchor.set_document_url(dom.URL{
+		value: 'https://second.example/two/'
+	})
+	assert anchor.href() == 'https://second.example/two/relative'
 }
 
 fn test_common_presentational_hints_and_role() {
