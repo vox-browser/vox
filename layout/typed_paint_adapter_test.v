@@ -6,6 +6,22 @@ import html
 import math
 import painting
 
+fn typed_paint_node_with_id(root &Node, id string) ?&Node {
+	if dom_node := root.dom_node() {
+		if element := dom_node.as_element() {
+			if element.get_attribute_value('id') == id {
+				return root
+			}
+		}
+	}
+	for child in root.children() {
+		if found := typed_paint_node_with_id(child, id) {
+			return found
+		}
+	}
+	return none
+}
+
 fn append_typed_scroll_frame_index(indices_pointer &[]int, index int) {
 	unsafe {
 		mut indices := *indices_pointer
@@ -1963,6 +1979,24 @@ fn test_svg_path_hit_testing_rejects_stroke_inflation_outside_transformed_path_b
 	}
 	assert stroke_margin_hit.as_node().unique_id() != target.as_node().unique_id()
 	assert mutable_document.elements_from_point(45, 25).all(it.as_node().unique_id() != target.as_node().unique_id())
+}
+
+fn test_nested_svg_viewport_and_element_transforms_are_interleaved_at_paint_time() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="200" height="200" viewBox="0 0 10 10"><g transform="translate(1 0)"><svg x="2" width="4" height="4" viewBox="0 0 2 2"><rect id="target" x=".5" y=".5" width="1" height="1"/></svg></g></svg>')
+	result := run_document_layout(document, 240, 240) or { panic('layout failed') }
+	target_node := typed_paint_node_with_id(result.root, 'target') or {
+		panic('missing SVG target layout node')
+	}
+	target_styled := target_node.as_node_with_style() or { panic('SVG target has no style') }
+	target_used := result.state.try_get(target_styled) or { panic('SVG target has no used values') }
+	assert target_used.offset.x().to_double() == 0.5
+	assert target_used.offset.y().to_double() == 0.5
+	root := block_box_from_typed_layout(result.root, result.state)
+	element := document.get_element_by_id('target') or { panic('missing SVG target') }
+	target_box := root.find_box(i64(element.as_node().unique_id())) or {
+		panic('missing SVG target paint box')
+	}
+	assert target_box.svg_transform == [f64(40), 0, 0, 40, 60, 0]!
 }
 
 fn test_svg_linear_gradient_paints_retain_linked_resource_algorithms() {

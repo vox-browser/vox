@@ -199,7 +199,7 @@ fn layout_debug_paintable_border_rect(node &Node, state &LayoutState, paintable_
 	}
 	styled := node.as_node_with_style() or { return none }
 	used := state.try_get(styled) or { return none }
-	position := paint_cumulative_offset(node, state, used)
+	position := layout_offset_in_svg_user_space(node, state, used)
 	return layout_debug_border_rect(position, used.content_width(), used.content_height(), used)
 }
 
@@ -396,7 +396,7 @@ fn append_typed_stacking_context(context_index int, contexts []LayoutDebugStacki
 	styled := node.as_node_with_style() or { return }
 	used := state.try_get(styled) or { return }
 	children := layout_debug_stacking_context_children(context_index, contexts)
-	position := paint_cumulative_offset(node, state, used)
+	position := layout_offset_in_svg_user_space(node, state, used)
 	rect := css.CSSPixelRect{
 		x: position.x()
 		y: position.y()

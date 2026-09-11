@@ -43,6 +43,137 @@ fn paint_cumulative_offset(node &Node, state &LayoutState, used &UsedValues) css
 	return offset
 }
 
+// The committed rectangle of content below an SVG viewport is relative to
+// that viewport, not the page. Painting applies the viewport transform later.
+fn layout_offset_in_svg_user_space(node &Node, state &LayoutState, used &UsedValues) css.CSSPixelPoint {
+	position := paint_cumulative_offset(node, state, used)
+	mut ancestor := node.parent()
+	for ancestor != none {
+		ancestor_node := ancestor or { break }
+		if ancestor_node.is_svg_svg_box() {
+			ancestor_styled := ancestor_node.as_node_with_style() or { return position }
+			ancestor_used := state.try_get(ancestor_styled) or { return position }
+			viewport_position := paint_cumulative_offset(ancestor_node, state, ancestor_used)
+			return css.CSSPixelPoint.new(position.x().minus(viewport_position.x()), position.y().minus(viewport_position.y()))
+		}
+		ancestor = ancestor_node.parent()
+	}
+	return position
+}
+
+// SVG layout keeps geometry in viewport user units. Build the corresponding
+// page-space CTM in tree order so viewport placement and element transforms
+// remain correctly interleaved instead of being flattened into every box.
+fn svg_path_transform_to_page(node &Node, state &LayoutState) svg.AffineTransform {
+	mut chain := []&Node{}
+	mut current := ?&Node(node)
+	mut outermost_viewport_index := -1
+	for current != none {
+		candidate := current or { break }
+		chain << candidate
+		if candidate.is_svg_svg_box() {
+			outermost_viewport_index = chain.len - 1
+		}
+		current = candidate.parent()
+	}
+	if outermost_viewport_index < 0 {
+		return svg.AffineTransform{}
+	}
+	root := chain[outermost_viewport_index]
+	root_styled := root.as_node_with_style() or { return svg.AffineTransform{} }
+	root_used := state.try_get(root_styled) or { return svg.AffineTransform{} }
+	root_position := paint_cumulative_offset(root, state, root_used)
+	mut transform := svg.AffineTransform{}.translated(root_position.x().to_double(), root_position.y().to_double())
+	for index := outermost_viewport_index; index >= 0; index-- {
+		part := chain[index]
+		part_styled := part.as_node_with_style() or { continue }
+		part_used := state.try_get(part_styled) or { continue }
+		if element := svg_element_for_layout_node(part) {
+			transform = transform.multiply(svg.element_transform(svg_element_model(element)))
+		}
+		if viewport_transform := part_used.svg_viewport_transform() {
+			if index != outermost_viewport_index {
+				transform = transform.translated(part_used.offset.x().to_double(), part_used.offset.y().to_double())
+			}
+			transform = transform.multiply(viewport_transform)
+		}
+	}
+	return transform
+}
+
+fn svg_box_visual_bounds_to_page(node &Node, state &LayoutState, used &UsedValues) svg.Rect {
+	mut chain := []&Node{}
+	mut current := ?&Node(node)
+	mut outermost_viewport_index := -1
+	for current != none {
+		candidate := current or { break }
+		chain << candidate
+		if candidate.is_svg_svg_box() {
+			outermost_viewport_index = chain.len - 1
+		}
+		current = candidate.parent()
+	}
+	if outermost_viewport_index < 0 {
+		position := paint_cumulative_offset(node, state, used)
+		return svg.Rect{position.x().to_double(), position.y().to_double(), used.content_width().to_double(), used.content_height().to_double()}
+	}
+	root := chain[outermost_viewport_index]
+	root_styled := root.as_node_with_style() or { return svg.Rect{} }
+	root_used := state.try_get(root_styled) or { return svg.Rect{} }
+	root_position := paint_cumulative_offset(root, state, root_used)
+	mut transform := svg.AffineTransform{}.translated(root_position.x().to_double(), root_position.y().to_double())
+	for index := outermost_viewport_index; index >= 0; index-- {
+		part := chain[index]
+		part_styled := part.as_node_with_style() or { continue }
+		part_used := state.try_get(part_styled) or { continue }
+		if element := svg_element_for_layout_node(part) {
+			transform = transform.multiply(svg.element_transform(svg_element_model(element)))
+		}
+		if viewport_transform := part_used.svg_viewport_transform() {
+			if index != outermost_viewport_index {
+				transform = transform.translated(part_used.offset.x().to_double(), part_used.offset.y().to_double())
+			}
+			if layout_nodes_same(part, node) {
+				return transform.map_rect(svg.Rect{0, 0, part_used.content_width().to_double(), part_used.content_height().to_double()})
+			}
+			transform = transform.multiply(viewport_transform)
+			continue
+		}
+		if part.is_svg_foreign_object_box() {
+			transform = transform.translated(part_used.offset.x().to_double(), part_used.offset.y().to_double())
+			if layout_nodes_same(part, node) {
+				return transform.map_rect(svg.Rect{0, 0, part_used.content_width().to_double(), part_used.content_height().to_double()})
+			}
+			continue
+		}
+		if layout_nodes_same(part, node) {
+			return transform.map_rect(svg.Rect{part_used.offset.x().to_double(), part_used.offset.y().to_double(), part_used.content_width().to_double(), part_used.content_height().to_double()})
+		}
+	}
+	return svg.Rect{}
+}
+
+// Legacy resource collection already builds its transform in CSS layout
+// coordinates. Object-bounding-box resources additionally need the outer SVG
+// viewport transform conjugated around that coordinate space.
+fn outer_svg_viewport_transform_in_page_space(node &Node, state &LayoutState) svg.AffineTransform {
+	mut current := ?&Node(node)
+	mut root := ?&Node(none)
+	for current != none {
+		candidate := current or { break }
+		if candidate.is_svg_svg_box() {
+			root = candidate
+		}
+		current = candidate.parent()
+	}
+	root_node := root or { return svg.AffineTransform{} }
+	root_styled := root_node.as_node_with_style() or { return svg.AffineTransform{} }
+	root_used := state.try_get(root_styled) or { return svg.AffineTransform{} }
+	viewport_transform := root_used.svg_viewport_transform() or { return svg.AffineTransform{} }
+	position := paint_cumulative_offset(root_node, state, root_used)
+	return svg.AffineTransform{}.translated(position.x().to_double(), position.y().to_double()).multiply(viewport_transform).translated(-position.x().to_double(), -position.y().to_double())
+}
+
 fn color_resolution_context_for_typed_node(node &Node, current_color css.Color) css.ColorResolutionContext {
 	mut context := css.ColorResolutionContext{
 		current_color: current_color
@@ -1947,7 +2078,7 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 	target_used := state.try_get(target_styled) or { return none }
 	resource_transform := target_used.svg_transform().multiply(svg.element_transform(svg_element_model(content_element)))
 	mut collection := SVGMaskPaintCollection{}
-	collect_svg_mask_paint_operations(resource, state, resource_transform, true, mut collection)
+	collect_svg_mask_paint_operations(resource, state, resource_transform, true, false, mut collection)
 	mut content_origin := painting.Point{}
 	if svg.parse_viewbox(content_element.get_attribute_value('viewBox')) == none {
 		seen.clear()
@@ -2402,7 +2533,8 @@ mut:
 }
 
 fn collect_svg_clip_path_components(node &Node, state &LayoutState,
-	resource_transform svg.AffineTransform, mut collection SVGClipPathCollection) {
+	resource_transform svg.AffineTransform, object_bounding_box_units bool,
+	mut collection SVGClipPathCollection) {
 	if node.is_svg_mask_box() || node.is_svg_pattern_box() {
 		return
 	}
@@ -2412,7 +2544,10 @@ fn collect_svg_clip_path_components(node &Node, state &LayoutState,
 				position := paint_cumulative_offset(node, state, used)
 				page_delta_x := position.x().to_double() - used.offset.x().to_double()
 				page_delta_y := position.y().to_double() - used.offset.y().to_double()
-				to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
+				mut to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
+				if object_bounding_box_units {
+					to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
+				}
 				local_path := html.canvas_gfx_path_from_svg_path(svg_path)
 				clip_path := painting_clip_path_from_canvas_path(local_path, if styled.computed_values().clip_rule() == .evenodd {
 					painting.WindingRule.even_odd
@@ -2442,7 +2577,7 @@ fn collect_svg_clip_path_components(node &Node, state &LayoutState,
 	}
 	for child in node.children() {
 		if child.is_box() && !child.is_svg_clip_box() {
-			collect_svg_clip_path_components(child, state, resource_transform, mut collection)
+			collect_svg_clip_path_components(child, state, resource_transform, object_bounding_box_units, mut collection)
 		}
 	}
 }
@@ -2463,8 +2598,11 @@ fn svg_url_clip_path_for_box(node &Node, state &LayoutState,
 	clip_box := resource or { return none }
 	clip_element := svg_element_for_layout_node(clip_box) or { return none }
 	resource_transform := target_used.svg_transform().multiply(svg.element_transform(svg_element_model(clip_element)))
+	object_bounding_box_units := svg.parse_units(clip_element.get_attribute_value('clipPathUnits')) or {
+		svg.Units.user_space_on_use
+	} == .object_bounding_box
 	mut collection := SVGClipPathCollection{}
-	collect_svg_clip_path_components(clip_box, state, resource_transform, mut collection)
+	collect_svg_clip_path_components(clip_box, state, resource_transform, object_bounding_box_units, mut collection)
 	return painting.SVGClipVisualData{
 		bounding_rect: compatibility_enclosing_int_rect(LayoutRect{
 			x: collection.bounds.x
@@ -2520,7 +2658,7 @@ fn resolved_svg_image_url(element &dom.Element) string {
 }
 
 fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
-	resource_transform svg.AffineTransform, is_resource_root bool,
+	resource_transform svg.AffineTransform, is_resource_root bool, object_bounding_box_units bool,
 	mut collection SVGMaskPaintCollection) {
 	if !is_resource_root
 		&& (node.is_svg_mask_box() || node.is_svg_clip_box() || node.is_svg_pattern_box()) {
@@ -2578,7 +2716,10 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 			position := paint_cumulative_offset(node, state, used)
 			page_delta_x := position.x().to_double() - used.offset.x().to_double()
 			page_delta_y := position.y().to_double() - used.offset.y().to_double()
-			to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
+			mut to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(resource_transform).multiply(used.svg_transform())
+			if object_bounding_box_units {
+				to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
+			}
 			path := painting_clip_path_from_canvas_path(html.canvas_gfx_path_from_svg_path(svg_path), if computed.fill_rule() == .evenodd {
 				painting.WindingRule.even_odd
 			} else {
@@ -2665,7 +2806,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 	}
 	for child in node.children() {
 		if child.is_box() {
-			collect_svg_mask_paint_operations(child, state, resource_transform, false, mut collection)
+			collect_svg_mask_paint_operations(child, state, resource_transform, false, object_bounding_box_units, mut collection)
 		}
 	}
 	if wrap_opacity {
@@ -2693,8 +2834,11 @@ fn svg_url_mask_for_box(node &Node, state &LayoutState,
 	mask_used := state.try_get(mask_styled) or { return none }
 	mask_element := svg_element_for_layout_node(mask_box) or { return none }
 	resource_transform := target_used.svg_transform().multiply(svg.element_transform(svg_element_model(mask_element)))
+	object_bounding_box_units := svg.parse_units(mask_element.get_attribute_value('maskContentUnits')) or {
+		svg.Units.user_space_on_use
+	} == .object_bounding_box
 	mut collection := SVGMaskPaintCollection{}
-	collect_svg_mask_paint_operations(mask_box, state, resource_transform, true, mut collection)
+	collect_svg_mask_paint_operations(mask_box, state, resource_transform, true, object_bounding_box_units, mut collection)
 	position := paint_cumulative_offset(mask_box, state, mask_used)
 	resource_border_rect := svg.Rect{
 		x: position.x().to_double() - mask_used.padding_left.to_double() - mask_used.border_left.to_double()
@@ -2742,6 +2886,15 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	}
 	computed := styled.computed_values()
 	position := paint_cumulative_offset(node, state, used)
+	mut paint_position := position
+	mut paint_width := used.content_width().to_double()
+	mut paint_height := used.content_height().to_double()
+	if node.is_svg_svg_box() || node.is_svg_foreign_object_box() {
+		mapped_bounds := svg_box_visual_bounds_to_page(node, state, used)
+		paint_position = CSSPixelPoint.from_values(mapped_bounds.x, mapped_bounds.y)
+		paint_width = mapped_bounds.width
+		paint_height = mapped_bounds.height
+	}
 	mut element := ?&dom.Element(none)
 	mut tag_name := ''
 	mut node_id := i64(0)
@@ -2902,10 +3055,12 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		})
 		svg_path_data = compatibility_pack_clip_path_segments(exact_visual_path)
 		svg_fill_even_odd = computed.fill_rule() == .evenodd
-		page_delta_x := position.x().to_double() - used.offset.x().to_double()
-		page_delta_y := position.y().to_double() - used.offset.y().to_double()
-		to_page := svg.AffineTransform{}.translated(page_delta_x, page_delta_y).multiply(used.svg_viewbox_transform()).multiply(used.svg_transform())
+		to_page := svg_path_transform_to_page(node, state)
 		svg_transform = [to_page.a, to_page.b, to_page.c, to_page.d, to_page.e, to_page.f]!
+		mapped_bounds := svg_box_visual_bounds_to_page(node, state, used)
+		paint_position = CSSPixelPoint.from_values(mapped_bounds.x, mapped_bounds.y)
+		paint_width = mapped_bounds.width
+		paint_height = mapped_bounds.height
 		for point in path.endpoints() {
 			mapped := to_page.map_point(point)
 			svg_points << mapped.x
@@ -3053,6 +3208,10 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			replaced_image_position_x = object_position.offset_x.to_string()
 			replaced_image_position_y = object_position.offset_y.to_string()
 		}
+		mapped_bounds := svg_box_visual_bounds_to_page(node, state, used)
+		paint_position = CSSPixelPoint.from_values(mapped_bounds.x, mapped_bounds.y)
+		paint_width = mapped_bounds.width
+		paint_height = mapped_bounds.height
 	}
 	if replaced_image_url != '' || node.is_image_box() {
 		mut replaced_intrinsic_size := ?css.SizeWithAspectRatio(none)
@@ -3061,10 +3220,10 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		}
 		replaced_image_paintable = painting.ImagePaintable{
 			image_rect: painting.Rect{
-				x: position.x().to_double()
-				y: position.y().to_double()
-				width: used.content_width().to_double()
-				height: used.content_height().to_double()
+				x: paint_position.x().to_double()
+				y: paint_position.y().to_double()
+				width: paint_width
+				height: paint_height
 			}
 			border_radii: painting.BorderRadiiData{
 				top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
@@ -3237,7 +3396,15 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		}
 	}
 	overlay := compatibility_overlay_data(node, computed, used)
-	overflow_clip := compatibility_overflow_clip(node, computed, used, position, border_radii)
+	mut overflow_clip := compatibility_overflow_clip(node, computed, used, paint_position, border_radii)
+	if node.is_svg_svg_box() {
+		if clip := overflow_clip {
+			overflow_clip = CompatibilityOverflowClip{
+				...clip
+				rect: LayoutRect{paint_position.x().to_double(), paint_position.y().to_double(), paint_width, paint_height}
+			}
+		}
+	}
 	css_clip := paintable_box_get_clip_rect(node, computed, used, position)
 	mut scrollable_overflow := ?LayoutRect(none)
 	if overflow := used.scrollable_overflow_rect() {
@@ -3280,10 +3447,10 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	paint_border := compatibility_paint_border_edges(used)
 	return BlockBox{
 		tag_name: tag_name
-		x: position.x().to_double()
-		y: position.y().to_double()
-		width: used.content_width().to_double()
-		height: used.content_height().to_double()
+		x: paint_position.x().to_double()
+		y: paint_position.y().to_double()
+		width: paint_width
+		height: paint_height
 		margin: BoxEdges{used.margin_top.to_double(), used.margin_right.to_double(), used.margin_bottom.to_double(), used.margin_left.to_double()}
 		border: paint_border
 		padding: BoxEdges{used.padding_top.to_double(), used.padding_right.to_double(), used.padding_bottom.to_double(), used.padding_left.to_double()}

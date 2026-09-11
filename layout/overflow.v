@@ -65,7 +65,7 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 		return css.CSSPixelRect{}
 	}
 
-	position := paint_cumulative_offset(box, state, used)
+	position := layout_offset_in_svg_user_space(box, state, used)
 	content_box := css.CSSPixelRect{
 		x: position.x()
 		y: position.y()
@@ -272,7 +272,7 @@ fn padding_inflated_scrollable_overflow(content_box css.CSSPixelRect, padding_bo
 fn overflow_box_border_rect(node &Node, state &LayoutState) ?css.CSSPixelRect {
 	styled := node.as_node_with_style() or { return none }
 	used := state.try_get(styled) or { return none }
-	position := paint_cumulative_offset(node, state, used)
+	position := layout_offset_in_svg_user_space(node, state, used)
 	border_left := if used.use_collapsing_borders_model() {
 		css.css_pixels_round(used.border_left.divided_by_float(2.0))
 	} else {

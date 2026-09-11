@@ -2362,7 +2362,7 @@ fn test_intrinsic_min_and_max_height_constraints_clamp_used_height() {
 	assert used_for_id(result, 'minimum').content_height().to_double() == 30
 }
 
-fn test_svg_formatting_context_applies_viewbox_and_group_transforms_to_geometry() {
+fn test_svg_formatting_context_keeps_geometry_in_viewport_user_units() {
 	document :=
 		html.parse_document('<!doctype html><style>body { margin:0 }</style><svg id="svg" width="200" height="100" viewBox="0 0 100 50"><g id="group" transform="translate(10 5)"><rect id="shape" x="20" y="10" width="30" height="15"/></g></svg>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
@@ -2370,10 +2370,10 @@ fn test_svg_formatting_context_applies_viewbox_and_group_transforms_to_geometry(
 	assert svg_state.content_width().to_double() == 200
 	assert svg_state.content_height().to_double() == 100
 	shape := used_for_id(result, 'shape')
-	assert shape.offset.x().to_double() == 60
-	assert shape.offset.y().to_double() == 30
-	assert shape.content_width().to_double() == 60
-	assert shape.content_height().to_double() == 30
+	assert shape.offset.x().to_double() == 20
+	assert shape.offset.y().to_double() == 10
+	assert shape.content_width().to_double() == 30
+	assert shape.content_height().to_double() == 15
 	assert shape.computed_svg_path() or { panic('shape has no SVG path') }.serialize().starts_with('M 20')
 	group := used_for_id(result, 'group')
 	assert group.offset.x().to_double() == shape.offset.x().to_double()
@@ -2433,12 +2433,12 @@ fn test_svg_foreign_object_delegates_its_contents_to_block_layout() {
 		html.parse_document('<!doctype html><style>body { margin:0 } #html-child { height:8px }</style><svg width="200" height="100" viewBox="0 0 100 50"><foreignObject id="foreign" x="5" y="6" width="40" height="20"><div id="html-child"></div></foreignObject></svg>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	foreign := used_for_id(result, 'foreign')
-	assert foreign.offset.x().to_double() == 10
-	assert foreign.offset.y().to_double() == 12
-	assert foreign.content_width().to_double() == 80
-	assert foreign.content_height().to_double() == 40
+	assert foreign.offset.x().to_double() == 5
+	assert foreign.offset.y().to_double() == 6
+	assert foreign.content_width().to_double() == 40
+	assert foreign.content_height().to_double() == 20
 	html_child := used_for_id(result, 'html-child')
-	assert html_child.content_width().to_double() == 80
+	assert html_child.content_width().to_double() == 40
 	assert html_child.content_height().to_double() == 8
 }
 
@@ -2456,20 +2456,20 @@ fn test_svg_computed_geometry_properties_override_presentation_attributes_where_
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	circle := used_for_id(result, 'circle')
 	assert circle.computed_svg_path() or { panic('circle has no path') }.serialize().starts_with('M 50 20')
-	assert circle.offset.x().to_double() == 60
-	assert circle.offset.y().to_double() == 20
-	assert circle.content_width().to_double() == 40
-	assert circle.content_height().to_double() == 40
+	assert circle.offset.x().to_double() == 30
+	assert circle.offset.y().to_double() == 10
+	assert circle.content_width().to_double() == 20
+	assert circle.content_height().to_double() == 20
 	nested := used_for_id(result, 'nested')
-	assert nested.offset.x().to_double() == 20
-	assert nested.offset.y().to_double() == 10
-	assert nested.content_width().to_double() == 120
-	assert nested.content_height().to_double() == 60
+	assert nested.offset.x().to_double() == 10
+	assert nested.offset.y().to_double() == 5
+	assert nested.content_width().to_double() == 60
+	assert nested.content_height().to_double() == 30
 	foreign := used_for_id(result, 'foreign')
-	assert foreign.offset.x().to_double() == 14
-	assert foreign.offset.y().to_double() == 16
-	assert foreign.content_width().to_double() == 50
-	assert foreign.content_height().to_double() == 24
+	assert foreign.offset.x().to_double() == 7
+	assert foreign.offset.y().to_double() == 8
+	assert foreign.content_width().to_double() == 25
+	assert foreign.content_height().to_double() == 12
 }
 
 fn test_relative_positioning_does_not_move_following_flow_content() {

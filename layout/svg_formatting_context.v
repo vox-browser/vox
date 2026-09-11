@@ -19,7 +19,6 @@ mut:
 	state                     &LayoutState = unsafe { nil }
 	current_viewbox_transform svg.AffineTransform
 	viewport_size             CSSPixelSize
-	svg_offset                CSSPixelPoint
 	current_text_position     svg.Point
 }
 
@@ -153,16 +152,6 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 		}
 	}
 
-	// Inline-level replaced boxes are laid out internally before their final
-	// line-box content offset is installed, so their state still points at the
-	// border-box origin here. Block-level SVG boxes already carry the content
-	// origin. This is the same distinction made by the upstream inline layout
-	// path before SVGFormattingContext consumes the state.
-	context.svg_offset = if context.context_box.display().is_inline_outside() {
-		CSSPixelPoint.new(svg_box_state.offset.x().plus(svg_box_state.border_box_left()), svg_box_state.offset.y().plus(svg_box_state.border_box_top()))
-	} else {
-		svg_box_state.offset
-	}
 	// SVGFormattingContext::run() starts with the inherited viewBox transform.
 	// The SVG viewport's own offset remains in its paintable and is accumulated
 	// through the containing-block chain; folding it into this transform would
@@ -210,16 +199,6 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 	}
 	context.viewport_size = CSSPixelSize.new(viewport_width, viewport_height)
 
-	if svg_box_state.has_definite_width() && svg_box_state.has_definite_height() {
-		mapped := context.parent_viewbox_transform.map_rect(svg.Rect{
-			x: svg_box_state.offset.x().to_double()
-			y: svg_box_state.offset.y().to_double()
-			width: svg_box_state.content_width().to_double()
-			height: svg_box_state.content_height().to_double()
-		})
-		set_used_values_rect(mut svg_box_state, mapped)
-	}
-
 	for child in context.context_box.children() {
 		if child.is_box() {
 			context.layout_svg_element(child)
@@ -262,27 +241,26 @@ fn (mut context SVGFormattingContext) layout_svg_element(child &Node) {
 fn (mut context SVGFormattingContext) layout_nested_viewport(viewport &Node) {
 	styled := viewport.as_node_with_style() or { return }
 	mut viewport_state := context.state.get_mutable(styled)
-	element := svg_element_for_layout_node(viewport) or { return }
+	_ = svg_element_for_layout_node(viewport) or { return }
 	computed := viewport.computed_values()
 	x := resolve_computed_svg_length(computed, .x, context.viewport_size.width(), CSSPixels.new(0))
 	y := resolve_computed_svg_length(computed, .y, context.viewport_size.height(), CSSPixels.new(0))
 	width := resolve_computed_svg_viewport_dimension(computed, .width, context.viewport_size.width())
 	height := resolve_computed_svg_viewport_dimension(computed, .height, context.viewport_size.height())
 
-	mut content_rect := svg.Rect{
+	content_rect := svg.Rect{
 		x: x.to_double()
 		y: y.to_double()
 		width: width.to_double()
 		height: height.to_double()
 	}
-	mut parent_viewbox_transform := context.current_viewbox_transform
-	if svg.parse_viewbox(element.get_attribute_value('viewBox')) != none {
-		content_rect = context.current_viewbox_transform.map_rect(content_rect)
-		parent_viewbox_transform = svg.AffineTransform{}
-	}
 	set_used_values_rect(mut viewport_state, content_rect)
 	viewport_state.set_has_definite_width(true)
 	viewport_state.set_has_definite_height(true)
+	// A nested viewport is placed in its parent's user space. Its own viewBox
+	// transform follows that placement; neither operation changes committed
+	// layout geometry.
+	parent_viewbox_transform := context.current_viewbox_transform.translated(x.to_double(), y.to_double())
 	run_svg_formatting_context(mut context.state, viewport, mut viewport_state, context.available_space, parent_viewbox_transform)
 }
 
@@ -292,13 +270,12 @@ fn (mut context SVGFormattingContext) layout_foreign_object(child &Node) {
 	_ = svg_element_for_layout_node(child) or { return }
 	computed := child.computed_values()
 	rect := svg.Rect{
-		x: resolve_computed_svg_length(computed, .x, context.available_space.width.to_px_or_zero(), CSSPixels.new(0)).to_double()
-		y: resolve_computed_svg_length(computed, .y, context.available_space.height.to_px_or_zero(), CSSPixels.new(0)).to_double()
-		width: resolve_computed_svg_length(computed, .width, context.available_space.width.to_px_or_zero(), CSSPixels.new(0)).to_double()
-		height: resolve_computed_svg_length(computed, .height, context.available_space.height.to_px_or_zero(), CSSPixels.new(0)).to_double()
+		x: resolve_computed_svg_length(computed, .x, context.viewport_size.width(), CSSPixels.new(0)).to_double()
+		y: resolve_computed_svg_length(computed, .y, context.viewport_size.height(), CSSPixels.new(0)).to_double()
+		width: resolve_computed_svg_length(computed, .width, context.viewport_size.width(), CSSPixels.new(0)).to_double()
+		height: resolve_computed_svg_length(computed, .height, context.viewport_size.height(), CSSPixels.new(0)).to_double()
 	}
-	transformed_rect := context.current_viewbox_transform.map_rect(rect)
-	set_used_values_rect(mut child_state, transformed_rect)
+	set_used_values_rect(mut child_state, rect)
 	child_state.set_has_definite_width(true)
 	child_state.set_has_definite_height(true)
 	layout_inside_independent_formatting_context(mut context.state, child, mut child_state, AvailableSpace.new(AvailableSize.make_definite(child_state.content_width()), AvailableSize.make_definite(child_state.content_height())))
@@ -359,18 +336,14 @@ fn (mut context SVGFormattingContext) layout_path_like_element(graphics_box &Nod
 	styled := graphics_box.as_node_with_style() or { return }
 	mut graphics_state := context.state.get_mutable(styled)
 	element := svg_element_for_layout_node(graphics_box) or { return }
-	to_css_pixels := context.current_viewbox_transform.multiply(graphics_state.svg_transform())
-
 	if graphics_box.is_svg_geometry_box() {
 		path := svg.geometry_path(svg_geometry_element_model(graphics_box, element, context.viewport_size), context.viewport_size.width().to_double(), context.viewport_size.height().to_double())
 		bounds := svg_path_bounds(path) or { svg.Rect{} }
-		mut transformed_bounds := quantize_svg_rect(to_css_pixels.map_rect(bounds))
-		stroke_width := CSSPixels.nearest_value_for(visible_svg_stroke_width(graphics_box, context.viewport_size) * context.current_viewbox_transform.x_scale()).to_double()
-		transformed_bounds = inflate_svg_rect(transformed_bounds, stroke_width)
-		set_used_values_rect(mut graphics_state, transformed_bounds)
+		stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
+		set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(bounds), stroke_width))
 		graphics_state.set_computed_svg_path(path)
 	} else if graphics_box.is_svg_text_box() {
-		text_bounds := context.layout_text_element(graphics_box, element, to_css_pixels, mut graphics_state)
+		text_bounds := context.layout_text_element(graphics_box, element, mut graphics_state)
 		// <text> and <tspan> elements can contain more text elements.
 		for child in graphics_box.children() {
 			if child.is_svg_text_box() || child.is_svg_text_path_box() {
@@ -386,7 +359,7 @@ fn (mut context SVGFormattingContext) layout_path_like_element(graphics_box &Nod
 			y: text_bounds.y + text_bounds.height
 		}
 	} else if graphics_box.is_svg_text_path_box() {
-		context.layout_text_path_element(graphics_box, element, to_css_pixels, mut graphics_state)
+		context.layout_text_path_element(graphics_box, element, mut graphics_state)
 	} else {
 		set_used_values_rect(mut graphics_state, svg.Rect{})
 	}
@@ -394,7 +367,7 @@ fn (mut context SVGFormattingContext) layout_path_like_element(graphics_box &Nod
 	graphics_state.set_has_definite_height(true)
 }
 
-fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, element &dom.Element, transform svg.AffineTransform, mut graphics_state UsedValues) svg.Rect {
+fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, element &dom.Element, mut graphics_state UsedValues) svg.Rect {
 	if x := first_svg_text_position(element.get_attribute_value('x'), context.viewport_size.width()) {
 		context.current_text_position = svg.Point{
 			x: x
@@ -447,10 +420,8 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 	baseline_y := context.current_text_position.y + f64(dominant_baseline_offset(baseline_metric, font.pixel_metrics()))
 	path := svg_text_outline_path(text, font, x, baseline_y)
 	final_local_bounds := svg_path_bounds(path) or { svg.Rect{} }
-	mut transformed_bounds := quantize_svg_rect(transform.map_rect(final_local_bounds))
-	stroke_width := CSSPixels.nearest_value_for(visible_svg_stroke_width(graphics_box, context.viewport_size) * context.current_viewbox_transform.x_scale()).to_double()
-	transformed_bounds = inflate_svg_rect(transformed_bounds, stroke_width)
-	set_used_values_rect(mut graphics_state, transformed_bounds)
+	stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
+	set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(final_local_bounds), stroke_width))
 	graphics_state.set_computed_svg_path(path)
 	return final_local_bounds
 }
@@ -583,7 +554,7 @@ fn svg_direct_text_contents(element &dom.Element) string {
 	return text.trim(' \t\n\r\f')
 }
 
-fn (mut context SVGFormattingContext) layout_text_path_element(graphics_box &Node, element &dom.Element, transform svg.AffineTransform, mut graphics_state UsedValues) {
+fn (mut context SVGFormattingContext) layout_text_path_element(graphics_box &Node, element &dom.Element, mut graphics_state UsedValues) {
 	href := element.get_attribute_value('href').trim_space()
 	legacy_href := element.get_attribute_value('xlink:href').trim_space()
 	reference := if href.len > 0 { href } else { legacy_href }
@@ -604,10 +575,8 @@ fn (mut context SVGFormattingContext) layout_text_path_element(graphics_box &Nod
 	}
 	path := svg_place_text_along_path(shape_path, svg_direct_text_contents(element), font)
 	local_bounds := svg_path_bounds(path) or { svg.Rect{} }
-	mut transformed_bounds := quantize_svg_rect(transform.map_rect(local_bounds))
-	stroke_width := CSSPixels.nearest_value_for(visible_svg_stroke_width(graphics_box, context.viewport_size) * context.current_viewbox_transform.x_scale()).to_double()
-	transformed_bounds = inflate_svg_rect(transformed_bounds, stroke_width)
-	set_used_values_rect(mut graphics_state, transformed_bounds)
+	stroke_width := visible_svg_stroke_width(graphics_box, context.viewport_size)
+	set_used_values_rect(mut graphics_state, inflate_svg_rect(quantize_svg_rect(local_bounds), stroke_width))
 	graphics_state.set_computed_svg_path(path)
 	context.current_text_position = svg.Point{
 		x: local_bounds.x + local_bounds.width
@@ -725,7 +694,6 @@ fn (mut context SVGFormattingContext) layout_image_element(image_box &Node) {
 	styled := image_box.as_node_with_style() or { return }
 	mut image_state := context.state.get_mutable(styled)
 	element := svg_element_for_layout_node(image_box) or { return }
-	transform := context.current_viewbox_transform.multiply(image_state.svg_transform())
 	mut source := ''
 	if element.has_attribute('href') {
 		source = element.get_attribute_value('href').trim_space()
@@ -772,7 +740,7 @@ fn (mut context SVGFormattingContext) layout_image_element(image_box &Node) {
 		width: width or { 0.0 }
 		height: height or { 0.0 }
 	}
-	set_used_values_rect(mut image_state, transform.map_rect(rect))
+	set_used_values_rect(mut image_state, rect)
 	image_state.set_has_definite_width(true)
 	image_state.set_has_definite_height(true)
 }
@@ -864,11 +832,14 @@ fn (mut context SVGFormattingContext) layout_container_element(container &Node) 
 		context.layout_svg_element(child)
 		child_styled := child.as_node_with_style() or { continue }
 		child_state := context.state.try_get(child_styled) or { continue }
-		child_rect := svg.Rect{
+		mut child_rect := svg.Rect{
 			x: child_state.offset.x().to_double()
 			y: child_state.offset.y().to_double()
 			width: child_state.content_width().to_double()
 			height: child_state.content_height().to_double()
+		}
+		if child_element := svg_element_for_layout_node(child) {
+			child_rect = svg.element_transform(svg_element_model(child_element)).map_rect(child_rect)
 		}
 		bounds = if current := bounds { union_svg_rect(current, child_rect) } else { child_rect }
 	}

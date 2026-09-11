@@ -89,7 +89,7 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 			if used.svg_rendering_disabled() {
 				line += '(not painted)'
 			} else {
-				position := paint_cumulative_offset(node, state, used)
+				position := layout_offset_in_svg_user_space(node, state, used)
 				line += 'at ${layout_debug_point(position)}'
 				if node.is_box() {
 					if node.is_positioned() {
@@ -268,7 +268,7 @@ fn layout_debug_flex_direction(direction css.FlexDirection) string {
 }
 
 fn append_typed_block_line_fragments(node &Node, state &LayoutState, used &UsedValues, depth int, mut lines []string) {
-	container_position := paint_cumulative_offset(node, state, used)
+	container_position := layout_offset_in_svg_user_space(node, state, used)
 	mut fragment_index := 0
 	for line_box in used.line_boxes {
 		for fragment in line_box.fragments() {
@@ -287,7 +287,7 @@ fn append_typed_inline_line_fragments(node &Node, state &LayoutState, depth int,
 	containing_node := unsafe { &Node(containing_block) }
 	containing_styled := containing_node.as_node_with_style() or { return }
 	containing_used := state.try_get(containing_styled) or { return }
-	container_position := paint_cumulative_offset(containing_node, state, containing_used)
+	container_position := layout_offset_in_svg_user_space(containing_node, state, containing_used)
 	for line_box in containing_used.line_boxes {
 		mut fragment_index := 0
 		for fragment in line_box.fragments() {
@@ -365,7 +365,7 @@ fn layout_debug_inline_metrics(node &Node, state &LayoutState) ?LayoutDebugInlin
 	containing_node := unsafe { &Node(containing_block) }
 	containing_styled := containing_node.as_node_with_style() or { return none }
 	containing_used := state.try_get(containing_styled) or { return none }
-	container_position := paint_cumulative_offset(containing_node, state, containing_used)
+	container_position := layout_offset_in_svg_user_space(containing_node, state, containing_used)
 	mut first_position := ?css.CSSPixelPoint(none)
 	mut maximum_width := CSSPixels.new(0)
 	mut maximum_height := CSSPixels.new(0)
