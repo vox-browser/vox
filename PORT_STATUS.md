@@ -2,8 +2,55 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
-Translation workspace: `~/code/libweb_v`
-Audited: 2026-09-08
+Translation workspace: `~/code/vox2`
+Audited: 2026-09-11
+
+## Upstream delta since the V snapshot
+
+The last Ladybird commit on 2026-03-24 is
+`1d025620e3344e3cc9aee26fe815d8675e4f9810` ("Everywhere: Move Mach
+bootstrap listener into LibIPC"). The upstream checkout used for the current
+refresh is `963d46a829f3e1b79f44dba9d02afb70654300fa` (2026-09-11).
+
+The implementation review/translation workload between those commits is
+**150,914 added lines in module-owned LibWeb `.cpp` files**. Rewritten and
+removed behavior also has to be audited, so the complete implementation churn
+is **288,219 lines**. These are physical diff lines and intentionally measure
+the upstream review input, not the amount of V code a faithful translation
+will produce.
+
+| Diff scope | Files | Added | Deleted | Churn |
+| --- | ---: | ---: | ---: | ---: |
+| Module-owned LibWeb `.cpp` | 1,309 | 150,914 | 137,305 | 288,219 |
+| Root-support LibWeb `.cpp` | 5 | 313 | 684 | 997 |
+| All LibWeb headers | 1,442 | 42,247 | 29,692 | 71,939 |
+| All LibWeb `.cpp` and headers | 2,756 | 193,474 | 167,681 | 361,155 |
+
+There are 8,152 upstream commits in the range, of which 5,077 touch
+`Libraries/LibWeb`. Reproduce the count and the per-module breakdown against
+any upstream checkout with:
+
+```sh
+python3 tools/upstream_delta.py --upstream ~/code/3rd/ladybird
+```
+
+### 2026-09-11 rendering refresh slice
+
+The current refresh translates the upstream behavior exercised by all 24
+screenshot cases added after the baseline. It includes animated CSS image
+timing and invalidation, single-value background sizing, canvas-to-canvas
+ordering, form-control sizing/colors, fieldset clipping, inline-fragment
+borders and shadows, adaptive overlay scrollbars, nested and out-of-line SVG
+viewports, SVG clipping/patterns/non-scaling strokes and Skia gradient replay,
+and FFmpeg-backed video/MSE/canvas frame presentation (including 10-bit YUV).
+The comparison driver reads upstream fuzzy metadata and, on macOS only, admits
+at most 64 additional sparse Skia CPU edge samples with a maximum channel error
+of 20. Exact comparisons remain exact. All 24 cases pass this bounded workflow.
+
+This rendering slice is not a claim that the complete 150,914-line addition
+set has been translated. The current semantic audit below deliberately remains
+failing with 7,243 unmatched bodies, providing the review queue for subsequent
+translation slices.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -29,10 +76,12 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-Inventory reconciliation covers all 75 of 75 upstream module directories and
-all 1,147 of 1,147 module-owned `.cpp` implementation units. The four
-root-level LibWeb `.cpp` support units are mapped separately in
-`ROOT_SUPPORT.md`.
+The table below is the reconciled 2026-03-24 baseline: it covers all 75 module
+directories and 1,147 module-owned `.cpp` implementation units that existed at
+the translation snapshot. It must not be read as an inventory of the refreshed
+September tree. That tree contains 76 modules and 1,193 current module-owned
+`.cpp` files; its semantic re-audit is recorded under Verification. Root-level
+LibWeb `.cpp` support units are mapped separately in `ROOT_SUPPORT.md`.
 
 | Upstream module | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -120,33 +169,41 @@ missing. Its current baseline is:
 
 ```text
 $ python3 tools/libweb_translation_audit.py
-upstream modules: 74
-upstream .cpp files: 1147
-upstream implementations: 18658
+upstream modules: 76
+upstream .cpp files: 1193
+upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
-reviewed upstream-equivalent trivial implementations: 549
+reviewed upstream-equivalent trivial implementations: 550
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 14170
-  unmatched: 100
-  language-constructor-or-destructor: 1182
-  gc-or-binding-runtime: 1110
-  consolidated-name-match: 1619
-  namespace-template-specialization: 152
-  language-operator: 71
-  language-template-trait: 65
-  value-record-field-match: 189
-unmatched implementations by module:
+  candidate-name-match: 11387
+  unmatched: 7243
+  language-constructor-or-destructor: 1383
+  gc-or-binding-runtime: 628
+  consolidated-name-match: 381
+  namespace-template-specialization: 177
+  language-operator: 124
+  language-template-trait: 61
+  value-record-field-match: 17
 
-    96 CSS
-     4 Layout
-     0 Painting
+largest unmatched modules:
+
+  1853 CSS
+  1357 HTML
+   705 DOM
+   444 Painting
+   339 WebAudio
+   319 Layout
+   242 Editing
+   173 MediaSourceExtensions
+   172 Page
+   149 Internals
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 904 passed, 0 failed, 904 total
+Layout corpus: 639 passed, 450 failed, 1089 total
 
 $ /Users/alex/code/v/v -enable-globals test .
-Summary for all V _test.v files: 392 passed, 392 total.
+Summary for all V _test.v files: 394 passed, 394 total.
 
 $ /Users/alex/code/v/v -enable-globals test css
 Summary for all V _test.v files: 26 passed, 26 total.
@@ -281,17 +338,19 @@ style-value equality. Known implementation boundaries remain visible rather
 than being classified through adjacent code. CSS falls from 196 to 96 without
 adding audit-only facades, and the full suite passes 392/392 at this checkpoint.
 
-The zero checkpoint closes the final 100 reviewed implementations. Direct
+The zero checkpoint closed the final 100 implementations reviewed against the
+2026-03-24 baseline. Direct
 translations cover stylesheet invalidation and font/image ownership, numeric
 and transform interpolation (including matrix decomposition), grid-track
 interpolation and composition, descriptor conversion, Unicode-range
 serialization, meter matching, color/style-value operations, list markers, and
 text font selection. The remaining C++ ownership accessors, template artifacts,
 record fields, and decomposed algorithms are classified only where the active V
-path supplies the same responsibility. The audit now accounts for all 18,658
-upstream implementations with 0 unmatched, 0 suspicious trivial bodies, and 0
-quarantined coverage shims. Focused matrix/grid regressions and the full suite
-pass 392/392 at this checkpoint.
+path supplies the same responsibility. At that baseline, the audit accounted
+for all 18,658 upstream implementations with 0 unmatched, 0 suspicious trivial
+bodies, and 0 quarantined coverage shims. The current September audit above
+supersedes that historical count. Focused matrix/grid regressions and the full
+suite passed 392/392 at this checkpoint.
 
 Flex and grid layout were additionally checked differentially against the upstream
 browser with `tools/layout_dump.v`. Flex: a 489-case generated corpus (directions,
@@ -561,9 +620,10 @@ inheritance and precedence, normalized computed stops, `gradientUnits`,
 `gradientTransform`, `spreadMethod`, color interpolation, and paint order.
 Radial gradients additionally retain the two focal/end circles, `fr`, C++'s
 negative-radius inheritance behavior, and width-relative radius resolution.
-Quartz consumes both retained styles directly for ordinary paths and mask
-content, including pad/repeat/reflect tiling, instead of substituting the URL
-paint's fallback color. SVG `<pattern>` now follows C++'s retained paint-server
+Skia consumes both retained gradient styles directly for ordinary paths;
+bounded Quartz mask surfaces consume the same data for mask content. Both paths
+preserve pad/repeat/reflect tiling instead of substituting the URL paint's
+fallback color. SVG `<pattern>` now follows C++'s retained paint-server
 path as well: same-document href inheritance, first content-owning linked
 resource selection, `patternUnits`, `patternContentUnits`, `viewBox`,
 `preserveAspectRatio`, CSS-transform precedence, `patternTransform`, and

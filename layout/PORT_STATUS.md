@@ -325,9 +325,11 @@ both instead:
 
 The upstream Layout regression corpus is exercised directly by
 `tools/layout_corpus.v`. It discovers every HTML or SVG input with a matching
-expected snapshot and compares all three upstream sections exactly: layout tree,
-paint tree, and text. The current checkout has 904 comparable cases; all 904
-pass byte-for-byte.
+expected snapshot and compares the current upstream layout-tree and
+stacking-context sections exactly. The 2026-03-24 checkout had 904 comparable
+cases and all 904 passed byte-for-byte. The refreshed 2026-09-11 checkout has
+1,089 cases; after translating the post-March dump format and deterministic
+font setup, 639 pass and 450 remain as layout-semantic translation work.
 
 The detached `BlockBox` compatibility layout now retains static-position data
 at the same formatting-context boundary as C++. Its block pass records the
@@ -811,14 +813,14 @@ decoded-bitmap `feImage` graph execution.
 
 ## Verification
 
-Verified through 2026-09-08:
+Verified through 2026-09-11:
 
 ```text
-$ /Users/alex/code/v/v_old -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 904 passed, 0 failed, 904 total
+$ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
+Layout corpus: 639 passed, 450 failed, 1089 total
 
 $ /Users/alex/code/v/v -enable-globals test .
-Summary for all V _test.v files: 392 passed, 392 total.
+Summary for all V _test.v files: 394 passed, 394 total.
 
 $ /Users/alex/code/v/v -enable-globals test layout
 Summary for all V _test.v files: 19 passed, 19 total.
