@@ -2154,14 +2154,17 @@ pub type ResizeObserverBroadcastCallback = fn (voidptr) int
 
 pub type ResizeObserverBoolCallback = fn (voidptr) bool
 
+pub type ResizeObserverDocumentDestroyedCallback = fn (voidptr)
+
 @[heap]
 pub struct ResizeObserver {
 pub:
-	target          voidptr = unsafe { nil }
-	gather_at_depth ResizeObserverGatherAtDepthCallback = unsafe { nil }
-	broadcast       ResizeObserverBroadcastCallback = unsafe { nil }
-	has_active      ResizeObserverBoolCallback = unsafe { nil }
-	has_skipped     ResizeObserverBoolCallback = unsafe { nil }
+	target                 voidptr = unsafe { nil }
+	gather_at_depth        ResizeObserverGatherAtDepthCallback = unsafe { nil }
+	broadcast              ResizeObserverBroadcastCallback = unsafe { nil }
+	has_active             ResizeObserverBoolCallback = unsafe { nil }
+	has_skipped            ResizeObserverBoolCallback = unsafe { nil }
+	document_was_destroyed ResizeObserverDocumentDestroyedCallback = unsafe { nil }
 }
 
 // Other stubs
@@ -7538,6 +7541,14 @@ pub fn (mut d Document) destroy() {
 
 	// Mark this document as destroyed.
 	d.has_been_destroyed = true
+	// ResizeObserver holds its document weakly upstream. Tell each observer to
+	// release its activity root before dropping the document-side weak list.
+	for observer in d.resize_observers {
+		if observer.document_was_destroyed != unsafe { nil } {
+			observer.document_was_destroyed(observer.target)
+		}
+	}
+	d.resize_observers.clear()
 
 	// 8. Set document's browsing context to null.
 	d.browsing_context = unsafe { nil }
@@ -8043,7 +8054,9 @@ pub fn (d &Document) registered_intersection_observer_count() int {
 
 pub fn (mut d Document) register_resize_observer(observer &ResizeObserver) {
 	for registered_observer in d.resize_observers {
-		assert voidptr(registered_observer) != voidptr(observer)
+		if voidptr(registered_observer) == voidptr(observer) {
+			return
+		}
 	}
 	d.resize_observers << observer
 }
@@ -8056,6 +8069,10 @@ pub fn (mut d Document) unregister_resize_observer(observer &ResizeObserver) {
 		}
 	}
 	assert false, 'ResizeObserver was not registered with this document'
+}
+
+pub fn (d &Document) registered_resize_observer_count() int {
+	return d.resize_observers.len
 }
 
 // --- Intersection observations ---
@@ -8188,7 +8205,8 @@ pub fn (mut d Document) stop_intersection_observing_a_lazy_loading_element(eleme
 
 // https://drafts.csswg.org/resize-observer-1/#gather-active-observations-h
 pub fn (mut d Document) gather_active_observations_at_depth(depth int) {
-	for observer in d.resize_observers {
+	observers := d.resize_observers.clone()
+	for observer in observers {
 		observer.gather_active_observations_at_depth(depth)
 	}
 }
