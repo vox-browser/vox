@@ -6,6 +6,7 @@
 module compression
 
 import compress.deflate
+import compress.brotli
 
 fn decode_raw_bytes(bytes []u8) ![]u8 {
 	result := deflate.decompress_raw_with_consumed(bytes)!
@@ -17,6 +18,7 @@ fn decode_raw_bytes(bytes []u8) ![]u8 {
 
 fn decode_bytes(format CompressionFormat, bytes []u8) ![]u8 {
 	return match format {
+		.brotli { brotli.decompress(bytes)! }
 		.deflate { deflate.decompress_zlib(bytes)! }
 		.deflate_raw { decode_raw_bytes(bytes)! }
 		.gzip { deflate.decompress_gzip(bytes)! }
@@ -35,6 +37,21 @@ mut:
 
 // https://compression.spec.whatwg.org/#dom-decompressionstream-decompressionstream
 pub fn DecompressionStream.construct_impl(format CompressionFormat) !&DecompressionStream {
+	return DecompressionStream.create_for_constructor(format)
+}
+
+pub fn DecompressionStream.create_for_constructor(format CompressionFormat) !&DecompressionStream {
+	create_decompressor(format)!
+	return DecompressionStream.create(format)
+}
+
+fn create_decompressor(format CompressionFormat) ! {
+	if format == .brotli && !brotli.is_available() {
+		return error('TypeError: Unable to create decompressor: Brotli is unavailable')
+	}
+}
+
+pub fn DecompressionStream.create(format CompressionFormat) &DecompressionStream {
 	mut stream := &DecompressionStream{
 		format_: format
 	}

@@ -6,7 +6,10 @@
 // GenericTransformStream surface it exposes.
 module compression
 
+import compress.brotli
+
 pub enum CompressionFormat {
+	brotli
 	deflate
 	deflate_raw
 	gzip
@@ -14,6 +17,7 @@ pub enum CompressionFormat {
 
 pub fn parse_compression_format(value string) !CompressionFormat {
 	return match value {
+		'br' { .brotli }
 		'deflate' { .deflate }
 		'deflate-raw' { .deflate_raw }
 		'gzip' { .gzip }
@@ -23,6 +27,7 @@ pub fn parse_compression_format(value string) !CompressionFormat {
 
 pub fn compression_format_string(format CompressionFormat) string {
 	return match format {
+		.brotli { 'br' }
 		.deflate { 'deflate' }
 		.deflate_raw { 'deflate-raw' }
 		.gzip { 'gzip' }
@@ -177,10 +182,26 @@ mut:
 	adler32_        u32 = 1
 	crc32_          u32 = 0xffff_ffff
 	input_size_     u32
+	input_          []u8
 }
 
 // https://compression.spec.whatwg.org/#dom-compressionstream-compressionstream
 pub fn CompressionStream.construct_impl(format CompressionFormat) !&CompressionStream {
+	return CompressionStream.create_for_constructor(format)
+}
+
+pub fn CompressionStream.create_for_constructor(format CompressionFormat) !&CompressionStream {
+	create_compressor(format)!
+	return CompressionStream.create(format)
+}
+
+fn create_compressor(format CompressionFormat) ! {
+	if format == .brotli && !brotli.is_available() {
+		return error('TypeError: Unable to create compressor: Brotli is unavailable')
+	}
+}
+
+pub fn CompressionStream.create(format CompressionFormat) &CompressionStream {
 	mut stream := &CompressionStream{
 		format_: format
 	}
@@ -209,7 +230,7 @@ fn (mut stream CompressionStream) compress_and_enqueue_chunk(chunk []u8) ! {
 	if stream.finished_ {
 		return error('TypeError: Compression stream has already finished')
 	}
-	buffer := stream.compress(chunk, false)
+	buffer := stream.compress(chunk, false)!
 	if buffer.len == 0 {
 		return
 	}
@@ -223,7 +244,7 @@ fn (mut stream CompressionStream) compress_flush_and_enqueue() ! {
 		return error('TypeError: Compression stream has already finished')
 	}
 	stream.finished_ = true
-	buffer := stream.compress([]u8{}, true)
+	buffer := stream.compress([]u8{}, true)!
 	mut readable := stream.transform_.readable_
 	readable.enqueue(buffer)
 	readable.close()
@@ -233,10 +254,18 @@ fn (mut stream CompressionStream) compress_flush_and_enqueue() ! {
 // LibCompress and returns all bytes produced by that invocation. This port
 // emits standards-compliant uncompressed DEFLATE blocks so each write can be
 // observed immediately without depending on a platform zlib stream object.
-fn (mut stream CompressionStream) compress(bytes []u8, finish bool) []u8 {
+fn (mut stream CompressionStream) compress(bytes []u8, finish bool) ![]u8 {
+	if stream.format_ == .brotli {
+		stream.input_ << bytes
+		if !finish {
+			return []u8{}
+		}
+		return brotli.compress(stream.input_)!
+	}
 	mut output := []u8{}
 	if !stream.header_emitted_ {
 		match stream.format_ {
+			.brotli {}
 			.deflate {
 				// CMF/FLG for deflate, 32 KiB window, fastest/no-compression level.
 				output << [u8(0x78), 0x01]
@@ -258,6 +287,7 @@ fn (mut stream CompressionStream) compress(bytes []u8, finish bool) []u8 {
 	if finish {
 		append_stored_deflate_blocks(mut output, []u8{}, true)
 		match stream.format_ {
+			.brotli {}
 			.deflate {
 				output << u8(stream.adler32_ >> 24)
 				output << u8(stream.adler32_ >> 16)

@@ -2,6 +2,9 @@ module compression
 
 fn compressed_hello(format CompressionFormat) []u8 {
 	return match format {
+		.brotli {
+			[u8(0x0f), 0x02, 0x80, 0x68, 0x65, 0x6c, 0x6c, 0x6f, 0x03]
+		}
 		.deflate {
 			[u8(0x78), 0x9c, 0xcb, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00, 0x06, 0x2c, 0x02, 0x15]
 		}
@@ -16,14 +19,16 @@ fn compressed_hello(format CompressionFormat) []u8 {
 }
 
 fn test_parse_compression_formats() {
+	assert parse_compression_format('br')! == .brotli
 	assert parse_compression_format('deflate')! == .deflate
 	assert parse_compression_format('deflate-raw')! == .deflate_raw
 	assert parse_compression_format('gzip')! == .gzip
+	assert compression_format_string(.brotli) == 'br'
 	assert compression_format_string(.deflate) == 'deflate'
 	assert compression_format_string(.deflate_raw) == 'deflate-raw'
 	assert compression_format_string(.gzip) == 'gzip'
 
-	if _ := parse_compression_format('br') {
+	if _ := parse_compression_format('zstd') {
 		assert false
 	} else {
 		assert err.msg().starts_with('TypeError:')
@@ -32,15 +37,15 @@ fn test_parse_compression_formats() {
 
 fn test_compression_and_decompression_round_trip_all_formats() {
 	input := 'Ladybird CompressionStream: hello from several chunks.'.bytes()
-	for format in [CompressionFormat.deflate, .deflate_raw, .gzip] {
+	for format in [CompressionFormat.brotli, .deflate, .deflate_raw, .gzip] {
 		mut compressor := CompressionStream.construct_impl(format)!
 		mut compressor_writable := compressor.writable()
 		compressor_writable.write(input[..9])!
-		assert compressor.readable().chunk_count() == 1
+		assert compressor.readable().chunk_count() == if format == .brotli { 0 } else { 1 }
 		compressor_writable.write(input[9..31])!
-		assert compressor.readable().chunk_count() == 2
+		assert compressor.readable().chunk_count() == if format == .brotli { 0 } else { 2 }
 		compressor_writable.write(input[31..])!
-		assert compressor.readable().chunk_count() == 3
+		assert compressor.readable().chunk_count() == if format == .brotli { 0 } else { 3 }
 		compressor_writable.close()!
 		assert compressor_writable.is_closed()
 		assert compressor.readable().state() == .closed
@@ -62,7 +67,7 @@ fn test_compression_and_decompression_round_trip_all_formats() {
 }
 
 fn test_decompression_accepts_external_format_vectors() {
-	for format in [CompressionFormat.deflate, .deflate_raw, .gzip] {
+	for format in [CompressionFormat.brotli, .deflate, .deflate_raw, .gzip] {
 		mut stream := DecompressionStream.construct_impl(format)!
 		mut writable := stream.writable()
 		writable.write(compressed_hello(format))!
@@ -74,7 +79,7 @@ fn test_decompression_accepts_external_format_vectors() {
 }
 
 fn test_empty_input_round_trips_all_formats() {
-	for format in [CompressionFormat.deflate, .deflate_raw, .gzip] {
+	for format in [CompressionFormat.brotli, .deflate, .deflate_raw, .gzip] {
 		mut compressor := CompressionStream.construct_impl(format)!
 		mut compressor_writable := compressor.writable()
 		compressor_writable.close()!
@@ -92,7 +97,7 @@ fn test_empty_input_round_trips_all_formats() {
 }
 
 fn test_decompression_errors_the_readable_stream_for_invalid_input() {
-	for format in [CompressionFormat.deflate, .deflate_raw, .gzip] {
+	for format in [CompressionFormat.brotli, .deflate, .deflate_raw, .gzip] {
 		mut stream := DecompressionStream.construct_impl(format)!
 		mut writable := stream.writable()
 		writable.write([u8(0xde), 0xad, 0xbe, 0xef])!
