@@ -1,6 +1,6 @@
 # LibWeb V translation
 
-This repository at `~/code/libweb_v` is the canonical workspace for the V
+This repository at `~/code/vox2` is the canonical workspace for the V
 translation of Ladybird's LibWeb. The upstream C++ reference is
 `~/code/3rd/ladybird/Libraries/LibWeb`.
 
@@ -11,14 +11,15 @@ translation-specific documentation belong in this repository. See
 
 ## Translation footprint
 
-As of 2026-08-29, excluding `Build/` and vendored `third_party/` code, the V
-workspace contains **288,858 implementation LOC** and **46,703 test LOC**. The
-module-owned translation subset contains **272,002 implementation LOC** and
-**42,009 test LOC**; the difference is root support, browser integration, and
-translation tooling.
+As of 2026-09-11, tracked V sources contain **339,172 implementation LOC** and
+**65,409 test LOC**. The current module-owned translation subset contains
+**328,281 implementation LOC** and **61,571 test LOC**; the difference is root
+support, browser integration, and translation tooling. See the canonical
+current table in [`PORT_STATUS.md`](PORT_STATUS.md).
 
-The counts below are physical lines (`wc -l`), including comments and blank
-lines. Upstream counts include each module's subdirectories.
+The counts below preserve the 2026-08-29 checkpoint for historical comparison.
+They are physical lines (`wc -l`), including comments and blank lines. Upstream
+counts include each module's subdirectories.
 
 | Module | Upstream `.cpp` LOC | Upstream `.cpp` + `.h` LOC | V implementation LOC | V test LOC |
 | --- | ---: | ---: | ---: | ---: |

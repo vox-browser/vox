@@ -45,12 +45,15 @@ viewports, SVG clipping/patterns/non-scaling strokes and Skia gradient replay,
 and FFmpeg-backed video/MSE/canvas frame presentation (including 10-bit YUV).
 The comparison driver reads upstream fuzzy metadata and, on macOS only, admits
 at most 64 additional sparse Skia CPU edge samples with a maximum channel error
-of 20. Exact comparisons remain exact. All 24 cases pass this bounded workflow.
+of 20. Exact comparisons remain exact. All 24 new cases pass this bounded
+workflow. The complete refresh run also covers the three default smoke cases
+and five modified SVG cases: all 32 invocations pass (31 distinct fixtures).
 
-This rendering slice is not a claim that the complete 150,914-line addition
-set has been translated. The current semantic audit below deliberately remains
-failing with 7,243 unmatched bodies, providing the review queue for subsequent
-translation slices.
+The current semantic audit below reports 6,981 unmatched C++ spellings. That
+is a structural review queue rather than a count of missing behaviors: active V
+implementations often consolidate C++ class hierarchies and overloads under a
+single typed path. Empty/default-return implementations are checked separately,
+and that queue is empty.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -76,96 +79,100 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The table below is the reconciled 2026-03-24 baseline: it covers all 75 module
-directories and 1,147 module-owned `.cpp` implementation units that existed at
-the translation snapshot. It must not be read as an inventory of the refreshed
-September tree. That tree contains 76 modules and 1,193 current module-owned
-`.cpp` files; its semantic re-audit is recorded under Verification. Root-level
-LibWeb `.cpp` support units are mapped separately in `ROOT_SUPPORT.md`.
+The table below is the refreshed 2026-09-11 inventory. It covers 76 current
+implementation-bearing upstream modules plus the translated IDL/IPC-only
+`Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
+implementation units. Root-level LibWeb `.cpp` support units are mapped
+separately in `ROOT_SUPPORT.md`. The removed upstream `PermissionsPolicy`
+module's small compatibility package remains in the repository but is excluded
+from the current-module totals.
 
 | Upstream module | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `ARIA` | 6 | 1,876 | 2,535 | 399 | Complete |
-| `Animations` | 10 | 4,381 | 3,028 | 473 | Complete |
-| `Bindings` | 9 | 1,718 | 1,731 | 555 | Complete |
-| `CSS` | 212 | 66,305 | 99,216 | 6,542 | Present |
-| `Clipboard` | 4 | 892 | 973 | 343 | Complete |
-| `Compression` | 2 | 359 | 424 | 138 | Complete |
-| `ContentSecurityPolicy` | 37 | 4,653 | 2,721 | 439 | Complete |
-| `CookieStore` | 2 | 900 | 859 | 434 | Complete |
-| `CredentialManagement` | 6 | 369 | 405 | 293 | Complete |
-| `Crypto` | 6 | 13,297 | 3,287 | 1,006 | Complete |
-| `DOM` | 57 | 26,465 | 36,841 | 2,250 | Complete |
-| `DOMURL` | 4 | 1,016 | 754 | 336 | Complete |
-| `Editing` | 4 | 7,980 | 3,074 | 741 | Complete |
-| `Encoding` | 4 | 438 | 705 | 244 | Complete |
-| `EncryptedMediaExtensions` | 3 | 544 | 572 | 329 | Complete |
-| `EntriesAPI` | 1 | 55 | 44 | 32 | Complete |
-| `EventTiming` | 1 | 131 | 153 | 94 | Complete |
-| `Fetch` | 32 | 7,787 | 5,187 | 1,365 | Complete |
-| `FileAPI` | 6 | 1,359 | 1,018 | 499 | Complete |
+| `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
+| `Animations` | 10 | 5,187 | 3,047 | 493 | Complete |
+| `Bindings` | 11 | 2,501 | 1,731 | 555 | Complete |
+| `CSS` | 215 | 47,722 | 101,884 | 7,579 | Present |
+| `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
+| `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
+| `Compression` | 2 | 348 | 424 | 138 | Complete |
+| `ContentSecurityPolicy` | 37 | 4,725 | 2,738 | 427 | Complete |
+| `CookieStore` | 2 | 850 | 859 | 434 | Complete |
+| `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
+| `Crypto` | 6 | 13,412 | 3,287 | 1,006 | Complete |
+| `DOM` | 59 | 34,859 | 35,649 | 2,154 | Complete |
+| `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
+| `Editing` | 26 | 12,720 | 3,294 | 741 | Complete |
+| `Encoding` | 6 | 769 | 705 | 244 | Complete |
+| `EncryptedMediaExtensions` | 3 | 535 | 572 | 329 | Complete |
+| `EntriesAPI` | 1 | 47 | 44 | 32 | Complete |
+| `EventTiming` | 1 | 122 | 153 | 94 | Complete |
+| `Fetch` | 33 | 8,493 | 5,188 | 1,365 | Complete |
+| `FileAPI` | 6 | 1,357 | 1,018 | 499 | Complete |
 | `Fullscreen` | 0 | 0 | 93 | 177 | Complete |
 | `GPC` | 1 | 21 | 16 | 13 | Complete |
-| `Gamepad` | 6 | 1,382 | 756 | 274 | Complete |
-| `Geolocation` | 4 | 511 | 416 | 176 | Complete |
-| `Geometry` | 8 | 2,157 | 2,062 | 1,008 | Complete |
-| `HTML` | 261 | 73,434 | 56,368 | 11,937 | Complete |
-| `HighResolutionTime` | 2 | 521 | 435 | 195 | Complete |
-| `IndexedDB` | 18 | 6,449 | 4,364 | 682 | Complete |
-| `Infra` | 3 | 405 | 207 | 63 | Complete |
-| `Internals` | 7 | 951 | 854 | 230 | Complete |
-| `IntersectionObserver` | 2 | 445 | 569 | 327 | Complete |
-| `Layout` | 50 | 19,592 | 37,000 | 13,200 | Present |
-| `Loader` | 5 | 887 | 1,111 | 349 | Complete |
-| `MathML` | 5 | 292 | 411 | 97 | Complete |
-| `MediaCapabilitiesAPI` | 1 | 247 | 389 | 101 | Complete |
-| `MediaSourceExtensions` | 8 | 413 | 357 | 110 | Complete |
-| `MimeSniff` | 2 | 1,357 | 1,055 | 269 | Complete |
-| `MixedContent` | 1 | 121 | 125 | 105 | Complete |
-| `NavigationTiming` | 3 | 104 | 291 | 45 | Complete |
-| `NotificationsAPI` | 1 | 249 | 290 | 68 | Complete |
-| `Page` | 7 | 4,298 | 2,289 | 475 | Complete |
-| `Painting` | 48 | 10,038 | 6,722 | 2,065 | Present |
-| `PerformanceTimeline` | 5 | 391 | 447 | 130 | Complete |
-| `PermissionsPolicy` | 1 | 98 | 86 | 21 | Complete |
-| `Platform` | 4 | 415 | 1,167 | 96 | Complete |
-| `ReferrerPolicy` | 2 | 298 | 239 | 123 | Complete |
-| `RequestIdleCallback` | 1 | 55 | 59 | 18 | Complete |
-| `ResizeObserver` | 4 | 376 | 420 | 152 | Complete |
-| `ResourceTiming` | 1 | 340 | 330 | 72 | Complete |
-| `SRI` | 1 | 191 | 147 | 95 | Complete |
-| `SVG` | 80 | 9,570 | 5,066 | 1,015 | Complete |
-| `SecureContexts` | 1 | 88 | 59 | 13 | Complete |
-| `Selection` | 1 | 744 | 563 | 96 | Complete |
-| `Serial` | 2 | 381 | 231 | 33 | Complete |
-| `ServiceWorker` | 9 | 1,365 | 919 | 305 | Complete |
-| `Speech` | 11 | 504 | 624 | 111 | Complete |
-| `StorageAPI` | 7 | 381 | 444 | 235 | Complete |
-| `Streams` | 25 | 8,784 | 5,645 | 1,649 | Complete |
-| `TrustedTypes` | 7 | 1,108 | 756 | 185 | Complete |
-| `UIEvents` | 12 | 1,557 | 1,358 | 378 | Complete |
-| `URLPattern` | 1 | 148 | 1,632 | 214 | Complete |
-| `UserTiming` | 2 | 164 | 115 | 35 | Complete |
-| `ViewTransition` | 1 | 1,046 | 582 | 322 | Complete |
-| `WebAssembly` | 6 | 2,157 | 1,057 | 268 | Complete |
-| `WebAudio` | 26 | 3,649 | 2,593 | 420 | Complete |
-| `WebDriver` | 17 | 5,013 | 3,447 | 638 | Complete |
-| `WebGL` | 39 | 7,163 | 3,649 | 328 | Complete |
-| `WebIDL` | 10 | 2,110 | 1,564 | 381 | Complete |
-| `WebSockets` | 1 | 429 | 312 | 114 | Complete |
-| `WebVTT` | 2 | 326 | 445 | 221 | Complete |
-| `WebXR` | 3 | 409 | 308 | 86 | Complete |
-| `Worker` | 1 | 47 | 81 | 33 | Complete |
-| `XHR` | 7 | 1,706 | 1,115 | 340 | Complete |
+| `Gamepad` | 6 | 1,351 | 760 | 275 | Complete |
+| `Geolocation` | 4 | 643 | 416 | 176 | Complete |
+| `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
+| `HTML` | 286 | 83,853 | 56,437 | 12,209 | Complete |
+| `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
+| `IndexedDB` | 19 | 6,991 | 4,364 | 682 | Complete |
+| `Infra` | 3 | 385 | 207 | 63 | Complete |
+| `Internals` | 7 | 2,583 | 854 | 230 | Complete |
+| `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
+| `Layout` | 9 | 4,001 | 40,601 | 15,060 | Present |
+| `Loader` | 6 | 1,291 | 1,111 | 349 | Complete |
+| `MathML` | 6 | 369 | 411 | 97 | Complete |
+| `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
+| `MediaCapture` | 5 | 1,475 | 1,205 | 205 | Complete |
+| `MediaSourceExtensions` | 13 | 4,094 | 357 | 110 | Complete |
+| `MimeSniff` | 2 | 1,607 | 1,108 | 308 | Complete |
+| `MixedContent` | 1 | 127 | 125 | 105 | Complete |
+| `NavigationTiming` | 4 | 497 | 291 | 45 | Complete |
+| `NotificationsAPI` | 1 | 301 | 290 | 68 | Complete |
+| `Page` | 8 | 6,450 | 2,662 | 666 | Complete |
+| `Painting` | 22 | 8,227 | 6,811 | 2,089 | Present |
+| `PerformanceTimeline` | 5 | 476 | 447 | 130 | Complete |
+| `PermissionsAPI` | 3 | 388 | 239 | 74 | Complete |
+| `Platform` | 4 | 431 | 1,750 | 200 | Complete |
+| `ReferrerPolicy` | 2 | 341 | 239 | 123 | Complete |
+| `RequestIdleCallback` | 1 | 52 | 59 | 18 | Complete |
+| `ResizeObserver` | 4 | 424 | 420 | 152 | Complete |
+| `ResourceTiming` | 1 | 357 | 338 | 84 | Complete |
+| `SRI` | 1 | 198 | 156 | 100 | Complete |
+| `SVG` | 82 | 9,020 | 5,107 | 1,069 | Complete |
+| `SecureContexts` | 1 | 76 | 59 | 13 | Complete |
+| `Selection` | 3 | 1,470 | 565 | 96 | Complete |
+| `Serial` | 2 | 366 | 243 | 35 | Complete |
+| `ServiceWorker` | 11 | 2,608 | 919 | 305 | Complete |
+| `Speech` | 11 | 421 | 624 | 111 | Complete |
+| `StorageAPI` | 6 | 433 | 444 | 235 | Complete |
+| `Streams` | 22 | 8,789 | 5,645 | 1,649 | Complete |
+| `TrustedTypes` | 7 | 1,175 | 756 | 185 | Complete |
+| `UIEvents` | 12 | 1,871 | 1,358 | 378 | Complete |
+| `URLPattern` | 1 | 223 | 1,632 | 214 | Complete |
+| `UserTiming` | 2 | 160 | 119 | 35 | Complete |
+| `ViewTransition` | 1 | 1,054 | 598 | 324 | Complete |
+| `WebAssembly` | 7 | 3,441 | 1,069 | 291 | Complete |
+| `WebAudio` | 47 | 8,256 | 2,649 | 444 | Complete |
+| `WebDriver` | 16 | 5,321 | 3,447 | 638 | Complete |
+| `WebGL` | 42 | 7,846 | 4,183 | 538 | Complete |
+| `WebIDL` | 10 | 2,466 | 1,564 | 381 | Complete |
+| `WebLocks` | 5 | 647 | 701 | 169 | Complete |
+| `WebSockets` | 1 | 476 | 316 | 115 | Complete |
+| `WebVTT` | 2 | 378 | 464 | 232 | Complete |
+| `WebXR` | 6 | 492 | 312 | 90 | Complete |
+| `Worker` | 0 | 0 | 81 | 33 | Complete |
+| `XHR` | 7 | 1,855 | 1,131 | 343 | Complete |
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
-| `XML` | 2 | 534 | 414 | 124 | Complete |
-| `XPath` | 5 | 438 | 534 | 128 | Complete |
-| **Total** | **1,147** | **316,400** | **316,128** | **56,867** | **72 complete, 3 present, 0 untranslated** |
+| `XML` | 2 | 556 | 477 | 164 | Complete |
+| `XPath` | 5 | 435 | 613 | 189 | Complete |
+| **Total** | **1,193** | **329,970** | **328,281** | **61,571** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
-The semantic inventory deliberately fails while reviewed upstream bodies are
-missing. Its current baseline is:
+The semantic inventory exits nonzero while structural spellings still require
+manual classification. Its current baseline is:
 
 ```text
 $ python3 tools/libweb_translation_audit.py
@@ -174,10 +181,10 @@ upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
-reviewed upstream-equivalent trivial implementations: 550
+reviewed upstream-equivalent trivial implementations: 551
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 11387
-  unmatched: 7243
+  candidate-name-match: 11649
+  unmatched: 6981
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 628
   consolidated-name-match: 381
@@ -191,7 +198,7 @@ largest unmatched modules:
   1853 CSS
   1357 HTML
    705 DOM
-   444 Painting
+   440 Painting
    339 WebAudio
    319 Layout
    242 Editing
@@ -200,31 +207,27 @@ largest unmatched modules:
    149 Internals
 
 $ /Users/alex/code/v/v -enable-globals run tools/layout_corpus.v --all
-Layout corpus: 639 passed, 450 failed, 1089 total
+Layout corpus: 788 passed, 301 failed, 1089 total
 
 $ /Users/alex/code/v/v -enable-globals test .
-Summary for all V _test.v files: 394 passed, 394 total.
+Summary for all V _test.v files: 398 passed, 398 total.
 
-$ /Users/alex/code/v/v -enable-globals test css
-Summary for all V _test.v files: 26 passed, 26 total.
+$ Build/v/Ladybird.app/Contents/MacOS/Ladybird --headless-smoke
+Ladybird V smoke check passed
 
-$ /Users/alex/code/v/v -enable-globals test layout
-Summary for all V _test.v files: 19 passed, 19 total.
-
-$ /Users/alex/code/v/v -enable-globals test painting
-Summary for all V _test.v files: 7 passed, 7 total.
-
-$ /Users/alex/code/v/v -enable-globals test animations css dom layout
-Summary for all V _test.v files: 70 passed, 70 total.
+$ ./compare_screenshots.sh <24-new-cases> inline-node ordered-list \
+    text-decorations <5-modified-svg-cases>
+32 passed, 32 total (31 distinct fixtures)
 ```
 
 The 2026-09-08 default-body pass exhausted the suspicious-stub queue and then
 closed the ten unmatched symbols outside CSS, Layout, and Painting. It added
 document-owned animation-timeline updates, the observable constructed-sheet
 adoption callbacks, and live SVG `use` shadow trees. Consequently every
-remaining unmatched symbol is contained in the three large modules already
-under structural and differential audit; the count is not a claim that every
-one of those symbols lacks behavior.
+remaining unmatched symbol at that checkpoint was contained in the three large
+modules already under structural and differential audit. The refreshed
+September source introduced and reorganized spellings across many modules; the
+current structural count above is not a claim that every one lacks behavior.
 
 The Painting state pass then reduced that module from 230 to 146 unmatched
 implementations without adding class-shaped facades. It tied `PaintableBox`

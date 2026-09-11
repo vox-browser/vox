@@ -1,7 +1,7 @@
 # LibWeb root support translation
 
 The upstream source of truth is `~/code/3rd/ladybird/Libraries/LibWeb`; all V
-translation code, tests, and translation notes live in `~/code/libweb_v`.
+translation code, tests, and translation notes live in `~/code/vox2`.
 
 | Upstream root file | V translation |
 | --- | --- |

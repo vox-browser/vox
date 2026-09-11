@@ -10,7 +10,7 @@
 
 ## LibWeb V translation
 
-- This repository (`~/code/libweb_v`) is the canonical LibWeb V translation workspace.
+- This repository (`~/code/vox2`) is the canonical LibWeb V translation workspace.
 - Use `~/code/3rd/ladybird/Libraries/LibWeb` as the upstream source reference.
 - Keep all translated V implementation code, tests, generated translation assets,
   and translation-specific documentation in this repository.
@@ -23,7 +23,7 @@
 - Build the native macOS bundle from this repository with:
 
   ```sh
-  cd ~/code/libweb_v
+  cd ~/code/vox2
   ./build_ladybird.sh
   ```
 
@@ -83,53 +83,55 @@
 
 ## Translated module inventory
 
-All 75 of 75 upstream LibWeb module directories and all 1,147 module-owned C++
-implementation units have audited V mappings. As of 2026-08-17, the module
-translations contain 222,554 implementation V LOC and 33,406 test V LOC.
+All 78 translated LibWeb packages and all 1,193 current module-owned C++
+implementation units have audited V mappings. As of 2026-09-11, the module
+translations contain 328,281 implementation V LOC and 61,571 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
 
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
-| ARIA | 2,523 | Animations | 2,217 |
-| Bindings | 1,639 | CSS | 86,672 |
-| Clipboard | 948 | Compression | 322 |
-| ContentSecurityPolicy | 2,404 | CookieStore | 997 |
-| CredentialManagement | 400 | Crypto (`webcrypto/`) | 2,303 |
-| DOM | 32,116 | DOMURL | 932 |
-| Editing | 2,019 | Encoding | 668 |
-| EncryptedMediaExtensions | 572 | EntriesAPI | 44 |
-| EventTiming | 170 | Fetch | 3,194 |
-| FileAPI | 943 | Fullscreen | 93 |
-| GPC | 16 | Gamepad | 681 |
-| Geolocation | 391 | Geometry | 1,962 |
-| HTML | 36,891 | HighResolutionTime | 362 |
-| IndexedDB | 2,362 | Infra | 193 |
-| Internals | 826 | IntersectionObserver | 376 |
-| Layout | 5,802 | Loader | 830 |
-| MathML | 361 | MediaCapabilitiesAPI | 369 |
-| MediaSourceExtensions | 357 | MimeSniff | 1,035 |
-| MixedContent | 125 | NavigationTiming | 264 |
-| NotificationsAPI | 278 | Page | 1,533 |
-| Painting | 3,472 | PerformanceTimeline | 417 |
-| PermissionsPolicy | 79 | Platform | 394 |
-| ReferrerPolicy | 239 | RequestIdleCallback | 36 |
-| ResizeObserver | 238 | ResourceTiming | 317 |
-| SRI | 147 | SVG | 2,543 |
-| SecureContexts | 63 | Selection | 569 |
-| Serial | 231 | ServiceWorker | 842 |
-| Speech | 596 | StorageAPI | 342 |
-| Streams | 2,640 | TrustedTypes | 722 |
-| UIEvents | 1,270 | URLPattern | 300 |
-| UserTiming | 89 | ViewTransition | 567 |
-| WebAssembly | 740 | WebAudio | 1,660 |
-| WebDriver | 2,091 | WebGL | 1,982 |
-| WebIDL | 1,139 | WebSockets | 285 |
-| WebVTT | 445 | WebXR | 200 |
-| Worker | 81 | XHR | 964 |
-| XLink | 13 | XML | 244 |
-| XPath | 407 | **Total** | **222,554** |
+| ARIA | 2,535 | Animations | 3,047 |
+| Bindings | 1,731 | CSS | 101,884 |
+| Clipboard | 973 | Compositor | 2,403 |
+| Compression | 424 | ContentSecurityPolicy | 2,738 |
+| CookieStore | 859 | CredentialManagement | 418 |
+| Crypto (`webcrypto/`) | 3,287 | DOM | 35,649 |
+| DOMURL | 754 | Editing | 3,294 |
+| Encoding | 705 | EncryptedMediaExtensions | 572 |
+| EntriesAPI | 44 | EventTiming | 153 |
+| Fetch | 5,188 | FileAPI | 1,018 |
+| Fullscreen | 93 | GPC | 16 |
+| Gamepad | 760 | Geolocation | 416 |
+| Geometry | 2,062 | HTML | 56,437 |
+| HighResolutionTime | 442 | IndexedDB | 4,364 |
+| Infra | 207 | Internals | 854 |
+| IntersectionObserver | 569 | Layout | 40,601 |
+| Loader | 1,111 | MathML | 411 |
+| MediaCapabilitiesAPI | 676 | MediaCapture | 1,205 |
+| MediaSourceExtensions | 357 | MimeSniff | 1,108 |
+| MixedContent | 125 | NavigationTiming | 291 |
+| NotificationsAPI | 290 | Page | 2,662 |
+| Painting | 6,811 | PerformanceTimeline | 447 |
+| PermissionsAPI | 239 | Platform | 1,750 |
+| ReferrerPolicy | 239 | RequestIdleCallback | 59 |
+| ResizeObserver | 420 | ResourceTiming | 338 |
+| SRI | 156 | SVG | 5,107 |
+| SecureContexts | 59 | Selection | 565 |
+| Serial | 243 | ServiceWorker | 919 |
+| Speech | 624 | StorageAPI | 444 |
+| Streams | 5,645 | TrustedTypes | 756 |
+| UIEvents | 1,358 | URLPattern | 1,632 |
+| UserTiming | 119 | ViewTransition | 598 |
+| WebAssembly | 1,069 | WebAudio | 2,649 |
+| WebDriver | 3,447 | WebGL | 4,183 |
+| WebIDL | 1,564 | WebLocks | 701 |
+| WebSockets | 316 | WebVTT | 464 |
+| WebXR | 312 | Worker | 81 |
+| XHR | 1,131 | XLink | 13 |
+| XML | 477 | XPath | 613 |
+| **Total** | **328,281** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
