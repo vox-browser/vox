@@ -24,6 +24,17 @@ pub fn XPathNSResolver.create(callback NamespaceResolver) &XPathNSResolver {
 	}
 }
 
+pub enum EvaluationError {
+	invalid_expression
+	evaluation_failed
+}
+
+pub struct EvaluateResult {
+pub:
+	result ?&XPathResult
+	error  ?EvaluationError
+}
+
 pub fn (resolver &XPathNSResolver) callback() NamespaceResolver {
 	return resolver.callback_ or { panic('XPathNSResolver has no callback') }
 }
@@ -39,8 +50,7 @@ pub:
 
 pub fn mirror_node(node &dom.Node) ?&MirroredXPathNode {
 	match node.type_() {
-		.invalid, .attribute_node, .entity_reference_node, .entity_node, .document_type_node,
-		.notation_node {
+		.invalid, .attribute_node, .entity_reference_node, .entity_node, .document_type_node, .notation_node {
 			return none
 		}
 		.document_node {
@@ -69,11 +79,11 @@ pub fn mirror_node(node &dom.Node) ?&MirroredXPathNode {
 		}
 	}
 	return &MirroredXPathNode{
-		original:   node
-		name:       name
-		data:       data
+		original: node
+		name: name
+		data: data
 		attributes: attributes
-		children:   children
+		children: children
 	}
 }
 
@@ -107,8 +117,12 @@ pub fn convert_xpath_result(native_result XPathNativeResult, requested ResultTyp
 @[heap]
 pub struct XPathEvaluator {}
 
-pub fn XPathEvaluator.construct() &XPathEvaluator {
+pub fn XPathEvaluator.create() &XPathEvaluator {
 	return &XPathEvaluator{}
+}
+
+pub fn XPathEvaluator.construct() &XPathEvaluator {
+	return XPathEvaluator.create()
 }
 
 pub fn XPathEvaluator.construct_impl() &XPathEvaluator {
@@ -122,11 +136,19 @@ pub:
 	resolver   ?NamespaceResolver
 }
 
+pub fn XPathExpression.create(expression string, resolver ?NamespaceResolver) &XPathExpression {
+	return &XPathExpression{expression, resolver}
+}
+
+pub fn create_expression(expression string, resolver ?NamespaceResolver) !&XPathExpression {
+	return XPathExpression.create(expression, resolver)
+}
+
 pub fn (evaluator &XPathEvaluator) create_expression(expression string, resolver ?NamespaceResolver) !&XPathExpression {
 	_ = evaluator
 	// Current upstream stores the source and resolver here; libxml compilation
 	// (and therefore SyntaxError) occurs only when evaluate() is called.
-	return &XPathExpression{expression, resolver}
+	return create_expression(expression, resolver)
 }
 
 pub fn (evaluator &XPathEvaluator) create_ns_resolver(node &dom.Node) &dom.Node {
@@ -135,14 +157,47 @@ pub fn (evaluator &XPathEvaluator) create_ns_resolver(node &dom.Node) &dom.Node 
 }
 
 pub fn (evaluator &XPathEvaluator) evaluate(expression string, context &dom.Node, resolver ?NamespaceResolver, requested ResultType, reusable ?&XPathResult) !&XPathResult {
-	compiled := evaluator.create_expression(expression, resolver)!
-	return compiled.evaluate(context, requested, reusable)
+	_ = evaluator
+	return throw_evaluation_error_if_needed(evaluate(expression, context, resolver, requested, reusable))
 }
 
 pub fn (expression &XPathExpression) evaluate(context &dom.Node, requested ResultType, reusable ?&XPathResult) !&XPathResult {
-	mut result := reusable or { &XPathResult{} }
-	evaluate_into(expression.expression, context, requested, mut result)!
-	return result
+	return throw_evaluation_error_if_needed(evaluate(expression.expression, context, expression.resolver, requested, reusable))
+}
+
+pub fn evaluate(expression string, context &dom.Node, _ ?NamespaceResolver, requested ResultType, reusable ?&XPathResult) EvaluateResult {
+	if mirror_node(context) == none {
+		return EvaluateResult{
+			error: .evaluation_failed
+		}
+	}
+	mut result := reusable or { XPathResult.create() }
+	evaluate_into(expression, context, requested, mut result) or {
+		return EvaluateResult{
+			error: if err.msg().contains('SyntaxError') {
+				EvaluationError.invalid_expression
+			} else {
+				EvaluationError.evaluation_failed
+			}
+		}
+	}
+	return EvaluateResult{
+		result: result
+	}
+}
+
+pub fn throw_evaluation_error_if_needed(evaluation EvaluateResult) !&XPathResult {
+	if result := evaluation.result {
+		return result
+	}
+	match evaluation.error or { EvaluationError.evaluation_failed } {
+		.invalid_expression {
+			return error('SyntaxError: Invalid XPath expression')
+		}
+		.evaluation_failed {
+			return error('OperationError: XPath evaluation failed')
+		}
+	}
 }
 
 fn validate_expression(expression string) ! {

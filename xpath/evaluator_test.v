@@ -28,19 +28,16 @@ fn xpath_document() &dom.Document {
 fn test_evaluator_path_predicates_functions_and_scalars() {
 	document := xpath_document()
 	evaluator := XPathEvaluator.construct()
-	mut all := evaluator.evaluate('//item', unsafe { &dom.Node(document) }, none,
-		.ordered_node_snapshot, none)!
+	mut all := evaluator.evaluate('//item', unsafe { &dom.Node(document) }, none, .ordered_node_snapshot, none)!
 	assert all.snapshot_length() == 2
 	assert (all.snapshot_item(1) or { panic('missing') }).text_content()? == '20'
 	assert (all.iterate_next() or { panic('missing') }).text_content()? == '10'
 	count := evaluator.evaluate('count(//item)', unsafe { &dom.Node(document) }, none, .any, none)!
 	assert count.result_type() == .number
 	assert count.number_value() == 2
-	filtered := evaluator.evaluate("//item[@id='b']", unsafe { &dom.Node(document) }, none,
-		.first_ordered_node, none)!
+	filtered := evaluator.evaluate("//item[@id='b']", unsafe { &dom.Node(document) }, none, .first_ordered_node, none)!
 	assert (filtered.single_node_value() or { panic('missing') }).text_content()? == '20'
-	attribute := evaluator.evaluate('string(//item[1]/@id)', unsafe { &dom.Node(document) }, none,
-		.any, none)!
+	attribute := evaluator.evaluate('string(//item[1]/@id)', unsafe { &dom.Node(document) }, none, .any, none)!
 	assert attribute.string_value() == 'a'
 }
 
@@ -49,8 +46,7 @@ fn test_expression_reuse_types_and_syntax_errors() {
 	evaluator := XPathEvaluator.construct()
 	expression := evaluator.create_expression('/root/item[2]', none)!
 	mut reusable := &XPathResult{}
-	mut result := expression.evaluate(unsafe { &dom.Node(document) }, .ordered_node_iterator,
-		reusable)!
+	mut result := expression.evaluate(unsafe { &dom.Node(document) }, .ordered_node_iterator, reusable)!
 	assert result == reusable
 	assert (result.iterate_next() or { panic('missing') }).text_content()? == '20'
 	assert result.iterate_next() == none
@@ -88,7 +84,7 @@ fn test_mirrored_context_root_result_flavor_and_prefix_behavior() {
 
 fn test_exact_xpath_mirroring_resolver_conversion_and_result_entry_points() {
 	document := xpath_document()
-	evaluator := XPathEvaluator.construct_impl()
+	evaluator := XPathEvaluator.create()
 	assert evaluator != unsafe { nil }
 	resolver := XPathNSResolver.create(exact_xpath_namespace_callback)
 	assert resolver.callback()('x')? == 'urn:test'
@@ -99,7 +95,7 @@ fn test_exact_xpath_mirroring_resolver_conversion_and_result_entry_points() {
 	assert mirrored.children[0].attributes['id'] == 'a'
 	assert mirrored.children[0].children[0].data == '10'
 
-	mut result := &XPathResult{}
+	mut result := XPathResult.create()
 	result.set_number(42)
 	assert result.result_type() == .number
 	assert result.number_value() == 42
@@ -114,15 +110,40 @@ fn test_exact_xpath_mirroring_resolver_conversion_and_result_entry_points() {
 	assert result.single_node_value()? == root.as_node()
 
 	convert_xpath_result(XPathNativeResult{
-		kind:         .string
+		kind: .string
 		string_value: 'converted'
 	}, .any, mut result)
 	assert result.result_type() == .string
 	assert result.string_value() == 'converted'
 	convert_xpath_result(XPathNativeResult{
-		kind:  .node_set
+		kind: .node_set
 		nodes: [root.as_node()]
 	}, .ordered_node_snapshot, mut result)
 	assert result.result_type() == .ordered_node_snapshot
 	assert result.snapshot_length() == 1
+}
+
+fn test_raw_evaluation_result_maps_errors_at_the_webidl_boundary() {
+	document := xpath_document()
+	document_node := unsafe { &dom.Node(document) }
+	valid := evaluate('count(//item)', document_node, none, .any, none)
+	assert valid.error == none
+	assert throw_evaluation_error_if_needed(valid)!.number_value() == 2
+
+	invalid := evaluate('//item[', document_node, none, .any, none)
+	assert invalid.error or { panic('missing error') } == EvaluationError.invalid_expression
+	if _ := throw_evaluation_error_if_needed(invalid) {
+		assert false
+	} else {
+		assert err.msg().contains('SyntaxError')
+	}
+
+	unsupported_context := dom.DocumentType.create(document)
+	failed := evaluate('//item', unsupported_context.as_node(), none, .any, none)
+	assert failed.error or { panic('missing error') } == EvaluationError.evaluation_failed
+	if _ := throw_evaluation_error_if_needed(failed) {
+		assert false
+	} else {
+		assert err.msg().contains('OperationError')
+	}
 }

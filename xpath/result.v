@@ -27,8 +27,12 @@ mut:
 	string_value_           string
 	boolean_value_          bool
 	invalid_iterator_state_ bool
-	nodes                    []&dom.Node
-	iterator_index           int
+	nodes                   []&dom.Node
+	iterator_index          int
+}
+
+pub fn XPathResult.create() &XPathResult {
+	return &XPathResult{}
 }
 
 pub fn (result &XPathResult) result_type() ResultType {
