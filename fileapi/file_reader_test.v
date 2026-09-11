@@ -18,6 +18,7 @@ fn test_blob_package_data_all_read_types() {
 	assert blob_package_data([u8(0x41), 0xff], .binary_string, none, none)!.text == 'Aÿ'
 	assert blob_package_data(bytes, .text, 'text/plain;charset=utf-8', none)!.text == 'Hi'
 	assert blob_package_data(bytes, .data_url, 'text/plain', none)!.text == 'data:text/plain;base64,SGk='
+	assert blob_package_data(bytes, .data_url, none, none)!.text == 'data:application/octet-stream;base64,SGk='
 }
 
 fn test_blob_package_data_encoding_precedence_and_bom() {
@@ -26,8 +27,7 @@ fn test_blob_package_data_encoding_precedence_and_bom() {
 	result := blob_package_data(utf16, .text, 'text/plain;charset=windows-1252', 'utf-16le')!
 	assert result.text == 'A'
 	// Unknown explicit labels fall through to the MIME charset.
-	windows := blob_package_data([u8(0x80)], .text, 'text/plain;charset=windows-1252',
-		'unknown-label')!
+	windows := blob_package_data([u8(0x80)], .text, 'text/plain;charset=windows-1252', 'unknown-label')!
 	assert windows.text == '€'
 }
 
@@ -96,6 +96,19 @@ fn test_file_reader_exact_package_queue_and_sync_read_entry_points() {
 	sync_reader := FileReaderSync.construct_impl()
 	result := sync_reader.read_as(blob, .text, 'UTF-8')!
 	assert result.text == 'sync'
+	assert sync_reader.read_as_array_buffer_impl(blob)! == 'sync'.bytes()
+}
+
+fn test_file_reader_constructor_global_result_event_and_offset_boundaries() {
+	global := &dom.EventTarget{}
+	mut reader := FileReader.create_for_constructor(global)
+	assert reader.relevant_global_object() == global
+	reader.set_result(file_reader_string_result('set-result'))
+	assert reader.result().text == 'set-result'
+	event := reader.create_associated_event('load')
+	assert event.type_name() == 'load'
+	assert event.time_stamp() > 0
+	assert FileReader.error_offset() > 0
 }
 
 fn test_file_reader_events_use_the_inherited_event_target() {

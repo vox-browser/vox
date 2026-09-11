@@ -44,21 +44,21 @@ pub:
 
 pub fn BlobPart.from_string(value string) BlobPart {
 	return BlobPart{
-		kind:         .string
+		kind: .string
 		string_value: value
 	}
 }
 
 pub fn BlobPart.from_bytes(value []u8) BlobPart {
 	return BlobPart{
-		kind:        .bytes
+		kind: .bytes
 		bytes_value: value
 	}
 }
 
 pub fn BlobPart.from_blob(value &Blob) BlobPart {
 	return BlobPart{
-		kind:       .blob
+		kind: .blob
 		blob_value: value
 	}
 }
@@ -163,7 +163,7 @@ mut:
 pub fn Blob.create(byte_buffer []u8, type_ string) &Blob {
 	return &Blob{
 		byte_buffer: byte_buffer.clone()
-		type_:       type_
+		type_: type_
 	}
 }
 
@@ -275,20 +275,26 @@ pub fn (blob &Blob) stream() !&streams.ReadableStream {
 	return blob.get_stream()
 }
 
+pub fn read_all_blob_bytes(blob &Blob) ![]u8 {
+	mut stream := blob.get_stream()!
+	mut reader := stream.get_default_reader()!
+	return reader.read_all_bytes()!
+}
+
 // https://w3c.github.io/FileAPI/#dom-blob-text
 pub fn (blob &Blob) text() !string {
 	decoder := encoding.TextDecoder.create()
-	return decoder.decode(blob.byte_buffer, encoding.TextDecodeOptions{})
+	return decoder.decode(read_all_blob_bytes(blob)!, encoding.TextDecodeOptions{})
 }
 
 // The WebIDL ArrayBuffer and Uint8Array wrappers are LibJS-owned. Both typed
 // accessors return a fresh byte buffer, preserving the spec's NewObject rule.
 pub fn (blob &Blob) array_buffer() []u8 {
-	return blob.byte_buffer.clone()
+	return read_all_blob_bytes(blob) or { []u8{} }
 }
 
 pub fn (blob &Blob) bytes() []u8 {
-	return blob.byte_buffer.clone()
+	return read_all_blob_bytes(blob) or { []u8{} }
 }
 
 pub struct SerializedBlob {

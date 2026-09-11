@@ -44,8 +44,8 @@ pub:
 
 pub fn (result FileReaderResult) clone() FileReaderResult {
 	return FileReaderResult{
-		kind:  result.kind
-		text:  result.text
+		kind: result.kind
+		text: result.text
 		bytes: result.bytes.clone()
 	}
 }
@@ -59,7 +59,7 @@ fn file_reader_string_result(value string) FileReaderResult {
 
 fn file_reader_bytes_result(value []u8) FileReaderResult {
 	return FileReaderResult{
-		kind:  .bytes
+		kind: .bytes
 		bytes: value.clone()
 	}
 }
@@ -103,7 +103,12 @@ fn encoding_for_blob(mime_type ?string, encoding_name ?string) string {
 pub fn blob_package_data(bytes []u8, type_ FileReaderType, mime_type ?string, encoding_name ?string) !FileReaderResult {
 	return match type_ {
 		.data_url {
-			mime := mime_type or { '' }
+			mut mime := 'application/octet-stream'
+			if supplied := mime_type {
+				if supplied != '' {
+					mime = supplied
+				}
+			}
 			file_reader_string_result('data:${mime};base64,${base64.encode(bytes)}')
 		}
 		.text {
@@ -143,24 +148,40 @@ struct PendingFileRead {
 pub struct FileReader {
 	dom.EventTarget
 mut:
-	state_        FileReaderState
-	result_       FileReaderResult
-	error_        ?string
-	pending_read_ ?PendingFileRead
-	is_aborted_   bool
-	event_log_    []string
-	next_read_id_ u64
-	queued_tasks_ []QueuedFileReaderTask
-	pending_task_ids_ []u64
-	next_task_id_ u64
+	relevant_global_object_ &dom.EventTarget = unsafe { nil }
+	state_                  FileReaderState
+	result_                 FileReaderResult
+	error_                  ?string
+	pending_read_           ?PendingFileRead
+	is_aborted_             bool
+	event_log_              []string
+	next_read_id_           u64
+	queued_tasks_           []QueuedFileReaderTask
+	pending_task_ids_       []u64
+	next_task_id_           u64
 }
 
 pub fn FileReader.create() &FileReader {
-	return &FileReader{}
+	mut reader := &FileReader{}
+	reader.relevant_global_object_ = &reader.EventTarget
+	return reader
 }
 
 pub fn FileReader.construct_impl() &FileReader {
 	return FileReader.create()
+}
+
+pub fn FileReader.create_for_constructor(relevant_global_object &dom.EventTarget) &FileReader {
+	return &FileReader{
+		relevant_global_object_: relevant_global_object
+	}
+}
+
+pub fn (reader &FileReader) relevant_global_object() &dom.EventTarget {
+	if reader.relevant_global_object_ == unsafe { nil } {
+		return &reader.EventTarget
+	}
+	return reader.relevant_global_object_
 }
 
 fn (reader &FileReader) event_target() &dom.EventTarget {
@@ -169,7 +190,7 @@ fn (reader &FileReader) event_target() &dom.EventTarget {
 
 fn (mut reader FileReader) fire_event(name string) {
 	reader.event_log_ << name
-	reader.event_target().dispatch_event(dom.Event.create(name, dom.EventInit{}))
+	reader.event_target().dispatch_event(reader.create_associated_event(name))
 }
 
 pub fn (reader &FileReader) ready_state() FileReaderState {
@@ -180,8 +201,20 @@ pub fn (reader &FileReader) result() FileReaderResult {
 	return reader.result_.clone()
 }
 
+pub fn (mut reader FileReader) set_result(result FileReaderResult) {
+	reader.result_ = result.clone()
+}
+
+pub fn (reader &FileReader) create_associated_event(event_name string) &dom.Event {
+	return dom.Event.create(event_name, dom.EventInit{})
+}
+
 pub fn (reader &FileReader) error() ?string {
 	return reader.error_
+}
+
+pub fn FileReader.error_offset() usize {
+	return usize(__offsetof(FileReader, error_))
 }
 
 pub fn (reader &FileReader) event_log() []string {
@@ -194,14 +227,14 @@ fn (mut reader FileReader) read_operation(blob &Blob, type_ FileReaderType, enco
 	}
 	reader.state_ = .loading
 	reader.is_aborted_ = false
-	reader.result_ = FileReaderResult{}
+	reader.set_result(FileReaderResult{})
 	reader.error_ = none
 	reader.next_read_id_++
 	reader.pending_read_ = PendingFileRead{
-		id:            reader.next_read_id_
-		bytes:         blob.raw_bytes()
-		mime_type:     blob.type_()
-		type_:         type_
+		id: reader.next_read_id_
+		bytes: blob.raw_bytes()
+		mime_type: blob.type_()
+		type_: type_
 		encoding_name: encoding_name
 	}
 }
@@ -226,7 +259,7 @@ pub fn (mut reader FileReader) queue_a_task(task FileReaderTask) {
 	reader.next_task_id_++
 	reader.pending_task_ids_ << reader.next_task_id_
 	reader.queued_tasks_ << QueuedFileReaderTask{
-		id:   reader.next_task_id_
+		id: reader.next_task_id_
 		task: task
 	}
 }
@@ -258,8 +291,7 @@ pub fn (mut reader FileReader) process_pending_tasks() {
 			return
 		}
 	}
-	result := blob_package_data(pending.bytes, pending.type_, pending.mime_type,
-		pending.encoding_name) or {
+	result := blob_package_data(pending.bytes, pending.type_, pending.mime_type, pending.encoding_name) or {
 		reader.state_ = .done
 		reader.error_ = err.msg()
 		reader.pending_read_ = none
@@ -270,7 +302,7 @@ pub fn (mut reader FileReader) process_pending_tasks() {
 		return
 	}
 	reader.state_ = .done
-	reader.result_ = result
+	reader.set_result(result)
 	reader.pending_read_ = none
 	reader.fire_event('load')
 	if reader.state_ != .loading {
@@ -289,11 +321,11 @@ fn (reader &FileReader) pending_read_is_active(id u64) bool {
 // https://w3c.github.io/FileAPI/#dfn-abort
 pub fn (mut reader FileReader) abort() {
 	if reader.state_ in [.empty, .done] {
-		reader.result_ = FileReaderResult{}
+		reader.set_result(FileReaderResult{})
 		return
 	}
 	reader.state_ = .done
-	reader.result_ = FileReaderResult{}
+	reader.set_result(FileReaderResult{})
 	reader.pending_read_ = none
 	reader.is_aborted_ = true
 	reader.queued_tasks_.clear()
@@ -363,7 +395,11 @@ pub fn FileReaderSync.construct_impl() &FileReaderSync {
 }
 
 pub fn (reader &FileReaderSync) read_as_array_buffer(blob &Blob) ![]u8 {
-	return reader.read_as(blob, .array_buffer, none)!.bytes
+	return reader.read_as_array_buffer_impl(blob)
+}
+
+pub fn (_ &FileReaderSync) read_as_array_buffer_impl(blob &Blob) ![]u8 {
+	return blob.raw_bytes()
 }
 
 pub fn (reader &FileReaderSync) read_as_binary_string(blob &Blob) !string {

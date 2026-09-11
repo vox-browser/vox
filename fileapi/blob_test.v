@@ -94,6 +94,7 @@ fn test_blob_owns_input_and_returns_fresh_buffers() {
 
 fn test_blob_text_array_buffer_and_stream() {
 	blob := Blob.create('héllo'.bytes(), 'text/plain')
+	assert read_all_blob_bytes(blob)! == 'héllo'.bytes()
 	assert blob.text()! == 'héllo'
 	assert blob.array_buffer() == 'héllo'.bytes()
 	mut stream := blob.stream()!
