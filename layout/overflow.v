@@ -9,6 +9,11 @@ import css
 // Translation of LayoutState.cpp's scrollable-overflow commit pass.
 type ContainedLayoutBoxes = map[u32][]&Node
 
+struct PhysicalOverflowDirections {
+	horizontal_axis_is_positive bool = true
+	vertical_axis_is_positive   bool = true
+}
+
 fn measure_document_scrollable_overflow(mut state LayoutState, root &Node) {
 	// LayoutState.cpp builds a hash map from each containing block to the boxes
 	// it contains. Keeping the same shape is important for large flat documents:
@@ -61,6 +66,12 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 	}
 
 	position := paint_cumulative_offset(box, state, used)
+	content_box := css.CSSPixelRect{
+		x: position.x()
+		y: position.y()
+		width: used.content_width()
+		height: used.content_height()
+	}
 	padding_box := css.CSSPixelRect{
 		x: position.x().minus(used.padding_left)
 		y: position.y().minus(used.padding_top)
@@ -68,6 +79,7 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 		height: used.content_height().plus(used.padding_top).plus(used.padding_bottom)
 	}
 	mut scrollable_overflow_rect := padding_box
+	mut in_flow_and_floated_content_bounds := content_box
 
 	// All line fragments which remain on this BlockContainer's PaintableWithLines.
 	if box.is_block_container() {
@@ -84,10 +96,11 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 					height: fragment.height()
 				}
 				scrollable_overflow_rect = overflow_rect_united(scrollable_overflow_rect, fragment_rect)
+				in_flow_and_floated_content_bounds = overflow_rect_united(in_flow_and_floated_content_bounds, fragment_rect)
 			}
 		}
 	}
-	mut content_overflow_rect := scrollable_overflow_rect
+	overflow_directions := physical_overflow_directions(box)
 
 	if contained := contained_boxes[styled.layout_index()] {
 		for child in contained {
@@ -95,12 +108,24 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 				continue
 			}
 			child_rect := overflow_box_border_rect(child, state) or { continue }
-			if child_rect.bottom().raw_value() < 0 || child_rect.right().raw_value() < 0 {
+			wholly_in_unreachable_horizontal_axis := if overflow_directions.horizontal_axis_is_positive {
+				child_rect.right().raw_value() < padding_box.left().raw_value()
+			} else {
+				child_rect.left().raw_value() > padding_box.right().raw_value()
+			}
+			wholly_in_unreachable_vertical_axis := if overflow_directions.vertical_axis_is_positive {
+				child_rect.bottom().raw_value() < padding_box.top().raw_value()
+			} else {
+				child_rect.top().raw_value() > padding_box.bottom().raw_value()
+			}
+			if wholly_in_unreachable_horizontal_axis || wholly_in_unreachable_vertical_axis {
 				continue
 			}
 			if !overflow_rect_is_empty(child_rect) {
 				scrollable_overflow_rect = overflow_rect_united(scrollable_overflow_rect, child_rect)
-				content_overflow_rect = overflow_rect_united(content_overflow_rect, child_rect)
+				if !child.is_absolutely_positioned() {
+					in_flow_and_floated_content_bounds = overflow_rect_united(in_flow_and_floated_content_bounds, child_rect)
+				}
 			}
 			if child.has_layout_containment() || child.has_paint_containment() {
 				continue
@@ -120,31 +145,121 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 		}
 	}
 
-	mut has_scrollable_overflow := !overflow_rect_contains(padding_box, scrollable_overflow_rect)
-		&& box.is_scroll_container()
-	if has_scrollable_overflow {
-		padded_content_height := content_overflow_rect.height.plus(used.padding_bottom)
-		if padded_content_height.raw_value() > scrollable_overflow_rect.height.raw_value() {
-			scrollable_overflow_rect.height = padded_content_height
-		}
+	if box.is_scroll_container() {
+		padded_content_bounds := padding_inflated_scrollable_overflow(content_box, padding_box, in_flow_and_floated_content_bounds, used, overflow_directions)
+		scrollable_overflow_rect = overflow_rect_united(scrollable_overflow_rect, padded_content_bounds)
 	}
 
-	if scrollable_overflow_rect.x.raw_value() < padding_box.x.raw_value()
-		|| scrollable_overflow_rect.y.raw_value() < padding_box.y.raw_value() {
-		negative_x := css_pixels_min(scrollable_overflow_rect.x.minus(padding_box.x), CSSPixels.new(0))
-		negative_y := css_pixels_min(scrollable_overflow_rect.y.minus(padding_box.y), CSSPixels.new(0))
-		scrollable_overflow_rect.width = css_pixels_max(scrollable_overflow_rect.width.plus(negative_x), CSSPixels.new(0))
-		scrollable_overflow_rect.height = css_pixels_max(scrollable_overflow_rect.height.plus(negative_y), CSSPixels.new(0))
-		scrollable_overflow_rect.x = css_pixels_max(scrollable_overflow_rect.x, padding_box.x)
-		scrollable_overflow_rect.y = css_pixels_max(scrollable_overflow_rect.y, padding_box.y)
-		has_scrollable_overflow = !overflow_rect_contains(padding_box, scrollable_overflow_rect)
-			&& box.is_scroll_container()
+	// Content past the scroll origin is unreachable. Which physical edge is the
+	// origin depends on writing mode, direction, and flex axis reversal.
+	left := if overflow_directions.horizontal_axis_is_positive {
+		css_pixels_max(scrollable_overflow_rect.left(), padding_box.left())
+	} else {
+		scrollable_overflow_rect.left()
 	}
+	top := if overflow_directions.vertical_axis_is_positive {
+		css_pixels_max(scrollable_overflow_rect.top(), padding_box.top())
+	} else {
+		scrollable_overflow_rect.top()
+	}
+	right := if overflow_directions.horizontal_axis_is_positive {
+		scrollable_overflow_rect.right()
+	} else {
+		css_pixels_min(scrollable_overflow_rect.right(), padding_box.right())
+	}
+	bottom := if overflow_directions.vertical_axis_is_positive {
+		scrollable_overflow_rect.bottom()
+	} else {
+		css_pixels_min(scrollable_overflow_rect.bottom(), padding_box.bottom())
+	}
+	scrollable_overflow_rect = css.CSSPixelRect{
+		x: left
+		y: top
+		width: css_pixels_max(right.minus(left), CSSPixels.new(0))
+		height: css_pixels_max(bottom.minus(top), CSSPixels.new(0))
+	}
+	has_scrollable_overflow := box.is_scroll_container()
+		&& !overflow_rect_contains(padding_box, scrollable_overflow_rect)
 
 	mut mutable_used := state.get_mutable(styled)
 	mutable_used.scrollable_overflow_rect_ = scrollable_overflow_rect
 	mutable_used.has_scrollable_overflow_ = has_scrollable_overflow
 	return scrollable_overflow_rect
+}
+
+fn physical_overflow_directions(box &Node) PhysicalOverflowDirections {
+	computed := box.computed_values()
+	writing_mode := computed.writing_mode()
+	inline_is_horizontal := writing_mode == .horizontal_tb
+	inline_is_reverse := computed.direction() == .rtl
+	block_is_reverse := writing_mode in [.vertical_rl, .sideways_rl]
+	mut horizontal_is_reverse := if inline_is_horizontal {
+		inline_is_reverse
+	} else {
+		block_is_reverse
+	}
+	mut vertical_is_reverse := if inline_is_horizontal {
+		block_is_reverse
+	} else {
+		inline_is_reverse
+	}
+	if box.display().is_flex_inside() {
+		direction := computed.flex_direction()
+		main_is_horizontal := if direction in [.row, .row_reverse] {
+			inline_is_horizontal
+		} else {
+			!inline_is_horizontal
+		}
+		if direction in [.row_reverse, .column_reverse] {
+			if main_is_horizontal {
+				horizontal_is_reverse = !horizontal_is_reverse
+			} else {
+				vertical_is_reverse = !vertical_is_reverse
+			}
+		}
+		if computed.flex_wrap() == .wrap_reverse {
+			if main_is_horizontal {
+				vertical_is_reverse = !vertical_is_reverse
+			} else {
+				horizontal_is_reverse = !horizontal_is_reverse
+			}
+		}
+	}
+	return PhysicalOverflowDirections{
+		horizontal_axis_is_positive: !horizontal_is_reverse
+		vertical_axis_is_positive: !vertical_is_reverse
+	}
+}
+
+fn padding_inflated_scrollable_overflow(content_box css.CSSPixelRect, padding_box css.CSSPixelRect, in_flow_bounds css.CSSPixelRect, used &UsedValues, directions PhysicalOverflowDirections) css.CSSPixelRect {
+	mut left := in_flow_bounds.left()
+	mut top := in_flow_bounds.top()
+	mut right := in_flow_bounds.right()
+	mut bottom := in_flow_bounds.bottom()
+	if left.raw_value() < content_box.left().raw_value()
+		|| right.raw_value() > content_box.right().raw_value() {
+		if directions.horizontal_axis_is_positive
+			&& right.raw_value() > content_box.right().raw_value() {
+			right = right.plus(used.padding_right)
+		} else if !directions.horizontal_axis_is_positive {
+			left = css_pixels_min(left, padding_box.left()).minus(used.padding_left)
+		}
+	}
+	if top.raw_value() < content_box.top().raw_value()
+		|| bottom.raw_value() > content_box.bottom().raw_value() {
+		if directions.vertical_axis_is_positive
+			&& bottom.raw_value() > content_box.bottom().raw_value() {
+			bottom = bottom.plus(used.padding_bottom)
+		} else if !directions.vertical_axis_is_positive {
+			top = css_pixels_min(top, padding_box.top()).minus(used.padding_top)
+		}
+	}
+	return css.CSSPixelRect{
+		x: left
+		y: top
+		width: right.minus(left)
+		height: bottom.minus(top)
+	}
 }
 
 fn overflow_box_border_rect(node &Node, state &LayoutState) ?css.CSSPixelRect {

@@ -4,6 +4,22 @@ import dom
 import css
 import html
 
+fn document_tree_builder_node_with_id(root &Node, id string) ?&Node {
+	if dom_node := root.dom_node() {
+		if element := dom_node.as_element() {
+			if element.id() or { '' } == id {
+				return root
+			}
+		}
+	}
+	for child in root.children() {
+		if found := document_tree_builder_node_with_id(child, id) {
+			return found
+		}
+	}
+	return none
+}
+
 // build_layout_tree walks the DOM and produces a real layout tree rooted at the Viewport (whose DOM node is
 // the Document); the root element's box is the viewport's child. display:none elements (and their subtrees)
 // get no box.
@@ -149,6 +165,23 @@ fn test_layout_tree_dump_includes_viewport_overflow() {
 		panic('layout tree was not produced')
 	}
 	assert tree.split_into_lines()[0].ends_with(' overflow: [0,0 400x300]')
+}
+
+fn test_scrollable_overflow_preserves_end_padding() {
+	mut doc := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#scroller { width: 100px; height: 50px; padding: 25px; overflow: auto }
+		#content { box-sizing: content-box; width: 100px; height: 100px; border: 1px solid }
+	</style><div id="scroller"><div id="content"></div></div>')
+	result := run_document_layout(doc, 320, 200) or { panic('layout failed') }
+	scroller := document_tree_builder_node_with_id(result.root, 'scroller') or {
+		panic('missing #scroller')
+	}
+	styled := scroller.as_node_with_style() or { panic('#scroller has no style') }
+	used := result.state.try_get(styled) or { panic('#scroller has no used values') }
+	overflow := used.scrollable_overflow_rect() or { panic('#scroller has no overflow rect') }
+	assert used.has_scrollable_overflow()
+	assert layout_debug_css_rect(overflow) == '[0,0 152x152]'
 }
 
 // A DOM text node becomes a Layout::TextNode carrying offset-preserving rendered text.
