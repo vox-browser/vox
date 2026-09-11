@@ -30,9 +30,9 @@ fn test_standard_device_initializes_and_normalizes_state() {
 
 fn test_incomplete_layout_is_not_standard_and_uses_upstream_normalization_formula() {
 	mut device := &Device{
-		id:      1
-		name:    'one axis'
-		axes:    [AxisInput{ canonical_index: 0, value: joystick_axis_max }]
+		id: 1
+		name: 'one axis'
+		axes: [AxisInput{ canonical_index: 0, value: joystick_axis_max }]
 		buttons: [ButtonInput{ canonical_index: 0, value: 3 }]
 	}
 	pad := Gamepad.create(device, 0, 0)
@@ -46,11 +46,11 @@ fn test_gamepad_event_preserves_dom_event_init_and_gamepad() {
 	pad := Gamepad.create(device, 0, 0)
 	event := GamepadEvent.construct_impl('custom', GamepadEventInit{
 		EventInit: dom.EventInit{
-			bubbles:    true
+			bubbles: true
 			cancelable: true
-			composed:   true
+			composed: true
 		}
-		gamepad:   pad
+		gamepad: pad
 	})!
 	assert event.type_name() == 'custom'
 	assert event.event.bubbles()
@@ -88,4 +88,18 @@ fn test_exact_gamepad_state_entry_points_and_platform_accessors() {
 	assert button.pressed()
 	assert button.touched()
 	assert button.value() == 0.75
+}
+
+fn test_gamepad_window_button_factory_and_event_offset() {
+	window := GamepadWindow.create('test-window')
+	device := new_standard_virtual_device(22, 'window pad')
+	pad := Gamepad.create_with_window(window, device, 0, 0)
+	assert pad.window() == window
+	assert GamepadButton.create().value() == 0
+	event := GamepadEvent.create_with_timestamp('gamepadconnected', GamepadEventInit{
+		gamepad: pad
+	}, 12.5)
+	assert event.gamepad()? == pad
+	assert event.event.time_stamp() == 12.5
+	assert GamepadEvent.gamepad_offset() > 0
 }

@@ -14,14 +14,14 @@ fn test_haptics_validate_complete_preempt_reset_and_visibility() {
 	hidden := actuator.play_effect(.dual_rumble, GamepadEffectParameters{}, true, false)
 	assert hidden.state == .rejected
 	first := actuator.play_effect(.dual_rumble, GamepadEffectParameters{
-		duration:         20
+		duration: 20
 		strong_magnitude: 0.5
-		weak_magnitude:   0.25
+		weak_magnitude: 0.25
 	}, true, true)
 	assert first.state == .pending
 	second := actuator.play_effect(.trigger_rumble, GamepadEffectParameters{
-		duration:      20
-		left_trigger:  1
+		duration: 20
+		left_trigger: 1
 		right_trigger: 0.5
 	}, true, true)
 	assert first.state == .fulfilled
@@ -50,7 +50,7 @@ fn test_haptics_validate_complete_preempt_reset_and_visibility() {
 
 fn test_haptics_unsupported_effect_and_overflow_safe_duration() {
 	device := &Device{
-		id:   1
+		id: 1
 		name: 'no rumble'
 	}
 	pad := Gamepad.create(device, 0, 0)
@@ -64,6 +64,41 @@ fn test_haptics_unsupported_effect_and_overflow_safe_duration() {
 		strong_magnitude: math.nan()
 	})
 	assert is_valid_effect(.dual_rumble, GamepadEffectParameters{ duration: 5000 })
+}
+
+fn test_unsupported_effect_does_not_preempt_playing_effect() {
+	device := &Device{
+		id: 2
+		name: 'dual rumble only'
+		connected: true
+		supports_dual_rumble: true
+	}
+	pad := Gamepad.create(device, 0, 0)
+	mut actuator := pad.vibration_actuator()
+	playing := actuator.play_effect(.dual_rumble, GamepadEffectParameters{
+		duration: 1
+	}, true, true)
+	unsupported := actuator.play_effect(.trigger_rumble, GamepadEffectParameters{
+		duration: 1
+	}, true, true)
+	assert unsupported.state == .rejected
+	assert playing.state == .pending
+	assert actuator.playing_ or { panic('missing playing effect') } == playing
+	assert actuator.can_play_effect_with_type(.dual_rumble)
+	assert !actuator.can_play_effect_with_type(.trigger_rumble)
+}
+
+fn test_haptics_completion_step_factories_resolve_promises() {
+	queued_promise := &HapticPromise{
+		state: .pending
+	}
+	create_queued_haptics_completion_steps(queued_promise).complete(.preempted)
+	assert queued_promise.result? == .preempted
+	direct_promise := &HapticPromise{
+		state: .pending
+	}
+	create_haptics_completion_steps(direct_promise).complete(.complete)
+	assert direct_promise.result? == .complete
 }
 
 fn test_haptic_platform_failure_still_completes_play_promise() {
@@ -80,8 +115,7 @@ fn test_haptic_platform_failure_still_completes_play_promise() {
 	mut reset_device := new_standard_virtual_device(3, 'reset failure')
 	reset_pad := Gamepad.create(reset_device, 0, 0)
 	mut reset_actuator := reset_pad.vibration_actuator()
-	playing := reset_actuator.play_effect(.dual_rumble, GamepadEffectParameters{ duration: 1 },
-		true, true)
+	playing := reset_actuator.play_effect(.dual_rumble, GamepadEffectParameters{ duration: 1 }, true, true)
 	reset_device.connected = false
 	reset := reset_actuator.reset(true, true)
 	assert reset.state == .fulfilled
@@ -96,7 +130,7 @@ fn test_exact_haptic_issue_and_timer_clear_entry_points() {
 	mut actuator := pad.vibration_actuator()
 	assert actuator.issue_haptic_effect(.dual_rumble, GamepadEffectParameters{
 		strong_magnitude: 1
-		weak_magnitude:   0.5
+		weak_magnitude: 0.5
 	})
 	assert device.received_rumble.len == 2
 	actuator.pending_type_ = .dual_rumble

@@ -32,6 +32,10 @@ pub mut:
 	value_   f64
 }
 
+pub fn GamepadButton.create() &GamepadButton {
+	return &GamepadButton{}
+}
+
 pub fn (button &GamepadButton) pressed() bool {
 	return button.pressed_
 }
@@ -70,17 +74,27 @@ pub:
 }
 
 pub fn GamepadEvent.construct_impl(event_name string, init GamepadEventInit) !&GamepadEvent {
+	base := dom.Event.construct_impl(event_name, init.EventInit)!
+	return GamepadEvent.create_with_timestamp(event_name, init, base.time_stamp())
+}
+
+pub fn GamepadEvent.create(event_name string, pad ?&Gamepad) &GamepadEvent {
+	return GamepadEvent.create_with_timestamp(event_name, GamepadEventInit{
+		gamepad: pad
+	}, 0)
+}
+
+pub fn GamepadEvent.create_with_timestamp(event_name string, init GamepadEventInit, time_stamp f64) &GamepadEvent {
+	mut event := dom.Event.create(event_name, init.EventInit)
+	event.set_time_stamp(time_stamp)
 	return &GamepadEvent{
-		event:    dom.Event.construct_impl(event_name, init.EventInit)!
+		event: event
 		gamepad_: init.gamepad
 	}
 }
 
-pub fn GamepadEvent.create(event_name string, pad ?&Gamepad) &GamepadEvent {
-	return &GamepadEvent{
-		event:    dom.Event.create(event_name, dom.EventInit{})
-		gamepad_: pad
-	}
+pub fn GamepadEvent.gamepad_offset() usize {
+	return usize(__offsetof(GamepadEvent, gamepad_))
 }
 
 pub fn (event &GamepadEvent) gamepad() ?&Gamepad {

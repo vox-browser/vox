@@ -11,10 +11,12 @@ pub enum GamepadHapticsResult {
 	complete
 	preempted
 }
+
 pub enum GamepadHapticEffectType {
 	dual_rumble
 	trigger_rumble
 }
+
 pub enum HapticPromiseState {
 	pending
 	fulfilled
@@ -40,13 +42,46 @@ pub mut:
 }
 
 @[heap]
+struct GamepadHapticsCompletionSteps {
+	promise &HapticPromise
+	queued  bool
+}
+
+fn resolve_haptics_promise(promise &HapticPromise, result GamepadHapticsResult) {
+	mut target := unsafe { &HapticPromise(promise) }
+	target.state = .fulfilled
+	target.result = result
+}
+
+fn create_queued_haptics_completion_steps(promise &HapticPromise) &GamepadHapticsCompletionSteps {
+	return &GamepadHapticsCompletionSteps{
+		promise: promise
+		queued: true
+	}
+}
+
+fn create_haptics_completion_steps(promise &HapticPromise) &GamepadHapticsCompletionSteps {
+	return &GamepadHapticsCompletionSteps{
+		promise: promise
+	}
+}
+
+fn (steps &GamepadHapticsCompletionSteps) complete(result GamepadHapticsResult) {
+	// Queued completion is run at this explicit event-loop boundary in the V
+	// host, while direct completion is used by reset().
+	_ = steps.queued
+	resolve_haptics_promise(steps.promise, result)
+}
+
+@[heap]
 pub struct GamepadHapticActuator {
 	gamepad &Gamepad
 pub mut:
-	effects_        []GamepadHapticEffectType
-	playing_        ?&HapticPromise
-	pending_type_   ?GamepadHapticEffectType
-	pending_params_ GamepadEffectParameters
+	effects_                  []GamepadHapticEffectType
+	playing_                  ?&HapticPromise
+	playing_completion_steps_ ?&GamepadHapticsCompletionSteps
+	pending_type_             ?GamepadHapticEffectType
+	pending_params_           GamepadEffectParameters
 }
 
 pub fn GamepadHapticActuator.create(pad &Gamepad) &GamepadHapticActuator {
@@ -54,7 +89,7 @@ pub fn GamepadHapticActuator.create(pad &Gamepad) &GamepadHapticActuator {
 	if pad.device.supports_dual_rumble { effects << .dual_rumble }
 	if pad.device.supports_trigger_rumble { effects << .trigger_rumble }
 	return &GamepadHapticActuator{
-		gamepad:  pad
+		gamepad: pad
 		effects_: effects
 	}
 }
@@ -84,37 +119,47 @@ pub fn is_valid_effect(effect_type GamepadHapticEffectType, params GamepadEffect
 	return true
 }
 
+pub fn (actuator &GamepadHapticActuator) is_valid_effect(effect_type GamepadHapticEffectType, params GamepadEffectParameters) bool {
+	_ = actuator
+	return is_valid_effect(effect_type, params)
+}
+
+pub fn (actuator &GamepadHapticActuator) can_play_effect_with_type(effect_type GamepadHapticEffectType) bool {
+	return effect_type in actuator.effects_
+}
+
 pub fn valid_effect(effect_type GamepadHapticEffectType, params GamepadEffectParameters) bool {
 	return is_valid_effect(effect_type, params)
 }
 
 fn rejected_haptic_promise(message string) &HapticPromise {
 	return &HapticPromise{
-		state:  .rejected
+		state: .rejected
 		error_: message
 	}
 }
 
 pub fn (mut actuator GamepadHapticActuator) play_effect(effect_type GamepadHapticEffectType, params GamepadEffectParameters, document_active bool, document_visible bool) &HapticPromise {
-	if !is_valid_effect(effect_type, params) {
+	if !actuator.is_valid_effect(effect_type, params) {
 		return rejected_haptic_promise('TypeError: Invalid effect')
 	}
 	if !document_active || !document_visible {
 		return rejected_haptic_promise('InvalidStateError: Haptics are not allowed in a hidden document')
 	}
-	if mut old := actuator.playing_ {
-		old.state = .fulfilled
-		old.result = .preempted
-		actuator.playing_ = none
-		actuator.clear_playing_effect_timers()
-	}
-	if effect_type !in actuator.effects_ {
+	if !actuator.can_play_effect_with_type(effect_type) {
 		return rejected_haptic_promise('NotSupportedError: Gamepad does not support this effect')
+	}
+	if old_steps := actuator.playing_completion_steps_ {
+		old_steps.complete(.preempted)
+		actuator.playing_ = none
+		actuator.playing_completion_steps_ = none
+		actuator.clear_playing_effect_timers()
 	}
 	promise := &HapticPromise{
 		state: .pending
 	}
 	actuator.playing_ = promise
+	actuator.playing_completion_steps_ = create_queued_haptics_completion_steps(promise)
 	actuator.pending_type_ = effect_type
 	actuator.pending_params_ = params
 	return promise
@@ -126,9 +171,13 @@ pub fn (mut actuator GamepadHapticActuator) complete_pending_effect() bool {
 	mut promise := actuator.playing_ or { return false }
 	effect_type := actuator.pending_type_ or { return false }
 	succeeded := actuator.issue_haptic_effect(effect_type, actuator.pending_params_)
-	promise.state = .fulfilled
-	promise.result = .complete
+	if completion_steps := actuator.playing_completion_steps_ {
+		completion_steps.complete(.complete)
+	} else {
+		resolve_haptics_promise(promise, .complete)
+	}
 	actuator.playing_ = none
+	actuator.playing_completion_steps_ = none
 	actuator.clear_playing_effect_timers()
 	return succeeded
 }
@@ -137,12 +186,10 @@ pub fn (mut actuator GamepadHapticActuator) issue_haptic_effect(effect_type Game
 	mut device := unsafe { &Device(actuator.gamepad.sdl_gamepad()) }
 	succeeded := match effect_type {
 		.dual_rumble {
-			device.issue_dual_rumble(magnitude_to_u16(params.strong_magnitude),
-				magnitude_to_u16(params.weak_magnitude))
+			device.issue_dual_rumble(magnitude_to_u16(params.strong_magnitude), magnitude_to_u16(params.weak_magnitude))
 		}
 		.trigger_rumble {
-			device.issue_trigger_rumble(magnitude_to_u16(params.left_trigger),
-				magnitude_to_u16(params.right_trigger))
+			device.issue_trigger_rumble(magnitude_to_u16(params.left_trigger), magnitude_to_u16(params.right_trigger))
 		}
 	}
 	match effect_type {
@@ -175,26 +222,34 @@ pub fn (mut actuator GamepadHapticActuator) reset(document_active bool, document
 	mut reset_promise := &HapticPromise{
 		state: .pending
 	}
+	reset_completion_steps := create_haptics_completion_steps(reset_promise)
 	if mut playing := actuator.playing_ {
 		if actuator.stop_haptic_effects() {
-			playing.state = .fulfilled
-			playing.result = .preempted
+			if completion_steps := actuator.playing_completion_steps_ {
+				completion_steps.complete(.preempted)
+			} else {
+				resolve_haptics_promise(playing, .preempted)
+			}
 			actuator.playing_ = none
+			actuator.playing_completion_steps_ = none
 			actuator.clear_playing_effect_timers()
 		}
-		reset_promise.state = .fulfilled
-		reset_promise.result = .complete
+		reset_completion_steps.complete(.complete)
 	}
 	return reset_promise
 }
 
 pub fn (mut actuator GamepadHapticActuator) document_became_hidden() {
 	if mut playing := actuator.playing_ {
-		playing.state = .fulfilled
-		playing.result = .preempted
+		if completion_steps := actuator.playing_completion_steps_ {
+			completion_steps.complete(.preempted)
+		} else {
+			resolve_haptics_promise(playing, .preempted)
+		}
 		actuator.stop_haptic_effects()
 	}
 	actuator.playing_ = none
+	actuator.playing_completion_steps_ = none
 	actuator.clear_playing_effect_timers()
 }
 

@@ -10,9 +10,23 @@ const analog_button_press_threshold = 0.1
 const gamepad_exposure_axis_threshold = 0.5
 
 @[heap]
+pub struct GamepadWindow {
+pub:
+	identifier string
+}
+
+pub fn GamepadWindow.create(identifier string) &GamepadWindow {
+	return &GamepadWindow{
+		identifier: identifier
+	}
+}
+
+@[heap]
 pub struct Gamepad {
 pub:
 	device &Device
+mut:
+	window_ &GamepadWindow = unsafe { nil }
 pub mut:
 	id_                 string
 	index_              int
@@ -26,10 +40,15 @@ pub mut:
 }
 
 pub fn Gamepad.create(device &Device, index int, timestamp f64) &Gamepad {
+	return Gamepad.create_with_window(GamepadWindow.create('default'), device, index, timestamp)
+}
+
+pub fn Gamepad.create_with_window(window &GamepadWindow, device &Device, index int, timestamp f64) &Gamepad {
 	mut pad := &Gamepad{
-		device:     device
-		id_:        device.name
-		index_:     index
+		device: device
+		window_: window
+		id_: device.name
+		index_: index
 		connected_: device.connected
 		timestamp_: timestamp
 	}
@@ -39,6 +58,10 @@ pub fn Gamepad.create(device &Device, index int, timestamp f64) &Gamepad {
 	pad.vibration_actuator_ = GamepadHapticActuator.create(pad)
 	pad.update_input_state(timestamp)
 	return pad
+}
+
+pub fn (pad &Gamepad) window() &GamepadWindow {
+	return pad.window_
 }
 
 pub fn (pad &Gamepad) id() string {
@@ -101,7 +124,9 @@ pub fn (mut pad Gamepad) set_timestamp(value f64) {
 fn (mut pad Gamepad) initialize_axes() {
 	mut maximum_index := -1
 	for input in pad.device.axes {
-		if input.canonical_index > maximum_index { maximum_index = input.canonical_index }
+		if input.canonical_index > maximum_index {
+			maximum_index = input.canonical_index
+		}
 	}
 	pad.axes_ = []f64{len: maximum_index + 1}
 }
@@ -109,11 +134,13 @@ fn (mut pad Gamepad) initialize_axes() {
 fn (mut pad Gamepad) initialize_buttons() {
 	mut maximum_index := -1
 	for input in pad.device.buttons {
-		if input.canonical_index > maximum_index { maximum_index = input.canonical_index }
+		if input.canonical_index > maximum_index {
+			maximum_index = input.canonical_index
+		}
 	}
 	pad.buttons_ = []&GamepadButton{cap: maximum_index + 1}
 	for _ in 0 .. maximum_index + 1 {
-		pad.buttons_ << &GamepadButton{}
+		pad.buttons_ << GamepadButton.create()
 	}
 }
 
@@ -152,16 +179,16 @@ fn normalize_button(value i16, minimum i16, maximum i16) f64 {
 pub fn (mut pad Gamepad) map_and_normalize_axes() {
 	for input in pad.device.axes {
 		if input.canonical_index >= 0 && input.canonical_index < pad.axes_.len {
-			pad.axes_[input.canonical_index] = normalize_axis(input.value, input.minimum,
-				input.maximum)
+			pad.axes_[input.canonical_index] = normalize_axis(input.value, input.minimum, input.maximum)
 		}
 	}
 }
 
 pub fn (mut pad Gamepad) map_and_normalize_buttons() {
 	for input in pad.device.buttons {
-		if input.canonical_index < 0 || input.canonical_index >= pad.buttons_.len { continue
-		 }
+		if input.canonical_index < 0 || input.canonical_index >= pad.buttons_.len {
+			continue
+		}
 		mut button := pad.buttons_[input.canonical_index]
 		value := normalize_button(input.value, input.minimum, input.maximum)
 		button.set_value(value)
@@ -186,10 +213,14 @@ pub fn (mut pad Gamepad) update_input_state(timestamp f64) {
 
 pub fn (pad &Gamepad) contains_gamepad_user_gesture() bool {
 	for button in pad.buttons_ {
-		if button.pressed() { return true }
+		if button.pressed() {
+			return true
+		}
 	}
 	for axis in pad.axes_ {
-		if math.abs(axis) > gamepad_exposure_axis_threshold { return true }
+		if math.abs(axis) > gamepad_exposure_axis_threshold {
+			return true
+		}
 	}
 	return false
 }
