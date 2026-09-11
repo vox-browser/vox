@@ -72,6 +72,8 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         # AnimationEffect's virtual target default and the legacy
         # NavigationTiming/PerformanceTiming getters are constants upstream.
         ("animations/animation_effect.v", "AnimationEffect", "target"),
+        # Permissions::create is exactly an allocator-only factory upstream.
+        ("permissionsapi/permissions.v", "Permissions", "create"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "unload_event_start"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "unload_event_end"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "redirect_start"),

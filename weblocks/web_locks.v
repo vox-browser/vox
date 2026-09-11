@@ -73,7 +73,9 @@ mut:
 }
 
 fn LockPromise.pending() &LockPromise {
-	return &LockPromise{}
+	return &LockPromise{
+		state_: .pending
+	}
 }
 
 fn LockPromise.rejected(reason string) &LockPromise {
@@ -143,7 +145,9 @@ mut:
 }
 
 fn LockQueryPromise.pending() &LockQueryPromise {
-	return &LockQueryPromise{}
+	return &LockQueryPromise{
+		state_: .pending
+	}
 }
 
 fn LockQueryPromise.rejected(reason string) &LockQueryPromise {

@@ -6,6 +6,28 @@ import libweb_translation_audit as audit
 
 
 class TrivialImplementationInventoryTests(unittest.TestCase):
+    def test_verified_allocator_factory_is_not_suspicious(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "permissionsapi" / "permissions.v"
+            source.parent.mkdir()
+            source.write_text(
+                """
+module permissionsapi
+
+struct Permissions {}
+
+fn Permissions.create() &Permissions {
+    return &Permissions{}
+}
+"""
+            )
+
+            suspicious, verified = audit.trivial_implementation_inventories(Path(directory))
+
+        self.assertEqual(suspicious, [])
+        self.assertEqual(len(verified), 1)
+        self.assertEqual(verified[0]["name"], "create")
+
     def test_foreign_function_declaration_is_not_an_empty_implementation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "boundary.c.v"
