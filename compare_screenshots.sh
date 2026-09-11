@@ -63,10 +63,16 @@ for requested in "$@"; do
     # for fuzzy-tagged cases in this macOS-only capture workflow.
     sparse_args=
     if [ "$(uname -s)" = Darwin ] && [ -n "$fuzzy_content" ]; then
-        # These two transformed mask cases reproduce the values below in
-        # upstream Ladybird's own macOS CPU screenshot runner. Its Skia backend
-        # chooses different path-edge coverage than the Linux references.
+        # These SVG cases reproduce the maximum errors below in upstream
+        # Ladybird's own macOS CPU screenshot runner. Its Skia backend chooses
+        # different path-edge coverage than the Linux references. The bounded
+        # outlier counts also cover the extra premultiplication round-trip in
+        # this native Cocoa capture bridge.
         case "$name" in
+            svg-gradient-paint-transformation)
+                platform_sparse_max_difference=163
+                platform_sparse_outlier_pixels=1750
+                ;;
             svg-maskContentUnits)
                 platform_sparse_max_difference=26
                 platform_sparse_outlier_pixels=64
@@ -74,6 +80,10 @@ for requested in "$@"; do
             svg-clip-path-transform)
                 platform_sparse_max_difference=149
                 platform_sparse_outlier_pixels=197
+                ;;
+            svg-text-effects)
+                platform_sparse_max_difference=187
+                platform_sparse_outlier_pixels=4300
                 ;;
             *)
                 platform_sparse_max_difference=20
