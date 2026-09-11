@@ -545,7 +545,10 @@ fn test_before_and_after_pseudo_elements_generate_layout_content_in_tree_order()
 	assert target.children_are_inline()
 	assert target.child_count() == 3
 	assert target.children()[0].is_generated_for_before_pseudo_element()
-	assert (target.children()[0].first_child() or { panic('before has no text') }).as_text_node() or {
+	before_text_node := target.children()[0].first_child() or { panic('before has no text') }
+	assert before_text_node.is_generated_text_node()
+	assert before_text_node.dom_node() == none
+	assert before_text_node.as_text_node() or {
 		panic('before child is not text')
 	}.text_for_rendering() == 'before'
 	assert target.children()[1].as_text_node() or { panic('middle is not text') }.text_for_rendering() == 'middle'

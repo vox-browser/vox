@@ -54,6 +54,7 @@ pub mut:
 	is_table_wrapper_                bool
 	is_list_item_marker_box_         bool
 	is_text_node_                    bool
+	is_generated_text_node_          bool
 	is_viewport_                     bool
 	is_svg_box_                      bool
 	is_svg_graphics_box_             bool
@@ -1653,11 +1654,17 @@ pub fn TextNode.new(document &dom.Document, dom_text_node &dom.Node, source_text
 	}
 }
 
-// TreeBuilder creates a detached DOM::Text for each generated string before it
-// creates the Layout::TextNode. The text is not inserted into the document's DOM tree.
+// GeneratedTextNode is layout-owned and deliberately has no corresponding DOM
+// text node. Its pseudo-element generator supplies inherited style context.
 pub fn TextNode.new_generated(document &dom.Document, source_text string) &TextNode {
-	text := document.create_text_node(source_text)
-	return TextNode.new(document, text.as_node(), source_text)
+	return &TextNode{
+		Node: Node{
+			document_: document
+			is_text_node_: true
+			is_generated_text_node_: true
+		}
+		source_text_: source_text
+	}
 }
 
 // Layout::TextNode::text_for_rendering().
@@ -1707,6 +1714,10 @@ fn (mut n TextNode) compute_text_for_rendering() {
 
 pub fn (n &Node) is_text_node() bool {
 	return n.is_text_node_
+}
+
+pub fn (n &Node) is_generated_text_node() bool {
+	return n.is_generated_text_node_
 }
 
 pub fn (n &Node) as_text_node() ?&TextNode {

@@ -513,6 +513,9 @@ fn layout_debug_class_name(node &Node) string {
 	if node.is_svg_svg_box() {
 		return 'SVGSVGBox'
 	}
+	if node.is_generated_text_node() {
+		return 'GeneratedTextNode'
+	}
 	if node.is_text_node() {
 		return 'TextNode'
 	}
@@ -589,6 +592,9 @@ fn layout_debug_replaced_class_name(node &Node) string {
 }
 
 fn layout_debug_tag(node &Node) string {
+	if node.is_generated_text_node() {
+		return '(anonymous)'
+	}
 	if node.is_text_node() {
 		return '#text'
 	}
