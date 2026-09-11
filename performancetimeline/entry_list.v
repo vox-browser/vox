@@ -11,6 +11,10 @@ mut:
 }
 
 pub fn PerformanceObserverEntryList.new(entries []&PerformanceEntry) PerformanceObserverEntryList {
+	return PerformanceObserverEntryList.create(entries)
+}
+
+pub fn PerformanceObserverEntryList.create(entries []&PerformanceEntry) PerformanceObserverEntryList {
 	return PerformanceObserverEntryList{
 		entry_list_: entries.clone()
 	}

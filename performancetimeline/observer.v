@@ -24,12 +24,13 @@ pub enum ObserverType {
 	multiple
 }
 
-pub type PerformanceObserverCallback = fn(entries PerformanceObserverEntryList, observer &PerformanceObserver, options PerformanceObserverCallbackOptions)
+pub type PerformanceObserverCallback = fn (entries PerformanceObserverEntryList, observer &PerformanceObserver, options PerformanceObserverCallbackOptions)
 
 @[heap]
 pub struct PerformanceObserver {
 mut:
 	callback_                 PerformanceObserverCallback = unsafe { nil }
+	relevant_global_          &PerformanceTimeline = unsafe { nil }
 	observer_buffer_          []&PerformanceEntry
 	observer_type_            ObserverType
 	requires_dropped_entries_ bool
@@ -47,6 +48,24 @@ pub fn PerformanceObserver.new(callback PerformanceObserverCallback) &Performanc
 
 pub fn PerformanceObserver.construct_impl(callback PerformanceObserverCallback) &PerformanceObserver {
 	return PerformanceObserver.new(callback)
+}
+
+pub fn PerformanceObserver.create(callback PerformanceObserverCallback, relevant_global &PerformanceTimeline) &PerformanceObserver {
+	return &PerformanceObserver{
+		callback_: callback
+		relevant_global_: relevant_global
+	}
+}
+
+pub fn PerformanceObserver.create_for_constructor(relevant_global &PerformanceTimeline, callback PerformanceObserverCallback) &PerformanceObserver {
+	return PerformanceObserver.create(callback, relevant_global)
+}
+
+pub fn (observer &PerformanceObserver) relevant_global() &PerformanceTimeline {
+	if observer.relevant_global_ == unsafe { nil } {
+		panic('PerformanceObserver has not been associated with a relevant global')
+	}
+	return observer.relevant_global_
 }
 
 pub fn (observer &PerformanceObserver) callback() PerformanceObserverCallback {
@@ -77,37 +96,44 @@ pub fn (observer &PerformanceObserver) last_dropped_count() u64 {
 	return observer.last_dropped_count_
 }
 
-pub fn (mut observer PerformanceObserver) observe(mut timeline PerformanceTimeline, mut options PerformanceObserverInit) ! {
-	if options.entry_types == none && options.type_ == none {
+pub fn (mut observer PerformanceObserver) observe(options PerformanceObserverInit) ! {
+	mut timeline := observer.relevant_global()
+	mut observer_options := clone_observer_init(options)
+	if observer_options.entry_types == none && observer_options.type_ == none {
 		return error('TypeError: must specify one of entryTypes or type')
 	}
-	if options.entry_types != none && (options.type_ != none || options.buffered != none) {
+	if observer_options.entry_types != none
+		&& (observer_options.type_ != none || observer_options.buffered != none) {
 		return error('TypeError: cannot specify type or buffered with entryTypes')
 	}
 	if observer.observer_type_ == .undefined {
-		observer.observer_type_ = if options.entry_types != none { .multiple } else { .single }
-	} else if observer.observer_type_ == .single && options.entry_types != none {
+		observer.observer_type_ = if observer_options.entry_types != none {
+			.multiple
+		} else {
+			.single
+		}
+	} else if observer.observer_type_ == .single && observer_options.entry_types != none {
 		return error('InvalidModificationError: cannot change observer from single to multiple')
-	} else if observer.observer_type_ == .multiple && options.type_ != none {
+	} else if observer.observer_type_ == .multiple && observer_options.type_ != none {
 		return error('InvalidModificationError: cannot change observer from multiple to single')
 	}
 	observer.requires_dropped_entries_ = true
 	if observer.observer_type_ == .multiple {
 		mut filtered := []string{}
-		for kind in options.entry_types or { []string{} } {
+		for kind in observer_options.entry_types or { []string{} } {
 			if kind in timeline.supported_entry_types {
 				filtered << kind
 			}
 		}
-		options.entry_types = filtered
+		observer_options.entry_types = filtered
 		if filtered.len == 0 {
 			return
 		}
-		observer.options_list_ = [clone_observer_init(options)]
+		observer.options_list_ = [clone_observer_init(observer_options)]
 		timeline.register(mut observer)
 		return
 	}
-	kind := options.type_ or { return }
+	kind := observer_options.type_ or { return }
 	if kind !in timeline.supported_entry_types {
 		return
 	}
@@ -115,9 +141,9 @@ pub fn (mut observer PerformanceObserver) observe(mut timeline PerformanceTimeli
 		mut replaced := false
 		for index, existing in observer.options_list_ {
 			if existing_type := existing.type_ {
-				if option_type := options.type_ {
+				if option_type := observer_options.type_ {
 					if existing_type == option_type {
-						observer.options_list_[index] = clone_observer_init(options)
+						observer.options_list_[index] = clone_observer_init(observer_options)
 						replaced = true
 						break
 					}
@@ -125,16 +151,16 @@ pub fn (mut observer PerformanceObserver) observe(mut timeline PerformanceTimeli
 			}
 		}
 		if !replaced {
-			observer.options_list_ << clone_observer_init(options)
+			observer.options_list_ << clone_observer_init(observer_options)
 		}
 	} else {
-		observer.options_list_ = [clone_observer_init(options)]
+		observer.options_list_ = [clone_observer_init(observer_options)]
 		timeline.register(mut observer)
 	}
-	if options.buffered or { false } {
+	if observer_options.buffered or { false } {
 		if tuple := timeline.entry_buffers[kind] {
 			for entry in tuple.performance_entry_buffer {
-				if entry.should_add_entry(options) == .yes {
+				if entry.should_add_entry(observer_options) == .yes {
 					observer.observer_buffer_ << entry
 				}
 			}
@@ -152,7 +178,8 @@ fn clone_observer_init(options PerformanceObserverInit) PerformanceObserverInit 
 	}
 }
 
-pub fn (mut observer PerformanceObserver) disconnect(mut timeline PerformanceTimeline) {
+pub fn (mut observer PerformanceObserver) disconnect() {
+	mut timeline := observer.relevant_global()
 	timeline.unregister(&observer)
 	observer.observer_buffer_.clear()
 	observer.options_list_.clear()
@@ -169,8 +196,36 @@ pub fn (mut observer PerformanceObserver) append_to_observer_buffer(entry &Perfo
 	observer.observer_buffer_ << entry
 }
 
-pub fn (observer &PerformanceObserver) supported_entry_types(timeline &PerformanceTimeline) []string {
-	return timeline.supported_entry_types.clone()
+pub fn (observer &PerformanceObserver) supported_entry_types() []string {
+	return supported_entry_types_cache_for(observer.relevant_global())
+}
+
+pub fn (mut observer PerformanceObserver) invoke_callback(entry_list PerformanceObserverEntryList, dropped_entries_count ?u64) {
+	observer.last_delivered_names_ = entry_list.get_entries().map(it.name)
+	observer.last_dropped_count_ = dropped_entries_count or { 0 }
+	observer.callback_(entry_list, observer, PerformanceObserverCallbackOptions{
+		dropped_entries_count: dropped_entries_count
+	})
+}
+
+struct SupportedEntryTypesCaches {}
+
+fn supported_entry_types_caches() SupportedEntryTypesCaches {
+	return SupportedEntryTypesCaches{}
+}
+
+fn (_ SupportedEntryTypesCaches) cache_for(relevant_global &PerformanceTimeline) []string {
+	return create_supported_entry_types_array(relevant_global)
+}
+
+fn supported_entry_types_cache_for(relevant_global &PerformanceTimeline) []string {
+	return supported_entry_types_caches().cache_for(relevant_global)
+}
+
+fn create_supported_entry_types_array(relevant_global &PerformanceTimeline) []string {
+	// V arrays are values at the WebIDL boundary. Returning a clone gives callers
+	// the same immutable-snapshot semantics as upstream's frozen JS array cache.
+	return relevant_global.supported_entry_types.clone()
 }
 
 @[heap]
@@ -265,10 +320,6 @@ pub fn (mut timeline PerformanceTimeline) run_observer_task() {
 			}
 			observer.requires_dropped_entries_ = false
 		}
-		observer.last_delivered_names_ = records.map(it.name)
-		observer.last_dropped_count_ = dropped or { 0 }
-		observer.callback_(PerformanceObserverEntryList.new(records), observer, PerformanceObserverCallbackOptions{
-			dropped_entries_count: dropped
-		})
+		observer.invoke_callback(PerformanceObserverEntryList.create(records), dropped)
 	}
 }

@@ -12,6 +12,14 @@ fn test_entry_list_filters_and_sorts_chronologically() {
 	assert list.get_entries_by_name('same', none).len == 2
 }
 
+fn test_entry_list_create_factory_owns_its_entry_vector() {
+	a := PerformanceEntry.new('first', 'mark', 1, 0)
+	mut entries := [a]
+	list := PerformanceObserverEntryList.create(entries)
+	entries.clear()
+	assert list.get_entries().map(it.name) == ['first']
+}
+
 fn test_performance_entry_json_and_registry_names() {
 	entry := PerformanceEntry.new('load', 'resource', 2.5, 4.5)
 	json := entry.to_json()
