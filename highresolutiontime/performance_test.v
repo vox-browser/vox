@@ -6,11 +6,11 @@ import usertiming
 
 fn deterministic_performance() &Performance {
 	return Performance.create(PerformanceHost{
-		time:                    TimeOriginContext{
+		time: TimeOriginContext{
 			time_origin: 100
 		}
-		window_context:          true
-		navigation_start:        1_000
+		window_context: true
+		navigation_start: 1_000
 		navigation_timing_names: {
 			'loadEventEnd': u64(1_250)
 		}
@@ -60,7 +60,7 @@ fn test_convert_mark_uses_latest_mark_and_legacy_timing() {
 fn test_measure_options_compute_start_end_and_duration() {
 	mut performance := deterministic_performance()
 	entry := performance.measure('span', StartOrMeasureOptions(usertiming.PerformanceMeasureOptions{
-		start:    usertiming.StringOrTimestamp(10.0)
+		start: usertiming.StringOrTimestamp(10.0)
 		duration: 5.0
 	}), none)!
 	assert entry.entry.start_time == 10
@@ -71,11 +71,10 @@ fn test_measure_options_compute_start_end_and_duration() {
 fn test_measure_rejects_inconsistent_options() {
 	mut performance := deterministic_performance()
 	if _ := performance.measure('bad', StartOrMeasureOptions(usertiming.PerformanceMeasureOptions{
-		start:    usertiming.StringOrTimestamp(1.0)
-		end:      usertiming.StringOrTimestamp(2.0)
+		start: usertiming.StringOrTimestamp(1.0)
+		end: usertiming.StringOrTimestamp(2.0)
 		duration: 1.0
-	}), none)
-	{
+	}), none) {
 		assert false
 	} else {
 		assert err.msg().contains('cannot all be present')
@@ -125,4 +124,5 @@ fn test_legacy_navigation_objects_are_lazy_same_objects() {
 	assert navigation.redirect_count() == 0
 	assert voidptr(navigation) == voidptr(performance.navigation())
 	assert performance.window_or_worker() == performance.timeline
+	assert performance.relevant_global_object() == performance.host
 }

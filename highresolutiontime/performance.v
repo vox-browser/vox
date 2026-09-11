@@ -42,8 +42,8 @@ mut:
 
 pub fn Performance.create(host PerformanceHost) &Performance {
 	return &Performance{
-		host:                  host
-		timeline:              performancetimeline.PerformanceTimeline.new(performancetimeline.supported_entry_types)
+		host: host
+		timeline: performancetimeline.PerformanceTimeline.new(performancetimeline.supported_entry_types)
 		time_origin_timestamp: get_time_origin_timestamp(host.time)
 	}
 }
@@ -67,13 +67,13 @@ pub fn (mut performance Performance) timing() &navigationtiming.PerformanceTimin
 	}
 	timing := &navigationtiming.PerformanceTiming{
 		load_timing_info: navigationtiming.DocumentLoadTimingInfo{
-			navigation_start_time:               f64(performance.host.navigation_start)
-			dom_interactive_time:                value('domInteractive')
+			navigation_start_time: f64(performance.host.navigation_start)
+			dom_interactive_time: value('domInteractive')
 			dom_content_loaded_event_start_time: value('domContentLoadedEventStart')
-			dom_content_loaded_event_end_time:   value('domContentLoadedEventEnd')
-			dom_complete_time:                   value('domComplete')
-			load_event_start_time:               value('loadEventStart')
-			load_event_end_time:                 value('loadEventEnd')
+			dom_content_loaded_event_end_time: value('domContentLoadedEventEnd')
+			dom_complete_time: value('domComplete')
+			load_event_start_time: value('loadEventStart')
+			load_event_end_time: value('loadEventEnd')
 		}
 		// PerformanceHost's legacy values are already wall-clock milliseconds.
 		estimated_monotonic_epoch: 0
@@ -88,7 +88,7 @@ pub fn (mut performance Performance) navigation() &navigationtiming.PerformanceN
 		return navigation
 	}
 	navigation := &navigationtiming.PerformanceNavigation{
-		type_:          navigationtiming.type_navigate
+		type_: navigationtiming.type_navigate
 		redirect_count: 0
 	}
 	performance.navigation_ = navigation
@@ -99,6 +99,11 @@ pub fn (mut performance Performance) navigation() &navigationtiming.PerformanceN
 // the shared performance timeline it owns.
 pub fn (performance &Performance) window_or_worker() &performancetimeline.PerformanceTimeline {
 	return performance.timeline
+}
+
+// PerformanceHost is the embedding's relevant WindowOrWorker global record.
+pub fn (performance &Performance) relevant_global_object() PerformanceHost {
+	return performance.host
 }
 
 pub fn (performance &Performance) time_origin() DOMHighResTimeStamp {
@@ -116,8 +121,7 @@ pub fn (performance &Performance) to_json() PerformanceJSON {
 }
 
 pub fn (mut performance Performance) mark(name string, options usertiming.PerformanceMarkOptions) !&usertiming.PerformanceMark {
-	entry := usertiming.PerformanceMark.new(name, options, performance.now(),
-		performance.host.window_context)!
+	entry := usertiming.PerformanceMark.new(name, options, performance.now(), performance.host.window_context)!
 	mut timeline := performance.window_or_worker()
 	timeline.add_entry(entry.entry)
 	return entry
@@ -196,8 +200,12 @@ pub fn (mut performance Performance) measure(name string, start_or_options ?Star
 	mut options := ?usertiming.PerformanceMeasureOptions(none)
 	if argument := start_or_options {
 		match argument {
-			string { start_name = argument }
-			usertiming.PerformanceMeasureOptions { options = argument }
+			string {
+				start_name = argument
+			}
+			usertiming.PerformanceMeasureOptions {
+				options = argument
+			}
 		}
 	}
 	if measure_options := options {
@@ -223,8 +231,7 @@ pub fn (mut performance Performance) measure(name string, start_or_options ?Star
 			end_time = performance.convert_mark_to_timestamp(end)!
 		} else if start := measure_options.start {
 			if duration := measure_options.duration {
-				end_time = performance.convert_mark_to_timestamp(start)! +
-					performance.convert_mark_to_timestamp(usertiming.StringOrTimestamp(duration))!
+				end_time = performance.convert_mark_to_timestamp(start)! + performance.convert_mark_to_timestamp(usertiming.StringOrTimestamp(duration))!
 			}
 		}
 	}
