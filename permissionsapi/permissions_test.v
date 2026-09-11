@@ -63,6 +63,7 @@ fn test_permission_status_requeries_and_queues_change_event() {
 	environment := permission_test_environment(true)
 	descriptor := PermissionDescriptor{ name: 'geolocation' }
 	mut status := PermissionStatus.create(environment, descriptor)
+	assert status.relevant_global_object() == environment
 	permission_query_algorithm(descriptor, mut status)
 	assert status.state() == .prompt
 	store.set_permission_store_entry(descriptor, environment.top_level_origin, .granted)

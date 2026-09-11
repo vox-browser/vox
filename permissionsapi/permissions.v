@@ -178,6 +178,12 @@ pub fn (status &PermissionStatus) query() PermissionDescriptor {
 	return status.query_
 }
 
+// The V environment record is the translated current-global boundary carried
+// by PermissionStatus in place of the C++ EventTarget/WindowOrWorker lookup.
+pub fn (status &PermissionStatus) relevant_global_object() PermissionEnvironment {
+	return status.environment
+}
+
 // https://w3c.github.io/permissions/#dfn-permissionstatus-update-steps
 pub fn (mut status PermissionStatus) update_steps() {
 	if !status.environment.fully_active {
