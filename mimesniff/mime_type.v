@@ -48,6 +48,21 @@ fn ascii_lowercase(input string) string {
 	return bytes.bytestr()
 }
 
+// Append the UTF-16 encoding of a valid UTF-8 string. Utf16StringBuilder in
+// LibWeb performs this conversion one Unicode scalar value at a time.
+fn append_utf8_as_utf16(mut builder []u16, input string) {
+	for code_point in input.runes() {
+		value := u32(code_point)
+		if value <= 0xffff {
+			builder << u16(value)
+			continue
+		}
+		supplementary := value - 0x10000
+		builder << u16(0xd800 + (supplementary >> 10))
+		builder << u16(0xdc00 + (supplementary & 0x3ff))
+	}
+}
+
 // https://mimesniff.spec.whatwg.org/#http-token-code-point
 fn is_http_token_code_point(ch u8) bool {
 	return ch in [u8(`!`), `#`, `$`, `%`, `&`, `'`, `*`, `+`, `-`, `.`, `^`, `_`, `\``, `|`, `~`]
@@ -61,6 +76,15 @@ fn contains_only_http_token_code_points(string_ string) bool {
 		}
 	}
 	return true
+}
+
+fn http_token_to_ascii_lowercase_string(input string) string {
+	mut result := []u8{cap: input.len}
+	for ch in input.bytes() {
+		assert is_http_token_code_point(ch)
+		result << if ch >= `A` && ch <= `Z` { ch + 0x20 } else { ch }
+	}
+	return result.bytestr()
 }
 
 // https://mimesniff.spec.whatwg.org/#http-quoted-string-token-code-point
@@ -260,8 +284,8 @@ mut:
 // https://mimesniff.spec.whatwg.org/#mime-type
 pub fn MimeType.create(type_ string, subtype_ string) MimeType {
 	return MimeType{
-		type_:           type_
-		subtype_:        subtype_
+		type_: type_
+		subtype_: subtype_
 		cached_essence_: '${type_}/${subtype_}'
 	}
 }
@@ -311,7 +335,7 @@ pub fn MimeType.parse(string_ string) ?MimeType {
 		return none
 	}
 	// 10. Let mimeType be a new MIME type record; type/subtype in ASCII lowercase.
-	mut mime_type := MimeType.create(ascii_lowercase(type_), ascii_lowercase(subtype))
+	mut mime_type := MimeType.create(http_token_to_ascii_lowercase_string(type_), http_token_to_ascii_lowercase_string(subtype))
 	// 11. While not past the end of input:
 	for !lexer.is_eof() {
 		// 1. Advance past U+003B (;).
@@ -323,7 +347,10 @@ pub fn MimeType.parse(string_ string) ?MimeType {
 			return ch == `;` || ch == `=`
 		})
 		// 4. Set parameterName to ASCII lowercase.
-		mut parameter_name := ascii_lowercase(parameter_name_view)
+		mut parameter_name := ''
+		if contains_only_http_token_code_points(parameter_name_view) {
+			parameter_name = http_token_to_ascii_lowercase_string(parameter_name_view)
+		}
 		// 5. If not past the end:
 		if !lexer.is_eof() {
 			// 1. If the code point is ';', continue.
@@ -392,6 +419,32 @@ pub fn (m &MimeType) serialized() string {
 		serialization += serialized_value
 	}
 	// 3. Return serialization.
+	return serialization
+}
+
+// https://mimesniff.spec.whatwg.org/#serialize-a-mime-type
+pub fn (m &MimeType) serialized_as_utf16() []u16 {
+	mut serialization := []u16{}
+	append_utf8_as_utf16(mut serialization, m.type_)
+	serialization << u16(`/`)
+	append_utf8_as_utf16(mut serialization, m.subtype_)
+	for name, parameter_value in m.parameters_ {
+		serialization << u16(`;`)
+		append_utf8_as_utf16(mut serialization, name)
+		serialization << u16(`=`)
+		if !contains_only_http_token_code_points(parameter_value) || parameter_value.len == 0 {
+			serialization << u16(`\"`)
+			for code_point in parameter_value.runes() {
+				if code_point == `\"` || code_point == `\\` {
+					serialization << u16(`\\`)
+				}
+				append_utf8_as_utf16(mut serialization, code_point.str())
+			}
+			serialization << u16(`\"`)
+			continue
+		}
+		append_utf8_as_utf16(mut serialization, parameter_value)
+	}
 	return serialization
 }
 

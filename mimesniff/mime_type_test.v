@@ -97,6 +97,45 @@ fn test_serialized_escapes_quotes_and_backslashes() {
 	assert m.serialized() == r'text/plain;x="a\"b\\c"'
 }
 
+fn test_serialized_as_utf16_encodes_and_escapes_parameter_values() {
+	mut m := MimeType.create('text', 'plain')
+	m.set_parameter('emoji', 'A😀"\\')
+	assert m.serialized_as_utf16() == [
+		u16(`t`),
+		`e`,
+		`x`,
+		`t`,
+		`/`,
+		`p`,
+		`l`,
+		`a`,
+		`i`,
+		`n`,
+		`;`,
+		`e`,
+		`m`,
+		`o`,
+		`j`,
+		`i`,
+		`=`,
+		`\"`,
+		`A`,
+		0xd83d,
+		0xde00,
+		`\\`,
+		`\"`,
+		`\\`,
+		`\\`,
+		`\"`,
+	]
+}
+
+fn test_http_token_lowercase_conversion_is_used_by_parser() {
+	m := parse('APPLICATION/X-THING;CHARSET=UTF-8')
+	assert m.essence() == 'application/x-thing'
+	assert m.parameters()['charset'] == 'UTF-8'
+}
+
 fn test_type_predicates() {
 	assert parse('image/png').is_image()
 	assert parse('audio/mpeg').is_audio_or_video()
