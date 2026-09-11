@@ -77,6 +77,10 @@ for requested in "$@"; do
                 platform_sparse_max_difference=26
                 platform_sparse_outlier_pixels=64
                 ;;
+            svg-image-document-nested-clip-path)
+                platform_sparse_max_difference=20
+                platform_sparse_outlier_pixels=80
+                ;;
             svg-clip-path-transform)
                 platform_sparse_max_difference=149
                 platform_sparse_outlier_pixels=197
