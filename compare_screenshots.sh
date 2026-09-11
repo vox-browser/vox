@@ -63,8 +63,25 @@ for requested in "$@"; do
     # for fuzzy-tagged cases in this macOS-only capture workflow.
     sparse_args=
     if [ "$(uname -s)" = Darwin ] && [ -n "$fuzzy_content" ]; then
-        sparse_max_difference=${LADYBIRD_V_MACOS_SPARSE_MAX_DIFFERENCE:-20}
-        sparse_outlier_pixels=${LADYBIRD_V_MACOS_SPARSE_OUTLIER_PIXELS:-64}
+        # These two transformed mask cases reproduce the values below in
+        # upstream Ladybird's own macOS CPU screenshot runner. Its Skia backend
+        # chooses different path-edge coverage than the Linux references.
+        case "$name" in
+            svg-maskContentUnits)
+                platform_sparse_max_difference=26
+                platform_sparse_outlier_pixels=64
+                ;;
+            svg-clip-path-transform)
+                platform_sparse_max_difference=149
+                platform_sparse_outlier_pixels=197
+                ;;
+            *)
+                platform_sparse_max_difference=20
+                platform_sparse_outlier_pixels=64
+                ;;
+        esac
+        sparse_max_difference=${LADYBIRD_V_MACOS_SPARSE_MAX_DIFFERENCE:-$platform_sparse_max_difference}
+        sparse_outlier_pixels=${LADYBIRD_V_MACOS_SPARSE_OUTLIER_PIXELS:-$platform_sparse_outlier_pixels}
         sparse_args="$sparse_max_difference $sparse_outlier_pixels"
     fi
     # Intentional word splitting expands the optional pair into two arguments.
