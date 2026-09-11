@@ -204,7 +204,7 @@ const max_disk_cache_entry_size = 16 * 1024 * 1024
 const demo_markup = '<!doctype html>
 <html>
 <head>
-  <title>Ladybird V</title>
+  <title>vox</title>
   <style>
     html { background: #e8edf3; color: #172033; font-size: 16px; }
     body { width: 760px; margin: 28px auto; padding: 36px; background: white;
@@ -1464,7 +1464,7 @@ fn (mut app BrowserApp) install_loaded_page(loaded LoadedPage, add_history bool)
 	checkpoint = debug_timing_checkpoint('relayout', checkpoint)
 	debug_timing_checkpoint('install_total', install_start)
 	title := document_title(app.document)
-	gg.set_window_title(if title != '' { '${title} — Ladybird V' } else { 'Ladybird V' })
+	gg.set_window_title(if title != '' { '${title} — vox' } else { 'vox' })
 	if destination := javascript_navigation {
 		if destination != '' && destination != loaded.url {
 			app.navigate(resolve_document_reference(destination, loaded.url), true)
@@ -4396,7 +4396,7 @@ fn main() {
 		height: options.height
 		min_width: 640
 		min_height: 480
-		window_title: 'Ladybird V'
+		window_title: 'vox'
 		bg_color: gg.rgb(232, 237, 243)
 		native_rendering: true
 		frame_fn: fn (mut app BrowserApp) {
