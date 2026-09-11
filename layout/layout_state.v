@@ -70,6 +70,7 @@ pub mut:
 	has_computed_svg_transforms_  bool
 	svg_viewbox_transform_        svg.AffineTransform
 	svg_transform_                svg.AffineTransform
+	svg_viewport_transform_       ?svg.AffineTransform
 	svg_rendering_disabled_       bool
 	override_borders_data_        ?painting.BordersDataWithElementKind
 	table_cell_coordinates_       ?painting.TableCellCoordinates
@@ -431,6 +432,14 @@ pub fn (u &UsedValues) svg_transform() svg.AffineTransform {
 	return u.svg_transform_
 }
 
+pub fn (mut u UsedValues) set_svg_viewport_transform(transform svg.AffineTransform) {
+	u.svg_viewport_transform_ = transform
+}
+
+pub fn (u &UsedValues) svg_viewport_transform() ?svg.AffineTransform {
+	return u.svg_viewport_transform_
+}
+
 pub fn (mut u UsedValues) set_svg_rendering_disabled(disabled bool) {
 	u.svg_rendering_disabled_ = disabled
 }
@@ -666,6 +675,7 @@ pub fn (mut state LayoutState) populate_node_from(mut source LayoutState, node &
 	values.has_computed_svg_transforms_ = source_values.has_computed_svg_transforms_
 	values.svg_viewbox_transform_ = source_values.svg_viewbox_transform_
 	values.svg_transform_ = source_values.svg_transform_
+	values.svg_viewport_transform_ = source_values.svg_viewport_transform_
 	values.svg_rendering_disabled_ = source_values.svg_rendering_disabled_
 	values.containing_block_used_values_ = none
 	return values

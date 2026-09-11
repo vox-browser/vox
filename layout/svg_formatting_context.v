@@ -144,6 +144,10 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 		if view_box.width < 0 || view_box.height < 0 {
 			active_view_box = none
 		} else if view_box.width == 0 || view_box.height == 0 {
+			if context.context_box.is_svg_svg_box()
+				|| element.local_name() in ['symbol', 'pattern'] {
+				svg_box_state.set_svg_viewport_transform(svg.AffineTransform{})
+			}
 			disable_svg_rendering_for_descendants(mut context.state, context.context_box)
 			return
 		}
@@ -164,6 +168,7 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 	// through the containing-block chain; folding it into this transform would
 	// apply the viewport position twice to descendants.
 	context.current_viewbox_transform = context.parent_viewbox_transform
+	mut viewport_transform := svg.AffineTransform{}
 	if view_box := active_view_box {
 		scale_width := if svg_box_state.has_definite_width() {
 			f64(f32(svg_box_state.content_width().to_double()) / f32(view_box.width))
@@ -186,7 +191,11 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 			}
 		}
 		viewbox_transform := scale_and_align_viewbox_content(preserve_aspect_ratio, view_box, scale_width, scale_height, svg_box_state)
+		viewport_transform = viewport_transform.translated(viewbox_transform.offset.x().to_double(), viewbox_transform.offset.y().to_double()).scaled(viewbox_transform.scale_factor_x, viewbox_transform.scale_factor_y).translated(-view_box.min_x, -view_box.min_y)
 		context.current_viewbox_transform = context.current_viewbox_transform.translated(viewbox_transform.offset.x().to_double(), viewbox_transform.offset.y().to_double()).scaled(viewbox_transform.scale_factor_x, viewbox_transform.scale_factor_y).translated(-view_box.min_x, -view_box.min_y)
+	}
+	if context.context_box.is_svg_svg_box() || element.local_name() in ['symbol', 'pattern'] {
+		svg_box_state.set_svg_viewport_transform(viewport_transform)
 	}
 
 	viewport_width := if view_box := active_view_box {

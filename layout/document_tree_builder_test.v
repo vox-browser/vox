@@ -167,6 +167,20 @@ fn test_layout_tree_dump_includes_viewport_overflow() {
 	assert tree.split_into_lines()[0].ends_with(' overflow: [0,0 400x300]')
 }
 
+fn test_layout_tree_dump_includes_svg_viewport_transforms() {
+	mut doc := html.parse_document('<!doctype html><style>html, body, svg { margin: 0; display: block }</style>
+		<svg id="outer" width="200" height="100" viewBox="0 0 10 10">
+			<svg id="inner" width="8" height="8" viewBox="-1 -1 10 10"></svg>
+		</svg>')
+	tree := dump_document_layout_tree(doc, 320, 200) or {
+		panic('layout tree was not produced')
+	}
+	outer_line := tree.split_into_lines().filter(it.contains('<svg#outer>'))[0]
+	inner_line := tree.split_into_lines().filter(it.contains('<svg#inner>'))[0]
+	assert outer_line.contains(' viewport-transform=[10 0 0 10 50 0] [SVG]')
+	assert inner_line.contains(' viewport-transform=[')
+}
+
 fn test_scrollable_overflow_preserves_end_padding() {
 	mut doc := html.parse_document('<!doctype html><style>
 		html, body { margin: 0 }

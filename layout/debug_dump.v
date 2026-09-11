@@ -6,6 +6,7 @@ module layout
 
 import css
 import dom
+import svg
 
 // Serialize the translated typed Layout tree in the same first-section format used by
 // Tests/LibWeb/Layout/expected. Keeping this separate from BlockBox.tree_repr() is important: the
@@ -140,6 +141,13 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 		line += '(not painted)'
 	}
 	if node.is_box() {
+		if styled := node.as_node_with_style() {
+			if used := state.try_get(styled) {
+				if viewport_transform := used.svg_viewport_transform() {
+					line += ' viewport-transform=${layout_debug_affine_transform(viewport_transform)}'
+				}
+			}
+		}
 		if context_name := layout_debug_formatting_context(node) {
 			line += ' [${context_name}]'
 		}
@@ -615,6 +623,21 @@ fn layout_debug_point(point css.CSSPixelPoint) string {
 
 fn layout_debug_rect(point css.CSSPixelPoint, width CSSPixels, height CSSPixels) string {
 	return '[${layout_debug_pixels(point.x())},${layout_debug_pixels(point.y())} ${layout_debug_pixels(width)}x${layout_debug_pixels(height)}]'
+}
+
+fn layout_debug_affine_transform(transform svg.AffineTransform) string {
+	return '[${layout_debug_float(f32(transform.a))} ${layout_debug_float(f32(transform.b))} ${layout_debug_float(f32(transform.c))} ${layout_debug_float(f32(transform.d))} ${layout_debug_float(f32(transform.e))} ${layout_debug_float(f32(transform.f))}]'
+}
+
+fn layout_debug_float(value f32) string {
+	if value == 0 {
+		return '0'
+	}
+	integer := int(value)
+	if value == f32(integer) {
+		return integer.str()
+	}
+	return value.str()
 }
 
 fn layout_debug_pixels(value CSSPixels) string {
