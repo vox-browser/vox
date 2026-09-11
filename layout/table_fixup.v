@@ -18,6 +18,27 @@ fn proper_table_child(node &Node) bool {
 		|| display.is_table_caption()
 }
 
+fn table_non_root_box(node &Node) bool {
+	if !node.is_box() || !node.has_style() {
+		return false
+	}
+	display := node.display()
+	return display.is_table_row() || display.is_table_column()
+		|| display.is_table_row_group() || display.is_table_header_group()
+		|| display.is_table_footer_group() || display.is_table_column_group()
+		|| display.is_table_cell() || display.is_table_caption()
+}
+
+fn tabular_container(node &Node) bool {
+	if !node.is_box() || !node.has_style() {
+		return false
+	}
+	display := node.display()
+	return display.is_table_inside() || display.is_table_row()
+		|| display.is_table_row_group() || display.is_table_header_group()
+		|| display.is_table_footer_group()
+}
+
 fn ignorable_table_whitespace(node &Node) bool {
 	if text := node.as_text_node() {
 		return string_is_ascii_whitespace(text.source_text_)
@@ -53,10 +74,18 @@ fn anonymous_table_box(document &dom.Document, parent &Node, display css.Display
 	return wrapper
 }
 
-fn flush_table_fixup_sequence(mut rebuilt []&Node, mut sequence []&Node, parent &Node, document &dom.Document, display css.Display, kind AnonymousTableBoxKind) {
+fn flush_table_fixup_sequence(mut rebuilt []&Node, mut sequence []&Node, parent &Node, document &dom.Document, matcher fn (&Node) bool, display css.Display, kind AnonymousTableBoxKind) {
 	if sequence.len == 0 {
 		return
 	}
+	// Whitespace after the last matching table-internal box stays outside the
+	// generated wrapper. Only whitespace between two such boxes is discarded.
+	mut trailing_start := sequence.len
+	for trailing_start > 0 && !matcher(sequence[trailing_start - 1]) {
+		trailing_start--
+	}
+	trailing := sequence[trailing_start..].clone()
+	sequence.trim(trailing_start)
 	mut all_whitespace := true
 	for child in sequence {
 		if !ignorable_table_whitespace(child) {
@@ -66,6 +95,7 @@ fn flush_table_fixup_sequence(mut rebuilt []&Node, mut sequence []&Node, parent 
 	}
 	if all_whitespace {
 		rebuilt << sequence
+		rebuilt << trailing
 		sequence.clear()
 		return
 	}
@@ -73,6 +103,7 @@ fn flush_table_fixup_sequence(mut rebuilt []&Node, mut sequence []&Node, parent 
 	wrapper_style := wrapper.as_node_with_style() or { return }
 	attach_children_maintaining_inline_invariant(mut wrapper, sequence.clone(), document, wrapper_style.computed_values())
 	rebuilt << wrapper
+	rebuilt << trailing
 	sequence.clear()
 }
 
@@ -85,10 +116,10 @@ fn wrap_table_child_sequences(mut parent Node, document &dom.Document, matcher f
 			sequence << child
 			continue
 		}
-		flush_table_fixup_sequence(mut rebuilt, mut sequence, parent, document, display, kind)
+		flush_table_fixup_sequence(mut rebuilt, mut sequence, parent, document, matcher, display, kind)
 		rebuilt << child
 	}
-	flush_table_fixup_sequence(mut rebuilt, mut sequence, parent, document, display, kind)
+	flush_table_fixup_sequence(mut rebuilt, mut sequence, parent, document, matcher, display, kind)
 	parent.replace_children(rebuilt)
 }
 
@@ -126,6 +157,27 @@ fn remove_irrelevant_table_children(mut node Node) {
 				kept << child
 			}
 		}
+		node.replace_children(kept)
+	}
+	// Discard whitespace between two table-internal siblings. Also discard
+	// leading/trailing whitespace of authored tabular containers when its one
+	// immediate sibling is table-internal (CSS Tables fixup step 1).
+	original := node.children_.clone()
+	mut kept := []&Node{}
+	for index, child in original {
+		previous_is_table_non_root := index > 0 && table_non_root_box(original[index - 1])
+		next_is_table_non_root := index + 1 < original.len
+			&& table_non_root_box(original[index + 1])
+		between_table_non_roots := previous_is_table_non_root && next_is_table_non_root
+		at_tabular_edge := child.is_box() && tabular_container(node) && !node.is_anonymous()
+			&& (index == 0 || index == original.len - 1)
+			&& (if index > 0 { previous_is_table_non_root } else { next_is_table_non_root })
+		if ignorable_table_whitespace(child) && (between_table_non_roots || at_tabular_edge) {
+			continue
+		}
+		kept << child
+	}
+	if kept.len != original.len {
 		node.replace_children(kept)
 	}
 	for child in node.children_.clone() {

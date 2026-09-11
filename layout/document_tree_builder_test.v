@@ -687,6 +687,29 @@ fn test_table_fixup_generates_wrapper_rows_and_cells() {
 	assert (generated_cell.first_child() or { panic('cell has no text') }).is_text_node()
 }
 
+fn test_table_fixup_discards_irrelevant_whitespace() {
+	document := html.parse_document('<!doctype html><style>
+		.cell { display: table-cell }
+	</style>
+	<table id="table">
+		<tbody id="group"><tr><td>cell</td></tr></tbody>
+	</table>
+	<div id="host"><span id="one" class="cell">one</span> <span id="two" class="cell">two</span> tail</div>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	table := tree_builder_node_with_id(root, 'table') or { panic('no table') }
+	assert table.child_count() == 1
+	group := tree_builder_node_with_id(root, 'group') or { panic('no row group') }
+	assert voidptr(table.first_child() or { panic('table is empty') }) == voidptr(group)
+	one := tree_builder_node_with_id(root, 'one') or { panic('no first cell') }
+	two := tree_builder_node_with_id(root, 'two') or { panic('no second cell') }
+	row := one.parent() or { panic('first cell has no row') }
+	assert voidptr(row) == voidptr(two.parent() or { panic('second cell has no row') })
+	assert row.child_count() == 2
+	generated_table := row.parent() or { panic('cells have no generated table') }
+	assert generated_table.display().is_table_inside()
+	assert (generated_table.parent() or { panic('generated table has no wrapper') }).next_sibling() != none
+}
+
 fn test_fieldset_moves_non_legend_content_into_flow_root_wrapper() {
 	document := html.parse_document('<!doctype html><style>
 		#fieldset { width:200px; border:2px solid; padding:10px }
