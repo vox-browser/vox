@@ -23,12 +23,12 @@ mut:
 
 pub fn ClipboardEvent.create(event_name string, init ClipboardEventInit) &ClipboardEvent {
 	return &ClipboardEvent{
-		Event:           dom.Event{
-			interface_:   .clipboard_event
-			type_:        event_name
-			bubbles_:     init.bubbles
-			cancelable_:  init.cancelable
-			composed_:    init.composed
+		Event: dom.Event{
+			interface_: .clipboard_event
+			type_: event_name
+			bubbles_: init.bubbles
+			cancelable_: init.cancelable
+			composed_: init.composed
 			initialized_: true
 		}
 		clipboard_data_: init.clipboard_data
@@ -41,4 +41,8 @@ pub fn ClipboardEvent.construct_impl(event_name string, init ClipboardEventInit)
 
 pub fn (event &ClipboardEvent) clipboard_data() ?&html.DataTransfer {
 	return event.clipboard_data_
+}
+
+pub fn ClipboardEvent.clipboard_data_offset() usize {
+	return usize(__offsetof(ClipboardEvent, clipboard_data_))
 }

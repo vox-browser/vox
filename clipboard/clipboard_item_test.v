@@ -6,7 +6,7 @@ import html
 
 fn test_system_clipboard_records_round_trip_and_reject_malformed_input() {
 	representation := SystemClipboardRepresentation{
-		data:      [u8(0), 1, 2, 255]
+		data: [u8(0), 1, 2, 255]
 		mime_type: 'image/png'
 	}
 	encoded_representation := encode_system_clipboard_representation(representation)
@@ -17,7 +17,7 @@ fn test_system_clipboard_records_round_trip_and_reject_malformed_input() {
 
 	item := SystemClipboardItem{
 		system_clipboard_representations: [representation, SystemClipboardRepresentation{
-			data:      'hello'.bytes()
+			data: 'hello'.bytes()
 			mime_type: 'text/plain'
 		}]
 	}
@@ -40,7 +40,7 @@ fn test_system_clipboard_backend_owns_snapshots() {
 		SystemClipboardItem{
 			system_clipboard_representations: [
 				SystemClipboardRepresentation{
-					data:      source_data
+					data: source_data
 					mime_type: 'text/plain'
 				},
 			]
@@ -55,11 +55,11 @@ fn test_clipboard_item_normalizes_types_and_get_type_converts_strings() {
 	item := ClipboardItem.construct_impl([
 		ClipboardItemInput{
 			type_: 'TEXT/PLAIN;Charset=UTF-8'
-			data:  ClipboardItemDataPromise.resolved_string('hello')
+			data: ClipboardItemDataPromise.resolved_string('hello')
 		},
 		ClipboardItemInput{
 			type_: 'web Application/X-Test'
-			data:  ClipboardItemDataPromise.resolved_string('custom')
+			data: ClipboardItemDataPromise.resolved_string('custom')
 		},
 	], ClipboardItemOptions{
 		presentation_style: .inline
@@ -80,7 +80,7 @@ fn test_clipboard_item_get_type_tracks_pending_and_rejected_data() {
 	item := ClipboardItem.construct_impl([
 		ClipboardItemInput{
 			type_: 'image/png'
-			data:  data
+			data: data
 		},
 	], ClipboardItemOptions{}) or { panic(err) }
 	result := item.get_type('image/png') or { panic(err) }
@@ -93,7 +93,7 @@ fn test_clipboard_item_get_type_tracks_pending_and_rejected_data() {
 	rejected_item := ClipboardItem.construct_impl([
 		ClipboardItemInput{
 			type_: 'text/plain'
-			data:  ClipboardItemDataPromise.rejected('source failed')
+			data: ClipboardItemDataPromise.rejected('source failed')
 		},
 	], ClipboardItemOptions{}) or { panic(err) }
 	rejected := rejected_item.get_type('text/plain') or { panic(err) }
@@ -108,23 +108,21 @@ fn test_clipboard_item_rejects_empty_invalid_and_normalized_duplicate_types() {
 	if _ := ClipboardItem.construct_impl([
 		ClipboardItemInput{
 			type_: 'not a mime type'
-			data:  ClipboardItemDataPromise.resolved_string('x')
+			data: ClipboardItemDataPromise.resolved_string('x')
 		},
-	], ClipboardItemOptions{})
-	{
+	], ClipboardItemOptions{}) {
 		assert false
 	}
 	if _ := ClipboardItem.construct_impl([
 		ClipboardItemInput{
 			type_: 'TEXT/PLAIN'
-			data:  ClipboardItemDataPromise.resolved_string('a')
+			data: ClipboardItemDataPromise.resolved_string('a')
 		},
 		ClipboardItemInput{
 			type_: 'text/plain'
-			data:  ClipboardItemDataPromise.resolved_string('b')
+			data: ClipboardItemDataPromise.resolved_string('b')
 		},
-	], ClipboardItemOptions{})
-	{
+	], ClipboardItemOptions{}) {
 		assert false
 	}
 	assert ClipboardItem.supports('text/plain')
@@ -136,8 +134,8 @@ fn test_clipboard_item_rejects_empty_invalid_and_normalized_duplicate_types() {
 fn test_clipboard_event_exposes_initialization_and_data_transfer() {
 	transfer := html.DataTransfer.construct()
 	event := ClipboardEvent.construct_impl('paste', ClipboardEventInit{
-		EventInit:      dom.EventInit{
-			bubbles:    true
+		EventInit: dom.EventInit{
+			bubbles: true
 			cancelable: true
 		}
 		clipboard_data: transfer
@@ -146,4 +144,29 @@ fn test_clipboard_event_exposes_initialization_and_data_transfer() {
 	assert event.bubbles()
 	assert event.cancelable()
 	assert event.clipboard_data() or { panic('missing transfer') } == transfer
+	assert ClipboardEvent.clipboard_data_offset() > 0
+}
+
+fn test_clipboard_item_create_and_system_metadata_setters() {
+	mut item := ClipboardItem.create([
+		ClipboardItemInput{
+			type_: 'text/plain'
+			data: ClipboardItemDataPromise.resolved_string('value')
+		},
+	], .attachment) or { panic(err) }
+	assert item.presentation_style() == .attachment
+	item.set_clipboard_change_count_at_read(3)
+	item.set_originating_system_clipboard_item(SystemClipboardItem{
+		system_clipboard_representations: [SystemClipboardRepresentation{
+			data: 'system'.bytes()
+			mime_type: 'text/plain'
+		}]
+	})
+	item.set_unsanitized_mime_types(['text/plain'])
+	result := item.get_type('text/plain') or { panic(err) }
+	assert result.blob() or { panic('missing system Blob') }.raw_bytes().bytestr() == 'system'
+	assert presentation_style_to_string(.attachment) == 'attachment'
+	assert clipboard_item_data_blob(ClipboardItemData.from_blob(result.blob() or {
+		panic('missing Blob')
+	})) != none
 }

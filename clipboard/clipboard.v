@@ -6,10 +6,16 @@
 module clipboard
 
 import dom
-import encoding
 import fileapi
 import html
 import mimesniff
+
+pub fn clipboard_item_data_blob(value ClipboardItemData) ?&fileapi.Blob {
+	if value.kind != .blob {
+		return none
+	}
+	return value.blob
+}
 
 pub struct ClipboardUnsanitizedFormats {
 pub:
@@ -45,6 +51,10 @@ fn (mut promise ClipboardReadPromise) resolve(items []&ClipboardItem) {
 		promise.state_ = .fulfilled
 		promise.items_ = items.clone()
 	}
+}
+
+pub fn resolve_clipboard_items_promise(mut promise ClipboardReadPromise, items []&ClipboardItem) {
+	promise.resolve(items)
 }
 
 fn (mut promise ClipboardReadPromise) reject(reason string) {
@@ -154,13 +164,11 @@ pub:
 }
 
 pub fn write_blobs_and_option_to_clipboard(items []&fileapi.Blob, presentation_style string) ClipboardNativeWrite {
-	decoder := encoding.TextDecoder.create()
 	mut representations := []SystemClipboardRepresentation{cap: items.len}
 	for item in items {
 		format_string := os_specific_well_known_format(item.type_())
-		payload := decoder.decode(item.raw_bytes(), encoding.TextDecodeOptions{}) or { panic(err) }
 		representations << SystemClipboardRepresentation{
-			data: payload.bytes()
+			data: item.raw_bytes().clone()
 			mime_type: format_string
 		}
 	}
@@ -220,6 +228,7 @@ pub fn (board &Clipboard) read(formats ClipboardUnsanitizedFormats) &ClipboardRe
 		}
 		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, mut promise, formats] () {
 			mut items := []&ClipboardItem{}
+			snapshot_change_count := board.backend_.change_count()
 			for system_item in board.backend_.items() {
 				mut item := ClipboardItem.create_empty()
 				for system_representation in system_item.system_clipboard_representations {
@@ -236,14 +245,19 @@ pub fn (board &Clipboard) read(formats ClipboardUnsanitizedFormats) &ClipboardRe
 					_ = is_unsanitized
 					item.append_representation(ClipboardItemRepresentation{
 						mime_type: mime_type
-						data: ClipboardItemDataPromise.resolved_string(system_representation.data.bytestr())
+						data: ClipboardItemDataPromise.pending()
 					})
 				}
 				if item.representations().len > 0 {
+					item.set_clipboard_change_count_at_read(snapshot_change_count)
+					item.set_originating_system_clipboard_item(system_item)
+					if unsanitized := formats.unsanitized {
+						item.set_unsanitized_mime_types(unsanitized)
+					}
 					items << item
 				}
 			}
-			promise.resolve(items)
+			resolve_clipboard_items_promise(mut promise, items)
 		})
 	})
 	return promise
@@ -381,7 +395,7 @@ fn (mut operation ClipboardWriteOperation) process() {
 					fileapi.Blob.create(value.text.bytes(), representation.mime_type)
 				}
 				.blob {
-					value.blob or {
+					clipboard_item_data_blob(value) or {
 						operation.fail('NotAllowedError: Clipboard Blob value is missing')
 						return
 					}
@@ -397,7 +411,7 @@ fn (mut operation ClipboardWriteOperation) process() {
 			}
 			clean_item_list << blob
 		}
-		native_write := write_blobs_and_option_to_clipboard(clean_item_list, presentation_style_string(item.presentation_style()))
+		native_write := write_blobs_and_option_to_clipboard(clean_item_list, presentation_style_to_string(item.presentation_style()))
 		system_items << native_write.item
 		presentation_styles << native_write.presentation_style
 	}

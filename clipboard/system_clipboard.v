@@ -41,8 +41,7 @@ fn (mut decoder SystemClipboardDecoder) read_u32() !u32 {
 	if decoder.offset < 0 || decoder.input.len - decoder.offset < 4 {
 		return error('Invalid SystemClipboard encoding: truncated length')
 	}
-	value := u32(decoder.input[decoder.offset]) | (u32(decoder.input[decoder.offset + 1]) << 8) | (u32(decoder.input[
-		decoder.offset + 2]) << 16) | (u32(decoder.input[decoder.offset + 3]) << 24)
+	value := u32(decoder.input[decoder.offset]) | (u32(decoder.input[decoder.offset + 1]) << 8) | (u32(decoder.input[decoder.offset + 2]) << 16) | (u32(decoder.input[decoder.offset + 3]) << 24)
 	decoder.offset += 4
 	return value
 }
@@ -67,7 +66,7 @@ fn (mut decoder SystemClipboardDecoder) decode_representation() !SystemClipboard
 	data := decoder.read_bytes()!
 	mime_type := decoder.read_bytes()!.bytestr()
 	return SystemClipboardRepresentation{
-		data:      data
+		data: data
 		mime_type: mime_type
 	}
 }
@@ -126,7 +125,7 @@ fn clone_system_clipboard_items(items []SystemClipboardItem) []SystemClipboardIt
 		mut representations := []SystemClipboardRepresentation{cap: item.system_clipboard_representations.len}
 		for representation in item.system_clipboard_representations {
 			representations << SystemClipboardRepresentation{
-				data:      representation.data.clone()
+				data: representation.data.clone()
 				mime_type: representation.mime_type
 			}
 		}
@@ -145,6 +144,7 @@ pub struct SystemClipboardBackend {
 mut:
 	items_               []SystemClipboardItem
 	presentation_styles_ []string
+	change_count_        usize
 }
 
 pub fn SystemClipboardBackend.create() &SystemClipboardBackend {
@@ -159,7 +159,12 @@ pub fn (backend &SystemClipboardBackend) presentation_styles() []string {
 	return backend.presentation_styles_.clone()
 }
 
+pub fn (backend &SystemClipboardBackend) change_count() usize {
+	return backend.change_count_
+}
+
 pub fn (mut backend SystemClipboardBackend) replace_items(items []SystemClipboardItem, presentation_styles []string) {
 	backend.items_ = clone_system_clipboard_items(items)
 	backend.presentation_styles_ = presentation_styles.clone()
+	backend.change_count_++
 }

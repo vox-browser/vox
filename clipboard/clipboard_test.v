@@ -20,16 +20,16 @@ fn test_well_known_clipboard_formats_use_mime_essence() {
 	assert os_specific_well_known_format('invalid') == ''
 }
 
-fn test_write_blobs_and_option_to_clipboard_decodes_utf8_and_preserves_native_formats() {
+fn test_write_blobs_and_option_to_clipboard_preserves_raw_bytes_and_native_formats() {
 	text := fileapi.Blob.create([u8(0x66), 0x6f, 0x80], 'text/plain;charset=utf-8')
 	image := fileapi.Blob.create([u8(0xc2), 0xa9], 'image/png')
 	native_write := write_blobs_and_option_to_clipboard([text, image], 'attachment')
 	assert native_write.presentation_style == 'attachment'
 	assert native_write.item.system_clipboard_representations.len == 2
 	assert native_write.item.system_clipboard_representations[0].mime_type == 'text/plain'
-	assert native_write.item.system_clipboard_representations[0].data.bytestr() == 'fo�'
+	assert native_write.item.system_clipboard_representations[0].data == [u8(0x66), 0x6f, 0x80]
 	assert native_write.item.system_clipboard_representations[1].mime_type == 'image/png'
-	assert native_write.item.system_clipboard_representations[1].data.bytestr() == '©'
+	assert native_write.item.system_clipboard_representations[1].data == [u8(0xc2), 0xa9]
 }
 
 fn test_clipboard_operations_require_transient_activation() {
@@ -109,7 +109,10 @@ fn test_clipboard_read_builds_items_and_ignores_unknown_native_formats() {
 	assert items[0].types() == ['text/html']
 	html_result := items[0].get_type('text/html') or { panic(err) }
 	assert html_result.blob() or { panic('missing HTML Blob') }.raw_bytes().bytestr() == '<b>hello</b>'
+	assert items[0].get_type('text/html') or { panic(err) } == html_result
 	assert items[1].types() == ['image/png']
+	png_result := items[1].get_type('image/png') or { panic(err) }
+	assert png_result.blob() or { panic('missing PNG Blob') }.raw_bytes() == [u8(137), 80, 78, 71]
 }
 
 fn test_clipboard_write_serializes_supported_representations_and_styles() {

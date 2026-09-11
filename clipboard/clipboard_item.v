@@ -71,21 +71,21 @@ pub fn ClipboardItemDataPromise.pending() &ClipboardItemDataPromise {
 
 pub fn ClipboardItemDataPromise.resolved_string(value string) &ClipboardItemDataPromise {
 	return &ClipboardItemDataPromise{
-		state_:  .fulfilled
+		state_: .fulfilled
 		result_: ClipboardItemData.from_string(value)
 	}
 }
 
 pub fn ClipboardItemDataPromise.resolved_blob(value &fileapi.Blob) &ClipboardItemDataPromise {
 	return &ClipboardItemDataPromise{
-		state_:  .fulfilled
+		state_: .fulfilled
 		result_: ClipboardItemData.from_blob(value)
 	}
 }
 
 pub fn ClipboardItemDataPromise.rejected(reason string) &ClipboardItemDataPromise {
 	return &ClipboardItemDataPromise{
-		state_:  .rejected
+		state_: .rejected
 		reason_: reason
 	}
 }
@@ -181,6 +181,10 @@ fn (mut promise ClipboardBlobPromise) resolve(blob &fileapi.Blob) {
 	}
 }
 
+pub fn resolve_clipboard_item_blob_promise(mut promise ClipboardBlobPromise, blob &fileapi.Blob) {
+	promise.resolve(blob)
+}
+
 fn (mut promise ClipboardBlobPromise) reject(reason string) {
 	if promise.state_ == .pending {
 		promise.state_ = .rejected
@@ -230,9 +234,13 @@ fn normalize_clipboard_type(type_ string) !NormalizedClipboardType {
 @[heap]
 pub struct ClipboardItem {
 mut:
-	types_              []string
-	representations_    []ClipboardItemRepresentation
-	presentation_style_ PresentationStyle
+	types_                         []string
+	representations_               []ClipboardItemRepresentation
+	presentation_style_            PresentationStyle
+	clipboard_change_count_at_read ?usize
+	originating_system_item_       ?SystemClipboardItem
+	unsanitized_mime_types_        []string
+	representations_with_resolvers map[string]&ClipboardBlobPromise
 }
 
 pub fn ClipboardItem.construct_impl(items []ClipboardItemInput, options ClipboardItemOptions) !&ClipboardItem {
@@ -241,6 +249,7 @@ pub fn ClipboardItem.construct_impl(items []ClipboardItemInput, options Clipboar
 	}
 	mut item := &ClipboardItem{
 		presentation_style_: options.presentation_style
+		representations_with_resolvers: map[string]&ClipboardBlobPromise{}
 	}
 	for input in items {
 		if input.data == unsafe { nil } {
@@ -256,16 +265,24 @@ pub fn ClipboardItem.construct_impl(items []ClipboardItemInput, options Clipboar
 		item.append_representation(ClipboardItemRepresentation{
 			mime_type: normalized.mime_type
 			is_custom: normalized.is_custom
-			data:      input.data
+			data: input.data
 		})
 	}
 	return item
 }
 
+pub fn ClipboardItem.create(items []ClipboardItemInput, presentation_style PresentationStyle) !&ClipboardItem {
+	return ClipboardItem.construct_impl(items, ClipboardItemOptions{
+		presentation_style: presentation_style
+	})
+}
+
 // create_empty is used by Clipboard.read while constructing the underlying
 // clipboard item described by the specification.
 pub fn ClipboardItem.create_empty() &ClipboardItem {
-	return &ClipboardItem{}
+	return &ClipboardItem{
+		representations_with_resolvers: map[string]&ClipboardBlobPromise{}
+	}
 }
 
 pub fn (mut item ClipboardItem) append_representation(representation ClipboardItemRepresentation) {
@@ -290,6 +307,18 @@ pub fn (item &ClipboardItem) presentation_style() PresentationStyle {
 	return item.presentation_style_
 }
 
+pub fn (mut item ClipboardItem) set_clipboard_change_count_at_read(count usize) {
+	item.clipboard_change_count_at_read = count
+}
+
+pub fn (mut item ClipboardItem) set_originating_system_clipboard_item(originating ?SystemClipboardItem) {
+	item.originating_system_item_ = originating
+}
+
+pub fn (mut item ClipboardItem) set_unsanitized_mime_types(types []string) {
+	item.unsanitized_mime_types_ = types.clone()
+}
+
 pub fn (item &ClipboardItem) get_type(type_ string) !&ClipboardBlobPromise {
 	normalized := normalize_clipboard_type(type_)!
 	mut result := ClipboardBlobPromise.pending()
@@ -299,6 +328,36 @@ pub fn (item &ClipboardItem) get_type(type_ string) !&ClipboardBlobPromise {
 			continue
 		}
 		mime_type := normalized.mime_type
+		if item.clipboard_change_count_at_read != none {
+			key := if normalized.is_custom {
+				'${web_custom_format_prefix}${normalized.mime_type}'
+			} else {
+				normalized.mime_type
+			}
+			if cached := item.representations_with_resolvers[key] {
+				return cached
+			}
+			mut mutable_item := unsafe { &ClipboardItem(item) }
+			mutable_item.representations_with_resolvers[key] = result
+			originating := item.originating_system_item_ or {
+				result.reject('InvalidStateError: This clipboard item is missing an originating system clipboard entry')
+				return result
+			}
+			if normalized.is_custom {
+				result.reject('NotFoundError: No data found for MIME type: ${type_}')
+				return result
+			}
+			os_format_name := os_specific_well_known_format(normalized.mime_type)
+			for system_representation in originating.system_clipboard_representations {
+				if os_specific_well_known_format(system_representation.mime_type) == os_format_name {
+					blob := fileapi.Blob.create(system_representation.data.clone(), normalized.mime_type)
+					resolve_clipboard_item_blob_promise(mut result, blob)
+					return result
+				}
+			}
+			result.reject('NotFoundError: No data found for MIME type: ${os_format_name}')
+			return result
+		}
 		requested_type := type_
 		representation.data.react(fn [mut result, mime_type] (value ClipboardItemData) {
 			match value.kind {
@@ -326,10 +385,14 @@ pub fn ClipboardItem.supports(type_ string) bool {
 	return type_ == 'text/plain' || type_ == 'text/html' || type_ == 'image/png'
 }
 
-pub fn presentation_style_string(style PresentationStyle) string {
+pub fn presentation_style_to_string(style PresentationStyle) string {
 	return match style {
 		.unspecified { 'unspecified' }
 		.inline { 'inline' }
 		.attachment { 'attachment' }
 	}
+}
+
+pub fn presentation_style_string(style PresentationStyle) string {
+	return presentation_style_to_string(style)
 }
