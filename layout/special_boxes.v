@@ -1105,7 +1105,7 @@ pub struct TableWrapper {
 
 @[heap]
 pub struct ListItemMarkerBox {
-	Box
+	BlockContainer
 pub:
 	list_style_type_     css.ListStyleType
 	list_style_position_ css.ListStylePosition
@@ -1113,10 +1113,10 @@ pub:
 }
 
 pub fn ListItemMarkerBox.new(document &dom.Document, list_style_type css.ListStyleType, list_style_position css.ListStylePosition, list_item_element &dom.Element, computed_values &css.ComputedProperties) &ListItemMarkerBox {
-	mut box := special_box_base(document, none, computed_values)
+	mut box := special_block_container_base(document, none, computed_values)
 	box.is_list_item_marker_box_ = true
 	return &ListItemMarkerBox{
-		Box: box
+		BlockContainer: box
 		list_style_type_: list_style_type
 		list_style_position_: list_style_position
 		list_item_element_: list_item_element
@@ -1165,12 +1165,6 @@ fn marker_text_for_list_style(list_style_type css.ListStyleType, element &dom.El
 	if list_style_type.kind == .string {
 		return list_style_type.name
 	}
-	// These predefined counter styles do not participate in text layout;
-	// MarkerPaintable draws their geometric image instead.
-	if ListItemMarkerBox.counter_style_is_rendered_with_custom_image(list_style_type.counter_style) {
-		return none
-	}
-
 	mut mutable_element := unsafe { &dom.Element(element) }
 	ordinal := mutable_element.ordinal_value()
 	registered_counter_styles := css.registered_counter_styles_for_document(element.document())

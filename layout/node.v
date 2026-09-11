@@ -498,7 +498,7 @@ pub fn (n &Node) is_in_flow() bool {
 }
 
 pub fn (n &Node) can_have_children() bool {
-	if n.is_break_node_ || n.is_list_item_marker_box_ {
+	if n.is_break_node_ {
 		return false
 	}
 	if n.is_replaced_box_ {

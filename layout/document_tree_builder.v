@@ -1818,6 +1818,12 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	marker := ListItemMarkerBox.new(document, list_style_type, list_item_computed.list_style_position(), element, marker_computed)
 	mut marker_node := unsafe { &Node(marker) }
 	marker_node.set_generated_for(.marker, element)
+	marker_node.set_children_are_inline(true)
+	if !has_list_style_image {
+		mut text_node := unsafe { &Node(TextNode.new_generated(document, '')) }
+		text_node.set_generated_for(.marker, element)
+		marker_node.append_child(text_node)
+	}
 	return marker_node
 }
 

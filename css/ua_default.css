@@ -787,6 +787,13 @@ details > summary:first-of-type {
     list-style: disclosure-closed inside;
 }
 
+::marker {
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
+    white-space: pre;
+    text-transform: none;
+}
+
 details[open] > summary:first-of-type {
     list-style-type: disclosure-open;
 }

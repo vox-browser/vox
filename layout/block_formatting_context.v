@@ -82,6 +82,9 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 	if !node.is_box() {
 		return false
 	}
+	if node.is_list_item_marker_box() {
+		return true
+	}
 	display := node.display()
 	// Replaced elements do not create BFCs. None of the generic Box subclasses
 	// are replaced; concrete replaced boxes set this flag when constructed.
@@ -546,8 +549,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	// does not change that flag.
 	if definite_content_height == none && box_as_node.display().is_flex_inside() {
 		if flex_box := box_as_node.as_box() {
-			box_state.set_content_height(calculate_max_content_height(mut state, flex_box,
-				css_px(content_width)))
+			box_state.set_content_height(calculate_max_content_height(mut state, flex_box, css_px(content_width)))
 		}
 	}
 	// Anonymous block wrappers pass through the containing block's available
@@ -720,6 +722,13 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	if has_list_style_image {
 		marker_state.set_content_width(marker_width)
 	} else if text := marker_text {
+		if child := marker_node.first_child() {
+			if generated_text := child.as_text_node() {
+				mut mutable_text := unsafe { &TextNode(generated_text) }
+				mutable_text.source_text_ = text
+				mutable_text.invalidate_text_for_rendering()
+			}
+		}
 		font := platform.Font{
 			family: 'sans-serif'
 			point_size: f32(marker.computed_values().resolved_font_size_px())
@@ -729,6 +738,12 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 		marker_state.set_content_width(CSSPixels.nearest_value_for(f64(run.width())))
 	} else {
 		marker_state.set_content_width(marker_width)
+	}
+	if marker_text != none {
+		if block_container := marker_node.as_block_container() {
+			inline_result := run_inline_formatting_context(mut state, block_container, mut marker_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(marker_state.content_width()), AvailableSize.make_indefinite()))
+			marker_state.set_content_height(inline_result.automatic_content_height)
+		}
 	}
 	mut marker_distance := CSSPixels.new(0)
 	if marker_text == none {
@@ -971,8 +986,7 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 	// already apply these constraints as part of compute_replaced_size().
 	if width := forced_width {
 		if !box.is_replaced_box() {
-			forced_width = clamp_layout_content_size(box, width, container_width, initial_state,
-				true)
+			forced_width = clamp_layout_content_size(box, width, container_width, initial_state, true)
 		}
 	}
 	mut box_state := layout_independent_child(mut state, box, mut container_state, container_width, container_height, forced_width, forced_height)

@@ -242,7 +242,8 @@ fn (mut iterator InlineLevelIterator) compute_next() {
 fn (mut iterator InlineLevelIterator) skip_to_next() {
 	if next := iterator.next_node {
 		if box_model_node := next.as_node_with_style_and_box_model_metrics() {
-			if next.display().is_flow_inside() && !next.is_out_of_flow() && !next.is_replaced_box() {
+			if !next.is_list_item_marker_box() && next.display().is_flow_inside()
+				&& !next.is_out_of_flow() && !next.is_replaced_box() {
 				iterator.enter_node_with_box_model_metrics(box_model_node)
 			}
 		}
@@ -342,8 +343,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			shaped_text = string_from_utf16_code_units_for_line_box(units[tab_count..])
 			x = stop_distance
 		}
-		glyph_run := iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing),
-			shaped_text, chunk.font, text_type)
+		glyph_run := iterator.shape_text_for_layout(text_node, f32(x), f32(letter_spacing), shaped_text, chunk.font, text_type)
 		chunk_width := CSSPixels.nearest_value_for(f64(glyph_run.width()) + x)
 		is_empty_editable := chunk.length == 0 && text_node_is_inside_mutable_control(text_node)
 		is_generated_empty_string := is_empty_editable
@@ -386,7 +386,14 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			node: current
 		}
 	}
-	if current.is_list_item_marker_box() || !current.is_box() {
+	if current.is_list_item_marker_box() {
+		// The marker owns an independent inline formatting context. Skip its
+		// complete subtree while iterating the list item's principal content.
+		iterator.next_node = current.next_sibling()
+		iterator.skip_to_next()
+		return iterator.generate_next_item()
+	}
+	if !current.is_box() {
 		iterator.skip_to_next()
 		return iterator.generate_next_item()
 	}

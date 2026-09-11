@@ -611,10 +611,16 @@ fn test_normal_list_marker_is_created_and_laid_out() {
 	marker_node := list_item.marker() or { panic('list item has no marker') }
 	marker := marker_node.as_list_item_marker_box() or { panic('marker has wrong node type') }
 	assert marker.text() or { '' } == '1. '
+	assert marker_node.is_block_container()
+	assert marker_node.children_are_inline()
+	assert marker_node.child_count() == 1
+	assert (marker_node.first_child() or { panic('marker has no content') }).is_generated_text_node()
 	marker_used := result.used_values_for(marker_node.as_node_with_style() or {
 		panic('marker has no style')
 	}) or { panic('marker was not laid out') }
 	assert marker_used.content_width().to_double() > 0
+	assert marker_used.content_height().to_double() == 16
+	assert marker_used.line_boxes.len == 1
 	assert marker_used.offset.x().to_double() < 0
 }
 
@@ -626,13 +632,13 @@ fn test_predefined_symbol_marker_uses_geometric_marker_size() {
 	marker_node := list_item.marker() or { panic('list item has no marker') }
 	marker := marker_node.as_list_item_marker_box() or { panic('marker has wrong node type') }
 	assert marker.list_style_type_.name == 'disc'
-	assert marker.text() == none
-	assert marker.relative_size().to_double() == 6
+	assert marker.text() or { '' } == '• '
+	assert marker.relative_size().to_double() == 16
 	marker_used := result.used_values_for(marker_node.as_node_with_style() or {
 		panic('marker has no style')
 	}) or { panic('marker was not laid out') }
-	assert marker_used.content_width().to_double() == 6
-	assert marker_used.content_height().to_double() == 6
+	assert marker_used.content_width().to_double() == 13.84375
+	assert marker_used.content_height().to_double() == 16
 }
 
 fn test_marker_preserves_literal_string_list_style_type() {
