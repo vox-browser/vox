@@ -65,6 +65,20 @@ pub struct NoProtocols {}
 pub type Protocols = NoProtocols | []string | string
 
 @[heap]
+pub struct WebSocketGlobalScope {
+pub:
+	api_base_url string
+	origin       string
+}
+
+pub fn WebSocketGlobalScope.create(api_base_url string, origin string) &WebSocketGlobalScope {
+	return &WebSocketGlobalScope{
+		api_base_url: api_base_url
+		origin: origin
+	}
+}
+
+@[heap]
 pub struct WebSocket {
 pub:
 	protocols []string
@@ -73,7 +87,7 @@ pub mut:
 	selected_protocol    string
 	events               []WebSocketEvent
 	sent_frames          []SentFrame
-	binary_type          string = 'blob'
+	binary_type          BinaryType = .blob
 	has_open_listener    bool
 	has_message_listener bool
 	has_error_listener   bool
@@ -81,6 +95,10 @@ pub mut:
 mut:
 	url_               string
 	connection_created bool
+	relevant_global_   &WebSocketGlobalScope = unsafe { nil }
+	has_activity_root_ bool
+	has_disappeared_   bool
+	is_registered_     bool
 }
 
 pub fn WebSocket.construct(input string, base_url string, protocols Protocols) !&WebSocket {
@@ -90,7 +108,12 @@ pub fn WebSocket.construct(input string, base_url string, protocols Protocols) !
 // The V host supplies the relevant settings object's API base URL explicitly.
 // https://websockets.spec.whatwg.org/#dom-websocket-websocket
 pub fn WebSocket.construct_impl(input string, base_url string, protocols Protocols) !&WebSocket {
-	url := normalize_websocket_url(input, base_url)!
+	global_scope := WebSocketGlobalScope.create(base_url, '')
+	return WebSocket.create(global_scope, input, protocols)
+}
+
+pub fn WebSocket.create(global_scope &WebSocketGlobalScope, input string, protocols Protocols) !&WebSocket {
+	url := normalize_websocket_url(input, global_scope.api_base_url)!
 	sequence := match protocols {
 		NoProtocols { []string{} }
 		string { [protocols] }
@@ -99,11 +122,14 @@ pub fn WebSocket.construct_impl(input string, base_url string, protocols Protoco
 	mut sorted := sequence.clone()
 	sorted.sort()
 	for index, protocol in sorted {
+		if protocol == '' {
+			return error('SyntaxError: Found empty protocol name')
+		}
 		if index + 1 < sorted.len && protocol == sorted[index + 1] {
 			return error('SyntaxError: Found a duplicate protocol name in the specified list')
 		}
-		// Match current upstream behavior: it checks the visible ASCII range,
-		// despite the adjacent RFC comment also mentioning separators/non-empty.
+		// Match current upstream behavior: empty names and characters outside the
+		// visible ASCII range are rejected; separators are not checked separately.
 		for character in protocol.runes() {
 			if character < 0x21 || character > 0x7e {
 				return error('SyntaxError: Found invalid character in subprotocol name')
@@ -112,8 +138,14 @@ pub fn WebSocket.construct_impl(input string, base_url string, protocols Protoco
 	}
 	return &WebSocket{
 		protocols: sequence
-		url_:      url
+		url_: url
+		relevant_global_: global_scope
+		is_registered_: true
 	}
+}
+
+pub fn WebSocket.create_for_constructor(global_scope &WebSocketGlobalScope, input string, protocols Protocols) !&WebSocket {
+	return WebSocket.create(global_scope, input, protocols)
 }
 
 fn normalize_websocket_url(input string, base_url string) !string {
@@ -149,6 +181,18 @@ pub fn (mut socket WebSocket) establish_web_socket_connection() ! {
 	}
 	socket.connection_created = true
 	socket.state = .connecting
+	socket.update_activity_root()
+}
+
+pub fn (socket &WebSocket) relevant_global_object() &WebSocketGlobalScope {
+	return socket.relevant_global_scope()
+}
+
+pub fn (socket &WebSocket) relevant_global_scope() &WebSocketGlobalScope {
+	if socket.relevant_global_ == unsafe { nil } {
+		panic('WebSocket has no relevant global scope')
+	}
+	return socket.relevant_global_
 }
 
 pub fn (socket &WebSocket) url() string {
@@ -171,12 +215,11 @@ pub fn (socket &WebSocket) protocol() string {
 	return socket.selected_protocol
 }
 
-pub fn (mut socket WebSocket) set_binary_type(value string) {
-	// The current upstream setter stores the DOMString verbatim.
+pub fn (mut socket WebSocket) set_binary_type(value BinaryType) {
 	socket.binary_type = value
 }
 
-pub fn (socket &WebSocket) binary_type() string {
+pub fn (socket &WebSocket) binary_type() BinaryType {
 	return socket.binary_type
 }
 
@@ -195,6 +238,7 @@ pub fn (mut socket WebSocket) close(code ?u16, reason ?string) ! {
 		return
 	}
 	socket.state = .closing
+	socket.update_activity_root()
 }
 
 pub fn (mut socket WebSocket) send_text(data string) ! {
@@ -218,14 +262,12 @@ pub fn (mut socket WebSocket) send(data WebSocketSendData) ! {
 		bytes, is_text := match data {
 			string { data.bytes(), true }
 			WebSocketBufferData {
-				// Match current upstream: views send their viewed ArrayBuffer,
-				// rather than only the view's byte range.
-				if data.buffer.detached { []u8{}, false } else { data.buffer.bytes.clone(), false }
+				webidl.get_buffer_source_copy(data.buffer), false
 			}
 			WebSocketBlobData { data.blob.raw_bytes(), false }
 		}
 		socket.sent_frames << SentFrame{
-			data:    bytes
+			data: bytes
 			is_text: is_text
 		}
 	}
@@ -237,6 +279,7 @@ pub fn (mut socket WebSocket) on_open(selected_protocol string) {
 	}
 	socket.state = .open
 	socket.selected_protocol = selected_protocol
+	socket.update_activity_root()
 	socket.events << WebSocketEvent{
 		kind: .open
 	}
@@ -250,10 +293,11 @@ pub fn (mut socket WebSocket) on_error() {
 
 pub fn (mut socket WebSocket) on_close(code u16, reason string, was_clean bool) {
 	socket.state = .closed
+	socket.update_activity_root()
 	socket.events << WebSocketEvent{
-		kind:      .close
-		code:      code
-		reason:    reason
+		kind: .close
+		code: code
+		reason: reason
 		was_clean: was_clean
 	}
 }
@@ -263,41 +307,53 @@ pub fn (mut socket WebSocket) on_message(message []u8, is_text bool) {
 		return
 	}
 	if is_text {
-			socket.events << WebSocketEvent{
-				kind:   .message
-				text:   message.bytestr()
-				origin: socket.url()
+		socket.events << WebSocketEvent{
+			kind: .message
+			text: message.bytestr()
+			origin: socket.message_origin()
 		}
 		return
 	}
-	if socket.binary_type == 'blob' {
+	if socket.binary_type == .blob {
 		socket.events << WebSocketEvent{
-			kind:   .message
-			blob:   fileapi.Blob.create(message.clone(), 'text/plain;charset=utf-8')
-			origin: socket.url()
+			kind: .message
+			blob: fileapi.Blob.create(message.clone(), '')
+			origin: socket.message_origin()
 		}
-	} else if socket.binary_type == 'arraybuffer' {
+	} else if socket.binary_type == .arraybuffer {
 		socket.events << WebSocketEvent{
-			kind:   .message
-			bytes:  message.clone()
-			origin: socket.url()
+			kind: .message
+			bytes: message.clone()
+			origin: socket.message_origin()
 		}
 	}
 }
 
+fn (socket &WebSocket) message_origin() string {
+	parsed := liburl.parse(socket.url_) or { return 'null' }
+	return parsed.origin().serialize()
+}
+
 pub fn (mut socket WebSocket) make_disappear() {
+	socket.has_disappeared_ = true
 	if socket.state !in [.closing, .closed] {
 		socket.state = .closing
 	}
+	socket.update_activity_root()
 }
 
 pub fn (mut socket WebSocket) finalize() {
 	if socket.state !in [.closing, .closed] {
 		socket.state = .closing
 	}
+	socket.has_activity_root_ = false
+	socket.is_registered_ = false
 }
 
-pub fn (socket &WebSocket) must_survive_garbage_collection() bool {
+pub fn (socket &WebSocket) should_be_kept_alive() bool {
+	if socket.has_disappeared_ {
+		return false
+	}
 	return match socket.state {
 		.connecting {
 			socket.has_open_listener || socket.has_message_listener || socket.has_error_listener
@@ -313,4 +369,24 @@ pub fn (socket &WebSocket) must_survive_garbage_collection() bool {
 			false
 		}
 	}
+}
+
+pub fn (socket &WebSocket) must_survive_garbage_collection() bool {
+	return socket.should_be_kept_alive()
+}
+
+pub fn (mut socket WebSocket) update_activity_root() {
+	socket.has_activity_root_ = socket.should_be_kept_alive()
+}
+
+pub fn (mut socket WebSocket) event_listener_list_changed() {
+	socket.update_activity_root()
+}
+
+pub fn (socket &WebSocket) has_activity_root() bool {
+	return socket.has_activity_root_
+}
+
+pub fn (socket &WebSocket) is_registered_with_global() bool {
+	return socket.is_registered_
 }

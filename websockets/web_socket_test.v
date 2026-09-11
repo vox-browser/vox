@@ -4,7 +4,10 @@ import fileapi
 import webidl
 
 fn test_constructor_url_protocol_normalization_and_validation() {
-	socket := WebSocket.construct_impl('https://example.test/chat', '', Protocols(['chat', 'super']))!
+	socket := WebSocket.construct_impl('https://example.test/chat', '', Protocols([
+		'chat',
+		'super',
+	]))!
 	assert socket.url() == 'wss://example.test/chat'
 	assert socket.protocols == ['chat', 'super']
 	relative := WebSocket.construct('/socket', 'http://example.test/base', NoProtocols{})!
@@ -15,10 +18,11 @@ fn test_constructor_url_protocol_normalization_and_validation() {
 	dot_segments :=
 		WebSocket.construct('../socket?mode=1', 'http://example.test/a/b/', NoProtocols{})!
 	assert dot_segments.url() == 'ws://example.test/a/socket?mode=1'
-	// Match the checked current implementation: empty protocol is accepted.
-	assert WebSocket.construct('ws://example.test/', '', Protocols(''))!.protocols == [
-		'',
-	]
+	if _ := WebSocket.construct('ws://example.test/', '', Protocols('')) {
+		assert false
+	} else {
+		assert err.msg().contains('empty protocol')
+	}
 	for invalid in ['ftp://example.test/', 'ws://example.test/#fragment', 'not-relative'] {
 		if _ := WebSocket.construct(invalid, '', NoProtocols{}) {
 			assert false
@@ -67,7 +71,7 @@ fn test_state_send_close_and_payload_conversion() {
 	socket.send_blob(fileapi.Blob.create([u8(3), 4], 'application/octet-stream'))!
 	assert socket.sent_frames.len == 4
 	assert socket.sent_frames[0].is_text
-	assert socket.sent_frames[2].data == [u8(5), 6, 7]
+	assert socket.sent_frames[2].data == [u8(6)]
 	assert socket.sent_frames[3].data == [u8(3), 4]
 	if _ := socket.close(2000, none) {
 		assert false
@@ -82,17 +86,22 @@ fn test_message_close_error_events_binary_modes_and_gc_rules() {
 	mut socket := WebSocket.construct('ws://example.test/', '', NoProtocols{})!
 	socket.establish()
 	socket.has_open_listener = true
+	socket.event_listener_list_changed()
 	assert socket.must_survive_garbage_collection()
+	assert socket.has_activity_root()
 	socket.on_open('')
 	socket.has_open_listener = false
 	socket.has_message_listener = true
+	socket.event_listener_list_changed()
 	assert socket.must_survive_garbage_collection()
 	socket.on_message('hello'.bytes(), true)
 	assert socket.events.last().text? == 'hello'
 	socket.on_message([u8(1), 2], false)
 	assert socket.events.last().blob?.raw_bytes() == [u8(1), 2]
-	socket.set_binary_type('arraybuffer')
-	assert socket.binary_type() == 'arraybuffer'
+	assert socket.events.last().blob?.type_() == ''
+	assert socket.events.last().origin == 'ws://example.test'
+	socket.set_binary_type(.arraybuffer)
+	assert socket.binary_type() == .arraybuffer
 	socket.on_message([u8(3), 4], false)
 	assert socket.events.last().bytes? == [u8(3), 4]
 	socket.on_error()
@@ -100,6 +109,7 @@ fn test_message_close_error_events_binary_modes_and_gc_rules() {
 	socket.on_close(1000, 'done', true)
 	assert socket.events.last().was_clean
 	assert !socket.must_survive_garbage_collection()
+	assert !socket.has_activity_root()
 }
 
 fn test_reason_utf8_byte_limit_and_disappear() {
@@ -112,4 +122,15 @@ fn test_reason_utf8_byte_limit_and_disappear() {
 	}
 	socket.make_disappear()
 	assert socket.state == .closing
+	assert !socket.has_activity_root()
+}
+
+fn test_constructor_factories_retain_relevant_global_and_registration() {
+	global_scope := WebSocketGlobalScope.create('https://example.test/base/', 'https://example.test')
+	mut socket := WebSocket.create_for_constructor(global_scope, '/chat', Protocols('chat'))!
+	assert socket.relevant_global_object() == global_scope
+	assert socket.relevant_global_scope() == global_scope
+	assert socket.is_registered_with_global()
+	socket.finalize()
+	assert !socket.is_registered_with_global()
 }
