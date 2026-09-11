@@ -14,6 +14,15 @@ pub:
 
 pub type PolicyCallback = fn (string, []webidl.Value) !PolicyResult
 
+// Invoke a Trusted Type policy callback with an undefined `this` value and
+// rethrow callback exceptions. `PolicyCallback` models `this` out of band; its
+// first parameter is the converted first argument and the second receives the
+// complete JavaScript argument list.
+pub fn invoke_trusted_type_policy_callback(callback PolicyCallback, arguments []webidl.Value) !PolicyResult {
+	input := if arguments.len > 0 { webidl.to_string(arguments[0])! } else { '' }
+	return callback(input, arguments)
+}
+
 pub struct TrustedTypePolicyOptions {
 pub:
 	create_html       ?PolicyCallback
@@ -35,7 +44,7 @@ mut:
 
 pub fn TrustedTypePolicy.create(name string, options TrustedTypePolicyOptions) &TrustedTypePolicy {
 	return &TrustedTypePolicy{
-		name_:   name
+		name_: name
 		options: options
 	}
 }
@@ -53,7 +62,7 @@ pub fn (policy &TrustedTypePolicy) get_trusted_type_policy_value(name TrustedTyp
 	if function := callback {
 		mut args := [webidl.string_value(value)]
 		args << arguments
-		return function(value, args)
+		return invoke_trusted_type_policy_callback(function, args)
 	}
 	if throw_if_missing == .yes {
 		return error('TypeError: Trying to create a trusted type without a callback')
@@ -142,8 +151,7 @@ pub fn get_trusted_type_compliant_string(mut factory TrustedTypePolicyFactory, e
 			TrustedScriptURL { trusted.data }
 		}
 	}
-	if should_sink_type_mismatch_violation_be_blocked_by_content_security_policy(mut factory,
-		sink, sink_group, stringify(input)) {
+	if should_sink_type_mismatch_violation_be_blocked_by_content_security_policy(mut factory, sink, sink_group, stringify(input)) {
 		return error('TypeError: Sink ${injection_sink_string(sink)} of type ${sink_group} requires a TrustedType to be used')
 	}
 	return stringify(input)
@@ -161,6 +169,5 @@ pub fn get_trusted_types_compliant_attribute_value(mut factory TrustedTypePolicy
 	data := get_trusted_type_data_for_attribute(element, attribute_name.to_lower(), normalized_ns) or {
 		return stringify(new_value)
 	}
-	return get_trusted_type_compliant_string(mut factory, data.trusted_type, new_value, data.sink,
-		"'script'", true)
+	return get_trusted_type_compliant_string(mut factory, data.trusted_type, new_value, data.sink, "'script'", true)
 }

@@ -212,6 +212,15 @@ pub fn (directive &RequireTrustedTypesForDirective) pre_navigation_check(mut fac
 	return factory.pre_navigation_check(url)
 }
 
+// A small, cycle-free representation of the Window/WorkerGlobalScope owner
+// retained by the upstream factory. Embedders can associate their concrete
+// global and realm objects through the opaque handles.
+pub struct TrustedTypesGlobalContext {
+pub:
+	global voidptr
+	realm  voidptr
+}
+
 @[heap]
 pub struct TrustedTypePolicyFactory {
 pub mut:
@@ -222,10 +231,31 @@ mut:
 	default_policy_      ?&TrustedTypePolicy
 	empty_html_          ?TrustedHTML
 	empty_script_        ?TrustedScript
+	global_context_      ?&TrustedTypesGlobalContext
 }
 
 pub fn TrustedTypePolicyFactory.create() &TrustedTypePolicyFactory {
 	return &TrustedTypePolicyFactory{}
+}
+
+pub fn TrustedTypePolicyFactory.create_for_global(context &TrustedTypesGlobalContext) &TrustedTypePolicyFactory {
+	return &TrustedTypePolicyFactory{
+		global_context_: context
+	}
+}
+
+pub fn (factory &TrustedTypePolicyFactory) relevant_global_impl() voidptr {
+	context := factory.global_context_ or { return unsafe { nil } }
+	return context.global
+}
+
+pub fn (factory &TrustedTypePolicyFactory) relevant_realm() voidptr {
+	context := factory.global_context_ or { return unsafe { nil } }
+	return context.realm
+}
+
+pub fn TrustedTypePolicyFactory.default_policy_offset() usize {
+	return usize(__offsetof(TrustedTypePolicyFactory, default_policy_))
 }
 
 pub fn (factory &TrustedTypePolicyFactory) default_policy() ?&TrustedTypePolicy {
@@ -238,8 +268,7 @@ pub fn (mut factory TrustedTypePolicyFactory) create_policy(name string, options
 
 // https://w3c.github.io/trusted-types/dist/spec/#create-trusted-type-policy-algorithm
 pub fn (mut factory TrustedTypePolicyFactory) create_a_trusted_type_policy(name string, options TrustedTypePolicyOptions) !&TrustedTypePolicy {
-	if factory.should_trusted_type_policy_be_blocked_by_content_security_policy(name,
-		factory.created_policy_names.clone()) {
+	if factory.should_trusted_type_policy_be_blocked_by_content_security_policy(name, factory.created_policy_names.clone()) {
 		return error('TypeError: Content Security Policy blocked the creation of the policy ${name}')
 	}
 	if name == 'default' && factory.default_policy_ != none {
@@ -271,7 +300,7 @@ pub fn (mut factory TrustedTypePolicyFactory) should_trusted_type_policy_be_bloc
 			trimmed := runes[..if runes.len < 40 { runes.len } else { 40 }].string()
 			factory.violations << TrustedTypesViolation{
 				resource: 'trusted-types-policy'
-				sample:   trimmed
+				sample: trimmed
 			}
 			if policy.disposition == .enforce {
 				blocked = true
@@ -282,15 +311,15 @@ pub fn (mut factory TrustedTypePolicyFactory) should_trusted_type_policy_be_bloc
 }
 
 pub fn (factory &TrustedTypePolicyFactory) is_html(value TrustedTypeOrString) bool {
-	return value is TrustedHTML
+	return is_trusted_html_value(value)
 }
 
 pub fn (factory &TrustedTypePolicyFactory) is_script(value TrustedTypeOrString) bool {
-	return value is TrustedScript
+	return is_trusted_script_value(value)
 }
 
 pub fn (factory &TrustedTypePolicyFactory) is_script_url(value TrustedTypeOrString) bool {
-	return value is TrustedScriptURL
+	return is_trusted_script_url_value(value)
 }
 
 pub fn (mut factory TrustedTypePolicyFactory) empty_html() TrustedHTML {
@@ -315,9 +344,21 @@ pub fn (mut factory TrustedTypePolicyFactory) empty_script() TrustedScript {
 	return value
 }
 
+fn strip_sink_group_quotes(value string) string {
+	if value.len >= 2 && ((value[0] == `'` && value[value.len - 1] == `'`)
+		|| (value[0] == `"` && value[value.len - 1] == `"`)) {
+		return value[1..value.len - 1]
+	}
+	return value
+}
+
+pub fn sink_group_matches(directive_value string, sink_group string) bool {
+	return strip_sink_group_quotes(directive_value).to_lower() == strip_sink_group_quotes(sink_group).to_lower()
+}
+
 pub fn (factory &TrustedTypePolicyFactory) does_sink_require_trusted_types(sink_group string, include_report_only bool) bool {
 	for policy in factory.csp_policies {
-		if !policy.require_trusted_types_for.any(it.to_lower() == sink_group.to_lower()) {
+		if !policy.require_trusted_types_for.any(sink_group_matches(it, sink_group)) {
 			continue
 		}
 		if policy.disposition == .enforce || include_report_only {
@@ -328,8 +369,7 @@ pub fn (factory &TrustedTypePolicyFactory) does_sink_require_trusted_types(sink_
 }
 
 pub fn (mut factory TrustedTypePolicyFactory) should_sink_type_mismatch_violation_be_blocked(sink InjectionSink, sink_group string, source string) bool {
-	return should_sink_type_mismatch_violation_be_blocked_by_content_security_policy(mut factory,
-		sink, sink_group, source)
+	return should_sink_type_mismatch_violation_be_blocked_by_content_security_policy(mut factory, sink, sink_group, source)
 }
 
 // https://w3c.github.io/trusted-types/dist/spec/#should-block-sink-type-mismatch
@@ -346,14 +386,14 @@ pub fn should_sink_type_mismatch_violation_be_blocked_by_content_security_policy
 	}
 	mut blocked := false
 	for policy in factory.csp_policies {
-		if !policy.require_trusted_types_for.any(it.to_lower() == sink_group.to_lower()) {
+		if !policy.require_trusted_types_for.any(sink_group_matches(it, sink_group)) {
 			continue
 		}
 		trimmed :=
 			sample.runes()[..if sample.runes().len < 40 { sample.runes().len } else { 40 }].string()
 		factory.violations << TrustedTypesViolation{
 			resource: 'trusted-types-sink'
-			sample:   '${injection_sink_string(sink)}|${trimmed}'
+			sample: '${injection_sink_string(sink)}|${trimmed}'
 		}
 		if policy.disposition == .enforce {
 			blocked = true
@@ -365,7 +405,7 @@ pub fn should_sink_type_mismatch_violation_be_blocked_by_content_security_policy
 pub fn (factory &TrustedTypePolicyFactory) sink_type_mismatch_would_be_blocked(sink_group string) bool {
 	for policy in factory.csp_policies {
 		if policy.disposition == .enforce
-			&& policy.require_trusted_types_for.any(it.to_lower() == sink_group.to_lower()) {
+			&& policy.require_trusted_types_for.any(sink_group_matches(it, sink_group)) {
 			return true
 		}
 	}
@@ -391,24 +431,24 @@ pub fn element_interface(local_name string, namespace string) ElementInterface {
 	if namespace == html_namespace && local_name == 'iframe' {
 		return ElementInterface{
 			element_name: 'HTMLIFrameElement'
-			element_ns:   namespace
+			element_ns: namespace
 		}
 	}
 	if namespace == html_namespace && local_name == 'script' {
 		return ElementInterface{
 			element_name: 'HTMLScriptElement'
-			element_ns:   namespace
+			element_ns: namespace
 		}
 	}
 	if namespace == svg_namespace && local_name == 'script' {
 		return ElementInterface{
 			element_name: 'SVGScriptElement'
-			element_ns:   namespace
+			element_ns: namespace
 		}
 	}
 	return ElementInterface{
 		element_name: 'Element'
-		element_ns:   namespace
+		element_ns: namespace
 	}
 }
 
@@ -423,10 +463,10 @@ pub fn get_trusted_type_data_for_attribute(element ElementInterface, attribute s
 		&& element.element_ns in [html_namespace, svg_namespace, mathml_namespace]
 		&& actual_attribute in event_handler_attributes {
 		return TrustedTypeData{
-			element:              'Element'
+			element: 'Element'
 			attribute_local_name: actual_attribute
-			trusted_type:         .trusted_script
-			sink:                 .element_event_handler
+			trusted_type: .trusted_script
+			sink: .element_event_handler
 		}
 	}
 	mut name := TrustedTypeName.trusted_html
@@ -447,11 +487,11 @@ pub fn get_trusted_type_data_for_attribute(element ElementInterface, attribute s
 		return none
 	}
 	return TrustedTypeData{
-		element:              element.element_name
-		attribute_ns:         attribute_ns
+		element: element.element_name
+		attribute_ns: attribute_ns
 		attribute_local_name: actual_attribute
-		trusted_type:         name
-		sink:                 sink
+		trusted_type: name
+		sink: sink
 	}
 }
 
@@ -463,8 +503,7 @@ pub fn (factory &TrustedTypePolicyFactory) get_attribute_type(tag_name string, a
 	} else {
 		none
 	}
-	data := get_trusted_type_data_for_attribute(element_interface(tag_name.to_lower(),
-		actual_namespace), attribute.to_lower(), actual_attribute_ns) or { return none }
+	data := get_trusted_type_data_for_attribute(element_interface(tag_name.to_lower(), actual_namespace), attribute.to_lower(), actual_attribute_ns) or { return none }
 	return trusted_type_name_string(data.trusted_type)
 }
 
@@ -500,8 +539,7 @@ pub fn (mut factory TrustedTypePolicyFactory) pre_navigation_check(url string) !
 	if !url.starts_with('javascript:') {
 		return url
 	}
-	converted := process_value_with_a_default_policy(factory, .trusted_script,
-		url['javascript:'.len..], .location_href)!
+	converted := process_value_with_a_default_policy(factory, .trusted_script, url['javascript:'.len..], .location_href)!
 	trusted := converted.value or { return error('Blocked') }
 	if trusted is TrustedScript {
 		return 'javascript:${trusted.data}'

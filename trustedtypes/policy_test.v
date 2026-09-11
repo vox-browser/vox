@@ -15,7 +15,7 @@ fn null_callback(_ string, _ []webidl.Value) !PolicyResult {
 
 fn test_trusted_values_policy_callbacks_and_missing_callback() {
 	policy := TrustedTypePolicy.create('p', TrustedTypePolicyOptions{
-		create_html:       prefix_callback
+		create_html: prefix_callback
 		create_script_url: null_callback
 	})
 	assert policy.name() == 'p'
@@ -53,14 +53,39 @@ fn test_factory_default_uniqueness_type_checks_and_empty_singletons() {
 fn test_default_policy_processing_and_compliant_string() {
 	mut factory := TrustedTypePolicyFactory.create()
 	factory.csp_policies << TrustedTypesCSPPolicy{
-		disposition:               .enforce
+		disposition: .enforce
 		require_trusted_types_for: ["'script'"]
 	}
 	factory.create_policy('default', TrustedTypePolicyOptions{ create_script: prefix_callback })!
-	converted := get_trusted_type_compliant_string(mut factory, .trusted_script, 'alert(1)', .eval,
-		"'script'", true)!
+	converted := get_trusted_type_compliant_string(mut factory, .trusted_script, 'alert(1)', .eval, "'script'", true)!
 	assert converted == 'safe:alert(1)'
 	assert get_trusted_type_compliant_string(mut factory, .trusted_script, TrustedScript{
 		data: 'already'
 	}, .eval, "'script'", true)! == 'already'
+}
+
+fn test_binding_value_helpers_and_policy_callback_invocation() {
+	html := TrustedHTML{ data: '<p>safe</p>' }
+	script := TrustedScript{ data: 'safe()' }
+	url := TrustedScriptURL{ data: 'https://example.test/app.js' }
+	assert trusted_html_from_value(html)?.data == html.data
+	assert trusted_html_from_value('plain') == none
+	assert trusted_script_from_value(script)?.data == script.data
+	assert trusted_script_url_from_value(url)?.data == url.data
+	assert is_trusted_html_value(html)
+	assert is_trusted_script_value(script)
+	assert is_trusted_script_url_value(url)
+	assert trusted_script_value_matches(script, 'safe()')
+	assert !trusted_script_value_matches('safe()', 'safe()')
+	assert trusted_script_values_match([TrustedTypeOrString(script),
+		TrustedTypeOrString(TrustedScript{ data: 'second()' })], [
+		'safe()',
+		'second()',
+	])
+	assert !trusted_script_values_match([TrustedTypeOrString(script)], ['safe()', 'extra'])
+
+	result := invoke_trusted_type_policy_callback(prefix_callback, [
+		webidl.string_value('input'),
+	])!
+	assert result.value? == 'safe:input'
 }
