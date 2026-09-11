@@ -25,9 +25,9 @@ pub fn dump_current_document_layout_tree(document &dom.Document) ?string {
 	return dump_typed_layout_tree(result.root, result.state)
 }
 
-// LayoutTest snapshots contain the Layout tree, the committed paint tree, and the
-// stacking-context tree. Keep dump_document_layout_tree() as the focused first-section API used by
-// unit tests, and expose the complete translated LayoutState::commit() result here.
+// LayoutTest snapshots contain the Layout tree and stacking-context tree. Ladybird
+// stopped dumping the intermediate paint tree in 980be4b6b2d; retain the typed paint
+// dump as a focused diagnostic API, but keep the corpus snapshot format source-faithful.
 pub fn dump_document_layout_snapshot(document &dom.Document, viewport_width f64, viewport_height f64) ?string {
 	result := run_document_layout(document, viewport_width, viewport_height) or { return none }
 	mut layout_lines := []string{}
@@ -35,9 +35,8 @@ pub fn dump_document_layout_snapshot(document &dom.Document, viewport_width f64,
 	// Dump.cpp retains a final blank line produced by a recursively dumped
 	// navigable layout root. The focused tree API trims it; a full snapshot does not.
 	layout_tree := layout_lines.join('\n')
-	paint_tree := dump_typed_paint_tree(result.root, result.state)
 	stacking_context_tree := dump_typed_stacking_context_tree(result.root, result.state)
-	return '${layout_tree}\n\n${paint_tree}\n\n${stacking_context_tree}'
+	return '${layout_tree}\n\n${stacking_context_tree}'
 }
 
 pub fn dump_typed_layout_tree(root &Node, state &LayoutState) string {
@@ -54,15 +53,15 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 	if parent := node.parent() {
 		skip_anonymous_item =
 			(parent.display().is_flex_inside() || parent.display().is_grid_inside())
-			&& can_skip_anonymous_text_run(node) && !node.is_button_content_box_
-			&& !(parent.display().is_grid_inside() && parent.display().is_inline_outside())
-			&& !(parent.display().is_flex_inside() && parent.display().is_inline_outside()
-			&& node.next_sibling() == none)
+				&& can_skip_anonymous_text_run(node) && !node.is_button_content_box_
+				&& !(parent.display().is_grid_inside() && parent.display().is_inline_outside())
+				&& !(parent.display().is_flex_inside() && parent.display().is_inline_outside()
+					&& node.next_sibling() == none)
 		skip_table_whitespace = ignorable_table_whitespace(node)
 			&& (parent.display().is_table_inside() || parent.display().is_table_row_group()
-			|| parent.display().is_table_header_group()
-			|| parent.display().is_table_footer_group()
-			|| parent.display().is_table_row()) && !is_trailing_whitespace_of_inline_table(node)
+				|| parent.display().is_table_header_group()
+				|| parent.display().is_table_footer_group()
+				|| parent.display().is_table_row()) && !is_trailing_whitespace_of_inline_table(node)
 	}
 	if node.is_text_node() || node.is_break_node() || skip_anonymous_item || skip_table_whitespace {
 		line += '(not painted)'
@@ -164,9 +163,7 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 		viewport := unsafe { &NavigableContainerViewport(node) }
 		if styled := node.as_node_with_style() {
 			if used := state.try_get(styled) {
-				if nested := run_document_layout_for_tree_dump(viewport.content_document(),
-					used.content_width().to_double(), used.content_height().to_double())
-				{
+				if nested := run_document_layout_for_tree_dump(viewport.content_document(), used.content_width().to_double(), used.content_height().to_double()) {
 					append_typed_layout_node(nested.root, nested.state, depth + 1, mut lines)
 					lines << ''
 				}
@@ -190,8 +187,7 @@ fn append_typed_layout_node(node &Node, state &LayoutState, depth int, mut lines
 					mutable_svg_document.set_viewport_rect(dom.Rect{0, 0, width, height})
 					if svg_result := run_document_layout_for_tree_dump(svg_document, width, height) {
 						lines << '${'  '.repeat(depth + 1)}(SVG-as-image isolated context)'
-						append_typed_layout_node(svg_result.root, svg_result.state, depth + 1, mut
-							lines)
+						append_typed_layout_node(svg_result.root, svg_result.state, depth + 1, mut lines)
 					}
 				}
 			}
@@ -259,8 +255,7 @@ fn append_typed_block_line_fragments(node &Node, state &LayoutState, used &UsedV
 			if fragment_inline_paintable_target(fragment.layout_node()) != none {
 				continue
 			}
-			offset := css_pixel_point_add(css_pixel_point_add(container_position, fragment.offset()), inline_relative_offset(fragment.layout_node(),
-				state))
+			offset := css_pixel_point_add(css_pixel_point_add(container_position, fragment.offset()), inline_relative_offset(fragment.layout_node(), state))
 			append_typed_fragment(fragment, offset, fragment_index, depth, mut lines)
 			fragment_index++
 		}
@@ -280,8 +275,7 @@ fn append_typed_inline_line_fragments(node &Node, state &LayoutState, depth int,
 			if !layout_nodes_same(target, node) {
 				continue
 			}
-			offset := css_pixel_point_add(css_pixel_point_add(container_position, fragment.offset()), inline_relative_offset(fragment.layout_node(),
-				state))
+			offset := css_pixel_point_add(css_pixel_point_add(container_position, fragment.offset()), inline_relative_offset(fragment.layout_node(), state))
 			append_typed_fragment(fragment, offset, fragment_index, depth, mut lines)
 			fragment_index++
 		}
@@ -290,8 +284,7 @@ fn append_typed_inline_line_fragments(node &Node, state &LayoutState, depth int,
 
 fn append_typed_fragment(fragment &LineBoxFragment, offset css.CSSPixelPoint, fragment_index int, depth int, mut lines []string) {
 	indent := '  '.repeat(depth)
-	lines << '${indent}  frag ${fragment_index} from ${layout_debug_class_name(fragment.layout_node())} start: ${fragment.start()}, length: ${fragment.length_in_code_units()}, rect: ${layout_debug_rect(offset,
-		fragment.width(), fragment.height())} baseline: ${layout_debug_pixels(fragment.baseline())}'
+	lines << '${indent}  frag ${fragment_index} from ${layout_debug_class_name(fragment.layout_node())} start: ${fragment.start()}, length: ${fragment.length_in_code_units()}, rect: ${layout_debug_rect(offset, fragment.width(), fragment.height())} baseline: ${layout_debug_pixels(fragment.baseline())}'
 	if text := fragment.text() {
 		if fragment.length_in_code_units() > 0 {
 			lines << '${indent}      "${layout_debug_text(text)}"'
@@ -365,8 +358,7 @@ fn layout_debug_inline_metrics(node &Node, state &LayoutState) ?LayoutDebugInlin
 				continue
 			}
 			relative_offset := inline_relative_offset(fragment.layout_node(), state)
-			leading, trailing := inline_descendant_horizontal_edges(fragment.layout_node(), node,
-				state)
+			leading, trailing := inline_descendant_horizontal_edges(fragment.layout_node(), node, state)
 			fragment_x := fragment.offset().x().plus(relative_offset.x())
 			left := fragment_x.minus(leading)
 			right := fragment_x.plus(fragment.width()).plus(trailing)
@@ -386,8 +378,7 @@ fn layout_debug_inline_metrics(node &Node, state &LayoutState) ?LayoutDebugInlin
 			}
 			line_height = css_pixels_max(line_height, fragment.block_length())
 			if first_position == none {
-				first_position = css.CSSPixelPoint.new(container_position.x().plus(left),
-					container_position.y().plus(fragment.offset().y()).plus(relative_offset.y()))
+				first_position = css.CSSPixelPoint.new(container_position.x().plus(left), container_position.y().plus(fragment.offset().y()).plus(relative_offset.y()))
 			}
 		}
 		if left := line_left {
@@ -408,15 +399,15 @@ fn layout_debug_inline_metrics(node &Node, state &LayoutState) ?LayoutDebugInlin
 		}
 		return LayoutDebugInlineMetrics{
 			position: container_position
-			width:    CSSPixels.new(0)
-			height:   node.computed_values().line_height()
+			width: CSSPixels.new(0)
+			height: node.computed_values().line_height()
 		}
 	}
 
 	return LayoutDebugInlineMetrics{
 		position: position
-		width:    maximum_width
-		height:   maximum_height
+		width: maximum_width
+		height: maximum_height
 	}
 }
 
@@ -425,9 +416,7 @@ fn layout_debug_box_model(used &UsedValues) string {
 }
 
 fn layout_debug_box_model_with_size(used &UsedValues, width CSSPixels, height CSSPixels) string {
-	return
-		' [${layout_debug_pixels(used.margin_left)}+${layout_debug_pixels(used.border_left)}+${layout_debug_pixels(used.padding_left)} ${layout_debug_pixels(width)} ${layout_debug_pixels(used.padding_right)}+${layout_debug_pixels(used.border_right)}+${layout_debug_pixels(used.margin_right)}]' +
-		' [${layout_debug_pixels(used.margin_top)}+${layout_debug_pixels(used.border_top)}+${layout_debug_pixels(used.padding_top)} ${layout_debug_pixels(height)} ${layout_debug_pixels(used.padding_bottom)}+${layout_debug_pixels(used.border_bottom)}+${layout_debug_pixels(used.margin_bottom)}]'
+	return ' [${layout_debug_pixels(used.margin_left)}+${layout_debug_pixels(used.border_left)}+${layout_debug_pixels(used.padding_left)} ${layout_debug_pixels(width)} ${layout_debug_pixels(used.padding_right)}+${layout_debug_pixels(used.border_right)}+${layout_debug_pixels(used.margin_right)}]' + ' [${layout_debug_pixels(used.margin_top)}+${layout_debug_pixels(used.border_top)}+${layout_debug_pixels(used.padding_top)} ${layout_debug_pixels(height)} ${layout_debug_pixels(used.padding_bottom)}+${layout_debug_pixels(used.border_bottom)}+${layout_debug_pixels(used.margin_bottom)}]'
 }
 
 fn layout_debug_formatting_context(node &Node) ?string {

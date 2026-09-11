@@ -89,15 +89,15 @@ fn layout_debug_node_suppresses_paintable(node &Node) bool {
 		&& can_skip_anonymous_text_run(node) && !node.is_button_content_box_
 		&& !(parent.display().is_grid_inside() && parent.display().is_inline_outside())
 		&& !(parent.display().is_flex_inside() && parent.display().is_inline_outside()
-		&& node.next_sibling() == none)
+			&& node.next_sibling() == none)
 	if skip_anonymous_item {
 		return true
 	}
 	return ignorable_table_whitespace(node)
 		&& (parent.display().is_table_inside() || parent.display().is_table_row_group()
-		|| parent.display().is_table_header_group()
-		|| parent.display().is_table_footer_group()
-		|| parent.display().is_table_row()) && !is_trailing_whitespace_of_inline_table(node)
+			|| parent.display().is_table_header_group()
+			|| parent.display().is_table_footer_group()
+			|| parent.display().is_table_row()) && !is_trailing_whitespace_of_inline_table(node)
 }
 
 fn layout_debug_paintable_class(node &Node) string {
@@ -227,9 +227,9 @@ fn layout_debug_border_rect(position css.CSSPixelPoint, width CSSPixels, height 
 	left := border_left.plus(used.padding_left)
 	top := border_top.plus(used.padding_top)
 	return css.CSSPixelRect{
-		x:      position.x().minus(left)
-		y:      position.y().minus(top)
-		width:  width.plus(left).plus(used.padding_right).plus(border_right)
+		x: position.x().minus(left)
+		y: position.y().minus(top)
+		width: width.plus(left).plus(used.padding_right).plus(border_right)
 		height: height.plus(top).plus(used.padding_bottom).plus(border_bottom)
 	}
 }
@@ -330,10 +330,9 @@ fn layout_debug_inline_metrics_for_line(node &Node, state &LayoutState, line_ind
 	right_value := right or { return none }
 	top_value := direct_top or { top or { return none } }
 	return LayoutDebugInlineMetrics{
-		position: css.CSSPixelPoint.new(container_position.x().plus(left_value),
-			container_position.y().plus(top_value))
-		width:    right_value.minus(left_value)
-		height:   height
+		position: css.CSSPixelPoint.new(container_position.x().plus(left_value), container_position.y().plus(top_value))
+		width: right_value.minus(left_value)
+		height: height
 	}
 }
 
@@ -361,9 +360,9 @@ fn collect_typed_stacking_contexts(node &Node, state &LayoutState, enclosing_ind
 		&& node.establishes_stacking_context() {
 		child_enclosing_index = contexts.len
 		contexts << LayoutDebugStackingContext{
-			node:       node
+			node: node
 			tree_index: contexts.len
-			parent:     enclosing_index
+			parent: enclosing_index
 		}
 	}
 	for child in node.children() {
@@ -399,13 +398,13 @@ fn append_typed_stacking_context(context_index int, contexts []LayoutDebugStacki
 	children := layout_debug_stacking_context_children(context_index, contexts)
 	position := paint_cumulative_offset(node, state, used)
 	rect := css.CSSPixelRect{
-		x:      position.x()
-		y:      position.y()
-		width:  used.content_width()
+		x: position.x()
+		y: position.y()
+		width: used.content_width()
 		height: used.content_height()
 	}
 	z_index := if value := node.computed_values().z_index() { value.str() } else { 'auto' }
-	mut line := '${' '.repeat(depth)}SC for ${layout_debug_node_description(node)} ${layout_debug_css_rect(rect)} [children: ${children.len}] (z-index: ${z_index})'
+	mut line := '${' '.repeat(depth)}SC for ${layout_debug_node_description(node)} ${layout_debug_css_rect(rect)} (z-index: ${z_index})'
 	computed := node.computed_values()
 	if computed.transformations().len > 0 || computed.rotate() != none
 		|| computed.translate() != none || computed.scale() != none {

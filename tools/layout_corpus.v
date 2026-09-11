@@ -198,6 +198,15 @@ fn main() {
 		eprintln('       v run tools/layout_corpus.v --all [--upstream PATH]')
 		exit(2)
 	}
+	// The upstream layout runner always installs its deterministic SerenitySans
+	// face. Mirror that setup when callers have not supplied an override, so the
+	// documented bare `--all` command does not depend on host font discovery.
+	if os.getenv('LADYBIRD_LAYOUT_TEST_FONT') == '' {
+		layout_test_font := os.join_path(options.upstream_root, 'Base', 'res', 'fonts', 'SerenitySans-Regular.ttf')
+		if os.is_file(layout_test_font) {
+			os.setenv('LADYBIRD_LAYOUT_TEST_FONT', layout_test_font, true)
+		}
+	}
 	input_root, expected_root := corpus_directories(options.upstream_root) or {
 		eprintln('${err}')
 		exit(2)

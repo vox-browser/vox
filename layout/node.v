@@ -389,6 +389,16 @@ pub fn (n &Node) first_available_font() &platform.Font {
 	}
 }
 
+// ComputedValues owns a materialized FontCascadeList upstream. The V
+// translation shares its allocation with ComputedProperties, whose cache can
+// be cleared by a later style mutation while an old layout node is retained.
+// Restore the immutable-ComputedValues invariant before a text iterator reads
+// the complete cascade, just as first_available_font() does for one face.
+pub fn (n &Node) font_list() &css.FontCascadeList {
+	mut computed_values := unsafe { &css.ComputedProperties(n.computed_values()) }
+	return computed_values.computed_font_list(css.css_style_computer_for(n.document()).font_computer())
+}
+
 pub fn (n &Node) debug_description() string {
 	mut description := layout_debug_class_name(n)
 	if dom_node := n.dom_node() {

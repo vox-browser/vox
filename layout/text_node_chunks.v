@@ -60,7 +60,7 @@ pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, sh
 	mut code_units := utf16_code_units_for_line_box(view)
 	mut mutable_text_node := unsafe { &TextNode(text_node) }
 	mutable_text_node.cached_utf16_code_units_ = code_units
-	font_cascade := text_node.Node.computed_values().font_list()
+	font_cascade := text_node.Node.font_list()
 	mut font_cascade_fonts := []&platform.Font{cap: font_cascade.fonts.len}
 	mut font_cascade_ranges := [][]css.UnicodeRange{cap: font_cascade.fonts.len}
 	for entry in font_cascade.fonts {

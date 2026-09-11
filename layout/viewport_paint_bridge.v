@@ -1888,13 +1888,13 @@ fn dump_stacking_context(box &BlockBox, indent int, mut builder strings.Builder)
 			description = node.debug_description()
 		}
 	}
-	children := direct_child_stacking_contexts(box)
 	z_index := if box.z_index_auto { 'auto' } else { box.z_index.str() }
-	builder.write_string('SC for ${description} [${rect.x},${rect.y} ${rect.width}x${rect.height}] [children: ${children.len}] (z-index: ${z_index})')
+	builder.write_string('SC for ${description} [${rect.x},${rect.y} ${rect.width}x${rect.height}] (z-index: ${z_index})')
 	if box.paint_transform != [6]f64{} {
 		builder.write_string(', has_transform')
 	}
 	builder.write_string('\n')
+	children := direct_child_stacking_contexts(box)
 	for child in children {
 		dump_stacking_context(child, indent + 1, mut builder)
 	}

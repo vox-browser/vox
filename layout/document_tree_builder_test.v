@@ -113,6 +113,20 @@ fn test_tree_dump_layout_does_not_build_renderer_transport() {
 	assert tree_text.contains('BlockContainer <html>')
 }
 
+fn test_layout_snapshot_uses_current_upstream_sections() {
+	mut doc := html.parse_document('<!doctype html><div>snapshot</div>')
+	snapshot := dump_document_layout_snapshot(doc, 320, 200) or {
+		panic('layout snapshot was not produced')
+	}
+	sections := snapshot.split('\n\n')
+	// Since 980be4b6b2d, LayoutTest no longer includes the intermediate
+	// paintable-tree dump. The second and final section is the stacking tree.
+	assert sections.len == 2
+	assert sections[0].starts_with('Viewport <#document>')
+	assert sections[1].starts_with('SC for Viewport<#document>')
+	assert !sections[1].contains('[children:')
+}
+
 // A DOM text node becomes a Layout::TextNode carrying offset-preserving rendered text.
 fn test_text_node_layout() {
 	mut doc := dom.Document.create(dom.url_about_blank())
