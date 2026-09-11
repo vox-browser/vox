@@ -30,7 +30,7 @@ pub fn CredentialsContainer.construct_impl() &CredentialsContainer {
 	return &CredentialsContainer{}
 }
 
-fn not_implemented_promise(operation string) &dom.Promise {
+fn reject_not_implemented_promise(operation string) &dom.Promise {
 	return dom.Promise.rejected(dom.js_string('InternalError: Not implemented: ${operation}'))
 }
 
@@ -40,22 +40,22 @@ fn not_implemented_promise(operation string) &dom.Promise {
 pub fn (container &CredentialsContainer) get(options CredentialRequestOptions) &dom.Promise {
 	_ = container
 	_ = options
-	return not_implemented_promise('get')
+	return reject_not_implemented_promise('get')
 }
 
 pub fn (container &CredentialsContainer) store(credential &Credential) &dom.Promise {
 	_ = container
 	_ = credential
-	return not_implemented_promise('store')
+	return reject_not_implemented_promise('store')
 }
 
 pub fn (container &CredentialsContainer) create(options CredentialCreationOptions) &dom.Promise {
 	_ = container
 	_ = options
-	return not_implemented_promise('create')
+	return reject_not_implemented_promise('create')
 }
 
 pub fn (container &CredentialsContainer) prevent_silent_access() &dom.Promise {
 	_ = container
-	return not_implemented_promise('prevent silent access')
+	return reject_not_implemented_promise('prevent silent access')
 }

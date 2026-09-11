@@ -33,19 +33,28 @@ mut:
 // V cannot overload construct_impl by dictionary/form argument like WebIDL,
 // so the two generated constructor entry points have explicit suffixes.
 pub fn PasswordCredential.construct_impl(data PasswordCredentialData, origin dom.Origin) !&PasswordCredential {
-	return create_password_credential(data, origin)
+	return PasswordCredential.create_for_constructor(data, origin)
 }
 
 pub fn PasswordCredential.construct_impl_from_form(form &html.HTMLFormElementModel, origin dom.Origin) !&PasswordCredential {
-	return create_password_credential_from_form(form, origin)
+	return PasswordCredential.create_for_constructor(*form, origin)
+}
+
+// V represents WebIDL's overloaded constructor argument with a sum type. The
+// caller supplies the relevant settings object's origin explicitly.
+pub fn PasswordCredential.create_for_constructor(initializer PasswordCredentialInit, origin dom.Origin) !&PasswordCredential {
+	return match initializer {
+		PasswordCredentialData { create_password_credential(initializer, origin) }
+		html.HTMLFormElementModel { create_password_credential_from_form(&initializer, origin) }
+	}
 }
 
 fn PasswordCredential.create(data PasswordCredentialData, origin dom.Origin) &PasswordCredential {
 	return &PasswordCredential{
-		Credential:         Credential.create(data.id, 'password')
+		Credential: Credential.create(data.id, 'password')
 		CredentialUserData: CredentialUserData.create(data.name or { '' }, data.icon_url or { '' })
-		password_:          data.password
-		origin_:            origin
+		password_: data.password
+		origin_: origin
 	}
 }
 

@@ -35,7 +35,7 @@ mut:
 
 fn Credential.create(id string, type_ string) Credential {
 	return Credential{
-		id_:   id
+		id_: id
 		type_: type_
 	}
 }
@@ -50,6 +50,10 @@ pub fn (credential &Credential) type_() string {
 
 // https://www.w3.org/TR/credential-management-1/#dom-credential-isconditionalmediationavailable
 pub fn Credential.is_conditional_mediation_available() &dom.Promise {
+	return Credential.is_conditional_mediation_available_impl()
+}
+
+pub fn Credential.is_conditional_mediation_available_impl() &dom.Promise {
 	return dom.Promise.resolved(dom.js_bool(false))
 }
 
@@ -62,7 +66,7 @@ mut:
 
 fn CredentialUserData.create(name string, icon_url string) CredentialUserData {
 	return CredentialUserData{
-		name_:     name
+		name_: name
 		icon_url_: icon_url
 	}
 }

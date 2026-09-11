@@ -7,12 +7,13 @@ fn test_conditional_mediation_is_resolved_false() {
 	assert promise.state() == .fulfilled
 	assert promise.result().kind == .boolean
 	assert !promise.result().boolean_data
+	assert Credential.is_conditional_mediation_available_impl().state() == .fulfilled
 }
 
 fn test_federated_credential_copies_all_idl_members_and_origin() {
 	credential := FederatedCredential.construct_impl(FederatedCredentialInit{
-		id:       'alice@example.test'
-		name:     'Alice'
+		id: 'alice@example.test'
+		name: 'Alice'
 		icon_url: 'https://idp.example.test/alice.png'
 		provider: 'https://idp.example.test/login?client=browser'
 		protocol: 'openidconnect'
@@ -30,7 +31,7 @@ fn test_federated_credential_copies_all_idl_members_and_origin() {
 
 fn test_federated_optional_user_data_defaults_to_empty() {
 	credential := create_federated_credential(FederatedCredentialInit{
-		id:       'account'
+		id: 'account'
 		provider: 'https://accounts.example/'
 	})!
 	assert credential.name() == ''
@@ -42,8 +43,7 @@ fn test_federated_optional_user_data_defaults_to_empty() {
 fn test_federated_constructor_rejects_empty_required_members() {
 	if _ := create_federated_credential(FederatedCredentialInit{
 		provider: 'https://accounts.example/'
-	})
-	{
+	}) {
 		assert false, 'empty id must fail'
 	} else {
 		assert err.msg() == "TypeError: 'id' must not be empty."
@@ -51,8 +51,7 @@ fn test_federated_constructor_rejects_empty_required_members() {
 
 	if _ := create_federated_credential(FederatedCredentialInit{
 		id: 'account'
-	})
-	{
+	}) {
 		assert false, 'empty provider must fail'
 	} else {
 		assert err.msg() == "TypeError: 'provider' must not be empty."
@@ -62,10 +61,9 @@ fn test_federated_constructor_rejects_empty_required_members() {
 fn test_federated_constructor_rejects_non_url_provider() {
 	for provider in ['relative/path', 'not a URL'] {
 		if _ := create_federated_credential(FederatedCredentialInit{
-			id:       'account'
+			id: 'account'
 			provider: provider
-		})
-		{
+		}) {
 			assert false, 'relative provider must fail'
 		} else {
 			assert err.msg().starts_with('SyntaxError:')

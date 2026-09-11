@@ -32,8 +32,8 @@ fn test_password_credential_from_dictionary() {
 		value: 'https://shop.example'
 	}
 	credential := PasswordCredential.construct_impl(PasswordCredentialData{
-		id:       'alice'
-		name:     'Alice Example'
+		id: 'alice'
+		name: 'Alice Example'
 		icon_url: 'https://shop.example/avatar.png'
 		password: 'correct horse battery staple'
 	}, origin)!
@@ -46,12 +46,24 @@ fn test_password_credential_from_dictionary() {
 	assert credential.as_credential().type_() == 'password'
 }
 
+fn test_password_credential_constructor_adapter_uses_relevant_origin() {
+	origin := dom.Origin{
+		value: 'https://constructor.example'
+	}
+	credential := PasswordCredential.create_for_constructor(PasswordCredentialData{
+		id: 'constructor-user'
+		password: 'secret'
+	}, origin)!
+	assert credential.id() == 'constructor-user'
+	assert credential.origin() == origin
+}
+
 fn test_password_dictionary_defaults_and_required_validation() {
 	origin := dom.Origin{
 		value: 'https://example.test'
 	}
 	credential := create_password_credential(PasswordCredentialData{
-		id:       'alice'
+		id: 'alice'
 		password: 'secret'
 	}, origin)!
 	assert credential.name() == ''
@@ -59,16 +71,14 @@ fn test_password_dictionary_defaults_and_required_validation() {
 
 	if _ := create_password_credential(PasswordCredentialData{
 		password: 'secret'
-	}, origin)
-	{
+	}, origin) {
 		assert false, 'empty id must fail'
 	} else {
 		assert err.msg() == "TypeError: 'id' must not be empty."
 	}
 	if _ := create_password_credential(PasswordCredentialData{
 		id: 'alice'
-	}, origin)
-	{
+	}, origin) {
 		assert false, 'empty password must fail'
 	} else {
 		assert err.msg() == "TypeError: 'password' must not be empty."
