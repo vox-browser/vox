@@ -23,6 +23,14 @@ pub type PositionErrorCallback = fn (&GeolocationPositionError)
 
 pub type PositionProvider = fn (enable_high_accuracy bool) !CoordinatesData
 
+pub fn invoke_position_callback(callback PositionCallback, position &GeolocationPosition) {
+	callback(position)
+}
+
+pub fn invoke_position_error_callback(callback PositionErrorCallback, position_error &GeolocationPositionError) {
+	callback(position_error)
+}
+
 pub struct EmulatedPositionData {
 pub:
 	coordinates ?&GeolocationCoordinates
@@ -49,6 +57,14 @@ struct GeolocationRequest {
 	visibility_deadline EpochTimeStamp
 }
 
+struct WatchPositionData {
+mut:
+	success                            PositionCallback @[required]
+	error                              ?PositionErrorCallback
+	options                            PositionOptions
+	emulated_position_data_observer_id ?u64
+}
+
 enum GeolocationTaskKind {
 	success
 	error
@@ -68,20 +84,31 @@ pub mut:
 	host            GeolocationHost
 	cached_position ?&GeolocationPosition
 mut:
-	watch_ids       map[int]bool
-	pending_visible []GeolocationRequest
-	tasks           []GeolocationTask
+	watch_ids                          map[int]bool
+	watch_data                         map[int]WatchPositionData
+	pending_visible                    []GeolocationRequest
+	pending_watch_position_request_ids map[int]u64
+	tasks                              []GeolocationTask
+	next_emulated_position_observer_id u64
 }
 
 pub fn Geolocation.create(host GeolocationHost) &Geolocation {
 	return &Geolocation{
-		host:      host
+		host: host
 		watch_ids: map[int]bool{}
+		watch_data: map[int]WatchPositionData{}
+		pending_watch_position_request_ids: map[int]u64{}
 	}
 }
 
 pub fn Geolocation.construct_impl() &Geolocation {
 	return Geolocation.create(GeolocationHost{})
+}
+
+// V's host record is the cycle-free counterpart of the Window retained by
+// the current C++ object. It owns the associated-document and page inputs.
+pub fn (geo &Geolocation) window() &GeolocationHost {
+	return &geo.host
 }
 
 pub fn (mut geo Geolocation) get_current_position(success PositionCallback, error_callback ?PositionErrorCallback, options PositionOptions) {
@@ -91,7 +118,7 @@ pub fn (mut geo Geolocation) get_current_position(success PositionCallback, erro
 	}
 	geo.request_a_position(GeolocationRequest{
 		success: success
-		error:   error_callback
+		error: error_callback
 		options: options
 	})
 }
@@ -104,23 +131,58 @@ pub fn (mut geo Geolocation) watch_position(success PositionCallback, error_call
 	geolocation_next_watch_id++
 	watch_id := geolocation_next_watch_id
 	geo.watch_ids[watch_id] = true
+	geo.watch_data[watch_id] = WatchPositionData{
+		success: success
+		error: error_callback
+		options: options
+	}
 	geo.request_a_position(GeolocationRequest{
-		success:  success
-		error:    error_callback
-		options:  options
+		success: success
+		error: error_callback
+		options: options
 		watch_id: watch_id
 	})
 	return watch_id
 }
 
 pub fn (mut geo Geolocation) clear_watch(watch_id int) {
+	geo.remove_watch_id(watch_id)
+	geo.pending_watch_position_request_ids.delete(watch_id)
+}
+
+pub fn (mut geo Geolocation) remove_watch_id(watch_id int) {
 	geo.watch_ids.delete(watch_id)
+	geo.unregister_watch_position_observer(watch_id)
+	geo.watch_data.delete(watch_id)
+	mut remaining_visible_requests := []GeolocationRequest{cap: geo.pending_visible.len}
+	for pending in geo.pending_visible {
+		if pending_watch_id := pending.watch_id {
+			if pending_watch_id == watch_id {
+				continue
+			}
+		}
+		remaining_visible_requests << pending
+	}
+	geo.pending_visible = remaining_visible_requests
+}
+
+// The embedding host represents the top-level traversable state used for
+// emulation. Absence is not representable after construction, so the host is
+// always the returned traversable boundary.
+pub fn (geo &Geolocation) top_level_traversable() &GeolocationHost {
+	return &geo.host
+}
+
+pub fn (mut geo Geolocation) unregister_watch_position_observer(watch_id int) {
+	mut data := geo.watch_data[watch_id] or { return }
+	data.emulated_position_data_observer_id = none
+	geo.watch_data[watch_id] = data
 }
 
 fn (mut geo Geolocation) request_a_position(request GeolocationRequest) {
 	if !geo.host.feature_allowed || !geo.host.secure_context {
 		if watch_id := request.watch_id {
-			geo.watch_ids.delete(watch_id)
+			geo.remove_watch_id(watch_id)
 		}
 		geo.call_back_with_error(request.error, .permission_denied)
 		return
@@ -140,8 +202,8 @@ fn (mut geo Geolocation) acquire_a_position(request GeolocationRequest) {
 		return
 	}
 	if coordinates := emulated.coordinates {
-		geo.queue_success(request.success, GeolocationPosition.create(coordinates,
-			geo.host.now_ms, request.options.enable_high_accuracy))
+		geo.queue_success(request.success, GeolocationPosition.create(coordinates, geo.host.now_ms, request.options.enable_high_accuracy))
+		geo.register_emulated_position_observer(request.watch_id)
 		return
 	}
 	if cached := geo.cached_position {
@@ -153,6 +215,16 @@ fn (mut geo Geolocation) acquire_a_position(request GeolocationRequest) {
 		if request.options.maximum_age > 0 && cached.timestamp() > cache_time
 			&& cached.is_high_accuracy() == request.options.enable_high_accuracy {
 			geo.queue_success(request.success, cached)
+			geo.register_emulated_position_observer(request.watch_id)
+			return
+		}
+	}
+	geo.acquire_position_from_page(request)
+}
+
+fn (mut geo Geolocation) acquire_position_from_page(request GeolocationRequest) {
+	if watch_id := request.watch_id {
+		if watch_id !in geo.watch_ids {
 			return
 		}
 	}
@@ -163,10 +235,21 @@ fn (mut geo Geolocation) acquire_a_position(request GeolocationRequest) {
 			return
 		}
 	}
-	position := GeolocationPosition.create(GeolocationCoordinates.create(data), geo.host.now_ms,
-		request.options.enable_high_accuracy)
+	position := GeolocationPosition.create(GeolocationCoordinates.create(data), geo.host.now_ms, request.options.enable_high_accuracy)
 	geo.cached_position = position
 	geo.queue_success(request.success, position)
+	geo.register_emulated_position_observer(request.watch_id)
+}
+
+fn (mut geo Geolocation) register_emulated_position_observer(watch_id ?int) {
+	id := watch_id or { return }
+	mut data := geo.watch_data[id] or { return }
+	if data.emulated_position_data_observer_id != none {
+		return
+	}
+	geo.next_emulated_position_observer_id++
+	data.emulated_position_data_observer_id = geo.next_emulated_position_observer_id
+	geo.watch_data[id] = data
 }
 
 // https://w3c.github.io/geolocation/#dfn-get-emulated-position-data
@@ -188,18 +271,22 @@ fn (mut geo Geolocation) run_in_parallel_when_document_is_visible(request Geoloc
 		return
 	}
 	geo.pending_visible << GeolocationRequest{
-		success:             request.success
-		error:               request.error
-		options:             request.options
-		watch_id:            request.watch_id
+		success: request.success
+		error: request.error
+		options: request.options
+		watch_id: request.watch_id
 		visibility_deadline: geo.host.now_ms + visibility_state_timeout_ms
 	}
 }
 
 fn (mut geo Geolocation) queue_success(callback PositionCallback, position &GeolocationPosition) {
+	queue_success_callback(mut geo, callback, position)
+}
+
+pub fn queue_success_callback(mut geo Geolocation, callback PositionCallback, position &GeolocationPosition) {
 	geo.tasks << GeolocationTask{
-		kind:     .success
-		success:  callback
+		kind: .success
+		success: callback
 		position: position
 	}
 }
@@ -208,10 +295,32 @@ fn (mut geo Geolocation) call_back_with_error(callback ?PositionErrorCallback, c
 	if callback == none {
 		return
 	}
+	queue_error_callback(mut geo, callback, GeolocationPositionError.create(code))
+}
+
+pub fn queue_error_callback(mut geo Geolocation, callback PositionErrorCallback, position_error &GeolocationPositionError) {
 	geo.tasks << GeolocationTask{
-		kind:  .error
+		kind: .error
 		error: callback
-		code:  code
+		code: position_error.code()
+	}
+}
+
+// Setting emulated position data is a significant position change. Re-enter
+// the request algorithm for each active watch, preserving its callbacks and
+// options exactly as the C++ traversable observer does.
+pub fn (mut geo Geolocation) set_emulated_position_data(data ?CoordinatesData, position_error ?GeolocationPositionErrorCode) {
+	geo.host.emulated_data = data
+	geo.host.emulated_error = position_error
+	watch_ids := geo.watch_ids.keys()
+	for watch_id in watch_ids {
+		watch := geo.watch_data[watch_id] or { continue }
+		geo.request_a_position(GeolocationRequest{
+			success: watch.success
+			error: watch.error
+			options: watch.options
+			watch_id: watch_id
+		})
 	}
 }
 
@@ -254,20 +363,26 @@ pub fn (mut geo Geolocation) run_next_task() bool {
 		.success {
 			callback := task.success or { return true }
 			position := task.position or { return true }
-			callback(position)
+			invoke_position_callback(callback, position)
 		}
 		.error {
 			callback := task.error or { return true }
-			callback(GeolocationPositionError.create(task.code))
+			invoke_position_error_callback(callback, GeolocationPositionError.create(task.code))
 		}
 	}
 	return true
 }
 
 pub fn (mut geo Geolocation) drain_tasks() {
-	for geo.run_next_task() {}
+	for geo.run_next_task() {
+	}
 }
 
 pub fn (geo &Geolocation) has_watch(watch_id int) bool {
 	return watch_id in geo.watch_ids
+}
+
+pub fn (geo &Geolocation) has_emulated_position_observer(watch_id int) bool {
+	data := geo.watch_data[watch_id] or { return false }
+	return data.emulated_position_data_observer_id != none
 }

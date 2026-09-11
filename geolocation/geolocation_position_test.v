@@ -2,13 +2,13 @@ module geolocation
 
 fn test_coordinates_getters() {
 	coords := GeolocationCoordinates.create(CoordinatesData{
-		accuracy:          10.0
-		latitude:          51.5
-		longitude:         -0.12
-		altitude:          25.0
+		accuracy: 10.0
+		latitude: 51.5
+		longitude: -0.12
+		altitude: 25.0
 		altitude_accuracy: 5.0
-		heading:           90.0
-		speed:             1.5
+		heading: 90.0
+		speed: 1.5
 	})
 	assert coords.accuracy() == 10.0
 	assert coords.latitude() == 51.5
@@ -22,8 +22,8 @@ fn test_coordinates_getters() {
 fn test_coordinates_optional_fields_default_to_none() {
 	// Only the three required fields are given; the optional ones are none.
 	coords := GeolocationCoordinates.create(CoordinatesData{
-		accuracy:  20.0
-		latitude:  0.0
+		accuracy: 20.0
+		latitude: 0.0
 		longitude: 0.0
 	})
 	assert coords.accuracy() == 20.0
@@ -35,8 +35,8 @@ fn test_coordinates_optional_fields_default_to_none() {
 
 fn test_position_holds_coords_timestamp_and_accuracy_flag() {
 	coords := GeolocationCoordinates.create(CoordinatesData{
-		accuracy:  10.0
-		latitude:  1.0
+		accuracy: 10.0
+		latitude: 1.0
 		longitude: 2.0
 	})
 	position := GeolocationPosition.create(coords, EpochTimeStamp(1700000000000), true)
@@ -45,6 +45,7 @@ fn test_position_holds_coords_timestamp_and_accuracy_flag() {
 	assert position.coords().latitude() == 1.0
 	assert position.timestamp() == u64(1700000000000)
 	assert position.is_high_accuracy()
+	assert GeolocationPosition.coords_offset() == 0
 }
 
 fn test_position_low_accuracy() {
@@ -106,12 +107,12 @@ fn test_geolocation_document_security_and_task_boundaries() {
 fn test_geolocation_visibility_emulation_cache_and_watch() {
 	mut recorder := &GeolocationRecorder{}
 	mut geo := Geolocation.create(GeolocationHost{
-		visible:       false
-		now_ms:        1_000
+		visible: false
+		now_ms: 1_000
 		emulated_data: CoordinatesData{
-			latitude:  12.5
+			latitude: 12.5
 			longitude: 44.0
-			accuracy:  2.0
+			accuracy: 2.0
 		}
 	})
 	emulated := geo.get_emulated_position_data()
@@ -137,7 +138,7 @@ fn test_geolocation_visibility_emulation_cache_and_watch() {
 		recorder.positions << position
 	}, none, PositionOptions{
 		enable_high_accuracy: true
-		maximum_age:          100
+		maximum_age: 100
 	})
 	geo.drain_tasks()
 	assert recorder.positions.len == 2
@@ -160,7 +161,7 @@ fn test_hidden_position_request_expires_without_callback() {
 	mut recorder := &GeolocationRecorder{}
 	mut geo := Geolocation.create(GeolocationHost{
 		visible: false
-		now_ms:  100
+		now_ms: 100
 	})
 	geo.get_current_position(fn [mut recorder] (position &GeolocationPosition) {
 		recorder.positions << position
@@ -173,4 +174,51 @@ fn test_hidden_position_request_expires_without_callback() {
 	geo.drain_tasks()
 	assert recorder.positions.len == 0
 	assert recorder.errors.len == 0
+}
+
+fn test_watch_reenters_position_request_on_emulated_position_changes() {
+	mut recorder := &GeolocationRecorder{}
+	mut geo := Geolocation.create(GeolocationHost{
+		now_ms: 10
+		emulated_data: CoordinatesData{ latitude: 1 }
+	})
+	watch_id := geo.watch_position(fn [mut recorder] (position &GeolocationPosition) {
+		recorder.positions << position
+	}, none, PositionOptions{ enable_high_accuracy: true })
+	geo.drain_tasks()
+	assert recorder.positions.map(it.coords().latitude()) == [1.0]
+	assert geo.has_emulated_position_observer(watch_id)
+
+	geo.host.now_ms = 20
+	geo.set_emulated_position_data(CoordinatesData{ latitude: 2 }, none)
+	geo.drain_tasks()
+	assert recorder.positions.map(it.coords().latitude()) == [1.0, 2.0]
+	assert recorder.positions.last().is_high_accuracy()
+
+	geo.clear_watch(watch_id)
+	assert !geo.has_emulated_position_observer(watch_id)
+	geo.set_emulated_position_data(CoordinatesData{ latitude: 3 }, none)
+	geo.drain_tasks()
+	assert recorder.positions.len == 2
+}
+
+fn test_explicit_callback_helpers_preserve_geolocation_task_boundary() {
+	mut recorder := &GeolocationRecorder{}
+	mut geo := Geolocation.create(GeolocationHost{})
+	position := GeolocationPosition.create(GeolocationCoordinates.create(CoordinatesData{
+		latitude: 42
+	}), 1, false)
+	queue_success_callback(mut geo, fn [mut recorder] (value &GeolocationPosition) {
+		recorder.positions << value
+	}, position)
+	queue_error_callback(mut geo, fn [mut recorder] (value &GeolocationPositionError) {
+		recorder.errors << value.code()
+	}, GeolocationPositionError.create(.timeout))
+	assert recorder.positions.len == 0
+	assert recorder.errors.len == 0
+	geo.drain_tasks()
+	assert recorder.positions == [position]
+	assert recorder.errors == [.timeout]
+	assert voidptr(geo.window()) == voidptr(&geo.host)
+	assert voidptr(geo.top_level_traversable()) == voidptr(&geo.host)
 }

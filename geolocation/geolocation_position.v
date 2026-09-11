@@ -79,10 +79,14 @@ pub struct GeolocationPosition {
 
 pub fn GeolocationPosition.create(coords &GeolocationCoordinates, timestamp EpochTimeStamp, is_high_accuracy bool) &GeolocationPosition {
 	return &GeolocationPosition{
-		coords_:           coords
-		timestamp_:        timestamp
+		coords_: coords
+		timestamp_: timestamp
 		is_high_accuracy_: is_high_accuracy
 	}
+}
+
+pub fn GeolocationPosition.coords_offset() usize {
+	return usize(__offsetof(GeolocationPosition, coords_))
 }
 
 pub fn (position &GeolocationPosition) coords() &GeolocationCoordinates {
@@ -106,7 +110,7 @@ pub:
 
 pub fn (position &GeolocationPosition) to_json() GeolocationPositionJSON {
 	return GeolocationPositionJSON{
-		coords:    position.coords_.to_json()
+		coords: position.coords_.to_json()
 		timestamp: position.timestamp_
 	}
 }
