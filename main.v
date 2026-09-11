@@ -141,7 +141,7 @@ fn C.native_draw_css_gradient_path(data &f32, segment_count int, even_odd int, t
 
 fn C.native_begin_svg_clip_mask(cache_key u64, canvas_width f32, canvas_height f32, area_x f32, area_y f32, area_width f32, area_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32)
 
-fn C.native_add_svg_clip_mask_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32)
+fn C.native_add_svg_clip_mask_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32)
 
 fn C.native_begin_svg_content_mask(cache_key u64, luminance int, canvas_width f32, canvas_height f32, area_x f32, area_y f32, area_width f32, area_height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32)
 
@@ -149,7 +149,7 @@ fn C.native_begin_svg_mask_opacity(opacity f32)
 
 fn C.native_end_svg_mask_opacity()
 
-fn C.native_add_svg_content_mask_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, stroke_first int)
+fn C.native_add_svg_content_mask_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, fill_color gg.Color, has_fill int, stroke_color gg.Color, has_stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, stroke_first int)
 
 fn C.native_add_svg_content_mask_linear_gradient_path(data &f32, segment_count int, even_odd int, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_height f32, stroke int, stroke_width f32, line_cap int, line_join int, miter_limit f32, start_x f32, start_y f32, end_x f32, end_y f32, gradient_a f32, gradient_b f32, gradient_c f32, gradient_d f32, gradient_e f32, gradient_f f32, spread_method int, linear_color_space int, stop_data &f32, stop_count int, opacity f32)
 
@@ -2875,7 +2875,7 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 									1
 								} else {
 									0
-								}, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.height), fill, if operation.has_fill {
+								}, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), fill, if operation.has_fill {
 									1
 								} else {
 									0
@@ -2906,7 +2906,7 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 											1
 										} else {
 											0
-										}, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.height), fill, 1, stroke, 0, f32(operation.stroke_width), operation.stroke_linecap, operation.stroke_linejoin, f32(operation.stroke_miterlimit), 0)
+										}, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), fill, 1, stroke, 0, f32(operation.stroke_width), operation.stroke_linecap, operation.stroke_linejoin, f32(operation.stroke_miterlimit), 0)
 									}
 								}
 							} else if gradient := operation.stroke_linear_gradient {
@@ -2921,7 +2921,7 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 										1
 									} else {
 										0
-									}, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.height), fill, 0, stroke, 1, f32(operation.stroke_width), operation.stroke_linecap, operation.stroke_linejoin, f32(operation.stroke_miterlimit), 0)
+									}, f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height), fill, 0, stroke, 1, f32(operation.stroke_width), operation.stroke_linecap, operation.stroke_linejoin, f32(operation.stroke_miterlimit), 0)
 								}
 							}
 						}
@@ -2941,7 +2941,7 @@ fn (mut app BrowserApp) prepare_native_svg_layer_mask(clip layout.PaintClip, pag
 						1
 					} else {
 						0
-					}, f32(component_matrix[0]), f32(component_matrix[1]), f32(component_matrix[2]), f32(component_matrix[3]), f32(component_matrix[4]), f32(component_matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.height))
+					}, f32(component_matrix[0]), f32(component_matrix[1]), f32(component_matrix[2]), f32(component_matrix[3]), f32(component_matrix[4]), f32(component_matrix[5]), page_x, page_y, scroll_y, f32(app.ctx.width), f32(app.ctx.height))
 				}
 			}
 		}

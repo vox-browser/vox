@@ -3262,11 +3262,20 @@ void native_begin_svg_content_mask(unsigned long long input_key, int luminance,
 void native_add_svg_clip_mask_path(const float *data, int segment_count, int even_odd,
 	float transform_a, float transform_b, float transform_c, float transform_d,
 	float transform_e, float transform_f, float page_x, float page_y,
-	float scroll_y, float canvas_height) {
+	float scroll_y, float canvas_width, float canvas_height) {
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL
 		|| data == NULL || segment_count <= 0) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (ladybird_v_skia_draw_svg_path(native_svg_clip_build_context, data,
+		segment_count, even_odd, transform_a, transform_b, transform_c,
+		transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+		canvas_width, canvas_height, 255, 255, 255, 255, 1,
+		0, 0, 0, 0, 0, 0.0f, 0, 0, 4.0f, 0, NULL, 0, 0.0)) {
+		return;
+	}
+#endif
 	CGMutablePathRef local_path = native_create_path_from_data(data, segment_count);
 	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
 		transform_c, -transform_d, page_x + transform_e,
@@ -3312,13 +3321,38 @@ static void native_draw_svg_mask_path_part(CGContextRef context, CGPathRef path,
 void native_add_svg_content_mask_path(const float *data, int segment_count,
 	int even_odd, float transform_a, float transform_b, float transform_c,
 	float transform_d, float transform_e, float transform_f, float page_x,
-	float page_y, float scroll_y, float canvas_height, gg__Color fill_color,
+	float page_y, float scroll_y, float canvas_width, float canvas_height,
+	gg__Color fill_color,
 	int has_fill, gg__Color stroke_color, int has_stroke, float stroke_width,
 	int line_cap, int line_join, float miter_limit, int stroke_first) {
 	if (native_svg_clip_image != NULL || native_svg_clip_build_context == NULL
 		|| data == NULL || segment_count <= 0 || (!has_fill && !has_stroke)) {
 		return;
 	}
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	int order[] = { stroke_first ? 1 : 0, stroke_first ? 0 : 1 };
+	int used_skia = 1;
+	for (int index = 0; index < 2; ++index) {
+		int draw_stroke = order[index];
+		if ((draw_stroke && !has_stroke) || (!draw_stroke && !has_fill)) {
+			continue;
+		}
+		gg__Color color = draw_stroke ? stroke_color : fill_color;
+		if (!ladybird_v_skia_draw_svg_path(native_svg_clip_build_context, data,
+			segment_count, even_odd, transform_a, transform_b, transform_c,
+			transform_d, transform_e, transform_f, page_x, page_y, scroll_y,
+			canvas_width, canvas_height,
+			color.r, color.g, color.b, color.a, draw_stroke ? 0 : 1,
+			color.r, color.g, color.b, color.a, draw_stroke ? 1 : 0,
+			stroke_width, line_cap, line_join, miter_limit, 0, NULL, 0, 0.0)) {
+			used_skia = 0;
+			break;
+		}
+	}
+	if (used_skia) {
+		return;
+	}
+#endif
 	CGMutablePathRef path = native_create_path_from_data(data, segment_count);
 	CGAffineTransform to_canvas = CGAffineTransformMake(transform_a, -transform_b,
 		transform_c, -transform_d, page_x + transform_e,
