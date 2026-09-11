@@ -5,18 +5,17 @@ import url
 fn csp_url(scheme string, host string, paths []string) url.URL {
 	return url.URL{
 		scheme: scheme
-		host:   url.Host.from_string(host)
-		paths:  paths
+		host: url.Host.from_string(host)
+		paths: paths
 	}
 }
 
 fn csp_fixture(serialized string, disposition Disposition) (&Policy, &PolicyList, GlobalContext) {
 	mut policy := parse_a_serialized_csp(serialized, .header, disposition)
-	policy.set_self_origin(url.Origin.tuple('https', url.Host.from_string('example.test'), none,
-		none))
+	policy.set_self_origin(url.Origin.tuple('https', url.Host.from_string('example.test'), none, none))
 	list := PolicyList.create([policy])
 	global := GlobalContext{
-		url:         csp_url('https', 'example.test', ['page'])
+		url: csp_url('https', 'example.test', ['page'])
 		policy_list: list
 	}
 	return policy, list, global
@@ -37,8 +36,7 @@ fn test_request_response_blocking_and_reporting() {
 	response := Response{
 		url: csp_url('https', 'evil.test', ['response.png'])
 	}
-	assert should_response_to_request_be_blocked_by_content_security_policy(mut global, response,
-		request) == .blocked
+	assert should_response_to_request_be_blocked_by_content_security_policy(mut global, response, request) == .blocked
 	assert global.reports.len == 2
 }
 
@@ -56,8 +54,9 @@ fn test_report_only_does_not_block() {
 
 fn test_violation_accessors_and_disposition_conversion() {
 	policy, _, fixture := csp_fixture("default-src 'none'", .report)
-	mut violation := Violation.create_a_violation_object_for_global_policy_and_directive(fixture,
-		policy, default_src)
+	assert global_scope_from_global_object(none) == none
+	assert global_scope_from_global_object(&fixture) or { panic('missing global') } == &fixture
+	mut violation := Violation.create_a_violation_object_for_global_policy_and_directive(fixture, policy, default_src)
 	violation.set_status(418)
 	violation.set_resource(ViolationResource(ViolationResourceKind.inline))
 	violation.set_source_file(csp_url('https', 'example.test', ['script.js']))
@@ -80,25 +79,21 @@ fn test_violation_accessors_and_disposition_conversion() {
 }
 
 fn test_navigation_inline_eval_wasm_and_base_checks() {
-	_, list, fixture := csp_fixture("form-action 'none'; script-src 'none' 'report-sample'; style-src 'none'; base-uri 'self'",
-		.enforce)
+	_, list, fixture := csp_fixture("form-action 'none'; script-src 'none' 'report-sample'; style-src 'none'; base-uri 'self'", .enforce)
 	mut global := fixture
 	mut navigation := new_request(csp_url('https', 'evil.test', ['submit']))
 	navigation.policy_list = list
-	assert should_navigation_request_of_type_be_blocked_by_content_security_policy(mut global,
-		navigation, .form_submission) == .blocked
+	assert should_navigation_request_of_type_be_blocked_by_content_security_policy(mut global, navigation, .form_submission) == .blocked
 	element := ElementContext{
 		is_script: true
 	}
 	source := '0123456789012345678901234567890123456789extra'
-	assert should_elements_inline_type_behavior_be_blocked_by_content_security_policy(mut global,
-		element, .script, source) == .blocked
+	assert should_elements_inline_type_behavior_be_blocked_by_content_security_policy(mut global, element, .script, source) == .blocked
 	assert global.reports[global.reports.len - 1].sample.runes().len == 40
 	if _ := ensure_csp_does_not_block_string_compilation(mut global, CompilationInput{
 		code_string: source
-		type_:       .eval
-	})
-	{
+		type_: .eval
+	}) {
 		assert false
 	}
 	if _ := ensure_csp_does_not_block_wasm_byte_compilation(mut global) {
@@ -109,12 +104,12 @@ fn test_navigation_inline_eval_wasm_and_base_checks() {
 
 fn test_integrity_policy_and_navigation_response() {
 	request := Request{
-		url:              csp_url('https', 'cdn.test', ['x.js'])
-		current_url:      csp_url('https', 'cdn.test', ['x.js'])
-		destination:      .script
-		mode:             .no_cors
+		url: csp_url('https', 'cdn.test', ['x.js'])
+		current_url: csp_url('https', 'cdn.test', ['x.js'])
+		destination: .script
+		mode: .no_cors
 		integrity_policy: IntegrityPolicy{
-			sources:              ['inline']
+			sources: ['inline']
 			blocked_destinations: [.script]
 		}
 	}
@@ -130,8 +125,7 @@ fn test_integrity_policy_and_navigation_response() {
 		url: csp_url('https', 'child.test', [])
 	}
 	foreign := url.Origin.tuple('https', url.Host.from_string('foreign.test'), none, none)
-	assert should_navigation_response_to_navigation_request_of_type_in_target_be_blocked_by_content_security_policy(mut global,
-		&with_metadata, response, response_list, .other, NavigableContext{
+	assert should_navigation_response_to_navigation_request_of_type_in_target_be_blocked_by_content_security_policy(mut global, &with_metadata, response, response_list, .other, NavigableContext{
 		ancestor_origins: [
 			foreign,
 		]

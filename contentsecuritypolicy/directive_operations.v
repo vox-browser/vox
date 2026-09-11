@@ -17,6 +17,18 @@ pub enum MatchResult {
 	matches
 }
 
+fn ends_with_ignoring_ascii_case(value string, suffix string) bool {
+	if value.len < suffix.len {
+		return false
+	}
+	return value[value.len - suffix.len..].to_lower() == suffix.to_lower()
+}
+
+fn substring_view(value string, start int) string {
+	assert start >= 0 && start <= value.len
+	return value[start..]
+}
+
 pub fn get_the_effective_directive_for_request(request &Request) ?string {
 	if request.initiator in [.prefetch, .prerender] {
 		return default_src
@@ -99,7 +111,8 @@ pub fn host_part_matches(pattern string, maybe_host ?url.Host) MatchResult {
 		return .matches
 	}
 	if pattern.starts_with('*.') {
-		return if host_string.to_lower().ends_with(pattern[1..].to_lower()) {
+		remaining_without_asterisk := substring_view(pattern, 1)
+		return if ends_with_ignoring_ascii_case(host_string, remaining_without_asterisk) {
 			MatchResult.matches
 		} else {
 			MatchResult.does_not_match
@@ -176,8 +189,8 @@ pub fn url_from_origin(origin url.Origin) ?url.URL {
 		scheme := origin.scheme or { return none }
 		return url.URL{
 			scheme: scheme
-			host:   origin.host
-			port:   origin.port
+			host: origin.host
+			port: origin.port
 		}
 	}
 	return none
@@ -232,7 +245,7 @@ pub fn does_url_match_expression_in_origin_with_redirect_count(record url.URL, e
 		}
 		ports_same := optional_u16_equal(origin_port(origin), record.port)
 			|| (optional_u16_equal(origin_port(origin), origin_default_port)
-			&& optional_u16_equal(record.port, record_default_port))
+				&& optional_u16_equal(record.port, record_default_port))
 		if hosts_same && ports_same {
 			if record.scheme in ['https', 'wss']
 				|| (base_scheme == 'http' && record.scheme in ['http', 'ws']) {
@@ -248,8 +261,7 @@ pub fn does_url_match_source_list_in_origin_with_redirect_count(record url.URL, 
 		return .does_not_match
 	}
 	for expression in source_list {
-		if does_url_match_expression_in_origin_with_redirect_count(record, expression, origin,
-			redirect_count) == .matches {
+		if does_url_match_expression_in_origin_with_redirect_count(record, expression, origin, redirect_count) == .matches {
 			return .matches
 		}
 	}
@@ -257,14 +269,12 @@ pub fn does_url_match_source_list_in_origin_with_redirect_count(record url.URL, 
 }
 
 pub fn does_request_match_source_list(request &Request, source_list []string, policy &Policy) MatchResult {
-	return does_url_match_source_list_in_origin_with_redirect_count(request.current_url,
-		source_list, policy.self_origin_value(), request.redirect_count)
+	return does_url_match_source_list_in_origin_with_redirect_count(request.current_url, source_list, policy.self_origin_value(), request.redirect_count)
 }
 
 pub fn does_response_match_source_list(response &Response, request &Request, source_list []string, policy &Policy) MatchResult {
 	record := response.url or { return .does_not_match }
-	return does_url_match_source_list_in_origin_with_redirect_count(record, source_list,
-		policy.self_origin_value(), request.redirect_count)
+	return does_url_match_source_list_in_origin_with_redirect_count(record, source_list, policy.self_origin_value(), request.redirect_count)
 }
 
 pub fn does_nonce_match_source_list(nonce string, source_list []string) MatchResult {

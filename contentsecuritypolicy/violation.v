@@ -62,11 +62,19 @@ mut:
 	sample_              string
 }
 
+fn global_scope_from_global_object(global_object ?&GlobalContext) ?&GlobalContext {
+	if global_scope := global_object {
+		return global_scope
+	}
+	return none
+}
+
 pub fn create_a_violation_object_for_global_policy_and_directive(global &GlobalContext, policy &Policy, directive string) &Violation {
+	global_scope := global_scope_from_global_object(global) or { panic('missing CSP global scope') }
 	return &Violation{
-		global_url:          global.url
-		referrer_:            global.referrer
-		policy_:              policy
+		global_url: global_scope.url
+		referrer_: global_scope.referrer
+		policy_: policy
 		effective_directive_: directive
 	}
 }
@@ -77,8 +85,7 @@ pub fn Violation.create_a_violation_object_for_global_policy_and_directive(globa
 
 pub fn create_a_violation_object_for_request_and_policy(global &GlobalContext, request &Request, policy &Policy) &Violation {
 	directive := get_the_effective_directive_for_request(request) or { default_src }
-	mut violation := create_a_violation_object_for_global_policy_and_directive(global, policy,
-		directive)
+	mut violation := create_a_violation_object_for_global_policy_and_directive(global, policy, directive)
 	violation.set_resource(ViolationResource(request.url))
 	return violation
 }
@@ -265,26 +272,26 @@ fn resolve_report_endpoint(token string, base url.URL) ?string {
 
 pub fn (violation &Violation) as_report() ViolationReport {
 	return ViolationReport{
-		document_uri:        strip_url_for_use_in_reports(violation.url())
-		referrer:            if value := violation.referrer_ {
+		document_uri: strip_url_for_use_in_reports(violation.url())
+		referrer: if value := violation.referrer_ {
 			strip_url_for_use_in_reports(value)
 		} else {
 			''
 		}
-		blocked_uri:         violation.obtain_the_blocked_uri_of_resource()
+		blocked_uri: violation.obtain_the_blocked_uri_of_resource()
 		effective_directive: violation.effective_directive_
-		violated_directive:  violation.effective_directive_
-		original_policy:     violation.policy_.pre_parsed_policy_string()
-		disposition:         violation.policy_.disposition()
-		status_code:         violation.status_
-		source_file:         if value := violation.source_file_ {
+		violated_directive: violation.effective_directive_
+		original_policy: violation.policy_.pre_parsed_policy_string()
+		disposition: violation.policy_.disposition()
+		status_code: violation.status_
+		source_file: if value := violation.source_file_ {
 			strip_url_for_use_in_reports(value)
 		} else {
 			''
 		}
-		line_number:         violation.line_number_
-		column_number:       violation.column_number_
-		sample:              violation.sample_
+		line_number: violation.line_number_
+		column_number: violation.column_number_
+		sample: violation.sample_
 	}
 }
 
@@ -292,22 +299,22 @@ pub fn (violation &Violation) report_a_violation(mut global GlobalContext) {
 	report := violation.as_report()
 	global.reports << report
 	init := SecurityPolicyViolationEventInit{
-		EventInit:           dom.EventInit{
-			bubbles:  true
+		EventInit: dom.EventInit{
+			bubbles: true
 			composed: true
 		}
-		document_uri:        report.document_uri
-		referrer:            report.referrer
-		blocked_uri:         report.blocked_uri
+		document_uri: report.document_uri
+		referrer: report.referrer
+		blocked_uri: report.blocked_uri
 		effective_directive: report.effective_directive
-		violated_directive:  report.violated_directive
-		original_policy:     report.original_policy
-		disposition:         report.disposition
-		source_file:         report.source_file
-		status_code:         report.status_code
-		line_number:         report.line_number
-		column_number:       report.column_number
-		sample:              report.sample
+		violated_directive: report.violated_directive
+		original_policy: report.original_policy
+		disposition: report.disposition
+		source_file: report.source_file
+		status_code: report.status_code
+		line_number: report.line_number
+		column_number: report.column_number
+		sample: report.sample
 	}
 	mut event := SecurityPolicyViolationEvent.create('securitypolicyviolation', init)
 	event.set_is_trusted(true)
@@ -318,7 +325,7 @@ pub fn (violation &Violation) report_a_violation(mut global GlobalContext) {
 				if endpoint := resolve_report_endpoint(token, violation.url()) {
 					global.report_requests << CSPReportRequest{
 						endpoint: endpoint
-						body:     violation.obtain_the_deprecated_serialization()
+						body: violation.obtain_the_deprecated_serialization()
 					}
 				}
 			}

@@ -7,25 +7,24 @@ fn matching_url(source string, scheme string, host string, path []string, port ?
 	_ = source
 	return url.URL{
 		scheme: scheme
-		host:   url.Host.from_string(host)
-		paths:  path
-		port:   port
+		host: url.Host.from_string(host)
+		paths: path
+		port: port
 	}
 }
 
 fn test_source_list_url_matching() {
+	assert ends_with_ignoring_ascii_case('Sub.Example.TEST', '.example.test')
+	assert !ends_with_ignoring_ascii_case('test', 'longer-test')
+	assert substring_view('*.example.test', 1) == '.example.test'
 	origin := url.Origin.tuple('http', url.Host.from_string('example.test'), none, none)
 	secure_self := matching_url('', 'https', 'example.test', ['app.js'], none)
-	assert does_url_match_expression_in_origin_with_redirect_count(secure_self, keyword_self,
-		origin, 0) == .matches
+	assert does_url_match_expression_in_origin_with_redirect_count(secure_self, keyword_self, origin, 0) == .matches
 	cdn := matching_url('', 'https', 'static.example.test', ['assets', 'app.js'], u16(8443))
-	assert does_url_match_expression_in_origin_with_redirect_count(cdn,
-		'https://*.example.test:8443/assets/', origin, 0) == .matches
-	assert does_url_match_expression_in_origin_with_redirect_count(cdn,
-		'https://*.example.test:8443/other/', origin, 0) == .does_not_match
+	assert does_url_match_expression_in_origin_with_redirect_count(cdn, 'https://*.example.test:8443/assets/', origin, 0) == .matches
+	assert does_url_match_expression_in_origin_with_redirect_count(cdn, 'https://*.example.test:8443/other/', origin, 0) == .does_not_match
 	// Redirects deliberately ignore source-expression paths.
-	assert does_url_match_expression_in_origin_with_redirect_count(cdn,
-		'https://*.example.test:8443/other/', origin, 1) == .matches
+	assert does_url_match_expression_in_origin_with_redirect_count(cdn, 'https://*.example.test:8443/other/', origin, 1) == .matches
 	assert does_url_match_source_list_in_origin_with_redirect_count(cdn, ["'none'"], origin, 0) == .does_not_match
 	assert does_url_match_source_list_in_origin_with_redirect_count(cdn, ["'none'",
 		'https://static.example.test:8443/assets/'], origin, 0) == .matches
@@ -38,10 +37,8 @@ fn test_nonce_integrity_and_script_checks() {
 	assert does_integrity_metadata_match_source_list('sha256-${digest}', [
 		"'sha256-${digest}'",
 	]) == .matches
-	mut policy := parse_a_serialized_csp("script-src 'strict-dynamic' 'nonce-abc'", .header,
-		.enforce)
-	policy.set_self_origin(url.Origin.tuple('https', url.Host.from_string('example.test'), none,
-		none))
+	mut policy := parse_a_serialized_csp("script-src 'strict-dynamic' 'nonce-abc'", .header, .enforce)
+	policy.set_self_origin(url.Origin.tuple('https', url.Host.from_string('example.test'), none, none))
 	mut request := new_request(matching_url('', 'https', 'evil.test', ['x.js'], none))
 	request.destination = .script
 	request.parser_metadata = .parser_inserted
@@ -52,17 +49,15 @@ fn test_nonce_integrity_and_script_checks() {
 
 fn test_inline_nonce_hash_and_unsafe_inline() {
 	element := ElementContext{
-		is_script:       true
-		nonce:           'xyz'
-		attributes:      {
+		is_script: true
+		nonce: 'xyz'
+		attributes: {
 			'nonce': 'xyz'
 		}
 		parser_inserted: true
 	}
-	assert does_element_match_source_list_for_type_and_source(element, ["'nonce-xyz'"], .script,
-		'x') == .matches
-	assert does_element_match_source_list_for_type_and_source(element, [unsafe_inline,
-		"'nonce-other'"], .script, 'x') == .does_not_match
+	assert does_element_match_source_list_for_type_and_source(element, ["'nonce-xyz'"], .script, 'x') == .matches
+	assert does_element_match_source_list_for_type_and_source(element, [unsafe_inline, "'nonce-other'"], .script, 'x') == .does_not_match
 	digest := sri.apply_algorithm_to_bytes('sha384', 'body {}'.bytes())!
 	assert does_element_match_source_list_for_type_and_source(none, [
 		"'sha384-${digest}'",
@@ -72,8 +67,7 @@ fn test_inline_nonce_hash_and_unsafe_inline() {
 }
 
 fn test_frame_ancestors_and_webrtc() {
-	mut policy := parse_a_serialized_csp("frame-ancestors 'self'; webrtc 'allow'", .header,
-		.enforce)
+	mut policy := parse_a_serialized_csp("frame-ancestors 'self'; webrtc 'allow'", .header, .enforce)
 	origin := url.Origin.tuple('https', url.Host.from_string('example.test'), none, none)
 	policy.set_self_origin(origin)
 	response := Response{
