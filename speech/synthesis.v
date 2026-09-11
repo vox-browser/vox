@@ -24,11 +24,11 @@ pub fn SpeechSynthesisVoice.create() &SpeechSynthesisVoice {
 
 pub fn SpeechSynthesisVoice.from_platform(voice_uri string, name string, lang string, local_service bool, is_default bool) &SpeechSynthesisVoice {
 	return &SpeechSynthesisVoice{
-		voice_uri_:     voice_uri
-		name_:          name
-		lang_:          lang
+		voice_uri_: voice_uri
+		name_: name
+		lang_: lang
 		local_service_: local_service
-		is_default_:    is_default
+		is_default_: is_default
 	}
 }
 
@@ -111,14 +111,22 @@ mut:
 }
 
 pub fn SpeechSynthesisUtterance.new(text string) &SpeechSynthesisUtterance {
-	return SpeechSynthesisUtterance.construct_impl(text)
+	return SpeechSynthesisUtterance.create(text)
 }
 
 pub fn SpeechSynthesisUtterance.construct_impl(text string) &SpeechSynthesisUtterance {
+	return SpeechSynthesisUtterance.create(text)
+}
+
+pub fn SpeechSynthesisUtterance.create(text string) &SpeechSynthesisUtterance {
 	return &SpeechSynthesisUtterance{
 		EventTarget: dom.EventTarget{}
-		text_:       text
+		text_: text
 	}
+}
+
+pub fn SpeechSynthesisUtterance.voice_offset() usize {
+	return usize(__offsetof(SpeechSynthesisUtterance, voice_))
 }
 
 pub fn (u &SpeechSynthesisUtterance) text() string {

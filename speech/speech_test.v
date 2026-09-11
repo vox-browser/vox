@@ -36,14 +36,33 @@ fn test_recognition_defaults_handlers_phrase_and_event() {
 	results := SpeechRecognitionResultList.create()
 	event := SpeechRecognitionEvent.construct_impl('result', SpeechRecognitionEventInit{
 		result_index: 2
-		results:      results
+		results: results
 	})
 	assert event.interface_ == .speech_recognition_event
 	assert event.type_name() == 'result'
 	assert event.result_index() == 2
-	assert event.results() or { panic('missing results') } == results
+	assert event.results() == results
+	assert event.time_stamp() == 0
 	assert SpeechRecognitionPhrase.construct_impl('Ladybird', 2).boost() == 2
 	assert SpeechRecognitionPhrase.new_with_default_boost('Ladybird').boost() == 1
+}
+
+fn test_new_speech_factories_and_binding_offsets() {
+	assert SpeechGrammar.create().src() == ''
+	assert SpeechGrammarList.create().length() == 0
+	assert SpeechRecognition.create().grammars().length() == 0
+	assert SpeechRecognition.grammars_offset() > 0
+	assert SpeechRecognitionPhrase.create('hello', 1.5).phrase() == 'hello'
+	assert SpeechSynthesisUtterance.create('speak').text() == 'speak'
+	assert SpeechSynthesisUtterance.voice_offset() > 0
+
+	results := SpeechRecognitionResultList.create()
+	event := SpeechRecognitionEvent.create_with_timestamp('result', SpeechRecognitionEventInit{
+		results: results
+	}, 42.5)
+	assert event.results() == results
+	assert event.time_stamp() == 42.5
+	assert SpeechRecognitionEvent.results_offset() > 0
 }
 
 fn test_all_recognition_and_utterance_event_handler_attributes() {

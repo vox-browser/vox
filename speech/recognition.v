@@ -20,14 +20,22 @@ mut:
 }
 
 pub fn SpeechRecognition.new() &SpeechRecognition {
-	return SpeechRecognition.construct_impl()
+	return SpeechRecognition.create()
 }
 
 pub fn SpeechRecognition.construct_impl() &SpeechRecognition {
+	return SpeechRecognition.create()
+}
+
+pub fn SpeechRecognition.create() &SpeechRecognition {
 	return &SpeechRecognition{
 		EventTarget: dom.EventTarget{}
-		grammars_:   SpeechGrammarList.new()
+		grammars_: SpeechGrammarList.create()
 	}
+}
+
+pub fn SpeechRecognition.grammars_offset() usize {
+	return usize(__offsetof(SpeechRecognition, grammars_))
 }
 
 pub fn (recognition &SpeechRecognition) grammars() &SpeechGrammarList {
@@ -172,7 +180,7 @@ pub:
 	cancelable   bool
 	composed     bool
 	result_index u32
-	results      ?&SpeechRecognitionResultList
+	results      &SpeechRecognitionResultList = unsafe { nil }
 }
 
 @[heap]
@@ -180,7 +188,7 @@ pub struct SpeechRecognitionEvent {
 	dom.Event
 mut:
 	result_index_ u32
-	results_      ?&SpeechRecognitionResultList
+	results_      &SpeechRecognitionResultList = unsafe { nil }
 }
 
 pub fn SpeechRecognitionEvent.new(event_name string, init SpeechRecognitionEventInit) &SpeechRecognitionEvent {
@@ -192,26 +200,36 @@ pub fn SpeechRecognitionEvent.construct_impl(event_name string, init SpeechRecog
 }
 
 pub fn SpeechRecognitionEvent.create(event_name string, init SpeechRecognitionEventInit) &SpeechRecognitionEvent {
+	return SpeechRecognitionEvent.create_with_timestamp(event_name, init, 0)
+}
+
+pub fn SpeechRecognitionEvent.create_with_timestamp(event_name string, init SpeechRecognitionEventInit, time_stamp f64) &SpeechRecognitionEvent {
 	base := dom.Event.new_with_init(event_name, dom.EventInit{
-		bubbles:    init.bubbles
+		bubbles: init.bubbles
 		cancelable: init.cancelable
-		composed:   init.composed
+		composed: init.composed
 	})
-	return &SpeechRecognitionEvent{
-		Event:         dom.Event{
+	mut event := &SpeechRecognitionEvent{
+		Event: dom.Event{
 			...*base
 			interface_: .speech_recognition_event
 		}
 		result_index_: init.result_index
-		results_:      init.results
+		results_: init.results
 	}
+	event.set_time_stamp(time_stamp)
+	return event
+}
+
+pub fn SpeechRecognitionEvent.results_offset() usize {
+	return usize(__offsetof(SpeechRecognitionEvent, results_))
 }
 
 pub fn (event &SpeechRecognitionEvent) result_index() u32 {
 	return event.result_index_
 }
 
-pub fn (event &SpeechRecognitionEvent) results() ?&SpeechRecognitionResultList {
+pub fn (event &SpeechRecognitionEvent) results() &SpeechRecognitionResultList {
 	return event.results_
 }
 
@@ -222,18 +240,22 @@ mut:
 }
 
 pub fn SpeechRecognitionPhrase.new(phrase string, boost f32) &SpeechRecognitionPhrase {
-	return SpeechRecognitionPhrase.construct_impl(phrase, boost)
+	return SpeechRecognitionPhrase.create(phrase, boost)
 }
 
 pub fn SpeechRecognitionPhrase.construct_impl(phrase string, boost f32) &SpeechRecognitionPhrase {
+	return SpeechRecognitionPhrase.create(phrase, boost)
+}
+
+pub fn SpeechRecognitionPhrase.create(phrase string, boost f32) &SpeechRecognitionPhrase {
 	return &SpeechRecognitionPhrase{
 		phrase_: phrase
-		boost_:  boost
+		boost_: boost
 	}
 }
 
 pub fn SpeechRecognitionPhrase.new_with_default_boost(phrase string) &SpeechRecognitionPhrase {
-	return SpeechRecognitionPhrase.construct_impl(phrase, 1)
+	return SpeechRecognitionPhrase.create(phrase, 1)
 }
 
 pub fn (recognition_phrase &SpeechRecognitionPhrase) phrase() string {

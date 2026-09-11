@@ -15,10 +15,14 @@ mut:
 }
 
 pub fn SpeechGrammar.new() &SpeechGrammar {
-	return SpeechGrammar.construct_impl()
+	return SpeechGrammar.create()
 }
 
 pub fn SpeechGrammar.construct_impl() &SpeechGrammar {
+	return SpeechGrammar.create()
+}
+
+pub fn SpeechGrammar.create() &SpeechGrammar {
 	return &SpeechGrammar{}
 }
 
@@ -45,10 +49,14 @@ mut:
 }
 
 pub fn SpeechGrammarList.new() &SpeechGrammarList {
-	return SpeechGrammarList.construct_impl()
+	return SpeechGrammarList.create()
 }
 
 pub fn SpeechGrammarList.construct_impl() &SpeechGrammarList {
+	return SpeechGrammarList.create()
+}
+
+pub fn SpeechGrammarList.create() &SpeechGrammarList {
 	return &SpeechGrammarList{}
 }
 
@@ -57,7 +65,9 @@ pub fn (list &SpeechGrammarList) length() u32 {
 }
 
 pub fn (list &SpeechGrammarList) item(index u32) ?&SpeechGrammar {
-	if index >= u32(list.grammars_.len) { return none }
+	if index >= u32(list.grammars_.len) {
+		return none
+	}
 	return list.grammars_[index]
 }
 
@@ -108,7 +118,9 @@ pub fn (result &SpeechRecognitionResult) length() u32 {
 }
 
 pub fn (result &SpeechRecognitionResult) item(index u32) ?&SpeechRecognitionAlternative {
-	if index >= u32(result.alternatives_.len) { return none }
+	if index >= u32(result.alternatives_.len) {
+		return none
+	}
 	return result.alternatives_[index]
 }
 
@@ -136,7 +148,9 @@ pub fn (list &SpeechRecognitionResultList) length() u32 {
 }
 
 pub fn (list &SpeechRecognitionResultList) item(index u32) ?&SpeechRecognitionResult {
-	if index >= u32(list.results_.len) { return none }
+	if index >= u32(list.results_.len) {
+		return none
+	}
 	return list.results_[index]
 }
 
