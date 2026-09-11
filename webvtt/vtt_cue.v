@@ -66,7 +66,7 @@ pub fn line_and_position_auto() LineAndPositionSetting {
 pub fn line_and_position_number(value f64) LineAndPositionSetting {
 	return LineAndPositionSetting{
 		is_auto: false
-		value:   value
+		value: value
 	}
 }
 
@@ -103,6 +103,10 @@ mut:
 
 // https://w3c.github.io/webvtt/#dom-vttcue-vttcue
 pub fn VTTCue.construct_impl(start_time f64, end_time f64, text string) !&VTTCue {
+	return VTTCue.create(start_time, end_time, text)
+}
+
+pub fn VTTCue.create(start_time f64, end_time f64, text string) !&VTTCue {
 	// 3. If endTime is negative Infinity or NaN, throw a TypeError.
 	if end_time == math.inf(-1) || math.is_nan(end_time) {
 		return error('End time is negative infinity or NaN')
@@ -120,6 +124,13 @@ pub fn VTTCue.construct_impl(start_time f64, end_time f64, text string) !&VTTCue
 	new_cue.TextTrackCue.set_pause_on_exit(false)
 	// 7-15. The remaining WebVTT defaults match the struct field defaults.
 	return new_cue
+}
+
+// The C++ binding uses this offset to trace the region GC edge. V traces the
+// typed optional pointer directly, but exposing the corresponding layout value
+// keeps generated binding adapters independent of the struct definition.
+pub fn VTTCue.region_offset() usize {
+	return usize(__offsetof(VTTCue, region_))
 }
 
 // https://w3c.github.io/webvtt/#dom-vttcue-region

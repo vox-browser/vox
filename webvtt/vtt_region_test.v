@@ -4,6 +4,7 @@ import math
 
 fn test_defaults() {
 	region := VTTRegion.construct_impl()
+	direct := VTTRegion.create()
 	assert region.id() == ''
 	assert region.width() == 100.0
 	assert region.lines() == u32(3)
@@ -12,6 +13,7 @@ fn test_defaults() {
 	assert region.viewport_anchor_x() == 0.0
 	assert region.viewport_anchor_y() == 100.0
 	assert region.scroll() == .empty
+	assert direct.width() == region.width()
 }
 
 fn test_unvalidated_setters() {
@@ -45,6 +47,8 @@ fn test_percentage_setters_reject_out_of_range() {
 	mut region := VTTRegion.construct_impl()
 	if _ := set_width_result(mut region, -1) {
 		assert false, 'expected IndexSizeError for width < 0'
+	} else {
+		assert err.msg().starts_with('IndexSizeError:')
 	}
 	if _ := set_width_result(mut region, 101) {
 		assert false, 'expected IndexSizeError for width > 100'

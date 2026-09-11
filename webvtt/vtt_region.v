@@ -34,8 +34,16 @@ mut:
 
 // https://w3c.github.io/webvtt/#dom-vttregion-vttregion
 pub fn VTTRegion.construct_impl() &VTTRegion {
+	return VTTRegion.create()
+}
+
+pub fn VTTRegion.create() &VTTRegion {
 	// Steps 2-9 set the WebVTT region defaults; these match the struct field defaults.
 	return &VTTRegion{}
+}
+
+fn create_region_range_error() IError {
+	return error('IndexSizeError: Value is negative or greater than 100')
 }
 
 // https://w3c.github.io/webvtt/#dom-vttregion-id
@@ -55,7 +63,7 @@ pub fn (region &VTTRegion) width() f64 {
 pub fn (mut region VTTRegion) set_width(width f64) ! {
 	// On setting, if the new value is negative or greater than 100, throw an IndexSizeError.
 	if width < 0 || width > 100 {
-		return error('Value is negative or greater than 100')
+		return create_region_range_error()
 	}
 	region.width_ = width
 }
@@ -76,7 +84,7 @@ pub fn (region &VTTRegion) region_anchor_x() f64 {
 
 pub fn (mut region VTTRegion) set_region_anchor_x(region_anchor_x f64) ! {
 	if region_anchor_x < 0 || region_anchor_x > 100 {
-		return error('Value is negative or greater than 100')
+		return create_region_range_error()
 	}
 	region.anchor_x_ = region_anchor_x
 }
@@ -88,7 +96,7 @@ pub fn (region &VTTRegion) region_anchor_y() f64 {
 
 pub fn (mut region VTTRegion) set_region_anchor_y(region_anchor_y f64) ! {
 	if region_anchor_y < 0 || region_anchor_y > 100 {
-		return error('Value is negative or greater than 100')
+		return create_region_range_error()
 	}
 	region.anchor_y_ = region_anchor_y
 }
@@ -100,7 +108,7 @@ pub fn (region &VTTRegion) viewport_anchor_x() f64 {
 
 pub fn (mut region VTTRegion) set_viewport_anchor_x(viewport_anchor_x f64) ! {
 	if viewport_anchor_x < 0 || viewport_anchor_x > 100 {
-		return error('Value is negative or greater than 100')
+		return create_region_range_error()
 	}
 	region.viewport_anchor_x_ = viewport_anchor_x
 }
@@ -112,7 +120,7 @@ pub fn (region &VTTRegion) viewport_anchor_y() f64 {
 
 pub fn (mut region VTTRegion) set_viewport_anchor_y(viewport_anchor_y f64) ! {
 	if viewport_anchor_y < 0 || viewport_anchor_y > 100 {
-		return error('Value is negative or greater than 100')
+		return create_region_range_error()
 	}
 	region.viewport_anchor_y_ = viewport_anchor_y
 }

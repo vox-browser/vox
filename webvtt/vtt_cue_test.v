@@ -1,5 +1,6 @@
 module webvtt
 
+import html
 import math
 
 fn cue() &VTTCue {
@@ -15,6 +16,12 @@ fn test_construct_sets_inherited_and_own_fields() {
 	assert c.pause_on_exit() == false
 	// Own field.
 	assert c.text() == 'hello'
+}
+
+fn test_create_entry_point_and_region_offset() {
+	c := VTTCue.create(2, 4, 'created')!
+	assert c.text() == 'created'
+	assert VTTCue.region_offset() > sizeof(html.TextTrackCue)
 }
 
 fn test_construct_rejects_bad_end_time() {
