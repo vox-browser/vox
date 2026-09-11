@@ -61,11 +61,9 @@ fn test_state_and_property_string_serialization() {
 	assert optional_integer_to_string(none) == ''
 	assert state_or_property_to_string_value(.aria_atomic, &data, DefaultValue(true)) == 'true'
 	assert state_or_property_to_string_value(.aria_live, &data, DefaultValue(AriaLive.assertive)) == 'assertive'
-	assert state_or_property_to_string_value(.aria_orientation, &data,
-		DefaultValue(AriaOrientation.horizontal)) == 'horizontal'
+	assert state_or_property_to_string_value(.aria_orientation, &data, DefaultValue(AriaOrientation.horizontal)) == 'horizontal'
 	// RoleType.cpp currently does not apply an implicit role default to aria-haspopup.
-	assert state_or_property_to_string_value(.aria_has_popup, &data,
-		DefaultValue(AriaHasPopup.listbox)) == 'false'
+	assert state_or_property_to_string_value(.aria_has_popup, &data, DefaultValue(AriaHasPopup.listbox)) == 'false'
 }
 
 fn test_aria_data_exact_parser_entry_points_match_upstream_semantics() {
@@ -89,6 +87,19 @@ fn test_aria_data_exact_parser_entry_points_match_upstream_semantics() {
 	assert AriaData.parse_aria_orientation('horizontal')? == .horizontal
 	assert AriaData.parse_aria_relevant('additions removals text') == [.all]
 	assert AriaData.parse_aria_sort('descending') == .descending
+}
+
+fn test_aria_token_lists_split_only_on_ascii_whitespace() {
+	assert ascii_whitespace_separated_tokens(' copy\tmove\nlink\rpopup\fexecute ') == [
+		'copy',
+		'move',
+		'link',
+		'popup',
+		'execute',
+	]
+	assert ascii_whitespace_separated_tokens('copy move') == ['copy move']
+	assert AriaData.parse_aria_drop_effect('copy move') == [.none_]
+	assert AriaData.parse_aria_relevant('additions text') == [.additions_text]
 }
 
 fn test_aria_data_build_data_is_the_constructor_logic() {

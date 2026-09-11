@@ -24,8 +24,8 @@ mut:
 
 pub fn ARIAMixin.create(element &dom.Element, default_role ?Role, role_resolver ?RoleResolver) &ARIAMixin {
 	return &ARIAMixin{
-		element:        element
-		default_role_:  default_role
+		element: element
+		default_role_: default_role
 		role_resolver_: role_resolver
 	}
 }
@@ -53,7 +53,7 @@ pub fn (mut mixin ARIAMixin) set_default_role(role ?Role) {
 
 fn first_unconditional_explicit_role(element &dom.Element) ?Role {
 	role_attribute := element.get_attribute('role') or { return none }
-	for token in role_attribute.fields() {
+	for token in ascii_whitespace_separated_tokens(role_attribute) {
 		role := role_from_string(token) or { continue }
 		if is_abstract_role(role) {
 			continue
@@ -105,7 +105,7 @@ fn role_required_contexts(role Role) []Role {
 // https://www.w3.org/TR/wai-aria-1.2/#introroles
 pub fn (mixin &ARIAMixin) role_from_role_attribute_value() ?Role {
 	role_attribute := mixin.role() or { return none }
-	for token in role_attribute.fields() {
+	for token in ascii_whitespace_separated_tokens(role_attribute) {
 		mut role := role_from_string(token) or { continue }
 		if role == .directory {
 			return .list
@@ -169,7 +169,7 @@ pub fn (mixin &ARIAMixin) parse_id_reference(id_reference ?string) ?string {
 pub fn (mixin &ARIAMixin) parse_id_reference_list(id_list ?string) []string {
 	value := id_list or { return []string{} }
 	mut result := []string{}
-	for id in value.fields() {
+	for id in ascii_whitespace_separated_tokens(value) {
 		if mixin.id_reference_exists(id) {
 			result << id
 		}

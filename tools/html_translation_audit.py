@@ -84,6 +84,11 @@ RUNTIME_ONLY_FREE_FUNCTIONS = {
     # parsing document and URL context are carried by ParsingParams instead.
     ("Parser/Helpers.cpp", "internal_css_realm"),
 }
+LANGUAGE_ARTIFACT_FREE_FUNCTIONS = {
+    # V string literals already have their runtime representation; this C++
+    # template exists only to form a Utf16View over a char16_t array.
+    ("StateAndProperties.cpp", "utf16_view"),
+}
 LANGUAGE_ARTIFACT_METHODS = {
     # These are constructor initializer-list and macro-parameter fragments
     # which the deliberately lightweight header scanner sees as methods.
@@ -2776,6 +2781,14 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    # Both ARIA callers share the same translated tokenizer. The C++ helper
+    # drives a callback; V returns the tokens for direct iteration.
+    ("ARIAMixin.cpp", "for_each_ascii_whitespace_separated_token"): (
+        "ascii_whitespace_separated_tokens",
+    ),
+    ("AriaData.cpp", "for_each_ascii_whitespace_separated_token"): (
+        "ascii_whitespace_separated_tokens",
+    ),
     ("CSSDescriptors.cpp", "is_shorthand"): ("is_descriptor_shorthand",),
     ("CSSDescriptors.cpp", "for_each_expanded_longhand"): (
         "for_each_expanded_descriptor_longhand",
@@ -3445,6 +3458,8 @@ def free_function_inventory(
                 candidates = free_function_candidate_names(function_name, functions)
                 if function_name.startswith("operator"):
                     disposition = "language-operator"
+                elif (source_path, function_name) in LANGUAGE_ARTIFACT_FREE_FUNCTIONS:
+                    disposition = "language-template-trait"
                 elif (source_path, function_name) in RUNTIME_ONLY_FREE_FUNCTIONS:
                     disposition = "gc-or-binding-runtime"
                 elif mapped_names and len(mapped_candidates) == len(mapped_names):

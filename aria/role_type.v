@@ -168,19 +168,19 @@ fn raw_role_definition(name string, object map[string]json2.Any) RawRoleDefiniti
 		}
 	}
 	return RawRoleDefinition{
-		name:                        name
-		supported_states:            metadata_state_list(object, 'supportedStates')
-		supported_properties:        metadata_state_list(object, 'supportedProperties')
-		required_states:             metadata_state_list(object, 'requiredStates')
-		required_properties:         metadata_state_list(object, 'requiredProperties')
-		prohibited_states:           metadata_state_list(object, 'prohibitedStates')
-		prohibited_properties:       metadata_state_list(object, 'prohibitedProperties')
-		required_context_roles:      metadata_role_list(object, 'requiredContextRoles')
-		required_owned_elements:     metadata_role_list(object, 'requiredOwnedElements')
-		name_from_source:            parse_name_from_source(json_string(object, 'nameFromSource'))
-		accessible_name_required:    json_bool(object, 'accessibleNameRequired')
+		name: name
+		supported_states: metadata_state_list(object, 'supportedStates')
+		supported_properties: metadata_state_list(object, 'supportedProperties')
+		required_states: metadata_state_list(object, 'requiredStates')
+		required_properties: metadata_state_list(object, 'requiredProperties')
+		prohibited_states: metadata_state_list(object, 'prohibitedStates')
+		prohibited_properties: metadata_state_list(object, 'prohibitedProperties')
+		required_context_roles: metadata_role_list(object, 'requiredContextRoles')
+		required_owned_elements: metadata_role_list(object, 'requiredOwnedElements')
+		name_from_source: parse_name_from_source(json_string(object, 'nameFromSource'))
+		accessible_name_required: json_bool(object, 'accessibleNameRequired')
 		children_are_presentational: json_bool(object, 'childrenArePresentational')
-		implicit_values:             implicit_values
+		implicit_values: implicit_values
 	}
 }
 
@@ -234,8 +234,8 @@ pub fn RoleType.build_role_object(role Role, focusable bool, data AriaData) !&Ro
 		return error('Missing generated metadata object ${key}')
 	})!
 	return &RoleType{
-		role:        role
-		data_:       data
+		role: role
+		data_: data
 		definition_: raw_role_definition(key, object)
 	}
 }
@@ -291,10 +291,13 @@ pub fn (role_type &RoleType) default_value_for_property_or_state(value StateAndP
 fn role_type_values(role_type &RoleType, values []StateAndProperty) map[string]string {
 	mut result := map[string]string{}
 	for value in values {
-		result[state_or_property_to_string(value)] = state_or_property_to_string_value(value,
-			&role_type.data_, role_type.default_value_for_property_or_state(value))
+		add_state_or_property(mut result, value, state_or_property_to_string_value(value, &role_type.data_, role_type.default_value_for_property_or_state(value)))
 	}
 	return result
+}
+
+fn add_state_or_property(mut object map[string]string, state_or_property StateAndProperty, value string) {
+	object[state_or_property_to_string(state_or_property)] = value
 }
 
 pub fn (role_type &RoleType) serialize_as_json() string {

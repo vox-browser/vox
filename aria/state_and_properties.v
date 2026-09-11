@@ -288,10 +288,14 @@ fn aria_sort_to_string(value AriaSort) string {
 	}
 }
 
+fn serialize_aria_string(value string) string {
+	return value
+}
+
 pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData, default_value DefaultValue) string {
 	return match value {
 		.aria_active_descendant {
-			data.aria_active_descendant_or_default() or { '' }
+			serialize_aria_string(data.aria_active_descendant_or_default() or { '' })
 		}
 		.aria_atomic {
 			data.aria_atomic_or(if default_value is bool { default_value } else { false }).str()
@@ -300,10 +304,10 @@ pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData,
 			aria_autocomplete_to_string(data.aria_auto_complete_or_default())
 		}
 		.aria_braille_label {
-			data.aria_braille_label_or_default()
+			serialize_aria_string(data.aria_braille_label_or_default())
 		}
 		.aria_braille_role_description {
-			data.aria_braille_role_description_or_default()
+			serialize_aria_string(data.aria_braille_role_description_or_default())
 		}
 		.aria_busy {
 			data.aria_busy_or_default().str()
@@ -318,7 +322,7 @@ pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData,
 			optional_integer_to_string(data.aria_col_index_or_default())
 		}
 		.aria_col_index_text {
-			data.aria_col_index_text_or_default()
+			serialize_aria_string(data.aria_col_index_text_or_default())
 		}
 		.aria_col_span {
 			optional_integer_to_string(data.aria_col_span_or_default())
@@ -333,10 +337,10 @@ pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData,
 			id_reference_list_to_string(data.aria_described_by_or_default())
 		}
 		.aria_description {
-			data.aria_description_or_default()
+			serialize_aria_string(data.aria_description_or_default())
 		}
 		.aria_details {
-			data.aria_details_or_default() or { '' }
+			serialize_aria_string(data.aria_details_or_default() or { '' })
 		}
 		.aria_disabled {
 			data.aria_disabled_or_default().str()
@@ -352,7 +356,7 @@ pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData,
 			}).join(' ')
 		}
 		.aria_error_message {
-			data.aria_error_message_or_default() or { '' }
+			serialize_aria_string(data.aria_error_message_or_default() or { '' })
 		}
 		.aria_expanded {
 			optional_bool_to_string(data.aria_expanded_or_default())
@@ -373,10 +377,10 @@ pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData,
 			aria_invalid_to_string(data.aria_invalid_or_default())
 		}
 		.aria_key_shortcuts {
-			data.aria_key_shortcuts_or_default()
+			serialize_aria_string(data.aria_key_shortcuts_or_default())
 		}
 		.aria_label {
-			data.aria_label_or_default()
+			serialize_aria_string(data.aria_label_or_default())
 		}
 		.aria_labelled_by {
 			id_reference_list_to_string(data.aria_labelled_by_or_default())
@@ -411,7 +415,7 @@ pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData,
 			id_reference_list_to_string(data.aria_owns_or_default())
 		}
 		.aria_placeholder {
-			data.aria_placeholder_or_default()
+			serialize_aria_string(data.aria_placeholder_or_default())
 		}
 		.aria_pos_in_set {
 			optional_integer_to_string(data.aria_pos_in_set_or_default())
@@ -435,7 +439,7 @@ pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData,
 			data.aria_required_or_default().str()
 		}
 		.aria_role_description {
-			data.aria_role_description_or_default()
+			serialize_aria_string(data.aria_role_description_or_default())
 		}
 		.aria_row_count {
 			optional_integer_to_string(data.aria_row_count_or_default())
@@ -444,7 +448,7 @@ pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData,
 			optional_integer_to_string(data.aria_row_index_or_default())
 		}
 		.aria_row_index_text {
-			data.aria_row_index_text_or_default()
+			serialize_aria_string(data.aria_row_index_text_or_default())
 		}
 		.aria_row_span {
 			optional_integer_to_string(data.aria_row_span_or_default())
@@ -476,7 +480,7 @@ pub fn state_or_property_to_string_value(value StateAndProperty, data &AriaData,
 			optional_number_to_string(data.aria_value_now_or_default())
 		}
 		.aria_value_text {
-			data.aria_value_text_or_default()
+			serialize_aria_string(data.aria_value_text_or_default())
 		}
 	}
 }
