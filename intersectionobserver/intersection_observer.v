@@ -139,7 +139,24 @@ pub:
 
 // Web IDL callback: undefined (sequence<IntersectionObserverEntry> entries,
 // IntersectionObserver observer).
-pub type IntersectionObserverCallback = fn([]&IntersectionObserverEntry, &IntersectionObserver)
+pub type IntersectionObserverCallback = fn ([]&IntersectionObserverEntry, &IntersectionObserver)
+
+pub fn create_lazy_load_intersection_observer_callback(callback IntersectionObserverCallback) IntersectionObserverCallback {
+	// The HTML Document supplies its lazy-load resumption callback at this
+	// cycle-breaking boundary; the typed V callback needs no JS wrapper.
+	return callback
+}
+
+pub fn invoke_intersection_observer_callback(observer &IntersectionObserver, queue []&IntersectionObserverEntry) {
+	observer.callback()(queue, observer)
+}
+
+struct ObservationTarget {
+mut:
+	target                   &dom.Element
+	previous_threshold_index ?usize
+	previous_is_intersecting bool
+}
 
 @[heap]
 pub struct IntersectionObserver {
@@ -155,12 +172,36 @@ pub struct IntersectionObserver {
 mut:
 	document_registration_ ?&dom.IntersectionObserver
 	queued_entries_        []&IntersectionObserverEntry
-	observation_targets_   []&dom.Element
+	observation_targets_   []ObservationTarget
 }
 
 fn dom_observer_observation_targets(target voidptr) []&dom.Element {
 	observer := unsafe { &IntersectionObserver(target) }
 	return observer.observation_targets()
+}
+
+fn dom_observer_target_state(target voidptr, element &dom.Element) ?dom.IntersectionObserverTargetState {
+	observer := unsafe { &IntersectionObserver(target) }
+	for observed_target in observer.observation_targets_ {
+		if voidptr(observed_target.target) == voidptr(element) {
+			return dom.IntersectionObserverTargetState{
+				previous_threshold_index: observed_target.previous_threshold_index
+				previous_is_intersecting: observed_target.previous_is_intersecting
+			}
+		}
+	}
+	return none
+}
+
+fn dom_observer_update_target_state(target voidptr, element &dom.Element, threshold_index usize, is_intersecting bool) {
+	mut observer := unsafe { &IntersectionObserver(target) }
+	for index, observed_target in observer.observation_targets_ {
+		if voidptr(observed_target.target) == voidptr(element) {
+			observer.observation_targets_[index].previous_threshold_index = threshold_index
+			observer.observation_targets_[index].previous_is_intersecting = is_intersecting
+			return
+		}
+	}
 }
 
 fn dom_observer_observe(target voidptr, element &dom.Element) {
@@ -202,7 +243,7 @@ fn dom_observer_notify(target voidptr) {
 	if queue.len == 0 {
 		return
 	}
-	observer.callback()(queue, observer)
+	invoke_intersection_observer_callback(observer, queue)
 }
 
 fn geometry_rect_to_dom_rect(rect geometry.DOMRectInit) dom.Rect {
@@ -235,10 +276,18 @@ fn dom_observer_root_bounds(target voidptr) dom.Rect {
 	} else {
 		false
 	}
+	is_scrollable := if root.document != none {
+		true
+	} else if element := root.element {
+		element.is_scroll_container()
+	} else {
+		false
+	}
 	return geometry_rect_to_dom_rect(observer.root_intersection_rectangle(RootGeometry{
 		rect: base
 		same_origin: same_origin
 		has_layout_box: has_layout_box
+		is_scrollable: is_scrollable
 	}))
 }
 
@@ -272,6 +321,24 @@ pub fn IntersectionObserver.construct(callback IntersectionObserverCallback, opt
 }
 
 pub fn IntersectionObserver.construct_impl(callback IntersectionObserverCallback, options IntersectionObserverInit) !&IntersectionObserver {
+	if document := options.relevant_document {
+		return IntersectionObserver.create_with_implicit_root_document(callback, options, document)
+	}
+	return IntersectionObserver.create_internal(callback, options)
+}
+
+pub fn IntersectionObserver.create_with_implicit_root_document(callback IntersectionObserverCallback, options IntersectionObserverInit, implicit_root_document &dom.Document) !&IntersectionObserver {
+	return IntersectionObserver.create_internal(callback, IntersectionObserverInit{
+		...options
+		relevant_document: implicit_root_document
+	})
+}
+
+pub fn IntersectionObserver.create_for_constructor(callback IntersectionObserverCallback, options IntersectionObserverInit, implicit_root_document &dom.Document) !&IntersectionObserver {
+	return IntersectionObserver.create_with_implicit_root_document(callback, options, implicit_root_document)
+}
+
+fn IntersectionObserver.create_internal(callback IntersectionObserverCallback, options IntersectionObserverInit) !&IntersectionObserver {
 	root_margin := IntersectionObserver.parse_a_margin(options.root_margin) or {
 		return error('IntersectionObserver: Cannot parse root margin as a margin')
 	}
@@ -327,6 +394,8 @@ pub fn IntersectionObserver.construct_impl(callback IntersectionObserverCallback
 			root_is_element: dom_observer_root_is_element
 			thresholds: dom_observer_thresholds
 			scroll_margins: dom_observer_scroll_margins
+			target_state: dom_observer_target_state
+			update_target_state: dom_observer_update_target_state
 		}
 		observer.document_registration_ = registration
 		observer_document.register_intersection_observer(registration)
@@ -349,11 +418,23 @@ pub fn (observer &IntersectionObserver) root() ObserverRoot {
 }
 
 pub fn (observer &IntersectionObserver) root_margin() string {
-	return observer.root_margin_.map(it.serialize()).join(' ')
+	mut values := []string{cap: observer.root_margin_.len}
+	for value in observer.root_margin_ {
+		append_margin_value(mut values, value)
+	}
+	return values.join(' ')
 }
 
 pub fn (observer &IntersectionObserver) scroll_margin() string {
-	return observer.scroll_margin_.map(it.serialize()).join(' ')
+	mut values := []string{cap: observer.scroll_margin_.len}
+	for value in observer.scroll_margin_ {
+		append_margin_value(mut values, value)
+	}
+	return values.join(' ')
+}
+
+fn append_margin_value(mut values []string, value LengthPercentage) {
+	values << value.serialize()
 }
 
 pub fn (observer &IntersectionObserver) scroll_margin_values() []LengthPercentage {
@@ -403,14 +484,14 @@ pub fn (observer &IntersectionObserver) callback() IntersectionObserverCallback 
 }
 
 pub fn (observer &IntersectionObserver) observation_targets() []&dom.Element {
-	return observer.observation_targets_.clone()
+	return observer.observation_targets_.map(it.target)
 }
 
 pub fn (mut observer IntersectionObserver) observe(target &dom.Element) {
 	for candidate in observer.observation_targets_ {
 		// DOM object identity is pointer identity. Struct equality would wrongly
 		// collapse two distinct, currently equivalent Element objects.
-		if voidptr(candidate) == voidptr(target) {
+		if voidptr(candidate.target) == voidptr(target) {
 			return
 		}
 	}
@@ -418,12 +499,14 @@ pub fn (mut observer IntersectionObserver) observe(target &dom.Element) {
 	mutable_target.register_intersection_observer(dom.IntersectionObserverRegistration_{
 		observer: voidptr(observer)
 	})
-	observer.observation_targets_ << target
+	observer.observation_targets_ << ObservationTarget{
+		target: target
+	}
 }
 
 pub fn (mut observer IntersectionObserver) unobserve(target &dom.Element) {
 	for index, candidate in observer.observation_targets_ {
-		if voidptr(candidate) == voidptr(target) {
+		if voidptr(candidate.target) == voidptr(target) {
 			mut mutable_target := target
 			mutable_target.unregister_intersection_observer(voidptr(observer))
 			observer.observation_targets_.delete(index)
@@ -434,7 +517,7 @@ pub fn (mut observer IntersectionObserver) unobserve(target &dom.Element) {
 
 pub fn (mut observer IntersectionObserver) disconnect() {
 	for target in observer.observation_targets_ {
-		mut mutable_target := target
+		mut mutable_target := target.target
 		mutable_target.unregister_intersection_observer(voidptr(observer))
 	}
 	observer.observation_targets_.clear()
@@ -462,6 +545,7 @@ pub:
 	rect           geometry.DOMRectInit
 	same_origin    bool = true
 	has_layout_box bool = true
+	is_scrollable  bool
 }
 
 fn margin_to_px(value LengthPercentage, reference f64) f64 {
@@ -472,17 +556,27 @@ fn margin_to_px(value LengthPercentage, reference f64) f64 {
 // the C++ root-kind branches. Margin expansion retains Ladybird's current
 // vertical-height/horizontal-width percentage resolution.
 pub fn (observer &IntersectionObserver) root_intersection_rectangle(root RootGeometry) geometry.DOMRectInit {
-	if !root.same_origin || !root.has_layout_box {
+	if !root.same_origin {
 		return root.rect
 	}
 	top := margin_to_px(observer.root_margin_[0], root.rect.height)
 	right := margin_to_px(observer.root_margin_[1], root.rect.width)
 	bottom := margin_to_px(observer.root_margin_[2], root.rect.height)
 	left := margin_to_px(observer.root_margin_[3], root.rect.width)
+	mut expanded_top := top
+	mut expanded_right := right
+	mut expanded_bottom := bottom
+	mut expanded_left := left
+	if root.is_scrollable {
+		expanded_top += margin_to_px(observer.scroll_margin_[0], root.rect.width)
+		expanded_right += margin_to_px(observer.scroll_margin_[1], root.rect.width)
+		expanded_bottom += margin_to_px(observer.scroll_margin_[2], root.rect.width)
+		expanded_left += margin_to_px(observer.scroll_margin_[3], root.rect.width)
+	}
 	return geometry.DOMRectInit{
-		x: root.rect.x - left
-		y: root.rect.y - top
-		width: root.rect.width + left + right
-		height: root.rect.height + top + bottom
+		x: root.rect.x - expanded_left
+		y: root.rect.y - expanded_top
+		width: root.rect.width + expanded_left + expanded_right
+		height: root.rect.height + expanded_top + expanded_bottom
 	}
 }

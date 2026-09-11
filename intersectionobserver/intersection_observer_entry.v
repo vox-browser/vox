@@ -41,15 +41,35 @@ pub fn IntersectionObserverEntry.construct_impl(options IntersectionObserverEntr
 	if bounds := options.root_bounds {
 		root_bounds = geometry.DOMRectReadOnly.from_rect(bounds)
 	}
+	return IntersectionObserverEntry.create(options.time, root_bounds, geometry.DOMRectReadOnly.from_rect(options.bounding_client_rect), geometry.DOMRectReadOnly.from_rect(options.intersection_rect), options.is_intersecting, options.intersection_ratio, options.target)
+}
+
+pub fn IntersectionObserverEntry.create(time f64, root_bounds ?&geometry.DOMRectReadOnly, bounding_client_rect &geometry.DOMRectReadOnly, intersection_rect &geometry.DOMRectReadOnly, is_intersecting bool, intersection_ratio f64, target &dom.Element) &IntersectionObserverEntry {
 	return &IntersectionObserverEntry{
-		time_: options.time
+		time_: time
 		root_bounds_: root_bounds
-		bounding_client_rect_: geometry.DOMRectReadOnly.from_rect(options.bounding_client_rect)
-		intersection_rect_: geometry.DOMRectReadOnly.from_rect(options.intersection_rect)
-		is_intersecting_: options.is_intersecting
-		intersection_ratio_: options.intersection_ratio
-		target_: options.target
+		bounding_client_rect_: bounding_client_rect
+		intersection_rect_: intersection_rect
+		is_intersecting_: is_intersecting
+		intersection_ratio_: intersection_ratio
+		target_: target
 	}
+}
+
+pub fn IntersectionObserverEntry.root_bounds_offset() usize {
+	return usize(__offsetof(IntersectionObserverEntry, root_bounds_))
+}
+
+pub fn IntersectionObserverEntry.bounding_client_rect_offset() usize {
+	return usize(__offsetof(IntersectionObserverEntry, bounding_client_rect_))
+}
+
+pub fn IntersectionObserverEntry.intersection_rect_offset() usize {
+	return usize(__offsetof(IntersectionObserverEntry, intersection_rect_))
+}
+
+pub fn IntersectionObserverEntry.target_offset() usize {
+	return usize(__offsetof(IntersectionObserverEntry, target_))
 }
 
 pub fn (entry &IntersectionObserverEntry) time() f64 {

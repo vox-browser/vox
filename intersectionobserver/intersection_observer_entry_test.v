@@ -37,3 +37,16 @@ fn test_entry_allows_null_root_bounds_but_requires_target() {
 		assert err.msg().contains('target is required')
 	}
 }
+
+fn test_entry_factory_and_binding_offsets() {
+	target := &dom.Element{}
+	bounding := geometry.DOMRectReadOnly.from_rect(geometry.DOMRectInit{1, 2, 3, 4})
+	intersection := geometry.DOMRectReadOnly.from_rect(geometry.DOMRectInit{2, 3, 1, 1})
+	entry := IntersectionObserverEntry.create(7, none, bounding, intersection, true, 0.25, target)
+	assert entry.target() == target
+	assert entry.time() == 7
+	assert IntersectionObserverEntry.root_bounds_offset() > 0
+	assert IntersectionObserverEntry.bounding_client_rect_offset() > 0
+	assert IntersectionObserverEntry.intersection_rect_offset() > 0
+	assert IntersectionObserverEntry.target_offset() > 0
+}

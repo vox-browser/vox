@@ -2119,6 +2119,16 @@ pub:
 
 pub type IntersectionObserverMarginsCallback = fn (voidptr) []IntersectionObserverMarginValue
 
+pub struct IntersectionObserverTargetState {
+pub:
+	previous_threshold_index ?usize
+	previous_is_intersecting bool
+}
+
+pub type IntersectionObserverTargetStateCallback = fn (voidptr, &Element) ?IntersectionObserverTargetState
+
+pub type IntersectionObserverUpdateTargetStateCallback = fn (voidptr, &Element, usize, bool)
+
 @[heap]
 pub struct IntersectionObserver {
 pub:
@@ -2134,6 +2144,8 @@ pub:
 	root_is_element      IntersectionObserverBoolCallback = unsafe { nil }
 	thresholds           IntersectionObserverThresholdsCallback = unsafe { nil }
 	scroll_margins       IntersectionObserverMarginsCallback = unsafe { nil }
+	target_state         IntersectionObserverTargetStateCallback = unsafe { nil }
+	update_target_state  IntersectionObserverUpdateTargetStateCallback = unsafe { nil }
 }
 
 pub type ResizeObserverGatherAtDepthCallback = fn (voidptr, int)
@@ -8097,7 +8109,8 @@ pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64)
 			mut intersection := Rect{}
 			mut intersection_ratio := 0.0
 
-			target_has_layout := target.el_layout_node() != none
+			target_has_layout := target.document().layout_is_up_to_date()
+				&& target.el_layout_node() != none
 			same_document := voidptr(target.document()) == voidptr(root_node.document())
 			inside_element_root := !root_is_element || target.as_node().is_descendant_of(root_node)
 			if target_has_layout && (is_implicit_root || same_document) && inside_element_root {
@@ -8105,42 +8118,48 @@ pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64)
 				intersection = compute_intersection(target, observer, none, root_bounds)
 				target_area := target_rect.width * target_rect.height
 				intersection_area := intersection.width * intersection.height
-				is_intersecting = edge_adjacent_intersects(target_rect, root_bounds)
+				intersection_geometry_intersects := edge_adjacent_intersects(target_rect,
+					root_bounds)
 				intersection_ratio = if target_area != 0 {
 					intersection_area / target_area
-				} else if is_intersecting {
+				} else if intersection_geometry_intersects {
 					1.0
 				} else {
 					0.0
 				}
-				// upper_bound(thresholds, intersectionRatio)
-				mut lower := 0
-				mut upper := thresholds.len
-				for lower < upper {
-					middle := lower + (upper - lower) / 2
-					if thresholds[middle] > intersection_ratio {
-						upper = middle
-					} else {
-						lower = middle + 1
+				if intersection_geometry_intersects {
+					// upper_bound(thresholds, intersectionRatio)
+					mut lower := 0
+					mut upper := thresholds.len
+					for lower < upper {
+						middle := lower + (upper - lower) / 2
+						if thresholds[middle] > intersection_ratio {
+							upper = middle
+						} else {
+							lower = middle + 1
+						}
 					}
+					threshold_index = usize(lower)
 				}
-				threshold_index = usize(lower)
+				// Match the current interop behavior: geometry which intersects but
+				// does not reach the first threshold is reported as non-intersecting.
+				is_intersecting = threshold_index > 0
 			}
 
-			mut mutable_target := unsafe { &Element(target) }
-			mut registration := mutable_target.get_intersection_observer_registration(observer.target) or {
+			if observer.target_state == unsafe { nil }
+				|| observer.update_target_state == unsafe { nil } {
 				continue
 			}
-			threshold_changed := if previous := registration.previous_threshold_index {
+			state := observer.target_state(observer.target, target) or { continue }
+			threshold_changed := if previous := state.previous_threshold_index {
 				previous != threshold_index
 			} else {
 				true
 			}
-			if threshold_changed || registration.previous_is_intersecting != is_intersecting {
+			if threshold_changed || state.previous_is_intersecting != is_intersecting {
 				d.queue_an_intersection_observer_entry(observer, time, root_bounds, target_rect, intersection, is_intersecting, intersection_ratio, target)
 			}
-			registration.previous_threshold_index = threshold_index
-			registration.previous_is_intersecting = is_intersecting
+			observer.update_target_state(observer.target, target, threshold_index, is_intersecting)
 		}
 	}
 }

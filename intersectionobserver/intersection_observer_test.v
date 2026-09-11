@@ -254,6 +254,24 @@ fn test_document_update_intersection_observations_uses_layout_geometry_and_thres
 	assert intersection_observer_ratio == 0.0
 
 	observer.finalize()
+
+	// Current Ladybird reports geometry below the first threshold as not
+	// intersecting, while retaining the measured ratio.
+	reset_recorded_entries()
+	target.set_attribute_value('style', 'position: absolute; left: 750px; top: 20px; width: 100px; height: 50px')
+	document.update_layout(.debugging)
+	mut threshold_observer := IntersectionObserver.construct(record_delivered_entries,
+		IntersectionObserverInit{
+		relevant_document: document
+		thresholds: [0.75]
+	}) or { panic(err) }
+	threshold_observer.observe(target)
+	document.run_the_update_intersection_observations_steps(103)
+	deliver_intersection_observer_tasks()
+	assert intersection_observer_callback_count == 1
+	assert math.abs(intersection_observer_ratio - 0.5) < 0.000001
+	assert !intersection_observer_is_intersecting
+	threshold_observer.finalize()
 }
 
 fn test_observe_uses_dom_object_identity_for_equivalent_elements() {
@@ -270,7 +288,7 @@ fn test_observe_uses_dom_object_identity_for_equivalent_elements() {
 	assert voidptr(observer.observation_targets()[0]) == voidptr(target_b)
 }
 
-fn test_root_intersection_rectangle_expands_only_same_origin_layout_roots() {
+fn test_root_intersection_rectangle_expands_same_origin_roots_without_requiring_a_layout_box() {
 	observer := IntersectionObserver.construct(discard_entries, IntersectionObserverInit{
 		root_margin: '10% 5px 20% 2px'
 	}) or { panic(err) }
@@ -284,5 +302,26 @@ fn test_root_intersection_rectangle_expands_only_same_origin_layout_roots() {
 	assert observer.root_intersection_rectangle(RootGeometry{
 		rect: base
 		has_layout_box: false
-	}) == base
+	}) == expanded
+}
+
+fn test_scroll_margin_expands_scrollable_root_and_callback_factories() {
+	reset_recorded_entries()
+	document := dom.Document.create(dom.url_about_blank())
+	mut observer := IntersectionObserver.create_for_constructor(record_delivered_entries, IntersectionObserverInit{
+		root_margin: '10px'
+		scroll_margin: '5% 2px'
+	}, document)!
+	base := geometry.DOMRectInit{10, 20, 200, 100}
+	expanded := observer.root_intersection_rectangle(RootGeometry{
+		rect: base
+		is_scrollable: true
+	})
+	assert expanded == geometry.DOMRectInit{-2, 0, 224, 140}
+	callback := create_lazy_load_intersection_observer_callback(record_delivered_entries)
+	callback([], observer)
+	assert intersection_observer_callback_count == 1
+	invoke_intersection_observer_callback(observer, [])
+	assert intersection_observer_callback_count == 2
+	observer.finalize()
 }
