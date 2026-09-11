@@ -15,54 +15,35 @@ fn hyperlink_html_element(element &dom.Element) &dom.HTMLElement {
 	return unsafe { &dom.HTMLElement(element) }
 }
 
-fn hyperlink_optional_url_serialization(url ?dom.URL) string {
-	value := url or { return '\x00' }
-	return value.serialize()
-}
-
 // https://html.spec.whatwg.org/multipage/links.html#concept-hyperlink-url-set
 pub fn html_hyperlink_element_utils_set_the_url(element &dom.Element) {
 	mut html_element := unsafe { &dom.HTMLElement(hyperlink_html_element(element)) }
-	old_url := hyperlink_optional_url_serialization(html_element.hyperlink_url_)
 	html_element.hyperlink_url_ = none
 	html_element.hyperlink_url_initialized = true
-	href := element.get_attribute(attr_href) or {
-		if old_url != '\x00' {
-			mut node := unsafe { &dom.Node(element.as_node()) }
-			node.invalidate_style(.element_attribute_change)
-		}
-		return
-	}
+	href := element.get_attribute(attr_href) or { return }
 	if url := element.document().encoding_parse_url(href) {
 		html_element.hyperlink_url_ = url
-	}
-	if old_url != hyperlink_optional_url_serialization(html_element.hyperlink_url_) {
-		mut node := unsafe { &dom.Node(element.as_node()) }
-		node.invalidate_style(.element_attribute_change)
 	}
 }
 
 // https://html.spec.whatwg.org/multipage/links.html#reinitialise-url
 pub fn html_hyperlink_element_utils_reinitialize_url(element &dom.Element) {
-	html_element := hyperlink_html_element(element)
-	if html_element.hyperlink_url_initialized {
-		if url := html_element.hyperlink_url_ {
-			if url.scheme() == 'blob' && url.has_an_opaque_path() {
-				return
-			}
-		}
-	}
+	// The serialized href is the stable V boundary for DOM URLs. Reparse it on
+	// reinitialization instead of binding Optional<URL> out of an embedded
+	// HTMLElement; that optional struct binding can retain a dangling copy of
+	// URL.value after the element's attribute storage changes.
 	html_hyperlink_element_utils_set_the_url(element)
 }
 
 fn hyperlink_url(element &dom.Element) ?dom.URL {
 	html_hyperlink_element_utils_reinitialize_url(element)
-	return hyperlink_html_element(element).hyperlink_url_
+	href := element.get_attribute(attr_href) or { return none }
+	return element.document().encoding_parse_url(href)
 }
 
 // https://html.spec.whatwg.org/multipage/links.html#update-href
 pub fn html_hyperlink_element_utils_update_href(element &dom.Element) {
-	url := hyperlink_html_element(element).hyperlink_url_ or { return }
+	url := hyperlink_url(element) or { return }
 	mut mutable_element := unsafe { &dom.Element(element) }
 	mutable_element.set_attribute_value(attr_href, url.serialize())
 }
@@ -71,7 +52,7 @@ fn hyperlink_update_href(mut element dom.Element, url dom.URL) {
 	mut html_element := unsafe { &dom.HTMLElement(hyperlink_html_element(&element)) }
 	html_element.hyperlink_url_ = url
 	html_element.hyperlink_url_initialized = true
-	html_hyperlink_element_utils_update_href(&element)
+	element.set_attribute_value(attr_href, url.serialize())
 }
 
 // https://html.spec.whatwg.org/multipage/links.html#dom-hyperlink-origin
