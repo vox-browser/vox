@@ -74,6 +74,8 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("animations/animation_effect.v", "AnimationEffect", "target"),
         # Permissions::create is exactly an allocator-only factory upstream.
         ("permissionsapi/permissions.v", "Permissions", "create"),
+        # VTTRegion's field defaults are the complete upstream factory body.
+        ("webvtt/vtt_region.v", "VTTRegion", "create"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "unload_event_start"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "unload_event_end"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "redirect_start"),

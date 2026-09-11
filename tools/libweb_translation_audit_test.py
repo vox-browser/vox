@@ -21,12 +21,27 @@ fn Permissions.create() &Permissions {
 }
 """
             )
+            region_source = Path(directory) / "webvtt" / "vtt_region.v"
+            region_source.parent.mkdir()
+            region_source.write_text(
+                """
+module webvtt
+
+struct VTTRegion {}
+
+fn VTTRegion.create() &VTTRegion {
+    return &VTTRegion{}
+}
+"""
+            )
 
             suspicious, verified = audit.trivial_implementation_inventories(Path(directory))
 
         self.assertEqual(suspicious, [])
-        self.assertEqual(len(verified), 1)
-        self.assertEqual(verified[0]["name"], "create")
+        self.assertEqual(len(verified), 2)
+        self.assertEqual(
+            {finding["owner"] for finding in verified}, {"Permissions", "VTTRegion"}
+        )
 
     def test_foreign_function_declaration_is_not_an_empty_implementation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
