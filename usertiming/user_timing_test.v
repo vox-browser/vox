@@ -1,7 +1,7 @@
 module usertiming
 
 fn test_mark_validation_and_values() {
-	mark := PerformanceMark.construct_impl('ready', PerformanceMarkOptions{
+	mark := PerformanceMark.create_for_constructor('ready', PerformanceMarkOptions{
 		detail: 'cloned detail'
 		detail_set: true
 	}, 12.5, true)!

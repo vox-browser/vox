@@ -27,12 +27,12 @@ pub:
 }
 
 pub fn PerformanceMark.new(name string, options PerformanceMarkOptions, now f64, window_context bool) !&PerformanceMark {
-	return PerformanceMark.construct_impl(name, options, now, window_context)
+	return PerformanceMark.create_for_constructor(name, options, now, window_context)
 }
 
 // The current time and principal-global kind are supplied by the translated
-// host boundary; the remaining steps mirror PerformanceMark::construct_impl.
-pub fn PerformanceMark.construct_impl(mark_name string, mark_options PerformanceMarkOptions, now f64, window_context bool) !&PerformanceMark {
+// host boundary; the remaining steps mirror the constructor algorithm.
+pub fn PerformanceMark.create_for_constructor(mark_name string, mark_options PerformanceMarkOptions, now f64, window_context bool) !&PerformanceMark {
 	if window_context && mark_name in navigation_timing_entry_names {
 		return error("SyntaxError: '${mark_name}' is part of PerformanceTiming")
 	}
@@ -44,6 +44,10 @@ pub fn PerformanceMark.construct_impl(mark_name string, mark_options Performance
 		entry: performancetimeline.PerformanceEntry.new(mark_name, 'mark', start_time, 0)
 		detail: if mark_options.detail_set { mark_options.detail } else { none }
 	}
+}
+
+pub fn PerformanceMark.construct_impl(mark_name string, mark_options PerformanceMarkOptions, now f64, window_context bool) !&PerformanceMark {
+	return PerformanceMark.create_for_constructor(mark_name, mark_options, now, window_context)
 }
 
 pub fn (_ &PerformanceMark) entry_type() string {
