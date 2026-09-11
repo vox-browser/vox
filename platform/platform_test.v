@@ -154,12 +154,15 @@ fn test_timer_state_and_single_shot_fire() {
 	assert timer.interval() == 10
 	timer.start()
 	assert timer.is_active()
+	assert timer.has_activity_root()
 	timer.fire()
 	assert !timer.is_active()
+	assert !timer.has_activity_root()
 	timer.set_single_shot(false)
 	timer.restart_with_interval(20)
 	timer.fire()
 	assert timer.is_active()
+	assert timer.has_activity_root()
 	assert timer.interval() == 20
 }
 

@@ -6,7 +6,7 @@
 // fire() is the host timeout edge.
 module platform
 
-pub type TimerCallback = fn()
+pub type TimerCallback = fn ()
 
 @[heap]
 pub struct Timer {
@@ -68,6 +68,10 @@ pub fn (mut timer Timer) set_active(active bool) {
 }
 
 pub fn (timer &Timer) is_active() bool {
+	return timer.active_
+}
+
+pub fn (timer &Timer) has_activity_root() bool {
 	return timer.active_
 }
 
