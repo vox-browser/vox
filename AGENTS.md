@@ -1,5 +1,13 @@
 # Repository instructions
 
+## Commits
+
+- Commit each completed translation feature separately with a focused commit
+  message. Do not combine unrelated translation slices in one commit.
+- Include the feature's focused tests in the same commit as its implementation.
+- Keep documentation-only and tooling-only changes in separate commits when
+  they are independently reviewable.
+
 ## LibWeb V translation
 
 - This repository (`~/code/libweb_v`) is the canonical LibWeb V translation workspace.
