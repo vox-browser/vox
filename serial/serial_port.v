@@ -53,10 +53,10 @@ pub fn (value FlowControlType) str() string {
 pub struct SerialOptions {
 pub:
 	baud_rate    ?u32
-	data_bits    ?u8              = u8(8)
-	stop_bits    ?u8              = u8(1)
-	parity       ?ParityType      = ParityType.none
-	buffer_size  ?u32             = u32(255)
+	data_bits    ?u8 = u8(8)
+	stop_bits    ?u8 = u8(1)
+	parity       ?ParityType = ParityType.none
+	buffer_size  ?u32 = u32(255)
 	flow_control ?FlowControlType = FlowControlType.none
 }
 
@@ -117,23 +117,23 @@ pub fn (_ &SerialPort) get_info() SerialPortInfo {
 // These methods preserve the current upstream implementation: their specified
 // algorithms are marked FIXME and each returns a rejected UnknownError promise.
 pub fn (_ &SerialPort) open(_ SerialOptions) &dom.Promise {
-	return rejected_unknown_error()
+	return reject_unknown_error()
 }
 
 pub fn (_ &SerialPort) set_signals(_ SerialOutputSignals) &dom.Promise {
-	return rejected_unknown_error()
+	return reject_unknown_error()
 }
 
 pub fn (_ &SerialPort) get_signals() &dom.Promise {
-	return rejected_unknown_error()
+	return reject_unknown_error()
 }
 
 pub fn (_ &SerialPort) close() &dom.Promise {
-	return rejected_unknown_error()
+	return reject_unknown_error()
 }
 
 pub fn (_ &SerialPort) forget() &dom.Promise {
-	return rejected_unknown_error()
+	return reject_unknown_error()
 }
 
 pub fn (port &SerialPort) state() SerialPortState {
@@ -148,8 +148,16 @@ pub fn (port &SerialPort) readable() ?voidptr {
 	return port.readable_
 }
 
+pub fn SerialPort.readable_offset() usize {
+	return usize(__offsetof(SerialPort, readable_))
+}
+
 pub fn (port &SerialPort) writable() ?voidptr {
 	return port.writable_
+}
+
+pub fn SerialPort.writable_offset() usize {
+	return usize(__offsetof(SerialPort, writable_))
 }
 
 pub fn (port &SerialPort) set_onconnect(handler ?&dom.CallbackType) {

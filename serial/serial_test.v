@@ -4,11 +4,13 @@ import dom
 
 fn test_serial_methods_preserve_current_rejected_promise_boundary() {
 	serial_api := Serial.new()
+	assert Serial.create().get_ports().state() == .rejected
 	assert serial_api.request_port(SerialPortRequestOptions{}).state() == .rejected
 	assert serial_api.get_ports().result().string_data.starts_with('UnknownError:')
 	port := SerialPort.new()
 	assert port.state() == .closed
 	assert !port.connected()
+	assert SerialPort.readable_offset() < SerialPort.writable_offset()
 	assert port.get_info() == SerialPortInfo{}
 	for promise in [port.open(SerialOptions{}), port.set_signals(SerialOutputSignals{}),
 		port.get_signals(), port.close(), port.forget()] {

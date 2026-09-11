@@ -26,23 +26,27 @@ pub struct Serial {
 }
 
 pub fn Serial.new() &Serial {
+	return Serial.create()
+}
+
+pub fn Serial.create() &Serial {
 	return &Serial{
 		EventTarget: dom.EventTarget{}
 	}
 }
 
-fn rejected_unknown_error() &dom.Promise {
+fn reject_unknown_error() &dom.Promise {
 	return dom.Promise.rejected(dom.js_string('UnknownError:'))
 }
 
 // Current upstream deliberately returns rejected UnknownError promises while
 // platform enumeration and prompting are FIXME.
 pub fn (_ &Serial) request_port(_ SerialPortRequestOptions) &dom.Promise {
-	return rejected_unknown_error()
+	return reject_unknown_error()
 }
 
 pub fn (_ &Serial) get_ports() &dom.Promise {
-	return rejected_unknown_error()
+	return reject_unknown_error()
 }
 
 pub fn (serial_api &Serial) set_onconnect(handler ?&dom.CallbackType) {
