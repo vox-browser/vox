@@ -1912,7 +1912,7 @@ pub fn (mut e Element) attach_a_shadow_root_with_registry(mode ShadowRootMode, c
 		slot_assignment_: slot_assignment
 		custom_element_registry_: registry
 	})
-	e.shadow_root_ = shadow
+	e.set_shadow_root(shadow)
 }
 
 // UA widgets may have shadow roots even when their tag is not a valid author
@@ -1937,7 +1937,7 @@ pub fn (mut e Element) attach_a_user_agent_shadow_root(slot_assignment SlotAssig
 		slot_assignment_: slot_assignment
 		user_agent_internal_: true
 	})
-	e.shadow_root_ = shadow
+	e.set_shadow_root(shadow)
 	return shadow
 }
 
@@ -1981,11 +1981,15 @@ pub fn (mut e Element) set_shadow_root(sr ?&ShadowRoot) {
 	if current_shadow_root != unsafe { nil } {
 		mut current_fragment := unsafe { &DocumentFragment(current_shadow_root) }
 		current_fragment.set_host(none)
+		mut current_node := unsafe { &Node(current_shadow_root) }
+		current_node.set_is_connected(false)
 	}
 	e.shadow_root_ = sr
 	if new_shadow_root != unsafe { nil } {
 		mut new_fragment := unsafe { &DocumentFragment(new_shadow_root) }
 		new_fragment.set_host(&e)
+		mut new_node := unsafe { &Node(new_shadow_root) }
+		new_node.set_is_connected(e.is_connected())
 	}
 	mut node := unsafe { &Node(&e) }
 	node.invalidate_style(.element_set_shadow_root)

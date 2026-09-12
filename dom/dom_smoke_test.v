@@ -178,6 +178,37 @@ fn test_get_element_by_id() {
 	assert doc.get_element_by_id('missing') == none
 }
 
+fn test_cached_connection_state_tracks_light_and_shadow_tree_mutations() {
+	mut document := Document.create(url_about_blank())
+	document_node := unsafe { &Node(document) }
+	mut host := document.create_element_ns(namespace_html_uri, 'div') or { panic(err) }
+	child := document.create_element_ns(namespace_html_uri, 'span') or { panic(err) }
+	mut host_node := host.as_node()
+	host_node.append_child(child.as_node()) or { panic(err) }
+
+	assert document_node.is_connected()
+	assert !host_node.is_connected()
+	assert !child.as_node().is_connected()
+
+	mut mutable_document_node := document_node
+	mutable_document_node.append_child(host_node) or { panic(err) }
+	assert host_node.is_connected()
+	assert child.as_node().is_connected()
+
+	shadow_root := host.attach_shadow(ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := shadow_root_as_node(shadow_root)
+	shadow_child := document.create_element_ns(namespace_html_uri, 'b') or { panic(err) }
+	shadow_node.append_child(shadow_child.as_node()) or { panic(err) }
+	assert shadow_node.is_connected()
+	assert shadow_child.as_node().is_connected()
+
+	mutable_document_node.remove_child(host_node) or { panic(err) }
+	assert !host_node.is_connected()
+	assert !child.as_node().is_connected()
+	assert !shadow_node.is_connected()
+	assert !shadow_child.as_node().is_connected()
+}
+
 fn test_text_split_and_whole() {
 	doc := Document.create(url_about_blank())
 	mut root := new_element(doc, 'div')

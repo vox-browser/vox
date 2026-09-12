@@ -446,6 +446,7 @@ pub mut:
 	child_needs_style_update_          bool
 	entire_subtree_needs_style_update_ bool
 	in_editable_subtree_               bool
+	is_connected_                      bool
 
 	unique_id_                UniqueNodeID
 	registered_observer_list_ []&RegisteredObserver
@@ -4500,6 +4501,7 @@ pub fn Document.create_and_initialize(type_ DocumentType_, content_type string, 
 	doc.unique_id_ = allocate_unique_id(unsafe { &Node(doc) })
 	doc.node_type = .document_node
 	doc.document_ = doc
+	doc.is_connected_ = true
 	doc.type_ = type_
 	doc.content_type = content_type
 	doc.url = creation_url
@@ -4524,6 +4526,7 @@ pub fn Document.create(url URL) &Document {
 	doc.unique_id_ = allocate_unique_id(unsafe { &Node(doc) })
 	doc.node_type = .document_node
 	doc.document_ = doc
+	doc.is_connected_ = true
 	doc.url = url
 	doc.initialize()
 	return doc
@@ -4536,6 +4539,7 @@ pub fn Document.create_for_fragment_parsing() &Document {
 	doc.unique_id_ = allocate_unique_id(unsafe { &Node(doc) })
 	doc.node_type = .document_node
 	doc.document_ = doc
+	doc.is_connected_ = true
 	doc.url = url_about_blank()
 	doc.temporary_document_for_fragment_parsing = .yes
 	doc.initialize()

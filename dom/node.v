@@ -624,6 +624,7 @@ pub fn Node.new_with_realm(realm voidptr, document &Document, node_type NodeType
 	mut node := &Node{
 		node_type: node_type
 		document_: document
+		is_connected_: node_type == .document_node
 	}
 	node.EventTarget.data.kind = .node
 	node.unique_id_ = allocate_unique_id(node)
@@ -1676,8 +1677,13 @@ pub fn (n &Node) is_closed_shadow_hidden_from(b &Node) bool {
 
 // https://dom.spec.whatwg.org/#connected
 pub fn (n &Node) is_connected() bool {
-	// An element is connected if its shadow-including root is a document.
-	return n.shadow_including_root().is_document()
+	// Documents created through direct V struct literals predate the cached flag,
+	// but a Document is always its own connected shadow-including root.
+	return n.is_connected_ || n.is_document()
+}
+
+pub fn (mut n Node) set_is_connected(is_connected bool) {
+	n.is_connected_ = is_connected
 }
 
 // https://html.spec.whatwg.org/multipage/infrastructure.html#browsing-context-connected
@@ -2770,6 +2776,17 @@ pub fn (mut n Node) set_entire_subtree_needs_style_update(value bool) {
 pub fn (mut n Node) post_connection() {}
 
 pub fn (mut n Node) inserted() {
+	// Insertion visits shadow-including inclusive descendants in tree order, so
+	// the parent (or shadow host) already has its cached connection state.
+	if shadow_root := n.as_shadow_root() {
+		n.is_connected_ = if host := shadow_root.host() {
+			host.as_node().is_connected()
+		} else {
+			false
+		}
+	} else if parent := n.parent() {
+		n.is_connected_ = parent.is_connected()
+	}
 	if element := n.as_element() {
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.inserted()
@@ -2786,6 +2803,7 @@ pub fn (mut n Node) inserted() {
 }
 
 pub fn (mut n Node) removed_from(old_parent ?&Node, old_root &Node) {
+	n.is_connected_ = false
 	if element := n.as_element() {
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.removed_from(old_parent, old_root)

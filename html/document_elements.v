@@ -542,16 +542,16 @@ pub fn html_style_element_children_changed(style &dom.HTMLStyleElement, metadata
 }
 
 pub fn html_style_element_inserted(style &dom.HTMLStyleElement) {
-	html_style_element_update_a_style_block(style)
 	mut element := unsafe { &dom.Element(style) }
 	element.inserted()
+	html_style_element_update_a_style_block(style)
 }
 
 pub fn html_style_element_removed_from(style &dom.HTMLStyleElement, old_parent ?&dom.Node, old_root &dom.Node) {
-	mut base := html_style_element_base(style)
-	base.update_a_style_block()
 	mut element := unsafe { &dom.Element(style) }
 	element.removed_from(old_parent, old_root)
+	mut base := html_style_element_base(style)
+	base.update_a_style_block()
 }
 
 pub fn html_style_element_attribute_changed(style &dom.HTMLStyleElement, name string, old_value ?string, value ?string, namespace_ ?string) {
