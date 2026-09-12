@@ -576,6 +576,51 @@ pub fn (shadow_root &ShadowRoot) part_element_map() map[string][]AbstractElement
 	return shadow_root.calculate_part_element_map()
 }
 
+struct ExportedPart {
+	inner_name string
+	outer_name string
+}
+
+// https://drafts.csswg.org/css-shadow-1/#exportparts
+fn parse_exportparts_attribute(element &Element) []ExportedPart {
+	if !element.has_attribute('exportparts') {
+		return []ExportedPart{}
+	}
+	mut result := []ExportedPart{}
+	for mapping in element.get_attribute_value('exportparts').split(',') {
+		trimmed := mapping.trim_space()
+		if trimmed.len == 0 {
+			continue
+		}
+		parts := trimmed.split(':')
+		if parts.len == 1 {
+			name := parts[0].trim_space()
+			result << ExportedPart{
+				inner_name: name
+				outer_name: name
+			}
+		} else if parts.len == 2 {
+			result << ExportedPart{
+				inner_name: parts[0].trim_space()
+				outer_name: parts[1].trim_space()
+			}
+		}
+	}
+	return result
+}
+
+fn append_part_element(mut part_element_map map[string][]AbstractElement, name string, abstract_element AbstractElement) {
+	mut entries := part_element_map[name] or { []AbstractElement{} }
+	for existing in entries {
+		if voidptr(existing.element()) == voidptr(abstract_element.element())
+			&& existing.pseudo_element() == abstract_element.pseudo_element() {
+			return
+		}
+	}
+	entries << abstract_element
+	part_element_map[name] = entries
+}
+
 // https://drafts.csswg.org/css-shadow-1/#calculate-the-part-element-map
 pub fn (shadow_root &ShadowRoot) calculate_part_element_map() map[string][]AbstractElement {
 	// To calculate the part element map of a shadow root, outerRoot:
@@ -590,14 +635,28 @@ pub fn (shadow_root &ShadowRoot) calculate_part_element_map() map[string][]Abstr
 		for name in element.parts {
 			unsafe {
 				mut current := *map_ptr
-				mut entries := current[name] or { []AbstractElement{} }
-				entries << AbstractElement.new(element, none)
-				current[name] = entries
+				append_part_element(mut current, name, AbstractElement.new(element, none))
 				*map_ptr = current
 			}
 		}
 
-		// Current upstream stops here as well; its forwarded-part steps remain a FIXME.
+		// A nested shadow host forwards entries from its own part element map
+		// according to exportparts, including transitively forwarded entries.
+		if inner_root := element.shadow_root() {
+			inner_map := inner_root.part_element_map()
+			for exported_part in parse_exportparts_attribute(element) {
+				if inner_parts := inner_map[exported_part.inner_name] {
+					for inner_part in inner_parts {
+						unsafe {
+							mut current := *map_ptr
+							append_part_element(mut current, exported_part.outer_name, inner_part)
+							*map_ptr = current
+						}
+					}
+				}
+			}
+		}
+
 		return .@continue
 	})
 
