@@ -53,6 +53,7 @@ mut:
 	crossorigin_                  CORSSettingAttribute
 	referrer_policy_              string
 	document_load_event_delaying_ bool
+	document_load_event_delayer_  ?dom.DocumentLoadEventDelayer
 }
 
 pub fn HTMLScriptElementModel.create(base_url dom.URL) &HTMLScriptElementModel {
@@ -87,13 +88,31 @@ fn script_dom_element(element &dom.HTMLScriptElement) &dom.Element {
 	return unsafe { &dom.Element(element) }
 }
 
+fn html_script_element_adopted_from_callback(target voidptr, old_document &dom.Document) {
+	mut model := unsafe { &HTMLScriptElementModel(target) }
+	model.adopted_from(old_document)
+}
+
+fn attach_html_script_element_model(element &dom.HTMLScriptElement, model &HTMLScriptElementModel) {
+	mut mutable_model := unsafe { &HTMLScriptElementModel(model) }
+	mutable_model.element_ = element
+	mut mutable_element := unsafe { &dom.HTMLScriptElement(element) }
+	mutable_element.script_element_model_ = voidptr(model)
+	mut node := script_dom_element(element).as_node()
+	node.set_adopted_from_hook(dom.NodeAdoptedFromHook{
+		target: voidptr(model)
+		callback: html_script_element_adopted_from_callback
+	})
+}
+
 pub fn html_script_element_model_for_dom_element(element &dom.HTMLScriptElement) &HTMLScriptElementModel {
 	if element.script_element_model_ != unsafe { nil } {
-		return unsafe { &HTMLScriptElementModel(element.script_element_model_) }
+		model := unsafe { &HTMLScriptElementModel(element.script_element_model_) }
+		attach_html_script_element_model(element, model)
+		return model
 	}
 	dom_element := script_dom_element(element)
 	mut model := HTMLScriptElementModel.create(dom_element.document().base_url())
-	model.element_ = element
 	model.src_ = dom_element.get_attribute('src')
 	model.text_ = dom_element.as_node().child_text_content()
 	model.type_attribute_ = dom_element.get_attribute('type')
@@ -103,8 +122,7 @@ pub fn html_script_element_model_for_dom_element(element &dom.HTMLScriptElement)
 	model.connected_ = dom_element.as_node().is_connected()
 	model.crossorigin_ = cors_setting_attribute_from_keyword(dom_element.get_attribute('crossorigin'))
 	model.referrer_policy_ = ascii_lowercase_string(dom_element.get_attribute_value('referrerpolicy'))
-	mut mutable_element := unsafe { &dom.HTMLScriptElement(element) }
-	mutable_element.script_element_model_ = voidptr(model)
+	attach_html_script_element_model(element, model)
 	return model
 }
 
@@ -307,7 +325,7 @@ pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Documen
 
 fn (mut script HTMLScriptElementModel) mark_as_ready(result ?string) {
 	script.script_ready_ = true
-	script.document_load_event_delaying_ = false
+	script.stop_delaying_document_load_event()
 	if result == none {
 		script.failed_to_load_ = true
 	}
@@ -327,8 +345,37 @@ pub fn (mut script HTMLScriptElementModel) prepare_script_text() {
 	}
 }
 
-pub fn (mut script HTMLScriptElementModel) begin_delaying_document_load_event(_ &dom.Document) {
+pub fn (mut script HTMLScriptElementModel) begin_delaying_document_load_event(document &dom.Document) {
+	if mut delayer := script.document_load_event_delayer_ {
+		delayer.finish()
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	script.document_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut mutable_document)
 	script.document_load_event_delaying_ = true
+}
+
+pub fn (mut script HTMLScriptElementModel) stop_delaying_document_load_event() {
+	if mut delayer := script.document_load_event_delayer_ {
+		delayer.finish()
+	}
+	script.document_load_event_delayer_ = none
+	script.document_load_event_delaying_ = false
+}
+
+pub fn (mut script HTMLScriptElementModel) adopted_from(_ &dom.Document) {
+	element := script.element_ or { return }
+	new_document := script_dom_element(element).document()
+	script.base_url_ = new_document.base_url()
+	mut was_delaying := false
+	if mut delayer := script.document_load_event_delayer_ {
+		delayer.finish()
+		was_delaying = true
+	}
+	if was_delaying {
+		mut mutable_new_document := unsafe { &dom.Document(new_document) }
+		script.document_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut mutable_new_document)
+		script.document_load_event_delaying_ = true
+	}
 }
 
 pub fn (mut script HTMLScriptElementModel) execute_script() {

@@ -228,9 +228,8 @@ fn (mut p HTMLParser) decrement_script_nesting_level() {
 
 fn (mut p HTMLParser) register_parser_inserted_script(element &dom.Element, token &HTMLToken) {
 	mut script := HTMLScriptElementModel.create(p.document_.base_url())
-	script.element_ = unsafe { &dom.HTMLScriptElement(element) }
-	mut script_element := unsafe { &dom.HTMLScriptElement(element) }
-	script_element.script_element_model_ = voidptr(script)
+	script_element := unsafe { &dom.HTMLScriptElement(element) }
+	attach_html_script_element_model(script_element, script)
 	script.set_parser_document(p.document_)
 	script.set_scripting_enabled(p.scripting_enabled)
 	script.set_src(token.attribute('src'))
