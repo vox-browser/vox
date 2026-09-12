@@ -8,6 +8,10 @@ fn test_analyser_validates_fft_and_preserves_current_silence_boundary() {
 	analyser.get_byte_time_domain_data(mut time_bytes)
 	assert time_bytes[..32] == []u8{len: 32, init: 128}
 	assert time_bytes[32] == 255
+	mut time_floats := []f32{len: 40, init: 1}
+	analyser.get_float_time_domain_data(mut time_floats)
+	assert time_floats[..32] == []f32{len: 32}
+	assert time_floats[32] == 1
 	mut frequency_bytes := []u8{len: 16, init: 99}
 	analyser.get_byte_frequency_data(mut frequency_bytes)
 	assert frequency_bytes == []u8{len: 16}

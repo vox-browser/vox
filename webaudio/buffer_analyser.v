@@ -230,11 +230,10 @@ pub fn (mut analyser AnalyserNode) get_byte_frequency_data(mut output []u8) {
 
 pub fn (analyser AnalyserNode) get_float_time_domain_data(mut output []f32) {
 	data := analyser.current_time_domain_data()
-	// This intentionally mirrors Ladybird's current frequencyBinCount-sized copy.
-	count := if output.len < int(analyser.frequency_bin_count()) {
+	count := if output.len < int(analyser.fft_size) {
 		output.len
 	} else {
-		int(analyser.frequency_bin_count())
+		int(analyser.fft_size)
 	}
 	for index in 0 .. count {
 		output[index] = data[index]
