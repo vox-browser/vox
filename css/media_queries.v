@@ -298,6 +298,21 @@ fn (mut parser Parser) parse_supports_feature(mut tokens SupportsTokenStream) ?&
 		return BooleanExpression.create_supports_font_format(format_name, font_format_is_supported(format_name))
 	}
 
+	// `<supports-env-fn> = env( <ident> )`
+	if first_token.is_function_named('env') {
+		mut variable_tokens := SupportsTokenStream.from_values(first_token.function().value)
+		variable_tokens.discard_whitespace()
+		variable_token := variable_tokens.consume_a_token() or { return none }
+		variable_tokens.discard_whitespace()
+		if variable_tokens.has_next_token() || !variable_token.is(.ident) {
+			return none
+		}
+		variable_name := variable_token.token().ident()
+		tokens = transaction
+		return BooleanExpression.create_supports_env(variable_name,
+			environment_variable_from_string_local(variable_name) != none)
+	}
+
 	// `<supports-at-rule-fn> = at-rule( <at-keyword-token> )`
 	if first_token.is_function_named('at-rule') {
 		mut at_rule_tokens := SupportsTokenStream.from_values(first_token.function().value)

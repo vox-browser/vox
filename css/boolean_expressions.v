@@ -81,6 +81,7 @@ pub enum BooleanExpressionKind {
 	supports_selector
 	supports_font_tech
 	supports_font_format
+	supports_env
 	supports_at_rule
 }
 
@@ -189,6 +190,14 @@ pub fn BooleanExpression.create_supports_font_format(format string, matches bool
 	}
 }
 
+pub fn BooleanExpression.create_supports_env(variable_name string, matches bool) &BooleanExpression {
+	return &BooleanExpression{
+		kind:    .supports_env
+		text:    variable_name
+		matches: as_match_result(matches)
+	}
+}
+
 pub fn BooleanExpression.create_supports_at_rule(name string, matches bool) &BooleanExpression {
 	return &BooleanExpression{
 		kind:    .supports_at_rule
@@ -212,7 +221,7 @@ pub fn boolean_expression_indent(levels int) string {
 pub fn (expression &BooleanExpression) evaluate(document ?&dom.Document) MatchResult {
 	match expression.kind {
 		.general_enclosed, .constant, .supports_declaration, .supports_selector,
-		.supports_font_tech, .supports_font_format, .supports_at_rule {
+		.supports_font_tech, .supports_font_format, .supports_env, .supports_at_rule {
 			if expression.kind == .general_enclosed && expression.media_feature_name.len > 0 {
 				return evaluate_media_feature(expression.media_feature_name,
 					expression.media_feature_kind, expression.media_feature_value,
@@ -316,6 +325,9 @@ pub fn (expression &BooleanExpression) to_string() string {
 		.supports_font_format {
 			'font-format(${expression.text})'
 		}
+		.supports_env {
+			'env(${serialize_an_identifier(expression.text)})'
+		}
 		.supports_at_rule {
 			'at-rule(@${serialize_an_identifier(expression.text)})'
 		}
@@ -376,6 +388,9 @@ pub fn (expression &BooleanExpression) dump(indent_levels int) string {
 		}
 		.supports_font_format {
 			builder.write_string('${indent}FontFormat: `${expression.text}` matches=${expression.matches == .true_}\n')
+		}
+		.supports_env {
+			builder.write_string('${indent}Env: `${expression.text}` matches=${expression.matches == .true_}\n')
 		}
 		.supports_at_rule {
 			builder.write_string('${indent}AtRule: `@${expression.text}` matches=${expression.matches == .true_}\n')
