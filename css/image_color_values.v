@@ -1136,6 +1136,12 @@ pub mut:
 	alpha_multiplier f64
 }
 
+struct ColorMixNormalizedPercentagePair {
+	p1               Percentage
+	p2               Percentage
+	alpha_multiplier f64 = 1.0
+}
+
 pub struct ColorMixStyleValue {
 pub mut:
 	color_interpolation_method ?ColorInterpolationMethodStyleValue
@@ -1250,16 +1256,11 @@ fn serialize_second_color_mix_percentage(p1 ?StyleValue, p2 ?StyleValue, mode Se
 }
 
 // https://drafts.csswg.org/css-color-5/#color-mix-percent-norm
-pub fn (style_value ColorMixStyleValue) normalize_percentages(context ComputationContext) ColorMixPercentageNormalizationResult {
-	resolve_percentage := fn [context] (percentage_style_value ?StyleValue) ?Percentage {
-		percentage := percentage_style_value or { return none }
-		return Percentage.from_style_value_logic(percentage.absolutized(context))
-	}
-
+fn normalize_color_mix_percentage_pair(first_percentage ?Percentage, second_percentage ?Percentage) ColorMixNormalizedPercentagePair {
 	// 1. Let p1 be the first percentage and p2 the second one.
-	mut p1 := resolve_percentage(style_value.first_component.percentage)
-	mut p2 := resolve_percentage(style_value.second_component.percentage)
-	mut alpha_multiplier := 0.0
+	mut p1 := first_percentage
+	mut p2 := second_percentage
+	mut alpha_multiplier := 1.0
 
 	// 2. If both percentages are omitted, they each default to 50% (an equal mix of the two colors).
 	if p1 == none && p2 == none {
@@ -1293,10 +1294,23 @@ pub fn (style_value ColorMixStyleValue) normalize_percentages(context Computatio
 		}
 	}
 
-	return ColorMixPercentageNormalizationResult{
-		p1: StyleValue(PercentageStyleValue.create(p1 or { Percentage.new(0) }))
-		p2: StyleValue(PercentageStyleValue.create(p2 or { Percentage.new(0) }))
+	return ColorMixNormalizedPercentagePair{
+		p1: p1 or { Percentage.new(0) }
+		p2: p2 or { Percentage.new(0) }
 		alpha_multiplier: alpha_multiplier
+	}
+}
+
+pub fn (style_value ColorMixStyleValue) normalize_percentages(context ComputationContext) ColorMixPercentageNormalizationResult {
+	resolve_percentage := fn [context] (percentage_style_value ?StyleValue) ?Percentage {
+		percentage := percentage_style_value or { return none }
+		return Percentage.from_style_value_logic(percentage.absolutized(context))
+	}
+	normalized := normalize_color_mix_percentage_pair(resolve_percentage(style_value.first_component.percentage), resolve_percentage(style_value.second_component.percentage))
+	return ColorMixPercentageNormalizationResult{
+		p1: StyleValue(PercentageStyleValue.create(normalized.p1))
+		p2: StyleValue(PercentageStyleValue.create(normalized.p2))
+		alpha_multiplier: normalized.alpha_multiplier
 	}
 }
 
@@ -1306,13 +1320,20 @@ pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorR
 	// The current implementation only uses oklab interpolation.
 	from_color := color_style_value_from_style_value(style_value.first_component.color, color_resolution_context) or { return none }
 	to_color := color_style_value_from_style_value(style_value.second_component.color, color_resolution_context) or { return none }
-	second_percentage := style_value.second_component.percentage or {
-		StyleValue(PercentageStyleValue.create(Percentage.new(50)))
+	first_percentage := if percentage := style_value.first_component.percentage {
+		?Percentage(Percentage.from_style_value_logic(percentage))
+	} else {
+		?Percentage(none)
 	}
-	delta := Percentage.from_style_value_logic(second_percentage).as_fraction()
+	second_percentage := if percentage := style_value.second_component.percentage {
+		?Percentage(Percentage.from_style_value_logic(percentage))
+	} else {
+		?Percentage(none)
+	}
+	normalized := normalize_color_mix_percentage_pair(first_percentage, second_percentage)
 
-	interpolated := interpolate_color(ComputedColor.rgba(from_color.red(), from_color.green(), from_color.blue(), from_color.alpha()), ComputedColor.rgba(to_color.red(), to_color.green(), to_color.blue(), to_color.alpha()), delta, .modern)
-	return Color.rgba(interpolated.red(), interpolated.green(), interpolated.blue(), interpolated.alpha())
+	interpolated := interpolate_color(ComputedColor.rgba(from_color.red(), from_color.green(), from_color.blue(), from_color.alpha()), ComputedColor.rgba(to_color.red(), to_color.green(), to_color.blue(), to_color.alpha()), normalized.p2.as_fraction(), .modern)
+	return Color.rgba(interpolated.red(), interpolated.green(), interpolated.blue(), u8(f64(interpolated.alpha()) * normalized.alpha_multiplier))
 }
 
 pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) StyleValue {

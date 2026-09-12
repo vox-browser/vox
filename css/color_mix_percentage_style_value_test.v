@@ -26,11 +26,25 @@ fn test_color_mix_retains_percentage_style_values() {
 }
 
 fn test_color_mix_to_color_uses_the_stored_second_percentage() {
-	// to_color() receives normalized values in computed-style use. It must not
-	// normalize them again, because doing so changes a stored 20% delta to 50%.
 	mix := parsed_color_mix('color-mix(in oklab, red 20%, blue 20%)')
 	color := mix.to_color(ColorResolutionContext{}) or { panic('color mix did not resolve') }
-	assert color.red() > color.blue()
+	opaque_equal_mix := parsed_color_mix('color-mix(in oklab, red, blue)').to_color(ColorResolutionContext{}) or {
+		panic('equal color mix did not resolve')
+	}
+	assert color.red() == opaque_equal_mix.red()
+	assert color.green() == opaque_equal_mix.green()
+	assert color.blue() == opaque_equal_mix.blue()
+	assert color.alpha() == 102
+
+	omitted_second := parsed_color_mix('color-mix(in oklab, red 25%, blue)')
+	omitted_second_color := omitted_second.to_color(ColorResolutionContext{}) or {
+		panic('color mix with omitted percentage did not resolve')
+	}
+	explicit_percentages := parsed_color_mix('color-mix(in oklab, red 25%, blue 75%)').to_color(ColorResolutionContext{}) or {
+		panic('color mix with explicit percentages did not resolve')
+	}
+	assert omitted_second_color == explicit_percentages
+	assert omitted_second_color.alpha() == 255
 }
 
 fn test_color_mix_absolutizes_relative_lengths_in_calculated_percentages() {
