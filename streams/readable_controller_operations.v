@@ -432,14 +432,26 @@ pub fn readable_byte_stream_controller_enqueue(mut controller ReadableByteStream
 	if chunk.kind != .bytes {
 		return error('TypeError: byte controller requires a byte chunk')
 	}
+	// TransferArrayBuffer moves the backing store. Value cannot expose a detached
+	// input slice, so retain its backing store here instead of copying it.
+	transferred_buffer := ArrayBuffer{
+		data_: chunk.bytes_
+	}
+	readable_byte_stream_controller_enqueue_transferred_buffer(mut controller, transferred_buffer,
+		0, transferred_buffer.byte_length())!
+}
+
+fn readable_byte_stream_controller_enqueue_transferred_buffer(mut controller ReadableByteStreamController, transferred_buffer ArrayBuffer, byte_offset int, byte_length int) ! {
 	mut stream := controller.stream_
 	if stream.close_requested_ || stream.state_ != .readable {
 		return
 	}
-	// TransferArrayBuffer moves the backing store. Value cannot expose a detached
-	// input slice, so retain its backing store here instead of copying it.
-	mut transferred_buffer := ArrayBuffer{
-		data_: chunk.bytes_
+	if transferred_buffer.detached_ {
+		return error('TypeError: Buffer is detached')
+	}
+	if byte_offset < 0 || byte_length < 0 || byte_offset > transferred_buffer.data_.len
+		|| byte_length > transferred_buffer.data_.len - byte_offset {
+		return error('RangeError: ArrayBuffer view is out of bounds')
 	}
 	if controller.pending_pull_intos_.len > 0 {
 		stream.invalidate_byob_request()
@@ -455,25 +467,40 @@ pub fn readable_byte_stream_controller_enqueue(mut controller ReadableByteStream
 	if readable_stream_has_default_reader(stream) {
 		readable_byte_stream_controller_process_read_requests_using_queue(mut controller)
 		if readable_stream_get_num_read_requests(stream) == 0 {
-			readable_byte_stream_controller_enqueue_chunk_to_queue(mut controller, &transferred_buffer, 0, transferred_buffer.byte_length())!
+			readable_byte_stream_controller_enqueue_chunk_to_queue(mut controller, &transferred_buffer, byte_offset, byte_length)!
 		} else {
 			if controller.pending_pull_intos_.len > 0 {
 				_ = readable_byte_stream_controller_shift_pending_pull_into(mut controller)!
 			}
-			readable_stream_fulfill_read_request(mut stream, bytes_value(chunk.bytes_), false)
+			chunk := unsafe { transferred_buffer.data_[byte_offset..byte_offset + byte_length] }
+			readable_stream_fulfill_read_request(mut stream, bytes_value(chunk), false)
 		}
 	} else if readable_stream_has_byob_reader(stream) {
-		readable_byte_stream_controller_enqueue_chunk_to_queue(mut controller, &transferred_buffer, 0, transferred_buffer.byte_length())!
+		readable_byte_stream_controller_enqueue_chunk_to_queue(mut controller, &transferred_buffer, byte_offset, byte_length)!
 		filled := readable_byte_stream_controller_process_pull_into_descriptors_using_queue(mut controller)
 		for descriptor in filled {
 			readable_byte_stream_controller_commit_pull_into_descriptor(mut stream, descriptor)
 		}
 	} else {
-		readable_byte_stream_controller_enqueue_chunk_to_queue(mut controller, &transferred_buffer, 0, transferred_buffer.byte_length())!
+		readable_byte_stream_controller_enqueue_chunk_to_queue(mut controller, &transferred_buffer, byte_offset, byte_length)!
 	}
 	readable_byte_stream_controller_call_pull_if_needed(mut controller)
 	pump_readable_tee_source(mut stream)
 	pump_readable_pipe(mut stream)
+}
+
+pub fn readable_byte_stream_controller_enqueue_native_bytes(mut controller ReadableByteStreamController, bytes []u8) ! {
+	mut stream := controller.stream_
+	if stream.close_requested_ || stream.state_ != .readable {
+		return
+	}
+	// Native producers have no script-visible chunk to detach. Retain the owned
+	// backing allocation and enter the enqueue algorithm after buffer transfer.
+	transferred_buffer := ArrayBuffer{
+		data_: bytes
+	}
+	readable_byte_stream_controller_enqueue_transferred_buffer(mut controller, transferred_buffer,
+		0, bytes.len)!
 }
 
 pub fn readable_byte_stream_controller_enqueue_chunk_to_queue(mut controller ReadableByteStreamController, buffer &ArrayBuffer, byte_offset int, byte_length int) ! {
