@@ -551,6 +551,56 @@ fn build_layout_box_for_element(document &dom.Document, element &dom.Element, st
 	return build_layout_box_for_element_with_svg_resource_kind(document, element, style_computer, mut builder_state, none)
 }
 
+fn is_svg_resource_box(node &Node) bool {
+	return node.is_svg_pattern_box() || node.is_svg_mask_box() || node.is_svg_clip_box()
+}
+
+fn layout_node_is_attached_to_dom_subtree(layout_node &Node, subtree_root &dom.Node) bool {
+	mut ancestor := layout_node.parent()
+	for ancestor != none {
+		current := ancestor or { break }
+		if dom_node := current.dom_node() {
+			if dom_node.is_shadow_including_inclusive_descendant_of(subtree_root) {
+				return true
+			}
+		}
+		ancestor = current.parent()
+	}
+	return false
+}
+
+fn clear_stale_layout_and_paint_node(node &dom.Node, content_visibility_hidden_root ?&dom.Node) dom.TraversalDecision {
+	mut mutable_node := unsafe { &dom.Node(node) }
+	mutable_node.set_needs_layout_tree_update(false, .none)
+	mutable_node.set_child_needs_layout_tree_update(false)
+
+	if dom_layout_node := node.unsafe_layout_node() {
+		if dom_layout_node.real_layout_handle() != unsafe { nil } {
+			mut layout_node := unsafe { &Node(dom_layout_node.real_layout_handle()) }
+			if is_svg_resource_box(layout_node) {
+				if hidden_root := content_visibility_hidden_root {
+					if !layout_node_is_attached_to_dom_subtree(layout_node, hidden_root) {
+						return .skip_children_and_continue
+					}
+				} else {
+					return .skip_children_and_continue
+				}
+			}
+			if layout_node.parent() != none {
+				layout_node.remove()
+			}
+		}
+	}
+
+	mutable_node.detach_layout_node()
+	mutable_node.clear_paintable()
+	if element := node.as_element() {
+		mut mutable_element := unsafe { &dom.Element(element) }
+		mutable_element.clear_pseudo_element_nodes()
+	}
+	return .@continue
+}
+
 fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, element &dom.Element, style_computer &css.StyleComputer, mut builder_state TreeBuilderState, svg_resource_kind ?SVGReferencedResourceKind) ?&Node {
 	computed := css.computed_properties_for_element(element) or {
 		style_computer.compute_style(dom.AbstractElement.new(element, none))
@@ -558,6 +608,9 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 
 	// `display: none` produces no box (and neither do its descendants).
 	if computed.display().is_none() {
+		element.as_node().for_each_in_inclusive_subtree(fn (node &dom.Node) dom.TraversalDecision {
+			return clear_stale_layout_and_paint_node(node, none)
+		})
 		return none
 	}
 
@@ -588,6 +641,10 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	// box itself remains, with its own padding/border and zero automatic content
 	// size.
 	if computed.content_visibility() == .hidden {
+		hidden_root := element.as_node()
+		hidden_root.for_each_shadow_including_descendant(fn [hidden_root] (node &dom.Node) dom.TraversalDecision {
+			return clear_stale_layout_and_paint_node(node, hidden_root)
+		})
 		return box_node
 	}
 

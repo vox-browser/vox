@@ -927,3 +927,35 @@ fn test_document_layout_caches_only_paintable_boxes_with_auto_content_visibility
 	returned_boxes.clear()
 	assert viewport_paintable.paintable_boxes_with_auto_content_visibility().len == 2
 }
+
+fn test_content_visibility_hidden_clears_stale_descendant_layout_and_paint_nodes() {
+	document := html.parse_document('<!doctype html><div id="hidden"><span id="child">text</span></div><div id="shadow-host"></div>')
+	mut shadow_host := document.get_element_by_id('shadow-host') or { panic('missing shadow host') }
+	shadow_host.attach_a_shadow_root(.open, false, false, false, .named) or { panic(err) }
+	mut shadow_root := unsafe { &dom.Node(shadow_host.shadow_root() or { panic('missing shadow root') }) }
+	mut shadow_child := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic(err)
+	}
+	shadow_root.append_child(shadow_child.as_node()) or { panic(err) }
+	_ = run_document_layout(document, 800, 600) or { panic('initial layout failed') }
+	mut hidden := document.get_element_by_id('hidden') or { panic('missing hidden element') }
+	child := document.get_element_by_id('child') or { panic('missing child element') }
+	text := child.as_node().first_child() or { panic('missing text node') }
+	assert hidden.as_node().layout_node() != none
+	assert child.as_node().layout_node() != none
+	assert child.as_node().paintable() != none
+	assert text.layout_node() != none
+	assert shadow_child.as_node().layout_node() != none
+
+	hidden.set_attribute_value('style', 'content-visibility: hidden')
+	shadow_host.set_attribute_value('style', 'content-visibility: hidden')
+	_ = run_document_layout(document, 800, 600) or { panic('updated layout failed') }
+
+	assert hidden.as_node().layout_node() != none
+	assert child.as_node().layout_node() == none
+	assert child.as_node().paintable() == none
+	assert text.layout_node() == none
+	assert text.paintable() == none
+	assert shadow_child.as_node().layout_node() == none
+	assert shadow_child.as_node().paintable() == none
+}
