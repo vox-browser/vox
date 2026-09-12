@@ -904,6 +904,22 @@ fn selector_pseudo_class_from_dom(pseudo_class dom.PseudoClass) ?PseudoClass {
 	}
 }
 
+fn selector_matches_pseudo_class_invalidation_candidate(selector Selector, element &dom.Element) bool {
+	mut context := MatchContext{}
+	target_pseudo := selector.pseudo_element() or {
+		return matches(selector, element, none, mut context, none, none, .normal, none)
+	}
+	return match target_pseudo.type_ {
+		.before {
+			matches(selector, element, none, mut context, .before, none, .normal, none)
+		}
+		.after {
+			matches(selector, element, none, mut context, .after, none, .normal, none)
+		}
+		else { false }
+	}
+}
+
 fn pseudo_class_rule_matches_element(style_computer &StyleComputer, element &dom.Element, rule &MatchingRule, shadow_root ?&dom.ShadowRoot) bool {
 	rule_root := rule.shadow_root
 	from_user_agent_or_user_stylesheet := rule.cascade_origin == .user_agent
@@ -928,19 +944,7 @@ fn pseudo_class_rule_matches_element(style_computer &StyleComputer, element &dom
 		return false
 	}
 
-	mut context := MatchContext{}
-	if matches(selector, element, none, mut context, none, none, .normal, none) {
-		return true
-	}
-	if element.has_pseudo_element(int(dom.PseudoElement.before))
-		&& matches(selector, element, none, mut context, .before, none, .normal, none) {
-		return true
-	}
-	if element.has_pseudo_element(int(dom.PseudoElement.after))
-		&& matches(selector, element, none, mut context, .after, none, .normal, none) {
-		return true
-	}
-	return false
+	return selector_matches_pseudo_class_invalidation_candidate(selector, element)
 }
 
 fn pseudo_class_matches_different_rule_set_after_state_change(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, element &dom.Element, rules &RuleCache, shadow_root ?&dom.ShadowRoot, style_computer &StyleComputer) bool {
