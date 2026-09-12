@@ -1304,10 +1304,12 @@ pub fn (style_value ColorMixStyleValue) normalize_percentages() ColorMixPercenta
 pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
 	// FIXME: Take the color space and hue interpolation method into account.
 	// The current implementation only uses oklab interpolation.
-	normalized_percentages := style_value.normalize_percentages()
 	from_color := color_style_value_from_style_value(style_value.first_component.color, color_resolution_context) or { return none }
 	to_color := color_style_value_from_style_value(style_value.second_component.color, color_resolution_context) or { return none }
-	delta := Percentage.from_style_value_logic(normalized_percentages.p2).as_fraction()
+	second_percentage := style_value.second_component.percentage or {
+		StyleValue(PercentageStyleValue.create(Percentage.new(50)))
+	}
+	delta := Percentage.from_style_value_logic(second_percentage).as_fraction()
 
 	interpolated := interpolate_color(ComputedColor.rgba(from_color.red(), from_color.green(), from_color.blue(), from_color.alpha()), ComputedColor.rgba(to_color.red(), to_color.green(), to_color.blue(), to_color.alpha()), delta, .modern)
 	return Color.rgba(interpolated.red(), interpolated.green(), interpolated.blue(), interpolated.alpha())

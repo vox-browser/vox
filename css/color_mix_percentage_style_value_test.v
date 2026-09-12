@@ -24,3 +24,11 @@ fn test_color_mix_retains_percentage_style_values() {
 	assert calculated_percentage.serialize(.normal) == 'calc(25%)'
 	assert calculated.serialize(.normal).contains('calc(25%)')
 }
+
+fn test_color_mix_to_color_uses_the_stored_second_percentage() {
+	// to_color() receives normalized values in computed-style use. It must not
+	// normalize them again, because doing so changes a stored 20% delta to 50%.
+	mix := parsed_color_mix('color-mix(in oklab, red 20%, blue 20%)')
+	color := mix.to_color(ColorResolutionContext{}) or { panic('color mix did not resolve') }
+	assert color.red() > color.blue()
+}
