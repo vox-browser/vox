@@ -3803,6 +3803,7 @@ pub enum StyleValueType {
 	edge
 	filter_value_list
 	fit_content
+	function
 	flex
 	font_source
 	font_style
@@ -3886,6 +3887,7 @@ pub type StyleValue = KeywordStyleValue
 	| EdgeStyleValue
 	| FilterValueListStyleValue
 	| FitContentStyleValue
+	| FunctionStyleValue
 	| FlexStyleValue
 	| FontSourceStyleValue
 	| FontStyleStyleValue
@@ -3999,6 +4001,7 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		EdgeStyleValue { .edge }
 		FilterValueListStyleValue { .filter_value_list }
 		FitContentStyleValue { .fit_content }
+		FunctionStyleValue { .function }
 		FlexStyleValue { .flex }
 		FontSourceStyleValue { .font_source }
 		FontStyleStyleValue { .font_style }
@@ -4199,6 +4202,9 @@ pub fn (style_value StyleValue) is_computationally_independent() bool {
 		GuaranteedInvalidStyleValue, PendingSubstitutionStyleValue, UnresolvedStyleValue {
 			return false
 		}
+		FunctionStyleValue {
+			return style_value.value().is_computationally_independent()
+		}
 		LightDarkStyleValue, TreeCountingFunctionStyleValue {
 			return false
 		}
@@ -4291,6 +4297,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		EasingStyleValue { style_value.absolutized(context) }
 		EdgeStyleValue { style_value.absolutized(context) }
 		FilterValueListStyleValue { style_value.absolutized(context) }
+		FunctionStyleValue { style_value.absolutized(context) }
 		FontStyleStyleValue { style_value.absolutized(context) }
 		FontVariantAlternatesFunctionStyleValue { style_value.absolutized(context) }
 		GridTrackPlacementStyleValue { StyleValue(style_value.absolutized(context)) }
@@ -4381,6 +4388,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		FilterValueListStyleValue { style_value.serialize(mode) }
 		FitContentStyleValue { style_value.serialize(mode) }
 		FlexStyleValue { style_value.serialize(mode) }
+		FunctionStyleValue { style_value.serialize(mode) }
 		FontSourceStyleValue { style_value.serialize(mode) }
 		FontStyleStyleValue { style_value.serialize(mode) }
 		FontVariantAlternatesFunctionStyleValue { style_value.serialize(mode) }

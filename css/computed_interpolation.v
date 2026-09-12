@@ -6397,6 +6397,16 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				none
 			}
 		}
+		FunctionStyleValue {
+			if to is FunctionStyleValue && from.name() == to.name() {
+				interpolated_value := interpolate_style_value(calculation_context, from.value(), to.value(), delta, allow_discrete) or {
+					return none
+				}
+				StyleValue(FunctionStyleValue.create(from.name(), interpolated_value))
+			} else {
+				none
+			}
+		}
 		FontStyleStyleValue {
 			if to is FontStyleStyleValue {
 				font_style := if from.font_style() == to.font_style() {
@@ -8250,6 +8260,16 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 		FlexStyleValue {
 			if animated is FlexStyleValue && underlying.flex().unit() == animated.flex().unit() {
 				StyleValue(FlexStyleValue.create(Flex.new(underlying.raw_value() + animated.raw_value(), underlying.flex().unit())))
+			} else {
+				none
+			}
+		}
+		FunctionStyleValue {
+			if animated is FunctionStyleValue && underlying.name() == animated.name() {
+				composited_value := composite_style_value(property_id, underlying.value(), animated.value(), operation) or {
+					return none
+				}
+				StyleValue(FunctionStyleValue.create(underlying.name(), composited_value))
 			} else {
 				none
 			}

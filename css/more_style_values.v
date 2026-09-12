@@ -467,6 +467,48 @@ pub fn (style_value FitContentStyleValue) properties_equal(other FitContentStyle
 	return style_value == other
 }
 
+// --- FunctionStyleValue ---
+pub struct FunctionStyleValue {
+pub mut:
+	name_  string
+	value_ StyleValue
+}
+
+pub fn FunctionStyleValue.create(name string, value StyleValue) FunctionStyleValue {
+	return FunctionStyleValue{
+		name_: name
+		value_: value
+	}
+}
+
+pub fn (style_value FunctionStyleValue) name() string {
+	return style_value.name_
+}
+
+pub fn (style_value FunctionStyleValue) value() StyleValue {
+	return style_value.value_
+}
+
+pub fn (style_value FunctionStyleValue) absolutized(context ComputationContext) StyleValue {
+	absolutized_value := style_value.value_.absolutized(context)
+	if absolutized_value.equals(style_value.value_) {
+		return StyleValue(style_value)
+	}
+	return StyleValue(FunctionStyleValue.create(style_value.name_, absolutized_value))
+}
+
+pub fn (style_value FunctionStyleValue) serialize(mode SerializationMode) string {
+	return '${style_value.name_}(${style_value.value_.serialize(mode)})'
+}
+
+pub fn (style_value FunctionStyleValue) to_string() string {
+	return style_value.serialize(.normal)
+}
+
+pub fn (style_value FunctionStyleValue) properties_equal(other FunctionStyleValue) bool {
+	return style_value.name_ == other.name_ && style_value.value_.equals(other.value_)
+}
+
 // --- BackgroundSizeStyleValue ---
 pub struct BackgroundSizeStyleValue {
 pub mut:
