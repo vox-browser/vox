@@ -142,6 +142,11 @@ pub fn (mut container NavigableContainerModel) create_new_child_navigable() &Chi
 // https://html.spec.whatwg.org/multipage/browsers.html#concept-bcc-content-document
 pub fn (container &NavigableContainerModel) content_document() ?&EmbeddedDocument {
 	mut navigable := container.content_navigable_ or { return none }
+	// During navigation there is a window after the old active document is
+	// destroyed and before its replacement is installed.
+	if navigable.active_document == unsafe { nil } {
+		return none
+	}
 	if !navigable.active_document.origin.is_same_origin(container.owner_origin_) {
 		return none
 	}

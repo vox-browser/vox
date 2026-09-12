@@ -61,6 +61,8 @@ fn test_navigable_container_origin_navigation_and_destruction() {
 	}
 	assert container.content_document() == none
 	assert container.content_document_without_origin_check() != none
+	navigable.active_document = unsafe { nil }
+	assert container.content_document() == none
 	container.destroy_the_child_navigable()
 	assert container.content_navigable() == none
 }
