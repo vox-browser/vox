@@ -125,6 +125,10 @@ fn test_input_date_time_value_as_number() {
 	mut time := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[1]) })
 	time.set_value('01:30')!
 	assert time.value_as_number() == 5400000
+	time.set_value_as_number(2.734333707189448e26)!
+	assert time.value() == '10:54:10.944'
+	time.set_value_as_number(-3600000)!
+	assert time.value() == '23:00'
 	mut month := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[2]) })
 	month.set_value('1971-01')!
 	assert month.value_as_number() == 12

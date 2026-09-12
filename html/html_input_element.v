@@ -1581,11 +1581,14 @@ fn numeric_input_string(model &HTMLInputElementModel, value f64) string {
 			return '${year:04d}-W${week:02d}'
 		}
 		.time {
-			milliseconds := i64(math.floor(value))
-			hour := (milliseconds / 3600000) % 24
-			minute := (milliseconds / 60000) % 60
-			second := (milliseconds / 1000) % 60
-			millisecond := milliseconds % 1000
+			mut time_of_day := math.fmod(value, 86400000.0)
+			if time_of_day < 0 {
+				time_of_day += 86400000.0
+			}
+			hour := int(time_of_day / 3600000.0)
+			minute := int(math.fmod(time_of_day, 3600000.0) / 60000.0)
+			second := int(math.fmod(time_of_day, 60000.0) / 1000.0)
+			millisecond := int(math.fmod(time_of_day, 1000.0))
 			if millisecond != 0 {
 				return '${hour:02d}:${minute:02d}:${second:02d}.${millisecond:03d}'
 			}
