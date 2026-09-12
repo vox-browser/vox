@@ -1971,7 +1971,11 @@ pub fn (mut sheet CSSStyleSheet) replace(text string) !&CSSStyleSheet {
 			rules_without_import << parsed_rule
 		}
 	}
+	for mut parsed_rule in rules_without_import {
+		parsed_rule.set_parent_style_sheet(sheet)
+	}
 	sheet.rules.set_rules(rules_without_import)
+	sheet.invalidate_owners(.style_sheet_replace)
 	sheet.disallow_modification = false
 	return sheet
 }
@@ -2004,6 +2008,7 @@ pub fn (mut sheet CSSStyleSheet) replace_sync(text string) ! {
 
 	// 4. Set sheet's CSS rules to rules.
 	sheet.rules.set_rules(rules_without_import)
+	sheet.invalidate_owners(.style_sheet_replace)
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule
@@ -2144,6 +2149,14 @@ pub fn (mut sheet CSSStyleSheet) invalidate_owners(reason dom.StyleInvalidationR
 		mutable_owner.invalidate_style(reason)
 		invalidate_css_style_scope_for_node(owner)
 	}
+}
+
+pub fn (mut sheet CSSStyleSheet) set_disabled(disabled bool) {
+	if sheet.base.disabled == disabled {
+		return
+	}
+	sheet.base.set_disabled(disabled)
+	sheet.invalidate_owners(.style_sheet_disabled_state_change)
 }
 
 pub fn (sheet &CSSStyleSheet) owning_document() ?&dom.Document {

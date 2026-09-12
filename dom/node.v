@@ -135,6 +135,8 @@ pub enum StyleInvalidationReason {
 	node_set_text_content
 	settings_change
 	style_change
+	style_sheet_disabled_state_change
+	style_sheet_replace
 	media_query_changed_match_state
 	counter_style_cache_invalidated
 	other
@@ -162,6 +164,8 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 		.node_set_text_content { 'NodeSetTextContent' }
 		.settings_change { 'SettingsChange' }
 		.style_change { 'StyleChange' }
+		.style_sheet_disabled_state_change { 'StyleSheetDisabledStateChange' }
+		.style_sheet_replace { 'StyleSheetReplace' }
 		.media_query_changed_match_state { 'MediaQueryChangedMatchState' }
 		.counter_style_cache_invalidated { 'CounterStyleCacheInvalidated' }
 		.other { 'Other' }
@@ -1292,7 +1296,7 @@ fn reason_may_affect_has_selectors(reason StyleInvalidationReason) bool {
 	// any DOM state can't affect :has() matching, so we can skip scheduling :has() ancestor invalidation.
 	return reason !in [.base_url_changed, .css_font_loaded, .html_iframe_element_geometry_change,
 		.html_object_element_update_layout_and_child_objects, .navigable_set_viewport_size,
-		.settings_change]
+		.settings_change, .style_sheet_disabled_state_change, .style_sheet_replace]
 }
 
 pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {

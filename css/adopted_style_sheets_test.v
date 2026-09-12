@@ -54,3 +54,30 @@ fn test_adopted_style_sheet_participates_in_shadow_root_cascade() {
 	assert (computed.property(.color, .no) or { panic('shadow adopted color missing') }).css_text == 'rgb(0, 0, 255)'
 	assert sheet.owning_documents_or_shadow_roots[0] == shadow_node
 }
+
+fn test_constructed_style_sheet_replacement_and_disabled_state_invalidate_owners() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document_node := unsafe { &dom.Node(document) }
+	mut sheet := css_style_sheet_construct(none, document)!
+	mut list := create_adopted_style_sheets_list(document_node)
+	list.append(sheet)!
+
+	document.set_needs_full_style_update(false)
+	sheet.replace_sync('.first { color: red; }')!
+	assert document.needs_full_style_update()
+	first_rule := sheet.css_rules().item(0) or { panic('missing replacement rule') }
+	assert first_rule.parent_style_sheet? == sheet
+
+	document.set_needs_full_style_update(false)
+	sheet.replace('.second { color: blue; }')!
+	assert document.needs_full_style_update()
+	second_rule := sheet.css_rules().item(0) or { panic('missing async replacement rule') }
+	assert second_rule.parent_style_sheet? == sheet
+
+	document.set_needs_full_style_update(false)
+	sheet.set_disabled(true)
+	assert document.needs_full_style_update()
+	document.set_needs_full_style_update(false)
+	sheet.set_disabled(true)
+	assert !document.needs_full_style_update()
+}
