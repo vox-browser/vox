@@ -3,7 +3,7 @@
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 
 Translation workspace: `~/code/vox2`
-Audited: 2026-09-11
+Audited: 2026-09-12
 
 ## Upstream delta since the V snapshot
 
@@ -144,7 +144,7 @@ from the current-module totals.
 | `SecureContexts` | 1 | 76 | 59 | 13 | Complete |
 | `Selection` | 3 | 1,470 | 565 | 96 | Complete |
 | `Serial` | 2 | 366 | 243 | 35 | Complete |
-| `ServiceWorker` | 11 | 2,608 | 919 | 305 | Complete |
+| `ServiceWorker` | 11 | 2,608 | 1,562 | 513 | Complete |
 | `Speech` | 11 | 421 | 624 | 111 | Complete |
 | `StorageAPI` | 6 | 433 | 444 | 235 | Complete |
 | `Streams` | 22 | 8,789 | 5,645 | 1,649 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **328,281** | **61,571** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **328,924** | **61,779** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

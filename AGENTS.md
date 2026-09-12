@@ -85,7 +85,7 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-11, the module
-translations contain 328,281 implementation V LOC and 61,571 test V LOC.
+translations contain 328,924 implementation V LOC and 61,779 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
@@ -119,7 +119,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | ResizeObserver | 420 | ResourceTiming | 338 |
 | SRI | 156 | SVG | 5,107 |
 | SecureContexts | 59 | Selection | 565 |
-| Serial | 243 | ServiceWorker | 919 |
+| Serial | 243 | ServiceWorker | 1,562 |
 | Speech | 624 | StorageAPI | 444 |
 | Streams | 5,645 | TrustedTypes | 756 |
 | UIEvents | 1,358 | URLPattern | 1,632 |
@@ -131,7 +131,7 @@ integration code are excluded. `Selection` includes `dom/selection.v`, and
 | WebXR | 312 | Worker | 81 |
 | XHR | 1,131 | XLink | 13 |
 | XML | 477 | XPath | 613 |
-| **Total** | **328,281** |  |  |
+| **Total** | **328,924** |  |  |
 
 `PORT_STATUS.md` is the canonical detailed inventory. It also records upstream
 C++ file/LOC counts, per-module test LOC, status, and the counting conventions;
