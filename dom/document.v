@@ -22,6 +22,8 @@ pub type XPathCreateExpressionCallback = fn (string, ?&XPathNSResolver) !&XPathE
 
 pub type XPathEvaluateCallback = fn (string, &Node, ?&XPathNSResolver, u16, ?&XPathResult) !&XPathResult
 
+pub type CustomElementDefinitionLookupCallback = fn (voidptr, ?string, string, ?string) ?&CustomElementDefinition
+
 pub struct XPathBridge {
 pub:
 	create_expression XPathCreateExpressionCallback = unsafe { nil }
@@ -32,6 +34,7 @@ __global (
 	dom_all_navigables   = []&Navigable{}
 	dom_url_record_cache = map[string]liburl.URL{}
 	dom_xpath_bridge     &XPathBridge
+	dom_custom_element_definition_lookup CustomElementDefinitionLookupCallback
 )
 
 // Simple color representation
@@ -10239,38 +10242,21 @@ pub fn (mut d Document) set_custom_element_registry(registry voidptr) {
 
 // --- lookup_custom_element_definition ---
 
+pub fn install_custom_element_definition_lookup(callback CustomElementDefinitionLookupCallback) {
+	dom_custom_element_definition_lookup = callback
+}
+
+// https://html.spec.whatwg.org/multipage/custom-elements.html#look-up-a-custom-element-definition
+pub fn look_up_custom_element_definition(registry voidptr, namespace_ ?string, local_name string, is_ ?string) ?&CustomElementDefinition {
+	if registry == unsafe { nil } || dom_custom_element_definition_lookup == unsafe { nil } {
+		return none
+	}
+	return dom_custom_element_definition_lookup(registry, namespace_, local_name, is_)
+}
+
 // https://html.spec.whatwg.org/multipage/custom-elements.html#look-up-a-custom-element-definition
 pub fn (d &Document) lookup_custom_element_definition(namespace_ ?string, local_name string, is_ ?string) ?&CustomElementDefinition {
-	// 1. If namespace is not the HTML namespace, then return null.
-	ns := namespace_ or { return none }
-	if ns != namespace_html_ {
-		return none
-	}
-	// 2. If document's browsing context is null, then return null.
-	if d.browsing_context == unsafe { nil } {
-		return none
-	}
-
-	// 3. Let registry be document's relevant global object's custom element registry.
-	// The V port keeps the translated definition set on Document until Window's
-	// CustomElementRegistry is available.
-
-	// 4. If registry's custom element definition set contains an item with name and local name both equal to localName, then return that item.
-	for definition in d.custom_element_definitions {
-		if definition.name() == local_name && definition.local_name() == local_name {
-			return definition
-		}
-	}
-
-	// 5. If registry's custom element definition set contains an item with name equal to is and local name equal to localName, then return that item.
-	// 6. Return null.
-	is_value := is_ or { return none }
-	for definition in d.custom_element_definitions {
-		if definition.name() == is_value && definition.local_name() == local_name {
-			return definition
-		}
-	}
-	return none
+	return look_up_custom_element_definition(d.custom_element_registry(), namespace_, local_name, is_)
 }
 
 pub fn (mut d Document) register_custom_element_definition(definition &CustomElementDefinition) {

@@ -85,3 +85,15 @@ fn test_custom_element_registry_rejects_invalid_duplicates_and_unknown_extension
 		assert err.msg().starts_with('NotSupportedError:')
 	}
 }
+
+fn test_custom_element_definition_lookup_uses_explicit_registry() {
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	mut first := CustomElementRegistry.create(document)
+	second := CustomElementRegistry.create(document)
+	first.define('x-widget', CustomElementConstructor{ id: 7 }, ElementDefinitionOptions{})!
+
+	assert dom.look_up_custom_element_definition(voidptr(first), 'http://www.w3.org/1999/xhtml', 'x-widget', none)?.constructor() == 7
+	assert dom.look_up_custom_element_definition(voidptr(second), 'http://www.w3.org/1999/xhtml', 'x-widget', none) == none
+	assert dom.look_up_custom_element_definition(voidptr(first), 'http://www.w3.org/2000/svg', 'x-widget', none) == none
+	assert dom.look_up_custom_element_definition(voidptr(0), 'http://www.w3.org/1999/xhtml', 'x-widget', none) == none
+}

@@ -63,7 +63,20 @@ mut:
 	element_definition_is_running bool
 }
 
+fn custom_element_definition_lookup(registry_handle voidptr, namespace_ ?string, local_name string, is_ ?string) ?&dom.CustomElementDefinition {
+	registry := unsafe { &CustomElementRegistry(registry_handle) }
+	if namespace_ or { return none } != 'http://www.w3.org/1999/xhtml' {
+		return none
+	}
+	if definition := registry.get_definition_with_name_and_local_name(local_name, local_name) {
+		return definition
+	}
+	is_value := is_ or { return none }
+	return registry.get_definition_with_name_and_local_name(is_value, local_name)
+}
+
 pub fn CustomElementRegistry.create(document &dom.Document) &CustomElementRegistry {
+	dom.install_custom_element_definition_lookup(custom_element_definition_lookup)
 	return &CustomElementRegistry{
 		document_: document
 	}
