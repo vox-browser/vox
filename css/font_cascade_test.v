@@ -230,3 +230,26 @@ fn test_loaded_script_font_face_is_registered_for_matching_and_removed_with_its_
 		assert fallback.fonts[0].font.typeface.family_name == 'Default'
 	}
 }
+
+fn test_font_faces_with_the_same_url_share_one_loader() {
+	$if macos {
+		mut computer := FontComputer.create()
+		mut set := FontFaceSet.create_for_font_computer(computer)
+		source := FontFaceSource.from_string("url('file:///System/Library/Fonts/Supplemental/Arial.ttf')")
+		mut face_a := FontFaceObject.construct_impl('Dedup Fixture', source, FontFaceDescriptors{
+			weight: '400'
+		})
+		mut face_b := FontFaceObject.construct_impl('Dedup Fixture', source, FontFaceDescriptors{
+			weight: '700'
+		})
+		set.add(face_a)!
+		set.add(face_b)!
+
+		face_a.load()
+		face_b.load()
+		assert face_a.status() == .loaded
+		assert face_b.status() == .loaded
+		assert computer.loaders_by_url.len == 1
+		assert face_a.parsed_font?.source_path == face_b.parsed_font?.source_path
+	}
+}

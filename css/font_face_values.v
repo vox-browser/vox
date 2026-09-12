@@ -2401,14 +2401,15 @@ pub fn (mut face FontFaceObject) load_with_font_computer(font_computer &FontComp
 }
 
 fn (mut face FontFaceObject) continue_url_load_with_font_computer(mut font_computer FontComputer) {
-	loader := font_computer.load_font_face(face.parsed_font_face(), none) or {
-		face.finish_loading_from_typeface(none)
-		return
+	face_pointer := unsafe { &FontFaceObject(face) }
+	on_load := fn [face_pointer] (typeface ?PlatformTypeface) {
+		mut mutable_face := unsafe { &FontFaceObject(face_pointer) }
+		mutable_face.finish_loading_from_typeface(typeface)
 	}
+	loader := font_computer.load_font_face(face.parsed_font_face(), on_load) or { return }
 
 	mut mutable_loader := unsafe { &FontLoader(loader) }
 	mutable_loader.start_loading_next_url()
-	face.finish_loading_from_typeface(mutable_loader.typeface)
 }
 
 pub fn (mut face FontFaceObject) add_to_set(set &FontFaceSet) {
@@ -3349,17 +3350,29 @@ pub mut:
 	unicode_ranges_ []UnicodeRange
 	typeface        ?PlatformTypeface
 	urls            []URL
-	on_load         ?fn (?PlatformTypeface)
+	subscribers     []fn (?PlatformTypeface)
+	has_completed   bool
 }
 
 pub fn FontLoader.create(font_computer &FontComputer, family_name string, unicode_ranges []UnicodeRange, urls []URL, on_load ?fn (?PlatformTypeface)) &FontLoader {
-	return &FontLoader{
+	mut loader := &FontLoader{
 		font_computer: font_computer
 		family_name_: family_name
 		unicode_ranges_: unicode_ranges.clone()
 		urls: urls.clone()
-		on_load: on_load
 	}
+	if callback := on_load {
+		loader.subscribers << callback
+	}
+	return loader
+}
+
+pub fn (mut loader FontLoader) subscribe(callback fn (?PlatformTypeface)) {
+	if loader.has_completed {
+		callback(loader.typeface)
+		return
+	}
+	loader.subscribers << callback
 }
 
 pub fn (loader &FontLoader) unicode_ranges() []UnicodeRange {
@@ -3445,14 +3458,12 @@ fn (mut loader FontLoader) font_did_load_or_fail(typeface ?PlatformTypeface) {
 		loader.typeface = loaded_typeface
 		mut mutable_computer := unsafe { &FontComputer(loader.font_computer) }
 		mutable_computer.clear_computed_font_cache(loader.family_name_)
-		if on_load := loader.on_load {
-			on_load(loaded_typeface)
-		}
-	} else {
-		if on_load := loader.on_load {
-			on_load(none)
-		}
 	}
+	loader.has_completed = true
+	for callback in loader.subscribers {
+		callback(loader.typeface)
+	}
+	loader.subscribers.clear()
 }
 
 struct MatchingFontCandidate {
@@ -3498,6 +3509,7 @@ fn (mut candidate MatchingFontCandidate) font_with_point_size(point_size f32, va
 pub struct FontComputer {
 pub mut:
 	font_faces                map[string][]&FontFaceObject
+	loaders_by_url            map[string]&FontLoader
 	computed_font_cache       map[string]FontCascadeList
 	font_feature_values_cache map[string]map[string][]u32
 	font_feature_values_rules []&CSSFontFeatureValuesRule
@@ -3506,6 +3518,7 @@ pub mut:
 pub fn FontComputer.create() &FontComputer {
 	return &FontComputer{
 		font_faces: map[string][]&FontFaceObject{}
+		loaders_by_url: map[string]&FontLoader{}
 		computed_font_cache: map[string]FontCascadeList{}
 		font_feature_values_cache: map[string]map[string][]u32{}
 	}
@@ -3608,7 +3621,17 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 		return none
 	}
 
+	key := urls[0].url()
+	if existing := computer.loaders_by_url[key] {
+		if callback := on_load {
+			mut mutable_loader := unsafe { &FontLoader(existing) }
+			mutable_loader.subscribe(callback)
+		}
+		return existing
+	}
+
 	loader := FontLoader.create(computer, font_face.font_family(), font_face.unicode_ranges(), urls, on_load)
+	computer.loaders_by_url[key] = loader
 	return loader
 }
 
