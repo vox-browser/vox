@@ -244,6 +244,7 @@ pub mut:
 pub enum DescriptorID {
 	unknown
 	custom
+	result
 	margin
 	margin_top
 	margin_right

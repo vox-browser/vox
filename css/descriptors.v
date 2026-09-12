@@ -6,12 +6,14 @@ pub enum AtRuleID {
 	font_face
 	page
 	counter_style
+	function_rule
 }
 
 fn descriptor_id_to_string(descriptor_id DescriptorID) string {
 	return match descriptor_id {
 		.unknown { '' }
 		.custom { '' }
+		.result { 'result' }
 		.margin { 'margin' }
 		.margin_top { 'margin-top' }
 		.margin_right { 'margin-right' }
@@ -27,6 +29,12 @@ fn descriptor_id_to_string(descriptor_id DescriptorID) string {
 fn descriptor_id_from_string(at_rule_id AtRuleID, property string) ?DescriptorID {
 	lower := property.to_lower()
 	return match at_rule_id {
+		.function_rule {
+			match lower {
+				'result' { DescriptorID.result }
+				else { none }
+			}
+		}
 		.page {
 			match lower {
 				'margin' { DescriptorID.margin }
@@ -352,8 +360,11 @@ fn descriptor_initial_value_text(at_rule_id AtRuleID, descriptor_id DescriptorID
 				.page_orientation { 'upright' }
 				.marks { 'none' }
 				.bleed { 'auto' }
-				.unknown, .custom { none }
+				.unknown, .custom, .result { none }
 			}
+		}
+		.function_rule {
+			none
 		}
 		else {
 			none
@@ -532,13 +543,16 @@ pub fn parse_css_descriptor_declaration_block(parsing_params ParsingParams, at_r
 				})
 			}
 		} else {
-			descriptor_id := descriptor_id_from_string(at_rule_id, declaration.name) or { continue }
+			descriptor_name_and_id := DescriptorNameAndID.from_name(at_rule_id, declaration.name) or {
+				continue
+			}
 			value_text := parser_component_values_to_string(declaration.value).trim_space()
-			value := parse_css_descriptor_value_for_cssom(at_rule_id, descriptor_id, value_text) or {
+			value := parse_css_descriptor_value_for_cssom(at_rule_id, descriptor_name_and_id.id(),
+				value_text) or {
 				continue
 			}
 			append_descriptor(mut declarations, Descriptor{
-				descriptor_name_and_id: DescriptorNameAndID.from_id(descriptor_id)
+				descriptor_name_and_id: descriptor_name_and_id
 				value: value.value
 				serialized_value: value.serialized
 			})
@@ -546,6 +560,29 @@ pub fn parse_css_descriptor_declaration_block(parsing_params ParsingParams, at_r
 	}
 
 	return declarations
+}
+
+@[heap]
+pub struct CSSFunctionDescriptors {
+pub mut:
+	base CSSDescriptors
+}
+
+pub fn CSSFunctionDescriptors.create(descriptors []Descriptor) &CSSFunctionDescriptors {
+	return &CSSFunctionDescriptors{
+		base: CSSDescriptors{
+			at_rule_id: .function_rule
+			descriptors: descriptors.clone()
+		}
+	}
+}
+
+pub fn (descriptors &CSSFunctionDescriptors) result() string {
+	return descriptors.base.get_property_value('result')
+}
+
+pub fn (mut descriptors CSSFunctionDescriptors) set_result(value string) ! {
+	descriptors.base.set_property('result', value, '')!
 }
 
 @[heap]

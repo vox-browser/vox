@@ -13021,6 +13021,16 @@ fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descri
 
 	mut maybe_value := ?StyleValue(none)
 	match at_rule_id {
+		.function_rule {
+			if descriptor_id !in [.custom, .result] {
+				return none
+			}
+			remaining := tokens.consume_remaining_component_values()
+			if !is_valid_optional_declaration_value(remaining) {
+				return none
+			}
+			return StyleValue(UnresolvedStyleValue.create(remaining))
+		}
 		.page {
 			maybe_value = match descriptor_id {
 				.margin {
@@ -13041,7 +13051,7 @@ fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descri
 				.marks {
 					parser.parse_page_marks_descriptor_value(mut tokens)
 				}
-				.unknown, .custom {
+				.unknown, .custom, .result {
 					?StyleValue(none)
 				}
 			}
