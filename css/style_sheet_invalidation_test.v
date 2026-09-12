@@ -289,6 +289,28 @@ fn test_shadow_root_style_sheet_effects_include_hosts_light_dom_and_slots() {
 	assert effects.may_affect_assigned_nodes_via_slots
 }
 
+fn test_host_attribute_change_invalidates_host_dependent_shadow_subtree() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut host := style_sheet_invalidation_test_element(document, 'div')
+	document_node.append_child(host.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut style := style_sheet_invalidation_test_element(document, 'style')
+	mut target := style_sheet_invalidation_test_element(document, 'span')
+	shadow_node.append_child(style.as_node()) or { panic(err) }
+	shadow_node.append_child(target.as_node()) or { panic(err) }
+
+	mut sheet := parse_css_stylesheet_with_parser(':host(.active) span { color: red }', none)
+	install_inline_style_sheet_for_invalidation_test(mut sheet, style, shadow_node)
+	_ := css_style_computer_for(document)
+	clear_style_sheet_invalidation_test_flags(document_node, host.as_node(), shadow_node, style.as_node(), target.as_node())
+
+	host.set_attribute_value('class', 'active')
+	assert shadow_node.entire_subtree_needs_style_update()
+	assert shadow_node.needs_style_update()
+}
+
 fn test_shadow_local_replace_sync_does_not_invalidate_light_dom() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }

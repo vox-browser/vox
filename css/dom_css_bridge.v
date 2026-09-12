@@ -764,6 +764,7 @@ pub fn css_style_computer_for(document &dom.Document) &StyleComputer {
 		css_handle:                                 voidptr(style_computer)
 		invalidation_property_used_in_has_callback: style_computer_invalidation_property_used_in_has_callback
 		invalidation_plan_callback:                 style_computer_invalidation_plan_callback
+		shadow_root_may_match_host_callback:        style_computer_shadow_root_may_match_host_callback
 		recompute_style_callback:                   style_computer_recompute_style_callback
 		recompute_inherited_style_callback:         style_computer_recompute_inherited_style_callback
 		update_animated_style_callback:             style_computer_update_animated_style_callback

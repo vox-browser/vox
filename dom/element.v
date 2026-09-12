@@ -5333,6 +5333,7 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 		// A DOM-only consumer has no CSS rule cache to produce an invalidation plan. Conservatively
 		// invalidate the subtree so selector and inheritance changes remain correct.
 		node.invalidate_style(.element_attribute_change)
+		e.invalidate_hosted_shadow_tree_after_attribute_change(style_computer)
 		return
 	}
 
@@ -5395,6 +5396,18 @@ fn (mut e Element) invalidate_style_after_attribute_change(attribute_name string
 	// changed element is conservative until those subclass hooks are represented in this module.
 	options.invalidate_self = true
 	node.invalidate_style_with_properties(.element_attribute_change, changed_properties, options)
+	e.invalidate_hosted_shadow_tree_after_attribute_change(style_computer)
+}
+
+fn (mut e Element) invalidate_hosted_shadow_tree_after_attribute_change(style_computer &StyleComputer) {
+	shadow_root := e.shadow_root() or { return }
+	if style_computer.shadow_root_may_match_host_callback == unsafe { nil }
+		|| !style_computer.shadow_root_may_match_host_callback(style_computer.css_handle, shadow_root) {
+		return
+	}
+	mut shadow_node := unsafe { &Node(shadow_root) }
+	shadow_node.set_entire_subtree_needs_style_update(true)
+	shadow_node.set_needs_style_update(true)
 }
 
 // --- Hidden / Accessibility ---

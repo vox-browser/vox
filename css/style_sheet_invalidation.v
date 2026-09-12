@@ -541,6 +541,10 @@ fn determine_shadow_root_style_sheet_effects(shadow_root &dom.ShadowRoot) Shadow
 	return effects
 }
 
+fn style_computer_shadow_root_may_match_host_callback(_ voidptr, shadow_root &dom.ShadowRoot) bool {
+	return determine_shadow_root_style_sheet_effects(shadow_root).may_match_shadow_host
+}
+
 fn determine_shadow_root_style_sheet_effects_for_style_sheet(style_sheet &CSSStyleSheet) ShadowRootStylesheetEffects {
 	mut effects := ShadowRootStylesheetEffects{}
 	for owner in style_sheet.owning_documents_or_shadow_roots {

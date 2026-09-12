@@ -1415,6 +1415,7 @@ pub mut:
 	css_handle                                 voidptr = unsafe { nil }
 	invalidation_property_used_in_has_callback StyleComputerInvalidationPropertyUsedInHasCallback = unsafe { nil }
 	invalidation_plan_callback                 StyleComputerInvalidationPlanCallback = unsafe { nil }
+	shadow_root_may_match_host_callback        StyleComputerShadowRootMayMatchHostCallback = unsafe { nil }
 	recompute_style_callback                   StyleComputerRecomputeStyleCallback = unsafe { nil }
 	recompute_inherited_style_callback         StyleComputerRecomputeInheritedStyleCallback = unsafe { nil }
 	update_animated_style_callback             StyleComputerUpdateAnimatedStyleCallback = unsafe { nil }
@@ -1600,6 +1601,8 @@ pub:
 pub type StyleComputerInvalidationPropertyUsedInHasCallback = fn (voidptr, InvalidationProperty, &StyleScope) bool
 
 pub type StyleComputerInvalidationPlanCallback = fn (voidptr, []InvalidationProperty, &StyleScope) InvalidationPlan
+
+pub type StyleComputerShadowRootMayMatchHostCallback = fn (voidptr, &ShadowRoot) bool
 
 pub type StyleComputerRecomputeStyleCallback = fn (voidptr, &Element) RequiredInvalidationAfterStyleChange
 
