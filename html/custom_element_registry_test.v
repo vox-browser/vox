@@ -61,6 +61,23 @@ fn test_custom_element_registry_define_get_when_defined_and_upgrade() {
 	assert registry.definition_count() == 2
 }
 
+fn test_custom_element_registry_canonicalizes_lifecycle_callback_order() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	mut registry := CustomElementRegistry.create(document)
+	registry.define('x-ordered', CustomElementConstructor{
+		id: 91
+		lifecycle_callbacks: ['adoptedCallback', 'attributeChangedCallback', 'connectedMoveCallback',
+			'connectedCallback']
+	}, ElementDefinitionOptions{})!
+	definition := registry.get_definition_with_name_and_local_name('x-ordered', 'x-ordered')?
+	assert definition.lifecycle_callbacks() == [
+		'connectedCallback',
+		'connectedMoveCallback',
+		'adoptedCallback',
+		'attributeChangedCallback',
+	]
+}
+
 fn test_custom_element_registry_rejects_invalid_duplicates_and_unknown_extensions() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
 	mut registry := CustomElementRegistry.create(document)

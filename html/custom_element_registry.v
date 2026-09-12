@@ -230,8 +230,8 @@ pub fn (mut registry CustomElementRegistry) define(name string, constructor Cust
 		registry.element_definition_is_running = false
 	}
 	mut lifecycle_callbacks := []string{}
-	for callback in constructor.lifecycle_callbacks {
-		if callback in custom_element_reaction_names() && callback !in lifecycle_callbacks {
+	for callback in custom_element_reaction_names() {
+		if callback in constructor.lifecycle_callbacks && callback !in lifecycle_callbacks {
 			lifecycle_callbacks << callback
 		}
 	}

@@ -624,8 +624,8 @@ pub fn custom_element_reaction_names() []string {
 	return [
 		'connectedCallback',
 		'disconnectedCallback',
-		'adoptedCallback',
 		'connectedMoveCallback',
+		'adoptedCallback',
 		'attributeChangedCallback',
 		'formAssociatedCallback',
 		'formDisabledCallback',
