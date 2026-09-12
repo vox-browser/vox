@@ -9442,6 +9442,20 @@ fn build_invalidation_sets_for_simple_selector_impl(selector InvalidationSimpleS
 				}
 			}
 		}
+		.pseudo_element {
+			if selector.pseudo_element == .slotted {
+				for child_selector in selector.nested_selectors {
+					for group in selector_groups_for_invalidation(child_selector) {
+						for simple_selector in group.simple_selectors {
+							build_invalidation_sets_for_simple_selector_impl(simple_selector,
+								mut invalidation_set, exclude_properties_nested_in_not_pseudo_class,
+								mut style_invalidation_data, inside_nth_child_selector,
+								root_invalidation_plan)
+						}
+					}
+				}
+			}
+		}
 		else {}
 	}
 }

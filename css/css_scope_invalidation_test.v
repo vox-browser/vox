@@ -46,6 +46,13 @@ fn test_slotted_argument_contributes_selector_insights() {
 	assert data.class_names_used_in_has_selectors['flag']
 }
 
+fn test_slotted_argument_builds_invalidation_sets() {
+	scope := build_scope_invalidation_cache('::slotted(.item[data-state]) { color: red }')
+	data := scope.style_invalidation_data or { panic('missing invalidation data') }
+	assert data.plan_for_property(InvalidationProperty.class('item')) != none
+	assert data.plan_for_property(InvalidationProperty.attribute('data-state')) != none
+}
+
 fn test_scope_root_class_change_invalidates_its_subtree() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut html := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
