@@ -969,11 +969,17 @@ fn (leaf CalcNumeric) clamp_and_censor(context CalculationContext) CalcNumeric {
 		.flex { ValueType.flex }
 		.percentage { ValueType.percentage }
 	}
-	// FIXME: Min and max values for Integer should be based on i32 rather than float.
 	accepted_range := context.accepted_type_ranges[value_type] or {
-		AcceptedTypeRange{
-			min: -math.max_f32
-			max: math.max_f32
+		if value_type == .integer {
+			AcceptedTypeRange{
+				min: f64(-2147483647 - 1)
+				max: f64(2147483647)
+			}
+		} else {
+			AcceptedTypeRange{
+				min: -math.max_f32
+				max: math.max_f32
+			}
 		}
 	}
 

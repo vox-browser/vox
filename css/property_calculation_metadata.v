@@ -2896,13 +2896,13 @@ pub fn property_accepted_type_ranges(property_id PropertyID) map[ValueType]Accep
 		.column_count, .orphans, .widows {
 			ranges[.integer] = AcceptedTypeRange{
 				min: 1
-				max: math.max_f32
+				max: f64(2147483647)
 			}
 		}
 		.counter_increment, .counter_reset, .counter_set, .order, .z_index {
 			ranges[.integer] = AcceptedTypeRange{
-				min: -math.max_f32
-				max: math.max_f32
+				min: f64(-2147483647 - 1)
+				max: f64(2147483647)
 			}
 		}
 		.cursor {
@@ -2924,7 +2924,7 @@ pub fn property_accepted_type_ranges(property_id PropertyID) map[ValueType]Accep
 		.font_feature_settings {
 			ranges[.integer] = AcceptedTypeRange{
 				min: 0
-				max: math.max_f32
+				max: f64(2147483647)
 			}
 		}
 		.font_weight {

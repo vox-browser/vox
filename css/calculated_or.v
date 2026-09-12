@@ -1,7 +1,6 @@
 module css
 
 import dom
-import math
 
 // --- CalculatedOr ---
 pub fn (c CalculatedStyleValue) resolve_angle(context CalculationResolutionContext) ?Angle {

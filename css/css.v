@@ -2745,12 +2745,19 @@ fn (c CalculatedStyleValue) clamp_top_level_value(raw_value f64, resolved_type N
 	mut value := if math.is_nan(raw_value) { 0.0 } else { raw_value }
 
 	// https://drafts.csswg.org/css-values/#calc-range
-	// Clamp to the range accepted by the target property. Upstream uses the finite
-	// float range when no narrower property range exists.
+	value_type_is_integer := resolved_type.matches_number(c.calculation_context.percentages_resolve_as)
+		&& c.calculation_context.resolve_numbers_as_integers
 	accepted_range := c.accepted_type_range(resolved_type) or {
-		AcceptedTypeRange{
-			min: -math.max_f32
-			max: math.max_f32
+		if value_type_is_integer {
+			AcceptedTypeRange{
+				min: f64(-2147483647 - 1)
+				max: f64(2147483647)
+			}
+		} else {
+			AcceptedTypeRange{
+				min: -math.max_f32
+				max: math.max_f32
+			}
 		}
 	}
 	if value < accepted_range.min {

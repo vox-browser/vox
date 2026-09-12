@@ -276,7 +276,7 @@ fn (parser Parser) calculation_context() CalculationContext {
 						CalculationContext{
 							resolve_numbers_as_integers: true
 							accepted_type_ranges: {
-								ValueType.integer: accepted_calculation_range(2, math.max_f32)
+								ValueType.integer: accepted_calculation_range(2, f64(2147483647))
 							}
 						}
 					}
@@ -284,7 +284,7 @@ fn (parser Parser) calculation_context() CalculationContext {
 						CalculationContext{
 							resolve_numbers_as_integers: true
 							accepted_type_ranges: {
-								ValueType.integer: accepted_calculation_range(1, math.max_f32)
+								ValueType.integer: accepted_calculation_range(1, f64(2147483647))
 							}
 						}
 					}
