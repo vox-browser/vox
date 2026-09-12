@@ -2237,7 +2237,7 @@ fn test_svg_text_reuses_svg_path_painting_instead_of_generic_text_commands() {
 }
 
 fn test_broken_image_paints_and_refreshes_alt_text_fallback() {
-	document := html.parse_document('<!doctype html><style>html,body{margin:0}img{display:block;width:100px;height:30px;color:rgb(10 20 30)}</style><img id="target" src="missing.png" alt="fallback">')
+	document := html.parse_document('<!doctype html><style>html,body{margin:0}img{display:block;width:100px;height:30px;color:rgb(10 20 30);font:700 19px monospace}</style><img id="target" src="missing.png" alt="fallback">')
 	mut target := document.get_element_by_id('target') or { panic('missing image') }
 	image := unsafe { &dom.HTMLImageElement(target) }
 	mut root := layout_document_typed_in_viewport(document, 240, 140)
@@ -2245,14 +2245,13 @@ fn test_broken_image_paints_and_refreshes_alt_text_fallback() {
 	mut text_commands := commands.filter(it.kind == 'draw_text' && it.text == 'fallback')
 	assert text_commands.len == 1
 	assert text_commands[0].color == css.Color{10, 20, 30, 255}.serialize()
-	assert text_commands[0].font_size == 12
+	assert text_commands[0].font_size == 19
+	assert text_commands[0].bold
+	assert text_commands[0].mono
 	assert text_commands[0].glyph_run != none
 	assert text_commands[0].glyph_translation_x > 0
 	assert text_commands[0].glyph_translation_y > 0
-	outline_commands := commands.filter(it.kind == 'stroke_rounded_rect'
-		&& it.color == css.Color{}.serialize() && it.x == 0 && it.y == 0 && it.width == 100
-		&& it.height == 30 && it.stroke_width == 1)
-	assert outline_commands.len == 1
+	assert commands.all(it.kind != 'stroke_rounded_rect')
 	assert commands.all(it.kind != 'draw_replaced_image')
 
 	target.set_attribute_value('alt', 'updated fallback')

@@ -116,23 +116,26 @@ fn test_image_paintable_translates_object_fit_position_rounding_and_clip() {
 
 fn test_image_paintable_paints_broken_image_alt_text() {
 	converter := new_device_pixel_converter(1) or { panic(err) }
+	font := &platform.Font{
+		family: 'serif'
+		point_size: 21
+		weight: 700
+	}
 	paintable := ImagePaintable{
 		image_rect: Rect{10, 20, 100, 30}
 		renders_as_alt_text: true
 		alt_text: 'fallback'
 		alt_text_color: Color{10, 20, 30, 255}
+		alt_text_font: font
 	}
 	result := paintable.paint_alt_text(converter) or { panic('expected alt text paint') }
-	assert result.outline == DrawRect{
-		rect: IntRect{10, 20, 100, 30}
-		color: Color{}
-	}
 	assert result.text == 'fallback'
-	assert result.font_size == 12
-	assert result.glyph_run.rect == result.outline.rect
+	assert result.font_size == 21
+	assert result.glyph_run.rect == IntRect{10, 20, 100, 30}
 	assert result.glyph_run.color == Color{10, 20, 30, 255}
 	assert result.glyph_run.orientation == .horizontal
 	retained_run := result.glyph_run.glyph_run or { panic('missing retained glyph run') }
+	assert retained_run.font() == font
 	assert result.glyph_run.translation.x == 10 + (100 - f64(retained_run.width())) / 2
 	assert result.glyph_run.translation.y > 20
 	assert result.glyph_run.translation.y < 50

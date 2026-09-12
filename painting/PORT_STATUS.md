@@ -195,9 +195,9 @@ following behavioral mismatches and added focused regressions:
   nested in masks and pattern tiles consume this same result instead of the
   renderer-local `contained_image_destination()` shortcut.
 - The other `ImagePaintable::paint()` foreground branch is active for broken
-  HTML images. It draws the source black outline around the content rectangle,
-  shapes nonempty `alt` text with the default 12px font, centers the retained
-  glyph run, and uses the element's computed text color. Before every retained-
+  HTML images. It shapes nonempty `alt` text with the element's CSS-resolved
+  layout font, centers the retained glyph run, and uses the element's computed
+  text color without drawing a synthetic border. Before every retained-
   tree relayout, the image box refreshes provider availability, current source,
   intrinsic dimensions, and live alternative text; tests cover failed-image,
   changed-alt, and subsequently available-image states. The audit maps that

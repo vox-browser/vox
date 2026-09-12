@@ -2690,8 +2690,8 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 			if alt_text_paint := image_paintable.paint_alt_text(painting.new_device_pixel_converter(1.0) or {
 				panic(err)
 			}) {
-				append_painting_display_command(mut commands, alt_text_paint.outline, opacity)
 				if glyph_run := alt_text_paint.glyph_run.glyph_run {
+					font := glyph_run.font()
 					commands << PaintCommand{
 						kind: 'draw_text'
 						x: alt_text_paint.glyph_run.translation.x
@@ -2701,6 +2701,8 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 						color: painting_color_string(alt_text_paint.glyph_run.color)
 						text: alt_text_paint.text
 						font_size: alt_text_paint.font_size
+						bold: font.weight >= 600
+						mono: font.family.to_lower().contains('mono')
 						glyph_run: glyph_run
 						glyph_translation_x: alt_text_paint.glyph_run.translation.x
 						glyph_translation_y: alt_text_paint.glyph_run.translation.y

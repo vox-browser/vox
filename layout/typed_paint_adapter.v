@@ -3282,6 +3282,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		if image_box := node.as_box() {
 			replaced_intrinsic_size = image_box.natural_size()
 		}
+		alt_text_font := node.first_available_font()
 		replaced_image_paintable = painting.ImagePaintable{
 			image_rect: painting.Rect{
 				x: paint_position.x().to_double()
@@ -3310,6 +3311,7 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 			renders_as_alt_text: replaced_image_renders_as_alt_text
 			alt_text: replaced_image_alt_text
 			alt_text_color: painting.Color{text_color.r, text_color.g, text_color.b, text_color.a}
+			alt_text_font: alt_text_font
 		}
 	}
 	if tag_name == 'canvas' {
