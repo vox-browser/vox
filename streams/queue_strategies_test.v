@@ -80,17 +80,36 @@ fn test_high_water_mark_and_size_algorithm_extraction() {
 }
 
 fn test_count_and_byte_length_queuing_strategies() {
-	count := CountQueuingStrategy.construct_impl(QueuingStrategyInit{
+	count := CountQueuingStrategy.create_for_constructor(QueuingStrategyInit{
 		high_water_mark: 4
 	})
 	assert count.high_water_mark() == 4
 	assert count.size(bytes_value([u8(1), 2, 3])) == 1
-	byte_length := ByteLengthQueuingStrategy.construct_impl(QueuingStrategyInit{
+	byte_length := ByteLengthQueuingStrategy.create_for_constructor(QueuingStrategyInit{
 		high_water_mark: 16
 	})
 	assert byte_length.high_water_mark() == 16
 	assert byte_length.size(bytes_value([u8(1), 2, 3])) == 3
 	assert byte_length.size(string_value('not an ArrayBufferView')) == 0
+	assert CountQueuingStrategy.create(9).high_water_mark() == 9
+	assert ByteLengthQueuingStrategy.create(12).high_water_mark() == 12
+}
+
+fn queuing_strategy_test_size(value Value) !f64 {
+	if value.kind != .bytes {
+		return error('expected bytes')
+	}
+	return f64(value.bytes_.len * 2)
+}
+
+fn test_queuing_strategy_size_callback_preserves_completion() {
+	assert invoke_queuing_strategy_size_callback(queuing_strategy_test_size,
+		bytes_value([u8(1), 2, 3]))! == 6
+	if _ := invoke_queuing_strategy_size_callback(queuing_strategy_test_size, string_value('bad')) {
+		assert false
+	} else {
+		assert err.msg() == 'expected bytes'
+	}
 }
 
 fn test_array_buffer_transfer_clone_and_bounds() {

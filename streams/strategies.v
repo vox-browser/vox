@@ -31,14 +31,28 @@ pub fn extract_size_algorithm(strategy QueuingStrategy) SizeAlgorithm {
 	return strategy.size or { default_size_algorithm }
 }
 
+// BindingsGlue.h keeps callback invocation out of the Streams implementation.
+// The typed V boundary preserves the same abrupt-completion result.
+pub fn invoke_queuing_strategy_size_callback(callback SizeAlgorithm, chunk Value) !f64 {
+	return callback(chunk)
+}
+
 pub struct ByteLengthQueuingStrategy {
 	high_water_mark_ f64
 }
 
-pub fn ByteLengthQueuingStrategy.construct_impl(init QueuingStrategyInit) &ByteLengthQueuingStrategy {
+pub fn ByteLengthQueuingStrategy.create(high_water_mark f64) &ByteLengthQueuingStrategy {
 	return &ByteLengthQueuingStrategy{
-		high_water_mark_: init.high_water_mark
+		high_water_mark_: high_water_mark
 	}
+}
+
+pub fn ByteLengthQueuingStrategy.create_for_constructor(init QueuingStrategyInit) &ByteLengthQueuingStrategy {
+	return ByteLengthQueuingStrategy.create(init.high_water_mark)
+}
+
+pub fn ByteLengthQueuingStrategy.construct_impl(init QueuingStrategyInit) &ByteLengthQueuingStrategy {
+	return ByteLengthQueuingStrategy.create_for_constructor(init)
 }
 
 pub fn (strategy &ByteLengthQueuingStrategy) high_water_mark() f64 {
@@ -53,10 +67,18 @@ pub struct CountQueuingStrategy {
 	high_water_mark_ f64
 }
 
-pub fn CountQueuingStrategy.construct_impl(init QueuingStrategyInit) &CountQueuingStrategy {
+pub fn CountQueuingStrategy.create(high_water_mark f64) &CountQueuingStrategy {
 	return &CountQueuingStrategy{
-		high_water_mark_: init.high_water_mark
+		high_water_mark_: high_water_mark
 	}
+}
+
+pub fn CountQueuingStrategy.create_for_constructor(init QueuingStrategyInit) &CountQueuingStrategy {
+	return CountQueuingStrategy.create(init.high_water_mark)
+}
+
+pub fn CountQueuingStrategy.construct_impl(init QueuingStrategyInit) &CountQueuingStrategy {
+	return CountQueuingStrategy.create_for_constructor(init)
 }
 
 pub fn (strategy &CountQueuingStrategy) high_water_mark() f64 {
