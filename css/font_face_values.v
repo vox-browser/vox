@@ -52,6 +52,18 @@ pub fn font_feature_value_type_to_string(type_ FontFeatureValueType) string {
 	}
 }
 
+pub fn font_feature_value_type_from_string(value string) ?FontFeatureValueType {
+	return match value {
+		'stylistic' { .stylistic }
+		'styleset' { .styleset }
+		'character-variant' { .character_variant }
+		'swash' { .swash }
+		'ornaments' { .ornaments }
+		'annotation' { .annotation }
+		else { none }
+	}
+}
+
 pub enum EastAsianVariant {
 	jis78
 	jis83

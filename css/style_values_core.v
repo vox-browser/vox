@@ -3807,7 +3807,6 @@ pub enum StyleValueType {
 	flex
 	font_source
 	font_style
-	font_variant_alternates_function
 	frequency
 	grid_auto_flow
 	grid_template_area
@@ -3891,7 +3890,6 @@ pub type StyleValue = KeywordStyleValue
 	| FlexStyleValue
 	| FontSourceStyleValue
 	| FontStyleStyleValue
-	| FontVariantAlternatesFunctionStyleValue
 	| FrequencyStyleValue
 	| GridAutoFlowStyleValue
 	| GridTemplateAreaStyleValue
@@ -4005,7 +4003,6 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		FlexStyleValue { .flex }
 		FontSourceStyleValue { .font_source }
 		FontStyleStyleValue { .font_style }
-		FontVariantAlternatesFunctionStyleValue { .font_variant_alternates_function }
 		FrequencyStyleValue { .frequency }
 		GridAutoFlowStyleValue { .grid_auto_flow }
 		GridTemplateAreaStyleValue { .grid_template_area }
@@ -4299,7 +4296,6 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		FilterValueListStyleValue { style_value.absolutized(context) }
 		FunctionStyleValue { style_value.absolutized(context) }
 		FontStyleStyleValue { style_value.absolutized(context) }
-		FontVariantAlternatesFunctionStyleValue { style_value.absolutized(context) }
 		GridTrackPlacementStyleValue { StyleValue(style_value.absolutized(context)) }
 		GridTrackSizeListStyleValue { StyleValue(style_value.absolutized(context)) }
 		HSLColorStyleValue { StyleValue(style_value.absolutized(context)) }
@@ -4391,7 +4387,6 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		FunctionStyleValue { style_value.serialize(mode) }
 		FontSourceStyleValue { style_value.serialize(mode) }
 		FontStyleStyleValue { style_value.serialize(mode) }
-		FontVariantAlternatesFunctionStyleValue { style_value.serialize(mode) }
 		FrequencyStyleValue { style_value.serialize(mode) }
 		GridAutoFlowStyleValue { style_value.serialize(mode) }
 		GridTemplateAreaStyleValue { style_value.serialize(mode) }

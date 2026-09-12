@@ -6048,42 +6048,42 @@ fn (mut parser Parser) parse_font_variant_alternates_value(mut tokens ComponentV
 					return none
 				}
 				transaction.consume()
-				stylistic = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.stylistic, feature_value_names))
+				stylistic = StyleValue(FunctionStyleValue.create('stylistic', StyleValue(StyleValueList.create(feature_value_names, .comma, .yes))))
 			}
 			'styleset' {
 				if styleset != none {
 					return none
 				}
 				transaction.consume()
-				styleset = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.styleset, feature_value_names))
+				styleset = StyleValue(FunctionStyleValue.create('styleset', StyleValue(StyleValueList.create(feature_value_names, .comma, .yes))))
 			}
 			'character-variant' {
 				if character_variant != none {
 					return none
 				}
 				transaction.consume()
-				character_variant = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.character_variant, feature_value_names))
+				character_variant = StyleValue(FunctionStyleValue.create('character-variant', StyleValue(StyleValueList.create(feature_value_names, .comma, .yes))))
 			}
 			'swash' {
 				if feature_value_names.len != 1 || swash != none {
 					return none
 				}
 				transaction.consume()
-				swash = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.swash, feature_value_names))
+				swash = StyleValue(FunctionStyleValue.create('swash', StyleValue(StyleValueList.create(feature_value_names, .comma, .yes))))
 			}
 			'ornaments' {
 				if feature_value_names.len != 1 || ornaments != none {
 					return none
 				}
 				transaction.consume()
-				ornaments = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.ornaments, feature_value_names))
+				ornaments = StyleValue(FunctionStyleValue.create('ornaments', StyleValue(StyleValueList.create(feature_value_names, .comma, .yes))))
 			}
 			'annotation' {
 				if feature_value_names.len != 1 || annotation != none {
 					return none
 				}
 				transaction.consume()
-				annotation = StyleValue(FontVariantAlternatesFunctionStyleValue.create(.annotation, feature_value_names))
+				annotation = StyleValue(FunctionStyleValue.create('annotation', StyleValue(StyleValueList.create(feature_value_names, .comma, .yes))))
 			}
 			else {
 				break

@@ -1794,60 +1794,6 @@ pub fn (style_value FontStyleStyleValue) properties_equal(other FontStyleStyleVa
 	return style_value == other
 }
 
-// --- FontVariantAlternatesFunctionStyleValue ---
-pub struct FontVariantAlternatesFunctionStyleValue {
-pub mut:
-	function_type_ FontFeatureValueType
-	names_         []StyleValue
-}
-
-pub fn FontVariantAlternatesFunctionStyleValue.create(function_type FontFeatureValueType, names []StyleValue) FontVariantAlternatesFunctionStyleValue {
-	return FontVariantAlternatesFunctionStyleValue{
-		function_type_: function_type
-		names_: names
-	}
-}
-
-pub fn (style_value FontVariantAlternatesFunctionStyleValue) function_type() FontFeatureValueType {
-	return style_value.function_type_
-}
-
-pub fn (style_value FontVariantAlternatesFunctionStyleValue) names() []StyleValue {
-	return style_value.names_
-}
-
-pub fn (style_value FontVariantAlternatesFunctionStyleValue) serialize(mode SerializationMode) string {
-	_ = mode
-	function_name := font_feature_value_type_to_string(style_value.function_type_)
-	return '${function_name}(${serialize_style_value_sequence(style_value.names_, ', ', .normal)})'
-}
-
-pub fn (style_value FontVariantAlternatesFunctionStyleValue) absolutized(context ComputationContext) StyleValue {
-	mut absolutized_names := []StyleValue{cap: style_value.names_.len}
-	mut any_name_changed := false
-	for name in style_value.names_ {
-		absolutized_name := name.absolutized(context)
-		if absolutized_name != name {
-			any_name_changed = true
-		}
-		absolutized_names << absolutized_name
-	}
-
-	if !any_name_changed {
-		return StyleValue(style_value)
-	}
-
-	return StyleValue(FontVariantAlternatesFunctionStyleValue.create(style_value.function_type_, absolutized_names))
-}
-
-pub fn (style_value FontVariantAlternatesFunctionStyleValue) to_string() string {
-	return style_value.serialize(.normal)
-}
-
-pub fn (style_value FontVariantAlternatesFunctionStyleValue) properties_equal(other FontVariantAlternatesFunctionStyleValue) bool {
-	return style_value == other
-}
-
 // --- OpenTypeTaggedStyleValue ---
 pub enum OpenTypeTaggedStyleValueMode {
 	font_feature_settings

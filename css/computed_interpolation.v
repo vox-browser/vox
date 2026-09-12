@@ -3645,10 +3645,16 @@ pub fn (c &ComputedProperties) font_variant_alternates() ?FontVariantAlternates 
 	for entry in list.values() {
 		if entry.to_keyword() == .historical_forms {
 			result.historical_forms = true
-		} else if entry is FontVariantAlternatesFunctionStyleValue {
-			for name in entry.names() {
+		} else if entry is FunctionStyleValue {
+			function_type := font_feature_value_type_from_string(entry.name()) or { continue }
+			names_value := entry.value()
+			names := match names_value {
+				StyleValueList { names_value }
+				else { continue }
+			}
+			for name in names.values() {
 				result.font_feature_value_entries << FontFeatureValueKey{
-					type_: entry.function_type()
+					type_: function_type
 					name: name.serialize(.normal)
 				}
 			}
