@@ -264,3 +264,22 @@ fn test_canvas_gradient_and_navigator_information() {
 	assert compute_device_memory_value(512 * 1024 * 1024) == 1.0
 	assert compute_device_memory_value(3 * 1024 * 1024 * 1024) == 4.0
 }
+
+fn test_offset_dimensions_round_fractional_border_boxes() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(element.as_node())!
+	mut element_node := element.as_node()
+	element_node.set_layout_node(&dom.LayoutNode{
+		dom_node_: element.as_node()
+		has_geometry_: true
+		border_box_: dom.Rect{
+			width: 10.4
+			height: 20.6
+		}
+	})
+	html_element := unsafe { &dom.HTMLElement(element) }
+	assert html_element_offset_width(html_element) == 10
+	assert html_element_offset_height(html_element) == 21
+}

@@ -560,7 +560,9 @@ pub fn html_element_offset_width(element &dom.HTMLElement) int {
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_element_offset_width)
 	layout_node := dom_element.as_node().layout_node() or { return 0 }
-	return int((paintable_box_absolute_united_border_box_rect(layout_node) or { return 0 }).width)
+	return int(math.round((paintable_box_absolute_united_border_box_rect(layout_node) or {
+		return 0
+	}).width))
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetheight
@@ -569,7 +571,9 @@ pub fn html_element_offset_height(element &dom.HTMLElement) int {
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_element_offset_height)
 	layout_node := dom_element.as_node().layout_node() or { return 0 }
-	return int((paintable_box_absolute_united_border_box_rect(layout_node) or { return 0 }).height)
+	return int(math.round((paintable_box_absolute_united_border_box_rect(layout_node) or {
+		return 0
+	}).height))
 }
 
 pub fn html_element_set_subtree_inertness(element &dom.HTMLElement, is_inert bool) {
