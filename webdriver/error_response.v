@@ -42,6 +42,36 @@ pub enum ErrorCode {
 	out_of_memory
 }
 
+pub struct ErrorCodeData {
+pub:
+	error_code      ErrorCode
+	http_status     u32
+	json_error_code string
+}
+
+// https://w3c.github.io/webdriver/#dfn-error-code
+pub fn error_code_data() []ErrorCodeData {
+	statuses := [u32(400), 400, 400, 400, 400, 400, 400, 404, 500, 500, 404, 404, 404, 404, 404,
+		404, 500, 500, 404, 404, 500, 500, 500, 500, 404, 500, 405, 500, 500]
+	names := ['element click intercepted', 'element not interactable', 'insecure certificate',
+		'invalid argument', 'invalid cookie domain', 'invalid element state', 'invalid selector',
+		'invalid session id', 'javascript error', 'move target out of bounds', 'no such alert',
+		'no such cookie', 'no such element', 'no such frame', 'no such window', 'no such shadow root',
+		'script timeout', 'session not created', 'stale element reference', 'detached shadow root',
+		'timeout', 'unable to set cookie', 'unable to capture screen', 'unexpected alert open',
+		'unknown command', 'unknown error', 'unknown method', 'unsupported operation',
+		'out of memory']
+	mut data := []ErrorCodeData{cap: names.len}
+	for index, name in names {
+		data << ErrorCodeData{
+			error_code:      unsafe { ErrorCode(index) }
+			http_status:     statuses[index]
+			json_error_code: name
+		}
+	}
+	return data
+}
+
 pub struct WebDriverError {
 pub:
 	http_status u32
@@ -55,19 +85,10 @@ pub fn WebDriverError.from_code(code ErrorCode, message string) WebDriverError {
 }
 
 pub fn WebDriverError.from_code_with_data(code ErrorCode, message string, data ?json2.Any) WebDriverError {
-	statuses := [u32(400), 400, 400, 400, 400, 400, 400, 404, 500, 500, 404, 404, 404, 404, 404,
-		404, 500, 500, 404, 404, 500, 500, 500, 500, 404, 500, 405, 500, 500]
-	names := ['element click intercepted', 'element not interactable', 'insecure certificate',
-		'invalid argument', 'invalid cookie domain', 'invalid element state', 'invalid selector',
-		'invalid session id', 'javascript error', 'move target out of bounds', 'no such alert',
-		'no such cookie', 'no such element', 'no such frame', 'no such window', 'no such shadow root',
-		'script timeout', 'session not created', 'stale element reference', 'detached shadow root',
-		'timeout', 'unable to set cookie', 'unable to capture screen', 'unexpected alert open',
-		'unknown command', 'unknown error', 'unknown method', 'unsupported operation',
-		'out of memory']
+	code_data := error_code_data()[int(code)]
 	return WebDriverError{
-		http_status: statuses[int(code)]
-		code:        names[int(code)]
+		http_status: code_data.http_status
+		code:        code_data.json_error_code
 		message:     message
 		data:        data
 	}

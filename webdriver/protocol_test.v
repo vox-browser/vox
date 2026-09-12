@@ -3,6 +3,10 @@ module webdriver
 import x.json2
 
 fn test_error_table_and_response_preserve_protocol_codes() {
+	rows := error_code_data()
+	assert rows.len == 29
+	assert rows[int(ErrorCode.no_such_element)].error_code == .no_such_element
+	assert rows[int(ErrorCode.no_such_element)].json_error_code == 'no such element'
 	error_value := WebDriverError.from_code(.no_such_element, 'gone')
 	assert error_value.http_status == 404
 	assert error_value.code == 'no such element'
