@@ -1326,9 +1326,9 @@ fn cssom_style_value_for_size(value Size) &dom.StyleValue {
 	}
 	if value.is_fit_content() {
 		if available_space := value.fit_content_available_space() {
-			return dom_style_value_from_value_logic(StyleValue(FitContentStyleValue.create_with_length_percentage(style_value_logic_for_length_percentage(available_space))))
+			return dom_style_value_from_value_logic(StyleValue(FunctionStyleValue.create('fit-content', style_value_logic_for_length_percentage(available_space))))
 		}
-		return dom_style_value_from_value_logic(StyleValue(FitContentStyleValue.create()))
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.fit_content)))
 	}
 	return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto)))
 }

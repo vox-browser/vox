@@ -396,41 +396,6 @@ pub fn (style_value AnchorSizeStyleValue) properties_equal(other AnchorSizeStyle
 	return style_value == other
 }
 
-// --- FitContentStyleValue ---
-pub struct FitContentStyleValue {
-pub mut:
-	length_percentage_ ?StyleValue
-}
-
-pub fn FitContentStyleValue.create() FitContentStyleValue {
-	return FitContentStyleValue{}
-}
-
-pub fn FitContentStyleValue.create_with_length_percentage(length_percentage StyleValue) FitContentStyleValue {
-	return FitContentStyleValue{
-		length_percentage_: length_percentage
-	}
-}
-
-pub fn (style_value FitContentStyleValue) length_percentage() ?StyleValue {
-	return style_value.length_percentage_
-}
-
-pub fn (style_value FitContentStyleValue) serialize(mode SerializationMode) string {
-	if length_percentage := style_value.length_percentage_ {
-		return 'fit-content(${length_percentage.serialize(mode)})'
-	}
-	return 'fit-content'
-}
-
-pub fn (style_value FitContentStyleValue) to_string() string {
-	return style_value.serialize(.normal)
-}
-
-pub fn (style_value FitContentStyleValue) properties_equal(other FitContentStyleValue) bool {
-	return style_value == other
-}
-
 // --- FunctionStyleValue ---
 pub struct FunctionStyleValue {
 pub mut:

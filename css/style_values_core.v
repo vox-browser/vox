@@ -201,7 +201,11 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 	}
 	return match value {
 		KeywordStyleValue {
-			property_accepts_keyword_string(property_id, value.to_string())
+			if value.keyword() == .fit_content {
+				property_accepts_type(property_id, .fit_content)
+			} else {
+				property_accepts_keyword_string(property_id, value.to_string())
+			}
 		}
 		AnchorSizeStyleValue {
 			property_accepts_type(property_id, .anchor_size)
@@ -218,8 +222,17 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		EasingStyleValue {
 			property_accepts_type(property_id, .easing_function)
 		}
-		FitContentStyleValue {
-			property_accepts_type(property_id, .fit_content)
+		FunctionStyleValue {
+			match value.name() {
+				'add' { property_id == .math_depth }
+				'fit-content' { property_accepts_type(property_id, .fit_content) }
+				'stylistic', 'styleset', 'character-variant', 'swash', 'ornaments', 'annotation' {
+					property_id == .font_variant_alternates
+				}
+				'scroll' { property_accepts_type(property_id, .scroll_function) }
+				'view' { property_accepts_type(property_id, .view_function) }
+				else { false }
+			}
 		}
 		BackgroundSizeStyleValue {
 			property_id in [.background_size, .mask_size]
@@ -1454,6 +1467,7 @@ pub enum Keyword {
 	fill_box
 	filled_circled_decimal
 	fine
+	fit_content
 	fixed
 	flat
 	flex
@@ -2333,6 +2347,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.fill_box { 'fill-box' }
 		.filled_circled_decimal { 'filled-circled-decimal' }
 		.fine { 'fine' }
+		.fit_content { 'fit-content' }
 		.fixed { 'fixed' }
 		.flat { 'flat' }
 		.flex { 'flex' }
@@ -3194,6 +3209,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 		'fill-box' { Keyword.fill_box }
 		'filled-circled-decimal' { Keyword.filled_circled_decimal }
 		'fine' { Keyword.fine }
+		'fit-content' { Keyword.fit_content }
 		'fixed' { Keyword.fixed }
 		'flat' { Keyword.flat }
 		'flex' { Keyword.flex }
@@ -3801,7 +3817,6 @@ pub enum StyleValueType {
 	easing
 	edge
 	filter_value_list
-	fit_content
 	function
 	flex
 	font_source
@@ -3883,7 +3898,6 @@ pub type StyleValue = KeywordStyleValue
 	| EasingStyleValue
 	| EdgeStyleValue
 	| FilterValueListStyleValue
-	| FitContentStyleValue
 	| FunctionStyleValue
 	| FlexStyleValue
 	| FontSourceStyleValue
@@ -3995,7 +4009,6 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		EasingStyleValue { .easing }
 		EdgeStyleValue { .edge }
 		FilterValueListStyleValue { .filter_value_list }
-		FitContentStyleValue { .fit_content }
 		FunctionStyleValue { .function }
 		FlexStyleValue { .flex }
 		FontSourceStyleValue { .font_source }
@@ -4377,7 +4390,6 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		EasingStyleValue { style_value.serialize(mode) }
 		EdgeStyleValue { style_value.serialize(mode) }
 		FilterValueListStyleValue { style_value.serialize(mode) }
-		FitContentStyleValue { style_value.serialize(mode) }
 		FlexStyleValue { style_value.serialize(mode) }
 		FunctionStyleValue { style_value.serialize(mode) }
 		FontSourceStyleValue { style_value.serialize(mode) }

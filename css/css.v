@@ -3735,17 +3735,18 @@ pub fn Size.from_style_value(value StyleValue) Size {
 		KeywordStyleValue {
 			match value.keyword() {
 				.auto { Size.make_auto() }
+				.fit_content { Size.make_fit_content_without_available_space() }
 				.min_content { Size.make_min_content() }
 				.max_content { Size.make_max_content() }
 				.none_ { Size.make_none() }
 				else { Size.make_auto() }
 			}
 		}
-		FitContentStyleValue {
-			if available_space := value.length_percentage() {
-				Size.make_fit_content(LengthPercentage.from_style_value_logic(available_space))
+		FunctionStyleValue {
+			if value.name() == 'fit-content' {
+				Size.make_fit_content(LengthPercentage.from_style_value_logic(value.value()))
 			} else {
-				Size.make_fit_content_without_available_space()
+				Size.make_auto()
 			}
 		}
 		CalculatedStyleValue { Size.make_calculated(value) }

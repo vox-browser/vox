@@ -9811,7 +9811,7 @@ fn (mut parser Parser) parse_fit_content_value(mut tokens ComponentValueStream) 
 	component_value := transaction.consume() or { return none }
 	if component_value.is(.ident) && equals_ignoring_ascii_case(component_value.token().ident(), 'fit-content') {
 		tokens = transaction
-		return StyleValue(FitContentStyleValue.create())
+		return StyleValue(KeywordStyleValue.create(.fit_content))
 	}
 	if component_value.is_function_named('fit-content') {
 		parser.push_temporary_value_parsing_context(ValueParsingContext(FunctionContext{
@@ -9829,7 +9829,7 @@ fn (mut parser Parser) parse_fit_content_value(mut tokens ComponentValueStream) 
 			return none
 		}
 		tokens = transaction
-		return StyleValue(FitContentStyleValue.create_with_length_percentage(length_percentage))
+		return StyleValue(FunctionStyleValue.create('fit-content', length_percentage))
 	}
 	return none
 }

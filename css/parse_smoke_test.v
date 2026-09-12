@@ -676,6 +676,7 @@ fn test_initial_values_are_typed_and_cached() {
 }
 
 fn test_generated_keyword_table_matches_upstream_surface() {
+	assert keyword_from_string('fit-content')? == .fit_content
 	assert keyword_from_string('max-content')? == .max_content
 	assert keyword_from_string('most-inline-size')? == .most_inline_size
 	assert keyword_from_string('scroll-position')? == .scroll_position
@@ -685,7 +686,8 @@ fn test_generated_keyword_table_matches_upstream_surface() {
 
 fn test_anchor_and_fit_content_values_are_typed() {
 	fit_content := parse_css_value_logic(.width, 'fit-content(25%)')?
-	assert fit_content is FitContentStyleValue
+	assert fit_content is FunctionStyleValue
+	assert (fit_content as FunctionStyleValue).name() == 'fit-content'
 	assert fit_content.serialize(.normal) == 'fit-content(25%)'
 
 	anchor := parse_css_value_logic(.top, 'anchor(--card bottom, 10px)')?
