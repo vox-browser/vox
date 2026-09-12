@@ -1667,6 +1667,8 @@ pub type DocumentWindowOpenCallback = fn (voidptr, string, string, string) ?&Win
 
 pub type DocumentDeclarativeRefreshNavigateCallback = fn (voidptr, &Document, URL)
 
+pub type DocumentInitialAboutBlankOpenedCallback = fn (voidptr)
+
 pub struct DocumentHTMLNavigationHook {
 pub:
 	target                       voidptr = unsafe { nil }
@@ -1674,6 +1676,7 @@ pub:
 	update_url_and_history       DocumentURLAndHistoryUpdateCallback = unsafe { nil }
 	open_window                  DocumentWindowOpenCallback = unsafe { nil }
 	declarative_refresh_navigate DocumentDeclarativeRefreshNavigateCallback = unsafe { nil }
+	initial_about_blank_opened   DocumentInitialAboutBlankOpenedCallback = unsafe { nil }
 }
 
 pub type DocumentFullscreenPopoverCallback = fn (voidptr, &Document, &Element)
@@ -6816,6 +6819,16 @@ pub fn (mut d Document) open_document() !&Document {
 		}
 		// 3. Run the URL and history update steps with document and newURL.
 		html_perform_url_and_history_update_steps(d, new_url)!
+	}
+
+	// Keep Navigation API entries and events disabled after document.open()
+	// clears the initial-about:blank marker.
+	if d.is_initial_about_blank {
+		if hook := d.html_navigation_hook_ {
+			if hook.initial_about_blank_opened != unsafe { nil } {
+				hook.initial_about_blank_opened(hook.target)
+			}
+		}
 	}
 
 	// 13. Set is_initial_about_blank to false.

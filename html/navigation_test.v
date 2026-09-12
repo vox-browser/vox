@@ -115,3 +115,31 @@ fn test_navigation_disabled_surface_and_early_errors() {
 	assert result.committed.state() == .rejected
 	assert result.finished.state() == .rejected
 }
+
+fn test_document_open_keeps_initial_about_blank_navigation_disabled() {
+	mut document := &dom.Document{}
+	document.set_document_type(.html)
+	document.set_url(dom.url_about_blank())
+	document.set_origin(dom.URL{ value: 'https://example.test/' }.origin())
+	document.set_is_initial_about_blank(true)
+	install_document_fragment_parsing_hook(document)
+	window := WindowModel.create_top_level(document, none, '')!
+	mut navigation := unsafe { &Navigation(window.navigation()) }
+	assert document.is_fully_active()
+	assert navigation.has_entries_and_events_disabled()
+
+	document.open()!
+	assert !document.get_is_initial_about_blank()
+	assert navigation.was_initial_about_blank_opened()
+	assert navigation.has_entries_and_events_disabled()
+	assert navigation.current_entry() == none
+
+	entry := &SessionHistoryEntry{
+		url: dom.URL{ value: 'https://example.test/next' }
+		document_state: &DocumentState{
+			document: document
+		}
+	}
+	navigation.initialize_the_navigation_api_entries_for_a_new_document([entry], entry)
+	assert !navigation.was_initial_about_blank_opened()
+}

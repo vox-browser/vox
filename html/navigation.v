@@ -109,6 +109,7 @@ mut:
 	upcoming_non_traverse_api_method_tracker_      ?&NavigationAPIMethodTracker
 	upcoming_traverse_api_method_trackers_         map[string]&NavigationAPIMethodTracker
 	entries_and_events_disabled_override_          ?bool
+	was_initial_about_blank_opened_                 bool
 	navigate_hook_                                 ?NavigationNavigateHook
 	reload_hook_                                   ?NavigationReloadHook
 	traverse_hook_                                 ?NavigationTraverseHook
@@ -126,6 +127,14 @@ pub fn (mut navigation Navigation) set_associated_document(document ?&dom.Docume
 
 pub fn (mut navigation Navigation) set_entries_and_events_disabled_override(value ?bool) {
 	navigation.entries_and_events_disabled_override_ = value
+}
+
+pub fn (mut navigation Navigation) set_was_initial_about_blank_opened(value bool) {
+	navigation.was_initial_about_blank_opened_ = value
+}
+
+pub fn (navigation &Navigation) was_initial_about_blank_opened() bool {
+	return navigation.was_initial_about_blank_opened_
 }
 
 pub fn (mut navigation Navigation) set_navigate_hook(hook ?NavigationNavigateHook) {
@@ -206,7 +215,8 @@ pub fn (navigation &Navigation) has_entries_and_events_disabled() bool {
 		return override
 	}
 	document := navigation.associated_document_ or { return true }
-	return !document.is_fully_active() || document.get_is_initial_about_blank() || document.origin().is_opaque()
+	return !document.is_fully_active() || document.get_is_initial_about_blank()
+		|| document.origin().is_opaque() || navigation.was_initial_about_blank_opened_
 }
 
 pub fn (navigation &Navigation) get_the_navigation_api_entry_index(session_entry &SessionHistoryEntry) i64 {
@@ -663,7 +673,11 @@ pub fn (mut navigation Navigation) fire_a_download_request_navigate_event(destin
 }
 
 pub fn (mut navigation Navigation) initialize_the_navigation_api_entries_for_a_new_document(new_session_entries []&SessionHistoryEntry, initial_session_entry &SessionHistoryEntry) {
-	if navigation.entry_list_.len > 0 || navigation.current_entry_index_ != -1 || navigation.has_entries_and_events_disabled() {
+	if navigation.entry_list_.len > 0 || navigation.current_entry_index_ != -1 {
+		return
+	}
+	navigation.was_initial_about_blank_opened_ = false
+	if navigation.has_entries_and_events_disabled() {
 		return
 	}
 	for session_entry in new_session_entries {

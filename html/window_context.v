@@ -1246,6 +1246,12 @@ fn document_declarative_refresh_navigate(_ voidptr, document &dom.Document, url 
 	}) or {}
 }
 
+fn document_initial_about_blank_opened(target voidptr) {
+	window := unsafe { &WindowModel(target) }
+	mut navigation := unsafe { &Navigation(window.navigation()) }
+	navigation.set_was_initial_about_blank_opened(true)
+}
+
 fn document_begin_temporary_execution_context(target voidptr) voidptr {
 	mut window := unsafe { &WindowModel(target) }
 	if window.scripting_realm_ == unsafe { nil } {
@@ -1407,6 +1413,7 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		update_url_and_history:    document_update_url_and_history
 		open_window:               document_open_window
 		declarative_refresh_navigate: document_declarative_refresh_navigate
+		initial_about_blank_opened: document_initial_about_blank_opened
 	})
 	mut window_realm := window.scripting_realm_
 	_ = WindowEnvironmentSettingsObject.setup(window, document.url, mut window_realm, none,
