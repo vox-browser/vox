@@ -5,18 +5,23 @@ import dom
 fn media_elements_fetch(url dom.URL, _ u64) !MediaResourceResponse {
 	_ = url
 	return MediaResourceResponse{
-		mime_type:    'video/mp4'
-		duration:     120
-		video_tracks: [MediaTrackMetadata{ identifier: 1, name: 'video' }]
+		mime_type: 'video/mp4'
+		duration: 120
+		video_tracks: [MediaTrackMetadata{
+			identifier: 1
+			name: 'video'
+			pixel_width: 1920
+			pixel_height: 1080
+		}]
 	}
 }
 
 fn poster_test_fetch(_ dom.URL) !&dom.ImmutableBitmap_ {
 	return &dom.ImmutableBitmap_{
-		width:  320
+		width: 320
 		height: 180
-		pitch:  1280
-		data:   []u8{len: 320 * 180 * 4}
+		pitch: 1280
+		data: []u8{len: 320 * 180 * 4}
 	}
 }
 
@@ -35,13 +40,20 @@ fn test_video_representation_dimensions_poster_and_controls() {
 	video.set_poster('/poster.png')
 	assert video.current_representation() == .poster_frame
 	assert video.bitmap()?.width == 320
+	assert video.natural_element_size()? == VideoDimensions{320, 180}
 	video.set_video_dimensions(1920, 1080)
 	assert video.video_width() == 0
 	assert video.video_height() == 0
+	assert video.natural_media_size()? == VideoDimensions{1920, 1080}
+	assert video.natural_element_size()? == VideoDimensions{320, 180}
 	media.load()!
 	assert video.video_width() == 1920
 	assert video.video_height() == 1080
 	assert video.current_representation() == .poster_frame
+	media.set_show_poster(false)
+	assert video.current_representation() == .video_frame
+	assert video.natural_element_size()? == VideoDimensions{1920, 1080}
+	assert media.event_count('resize') == 2
 	mut controls := MediaControls.create(media)
 	controls.toggle_playback()
 	assert controls.play_icon_is_pause

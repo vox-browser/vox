@@ -226,6 +226,7 @@ mut:
 	playback_manager_ready_     bool
 	playback_has_future_data_   bool
 	selected_video_track_       ?&VideoTrack
+	video_element_model_        ?&HTMLVideoElementModel
 	external_content_source_    ?&MediaExternalContentSource
 	accepts_byte_ranges_        bool
 	last_fetch_offset_          u64
@@ -913,6 +914,9 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 		return
 	}
 	element.ready_state_ = state
+	if mut video := element.video_element_model_ {
+		video.update_natural_dimensions()
+	}
 	if int(old_state) < int(MediaReadyState.have_current_data) && int(state) >= int(MediaReadyState.have_current_data) {
 		element.fire_event('loadeddata')
 	}
@@ -999,6 +1003,9 @@ pub fn (mut element HTMLMediaElement) set_show_poster(show_poster bool) {
 		return
 	}
 	element.show_poster_ = show_poster
+	if mut video := element.video_element_model_ {
+		video.update_natural_dimensions()
+	}
 }
 
 pub fn (mut element HTMLMediaElement) set_paused(paused bool) {
@@ -1006,6 +1013,9 @@ pub fn (mut element HTMLMediaElement) set_paused(paused bool) {
 		return
 	}
 	element.paused_ = paused
+	if mut video := element.video_element_model_ {
+		video.update_natural_dimensions()
+	}
 	if paused {
 		if hook := element.playback_hooks_.pause {
 			hook()
@@ -1095,6 +1105,9 @@ pub fn (mut element HTMLMediaElement) set_current_playback_position(value f64) {
 	element.current_playback_position_ = value
 	element.official_playback_position_ = value
 	element.upon_has_ended_playback_possibly_changed()
+	if mut video := element.video_element_model_ {
+		video.update_natural_dimensions()
+	}
 }
 
 pub fn (element &HTMLMediaElement) ended() bool {
@@ -1381,6 +1394,18 @@ pub fn (mut element HTMLMediaElement) set_selected_video_track(track ?&VideoTrac
 		mutable_source.clear()
 	}
 	element.selected_video_track_ = track
+	if mut video := element.video_element_model_ {
+		if selected := track {
+			if selected.base.pixel_width > 0 && selected.base.pixel_height > 0 {
+				video.set_intrinsic_video_dimensions(VideoDimensions{
+					width: selected.base.pixel_width
+					height: selected.base.pixel_height
+				})
+			}
+		} else {
+			video.set_intrinsic_video_dimensions(none)
+		}
+	}
 	if hook := element.playback_hooks_.set_video_track {
 		hook(track)
 	}
@@ -1403,6 +1428,14 @@ pub fn (mut element HTMLMediaElement) update_video_frame_and_timeline() {
 		frame := frame_hook()
 		mut source := element.ensure_external_content_source()
 		source.update(frame)
+		if current_frame := frame {
+			if mut video := element.video_element_model_ {
+				video.set_intrinsic_video_dimensions(VideoDimensions{
+					width: u32(current_frame.width)
+					height: u32(current_frame.height)
+				})
+			}
+		}
 	}
 	if element.seeking_ {
 		return
@@ -1516,6 +1549,9 @@ pub fn (mut element HTMLMediaElement) forget_media_resource_specific_tracks() {
 	element.audio_tracks_.remove_all_tracks()
 	element.video_tracks_.remove_all_tracks()
 	element.selected_video_track_ = none
+	if mut video := element.video_element_model_ {
+		video.set_intrinsic_video_dimensions(none)
+	}
 	element.playback_manager_ready_ = false
 	element.playback_has_future_data_ = false
 }

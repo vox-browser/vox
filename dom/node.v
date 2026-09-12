@@ -47,6 +47,7 @@ pub enum SetNeedsLayoutReason {
 	html_canvas_element_width_or_height_change
 	html_image_element_react_to_changes_in_the_environment
 	html_image_element_update_the_image_data
+	html_video_element_natural_dimensions_changed
 	html_video_element_set_video_track
 	keyframe_effect
 	layout_tree_update
@@ -68,6 +69,9 @@ pub fn set_needs_layout_reason_to_string(reason SetNeedsLayoutReason) string {
 			'HTMLImageElementReactToChangesInTheEnvironment'
 		}
 		.html_image_element_update_the_image_data { 'HTMLImageElementUpdateTheImageData' }
+		.html_video_element_natural_dimensions_changed {
+			'HTMLVideoElementNaturalDimensionsChanged'
+		}
 		.html_video_element_set_video_track { 'HTMLVideoElementSetVideoTrack' }
 		.keyframe_effect { 'KeyframeEffect' }
 		.layout_tree_update { 'LayoutTreeUpdate' }

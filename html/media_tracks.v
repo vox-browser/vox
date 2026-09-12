@@ -17,6 +17,8 @@ pub:
 	name                  string
 	parsed_bcp47_language ?string
 	playback_track_handle voidptr
+	pixel_width           u32
+	pixel_height          u32
 }
 
 pub struct MediaTrackBase {
@@ -25,6 +27,8 @@ pub:
 	id                    string
 	label                 string
 	language              string
+	pixel_width           u32
+	pixel_height          u32
 pub mut:
 	kind           string
 	media_element_ ?&HTMLMediaElement
@@ -41,6 +45,8 @@ pub fn MediaTrackBase.create(metadata MediaTrackMetadata) MediaTrackBase {
 		id: metadata.identifier.str()
 		label: metadata.name
 		language: language
+		pixel_width: metadata.pixel_width
+		pixel_height: metadata.pixel_height
 	}
 }
 

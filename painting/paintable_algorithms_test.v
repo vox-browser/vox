@@ -527,6 +527,7 @@ fn test_video_paintable_switches_between_external_poster_and_transparent_content
 		}
 		border_widths: PixelBox{2, 2, 2, 2}
 		image_rendering: .auto_
+		natural_media_size: IntSize{200, 100}
 	}
 	external := paintable.paint(.video_frame, 'video', none, converter) or {
 		panic('expected external video paint')
@@ -534,8 +535,19 @@ fn test_video_paintable_switches_between_external_poster_and_transparent_content
 	assert external.content is DrawExternalContent
 	external_content := external.content as DrawExternalContent
 	assert external_content.destination == IntRect{5, 7, 100, 50}
-	assert external_content.scaling == .bilinear
+	assert external_content.scaling == .bilinear_mipmap
 	assert external.clip_radii.top_left == CornerRadius{10, 10}
+	contained := VideoPaintable{
+		video_rect: Rect{0, 0, 100, 100}
+		object_fit: .contain
+		natural_media_size: IntSize{200, 100}
+	}.paint(.video_frame, 'video', none, converter) or {
+		panic('expected naturally sized video paint')
+	}
+	assert (contained.content as DrawExternalContent).destination == IntRect{0, 25, 100, 50}
+	assert VideoPaintable{
+		video_rect: Rect{0, 0, 100, 100}
+	}.paint(.video_frame, 'video', none, converter) == none
 
 	poster := paintable.paint(.poster_frame, 'poster', IntSize{200, 100}, converter) or {
 		panic('expected poster paint')

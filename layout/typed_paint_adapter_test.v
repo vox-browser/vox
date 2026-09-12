@@ -2371,7 +2371,14 @@ fn test_canvas_uses_canvas_paintable_only_after_a_surface_exists() {
 }
 
 fn test_video_uses_the_paintable_representation_switch() {
-	document := html.parse_document('<!doctype html><style>html,body{margin:0}video{display:block;width:100px;height:50px;border:4px solid red;border-radius:12px;image-rendering:pixelated}</style><video id="frame"></video><video id="poster"></video><video id="blank"></video>')
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}video{display:block;width:100px;height:50px;border:4px solid red;border-radius:12px;image-rendering:pixelated}</style><video id="frame"></video><video id="poster"></video><video id="blank"></video>')
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
 	frame_element := document.get_element_by_id('frame') or { panic('missing frame video') }
 	frame_video := unsafe { &dom.HTMLVideoElement(frame_element) }
 	mut frame_model := html.html_video_element_model_for_dom_element(frame_video)
@@ -2379,6 +2386,8 @@ fn test_video_uses_the_paintable_representation_switch() {
 	frame_media.set_fetch_hook(typed_video_paint_fetch)
 	frame_media.set_source('https://example.test/movie.mp4')
 	frame_media.load() or { panic(err) }
+	assert frame_media.ready_state() != .have_nothing
+	assert frame_media.video_tracks().length() == 1
 	frame_media.set_current_playback_position(1)
 	frame_model.set_current_frame(&dom.ImmutableBitmap_{
 		width: 20
@@ -2386,6 +2395,8 @@ fn test_video_uses_the_paintable_representation_switch() {
 		pitch: 80
 		data: []u8{len: 20 * 10 * 4}
 	})
+	assert frame_model.current_representation() == .video_frame
+	assert frame_model.natural_media_size()? == html.VideoDimensions{20, 10}
 
 	poster_element := document.get_element_by_id('poster') or { panic('missing poster video') }
 	poster_video := unsafe { &dom.HTMLVideoElement(poster_element) }
@@ -2396,6 +2407,9 @@ fn test_video_uses_the_paintable_representation_switch() {
 	root := layout_document_typed_in_viewport(document, 240, 190)
 	commands := root.paint_commands().filter(it.kind == 'draw_video')
 	assert commands.len == 3
+	assert commands.any(it.video_representation == .video_frame)
+	assert commands.any(it.video_representation == .poster_frame)
+	assert commands.any(it.video_representation == .transparent_black)
 	frame_command := commands.filter(it.video_representation == .video_frame)[0]
 	frame_bitmap := frame_command.video_bitmap or { panic('missing current video frame') }
 	frame_result := (frame_command.video_paintable or { panic('missing VideoPaintable') }).paint(frame_command.video_representation, 'video', painting.IntSize{frame_bitmap.width, frame_bitmap.height}, painting.new_device_pixel_converter(1) or { panic(err) }) or {

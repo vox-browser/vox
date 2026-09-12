@@ -18,6 +18,7 @@ pub:
 	object_fit         css.ObjectFit
 	object_position    css.Position
 	resolution_context css.LengthResolutionContext
+	natural_media_size ?IntSize
 }
 
 pub struct VideoPaintResult {
@@ -39,7 +40,7 @@ pub fn (paintable VideoPaintable) paint(representation VideoRepresentation, bitm
 	clip_radii.shrink(paintable.border_widths.top, paintable.border_widths.right, paintable.border_widths.bottom, paintable.border_widths.left)
 	content := match representation {
 		.video_frame, .first_video_frame {
-			source_size := bitmap_size or { IntSize{video_rect.width, video_rect.height} }
+			source_size := bitmap_size or { paintable.natural_media_size or { return none } }
 			destination := get_replaced_box_painting_area(paintable.video_rect, Size{f64(source_size.width), f64(source_size.height)}, paintable.object_fit, paintable.object_position, paintable.resolution_context, converter) or { return none }
 			DisplayListCommand(DrawExternalContent{
 				destination: destination

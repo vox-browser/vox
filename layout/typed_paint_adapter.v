@@ -3396,6 +3396,11 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 				object_fit: computed.object_fit()
 				object_position: computed.object_position()
 				resolution_context: computed.length_resolution_context()
+				natural_media_size: if dimensions := model.natural_media_size() {
+					painting.IntSize{int(dimensions.width), int(dimensions.height)}
+				} else {
+					none
+				}
 			}
 		}
 	}

@@ -19,25 +19,43 @@ pub enum VideoRepresentation {
 
 pub type PosterFrameFetchHook = fn(dom.URL) !&dom.ImmutableBitmap_
 
+pub struct VideoDimensions {
+pub:
+	width  u32
+	height u32
+}
+
 @[heap]
 pub struct HTMLVideoElementModel {
 pub:
 	media &HTMLMediaElement
 mut:
-	base_url_         dom.URL
-	poster_           ?string
-	poster_frame_     ?&dom.ImmutableBitmap_
-	current_frame_    ?&dom.ImmutableBitmap_
-	video_width_      u32
-	video_height_     u32
-	poster_fetch_hook ?PosterFrameFetchHook
+	base_url_                   dom.URL
+	poster_                     ?string
+	poster_frame_               ?&dom.ImmutableBitmap_
+	current_frame_              ?&dom.ImmutableBitmap_
+	intrinsic_video_dimensions_ ?VideoDimensions
+	natural_dimensions_         ?VideoDimensions
+	poster_fetch_hook           ?PosterFrameFetchHook
 }
 
 pub fn HTMLVideoElementModel.create(media &HTMLMediaElement, base_url dom.URL) &HTMLVideoElementModel {
-	return &HTMLVideoElementModel{
+	mut model := &HTMLVideoElementModel{
 		media: media
 		base_url_: base_url
 	}
+	mut mutable_media := unsafe { &HTMLMediaElement(media) }
+	mutable_media.video_element_model_ = model
+	if track := media.selected_video_track_ {
+		if track.base.pixel_width > 0 && track.base.pixel_height > 0 {
+			model.intrinsic_video_dimensions_ = VideoDimensions{
+				width: track.base.pixel_width
+				height: track.base.pixel_height
+			}
+		}
+	}
+	model.update_natural_dimensions()
+	return model
 }
 
 pub fn html_video_element_model_for_dom_element(element &dom.HTMLVideoElement) &HTMLVideoElementModel {
@@ -76,40 +94,47 @@ pub fn (mut video HTMLVideoElementModel) set_poster(value ?string) {
 pub fn (mut video HTMLVideoElementModel) determine_element_poster_frame() {
 	poster := video.poster_ or {
 		video.poster_frame_ = none
+		video.update_natural_dimensions()
 		return
 	}
 
 	if poster == '' {
 		video.poster_frame_ = none
+		video.update_natural_dimensions()
 		return
 	}
 	url := dom.dom_url_parse(poster, video.base_url_, 'UTF-8') or {
 		video.poster_frame_ = none
+		video.update_natural_dimensions()
 		return
 	}
 	fetch := video.poster_fetch_hook or {
 		video.poster_frame_ = none
+		video.update_natural_dimensions()
 		return
 	}
 
 	frame := fetch(url) or {
 		video.poster_frame_ = none
+		video.update_natural_dimensions()
 		return
 	}
 	video.poster_frame_ = frame
+	video.update_natural_dimensions()
 }
 
 pub fn (mut video HTMLVideoElementModel) set_video_dimensions(width u32, height u32) {
-	video.video_width_ = width
-	video.video_height_ = height
+	video.set_intrinsic_video_dimensions(VideoDimensions{width, height})
 }
 
 pub fn (mut video HTMLVideoElementModel) set_video_width(width u32) {
-	video.video_width_ = width
+	height := if dimensions := video.intrinsic_video_dimensions_ { dimensions.height } else { 0 }
+	video.set_intrinsic_video_dimensions(VideoDimensions{width, height})
 }
 
 pub fn (mut video HTMLVideoElementModel) set_video_height(height u32) {
-	video.video_height_ = height
+	width := if dimensions := video.intrinsic_video_dimensions_ { dimensions.width } else { 0 }
+	video.set_intrinsic_video_dimensions(VideoDimensions{width, height})
 }
 
 pub fn (video &HTMLVideoElementModel) supports_dimension_attributes() bool {
@@ -121,14 +146,14 @@ pub fn (video &HTMLVideoElementModel) video_width() u32 {
 	if video.media.ready_state() == .have_nothing {
 		return 0
 	}
-	return video.video_width_
+	return if dimensions := video.intrinsic_video_dimensions_ { dimensions.width } else { 0 }
 }
 
 pub fn (video &HTMLVideoElementModel) video_height() u32 {
 	if video.media.ready_state() == .have_nothing {
 		return 0
 	}
-	return video.video_height_
+	return if dimensions := video.intrinsic_video_dimensions_ { dimensions.height } else { 0 }
 }
 
 pub fn (mut video HTMLVideoElementModel) set_current_frame(frame ?&dom.ImmutableBitmap_) {
@@ -136,6 +161,63 @@ pub fn (mut video HTMLVideoElementModel) set_current_frame(frame ?&dom.Immutable
 	mut media := video.media
 	mut source := media.ensure_external_content_source()
 	source.update(frame)
+	if current_frame := frame {
+		video.set_intrinsic_video_dimensions(VideoDimensions{
+			width: u32(current_frame.width)
+			height: u32(current_frame.height)
+		})
+	}
+}
+
+fn video_dimensions_equal(left ?VideoDimensions, right ?VideoDimensions) bool {
+	if left == none || right == none {
+		return left == none && right == none
+	}
+	left_value := left or { return false }
+	right_value := right or { return false }
+	return left_value == right_value
+}
+
+pub fn (mut video HTMLVideoElementModel) set_intrinsic_video_dimensions(dimensions ?VideoDimensions) {
+	if video_dimensions_equal(video.intrinsic_video_dimensions_, dimensions) {
+		return
+	}
+	video.intrinsic_video_dimensions_ = dimensions
+	if dimensions != none {
+		mut media := video.media
+		media.queue_a_media_element_task(fn [mut media] () {
+			media.fire_event('resize')
+		})
+	}
+	video.update_natural_dimensions()
+}
+
+pub fn (mut video HTMLVideoElementModel) update_natural_dimensions() {
+	mut dimensions := video.intrinsic_video_dimensions_
+	if video.current_representation() == .poster_frame {
+		if poster := video.poster_frame_ {
+			dimensions = VideoDimensions{
+				width: u32(poster.width)
+				height: u32(poster.height)
+			}
+		}
+	}
+	if video_dimensions_equal(video.natural_dimensions_, dimensions) {
+		return
+	}
+	video.natural_dimensions_ = dimensions
+	if html_element := video.media.associated_element_ {
+		mut node := unsafe { &dom.Element(html_element) }.as_node()
+		node.set_needs_layout_update(.html_video_element_natural_dimensions_changed)
+	}
+}
+
+pub fn (video &HTMLVideoElementModel) natural_media_size() ?VideoDimensions {
+	return video.intrinsic_video_dimensions_
+}
+
+pub fn (video &HTMLVideoElementModel) natural_element_size() ?VideoDimensions {
+	return video.natural_dimensions_
 }
 
 pub fn (video &HTMLVideoElementModel) poster_frame() ?&dom.ImmutableBitmap_ {

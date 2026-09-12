@@ -975,7 +975,8 @@ pub fn (box &VideoBox) natural_size() css.SizeWithAspectRatio {
 	}
 	video := unsafe { &dom.HTMLVideoElement(element) }
 	model := html.html_video_element_model_for_dom_element(video)
-	return size_with_optional_aspect_ratio(CSSPixels.new(int(model.video_width())), CSSPixels.new(int(model.video_height())))
+	dimensions := model.natural_element_size() or { return css.SizeWithAspectRatio{} }
+	return size_with_optional_aspect_ratio(CSSPixels.new(int(dimensions.width)), CSSPixels.new(int(dimensions.height)))
 }
 
 @[heap]
