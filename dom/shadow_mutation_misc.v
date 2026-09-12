@@ -1061,12 +1061,20 @@ pub fn assign_slottables(slot &HTMLSlotElement) {
 	for old_slottable in slot.assigned_nodes_internal() {
 		mut old_node := unsafe { &Node(old_slottable) }
 		old_node.set_assigned_slot(none)
+		if element := old_slottable.as_element() {
+			mut mutable_element := unsafe { &Element(element) }
+			mutable_element.set_needs_style_update(true)
+		}
 	}
 
 	// 4. For each slottable in slottables, set slottable's assigned slot to slot.
 	for slottable in slottables {
 		mut node := unsafe { &Node(slottable) }
 		node.set_assigned_slot(slot)
+		if element := slottable.as_element() {
+			mut mutable_element := unsafe { &Element(element) }
+			mutable_element.set_needs_style_update(true)
+		}
 	}
 
 	// 3. Set slot's assigned nodes to slottables.
