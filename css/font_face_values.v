@@ -1284,7 +1284,6 @@ pub struct CSSFontFaceRule {
 pub mut:
 	style_                  &CSSFontFaceDescriptors = unsafe { nil }
 	css_connected_font_face ?&FontFaceObject
-	loading_state_          CSSStyleSheetLoadingState = .unloaded
 	parent_style_sheet      ?&CSSStyleSheet
 }
 
@@ -1483,17 +1482,9 @@ pub fn (mut rule CSSFontFaceRule) disconnect_font_face() {
 	rule.css_connected_font_face = none
 }
 
-pub fn (mut rule CSSFontFaceRule) set_loading_state(loading_state CSSStyleSheetLoadingState) {
-	rule.loading_state_ = loading_state
-}
-
-pub fn (rule &CSSFontFaceRule) loading_state() CSSStyleSheetLoadingState {
-	return rule.loading_state_
-}
-
 pub fn (mut rule CSSFontFaceRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSheet) {
-	// Boundary: C++ registers CSSFontFaceRule as a critical stylesheet subresource here. CSSStyleSheet currently tracks
-	// CSSRule wrapper objects rather than CSSFontFaceRule objects in this V port.
+	// Font faces resolve relative URLs against their containing sheet, but do not
+	// participate in the sheet's critical-subresource loading state.
 	rule.parent_style_sheet = parent_style_sheet
 }
 
@@ -2441,9 +2432,6 @@ fn (mut face FontFaceObject) begin_url_load() bool {
 	}
 
 	face.status_ = .loading
-	if mut rule := face.css_font_face_rule {
-		rule.set_loading_state(.loading)
-	}
 
 	// AD-HOC: URL-backed fonts must update their containing FontFaceSets just like
 	// BufferSource-backed fonts do while their load is in progress.
@@ -2489,9 +2477,6 @@ fn (mut face FontFaceObject) finish_loading_from_typeface(maybe_typeface ?Platfo
 		face.parsed_font = typeface
 		face.status_ = .loaded
 		face.font_status_promise.resolve(webidl.platform_object_value())
-		if mut rule := face.css_font_face_rule {
-			rule.set_loading_state(.loaded)
-		}
 		if mut computer := face.font_computer() {
 			computer.register_font_face(face)
 		}
@@ -2512,9 +2497,6 @@ fn (mut face FontFaceObject) finish_loading_from_typeface(maybe_typeface ?Platfo
 		// 2. Otherwise, reject font face's [[FontStatusPromise]] with a DOMException named "SyntaxError"/"NetworkError"
 		//    and set font face's status attribute to "error".
 		face.reject_status_promise('Failed to load font')
-		if mut rule := face.css_font_face_rule {
-			rule.set_loading_state(.error)
-		}
 
 		for mut font_face_set in face.containing_sets {
 			font_face_set.failed_fonts_ << face

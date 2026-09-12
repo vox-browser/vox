@@ -95,6 +95,22 @@ fn test_font_face_set_ready_settles_when_all_faces_are_deferred() {
 	assert set.ready().state == .fulfilled
 }
 
+fn test_unused_font_face_does_not_keep_its_stylesheet_loading() {
+	sheet := parse_css_stylesheet_with_parser('@font-face {
+		font-family: DeferredFace;
+		src: url("deferred.woff2");
+		unicode-range: U+41;
+	}', none)
+	assert sheet.loading_state() == .loaded
+
+	mut computer := FontComputer.create()
+	mut set := FontFaceSet.create_for_font_computer(computer)
+	computer.load_fonts_from_css_rules(sheet.css_rules().rules, set)
+	face := set.set_entries()[0]
+	assert face.status() == .unloaded
+	assert sheet.loading_state() == .loaded
+}
+
 fn test_font_face_set_load_filters_faces_by_text_unicode_range() {
 	mut set := FontFaceSet.create()
 	face_a := FontFaceObject.construct_impl('MultiFace', FontFaceSource.from_string('url("missing-a.woff2")'), FontFaceDescriptors{
