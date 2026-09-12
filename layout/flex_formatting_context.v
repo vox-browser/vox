@@ -204,7 +204,10 @@ fn flex_used_basis_is_definite(item &Node, container_state &UsedValues, row_axis
 			return false
 		}
 	}
-	if size.is_intrinsic_sizing_constraint() {
+	// anchor-size() currently computes to Size::none while anchor sizing is
+	// unresolved. Like auto and intrinsic sizing keywords, that is not a
+	// definite flex basis and must not enter the definite-size path.
+	if size.is_none() || size.is_intrinsic_sizing_constraint() {
 		return false
 	}
 	if size.is_length() {

@@ -715,6 +715,17 @@ fn test_flex_content_basis_uses_definite_cross_size_and_aspect_ratio() {
 	assert used_for_id(result, 'item').content_width().to_double() == 80
 }
 
+fn test_anchor_size_flex_basis_is_unresolvable_in_flex_formatting_context() {
+	document := html.parse_document('<!doctype html><style>
+		#flex { display:flex }
+		#basis { flex-basis:anchor-size(--a width, 10px) }
+		#width { flex-basis:auto; width:anchor-size(--a width, 10px) }
+	</style><div id="flex"><div id="basis"></div><div id="width"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'basis').content_width().to_double() == 0
+	assert used_for_id(result, 'width').content_width().to_double() == 0
+}
+
 fn test_column_flex_base_size_is_adjusted_through_natural_aspect_ratio() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-direction:column; width:200px; height:300px; align-items:flex-start }
