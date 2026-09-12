@@ -88,6 +88,9 @@ LANGUAGE_ARTIFACT_FREE_FUNCTIONS = {
     # V string literals already have their runtime representation; this C++
     # template exists only to form a Utf16View over a char16_t array.
     ("StateAndProperties.cpp", "utf16_view"),
+    # BindingsGlue's pointer overload only converts a nullable GC pointer to
+    # the non-null wrapper overload; V optionals narrow directly at the call.
+    ("BindingsGlue.h", "webgl_wrappable"),
 }
 LANGUAGE_ARTIFACT_METHODS = {
     # These are constructor initializer-list and macro-parameter fragments

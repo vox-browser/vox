@@ -142,6 +142,12 @@ class ConsolidatedFunctionTests(unittest.TestCase):
             (("utf16_string_from_gl_string", None),),
         )
 
+    def test_nullable_webgl_wrapper_is_a_language_binding_artifact(self) -> None:
+        self.assertIn(
+            ("BindingsGlue.h", "webgl_wrappable"),
+            audit.LANGUAGE_ARTIFACT_FREE_FUNCTIONS,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -74,6 +74,30 @@ fn genuinely_empty() {
             ],
         )
 
+    def test_webgl_proxy_noops_are_reviewed_upstream_equivalents(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "webgl" / "context_proxy.v"
+            source.parent.mkdir()
+            source.write_text(
+                """
+module webgl
+
+struct WebGLContextProxyBase {}
+
+fn (_ &WebGLContextProxyBase) make_current() {}
+fn (_ &WebGLContextProxyBase) notify_content_will_change() {}
+fn (_ &WebGLContextProxyBase) default_framebuffer() u32 { return 0 }
+fn (_ &WebGLContextProxyBase) default_renderbuffer() u32 { return 0 }
+"""
+            )
+
+            suspicious, verified = audit.trivial_implementation_inventories(
+                Path(directory)
+            )
+
+        self.assertEqual(suspicious, [])
+        self.assertEqual(len(verified), 4)
+
 
 class VFunctionInventoryTests(unittest.TestCase):
     def test_generic_receiver_owner_drops_type_parameters(self) -> None:

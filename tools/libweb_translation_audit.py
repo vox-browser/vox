@@ -76,6 +76,16 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
         ("permissionsapi/permissions.v", "Permissions", "create"),
         # VTTRegion's field defaults are the complete upstream factory body.
         ("webvtt/vtt_region.v", "VTTRegion", "create"),
+        # The remote proxy never owns a local GL context or default targets;
+        # these are the exact upstream compatibility no-ops/constants.
+        ("webgl/context_proxy.v", "WebGLContextProxyBase", "make_current"),
+        (
+            "webgl/context_proxy.v",
+            "WebGLContextProxyBase",
+            "notify_content_will_change",
+        ),
+        ("webgl/context_proxy.v", "WebGLContextProxyBase", "default_framebuffer"),
+        ("webgl/context_proxy.v", "WebGLContextProxyBase", "default_renderbuffer"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "unload_event_start"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "unload_event_end"),
         ("navigationtiming/navigation_timing.v", "PerformanceTiming", "redirect_start"),
