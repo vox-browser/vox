@@ -97,3 +97,19 @@ fn test_custom_element_definition_lookup_uses_explicit_registry() {
 	assert dom.look_up_custom_element_definition(voidptr(first), 'http://www.w3.org/2000/svg', 'x-widget', none) == none
 	assert dom.look_up_custom_element_definition(voidptr(0), 'http://www.w3.org/1999/xhtml', 'x-widget', none) == none
 }
+
+fn test_create_element_retains_and_uses_documents_registry() {
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	mut registry := CustomElementRegistry.create(document)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_custom_element_registry(voidptr(registry))
+	registry.define('x-widget', CustomElementConstructor{ id: 11 }, ElementDefinitionOptions{})!
+
+	element := dom.create_element(document, 'x-widget', 'http://www.w3.org/1999/xhtml', none, none, false)!
+	assert element.custom_element_registry() == voidptr(registry)
+	assert !element.is_defined()
+	assert element.ensure_custom_element_reaction_queue().len == 1
+
+	svg_element := dom.create_element(document, 'circle', 'http://www.w3.org/2000/svg', none, none, false)!
+	assert svg_element.custom_element_registry() == voidptr(registry)
+}

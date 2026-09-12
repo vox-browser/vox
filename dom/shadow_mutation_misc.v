@@ -2855,14 +2855,13 @@ pub fn create_element(document &Document, local_name string, namespace_ ?string,
 	// NOTE: We collapse this into just returning an element where necessary.
 
 	// 2. If registry is "default", then set registry to the result of looking up a custom element registry given document.
-	// The V port's custom element definition set is currently stored on Document.
+	registry := document.custom_element_registry()
 
-	// 3. Let definition be the result of looking up a custom element definition given registry, document, namespace, localName, and is.
-	if definition := document.lookup_custom_element_definition(namespace_, local_name, is_value) {
+	// 3. Let definition be the result of looking up a custom element definition given registry, namespace, localName, and is.
+	if definition := look_up_custom_element_definition(registry, namespace_, local_name, is_value) {
 		// 4. If definition is non-null, and definition's name is not equal to its local name (i.e., definition represents a customized built-in element), then:
 		if definition.name() != definition.local_name() {
-			mut element := create_element_internal(document, local_name, namespace_html_, prefix,
-				.undefined_, is_value)
+			mut element := create_element_internal(document, local_name, namespace_html_, prefix, .undefined_, is_value, registry)
 			if synchronous_custom_elements_flag {
 				element.upgrade_element(definition) or {
 					// If this step threw an exception, report it and set result's custom element state to "failed".
@@ -2879,8 +2878,7 @@ pub fn create_element(document &Document, local_name string, namespace_ ?string,
 		// The C++ implementation constructs through the JavaScript constructor for synchronous
 		// autonomous custom elements. Constructor execution is outside this V DOM port, so the
 		// translated path creates the element and performs the available upgrade bookkeeping.
-		mut element := create_element_internal(document, local_name, namespace_html_, prefix,
-			.undefined_, none)
+		mut element := create_element_internal(document, local_name, namespace_html_, prefix, .undefined_, none, registry)
 		if synchronous_custom_elements_flag {
 			element.upgrade_element(definition) or {
 				// If any of these steps threw an exception, report it and set result to an HTMLUnknownElement in the failed state.
@@ -2897,6 +2895,7 @@ pub fn create_element(document &Document, local_name string, namespace_ ?string,
 				}
 				assign_unique_node_id(fallback_element)
 				fallback_element.set_custom_element_state(.failed)
+				fallback_element.set_custom_element_registry(registry)
 				return fallback_element
 			}
 		} else {
@@ -2909,8 +2908,7 @@ pub fn create_element(document &Document, local_name string, namespace_ ?string,
 	// 1. Let interface be the element interface for localName and namespace.
 	// 2. Set result to the result of creating an element internal given document, interface, localName, namespace,
 	//    prefix, "uncustomized", is, and registry.
-	mut element := create_element_internal(document, local_name, namespace_, prefix, .uncustomized,
-		is_value)
+	mut element := create_element_internal(document, local_name, namespace_, prefix, .uncustomized, is_value, registry)
 
 	// 3. If namespace is the HTML namespace, and either localName is a valid custom element name or is is non-null,
 	//    then set result's custom element state to "undefined".
@@ -2926,7 +2924,7 @@ fn report_custom_element_upgrade_exception(definition &CustomElementDefinition, 
 }
 
 // https://dom.spec.whatwg.org/#create-an-element-internal
-pub fn create_element_internal(document &Document, local_name string, namespace_ ?string, prefix ?string, state CustomElementState, is_value ?string) &Element {
+pub fn create_element_internal(document &Document, local_name string, namespace_ ?string, prefix ?string, state CustomElementState, is_value ?string, registry voidptr) &Element {
 	qualified_name := QualifiedName{
 		local_name:            local_name
 		prefix_:               prefix
@@ -2949,6 +2947,7 @@ pub fn create_element_internal(document &Document, local_name string, namespace_
 	// identity operator (Node `==` compares unique_id_). (Element.new already assigns it for the
 	// non-HTML fallback; re-assigning is idempotent since the id is derived from the pointer.)
 	assign_unique_node_id(element)
+	element.set_custom_element_registry(registry)
 	element.set_custom_element_state(state)
 	element.is_value = is_value
 	return element
