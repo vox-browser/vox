@@ -92,3 +92,41 @@ fn test_wrapper_world_weak_value_cache_surfaces() {
 	nested.clear()
 	assert nested.get(world) == none
 }
+
+fn test_hintless_wrapper_diagnostics_only_record_new_main_world_realms() {
+	first_realm := &html.ScriptingRealm{}
+	second_realm := &html.ScriptingRealm{}
+	mut world := WrapperWorld.create(.main)
+	register_wrapper_world_for_realm(first_realm, world)
+	register_wrapper_world_for_realm(second_realm, world)
+	mut first := Wrappable.create('DiagnosticInterface', [])
+	_ = wrap(mut world, first_realm, mut first)
+	_ = wrap(mut world, first_realm, mut first)
+	assert hintless_main_world_wrapper_realm_count('DiagnosticInterface') == 1
+
+	mut second := Wrappable.create('DiagnosticInterface', [])
+	_ = wrap(mut world, second_realm, mut second)
+	assert hintless_main_world_wrapper_realm_count('DiagnosticInterface') == 2
+
+	mut node := Wrappable.create('DiagnosticNode', ['Node'])
+	_ = wrap(mut world, second_realm, mut node)
+	assert hintless_main_world_wrapper_realm_count('DiagnosticNode') == 0
+}
+
+fn test_gc_allocated_wrappable_finalization_drops_non_main_preservation_entries() {
+	realm := &html.ScriptingRealm{}
+	mut world := WrapperWorld.create(.extension)
+	register_wrapper_world_for_realm(realm, world)
+	mut implementation := GCAllocatedWrappable.create('FinalizedInterface', [])
+	wrapper := wrap(mut world, realm, mut implementation.Wrappable)
+	preserve_wrapper(mut implementation.Wrappable, wrapper)
+	assert wrapper_is_preserved(wrapper)
+	entries := non_main_world_preserved_wrappers()[wrappable_key(implementation.Wrappable)] or {
+		panic('missing preservation entry')
+	}
+	assert entries.len == 1
+	implementation.finalize()
+	assert !wrapper_is_preserved(wrapper)
+	assert wrappable_key(implementation.Wrappable) !in non_main_world_preserved_wrappers()
+	world.finalize(false)
+}

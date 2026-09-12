@@ -9,8 +9,10 @@ import dom
 import html
 
 __global (
-	realm_wrapper_worlds      = map[u64]&WrapperWorld{}
-	agent_main_wrapper_worlds = map[u64]&WrapperWorld{}
+	realm_wrapper_worlds                     = map[u64]&WrapperWorld{}
+	agent_main_wrapper_worlds                = map[u64]&WrapperWorld{}
+	hintless_main_world_wrapper_realms_state = map[string][]u64{}
+	non_main_world_preserved_wrappers_state  = map[u64][]PreservedWrapper{}
 )
 
 pub enum WrapperWorldType {
@@ -31,8 +33,37 @@ mut:
 	main_world_wrapper_                    ?&PlatformObject
 	main_world_                            ?&WrapperWorld
 	main_world_wrapper_is_preserved_       bool
-	non_main_world_preserved_wrappers_     map[u64]&PlatformObject
 	has_non_main_world_preserved_wrappers_ bool
+}
+
+pub struct PreservedWrapper {
+pub:
+	world   &WrapperWorld
+	wrapper &PlatformObject
+}
+
+fn hintless_main_world_wrapper_realms_by_interface() map[string][]u64 {
+	return hintless_main_world_wrapper_realms_state
+}
+
+fn log_hintless_main_world_wrapper_realm_if_new(wrappable &Wrappable, realm &html.ScriptingRealm) {
+	realm_address := u64(voidptr(realm))
+	mut seen_realms := hintless_main_world_wrapper_realms_state[wrappable.interface_name_] or {
+		[]u64{}
+	}
+	if realm_address in seen_realms {
+		return
+	}
+	seen_realms << realm_address
+	hintless_main_world_wrapper_realms_state[wrappable.interface_name_] = seen_realms
+}
+
+fn non_main_world_preserved_wrappers() map[u64][]PreservedWrapper {
+	return non_main_world_preserved_wrappers_state
+}
+
+pub fn hintless_main_world_wrapper_realm_count(interface_name string) int {
+	return hintless_main_world_wrapper_realms_by_interface()[interface_name].len
 }
 
 pub fn Wrappable.create(interface_name string, inherited_interfaces []string) &Wrappable {
@@ -166,6 +197,20 @@ pub fn (mut wrappable GCAllocatedWrappable) clear_preserved_wrappers(world &Wrap
 	wrappable.Wrappable.clear_preserved_wrappers(world)
 }
 
+pub fn (mut wrappable GCAllocatedWrappable) finalize() {
+	if !wrappable.has_non_main_world_preserved_wrappers() {
+		return
+	}
+	key := wrappable_key(wrappable.Wrappable)
+	entries := non_main_world_preserved_wrappers_state[key] or { return }
+	for entry in entries {
+		mut world := unsafe { &WrapperWorld(entry.world) }
+		world.unregister_preserved_wrappable(wrappable.Wrappable)
+	}
+	non_main_world_preserved_wrappers_state.delete(key)
+	wrappable.set_has_non_main_world_preserved_wrappers(false)
+}
+
 @[heap]
 pub struct WrapperWorld {
 pub:
@@ -233,6 +278,17 @@ pub fn (mut world WrapperWorld) register_preserved_wrappable(wrappable &Wrappabl
 	}
 }
 
+fn (mut world WrapperWorld) unregister_preserved_wrappable(wrappable &Wrappable) {
+	world.preserved_wrappables_.delete(wrappable_key(wrappable))
+}
+
+fn verify_cache_entry(world &WrapperWorld, wrappable &Wrappable, wrapper &PlatformObject) {
+	registered_world := host_defined_wrapper_world(wrapper.realm())
+	assert voidptr(registered_world) == voidptr(world)
+	implementation := wrappable_impl_from(wrapper) or { panic('wrapper has no implementation') }
+	assert voidptr(implementation) == voidptr(wrappable)
+}
+
 pub fn (world &WrapperWorld) wrapper_for(wrappable &Wrappable, realm &html.ScriptingRealm) ?&PlatformObject {
 	if world.is_main_world() {
 		return wrappable.cached_main_world_wrapper_for(world)
@@ -244,8 +300,7 @@ pub fn (world &WrapperWorld) wrapper_for(wrappable &Wrappable, realm &html.Scrip
 
 pub fn (mut world WrapperWorld) set_wrapper(mut wrappable Wrappable, wrapper &PlatformObject) {
 	assert !world.is_detached()
-	implementation := wrapper.wrappable_impl() or { panic('wrapper has no implementation') }
-	assert implementation == &wrappable
+	verify_cache_entry(world, wrappable, wrapper)
 	if world.is_main_world() {
 		wrappable.set_cached_main_world_wrapper(wrapper, world)
 		return
@@ -262,6 +317,7 @@ pub fn (mut world WrapperWorld) set_wrapper(mut wrappable Wrappable, wrapper &Pl
 }
 
 pub fn (mut world WrapperWorld) clear_wrapper(mut wrappable Wrappable, wrapper &PlatformObject) {
+	verify_cache_entry(world, wrappable, wrapper)
 	if world.is_main_world() {
 		wrappable.clear_cached_main_world_wrapper(wrapper)
 		return
@@ -285,6 +341,11 @@ pub fn (mut world WrapperWorld) detach() {
 	}
 	world.preserved_wrappables_.clear()
 	world.wrappers_.clear()
+}
+
+pub fn (world &WrapperWorld) finalize(collecting_everything bool) {
+	assert world.is_main_world() || world.is_detached() || world.preserved_wrappables_.len == 0
+		|| collecting_everything
 }
 
 pub struct WrapperWorldWeakValueCache[T] {
@@ -384,6 +445,10 @@ pub fn wrap(mut world WrapperWorld, preferred_realm &html.ScriptingRealm, mut wr
 		}
 	}
 	wrapper := wrappable.create_wrapper(actual_realm)
+	if world.is_main_world() && !wrappable.implements_interface('Node')
+		&& wrappable.relevant_global_impl() == none {
+		log_hintless_main_world_wrapper_realm_if_new(wrappable, actual_realm)
+	}
 	world.set_wrapper(mut wrappable, wrapper)
 	return wrapper
 }
@@ -416,15 +481,18 @@ pub fn preserve_wrapper(mut wrappable Wrappable, wrapper &PlatformObject) {
 		wrappable.main_world_wrapper_is_preserved_ = true
 		return
 	}
-	key := u64(voidptr(world))
-	if existing := wrappable.non_main_world_preserved_wrappers_[key] {
-		if existing == wrapper {
+	key := wrappable_key(wrappable)
+	mut entries := non_main_world_preserved_wrappers_state[key] or { []PreservedWrapper{} }
+	for entry in entries {
+		if voidptr(entry.wrapper) == voidptr(wrapper) && voidptr(entry.world) == voidptr(world) {
 			return
 		}
 	}
-	unsafe {
-		wrappable.non_main_world_preserved_wrappers_[key] = wrapper
+	entries << PreservedWrapper{
+		world: world
+		wrapper: wrapper
 	}
+	non_main_world_preserved_wrappers_state[key] = entries
 	wrappable.has_non_main_world_preserved_wrappers_ = true
 	mut mutable_world := unsafe { &WrapperWorld(world) }
 	mutable_world.register_preserved_wrappable(wrappable)
@@ -437,14 +505,34 @@ pub fn wrapper_is_preserved(wrapper &PlatformObject) bool {
 		cached := wrappable.main_world_wrapper_ or { return false }
 		return wrappable.main_world_wrapper_is_preserved_ && cached == wrapper
 	}
-	cached := wrappable.non_main_world_preserved_wrappers_[u64(voidptr(world))] or { return false }
-	return cached == wrapper
+	if !wrappable.has_non_main_world_preserved_wrappers_ {
+		return false
+	}
+	entries := non_main_world_preserved_wrappers()[wrappable_key(wrappable)] or { return false }
+	for entry in entries {
+		if voidptr(entry.wrapper) == voidptr(wrapper) && voidptr(entry.world) == voidptr(world) {
+			return true
+		}
+	}
+	return false
 }
 
 pub fn (mut wrappable Wrappable) clear_preserved_wrappers(world &WrapperWorld) {
 	assert !world.is_main_world()
-	wrappable.non_main_world_preserved_wrappers_.delete(u64(voidptr(world)))
-	wrappable.has_non_main_world_preserved_wrappers_ = wrappable.non_main_world_preserved_wrappers_.len > 0
+	key := wrappable_key(wrappable)
+	entries := non_main_world_preserved_wrappers_state[key] or { return }
+	mut remaining := []PreservedWrapper{}
+	for entry in entries {
+		if voidptr(entry.world) != voidptr(world) {
+			remaining << entry
+		}
+	}
+	if remaining.len == 0 {
+		non_main_world_preserved_wrappers_state.delete(key)
+		wrappable.has_non_main_world_preserved_wrappers_ = false
+	} else {
+		non_main_world_preserved_wrappers_state[key] = remaining
+	}
 }
 
 pub fn cache_global_object_wrapper(realm &html.ScriptingRealm) {
