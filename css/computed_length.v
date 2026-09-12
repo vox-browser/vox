@@ -137,8 +137,10 @@ pub fn (c &ComputedProperties) length_resolution_context() LengthResolutionConte
 	context.viewport_rect = c.viewport_rect_
 	context.font_metrics = computed_interpolation_font_metrics_for_size(font_px)
 	context.font_metrics.line_height = c.line_height()
+	context.font_metrics_depend_on_viewport_metrics = c.font_metrics_depend_on_viewport_metrics()
 	context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_font_px)
 	context.root_font_metrics.line_height = CSSPixels.nearest_value_for(c.root_line_height_px_)
+	context.root_font_metrics_depend_on_viewport_metrics = c.root_font_metrics_depend_on_viewport_metrics_
 	return context
 }
 

@@ -1410,6 +1410,21 @@ fn property_affects_computed_font_list(id PropertyID) bool {
 		.font_variation_settings]
 }
 
+fn property_affects_font_metrics(id PropertyID) bool {
+	return id in [.font_size, .line_height]
+}
+
+fn font_size_value_depends_on_inherited_font_size(value StyleValue) bool {
+	return value is PercentageStyleValue
+		|| (value is CalculatedStyleValue && value.contains_percentage())
+		|| value.to_keyword() in [.larger, .smaller, .math]
+}
+
+fn line_height_value_depends_on_computed_font_size(value StyleValue) bool {
+	return value is PercentageStyleValue
+		|| (value is CalculatedStyleValue && value.contains_percentage())
+}
+
 // --- ComputedProperties ---
 pub enum ComputedPropertyInheritance {
 	no
@@ -1440,6 +1455,8 @@ pub mut:
 	cached_first_available_computed_font_   ?&PlatformFont
 	line_height_                            ?CSSPixels
 	attempted_pseudo_class_matches_         PseudoClassBitmap
+	depends_on_viewport_metrics_            bool
+	font_metrics_depend_on_viewport_metrics_ bool
 	// Lengths whose computed value remains viewport- or root-font-relative
 	// need the same style-computation context when Layout resolves their used
 	// value. LibWeb carries that context through the layout node; retaining it
@@ -1447,6 +1464,7 @@ pub mut:
 	viewport_rect_       CSSPixelRect
 	root_font_size_px_   f64 = 16.0
 	root_line_height_px_ f64 = 19.2
+	root_font_metrics_depend_on_viewport_metrics_ bool
 
 	// Layout::NodeWithStyle resolves these values once in apply_style(). Keeping
 	// the translated ComputedValues slots on the retained object avoids decoding
@@ -1686,6 +1704,7 @@ pub fn (c &ComputedProperties) clone_for_anonymous_block() &ComputedProperties {
 	clone.viewport_rect_ = c.viewport_rect_
 	clone.root_font_size_px_ = c.root_font_size_px_
 	clone.root_line_height_px_ = c.root_line_height_px_
+	clone.root_font_metrics_depend_on_viewport_metrics_ = c.root_font_metrics_depend_on_viewport_metrics_
 	ensure_computed_interpolation_inherited_cache()
 	for index, inherited in computed_interpolation_inherited_cache {
 		if inherited == 0 {
@@ -1728,6 +1747,7 @@ pub fn (mut c ComputedProperties) inherit_from_for_layout(source &ComputedProper
 	c.viewport_rect_ = source.viewport_rect_
 	c.root_font_size_px_ = source.root_font_size_px_
 	c.root_line_height_px_ = source.root_line_height_px_
+	c.root_font_metrics_depend_on_viewport_metrics_ = source.root_font_metrics_depend_on_viewport_metrics_
 	for property_id in computed_interpolation_longhand_property_ids() {
 		if !computed_interpolation_is_inherited_property(property_id) {
 			continue
@@ -1827,6 +1847,22 @@ pub fn (c &ComputedProperties) is_property_important(property_id PropertyID) boo
 	computed_interpolation_verify_longhand_property(property_id)
 	index := int(property_id) - int(first_longhand_property_id())
 	return c.property_important_[index / 8] & (u8(1) << (index % 8)) != 0
+}
+
+pub fn (c &ComputedProperties) depends_on_viewport_metrics() bool {
+	return c.depends_on_viewport_metrics_
+}
+
+pub fn (c &ComputedProperties) font_metrics_depend_on_viewport_metrics() bool {
+	return c.font_metrics_depend_on_viewport_metrics_
+}
+
+pub fn (mut c ComputedProperties) set_depends_on_viewport_metrics() {
+	c.depends_on_viewport_metrics_ = true
+}
+
+pub fn (mut c ComputedProperties) set_font_metrics_depend_on_viewport_metrics() {
+	c.font_metrics_depend_on_viewport_metrics_ = true
 }
 
 pub fn (c &ComputedProperties) is_property_inherited(property_id PropertyID) bool {
@@ -9620,6 +9656,7 @@ pub mut:
 	document_                              &dom.Document = unsafe { nil }
 	default_font_metrics                   LengthFontMetrics = LengthFontMetrics.default()
 	root_element_font_metrics              LengthFontMetrics = LengthFontMetrics.default()
+	root_element_font_metrics_depend_on_viewport_metrics bool
 	cached_font_computation_context        ?ComputationContext
 	cached_line_height_computation_context ?ComputationContext
 	cached_generic_computation_context     ?ComputationContext
@@ -9753,6 +9790,7 @@ pub fn (s &StyleComputer) create_document_style() &ComputedProperties {
 	style.viewport_rect_ = s.viewport_rect_
 	style.root_font_size_px_ = s.root_element_font_metrics.font_size.to_double()
 	style.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
+	style.root_font_metrics_depend_on_viewport_metrics_ = s.root_element_font_metrics_depend_on_viewport_metrics
 	for property_id in computed_interpolation_longhand_property_ids() {
 		style.set_property_without_modifying_flags(property_id, computed_interpolation_property_initial_value(property_id))
 	}
@@ -9877,7 +9915,7 @@ fn is_monospace(value &dom.StyleValue) bool {
 	return values.len == 1 && values[0].to_keyword() == .monospace
 }
 
-pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties) ?&dom.StyleValue {
+pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.AbstractElement, mut cascaded_properties CascadedProperties, depends_on_viewport_metrics &bool) ?&dom.StyleValue {
 	font_family := cascaded_properties.property(.font_family) or { return none }
 	if !is_monospace(font_family) {
 		return none
@@ -9893,6 +9931,7 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 
 	default_monospace_font_size := CSSPixels.nearest_value_for(13)
 	mut current_size := default_monospace_font_size
+	mut current_size_depends_on_viewport_metrics := false
 	for index := ancestors.len - 1; index >= 0; index-- {
 		ancestor := ancestors[index]
 		dom_cascaded := ancestor.cascaded_properties() or { continue }
@@ -9903,6 +9942,7 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 		}
 		if keyword in [.initial, .unset] {
 			current_size = default_monospace_font_size
+			current_size_depends_on_viewport_metrics = false
 			continue
 		}
 		if keyword == .inherit || keyword == .math {
@@ -9910,6 +9950,7 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 		}
 		if absolute_size := computed_interpolation_keyword_to_absolute_size(keyword) {
 			current_size = StyleComputer.absolute_size_mapping(absolute_size, default_monospace_font_size)
+			current_size_depends_on_viewport_metrics = false
 			continue
 		}
 		if relative_size := computed_interpolation_keyword_to_relative_size(keyword) {
@@ -9924,20 +9965,32 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 			continue
 		}
 		mut font_metrics := computed_interpolation_font_metrics_for_size(current_size)
+		mut inherited_font_metrics_depend_on_viewport_metrics := false
 		if parent := ancestor.element_to_inherit_style_from() {
 			if dom_computed := parent.computed_properties() {
 				if computed := computed_properties_from_dom(dom_computed) {
 					font_metrics.line_height = computed.line_height()
+					inherited_font_metrics_depend_on_viewport_metrics = computed.font_metrics_depend_on_viewport_metrics()
 				}
 			}
 		}
-		current_size = length.to_px(LengthResolutionContext{
+		mut did_resolve_viewport_relative_length := false
+		mut resolution_context := LengthResolutionContext{
 			viewport_rect: s.viewport_rect_
 			font_metrics: font_metrics
 			root_font_metrics: s.root_element_font_metrics
-		})
+			font_metrics_depend_on_viewport_metrics: current_size_depends_on_viewport_metrics
+				|| inherited_font_metrics_depend_on_viewport_metrics
+			root_font_metrics_depend_on_viewport_metrics: s.root_element_font_metrics_depend_on_viewport_metrics
+		}
+		resolution_context.set_did_resolve_viewport_relative_length(&did_resolve_viewport_relative_length)
+		current_size = length.to_px(resolution_context)
+		current_size_depends_on_viewport_metrics = did_resolve_viewport_relative_length
 	}
 
+	unsafe {
+		*depends_on_viewport_metrics = current_size_depends_on_viewport_metrics
+	}
 	return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_css_px(current_size))))
 }
 
@@ -10027,13 +10080,23 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 
 	mut result := map[PropertyID]&dom.StyleValue{}
 	for property_id, value in specified_values {
+		mut computation_context := s.get_computation_context_for_property(property_id,
+			computed_properties, abstract_element)
+		computation_context.reset_viewport_metric_dependency_tracking()
 		computed_value := StyleComputer.compute_value_of_property(property_id, value, fn [specified_values, computed_properties] (id PropertyID) &dom.StyleValue {
 			return specified_values[id] or {
 				computed_properties.property(id, .no) or {
 					computed_interpolation_property_initial_value(id)
 				}
 			}
-		}, s.get_computation_context_for_property(property_id, computed_properties, abstract_element), 1.0)
+		}, computation_context, 1.0)
+		if computation_context.depends_on_viewport_metrics() {
+			mut mutable_properties := unsafe { &ComputedProperties(computed_properties) }
+			mutable_properties.set_depends_on_viewport_metrics()
+			if property_affects_font_metrics(property_id) {
+				mutable_properties.set_font_metrics_depend_on_viewport_metrics()
+			}
+		}
 		result[property_id] = computed_value
 	}
 	return result
@@ -10108,9 +10171,16 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	properties.viewport_rect_ = s.viewport_rect_
 	properties.root_font_size_px_ = s.root_element_font_metrics.font_size.to_double()
 	properties.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
-	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut cascaded_properties)
+	properties.root_font_metrics_depend_on_viewport_metrics_ = s.root_element_font_metrics_depend_on_viewport_metrics
+	mut recascaded_font_size_depends_on_viewport_metrics := false
+	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut cascaded_properties,
+		&recascaded_font_size_depends_on_viewport_metrics)
 	if font_size := recascaded_font_size {
 		properties.set_property(.font_size, font_size, .no, .no)
+		if recascaded_font_size_depends_on_viewport_metrics {
+			properties.set_depends_on_viewport_metrics()
+			properties.set_font_metrics_depend_on_viewport_metrics()
+		}
 	}
 	// Parent computed style to inherit from, bridged from the DOM-side placeholder. Available only if the
 	// inheritance source element has already had its (bridged) computed style stored.
@@ -10185,6 +10255,10 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 				if inherited_value := src.property(property_id, .no) {
 					value = inherited_value
 				}
+				if property_affects_font_metrics(property_id)
+					&& src.font_metrics_depend_on_viewport_metrics() {
+					properties.set_font_metrics_depend_on_viewport_metrics()
+				}
 			}
 			requires_computation = property_requires_computation_with_inherited_value(property_id)
 			if animated_inherit := StyleComputer.get_animated_inherit_value(property_id, abstract_element) {
@@ -10203,14 +10277,23 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		}
 
 		style_value := value or { continue }
+		mut computation_context := s.get_computation_context_for_property(property_id,
+			properties, abstract_element)
+		computation_context.reset_viewport_metric_dependency_tracking()
 		computed_value := if requires_computation {
 			StyleComputer.compute_value_of_property(property_id, style_value, fn [properties] (id PropertyID) &dom.StyleValue {
 				return properties.property(id, .no) or {
 					computed_interpolation_property_initial_value(id)
 				}
-			}, s.get_computation_context_for_property(property_id, properties, abstract_element), 1.0)
+			}, computation_context, 1.0)
 		} else {
 			style_value
+		}
+		if computation_context.depends_on_viewport_metrics() {
+			properties.set_depends_on_viewport_metrics()
+			if property_affects_font_metrics(property_id) {
+				properties.set_font_metrics_depend_on_viewport_metrics()
+			}
 		}
 		properties.set_property_without_modifying_flags(property_id, computed_value)
 		if can_reuse_default_computed_value {
@@ -10224,8 +10307,10 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	if abstract_element.pseudo_element() == none && abstract_element.element().is_html_element() && abstract_element.element().local_name().to_lower() == 'html' {
 		mut mutable_computer := unsafe { &StyleComputer(s) }
 		mutable_computer.root_element_font_metrics = s.calculate_root_element_font_metrics(properties)
+		mutable_computer.root_element_font_metrics_depend_on_viewport_metrics = properties.font_metrics_depend_on_viewport_metrics()
 		properties.root_font_size_px_ = mutable_computer.root_element_font_metrics.font_size.to_double()
 		properties.root_line_height_px_ = mutable_computer.root_element_font_metrics.line_height.to_double()
+		properties.root_font_metrics_depend_on_viewport_metrics_ = mutable_computer.root_element_font_metrics_depend_on_viewport_metrics
 	}
 
 	// Compute the value of custom properties.
@@ -10553,13 +10638,21 @@ pub fn (s &StyleComputer) compute_property_values(mut computed_properties Comput
 		specified_value := computed_properties.property(property_id, .no) or {
 			computed_interpolation_property_initial_value(property_id)
 		}
-		computation_context := s.get_computation_context_for_property(property_id, computed_properties, abstract_element)
+		mut computation_context := s.get_computation_context_for_property(property_id,
+			computed_properties, abstract_element)
+		computation_context.reset_viewport_metric_dependency_tracking()
 		computed_value := StyleComputer.compute_value_of_property(property_id, specified_value, fn [computed_properties] (id PropertyID) &dom.StyleValue {
 			return computed_properties.property(id, .no) or {
 				computed_interpolation_property_initial_value(id)
 			}
 		}, computation_context, 1.0)
 		computed_properties.set_property_without_modifying_flags(property_id, computed_value)
+		if computation_context.depends_on_viewport_metrics() {
+			computed_properties.set_depends_on_viewport_metrics()
+			if property_affects_font_metrics(property_id) {
+				computed_properties.set_font_metrics_depend_on_viewport_metrics()
+			}
+		}
 	}
 }
 
@@ -10745,6 +10838,17 @@ pub fn StyleComputer.compute_value_of_property(property_id PropertyID, specified
 				0
 			})
 			inheritance_parent := style_computation_inheritance_parent(computation_context)
+			if font_size_value_depends_on_inherited_font_size(typed_absolutized_value) {
+				if parent := inheritance_parent {
+					if dom_computed := parent.computed_properties() {
+						if inherited := computed_properties_from_dom(dom_computed) {
+							if inherited.font_metrics_depend_on_viewport_metrics() {
+								computation_context.length_resolution_context.record_viewport_relative_length_resolution()
+							}
+						}
+					}
+				}
+			}
 			StyleComputer.compute_font_size(absolutized_value, computed_math_depth, inheritance_parent)
 		}
 		.font_style {
@@ -13463,6 +13567,16 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 				viewport_rect: s.viewport_rect_
 				font_metrics: font_metrics
 				root_font_metrics: s.root_element_font_metrics
+				font_metrics_depend_on_viewport_metrics: if current := abstract_element {
+					if parent := current.element_to_inherit_style_from() {
+						if dom_computed := parent.computed_properties() {
+							if inherited := computed_properties_from_dom(dom_computed) {
+								inherited.font_metrics_depend_on_viewport_metrics()
+							} else { false }
+						} else { false }
+					} else { false }
+				} else { false }
+				root_font_metrics_depend_on_viewport_metrics: s.root_element_font_metrics_depend_on_viewport_metrics
 			}
 			abstract_element: abstract_element
 		}
@@ -13521,6 +13635,20 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 			viewport_rect: s.viewport_rect_
 			font_metrics: font_metrics
 			root_font_metrics: root_font_metrics
+			font_metrics_depend_on_viewport_metrics: computed_properties.font_metrics_depend_on_viewport_metrics()
+			root_font_metrics_depend_on_viewport_metrics: if root := s.document_.document_element() {
+				if current := abstract_element {
+					if voidptr(current.element()) == voidptr(root) {
+						computed_properties.font_metrics_depend_on_viewport_metrics()
+					} else {
+						s.root_element_font_metrics_depend_on_viewport_metrics
+					}
+				} else {
+					s.root_element_font_metrics_depend_on_viewport_metrics
+				}
+			} else {
+				s.root_element_font_metrics_depend_on_viewport_metrics
+			}
 		}
 		abstract_element: abstract_element
 	}

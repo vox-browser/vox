@@ -34,6 +34,7 @@ fn length_resolution_context_from_layout_node(layout_node &dom.LayoutNode) ?Leng
 	if computed := computed_properties_for_layout_node(layout_node) {
 		context.font_metrics = computed_interpolation_font_metrics_for_size(computed.font_size())
 		context.font_metrics.line_height = computed.line_height()
+		context.font_metrics_depend_on_viewport_metrics = computed.font_metrics_depend_on_viewport_metrics()
 	}
 	if root := dom_node.document().document_element() {
 		root_abstract := dom.AbstractElement.new(root, none)
@@ -42,6 +43,7 @@ fn length_resolution_context_from_layout_node(layout_node &dom.LayoutNode) ?Leng
 				context.root_font_metrics =
 					computed_interpolation_font_metrics_for_size(root_computed.font_size())
 				context.root_font_metrics.line_height = root_computed.line_height()
+				context.root_font_metrics_depend_on_viewport_metrics = root_computed.font_metrics_depend_on_viewport_metrics()
 			}
 		}
 	}
@@ -68,6 +70,7 @@ pub fn LengthResolutionContext.for_element(element &dom.AbstractElement) LengthR
 			context.font_metrics =
 				computed_interpolation_font_metrics_for_size(computed.font_size())
 			context.font_metrics.line_height = computed.line_height()
+			context.font_metrics_depend_on_viewport_metrics = computed.font_metrics_depend_on_viewport_metrics()
 		}
 	}
 	if root := element.document().document_element() {
@@ -77,6 +80,7 @@ pub fn LengthResolutionContext.for_element(element &dom.AbstractElement) LengthR
 				context.root_font_metrics =
 					computed_interpolation_font_metrics_for_size(root_computed.font_size())
 				context.root_font_metrics.line_height = root_computed.line_height()
+				context.root_font_metrics_depend_on_viewport_metrics = root_computed.font_metrics_depend_on_viewport_metrics()
 			}
 		}
 	}

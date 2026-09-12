@@ -115,9 +115,19 @@ pub fn (c Color) serialize() string {
 
 pub struct ComputationContext {
 pub mut:
-	length_resolution_context LengthResolutionContext = LengthResolutionContext.default()
-	color_scheme              ?PreferredColorScheme
-	abstract_element          ?dom.AbstractElement
+	length_resolution_context            LengthResolutionContext = LengthResolutionContext.default()
+	color_scheme                         ?PreferredColorScheme
+	abstract_element                     ?dom.AbstractElement
+	did_resolve_viewport_relative_length bool
+}
+
+pub fn (mut context ComputationContext) reset_viewport_metric_dependency_tracking() {
+	context.did_resolve_viewport_relative_length = false
+	context.length_resolution_context.set_did_resolve_viewport_relative_length(&context.did_resolve_viewport_relative_length)
+}
+
+pub fn (context ComputationContext) depends_on_viewport_metrics() bool {
+	return context.did_resolve_viewport_relative_length
 }
 
 pub enum PerformTypeCheck {

@@ -143,6 +143,8 @@ pub fn LengthResolutionContext.for_computed_properties(values &ComputedPropertie
 		viewport_rect: values.viewport_rect_
 		font_metrics: font_metrics
 		root_font_metrics: root_font_metrics
+		font_metrics_depend_on_viewport_metrics: values.font_metrics_depend_on_viewport_metrics()
+		root_font_metrics_depend_on_viewport_metrics: values.root_font_metrics_depend_on_viewport_metrics_
 	}
 }
 

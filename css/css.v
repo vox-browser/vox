@@ -1785,9 +1785,12 @@ pub fn LengthFontMetrics.default() LengthFontMetrics {
 
 pub struct LengthResolutionContext {
 pub mut:
-	viewport_rect     CSSPixelRect
-	font_metrics      LengthFontMetrics
-	root_font_metrics LengthFontMetrics
+	viewport_rect                                CSSPixelRect
+	font_metrics                                 LengthFontMetrics
+	root_font_metrics                            LengthFontMetrics
+	font_metrics_depend_on_viewport_metrics      bool
+	root_font_metrics_depend_on_viewport_metrics bool
+	did_resolve_viewport_relative_length         ?&bool
 }
 
 pub fn LengthResolutionContext.default() LengthResolutionContext {
@@ -1805,6 +1808,39 @@ pub fn LengthResolutionContext.for_document(document &dom.Document) LengthResolu
 
 pub fn LengthResolutionContext.for_layout_node(node &dom.LayoutNode) LengthResolutionContext {
 	return length_resolution_context_from_layout_node(node) or { LengthResolutionContext.default() }
+}
+
+pub fn (mut context LengthResolutionContext) set_did_resolve_viewport_relative_length(flag &bool) {
+	unsafe {
+		context.did_resolve_viewport_relative_length = flag
+	}
+}
+
+pub fn (context LengthResolutionContext) viewport_metric_dependency_flag() ?&bool {
+	return context.did_resolve_viewport_relative_length
+}
+
+pub fn (context LengthResolutionContext) record_viewport_relative_length_resolution() {
+	flag := context.did_resolve_viewport_relative_length or { return }
+	unsafe {
+		*flag = true
+	}
+}
+
+pub fn (context LengthResolutionContext) record_font_relative_length_resolution(unit LengthUnit) {
+	if context.did_resolve_viewport_relative_length == none {
+		return
+	}
+	if unit in [.rem, .rex, .rcap, .rch, .ric, .rlh] {
+		if context.root_font_metrics_depend_on_viewport_metrics {
+			context.record_viewport_relative_length_resolution()
+		}
+		return
+	}
+	if unit in [.em, .ex, .cap, .ch, .ic, .lh]
+		&& context.font_metrics_depend_on_viewport_metrics {
+		context.record_viewport_relative_length_resolution()
+	}
 }
 
 pub struct Length {
@@ -1865,7 +1901,7 @@ pub fn (l Length) unit_name() string {
 }
 
 pub fn (l Length) to_px(context LengthResolutionContext) CSSPixels {
-	return l.to_px_with_values(context.viewport_rect, context.font_metrics, context.root_font_metrics)
+	return CSSPixels.nearest_value_for(l.to_px_without_rounding(context))
 }
 
 pub fn (l Length) to_px_without_rounding(context LengthResolutionContext) f64 {
@@ -1873,9 +1909,11 @@ pub fn (l Length) to_px_without_rounding(context LengthResolutionContext) f64 {
 		return l.absolute_length_to_px_without_rounding()
 	}
 	if l.is_font_relative() {
+		context.record_font_relative_length_resolution(l.unit_)
 		return l.font_relative_length_to_px_without_rounding(context.font_metrics, context.root_font_metrics)
 	}
 	if l.is_viewport_relative() {
+		context.record_viewport_relative_length_resolution()
 		return l.viewport_relative_length_to_px_without_rounding(context.viewport_rect)
 	}
 	panic('VERIFY_NOT_REACHED')
