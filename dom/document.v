@@ -2018,6 +2018,8 @@ pub type NavigablePerformScrollCallback = fn (voidptr, CSSPixelPoint_) &Promise
 
 pub type NavigableIsFocusedCallback = fn (voidptr) bool
 
+pub type NavigableActiveDocumentChangedCallback = fn (voidptr, ?&Document)
+
 @[heap]
 pub struct Navigable {
 pub mut:
@@ -2032,6 +2034,7 @@ pub mut:
 	viewport_scroll_callback_   NavigableViewportScrollCallback = unsafe { nil }
 	perform_scroll_callback_    NavigablePerformScrollCallback = unsafe { nil }
 	is_focused_callback_        NavigableIsFocusedCallback = unsafe { nil }
+	active_document_changed_    NavigableActiveDocumentChangedCallback = unsafe { nil }
 }
 
 pub fn (n &Navigable) perform_scroll_of_viewport_scrolling_box(position CSSPixelPoint_) {
@@ -2952,15 +2955,41 @@ pub fn (n &Navigable) active_document() ?&Document {
 	return n.active_document_
 }
 
-fn navigable_with_active_document(document &Document) ?&Navigable {
-	for navigable in dom_all_navigables {
-		if active_document := navigable.active_document() {
-			if voidptr(active_document) == voidptr(document) {
-				return navigable
+pub fn (n &Navigable) active_document_id() ?UniqueNodeID {
+	document := n.active_document_ or { return none }
+	return document.unique_id()
+}
+
+pub fn (mut n Navigable) set_active_document(document ?&Document) {
+	if old_document := n.active_document_ {
+		is_same_document := if new_document := document {
+			voidptr(old_document) == voidptr(new_document)
+		} else {
+			false
+		}
+		if !is_same_document {
+			if linked_navigable := old_document.navigable() {
+				if voidptr(linked_navigable) == voidptr(&n) {
+					mut mutable_old_document := unsafe { &Document(old_document) }
+					mutable_old_document.set_navigable(none)
+				}
 			}
 		}
 	}
-	return none
+	n.active_document_ = document
+	if new_document := document {
+		mut mutable_new_document := unsafe { &Document(new_document) }
+		mutable_new_document.set_navigable(&n)
+	}
+	if n.html_model_handle_ != unsafe { nil }
+		&& n.active_document_changed_ != unsafe { nil } {
+		n.active_document_changed_(n.html_model_handle_, document)
+	}
+}
+
+pub fn (mut n Navigable) remove_from_all_navigables() {
+	n.set_active_document(none)
+	dom_all_navigables = dom_all_navigables.filter(voidptr(it) != voidptr(&n))
 }
 
 fn register_navigable(navigable &Navigable) {
@@ -3463,10 +3492,10 @@ pub fn (mut d Document) set_is_svg_image_document(value bool) {
 }
 
 pub fn (d &Document) navigable() ?&Navigable {
-	if d.cached_navigable_ == unsafe { nil } {
+	if d.navigable_ == unsafe { nil } {
 		return none
 	}
-	return d.cached_navigable_
+	return d.navigable_
 }
 
 pub fn (d &Document) in_quirks_mode() bool {
@@ -4389,7 +4418,7 @@ pub mut:
 	console_client_                         &ConsoleClient = unsafe { nil }
 	cursor_blink_timer                      &Timer = unsafe { nil }
 	active_refresh_timer                    &Timer = unsafe { nil }
-	cached_navigable_                       &Navigable = unsafe { nil }
+	navigable_                              &Navigable = unsafe { nil }
 	temporary_document_for_fragment_parsing TemporaryDocumentForFragmentParsing = .no
 	media_query_lists                       []&MediaQueryList
 	document_observers_being_notified       []&DocumentObserver
@@ -7826,8 +7855,8 @@ pub fn (mut d Document) destroy() {
 
 	// 9. Set document's node navigable's active session history entry's document state's document to null.
 	if nav := d.navigable() {
-		_ = nav
-		// Clear navigable association
+		mut mutable_navigable := unsafe { &Navigable(nav) }
+		mutable_navigable.set_active_document(none)
 	}
 
 	d.tear_down_layout_tree()
@@ -9410,21 +9439,24 @@ pub fn (d &Document) get_cursor_blink_state() bool {
 	return d.cursor_blink_state
 }
 
-// --- Navigable cache ---
-pub fn (d &Document) cached_navigable() ?&Navigable {
-	if d.cached_navigable_ == unsafe { nil } {
-		return none
+// --- Navigable back-pointer ---
+pub fn (mut d Document) set_navigable(navigable ?&Navigable) {
+	if value := navigable {
+		register_navigable(value)
+		d.navigable_ = value
+		return
 	}
-	return d.cached_navigable_
+	d.navigable_ = unsafe { nil }
+}
+
+// Compatibility aliases for translated callers predating the maintained
+// back-pointer. New navigation code uses navigable()/set_navigable().
+pub fn (d &Document) cached_navigable() ?&Navigable {
+	return d.navigable()
 }
 
 pub fn (mut d Document) set_cached_navigable(navigable ?&Navigable) {
-	if value := navigable {
-		register_navigable(value)
-		d.cached_navigable_ = value
-		return
-	}
-	d.cached_navigable_ = unsafe { nil }
+	d.set_navigable(navigable)
 }
 
 // --- Repaint ---

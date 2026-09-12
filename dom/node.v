@@ -1282,19 +1282,9 @@ pub fn (n &Node) navigable() ?&Navigable {
 	if doc == unsafe { nil } {
 		return none
 	}
-	mut document := unsafe { &Document(doc) }
-	if cached_navigable := document.cached_navigable() {
-		if active_document := cached_navigable.active_document() {
-			if active_document == document {
-				return cached_navigable
-			}
-		}
-	}
 	// To get the node navigable of a node node, return the navigable whose active document is node's node document,
 	// or null if there is no such navigable.
-	navigable := navigable_with_active_document(document)
-	document.set_cached_navigable(navigable)
-	return navigable
+	return doc.navigable()
 }
 
 fn reason_may_affect_has_selectors(reason StyleInvalidationReason) bool {

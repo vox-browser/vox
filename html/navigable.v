@@ -192,12 +192,23 @@ fn navigable_model_is_focused(target voidptr) bool {
 	return model.is_focused()
 }
 
+fn navigable_model_active_document_changed(target voidptr, document ?&dom.Document) {
+	mut model := unsafe { &NavigableModel(target) }
+	if entry := model.active_session_history_entry_ {
+		if state := entry.document_state {
+			mut mutable_state := unsafe { &DocumentState(state) }
+			mutable_state.set_document_id(if value := document { value.unique_id() } else { none })
+		}
+	}
+}
+
 fn connect_navigable_model_to_host(model &NavigableModel) {
 	mut host := unsafe { &dom.Navigable(model.host_) }
 	host.html_model_handle_ = voidptr(model)
 	host.viewport_scroll_callback_ = navigable_model_scroll_viewport_box
 	host.perform_scroll_callback_ = navigable_model_perform_viewport_scroll
 	host.is_focused_callback_ = navigable_model_is_focused
+	host.active_document_changed_ = navigable_model_active_document_changed
 }
 
 // Binds the DOM identity created by Document/Window to the translated HTML
@@ -316,7 +327,7 @@ pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentS
 	model.parent_ = parent
 	model.has_session_history_entry_and_ready_ = parent == none
 	mut host := unsafe { &dom.Navigable(model.host_) }
-	host.active_document_ = document
+	host.set_active_document(document)
 	mut mutable_document_state := unsafe { &DocumentState(document_state) }
 	mutable_document_state.set_document_id(document.unique_id())
 	if parent_model := parent {
@@ -329,7 +340,6 @@ pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentS
 		host.is_top_level_traversable_ = true
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
-	mutable_document.set_cached_navigable(model.host_)
 	mutable_document.set_ready_to_run_scripts()
 }
 
@@ -429,14 +439,8 @@ pub fn (mut model NavigableModel) clear_navigation_load_event_guard() {
 }
 
 pub fn NavigableModel.navigable_with_active_document(document &dom.Document) ?&NavigableModel {
-	for model in html_all_navigable_models {
-		if active := model.active_document() {
-			if voidptr(active) == voidptr(document) {
-				return model
-			}
-		}
-	}
-	return none
+	host := document.navigable() or { return none }
+	return navigable_model_for_host(host)
 }
 
 pub fn (model &NavigableModel) current_session_history_entry() ?&SessionHistoryEntry {
@@ -484,7 +488,6 @@ pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryE
 	model.active_session_history_entry_ = value
 	model.set_active_document(new_document)
 	mut document := unsafe { &dom.Document(new_document) }
-	document.set_cached_navigable(model.host_)
 	document.make_active()
 	document.set_ready_to_run_scripts()
 	if document.document_ready_for_post_load_tasks() {
@@ -515,13 +518,7 @@ pub fn (model &NavigableModel) active_document_id() ?dom.UniqueNodeID {
 
 pub fn (mut model NavigableModel) set_active_document(document ?&dom.Document) {
 	mut host := unsafe { &dom.Navigable(model.host_) }
-	host.active_document_ = document
-	if entry := model.active_session_history_entry_ {
-		if state := entry.document_state {
-			mut mutable_state := unsafe { &DocumentState(state) }
-			mutable_state.set_document_id(if value := document { value.unique_id() } else { none })
-		}
-	}
+	host.set_active_document(document)
 }
 
 pub fn (model &NavigableModel) active_browsing_context() ?&BrowsingContextModel {
@@ -995,7 +992,6 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 			document.set_active_sandboxing_flag_bits(params.final_sandboxing_flags.bits)
 		}
 		state.set_document(document)
-		document.set_cached_navigable(model.host_)
 		if context := model.context_ {
 			if document.get_browsing_context() == none {
 				document.set_browsing_context(&dom.BrowsingContext{
@@ -1043,7 +1039,6 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 	}
 	document := state.document or { return }
 	mut mutable_document := unsafe { &dom.Document(document) }
-	mutable_document.set_cached_navigable(model.host_)
 	if context := model.context_ {
 		if document.get_browsing_context() == none {
 			mutable_document.set_browsing_context(&dom.BrowsingContext{
@@ -1847,6 +1842,11 @@ pub fn (model &NavigableModel) has_pending_navigations() bool {
 pub fn (mut model NavigableModel) set_has_been_destroyed() {
 	model.has_been_destroyed_ = true
 	model.inform_the_navigation_api_about_child_navigable_destruction()
+}
+
+pub fn (mut model NavigableModel) remove_from_all_navigables() {
+	model.set_active_document(none)
+	html_all_navigable_models = html_all_navigable_models.filter(voidptr(it) != voidptr(&model))
 }
 
 pub fn (model &NavigableModel) has_been_destroyed() bool {

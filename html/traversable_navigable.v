@@ -139,12 +139,11 @@ pub fn TraversableNavigable.create_a_new_top_level_traversable(target_name strin
 	traversable.active_session_history_entry_ = entry
 	traversable.active_document_ = document
 	mut host_navigable := &dom.Navigable{
-		active_document_: document
 		is_top_level_traversable_: true
 	}
 	host_navigable.traversable_navigable_ = host_navigable
+	host_navigable.set_active_document(document)
 	traversable.host_navigable_ = host_navigable
-	document.set_cached_navigable(host_navigable)
 	return traversable
 }
 
@@ -169,12 +168,11 @@ pub fn TraversableNavigable.create_a_fresh_top_level_traversable(initial_navigat
 	traversable.active_session_history_entry_ = entry
 	traversable.active_document_ = document
 	mut host_navigable := &dom.Navigable{
-		active_document_: document
 		is_top_level_traversable_: true
 	}
 	host_navigable.traversable_navigable_ = host_navigable
+	host_navigable.set_active_document(document)
 	traversable.host_navigable_ = host_navigable
-	document.set_cached_navigable(host_navigable)
 	return traversable
 }
 
@@ -778,7 +776,7 @@ fn (mut state ApplyHistoryStepState) commit_change_job_after_potential_unloads()
 				mutable_model.activate_history_entry(state.target, document)
 			}
 		} else {
-			host.active_document_ = resolved_document
+			host.set_active_document(resolved_document)
 		}
 	}
 	if document_state := state.target.document_state {
@@ -1027,6 +1025,15 @@ pub fn (mut traversable TraversableNavigable) destroy_top_level_traversable() {
 		return
 	}
 	traversable.has_been_destroyed_ = true
+	if host := traversable.host_navigable_ {
+		if model := navigable_model_for_host(host) {
+			mut mutable_model := unsafe { &NavigableModel(model) }
+			mutable_model.remove_from_all_navigables()
+		} else {
+			mut mutable_host := unsafe { &dom.Navigable(host) }
+			mutable_host.remove_from_all_navigables()
+		}
+	}
 	traversable.active_document_ = none
 	html_user_agent_top_level_traversables = html_user_agent_top_level_traversables.filter(voidptr(it) != voidptr(&traversable))
 }

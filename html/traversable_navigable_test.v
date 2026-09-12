@@ -221,6 +221,9 @@ fn test_traversable_cancellation_visibility_focus_and_close() {
 	traversable.close_top_level_traversable()
 	assert traversable.is_closing()
 	assert !traversable.has_been_destroyed()
+	// The maintained document back-pointer makes the active document visible to
+	// the unload check, whose task must run before the queued destruction step.
+	event_loop.process()
 	traversable.process_session_history_traversal_queue()
 	assert traversable.has_been_destroyed()
 	assert traversable !in user_agent_top_level_traversable_set()

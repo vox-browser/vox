@@ -92,7 +92,7 @@ fn navigable_test_top_level(url string, target_name string) !(&dom.Document, &Wi
 	document.set_origin(document.url.origin())
 	document.populate_with_html_head_and_body()!
 	window := WindowModel.create_top_level(document, none, target_name)!
-	host := document.cached_navigable() or { return error('missing host navigable') }
+	host := document.navigable() or { return error('missing host navigable') }
 	model := navigable_model_for_host(host) or { return error('missing navigable model') }
 	return document, window, model
 }
@@ -119,7 +119,7 @@ fn test_navigable_initialization_hierarchy_and_target_choice() {
 	mut mutable_child_context := unsafe { &BrowsingContextModel(child_context) }
 	mutable_child_context.set_container(container)
 	_ = WindowModel.create(child_document, child_context)!
-	child_host := child_document.cached_navigable() or { panic('missing child host') }
+	child_host := child_document.navigable() or { panic('missing child host') }
 	mut child_model := navigable_model_for_host(child_host) or { panic('missing child model') }
 	assert child_model.parent()? == parent_model
 	assert parent_model.is_ancestor_of(child_model)
@@ -136,9 +136,10 @@ fn test_navigable_initialization_hierarchy_and_target_choice() {
 	assert child_snapshot.sandboxing_flags.contains(.sandboxed_document_domain)
 	assert !child_snapshot.sandboxing_flags.contains(.sandboxed_scripts)
 	assert !child_snapshot.sandboxing_flags.contains(.sandboxed_forms)
-	child_document.set_cached_navigable(none)
+	child_document.set_navigable(none)
+	assert child_document.as_node().navigable() == none
+	child_document.set_navigable(child_host)
 	assert child_document.as_node().navigable()? == child_host
-	assert child_document.cached_navigable()? == child_host
 	assert parent_document.document_tree_child_navigables() == [child_host]
 	assert parent_model.child_navigables().len == 0
 	child_model.set_has_session_history_entry_and_ready_for_navigation()
@@ -246,6 +247,10 @@ fn test_activating_an_entry_replays_deferred_complete_loading() {
 	assert entry.document() == none
 	assert entry.document_state()?.document_id()? == deferred_document.unique_id()
 	assert !deferred_document.document_completely_loaded_deferred()
+	model.set_active_document(none)
+	assert model.active_document() == none
+	assert entry.document_state()?.document_id() == none
+	assert deferred_document.navigable() == none
 }
 
 fn test_navigable_sandbox_viewport_selection_observers_and_rendering() {

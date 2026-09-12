@@ -510,7 +510,7 @@ pub fn (mut window WindowModel) invoke_idle_callbacks() {
 }
 
 pub fn (window &WindowModel) navigable() ?&dom.Navigable {
-	return window.associated_document().cached_navigable()
+	return window.associated_document().navigable()
 }
 
 pub fn (window &WindowModel) navigable_model() &NavigableModel {
