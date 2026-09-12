@@ -2,10 +2,10 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/IndexedDB`
 
-Translation workspace: `~/code/libweb_v/indexeddb`
-Audited: 2026-09-04
+Translation workspace: `~/code/vox2/indexeddb`
+Audited: 2026-09-12
 
-All 18 upstream IndexedDB `.cpp` implementation units have an audited V
+All 19 upstream IndexedDB `.cpp` implementation units have an audited V
 implementation mapping. The companion headers and all 12 IDL files are
 represented by typed V APIs.
 
@@ -15,6 +15,7 @@ represented by typed V APIs.
 | `IDBDatabase.cpp` | `database.v`, `transaction.v` |
 | `IDBFactory.cpp` | `factory.v`, `key.v` |
 | `IDBIndex.cpp` | `index.v`, `records.v` |
+| `Inspection.cpp` | `inspection.v`, `transaction_changes.v` |
 | `IDBKeyRange.cpp` | `key_range.v` |
 | `IDBObjectStore.cpp` | `object_store.v`, `records.v`, `value.v` |
 | `IDBOpenDBRequest.cpp` | `request.v`, `factory.v` |
@@ -26,7 +27,7 @@ represented by typed V APIs.
 | `Internal/Database.cpp` | `database.v`, `factory.v` |
 | `Internal/Index.cpp` | `records.v`, `index.v` |
 | `Internal/Key.cpp` | `key.v` |
-| `Internal/MutationLog.cpp` | `transaction.v` |
+| `Internal/MutationLog.cpp` | `internal_operations.v`, `transaction_changes.v` |
 | `Internal/ObjectStore.cpp` | `records.v`, `object_store.v` |
 | `Internal/RequestList.cpp` | `request_list.v` |
 
@@ -43,6 +44,7 @@ represented by typed V APIs.
 | `IDBRecord.h`, `IDBRecord.idl` | `records.v` |
 | `IDBRequest.h`, `IDBRequest.idl` | `request.v` |
 | `IDBTransaction.h`, `IDBTransaction.idl` | `transaction.v` |
+| `TransactionChanges.h` | `transaction_changes.v` |
 | `IDBVersionChangeEvent.h`, `IDBVersionChangeEvent.idl` | `request.v` |
 | `Internal/Algorithms.h` | all implementation files above |
 | `Internal/ConnectionQueueHandler.h` | `factory.v` |
@@ -62,7 +64,7 @@ The internal C++ `Database`, `ObjectStore`, and `Index` classes map to the V
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `IndexedDB/` | 18 | 6,449 | 4,364 | 682 | Audited |
+| `IndexedDB/` | 19 | 6,991 | 5,211 | 1,086 | Audited |
 
 The V implementation covers IndexedDB key construction and total ordering,
 key/value conversion, compound and dotted key paths, generated-key injection,
@@ -87,9 +89,13 @@ cursors scan the live sorted source rather than eagerly materializing every
 matching record. Shared storage-key registries and transaction-local handle
 caches preserve database and handle identity at the standalone runtime
 boundary. Stored values are cloned only at structured-storage and API-output
-boundaries.
+boundaries. The current update also covers typed storage inspection, record and
+schema change coalescing for DevTools notifications, realm propagation through
+factory/database/request/transaction/store/index/cursor handles, request and
+handle binding offsets, stored-record deserialization failures, and Blob/File
+key-path properties.
 
-The symbol audit covers 425 upstream implementation entries with zero
+The symbol audit covers 471 upstream implementation entries with zero
 unmatched symbols.
 
 `IDBFactory` is also the explicit storage-key/backend boundary. Its database
@@ -98,9 +104,9 @@ storage service. Browser realms, WebIDL JavaScript conversion/structured clone,
 event-loop task dispatch, origin quota, and cross-process connection
 coordination are represented by deterministic typed V calls and event logs;
 they require the surrounding browser runtime and do not conceal unimplemented
-record, index, transaction, or cursor operations. Blob/File special key-path
-properties require browser FileAPI values, which the standalone typed `Value`
-does not represent. Cursor entry materialization and request-list dispatch are
+record, index, transaction, or cursor operations. Blob/File values use a typed
+standalone representation for their IndexedDB-visible metadata. Cursor entry
+materialization and request-list dispatch are
 synchronous standalone event-loop boundaries. Version upgrades remain active
 after `open()` until `finish_upgrade()` or `abort_upgrade()`, directly modeling
 the work normally performed inside the asynchronous `upgradeneeded` callback.
@@ -109,7 +115,7 @@ the work normally performed inside the asynchronous `upgradeneeded` callback.
 
 ```text
 $ /Users/alex/code/v/v -enable-globals test indexeddb
-Summary for all V _test.v files: 5 passed, 5 total.
+Summary for all V _test.v files: 9 passed, 9 total.
 
 $ git diff --check -- indexeddb
 (no output; exit status 0)

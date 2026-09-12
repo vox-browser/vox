@@ -116,7 +116,7 @@ from the current-module totals.
 | `Geometry` | 8 | 2,078 | 2,062 | 1,008 | Complete |
 | `HTML` | 286 | 83,853 | 56,437 | 12,209 | Complete |
 | `HighResolutionTime` | 2 | 516 | 442 | 195 | Complete |
-| `IndexedDB` | 19 | 6,991 | 4,364 | 682 | Complete |
+| `IndexedDB` | 19 | 6,991 | 5,211 | 1,086 | Complete |
 | `Infra` | 3 | 385 | 207 | 63 | Complete |
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **330,379** | **62,417** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **331,226** | **62,821** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
