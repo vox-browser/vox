@@ -38,14 +38,14 @@ fn test_i64_uses_bigint_and_externref_defaults_to_undefined() {
 }
 
 fn test_table_bounds_grow_and_anyfunc_validation() {
-	mut table := Table.construct(TableDescriptor{ element: .externref, initial: 2, maximum: 3 },
+	mut table_ := Table.construct(TableDescriptor{ element: .externref, initial: 2, maximum: 3 },
 		webidl.string_value('x'))!
-	assert table.length() == 2
-	assert table.get(1)!.string_value == 'x'
-	table.set(0, webidl.number_value(9))!
-	assert table.get(0)!.number_value == 9
-	assert table.grow(1, webidl.null_value())! == 2
-	if _ := table.grow(1, none) {
+	assert table_.length() == 2
+	assert table_.get(1)!.string_value == 'x'
+	table_.set(0, webidl.number_value(9))!
+	assert table_.get(0)!.number_value == 9
+	assert table_.grow(1, webidl.null_value())! == 2
+	if _ := table_.grow(1, none) {
 		assert false
 	} else {
 		assert err.msg().starts_with('RangeError:')
@@ -56,6 +56,40 @@ fn test_table_bounds_grow_and_anyfunc_validation() {
 		assert false
 	} else {
 		assert err.msg().starts_with('TypeError:')
+	}
+}
+
+fn test_table64_address_values_and_binding_conversions() {
+	mut table64 := construct_table(TableDescriptor{
+		element: .externref
+		initial: 2
+		maximum: 4
+		address: .i64
+	}, webidl.string_value('initial'))!
+	assert table64.address_type() == .i64
+	assert table64.element_type() == .externref
+	assert address_type_from_bindings(.i64) == .i64
+	assert address_value_to_u64(webidl.bigint_value(3), .i64)! == 3
+	assert table_limit_to_js_value(table64.length(), .i64).bigint_value == 2
+	assert table(table64) == table64
+	assert value_to_table_reference(table64, none)!.kind == .undefined
+	assert table64.grow(1, none)! == 2
+	assert table64.length() == 3
+
+	if _ := address_value_to_u64(webidl.number_value(1), .i64) {
+		assert false
+	} else {
+		assert err.msg().contains('BigInt')
+	}
+	if _ := address_value_to_u64(webidl.bigint_value(-1), .i64) {
+		assert false
+	} else {
+		assert err.msg().contains('non-negative')
+	}
+	if _ := address_value_to_u64(webidl.number_value(1.5), .i32) {
+		assert false
+	} else {
+		assert err.msg().contains('unsigned 32-bit')
 	}
 }
 
