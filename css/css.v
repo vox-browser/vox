@@ -2794,7 +2794,7 @@ fn (c CalculatedStyleValue) clamp_top_level_value(raw_value f64, resolved_type N
 }
 
 // https://drafts.csswg.org/css-values-4/#calc-computed-value
-pub fn (c CalculatedStyleValue) resolve_value(resolution_context CalculationResolutionContext) ?CalculatedResolvedValue {
+fn (c CalculatedStyleValue) resolve_value_internal(resolution_context CalculationResolutionContext, apply_censoring_and_clamping bool) ?CalculatedResolvedValue {
 	// When the parsed calculation tree is available, evaluate it directly with the
 	// resolution context (relative-length resolution, percentage basis, canonical units).
 	if c.node.len == 1 {
@@ -2802,7 +2802,11 @@ pub fn (c CalculatedStyleValue) resolve_value(resolution_context CalculationReso
 			return none
 		}
 		return CalculatedResolvedValue{
-			value: c.clamp_top_level_value(result.value, result.type_)
+			value: if apply_censoring_and_clamping {
+				c.clamp_top_level_value(result.value, result.type_)
+			} else {
+				result.value
+			}
 			type_: result.type_
 		}
 	}
@@ -2818,9 +2822,26 @@ pub fn (c CalculatedStyleValue) resolve_value(resolution_context CalculationReso
 	unit_value := CSSUnitValue.create_from_sum_value_item(sum[0]) or { return none }
 	resolved_type := NumericType.create_from_unit(unit_value.unit()) or { return none }
 	return CalculatedResolvedValue{
-		value: c.clamp_top_level_value(unit_value.value(), resolved_type)
+		value: if apply_censoring_and_clamping {
+			c.clamp_top_level_value(unit_value.value(), resolved_type)
+		} else {
+			unit_value.value()
+		}
 		type_: resolved_type
 	}
+}
+
+pub fn (c CalculatedStyleValue) resolve_value(resolution_context CalculationResolutionContext) ?CalculatedResolvedValue {
+	return c.resolve_value_internal(resolution_context, true)
+}
+
+pub fn (c CalculatedStyleValue) resolve_raw_length(context CalculationResolutionContext) ?f64 {
+	result := c.resolve_value_internal(context, false) or { return none }
+	resolved_type := result.type_ or { return none }
+	if resolved_type.matches_length(c.calculation_context.percentages_resolve_as) {
+		return result.value
+	}
+	return none
 }
 
 pub fn (c CalculatedStyleValue) resolve_length(context CalculationResolutionContext) ?Length {

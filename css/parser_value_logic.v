@@ -11299,6 +11299,16 @@ fn (mut parser Parser) parse_source_size_value(mut tokens ComponentValueStream) 
 
 	transaction = tokens.clone()
 	if length := parser.parse_length_value(mut transaction) {
+		if length is LengthStyleValue && length.raw_value() < 0 {
+			return none
+		}
+		if length is CalculatedStyleValue {
+			if raw_length := length.resolve_raw_length(CalculationResolutionContext{}) {
+				if math.is_inf(raw_length, 0) {
+					return none
+				}
+			}
+		}
 		tokens = transaction
 		return length
 	}
@@ -11462,7 +11472,7 @@ fn (mut parser Parser) parse_as_sizes_attribute(element &dom.Element, rendered_a
 		mut condition_tokens := ComponentValueStream.new(unparsed_size)
 		condition := parser.parse_media_condition(mut condition_tokens) or { continue }
 		condition_tokens.consume_whitespace()
-		if condition_tokens.has_more_tokens() || condition.evaluate(element.document()) == .false_ {
+		if condition_tokens.has_more_tokens() || !condition.evaluate_to_boolean(element.document()) {
 			continue
 		}
 		if !size.has_auto() {
@@ -13567,6 +13577,21 @@ fn (mut parser Parser) parse_known_media_feature_value(media_feature string, mut
 		if value := parser.parse_length_value(mut transaction) {
 			tokens = transaction
 			return value
+		}
+
+		transaction = tokens.clone()
+		transaction.consume_whitespace()
+		component_value := transaction.consume() or { return none }
+		mut calculated_tokens := ComponentValueStream.new([component_value])
+		if calculated := parse_calculated_value(mut calculated_tokens) {
+			if calculated is CalculatedStyleValue && calculated.resolves_to_number() {
+				if number := calculated.resolve_number(CalculationResolutionContext{}) {
+					if number == 0 {
+						tokens = transaction
+						return StyleValue(LengthStyleValue.create(Length.make_px(0)))
+					}
+				}
+			}
 		}
 	}
 

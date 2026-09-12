@@ -770,3 +770,18 @@ fn test_sizes_attribute_auto_uses_rendered_width() {
 	element := document.create_element('img')!
 	assert parse_sizes_attribute_source_size(element, 'auto, 50vw', 137.0) == 137
 }
+
+fn test_sizes_attribute_rejects_invalid_lengths_and_unknown_media_conditions() {
+	document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element('img')!
+	assert parse_sizes_attribute_source_size(element, '-10px, 25px', none) == 25
+	assert parse_sizes_attribute_source_size(element, 'calc(infinity * 1px), 30px', none) == 30
+	assert parse_sizes_attribute_source_size(element, '(unknown-feature: 1px) 35px, 40px', none) == 40
+	assert parse_sizes_attribute_source_size(element, '(width < calc(0)) 45px, 50px', none) == 50
+}
+
+fn test_media_general_enclosed_rejects_non_any_value_tokens() {
+	mut parser := Parser.from_css_text('(unknown("unterminated\n))')
+	mut tokens := ComponentValueStream.new(parser.component_values)
+	assert parser.parse_media_condition(mut tokens) == none
+}

@@ -377,17 +377,48 @@ fn parse_supports_declaration_from_parser_tokens(mut tokens ParserTokenStream) ?
 	return parser.parse_supports_declaration(mut tokens)
 }
 
-// https://www.w3.org/TR/mediaqueries-4/#typedef-general-enclosed
+fn component_values_contain_only_any_value(values []ComponentValue) bool {
+	for value in values {
+		if value.is_function() {
+			if !component_values_contain_only_any_value(value.function().value) {
+				return false
+			}
+			continue
+		}
+		if value.is_block() {
+			if !component_values_contain_only_any_value(value.block().value) {
+				return false
+			}
+			continue
+		}
+		if !value.is_token() {
+			continue
+		}
+		if value.token().type_ in [.invalid, .end_of_file, .bad_string, .bad_url, .function,
+			.open_curly, .open_paren, .open_square, .close_curly, .close_paren, .close_square] {
+			return false
+		}
+	}
+	return true
+}
+
+// https://drafts.csswg.org/mediaqueries-5/#typedef-general-enclosed
 fn (mut parser Parser) parse_general_enclosed(mut tokens SupportsTokenStream, result MatchResult) ?&BooleanExpression {
 	_ = parser
 	mut transaction := tokens
 	transaction.discard_whitespace()
 	first_token := transaction.consume_a_token() or { return none }
 	if first_token.is_function() {
+		if !component_values_contain_only_any_value(first_token.function().value) {
+			return none
+		}
 		tokens = transaction
 		return BooleanExpression.create_general_enclosed(first_token.to_string(), result)
 	}
 	if first_token.is_block() && first_token.block().is_paren() {
+		if !component_values_contain_only_any_value(first_token.block().value) {
+			return none
+		}
 		tokens = transaction
 		return BooleanExpression.create_general_enclosed(first_token.to_string(), result)
 	}
