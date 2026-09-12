@@ -63,6 +63,13 @@ fn test_string_conversions_and_trace_formatting() {
 	} else {
 		assert err.msg().starts_with('TypeError:')
 	}
+	if _ := to_byte_string(string_value('😀')) {
+		assert false
+	} else {
+		assert err.msg().contains('0xd83d')
+		assert err.msg().contains('index 0')
+	}
+	assert primitive_string_from_string('already primitive') == 'already primitive'
 	assert to_string(undefined_value())! == 'undefined'
 	assert to_string(number_value(12))! == '12'
 	mut trace := TraceState{}

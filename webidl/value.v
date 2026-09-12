@@ -152,9 +152,10 @@ pub fn is_buffer_source_type(value Value) bool {
 
 pub fn to_byte_string(value Value) !string {
 	text := to_string(value)!
-	for index, character in text.runes() {
-		if character > 0xff {
-			return error('TypeError: Invalid byte 0x${character.hex()} at index ${index}, must be no greater than 0xFF')
+	utf16 := to_utf16_string(value)!
+	for index, code_unit in utf16 {
+		if code_unit > 0xff {
+			return error('TypeError: Invalid byte 0x${code_unit.hex()} at index ${index}, must be no greater than 0xFF')
 		}
 	}
 	return text

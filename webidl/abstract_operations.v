@@ -46,6 +46,12 @@ pub fn to_utf16_usv_string(value Value) ![]u16 {
 	return to_utf16_string(value)
 }
 
+// V strings already are the primitive string representation used at this
+// boundary. Upstream selects its UTF-8 or UTF-16 JS constructor by input type.
+pub fn primitive_string_from_string(value string) string {
+	return value
+}
+
 pub fn invoke_callback_impl(callback CallbackType, this_argument ?Value, arguments []Value) !Value {
 	return callback.callback(this_argument or { undefined_value() }, arguments)
 }
