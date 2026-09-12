@@ -1356,17 +1356,16 @@ pub fn (mut element HTMLMediaElement) time_marches_on(reason TimeMarchesOnReason
 	if reason != .normal_playback || element.running_time_update_event_ {
 		return
 	}
-	defer {
-		element.update_ready_state()
-	}
 	last_position := element.last_time_update_position_ or {
 		element.dispatch_time_update_event()
+		element.update_ready_state()
 		return
 	}
 	// The host tick does not expose wall-clock time. Advancing by at least one
 	// frame is the equivalent opportunity to satisfy upstream's 15-250ms rule.
 	if math.abs(element.current_playback_position_ - last_position) >= 0.015 {
 		element.dispatch_time_update_event()
+		element.update_ready_state()
 	}
 }
 

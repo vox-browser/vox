@@ -174,6 +174,29 @@ fn test_media_element_ready_state_follows_buffered_data() {
 	assert media.ready_state() == .have_metadata
 }
 
+fn test_media_element_throttles_ready_state_monitoring_with_time_updates() {
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	media.set_up_playback_manager()
+	media.set_duration(20)
+	media.set_ready_state(.have_metadata)
+	media.buffered_.add_range(0, 1)
+	media.playback_has_future_data_ = true
+	media.time_marches_on(.normal_playback)
+	assert media.ready_state() == .have_future_data
+	assert media.event_count('timeupdate') == 1
+
+	media.buffered_.clear()
+	media.playback_has_future_data_ = false
+	media.time_marches_on(.normal_playback)
+	assert media.ready_state() == .have_future_data
+	assert media.event_count('timeupdate') == 1
+
+	media.set_current_playback_position(0.02)
+	media.time_marches_on(.normal_playback)
+	assert media.ready_state() == .have_metadata
+	assert media.event_count('timeupdate') == 2
+}
+
 fn test_media_element_exposes_playback_manager_buffered_ranges() {
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
 	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
