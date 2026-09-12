@@ -4380,10 +4380,7 @@ fn computed_custom_property_tokens_for_substitution(abstract_element dom.Abstrac
 	if typed is GuaranteedInvalidStyleValue {
 		return arbitrary_substitution_guaranteed_invalid_value()
 	}
-	if typed is UnresolvedStyleValue {
-		return typed.tokens.clone()
-	}
-	return parse_component_values_for_value_logic(typed.serialize(.normal))
+	return typed.tokenize()
 }
 
 fn replace_an_inherit_function(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, arguments ArbitrarySubstitutionFunctionArguments) []ComponentValue {
