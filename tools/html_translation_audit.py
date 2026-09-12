@@ -78,6 +78,9 @@ BINDING_RUNTIME_METHODS = {
     ("Parser", "realm"),
     ("Screen", "window"),
     ("Client", "image_style_value_finalize"),
+    # ComputedFilterView retains a Rust-owned StyleValue handle while lowering
+    # the FFI record. V stores the typed FilterStyleValue sum directly.
+    ("ComputedFilterView", "retained_style_value"),
 }
 RUNTIME_ONLY_FREE_FUNCTIONS = {
     # The standalone parser has no process-global internal JS realm; its
@@ -2327,6 +2330,20 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
         ("serialize_hue_component", None),
     ),
     ("ColorStyleValue", "has_color"): (("has_color", "StyleValue"),),
+})
+
+# C++ exposes a temporary view which lowers Rust FFI filter records. V's
+# ComputedProperties already owns the materialized Filter and its typed
+# operations; URL fragment validation happens at the SVG paint resolver.
+CONSOLIDATED_METHOD_MAPPINGS.update({
+    ("ComputedFilterView", "has_filters"): (("has_filters", "Filter"),),
+    ("ComputedFilterView", "is_none"): (("is_none", "Filter"),),
+    ("ComputedFilterView", "for_each_operation"): (("filters", "Filter"),),
+    ("ComputedFilterView", "url_fragment"): (("resolved_svg_filter", None),),
+    ("ComputedFilterView", "materialize"): (
+        ("new", "Filter"),
+        ("filters", "Filter"),
+    ),
 })
 
 # Length contexts are CSS-owned in V; Layout supplies its retained computed

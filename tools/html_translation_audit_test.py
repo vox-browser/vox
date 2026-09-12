@@ -156,6 +156,24 @@ class ConsolidatedFunctionTests(unittest.TestCase):
                 ((method_name, "LengthResolutionContext"),),
             )
 
+    def test_computed_filter_view_maps_to_materialized_v_filters(self) -> None:
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("ComputedFilterView", "for_each_operation")
+            ],
+            (("filters", "Filter"),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("ComputedFilterView", "url_fragment")
+            ],
+            (("resolved_svg_filter", None),),
+        )
+        self.assertIn(
+            ("ComputedFilterView", "retained_style_value"),
+            audit.BINDING_RUNTIME_METHODS,
+        )
+
     def test_nullable_webgl_wrapper_is_a_language_binding_artifact(self) -> None:
         self.assertIn(
             ("BindingsGlue.h", "webgl_wrappable"),
