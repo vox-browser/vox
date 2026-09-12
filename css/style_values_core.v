@@ -180,8 +180,7 @@ pub fn property_id_from_string(name string) ?PropertyID {
 
 fn property_accepts_custom_ident(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
-	if lowercase_value.len == 0 || lowercase_value == 'default'
-		|| is_css_wide_keyword_string(lowercase_value) {
+	if lowercase_value.len == 0 || !is_valid_custom_ident(value, []) {
 		return false
 	}
 	if property_accepts_type(property_id, .custom_ident) {
@@ -2043,6 +2042,19 @@ pub fn is_css_wide_keyword_string(value string) bool {
 		'inherit', 'initial', 'revert', 'revert-layer', 'unset' { true }
 		else { false }
 	}
+}
+
+// https://drafts.csswg.org/css-values-4/#identifier-value
+pub fn is_valid_custom_ident(ident string, blacklist []string) bool {
+	if is_css_wide_keyword_string(ident) || equals_ignoring_ascii_case(ident, 'default') {
+		return false
+	}
+	for value in blacklist {
+		if equals_ignoring_ascii_case(ident, value) {
+			return false
+		}
+	}
+	return true
 }
 
 pub fn string_from_keyword(keyword Keyword) string {

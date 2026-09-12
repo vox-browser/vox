@@ -13076,23 +13076,8 @@ fn (mut parser Parser) parse_custom_ident(mut tokens ComponentValueStream, black
 	}
 	custom_ident := token.token().ident()
 
-	// The CSS-wide keywords are not valid <custom-ident>s.
-	if is_css_wide_keyword_string(custom_ident) {
+	if !is_valid_custom_ident(custom_ident, blacklist) {
 		return none
-	}
-
-	// The default keyword is reserved and is also not a valid <custom-ident>.
-	if equals_ignoring_ascii_case(custom_ident, 'default') {
-		return none
-	}
-
-	// Specifications using <custom-ident> must specify clearly what other keywords are excluded from <custom-ident>,
-	// if any-for example by saying that any pre-defined keywords in that property's value definition are excluded.
-	// Excluded keywords are excluded in all ASCII case permutations.
-	for value in blacklist {
-		if equals_ignoring_ascii_case(custom_ident, value) {
-			return none
-		}
 	}
 
 	tokens = transaction

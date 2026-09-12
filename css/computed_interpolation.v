@@ -10948,10 +10948,7 @@ fn computed_interpolation_compute_animation_name_entry(entry StyleValue) ?StyleV
 		string_value := entry.as_string().string_value()
 
 		// AD-HOC: We shouldn't convert strings that aren't valid <custom-ident>s
-		if is_css_wide_keyword_string(string_value) || to_ascii_lowercase(string_value) in [
-			'default',
-			'none',
-		] {
+		if !is_valid_custom_ident(string_value, ['none']) {
 			return entry
 		}
 

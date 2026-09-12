@@ -1479,8 +1479,7 @@ fn (mut parser RuleSelectorParser) convert_to_keyframes_rule(rule AtRule) ?&CSSR
 
 	if name_token.is(.ident) {
 		name := name_token.token().ident()
-		if is_css_wide_keyword_local(name) || equals_ignoring_ascii_case(name, 'none')
-			|| equals_ignoring_ascii_case(name, 'default') {
+		if !is_valid_custom_ident(name, ['none']) {
 			parser_report_error(ParsingError(InvalidRuleError{
 				rule_name: '@keyframes'
 				prelude: prelude_stream.dump_string()
@@ -2304,7 +2303,7 @@ fn parse_font_family_name_for_rule_parsing(values []ComponentValue) ?string {
 		return none
 	}
 	if parts.len == 1 {
-		if is_css_wide_keyword_string(parts[0]) || equals_ignoring_ascii_case(parts[0], 'default') {
+		if !is_valid_custom_ident(parts[0], []) {
 			return none
 		}
 		if is_generic_font_family_name(parts[0]) {
@@ -2345,17 +2344,11 @@ fn parse_counter_style_name_from_tokens(mut tokens ParserTokenStream) ?string {
 	transaction_index := tokens.index
 	tokens.discard_whitespace()
 	token := tokens.consume_a_token()
-	if !token.is(.ident) || equals_ignoring_ascii_case(token.token().ident(), 'none') {
+	if !token.is(.ident) || !is_valid_custom_ident(token.token().ident(), ['none']) {
 		tokens.index = transaction_index
 		return none
 	}
 	mut custom_ident := token.token().ident()
-	if keyword := keyword_from_string(custom_ident) {
-		if keyword.is_css_wide_keyword() {
-			tokens.index = transaction_index
-			return none
-		}
-	}
 
 	// https://drafts.csswg.org/css-counter-styles-3/#the-counter-style-rule
 	// Counter style names are case-sensitive. However, the names defined in this specification are ASCII lowercased
