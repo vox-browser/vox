@@ -14,6 +14,7 @@ pub mut:
 	native &OpenGLContext
 mut:
 	next_handle                         GLuint = 1
+	context_generation_                 u64
 	error_                              GLenum
 	context_lost_                       bool
 	xr_compatible_                      bool
@@ -86,6 +87,10 @@ pub fn WebGLRenderingContext.new(version WebGLVersion, attributes WebGLContextAt
 
 pub fn (context &WebGLRenderingContext) identity() u64 {
 	return u64(voidptr(context))
+}
+
+pub fn (context &WebGLRenderingContext) context_generation() u64 {
+	return context.context_generation_
 }
 
 fn (mut context WebGLRenderingContext) allocate_handle() GLuint {
@@ -189,10 +194,23 @@ pub fn (mut context WebGLRenderingContext) reset_to_default_state() {
 	context.generic_parameters_ = default_webgl_parameters()
 }
 
+// A restored compositor context owns a fresh GL object namespace. Advancing
+// the generation invalidates every wrapper from the lost context without
+// confusing it with an object explicitly deleted by script.
+pub fn (mut context WebGLRenderingContext) reset_context_state_after_loss() {
+	context.context_generation_++
+	context.reset_to_default_state()
+	context.current_queries.clear()
+	context.bound_samplers.clear()
+	context.current_transform_feedback = none
+	context.current_vertex_array = none
+	context.current_vertex_array_oes = none
+}
+
 pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {
 	handle := context.allocate_handle()
 	buffer := &WebGLBuffer{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.buffers[handle] = buffer
@@ -203,7 +221,7 @@ pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {
 pub fn (mut context WebGLRenderingContext) create_framebuffer() &WebGLFramebuffer {
 	handle := context.allocate_handle()
 	framebuffer_object := &WebGLFramebuffer{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.framebuffers[handle] = framebuffer_object
@@ -214,7 +232,7 @@ pub fn (mut context WebGLRenderingContext) create_framebuffer() &WebGLFramebuffe
 pub fn (mut context WebGLRenderingContext) create_renderbuffer() &WebGLRenderbuffer {
 	handle := context.allocate_handle()
 	renderbuffer_object := &WebGLRenderbuffer{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.renderbuffers[handle] = renderbuffer_object
@@ -225,7 +243,7 @@ pub fn (mut context WebGLRenderingContext) create_renderbuffer() &WebGLRenderbuf
 pub fn (mut context WebGLRenderingContext) create_texture() &WebGLTexture {
 	handle := context.allocate_handle()
 	texture := &WebGLTexture{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.textures[handle] = texture
@@ -240,7 +258,7 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 	}
 	handle := context.allocate_handle()
 	shader := &WebGLShader{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 		type_: type_
 	}
 	unsafe {
@@ -252,7 +270,7 @@ pub fn (mut context WebGLRenderingContext) create_shader(type_ GLenum) ?&WebGLSh
 pub fn (mut context WebGLRenderingContext) create_program() &WebGLProgram {
 	handle := context.allocate_handle()
 	program := &WebGLProgram{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.programs[handle] = program
@@ -261,7 +279,19 @@ pub fn (mut context WebGLRenderingContext) create_program() &WebGLProgram {
 }
 
 pub fn (context &WebGLRenderingContext) owns(object &WebGLObject) bool {
-	return object.context_id == context.identity() && !object.invalidated_
+	return object.context_id == context.identity()
+		&& !object.invalidated_for_context(context.context_generation_)
+}
+
+fn (mut context WebGLRenderingContext) object_handle_for_query(object &WebGLObject) ?GLuint {
+	handle_result := object.handle_for_query(context.identity(), context.context_generation_) or {
+		context.set_error(invalid_operation)
+		return none
+	}
+	if !handle_result.has_value {
+		return none
+	}
+	return handle_result.value
 }
 
 pub fn (mut context WebGLRenderingContext) bind_buffer(target GLenum, buffer ?&WebGLBuffer) {
@@ -331,11 +361,14 @@ pub fn (mut context WebGLRenderingContext) buffer_sub_data(target GLenum, offset
 pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
 	if value := buffer {
 		mut mutable_value := unsafe { &WebGLBuffer(value) }
-		if !context.owns(&value.object) {
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
+			context.set_error(invalid_operation)
 			return
 		}
-		handle := value.object.handle_
-		mutable_value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.buffers.delete(handle)
 		for target, bound in context.bound_buffers {
 			if bound == handle { context.bound_buffers.delete(target) }
@@ -352,9 +385,10 @@ pub fn (mut context WebGLRenderingContext) delete_buffer(buffer ?&WebGLBuffer) {
 	}
 }
 
-pub fn (context &WebGLRenderingContext) is_buffer(buffer ?&WebGLBuffer) bool {
+pub fn (mut context WebGLRenderingContext) is_buffer(buffer ?&WebGLBuffer) bool {
 	value := buffer or { return false }
-	return context.owns(&value.object) && value.object.handle_ in context.buffers
+	handle := context.object_handle_for_query(&value.object) or { return false }
+	return handle in context.buffers
 }
 
 pub fn (mut context WebGLRenderingContext) shader_source(mut shader WebGLShader, source string) {

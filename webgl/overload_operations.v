@@ -259,12 +259,14 @@ pub fn (mut context WebGLRenderingContext) compressed_tex_sub_image3d(target GLe
 pub fn (mut context WebGLRenderingContext) delete_transform_feedback(feedback ?&WebGLTransformFeedback) {
 	if value := feedback {
 		mut mutable_value := unsafe { &WebGLTransformFeedback(value) }
-		if !context.owns(&value.object) || value.active_ {
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
-		handle := value.object.handle_
-		mutable_value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.transform_feedbacks.delete(handle)
 		if current := context.current_transform_feedback {
 			if current.object.handle_ == handle {

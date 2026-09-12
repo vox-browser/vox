@@ -85,7 +85,7 @@ pub fn (mut context WebGLRenderingContext) create_query() &WebGLQuery {
 	context.require_webgl2()
 	handle := context.allocate_handle()
 	query := &WebGLQuery{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.queries[handle] = query
@@ -176,16 +176,14 @@ pub fn (mut context WebGLRenderingContext) get_query_parameter(query &WebGLQuery
 
 pub fn (mut context WebGLRenderingContext) delete_query(mut query ?&WebGLQuery) {
 	if mut value := query {
-		if !context.owns(&value.object) {
+		handle_result := value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
-		if value.active_ {
-			context.set_error(invalid_operation)
+		if !handle_result.has_value {
 			return
 		}
-		handle := value.object.handle_
-		value.object.invalidate()
+		handle := handle_result.value
 		context.queries.delete(handle)
 		context.native.dispatch('delete_query', handle)
 	}
@@ -195,7 +193,7 @@ pub fn (mut context WebGLRenderingContext) create_sampler() &WebGLSampler {
 	context.require_webgl2()
 	handle := context.allocate_handle()
 	sampler := &WebGLSampler{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.samplers[handle] = sampler
@@ -253,12 +251,14 @@ pub fn (mut context WebGLRenderingContext) sampler_parameterf(mut sampler WebGLS
 
 pub fn (mut context WebGLRenderingContext) delete_sampler(mut sampler ?&WebGLSampler) {
 	if mut value := sampler {
-		if !context.owns(&value.object) {
+		handle_result := value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
-		handle := value.object.handle_
-		value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.samplers.delete(handle)
 		for unit, bound in context.bound_samplers {
 			if bound == handle { context.bound_samplers.delete(unit) }
@@ -278,7 +278,7 @@ pub fn (mut context WebGLRenderingContext) fence_sync(condition GLenum, flags GL
 	}
 	handle := context.allocate_handle()
 	sync := &WebGLSync{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.syncs[handle] = sync
@@ -322,12 +322,14 @@ pub fn (mut context WebGLRenderingContext) wait_sync(mut sync WebGLSync, flags G
 
 pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
 	if mut value := sync {
-		if !context.owns(&value.object) {
+		handle_result := value.sync_handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
-		handle := value.object.handle_
-		value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.syncs.delete(handle)
 		context.native.dispatch('delete_sync', handle)
 	}
@@ -336,7 +338,7 @@ pub fn (mut context WebGLRenderingContext) delete_sync(mut sync ?&WebGLSync) {
 pub fn (mut context WebGLRenderingContext) create_transform_feedback() &WebGLTransformFeedback {
 	handle := context.allocate_handle()
 	feedback := &WebGLTransformFeedback{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.transform_feedbacks[handle] = feedback
@@ -430,7 +432,7 @@ pub fn (mut context WebGLRenderingContext) resume_transform_feedback() {
 pub fn (mut context WebGLRenderingContext) create_vertex_array() &WebGLVertexArrayObject {
 	handle := context.allocate_handle()
 	array := &WebGLVertexArrayObject{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.vertex_arrays[handle] = array
@@ -453,19 +455,22 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array(array ?&WebGLVertex
 	})
 }
 
-pub fn (context &WebGLRenderingContext) is_vertex_array(array ?&WebGLVertexArrayObject) bool {
+pub fn (mut context WebGLRenderingContext) is_vertex_array(array ?&WebGLVertexArrayObject) bool {
 	value := array or { return false }
-	return context.owns(&value.object) && value.object.handle_ in context.vertex_arrays
+	handle := context.object_handle_for_query(&value.object) or { return false }
+	return handle in context.vertex_arrays
 }
 
 pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGLVertexArrayObject) {
 	if mut value := array {
-		if !context.owns(&value.object) {
+		handle_result := value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
-		handle := value.object.handle_
-		value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.vertex_arrays.delete(handle)
 		if current := context.current_vertex_array {
 			if current == value {
@@ -481,7 +486,7 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGL
 pub fn (mut context WebGLRenderingContext) create_vertex_array_oes() &WebGLVertexArrayObjectOES {
 	handle := context.allocate_handle()
 	array := &WebGLVertexArrayObjectOES{
-		object: new_object(context.identity(), handle)
+		object: new_object(context.identity(), context.context_generation_, handle)
 	}
 	unsafe {
 		context.vertex_arrays_oes[handle] = array
@@ -503,20 +508,27 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array_oes(array ?&WebGLVe
 	})
 }
 
-pub fn (context &WebGLRenderingContext) is_vertex_array_oes(array ?&WebGLVertexArrayObjectOES) bool {
+pub fn (mut context WebGLRenderingContext) is_vertex_array_oes(array ?&WebGLVertexArrayObjectOES) bool {
 	value := array or { return false }
-	return context.owns(&value.object) && value.object.handle_ in context.vertex_arrays_oes
+	// The extension currently returns false without setting an error for a
+	// vertex array created by another context.
+	handle_result := value.object.handle_for_query(context.identity(), context.context_generation_) or {
+		return false
+	}
+	return handle_result.has_value && handle_result.value in context.vertex_arrays_oes
 }
 
 pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGLVertexArrayObjectOES) {
 	if value := array {
 		mut mutable_value := unsafe { &WebGLVertexArrayObjectOES(value) }
-		if !context.owns(&value.object) {
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			// Upstream currently returns silently for a foreign OES VAO.
 			return
 		}
-		handle := value.object.handle_
-		mutable_value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.vertex_arrays_oes.delete(handle)
 		if current := context.current_vertex_array_oes {
 			if current == value {

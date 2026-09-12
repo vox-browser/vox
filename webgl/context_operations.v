@@ -411,12 +411,14 @@ pub fn (mut context WebGLRenderingContext) cull_face(mode GLenum) {
 pub fn (mut context WebGLRenderingContext) delete_framebuffer(object ?&WebGLFramebuffer) {
 	if value := object {
 		mut mutable_value := unsafe { &WebGLFramebuffer(value) }
-		if !context.owns(&value.object) {
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
-		handle := value.object.handle_
-		mutable_value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.framebuffers.delete(handle)
 		if context.bound_framebuffer == handle {
 			context.bound_framebuffer = 0
@@ -428,12 +430,14 @@ pub fn (mut context WebGLRenderingContext) delete_framebuffer(object ?&WebGLFram
 pub fn (mut context WebGLRenderingContext) delete_renderbuffer(object ?&WebGLRenderbuffer) {
 	if value := object {
 		mut mutable_value := unsafe { &WebGLRenderbuffer(value) }
-		if !context.owns(&value.object) {
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
-		handle := value.object.handle_
-		mutable_value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.renderbuffers.delete(handle)
 		if context.bound_renderbuffer == handle {
 			context.bound_renderbuffer = 0
@@ -445,12 +449,14 @@ pub fn (mut context WebGLRenderingContext) delete_renderbuffer(object ?&WebGLRen
 pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture) {
 	if value := object {
 		mut mutable_value := unsafe { &WebGLTexture(value) }
-		if !context.owns(&value.object) {
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
-		handle := value.object.handle_
-		mutable_value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.textures.delete(handle)
 		for target, bound in context.bound_textures {
 			if bound == handle { context.bound_textures.delete(target) }
@@ -462,12 +468,14 @@ pub fn (mut context WebGLRenderingContext) delete_texture(object ?&WebGLTexture)
 pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 	if value := object {
 		mut mutable_value := unsafe { &WebGLShader(value) }
-		if !context.owns(&value.object) {
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
-		handle := value.object.handle_
-		mutable_value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.shaders.delete(handle)
 		context.command('delete_shader', handle)
 	}
@@ -476,12 +484,14 @@ pub fn (mut context WebGLRenderingContext) delete_shader(object ?&WebGLShader) {
 pub fn (mut context WebGLRenderingContext) delete_program(object ?&WebGLProgram) {
 	if value := object {
 		mut mutable_value := unsafe { &WebGLProgram(value) }
-		if !context.owns(&value.object) {
+		handle_result := mutable_value.object.handle_for_deletion(context.identity(), context.context_generation_) or {
 			context.set_error(invalid_operation)
 			return
 		}
-		handle := value.object.handle_
-		mutable_value.object.invalidate()
+		if !handle_result.has_value {
+			return
+		}
+		handle := handle_result.value
 		context.programs.delete(handle)
 		if current := context.current_program {
 			if current.object.handle_ == handle {
@@ -930,27 +940,32 @@ pub fn (mut context WebGLRenderingContext) get_vertex_attrib_offset(index GLuint
 
 pub fn (mut context WebGLRenderingContext) is_framebuffer(value ?&WebGLFramebuffer) bool {
 	object := value or { return false }
-	return context.owns(&object.object)
+	handle := context.object_handle_for_query(&object.object) or { return false }
+	return handle in context.framebuffers
 }
 
 pub fn (mut context WebGLRenderingContext) is_renderbuffer(value ?&WebGLRenderbuffer) bool {
 	object := value or { return false }
-	return context.owns(&object.object)
+	handle := context.object_handle_for_query(&object.object) or { return false }
+	return handle in context.renderbuffers
 }
 
 pub fn (mut context WebGLRenderingContext) is_texture(value ?&WebGLTexture) bool {
 	object := value or { return false }
-	return context.owns(&object.object)
+	handle := context.object_handle_for_query(&object.object) or { return false }
+	return handle in context.textures
 }
 
 pub fn (mut context WebGLRenderingContext) is_shader(value ?&WebGLShader) bool {
 	object := value or { return false }
-	return context.owns(&object.object)
+	handle := context.object_handle_for_query(&object.object) or { return false }
+	return handle in context.shaders
 }
 
 pub fn (mut context WebGLRenderingContext) is_program(value ?&WebGLProgram) bool {
 	object := value or { return false }
-	return context.owns(&object.object)
+	handle := context.object_handle_for_query(&object.object) or { return false }
+	return handle in context.programs
 }
 
 pub fn (mut context WebGLRenderingContext) line_width(width f32) {

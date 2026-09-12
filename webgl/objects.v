@@ -8,25 +8,74 @@ module webgl
 @[heap]
 pub struct WebGLObject {
 pub:
-	context_id u64
+	context_id         u64
+	context_generation u64
 mut:
 	handle_      GLuint
 	invalidated_ bool
 	label_       string
 }
 
-fn new_object(context_id u64, handle GLuint) WebGLObject {
+fn new_object(context_id u64, context_generation u64, handle GLuint) WebGLObject {
 	return WebGLObject{
 		context_id: context_id
-		handle_:    handle
+		context_generation: context_generation
+		handle_: handle
 	}
 }
 
-pub fn (object &WebGLObject) handle(context_id u64) !GLuint {
-	if object.context_id != context_id || object.invalidated_ {
+pub struct WebGLOptionalHandle {
+pub:
+	has_value bool
+	value     GLuint
+}
+
+pub fn (object &WebGLObject) validate_context(context_id u64) ! {
+	if object.context_id != context_id {
+		return error('GL_INVALID_OPERATION')
+	}
+	return
+}
+
+pub fn (object &WebGLObject) invalidated_for_context(context_generation u64) bool {
+	return object.invalidated_ || object.context_generation != context_generation
+}
+
+pub fn (object &WebGLObject) handle(context_id u64, context_generation u64) !GLuint {
+	object.validate_context(context_id)!
+	if object.invalidated_for_context(context_generation) {
 		return error('GL_INVALID_OPERATION')
 	}
 	return object.handle_
+}
+
+pub fn (mut object WebGLObject) handle_for_deletion(context_id u64, context_generation u64) !WebGLOptionalHandle {
+	object.validate_context(context_id)!
+	if object.invalidated_for_context(context_generation) {
+		return WebGLOptionalHandle{}
+	}
+	object.invalidated_ = true
+	return WebGLOptionalHandle{
+		has_value: true
+		value: object.handle_
+	}
+}
+
+pub fn (object &WebGLObject) handle_for_query(context_id u64, context_generation u64) !WebGLOptionalHandle {
+	object.validate_context(context_id)!
+	if object.invalidated_for_context(context_generation) {
+		return WebGLOptionalHandle{}
+	}
+	return WebGLOptionalHandle{
+		has_value: true
+		value: object.handle_
+	}
+}
+
+// The V translation uses context identity as its standalone relevant-global
+// token; objects forward the token from their creating context.
+pub fn (object &WebGLObject) relevant_global_impl() u64 {
+	return object.context_id
 }
 
 pub fn (object &WebGLObject) invalidated() bool {
@@ -43,7 +92,6 @@ pub fn (mut object WebGLObject) set_label(label string) {
 
 fn (mut object WebGLObject) invalidate() {
 	object.invalidated_ = true
-	object.handle_ = 0
 }
 
 @[heap]
@@ -155,6 +203,14 @@ pub mut:
 	object WebGLObject
 mut:
 	signaled_ bool
+}
+
+pub fn (sync &WebGLSync) sync_handle(context_id u64, context_generation u64) !GLuint {
+	return sync.object.handle(context_id, context_generation)
+}
+
+pub fn (mut sync WebGLSync) sync_handle_for_deletion(context_id u64, context_generation u64) !WebGLOptionalHandle {
+	return sync.object.handle_for_deletion(context_id, context_generation)
 }
 
 @[heap]

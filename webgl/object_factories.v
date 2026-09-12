@@ -64,10 +64,6 @@ pub fn WebGLSync.create(mut context WebGLRenderingContext, condition GLenum, fla
 	return context.fence_sync(condition, flags)
 }
 
-pub fn (sync &WebGLSync) sync_handle() GLuint {
-	return sync.object.handle_
-}
-
 pub fn WebGLTransformFeedback.create(mut context WebGLRenderingContext) &WebGLTransformFeedback {
 	return context.create_transform_feedback()
 }
