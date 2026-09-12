@@ -2017,7 +2017,7 @@ fn test_table_caption_position_ignores_own_margins_at_wrapper_origin() {
 	assert caption.offset.y().to_double() == 0
 }
 
-fn test_table_caption_resolves_own_width_after_laying_out_descendants() {
+fn test_table_caption_uses_its_content_width_to_lay_out_descendants() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:200px; border-spacing:0 } caption { width:50%; height:10px; padding:5px } td { height:20px; padding:0 }
 	</style><table><caption id="caption"><div id="inside"></div></caption><tr><td></td></tr></table>')
@@ -2026,7 +2026,7 @@ fn test_table_caption_resolves_own_width_after_laying_out_descendants() {
 	inside := used_for_id(result, 'inside')
 	assert caption.content_width().to_double() == 100
 	assert caption.offset.x().to_double() == 0
-	assert inside.content_width().to_double() == 200
+	assert inside.content_width().to_double() == 100
 	assert inside.offset.x().to_double() == 0
 }
 

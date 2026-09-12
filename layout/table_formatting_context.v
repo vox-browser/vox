@@ -1452,13 +1452,6 @@ fn layout_table_captions(mut state LayoutState, table &Node, mut table_state Use
 		if !has_caption_containing_state {
 			caption_state.set_containing_block_used_values(table_state)
 		}
-		// run_caption_layout() creates and runs the caption's independent BFC
-		// before resolving the caption's own box model. Descendants therefore
-		// see the full table border-box width even when the caption later resolves
-		// to a percentage or fixed width.
-		caption_state.set_content_width(caption_available_width)
-		caption_state.set_has_definite_width(true)
-		result := layout_inside_independent_formatting_context(mut state, child, mut caption_state, AvailableSpace.new(AvailableSize.make_definite(caption_available_width), caption_available_height))
 		resolve_box_model_edges(styled.computed_values(), mut caption_state, caption_available_width.to_double())
 		caption_width := child.computed_values().size_value(.width)
 		if caption_width.is_auto() {
@@ -1466,6 +1459,10 @@ fn layout_table_captions(mut state LayoutState, table &Node, mut table_state Use
 		} else if resolved_width := resolve_layout_content_size(child, caption_width, caption_available_width, caption_state, true) {
 			caption_state.set_content_width(clamp_layout_content_size(child, resolved_width, caption_available_width, caption_state, true))
 		}
+		caption_state.set_has_definite_width(true)
+		caption_outer_space := AvailableSpace.new(AvailableSize.make_definite(caption_available_width), caption_available_height)
+		caption_inner_space := caption_state.available_inner_space_or_constraints_from(caption_outer_space)
+		result := layout_inside_independent_formatting_context(mut state, child, mut caption_state, caption_inner_space)
 		height_basis := if caption_available_height.is_definite() {
 			?f64(caption_available_height.to_px_or_zero().to_double())
 		} else {
