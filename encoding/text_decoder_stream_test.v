@@ -59,6 +59,7 @@ fn test_exact_constructors_and_scalar_conversion_entry_point() {
 	assert stream.convert_code_unit_to_scalar_value(0xd83d).value == none
 	converted := stream.convert_code_unit_to_scalar_value(0xde00)
 	assert converted.value? == u32(0x1f600)
+	assert TextEncoderStream.create_for_constructor().encoding() == 'utf-8'
 }
 
 fn test_decoder_output_queue_uses_single_then_builder_storage() {

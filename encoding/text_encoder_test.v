@@ -17,6 +17,7 @@ fn test_encode_multibyte() {
 	// U+00E9 é -> 2 bytes, U+1D538 𝔸 (astral) -> 4 bytes.
 	assert encoder.encode('é') == [u8(0xC3), 0xA9]
 	assert encoder.encode('𝔸') == [u8(0xF0), 0x9D, 0x94, 0xB8]
+	assert encoder.encode_to_byte_buffer('é𝔸') == 'é𝔸'.bytes()
 }
 
 fn test_encode_into_fits() {
@@ -26,6 +27,14 @@ fn test_encode_into_fits() {
 	assert result.read == u64(3)
 	assert result.written == u64(3)
 	assert dest[..3].bytestr() == 'abc'
+}
+
+fn test_encode_into_result_is_the_raw_encoder_boundary() {
+	encoder := TextEncoder.create()
+	mut destination := []u8{len: 3}
+	result := encoder.encode_into_result('Aé', mut destination)
+	assert result == TextEncoderEncodeIntoResult{ read: 2, written: 3 }
+	assert destination == 'Aé'.bytes()
 }
 
 fn test_encode_into_partial_ascii() {

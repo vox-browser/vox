@@ -19,6 +19,10 @@ pub:
 }
 
 pub fn TextEncoderStream.create() &TextEncoderStream {
+	return TextEncoderStream.create_for_constructor()
+}
+
+pub fn TextEncoderStream.create_for_constructor() &TextEncoderStream {
 	return TextEncoderStream.construct_impl()
 }
 

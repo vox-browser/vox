@@ -40,10 +40,14 @@ pub fn (encoder &TextEncoder) encoding() string {
 	return (&TextEncoderCommonMixin{}).encoding()
 }
 
+pub fn (_ &TextEncoder) encode_to_byte_buffer(input string) []u8 {
+	return input.bytes()
+}
+
 // https://encoding.spec.whatwg.org/#dom-textencoder-encode — the UTF-8 bytes of input. The V string
 // (like AK::String) is always UTF-8, so this is a copy of its bytes.
 pub fn (encoder &TextEncoder) encode(input string) []u8 {
-	return input.bytes()
+	return encoder.encode_to_byte_buffer(input)
 }
 
 // https://encoding.spec.whatwg.org/#dom-textencoder-encodeinto — encode source into destination,
@@ -52,6 +56,10 @@ pub fn (encoder &TextEncoder) encode(input string) []u8 {
 // AD-HOC (upstream): a detached destination has byte length 0, so no bytes are copied and the result
 // is { 0, 0 }. Here an empty destination []u8 yields the same result without special-casing.
 pub fn (encoder &TextEncoder) encode_into(source string, mut destination []u8) TextEncoderEncodeIntoResult {
+	return encoder.encode_into_result(source, mut destination)
+}
+
+pub fn (_ &TextEncoder) encode_into_result(source string, mut destination []u8) TextEncoderEncodeIntoResult {
 	// 1-2. Let read and written be 0. (Named with `_count` suffixes to avoid shadowing V's builtins.)
 	mut read_count := u64(0)
 	mut written_count := u64(0)
