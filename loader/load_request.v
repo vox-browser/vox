@@ -7,6 +7,7 @@ module loader
 import dom
 import fetch
 import http
+import referrerpolicy
 import time
 
 pub enum NavigatorCompatibilityMode {
@@ -24,6 +25,12 @@ mut:
 	cache_mode_          fetch.CacheMode
 	include_credentials_ bool = true
 	initiator_type_      ?fetch.InitiatorType
+	destination_         ?fetch.Destination
+	request_mode_        fetch.Mode = .no_cors
+	referrer_policy_     referrerpolicy.ReferrerPolicy = referrerpolicy.default_referrer_policy
+	is_navigation_request_ bool
+	priority_              fetch.Priority = .auto
+	source_url_            ?dom.URL
 	page_id_             ?u64
 	started_at           ?time.Time
 }
@@ -80,6 +87,54 @@ pub fn (request &LoadRequest) initiator_type() ?fetch.InitiatorType {
 
 pub fn (mut request LoadRequest) set_initiator_type(initiator_type ?fetch.InitiatorType) {
 	request.initiator_type_ = initiator_type
+}
+
+pub fn (request &LoadRequest) destination() ?fetch.Destination {
+	return request.destination_
+}
+
+pub fn (mut request LoadRequest) set_destination(destination ?fetch.Destination) {
+	request.destination_ = destination
+}
+
+pub fn (request &LoadRequest) request_mode() fetch.Mode {
+	return request.request_mode_
+}
+
+pub fn (mut request LoadRequest) set_request_mode(request_mode fetch.Mode) {
+	request.request_mode_ = request_mode
+}
+
+pub fn (request &LoadRequest) referrer_policy() referrerpolicy.ReferrerPolicy {
+	return request.referrer_policy_
+}
+
+pub fn (mut request LoadRequest) set_referrer_policy(referrer_policy referrerpolicy.ReferrerPolicy) {
+	request.referrer_policy_ = referrer_policy
+}
+
+pub fn (request &LoadRequest) is_navigation_request() bool {
+	return request.is_navigation_request_
+}
+
+pub fn (mut request LoadRequest) set_is_navigation_request(is_navigation_request bool) {
+	request.is_navigation_request_ = is_navigation_request
+}
+
+pub fn (request &LoadRequest) priority() fetch.Priority {
+	return request.priority_
+}
+
+pub fn (mut request LoadRequest) set_priority(priority fetch.Priority) {
+	request.priority_ = priority
+}
+
+pub fn (request &LoadRequest) source_url() ?dom.URL {
+	return request.source_url_
+}
+
+pub fn (mut request LoadRequest) set_source_url(source_url dom.URL) {
+	request.source_url_ = source_url
 }
 
 // Page is an embedder-owned GC object upstream. The standalone translation
