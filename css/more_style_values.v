@@ -1094,10 +1094,6 @@ pub fn (style_value ContentStyleValue) content() StyleValueList {
 	return style_value.content_
 }
 
-pub fn (style_value ContentStyleValue) has_alt_text() bool {
-	return style_value.alt_text_ != none
-}
-
 pub fn (style_value ContentStyleValue) alt_text() ?StyleValueList {
 	return style_value.alt_text_
 }
