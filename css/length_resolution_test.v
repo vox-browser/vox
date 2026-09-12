@@ -89,6 +89,24 @@ fn test_style_computation_records_viewport_and_font_metric_dependencies() {
 	assert child_style.length_percentage_to_px(.width, 0) or { -1 } == 60
 }
 
+fn test_iframe_root_font_size_uses_its_document_viewport() {
+	// An iframe's style computer can exist before layout assigns the child
+	// document its viewport. Root font properties must therefore obtain the
+	// current viewport from that document, rather than a cached/top-level one.
+	mut child_document := dom.Document.create(dom.URL{'about:srcdoc'})
+	computer := StyleComputer.new(child_document)
+	child_document.set_viewport_rect(dom.Rect{0, 0, 400, 600})
+	mut root := child_document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	root.set_attribute_value('style', 'font-size: 10vw')
+	mut child_document_node := unsafe { &dom.Node(child_document) }
+	child_document_node.append_child(root.as_node()) or { panic('${err}') }
+
+	computed := computer.compute_style(dom.AbstractElement.new(root, none))
+	assert computed.font_size().to_double() == 40
+}
+
 fn container_length_test_tree(container_style_text string, subject_style_text string, width f64, height f64, has_geometry bool) (&dom.Document, &dom.Element, &dom.Element, LengthResolutionContext) {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_viewport_rect(dom.Rect{0, 0, 800, 600})

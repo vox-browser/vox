@@ -13570,9 +13570,11 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 		// resolves font-relative units against the inheritance parent. The
 		// partially built current style may contain the temporary 13px value used
 		// by monospace font-size recascading and must not be used here.
+		mut length_resolution_context := LengthResolutionContext.for_document(s.document_)
 		mut font_metrics := LengthFontMetrics.default()
 		if current := abstract_element {
 			if parent := current.element_to_inherit_style_from() {
+				length_resolution_context = LengthResolutionContext.for_element(&parent)
 				if dom_computed := parent.computed_properties() {
 					if inherited := computed_properties_from_dom(dom_computed) {
 						font_metrics = computed_interpolation_font_metrics_for_style(inherited, s.font_computer_)
@@ -13580,33 +13582,39 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 				}
 			}
 		}
-		context := ComputationContext{
-			length_resolution_context: LengthResolutionContext{
-				viewport_rect: s.viewport_rect_
-				font_metrics: font_metrics
-				root_font_metrics: s.root_element_font_metrics
-				font_metrics_depend_on_viewport_metrics: if current := abstract_element {
-					if parent := current.element_to_inherit_style_from() {
-						if dom_computed := parent.computed_properties() {
-							if inherited := computed_properties_from_dom(dom_computed) {
-								inherited.font_metrics_depend_on_viewport_metrics()
-							} else { false }
-						} else { false }
-					} else { false }
-				} else { false }
-				root_font_metrics_depend_on_viewport_metrics: s.root_element_font_metrics_depend_on_viewport_metrics
-				subject_inline_axis_is_horizontal: computed_properties.writing_mode() == .horizontal_tb
-				subject_element: if current := abstract_element {
-					?&dom.Element(current.element())
+		length_resolution_context.font_metrics = font_metrics
+		length_resolution_context.root_font_metrics = s.root_element_font_metrics
+		length_resolution_context.font_metrics_depend_on_viewport_metrics = if current := abstract_element {
+			if parent := current.element_to_inherit_style_from() {
+				if dom_computed := parent.computed_properties() {
+					if inherited := computed_properties_from_dom(dom_computed) {
+						inherited.font_metrics_depend_on_viewport_metrics()
+					} else {
+						false
+					}
 				} else {
-					?&dom.Element(none)
+					false
 				}
-				query_container_cache: if _ := abstract_element {
-					?&LengthQueryContainerCache(&LengthQueryContainerCache{})
-				} else {
-					?&LengthQueryContainerCache(none)
-				}
+			} else {
+				false
 			}
+		} else {
+			false
+		}
+		length_resolution_context.root_font_metrics_depend_on_viewport_metrics = s.root_element_font_metrics_depend_on_viewport_metrics
+		length_resolution_context.subject_inline_axis_is_horizontal = computed_properties.writing_mode() == .horizontal_tb
+		length_resolution_context.subject_element = if current := abstract_element {
+			?&dom.Element(current.element())
+		} else {
+			?&dom.Element(none)
+		}
+		length_resolution_context.query_container_cache = if _ := abstract_element {
+			?&LengthQueryContainerCache(&LengthQueryContainerCache{})
+		} else {
+			?&LengthQueryContainerCache(none)
+		}
+		context := ComputationContext{
+			length_resolution_context: length_resolution_context
 			abstract_element: abstract_element
 		}
 		mut mutable_s := unsafe { &StyleComputer(s) }
