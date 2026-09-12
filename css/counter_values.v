@@ -557,6 +557,14 @@ pub fn (counter_style CounterStyle) pad() CounterStylePad {
 	return counter_style.pad_
 }
 
+pub fn (counter_style CounterStyle) equals(other CounterStyle) bool {
+	return counter_style.name_ == other.name_ && counter_style.algorithm_ == other.algorithm_
+		&& counter_style.negative_sign_ == other.negative_sign_
+		&& counter_style.prefix_ == other.prefix_ && counter_style.suffix_ == other.suffix_
+		&& counter_style.range_ == other.range_ && counter_style.pad_ == other.pad_
+		&& counter_style.fallback_ == other.fallback_
+}
+
 // https://drafts.csswg.org/css-counter-styles-3/#extended-range-optional
 fn generate_an_initial_representation_for_extended_cjk_system(input_value i64, type_ ExtendedCJKCounterStyleAlgorithmType, digit_strings []string, digit_marker_strings []string, group_marker_strings []string) string {
 	mut value := input_value

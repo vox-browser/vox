@@ -2,6 +2,25 @@ module css
 
 import dom
 
+fn test_counter_style_equality_compares_every_effective_descriptor() {
+	original := CounterStyle.decimal()
+	same := CounterStyle.create(original.name(), original.algorithm(), original.negative_sign(), original.prefix(), original.suffix(), original.range(), original.fallback(), original.pad())
+	assert original.equals(same)
+
+	mut changed := same
+	changed.suffix_ = 'changed'
+	assert !original.equals(changed)
+	changed = same
+	changed.range_ = [CounterStyleRangeEntry{1, 2}]
+	assert !original.equals(changed)
+	changed = same
+	changed.algorithm_ = CounterStyleAlgorithm(GenericCounterStyleAlgorithm{
+		type_: .cyclic
+		symbol_list: ['x']
+	})
+	assert !original.equals(changed)
+}
+
 fn test_counter_style_rule_mutation_invalidates_registered_style_cache() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	add_document_author_style_sheet(document,
