@@ -185,10 +185,14 @@ mut:
 	running_time_update_event_  bool
 	last_time_update_position_  ?f64
 	allow_autoplay_             bool = true
+	document_observer_          ?&dom.DocumentObserver
+	delaying_load_event_        ?dom.DocumentLoadEventDelayer
+	resource_selection_pending_ bool
+	resource_fetch_started_     bool
 }
 
 pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTMLMediaElement {
-	return &HTMLMediaElement{
+	mut media := &HTMLMediaElement{
 		EventTarget: dom.EventTarget{}
 		event_target_: dom.EventTarget.new()
 		associated_element_: element
@@ -200,6 +204,27 @@ pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTM
 		played_: &TimeRanges{}
 		seekable_: &TimeRanges{}
 	}
+	if html_element := element {
+		dom_element := unsafe { &dom.Element(html_element) }
+		mut document := dom_element.document()
+		mut observer := dom.DocumentObserver.create(mut document)
+		observer.set_document_became_inactive(fn [media] () {
+			mut mutable_media := unsafe { &HTMLMediaElement(media) }
+			mutable_media.pause_element()
+		})
+		media.document_observer_ = observer
+		mut node := dom_element.as_node()
+		node.set_adopted_from_hook(dom.NodeAdoptedFromHook{
+			target: voidptr(media)
+			callback: html_media_element_adopted_from_callback
+		})
+	}
+	return media
+}
+
+fn html_media_element_adopted_from_callback(target voidptr, old_document &dom.Document) {
+	mut media := unsafe { &HTMLMediaElement(target) }
+	media.adopted_from(old_document)
 }
 
 pub fn (media &HTMLMediaElement) is_focusable() bool {
@@ -257,6 +282,51 @@ pub fn (mut element HTMLMediaElement) removed_from(old_parent ?&dom.Node, old_ro
 		}
 	}
 	element.pause_element()
+}
+
+pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
+	html_element := element.associated_element_ or { return }
+	mut new_document := unsafe { &dom.Element(html_element) }.document()
+	element.base_url_ = new_document.base_url()
+	if observer := element.document_observer_ {
+		mut mutable_observer := unsafe { &dom.DocumentObserver(observer) }
+		mutable_observer.retarget_for_adoption(mut new_document)
+	}
+
+	// The delaying flag belongs to the media element's current node document,
+	// so transfer its load-event delay when the element is adopted.
+	if mut delayer := element.delaying_load_event_ {
+		delayer.finish()
+		element.delaying_load_event_ = dom.DocumentLoadEventDelayer.new(mut new_document)
+	}
+
+	// Resource-selection tasks queued against an inactive document cannot run.
+	// Drop their stale task-source entries and continue in the adopting document
+	// unless a resource fetch had already begun.
+	if !old_document.is_fully_active() && !element.resource_fetch_started_
+		&& element.resource_selection_pending_ {
+		mut queue := main_thread_event_loop().task_queue()
+		queue.remove_tasks_matching(fn (task &Task) bool {
+			return task.source() == .media_element
+		})
+		element.select_resource() or {}
+	}
+}
+
+fn (mut element HTMLMediaElement) begin_delaying_load_event() {
+	if element.delaying_load_event_ != none {
+		return
+	}
+	html_element := element.associated_element_ or { return }
+	mut document := unsafe { &dom.Element(html_element) }.document()
+	element.delaying_load_event_ = dom.DocumentLoadEventDelayer.new(mut document)
+}
+
+fn (mut element HTMLMediaElement) finish_delaying_load_event() {
+	if mut delayer := element.delaying_load_event_ {
+		delayer.finish()
+		element.delaying_load_event_ = none
+	}
 }
 
 pub fn (mut element HTMLMediaElement) toggle_fullscreen() {
@@ -422,6 +492,8 @@ pub fn (element &HTMLMediaElement) event_count(name string) int {
 
 pub fn (mut element HTMLMediaElement) cancel_the_fetching_process() {
 	element.fetch_generation_++
+	element.resource_selection_pending_ = false
+	element.resource_fetch_started_ = false
 	if element.network_state_ == .loading {
 		element.network_state_ = .idle
 	}
@@ -505,6 +577,19 @@ pub fn (mut element HTMLMediaElement) load_element() ! {
 }
 
 pub fn (mut element HTMLMediaElement) select_resource() ! {
+	if html_element := element.associated_element_ {
+		document := unsafe { &dom.Element(html_element) }.document()
+		if !document.is_fully_active() {
+			element.begin_delaying_load_event()
+			element.resource_selection_pending_ = true
+			return
+		}
+	}
+	element.resource_selection_pending_ = false
+	element.begin_delaying_load_event()
+	defer {
+		element.finish_delaying_load_event()
+	}
 	mut candidates := []string{}
 	if source := element.source_ {
 		if source.trim_space() != '' {
@@ -534,6 +619,7 @@ pub fn (mut element HTMLMediaElement) select_resource() ! {
 			last_error = 'Invalid media URL'
 			continue
 		}
+		element.resource_fetch_started_ = true
 		response := hook(url, 0) or {
 			last_error = err.msg()
 			continue
@@ -576,6 +662,7 @@ pub fn (mut element HTMLMediaElement) fetch_resource(url_record dom.URL, failure
 		}
 		return error(message)
 	}
+	element.resource_fetch_started_ = true
 	response := hook(url_record, 0) or {
 		message := err.msg()
 		if callback := failure_callback {

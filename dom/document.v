@@ -74,6 +74,16 @@ pub:
 	callback NodeActiveWindowProxyCallback = unsafe { nil }
 }
 
+pub type NodeAdoptedFromCallback = fn (voidptr, &Document)
+
+// HTML element subclasses install this hook for adopting steps that own
+// state outside the DOM module.
+pub struct NodeAdoptedFromHook {
+pub:
+	target   voidptr
+	callback NodeAdoptedFromCallback = unsafe { nil }
+}
+
 pub const color_transparent = Color{0, 0, 0, 0}
 
 pub fn (c Color) alpha() u8 {
@@ -436,6 +446,7 @@ pub mut:
 	manual_slot_assignment_   ?&HTMLSlotElement
 	load_event_delay_hook_    ?NodeLoadEventDelayHook
 	active_window_proxy_hook_ ?NodeActiveWindowProxyHook
+	adopted_from_hook_        ?NodeAdoptedFromHook
 }
 
 // Translation of the ParentNode mixin; its algorithms live in

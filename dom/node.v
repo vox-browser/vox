@@ -2467,6 +2467,10 @@ pub fn (mut n Node) set_document(document &Document) {
 		return
 	}
 	n.document_ = document
+	if element := n.as_element() {
+		mut mutable_element := unsafe { &Element(element) }
+		mutable_element.doc_ = document
+	}
 	if n.needs_style_update() || n.child_needs_style_update() {
 		// NOTE: We unset and reset the "needs style update" flag here.
 		// This ensures that there's a pending style update in the new document
@@ -2774,8 +2778,16 @@ pub fn (mut n Node) moved_from(old_parent ?&Node) {
 }
 
 pub fn (mut n Node) adopted_from(old_document &Document) {
-	_ = old_document
 	n.recompute_editable_subtree_flag()
+	if hook := n.adopted_from_hook_ {
+		if hook.callback != unsafe { nil } {
+			hook.callback(hook.target, old_document)
+		}
+	}
+}
+
+pub fn (mut n Node) set_adopted_from_hook(hook ?NodeAdoptedFromHook) {
+	n.adopted_from_hook_ = hook
 }
 
 pub fn (n &Node) parent_or_shadow_host() ?&Node {
