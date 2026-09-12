@@ -41,6 +41,8 @@ fn test_fallback_execution_and_effective_directives() {
 	mut request := new_request(url.URL{})
 	request.destination = .worker
 	assert (get_the_effective_directive_for_request(request) or { '' }) == worker_src
+	request.destination = .document
+	assert get_the_effective_directive_for_request(request) == none
 	request.initiator = .prefetch
 	assert (get_the_effective_directive_for_request(request) or { '' }) == default_src
 	assert get_the_effective_directive_for_inline_checks(.style_attribute) == style_src_attr

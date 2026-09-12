@@ -35,6 +35,9 @@ pub fn get_the_effective_directive_for_request(request &Request) ?string {
 	}
 	destination := request.destination or { return connect_src }
 	return match destination {
+		// Top-level document navigations use navigation checks. Applying the
+		// fallback connect-src directive here would incorrectly block them.
+		.document { none }
 		.manifest { manifest_src }
 		.object, .embed { object_src }
 		.frame, .iframe { frame_src }
