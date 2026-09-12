@@ -80,3 +80,48 @@ fn test_host_part_selector_can_match_within_its_own_shadow_root() {
 	nested_selector := shadow_part_test_selector(':is(:host)::part(label)')
 	assert matches(nested_selector, part, host, mut nested_context, none, none, .normal, none)
 }
+
+fn test_part_pseudo_element_chaining_uses_the_last_pseudo_element_as_target() {
+	for source, target in {
+		'::part(label)::before':               PseudoElement.before
+		'::part(label)::after':                PseudoElement.after
+		'::part(label)::placeholder':          PseudoElement.placeholder
+		'::part(label)::first-line':           PseudoElement.first_line
+		'::part(label)::first-letter':         PseudoElement.first_letter
+		'::part(label)::file-selector-button': PseudoElement.file_selector_button
+	} {
+		selector := shadow_part_test_selector(source)
+		assert selector.has_part_pseudo_element(), source
+		pseudo_element := selector.pseudo_element() or { panic('missing target: ${source}') }
+		assert pseudo_element.type_ == target, source
+	}
+}
+
+fn test_part_pseudo_element_chaining_rejects_unsupported_combinations() {
+	for source in [
+		'::before::after',
+		'::before::part(label)',
+		'::part(label)::part(icon)',
+		'::part(label)::before::after',
+		'::part(label) + ::part(icon)',
+	] {
+		assert parse_selector_with_parser(source, map[string]bool{}) == none, source
+	}
+}
+
+fn test_chained_part_selector_matches_only_its_target_pseudo_element() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut host := shadow_part_test_element(document, 'part-host')
+	root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut part := shadow_part_test_element(document, 'span')
+	part.set_attribute_value('part', 'label')
+	shadow_part_test_append_to_root(root, part)
+	selector := shadow_part_test_selector('::part(label)::before')
+
+	mut matching_context := MatchContext{}
+	assert matches(selector, part, none, mut matching_context, .before, none, .normal, none)
+	mut base_context := MatchContext{}
+	assert !matches(selector, part, none, mut base_context, none, none, .normal, none)
+	mut wrong_pseudo_context := MatchContext{}
+	assert !matches(selector, part, none, mut wrong_pseudo_context, .after, none, .normal, none)
+}

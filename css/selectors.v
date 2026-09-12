@@ -933,6 +933,7 @@ pub mut:
 	can_use_fast_matches          bool
 	can_use_ancestor_filter       bool
 	contains_the_nesting_selector bool
+	contains_part_pseudo_element  bool
 	contained_pseudo_classes      PseudoClassBitmap
 	ancestor_hashes               [8]u32
 }
@@ -969,6 +970,7 @@ fn create_selector(text string, compound_selectors []CompoundSelector) Selector 
 	// cached metadata through the selector's RefPtr rather than traversing the
 	// selector graph again for every candidate element.
 	data.pseudo_element = selector_pseudo_element_uncached(compound_selectors)
+	data.contains_part_pseudo_element = selector_contains_part_pseudo_element_uncached(compound_selectors)
 	data.contains_the_nesting_selector = selector_contains_nesting_uncached(compound_selectors)
 	data.contained_pseudo_classes = selector_contained_pseudo_classes_uncached(compound_selectors)
 	data.can_use_fast_matches = can_selector_use_fast_matches(selector)
@@ -1053,12 +1055,26 @@ fn selector_pseudo_element_uncached(compound_selectors []CompoundSelector) ?Pseu
 		return none
 	}
 	last := compound_selectors[compound_selectors.len - 1]
+	mut pseudo_element := ?PseudoElementSelector(none)
 	for simple_selector in last.simple_selectors {
 		if simple_selector.type_ == .pseudo_element {
-			return simple_selector.pseudo_element
+			pseudo_element = simple_selector.pseudo_element
 		}
 	}
-	return none
+	return pseudo_element
+}
+
+fn selector_contains_part_pseudo_element_uncached(compound_selectors []CompoundSelector) bool {
+	if compound_selectors.len == 0 {
+		return false
+	}
+	last := compound_selectors[compound_selectors.len - 1]
+	for simple_selector in last.simple_selectors {
+		if simple_selector.type_ == .pseudo_element && simple_selector.pseudo_element.type_ == .part {
+			return true
+		}
+	}
+	return false
 }
 
 pub fn (selector Selector) contains_pseudo_class(pseudo_class PseudoClass) bool {
@@ -1115,8 +1131,10 @@ pub fn (selector Selector) is_slotted() bool {
 }
 
 pub fn (selector Selector) has_part_pseudo_element() bool {
-	pseudo := selector.pseudo_element() or { return false }
-	return pseudo.type_ == .part
+	if selector.data_ != unsafe { nil } {
+		return selector.data_.contains_part_pseudo_element
+	}
+	return selector_contains_part_pseudo_element_uncached(selector.compound_selectors())
 }
 
 // https://www.w3.org/TR/selectors-4/#specificity-rules
@@ -2798,6 +2816,8 @@ fn selector_text_has_invalid_simple_selectors(text string, relative bool) bool {
 	}
 
 	mut pseudo_element_count := 0
+	mut first_pseudo_element := PseudoElement.unknown
+	mut second_pseudo_element := PseudoElement.unknown
 	for compound_index, compound_selector in compound_selectors {
 		if compound_selector.simple_selectors.len == 0 {
 			return true
@@ -2829,12 +2849,24 @@ fn selector_text_has_invalid_simple_selectors(text string, relative bool) bool {
 				}
 				.pseudo_element {
 					pseudo_element_count++
-					if compound_index != compound_selectors.len - 1 || pseudo_element_count > 1 {
+					if pseudo_element_count == 1 {
+						first_pseudo_element = simple_selector.pseudo_element.type_
+					} else if pseudo_element_count == 2 {
+						second_pseudo_element = simple_selector.pseudo_element.type_
+					}
+					if compound_index != compound_selectors.len - 1 {
 						return true
 					}
 				}
 				else {}
 			}
+		}
+	}
+	if pseudo_element_count > 1 {
+		is_valid_chain := pseudo_element_count == 2 && first_pseudo_element == .part
+			&& second_pseudo_element != .part
+		if !is_valid_chain {
+			return true
 		}
 	}
 	return false
