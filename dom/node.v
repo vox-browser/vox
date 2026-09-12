@@ -2497,17 +2497,30 @@ pub fn (mut n Node) set_document(document &Document) {
 	if n.document_ == document {
 		return
 	}
+	node_needs_style_update := n.needs_style_update()
+	subtree_needs_style_update := n.entire_subtree_needs_style_update()
+	descendants_need_style_update := n.child_needs_style_update()
 	n.document_ = document
 	if element := n.as_element() {
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.doc_ = document
 	}
-	if n.needs_style_update() || n.child_needs_style_update() {
+	if node_needs_style_update {
 		// NOTE: We unset and reset the "needs style update" flag here.
 		// This ensures that there's a pending style update in the new document
 		// that will eventually assign some style to this node if needed.
 		n.set_needs_style_update(false)
 		n.set_needs_style_update(true)
+	}
+	if subtree_needs_style_update || descendants_need_style_update {
+		for ancestor := n.parent_or_shadow_host(); ancestor != none;  {
+			mut current := unsafe { &Node(ancestor or { break }) }
+			if current.child_needs_style_update_ {
+				break
+			}
+			current.child_needs_style_update_ = true
+			ancestor = current.parent_or_shadow_host()
+		}
 	}
 }
 
