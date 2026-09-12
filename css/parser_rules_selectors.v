@@ -921,6 +921,9 @@ fn (mut parser RuleSelectorParser) consume_a_declaration(mut input ParserTokenSt
 		return none
 	}
 	if is_a_custom_property_name_string(declaration.name) {
+		if !is_valid_optional_declaration_value(declaration.value) {
+			return none
+		}
 		declaration.original_value_text = parser_component_values_original_text(declaration.value)
 	} else if declaration_contains_a_curly_block_and_non_whitespace(declaration.value) {
 		// Otherwise, if decl's value contains a top-level simple block with an associated token of <{-token>, and also
@@ -3581,6 +3584,17 @@ fn parse_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenTy
 		return none
 	}
 	return declaration_value
+}
+
+fn is_valid_optional_declaration_value(values []ComponentValue) bool {
+	mut tokens := ParserTokenStream.from_values(values)
+	tokens.discard_whitespace()
+	if !tokens.has_next_token() {
+		return true
+	}
+	_ := parse_declaration_value(mut tokens, none) or { return false }
+	tokens.discard_whitespace()
+	return !tokens.has_next_token()
 }
 
 fn parse_declaration_value_then_optional_declaration_value(mut tokens ParserTokenStream, separator TokenType) ?DeclarationValueList {

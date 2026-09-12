@@ -895,6 +895,9 @@ pub fn (mut properties CSSStyleProperties) set_property_internal(property Proper
 	}
 
 	if property.is_custom_property() {
+		if !is_valid_optional_declaration_value(parse_component_values_for_value_logic(value)) {
+			return
+		}
 		properties.custom_properties[property.name()] = StyleProperty{
 			important: if priority.len != 0 { Important.yes } else { Important.no }
 			property_id: .color
