@@ -29,16 +29,19 @@ pub mut:
 @[heap]
 pub struct IDBDatabase {
 pub mut:
-	data                 &DatabaseData
-	state                ConnectionState = .open
-	upgrade_active       bool
-	transactions         []&IDBTransaction
-	events               []string
-	object_store_handles map[string]IDBObjectStore
-	onabort_             ?IDBEventHandler
-	onerror_             ?IDBEventHandler
-	onclose_             ?IDBEventHandler
-	onversionchange_     ?IDBEventHandler
+	data                   &DatabaseData
+	state                  ConnectionState = .open
+	upgrade_active         bool
+	transactions           []&IDBTransaction
+	events                 []string
+	document_url           string
+	devtools_active        bool
+	devtools_notifications []IndexedDBDevtoolsNotification
+	object_store_handles   map[string]IDBObjectStore
+	onabort_               ?IDBEventHandler
+	onerror_               ?IDBEventHandler
+	onclose_               ?IDBEventHandler
+	onversionchange_       ?IDBEventHandler
 }
 
 fn new_connection(data &DatabaseData) &IDBDatabase {

@@ -224,6 +224,30 @@ pub fn (mut transaction IDBTransaction) discard_mutation_logs() {
 	transaction.store_mutation_logs.clear()
 }
 
+pub fn (mut transaction IDBTransaction) notify_devtools_of_committed_changes() {
+	if transaction.database.document_url == '' || !transaction.database.devtools_active {
+		return
+	}
+	mut changes := TransactionChanges{}
+	for entry in transaction.store_mutation_logs {
+		entry.log.append_changes(transaction.database.data.name, entry.store.name, mut changes)
+	}
+	if changes.is_empty() {
+		return
+	}
+	unsafe {
+		transaction.database.devtools_notifications << IndexedDBDevtoolsNotification{
+			document_url: transaction.database.document_url
+			changes: changes
+		}
+	}
+}
+
+pub fn (mut database IDBDatabase) set_devtools_inspection_context(document_url string, active bool) {
+	database.document_url = document_url
+	database.devtools_active = active
+}
+
 pub fn (transaction &IDBTransaction) transaction_mode() IDBTransactionMode {
 	return transaction.mode
 }

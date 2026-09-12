@@ -586,6 +586,85 @@ pub fn (mut log MutationLog) note_index_record_stored(index &IndexData, record I
 	log.entries << MutationEntry{ kind: .index_record_stored, index_name: index.name, index: index, index_record: record }
 }
 
+pub fn (log &MutationLog) append_changes(database_name string, object_store_name string, mut changes TransactionChanges) {
+	mut stored_keys := []Key{}
+	mut changed_keys := []Key{}
+	mut deleted_keys := []Key{}
+
+	for entry in log.entries {
+		match entry.kind {
+			.object_store_created {
+				changes.added << TransactionChange{
+					database_name: database_name
+					object_store_name: object_store_name
+				}
+			}
+			.object_store_deleted {
+				changes.deleted << TransactionChange{
+					database_name: database_name
+					object_store_name: object_store_name
+				}
+			}
+			.object_store_renamed {
+				changes.deleted << TransactionChange{
+					database_name: database_name
+					object_store_name: entry.old_name
+				}
+				changes.added << TransactionChange{
+					database_name: database_name
+					object_store_name: object_store_name
+				}
+			}
+			.records_deleted {
+				for record in entry.records {
+					if remove_mutation_key(mut stored_keys, record.key) {
+						continue
+					}
+					remove_mutation_key(mut changed_keys, record.key)
+					deleted_keys << record.key
+				}
+			}
+			.record_stored {
+				if remove_mutation_key(mut deleted_keys, entry.key) {
+					changed_keys << entry.key
+				} else {
+					stored_keys << entry.key
+				}
+			}
+			.index_created, .index_deleted, .index_renamed, .key_generator_changed, .index_records_deleted, .index_record_stored {
+			}
+		}
+	}
+
+	for key in stored_keys {
+		changes.added << transaction_change_for_key(database_name, object_store_name, key)
+	}
+	for key in changed_keys {
+		changes.changed << transaction_change_for_key(database_name, object_store_name, key)
+	}
+	for key in deleted_keys {
+		changes.deleted << transaction_change_for_key(database_name, object_store_name, key)
+	}
+}
+
+fn remove_mutation_key(mut keys []Key, key Key) bool {
+	for index, existing in keys {
+		if keys_equal(existing, key) {
+			keys.delete(index)
+			return true
+		}
+	}
+	return false
+}
+
+fn transaction_change_for_key(database_name string, object_store_name string, key Key) TransactionChange {
+	return TransactionChange{
+		database_name: database_name
+		object_store_name: object_store_name
+		key: serialize_key_for_inspection(key)
+	}
+}
+
 pub fn (mut log MutationLog) revert(mut store ObjectStoreData, database &DatabaseData, connection &IDBDatabase) {
 	log.revert_entries(mut store, 0, database, connection)
 }

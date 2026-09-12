@@ -117,6 +117,7 @@ pub fn (mut transaction IDBTransaction) commit() ! {
 		return error('InvalidStateError: transaction is not active')
 	}
 	transaction.state = .committing
+	transaction.notify_devtools_of_committed_changes()
 	transaction.discard_mutation_logs()
 	transaction.state = .finished
 	transaction.events << 'complete'
