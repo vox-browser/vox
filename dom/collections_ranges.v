@@ -2762,6 +2762,11 @@ pub fn (mut r Range) extract() !&DocumentFragment {
 		new_node = reference_node.parent_node() or { new_node }
 		new_offset = reference_node.index() + 1
 	}
+	// Collapse before any of the extraction mutations. Keeping this live range
+	// at its final boundary lets the normal mutation steps adjust that boundary
+	// while partially-contained and contained nodes are changed.
+	r.set_start(new_node, new_offset)!
+	r.set_end(new_node, new_offset)!
 	if first_child := first_partially_contained_child {
 		if first_child.is_character_data() {
 			clone := original_start_node.clone_node(none, false, none)!
@@ -2811,8 +2816,6 @@ pub fn (mut r Range) extract() !&DocumentFragment {
 			clone_node.append_child(subfragment.as_node())!
 		}
 	}
-	r.set_start(new_node, new_offset)!
-	r.set_end(new_node, new_offset)!
 	return fragment
 }
 
@@ -3099,28 +3102,29 @@ pub fn (mut r Range) delete_contents() ! {
 			new_offset = 1 + reference_node.index()
 		}
 	}
-	// 7. If original start node is CharacterData, remove data after start offset.
+	// 7. Collapse before any deletion mutations so the live boundary is updated
+	// by those mutations along with every other live range.
+	r.set_start(new_node, new_offset)!
+	r.set_end(new_node, new_offset)!
+	// 8. If original start node is CharacterData, remove data after start offset.
 	if original_start_node.is_character_data() {
 		mut mutable_original_start_node := unsafe { &Node(original_start_node) }
 		if mut data := mutable_original_start_node.character_data_mut() {
 			data.replace_data(original_start_offset, original_start_node.length() - original_start_offset, '')!
 		}
 	}
-	// 8. For each node in nodes to remove, in tree order, remove node.
+	// 9. For each node in nodes to remove, in tree order, remove node.
 	for node in nodes_to_remove {
 		mut mutable_node := unsafe { &Node(node) }
 		mutable_node.remove(false)
 	}
-	// 9. If original end node is CharacterData, remove data before end offset.
+	// 10. If original end node is CharacterData, remove data before end offset.
 	if original_end_node.is_character_data() {
 		mut mutable_original_end_node := unsafe { &Node(original_end_node) }
 		if mut data := mutable_original_end_node.character_data_mut() {
 			data.replace_data(0, original_end_offset, '')!
 		}
 	}
-	// 10. Set start and end to (new node, new offset).
-	r.set_start(new_node, new_offset)!
-	r.set_end(new_node, new_offset)!
 }
 
 pub struct DOMRect {
