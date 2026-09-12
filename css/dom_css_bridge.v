@@ -922,24 +922,7 @@ fn selector_matches_pseudo_class_invalidation_candidate(selector Selector, eleme
 	}
 }
 
-fn pseudo_class_rule_matches_element(style_computer &StyleComputer, element &dom.Element, rule &MatchingRule, shadow_root ?&dom.ShadowRoot) bool {
-	rule_root := rule.shadow_root
-	from_user_agent_or_user_stylesheet := rule.cascade_origin == .user_agent
-		|| rule.cascade_origin == .user
-	mut rule_is_relevant_for_current_scope := style_scope_optional_shadow_root_equal(rule_root,
-		shadow_root)
-	if element.is_shadow_host() {
-		if element_shadow_root := element.shadow_root() {
-			rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope
-				|| style_scope_optional_shadow_root_equal(rule_root, element_shadow_root)
-		}
-	}
-	rule_is_relevant_for_current_scope = rule_is_relevant_for_current_scope
-		|| from_user_agent_or_user_stylesheet
-	if !rule_is_relevant_for_current_scope {
-		return false
-	}
-
+fn pseudo_class_rule_matches_element(style_computer &StyleComputer, element &dom.Element, rule &MatchingRule) bool {
 	selector := rule.selector
 	if selector.can_use_ancestor_filter()
 		&& style_computer.should_reject_with_ancestor_filter(selector) {
@@ -949,17 +932,15 @@ fn pseudo_class_rule_matches_element(style_computer &StyleComputer, element &dom
 	return selector_matches_pseudo_class_invalidation_candidate(selector, element)
 }
 
-fn pseudo_class_matches_different_rule_set_after_state_change(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, element &dom.Element, rules &RuleCache, shadow_root ?&dom.ShadowRoot, style_computer &StyleComputer) bool {
+fn pseudo_class_matches_different_rule_set_after_state_change(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, element &dom.Element, rules &RuleCache, style_computer &StyleComputer) bool {
 	abstract_element := dom.AbstractElement.new(element, none)
 	old_node := document.pseudo_class_state_node(pseudo_class)
 	for bucket in rules.matching_rule_buckets(abstract_element) {
 		for rule in bucket {
-			before := pseudo_class_rule_matches_element(style_computer, element, rule,
-				shadow_root)
+			before := pseudo_class_rule_matches_element(style_computer, element, rule)
 			mut mutable_document := unsafe { &dom.Document(document) }
 			mutable_document.set_pseudo_class_state_without_invalidation(pseudo_class, new_node)
-			after := pseudo_class_rule_matches_element(style_computer, element, rule,
-				shadow_root)
+			after := pseudo_class_rule_matches_element(style_computer, element, rule)
 			mutable_document.set_pseudo_class_state_without_invalidation(pseudo_class, old_node)
 			if before != after {
 				return true
@@ -969,7 +950,7 @@ fn pseudo_class_matches_different_rule_set_after_state_change(document &dom.Docu
 	return false
 }
 
-fn invalidate_elements_affected_by_pseudo_class_recursively(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, node &dom.Node, rules &RuleCache, shadow_root ?&dom.ShadowRoot, style_computer &StyleComputer) {
+fn invalidate_elements_affected_by_pseudo_class_recursively(document &dom.Document, pseudo_class dom.PseudoClass, new_node ?&dom.Node, node &dom.Node, rules &RuleCache, style_computer &StyleComputer) {
 	mut element_for_pop := ?&dom.Element(none)
 	if element := node.as_element() {
 		mut mutable_style_computer := unsafe { &StyleComputer(style_computer) }
@@ -977,7 +958,7 @@ fn invalidate_elements_affected_by_pseudo_class_recursively(document &dom.Docume
 		element_for_pop = element
 		if element.affected_by_pseudo_class(pseudo_class)
 			&& pseudo_class_matches_different_rule_set_after_state_change(document,
-				pseudo_class, new_node, element, rules, shadow_root, style_computer) {
+				pseudo_class, new_node, element, rules, style_computer) {
 			mut mutable_element := unsafe { &dom.Element(element) }
 			mutable_element.set_needs_style_update(true)
 		}
@@ -985,7 +966,7 @@ fn invalidate_elements_affected_by_pseudo_class_recursively(document &dom.Docume
 
 	for child in node.children_as_vector() {
 		invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class,
-			new_node, child, rules, shadow_root, style_computer)
+			new_node, child, rules, style_computer)
 	}
 
 	if element := element_for_pop {
@@ -1020,7 +1001,7 @@ fn document_pseudo_class_invalidation_callback(target voidptr, pseudo_class dom.
 	}
 
 	invalidate_elements_affected_by_pseudo_class_recursively(document, pseudo_class,
-		new_node, common_ancestor, rules, shadow_root, style_computer)
+		new_node, common_ancestor, rules, style_computer)
 
 	ancestor = common_ancestor.parent()
 	for ancestor != none {

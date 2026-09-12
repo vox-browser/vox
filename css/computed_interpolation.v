@@ -9644,7 +9644,6 @@ pub fn (f &CountingBloomFilter) may_contain(hash u32) bool {
 @[heap]
 pub struct MatchingRule {
 pub mut:
-	shadow_root                  ?&dom.ShadowRoot
 	rule                         ?&CSSRule
 	sheet                        ?&CSSStyleSheet
 	default_namespace            ?string
@@ -9658,20 +9657,29 @@ pub mut:
 	slotted                      bool
 	contains_part_pseudo_element bool
 	scope_rule                   ?&CSSRule
-	resolved_scope_root          ?&dom.Element
-	scope_proximity              int = int(0x3fffffff)
+}
+
+// The rule cache owns MatchingRule entries independently of the style scope
+// using it. Keep the effective shadow root and per-element @scope result on
+// this transient wrapper instead.
+pub struct ScopedMatchingRule {
+pub mut:
+	rule                &MatchingRule = unsafe { nil }
+	shadow_root         ?&dom.ShadowRoot
+	resolved_scope_root ?&dom.Element
+	scope_proximity     int = int(0x3fffffff)
 }
 
 pub struct LayerMatchingRules {
 pub mut:
 	qualified_layer_name string
-	rules                []&MatchingRule
+	rules                []ScopedMatchingRule
 }
 
 pub struct MatchingRuleSet {
 pub mut:
-	user_agent_rules []&MatchingRule
-	user_rules       []&MatchingRule
+	user_agent_rules []ScopedMatchingRule
+	user_rules       []ScopedMatchingRule
 	author_rules     []LayerMatchingRules
 }
 
@@ -9918,7 +9926,7 @@ pub fn (s &StyleComputer) compute_pseudo_element_style_if_needed_tracking_custom
 	return s.compute_style_impl(abstract_element, .create_pseudo_element_style_if_needed, did_change_custom_properties, scope)
 }
 
-pub fn (s &StyleComputer) collect_matching_rules(abstract_element dom.AbstractElement, origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []&MatchingRule {
+pub fn (s &StyleComputer) collect_matching_rules(abstract_element dom.AbstractElement, origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string) []ScopedMatchingRule {
 	return style_computer_collect_matching_rules_without_scope_boundary(s, abstract_element, origin, mut attempted_pseudo_class_matches, qualified_layer_name)
 }
 
@@ -12110,10 +12118,10 @@ fn custom_property_maps_equal(left map[string]dom.CSSCustomProperty_, right map[
 
 // StyleComputer.cpp:cascade_custom_properties. Important declarations are
 // collected while walking the matching rules and applied after normal ones.
-fn cascade_custom_properties(abstract_element dom.AbstractElement, rules []&MatchingRule, mut values map[string]dom.CSSCustomProperty_) {
+fn cascade_custom_properties(abstract_element dom.AbstractElement, rules []ScopedMatchingRule, mut values map[string]dom.CSSCustomProperty_) {
 	mut important_values := map[string]dom.CSSCustomProperty_{}
-	for match_rule in rules {
-		rule := match_rule.rule or { continue }
+	for scoped_rule in rules {
+		rule := scoped_rule.rule.rule or { continue }
 		declaration := rule.style() or { continue }
 		cascade_custom_properties_from_declaration(declaration, mut values, mut important_values)
 	}
@@ -13593,17 +13601,17 @@ fn style_computer_css_wide_keyword_from_declaration_text(value string) ?Keyword 
 	return keyword_from_string(value.trim_space()) or { none }
 }
 
-pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, rules []&MatchingRule, origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
+pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, rules []ScopedMatchingRule, origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade ComputedInterpolationPropertyIDs) {
 	_ = s
 	// StyleComputer::cascade_declarations (StyleComputer.cpp:476): cascade each matching rule's
 	// declaration, then — for the author origin on a non-pseudo element — the element's inline style.
 	// Each declaration is handled by cascade_one_declaration (the inner cascade_style_declaration lambda),
 	// which filters by importance / pseudo-element support / properties_to_cascade, expands shorthands,
 	// maps logical aliases to physical properties, and reverts or sets each longhand.
-	for match_rule in rules {
-		rule := match_rule.rule or { continue }
+	for scoped_rule in rules {
+		rule := scoped_rule.rule.rule or { continue }
 		declaration := rule.style() or { continue }
-		cascade_one_declaration(mut cascaded_properties, abstract_element, declaration, match_rule.shadow_root, origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
+		cascade_one_declaration(mut cascaded_properties, abstract_element, declaration, scoped_rule.shadow_root, origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
 	}
 
 	if origin == .author && abstract_element.pseudo_element() == none {

@@ -11,10 +11,14 @@ fn test_sort_matching_rules_uses_cached_specificity() {
 		style_sheet_index: 1
 		rule_index: 1
 	}
-	mut rules := [&MatchingRule(higher_specificity), lower_specificity]
+	mut rules := [ScopedMatchingRule{
+		rule: higher_specificity
+	}, ScopedMatchingRule{
+		rule: lower_specificity
+	}]
 
 	sort_matching_rules(mut rules)
 
-	assert voidptr(rules[0]) == voidptr(lower_specificity)
-	assert voidptr(rules[1]) == voidptr(higher_specificity)
+	assert voidptr(rules[0].rule) == voidptr(lower_specificity)
+	assert voidptr(rules[1].rule) == voidptr(higher_specificity)
 }

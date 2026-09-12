@@ -1370,7 +1370,15 @@ fn test_shadow_root_author_stylesheet_uses_its_own_css_scope() {
 	shadow_node.append_child(child.as_node()) or { panic('${err}') }
 	add_shadow_root_author_style_sheet(shadow_root, '.inside { color: red; }')
 
-	computed := StyleComputer.new(doc).compute_style(dom.AbstractElement.new(child, none))
+	computer := StyleComputer.new(doc)
+	abstract_child := dom.AbstractElement.new(child, none)
+	mut attempted_pseudo_class_matches := PseudoClassBitmap{}
+	matching_rules := computer.collect_matching_rules(abstract_child, .author, mut attempted_pseudo_class_matches, none)
+	assert matching_rules.len == 1
+	assert matching_rules[0].shadow_root != none
+	assert voidptr(matching_rules[0].shadow_root or { panic('missing rule scope') }) == voidptr(shadow_root)
+
+	computed := computer.compute_style(abstract_child)
 	assert (computed.property(.color, .no) or { panic('shadow color missing') }).css_text == 'rgb(255, 0, 0)'
 }
 

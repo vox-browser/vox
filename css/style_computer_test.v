@@ -95,7 +95,7 @@ fn test_cascade_declarations_inline_style() {
 
 	s := StyleComputer.new(doc)
 	mut cascaded := CascadedProperties.new()
-	s.cascade_declarations(mut cascaded, abstract_element, []&MatchingRule{}, CascadeOrigin.author, Important.no, none, none, []PropertyID{})
+	s.cascade_declarations(mut cascaded, abstract_element, []ScopedMatchingRule{}, CascadeOrigin.author, Important.no, none, none, []PropertyID{})
 
 	// The direct `color` declaration is cascaded.
 	color_id := property_id_from_string('color') or { panic('no color id') }
@@ -179,7 +179,7 @@ fn test_compute_properties_resolves_effective_overflow() {
 
 	s := StyleComputer.new(doc)
 	mut cascaded := CascadedProperties.new()
-	s.cascade_declarations(mut cascaded, abstract_element, []&MatchingRule{}, CascadeOrigin.author, Important.no, none, none, []PropertyID{})
+	s.cascade_declarations(mut cascaded, abstract_element, []ScopedMatchingRule{}, CascadeOrigin.author, Important.no, none, none, []PropertyID{})
 
 	mut computed := s.compute_properties(abstract_element, mut cascaded)
 	assert computed.overflow_y() == .scroll
