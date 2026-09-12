@@ -271,14 +271,20 @@ pub mut:
 @[heap]
 pub struct WebGLUniformLocation {
 pub:
-	handle_           GLuint
-	parent_program_id GLuint
+	handle_        GLuint
+	parent_program ?&WebGLProgram
 }
 
 pub fn (location &WebGLUniformLocation) handle(current_program ?&WebGLProgram) !GLuint {
 	program := current_program or { return error('GL_INVALID_OPERATION') }
-	if program.object.handle_ != location.parent_program_id || program.object.invalidated_ {
+	parent := location.parent_program or { return error('GL_INVALID_OPERATION') }
+	if program != parent {
 		return error('GL_INVALID_OPERATION')
 	}
 	return location.handle_
+}
+
+pub fn (location &WebGLUniformLocation) relevant_global_impl() ?u64 {
+	parent := location.parent_program or { return none }
+	return parent.object.relevant_global_impl()
 }

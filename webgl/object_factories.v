@@ -76,10 +76,10 @@ pub fn WebGLVertexArrayObjectOES.create(mut context WebGLRenderingContext) &WebG
 	return context.create_vertex_array_oes()
 }
 
-pub fn WebGLUniformLocation.create(handle GLuint, parent_program_id GLuint) &WebGLUniformLocation {
+pub fn WebGLUniformLocation.create(handle GLuint, parent_program ?&WebGLProgram) &WebGLUniformLocation {
 	return &WebGLUniformLocation{
 		handle_: handle
-		parent_program_id: parent_program_id
+		parent_program: parent_program
 	}
 }
 

@@ -14,12 +14,17 @@ fn test_shader_program_and_uniform_parent_validation() {
 	context.link_program(mut program)
 	context.use_program(program)
 	location := context.get_uniform_location(mut program, 'color') or { panic('location') }
+	assert location.relevant_global_impl() or { panic('relevant global expected') } == context.identity()
 	context.set_uniform(location, [f32(1), 0, 0, 1])
 	assert context.get_error() == no_error
 	mut other_program := context.create_program()
 	context.current_program = other_program
 	context.set_uniform(location, [f32(0)])
 	assert context.get_error() == invalid_operation
+	detached_location := WebGLUniformLocation.create(10, none)
+	assert detached_location.relevant_global_impl() == none
+	assert available_webgl_extensions().contains('WEBGL_debug_renderer_info')
+	assert context.realm() == context.relevant_global_impl()
 }
 
 fn test_extension_filtering_caching_and_compressed_formats() {

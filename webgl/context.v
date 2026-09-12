@@ -94,6 +94,16 @@ pub fn (context &WebGLRenderingContext) identity() u64 {
 	return u64(voidptr(context))
 }
 
+// Realm and relevant-global tokens use the context identity in the standalone
+// V model; wrappers created by the context forward this same token.
+pub fn (context &WebGLRenderingContext) realm() u64 {
+	return context.identity()
+}
+
+pub fn (context &WebGLRenderingContext) relevant_global_impl() u64 {
+	return context.identity()
+}
+
 pub fn (context &WebGLRenderingContext) context_generation() u64 {
 	return context.context_generation_
 }
@@ -638,7 +648,7 @@ pub fn (mut context WebGLRenderingContext) get_uniform_location(mut program WebG
 	}
 	location := &WebGLUniformLocation{
 		handle_: GLuint(program.uniform_locations.len)
-		parent_program_id: program.object.handle_
+		parent_program: program
 	}
 	unsafe {
 		program.uniform_locations[name] = location

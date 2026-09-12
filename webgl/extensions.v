@@ -272,6 +272,10 @@ const available_extensions = [
 	},
 ]
 
+pub fn available_webgl_extensions() []string {
+	return available_extensions.map(it.name)
+}
+
 @[heap]
 pub struct WebGLExtension {
 pub:
