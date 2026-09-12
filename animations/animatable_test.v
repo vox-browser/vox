@@ -27,6 +27,33 @@ fn test_animatable_creates_and_lists_relevant_animations() {
 	assert animatable.get_animations(GetAnimationsOptions{})!.len == 0
 }
 
+fn test_animatable_animate_uses_the_selected_timeline_directly() {
+	mut animatable := Animatable.new(none)
+	timeline := AnimationTimeline.new()
+	animation := animatable.animate([
+		BaseKeyframe{
+			offset: 0
+			properties: {
+				'opacity': '0'
+			}
+		},
+		BaseKeyframe{
+			offset: 1
+			properties: {
+				'opacity': '1'
+			}
+		},
+	], KeyframeAnimationOptions{
+		KeyframeEffectOptions: KeyframeEffectOptions{
+			timing: OptionalEffectTiming{
+				duration: IterationDuration(100.0)
+			}
+		}
+		timeline: timeline
+	})!
+	assert (animation.timeline_ or { panic('missing selected timeline') }) == timeline
+}
+
 fn test_animatable_transition_attributes() {
 	mut animatable := Animatable.new(none)
 	animatable.add_transitioned_properties(none, [
