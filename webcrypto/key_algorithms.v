@@ -241,6 +241,91 @@ pub fn (algorithm &KmacKeyAlgorithm) length() u32 {
 	return algorithm.length
 }
 
+// CryptoKey now stores plain algorithm-data records instead of binding
+// objects. Keep the established V names as aliases while exposing the exact
+// record surface introduced by CryptoKey.h.
+pub type KeyAlgorithmData = KeyAlgorithm
+
+pub type RsaKeyAlgorithmData = RsaKeyAlgorithm
+
+pub type RsaHashedKeyAlgorithmData = RsaHashedKeyAlgorithm
+
+pub type EcKeyAlgorithmData = EcKeyAlgorithm
+
+pub type AesKeyAlgorithmData = AesKeyAlgorithm
+
+pub type HmacKeyAlgorithmData = HmacKeyAlgorithm
+
+pub type KmacKeyAlgorithmData = KmacKeyAlgorithm
+
+pub fn (algorithm &KeyAlgorithmData) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &RsaKeyAlgorithmData) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &RsaKeyAlgorithmData) modulus_length() u32 {
+	return algorithm.modulus_length
+}
+
+pub fn (algorithm &RsaKeyAlgorithmData) public_exponent() []u8 {
+	return algorithm.public_exponent.clone()
+}
+
+pub fn (algorithm &RsaHashedKeyAlgorithmData) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &RsaHashedKeyAlgorithmData) modulus_length() u32 {
+	return algorithm.modulus_length
+}
+
+pub fn (algorithm &RsaHashedKeyAlgorithmData) public_exponent() []u8 {
+	return algorithm.public_exponent.clone()
+}
+
+pub fn (algorithm &RsaHashedKeyAlgorithmData) hash() string {
+	return algorithm.hash
+}
+
+pub fn (algorithm &EcKeyAlgorithmData) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &EcKeyAlgorithmData) named_curve() string {
+	return algorithm.named_curve
+}
+
+pub fn (algorithm &AesKeyAlgorithmData) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &AesKeyAlgorithmData) length() u16 {
+	return algorithm.length
+}
+
+pub fn (algorithm &HmacKeyAlgorithmData) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &HmacKeyAlgorithmData) hash() string {
+	return algorithm.hash
+}
+
+pub fn (algorithm &HmacKeyAlgorithmData) length() u32 {
+	return algorithm.length
+}
+
+pub fn (algorithm &KmacKeyAlgorithmData) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &KmacKeyAlgorithmData) length() u32 {
+	return algorithm.length
+}
+
 pub type CryptoKeyAlgorithm = AesKeyAlgorithm
 	| EcKeyAlgorithm
 	| HmacKeyAlgorithm

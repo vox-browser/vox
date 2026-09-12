@@ -105,6 +105,7 @@ pub fn (mut key CryptoKey) set_type(type_ KeyType) {
 
 pub fn (mut key CryptoKey) set_algorithm(algorithm CryptoKeyAlgorithm) {
 	key.algorithm = clone_key_algorithm(algorithm)
+	invalidate_crypto_key_algorithm_cache(key)
 }
 
 pub fn (mut key CryptoKey) set_usages(usages []KeyUsage) {
@@ -195,6 +196,7 @@ pub fn CryptoKey.deserialize(serialized SerializedCryptoKey) !&CryptoKey {
 }
 
 pub fn (mut key CryptoKey) deserialization_steps(serialized SerializedCryptoKey) ! {
+	release_crypto_key_caches(key)
 	key.type_ = serialized.type_
 	key.extractable = serialized.extractable
 	key.algorithm = if serialized.algorithm_data.len > 0 {
@@ -240,6 +242,7 @@ pub fn (mut key CryptoKey) destroy() {
 	key.internal_handle_ = ByteBufferKeyHandle{}
 	key.jwk_handle_ = none
 	key.destroyed_ = true
+	release_crypto_key_caches(key)
 }
 
 pub fn (key &CryptoKey) destroyed() bool {

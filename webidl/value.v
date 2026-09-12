@@ -30,6 +30,7 @@ pub:
 	sequence_value []Value
 	buffer_value   ?BufferSource
 	opaque_id      u64
+	frozen         bool
 }
 
 pub fn undefined_value() Value {
@@ -79,6 +80,14 @@ pub fn object_value(value map[string]Value) Value {
 	}
 }
 
+pub fn object_value_with_id(value map[string]Value, opaque_id u64) Value {
+	return Value{
+		kind: .object
+		object_value: value
+		opaque_id: opaque_id
+	}
+}
+
 pub fn sequence_value(value []Value) Value {
 	return Value{
 		kind:           .sequence
@@ -86,10 +95,27 @@ pub fn sequence_value(value []Value) Value {
 	}
 }
 
+pub fn frozen_sequence_value_with_id(value []Value, opaque_id u64) Value {
+	return Value{
+		kind: .sequence
+		sequence_value: value.clone()
+		opaque_id: opaque_id
+		frozen: true
+	}
+}
+
 pub fn buffer_source_value(value BufferSource) Value {
 	return Value{
 		kind:         .buffer_source
 		buffer_value: value
+	}
+}
+
+pub fn buffer_source_value_with_id(value BufferSource, opaque_id u64) Value {
+	return Value{
+		kind: .buffer_source
+		buffer_value: value
+		opaque_id: opaque_id
 	}
 }
 
