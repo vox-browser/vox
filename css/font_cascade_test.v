@@ -185,8 +185,22 @@ fn test_unicode_range_font_face_loads_only_when_a_covered_code_point_is_selected
 		assert cascade.pending_faces.len == 1
 		cascade.font_for_code_point(u32(`B`))
 		assert face.status() == .unloaded
-		cascade.font_for_code_point(u32(`A`))
+		cascade.font_for_code_point_for_shaping(u32(`A`))
 		assert face.status() == .loaded
+	}
+}
+
+fn test_font_cascade_probe_does_not_trigger_pending_face_load() {
+	$if macos {
+		sheet := parse_css_stylesheet_with_parser("@font-face { font-family: Probe; src: url('Arial.ttf') format('truetype'); unicode-range: U+20; }", 'file:///System/Library/Fonts/Supplemental/main.css')
+		mut computer := FontComputer.create()
+		set := FontFaceSet.create_for_font_computer(computer)
+		computer.load_fonts_from_css_rules(sheet.css_rules().rules, set)
+		face := set.set_entries()[0]
+		cascade := computer.compute_font_for_style_values(['Probe'], CSSPixels.new(16), 0, 400, Percentage{ value_: 100 }, .auto_, map[string]f64{}, FontFeatureData{})
+
+		cascade.font_for_code_point(u32(` `))
+		assert face.status() == .unloaded
 	}
 }
 

@@ -3182,11 +3182,11 @@ pub fn (mut list FontCascadeList) set_last_resort_font(font PlatformFont) {
 	list.last_resort_font = font
 }
 
-// Gfx::FontCascadeList::font_for_code_point(). An empty unicode-range means
-// that the face covers the full Unicode range for cascade selection.
-pub fn (list &FontCascadeList) font_for_code_point(code_point u32) &PlatformFont {
-	mut mutable_list := unsafe { &FontCascadeList(list) }
-	mutable_list.trigger_pending_loads_for_code_point(code_point)
+fn (list &FontCascadeList) font_for_code_point_internal(code_point u32, trigger_pending_loads bool) &PlatformFont {
+	if trigger_pending_loads {
+		mut mutable_list := unsafe { &FontCascadeList(list) }
+		mutable_list.trigger_pending_loads_for_code_point(code_point)
+	}
 	for index, entry in list.fonts {
 		if entry.unicode_ranges.len == 0 {
 			return unsafe { &list.fonts[index].font }
@@ -3201,6 +3201,17 @@ pub fn (list &FontCascadeList) font_for_code_point(code_point u32) &PlatformFont
 		return &font
 	}
 	panic('FontCascadeList must contain a font or a last-resort font')
+}
+
+// Gfx::FontCascadeList::font_for_code_point(). An empty unicode-range means
+// that the face covers the full Unicode range for cascade selection. Probes do
+// not start pending downloads; only the shaping entry point below does.
+pub fn (list &FontCascadeList) font_for_code_point(code_point u32) &PlatformFont {
+	return list.font_for_code_point_internal(code_point, false)
+}
+
+pub fn (list &FontCascadeList) font_for_code_point_for_shaping(code_point u32) &PlatformFont {
+	return list.font_for_code_point_internal(code_point, true)
 }
 
 pub struct FontVariationSettings {
