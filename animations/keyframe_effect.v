@@ -823,3 +823,20 @@ pub fn css_animation_composition_to_bindings_composite_operation(value css.Anima
 pub fn css_animation_composition_to_bindings_composite_operation_or_auto(value css.AnimationComposition) CompositeOperationOrAuto {
 	return composite_operation_or_auto_from_css(value)
 }
+
+pub fn css_animation_composition_to_composite_operation(value css.AnimationComposition) CompositeOperation {
+	return css_animation_composition_to_bindings_composite_operation(value)
+}
+
+pub fn css_animation_composition_to_composite_operation_or_auto(value css.AnimationComposition) CompositeOperationOrAuto {
+	return css_animation_composition_to_bindings_composite_operation_or_auto(value)
+}
+
+pub fn composite_operation_or_auto_to_string(value CompositeOperationOrAuto) string {
+	return match value {
+		.replace { 'replace' }
+		.add { 'add' }
+		.accumulate { 'accumulate' }
+		.auto_ { 'auto' }
+	}
+}

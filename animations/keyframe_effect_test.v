@@ -17,6 +17,19 @@ fn test_pseudo_element_parsing_and_canonicalization() {
 	}
 }
 
+fn test_animation_composition_conversions_and_serialization() {
+	assert css_animation_composition_to_composite_operation(.replace) == .replace
+	assert css_animation_composition_to_composite_operation(.add) == .add
+	assert css_animation_composition_to_composite_operation(.accumulate) == .accumulate
+	assert css_animation_composition_to_composite_operation_or_auto(.replace) == .replace
+	assert css_animation_composition_to_composite_operation_or_auto(.add) == .add
+	assert css_animation_composition_to_composite_operation_or_auto(.accumulate) == .accumulate
+	assert composite_operation_or_auto_to_string(.replace) == 'replace'
+	assert composite_operation_or_auto_to_string(.add) == 'add'
+	assert composite_operation_or_auto_to_string(.accumulate) == 'accumulate'
+	assert composite_operation_or_auto_to_string(.auto_) == 'auto'
+}
+
 fn test_compute_missing_keyframe_offsets() {
 	mut frames := [
 		BaseKeyframe{},
