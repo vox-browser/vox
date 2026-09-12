@@ -101,6 +101,23 @@ class ConsolidatedOwnerTests(unittest.TestCase):
             ("request_server_request",),
         )
 
+    def test_webgl_proxy_methods_use_shared_proxy_owner(self) -> None:
+        functions = {
+            ("shader_source", "WebGLContextProxyBase"),
+            ("get_uniform_indices", "WebGLContextProxyBase"),
+        }
+
+        self.assertEqual(
+            audit.candidate_names("shader_source", "WebGLContextProxy", functions),
+            ("shader_source",),
+        )
+        self.assertEqual(
+            audit.candidate_names(
+                "get_uniform_indices", "WebGLContextProxy", functions
+            ),
+            ("get_uniform_indices",),
+        )
+
 
 class ConsolidatedFunctionTests(unittest.TestCase):
     def test_animation_overlay_adapter_maps_to_the_css_update_callback(self) -> None:
@@ -109,6 +126,20 @@ class ConsolidatedFunctionTests(unittest.TestCase):
                 ("AnimationEffect.cpp", "animated_overlay_entries")
             ],
             ("style_computer_update_animated_style_callback",),
+        )
+
+    def test_webgl_base_buffer_helpers_map_to_free_functions(self) -> None:
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("WebGLRenderingContextBase", "with_buffer_source_bytes")
+            ],
+            (("with_buffer_source_bytes", None),),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("WebGLRenderingContextBase", "utf16_string_from_gl_string")
+            ],
+            (("utf16_string_from_gl_string", None),),
         )
 
 

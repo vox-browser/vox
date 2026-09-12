@@ -126,6 +126,9 @@ CONSOLIDATED_OWNER_ALIASES: dict[str, tuple[str, ...]] = {
     "WebGL2RenderingContextOverloads": ("WebGLRenderingContext",),
     "WebGLRenderingContextBase": ("WebGLRenderingContext",),
     "WebGL2RenderingContext": ("WebGLRenderingContext",),
+    # The transport-facing subclass only specializes string/pointer marshaling.
+    # V keeps those methods on the shared proxy record with the batching state.
+    "WebGLContextProxy": ("WebGLContextProxyBase",),
     "ANGLEInstancedArrays": ("WebGLExtension",),
     "EXTBlendMinMax": ("WebGLExtension",),
     "EXTColorBufferFloat": ("WebGLExtension",),
@@ -267,6 +270,20 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     # they map to the equivalent tagged-value operations.
     ("StyleValue", "__ENUMERATE_CSS_STYLE_VALUE_TYPE"): (("type_", "StyleValue"),),
     ("ComponentValue", "Token"): (("from_token", "ComponentValue"),),
+    # WebGL's template helpers are free functions in V because BufferSource and
+    # string conversion do not require context state after type narrowing.
+    ("WebGLRenderingContextBase", "with_buffer_source_bytes"): (
+        ("with_buffer_source_bytes", None),
+    ),
+    ("WebGLRenderingContextBase", "span_from_typed_array"): (
+        ("span_from_typed_array", None),
+    ),
+    ("WebGLRenderingContextBase", "null_terminated_utf8_string"): (
+        ("null_terminated_utf8_string", None),
+    ),
+    ("WebGLRenderingContextBase", "utf16_string_from_gl_string"): (
+        ("utf16_string_from_gl_string", None),
+    ),
     # CSS owns ComputedProperties in the V module graph, so the SVG class
     # overrides are dispatched together at the style-computation boundary.
     ("SVGElement", "adjust_computed_style"): (("adjust_element_computed_style", None),),
