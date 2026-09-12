@@ -21,6 +21,7 @@ pub enum CSSRuleType {
 	namespace_rule
 	counter_style
 	supports
+	container_rule
 	font_feature_values
 	layer_block
 	layer_statement
@@ -35,7 +36,7 @@ pub enum CSSRuleType {
 // that may contain style rules: CSSStyleRule, CSSPageRule, CSSLayerBlockRule,
 // and the CSSConditionRule subclasses CSSMediaRule and CSSSupportsRule.
 pub const css_grouping_rule_types = [CSSRuleType.style, .page, .layer_block, .media, .supports,
-	.scope, .function_rule]
+	.container_rule, .scope, .function_rule]
 
 pub fn (t CSSRuleType) type_for_bindings() u16 {
 	// NOTE: Types that aren't defined in the spec must return 0.
@@ -53,7 +54,9 @@ pub fn (t CSSRuleType) type_for_bindings() u16 {
 		.counter_style { 11 }
 		.supports { 12 }
 		.font_feature_values { 14 }
-		.layer_block, .layer_statement, .nested_declarations, .property, .scope, .function_rule, .function_declarations { 0 }
+		.layer_block, .layer_statement, .nested_declarations, .property, .scope, .container_rule, .function_rule, .function_declarations {
+			0
+		}
 	}
 }
 
@@ -70,6 +73,7 @@ pub fn (t CSSRuleType) class_name() string {
 		.namespace_rule { 'CSSNamespaceRule' }
 		.counter_style { 'CSSCounterStyleRule' }
 		.supports { 'CSSSupportsRule' }
+		.container_rule { 'CSSContainerRule' }
 		.font_feature_values { 'CSSFontFeatureValuesRule' }
 		.layer_block { 'CSSLayerBlockRule' }
 		.layer_statement { 'CSSLayerStatementRule' }
@@ -414,7 +418,7 @@ pub fn (rule_list &CSSRuleList) for_each_effective_rule(order TraversalOrder, ca
 					loaded_style_sheet.for_each_effective_rule(order, callback)
 				}
 			}
-			.function_rule, .layer_block, .media, .page, .scope, .style, .supports {
+			.container_rule, .function_rule, .layer_block, .media, .page, .scope, .style, .supports {
 				rule.for_each_effective_rule(order, callback)
 			}
 			.counter_style, .font_face, .font_feature_values, .function_declarations, .keyframe, .keyframes, .layer_statement, .margin, .namespace_rule, .nested_declarations, .property {
@@ -433,6 +437,13 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 
 	for mut rule in rule_list.rules {
 		match rule.type_ {
+			.container_rule {
+				if mut child_rules := rule.rules {
+					if child_rules.evaluate_media_queries(document) {
+						any_media_queries_changed_match_state = true
+					}
+				}
+			}
 			.import_rule {
 				if mut loaded_style_sheet := rule.loaded_style_sheet {
 					if loaded_style_sheet.evaluate_media_queries(document) {
@@ -552,8 +563,9 @@ pub mut:
 
 	rules ?&CSSRuleList
 
-	media    ?&MediaList
-	supports ?&Supports
+	media                ?&MediaList
+	supports             ?&Supports
+	container_conditions []ContainerRuleCondition
 
 	url                string
 	document           ?&dom.Document
@@ -621,6 +633,12 @@ pub fn CSSRule.create_media(media &MediaList, rules &CSSRuleList) &CSSRule {
 pub fn CSSRule.create_supports(supports &Supports, rules &CSSRuleList) &CSSRule {
 	mut rule := CSSRule.create_grouping(.supports, rules)
 	rule.supports = supports
+	return rule
+}
+
+pub fn CSSRule.create_container(conditions []ContainerRuleCondition, rules &CSSRuleList) &CSSRule {
+	mut rule := CSSRule.create_grouping(.container_rule, rules)
+	rule.container_conditions = conditions.clone()
 	return rule
 }
 
@@ -806,6 +824,9 @@ pub fn (rule &CSSRule) dump(indent_levels int) string {
 				builder.write_string(supports.dump(indent_levels + 1))
 			}
 		}
+		.container_rule {
+			builder.write_string('${cssom_indent(indent_levels + 1)}Condition: ${rule.condition_text()}\n')
+		}
 		.import_rule {
 			builder.write_string('${cssom_indent(indent_levels + 1)}Document URL: ${rule.url}\n')
 			builder.write_string('${cssom_indent(indent_levels + 1)}Loading state: ${css_style_sheet_loading_state_name(rule.loading_state)}\n')
@@ -913,6 +934,9 @@ pub fn (rule &CSSRule) serialized() string {
 		}
 		.supports {
 			rule.serialized_supports_rule()
+		}
+		.container_rule {
+			rule.serialized_container_rule()
 		}
 		.import_rule {
 			rule.serialized_import_rule()
@@ -1112,6 +1136,10 @@ pub fn (mut rule CSSRule) delete_rule(index u32) ! {
 }
 
 pub fn (rule &CSSRule) for_each_effective_rule(order TraversalOrder, callback fn (&CSSRule)) {
+	if rule.type_ == .container_rule {
+		rule.for_each_globally_effective_container_child(order, callback)
+		return
+	}
 	if rule.type_ in [.media, .supports] && !rule.condition_matches() {
 		return
 	}
@@ -1136,6 +1164,7 @@ pub fn (rule &CSSRule) condition_text() string {
 				''
 			}
 		}
+		.container_rule { rule.container_condition_text() }
 		else {
 			''
 		}
@@ -1158,6 +1187,7 @@ pub fn (rule &CSSRule) condition_matches() bool {
 				false
 			}
 		}
+		.container_rule { false }
 		else {
 			true
 		}
@@ -2582,6 +2612,7 @@ pub enum RuleContext {
 	keyframes
 	keyframe
 	supports
+	container_rule
 	scope
 	supports_condition
 	layer
@@ -2601,6 +2632,7 @@ fn rule_context_type_for_rule(rule_type CSSRuleType) RuleContext {
 		.keyframes { .keyframes }
 		.keyframe { .keyframe }
 		.supports { .supports }
+		.container_rule { .container_rule }
 		.scope { .scope }
 		.layer_block { .layer }
 		.property { .property }
