@@ -43,3 +43,18 @@ fn test_dir_and_lang_changes_invalidate_shadow_including_descendants() {
 	assert light_child.lang() or { '' } == 'fr'
 	assert shadow_child.lang() or { '' } == 'fr'
 }
+
+fn test_character_data_change_invalidates_dir_auto_ancestors() {
+	mut document := Document.create(url_about_blank())
+	mut document_node := unsafe { &Node(document) }
+	mut auto_parent := inherited_invalidation_test_element(document, 'div')
+	auto_parent.set_attribute_value('dir', 'auto')
+	document_node.append_child(auto_parent.as_node()) or { panic(err) }
+	mut text := document.create_text_node('abc')
+	mut parent_node := auto_parent.as_node()
+	parent_node.append_child(text.as_node()) or { panic(err) }
+	clear_inherited_invalidation_test_flags(document_node, auto_parent.as_node(), text.as_node())
+
+	text.replace_data(0, text.length(), '\u05d0\u05d1\u05d2') or { panic(err) }
+	assert auto_parent.needs_style_update()
+}

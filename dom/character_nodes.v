@@ -344,6 +344,17 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 	if c.word_segmenter_ != unsafe { nil } {
 		c.word_segmenter_.set_segmented_text(c.data_)
 	}
+
+	for ancestor := node.parent_element(); ancestor != none;  {
+		mut current := unsafe { &Element(ancestor or { break }) }
+		if direction := current.dir() {
+			if direction == .auto_ {
+				current.set_needs_style_update(true)
+				schedule_has_invalidation_for_inherited_attribute_change(current)
+			}
+		}
+		ancestor = current.as_node().parent_element()
+	}
 }
 
 fn utf16_code_units_from_string(value string) []u16 {

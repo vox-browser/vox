@@ -223,6 +223,29 @@ fn test_dir_and_lang_changes_schedule_has_invalidation_across_shadow_scopes() {
 	assert shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
 }
 
+fn test_dir_auto_text_change_schedules_has_invalidation() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(document, 'section:has(:dir(rtl)) { color: red }')
+	mut document_node := unsafe { &dom.Node(document) }
+	mut subject := style_sheet_invalidation_test_element(document, 'section')
+	mut auto_parent := style_sheet_invalidation_test_element(document, 'div')
+	auto_parent.set_attribute_value('dir', 'auto')
+	document_node.append_child(subject.as_node()) or { panic(err) }
+	mut subject_node := subject.as_node()
+	subject_node.append_child(auto_parent.as_node()) or { panic(err) }
+	mut text := document.create_text_node('abc')
+	mut auto_parent_node := auto_parent.as_node()
+	auto_parent_node.append_child(text.as_node()) or { panic(err) }
+	_ := css_style_computer_for(document)
+	mut document_scope := css_style_scope_for_document(document)
+	document_scope.build_rule_cache_if_needed()
+	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+
+	text.replace_data(0, text.length(), '\u05d0\u05d1\u05d2') or { panic(err) }
+	assert auto_parent.needs_style_update()
+	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+}
+
 fn test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }
