@@ -207,6 +207,8 @@ fn grid_track_from_size(node &Node, size css.GridSize, basis CSSPixels, availabl
 		return GridTrack{
 			base_size: value
 			auto_fit: auto_fit
+			fixed_max: true
+			fixed_max_size: value
 		}
 	}
 	mut track := GridTrack{
@@ -1387,7 +1389,7 @@ fn increase_grid_flexible_tracks_for_spanning_items(mut state LayoutState, conta
 				item_state := state.get(styled)
 				grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .min_content, available_height_is_definite, percentage_basis, grid_track_range_size(tracks, start, span, gap))
 			}
-			item_contribution = grid_limited_content_contribution(state, container, container_state, available_size, columns, min_content_contribution, minimum_contribution)
+			item_contribution = grid_limited_content_contribution(state, container, container_state, available_size, columns, tracks, start, span, min_content_contribution, minimum_contribution)
 		}
 		item_contribution = css_pixels_max(item_contribution.minus(non_flexible_space), CSSPixels.new(0))
 		for index in first .. last {
@@ -1796,13 +1798,36 @@ fn grid_should_treat_max_height_as_none(state &LayoutState, container &Node, ava
 	return false
 }
 
+// GridFormattingContext::calculate_fixed_max_track_size_limit(). Fixed and
+// resolvable fit-content() maxima limit intrinsic contributions only when every
+// spanned track supplies such a limit.
+fn grid_fixed_max_track_size_limit(tracks []GridTrack, start int, span int) ?CSSPixels {
+	first := if start > 0 { start } else { 0 }
+	last := if start + span < tracks.len { start + span } else { tracks.len }
+	if first >= last || last - first != span {
+		return none
+	}
+	mut result := CSSPixels.new(0)
+	for index in first .. last {
+		track := tracks[index]
+		if track.fixed_max {
+			result = result.plus(track.fixed_max_size)
+		} else if track.fit_content_max && track.has_fit_content_limit {
+			result = result.plus(track.fit_content_limit)
+		} else {
+			return none
+		}
+	}
+	return result
+}
+
 // GridFormattingContext::calculate_limited_{min,max}_content_contribution().
-// Upstream currently limits against the grid container's maximum size (with a
-// FIXME to use the spanned tracks' maximum functions), after flooring by the
-// item's minimum contribution.
-fn grid_limited_content_contribution(state &LayoutState, container &Node, container_state &UsedValues, available_size AvailableSize, columns bool, contribution CSSPixels, minimum_contribution CSSPixels) CSSPixels {
+fn grid_limited_content_contribution(state &LayoutState, container &Node, container_state &UsedValues, available_size AvailableSize, columns bool, tracks []GridTrack, start int, span int, contribution CSSPixels, minimum_contribution CSSPixels) CSSPixels {
 	if contribution.raw_value() < minimum_contribution.raw_value() {
 		return minimum_contribution
+	}
+	if fixed_maximum := grid_fixed_max_track_size_limit(tracks, start, span) {
+		return css_pixels_max(css_pixels_min(contribution, fixed_maximum), minimum_contribution)
 	}
 	maximum_is_none := if columns {
 		should_treat_max_width_as_none(state, container, available_size)
@@ -1945,7 +1970,7 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			minimum_contribution := grid_item_minimum_outer_inline_contribution(mut state, placement.item, columns, placement.column, placement.column_span, column_gap)
 			min_content_contribution := grid_intrinsic_outer_width_contribution(mut state, placement.item, .min_content)
 			phase_one_contribution := if width_is_intrinsic {
-				grid_limited_content_contribution(state, container, container_state, available_space.width, true, min_content_contribution, minimum_contribution)
+				grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, min_content_contribution, minimum_contribution)
 			} else {
 				minimum_contribution
 			}
@@ -1953,7 +1978,7 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, min_content_contribution, .min_content_contribution)
 			if available_space.width.is_max_content() {
 				max_content_contribution := grid_intrinsic_outer_width_contribution(mut state, placement.item, .max_content)
-				limited_max_content_contribution := grid_limited_content_contribution(state, container, container_state, available_space.width, true, max_content_contribution, minimum_contribution)
+				limited_max_content_contribution := grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, max_content_contribution, minimum_contribution)
 				distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, limited_max_content_contribution, .max_content_contribution)
 			}
 			for index in 0 .. columns.len {
@@ -2111,7 +2136,7 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			minimum_contribution := grid_item_minimum_outer_block_contribution(mut state, placement.item, item_state, rows, placement.row, placement.row_span, container_state.has_definite_height(), row_basis, row_gap)
 			min_content_contribution := grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .min_content, container_state.has_definite_height(), row_basis, spanned_track_size)
 			phase_one_contribution := if available_space.height.is_intrinsic_sizing_constraint() {
-				grid_limited_content_contribution(state, container, container_state, available_space.height, false, min_content_contribution, minimum_contribution)
+				grid_limited_content_contribution(state, container, container_state, available_space.height, false, rows, placement.row, placement.row_span, min_content_contribution, minimum_contribution)
 			} else {
 				minimum_contribution
 			}
@@ -2119,7 +2144,7 @@ fn run_grid_formatting_context(mut state LayoutState, container &Node, mut conta
 			distribute_grid_item_contribution_across_intrinsic_track_bases(mut rows, placement.row, placement.row_span, row_gap, min_content_contribution, .min_content_contribution)
 			if available_space.height.is_max_content() {
 				max_content_contribution := grid_item_outer_block_content_contribution(mut state, placement.item, item_state, .max_content, container_state.has_definite_height(), row_basis, spanned_track_size)
-				limited_max_content_contribution := grid_limited_content_contribution(state, container, container_state, available_space.height, false, max_content_contribution, minimum_contribution)
+				limited_max_content_contribution := grid_limited_content_contribution(state, container, container_state, available_space.height, false, rows, placement.row, placement.row_span, max_content_contribution, minimum_contribution)
 				distribute_grid_item_contribution_across_intrinsic_track_bases(mut rows, placement.row, placement.row_span, row_gap, limited_max_content_contribution, .max_content_contribution)
 			}
 			for index in 0 .. rows.len {

@@ -1232,6 +1232,29 @@ fn test_grid_intrinsic_flexible_row_uses_limited_min_content_contribution() {
 	assert item.content_height().to_double() == 50
 }
 
+fn test_grid_limited_contribution_is_clamped_by_fit_content_row() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		.outer { display:grid; grid-template-columns:1fr minmax(auto, 200px) 1fr }
+		.inner { display:grid; gap:10px; grid-column:2;
+			grid-template-columns:repeat(2, 1fr);
+			grid-template-rows:min-content 1fr fit-content(0) }
+		.span { grid-column:1; grid-row:1 / 3; min-height:100px }
+		.top { grid-column:2; grid-row:1; min-height:70px }
+		.middle { grid-column:2; grid-row:2; min-height:20px }
+		.feed { grid-column:1 / 3; grid-row:3; min-height:50px; overflow:hidden }
+		.feed > div { height:300px }
+	</style><div id="outer" class="outer"><div id="inner" class="inner"><div class="span"></div><div class="top"></div><div class="middle"></div><div id="feed" class="feed"><div></div></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	outer := used_for_id(result, 'outer')
+	inner := used_for_id(result, 'inner')
+	feed := used_for_id(result, 'feed')
+	assert outer.content_height().to_double() == 160
+	assert inner.content_height().to_double() == 160
+	assert feed.offset.y().to_double() == 110
+	assert feed.content_height().to_double() == 50
+}
+
 fn test_grid_percentage_gaps_resolve_against_their_axis_available_size() {
 	document := html.parse_document('<!doctype html><style>
 		#grid { display:grid; width:200px; height:100px; align-content:start;
