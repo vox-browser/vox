@@ -278,42 +278,6 @@ pub fn font_tech_to_string(value FontTech) string {
 	}
 }
 
-// --- AddFunctionStyleValue ---
-pub struct AddFunctionStyleValue {
-pub mut:
-	value_ StyleValue
-}
-
-pub fn AddFunctionStyleValue.create(value StyleValue) AddFunctionStyleValue {
-	return AddFunctionStyleValue{
-		value_: value
-	}
-}
-
-pub fn (style_value AddFunctionStyleValue) value() StyleValue {
-	return style_value.value_
-}
-
-pub fn (style_value AddFunctionStyleValue) absolutized(context ComputationContext) StyleValue {
-	absolutized_value := style_value.value_.absolutized(context)
-	if absolutized_value == style_value.value_ {
-		return StyleValue(style_value)
-	}
-	return StyleValue(AddFunctionStyleValue.create(absolutized_value))
-}
-
-pub fn (style_value AddFunctionStyleValue) serialize(mode SerializationMode) string {
-	return 'add(${style_value.value_.serialize(mode)})'
-}
-
-pub fn (style_value AddFunctionStyleValue) to_string() string {
-	return style_value.serialize(.normal)
-}
-
-pub fn (style_value AddFunctionStyleValue) properties_equal(other AddFunctionStyleValue) bool {
-	return style_value.value_ == other.value_
-}
-
 // --- AnchorStyleValue ---
 pub struct AnchorStyleValue {
 pub mut:

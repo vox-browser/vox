@@ -11292,7 +11292,7 @@ pub fn StyleComputer.compute_math_depth(absolutized_value &dom.StyleValue, inher
 
 	// - If the specified value of math-depth is of the form add(<integer>) then the computed value of
 	//   math-depth of the element is its inherited value plus the specified integer.
-	if parsed_value is AddFunctionStyleValue {
+	if parsed_value is FunctionStyleValue {
 		depth := inherited_math_depth + int(int_from_style_value(parsed_value.value()))
 		return dom_style_value_from_value_logic(StyleValue(IntegerStyleValue.create(i64(depth))))
 	}

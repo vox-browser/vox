@@ -3777,7 +3777,6 @@ pub fn keyword_from_string(input string) ?Keyword {
 
 // --- StyleValue ---
 pub enum StyleValueType {
-	add_function
 	anchor
 	anchor_size
 	angle
@@ -3859,7 +3858,6 @@ pub type DimensionStyleValue = AngleStyleValue
 	| TimeStyleValue
 
 pub type StyleValue = KeywordStyleValue
-	| AddFunctionStyleValue
 	| AnchorSizeStyleValue
 	| AnchorStyleValue
 	| AngleStyleValue
@@ -3972,7 +3970,6 @@ pub fn (mut style_value StyleValue) set_style_sheet(style_sheet ?&CSSStyleSheet)
 
 pub fn (style_value StyleValue) type_() StyleValueType {
 	return match style_value {
-		AddFunctionStyleValue { .add_function }
 		AnchorSizeStyleValue { .anchor_size }
 		AnchorStyleValue { .anchor }
 		AngleStyleValue { .angle }
@@ -4280,7 +4277,6 @@ pub fn (style_value StyleValue) is_color_function() bool {
 
 pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleValue {
 	return match style_value {
-		AddFunctionStyleValue { style_value.absolutized(context) }
 		BackgroundSizeStyleValue { style_value.absolutized(context) }
 		BasicShapeStyleValue { style_value.absolutized(context) }
 		BorderRadiusRectStyleValue { style_value.absolutized(context) }
@@ -4356,7 +4352,6 @@ pub fn (style_value StyleValue) to_keyword() Keyword {
 
 pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 	return match style_value {
-		AddFunctionStyleValue { style_value.serialize(mode) }
 		AnchorSizeStyleValue { style_value.serialize(mode) }
 		AnchorStyleValue { style_value.serialize(mode) }
 		AngleStyleValue { style_value.serialize(mode) }

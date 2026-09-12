@@ -10578,7 +10578,7 @@ fn (mut parser Parser) parse_math_depth_value(mut tokens ComponentValueStream) ?
 				return none
 			}
 			tokens = add_transaction
-			return StyleValue(AddFunctionStyleValue.create(integer_value))
+			return StyleValue(FunctionStyleValue.create('add', integer_value))
 		}
 	}
 
