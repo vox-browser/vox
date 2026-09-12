@@ -1312,30 +1312,49 @@ fn reason_may_affect_has_selectors(reason StyleInvalidationReason) bool {
 		.settings_change, .style_sheet_disabled_state_change, .style_sheet_replace]
 }
 
+fn schedule_has_walk_for_parent(style_scope &StyleScope, parent &Node, reason StyleInvalidationReason) {
+	if !style_scope.may_have_has_selectors() {
+		return
+	}
+	mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
+	mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(parent)
+	if reason == .node_remove || reason == .node_insert_before {
+		for child in parent.children {
+			if element := child.as_element() {
+				if element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator {
+					mut mutable_element := unsafe { &Element(element) }
+					mutable_element.invalidate_style_if_affected_by_has()
+				}
+			}
+		}
+	}
+}
+
 pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	doc := n.document()
 	if doc == unsafe { nil } {
 		return
 	}
 	style_scope := style_scope_for_node(&n)
-	if style_scope.may_have_has_selectors() {
-		if reason == .node_remove || reason == .node_insert_before {
-			if parent := n.parent_or_shadow_host() {
-				mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
-				mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(parent)
-				for child in parent.children {
-					if element := child.as_element() {
-						if element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator {
-							mut mutable_element := unsafe { &Element(element) }
-							mutable_element.invalidate_style_if_affected_by_has()
+	if reason == .node_remove || reason == .node_insert_before {
+		if parent := n.parent_or_shadow_host() {
+			schedule_has_walk_for_parent(style_scope, parent, reason)
+			for ancestor := ?&Node(parent); ancestor != none;  {
+				current := ancestor or { break }
+				if element := current.as_element() {
+					if shadow_root := element.shadow_root() {
+						shadow_scope := shadow_root.style_scope()
+						if shadow_scope != style_scope {
+							schedule_has_walk_for_parent(shadow_scope, parent, reason)
 						}
 					}
 				}
+				ancestor = current.parent_or_shadow_host()
 			}
-		} else if reason_may_affect_has_selectors(reason) {
-			mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
-			mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
 		}
+	} else if style_scope.may_have_has_selectors() && reason_may_affect_has_selectors(reason) {
+		mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
+		mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
 	}
 	// Character data has no style of its own. Its observable :has() ancestor
 	// invalidation was scheduled above, so no direct invalidation remains.
