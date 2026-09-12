@@ -125,3 +125,29 @@ fn test_upstream_key_pair_and_registry_entry_points() {
 	assert 'sharedKey' in bits_object
 	assert 'ciphertext' !in bits_object
 }
+
+fn test_crypto_algorithm_binding_helpers_preserve_webcrypto_spellings() {
+	assert export_public_exponent([u8(0), 0, 1, 0, 1]) == [u8(1), 0, 1]
+	assert export_public_exponent([]) == [u8(0)]
+	assert base64_url_bytes_encode([u8(0), 0, 1]) == 'AAAB'
+	assert base64_url_bytes_encode([]) == ''
+
+	usages := [KeyUsage.encrypt, .decrypt, .sign, .verify, .derive_key, .derive_bits, .wrap_key,
+		.unwrap_key, .encapsulate_key, .encapsulate_bits, .decapsulate_key, .decapsulate_bits]
+	usage_names := ['encrypt', 'decrypt', 'sign', 'verify', 'deriveKey', 'deriveBits', 'wrapKey',
+		'unwrapKey', 'encapsulateKey', 'encapsulateBits', 'decapsulateKey', 'decapsulateBits']
+	for index, usage in usages {
+		assert key_usage_to_string(usage) == usage_names[index]
+	}
+	formats := [KeyFormat.raw_public, .raw_private, .raw_seed, .raw_secret, .raw, .spki, .pkcs8,
+		.jwk]
+	format_names := ['raw-public', 'raw-private', 'raw-seed', 'raw-secret', 'raw', 'spki', 'pkcs8',
+		'jwk']
+	for index, format in formats {
+		assert key_format_to_string(format) == format_names[index]
+	}
+
+	assert kmac_kind_from_algorithm_name('KMAC128')? == .kmac128
+	assert kmac_kind_from_algorithm_name('KMAC256')? == .kmac256
+	assert kmac_kind_from_algorithm_name('kmac128') == none
+}

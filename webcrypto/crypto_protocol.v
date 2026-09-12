@@ -445,8 +445,59 @@ pub fn big_integer_from_api_big_integer(bytes []u8) []u8 {
 	return unsigned_big_integer_bytes(bytes)
 }
 
+pub fn export_public_exponent(exponent []u8) []u8 {
+	return unsigned_big_integer_bytes(exponent)
+}
+
+pub fn key_usage_to_string(usage KeyUsage) string {
+	return match usage {
+		.encrypt { 'encrypt' }
+		.decrypt { 'decrypt' }
+		.sign { 'sign' }
+		.verify { 'verify' }
+		.derive_key { 'deriveKey' }
+		.derive_bits { 'deriveBits' }
+		.wrap_key { 'wrapKey' }
+		.unwrap_key { 'unwrapKey' }
+		.encapsulate_key { 'encapsulateKey' }
+		.encapsulate_bits { 'encapsulateBits' }
+		.decapsulate_key { 'decapsulateKey' }
+		.decapsulate_bits { 'decapsulateBits' }
+	}
+}
+
+pub fn key_format_to_string(format KeyFormat) string {
+	return match format {
+		.raw_public { 'raw-public' }
+		.raw_private { 'raw-private' }
+		.raw_seed { 'raw-seed' }
+		.raw_secret { 'raw-secret' }
+		.raw { 'raw' }
+		.spki { 'spki' }
+		.pkcs8 { 'pkcs8' }
+		.jwk { 'jwk' }
+	}
+}
+
+pub fn base64_url_bytes_encode(bytes []u8) string {
+	return base64url_encode(bytes)
+}
+
 pub fn base64_url_uint_encode(bytes []u8) string {
 	return base64url_encode(unsigned_big_integer_bytes(bytes))
+}
+
+pub enum KmacKind {
+	kmac128
+	kmac256
+}
+
+pub fn kmac_kind_from_algorithm_name(algorithm_name string) ?KmacKind {
+	return match algorithm_name {
+		'KMAC128' { KmacKind.kmac128 }
+		'KMAC256' { KmacKind.kmac256 }
+		else { none }
+	}
 }
 
 pub fn base64_url_bytes_decode(value string) ![]u8 {
