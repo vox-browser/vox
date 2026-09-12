@@ -168,11 +168,12 @@ fn (iterator &TextNodeChunkIterator) is_at_line_break_opportunity() bool {
 fn (iterator &TextNodeChunkIterator) font_for_code_point(code_point u32) &platform.Font {
 	for index, font in iterator.font_cascade_fonts {
 		ranges := iterator.font_cascade_ranges[index]
-		if ranges.len == 0 {
+		if ranges.len == 0 && font.contains_glyph(code_point) {
 			return font
 		}
 		for range_ in ranges {
-			if range_.start <= code_point && code_point <= range_.end {
+			if range_.start <= code_point && code_point <= range_.end
+				&& font.contains_glyph(code_point) {
 				return font
 			}
 		}
@@ -180,9 +181,9 @@ fn (iterator &TextNodeChunkIterator) font_for_code_point(code_point u32) &platfo
 	return iterator.last_resort_font or { iterator.font }
 }
 
-pub fn (iterator &TextNodeChunkIterator) font_for_space(at_index int) &platform.Font {
+pub fn (iterator &TextNodeChunkIterator) font_for_space(at_index int, space_code_point u32) &platform.Font {
 	if font := iterator.last_non_whitespace_font {
-		if !font.is_emoji_font() {
+		if !font.is_emoji_font() && font.contains_glyph(space_code_point) {
 			return font
 		}
 	}
@@ -193,7 +194,7 @@ pub fn (iterator &TextNodeChunkIterator) font_for_space(at_index int) &platform.
 		if !is_interword_space(code_point) && code_point != u32(`\t`)
 			&& code_point != u32(`\n`) {
 			font := iterator.font_for_code_point(code_point)
-			if !font.is_emoji_font() {
+			if !font.is_emoji_font() && font.contains_glyph(space_code_point) {
 				return font
 			}
 			break
@@ -201,17 +202,7 @@ pub fn (iterator &TextNodeChunkIterator) font_for_space(at_index int) &platform.
 		index += utf16_code_point_length(code_point)
 	}
 
-	for font in iterator.font_cascade_fonts {
-		if !font.is_emoji_font() {
-			return font
-		}
-	}
-	if font := iterator.last_resort_font {
-		if !font.is_emoji_font() {
-			return font
-		}
-	}
-	return iterator.font
+	return iterator.font_for_code_point(space_code_point)
 }
 
 fn (mut iterator TextNodeChunkIterator) next_without_peek() ?TextNodeChunk {
@@ -222,7 +213,7 @@ fn (mut iterator TextNodeChunkIterator) next_without_peek() ?TextNodeChunk {
 	mut can_break_at_current_position := iterator.is_at_line_break_opportunity()
 	start_of_chunk := iterator.current_index
 	font := if is_interword_space(code_point) {
-		iterator.font_for_space(iterator.current_index)
+		iterator.font_for_space(iterator.current_index, code_point)
 	} else {
 		iterator.font_for_code_point(code_point)
 	}
@@ -232,7 +223,7 @@ fn (mut iterator TextNodeChunkIterator) next_without_peek() ?TextNodeChunk {
 	for iterator.current_index < iterator.code_units.len {
 		code_point = code_point_at_utf16(iterator.code_units, iterator.current_index)
 		expected_font := if is_interword_space(code_point) {
-			iterator.font_for_space(iterator.current_index)
+			iterator.font_for_space(iterator.current_index, code_point)
 		} else {
 			iterator.font_for_code_point(code_point)
 		}
@@ -286,7 +277,7 @@ fn (mut iterator TextNodeChunkIterator) next_without_peek() ?TextNodeChunk {
 				}
 				iterator.current_index = iterator.next_grapheme_boundary()
 				can_break_at_current_position = iterator.is_at_line_break_opportunity()
-				space_font := iterator.font_for_space(iterator.current_index)
+				space_font := iterator.font_for_space(iterator.current_index, code_point)
 				if chunk := iterator.try_commit_chunk(start_of_chunk, iterator.current_index, false, broken_on_tab, false, space_font, text_type) {
 					return chunk
 				}

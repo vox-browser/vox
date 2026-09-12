@@ -272,6 +272,18 @@ pub fn (font &Font) glyph_width(code_point u32) f32 {
 	return advance
 }
 
+// Gfx::Font::contains_glyph(). A decoded face maps missing characters to the
+// .notdef glyph at index zero. Fonts without a concrete source retain the
+// synthetic fallback behavior used by standalone and unit-test configurations.
+pub fn (font &Font) contains_glyph(code_point u32) bool {
+	face := font_face(font) or { return font.source_path == '' }
+	if code_point > 0xffff {
+		return false
+	}
+	mut mutable_face := unsafe { &ttf.TTF_File(face) }
+	return mutable_face.map_code(int(code_point)) != 0
+}
+
 // The outline bounds used by Gfx::Path::text(). TrueType's Y axis points up;
 // callers map y_max to the visual top and y_min to the visual bottom around
 // the text baseline.

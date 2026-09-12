@@ -2,6 +2,7 @@ module layout
 
 import css
 import dom
+import platform
 
 fn chunk_test_style(document &dom.Document, declarations string) &css.ComputedProperties {
 	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
@@ -56,6 +57,38 @@ fn test_text_node_chunk_iterator_preserves_utf16_offsets_and_newline() {
 	assert newline.start == 3
 	assert newline.length == 1
 	assert last.start == 4
+}
+
+fn test_text_node_chunk_iterator_uses_fallback_for_missing_space_glyph() {
+	letters_font := &platform.Font{
+		family: 'Verdemerona'
+		point_size: 16
+		source_path: 'pixel_tests/sites/css-zen-garden/www.csszengarden.com/214/verdemoderna.ttf'
+	}
+	space_font := &platform.Font{
+		family: 'Glyphicons Halflings'
+		point_size: 16
+		source_path: 'pixel_tests/sites/uclibc-ng/uclibc-ng.org/fonts/glyphicons-halflings-regular.ttf'
+	}
+	assert letters_font.contains_glyph(u32(`A`))
+	assert !letters_font.contains_glyph(u32(` `))
+	assert space_font.contains_glyph(u32(` `))
+
+	mut iterator := TextNodeChunkIterator{
+		view: 'A A'
+		code_units: utf16_code_units_for_line_box('A A')
+		grapheme_boundaries: [0, 1, 2, 3]
+		font: space_font
+		font_cascade_fonts: [letters_font, space_font]
+		font_cascade_ranges: [[css.UnicodeRange{ start: u32(`A`), end: u32(`A`) }],
+			[]css.UnicodeRange{}]
+	}
+	first := iterator.next() or { panic('first letter') }
+	space := iterator.next() or { panic('space') }
+	last := iterator.next() or { panic('last letter') }
+	assert first.font == letters_font
+	assert space.font == space_font
+	assert last.font == letters_font
 }
 
 fn test_line_box_utf16_helpers_preserve_ascii_and_surrogate_offsets() {
