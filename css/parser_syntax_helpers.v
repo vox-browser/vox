@@ -908,11 +908,13 @@ fn parse_according_to_syntax_node(mut tokens ComponentValueTokenStream, syntax_n
 		}
 		.alternatives {
 			for child in syntax_node.children {
-				result := parse_according_to_syntax_node(mut tokens, child) or {
-					tokens.index = transaction_index
-					continue
+				tokens.index = transaction_index
+				if result := parse_according_to_syntax_node(mut tokens, child) {
+					tokens.discard_whitespace()
+					if !tokens.has_next_token() {
+						return result
+					}
 				}
-				return result
 			}
 			tokens.index = transaction_index
 			return none
