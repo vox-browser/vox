@@ -1077,6 +1077,9 @@ fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNeste
 			if equals_ignoring_ascii_case(rule.name, 'font-feature-values') {
 				return parser.convert_to_font_feature_values_rule(rule)
 			}
+			if equals_ignoring_ascii_case(rule.name, 'function') {
+				return parser.convert_to_function_rule(rule)
+			}
 			if equals_ignoring_ascii_case(rule.name, 'import') {
 				return parser.convert_to_import_rule(rule)
 			}
@@ -2004,6 +2007,156 @@ fn (mut parser RuleSelectorParser) convert_to_font_feature_values_rule(rule AtRu
 	return CSSRule.create_font_feature_values_rule(font_feature_values_rule)
 }
 
+struct ParsedFunctionPrelude {
+	name        string
+	parameters  []FunctionParameterInternal
+	return_type SyntaxNode
+}
+
+fn parse_function_css_type(mut tokens ParserTokenStream) ?SyntaxNode {
+	transaction_index := tokens.index
+	tokens.discard_whitespace()
+
+	mut component_tokens := ComponentValueTokenStream.new(tokens.values[tokens.index..tokens.values.len - 1])
+	if syntax_component := parse_syntax_component(mut component_tokens, .no) {
+		tokens.index += component_tokens.index
+		return syntax_component
+	}
+
+	tokens.index = transaction_index
+	tokens.discard_whitespace()
+	if tokens.next_token().is_function_named('type') {
+		type_function := tokens.consume_a_token().function()
+		if syntax := parse_as_syntax(type_function.value) {
+			return syntax
+		}
+	}
+
+	tokens.index = transaction_index
+	return none
+}
+
+fn (mut parser RuleSelectorParser) parse_function_prelude(mut tokens ParserTokenStream) ?ParsedFunctionPrelude {
+	tokens.discard_whitespace()
+	function_component := tokens.consume_a_token()
+	if !function_component.is_function() {
+		return none
+	}
+
+	function := function_component.function()
+	if !is_a_custom_property_name_string(function.name) {
+		return none
+	}
+
+	mut parameters := []FunctionParameterInternal{}
+	mut parameters_tokens := ParserTokenStream.from_values(function.value)
+	parameters_tokens.discard_whitespace()
+	if parameters_tokens.has_next_token() {
+		parameter_lists := parser.parse_a_comma_separated_list_of_component_values(mut parameters_tokens)
+		for parameter_values in parameter_lists {
+			mut parameter_tokens := ParserTokenStream.from_values(parameter_values)
+			parameter_tokens.discard_whitespace()
+			name_token := parameter_tokens.consume_a_token()
+			if !name_token.is(.ident)
+				|| !is_a_custom_property_name_string(name_token.token().ident()) {
+				return none
+			}
+			parameter_name := name_token.token().ident()
+
+			mut parameter_type := SyntaxNode.create_universal()
+			if parsed_type := parse_function_css_type(mut parameter_tokens) {
+				parameter_type = parsed_type
+			}
+
+			parameter_tokens.discard_whitespace()
+			mut default_value := ?[]ComponentValue(none)
+			if parameter_tokens.next_token().is(.colon) {
+				parameter_tokens.discard_a_token()
+				parameter_tokens.discard_whitespace()
+				parsed_default := parse_declaration_value(mut parameter_tokens, none) or {
+					return none
+				}
+
+				mut default_tokens := ComponentValueTokenStream.new(parsed_default)
+				_ := parse_according_to_syntax_node(mut default_tokens, parameter_type) or {
+					return none
+				}
+				default_tokens.discard_whitespace()
+				if default_tokens.has_next_token() {
+					return none
+				}
+				default_value = parsed_default.clone()
+			}
+
+			parameter_tokens.discard_whitespace()
+			if parameter_tokens.has_next_token() {
+				return none
+			}
+			parameters << FunctionParameterInternal{
+				name: parameter_name
+				type_: parameter_type
+				default_value: default_value
+			}
+		}
+	}
+
+	tokens.discard_whitespace()
+	mut return_type := SyntaxNode.create_universal()
+	if tokens.next_token().is(.ident)
+		&& equals_ignoring_ascii_case(tokens.next_token().token().ident(), 'returns') {
+		tokens.discard_a_token()
+		return_type = parse_function_css_type(mut tokens) or { return none }
+	}
+
+	tokens.discard_whitespace()
+	if tokens.has_next_token() {
+		return none
+	}
+
+	return ParsedFunctionPrelude{
+		name: function.name
+		parameters: parameters
+		return_type: return_type
+	}
+}
+
+fn (mut parser RuleSelectorParser) convert_to_function_declarations(declarations []Declaration) &CSSRule {
+	mut descriptors := []Descriptor{}
+	for declaration in declarations {
+		mut descriptor_parser := Parser.from_component_values(declaration.value)
+		descriptor_parser.context = parser.parsing_params()
+		if descriptor := descriptor_parser.convert_to_descriptor(.function_rule, declaration) {
+			append_descriptor(mut descriptors, descriptor)
+		}
+	}
+	return CSSRule.create_function_declarations(CSSFunctionDescriptors.create(descriptors))
+}
+
+fn (mut parser RuleSelectorParser) convert_to_function_rule(rule AtRule) ?&CSSRule {
+	if !rule.is_block_rule {
+		return none
+	}
+
+	mut prelude_tokens := ParserTokenStream.from_values(rule.prelude)
+	prelude := parser.parse_function_prelude(mut prelude_tokens) or { return none }
+	mut children := []&CSSRule{}
+	for child in rule.child_rules_and_lists_of_declarations {
+		match child {
+			RuleNode {
+				if child_rule := parser.convert_to_rule(child.rule, .yes, .function_rule) {
+					children << child_rule
+				}
+			}
+			DeclarationList {
+				children << parser.convert_to_function_declarations(child.declarations)
+			}
+		}
+	}
+
+	return CSSRule.create_function(CSSRuleList.create(children), prelude.name, prelude.parameters,
+		prelude.return_type)
+}
+
 fn (mut parser RuleSelectorParser) convert_to_page_rule(page_rule AtRule) ?&CSSRule {
 	// https://drafts.csswg.org/css-page-3/#syntax-page-selector
 	// @page = @page <page-selector-list>? { <declaration-rule-list> }
@@ -2100,15 +2253,7 @@ fn (mut parser RuleSelectorParser) convert_child_rule_list(children []RuleOrList
 			}
 			DeclarationList {
 				if declaration_rule_kind == .function_rule {
-					mut descriptors := []Descriptor{}
-					for declaration in child.declarations {
-						mut descriptor_parser := Parser.from_component_values(declaration.value)
-						descriptor_parser.context = parser.parsing_params()
-						if descriptor := descriptor_parser.convert_to_descriptor(.function_rule, declaration) {
-							append_descriptor(mut descriptors, descriptor)
-						}
-					}
-					child_rules << CSSRule.create_function_declarations(CSSFunctionDescriptors.create(descriptors))
+					child_rules << parser.convert_to_function_declarations(child.declarations)
 				} else {
 					child_rules << CSSRule.create_nested_declarations(parser.convert_to_style_declaration(child.declarations))
 				}
@@ -3165,6 +3310,9 @@ fn rule_context_type_for_at_rule_local(name string) RuleContext {
 	}
 	if equals_ignoring_ascii_case(name, 'font-feature-values') {
 		return .font_feature_values
+	}
+	if equals_ignoring_ascii_case(name, 'function') {
+		return .function_rule
 	}
 	if is_font_feature_value_type_at_keyword_local(name) {
 		return .font_feature_value
