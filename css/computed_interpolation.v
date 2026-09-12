@@ -10686,14 +10686,6 @@ fn html_input_element_adjust_computed_style(mut properties ComputedProperties, e
 		}
 	}
 
-	if type_ != 'file' && properties.size_value(.width).is_auto() {
-		size := element.get_attribute_value('size').int()
-		columns := if size > 0 { size } else { 20 }
-		if parsed := parse_css_value_logic(.width, '${columns}ch') {
-			properties.set_property_without_modifying_flags(.width, dom_style_value_from_value_logic(parsed))
-		}
-	}
-
 	// For web compatibility, these are the one-line plain-text controls used by
 	// HTMLInputElement::is_single_line(). URL is intentionally not in this set.
 	if type_ in ['text', 'search', 'password', 'email', 'tel', 'number'] && properties.size_value(.height).is_auto() {

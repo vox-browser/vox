@@ -42,6 +42,17 @@ fn test_flex_formatting_context_grows_and_aligns_items() {
 	assert two.offset.y().to_double() == 40
 }
 
+fn test_auto_width_text_input_stretches_in_nested_column_flex() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer, #inner { display:flex; flex-direction:column; width:300px }
+		#inner { width:auto }
+	</style><div id="outer"><div id="inner"><input id="input" type="text" size="5"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'inner').border_box_width().to_double() == 300
+	assert used_for_id(result, 'input').border_box_width().to_double() == 300
+}
+
 fn test_multiline_flex_align_content_distributes_cross_axis_space() {
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-wrap:wrap; align-content:center; width:100px; height:100px }
