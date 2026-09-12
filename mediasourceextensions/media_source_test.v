@@ -140,6 +140,49 @@ fn test_media_source_add_source_buffer_and_indexed_source_buffer_list() {
 	assert observation.interface_ == .event
 }
 
+fn test_source_buffer_append_error_and_end_of_stream_algorithms() {
+	mut unattached := SourceBuffer.create_internal()
+	unattached.append_buffer('data'.bytes()) or {
+		assert err.msg() == 'InvalidStateError: Unsupported in workers'
+	}
+
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+	update_start := &EventObservation{}
+	append_error := &EventObservation{}
+	update_end := &EventObservation{}
+	source_ended := &EventObservation{}
+	buffer.set_onupdatestart(observer_callback(update_start))
+	buffer.set_onerror(observer_callback(append_error))
+	buffer.set_onupdateend(observer_callback(update_end))
+	source.set_onsourceended(observer_callback(source_ended))
+
+	buffer.append_buffer('not yet demuxed'.bytes())!
+	assert !buffer.updating()
+	assert buffer.input_buffer_length() == 0
+	assert update_start.count == 1
+	assert append_error.count == 1
+	assert update_end.count == 1
+	assert source_ended.count == 1
+	assert source.ready_state() == .ended
+
+	source.end_of_stream(none) or {
+		assert err.msg() == 'InvalidStateError: MediaSource is not open'
+	}
+	mut mutable_processor := buffer.processor_
+	mutable_processor.set_updating(true)
+	mut mutable_source := source
+	mutable_source.set_ready_state_to_open_and_fire_sourceopen_event()
+	source.end_of_stream(none) or {
+		assert err.msg() == 'InvalidStateError: A SourceBuffer is still updating'
+	}
+	mutable_processor.set_updating(false)
+	source.end_of_stream(none)!
+	assert source.ready_state() == .ended
+}
+
 fn test_buffered_change_event_preserves_base_init_and_identity() {
 	mut added := &html.TimeRanges{}
 	added.add_range(1, 2)

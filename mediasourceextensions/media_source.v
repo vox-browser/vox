@@ -105,10 +105,35 @@ pub fn (mut source MediaSource) add_source_buffer(type_ string) !&SourceBuffer {
 	if source.ready_state_ != .open {
 		return error('InvalidStateError: MediaSource is not open')
 	}
-	buffer := SourceBuffer.create_internal()
+	buffer := SourceBuffer.create_internal_for_media_source(source)
 	mut buffers := source.source_buffers_
 	buffers.append(buffer)
 	return buffer
+}
+
+// https://w3c.github.io/media-source/#dom-mediasource-endofstream
+pub fn (mut source MediaSource) end_of_stream(error_ ?EndOfStreamError) ! {
+	if source.ready_state_ != .open {
+		return error('InvalidStateError: MediaSource is not open')
+	}
+	for index in 0 .. source.source_buffers_.length() {
+		buffer := source.source_buffers_.item(index) or { continue }
+		if buffer.updating() {
+			return error('InvalidStateError: A SourceBuffer is still updating')
+		}
+	}
+	source.run_end_of_stream_algorithm(error_)
+}
+
+// https://w3c.github.io/media-source/#end-of-stream-algorithm
+pub fn (mut source MediaSource) run_end_of_stream_algorithm(error_ ?EndOfStreamError) {
+	source.ready_state_ = .ended
+	source.queue_a_media_source_task(fn [source] () {
+		source.dispatch_event(dom.Event.create('sourceended', dom.EventInit{}))
+	})
+	// Duration adjustment and media-element error signaling depend on coded
+	// track buffers and are translated with the demuxing path.
+	_ = error_
 }
 
 pub fn (source &MediaSource) queue_a_media_source_task(task fn ()) {
