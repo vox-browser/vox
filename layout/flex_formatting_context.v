@@ -888,7 +888,7 @@ mut:
 	iterate_lines_backwards bool
 }
 
-fn flex_line_placement(align css.AlignContent, cross_size_of_flex_container CSSPixels, sum_of_flex_line_cross_sizes CSSPixels, line_count int, wrap_reverse bool) FlexLinePlacement {
+fn flex_line_placement(align css.AlignContent, cross_size_of_flex_container CSSPixels, sum_of_flex_line_cross_sizes CSSPixels, line_count int, reverse_cross_axis bool) FlexLinePlacement {
 	mut placement := FlexLinePlacement{}
 	if line_count == 0 {
 		return placement
@@ -897,32 +897,32 @@ fn flex_line_placement(align css.AlignContent, cross_size_of_flex_container CSSP
 	centered_start := flex_divide_by_integer(cross_size_of_flex_container, 2).minus(flex_divide_by_integer(sum_of_flex_line_cross_sizes, 2))
 	match align {
 		.start {
-			placement.iterate_lines_backwards = wrap_reverse
+			placement.iterate_lines_backwards = reverse_cross_axis
 		}
 		.end_ {
 			placement.start_of_current_line = cross_size_of_flex_container
 			placement.place_items_backwards = true
-			placement.iterate_lines_backwards = !wrap_reverse
+			placement.iterate_lines_backwards = !reverse_cross_axis
 		}
 		.flex_start {
-			if wrap_reverse {
+			if reverse_cross_axis {
 				placement.start_of_current_line = cross_size_of_flex_container
 				placement.place_items_backwards = true
 			}
 		}
 		.flex_end {
 			placement.iterate_lines_backwards = true
-			if !wrap_reverse {
+			if !reverse_cross_axis {
 				placement.start_of_current_line = cross_size_of_flex_container
 				placement.place_items_backwards = true
 			}
 		}
 		.center {
-			placement.iterate_lines_backwards = wrap_reverse
+			placement.iterate_lines_backwards = reverse_cross_axis
 			placement.start_of_current_line = centered_start
 		}
 		.space_between {
-			if wrap_reverse {
+			if reverse_cross_axis {
 				placement.start_of_current_line = cross_size_of_flex_container
 				placement.place_items_backwards = true
 			}
@@ -931,7 +931,7 @@ fn flex_line_placement(align css.AlignContent, cross_size_of_flex_container CSSP
 			}
 		}
 		.space_around {
-			placement.iterate_lines_backwards = wrap_reverse
+			placement.iterate_lines_backwards = reverse_cross_axis
 			// "If the leftover free-space is negative this value is identical to center."
 			if leftover_free_space.raw_value() < 0 {
 				placement.start_of_current_line = centered_start
@@ -942,7 +942,7 @@ fn flex_line_placement(align css.AlignContent, cross_size_of_flex_container CSSP
 			}
 		}
 		.space_evenly {
-			placement.iterate_lines_backwards = wrap_reverse
+			placement.iterate_lines_backwards = reverse_cross_axis
 			if leftover_free_space.raw_value() < 0 {
 				placement.start_of_current_line = centered_start
 			} else {
@@ -953,13 +953,27 @@ fn flex_line_placement(align css.AlignContent, cross_size_of_flex_container CSSP
 		}
 		else {
 			// `normal` and `stretch`: the lines were already grown to fill the container.
-			if wrap_reverse {
+			if reverse_cross_axis {
 				placement.start_of_current_line = cross_size_of_flex_container
 				placement.place_items_backwards = true
 			}
 		}
 	}
 	return placement
+}
+
+fn flex_formatting_cross_axis_is_reversed(container &Node) bool {
+	computed := container.computed_values()
+	is_row_layout := computed.flex_direction() in [.row, .row_reverse]
+	mut reverse := if is_row_layout {
+		layout_block_axis_is_reverse(computed.writing_mode())
+	} else {
+		layout_inline_axis_is_reverse(computed.writing_mode(), computed.direction())
+	}
+	if computed.flex_wrap() == .wrap_reverse {
+		reverse = !reverse
+	}
+	return reverse
 }
 
 fn flex_align_content_offsets(align css.AlignContent, free_space CSSPixels, line_count int, wrap_reverse bool) (CSSPixels, CSSPixels, CSSPixels) {
@@ -1127,11 +1141,7 @@ fn flex_static_main_axis_alignment(container &Node, direction css.FlexDirection)
 fn set_flex_abspos_static_positions(mut state LayoutState, container &Node, container_state &UsedValues, direction css.FlexDirection) {
 	row_axis := direction in [.row, .row_reverse]
 	main_alignment := flex_static_main_axis_alignment(container, direction)
-	cross_reversed := if row_axis {
-		container.computed_values().flex_wrap() == .wrap_reverse
-	} else {
-		(container.computed_values().direction() == .rtl) != (container.computed_values().flex_wrap() == .wrap_reverse)
-	}
+	cross_reversed := flex_formatting_cross_axis_is_reversed(container)
 	for child in container.children() {
 		if !child.is_absolutely_positioned() {
 			continue
@@ -1342,7 +1352,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	for cross_size in line_cross_sizes {
 		total_cross_size = total_cross_size.plus(cross_size)
 	}
-	wrap_reverse := container.computed_values().flex_wrap() == .wrap_reverse
+	reverse_cross_axis := flex_formatting_cross_axis_is_reversed(container)
 	available_cross_size := if container_state.has_definite_height() {
 		container_state.content_height()
 	} else if available_space.height.is_definite() {
@@ -1350,7 +1360,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 	} else {
 		total_cross_size
 	}
-	_, _, stretched_cross_space := flex_align_content_offsets(container.computed_values().align_content(), available_cross_size.minus(total_cross_size), line_cross_sizes.len, wrap_reverse)
+	_, _, stretched_cross_space := flex_align_content_offsets(container.computed_values().align_content(), available_cross_size.minus(total_cross_size), line_cross_sizes.len, reverse_cross_axis)
 	// handle_align_content_stretch(): grow every line by an equal, truncated share so their
 	// sum reaches the container's inner cross size.
 	if stretched_cross_space.raw_value() > 0 {
@@ -1359,7 +1369,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 		}
 		total_cross_size = total_cross_size.plus(stretched_cross_space.scaled(f64(line_cross_sizes.len)))
 	}
-	mut placement := flex_line_placement(container.computed_values().align_content(), available_cross_size, total_cross_size, lines.len, wrap_reverse)
+	mut placement := flex_line_placement(container.computed_values().align_content(), available_cross_size, total_cross_size, lines.len, reverse_cross_axis)
 	distributed_cross_space := placement.gap_size
 
 	mut line_order := []int{cap: lines.len}
@@ -1447,7 +1457,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			} else if cross_free_space.raw_value() > 0 && bottom_margin_auto {
 				item_state.margin_bottom = cross_free_space
 			} else {
-				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_height(), wrap_reverse)
+				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_height(), reverse_cross_axis)
 				if alignment == .baseline {
 					// Baseline-aligned items start at the line's cross-start edge, so the
 					// baseline shift always runs towards cross-end.
@@ -1682,7 +1692,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		} else if cross_free_space.raw_value() > 0 && right_margin_auto {
 			item_state.margin_right = cross_free_space
 		} else {
-			cross_delta = cross_alignment_offset(alignment, container_width, item_state.margin_box_width(), container.computed_values().flex_wrap() == .wrap_reverse)
+			cross_delta = cross_alignment_offset(alignment, container_width, item_state.margin_box_width(), flex_formatting_cross_axis_is_reversed(container))
 			if alignment == .baseline {
 				cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item)))
 			}
@@ -1815,7 +1825,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 	// align_all_flex_lines(): the same per-keyword starting edge and direction flags the row
 	// axis uses. `start`/`end` name the container's own cross edges here too - C++ never
 	// consults the inline `direction` when placing the lines.
-	mut placement := flex_line_placement(container.computed_values().align_content(), container_width, total_cross_size, lines.len, container.computed_values().flex_wrap() == .wrap_reverse)
+	mut placement := flex_line_placement(container.computed_values().align_content(), container_width, total_cross_size, lines.len, flex_formatting_cross_axis_is_reversed(container))
 	distributed_cross := placement.gap_size
 	mut line_indexes := []int{cap: lines.len}
 	for index in 0 .. lines.len {
@@ -1899,7 +1909,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 			} else if cross_free_space.raw_value() > 0 && right_margin_auto {
 				item_state.margin_right = cross_free_space
 			} else {
-				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_width(), container.computed_values().flex_wrap() == .wrap_reverse)
+				cross_delta = cross_alignment_offset(alignment, cross_size, item_state.margin_box_width(), flex_formatting_cross_axis_is_reversed(container))
 				if alignment == .baseline {
 					cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item)))
 				}

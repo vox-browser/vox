@@ -132,16 +132,16 @@ fn test_single_line_column_flex_swaps_cross_edges_for_wrap_reverse() {
 	assert used_for_id(result, 'two').offset.y().to_double() == 20
 }
 
-fn test_rtl_does_not_affect_the_wrap_reverse_cross_flip() {
-	// The item's own cross offset follows flex-wrap alone, so a right-to-left container does
-	// not cancel the wrap-reverse swap: `normal` items stay at the swapped cross-start edge.
+fn test_rtl_and_wrap_reverse_cancel_each_other_on_the_column_cross_axis() {
+	// A column's cross axis is the inline axis. RTL reverses it once and wrap-reverse reverses
+	// it again, leaving normal items at the physical left edge.
 	document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-direction:column; flex-wrap:wrap-reverse; direction:rtl; width:240px }
 		#one { width:50px; height:20px } #two { width:70px; height:30px }
 	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
-	assert used_for_id(result, 'one').offset.x().to_double() == 190
-	assert used_for_id(result, 'two').offset.x().to_double() == 170
+	assert used_for_id(result, 'one').offset.x().to_double() == 0
+	assert used_for_id(result, 'two').offset.x().to_double() == 0
 }
 
 fn test_indefinite_column_flex_uses_the_intrinsic_main_size_algorithm() {
@@ -909,17 +909,17 @@ fn test_wrapping_column_flex_applies_column_gap_and_align_content() {
 	assert used_for_id(result, 'two').offset.x().to_double() == 30
 }
 
-fn test_only_wrap_reverse_reverses_wrapping_column_flex_line_order() {
-	// align_all_flex_lines() iterates the lines backwards for a wrap-reverse container and
-	// for nothing else, so an rtl wrapping column still runs its lines left to right.
+fn test_reversed_cross_axis_reverses_wrapping_column_flex_line_order() {
+	// A horizontal-tb column flex container's cross axis is its inline axis, so RTL reverses
+	// line placement even without wrap-reverse.
 	rtl_document := html.parse_document('<!doctype html><style>
 		#flex { direction:rtl; display:flex; flex-direction:column; flex-wrap:wrap;
 			width:200px; height:100px }
 		#one, #two { flex:none; width:20px; height:60px }
 	</style><div id="flex"><div id="one"></div><div id="two"></div></div>')
 	rtl_result := run_document_layout(rtl_document, 800, 600) or { panic('layout failed') }
-	assert used_for_id(rtl_result, 'one').offset.x().to_double() == 0
-	assert used_for_id(rtl_result, 'two').offset.x().to_double() == 100
+	assert used_for_id(rtl_result, 'one').offset.x().to_double() == 180
+	assert used_for_id(rtl_result, 'two').offset.x().to_double() == 80
 
 	reverse_document := html.parse_document('<!doctype html><style>
 		#flex { display:flex; flex-direction:column; flex-wrap:wrap-reverse;

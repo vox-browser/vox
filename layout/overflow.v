@@ -197,9 +197,9 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 fn physical_overflow_directions(box &Node) PhysicalOverflowDirections {
 	computed := box.computed_values()
 	writing_mode := computed.writing_mode()
-	inline_is_horizontal := writing_mode == .horizontal_tb
-	inline_is_reverse := computed.direction() == .rtl
-	block_is_reverse := writing_mode in [.vertical_rl, .sideways_rl]
+	inline_is_horizontal := layout_inline_axis_is_horizontal(writing_mode)
+	inline_is_reverse := layout_inline_axis_is_reverse(writing_mode, computed.direction())
+	block_is_reverse := layout_block_axis_is_reverse(writing_mode)
 	mut horizontal_is_reverse := if inline_is_horizontal {
 		inline_is_reverse
 	} else {
@@ -236,6 +236,21 @@ fn physical_overflow_directions(box &Node) PhysicalOverflowDirections {
 		horizontal_axis_is_positive: !horizontal_is_reverse
 		vertical_axis_is_positive: !vertical_is_reverse
 	}
+}
+
+fn layout_inline_axis_is_horizontal(writing_mode css.WritingMode) bool {
+	return writing_mode == .horizontal_tb
+}
+
+fn layout_inline_axis_is_reverse(writing_mode css.WritingMode, direction css.Direction) bool {
+	return match writing_mode {
+		.horizontal_tb, .vertical_rl, .vertical_lr, .sideways_rl { direction == .rtl }
+		.sideways_lr { direction == .ltr }
+	}
+}
+
+fn layout_block_axis_is_reverse(writing_mode css.WritingMode) bool {
+	return writing_mode in [.vertical_rl, .sideways_rl]
 }
 
 fn padding_inflated_scrollable_overflow(content_box css.CSSPixelRect, padding_box css.CSSPixelRect, in_flow_bounds css.CSSPixelRect, used &UsedValues, directions PhysicalOverflowDirections) css.CSSPixelRect {
