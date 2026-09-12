@@ -67,7 +67,7 @@ pub fn MediaSource.construct_impl() !&MediaSource {
 }
 
 pub fn MediaSource.can_construct_in_dedicated_worker() bool {
-	return true
+	return false
 }
 
 pub fn MediaSource.is_type_supported(value string) bool {

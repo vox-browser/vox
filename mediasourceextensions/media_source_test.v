@@ -35,7 +35,7 @@ fn test_event_name_and_enum_registries() {
 }
 
 fn test_media_source_type_support_and_worker_flag() {
-	assert MediaSource.can_construct_in_dedicated_worker()
+	assert !MediaSource.can_construct_in_dedicated_worker()
 	assert !MediaSource.is_type_supported('')
 	assert !MediaSource.is_type_supported('not a mime')
 	assert !MediaSource.is_type_supported('video/mp4; codecs="avc1"')
