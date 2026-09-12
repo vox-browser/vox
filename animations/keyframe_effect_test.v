@@ -30,6 +30,79 @@ fn test_animation_composition_conversions_and_serialization() {
 	assert composite_operation_or_auto_to_string(.auto_) == 'auto'
 }
 
+fn test_keyframe_effect_binding_options_reject_numeric_duration_and_parse_pseudo() {
+	if _ := keyframe_effect_options_from_bindings(KeyframeEffectOptions{
+		duration_css_numeric: css.CSSNumericValue(css.CSSUnitValue.create(1, 's'))
+	}) {
+		assert false
+	} else {
+		assert err.msg().contains('CSSNumericValue')
+	}
+	converted := keyframe_effect_options_from_bindings(KeyframeEffectOptions{
+		composite: .add
+		pseudo_element: ':before'
+	})!
+	assert converted.composite == .add
+	assert converted.pseudo_element? == '::before'
+}
+
+fn test_keyframe_effect_creation_from_processed_keyframes() {
+	target := &dom.Element{}
+	processed := process_a_keyframes_argument([
+		BaseKeyframe{
+			offset: 0
+			properties: {
+				'opacity': '0'
+			}
+		},
+		BaseKeyframe{
+			offset: 1
+			properties: {
+				'opacity': '1'
+			}
+		},
+	])!
+	effect := KeyframeEffect.create_from_processed_keyframes(target, processed, ProcessedKeyframeOptions(KeyframeEffectOptions{
+		composite: .add
+		pseudo_element: '::before'
+		timing: OptionalEffectTiming{
+			duration: IterationDuration(250.0)
+		}
+	}))!
+	assert (effect.target() or { panic('missing target') }) == target
+	assert effect.pseudo_element()? == '::before'
+	assert effect.composite() == .add
+	assert effect.iteration_duration().value == 250
+	assert effect.get_keyframes().len == 2
+	assert css.PropertyID.opacity in effect.target_properties()
+
+	duration_effect := KeyframeEffect.create_from_processed_keyframes(none, processed, ProcessedKeyframeOptions(100.0))!
+	assert duration_effect.iteration_duration().value == 100
+}
+
+fn test_set_keyframes_from_js_replaces_the_processed_keyframe_set() {
+	mut effect := KeyframeEffect.create()
+	effect.set_keyframes_from_js([
+		BaseKeyframe{
+			properties: {
+				'opacity': '0.5'
+			}
+		},
+	])!
+	frames := effect.get_keyframes()
+	assert frames.len == 1
+	assert frames[0].computed_offset? == 1
+	assert css.PropertyID.opacity in frames[0].parsed_properties
+	if _ := effect.set_keyframes_from_js([
+		BaseKeyframe{ offset: 0.8 },
+		BaseKeyframe{ offset: 0.2 },
+	]) {
+		assert false
+	} else {
+		assert err.msg().contains('ascending order')
+	}
+}
+
 fn test_compute_missing_keyframe_offsets() {
 	mut frames := [
 		BaseKeyframe{},

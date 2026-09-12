@@ -27,10 +27,13 @@ pub enum CompositeOperationOrAuto {
 
 pub struct KeyframeEffectOptions {
 pub mut:
-	timing         OptionalEffectTiming
-	composite      CompositeOperation = .replace
-	pseudo_element ?string
+	timing               OptionalEffectTiming
+	composite            CompositeOperation = .replace
+	pseudo_element       ?string
+	duration_css_numeric ?css.CSSNumericValue
 }
+
+pub type ProcessedKeyframeOptions = KeyframeEffectOptions | f64
 
 pub struct BaseKeyframe {
 pub mut:
@@ -124,13 +127,9 @@ pub fn KeyframeEffect.create() &KeyframeEffect {
 }
 
 pub fn KeyframeEffect.construct_impl(target ?&dom.Element, keyframes []BaseKeyframe, options KeyframeEffectOptions) !&KeyframeEffect {
-	mut effect := KeyframeEffect.create()
-	effect.set_target(target)
-	effect.set_pseudo_element(options.pseudo_element)!
-	effect.AnimationEffect.update_timing(options.timing)!
-	effect.set_composite(options.composite)
-	effect.set_keyframes(keyframes)!
-	return effect
+	processed_keyframes := process_a_keyframes_argument(keyframes)!
+	converted_options := keyframe_effect_options_from_bindings(options)!
+	return KeyframeEffect.create_from_processed_keyframes(target, processed_keyframes, ProcessedKeyframeOptions(converted_options))
 }
 
 pub fn KeyframeEffect.with_duration(target ?&dom.Element, keyframes []BaseKeyframe, duration f64) !&KeyframeEffect {
@@ -157,6 +156,41 @@ pub fn KeyframeEffect.copy(source &KeyframeEffect) &KeyframeEffect {
 	effect.has_target_ = source.has_target_
 	effect.target_properties_ = source.target_properties_.clone()
 	effect.normalize_specified_timing()
+	return effect
+}
+
+pub fn keyframe_effect_options_from_bindings(options KeyframeEffectOptions) !KeyframeEffectOptions {
+	if options.duration_css_numeric != none {
+		return error('Setting duration as a CSSNumericValue is not supported')
+	}
+	canonical_pseudo_element := if pseudo_element := options.pseudo_element {
+		pseudo_element_parsing(pseudo_element)!.serialize()
+	} else {
+		none
+	}
+	return KeyframeEffectOptions{
+		timing: options.timing
+		composite: options.composite
+		pseudo_element: canonical_pseudo_element
+	}
+}
+
+pub fn KeyframeEffect.create_from_processed_keyframes(target ?&dom.Element, keyframes []BaseKeyframe, options ProcessedKeyframeOptions) !&KeyframeEffect {
+	mut effect := KeyframeEffect.create()
+	effect.set_target(target)
+	match options {
+		KeyframeEffectOptions {
+			effect.set_pseudo_element(options.pseudo_element)!
+			effect.AnimationEffect.update_timing(options.timing)!
+			effect.set_composite(options.composite)
+		}
+		f64 {
+			effect.AnimationEffect.update_timing(OptionalEffectTiming{
+				duration: IterationDuration(options)
+			})!
+		}
+	}
+	effect.install_processed_keyframes(keyframes)
 	return effect
 }
 
@@ -406,8 +440,9 @@ pub fn process_property_indexed_keyframes(input BasePropertyIndexedKeyframe) ![]
 	return process_keyframes(merged)
 }
 
-pub fn (mut effect KeyframeEffect) set_keyframes(input []BaseKeyframe) ! {
-	effect.keyframes_ = process_keyframes(input)!
+fn (mut effect KeyframeEffect) install_processed_keyframes(input []BaseKeyframe) {
+	effect.keyframes_ = input.clone()
+	compute_missing_keyframe_offsets(mut effect.keyframes_)
 	effect.target_properties_.clear()
 	mut set := KeyFrameSet{}
 	for keyframe in effect.keyframes_ {
@@ -428,6 +463,16 @@ pub fn (mut effect KeyframeEffect) set_keyframes(input []BaseKeyframe) ! {
 	effect.key_frame_set_ = set
 	effect.invalidate_animation_preparation()
 	effect.invalidate_effect()
+}
+
+pub fn (mut effect KeyframeEffect) set_keyframes(input []BaseKeyframe) ! {
+	processed_keyframes := process_keyframes(input)!
+	effect.install_processed_keyframes(processed_keyframes)
+}
+
+pub fn (mut effect KeyframeEffect) set_keyframes_from_js(input []BaseKeyframe) ! {
+	processed_keyframes := process_a_keyframes_argument(input)!
+	effect.install_processed_keyframes(processed_keyframes)
 }
 
 pub fn (mut effect KeyframeEffect) set_key_frame_set(set KeyFrameSet) {
