@@ -1,7 +1,14 @@
+@[has_globals]
 module html
 
 import dom
 import math
+
+__global media_test_seek_modes = []MediaPlaybackSeekMode{}
+
+fn media_test_seek(_ f64, mode MediaPlaybackSeekMode) {
+	media_test_seek_modes << mode
+}
 
 fn media_test_fetch(url dom.URL, offset u64) !MediaResourceResponse {
 	assert offset == 0
@@ -79,6 +86,24 @@ fn test_media_element_play_pause_seek_end_and_loop() {
 	media.advance_playback(2)
 	assert !media.ended()
 	assert media.current_time() == 0
+}
+
+fn test_media_element_fast_seek_at_current_position_is_accurate() {
+	media_test_seek_modes.clear()
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	media.set_fetch_hook(media_test_fetch)
+	media.set_source('/movie.mp4')
+	media.load()!
+	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
+		seek: media_test_seek
+	})
+	media.set_current_playback_position(5)
+
+	media.fast_seek(5)
+	media.fast_seek(4)
+	media.fast_seek(6)
+
+	assert media_test_seek_modes == [.accurate, .fast_before, .fast_after]
 }
 
 fn test_media_element_volume_rate_text_track_and_failures() {

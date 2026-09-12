@@ -16,6 +16,12 @@ pub enum MediaSeekMode {
 	approximate_for_speed
 }
 
+pub enum MediaPlaybackSeekMode {
+	accurate
+	fast_before
+	fast_after
+}
+
 pub enum MediaNetworkState {
 	empty
 	idle
@@ -63,7 +69,7 @@ pub type MediaPlaybackSetAudioTrackHook = fn(&AudioTrack, bool)
 
 pub type MediaPlaybackSetVideoTrackHook = fn(?&VideoTrack)
 
-pub type MediaPlaybackSeekHook = fn(f64, MediaSeekMode)
+pub type MediaPlaybackSeekHook = fn(f64, MediaPlaybackSeekMode)
 
 pub type MediaPlaybackCurrentTimeHook = fn() f64
 
@@ -1061,7 +1067,15 @@ pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode
 	}
 	element.official_playback_position_ = target
 	if hook := element.playback_hooks_.seek {
-		hook(target, mode)
+		mut playback_seek_mode := MediaPlaybackSeekMode.accurate
+		if mode == .approximate_for_speed {
+			if target < element.current_playback_position_ {
+				playback_seek_mode = .fast_before
+			} else if target > element.current_playback_position_ {
+				playback_seek_mode = .fast_after
+			}
+		}
+		hook(target, playback_seek_mode)
 	} else {
 		element.current_playback_position_ = target
 		element.upon_has_ended_playback_possibly_changed()
