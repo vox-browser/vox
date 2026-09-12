@@ -30,10 +30,20 @@ fn test_resource_loader_initialization_and_configuration() {
 	resource_loader.set_preferred_languages(['fr', 'en']) or { panic(err) }
 	assert resource_loader.preferred_languages() == ['fr', 'en']
 	resource_loader.set_user_agent('Test Agent')
+	mut compatibility_data := SiteCompatibilityData{}
+	compatibility_data.add_rule(SiteCompatibilityRule.create(['https://compat.example/*'],
+		[.hide_ladybird], ['PressureObserver'])!)
+	resource_loader.set_site_compatibility_data(compatibility_data)
 	resource_loader.set_platform('Test Platform')
 	resource_loader.set_navigator_compatibility_mode(.gecko)
 	resource_loader.set_enable_global_privacy_control(true)
 	assert resource_loader.user_agent() == 'Test Agent'
+	assert resource_loader.user_agent_for_url(dom.URL{'https://compat.example/page'}) == 'Test Agent'
+	resource_loader.set_user_agent('Mozilla/5.0 Ladybird/1.0 Safari/537.36')
+	assert resource_loader.user_agent_for_url(dom.URL{'https://compat.example/page'}) == 'Mozilla/5.0 Safari/537.36'
+	assert resource_loader.user_agent_for_websocket_url(dom.URL{'wss://compat.example/socket'}) == 'Mozilla/5.0 Safari/537.36'
+	assert resource_loader.site_compatibility_exposes_experimental_interface(dom.URL{'https://compat.example/page'},
+		'PressureObserver')
 	assert resource_loader.platform() == 'Test Platform'
 	assert resource_loader.navigator_compatibility_mode() == .gecko
 	assert resource_loader.enable_global_privacy_control()
@@ -49,17 +59,26 @@ fn test_resource_loader_initialization_and_configuration() {
 
 fn test_connection_preparation_and_request_blocking() {
 	mut resource_loader := ResourceLoader.create()
-	assert resource_loader.prepare_connection(dom.URL{'file:///tmp/a'}, true) == .none
-	assert resource_loader.prepare_connection(dom.URL{'data:text/plain,a'}, false) == .none
-	assert resource_loader.prepare_connection(dom.URL{'https://example.test/'}, false) == .resolve_only
-	assert resource_loader.prepare_connection(dom.URL{'https://example.test/'}, true) == .create_connection
-	assert resource_loader.prefetch_dns(dom.URL{'https://example.test/'}) == .resolve_only
-	assert resource_loader.preconnect(dom.URL{'https://example.test/'}) == .create_connection
-	mut filter := resource_loader.content_blocker()
-	filter.set_patterns(['blocked.test']) or { panic(err) }
-	assert resource_loader.prepare_connection(dom.URL{'https://blocked.test/'}, true) == .none
+	mut blocker := ContentBlocker.the()
+	blocker.set_patterns([])!
+	source_url := dom.URL{'https://source.test/'}
+	assert resource_loader.prepare_connection(dom.URL{'file:///tmp/a'}, source_url, true) == .none
+	assert resource_loader.prepare_connection(dom.URL{'data:text/plain,a'}, source_url, false) == .none
+	assert resource_loader.prepare_connection(dom.URL{'https://example.test/'}, source_url,
+		false) == .resolve_only
+	assert resource_loader.prepare_connection(dom.URL{'https://example.test/'}, source_url,
+		true) == .create_connection
+	assert resource_loader.prefetch_dns(dom.URL{'https://example.test/'}, source_url) == .resolve_only
+	assert resource_loader.preconnect(dom.URL{'https://example.test/'}, source_url) == .create_connection
+	blocker.set_patterns(['||blocked.test^$third-party']) or { panic(err) }
+	assert resource_loader.prepare_connection(dom.URL{'https://blocked.test/'}, source_url,
+		true) == .none
 	assert resource_loader.should_block_request(load_request_for('http://example.test:22/'))
-	assert resource_loader.should_block_request(load_request_for('https://blocked.test/a'))
+	mut blocked_request := load_request_for('https://blocked.test/a')
+	blocked_request.set_source_url(source_url)
+	assert resource_loader.should_block_request(blocked_request)
+	blocked_request.set_source_url(dom.URL{'https://www.blocked.test/'})
+	assert !resource_loader.should_block_request(blocked_request)
 	assert !resource_loader.should_block_request(load_request_for('https://example.test/a'))
 }
 
@@ -104,14 +123,59 @@ fn test_load_dispatches_about_resource_and_unsupported_protocols() {
 
 fn test_load_blocks_filtered_and_bad_port_requests_before_dispatch() {
 	mut resource_loader := ResourceLoader.create()
-	mut filter := resource_loader.content_blocker()
-	filter.set_patterns(['blocked.test']) or { panic(err) }
+	mut blocker := ContentBlocker.the()
+	blocker.set_patterns(['blocked.test']) or { panic(err) }
 	for value in ['https://blocked.test/a', 'http://example.test:6379/a'] {
 		mut request := load_request_for(value)
 		result := resource_loader.load(mut request)
 		assert !result.success
 		assert (result.error_message or { panic('missing block message') }) == 'Request was blocked'
 	}
+}
+
+fn test_resource_loader_stores_and_queries_hsts_policies() {
+	mut resource_loader := ResourceLoader.create()
+	resource_loader.try_store_hsts_policy_for_url(dom.URL{'https://example.test/'},
+		'max-age=31536000; includeSubDomains')
+	policy := resource_loader.hsts_policy_for_host('example.test') or { panic('missing policy') }
+	assert policy.max_age_seconds == u64(31536000)
+	assert policy.include_sub_domains
+	assert resource_loader.is_known_hsts_host('EXAMPLE.TEST')
+	assert resource_loader.is_known_hsts_host('assets.example.test')
+
+	resource_loader.try_store_hsts_policy_for_url(dom.URL{'https://invalid.test/'},
+		'max-age=10; max-age=20')
+	assert !resource_loader.is_known_hsts_host('invalid.test')
+	resource_loader.try_store_hsts_policy_for_url(dom.URL{'https://127.0.0.1/'}, 'max-age=10')
+	assert !resource_loader.is_known_hsts_host('127.0.0.1')
+	resource_loader.try_store_hsts_policy_for_url(dom.URL{'https://example.test/'}, 'max-age=0')
+	assert !resource_loader.is_known_hsts_host('example.test')
+
+	resource_loader.add_preloaded_hsts_host('preloaded.test', true)
+	assert resource_loader.is_known_hsts_host('preloaded.test')
+	assert resource_loader.is_known_hsts_host('www.preloaded.test')
+}
+
+fn test_https_response_processes_only_first_hsts_header() {
+	mut resource_loader := ResourceLoader.create()
+	resource_loader.register_network_response('https://hsts.test/', NetworkResponse{
+		headers: [
+			http.Header{'Strict-Transport-Security', 'max-age=60'},
+			http.Header{'Strict-Transport-Security', 'max-age=0'},
+		]
+	})
+	mut request := load_request_for('https://hsts.test/')
+	request.set_page(9)
+	assert resource_loader.load(mut request).success
+	assert resource_loader.is_known_hsts_host('hsts.test')
+
+	resource_loader.register_network_response('http://insecure.test/', NetworkResponse{
+		headers: [http.Header{'Strict-Transport-Security', 'max-age=60'}]
+	})
+	mut insecure_request := load_request_for('http://insecure.test/')
+	insecure_request.set_page(9)
+	assert resource_loader.load(mut insecure_request).success
+	assert !resource_loader.is_known_hsts_host('insecure.test')
 }
 
 fn test_file_load_reads_bytes_and_synthesizes_response_headers() {

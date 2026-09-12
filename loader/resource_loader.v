@@ -10,6 +10,8 @@ module loader
 import dom
 import http
 import os
+import strconv
+import time
 import url as liburl
 
 __global (
@@ -63,6 +65,13 @@ pub:
 	value   string
 }
 
+pub struct HSTSPolicy {
+pub:
+	max_age_seconds    u64
+	include_sub_domains bool
+	stored_at_unix     i64
+}
+
 struct StartedNetworkRequest {
 	id       u64
 	response NetworkResponse
@@ -77,7 +86,9 @@ mut:
 	preferred_languages_          []string                   = ['en-US']
 	navigator_compatibility_mode_ NavigatorCompatibilityMode = .chrome
 	enable_global_privacy_control_ bool
-	content_blocker                &ContentBlocker
+	site_compatibility_data_       SiteCompatibilityData
+	hsts_policies                  map[string]HSTSPolicy
+	preloaded_hsts_policies        map[string]bool
 	proxy_mappings                 &ProxyMappings
 	resources                      map[string]StoredResource
 	about_pages                    map[string][]u8
@@ -92,13 +103,18 @@ pub fn ResourceLoader.create() &ResourceLoader {
 	return &ResourceLoader{
 		user_agent_:       default_user_agent()
 		platform_:         default_platform()
-		content_blocker:   ContentBlocker.create()
 		proxy_mappings:    ProxyMappings.create()
+		hsts_policies:     map[string]HSTSPolicy{}
+		preloaded_hsts_policies: map[string]bool{}
 		resources:         map[string]StoredResource{}
 		about_pages:       map[string][]u8{}
 		network_responses: map[string]NetworkResponse{}
 		active_requests:   map[u64]string{}
 	}
+}
+
+fn resource_loader() &ResourceLoader {
+	return loader_global_resource_loader
 }
 
 pub fn initialize() &ResourceLoader {
@@ -139,10 +155,6 @@ pub fn (resource_loader &ResourceLoader) pending_loads() int {
 	return resource_loader.pending_loads_
 }
 
-pub fn (resource_loader &ResourceLoader) content_blocker() &ContentBlocker {
-	return resource_loader.content_blocker
-}
-
 pub fn (resource_loader &ResourceLoader) proxy_mappings() &ProxyMappings {
 	return resource_loader.proxy_mappings
 }
@@ -151,8 +163,26 @@ pub fn (resource_loader &ResourceLoader) user_agent() string {
 	return resource_loader.user_agent_
 }
 
+pub fn (resource_loader &ResourceLoader) user_agent_for_url(url dom.URL) string {
+	return resource_loader.site_compatibility_data_.user_agent_for_url(url,
+		resource_loader.user_agent_)
+}
+
+pub fn (resource_loader &ResourceLoader) user_agent_for_websocket_url(url dom.URL) string {
+	return resource_loader.site_compatibility_data_.user_agent_for_websocket_url(url,
+		resource_loader.user_agent_)
+}
+
 pub fn (mut resource_loader ResourceLoader) set_user_agent(user_agent string) {
 	resource_loader.user_agent_ = user_agent
+}
+
+pub fn (mut resource_loader ResourceLoader) set_site_compatibility_data(data SiteCompatibilityData) {
+	resource_loader.site_compatibility_data_ = data
+}
+
+pub fn (resource_loader &ResourceLoader) site_compatibility_exposes_experimental_interface(url dom.URL, name string) bool {
+	return resource_loader.site_compatibility_data_.exposes_experimental_interface(url, name)
 }
 
 pub fn (resource_loader &ResourceLoader) platform() string {
@@ -206,19 +236,20 @@ pub fn (mut resource_loader ResourceLoader) register_network_response(url string
 	resource_loader.network_responses[url] = response
 }
 
-pub fn (resource_loader &ResourceLoader) prepare_connection(url dom.URL, preconnect bool) ConnectionPreparation {
-	if url.scheme() in ['file', 'data'] || resource_loader.content_blocker.is_filtered(url) {
+pub fn (resource_loader &ResourceLoader) prepare_connection(url dom.URL, source_url dom.URL, preconnect bool) ConnectionPreparation {
+	if url.scheme() in ['file', 'data']
+		|| ContentBlocker.the().is_filtered_for_resource(url, source_url, .other) {
 		return .none
 	}
 	return if preconnect { .create_connection } else { .resolve_only }
 }
 
-pub fn (resource_loader &ResourceLoader) prefetch_dns(url dom.URL) ConnectionPreparation {
-	return resource_loader.prepare_connection(url, false)
+pub fn (resource_loader &ResourceLoader) prefetch_dns(url dom.URL, source_url dom.URL) ConnectionPreparation {
+	return resource_loader.prepare_connection(url, source_url, false)
 }
 
-pub fn (resource_loader &ResourceLoader) preconnect(url dom.URL) ConnectionPreparation {
-	return resource_loader.prepare_connection(url, true)
+pub fn (resource_loader &ResourceLoader) preconnect(url dom.URL, source_url dom.URL) ConnectionPreparation {
+	return resource_loader.prepare_connection(url, source_url, true)
 }
 
 const blocked_loader_ports = [u16(1), 7, 9, 11, 13, 15, 17, 19, 20, 21, 22, 23, 25, 37, 42, 43,
@@ -239,8 +270,10 @@ fn port_or_default(url dom.URL) u16 {
 
 pub fn (resource_loader &ResourceLoader) should_block_request(request &LoadRequest) bool {
 	url := request.url() or { return true }
+	source_url := request.source_url() or { url }
 	return port_or_default(url) in blocked_loader_ports
-		|| resource_loader.content_blocker.is_filtered(url)
+		|| ContentBlocker.the().is_filtered_with_metadata(url, source_url, request.destination(),
+		request.initiator_type(), request.request_mode())
 }
 
 pub fn sanitized_url_for_logging(url dom.URL) string {
@@ -268,6 +301,181 @@ fn log_failure(request &LoadRequest, message string) string {
 fn log_filtered_request(request &LoadRequest) string {
 	url := request.url() or { return '' }
 	return 'ResourceLoader: Filtered request to: "${sanitized_url_for_logging(url)}"'
+}
+
+fn is_http_token_byte(character u8) bool {
+	if (character >= `a` && character <= `z`) || (character >= `A` && character <= `Z`)
+		|| (character >= `0` && character <= `9`) {
+		return true
+	}
+	return character in [`!`, `#`, `$`, `%`, `&`, `'`, `*`, `+`, `-`, `.`, `^`, `_`, `\``, `|`, `~`]
+}
+
+fn is_http_token(value string) bool {
+	if value == '' {
+		return false
+	}
+	for character in value.bytes() {
+		if !is_http_token_byte(character) {
+			return false
+		}
+	}
+	return true
+}
+
+fn split_hsts_directives(header_value string) ?[]string {
+	mut directives := []string{}
+	mut start := 0
+	mut quoted := false
+	mut escaped := false
+	for index, character in header_value.bytes() {
+		if escaped {
+			escaped = false
+			continue
+		}
+		if quoted && character == `\\` {
+			escaped = true
+			continue
+		}
+		if character == `"` {
+			quoted = !quoted
+			continue
+		}
+		if character == `;` && !quoted {
+			directives << header_value[start..index]
+			start = index + 1
+		}
+	}
+	if quoted || escaped {
+		return none
+	}
+	directives << header_value[start..]
+	return directives
+}
+
+fn parse_hsts_directive_value(raw_value string) ?string {
+	value := raw_value.trim_space()
+	if value.starts_with('"') {
+		if value.len < 2 || !value.ends_with('"') {
+			return none
+		}
+		mut result := []u8{}
+		mut index := 1
+		for index < value.len - 1 {
+			if value[index] == `\\` {
+				index++
+				if index >= value.len - 1 {
+					return none
+				}
+			}
+			result << value[index]
+			index++
+		}
+		return result.bytestr()
+	}
+	if !is_http_token(value) {
+		return none
+	}
+	return value
+}
+
+fn parse_hsts_policy(header_value string) ?HSTSPolicy {
+	directives := split_hsts_directives(header_value) or { return none }
+	mut max_age := ?u64(none)
+	mut include_sub_domains := false
+	for raw_directive in directives {
+		directive := raw_directive.trim_space()
+		if directive == '' {
+			continue
+		}
+		separator := directive.index('=') or { -1 }
+		name := if separator >= 0 {
+			directive[..separator].trim_space()
+		} else {
+			directive
+		}
+		if !is_http_token(name) {
+			return none
+		}
+		value := if separator >= 0 {
+			parse_hsts_directive_value(directive[separator + 1..]) or { return none }
+		} else {
+			''
+		}
+		match name.to_lower() {
+			'max-age' {
+				if separator < 0 || max_age != none {
+					return none
+				}
+				max_age = strconv.parse_uint(value, 10, 64) or { return none }
+			}
+			'includesubdomains' {
+				if separator >= 0 || include_sub_domains {
+					return none
+				}
+				include_sub_domains = true
+			}
+			else {}
+		}
+	}
+	seconds := max_age or { return none }
+	return HSTSPolicy{
+		max_age_seconds: seconds
+		include_sub_domains: include_sub_domains
+		stored_at_unix: time.now().unix()
+	}
+}
+
+pub fn (mut resource_loader ResourceLoader) try_store_hsts_policy_for_url(url dom.URL, header_value string) {
+	parsed_url := liburl.parse(url.serialize()) or { return }
+	host_record := parsed_url.host or { return }
+	if !host_record.is_domain() {
+		return
+	}
+	policy := parse_hsts_policy(header_value) or { return }
+	host := host_record.serialize().trim_right('.').to_lower()
+	if policy.max_age_seconds == 0 {
+		resource_loader.hsts_policies.delete(host)
+		return
+	}
+	resource_loader.hsts_policies[host] = policy
+}
+
+fn hsts_policy_is_active(policy HSTSPolicy) bool {
+	if policy.max_age_seconds > u64(9223372036854775807) {
+		return true
+	}
+	return time.now().unix() - policy.stored_at_unix < i64(policy.max_age_seconds)
+}
+
+pub fn (mut resource_loader ResourceLoader) add_preloaded_hsts_host(host string, include_sub_domains bool) {
+	resource_loader.preloaded_hsts_policies[host.trim_right('.').to_lower()] = include_sub_domains
+}
+
+pub fn (resource_loader &ResourceLoader) hsts_policy_for_host(host string) ?HSTSPolicy {
+	policy := resource_loader.hsts_policies[host.trim_right('.').to_lower()] or { return none }
+	return if hsts_policy_is_active(policy) { policy } else { none }
+}
+
+pub fn (resource_loader &ResourceLoader) is_known_hsts_host(host string) bool {
+	mut candidate := host.trim_right('.').to_lower()
+	mut exact := true
+	for candidate != '' {
+		if include_subdomains := resource_loader.preloaded_hsts_policies[candidate] {
+			if exact || include_subdomains {
+				return true
+			}
+		}
+		if policy := resource_loader.hsts_policies[candidate] {
+			if hsts_policy_is_active(policy) && (exact || policy.include_sub_domains) {
+				return true
+			}
+		}
+		dot := candidate.index('.') or { break }
+		candidate = candidate[dot + 1..]
+		exact = false
+	}
+	return false
 }
 
 fn store_response_cookies(mut resource_loader ResourceLoader, request &LoadRequest, set_cookie_entry string) {
@@ -480,7 +688,20 @@ fn (mut resource_loader ResourceLoader) start_network_request(request &LoadReque
 }
 
 fn (mut resource_loader ResourceLoader) handle_network_response_headers(request &LoadRequest, response_headers []http.Header) {
-	if request.page() == none || !request.include_credentials() {
+	if request.page() == none {
+		return
+	}
+	if url := request.url() {
+		if url.scheme() == 'https' {
+			for header in response_headers {
+				if header.name.to_lower() == 'strict-transport-security' {
+					resource_loader.try_store_hsts_policy_for_url(url, header.value)
+					break
+				}
+			}
+		}
+	}
+	if !request.include_credentials() {
 		return
 	}
 	for header in response_headers {
