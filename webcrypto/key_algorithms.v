@@ -19,6 +19,10 @@ pub fn (mut algorithm KeyAlgorithm) set_name(name string) {
 	algorithm.name = name
 }
 
+pub fn (algorithm &KeyAlgorithm) name() string {
+	return algorithm.name
+}
+
 pub struct RsaKeyAlgorithm {
 pub mut:
 	name            string
@@ -56,6 +60,18 @@ pub fn (mut algorithm RsaKeyAlgorithm) set_public_exponent(exponent []u8) {
 	algorithm.public_exponent = unsigned_big_integer_bytes(exponent)
 }
 
+pub fn (algorithm &RsaKeyAlgorithm) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &RsaKeyAlgorithm) modulus_length() u32 {
+	return algorithm.modulus_length
+}
+
+pub fn (algorithm &RsaKeyAlgorithm) public_exponent() []u8 {
+	return algorithm.public_exponent.clone()
+}
+
 pub struct RsaHashedKeyAlgorithm {
 pub mut:
 	name            string
@@ -90,6 +106,22 @@ pub fn (algorithm &RsaHashedKeyAlgorithm) hash_algorithm() KeyAlgorithm {
 	}
 }
 
+pub fn (algorithm &RsaHashedKeyAlgorithm) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &RsaHashedKeyAlgorithm) modulus_length() u32 {
+	return algorithm.modulus_length
+}
+
+pub fn (algorithm &RsaHashedKeyAlgorithm) public_exponent() []u8 {
+	return algorithm.public_exponent.clone()
+}
+
+pub fn (algorithm &RsaHashedKeyAlgorithm) hash() string {
+	return algorithm.hash
+}
+
 pub struct EcKeyAlgorithm {
 pub mut:
 	name        string
@@ -108,6 +140,14 @@ pub fn (mut algorithm EcKeyAlgorithm) set_named_curve(named_curve string) {
 	algorithm.named_curve = named_curve
 }
 
+pub fn (algorithm &EcKeyAlgorithm) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &EcKeyAlgorithm) named_curve() string {
+	return algorithm.named_curve
+}
+
 pub struct AesKeyAlgorithm {
 pub mut:
 	name   string
@@ -124,6 +164,14 @@ pub fn (mut algorithm AesKeyAlgorithm) set_name(name string) {
 
 pub fn (mut algorithm AesKeyAlgorithm) set_length(length u16) {
 	algorithm.length = length
+}
+
+pub fn (algorithm &AesKeyAlgorithm) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &AesKeyAlgorithm) length() u16 {
+	return algorithm.length
 }
 
 pub struct HmacKeyAlgorithm {
@@ -155,6 +203,18 @@ pub fn (algorithm &HmacKeyAlgorithm) hash_algorithm() KeyAlgorithm {
 	}
 }
 
+pub fn (algorithm &HmacKeyAlgorithm) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &HmacKeyAlgorithm) hash() string {
+	return algorithm.hash
+}
+
+pub fn (algorithm &HmacKeyAlgorithm) length() u32 {
+	return algorithm.length
+}
+
 pub struct KmacKeyAlgorithm {
 pub mut:
 	name   string
@@ -171,6 +231,14 @@ pub fn (mut algorithm KmacKeyAlgorithm) set_name(name string) {
 
 pub fn (mut algorithm KmacKeyAlgorithm) set_length(length u32) {
 	algorithm.length = length
+}
+
+pub fn (algorithm &KmacKeyAlgorithm) name() string {
+	return algorithm.name
+}
+
+pub fn (algorithm &KmacKeyAlgorithm) length() u32 {
+	return algorithm.length
 }
 
 pub type CryptoKeyAlgorithm = AesKeyAlgorithm

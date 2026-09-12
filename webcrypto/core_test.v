@@ -168,6 +168,7 @@ fn test_key_algorithm_records_setters_and_big_endian_exponent() {
 	mut base := KeyAlgorithm.create()
 	base.set_name('Ed25519')
 	assert base.name == 'Ed25519'
+	assert base.name() == 'Ed25519'
 
 	mut rsa := RsaKeyAlgorithm.create()
 	rsa.set_name('RSA-OAEP')
@@ -176,32 +177,50 @@ fn test_key_algorithm_records_setters_and_big_endian_exponent() {
 	assert rsa.name == 'RSA-OAEP'
 	assert rsa.modulus_length == 2048
 	assert rsa.public_exponent == [u8(1), 0, 1]
+	assert rsa.name() == 'RSA-OAEP'
+	assert rsa.modulus_length() == 2048
+	assert rsa.public_exponent() == [u8(1), 0, 1]
 
 	mut hashed := RsaHashedKeyAlgorithm.create()
 	hashed.set_name('RSA-PSS')
+	hashed.set_modulus_length(3072)
+	hashed.set_public_exponent([u8(1), 0, 1])
 	hashed.set_hash('SHA-256')
 	assert hashed.hash_algorithm().name == 'SHA-256'
+	assert hashed.name() == 'RSA-PSS'
+	assert hashed.modulus_length() == 3072
+	assert hashed.public_exponent() == [u8(1), 0, 1]
+	assert hashed.hash() == 'SHA-256'
 
 	mut ec := EcKeyAlgorithm.create()
 	ec.set_name('ECDSA')
 	ec.set_named_curve('P-256')
 	assert ec.named_curve == 'P-256'
+	assert ec.name() == 'ECDSA'
+	assert ec.named_curve() == 'P-256'
 
 	mut aes := AesKeyAlgorithm.create()
 	aes.set_name('AES-GCM')
 	aes.set_length(256)
 	assert aes.length == 256
+	assert aes.name() == 'AES-GCM'
+	assert aes.length() == 256
 
 	mut hmac := HmacKeyAlgorithm.create()
 	hmac.set_hash('SHA-512')
 	hmac.set_length(1024)
 	assert hmac.name == 'HMAC'
 	assert hmac.hash_algorithm().name == 'SHA-512'
+	assert hmac.name() == 'HMAC'
+	assert hmac.hash() == 'SHA-512'
+	assert hmac.length() == 1024
 
 	mut kmac := KmacKeyAlgorithm.create()
 	kmac.set_name('KMAC256')
 	kmac.set_length(512)
 	assert kmac.length == 512
+	assert kmac.name() == 'KMAC256'
+	assert kmac.length() == 512
 }
 
 fn test_crypto_key_slots_usage_order_clone_and_pair() {
@@ -215,6 +234,26 @@ fn test_crypto_key_slots_usage_order_clone_and_pair() {
 	assert key.internal_usages() == [.decrypt, .encrypt, .decrypt]
 	assert key.permits(.encrypt)
 	assert key.algorithm_name() == 'AES-GCM'
+	assert key.bindings_type() == .secret
+	internal := key.internal_algorithm()
+	assert internal is AesKeyAlgorithm
+	assert (internal as AesKeyAlgorithm).length == 128
+
+	rsa_hashed_key := CryptoKey.create(.public_key, true, RsaHashedKeyAlgorithm{
+		name: 'RSA-PSS'
+		hash: 'SHA-384'
+	}, [.verify], [])
+	assert rsa_hashed_key.rsa_hashed_algorithm().hash == 'SHA-384'
+	ec_key := CryptoKey.create(.public_key, true, EcKeyAlgorithm{
+		name: 'ECDSA'
+		named_curve: 'P-384'
+	}, [.verify], [])
+	assert ec_key.ec_algorithm().named_curve == 'P-384'
+	hmac_key := CryptoKey.create(.secret, true, HmacKeyAlgorithm{
+		hash: 'SHA-256'
+		length: 256
+	}, [.sign], [])
+	assert hmac_key.hmac_algorithm().length == 256
 
 	mut returned_handle := key.handle()
 	returned_handle[0] = 77

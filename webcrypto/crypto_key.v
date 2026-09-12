@@ -104,6 +104,31 @@ pub fn (key &CryptoKey) internal_usages() []KeyUsage {
 	return key.usages.clone()
 }
 
+pub fn (key &CryptoKey) internal_algorithm() CryptoKeyAlgorithm {
+	return clone_key_algorithm(key.algorithm)
+}
+
+pub fn (key &CryptoKey) rsa_hashed_algorithm() RsaHashedKeyAlgorithm {
+	if key.algorithm is RsaHashedKeyAlgorithm {
+		return key.algorithm
+	}
+	panic('CryptoKey algorithm is not an RSA hashed algorithm')
+}
+
+pub fn (key &CryptoKey) ec_algorithm() EcKeyAlgorithm {
+	if key.algorithm is EcKeyAlgorithm {
+		return key.algorithm
+	}
+	panic('CryptoKey algorithm is not an EC algorithm')
+}
+
+pub fn (key &CryptoKey) hmac_algorithm() HmacKeyAlgorithm {
+	if key.algorithm is HmacKeyAlgorithm {
+		return key.algorithm
+	}
+	panic('CryptoKey algorithm is not an HMAC algorithm')
+}
+
 pub fn (key &CryptoKey) handle() []u8 {
 	return key.handle_.clone()
 }
@@ -121,6 +146,10 @@ pub fn (key &CryptoKey) handle_kind() CryptoKeyHandleKind {
 
 pub fn (key &CryptoKey) algorithm_name() string {
 	return key.algorithm.name()
+}
+
+pub fn (key &CryptoKey) bindings_type() KeyType {
+	return key.type_
 }
 
 pub fn (key &CryptoKey) permits(usage KeyUsage) bool {
