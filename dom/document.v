@@ -464,13 +464,14 @@ pub mut:
 	layout_node_ &LayoutNode = unsafe { nil }
 	paintable_   &Paintable = unsafe { nil }
 
-	needs_layout_tree_update           bool
-	child_needs_layout_tree_update     bool
-	needs_style_update_                bool
-	child_needs_style_update_          bool
-	entire_subtree_needs_style_update_ bool
-	in_editable_subtree_               bool
-	is_connected_                      bool
+	needs_layout_tree_update                           bool
+	child_needs_layout_tree_update                     bool
+	needs_style_update_                                bool
+	child_needs_style_update_                          bool
+	entire_subtree_needs_style_update_                 bool
+	has_child_affected_by_backward_structural_changes_ bool
+	in_editable_subtree_                               bool
+	is_connected_                                      bool
 
 	unique_id_                UniqueNodeID
 	registered_observer_list_ []&RegisteredObserver

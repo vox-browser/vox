@@ -179,6 +179,7 @@ fn test_style_invalidation_counters_count_previous_sibling_walks() {
 	parent_node.append_child(first.as_node())!
 	parent_node.append_child(second.as_node())!
 	parent_node.append_child(third.as_node())!
+	first.set_affected_by_last_child_pseudo_class(true)
 	parent_node.set_entire_subtree_needs_style_update(false)
 	mut third_node := third.as_node()
 	third_node.set_entire_subtree_needs_style_update(false)
@@ -187,4 +188,27 @@ fn test_style_invalidation_counters_count_previous_sibling_walks() {
 
 	third_node.invalidate_style(.node_remove)
 	assert api.get_style_invalidation_counters().previous_sibling_invalidation_walk_visits == 2
+}
+
+fn test_previous_sibling_walk_is_skipped_without_backward_structural_dependencies() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut platform := &PlatformState{
+		associated_document: document
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	api := Internals.create(platform, navigator)
+	mut parent := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
+	mut first := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
+	mut second := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
+	mut parent_node := parent.as_node()
+	parent_node.append_child(first.as_node())!
+	parent_node.append_child(second.as_node())!
+	parent_node.set_entire_subtree_needs_style_update(false)
+	mut second_node := second.as_node()
+	second_node.set_entire_subtree_needs_style_update(false)
+	document.set_needs_full_style_update(false)
+	document.reset_style_invalidation_counters()
+
+	second_node.invalidate_style(.node_remove)
+	assert api.get_style_invalidation_counters().previous_sibling_invalidation_walk_visits == 0
 }

@@ -1375,17 +1375,21 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	// FIXME: This is a lot of invalidation and we should implement more sophisticated invalidation to do less work!
 	n.set_entire_subtree_needs_style_update(true)
 	if reason == .node_insert_before || reason == .node_remove {
-		for sibling := n.previous_sibling(); sibling != none;  {
-			current := sibling or { break }
-			mut mutable_document := unsafe { &Document(doc) }
-			mutable_document.record_previous_sibling_invalidation_walk_visit()
-			if element := current.as_element() {
-				if element.affected_by_backward_structural_changes() {
-					mut mutable_current := unsafe { &Node(current) }
-					mutable_current.set_entire_subtree_needs_style_update(true)
+		if parent := n.parent() {
+			if parent.has_child_affected_by_backward_structural_changes() {
+				for sibling := n.previous_sibling(); sibling != none;  {
+					current := sibling or { break }
+					mut mutable_document := unsafe { &Document(doc) }
+					mutable_document.record_previous_sibling_invalidation_walk_visit()
+					if element := current.as_element() {
+						if element.affected_by_backward_structural_changes() {
+							mut mutable_current := unsafe { &Node(current) }
+							mutable_current.set_entire_subtree_needs_style_update(true)
+						}
+					}
+					sibling = current.previous_sibling()
 				}
 			}
-			sibling = current.previous_sibling()
 		}
 	}
 	mut current_sibling_distance := 1
@@ -2850,6 +2854,14 @@ pub fn (n &Node) entire_subtree_needs_style_update() bool {
 
 pub fn (mut n Node) set_entire_subtree_needs_style_update(value bool) {
 	n.entire_subtree_needs_style_update_ = value
+}
+
+pub fn (n &Node) has_child_affected_by_backward_structural_changes() bool {
+	return n.has_child_affected_by_backward_structural_changes_
+}
+
+pub fn (mut n Node) set_has_child_affected_by_backward_structural_changes(value bool) {
+	n.has_child_affected_by_backward_structural_changes_ = value
 }
 
 pub fn (mut n Node) post_connection() {}

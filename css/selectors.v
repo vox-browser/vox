@@ -1769,7 +1769,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 		.last_child {
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
-				mutable_element.affected_by_last_child_pseudo_class = true
+				mutable_element.set_affected_by_last_child_pseudo_class(true)
 			}
 			return next_element_sibling(element) == none
 		}
@@ -1777,7 +1777,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_first_child_pseudo_class = true
-				mutable_element.affected_by_last_child_pseudo_class = true
+				mutable_element.set_affected_by_last_child_pseudo_class(true)
 			}
 			return previous_element_sibling(element) == none && next_element_sibling(element) == none
 		}
@@ -1820,7 +1820,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 		.last_of_type {
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
-				mutable_element.affected_by_backward_positional_pseudo_class = true
+				mutable_element.set_affected_by_backward_positional_pseudo_class(true)
 			}
 			return next_sibling_with_same_type(element) == none
 		}
@@ -1828,7 +1828,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 			if context.collect_per_element_selector_involvement_metadata {
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.affected_by_forward_positional_pseudo_class = true
-				mutable_element.affected_by_backward_positional_pseudo_class = true
+				mutable_element.set_affected_by_backward_positional_pseudo_class(true)
 			}
 			return previous_sibling_with_same_type(element) == none && next_sibling_with_same_type(element) == none
 		}
@@ -1903,7 +1903,7 @@ fn matches_pseudo_class(pseudo_class PseudoClassSelector, element &dom.Element, 
 						mutable_element.affected_by_forward_positional_pseudo_class = true
 					}
 					.nth_last_child, .nth_last_of_type {
-						mutable_element.affected_by_backward_positional_pseudo_class = true
+						mutable_element.set_affected_by_backward_positional_pseudo_class(true)
 					}
 					else {}
 				}

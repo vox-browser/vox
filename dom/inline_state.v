@@ -111,6 +111,12 @@ pub fn (e &Element) element_affected_by_last_child_pseudo_class() bool {
 
 pub fn (mut e Element) set_affected_by_last_child_pseudo_class(value bool) {
 	e.affected_by_last_child_pseudo_class = value
+	if value {
+		if parent := e.as_node().parent() {
+			mut mutable_parent := unsafe { &Node(parent) }
+			mutable_parent.set_has_child_affected_by_backward_structural_changes(true)
+		}
+	}
 }
 
 pub fn (e &Element) element_affected_by_forward_positional_pseudo_class() bool {
@@ -127,6 +133,12 @@ pub fn (e &Element) element_affected_by_backward_positional_pseudo_class() bool 
 
 pub fn (mut e Element) set_affected_by_backward_positional_pseudo_class(value bool) {
 	e.affected_by_backward_positional_pseudo_class = value
+	if value {
+		if parent := e.as_node().parent() {
+			mut mutable_parent := unsafe { &Node(parent) }
+			mutable_parent.set_has_child_affected_by_backward_structural_changes(true)
+		}
+	}
 }
 
 pub fn (e &Element) element_sibling_invalidation_distance() int {
