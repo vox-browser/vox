@@ -114,6 +114,22 @@ fn test_middle_button_autoscroll_activation_dead_zone_and_cancellation() {
 	assert handler.middle_button_scroll_handler() == none
 }
 
+fn test_middle_button_teardown_skips_repaint_when_layout_is_stale() {
+	target := InputTarget{
+		id: 'scroller'
+		has_scrollable_box: true
+	}
+	mut stale := MiddleButtonScrollHandler.create(target, PixelPoint{})
+	assert stale.repaint_request_count() == 1
+	stale.set_document_layout_state(false, false)
+	stale.close()
+	assert stale.repaint_request_count() == 1
+
+	mut current := MiddleButtonScrollHandler.create(target, PixelPoint{})
+	current.close()
+	assert current.repaint_request_count() == 2
+}
+
 fn test_page_autoscroll_setting_controls_middle_button_activation() {
 	mut model := Page.create(1)!
 	target := InputTarget{ id: 'scroller', has_scrollable_box: true }

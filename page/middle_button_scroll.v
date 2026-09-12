@@ -19,6 +19,10 @@ mut:
 	mouse_position_         PixelPoint
 	fractional_delta_       PixelPoint
 	moved_beyond_dead_zone_ bool
+	layout_is_up_to_date_   bool
+	has_document_paintable_ bool
+	repaint_request_count_  int
+	closed_                 bool
 }
 
 pub fn MiddleButtonScrollHandler.create(container InputTarget, origin PixelPoint) &MiddleButtonScrollHandler {
@@ -26,7 +30,35 @@ pub fn MiddleButtonScrollHandler.create(container InputTarget, origin PixelPoint
 		container: container
 		origin: origin
 		mouse_position_: origin
+		layout_is_up_to_date_: container.layout_is_up_to_date
+		has_document_paintable_: container.has_document_paintable
+		repaint_request_count_: if container.has_document_paintable { 1 } else { 0 }
 	}
+}
+
+pub fn (mut handler MiddleButtonScrollHandler) set_document_layout_state(layout_is_up_to_date bool, has_paintable bool) {
+	handler.layout_is_up_to_date_ = layout_is_up_to_date
+	handler.has_document_paintable_ = has_paintable
+}
+
+// C++ performs this in ~MiddleButtonScrollHandler. EventHandler calls close
+// before releasing its optional handler so navigation can invalidate layout
+// without making the teardown repaint query assert.
+pub fn (mut handler MiddleButtonScrollHandler) close() {
+	if handler.closed_ {
+		return
+	}
+	handler.closed_ = true
+	if !handler.layout_is_up_to_date_ {
+		return
+	}
+	if handler.has_document_paintable_ {
+		handler.repaint_request_count_++
+	}
+}
+
+pub fn (handler &MiddleButtonScrollHandler) repaint_request_count() int {
+	return handler.repaint_request_count_
 }
 
 pub fn find_middle_button_scrollable_ancestor(targets []InputTarget) ?InputTarget {

@@ -21,15 +21,17 @@ pub enum SelectionMode {
 
 pub struct InputTarget {
 pub:
-	id                 string
-	is_editable        bool
-	is_focusable       bool
-	is_link            bool
-	cancel_pointer     bool
-	cancel_mouse       bool
-	cancel_drag_start  bool
-	cancel_keyboard    bool
-	has_scrollable_box bool
+	id                     string
+	is_editable            bool
+	is_focusable           bool
+	is_link                bool
+	cancel_pointer         bool
+	cancel_mouse           bool
+	cancel_drag_start      bool
+	cancel_keyboard        bool
+	has_scrollable_box     bool
+	layout_is_up_to_date   bool = true
+	has_document_paintable bool = true
 }
 
 pub struct InputDispatch {
@@ -74,6 +76,16 @@ mut:
 pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root bool) {
 	handler.active_document = active
 	handler.paint_root_available = has_paint_root
+	if mut middle := handler.middle_button_scroll_handler_ {
+		middle.set_document_layout_state(active && has_paint_root, has_paint_root)
+	}
+}
+
+fn (mut handler EventHandler) clear_middle_button_scroll_handler() {
+	if mut middle := handler.middle_button_scroll_handler_ {
+		middle.close()
+	}
+	handler.middle_button_scroll_handler_ = none
 }
 
 pub fn (handler &EventHandler) is_handling_mouse_selection() bool {
@@ -164,7 +176,7 @@ pub fn (mut handler EventHandler) handle_mousedown_with_button_and_modifiers(tar
 		handler.mousedown_target_is_drag_candidate_ = button == 0
 	}
 	if handler.middle_button_scroll_handler_ != none {
-		handler.middle_button_scroll_handler_ = none
+		handler.clear_middle_button_scroll_handler()
 		return result
 	}
 	if button != 1 || !enable_autoscroll {
@@ -195,7 +207,7 @@ pub fn (mut handler EventHandler) handle_mouseup_with_button(target ?InputTarget
 		handler.clear_mousedown_tracking()
 		handler.stop_updating_selection()
 		if middle_button_autoscrolled && button == 1 {
-			handler.middle_button_scroll_handler_ = none
+			handler.clear_middle_button_scroll_handler()
 		}
 	}
 	if handler.drag_and_drop.has_ongoing_drag_and_drop_operation()
@@ -333,7 +345,7 @@ pub fn (mut handler EventHandler) handle_keydown(key int, code_point u32, modifi
 		return .cancelled
 	}
 	if key == 27 && handler.middle_button_scroll_handler_ != none {
-		handler.middle_button_scroll_handler_ = none
+		handler.clear_middle_button_scroll_handler()
 		return .handled
 	}
 	if produces_character_value(key, code_point)
