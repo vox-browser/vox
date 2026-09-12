@@ -6,6 +6,14 @@ fn test_descriptor_parser_rejects_top_level_semicolons() {
 	assert parse_css_descriptor_value_logic(.function_rule, .result, 'if(style(--x): one; else: two)') != none
 }
 
+fn test_only_function_descriptors_allow_arbitrary_substitution_functions() {
+	function_result := parse_css_descriptor_value_logic(.function_rule, .result, 'var(--result)') or {
+		panic('function result descriptor rejected var()')
+	}
+	assert function_result is UnresolvedStyleValue
+	assert parse_css_descriptor_value_logic(.page, .margin_top, 'var(--margin)') == none
+}
+
 fn test_font_face_object_setter_rejects_trailing_semicolon() {
 	mut face := FontFaceObject.construct_impl('Foo', FontFaceSource.from_string('url(foo.woff2)'), FontFaceDescriptors{})
 	face.set_weight('400;') or {

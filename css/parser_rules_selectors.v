@@ -1775,6 +1775,11 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 	mut parsed_initial_value_maybe := ?StyleValue(none)
 	if initial_value := initial_value_maybe {
 		initial_value_component_values := parse_component_values_for_value_logic(initial_value)
+		mut substitution_presence := SubstitutionFunctionsPresence{}
+		collect_arbitrary_substitution_function_presence(initial_value_component_values, mut substitution_presence)
+		if substitution_presence.has_any() {
+			return none
+		}
 		parsed_initial_value := parse_with_a_syntax(initial_value_component_values, maybe_syntax)
 		if parsed_initial_value.type_() == .guaranteed_invalid {
 			return none

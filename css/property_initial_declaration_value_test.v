@@ -21,6 +21,7 @@ fn test_register_property_validates_universal_initial_value() {
 
 fn test_property_rule_validates_universal_initial_value_descriptor() {
 	sheet := parse_css_stylesheet_with_parser('@property --bad { syntax: "*"; inherits: false; initial-value: whee!; }
+		@property --substitution { syntax: "*"; inherits: false; initial-value: var(--other); }
 		@property --good { syntax: "*"; inherits: false; initial-value: plain tokens; }', none)
 	assert sheet.css_rules().length() == 1
 	rule := sheet.css_rules().item(0) or { panic('missing property rule') }

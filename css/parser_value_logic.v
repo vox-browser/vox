@@ -13030,6 +13030,18 @@ fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descri
 			return none
 		}
 	}
+	descriptor_values := tokens.values[tokens.index..].clone()
+	mut substitution_presence := SubstitutionFunctionsPresence{}
+	collect_arbitrary_substitution_function_presence(descriptor_values, mut substitution_presence)
+	if substitution_presence.has_any() {
+		// Property values admit arbitrary substitution functions by default;
+		// descriptors do not. @function result/custom descriptors explicitly opt
+		// in because their values are substituted when the function is invoked.
+		if at_rule_id != .function_rule {
+			return none
+		}
+		return StyleValue(UnresolvedStyleValue.create(descriptor_values))
+	}
 
 	mut maybe_value := ?StyleValue(none)
 	match at_rule_id {
