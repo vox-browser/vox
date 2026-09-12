@@ -3769,6 +3769,8 @@ pub fn (style_value TreeCountingFunctionStyleValue) properties_equal(other TreeC
 // --- TupleStyleValue ---
 const tuple_scroll_function_scroller_index = 0
 const tuple_scroll_function_axis_index = 1
+const tuple_view_function_axis_index = 0
+const tuple_view_function_inset_index = 1
 
 pub struct TupleStyleValue {
 pub mut:
@@ -3862,64 +3864,6 @@ pub fn (style_value UnicodeRangeStyleValue) to_string() string {
 
 pub fn (style_value UnicodeRangeStyleValue) properties_equal(other UnicodeRangeStyleValue) bool {
 	return style_value.unicode_range_ == other.unicode_range_
-}
-
-// --- ViewFunctionStyleValue ---
-pub struct ViewFunctionStyleValue {
-pub mut:
-	axis_  Axis
-	inset_ StyleValue
-}
-
-pub fn ViewFunctionStyleValue.create(axis Axis, inset StyleValue) ViewFunctionStyleValue {
-	return ViewFunctionStyleValue{
-		axis_: axis
-		inset_: inset
-	}
-}
-
-pub fn (style_value ViewFunctionStyleValue) axis() Axis {
-	return style_value.axis_
-}
-
-pub fn (style_value ViewFunctionStyleValue) inset() StyleValue {
-	return style_value.inset_
-}
-
-pub fn (style_value ViewFunctionStyleValue) serialize(mode SerializationMode) string {
-	mut serialized := 'view('
-
-	if style_value.axis_ != .block {
-		serialized += axis_to_string(style_value.axis_)
-	}
-
-	stringified_inset := style_value.inset_.serialize(mode)
-
-	if stringified_inset != 'auto' {
-		if style_value.axis_ != .block {
-			serialized += ' '
-		}
-		serialized += stringified_inset
-	}
-
-	serialized += ')'
-	return serialized
-}
-
-pub fn (style_value ViewFunctionStyleValue) absolutized(context ComputationContext) StyleValue {
-	absolutized_inset := style_value.inset_.absolutized(context)
-	if absolutized_inset == style_value.inset_ {
-		return StyleValue(style_value)
-	}
-	return StyleValue(ViewFunctionStyleValue.create(style_value.axis_, absolutized_inset))
-}
-
-pub fn (style_value ViewFunctionStyleValue) to_string() string {
-	return style_value.serialize(.normal)
-}
-
-pub fn (style_value ViewFunctionStyleValue) properties_equal(other ViewFunctionStyleValue) bool {
-	return style_value == other
 }
 
 // --- StyleValue downcasts for translated subclasses ---

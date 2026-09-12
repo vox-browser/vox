@@ -3860,7 +3860,6 @@ pub enum StyleValueType {
 	unresolved
 	url
 	value_list
-	view_function
 }
 
 pub type DimensionStyleValue = AngleStyleValue
@@ -3947,7 +3946,6 @@ pub type StyleValue = KeywordStyleValue
 	| UnicodeRangeStyleValue
 	| UnresolvedStyleValue
 	| URLStyleValue
-	| ViewFunctionStyleValue
 
 pub type StyleValueVector = []StyleValue
 
@@ -4058,7 +4056,6 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		UnicodeRangeStyleValue { .unicode_range }
 		UnresolvedStyleValue { .unresolved }
 		URLStyleValue { .url }
-		ViewFunctionStyleValue { .view_function }
 	}
 }
 
@@ -4330,7 +4327,6 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		TransformationStyleValue { StyleValue(style_value.absolutized(context)) }
 		TreeCountingFunctionStyleValue { style_value.absolutized(context) }
 		TupleStyleValue { style_value.absolutized(context) }
-		ViewFunctionStyleValue { style_value.absolutized(context) }
 		else { style_value }
 	}
 }
@@ -4438,7 +4434,6 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		UnicodeRangeStyleValue { style_value.serialize(mode) }
 		UnresolvedStyleValue { style_value.serialize(mode) }
 		URLStyleValue { style_value.serialize(mode) }
-		ViewFunctionStyleValue { style_value.serialize(mode) }
 	}
 }
 

@@ -10821,7 +10821,7 @@ fn (mut parser Parser) parse_view_timeline_inset_value(mut tokens ComponentValue
 	return StyleValue(StyleValueList.create(inset_values, .space, .yes))
 }
 
-fn (mut parser Parser) parse_view_function_value(component_value ComponentValue) ?ViewFunctionStyleValue {
+fn (mut parser Parser) parse_view_function_value(component_value ComponentValue) ?FunctionStyleValue {
 	// <view()> = view( [ <axis> || <'view-timeline-inset'> ]? )
 	if !component_value.is_function_named('view') {
 		return none
@@ -10833,18 +10833,18 @@ fn (mut parser Parser) parse_view_function_value(component_value ComponentValue)
 		parser.pop_temporary_value_parsing_context()
 	}
 	mut argument_tokens := ComponentValueStream.new(component_value.function().value)
-	mut axis := ?Axis(none)
+	mut arguments := [?StyleValue(none), ?StyleValue(none)]
+	mut has_axis := false
 	mut has_inset := false
-	mut inset := StyleValue(StyleValueList.create([
-		StyleValue(KeywordStyleValue.create(.auto)),
-		StyleValue(KeywordStyleValue.create(.auto)),
-	], .space, .yes))
 	for argument_tokens.has_more_tokens() {
 		if inset_value := parser.parse_view_timeline_inset_value(mut argument_tokens) {
 			if has_inset {
 				return none
 			}
-			inset = inset_value
+			inset_values := (inset_value as StyleValueList).values()
+			if inset_values[0].to_keyword() != .auto || inset_values[1].to_keyword() != .auto {
+				arguments[tuple_view_function_inset_index] = inset_value
+			}
 			has_inset = true
 			continue
 		}
@@ -10855,16 +10855,17 @@ fn (mut parser Parser) parse_view_function_value(component_value ComponentValue)
 			return none
 		}
 		maybe_axis := axis_from_identifier_for_value_logic(token.token().ident()) or { return none }
-		if _ := axis {
+		if has_axis {
 			return none
 		}
-		axis = maybe_axis
+		if maybe_axis != .block {
+			keyword := keyword_from_string(to_ascii_lowercase(token.token().ident())) or { return none }
+			arguments[tuple_view_function_axis_index] = StyleValue(KeywordStyleValue.create(keyword))
+		}
+		has_axis = true
 	}
 
-	resolved_axis := axis or { Axis.block }
-	resolved_inset := inset
-
-	return ViewFunctionStyleValue.create(resolved_axis, resolved_inset)
+	return FunctionStyleValue.create('view', StyleValue(TupleStyleValue.create(arguments)))
 }
 
 fn (mut parser Parser) parse_keyword_value(mut tokens ComponentValueStream) ?StyleValue {
