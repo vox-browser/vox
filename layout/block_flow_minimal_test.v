@@ -794,6 +794,8 @@ fn test_establishes_bfc_classification() {
 	assert establishes_block_formatting_context(styled(doc, 'div', 'overflow: hidden'), []&css.CSSRule{})
 	assert establishes_block_formatting_context(styled(doc, 'div', 'overflow-y: scroll'), []&css.CSSRule{})
 	assert establishes_block_formatting_context(styled(doc, 'div', 'display: flow-root'), []&css.CSSRule{})
+	assert establishes_block_formatting_context(styled(doc, 'div', 'container-type: size'), []&css.CSSRule{})
+	assert establishes_block_formatting_context(styled(doc, 'div', 'container-type: inline-size'), []&css.CSSRule{})
 	assert !establishes_block_formatting_context(styled(doc, 'div', ''), []&css.CSSRule{})
 	assert !establishes_block_formatting_context(styled(doc, 'div', 'overflow: visible'), []&css.CSSRule{})
 }

@@ -9438,6 +9438,11 @@ fn establishes_block_formatting_context(element &dom.Element, author_rules []&cs
 		'inline-grid', 'inline-block'] {
 		return true // flow-root / flex / table / grid establish an independent formatting context
 	}
+	container_type_id := css.property_id_from_string('container-type') or { return false }
+	container_type := css.cascaded_value_with_ua(element, container_type_id, author_rules)
+	if 'size' in container_type.fields() || 'inline-size' in container_type.fields() {
+		return true
+	}
 	for axis in ['overflow-x', 'overflow-y'] {
 		id := css.property_id_from_string(axis) or { continue }
 		value := css.cascaded_value_with_ua(element, id, author_rules)

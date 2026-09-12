@@ -109,6 +109,12 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 		|| node.has_paint_containment() {
 		return true
 	}
+	// https://drafts.csswg.org/css-conditional-5/#valdef-container-type-size
+	// Size and inline-size containers establish an independent formatting context.
+	container_type := computed.container_type()
+	if container_type.is_size_container || container_type.is_inline_size_container {
+		return true
+	}
 	if parent := node.parent() {
 		parent_display := parent.display()
 		if parent_display.is_flex_inside() || parent_display.is_grid_inside() {

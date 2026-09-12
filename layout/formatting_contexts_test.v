@@ -2673,6 +2673,18 @@ fn test_independent_formatting_context_avoids_preceding_float() {
 	assert independent.content_width().to_double() == 120
 }
 
+fn test_container_type_establishes_an_independent_formatting_context() {
+	for container_type in ['size', 'inline-size'] {
+		document := html.parse_document('<!doctype html><div id="container" style="container-type:${container_type}"></div>')
+		root := build_layout_tree(document) or { panic('layout tree was not created') }
+		container := layout_node_with_id(root, 'container') or { panic('container box is missing') }
+		styled_container := container.as_node_with_style() or {
+			panic('container box has no computed style')
+		}
+		assert creates_block_formatting_context(styled_container), container_type
+	}
+}
+
 // FormattingContext::box_is_sized_as_replaced_element(): a non-replaced box with
 // a preferred aspect ratio and a definite block size resolves its automatic
 // inline size through the ratio instead of stretching to the containing block.
