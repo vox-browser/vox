@@ -402,6 +402,7 @@ fn sync_shadow_root_style_sheets(document &dom.Document, shadow_root &dom.Shadow
 		active_urls[location] = true
 		load_local_imported_stylesheets(document, mut sheet, location, mut active_urls)
 		sheet.evaluate_media_queries(document)
+		sheet.add_owning_document_or_shadow_root(root)
 		scope.author_style_sheets << sheet
 	}
 	scope.invalidate_rule_cache()
@@ -722,7 +723,9 @@ pub fn computed_properties_for_pseudo_element(element &dom.Element, pseudo_eleme
 // concrete CSSStyleSheet on css.StyleScope avoids a dom -> css import cycle.
 pub fn add_shadow_root_author_style_sheet(shadow_root &dom.ShadowRoot, css_text string) {
 	mut scope := css_style_scope_for_shadow_root(shadow_root)
-	scope.author_style_sheets << parse_css_stylesheet_with_parser(css_text, none)
+	mut sheet := parse_css_stylesheet_with_parser(css_text, none)
+	sheet.add_owning_document_or_shadow_root(unsafe { &dom.Node(shadow_root) })
+	scope.author_style_sheets << sheet
 	scope.invalidate_rule_cache()
 }
 
@@ -1058,7 +1061,17 @@ fn css_style_scope_from_dom(mut dom_scope dom.StyleScope, node &dom.Node) &Style
 // one scope (and its rule cache), as in Ladybird where the scope is owned by the Document/ShadowRoot.
 fn css_style_scope_for(abstract_element dom.AbstractElement) &StyleScope {
 	mut dom_scope := abstract_element.style_scope()
-	return css_style_scope_from_dom(mut dom_scope, abstract_element.element().as_node())
+	root := abstract_element.element().as_node().root()
+	if shadow_root := root.as_shadow_root() {
+		if !shadow_root.uses_document_style_sheets() {
+			return css_style_scope_from_dom(mut dom_scope, root)
+		}
+	}
+	return css_style_scope_from_dom(mut dom_scope, unsafe { &dom.Node(root.document()) })
+}
+
+pub fn style_scope_for_abstract_element(abstract_element dom.AbstractElement) &StyleScope {
+	return css_style_scope_for(abstract_element)
 }
 
 fn css_style_scope_for_document(document &dom.Document) &StyleScope {
@@ -1075,10 +1088,15 @@ fn css_style_scope_for_shadow_root(shadow_root &dom.ShadowRoot) &StyleScope {
 }
 
 fn css_style_scope_for_node(node &dom.Node) &StyleScope {
-	if shadow_root := node.as_shadow_root() {
+	root := node.root()
+	if shadow_root := root.as_shadow_root() {
 		return css_style_scope_for_shadow_root(shadow_root)
 	}
-	return css_style_scope_for_document(node.document())
+	return css_style_scope_for_document(root.document())
+}
+
+pub fn style_scope_for_dom_node(node &dom.Node) &StyleScope {
+	return css_style_scope_for_node(node)
 }
 
 fn invalidate_css_style_scope_for_node(node &dom.Node) {

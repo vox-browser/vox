@@ -1140,40 +1140,90 @@ fn define_complex_predefined_counter_styles(mut definitions map[string]CounterSt
 	}
 }
 
-fn build_registered_counter_styles_for_document(document &dom.Document) map[string]CounterStyle {
+fn parent_style_scope_for_global_tree_scoped_reference(scope &StyleScope) ?&StyleScope {
+	node := scope.node_ref() or { return none }
+	shadow_root := node.as_shadow_root() or { return none }
+	host := shadow_root.host() or { return none }
+	root := host.as_node().root()
+	if outer_shadow_root := root.as_shadow_root() {
+		return css_style_scope_for_shadow_root(outer_shadow_root)
+	}
+	return css_style_scope_for_document(root.document())
+}
+
+fn counter_style_definition_is_part_of_extends_cycle(name string, definitions map[string]CounterStyleDefinition) bool {
+	mut visited := map[string]bool{}
+	mut current_name := name
+	for {
+		if visited[current_name] {
+			return true
+		}
+		visited[current_name] = true
+		definition := definitions[current_name] or { return false }
+		algorithm := definition.algorithm()
+		if algorithm is CounterStyleAlgorithm {
+			return false
+		}
+		current_name = algorithm.name
+	}
+	return false
+}
+
+fn build_registered_counter_styles_for_scope(scope &StyleScope) map[string]CounterStyle {
+	document := scope.document() or { return map[string]CounterStyle{} }
 	mut definitions := map[string]CounterStyleDefinition{}
 	definitions_ptr := &definitions
 	context := ComputationContext{
 		length_resolution_context: LengthResolutionContext.for_document(document)
 	}
-	scope := css_style_scope_for_document(document)
-	collect_counter_style_definitions_from_sheet(user_agent_counter_style_sheet(), context, definitions_ptr)
-	for origin in [CascadeOrigin.user_agent, .user] {
-		for sheet in scope.stylesheets_for_cascade_origin(origin) {
+	mut registered := map[string]CounterStyle{}
+	if parent_scope := parent_style_scope_for_global_tree_scoped_reference(scope) {
+		registered = registered_counter_styles_for_scope(parent_scope).clone()
+	} else {
+		collect_counter_style_definitions_from_sheet(user_agent_counter_style_sheet(), context, definitions_ptr)
+		for sheet in scope.stylesheets_for_cascade_origin(.user_agent) {
+			collect_counter_style_definitions_from_sheet(sheet, context, definitions_ptr)
+		}
+		define_complex_predefined_counter_styles(mut definitions)
+		for sheet in scope.stylesheets_for_cascade_origin(.user) {
 			collect_counter_style_definitions_from_sheet(sheet, context, definitions_ptr)
 		}
 	}
-	define_complex_predefined_counter_styles(mut definitions)
 	for sheet in scope.stylesheets_for_cascade_origin(.author) {
 		collect_counter_style_definitions_from_sheet(sheet, context, definitions_ptr)
 	}
 
-	mut registered := map[string]CounterStyle{}
-	// Default.css defines decimal; retain the spec fallback even if a reduced
-	// embedding omits that stylesheet.
-	registered['decimal'] = CounterStyle.decimal()
-	registered['disc'] = CounterStyle.disc()
+	// Default.css defines these in the document scope. Retain the spec fallback
+	// when a reduced embedding omits that stylesheet; descendant scopes inherit
+	// the resulting definitions through the global tree-scoped-name chain.
+	if parent_style_scope_for_global_tree_scoped_reference(scope) == none {
+		if 'decimal' !in definitions {
+			registered['decimal'] = CounterStyle.decimal()
+		}
+		if 'disc' !in definitions {
+			registered['disc'] = CounterStyle.disc()
+		}
+	}
 	mut extending := []CounterStyleDefinition{}
+	mut resolved_in_this_scope := map[string]bool{}
 	for _, definition in definitions {
 		algorithm := definition.algorithm()
 		if algorithm is CounterStyleAlgorithm {
 			registered[definition.name()] = CounterStyle.from_counter_style_definition(definition, registered)
+			resolved_in_this_scope[definition.name()] = true
 		} else {
-			extending << definition
+			if counter_style_definition_is_part_of_extends_cycle(definition.name(), definitions) {
+				mut copied := definition
+				copied.set_algorithm(CounterStyleAlgorithmOrExtends(CounterStyleSystemExtends{
+					name: 'decimal'
+				}))
+				extending << copied
+			} else {
+				extending << definition
+			}
 		}
 	}
 	for extending.len > 0 {
-		mut made_progress := false
 		mut remaining := []CounterStyleDefinition{}
 		for definition in extending {
 			algorithm := definition.algorithm()
@@ -1182,48 +1232,59 @@ fn build_registered_counter_styles_for_document(document &dom.Document) map[stri
 			} else {
 				'decimal'
 			}
-			if extends in registered {
-				registered[definition.name()] = CounterStyle.from_counter_style_definition(definition, registered)
-				made_progress = true
-			} else {
+			if extends in definitions && !resolved_in_this_scope[extends] {
 				remaining << definition
+				continue
 			}
-		}
-		if !made_progress {
-			// A missing extension or an extends cycle computes as extending decimal.
-			for mut definition in remaining {
-				definition.set_algorithm(CounterStyleAlgorithmOrExtends(CounterStyleSystemExtends{
-					name: 'decimal'
-				}))
-				registered[definition.name()] = CounterStyle.from_counter_style_definition(definition, registered)
-			}
-			break
+			registered[definition.name()] = CounterStyle.from_counter_style_definition(definition, registered)
+			resolved_in_this_scope[definition.name()] = true
 		}
 		extending = remaining.clone()
 	}
 	return registered
 }
 
-// DOM::Document::build_counter_style_cache(). The concrete cache remains on
-// the CSS side of the module boundary because dom cannot name CounterStyle.
-fn rebuild_registered_counter_styles_for_document(document &dom.Document) {
-	mut style_computer := css_style_computer_for(document)
-	style_computer.registered_counter_styles_ = build_registered_counter_styles_for_document(document)
-	style_computer.has_registered_counter_styles_ = true
+fn mark_counter_style_scope_cache_dirty(scope &StyleScope) {
+	mut mutable_scope := unsafe { &StyleScope(scope) }
+	mutable_scope.needs_counter_style_cache_update = true
 }
 
-pub fn invalidate_registered_counter_styles_for_document(document &dom.Document) {
-	mut style_computer := css_style_computer_for(document)
-	style_computer.registered_counter_styles_ = map[string]CounterStyle{}
-	style_computer.has_registered_counter_styles_ = false
+pub fn (mut scope StyleScope) invalidate_counter_style_cache() {
+	document := scope.document() or { return }
+	mark_counter_style_scope_cache_dirty(css_style_scope_for_document(document))
+	document.for_each_shadow_root(fn (shadow_root &dom.ShadowRoot) {
+		mark_counter_style_scope_cache_dirty(css_style_scope_for_shadow_root(shadow_root))
+	})
+}
+
+pub fn registered_counter_styles_for_scope(scope &StyleScope) map[string]CounterStyle {
+	if scope.needs_counter_style_cache_update && !scope.is_doing_counter_style_cache_update {
+		mut mutable_scope := unsafe { &StyleScope(scope) }
+		mutable_scope.is_doing_counter_style_cache_update = true
+		mutable_scope.registered_counter_styles = build_registered_counter_styles_for_scope(scope)
+		mutable_scope.is_doing_counter_style_cache_update = false
+		mutable_scope.needs_counter_style_cache_update = false
+	}
+	return scope.registered_counter_styles
+}
+
+pub fn registered_counter_styles_for_abstract_element(abstract_element dom.AbstractElement) map[string]CounterStyle {
+	return registered_counter_styles_for_scope(css_style_scope_for(abstract_element))
 }
 
 pub fn registered_counter_styles_for_document(document &dom.Document) map[string]CounterStyle {
-	mut style_computer := css_style_computer_for(document)
-	if !style_computer.has_registered_counter_styles_ {
-		rebuild_registered_counter_styles_for_document(document)
-	}
-	return style_computer.registered_counter_styles_
+	return registered_counter_styles_for_scope(css_style_scope_for_document(document))
+}
+
+fn rebuild_registered_counter_styles_for_document(document &dom.Document) {
+	mut scope := css_style_scope_for_document(document)
+	scope.needs_counter_style_cache_update = true
+	_ = registered_counter_styles_for_scope(scope)
+}
+
+pub fn invalidate_registered_counter_styles_for_document(document &dom.Document) {
+	mut scope := css_style_scope_for_document(document)
+	scope.invalidate_counter_style_cache()
 }
 
 // --- CountersSet ---
@@ -2715,12 +2776,13 @@ pub fn (mut rule CSSCounterStyleRule) set_parent_style_sheet(parent_style_sheet 
 
 pub fn (mut rule CSSCounterStyleRule) clear_caches() {
 	sheet := rule.parent_style_sheet_ or { return }
-	for owner in sheet.owning_documents_or_shadow_roots {
-		document := owner.document()
-		invalidate_registered_counter_styles_for_document(document)
+	sheet.for_each_owning_style_scope(fn (scope &StyleScope) {
+		mut mutable_scope := unsafe { &StyleScope(scope) }
+		mutable_scope.invalidate_counter_style_cache()
+		owner := scope.node_ref() or { return }
 		mut mutable_owner := unsafe { &dom.Node(owner) }
 		mutable_owner.invalidate_style(.counter_style_cache_invalidated)
-	}
+	})
 }
 
 pub fn (rule CSSCounterStyleRule) speak_as_style_value() ?StyleValue {

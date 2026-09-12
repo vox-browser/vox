@@ -3104,7 +3104,7 @@ pub fn (c &ComputedProperties) text_wrap_style() TextWrapStyle {
 	}
 }
 
-pub fn (c &ComputedProperties) list_style_type(document &dom.Document) ListStyleType {
+pub fn (c &ComputedProperties) list_style_type_for_scope(scope &StyleScope) ListStyleType {
 	value := c.property(.list_style_type, .yes) or {
 		return ListStyleType{
 			kind: .counter_style
@@ -3141,7 +3141,7 @@ pub fn (c &ComputedProperties) list_style_type(document &dom.Document) ListStyle
 				counter_style = CounterStyle.decimal()
 			}
 			else {
-				if resolved := registered_counter_styles_for_document(document)[name] {
+				if resolved := registered_counter_styles_for_scope(scope)[name] {
 					counter_style = resolved
 				}
 			}
@@ -3157,6 +3157,10 @@ pub fn (c &ComputedProperties) list_style_type(document &dom.Document) ListStyle
 		name: 'disc'
 		counter_style: CounterStyle.disc()
 	}
+}
+
+pub fn (c &ComputedProperties) list_style_type(document &dom.Document) ListStyleType {
+	return c.list_style_type_for_scope(css_style_scope_for_document(document))
 }
 
 pub fn (c &ComputedProperties) list_style_position() ListStylePosition {
@@ -9660,7 +9664,10 @@ pub mut:
 	node                                                        ?&dom.Node
 	// CSS-owned sheets for a shadow-root scope. Document sheets keep their
 	// existing document holder for compatibility with the HTML bridge.
-	author_style_sheets []&CSSStyleSheet
+	author_style_sheets                 []&CSSStyleSheet
+	registered_counter_styles           map[string]CounterStyle
+	needs_counter_style_cache_update    bool = true
+	is_doing_counter_style_cache_update bool
 }
 
 pub struct LogicalAliasMappingContext {
@@ -9701,8 +9708,6 @@ pub mut:
 	document_timeline_                     &AnimationTimeline = unsafe { nil }
 	font_computer_                         &FontComputer = unsafe { nil }
 	font_face_set_                         &FontFaceSet = unsafe { nil }
-	registered_counter_styles_             map[string]CounterStyle
-	has_registered_counter_styles_         bool
 	animation_time_ms_                     f64
 	transition_generation_                 int
 }

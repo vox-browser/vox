@@ -963,6 +963,21 @@ pub fn (n &NodeWithStyle) list_style_image() ?css.StyleValue {
 	return n.list_style_image_
 }
 
+pub fn (n &NodeWithStyle) style_scope() &css.StyleScope {
+	if dom_node := n.dom_node_ {
+		return css.style_scope_for_dom_node(dom_node)
+	}
+	if generator := n.pseudo_element_generator_ {
+		return css.style_scope_for_dom_node(generator.as_node())
+	}
+	if parent := n.parent() {
+		if styled_parent := parent.as_node_with_style() {
+			return styled_parent.style_scope()
+		}
+	}
+	return css.style_scope_for_dom_node(unsafe { &dom.Node(n.document_) })
+}
+
 pub fn (mut n NodeWithStyle) set_computed_values(computed_values &css.ComputedProperties) {
 	n.computed_values_ = css.resolve_computed_values_for_document(computed_values, n.document_)
 	n.list_style_image_ = materialize_list_style_image(computed_values, n.document_)

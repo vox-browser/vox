@@ -2144,10 +2144,18 @@ pub fn (mut sheet CSSStyleSheet) remove_owning_document_or_shadow_root(document_
 
 pub fn (mut sheet CSSStyleSheet) invalidate_owners(reason dom.StyleInvalidationReason) {
 	sheet.did_match = none
-	for owner in sheet.owning_documents_or_shadow_roots {
+	sheet.for_each_owning_style_scope(fn [reason] (scope &StyleScope) {
+		owner := scope.node_ref() or { return }
 		mut mutable_owner := unsafe { &dom.Node(owner) }
 		mutable_owner.invalidate_style(reason)
-		invalidate_css_style_scope_for_node(owner)
+		mut mutable_scope := unsafe { &StyleScope(scope) }
+		mutable_scope.invalidate_rule_cache()
+	})
+}
+
+pub fn (sheet &CSSStyleSheet) for_each_owning_style_scope(callback fn (&StyleScope)) {
+	for owner in sheet.owning_documents_or_shadow_roots {
+		callback(css_style_scope_for_node(owner))
 	}
 }
 

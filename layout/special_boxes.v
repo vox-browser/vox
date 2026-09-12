@@ -1167,10 +1167,14 @@ fn marker_text_for_list_style(list_style_type css.ListStyleType, element &dom.El
 	}
 	mut mutable_element := unsafe { &dom.Element(element) }
 	ordinal := mutable_element.ordinal_value()
-	registered_counter_styles := css.registered_counter_styles_for_document(element.document())
-	representation := css.generate_a_counter_representation(list_style_type.counter_style, registered_counter_styles, i32(ordinal))
-	if style := list_style_type.counter_style {
-		return '${style.prefix()}${representation}${style.suffix()}'
+	registered_counter_styles := css.registered_counter_styles_for_abstract_element(dom.AbstractElement.new(element, none))
+	mut style := list_style_type.counter_style
+	if resolved_style := registered_counter_styles[list_style_type.name] {
+		style = resolved_style
+	}
+	representation := css.generate_a_counter_representation(style, registered_counter_styles, i32(ordinal))
+	if resolved_style := style {
+		return '${resolved_style.prefix()}${representation}${resolved_style.suffix()}'
 	}
 	// A missing named counter style falls back to decimal.
 	return '${representation}. '

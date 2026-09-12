@@ -409,9 +409,7 @@ pub fn (mut scope StyleScope) build_rule_cache() {
 }
 
 pub fn (mut scope StyleScope) invalidate_rule_cache() {
-	if document := scope.document() {
-		invalidate_registered_counter_styles_for_document(document)
-	}
+	scope.invalidate_counter_style_cache()
 	scope.author_rule_cache = none
 
 	// NOTE: We could be smarter about keeping the user rule cache, and style sheet.

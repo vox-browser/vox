@@ -33,12 +33,11 @@ enum SVGReferencedResourceKind {
 
 struct TreeBuilderState {
 mut:
-	quote_nesting_level       u32
-	registered_counter_styles map[string]css.CounterStyle
-	counter_sets              map[string]css.CountersSet
-	last_child_by_parent      map[string]string
-	last_processed_key        string
-	counter_tree_order_index  i64
+	quote_nesting_level      u32
+	counter_sets             map[string]css.CountersSet
+	last_child_by_parent     map[string]string
+	last_processed_key       string
+	counter_tree_order_index i64
 }
 
 fn abstract_element_counter_key(abstract_element &dom.AbstractElement) string {
@@ -182,7 +181,7 @@ fn build_layout_tree_from_computed_styles(document &dom.Document, mut style_comp
 	document_style := style_computer.create_document_style()
 	mut viewport := unsafe { &Node(Viewport.new(document, document_style)) }
 	mut builder_state := TreeBuilderState{
-		registered_counter_styles: map[string]css.CounterStyle{}
+		counter_sets: map[string]css.CountersSet{}
 	}
 	if root_element_box := build_layout_box_for_element(document, root_element, style_computer, mut builder_state) {
 		propagate_overflow_to_viewport(root_element_box, mut viewport)
@@ -1712,20 +1711,18 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	if computed.display().is_none() {
 		return none
 	}
-	if builder_state.registered_counter_styles.len == 0 {
-		builder_state.registered_counter_styles = css.registered_counter_styles_for_document(document)
-	}
 	css.resolve_computed_values_for_document(computed, document)
 	abstract_element := dom.AbstractElement.new(element, dom_pseudo)
+	registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
 	initial_quote_nesting_level := builder_state.quote_nesting_level
-	initial_content_result := computed.content(&abstract_element, initial_quote_nesting_level, builder_state.registered_counter_styles)
+	initial_content_result := computed.content(&abstract_element, initial_quote_nesting_level, registered_counter_styles)
 	builder_state.quote_nesting_level = initial_content_result.final_quote_nesting_level
 	initial_content := initial_content_result.content_data
 	if initial_content.type_ in [.normal, .none_] {
 		return none
 	}
 	resolve_layout_counters(mut builder_state, abstract_element, computed)
-	content := computed.content(&abstract_element, initial_quote_nesting_level, builder_state.registered_counter_styles).content_data
+	content := computed.content(&abstract_element, initial_quote_nesting_level, registered_counter_styles).content_data
 	mut node := create_layout_node_for_generated_content(document, computed)
 	node.set_generated_for(layout_pseudo, element)
 	node.initial_quote_nesting_level_ = initial_quote_nesting_level
@@ -1771,9 +1768,6 @@ fn build_backdrop_pseudo_element(document &dom.Document, element &dom.Element, m
 }
 
 fn build_list_item_marker(document &dom.Document, element &dom.Element, list_item_computed &css.ComputedProperties, mut builder_state TreeBuilderState) ?&Node {
-	if builder_state.registered_counter_styles.len == 0 {
-		builder_state.registered_counter_styles = css.registered_counter_styles_for_document(document)
-	}
 	marker_computed := css.computed_properties_for_pseudo_element(element, .marker) or {
 		list_item_computed.clone_for_anonymous_block()
 	}
@@ -1782,13 +1776,14 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	}
 	css.resolve_computed_values_for_document(marker_computed, document)
 	abstract_element := dom.AbstractElement.new(element, .marker)
-	initial_content := marker_computed.content(&abstract_element, 0, builder_state.registered_counter_styles).content_data
+	registered_counter_styles := css.registered_counter_styles_for_abstract_element(abstract_element)
+	initial_content := marker_computed.content(&abstract_element, 0, registered_counter_styles).content_data
 	if initial_content.type_ == .none_ {
 		return none
 	}
 	if initial_content.type_ == .list {
 		resolve_marker_layout_counters(mut builder_state, abstract_element, marker_computed)
-		content := marker_computed.content(&abstract_element, 0, builder_state.registered_counter_styles).content_data
+		content := marker_computed.content(&abstract_element, 0, registered_counter_styles).content_data
 		mut marker := create_layout_node_for_generated_content(document, marker_computed)
 		marker.set_generated_for(.marker, element)
 		if marker.can_have_children() {
@@ -1805,7 +1800,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 		}
 		return marker
 	}
-	list_style_type := unsafe { &css.ComputedValues(list_item_computed) }.computed_list_style_type()
+	list_style_type := list_item_computed.list_style_type_for_scope(css.style_scope_for_abstract_element(dom.AbstractElement.new(element, none)))
 	list_style_image := list_item_computed.typed_property_value(.list_style_image)
 	has_list_style_image := if image := list_style_image {
 		image.is_abstract_image()

@@ -704,6 +704,49 @@ fn test_marker_missing_counter_style_falls_back_to_decimal() {
 	assert marker_box.text() or { '' } == '1. '
 }
 
+fn test_list_markers_resolve_counter_styles_in_their_shadow_tree_scope() {
+	document := html.parse_document('<!doctype html><style>@counter-style scoped { system: cyclic; symbols: "DOCUMENT"; suffix: "" } li { list-style-type: scoped }</style><ol><li id="outside">outside</li></ol><div id="host"></div>')
+	mut host := document.get_element_by_id('host') or { panic('missing host') }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut style := document.create_element_ns('http://www.w3.org/1999/xhtml', 'style') or {
+		panic(err)
+	}
+	mut style_node := style.as_node()
+	style_node.append_child(document.create_text_node('@counter-style scoped { system: cyclic; symbols: "SHADOW"; suffix: "" } li { list-style-type: scoped }').as_node()) or {
+		panic(err)
+	}
+	mut list := document.create_element_ns('http://www.w3.org/1999/xhtml', 'ol') or {
+		panic(err)
+	}
+	mut item := document.create_element_ns('http://www.w3.org/1999/xhtml', 'li') or {
+		panic(err)
+	}
+	item.set_attribute_value('id', 'inside')
+	mut item_node := item.as_node()
+	item_node.append_child(document.create_text_node('inside').as_node()) or { panic(err) }
+	mut list_node := list.as_node()
+	list_node.append_child(item.as_node()) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	shadow_node.append_child(style.as_node()) or { panic(err) }
+	shadow_node.append_child(list.as_node()) or { panic(err) }
+
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	outside := tree_builder_node_with_id(root, 'outside') or { panic('missing outer list item') }
+	inside := tree_builder_node_with_id(root, 'inside') or { panic('missing shadow list item') }
+	outside_marker := (outside.as_list_item_box() or { panic('outer item is not a list item') }).marker() or {
+		panic('outer marker missing')
+	}
+	inside_marker := (inside.as_list_item_box() or { panic('inner item is not a list item') }).marker() or {
+		panic('inner marker missing')
+	}
+	assert (outside_marker.as_list_item_marker_box() or { panic('outer marker box missing') }).text() or {
+		''
+	} == 'DOCUMENT'
+	assert (inside_marker.as_list_item_marker_box() or { panic('inner marker box missing') }).text() or {
+		''
+	} == 'SHADOW'
+}
+
 fn test_table_fixup_generates_wrapper_rows_and_cells() {
 	document := html.parse_document('<!doctype html><style>
 		#misparented { display:table-cell }
