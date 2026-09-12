@@ -49,7 +49,7 @@ of 20. Exact comparisons remain exact. All 24 new cases pass this bounded
 workflow. The complete refresh run also covers the three default smoke cases
 and five modified SVG cases: all 32 invocations pass (31 distinct fixtures).
 
-The current semantic audit below reports 6,183 unmatched C++ spellings. That
+The current semantic audit below reports 6,055 unmatched C++ spellings. That
 is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
@@ -91,7 +91,7 @@ from the current-module totals.
 | --- | ---: | ---: | ---: | ---: | --- |
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
 | `Animations` | 10 | 5,187 | 3,047 | 493 | Complete |
-| `Bindings` | 11 | 2,501 | 1,731 | 555 | Complete |
+| `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
 | `CSS` | 215 | 47,722 | 101,884 | 7,579 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **334,005** | **63,917** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **334,949** | **64,280** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
