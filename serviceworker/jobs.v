@@ -23,10 +23,13 @@ pub enum WorkerPromiseState {
 @[heap]
 pub struct WorkerPromise {
 pub mut:
-	state        WorkerPromiseState
-	error        string
-	registration ?&Registration
-	bool_value   ?bool
+	state                WorkerPromiseState
+	error                string
+	registration         ?&Registration
+	registrations        []&Registration
+	registration_object  ?&ServiceWorkerRegistration
+	registration_objects []&ServiceWorkerRegistration
+	bool_value           ?bool
 }
 
 @[heap]

@@ -44,6 +44,40 @@ fn test_ready_is_same_pending_promise_until_active_worker_exists() {
 	container.poll_ready()
 	assert first.state == .fulfilled
 	assert voidptr(first.registration or { panic('missing') }) == voidptr(registration)
+	assert voidptr(first.registration_object or { panic('missing wrapper') }.registration()) == voidptr(registration)
+}
+
+fn test_ready_cache_is_per_wrapper_world_and_prunes_dead_containers() {
+	mut agent := ServiceWorkerAgent.create()
+	mut container := ServiceWorkerContainer.create(client(), agent)
+	first_world := container.ready_for_world(1)
+	first_world_again := container.ready_for_world(1)
+	second_world := container.ready_for_world(2)
+	assert voidptr(first_world) == voidptr(first_world_again)
+	assert voidptr(first_world) != voidptr(second_world)
+	assert service_worker_container_ready_promise_caches().len > 0
+	container.mark_destroyed()
+	for entry in service_worker_container_ready_promise_caches() {
+		assert entry.container_pointer != voidptr(container)
+	}
+}
+
+fn test_get_registrations_filters_storage_key_and_reuses_wrappers() {
+	mut agent := ServiceWorkerAgent.create()
+	mut container := ServiceWorkerContainer.create(client(), agent)
+	first := agent.store.set('example-key', 'https://example.test/a/', .imports)
+	second := agent.store.set('example-key', 'https://example.test/b/', .all)
+	agent.store.set('foreign', 'https://example.test/c/', .none)
+	promise := container.get_registrations()
+	assert promise.state == .fulfilled
+	assert promise.registrations.len == 2
+	assert voidptr(promise.registrations[0]) == voidptr(first)
+	assert voidptr(promise.registrations[1]) == voidptr(second)
+	assert promise.registration_objects.len == 2
+
+	lookup := container.get_registration('https://example.test/a/page')
+	assert voidptr(lookup.registration_object or { panic('missing wrapper') }) == voidptr(promise.registration_objects[0])
+	assert voidptr(container.service_worker_client()) == voidptr(container.client_)
 }
 
 fn test_event_attributes_global_cookie_store_and_cache_storage() {
