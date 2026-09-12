@@ -139,14 +139,22 @@ fn test_typed_paint_adapter_uses_computed_enums_and_lengths() {
 	assert computed_font_is_monospace(computed)
 }
 
-fn test_typed_paint_adapter_treats_grid_item_with_z_index_as_positioned() {
-	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #grid { display: grid } #item { z-index: 7 } #ordinary { z-index: 9 }</style><body><div id="grid"><div id="item"></div></div><div id="ordinary"></div></body>')
+fn test_typed_paint_adapter_treats_flex_and_grid_items_with_z_index_as_positioned() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } #grid { display: grid } #grid-item { z-index: 7 } #flex { display: flex } #flex-item { z-index: -3 } #ordinary { z-index: 9 }</style><body><div id="grid"><div id="grid-item"></div></div><div id="flex"><div id="flex-item"></div></div><div id="ordinary"></div></body>')
 	root := layout_document_typed_in_viewport(document, 200, 120)
-	item := document.get_element_by_id('item') or { panic('missing grid item') }
+	item := document.get_element_by_id('grid-item') or { panic('missing grid item') }
 	item_box := root.find_box(i64(item.as_node().unique_id())) or { panic('missing grid item box') }
 	assert item_box.positioned
 	assert item_box.z_index == 7
 	assert !item_box.z_index_auto
+
+	flex_item := document.get_element_by_id('flex-item') or { panic('missing flex item') }
+	flex_item_box := root.find_box(i64(flex_item.as_node().unique_id())) or {
+		panic('missing flex item box')
+	}
+	assert flex_item_box.positioned
+	assert flex_item_box.z_index == -3
+	assert !flex_item_box.z_index_auto
 
 	ordinary := document.get_element_by_id('ordinary') or { panic('missing ordinary box') }
 	ordinary_box := root.find_box(i64(ordinary.as_node().unique_id())) or {

@@ -2930,11 +2930,13 @@ fn svg_url_mask_for_box(node &Node, state &LayoutState,
 // Carry the accumulated matrix through construction too, instead of copying a
 // complete child subtree once for every transformed ancestor.
 //
-// Paintable's cached positioned bit has one painting-specific exception to
-// Layout::Node::is_positioned(): a grid item with a non-auto z-index behaves as
-// positioned for stacking even when its computed position remains static.
+// Paintable's cached positioned bit has a painting-specific exception to
+// Layout::Node::is_positioned(): flex and grid items with a non-auto z-index
+// behave as positioned for stacking even when their computed position remains
+// static.
 fn paintable_is_positioned(node &Node, computed &css.ComputedValues) bool {
-	return node.is_positioned() || (node.is_grid_item() && computed.z_index() != none)
+	return node.is_positioned()
+		|| ((node.is_flex_item() || node.is_grid_item()) && computed.z_index() != none)
 }
 
 fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, ancestor_paint_transform [6]f64) BlockBox {
