@@ -12034,6 +12034,20 @@ fn custom_property_bridge_values_identical(left &dom.CSSStyleValue_, right &dom.
 	return voidptr(left) == voidptr(right)
 }
 
+fn custom_property_maps_equal(left map[string]dom.CSSCustomProperty_, right map[string]dom.CSSCustomProperty_) bool {
+	if left.len != right.len {
+		return false
+	}
+	for name, left_property in left {
+		right_property := right[name] or { return false }
+		if left_property.important != right_property.important
+			|| !custom_property_bridge_values_equal(left_property.value, right_property.value) {
+			return false
+		}
+	}
+	return true
+}
+
 // StyleComputer.cpp:cascade_custom_properties. Important declarations are
 // collected while walking the matching rules and applied after normal ones.
 fn cascade_custom_properties(abstract_element dom.AbstractElement, rules []&MatchingRule, mut values map[string]dom.CSSCustomProperty_) {
@@ -12054,25 +12068,14 @@ fn cascade_custom_properties(abstract_element dom.AbstractElement, rules []&Matc
 }
 
 fn custom_property_own_values_equal(left ?&dom.CSSCustomPropertyData_, right ?&dom.CSSCustomPropertyData_) bool {
-	left_values := if data := left {
-		data.own_values
-	} else {
-		map[string]dom.CSSCustomProperty_{}
-	}
-	right_values := if data := right {
-		data.own_values
-	} else {
-		map[string]dom.CSSCustomProperty_{}
-	}
-	if left_values.len != right_values.len {
-		return false
-	}
-	for name, left_property in left_values {
-		right_property := right_values[name] or { return false }
-		if left_property.important != right_property.important
-			|| !custom_property_bridge_values_equal(left_property.value, right_property.value) {
-			return false
+	if left_data := left {
+		if right_data := right {
+			return custom_property_maps_equal(left_data.own_values, right_data.own_values)
 		}
+		return left_data.own_values.len == 0
+	}
+	if right_data := right {
+		return right_data.own_values.len == 0
 	}
 	return true
 }
