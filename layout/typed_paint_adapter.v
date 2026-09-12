@@ -33,6 +33,27 @@ fn paint_local_offset(node &Node, state &LayoutState, used &UsedValues) css.CSSP
 	return offset
 }
 
+// LayoutState::commit() does not materialize a paintable for an atomic inline
+// fragment displaced by text-overflow ellipsis. The fragment stays in its line
+// so the coordinate recorded during layout remains stable.
+fn is_fully_truncated_inline_fragment(node &Node, state &LayoutState) bool {
+	styled := node.as_node_with_style() or { return false }
+	used := state.try_get(styled) or { return false }
+	coordinate := used.containing_line_box_fragment or { return false }
+	containing_block := node.containing_block() or { return false }
+	containing_styled := unsafe { &NodeWithStyle(containing_block) }
+	containing_used := state.try_get(containing_styled) or { return false }
+	if coordinate.line_box_index < 0
+		|| coordinate.line_box_index >= containing_used.line_boxes.len {
+		return false
+	}
+	line_box := containing_used.line_boxes[coordinate.line_box_index]
+	if coordinate.fragment_index < 0 || coordinate.fragment_index >= line_box.fragments_.len {
+		return false
+	}
+	return line_box.fragments_[coordinate.fragment_index].is_fully_truncated()
+}
+
 fn paint_cumulative_offset(node &Node, state &LayoutState, used &UsedValues) css.CSSPixelPoint {
 	offset := paint_local_offset(node, state, used)
 	if containing := used.containing_block_used_values() {
@@ -3464,6 +3485,9 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 		if child.is_svg_mask_box() || child.is_svg_clip_box() || child.is_svg_pattern_box() {
 			continue
 		}
+		if child.is_box() && is_fully_truncated_inline_fragment(child, state) {
+			continue
+		}
 		if child.is_box() {
 			if child_styled := child.as_node_with_style() {
 				if state.try_get(child_styled) == none {
@@ -3610,6 +3634,9 @@ fn typed_block_descendants(node &Node, state &LayoutState, ancestor_paint_transf
 		if child.is_svg_mask_box() || child.is_svg_clip_box() || child.is_svg_pattern_box() {
 			continue
 		}
+		if child.is_box() && is_fully_truncated_inline_fragment(child, state) {
+			continue
+		}
 		if child.is_box() {
 			if styled := child.as_node_with_style() {
 				if state.try_get(styled) == none {
@@ -3642,6 +3669,9 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			last_fragment_continues_next_line = voidptr(line_box.fragments_.last().layout_node_) == voidptr(next.layout_node_)
 		}
 		for fragment_index, fragment in line_box.fragments_ {
+			if fragment.is_fully_truncated() {
+				continue
+			}
 			text := fragment.text() or { continue }
 			computed := fragment.layout_node_.computed_values()
 			font_metrics := fragment.layout_node_.first_available_font().pixel_metrics()

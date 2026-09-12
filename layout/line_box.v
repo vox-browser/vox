@@ -32,6 +32,7 @@ pub mut:
 	insert_position_         f32
 	current_insert_direction css.Direction = .ltr
 	has_trailing_whitespace_ bool
+	is_fully_truncated_      bool
 }
 
 pub fn LineBoxFragment.new(layout_node &Node, start int, length_in_code_units int, inline_offset CSSPixels, block_offset CSSPixels, inline_length CSSPixels, block_length CSSPixels, border_box_top CSSPixels, direction css.Direction, writing_mode css.WritingMode, glyph_run ?&platform.GlyphRun) LineBoxFragment {
@@ -206,6 +207,14 @@ pub fn (fragment &LineBoxFragment) has_trailing_whitespace() bool {
 
 pub fn (mut fragment LineBoxFragment) set_has_trailing_whitespace(value bool) {
 	fragment.has_trailing_whitespace_ = value
+}
+
+pub fn (fragment &LineBoxFragment) is_fully_truncated() bool {
+	return fragment.is_fully_truncated_
+}
+
+pub fn (mut fragment LineBoxFragment) set_fully_truncated(value bool) {
+	fragment.is_fully_truncated_ = value
 }
 
 fn (fragment &LineBoxFragment) resolve_glyph_run_direction(text_type platform.GlyphRunTextType) css.Direction {

@@ -327,9 +327,8 @@ fn apply_text_overflow_ellipsis(containing_block &BlockContainer, mut line_boxes
 			run.width_ = last_kept_end + ellipsis_width
 			fragment.set_inline_length(CSSPixels.nearest_value_for(f64(run.width_)))
 
-			if fragment_index + 1 < line_box.fragments_.len {
-				line_box.fragments_.delete_many(fragment_index + 1,
-					line_box.fragments_.len - fragment_index - 1)
+			for later_index := fragment_index + 1; later_index < line_box.fragments_.len; later_index++ {
+				line_box.fragments_[later_index].set_fully_truncated(true)
 			}
 			line_box.inline_length_ = available_width
 			break

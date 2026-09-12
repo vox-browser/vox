@@ -125,8 +125,10 @@ fn test_text_overflow_ellipsis_preserves_preceding_inline_fragments() {
 		AvailableSize.make_indefinite()))
 
 	assert used.line_boxes.len == 1
-	assert used.line_boxes[0].fragments_.len == 2
+	assert used.line_boxes[0].fragments_.len == 3
 	assert used.line_boxes[0].fragments_[0].text() or { '' } == 'Bold'
 	second_run := used.line_boxes[0].fragments_[1].glyph_run() or { panic('second glyph run') }
 	assert second_run.glyphs_.last().code_point == u32(0x2026)
+	assert !used.line_boxes[0].fragments_[1].is_fully_truncated()
+	assert used.line_boxes[0].fragments_[2].is_fully_truncated()
 }
