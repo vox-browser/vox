@@ -100,9 +100,14 @@ fn test_traversable_cancellation_visibility_focus_and_close() {
 	assert traversable.system_visibility_state() == .visible
 	traversable.set_has_system_focus(true)
 	assert traversable.currently_focused_area()? == unsafe { &dom.Node(second_document) }
+	assert !traversable.is_closing()
 	traversable.close_top_level_traversable()
+	assert traversable.is_closing()
 	assert traversable.has_been_destroyed()
 	assert traversable !in user_agent_top_level_traversable_set()
+	// A repeated close is ignored after the flag has been set.
+	traversable.close_top_level_traversable()
+	assert traversable.is_closing()
 }
 
 fn test_top_level_traversable_registry_creation_and_deactivation() {

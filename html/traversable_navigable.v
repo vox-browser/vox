@@ -549,6 +549,8 @@ pub fn (mut traversable TraversableNavigable) close_top_level_traversable() {
 	if traversable.is_closing_ {
 		return
 	}
+	// Prevent re-entrant close requests from scheduling duplicate destruction work.
+	traversable.is_closing_ = true
 	traversable.definitely_close_top_level_traversable()
 }
 
@@ -568,6 +570,10 @@ pub fn (mut traversable TraversableNavigable) destroy_top_level_traversable() {
 
 pub fn (traversable &TraversableNavigable) has_been_destroyed() bool {
 	return traversable.has_been_destroyed_
+}
+
+pub fn (traversable &TraversableNavigable) is_closing() bool {
+	return traversable.is_closing_
 }
 
 pub fn (mut traversable TraversableNavigable) set_has_system_focus(value bool) {
