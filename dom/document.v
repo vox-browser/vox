@@ -212,6 +212,11 @@ pub fn (u URL) serialize_path() string {
 	return parsed.serialize_path()
 }
 
+pub fn (u URL) basename() string {
+	parsed := u.parsed() or { return '' }
+	return parsed.basename()
+}
+
 // URL's query, without the leading "?", or none when there is no query.
 pub fn (u URL) query() ?string {
 	parsed := u.parsed() or { return none }
@@ -10135,11 +10140,19 @@ pub fn (mut request SharedResourceRequest) handle_successful_fetch(url URL, mime
 		request.handle_failed_fetch()
 		return
 	}
-	image_data := decode(url, mime_type, data.clone()) or {
+	effective_mime_type := shared_resource_effective_image_mime_type(url, mime_type)
+	image_data := decode(url, effective_mime_type, data.clone()) or {
 		request.handle_failed_fetch()
 		return
 	}
 	request.handle_successful_resource_load(image_data)
+}
+
+pub fn shared_resource_effective_image_mime_type(url URL, mime_type string) string {
+	if mime_type == '' && url.basename().ends_with('.svg') {
+		return 'image/svg+xml'
+	}
+	return mime_type
 }
 
 pub fn (request &SharedResourceRequest) needs_fetching() bool {

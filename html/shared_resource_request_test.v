@@ -115,3 +115,12 @@ fn test_shared_resource_request_handle_successful_fetch_decodes_and_finishes() {
 	assert shared_resource_test_decode_url == url.serialize()
 	assert shared_resource_test_decode_mime == 'image/test'
 }
+
+fn test_shared_resource_request_prefers_response_mime_type_over_svg_suffix() {
+	url := dom.URL{ value: 'https://example.test/transformed.svg' }
+	assert shared_resource_effective_image_mime_type(url, 'image/webp') == 'image/webp'
+	assert shared_resource_effective_image_mime_type(url, '') == 'image/svg+xml'
+	assert shared_resource_effective_image_mime_type(dom.URL{
+		value: 'https://example.test/image.webp'
+	}, '') == ''
+}
