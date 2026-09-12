@@ -68,6 +68,7 @@ pub fn Animation.create(effect ?&AnimationEffect, timeline ?&AnimationTimeline) 
 		global_animation_list_order_: order
 	}
 	animation.Animation.concrete_handle_ = voidptr(animation)
+	animation.current_ready_promise_ = create_resolved_animation_promise(animation)
 	animation.set_effect(effect)
 	animation.set_timeline(timeline)
 	return animation
@@ -75,6 +76,26 @@ pub fn Animation.create(effect ?&AnimationEffect, timeline ?&AnimationTimeline) 
 
 pub fn Animation.construct_impl(effect ?&AnimationEffect, timeline ?&AnimationTimeline) !&Animation {
 	return Animation.create(effect, timeline)
+}
+
+pub fn animation_wrapper_value(animation &Animation) dom.JSValue {
+	return dom.js_object(voidptr(animation))
+}
+
+pub fn resolve_animation_promise(promise &dom.Promise, animation &Animation) {
+	mut mutable_promise := unsafe { &dom.Promise(promise) }
+	mutable_promise.resolve(animation_wrapper_value(animation))
+}
+
+pub fn create_resolved_animation_promise(animation &Animation) &dom.Promise {
+	return dom.Promise.resolved(animation_wrapper_value(animation))
+}
+
+// The generated binding supplies the associated document's default timeline
+// separately because the V object model does not retain a Realm on each call.
+pub fn construct_animation(effect ?&AnimationEffect, timeline ?&AnimationTimeline, default_timeline ?&AnimationTimeline, argument_count int) &Animation {
+	selected_timeline := if argument_count < 2 { default_timeline } else { timeline }
+	return Animation.create(effect, selected_timeline)
 }
 
 pub fn (mut animation Animation) set_effect(new_effect ?&AnimationEffect) {
@@ -127,6 +148,7 @@ pub fn (animation &Animation) pending() bool {
 }
 
 pub fn (animation &Animation) ready() &dom.Promise {
+	animation.update_style_if_needed()
 	return animation.current_ready_promise_
 }
 
@@ -173,6 +195,7 @@ pub fn (animation &Animation) validate_a_css_numberish_time(value ?CSSNumberish)
 }
 
 pub fn (animation &Animation) timeline_for_bindings() ?&AnimationTimeline {
+	animation.update_style_if_needed()
 	return animation.timeline_
 }
 
@@ -181,6 +204,7 @@ pub fn (mut animation Animation) set_timeline_for_bindings(timeline ?&AnimationT
 }
 
 pub fn (animation &Animation) start_time_for_bindings() NullableCSSNumberish {
+	animation.update_style_if_needed()
 	return NullableCSSNumberish.from_optional_css_numberish_time(animation.start_time())
 }
 
@@ -190,7 +214,8 @@ pub fn (mut animation Animation) set_start_time_for_bindings(value ?CSSNumberish
 }
 
 pub fn (animation &Animation) current_time_for_bindings() NullableCSSNumberish {
-	return NullableCSSNumberish.from_optional_css_numberish_time(animation.current_time())
+	animation.update_style_if_needed()
+	return NullableCSSNumberish.from_optional_css_numberish_time(animation.current_time_for_observation())
 }
 
 pub fn (mut animation Animation) set_current_time_for_bindings(value ?CSSNumberish) ! {
@@ -218,7 +243,7 @@ pub fn (mut animation Animation) set_start_time(value ?TimeValue) ! {
 	if animation.pending() {
 		animation.pending_play_task_ = false
 		animation.pending_pause_task_ = false
-		animation.current_ready_promise_.resolve(dom.js_undefined())
+		resolve_animation_promise(animation.current_ready_promise_, animation)
 	}
 	animation.update_finished_state(true)
 }
@@ -262,12 +287,29 @@ pub fn (mut animation Animation) calculate_auto_aligned_start_time() {
 }
 
 pub fn (animation &Animation) current_time() ?TimeValue {
-	if hold := animation.hold_time_ { return hold }
-	timeline := animation.timeline_ or { return none }
-	if timeline.is_inactive() { return none }
+	timeline_time := if timeline := animation.timeline_ { timeline.current_time() } else { none }
+	return animation.current_time_at(timeline_time)
+}
+
+pub fn (animation &Animation) current_time_for_observation() ?TimeValue {
+	timeline_time := if timeline := animation.timeline_ {
+		timeline.current_time_for_observation()
+	} else {
+		none
+	}
+	return animation.current_time_at(timeline_time)
+}
+
+pub fn (animation &Animation) current_time_at(timeline_time ?TimeValue) ?TimeValue {
+	if hold := animation.hold_time_ {
+		return hold
+	}
+	if animation.timeline_ == none {
+		return none
+	}
 	start := animation.start_time_ or { return none }
-	timeline_time := timeline.current_time() or { return none }
-	difference := timeline_time.subtract(start) or { return none }
+	resolved_timeline_time := timeline_time or { return none }
+	difference := resolved_timeline_time.subtract(start) or { return none }
 	return difference.multiply(animation.playback_rate_)
 }
 
@@ -279,7 +321,7 @@ pub fn (mut animation Animation) set_current_time(value ?TimeValue) ! {
 		animation.apply_pending_playback_rate()
 		animation.start_time_ = none
 		animation.pending_pause_task_ = false
-		animation.current_ready_promise_.resolve(dom.js_undefined())
+		resolve_animation_promise(animation.current_ready_promise_, animation)
 	}
 	animation.update_finished_state(true)
 }
@@ -329,8 +371,13 @@ pub fn (mut animation Animation) set_playback_rate(new_rate f64) ! {
 }
 
 pub fn (animation &Animation) play_state() AnimationPlayState {
-	current := animation.current_time()
-	if current == none && animation.start_time_ == none && !animation.pending() { return .idle }
+	return animation.play_state_at(animation.current_time())
+}
+
+pub fn (animation &Animation) play_state_at(current ?TimeValue) AnimationPlayState {
+	if current == none && animation.start_time_ == none && !animation.pending() {
+		return .idle
+	}
 	if animation.pending_pause_task_
 		|| (animation.start_time_ == none && !animation.pending_play_task_) {
 		return .paused
@@ -350,7 +397,49 @@ pub fn (animation &Animation) play_state_for_bindings() AnimationPlayState {
 		mut document := unsafe { &dom.Document(owner.document()) }
 		document.update_style()
 	}
-	return animation.play_state()
+	return animation.play_state_at(animation.current_time_for_observation())
+}
+
+pub fn (animation &Animation) pending_for_bindings() bool {
+	animation.update_style_if_needed()
+	return animation.pending()
+}
+
+pub fn (animation &Animation) has_pending_play_task() bool {
+	return animation.pending_play_task_
+}
+
+pub fn (animation &Animation) ready_for_bindings() &dom.Promise {
+	animation.update_style_if_needed()
+	return animation.current_ready_promise_
+}
+
+pub fn (mut animation Animation) finished_for_bindings() &dom.Promise {
+	animation.update_style_if_needed()
+	if mut timeline := animation.timeline_ {
+		observed_timeline_time := timeline.current_time_for_observation()
+		observed_current_time := animation.current_time_at(observed_timeline_time)
+		if !animation.is_finished_ && animation.play_state_at(animation.current_time()) != .finished
+			&& animation.play_state_at(observed_current_time) == .finished {
+			previous_override := timeline.current_time_override_for_style_sampling_
+			had_previous_override := timeline.has_current_time_override_for_style_sampling_
+			timeline.set_current_time_override_for_style_sampling(observed_timeline_time)
+			animation.update_finished_state(false)
+			timeline.current_time_override_for_style_sampling_ = previous_override
+			timeline.has_current_time_override_for_style_sampling_ = had_previous_override
+		}
+	}
+	return animation.current_finished_promise_
+}
+
+pub fn (animation &Animation) update_style_if_needed() {
+	owner := animation.owning_element_ or { return }
+	element := owner.element()
+	if element.document() == unsafe { nil } {
+		return
+	}
+	mut document := unsafe { &dom.Document(element.document()) }
+	document.update_style_if_needed_for_element(element)
 }
 
 pub fn (animation &Animation) is_finished() bool {
@@ -448,7 +537,7 @@ pub fn (mut animation Animation) finish() ! {
 	}
 	animation.pending_play_task_ = false
 	animation.pending_pause_task_ = false
-	animation.current_ready_promise_.resolve(dom.js_undefined())
+	resolve_animation_promise(animation.current_ready_promise_, animation)
 	animation.update_finished_state(true)
 }
 
@@ -678,7 +767,7 @@ fn (mut animation Animation) run_pending_play_task() {
 			}
 		}
 	}
-	animation.current_ready_promise_.resolve(dom.js_undefined())
+	resolve_animation_promise(animation.current_ready_promise_, animation)
 	animation.update_finished_state(false)
 }
 
@@ -692,7 +781,7 @@ fn (mut animation Animation) run_pending_pause_task() {
 	}
 	animation.apply_pending_playback_rate()
 	animation.start_time_ = none
-	animation.current_ready_promise_.resolve(dom.js_undefined())
+	resolve_animation_promise(animation.current_ready_promise_, animation)
 	animation.update_finished_state(false)
 }
 
@@ -703,7 +792,7 @@ fn (mut animation Animation) reset_pending_tasks() {
 	animation.apply_pending_playback_rate()
 	animation.current_ready_promise_.reject(dom.js_string('AbortError: Animation was cancelled'))
 	animation.current_ready_promise_.mark_handled()
-	animation.current_ready_promise_ = dom.Promise.resolved(dom.js_undefined())
+	animation.current_ready_promise_ = create_resolved_animation_promise(animation)
 }
 
 pub fn (mut animation Animation) reset_an_animations_pending_tasks() {
@@ -817,7 +906,7 @@ fn (mut animation Animation) update_finished_state(did_seek bool) {
 	animation.previous_current_time_ = animation.current_time()
 	finished_now := animation.play_state() == .finished
 	if finished_now && !animation.is_finished_ {
-		animation.current_finished_promise_.resolve(dom.js_undefined())
+		resolve_animation_promise(animation.current_finished_promise_, animation)
 		animation.is_finished_ = true
 		animation.emit_playback_event('finish', animation.current_time())
 	} else if !finished_now && animation.is_finished_ {
