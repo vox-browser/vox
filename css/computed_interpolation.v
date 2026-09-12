@@ -10788,7 +10788,7 @@ fn compute_value_of_custom_property_with_guarded_contexts(abstract_element dom.A
 	if contains_guaranteed_invalid_value(result) {
 		return dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
 	}
-	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create(result)))
+	return dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_presence(result, SubstitutionFunctionsPresence{}, none)))
 }
 
 pub fn StyleComputer.compute_value_of_custom_property(abstract_element dom.AbstractElement, custom_property string) &dom.StyleValue {

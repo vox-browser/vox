@@ -13051,7 +13051,7 @@ fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descri
 		if at_rule_id != .function_rule {
 			return none
 		}
-		return StyleValue(UnresolvedStyleValue.create(descriptor_values))
+		return StyleValue(UnresolvedStyleValue.create_with_presence(descriptor_values, substitution_presence, none))
 	}
 
 	mut maybe_value := ?StyleValue(none)
@@ -13503,7 +13503,7 @@ fn (mut parser Parser) parse_media_feature_value(media_feature string, mut token
 
 	if unknown_tokens.len != 0 {
 		tokens = unknown_transaction
-		return StyleValue(UnresolvedStyleValue.create(unknown_tokens))
+		return StyleValue(UnresolvedStyleValue.create_with_presence(unknown_tokens, SubstitutionFunctionsPresence{}, none))
 	}
 
 	return none

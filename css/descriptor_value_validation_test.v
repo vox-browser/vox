@@ -11,6 +11,7 @@ fn test_only_function_descriptors_allow_arbitrary_substitution_functions() {
 		panic('function result descriptor rejected var()')
 	}
 	assert function_result is UnresolvedStyleValue
+	assert (function_result as UnresolvedStyleValue).substitution_functions_presence().var
 	assert parse_css_descriptor_value_logic(.page, .margin_top, 'var(--margin)') == none
 }
 
