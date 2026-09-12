@@ -72,6 +72,35 @@ fn test_insert_rule_targets_matching_elements_in_inline_style_sheet() {
 	assert counters.style_invalidations == 1
 }
 
+fn test_style_rule_declaration_mutation_keeps_and_uses_rule_cache() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_invalidation_test_element(document, 'html')
+	mut style := style_sheet_invalidation_test_element(document, 'style')
+	mut target := style_sheet_invalidation_test_element(document, 'div')
+	target.set_attribute_value('class', 'target')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(style.as_node()) or { panic(err) }
+	root_node.append_child(target.as_node()) or { panic(err) }
+
+	mut sheet := parse_css_stylesheet_with_parser('.target { color: red }', none)
+	install_inline_style_sheet_for_invalidation_test(mut sheet, style, document_node)
+	mut scope := css_style_scope_for_document(document)
+	scope.build_rule_cache_if_needed()
+	mut computer := StyleComputer.new(document)
+	before := computer.compute_style(dom.AbstractElement.new(target, none))
+	assert (before.property(.color, .no) or { panic('missing initial color') }).css_text == 'rgb(255, 0, 0)'
+	assert scope.has_valid_rule_cache()
+
+	style_rule := sheet.css_rules().item(0) or { panic('missing style rule') }
+	mut declaration := unsafe { &CSSStyleProperties(style_rule.style() or { panic('missing declaration') }) }
+	declaration.set_property('color', 'blue', '')!
+	assert scope.has_valid_rule_cache()
+	after := computer.compute_style(dom.AbstractElement.new(target, none))
+	assert (after.property(.color, .no) or { panic('missing updated color') }).css_text == 'rgb(0, 0, 255)'
+}
+
 fn test_inserted_character_data_schedules_has_ancestor_invalidation() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	add_document_author_style_sheet(document, 'div:has(:empty) { color: red; }')

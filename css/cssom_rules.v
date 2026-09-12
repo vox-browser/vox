@@ -2161,6 +2161,11 @@ pub fn (mut sheet CSSStyleSheet) invalidate_owners(reason dom.StyleInvalidationR
 	sheet.invalidate_owners_with_previous_effects(reason, none)
 }
 
+pub enum ShouldInvalidateRuleCache {
+	no
+	yes
+}
+
 fn apply_style_sheet_shadow_root_effects(host &dom.Element, shadow_root &dom.ShadowRoot, effects ShadowRootStylesheetEffects, reason dom.StyleInvalidationReason) bool {
 	if effects.may_match_light_dom_under_shadow_host && !effects.may_match_shadow_host {
 		mut host_node := host.as_node()
@@ -2184,9 +2189,15 @@ fn apply_style_sheet_shadow_root_effects(host &dom.Element, shadow_root &dom.Sha
 
 fn (mut sheet CSSStyleSheet) invalidate_owners_with_previous_effects(reason dom.StyleInvalidationReason, previous_sheet_effects ?ShadowRootStylesheetEffects) {
 	sheet.did_match = none
+	invalidate_style_for_style_sheet_owners(sheet, reason, .yes, previous_sheet_effects)
+}
+
+fn invalidate_style_for_style_sheet_owners(sheet &CSSStyleSheet, reason dom.StyleInvalidationReason, should_invalidate_rule_cache ShouldInvalidateRuleCache, previous_sheet_effects ?ShadowRootStylesheetEffects) {
 	for owner in sheet.owning_documents_or_shadow_roots {
 		mut scope := css_style_scope_for_node(owner)
-		scope.invalidate_rule_cache()
+		if should_invalidate_rule_cache == .yes {
+			scope.invalidate_rule_cache()
+		}
 		scope_owner := scope.node_ref() or { continue }
 		mut mutable_owner := unsafe { &dom.Node(scope_owner) }
 		mutable_owner.invalidate_style(reason)

@@ -1797,8 +1797,14 @@ fn (properties &CSSStyleProperties) invalidate_owners(reason StyleInvalidationRe
 		node.invalidate_style(mapped_reason)
 	}
 	if parent_rule := properties.parent_rule {
-		if mut parent_style_sheet := parent_rule.parent_style_sheet {
-			parent_style_sheet.invalidate_owners(mapped_reason)
+		if parent_style_sheet := parent_rule.parent_style_sheet {
+			if parent_rule.type_ in [.style, .nested_declarations] {
+				invalidate_style_for_style_sheet_owners(parent_style_sheet, mapped_reason, .no,
+					none)
+				return
+			}
+			mut mutable_parent_style_sheet := unsafe { &CSSStyleSheet(parent_style_sheet) }
+			mutable_parent_style_sheet.invalidate_owners(mapped_reason)
 		}
 	}
 }
