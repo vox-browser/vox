@@ -5,6 +5,8 @@
 // WebGLRenderingContextImpl and the WebGL1 overload implementation.
 module webgl
 
+pub const max_webgl_drawing_buffer_dimension = 16384
+
 @[heap]
 pub struct WebGLRenderingContext {
 pub:
@@ -17,6 +19,8 @@ mut:
 	context_generation_                 u64
 	error_                              GLenum
 	context_lost_                       bool
+	context_restore_requested_          bool
+	context_events_                     []WebGLContextEvent
 	xr_compatible_                      bool
 	enabled_extensions                  map[string]&WebGLExtension
 	enabled_compressed_texture_formats_ []GLenum
@@ -107,7 +111,13 @@ fn (mut context WebGLRenderingContext) set_error(error_value GLenum) {
 
 pub fn (mut context WebGLRenderingContext) get_error() GLenum {
 	if context.context_lost_ {
-		return context_lost_webgl
+		error_value := context.error_
+		context.error_ = no_error
+		return error_value
+	}
+	local_error := context.native.take_pending_local_error()
+	if local_error != no_error {
+		return local_error
 	}
 	error_value := context.error_
 	context.error_ = no_error
@@ -134,15 +144,70 @@ pub fn (mut context WebGLRenderingContext) set_xr_compatible(xr_compatible bool)
 }
 
 pub fn (mut context WebGLRenderingContext) lose_context(status_message string) WebGLContextEvent {
+	if context.context_lost_ {
+		return WebGLContextEvent.new('webglcontextlost', WebGLContextEventInit{
+			status_message: status_message
+		})
+	}
 	context.context_lost_ = true
-	return WebGLContextEvent.new('webglcontextlost', WebGLContextEventInit{
+	context.native.set_lost()
+	context.error_ = context_lost_webgl
+	event := WebGLContextEvent.new('webglcontextlost', WebGLContextEventInit{
 		status_message: status_message
 	})
+	context.context_events_ << event
+	return event
+}
+
+pub fn (mut context WebGLRenderingContext) lose_context_from_compositor_loss() {
+	context.lose_context('')
+}
+
+// This models canceling the queued webglcontextlost event with
+// preventDefault(), which opts the page into restoration.
+pub fn (mut context WebGLRenderingContext) request_context_restore() {
+	if context.context_lost_ {
+		context.context_restore_requested_ = true
+	}
+}
+
+pub fn (mut context WebGLRenderingContext) reestablish_remote_context() bool {
+	context.native.restore(context.native.get_supported_opengl_extensions())
+	return true
+}
+
+pub fn (mut context WebGLRenderingContext) restore_context_after_compositor_reconnect() bool {
+	if !context.context_lost_ || !context.context_restore_requested_ {
+		return false
+	}
+	if !context.reestablish_remote_context() {
+		return false
+	}
+	context.reset_context_state_after_loss()
+	context.context_lost_ = false
+	context.context_restore_requested_ = false
+	context.error_ = no_error
+	context.context_events_ << WebGLContextEvent.new('webglcontextrestored', WebGLContextEventInit{})
+	return true
+}
+
+pub fn (mut context WebGLRenderingContext) take_context_events() []WebGLContextEvent {
+	events := context.context_events_.clone()
+	context.context_events_.clear()
+	return events
+}
+
+pub fn (mut context WebGLRenderingContext) make_xr_compatible() !bool {
+	if context.context_lost_ {
+		context.xr_compatible_ = false
+		return error('InvalidStateError: The WebGL context has been lost')
+	}
+	context.xr_compatible_ = true
+	return true
 }
 
 pub fn (mut context WebGLRenderingContext) set_size(width int, height int) {
-	final_width := if width < 1 { 1 } else { width }
-	final_height := if height < 1 { 1 } else { height }
+	final_width, final_height := initial_drawing_buffer_size(width, height)
 	context.native.set_size(final_width, final_height)
 	context.viewport_ = [0, 0, final_width, final_height]!
 	context.scissor_ = [0, 0, final_width, final_height]!
@@ -164,6 +229,32 @@ pub fn (context &WebGLRenderingContext) needs_to_present() bool {
 
 pub fn (mut context WebGLRenderingContext) present() bool {
 	return context.native.present()
+}
+
+pub fn (mut context WebGLRenderingContext) prepare_for_compositing() bool {
+	return context.native.present_canvas_for_compositing(context.attributes.preserve_drawing_buffer)
+}
+
+pub fn (mut context WebGLRenderingContext) did_update_canvas_content() {
+	context.native.notify_content_will_change()
+}
+
+fn initial_drawing_buffer_size(width int, height int) (int, int) {
+	final_width := if width < 1 {
+		1
+	} else if width > max_webgl_drawing_buffer_dimension {
+		max_webgl_drawing_buffer_dimension
+	} else {
+		width
+	}
+	final_height := if height < 1 {
+		1
+	} else if height > max_webgl_drawing_buffer_dimension {
+		max_webgl_drawing_buffer_dimension
+	} else {
+		height
+	}
+	return final_width, final_height
 }
 
 pub fn (mut context WebGLRenderingContext) reset_to_default_state() {

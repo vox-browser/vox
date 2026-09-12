@@ -18,6 +18,17 @@ pub fn (mut context OpenGLContext) free_surface_resources() {
 	context.current_ = false
 }
 
+pub fn (context &OpenGLContext) canvas_id() ?u64 {
+	if context.lost_ {
+		return none
+	}
+	return u64(voidptr(context))
+}
+
+pub fn (mut context OpenGLContext) present_canvas_for_compositing(_ bool) bool {
+	return context.present()
+}
+
 pub fn (mut context OpenGLContext) clear_buffer_to_default_values() {
 	context.dispatch('clear_buffer_to_default_values')
 }
