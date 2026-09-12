@@ -13,6 +13,10 @@ pub const webgl_max_bitmap_attachments_per_message = 15
 pub const webgl_reserved_bitmap_command_size = 256
 pub const webgl_command_set_drawing_buffer_size = WebGLCommandType(170)
 pub const webgl_command_read_pixels_into_pixel_pack_buffer = WebGLCommandType(171)
+pub const webgl_command_tex_image2d_from_bitmap = WebGLCommandType(172)
+pub const webgl_command_tex_sub_image2d_from_bitmap = WebGLCommandType(173)
+pub const webgl_command_tex_image3d_from_bitmap = WebGLCommandType(174)
+pub const webgl_command_tex_sub_image3d_from_bitmap = WebGLCommandType(175)
 
 pub struct WebGLIntSize {
 pub:
@@ -419,4 +423,79 @@ pub fn (mut proxy WebGLContextProxyBase) read_buffer_sub_data(_ GLenum, _ i64, m
 	}
 	copy(mut destination, proxy.next_buffer_sub_data_[..destination.len])
 	return !proxy.lost_
+}
+
+fn proxy_append_bitmap_options(mut payload []u8, bitmap_index u32, destination_size ?WebGLIntSize, flip_y bool, premultiply_alpha bool) {
+	size := destination_size or { WebGLIntSize{} }
+	proxy_append_u32(mut payload, bitmap_index)
+	proxy_append_u32(mut payload, u32(destination_size != none))
+	proxy_append_i32(mut payload, size.width)
+	proxy_append_i32(mut payload, size.height)
+	proxy_append_u32(mut payload, u32(flip_y))
+	proxy_append_u32(mut payload, u32(premultiply_alpha))
+}
+
+pub fn (mut proxy WebGLContextProxyBase) tex_image2d_from_bitmap(target GLenum, level int, internal_format int, format GLenum, type_ GLenum, frame []u8, destination_size ?WebGLIntSize, flip_y bool, premultiply_alpha bool) ! {
+	if proxy.lost_ {
+		return
+	}
+	bitmap_index := proxy.append_pending_bitmap(frame)!
+	mut payload := []u8{cap: 40}
+	proxy_append_u32(mut payload, target)
+	proxy_append_i32(mut payload, level)
+	proxy_append_i32(mut payload, internal_format)
+	proxy_append_u32(mut payload, format)
+	proxy_append_u32(mut payload, type_)
+	proxy_append_bitmap_options(mut payload, bitmap_index, destination_size, flip_y, premultiply_alpha)
+	proxy.record_bytes(webgl_command_tex_image2d_from_bitmap, payload, []u8{})!
+}
+
+pub fn (mut proxy WebGLContextProxyBase) tex_sub_image2d_from_bitmap(target GLenum, level int, x_offset int, y_offset int, format GLenum, type_ GLenum, frame []u8, destination_size ?WebGLIntSize, flip_y bool, premultiply_alpha bool) ! {
+	if proxy.lost_ {
+		return
+	}
+	bitmap_index := proxy.append_pending_bitmap(frame)!
+	mut payload := []u8{cap: 44}
+	proxy_append_u32(mut payload, target)
+	proxy_append_i32(mut payload, level)
+	proxy_append_i32(mut payload, x_offset)
+	proxy_append_i32(mut payload, y_offset)
+	proxy_append_u32(mut payload, format)
+	proxy_append_u32(mut payload, type_)
+	proxy_append_bitmap_options(mut payload, bitmap_index, destination_size, flip_y, premultiply_alpha)
+	proxy.record_bytes(webgl_command_tex_sub_image2d_from_bitmap, payload, []u8{})!
+}
+
+pub fn (mut proxy WebGLContextProxyBase) tex_image3d_from_bitmap(target GLenum, level int, internal_format int, depth int, format GLenum, type_ GLenum, frame []u8, destination_size ?WebGLIntSize, flip_y bool, premultiply_alpha bool) ! {
+	if proxy.lost_ {
+		return
+	}
+	bitmap_index := proxy.append_pending_bitmap(frame)!
+	mut payload := []u8{cap: 44}
+	proxy_append_u32(mut payload, target)
+	proxy_append_i32(mut payload, level)
+	proxy_append_i32(mut payload, internal_format)
+	proxy_append_i32(mut payload, depth)
+	proxy_append_u32(mut payload, format)
+	proxy_append_u32(mut payload, type_)
+	proxy_append_bitmap_options(mut payload, bitmap_index, destination_size, flip_y, premultiply_alpha)
+	proxy.record_bytes(webgl_command_tex_image3d_from_bitmap, payload, []u8{})!
+}
+
+pub fn (mut proxy WebGLContextProxyBase) tex_sub_image3d_from_bitmap(target GLenum, level int, x_offset int, y_offset int, z_offset int, depth int, format GLenum, type_ GLenum, frame []u8, destination_size ?WebGLIntSize, flip_y bool, premultiply_alpha bool) ! {
+	if proxy.lost_ {
+		return
+	}
+	bitmap_index := proxy.append_pending_bitmap(frame)!
+	mut payload := []u8{cap: 52}
+	proxy_append_u32(mut payload, target)
+	proxy_append_i32(mut payload, level)
+	proxy_append_i32(mut payload, x_offset)
+	proxy_append_i32(mut payload, y_offset)
+	proxy_append_i32(mut payload, z_offset)
+	proxy_append_i32(mut payload, depth)
+	proxy_append_u32(mut payload, format)
+	proxy_append_u32(mut payload, type_)
+	proxy_append_bitmap_options(mut payload, bitmap_index, destination_size, flip_y, premultiply_alpha)
+	proxy.record_bytes(webgl_command_tex_sub_image3d_from_bitmap, payload, []u8{})!
 }
