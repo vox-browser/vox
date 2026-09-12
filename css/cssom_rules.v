@@ -2546,22 +2546,8 @@ pub fn (list &StyleSheetList) document() &dom.Document {
 	return list.document_or_shadow_root.document()
 }
 
-fn build_invalidation_set_for_stylesheet(sheet &CSSStyleSheet) InvalidationSet {
-	mut invalidation_set := InvalidationSet{}
-	mut requires_broad_invalidation := false
-	requires_broad_invalidation_ptr := &requires_broad_invalidation
-	sheet.for_each_effective_rule(.preorder, fn [requires_broad_invalidation_ptr] (rule &CSSRule) {
-		if rule.type_ == .import_rule && (rule.layer_name() != none || rule.has_scope()) {
-			unsafe {
-				*requires_broad_invalidation_ptr = true
-			}
-		}
-	})
-	if requires_broad_invalidation {
-		invalidation_set.set_needs_invalidate_whole_subtree()
-		return invalidation_set
-	}
-	mut throwaway_data := StyleInvalidationData.new()
+fn build_invalidation_set_for_stylesheet(sheet &CSSStyleSheet) StyleSheetInvalidationSet {
+	mut result := StyleSheetInvalidationSet{}
 	mut rules := []&CSSRule{}
 	rules_ptr := &rules
 	sheet.for_each_effective_style_producing_rule(fn [rules_ptr] (rule &CSSRule) {
@@ -2573,44 +2559,33 @@ fn build_invalidation_set_for_stylesheet(sheet &CSSStyleSheet) InvalidationSet {
 	})
 
 	for rule in rules {
-		if invalidation_set.needs_invalidate_whole_subtree() {
+		if result.invalidation_set.needs_invalidate_whole_subtree() {
 			break
 		}
-		if rule.type_ != .style {
-			continue
-		}
-		mut mutable_rule := unsafe { &CSSRule(rule) }
-		for selector in mutable_rule.absolutized_selectors().selectors {
-			compound_selectors := selector.compound_selectors()
-			if compound_selectors.len == 0 {
-				continue
-			}
-			rightmost := compound_selectors[compound_selectors.len - 1]
-			mut rightmost_set := InvalidationSet{}
-			for simple in rightmost.simple_selectors {
-				build_invalidation_sets_for_simple_selector(simple_selector_for_invalidation(simple), mut rightmost_set, .no, mut throwaway_data, .no)
-			}
-			if !rightmost_set.has_properties() {
-				invalidation_set.set_needs_invalidate_whole_subtree()
-				break
-			}
-			invalidation_set.include_all_from(rightmost_set)
+		if rule.type_ == .style {
+			extend_style_sheet_invalidation_set_with_style_rule(mut result, rule)
 		}
 	}
-	return invalidation_set
+	return result
 }
 
-fn invalidate_elements_matching_invalidation_set(root &dom.Node, invalidation_set InvalidationSet) {
-	match_set := invalidation_set_to_dom(invalidation_set)
-	root.for_each_in_inclusive_subtree(fn [match_set] (node &dom.Node) dom.TraversalDecision {
-		if element := node.as_element() {
-			if element.includes_properties_from_invalidation_set(match_set) {
-				mut mutable_element := unsafe { &dom.Element(element) }
-				mutable_element.set_needs_style_update(true)
+fn rule_requires_broad_add_or_remove_invalidation(rule &CSSRule) bool {
+	return rule.type_ in [.property, .font_face, .font_feature_values, .counter_style, .keyframes,
+		.layer_block, .layer_statement]
+}
+
+fn stylesheet_requires_broad_add_or_remove_invalidation(sheet &CSSStyleSheet) bool {
+	mut requires_broad_invalidation := false
+	requires_broad_invalidation_ptr := &requires_broad_invalidation
+	sheet.for_each_effective_rule(.preorder, fn [requires_broad_invalidation_ptr] (rule &CSSRule) {
+		unsafe {
+			if *requires_broad_invalidation_ptr {
+				return
 			}
+			*requires_broad_invalidation_ptr = rule_requires_broad_add_or_remove_invalidation(rule)
 		}
-		return .@continue
 	})
+	return requires_broad_invalidation
 }
 
 fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
@@ -2654,25 +2629,31 @@ fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
 	}
 
 	invalidate_css_style_scope_for_node(list.document_or_shadow_root)
-	if list.document_or_shadow_root.entire_subtree_needs_style_update() {
+	if !list.document_or_shadow_root.is_shadow_root()
+		&& list.document_or_shadow_root.entire_subtree_needs_style_update() {
 		return
 	}
 
-	invalidation_set := build_invalidation_set_for_stylesheet(sheet)
-	mut invalidation_root := list.document_or_shadow_root
-	if shadow_root := list.document_or_shadow_root.as_shadow_root() {
-		host := shadow_root.host() or { return }
-		invalidation_root = host.as_node()
+	mut invalidation_result := build_invalidation_set_for_stylesheet(sheet)
+	requires_broad_invalidation := invalidation_result.invalidation_set.needs_invalidate_whole_subtree()
+		|| stylesheet_requires_broad_add_or_remove_invalidation(sheet)
+	if requires_broad_invalidation {
+		if shadow_root := list.document_or_shadow_root.as_shadow_root() {
+			effects := determine_shadow_root_style_sheet_effects(shadow_root)
+			invalidation_result.may_match_shadow_host = invalidation_result.may_match_shadow_host
+				|| effects.may_match_shadow_host
+			invalidation_result.may_match_light_dom_under_shadow_host = invalidation_result.may_match_light_dom_under_shadow_host
+				|| effects.may_match_light_dom_under_shadow_host
+		}
 	}
-	if invalidation_set.needs_invalidate_whole_subtree() {
-		mut mutable_root := unsafe { &dom.Node(invalidation_root) }
-		mutable_root.invalidate_style(dom.StyleInvalidationReason.style_change)
-	} else {
-		invalidate_elements_matching_invalidation_set(invalidation_root, invalidation_set)
-	}
+	invalidate_root_for_style_sheet_change(list.document_or_shadow_root, invalidation_result, .style_sheet_list_add_sheet, requires_broad_invalidation)
 }
 
 fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
+	mut invalidation_result := build_invalidation_set_for_stylesheet(sheet)
+	requires_broad_invalidation := invalidation_result.invalidation_set.needs_invalidate_whole_subtree()
+		|| stylesheet_requires_broad_add_or_remove_invalidation(sheet)
+
 	mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
 	mutable_sheet.remove_owning_document_or_shadow_root(list.document_or_shadow_root)
 	mut did_remove := false
@@ -2694,9 +2675,22 @@ fn (mut list StyleSheetList) remove_sheet(sheet &CSSStyleSheet) {
 		return
 	}
 
-	mut mutable_root := unsafe { &dom.Node(list.document_or_shadow_root) }
-	mutable_root.invalidate_style(dom.StyleInvalidationReason.style_change)
 	invalidate_css_style_scope_for_node(list.document_or_shadow_root)
+	if !list.document_or_shadow_root.is_shadow_root()
+		&& list.document_or_shadow_root.entire_subtree_needs_style_update() {
+		return
+	}
+
+	if requires_broad_invalidation {
+		if shadow_root := list.document_or_shadow_root.as_shadow_root() {
+			effects := determine_shadow_root_style_sheet_effects(shadow_root)
+			invalidation_result.may_match_shadow_host = invalidation_result.may_match_shadow_host
+				|| effects.may_match_shadow_host
+			invalidation_result.may_match_light_dom_under_shadow_host = invalidation_result.may_match_light_dom_under_shadow_host
+				|| effects.may_match_light_dom_under_shadow_host
+		}
+	}
+	invalidate_root_for_style_sheet_change(list.document_or_shadow_root, invalidation_result, .style_sheet_list_remove_sheet, requires_broad_invalidation)
 }
 
 pub enum RuleContext {

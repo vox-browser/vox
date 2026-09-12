@@ -2,12 +2,17 @@ module css
 
 import dom
 
-fn test_scoped_import_requires_broad_stylesheet_invalidation() {
-	scoped := parse_css_stylesheet_with_parser('@import url(imported.css) scope(.root);', none)
-	assert build_invalidation_set_for_stylesheet(scoped).needs_invalidate_whole_subtree()
+fn test_import_broadness_comes_from_effective_imported_rules() {
+	mut parent := parse_css_stylesheet_with_parser('@import url(imported.css) scope(.root);', none)
+	mut import_rule := parent.rules.item(0) or { panic('missing import rule') }
+	mut imported := parse_css_stylesheet_with_parser('@layer B, A;', none)
+	import_rule.set_style_sheet(imported)
 
-	plain := parse_css_stylesheet_with_parser('@import url(imported.css);', none)
-	assert !build_invalidation_set_for_stylesheet(plain).needs_invalidate_whole_subtree()
+	assert !build_invalidation_set_for_stylesheet(parent).invalidation_set.needs_invalidate_whole_subtree()
+	assert stylesheet_requires_broad_add_or_remove_invalidation(parent)
+
+	plain := parse_css_stylesheet_with_parser('@import url(unloaded.css);', none)
+	assert !stylesheet_requires_broad_add_or_remove_invalidation(plain)
 }
 
 fn test_import_scope_boundaries_seed_invalidation_and_selector_insights() {

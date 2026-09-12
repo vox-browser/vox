@@ -256,11 +256,15 @@ fn test_shadow_root_style_sheet_effects_include_hosts_light_dom_and_slots() {
 	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
 	mut shadow_node := unsafe { &dom.Node(shadow_root) }
 	mut style := style_sheet_invalidation_test_element(document, 'style')
+	mut slot_wrapper := style_sheet_invalidation_test_element(document, 'div')
+	slot_wrapper.set_attribute_value('class', 'slot-wrapper')
 	mut slot := style_sheet_invalidation_test_element(document, 'slot')
 	shadow_node.append_child(style.as_node()) or { panic(err) }
-	shadow_node.append_child(slot.as_node()) or { panic(err) }
+	shadow_node.append_child(slot_wrapper.as_node()) or { panic(err) }
+	mut wrapper_node := slot_wrapper.as_node()
+	wrapper_node.append_child(slot.as_node()) or { panic(err) }
 
-	mut sheet := parse_css_stylesheet_with_parser(':host > .item {} slot {}', none)
+	mut sheet := parse_css_stylesheet_with_parser(':host > .item {} .slot-wrapper {}', none)
 	install_inline_style_sheet_for_invalidation_test(mut sheet, style, shadow_node)
 	effects := determine_shadow_root_style_sheet_effects(shadow_root)
 	assert effects.may_match_shadow_host

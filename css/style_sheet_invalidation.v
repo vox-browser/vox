@@ -248,14 +248,30 @@ fn invalidate_elements_matching_style_sheet_invalidation(root &dom.Node, result 
 	})
 }
 
+fn style_sheet_slot_or_ancestor_needs_style_update(slot &dom.HTMLSlotElement, shadow_root &dom.ShadowRoot) bool {
+	shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut current := ?&dom.Node(slot.HTMLElement.Element.as_node())
+	for current != none {
+		node := current or { break }
+		if node == shadow_node {
+			break
+		}
+		if node.needs_style_update() {
+			return true
+		}
+		current = node.parent_node()
+	}
+	return false
+}
+
 fn invalidate_assigned_elements_for_dirty_style_sheet_slots(shadow_root &dom.ShadowRoot) {
 	shadow_node := unsafe { &dom.Node(shadow_root) }
-	shadow_node.for_each_in_inclusive_subtree(fn (node &dom.Node) dom.TraversalDecision {
+	shadow_node.for_each_in_inclusive_subtree(fn [shadow_root] (node &dom.Node) dom.TraversalDecision {
 		if !node.is_html_slot_element() {
 			return .@continue
 		}
 		slot := unsafe { &dom.HTMLSlotElement(node) }
-		if !slot.HTMLElement.Element.needs_style_update() {
+		if !style_sheet_slot_or_ancestor_needs_style_update(slot, shadow_root) {
 			return .@continue
 		}
 		options := dom.AssignedNodesOptions{
@@ -431,6 +447,30 @@ fn invalidate_elements_affected_by_inserted_keyframes_rule(root &dom.Node, anima
 	})
 }
 
+fn style_sheet_selector_may_affect_assigned_nodes_via_slot_inheritance(selector Selector, slots []&dom.Element, style_sheet &CSSStyleSheet, shadow_root &dom.ShadowRoot) bool {
+	shadow_node := unsafe { &dom.Node(shadow_root) }
+	for slot in slots {
+		mut current := ?&dom.Node(slot.as_node())
+		for current != none {
+			node := current or { break }
+			if node == shadow_node {
+				break
+			}
+			if element := node.as_element() {
+				mut context := MatchContext{}
+				context.style_sheet_for_rule = unsafe { &CSSStyleSheet(style_sheet) }
+				context.subject = unsafe { &dom.Element(element) }
+				context.rule_shadow_root = unsafe { &dom.ShadowRoot(shadow_root) }
+				if matches(selector, element, shadow_root.host(), mut context, none, none, .normal, none) {
+					return true
+				}
+			}
+			current = node.parent_node()
+		}
+	}
+	return false
+}
+
 fn determine_shadow_root_style_sheet_effects_for_sheet(style_sheet &CSSStyleSheet, shadow_root &dom.ShadowRoot) ShadowRootStylesheetEffects {
 	mut effects := ShadowRootStylesheetEffects{}
 	mut slots := []&dom.Element{}
@@ -467,16 +507,7 @@ fn determine_shadow_root_style_sheet_effects_for_sheet(style_sheet &CSSStyleShee
 				current_effects.may_match_light_dom_under_shadow_host = current_effects.may_match_light_dom_under_shadow_host
 					|| selector_may_match_light_dom_under_shadow_host(selector)
 				if !current_effects.may_affect_assigned_nodes_via_slots && slots.len > 0 {
-					for slot in slots {
-						mut context := MatchContext{}
-						context.style_sheet_for_rule = &CSSStyleSheet(style_sheet)
-						context.subject = &dom.Element(slot)
-						context.rule_shadow_root = &dom.ShadowRoot(shadow_root)
-						if matches(selector, slot, shadow_root.host(), mut context, none, none, .normal, none) {
-							current_effects.may_affect_assigned_nodes_via_slots = true
-							break
-						}
-					}
+					current_effects.may_affect_assigned_nodes_via_slots = style_sheet_selector_may_affect_assigned_nodes_via_slot_inheritance(selector, slots, style_sheet, shadow_root)
 				}
 				if current_effects.may_match_shadow_host
 					&& current_effects.may_match_light_dom_under_shadow_host

@@ -1,0 +1,121 @@
+module css
+
+import dom
+
+const style_sheet_list_invalidation_html_namespace = 'http://www.w3.org/1999/xhtml'
+
+fn style_sheet_list_invalidation_element(document &dom.Document, local_name string) &dom.Element {
+	return document.create_element_ns(style_sheet_list_invalidation_html_namespace, local_name) or {
+		panic(err)
+	}
+}
+
+fn clear_style_sheet_list_invalidation_flags(nodes ...&dom.Node) {
+	for node in nodes {
+		mut mutable_node := unsafe { &dom.Node(node) }
+		mutable_node.set_needs_style_update_internal(false)
+		mutable_node.set_child_needs_style_update(false)
+		mutable_node.set_entire_subtree_needs_style_update(false)
+	}
+}
+
+fn test_style_sheet_list_add_and_remove_target_document_elements() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_list_invalidation_element(document, 'html')
+	mut target := style_sheet_list_invalidation_element(document, 'div')
+	target.set_attribute_value('class', 'target')
+	mut bystander := style_sheet_list_invalidation_element(document, 'div')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(target.as_node()) or { panic(err) }
+	root_node.append_child(bystander.as_node()) or { panic(err) }
+
+	mut list := StyleSheetList.create(document_node)
+	sheet := parse_css_stylesheet_with_parser('.target { color: red }', none)
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), target.as_node(), bystander.as_node())
+	document.set_needs_full_style_update(false)
+	document.reset_style_invalidation_counters()
+
+	list.add_sheet(sheet)
+	assert target.needs_style_update()
+	assert !bystander.needs_style_update()
+	assert !document.needs_full_style_update()
+	assert document.style_invalidation_counters().full_style_invalidations == 0
+
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), target.as_node(), bystander.as_node())
+	document.set_needs_full_style_update(false)
+	document.reset_style_invalidation_counters()
+	list.remove_sheet(sheet)
+	assert target.needs_style_update()
+	assert !bystander.needs_style_update()
+	assert !document.needs_full_style_update()
+	assert document.style_invalidation_counters().full_style_invalidations == 0
+}
+
+fn test_shadow_sheet_add_targets_local_elements_and_slot_inheritors() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut host := style_sheet_list_invalidation_element(document, 'div')
+	mut slotted := style_sheet_list_invalidation_element(document, 'span')
+	slotted.set_attribute_value('slot', 'target')
+	mut light_bystander := style_sheet_list_invalidation_element(document, 'span')
+	light_bystander.set_attribute_value('slot', 'other')
+	document_node.append_child(host.as_node()) or { panic(err) }
+	mut host_node := host.as_node()
+	host_node.append_child(slotted.as_node()) or { panic(err) }
+	host_node.append_child(light_bystander.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut wrapper := style_sheet_list_invalidation_element(document, 'div')
+	wrapper.set_attribute_value('class', 'slot-wrapper')
+	mut shadow_bystander := style_sheet_list_invalidation_element(document, 'div')
+	mut slot_element := style_sheet_list_invalidation_element(document, 'slot')
+	slot_element.set_attribute_value('name', 'target')
+	shadow_node.append_child(wrapper.as_node()) or { panic(err) }
+	shadow_node.append_child(shadow_bystander.as_node()) or { panic(err) }
+	mut wrapper_node := wrapper.as_node()
+	wrapper_node.append_child(slot_element.as_node()) or { panic(err) }
+	mut slot := unsafe { &dom.HTMLSlotElement(slot_element) }
+	slot.set_assigned_nodes([slotted.as_node()])
+
+	mut list := StyleSheetList.create(shadow_node)
+	sheet := parse_css_stylesheet_with_parser('.slot-wrapper { color: green }', none)
+	clear_style_sheet_list_invalidation_flags(document_node, host.as_node(), slotted.as_node(), light_bystander.as_node(), shadow_node, wrapper.as_node(), shadow_bystander.as_node(), slot_element.as_node())
+	document.set_needs_full_style_update(false)
+
+	list.add_sheet(sheet)
+	assert wrapper.needs_style_update()
+	assert slotted.needs_style_update()
+	assert !shadow_bystander.needs_style_update()
+	assert !light_bystander.needs_style_update()
+	assert !host.needs_style_update()
+	assert !document.needs_full_style_update()
+}
+
+fn test_non_style_rules_force_broad_add_remove_but_inactive_sheets_do_not() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_list_invalidation_element(document, 'html')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut list := StyleSheetList.create(document_node)
+	broad_sheet := parse_css_stylesheet_with_parser('@layer B, A;', none)
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node())
+	document.set_needs_full_style_update(false)
+
+	list.add_sheet(broad_sheet)
+	assert document.needs_full_style_update()
+
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node())
+	document.set_needs_full_style_update(false)
+	list.remove_sheet(broad_sheet)
+	assert document.needs_full_style_update()
+
+	mut inactive_sheet := parse_css_stylesheet_with_parser('@layer D, C;', none)
+	inactive_sheet.set_media('print')
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node())
+	document.set_needs_full_style_update(false)
+	list.add_sheet(inactive_sheet)
+	assert !document.needs_full_style_update()
+	assert !root.needs_style_update()
+}

@@ -141,6 +141,8 @@ pub enum StyleInvalidationReason {
 	style_change
 	style_sheet_delete_rule
 	style_sheet_insert_rule
+	style_sheet_list_add_sheet
+	style_sheet_list_remove_sheet
 	style_sheet_disabled_state_change
 	style_sheet_replace
 	media_query_changed_match_state
@@ -172,6 +174,8 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 		.style_change { 'StyleChange' }
 		.style_sheet_delete_rule { 'StyleSheetDeleteRule' }
 		.style_sheet_insert_rule { 'StyleSheetInsertRule' }
+		.style_sheet_list_add_sheet { 'StyleSheetListAddSheet' }
+		.style_sheet_list_remove_sheet { 'StyleSheetListRemoveSheet' }
 		.style_sheet_disabled_state_change { 'StyleSheetDisabledStateChange' }
 		.style_sheet_replace { 'StyleSheetReplace' }
 		.media_query_changed_match_state { 'MediaQueryChangedMatchState' }
