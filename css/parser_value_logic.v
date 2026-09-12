@@ -202,6 +202,31 @@ fn (parser Parser) calculation_context() CalculationContext {
 				// the non-negative integer context handled by C++ here.
 				return CalculationContext{}
 			}
+			SyntaxParsingContext {
+				return match value_context.type_ {
+					.angle_percentage {
+						CalculationContext{
+							percentages_resolve_as: ValueType.angle
+						}
+					}
+					.frequency_percentage {
+						CalculationContext{
+							percentages_resolve_as: ValueType.frequency
+						}
+					}
+					.length_percentage {
+						CalculationContext{
+							percentages_resolve_as: ValueType.length
+						}
+					}
+					.time_percentage {
+						CalculationContext{
+							percentages_resolve_as: ValueType.time
+						}
+					}
+					else { CalculationContext{} }
+				}
+			}
 			SpecialContext {
 				return match value_context {
 					.angular_color_stop_list {

@@ -46,6 +46,11 @@ pub:
 	descriptor DescriptorID
 }
 
+pub struct SyntaxParsingContext {
+pub:
+	type_ ValueType
+}
+
 pub enum SpecialContext {
 	angular_color_stop_list
 	border_radius
@@ -61,7 +66,7 @@ pub enum SpecialContext {
 	translate_z_argument
 }
 
-pub type ValueParsingContext = DescriptorContext | FunctionContext | PropertyID | SpecialContext
+pub type ValueParsingContext = DescriptorContext | FunctionContext | PropertyID | SpecialContext | SyntaxParsingContext
 
 pub struct ParsingParams {
 pub:

@@ -634,6 +634,9 @@ fn parse_value_for_syntax_type(type_ ValueType, mut tokens ComponentValueTokenSt
 
 fn parse_value_using_existing_parser_for_syntax_type(type_ ValueType, mut tokens ComponentValueTokenStream) ?StyleValue {
 	mut parser := Parser.from_component_values([])
+	parser.push_temporary_value_parsing_context(ValueParsingContext(SyntaxParsingContext{
+		type_: type_
+	}))
 	mut stream := ComponentValueStream.new(tokens.tokens[tokens.index..])
 	value := parser.parse_value(type_, mut stream) or { return none }
 	tokens.index += stream.index
