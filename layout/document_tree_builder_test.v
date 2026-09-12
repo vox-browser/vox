@@ -20,6 +20,20 @@ fn document_tree_builder_node_with_id(root &Node, id string) ?&Node {
 	return none
 }
 
+fn document_tree_builder_node_for_dom(root &Node, target &dom.Node) ?&Node {
+	if dom_node := root.dom_node() {
+		if dom_node.unique_id() == target.unique_id() {
+			return root
+		}
+	}
+	for child in root.children() {
+		if found := document_tree_builder_node_for_dom(child, target) {
+			return found
+		}
+	}
+	return none
+}
+
 // build_layout_tree walks the DOM and produces a real layout tree rooted at the Viewport (whose DOM node is
 // the Document); the root element's box is the viewport's child. display:none elements (and their subtrees)
 // get no box.
@@ -445,6 +459,14 @@ fn test_display_type_selects_literal_layout_node_subclass() {
 	video_dom := media_document.get_element_by_id('video') or { panic('video DOM') }
 	assert html_audio_element_layout_node(unsafe { &dom.HTMLAudioElement(audio_dom) }) != none
 	assert html_video_element_layout_node(unsafe { &dom.HTMLVideoElement(video_dom) }) != none
+	audio_shadow := audio_dom.shadow_root() or { panic('audio controls shadow root') }
+	timeline := css.query_selector(audio_shadow.as_node(), '.timeline') or {
+		panic('audio controls timeline')
+	}
+	timeline_layout := document_tree_builder_node_for_dom(media_root, timeline.as_node()) or {
+		panic('audio controls timeline layout node')
+	}
+	assert timeline_layout.computed_values().text_align() == .left
 
 	textarea := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'textarea') or {
 		panic('${err}')
