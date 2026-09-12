@@ -270,24 +270,21 @@ fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTML
 		}
 		HTMLParser.adjust_foreign_attributes(mut token)
 		acn_namespace := acn.namespace_uri()
-		element := p.insert_foreign_element(token, acn_namespace, false)
-		if token.is_self_closing() {
-			if element_in_namespace(element, ns_svg) && element.local_name() == 'script' {
-				// SVGScriptElement::prepare_script is host-equivalent to preparing a
-				// classic script with href/xlink:href as its external source.
-				mut script := HTMLScriptElementModel.create(p.document_.base_url())
-				script.set_parser_document(p.document_)
-				script.set_scripting_enabled(p.scripting_mode != .disabled)
-				mut source := token.attribute('href')
-				if source == none {
-					source = token.attribute('xlink:href')
-				}
-				script.set_src(source)
-				script.set_fetch_hook(p.script_fetch_hook)
-				script.set_execute_hook(p.script_execute_hook)
-				script.prepare_script(p.document_)
-				script.parser_execute_ready_script()
+		if token.tag_name == 'script' && element_in_namespace(acn, ns_svg) {
+			location := p.find_appropriate_place_for_inserting_node()
+			parent := location.parent or { return }
+			element := p.create_element_for(token, acn_namespace, parent)
+			p.register_parser_inserted_svg_script(element, token)
+			p.insert_an_element_at_the_adjusted_insertion_location(element)
+			p.stack_of_open_elements.push(element)
+			if token.is_self_closing() {
+				token.acknowledge_self_closing_flag_if_set()
+				p.process_svg_script_end_tag(element)
 			}
+			return
+		}
+		p.insert_foreign_element(token, acn_namespace, false)
+		if token.is_self_closing() {
 			p.stack_of_open_elements.pop()
 			token.acknowledge_self_closing_flag_if_set()
 		}
@@ -297,6 +294,11 @@ fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTML
 	// Any other end tag.
 	if token.is_end_tag() {
 		mut node := p.current_node() or { return }
+		if token.tag_name == 'script' && element_in_namespace(node, ns_svg)
+			&& node.local_name() == 'script' {
+			p.process_svg_script_end_tag(node)
+			return
+		}
 		for i := p.stack_of_open_elements.elements.len - 1; i >= 0; i-- {
 			if same_element(node, p.stack_of_open_elements.first()) {
 				return
@@ -322,5 +324,28 @@ fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTML
 			p.process_using_the_rules_for(p.insertion_mode, mut token)
 			return
 		}
+	}
+}
+
+fn (mut p HTMLParser) process_svg_script_end_tag(element &dom.Element) {
+	p.stack_of_open_elements.pop()
+	p.tokenizer.store_insertion_point()
+	p.tokenizer.update_insertion_point()
+	p.increment_script_nesting_level()
+	p.parser_pause_flag = true
+	p.flush_character_insertions()
+
+	mut script := svg_script_element_model_for_dom_element(unsafe { &dom.SVGScriptElement(element) })
+	script.set_text(element.as_node().child_text_content())
+	script.process_the_script_element()
+
+	p.decrement_script_nesting_level()
+	if p.script_nesting_level == 0 {
+		p.parser_pause_flag = false
+	}
+	p.tokenizer.restore_insertion_point()
+	if p.document_.pending_parsing_blocking_svg_script() != none {
+		p.parser_pause_flag = true
+		p.schedule_resume_check()
 	}
 }

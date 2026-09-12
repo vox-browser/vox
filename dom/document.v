@@ -1226,6 +1226,8 @@ pub struct SVGUseElement {
 @[heap]
 pub struct SVGScriptElement {
 	SVGElement
+pub mut:
+	script_element_model_ voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -4309,6 +4311,7 @@ pub mut:
 
 	// Scripts
 	pending_parsing_blocking_script                 &HTMLScriptElement = unsafe { nil }
+	pending_parsing_blocking_svg_script             &SVGScriptElement = unsafe { nil }
 	scripts_to_execute_when_parsing_has_finished    []&HTMLScriptElement
 	scripts_to_execute_in_order_as_soon_as_possible []&HTMLScriptElement
 	scripts_to_execute_as_soon_as_possible          []&HTMLScriptElement
@@ -4652,6 +4655,7 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(d.associated_inert_template_document)
 	visitor.visit(d.appropriate_template_contents_owner_document)
 	visitor.visit(d.pending_parsing_blocking_script)
+	visitor.visit(d.pending_parsing_blocking_svg_script)
 	visitor.visit(d.history_)
 	visitor.visit(d.style_computer)
 	visitor.visit(d.font_computer)
@@ -7096,7 +7100,7 @@ pub fn (mut d Document) close() ! {
 	d.parser.insert_eof()
 
 	// 5. If there is a pending parsing-blocking script, then return.
-	if d.pending_parsing_blocking_script != unsafe { nil } {
+	if d.has_pending_parsing_blocking_script() {
 		d.parser.finish_loading_after_parse()
 		return
 	}
@@ -7104,7 +7108,7 @@ pub fn (mut d Document) close() ! {
 	// 6. Run the tokenizer, processing resulting tokens as they are emitted, and stopping when the tokenizer reaches
 	// the explicit "EOF" character or pauses for a parser-blocking script.
 	d.parser.run()
-	if d.pending_parsing_blocking_script != unsafe { nil } {
+	if d.has_pending_parsing_blocking_script() {
 		d.parser.finish_loading_after_parse()
 		return
 	}
@@ -7187,6 +7191,22 @@ pub fn (d &Document) pending_parsing_blocking_script() ?&HTMLScriptElement {
 		return none
 	}
 	return d.pending_parsing_blocking_script
+}
+
+pub fn (mut d Document) set_pending_parsing_blocking_svg_script(script &SVGScriptElement) {
+	d.pending_parsing_blocking_svg_script = script
+}
+
+pub fn (d &Document) pending_parsing_blocking_svg_script() ?&SVGScriptElement {
+	if d.pending_parsing_blocking_svg_script == unsafe { nil } {
+		return none
+	}
+	return d.pending_parsing_blocking_svg_script
+}
+
+pub fn (d &Document) has_pending_parsing_blocking_script() bool {
+	return d.pending_parsing_blocking_script != unsafe { nil }
+		|| d.pending_parsing_blocking_svg_script != unsafe { nil }
 }
 
 pub fn (mut d Document) add_script_to_execute_when_parsing_has_finished(script &HTMLScriptElement) {
@@ -11314,7 +11334,7 @@ pub fn (mut d Document) run_the_document_write_steps(text []TrustedHTMLOrString,
 	//     process string, one code point at a time, processing resulting tokens as they are emitted, and stopping when
 	//     the tokenizer reaches the insertion point or when the processing of the tokenizer is aborted by the tree
 	//     construction stage (this can happen if a script end tag token is emitted by the tokenizer).
-	if d.pending_parsing_blocking_script == unsafe { nil } {
+	if !d.has_pending_parsing_blocking_script() {
 		if d.parser != unsafe { nil } {
 			d.parser.run_until_insertion_point()
 		}
@@ -11325,6 +11345,12 @@ pub fn (mut d Document) run_the_document_write_steps(text []TrustedHTMLOrString,
 pub fn (mut d Document) take_pending_parsing_blocking_script() &HTMLScriptElement {
 	script := d.pending_parsing_blocking_script
 	d.pending_parsing_blocking_script = unsafe { nil }
+	return script
+}
+
+pub fn (mut d Document) take_pending_parsing_blocking_svg_script() &SVGScriptElement {
+	script := d.pending_parsing_blocking_svg_script
+	d.pending_parsing_blocking_svg_script = unsafe { nil }
 	return script
 }
 

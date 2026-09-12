@@ -293,6 +293,16 @@ fn (mut p HTMLParser) prepare_and_execute_parser_inserted_script(element &dom.El
 	}
 }
 
+fn (mut p HTMLParser) register_parser_inserted_svg_script(element &dom.Element, token &HTMLToken) &SVGScriptElementModel {
+	svg_element := unsafe { &dom.SVGScriptElement(element) }
+	mut script := svg_script_element_model_for_dom_element(svg_element)
+	script.set_parser_inserted()
+	script.set_source_line_number(usize(token.start_position().line + 1))
+	script.set_fetch_hook(p.script_fetch_hook)
+	script.set_execute_hook(p.script_execute_hook)
+	return script
+}
+
 fn same_node(a &dom.Node, b &dom.Node) bool {
 	return a.is_same_node(b)
 }
@@ -371,18 +381,31 @@ fn (mut p HTMLParser) resume_after_parser_blocking_script() {
 	if !p.parser_pause_flag || p.aborted || p.stop_parsing {
 		return
 	}
-	pending := p.document_.pending_parsing_blocking_script() or { return }
-	if p.document_.has_a_style_sheet_that_is_blocking_scripts()
-		|| !html_script_element_is_ready_to_be_parser_executed(pending) {
+	pending := p.document_.pending_parsing_blocking_script()
+	pending_svg := p.document_.pending_parsing_blocking_svg_script()
+	ready := if script := pending {
+		html_script_element_is_ready_to_be_parser_executed(script)
+	} else if script := pending_svg {
+		svg_script_element_model_for_dom_element(script).is_ready_to_be_parser_executed()
+	} else {
+		return
+	}
+	if p.document_.has_a_style_sheet_that_is_blocking_scripts() || !ready {
 		return
 	}
 
 	mut document := unsafe { &dom.Document(p.document_) }
-	the_script := document.take_pending_parsing_blocking_script()
 	p.tokenizer.update_insertion_point()
 	assert p.script_nesting_level == 0
 	p.increment_script_nesting_level()
-	html_script_element_parser_execute_ready_script(the_script)
+	if pending != none {
+		the_script := document.take_pending_parsing_blocking_script()
+		html_script_element_parser_execute_ready_script(the_script)
+	} else {
+		the_script := document.take_pending_parsing_blocking_svg_script()
+		mut model := svg_script_element_model_for_dom_element(the_script)
+		model.execute_pending_parser_blocking_script()
+	}
 	p.decrement_script_nesting_level()
 	assert p.script_nesting_level == 0
 	p.stop_the_speculative_html_parser()
