@@ -6,6 +6,54 @@
 module webcrypto
 
 import crypto.rand
+import webidl
+import x.json2
+
+pub type ExportKeyResult = JsonWebKey | []u8
+
+fn json_value_to_webidl_value(value json2.Any) webidl.Value {
+	return match value {
+		string { webidl.string_value(value) }
+		bool { webidl.boolean_value(value) }
+		[]json2.Any {
+			webidl.sequence_value(value.map(json_value_to_webidl_value(it)))
+		}
+		map[string]json2.Any {
+			mut object := map[string]webidl.Value{}
+			for name, property in value {
+				object[name] = json_value_to_webidl_value(property)
+			}
+			webidl.object_value(object)
+		}
+		else { webidl.undefined_value() }
+	}
+}
+
+pub fn export_key_result_to_js_value(_ string, result ExportKeyResult) !webidl.Value {
+	if result is []u8 {
+		return webidl.buffer_source_value(webidl.BufferSource.array_buffer(result))
+	}
+	key := result as JsonWebKey
+	return json_value_to_webidl_value(json2.Any(key.to_object()))
+}
+
+pub fn export_key_result_to_bytes(result ExportKeyResult) ![]u8 {
+	if result is []u8 {
+		return result.clone()
+	}
+	key := result as JsonWebKey
+	return key.to_json().bytes()
+}
+
+pub fn create_algorithm_dictionary(name string) webidl.Value {
+	return webidl.object_value({
+		'name': webidl.string_value(name)
+	})
+}
+
+pub fn key_format_expects_buffer_source(format KeyFormat) bool {
+	return format in [.raw, .raw_public, .raw_private, .raw_seed, .raw_secret, .pkcs8, .spki]
+}
 
 pub struct GeneratedKey {
 pub:

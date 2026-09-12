@@ -1,5 +1,6 @@
 module webcrypto
 
+import webidl
 import x.json2
 
 fn test_upstream_parameter_normalization_and_binary_helpers() {
@@ -150,4 +151,34 @@ fn test_crypto_algorithm_binding_helpers_preserve_webcrypto_spellings() {
 	assert kmac_kind_from_algorithm_name('KMAC128')? == .kmac128
 	assert kmac_kind_from_algorithm_name('KMAC256')? == .kmac256
 	assert kmac_kind_from_algorithm_name('kmac128') == none
+}
+
+fn test_subtle_crypto_export_and_dictionary_binding_helpers() {
+	raw := ExportKeyResult([u8(1), 2, 3])
+	raw_value := export_key_result_to_js_value('subtle-binding-realm', raw)!
+	assert raw_value.kind == .buffer_source
+	assert webidl.get_buffer_source_copy(raw_value.buffer_value?) == [u8(1), 2, 3]
+	assert export_key_result_to_bytes(raw)! == [u8(1), 2, 3]
+
+	jwk := JsonWebKey{
+		kty: 'oct'
+		k: 'AQID'
+		ext: true
+		key_ops: ['encrypt']
+	}
+	jwk_result := ExportKeyResult(jwk)
+	jwk_value := export_key_result_to_js_value('subtle-binding-realm', jwk_result)!
+	assert jwk_value.kind == .object
+	assert jwk_value.object_value['kty'].string_value == 'oct'
+	assert jwk_value.object_value['ext'].boolean_value
+	assert jwk_value.object_value['key_ops'].sequence_value[0].string_value == 'encrypt'
+	assert export_key_result_to_bytes(jwk_result)!.bytestr().contains('"kty":"oct"')
+
+	dictionary := create_algorithm_dictionary('SHA-256')
+	assert dictionary.kind == .object
+	assert dictionary.object_value['name'].string_value == 'SHA-256'
+	for format in [KeyFormat.raw, .raw_public, .raw_private, .raw_seed, .raw_secret, .pkcs8, .spki] {
+		assert key_format_expects_buffer_source(format)
+	}
+	assert !key_format_expects_buffer_source(.jwk)
 }
