@@ -32,7 +32,7 @@ fn test_create_and_select_source_set() {
 	assert selected.pixel_density == 1.0
 
 	mut widths := parse_a_srcset_attribute('small.png 100w, large.png 200w')
-	widths.normalize_source_densities(100.0)
+	widths.normalize_source_densities_with_source_size(100.0)
 	assert density_of(widths.sources[0]) == 1.0
 	assert density_of(widths.sources[1]) == 2.0
 
@@ -42,6 +42,18 @@ fn test_create_and_select_source_set() {
 	assert created.source_size is css.LengthStyleValue
 	assert created.source_size.serialize(.normal) == '100px'
 	assert density_of(created.sources[0]) == 2
+}
+
+fn test_normalize_source_densities_uses_the_image_document_viewport() {
+	mut child_document := dom.Document.create(dom.URL{'about:srcdoc'})
+	child_document.set_viewport_rect(dom.Rect{0, 0, 400, 600})
+	element := child_document.create_element('img')!
+	mut source_set := parse_a_srcset_attribute('small.png 100w, large.png 200w')
+	source_set.source_size = parse_a_sizes_attribute_style_value(element, '50vw', none)
+
+	source_set.normalize_source_densities(element)
+	assert density_of(source_set.sources[0]) == 0.5
+	assert density_of(source_set.sources[1]) == 1.0
 }
 
 fn test_sizes_attribute_uses_css_parser_media_and_math_algorithms() {

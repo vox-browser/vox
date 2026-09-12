@@ -276,7 +276,7 @@ pub fn (mut image HTMLImageElementModel) update_source_set() {
 						&& !is_supported_image_type(child.get_attribute_value('type')) {
 						continue
 					}
-					source_set.normalize_source_densities(css.resolve_sizes_attribute_style_value(dom_element, source_size))
+					source_set.normalize_source_densities(dom_element)
 					image.source_set_ = source_set
 					if child.has_attribute('width') || child.has_attribute('height') {
 						image.set_dimension_attribute_source(child)

@@ -264,8 +264,7 @@ pub fn parse_a_srcset_attribute(input string) SourceSet {
 	return candidates
 }
 
-// https://html.spec.whatwg.org/multipage/images.html#normalise-the-source-densities
-pub fn (mut source_set SourceSet) normalize_source_densities(source_size f64) {
+fn (mut source_set SourceSet) normalize_source_densities_with_source_size(source_size f64) {
 	for mut source in source_set.sources {
 		if source.descriptor is PixelDensityDescriptorValue {
 			continue
@@ -286,6 +285,14 @@ pub fn (mut source_set SourceSet) normalize_source_densities(source_size f64) {
 			source.descriptor = PixelDensityDescriptorValue{1.0}
 		}
 	}
+}
+
+// https://html.spec.whatwg.org/multipage/images.html#normalise-the-source-densities
+pub fn (mut source_set SourceSet) normalize_source_densities(element &dom.Element) {
+	// Viewport-relative source sizes use the img element's node document. In
+	// particular, an image in an iframe must not inherit the top-level viewport.
+	source_size := css.resolve_sizes_attribute_style_value(element, source_set.source_size)
+	source_set.normalize_source_densities_with_source_size(source_size)
 }
 
 // https://html.spec.whatwg.org/multipage/images.html#create-a-source-set
@@ -312,7 +319,7 @@ pub fn create_source_set(default_source string, srcset string, source_size f64) 
 			}
 		}
 	}
-	source_set.normalize_source_densities(source_size)
+	source_set.normalize_source_densities_with_source_size(source_size)
 	return source_set
 }
 
@@ -358,7 +365,26 @@ pub fn parse_a_sizes_attribute(element &dom.Element, sizes string, image ?&dom.H
 
 pub fn SourceSet.create(element &dom.Element, default_source string, srcset string, sizes string, image ?&dom.HTMLImageElement) SourceSet {
 	source_size := parse_a_sizes_attribute_style_value(element, sizes, image)
-	mut source_set := create_source_set(default_source, srcset, css.resolve_sizes_attribute_style_value(element, source_size))
+	mut source_set := if srcset == '' { SourceSet{} } else { parse_a_srcset_attribute(srcset) }
 	source_set.source_size = source_size
+	if default_source != '' {
+		mut contains_one_x := false
+		mut contains_width := false
+		for source in source_set.sources {
+			if source.descriptor is PixelDensityDescriptorValue
+				&& (source.descriptor as PixelDensityDescriptorValue).value == 1.0 {
+				contains_one_x = true
+			}
+			if source.descriptor is WidthDescriptorValue {
+				contains_width = true
+			}
+		}
+		if !contains_one_x && !contains_width {
+			source_set.sources << ImageSource{
+				url: default_source
+			}
+		}
+	}
+	source_set.normalize_source_densities(element)
 	return source_set
 }
