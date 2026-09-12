@@ -181,6 +181,13 @@ pub fn Length.from_style_value_logic(style_value StyleValue, percentage_basis ?L
 	}
 }
 
+pub fn LengthOrAuto.from_style_value_logic(style_value StyleValue, percentage_basis ?Length) LengthOrAuto {
+	if style_value.has_auto() {
+		return LengthOrAuto.make_auto()
+	}
+	return LengthOrAuto.new(Length.from_style_value_logic(style_value, percentage_basis))
+}
+
 pub fn Time.from_style_value(style_value StyleValue, percentage_basis ?Time) Time {
 	return match style_value {
 		TimeStyleValue {

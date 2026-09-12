@@ -2656,6 +2656,15 @@ pub fn Length.from_style_value(style_value &dom.StyleValue, percentage_basis ?Le
 	return Length.make_px(0)
 }
 
+pub fn LengthOrAuto.from_style_value(style_value &dom.StyleValue, percentage_basis ?Length) LengthOrAuto {
+	if keyword := computed_interpolation_style_value_keyword(style_value) {
+		if keyword == .auto {
+			return LengthOrAuto.make_auto()
+		}
+	}
+	return LengthOrAuto.new(Length.from_style_value(style_value, percentage_basis))
+}
+
 pub fn Length.resolve_calculated(calculated CalculatedStyleValue, context LengthResolutionContext, reference_value Length) Length {
 	resolution_context := CalculationResolutionContext{
 		percentage_basis: reference_value
