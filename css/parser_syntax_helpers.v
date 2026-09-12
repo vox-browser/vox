@@ -11,14 +11,20 @@ pub enum SyntaxNodeType {
 	alternatives
 }
 
+pub enum LimitSingleComponentIdentToCustomIdent {
+	no
+	yes
+}
+
 // Translated from LibWeb/CSS/Parser/Syntax.h.
 pub struct SyntaxNode {
 pub mut:
-	type_      SyntaxNodeType
-	ident_     string
-	type_name_ string
-	value_type ?ValueType
-	children   []SyntaxNode
+	type_                SyntaxNodeType
+	ident_               string
+	ident_case_sensitive bool
+	type_name_           string
+	value_type           ?ValueType
+	children             []SyntaxNode
 }
 
 pub fn SyntaxNode.create_universal() SyntaxNode {
@@ -27,10 +33,11 @@ pub fn SyntaxNode.create_universal() SyntaxNode {
 	}
 }
 
-pub fn SyntaxNode.create_ident(ident string) SyntaxNode {
+pub fn SyntaxNode.create_ident(ident string, case_sensitive bool) SyntaxNode {
 	return SyntaxNode{
 		type_: .ident
 		ident_: ident
+		ident_case_sensitive: case_sensitive
 	}
 }
 
@@ -220,7 +227,7 @@ fn is_supported_syntax_type_name(type_name string) bool {
 	]
 }
 
-fn parse_syntax_single_component(mut tokens ComponentValueTokenStream) ?SyntaxNode {
+fn parse_syntax_single_component(mut tokens ComponentValueTokenStream, limit_ident LimitSingleComponentIdentToCustomIdent) ?SyntaxNode {
 	// <syntax-single-component> = '<' <syntax-type-name> '>' | <ident>
 	// <syntax-type-name> = angle | color | custom-ident | image | integer
 	//                    | length | length-percentage | number
@@ -232,7 +239,11 @@ fn parse_syntax_single_component(mut tokens ComponentValueTokenStream) ?SyntaxNo
 	// <ident>
 	if tokens.next_token().is(.ident) {
 		ident := tokens.consume_a_token().token().ident()
-		return SyntaxNode.create_ident(ident)
+		if limit_ident == .yes && !is_valid_custom_ident(ident, []) {
+			tokens.index = transaction_index
+			return none
+		}
+		return SyntaxNode.create_ident(ident, limit_ident == .yes)
 	}
 
 	// '<' <syntax-type-name> '>'
@@ -264,7 +275,7 @@ fn parse_syntax_multiplier(mut tokens ComponentValueTokenStream) ?u32 {
 	return none
 }
 
-fn parse_syntax_component(mut tokens ComponentValueTokenStream) ?SyntaxNode {
+fn parse_syntax_component(mut tokens ComponentValueTokenStream, limit_ident LimitSingleComponentIdentToCustomIdent) ?SyntaxNode {
 	// <syntax-component> = <syntax-single-component> <syntax-multiplier>?
 	//                    | '<' transform-list '>'
 	transaction_index := tokens.index
@@ -285,7 +296,7 @@ fn parse_syntax_component(mut tokens ComponentValueTokenStream) ?SyntaxNode {
 	}
 
 	// <syntax-single-component> <syntax-multiplier>?
-	syntax_single_component := parse_syntax_single_component(mut tokens) or {
+	syntax_single_component := parse_syntax_single_component(mut tokens, limit_ident) or {
 		tokens.index = transaction_index
 		return none
 	}
@@ -322,6 +333,10 @@ fn parse_syntax_combinator(mut tokens ComponentValueTokenStream) ?u32 {
 
 // https://drafts.csswg.org/css-values-5/#typedef-syntax
 pub fn parse_as_syntax(component_values []ComponentValue) ?SyntaxNode {
+	return parse_as_syntax_with_ident_limit(component_values, .no)
+}
+
+pub fn parse_as_syntax_with_ident_limit(component_values []ComponentValue, limit_ident LimitSingleComponentIdentToCustomIdent) ?SyntaxNode {
 	// <syntax> = '*' | <syntax-component> [ <syntax-combinator> <syntax-component> ]* | <syntax-string>
 	// <syntax-component> = <syntax-single-component> <syntax-multiplier>?
 	//                    | '<' transform-list '>'
@@ -360,18 +375,18 @@ pub fn parse_as_syntax(component_values []ComponentValue) ?SyntaxNode {
 		}
 
 		child_component_values := syntax_component_values_from_string(syntax_string)
-		return parse_as_syntax(child_component_values)
+		return parse_as_syntax_with_ident_limit(child_component_values, limit_ident)
 	}
 
 	// <syntax-component> [ <syntax-combinator> <syntax-component> ]*
-	first := parse_syntax_component(mut tokens) or { return none }
+	first := parse_syntax_component(mut tokens, limit_ident) or { return none }
 	mut syntax_components := [first]
 
 	tokens.discard_whitespace()
 	for tokens.has_next_token() {
 		combinator := parse_syntax_combinator(mut tokens) or { return none }
 		tokens.discard_whitespace()
-		component := parse_syntax_component(mut tokens) or { return none }
+		component := parse_syntax_component(mut tokens, limit_ident) or { return none }
 		tokens.discard_whitespace()
 
 		// FIXME: Make this logic smarter once we have more than one type of combinator.
@@ -600,7 +615,7 @@ fn parse_value_for_syntax_type(type_ ValueType, mut tokens ComponentValueTokenSt
 	token := tokens.next_token()
 	match type_ {
 		.custom_ident {
-			if token.is(.ident) {
+			if token.is(.ident) && is_valid_custom_ident(token.token().ident(), []) {
 				ident := tokens.consume_a_token().token().ident()
 				return StyleValue(CustomIdentStyleValue.create(ident))
 			}
@@ -863,7 +878,13 @@ fn parse_according_to_syntax_node(mut tokens ComponentValueTokenStream, syntax_n
 		}
 		.ident {
 			tokens.discard_whitespace()
-			if tokens.consume_a_token().is_ident(syntax_node.ident()) {
+			token := tokens.consume_a_token()
+			if token.is(.ident)
+				&& (if syntax_node.ident_case_sensitive {
+					token.token().ident() == syntax_node.ident()
+				} else {
+					equals_ignoring_ascii_case(token.token().ident(), syntax_node.ident())
+				}) {
 				if keyword := keyword_from_string(syntax_node.ident()) {
 					return StyleValue(KeywordStyleValue.create(keyword))
 				}

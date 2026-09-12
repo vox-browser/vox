@@ -2647,7 +2647,7 @@ pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistrat
 	// 3. Attempt to consume a syntax definition from syntax. If it returns failure, throw a SyntaxError.
 	//    Otherwise, let syntax definition be the returned syntax definition.
 	syntax_component_values := parse_component_values_for_value_logic(definition.syntax)
-	maybe_syntax := parse_as_syntax(syntax_component_values) or {
+	maybe_syntax := parse_as_syntax_with_ident_limit(syntax_component_values, .yes) or {
 		return error('SyntaxError: Invalid syntax definition')
 	}
 

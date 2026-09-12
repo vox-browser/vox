@@ -1693,7 +1693,9 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 	inherits := inherits_maybe or { return none }
 
 	syntax_component_values := parse_component_values_for_value_logic(syntax)
-	maybe_syntax := parse_as_syntax(syntax_component_values) or { return none }
+	maybe_syntax := parse_as_syntax_with_ident_limit(syntax_component_values, .yes) or {
+		return none
+	}
 
 	// The initial-value descriptor is optional only if the syntax is the universal syntax definition,
 	// otherwise the descriptor is required; if it's missing, the entire rule is invalid and must be ignored.
