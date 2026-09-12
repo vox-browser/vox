@@ -28,6 +28,7 @@ pub enum CSSRuleType {
 	property
 	scope
 	function_rule
+	function_declarations
 }
 
 // The rule types whose C++ class derives from CSSGroupingRule, i.e. the rules
@@ -52,7 +53,7 @@ pub fn (t CSSRuleType) type_for_bindings() u16 {
 		.counter_style { 11 }
 		.supports { 12 }
 		.font_feature_values { 14 }
-		.layer_block, .layer_statement, .nested_declarations, .property, .scope, .function_rule { 0 }
+		.layer_block, .layer_statement, .nested_declarations, .property, .scope, .function_rule, .function_declarations { 0 }
 	}
 }
 
@@ -76,6 +77,7 @@ pub fn (t CSSRuleType) class_name() string {
 		.property { 'CSSPropertyRule' }
 		.scope { 'CSSScopeRule' }
 		.function_rule { 'CSSFunctionRule' }
+		.function_declarations { 'CSSFunctionDeclarations' }
 	}
 }
 
@@ -415,7 +417,7 @@ pub fn (rule_list &CSSRuleList) for_each_effective_rule(order TraversalOrder, ca
 			.function_rule, .layer_block, .media, .page, .scope, .style, .supports {
 				rule.for_each_effective_rule(order, callback)
 			}
-			.counter_style, .font_face, .font_feature_values, .keyframe, .keyframes, .layer_statement, .margin, .namespace_rule, .nested_declarations, .property {
+			.counter_style, .font_face, .font_feature_values, .function_declarations, .keyframe, .keyframes, .layer_statement, .margin, .namespace_rule, .nested_declarations, .property {
 			}
 		}
 
@@ -489,7 +491,7 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 					}
 				}
 			}
-			.counter_style, .font_face, .font_feature_values, .keyframe, .keyframes, .layer_statement, .margin, .namespace_rule, .nested_declarations, .property, .page {
+			.counter_style, .font_face, .font_feature_values, .function_declarations, .keyframe, .keyframes, .layer_statement, .margin, .namespace_rule, .nested_declarations, .property, .page {
 			}
 		}
 	}
@@ -586,6 +588,7 @@ pub mut:
 	function_name                     string
 	function_parameters               []FunctionParameterInternal
 	function_return_type              SyntaxNode
+	function_descriptors              ?&CSSFunctionDescriptors
 
 	font_face_rule           ?&CSSFontFaceRule
 	font_feature_values_rule ?&CSSFontFeatureValuesRule
@@ -633,6 +636,14 @@ pub fn CSSRule.create_function(rules &CSSRuleList, name string, parameters []Fun
 	rule.function_name = name
 	rule.function_parameters = parameters.clone()
 	rule.function_return_type = return_type
+	return rule
+}
+
+pub fn CSSRule.create_function_declarations(descriptors &CSSFunctionDescriptors) &CSSRule {
+	mut rule := CSSRule.create(.function_declarations)
+	rule.function_descriptors = descriptors
+	mut mutable_descriptors := unsafe { &CSSFunctionDescriptors(descriptors) }
+	mutable_descriptors.base.set_parent_rule(rule)
 	return rule
 }
 
@@ -947,6 +958,13 @@ pub fn (rule &CSSRule) serialized() string {
 		}
 		.function_rule {
 			rule.serialized_function_rule()
+		}
+		.function_declarations {
+			if descriptors := rule.function_descriptors {
+				descriptors.base.serialized()
+			} else {
+				''
+			}
 		}
 		.nested_declarations {
 			if declaration := rule.declaration {
@@ -2589,6 +2607,7 @@ fn rule_context_type_for_rule(rule_type CSSRuleType) RuleContext {
 		.page { .page }
 		.margin { .margin }
 		.function_rule { .function_rule }
+		.function_declarations { .function_rule }
 		else { .unknown }
 	}
 }

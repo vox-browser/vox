@@ -73,6 +73,10 @@ pub fn (rule &CSSRule) function_return_type_string() string {
 	return rule.function_return_type.to_string()
 }
 
+pub fn (rule &CSSRule) function_declarations_style() ?&CSSFunctionDescriptors {
+	return rule.function_descriptors
+}
+
 pub fn (rule &CSSRule) serialized_function_rule() string {
 	mut builder := strings.new_builder(64)
 	builder.write_string('@function ')
