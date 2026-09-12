@@ -46,3 +46,12 @@ fn test_color_mix_absolutizes_relative_lengths_in_calculated_percentages() {
 	calculated := parsed_color_mix('color-mix(in oklab, red calc(100% * (1em / 64px)), blue)').absolutized(context)
 	assert calculated.serialize(.normal) == literal.serialize(.normal)
 }
+
+fn test_shadow_absolutizes_color_mix_color() {
+	zero := StyleValue(LengthStyleValue.create(Length.make_px(0)))
+	shadow := ShadowStyleValue.create(.text, StyleValue(parsed_color_mix('color-mix(in srgb, red, blue)')), zero, zero, none, none, .outer)
+	absolutized := shadow.absolutized(ComputationContext{})
+	assert absolutized is ShadowStyleValue
+	resolved_shadow := absolutized as ShadowStyleValue
+	assert resolved_shadow.color() !is ColorMixStyleValue
+}

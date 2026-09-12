@@ -2440,7 +2440,7 @@ pub fn (style_value ShadowStyleValue) serialize(mode SerializationMode) string {
 }
 
 pub fn (style_value ShadowStyleValue) absolutized(context ComputationContext) StyleValue {
-	return StyleValue(ShadowStyleValue.create(style_value.shadow_type_, style_value.color(), style_value.offset_x_.absolutized(context), style_value.offset_y_.absolutized(context), style_value.blur_radius().absolutized(context), style_value.spread_distance().absolutized(context), style_value.placement_))
+	return StyleValue(ShadowStyleValue.create(style_value.shadow_type_, style_value.color().absolutized(context), style_value.offset_x_.absolutized(context), style_value.offset_y_.absolutized(context), style_value.blur_radius().absolutized(context), style_value.spread_distance().absolutized(context), style_value.placement_))
 }
 
 pub fn (style_value ShadowStyleValue) to_string() string {
