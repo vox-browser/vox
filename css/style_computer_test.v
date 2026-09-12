@@ -114,7 +114,7 @@ fn test_cascade_declarations_inline_style() {
 fn test_cascaded_properties_cache_retains_unresolved_shorthand_ids() {
 	mut cascaded := CascadedProperties.new()
 	unresolved := dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic('var(--spacing)'))))
-	cascaded.set_property(.margin, unresolved, .no, .author, none, unsafe { nil })
+	cascaded.set_property(.margin, unresolved, .no, .author, none, unsafe { nil }, none)
 
 	retained := cascaded.property(.margin) or {
 		panic('unresolved shorthand was not retained in the cascade')
@@ -138,8 +138,8 @@ fn test_cascaded_properties_refresh_source_on_same_priority_replacement() {
 	second_source := &dom.StyleValue{
 		css_text: 'second source'
 	}
-	cascaded.set_property(.color, first_value, .no, .author, none, voidptr(first_source))
-	cascaded.set_property(.color, second_value, .no, .author, none, voidptr(second_source))
+	cascaded.set_property(.color, first_value, .no, .author, none, voidptr(first_source), none)
+	cascaded.set_property(.color, second_value, .no, .author, none, voidptr(second_source), none)
 
 	assert cascaded.property(.color)? == second_value
 	assert cascaded.property_source(.color) == voidptr(second_source)

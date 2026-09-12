@@ -134,10 +134,11 @@ pub enum CascadeOrigin {
 
 pub struct CascadedPropertiesEntry {
 pub mut:
-	property   StyleProperty
-	origin     CascadeOrigin
-	layer_name ?string
-	source     voidptr
+	property           StyleProperty
+	origin             CascadeOrigin
+	layer_name         ?string
+	source             voidptr
+	source_shadow_root ?&dom.ShadowRoot
 }
 
 @[heap]
@@ -271,7 +272,7 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 	return dom_style_value_from_value_logic(parsed_value)
 }
 
-pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &dom.StyleValue, important Important, origin CascadeOrigin, layer_name ?string, source voidptr) {
+pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &dom.StyleValue, important Important, origin CascadeOrigin, layer_name ?string, source voidptr, source_shadow_root ?&dom.ShadowRoot) {
 	c.contained_properties_cache_[cascaded_property_index(property_id)] = 1
 
 	mut entries := c.properties_[property_id] or { []CascadedPropertiesEntry{} }
@@ -287,6 +288,7 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 				value: unsafe { value }
 			}
 			entry.source = source
+			entry.source_shadow_root = source_shadow_root
 			entries[index] = entry
 			c.properties_[property_id] = entries
 			return
@@ -302,6 +304,7 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 		origin: origin
 		layer_name: layer_name
 		source: source
+		source_shadow_root: source_shadow_root
 	}
 	c.properties_[property_id] = entries
 }
@@ -406,6 +409,17 @@ pub fn (c &CascadedProperties) property_source(property_id PropertyID) voidptr {
 		return unsafe { nil }
 	}
 	return entries[entries.len - 1].source
+}
+
+pub fn (c &CascadedProperties) property_source_shadow_root(property_id PropertyID) ?&dom.ShadowRoot {
+	if c.contained_properties_cache_[cascaded_property_index(property_id)] == 0 {
+		return none
+	}
+	entries := c.properties_[property_id] or { return none }
+	if entries.len == 0 {
+		return none
+	}
+	return entries[entries.len - 1].source_shadow_root
 }
 
 pub fn (c &CascadedProperties) style_property(property_id PropertyID) ?StyleProperty {

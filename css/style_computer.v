@@ -671,7 +671,7 @@ fn opaque_is_pending_substitution(value &dom.StyleValue) bool {
 // set it in the cascade.
 // Unresolved var()/env() values are resolved before shorthand expansion by
 // resolve_cascade_declaration_value(); CascadedProperties performs the final custom-property pass.
-fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, declaration &CSSStyleProperties, cascade_origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
+fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, declaration &CSSStyleProperties, source_shadow_root ?&dom.ShadowRoot, cascade_origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
 	pseudo_element := abstract_element.pseudo_element()
 	properties := declaration_style_properties(declaration)
 	importance_bit := if important == .yes { u8(2) } else { u8(1) }
@@ -719,19 +719,15 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 			mut physical_property_id := longhand_id
 			if property_is_logical_alias(longhand_id) {
 				context := logical_alias_mapping_context or { continue }
-				physical_property_id = map_logical_alias_to_physical_property(longhand_id,
-					context)
+				physical_property_id = map_logical_alias_to_physical_property(longhand_id, context)
 			}
 
 			if opaque_is_revert(longhand_id, resolved_property_value) {
-				cascaded_properties.revert_property(physical_property_id, important,
-					cascade_origin)
+				cascaded_properties.revert_property(physical_property_id, important, cascade_origin)
 			} else if opaque_is_revert_layer(longhand_id, resolved_property_value) {
-				cascaded_properties.revert_layer_property(physical_property_id, important,
-					layer_name)
+				cascaded_properties.revert_layer_property(physical_property_id, important, layer_name)
 			} else {
-				cascaded_properties.set_property(physical_property_id, resolved_property_value,
-					important, cascade_origin, layer_name, voidptr(declaration))
+				cascaded_properties.set_property(physical_property_id, resolved_property_value, important, cascade_origin, layer_name, voidptr(declaration), source_shadow_root)
 			}
 			continue
 		}
@@ -760,7 +756,7 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 			} else if opaque_is_revert_layer(longhand.id, longhand.value) {
 				cascaded_properties.revert_layer_property(physical_property_id, important, layer_name)
 			} else {
-				cascaded_properties.set_property(physical_property_id, longhand.value, important, cascade_origin, layer_name, voidptr(declaration))
+				cascaded_properties.set_property(physical_property_id, longhand.value, important, cascade_origin, layer_name, voidptr(declaration), source_shadow_root)
 			}
 		}
 	}

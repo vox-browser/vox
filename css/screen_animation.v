@@ -589,7 +589,7 @@ pub fn (mut effect KeyframeEffect) set_composite(composite CompositeOperation) {
 	effect.composite = composite
 }
 
-pub fn (mut effect KeyframeEffect) set_key_frame_set(key_frame_set &KeyFrameSet) {
+pub fn (mut effect KeyframeEffect) set_key_frame_set(key_frame_set ?&KeyFrameSet) {
 	effect.key_frame_set = key_frame_set
 }
 

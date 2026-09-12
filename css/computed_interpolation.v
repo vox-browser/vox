@@ -10302,7 +10302,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	s.compute_custom_properties(mut properties, abstract_element)
 
 	s.clear_computation_context_caches()
-	s.process_animation_definitions(properties, abstract_element)
+	s.process_animation_definitions(properties, cascaded_properties, abstract_element)
 	if s.css_animation_storage_ != unsafe { nil } {
 		for existing in s.css_animation_storage_.animations_for(abstract_element) {
 			mut animation := existing
@@ -10637,7 +10637,26 @@ pub fn (s &StyleComputer) compute_property_values(mut computed_properties Comput
 	}
 }
 
-pub fn (s &StyleComputer) process_animation_definitions(computed_properties &ComputedProperties, abstract_element dom.AbstractElement) {
+fn (s &StyleComputer) find_animation_keyframes(name string, shadow_root ?&dom.ShadowRoot) ?&KeyFrameSet {
+	cache := s.rule_cache_for_cascade_origin(.author, none, shadow_root) or { return none }
+	return cache.rules_by_animation_keyframes[name] or { none }
+}
+
+fn (s &StyleComputer) resolve_animation_keyframes(name string, cascaded_properties &CascadedProperties, abstract_element dom.AbstractElement) ?&KeyFrameSet {
+	if source_shadow_root := cascaded_properties.property_source_shadow_root(.animation_name) {
+		if keyframes := s.find_animation_keyframes(name, source_shadow_root) {
+			return keyframes
+		}
+	}
+	if shadow_root := abstract_element.element().as_node().root().as_shadow_root() {
+		if keyframes := s.find_animation_keyframes(name, shadow_root) {
+			return keyframes
+		}
+	}
+	return s.find_animation_keyframes(name, none)
+}
+
+pub fn (s &StyleComputer) process_animation_definitions(computed_properties &ComputedProperties, cascaded_properties &CascadedProperties, abstract_element dom.AbstractElement) {
 	if s.css_animation_storage_ == unsafe { nil } {
 		return
 	}
@@ -10648,6 +10667,8 @@ pub fn (s &StyleComputer) process_animation_definitions(computed_properties &Com
 		defined_names[animation_properties.name] = true
 		if existing := storage.animation(abstract_element, animation_properties.name) {
 			mut animation := existing
+			mut effect := unsafe { &KeyframeEffect(animation.effect_) }
+			effect.set_key_frame_set(s.resolve_animation_keyframes(animation_properties.name, cascaded_properties, abstract_element))
 			animation.apply_css_properties(animation_properties)
 			continue
 		}
@@ -10660,24 +10681,7 @@ pub fn (s &StyleComputer) process_animation_definitions(computed_properties &Com
 		animation.set_effect(effect)
 		animation.apply_css_properties(animation_properties)
 
-		mut key_frame_set := ?&KeyFrameSet(none)
-		if shadow_root := abstract_element.element().as_node().root().as_shadow_root() {
-			if cache := s.rule_cache_for_cascade_origin(.author, none, shadow_root) {
-				key_frame_set = cache.rules_by_animation_keyframes[animation_properties.name] or {
-					none
-				}
-			}
-		}
-		if key_frame_set == none {
-			if cache := s.rule_cache_for_cascade_origin(.author, none, none) {
-				key_frame_set = cache.rules_by_animation_keyframes[animation_properties.name] or {
-					none
-				}
-			}
-		}
-		if resolved_set := key_frame_set {
-			effect.set_key_frame_set(resolved_set)
-		}
+		effect.set_key_frame_set(s.resolve_animation_keyframes(animation_properties.name, cascaded_properties, abstract_element))
 		effect.set_target(abstract_element)
 		storage.set(abstract_element, animation_properties.name, animation)
 	}
@@ -13470,12 +13474,12 @@ pub fn (s &StyleComputer) cascade_declarations(mut cascaded_properties CascadedP
 	for match_rule in rules {
 		rule := match_rule.rule or { continue }
 		declaration := rule.style() or { continue }
-		cascade_one_declaration(mut cascaded_properties, abstract_element, declaration, origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
+		cascade_one_declaration(mut cascaded_properties, abstract_element, declaration, match_rule.shadow_root, origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
 	}
 
 	if origin == .author && abstract_element.pseudo_element() == none {
 		if inline_declaration := inline_style_for_abstract_element(abstract_element) {
-			cascade_one_declaration(mut cascaded_properties, abstract_element, inline_declaration, origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
+			cascade_one_declaration(mut cascaded_properties, abstract_element, inline_declaration, none, origin, important, layer_name, logical_alias_mapping_context, properties_to_cascade)
 		}
 	}
 }
