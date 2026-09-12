@@ -2346,6 +2346,19 @@ pub fn (list &StyleSheetList) document() &dom.Document {
 
 fn build_invalidation_set_for_stylesheet(sheet &CSSStyleSheet) InvalidationSet {
 	mut invalidation_set := InvalidationSet{}
+	mut requires_broad_invalidation := false
+	requires_broad_invalidation_ptr := &requires_broad_invalidation
+	sheet.for_each_effective_rule(.preorder, fn [requires_broad_invalidation_ptr] (rule &CSSRule) {
+		if rule.type_ == .import_rule && (rule.layer_name() != none || rule.has_scope()) {
+			unsafe {
+				*requires_broad_invalidation_ptr = true
+			}
+		}
+	})
+	if requires_broad_invalidation {
+		invalidation_set.set_needs_invalidate_whole_subtree()
+		return invalidation_set
+	}
 	mut throwaway_data := StyleInvalidationData.new()
 	mut rules := []&CSSRule{}
 	rules_ptr := &rules
