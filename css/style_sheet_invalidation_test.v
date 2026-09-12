@@ -353,3 +353,38 @@ fn test_shadow_rule_deletion_uses_pre_mutation_host_reach() {
 	assert shadow_node.needs_style_update()
 	assert !document.needs_full_style_update()
 }
+
+fn test_shadow_sheet_disabled_toggle_preserves_host_reach_invalidation() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_invalidation_test_element(document, 'html')
+	mut host := style_sheet_invalidation_test_element(document, 'div')
+	mut slotted := style_sheet_invalidation_test_element(document, 'span')
+	slotted.set_attribute_value('class', 'item')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(host.as_node()) or { panic(err) }
+	mut host_node := host.as_node()
+	host_node.append_child(slotted.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut slot := style_sheet_invalidation_test_element(document, 'slot')
+	shadow_node.append_child(slot.as_node()) or { panic(err) }
+
+	mut sheet := css_style_sheet_construct(none, document) or { panic(err) }
+	sheet.replace_sync('::slotted(.item) { color: blue }') or { panic(err) }
+	mut adopted := create_adopted_style_sheets_list(shadow_node)
+	adopted.append(sheet) or { panic(err) }
+	clear_style_sheet_invalidation_test_flags(document_node, root.as_node(), host.as_node(), slotted.as_node(), shadow_node, slot.as_node())
+	document.set_needs_full_style_update(false)
+
+	sheet.set_disabled(true)
+	assert host.as_node().entire_subtree_needs_style_update()
+	assert !document.needs_full_style_update()
+
+	clear_style_sheet_invalidation_test_flags(document_node, root.as_node(), host.as_node(), slotted.as_node(), shadow_node, slot.as_node())
+	document.set_needs_full_style_update(false)
+	sheet.set_disabled(false)
+	assert host.as_node().entire_subtree_needs_style_update()
+	assert !document.needs_full_style_update()
+}

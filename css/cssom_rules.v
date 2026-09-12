@@ -2213,10 +2213,10 @@ pub fn (mut sheet CSSStyleSheet) set_disabled(disabled bool) {
 	if sheet.base.disabled == disabled {
 		return
 	}
+	previous_sheet_effects := determine_shadow_root_style_sheet_effects_for_style_sheet(sheet)
 	document := sheet.owning_document()
 	sheet.did_match = none
 	sheet.base.set_disabled(disabled)
-	sheet.invalidate_owners(.style_sheet_disabled_state_change)
 	if !disabled {
 		if owner_document := document {
 			sheet.evaluate_media_queries(owner_document)
@@ -2226,6 +2226,7 @@ pub fn (mut sheet CSSStyleSheet) set_disabled(disabled bool) {
 	} else if owner_document := document {
 		sheet.unload_fonts_for_document(owner_document)
 	}
+	sheet.invalidate_owners_with_previous_effects(.style_sheet_disabled_state_change, previous_sheet_effects)
 }
 
 fn (mut sheet CSSStyleSheet) load_fonts_for_document(document &dom.Document) {
