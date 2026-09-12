@@ -6259,44 +6259,65 @@ const cursor_predefined_keywords = ['auto', 'default', 'none', 'context-menu', '
 
 // https://drafts.csswg.org/css-lists-3/#propdef-counter-increment  ->  [ <counter-name> <integer>? ]+ | none
 fn (mut parser Parser) parse_counter_increment_value(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_counter_definitions_value(mut tokens, 1)
+	return parser.parse_counter_definitions_value(mut tokens, false, 1)
 }
 
 fn (mut parser Parser) parse_counter_reset_value(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_counter_definitions_value(mut tokens, 0)
+	return parser.parse_counter_definitions_value(mut tokens, true, 0)
 }
 
 fn (mut parser Parser) parse_counter_set_value(mut tokens ComponentValueStream) ?StyleValue {
-	return parser.parse_counter_definitions_value(mut tokens, 0)
+	return parser.parse_counter_definitions_value(mut tokens, false, 0)
 }
 
-fn (mut parser Parser) parse_counter_definitions_value(mut tokens ComponentValueStream, default_value int) ?StyleValue {
+fn (mut parser Parser) parse_counter_definitions_value(mut tokens ComponentValueStream, allow_reversed bool, default_value int) ?StyleValue {
 	mut none_attempt := tokens.clone()
 	if value := parse_property_keyword_value(mut none_attempt, ['none']) {
 		tokens = none_attempt
 		return value
 	}
 
-	// FIXME: The C++ implementation also disables reversed() counters for now.
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	mut counter_definitions := []CounterDefinition{}
 	for transaction.has_more_tokens() {
-		// <counter-name> cannot be the keyword `none`.
-		counter_name := parser.parse_custom_ident(mut transaction, ['none']) or { break }
+		mut counter_name := ''
+		mut is_reversed := false
+		// <counter-name> | <reversed-counter-name>
+		if name := parser.parse_custom_ident(mut transaction, ['none']) {
+			counter_name = name
+		} else if allow_reversed {
+			component_value := transaction.peek() or { break }
+			if !component_value.is_function_named('reversed') {
+				break
+			}
+			transaction.consume()
+			mut function_tokens := ComponentValueStream.new(component_value.function().value)
+			function_tokens.consume_whitespace()
+			counter_name = parser.parse_custom_ident(mut function_tokens, ['none']) or { break }
+			function_tokens.consume_whitespace()
+			if function_tokens.has_more_tokens() {
+				break
+			}
+			is_reversed = true
+		} else {
+			break
+		}
 		transaction.consume_whitespace()
 
 		// <integer>?
-		mut value := ?StyleValue(StyleValue(IntegerStyleValue.create(i64(default_value))))
+		mut value := ?StyleValue(none)
 		mut int_attempt := transaction.clone()
 		if integer_value := parser.parse_integer_value(mut int_attempt) {
 			value = integer_value
 			transaction = int_attempt
+		} else if !is_reversed {
+			value = StyleValue(IntegerStyleValue.create(i64(default_value)))
 		}
 
 		counter_definitions << CounterDefinition{
 			name: counter_name
-			is_reversed: false
+			is_reversed: is_reversed
 			value: value
 		}
 		transaction.consume_whitespace()
