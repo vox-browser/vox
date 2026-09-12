@@ -944,13 +944,18 @@ fn materialize_list_style_image(computed_values &css.ComputedProperties, documen
 }
 
 pub fn NodeWithStyle.new(document &dom.Document, dom_node ?&dom.Node, computed_values &css.ComputedProperties) &NodeWithStyle {
+	values := css.resolve_computed_values_for_document(computed_values, document)
+	if node := dom_node {
+		mut mutable_values := unsafe { &css.MutableComputedValues(values) }
+		mutable_values.set_list_style_type(computed_values.list_style_type_for_scope(css.style_scope_for_dom_node(node)))
+	}
 	return &NodeWithStyle{
 		Node: Node{
 			document_: document
 			dom_node_: dom_node
 			has_style_: true
 		}
-		computed_values_: css.resolve_computed_values_for_document(computed_values, document)
+		computed_values_: values
 		list_style_image_: materialize_list_style_image(computed_values, document)
 	}
 }
@@ -980,11 +985,15 @@ pub fn (n &NodeWithStyle) style_scope() &css.StyleScope {
 
 pub fn (mut n NodeWithStyle) set_computed_values(computed_values &css.ComputedProperties) {
 	n.computed_values_ = css.resolve_computed_values_for_document(computed_values, n.document_)
+	mut mutable_values := unsafe { &css.MutableComputedValues(n.computed_values_) }
+	mutable_values.set_list_style_type(computed_values.list_style_type_for_scope(n.style_scope()))
 	n.list_style_image_ = materialize_list_style_image(computed_values, n.document_)
 }
 
 pub fn (mut n NodeWithStyle) apply_style(computed_style &css.ComputedProperties) {
 	n.computed_values_ = css.resolve_computed_values_for_document(computed_style, n.document_)
+	mut mutable_values := unsafe { &css.MutableComputedValues(n.computed_values_) }
+	mutable_values.set_list_style_type(computed_style.list_style_type_for_scope(n.style_scope()))
 	n.list_style_image_ = materialize_list_style_image(computed_style, n.document_)
 	n.propagate_style_to_anonymous_wrappers()
 	if metrics := unsafe { &Node(n) }.as_node_with_style_and_box_model_metrics() {

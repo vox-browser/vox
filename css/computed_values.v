@@ -1126,6 +1126,10 @@ pub fn (values &ComputedValues) computed_list_style_type() ListStyleType {
 	return values.computed_values_list_style_type_
 }
 
+pub fn (values &ComputedValues) computed_content() ?ContentData {
+	return values.computed_values_content_
+}
+
 pub fn (values &ComputedValues) grid_column_end() GridTrackPlacement {
 	return values.computed_values_grid_column_end_
 }
@@ -1965,6 +1969,10 @@ pub fn (mut values MutableComputedValues) set_list_style_position(value ListStyl
 
 pub fn (mut values MutableComputedValues) set_list_style_type(value ListStyleType) {
 	values.computed_values_list_style_type_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_content(value ?ContentData) {
+	values.computed_values_content_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_grid_column_end(value GridTrackPlacement) {

@@ -2,6 +2,22 @@ module css
 
 import dom
 
+fn counter_style_invalidation_test_properties(property_id PropertyID, value_text string) &ComputedProperties {
+	mut properties := computed_properties_with_initial_values()
+	value := parse_css_value_logic(property_id, value_text) or {
+		panic('could not parse ${property_id}: ${value_text}')
+	}
+	properties.set_property(property_id, dom_style_value_from_value_logic(value), .no, .no)
+	return properties
+}
+
+fn attach_counter_style_invalidation_test_layout_node(mut element dom.Element) {
+	mut node := element.as_node()
+	node.set_layout_node(&dom.LayoutNode{
+		dom_node_: node
+	})
+}
+
 fn test_counter_style_equality_compares_every_effective_descriptor() {
 	original := CounterStyle.decimal()
 	same := CounterStyle.create(original.name(), original.algorithm(), original.negative_sign(), original.prefix(), original.suffix(), original.range(), original.fallback(), original.pad())
@@ -38,6 +54,58 @@ fn test_counter_style_rule_mutation_invalidates_registered_style_cache() {
 	assert document.needs_full_style_update
 	styles_after := registered_counter_styles_for_document(document)
 	assert generate_a_counter_representation(styles_after['marker'], styles_after, 1).contains('PASS')
+}
+
+fn test_content_tracks_effective_counter_styles_and_invalidates_when_they_change() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(document, '@counter-style marker { system: cyclic; symbols: "FAIL"; suffix: ""; }')
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'p') or {
+		panic(err)
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(element.as_node()) or { panic(err) }
+	element.set_pseudo_element_node(int(dom.PseudoElement.before), &dom.LayoutNodeWithStyle_{})
+	abstract_element := dom.AbstractElement.new(element, .before)
+	old_style := counter_style_invalidation_test_properties(.content, 'counter(item, marker) / counter(item, marker)')
+	new_style := counter_style_invalidation_test_properties(.content, 'counter(item, marker) / counter(item, marker)')
+	old_content := old_style.content(&abstract_element, 0, registered_counter_styles_for_abstract_element(abstract_element)).content_data
+	assert old_content.counter_style_dependencies.len == 2
+	assert (old_content.counter_style_dependencies[0] or { panic('missing dependency') }).suffix() == ''
+	mut old_values := unsafe { &MutableComputedValues(old_style) }
+	old_values.set_content(old_content)
+	computer := StyleComputer.new(document)
+	assert !compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element).needs_layout_tree_rebuild()
+
+	holder := css_author_style_sheets_for(document)
+	mut sheet := holder.sheets[0]
+	sheet.insert_rule('@counter-style marker { system: cyclic; symbols: "PASS"; suffix: ""; }', u32(sheet.rules.rules.len))!
+	invalidation := compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element)
+	assert invalidation.needs_layout_tree_rebuild()
+	assert invalidation.needs_relayout()
+	assert invalidation.needs_repaint()
+}
+
+fn test_list_style_type_invalidates_when_effective_counter_style_changes() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(document, '@counter-style marker { system: cyclic; symbols: "FAIL"; suffix: ""; }')
+	mut element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'li') or {
+		panic(err)
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(element.as_node()) or { panic(err) }
+	attach_counter_style_invalidation_test_layout_node(mut element)
+	abstract_element := dom.AbstractElement.new(element, none)
+	old_style := counter_style_invalidation_test_properties(.list_style_type, 'marker')
+	new_style := counter_style_invalidation_test_properties(.list_style_type, 'marker')
+	mut old_values := unsafe { &MutableComputedValues(old_style) }
+	old_values.set_list_style_type(old_style.list_style_type_for_scope(css_style_scope_for(abstract_element)))
+	computer := StyleComputer.new(document)
+	assert !compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element).needs_layout_tree_rebuild()
+
+	holder := css_author_style_sheets_for(document)
+	mut sheet := holder.sheets[0]
+	sheet.insert_rule('@counter-style marker { system: cyclic; symbols: "PASS"; suffix: ""; }', u32(sheet.rules.rules.len))!
+	assert compute_required_invalidation(old_style, new_style, computer.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element).needs_layout_tree_rebuild()
 }
 
 fn test_invalid_counter_style_descriptor_does_not_invalidate() {

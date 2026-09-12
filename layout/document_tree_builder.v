@@ -1723,6 +1723,8 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 	}
 	resolve_layout_counters(mut builder_state, abstract_element, computed)
 	content := computed.content(&abstract_element, initial_quote_nesting_level, registered_counter_styles).content_data
+	mut mutable_computed := unsafe { &css.MutableComputedValues(computed) }
+	mutable_computed.set_content(content)
 	mut node := create_layout_node_for_generated_content(document, computed)
 	node.set_generated_for(layout_pseudo, element)
 	node.initial_quote_nesting_level_ = initial_quote_nesting_level
@@ -1784,6 +1786,8 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	if initial_content.type_ == .list {
 		resolve_marker_layout_counters(mut builder_state, abstract_element, marker_computed)
 		content := marker_computed.content(&abstract_element, 0, registered_counter_styles).content_data
+		mut mutable_marker_computed := unsafe { &css.MutableComputedValues(marker_computed) }
+		mutable_marker_computed.set_content(content)
 		mut marker := create_layout_node_for_generated_content(document, marker_computed)
 		marker.set_generated_for(.marker, element)
 		if marker.can_have_children() {
@@ -1801,6 +1805,10 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 		return marker
 	}
 	list_style_type := list_item_computed.list_style_type_for_scope(css.style_scope_for_abstract_element(dom.AbstractElement.new(element, none)))
+	mut mutable_list_item_computed := unsafe { &css.MutableComputedValues(list_item_computed) }
+	mutable_list_item_computed.set_list_style_type(list_style_type)
+	mut mutable_marker_computed := unsafe { &css.MutableComputedValues(marker_computed) }
+	mutable_marker_computed.set_content(initial_content)
 	list_style_image := list_item_computed.typed_property_value(.list_style_image)
 	has_list_style_image := if image := list_style_image {
 		image.is_abstract_image()

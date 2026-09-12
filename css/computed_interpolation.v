@@ -228,10 +228,11 @@ pub:
 
 pub struct ContentData {
 pub mut:
-	type_    ContentDataType
-	text     string
-	alt_text string
-	items    []ContentItem
+	type_                      ContentDataType
+	text                       string
+	alt_text                   string
+	items                      []ContentItem
+	counter_style_dependencies []?CounterStyle
 }
 
 pub struct ContentDataAndQuoteNestingLevel {
@@ -1558,6 +1559,7 @@ pub mut:
 	computed_values_pointer_events_                PointerEvents
 	computed_values_list_style_type_               ListStyleType
 	computed_values_list_style_position_           ListStylePosition
+	computed_values_content_                       ?ContentData
 	computed_values_grid_column_end_               GridTrackPlacement
 	computed_values_grid_column_start_             GridTrackPlacement
 	computed_values_grid_row_end_                  GridTrackPlacement
@@ -2672,6 +2674,7 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 	mut nesting := initial_quote_nesting_level
 	mut text := ''
 	mut items := []ContentItem{}
+	mut counter_style_dependencies := []?CounterStyle{}
 	for item in content_value.content().values() {
 		if item is StringStyleValue {
 			string_item := item.string_value()
@@ -2690,6 +2693,7 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 			continue
 		}
 		if item is CounterStyleValue {
+			counter_style_dependencies << item.counter_style().resolve_counter_style(registered_counter_styles)
 			counter_text := item.resolve_for_abstract_element(abstract_element, registered_counter_styles)
 			text += counter_text
 			items << ContentItem{
@@ -2742,6 +2746,7 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 			if item is StringStyleValue {
 				alt_text += item.string_value()
 			} else if item is CounterStyleValue {
+				counter_style_dependencies << item.counter_style().resolve_counter_style(registered_counter_styles)
 				alt_text += item.resolve_for_abstract_element(abstract_element, registered_counter_styles)
 			}
 		}
@@ -2752,6 +2757,7 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 			text: text
 			alt_text: alt_text
 			items: items
+			counter_style_dependencies: counter_style_dependencies
 		}
 		final_quote_nesting_level: nesting
 	}

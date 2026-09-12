@@ -823,7 +823,37 @@ pub fn (s &StyleComputer) recompute_style(mut abstract_element dom.AbstractEleme
 	return computed
 }
 
-pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &ComputedProperties, font_computer &FontComputer) RequiredInvalidationAfterStyleChange {
+fn counter_style_dependencies_equal(left []?CounterStyle, right []?CounterStyle) bool {
+	if left.len != right.len {
+		return false
+	}
+	for index, left_dependency in left {
+		left_style := left_dependency or {
+			if _ := right[index] {
+				return false
+			}
+			continue
+		}
+		right_style := right[index] or { return false }
+		if !left_style.equals(right_style) {
+			return false
+		}
+	}
+	return true
+}
+
+fn counter_style_options_equal(left ?CounterStyle, right ?CounterStyle) bool {
+	left_style := left or {
+		if _ := right {
+			return false
+		}
+		return true
+	}
+	right_style := right or { return false }
+	return left_style.equals(right_style)
+}
+
+pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &ComputedProperties, font_computer &FontComputer, old_layout_node ?&dom.LayoutNodeWithStyle_, abstract_element &dom.AbstractElement) RequiredInvalidationAfterStyleChange {
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	mut mutable_old_style := unsafe { &ComputedProperties(old_style) }
 	mut mutable_new_style := unsafe { &ComputedProperties(new_style) }
@@ -834,6 +864,25 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 	}
 	for property_id in computed_interpolation_longhand_property_ids() {
 		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_style.property(property_id, .no), new_style.property(property_id, .no)))
+	}
+	// A counter style is resolved from the element's current style scope. Its effective
+	// definition can therefore change while the computed property text remains identical.
+	if _ := old_layout_node {
+		if old_content := unsafe { &ComputedValues(old_style) }.computed_content() {
+			registered_counter_styles := registered_counter_styles_for_abstract_element(*abstract_element)
+			new_content := new_style.content(abstract_element, 0, registered_counter_styles).content_data
+			if !counter_style_dependencies_equal(old_content.counter_style_dependencies, new_content.counter_style_dependencies) {
+				invalidation.ensure_at_least(.rebuild_layout_tree)
+			}
+		}
+		old_list_style_type := unsafe { &ComputedValues(old_style) }.computed_list_style_type()
+		if old_list_style_type.kind == .counter_style {
+			new_list_style_type := new_style.list_style_type_for_scope(css_style_scope_for(*abstract_element))
+			if new_list_style_type.kind == .counter_style
+				&& !counter_style_options_equal(old_list_style_type.counter_style, new_list_style_type.counter_style) {
+				invalidation.ensure_at_least(.rebuild_layout_tree)
+			}
+		}
 	}
 	return invalidation
 }
@@ -856,7 +905,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 	old_display_is_none := if previous := old_style { previous.display().is_none() } else { true }
 	computed := s.compute_style_tracking_custom_property_changes(abstract_element, did_change_custom_properties)
 	mut invalidation := if previous := old_style {
-		compute_required_invalidation(previous, computed, s.font_computer())
+		compute_required_invalidation(previous, computed, s.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element)
 	} else {
 		required_invalidation_after_style_change_full()
 	}
@@ -898,7 +947,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		}
 		if pseudo_style := new_pseudo_style {
 			if previous := old_pseudo_style {
-				invalidation = required_invalidation_after_style_change_or(invalidation, compute_required_invalidation(previous, pseudo_style, s.font_computer()))
+				invalidation = required_invalidation_after_style_change_or(invalidation, compute_required_invalidation(previous, pseudo_style, s.font_computer(), pseudo_abstract.unsafe_layout_node(), &pseudo_abstract))
 			} else {
 				invalidation = required_invalidation_after_style_change_full()
 			}

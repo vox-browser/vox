@@ -583,6 +583,24 @@ fn test_before_and_after_pseudo_elements_generate_layout_content_in_tree_order()
 	assert target_element.as_node().accessible_name(document, .yes)! == 'before middleafter'
 }
 
+fn test_generated_content_retains_its_effective_counter_style_dependencies() {
+	document := html.parse_document('<!doctype html><style>
+		@counter-style custom { system: cyclic; symbols: "tracked"; suffix: "" }
+		#target::before { content: counter(item, custom) }
+	</style><div id="target"></div>')
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	target := tree_builder_node_with_id(root, 'target') or { panic('no target') }
+	generated := target.first_child() or { panic('no generated content') }
+	generated_style := generated.as_node_with_style() or { panic('generated node has no style') }
+	content := generated_style.computed_values().computed_content() or {
+		panic('generated content was not retained')
+	}
+	assert content.counter_style_dependencies.len == 1
+	assert (content.counter_style_dependencies[0] or {
+		panic('counter style dependency did not resolve')
+	}).name() == 'custom'
+}
+
 fn test_generated_inline_content_is_laid_out_inside_mixed_content_wrappers() {
 	document := html.parse_document('<!doctype html><style>
 		span { display:list-item }
@@ -688,6 +706,10 @@ fn test_marker_uses_resolved_custom_counter_style() {
 	marker_box := marker.as_list_item_marker_box() or { panic('marker has wrong node type') }
 	assert marker_box.list_style_type_.kind == .counter_style
 	assert (marker_box.list_style_type_.counter_style or { panic('counter style did not resolve') }).name() == 'custom'
+	item_style := item_node.as_node_with_style() or { panic('item has no computed values') }
+	assert (item_style.computed_values().computed_list_style_type().counter_style or {
+		panic('effective list counter style was not retained')
+	}).name() == 'custom'
 	assert marker_box.text() or { '' } == '[A]'
 }
 
