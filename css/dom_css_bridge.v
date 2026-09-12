@@ -844,11 +844,11 @@ fn style_computer_document_timeline_update_callback(target voidptr, timestamp f6
 
 fn required_style_invalidation_to_dom(invalidation RequiredInvalidationAfterStyleChange) dom.RequiredInvalidationAfterStyleChange {
 	return dom.RequiredInvalidationAfterStyleChange{
-		relayout:                            invalidation.relayout
-		rebuild_layout_tree:                 invalidation.rebuild_layout_tree
-		repaint:                             invalidation.repaint
-		rebuild_stacking_context_tree:       invalidation.rebuild_stacking_context_tree
-		rebuild_accumulated_visual_contexts: invalidation.rebuild_accumulated_visual_contexts
+		relayout: invalidation.needs_relayout()
+		rebuild_layout_tree: invalidation.needs_layout_tree_rebuild()
+		repaint: invalidation.needs_repaint()
+		rebuild_stacking_context_tree: invalidation.needs_stacking_context_tree_rebuild()
+		rebuild_accumulated_visual_contexts: invalidation.accumulated_visual_contexts() == .rebuild
 	}
 }
 
@@ -874,11 +874,11 @@ fn document_style_update_callback(target voidptr) dom.RequiredInvalidationAfterS
 	document := unsafe { &dom.Document(target) }
 	invalidation := update_style_for_document_from_upstream(document)
 	return dom.RequiredInvalidationAfterStyleChange{
-		relayout:                            invalidation.relayout
-		rebuild_layout_tree:                 invalidation.rebuild_layout_tree
-		repaint:                             invalidation.repaint
-		rebuild_stacking_context_tree:       invalidation.rebuild_stacking_context_tree
-		rebuild_accumulated_visual_contexts: invalidation.rebuild_accumulated_visual_contexts
+		relayout: invalidation.needs_relayout()
+		rebuild_layout_tree: invalidation.needs_layout_tree_rebuild()
+		repaint: invalidation.needs_repaint()
+		rebuild_stacking_context_tree: invalidation.needs_stacking_context_tree_rebuild()
+		rebuild_accumulated_visual_contexts: invalidation.accumulated_visual_contexts() == .rebuild
 	}
 }
 

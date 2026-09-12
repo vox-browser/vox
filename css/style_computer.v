@@ -805,7 +805,7 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 	old_font_list := mutable_old_style.computed_font_list(font_computer)
 	new_font_list := mutable_new_style.computed_font_list(font_computer)
 	if !old_font_list.equals(new_font_list) {
-		invalidation.relayout = true
+		invalidation.ensure_at_least(.relayout)
 	}
 	for property_id in computed_interpolation_longhand_property_ids() {
 		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_style.property(property_id, .no), new_style.property(property_id, .no)))
@@ -887,7 +887,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		mutable_computer.pop_ancestor(abstract_element.element())
 	}
 
-	if !invalidation.is_none() && !invalidation.rebuild_layout_tree {
+	if !invalidation.is_none() && !invalidation.needs_layout_tree_rebuild() {
 		if layout_node := abstract_element.unsafe_layout_node() {
 			if dom_style := abstract_element.computed_properties() {
 				layout_node.apply_style(dom_style)
@@ -1183,10 +1183,10 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 		}
 
 		mut mutable_target_node := unsafe { &dom.Node(target_node) }
-		if invalidation.relayout {
+		if invalidation.needs_relayout() {
 			mutable_target_node.set_needs_layout_update(.keyframe_effect)
 		}
-		if invalidation.rebuild_layout_tree {
+		if invalidation.needs_layout_tree_rebuild() {
 			if parent_element := target_node.parent_element() {
 				mut parent_node := unsafe { &dom.Node(parent_element.as_node()) }
 				parent_node.set_needs_layout_tree_update(true, .keyframe_effect)
@@ -1195,14 +1195,14 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			}
 		}
 		mut document := unsafe { &dom.Document(target_element.document()) }
-		if invalidation.repaint {
+		if invalidation.needs_repaint() {
 			mutable_target_node.set_needs_repaint(.yes)
 			document.invalidate_display_list()
-			if invalidation.rebuild_accumulated_visual_contexts {
+			if invalidation.accumulated_visual_contexts() == .rebuild {
 				document.set_needs_accumulated_visual_contexts_update(true)
 			}
 		}
-		if invalidation.rebuild_stacking_context_tree {
+		if invalidation.needs_stacking_context_tree_rebuild() {
 			document.invalidate_stacking_context_tree()
 		}
 	}
@@ -1289,10 +1289,10 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 	}
 
 	mut mutable_node := unsafe { &dom.Node(node) }
-	if node_invalidation.relayout {
+	if node_invalidation.needs_relayout() {
 		mutable_node.set_needs_layout_update(.style_change)
 	}
-	if node_invalidation.rebuild_layout_tree {
+	if node_invalidation.needs_layout_tree_rebuild() {
 		if parent_element := node.parent_element() {
 			mut mutable_parent := unsafe { &dom.Node(parent_element.as_node()) }
 			mutable_parent.set_needs_layout_tree_update(true, .style_change)
@@ -1308,7 +1308,7 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 		recompute_custom_property_dependents = true
 	}
 	children_need_inherited_style_update := !invalidation.is_none()
-	children_need_full_style_recompute := node_invalidation.rebuild_layout_tree
+	children_need_full_style_recompute := node_invalidation.needs_layout_tree_rebuild()
 	if needs_full_style_update || node.child_needs_style_update()
 		|| children_need_inherited_style_update || recompute_custom_property_dependents
 		|| children_need_full_style_recompute {

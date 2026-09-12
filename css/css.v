@@ -537,17 +537,184 @@ pub enum ContentVisibility {
 }
 
 // --- RequiredInvalidationAfterStyleChange ---
+// Ordered by increasing severity. A higher level implies every lower level.
+pub enum InvalidationLevel {
+	none_
+	repaint
+	relayout
+	rebuild_layout_tree
+}
+
+pub enum AccumulatedVisualContextInvalidation {
+	none_
+	update_values
+	rebuild
+}
+
+pub enum LayoutTreeRebuildRoot {
+	self
+	self_unless_document_element_or_body
+	box_presence_change
+	parent
+}
+
 pub struct RequiredInvalidationAfterStyleChange {
 pub mut:
-	repaint                             bool
-	rebuild_stacking_context_tree       bool
-	relayout                            bool
-	rebuild_layout_tree                 bool
-	rebuild_accumulated_visual_contexts bool
+	level_                                             InvalidationLevel
+	accumulated_visual_contexts_                       AccumulatedVisualContextInvalidation
+	layout_tree_rebuild_root_                          LayoutTreeRebuildRoot = .parent
+	rebuild_stacking_context_tree_                     bool
+	needs_scrollable_overflow_recalculation_           bool
+	needs_scroll_container_resnap                      bool
+	recompute_descendant_styles                        bool
+	inherited_style_groups_changed_                    u8
+	changes_containing_block_establishment             bool
+	repaint_propagated_text_decorations                bool
+	repaint_selection                                  bool
+	affects_hit_testing                                bool
+	non_inherited_property_inheritance_sources_changed bool
+}
+
+pub fn (mut r RequiredInvalidationAfterStyleChange) ensure_at_least(level InvalidationLevel) {
+	if int(level) > int(r.level_) {
+		r.level_ = level
+	}
+	if int(level) >= int(InvalidationLevel.rebuild_layout_tree) {
+		r.layout_tree_rebuild_root_ = .parent
+	}
+}
+
+pub fn (mut r RequiredInvalidationAfterStyleChange) ensure_accumulated_visual_contexts_at_least(invalidation AccumulatedVisualContextInvalidation) {
+	if int(invalidation) > int(r.accumulated_visual_contexts_) {
+		r.accumulated_visual_contexts_ = invalidation
+	}
+}
+
+pub fn (mut r RequiredInvalidationAfterStyleChange) set_needs_stacking_context_tree_rebuild() {
+	r.rebuild_stacking_context_tree_ = true
+	r.ensure_at_least(.repaint)
+}
+
+pub fn (mut r RequiredInvalidationAfterStyleChange) set_needs_scrollable_overflow_recalculation() {
+	r.needs_scrollable_overflow_recalculation_ = true
+}
+
+pub fn (r RequiredInvalidationAfterStyleChange) needs_repaint() bool {
+	return int(r.level_) >= int(InvalidationLevel.repaint)
+}
+
+pub fn (r RequiredInvalidationAfterStyleChange) needs_relayout() bool {
+	return int(r.level_) >= int(InvalidationLevel.relayout)
+}
+
+pub fn (r RequiredInvalidationAfterStyleChange) needs_layout_tree_rebuild() bool {
+	return int(r.level_) >= int(InvalidationLevel.rebuild_layout_tree)
+}
+
+pub fn (r RequiredInvalidationAfterStyleChange) layout_tree_rebuild_root() LayoutTreeRebuildRoot {
+	if !r.needs_layout_tree_rebuild() {
+		panic('VERIFY_NOT_REACHED')
+	}
+	return r.layout_tree_rebuild_root_
+}
+
+pub fn (mut r RequiredInvalidationAfterStyleChange) set_layout_tree_rebuild_root(root LayoutTreeRebuildRoot) {
+	if !r.needs_layout_tree_rebuild() {
+		panic('VERIFY_NOT_REACHED')
+	}
+	r.layout_tree_rebuild_root_ = root
+}
+
+pub fn (r RequiredInvalidationAfterStyleChange) needs_stacking_context_tree_rebuild() bool {
+	return r.rebuild_stacking_context_tree_
+}
+
+pub fn (r RequiredInvalidationAfterStyleChange) needs_scrollable_overflow_recalculation() bool {
+	return r.needs_scrollable_overflow_recalculation_ && !r.needs_relayout()
+}
+
+pub fn (r RequiredInvalidationAfterStyleChange) accumulated_visual_contexts() AccumulatedVisualContextInvalidation {
+	return r.accumulated_visual_contexts_
+}
+
+pub fn (r RequiredInvalidationAfterStyleChange) invalidates_hit_test_display_list() bool {
+	return r.affects_hit_testing || r.needs_relayout() || r.needs_stacking_context_tree_rebuild()
+		|| r.accumulated_visual_contexts_ == .rebuild
+}
+
+pub fn (r RequiredInvalidationAfterStyleChange) inherited_style_changed() bool {
+	return r.inherited_style_groups_changed_ != 0
+}
+
+pub fn (r RequiredInvalidationAfterStyleChange) inherited_style_groups_changed() u8 {
+	return r.inherited_style_groups_changed_
+}
+
+pub fn (mut r RequiredInvalidationAfterStyleChange) mark_inherited_style_group_changed(group usize) {
+	if group >= 7 {
+		panic('inherited style group index out of range')
+	}
+	r.inherited_style_groups_changed_ |= u8(1 << group)
+}
+
+pub fn (mut r RequiredInvalidationAfterStyleChange) mark_all_inherited_style_groups_changed() {
+	r.inherited_style_groups_changed_ = 0x7f
 }
 
 pub fn (r RequiredInvalidationAfterStyleChange) is_none() bool {
-	return !r.repaint && !r.rebuild_stacking_context_tree && !r.relayout && !r.rebuild_layout_tree && !r.rebuild_accumulated_visual_contexts
+	return r.level_ == .none_ && r.accumulated_visual_contexts_ == .none_
+		&& !r.needs_scrollable_overflow_recalculation_ && !r.needs_scroll_container_resnap
+		&& !r.recompute_descendant_styles && !r.inherited_style_changed()
+		&& !r.changes_containing_block_establishment && !r.repaint_selection
+		&& !r.affects_hit_testing && !r.repaint_propagated_text_decorations
+		&& !r.non_inherited_property_inheritance_sources_changed
+}
+
+pub fn RequiredInvalidationAfterStyleChange.full() RequiredInvalidationAfterStyleChange {
+	mut invalidation := RequiredInvalidationAfterStyleChange{}
+	invalidation.ensure_at_least(.rebuild_layout_tree)
+	invalidation.set_needs_stacking_context_tree_rebuild()
+	return invalidation
+}
+
+pub fn RequiredInvalidationAfterStyleChange.rebuild_layout_tree_from(root LayoutTreeRebuildRoot) RequiredInvalidationAfterStyleChange {
+	mut invalidation := RequiredInvalidationAfterStyleChange{}
+	invalidation.ensure_at_least(.rebuild_layout_tree)
+	invalidation.set_layout_tree_rebuild_root(root)
+	invalidation.set_needs_stacking_context_tree_rebuild()
+	return invalidation
+}
+
+pub fn decode_style_invalidation(packed u32) RequiredInvalidationAfterStyleChange {
+	mut result := RequiredInvalidationAfterStyleChange{}
+	result.ensure_at_least(unsafe { InvalidationLevel(packed & 0x3) })
+	result.ensure_accumulated_visual_contexts_at_least(unsafe {
+		AccumulatedVisualContextInvalidation((packed >> 2) & 0x3)
+	})
+	if result.needs_layout_tree_rebuild() {
+		result.set_layout_tree_rebuild_root(unsafe {
+			LayoutTreeRebuildRoot((packed >> 4) & 0x3)
+		})
+	}
+	if packed & (u32(1) << 6) != 0 {
+		result.set_needs_stacking_context_tree_rebuild()
+	}
+	if packed & (u32(1) << 7) != 0 {
+		result.set_needs_scrollable_overflow_recalculation()
+	}
+	result.needs_scroll_container_resnap = packed & (u32(1) << 8) != 0
+	result.recompute_descendant_styles = packed & (u32(1) << 9) != 0
+	inherited_groups := u8((packed >> 10) & 0x7f)
+	for group in 0 .. 7 {
+		if inherited_groups & u8(1 << group) != 0 {
+			result.mark_inherited_style_group_changed(usize(group))
+		}
+	}
+	result.changes_containing_block_establishment = packed & (u32(1) << 17) != 0
+	result.repaint_propagated_text_decorations = packed & (u32(1) << 18) != 0
+	result.non_inherited_property_inheritance_sources_changed = packed & (u32(1) << 19) != 0
+	result.affects_hit_testing = packed & (u32(1) << 22) != 0
+	return result
 }
 
 // --- StyleComputer user agent source ---

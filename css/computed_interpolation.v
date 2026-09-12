@@ -8611,9 +8611,7 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 	// NOTE: If the text-transform property changes, it may affect layout. Furthermore, since the
 	//       Layout::TextNode caches the post-transform text, we have to update the layout tree.
 	if property_id == .text_transform {
-		invalidation.rebuild_layout_tree = true
-		invalidation.relayout = true
-		invalidation.repaint = true
+		invalidation.ensure_at_least(.rebuild_layout_tree)
 		return invalidation
 	}
 
@@ -8631,12 +8629,12 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 			false
 		}
 		if old_is_collapse != new_is_collapse {
-			invalidation.relayout = true
+			invalidation.ensure_at_least(.relayout)
 		}
 		// Of course, we still have to repaint on any visibility change.
-		invalidation.repaint = true
+		invalidation.ensure_at_least(.repaint)
 	} else if property_affects_layout(property_id) {
-		invalidation.relayout = true
+		invalidation.ensure_at_least(.relayout)
 	}
 
 	if property_affects_stacking_context(property_id) {
@@ -8652,47 +8650,70 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 		// causing it to be painted from both step 8 (m_positioned_descendants) and
 		// step 9 (m_children with z >= 1), resulting in double painting.
 		if property_id == .z_index {
-			invalidation.rebuild_stacking_context_tree = true
+			invalidation.set_needs_stacking_context_tree_rebuild()
 		} else {
 			// OPTIMIZATION: Only rebuild stacking context tree when property crosses from a neutral value
 			// (doesn't create stacking context) to a creating value or vice versa.
 			old_creates := is_stacking_context_creating_value_boundary(property_id, old_value)
 			new_creates := is_stacking_context_creating_value_boundary(property_id, new_value)
 			if old_creates != new_creates {
-				invalidation.rebuild_stacking_context_tree = true
+				invalidation.set_needs_stacking_context_tree_rebuild()
 			}
 		}
 	}
 
 	if property_rebuilds_accumulated_visual_contexts(property_id) {
-		invalidation.rebuild_accumulated_visual_contexts = true
+		invalidation.ensure_accumulated_visual_contexts_at_least(.rebuild)
 	}
 
-	invalidation.repaint = true
+	invalidation.ensure_at_least(.repaint)
 	return invalidation
 }
 
 pub fn required_invalidation_after_style_change_full() RequiredInvalidationAfterStyleChange {
-	return RequiredInvalidationAfterStyleChange{
-		repaint: true
-		relayout: true
-		rebuild_layout_tree: true
-		rebuild_stacking_context_tree: true
-	}
+	return RequiredInvalidationAfterStyleChange.full()
 }
 
 pub fn required_invalidation_after_style_change_is_full(invalidation RequiredInvalidationAfterStyleChange) bool {
-	return invalidation.repaint && invalidation.rebuild_stacking_context_tree && invalidation.relayout && invalidation.rebuild_layout_tree
+	return invalidation.needs_repaint() && invalidation.needs_stacking_context_tree_rebuild()
+		&& invalidation.needs_relayout() && invalidation.needs_layout_tree_rebuild()
 }
 
 pub fn required_invalidation_after_style_change_or(left RequiredInvalidationAfterStyleChange, right RequiredInvalidationAfterStyleChange) RequiredInvalidationAfterStyleChange {
-	return RequiredInvalidationAfterStyleChange{
-		repaint: left.repaint || right.repaint
-		relayout: left.relayout || right.relayout
-		rebuild_layout_tree: left.rebuild_layout_tree || right.rebuild_layout_tree
-		rebuild_stacking_context_tree: left.rebuild_stacking_context_tree || right.rebuild_stacking_context_tree
-		rebuild_accumulated_visual_contexts: left.rebuild_accumulated_visual_contexts || right.rebuild_accumulated_visual_contexts
+	mut result := left
+	if right.needs_layout_tree_rebuild() {
+		if result.needs_layout_tree_rebuild() {
+			if int(right.layout_tree_rebuild_root_) > int(result.layout_tree_rebuild_root_) {
+				result.layout_tree_rebuild_root_ = right.layout_tree_rebuild_root_
+			}
+		} else {
+			result.layout_tree_rebuild_root_ = right.layout_tree_rebuild_root_
+		}
 	}
+	if int(right.level_) > int(result.level_) {
+		result.level_ = right.level_
+	}
+	if int(right.accumulated_visual_contexts_) > int(result.accumulated_visual_contexts_) {
+		result.accumulated_visual_contexts_ = right.accumulated_visual_contexts_
+	}
+	result.rebuild_stacking_context_tree_ = result.rebuild_stacking_context_tree_
+		|| right.rebuild_stacking_context_tree_
+	result.needs_scrollable_overflow_recalculation_ = result.needs_scrollable_overflow_recalculation_
+		|| right.needs_scrollable_overflow_recalculation_
+	result.needs_scroll_container_resnap = result.needs_scroll_container_resnap
+		|| right.needs_scroll_container_resnap
+	result.recompute_descendant_styles = result.recompute_descendant_styles
+		|| right.recompute_descendant_styles
+	result.inherited_style_groups_changed_ |= right.inherited_style_groups_changed_
+	result.changes_containing_block_establishment = result.changes_containing_block_establishment
+		|| right.changes_containing_block_establishment
+	result.repaint_propagated_text_decorations = result.repaint_propagated_text_decorations
+		|| right.repaint_propagated_text_decorations
+	result.repaint_selection = result.repaint_selection || right.repaint_selection
+	result.affects_hit_testing = result.affects_hit_testing || right.affects_hit_testing
+	result.non_inherited_property_inheritance_sources_changed = result.non_inherited_property_inheritance_sources_changed
+		|| right.non_inherited_property_inheritance_sources_changed
+	return result
 }
 
 // --- InvalidationSet ---
