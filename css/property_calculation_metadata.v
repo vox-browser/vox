@@ -2058,7 +2058,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.place_self { 'normal' }
 		.pointer_events { 'auto' }
 		.position { 'static' }
-		.position_anchor { 'auto' }
+		.position_anchor { 'normal' }
 		.position_area { 'none' }
 		.position_try_fallbacks { 'none' }
 		.position_try_order { 'normal' }
@@ -2464,8 +2464,11 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
-		.accent_color, .animation_duration, .aspect_ratio, .border_image_width, .bottom, .caret_color, .clip, .column_count, .column_height, .column_width, .grid, .grid_area, .grid_auto_columns, .grid_auto_rows, .grid_column, .grid_column_end, .grid_column_start, .grid_row, .grid_row_end, .grid_row_start, .grid_template, .grid_template_columns, .grid_template_rows, .inset, .inset_block, .inset_block_end, .inset_block_start, .inset_inline, .inset_inline_end, .inset_inline_start, .left, .margin, .margin_block, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .position_anchor, .right, .rx, .ry, .text_underline_offset, .top, .z_index {
+		.accent_color, .animation_duration, .aspect_ratio, .border_image_width, .bottom, .caret_color, .clip, .column_count, .column_height, .column_width, .grid, .grid_area, .grid_auto_columns, .grid_auto_rows, .grid_column, .grid_column_end, .grid_column_start, .grid_row, .grid_row_end, .grid_row_start, .grid_template, .grid_template_columns, .grid_template_rows, .inset, .inset_block, .inset_block_end, .inset_block_start, .inset_inline, .inset_inline_end, .inset_inline_start, .left, .margin, .margin_block, .margin_block_end, .margin_block_start, .margin_bottom, .margin_inline, .margin_inline_end, .margin_inline_start, .margin_left, .margin_right, .margin_top, .right, .rx, .ry, .text_underline_offset, .top, .z_index {
 			lowercase_value in ['auto']
+		}
+		.position_anchor {
+			lowercase_value in ['normal', 'none', 'auto']
 		}
 		.align_content {
 			lowercase_value in ['normal', 'start', 'flex-start', 'end', 'flex-end', 'center', 'space-between', 'space-around', 'space-evenly', 'stretch']

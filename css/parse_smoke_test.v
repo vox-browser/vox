@@ -707,6 +707,21 @@ fn test_anchor_and_fit_content_values_are_typed() {
 	assert parse_css_value_logic(.color, 'anchor-size(width)') == none
 }
 
+fn test_position_anchor_accepts_current_keywords_and_uses_normal_initial_value() {
+	for keyword in ['normal', 'none', 'auto'] {
+		value := parse_css_value_logic(.position_anchor, keyword) or {
+			panic('position-anchor rejected ${keyword}')
+		}
+		assert value.serialize(.normal) == keyword
+	}
+	assert parse_css_value_logic(.position_anchor, '--card')?.serialize(.normal) == '--card'
+	assert parse_css_value_logic(.position_anchor, 'card') == none
+	assert property_initial_value_string(.position_anchor) == 'normal'
+	assert property_accepts_keyword(.position_anchor, .normal)
+	assert property_accepts_keyword(.position_anchor, .none_)
+	assert property_accepts_keyword(.position_anchor, .auto)
+}
+
 fn parsed_type(text string, value_type ValueType) ?StyleValue {
 	mut parser := Parser.with_context(ParsingParams{}, text)
 	return parser.parse_as_type(value_type)

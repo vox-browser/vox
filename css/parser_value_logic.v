@@ -2294,13 +2294,21 @@ fn (mut parser Parser) parse_anchor_scope_value(mut tokens ComponentValueStream)
 
 fn (mut parser Parser) parse_position_anchor_value(mut tokens ComponentValueStream) ?StyleValue {
 	// https://drafts.csswg.org/css-anchor-position/#position-anchor
-	// auto | <anchor-name>
+	// normal | none | auto | <anchor-name>
+	if normal_value := parser.parse_all_as_single_keyword_value(mut tokens, .normal) {
+		return normal_value
+	}
+
+	if none_value := parser.parse_all_as_single_keyword_value(mut tokens, .none_) {
+		return none_value
+	}
+
 	if auto_value := parser.parse_all_as_single_keyword_value(mut tokens, .auto) {
 		return auto_value
 	}
 
 	// <anchor-name> = <dashed-ident>
-	return parser.parse_dashed_ident_value(mut tokens, ['auto'])
+	return parser.parse_dashed_ident_value(mut tokens, ['normal', 'none', 'auto'])
 }
 
 fn (mut parser Parser) parse_timeline_name_value(mut tokens ComponentValueStream) ?StyleValue {
