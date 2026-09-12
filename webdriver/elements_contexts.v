@@ -216,6 +216,49 @@ pub fn represents_shadow_root(value json2.Any) bool {
 	return shadow_root_identifier in (value as map[string]json2.Any)
 }
 
+// These helpers are the portable equivalents of the JS wrapper conversions in
+// JSON.cpp. The V model carries protocol objects as json2 values and resolves
+// them through the same per-session reference store.
+pub fn web_driver_element_from_object(value json2.Any, store ReferenceStore, context BrowsingContext) ?ElementRecord {
+	if !represents_web_element(value) {
+		return none
+	}
+	object := value as map[string]json2.Any
+	reference_value := object[web_element_identifier] or { return none }
+	if reference_value !is string {
+		return none
+	}
+	return get_known_element(store, context, reference_value as string) or { none }
+}
+
+pub fn web_driver_shadow_root_from_object(value json2.Any, store ReferenceStore, context BrowsingContext) ?ShadowRootRecord {
+	if !represents_shadow_root(value) {
+		return none
+	}
+	object := value as map[string]json2.Any
+	reference_value := object[shadow_root_identifier] or { return none }
+	if reference_value !is string {
+		return none
+	}
+	return get_known_shadow_root(store, context, reference_value as string) or { none }
+}
+
+pub fn web_driver_value_is_collection(value json2.Any) bool {
+	// Every translated supported platform collection crosses this boundary as
+	// a JSON array; plain JSON objects remain non-collections.
+	return value is []json2.Any
+}
+
+pub fn web_driver_element(mut store ReferenceStore, context BrowsingContext, element ElementRecord) json2.Any {
+	reference := store.element_reference(context, element)
+	return json2.Any(element_reference_object(reference))
+}
+
+pub fn web_driver_shadow_root(mut store ReferenceStore, context BrowsingContext, root ShadowRootRecord) json2.Any {
+	reference := store.shadow_reference(context, root)
+	return json2.Any(shadow_reference_object(reference))
+}
+
 pub fn get_known_element(store ReferenceStore, context BrowsingContext, reference string) !ElementRecord {
 	seen := store.seen_node_references[reference_navigable_key(context)] or { []string{} }
 	if reference !in seen {

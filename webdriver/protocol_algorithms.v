@@ -266,7 +266,7 @@ pub fn reset_input_state(context BrowsingContext) {
 }
 
 pub fn is_collection(value json2.Any) bool {
-	return value is []json2.Any
+	return web_driver_value_is_collection(value)
 }
 
 pub fn json_object_to_js_object(value map[string]json2.Any) !map[string]json2.Any {

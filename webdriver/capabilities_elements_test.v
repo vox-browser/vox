@@ -109,6 +109,39 @@ fn test_reference_store_staleness_and_shadow_identity() {
 	assert false
 }
 
+fn test_webdriver_json_wrapper_boundaries_round_trip_references() {
+	context := BrowsingContext{
+		handle:      'json-window'
+		group_id:    'json-group'
+		document_id: 'json-document'
+	}
+	mut store := ReferenceStore{}
+	element := ElementRecord{
+		node_id:     'json-element'
+		document_id: 'json-document'
+	}
+	element_value := web_driver_element(mut store, context, element)
+	resolved_element := web_driver_element_from_object(element_value, store, context) or {
+		panic('element wrapper did not resolve')
+	}
+	assert resolved_element.node_id == 'json-element'
+
+	shadow := ShadowRootRecord{
+		node_id:     'json-shadow'
+		document_id: 'json-document'
+	}
+	shadow_value := web_driver_shadow_root(mut store, context, shadow)
+	resolved_shadow := web_driver_shadow_root_from_object(shadow_value, store, context) or {
+		panic('shadow wrapper did not resolve')
+	}
+	assert resolved_shadow.node_id == 'json-shadow'
+	assert web_driver_element_from_object(json2.Any(map[string]json2.Any{}), store,
+		context) == none
+	collection := [element_value]
+	assert web_driver_value_is_collection(json2.Any(collection))
+	assert !web_driver_value_is_collection(element_value)
+}
+
 fn test_location_strategies_match_rendered_link_text_and_css() {
 	elements := [
 		ElementRecord{
