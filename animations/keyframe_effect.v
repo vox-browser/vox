@@ -6,8 +6,11 @@
 module animations
 
 import css
+import compositor
 import dom
 import math
+
+__global keyframe_effect_preparation_identity_counter u64
 
 pub enum CompositeOperation {
 	replace
@@ -73,20 +76,50 @@ pub mut:
 	keyframes_by_key map[u64]ResolvedKeyframe
 }
 
+pub struct CompositorKeyframeValueCache {
+pub mut:
+	key_frame_set_identity      voidptr
+	target_style_generation     u64
+	style_environment_version   u64
+	reference_width             f32
+	reference_height            f32
+	device_pixels_per_css_pixel f32
+	is_valid                    bool
+	values                      []?compositor.VisualAnimationValue
+}
+
 @[heap]
 pub struct KeyframeEffect {
 	AnimationEffect
 pub mut:
-	target_element_         ?&dom.Element
-	target_pseudo_selector_ ?css.PseudoElementSelector
-	composite_              CompositeOperation = .replace
-	keyframes_              []BaseKeyframe
-	key_frame_set_          KeyFrameSet
+	target_element_                                   ?&dom.Element
+	target_pseudo_selector_                           ?css.PseudoElementSelector
+	composite_                                        CompositeOperation = .replace
+	keyframes_                                        []BaseKeyframe
+	key_frame_set_                                    KeyFrameSet
+	animation_preparation_identity_                   u64
+	animation_preparation_generation_                 u64
+	compositor_opacity_keyframe_value_cache_          ?CompositorKeyframeValueCache
+	compositor_background_color_keyframe_value_cache_ ?CompositorKeyframeValueCache
+	compositor_filter_keyframe_value_cache_           ?CompositorKeyframeValueCache
+	compositor_transform_keyframe_value_cache_        ?CompositorKeyframeValueCache
+	retained_compositor_animations_                   []compositor.VisualAnimation
+	is_compositor_driven_                             bool
+	is_compositor_replaced_                           bool
+	is_offscreen_throttled_                           bool
+	is_observation_relevant_compositor_animation_     bool
+	needs_observation_sample_                         bool
+	can_skip_per_frame_style_update_cache_            ?bool
+	last_element_scoped_observation_task_generation_  ?u64
+	per_frame_animation_tick_was_skipped_             bool
 }
 
 pub fn KeyframeEffect.create() &KeyframeEffect {
+	identity := keyframe_effect_preparation_identity_counter
+	keyframe_effect_preparation_identity_counter++
 	return &KeyframeEffect{
 		is_keyframe_effect_: true
+		animation_preparation_identity_: identity
 	}
 }
 
@@ -95,7 +128,7 @@ pub fn KeyframeEffect.construct_impl(target ?&dom.Element, keyframes []BaseKeyfr
 	effect.set_target(target)
 	effect.set_pseudo_element(options.pseudo_element)!
 	effect.AnimationEffect.update_timing(options.timing)!
-	effect.composite_ = options.composite
+	effect.set_composite(options.composite)
 	effect.set_keyframes(keyframes)!
 	return effect
 }
@@ -107,13 +140,12 @@ pub fn KeyframeEffect.with_duration(target ?&dom.Element, keyframes []BaseKeyfra
 }
 
 pub fn KeyframeEffect.copy(source &KeyframeEffect) &KeyframeEffect {
-	mut effect := &KeyframeEffect{
-		target_element_:         source.target_element_
-		target_pseudo_selector_: source.target_pseudo_selector_
-		composite_:              source.composite_
-		keyframes_:              source.keyframes_.clone()
-		key_frame_set_:          source.key_frame_set_
-	}
+	mut effect := KeyframeEffect.create()
+	effect.target_element_ = source.target_element_
+	effect.target_pseudo_selector_ = source.target_pseudo_selector_
+	effect.composite_ = source.composite_
+	effect.keyframes_ = source.keyframes_.clone()
+	effect.key_frame_set_ = source.key_frame_set_
 	effect.specified_start_delay_ = source.specified_start_delay_
 	effect.specified_end_delay_ = source.specified_end_delay_
 	effect.fill_mode_ = source.fill_mode_
@@ -133,8 +165,22 @@ pub fn (effect &KeyframeEffect) as_animation_effect() &AnimationEffect {
 }
 
 pub fn (mut effect KeyframeEffect) set_target(target ?&dom.Element) {
+	if animation := effect.associated_animation_ {
+		if old_target := effect.target_element_ {
+			if old_target.animations_animatable_handle_ != unsafe { nil } {
+				mut old_animatable := unsafe { &Animatable(old_target.animations_animatable_handle_) }
+				old_animatable.disassociate_with_animation(animation)
+			}
+		}
+		if new_target := target {
+			mut new_animatable := Animatable.new(new_target)
+			new_animatable.associate_with_animation(animation)
+		}
+	}
 	effect.target_element_ = target
 	effect.has_target_ = target != none
+	effect.invalidate_animation_preparation()
+	effect.invalidate_effect()
 }
 
 pub fn (effect &KeyframeEffect) target() ?&dom.Element {
@@ -149,10 +195,32 @@ pub fn (effect &KeyframeEffect) pseudo_element() ?string {
 pub fn (mut effect KeyframeEffect) set_pseudo_element(value ?string) ! {
 	text := value or {
 		effect.target_pseudo_selector_ = none
+		effect.invalidate_animation_preparation()
+		effect.invalidate_effect()
 		return
 	}
 
 	effect.target_pseudo_selector_ = pseudo_element_parsing(text)!
+	effect.invalidate_animation_preparation()
+	effect.invalidate_effect()
+}
+
+pub fn (effect &KeyframeEffect) composite_for_bindings() CompositeOperation {
+	return effect.composite_
+}
+
+pub fn (effect &KeyframeEffect) composite() CompositeOperation {
+	return effect.composite_
+}
+
+pub fn (mut effect KeyframeEffect) set_composite_for_bindings(value CompositeOperation) {
+	effect.set_composite(value)
+}
+
+pub fn (mut effect KeyframeEffect) set_composite(value CompositeOperation) {
+	effect.composite_ = value
+	effect.invalidate_animation_preparation()
+	effect.invalidate_effect()
 }
 
 pub fn (effect &KeyframeEffect) pseudo_element_type() ?css.PseudoElement {
@@ -358,6 +426,261 @@ pub fn (mut effect KeyframeEffect) set_keyframes(input []BaseKeyframe) ! {
 	}
 	generate_initial_and_final_frames(mut set, effect.target_properties_)
 	effect.key_frame_set_ = set
+	effect.invalidate_animation_preparation()
+	effect.invalidate_effect()
+}
+
+pub fn (mut effect KeyframeEffect) set_key_frame_set(set KeyFrameSet) {
+	effect.target_properties_.clear()
+	for _, keyframe in set.keyframes_by_key {
+		for property_id, _ in keyframe.properties {
+			effect.target_properties_[property_id] = true
+		}
+	}
+	effect.key_frame_set_ = set
+	effect.invalidate_animation_preparation()
+	effect.invalidate_effect()
+}
+
+pub fn (mut effect KeyframeEffect) invalidate_effect() {
+	effect.compositor_opacity_keyframe_value_cache_ = none
+	effect.compositor_background_color_keyframe_value_cache_ = none
+	effect.compositor_filter_keyframe_value_cache_ = none
+	effect.compositor_transform_keyframe_value_cache_ = none
+	effect.is_compositor_driven_ = false
+	effect.is_compositor_replaced_ = false
+	effect.retained_compositor_animations_.clear()
+	effect.is_offscreen_throttled_ = false
+	effect.is_observation_relevant_compositor_animation_ = false
+	effect.clear_per_frame_style_update_cache()
+	if target := effect.target_element_ {
+		if target.document() != unsafe { nil } {
+			mut document := unsafe { &dom.Document(target.document()) }
+			document.set_needs_animated_style_update()
+		}
+	}
+}
+
+pub fn (effect &KeyframeEffect) animation_preparation_identity() u64 {
+	return effect.animation_preparation_identity_
+}
+
+pub fn (effect &KeyframeEffect) animation_preparation_generation() u64 {
+	return effect.animation_preparation_generation_
+}
+
+pub fn (mut effect KeyframeEffect) invalidate_animation_preparation() {
+	effect.animation_preparation_generation_++
+}
+
+pub fn (effect &KeyframeEffect) is_compositor_driven() bool {
+	return effect.is_compositor_driven_
+}
+
+pub fn (mut effect KeyframeEffect) set_is_compositor_driven(value bool) {
+	if effect.is_compositor_driven_ == value {
+		return
+	}
+	effect.is_compositor_driven_ = value
+	effect.clear_per_frame_style_update_cache()
+}
+
+pub fn (effect &KeyframeEffect) is_compositor_replaced() bool {
+	return effect.is_compositor_replaced_
+}
+
+pub fn (mut effect KeyframeEffect) set_is_compositor_replaced(value bool) {
+	if effect.is_compositor_replaced_ == value {
+		return
+	}
+	effect.is_compositor_replaced_ = value
+	effect.clear_per_frame_style_update_cache()
+}
+
+pub fn (effect &KeyframeEffect) retained_compositor_animations() []compositor.VisualAnimation {
+	return effect.retained_compositor_animations_.clone()
+}
+
+pub fn (mut effect KeyframeEffect) set_retained_compositor_animations(values []compositor.VisualAnimation) {
+	effect.retained_compositor_animations_ = values.clone()
+}
+
+pub fn (mut effect KeyframeEffect) clear_retained_compositor_animations() {
+	effect.retained_compositor_animations_.clear()
+}
+
+pub fn (effect &KeyframeEffect) is_offscreen_throttled() bool {
+	return effect.is_offscreen_throttled_
+}
+
+pub fn (mut effect KeyframeEffect) set_is_offscreen_throttled(value bool) {
+	if effect.is_offscreen_throttled_ == value {
+		return
+	}
+	effect.is_offscreen_throttled_ = value
+	effect.clear_per_frame_style_update_cache()
+}
+
+pub fn (effect &KeyframeEffect) is_observation_relevant_compositor_animation() bool {
+	return effect.is_observation_relevant_compositor_animation_
+}
+
+pub fn (mut effect KeyframeEffect) set_is_observation_relevant_compositor_animation(value bool) {
+	effect.is_observation_relevant_compositor_animation_ = value
+}
+
+pub fn (mut effect KeyframeEffect) clear_per_frame_style_update_cache() {
+	effect.can_skip_per_frame_style_update_cache_ = none
+}
+
+pub fn (mut effect KeyframeEffect) request_observation_sample() {
+	if effect.needs_observation_sample_ {
+		return
+	}
+	effect.needs_observation_sample_ = true
+	if target := effect.target_element_ {
+		if target.document() != unsafe { nil } {
+			mut document := unsafe { &dom.Document(target.document()) }
+			document.set_needs_animated_style_update()
+		}
+	}
+}
+
+pub fn (mut effect KeyframeEffect) request_element_scoped_observation_sample(task_generation u64) bool {
+	if previous := effect.last_element_scoped_observation_task_generation_ {
+		if previous == task_generation {
+			return false
+		}
+	}
+	effect.last_element_scoped_observation_task_generation_ = task_generation
+	effect.request_observation_sample()
+	return true
+}
+
+pub fn (effect &KeyframeEffect) observation_sample_requested() bool {
+	return effect.needs_observation_sample_
+}
+
+pub fn (mut effect KeyframeEffect) consume_observation_sample_request() bool {
+	was_requested := effect.needs_observation_sample_
+	effect.needs_observation_sample_ = false
+	return was_requested
+}
+
+pub fn (effect &KeyframeEffect) per_frame_animation_tick_was_skipped() bool {
+	return effect.per_frame_animation_tick_was_skipped_
+}
+
+pub fn (mut effect KeyframeEffect) note_per_frame_animation_tick_was_skipped() {
+	effect.per_frame_animation_tick_was_skipped_ = true
+}
+
+pub fn (mut effect KeyframeEffect) clear_per_frame_animation_tick_was_skipped() {
+	effect.per_frame_animation_tick_was_skipped_ = false
+}
+
+pub fn (effect &KeyframeEffect) compositor_keyframe_value_cache(target_kind compositor.VisualAnimationTargetKind) ?CompositorKeyframeValueCache {
+	return match target_kind {
+		.opacity { effect.compositor_opacity_keyframe_value_cache_ }
+		.background_color { effect.compositor_background_color_keyframe_value_cache_ }
+		.filter { effect.compositor_filter_keyframe_value_cache_ }
+		.transform { effect.compositor_transform_keyframe_value_cache_ }
+	}
+}
+
+pub fn (mut effect KeyframeEffect) set_compositor_keyframe_value_cache(target_kind compositor.VisualAnimationTargetKind, cache ?CompositorKeyframeValueCache) {
+	match target_kind {
+		.opacity {
+			effect.compositor_opacity_keyframe_value_cache_ = cache
+		}
+		.background_color {
+			effect.compositor_background_color_keyframe_value_cache_ = cache
+		}
+		.filter {
+			effect.compositor_filter_keyframe_value_cache_ = cache
+		}
+		.transform {
+			effect.compositor_transform_keyframe_value_cache_ = cache
+		}
+	}
+}
+
+pub fn (effect &KeyframeEffect) can_skip_per_frame_style_update() bool {
+	if effect.is_compositor_driven_ || effect.is_compositor_replaced_ {
+		return true
+	}
+	if !math.is_inf(effect.iteration_count_, 1) || effect.pseudo_element_type() != none {
+		return false
+	}
+	target := effect.target_element_ or { return false }
+	if !target.as_node().is_connected() {
+		return true
+	}
+	if target.namespace_uri() or { '' } == 'http://www.w3.org/2000/svg' {
+		return false
+	}
+	mut has_animated_property := false
+	for _, keyframe in effect.key_frame_set_.keyframes_by_key {
+		for property_id, _ in keyframe.properties {
+			has_animated_property = true
+			if property_id !in [.transform, .translate, .rotate, .scale] {
+				return false
+			}
+		}
+	}
+	if !has_animated_property {
+		return false
+	}
+	if effect.is_offscreen_throttled_ {
+		return true
+	}
+	if target.document() == unsafe { nil } || !target.document().layout_is_up_to_date() {
+		return false
+	}
+	layout_node_with_style := target.el_unsafe_layout_node() or { return false }
+	layout_node := layout_node_with_style.layout_node_ or { return false }
+	if layout_node.visibility_ != .hidden {
+		return false
+	}
+	mut descendants := layout_node.children_.clone()
+	for descendants.len > 0 {
+		descendant := descendants.pop()
+		if descendant.visibility_ == .visible {
+			return false
+		}
+		descendants << descendant.children_
+	}
+	return true
+}
+
+pub fn (effect &KeyframeEffect) can_skip_per_frame_animation_tick() bool {
+	if animation := effect.associated_animation_ {
+		if !animation.pending() && animation.play_state() == .running
+			&& animation.playback_rate() > 0 {
+			if timeline := animation.timeline_ {
+				if timeline.is_monotonically_increasing() && effect.is_in_the_before_phase() {
+					return true
+				}
+			}
+		}
+	}
+	if !effect.is_compositor_driven_ && !effect.is_compositor_replaced_
+		&& !effect.can_skip_per_frame_style_update() {
+		return false
+	}
+	if (effect.is_compositor_driven_ || effect.is_compositor_replaced_)
+		&& (!math.is_inf(effect.iteration_count_, 1)
+			|| effect.is_observation_relevant_compositor_animation_) {
+		return true
+	}
+	target := effect.target_element_ or { return false }
+	for event_name in ['animationcancel', 'animationiteration', 'animationstart',
+		'webkitAnimationIteration', 'webkitAnimationStart'] {
+		if target.as_node().has_inclusive_ancestor_with_event_listener(event_name) {
+			return false
+		}
+	}
+	return true
 }
 
 pub fn generate_initial_and_final_frames(mut set KeyFrameSet, properties map[css.PropertyID]bool) {

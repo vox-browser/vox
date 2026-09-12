@@ -1,7 +1,9 @@
 module animations
 
 import css
+import compositor
 import dom
+import math
 
 fn test_pseudo_element_parsing_and_canonicalization() {
 	legacy := pseudo_element_parsing(':before')!
@@ -120,4 +122,90 @@ fn test_keyframe_effect_samples_css_properties() {
 		return
 	}
 	assert opacity.css_text == '0.5'
+}
+
+fn test_keyframe_effect_invalidation_resets_compositor_preparation() {
+	mut first := KeyframeEffect.create()
+	second := KeyframeEffect.create()
+	assert first.animation_preparation_identity() != second.animation_preparation_identity()
+	assert first.animation_preparation_generation() == 0
+
+	first.set_is_compositor_driven(true)
+	first.set_is_compositor_replaced(true)
+	first.set_is_offscreen_throttled(true)
+	first.set_is_observation_relevant_compositor_animation(true)
+	first.set_retained_compositor_animations([compositor.VisualAnimation{}])
+	first.set_compositor_keyframe_value_cache(.opacity, CompositorKeyframeValueCache{
+		is_valid: true
+	})
+	first.set_composite(.add)
+
+	assert first.animation_preparation_generation() == 1
+	assert first.composite_for_bindings() == .add
+	assert !first.is_compositor_driven()
+	assert !first.is_compositor_replaced()
+	assert !first.is_offscreen_throttled()
+	assert !first.is_observation_relevant_compositor_animation()
+	assert first.retained_compositor_animations().len == 0
+	assert first.compositor_keyframe_value_cache(.opacity) == none
+}
+
+fn test_keyframe_effect_observation_requests_are_coalesced_by_task() {
+	mut effect := KeyframeEffect.create()
+	assert !effect.observation_sample_requested()
+	assert effect.request_element_scoped_observation_sample(7)
+	assert effect.observation_sample_requested()
+	assert !effect.request_element_scoped_observation_sample(7)
+	assert effect.consume_observation_sample_request()
+	assert !effect.consume_observation_sample_request()
+	assert effect.request_element_scoped_observation_sample(8)
+
+	effect.note_per_frame_animation_tick_was_skipped()
+	assert effect.per_frame_animation_tick_was_skipped()
+	effect.clear_per_frame_animation_tick_was_skipped()
+	assert !effect.per_frame_animation_tick_was_skipped()
+}
+
+fn test_keyframe_effect_target_change_moves_associated_animation() {
+	document := dom.Document.create(dom.url_about_blank())
+	first_target := document.create_element('div')!
+	second_target := document.create_element('div')!
+	mut effect := KeyframeEffect.create()
+	effect.set_target(first_target)
+	animation := Animation.create(effect.as_animation_effect(), none)
+	mut first_animatable := Animatable.new(first_target)
+	first_animatable.associate_with_animation(animation)
+
+	effect.set_target(second_target)
+	assert !first_animatable.has_associated_animations()
+	mut second_animatable := Animatable.new(second_target)
+	assert second_animatable.has_associated_animations()
+	assert second_animatable.associated_animations_in_composite_order() == [animation]
+}
+
+fn test_infinite_transform_effect_can_skip_disconnected_style_updates() {
+	target := &dom.Element{}
+	mut effect := KeyframeEffect.construct_impl(target, [
+		BaseKeyframe{
+			offset: 0
+			properties: {
+				'transform': 'translateX(0px)'
+			}
+		},
+		BaseKeyframe{
+			offset: 1
+			properties: {
+				'transform': 'translateX(10px)'
+			}
+		},
+	], KeyframeEffectOptions{
+		timing: OptionalEffectTiming{
+			iterations: math.inf(1)
+			duration: IterationDuration(1000.0)
+		}
+	})!
+	assert effect.can_skip_per_frame_style_update()
+
+	effect.set_is_compositor_driven(true)
+	assert effect.can_skip_per_frame_animation_tick()
 }
