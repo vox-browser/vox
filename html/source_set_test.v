@@ -1,5 +1,6 @@
 module html
 
+import css
 import dom
 
 fn density_of(source ImageSource) f64 {
@@ -38,7 +39,8 @@ fn test_create_and_select_source_set() {
 	document := dom.Document.create(dom.url_about_blank())
 	element := document.create_element('img')!
 	created := SourceSet.create(element, 'fallback.png', 'wide.png 200w', '100px', none)
-	assert created.source_size == 100
+	assert created.source_size is css.LengthStyleValue
+	assert created.source_size.serialize(.normal) == '100px'
 	assert density_of(created.sources[0]) == 2
 }
 
@@ -52,6 +54,9 @@ fn test_sizes_attribute_uses_css_parser_media_and_math_algorithms() {
 	assert parse_a_sizes_attribute(element, 'calc(50vw - 10px)', none) == 390
 	assert parse_a_sizes_attribute(element, 'auto, 25vw', none) == 200
 	assert parse_a_sizes_attribute(element, 'url(not-a-size)', none) == 800
+	calculated := css.parse_sizes_attribute_style_value(element, 'calc(50vw - 10px)', none)
+	assert calculated is css.CalculatedStyleValue
+	assert calculated.serialize(.normal) == 'calc(-10px + 50vw)'
 
 	document.set_viewport_rect(dom.Rect{0, 0, 400, 600})
 	assert parse_a_sizes_attribute(element, '(max-width: 500px) 100px, (min-width: 501px) 50vw', none) == 100

@@ -40,7 +40,7 @@ pub:
 pub struct SourceSet {
 pub mut:
 	sources     []ImageSource
-	source_size f64
+	source_size css.StyleValue = css.StyleValue(css.LengthStyleValue.create(css.Length.make_px(0)))
 }
 
 pub fn (source_set &SourceSet) is_empty() bool {
@@ -291,7 +291,7 @@ pub fn (mut source_set SourceSet) normalize_source_densities(source_size f64) {
 // https://html.spec.whatwg.org/multipage/images.html#create-a-source-set
 pub fn create_source_set(default_source string, srcset string, source_size f64) SourceSet {
 	mut source_set := if srcset == '' { SourceSet{} } else { parse_a_srcset_attribute(srcset) }
-	source_set.source_size = source_size
+	source_set.source_size = css.StyleValue(css.LengthStyleValue.create(css.Length.make_px(source_size)))
 	if default_source != '' {
 		mut contains_one_x := false
 		mut contains_width := false
@@ -316,7 +316,7 @@ pub fn create_source_set(default_source string, srcset string, source_size f64) 
 	return source_set
 }
 
-pub fn parse_a_sizes_attribute(element &dom.Element, sizes string, image ?&dom.HTMLImageElement) f64 {
+fn rendered_auto_width_for_sizes_attribute(image ?&dom.HTMLImageElement) ?f64 {
 	mut rendered_auto_width := ?f64(none)
 	if image_element := image {
 		model := html_image_element_model_for_dom_element(image_element)
@@ -344,9 +344,21 @@ pub fn parse_a_sizes_attribute(element &dom.Element, sizes string, image ?&dom.H
 			rendered_auto_width = concrete_size.width().to_double()
 		}
 	}
-	return css.parse_sizes_attribute_source_size(element, sizes, rendered_auto_width)
+	return rendered_auto_width
+}
+
+pub fn parse_a_sizes_attribute_style_value(element &dom.Element, sizes string, image ?&dom.HTMLImageElement) css.StyleValue {
+	return css.parse_sizes_attribute_style_value(element, sizes, rendered_auto_width_for_sizes_attribute(image))
+}
+
+pub fn parse_a_sizes_attribute(element &dom.Element, sizes string, image ?&dom.HTMLImageElement) f64 {
+	value := parse_a_sizes_attribute_style_value(element, sizes, image)
+	return css.resolve_sizes_attribute_style_value(element, value)
 }
 
 pub fn SourceSet.create(element &dom.Element, default_source string, srcset string, sizes string, image ?&dom.HTMLImageElement) SourceSet {
-	return create_source_set(default_source, srcset, parse_a_sizes_attribute(element, sizes, image))
+	source_size := parse_a_sizes_attribute_style_value(element, sizes, image)
+	mut source_set := create_source_set(default_source, srcset, css.resolve_sizes_attribute_style_value(element, source_size))
+	source_set.source_size = source_size
+	return source_set
 }

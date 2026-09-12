@@ -270,12 +270,13 @@ pub fn (mut image HTMLImageElementModel) update_source_set() {
 							continue
 						}
 					}
-					source_set.source_size = parse_a_sizes_attribute(dom_element, child.get_attribute_value('sizes'), element)
+					source_size := parse_a_sizes_attribute_style_value(dom_element, child.get_attribute_value('sizes'), element)
+					source_set.source_size = source_size
 					if child.has_attribute('type')
 						&& !is_supported_image_type(child.get_attribute_value('type')) {
 						continue
 					}
-					source_set.normalize_source_densities(source_set.source_size)
+					source_set.normalize_source_densities(css.resolve_sizes_attribute_style_value(dom_element, source_size))
 					image.source_set_ = source_set
 					if child.has_attribute('width') || child.has_attribute('height') {
 						image.set_dimension_attribute_source(child)
@@ -293,7 +294,7 @@ pub fn (mut image HTMLImageElementModel) update_source_set() {
 	image.set_dimension_attribute_source(none)
 	if element := image.element_ {
 		dom_element := image_dom_element(element)
-		image.source_set_ = create_source_set(image.src_ or { '' }, image.srcset_ or { '' }, parse_a_sizes_attribute(dom_element, image.sizes_ or { '' }, element))
+		image.source_set_ = SourceSet.create(dom_element, image.src_ or { '' }, image.srcset_ or { '' }, image.sizes_ or { '' }, element)
 		return
 	}
 	image.source_set_ = create_source_set(image.src_ or { '' }, image.srcset_ or { '' }, 100.0)

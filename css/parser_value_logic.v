@@ -11257,7 +11257,7 @@ fn (mut parser Parser) parse_length(mut tokens ComponentValueStream) ?Length {
 	return Length.new(component_value.token().dimension_value(), unit)
 }
 
-fn (mut parser Parser) parse_source_size_value(mut tokens ComponentValueStream) ?LengthOrAutoOrCalculated {
+fn (mut parser Parser) parse_source_size_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
 	transaction.consume_whitespace()
 	if component_value := transaction.peek() {
@@ -11265,22 +11265,14 @@ fn (mut parser Parser) parse_source_size_value(mut tokens ComponentValueStream) 
 			&& equals_ignoring_ascii_case(component_value.token().ident(), 'auto') {
 			transaction.consume()
 			tokens = transaction
-			return LengthOrAutoOrCalculated.from_length_or_auto(LengthOrAuto.make_auto())
+			return StyleValue(KeywordStyleValue.create(.auto))
 		}
 	}
 
 	transaction = tokens.clone()
-	if length := parser.parse_length(mut transaction) {
+	if length := parser.parse_length_value(mut transaction) {
 		tokens = transaction
-		return LengthOrAutoOrCalculated.from_length_or_auto(LengthOrAuto.new(length))
-	}
-
-	transaction = tokens.clone()
-	if calculated := parser.parse_calculated_value_of_kind(mut transaction, .length) {
-		if calculated is CalculatedStyleValue {
-			tokens = transaction
-			return LengthOrAutoOrCalculated.from_calculated(calculated)
-		}
+		return length
 	}
 	return none
 }
@@ -11408,7 +11400,7 @@ fn (mut parser Parser) parse_unicode_range_value(mut tokens ComponentValueStream
 }
 
 // https://html.spec.whatwg.org/multipage/images.html#parsing-a-sizes-attribute
-fn (mut parser Parser) parse_as_sizes_attribute(element &dom.Element, rendered_auto_width ?f64) LengthOrCalculated {
+fn (mut parser Parser) parse_as_sizes_attribute(element &dom.Element, rendered_auto_width ?f64) StyleValue {
 	mut unparsed_sizes_list := parse_a_comma_separated_list_of_component_values_for_value_logic(parser.component_values)
 	for index := 0; index < unparsed_sizes_list.len; index++ {
 		mut unparsed_size := unparsed_sizes_list[index].clone()
@@ -11423,9 +11415,9 @@ fn (mut parser Parser) parse_as_sizes_attribute(element &dom.Element, rendered_a
 		mut size := parser.parse_source_size_value(mut last_value_stream) or { continue }
 		unparsed_size.pop()
 
-		if size.is_auto() {
+		if size.has_auto() {
 			if auto_width := rendered_auto_width {
-				size = LengthOrAutoOrCalculated.from_length_or_auto(LengthOrAuto.new(Length.make_px(auto_width)))
+				size = StyleValue(LengthStyleValue.create(Length.make_px(auto_width)))
 			}
 		}
 
@@ -11433,8 +11425,8 @@ fn (mut parser Parser) parse_as_sizes_attribute(element &dom.Element, rendered_a
 			unparsed_size.pop()
 		}
 		if unparsed_size.len == 0 {
-			if !size.is_auto() {
-				return size.without_auto()
+			if !size.has_auto() {
+				return size
 			}
 			continue
 		}
@@ -11445,25 +11437,34 @@ fn (mut parser Parser) parse_as_sizes_attribute(element &dom.Element, rendered_a
 		if condition_tokens.has_more_tokens() || condition.evaluate(element.document()) == .false_ {
 			continue
 		}
-		if !size.is_auto() {
-			return size.without_auto()
+		if !size.has_auto() {
+			return size
 		}
 	}
 
-	return LengthOrCalculated.from_length(Length.new(100, .vw))
+	return StyleValue(LengthStyleValue.create(Length.new(100, .vw)))
+}
+
+pub fn parse_sizes_attribute_style_value(element &dom.Element, sizes string, rendered_auto_width ?f64) StyleValue {
+	mut parser := Parser.with_context(ParsingParams{
+		document: element.document()
+	}, sizes)
+	return parser.parse_as_sizes_attribute(element, rendered_auto_width)
 }
 
 // Resolve the translated sizes-attribute result to the numeric CSS-pixel source
 // size consumed by HTML::SourceSet.
 pub fn parse_sizes_attribute_source_size(element &dom.Element, sizes string, rendered_auto_width ?f64) f64 {
-	mut parser := Parser.with_context(ParsingParams{
-		document: element.document()
-	}, sizes)
-	value := parser.parse_as_sizes_attribute(element, rendered_auto_width)
-	resolved := value.resolved(CalculationResolutionContext{
-		length_resolution_context: length_resolution_context_from_document(element.document())
-	}) or { return 0.0 }
-	return resolved.to_px_without_rounding(length_resolution_context_from_document(element.document()))
+	value := parse_sizes_attribute_style_value(element, sizes, rendered_auto_width)
+	return resolve_sizes_attribute_style_value(element, value)
+}
+
+pub fn resolve_sizes_attribute_style_value(element &dom.Element, value StyleValue) f64 {
+	resolution_context := length_resolution_context_from_document(element.document())
+	absolutized := value.absolutized(ComputationContext{
+		length_resolution_context: resolution_context
+	})
+	return Length.from_style_value_logic(absolutized, none).absolute_length_to_px_without_rounding()
 }
 
 fn (mut parser Parser) parse_length_percentage_value(mut tokens ComponentValueStream) ?StyleValue {
