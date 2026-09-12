@@ -1,6 +1,7 @@
 module fetch
 
 import dom
+import http
 
 fn test_request_defaults() {
 	request := Request.create()
@@ -105,4 +106,27 @@ fn test_redirect_taint_uses_request_origin_same_site_before_cross_site() {
 	request.url_list = [dom.URL{'https://b.example.test/start'},
 		dom.URL{'https://elsewhere.test/end'}]
 	assert request.redirect_taint() == .same_site
+}
+
+fn test_navigation_timing_allow_values_accumulate_and_clone() {
+	mut request := Request.create()
+	request.destination = .document
+	mut wildcard := Response.create()
+	wildcard.header_list.append(http.Header{
+		name: 'Timing-Allow-Origin'
+		value: '*'
+	})
+	request.append_to_navigation_timing_allow_values_list(wildcard)
+	mut origins := Response.create()
+	origins.header_list.append(http.Header{
+		name: 'Timing-Allow-Origin'
+		value: 'https://destination.test, https://other.test'
+	})
+	request.append_to_navigation_timing_allow_values_list(origins)
+	request.append_to_navigation_timing_allow_values_list(Response.create())
+	assert request.navigation_timing_allow_values_list() == [['*'], [
+		'https://destination.test',
+		'https://other.test',
+	], []string{}]
+	assert request.clone().navigation_timing_allow_values_list() == request.navigation_timing_allow_values_list()
 }

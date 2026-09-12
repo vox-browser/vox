@@ -10,6 +10,7 @@ __global (
 	transfer_pause_notifications     int
 	redirect_transfer_releases       int
 	redirect_request_stops           int
+	navigation_redirect_host_calls   int
 )
 
 fn controller_test_process_response(_ &Response) {}
@@ -355,6 +356,50 @@ fn redirect_host(request &Request) !&Response {
 	response.url_list = request.url_list.clone()
 	response.set_body_bytes(request.current_url().serialize().bytes())
 	return response
+}
+
+fn navigation_redirect_host(request &Request) !&Response {
+	navigation_redirect_host_calls++
+	mut response := Response.create()
+	response.url_list = request.url_list.clone()
+	if navigation_redirect_host_calls == 1 {
+		response.status = 302
+		response.header_list.append(http.Header{ name: 'Location', value: '/final' })
+		response.header_list.append(http.Header{
+			name: 'Timing-Allow-Origin'
+			value: 'https://destination.test'
+		})
+	}
+	return response
+}
+
+fn test_navigation_tao_check_and_redirect_chain_propagation() {
+	destination_origin := dom.Origin{ value: 'https://destination.test' }
+	mut response := Response.create()
+	assert navigation_tao_check(response, destination_origin)
+	response.set_navigation_timing_allow_values_list([['*'], ['https://destination.test']])
+	assert navigation_tao_check(response, destination_origin)
+	response.set_navigation_timing_allow_values_list([['*'], []string{}])
+	assert !navigation_tao_check(response, destination_origin)
+
+	mut request := Request.create()
+	request.url_list = [dom.URL{'https://origin.test/start'}]
+	request.destination = .document
+	request.mode = .navigate
+	request.origin = RequestOrigin{
+		is_client: false
+		origin: dom.Origin{ value: 'https://origin.test' }
+	}
+	navigation_redirect_host_calls = 0
+	result := main_fetch(FetchParams.create(request, FetchTimingInfo.create()), FetchHost{
+		perform: navigation_redirect_host
+	}).response()?
+	assert navigation_redirect_host_calls == 2
+	assert request.current_url().serialize() == 'https://origin.test/final'
+	assert result.navigation_timing_allow_values_list() == [
+		['https://destination.test'],
+	]
+	assert navigation_tao_check(result, destination_origin)
 }
 
 fn test_http_redirect_and_cors_preflight_boundaries() {

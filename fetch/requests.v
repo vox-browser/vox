@@ -269,6 +269,8 @@ pub mut:
 	prevent_no_cache_cache_control_header_modification bool
 	done                                               bool
 	timing_allow_failed                                bool
+	// https://fetch.spec.whatwg.org/#request-navigation-timing-allow-values-list
+	navigation_timing_allow_values_list_ [][]string
 	// Pending responses are represented by Fetching::PendingResponse in runtime.v.
 	pending_responses []&PendingResponse
 	request_time      i64
@@ -345,6 +347,19 @@ pub fn (request &Request) is_non_subresource_request() bool {
 pub fn (request &Request) is_navigation_request() bool {
 	destination := request.destination or { return false }
 	return destination in [Destination.document, .embed, .frame, .iframe, .object]
+}
+
+pub fn (request &Request) navigation_timing_allow_values_list() [][]string {
+	return clone_navigation_timing_allow_values_list(request.navigation_timing_allow_values_list_)
+}
+
+// https://fetch.spec.whatwg.org/#append-to-a-requests-navigation-timing-allow-values-list
+pub fn (mut request Request) append_to_navigation_timing_allow_values_list(response &Response) {
+	assert request.is_navigation_request()
+	tao_values := response.fetch_response_header_list().get_decode_and_split('Timing-Allow-Origin') or {
+		[]string{}
+	}
+	request.navigation_timing_allow_values_list_ << tao_values
 }
 
 fn request_same_site(a dom.URL, b dom.URL) bool {
@@ -443,6 +458,7 @@ pub fn (request &Request) clone() &Request {
 		prevent_no_cache_cache_control_header_modification: request.prevent_no_cache_cache_control_header_modification
 		done: request.done
 		timing_allow_failed: request.timing_allow_failed
+		navigation_timing_allow_values_list_: clone_navigation_timing_allow_values_list(request.navigation_timing_allow_values_list_)
 		request_time: i64(time.now().unix_milli())
 	}
 }

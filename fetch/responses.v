@@ -59,6 +59,14 @@ pub:
 	stop                       ?RequestServerAction
 }
 
+fn clone_navigation_timing_allow_values_list(values [][]string) [][]string {
+	mut cloned := [][]string{cap: values.len}
+	for value in values {
+		cloned << value.clone()
+	}
+	return cloned
+}
+
 // https://fetch.spec.whatwg.org/#concept-response
 @[heap]
 pub struct Response {
@@ -88,6 +96,8 @@ pub mut:
 	request_includes_credentials bool = true
 	// https://fetch.spec.whatwg.org/#concept-response-timing-allow-passed
 	timing_allow_passed bool
+	// https://fetch.spec.whatwg.org/#response-navigation-timing-allow-values-list
+	navigation_timing_allow_values_list_ [][]string
 	// https://fetch.spec.whatwg.org/#response-body-info
 	body_info BodyInfo
 	// https://fetch.spec.whatwg.org/#response-redirect-taint
@@ -213,6 +223,7 @@ pub fn (response &Response) clone() &Response {
 		range_requested: response.range_requested
 		request_includes_credentials: response.request_includes_credentials
 		timing_allow_passed: response.timing_allow_passed
+		navigation_timing_allow_values_list_: clone_navigation_timing_allow_values_list(response.navigation_timing_allow_values_list_)
 		body_info: response.body_info
 		request_server_request_: response.request_server_request_
 		monotonic_response_time: i64(time.sys_mono_now())

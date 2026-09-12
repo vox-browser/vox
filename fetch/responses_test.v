@@ -139,3 +139,20 @@ fn test_response_transfer_lease_actions_delegate_through_filtered_responses() {
 	assert log.stops == 1
 	assert response.clone().request_server_request()?.request_id == 99
 }
+
+fn test_navigation_timing_allow_values_clone_and_delegate_through_filtered_responses() {
+	mut response := Response.create()
+	response.set_navigation_timing_allow_values_list([['*'], ['https://destination.test']])
+	filtered := filtered_response(response, .basic)
+	assert filtered.navigation_timing_allow_values_list() == [['*'], [
+		'https://destination.test',
+	]]
+	mut filtered_mut := filtered
+	filtered_mut.set_navigation_timing_allow_values_list([['https://updated.test']])
+	assert response.navigation_timing_allow_values_list() == [
+		['https://updated.test'],
+	]
+	assert response.clone().navigation_timing_allow_values_list() == [
+		['https://updated.test'],
+	]
+}

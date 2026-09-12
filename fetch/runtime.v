@@ -567,6 +567,18 @@ pub fn tao_check(request &Request, response &Response) bool {
 	return request.response_tainting == .basic
 }
 
+// https://fetch.spec.whatwg.org/#navigation-tao-check
+pub fn navigation_tao_check(response &Response, destination_origin dom.Origin) bool {
+	serialized_origin := destination_origin.serialize()
+	for tao_values in response.navigation_timing_allow_values_list() {
+		if '*' in tao_values || serialized_origin in tao_values {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 pub fn set_sec_fetch_dest_header(mut request Request) {
 	value := if destination := request.destination {
 		request_destination_to_string(destination)
@@ -780,6 +792,9 @@ pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 		internal.url_list = request.url_list.clone()
 	}
 	internal.redirect_taint = request.redirect_taint()
+	if request.is_navigation_request() {
+		internal.set_navigation_timing_allow_values_list(request.navigation_timing_allow_values_list())
+	}
 	if !request.timing_allow_failed {
 		internal.timing_allow_passed = true
 	}
@@ -1085,6 +1100,9 @@ pub fn http_fetch(params &FetchParams, host &FetchHost, make_cors_preflight bool
 		request.timing_allow_failed = true
 	}
 	if is_redirect_status(internal.status) {
+		if request.is_navigation_request() {
+			request.append_to_navigation_timing_allow_values_list(internal)
+		}
 		match request.redirect_mode {
 			.error {
 				response = Response.network_error("Request with 'error' redirect mode received redirect response")

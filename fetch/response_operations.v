@@ -200,6 +200,21 @@ pub fn (mut response Response) set_timing_allow_passed(passed bool) {
 	response.timing_allow_passed = passed
 }
 
+pub fn (response &Response) navigation_timing_allow_values_list() [][]string {
+	if internal := response.internal_response {
+		return internal.navigation_timing_allow_values_list()
+	}
+	return clone_navigation_timing_allow_values_list(response.navigation_timing_allow_values_list_)
+}
+
+pub fn (mut response Response) set_navigation_timing_allow_values_list(values [][]string) {
+	if mut internal := response.internal_response {
+		internal.set_navigation_timing_allow_values_list(values)
+		return
+	}
+	response.navigation_timing_allow_values_list_ = clone_navigation_timing_allow_values_list(values)
+}
+
 pub fn (response &Response) fetch_response_body_info() BodyInfo {
 	if internal := response.internal_response {
 		return internal.body_info
