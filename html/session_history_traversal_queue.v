@@ -78,6 +78,12 @@ pub fn (mut queue SessionHistoryTraversalQueue) process() {
 		queue.queue.delete(0)
 		queue.current_promise = entry.execute_steps()
 		queue.is_task_running = false
+		if promise := queue.current_promise {
+			if !promise.resolved && !promise.rejected {
+				queue.scheduled = true
+				return
+			}
+		}
 	}
 
 	queue.current_promise = none

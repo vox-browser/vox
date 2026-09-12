@@ -80,6 +80,26 @@ fn test_session_history_traversal_queue_waits_for_current_promise() {
 	assert queue.current_promise == none
 }
 
+fn test_session_history_traversal_queue_retains_a_pending_final_promise() {
+	unsafe {
+		navigation_test_run_count = 0
+		navigation_test_first_promise = &TraversalPromiseState{}
+	}
+	mut queue := SessionHistoryTraversalQueue{}
+	queue.append(navigation_test_first_steps)
+	queue.process()
+	assert queue.queue.len == 0
+	assert queue.scheduled
+	assert queue.current_promise? == navigation_test_first_promise
+
+	unsafe {
+		navigation_test_first_promise.resolved = true
+	}
+	queue.process()
+	assert !queue.scheduled
+	assert queue.current_promise == none
+}
+
 fn test_session_history_traversal_queue_extracts_sync_entry() {
 	first := &dom.Navigable{}
 	second := &dom.Navigable{}

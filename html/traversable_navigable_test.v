@@ -4,6 +4,18 @@ import dom
 
 __global traversable_deactivation_completed bool
 
+@[heap]
+struct HistoryStepObservation {
+mut:
+	completed bool
+	result    HistoryStepResult
+}
+
+fn (mut observation HistoryStepObservation) complete(result HistoryStepResult) {
+	observation.completed = true
+	observation.result = result
+}
+
 fn traversable_deactivation_completion() {
 	traversable_deactivation_completed = true
 }
@@ -52,6 +64,8 @@ fn test_traversable_used_steps_length_index_and_delta() {
 	assert traversable.get_the_used_step(9)! == 2
 	assert traversable.can_go_forward()
 	traversable.traverse_the_history_by_delta(2, none)
+	assert traversable.current_session_history_step() == 0
+	traversable.process_session_history_traversal_queue()
 	assert traversable.current_session_history_step() == 2
 	assert traversable.active_session_history_entry()? == second
 }
@@ -65,7 +79,12 @@ fn test_traversable_clear_forward_and_finalize_navigation() {
 	two := traversal_entry(2, 'https://example.test/two', document)
 	traversable.append_session_history_entry(one)
 	traversable.append_session_history_entry(two)
-	assert traversable.apply_the_traverse_history_step(1, none, none, .none_) == .applied
+	mut observation := &HistoryStepObservation{}
+	traversable.apply_the_traverse_history_step(1, none, none, .none_, fn [mut observation] (result HistoryStepResult) {
+		observation.complete(result)
+	})
+	assert observation.completed
+	assert observation.result == .applied
 	traversable.clear_the_forward_session_history()
 	assert traversable.session_history_entries().len == 2
 	assert !traversable.can_go_forward()
@@ -91,11 +110,26 @@ fn test_traversable_cancellation_visibility_focus_and_close() {
 	second := traversal_entry(2, 'https://example.test/two', second_document)
 	traversable.append_session_history_entry(second)
 	traversable.set_before_unload_hook(cancel_traversable_before_unload)
-	assert traversable.apply_the_traverse_history_step(2, none, none, .none_) == .canceled_by_before_unload
+	mut cancellation := &HistoryStepObservation{}
+	traversable.apply_the_traverse_history_step(2, none, none, .none_, fn [mut cancellation] (result HistoryStepResult) {
+		cancellation.complete(result)
+	})
+	assert !cancellation.completed
+	mut event_loop := main_thread_event_loop()
+	event_loop.process()
+	assert cancellation.completed
+	assert cancellation.result == .canceled_by_before_unload
 	assert traversable.active_document()? == first_document
 
 	traversable.set_before_unload_hook(none)
-	assert traversable.apply_the_traverse_history_step(2, none, none, .none_) == .applied
+	mut application := &HistoryStepObservation{}
+	traversable.apply_the_traverse_history_step(2, none, none, .none_, fn [mut application] (result HistoryStepResult) {
+		application.complete(result)
+	})
+	assert !application.completed
+	event_loop.process()
+	assert application.completed
+	assert application.result == .applied
 	traversable.set_system_visibility_state(.visible)
 	assert traversable.system_visibility_state() == .visible
 	traversable.set_has_system_focus(true)
@@ -103,6 +137,8 @@ fn test_traversable_cancellation_visibility_focus_and_close() {
 	assert !traversable.is_closing()
 	traversable.close_top_level_traversable()
 	assert traversable.is_closing()
+	assert !traversable.has_been_destroyed()
+	traversable.process_session_history_traversal_queue()
 	assert traversable.has_been_destroyed()
 	assert traversable !in user_agent_top_level_traversable_set()
 	// A repeated close is ignored after the flag has been set.

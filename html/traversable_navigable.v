@@ -74,6 +74,10 @@ pub type TraversableAppliedHook = fn(int, dom.NavigationType)
 
 pub type TraversableScreenshotHook = fn(?u64)
 
+pub type TraversableUnloadCompletion = fn (CheckIfUnloadingIsCanceledResult)
+
+pub type TraversableHistoryStepCompletion = fn (HistoryStepResult)
+
 @[heap]
 pub struct TraversableNavigable {
 mut:
@@ -387,6 +391,12 @@ fn history_origins_differ(first ?dom.Origin, second ?dom.Origin) bool {
 	return false
 }
 
+fn history_entry_origins_differ(first &SessionHistoryEntry, second &SessionHistoryEntry) bool {
+	first_state := first.document_state or { return false }
+	second_state := second.document_state or { return false }
+	return history_origins_differ(first_state.origin, second_state.origin)
+}
+
 fn collect_documents_that_will_unload(entries []&SessionHistoryEntry, active &SessionHistoryEntry, target &SessionHistoryEntry) []&dom.Document {
 	_ = entries
 	mut documents := []&dom.Document{}
@@ -404,42 +414,171 @@ fn collect_documents_that_will_unload(entries []&SessionHistoryEntry, active &Se
 	return documents
 }
 
-pub fn (traversable &TraversableNavigable) check_if_unloading_is_canceled(documents []&dom.Document) CheckIfUnloadingIsCanceledResult {
-	if hook := traversable.before_unload_hook_ {
-		return hook(documents)
-	}
-	return .continue_
+@[heap]
+struct CheckUnloadingCanceledState {
+mut:
+	traversable         &TraversableNavigable = unsafe { nil }
+	documents           []&dom.Document
+	target_entry        ?&SessionHistoryEntry
+	user_involvement    UserNavigationInvolvement
+	callback            TraversableUnloadCompletion = unsafe { nil }
+	final_status        CheckIfUnloadingIsCanceledResult = .continue_
+	unload_prompt_shown bool
+	needs_before_unload bool
+	remaining_documents int
+	completed           bool
 }
 
-fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check_for_cancellation bool, user_involvement UserNavigationInvolvement, navigation_type dom.NavigationType) HistoryStepResult {
-	if traversable.has_been_destroyed_ {
-		return .initiator_disallowed
+fn (mut state CheckUnloadingCanceledState) finish(result CheckIfUnloadingIsCanceledResult) {
+	if state.completed {
+		return
 	}
-	used_step := traversable.get_the_used_step(step) or { return .initiator_disallowed }
-	target := target_history_entry(traversable.session_history_entries_, used_step) or {
-		return .initiator_disallowed
+	state.completed = true
+	state.callback(result)
+}
+
+fn (mut state CheckUnloadingCanceledState) document_task_completed() {
+	state.remaining_documents--
+	if state.remaining_documents == 0 {
+		state.finish(state.final_status)
 	}
-	active := traversable.active_session_history_entry_ or { target }
-	if check_for_cancellation {
-		documents := collect_documents_that_will_unload(traversable.session_history_entries_, active, target)
-		match traversable.check_if_unloading_is_canceled(documents) {
-			.canceled_by_before_unload {
-				return .canceled_by_before_unload
+}
+
+fn (mut state CheckUnloadingCanceledState) start_document_tasks() {
+	if state.documents.len == 0 {
+		state.finish(state.final_status)
+		return
+	}
+	state.remaining_documents = state.documents.len
+	for document in state.documents {
+		queue_a_task(.navigation_and_traversal, main_thread_event_loop(), document, fn [mut state, document] () {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			result := mutable_document.steps_to_fire_beforeunload(state.unload_prompt_shown)
+			if result.unload_prompt_shown {
+				state.unload_prompt_shown = true
 			}
-			.canceled_by_navigate {
-				return .canceled_by_navigate
+			if result.unload_prompt_canceled {
+				state.final_status = .canceled_by_before_unload
 			}
-			.continue_ {}
+			state.document_task_completed()
+		})
+	}
+}
+
+fn (mut state CheckUnloadingCanceledState) start_traverse_event_task() {
+	active_document := state.traversable.active_document_ or {
+		state.start_document_tasks()
+		return
+	}
+	queue_a_task(.navigation_and_traversal, main_thread_event_loop(), active_document, fn [mut state] () {
+		if state.needs_before_unload {
+			if active_document := state.traversable.active_document_ {
+				mut mutable_document := unsafe { &dom.Document(active_document) }
+				result := mutable_document.steps_to_fire_beforeunload(false)
+				if result.unload_prompt_shown {
+					state.unload_prompt_shown = true
+				}
+				if result.unload_prompt_canceled {
+					state.finish(.canceled_by_before_unload)
+					return
+				}
+			}
+		}
+		if navigation := state.traversable.navigation_ {
+			if target := state.target_entry {
+				mut mutable_navigation := unsafe { &Navigation(navigation) }
+				if !mutable_navigation.fire_a_traverse_navigate_event(target, state.user_involvement) {
+					state.finish(.canceled_by_navigate)
+					return
+				}
+			}
+		}
+		state.start_document_tasks()
+	})
+}
+
+fn (traversable &TraversableNavigable) check_if_unloading_is_canceled_for_history_step(documents []&dom.Document, target &SessionHistoryEntry, user_involvement UserNavigationInvolvement, callback TraversableUnloadCompletion) {
+	mut state := &CheckUnloadingCanceledState{
+		traversable: traversable
+		documents: documents.clone()
+		target_entry: target
+		user_involvement: user_involvement
+		callback: callback
+	}
+	if hook := traversable.before_unload_hook_ {
+		queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [hook, mut state] () {
+			state.finish(hook(state.documents))
+		})
+		return
+	}
+	active := traversable.active_session_history_entry_ or {
+		state.start_document_tasks()
+		return
+	}
+	if voidptr(target) != voidptr(active) && history_entry_origins_differ(target, active) {
+		if active_document := traversable.active_document_ {
+			for index, document in state.documents {
+				if voidptr(document) == voidptr(active_document) {
+					state.documents.delete(index)
+					state.needs_before_unload = true
+					break
+				}
+			}
+		}
+		state.start_traverse_event_task()
+		return
+	}
+	state.start_document_tasks()
+}
+
+pub fn (traversable &TraversableNavigable) check_if_unloading_is_canceled(documents []&dom.Document, callback TraversableUnloadCompletion) {
+	mut state := &CheckUnloadingCanceledState{
+		traversable: traversable
+		documents: documents.clone()
+		callback: callback
+	}
+	if hook := traversable.before_unload_hook_ {
+		queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [hook, mut state] () {
+			state.finish(hook(state.documents))
+		})
+		return
+	}
+	state.start_document_tasks()
+}
+
+fn complete_history_step(callback ?TraversableHistoryStepCompletion, result HistoryStepResult) {
+	if completion := callback {
+		completion(result)
+	}
+}
+
+@[heap]
+struct HistoryStepContinuationState {
+mut:
+	traversable     &TraversableNavigable = unsafe { nil }
+	used_step       int
+	target          &SessionHistoryEntry = unsafe { nil }
+	navigation_type dom.NavigationType
+	on_complete     ?TraversableHistoryStepCompletion
+}
+
+fn (mut state HistoryStepContinuationState) resume(result CheckIfUnloadingIsCanceledResult) {
+	match result {
+		.canceled_by_before_unload {
+			complete_history_step(state.on_complete, .canceled_by_before_unload)
+		}
+		.canceled_by_navigate {
+			complete_history_step(state.on_complete, .canceled_by_navigate)
+		}
+		.continue_ {
+			mut mutable_traversable := unsafe { &TraversableNavigable(state.traversable) }
+			mutable_traversable.apply_the_history_step_after_unload_check(state.used_step,
+				state.target, state.navigation_type, state.on_complete)
 		}
 	}
-	if navigation := traversable.navigation_ {
-		if navigation_type == .traverse {
-			mut mutable_navigation := unsafe { &Navigation(navigation) }
-			if !mutable_navigation.fire_a_traverse_navigate_event(target, user_involvement) {
-				return .canceled_by_navigate
-			}
-		}
-	}
+}
+
+fn (mut traversable TraversableNavigable) apply_the_history_step_after_unload_check(used_step int, target &SessionHistoryEntry, navigation_type dom.NavigationType, on_complete ?TraversableHistoryStepCompletion) {
 	traversable.running_nested_apply_step_ = true
 	traversable.current_session_history_step_ = used_step
 	traversable.active_session_history_entry_ = target
@@ -452,31 +591,65 @@ fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check
 	if hook := traversable.applied_hook_ {
 		hook(used_step, navigation_type)
 	}
-	return .applied
+	complete_history_step(on_complete, .applied)
 }
 
-pub fn (mut traversable TraversableNavigable) apply_the_traverse_history_step(step int, source_snapshot_params ?&SourceSnapshotParams, initiator_to_check ?&dom.Navigable, user_involvement UserNavigationInvolvement) HistoryStepResult {
+fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check_for_cancellation bool, user_involvement UserNavigationInvolvement, navigation_type dom.NavigationType, on_complete ?TraversableHistoryStepCompletion) {
+	if traversable.has_been_destroyed_ {
+		complete_history_step(on_complete, .initiator_disallowed)
+		return
+	}
+	used_step := traversable.get_the_used_step(step) or {
+		complete_history_step(on_complete, .initiator_disallowed)
+		return
+	}
+	target := target_history_entry(traversable.session_history_entries_, used_step) or {
+		complete_history_step(on_complete, .initiator_disallowed)
+		return
+	}
+	active := traversable.active_session_history_entry_ or { target }
+	if check_for_cancellation {
+		documents := collect_documents_that_will_unload(traversable.session_history_entries_, active, target)
+		mut continuation := &HistoryStepContinuationState{
+			traversable: unsafe { &TraversableNavigable(voidptr(traversable)) }
+			used_step: used_step
+			target: target
+			navigation_type: navigation_type
+			on_complete: on_complete
+		}
+		traversable.check_if_unloading_is_canceled_for_history_step(documents, target, user_involvement, fn [mut continuation] (result CheckIfUnloadingIsCanceledResult) {
+			continuation.resume(result)
+		})
+		return
+	}
+	traversable.apply_the_history_step_after_unload_check(used_step, target, navigation_type,
+		on_complete)
+}
+
+pub fn (mut traversable TraversableNavigable) apply_the_traverse_history_step(step int, source_snapshot_params ?&SourceSnapshotParams, initiator_to_check ?&dom.Navigable, user_involvement UserNavigationInvolvement, on_complete ?TraversableHistoryStepCompletion) {
 	_ = source_snapshot_params
 	_ = initiator_to_check
-	return traversable.apply_the_history_step(step, true, user_involvement, .traverse)
+	traversable.apply_the_history_step(step, true, user_involvement, .traverse, on_complete)
 }
 
-pub fn (mut traversable TraversableNavigable) apply_the_reload_history_step(user_involvement UserNavigationInvolvement) HistoryStepResult {
-	return traversable.apply_the_history_step(traversable.current_session_history_step_, true, user_involvement, .reload)
+pub fn (mut traversable TraversableNavigable) apply_the_reload_history_step(user_involvement UserNavigationInvolvement, on_complete ?TraversableHistoryStepCompletion) {
+	traversable.apply_the_history_step(traversable.current_session_history_step_, true,
+		user_involvement, .reload, on_complete)
 }
 
-pub fn (mut traversable TraversableNavigable) apply_the_push_or_replace_history_step(step int, history_handling HistoryHandlingBehavior, user_involvement UserNavigationInvolvement, synchronous_navigation SynchronousNavigation) HistoryStepResult {
+pub fn (mut traversable TraversableNavigable) apply_the_push_or_replace_history_step(step int, history_handling HistoryHandlingBehavior, user_involvement UserNavigationInvolvement, synchronous_navigation SynchronousNavigation) {
 	_ = synchronous_navigation
 	type_ := if history_handling == .replace {
 		dom.NavigationType.replace
 	} else {
 		dom.NavigationType.push
 	}
-	return traversable.apply_the_history_step(step, false, user_involvement, type_)
+	traversable.apply_the_history_step(step, false, user_involvement, type_, none)
 }
 
-pub fn (mut traversable TraversableNavigable) update_for_navigable_creation_or_destruction() HistoryStepResult {
-	return traversable.apply_the_history_step(traversable.current_session_history_step_, false, .none_, .traverse)
+pub fn (mut traversable TraversableNavigable) update_for_navigable_creation_or_destruction() {
+	traversable.apply_the_history_step(traversable.current_session_history_step_, false, .none_,
+		.traverse, none)
 }
 
 fn clear_forward_in_entries(entries []&SessionHistoryEntry, current_step int) []&SessionHistoryEntry {
@@ -516,20 +689,27 @@ pub fn (traversable &TraversableNavigable) can_go_forward() bool {
 }
 
 pub fn (mut traversable TraversableNavigable) traverse_the_history_by_delta(delta int, source_document ?&dom.Document) {
-	_ = source_document
-	steps := traversable.get_all_used_history_steps()
-	current_index := steps.index(traversable.current_session_history_step_)
-	if current_index < 0 {
-		return
-	}
-	target_index := current_index + delta
-	if target_index < 0 || target_index >= steps.len {
-		return
-	}
-	_ = traversable.apply_the_traverse_history_step(steps[target_index], none, none, if source_document != none {
-		.none_
+	user_involvement := if source_document != none {
+		UserNavigationInvolvement.none_
 	} else {
-		.browser_ui
+		UserNavigationInvolvement.browser_ui
+	}
+	traversable_pointer := voidptr(traversable)
+	traversable.append_session_history_traversal_steps(fn [delta, traversable_pointer, user_involvement] () &TraversalPromiseState {
+		mut signal := &TraversalPromiseState{}
+		mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
+		steps := mutable_traversable.get_all_used_history_steps()
+		current_index := steps.index(mutable_traversable.current_session_history_step_)
+		target_index := current_index + delta
+		if current_index < 0 || target_index < 0 || target_index >= steps.len {
+			signal.resolved = true
+			return signal
+		}
+		mutable_traversable.apply_the_traverse_history_step(steps[target_index], none, none,
+			user_involvement, fn [mut signal] (_ HistoryStepResult) {
+				signal.resolved = true
+			})
+		return signal
 	})
 }
 
@@ -556,7 +736,35 @@ pub fn (mut traversable TraversableNavigable) close_top_level_traversable() {
 
 pub fn (mut traversable TraversableNavigable) definitely_close_top_level_traversable() {
 	traversable.is_closing_ = true
-	traversable.destroy_top_level_traversable()
+	documents := if document := traversable.active_document_ {
+		mut result := []&dom.Document{}
+		for navigable in document.inclusive_descendant_navigables() {
+			if active := navigable.active_document() {
+				result << active
+			}
+		}
+		result
+	} else {
+		[]&dom.Document{}
+	}
+	traversable_pointer := voidptr(traversable)
+	traversable.check_if_unloading_is_canceled(documents, fn [traversable_pointer] (result CheckIfUnloadingIsCanceledResult) {
+		if result != .continue_ {
+			return
+		}
+		mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
+		mutable_traversable.append_session_history_traversal_steps(fn [traversable_pointer] () &TraversalPromiseState {
+			mut signal := &TraversalPromiseState{}
+			mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
+			if document := mutable_traversable.active_document_ {
+				mut mutable_document := unsafe { &dom.Document(document) }
+				mutable_document.unload_a_document_and_its_descendants(none)
+			}
+			mutable_traversable.destroy_top_level_traversable()
+			signal.resolved = true
+			return signal
+		})
+	})
 }
 
 pub fn (mut traversable TraversableNavigable) destroy_top_level_traversable() {
@@ -672,5 +880,6 @@ pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable,
 		mutable_target.step = target_step
 		traversable.session_history_entries_ << target_entry
 	}
-	_ = traversable.apply_the_push_or_replace_history_step(target_step, history_handling, user_involvement, .yes)
+	traversable.apply_the_push_or_replace_history_step(target_step, history_handling, user_involvement,
+		.yes)
 }
