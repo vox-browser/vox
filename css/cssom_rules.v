@@ -1934,7 +1934,16 @@ pub fn (mut sheet CSSStyleSheet) insert_rule(rule string, index u32) !u32 {
 	// NOTE: The spec doesn't say where to set the parent style sheet, so Ladybird does it here.
 	parsed_rule.set_parent_style_sheet(sheet)
 
-	sheet.invalidate_owners(dom.StyleInvalidationReason.style_change)
+	owner_is_inline_style := if owner := sheet.base.owner_node {
+		owner.as_node().is_html_style_element()
+	} else {
+		false
+	}
+	if !sheet.constructed && owner_is_inline_style && parsed_rule.type_ == .style {
+		invalidate_owners_for_inserted_style_rule(mut sheet, parsed_rule, .style_sheet_insert_rule)
+	} else {
+		sheet.invalidate_owners(.style_sheet_insert_rule)
+	}
 	return result
 }
 
