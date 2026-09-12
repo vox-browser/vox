@@ -10,8 +10,8 @@ Upstream: `Libraries/LibWeb/NavigationTiming`
 | `PerformanceTiming.cpp` | `navigation_timing.v` |
 
 - Upstream: 4 `.cpp` files, 497 physical LOC.
-- V implementation: 631 LOC.
-- V tests: 129 LOC in 1 file.
+- V implementation: 637 LOC.
+- V tests: 130 LOC in 1 file.
 - Status: complete.
 
 `NavigationTimingContext`, document timing records, and the estimated monotonic
