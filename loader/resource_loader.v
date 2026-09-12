@@ -18,8 +18,6 @@ __global (
 	loader_global_resource_loader          &ResourceLoader
 	loader_global_content_blocker          &ContentBlocker
 	loader_global_proxy_mappings           &ProxyMappings
-	loader_browser_process_command_line    string
-	loader_browser_process_executable_path string
 )
 
 pub enum ConnectionPreparation {
@@ -585,10 +583,11 @@ pub fn (mut resource_loader ResourceLoader) handle_about_load_request(request &L
 		url.serialize().all_after('about:').all_before('?').all_before('#')
 	}
 	path := liburl.percent_decode(encoded_path).bytestr()
-	data := if path == 'version' {
-		load_about_version_page().bytes()
-	} else {
-		resource_loader.about_pages[path] or { []u8{} }
+	target_file := '${path}.html'
+	data := resource_loader.about_pages[target_file] or {
+		message := 'No such about page: ${path}'
+		_ := log_failure(request, message)
+		return failure(message, 'about')
 	}
 	_ := log_success(request)
 	return LoadResult{

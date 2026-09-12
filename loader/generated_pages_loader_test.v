@@ -4,21 +4,13 @@ module loader
 import dom
 import os
 
-fn test_error_and_version_pages_escape_inserted_values() {
+fn test_error_page_escapes_inserted_values() {
 	error_page := load_error_page(dom.URL{'https://example.test/?x=<tag>'}, '<boom> & "bad"')
 	// URL serialization percent-encodes forbidden query code points before the
 	// generated page applies HTML escaping.
 	assert error_page.contains('x=%3Ctag%3E')
 	assert error_page.contains('&lt;boom&gt; &amp; &quot;bad&quot;')
 	assert !error_page.contains('<boom>')
-
-	set_browser_process_command_line('ladybird --url "<unsafe>"')
-	set_browser_process_executable_path('/Applications/Ladybird<&>')
-	version_page := load_about_version_page()
-	assert version_page.contains('Ladybird')
-	assert version_page.contains(browser_version)
-	assert version_page.contains('&quot;&lt;unsafe&gt;&quot;')
-	assert version_page.contains('&lt;&amp;&gt;')
 }
 
 fn test_directory_page_sorts_entries_marks_kinds_and_escapes_names() {

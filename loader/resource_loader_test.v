@@ -84,6 +84,7 @@ fn test_connection_preparation_and_request_blocking() {
 
 fn test_load_dispatches_about_resource_and_unsupported_protocols() {
 	mut resource_loader := ResourceLoader.create()
+	resource_loader.register_about_page('version.html', '<h1>Ladybird version</h1>'.bytes())
 	mut about_request := load_request_for('about:version')
 	about := resource_loader.load(mut about_request)
 	assert about.success
@@ -94,9 +95,13 @@ fn test_load_dispatches_about_resource_and_unsupported_protocols() {
 	encoded_about := resource_loader.load(mut encoded_about_request)
 	assert encoded_about.success
 	assert encoded_about.data.bytestr().contains('Ladybird')
-	resource_loader.register_about_page('custom page', 'custom contents'.bytes())
+	resource_loader.register_about_page('custom page.html', 'custom contents'.bytes())
 	mut custom_about_request := load_request_for('about:custom%20page')
 	assert resource_loader.load(mut custom_about_request).data.bytestr() == 'custom contents'
+	mut missing_about_request := load_request_for('about:missing')
+	missing_about := resource_loader.load(mut missing_about_request)
+	assert !missing_about.success
+	assert (missing_about.error_message or { panic('missing about error') }) == 'No such about page: missing'
 
 	resource_loader.register_resource('resource://ladybird/app.js', StoredResource{
 		data:          'let answer = 42;'.bytes()

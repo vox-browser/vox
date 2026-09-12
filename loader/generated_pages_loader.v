@@ -10,7 +10,6 @@ import url as liburl
 
 const error_page_template = '<!doctype html><title>Load error</title><h1>Failed to load %failed_url%</h1><pre>%error_message%</pre>'
 const directory_page_template = '<!doctype html><title>Index of %path%</title><a href="%parent_url%">Parent directory</a>%contents%'
-const version_page_template = '<!doctype html><title>About %browser_name%</title><dl><dt>Version</dt><dd>%browser_version%</dd><dt>Architecture</dt><dd>%arch_name%</dd><dt>Operating system</dt><dd>%os_name%</dd><dt>User agent</dt><dd>%user_agent%</dd><dt>Command line</dt><dd>%command_line%</dd><dt>Executable</dt><dd>%executable_path%</dd></dl>'
 
 fn escape_html_entities(value string) string {
 	return value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"',
@@ -23,14 +22,6 @@ fn substitute(template string, values map[string]string) string {
 		result = result.replace('%${key}%', value)
 	}
 	return result
-}
-
-pub fn set_browser_process_command_line(command_line string) {
-	loader_browser_process_command_line = command_line
-}
-
-pub fn set_browser_process_executable_path(executable_path string) {
-	loader_browser_process_executable_path = executable_path
 }
 
 pub fn load_error_page(url dom.URL, error_message string) string {
@@ -77,17 +68,5 @@ pub fn load_file_directory_page(url dom.URL) !string {
 		'path':       escape_html_entities(path)
 		'parent_url': 'file://${escape_html_entities(parent)}'
 		'contents':   contents
-	})
-}
-
-pub fn load_about_version_page() string {
-	return substitute(version_page_template, {
-		'browser_name':    browser_name
-		'browser_version': browser_version
-		'arch_name':       cpu_string()
-		'os_name':         os_string()
-		'user_agent':      default_user_agent()
-		'command_line':    escape_html_entities(loader_browser_process_command_line)
-		'executable_path': escape_html_entities(loader_browser_process_executable_path)
 	})
 }
