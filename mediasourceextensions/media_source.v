@@ -77,7 +77,7 @@ pub fn MediaSource.is_type_supported(value string) bool {
 	_ := mimesniff.MimeType.parse(value) or { return false }
 	// Media subtype, codec, and combination support checks remain FIXME in the
 	// current upstream implementation.
-	return true
+	return false
 }
 
 pub fn (source &MediaSource) set_onsourceopen(handler ?&dom.CallbackType) {
