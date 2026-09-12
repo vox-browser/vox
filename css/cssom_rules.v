@@ -2656,7 +2656,9 @@ pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistrat
 		if initial_value := definition.initial_value {
 			// Otherwise, if syntax definition is the universal syntax definition,
 			// parse initialValue as a <declaration-value>
-			if initial_value.trim_space().len == 0 {
+			parsed_initial_value := parse_with_a_syntax(parse_component_values_for_value_logic(initial_value),
+				maybe_syntax)
+			if parsed_initial_value.type_() == .guaranteed_invalid {
 				return error('SyntaxError: Invalid initial value')
 			}
 		}

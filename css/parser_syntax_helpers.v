@@ -542,16 +542,12 @@ fn guaranteed_invalid_style_value() StyleValue {
 }
 
 fn parse_declaration_value_from_remaining(mut tokens ComponentValueTokenStream) ?[]ComponentValue {
-	tokens.discard_whitespace()
-	if !tokens.has_next_token() {
+	remaining := tokens.tokens[tokens.index..].clone()
+	if !is_valid_optional_declaration_value(remaining) {
 		return none
 	}
-
-	mut value := []ComponentValue{}
-	for tokens.has_next_token() {
-		value << tokens.consume_a_token()
-	}
-	return value
+	tokens.index = tokens.tokens.len
+	return remaining
 }
 
 fn parse_dimension_value(type_ ValueType, mut tokens ComponentValueTokenStream) ?StyleValue {
