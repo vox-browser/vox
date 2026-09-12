@@ -234,7 +234,7 @@ pub fn (definition CounterStyleDefinition) pad() ?CounterStylePad {
 	return definition.pad_
 }
 
-pub fn CounterStyleDefinition.from_counter_style_rule(rule CSSCounterStyleRule, computation_context ComputationContext) ?CounterStyleDefinition {
+pub fn CounterStyleDefinition.from_counter_style_rule(rule &CSSCounterStyleRule, computation_context ComputationContext) ?CounterStyleDefinition {
 	system_style_value := rule.system_style_value() or {
 		CounterStyleSystemStyleValue.create(.symbolic)
 	}
@@ -2447,6 +2447,7 @@ pub fn (style_value CounterStylePadStyleValue) serialize(mode SerializationMode)
 }
 
 // CSSCounterStyleRule translation so CounterStyleDefinition::from_counter_style_rule can keep its logic.
+@[heap]
 pub struct CSSCounterStyleRule {
 pub mut:
 	name_                         string
@@ -2460,10 +2461,11 @@ pub mut:
 	symbols_style_value_          ?CounterStyleSymbolListStyleValue
 	additive_symbols_style_value_ ?CounterStyleAdditiveSymbolsStyleValue
 	speak_as_style_value_         ?StyleValue
+	parent_style_sheet_           ?&CSSStyleSheet
 }
 
-pub fn CSSCounterStyleRule.create(name string, system ?CounterStyleSystemStyleValue, negative ?CounterStyleSymbolListStyleValue, prefix ?StyleValue, suffix ?StyleValue, range ?CounterStyleRangeStyleValue, pad ?CounterStylePadStyleValue, fallback ?StyleValue, symbols ?CounterStyleSymbolListStyleValue, additive_symbols ?CounterStyleAdditiveSymbolsStyleValue, speak_as ?StyleValue) CSSCounterStyleRule {
-	return CSSCounterStyleRule{
+pub fn CSSCounterStyleRule.create(name string, system ?CounterStyleSystemStyleValue, negative ?CounterStyleSymbolListStyleValue, prefix ?StyleValue, suffix ?StyleValue, range ?CounterStyleRangeStyleValue, pad ?CounterStylePadStyleValue, fallback ?StyleValue, symbols ?CounterStyleSymbolListStyleValue, additive_symbols ?CounterStyleAdditiveSymbolsStyleValue, speak_as ?StyleValue) &CSSCounterStyleRule {
+	return &CSSCounterStyleRule{
 		name_: name
 		system_style_value_: system
 		negative_style_value_: negative
@@ -2495,6 +2497,7 @@ pub fn (mut rule CSSCounterStyleRule) set_name(name string) {
 	// 2. If the value is an ASCII case-insensitive match for any of the predefined counter styles, lowercase it.
 	// 3. Replace the associated rule's name with an identifier equal to the value.
 	rule.name_ = if is_predefined_counter_style_name(name) { name.to_lower() } else { name }
+	rule.clear_caches()
 }
 
 pub fn (rule CSSCounterStyleRule) system() string {
@@ -2523,6 +2526,7 @@ pub fn (mut rule CSSCounterStyleRule) set_system(system string) {
 
 	// 4. Set the descriptor to the value.
 	rule.system_style_value_ = value
+	rule.clear_caches()
 }
 
 pub fn (rule CSSCounterStyleRule) system_style_value() ?CounterStyleSystemStyleValue {
@@ -2537,6 +2541,7 @@ pub fn (rule CSSCounterStyleRule) negative() string {
 pub fn (mut rule CSSCounterStyleRule) set_negative(negative string) {
 	if value := parse_counter_style_symbol_list_descriptor_value(negative) {
 		rule.negative_style_value_ = value
+		rule.clear_caches()
 	}
 }
 
@@ -2552,6 +2557,7 @@ pub fn (rule CSSCounterStyleRule) prefix() string {
 pub fn (mut rule CSSCounterStyleRule) set_prefix(prefix string) {
 	if value := parse_counter_style_symbol_descriptor_value(prefix) {
 		rule.prefix_style_value_ = value
+		rule.clear_caches()
 	}
 }
 
@@ -2567,6 +2573,7 @@ pub fn (rule CSSCounterStyleRule) suffix() string {
 pub fn (mut rule CSSCounterStyleRule) set_suffix(suffix string) {
 	if value := parse_counter_style_symbol_descriptor_value(suffix) {
 		rule.suffix_style_value_ = value
+		rule.clear_caches()
 	}
 }
 
@@ -2582,6 +2589,7 @@ pub fn (rule CSSCounterStyleRule) range() string {
 pub fn (mut rule CSSCounterStyleRule) set_range(range string) {
 	if value := parse_counter_style_range_descriptor_value(range) {
 		rule.range_style_value_ = value
+		rule.clear_caches()
 	}
 }
 
@@ -2597,6 +2605,7 @@ pub fn (rule CSSCounterStyleRule) pad() string {
 pub fn (mut rule CSSCounterStyleRule) set_pad(pad string) {
 	if value := parse_counter_style_pad_descriptor_value(pad) {
 		rule.pad_style_value_ = value
+		rule.clear_caches()
 	}
 }
 
@@ -2612,6 +2621,7 @@ pub fn (rule CSSCounterStyleRule) fallback() string {
 pub fn (mut rule CSSCounterStyleRule) set_fallback(fallback string) {
 	if value := parse_counter_style_name_descriptor_value(fallback) {
 		rule.fallback_style_value_ = value
+		rule.clear_caches()
 	}
 }
 
@@ -2645,6 +2655,7 @@ pub fn (mut rule CSSCounterStyleRule) set_symbols(symbols string) {
 
 	// 4. Set the descriptor to the value.
 	rule.symbols_style_value_ = value
+	rule.clear_caches()
 }
 
 pub fn (rule CSSCounterStyleRule) symbols_style_value() ?CounterStyleSymbolListStyleValue {
@@ -2677,6 +2688,7 @@ pub fn (mut rule CSSCounterStyleRule) set_additive_symbols(additive_symbols stri
 
 	// 4. Set the descriptor to the value.
 	rule.additive_symbols_style_value_ = value
+	rule.clear_caches()
 }
 
 pub fn (rule CSSCounterStyleRule) additive_symbols_style_value() ?CounterStyleAdditiveSymbolsStyleValue {
@@ -2691,6 +2703,23 @@ pub fn (rule CSSCounterStyleRule) speak_as() string {
 pub fn (mut rule CSSCounterStyleRule) set_speak_as(speak_as string) {
 	if value := parse_counter_style_speak_as_descriptor_value(speak_as) {
 		rule.speak_as_style_value_ = value
+		rule.clear_caches()
+	}
+}
+
+pub fn (mut rule CSSCounterStyleRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSheet) {
+	rule.clear_caches()
+	rule.parent_style_sheet_ = parent_style_sheet
+	rule.clear_caches()
+}
+
+pub fn (mut rule CSSCounterStyleRule) clear_caches() {
+	sheet := rule.parent_style_sheet_ or { return }
+	for owner in sheet.owning_documents_or_shadow_roots {
+		document := owner.document()
+		invalidate_registered_counter_styles_for_document(document)
+		mut mutable_owner := unsafe { &dom.Node(owner) }
+		mutable_owner.invalidate_style(.counter_style_cache_invalidated)
 	}
 }
 

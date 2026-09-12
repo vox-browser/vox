@@ -312,7 +312,8 @@ fn document_theme_color_media_matches_callback(target voidptr, value string) boo
 // attached here by css-aware callers.
 pub fn add_document_author_style_sheet(document &dom.Document, css_text string) {
 	holder := css_author_style_sheets_for(document)
-	sheet := parse_css_stylesheet_with_parser(css_text, none)
+	mut sheet := parse_css_stylesheet_with_parser(css_text, none)
+	sheet.add_owning_document_or_shadow_root(unsafe { &dom.Node(document) })
 	// The holder is @[heap] (stable address) reached through a cached handle; append through the pointer.
 	unsafe {
 		holder.sheets << sheet

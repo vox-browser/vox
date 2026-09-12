@@ -544,7 +544,7 @@ pub mut:
 
 	font_face_rule           ?&CSSFontFaceRule
 	font_feature_values_rule ?&CSSFontFeatureValuesRule
-	counter_style_rule       ?CSSCounterStyleRule
+	counter_style_rule       ?&CSSCounterStyleRule
 }
 
 pub fn CSSRule.create(type_ CSSRuleType) &CSSRule {
@@ -657,6 +657,9 @@ pub fn (mut rule CSSRule) set_parent_style_sheet(parent_style_sheet ?&CSSStyleSh
 	rule.parent_style_sheet = parent_style_sheet
 	if mut font_face_rule := rule.font_face_rule {
 		font_face_rule.set_parent_style_sheet(parent_style_sheet)
+	}
+	if mut counter_style_rule := rule.counter_style_rule {
+		counter_style_rule.set_parent_style_sheet(parent_style_sheet)
 	}
 	if declaration := rule.declaration {
 		mut declaration_with_base := unsafe { &CSSStyleProperties(declaration) }

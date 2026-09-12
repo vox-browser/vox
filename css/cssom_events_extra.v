@@ -515,14 +515,14 @@ fn (rule &CSSRule) serialized_font_feature_values_rule() string {
 	return '@font-feature-values { }'
 }
 
-pub fn CSSRule.create_counter_style_rule(counter_style_rule CSSCounterStyleRule) &CSSRule {
+pub fn CSSRule.create_counter_style_rule(counter_style_rule &CSSCounterStyleRule) &CSSRule {
 	mut rule := CSSRule.create(.counter_style)
 	rule.counter_style_rule = counter_style_rule
 	rule.url = counter_style_rule.name()
 	return rule
 }
 
-pub fn (rule &CSSRule) counter_style_rule_value() ?CSSCounterStyleRule {
+pub fn (rule &CSSRule) counter_style_rule_value() ?&CSSCounterStyleRule {
 	if rule.type_ != .counter_style {
 		return none
 	}
