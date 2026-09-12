@@ -189,6 +189,40 @@ fn test_shadow_tree_mutations_schedule_has_invalidation_in_outer_document_scope(
 	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
 }
 
+fn test_dir_and_lang_changes_schedule_has_invalidation_across_shadow_scopes() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(document, 'div:has(:dir(rtl)) { color: red }')
+	mut document_node := unsafe { &dom.Node(document) }
+	mut host := style_sheet_invalidation_test_element(document, 'div')
+	document_node.append_child(host.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut style := style_sheet_invalidation_test_element(document, 'style')
+	shadow_node.append_child(style.as_node()) or { panic(err) }
+	mut sheet := parse_css_stylesheet_with_parser(':host(:has(:lang(fr))) { color: blue }', none)
+	install_inline_style_sheet_for_invalidation_test(mut sheet, style, shadow_node)
+	mut light_child := style_sheet_invalidation_test_element(document, 'span')
+	mut host_node := host.as_node()
+	host_node.append_child(light_child.as_node()) or { panic(err) }
+	_ := css_style_computer_for(document)
+	mut document_scope := css_style_scope_for_document(document)
+	mut shadow_scope := css_style_scope_for_shadow_root(shadow_root)
+	document_scope.build_rule_cache_if_needed()
+	shadow_scope.build_rule_cache_if_needed()
+	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+
+	light_child.set_attribute_value('dir', 'rtl')
+	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+	assert shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+
+	light_child.set_attribute_value('lang', 'fr')
+	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+	assert shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+}
+
 fn test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }

@@ -5107,6 +5107,26 @@ pub fn (mut e Element) invalidate_lang_value() {
 	}
 }
 
+fn schedule_has_invalidation_for_inherited_attribute_change(element &Element) {
+	node := element.as_node()
+	mut style_scopes := []&StyleScope{cap: 4}
+	document_scope := element.document().style_scope()
+	style_scopes << document_scope
+	root_scope := style_scope_for_node(node)
+	if root_scope !in style_scopes {
+		style_scopes << root_scope
+	}
+	for scope in additional_style_scopes_for_node(node, root_scope) {
+		if scope !in style_scopes {
+			style_scopes << scope
+		}
+	}
+	for scope in style_scopes {
+		mut mutable_scope := unsafe { &StyleScope(scope) }
+		mutable_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(node)
+	}
+}
+
 // --- is_connected ---
 pub fn (e &Element) is_connected() bool {
 	return e.as_node().is_connected()
@@ -5202,33 +5222,31 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		}
 		inline_style.set_declarations_from_text(value_or_empty)
 		e.set_needs_style_update(true)
-	} else if local_name == 'dir' {
-		lowercase_value := to_ascii_lowercase(value_or_empty)
-		if lowercase_value == 'ltr' {
-			e.dir__ = .ltr
-		} else if lowercase_value == 'rtl' {
-			e.dir__ = .rtl
-		} else if lowercase_value == 'auto' {
-			e.dir__ = .auto_
-		} else {
-			e.dir__ = none
+	} else if local_name == 'dir' || local_name == 'lang' {
+		is_dir := local_name == 'dir'
+		if is_dir {
+			lowercase_value := to_ascii_lowercase(value_or_empty)
+			if lowercase_value == 'ltr' {
+				e.dir__ = .ltr
+			} else if lowercase_value == 'rtl' {
+				e.dir__ = .rtl
+			} else if lowercase_value == 'auto' {
+				e.dir__ = .auto_
+			} else {
+				e.dir__ = none
+			}
 		}
-		e.as_node().for_each_shadow_including_inclusive_descendant(fn (node &Node) TraversalDecision {
+		e.as_node().for_each_shadow_including_inclusive_descendant(fn [is_dir] (node &Node) TraversalDecision {
 			if element := node.as_element() {
 				mut mutable_element := unsafe { &Element(element) }
+				if !is_dir {
+					mutable_element.invalidate_lang_value()
+				}
 				mutable_element.set_needs_style_update(true)
 			}
 			return .@continue
 		})
-	} else if local_name == 'lang' {
-		e.as_node().for_each_shadow_including_inclusive_descendant(fn (node &Node) TraversalDecision {
-			if element := node.as_element() {
-				mut mutable_element := unsafe { &Element(element) }
-				mutable_element.invalidate_lang_value()
-				mutable_element.set_needs_style_update(true)
-			}
-			return .@continue
-		})
+		schedule_has_invalidation_for_inherited_attribute_change(&e)
 	} else if local_name == 'part' {
 		e.parts.clear()
 		if value_or_empty.len > 0 {
