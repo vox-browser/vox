@@ -403,8 +403,17 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm string
 			return error('DataError: Invalid Ed25519 JWK')
 		}
 		if private_value := jwk.d {
-			_ := jwk.x or { return error('DataError: Ed25519 private JWK has no x member') }
+			public_value := jwk.x or {
+				return error('DataError: Ed25519 private JWK has no x member')
+			}
+			public_material := base64url_decode(public_value)!
+			if public_material.len != 32 {
+				return error('DataError: Ed25519 public key must be 32 bytes')
+			}
 			private_material := base64url_decode(private_value)!
+			if private_material.len != 32 {
+				return error('DataError: Ed25519 private key must be 32 bytes')
+			}
 			validate_jwk_algorithm_metadata(jwk, normalized, private_material.len, hash_name,
 				normalized_usages)!
 			if normalized_usages.len == 0 {
