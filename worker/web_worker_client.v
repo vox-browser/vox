@@ -48,6 +48,16 @@ pub mut:
 	on_worker_script_load_failure ?CloseCallback
 	on_request_cookie             ?CookieCallback
 	on_request_worker_agent       ?WorkerAgentCallback
+mut:
+	pid_ int = -1
+}
+
+pub fn (client &WebWorkerClient) pid() int {
+	return client.pid_
+}
+
+pub fn (mut client WebWorkerClient) set_pid(pid int) {
+	client.pid_ = pid
 }
 
 pub fn (_ &WebWorkerClient) die() {

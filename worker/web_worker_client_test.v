@@ -21,6 +21,9 @@ fn agent_callback(_ AgentType) WorkerAgentResponse {
 
 fn test_endpoint_fallbacks_and_callbacks() {
 	mut client := &WebWorkerClient{}
+	assert client.pid() == -1
+	client.set_pid(4242)
+	assert client.pid() == 4242
 	assert client.did_request_cookie('https://example.test', .http) == VersionedCookie{}
 	assert client.request_worker_agent(.dedicated_worker).client.id == 0
 	client.on_request_cookie = cookie_callback
