@@ -129,3 +129,44 @@ fn test_document_timeline_constructor_uses_the_latest_animation_frame() {
 	assert timeline.current_time()!.value == 225
 	assert timeline.is_monotonically_increasing()
 }
+
+fn test_scroll_timeline_constructor_metrics_and_staleness() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut root := document.create_element('html')!
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root.as_node())!
+	metrics := ScrollMetrics{
+		is_scroll_container: true
+		has_overflow: true
+		scroll_x: 100
+		overflow_width: 600
+		container_width: 200
+		writing_mode: .horizontal_tb
+		direction: .ltr
+	}
+	mut timeline := ScrollTimeline.create_for_constructor(document, ScrollTimelineOptions{
+		axis: .x
+	}, metrics)
+	assert (timeline.source() or { panic('missing default source') }) == root
+	assert timeline.current_time()!.value == 25
+	assert !timeline.is_stale()
+	assert scroll_axis_from_css_axis(.inline_) == .inline_
+
+	offset_data := compute_scroll_offset_data(metrics, .x) or { panic('missing offsets') }
+	assert offset_data.scroll_offset == 100
+	assert offset_data.max_scroll_offset == 400
+	timeline.scroll_metrics_ = ScrollMetrics{
+		...metrics
+		overflow_width: 1000
+	}
+	assert timeline.is_stale()
+	timeline.update_current_time(0)
+	assert !timeline.is_stale()
+	assert timeline.current_time()!.value == 12.5
+
+	explicit_null := ScrollTimeline.create_for_constructor(document, ScrollTimelineOptions{
+		source_is_present: true
+		source: none
+	}, metrics)
+	assert explicit_null.source() == none
+}

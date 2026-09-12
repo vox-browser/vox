@@ -35,6 +35,12 @@ pub:
 	direction           css.Direction
 }
 
+pub struct ScrollOffsetData {
+pub:
+	scroll_offset     f64
+	max_scroll_offset f64
+}
+
 pub struct ScrollTimelineOptions {
 pub:
 	// source_is_present preserves Web IDL's distinction between an omitted
@@ -51,6 +57,10 @@ pub fn scroll_axis_from_css(axis css.Axis) ScrollAxis {
 		.x { .x }
 		.y { .y }
 	}
+}
+
+pub fn scroll_axis_from_css_axis(axis css.Axis) ScrollAxis {
+	return scroll_axis_from_css(axis)
 }
 
 pub fn computed_scroll_axis(axis ScrollAxis, writing_mode css.WritingMode, direction css.Direction) ComputedScrollAxis {
@@ -92,6 +102,24 @@ pub fn new_scroll_timeline(axis ScrollAxis) &AnimationTimeline {
 	}
 }
 
+pub fn compute_scroll_offset_data(metrics ?ScrollMetrics, axis ScrollAxis) ?ScrollOffsetData {
+	value := metrics or { return none }
+	if !value.is_scroll_container || !value.has_overflow {
+		return none
+	}
+	computed := computed_scroll_axis(axis, value.writing_mode, value.direction)
+	overflow_size := if computed.is_vertical { value.overflow_height } else { value.overflow_width }
+	container_size := if computed.is_vertical {
+		value.container_height
+	} else {
+		value.container_width
+	}
+	return ScrollOffsetData{
+		scroll_offset: if computed.is_vertical { value.scroll_y } else { value.scroll_x }
+		max_scroll_offset: overflow_size - container_size
+	}
+}
+
 // ScrollTimeline::update_current_time. Layout supplies a metric snapshot so
 // this module does not create a CSS/Animations/Layout import cycle.
 pub fn (mut timeline AnimationTimeline) update_from_scroll_metrics(axis ScrollAxis, metrics ?ScrollMetrics) {
@@ -101,25 +129,17 @@ pub fn (mut timeline AnimationTimeline) update_from_scroll_metrics(axis ScrollAx
 	timeline.set_current_time(none)
 	timeline.scroll_axis_ = axis
 	timeline.scroll_metrics_ = metrics
-	value := metrics or { return }
-	if !value.is_scroll_container || !value.has_overflow {
+	offset_data := compute_scroll_offset_data(metrics, axis) or {
+		timeline.last_max_scroll_offset_ = none
 		return
 	}
-	computed := computed_scroll_axis(axis, value.writing_mode, value.direction)
-	overflow_size := if computed.is_vertical { value.overflow_height } else { value.overflow_width }
-	container_size := if computed.is_vertical {
-		value.container_height
-	} else {
-		value.container_width
-	}
-	denominator := overflow_size - container_size
-	if denominator == 0 {
+	timeline.last_max_scroll_offset_ = offset_data.max_scroll_offset
+	if offset_data.max_scroll_offset == 0 {
 		return
 	}
-	offset := if computed.is_vertical { value.scroll_y } else { value.scroll_x }
 	// Upstream computes is_reversed but intentionally leaves reversed-axis
 	// progress as a FIXME, so the translated behavior does the same.
-	timeline.set_current_time(TimeValue.percentage(offset / denominator * 100.0))
+	timeline.set_current_time(TimeValue.percentage(offset_data.scroll_offset / offset_data.max_scroll_offset * 100.0))
 }
 
 pub fn css_axis_to_bindings_scroll_axis(axis css.Axis) ScrollAxis {
@@ -141,6 +161,11 @@ pub fn ScrollTimeline.construct_impl(document ?&dom.Document, scrolling_element 
 	return ScrollTimeline.create(document, source, options.axis, metrics)
 }
 
+pub fn ScrollTimeline.create_for_constructor(document &dom.Document, options ScrollTimelineOptions, metrics ?ScrollMetrics) &ScrollTimeline {
+	source := if options.source_is_present { options.source } else { document.scrolling_element() }
+	return ScrollTimeline.create(document, source, options.axis, metrics)
+}
+
 pub fn (timeline &ScrollTimeline) duration() ?TimeValue {
 	return TimeValue.percentage(100)
 }
@@ -159,6 +184,15 @@ pub fn (timeline &ScrollTimeline) source_internal() ?&dom.Element {
 
 pub fn (mut timeline ScrollTimeline) update_current_time(_ f64) {
 	timeline.update_from_scroll_metrics(timeline.scroll_axis_, timeline.scroll_metrics_)
+}
+
+pub fn (timeline &ScrollTimeline) is_stale() bool {
+	current_max_scroll_offset := if data := compute_scroll_offset_data(timeline.scroll_metrics_, timeline.scroll_axis_) {
+		?f64(data.max_scroll_offset)
+	} else {
+		?f64(none)
+	}
+	return current_max_scroll_offset != timeline.last_max_scroll_offset_
 }
 
 pub fn (timeline &ScrollTimeline) get_propagated_source() ?&dom.Element {

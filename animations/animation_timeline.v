@@ -37,6 +37,7 @@ pub mut:
 	scroll_source_                                ?&dom.Element
 	scroll_axis_                                  ScrollAxis
 	scroll_metrics_                               ?ScrollMetrics
+	last_max_scroll_offset_                       ?f64
 }
 
 pub fn AnimationTimeline.new() &AnimationTimeline {
