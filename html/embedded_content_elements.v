@@ -59,6 +59,7 @@ pub struct NavigableContainerModel {
 mut:
 	base_url_                      dom.URL
 	owner_origin_                  dom.Origin
+	document_                      ?&dom.Document
 	name_                          string
 	src_                           string
 	content_navigable_             ?&ChildNavigable
@@ -229,10 +230,18 @@ pub fn (mut container NavigableContainerModel) destroy_the_child_navigable() {
 	navigable.has_been_destroyed = true
 	navigable.is_delaying_load_events = false
 	container.content_navigable_ = none
+	if document := container.document_ {
+		document.schedule_html_parser_end_check()
+	}
 }
 
 pub fn (mut container NavigableContainerModel) set_potentially_delays_load_event(value bool) {
 	container.potentially_delays_load_event_ = value
+	if !value {
+		if document := container.document_ {
+			document.schedule_html_parser_end_check()
+		}
+	}
 }
 
 pub fn (mut container NavigableContainerModel) set_potentially_delays_the_load_event(value bool) {
@@ -277,6 +286,8 @@ fn navigable_container_active_window_proxy_callback(target voidptr) ?&dom.Window
 }
 
 pub fn attach_navigable_container_load_event_delay_hook(element &dom.Element, container &NavigableContainerModel) {
+	mut mutable_container := unsafe { &NavigableContainerModel(container) }
+	mutable_container.document_ = element.document()
 	mut node := element.as_node()
 	node.set_load_event_delay_hook(dom.NodeLoadEventDelayHook{
 		target: voidptr(container)
@@ -291,6 +302,9 @@ pub fn attach_navigable_container_load_event_delay_hook(element &dom.Element, co
 pub fn (mut container NavigableContainerModel) mark_content_navigable_ready() {
 	mut navigable := container.content_navigable_ or { return }
 	navigable.has_session_history_entry_and_ready = true
+	if document := container.document_ {
+		document.schedule_html_parser_end_check()
+	}
 }
 
 pub fn (container &NavigableContainerModel) content_navigable_has_session_history_entry_and_ready_for_navigation() bool {

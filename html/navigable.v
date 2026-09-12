@@ -116,6 +116,7 @@ mut:
 	ongoing_navigation_                  NavigableOngoingNavigation
 	pending_navigations_                 []NavigableNavigateParams
 	delaying_load_events_                bool
+	navigation_load_event_guard_         ?dom.DocumentLoadEventDelayer
 	is_closing_                          bool
 	is_created_by_web_content_           bool
 	has_been_destroyed_                  bool
@@ -411,6 +412,19 @@ pub fn (mut model NavigableModel) set_delaying_load_events(value bool) {
 
 pub fn (model &NavigableModel) is_delaying_load_events() bool {
 	return model.delaying_load_events_
+}
+
+pub fn (mut model NavigableModel) set_navigation_load_event_guard(parent_document &dom.Document) {
+	model.clear_navigation_load_event_guard()
+	mut mutable_parent := unsafe { &dom.Document(parent_document) }
+	model.navigation_load_event_guard_ = dom.DocumentLoadEventDelayer.new(mut mutable_parent)
+}
+
+pub fn (mut model NavigableModel) clear_navigation_load_event_guard() {
+	if mut guard := model.navigation_load_event_guard_ {
+		guard.finish()
+	}
+	model.navigation_load_event_guard_ = none
 }
 
 pub fn NavigableModel.navigable_with_active_document(document &dom.Document) ?&NavigableModel {
@@ -1193,6 +1207,9 @@ pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_h
 		return
 	}
 	mut model := unsafe { &NavigableModel(navigable) }
+	if parent_document := model.container_document() {
+		model.set_navigation_load_event_guard(parent_document)
+	}
 	model.set_delaying_load_events(false)
 	new_document := history_entry.document() or { return }
 	active_document := model.active_document() or { return }

@@ -362,6 +362,13 @@ pub fn (d &Document) document_ready_for_post_load_tasks() bool {
 
 pub fn (mut d Document) set_ready_for_post_load_tasks(value bool) {
 	d.ready_for_post_load_tasks = value
+	if value {
+		if navigable := d.navigable() {
+			if container_document := navigable.container_document() {
+				container_document.schedule_html_parser_end_check()
+			}
+		}
+	}
 }
 
 pub fn (mut d Document) set_current_script(script ?&HTMLScriptElement) {

@@ -96,6 +96,7 @@ pub mut:
 	foster_parenting              bool
 	stop_parsing                  bool
 	aborted                       bool
+	the_end_started               bool
 	context_element               ?&dom.Element
 	script_nesting_level          usize
 	script_models                 map[i64]&HTMLScriptElementModel
@@ -270,6 +271,7 @@ pub fn (mut p HTMLParser) run_until_insertion_point() {
 
 fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point StopAtInsertionPoint) {
 	p.stop_parsing = false
+	mut reached_end_of_file := false
 	for {
 		mut token := p.tokenizer.next_token_impl(stop_at_insertion_point) or { break }
 
@@ -288,6 +290,7 @@ fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point S
 		}
 
 		if token.is_end_of_file() {
+			reached_end_of_file = true
 			break
 		}
 		if p.stop_parsing {
@@ -299,6 +302,11 @@ fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point S
 	if stop_at_insertion_point == .no && p.document_.allow_declarative_shadow_roots() {
 		materialize_declarative_shadow_roots(unsafe { &dom.Node(p.document_) })
 	}
+	if stop_at_insertion_point == .no && reached_end_of_file && !p.the_end_started
+		&& (!p.tokenizer.is_insertion_point_defined() || p.tokenizer.is_eof_inserted()) {
+		p.the_end_started = true
+		HTMLParser.the_end(p.document_, p)
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#abort-a-parser
@@ -306,6 +314,158 @@ pub fn (mut p HTMLParser) abort() {
 	p.aborted = true
 	p.stop_parsing = true
 	p.tokenizer.abort()
+}
+
+pub enum HTMLParserEndPhase {
+	waiting_for_deferred_scripts
+	waiting_for_asap_scripts
+	waiting_for_load_event_delay
+	completed
+}
+
+@[heap]
+pub struct HTMLParserEndState {
+mut:
+	phase_        HTMLParserEndPhase = .waiting_for_deferred_scripts
+	check_pending bool
+	document      &dom.Document = unsafe { nil }
+	parser        ?&HTMLParser
+}
+
+pub fn HTMLParserEndState.create(document &dom.Document, parser ?&HTMLParser) &HTMLParserEndState {
+	return &HTMLParserEndState{
+		document: document
+		parser: parser
+	}
+}
+
+pub fn (state &HTMLParserEndState) phase() HTMLParserEndPhase {
+	return state.phase_
+}
+
+pub fn (state &HTMLParserEndState) has_pending_check() bool {
+	return state.check_pending
+}
+
+fn html_parser_end_state_schedule_callback(target voidptr) {
+	mut state := unsafe { &HTMLParserEndState(target) }
+	state.schedule_progress_check()
+}
+
+pub fn (mut state HTMLParserEndState) schedule_progress_check() {
+	if state.phase_ == .completed || state.check_pending {
+		return
+	}
+	state.check_pending = true
+	state_pointer := voidptr(state)
+	queue_a_task(.unspecified, main_thread_event_loop(), none, fn [state_pointer] () {
+		perform_a_microtask_checkpoint()
+		mut mutable_state := unsafe { &HTMLParserEndState(state_pointer) }
+		mutable_state.check_progress()
+		mutable_state.check_pending = false
+	})
+}
+
+fn (mut state HTMLParserEndState) check_progress() {
+	if !state.document.is_fully_active() {
+		state.complete()
+		return
+	}
+	if state.phase_ == .waiting_for_deferred_scripts {
+		for {
+			script := state.document.first_script_to_execute_when_parsing_has_finished() or {
+				break
+			}
+			if !html_script_element_is_ready_to_be_parser_executed(script)
+				|| state.document.has_a_style_sheet_that_is_blocking_scripts() {
+				return
+			}
+			html_script_element_execute_script(script)
+			mut mutable_document := unsafe { &dom.Document(state.document) }
+			mutable_document.remove_first_script_to_execute_when_parsing_has_finished()
+		}
+		state.advance_to_asap_scripts_phase()
+	}
+	if state.phase_ == .waiting_for_asap_scripts {
+		if state.document.has_scripts_to_execute_as_soon_as_possible() {
+			return
+		}
+		state.phase_ = .waiting_for_load_event_delay
+	}
+	if state.phase_ == .waiting_for_load_event_delay {
+		if state.document.anything_is_delaying_the_load_event() {
+			return
+		}
+		state.complete()
+	}
+}
+
+fn (mut state HTMLParserEndState) advance_to_asap_scripts_phase() {
+	document := state.document
+	queue_a_task(.dom_manipulation, main_thread_event_loop(), document, fn [document] () {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.mark_dom_content_loaded_event_start()
+		mutable_document.dispatch_event_simple('DOMContentLoaded', true)
+		mutable_document.mark_dom_content_loaded_event_end()
+	})
+	state.phase_ = .waiting_for_asap_scripts
+}
+
+fn (mut state HTMLParserEndState) complete() {
+	if state.phase_ == .completed {
+		return
+	}
+	state.phase_ = .completed
+	mut mutable_document := unsafe { &dom.Document(state.document) }
+	mutable_document.clear_html_parser_end_state(voidptr(state))
+	document := state.document
+	parser := state.parser
+	queue_a_task(.dom_manipulation, main_thread_event_loop(), document, fn [document, parser] () {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.update_readiness(.complete)
+		if parser != none {
+			mutable_document.detach_parser()
+		}
+		if mutable_document.get_browsing_context() == none {
+			return
+		}
+		mutable_document.dispatch_event_simple('load', false)
+		mutable_document.set_page_showing(true)
+		mutable_document.completely_finish_loading()
+	})
+	mutable_document.set_ready_for_post_load_tasks(true)
+	if host := state.document.navigable() {
+		if navigable := navigable_model_for_host(host) {
+			mut mutable_navigable := unsafe { &NavigableModel(navigable) }
+			mutable_navigable.clear_navigation_load_event_guard()
+		}
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#the-end
+pub fn HTMLParser.the_end(document &dom.Document, parser ?&HTMLParser) {
+	if concrete_parser := parser {
+		if concrete_parser.parsing_fragment {
+			return
+		}
+		mut mutable_parser := unsafe { &HTMLParser(concrete_parser) }
+		mutable_parser.tokenizer.undefine_insertion_point()
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.update_readiness(.interactive)
+	if concrete_parser := parser {
+		mut mutable_parser := unsafe { &HTMLParser(concrete_parser) }
+		for !mutable_parser.stack_of_open_elements.is_empty() {
+			mutable_parser.stack_of_open_elements.pop()
+		}
+	}
+	if document.get_browsing_context() == none {
+		mutable_document.update_readiness(.complete)
+		return
+	}
+	mut state := HTMLParserEndState.create(document, parser)
+	mutable_document.set_html_parser_end_state(voidptr(state), html_parser_end_state_schedule_callback)
+	state.schedule_progress_check()
 }
 
 // The tree-construction rules parse a template's contents into its inert

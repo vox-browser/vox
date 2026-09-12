@@ -1738,6 +1738,8 @@ pub type HTMLParserNestingLevelCallback = fn (voidptr) usize
 
 pub type HTMLParserBoolCallback = fn (voidptr) bool
 
+pub type HTMLParserEndStateScheduleCallback = fn (voidptr)
+
 pub struct DocumentHTMLFragmentParsingHook {
 pub:
 	target                      voidptr = unsafe { nil }
@@ -4182,8 +4184,10 @@ pub mut:
 	last_focus_trigger FocusTrigger = .other
 
 	// Parser
-	parser                    &HTMLParser = unsafe { nil }
-	active_parser_was_aborted bool
+	parser                                  &HTMLParser = unsafe { nil }
+	active_parser_was_aborted               bool
+	html_parser_end_state_target            voidptr = unsafe { nil }
+	html_parser_end_state_schedule_callback HTMLParserEndStateScheduleCallback = unsafe { nil }
 
 	// State flags
 	has_been_destroyed                         bool
@@ -6964,6 +6968,19 @@ pub fn (mut d Document) add_script_to_execute_in_order_as_soon_as_possible(scrip
 	d.scripts_to_execute_in_order_as_soon_as_possible << script
 }
 
+pub fn (d &Document) first_script_to_execute_when_parsing_has_finished() ?&HTMLScriptElement {
+	if d.scripts_to_execute_when_parsing_has_finished.len == 0 {
+		return none
+	}
+	return d.scripts_to_execute_when_parsing_has_finished[0]
+}
+
+pub fn (mut d Document) remove_first_script_to_execute_when_parsing_has_finished() {
+	if d.scripts_to_execute_when_parsing_has_finished.len > 0 {
+		d.scripts_to_execute_when_parsing_has_finished.delete(0)
+	}
+}
+
 pub fn (d &Document) has_scripts_to_execute_as_soon_as_possible() bool {
 	return d.scripts_to_execute_as_soon_as_possible.len > 0
 		|| d.scripts_to_execute_in_order_as_soon_as_possible.len > 0
@@ -7033,6 +7050,7 @@ pub fn (mut d Document) decrement_number_of_things_delaying_the_load_event() {
 	if d.page_ != unsafe { nil } {
 		d.page_.client_page_did_update_resource_count(d.number_of_things_delaying_the_load_event)
 	}
+	d.schedule_html_parser_end_check()
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#completely-finish-loading
@@ -7251,6 +7269,35 @@ pub fn (d &Document) allow_focus() bool {
 // --- Parser management ---
 pub fn (mut d Document) set_parser(parser &HTMLParser) {
 	d.parser = parser
+}
+
+pub fn (mut d Document) set_html_parser_end_state(target voidptr, schedule_callback HTMLParserEndStateScheduleCallback) {
+	d.html_parser_end_state_target = target
+	d.html_parser_end_state_schedule_callback = schedule_callback
+}
+
+pub fn (mut d Document) clear_html_parser_end_state(target voidptr) {
+	if d.html_parser_end_state_target != target {
+		return
+	}
+	d.html_parser_end_state_target = unsafe { nil }
+	d.html_parser_end_state_schedule_callback = unsafe { nil }
+}
+
+pub fn (d &Document) has_html_parser_end_state() bool {
+	return d.html_parser_end_state_target != unsafe { nil }
+}
+
+pub fn (d &Document) html_parser_end_state() voidptr {
+	return d.html_parser_end_state_target
+}
+
+pub fn (d &Document) schedule_html_parser_end_check() {
+	if d.html_parser_end_state_target == unsafe { nil }
+		|| d.html_parser_end_state_schedule_callback == unsafe { nil } {
+		return
+	}
+	d.html_parser_end_state_schedule_callback(d.html_parser_end_state_target)
 }
 
 pub fn (mut d Document) detach_parser() {
@@ -10288,6 +10335,7 @@ pub fn (mut d Document) set_source(source string) {
 // --- did_stop_being_active_document_in_navigable ---
 pub fn (mut d Document) did_stop_being_active_document_in_navigable() {
 	d.tear_down_layout_tree()
+	d.schedule_html_parser_end_check()
 	if !d.has_fired_document_became_inactive {
 		d.has_fired_document_became_inactive = true
 		d.notify_each_document_observer_became_inactive()

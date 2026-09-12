@@ -331,9 +331,15 @@ fn (mut script HTMLScriptElementModel) mark_as_ready(result ?string) {
 	}
 	if script.is_parser_inserted() && !script.async_attribute_ {
 		script.ready_to_be_parser_executed_ = true
+		if document := script.preparation_time_document_ {
+			document.schedule_html_parser_end_check()
+		}
 		return
 	}
 	script.execute_script()
+	if document := script.preparation_time_document_ {
+		document.schedule_html_parser_end_check()
+	}
 }
 
 pub fn (mut script HTMLScriptElementModel) prepare_script_text() {

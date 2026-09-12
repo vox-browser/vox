@@ -585,6 +585,7 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 		mut dom_element := link_dom_element(element)
 		mut document := unsafe { &dom.Document(dom_element.document()) }
 		document.script_blocking_style_sheet_set = document.script_blocking_style_sheet_set.filter(voidptr(it) != voidptr(dom_element))
+		document.schedule_html_parser_end_check()
 		dom_element.unblock_rendering()
 	}
 	link.finished_loading_critical_style_subresources(link.stylesheet_failed_)

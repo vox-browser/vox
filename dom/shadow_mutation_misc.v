@@ -1463,6 +1463,7 @@ pub fn (mut base StyleElementBase) finished_loading_critical_subresources(any_fa
 		mut document := unsafe { &Document(element.document()) }
 		document.script_blocking_style_sheet_set =
 			document.script_blocking_style_sheet_set.filter(it != element)
+		document.schedule_html_parser_end_check()
 	}
 	element.unblock_rendering()
 	if mut delayer := base.document_load_event_delayer_ {
