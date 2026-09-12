@@ -4216,6 +4216,8 @@ pub mut:
 	focused_area               &Node = unsafe { nil }
 	active_element_            &Element = unsafe { nil }
 	target_element_            &Element = unsafe { nil }
+	autofocus_candidates_      []&Element
+	autofocus_processed_flag_  bool
 	active_favicon             &Node = unsafe { nil }
 
 	// Colors
@@ -4587,6 +4589,9 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(d.focused_area)
 	visitor.visit(d.active_element_)
 	visitor.visit(d.target_element_)
+	for candidate in d.autofocus_candidates_ {
+		visitor.visit(candidate)
+	}
 	visitor.visit(d.implementation_)
 	visitor.visit(d.current_script)
 	visitor.visit(d.associated_inert_template_document)
@@ -6662,6 +6667,90 @@ pub fn (mut d Document) set_target_element(element ?&Element) {
 	}
 	d.target_element_ = new_target
 	d.set_needs_repaint()
+}
+
+pub fn (d &Document) autofocus_candidates() []&Element {
+	return d.autofocus_candidates_.clone()
+}
+
+pub fn (d &Document) autofocus_processed_flag() bool {
+	return d.autofocus_processed_flag_
+}
+
+pub fn (mut d Document) add_autofocus_candidate(element &Element) {
+	if d.autofocus_processed_flag_ {
+		return
+	}
+	d.autofocus_candidates_ = d.autofocus_candidates_.filter(voidptr(it) != voidptr(element))
+	d.autofocus_candidates_ << element
+}
+
+// https://html.spec.whatwg.org/multipage/interaction.html#flush-autofocus-candidates
+// The HTML event loop runs the focusing steps for the returned target so this
+// DOM-owned algorithm does not introduce a dom -> html import cycle.
+pub fn (mut d Document) take_autofocus_candidate_to_focus() ?&Element {
+	if d.autofocus_processed_flag_ || d.autofocus_candidates_.len == 0 {
+		return none
+	}
+	if focused := d.focused_area() {
+		if !focused.is_same_node(unsafe { &Node(d) }) {
+			d.autofocus_candidates_.clear()
+			d.autofocus_processed_flag_ = true
+			return none
+		}
+	}
+	if d.target_element() != none {
+		d.autofocus_candidates_.clear()
+		d.autofocus_processed_flag_ = true
+		return none
+	}
+
+	for d.autofocus_candidates_.len > 0 {
+		element := d.autofocus_candidates_[0]
+		document := element.document()
+		if !document.is_fully_active() {
+			d.autofocus_candidates_.delete(0)
+			continue
+		}
+		navigable := document.navigable() or {
+			d.autofocus_candidates_.delete(0)
+			continue
+		}
+		top_level_traversable := navigable.traversable_navigable() or {
+			d.autofocus_candidates_.delete(0)
+			continue
+		}
+		top_document_navigable := d.navigable() or {
+			d.autofocus_candidates_.delete(0)
+			continue
+		}
+		if voidptr(top_level_traversable) != voidptr(top_document_navigable) {
+			d.autofocus_candidates_.delete(0)
+			continue
+		}
+		if document.has_a_style_sheet_that_is_blocking_scripts() {
+			return none
+		}
+
+		d.autofocus_candidates_.delete(0)
+		mut ancestor_has_target := document.target_element() != none
+		mut ancestor_navigable := navigable.parent()
+		for !ancestor_has_target && ancestor_navigable != none {
+			current_navigable := ancestor_navigable or { break }
+			if ancestor_document := current_navigable.active_document() {
+				ancestor_has_target = ancestor_document.target_element() != none
+			}
+			ancestor_navigable = current_navigable.parent()
+		}
+		if ancestor_has_target || !element.as_node().is_connected() || !element.is_focusable() {
+			continue
+		}
+
+		d.autofocus_candidates_.clear()
+		d.autofocus_processed_flag_ = true
+		return element
+	}
+	return none
 }
 
 // --- Scroll / fragment ---

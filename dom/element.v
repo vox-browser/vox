@@ -5498,7 +5498,26 @@ pub fn (e &Element) should_indicate_focus() bool {
 
 // https://html.spec.whatwg.org/multipage/interaction.html#tabindex-value
 pub fn (e &Element) is_focusable() bool {
+	if e.is_html_element() {
+		if e.local_name() == 'input' {
+			return to_ascii_lowercase(e.get_attribute_value('type')) != 'hidden'
+				&& !e.is_actually_disabled()
+		}
+		if e.local_name() in ['button', 'select', 'textarea'] {
+			return !e.is_actually_disabled()
+		}
+		if e.local_name() in ['a', 'area'] {
+			return e.has_attribute('href')
+		}
+		if e.local_name() == 'iframe' || e.local_name() == 'dialog' {
+			return true
+		}
+		if e.local_name() in ['audio', 'video'] && e.has_attribute('controls') {
+			return true
+		}
+	}
 	return parse_html_integer(e.get_attribute_value('tabindex')) != none
+		|| e.as_node().is_editing_host()
 }
 
 // --- Tokenization flag ---
@@ -5533,6 +5552,17 @@ pub fn (mut e Element) inserted() {
 				e.enqueue_a_custom_element_callback_reaction('connectedCallback', [])
 			} else {
 				e.try_to_upgrade()
+			}
+		}
+		if e.has_attribute('autofocus') && doc.is_fully_active()
+			&& doc.active_sandboxing_flag_bits() & u32(512) == 0 && doc.allow_focus() {
+			if navigable := doc.navigable() {
+				if top_level_traversable := navigable.traversable_navigable() {
+					if top_document := top_level_traversable.active_document() {
+						mut mutable_top_document := unsafe { &Document(top_document) }
+						mutable_top_document.add_autofocus_candidate(e)
+					}
+				}
 			}
 		}
 	}

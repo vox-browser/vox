@@ -454,6 +454,18 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 		return document.is_fully_active() && !document.is_decoded_svg() && !document.is_render_blocked() && !document.hidden()
 	})
 	for document in documents {
+		navigable := document.navigable() or { continue }
+		if !navigable.is_top_level_traversable() {
+			continue
+		}
+		mut mutable_document := unsafe { &dom.Document(document) }
+		if target := mutable_document.take_autofocus_candidate_to_focus() {
+			mut manager := FocusManager.create()
+			manager.currently_focused_area = document.focused_area()
+			run_focusing_steps(mut manager, target.as_node(), none, .focus)
+		}
+	}
+	for document in documents {
 		mut mutable_document := unsafe { &dom.Document(document) }
 		mutable_document.run_the_resize_steps()
 		mutable_document.run_the_scroll_steps()
