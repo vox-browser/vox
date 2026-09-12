@@ -172,6 +172,13 @@ pub fn (tokenizer &HTMLTokenizer) source() string {
 	return tokenizer.source
 }
 
+pub fn (tokenizer &HTMLTokenizer) unparsed_input() string {
+	if tokenizer.current_offset < 0 || tokenizer.current_offset >= tokenizer.decoded_input.len {
+		return ''
+	}
+	return tokenizer.decoded_input[tokenizer.current_offset..].string()
+}
+
 pub fn HTMLTokenizer.state_name(state State) string {
 	mut builder := strings.new_builder(32)
 	for part in state.str().split('_') {

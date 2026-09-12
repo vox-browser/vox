@@ -103,6 +103,8 @@ pub mut:
 	script_models                      map[i64]&HTMLScriptElementModel
 	script_fetch_hook                  ?ScriptElementFetchHook
 	script_execute_hook                ?ScriptElementExecuteHook
+	speculative_fetch_hook             ?SpeculativeFetchHook
+	active_speculative_html_parser     ?&SpeculativeHTMLParser
 
 	character_insertion_node    ?&dom.Text
 	character_insertion_builder []rune
@@ -203,6 +205,14 @@ pub fn HTMLParser.create_from_bytes(document &dom.Document, input []u8, encoding
 pub fn (mut p HTMLParser) set_script_hooks(fetch ?ScriptElementFetchHook, execute ?ScriptElementExecuteHook) {
 	p.script_fetch_hook = fetch
 	p.script_execute_hook = execute
+}
+
+pub fn (mut p HTMLParser) set_speculative_fetch_hook(hook ?SpeculativeFetchHook) {
+	p.speculative_fetch_hook = hook
+}
+
+pub fn (p &HTMLParser) has_active_speculative_html_parser() bool {
+	return p.active_speculative_html_parser != none
 }
 
 pub fn (p &HTMLParser) current_script_nesting_level() usize {
@@ -375,6 +385,7 @@ fn (mut p HTMLParser) resume_after_parser_blocking_script() {
 	html_script_element_parser_execute_ready_script(the_script)
 	p.decrement_script_nesting_level()
 	assert p.script_nesting_level == 0
+	p.stop_the_speculative_html_parser()
 	p.parser_pause_flag = false
 	p.tokenizer.undefine_insertion_point()
 	p.run()
@@ -392,6 +403,24 @@ pub fn (mut p HTMLParser) abort() {
 	p.aborted = true
 	p.stop_parsing = true
 	p.tokenizer.abort()
+	p.stop_the_speculative_html_parser()
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#start-the-speculative-html-parser
+fn (mut p HTMLParser) start_the_speculative_html_parser() {
+	if p.active_speculative_html_parser != none {
+		p.stop_the_speculative_html_parser()
+	}
+	mut parser := SpeculativeHTMLParser.create(p.document_, p.tokenizer.unparsed_input(), p.document_.base_url(), p.speculative_fetch_hook)
+	p.active_speculative_html_parser = parser
+	parser.run()
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#stop-the-speculative-html-parser
+fn (mut p HTMLParser) stop_the_speculative_html_parser() {
+	mut parser := p.active_speculative_html_parser or { return }
+	parser.stop()
+	p.active_speculative_html_parser = none
 }
 
 pub enum HTMLParserEndPhase {
@@ -527,6 +556,10 @@ pub fn HTMLParser.the_end(document &dom.Document, parser ?&HTMLParser) {
 			return
 		}
 		mut mutable_parser := unsafe { &HTMLParser(concrete_parser) }
+		if mutable_parser.active_speculative_html_parser != none {
+			mutable_parser.stop_the_speculative_html_parser()
+			return
+		}
 		mutable_parser.tokenizer.undefine_insertion_point()
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }

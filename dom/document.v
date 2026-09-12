@@ -4478,6 +4478,7 @@ pub mut:
 
 	// Misc
 	shared_resource_requests_               map[string]&SharedResourceRequest
+	speculative_fetch_urls_                 map[string]bool
 	adopted_style_sheets                    []&CSSStyleSheet
 	adopted_css_style_sheets_handle         voidptr = unsafe { nil }
 	console_client_                         &ConsoleClient = unsafe { nil }
@@ -10239,6 +10240,15 @@ pub fn (mut d Document) cache_query_selector_result(selector_text string, result
 		d.selector_query_cache.clear()
 	}
 	d.selector_query_cache[selector_text] = result
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#list-of-speculative-fetch-urls
+pub fn (d &Document) has_speculative_fetch_url(url URL) bool {
+	return d.speculative_fetch_urls_[url.serialize()]
+}
+
+pub fn (mut d Document) add_speculative_fetch_url(url URL) {
+	d.speculative_fetch_urls_[url.serialize()] = true
 }
 
 // --- Shared resource requests ---

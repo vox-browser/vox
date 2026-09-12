@@ -956,6 +956,7 @@ fn (mut p HTMLParser) handle_text(mut token HTMLToken) {
 				if pending := p.document_.pending_parsing_blocking_script() {
 					if p.document_.has_a_style_sheet_that_is_blocking_scripts()
 						|| !html_script_element_is_ready_to_be_parser_executed(pending) {
+						p.start_the_speculative_html_parser()
 						p.parser_pause_flag = true
 						p.schedule_resume_check()
 						return
