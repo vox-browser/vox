@@ -5213,11 +5213,19 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		} else {
 			e.dir__ = none
 		}
+		e.as_node().for_each_shadow_including_inclusive_descendant(fn (node &Node) TraversalDecision {
+			if element := node.as_element() {
+				mut mutable_element := unsafe { &Element(element) }
+				mutable_element.set_needs_style_update(true)
+			}
+			return .@continue
+		})
 	} else if local_name == 'lang' {
-		e.as_node().for_each_in_inclusive_subtree(fn (node &Node) TraversalDecision {
+		e.as_node().for_each_shadow_including_inclusive_descendant(fn (node &Node) TraversalDecision {
 			if element := node.as_element() {
 				mut mutable_element := unsafe { &Element(element) }
 				mutable_element.invalidate_lang_value()
+				mutable_element.set_needs_style_update(true)
 			}
 			return .@continue
 		})
