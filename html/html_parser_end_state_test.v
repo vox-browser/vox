@@ -27,6 +27,7 @@ fn test_parser_end_state_resumes_each_async_phase() {
 	}
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
 	_ = WindowModel.create_top_level(document, none, 'parser-end-test')!
+	document.set_ready_to_run_scripts()
 
 	mut script := HTMLScriptElementModel.create(document.base_url())
 	script.set_parser_document(document)

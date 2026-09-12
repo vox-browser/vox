@@ -385,6 +385,9 @@ pub fn (mut script HTMLScriptElementModel) adopted_from(_ &dom.Document) {
 }
 
 pub fn (mut script HTMLScriptElementModel) execute_script() {
+	if document := script.preparation_time_document_ {
+		assert document.document_ready_to_run_scripts()
+	}
 	if !script.script_ready_ {
 		return
 	}

@@ -80,6 +80,8 @@ fn test_script_inline_external_parser_and_import_map() {
 	assert !external.failed_to_load()
 
 	document := dom.Document.create(dom.url_about_blank())
+	mut ready_document := unsafe { &dom.Document(document) }
+	ready_document.set_ready_to_run_scripts()
 	mut parser_script := HTMLScriptElementModel.create(dom.url_about_blank())
 	parser_script.set_parser_document(document)
 	parser_script.set_text('parser()')
@@ -109,7 +111,8 @@ fn test_script_failures_and_supports() {
 
 fn test_parser_inserted_inline_script_is_prepared_and_executed() {
 	executed_scripts = []
-	document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	document.set_ready_to_run_scripts()
 	mut parser := HTMLParser.create(document, '<script>parser_inline()</script><p>after</p>')
 	parser.scripting_enabled = true
 	parser.set_script_hooks(none, script_test_execute)
@@ -120,7 +123,8 @@ fn test_parser_inserted_inline_script_is_prepared_and_executed() {
 
 fn test_script_dom_receiver_lifecycle_and_text_idl_algorithms() {
 	executed_scripts = []
-	document := parse_document('<body><script></script></body>')
+	mut document := parse_document('<body><script></script></body>')
+	document.set_ready_to_run_scripts()
 	script_element := resource_test_element(unsafe { &dom.Node(document) }, 'script') or {
 		panic('missing script')
 	}

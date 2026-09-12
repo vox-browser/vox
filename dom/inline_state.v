@@ -415,6 +415,19 @@ pub fn (d &Document) document_ready_to_run_scripts() bool {
 
 pub fn (mut d Document) set_ready_to_run_scripts() {
 	d.ready_to_run_scripts = true
+	if callback := d.deferred_parser_start {
+		d.deferred_parser_start = none
+		callback()
+	}
+}
+
+pub fn (mut d Document) set_deferred_parser_start(callback fn ()) {
+	assert d.deferred_parser_start == none
+	d.deferred_parser_start = callback
+}
+
+pub fn (d &Document) has_deferred_parser_start() bool {
+	return d.deferred_parser_start != none
 }
 
 pub fn (mut d Document) set_needs_invalidation_of_elements_affected_by_has() {

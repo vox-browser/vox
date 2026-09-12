@@ -3496,9 +3496,18 @@ fn load_html_document(navigation_params &NavigationParams, signal_to_continue_se
 	} else {
 		// FIXME: Parse as we receive the document data, instead of waiting for the whole document to be fetched first.
 		resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
-		html_parser_run_with_uncertain_encoding(document, navigation_params.response_body,
-			navigation_response_mime_type(navigation_params),
-			navigation_response_url(navigation_params))
+		mime := navigation_response_mime_type(navigation_params)
+		url := navigation_response_url(navigation_params)
+		if document.document_ready_to_run_scripts() {
+			html_parser_run_with_uncertain_encoding(document, navigation_params.response_body, mime, url)
+		} else {
+			document_pointer := voidptr(document)
+			data := navigation_params.response_body.clone()
+			document.set_deferred_parser_start(fn [data, document_pointer, mime, url] () {
+				document := unsafe { &Document(document_pointer) }
+				html_parser_run_with_uncertain_encoding(document, data, mime, url)
+			})
+		}
 	}
 
 	// 4. Return document.
@@ -3536,10 +3545,20 @@ fn load_xml_document(navigation_params &NavigationParams, type_ mimesniff.MimeTy
 
 	// NB: If document is part of session history traversal, resolve the signal_to_continue_session_history_processing.
 	resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
-	document.source = source
-	if !parse_xml_document_into(document, source) {
-		convert_to_xml_error_document(mut document, 'Failed to parse XML document')
-		// NB: XMLDocumentBuilder ensures that the `load` event gets fired. We don't need to do anything else here.
+	if document.document_ready_to_run_scripts() {
+		document.source = source
+		if !parse_xml_document_into(document, source) {
+			convert_to_xml_error_document(mut document, 'Failed to parse XML document')
+		}
+	} else {
+		document_pointer := voidptr(document)
+		document.set_deferred_parser_start(fn [document_pointer, source] () {
+			mut document := unsafe { &Document(document_pointer) }
+			document.source = source
+			if !parse_xml_document_into(document, source) {
+				convert_to_xml_error_document(mut document, 'Failed to parse XML document')
+			}
+		})
 	}
 
 	return document
@@ -3560,13 +3579,21 @@ fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeT
 	//    with the tag name "pre" followed by a single U+000A LINE FEED (LF) character, and switch the HTML parser's tokenizer
 	//    to the PLAINTEXT state.
 	resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
-	encoding := html_parser_run_text_document(document, navigation_params.response_body, type_,
-		navigation_response_url(navigation_params))
-	document.set_encoding(encoding)
-
-	// 5. User agents may add content to the head element of document, e.g., linking to a style sheet, providing
-	//    script, or giving the document a title.
-	append_title_to_document_head(document, document.url_string()) or {}
+	url := navigation_response_url(navigation_params)
+	if document.document_ready_to_run_scripts() {
+		encoding := html_parser_run_text_document(document, navigation_params.response_body, type_, url)
+		document.set_encoding(encoding)
+		append_title_to_document_head(document, document.url_string()) or {}
+	} else {
+		document_pointer := voidptr(document)
+		data := navigation_params.response_body.clone()
+		document.set_deferred_parser_start(fn [data, document_pointer, type_, url] () {
+			mut document := unsafe { &Document(document_pointer) }
+			encoding := html_parser_run_text_document(document, data, type_, url)
+			document.set_encoding(encoding)
+			append_title_to_document_head(document, document.url_string()) or {}
+		})
+	}
 
 	// 6. Return document.
 	return document
@@ -3733,6 +3760,7 @@ pub fn create_document_for_inline_content(navigable ?&Navigable, navigation_id ?
 	document.set_document_type(.html)
 	document.set_content_type('text/html')
 	document.set_navigation_id(navigation_id)
+	document.set_ready_to_run_scripts()
 	mutate_document(document)
 	return document
 }

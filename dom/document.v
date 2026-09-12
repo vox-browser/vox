@@ -4095,6 +4095,7 @@ pub mut:
 	readiness                 DocumentReadyState = .complete
 	ready_for_post_load_tasks bool
 	ready_to_run_scripts      bool
+	deferred_parser_start     ?fn ()
 
 	// Encoding
 	encoding                    ?string
@@ -10138,6 +10139,9 @@ pub fn (mut d Document) update_for_history_step_application(entry &SessionHistor
 		}
 	}
 	_ = do_not_reactivate
+	if document_is_new {
+		d.set_ready_to_run_scripts()
+	}
 }
 
 // --- Last modified ---

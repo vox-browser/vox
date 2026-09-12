@@ -330,6 +330,7 @@ pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentS
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_cached_navigable(model.host_)
+	mutable_document.set_ready_to_run_scripts()
 }
 
 // https://html.spec.whatwg.org/multipage/document-sequences.html#child-navigable
@@ -487,6 +488,7 @@ pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryE
 	mut document := unsafe { &dom.Document(new_document) }
 	document.set_cached_navigable(model.host_)
 	document.make_active()
+	document.set_ready_to_run_scripts()
 	if mut context := model.context_ {
 		context.set_active_document(new_document)
 	}
@@ -994,7 +996,16 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		}
 		match state.resource {
 			string {
-				parse_html_from_a_string(document, state.resource as string)
+				markup := state.resource as string
+				if document.document_ready_to_run_scripts() {
+					parse_html_from_a_string(document, markup)
+				} else {
+					document_pointer := voidptr(document)
+					document.set_deferred_parser_start(fn [document_pointer, markup] () {
+						document := unsafe { &dom.Document(document_pointer) }
+						parse_html_from_a_string(document, markup)
+					})
+				}
 			}
 			EmptyDocumentResource {
 				document.populate_with_html_head_and_body() or {}
