@@ -74,9 +74,8 @@ pub:
 
 @[heap]
 pub struct WebGLContextProxyBase {
-pub:
-	webgl_version WebGLVersion
 mut:
+	webgl_version_                 WebGLVersion
 	supported_extensions_          []string
 	shared_command_buffer_         WebGLSharedCommandBuffer
 	shared_data_cursor_            int
@@ -104,7 +103,7 @@ mut:
 
 pub fn WebGLContextProxyBase.new(version WebGLVersion, supported_extensions []string, data_region_capacity int) !&WebGLContextProxyBase {
 	mut proxy := &WebGLContextProxyBase{
-		webgl_version: version
+		webgl_version_: version
 		supported_extensions_: supported_extensions.clone()
 	}
 	proxy.initialize_shared_command_buffer(data_region_capacity)!
@@ -302,6 +301,22 @@ pub fn (proxy &WebGLContextProxyBase) canvas_id() ?u64 {
 
 pub fn (proxy &WebGLContextProxyBase) get_supported_opengl_extensions() []string {
 	return proxy.supported_extensions_.clone()
+}
+
+pub fn (_ &WebGLContextProxyBase) make_current() {}
+
+pub fn (_ &WebGLContextProxyBase) notify_content_will_change() {}
+
+pub fn (_ &WebGLContextProxyBase) default_framebuffer() u32 {
+	return 0
+}
+
+pub fn (_ &WebGLContextProxyBase) default_renderbuffer() u32 {
+	return 0
+}
+
+pub fn (proxy &WebGLContextProxyBase) webgl_version() WebGLVersion {
+	return proxy.webgl_version_
 }
 
 pub fn (mut proxy WebGLContextProxyBase) allocate_object_id() WebGLObjectId {
