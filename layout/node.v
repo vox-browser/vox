@@ -938,6 +938,10 @@ fn materialize_list_style_image(computed_values &css.ComputedProperties, documen
 			mut mutable_document := unsafe { &dom.Document(document) }
 			value.load_any_resources(mut mutable_document)
 		}
+		css.ImageSetStyleValue {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			value.load_any_resources(mut mutable_document, document.device_pixels_per_css_pixel())
+		}
 		else {}
 	}
 	return value

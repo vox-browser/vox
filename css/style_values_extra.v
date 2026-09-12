@@ -585,6 +585,13 @@ fn style_values_extra_image_natural_size(image CSSImageSourceStyleValue) SizeWit
 				aspect_ratio: image.natural_aspect_ratio()
 			}
 		}
+		ImageSetStyleValue {
+			SizeWithAspectRatio{
+				width: image.natural_width()
+				height: image.natural_height()
+				aspect_ratio: image.natural_aspect_ratio()
+			}
+		}
 		else { SizeWithAspectRatio{} }
 	}
 }
@@ -592,6 +599,7 @@ fn style_values_extra_image_natural_size(image CSSImageSourceStyleValue) SizeWit
 fn style_values_extra_image_is_paintable(image CSSImageSourceStyleValue) bool {
 	return match image {
 		ImageStyleValue { image.is_paintable() }
+		ImageSetStyleValue { image.is_paintable() }
 		ConicGradientStyleValue, LinearGradientStyleValue, RadialGradientStyleValue { true }
 		StyleValue { false }
 	}
@@ -604,6 +612,11 @@ pub fn (mut style_value CursorStyleValue) make_image_cursor(node &dom.LayoutNode
 			ImageStyleValue {
 				mut document := document_from_layout_node(node) or { return none }
 				image.load_any_resources(mut document)
+				style_value.image_.value = CSSImageSourceStyleValue(image)
+			}
+			ImageSetStyleValue {
+				mut document := document_from_layout_node(node) or { return none }
+				image.load_any_resources(mut document, document.device_pixels_per_css_pixel())
 				style_value.image_.value = CSSImageSourceStyleValue(image)
 			}
 			else {}

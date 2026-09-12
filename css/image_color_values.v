@@ -14,6 +14,7 @@ module css
 
 import dom
 import math
+import platform
 
 pub enum ConcreteColorType {
 	rgb
@@ -1559,6 +1560,218 @@ pub mut:
 	clients_             []voidptr
 }
 
+pub type ImageSetImageStyleValue = ConicGradientStyleValue
+	| ImageStyleValue
+	| LinearGradientStyleValue
+	| RadialGradientStyleValue
+
+pub type ImageSetResolutionStyleValue = CalculatedStyleValue | ResolutionStyleValue
+
+pub struct ImageSetOption {
+pub mut:
+	image      ImageSetImageStyleValue
+	resolution ImageSetResolutionStyleValue
+	type_      ?string
+}
+
+pub struct ImageSetStyleValue {
+pub mut:
+	options_        []ImageSetOption
+	style_sheet_    ?&CSSStyleSheet
+	selected_index_ int = -1
+}
+
+pub fn ImageSetStyleValue.create(options []ImageSetOption) ImageSetStyleValue {
+	return ImageSetStyleValue{
+		options_: options.clone()
+	}
+}
+
+fn (image ImageSetImageStyleValue) serialize(mode SerializationMode) string {
+	return match image {
+		ConicGradientStyleValue { image.serialize(mode) }
+		ImageStyleValue { image.serialize(mode) }
+		LinearGradientStyleValue { image.serialize(mode) }
+		RadialGradientStyleValue { image.serialize(mode) }
+	}
+}
+
+fn (image ImageSetImageStyleValue) absolutized(context ComputationContext) ImageSetImageStyleValue {
+	return match image {
+		ConicGradientStyleValue { ImageSetImageStyleValue(image.absolutized(context)) }
+		ImageStyleValue { ImageSetImageStyleValue(image.absolutized(context)) }
+		LinearGradientStyleValue { ImageSetImageStyleValue(image.absolutized(context)) }
+		RadialGradientStyleValue { ImageSetImageStyleValue(image.absolutized(context)) }
+	}
+}
+
+fn (resolution ImageSetResolutionStyleValue) serialize(mode SerializationMode) string {
+	return match resolution {
+		CalculatedStyleValue { resolution.serialize(mode) }
+		ResolutionStyleValue { resolution.serialize(mode) }
+	}
+}
+
+fn (resolution ImageSetResolutionStyleValue) dots_per_pixel() ?f64 {
+	return match resolution {
+		CalculatedStyleValue {
+			resolution.resolve_resolution(CalculationResolutionContext{})?.to_dots_per_pixel()
+		}
+		ResolutionStyleValue { resolution.resolution().to_dots_per_pixel() }
+	}
+}
+
+pub fn (style_value ImageSetStyleValue) serialize(mode SerializationMode) string {
+	mut options := []string{cap: style_value.options_.len}
+	for option in style_value.options_ {
+		mut serialized := '${option.image.serialize(mode)} ${option.resolution.serialize(mode)}'
+		if type_ := option.type_ {
+			serialized += ' type("${type_.replace('\\', '\\\\').replace('"', '\\"')}")'
+		}
+		options << serialized
+	}
+	return 'image-set(${options.join(', ')})'
+}
+
+pub fn (style_value ImageSetStyleValue) equals(other ImageSetStyleValue) bool {
+	return style_value.serialize(.normal) == other.serialize(.normal)
+}
+
+pub fn (style_value ImageSetStyleValue) absolutized(context ComputationContext) ImageSetStyleValue {
+	mut options := []ImageSetOption{cap: style_value.options_.len}
+	for option in style_value.options_ {
+		mut resolution := option.resolution
+		if option.resolution is CalculatedStyleValue {
+			absolutized := option.resolution.absolutized(context)
+			resolution = image_set_resolution_from_absolutized_value(absolutized) or {
+				option.resolution
+			}
+		}
+		options << ImageSetOption{
+			image: option.image.absolutized(context)
+			resolution: resolution
+			type_: option.type_
+		}
+	}
+	return ImageSetStyleValue.create(options)
+}
+
+fn image_set_resolution_from_absolutized_value(value StyleValue) ?ImageSetResolutionStyleValue {
+	return match value {
+		CalculatedStyleValue { ImageSetResolutionStyleValue(value) }
+		ResolutionStyleValue { ImageSetResolutionStyleValue(value) }
+		else { none }
+	}
+}
+
+pub fn (style_value ImageSetStyleValue) select_image_index(device_pixels_per_css_pixel f64) ?int {
+	mut best_below_index := -1
+	mut best_below_resolution := -1.0
+	mut best_above_index := -1
+	mut best_above_resolution := f64(1.7976931348623157e+308)
+	for index, option in style_value.options_ {
+		if type_ := option.type_ {
+			if !platform.is_supported_image_type(type_) {
+				continue
+			}
+		}
+		resolution := option.resolution.dots_per_pixel() or { continue }
+		if resolution >= device_pixels_per_css_pixel {
+			if resolution < best_above_resolution {
+				best_above_index = index
+				best_above_resolution = resolution
+			}
+		} else if resolution > best_below_resolution {
+			best_below_index = index
+			best_below_resolution = resolution
+		}
+	}
+	if best_above_index >= 0 {
+		return best_above_index
+	}
+	if best_below_index >= 0 {
+		return best_below_index
+	}
+	return none
+}
+
+pub fn (mut style_value ImageSetStyleValue) load_any_resources(mut document dom.Document, device_pixels_per_css_pixel f64) {
+	style_value.selected_index_ = style_value.select_image_index(device_pixels_per_css_pixel) or { return }
+	mut option := style_value.options_[style_value.selected_index_]
+	match option.image {
+		ImageStyleValue {
+			option.image.set_style_sheet(style_value.style_sheet_)
+			option.image.load_any_resources(mut document)
+		}
+		else {}
+	}
+	style_value.options_[style_value.selected_index_] = option
+}
+
+pub fn (mut style_value ImageSetStyleValue) set_style_sheet(style_sheet ?&CSSStyleSheet) {
+	style_value.style_sheet_ = style_sheet
+	for index := 0; index < style_value.options_.len; index++ {
+		mut option := style_value.options_[index]
+		match option.image {
+			ImageStyleValue { option.image.set_style_sheet(style_sheet) }
+			else {}
+		}
+		style_value.options_[index] = option
+	}
+}
+
+pub fn (style_value ImageSetStyleValue) selected_image() ?ImageSetImageStyleValue {
+	if style_value.selected_index_ < 0 || style_value.selected_index_ >= style_value.options_.len {
+		return none
+	}
+	return style_value.options_[style_value.selected_index_].image
+}
+
+pub fn (style_value ImageSetStyleValue) image_for_device_pixel_ratio(device_pixels_per_css_pixel f64) ?ImageSetImageStyleValue {
+	index := style_value.select_image_index(device_pixels_per_css_pixel)?
+	return style_value.options_[index].image
+}
+
+pub fn (style_value ImageSetStyleValue) image_url_for_device_pixel_ratio(device_pixels_per_css_pixel f64) ?ImageStyleValue {
+	image := style_value.image_for_device_pixel_ratio(device_pixels_per_css_pixel)?
+	return match image {
+		ImageStyleValue { image }
+		else { none }
+	}
+}
+
+pub fn (style_value ImageSetStyleValue) is_paintable() bool {
+	image := style_value.selected_image() or { return false }
+	return match image {
+		ImageStyleValue { image.is_paintable() }
+		ConicGradientStyleValue, LinearGradientStyleValue, RadialGradientStyleValue { true }
+	}
+}
+
+pub fn (style_value ImageSetStyleValue) natural_width() ?CSSPixels {
+	image := style_value.selected_image() or { return none }
+	return match image {
+		ImageStyleValue { image.natural_width() }
+		else { none }
+	}
+}
+
+pub fn (style_value ImageSetStyleValue) natural_height() ?CSSPixels {
+	image := style_value.selected_image() or { return none }
+	return match image {
+		ImageStyleValue { image.natural_height() }
+		else { none }
+	}
+}
+
+pub fn (style_value ImageSetStyleValue) natural_aspect_ratio() ?CSSPixelFraction {
+	image := style_value.selected_image() or { return none }
+	return match image {
+		ImageStyleValue { image.natural_aspect_ratio() }
+		else { none }
+	}
+}
+
 pub fn ImageStyleValue.create(url URL) ImageStyleValue {
 	return ImageStyleValue{
 		url_: url
@@ -1734,6 +1947,7 @@ pub fn (mut style_value ImageStyleValue) unregister_client(client voidptr) {
 }
 
 pub type CSSImageSourceStyleValue = ConicGradientStyleValue
+	| ImageSetStyleValue
 	| ImageStyleValue
 	| LinearGradientStyleValue
 	| RadialGradientStyleValue
@@ -1742,6 +1956,7 @@ pub type CSSImageSourceStyleValue = ConicGradientStyleValue
 pub fn (style_value CSSImageSourceStyleValue) serialize(mode SerializationMode) string {
 	return match style_value {
 		ConicGradientStyleValue { style_value.serialize(mode) }
+		ImageSetStyleValue { style_value.serialize(mode) }
 		ImageStyleValue { style_value.serialize(mode) }
 		LinearGradientStyleValue { style_value.serialize(mode) }
 		RadialGradientStyleValue { style_value.serialize(mode) }
@@ -1752,6 +1967,7 @@ pub fn (style_value CSSImageSourceStyleValue) serialize(mode SerializationMode) 
 pub fn (style_value CSSImageSourceStyleValue) absolutized(context ComputationContext) CSSImageSourceStyleValue {
 	return match style_value {
 		ConicGradientStyleValue { CSSImageSourceStyleValue(style_value.absolutized(context)) }
+		ImageSetStyleValue { CSSImageSourceStyleValue(style_value.absolutized(context)) }
 		ImageStyleValue { CSSImageSourceStyleValue(style_value.absolutized(context)) }
 		LinearGradientStyleValue { CSSImageSourceStyleValue(style_value.absolutized(context)) }
 		RadialGradientStyleValue { CSSImageSourceStyleValue(style_value.absolutized(context)) }

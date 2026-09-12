@@ -13709,10 +13709,29 @@ fn (mut parser Parser) read_ratio_number_value(component_value ComponentValue) ?
 fn style_value_from_css_image_source_for_value_logic(value CSSImageSourceStyleValue) StyleValue {
 	return match value {
 		ConicGradientStyleValue { StyleValue(value) }
+		ImageSetStyleValue { StyleValue(value) }
 		ImageStyleValue { StyleValue(value) }
 		LinearGradientStyleValue { StyleValue(value) }
 		RadialGradientStyleValue { StyleValue(value) }
 		StyleValue { value }
+	}
+}
+
+fn image_set_image_from_css_image_source(value CSSImageSourceStyleValue) ?ImageSetImageStyleValue {
+	return match value {
+		ConicGradientStyleValue { ImageSetImageStyleValue(value) }
+		ImageStyleValue { ImageSetImageStyleValue(value) }
+		LinearGradientStyleValue { ImageSetImageStyleValue(value) }
+		RadialGradientStyleValue { ImageSetImageStyleValue(value) }
+		ImageSetStyleValue, StyleValue { none }
+	}
+}
+
+fn image_set_resolution_from_style_value(value StyleValue) ?ImageSetResolutionStyleValue {
+	return match value {
+		CalculatedStyleValue { ImageSetResolutionStyleValue(value) }
+		ResolutionStyleValue { ImageSetResolutionStyleValue(value) }
+		else { none }
 	}
 }
 
@@ -13755,6 +13774,10 @@ fn (mut parser Parser) parse_image_or_none_list_value(mut tokens ComponentValueS
 }
 
 fn (mut parser Parser) parse_image_value(mut tokens ComponentValueStream) ?CSSImageSourceStyleValue {
+	return parser.parse_image_value_allowing_image_set(mut tokens, true)
+}
+
+fn (mut parser Parser) parse_image_value_allowing_image_set(mut tokens ComponentValueStream, allow_image_set bool) ?CSSImageSourceStyleValue {
 	tokens.consume_whitespace()
 	component_value := tokens.consume() or { return none }
 	if component_value.is(.url) {
@@ -13772,6 +13795,69 @@ fn (mut parser Parser) parse_image_value(mut tokens ComponentValueStream) ?CSSIm
 			component_value.function().value.map(it.to_string()).join('')
 		}
 		return CSSImageSourceStyleValue(ImageStyleValue.create_from_url_string(url_string))
+	}
+	if allow_image_set && (component_value.is_function_named('image-set')
+		|| component_value.is_function_named('-webkit-image-set')) {
+		options_tokens := parse_a_comma_separated_list_of_component_values_for_value_logic(component_value.function().value)
+		mut options := []ImageSetOption{cap: options_tokens.len}
+		for option_values in options_tokens {
+			if contains_attr_tainted_value(option_values) {
+				return none
+			}
+			mut option_tokens := ComponentValueStream.new(option_values)
+			option_tokens.consume_whitespace()
+			first := option_tokens.peek() or { return none }
+			mut image := ImageSetImageStyleValue(ImageStyleValue{})
+			if first.is(.string) {
+				option_tokens.consume()
+				image = ImageSetImageStyleValue(ImageStyleValue.create_from_url_string(first.token().string_value()))
+			} else {
+				parsed_image := parser.parse_image_value_allowing_image_set(mut option_tokens, false) or { return none }
+				image = image_set_image_from_css_image_source(parsed_image) or { return none }
+			}
+
+			mut resolution := ?ImageSetResolutionStyleValue(none)
+			mut type_ := ?string(none)
+			for option_tokens.has_more_tokens() {
+				if resolution == none {
+					mut resolution_tokens := option_tokens.clone()
+					if parsed_resolution := parser.parse_resolution_value(mut resolution_tokens) {
+						resolution = image_set_resolution_from_style_value(parsed_resolution) or {
+							return none
+						}
+						option_tokens = resolution_tokens
+						continue
+					}
+				}
+
+				option_tokens.consume_whitespace()
+				next := option_tokens.peek() or { break }
+				if type_ == none && next.is_function_named('type') {
+					option_tokens.consume()
+					mut type_tokens := ComponentValueStream.new(next.function().value)
+					type_tokens.consume_whitespace()
+					type_token := type_tokens.consume() or { return none }
+					if !type_token.is(.string) || type_tokens.has_more_tokens() {
+						return none
+					}
+					type_ = type_token.token().string_value()
+					continue
+				}
+				return none
+			}
+
+			options << ImageSetOption{
+				image: image
+				resolution: resolution or {
+					ImageSetResolutionStyleValue(ResolutionStyleValue.create(Resolution.new(1, .x)))
+				}
+				type_: type_
+			}
+		}
+		if options.len == 0 {
+			return none
+		}
+		return CSSImageSourceStyleValue(ImageSetStyleValue.create(options))
 	}
 	if component_value.is_function_named('linear-gradient') || component_value.is_function_named('repeating-linear-gradient') || component_value.is_function_named('-webkit-linear-gradient') || component_value.is_function_named('-webkit-repeating-linear-gradient') {
 		parser.push_temporary_value_parsing_context(ValueParsingContext(FunctionContext{

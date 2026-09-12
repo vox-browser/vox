@@ -1359,6 +1359,18 @@ fn computed_background_image_layers(element &dom.Element, computed &css.Computed
 	mut layers := []BackgroundImageLayer{}
 	mut computed_layer_index := 0
 	for index, item in values {
+		mut effective_item := item
+		if item is css.ImageSetStyleValue {
+			selected := item.image_for_device_pixel_ratio(element.document().device_pixels_per_css_pixel()) or {
+				continue
+			}
+			effective_item = match selected {
+				css.ConicGradientStyleValue { css.StyleValue(selected) }
+				css.ImageStyleValue { css.StyleValue(selected) }
+				css.LinearGradientStyleValue { css.StyleValue(selected) }
+				css.RadialGradientStyleValue { css.StyleValue(selected) }
+			}
+		}
 		mut computed_layer := ?css.BackgroundLayerData(none)
 		if !(item.is_keyword() && item.to_keyword() == .none_) {
 			if computed_layer_index < computed_layers.len {
@@ -1367,12 +1379,13 @@ fn computed_background_image_layers(element &dom.Element, computed &css.Computed
 			computed_layer_index++
 		}
 		mut gradient_source := ?css.StyleValue(none)
-		if item is css.LinearGradientStyleValue || item is css.RadialGradientStyleValue
-			|| item is css.ConicGradientStyleValue {
-			gradient_source = item
+		if effective_item is css.LinearGradientStyleValue
+			|| effective_item is css.RadialGradientStyleValue
+			|| effective_item is css.ConicGradientStyleValue {
+			gradient_source = effective_item
 		}
 		mut resolved_url := ''
-		if image := item.as_image() {
+		if image := effective_item.as_image() {
 			source := image.url_.url()
 			resolved_url = if base := base_url {
 				if parsed := dom.dom_url_parse(source, dom.URL{base}, '') {
@@ -1430,7 +1443,19 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 	}
 	mut operations := []painting.SVGMaskPaintOperation{}
 	for item in values {
-		image := item.as_image() or {
+		mut effective_item := item
+		if item is css.ImageSetStyleValue {
+			selected := item.image_for_device_pixel_ratio(element.document().device_pixels_per_css_pixel()) or {
+				continue
+			}
+			effective_item = match selected {
+				css.ConicGradientStyleValue { css.StyleValue(selected) }
+				css.ImageStyleValue { css.StyleValue(selected) }
+				css.LinearGradientStyleValue { css.StyleValue(selected) }
+				css.RadialGradientStyleValue { css.StyleValue(selected) }
+			}
+		}
+		image := effective_item.as_image() or {
 			// A transparent gradient contributes no coverage. Other generated
 			// mask images remain available for the subsequent gradient slice.
 			continue

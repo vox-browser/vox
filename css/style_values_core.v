@@ -254,6 +254,9 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 		ImageStyleValue {
 			property_accepts_type(property_id, .image)
 		}
+		ImageSetStyleValue {
+			property_accepts_type(property_id, .image)
+		}
 		NumberStyleValue {
 			property_accepts_type(property_id, .number) && property_accepts_number(property_id, value.number())
 		}
@@ -3828,6 +3831,7 @@ pub enum StyleValueType {
 	grid_track_size_list
 	guaranteed_invalid
 	image
+	image_set
 	integer
 	keyword
 	length
@@ -3909,6 +3913,7 @@ pub type StyleValue = KeywordStyleValue
 	| HSLColorStyleValue
 	| HWBColorStyleValue
 	| ImageStyleValue
+	| ImageSetStyleValue
 	| IntegerStyleValue
 	| LabColorStyleValue
 	| LCHColorStyleValue
@@ -3955,6 +3960,11 @@ pub type StyleValueVector = []StyleValue
 pub fn (mut style_value StyleValue) set_style_sheet(style_sheet ?&CSSStyleSheet) {
 	match style_value {
 		ImageStyleValue {
+			mut value := style_value
+			value.set_style_sheet(style_sheet)
+			style_value = StyleValue(value)
+		}
+		ImageSetStyleValue {
 			mut value := style_value
 			value.set_style_sheet(style_sheet)
 			style_value = StyleValue(value)
@@ -4018,6 +4028,7 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		HSLColorStyleValue { .color }
 		HWBColorStyleValue { .color }
 		ImageStyleValue { .image }
+		ImageSetStyleValue { .image_set }
 		IntegerStyleValue { .integer }
 		KeywordStyleValue { .keyword }
 		LabColorStyleValue { .color }
@@ -4269,7 +4280,7 @@ pub fn (style_value StyleValue) has_color() bool {
 
 pub fn (style_value StyleValue) is_abstract_image() bool {
 	return match style_value {
-		ImageStyleValue, LinearGradientStyleValue, ConicGradientStyleValue, RadialGradientStyleValue {
+		ImageStyleValue, ImageSetStyleValue, LinearGradientStyleValue, ConicGradientStyleValue, RadialGradientStyleValue {
 			true
 		}
 		else {
@@ -4304,6 +4315,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		HSLColorStyleValue { StyleValue(style_value.absolutized(context)) }
 		HWBColorStyleValue { StyleValue(style_value.absolutized(context)) }
 		ImageStyleValue { StyleValue(style_value.absolutized(context)) }
+		ImageSetStyleValue { StyleValue(style_value.absolutized(context)) }
 		LengthStyleValue { StyleValue(style_value.absolutized(context)) }
 		LabColorStyleValue { StyleValue(style_value.absolutized(context)) }
 		LCHColorStyleValue { StyleValue(style_value.absolutized(context)) }
@@ -4396,6 +4408,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		HSLColorStyleValue { style_value.serialize(mode) }
 		HWBColorStyleValue { style_value.serialize(mode) }
 		ImageStyleValue { style_value.serialize(mode) }
+		ImageSetStyleValue { style_value.serialize(mode) }
 		IntegerStyleValue { style_value.serialize(mode) }
 		KeywordStyleValue { style_value.serialize(mode) }
 		LabColorStyleValue { style_value.serialize(mode) }
@@ -4523,6 +4536,13 @@ pub fn (style_value StyleValue) equals(other StyleValue) bool {
 	return match style_value {
 		ImageStyleValue {
 			if other is ImageStyleValue {
+				style_value.equals(other)
+			} else {
+				false
+			}
+		}
+		ImageSetStyleValue {
+			if other is ImageSetStyleValue {
 				style_value.equals(other)
 			} else {
 				false

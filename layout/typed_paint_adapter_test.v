@@ -610,6 +610,20 @@ fn test_typed_background_images_keep_gradient_url_layer_order_and_geometry() {
 	assert svg.contains('<clipPath id="gradient-clip')
 }
 
+fn test_typed_background_image_set_selects_candidate_for_device_pixel_ratio() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		#target { width: 20px; height: 20px; background-image: image-set(url("one.png") 1x, url("two.png") 2x) }
+	</style><body><div id="target"></div></body>')
+	root := layout_document_typed_in_viewport(document, 100, 100)
+	target_element := document.get_element_by_id('target') or { panic('missing target') }
+	target := root.find_box(i64(target_element.as_node().unique_id())) or {
+		panic('missing target box')
+	}
+	assert target.background_images.len == 1
+	assert target.background_images[0].url.ends_with('one.png')
+}
+
 fn test_svg_background_image_retains_its_isolated_document_for_nested_painting() {
 	source := 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2232%22%20height%3D%2216%22%20viewBox%3D%220%200%2032%2016%22%3E%3Cpath%20d%3D%22M2%2027L16-2L30%2027Z%22%20fill%3D%22%23999%22%2F%3E%3C%2Fsvg%3E'
 	document := html.parse_document('<!doctype html><style>html,body{margin:0}#arrow{width:10px;height:10px;background:url("${source}") no-repeat;background-size:10px}</style><div id="arrow"></div>')

@@ -3843,6 +3843,18 @@ fn arbitrary_substitution_guaranteed_invalid_value() []ComponentValue {
 	return [ComponentValue.from_guaranteed_invalid(GuaranteedInvalidValue{})]
 }
 
+fn contains_attr_tainted_value(values []ComponentValue) bool {
+	return values.any(it.contains_attr_tainted_value())
+}
+
+fn mark_as_attr_tainted(values []ComponentValue) []ComponentValue {
+	mut tainted := values.clone()
+	for index := 0; index < tainted.len; index++ {
+		tainted[index].set_attr_tainted()
+	}
+	return tainted
+}
+
 // ValueParsing.cpp: Parser::parse_declaration_value.
 fn parse_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenType) ?[]ComponentValue {
 	start_index := tokens.index
@@ -4021,16 +4033,18 @@ mut:
 fn attr_failure_result(element ?dom.AbstractElement, mut guarded_contexts GuardedSubstitutionContexts, second_argument ?[]ComponentValue, syntax AttrSyntax) []ComponentValue {
 	// 1. If second arg is null, and syntax was omitted, return an empty CSS <string>.
 	if second_argument == none && syntax.kind == .omitted {
-		return [ComponentValue.from_token(Token.create_string('', ''))]
+		return mark_as_attr_tainted([
+			ComponentValue.from_token(Token.create_string('', '')),
+		])
 	}
 
 	// 2. If second arg is null, return the guaranteed-invalid value.
 	if second_argument == none {
-		return arbitrary_substitution_guaranteed_invalid_value()
+		return mark_as_attr_tainted(arbitrary_substitution_guaranteed_invalid_value())
 	}
 
 	// 3. Substitute arbitrary substitution functions in second arg, and return the result.
-	return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, second_argument, none)
+	return mark_as_attr_tainted(substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, second_argument, none))
 }
 
 fn parse_number_from_attr_value(attribute_value string) ?Number {
@@ -4122,20 +4136,20 @@ fn replace_an_attr_function(element ?dom.AbstractElement, mut guarded_contexts G
 			return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
 		}
 		if syntax.kind == .number {
-			return [ComponentValue.from_token(Token.create_number(parsed_number, ''))]
+			return mark_as_attr_tainted([ComponentValue.from_token(Token.create_number(parsed_number, ''))])
 		}
 		if syntax.unit == '%' {
-			return [
+			return mark_as_attr_tainted([
 				ComponentValue.from_token(Token.create_percentage(parsed_number, '')),
-			]
+			])
 		}
-		return [
+		return mark_as_attr_tainted([
 			ComponentValue.from_token(Token.create_dimension(parsed_number, syntax.unit, '')),
-		]
+		])
 	}
 
 	if syntax.kind == .omitted || syntax.kind == .raw_string {
-		return [ComponentValue.from_token(Token.create_string(attribute_value, ''))]
+		return mark_as_attr_tainted([ComponentValue.from_token(Token.create_string(attribute_value, ''))])
 	}
 
 	syntax_node := syntax.syntax or {
@@ -4151,7 +4165,7 @@ fn replace_an_attr_function(element ?dom.AbstractElement, mut guarded_contexts G
 	if parsed_value.type_() == .guaranteed_invalid {
 		return attr_failure_result(element, mut guarded_contexts, second_argument, syntax)
 	}
-	return style_value_to_component_values_for_substitution(parsed_value)
+	return mark_as_attr_tainted(style_value_to_component_values_for_substitution(parsed_value))
 }
 
 fn environment_variable_from_string_local(name string) ?dom.EnvironmentVariable {
@@ -4347,6 +4361,7 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 
 	for branch in if_args.branches {
 		substituted_condition := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, branch.condition, none)
+		condition_is_attr_tainted := contains_attr_tainted_value(substituted_condition)
 		mut condition_tokens := SupportsTokenStream.from_values(substituted_condition)
 		condition := condition_parser.parse_if_condition(mut condition_tokens) or {
 			continue
@@ -4356,7 +4371,11 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 			continue
 		}
 		value := branch.value or { return []ComponentValue{} }
-		return substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, value, none)
+		result := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, value, none)
+		if condition_is_attr_tainted {
+			return mark_as_attr_tainted(result)
+		}
+		return result
 	}
 
 	return []ComponentValue{}

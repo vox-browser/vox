@@ -8580,10 +8580,21 @@ fn parse_background_image_layers(element &dom.Element, author_rules []&css.CSSRu
 	mut layers := []BackgroundImageLayer{}
 	for index, item in split_top_level(value, `,`) {
 		parsed := css.parse_css_image_value_logic(item) or { continue }
-		if parsed !is css.ImageStyleValue {
+		image := match parsed {
+			css.ImageStyleValue { parsed }
+			css.ImageSetStyleValue {
+				parsed.image_url_for_device_pixel_ratio(element.document().device_pixels_per_css_pixel()) or {
+					continue
+				}
+			}
+			else {
+				continue
+			}
+		}
+		if image.url_.url().len == 0 {
 			continue
 		}
-		source := parsed.url_.url()
+		source := image.url_.url()
 		resolved_url := element.document().encoding_parse_and_serialize_url(source) or { source }
 		svg_document := svg_image_document_for_source(element.document(), resolved_url)
 		intrinsic_width, intrinsic_height := background_svg_intrinsic_dimensions(element.document(), resolved_url, svg_document != none)

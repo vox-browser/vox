@@ -1983,7 +1983,25 @@ pub fn (presence SubstitutionFunctionsPresence) has_any() bool {
 // https://drafts.csswg.org/css-syntax/#component-value
 pub struct ComponentValue {
 pub mut:
-	value ComponentValuePayload = Token{}
+	value        ComponentValuePayload = Token{}
+	attr_tainted bool
+}
+
+pub fn (component_value ComponentValue) contains_attr_tainted_value() bool {
+	if component_value.attr_tainted {
+		return true
+	}
+	if component_value.is_function() {
+		return component_value.function().value.any(it.contains_attr_tainted_value())
+	}
+	if component_value.is_block() {
+		return component_value.block().value.any(it.contains_attr_tainted_value())
+	}
+	return false
+}
+
+pub fn (mut component_value ComponentValue) set_attr_tainted() {
+	component_value.attr_tainted = true
 }
 
 pub fn ComponentValue.from_token(token Token) ComponentValue {

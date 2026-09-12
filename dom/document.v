@@ -5403,6 +5403,13 @@ pub fn (d &Document) preferred_color_scheme() string {
 	return d.page_.preferred_color_scheme()
 }
 
+pub fn (d &Document) device_pixels_per_css_pixel() f64 {
+	if d.page_ == unsafe { nil } {
+		return 1.0
+	}
+	return d.page_.device_pixels_per_css_pixel()
+}
+
 // --- Colors ---
 pub fn (d &Document) background_color() Color {
 	hook := d.background_style_hook_ or { return color_transparent }
