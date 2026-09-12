@@ -177,6 +177,7 @@ mut:
 	event_counts_               map[string]int
 	playback_hooks_             MediaPlaybackManagerHooks
 	playback_manager_ready_     bool
+	playback_has_future_data_   bool
 	selected_video_track_       ?&VideoTrack
 	external_content_source_    ?&MediaExternalContentSource
 	accepts_byte_ranges_        bool
@@ -731,7 +732,8 @@ fn (mut element HTMLMediaElement) process_media_response(response MediaResourceR
 		} else {
 			response.duration
 		})
-		element.set_ready_state(.have_enough_data)
+		element.playback_has_future_data_ = true
+		element.update_ready_state()
 	}
 	for metadata in response.audio_tracks {
 		element.on_audio_track_added(metadata)
@@ -766,6 +768,43 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 	if int(state) < int(MediaReadyState.have_future_data) && int(old_state) >= int(MediaReadyState.have_future_data) && !element.paused_ {
 		element.fire_event('waiting')
 	}
+}
+
+// https://w3c.github.io/media-source/#buffer-monitoring
+pub fn (mut element HTMLMediaElement) update_ready_state() {
+	if !element.playback_manager_ready_ || element.ready_state_ == .have_nothing {
+		return
+	}
+
+	current_time := if hook := element.playback_hooks_.current_time {
+		hook()
+	} else {
+		element.current_playback_position_
+	}
+	mut current_range_end := ?f64(none)
+	for range_ in element.buffered_.ranges {
+		if range_.end >= current_time {
+			current_range_end = range_.end
+			break
+		}
+	}
+	if !element.playback_has_future_data_ && current_range_end == none {
+		element.set_ready_state(.have_metadata)
+		return
+	}
+
+	range_end := current_range_end or { 0.0 }
+	playable_duration := math.max(0.0, range_end - current_time)
+	if element.playback_has_future_data_
+		&& (playable_duration >= 5.0 || (!math.is_nan(element.duration_) && range_end >= element.duration_)) {
+		element.set_ready_state(.have_enough_data)
+		return
+	}
+	if element.playback_has_future_data_ && playable_duration > 0 {
+		element.set_ready_state(.have_future_data)
+		return
+	}
+	element.set_ready_state(.have_current_data)
 }
 
 pub fn (mut element HTMLMediaElement) set_seeking(seeking bool) {
@@ -1140,6 +1179,9 @@ pub fn (mut element HTMLMediaElement) time_marches_on(reason TimeMarchesOnReason
 	if reason != .normal_playback || element.running_time_update_event_ {
 		return
 	}
+	defer {
+		element.update_ready_state()
+	}
 	last_position := element.last_time_update_position_ or {
 		element.dispatch_time_update_event()
 		return
@@ -1231,6 +1273,7 @@ pub fn (mut element HTMLMediaElement) on_metadata_parsed(duration f64) {
 	element.official_playback_position_ = 0
 	element.set_duration(duration)
 	element.set_ready_state(.have_metadata)
+	element.update_ready_state()
 	if element.default_playback_start_ > 0 {
 		element.seek_element(element.default_playback_start_, .accurate)
 	}
@@ -1284,29 +1327,16 @@ pub fn (mut element HTMLMediaElement) forget_media_resource_specific_tracks() {
 	element.video_tracks_.remove_all_tracks()
 	element.selected_video_track_ = none
 	element.playback_manager_ready_ = false
+	element.playback_has_future_data_ = false
 }
 
 pub fn (mut element HTMLMediaElement) on_playback_manager_state_change(buffering bool) {
 	if element.seeking_ && !buffering {
 		element.finish_seeking_element()
 	}
-	if int(element.ready_state_) < int(MediaReadyState.have_metadata) {
-		return
-	}
-	if buffering {
-		if int(element.ready_state_) >= int(MediaReadyState.have_future_data) {
-			element.set_ready_state(.have_current_data)
-		}
-		return
-	}
-	if element.ready_state_ == .have_metadata {
-		element.set_ready_state(.have_current_data)
-	}
-	if element.ready_state_ == .have_current_data {
-		element.set_ready_state(.have_future_data)
-	}
-	if element.ready_state_ == .have_future_data {
-		element.set_ready_state(.have_enough_data)
+	element.playback_has_future_data_ = !buffering
+	if int(element.ready_state_) >= int(MediaReadyState.have_metadata) {
+		element.update_ready_state()
 	}
 }
 

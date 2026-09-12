@@ -120,6 +120,31 @@ fn test_media_element_literal_state_machine_boundaries() {
 	assert media.network_state() == .idle
 }
 
+fn test_media_element_ready_state_follows_buffered_data() {
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	media.set_up_playback_manager()
+	media.set_duration(20)
+	media.set_ready_state(.have_metadata)
+	media.buffered_.add_range(0, 2)
+	media.playback_has_future_data_ = true
+	media.update_ready_state()
+	assert media.ready_state() == .have_future_data
+
+	media.buffered_.clear()
+	media.buffered_.add_range(0, 8)
+	media.update_ready_state()
+	assert media.ready_state() == .have_enough_data
+
+	media.set_current_playback_position(8)
+	media.playback_has_future_data_ = false
+	media.update_ready_state()
+	assert media.ready_state() == .have_current_data
+
+	media.buffered_.clear()
+	media.update_ready_state()
+	assert media.ready_state() == .have_metadata
+}
+
 fn test_media_element_no_source_and_unsupported_source() {
 	mut empty := HTMLMediaElement.create(none, dom.url_about_blank())
 	empty.load()!
