@@ -1400,8 +1400,14 @@ fn (mut invalidator StyleInvalidator) perform_pending_style_invalidations(mut no
 		if shadow_root := element.shadow_root() {
 			mut shadow_node := unsafe { &Node(shadow_root) }
 			invalidator.perform_pending_style_invalidations(mut shadow_node, invalidate_subtree)
-			if invalidate_subtree {
+			if invalidate_subtree || shadow_node.needs_style_update()
+				|| shadow_node.child_needs_style_update() {
 				node.set_child_needs_style_update(true)
+				for ancestor := node.parent_or_shadow_host(); ancestor != none;  {
+					mut current := unsafe { &Node(ancestor or { break }) }
+					current.set_child_needs_style_update(true)
+					ancestor = current.parent_or_shadow_host()
+				}
 			}
 		}
 	}

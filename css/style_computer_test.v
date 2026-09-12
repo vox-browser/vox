@@ -630,6 +630,48 @@ fn test_document_media_rule_entry_point_crosses_css_module_boundary() {
 	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
 }
 
+fn test_shadow_media_rule_change_only_invalidates_its_style_scope_cache() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	document.set_viewport_rect(dom.Rect{0, 0, 500, 600})
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut first_host := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut second_host := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(root.as_node()) or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(first_host.as_node()) or { panic('${err}') }
+	root_node.append_child(second_host.as_node()) or { panic('${err}') }
+	first_shadow := first_host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic('${err}') }
+	second_shadow := second_host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic('${err}') }
+	add_shadow_root_author_style_sheet(first_shadow,
+		'@media (min-width: 600px) { span { color: red } }')
+	add_shadow_root_author_style_sheet(second_shadow, 'span { color: blue }')
+	_ := css_style_computer_for(document)
+	document.evaluate_media_rules()
+	mut document_scope := css_style_scope_for_document(document)
+	mut first_scope := css_style_scope_for_shadow_root(first_shadow)
+	mut second_scope := css_style_scope_for_shadow_root(second_shadow)
+	document_scope.build_rule_cache_if_needed()
+	first_scope.build_rule_cache_if_needed()
+	second_scope.build_rule_cache_if_needed()
+	assert document_scope.has_valid_rule_cache()
+	assert first_scope.has_valid_rule_cache()
+	assert second_scope.has_valid_rule_cache()
+
+	document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+	document.evaluate_media_rules()
+	assert document_scope.has_valid_rule_cache()
+	assert !first_scope.has_valid_rule_cache()
+	assert second_scope.has_valid_rule_cache()
+}
+
 fn test_document_style_sheet_source_entry_point_uses_css_owned_sheets() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	mut style := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'style') or {

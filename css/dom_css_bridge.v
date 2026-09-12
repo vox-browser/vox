@@ -551,46 +551,47 @@ pub fn sync_document_style_elements(document &dom.Document) {
 // module graph, so the translated algorithm lives at this bridge rather than
 // in dom.Document.
 fn evaluate_media_rules_for_document(document &dom.Document) {
-	mut any_media_queries_changed_match_state := false
-	changed_ptr := &any_media_queries_changed_match_state
+	mut document_media_queries_changed_match_state := false
 	mut document_scope := css_style_scope_for_document(document)
 	for sheet in document_scope.stylesheets_for_cascade_origin(.author) {
 		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
 		if mutable_sheet.evaluate_media_queries(document) {
-			any_media_queries_changed_match_state = true
+			document_media_queries_changed_match_state = true
 		}
 	}
 
 	root := unsafe { &dom.Node(document) }
-	root.for_each_shadow_including_inclusive_descendant(fn [document, changed_ptr] (node &dom.Node) dom.TraversalDecision {
+	root.for_each_shadow_including_inclusive_descendant(fn [document] (node &dom.Node) dom.TraversalDecision {
 		if shadow_root := node.as_shadow_root() {
 			mut scope := css_style_scope_for_shadow_root(shadow_root)
+			mut media_queries_changed_match_state := false
 			for sheet in scope.stylesheets_for_cascade_origin(.author) {
 				mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
 				if mutable_sheet.evaluate_media_queries(document) {
-					unsafe {
-						*changed_ptr = true
-					}
+					media_queries_changed_match_state = true
 				}
+			}
+			if !media_queries_changed_match_state {
+				return .@continue
+			}
+			scope.invalidate_rule_cache()
+			mut shadow_node := unsafe { &dom.Node(shadow_root) }
+			shadow_node.invalidate_style(.media_query_changed_match_state)
+			invalidate_assigned_elements_for_dirty_style_sheet_slots(shadow_root)
+			if host := shadow_root.host() {
+				mut host_root := unsafe { &dom.Node(host.as_node().root()) }
+				host_root.invalidate_style(.media_query_changed_match_state)
 			}
 		}
 		return .@continue
 	})
 
-	if !any_media_queries_changed_match_state {
-		return
+	if document_media_queries_changed_match_state {
+		document_scope.invalidate_rule_cache()
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mut document_node := unsafe { &dom.Node(mutable_document) }
+		document_node.invalidate_style(.media_query_changed_match_state)
 	}
-	document_scope.invalidate_rule_cache()
-	root.for_each_shadow_including_inclusive_descendant(fn (node &dom.Node) dom.TraversalDecision {
-		if shadow_root := node.as_shadow_root() {
-			mut scope := css_style_scope_for_shadow_root(shadow_root)
-			scope.invalidate_rule_cache()
-		}
-		return .@continue
-	})
-	mut mutable_document := unsafe { &dom.Document(document) }
-	mut document_node := unsafe { &dom.Node(mutable_document) }
-	document_node.invalidate_style(.media_query_changed_match_state)
 }
 
 fn document_evaluate_media_rules_callback(target voidptr) {
