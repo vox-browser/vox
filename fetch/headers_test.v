@@ -24,6 +24,7 @@ fn test_headers_normalize_combine_set_delete_and_iteration() {
 		value: 'two'
 	}
 	mut iterator := HeadersIterator.create(headers, .key_and_value)
+	assert iterator.prototype_name() == 'HeadersIterator'
 	assert iterator.next().name == 'x-a'
 	assert iterator.next().name == 'x-b'
 	assert iterator.next().done

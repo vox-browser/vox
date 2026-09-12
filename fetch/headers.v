@@ -260,14 +260,25 @@ pub struct HeadersIterator {
 	headers &Headers
 	kind    HeadersIterationKind
 mut:
-	index int
+	index           int
+	prototype_name_ string
+}
+
+fn set_headers_iterator_prototype(mut iterator HeadersIterator) {
+	iterator.prototype_name_ = 'HeadersIterator'
 }
 
 pub fn HeadersIterator.create(headers &Headers, kind HeadersIterationKind) &HeadersIterator {
-	return &HeadersIterator{
+	mut iterator := &HeadersIterator{
 		headers: headers
-		kind:    kind
+		kind: kind
 	}
+	set_headers_iterator_prototype(mut iterator)
+	return iterator
+}
+
+pub fn (iterator &HeadersIterator) prototype_name() string {
+	return iterator.prototype_name_
 }
 
 pub fn (mut iterator HeadersIterator) next() HeadersIteratorResult {
