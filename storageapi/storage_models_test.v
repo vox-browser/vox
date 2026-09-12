@@ -43,6 +43,26 @@ fn test_storage_key_origin_and_failure_rules() {
 	}) == none
 }
 
+fn test_storage_key_ipc_round_trip_preserves_the_complete_origin() {
+	key := StorageKey{
+		origin: StorageOrigin{
+			serialized: 'opaque-file:example'
+			opaque: true
+			opaque_file: true
+		}
+	}
+	decoded := decode_storage_key(encode_storage_key(key)) or { panic(err) }
+	assert decoded.origin == key.origin
+	if _ := decode_storage_key(encode_storage_key(key)[..5]) {
+		assert false
+	}
+	mut invalid_boolean := encode_storage_key(key)
+	invalid_boolean[invalid_boolean.len - 1] = 2
+	if _ := decode_storage_key(invalid_boolean) {
+		assert false
+	}
+}
+
 fn test_session_storage_shed_bucket_and_bottle_map() {
 	mut shed := &StorageShed{}
 	environment := session_environment('https://example.test')

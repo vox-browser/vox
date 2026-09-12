@@ -35,6 +35,46 @@ pub fn (key StorageKey) equals(other StorageKey) bool {
 		&& key.origin.serialized == other.origin.serialized
 }
 
+// IPC encodes the complete origin representation carried by a storage key.
+// Keeping the opaque flags is required because two equally serialized opaque
+// origins must still remain unsuitable for ordinary storage-key equality.
+pub fn encode_storage_key(key StorageKey) []u8 {
+	serialized := key.origin.serialized.bytes()
+	mut output := []u8{cap: 6 + serialized.len}
+	length := u32(serialized.len)
+	for shift in 0 .. 4 {
+		output << u8(length >> (shift * 8))
+	}
+	output << serialized
+	output << u8(key.origin.opaque)
+	output << u8(key.origin.opaque_file)
+	return output
+}
+
+pub fn decode_storage_key(data []u8) !StorageKey {
+	if data.len < 6 {
+		return error('truncated storage key IPC data')
+	}
+	mut length := u32(0)
+	for shift in 0 .. 4 {
+		length |= u32(data[shift]) << (shift * 8)
+	}
+	end := 4 + int(length)
+	if end < 4 || end + 2 != data.len {
+		return error('invalid storage key IPC data')
+	}
+	if data[end] > 1 || data[end + 1] > 1 {
+		return error('invalid storage key IPC boolean')
+	}
+	return StorageKey{
+		origin: StorageOrigin{
+			serialized: data[4..end].bytestr()
+			opaque: data[end] == 1
+			opaque_file: data[end + 1] == 1
+		}
+	}
+}
+
 pub fn obtain_a_storage_key_for_non_storage_purposes(environment StorageEnvironment) StorageKey {
 	return StorageKey{
 		origin: if environment.is_settings_object {
