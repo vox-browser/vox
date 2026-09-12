@@ -2,39 +2,39 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Streams`
 
-Translation workspace: `~/code/libweb_v/streams`
-Audited: 2026-09-04
+Translation workspace: `~/code/vox2/streams`
+Audited: 2026-09-12
 
-All 25 upstream Streams `.cpp` implementation units have audited V mappings.
-The 28 headers and 17 WebIDL definitions were cross-audited as well; their
+All 22 upstream Streams `.cpp` implementation units have audited V mappings.
+The 25 headers and 20 WebIDL definitions were cross-audited as well; their
 observable types, dictionaries, mixins, state machines, controller operations,
 reader/writer operations, and transfer algorithms are represented by the typed
 V package.
 
 | Upstream implementation units | V implementation |
 | --- | --- |
-| `AbstractOperations.cpp` | `queue.v`, `types.v`, `cross_realm_transform_operations.v` |
+| `AbstractOperations.cpp` | `queue.v`, `types.v`, `bindings_glue.v`, `cross_realm_transform_operations.v` |
 | `ByteLengthQueuingStrategy.cpp`, `CountQueuingStrategy.cpp` | `strategies.v` |
 | `GenericTransformStream.cpp` | `transform.v` |
 | `ReadableByteStreamController.cpp` | `readable_byte.v` |
-| `ReadableStream.cpp` | `readable.v`, `pipe_tee_transfer.v` |
+| `ReadableStream.cpp` | `readable.v`, `pipe_tee_transfer.v`, `transfer_bindings.v` |
 | `ReadableStreamAsyncIterator.cpp` | `readable.v` |
 | `ReadableStreamBYOBReader.cpp`, `ReadableStreamBYOBRequest.cpp` | `readable_byte.v` |
 | `ReadableStreamDefaultController.cpp`, `ReadableStreamDefaultReader.cpp`, `ReadableStreamGenericReader.cpp` | `readable.v` |
 | `ReadableStreamOperations.cpp` | `readable_operations.v`, `readable_controller_operations.v`, `readable.v`, `readable_byte.v`, `queue.v` |
-| `ReadableStreamPipeTo.cpp`, `ReadableStreamTee.cpp` | `pipe_tee_transfer.v` |
+| `ReadableStreamPipeTo.cpp`, `ReadableStreamTee.cpp` | `pipe_tee_transfer.v`, `operation_realms.v` |
 | `TransformStream.cpp`, `TransformStreamDefaultController.cpp`, `TransformStreamOperations.cpp`, `Transformer.cpp` | `transform.v`, `transform_operations.v` |
 | `UnderlyingSink.cpp` | `writable.v`, `writable_operations.v` |
 | `UnderlyingSource.cpp` | `readable.v`, `readable_operations.v` |
-| `WritableStream.cpp`, `WritableStreamDefaultController.cpp`, `WritableStreamDefaultWriter.cpp`, `WritableStreamOperations.cpp` | `writable.v`, `writable_operations.v` |
+| `WritableStream.cpp`, `WritableStreamDefaultController.cpp`, `WritableStreamDefaultWriter.cpp`, `WritableStreamOperations.cpp` | `writable.v`, `writable_operations.v`, `transfer_bindings.v` |
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Streams/` | 25 | 8,784 | 5,645 | 1,649 | Parity-audited; runtime boundary isolated |
+| `Streams/` | 22 | 8,789 | 6,290 | 1,972 | Parity-audited; runtime boundary isolated |
 
-The associated declarations comprise 28 headers / 2,139 LOC and 17 IDL files /
-219 LOC. Mapping completeness is 25/25 implementation units, 28/28 headers, and
-17/17 IDL definitions audited.
+The associated declarations comprise 25 headers / 2,066 LOC and 20 IDL files /
+229 LOC. Mapping completeness is 22/22 implementation units, 25/25 headers, and
+20/20 IDL definitions audited.
 
 The translation implements queue-with-size FIFO operations and numeric
 validation; count and byte-length strategies; readable/default-reader lifecycle;
@@ -49,6 +49,13 @@ branches with composite cancellation; lazy iterable streams; async iteration;
 structured cloning; moving ArrayBuffer transfer and view validation; message
 packing and pull handshakes; and readable/writable transferred proxies built
 through the cross-realm transforms.
+
+The 2026-09-12 upstream refresh adds realm-aware stream factories and promise
+records, distinct readable result realms, reader/writer/pipe/tee operation realm
+accessors, callback binding adapters, stable wrapper slot mappings, native and
+already-transferred byte enqueue paths, and separated stream transfer encoding
+and receiving steps. Transfer receivers now replay pull messages which arrived
+before the receiving endpoint was installed.
 
 The 2026-09-04 cross-audit replaced locally invented eager queue draining,
 one-request BYOB shortcuts, eager tee/from/transfer copies, direct writable sink
@@ -79,7 +86,7 @@ their heads in O(1). Long FIFO regressions cover 4,096 queued chunks, reads, and
 writes; partial byte-queue consumption advances the source offset without
 cloning every remainder.
 
-The public surface covers all 17 IDL definitions: `ReadableStream`, both reader
+The public surface covers all 20 IDL definitions: `ReadableStream`, both reader
 types and their generic-reader mixin, both readable controllers, BYOB requests,
 `WritableStream`, its writer and controller, `TransformStream`, its controller
 and generic-transform mixin, both queuing-strategy classes, and the strategy,
@@ -92,11 +99,13 @@ Ladybird represents stream chunks as arbitrary LibJS values and schedules real
 WebIDL promise reactions on the JavaScript job queue. The standalone V package
 uses a recursively cloneable typed `Value` and observable synchronous promise
 records; callbacks run synchronously, while pending read, pipe, close, error,
-abort, and BYOB settlement is retained. Generated bindings, realms/GC tracing,
+abort, and BYOB settlement is retained. Generated bindings and GC tracing,
 JavaScript iterator acquisition, and HTML `MessagePort` event dispatch remain
 owned by the bindings, LibJS, and HTML translations. The package models the
 Streams-specific algorithms and transfer endpoints without claiming those
-runtime integration layers.
+runtime integration layers. Realm identity and promise/result-realm selection
+are represented explicitly even though JavaScript execution remains outside
+this standalone package.
 
 No Streams implementation remains in an `upstream_*_entry_points.v` quarantine
 file. The strict symbol audit reports 0 unmatched Streams bodies: private C++
@@ -110,8 +119,8 @@ constructors, controller release/no-op algorithms, and default sink callbacks.
 
 ```text
 $ /Users/alex/code/v/v -enable-globals test streams
-Summary for all V _test.v files: 7 passed, 7 total.
+Summary for all V _test.v files: 12 passed, 12 total.
 
-$ /Users/alex/code/v/v fmt -verify streams
-(no output; exit status 0)
+$ python3 tools/upstream_function_delta.py [...] --json
+Streams added/unmatched: 0
 ```

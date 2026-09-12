@@ -49,7 +49,7 @@ of 20. Exact comparisons remain exact. All 24 new cases pass this bounded
 workflow. The complete refresh run also covers the three default smoke cases
 and five modified SVG cases: all 32 invocations pass (31 distinct fixtures).
 
-The current semantic audit below reports 6,981 unmatched C++ spellings. That
+The current semantic audit below reports 6,529 unmatched C++ spellings. That
 is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
@@ -147,7 +147,7 @@ from the current-module totals.
 | `ServiceWorker` | 11 | 2,608 | 1,562 | 513 | Complete |
 | `Speech` | 11 | 421 | 624 | 111 | Complete |
 | `StorageAPI` | 6 | 433 | 444 | 235 | Complete |
-| `Streams` | 22 | 8,789 | 5,645 | 1,649 | Complete |
+| `Streams` | 22 | 8,789 | 6,290 | 1,972 | Complete |
 | `TrustedTypes` | 7 | 1,175 | 756 | 185 | Complete |
 | `UIEvents` | 12 | 1,871 | 1,358 | 378 | Complete |
 | `URLPattern` | 1 | 223 | 1,632 | 214 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **329,734** | **62,094** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **330,379** | **62,417** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -183,14 +183,14 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 551
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 11649
-  unmatched: 6981
+  candidate-name-match: 12098
+  unmatched: 6529
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 628
-  consolidated-name-match: 381
+  consolidated-name-match: 383
   namespace-template-specialization: 177
   language-operator: 124
-  language-template-trait: 61
+  language-template-trait: 62
   value-record-field-match: 17
 
 largest unmatched modules:
@@ -199,7 +199,7 @@ largest unmatched modules:
   1357 HTML
    705 DOM
    440 Painting
-   339 WebAudio
+   338 WebAudio
    319 Layout
    242 Editing
    173 MediaSourceExtensions
