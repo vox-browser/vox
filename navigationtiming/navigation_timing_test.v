@@ -24,6 +24,7 @@ fn test_performance_timing_converts_relative_document_timestamps() {
 		load_event_end_time: 0
 	}, 1000)
 	assert timing.document_load_timing_info().dom_complete_time == 10.1
+	assert timing.document().dom_complete_time == 10.1
 	assert timing.navigation_start() == u64(1_699_999_999_000)
 	assert timing.dom_interactive() == u64(1_699_999_999_005)
 	assert timing.dom_content_loaded_event_start() == u64(1_699_999_999_006)

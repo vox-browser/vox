@@ -455,6 +455,12 @@ pub fn (timing PerformanceTiming) document_load_timing_info() DocumentLoadTiming
 	return timing.load_timing_info
 }
 
+// document is the V boundary for the upstream Window-owned DOM::Document. The
+// navigation timing package only needs its load timing record.
+pub fn (timing PerformanceTiming) document() DocumentLoadTimingInfo {
+	return timing.load_timing_info
+}
+
 fn (timing PerformanceTiming) monotonic_timestamp_to_wall_time_milliseconds(timestamp f64) u64 {
 	if timestamp == 0 {
 		return 0
