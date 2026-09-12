@@ -51,10 +51,10 @@ pub fn parse_css_rule(context ParsingParams, css_text string) ?&CSSRule {
 	return parser.parse_as_css_rule()
 }
 
-pub fn parse_selector_for_nested_style_rule(context ParsingParams, selector_text string) ?SelectorList {
+pub fn parse_selector_for_nested_style_rule(context ParsingParams, selector_text string, nesting_parent StyleNestingParent) ?SelectorList {
 	mut parser := RuleSelectorParser.create(context, selector_text, 'utf-8')
 	selectors := parser.parse_as_relative_selector(.standard) or { return none }
-	return adapt_nested_relative_selector_list(selectors)
+	return adapt_nested_relative_selector_list(selectors, nesting_parent)
 }
 
 pub fn parse_media_query_list(context ParsingParams, text string) []&MediaQuery {

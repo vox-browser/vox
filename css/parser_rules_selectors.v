@@ -328,9 +328,13 @@ pub fn (mut parser RuleSelectorParser) parse_as_stylesheet_contents() []&CSSRule
 }
 
 pub fn (mut parser RuleSelectorParser) parse_as_css_rule() ?&CSSRule {
+	return parser.parse_as_css_rule_with_nesting(.no)
+}
+
+pub fn (mut parser RuleSelectorParser) parse_as_css_rule_with_nesting(nested ParserNested) ?&CSSRule {
 	mut input := parser.token_stream
-	rule := parser.parse_a_rule(mut input) or { return none }
-	return parser.convert_to_rule(rule, .no)
+	rule := parser.parse_a_rule(mut input, nested) or { return none }
+	return parser.convert_to_rule(rule, nested)
 }
 
 pub fn (mut parser RuleSelectorParser) parse_as_selector(parsing_mode SelectorParsingMode) ?SelectorList {
@@ -360,7 +364,7 @@ pub fn (mut parser RuleSelectorParser) parse_as_component_value() ?ComponentValu
 }
 
 // https://drafts.csswg.org/css-syntax/#parse-rule
-fn (mut parser RuleSelectorParser) parse_a_rule(mut input ParserTokenStream) ?Rule {
+fn (mut parser RuleSelectorParser) parse_a_rule(mut input ParserTokenStream, nested ParserNested) ?Rule {
 	// To parse a rule from input:
 	// 1. Normalize input, and set input to the result.
 	// NOTE: This is done automatically when creating the Parser.
@@ -376,12 +380,12 @@ fn (mut parser RuleSelectorParser) parse_a_rule(mut input ParserTokenStream) ?Ru
 	// 4. If the next token is an <at-keyword-token>, consume an at-rule from input, and let rule be the return value.
 	mut rule := Rule(AtRule{})
 	if input.next_token().is(.at_keyword) {
-		at_rule := parser.consume_an_at_rule(mut input, .no) or { return none }
+		at_rule := parser.consume_an_at_rule(mut input, nested) or { return none }
 		rule = at_rule
 	} else {
 		// 5. Otherwise, consume a qualified rule from input and let rule be the return value. If nothing was returned,
 		// return failure.
-		result := parser.consume_a_qualified_rule(mut input, none, .no)
+		result := parser.consume_a_qualified_rule(mut input, none, nested)
 		match result {
 			QualifiedRule {
 				rule = result
@@ -1103,6 +1107,27 @@ fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNeste
 	}
 }
 
+fn (parser RuleSelectorParser) parent_for_style_nesting(nested ParserNested) StyleNestingParent {
+	if nested == .no {
+		return .none_
+	}
+	for index := parser.rule_context.len - 1; index >= 0; index-- {
+		match parser.rule_context[index] {
+			.style {
+				return .style
+			}
+			.scope {
+				return .scope
+			}
+			else {}
+		}
+	}
+	// During whole-stylesheet conversion the V parser carries the nearest nesting
+	// parent in ParserNested. Single-rule CSSOM parsing instead supplies the full
+	// owner rule context above.
+	return if nested == .scope { .scope } else { .style }
+}
+
 fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule QualifiedRule, nested ParserNested) ?&CSSRule {
 	mut prelude_stream := ParserTokenStream.from_values(qualified_rule.prelude)
 	maybe_selectors := parser.parse_a_selector_list(mut prelude_stream, if nested != .no {
@@ -1128,10 +1153,8 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 	}
 
 	mut selectors := maybe_selectors
-	if nested == .yes {
-		selectors = adapt_nested_relative_selector_list(selectors)
-	} else if nested == .scope {
-		selectors = adapt_scope_relative_selector_list(selectors)
+	if nested != .no {
+		selectors = adapt_nested_relative_selector_list(selectors, parser.parent_for_style_nesting(nested))
 	}
 
 	declaration := parser.convert_to_style_declaration(qualified_rule.declarations)
@@ -1407,10 +1430,8 @@ fn (mut parser RuleSelectorParser) convert_to_scope_rule(rule AtRule, nested Par
 			|| selector_list_contains_pseudo_element(parsed_start) {
 			return none
 		}
-		if nested == .yes {
-			parsed_start = adapt_nested_relative_selector_list(parsed_start)
-		} else if nested == .scope {
-			parsed_start = adapt_scope_relative_selector_list(parsed_start)
+		if nested != .no {
+			parsed_start = adapt_nested_relative_selector_list(parsed_start, parser.parent_for_style_nesting(nested))
 		}
 		start_selectors = parsed_start
 		prelude_stream.discard_whitespace()
@@ -4224,8 +4245,12 @@ pub fn parse_css_stylesheet_contents_with_parser(css_text string, declared_names
 }
 
 pub fn parse_css_rule_with_params(params ParsingParams, rule_text string) ?&CSSRule {
+	return parse_css_rule_with_params_and_nesting(params, rule_text, .no)
+}
+
+pub fn parse_css_rule_with_params_and_nesting(params ParsingParams, rule_text string, nested ParserNested) ?&CSSRule {
 	mut parser := RuleSelectorParser.create(params, rule_text, 'utf-8')
-	return parser.parse_as_css_rule()
+	return parser.parse_as_css_rule_with_nesting(nested)
 }
 
 pub fn parse_css_rule_with_parser(rule_text string, declared_namespaces map[string]bool) ?&CSSRule {
@@ -4272,7 +4297,8 @@ pub fn parse_selector_with_parser(selector_text string, declared_namespaces map[
 	return parser.parse_as_selector(.standard)
 }
 
-pub fn parse_selector_for_nested_style_rule_with_parser(selector_text string, declared_namespaces map[string]bool) ?SelectorList {
+pub fn parse_selector_for_nested_style_rule_with_parser(selector_text string, declared_namespaces map[string]bool, nesting_parent StyleNestingParent) ?SelectorList {
 	mut parser := RuleSelectorParser.create_with_namespaces(selector_text, declared_namespaces)
-	return parser.parse_as_relative_selector(.standard)
+	selectors := parser.parse_as_relative_selector(.standard) or { return none }
+	return adapt_nested_relative_selector_list(selectors, nesting_parent)
 }

@@ -1368,7 +1368,13 @@ pub fn (selector Selector) sibling_invalidation_distance() int {
 	return sibling_invalidation_distance
 }
 
-pub fn adapt_nested_relative_selector_list(selectors SelectorList) SelectorList {
+pub enum StyleNestingParent {
+	none_
+	style
+	scope
+}
+
+pub fn adapt_nested_relative_selector_list(selectors SelectorList, nesting_parent StyleNestingParent) SelectorList {
 	// "Nested style rules differ from non-nested rules in the following ways:
 	// - A nested style rule accepts a <relative-selector-list> as its prelude (rather than just a <selector-list>).
 	//   Any relative selectors are relative to the elements represented by the nesting selector.
@@ -1377,7 +1383,7 @@ pub fn adapt_nested_relative_selector_list(selectors SelectorList) SelectorList 
 	// https://drafts.csswg.org/css-nesting-1/#syntax
 	// NOTE: We already parsed the selectors as a <relative-selector-list>
 
-	// Nested relative selectors get a `&` inserted at the beginning.
+	// Nested relative selectors get a `&` inserted when the nearest nesting parent is a style rule.
 	// This is, handily, how the spec wants them serialized:
 	// "When serializing a relative selector in a nested style rule, the selector must be absolutized,
 	// with the implied nesting selector inserted."
@@ -1390,7 +1396,9 @@ pub fn adapt_nested_relative_selector_list(selectors SelectorList) SelectorList 
 			continue
 		}
 		first_combinator := compound_selectors[0].combinator
-		if first_combinator !in [.no_combinator, .descendant] || !selector.contains_the_nesting_selector() {
+		insert_leading_ampersand := nesting_parent == .style
+			&& (first_combinator !in [.no_combinator, .descendant] || !selector.contains_the_nesting_selector())
+		if insert_leading_ampersand {
 			new_list.selectors << selector.relative_to(SimpleSelector{
 				type_: .nesting
 			})
@@ -1407,26 +1415,7 @@ pub fn adapt_nested_relative_selector_list(selectors SelectorList) SelectorList 
 }
 
 pub fn adapt_scope_relative_selector_list(selectors SelectorList) SelectorList {
-	mut new_list := SelectorList{}
-	for selector in selectors.selectors {
-		compound_selectors := selector.compound_selectors()
-		if compound_selectors.len == 0 {
-			continue
-		}
-		first_combinator := compound_selectors[0].combinator
-		if first_combinator !in [.no_combinator, .descendant] {
-			new_list.selectors << selector.relative_to(SimpleSelector{
-				type_: .nesting
-			})
-		} else if first_combinator == .descendant {
-			mut copied := compound_selectors.clone()
-			copied[0].combinator = .no_combinator
-			new_list.selectors << selector_from_compound_selectors(copied)
-		} else {
-			new_list.selectors << selector
-		}
-	}
-	return new_list
+	return adapt_nested_relative_selector_list(selectors, .scope)
 }
 
 pub fn selector_matches(selector Selector, element &dom.Element) bool {

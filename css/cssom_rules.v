@@ -248,7 +248,25 @@ pub fn (mut rule_list CSSRuleList) set_rules(rules []&CSSRule) {
 // https://drafts.csswg.org/cssom/#insert-a-css-rule
 pub fn (mut rule_list CSSRuleList) insert_a_css_rule_from_text(rule string, index u32, nested CSSRuleListNested, declared_namespaces map[string]bool) !u32 {
 	// 3. Set new rule to the results of performing parse a CSS rule on argument rule.
-	mut new_rule := parse_css_rule_with_parser(rule, declared_namespaces) or {
+	parsing_params := ParsingParams{
+		rule_context: rule_list.rule_context()
+		declared_namespaces: declared_namespaces.clone()
+	}
+	mut new_rule := parse_css_rule_with_params_and_nesting(parsing_params, rule, if nested == .yes {
+		ParserNested.yes
+	} else {
+		ParserNested.no
+	}) or {
+		trimmed_rule := rule.trim_left(' \t\n\r\f')
+		lower_rule := trimmed_rule.to_lower()
+		if nested == .yes && (lower_rule.starts_with('@import')
+			|| lower_rule.starts_with('@namespace')) {
+			if top_level_rule := parse_css_rule_with_params(ParsingParams{
+				declared_namespaces: declared_namespaces.clone()
+			}, rule) {
+				return rule_list.insert_a_css_rule(top_level_rule, index, nested, declared_namespaces)
+			}
+		}
 		// 4. If new rule is a syntax error, and nested is set, perform the following substeps:
 		if nested == .yes {
 			// - Set declarations to the results of performing parse a CSS declaration block, on argument rule.
@@ -965,23 +983,7 @@ pub fn (mut rule CSSRule) scope_start_selectors_for_matching() ?SelectorList {
 	if cached := rule.cached_scope_start_selectors {
 		return cached
 	}
-	mut matching_selectors := selectors
-	if parent_style_rule := rule.parent_style_rule() {
-		mut mutable_parent := unsafe { &CSSRule(parent_style_rule) }
-		selector_for_nesting := SimpleSelector{
-			type_: .pseudo_class
-			pseudo_class: PseudoClassSelector{
-				type_: .is_
-				argument_selector_list: mutable_parent.absolutized_selectors()
-			}
-		}
-		matching_selectors = SelectorList{}
-		for selector in selectors.selectors {
-			if absolutized := selector.absolutized(selector_for_nesting) {
-				matching_selectors.selectors << absolutized
-			}
-		}
-	}
+	matching_selectors := absolutize_selectors_relative_to(selectors, rule.parent_rule)
 	rule.cached_scope_start_selectors = matching_selectors
 	return matching_selectors
 }
@@ -1497,9 +1499,13 @@ pub fn (mut rule CSSRule) set_selector_text(selector_text string) {
 	}
 
 	mut parsed_selectors := ?SelectorList(none)
-	if rule.parent_style_rule() != none {
+	if nesting_parent := rule.nesting_parent_rule() {
 		// AD-HOC: If we're a nested style rule, then we need to parse the selector as relative and then adapt it with implicit &s.
-		parsed_selectors = parse_selector_for_nested_style_rule_with_parser(selector_text, declared_namespaces)
+		parsed_selectors = parse_selector_for_nested_style_rule_with_parser(selector_text, declared_namespaces, if nesting_parent.type_ == .scope {
+			StyleNestingParent.scope
+		} else {
+			StyleNestingParent.style
+		})
 	} else {
 		parsed_selectors = parse_selector_with_parser(selector_text, declared_namespaces)
 	}
@@ -1516,58 +1522,73 @@ pub fn (mut rule CSSRule) set_selector_text(selector_text string) {
 	// 3. Otherwise, if the algorithm returns a null value, do nothing.
 }
 
-pub fn (mut rule CSSRule) absolutized_selectors() SelectorList {
-	if cached := rule.cached_absolutized_selectors {
-		return cached
+fn absolutize_selectors_relative_to(selectors SelectorList, parent ?&CSSRule) SelectorList {
+	parent_is_scope_rule := if parent_rule := parent {
+		parent_rule.type_ == .scope
+	} else {
+		false
 	}
-
-	// Replace all occurrences of `&` with the nearest ancestor style rule's selector list wrapped in `:is(...)`,
-	// or if we have no such ancestor, with `:scope`.
-
-	// If we don't have any nesting selectors, we can just use our selectors as they are.
-	mut has_any_nesting := false
-	for selector in rule.selectors.selectors {
-		if selector.contains_the_nesting_selector() {
-			has_any_nesting = true
+	mut requires_absolutization := false
+	for selector in selectors.selectors {
+		compound_selectors := selector.compound_selectors()
+		selector_is_scope_relative := parent_is_scope_rule && compound_selectors.len != 0
+			&& compound_selectors[0].combinator !in [.no_combinator, .descendant]
+		if selector.contains_the_nesting_selector() || selector_is_scope_relative {
+			requires_absolutization = true
 			break
 		}
 	}
-
-	if !has_any_nesting {
-		rule.cached_absolutized_selectors = rule.selectors
-		return rule.selectors
+	if !requires_absolutization {
+		return selectors
 	}
 
-	// Otherwise, build up a new list of selectors with the `&` replaced.
-
-	// First, figure out what we should replace `&` with.
-	// "When used in the selector of a nested style rule, the nesting selector represents the elements matched by the parent rule.
-	// When used in any other context, it represents the same elements as :scope in that context (unless otherwise defined)."
-	// https://drafts.csswg.org/css-nesting-1/#nest-selector
-	if parent_style_rule := rule.parent_style_rule() {
-		// TODO: If there's only 1, we don't have to use `:is()` for it.
-		mut mutable_parent := unsafe { &CSSRule(parent_style_rule) }
-		selector_for_nesting := SimpleSelector{
+	parent_rule := parent or {
+		// A top-level nesting selector is matched like :scope, without changing its specificity.
+		return selectors
+	}
+	mut selector_for_nesting := SimpleSelector{
+		type_: .pseudo_class
+		pseudo_class: PseudoClassSelector{
+			type_: .where
+			argument_selector_list: SelectorList{
+				selectors: [selector_from_text(':scope')]
+			}
+		}
+	}
+	if parent_rule.type_ == .style {
+		mut mutable_parent := unsafe { &CSSRule(parent_rule) }
+		selector_for_nesting = SimpleSelector{
 			type_: .pseudo_class
 			pseudo_class: PseudoClassSelector{
 				type_: .is_
 				argument_selector_list: mutable_parent.absolutized_selectors()
 			}
 		}
-		mut absolutized_selectors := SelectorList{}
-		for selector in rule.selectors.selectors {
-			if absolutized := selector.absolutized(selector_for_nesting) {
-				absolutized_selectors.selectors << absolutized
-			}
-		}
-		rule.cached_absolutized_selectors = absolutized_selectors
-		return absolutized_selectors
-	} else {
-		// NOTE: We can't actually replace & with :scope, because & has to have 0 specificity.
-		//       So Ladybird leaves it, and treats & like :scope during matching.
-		rule.cached_absolutized_selectors = rule.selectors
-		return rule.selectors
 	}
+
+	mut absolutized_selectors := SelectorList{}
+	for selector in selectors.selectors {
+		compound_selectors := selector.compound_selectors()
+		if !selector.contains_the_nesting_selector() && parent_rule.type_ == .scope
+			&& compound_selectors.len != 0
+			&& compound_selectors[0].combinator !in [.no_combinator, .descendant] {
+			absolutized_selectors.selectors << selector.relative_to(selector_for_nesting)
+			continue
+		}
+		if absolutized := selector.absolutized(selector_for_nesting) {
+			absolutized_selectors.selectors << absolutized
+		}
+	}
+	return absolutized_selectors
+}
+
+pub fn (mut rule CSSRule) absolutized_selectors() SelectorList {
+	if cached := rule.cached_absolutized_selectors {
+		return cached
+	}
+	absolutized_selectors := absolutize_selectors_relative_to(rule.selectors, rule.nesting_parent_rule())
+	rule.cached_absolutized_selectors = absolutized_selectors
+	return absolutized_selectors
 }
 
 pub fn (rule &CSSRule) parent_style_rule() ?&CSSRule {
@@ -1575,6 +1596,18 @@ pub fn (rule &CSSRule) parent_style_rule() ?&CSSRule {
 	for {
 		parent := current_parent or { break }
 		if parent.type_ == .style {
+			return parent
+		}
+		current_parent = parent.parent_rule
+	}
+	return none
+}
+
+pub fn (rule &CSSRule) nesting_parent_rule() ?&CSSRule {
+	mut current_parent := rule.parent_rule
+	for {
+		parent := current_parent or { break }
+		if parent.type_ == .style || parent.type_ == .scope {
 			return parent
 		}
 		current_parent = parent.parent_rule
