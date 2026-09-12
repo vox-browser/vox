@@ -162,7 +162,11 @@ pub fn (value &CSSUnparsedValue) create_an_internal_representation(property Prop
 	//     way to convert it to ComponentValues is to serialize and then parse it.
 	string_value := value.to_string()!
 	component_values := parse_as_list_of_component_values_for_unparsed_value(string_value)
-	return StyleValue(UnresolvedStyleValue.create(component_values))
+	mut substitution_presence := SubstitutionFunctionsPresence{}
+	collect_arbitrary_substitution_function_presence(component_values, mut substitution_presence) or {
+		return error('TypeError: Invalid arbitrary substitution function syntax')
+	}
+	return StyleValue(UnresolvedStyleValue.create_with_presence(component_values, substitution_presence, none))
 }
 
 fn parse_as_list_of_component_values_for_unparsed_value(value string) []ComponentValue {

@@ -855,12 +855,21 @@ fn (mut parser Parser) parse_css_value_tokens(property_id PropertyID, mut tokens
 	defer {
 		parser.pop_temporary_value_parsing_context()
 	}
-	// Properties containing var()/attr()/env()/if()/inherit() are valid at parse time and are resolved
-	// after the custom-property cascade. Preserve their component values instead of rejecting them
-	// against the property's ordinary grammar.
-	unresolved := UnresolvedStyleValue.create(tokens.values[tokens.index..].clone())
-	if unresolved.contains_arbitrary_substitution_function() {
-		return StyleValue(unresolved)
+	// Properties containing syntactically valid var()/attr()/env()/if()/inherit()
+	// are resolved after the custom-property cascade. Invalid argument grammars
+	// are rejected now rather than becoming guaranteed-invalid at computed time.
+	remaining := tokens.values[tokens.index..].clone()
+	mut substitution_presence := SubstitutionFunctionsPresence{}
+	for token in remaining {
+		if token.is(.semicolon) {
+			return none
+		}
+		collect_arbitrary_substitution_function_presence([token], mut substitution_presence) or {
+			return none
+		}
+	}
+	if substitution_presence.has_any() {
+		return StyleValue(UnresolvedStyleValue.create_with_presence(remaining, substitution_presence, none))
 	}
 	// CSS-wide keywords can be used as the entire value of any property.
 	if value := parser.parse_css_wide_keyword_value(mut tokens) {
@@ -13032,7 +13041,9 @@ fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descri
 	}
 	descriptor_values := tokens.values[tokens.index..].clone()
 	mut substitution_presence := SubstitutionFunctionsPresence{}
-	collect_arbitrary_substitution_function_presence(descriptor_values, mut substitution_presence)
+	collect_arbitrary_substitution_function_presence(descriptor_values, mut substitution_presence) or {
+		return none
+	}
 	if substitution_presence.has_any() {
 		// Property values admit arbitrary substitution functions by default;
 		// descriptors do not. @function result/custom descriptors explicitly opt

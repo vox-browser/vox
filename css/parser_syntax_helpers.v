@@ -867,7 +867,12 @@ fn parse_according_to_syntax_node(mut tokens ComponentValueTokenStream, syntax_n
 	match syntax_node.type() {
 		.universal {
 			if declaration_value := parse_declaration_value_from_remaining(mut tokens) {
-				return StyleValue(UnresolvedStyleValue.create(declaration_value))
+				mut substitution_presence := SubstitutionFunctionsPresence{}
+				collect_arbitrary_substitution_function_presence(declaration_value, mut substitution_presence) or {
+					tokens.index = transaction_index
+					return none
+				}
+				return StyleValue(UnresolvedStyleValue.create_with_presence(declaration_value, substitution_presence, none))
 			}
 			tokens.index = transaction_index
 			return none

@@ -1776,7 +1776,9 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 	if initial_value := initial_value_maybe {
 		initial_value_component_values := parse_component_values_for_value_logic(initial_value)
 		mut substitution_presence := SubstitutionFunctionsPresence{}
-		collect_arbitrary_substitution_function_presence(initial_value_component_values, mut substitution_presence)
+		collect_arbitrary_substitution_function_presence(initial_value_component_values, mut substitution_presence) or {
+			return none
+		}
 		if substitution_presence.has_any() {
 			return none
 		}
@@ -3747,16 +3749,19 @@ pub fn to_arbitrary_substitution_function(name string) ?ArbitrarySubstitutionFun
 // Parser::collect_arbitrary_substitution_function_presence(). Keeping this on
 // the parser boundary gives properties, descriptors, syntax parsing, and Typed
 // OM one recursive implementation for inspecting component values.
-pub fn collect_arbitrary_substitution_function_presence(values []ComponentValue, mut presence SubstitutionFunctionsPresence) {
+pub fn collect_arbitrary_substitution_function_presence(values []ComponentValue, mut presence SubstitutionFunctionsPresence) ! {
 	for value in values {
-		collect_arbitrary_substitution_function_presence_from_component(value, mut presence)
+		collect_arbitrary_substitution_function_presence_from_component(value, mut presence)!
 	}
 }
 
-fn collect_arbitrary_substitution_function_presence_from_component(value ComponentValue, mut presence SubstitutionFunctionsPresence) {
+fn collect_arbitrary_substitution_function_presence_from_component(value ComponentValue, mut presence SubstitutionFunctionsPresence) ! {
 	if value.is_function() {
 		function := value.function()
 		if substitution_function := to_arbitrary_substitution_function(function.name) {
+			parse_according_to_argument_grammar(substitution_function, function.value) or {
+				return error('invalid arbitrary substitution function syntax')
+			}
 			match substitution_function {
 				.attr {
 					presence.attr = true
@@ -3775,9 +3780,9 @@ fn collect_arbitrary_substitution_function_presence_from_component(value Compone
 				}
 			}
 		}
-		collect_arbitrary_substitution_function_presence(function.value, mut presence)
+		collect_arbitrary_substitution_function_presence(function.value, mut presence)!
 	} else if value.is_block() {
-		collect_arbitrary_substitution_function_presence(value.block().value, mut presence)
+		collect_arbitrary_substitution_function_presence(value.block().value, mut presence)!
 	}
 }
 

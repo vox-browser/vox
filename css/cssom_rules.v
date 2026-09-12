@@ -2736,7 +2736,9 @@ pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistrat
 			// substitution functions.
 			initial_value_components := parse_component_values_for_value_logic(initial_value)
 			mut substitution_presence := SubstitutionFunctionsPresence{}
-			collect_arbitrary_substitution_function_presence(initial_value_components, mut substitution_presence)
+			collect_arbitrary_substitution_function_presence(initial_value_components, mut substitution_presence) or {
+				return error('SyntaxError: Invalid initial value')
+			}
 			if substitution_presence.has_any() {
 				return error('SyntaxError: Invalid initial value')
 			}
