@@ -424,6 +424,33 @@ fn test_recompute_style_stores_and_inherits() {
 	assert stored_parent.display().is_none() == false
 }
 
+fn test_style_recomputation_counters_track_full_inherited_and_noop_work() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut parent := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	parent.set_attribute_value('style', 'color: red')
+	child := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic(err)
+	}
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node()) or { panic(err) }
+	computer := StyleComputer.new(document)
+	mut parent_abstract := dom.AbstractElement.new(parent, none)
+	mut child_abstract := dom.AbstractElement.new(child, none)
+	computer.recompute_style(mut parent_abstract)
+	computer.recompute_style(mut child_abstract)
+	document.reset_style_invalidation_counters()
+
+	computer.recompute_style(mut parent_abstract)
+	computer.recompute_inherited_style_with_invalidation(mut child_abstract)
+	counters := document.style_invalidation_counters()
+	assert counters.element_style_recomputations == 1
+	assert counters.element_style_noop_recomputations == 1
+	assert counters.element_inherited_style_recomputations == 1
+	assert counters.element_inherited_style_noop_recomputations == 1
+}
+
 // recompute_style_for_subtree styles a whole tree top-down in one pass, so an inherited property flows
 // down multiple levels (grandparent -> parent -> grandchild) via each element's stored computed style.
 fn test_recompute_style_for_subtree_inherits_down_levels() {

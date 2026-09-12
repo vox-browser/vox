@@ -889,6 +889,8 @@ pub fn compute_required_invalidation(old_style &ComputedProperties, new_style &C
 // required.
 fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom.AbstractElement, did_change_custom_properties &bool) (RequiredInvalidationAfterStyleChange, &ComputedProperties) {
 	mut element := unsafe { &dom.Element(abstract_element.element()) }
+	mut document := unsafe { &dom.Document(element.document()) }
+	document.record_element_style_recomputation()
 	element.reset_style_dependency_flags()
 	mut had_list_marker := false
 	mut old_style := ?&ComputedProperties(none)
@@ -972,6 +974,9 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 			}
 		}
 	}
+	if invalidation.is_none() {
+		document.record_element_style_noop_recomputation()
+	}
 	return invalidation, computed
 }
 
@@ -993,6 +998,8 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	mut computed := computed_properties_from_dom(dom_computed) or {
 		return RequiredInvalidationAfterStyleChange{}
 	}
+	mut document := unsafe { &dom.Document(abstract_element.element().document()) }
+	document.record_element_inherited_style_recomputation()
 
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	mut values_affected_by_inherited_style := map[PropertyID]&dom.StyleValue{}
@@ -1034,6 +1041,7 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	}
 
 	if invalidation.is_none() && values_affected_by_inherited_style.len == 0 {
+		document.record_element_inherited_style_noop_recomputation()
 		return invalidation
 	}
 
@@ -1042,6 +1050,7 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 		invalidation = required_invalidation_after_style_change_or(invalidation, compute_property_invalidation(property_id, old_value, computed.property(property_id, .no)))
 	}
 	if invalidation.is_none() {
+		document.record_element_inherited_style_noop_recomputation()
 		return invalidation
 	}
 

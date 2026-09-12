@@ -158,6 +158,8 @@ fn test_style_invalidation_counters_include_full_document_invalidations() {
 	counters := api.get_style_invalidation_counters()
 	assert counters.full_style_invalidations == 2
 	assert counters.style_invalidations == 1
+	assert counters.element_style_recomputations == 0
+	assert counters.element_inherited_style_recomputations == 0
 	api.reset_style_invalidation_counters()
 	assert api.get_style_invalidation_counters() == dom.StyleInvalidationCounters{}
 }

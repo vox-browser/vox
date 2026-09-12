@@ -4137,15 +4137,19 @@ pub struct TopOfTheDocument {}
 
 pub struct StyleInvalidationCounters {
 pub mut:
-	has_ancestor_walk_invocations         u64
-	has_ancestor_walk_visits              u64
-	has_ancestor_sibling_element_checks   u64
-	has_invalidation_metadata_candidates  u64
-	has_match_invocations                 u64
-	has_result_cache_hits                 u64
-	has_result_cache_misses               u64
-	full_style_invalidations              u64
-	style_invalidations                   u64
+	has_ancestor_walk_invocations               u64
+	has_ancestor_walk_visits                    u64
+	has_ancestor_sibling_element_checks         u64
+	has_invalidation_metadata_candidates        u64
+	has_match_invocations                       u64
+	has_result_cache_hits                       u64
+	has_result_cache_misses                     u64
+	full_style_invalidations                    u64
+	style_invalidations                         u64
+	element_style_recomputations                u64
+	element_style_noop_recomputations           u64
+	element_inherited_style_recomputations      u64
+	element_inherited_style_noop_recomputations u64
 }
 
 // --- Main Document struct ---
@@ -7596,6 +7600,22 @@ pub fn (mut d Document) record_full_style_invalidation() {
 
 pub fn (mut d Document) record_style_invalidation() {
 	d.style_invalidation_counters_.style_invalidations++
+}
+
+pub fn (mut d Document) record_element_style_recomputation() {
+	d.style_invalidation_counters_.element_style_recomputations++
+}
+
+pub fn (mut d Document) record_element_style_noop_recomputation() {
+	d.style_invalidation_counters_.element_style_noop_recomputations++
+}
+
+pub fn (mut d Document) record_element_inherited_style_recomputation() {
+	d.style_invalidation_counters_.element_inherited_style_recomputations++
+}
+
+pub fn (mut d Document) record_element_inherited_style_noop_recomputation() {
+	d.style_invalidation_counters_.element_inherited_style_noop_recomputations++
 }
 
 pub fn (mut d Document) reset_style_invalidation_counters() {
