@@ -409,48 +409,73 @@ pub enum NetworkState {
 	error
 }
 
-pub enum FetchedDataLifecycle {
-	receiving
-	complete_pending
-	ready_to_close
-	closed
+pub struct NetworkResponseData {
+pub:
+	bytes                       []u8
+	immutable_bytes             ?[]u8
+	immutable_bytes_file_backed bool
 }
+
+pub fn NetworkResponseData.from_bytes(bytes []u8) NetworkResponseData {
+	return NetworkResponseData{
+		bytes: bytes.clone()
+	}
+}
+
+pub fn NetworkResponseData.from_file_backed_bytes(bytes []u8) NetworkResponseData {
+	return NetworkResponseData{
+		bytes: bytes.clone()
+		immutable_bytes: bytes.clone()
+		immutable_bytes_file_backed: true
+	}
+}
+
+const maximum_pending_bytes = 5 * 1024 * 1024
 
 @[heap]
 pub struct FetchedDataReceiver {
 mut:
-	fetch_params_            &FetchParams = unsafe { nil }
-	stream_                  &streams.ReadableStream = unsafe { nil }
-	response_                ?&Response
-	body_                    ?&Body
-	buffer_                  []u8
-	pulled_bytes_            int
-	lifecycle_state_         FetchedDataLifecycle
-	pending_promise_         ?FetchedDataPendingPromise
-	has_unfulfilled_promise_ bool
+	fetch_params_                      ?&FetchParams
+	stream_                            &streams.ReadableStream = unsafe { nil }
+	response_                          ?&Response
+	body_                              ?&Body
+	cache_enabled_                     bool
+	pre_body_sniff_buffer_             []u8
+	cache_buffer_                      []u8
+	cache_body_                        ?[]u8
+	cache_body_replaces_network_buffer bool
+	network_complete_                  bool
+	network_request_                   ?RequestServerRequest
+	pending_bytes_                     []u8
+	delivery_task_queued_              bool
+	paused_network_delivery_           bool
 }
-
-pub type FetchedDataPendingPromise = fn ()
 
 pub fn FetchedDataReceiver.create(params &FetchParams, stream &streams.ReadableStream) &FetchedDataReceiver {
 	mut receiver := &FetchedDataReceiver{
 		fetch_params_: params
 		stream_: stream
+		cache_enabled_: fetch_http_memory_cache_enabled && params.request.cache_mode != .no_store
+			&& determine_the_http_cache_partition(params.request) != none
 	}
 	mut mutable_stream := stream
 	mut controller := mutable_stream.byte_controller() or {
 		panic('FetchedDataReceiver requires a readable byte stream')
 	}
-	controller.set_pull_algorithm(fn [mut receiver] () ! {
-		if receiver.pending_promise_ == none && !receiver.has_unfulfilled_promise_ {
-			receiver.set_pending_promise(fn () {})
+	controller.set_pull_algorithm(fn () ! {})
+	controller.set_cancel_algorithm(fn [mut receiver] (reason streams.Value) ! {
+		if params := receiver.fetch_params_ {
+			mut fetch_controller := params.controller
+			fetch_controller.abort(reason.description())
 		}
 	})
-	controller.set_cancel_algorithm(fn [mut receiver] (reason streams.Value) ! {
-		mut fetch_controller := receiver.fetch_params_.controller
-		fetch_controller.abort(reason.description())
-	})
 	return receiver
+}
+
+pub fn FetchedDataReceiver.create_for_stream(stream &streams.ReadableStream) &FetchedDataReceiver {
+	return &FetchedDataReceiver{
+		stream_: stream
+	}
 }
 
 pub fn (mut receiver FetchedDataReceiver) set_response(response &Response) {
@@ -461,80 +486,69 @@ pub fn (mut receiver FetchedDataReceiver) set_body(body &Body) {
 	assert body.stream() == receiver.stream_
 	receiver.body_ = body
 	if mut stored_body := receiver.body_ {
-		if receiver.buffer_.len > 0 {
-			stored_body.append_sniff_bytes(receiver.buffer_)
+		if receiver.pre_body_sniff_buffer_.len > 0 {
+			stored_body.append_sniff_bytes(receiver.pre_body_sniff_buffer_)
+			receiver.pre_body_sniff_buffer_.clear()
 		}
-		if receiver.lifecycle_state_ != .receiving {
+		if receiver.network_complete_ {
 			stored_body.set_sniff_bytes_complete()
 		}
 	}
 }
 
-pub fn (mut receiver FetchedDataReceiver) handle_network_bytes(bytes []u8, state NetworkState) {
-	assert receiver.lifecycle_state_ == .receiving
-	match state {
-		.ongoing {
-			receiver.buffer_ << bytes
-			if mut body := receiver.body_ { body.append_sniff_bytes(bytes) }
+pub fn (mut receiver FetchedDataReceiver) set_network_request(request ?RequestServerRequest) {
+	receiver.network_request_ = request
+}
+
+pub fn (mut receiver FetchedDataReceiver) handle_network_data(data NetworkResponseData, state NetworkState) {
+	if state == .complete {
+		assert data.bytes.len == 0
+		receiver.network_complete_ = true
+		if mut body := receiver.body_ {
+			body.set_sniff_bytes_complete()
 		}
-		.complete {
-			assert bytes.len == 0
-			receiver.lifecycle_state_ = .complete_pending
-			if mut body := receiver.body_ { body.set_sniff_bytes_complete() }
-		}
-		.error {}
-	}
-	if receiver.pending_promise_ == none {
-		if receiver.lifecycle_state_ == .complete_pending && receiver.buffer_is_eof() && !receiver.has_unfulfilled_promise_ {
-			receiver.lifecycle_state_ = .ready_to_close
-		}
+		receiver.queue_delivery_task()
 		return
 	}
-	if bytes.len > 0 {
-		receiver.pull_bytes_into_stream()
+	if state == .error || data.bytes.len == 0 {
 		return
 	}
-	if receiver.lifecycle_state_ == .complete_pending {
-		receiver.close_stream()
-	}
-}
-
-fn (mut receiver FetchedDataReceiver) pull_bytes_into_stream() {
-	assert receiver.lifecycle_state_ in [.receiving, .complete_pending]
-	bytes := receiver.copy_unpulled_bytes()
-	assert bytes.len > 0
-	callback := receiver.pending_promise_ or {
-		panic('FetchedDataReceiver.pull_bytes_into_stream called without a pending promise')
-	}
-	assert !receiver.has_unfulfilled_promise_
-	receiver.has_unfulfilled_promise_ = true
-	receiver.pending_promise_ = none
-	queue_fetch_task_for_controller(mut receiver.fetch_params_.controller, fn [mut receiver, callback, bytes] () {
-		receiver.has_unfulfilled_promise_ = false
-		assert receiver.lifecycle_state_ in [.receiving, .complete_pending]
-		mut stream := receiver.stream_
-		stream.pull_from_bytes(bytes) or {
-			stream.error(err.msg())
-			mut fetch_controller := receiver.fetch_params_.controller
-			fetch_controller.terminate()
-			callback()
-			return
+	bytes := data.bytes
+	if mut body := receiver.body_ {
+		if immutable_bytes := data.immutable_bytes {
+			if data.immutable_bytes_file_backed && body.body_source() in [.empty, .readable_stream]
+				&& bytes.len == immutable_bytes.len {
+				body.set_source(immutable_bytes, u64(immutable_bytes.len))
+			}
 		}
-		callback()
-		if receiver.lifecycle_state_ == .complete_pending && receiver.buffer_is_eof() {
-			receiver.lifecycle_state_ = .ready_to_close
+		body.append_sniff_bytes(bytes)
+	} else if receiver.pre_body_sniff_buffer_.len < 1445 {
+		space_remaining := 1445 - receiver.pre_body_sniff_buffer_.len
+		to_append := if bytes.len < space_remaining { bytes.len } else { space_remaining }
+		receiver.pre_body_sniff_buffer_ << bytes[..to_append]
+	}
+	if receiver.cache_enabled_ && !receiver.cache_body_replaces_network_buffer {
+		if immutable_bytes := data.immutable_bytes {
+			if data.immutable_bytes_file_backed && receiver.cache_buffer_.len == 0
+				&& receiver.cache_body_ == none {
+				receiver.cache_body_ = immutable_bytes.clone()
+			} else {
+				receiver.append_to_cache_buffer(bytes)
+			}
+		} else {
+			receiver.append_to_cache_buffer(bytes)
 		}
-	})
-}
-
-pub fn (mut receiver FetchedDataReceiver) copy_unpulled_bytes() []u8 {
-	bytes := receiver.buffer_[receiver.pulled_bytes_..].clone()
-	receiver.pulled_bytes_ = receiver.buffer_.len
-	return bytes
-}
-
-pub fn (receiver &FetchedDataReceiver) lifecycle_state() FetchedDataLifecycle {
-	return receiver.lifecycle_state_
+	}
+	receiver.pending_bytes_ << bytes
+	if receiver.pending_bytes_.len >= maximum_pending_bytes && !receiver.paused_network_delivery_ {
+		if request := receiver.network_request_ {
+			if set_paused := request.set_body_delivery_paused {
+				set_paused(true)
+				receiver.paused_network_delivery_ = true
+			}
+		}
+	}
+	receiver.queue_delivery_task()
 }
 
 pub fn cors_check(request &Request, response &Response) bool {

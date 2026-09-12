@@ -302,35 +302,101 @@ pub fn (mut flag RefCountedFlag) set_value(value bool) {
 	flag.value = value
 }
 
-pub fn (mut receiver FetchedDataReceiver) set_pending_promise(callback FetchedDataPendingPromise) {
-	assert receiver.pending_promise_ == none
-	assert !receiver.has_unfulfilled_promise_
-	receiver.pending_promise_ = callback
-	if !receiver.buffer_is_eof() {
-		receiver.pull_bytes_into_stream()
-	} else if receiver.lifecycle_state_ == .ready_to_close {
-		receiver.close_stream()
+fn queue_networking_task(steps fn ()) {
+	_ = queue_fetch_task(steps)
+}
+
+fn (mut receiver FetchedDataReceiver) append_to_cache_buffer(bytes []u8) {
+	if cached_body := receiver.cache_body_ {
+		receiver.cache_buffer_ << cached_body
+		receiver.cache_body_ = none
+	}
+	receiver.cache_buffer_ << bytes
+}
+
+pub fn (mut receiver FetchedDataReceiver) set_cached_response_body(body []u8) {
+	if !receiver.cache_enabled_ {
+		return
+	}
+	receiver.cache_buffer_.clear()
+	receiver.cache_body_ = body.clone()
+	receiver.cache_body_replaces_network_buffer = true
+}
+
+fn (mut receiver FetchedDataReceiver) queue_delivery_task() {
+	if receiver.delivery_task_queued_ {
+		return
+	}
+	receiver.delivery_task_queued_ = true
+	queue_networking_task(fn [mut receiver] () {
+		receiver.deliver_pending_bytes()
+	})
+}
+
+fn (mut receiver FetchedDataReceiver) deliver_pending_bytes() {
+	receiver.delivery_task_queued_ = false
+	bytes := receiver.pending_bytes_.clone()
+	receiver.pending_bytes_.clear()
+	if bytes.len > 0 {
+		receiver.enqueue_into_stream(bytes)
+	}
+	if receiver.paused_network_delivery_ {
+		receiver.paused_network_delivery_ = false
+		if request := receiver.network_request_ {
+			if set_paused := request.set_body_delivery_paused {
+				set_paused(false)
+			}
+		}
+	}
+	if receiver.network_complete_ {
+		queue_networking_task(fn [mut receiver] () {
+			receiver.close_stream()
+		})
 	}
 }
 
-pub fn (receiver &FetchedDataReceiver) buffer_is_eof() bool {
-	return receiver.pulled_bytes_ == receiver.buffer_.len
+fn (mut receiver FetchedDataReceiver) enqueue_into_stream(bytes []u8) {
+	if !receiver.stream_.is_readable() {
+		return
+	}
+	mut stream := receiver.stream_
+	mut controller := stream.byte_controller() or {
+		if params := receiver.fetch_params_ {
+			mut fetch_controller := params.controller
+			fetch_controller.terminate()
+		}
+		return
+	}
+	streams.readable_byte_stream_controller_enqueue_native_bytes(mut controller, bytes.clone()) or {
+		controller.error(err.msg())
+		if params := receiver.fetch_params_ {
+			mut fetch_controller := params.controller
+			fetch_controller.terminate()
+		}
+	}
 }
 
-pub fn (mut receiver FetchedDataReceiver) close_stream() {
-	assert !receiver.has_unfulfilled_promise_
-	assert receiver.buffer_is_eof()
-	callback := receiver.pending_promise_ or {
-		panic('FetchedDataReceiver.close_stream called without a pending promise')
+fn (mut receiver FetchedDataReceiver) close_stream() {
+	if receiver.cache_enabled_ {
+		if params := receiver.fetch_params_ {
+			request := params.request
+			if receiver.stream_.is_readable() && !params.is_canceled()
+				&& request.cache_mode != .no_store {
+				if response := receiver.response_ {
+					response_body := receiver.cache_body_ or { receiver.cache_buffer_.clone() }
+					finalize_response_body_in_cache(request, response, response_body)
+				}
+			}
+		}
+		receiver.cache_enabled_ = false
+		receiver.cache_body_ = none
+		receiver.cache_buffer_.clear()
 	}
-	callback()
-	receiver.pending_promise_ = none
-	receiver.lifecycle_state_ = .closed
+	if !receiver.stream_.is_readable() {
+		return
+	}
 	mut stream := receiver.stream_
 	stream.close()
-	if response := receiver.response_ {
-		finalize_response_in_cache(receiver.fetch_params_.request, response)
-	}
 }
 
 fn fetch_cache_partition_key(request &Request) ?string {
@@ -424,6 +490,11 @@ pub fn store_response_in_cache(request &Request, mut response Response) {
 }
 
 pub fn finalize_response_in_cache(request &Request, response &Response) {
+	response_body := response.fetch_response_body_bytes() or { []u8{} }
+	finalize_response_body_in_cache(request, response, response_body)
+}
+
+fn finalize_response_body_in_cache(request &Request, response &Response, response_body []u8) {
 	if !fetch_http_memory_cache_enabled || request.cache_mode == .no_store {
 		return
 	}
@@ -444,7 +515,7 @@ pub fn finalize_response_in_cache(request &Request, response &Response) {
 		return
 	}
 	mut entry := pending_entries[matched_index]
-	entry.response_body = response.fetch_response_body_bytes() or { []u8{} }
+	entry.response_body = response_body.clone()
 	pending_entries.delete(matched_index)
 	if pending_entries.len == 0 {
 		fetch_http_memory_cache_pending.delete(key)

@@ -5,23 +5,28 @@ import dom
 import http
 
 __global (
-	fetched_data_promise_resolutions int
-	preload_host_calls               int
-	transfer_pause_notifications     int
-	redirect_transfer_releases       int
-	redirect_request_stops           int
-	navigation_redirect_host_calls   int
+	preload_host_calls             int
+	transfer_pause_notifications   int
+	receiver_pause_notifications   int
+	receiver_resume_notifications  int
+	redirect_transfer_releases     int
+	redirect_request_stops         int
+	navigation_redirect_host_calls int
 )
 
 fn controller_test_process_response(_ &Response) {}
 
-fn resolve_fetched_data_promise() {
-	fetched_data_promise_resolutions++
-}
-
 fn preload_tracking_host(_ &Request) !&Response {
 	preload_host_calls++
 	return Response.create()
+}
+
+fn note_receiver_delivery_pause(paused bool) {
+	if paused {
+		receiver_pause_notifications++
+	} else {
+		receiver_resume_notifications++
+	}
 }
 
 fn note_transfer_pause(paused bool) {
@@ -191,18 +196,35 @@ fn test_pending_response_and_fetched_data_receiver() {
 	assert request.pending_responses.len == 0
 	mut body := Body.streaming()
 	mut receiver := FetchedDataReceiver.create(FetchParams.create(request, FetchTimingInfo.create()), body.stream())
+	receiver.handle_network_data(NetworkResponseData.from_bytes('abc'.bytes()), .ongoing)
 	receiver.set_body(body)
-	receiver.handle_network_bytes('abc'.bytes(), .ongoing)
-	receiver.handle_network_bytes([]u8{}, .complete)
-	fetched_data_promise_resolutions = 0
-	receiver.set_pending_promise(resolve_fetched_data_promise)
-	assert receiver.lifecycle_state() == .ready_to_close
-	assert fetched_data_promise_resolutions == 1
-	receiver.set_pending_promise(resolve_fetched_data_promise)
-	assert receiver.lifecycle_state() == .closed
-	assert fetched_data_promise_resolutions == 2
+	receiver.handle_network_data(NetworkResponseData.from_bytes([]u8{}), .complete)
 	assert body.sniff_bytes_if_available()? == 'abc'.bytes()
 	assert body.fully_read()! == 'abc'.bytes()
+}
+
+fn test_fetched_data_receiver_uses_file_backed_source_and_network_backpressure() {
+	mut request := Request.create()
+	request.cache_mode = .no_store
+	mut body := Body.streaming()
+	mut receiver := FetchedDataReceiver.create(FetchParams.create(request, FetchTimingInfo.create()), body.stream())
+	receiver.set_body(body)
+	receiver.handle_network_data(NetworkResponseData.from_file_backed_bytes('mapped'.bytes()), .ongoing)
+	assert body.body_source() == .bytes
+	assert body.body_length()? == 6
+	assert body.bytes() == 'mapped'.bytes()
+
+	receiver_pause_notifications = 0
+	receiver_resume_notifications = 0
+	receiver.set_network_request(RequestServerRequest{
+		set_body_delivery_paused: note_receiver_delivery_pause
+	})
+	receiver.handle_network_data(NetworkResponseData.from_bytes([]u8{len: 5 * 1024 * 1024}), .ongoing)
+	assert receiver_pause_notifications == 1
+	assert receiver_resume_notifications == 1
+	receiver.handle_network_data(NetworkResponseData.from_bytes([]u8{}), .complete)
+	assert body.fully_read()!.len == 5 * 1024 * 1024 + 6
+	assert body.stream().state() == .closed
 }
 
 fn test_abort_fetch_cancels_the_infrastructure_request_body_stream() {

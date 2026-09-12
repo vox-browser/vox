@@ -210,6 +210,30 @@ fn test_javascript_bytecode_cache_update_respects_vary_request_headers() {
 	clear_http_memory_cache()
 }
 
+fn test_fetched_data_receiver_prefers_cached_response_body_for_cache_finalization() {
+	clear_http_memory_cache()
+	set_http_memory_cache_enabled(true)
+	mut request := Request.create()
+	request.set_client(&CacheTestClient{
+		top_level_origin: dom.Origin{ value: 'https://top-level.test' }
+	})
+	request.url_list = [dom.URL{'https://resource.test/cached-body'}]
+	mut response := Response.create()
+	response.header_list.append(http.Header{ name: 'Cache-Control', value: 'max-age=60' })
+	mut body := Body.streaming()
+	response.set_body(body)
+	store_response_in_cache(request, mut response)
+	mut receiver := FetchedDataReceiver.create(FetchParams.create(request, FetchTimingInfo.create()), body.stream())
+	receiver.set_response(response)
+	receiver.set_body(body)
+	receiver.set_cached_response_body('cache-owned'.bytes())
+	receiver.handle_network_data(NetworkResponseData.from_bytes('network-copy'.bytes()), .ongoing)
+	receiver.handle_network_data(NetworkResponseData.from_bytes([]u8{}), .complete)
+	assert body.fully_read()! == 'network-copy'.bytes()
+	assert select_response_from_cache(request)?.fetch_response_body_bytes()? == 'cache-owned'.bytes()
+	clear_http_memory_cache()
+}
+
 fn test_body_entry_points_and_multipart_header_parser() {
 	stream := Body.from_bytes('abc'.bytes(), .bytes)
 	body := Body.create(stream.stream(), .bytes, 3)
