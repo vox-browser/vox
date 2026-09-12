@@ -35,6 +35,17 @@ pub enum GlobalKind {
 	worker
 }
 
+@[heap]
+pub struct XMLHttpRequestGlobal {
+pub:
+	kind     GlobalKind
+	base_url string
+pub mut:
+	document_destroyed bool
+}
+
+__global live_xml_http_requests_ []&XMLHttpRequest
+
 pub struct ResponseHeader {
 pub:
 	name  string
@@ -71,8 +82,9 @@ pub:
 pub struct XMLHttpRequest {
 	XMLHttpRequestEventTarget
 pub:
-	global_kind GlobalKind
-	base_url    string
+	global_kind    GlobalKind
+	base_url       string
+	global_object_ &XMLHttpRequestGlobal = unsafe { nil }
 pub mut:
 	window_fully_active      bool = true
 	upload_object            &XMLHttpRequestUpload
@@ -96,19 +108,77 @@ pub mut:
 	upload_complete          bool
 	upload_listener          bool
 	onreadystatechange_      bool
+	activity_root_            bool
+	timeout_timer_active      bool
+	response_object_failed_   bool
 }
 
 pub fn XMLHttpRequest.construct(global_kind GlobalKind, base_url string) &XMLHttpRequest {
-	return &XMLHttpRequest{
+	global_object := &XMLHttpRequestGlobal{
+		kind: global_kind
+		base_url: base_url
+	}
+	return XMLHttpRequest.create(global_object)
+}
+
+pub fn live_xml_http_requests() []&XMLHttpRequest {
+	return live_xml_http_requests_.filter(voidptr(it) != unsafe { nil }).clone()
+}
+
+pub fn prune_live_xml_http_requests() {
+	live_xml_http_requests_ = live_xml_http_requests_.filter(voidptr(it) != unsafe { nil })
+}
+
+pub fn XMLHttpRequest.create(global_object &XMLHttpRequestGlobal) &XMLHttpRequest {
+	request := &XMLHttpRequest{
 		upload_object: &XMLHttpRequestUpload{}
-		global_kind:   global_kind
-		base_url:      base_url
+		global_kind:   global_object.kind
+		base_url:      global_object.base_url
+		global_object_: global_object
 		response_:     MockResponse{}
 	}
+	live_xml_http_requests_ << request
+	prune_live_xml_http_requests()
+	return request
+}
+
+pub fn XMLHttpRequest.create_for_constructor(global_object &XMLHttpRequestGlobal) &XMLHttpRequest {
+	return XMLHttpRequest.create(global_object)
 }
 
 pub fn XMLHttpRequest.construct_impl(global_kind GlobalKind, base_url string) &XMLHttpRequest {
 	return XMLHttpRequest.construct(global_kind, base_url)
+}
+
+pub fn (request &XMLHttpRequest) relevant_global_impl() &XMLHttpRequestGlobal {
+	return request.global_object_
+}
+
+pub fn XMLHttpRequest.release_activity_roots_for_relevant_global_object(global_object &XMLHttpRequestGlobal) {
+	prune_live_xml_http_requests()
+	for request in live_xml_http_requests_ {
+		if voidptr(request.global_object_) == voidptr(global_object) {
+			mut mutable_request := unsafe { &XMLHttpRequest(request) }
+			mutable_request.activity_root_ = false
+		}
+	}
+}
+
+pub fn (request &XMLHttpRequest) relevant_global_object() &XMLHttpRequestGlobal {
+	return request.global_object_
+}
+
+pub fn (request &XMLHttpRequest) relevant_settings_object() &XMLHttpRequestGlobal {
+	return request.global_object_
+}
+
+pub fn (request &XMLHttpRequest) create_associated_event(event_name string) ProgressEvent {
+	_ = request.relevant_global_object()
+	return ProgressEvent.create(event_name, ProgressEventInit{})
+}
+
+pub fn (mut request XMLHttpRequest) stop_timeout_timer() {
+	request.timeout_timer_active = false
 }
 
 pub fn (request &XMLHttpRequest) ready_state() u16 {
@@ -132,7 +202,7 @@ pub fn (request &XMLHttpRequest) upload() &XMLHttpRequestUpload {
 }
 
 pub fn (mut request XMLHttpRequest) dispatch_state_change() {
-	request.dispatch('readystatechange', 0, 0)
+	request.events << request.create_associated_event('readystatechange')
 }
 
 pub fn (mut request XMLHttpRequest) open(method string, input_url string, async bool, username ?string, password ?string) ! {
@@ -159,6 +229,8 @@ pub fn (mut request XMLHttpRequest) open(method string, input_url string, async 
 		return error('InvalidAccessError: Synchronous XMLHttpRequests in a Window context do not support timeout or a non-empty responseType')
 	}
 	request.send_flag = false
+	request.stop_timeout_timer()
+	request.update_activity_root()
 	request.request_method = normalize_method(method)
 	request.request_url = parsed.serialize(false)
 	request.author_request_headers.clear()
@@ -170,6 +242,7 @@ pub fn (mut request XMLHttpRequest) open(method string, input_url string, async 
 	request.response_ = MockResponse{}
 	request.received_bytes.clear()
 	request.response_cache = none
+	request.response_object_failed_ = false
 	if request.state != .opened {
 		request.state = .opened
 		request.dispatch_state_change()
@@ -297,6 +370,8 @@ fn (mut request XMLHttpRequest) send_bytes(body []u8, content_type ?string, body
 	request.request_body_transmitted = 0
 	request.timed_out = false
 	request.send_flag = true
+	request.timeout_timer_active = request.timeout_ms != 0
+	request.update_activity_root()
 	if !request.synchronous {
 		request.dispatch('loadstart', 0, 0)
 		if !request.upload_complete && request.upload_listener {
@@ -379,6 +454,7 @@ pub fn (mut request XMLHttpRequest) receive_headers(response MockResponse) ! {
 		return
 	}
 	request.state = .headers_received
+	request.update_activity_root()
 	request.dispatch_state_change()
 }
 
@@ -387,6 +463,7 @@ pub fn (mut request XMLHttpRequest) receive_chunk(bytes []u8) {
 		return
 	}
 	request.state = .loading
+	request.update_activity_root()
 	request.received_bytes << bytes
 	request.response_cache = none
 	request.dispatch_state_change()
@@ -406,6 +483,7 @@ pub fn (mut request XMLHttpRequest) complete_response() ! {
 }
 
 pub fn (mut request XMLHttpRequest) handle_response_end_of_body() ! {
+	request.stop_timeout_timer()
 	request.handle_errors()!
 	if request.response_.network_error != none || request.response_.aborted || request.timed_out {
 		return
@@ -418,6 +496,7 @@ pub fn (mut request XMLHttpRequest) handle_response_end_of_body() ! {
 	}
 	request.state = .done
 	request.send_flag = false
+	request.update_activity_root()
 	request.dispatch_state_change()
 	request.dispatch('load', transmitted, length)
 	request.dispatch('loadend', transmitted, length)
@@ -454,8 +533,10 @@ pub fn (mut request XMLHttpRequest) timeout_request() ! {
 }
 
 fn (mut request XMLHttpRequest) request_error_steps(event string, exception_message string) ! {
+	request.stop_timeout_timer()
 	request.state = .done
 	request.send_flag = false
+	request.update_activity_root()
 	request.response_ = MockResponse{
 		network_error: 'Failed to load'
 	}
@@ -476,6 +557,7 @@ fn (mut request XMLHttpRequest) request_error_steps(event string, exception_mess
 }
 
 pub fn (mut request XMLHttpRequest) abort() {
+	request.stop_timeout_timer()
 	if (request.state == .opened && request.send_flag)
 		|| request.state in [.headers_received, .loading] {
 		request.request_error_steps('abort', '') or {}
@@ -483,6 +565,7 @@ pub fn (mut request XMLHttpRequest) abort() {
 	if request.state == .done {
 		request.state = .unsent
 		request.response_ = MockResponse{}
+		request.update_activity_root()
 	}
 }
 
@@ -628,6 +711,36 @@ pub fn (mut request XMLHttpRequest) set_document_response() {
 	}
 }
 
+pub fn (request &XMLHttpRequest) response_document() ?XHRDocumentResult {
+	cached := request.response_cache or { return none }
+	document_text := cached.document_text or { return none }
+	return XHRDocumentResult{
+		document_text: document_text
+	}
+}
+
+pub fn (request &XMLHttpRequest) response_blob() ?&fileapi.Blob {
+	cached := request.response_cache or { return none }
+	return cached.blob
+}
+
+pub fn (mut request XMLHttpRequest) set_blob_response_object(blob &fileapi.Blob) {
+	request.response_cache = XHRResponse{
+		type_: .blob
+		blob: blob
+	}
+	request.response_object_failed_ = false
+}
+
+pub fn (request &XMLHttpRequest) response_body_is_null() bool {
+	return request.response_.body.len == 0
+}
+
+pub fn (mut request XMLHttpRequest) reset_response_object() {
+	request.response_cache = none
+	request.response_object_failed_ = false
+}
+
 pub fn (mut request XMLHttpRequest) response_xml() !XHRDocumentResult {
 	if request.response_type_ !in [.empty, .document] {
 		return error('InvalidStateError: XHR responseXML can only be used for responseType empty or document')
@@ -668,11 +781,9 @@ pub fn (mut request XMLHttpRequest) response() XHRResponse {
 				}
 			}
 			.blob {
-				result = XHRResponse{
-					type_: .blob
-					blob:  fileapi.Blob.create(request.received_bytes.clone(),
-						request.final_mime_type())
-				}
+				request.set_blob_response_object(fileapi.Blob.create(request.received_bytes.clone(),
+					request.final_mime_type()))
+				return request.response_cache or { XHRResponse{ type_: .blob } }
 			}
 			.document {
 				request.set_document_response()
@@ -752,12 +863,40 @@ pub fn (request &XMLHttpRequest) onreadystatechange() bool {
 
 pub fn (mut request XMLHttpRequest) set_onreadystatechange(value bool) {
 	request.onreadystatechange_ = value
+	request.event_listener_list_changed()
 }
 
 pub fn (request &XMLHttpRequest) must_survive_garbage_collection() bool {
+	return request.should_be_kept_alive()
+}
+
+pub fn (request &XMLHttpRequest) received_bytes() []u8 {
+	return request.received_bytes.clone()
+}
+
+pub fn (request &XMLHttpRequest) response_object_is_failure() bool {
+	return request.response_object_failed_
+}
+
+pub fn (request &XMLHttpRequest) has_activity_root() bool {
+	return request.activity_root_
+}
+
+pub fn (request &XMLHttpRequest) should_be_kept_alive() bool {
+	if request.global_kind == .window && request.global_object_.document_destroyed {
+		return false
+	}
 	active := (request.state == .opened && request.send_flag)
 		|| request.state in [.headers_received, .loading]
 	return active && (request.onreadystatechange() || request.has_relevant_listener())
+}
+
+pub fn (mut request XMLHttpRequest) update_activity_root() {
+	request.activity_root_ = request.should_be_kept_alive()
+}
+
+pub fn (mut request XMLHttpRequest) event_listener_list_changed() {
+	request.update_activity_root()
 }
 
 pub fn is_legacy_uppercased_byte_less_than(a string, b string) bool {

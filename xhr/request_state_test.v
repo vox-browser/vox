@@ -1,5 +1,7 @@
 module xhr
 
+import fileapi
+
 fn test_open_method_url_header_and_send_state_validation() {
 	mut request := XMLHttpRequest.construct(.window, 'https://example.test/base')
 	request.open('get', '/data', true, none, none)!
@@ -192,4 +194,52 @@ fn test_exact_xml_http_request_entry_points() {
 	mut target := XMLHttpRequestEventTarget{}
 	fire_progress_event(mut target, 'progress', 2, 4)
 	assert target.events[0].loaded() == 2
+}
+
+fn test_global_lifetime_roots_timer_and_response_object_boundaries() {
+	mut global := &XMLHttpRequestGlobal{
+		kind: .window
+		base_url: 'https://example.test/'
+	}
+	before := live_xml_http_requests().len
+	mut request := XMLHttpRequest.create_for_constructor(global)
+	assert live_xml_http_requests().len == before + 1
+	assert request.relevant_global_impl() == global
+	assert request.relevant_global_object() == global
+	assert request.relevant_settings_object() == global
+	assert request.create_associated_event('progress').type_ == 'progress'
+	request.open('GET', '/data', true, none, none)!
+	request.set_timeout(50)!
+	request.listeners['progress'] = true
+	request.send()!
+	assert request.timeout_timer_active
+	assert request.should_be_kept_alive()
+	assert request.has_activity_root()
+	request.listeners['progress'] = false
+	request.event_listener_list_changed()
+	assert !request.has_activity_root()
+	request.set_onreadystatechange(true)
+	assert request.has_activity_root()
+	XMLHttpRequest.release_activity_roots_for_relevant_global_object(global)
+	assert !request.has_activity_root()
+	request.update_activity_root()
+	assert request.has_activity_root()
+	global.document_destroyed = true
+	request.update_activity_root()
+	assert !request.has_activity_root()
+	request.stop_timeout_timer()
+	assert !request.timeout_timer_active
+
+	assert request.response_body_is_null()
+	request.receive_headers(MockResponse{ body: [u8(1), 2] })!
+	request.receive_chunk([u8(1), 2])
+	assert request.received_bytes() == [u8(1), 2]
+	assert !request.response_body_is_null()
+	blob := fileapi.Blob.create([u8(3)], 'application/octet-stream')
+	request.set_blob_response_object(blob)
+	assert request.response_blob()? == blob
+	assert !request.response_object_is_failure()
+	request.reset_response_object()
+	assert request.response_blob() == none
+	assert request.response_document() == none
 }
