@@ -1708,11 +1708,14 @@ fn (mut parser RuleSelectorParser) convert_to_property_rule(rule AtRule) ?&CSSRu
 		parsed_initial_value := parse_with_a_syntax(initial_value_component_values, maybe_syntax)
 		// Otherwise, if the value of the syntax descriptor is not the universal syntax definition,
 		// the following conditions must be met for the @property rule to be valid:
-		//  - The initial-value descriptor must be present.
-		//  - The initial-value descriptor's value must parse successfully according to the grammar specified by the syntax definition.
-		//  - FIXME: The initial-value must be computationally independent.
-		if parsed_initial_value.type_() == .guaranteed_invalid {
-			return none
+		if maybe_syntax.type() != .universal {
+			//  - The initial-value descriptor must be present.
+			//  - The initial-value descriptor's value must parse successfully according to the grammar specified by the syntax definition.
+			//  - The initial-value must be computationally independent.
+			if parsed_initial_value.type_() == .guaranteed_invalid
+				|| !parsed_initial_value.is_computationally_independent() {
+				return none
+			}
 		}
 		parsed_initial_value_maybe = parsed_initial_value
 	}

@@ -4169,6 +4169,47 @@ pub fn (style_value StyleValue) is_css_wide_keyword() bool {
 	return style_value.is_inherit() || style_value.is_initial() || style_value.is_revert() || style_value.is_unset() || style_value.is_revert_layer()
 }
 
+// https://drafts.css-houdini.org/css-properties-values-api/#computationally-independent
+// Registered-property initial values may depend on global viewport information,
+// but not on an element's font or query container. Token inspection covers those
+// length leaves uniformly inside calculations, transforms, gradients, and other
+// compound values without losing quoted strings or URL payloads.
+pub fn (style_value StyleValue) is_computationally_independent() bool {
+	if style_value.is_css_wide_keyword() {
+		return false
+	}
+	match style_value {
+		AnchorStyleValue, AnchorSizeStyleValue {
+			// These functions locate their anchor only when used; their registered
+			// initial-value representation is independent of the target element.
+			return true
+		}
+		GuaranteedInvalidStyleValue, PendingSubstitutionStyleValue, UnresolvedStyleValue {
+			return false
+		}
+		LightDarkStyleValue, TreeCountingFunctionStyleValue {
+			return false
+		}
+		KeywordStyleValue {
+			if style_value.keyword() != .currentcolor && style_value.has_color() {
+				return false
+			}
+		}
+		else {}
+	}
+
+	for token in Tokenizer.tokenize(style_value.serialize(.normal), 'UTF-8') {
+		if !token.is(.dimension) {
+			continue
+		}
+		unit := string_to_length_unit(token.dimension_unit()) or { continue }
+		if is_font_relative_length_unit(unit) || is_container_relative_length_unit(unit) {
+			return false
+		}
+	}
+	return true
+}
+
 pub fn (style_value StyleValue) is_inherit() bool {
 	return style_value.to_keyword() == .inherit
 }
