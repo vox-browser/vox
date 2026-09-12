@@ -2722,6 +2722,20 @@ pub fn (mut set FontFaceSet) load(font string, text string) !&webidl.Promise {
 	return promise
 }
 
+// https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-check
+pub fn (set &FontFaceSet) check(font string, text string) !bool {
+	// Find matching FontFace entries without initiating a load. System fonts are
+	// represented by an empty result in this translation boundary and therefore
+	// satisfy the check immediately.
+	matched_font_faces := find_matching_font_faces(set, font, text)!
+	for font_face in matched_font_faces {
+		if font_face.status() != .loaded {
+			return false
+		}
+	}
+	return true
+}
+
 // https://drafts.csswg.org/css-font-loading/#font-face-set-ready
 pub fn (set &FontFaceSet) ready() &webidl.Promise {
 	return set.ready_promise
