@@ -38,6 +38,12 @@ fn test_scope_boundary_selectors_contribute_selector_insights() {
 	assert data.class_names_used_in_has_selectors['flag']
 }
 
+fn test_slotted_argument_contributes_selector_insights() {
+	scope := build_scope_invalidation_cache('::slotted(.item:has(.flag)) { color: red }')
+	insights := scope.selector_insights or { panic('missing selector insights') }
+	assert insights.has_has_selectors
+}
+
 fn test_scope_root_class_change_invalidates_its_subtree() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut html := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {

@@ -818,6 +818,11 @@ pub fn StyleScope.collect_selector_insights(selector Selector, mut insights Sele
 				for argument_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
 					StyleScope.collect_selector_insights(argument_selector, mut insights)
 				}
+			} else if simple_selector.type_ == .pseudo_element
+				&& simple_selector.pseudo_element.type_ == .slotted {
+				if argument_selector := simple_selector.pseudo_element.compound_selector {
+					StyleScope.collect_selector_insights(argument_selector, mut insights)
+				}
 			}
 		}
 	}
