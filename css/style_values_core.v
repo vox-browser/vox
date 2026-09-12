@@ -6863,8 +6863,7 @@ pub fn (unit_value CSSUnitValue) create_an_internal_representation(property Prop
 					?StyleValue(wrap_in_math_sum(value))
 				}
 			} else if property_accepts_type(property_id, .integer) {
-				// NB: Same rounding as CalculatedStyleValue::resolve_integer(). Maybe this should go somewhere central?
-				integer := i64(math.round(value.value()))
+				integer := round_to_nearest_integer(value.value())
 				if property_accepts_integer(property_id, integer) {
 					?StyleValue(StyleValue(IntegerStyleValue.create(integer)))
 				} else {

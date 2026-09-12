@@ -1489,12 +1489,33 @@ pub fn (n Number) value() f64 {
 	return n.value_
 }
 
+// https://drafts.csswg.org/css-values-4/#css-round-to-the-nearest-integer
+pub fn round_to_nearest_integer(value f64) i64 {
+	if math.is_nan(value) {
+		return 0
+	}
+	if math.is_inf(value, 1) {
+		return max_i64
+	}
+	if math.is_inf(value, -1) {
+		return min_i64
+	}
+	rounded := math.floor(value + 0.5)
+	if rounded >= f64(max_i64) {
+		return max_i64
+	}
+	if rounded <= f64(min_i64) {
+		return min_i64
+	}
+	return i64(rounded)
+}
+
 pub fn (n Number) integer_value() i64 {
 	// https://www.w3.org/TR/css-values-4/#numeric-types
 	// When a value cannot be explicitly supported due to range/precision limitations, it must be converted
 	// to the closest value supported by the implementation, but how the implementation defines "closest"
 	// is explicitly undefined as well.
-	return i64(math.round(n.value_))
+	return round_to_nearest_integer(n.value_)
 }
 
 pub fn (n Number) is_integer() bool {

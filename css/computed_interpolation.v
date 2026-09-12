@@ -5607,7 +5607,7 @@ pub fn interpolate_raw(from f64, to f64, delta f64, accepted_type_range ?Accepte
 pub fn interpolate_raw_int(from int, to int, delta f64, accepted_type_range ?AcceptedTypeRange) int {
 	min := if range := accepted_type_range { range.min } else { f64(-2147483648) }
 	max := if range := accepted_type_range { range.max } else { f64(2147483647) }
-	result := math.round(f64(from) + (f64(to) - f64(from)) * delta)
+	result := f64(round_to_nearest_integer(f64(from) + (f64(to) - f64(from)) * delta))
 	return int(clamp_f64(result, min, max))
 }
 
@@ -6122,7 +6122,7 @@ pub fn interpolate_css_color(from Color, to Color, delta f64, syntax ColorSyntax
 fn interpolate_raw_i64(from i64, to i64, delta f64, accepted_type_range ?AcceptedTypeRange) i64 {
 	min := if range := accepted_type_range { range.min } else { f64(-9223372036854775808) }
 	max := if range := accepted_type_range { range.max } else { f64(9223372036854775807) }
-	result := math.round(f64(from) + (f64(to) - f64(from)) * delta)
+	result := f64(round_to_nearest_integer(f64(from) + (f64(to) - f64(from)) * delta))
 	return i64(clamp_f64(result, min, max))
 }
 

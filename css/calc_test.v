@@ -189,9 +189,9 @@ fn test_numeric_root_is_clamped_and_censored_for_resolved_values() {
 	assert calc_resolved_value('calc(-3)', PropertyID.opacity)? == '0'
 	assert calc_resolved_value('calc(NaN)', PropertyID.opacity)? == '0'
 	assert calc_resolved_value('calc(-2)', PropertyID.flex_grow)? == '0'
-	// An integer context rounds half away from zero before clamping.
+	// CSS rounds exact halves toward positive infinity before clamping.
 	assert calc_resolved_value('calc(2.5)', PropertyID.z_index)? == '3'
-	assert calc_resolved_value('calc(-2.5)', PropertyID.z_index)? == '-3'
+	assert calc_resolved_value('calc(-2.5)', PropertyID.z_index)? == '-2'
 	assert calc_resolved_value('calc(NaN)', PropertyID.z_index)? == '0'
 	// A property whose range permits them keeps out-of-gamut percentages as written.
 	assert calc_resolved_value('calc(-50%)', PropertyID.background_position_x)? == '-50%'

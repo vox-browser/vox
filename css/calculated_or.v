@@ -43,7 +43,7 @@ pub fn (c CalculatedStyleValue) resolve_frequency(context CalculationResolutionC
 
 pub fn (c CalculatedStyleValue) resolve_integer(context CalculationResolutionContext) ?i64 {
 	if resolved_number := c.resolve_number(context) {
-		return i64(math.round(resolved_number))
+		return round_to_nearest_integer(resolved_number)
 	}
 	return none
 }
