@@ -62,13 +62,15 @@ fn test_dispatch_actions_for_string_balances_key_state() {
 
 fn test_dispatch_actions_releases_queue_token_after_a_dispatch_error() {
 	mut state := InputState{}
-	state.input_state_map['wheel'] = InputSource{
-		type_: .wheel
+	state.input_state_map['pen'] = InputSource{
+		type_:           .pointer
+		pointer_subtype: .pen
 	}
 	dispatch_actions(mut state, [[ActionObject{
-		id: 'wheel'
-		type_: .wheel
-		subtype: .scroll
+		id:      'pen'
+		type_:   .pointer
+		subtype: .pointer_move
+		x:       1
 	}]]) or {
 		assert err.msg().contains('not implemented')
 		assert state.actions_queue.len == 0
@@ -125,19 +127,38 @@ fn test_pointer_dispatch_uses_webdriver_button_masks_and_suppresses_duplicates()
 	assert (dispatch_tick_actions(mut state, [up]) or { panic(err) }).len == 0
 }
 
-fn test_dispatch_preserves_current_upstream_unsupported_boundaries() {
+fn test_dispatch_scroll_action_uses_coordinates_deltas_and_key_state() {
 	mut state := InputState{}
 	state.input_state_map['wheel'] = InputSource{
 		type_: .wheel
 	}
-	dispatch_tick_actions(mut state, [
+	state.input_state_map['key'] = InputSource{
+		type_: .key
+		ctrl:  true
+	}
+	events := dispatch_tick_actions_in_viewport(mut state, [
 		ActionObject{
-			id: 'wheel'
-			type_: .wheel
+			id:      'wheel'
+			type_:   .wheel
 			subtype: .scroll
+			x:       20
+			y:       30
+			delta_x: 4
+			delta_y: -7
 		},
-	]) or {
-		assert err.msg().contains('not implemented')
+	], Rect{ width: 100, height: 100 }) or { panic(err) }
+	assert events.len == 1
+	assert events[0].kind == 'scroll'
+	assert events[0].x == 20 && events[0].y == 30
+	assert events[0].delta_x == 4 && events[0].delta_y == -7
+	assert events[0].modifiers == 2
+	dispatch_tick_actions_in_viewport(mut state, [ActionObject{
+		id:      'wheel'
+		type_:   .wheel
+		subtype: .scroll
+		x:       101
+	}], Rect{ width: 100, height: 100 }) or {
+		assert err.msg().contains('move target out of bounds')
 		return
 	}
 	assert false
@@ -176,6 +197,13 @@ fn test_host_can_resolve_element_origin_before_pointer_dispatch() {
 	assert action.origin == 'viewport'
 	assert action.x == 22
 	assert action.y == 29
+	scroll := resolve_scroll_element_origin(ActionObject{
+		origin: 'element-1'
+		x:      -2
+		y:      3
+	}, 20, 30)
+	assert scroll.origin == 'viewport'
+	assert scroll.x == 18 && scroll.y == 33
 }
 
 fn test_upstream_action_entry_points_share_parser_and_dispatcher() {

@@ -248,6 +248,35 @@ pub fn extract_an_action_sequence(mut state InputState, parameters json2.Any) ![
 
 pub fn dispatch_pause_action() {}
 
+// https://w3c.github.io/webdriver/#dfn-dispatch-a-scroll-action
+// The browser embedder consumes the returned event as a discrete mouse-wheel
+// input after this portable layer has resolved and validated its coordinates.
+pub fn dispatch_scroll_action(action_object ActionObject, global_key_state GlobalKeyState, tick_duration u64, viewport Rect) !DispatchedEvent {
+	_ = tick_duration
+	if action_object.origin != 'viewport' {
+		return error(WebDriverError.from_code(.unsupported_operation,
+			'Element-origin scrolling requires a host origin resolver').msg())
+	}
+	coordinates := CoordinateOffset{
+		x: action_object.x
+		y: action_object.y
+	}
+	if coordinates.x < viewport.x || coordinates.x > viewport.x + viewport.width
+		|| coordinates.y < viewport.y || coordinates.y > viewport.y + viewport.height {
+		return error(WebDriverError.from_code(.move_target_out_of_bounds,
+			'Coordinates (${coordinates.x}, ${coordinates.y}) are out of bounds').msg())
+	}
+	return DispatchedEvent{
+		kind:       'scroll'
+		source_id:  action_object.id
+		modifiers:  global_key_state.modifiers()
+		x:          coordinates.x
+		y:          coordinates.y
+		delta_x:    action_object.delta_x
+		delta_y:    action_object.delta_y
+	}
+}
+
 pub fn normalized_key_value(key string) string {
 	return match key {
 		'' { 'Unidentified' }

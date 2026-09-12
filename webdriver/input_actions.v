@@ -543,10 +543,19 @@ fn button_mask(button u32) u32 {
 	}
 }
 
-// DOM lookup and scrolling remain host responsibilities. The embedder resolves
-// an element reference to its in-view center and supplies the resulting action
-// to the portable dispatcher.
+// DOM lookup remains a host responsibility. The embedder resolves an element
+// reference to its in-view center and supplies the resulting action to the
+// portable dispatcher.
 pub fn resolve_pointer_move_element_origin(action ActionObject, center_x f64, center_y f64) ActionObject {
+	return ActionObject{
+		...action
+		origin: 'viewport'
+		x: center_x + action.x
+		y: center_y + action.y
+	}
+}
+
+pub fn resolve_scroll_element_origin(action ActionObject, center_x f64, center_y f64) ActionObject {
 	return ActionObject{
 		...action
 		origin: 'viewport'
@@ -746,7 +755,11 @@ fn dispatch_tick_actions_with_viewport(mut state InputState, actions []ActionObj
 				}
 			}
 			.scroll {
-				return error(WebDriverError.from_code(.unsupported_operation, 'Dispatching scroll actions is not implemented').msg())
+				bounds := viewport or { Rect{
+					width:  f64(maximum_safe_integer)
+					height: f64(maximum_safe_integer)
+				} }
+				events << dispatch_scroll_action(action, state.global_key_state(), action.duration_ms or { 0 }, bounds)!
 			}
 			else {}
 		}
