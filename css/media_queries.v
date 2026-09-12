@@ -104,6 +104,7 @@ enum BooleanExpressionParseTest {
 	supports_feature
 	media_in_parens
 	if_test
+	container_query_feature
 }
 
 // https://drafts.csswg.org/css-values-5/#typedef-boolean-expr
@@ -200,6 +201,11 @@ fn (mut parser Parser) parse_boolean_expression_group(mut tokens SupportsTokenSt
 		}
 		.if_test {
 			if test := parser.parse_if_test(mut tokens) {
+				return test
+			}
+		}
+		.container_query_feature {
+			if test := parser.parse_container_query_feature(mut tokens) {
 				return test
 			}
 		}

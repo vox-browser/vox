@@ -25,6 +25,39 @@ pub fn (query &ContainerQuery) to_string() string {
 	return query.condition.to_string()
 }
 
+fn (mut parser Parser) parse_container_query_condition(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	return parser.parse_boolean_expression(mut tokens, .false_, .container_query_feature)
+}
+
+fn (mut parser Parser) parse_container_query_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	// Size, style, scroll-state, and anchored query features are translated by
+	// later upstream slices. Boolean parsing still preserves all of them as
+	// <general-enclosed> in this initial implementation.
+	_ = parser
+	_ = tokens
+	return none
+}
+
+fn (mut parser Parser) parse_container_query(mut tokens SupportsTokenStream) ?&ContainerQuery {
+	condition := parser.parse_container_query_condition(mut tokens) or { return none }
+	return ContainerQuery.create(condition)
+}
+
+fn parse_container_name(mut tokens SupportsTokenStream) ?string {
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	token := transaction.consume_a_token() or { return none }
+	if !token.is(.ident) {
+		return none
+	}
+	name := token.token().ident()
+	if !is_valid_custom_ident(name, ['none', 'and', 'not', 'or']) {
+		return none
+	}
+	tokens = transaction
+	return name
+}
+
 pub struct ContainerRuleCondition {
 pub:
 	container_name  ?string

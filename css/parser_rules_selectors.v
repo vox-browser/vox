@@ -1068,6 +1068,9 @@ fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNeste
 			if has_ignored_vendor_prefix_local(rule.name) {
 				return none
 			}
+			if equals_ignoring_ascii_case(rule.name, 'container') {
+				return parser.convert_to_container_rule(rule, nested, declaration_rule_kind)
+			}
 			if equals_ignoring_ascii_case(rule.name, 'counter-style') {
 				return parser.convert_to_counter_style_rule(rule)
 			}
@@ -1196,6 +1199,57 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 	}
 
 	return CSSRule.create_style(selectors, declaration, CSSRuleList.create(child_rules))
+}
+
+// https://drafts.csswg.org/css-conditional-5/#container-rule
+fn (mut parser RuleSelectorParser) convert_to_container_rule(rule AtRule, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) ?&CSSRule {
+	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
+	prelude := prelude_stream.dump_string()
+	if !rule.is_block_rule {
+		parser_report_error(ParsingError(InvalidRuleError{
+			rule_name: '@container'
+			prelude: prelude
+			description: 'Must be a block, not a statement.'
+		}))
+		return none
+	}
+
+	prelude_items := parser.parse_a_comma_separated_list_of_component_values(mut prelude_stream)
+	mut conditions := []ContainerRuleCondition{cap: prelude_items.len}
+	for item in prelude_items {
+		mut item_tokens := SupportsTokenStream.from_values(item)
+		container_name := parse_container_name(mut item_tokens)
+		item_tokens.discard_whitespace()
+		mut query_parser := Parser{
+			context: parser.parsing_params()
+			value_context: parser.value_context.clone()
+		}
+		container_query := query_parser.parse_container_query(mut item_tokens)
+		if container_name == none && container_query == none {
+			parser_report_error(ParsingError(InvalidRuleError{
+				rule_name: '@container'
+				prelude: prelude
+				description: 'Missing container name or query.'
+			}))
+			return none
+		}
+		item_tokens.discard_whitespace()
+		if item_tokens.has_next_token() {
+			parser_report_error(ParsingError(InvalidRuleError{
+				rule_name: '@container'
+				prelude: prelude
+				description: 'Trailing tokens after name and query.'
+			}))
+			return none
+		}
+		conditions << ContainerRuleCondition{
+			container_name: container_name
+			container_query: container_query
+		}
+	}
+
+	children := parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations, nested, declaration_rule_kind)
+	return CSSRule.create_container(conditions, CSSRuleList.create(children))
 }
 
 fn (mut parser RuleSelectorParser) parse_import_scope_selector_list(mut tokens ParserTokenStream, selector_type ParserSelectorType) ?SelectorList {
@@ -3230,10 +3284,11 @@ fn (parser RuleSelectorParser) is_valid_at_rule_in_the_current_context(rule AtRu
 	}
 
 	if rule_context_contains(parser.rule_context, .style) {
-		return ascii_case_insensitive_name_is_one_of(rule.name, ['layer', 'media', 'scope', 'supports'])
+		return ascii_case_insensitive_name_is_one_of(rule.name, ['container', 'layer', 'media',
+			'scope', 'supports'])
 	}
 	if rule_context_contains(parser.rule_context, .function_rule) {
-		return ascii_case_insensitive_name_is_one_of(rule.name, ['media', 'supports'])
+		return ascii_case_insensitive_name_is_one_of(rule.name, ['container', 'media', 'supports'])
 	}
 
 	last_context := parser.rule_context[parser.rule_context.len - 1]
@@ -3297,6 +3352,9 @@ fn (parser RuleSelectorParser) is_valid_qualified_rule_in_the_current_context(ru
 fn rule_context_type_for_at_rule_local(name string) RuleContext {
 	if equals_ignoring_ascii_case(name, 'media') {
 		return .media
+	}
+	if equals_ignoring_ascii_case(name, 'container') {
+		return .container_rule
 	}
 	if equals_ignoring_ascii_case(name, 'counter-style') {
 		return .counter_style
