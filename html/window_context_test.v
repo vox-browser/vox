@@ -186,6 +186,22 @@ fn test_browsing_context_exact_creation_and_traversable_access() {
 	group.finalize()
 }
 
+fn test_new_browsing_context_propagates_embedder_sandbox_flags() {
+	page := &dom.Page{}
+	mut group := BrowsingContextGroup.create(page)
+	creator := dom.Document.create(dom.URL{ value: 'https://example.test/creator' })
+	mut iframe_element := creator.create_element_ns(namespace_html, 'iframe') or { panic(err) }
+	iframe_element.set_attribute_value('sandbox', 'allow-scripts')
+	created := BrowsingContextModel.create_a_new_browsing_context_and_document(page, creator,
+		iframe_element, group)!
+	assert created.document.active_sandboxing_flag_bits() & u32(SandboxingFlag.sandboxed_origin) != 0
+	assert created.document.active_sandboxing_flag_bits() & u32(SandboxingFlag.sandboxed_scripts) == 0
+	assert !created.document.origin().is_same_origin(creator.origin())
+	mut created_context := created.browsing_context
+	created_context.remove()
+	group.finalize()
+}
+
 fn test_window_proxy_indexed_and_cross_origin_access() {
 	top_document := window_test_document('https://top.test/')
 	mut top := WindowModel.create_top_level(top_document, none, 'top')!

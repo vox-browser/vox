@@ -562,24 +562,27 @@ pub fn BrowsingContextModel.create(document ?&dom.Document, parent ?&BrowsingCon
 }
 
 pub fn BrowsingContextModel.create_a_new_browsing_context_and_document(_ &dom.Page, creator ?&dom.Document, embedder ?&dom.Element, group &BrowsingContextGroup) !BrowsingContextAndDocument {
+	context := BrowsingContextModel.create(none, none, '')
+	mut mutable_context := unsafe { &BrowsingContextModel(context) }
+	mutable_context.set_container(embedder)
+	sandbox_flags := determine_the_creation_sandboxing_flags(context, embedder)
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_document_type(.html)
 	document.set_content_type('text/html')
 	document.set_quirks_mode(.yes)
-	document.set_origin(if creator_document := creator {
+	document.set_origin(determine_the_origin(dom.url_about_blank(), sandbox_flags, if creator_document := creator {
 		creator_document.origin()
 	} else {
-		dom.origin_create_opaque()
-	})
+		none
+	}))
+	document.set_active_sandboxing_flag_bits(sandbox_flags.bits)
 	document.set_is_initial_about_blank(true)
 	document.set_allow_declarative_shadow_roots(true)
 	if creator_document := creator {
 		document.set_referrer(creator_document.url_string())
 	}
 	document.populate_with_html_head_and_body()!
-	context := BrowsingContextModel.create(document, none, '')
-	mut mutable_context := unsafe { &BrowsingContextModel(context) }
-	mutable_context.set_container(embedder)
+	mutable_context.set_active_document(document)
 	mut mutable_group := unsafe { &BrowsingContextGroup(group) }
 	mutable_group.append_model(context)
 	_ = WindowModel.create(document, context)!
