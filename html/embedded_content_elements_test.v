@@ -136,6 +136,18 @@ fn test_iframe_srcdoc_sandbox_lazy_loading_and_events() {
 	assert iframe.container.content_navigable() == none
 }
 
+fn test_iframe_applies_sandbox_before_creating_its_initial_document() {
+	owner_origin := dom.Origin{ value: 'https://example.test' }
+	mut iframe := HTMLIFrameElementModel.create(dom.URL{ value: 'https://example.test/' }, owner_origin)
+	iframe.set_sandbox('allow-scripts')
+	iframe.post_connection(true, [])!
+	initial_document := iframe.container.content_navigable()?.active_document
+	assert initial_document.active_sandboxing_flags.contains(.sandboxed_origin)
+	assert !initial_document.active_sandboxing_flags.contains(.sandboxed_scripts)
+	assert !initial_document.origin.is_same_origin(owner_origin)
+	iframe.removed_from_document()
+}
+
 fn test_destroyed_child_is_not_marked_ready_by_deferred_creation_bookkeeping() {
 	mut container := NavigableContainerModel.create(dom.URL{ value: 'https://example.test/' }, dom.Origin{
 		value: 'https://example.test'

@@ -18,13 +18,14 @@ pub enum InitialInsertion {
 
 pub struct EmbeddedDocument {
 pub mut:
-	url                       dom.URL
-	origin                    dom.Origin
-	content_type              string = 'text/html'
-	completely_loaded         bool
-	ready_for_post_load_tasks bool
+	url                        dom.URL
+	origin                     dom.Origin
+	active_sandboxing_flags    SandboxingFlagSet
+	content_type               string = 'text/html'
+	completely_loaded          bool
+	ready_for_post_load_tasks  bool
 	anything_delays_load_event bool
-	body_needs_style_update   bool
+	body_needs_style_update    bool
 }
 
 @[heap]
@@ -65,6 +66,7 @@ mut:
 	name_                          string
 	src_                           string
 	content_navigable_             ?&ChildNavigable
+	creation_sandboxing_flags_     SandboxingFlagSet
 	potentially_delays_load_event_ bool = true
 	navigation_hook_               ?EmbeddedNavigationHook
 }
@@ -107,6 +109,10 @@ pub fn (mut container NavigableContainerModel) set_src(value string) {
 	container.src_ = value
 }
 
+pub fn (mut container NavigableContainerModel) set_creation_sandboxing_flags(flags SandboxingFlagSet) {
+	container.creation_sandboxing_flags_ = flags
+}
+
 pub fn (container &NavigableContainerModel) content_navigable() ?&ChildNavigable {
 	return container.content_navigable_
 }
@@ -117,7 +123,8 @@ pub fn (mut container NavigableContainerModel) create_new_child_navigable() &Chi
 		url: dom.URL{
 			value: 'about:blank'
 		}
-		origin: container.owner_origin_
+		origin: determine_the_origin(dom.url_about_blank(), container.creation_sandboxing_flags_, container.owner_origin_)
+		active_sandboxing_flags: container.creation_sandboxing_flags_
 	}
 	navigable := &ChildNavigable{
 		active_document: document
@@ -444,6 +451,7 @@ pub fn (mut iframe HTMLIFrameElementModel) set_sandbox(value ?string) {
 	} else {
 		SandboxingFlagSet{}
 	}
+	iframe.container.set_creation_sandboxing_flags(iframe.iframe_sandboxing_flag_set_)
 }
 
 pub fn (iframe &HTMLIFrameElementModel) iframe_sandboxing_flag_set() SandboxingFlagSet {
@@ -479,10 +487,11 @@ pub fn (mut iframe HTMLIFrameElementModel) post_connection(document_is_fully_act
 	if !document_is_fully_active {
 		return
 	}
-	iframe.container.create_new_child_navigable()
 	if sandbox := iframe.sandbox_ {
 		iframe.iframe_sandboxing_flag_set_ = parse_a_sandboxing_directive(sandbox)
 	}
+	iframe.container.set_creation_sandboxing_flags(iframe.iframe_sandboxing_flag_set_)
+	iframe.container.create_new_child_navigable()
 	iframe.process_the_iframe_attributes(.yes, inclusive_ancestor_urls)!
 }
 
