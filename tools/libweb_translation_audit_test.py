@@ -75,5 +75,28 @@ fn genuinely_empty() {
         )
 
 
+class VFunctionInventoryTests(unittest.TestCase):
+    def test_generic_receiver_owner_drops_type_parameters(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "bindings" / "wrapper_world.v"
+            source.parent.mkdir()
+            source.write_text(
+                """
+module bindings
+
+pub struct WrapperWorldWeakValueCache[T] {}
+
+pub fn (cache &WrapperWorldWeakValueCache[T]) get() ?&T {
+    return none
+}
+"""
+            )
+
+            functions, _, _ = audit.all_v_function_names(Path(directory))
+
+        self.assertIn(("get", "WrapperWorldWeakValueCache"), functions)
+        self.assertNotIn(("get", "WrapperWorldWeakValueCache[T]"), functions)
+
+
 if __name__ == "__main__":
     unittest.main()

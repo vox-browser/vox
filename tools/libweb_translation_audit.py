@@ -942,7 +942,7 @@ def all_v_function_names(
             owner = match.group("associated")
             if receiver := match.group("receiver"):
                 receiver_type = receiver.split()[-1].lstrip("&?")
-                owner = receiver_type.split(".")[-1]
+                owner = receiver_type.split(".")[-1].split("[", 1)[0]
             # Boundary placeholders are not implementations of upstream
             # methods, even when their names happen to match.
             if owner and (owner.endswith("Facade") or owner.endswith("Stub")):
