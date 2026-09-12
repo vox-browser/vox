@@ -147,6 +147,20 @@ fn test_fetch_params_and_fetch_propagate_response_body_transfer_lease() {
 	assert controller.fetch_params_?.has_response_body_transfer_lease()
 }
 
+fn test_image_fetch_accept_header_advertises_avif_and_webp() {
+	mut request := Request.create()
+	request.url_list = [dom.URL{'about:blank'}]
+	request.origin = RequestOrigin{
+		is_client: false
+		origin: dom.Origin{ value: 'opaque' }
+	}
+	request.destination = .image
+	fetch(request, FetchAlgorithms.create(FetchAlgorithmsInput{}), FetchHost{
+		perform: preload_tracking_host
+	}, .no)
+	assert request.header_list.get('Accept')? == 'image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5'
+}
+
 fn test_fetch_controller_matches_upstream_state_transitions_and_cleanup() {
 	mut request := Request.create()
 	mut params := FetchParams.create(request, FetchTimingInfo.create())

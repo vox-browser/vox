@@ -1365,7 +1365,8 @@ pub fn fetch(request &Request, algorithms &FetchAlgorithms, host &FetchHost, cre
 			value = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
 		} else if destination := mutable_request.destination {
 			value = match destination {
-				.image { 'image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5' }
+				// AD-HOC: Advertise the alpha-preserving formats supported by the image decoders.
+				.image { 'image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5' }
 				.json { 'application/json,*/*;q=0.5' }
 				.style { 'text/css,*/*;q=0.1' }
 				else { value }
