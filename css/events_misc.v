@@ -243,6 +243,7 @@ pub mut:
 
 pub enum DescriptorID {
 	unknown
+	custom
 	margin
 	margin_top
 	margin_right
@@ -254,11 +255,45 @@ pub enum DescriptorID {
 	bleed
 }
 
+pub struct DescriptorNameAndID {
+pub:
+	name_ string
+	id_   DescriptorID
+}
+
+pub fn DescriptorNameAndID.from_name(at_rule_id AtRuleID, name string) ?DescriptorNameAndID {
+	if is_a_custom_property_name_string(name) {
+		return DescriptorNameAndID{
+			name_: name
+			id_: .custom
+		}
+	}
+
+	descriptor_id := descriptor_id_from_string(at_rule_id, name) or { return none }
+	return DescriptorNameAndID.from_id(descriptor_id)
+}
+
+pub fn DescriptorNameAndID.from_id(descriptor_id DescriptorID) DescriptorNameAndID {
+	assert descriptor_id != .custom
+	return DescriptorNameAndID{
+		name_: descriptor_id_to_string(descriptor_id)
+		id_: descriptor_id
+	}
+}
+
+pub fn (descriptor DescriptorNameAndID) id() DescriptorID {
+	return descriptor.id_
+}
+
+pub fn (descriptor DescriptorNameAndID) name() string {
+	return descriptor.name_
+}
+
 pub struct Descriptor {
 pub mut:
-	descriptor_id    DescriptorID
-	value            &dom.StyleValue = unsafe { nil }
-	serialized_value string
+	descriptor_name_and_id DescriptorNameAndID
+	value                  &dom.StyleValue = unsafe { nil }
+	serialized_value       string
 }
 
 // --- PageSelector ---

@@ -2134,7 +2134,7 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 // rule applies, so `@page { margin: 1cm }` records four margin descriptors and a
 // later `margin-top` replaces only that one.
 fn append_page_descriptor(mut descriptors []Descriptor, parsed ParsedPageDescriptor) {
-	if !is_descriptor_shorthand(.page, parsed.descriptor.descriptor_id) {
+	if !is_descriptor_shorthand(.page, parsed.descriptor.descriptor_name_and_id.id()) {
 		append_descriptor(mut descriptors, parsed.descriptor)
 		return
 	}
@@ -2142,7 +2142,7 @@ fn append_page_descriptor(mut descriptors []Descriptor, parsed ParsedPageDescrip
 		longhand := parse_css_descriptor_value_for_cssom(.page, expanded.descriptor_id,
 			expanded.serialized_value) or { continue }
 		append_descriptor(mut descriptors, Descriptor{
-			descriptor_id: expanded.descriptor_id
+			descriptor_name_and_id: DescriptorNameAndID.from_id(expanded.descriptor_id)
 			value: longhand.value
 			serialized_value: longhand.serialized
 		})
@@ -2151,7 +2151,7 @@ fn append_page_descriptor(mut descriptors []Descriptor, parsed ParsedPageDescrip
 
 fn append_descriptor(mut descriptors []Descriptor, descriptor Descriptor) {
 	for index, existing in descriptors {
-		if existing.descriptor_id == descriptor.descriptor_id {
+		if existing.descriptor_name_and_id == descriptor.descriptor_name_and_id {
 			descriptors.delete(index)
 			break
 		}
@@ -2673,7 +2673,7 @@ fn convert_to_page_descriptor_for_rule_parsing(declaration Declaration) ?ParsedP
 	}
 	return ParsedPageDescriptor{
 		descriptor: Descriptor{
-			descriptor_id: descriptor_id
+			descriptor_name_and_id: DescriptorNameAndID.from_id(descriptor_id)
 			value: value.value
 			serialized_value: value.serialized
 		}

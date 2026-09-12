@@ -13041,7 +13041,7 @@ fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descri
 				.marks {
 					parser.parse_page_marks_descriptor_value(mut tokens)
 				}
-				.unknown {
+				.unknown, .custom {
 					?StyleValue(none)
 				}
 			}
