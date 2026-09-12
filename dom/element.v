@@ -2257,6 +2257,10 @@ pub fn (mut e Element) clear_pseudo_element_nodes() {
 	}
 }
 
+pub fn (mut e Element) clear_pseudo_element_layout_nodes() {
+	e.clear_pseudo_element_nodes()
+}
+
 pub fn (mut e Element) set_pseudo_element_node(pseudo_element int, node ?&LayoutNodeWithStyle_) {
 	mut pe := e.ensure_pseudo_element(pseudo_element)
 	pe.set_layout_node(node)

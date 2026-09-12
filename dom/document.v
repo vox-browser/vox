@@ -6125,6 +6125,19 @@ pub fn (mut d Document) tear_down_layout_tree() {
 	d.needs_full_layout_tree_update = true
 }
 
+pub fn (mut d Document) clear_layout_and_paintable_nodes_for_inactive_document() {
+	root := unsafe { &Node(&d) }
+	root.for_each_in_inclusive_subtree(fn (node &Node) TraversalDecision {
+		mut mutable_node := unsafe { &Node(node) }
+		mutable_node.clear_layout_node_and_paintable()
+		if element := node.as_element() {
+			mut mutable_element := unsafe { &Element(element) }
+			mutable_element.clear_pseudo_element_layout_nodes()
+		}
+		return .@continue
+	})
+}
+
 // --- Node creation ---
 
 // https://dom.spec.whatwg.org/#dom-document-createelement
@@ -7844,6 +7857,9 @@ pub fn (mut d Document) destroy() {
 	// 6. Run any unloading document cleanup steps.
 	d.run_unloading_cleanup_steps()
 
+	d.clear_layout_and_paintable_nodes_for_inactive_document()
+	d.tear_down_layout_tree()
+
 	// 7. Remove any tasks whose document is document from any task queue.
 	d.remove_tasks_for_document()
 
@@ -7867,7 +7883,6 @@ pub fn (mut d Document) destroy() {
 		mutable_navigable.set_active_document(none)
 	}
 
-	d.tear_down_layout_tree()
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#abort-a-document
@@ -10404,6 +10419,7 @@ pub fn (mut d Document) set_source(source string) {
 
 // --- did_stop_being_active_document_in_navigable ---
 pub fn (mut d Document) did_stop_being_active_document_in_navigable() {
+	d.clear_layout_and_paintable_nodes_for_inactive_document()
 	d.tear_down_layout_tree()
 	d.schedule_html_parser_end_check()
 	if !d.has_fired_document_became_inactive {

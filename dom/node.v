@@ -2637,6 +2637,11 @@ pub fn (mut n Node) detach_layout_node() {
 	}
 }
 
+pub fn (mut n Node) clear_layout_node_and_paintable() {
+	n.detach_layout_node()
+	n.paintable_ = unsafe { nil }
+}
+
 pub fn (n &Node) get_parent(event &Event) ?&EventTarget {
 	_ = event
 	// A node's get the parent algorithm, given an event, returns the node's assigned slot, if node is assigned;

@@ -118,3 +118,39 @@ fn test_document_view_transition_skips_hidden_and_replaced_transitions() {
 	assert second.phase() == .pending_capture
 	assert document.get_active_view_transition()? == second
 }
+
+fn test_inactive_document_clears_stale_layout_and_paintable_nodes() {
+	for should_destroy in [false, true] {
+		mut document := Document.create(url_about_blank())
+		mut root := document.create_element_ns(namespace_html_uri, 'html') or { panic(err) }
+		mut child := document.create_element_ns(namespace_html_uri, 'div') or { panic(err) }
+		mut document_node := unsafe { &Node(document) }
+		document_node.append_child(root.as_node()) or { panic(err) }
+		mut root_node := root.as_node()
+		root_node.append_child(child.as_node()) or { panic(err) }
+
+		document_node.set_layout_node(&LayoutNode{})
+		document_node.set_paintable(&Paintable{})
+		root_node.set_layout_node(&LayoutNode{})
+		root_node.set_paintable(&Paintable{})
+		mut child_node := child.as_node()
+		child_node.set_layout_node(&LayoutNode{})
+		child_node.set_paintable(&Paintable{})
+		child.set_pseudo_element_node(int(PseudoElement.before), &LayoutNodeWithStyle_{})
+
+		if should_destroy {
+			document.destroy()
+		} else {
+			document.did_stop_being_active_document_in_navigable()
+		}
+
+		assert document_node.layout_node() == none
+		assert document_node.paintable() == none
+		assert root_node.layout_node() == none
+		assert root_node.paintable() == none
+		assert child_node.layout_node() == none
+		assert child_node.paintable() == none
+		assert child.get_pseudo_element_node(int(PseudoElement.before)) == none
+		assert document.needs_full_layout_tree_update()
+	}
+}
