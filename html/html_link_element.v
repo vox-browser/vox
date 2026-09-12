@@ -111,6 +111,7 @@ mut:
 	fetch_priority_               string
 	cryptographic_nonce_          string
 	document_load_event_delaying_ bool
+	document_load_event_delayer_  ?dom.DocumentLoadEventDelayer
 	event_counts_                 map[string]int
 }
 
@@ -164,13 +165,33 @@ fn link_model_load_favicon(target voidptr) bool {
 	return decode_favicon(data, url, link_dom_element(element).document()) or { false }
 }
 
+fn html_link_element_adopted_from_callback(target voidptr, old_document &dom.Document) {
+	mut model := unsafe { &HTMLLinkElementModel(target) }
+	model.adopted_from(old_document)
+}
+
+fn attach_html_link_element_model(element &dom.HTMLLinkElement, model &HTMLLinkElementModel) {
+	mut mutable_model := unsafe { &HTMLLinkElementModel(model) }
+	mutable_model.element_ = element
+	mut mutable_element := unsafe { &dom.HTMLLinkElement(element) }
+	mutable_element.link_element_model_ = voidptr(model)
+	mutable_element.link_has_loaded_icon_callback_ = link_model_has_loaded_icon
+	mutable_element.link_load_favicon_callback_ = link_model_load_favicon
+	mut node := link_dom_element(element).as_node()
+	node.set_adopted_from_hook(dom.NodeAdoptedFromHook{
+		target: voidptr(model)
+		callback: html_link_element_adopted_from_callback
+	})
+}
+
 pub fn html_link_element_model_for_dom_element(element &dom.HTMLLinkElement) &HTMLLinkElementModel {
 	if element.link_element_model_ != unsafe { nil } {
-		return unsafe { &HTMLLinkElementModel(element.link_element_model_) }
+		model := unsafe { &HTMLLinkElementModel(element.link_element_model_) }
+		attach_html_link_element_model(element, model)
+		return model
 	}
 	dom_element := link_dom_element(element)
 	mut model := HTMLLinkElementModel.create(dom_element.document().base_url())
-	model.element_ = element
 	model.rel_ = dom_element.get_attribute_value('rel')
 	model.href_ = dom_element.get_attribute_value('href')
 	model.type_ = dom_element.get_attribute_value('type')
@@ -183,10 +204,7 @@ pub fn html_link_element_model_for_dom_element(element &dom.HTMLLinkElement) &HT
 	model.referrer_policy_ = ascii_lowercase_string(dom_element.get_attribute_value('referrerpolicy'))
 	model.fetch_priority_ = ascii_lowercase_string(dom_element.get_attribute_value('fetchpriority'))
 	model.connected_ = dom_element.as_node().is_browsing_context_connected()
-	mut mutable_element := unsafe { &dom.HTMLLinkElement(element) }
-	mutable_element.link_element_model_ = voidptr(model)
-	mutable_element.link_has_loaded_icon_callback_ = link_model_has_loaded_icon
-	mutable_element.link_load_favicon_callback_ = link_model_load_favicon
+	attach_html_link_element_model(element, model)
 	return model
 }
 
@@ -359,10 +377,10 @@ pub fn (mut link HTMLLinkElementModel) stylesheet_linked_resource_fetch_setup_st
 	request.destination = 'style'
 	request.kind = .stylesheet
 	link.stylesheet_loading_ = true
-	link.document_load_event_delaying_ = true
 	if element := link.element_ {
 		mut dom_element := link_dom_element(element)
 		mut document := unsafe { &dom.Document(dom_element.document()) }
+		link.begin_delaying_document_load_event(document)
 		if link.contributes_a_script_blocking_style_sheet() && !document.script_blocking_style_sheet_set.contains(dom_element) {
 			document.script_blocking_style_sheet_set << dom_element
 		}
@@ -370,8 +388,43 @@ pub fn (mut link HTMLLinkElementModel) stylesheet_linked_resource_fetch_setup_st
 			dom_element.block_rendering()
 		}
 		request.render_blocking = document.is_render_blocking_element(dom_element)
+	} else {
+		link.document_load_event_delaying_ = true
 	}
 	return true
+}
+
+fn (mut link HTMLLinkElementModel) begin_delaying_document_load_event(document &dom.Document) {
+	if mut delayer := link.document_load_event_delayer_ {
+		delayer.finish()
+	}
+	mut mutable_document := unsafe { &dom.Document(document) }
+	link.document_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut mutable_document)
+	link.document_load_event_delaying_ = true
+}
+
+fn (mut link HTMLLinkElementModel) stop_delaying_document_load_event() {
+	if mut delayer := link.document_load_event_delayer_ {
+		delayer.finish()
+	}
+	link.document_load_event_delayer_ = none
+	link.document_load_event_delaying_ = false
+}
+
+pub fn (mut link HTMLLinkElementModel) adopted_from(_ &dom.Document) {
+	element := link.element_ or { return }
+	new_document := link_dom_element(element).document()
+	link.base_url_ = new_document.base_url()
+	mut was_delaying := false
+	if mut delayer := link.document_load_event_delayer_ {
+		delayer.finish()
+		was_delaying = true
+	}
+	if was_delaying {
+		mut mutable_new_document := unsafe { &dom.Document(new_document) }
+		link.document_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut mutable_new_document)
+		link.document_load_event_delaying_ = true
+	}
 }
 
 pub fn (mut link HTMLLinkElementModel) default_fetch_and_process_linked_resource() {
@@ -538,7 +591,7 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 }
 
 pub fn (mut link HTMLLinkElementModel) finished_loading_critical_style_subresources(_ bool) {
-	link.document_load_event_delaying_ = false
+	link.stop_delaying_document_load_event()
 }
 
 pub fn (link &HTMLLinkElementModel) sheet() ?string {
@@ -572,6 +625,7 @@ pub fn (link &HTMLLinkElementModel) is_implicitly_potentially_render_blocking() 
 pub fn (mut link HTMLLinkElementModel) removed() {
 	link.connected_ = false
 	link.stylesheet_loading_ = false
+	link.stop_delaying_document_load_event()
 }
 
 pub fn html_link_element_inserted(element &dom.HTMLLinkElement) {
