@@ -130,6 +130,20 @@ fn test_table64_address_values_and_binding_conversions() {
 	}
 }
 
+fn test_table_keeps_the_cache_that_owns_its_address() {
+	table_ := construct_table_for_realm('table-owner-realm', TableDescriptor{
+		element: .externref
+		initial: 1
+	}, none)!
+	owner_cache := get_cache_for_realm('table-owner-realm')
+	assert voidptr(table_.cache()) == voidptr(owner_cache)
+	assert voidptr(table_.cache()) != voidptr(get_cache_for_realm('table-other-realm'))
+	assert voidptr(owner_cache.get_table_instance(table_.address()) or {
+		panic('table was not registered in its owner cache')
+	}) == voidptr(table_)
+	assert owner_cache.table_instances().len == 1
+}
+
 fn test_cache_identity_conversions_and_constructor_entry_points() {
 	mut cache := WebAssemblyCache.create()
 	function := ExportedWasmFunction.create('answer', 17)

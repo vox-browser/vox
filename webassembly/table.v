@@ -39,11 +39,16 @@ pub:
 	element       TableKind
 	maximum       ?u64
 	address_type_ AddressType
+	cache_        &WebAssemblyCache
 mut:
 	elements []webidl.Value
 }
 
 pub fn Table.construct(descriptor TableDescriptor, initial ?webidl.Value) !&Table {
+	return table_construct_with_cache(get_cache(), descriptor, initial)
+}
+
+fn table_construct_with_cache(cache &WebAssemblyCache, descriptor TableDescriptor, initial ?webidl.Value) !&Table {
 	address_type := descriptor.address or { AddressType.i32 }
 	if address_type == .i32 && descriptor.initial > u64(max_u32) {
 		return error('TypeError: Table size is too large')
@@ -65,15 +70,24 @@ pub fn Table.construct(descriptor TableDescriptor, initial ?webidl.Value) !&Tabl
 		webidl.null_value()
 	}
 	value := validate_table_value(descriptor.element, initial or { default_value })!
-	return &Table{
+	table_ := &Table{
 		element: descriptor.element
 		maximum: descriptor.maximum
 		address_type_: address_type
+		cache_: cache
 		elements: []webidl.Value{len: int(descriptor.initial), init: value}
 	}
+	unsafe {
+		cache.add_table_instance(table_.address(), table_)
+	}
+	return table_
 }
 
 pub fn Table.create(element_type ValueType, address_type AddressType, initial u64, maximum ?u64, reference webidl.Value) !&Table {
+	return table_create_with_cache(get_cache(), element_type, address_type, initial, maximum, reference)
+}
+
+fn table_create_with_cache(cache &WebAssemblyCache, element_type ValueType, address_type AddressType, initial u64, maximum ?u64, reference webidl.Value) !&Table {
 	element := match element_type {
 		.externref { TableKind.externref }
 		.anyfunc { TableKind.anyfunc }
@@ -81,7 +95,7 @@ pub fn Table.create(element_type ValueType, address_type AddressType, initial u6
 			return error('TypeError: Table element type must be a reference type')
 		}
 	}
-	return Table.construct(TableDescriptor{
+	return table_construct_with_cache(cache, TableDescriptor{
 		element: element
 		initial: initial
 		maximum: maximum
@@ -95,6 +109,10 @@ pub fn Table.construct_impl(descriptor TableDescriptor, initial ?webidl.Value) !
 
 pub fn (table &Table) address() u64 {
 	return u64(voidptr(table))
+}
+
+pub fn (table &Table) cache() &WebAssemblyCache {
+	return table.cache_
 }
 
 fn validate_table_value(kind TableKind, value webidl.Value) !webidl.Value {
@@ -187,6 +205,10 @@ pub fn table_limit_to_js_value(value u64, address_type AddressType) webidl.Value
 
 pub fn construct_table(descriptor TableDescriptor, value ?webidl.Value) !&Table {
 	return Table.construct(descriptor, value)
+}
+
+pub fn construct_table_for_realm(realm string, descriptor TableDescriptor, value ?webidl.Value) !&Table {
+	return table_construct_with_cache(get_cache_for_realm(realm), descriptor, value)
 }
 
 pub fn table(table_ &Table) &Table {

@@ -54,6 +54,7 @@ mut:
 	inverse_extern_     map[string]u64
 	global_instances_   map[u64]&Global
 	memory_instances_   map[u64]&Memory
+	table_instances_    map[u64]&Table
 	compiled_modules_   []&Module
 	imported_objects_   []webidl.Value
 	abstract_machine_   AbstractMachine
@@ -66,6 +67,7 @@ pub fn WebAssemblyCache.create() &WebAssemblyCache {
 		inverse_extern_: map[string]u64{}
 		global_instances_: map[u64]&Global{}
 		memory_instances_: map[u64]&Memory{}
+		table_instances_: map[u64]&Table{}
 	}
 	webassembly_live_caches_ << cache
 	return cache
@@ -134,6 +136,10 @@ pub fn (mut cache WebAssemblyCache) add_memory_instance(address u64, memory &Mem
 	cache.memory_instances_[address] = memory
 }
 
+pub fn (mut cache WebAssemblyCache) add_table_instance(address u64, table &Table) {
+	cache.table_instances_[address] = table
+}
+
 pub fn (cache &WebAssemblyCache) get_function_instance(address u64) ?&ExportedWasmFunction {
 	return cache.function_instances_[address] or { return none }
 }
@@ -148,6 +154,10 @@ pub fn (cache &WebAssemblyCache) get_global_instance(address u64) ?&Global {
 
 pub fn (cache &WebAssemblyCache) get_memory_instance(address u64) ?&Memory {
 	return cache.memory_instances_[address] or { return none }
+}
+
+pub fn (cache &WebAssemblyCache) get_table_instance(address u64) ?&Table {
+	return cache.table_instances_[address] or { return none }
 }
 
 pub fn (cache &WebAssemblyCache) function_instances() map[u64]&ExportedWasmFunction {
@@ -168,6 +178,10 @@ pub fn (cache &WebAssemblyCache) global_instances() map[u64]&Global {
 
 pub fn (cache &WebAssemblyCache) memory_instances() map[u64]&Memory {
 	return cache.memory_instances_.clone()
+}
+
+pub fn (cache &WebAssemblyCache) table_instances() map[u64]&Table {
+	return cache.table_instances_.clone()
 }
 
 pub fn (cache &WebAssemblyCache) imported_objects() []webidl.Value {
