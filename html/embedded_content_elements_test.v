@@ -67,6 +67,21 @@ fn test_navigable_container_origin_navigation_and_destruction() {
 	assert container.content_navigable() == none
 }
 
+fn test_iframe_src_change_does_not_replace_incomplete_document_history() {
+	mut container := NavigableContainerModel.create(dom.URL{ value: 'https://example.test/' }, dom.Origin{ value: 'https://example.test' })
+	mut navigable := container.create_new_child_navigable()
+	assert !navigable.active_document.completely_loaded
+	container.navigate_an_iframe_or_frame(dom.URL{ value: 'https://example.test/initial' }, .origin, none, .yes)!
+	assert navigable.last_navigation_replaced_current_entry
+	assert navigable.history.len == 1
+	container.navigate_an_iframe_or_frame(dom.URL{ value: 'https://example.test/changed' }, .origin, none, .no)!
+	assert !navigable.last_navigation_replaced_current_entry
+	assert navigable.history.map(it.serialize()) == [
+		'https://example.test/initial',
+		'https://example.test/changed',
+	]
+}
+
 fn test_dom_load_event_delay_uses_navigable_container_algorithm() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://parent.test/' })
 	document.set_origin(dom.Origin{ value: 'https://parent.test' })

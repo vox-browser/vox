@@ -211,7 +211,10 @@ pub fn (mut container NavigableContainerModel) navigate_an_iframe_or_frame(url d
 		return error('InvalidStateError: container has no content navigable')
 	}
 
-	replace := !navigable.active_document.completely_loaded
+	// Only the initial insertion replaces an incomplete initial document.
+	// Attribute-driven navigations may run before the previous document fires
+	// load, but must still create a new history entry.
+	replace := initial_insertion == .yes && !navigable.active_document.completely_loaded
 	request := EmbeddedNavigationRequest{
 		url: url
 		referrer_policy: referrer_policy
