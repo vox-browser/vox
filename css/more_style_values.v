@@ -2134,21 +2134,52 @@ pub fn (style_value RandomValueSharingStyleValue) properties_equal(other RandomV
 // --- RectStyleValue ---
 pub struct RectStyleValue {
 pub mut:
-	rect_ EdgeRect
+	top_    StyleValue
+	right_  StyleValue
+	bottom_ StyleValue
+	left_   StyleValue
 }
 
-pub fn RectStyleValue.create(rect EdgeRect) RectStyleValue {
+pub fn RectStyleValue.create(top StyleValue, right StyleValue, bottom StyleValue, left StyleValue) RectStyleValue {
 	return RectStyleValue{
-		rect_: rect
+		top_: top
+		right_: right
+		bottom_: bottom
+		left_: left
 	}
 }
 
+pub fn (style_value RectStyleValue) top() StyleValue {
+	return style_value.top_
+}
+
+pub fn (style_value RectStyleValue) right() StyleValue {
+	return style_value.right_
+}
+
+pub fn (style_value RectStyleValue) bottom() StyleValue {
+	return style_value.bottom_
+}
+
+pub fn (style_value RectStyleValue) left() StyleValue {
+	return style_value.left_
+}
+
 pub fn (style_value RectStyleValue) rect() EdgeRect {
-	return style_value.rect_
+	return EdgeRect{
+		top_edge: LengthOrAuto.from_style_value_logic(style_value.top_, none)
+		right_edge: LengthOrAuto.from_style_value_logic(style_value.right_, none)
+		bottom_edge: LengthOrAuto.from_style_value_logic(style_value.bottom_, none)
+		left_edge: LengthOrAuto.from_style_value_logic(style_value.left_, none)
+	}
 }
 
 pub fn (style_value RectStyleValue) serialize(mode SerializationMode) string {
-	return 'rect(${style_value.rect_.top_edge.serialize(mode)}, ${style_value.rect_.right_edge.serialize(mode)}, ${style_value.rect_.bottom_edge.serialize(mode)}, ${style_value.rect_.left_edge.serialize(mode)})'
+	return 'rect(${style_value.top_.serialize(mode)}, ${style_value.right_.serialize(mode)}, ${style_value.bottom_.serialize(mode)}, ${style_value.left_.serialize(mode)})'
+}
+
+pub fn (style_value RectStyleValue) absolutized(context ComputationContext) StyleValue {
+	return StyleValue(RectStyleValue.create(style_value.top_.absolutized(context), style_value.right_.absolutized(context), style_value.bottom_.absolutized(context), style_value.left_.absolutized(context)))
 }
 
 pub fn (style_value RectStyleValue) to_string() string {
@@ -2156,7 +2187,8 @@ pub fn (style_value RectStyleValue) to_string() string {
 }
 
 pub fn (style_value RectStyleValue) properties_equal(other RectStyleValue) bool {
-	return style_value.rect_ == other.rect_
+	return style_value.top_ == other.top_ && style_value.right_ == other.right_
+		&& style_value.bottom_ == other.bottom_ && style_value.left_ == other.left_
 }
 
 // --- RepeatStyleStyleValue ---

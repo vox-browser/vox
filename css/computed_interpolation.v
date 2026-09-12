@@ -6126,15 +6126,6 @@ fn interpolate_raw_i64(from i64, to i64, delta f64, accepted_type_range ?Accepte
 	return i64(clamp_f64(result, min, max))
 }
 
-fn interpolation_length_or_auto(from LengthOrAuto, to LengthOrAuto, delta f64, calculation_context InterpolationCalculationContext) LengthOrAuto {
-	if from.is_auto() && to.is_auto() {
-		return LengthOrAuto.make_auto()
-	}
-	from_length := from.length() or { return LengthOrAuto.make_auto() }
-	to_length := to.length() or { return LengthOrAuto.make_auto() }
-	return LengthOrAuto.new(Length.new(interpolate_raw(from_length.raw_value(), to_length.raw_value(), delta, interpolation_accepted_type_range(calculation_context, .length)), from_length.unit()))
-}
-
 fn normalized_superellipse_half_corner(parameter f64) f64 {
 	if math.is_inf(parameter, -1) {
 		return 0
@@ -6556,17 +6547,11 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		RectStyleValue {
 			if to is RectStyleValue {
-				from_rect := from.rect()
-				to_rect := to.rect()
-				if from_rect.top_edge.is_auto() != to_rect.top_edge.is_auto() || from_rect.right_edge.is_auto() != to_rect.right_edge.is_auto() || from_rect.bottom_edge.is_auto() != to_rect.bottom_edge.is_auto() || from_rect.left_edge.is_auto() != to_rect.left_edge.is_auto() {
-					return none
-				}
-				StyleValue(RectStyleValue.create(EdgeRect{
-					top_edge: interpolation_length_or_auto(from_rect.top_edge, to_rect.top_edge, delta, calculation_context)
-					right_edge: interpolation_length_or_auto(from_rect.right_edge, to_rect.right_edge, delta, calculation_context)
-					bottom_edge: interpolation_length_or_auto(from_rect.bottom_edge, to_rect.bottom_edge, delta, calculation_context)
-					left_edge: interpolation_length_or_auto(from_rect.left_edge, to_rect.left_edge, delta, calculation_context)
-				}))
+				top := interpolate_style_value_impl(calculation_context, from.top(), to.top(), delta, allow_discrete) or { return none }
+				right := interpolate_style_value_impl(calculation_context, from.right(), to.right(), delta, allow_discrete) or { return none }
+				bottom := interpolate_style_value_impl(calculation_context, from.bottom(), to.bottom(), delta, allow_discrete) or { return none }
+				left := interpolate_style_value_impl(calculation_context, from.left(), to.left(), delta, allow_discrete) or { return none }
+				StyleValue(RectStyleValue.create(top, right, bottom, left))
 			} else {
 				none
 			}

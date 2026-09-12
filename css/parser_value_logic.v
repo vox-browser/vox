@@ -7450,7 +7450,7 @@ fn (mut parser Parser) parse_rect_value(mut tokens ComponentValueStream) ?StyleV
 	}
 
 	mut argument_tokens := ComponentValueStream.new(component_value.function().value)
-	mut params := []LengthOrAuto{}
+	mut params := []StyleValue{}
 	// Unknown -> 0, RequiresCommas -> 1, RequiresNoCommas -> 2
 	mut comma_requirement := 0
 	for side in 0 .. 4 {
@@ -7459,11 +7459,10 @@ fn (mut parser Parser) parse_rect_value(mut tokens ComponentValueStream) ?StyleV
 		// Each side is either 'auto' or a <length>. Negative lengths are permitted.
 		if next.is(.ident) && equals_ignoring_ascii_case(next.token().ident(), 'auto') {
 			argument_tokens.consume()
-			params << LengthOrAuto.make_auto()
+			params << StyleValue(KeywordStyleValue.create(.auto))
 		} else {
-			// FIXME: The C++ implementation also rejects calculated lengths in rect().
-			length := parser.parse_length(mut argument_tokens) or { return none }
-			params << LengthOrAuto.new(length)
+			length := parser.parse_length_value(mut argument_tokens) or { return none }
+			params << length
 		}
 		argument_tokens.consume_whitespace()
 
@@ -7493,12 +7492,7 @@ fn (mut parser Parser) parse_rect_value(mut tokens ComponentValueStream) ?StyleV
 	}
 
 	tokens = transaction
-	return StyleValue(RectStyleValue.create(EdgeRect{
-		top_edge: params[0]
-		right_edge: params[1]
-		bottom_edge: params[2]
-		left_edge: params[3]
-	}))
+	return StyleValue(RectStyleValue.create(params[0], params[1], params[2], params[3]))
 }
 
 // https://drafts.csswg.org/css-lists-3/#propdef-list-style-type
