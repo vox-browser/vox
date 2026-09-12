@@ -17,6 +17,8 @@ pub enum ValueType {
 	binary
 	array
 	object
+	blob
+	file
 }
 
 pub struct Value {
@@ -28,6 +30,10 @@ pub mut:
 	bytes  []u8
 	items  []Value
 	fields map[string]Value
+	blob_size     u64
+	mime_type     string
+	file_name     string
+	last_modified f64
 }
 
 pub fn undefined_value() Value {
@@ -91,6 +97,24 @@ pub fn object_value(value map[string]Value) Value {
 	}
 }
 
+pub fn blob_value(size u64, mime_type string) Value {
+	return Value{
+		kind: .blob
+		blob_size: size
+		mime_type: mime_type
+	}
+}
+
+pub fn file_value(name string, size u64, mime_type string, last_modified f64) Value {
+	return Value{
+		kind: .file
+		blob_size: size
+		mime_type: mime_type
+		file_name: name
+		last_modified: last_modified
+	}
+}
+
 pub fn (value Value) clone() Value {
 	return Value{
 		kind: value.kind
@@ -100,6 +124,10 @@ pub fn (value Value) clone() Value {
 		bytes: value.bytes.clone()
 		items: clone_values(value.items)
 		fields: clone_fields(value.fields)
+		blob_size: value.blob_size
+		mime_type: value.mime_type
+		file_name: value.file_name
+		last_modified: value.last_modified
 	}
 }
 
@@ -205,6 +233,10 @@ fn evaluate_string_key_path(value Value, path string) ?Value {
 		}
 		if component == 'length' && current.kind == .array {
 			current = number_value(f64(current.items.len))
+			continue
+		}
+		if property := key_path_value_for_blob_or_file(current, component) {
+			current = property
 			continue
 		}
 		if current.kind != .object || component !in current.fields {

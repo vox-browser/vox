@@ -20,6 +20,7 @@ pub enum RequestResultKind {
 	count
 	records
 	cursor
+	database
 }
 
 pub type IDBEventHandler = fn ()
@@ -37,6 +38,7 @@ pub mut:
 	count         u64
 	records       []IDBRecord
 	cursor        &IDBCursor = unsafe { nil }
+	database      &IDBDatabase = unsafe { nil }
 	error_message string
 	events        []string
 	processed     bool

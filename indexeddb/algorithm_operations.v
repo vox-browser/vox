@@ -29,6 +29,20 @@ pub fn convert_a_value_to_a_key(value Value) Key {
 	return value_to_key(value)
 }
 
+pub fn strictly_split_key_path(key_path string) []string {
+	mut identifiers := []string{}
+	mut start := 0
+	for index, byte in key_path.bytes() {
+		if byte != `.` {
+			continue
+		}
+		identifiers << key_path[start..index]
+		start = index + 1
+	}
+	identifiers << key_path[start..]
+	return identifiers
+}
+
 pub fn close_a_database_connection(mut connection IDBDatabase, forced bool) {
 	connection.close()
 	if forced {
@@ -63,6 +77,28 @@ pub fn abort_a_transaction(mut transaction IDBTransaction, reason string) ! {
 
 pub fn convert_a_key_to_a_value(key Key) !Value {
 	return key_to_value(key)
+}
+
+pub struct StoredRecordSerialization {
+pub:
+	value     ?Value
+	corrupted bool
+}
+
+pub fn StoredRecordSerialization.from_value(value Value) StoredRecordSerialization {
+	return StoredRecordSerialization{
+		value: value.clone()
+	}
+}
+
+pub fn deserialize_a_stored_record(serialized StoredRecordSerialization) !Value {
+	if serialized.corrupted {
+		return error('NotReadableError: Stored value could not be read')
+	}
+	value := serialized.value or {
+		return error('NotReadableError: Stored value could not be read')
+	}
+	return value.clone()
 }
 
 pub fn create_a_sorted_name_list(names []string) []string {
@@ -147,6 +183,67 @@ pub fn convert_a_value_to_a_key_range(value Value) !IDBKeyRange {
 	key := value_to_key(value)
 	ensure_valid_key(key)!
 	return IDBKeyRange.only(key)
+}
+
+pub fn convert_a_key_path_to_a_value(key_path KeyPath) Value {
+	return match key_path {
+		string { string_value(key_path) }
+		[]string { array_value(key_path.map(string_value(it))) }
+	}
+}
+
+pub fn set_idb_request_result(mut request IDBRequest, database &IDBDatabase) {
+	request.database = database
+	request.succeed(.database)
+}
+
+pub fn resolve_database_info_list_promise(databases []&DatabaseData) []IDBDatabaseInfo {
+	mut result := []IDBDatabaseInfo{}
+	for database in databases {
+		if database.version == 0 {
+			continue
+		}
+		result << IDBDatabaseInfo{
+			name: database.name
+			version: database.version
+		}
+	}
+	return result
+}
+
+pub fn append_idb_record(mut list []IDBRecord, index u32, record IDBRecord) {
+	for list.len < int(index) {
+		list << IDBRecord{}
+	}
+	if int(index) == list.len {
+		list << record
+	} else {
+		list[int(index)] = record
+	}
+}
+
+pub fn idb_cursor_result(cursor ?&IDBCursor) ?&IDBCursor {
+	return cursor
+}
+
+pub fn key_path_value_for_blob_or_file(value Value, identifier string) ?Value {
+	if value.kind in [.blob, .file] {
+		if identifier == 'size' {
+			return number_value(f64(value.blob_size))
+		}
+		if identifier == 'type' {
+			return string_value(value.mime_type)
+		}
+	}
+	if value.kind == .file {
+		if identifier == 'name' {
+			return string_value(value.file_name)
+		}
+		if identifier == 'lastModified' {
+			return number_value(value.last_modified)
+		}
+	}
+	return none
 }
 
 pub fn count_the_records_in_a_range(store &ObjectStoreData, range IDBKeyRange) u64 {

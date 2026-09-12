@@ -13,6 +13,25 @@ pub:
 	upper_open bool
 }
 
+pub struct IDBKeyRangeValue {
+pub:
+	range ?IDBKeyRange
+}
+
+pub fn IDBKeyRangeValue.from_range(range IDBKeyRange) IDBKeyRangeValue {
+	return IDBKeyRangeValue{
+		range: range
+	}
+}
+
+pub fn key_range_from_value(value IDBKeyRangeValue) ?IDBKeyRange {
+	return value.range
+}
+
+pub fn idb_key_range_from_value(value IDBKeyRangeValue) ?IDBKeyRange {
+	return key_range_from_value(value)
+}
+
 pub fn IDBKeyRange.only(value Key) !IDBKeyRange {
 	ensure_valid_key(value)!
 	return IDBKeyRange{

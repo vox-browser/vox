@@ -110,6 +110,7 @@ fn serialize_value_to_json(value Value) !string {
 			}
 			'{${fields.join(',')}}'
 		}
+		.blob, .file { '{}' }
 	}
 }
 
