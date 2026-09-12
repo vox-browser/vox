@@ -106,6 +106,28 @@ fn test_font_face_source_resolves_against_its_stylesheet() {
 	assert resolved == 'file:///tmp/site/fonts/example.ttf'
 }
 
+fn test_font_face_tracks_declared_width_in_registration_key() {
+	mut computer := FontComputer.create()
+	mut set := FontFaceSet.create_for_font_computer(computer)
+	mut face := FontFaceObject.construct_impl('Width Fixture', FontFaceSource.from_string("url('missing-font.ttf')"), FontFaceDescriptors{
+		stretch: 'condensed'
+	})
+	set.add(face)!
+	face.status_ = .loaded
+	face.parsed_font = PlatformTypeface{
+		family_name: 'Width Fixture'
+	}
+	computer.register_font_face(face)
+
+	assert face.declared_width() == 75
+	assert face.parsed_font_face().width()? == 75
+	assert computer.font_faces.keys() == ['width fixture|0-0|0|75']
+
+	face.set_stretch('expanded')!
+	assert face.declared_width() == 125
+	assert computer.font_faces.keys() == ['width fixture|0-0|0|125']
+}
+
 fn test_stylesheet_font_face_rules_register_local_true_type_loaders() {
 	$if macos {
 		sheet := parse_css_stylesheet_with_parser("@font-face { font-family: Fixture; src: url('Arial.ttf') format('truetype'); }", 'file:///System/Library/Fonts/Supplemental/main.css')

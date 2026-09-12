@@ -1881,6 +1881,7 @@ pub mut:
 
 	status_             FontFaceLoadStatus = .unloaded
 	font_status_promise &webidl.Promise = unsafe { nil }
+	cached_width_       int = 100
 	urls                []ParsedFontFaceSource
 	binary_data         []u8
 	parsed_font         ?PlatformTypeface
@@ -1910,7 +1911,8 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 	}
 	font_face.style_ = font_face_try_parse_descriptor(mut font_face, .font_style, descriptors.style)
 	font_face.weight_ = font_face_try_parse_descriptor(mut font_face, .font_weight, descriptors.weight)
-	font_face.stretch_ = font_face_try_parse_descriptor(mut font_face, .font_width, descriptors.stretch)
+	stretch := font_face_try_parse_descriptor(mut font_face, .font_width, descriptors.stretch)
+	font_face.set_stretch_impl(stretch)
 	font_face.unicode_range_ = font_face_try_parse_descriptor(mut font_face, .unicode_range, descriptors.unicode_range)
 	font_face.feature_settings_ = font_face_try_parse_descriptor(mut font_face, .font_feature_settings, descriptors.feature_settings)
 	font_face.variation_settings_ = font_face_try_parse_descriptor(mut font_face, .font_variation_settings, descriptors.variation_settings)
@@ -2025,7 +2027,7 @@ pub fn (face &FontFaceObject) parsed_font_face() ParsedFontFace {
 		// FIXME: Actually parse this as we're supposed to.
 		weight_: parse_font_face_object_numeric_weight(face.weight_)
 		slope_: 0 // FIXME: slope
-		width_: 100 // FIXME: width
+		width_: face.cached_width_
 		sources_: face.urls.clone()
 		unicode_ranges_: face.unicode_ranges_.clone()
 		font_display_: .auto_ // FIXME: font_display
@@ -2087,6 +2089,10 @@ pub fn (face &FontFaceObject) is_css_connected() bool {
 
 pub fn (face &FontFaceObject) should_be_registered_with_font_computer() bool {
 	return face.is_css_connected() || face.status() == .loaded
+}
+
+pub fn (face &FontFaceObject) declared_width() int {
+	return face.cached_width_
 }
 
 fn (face &FontFaceObject) font_computer() ?&FontComputer {
@@ -2217,16 +2223,23 @@ pub fn (mut face FontFaceObject) set_stretch(value string) ! {
 		descriptors.set_font_width(value)!
 		return
 	}
-	face.set_stretch_impl(parsed)
-	if face.should_be_registered_with_font_computer() {
+	was_registered := face.should_be_registered_with_font_computer()
+	if was_registered {
 		if mut computer := face.font_computer() {
-			computer.did_load_font(face.family_)
+			computer.unregister_font_face(face)
+		}
+	}
+	face.set_stretch_impl(parsed)
+	if was_registered {
+		if mut computer := face.font_computer() {
+			computer.register_font_face(face)
 		}
 	}
 }
 
 pub fn (mut face FontFaceObject) set_stretch_impl(value string) {
 	face.stretch_ = value
+	face.cached_width_ = compute_font_width(value)
 }
 
 pub fn (mut face FontFaceObject) set_unicode_range(value string) ! {
@@ -3140,6 +3153,7 @@ pub mut:
 	family_name string
 	weight      FontWeightRange
 	slope       int
+	width       int = 100
 }
 
 pub fn (weight FontWeightRange) id() string {
@@ -3147,7 +3161,7 @@ pub fn (weight FontWeightRange) id() string {
 }
 
 pub fn (key FontFaceKey) id() string {
-	return '${key.family_name.to_lower()}|${key.weight.id()}|${key.slope}'
+	return '${key.family_name.to_lower()}|${key.weight.id()}|${key.slope}|${key.width}'
 }
 
 pub struct OwnFontFaceKey {
@@ -3155,6 +3169,7 @@ pub mut:
 	family_name string
 	weight      FontWeightRange
 	slope       int
+	width       int = 100
 }
 
 pub fn OwnFontFaceKey.from_font_face_key(other FontFaceKey) OwnFontFaceKey {
@@ -3162,6 +3177,7 @@ pub fn OwnFontFaceKey.from_font_face_key(other FontFaceKey) OwnFontFaceKey {
 		family_name: other.family_name
 		weight: other.weight
 		slope: other.slope
+		width: other.width
 	}
 }
 
@@ -3170,6 +3186,7 @@ pub fn (key OwnFontFaceKey) as_font_face_key() FontFaceKey {
 		family_name: key.family_name
 		weight: key.weight
 		slope: key.slope
+		width: key.width
 	}
 }
 
@@ -3187,6 +3204,7 @@ fn font_face_key_for_parsed_font_face(font_face ParsedFontFace) FontFaceKey {
 			}
 		}
 		slope: font_face.slope() or { 0 }
+		width: font_face.width() or { 100 }
 	}
 }
 
@@ -3681,6 +3699,7 @@ fn (mut computer FontComputer) find_font(family string, weight int, slope int, f
 			max: weight
 		}
 		slope: slope
+		width: int(variation.width)
 	}
 	if faces := computer.font_faces[key.id()] {
 		mut result := FontCascadeList.create()
@@ -4842,7 +4861,7 @@ fn sort_matching_font_candidates_by_weight(mut candidates []MatchingFontCandidat
 
 fn font_face_key_from_id(id string) FontFaceKey {
 	parts := id.split('|')
-	if parts.len != 3 {
+	if parts.len != 4 {
 		return FontFaceKey{}
 	}
 	range_parts := parts[1].split_nth('-', 2)
@@ -4859,6 +4878,7 @@ fn font_face_key_from_id(id string) FontFaceKey {
 			max: max
 		}
 		slope: strconv.atoi(parts[2]) or { 0 }
+		width: strconv.atoi(parts[3]) or { 100 }
 	}
 }
 
