@@ -242,3 +242,22 @@ fn test_wrap_key_converts_jwk_data_and_normalizes_import_before_unwrapping() {
 		assert err.msg().starts_with('NotSupportedError:')
 	}
 }
+
+fn test_wrap_key_handles_raw_secret_key_data() {
+	subtle_crypto := SubtleCrypto.create()
+	wrapping_key := subtle_crypto.import_key(.raw, []u8{len: 16, init: 0x11}, 'AES-KW', false, [
+		.wrap_key,
+		.unwrap_key,
+	], '')!
+	secret := []u8{len: 32, init: 0xa5}
+	key_to_wrap := subtle_crypto.import_key(.raw_secret, secret, 'ChaCha20-Poly1305', true, [
+		.encrypt,
+	], '')!
+
+	wrapped := subtle_crypto.wrap_key(.raw_secret, key_to_wrap, wrapping_key, 'AES-KW')!
+	unwrapped := subtle_crypto.unwrap_key(.raw_secret, wrapped, wrapping_key, 'AES-KW', 'ChaCha20-Poly1305', true, [
+		.encrypt,
+	], '')!
+	assert unwrapped.algorithm_name() == 'ChaCha20-Poly1305'
+	assert unwrapped.handle() == secret
+}
