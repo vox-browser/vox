@@ -13023,6 +13023,14 @@ fn (mut parser Parser) parse_descriptor_value_tokens(at_rule_id AtRuleID, descri
 		parser.pop_temporary_value_parsing_context()
 	}
 
+	// Descriptor CSSOM setters parse the complete supplied value. A top-level
+	// semicolon cannot terminate it and leave a suffix to be silently ignored.
+	for token in tokens.values[tokens.index..] {
+		if token.is(.semicolon) {
+			return none
+		}
+	}
+
 	mut maybe_value := ?StyleValue(none)
 	match at_rule_id {
 		.function_rule {

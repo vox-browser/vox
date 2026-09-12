@@ -1215,6 +1215,11 @@ fn parse_font_face_descriptor(id FontFaceDescriptorID, value string) ?string {
 	if trimmed.len == 0 {
 		return none
 	}
+	for component_value in parse_component_values_for_value_logic(trimmed) {
+		if component_value.is(.semicolon) {
+			return none
+		}
+	}
 
 	match id {
 		.font_display {
