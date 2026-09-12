@@ -1,6 +1,7 @@
 module css
 
 import encoding as text_encoding
+import math
 import strconv
 import strings
 
@@ -320,9 +321,19 @@ pub fn (token Token) number() Number {
 	return token.number_value_
 }
 
+fn clamp_to_single_precision(value f64) f64 {
+	if value > f64(math.max_f32) {
+		return f64(math.max_f32)
+	}
+	if value < -f64(math.max_f32) {
+		return -f64(math.max_f32)
+	}
+	return value
+}
+
 pub fn (token Token) number_value() f64 {
 	assert token.type_ == .number
-	return token.number_value_.value()
+	return clamp_to_single_precision(token.number_value_.value())
 }
 
 pub fn (token Token) to_integer() i64 {
@@ -337,7 +348,7 @@ pub fn (token Token) dimension_unit() string {
 
 pub fn (token Token) dimension_value() f64 {
 	assert token.type_ == .dimension
-	return token.number_value_.value()
+	return clamp_to_single_precision(token.number_value_.value())
 }
 
 pub fn (token Token) dimension_value_int() i64 {
@@ -346,7 +357,7 @@ pub fn (token Token) dimension_value_int() i64 {
 
 pub fn (token Token) percentage() f64 {
 	assert token.type_ == .percentage
-	return token.number_value_.value()
+	return clamp_to_single_precision(token.number_value_.value())
 }
 
 pub fn (token Token) mirror_variant() TokenType {
