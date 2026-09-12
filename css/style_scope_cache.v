@@ -1644,8 +1644,8 @@ pub fn style_computer_collect_matching_rules_without_scope_boundary(style_comput
 }
 
 fn matching_rule_less_than(left &MatchingRule, right &MatchingRule) bool {
-	left_specificity := left.selector.specificity()
-	right_specificity := right.selector.specificity()
+	left_specificity := left.specificity
+	right_specificity := right.specificity
 	if left_specificity == right_specificity {
 		if left.scope_proximity != right.scope_proximity {
 			return left.scope_proximity > right.scope_proximity
