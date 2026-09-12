@@ -405,11 +405,96 @@ pub fn PromptHandlerConfiguration.deserialize(value json2.Any) !PromptHandlerCon
 }
 
 pub fn user_prompt_handler() ?map[PromptType]PromptHandlerConfiguration {
-	return webdriver_user_prompt_state.handler
+	return user_prompt_handler_storage().handler
+}
+
+// https://w3c.github.io/webdriver/#dfn-user-prompt-handler
+pub fn user_prompt_handler_storage() UserPromptState {
+	if handler := webdriver_user_prompt_state.handler {
+		return UserPromptState{
+			handler: handler.clone()
+		}
+	}
+	return UserPromptState{}
 }
 
 pub fn set_user_prompt_handler(value map[PromptType]PromptHandlerConfiguration) {
 	webdriver_user_prompt_state.handler = value.clone()
+}
+
+// https://w3c.github.io/webdriver/#dfn-get-the-prompt-handler
+pub fn get_the_prompt_handler(type_ PromptType) PromptHandlerConfiguration {
+	if handlers := webdriver_user_prompt_state.handler {
+		if handler := handlers[type_] {
+			return handler
+		}
+		if handler := handlers[PromptType.default_] {
+			return handler
+		}
+		if type_ == .before_unload {
+			return PromptHandlerConfiguration{
+				handler: .accept
+			}
+		}
+		if handler := handlers[PromptType.fallback_default] {
+			return handler
+		}
+	} else if type_ == .before_unload {
+		return PromptHandlerConfiguration{
+			handler: .accept
+		}
+	}
+	return PromptHandlerConfiguration{
+		handler: .dismiss
+		notify:  true
+	}
+}
+
+pub fn create_annotated_unexpected_alert_open_error(text ?string) WebDriverError {
+	mut data := ?json2.Any(none)
+	if message := text {
+		data = json2.Any({
+			'text': json2.Any(message)
+		})
+	}
+	return WebDriverError.from_code_with_data(.unexpected_alert_open, 'A user prompt is open',
+		data)
+}
+
+pub struct PendingUserPrompt {
+pub:
+	type_ PromptType
+	text  ?string
+pub mut:
+	open      bool = true
+	accepted  bool
+	dismissed bool
+}
+
+// https://w3c.github.io/webdriver/#dfn-handle-any-user-prompts
+// Page owns the native dialog in Ladybird. This portable boundary records the
+// same accept/dismiss/ignore transition and returns the callback's completion
+// error synchronously to the V host.
+pub fn handle_any_user_prompts(mut prompt PendingUserPrompt) ?WebDriverError {
+	if !prompt.open {
+		return none
+	}
+	handler := get_the_prompt_handler(prompt.type_)
+	match handler.handler {
+		.accept {
+			prompt.accepted = true
+			prompt.open = false
+		}
+		.dismiss {
+			prompt.dismissed = true
+			prompt.open = false
+		}
+		.ignore {}
+	}
+	if handler.notify {
+		return create_annotated_unexpected_alert_open_error(prompt.text)
+	}
+	return none
 }
 
 pub fn deserialize_as_an_unhandled_prompt_behavior(value json2.Any) Response {

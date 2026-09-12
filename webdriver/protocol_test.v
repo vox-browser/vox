@@ -91,3 +91,43 @@ fn test_upstream_internal_prompt_configuration_deserialization() {
 	assert (alert_object['handler'] or { panic('missing handler') }) as string == 'accept'
 	assert (alert_object['notify'] or { panic('missing notify') }) as bool
 }
+
+fn test_prompt_handler_resolution_and_dialog_completion() {
+	webdriver_user_prompt_state.handler = none
+	assert user_prompt_handler_storage().handler == none
+	assert get_the_prompt_handler(.before_unload) == PromptHandlerConfiguration{
+		handler: .accept
+	}
+	assert get_the_prompt_handler(.alert) == PromptHandlerConfiguration{
+		handler: .dismiss
+		notify:  true
+	}
+
+	set_user_prompt_handler({
+		PromptType.default_: PromptHandlerConfiguration{
+			handler: .accept
+			notify:  true
+		}
+	})
+	mut prompt := PendingUserPrompt{
+		type_: .confirm
+		text:  'Continue?'
+	}
+	error_ := handle_any_user_prompts(mut prompt) or { panic('expected annotated alert error') }
+	assert prompt.accepted && !prompt.open
+	assert error_.code == 'unexpected alert open'
+	data := error_.data or { panic('missing alert data') }
+	data_object := data as map[string]json2.Any
+	assert (data_object['text'] or { panic('missing prompt text') }) as string == 'Continue?'
+
+	set_user_prompt_handler({
+		PromptType.prompt: PromptHandlerConfiguration{
+			handler: .ignore
+			notify:  true
+		}
+	})
+	mut ignored := PendingUserPrompt{ type_: .prompt }
+	assert handle_any_user_prompts(mut ignored) != none
+	assert ignored.open && !ignored.accepted && !ignored.dismissed
+	webdriver_user_prompt_state.handler = none
+}
