@@ -263,6 +263,33 @@ fn test_cookie_store_get_and_get_all_are_asynchronous_and_validate_options() {
 	assert worker_query.items().len == 2
 }
 
+fn test_cookie_binding_values_validation_and_completion_steps() {
+	item := CookieListItem{ name: 'name', value: 'value' }
+	value := cookie_store_cookie_list_item_to_value(item)
+	assert value.kind == .object
+	assert value.object_value['name'].string_value == 'name'
+	assert cookie_store_cookie_list_to_value([item]).sequence_value.len == 1
+	assert same_site_from_bindings(.lax) == .lax
+
+	mut event_loop := html.EventLoop.create(.window)
+	backend := CookieStoreBackend.create()
+	store := cookie_test_store(mut event_loop, backend, '/')
+	assert validate_cookie_store_get_options(store, CookieStoreGetOptions{}, .yes)!.serialize_path() == '/'
+	if _ := validate_cookie_store_get_options(store, CookieStoreGetOptions{}, .no) {
+		assert false
+	} else {
+		assert err.msg().contains('empty')
+	}
+	assert validate_cookie_store_mutation(store)!.serialize_path() == '/'
+
+	mut item_promise := CookieItemPromise.pending()
+	resolve_cookie_list_item_or_null_promise(mut item_promise, [item])
+	assert item_promise.item()?.name? == 'name'
+	mut list_promise := CookieListPromise.pending()
+	resolve_cookie_list_promise(mut list_promise, [item])
+	assert list_promise.items().len == 1
+}
+
 fn test_cookie_store_set_and_delete_cross_backend_boundary_asynchronously() {
 	mut event_loop := html.EventLoop.create(.window)
 	mut backend := CookieStoreBackend.create()

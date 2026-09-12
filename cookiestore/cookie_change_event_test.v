@@ -7,8 +7,8 @@ import url
 fn cookie_event_test_url(path string) url.URL {
 	return url.URL{
 		scheme: 'https'
-		host:   url.Host.from_string('www.example.com')
-		paths:  path.trim_left('/').split('/')
+		host: url.Host.from_string('www.example.com')
+		paths: path.trim_left('/').split('/')
 	}
 }
 
@@ -44,10 +44,10 @@ fn test_cookie_change_event_constructor_defaults_and_copies_lists() {
 	mut changed := [CookieListItem{ name: 'a', value: '1' }]
 	event := CookieChangeEvent.construct_impl('change', CookieChangeEventInit{
 		EventInit: dom.EventInit{
-			bubbles:    true
+			bubbles: true
 			cancelable: true
 		}
-		changed:   changed
+		changed: changed
 	}) or { panic(err) }
 	changed[0] = CookieListItem{
 		name: 'mutated'
@@ -62,6 +62,27 @@ fn test_cookie_change_event_constructor_defaults_and_copies_lists() {
 	mut returned := event.changed()
 	returned.clear()
 	assert event.changed().len == 1
+}
+
+fn test_cookie_change_event_arrays_are_cached_per_wrapper_world() {
+	mut event := CookieChangeEvent.create_with_timestamp('change', CookieChangeEventInit{
+		changed: [CookieListItem{ name: 'a', value: '1' }]
+		deleted: [CookieListItem{ name: 'b' }]
+	}, 123.5)
+	assert event.time_stamp() == 123.5
+	assert cached_changed(event, 1) == none
+	first := &CookieListArray{ items_: event.changed() }
+	second := &CookieListArray{ items_: event.changed() }
+	set_cached_changed(event, 1, first)
+	set_cached_changed(event, 2, second)
+	assert cached_changed(event, 1)? == first
+	assert cached_changed(event, 2)? == second
+	deleted := &CookieListArray{ items_: event.deleted() }
+	set_cached_deleted(event, 1, deleted)
+	assert cached_deleted(event, 1)? == deleted
+	assert cookie_change_event_caches().any(it.event == voidptr(event))
+	event.finalize()
+	assert !cookie_change_event_caches().any(it.event == voidptr(event))
 }
 
 fn test_process_cookie_changes_queues_trusted_changed_and_deleted_lists() {

@@ -8,6 +8,7 @@ module cookiestore
 import dom
 import html
 import url
+import webidl
 
 pub struct CookieListItem {
 pub:
@@ -38,6 +39,20 @@ pub:
 	domain      ?string
 	path        string = '/'
 	partitioned bool
+}
+
+pub enum EmptyOptionsAllowed {
+	no
+	yes
+}
+
+pub enum FirstItemOnly {
+	no
+	yes
+}
+
+pub fn same_site_from_bindings(same_site CookieSameSite) CookieSameSite {
+	return same_site
 }
 
 pub enum CookiePromiseState {
@@ -84,6 +99,14 @@ fn (mut promise CookieItemPromise) reject(reason string) {
 	}
 }
 
+pub fn resolve_cookie_list_item_or_null_promise(mut promise CookieItemPromise, cookie_list []CookieListItem) {
+	if cookie_list.len == 0 {
+		promise.resolve(none)
+		return
+	}
+	promise.resolve(cookie_list[0])
+}
+
 @[heap]
 pub struct CookieListPromise {
 mut:
@@ -122,6 +145,10 @@ fn (mut promise CookieListPromise) reject(reason string) {
 	}
 }
 
+pub fn resolve_cookie_list_promise(mut promise CookieListPromise, cookie_list []CookieListItem) {
+	promise.resolve(cookie_list_to_value(cookie_list))
+}
+
 @[heap]
 pub struct CookieVoidPromise {
 mut:
@@ -154,6 +181,69 @@ fn (mut promise CookieVoidPromise) reject(reason string) {
 	}
 }
 
+@[heap]
+pub struct CookieListCompletionSteps {
+	event_loop      &html.EventLoop
+	document        ?&dom.Document
+	first_item_only FirstItemOnly
+	item_promise    ?&CookieItemPromise
+	list_promise    ?&CookieListPromise
+}
+
+pub fn create_cookie_list_completion_steps(event_loop &html.EventLoop, document ?&dom.Document, first_item_only FirstItemOnly, item_promise ?&CookieItemPromise, list_promise ?&CookieListPromise) &CookieListCompletionSteps {
+	return &CookieListCompletionSteps{
+		event_loop: event_loop
+		document: document
+		first_item_only: first_item_only
+		item_promise: item_promise
+		list_promise: list_promise
+	}
+}
+
+pub fn (steps &CookieListCompletionSteps) complete(cookie_list []CookieListItem) {
+	html.queue_a_task(.unspecified, steps.event_loop, steps.document, fn [steps, cookie_list] () {
+		if steps.first_item_only == .yes {
+			if promise := steps.item_promise {
+				mut mutable_promise := unsafe { &CookieItemPromise(promise) }
+				resolve_cookie_list_item_or_null_promise(mut mutable_promise, cookie_list)
+			}
+			return
+		}
+		if promise := steps.list_promise {
+			mut mutable_promise := unsafe { &CookieListPromise(promise) }
+			resolve_cookie_list_promise(mut mutable_promise, cookie_list)
+		}
+	})
+}
+
+@[heap]
+pub struct CookieMutationCompletionSteps {
+	event_loop      &html.EventLoop
+	document        ?&dom.Document
+	promise         &CookieVoidPromise
+	failure_message string
+}
+
+pub fn create_cookie_mutation_completion_steps(event_loop &html.EventLoop, document ?&dom.Document, promise &CookieVoidPromise, failure_message string) &CookieMutationCompletionSteps {
+	return &CookieMutationCompletionSteps{
+		event_loop: event_loop
+		document: document
+		promise: promise
+		failure_message: failure_message
+	}
+}
+
+pub fn (steps &CookieMutationCompletionSteps) complete(result bool) {
+	html.queue_a_task(.unspecified, steps.event_loop, steps.document, fn [steps, result] () {
+		mut promise := unsafe { &CookieVoidPromise(steps.promise) }
+		if !result {
+			promise.reject('TypeError: ${steps.failure_message}')
+		} else {
+			promise.resolve()
+		}
+	})
+}
+
 pub struct CookieStoreEnvironment {
 pub:
 	creation_url     url.URL
@@ -182,10 +272,25 @@ pub fn create_a_cookie_list_item(cookie Cookie) CookieListItem {
 	}
 }
 
+pub fn cookie_store_cookie_list_item_to_value(item CookieListItem) webidl.Value {
+	mut value := map[string]webidl.Value{}
+	if name := item.name {
+		value['name'] = webidl.string_value(name)
+	}
+	if item_value := item.value {
+		value['value'] = webidl.string_value(item_value)
+	}
+	return webidl.object_value(value)
+}
+
 // The binding creates a fresh JavaScript array. Cloning gives typed callers
 // the same isolation from the internal query result.
 pub fn cookie_list_to_value(cookie_list []CookieListItem) []CookieListItem {
 	return cookie_list.clone()
+}
+
+pub fn cookie_store_cookie_list_to_value(cookie_list []CookieListItem) webidl.Value {
+	return webidl.sequence_value(cookie_list.map(cookie_store_cookie_list_item_to_value(it)))
 }
 
 // https://cookiestore.spec.whatwg.org/#normalize-a-cookie-name-or-value
@@ -309,7 +414,7 @@ pub fn set_a_cookie(mut backend CookieStoreBackend, record &url.URL, input Cooki
 		path: path
 		expires: expires
 		secure: true
-		same_site: input.same_site
+		same_site: same_site_from_bindings(input.same_site)
 		partitioned: false
 		host_only: host_only
 	})
@@ -373,52 +478,53 @@ fn (store &CookieStore) resolved_options_url(options_url ?string) !url.URL {
 	return target
 }
 
+pub fn validate_cookie_store_get_options(store &CookieStore, options CookieStoreGetOptions, empty_options_allowed EmptyOptionsAllowed) !url.URL {
+	if store.environment.origin_is_opaque {
+		return error('SecurityError: Document origin is opaque')
+	}
+	if empty_options_allowed == .no && options.name == none && options.url == none {
+		return error('TypeError: CookieStoreGetOptions is empty')
+	}
+	return store.resolved_options_url(options.url)
+}
+
+pub fn validate_cookie_store_mutation(store &CookieStore) !url.URL {
+	if store.environment.origin_is_opaque {
+		return error('SecurityError: Document origin is opaque')
+	}
+	return store.environment.creation_url
+}
+
 fn (store &CookieStore) queue_item_query(record url.URL, name ?string, promise &CookieItemPromise) {
-	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, record, name, promise] () {
+	completion_steps := create_cookie_list_completion_steps(store.event_loop_, store.environment.document, .yes, promise, none)
+	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, record, name, completion_steps] () {
 		list := query_cookies(store.backend_, &record, name)
-		html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [list, promise] () {
-			mut mutable_promise := unsafe { &CookieItemPromise(promise) }
-			if list.len == 0 {
-				mutable_promise.resolve(none)
-			} else {
-				mutable_promise.resolve(list[0])
-			}
-		})
+		completion_steps.complete(list)
 	})
 }
 
 fn (store &CookieStore) queue_list_query(record url.URL, name ?string, promise &CookieListPromise) {
-	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, record, name, promise] () {
+	completion_steps := create_cookie_list_completion_steps(store.event_loop_, store.environment.document, .no, none, promise)
+	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, record, name, completion_steps] () {
 		list := query_cookies(store.backend_, &record, name)
-		html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [list, promise] () {
-			mut mutable_promise := unsafe { &CookieListPromise(promise) }
-			mutable_promise.resolve(cookie_list_to_value(list))
-		})
+		completion_steps.complete(list)
 	})
 }
 
 // https://cookiestore.spec.whatwg.org/#dom-cookiestore-get
 pub fn (store &CookieStore) get(name string) &CookieItemPromise {
 	mut promise := CookieItemPromise.pending()
-	if store.environment.origin_is_opaque {
-		promise.reject('SecurityError: Document origin is opaque')
+	record := validate_cookie_store_get_options(store, CookieStoreGetOptions{ name: name }, .no) or {
+		promise.reject(err.msg())
 		return promise
 	}
-	store.queue_item_query(store.environment.creation_url, name, promise)
+	store.queue_item_query(record, name, promise)
 	return promise
 }
 
 pub fn (store &CookieStore) get_with_options(options CookieStoreGetOptions) &CookieItemPromise {
 	mut promise := CookieItemPromise.pending()
-	if store.environment.origin_is_opaque {
-		promise.reject('SecurityError: Document origin is opaque')
-		return promise
-	}
-	if options.name == none && options.url == none {
-		promise.reject('TypeError: CookieStoreGetOptions is empty')
-		return promise
-	}
-	record := store.resolved_options_url(options.url) or {
+	record := validate_cookie_store_get_options(store, options, .no) or {
 		promise.reject(err.msg())
 		return promise
 	}
@@ -429,21 +535,17 @@ pub fn (store &CookieStore) get_with_options(options CookieStoreGetOptions) &Coo
 // https://cookiestore.spec.whatwg.org/#dom-cookiestore-getall
 pub fn (store &CookieStore) get_all(name string) &CookieListPromise {
 	mut promise := CookieListPromise.pending()
-	if store.environment.origin_is_opaque {
-		promise.reject('SecurityError: Document origin is opaque')
+	record := validate_cookie_store_get_options(store, CookieStoreGetOptions{ name: name }, .yes) or {
+		promise.reject(err.msg())
 		return promise
 	}
-	store.queue_list_query(store.environment.creation_url, name, promise)
+	store.queue_list_query(record, name, promise)
 	return promise
 }
 
 pub fn (store &CookieStore) get_all_with_options(options CookieStoreGetOptions) &CookieListPromise {
 	mut promise := CookieListPromise.pending()
-	if store.environment.origin_is_opaque {
-		promise.reject('SecurityError: Document origin is opaque')
-		return promise
-	}
-	record := store.resolved_options_url(options.url) or {
+	record := validate_cookie_store_get_options(store, options, .yes) or {
 		promise.reject(err.msg())
 		return promise
 	}
@@ -452,25 +554,19 @@ pub fn (store &CookieStore) get_all_with_options(options CookieStoreGetOptions) 
 }
 
 fn (store &CookieStore) queue_set(options CookieInit, promise &CookieVoidPromise, error_message string) {
-	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, options, promise, error_message] () {
+	completion_steps := create_cookie_mutation_completion_steps(store.event_loop_, store.environment.document, promise, error_message)
+	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, options, completion_steps] () {
 		mut backend := store.backend_
 		result := set_a_cookie(mut backend, &store.environment.creation_url, options)
-		html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [result, error_message, promise] () {
-			mut mutable_promise := unsafe { &CookieVoidPromise(promise) }
-			if !result {
-				mutable_promise.reject('TypeError: ${error_message}')
-			} else {
-				mutable_promise.resolve()
-			}
-		})
+		completion_steps.complete(result)
 	})
 }
 
 // https://cookiestore.spec.whatwg.org/#dom-cookiestore-set
 pub fn (store &CookieStore) set(name string, value string) &CookieVoidPromise {
 	mut promise := CookieVoidPromise.pending()
-	if store.environment.origin_is_opaque {
-		promise.reject('SecurityError: Document origin is opaque')
+	_ = validate_cookie_store_mutation(store) or {
+		promise.reject(err.msg())
 		return promise
 	}
 	store.queue_set(CookieInit{
@@ -482,8 +578,8 @@ pub fn (store &CookieStore) set(name string, value string) &CookieVoidPromise {
 
 pub fn (store &CookieStore) set_with_options(options CookieInit) &CookieVoidPromise {
 	mut promise := CookieVoidPromise.pending()
-	if store.environment.origin_is_opaque {
-		promise.reject('SecurityError: Document origin is opaque')
+	_ = validate_cookie_store_mutation(store) or {
+		promise.reject(err.msg())
 		return promise
 	}
 	store.queue_set(options, promise, 'Name, value, domain or path are malformed')
@@ -491,25 +587,19 @@ pub fn (store &CookieStore) set_with_options(options CookieInit) &CookieVoidProm
 }
 
 fn (store &CookieStore) queue_delete(options CookieStoreDeleteOptions, promise &CookieVoidPromise) {
-	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, options, promise] () {
+	completion_steps := create_cookie_mutation_completion_steps(store.event_loop_, store.environment.document, promise, 'Name is malformed')
+	html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [store, options, completion_steps] () {
 		mut backend := store.backend_
 		result := delete_a_cookie(mut backend, &store.environment.creation_url, options)
-		html.queue_a_task(.unspecified, store.event_loop_, store.environment.document, fn [result, promise] () {
-			mut mutable_promise := unsafe { &CookieVoidPromise(promise) }
-			if !result {
-				mutable_promise.reject('TypeError: Name is malformed')
-			} else {
-				mutable_promise.resolve()
-			}
-		})
+		completion_steps.complete(result)
 	})
 }
 
 // https://cookiestore.spec.whatwg.org/#dom-cookiestore-delete
 pub fn (store &CookieStore) delete_(name string) &CookieVoidPromise {
 	mut promise := CookieVoidPromise.pending()
-	if store.environment.origin_is_opaque {
-		promise.reject('SecurityError: Document origin is opaque')
+	_ = validate_cookie_store_mutation(store) or {
+		promise.reject(err.msg())
 		return promise
 	}
 	store.queue_delete(CookieStoreDeleteOptions{
@@ -520,8 +610,8 @@ pub fn (store &CookieStore) delete_(name string) &CookieVoidPromise {
 
 pub fn (store &CookieStore) delete_with_options(options CookieStoreDeleteOptions) &CookieVoidPromise {
 	mut promise := CookieVoidPromise.pending()
-	if store.environment.origin_is_opaque {
-		promise.reject('SecurityError: Document origin is opaque')
+	_ = validate_cookie_store_mutation(store) or {
+		promise.reject(err.msg())
 		return promise
 	}
 	store.queue_delete(options, promise)
