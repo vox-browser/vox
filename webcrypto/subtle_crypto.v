@@ -414,6 +414,9 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm string
 			if private_material.len != 32 {
 				return error('DataError: Ed25519 private key must be 32 bytes')
 			}
+			if ed25519_public_key_from_seed(private_material)! != public_material {
+				return error('DataError: Invalid Ed25519 key pair')
+			}
 			validate_jwk_algorithm_metadata(jwk, normalized, private_material.len, hash_name,
 				normalized_usages)!
 			if normalized_usages.len == 0 {

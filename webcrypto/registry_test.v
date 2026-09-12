@@ -208,11 +208,12 @@ fn test_ed25519_jwk_import_covers_public_and_private_material() {
 	assert base64url_decode(exported_public.x or { panic('missing x') })! == public_material
 
 	seed := []u8{len: 32, init: 9}
+	private_public_material := ed25519_public_key_from_seed(seed)!
 	private_key := subtle_crypto.import_jwk(JsonWebKey{
 		kty:     'OKP'
 		key_ops: ['sign']
 		crv:     'Ed25519'
-		x:       base64url_encode(public_material)
+		x:       base64url_encode(private_public_material)
 		d:       base64url_encode(seed)
 	}, 'ed25519', true, [.sign], '')!
 	assert private_key.type_ == .private_key

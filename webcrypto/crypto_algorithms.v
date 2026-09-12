@@ -802,6 +802,14 @@ pub fn import_ed25519_key(format KeyFormat, material []u8, extractable bool, usa
 	}
 }
 
+pub fn ed25519_public_key_from_seed(seed []u8) ![]u8 {
+	if seed.len != ed25519.seed_size {
+		return error('DataError: Ed25519 seed must be 32 bytes')
+	}
+	private_key := ed25519.new_key_from_seed(seed)
+	return private_key[ed25519.seed_size..].clone()
+}
+
 pub fn import_ed448_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
 	return match format {
 		.raw, .raw_public {
