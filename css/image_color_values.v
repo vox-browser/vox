@@ -1330,7 +1330,7 @@ pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorR
 	color_interpolation_method := if method := style_value.color_interpolation_method {
 		?ColorInterpolationMethod(method.color_interpolation_method())
 	} else {
-		?ColorInterpolationMethod(none)
+		?ColorInterpolationMethod(RectangularColorSpace.oklab)
 	}
 	interpolated := interpolate_style_values_color(style_value.first_component.color,
 		style_value.second_component.color, normalized.p2.as_fraction(),
@@ -1364,7 +1364,7 @@ pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) 
 	color_interpolation_method := if method := absolutized_color_interpolation_method {
 		?ColorInterpolationMethod(method.color_interpolation_method())
 	} else {
-		?ColorInterpolationMethod(none)
+		?ColorInterpolationMethod(RectangularColorSpace.oklab)
 	}
 	if interpolated := interpolate_style_values_color(absolutized_first_color,
 		absolutized_second_color, delta, color_interpolation_method, color_resolution_context) {

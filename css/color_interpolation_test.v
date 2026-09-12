@@ -133,3 +133,15 @@ fn test_transparent_endpoint_borrows_the_other_colors_components() {
 	assert math.abs(oklab.b_.as_number().number() - 0.125846) < 0.00001
 	assert_interpolation_component_close(oklab.alpha_, 0.1)
 }
+
+fn test_color_mix_without_an_explicit_method_defaults_to_oklab() {
+	mix := parsed_interpolation_test_color_mix('color-mix(white, blue)')
+	absolutized := mix.absolutized(ComputationContext{})
+	assert absolutized is OKLabColorStyleValue
+	color := mix.to_color(ColorResolutionContext{}) or {
+		panic('default-method color-mix did not resolve')
+	}
+	assert color.red() == 116
+	assert color.green() == 163
+	assert color.blue() == 255
+}
