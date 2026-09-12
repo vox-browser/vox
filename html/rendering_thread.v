@@ -21,6 +21,35 @@ pub:
 	id int
 pub mut:
 	last_display_list_id int = -1
+mut:
+	context_locked_            bool
+	transparent_clear_count_   int
+	last_clear_was_serialized_ bool
+}
+
+fn (mut surface RenderingSurface) lock_context() {
+	surface.context_locked_ = true
+}
+
+fn (mut surface RenderingSurface) clear_transparent() {
+	surface.transparent_clear_count_++
+	surface.last_clear_was_serialized_ = surface.context_locked_
+}
+
+fn (mut surface RenderingSurface) unlock_context() {
+	surface.context_locked_ = false
+}
+
+pub fn (surface &RenderingSurface) context_is_locked() bool {
+	return surface.context_locked_
+}
+
+pub fn (surface &RenderingSurface) transparent_clear_count() int {
+	return surface.transparent_clear_count_
+}
+
+pub fn (surface &RenderingSurface) last_clear_was_serialized() bool {
+	return surface.last_clear_was_serialized_
 }
 
 @[heap]
@@ -38,7 +67,18 @@ pub type RenderingExecuteHook = fn (&RenderingDisplayList, RenderingScrollStateS
 
 pub type RenderingPresentationCallback = fn (RenderingRect, int)
 
+pub type RenderingPublishExternalContentCallback = fn (&RenderingSurface)
+
 pub type RenderingScreenshotCallback = fn ()
+
+pub struct RenderingPresentToUI {}
+
+pub struct RenderingPublishToExternalContent {
+pub:
+	publish RenderingPublishExternalContentCallback @[required]
+}
+
+pub type RenderingPresentationMode = RenderingPresentToUI | RenderingPublishToExternalContent
 
 struct UpdateDisplayListCommand {
 	display_list &RenderingDisplayList
@@ -92,6 +132,7 @@ mut:
 	queued_rasterization_tasks_ int
 	needs_present_              bool
 	pending_viewport_rect_      RenderingRect
+	presentation_mode_          RenderingPresentationMode = RenderingPresentToUI{}
 	started_                    bool
 	exited_                     bool
 }
@@ -108,6 +149,10 @@ pub fn (mut renderer RenderingThread) set_player(execute RenderingExecuteHook) {
 
 pub fn (mut renderer RenderingThread) set_skia_player(execute RenderingExecuteHook) {
 	renderer.set_player(execute)
+}
+
+pub fn (mut renderer RenderingThread) set_presentation_mode(mode RenderingPresentationMode) {
+	renderer.presentation_mode_ = mode
 }
 
 pub fn (mut renderer RenderingThread) start() ! {
@@ -191,13 +236,27 @@ pub fn (mut renderer RenderingThread) process() {
 		return
 	}
 	back := renderer.backing_stores_.back or { return }
+	if renderer.presentation_mode_ is RenderingPublishToExternalContent {
+		mut mutable_back := unsafe { &RenderingSurface(back) }
+		mutable_back.lock_context()
+		mutable_back.clear_transparent()
+		mutable_back.unlock_context()
+	}
 	if execute := renderer.execute_hook_ {
 		execute(display_list, renderer.cached_scroll_state_, back)
 	}
 	rendered_bitmap_id := renderer.backing_stores_.back_bitmap_id
 	renderer.backing_stores_.swap()
-	renderer.queued_rasterization_tasks_++
-	renderer.presentation_callback_(renderer.pending_viewport_rect_, rendered_bitmap_id)
+	match renderer.presentation_mode_ {
+		RenderingPresentToUI {
+			renderer.queued_rasterization_tasks_++
+			renderer.presentation_callback_(renderer.pending_viewport_rect_, rendered_bitmap_id)
+		}
+		RenderingPublishToExternalContent {
+			front := renderer.backing_stores_.front or { return }
+			renderer.presentation_mode_.publish(front)
+		}
+	}
 }
 
 pub fn (mut renderer RenderingThread) ready_to_paint() ! {

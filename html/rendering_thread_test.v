@@ -4,6 +4,7 @@ struct RenderingTestState {
 mut:
 	presented_ids []int
 	executed_ids  []int
+	published_ids []int
 	screenshots   int
 }
 
@@ -67,4 +68,39 @@ fn test_rendering_thread_screenshot_and_lifecycle() {
 	assert state.screenshots == 1
 	renderer.exit()
 	assert renderer.pending_command_count() == 0
+}
+
+fn test_rendering_thread_serializes_external_content_surface_clears() {
+	state := &RenderingTestState{}
+	mut renderer := RenderingThread.create(fn [state] (_ RenderingRect, bitmap_id int) {
+		mut mutable_state := unsafe { &RenderingTestState(state) }
+		mutable_state.presented_ids << bitmap_id
+	})
+	renderer.set_skia_player(fn [state] (display_list &RenderingDisplayList, _ RenderingScrollStateSnapshot, mut surface RenderingSurface) {
+		assert !surface.context_is_locked()
+		assert surface.transparent_clear_count() == 1
+		assert surface.last_clear_was_serialized()
+		mut mutable_state := unsafe { &RenderingTestState(state) }
+		mutable_state.executed_ids << display_list.id
+	})
+	renderer.set_presentation_mode(RenderingPublishToExternalContent{
+		publish: fn [state] (surface &RenderingSurface) {
+			mut mutable_state := unsafe { &RenderingTestState(state) }
+			mutable_state.published_ids << surface.id
+		}
+	})
+	renderer.start()!
+	front := &RenderingSurface{ id: 1 }
+	back := &RenderingSurface{ id: 2 }
+	renderer.update_display_list(&RenderingDisplayList{ id: 8 }, RenderingScrollStateSnapshot{})
+	renderer.update_backing_stores(front, back, 10, 20)
+	renderer.present_frame(RenderingRect{ width: 320, height: 200 })
+
+	renderer.process()
+
+	assert back.transparent_clear_count() == 1
+	assert state.executed_ids == [8]
+	assert state.published_ids == [2]
+	assert state.presented_ids.len == 0
+	assert renderer.queued_rasterization_tasks() == 0
 }
