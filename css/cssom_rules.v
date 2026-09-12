@@ -940,6 +940,23 @@ pub fn (rule &CSSRule) parent_scope_rule() ?&CSSRule {
 		}
 		current_parent = parent.parent_rule
 	}
+	mut current_style_sheet := rule.parent_style_sheet
+	for {
+		style_sheet := current_style_sheet or { break }
+		owner_rule := style_sheet.owner_rule or { break }
+		if owner_rule.has_scope() {
+			return owner_rule
+		}
+		current_parent = owner_rule.parent_rule
+		for {
+			parent := current_parent or { break }
+			if parent.type_ == .scope {
+				return parent
+			}
+			current_parent = parent.parent_rule
+		}
+		current_style_sheet = owner_rule.parent_style_sheet
+	}
 	return none
 }
 

@@ -1353,6 +1353,11 @@ fn style_scope_implicit_root(target &dom.Element, sheet ?&CSSStyleSheet) ?&dom.E
 }
 
 fn style_scope_find_root(scope_rule &CSSRule, target &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element) ?&dom.Element {
+	scope_style_sheet := if descriptor_sheet := scope_rule.parent_style_sheet {
+		?&CSSStyleSheet(descriptor_sheet)
+	} else {
+		sheet
+	}
 	mut parent_scope_root := ?&dom.Element(none)
 	if parent_scope_rule := scope_rule.parent_scope_rule() {
 		parent_scope_root = style_scope_find_root(parent_scope_rule, target, sheet, shadow_host)
@@ -1367,12 +1372,12 @@ fn style_scope_find_root(scope_rule &CSSRule, target &dom.Element, sheet ?&CSSSt
 		if parent_root := parent_scope_root {
 			return parent_root
 		}
-		return style_scope_implicit_root(target, sheet)
+		return style_scope_implicit_root(target, scope_style_sheet)
 	}
 	mut candidate := ?&dom.Element(target)
 	for {
 		current := candidate or { break }
-		if style_scope_selector_list_matches_element(start_selectors, current, sheet, shadow_host, parent_scope_root) {
+		if style_scope_selector_list_matches_element(start_selectors, current, scope_style_sheet, shadow_host, parent_scope_root) {
 			return current
 		}
 		if parent_root := parent_scope_root {
@@ -1386,12 +1391,17 @@ fn style_scope_find_root(scope_rule &CSSRule, target &dom.Element, sheet ?&CSSSt
 }
 
 fn style_scope_scope_limit_matches(scope_rule &CSSRule, scope_root &dom.Element, target &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element) bool {
+	scope_style_sheet := if descriptor_sheet := scope_rule.parent_style_sheet {
+		?&CSSStyleSheet(descriptor_sheet)
+	} else {
+		sheet
+	}
 	mut mutable_scope_rule := unsafe { &CSSRule(scope_rule) }
 	end_selectors := mutable_scope_rule.scope_end_selectors_for_matching() or { return false }
 	mut candidate := ?&dom.Element(target)
 	for {
 		current := candidate or { break }
-		if style_scope_selector_list_matches_element(end_selectors, current, sheet, shadow_host, scope_root) {
+		if style_scope_selector_list_matches_element(end_selectors, current, scope_style_sheet, shadow_host, scope_root) {
 			return true
 		}
 		if style_scope_elements_equal(current, scope_root) {
