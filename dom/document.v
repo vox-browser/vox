@@ -2434,6 +2434,7 @@ pub mut:
 	slot_registry_                     &SlotRegistry = unsafe { nil }
 	custom_element_registry_           voidptr = unsafe { nil }
 	keep_custom_element_registry_null_ bool
+	anchor_name_map_                   AnchorNameMap
 }
 
 @[heap]
@@ -4378,6 +4379,7 @@ pub mut:
 	form_associated_elements_with_form_attribute []&FormAssociatedElement
 	potentially_named_elements                   []&Element
 	element_by_id_map_                           &ElementByIdMap = unsafe { nil }
+	anchor_name_map_                             AnchorNameMap
 
 	// Render blocking
 	render_blocking_elements        []&Element

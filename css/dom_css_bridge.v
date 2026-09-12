@@ -55,6 +55,7 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 		math_depth_:                     computed.math_depth()
 		math_style_:                     math_style_to_dom(computed.math_style())
 		view_transition_name_:           computed.view_transition_name()
+		anchor_names_:                   computed.anchor_names()
 		attempted_pseudo_class_matches_: attempted_pseudo_class_matches_to_dom(computed)
 		css_handle:                      voidptr(computed)
 	}

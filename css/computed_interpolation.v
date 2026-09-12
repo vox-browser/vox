@@ -1836,6 +1836,24 @@ pub fn (c &ComputedProperties) for_each_property(callback fn (PropertyID, &dom.S
 	}
 }
 
+pub fn (c &ComputedProperties) anchor_names() []string {
+	value := c.property(.anchor_name, .yes) or { return []string{} }
+	parsed := style_value_logic_from_dom(.anchor_name, value) or { return []string{} }
+	if parsed is CustomIdentStyleValue {
+		return [parsed.custom_ident()]
+	}
+	if parsed is StyleValueList {
+		mut names := []string{cap: parsed.size()}
+		for item in parsed.values() {
+			if item is CustomIdentStyleValue {
+				names << item.custom_ident()
+			}
+		}
+		return names
+	}
+	return []string{}
+}
+
 pub fn (c &ComputedProperties) animated_property_values() map[PropertyID]&dom.StyleValue {
 	return c.animated_property_values_.clone()
 }

@@ -464,6 +464,7 @@ pub mut:
 	math_depth_                     int
 	math_style_                     CSSMathStyle_ = .normal
 	view_transition_name_           ?string
+	anchor_names_                   []string
 	attempted_pseudo_class_matches_ u8
 	// dom<->css bridge: opaque handle to the real css.ComputedProperties this placeholder mirrors.
 	// The CSS module (which owns the type) sets/reads it via unsafe cast; dom cannot name the type
@@ -509,6 +510,10 @@ pub fn (c &CSSComputedProperties_) math_style() CSSMathStyle_ {
 
 pub fn (c &CSSComputedProperties_) view_transition_name() ?string {
 	return c.view_transition_name_
+}
+
+pub fn (c &CSSComputedProperties_) anchor_names() []string {
+	return c.anchor_names_.clone()
 }
 
 pub fn (c &CSSComputedProperties_) has_attempted_match_against_pseudo_class(pseudo_class PseudoClass) bool {
@@ -2177,6 +2182,19 @@ pub fn (mut e Element) set_computed_properties(pseudo_element ?int, style ?&CSSC
 			}
 		}
 		return
+	}
+	if e.is_connected() {
+		old_names := if old_style := e.computed_properties_ {
+			old_style.anchor_names()
+		} else {
+			[]string{}
+		}
+		new_names := if new_style := style {
+			new_style.anchor_names()
+		} else {
+			[]string{}
+		}
+		update_anchor_name_map_for_root(e.as_node().root(), old_names, new_names, &e)
 	}
 	e.computed_properties_ = style
 }
@@ -5551,6 +5569,9 @@ pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
 		}
 		if e.name_ != none {
 			doc.element_with_name_was_removed(e)
+		}
+		if computed_properties := e.el_computed_properties() {
+			update_anchor_name_map_for_root(old_root, computed_properties.anchor_names(), [], &e)
 		}
 	}
 
