@@ -542,6 +542,7 @@ pub mut:
 	scope_end_selectors          ?SelectorList
 	cached_scope_start_selectors ?SelectorList
 	cached_scope_end_selectors   ?SelectorList
+	import_has_scope             bool
 	declaration                  ?&CSSStyleProperties
 	style_map_cache              ?&CSSOMStylePropertyMap
 
@@ -597,11 +598,16 @@ pub fn CSSRule.create_scope(start_selectors ?SelectorList, end_selectors ?Select
 	return rule
 }
 
-pub fn CSSRule.create_import(url string, document ?&dom.Document, layer ?string, supports ?&Supports, media &MediaList) &CSSRule {
+pub fn CSSRule.create_import(url string, document ?&dom.Document, layer ?string, scope ?ImportScope, supports ?&Supports, media &MediaList) &CSSRule {
 	mut rule := CSSRule.create(.import_rule)
 	rule.url = url
 	rule.document = document
 	rule.layer = layer
+	if import_scope := scope {
+		rule.import_has_scope = true
+		rule.scope_start_selectors = import_scope.start_selectors
+		rule.scope_end_selectors = import_scope.end_selectors
+	}
 	rule.supports = supports
 	rule.media = media
 	if layer_name := layer {
@@ -1187,6 +1193,28 @@ fn (rule &CSSRule) serialized_import_rule() string {
 		}
 	}
 
+	// AD-HOC: Serialize the rule's import scope if it exists.
+	if rule.import_has_scope {
+		builder.write_string(' scope')
+		if rule.scope_start_selectors != none || rule.scope_end_selectors != none {
+			builder.write_u8(`(`)
+			if start := rule.scope_start() {
+				if rule.scope_end_selectors != none {
+					builder.write_string('(${start})')
+				} else {
+					builder.write_string(start)
+				}
+			}
+			if end := rule.scope_end() {
+				if rule.scope_start_selectors != none {
+					builder.write_u8(` `)
+				}
+				builder.write_string('to (${end})')
+			}
+			builder.write_u8(`)`)
+		}
+	}
+
 	// AD-HOC: Serialize the rule's supports condition if it exists.
 	//         This isn't currently specified, but major browsers include this in their serialization of import rules.
 	if supports := rule.supports {
@@ -1274,6 +1302,30 @@ pub fn (rule &CSSRule) supports_text() ?string {
 		return supports.to_string()
 	}
 	return none
+}
+
+pub struct ImportScope {
+pub mut:
+	start_selectors ?SelectorList
+	end_selectors   ?SelectorList
+}
+
+pub fn (rule &CSSRule) has_scope() bool {
+	return rule.type_ == .import_rule && rule.import_has_scope
+}
+
+pub fn (rule &CSSRule) import_scope_start_selectors() ?SelectorList {
+	if !rule.has_scope() {
+		return none
+	}
+	return rule.scope_start_selectors
+}
+
+pub fn (rule &CSSRule) import_scope_end_selectors() ?SelectorList {
+	if !rule.has_scope() {
+		return none
+	}
+	return rule.scope_end_selectors
 }
 
 pub fn (mut rule CSSRule) internal_qualified_layer_name() ?string {

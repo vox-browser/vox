@@ -1164,6 +1164,57 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 	return CSSRule.create_style(selectors, declaration, CSSRuleList.create(child_rules))
 }
 
+fn (mut parser RuleSelectorParser) parse_import_scope_selector_list(mut tokens ParserTokenStream, selector_type ParserSelectorType) ?SelectorList {
+	selectors := parser.parse_a_selector_list(mut tokens, selector_type, .standard) or { return none }
+	tokens.discard_whitespace()
+	if selectors.is_empty() || tokens.has_next_token()
+		|| selector_list_contains_pseudo_element(selectors) {
+		return none
+	}
+	return selectors
+}
+
+fn (mut parser RuleSelectorParser) parse_import_scope_function(scope_function Function) ?ImportScope {
+	mut tokens := ParserTokenStream.from_values(scope_function.value)
+	mut scope := ImportScope{}
+	tokens.discard_whitespace()
+	if !tokens.has_next_token() {
+		return scope
+	}
+
+	if tokens.next_token().is_block() && tokens.next_token().block().is_paren() {
+		start_block := tokens.consume_a_token().block()
+		mut start_tokens := ParserTokenStream.from_values(start_block.value)
+		scope.start_selectors = parser.parse_import_scope_selector_list(mut start_tokens, .standalone) or { return none }
+		tokens.discard_whitespace()
+	}
+
+	if tokens.next_token().is_ident('to') {
+		tokens.discard_a_token()
+		tokens.discard_whitespace()
+		if !tokens.next_token().is_block() || !tokens.next_token().block().is_paren() {
+			return none
+		}
+		end_block := tokens.consume_a_token().block()
+		mut end_tokens := ParserTokenStream.from_values(end_block.value)
+		scope.end_selectors = parser.parse_import_scope_selector_list(mut end_tokens, .relative) or {
+			return none
+		}
+		tokens.discard_whitespace()
+	}
+
+	if scope.start_selectors == none && scope.end_selectors == none {
+		scope.start_selectors = parser.parse_import_scope_selector_list(mut tokens, .standalone) or {
+			return none
+		}
+		return scope
+	}
+	if tokens.has_next_token() {
+		return none
+	}
+	return scope
+}
+
 fn (mut parser RuleSelectorParser) convert_to_import_rule(rule AtRule) ?&CSSRule {
 	mut tokens := ParserTokenStream.from_values(rule.prelude)
 	if rule.is_block_rule || rule.prelude.len == 0 {
@@ -1191,33 +1242,55 @@ fn (mut parser RuleSelectorParser) convert_to_import_rule(rule AtRule) ?&CSSRule
 
 	tokens.discard_whitespace()
 	mut layer := ?string(none)
-	if tokens.next_token().is_ident('layer') {
-		tokens.discard_a_token()
-		layer = ''
-	} else if tokens.next_token().is_function_named('layer') {
-		layer_function := tokens.consume_a_token().function()
-		mut layer_tokens := ParserTokenStream.from_values(layer_function.value)
-		name := parser.parse_layer_name(mut layer_tokens, .no) or { return none }
-		layer_tokens.discard_whitespace()
-		if layer_tokens.has_next_token() {
-			return none
-		}
-		layer = name
-	}
-
-	tokens.discard_whitespace()
+	mut scope := ?ImportScope(none)
 	mut supports := ?&Supports(none)
-	if tokens.next_token().is_function_named('supports') {
-		supports_function := tokens.consume_a_token().function()
-		condition := parser_component_values_to_string(supports_function.value)
-		supports = parse_css_supports(parser.parsing_params(), condition)
-		if supports == none {
-			mut supports_tokens := ParserTokenStream.from_values(supports_function.value)
-			if supports_declaration := parse_supports_declaration_from_parser_tokens(mut supports_tokens) {
-				supports = Supports.create(supports_declaration)
-			}
-		}
+	for {
 		tokens.discard_whitespace()
+		if layer == none && tokens.next_token().is_ident('layer') {
+			tokens.discard_a_token()
+			layer = ''
+			continue
+		}
+		if layer == none && tokens.next_token().is_function_named('layer') {
+			layer_function := tokens.next_token().function()
+			mut layer_tokens := ParserTokenStream.from_values(layer_function.value)
+			name := parser.parse_layer_name(mut layer_tokens, .no) or { return none }
+			layer_tokens.discard_whitespace()
+			if layer_tokens.has_next_token() {
+				return none
+			}
+			tokens.discard_a_token()
+			layer = name
+			continue
+		}
+		if scope == none && tokens.next_token().is_ident('scope') {
+			tokens.discard_a_token()
+			scope = ImportScope{}
+			continue
+		}
+		if scope == none && tokens.next_token().is_function_named('scope') {
+			scope_function := tokens.next_token().function()
+			scope = parser.parse_import_scope_function(scope_function) or { return none }
+			tokens.discard_a_token()
+			continue
+		}
+		if supports == none && tokens.next_token().is_function_named('supports') {
+			supports_function := tokens.next_token().function()
+			condition := parser_component_values_to_string(supports_function.value)
+			supports = parse_css_supports(parser.parsing_params(), condition)
+			if supports == none {
+				mut supports_tokens := ParserTokenStream.from_values(supports_function.value)
+				if supports_declaration := parse_supports_declaration_from_parser_tokens(mut supports_tokens) {
+					supports = Supports.create(supports_declaration)
+				}
+			}
+			if supports == none {
+				return none
+			}
+			tokens.discard_a_token()
+			continue
+		}
+		break
 	}
 
 	media_text :=
@@ -1227,7 +1300,7 @@ fn (mut parser RuleSelectorParser) convert_to_import_rule(rule AtRule) ?&CSSRule
 		media_queries = parse_css_media_query_list_value_logic(media_text)
 	}
 	media := MediaList.create(media_query_entries_from_queries(media_queries))
-	return CSSRule.create_import(url, none, layer, supports, media)
+	return CSSRule.create_import(url, none, layer, scope, supports, media)
 }
 
 fn (mut parser RuleSelectorParser) convert_to_layer_rule(rule AtRule, nested ParserNested) ?&CSSRule {
