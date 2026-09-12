@@ -32,3 +32,17 @@ fn test_color_mix_to_color_uses_the_stored_second_percentage() {
 	color := mix.to_color(ColorResolutionContext{}) or { panic('color mix did not resolve') }
 	assert color.red() > color.blue()
 }
+
+fn test_color_mix_absolutizes_relative_lengths_in_calculated_percentages() {
+	font_size := CSSPixels.nearest_value_for(16)
+	font_metrics := LengthFontMetrics.new(font_size, CSSPixels.nearest_value_for(8), CSSPixels.nearest_value_for(12), CSSPixels.nearest_value_for(8), CSSPixels.nearest_value_for(19.2))
+	context := ComputationContext{
+		length_resolution_context: LengthResolutionContext{
+			font_metrics: font_metrics
+			root_font_metrics: font_metrics
+		}
+	}
+	literal := parsed_color_mix('color-mix(in oklab, red 25%, blue)').absolutized(context)
+	calculated := parsed_color_mix('color-mix(in oklab, red calc(100% * (1em / 64px)), blue)').absolutized(context)
+	assert calculated.serialize(.normal) == literal.serialize(.normal)
+}

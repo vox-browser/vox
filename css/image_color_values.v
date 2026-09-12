@@ -1250,10 +1250,10 @@ fn serialize_second_color_mix_percentage(p1 ?StyleValue, p2 ?StyleValue, mode Se
 }
 
 // https://drafts.csswg.org/css-color-5/#color-mix-percent-norm
-pub fn (style_value ColorMixStyleValue) normalize_percentages() ColorMixPercentageNormalizationResult {
-	resolve_percentage := fn (percentage_style_value ?StyleValue) ?Percentage {
+pub fn (style_value ColorMixStyleValue) normalize_percentages(context ComputationContext) ColorMixPercentageNormalizationResult {
+	resolve_percentage := fn [context] (percentage_style_value ?StyleValue) ?Percentage {
 		percentage := percentage_style_value or { return none }
-		return Percentage.from_style_value_logic(percentage)
+		return Percentage.from_style_value_logic(percentage.absolutized(context))
 	}
 
 	// 1. Let p1 be the first percentage and p2 the second one.
@@ -1317,7 +1317,7 @@ pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorR
 
 pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) StyleValue {
 	// FIXME: Follow the spec algorithm. https://drafts.csswg.org/css-color-5/#calculate-a-color-mix
-	normalized_percentages := style_value.normalize_percentages()
+	normalized_percentages := style_value.normalize_percentages(context)
 	mut context_document := ?&dom.Document(none)
 	if abstract_element := context.abstract_element {
 		context_document = ?&dom.Document(abstract_element.document())
