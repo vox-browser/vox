@@ -18,11 +18,151 @@ pub:
 	stream bool
 }
 
-pub struct TextDecoder {
+pub struct TextDecoderOutputQueue {
+mut:
+	single_output ?string
+	builder       string
+	has_builder   bool
+}
+
+pub fn (mut output TextDecoderOutputQueue) push(value string) ! {
+	if value == '' {
+		return
+	}
+	if output.has_builder {
+		output.builder += value
+		return
+	}
+	if output.single_output == none {
+		output.single_output = value
+		return
+	}
+	output.has_builder = true
+	output.builder = output.single_output or { '' }
+	output.single_output = none
+	output.builder += value
+}
+
+pub fn (mut output TextDecoderOutputQueue) serialize() !string {
+	if output.has_builder {
+		return output.builder
+	}
+	if value := output.single_output {
+		output.single_output = none
+		return value
+	}
+	return ''
+}
+
+pub struct TextDecoderCommonMixin {
 pub:
 	encoding_   string
 	fatal_      bool
 	ignore_bom_ bool
+mut:
+	pending_input []u8
+	bom_seen      bool
+}
+
+fn new_text_decoder_common(encoding_name string, options TextDecoderOptions) TextDecoderCommonMixin {
+	return TextDecoderCommonMixin{
+		encoding_:   encoding_name
+		fatal_:      options.fatal
+		ignore_bom_: options.ignore_bom
+	}
+}
+
+pub fn (decoder &TextDecoderCommonMixin) encoding() string {
+	return decoder.encoding_
+}
+
+pub fn (decoder &TextDecoderCommonMixin) fatal() bool {
+	return decoder.fatal_
+}
+
+pub fn (decoder &TextDecoderCommonMixin) ignore_bom() bool {
+	return decoder.ignore_bom_
+}
+
+pub fn (mut decoder TextDecoderCommonMixin) set_decoder_to_new_instance_of_encoding_decoder() {
+	decoder.pending_input.clear()
+	decoder.bom_seen = false
+}
+
+pub fn append_decoded_output(mut output TextDecoderOutputQueue, decoded string) ! {
+	output.push(decoded)!
+}
+
+fn utf16_safe_decode_boundary(bytes []u8, big_endian bool) int {
+	mut boundary := bytes.len - bytes.len % 2
+	if boundary < 2 {
+		return 0
+	}
+	last := if big_endian {
+		(u16(bytes[boundary - 2]) << 8) | u16(bytes[boundary - 1])
+	} else {
+		u16(bytes[boundary - 2]) | (u16(bytes[boundary - 1]) << 8)
+	}
+	if last >= 0xd800 && last <= 0xdbff {
+		boundary -= 2
+	}
+	return boundary
+}
+
+fn decode_bytes_for_encoding(bytes []u8, encoding_name string, fatal bool) !string {
+	return match encoding_name {
+		'utf-8' { decode_utf8(bytes, fatal)! }
+		'utf-16le' { decode_utf16(bytes, false, fatal)! }
+		'utf-16be' { decode_utf16(bytes, true, fatal)! }
+		'x-user-defined' { decode_x_user_defined(bytes) }
+		else {
+			viconv.encoding_to_vstring(bytes, encoding_name) or {
+				if fatal {
+					return error('TypeError: Decoding failed')
+				}
+				return decode_single_byte_replacing(bytes)
+			}
+		}
+	}
+}
+
+fn (mut decoder TextDecoderCommonMixin) decode_item(input []u8, end_of_queue bool) !string {
+	mut bytes := decoder.pending_input.clone()
+	bytes << input
+	mut boundary := bytes.len
+	if !end_of_queue {
+		boundary = match decoder.encoding_ {
+			'utf-8' { find_utf8_safe_decode_boundary(bytes) }
+			'utf-16le' { utf16_safe_decode_boundary(bytes, false) }
+			'utf-16be' { utf16_safe_decode_boundary(bytes, true) }
+			else { bytes.len }
+		}
+	}
+	decoder.pending_input = bytes[boundary..].clone()
+	mut decoded := decode_bytes_for_encoding(bytes[..boundary], decoder.encoding_, decoder.fatal_)!
+	if decoded != '' && !decoder.bom_seen {
+		decoder.bom_seen = true
+		if !decoder.ignore_bom_ && decoded.starts_with('\ufeff') {
+			decoded = decoded['\ufeff'.len..]
+		}
+	}
+	if end_of_queue {
+		decoder.pending_input.clear()
+	}
+	return decoded
+}
+
+pub fn (mut decoder TextDecoderCommonMixin) process_an_item(input []u8, end_of_queue bool, mut output TextDecoderOutputQueue) ! {
+	decoded := decoder.decode_item(input, end_of_queue)!
+	append_decoded_output(mut output, decoded)!
+}
+
+pub fn (_ &TextDecoderCommonMixin) serialize_io_queue(mut output TextDecoderOutputQueue) !string {
+	return output.serialize()
+}
+
+pub struct TextDecoder {
+	TextDecoderCommonMixin
 }
 
 pub fn TextDecoder.construct(label string, options TextDecoderOptions) !&TextDecoder {
@@ -35,9 +175,8 @@ pub fn TextDecoder.construct_impl(label string, options TextDecoderOptions) !&Te
 		return error('RangeError: Invalid encoding ${label}')
 	}
 	return &TextDecoder{
-		encoding_:   encoding_ascii_lowercase(canonical)
-		fatal_:      options.fatal
-		ignore_bom_: options.ignore_bom
+		TextDecoderCommonMixin: new_text_decoder_common(encoding_ascii_lowercase(canonical),
+			options)
 	}
 }
 
@@ -46,51 +185,25 @@ pub fn TextDecoder.create() &TextDecoder {
 }
 
 pub fn (decoder &TextDecoder) encoding() string {
-	return decoder.encoding_
+	return decoder.TextDecoderCommonMixin.encoding()
 }
 
 pub fn (decoder &TextDecoder) fatal() bool {
-	return decoder.fatal_
+	return decoder.TextDecoderCommonMixin.fatal()
 }
 
 pub fn (decoder &TextDecoder) ignore_bom() bool {
-	return decoder.ignore_bom_
+	return decoder.TextDecoderCommonMixin.ignore_bom()
 }
 
 pub fn (decoder &TextDecoder) decode(input ?[]u8, options TextDecodeOptions) !string {
-	// Current LibWeb keeps a shared codec and leaves streaming as a FIXME.
-	_ = options
 	bytes := input or { []u8{} }
-	mut result := match decoder.encoding_ {
-		'utf-8' {
-			decode_utf8(bytes, decoder.fatal_)!
-		}
-		'utf-16le' {
-			decode_utf16(bytes, false, decoder.fatal_)!
-		}
-		'utf-16be' {
-			decode_utf16(bytes, true, decoder.fatal_)!
-		}
-		'x-user-defined' {
-			decode_x_user_defined(bytes)
-		}
-		else {
-			viconv.encoding_to_vstring(bytes, decoder.encoding_) or {
-				if decoder.fatal_ {
-					return error('TypeError: Decoding failed')
-				}
-				return decode_single_byte_replacing(bytes)
-			}
-		}
-	}
-	// TextDecoder's BOM processing. ignoreBOM=true exposes the initial BOM.
-	if !decoder.ignore_bom_ && result.starts_with('\ufeff') {
-		result = result['\ufeff'.len..]
-	}
-	// Preserve the current upstream fatal check, which rejects any replacement
-	// character in the decoded output, including one encoded in the input.
-	if decoder.fatal_ && result.contains('\ufffd') {
-		return error('TypeError: Decoding failed')
+	mut mutable_decoder := unsafe { &TextDecoder(decoder) }
+	mut output := TextDecoderOutputQueue{}
+	mutable_decoder.process_an_item(bytes, !options.stream, mut output)!
+	result := mutable_decoder.serialize_io_queue(mut output)!
+	if !options.stream {
+		mutable_decoder.set_decoder_to_new_instance_of_encoding_decoder()
 	}
 	return result
 }
