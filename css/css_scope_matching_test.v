@@ -100,6 +100,18 @@ fn test_scope_direct_declarations_apply_to_root_with_zero_specificity() {
 	assert (child_style.property(.left, .no) or { panic('child left missing') }).css_text == 'auto'
 }
 
+fn test_scope_direct_declarations_are_matched_through_scope_pseudo() {
+	sheet := parse_css_stylesheet_with_parser('@scope (.outer) { left: 2px }', none)
+	scope_rule := sheet.rules.item(0) or { panic('missing scope rule') }
+	children := scope_rule.css_rules() or { panic('missing scope child rules') }
+	declarations := children.item(0) or { panic('missing nested declarations') }
+	selectors := style_scope_absolutized_selectors_for_rule(declarations)
+	assert selectors.selectors.len == 1
+	assert selectors.selectors[0].contains_pseudo_class(.scope)
+	assert selectors.selectors[0].specificity() == 0
+	assert selectors.selectors[0].serialize() == ':where(:scope)'
+}
+
 fn test_scope_proximity_wins_before_source_order() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut html := scope_matching_element(document, 'html', '')

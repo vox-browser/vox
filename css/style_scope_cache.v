@@ -1007,17 +1007,6 @@ fn style_scope_absolutized_selectors_for_rule(rule &CSSRule) SelectorList {
 				return mutable_parent.absolutized_selectors()
 			}
 			if parent.type_ == .scope {
-				mut mutable_scope := unsafe { &CSSRule(parent) }
-				root_selectors := mutable_scope.scope_start_selectors_for_matching() or {
-					SelectorList{
-						selectors: [selector_from_compound_selectors([CompoundSelector{
-							combinator: .no_combinator
-							simple_selectors: [SimpleSelector{
-								type_: .nesting
-							}]
-						}])]
-					}
-				}
 				return SelectorList{
 					selectors: [selector_from_compound_selectors([CompoundSelector{
 						combinator: .no_combinator
@@ -1025,7 +1014,17 @@ fn style_scope_absolutized_selectors_for_rule(rule &CSSRule) SelectorList {
 							type_: .pseudo_class
 							pseudo_class: PseudoClassSelector{
 								type_: .where
-								argument_selector_list: root_selectors
+								argument_selector_list: SelectorList{
+									selectors: [selector_from_compound_selectors([CompoundSelector{
+										combinator: .no_combinator
+										simple_selectors: [SimpleSelector{
+											type_: .pseudo_class
+											pseudo_class: PseudoClassSelector{
+												type_: .scope
+											}
+										}]
+									}])]
+								}
 							}
 						}]
 					}])]
