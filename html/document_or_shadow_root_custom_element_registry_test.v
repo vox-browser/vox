@@ -29,3 +29,15 @@ fn test_cloned_document_retains_custom_element_registry_identity() {
 	cloned_document := cloned_node.as_document() or { panic('expected a cloned document') }
 	assert cloned_document.custom_element_registry() == voidptr(registry)
 }
+
+fn test_window_returns_its_documents_custom_element_registry() {
+	document := dom.Document.create(dom.url_about_blank())
+	context := BrowsingContextModel.create(document, none, 'top')
+	window := WindowModel.create(document, context)!
+	assert voidptr(window.custom_elements()) == document.custom_element_registry()
+
+	replacement := CustomElementRegistry.create(document)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_custom_element_registry(voidptr(replacement))
+	assert window.custom_elements() == replacement
+}

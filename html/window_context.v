@@ -1165,7 +1165,6 @@ mut:
 	history_                                  &History = unsafe { nil }
 	navigation_                               &Navigation = unsafe { nil }
 	navigator_                                &Navigator = unsafe { nil }
-	custom_elements_                          &CustomElementRegistry = unsafe { nil }
 	animation_driver_                         &AnimationFrameCallbackDriver = unsafe { nil }
 	close_watcher_manager_model_              &CloseWatcherManager = unsafe { nil }
 	global_scope_                             &WindowOrWorkerGlobalScopeMixin = unsafe { nil }
@@ -1393,7 +1392,6 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		history_: history
 		navigation_: navigation
 		navigator_: Navigator.create(NavigatorHostConfiguration{})
-		custom_elements_: custom_element_registry
 		animation_driver_: &AnimationFrameCallbackDriver{}
 		close_watcher_manager_model_: close_watcher_manager
 		global_scope_: WindowOrWorkerGlobalScopeMixin.create(document.origin(), false, false)
@@ -1531,7 +1529,9 @@ pub fn (window &WindowModel) navigator() &Navigator {
 }
 
 pub fn (window &WindowModel) custom_elements() &CustomElementRegistry {
-	return window.custom_elements_
+	registry := window.associated_document().custom_element_registry()
+	assert registry != voidptr(0)
+	return unsafe { &CustomElementRegistry(registry) }
 }
 
 pub fn (window &WindowModel) close_watcher_manager() &CloseWatcherManager {
