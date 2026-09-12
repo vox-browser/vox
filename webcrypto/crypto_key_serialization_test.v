@@ -1,6 +1,7 @@
 module webcrypto
 
 fn test_crypto_key_internal_handle_serialization_round_trips_every_stable_tag() {
+	assert crypto_key_handle_tag_expectations.len == 11
 	handles := [
 		CryptoKeyInternalHandle(ByteBufferKeyHandle{ bytes: [u8(1), 2, 3] }),
 		CryptoKeyInternalHandle(RsaPublicKeyHandle{
@@ -53,6 +54,8 @@ fn test_crypto_key_internal_handle_serialization_round_trips_every_stable_tag() 
 }
 
 fn test_crypto_key_algorithm_serialization_round_trips_every_stable_tag() {
+	assert crypto_key_algorithm_tag_expectations.len == 7
+	assert crypto_key_algorithm_tag_expectations[1].expectation == .documented_reject
 	algorithms := [
 		CryptoKeyAlgorithm(KeyAlgorithm{ name: 'Ed25519' }),
 		CryptoKeyAlgorithm(RsaKeyAlgorithm{
@@ -89,6 +92,15 @@ fn test_crypto_key_algorithm_serialization_round_trips_every_stable_tag() {
 		assert encoded[0] == u8(index)
 		decoded := deserialize_algorithm(encoded)!
 		assert serialize_algorithm(decoded) == encoded
+	}
+}
+
+fn test_crypto_key_serialization_tag_tables_reject_unlisted_values() {
+	for value in 0 .. 256 {
+		handle_tag := unsafe { CryptoKeyHandleTag(u8(value)) }
+		assert handle_tag_is_in_table(handle_tag) == (value < 11)
+		algorithm_tag := unsafe { CryptoKeyAlgorithmTag(u8(value)) }
+		assert key_algorithm_tag_is_in_table(algorithm_tag) == (value < 7)
 	}
 }
 

@@ -20,6 +20,40 @@ pub enum CryptoKeyHandleTag as u8 {
 	okp_private_key   = 10
 }
 
+pub enum CryptoKeySerializationExpectation {
+	positive_golden
+	documented_reject
+}
+
+pub struct CryptoKeyHandleTagExpectation {
+pub:
+	tag         CryptoKeyHandleTag
+	expectation CryptoKeySerializationExpectation
+}
+
+pub const crypto_key_handle_tag_expectations = [
+	CryptoKeyHandleTagExpectation{ tag: .byte_buffer, expectation: .positive_golden },
+	CryptoKeyHandleTagExpectation{ tag: .rsa_public_key, expectation: .positive_golden },
+	CryptoKeyHandleTagExpectation{ tag: .rsa_private_key, expectation: .positive_golden },
+	CryptoKeyHandleTagExpectation{ tag: .ec_public_key, expectation: .positive_golden },
+	CryptoKeyHandleTagExpectation{ tag: .ec_private_key, expectation: .positive_golden },
+	CryptoKeyHandleTagExpectation{ tag: .mldsa_public_key, expectation: .positive_golden },
+	CryptoKeyHandleTagExpectation{ tag: .mldsa_private_key, expectation: .positive_golden },
+	CryptoKeyHandleTagExpectation{ tag: .mlkem_public_key, expectation: .positive_golden },
+	CryptoKeyHandleTagExpectation{ tag: .mlkem_private_key, expectation: .positive_golden },
+	CryptoKeyHandleTagExpectation{ tag: .okp_public_key, expectation: .positive_golden },
+	CryptoKeyHandleTagExpectation{ tag: .okp_private_key, expectation: .positive_golden },
+]
+
+pub fn handle_tag_is_in_table(tag CryptoKeyHandleTag) bool {
+	for entry in crypto_key_handle_tag_expectations {
+		if entry.tag == tag {
+			return true
+		}
+	}
+	return false
+}
+
 pub struct ByteBufferKeyHandle {
 pub mut:
 	bytes []u8
@@ -174,11 +208,11 @@ fn (mut reader CryptoKeySerializationReader) read_string() !string {
 }
 
 fn decode_handle_tag(mut reader CryptoKeySerializationReader) !CryptoKeyHandleTag {
-	tag := reader.read_u8()!
-	if tag > u8(CryptoKeyHandleTag.okp_private_key) {
+	tag := unsafe { CryptoKeyHandleTag(reader.read_u8()!) }
+	if !handle_tag_is_in_table(tag) {
 		return error('DataCloneError: Invalid CryptoKey handle tag')
 	}
-	return unsafe { CryptoKeyHandleTag(tag) }
+	return tag
 }
 
 fn serialize_ec_public_key(mut writer CryptoKeySerializationWriter, key EcPublicKeyHandle) {
@@ -387,6 +421,33 @@ pub enum CryptoKeyAlgorithmTag as u8 {
 	kmac_key_algorithm       = 6
 }
 
+pub struct CryptoKeyAlgorithmTagExpectation {
+pub:
+	tag         CryptoKeyAlgorithmTag
+	expectation CryptoKeySerializationExpectation
+}
+
+// WebCrypto RSA keys use RsaHashedKeyAlgorithm. The plain RSA tag stays
+// reserved in the durable format but is a documented corpus rejection.
+pub const crypto_key_algorithm_tag_expectations = [
+	CryptoKeyAlgorithmTagExpectation{ tag: .key_algorithm, expectation: .positive_golden },
+	CryptoKeyAlgorithmTagExpectation{ tag: .rsa_key_algorithm, expectation: .documented_reject },
+	CryptoKeyAlgorithmTagExpectation{ tag: .rsa_hashed_key_algorithm, expectation: .positive_golden },
+	CryptoKeyAlgorithmTagExpectation{ tag: .ec_key_algorithm, expectation: .positive_golden },
+	CryptoKeyAlgorithmTagExpectation{ tag: .aes_key_algorithm, expectation: .positive_golden },
+	CryptoKeyAlgorithmTagExpectation{ tag: .hmac_key_algorithm, expectation: .positive_golden },
+	CryptoKeyAlgorithmTagExpectation{ tag: .kmac_key_algorithm, expectation: .positive_golden },
+]
+
+pub fn key_algorithm_tag_is_in_table(tag CryptoKeyAlgorithmTag) bool {
+	for entry in crypto_key_algorithm_tag_expectations {
+		if entry.tag == tag {
+			return true
+		}
+	}
+	return false
+}
+
 pub fn serialize_algorithm(algorithm CryptoKeyAlgorithm) []u8 {
 	mut writer := CryptoKeySerializationWriter{}
 	match algorithm {
@@ -436,11 +497,10 @@ pub fn deserialize_algorithm(bytes []u8) !CryptoKeyAlgorithm {
 	mut reader := CryptoKeySerializationReader{
 		bytes: bytes
 	}
-	tag_value := reader.read_u8()!
-	if tag_value > u8(CryptoKeyAlgorithmTag.kmac_key_algorithm) {
+	tag := unsafe { CryptoKeyAlgorithmTag(reader.read_u8()!) }
+	if !key_algorithm_tag_is_in_table(tag) {
 		return error('DataCloneError: Invalid CryptoKey algorithm tag')
 	}
-	tag := unsafe { CryptoKeyAlgorithmTag(tag_value) }
 	algorithm := match tag {
 		.key_algorithm {
 			CryptoKeyAlgorithm(KeyAlgorithm{ name: reader.read_string()! })
