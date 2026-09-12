@@ -319,3 +319,26 @@ fn test_select_model_collection_indexed_mutation_children_and_roles() {
 	model.options().set_selected_index(1)
 	assert model.options().selected_index() == 1
 }
+
+fn test_select_fallback_button_text_follows_every_selectedness_change() {
+	document := parse_document('<select><option value="a" label="  Alpha  " selected>ignored</option><option value="b">Beta</option></select>')
+	select_element := select_test_element(unsafe { &dom.Node(document) }, 'select') or {
+		panic('missing select')
+	}
+	select_control := unsafe { &dom.HTMLSelectElement(select_element) }
+	mut model := HTMLSelectElementModel.create(select_control)
+	model.form_associated_element_was_inserted()
+	inner := model.inner_text_element_ or { panic('missing fallback button text') }
+	assert inner.as_node().child_text_content() == '  Alpha  '
+
+	set_html_select_element_value(select_control, 'b')
+	assert inner.as_node().child_text_content() == 'Beta'
+
+	set_html_select_element_selected_index(select_control, -1)
+	assert inner.as_node().child_text_content() == ''
+
+	options := html_select_element_list_of_options(select_control)
+	html_option_element_set_selected_internal(options[1], true)
+	html_select_element_update_selectedness(select_control)
+	assert inner.as_node().child_text_content() == 'Beta'
+}

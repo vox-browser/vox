@@ -92,6 +92,11 @@ pub fn html_option_element_update_selection_label(option &dom.HTMLOptionElement)
 	}
 	select_element := html_option_element_nearest_select(option) or { return }
 	html_select_element_update_selectedcontent(select_element) or {}
+	if select_element.select_element_model_ != unsafe { nil } {
+		mut model := unsafe { &HTMLSelectElementModel(select_element.select_element_model_) }
+		model.clone_selected_option_into_select_button()
+		return
+	}
 	shadow_root := select_dom_element(select_element).shadow_root() or { return }
 	shadow_children := unsafe { &dom.Node(shadow_root) }.children_as_vector()
 	if shadow_children.len == 0 {
@@ -102,7 +107,7 @@ pub fn html_option_element_update_selection_label(option &dom.HTMLOptionElement)
 		return
 	}
 	mut inner := border_children[0]
-	inner.string_replace_all(infra.strip_and_collapse_whitespace(html_option_element_label(option)))
+	inner.string_replace_all(html_option_element_label(option))
 }
 
 pub fn html_option_element_attribute_changed(option &dom.HTMLOptionElement, name string, old_value ?string, value ?string, namespace_ ?string) {
@@ -475,7 +480,7 @@ pub fn set_html_select_element_selected_index(select_element &dom.HTMLSelectElem
 		mutable_option.dirty_ = true
 	}
 	html_select_element_update_selectedcontent(select_element) or {}
-	model.update_inner_text_element()
+	model.clone_selected_option_into_select_button()
 }
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#dom-select-value
@@ -500,6 +505,11 @@ pub fn set_html_select_element_value(select_element &dom.HTMLSelectElement, valu
 		html_option_element_set_selected_internal(option, true)
 		mut mutable_option := unsafe { &dom.HTMLOptionElement(option) }
 		mutable_option.dirty_ = true
+	}
+	html_select_element_update_selectedcontent(select_element) or {}
+	if select_element.select_element_model_ != unsafe { nil } {
+		mut model := unsafe { &HTMLSelectElementModel(select_element.select_element_model_) }
+		model.clone_selected_option_into_select_button()
 	}
 }
 
@@ -539,6 +549,10 @@ pub fn html_select_element_update_selectedness(select_element &dom.HTMLSelectEle
 		}
 	}
 	html_select_element_update_selectedcontent(select_element) or {}
+	if select_element.select_element_model_ != unsafe { nil } {
+		mut model := unsafe { &HTMLSelectElementModel(select_element.select_element_model_) }
+		model.clone_selected_option_into_select_button()
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#the-select-element:concept-form-reset-control

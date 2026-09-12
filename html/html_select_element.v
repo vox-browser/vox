@@ -158,7 +158,7 @@ pub fn (mut model HTMLSelectElementModel) reset_algorithm() {
 	model.user_validity_ = false
 	html_select_element_reset(model.element)
 	model.update_cached_list_of_options()
-	model.update_inner_text_element()
+	model.clone_selected_option_into_select_button()
 }
 
 pub fn (model &HTMLSelectElementModel) is_html_select_element() bool {
@@ -228,7 +228,7 @@ pub fn (mut model HTMLSelectElementModel) children_changed(metadata dom.Children
 	}
 	model.update_cached_list_of_options()
 	html_select_element_update_selectedness(model.element)
-	model.update_inner_text_element()
+	model.clone_selected_option_into_select_button()
 }
 
 pub fn html_select_element_default_role(select_element &dom.HTMLSelectElement) aria.Role {
@@ -255,6 +255,7 @@ pub fn (mut model HTMLSelectElementModel) send_select_update_notifications() {
 		mut mutable_model := unsafe { &HTMLSelectElementModel(model_pointer) }
 		mutable_model.user_validity_ = true
 		html_select_element_update_selectedcontent(mutable_model.element) or {}
+		mutable_model.clone_selected_option_into_select_button()
 		mut input_event := dom.Event.create('input', dom.EventInit{ bubbles: true })
 		input_event.set_composed(true)
 		unsafe { &dom.EventTarget(select_node(mutable_model.element)) }
@@ -385,7 +386,7 @@ pub fn (mut model HTMLSelectElementModel) did_select_item(id ?u32) {
 			SelectItemSeparator {}
 		}
 	}
-	model.update_inner_text_element()
+	model.clone_selected_option_into_select_button()
 	model.send_select_update_notifications()
 }
 
@@ -396,7 +397,7 @@ pub fn (mut model HTMLSelectElementModel) form_associated_element_was_inserted()
 pub fn (mut model HTMLSelectElementModel) form_associated_element_attribute_changed(name string, value ?string) {
 	if name == 'multiple' && value == none {
 		html_select_element_update_selectedness(model.element)
-		model.update_inner_text_element()
+		model.clone_selected_option_into_select_button()
 	}
 }
 
@@ -450,21 +451,28 @@ pub fn (mut model HTMLSelectElementModel) create_shadow_tree_if_needed() {
 	shadow_node.append_child(border.as_node()) or { return }
 	model.inner_text_element_ = inner_text
 	model.chevron_icon_element_ = chevron
-	model.update_inner_text_element()
+	model.clone_selected_option_into_select_button()
 }
 
-// Both C++ overloads converge here; refreshing the cache is harmless for the
-// non-Badge overload and preserves the Badge overload's requirement.
-pub fn (mut model HTMLSelectElementModel) update_inner_text_element() {
+// https://html.spec.whatwg.org/multipage/form-elements.html#clone-selected-option-into-select-button
+pub fn (mut model HTMLSelectElementModel) clone_selected_option_into_select_button() {
 	inner := model.inner_text_element_ or { return }
 	model.update_cached_list_of_options()
+	mut text := ''
 	for option in model.cached_list_of_options_ {
 		if html_option_element_selected(option) {
-			mut inner_node := inner.as_node()
-			inner_node.string_replace_all(infra.strip_and_collapse_whitespace(html_option_element_label(option)))
-			return
+			text = html_option_element_label(option)
+			break
 		}
 	}
+	mut inner_node := inner.as_node()
+	inner_node.string_replace_all(text)
+}
+
+// Compatibility entry point for callers translated before the algorithm was
+// named in the HTML specification.
+pub fn (mut model HTMLSelectElementModel) update_inner_text_element() {
+	model.clone_selected_option_into_select_button()
 }
 
 pub fn (model &HTMLSelectElementModel) is_focusable() bool {
