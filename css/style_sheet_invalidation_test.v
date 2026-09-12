@@ -72,6 +72,23 @@ fn test_insert_rule_targets_matching_elements_in_inline_style_sheet() {
 	assert counters.style_invalidations == 1
 }
 
+fn test_inserted_character_data_schedules_has_ancestor_invalidation() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(document, 'div:has(:empty) { color: red; }')
+	parent := style_sheet_invalidation_test_element(document, 'div')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(parent.as_node()) or { panic(err) }
+	mut scope := css_style_scope_for_document(document)
+	assert scope.may_have_has_selectors()
+	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+
+	text := document.create_text_node('content').as_node()
+	mut parent_node := parent.as_node()
+	parent_node.append_child(text) or { panic(err) }
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 1
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has[0] == parent.as_node()
+}
+
 fn test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }

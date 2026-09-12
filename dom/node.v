@@ -1313,16 +1313,13 @@ fn reason_may_affect_has_selectors(reason StyleInvalidationReason) bool {
 }
 
 pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
-	if n.is_character_data() {
-		return
-	}
 	doc := n.document()
 	if doc == unsafe { nil } {
 		return
 	}
 	style_scope := style_scope_for_node(&n)
 	if style_scope.may_have_has_selectors() {
-		if reason == .node_remove {
+		if reason == .node_remove || reason == .node_insert_before {
 			if parent := n.parent_or_shadow_host() {
 				mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
 				mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(parent)
@@ -1339,6 +1336,11 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 			mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
 			mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
 		}
+	}
+	// Character data has no style of its own. Its observable :has() ancestor
+	// invalidation was scheduled above, so no direct invalidation remains.
+	if n.is_character_data() {
+		return
 	}
 	if n.is_document() {
 		mut mutable_doc := unsafe { &Document(doc) }
