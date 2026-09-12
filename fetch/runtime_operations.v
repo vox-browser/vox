@@ -7,6 +7,7 @@
 // boundary types.
 module fetch
 
+import dom
 import highresolutiontime
 import http
 import streams
@@ -334,9 +335,13 @@ pub fn (mut receiver FetchedDataReceiver) close_stream() {
 
 fn fetch_cache_partition_key(request &Request) ?string {
 	partition := determine_the_http_cache_partition(request) or { return none }
-	mut url := request.current_url()
+	return fetch_memory_cache_key(partition, request.current_url(), request.method)
+}
+
+fn fetch_memory_cache_key(partition NetworkPartitionKey, input_url dom.URL, method string) string {
+	mut url := input_url
 	url.set_fragment(none)
-	return '${partition.top_level_origin.serialize_for_ipc()}\n${request.method}\n${url.serialize()}'
+	return '${partition.top_level_origin.serialize_for_ipc()}\n${method}\n${url.serialize()}'
 }
 
 pub fn determine_the_http_cache_partition(request &Request) ?NetworkPartitionKey {
@@ -385,13 +390,16 @@ pub fn select_response_from_cache(request &Request) ?&Response {
 		response.status = entry.status_code
 		response.status_message = entry.reason_phrase
 		response.header_list = http.store_header_and_trailer_fields(entry.response_headers)
+		response.set_javascript_bytecode_cache(entry.javascript_bytecode_cache)
+		response.set_javascript_bytecode_cache_vary_key(entry.javascript_bytecode_cache_vary_key)
+		response.set_javascript_bytecode_cache_memory_cache_request_headers(entry.request_headers)
 		response.set_body_bytes(entry.response_body.clone())
 		return response
 	}
 	return none
 }
 
-pub fn store_response_in_cache(request &Request, response &Response) {
+pub fn store_response_in_cache(request &Request, mut response Response) {
 	if !fetch_http_memory_cache_enabled || request.cache_mode == .no_store {
 		return
 	}
@@ -399,6 +407,7 @@ pub fn store_response_in_cache(request &Request, response &Response) {
 		return
 	}
 	key := fetch_cache_partition_key(request) or { return }
+	response.set_javascript_bytecode_cache_memory_cache_request_headers(request.header_list)
 	mut entries := fetch_http_memory_cache_pending[key] or { []FetchMemoryCacheEntry{} }
 	entries << FetchMemoryCacheEntry{
 		vary_key: http.create_vary_key(request.header_list, response.header_list)
@@ -408,6 +417,8 @@ pub fn store_response_in_cache(request &Request, response &Response) {
 		response_headers: http.store_header_and_trailer_fields(response.header_list)
 		request_time: request.request_time
 		response_time: time.now().unix_milli()
+		javascript_bytecode_cache: response.javascript_bytecode_cache()
+		javascript_bytecode_cache_vary_key: response.javascript_bytecode_cache_vary_key()
 	}
 	fetch_http_memory_cache_pending[key] = entries
 }

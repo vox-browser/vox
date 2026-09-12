@@ -230,11 +230,51 @@ pub fn (mut response Response) set_body_info(info BodyInfo) {
 	response.body_info = info
 }
 
+pub fn (response &Response) javascript_bytecode_cache() ?[]u8 {
+	cache := response.javascript_bytecode_cache_ or { return none }
+	return cache.clone()
+}
+
+pub fn (mut response Response) set_javascript_bytecode_cache(cache ?[]u8) {
+	if bytes := cache {
+		response.javascript_bytecode_cache_ = bytes.clone()
+	} else {
+		response.javascript_bytecode_cache_ = none
+	}
+}
+
+pub fn (response &Response) javascript_bytecode_cache_vary_key() ?u64 {
+	return response.javascript_bytecode_cache_vary_key_
+}
+
+pub fn (mut response Response) set_javascript_bytecode_cache_vary_key(vary_key ?u64) {
+	response.javascript_bytecode_cache_vary_key_ = vary_key
+}
+
+pub fn (response &Response) javascript_bytecode_cache_memory_cache_request_headers() ?&http.HeaderList {
+	return response.javascript_bytecode_cache_memory_cache_request_headers_
+}
+
+pub fn (mut response Response) set_javascript_bytecode_cache_memory_cache_request_headers(request_headers ?&http.HeaderList) {
+	if headers := request_headers {
+		response.javascript_bytecode_cache_memory_cache_request_headers_ = clone_header_list(headers)
+	} else {
+		response.javascript_bytecode_cache_memory_cache_request_headers_ = none
+	}
+}
+
 pub fn (response &Response) fetch_response_redirect_taint() RedirectTaint {
+	if internal := response.internal_response {
+		return internal.fetch_response_redirect_taint()
+	}
 	return response.redirect_taint
 }
 
 pub fn (mut response Response) set_redirect_taint(taint RedirectTaint) {
+	if mut internal := response.internal_response {
+		internal.set_redirect_taint(taint)
+		return
+	}
 	response.redirect_taint = taint
 }
 

@@ -26,7 +26,9 @@ struct FetchMemoryCacheEntry {
 	request_time     i64
 	response_time    i64
 mut:
-	response_body []u8
+	response_body                      []u8
+	javascript_bytecode_cache          ?[]u8
+	javascript_bytecode_cache_vary_key ?u64
 }
 
 __global (
@@ -972,7 +974,7 @@ pub fn http_network_or_cache_fetch(params &FetchParams, host &FetchHost) &Pendin
 		}
 		controller.set_pending_request(none)
 		response = forward_response
-		store_response_in_cache(http_request, forward_response)
+		store_response_in_cache(http_request, mut forward_response)
 		finalize_response_in_cache(http_request, forward_response)
 	}
 	mut resolved := response or { Response.network_error('HTTP fetch produced no response') }
@@ -1303,4 +1305,29 @@ pub fn http_memory_cache_enabled() bool {
 pub fn clear_http_memory_cache() {
 	fetch_http_memory_cache_pending.clear()
 	fetch_http_memory_cache_complete.clear()
+}
+
+fn update_javascript_bytecode_cache_entries(entries []FetchMemoryCacheEntry, request_headers &http.HeaderList, vary_key u64, javascript_bytecode_cache []u8) []FetchMemoryCacheEntry {
+	mut updated := entries.clone()
+	for mut entry in updated {
+		if http.create_vary_key(request_headers, entry.response_headers) != entry.vary_key {
+			continue
+		}
+		entry.javascript_bytecode_cache = javascript_bytecode_cache.clone()
+		entry.javascript_bytecode_cache_vary_key = vary_key
+	}
+	return updated
+}
+
+pub fn update_javascript_bytecode_cache_in_http_memory_cache(partition_key NetworkPartitionKey, url dom.URL, method string, request_headers &http.HeaderList, vary_key u64, javascript_bytecode_cache []u8) {
+	if !fetch_http_memory_cache_enabled || !http.is_cacheable_request(method, request_headers) {
+		return
+	}
+	key := fetch_memory_cache_key(partition_key, url, method)
+	if entries := fetch_http_memory_cache_complete[key] {
+		fetch_http_memory_cache_complete[key] = update_javascript_bytecode_cache_entries(entries, request_headers, vary_key, javascript_bytecode_cache)
+	}
+	if entries := fetch_http_memory_cache_pending[key] {
+		fetch_http_memory_cache_pending[key] = update_javascript_bytecode_cache_entries(entries, request_headers, vary_key, javascript_bytecode_cache)
+	}
 }

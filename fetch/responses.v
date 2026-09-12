@@ -67,6 +67,14 @@ fn clone_navigation_timing_allow_values_list(values [][]string) [][]string {
 	return cloned
 }
 
+fn clone_header_list(source &http.HeaderList) &http.HeaderList {
+	mut cloned := http.HeaderList.create()
+	for header in source.headers() {
+		cloned.append(header)
+	}
+	return cloned
+}
+
 // https://fetch.spec.whatwg.org/#concept-response
 @[heap]
 pub struct Response {
@@ -105,9 +113,12 @@ pub mut:
 	method                  string
 	monotonic_response_time i64
 	// https://fetch.spec.whatwg.org/#concept-network-error (the network error message).
-	network_error_message   ?string
-	internal_response       ?&Response
-	request_server_request_ ?RequestServerRequest
+	network_error_message                                   ?string
+	javascript_bytecode_cache_                              ?[]u8
+	javascript_bytecode_cache_vary_key_                     ?u64
+	javascript_bytecode_cache_memory_cache_request_headers_ ?&http.HeaderList
+	internal_response                                       ?&Response
+	request_server_request_                                 ?RequestServerRequest
 }
 
 // https://fetch.spec.whatwg.org/#concept-response-clone (allocation only).
@@ -225,6 +236,14 @@ pub fn (response &Response) clone() &Response {
 		timing_allow_passed: response.timing_allow_passed
 		navigation_timing_allow_values_list_: clone_navigation_timing_allow_values_list(response.navigation_timing_allow_values_list_)
 		body_info: response.body_info
+		redirect_taint: response.redirect_taint
+		javascript_bytecode_cache_: response.javascript_bytecode_cache()
+		javascript_bytecode_cache_vary_key_: response.javascript_bytecode_cache_vary_key()
+		javascript_bytecode_cache_memory_cache_request_headers_: if cache_request_headers := response.javascript_bytecode_cache_memory_cache_request_headers_ {
+			clone_header_list(cache_request_headers)
+		} else {
+			none
+		}
 		request_server_request_: response.request_server_request_
 		monotonic_response_time: i64(time.sys_mono_now())
 	}

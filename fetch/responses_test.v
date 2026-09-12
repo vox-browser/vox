@@ -72,13 +72,21 @@ fn test_response_location_url_clone_and_cors_classification() {
 	response.url_list = [dom.URL{'https://example.test/base'}]
 	response.header_list.append(http.Header{ name: 'Location', value: '/next' })
 	response.redirect_taint = .cross_site
+	response.set_javascript_bytecode_cache([u8(1), 2, 3])
+	response.set_javascript_bytecode_cache_vary_key(u64(41))
+	mut request_headers := http.HeaderList.create()
+	request_headers.append(http.Header{ name: 'Accept', value: 'text/javascript' })
+	response.set_javascript_bytecode_cache_memory_cache_request_headers(request_headers)
 	response.method = 'POST'
 	response.network_error_message = 'outer-only metadata'
 	assert response.location_url('frag')!.url?.serialize() == 'https://example.test/next#frag'
 	clone := response.clone()
 	assert clone != response
 	assert clone.header_list.get('Location')? == '/next'
-	assert clone.redirect_taint == .same_origin
+	assert clone.redirect_taint == .cross_site
+	assert clone.javascript_bytecode_cache()? == [u8(1), 2, 3]
+	assert clone.javascript_bytecode_cache_vary_key()? == u64(41)
+	assert clone.javascript_bytecode_cache_memory_cache_request_headers()?.get('Accept')? == 'text/javascript'
 	assert clone.method == ''
 	assert clone.network_error_message == none
 	assert response.is_cors_same_origin()
@@ -97,7 +105,10 @@ fn test_filtered_responses_hide_headers_and_unsafe_response() {
 	basic := filtered_response(internal, .basic)
 	assert basic.header_list.contains('Content-Type')
 	assert !basic.header_list.contains('Set-Cookie')
-	assert basic.fetch_response_redirect_taint() == .same_origin
+	assert basic.fetch_response_redirect_taint() == .cross_site
+	mut basic_mut := basic
+	basic_mut.set_redirect_taint(.same_site)
+	assert internal.redirect_taint == .same_site
 	assert basic.fetch_response_method() == ''
 	assert basic.fetch_response_network_error_message() == none
 	cors_response := filtered_response(internal, .cors)

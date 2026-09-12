@@ -122,23 +122,92 @@ fn test_http_cache_partition_select_store_and_clear() {
 		top_level_origin: dom.Origin{ value: 'https://top-level.test' }
 	})
 	request.url_list = [dom.URL{'https://resource.test/data'}]
+	request.header_list.append(http.Header{ name: 'Accept-Language', value: 'en' })
 	mut response := Response.create()
 	response.status = 203
 	response.set_body_bytes('cached'.bytes())
+	response.set_javascript_bytecode_cache([u8(1), 2, 3])
+	response.set_javascript_bytecode_cache_vary_key(u64(17))
 	response.header_list.append(http.Header{ name: 'Cache-Control', value: 'max-age=60' })
-	store_response_in_cache(request, response)
+	store_response_in_cache(request, mut response)
 	assert select_response_from_cache(request) == none
 	finalize_response_in_cache(request, response)
 	cached := select_response_from_cache(request)?
 	assert cached != response
 	assert cached.status == 203
 	assert cached.body?.bytes() == 'cached'.bytes()
+	assert cached.javascript_bytecode_cache()? == [u8(1), 2, 3]
+	assert cached.javascript_bytecode_cache_vary_key()? == u64(17)
+	assert cached.javascript_bytecode_cache_memory_cache_request_headers()?.get('Accept-Language')? == 'en'
+	partition_key := determine_the_http_cache_partition(request)?
+	update_javascript_bytecode_cache_in_http_memory_cache(partition_key, request.current_url(), request.method, request.header_list, 29, [
+		u8(4),
+		5,
+		6,
+	])
+	updated := select_response_from_cache(request)?
+	assert updated.javascript_bytecode_cache()? == [u8(4), 5, 6]
+	assert updated.javascript_bytecode_cache_vary_key()? == u64(29)
+	clear_http_memory_cache()
+	store_response_in_cache(request, mut response)
+	update_javascript_bytecode_cache_in_http_memory_cache(partition_key, request.current_url(), request.method, request.header_list, 31, [
+		u8(7),
+		8,
+		9,
+	])
+	finalize_response_in_cache(request, response)
+	pending_updated := select_response_from_cache(request)?
+	assert pending_updated.javascript_bytecode_cache()? == [u8(7), 8, 9]
+	assert pending_updated.javascript_bytecode_cache_vary_key()? == u64(31)
 	clear_http_memory_cache()
 	assert select_response_from_cache(request) == none
 
 	request.cache_mode = .no_store
-	store_response_in_cache(request, response)
+	store_response_in_cache(request, mut response)
 	assert select_response_from_cache(request) == none
+}
+
+fn test_javascript_bytecode_cache_update_respects_vary_request_headers() {
+	clear_http_memory_cache()
+	set_http_memory_cache_enabled(true)
+	client := &CacheTestClient{
+		top_level_origin: dom.Origin{ value: 'https://top-level.test' }
+	}
+	mut english_request := Request.create()
+	english_request.set_client(client)
+	english_request.url_list = [dom.URL{'https://resource.test/script.js'}]
+	english_request.header_list.append(http.Header{ name: 'Accept-Language', value: 'en' })
+	mut french_request := Request.create()
+	french_request.set_client(client)
+	french_request.url_list = english_request.url_list.clone()
+	french_request.header_list.append(http.Header{ name: 'Accept-Language', value: 'fr' })
+
+	mut english_response := Response.create()
+	english_response.header_list.append(http.Header{ name: 'Cache-Control', value: 'max-age=60' })
+	english_response.header_list.append(http.Header{ name: 'Vary', value: 'Accept-Language' })
+	english_response.set_javascript_bytecode_cache([u8(1)])
+	english_response.set_javascript_bytecode_cache_vary_key(u64(11))
+	mut french_response := english_response.clone()
+	french_response.set_javascript_bytecode_cache([u8(2)])
+	french_response.set_javascript_bytecode_cache_vary_key(u64(12))
+	store_response_in_cache(english_request, mut english_response)
+	finalize_response_in_cache(english_request, english_response)
+	store_response_in_cache(french_request, mut french_response)
+	finalize_response_in_cache(french_request, french_response)
+
+	partition_key := determine_the_http_cache_partition(english_request)?
+	update_javascript_bytecode_cache_in_http_memory_cache(partition_key, english_request.current_url(), english_request.method, english_request.header_list, 99, [
+		u8(9),
+	])
+	assert select_response_from_cache(english_request)?.javascript_bytecode_cache()? == [
+		u8(9),
+	]
+	assert select_response_from_cache(english_request)?.javascript_bytecode_cache_vary_key()? == u64(99)
+	assert select_response_from_cache(french_request)?.javascript_bytecode_cache()? == [
+		u8(2),
+	]
+	assert select_response_from_cache(french_request)?.javascript_bytecode_cache_vary_key()? == u64(12)
+	clear_http_memory_cache()
 }
 
 fn test_body_entry_points_and_multipart_header_parser() {
