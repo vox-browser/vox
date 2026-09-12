@@ -83,7 +83,7 @@ pub fn Animation.create_with_environment(environment ?&html.EnvironmentSettingsO
 	return animation
 }
 
-pub fn Animation.construct_impl(effect ?&AnimationEffect, timeline ?&AnimationTimeline) !&Animation {
+pub fn Animation.construct_impl(effect ?&AnimationEffect, timeline ?&AnimationTimeline) &Animation {
 	return Animation.create(effect, timeline)
 }
 

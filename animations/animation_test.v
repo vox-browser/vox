@@ -85,6 +85,12 @@ fn test_construct_animation_selects_default_only_for_omitted_timeline() {
 	assert explicit_null.timeline_ == none
 }
 
+fn test_animation_constructor_is_infallible() {
+	timeline := AnimationTimeline.new()
+	animation := Animation.construct_impl(none, timeline)
+	assert (animation.timeline_ or { panic('missing constructor timeline') }) == timeline
+}
+
 fn test_finished_binding_synchronizes_an_observed_skipped_animation() {
 	mut timeline := new_document_timeline(none, 0, 0)
 	timeline.set_document_active(true)

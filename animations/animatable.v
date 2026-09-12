@@ -276,7 +276,7 @@ pub fn (mut animatable Animatable) animate(keyframes []BaseKeyframe, options Key
 		default_timeline_for_animatable(animatable)
 	}
 
-	mut animation := Animation.construct_impl(effect.as_animation_effect(), timeline)!
+	mut animation := Animation.construct_impl(effect.as_animation_effect(), timeline)
 	animation.id_ = options.id
 	animatable.associate_with_animation(animation)
 	animation.play()!
