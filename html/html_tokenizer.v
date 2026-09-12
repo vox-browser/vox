@@ -498,6 +498,21 @@ fn (t &HTMLTokenizer) is_insertion_point_reached() bool {
 	return false
 }
 
+fn (t &HTMLTokenizer) should_pause_before_next_input_character(stop StopAtInsertionPoint) bool {
+	if stop != .yes {
+		return false
+	}
+	insertion_point := t.insertion_point or { return false }
+	if t.current_offset >= insertion_point {
+		return true
+	}
+	// Newline normalization needs one character of lookahead to distinguish
+	// CRLF from a standalone CR. A later document.write() may provide that LF.
+	return t.current_offset < t.decoded_input.len
+		&& t.decoded_input[t.current_offset] == `\r`
+		&& t.current_offset + 1 == insertion_point
+}
+
 pub fn (t &HTMLTokenizer) is_blocked() bool {
 	return t.blocked
 }
@@ -647,7 +662,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 
 		for {
 			if !reconsume {
-				if stop == .yes && t.is_insertion_point_reached() {
+				if t.should_pause_before_next_input_character(stop) {
 					return none
 				}
 				current = t.next_code_point(stop)

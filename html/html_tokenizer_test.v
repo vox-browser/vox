@@ -44,6 +44,24 @@ fn test_tokenizer_keeps_consumed_input_while_an_old_insertion_point_is_saved() {
 	assert tokenizer.decoded_input.len == 0
 }
 
+fn test_tokenizer_waits_for_crlf_split_across_document_writes() {
+	mut tokenizer := HTMLTokenizer.new('\r')
+	tokenizer.current_offset = 0
+	tokenizer.insertion_point = 1
+	assert tokenizer.next_token_impl(.yes) == none
+	assert tokenizer.current_offset == 0
+
+	tokenizer.insert_input_at_insertion_point('\nX')
+	line_feed := tokenizer.next_token_impl(.yes) or { panic('missing normalized line feed') }
+	assert line_feed.is_character()
+	assert line_feed.code_point == `\n`
+	assert tokenizer.current_offset == 2
+	next := tokenizer.next_token_impl(.yes) or { panic('missing character after CRLF') }
+	assert next.is_character()
+	assert next.code_point == `X`
+	assert tokenizer.next_token_impl(.yes) == none
+}
+
 // Runtime tests for the HTML tokenizer, translated from Tests/LibWeb/TestHTMLTokenizer.cpp.
 // (The file-based `regression` test case is omitted: it depends on an external fixture and a hash
 // tied to HTMLToken::to_string()'s exact format.)
