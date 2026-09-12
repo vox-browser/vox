@@ -68,6 +68,14 @@ pub type MediaPlaybackCurrentTimeHook = fn() f64
 
 pub type MediaPlaybackCurrentFrameHook = fn() ?&dom.ImmutableBitmap_
 
+pub struct MediaBufferedRange {
+pub:
+	start f64
+	end   f64
+}
+
+pub type MediaPlaybackBufferedRangesHook = fn () []MediaBufferedRange
+
 // Host callbacks corresponding to LibMedia::PlaybackManager. Keeping this
 // boundary explicit lets the HTML state machine remain a direct translation
 // without importing a platform decoder into the html module.
@@ -81,6 +89,7 @@ pub:
 	seek                ?MediaPlaybackSeekHook
 	current_time        ?MediaPlaybackCurrentTimeHook
 	current_video_frame ?MediaPlaybackCurrentFrameHook
+	buffered_ranges     ?MediaPlaybackBufferedRangesHook
 }
 
 @[heap]
@@ -438,6 +447,13 @@ pub fn (element &HTMLMediaElement) text_tracks() &TextTrackList {
 }
 
 pub fn (element &HTMLMediaElement) buffered() &TimeRanges {
+	if hook := element.playback_hooks_.buffered_ranges {
+		mut result := &TimeRanges{}
+		for range_ in hook() {
+			result.add_range(range_.start, range_.end)
+		}
+		return result
+	}
 	return element.buffered_.clone()
 }
 
@@ -781,8 +797,17 @@ pub fn (mut element HTMLMediaElement) update_ready_state() {
 	} else {
 		element.current_playback_position_
 	}
+	buffered_ranges := if hook := element.playback_hooks_.buffered_ranges {
+		hook()
+	} else {
+		mut ranges := []MediaBufferedRange{cap: element.buffered_.ranges.len}
+		for range_ in element.buffered_.ranges {
+			ranges << MediaBufferedRange{range_.start, range_.end}
+		}
+		ranges
+	}
 	mut current_range_end := ?f64(none)
-	for range_ in element.buffered_.ranges {
+	for range_ in buffered_ranges {
 		if range_.end >= current_time {
 			current_range_end = range_.end
 			break

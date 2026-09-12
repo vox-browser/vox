@@ -28,6 +28,10 @@ fn media_range_test_fetch(_ dom.URL, offset u64) !MediaResourceResponse {
 	}
 }
 
+fn media_test_buffered_ranges() []MediaBufferedRange {
+	return [MediaBufferedRange{ start: 1, end: 7 }, MediaBufferedRange{ start: 9, end: 12 }]
+}
+
 fn test_media_element_resource_selection_metadata_and_tracks() {
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/page' })
 	media.set_fetch_hook(media_test_fetch)
@@ -143,6 +147,25 @@ fn test_media_element_ready_state_follows_buffered_data() {
 	media.buffered_.clear()
 	media.update_ready_state()
 	assert media.ready_state() == .have_metadata
+}
+
+fn test_media_element_exposes_playback_manager_buffered_ranges() {
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
+		buffered_ranges: media_test_buffered_ranges
+	})
+	ranges := media.buffered()
+	assert ranges.length() == 2
+	assert ranges.start(0)! == 1
+	assert ranges.end(0)! == 7
+	assert ranges.start(1)! == 9
+	assert ranges.end(1)! == 12
+
+	media.set_duration(20)
+	media.set_ready_state(.have_metadata)
+	media.playback_has_future_data_ = true
+	media.update_ready_state()
+	assert media.ready_state() == .have_enough_data
 }
 
 fn test_media_element_no_source_and_unsupported_source() {
