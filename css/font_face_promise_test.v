@@ -81,3 +81,16 @@ fn test_font_face_load_switches_containing_set_to_loading() {
 	assert set.fired_events.map(it.name) == ['loading']
 	assert set.is_stuck_on_the_environment
 }
+
+fn test_font_face_set_ready_settles_when_all_faces_are_deferred() {
+	mut set := FontFaceSet.create()
+	face := FontFaceObject.construct_impl('DeferredFace', FontFaceSource.from_string('url("missing-font.woff2")'), FontFaceDescriptors{
+		unicode_range: 'U+41'
+	})
+	set.add(face)!
+
+	set.set_is_pending_on_the_environment(false)
+	assert face.status() == .unloaded
+	assert set.status() == .loaded
+	assert set.ready().state == .fulfilled
+}

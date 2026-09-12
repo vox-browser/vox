@@ -36,6 +36,7 @@ pub struct TextNodeChunkIterator {
 	line_boundaries        []bool
 	word_break             css.WordBreak
 	font                   &platform.Font = unsafe { nil }
+	font_cascade_list      &css.FontCascadeList = unsafe { nil }
 	font_cascade_fonts     []&platform.Font
 	font_cascade_ranges    [][]css.UnicodeRange
 	last_resort_font       ?&platform.Font
@@ -85,6 +86,7 @@ pub fn TextNodeChunkIterator.new(text_node &TextNode, should_wrap_lines bool, sh
 		line_boundaries: text_line_boundaries_from_code_units(code_units)
 		word_break: text_node.Node.computed_values().word_break()
 		font: text_node.font_for_rendering()
+		font_cascade_list: font_cascade
 		font_cascade_fonts: font_cascade_fonts
 		font_cascade_ranges: font_cascade_ranges
 		last_resort_font: last_resort_font
@@ -166,6 +168,10 @@ fn (iterator &TextNodeChunkIterator) is_at_line_break_opportunity() bool {
 }
 
 fn (iterator &TextNodeChunkIterator) font_for_code_point(code_point u32) &platform.Font {
+	if iterator.font_cascade_list != unsafe { nil } {
+		mut font_cascade_list := unsafe { &css.FontCascadeList(iterator.font_cascade_list) }
+		font_cascade_list.trigger_pending_loads_for_code_point(code_point)
+	}
 	for index, font in iterator.font_cascade_fonts {
 		ranges := iterator.font_cascade_ranges[index]
 		if ranges.len == 0 && font.contains_glyph(code_point) {

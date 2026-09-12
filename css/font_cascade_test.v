@@ -172,6 +172,24 @@ fn test_stylesheet_font_face_rules_register_local_true_type_loaders() {
 	}
 }
 
+fn test_unicode_range_font_face_loads_only_when_a_covered_code_point_is_selected() {
+	$if macos {
+		sheet := parse_css_stylesheet_with_parser("@font-face { font-family: Subset; src: url('Arial.ttf') format('truetype'); unicode-range: U+41; }", 'file:///System/Library/Fonts/Supplemental/main.css')
+		mut computer := FontComputer.create()
+		set := FontFaceSet.create_for_font_computer(computer)
+		computer.load_fonts_from_css_rules(sheet.css_rules().rules, set)
+		face := set.set_entries()[0]
+
+		assert face.status() == .unloaded
+		mut cascade := computer.compute_font_for_style_values(['Subset'], CSSPixels.new(16), 0, 400, Percentage{ value_: 100 }, .auto_, map[string]f64{}, FontFeatureData{})
+		assert cascade.pending_faces.len == 1
+		cascade.font_for_code_point(u32(`B`))
+		assert face.status() == .unloaded
+		cascade.font_for_code_point(u32(`A`))
+		assert face.status() == .loaded
+	}
+}
+
 fn test_loaded_script_font_face_is_registered_for_matching_and_removed_with_its_set_entry() {
 	$if macos {
 		mut computer := FontComputer.create()

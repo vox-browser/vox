@@ -2059,6 +2059,19 @@ pub fn (face &FontFaceObject) unicode_range() string {
 	return face.unicode_range_
 }
 
+pub fn (face &FontFaceObject) unicode_ranges() []UnicodeRange {
+	return face.unicode_ranges_.clone()
+}
+
+pub fn (face &FontFaceObject) has_urls() bool {
+	return face.urls.len > 0
+}
+
+pub fn (face &FontFaceObject) has_non_default_unicode_range() bool {
+	return face.unicode_ranges_.len != 1 || face.unicode_ranges_[0].start != 0
+		|| face.unicode_ranges_[0].end != 0x10ffff
+}
+
 pub fn (face &FontFaceObject) feature_settings() string {
 	return face.feature_settings_
 }
@@ -2945,6 +2958,10 @@ pub fn (mut set FontFaceSet) set_is_pending_on_the_environment(is_pending_on_the
 		if set.set_entries_.len == 0
 			|| (set.is_stuck_on_the_environment && set.loading_fonts_.len == 0) {
 			set.switch_to_loaded()
+		} else if set.loading_fonts_.len == 0 {
+			// A set containing only deferred unicode-range faces never entered the
+			// loading list, but its ready promise must still settle.
+			set.switch_to_loaded()
 		}
 
 		// 2. If the FontFaceSet is stuck on the environment, unmark it as such.
@@ -3053,10 +3070,17 @@ pub:
 	unicode_ranges []UnicodeRange
 }
 
+pub struct PendingFontFace {
+pub:
+	unicode_ranges []UnicodeRange
+	font_face      &FontFaceObject = unsafe { nil }
+}
+
 @[heap]
 pub struct FontCascadeList {
 pub mut:
 	fonts            []FontCascadeEntry
+	pending_faces    []PendingFontFace
 	last_resort_font ?PlatformFont
 }
 
@@ -3075,13 +3099,50 @@ pub fn (mut list FontCascadeList) extend(other FontCascadeList) {
 	for entry in other.fonts {
 		list.fonts << entry
 	}
+	for pending_face in other.pending_faces {
+		list.pending_faces << pending_face
+	}
 	if last_resort := other.last_resort_font {
 		list.last_resort_font = last_resort
 	}
 }
 
 pub fn (list &FontCascadeList) is_empty() bool {
-	return list.fonts.len == 0
+	return list.fonts.len == 0 && list.pending_faces.len == 0 && list.last_resort_font == none
+}
+
+pub fn (mut list FontCascadeList) add_pending_face(font_face &FontFaceObject) {
+	if font_face.unicode_ranges_.len == 0 {
+		return
+	}
+	list.pending_faces << PendingFontFace{
+		unicode_ranges: font_face.unicode_ranges_.clone()
+		font_face: font_face
+	}
+}
+
+pub fn (mut list FontCascadeList) trigger_pending_loads_for_code_point(code_point u32) {
+	mut kept := []PendingFontFace{cap: list.pending_faces.len}
+	mut faces_to_load := []&FontFaceObject{}
+	for pending_face in list.pending_faces {
+		mut covers_code_point := false
+		for unicode_range in pending_face.unicode_ranges {
+			if unicode_range.start <= code_point && code_point <= unicode_range.end {
+				covers_code_point = true
+				break
+			}
+		}
+		if covers_code_point {
+			faces_to_load << pending_face.font_face
+		} else {
+			kept << pending_face
+		}
+	}
+	list.pending_faces = kept
+	for font_face in faces_to_load {
+		mut mutable_font_face := unsafe { &FontFaceObject(font_face) }
+		mutable_font_face.load()
+	}
 }
 
 fn platform_font_equals(left PlatformFont, right PlatformFont) bool {
@@ -3124,6 +3185,8 @@ pub fn (mut list FontCascadeList) set_last_resort_font(font PlatformFont) {
 // Gfx::FontCascadeList::font_for_code_point(). An empty unicode-range means
 // that the face covers the full Unicode range for cascade selection.
 pub fn (list &FontCascadeList) font_for_code_point(code_point u32) &PlatformFont {
+	mut mutable_list := unsafe { &FontCascadeList(list) }
+	mutable_list.trigger_pending_loads_for_code_point(code_point)
 	for index, entry in list.fonts {
 		if entry.unicode_ranges.len == 0 {
 			return unsafe { &list.fonts[index].font }
@@ -3388,6 +3451,10 @@ fn (mut candidate MatchingFontCandidate) font_with_point_size(point_size f32, va
 	for face in candidate.font_faces {
 		if face_fonts := face.font_with_point_size(point_size, variations, shape_features) {
 			font_list.extend(face_fonts)
+			continue
+		}
+		if face.has_urls() && face.has_non_default_unicode_range() {
+			font_list.add_pending_face(face)
 		}
 	}
 	if font_list.is_empty() {
@@ -3526,13 +3593,17 @@ pub fn (mut computer FontComputer) load_fonts_from_font_face_rules(rules []&CSSF
 		mut mutable_set := unsafe { &FontFaceSet(font_face_set) }
 		mutable_set.add_css_connected_font(font_face)
 
-		// NB: Load via FontFace::load(), to satisfy this requirement:
-		// https://drafts.csswg.org/css-font-loading/#font-face-load
-		// User agents can initiate font loads on their own, whenever they determine that a given font face is
-		// necessary to render something on the page. When this happens, they must act as if they had called the
-		// corresponding FontFace's load() method described here.
-		mut mutable_face := unsafe { &FontFaceObject(font_face) }
-		mutable_face.load_with_font_computer(computer)
+		if font_face.has_non_default_unicode_range() {
+			computer.register_font_face(font_face)
+		} else {
+			// NB: Load via FontFace::load(), to satisfy this requirement:
+			// https://drafts.csswg.org/css-font-loading/#font-face-load
+			// User agents can initiate font loads on their own, whenever they determine that a given font face is
+			// necessary to render something on the page. When this happens, they must act as if they had called the
+			// corresponding FontFace's load() method described here.
+			mut mutable_face := unsafe { &FontFaceObject(font_face) }
+			mutable_face.load_with_font_computer(computer)
+		}
 	}
 }
 
@@ -3550,13 +3621,17 @@ pub fn (mut computer FontComputer) load_fonts_from_css_rules(rules []&CSSRule, f
 			mut mutable_set := unsafe { &FontFaceSet(font_face_set) }
 			mutable_set.add_css_connected_font(font_face)
 
-			// NB: Load via FontFace::load(), to satisfy this requirement:
-			// https://drafts.csswg.org/css-font-loading/#font-face-load
-			// User agents can initiate font loads on their own, whenever they determine that a given font face is
-			// necessary to render something on the page. When this happens, they must act as if they had called the
-			// corresponding FontFace's load() method described here.
-			mut mutable_face := unsafe { &FontFaceObject(font_face) }
-			mutable_face.load_with_font_computer(computer)
+			if font_face.has_non_default_unicode_range() {
+				computer.register_font_face(font_face)
+			} else {
+				// NB: Load via FontFace::load(), to satisfy this requirement:
+				// https://drafts.csswg.org/css-font-loading/#font-face-load
+				// User agents can initiate font loads on their own, whenever they determine that a given font face is
+				// necessary to render something on the page. When this happens, they must act as if they had called the
+				// corresponding FontFace's load() method described here.
+				mut mutable_face := unsafe { &FontFaceObject(font_face) }
+				mutable_face.load_with_font_computer(computer)
+			}
 		}
 
 		if font_feature_values_rule := rule.font_feature_values_rule_ref() {

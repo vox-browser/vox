@@ -5317,6 +5317,7 @@ pub fn (mut c ComputedProperties) computed_font_list(font_computer &FontComputer
 	assert !computed.is_empty()
 	font_list := &FontCascadeList{
 		fonts: computed.fonts.clone()
+		pending_faces: computed.pending_faces.clone()
 		last_resort_font: computed.last_resort_font
 	}
 	c.cached_computed_font_list_ = font_list
