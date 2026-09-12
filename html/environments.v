@@ -163,6 +163,18 @@ pub fn (settings &EnvironmentSettingsObject) universal_global_scope() &Universal
 	return settings.universal_global_scope_
 }
 
+pub fn (settings &EnvironmentSettingsObject) report_an_exception(exception dom.JSValue, omit_error bool) {
+	if window := settings.window_ {
+		mut scope := unsafe { &WindowOrWorkerGlobalScopeMixin(window.window_or_worker_global_scope()) }
+		scope.report_an_exception(exception, omit_error)
+		return
+	}
+	if worker := settings.worker_ {
+		mut scope := unsafe { &WindowOrWorkerGlobalScopeMixin(worker.window_or_worker_global_scope()) }
+		scope.report_an_exception(exception, omit_error)
+	}
+}
+
 pub fn (settings &EnvironmentSettingsObject) module_map() &ModuleMap {
 	return settings.module_map_
 }

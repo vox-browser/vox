@@ -54,6 +54,7 @@ pub mut:
 	closing_                     bool
 	location_                    &WorkerLocation = unsafe { nil }
 	navigator_                   &WorkerNavigator
+	global_scope_                &WindowOrWorkerGlobalScopeMixin
 	internal_port_               ?&MessagePort
 	policy_container_initialized bool
 	web_interfaces_initialized_  bool
@@ -71,6 +72,7 @@ pub fn WorkerGlobalScope.create(url dom.URL, worker_type WorkerType, name string
 		worker_type: worker_type
 		name_: name
 		navigator_: WorkerNavigator.create()
+		global_scope_: WindowOrWorkerGlobalScopeMixin.create(url.origin(), is_url_potentially_trustworthy(url), false)
 	}
 	scope.location_ = WorkerLocation.create(scope)
 	return scope
@@ -127,6 +129,10 @@ pub fn (mut scope WorkerGlobalScope) set_location(location &WorkerLocation) {
 
 pub fn (scope &WorkerGlobalScope) navigator() &WorkerNavigator {
 	return scope.navigator_
+}
+
+pub fn (scope &WorkerGlobalScope) window_or_worker_global_scope() &WindowOrWorkerGlobalScopeMixin {
+	return scope.global_scope_
 }
 
 pub fn (mut scope WorkerGlobalScope) fonts() &css.FontFaceSet {
@@ -466,16 +472,15 @@ pub fn (worker &Worker) set_onerror(callback ?&dom.CallbackType) {
 
 // https://html.spec.whatwg.org/multipage/workers.html#run-a-worker
 pub fn run_a_worker(target WorkerRunTarget, url dom.URL, outside_settings &EnvironmentSettingsObject, port &MessagePort, options WorkerOptions) ! {
-	_ = outside_settings
 	if worker := target.worker {
-		mut agent := WorkerAgentParent.create(url, options, port, worker.this_event_target())
+		mut agent := WorkerAgentParent.create(url, options, outside_settings, port, worker.this_event_target())
 		agent.initialize()!
 		mut mutable_worker := unsafe { &Worker(worker) }
 		mutable_worker.set_agent(agent)
 		return
 	}
 	if worker := target.shared_worker {
-		mut agent := WorkerAgentParent.create(url, options, port, worker.this_event_target())
+		mut agent := WorkerAgentParent.create(url, options, outside_settings, port, worker.this_event_target())
 		agent.initialize()!
 		mut mutable_worker := unsafe { &SharedWorker(worker) }
 		mutable_worker.set_agent(agent)
@@ -572,6 +577,7 @@ pub struct WorkerAgentParent {
 pub:
 	url                 dom.URL
 	options             WorkerOptions
+	outside_settings    &EnvironmentSettingsObject
 	outside_port        &MessagePort
 	worker_event_target &dom.EventTarget
 pub mut:
@@ -579,12 +585,14 @@ pub mut:
 	started                              bool
 	ipc_callbacks_configured_            bool
 	worker_script_load_failure_callback_ ?fn()
+	worker_exception_callback_            ?fn(string, string, u32, u32)
 }
 
-pub fn WorkerAgentParent.create(url dom.URL, options WorkerOptions, outside_port &MessagePort, worker_event_target &dom.EventTarget) &WorkerAgentParent {
+pub fn WorkerAgentParent.create(url dom.URL, options WorkerOptions, outside_settings &EnvironmentSettingsObject, outside_port &MessagePort, worker_event_target &dom.EventTarget) &WorkerAgentParent {
 	return &WorkerAgentParent{
 		url: url
 		options: options
+		outside_settings: outside_settings
 		outside_port: outside_port
 		worker_event_target: worker_event_target
 	}
@@ -602,11 +610,36 @@ pub fn (mut parent WorkerAgentParent) initialize() ! {
 
 pub fn (mut parent WorkerAgentParent) setup_worker_ipc_callbacks() {
 	target := parent.worker_event_target
+	outside_settings := parent.outside_settings
+	parent.worker_exception_callback_ = fn [outside_settings, target] (message string, filename string, lineno u32, colno u32) {
+		queue_a_task(.dom_manipulation, outside_settings.responsible_event_loop(), outside_settings.responsible_document(), fn [outside_settings, target, message, filename, lineno, colno] () {
+			error_event := dom.ErrorEvent.create('error', dom.ErrorEventInit{
+				EventInit: dom.EventInit{
+					cancelable: true
+				}
+				message: message
+				filename: filename
+				lineno: lineno
+				colno: colno
+				error: dom.js_null()
+			})
+			base_event := unsafe { &dom.Event(error_event) }
+			if target.dispatch_event(base_event) {
+				outside_settings.report_an_exception(dom.js_object(voidptr(error_event)), true)
+			}
+		})
+	}
 	parent.worker_script_load_failure_callback_ = fn [target] () {
 		event := dom.Event.create('error', dom.EventInit{})
 		target.dispatch_event(event)
 	}
 	parent.ipc_callbacks_configured_ = true
+}
+
+pub fn (parent &WorkerAgentParent) worker_exception(message string, filename string, lineno u32, colno u32) {
+	if callback := parent.worker_exception_callback_ {
+		callback(message, filename, lineno, colno)
+	}
 }
 
 pub fn (parent &WorkerAgentParent) worker_script_load_failure() {

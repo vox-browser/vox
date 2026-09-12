@@ -10,10 +10,40 @@ mut:
 	values []string
 }
 
+struct WorkerErrorRecorder {
+mut:
+	messages        []string
+	filenames       []string
+	line_numbers    []u32
+	column_numbers  []u32
+	error_values    []dom.JSValue
+	event_pointers  []voidptr
+	prevent_default bool
+}
+
 fn worker_message_callback(mut recorder WorkerMessageRecorder) &dom.CallbackType {
 	return &dom.CallbackType{
 		handle_event: fn [mut recorder] (base_event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
 			event := unsafe { &MessageEvent(base_event) }recorder.values << event.data().to_string_value()return dom.js_undefined()
+		}
+	}
+}
+
+fn worker_error_callback(mut recorder WorkerErrorRecorder) &dom.CallbackType {
+	return &dom.CallbackType{
+		handle_event: fn [mut recorder] (base_event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			event := unsafe { &dom.ErrorEvent(base_event) }
+			recorder.messages << event.message()
+			recorder.filenames << event.filename()
+			recorder.line_numbers << event.lineno()
+			recorder.column_numbers << event.colno()
+			recorder.error_values << event.error()
+			recorder.event_pointers << voidptr(event)
+			if recorder.prevent_default {
+				mut mutable_event := unsafe { &dom.Event(base_event) }
+				mutable_event.prevent_default()
+			}
+			return dom.js_undefined()
 		}
 	}
 }
@@ -98,9 +128,13 @@ fn test_run_a_dedicated_worker_installs_and_starts_parent_agent() {
 }
 
 fn test_worker_agent_parent_callbacks_and_shadow_realm_interfaces() {
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	window := WindowModel.create_top_level(document, none, 'worker-parent-test')!
+	mut settings_realm := &ScriptingRealm{}
+	settings := WindowEnvironmentSettingsObject.setup(window, document.url, mut settings_realm, none, document.url, document.origin()).settings
 	outside := MessagePort.create()
 	target := dom.EventTarget.new()
-	mut parent := WorkerAgentParent.create(dom.URL{ value: 'https://example.test/worker.js' }, WorkerOptions{}, outside, target)
+	mut parent := WorkerAgentParent.create(dom.URL{ value: 'https://example.test/worker.js' }, WorkerOptions{}, settings, outside, target)
 	parent.initialize()!
 	assert parent.started
 	assert parent.ipc_callbacks_configured_
@@ -111,6 +145,36 @@ fn test_worker_agent_parent_callbacks_and_shadow_realm_interfaces() {
 	mut shadow := ShadowRealmGlobalScope.create(realm)
 	shadow.initialize_web_interfaces()
 	assert shadow.web_interfaces_initialized_
+}
+
+fn test_unhandled_dedicated_worker_exception_fires_error_on_parent_global() {
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	window := WindowModel.create_top_level(document, none, 'worker-error-test')!
+	mut realm := &ScriptingRealm{}
+	settings := WindowEnvironmentSettingsObject.setup(window, document.url, mut realm, none, document.url, document.origin()).settings
+	worker := Worker.construct_impl('/worker.js', settings, WorkerOptions{})!
+	agent := worker.agent_ or { panic('missing worker agent') }
+
+	mut recorder := &WorkerErrorRecorder{}
+	worker.set_onerror(worker_error_callback(mut recorder))
+	agent.worker_exception('worker exploded', 'worker.js', 12, 34)
+	drain_worker_messages()
+
+	assert recorder.messages == ['worker exploded']
+	assert recorder.filenames == ['worker.js']
+	assert recorder.line_numbers == [u32(12)]
+	assert recorder.column_numbers == [u32(34)]
+	assert recorder.error_values[0].is_nullish()
+	reported := window.window_or_worker_global_scope().reported_errors()
+	assert reported.len == 1
+	assert reported[0].kind == .object
+	assert reported[0].object_data == recorder.event_pointers[0]
+
+	recorder.prevent_default = true
+	agent.worker_exception('handled', 'worker.js', 56, 78)
+	drain_worker_messages()
+	assert recorder.messages == ['worker exploded', 'handled']
+	assert window.window_or_worker_global_scope().reported_errors().len == 1
 }
 
 fn test_worker_global_scope_fonts_policy_container_and_csp_initialization() {
