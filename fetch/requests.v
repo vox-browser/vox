@@ -38,6 +38,7 @@ pub enum Destination {
 	service_worker
 	shared_worker
 	style
+	text
 	track
 	video
 	web_identity
@@ -332,7 +333,7 @@ pub fn (mut request Request) set_url(url dom.URL) {
 pub fn (request &Request) is_subresource_request() bool {
 	destination := request.destination or { return true }
 	return destination in [Destination.audio, .audio_worklet, .font, .image, .json, .manifest,
-		.paint_worklet, .script, .style, .track, .video, .xslt]
+		.paint_worklet, .script, .style, .text, .track, .video, .xslt]
 }
 
 pub fn (request &Request) is_non_subresource_request() bool {
@@ -512,6 +513,7 @@ pub fn request_destination_to_string(destination Destination) string {
 		.service_worker { 'serviceworker' }
 		.shared_worker { 'sharedworker' }
 		.style { 'style' }
+		.text { 'text' }
 		.track { 'track' }
 		.video { 'video' }
 		.web_identity { 'webidentity' }
@@ -520,7 +522,7 @@ pub fn request_destination_to_string(destination Destination) string {
 	}
 }
 
-pub fn translate_potential_destination(value string) ?Destination {
+fn translate_potential_destination_impl(value string) ?Destination {
 	if value == 'fetch' {
 		return none
 	}
@@ -542,6 +544,7 @@ pub fn translate_potential_destination(value string) ?Destination {
 		'serviceworker' { Destination.service_worker }
 		'sharedworker' { Destination.shared_worker }
 		'style' { Destination.style }
+		'text' { Destination.text }
 		'track' { Destination.track }
 		'video' { Destination.video }
 		'webidentity' { Destination.web_identity }
@@ -549,6 +552,10 @@ pub fn translate_potential_destination(value string) ?Destination {
 		'xslt' { Destination.xslt }
 		else { none }
 	}
+}
+
+pub fn translate_potential_destination(value string) ?Destination {
+	return translate_potential_destination_impl(value)
 }
 
 pub fn request_mode_to_string(mode Mode) string {

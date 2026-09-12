@@ -69,6 +69,10 @@ fn test_request_classification_clone_range_and_strings() {
 	assert request_destination_to_string(.audio_worklet) == 'audioworklet'
 	assert translate_potential_destination('fetch') == none
 	assert translate_potential_destination('worker')? == Destination.worker
+	assert request_destination_to_string(.text) == 'text'
+	assert translate_potential_destination('text')? == Destination.text
+	request.destination = .text
+	assert request.is_subresource_request()
 	assert request_mode_to_string(.same_origin) == 'same-origin'
 	assert request_priority_from_string('HIGH')? == Priority.high
 }
