@@ -81,10 +81,13 @@ fn test_loader_singletons_are_stable() {
 }
 
 fn test_user_agent_and_platform_match_upstream_tokens() {
-	assert default_user_agent().starts_with('Mozilla/5.0 (')
+	assert default_user_agent().starts_with('Mozilla/5.0 (${ua_platform_string()})')
 	assert default_user_agent().contains('Ladybird/1.0')
 	assert default_user_agent().ends_with(compatibility_token)
 	assert default_platform() == '${os_string()} ${cpu_string()}'
+	$if macos {
+		assert ua_platform_string() == 'Macintosh; Intel Mac OS X 10_15_7'
+	}
 	assert default_navigator_compatibility_mode == .chrome
 }
 
