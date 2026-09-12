@@ -37,7 +37,7 @@ fn test_navigable_container_origin_navigation_and_destruction() {
 	container.set_name('frame')
 	container.set_src('child.html')
 	container.set_navigation_hook(embedded_navigation_hook)
-	navigable := container.create_new_child_navigable()
+	mut navigable := container.create_new_child_navigable()
 	assert navigable.target_name == 'frame'
 	assert container in navigable_container_all_instances()
 	assert navigable_container_navigable_container_with_content_navigable(navigable)? == container
@@ -45,6 +45,12 @@ fn test_navigable_container_origin_navigation_and_destruction() {
 	assert !navigable_container_content_navigable_has_session_history_entry_and_ready_for_navigation(container)
 	navigable_container_set_content_navigable_has_session_history_entry_and_ready_for_navigation(container)
 	assert navigable_container_content_navigable_has_session_history_entry_and_ready_for_navigation(container)
+	navigable.has_pending_navigations = true
+	assert container.shared_attribute_processing_steps(.yes, []) == none
+	navigable.has_pending_navigations = false
+	navigable.ongoing_navigation_is_navigation = true
+	assert container.shared_attribute_processing_steps(.yes, []) == none
+	navigable.ongoing_navigation_is_navigation = false
 	url := container.shared_attribute_processing_steps(.yes, [])?
 	container.navigate_an_iframe_or_frame(url, .origin, none, .yes)!
 	assert navigation_requests.last().url.serialize() == 'https://example.test/a/child.html'
@@ -93,6 +99,13 @@ fn test_iframe_srcdoc_sandbox_lazy_loading_and_events() {
 	iframe.set_loading_lazy(true)
 	iframe.set_srcdoc('<h1>Hello</h1>')
 	iframe.post_connection(true, [])!
+	assert !iframe.container.content_navigable_has_session_history_entry_and_ready_for_navigation()
+	mut event_loop := main_thread_event_loop()
+	for event_loop.task_queue().has_runnable_tasks()
+		&& !iframe.container.content_navigable_has_session_history_entry_and_ready_for_navigation() {
+		event_loop.process()
+	}
+	assert iframe.container.content_navigable_has_session_history_entry_and_ready_for_navigation()
 	assert iframe.current_navigation_was_lazy_loaded()
 	assert iframe.event_count('load') == 0
 	assert iframe.iframe_sandboxing_flag_set().contains(.sandboxed_origin)
@@ -104,6 +117,21 @@ fn test_iframe_srcdoc_sandbox_lazy_loading_and_events() {
 	assert navigable.last_srcdoc? == '<h1>Hello</h1>'
 	iframe.removed_from_document()
 	assert iframe.container.content_navigable() == none
+}
+
+fn test_destroyed_child_is_not_marked_ready_by_deferred_creation_bookkeeping() {
+	mut container := NavigableContainerModel.create(dom.URL{ value: 'https://example.test/' }, dom.Origin{
+		value: 'https://example.test'
+	})
+	child := container.create_new_child_navigable()
+	container.destroy_the_child_navigable()
+	mut event_loop := main_thread_event_loop()
+	for event_loop.task_queue().has_runnable_tasks() {
+		event_loop.process()
+	}
+	assert child.has_been_destroyed
+	assert !child.has_session_history_entry_and_ready
+	assert container.content_navigable() == none
 }
 
 fn test_concrete_iframe_attributes_tab_index_and_removal() {

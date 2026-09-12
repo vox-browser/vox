@@ -1669,6 +1669,8 @@ pub type DocumentDeclarativeRefreshNavigateCallback = fn (voidptr, &Document, UR
 
 pub type DocumentInitialAboutBlankOpenedCallback = fn (voidptr)
 
+pub type DocumentOpenStopLoadingCallback = fn (voidptr)
+
 pub struct DocumentHTMLNavigationHook {
 pub:
 	target                       voidptr = unsafe { nil }
@@ -1677,6 +1679,7 @@ pub:
 	open_window                  DocumentWindowOpenCallback = unsafe { nil }
 	declarative_refresh_navigate DocumentDeclarativeRefreshNavigateCallback = unsafe { nil }
 	initial_about_blank_opened   DocumentInitialAboutBlankOpenedCallback = unsafe { nil }
+	open_stop_loading            DocumentOpenStopLoadingCallback = unsafe { nil }
 }
 
 pub type DocumentFullscreenPopoverCallback = fn (voidptr, &Document, &Element)
@@ -4394,6 +4397,7 @@ pub mut:
 	implementation_            &DOMImplementation = unsafe { nil }
 	location_                  &Location = unsafe { nil }
 	completely_loaded_time     bool
+	completely_loaded_deferred bool
 	pointer_lock_element       &Element = unsafe { nil }
 	is_svg_document            bool
 	onreadystatechange_handler &CallbackType = unsafe { nil }
@@ -6766,9 +6770,6 @@ pub fn (mut d Document) open() !&Document {
 }
 
 pub fn (mut d Document) open_document() !&Document {
-	// If document belongs to a child navigable, the C++ implementation spins the navigation task source until the
-	// initial navigation is ready. That requires the full navigable/session-history subsystem.
-
 	// 1. If document is XML, throw InvalidStateError.
 	if d.is_xml_document() {
 		return error('InvalidStateError: open() called on XML document')
@@ -6798,6 +6799,13 @@ pub fn (mut d Document) open_document() !&Document {
 	// 7. If active parser was aborted, return document.
 	if d.active_parser_was_aborted {
 		return d
+	}
+	// 8. Cancel pending attempts and stop an ongoing navigation without
+	// spinning the navigation task source.
+	if hook := d.html_navigation_hook_ {
+		if hook.open_stop_loading != unsafe { nil } {
+			hook.open_stop_loading(hook.target)
+		}
 	}
 	// 11. Replace all with null (clear document).
 	mut document_node := unsafe { &Node(&d) }
@@ -7069,14 +7077,22 @@ pub fn (mut d Document) decrement_number_of_things_delaying_the_load_event() {
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#completely-finish-loading
 pub fn (mut d Document) completely_finish_loading() {
-	nav := d.navigable() or { return }
+	// Population may complete before the new document is activated and gains a
+	// navigable. Preserve that fact so activation can replay the container
+	// notification steps without blocking history traversal.
+	d.completely_loaded_time = true
+	nav := d.navigable() or {
+		d.completely_loaded_deferred = true
+		return
+	}
+	d.completely_loaded_deferred = false
 
 	// Notify document observers
 	d.notify_each_document_observer_completely_loaded()
 
 	// 1. Assert: document's browsing context is non-null.
-	// 2. Set document's completely loaded time to the current time.
-	d.completely_loaded_time = true
+	// 2. The completely loaded time was recorded above even when activation was
+	// deferred.
 	d.refresh_svg_use_shadow_trees()
 
 	// NOTE: Start the active refresh timer if set.
@@ -7099,6 +7115,10 @@ pub fn (mut d Document) completely_finish_loading() {
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#completely-loaded
 pub fn (d &Document) is_completely_loaded() bool {
 	return d.completely_loaded_time
+}
+
+pub fn (d &Document) document_completely_loaded_deferred() bool {
+	return d.completely_loaded_deferred
 }
 
 // --- Page showing / visibility ---

@@ -116,6 +116,12 @@ fn test_frame_element_lifecycle_and_about_blank_load() {
 	assert frame.default_tab_index_value() == 0
 	frame.inserted(true, true, [])!
 	assert frame.event_count('load') == 1
+	assert !frame.container.content_navigable()?.has_session_history_entry_and_ready
+	mut event_loop := main_thread_event_loop()
+	for event_loop.task_queue().has_runnable_tasks()
+		&& !frame.container.content_navigable()?.has_session_history_entry_and_ready {
+		event_loop.process()
+	}
 	assert frame.container.content_navigable()?.has_session_history_entry_and_ready
 	frame.set_src('next.html', [])!
 	assert frame.container.content_navigable()?.active_document.url.serialize() == 'https://example.test/base/next.html'

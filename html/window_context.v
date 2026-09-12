@@ -1252,6 +1252,15 @@ fn document_initial_about_blank_opened(target voidptr) {
 	navigation.set_was_initial_about_blank_opened(true)
 }
 
+fn document_open_stop_loading(target voidptr) {
+	window := unsafe { &WindowModel(target) }
+	mut navigable := unsafe { &NavigableModel(window.navigable_model()) }
+	navigable.clear_pending_navigations()
+	if navigable.ongoing_navigation().kind == .navigation {
+		navigable.stop_loading()
+	}
+}
+
 fn document_begin_temporary_execution_context(target voidptr) voidptr {
 	mut window := unsafe { &WindowModel(target) }
 	if window.scripting_realm_ == unsafe { nil } {
@@ -1414,6 +1423,7 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		open_window:               document_open_window
 		declarative_refresh_navigate: document_declarative_refresh_navigate
 		initial_about_blank_opened: document_initial_about_blank_opened
+		open_stop_loading:          document_open_stop_loading
 	})
 	mut window_realm := window.scripting_realm_
 	_ = WindowEnvironmentSettingsObject.setup(window, document.url, mut window_realm, none,

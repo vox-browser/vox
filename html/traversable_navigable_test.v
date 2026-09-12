@@ -11,6 +11,12 @@ mut:
 	result    HistoryStepResult
 }
 
+@[heap]
+struct SynchronousHistoryStepObservation {
+mut:
+	ran_while_outer_step_was_paused bool
+}
+
 fn (mut observation HistoryStepObservation) complete(result HistoryStepResult) {
 	observation.completed = true
 	observation.result = result
@@ -66,8 +72,42 @@ fn test_traversable_used_steps_length_index_and_delta() {
 	traversable.traverse_the_history_by_delta(2, none)
 	assert traversable.current_session_history_step() == 0
 	traversable.process_session_history_traversal_queue()
+	assert traversable.current_session_history_step() == 0
+	mut traversal_event_loop := main_thread_event_loop()
+	traversal_event_loop.process()
+	traversal_event_loop.process()
 	assert traversable.current_session_history_step() == 2
 	assert traversable.active_session_history_entry()? == second
+	mut mutable_document := unsafe { &dom.Document(document) }
+	assert mutable_document.history().length == 3
+	assert mutable_document.history().index == 2
+}
+
+fn test_synchronous_navigation_steps_jump_the_queue_while_history_application_is_paused() {
+	mut traversable := TraversableNavigable.create_a_fresh_top_level_traversable(dom.URL{
+		value: 'https://example.test/zero'
+	}, EmptyDocumentResource{})!
+	document := traversable.active_document() or { panic('missing document') }
+	second := traversal_entry(1, 'https://example.test/one', document)
+	traversable.append_session_history_entry(second)
+	host := traversable.host_navigable_ or { panic('missing host navigable') }
+	mut sync_observation := &SynchronousHistoryStepObservation{}
+	traversable.append_session_history_synchronous_navigation_steps(host, fn [mut sync_observation, traversable] (signal &TraversalPromiseState) {
+		sync_observation.ran_while_outer_step_was_paused = traversable.running_nested_apply_history_step()
+		signal.resolve()
+	})
+
+	mut completion := &HistoryStepObservation{}
+	traversable.apply_the_traverse_history_step(1, none, none, .none_, fn [mut completion] (result HistoryStepResult) {
+		completion.complete(result)
+	})
+	mut event_loop := main_thread_event_loop()
+	event_loop.process()
+	assert sync_observation.ran_while_outer_step_was_paused
+	assert !completion.completed
+	event_loop.process()
+	assert completion.completed
+	assert completion.result == .applied
 }
 
 fn test_traversable_clear_forward_and_finalize_navigation() {
@@ -83,6 +123,11 @@ fn test_traversable_clear_forward_and_finalize_navigation() {
 	traversable.apply_the_traverse_history_step(1, none, none, .none_, fn [mut observation] (result HistoryStepResult) {
 		observation.complete(result)
 	})
+	assert !observation.completed
+	mut event_loop := main_thread_event_loop()
+	event_loop.process()
+	assert !observation.completed
+	event_loop.process()
 	assert observation.completed
 	assert observation.result == .applied
 	traversable.clear_the_forward_session_history()
@@ -91,7 +136,14 @@ fn test_traversable_clear_forward_and_finalize_navigation() {
 
 	replacement := traversal_entry(99, 'https://example.test/replaced', document)
 	traversable.active_session_history_entry_ = replacement
-	finalize_a_same_document_navigation(mut traversable, replacement, one, .replace, .none_)
+	mut replacement_observation := &HistoryStepObservation{}
+	finalize_a_same_document_navigation(mut traversable, replacement, one, .replace, .none_, fn [mut replacement_observation] (result HistoryStepResult) {
+		replacement_observation.complete(result)
+	})
+	assert !replacement_observation.completed
+	event_loop.process()
+	event_loop.process()
+	assert replacement_observation.completed
 	assert traversable.current_session_history_step() == 1
 	assert traversable.active_session_history_entry()? == replacement
 }
@@ -107,7 +159,10 @@ fn test_superseded_same_document_navigation_retains_replacement_without_becoming
 	traversable.append_session_history_entry(newer)
 	traversable.active_session_history_entry_ = newer
 
-	finalize_a_same_document_navigation(mut traversable, superseded, replaced, .replace, .none_)
+	mut observation := &HistoryStepObservation{}
+	finalize_a_same_document_navigation(mut traversable, superseded, replaced, .replace, .none_, fn [mut observation] (result HistoryStepResult) {
+		observation.complete(result)
+	})
 
 	entries := traversable.session_history_entries()
 	assert entries.len == 2
@@ -116,6 +171,8 @@ fn test_superseded_same_document_navigation_retains_replacement_without_becoming
 	assert entries[1] == newer
 	assert traversable.current_session_history_step() == 0
 	assert traversable.active_session_history_entry()? == newer
+	assert observation.completed
+	assert observation.result == .applied
 }
 
 fn cancel_traversable_before_unload(documents []&dom.Document) CheckIfUnloadingIsCanceledResult {
@@ -151,6 +208,9 @@ fn test_traversable_cancellation_visibility_focus_and_close() {
 	})
 	assert !application.completed
 	event_loop.process()
+	assert !application.completed
+	event_loop.process()
+	event_loop.process()
 	assert application.completed
 	assert application.result == .applied
 	traversable.set_system_visibility_state(.visible)
@@ -167,6 +227,42 @@ fn test_traversable_cancellation_visibility_focus_and_close() {
 	// A repeated close is ignored after the flag has been set.
 	traversable.close_top_level_traversable()
 	assert traversable.is_closing()
+}
+
+fn test_history_application_populates_a_missing_document_before_activation() {
+	mut traversable := TraversableNavigable.create_a_fresh_top_level_traversable(dom.URL{
+		value: 'https://example.test/zero'
+	}, EmptyDocumentResource{})!
+	old_document := traversable.active_document() or { panic('missing active document') }
+	target := &SessionHistoryEntry{
+		step: 1
+		url: dom.URL{ value: 'https://example.test/restored' }
+		document_state: &DocumentState{
+			origin: dom.Origin{ value: 'https://example.test' }
+			resource: '<!doctype html><html><body>restored</body></html>'
+			ever_populated: true
+		}
+	}
+	traversable.append_session_history_entry(target)
+	mut observation := &HistoryStepObservation{}
+	traversable.apply_the_traverse_history_step(1, none, none, .none_, fn [mut observation] (result HistoryStepResult) {
+		observation.complete(result)
+	})
+	mut event_loop := main_thread_event_loop()
+	for _ in 0 .. 20 {
+		if observation.completed {
+			break
+		}
+		event_loop.process()
+	}
+
+	assert observation.completed
+	assert observation.result == .applied
+	assert traversable.active_session_history_entry()? == target
+	new_document := target.document() or { panic('history entry was not populated') }
+	assert new_document.url.serialize() == 'https://example.test/restored'
+	assert new_document.body() != none
+	assert old_document.has_been_destroyed()
 }
 
 fn test_top_level_traversable_registry_creation_and_deactivation() {

@@ -36,6 +36,8 @@ pub mut:
 	has_session_history_entry_and_ready      bool
 	is_delaying_load_events                  bool
 	has_been_destroyed                       bool
+	has_pending_navigations                  bool
+	ongoing_navigation_is_navigation         bool
 	last_referrer_policy                     ReferrerPolicy = .strict_origin_when_cross_origin
 	last_srcdoc                              ?string
 	last_navigation_replaced_current_entry   bool
@@ -124,6 +126,16 @@ pub fn (mut container NavigableContainerModel) create_new_child_navigable() &Chi
 		active_window_proxy: &dom.WindowProxy{}
 	}
 	container.content_navigable_ = navigable
+	container_pointer := voidptr(&container)
+	navigable_pointer := voidptr(navigable)
+	queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [container_pointer, navigable_pointer] () {
+		mut mutable_container := unsafe { &NavigableContainerModel(container_pointer) }
+		mut current := mutable_container.content_navigable_ or { return }
+		if voidptr(current) != navigable_pointer || current.has_been_destroyed {
+			return
+		}
+		mutable_container.mark_content_navigable_ready()
+	})
 	return navigable
 }
 
@@ -167,7 +179,8 @@ pub fn navigable_container_shared_attribute_processing_steps_for_iframe_and_fram
 // https://html.spec.whatwg.org/multipage/iframe-embed-object.html#shared-attribute-processing-steps-for-iframe-and-frame-elements
 pub fn (mut container NavigableContainerModel) shared_attribute_processing_steps(initial_insertion InitialInsertion, inclusive_ancestor_urls []dom.URL) ?dom.URL {
 	mut navigable := container.content_navigable_ or { return none }
-	if initial_insertion == .yes && navigable.history.len > 1 {
+	if initial_insertion == .yes
+		&& (navigable.has_pending_navigations || navigable.ongoing_navigation_is_navigation) {
 		return none
 	}
 	mut url := dom.URL{
@@ -202,7 +215,12 @@ pub fn (mut container NavigableContainerModel) navigate_an_iframe_or_frame(url d
 		initial_insertion: initial_insertion
 	}
 	if hook := container.navigation_hook_ {
-		hook(request)!
+		navigable.ongoing_navigation_is_navigation = true
+		hook(request) or {
+			navigable.ongoing_navigation_is_navigation = false
+			return err
+		}
+		navigable.ongoing_navigation_is_navigation = false
 	}
 	navigable.active_document.url = url
 	navigable.active_document.content_type = if srcdoc != none {
@@ -458,7 +476,6 @@ pub fn (mut iframe HTMLIFrameElementModel) post_connection(document_is_fully_act
 		iframe.iframe_sandboxing_flag_set_ = parse_a_sandboxing_directive(sandbox)
 	}
 	iframe.process_the_iframe_attributes(.yes, inclusive_ancestor_urls)!
-	iframe.container.mark_content_navigable_ready()
 }
 
 // https://html.spec.whatwg.org/multipage/iframe-embed-object.html#process-the-iframe-attributes

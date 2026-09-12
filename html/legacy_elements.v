@@ -460,7 +460,6 @@ pub fn (mut frame HTMLFrameElementModel) inserted(in_document_tree bool, has_bro
 	}
 	frame.container.create_new_child_navigable()
 	frame.process_the_frame_attributes(.yes, inclusive_ancestor_urls)!
-	frame.container.mark_content_navigable_ready()
 }
 
 pub fn (mut frame HTMLFrameElementModel) process_the_frame_attributes(initial_insertion InitialInsertion, inclusive_ancestor_urls []dom.URL) ! {

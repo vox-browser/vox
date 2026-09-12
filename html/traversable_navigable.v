@@ -84,7 +84,8 @@ mut:
 	current_session_history_step_ int
 	session_history_entries_      []&SessionHistoryEntry
 	active_session_history_entry_ ?&SessionHistoryEntry
-	running_nested_apply_step_    bool
+	paused_apply_history_step_    ?&ApplyHistoryStepState
+	apply_history_step_state_     ?&ApplyHistoryStepState
 	system_visibility_state_      dom.VisibilityState = .hidden
 	is_created_by_web_content_    bool
 	is_closing_                   bool
@@ -197,7 +198,7 @@ pub fn (traversable &TraversableNavigable) active_document() ?&dom.Document {
 }
 
 pub fn (traversable &TraversableNavigable) running_nested_apply_history_step() bool {
-	return traversable.running_nested_apply_step_
+	return traversable.paused_apply_history_step_ != none
 }
 
 pub fn (traversable &TraversableNavigable) system_visibility_state() dom.VisibilityState {
@@ -555,11 +556,13 @@ fn complete_history_step(callback ?TraversableHistoryStepCompletion, result Hist
 @[heap]
 struct HistoryStepContinuationState {
 mut:
-	traversable     &TraversableNavigable = unsafe { nil }
-	used_step       int
-	target          &SessionHistoryEntry = unsafe { nil }
-	navigation_type dom.NavigationType
-	on_complete     ?TraversableHistoryStepCompletion
+	traversable            &TraversableNavigable = unsafe { nil }
+	used_step              int
+	target                 &SessionHistoryEntry = unsafe { nil }
+	source_snapshot_params ?&SourceSnapshotParams
+	user_involvement       UserNavigationInvolvement
+	navigation_type        dom.NavigationType
+	on_complete            ?TraversableHistoryStepCompletion
 }
 
 fn (mut state HistoryStepContinuationState) resume(result CheckIfUnloadingIsCanceledResult) {
@@ -573,28 +576,269 @@ fn (mut state HistoryStepContinuationState) resume(result CheckIfUnloadingIsCanc
 		.continue_ {
 			mut mutable_traversable := unsafe { &TraversableNavigable(state.traversable) }
 			mutable_traversable.apply_the_history_step_after_unload_check(state.used_step,
-				state.target, state.navigation_type, state.on_complete)
+				state.target, state.source_snapshot_params, state.user_involvement, state.navigation_type,
+				.no, state.on_complete)
 		}
 	}
 }
 
-fn (mut traversable TraversableNavigable) apply_the_history_step_after_unload_check(used_step int, target &SessionHistoryEntry, navigation_type dom.NavigationType, on_complete ?TraversableHistoryStepCompletion) {
-	traversable.running_nested_apply_step_ = true
-	traversable.current_session_history_step_ = used_step
-	traversable.active_session_history_entry_ = target
-	traversable.active_document_ = target.document()
-	if state := target.document_state {
-		mut mutable_state := unsafe { &DocumentState(state) }
-		mutable_state.reload_pending = false
-	}
-	traversable.running_nested_apply_step_ = false
-	if hook := traversable.applied_hook_ {
-		hook(used_step, navigation_type)
-	}
-	complete_history_step(on_complete, .applied)
+pub enum ApplyHistoryStepPhase {
+	waiting_for_document_population
+	processing_continuations
+	waiting_for_change_job_completion
+	waiting_for_non_changing_jobs
+	completed
 }
 
-fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check_for_cancellation bool, user_involvement UserNavigationInvolvement, navigation_type dom.NavigationType, on_complete ?TraversableHistoryStepCompletion) {
+// The full engine has one continuation and one change job per changing
+// navigable. This translation currently owns the top-level entry directly, but
+// keeps the same event-driven phases so population, synchronous queue jumps,
+// activation, and completion never spin the event loop.
+@[heap]
+struct ApplyHistoryStepState {
+mut:
+	phase                  ApplyHistoryStepPhase = .waiting_for_document_population
+	traversable            &TraversableNavigable = unsafe { nil }
+	used_step              int
+	target                 &SessionHistoryEntry = unsafe { nil }
+	source_snapshot_params ?&SourceSnapshotParams
+	user_involvement       UserNavigationInvolvement
+	navigation_type        dom.NavigationType
+	synchronous_navigation SynchronousNavigation
+	on_complete            ?TraversableHistoryStepCompletion
+	continuation_ready     bool
+	change_job_scheduled   bool
+	changing               bool
+	non_changing           bool
+	waiting_navigables     []&dom.Navigable
+	pending_sync_signal    ?&TraversalPromiseState
+}
+
+fn (mut state ApplyHistoryStepState) start() {
+	state.phase = .waiting_for_document_population
+	state.changing = state.traversable.get_all_navigables_whose_current_session_history_entry_will_change_or_reload(state.used_step).len > 0
+	state.non_changing = state.traversable.get_all_navigables_that_only_need_history_object_length_index_update(state.used_step).len > 0
+	if !state.changing {
+		state.phase = .waiting_for_non_changing_jobs
+		state.enter_waiting_for_non_changing_jobs()
+		return
+	}
+	if host := state.traversable.host_navigable_ {
+		if model := navigable_model_for_host(host) {
+			mut mutable_model := unsafe { &NavigableModel(model) }
+			mutable_model.set_current_session_history_entry(state.target)
+			mutable_model.set_ongoing_navigation(NavigableOngoingNavigation{
+				kind: .traversal
+			})
+		}
+	}
+	queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [mut state] () {
+		state.populate_target_document_if_needed()
+	})
+}
+
+fn (mut state ApplyHistoryStepState) document_population_completed() {
+	state.continuation_ready = true
+	state.phase = .processing_continuations
+	state.process_continuations()
+}
+
+fn (mut state ApplyHistoryStepState) populate_target_document_if_needed() {
+	document_state := state.target.document_state or {
+		state.document_population_completed()
+		return
+	}
+	if document_state.document != none && !document_state.reload_pending {
+		state.document_population_completed()
+		return
+	}
+	mut mutable_document_state := unsafe { &DocumentState(document_state) }
+	if mutable_document_state.reload_pending {
+		mutable_document_state.document = none
+	}
+	mutable_document_state.reload_pending = false
+	if host := state.traversable.host_navigable_ {
+		if model := navigable_model_for_host(host) {
+			active_document := state.traversable.active_document_ or {
+				state.document_population_completed()
+				return
+			}
+			source_snapshot_params := if source := state.source_snapshot_params {
+				*source
+			} else {
+				snapshot_source_snapshot_params(active_document)
+			}
+			dom_user_involvement := match state.user_involvement {
+				.browser_ui { dom.UserNavigationInvolvement.browser_ui }
+				.activation { dom.UserNavigationInvolvement.activation }
+				.none_ { dom.UserNavigationInvolvement.none }
+			}
+			mut mutable_model := unsafe { &NavigableModel(model) }
+			mutable_model.populate_session_history_entry_document(state.target, source_snapshot_params,
+				mutable_model.snapshot_target_snapshot_params(), dom_user_involvement, none, none,
+				fn [mut state] () {
+					state.document_population_completed()
+				})
+			return
+		}
+	}
+
+	mut document := dom.Document.create(state.target.url)
+	document.set_document_type(.html)
+	document.set_content_type('text/html')
+	document.set_origin(document_state.origin or { state.target.url.origin() })
+	match document_state.resource {
+		string {
+			parse_html_from_a_string(document, document_state.resource as string)
+		}
+		else {
+			document.populate_with_html_head_and_body() or {}
+		}
+	}
+	mutable_document_state.document = document
+	mutable_document_state.ever_populated = true
+	state.document_population_completed()
+}
+
+fn (mut state ApplyHistoryStepState) process_continuations() {
+	if state.phase != .processing_continuations || !state.continuation_ready {
+		return
+	}
+	if state.traversable.paused_apply_history_step_ == none {
+		if entry := state.traversable.traversal_queue_.first_synchronous_navigation_steps_with_target_navigable_not_contained_in(state.waiting_navigables) {
+			state.traversable.paused_apply_history_step_ = state
+			signal := &TraversalPromiseState{}
+			state.pending_sync_signal = signal
+			mut mutable_signal := unsafe { &TraversalPromiseState(signal) }
+			mutable_signal.when_settled(fn [mut state] () {
+				state.pending_sync_signal = none
+				state.traversable.apply_history_step_state_ = state
+				state.traversable.paused_apply_history_step_ = none
+				state.process_continuations()
+			})
+			entry.execute_steps(signal)
+			return
+		}
+	}
+
+	if state.change_job_scheduled {
+		return
+	}
+	if host := state.traversable.host_navigable_ {
+		state.waiting_navigables << host
+	}
+	state.change_job_scheduled = true
+	state.phase = .waiting_for_change_job_completion
+	queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [mut state] () {
+		state.commit_change_job()
+	})
+}
+
+fn (mut state ApplyHistoryStepState) commit_change_job() {
+	if state.phase != .waiting_for_change_job_completion {
+		return
+	}
+	if displayed_document := state.traversable.active_document_ {
+		if target_document := state.target.document() {
+			if voidptr(displayed_document) != voidptr(target_document) {
+				deactivate_a_document_for_cross_document_navigation(displayed_document,
+					state.user_involvement, state.target, fn [mut state] () {
+						state.commit_change_job_after_potential_unloads()
+					})
+				return
+			}
+		}
+	}
+	state.commit_change_job_after_potential_unloads()
+}
+
+fn (mut state ApplyHistoryStepState) commit_change_job_after_potential_unloads() {
+	if state.phase != .waiting_for_change_job_completion {
+		return
+	}
+	mut traversable := unsafe { &TraversableNavigable(state.traversable) }
+	traversable.active_session_history_entry_ = state.target
+	traversable.active_document_ = state.target.document()
+	if mut host := traversable.host_navigable_ {
+		if model := navigable_model_for_host(host) {
+			mut mutable_model := unsafe { &NavigableModel(model) }
+			mutable_model.set_ongoing_navigation(NavigableOngoingNavigation{})
+			mutable_model.activate_history_entry(state.target)
+		} else {
+			host.active_document_ = state.target.document()
+		}
+	}
+	if document_state := state.target.document_state {
+		mut mutable_document_state := unsafe { &DocumentState(document_state) }
+		mutable_document_state.reload_pending = false
+	}
+	if document := state.target.document() {
+		position := traversable.get_the_history_object_length_and_index(state.used_step) or {
+			HistoryObjectLengthAndIndex{}
+		}
+		dom_entry := &dom.SessionHistoryEntry{
+			url: state.target.url
+			classic_history_api_state: dom.DOMSerializationRecord{
+				data: state.target.classic_history_api_state.data.clone()
+			}
+		}
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.update_for_history_step_application(dom_entry, state.synchronous_navigation == .yes,
+			int(position.script_history_length), int(position.script_history_index), state.navigation_type)
+	}
+	state.phase = .waiting_for_non_changing_jobs
+	state.enter_waiting_for_non_changing_jobs()
+}
+
+fn (mut state ApplyHistoryStepState) enter_waiting_for_non_changing_jobs() {
+	if !state.non_changing {
+		state.complete()
+		return
+	}
+	state.non_changing = false
+	queue_a_task(.navigation_and_traversal, main_thread_event_loop(), none, fn [mut state] () {
+		position := state.traversable.get_the_history_object_length_and_index(state.used_step) or {
+			state.complete()
+			return
+		}
+		if document := state.traversable.active_document_ {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			mutable_document.history().index = int(position.script_history_index)
+			mutable_document.history().length = int(position.script_history_length)
+		}
+		state.complete()
+	})
+}
+
+fn (mut state ApplyHistoryStepState) complete() {
+	if state.phase == .completed {
+		return
+	}
+	state.phase = .completed
+	state.traversable.current_session_history_step_ = state.used_step
+	state.traversable.apply_history_step_state_ = none
+	if hook := state.traversable.applied_hook_ {
+		hook(state.used_step, state.navigation_type)
+	}
+	complete_history_step(state.on_complete, .applied)
+}
+
+fn (mut traversable TraversableNavigable) apply_the_history_step_after_unload_check(used_step int, target &SessionHistoryEntry, source_snapshot_params ?&SourceSnapshotParams, user_involvement UserNavigationInvolvement, navigation_type dom.NavigationType, synchronous_navigation SynchronousNavigation, on_complete ?TraversableHistoryStepCompletion) {
+	mut state := &ApplyHistoryStepState{
+		traversable: traversable
+		used_step: used_step
+		target: target
+		source_snapshot_params: source_snapshot_params
+		user_involvement: user_involvement
+		navigation_type: navigation_type
+		synchronous_navigation: synchronous_navigation
+		on_complete: on_complete
+	}
+	traversable.apply_history_step_state_ = state
+	state.start()
+}
+
+fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check_for_cancellation bool, source_snapshot_params ?&SourceSnapshotParams, user_involvement UserNavigationInvolvement, navigation_type dom.NavigationType, synchronous_navigation SynchronousNavigation, on_complete ?TraversableHistoryStepCompletion) {
 	if traversable.has_been_destroyed_ {
 		complete_history_step(on_complete, .initiator_disallowed)
 		return
@@ -614,6 +858,8 @@ fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check
 			traversable: unsafe { &TraversableNavigable(voidptr(traversable)) }
 			used_step: used_step
 			target: target
+			source_snapshot_params: source_snapshot_params
+			user_involvement: user_involvement
 			navigation_type: navigation_type
 			on_complete: on_complete
 		}
@@ -622,34 +868,34 @@ fn (mut traversable TraversableNavigable) apply_the_history_step(step int, check
 		})
 		return
 	}
-	traversable.apply_the_history_step_after_unload_check(used_step, target, navigation_type,
-		on_complete)
+	traversable.apply_the_history_step_after_unload_check(used_step, target, source_snapshot_params,
+		user_involvement, navigation_type, synchronous_navigation, on_complete)
 }
 
 pub fn (mut traversable TraversableNavigable) apply_the_traverse_history_step(step int, source_snapshot_params ?&SourceSnapshotParams, initiator_to_check ?&dom.Navigable, user_involvement UserNavigationInvolvement, on_complete ?TraversableHistoryStepCompletion) {
-	_ = source_snapshot_params
 	_ = initiator_to_check
-	traversable.apply_the_history_step(step, true, user_involvement, .traverse, on_complete)
+	traversable.apply_the_history_step(step, true, source_snapshot_params, user_involvement,
+		.traverse, .no, on_complete)
 }
 
 pub fn (mut traversable TraversableNavigable) apply_the_reload_history_step(user_involvement UserNavigationInvolvement, on_complete ?TraversableHistoryStepCompletion) {
-	traversable.apply_the_history_step(traversable.current_session_history_step_, true,
-		user_involvement, .reload, on_complete)
+	traversable.apply_the_history_step(traversable.current_session_history_step_, true, none,
+		user_involvement, .reload, .no, on_complete)
 }
 
-pub fn (mut traversable TraversableNavigable) apply_the_push_or_replace_history_step(step int, history_handling HistoryHandlingBehavior, user_involvement UserNavigationInvolvement, synchronous_navigation SynchronousNavigation) {
-	_ = synchronous_navigation
+pub fn (mut traversable TraversableNavigable) apply_the_push_or_replace_history_step(step int, history_handling HistoryHandlingBehavior, user_involvement UserNavigationInvolvement, synchronous_navigation SynchronousNavigation, on_complete ?TraversableHistoryStepCompletion) {
 	type_ := if history_handling == .replace {
 		dom.NavigationType.replace
 	} else {
 		dom.NavigationType.push
 	}
-	traversable.apply_the_history_step(step, false, user_involvement, type_, none)
+	traversable.apply_the_history_step(step, false, none, user_involvement, type_, synchronous_navigation,
+		on_complete)
 }
 
-pub fn (mut traversable TraversableNavigable) update_for_navigable_creation_or_destruction() {
-	traversable.apply_the_history_step(traversable.current_session_history_step_, false, .none_,
-		.traverse, none)
+pub fn (mut traversable TraversableNavigable) update_for_navigable_creation_or_destruction(on_complete ?TraversableHistoryStepCompletion) {
+	traversable.apply_the_history_step(traversable.current_session_history_step_, false, none,
+		.none_, .traverse, .no, on_complete)
 }
 
 fn clear_forward_in_entries(entries []&SessionHistoryEntry, current_step int) []&SessionHistoryEntry {
@@ -695,21 +941,19 @@ pub fn (mut traversable TraversableNavigable) traverse_the_history_by_delta(delt
 		UserNavigationInvolvement.browser_ui
 	}
 	traversable_pointer := voidptr(traversable)
-	traversable.append_session_history_traversal_steps(fn [delta, traversable_pointer, user_involvement] () &TraversalPromiseState {
-		mut signal := &TraversalPromiseState{}
+	traversable.append_session_history_traversal_steps(fn [delta, traversable_pointer, user_involvement] (signal &TraversalPromiseState) {
 		mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
 		steps := mutable_traversable.get_all_used_history_steps()
 		current_index := steps.index(mutable_traversable.current_session_history_step_)
 		target_index := current_index + delta
 		if current_index < 0 || target_index < 0 || target_index >= steps.len {
-			signal.resolved = true
-			return signal
+			signal.resolve()
+			return
 		}
 		mutable_traversable.apply_the_traverse_history_step(steps[target_index], none, none,
-			user_involvement, fn [mut signal] (_ HistoryStepResult) {
-				signal.resolved = true
+			user_involvement, fn [signal] (_ HistoryStepResult) {
+				signal.resolve()
 			})
-		return signal
 	})
 }
 
@@ -753,16 +997,14 @@ pub fn (mut traversable TraversableNavigable) definitely_close_top_level_travers
 			return
 		}
 		mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
-		mutable_traversable.append_session_history_traversal_steps(fn [traversable_pointer] () &TraversalPromiseState {
-			mut signal := &TraversalPromiseState{}
+		mutable_traversable.append_session_history_traversal_steps(fn [traversable_pointer] (signal &TraversalPromiseState) {
 			mut mutable_traversable := unsafe { &TraversableNavigable(traversable_pointer) }
 			if document := mutable_traversable.active_document_ {
 				mut mutable_document := unsafe { &dom.Document(document) }
 				mutable_document.unload_a_document_and_its_descendants(none)
 			}
 			mutable_traversable.destroy_top_level_traversable()
-			signal.resolved = true
-			return signal
+			signal.resolve()
 		})
 	})
 }
@@ -854,8 +1096,9 @@ fn deactivate_a_document_for_cross_document_navigation(displayed_document &dom.D
 	after_potential_unloads()
 }
 
-pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable, target_entry &SessionHistoryEntry, entry_to_replace ?&SessionHistoryEntry, history_handling HistoryHandlingBehavior, user_involvement UserNavigationInvolvement) {
+pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable, target_entry &SessionHistoryEntry, entry_to_replace ?&SessionHistoryEntry, history_handling HistoryHandlingBehavior, user_involvement UserNavigationInvolvement, on_complete ?TraversableHistoryStepCompletion) {
 	if traversable.has_been_destroyed_ {
+		complete_history_step(on_complete, .applied)
 		return
 	}
 	active_entry := traversable.active_session_history_entry_ or {
@@ -867,6 +1110,7 @@ pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable,
 				traversable.session_history_entries_[index] = target_entry
 			}
 		}
+		complete_history_step(on_complete, .applied)
 		return
 	}
 	// A later navigation can become active before this queued navigation is
@@ -881,6 +1125,7 @@ pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable,
 				traversable.session_history_entries_[index] = target_entry
 			}
 		}
+		complete_history_step(on_complete, .applied)
 		return
 	}
 	mut target_step := traversable.current_session_history_step_
@@ -906,5 +1151,5 @@ pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable,
 		traversable.session_history_entries_ << target_entry
 	}
 	traversable.apply_the_push_or_replace_history_step(target_step, history_handling, user_involvement,
-		.yes)
+		.yes, on_complete)
 }

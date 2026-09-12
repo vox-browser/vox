@@ -18,6 +18,18 @@ __global (
 	navigable_test_destroy_during_fetch = &NavigableModel(unsafe { nil })
 )
 
+@[heap]
+struct NavigableHistoryStepObservation {
+mut:
+	completed bool
+	result    HistoryStepResult
+}
+
+fn (mut observation NavigableHistoryStepObservation) complete(result HistoryStepResult) {
+	observation.completed = true
+	observation.result = result
+}
+
 fn navigable_test_complete() {
 	navigable_test_observer_completions++
 }
@@ -195,6 +207,43 @@ fn test_navigable_history_cross_document_fragment_reload_and_javascript_url() {
 	})!
 	assert model.active_document()?.body() != none
 	assert model.get_session_history_entries().len == 3
+}
+
+fn test_cross_document_navigation_completion_runs_for_destroyed_navigables() {
+	document, _, model_pointer := navigable_test_top_level('https://example.test/start', 'top')!
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	model.set_has_been_destroyed()
+	entry := &SessionHistoryEntry{
+		url: document.url
+		document_state: &DocumentState{
+			document: document
+		}
+	}
+	mut observation := &NavigableHistoryStepObservation{}
+	finalize_a_cross_document_navigation(model, .replace, .none, entry, fn [mut observation] (result HistoryStepResult) {
+		observation.complete(result)
+	})
+	assert observation.completed
+	assert observation.result == .applied
+}
+
+fn test_activating_an_entry_replays_deferred_complete_loading() {
+	_, _, model_pointer := navigable_test_top_level('https://example.test/start', 'top')!
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	mut deferred_document := dom.Document.create(dom.URL{ value: 'https://example.test/next' })
+	deferred_document.set_origin(deferred_document.url.origin())
+	deferred_document.completely_finish_loading()
+	assert deferred_document.document_completely_loaded_deferred()
+	entry := &SessionHistoryEntry{
+		url: deferred_document.url
+		document_state: &DocumentState{
+			document: deferred_document
+		}
+	}
+
+	model.activate_history_entry(entry)
+	assert model.active_document()? == deferred_document
+	assert !deferred_document.document_completely_loaded_deferred()
 }
 
 fn test_navigable_sandbox_viewport_selection_observers_and_rendering() {

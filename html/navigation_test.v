@@ -143,3 +143,28 @@ fn test_document_open_keeps_initial_about_blank_navigation_disabled() {
 	navigation.initialize_the_navigation_api_entries_for_a_new_document([entry], entry)
 	assert !navigation.was_initial_about_blank_opened()
 }
+
+fn test_document_open_cancels_pending_and_ongoing_navigation_without_spinning() {
+	mut document := &dom.Document{}
+	document.set_document_type(.html)
+	document.set_url(dom.url_about_blank())
+	document.set_origin(dom.URL{ value: 'https://example.test/' }.origin())
+	document.set_is_initial_about_blank(true)
+	install_document_fragment_parsing_hook(document)
+	window := WindowModel.create_top_level(document, none, '')!
+	mut model := unsafe { &NavigableModel(window.navigable_model()) }
+	model.has_session_history_entry_and_ready_ = false
+	model.navigate(NavigableNavigateParams{
+		url: dom.URL{ value: 'https://example.test/pending' }
+		source_document: document
+	})!
+	assert model.has_pending_navigations()
+	model.set_ongoing_navigation(NavigableOngoingNavigation{
+		kind: .navigation
+		id: 'ongoing'
+	})
+
+	document.open()!
+	assert !model.has_pending_navigations()
+	assert model.ongoing_navigation().kind == .empty
+}

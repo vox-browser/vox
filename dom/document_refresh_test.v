@@ -59,6 +59,20 @@ fn test_shared_declarative_refresh_rejects_javascript_and_overflow_defaults_to_z
 	assert overflow.active_refresh_timer.interval_ms == 0
 }
 
+fn test_completely_finish_loading_defers_navigable_notifications_until_activation() {
+	mut document := Document.create(URL{ value: 'https://example.test/deferred' })
+	document.completely_finish_loading()
+	assert document.is_completely_loaded()
+	assert document.document_completely_loaded_deferred()
+
+	document.set_cached_navigable(&Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	})
+	document.completely_finish_loading()
+	assert !document.document_completely_loaded_deferred()
+}
+
 fn test_meta_declarative_refresh_starts_after_load_and_honors_sandbox() {
 	mut state := &DeclarativeRefreshTestState{}
 	mut document := refresh_test_document('https://example.test/', state)

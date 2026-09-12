@@ -489,6 +489,15 @@ pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryE
 	document.set_cached_navigable(model.host_)
 	document.make_active()
 	document.set_ready_to_run_scripts()
+	if document.document_ready_for_post_load_tasks() {
+		model.clear_navigation_load_event_guard()
+		if container_document := model.container_document() {
+			container_document.schedule_html_parser_end_check()
+		}
+	}
+	if document.document_completely_loaded_deferred() {
+		document.completely_finish_loading()
+	}
 	if mut context := model.context_ {
 		context.set_active_document(new_document)
 	}
@@ -1171,7 +1180,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 	}
 	model.populate_session_history_entry_document(entry, source_snapshot_params, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id, received_navigation_params.navigation_params, none)
 	finalize_session_history_entry(entry, received_navigation_params, true, none)
-	finalize_a_cross_document_navigation(&model, history_handling, params.user_involvement, entry)
+	finalize_a_cross_document_navigation(&model, history_handling, params.user_involvement, entry, none)
 }
 
 fn (mut model NavigableModel) commit_navigation_entry(entry &SessionHistoryEntry, history_handling HistoryHandlingBehavior) {
@@ -1212,9 +1221,10 @@ fn (mut model NavigableModel) commit_navigation_entry(entry &SessionHistoryEntry
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#finalize-a-cross-document-navigation
-pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_handling HistoryHandlingBehavior, user_involvement dom.UserNavigationInvolvement, history_entry &SessionHistoryEntry) {
+pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_handling HistoryHandlingBehavior, user_involvement dom.UserNavigationInvolvement, history_entry &SessionHistoryEntry, on_complete ?TraversableHistoryStepCompletion) {
 	_ = user_involvement
 	if navigable.has_been_destroyed_ || history_entry.document() == none {
+		complete_history_step(on_complete, .applied)
 		return
 	}
 	mut model := unsafe { &NavigableModel(navigable) }
@@ -1222,8 +1232,14 @@ pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_h
 		model.set_navigation_load_event_guard(parent_document)
 	}
 	model.set_delaying_load_events(false)
-	new_document := history_entry.document() or { return }
-	active_document := model.active_document() or { return }
+	new_document := history_entry.document() or {
+		complete_history_step(on_complete, .applied)
+		return
+	}
+	active_document := model.active_document() or {
+		complete_history_step(on_complete, .applied)
+		return
+	}
 	if model.parent_ == none {
 		is_auxiliary_with_opener := if context := model.context_ {
 			context.is_auxiliary() && context.opener_browsing_context() != none
@@ -1274,6 +1290,7 @@ pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_h
 		mut node := unsafe { &dom.Node(container.as_node()) }
 		node.set_needs_layout_update(.finalize_a_cross_document_navigation)
 	}
+	complete_history_step(on_complete, .applied)
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#url-and-history-update-steps
@@ -1671,6 +1688,10 @@ pub fn (mut model NavigableModel) stop_loading() {
 		}
 		document.abort_a_document_and_its_descendants()
 	}
+}
+
+pub fn (mut model NavigableModel) clear_pending_navigations() {
+	model.pending_navigations_.clear()
 }
 
 pub fn (model &NavigableModel) has_session_history_entry_and_ready_for_navigation() bool {

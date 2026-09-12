@@ -4,23 +4,22 @@ module html
 import dom
 
 __global (
-	navigation_test_run_count      int
-	navigation_test_first_promise  &TraversalPromiseState
-	navigation_test_second_promise &TraversalPromiseState
+	navigation_test_run_count     int
+	navigation_test_first_promise &TraversalPromiseState
 )
 
-fn navigation_test_first_steps() &TraversalPromiseState {
+fn navigation_test_first_steps(signal &TraversalPromiseState) {
 	unsafe {
 		navigation_test_run_count++
-		return navigation_test_first_promise
+		navigation_test_first_promise = signal
 	}
 }
 
-fn navigation_test_second_steps() &TraversalPromiseState {
+fn navigation_test_second_steps(signal &TraversalPromiseState) {
 	unsafe {
 		navigation_test_run_count++
-		return navigation_test_second_promise
 	}
+	signal.resolve()
 }
 
 fn test_x_frame_options_adherence() {
@@ -60,9 +59,6 @@ fn test_session_history_traversal_queue_waits_for_current_promise() {
 	unsafe {
 		navigation_test_run_count = 0
 		navigation_test_first_promise = &TraversalPromiseState{}
-		navigation_test_second_promise = &TraversalPromiseState{
-			resolved: true
-		}
 	}
 	mut queue := SessionHistoryTraversalQueue{}
 	queue.append(navigation_test_first_steps)
@@ -70,9 +66,8 @@ fn test_session_history_traversal_queue_waits_for_current_promise() {
 	queue.process()
 	unsafe {
 		assert navigation_test_run_count == 1
-		navigation_test_first_promise.resolved = true
+		navigation_test_first_promise.resolve()
 	}
-	queue.process()
 	unsafe {
 		assert navigation_test_run_count == 2
 	}
@@ -93,9 +88,8 @@ fn test_session_history_traversal_queue_retains_a_pending_final_promise() {
 	assert queue.current_promise? == navigation_test_first_promise
 
 	unsafe {
-		navigation_test_first_promise.resolved = true
+		navigation_test_first_promise.resolve()
 	}
-	queue.process()
 	assert !queue.scheduled
 	assert queue.current_promise == none
 }
@@ -113,5 +107,25 @@ fn test_session_history_traversal_queue_extracts_sync_entry() {
 	assert queue.queue.len == 1
 	created := SessionHistoryTraversalQueueEntry.create(navigation_test_first_steps, first)
 	assert created.target_navigable? == first
-	assert created.execute_steps() == navigation_test_first_promise
+	signal := &TraversalPromiseState{}
+	created.execute_steps(signal)
+	assert navigation_test_first_promise == signal
+}
+
+fn test_session_history_traversal_queue_does_not_jump_unready_child_bookkeeping() {
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	mut target := &dom.Navigable{
+		active_document_: document
+	}
+	mut model := NavigableModel.create(target, none) or { panic(err) }
+	model.has_session_history_entry_and_ready_ = false
+	mut queue := SessionHistoryTraversalQueue{}
+	queue.append_sync(navigation_test_first_steps, target)
+	assert queue.first_synchronous_navigation_steps_with_target_navigable_not_contained_in([]) == none
+
+	model.set_has_session_history_entry_and_ready_for_navigation()
+	entry := queue.first_synchronous_navigation_steps_with_target_navigable_not_contained_in([]) or {
+		panic('ready child navigation did not jump the queue')
+	}
+	assert entry.target_navigable()? == target
 }

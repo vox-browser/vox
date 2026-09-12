@@ -70,6 +70,13 @@ browsing contexts and cross-origin access, event loop and messaging, classic
 and module-script fetching, workers and scripting environments, structured
 serialization, rendering-thread command ordering, and syntax highlighting.
 
+History-step application is event-driven: document population, synchronous
+navigation queue jumps, changing-document updates, and non-changing history
+object updates advance through explicit continuation phases. Traversal queue
+entries receive a settlement signal, child navigables become ready only after
+their queued creation bookkeeping, and `Document.open()` cancels pending and
+ongoing navigation without spinning the event loop.
+
 The rendering update now executes the source content-visibility and
 ResizeObserver fixed-point loop. It determines proximity for the filtered
 `content-visibility:auto` paintable cache, repeats after an initially relevant
