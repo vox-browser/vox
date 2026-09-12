@@ -2731,9 +2731,16 @@ pub fn register_property(definition PropertyDefinition) !CustomPropertyRegistrat
 	if maybe_syntax.type() == .universal {
 		if initial_value := definition.initial_value {
 			// Otherwise, if syntax definition is the universal syntax definition,
-			// parse initialValue as a <declaration-value>
-			parsed_initial_value := parse_with_a_syntax(parse_component_values_for_value_logic(initial_value),
-				maybe_syntax)
+			// parse initialValue as the @property initial-value descriptor. Unlike
+			// property values, descriptor values do not admit arbitrary
+			// substitution functions.
+			initial_value_components := parse_component_values_for_value_logic(initial_value)
+			mut substitution_presence := SubstitutionFunctionsPresence{}
+			collect_arbitrary_substitution_function_presence(initial_value_components, mut substitution_presence)
+			if substitution_presence.has_any() {
+				return error('SyntaxError: Invalid initial value')
+			}
+			parsed_initial_value := parse_with_a_syntax(initial_value_components, maybe_syntax)
 			if parsed_initial_value.type_() == .guaranteed_invalid {
 				return error('SyntaxError: Invalid initial value')
 			}
