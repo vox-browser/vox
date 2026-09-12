@@ -118,6 +118,7 @@ mut:
 	service_worker_objects_              map[string]&ServiceWorkerObjectModel
 	fetch_group_                         FetchGroup
 	script_fetch_hook_                   ?PerformTheFetchHook
+	script_compile_hook_                 ?ScriptParseHook
 }
 
 fn create_environment_settings(realm &ScriptingRealm, environment &Environment, kind EnvironmentGlobalKind, event_loop &EventLoop) &EnvironmentSettingsObject {
@@ -195,6 +196,15 @@ pub fn (mut settings EnvironmentSettingsObject) set_script_fetch_hook(hook ?Perf
 
 pub fn (settings &EnvironmentSettingsObject) script_fetch_hook() ?PerformTheFetchHook {
 	return settings.script_fetch_hook_
+}
+
+// Runtime-neutral host boundary for parsing and top-level code generation.
+pub fn (mut settings EnvironmentSettingsObject) set_script_compile_hook(hook ?ScriptParseHook) {
+	settings.script_compile_hook_ = hook
+}
+
+pub fn (settings &EnvironmentSettingsObject) script_compile_hook() ?ScriptParseHook {
+	return settings.script_compile_hook_
 }
 
 pub fn (settings &EnvironmentSettingsObject) responsible_document() ?&dom.Document {

@@ -60,9 +60,10 @@ fn test_classic_script_lifecycle_and_error_modes() {
 		value: 'https://example.test/cached.js'
 	}, scripting_test_parse, .no)
 	assert preparsed.parse_error == none
-	broken_preparsed := ClassicScript.create_from_pre_parsed('cached.js', 'invalid', realm,
-		dom.url_about_blank(), scripting_test_parse, .no)
+	broken_preparsed := ClassicScript.create_from_pre_parsed('cached.js', 'invalid', realm, dom.url_about_blank(), scripting_test_parse, .no)
 	assert broken_preparsed.parse_error? == 'syntax error'
+	compiled := ClassicScript.create_from_pre_compiled('compiled.js', 'ok', realm, dom.url_about_blank(), CompiledProgram{ program_type: .script, line_number_offset: 1 }, .no)
+	assert compiled.compiled_program?.program_type == .script
 	mut visitor := dom.CellVisitor{}
 	unsafe { &Script(preparsed) }.visit_host_defined_self(mut visitor)
 }
@@ -86,9 +87,10 @@ fn test_module_script_module_map_and_temporary_context() {
 	assert module_map.is_failed(url, 'javascript')
 	assert scripting_test_module_changes == 1
 	assert module_map_is(module_map, url, 'javascript', .failed)
-	preparsed_module := JavaScriptModuleScript.create_from_pre_parsed('cached-module.js',
-		'value', realm, url, scripting_test_parse)
+	preparsed_module := JavaScriptModuleScript.create_from_pre_parsed('cached-module.js', 'value', realm, url, scripting_test_parse)
 	assert preparsed_module.parse_error == none
+	compiled_module := JavaScriptModuleScript.create_from_pre_compiled('compiled-module.js', 'value', realm, url, CompiledProgram{ program_type: .module })
+	assert compiled_module.compiled_program?.program_type == .module
 
 	mut context := TemporaryExecutionContext.create(mut realm, .yes)
 	assert realm.script_execution_depth == 1

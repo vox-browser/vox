@@ -207,6 +207,7 @@ pub struct ClassicScript {
 pub:
 	source             string
 	source_line_number usize
+	compiled_program   ?CompiledProgram
 pub mut:
 	muted_errors MutedErrors
 	evaluator    ?ScriptEvaluationHook
@@ -243,6 +244,31 @@ pub fn ClassicScript.create_from_pre_parsed(filename string, source_code string,
 		script.error_to_rethrow = err.msg()
 	}
 	return script
+}
+
+pub fn ClassicScript.create_from_parsed_program(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, parsed ParsedProgram, muted_errors MutedErrors) &ClassicScript {
+	mut script := ClassicScript.create(filename, source_code, realm, base_url, 1, muted_errors)
+	if parse_error := parsed.error {
+		script.parse_error = parse_error
+		script.error_to_rethrow = parse_error
+	}
+	return script
+}
+
+pub fn ClassicScript.create_from_pre_compiled(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, compiled CompiledProgram, muted_errors MutedErrors) &ClassicScript {
+	actual_url := if muted_errors == .yes { dom.url_about_blank() } else { base_url }
+	actual_source := if realm.scripting_enabled { source_code } else { '' }
+	return &ClassicScript{
+		Script: Script{
+			base_url: actual_url
+			filename: filename
+			realm: realm
+		}
+		source: actual_source
+		source_line_number: 1
+		compiled_program: compiled
+		muted_errors: muted_errors
+	}
 }
 
 pub fn (mut script ClassicScript) set_evaluator(evaluator ScriptEvaluationHook) {
@@ -328,7 +354,8 @@ pub fn (script &ModuleScript) is_module_script() bool {
 pub struct JavaScriptModuleScript {
 	ModuleScript
 pub:
-	source string
+	source           string
+	compiled_program ?CompiledProgram
 pub mut:
 	evaluator         ?ScriptEvaluationHook
 	requested_modules []ModuleRequest
@@ -356,6 +383,30 @@ pub fn JavaScriptModuleScript.create_from_pre_parsed(filename string, source_cod
 		script.parse_error = err.msg()
 	}
 	return script
+}
+
+pub fn JavaScriptModuleScript.create_from_parsed_program(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, parsed ParsedProgram) &JavaScriptModuleScript {
+	mut script := JavaScriptModuleScript.create(filename, source_code, realm, base_url)
+	if parse_error := parsed.error {
+		script.parse_error = parse_error
+	}
+	return script
+}
+
+pub fn JavaScriptModuleScript.create_from_pre_compiled(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, compiled CompiledProgram) &JavaScriptModuleScript {
+	actual_source := if realm.scripting_enabled { source_code } else { '' }
+	return &JavaScriptModuleScript{
+		ModuleScript: ModuleScript{
+			Script: Script{
+				base_url: base_url
+				filename: filename
+				realm: realm
+			}
+		}
+		source: actual_source
+		compiled_program: compiled
+		requested_modules: parse_module_requests(actual_source)
+	}
 }
 
 pub fn (mut script JavaScriptModuleScript) set_evaluator(evaluator ScriptEvaluationHook) {

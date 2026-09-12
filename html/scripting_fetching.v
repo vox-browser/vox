@@ -65,6 +65,20 @@ pub:
 
 pub type OffThreadParseComplete = fn (ParsedProgram, string)
 
+pub struct CompiledProgram {
+pub:
+	program_type       ScriptProgramType
+	line_number_offset usize
+}
+
+pub struct OffThreadCompiledProgram {
+pub:
+	parsed   ?ParsedProgram
+	compiled ?CompiledProgram
+}
+
+pub type OffThreadCompileComplete = fn (OffThreadCompiledProgram, string)
+
 // V's runtime-neutral parser is a host hook. Invoke it outside the script
 // execution context, then deliver completion and drain queued microtasks just
 // as Ladybird's event-loop bounce does.
@@ -76,6 +90,33 @@ pub fn parse_off_thread(source_code string, program_type ScriptProgramType, line
 		line_number_offset: line_number_offset
 		error: parse_error
 	}, source_code)
+	perform_a_microtask_checkpoint()
+}
+
+fn compile_source_off_thread(source_code string, program_type ScriptProgramType, line_number_offset usize, compiler ScriptParseHook) OffThreadCompiledProgram {
+	compiler(source_code, '', line_number_offset) or {
+		return OffThreadCompiledProgram{
+			parsed: ParsedProgram{
+				program_type: program_type
+				line_number_offset: line_number_offset
+				error: err.msg()
+			}
+		}
+	}
+	return OffThreadCompiledProgram{
+		compiled: CompiledProgram{
+			program_type: program_type
+			line_number_offset: line_number_offset
+		}
+	}
+}
+
+// LibJS owns the real bytecode artifact in Ladybird. The V host compiler
+// validates and compiles outside the script execution context, represented by
+// CompiledProgram, before completion materializes the script on the main loop.
+pub fn compile_off_thread(source_code string, program_type ScriptProgramType, line_number_offset usize, compiler ScriptParseHook, on_compiled OffThreadCompileComplete) {
+	result := compile_source_off_thread(source_code, program_type, line_number_offset, compiler)
+	on_compiled(result, source_code)
 	perform_a_microtask_checkpoint()
 }
 
@@ -222,11 +263,24 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 		return
 	}
 	response_url := unsafe_response.url() or { url }
-	script := ClassicScript.create(response_url.serialize(), source_text, settings_object.realm(), response_url, 1, if unsafe_response.is_cors_cross_origin() {
+	mut script := ClassicScript.create(response_url.serialize(), source_text, settings_object.realm(), response_url, 1, if unsafe_response.is_cors_cross_origin() {
 		.yes
 	} else {
 		.no
 	})
+	if compiler := settings_object.script_compile_hook() {
+		muted_errors := if unsafe_response.is_cors_cross_origin() {
+			MutedErrors.yes
+		} else {
+			MutedErrors.no
+		}
+		result := compile_source_off_thread(source_text, .script, 1, compiler)
+		if compiled := result.compiled {
+			script = ClassicScript.create_from_pre_compiled(response_url.serialize(), source_text, settings_object.realm(), response_url, compiled, muted_errors)
+		} else if parsed := result.parsed {
+			script = ClassicScript.create_from_parsed_program(response_url.serialize(), source_text, settings_object.realm(), response_url, parsed, muted_errors)
+		}
+	}
 	on_complete(script_pointer(script))
 }
 
@@ -350,7 +404,15 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 	if mime := mime_type {
 		if mime.is_javascript() && module_type == 'javascript' {
 			response_url := unsafe_response.url() or { url }
-			javascript_module := JavaScriptModuleScript.create(url.serialize(), source_text, module_map_realm, response_url)
+			mut javascript_module := JavaScriptModuleScript.create(url.serialize(), source_text, module_map_realm, response_url)
+			if compiler := fetch_client.script_compile_hook() {
+				result := compile_source_off_thread(source_text, .module, 0, compiler)
+				if compiled := result.compiled {
+					javascript_module = JavaScriptModuleScript.create_from_pre_compiled(url.serialize(), source_text, module_map_realm, response_url, compiled)
+				} else if parsed := result.parsed {
+					javascript_module = JavaScriptModuleScript.create_from_parsed_program(url.serialize(), source_text, module_map_realm, response_url, parsed)
+				}
+			}
 			module_script = &javascript_module.ModuleScript
 		}
 	}

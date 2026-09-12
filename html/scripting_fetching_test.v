@@ -14,6 +14,8 @@ __global (
 	scripting_fetching_last_mode        fetch.Mode
 	scripting_fetching_parsed           ParsedProgram
 	scripting_fetching_parsed_source    string
+	scripting_fetching_compiled         OffThreadCompiledProgram
+	scripting_fetching_compiled_source  string
 )
 
 struct ScriptingFetchingFixture {
@@ -56,6 +58,8 @@ fn scripting_fetching_host(request &fetch.Request, is_top_level TopLevelModule) 
 	body := if url.serialize().ends_with('/classic.js') {
 		content_type = 'text/javascript; charset=windows-1252'
 		[u8(0xe9)]
+	} else if url.serialize().ends_with('/syntax.js') {
+		'invalid'.bytes()
 	} else if url.serialize().ends_with('/root.js') {
 		"import './dep.js'\nexport const root = true".bytes()
 	} else if url.serialize().ends_with('/dep.js') {
@@ -89,6 +93,11 @@ fn scripting_fetching_parser(source string, filename string, line usize) ! {
 fn scripting_fetching_parsed_callback(parsed ParsedProgram, source string) {
 	scripting_fetching_parsed = parsed
 	scripting_fetching_parsed_source = source
+}
+
+fn scripting_fetching_compiled_callback(compiled OffThreadCompiledProgram, source string) {
+	scripting_fetching_compiled = compiled
+	scripting_fetching_compiled_source = source
 }
 
 fn test_script_fetch_options_module_requests_and_off_thread_parse() {
@@ -141,6 +150,15 @@ fn test_script_fetch_options_module_requests_and_off_thread_parse() {
 	assert scripting_fetching_parsed.line_number_offset == 7
 	assert scripting_fetching_parsed.error? == 'syntax error'
 	assert scripting_fetching_parsed_source == 'invalid'
+
+	compile_off_thread('valid', .script, 1, scripting_fetching_parser, scripting_fetching_compiled_callback)
+	assert scripting_fetching_compiled.compiled?.program_type == .script
+	assert scripting_fetching_compiled.compiled?.line_number_offset == 1
+	assert scripting_fetching_compiled.parsed == none
+	assert scripting_fetching_compiled_source == 'valid'
+	compile_off_thread('invalid', .module, 0, scripting_fetching_parser, scripting_fetching_compiled_callback)
+	assert scripting_fetching_compiled.compiled == none
+	assert scripting_fetching_compiled.parsed?.error? == 'syntax error'
 }
 
 fn test_descendant_options_resolve_import_map_integrity() {
@@ -166,6 +184,8 @@ fn test_descendant_options_resolve_import_map_integrity() {
 
 fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	fixture := scripting_fetching_fixture()!
+	mut settings := fixture.settings
+	settings.set_script_compile_hook(scripting_fetching_parser)
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	scripting_fetching_request_urls = []
 	options := ScriptFetchOptions{
@@ -176,8 +196,16 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	assert scripting_fetching_completed_script != unsafe { nil }
 	classic := unsafe { &ClassicScript(scripting_fetching_completed_script) }
 	assert classic.source == 'é'
+	assert classic.compiled_program?.program_type == .script
 	assert scripting_fetching_last_destination == .script
 	assert scripting_fetching_last_nonce == 'classic-nonce'
+
+	scripting_fetching_completed_script = unsafe { &Script(nil) }
+	fetch_classic_script(element, dom.URL{ value: 'https://example.test/app/syntax.js' }, fixture.settings, options, .anonymous, 'utf-8', scripting_fetching_complete)
+	broken := unsafe { &ClassicScript(scripting_fetching_completed_script) }
+	assert broken.compiled_program == none
+	assert broken.parse_error? == 'syntax error'
+	assert broken.error_to_rethrow? == 'syntax error'
 
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	fetch_classic_worker_script(dom.URL{ value: 'https://example.test/app/worker.js' }, fixture.settings, .worker, fixture.settings, none, scripting_fetching_complete)!
@@ -202,6 +230,8 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 
 fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	fixture := scripting_fetching_fixture()!
+	mut settings := fixture.settings
+	settings.set_script_compile_hook(scripting_fetching_parser)
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	scripting_fetching_request_urls = []
 	fetch_external_module_script_graph(fixture.realm, dom.URL{
@@ -210,6 +240,8 @@ fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	assert scripting_fetching_completed_script != unsafe { nil }
 	root := unsafe { &JavaScriptModuleScript(scripting_fetching_completed_script) }
 	assert root.is_linked()
+	assert root.compiled_program?.program_type == .module
+	assert root.compiled_program?.line_number_offset == 0
 	assert root.requested_modules().len == 1
 	assert scripting_fetching_request_urls == [
 		'https://example.test/app/root.js',
