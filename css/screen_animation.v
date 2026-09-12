@@ -1777,11 +1777,11 @@ pub fn (transition &CSSTransition) reversing_shortening_factor() f64 {
 }
 
 pub fn (transition &CSSTransition) timing_function_output_at_time(t f64) f64 {
-	mut progress := (t - transition.transition_start_time()) / (transition.transition_end_time() - transition.transition_start_time())
 	// AD-HOC: If the transition has an empty duration then we get NaN here,
 	// setting progress to 1 because an instant transition may be considered "finished".
+	mut progress := 1.0
 	if transition.transition_start_time() < transition.transition_end_time() {
-		progress = 1
+		progress = (t - transition.transition_start_time()) / (transition.transition_end_time() - transition.transition_start_time())
 	}
 
 	// FIXME: Is this before_flag value correct?
