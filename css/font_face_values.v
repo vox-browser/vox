@@ -3363,6 +3363,7 @@ fn (mut loader FontLoader) font_did_load_or_fail(typeface ?PlatformTypeface) {
 
 struct MatchingFontCandidate {
 	key              FontFaceKey
+	width            int = 5
 	font_faces       []&FontFaceObject
 	typeface         ?PlatformTypeface
 	is_platform_font bool
@@ -3733,6 +3734,7 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 		if key.family_name.to_lower() == family_name.to_lower() {
 			matching_family_fonts << MatchingFontCandidate{
 				key: key
+				width: font_width_bucket_from_percentage(key.width)
 				font_faces: faces.clone()
 			}
 		}
@@ -3748,6 +3750,7 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 				}
 				slope: typeface.slope_
 			}
+			width: font_width_bucket_from_percentage(typeface.width_)
 			typeface: typeface
 			is_platform_font: true
 		}
@@ -3757,9 +3760,15 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 		return none
 	}
 
+	// 1. font-width is tried first. If the desired width is present, discard
+	// every face in the family with a different width.
+	desired_width := font_width_bucket_from_percentage(variations.width)
+	if matching_family_fonts.any(it.width == desired_width) {
+		matching_family_fonts = matching_family_fonts.filter(it.width == desired_width)
+	}
+
 	sort_matching_font_candidates_by_weight(mut matching_family_fonts)
-	// FIXME: 1. font-width is tried first.
-	// FIXME: 2. font-style is tried next.
+	// 2. font-style is tried next.
 	// We don't have complete support of italic and oblique fonts, so matching on font-style can be simplified to:
 	// If a matching slope is found, all faces which don't have that matching slope are excluded from the matching set.
 	mut has_style_match := false
@@ -4857,6 +4866,20 @@ fn sort_matching_font_candidates_by_weight(mut candidates []MatchingFontCandidat
 			j--
 		}
 	}
+}
+
+fn font_width_bucket_from_percentage(percentage f64) int {
+	percentages := [50.0, 62.5, 75.0, 87.5, 100.0, 112.5, 125.0, 150.0, 200.0]
+	mut best_index := 0
+	mut best_distance := math.abs(percentage - percentages[0])
+	for index := 1; index < percentages.len; index++ {
+		distance := math.abs(percentage - percentages[index])
+		if distance < best_distance {
+			best_index = index
+			best_distance = distance
+		}
+	}
+	return best_index + 1
 }
 
 fn font_face_key_from_id(id string) FontFaceKey {

@@ -128,6 +128,34 @@ fn test_font_face_tracks_declared_width_in_registration_key() {
 	assert computer.font_faces.keys() == ['width fixture|0-0|0|125']
 }
 
+fn test_font_matching_filters_width_before_weight() {
+	mut computer := FontComputer.create()
+	mut set := FontFaceSet.create_for_font_computer(computer)
+	mut condensed := FontFaceObject.construct_impl('Width Match', FontFaceSource.from_string("url('condensed.ttf')"), FontFaceDescriptors{
+		stretch: 'condensed'
+	})
+	condensed.status_ = .loaded
+	condensed.parsed_font = PlatformTypeface{
+		family_name: 'Width Match'
+		source_path: 'condensed.ttf'
+	}
+	set.add(condensed)!
+	computer.register_font_face(condensed)
+
+	mut normal := FontFaceObject.construct_impl('Width Match', FontFaceSource.from_string("url('normal.ttf')"), FontFaceDescriptors{})
+	normal.status_ = .loaded
+	normal.parsed_font = PlatformTypeface{
+		family_name: 'Width Match'
+		source_path: 'normal.ttf'
+	}
+	set.add(normal)!
+	computer.register_font_face(normal)
+
+	matched := computer.compute_font_for_style_values(['Width Match'], CSSPixels.new(16), 0, 400, Percentage{ value_: 80 }, .none_, map[string]f64{}, FontFeatureData{})
+	assert matched.fonts.len == 1
+	assert matched.fonts[0].font.typeface.source_path == 'condensed.ttf'
+}
+
 fn test_stylesheet_font_face_rules_register_local_true_type_loaders() {
 	$if macos {
 		sheet := parse_css_stylesheet_with_parser("@font-face { font-family: Fixture; src: url('Arial.ttf') format('truetype'); }", 'file:///System/Library/Fonts/Supplemental/main.css')
