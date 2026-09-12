@@ -21,16 +21,17 @@ pub enum ValueKind {
 
 pub struct Value {
 pub:
-	kind           ValueKind
-	boolean_value  bool
-	number_value   f64
-	bigint_value   i64
-	string_value   string
-	object_value   map[string]Value
-	sequence_value []Value
-	buffer_value   ?BufferSource
-	opaque_id      u64
-	frozen         bool
+	kind                ValueKind
+	boolean_value       bool
+	number_value        f64
+	bigint_value        i64
+	string_value        string
+	object_value        map[string]Value
+	sequence_value      []Value
+	buffer_value        ?BufferSource
+	platform_interfaces []string
+	opaque_id           u64
+	frozen              bool
 }
 
 pub fn undefined_value() Value {
@@ -135,6 +136,13 @@ pub fn platform_object_value_with_id(opaque_id u64) Value {
 	return Value{
 		kind: .platform_object
 		opaque_id: opaque_id
+	}
+}
+
+pub fn platform_object_value_with_interfaces(interface_names []string) Value {
+	return Value{
+		kind: .platform_object
+		platform_interfaces: interface_names.clone()
 	}
 }
 

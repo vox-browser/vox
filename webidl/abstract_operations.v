@@ -151,17 +151,27 @@ pub fn lists_contain_same_elements(cached []u64, elements []u64) bool {
 	return true
 }
 
-pub fn convert_ecmascript_type_to_idl_value(value Value, _ IDLType) Value {
+pub fn convert_ecmascript_type_to_idl_value(value Value, _ &Type) Value {
 	// This is deliberately a pass-through upstream as well; generated bindings
 	// perform the concrete conversion.
 	return value
 }
 
-pub fn has_overload_with_argument_type_or_subtype_matching(overloads []EffectiveOverload, argument_index int, kinds []IDLTypeKind) bool {
-	for overload in overloads {
-		if argument_index < overload.arguments.len
-			&& overload.arguments[argument_index].type_.kind in kinds {
+pub fn has_overload_with_argument_type_or_subtype_matching(overloads EffectiveOverloadSet, argument_index int, type_names []string) bool {
+	for item in overloads.items_ {
+		if argument_index < 0 || argument_index >= item.types.len {
+			continue
+		}
+		type_ := item.types[argument_index]
+		if type_.name() in type_names {
 			return true
+		}
+		if type_.is_union() {
+			for member in type_.as_union().flattened_member_types() {
+				if member.name() in type_names {
+					return true
+				}
+			}
 		}
 	}
 	return false

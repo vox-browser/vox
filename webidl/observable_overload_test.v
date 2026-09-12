@@ -34,73 +34,108 @@ fn test_observable_array_callbacks_and_clear_observation() {
 	assert array.values.len == 0
 }
 
-fn test_overload_resolution_type_arity_optional_and_variadic() {
-	candidates := [
-		EffectiveOverload{
-			callable_id: 1
-			arguments:   [
-				OverloadArgument{
-					type_: IDLType{
-						kind: .string_
-					}
-				},
-			]
-		},
-		EffectiveOverload{
-			callable_id: 2
-			arguments:   [
-				OverloadArgument{
-					type_: IDLType{
-						kind: .numeric
-					}
-				},
-			]
-		},
-		EffectiveOverload{
-			callable_id: 3
-			arguments:   [
-				OverloadArgument{
-					type_:    IDLType{
-						kind: .boolean
-					}
-					variadic: true
-				},
-			]
-		},
-	]
-	assert resolve_overload(candidates, [string_value('x')])!.callable_id == 1
-	assert resolve_overload(candidates, [number_value(2)])!.callable_id == 2
-	assert resolve_overload(candidates, [boolean_value(true),
-		boolean_value(false)])!.callable_id == 3
-	// With no object/interface branch, Web IDL's primitive conversion fallback
-	// gives the string overload precedence for an ordinary object.
-	assert resolve_overload(candidates, [object_value(map[string]Value{})])!.callable_id == 1
+fn overload_item(callable_id int, type_ &Type, optionality Optionality) EffectiveOverloadSetItem {
+	return EffectiveOverloadSetItem{
+		callable_id: callable_id
+		types: [type_]
+		optionality_values: [optionality]
+	}
 }
 
-fn test_overload_distinguishing_precedence_beats_any_fallback() {
-	candidates := [
-		EffectiveOverload{
-			callable_id: 1
-			arguments:   [
-				OverloadArgument{
-					type_: IDLType{
-						kind: .any
-					}
-				},
-			]
-		},
-		EffectiveOverload{
-			callable_id: 2
-			arguments:   [
-				OverloadArgument{
-					type_: IDLType{
-						kind: .numeric
-					}
-				},
-			]
-		},
+fn resolve_one_argument(items []EffectiveOverloadSetItem, argument Value, dictionaries []string) !ResolvedOverload {
+	mut overloads := EffectiveOverloadSet.new(items, 0)
+	return resolve_overload(mut overloads, [argument], dictionaries)
+}
+
+fn test_overload_resolution_distinguishing_primitive_precedence() {
+	items := [
+		overload_item(1, Type.new('DOMString', false), .required),
+		overload_item(2, Type.new('double', false), .required),
+		overload_item(3, Type.new('boolean', false), .required),
+		overload_item(4, Type.new('bigint', false), .required),
+		overload_item(5, Type.new('any', false), .required),
 	]
-	assert resolve_overload(candidates, [number_value(1)])!.callable_id == 2
+	assert resolve_one_argument(items, string_value('x'), [])!.callable_id == 1
+	assert resolve_one_argument(items, number_value(2), [])!.callable_id == 2
+	assert resolve_one_argument(items, boolean_value(true), [])!.callable_id == 3
+	assert resolve_one_argument(items, bigint_value(9), [])!.callable_id == 4
+	// The string conversion fallback precedes numeric, boolean, bigint, and any.
+	assert resolve_one_argument(items, object_value(map[string]Value{}), [])!.callable_id == 1
+}
+
+fn test_overload_resolution_optional_nullable_dictionary_and_union() {
+	optional_items := [
+		overload_item(1, Type.new('DOMString', false), .required),
+		overload_item(2, Type.new('double', false), .optional),
+	]
+	resolved_optional := resolve_one_argument(optional_items, undefined_value(), [])!
+	assert resolved_optional.callable_id == 2
+	assert resolved_optional.arguments == [?Value(none)]
+
+	dictionary_items := [
+		overload_item(3, Type.new('Options', false), .required),
+		overload_item(4, Type.new('DOMString', false), .required),
+	]
+	assert resolve_one_argument(dictionary_items, null_value(), ['Options'])!.callable_id == 3
+
+	nullable_number := Type.new('double', true)
+	union_type := UnionType.new('(DOMString or double?)', false, [
+		Type.new('DOMString', false),
+		nullable_number,
+	])
+	union_items := [
+		overload_item(5, &union_type.Type, .required),
+		overload_item(6, Type.new('object', false), .required),
+	]
+	assert resolve_one_argument(union_items, null_value(), [])!.callable_id == 5
+}
+
+fn test_overload_resolution_platform_and_buffer_precedence() {
+	platform_items := [
+		overload_item(1, Type.new('Node', false), .required),
+		overload_item(2, Type.new('object', false), .required),
+	]
+	assert resolve_one_argument(platform_items, platform_object_value_with_interfaces([
+		'Node',
+	]), [])!.callable_id == 1
+	assert is_platform_object(platform_object_value())
+	assert platform_object_implements_interface(platform_object_value_with_interfaces([
+		'Node',
+	]), 'Node')
+
+	buffer_items := [
+		overload_item(3, Type.new('Uint16Array', false), .required),
+		overload_item(4, Type.new('ArrayBufferView', false), .required),
+		overload_item(5, Type.new('object', false), .required),
+	]
+	typed := BufferSource.view(.uint16_array, [u8(0), 1], 0, 2)!
+	assert resolve_one_argument(buffer_items, buffer_source_value(typed), [])!.callable_id == 3
+}
+
+fn test_overload_resolution_sequence_and_missing_arguments() {
+	sequence := ParameterizedType.new('sequence', false, [
+		Type.new('DOMString', false),
+	])
+	items := [
+		overload_item(1, &sequence.Type, .required),
+		overload_item(2, Type.new('object', false), .required),
+	]
+	resolved := resolve_one_argument(items, sequence_value([string_value('a')]), [])!
+	assert resolved.callable_id == 1
+	assert resolved.arguments[0] or { panic('sequence argument was marked missing') } == sequence_value([
+		string_value('a'),
+	])
+
+	mut single := EffectiveOverloadSet.new([
+		EffectiveOverloadSetItem{
+			callable_id: 7
+			types: [Type.new('DOMString', false), Type.new('double', false)]
+			optionality_values: [.required, .optional]
+		},
+	], 0)
+	missing := resolve_overload(mut single, [string_value('present')], [])!
+	assert missing.arguments.len == 2
+	assert missing.arguments[1] == none
 }
 
 fn test_observable_internal_operations_use_index_callbacks() {
