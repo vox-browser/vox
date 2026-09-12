@@ -18,6 +18,11 @@ enum ParserNested {
 	scope
 }
 
+enum NestedDeclarationRuleKind {
+	style
+	function_rule
+}
+
 enum SaveOriginalText {
 	no
 	yes
@@ -280,7 +285,7 @@ pub fn (mut parser RuleSelectorParser) convert_rules(raw_rules []Rule) []&CSSRul
 	// Interpret all of the resulting top-level qualified rules as style rules, defined below.
 	mut rules := []&CSSRule{}
 	for raw_rule in raw_rules {
-		rule := parser.convert_to_rule(raw_rule, .no) or {
+		rule := parser.convert_to_rule(raw_rule, .no, .style) or {
 			parser_log_parse_error()
 			continue
 		}
@@ -334,7 +339,7 @@ pub fn (mut parser RuleSelectorParser) parse_as_css_rule() ?&CSSRule {
 pub fn (mut parser RuleSelectorParser) parse_as_css_rule_with_nesting(nested ParserNested) ?&CSSRule {
 	mut input := parser.token_stream
 	rule := parser.parse_a_rule(mut input, nested) or { return none }
-	return parser.convert_to_rule(rule, nested)
+	return parser.convert_to_rule(rule, nested, .style)
 }
 
 pub fn (mut parser RuleSelectorParser) parse_as_selector(parsing_mode SelectorParsingMode) ?SelectorList {
@@ -1053,7 +1058,7 @@ fn parser_consume_a_function(mut input RawTokenStream) Function {
 	return function
 }
 
-fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNested) ?&CSSRule {
+fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) ?&CSSRule {
 	match rule {
 		AtRule {
 			if equals_ignoring_ascii_case(rule.name, 'keyframes')
@@ -1076,19 +1081,19 @@ fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNeste
 				return parser.convert_to_import_rule(rule)
 			}
 			if equals_ignoring_ascii_case(rule.name, 'layer') {
-				return parser.convert_to_layer_rule(rule, nested)
+				return parser.convert_to_layer_rule(rule, nested, declaration_rule_kind)
 			}
 			if is_margin_rule_name(rule.name) {
 				return parser.convert_to_margin_rule(rule)
 			}
 			if equals_ignoring_ascii_case(rule.name, 'media') {
-				return parser.convert_to_media_rule(rule, nested)
+				return parser.convert_to_media_rule(rule, nested, declaration_rule_kind)
 			}
 			if equals_ignoring_ascii_case(rule.name, 'namespace') {
 				return parser.convert_to_namespace_rule(rule)
 			}
 			if equals_ignoring_ascii_case(rule.name, 'supports') {
-				return parser.convert_to_supports_rule(rule, nested)
+				return parser.convert_to_supports_rule(rule, nested, declaration_rule_kind)
 			}
 			if equals_ignoring_ascii_case(rule.name, 'page') {
 				return parser.convert_to_page_rule(rule)
@@ -1097,7 +1102,7 @@ fn (mut parser RuleSelectorParser) convert_to_rule(rule Rule, nested ParserNeste
 				return parser.convert_to_property_rule(rule)
 			}
 			if equals_ignoring_ascii_case(rule.name, 'scope') {
-				return parser.convert_to_scope_rule(rule, nested)
+				return parser.convert_to_scope_rule(rule, nested, declaration_rule_kind)
 			}
 			parser_report_error(ParsingError(UnknownRuleError{
 				rule_name: '@${rule.name}'
@@ -1165,7 +1170,7 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 	for child in qualified_rule.child_rules {
 		match child {
 			RuleNode {
-				if converted_rule := parser.convert_to_rule(child.rule, .yes) {
+				if converted_rule := parser.convert_to_rule(child.rule, .yes, .style) {
 					// "In addition to nested style rules, this specification allows
 					// nested group rules inside of style rules: any at-rule whose body
 					// contains style rules can be nested inside of a style rule as
@@ -1329,7 +1334,7 @@ fn (mut parser RuleSelectorParser) convert_to_import_rule(rule AtRule) ?&CSSRule
 	return CSSRule.create_import(url, none, layer, scope, supports, media)
 }
 
-fn (mut parser RuleSelectorParser) convert_to_layer_rule(rule AtRule, nested ParserNested) ?&CSSRule {
+fn (mut parser RuleSelectorParser) convert_to_layer_rule(rule AtRule, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) ?&CSSRule {
 	if rule.is_block_rule {
 		mut prelude_tokens := ParserTokenStream.from_values(rule.prelude)
 		layer_name := parser.parse_layer_name(mut prelude_tokens, .yes) or { return none }
@@ -1337,7 +1342,8 @@ fn (mut parser RuleSelectorParser) convert_to_layer_rule(rule AtRule, nested Par
 		if prelude_tokens.has_next_token() {
 			return none
 		}
-		mut child_rules := parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations, nested)
+		mut child_rules := parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations,
+			nested, declaration_rule_kind)
 		return CSSRule.create_layer_block(layer_name, CSSRuleList.create(child_rules))
 	}
 
@@ -1361,7 +1367,7 @@ fn (mut parser RuleSelectorParser) convert_to_layer_rule(rule AtRule, nested Par
 	return CSSRule.create_layer_statement(layer_names)
 }
 
-fn (mut parser RuleSelectorParser) convert_to_media_rule(rule AtRule, nested ParserNested) ?&CSSRule {
+fn (mut parser RuleSelectorParser) convert_to_media_rule(rule AtRule, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) ?&CSSRule {
 	mut prelude_tokens := ParserTokenStream.from_values(rule.prelude)
 	if !rule.is_block_rule {
 		return none
@@ -1369,7 +1375,8 @@ fn (mut parser RuleSelectorParser) convert_to_media_rule(rule AtRule, nested Par
 	mut media := MediaList.create_empty()
 	mut mutable_media := unsafe { &MediaList(media) }
 	mutable_media.set_media_text(prelude_tokens.dump_string())
-	return CSSRule.create_media(media, CSSRuleList.create(parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations, nested)))
+	return CSSRule.create_media(media, CSSRuleList.create(parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations,
+		nested, declaration_rule_kind)))
 }
 
 fn (mut parser RuleSelectorParser) convert_to_namespace_rule(rule AtRule) ?&CSSRule {
@@ -1391,14 +1398,15 @@ fn (mut parser RuleSelectorParser) convert_to_namespace_rule(rule AtRule) ?&CSSR
 	return CSSRule.create_namespace(prefix, namespace_uri)
 }
 
-fn (mut parser RuleSelectorParser) convert_to_supports_rule(rule AtRule, nested ParserNested) ?&CSSRule {
+fn (mut parser RuleSelectorParser) convert_to_supports_rule(rule AtRule, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) ?&CSSRule {
 	mut supports_tokens := ParserTokenStream.from_values(rule.prelude)
 	if !rule.is_block_rule || rule.prelude.len == 0 {
 		return none
 	}
 	condition := supports_tokens.dump_string()
 	supports := parse_css_supports(parser.parsing_params(), condition) or { return none }
-	return CSSRule.create_supports(supports, CSSRuleList.create(parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations, nested)))
+	return CSSRule.create_supports(supports, CSSRuleList.create(parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations,
+		nested, declaration_rule_kind)))
 }
 
 fn selector_list_contains_pseudo_element(selectors SelectorList) bool {
@@ -1411,7 +1419,7 @@ fn selector_list_contains_pseudo_element(selectors SelectorList) bool {
 }
 
 // https://drafts.csswg.org/css-cascade-6/#scope-atrule
-fn (mut parser RuleSelectorParser) convert_to_scope_rule(rule AtRule, nested ParserNested) ?&CSSRule {
+fn (mut parser RuleSelectorParser) convert_to_scope_rule(rule AtRule, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) ?&CSSRule {
 	mut prelude_stream := ParserTokenStream.from_values(rule.prelude)
 	if !rule.is_block_rule {
 		return none
@@ -1464,7 +1472,8 @@ fn (mut parser RuleSelectorParser) convert_to_scope_rule(rule AtRule, nested Par
 	if prelude_stream.has_next_token() {
 		return none
 	}
-	children := parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations, .scope)
+	children := parser.convert_child_rule_list(rule.child_rules_and_lists_of_declarations,
+		.scope, declaration_rule_kind)
 	return CSSRule.create_scope(start_selectors, end_selectors, CSSRuleList.create(children))
 }
 
@@ -2024,7 +2033,7 @@ fn (mut parser RuleSelectorParser) convert_to_page_rule(page_rule AtRule) ?&CSSR
 						continue
 					}
 				}
-				if converted_rule := parser.convert_to_rule(Rule(at_rule), .no) {
+				if converted_rule := parser.convert_to_rule(Rule(at_rule), .no, .style) {
 					if converted_rule.type_ == .margin {
 						child_rules << converted_rule
 					} else {
@@ -2080,17 +2089,29 @@ fn (mut parser RuleSelectorParser) convert_to_margin_rule(rule AtRule) ?&CSSRule
 	return CSSRule.create_margin(rule.name, style)
 }
 
-fn (mut parser RuleSelectorParser) convert_child_rule_list(children []RuleOrListOfDeclarations, nested ParserNested) []&CSSRule {
+fn (mut parser RuleSelectorParser) convert_child_rule_list(children []RuleOrListOfDeclarations, nested ParserNested, declaration_rule_kind NestedDeclarationRuleKind) []&CSSRule {
 	mut child_rules := []&CSSRule{}
 	for child in children {
 		match child {
 			RuleNode {
-				if child_rule := parser.convert_to_rule(child.rule, nested) {
+				if child_rule := parser.convert_to_rule(child.rule, nested, declaration_rule_kind) {
 					child_rules << child_rule
 				}
 			}
 			DeclarationList {
-				child_rules << CSSRule.create_nested_declarations(parser.convert_to_style_declaration(child.declarations))
+				if declaration_rule_kind == .function_rule {
+					mut descriptors := []Descriptor{}
+					for declaration in child.declarations {
+						mut descriptor_parser := Parser.from_component_values(declaration.value)
+						descriptor_parser.context = parser.parsing_params()
+						if descriptor := descriptor_parser.convert_to_descriptor(.function_rule, declaration) {
+							append_descriptor(mut descriptors, descriptor)
+						}
+					}
+					child_rules << CSSRule.create_function_declarations(CSSFunctionDescriptors.create(descriptors))
+				} else {
+					child_rules << CSSRule.create_nested_declarations(parser.convert_to_style_declaration(child.declarations))
+				}
 			}
 		}
 	}
@@ -3049,6 +3070,7 @@ fn (parser RuleSelectorParser) is_valid_declaration_in_the_current_context(decla
 		.layer, .media, .supports {
 			rule_context_contains(parser.rule_context, .style)
 				|| rule_context_contains(parser.rule_context, .scope)
+				|| rule_context_contains(parser.rule_context, .function_rule)
 		}
 		.font_feature_value { true }
 		.counter_style, .font_face, .font_feature_values, .page, .property, .margin { true }
@@ -3064,6 +3086,9 @@ fn (parser RuleSelectorParser) is_valid_at_rule_in_the_current_context(rule AtRu
 
 	if rule_context_contains(parser.rule_context, .style) {
 		return ascii_case_insensitive_name_is_one_of(rule.name, ['layer', 'media', 'scope', 'supports'])
+	}
+	if rule_context_contains(parser.rule_context, .function_rule) {
+		return ascii_case_insensitive_name_is_one_of(rule.name, ['media', 'supports'])
 	}
 
 	last_context := parser.rule_context[parser.rule_context.len - 1]
