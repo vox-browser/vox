@@ -29,6 +29,7 @@ pub:
 	object_value   map[string]Value
 	sequence_value []Value
 	buffer_value   ?BufferSource
+	opaque_id      u64
 }
 
 pub fn undefined_value() Value {
@@ -101,6 +102,13 @@ pub fn callback_value() Value {
 pub fn platform_object_value() Value {
 	return Value{
 		kind: .platform_object
+	}
+}
+
+pub fn platform_object_value_with_id(opaque_id u64) Value {
+	return Value{
+		kind: .platform_object
+		opaque_id: opaque_id
 	}
 }
 

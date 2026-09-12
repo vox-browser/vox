@@ -3,10 +3,12 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of Crypto/CryptoBindings.{h,cpp} and the WebCrypto IDL enums.
+@[has_globals]
 module webcrypto
 
 import encoding.base64
 import encoding.utf8
+import webidl
 import x.json2
 
 pub enum KeyType {
@@ -175,6 +177,82 @@ pub fn JsonWebKey.parse(data []u8) !JsonWebKey {
 		return error('DataError: kty field is not defined')
 	}
 	return key
+}
+
+pub fn parse_json_web_key(data []u8) !JsonWebKey {
+	return JsonWebKey.parse(data)
+}
+
+@[heap]
+pub struct CryptoKeyBinding {
+pub:
+	realm string
+	key   &CryptoKey
+}
+
+__global crypto_key_bindings_ = map[u64]&CryptoKeyBinding{}
+__global crypto_key_binding_ids_ = map[string]u64{}
+
+fn crypto_key_binding_key(realm string, key &CryptoKey) string {
+	return '${realm}:${u64(voidptr(key))}'
+}
+
+pub fn crypto_key(realm string, key &CryptoKey) webidl.Value {
+	cache_key := crypto_key_binding_key(realm, key)
+	if binding_id := crypto_key_binding_ids_[cache_key] {
+		return webidl.platform_object_value_with_id(binding_id)
+	}
+	binding := &CryptoKeyBinding{
+		realm: realm
+		key: key
+	}
+	binding_id := u64(voidptr(binding))
+	crypto_key_bindings_[binding_id] = binding
+	crypto_key_binding_ids_[cache_key] = binding_id
+	return webidl.platform_object_value_with_id(binding_id)
+}
+
+pub fn crypto_key_from_value(value webidl.Value) !&CryptoKey {
+	if value.kind != .platform_object || value.opaque_id == 0 {
+		return error('TypeError: Value is not an object of type CryptoKey')
+	}
+	binding := crypto_key_bindings_[value.opaque_id] or {
+		return error('TypeError: Value is not an object of type CryptoKey')
+	}
+	return binding.key
+}
+
+pub fn resolve_crypto_key_promise(realm string, mut promise webidl.Promise, key &CryptoKey) {
+	promise.resolve(crypto_key(realm, key))
+}
+
+pub fn encapsulated_bits(_ string, bits EncapsulatedBits) map[string]webidl.Value {
+	mut object := map[string]webidl.Value{}
+	if shared_key := bits.shared_key {
+		object['sharedKey'] = webidl.buffer_source_value(webidl.BufferSource.array_buffer(shared_key))
+	}
+	if ciphertext := bits.ciphertext {
+		object['ciphertext'] = webidl.buffer_source_value(webidl.BufferSource.array_buffer(ciphertext))
+	}
+	return object
+}
+
+pub fn encapsulated_key(realm string, key EncapsulatedKey) map[string]webidl.Value {
+	mut object := map[string]webidl.Value{}
+	if shared_key := key.shared_key {
+		object['sharedKey'] = crypto_key(realm, shared_key)
+	}
+	if ciphertext := key.ciphertext {
+		object['ciphertext'] = webidl.buffer_source_value(webidl.BufferSource.array_buffer(ciphertext))
+	}
+	return object
+}
+
+pub fn crypto_key_pair(realm string, pair &CryptoKeyPair) map[string]webidl.Value {
+	return {
+		'publicKey':  crypto_key(realm, pair.public_key)
+		'privateKey': crypto_key(realm, pair.private_key)
+	}
 }
 
 fn put_optional_json_web_key_string(mut object map[string]json2.Any, name string, value ?string) {
