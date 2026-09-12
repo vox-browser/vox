@@ -126,6 +126,13 @@ fn test_video_track_selection_and_list_algorithms() {
 	assert list.selected_index() == -1
 	assert media_track_change_tasks == 3
 	assert media_track_last_selected_video == unsafe { nil }
+	mutable_first.set_selected(true)
+	assert media_track_change_tasks == 4
 	list.remove_all_tracks()
 	assert list.length() == 0
+	assert first.video_track_list == none
+	assert second.video_track_list == none
+	assert !first.selected
+	assert media_track_change_tasks == 4
+	assert media_track_last_selected_video == unsafe { nil }
 }
