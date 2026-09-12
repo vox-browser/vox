@@ -111,7 +111,7 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 		// a width constraint applied to a ratio-only replaced element becomes
 		// the basis for its tentative auto height.
 		if !available_space.width.is_definite() {
-			width = solve_replaced_size_constraint(box, width, height, intrinsic_ratio, available_space).width()
+			width = solve_replaced_size_constraint(box, width, height, intrinsic_ratio, available_space, box_model).width()
 			height = width.divided_by_fraction(intrinsic_ratio)
 		}
 	} else {
@@ -127,8 +127,7 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 	// the preferred size.
 	if intrinsic_ratio := ratio {
 		if specified_width == none && specified_height == none {
-			solved := solve_replaced_size_constraint(box, width, height, intrinsic_ratio,
-				available_space)
+			solved := solve_replaced_size_constraint(box, width, height, intrinsic_ratio, available_space, box_model)
 			width = solved.width()
 			height = solved.height()
 		}
@@ -208,62 +207,22 @@ fn clamp_replaced_axis(node &Node, minimum css.Size, maximum css.Size, input CSS
 }
 
 // Steps 2 and 3 of FormattingContext::compute_width_for_replaced_element() and
-// compute_height_for_replaced_element(). The constraint is *compared* against its
-// raw computed value, but the replacement size is produced by
-// tentative_width_for_replaced_element()/tentative_height_for_replaced_element(),
-// so it passes through the same `box-sizing` conversion as the preferred size.
-// With `box-sizing: border-box` the two differ, and a violated constraint is
-// therefore not the value the box ends up with.
+// compute_height_for_replaced_element(). Both the comparison and the replacement
+// size use calculate_inner_width()/calculate_inner_height(), represented by the
+// shared content-box constraint resolver here.
 fn apply_replaced_axis_constraints(node &Node, minimum css.Size, maximum css.Size, input CSSPixels, available_size AvailableSize, box_model ReplacedBoxModel, width bool) CSSPixels {
-	basis := available_size.to_px_or_zero()
-	mut used := input
-	if !should_treat_replaced_max_as_none(maximum, available_size) {
-		if specified_max := resolve_layout_size(node, maximum, basis) {
-			if used.raw_value() > specified_max.raw_value() {
-				used = resolve_replaced_content_size(node, maximum, basis, box_model, width) or {
-					used
-				}
-			}
-		}
-	}
-	if !minimum.is_auto() {
-		if specified_min := resolve_layout_size(node, minimum, basis) {
-			if used.raw_value() < specified_min.raw_value() {
-				used = resolve_replaced_content_size(node, minimum, basis, box_model, width) or {
-					used
-				}
-			}
-		}
-	}
-	return used
+	return clamp_replaced_axis(node, minimum, maximum, input, available_size, box_model, width)
 }
 
 // CSS 2.2 10.4 constraint-violation table. Replaced boxes with a preferred
-// aspect ratio adjust the opposite axis when a min/max constraint applies.
-// FormattingContext::solve_replaced_size_constraint() resolves its constraints
-// straight from the computed values. Unlike the preferred size, they never pass
-// through calculate_inner_width()/calculate_inner_height(), so `box-sizing:
-// border-box` does not shrink them here.
-fn replaced_constraint_axis(node &Node, minimum css.Size, maximum css.Size, input CSSPixels, available_size AvailableSize) (CSSPixels, CSSPixels) {
-	basis := available_size.to_px_or_zero()
-	min_value := if minimum.is_auto() {
-		CSSPixels.new(0)
-	} else {
-		resolve_layout_size(node, minimum, basis) or { CSSPixels.new(0) }
-	}
-	specified_max := if should_treat_replaced_max_as_none(maximum, available_size) {
-		input
-	} else {
-		resolve_layout_size(node, maximum, basis) or { input }
-	}
-	return min_value, css_pixels_max(min_value, specified_max)
-}
-
-fn solve_replaced_size_constraint(box &Box, input_width CSSPixels, input_height CSSPixels, aspect_ratio css.CSSPixelFraction, available_space AvailableSpace) CSSPixelSize {
+// aspect ratio adjust the opposite axis when a min/max constraint applies. The
+// min/max sizes are converted from the specified box to content-box space before
+// the table compares them with the tentative content size.
+fn solve_replaced_size_constraint(box &Box, input_width CSSPixels, input_height CSSPixels, aspect_ratio css.CSSPixelFraction, available_space AvailableSpace, box_model ReplacedBoxModel) CSSPixelSize {
 	node := unsafe { &Node(box) }
 	computed := node.computed_values()
-	min_width, max_width := replaced_constraint_axis(node, computed.size_value(.min_width), computed.size_value(.max_width), input_width, available_space.width)
-	min_height, max_height := replaced_constraint_axis(node, computed.size_value(.min_height), computed.size_value(.max_height), input_height, available_space.height)
+	min_width, max_width := replaced_axis_constraints(node, computed.size_value(.min_width), computed.size_value(.max_width), input_width, available_space.width, box_model, true)
+	min_height, max_height := replaced_axis_constraints(node, computed.size_value(.min_height), computed.size_value(.max_height), input_height, available_space.height, box_model, false)
 
 	if input_width.raw_value() < min_width.raw_value()
 		&& input_height.raw_value() > max_height.raw_value() {

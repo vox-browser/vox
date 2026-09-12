@@ -2846,10 +2846,9 @@ fn test_aspect_ratio_box_with_two_automatic_axes_uses_the_stretch_fit_width() {
 	assert box.content_height().to_double() == 100
 }
 
-// FormattingContext::solve_replaced_size_constraint() resolves min/max straight
-// from the computed values, without the box-sizing conversion the preferred size
-// receives.
-fn test_replaced_size_constraints_ignore_box_sizing() {
+// FormattingContext::solve_replaced_size_constraint() compares min/max sizes in
+// content-box space, just like the preferred size.
+fn test_replaced_size_constraints_use_content_box_space() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
 		#outer { width:200px }
@@ -2857,10 +2856,10 @@ fn test_replaced_size_constraints_ignore_box_sizing() {
 	</style><div id="outer"><div id="box"></div></div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	box := used_for_id(result, 'box')
-	// The constraint table clamps the stretch-fit 200 to the unconverted 150,
-	// and only the final calculate_inner_width() subtracts the 16px of edges.
-	assert box.content_width().to_double() == 134
-	assert box.content_height().to_double() == 67
+	// The constraint table converts max-width to 144 with the padding not yet
+	// assigned. The block path then subtracts all 16px of used edges.
+	assert box.content_width().to_double() == 128
+	assert box.content_height().to_double() == 64
 }
 
 // With one axis specified the source clamps each axis on its own through
@@ -2882,11 +2881,9 @@ fn test_specified_axis_clamps_each_axis_through_the_box_sizing_conversion() {
 }
 
 // Steps 2 and 3 of FormattingContext::compute_width_for_replaced_element()
-// compare the used size against the *raw* constraint but replace it with the
-// constraint converted through calculate_inner_width(), so with `box-sizing:
-// border-box` a violated constraint is not the size the box ends up with. The
-// steps also re-run after the constraint-violation table.
-fn test_replaced_constraints_compare_raw_and_assign_converted() {
+// compare and assign constraints in content-box space. They also re-run after
+// the constraint-violation table.
+fn test_replaced_constraints_compare_and_assign_converted_sizes() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
 		#outer { width:200px }
@@ -2895,11 +2892,27 @@ fn test_replaced_constraints_compare_raw_and_assign_converted() {
 	</style><div id="outer"><div id="box"></div></div>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	box := used_for_id(result, 'box')
-	// The table clamps 200 to the raw 120, max-width replaces it with 60-6=54,
-	// then min-width replaces that with 120-6=114, and the block-level
-	// conversion subtracts the real edges once more.
+	// min-width wins over max-width in content-box space (120-6=114), and the
+	// block-level conversion subtracts the real edges once more.
 	assert box.content_width().to_double() == 98
 	assert box.content_height().to_double() == 49
+}
+
+fn test_replaced_form_control_min_max_sizes_use_content_box_space() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		input { font-size:5px; box-sizing:border-box }
+		#max-width { border:5px solid; padding:0 10px; max-width:50px }
+		#max-height { border:4px solid; padding:10px 0; max-height:32px }
+		#min-height { border:3px solid; padding:8px 0; min-height:50px }
+		#image { box-sizing:border-box; border:10px solid; padding:5px; max-width:80px }
+	</style><input id="max-width"><input id="max-height"><input id="min-height"><canvas id="image"></canvas>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'max-width').content_width().to_double() == 20
+	assert used_for_id(result, 'max-height').content_height().to_double() == 4
+	assert used_for_id(result, 'min-height').content_height().to_double() == 28
+	assert used_for_id(result, 'image').content_width().to_double() == 50
+	assert used_for_id(result, 'image').content_height().to_double() == 25
 }
 
 // compute_height_for_replaced_element() applies its own max-height and

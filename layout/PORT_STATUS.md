@@ -228,17 +228,14 @@ converted inline size, as `tentative_height_for_replaced_element()` reads the
 used content width. The width equation still re-runs with the max-width and
 min-width clamps applied to that width so the used margins match, while the
 clamped width itself is discarded exactly as in step 4 of `compute_width()`.
-`solve_replaced_size_constraint()` now resolves its min/max constraints straight
-from the computed values, without the box-sizing conversion the preferred size
-receives, and runs only when both axes are automatic.
+`solve_replaced_size_constraint()` resolves min/max constraints through the same
+content-box conversion as preferred sizes and runs only when both axes are
+automatic.
 Steps 2 and 3 of `compute_width_for_replaced_element()` and
-`compute_height_for_replaced_element()` are translated as written: the used size
-is *compared* against the raw computed constraint, but a violated constraint is
-replaced by the value `tentative_width_for_replaced_element()` /
-`tentative_height_for_replaced_element()` produces, which has passed through the
-same box-sizing conversion as the preferred size. Under `box-sizing: border-box`
-the two differ, so the constraint is not the size the box ends up with. Those
-steps also run after the constraint table, and the block size is clamped before
+`compute_height_for_replaced_element()` are translated as written: both the
+used-size comparison and a violated constraint use the content-box value
+produced by `calculate_inner_width()` or `calculate_inner_height()`. Those steps
+also run after the constraint table, and the block size is clamped before
 `tentative_width_for_replaced_element()` transfers it through the ratio.
 An unresolved percentage block size is treated as automatic, and only a box that
 `box_is_sized_as_replaced_element()` selects transfers it from the inline size; a
