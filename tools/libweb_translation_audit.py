@@ -941,7 +941,9 @@ def all_v_function_names(
         for match in html_audit.V_FUNCTION.finditer(text):
             owner = match.group("associated")
             if receiver := match.group("receiver"):
-                receiver_type = receiver.split()[-1].lstrip("&?")
+                receiver_declaration = receiver.removeprefix("mut ").strip()
+                _, receiver_type = receiver_declaration.split(maxsplit=1)
+                receiver_type = receiver_type.lstrip("&?")
                 owner = receiver_type.split(".")[-1].split("[", 1)[0]
             # Boundary placeholders are not implementations of upstream
             # methods, even when their names happen to match.
@@ -1103,8 +1105,10 @@ def trivial_implementation_inventories(
                 continue
             owner = function.group("associated")
             if receiver := function.group("receiver"):
-                receiver_type = receiver.split()[-1].lstrip("&?")
-                owner = receiver_type.split(".")[-1]
+                receiver_declaration = receiver.removeprefix("mut ").strip()
+                _, receiver_type = receiver_declaration.split(maxsplit=1)
+                receiver_type = receiver_type.lstrip("&?")
+                owner = receiver_type.split(".")[-1].split("[", 1)[0]
             line = text.count("\n", 0, function.start()) + 1
             finding = {
                 "source": source.relative_to(translation).as_posix(),

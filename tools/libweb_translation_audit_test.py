@@ -86,7 +86,13 @@ module bindings
 
 pub struct WrapperWorldWeakValueCache[T] {}
 
+pub struct WrapperWorldWeakValueCacheMap[K, V] {}
+
 pub fn (cache &WrapperWorldWeakValueCache[T]) get() ?&T {
+    return none
+}
+
+pub fn (mut cache WrapperWorldWeakValueCacheMap[K, V]) cache_for(key &K) ?&V {
     return none
 }
 """
@@ -96,6 +102,8 @@ pub fn (cache &WrapperWorldWeakValueCache[T]) get() ?&T {
 
         self.assertIn(("get", "WrapperWorldWeakValueCache"), functions)
         self.assertNotIn(("get", "WrapperWorldWeakValueCache[T]"), functions)
+        self.assertIn(("cache_for", "WrapperWorldWeakValueCacheMap"), functions)
+        self.assertNotIn(("cache_for", "V]"), functions)
 
 
 if __name__ == "__main__":
