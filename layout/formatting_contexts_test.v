@@ -2562,6 +2562,21 @@ fn test_clearance_moves_past_every_stacked_float() {
 	assert cleared.offset.y().to_double() == 120
 }
 
+fn test_float_is_lowered_past_an_opposite_side_blocker() {
+	document := html.parse_document('<!doctype html><style>
+		#container { width:100px }
+		#left { float:left; width:60px; height:40px }
+		#right { float:right; width:60px; height:20px }
+	</style><div id="container"><div id="left"></div><div id="right"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	left := used_for_id(result, 'left')
+	right := used_for_id(result, 'right')
+	assert left.offset.x().to_double() == 0
+	assert left.offset.y().to_double() == 0
+	assert right.offset.x().to_double() == 40
+	assert right.offset.y().to_double() == 40
+}
+
 fn test_auto_width_float_is_clamped_by_max_width() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }

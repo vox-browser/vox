@@ -1034,6 +1034,8 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 		bfc.right_floats.y_offset = side_y_offset
 		bfc.right_floats.current_boxes = current_boxes
 	}
+	// Search both float sides together at each candidate Y. If they leave too
+	// little inline space, retry immediately below the shallowest blocker.
 	for {
 		left, right, next_y := bfc.float_boundaries_at(y, box_state.margin_box_height(), container_width, direction, container_root_offset)
 		// With no intersecting float boundary, an over-wide float still goes at
