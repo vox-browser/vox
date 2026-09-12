@@ -1490,22 +1490,32 @@ pub fn (n Number) value() f64 {
 }
 
 // https://drafts.csswg.org/css-values-4/#css-round-to-the-nearest-integer
+pub fn clamp_integer_to_32_bit(value i64) i64 {
+	if value > 2147483647 {
+		return 2147483647
+	}
+	if value < -2147483647 - 1 {
+		return -2147483647 - 1
+	}
+	return value
+}
+
 pub fn round_to_nearest_integer(value f64) i64 {
 	if math.is_nan(value) {
 		return 0
 	}
 	if math.is_inf(value, 1) {
-		return max_i64
+		return 2147483647
 	}
 	if math.is_inf(value, -1) {
-		return min_i64
+		return -2147483647 - 1
 	}
 	rounded := math.floor(value + 0.5)
-	if rounded >= f64(max_i64) {
-		return max_i64
+	if rounded >= f64(2147483647) {
+		return 2147483647
 	}
-	if rounded <= f64(min_i64) {
-		return min_i64
+	if rounded <= f64(-2147483647 - 1) {
+		return -2147483647 - 1
 	}
 	return i64(rounded)
 }

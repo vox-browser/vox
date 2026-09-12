@@ -4966,7 +4966,7 @@ pub mut:
 
 pub fn IntegerStyleValue.create(value i64) IntegerStyleValue {
 	return IntegerStyleValue{
-		value_: value
+		value_: clamp_integer_to_32_bit(value)
 	}
 }
 

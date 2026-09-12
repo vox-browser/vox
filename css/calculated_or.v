@@ -319,7 +319,7 @@ pub mut:
 
 pub fn IntegerOrCalculated.from_integer(value i64) IntegerOrCalculated {
 	return IntegerOrCalculated{
-		value_: value
+		value_: clamp_integer_to_32_bit(value)
 	}
 }
 
