@@ -17,6 +17,7 @@ pub:
 	window_context          bool
 	navigation_start        u64
 	navigation_timing_names map[string]u64
+	navigation_timing_entry ?&navigationtiming.PerformanceNavigationTiming
 }
 
 pub struct PerformanceJSON {
@@ -63,7 +64,11 @@ pub fn (mut performance Performance) timing() &navigationtiming.PerformanceTimin
 		return timing
 	}
 	value := fn [performance] (name string) f64 {
-		return f64(performance.host.navigation_timing_names[name] or { u64(0) })
+		absolute := performance.host.navigation_timing_names[name] or { u64(0) }
+		if absolute == 0 {
+			return 0
+		}
+		return f64(absolute - performance.host.navigation_start)
 	}
 	timing := &navigationtiming.PerformanceTiming{
 		load_timing_info: navigationtiming.DocumentLoadTimingInfo{
@@ -75,6 +80,7 @@ pub fn (mut performance Performance) timing() &navigationtiming.PerformanceTimin
 			load_event_start_time: value('loadEventStart')
 			load_event_end_time: value('loadEventEnd')
 		}
+		navigation_timing_entry_: performance.host.navigation_timing_entry
 		// PerformanceHost's legacy values are already wall-clock milliseconds.
 		estimated_monotonic_epoch: 0
 	}
@@ -87,10 +93,7 @@ pub fn (mut performance Performance) navigation() &navigationtiming.PerformanceN
 	if navigation := performance.navigation_ {
 		return navigation
 	}
-	navigation := &navigationtiming.PerformanceNavigation{
-		type_: navigationtiming.type_navigate
-		redirect_count: 0
-	}
+	navigation := navigationtiming.PerformanceNavigation.create(performance.host.navigation_timing_entry)
 	performance.navigation_ = navigation
 	return navigation
 }
