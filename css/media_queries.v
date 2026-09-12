@@ -217,6 +217,33 @@ fn (mut parser Parser) parse_supports_condition(mut tokens SupportsTokenStream) 
 	return parser.parse_boolean_expression(mut tokens, .false_, .supports_feature)
 }
 
+fn at_rule_is_supported(name string) bool {
+	// https://drafts.csswg.org/css-conditional-5/#support-definition-at-rules
+	// @charset is intentionally excluded because it is not a valid at-rule.
+	if equals_ignoring_ascii_case(name, 'charset') {
+		return false
+	}
+	if ascii_case_insensitive_name_is_one_of(name, [
+		'container',
+		'counter-style',
+		'font-face',
+		'font-feature-values',
+		'function',
+		'import',
+		'keyframes',
+		'-webkit-keyframes',
+		'layer',
+		'media',
+		'namespace',
+		'page',
+		'property',
+		'supports',
+	]) {
+		return true
+	}
+	return is_font_feature_value_type_at_keyword_local(name) || is_margin_rule_name(name)
+}
+
 // https://drafts.csswg.org/css-conditional-5/#typedef-supports-feature
 fn (mut parser Parser) parse_supports_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	mut transaction := tokens
@@ -268,6 +295,20 @@ fn (mut parser Parser) parse_supports_feature(mut tokens SupportsTokenStream) ?&
 		format_name := format_token.token().ident()
 		tokens = transaction
 		return BooleanExpression.create_supports_font_format(format_name, font_format_is_supported(format_name))
+	}
+
+	// `<supports-at-rule-fn> = at-rule( <at-keyword-token> )`
+	if first_token.is_function_named('at-rule') {
+		mut at_rule_tokens := SupportsTokenStream.from_values(first_token.function().value)
+		at_rule_tokens.discard_whitespace()
+		at_rule_token := at_rule_tokens.consume_a_token() or { return none }
+		at_rule_tokens.discard_whitespace()
+		if at_rule_tokens.has_next_token() || !at_rule_token.is(.at_keyword) {
+			return none
+		}
+		at_rule_name := at_rule_token.token().at_keyword()
+		tokens = transaction
+		return BooleanExpression.create_supports_at_rule(at_rule_name, at_rule_is_supported(at_rule_name))
 	}
 
 	return none
