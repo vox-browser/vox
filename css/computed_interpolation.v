@@ -5960,7 +5960,7 @@ fn interpolate_grid_track_size_list(calculation_context InterpolationCalculation
 			interpolated_tracks := interpolate_grid_track_size_list(calculation_context, from_repeat.grid_track_size_list(), to_repeat.grid_track_size_list(), delta) or {
 				return none
 			}
-			track := ExplicitGridTrack.from_repeat(GridRepeat.new(from_repeat.type_(), interpolated_tracks, from_repeat.repeat_count()))
+			track := ExplicitGridTrack.from_repeat(GridRepeat.new(from_repeat.type_(), interpolated_tracks, StyleValue(IntegerStyleValue.create(i64(from_repeat.repeat_count())))))
 			append_grid_track_with_line_names(mut result, track, line_names)
 		} else if from_track.is_minmax() && to_track.is_minmax() {
 			from_minmax := from_track.minmax()
@@ -8125,7 +8125,7 @@ fn composite_grid_track_size_list(calculation_context InterpolationCalculationCo
 			tracks := composite_grid_track_size_list(calculation_context, underlying_repeat.grid_track_size_list(), animated_repeat.grid_track_size_list()) or {
 				return none
 			}
-			track := ExplicitGridTrack.from_repeat(GridRepeat.new(underlying_repeat.type_(), tracks, underlying_repeat.repeat_count()))
+			track := ExplicitGridTrack.from_repeat(GridRepeat.new(underlying_repeat.type_(), tracks, StyleValue(IntegerStyleValue.create(i64(underlying_repeat.repeat_count())))))
 			append_grid_track_with_line_names(mut result, track, line_names)
 			continue
 		}

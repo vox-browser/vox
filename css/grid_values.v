@@ -605,21 +605,21 @@ pub enum GridRepeatType {
 pub struct GridRepeatParams {
 pub mut:
 	type_ GridRepeatType
-	count usize
+	count ?StyleValue
 }
 
 pub struct GridRepeat {
 pub mut:
 	type_                GridRepeatType
 	grid_track_size_list GridTrackSizeList
-	repeat_count_        usize
+	repeat_count_        ?StyleValue
 }
 
-pub fn GridRepeat.new(grid_repeat_type GridRepeatType, grid_track_size_list GridTrackSizeList, repeat_count usize) GridRepeat {
+pub fn GridRepeat.new(grid_repeat_type GridRepeatType, grid_track_size_list GridTrackSizeList, repeat_count ?StyleValue) GridRepeat {
 	return GridRepeat{
-		type_:                grid_repeat_type
+		type_: grid_repeat_type
 		grid_track_size_list: grid_track_size_list
-		repeat_count_:        repeat_count
+		repeat_count_: repeat_count
 	}
 }
 
@@ -643,7 +643,8 @@ pub fn (repeat GridRepeat) repeat_count() usize {
 	if !repeat.is_fixed() {
 		panic('VERIFY_NOT_REACHED')
 	}
-	return repeat.repeat_count_
+	count := repeat.repeat_count_ or { panic('VERIFY_NOT_REACHED') }
+	return usize(int_from_style_value(count))
 }
 
 pub fn (repeat GridRepeat) grid_track_size_list() GridTrackSizeList {
@@ -658,7 +659,10 @@ pub fn (repeat GridRepeat) serialize(mode SerializationMode) string {
 	repeat_prefix := match repeat.type_ {
 		.auto_fit { 'auto-fit' }
 		.auto_fill { 'auto-fill' }
-		.fixed { '${repeat.repeat_count_}' }
+		.fixed {
+			count := repeat.repeat_count_ or { panic('VERIFY_NOT_REACHED') }
+			count.serialize(mode)
+		}
 	}
 
 	return 'repeat(${repeat_prefix}, ${repeat.grid_track_size_list.serialize(mode)})'
@@ -674,9 +678,13 @@ pub fn (repeat GridRepeat) to_string_with_mode(mode SerializationMode) string {
 
 pub fn (repeat GridRepeat) absolutized(context ComputationContext) GridRepeat {
 	return GridRepeat{
-		type_:                repeat.type_
+		type_: repeat.type_
 		grid_track_size_list: repeat.grid_track_size_list.absolutized(context)
-		repeat_count_:        repeat.repeat_count_
+		repeat_count_: if count := repeat.repeat_count_ {
+			?StyleValue(count.absolutized(context))
+		} else {
+			?StyleValue(none)
+		}
 	}
 }
 

@@ -57,6 +57,7 @@ pub enum SpecialContext {
 	cubic_bezier_function_x_coordinate
 	dom_matrix_init_string
 	font_style_angle
+	grid_track_repeat_count
 	media_condition
 	radial_size_length_percentage
 	random_value_sharing_fixed_value

@@ -211,6 +211,24 @@ fn test_absolutized_uses_computation_context_and_preserves_typed_tree() {
 	assert absolutized_grid.serialize(.normal) == 'calc(22px)'
 }
 
+fn test_grid_repeat_accepts_and_absolutizes_calculated_integer_counts() {
+	value := parse_css_value_logic(.grid_template_columns, 'repeat(calc(1 + 3 * sign(100em - 1px)), 150px)') or {
+		panic('calculated repeat count did not parse')
+	}
+	assert value is GridTrackSizeListStyleValue
+	assert value.serialize(.normal).starts_with('repeat(calc(')
+	font_size := CSSPixels.new(16)
+	computed := value.absolutized(ComputationContext{
+		length_resolution_context: LengthResolutionContext{
+			font_metrics: LengthFontMetrics.new(font_size, CSSPixels.new(8), CSSPixels.new(12), CSSPixels.new(8), CSSPixels.new(19))
+			root_font_metrics: LengthFontMetrics.default()
+		}
+	})
+	assert computed.serialize(.normal) == 'repeat(calc(4), 150px)'
+	computed_list := (computed as GridTrackSizeListStyleValue).grid_track_size_list()
+	assert computed_list.track_list()[0].repeat().repeat_count() == 4
+}
+
 fn test_resolve_numbers() {
 	assert approx(resolved_number('calc(1 + 2)')?, 3)
 	assert approx(resolved_number('sqrt(16)')?, 4)

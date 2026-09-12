@@ -257,6 +257,14 @@ fn (parser Parser) calculation_context() CalculationContext {
 							}
 						}
 					}
+					.grid_track_repeat_count {
+						CalculationContext{
+							resolve_numbers_as_integers: true
+							accepted_type_ranges: {
+								ValueType.integer: accepted_calculation_range(1, f64(2147483647))
+							}
+						}
+					}
 					.radial_size_length_percentage {
 						CalculationContext{
 							percentages_resolve_as: ValueType.length
@@ -6990,20 +6998,23 @@ enum GridRepeatCountKind {
 fn (mut parser Parser) parse_grid_repeat_params(mut tokens ComponentValueStream, count_kind GridRepeatCountKind) ?GridRepeatParams {
 	match count_kind {
 		.fixed_integer {
-			// FIXME: The C++ implementation does not support calculated repeat counts yet.
 			mut int_attempt := tokens.clone()
-			integer_value := parser.parse_integer_value(mut int_attempt) or { return none }
+			parser.push_temporary_value_parsing_context(ValueParsingContext(SpecialContext.grid_track_repeat_count))
+			integer_value := parser.parse_integer_value(mut int_attempt) or {
+				parser.pop_temporary_value_parsing_context()
+				return none
+			}
+			parser.pop_temporary_value_parsing_context()
 			if integer_value is IntegerStyleValue {
 				if integer_value.integer() < 1 {
 					return none
 				}
-				tokens = int_attempt
-				return GridRepeatParams{
-					type_: .fixed
-					count: usize(integer_value.integer())
-				}
 			}
-			return none
+			tokens = int_attempt
+			return GridRepeatParams{
+				type_: .fixed
+				count: integer_value
+			}
 		}
 		.auto {
 			mut transaction := tokens.clone()
