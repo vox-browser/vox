@@ -378,6 +378,24 @@ fn (mut element HTMLMediaElement) finish_delaying_load_event() {
 
 pub fn (mut element HTMLMediaElement) media_source_attachment_did_open() {
 	element.finish_delaying_load_event()
+	element.set_up_playback_manager()
+}
+
+pub fn (mut element HTMLMediaElement) media_source_set_duration(duration f64) {
+	element.set_duration(duration)
+}
+
+pub fn (mut element HTMLMediaElement) media_source_initialization_segment_received(duration f64) {
+	element.on_metadata_parsed(duration)
+}
+
+pub fn (mut element HTMLMediaElement) media_source_update_buffered_ranges(ranges []MediaBufferedRange) {
+	element.buffered_.clear()
+	for range_ in ranges {
+		element.buffered_.add_range(range_.start, range_.end)
+	}
+	element.playback_has_future_data_ = ranges.any(it.end > element.current_playback_position_)
+	element.update_ready_state()
 }
 
 pub fn (mut element HTMLMediaElement) toggle_fullscreen() {

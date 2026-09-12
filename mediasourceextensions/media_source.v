@@ -8,6 +8,7 @@ module mediasourceextensions
 import dom
 import fileapi
 import html
+import math
 import mimesniff
 
 pub enum ReadyState {
@@ -61,12 +62,16 @@ mut:
 	has_ever_been_attached_    bool
 	media_element_assigned_to_ ?&html.HTMLMediaElement
 	source_buffers_            &SourceBufferList = unsafe { nil }
+	active_source_buffers_     &SourceBufferList = unsafe { nil }
+	duration_                  f64 = math.nan()
+	next_track_id_             i64 = 1
 }
 
 pub fn MediaSource.create() &MediaSource {
 	return &MediaSource{
 		EventTarget: dom.EventTarget{}
 		source_buffers_: SourceBufferList.create_internal()
+		active_source_buffers_: SourceBufferList.create_internal()
 	}
 }
 
@@ -94,6 +99,16 @@ pub fn (source &MediaSource) source_buffers() &SourceBufferList {
 	return source.source_buffers_
 }
 
+pub fn (source &MediaSource) active_source_buffers() &SourceBufferList {
+	return source.active_source_buffers_
+}
+
+pub fn (mut source MediaSource) next_track_id() i64 {
+	id := source.next_track_id_
+	source.next_track_id_++
+	return id
+}
+
 // https://w3c.github.io/media-source/#addsourcebuffer-method
 pub fn (mut source MediaSource) add_source_buffer(type_ string) !&SourceBuffer {
 	if type_.len == 0 {
@@ -105,10 +120,44 @@ pub fn (mut source MediaSource) add_source_buffer(type_ string) !&SourceBuffer {
 	if source.ready_state_ != .open {
 		return error('InvalidStateError: MediaSource is not open')
 	}
-	buffer := SourceBuffer.create_internal_for_media_source(source)
+	mut buffer := SourceBuffer.create_internal_for_media_source(source)
+	buffer.set_content_type(type_)!
 	mut buffers := source.source_buffers_
 	buffers.append(buffer)
 	return buffer
+}
+
+pub fn (source &MediaSource) duration() f64 {
+	if source.ready_state_ == .closed {
+		return math.nan()
+	}
+	return source.duration_
+}
+
+pub fn (mut source MediaSource) set_duration(duration f64) ! {
+	if duration < 0 || math.is_nan(duration) {
+		return error('TypeError: duration must not be negative or NaN')
+	}
+	if source.ready_state_ != .open {
+		return error('InvalidStateError: MediaSource is not open')
+	}
+	for index in 0 .. source.source_buffers_.length() {
+		buffer := source.source_buffers_.item(index) or { continue }
+		if buffer.updating() {
+			return error('InvalidStateError: A SourceBuffer is still updating')
+		}
+	}
+	source.run_duration_change_algorithm(duration)
+}
+
+pub fn (mut source MediaSource) run_duration_change_algorithm(duration f64) {
+	if source.duration_ == duration {
+		return
+	}
+	source.duration_ = duration
+	if mut media_element := source.media_element_assigned_to_ {
+		media_element.media_source_set_duration(duration)
+	}
 }
 
 // https://w3c.github.io/media-source/#dom-mediasource-endofstream
@@ -131,6 +180,11 @@ pub fn (mut source MediaSource) run_end_of_stream_algorithm(error_ ?EndOfStreamE
 	source.queue_a_media_source_task(fn [source] () {
 		source.dispatch_event(dom.Event.create('sourceended', dom.EventInit{}))
 	})
+	for index in 0 .. source.source_buffers_.length() {
+		if mut buffer := source.source_buffers_.item(index) {
+			buffer.set_reached_end_of_stream()
+		}
+	}
 	// Duration adjustment and media-element error signaling depend on coded
 	// track buffers and are translated with the demuxing path.
 	_ = error_
@@ -144,6 +198,11 @@ pub fn (source &MediaSource) queue_a_media_source_task(task fn ()) {
 
 pub fn (mut source MediaSource) set_ready_state_to_open_and_fire_sourceopen_event() {
 	source.ready_state_ = .open
+	for index in 0 .. source.source_buffers_.length() {
+		if mut buffer := source.source_buffers_.item(index) {
+			buffer.clear_reached_end_of_stream()
+		}
+	}
 	source.queue_a_media_source_task(fn [source] () {
 		source.dispatch_event(dom.Event.create('sourceopen', dom.EventInit{}))
 	})

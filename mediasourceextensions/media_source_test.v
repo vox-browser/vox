@@ -3,6 +3,7 @@ module mediasourceextensions
 import dom
 import fileapi
 import html
+import math
 
 @[heap]
 struct EventObservation {
@@ -140,6 +141,30 @@ fn test_media_source_add_source_buffer_and_indexed_source_buffer_list() {
 	assert observation.interface_ == .event
 }
 
+fn test_media_source_duration_mode_and_change_type() {
+	mut source := MediaSource.create()
+	assert math.is_nan(source.duration())
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	source.set_duration(-1) or {
+		assert err.msg() == 'TypeError: duration must not be negative or NaN'
+	}
+	source.set_duration(4)!
+	assert source.duration() == 4
+	assert media.duration() == 4
+
+	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+	assert buffer.mode() == .segments
+	buffer.set_mode(.sequence)!
+	assert buffer.mode() == .sequence
+	buffer.change_type('') or { assert err.msg() == 'TypeError: Type cannot be empty' }
+	buffer.change_type('video/mp4; codecs="avc1"') or {
+		assert err.msg() == 'NotSupportedError: Type is not supported'
+	}
+	buffer.change_type('video/webm; codecs="vp09.00.10.08"')!
+	assert buffer.mode() == .sequence
+}
+
 fn test_source_buffer_append_error_and_end_of_stream_algorithms() {
 	mut unattached := SourceBuffer.create_internal()
 	unattached.append_buffer('data'.bytes()) or {
@@ -161,13 +186,15 @@ fn test_source_buffer_append_error_and_end_of_stream_algorithms() {
 
 	buffer.append_buffer('not yet demuxed'.bytes())!
 	assert !buffer.updating()
-	assert buffer.input_buffer_length() == 0
+	assert buffer.input_buffer_length() == 'not yet demuxed'.len
 	assert update_start.count == 1
-	assert append_error.count == 1
+	assert append_error.count == 0
 	assert update_end.count == 1
-	assert source_ended.count == 1
-	assert source.ready_state() == .ended
+	assert source_ended.count == 0
+	assert source.ready_state() == .open
 
+	source.end_of_stream(none)!
+	assert source_ended.count == 1
 	source.end_of_stream(none) or {
 		assert err.msg() == 'InvalidStateError: MediaSource is not open'
 	}
@@ -181,6 +208,82 @@ fn test_source_buffer_append_error_and_end_of_stream_algorithms() {
 	mutable_processor.set_updating(false)
 	source.end_of_stream(none)!
 	assert source.ready_state() == .ended
+}
+
+fn ebml_test_element(id []u8, payload []u8) []u8 {
+	assert payload.len < 127
+	mut bytes := id.clone()
+	bytes << u8(0x80 | payload.len)
+	bytes << payload
+	return bytes
+}
+
+fn minimal_webm_initialization_segment() []u8 {
+	timestamp_scale := ebml_test_element([u8(0x2a), 0xd7, 0xb1], [u8(0x0f), 0x42, 0x40])
+	duration := ebml_test_element([u8(0x44), 0x89], [u8(0x40), 0x9f, 0x40, 0, 0, 0, 0, 0])
+	mut info_payload := timestamp_scale.clone()
+	info_payload << duration
+	info := ebml_test_element([u8(0x15), 0x49, 0xa9, 0x66], info_payload)
+
+	track_number := ebml_test_element([u8(0xd7)], [u8(1)])
+	track_type := ebml_test_element([u8(0x83)], [u8(1)])
+	codec := ebml_test_element([u8(0x86)], 'V_VP9'.bytes())
+	default_duration := ebml_test_element([u8(0x23), 0xe3, 0x83], [u8(0x01), 0xfc, 0xa0, 0x55])
+	mut entry_payload := track_number.clone()
+	entry_payload << track_type
+	entry_payload << codec
+	entry_payload << default_duration
+	entry := ebml_test_element([u8(0xae)], entry_payload)
+	tracks := ebml_test_element([u8(0x16), 0x54, 0xae, 0x6b], entry)
+
+	mut result := ebml_test_element([u8(0x1a), 0x45, 0xdf, 0xa3], []u8{})
+	result << [u8(0x18), 0x53, 0x80, 0x67, 0xff]
+	result << info
+	result << tracks
+	return result
+}
+
+fn minimal_webm_media_segment() []u8 {
+	timecode := ebml_test_element([u8(0xe7)], [u8(0)])
+	block := ebml_test_element([u8(0xa3)], [u8(0x81), 0, 0, 0x80, 1, 2])
+	mut payload := timecode.clone()
+	payload << block
+	return ebml_test_element([u8(0x1f), 0x43, 0xb6, 0x75], payload)
+}
+
+fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() {
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+	update := &EventObservation{}
+	append_error := &EventObservation{}
+	buffer.set_onupdate(observer_callback(update))
+	buffer.set_onerror(observer_callback(append_error))
+
+	initialization := minimal_webm_initialization_segment()
+	buffer.append_buffer(initialization[..initialization.len / 2])!
+	assert buffer.input_buffer_length() == initialization.len / 2
+	assert buffer.video_tracks().length() == 0
+	buffer.append_buffer(initialization[initialization.len / 2..])!
+	assert buffer.input_buffer_length() == 0
+	assert buffer.video_tracks().length() == 1
+	assert media.video_tracks().length() == 1
+	assert source.active_source_buffers().item(0)? == buffer
+	assert source.duration() == 2
+	assert media.ready_state() == .have_metadata
+
+	buffer.append_buffer(minimal_webm_media_segment())!
+	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing track buffer') }
+	assert track_buffer.demuxer.coded_frame_count() == 1
+	frame := track_buffer.demuxer.coded_frames()[0]
+	assert frame.is_keyframe
+	assert frame.data == [u8(1), 2]
+	assert frame.timestamp == 0
+	assert frame.duration > 0.033 && frame.duration < 0.034
+	assert media.buffered().length() == 1
+	assert append_error.count == 0
+	assert update.count == 3
 }
 
 fn test_buffered_change_event_preserves_base_init_and_identity() {

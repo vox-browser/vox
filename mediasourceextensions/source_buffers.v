@@ -7,6 +7,9 @@
 module mediasourceextensions
 
 import dom
+import html
+import math
+import mimesniff
 
 pub enum AppendMode {
 	segments
@@ -34,6 +37,10 @@ pub struct SourceBuffer {
 mut:
 	media_source_ ?&MediaSource
 	processor_    &SourceBufferProcessor = unsafe { nil }
+	content_type_ string
+	audio_tracks_ &html.AudioTrackList = unsafe { nil }
+	video_tracks_ &html.VideoTrackList = unsafe { nil }
+	text_tracks_  &html.TextTrackList = unsafe { nil }
 }
 
 // SourceBuffer has no exposed constructor, but MediaSource implementations
@@ -42,6 +49,9 @@ pub fn SourceBuffer.create_internal() &SourceBuffer {
 	return &SourceBuffer{
 		EventTarget: dom.EventTarget{}
 		processor_: SourceBufferProcessor.create()
+		audio_tracks_: &html.AudioTrackList{}
+		video_tracks_: &html.VideoTrackList{}
+		text_tracks_: &html.TextTrackList{}
 	}
 }
 
@@ -50,7 +60,88 @@ pub fn SourceBuffer.create_internal_for_media_source(media_source &MediaSource) 
 		EventTarget: dom.EventTarget{}
 		media_source_: media_source
 		processor_: SourceBufferProcessor.create()
+		audio_tracks_: &html.AudioTrackList{}
+		video_tracks_: &html.VideoTrackList{}
+		text_tracks_: &html.TextTrackList{}
 	}
+}
+
+pub fn (mut buffer SourceBuffer) set_content_type(type_ string) ! {
+	mime_type := mimesniff.MimeType.parse(type_) or { return error('Invalid media MIME type') }
+	if mime_type.subtype() != 'webm' {
+		return error('Unsupported media byte-stream format')
+	}
+	buffer.content_type_ = type_
+	buffer.processor_.set_webm_parser()
+}
+
+pub fn (buffer &SourceBuffer) mode() AppendMode {
+	return buffer.processor_.mode()
+}
+
+pub fn (mut buffer SourceBuffer) set_mode(mode AppendMode) ! {
+	mut media_source := buffer.media_source_ or {
+		return error('InvalidStateError: SourceBuffer has no MediaSource')
+	}
+	if !media_source.source_buffers().contains(buffer) {
+		return error('InvalidStateError: SourceBuffer has been removed')
+	}
+	if buffer.updating() {
+		return error('InvalidStateError: SourceBuffer is updating')
+	}
+	if buffer.processor_.generate_timestamps_flag() && mode == .segments {
+		return error("TypeError: Cannot set mode to 'segments' when generate timestamps flag is true")
+	}
+	if media_source.ready_state() == .ended {
+		media_source.set_ready_state_to_open_and_fire_sourceopen_event()
+	}
+	if buffer.processor_.is_parsing_media_segment() {
+		return error('InvalidStateError: Cannot change mode while parsing a media segment')
+	}
+	if mode == .sequence {
+		buffer.processor_.set_group_start_timestamp(buffer.processor_.group_end_timestamp())
+	}
+	buffer.processor_.set_mode(mode)
+}
+
+pub fn (mut buffer SourceBuffer) change_type(type_ string) ! {
+	if type_.len == 0 {
+		return error('TypeError: Type cannot be empty')
+	}
+	mut media_source := buffer.media_source_ or {
+		return error('InvalidStateError: SourceBuffer has no MediaSource')
+	}
+	if !media_source.source_buffers().contains(buffer) {
+		return error('InvalidStateError: SourceBuffer has been removed')
+	}
+	if buffer.updating() {
+		return error('InvalidStateError: SourceBuffer is updating')
+	}
+	if !MediaSource.is_type_supported(type_) {
+		return error('NotSupportedError: Type is not supported')
+	}
+	if media_source.ready_state() == .ended {
+		media_source.set_ready_state_to_open_and_fire_sourceopen_event()
+	}
+	buffer.processor_.reset_parser_state()
+	buffer.set_content_type(type_)!
+	buffer.processor_.set_generate_timestamps_flag(false)
+	if buffer.processor_.generate_timestamps_flag() {
+		buffer.set_mode(.sequence)!
+	}
+	buffer.processor_.set_pending_initialization_segment_for_change_type_flag(true)
+}
+
+pub fn (buffer &SourceBuffer) audio_tracks() &html.AudioTrackList {
+	return buffer.audio_tracks_
+}
+
+pub fn (buffer &SourceBuffer) video_tracks() &html.VideoTrackList {
+	return buffer.video_tracks_
+}
+
+pub fn (buffer &SourceBuffer) text_tracks() &html.TextTrackList {
+	return buffer.text_tracks_
 }
 
 pub fn (buffer &SourceBuffer) updating() bool {
@@ -104,9 +195,18 @@ pub fn (mut buffer SourceBuffer) append_buffer(data []u8) ! {
 }
 
 fn (mut buffer SourceBuffer) run_buffer_append_algorithm() {
-	if !buffer.processor_.run_segment_parser_loop() {
+	result := buffer.processor_.run_segment_parser_loop()
+	if !result.succeeded {
 		buffer.run_append_error_algorithm()
+		return
 	}
+	if result.first_initialization_segment {
+		buffer.on_first_initialization_segment_processed(result.duration, result.tracks)
+	}
+	if result.processed_coded_frames {
+		buffer.update_ready_state_and_duration_after_coded_frame_processing()
+	}
+	buffer.finish_buffer_append()
 }
 
 // https://w3c.github.io/media-source/#sourcebuffer-append-error
@@ -122,6 +222,83 @@ fn (mut buffer SourceBuffer) run_append_error_algorithm() {
 	})
 	mut mutable_media_source := media_source
 	mutable_media_source.run_end_of_stream_algorithm(.decode)
+}
+
+fn (mut buffer SourceBuffer) on_first_initialization_segment_processed(duration ?f64, tracks []WebMTrackInfo) {
+	mut media_source := buffer.media_source_ or { return }
+	if math.is_nan(media_source.duration()) {
+		media_source.run_duration_change_algorithm(duration or { math.inf(1) })
+	}
+	mut media_element := media_source.media_element_assigned_to() or { return }
+	mut has_active_track := false
+	for track in tracks {
+		track_buffer := buffer.processor_.track_buffers()[track.number] or { continue }
+		metadata := html.MediaTrackMetadata{
+			identifier: media_source.next_track_id()
+			name: track.label
+			parsed_bcp47_language: if track.language == '' { none } else { track.language }
+			playback_track_handle: voidptr(track_buffer.demuxer)
+		}
+		match track.type_ {
+			.audio {
+				audio_track := media_element.on_audio_track_added(metadata)
+				mut list := buffer.audio_tracks_
+				list.add_track(audio_track)
+				has_active_track = true
+			}
+			.video {
+				video_track := media_element.on_video_track_added(metadata)
+				mut list := buffer.video_tracks_
+				list.add_track(video_track)
+				has_active_track = true
+			}
+			.text {
+				mut text_track := html.TextTrack.create()
+				text_track.set_id(metadata.identifier.str())
+				text_track.set_language(track.language)
+				text_track.set_label(track.label)
+				text_track.set_kind(.metadata)
+				mut source_list := buffer.text_tracks_
+				source_list.add_track(text_track)
+				mut element_list := media_element.text_tracks()
+				element_list.add_track(text_track)
+			}
+		}
+	}
+	if has_active_track {
+		mut active_buffers := media_source.active_source_buffers()
+		active_buffers.append(buffer)
+	}
+	media_element.media_source_initialization_segment_received(media_source.duration())
+}
+
+fn (mut buffer SourceBuffer) finish_buffer_append() {
+	buffer.processor_.set_updating(false)
+	media_source := buffer.media_source_ or { return }
+	media_source.queue_a_media_source_task(fn [buffer] () {
+		buffer.dispatch_event(dom.Event.create('update', dom.EventInit{}))
+	})
+	media_source.queue_a_media_source_task(fn [buffer] () {
+		buffer.dispatch_event(dom.Event.create('updateend', dom.EventInit{}))
+	})
+}
+
+fn (mut buffer SourceBuffer) update_ready_state_and_duration_after_coded_frame_processing() {
+	media_source := buffer.media_source_ or { return }
+	mut media_element := media_source.media_element_assigned_to() or { return }
+	mut ranges := []html.MediaBufferedRange{}
+	for range_ in buffer.processor_.buffered_time_ranges() {
+		ranges << html.MediaBufferedRange{ start: range_.start, end: range_.end }
+	}
+	media_element.media_source_update_buffered_ranges(ranges)
+}
+
+pub fn (mut buffer SourceBuffer) set_reached_end_of_stream() {
+	buffer.processor_.set_reached_end_of_stream()
+}
+
+pub fn (mut buffer SourceBuffer) clear_reached_end_of_stream() {
+	buffer.processor_.clear_reached_end_of_stream()
 }
 
 pub fn (buffer &SourceBuffer) set_onupdatestart(handler ?&dom.CallbackType) {
