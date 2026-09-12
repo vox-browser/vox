@@ -79,7 +79,7 @@ V's standard `crypto.*` modules without shadowing that namespace.
 The IDL-only `Fullscreen` package delegates its state machine to the shared
 translated DOM implementation.
 
-The table below is the refreshed 2026-09-11 inventory. It covers 76 current
+The table below is the refreshed 2026-09-12 inventory. It covers 76 current
 implementation-bearing upstream modules plus the translated IDL/IPC-only
 `Fullscreen` and `Worker` packages, and all 1,193 module-owned `.cpp`
 implementation units. Root-level LibWeb `.cpp` support units are mapped
@@ -99,7 +99,7 @@ from the current-module totals.
 | `ContentSecurityPolicy` | 37 | 4,725 | 2,738 | 427 | Complete |
 | `CookieStore` | 2 | 850 | 859 | 434 | Complete |
 | `CredentialManagement` | 6 | 382 | 418 | 301 | Complete |
-| `Crypto` | 6 | 13,412 | 3,287 | 1,006 | Complete |
+| `Crypto` | 6 | 13,412 | 4,472 | 1,459 | Complete |
 | `DOM` | 59 | 34,859 | 35,649 | 2,154 | Complete |
 | `DOMURL` | 4 | 1,039 | 754 | 336 | Complete |
 | `Editing` | 26 | 12,720 | 3,294 | 741 | Complete |
@@ -153,7 +153,7 @@ from the current-module totals.
 | `URLPattern` | 1 | 223 | 1,632 | 214 | Complete |
 | `UserTiming` | 2 | 160 | 119 | 35 | Complete |
 | `ViewTransition` | 1 | 1,054 | 598 | 324 | Complete |
-| `WebAssembly` | 7 | 3,441 | 1,069 | 291 | Complete |
+| `WebAssembly` | 7 | 3,441 | 2,065 | 702 | Complete |
 | `WebAudio` | 47 | 8,256 | 2,649 | 444 | Complete |
 | `WebDriver` | 16 | 5,321 | 3,447 | 638 | Complete |
 | `WebGL` | 42 | 7,846 | 4,183 | 538 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **331,226** | **62,821** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **333,407** | **63,685** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

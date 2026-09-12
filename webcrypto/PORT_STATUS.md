@@ -1,9 +1,9 @@
-# Crypto module V translation — present; semantic re-audit in progress
+# Crypto module V translation — complete
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Crypto`
 
-Translation workspace: `~/code/libweb_v/webcrypto`
-Audited: 2026-08-29
+Translation workspace: `~/code/vox2/webcrypto`
+Audited: Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa` on 2026-09-12
 
 All six upstream Crypto `.cpp` implementation units have an audited V
 implementation mapping. The V package is named `webcrypto` so that it can
@@ -14,7 +14,7 @@ import V's standard `crypto.*` primitives without shadowing that namespace.
 | `Crypto.cpp` | `crypto.v` |
 | `CryptoAlgorithms.cpp` | `crypto_algorithms.v` |
 | `CryptoBindings.cpp` | `crypto_bindings.v` |
-| `CryptoKey.cpp` | `crypto_key.v` |
+| `CryptoKey.cpp` | `crypto_key.v`, `crypto_key_objects.v`, `crypto_key_serialization.v` |
 | `KeyAlgorithms.cpp` | `key_algorithms.v` |
 | `SubtleCrypto.cpp` | `subtle_crypto.v` |
 | concrete `AlgorithmMethods` subclasses | `upstream_algorithm_classes.v` |
@@ -22,20 +22,21 @@ import V's standard `crypto.*` primitives without shadowing that namespace.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Crypto/` | 6 | 13,297 | 3,077 | 955 | Present |
+| `Crypto/` | 6 | 13,412 | 4,472 | 1,459 | Complete |
 
-The shared protocol implementations have been moved out of the quarantined
-`upstream_*entry_points.v` filename after source review. That review corrected
-the ordering and duplicate-preservation requirements of `usage_intersection`
-and the mandatory one-octet representation of the integer zero. Remaining
-DER/JWK representation differences and binding conversions are still being
-reviewed body-by-body, so this module is not yet declared complete.
+The function-level delta from the 2026-03-24 baseline through the audited
+Ladybird revision has zero unmatched Crypto additions. The current-source
+inventory also has zero unmatched Crypto functions. The shared protocol review
+preserves the ordering and duplicates required by `usage_intersection` and the
+mandatory one-octet representation of the integer zero.
 
 The port covers secure random values and UUIDv4 generation, the WebCrypto IDL
-enums and JWK conversion, key metadata and structured serialization, algorithm
-normalization and per-operation registration, key-usage and extractability
-checks, raw and JWK import/export, key generation and derivation, wrapping and
-unwrapping, and typed encapsulation boundaries.
+enums and JWK conversion, key metadata, stable tagged structured serialization
+for every internal key-handle and algorithm variant, secure handle clearing,
+realm-scoped algorithm and frozen-usage binding caches, algorithm normalization
+and per-operation registration, key-usage and extractability checks, raw and
+JWK import/export, key generation and derivation, wrapping and unwrapping, and
+typed encapsulation boundaries.
 
 Available V backends provide real implementations for SHA-1, SHA-2, SHA-3,
 AES-CBC, AES-CTR, general-IV/general-tag AES-GCM, AES-KW, HMAC, HKDF, PBKDF2,
@@ -54,6 +55,6 @@ boundary.
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v_old -enable-globals test webcrypto
-Summary for all V _test.v files: 5 passed, 5 total.
+$ /Users/alex/code/v/v -enable-globals test webcrypto
+Summary for all V _test.v files: 8 passed, 8 total.
 ```
