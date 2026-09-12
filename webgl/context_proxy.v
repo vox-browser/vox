@@ -19,6 +19,9 @@ pub const webgl_command_tex_image3d_from_bitmap = WebGLCommandType(174)
 pub const webgl_command_tex_sub_image3d_from_bitmap = WebGLCommandType(175)
 pub const webgl_command_shader_source = WebGLCommandType(176)
 pub const webgl_command_transform_feedback_varyings = WebGLCommandType(177)
+pub const webgl_sync_get_string = WebGLSyncCallType(40)
+pub const webgl_sync_get_vertex_attrib_pointer = WebGLSyncCallType(41)
+pub const webgl_sync_get_uniform_indices = WebGLSyncCallType(42)
 
 pub struct WebGLIntSize {
 pub:
@@ -54,6 +57,12 @@ pub:
 	pixels []u8
 }
 
+pub struct WebGLVertexAttribPointerResult {
+pub:
+	length  int
+	pointer u64
+}
+
 pub struct WebGLTransportBatch {
 pub:
 	bytes                 []u8
@@ -82,6 +91,8 @@ mut:
 	pending_local_error_           GLenum
 	wait_for_execution_succeeds_   bool = true
 	next_sync_reply_               []u8
+	sync_requests_                 [][]u8
+	string_cache_                  map[GLenum]string
 	drawing_buffer_size_           WebGLIntSize
 	presentation_requests_         []bool
 	next_readback_bitmap_          ?WebGLBitmap
@@ -106,7 +117,9 @@ pub fn (mut proxy WebGLContextProxyBase) restore(supported_extensions []string, 
 	proxy.out_of_line_commands_.clear_with_capacity()
 	proxy.pending_bitmaps_.clear()
 	proxy.transmitted_batches_.clear()
+	proxy.sync_requests_.clear()
 	proxy.pending_local_error_ = no_error
+	proxy.string_cache_.clear()
 	proxy.initialize_shared_command_buffer(data_region_capacity)!
 }
 
@@ -247,6 +260,7 @@ pub fn (mut proxy WebGLContextProxyBase) send_sync_call(request []u8) []u8 {
 		return []u8{}
 	}
 	proxy.flush_commands()
+	proxy.sync_requests_ << request.clone()
 	reply := proxy.next_sync_reply_.clone()
 	proxy.next_sync_reply_.clear()
 	if reply.len == 0 {
@@ -257,6 +271,10 @@ pub fn (mut proxy WebGLContextProxyBase) send_sync_call(request []u8) []u8 {
 
 pub fn (mut proxy WebGLContextProxyBase) set_next_sync_reply(reply []u8) {
 	proxy.next_sync_reply_ = reply.clone()
+}
+
+pub fn (proxy &WebGLContextProxyBase) sync_requests() [][]u8 {
+	return proxy.sync_requests_.clone()
 }
 
 pub fn (mut proxy WebGLContextProxyBase) acknowledge_flush(sequence_number u64) {
@@ -530,4 +548,102 @@ pub fn (mut proxy WebGLContextProxyBase) transform_feedback_varyings(program GLu
 	proxy_append_u32(mut payload, u32(varyings_bytes.len))
 	proxy_append_u32(mut payload, buffer_mode)
 	proxy.record_bytes(webgl_command_transform_feedback_varyings, payload, varyings_bytes)!
+}
+
+fn proxy_decode_span(bytes []u8) !WebGLDataSpan {
+	if bytes.len < 8 {
+		return error('Truncated WebGL data span')
+	}
+	return WebGLDataSpan{
+		offset: binary.little_endian_u32_at(bytes, 0)
+		size: binary.little_endian_u32_at(bytes, 4)
+	}
+}
+
+pub fn (mut proxy WebGLContextProxyBase) get_string(name GLenum) string {
+	if cached := proxy.string_cache_[name] {
+		return cached
+	}
+	mut request_payload := []u8{cap: 4}
+	proxy_append_u32(mut request_payload, name)
+	request := WebGLSyncCall.encode_request_bytes(webgl_sync_get_string, request_payload, []u8{}) or {
+		proxy.set_lost()
+		return ''
+	}
+	reply := proxy.send_sync_call(request)
+	if proxy.lost_ {
+		return ''
+	}
+	span := proxy_decode_span(reply) or {
+		proxy.set_lost()
+		return ''
+	}
+	resolved := WebGLCommandList.resolve_string_span(reply, span) or {
+		proxy.set_lost()
+		return ''
+	}
+	value := resolved[..resolved.len - 1].bytestr()
+	proxy.string_cache_[name] = value
+	return value
+}
+
+pub fn (mut proxy WebGLContextProxyBase) get_vertex_attrib_pointerv_robust_angle(index GLuint, pname GLenum, _ int) WebGLVertexAttribPointerResult {
+	mut request_payload := []u8{cap: 8}
+	proxy_append_u32(mut request_payload, index)
+	proxy_append_u32(mut request_payload, pname)
+	request := WebGLSyncCall.encode_request_bytes(webgl_sync_get_vertex_attrib_pointer, request_payload, []u8{}) or {
+		proxy.set_lost()
+		return WebGLVertexAttribPointerResult{}
+	}
+	reply := proxy.send_sync_call(request)
+	if proxy.lost_ || reply.len < 8 {
+		proxy.set_lost()
+		return WebGLVertexAttribPointerResult{}
+	}
+	return WebGLVertexAttribPointerResult{
+		length: 1
+		pointer: binary.little_endian_u64_at(reply, 0)
+	}
+}
+
+pub fn (mut proxy WebGLContextProxyBase) get_uniform_indices(program GLuint, uniform_names []string) []GLuint {
+	names_bytes := pack_strings(uniform_names)
+	mut request_payload := []u8{cap: 16}
+	proxy_append_u32(mut request_payload, program)
+	proxy_append_i32(mut request_payload, uniform_names.len)
+	proxy_append_u32(mut request_payload, WebGLCommandList.first_inline_data_offset(16))
+	proxy_append_u32(mut request_payload, u32(names_bytes.len))
+	request := WebGLSyncCall.encode_request_bytes(webgl_sync_get_uniform_indices, request_payload, names_bytes) or {
+		proxy.set_lost()
+		return []GLuint{}
+	}
+	reply := proxy.send_sync_call(request)
+	if proxy.lost_ {
+		return []GLuint{}
+	}
+	span := proxy_decode_span(reply) or {
+		proxy.set_lost()
+		return []GLuint{}
+	}
+	indices_bytes := WebGLCommandList.resolve_typed_span(reply, span, 4, 4) or {
+		proxy.set_lost()
+		return []GLuint{}
+	}
+	if indices_bytes.len != uniform_names.len * 4 {
+		proxy.set_lost()
+		return []GLuint{}
+	}
+	mut indices := []GLuint{cap: uniform_names.len}
+	for offset := 0; offset < indices_bytes.len; offset += 4 {
+		indices << binary.little_endian_u32_at(indices_bytes, offset)
+	}
+	return indices
+}
+
+pub fn (_ &WebGLContextProxyBase) map_buffer_range(_ GLenum, _ i64, _ i64, _ u32) ![]u8 {
+	return error('map_buffer_range is unreachable; getBufferSubData uses read_buffer_sub_data')
+}
+
+pub fn (_ &WebGLContextProxyBase) unmap_buffer(_ GLenum) !bool {
+	return error('unmap_buffer is unreachable; proxy buffers are never mapped')
 }
