@@ -2785,6 +2785,13 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    # AnimationUpdateContext teardown is folded into the CSS-owned callback in
+    # V to avoid the css -> animations import cycle. That callback directly
+    # reads and compares the translated animated property maps, so the small
+    # Rust-overlay span adapter has no separate V representation.
+    ("AnimationEffect.cpp", "animated_overlay_entries"): (
+        "style_computer_update_animated_style_callback",
+    ),
     # Both ARIA callers share the same translated tokenizer. The C++ helper
     # drives a callback; V returns the tokens for direct iteration.
     ("ARIAMixin.cpp", "for_each_ascii_whitespace_separated_token"): (

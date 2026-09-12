@@ -102,5 +102,15 @@ class ConsolidatedOwnerTests(unittest.TestCase):
         )
 
 
+class ConsolidatedFunctionTests(unittest.TestCase):
+    def test_animation_overlay_adapter_maps_to_the_css_update_callback(self) -> None:
+        self.assertEqual(
+            audit.CONSOLIDATED_FUNCTION_MAPPINGS[
+                ("AnimationEffect.cpp", "animated_overlay_entries")
+            ],
+            ("style_computer_update_animated_style_callback",),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
