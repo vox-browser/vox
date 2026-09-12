@@ -6,6 +6,13 @@ fn test_tokenizer_decodes_the_declared_input_encoding() {
 	assert tokens[0].ident() == '€'
 }
 
+fn test_at_keyword_source_text_includes_the_consumed_name() {
+	tokens := Tokenizer.tokenize('@media screen', 'utf-8')
+	assert tokens[0].is(.at_keyword)
+	assert tokens[0].at_keyword() == 'media'
+	assert tokens[0].original_source_text() == '@media'
+}
+
 // Translation of Tests/LibWeb/TestCSSTokenStream.cpp.
 
 fn ident_token(name string) Token {

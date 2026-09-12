@@ -1788,8 +1788,8 @@ fn (mut tokenizer Tokenizer) consume_a_token() Token {
 		// If the next 3 input code points would start an ident sequence, consume an ident sequence, create
 		// an <at-keyword-token> with its value set to the returned value, and return it.
 		if Tokenizer.would_start_an_ident_sequence(tokenizer.peek_triplet()) {
-			return Token.create_at_keyword(tokenizer.consume_an_ident_sequence(),
-				tokenizer.input_since(start_byte_offset))
+			name := tokenizer.consume_an_ident_sequence()
+			return Token.create_at_keyword(name, tokenizer.input_since(start_byte_offset))
 		}
 
 		// Otherwise, return a <delim-token> with its value set to the current input code point.
