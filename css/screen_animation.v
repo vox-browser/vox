@@ -1366,6 +1366,10 @@ pub fn CSSTransition.new_with_timing_attributes(abstract_element dom.AbstractEle
 	transition.keyframe_effect_.set_target(abstract_element)
 	transition.keyframe_effect_.set_specified_start_delay(delay)
 	transition.keyframe_effect_.set_specified_iteration_duration(end_time - start_time)
+	// CSS transitions apply their start value throughout transition-delay. A
+	// default keyframe effect does not fill the before phase, so use backwards
+	// fill until the active interval begins.
+	transition.keyframe_effect_.set_fill_mode(.backwards)
 	// https://drafts.csswg.org/web-animations-2/#updating-animationeffect-timing
 	// Timing properties may also be updated due to a style change. Any change to a CSS animation property that affects
 	// timing requires rerunning the procedure to normalize specified timing.
