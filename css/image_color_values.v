@@ -1712,6 +1712,11 @@ pub fn (mut style_value ImageSetStyleValue) set_style_sheet(style_sheet ?&CSSSty
 	style_value.style_sheet_ = style_sheet
 	for index := 0; index < style_value.options_.len; index++ {
 		mut option := style_value.options_[index]
+		if type_ := option.type_ {
+			if !platform.is_supported_image_type(type_) {
+				continue
+			}
+		}
 		match option.image {
 			ImageStyleValue { option.image.set_style_sheet(style_sheet) }
 			else {}

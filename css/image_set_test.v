@@ -15,6 +15,41 @@ fn test_image_set_parses_candidates_descriptors_and_type_filters() {
 	assert image_set.serialize(.normal).starts_with('image-set(')
 }
 
+fn test_image_set_propagates_style_sheet_to_supported_image_candidates() {
+	parsed := parse_css_image_value_logic('image-set(url("plain.png") 1x, url("unsupported.png") 2x type("image/unknown"), url("supported.png") 3x type("image/webp"))') or {
+		panic('failed to parse image-set()')
+	}
+	assert parsed is ImageSetStyleValue
+	mut image_set := parsed as ImageSetStyleValue
+	sheet := css_style_sheet_construct(none, none)!
+	image_set.set_style_sheet(sheet)
+
+	match image_set.options_[0].image {
+		ImageStyleValue {
+			assert image_set.options_[0].image.style_sheet_? == sheet
+		}
+		else {
+			assert false, 'expected plain URL image candidate'
+		}
+	}
+	match image_set.options_[1].image {
+		ImageStyleValue {
+			assert image_set.options_[1].image.style_sheet_ == none
+		}
+		else {
+			assert false, 'expected unsupported URL image candidate'
+		}
+	}
+	match image_set.options_[2].image {
+		ImageStyleValue {
+			assert image_set.options_[2].image.style_sheet_? == sheet
+		}
+		else {
+			assert false, 'expected supported URL image candidate'
+		}
+	}
+}
+
 fn test_webkit_image_set_serializes_to_canonical_function() {
 	parsed := parse_css_image_value_logic('-webkit-image-set(url("one.png") 1x)') or {
 		panic('failed to parse -webkit-image-set()')
