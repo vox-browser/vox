@@ -5237,6 +5237,7 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		if mut pl := e.part_list_ {
 			pl.associated_attribute_changed(value_or_empty)
 		}
+		e.set_needs_style_update(true)
 	}
 
 	if local_name == 'name' && e.local_name() == 'slot' {
