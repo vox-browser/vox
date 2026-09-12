@@ -1748,12 +1748,13 @@ pub mut:
 
 	owner_rule ?&CSSRule
 
-	base_url                         ?string
-	constructor_document             ?&dom.Document
-	owning_documents_or_shadow_roots []&dom.Node
-	constructed                      bool
-	disallow_modification            bool
-	did_match                        ?bool
+	base_url                                    ?string
+	constructor_document                        ?&dom.Document
+	owning_documents_or_shadow_roots            []&dom.Node
+	constructed                                 bool
+	disallow_modification                       bool
+	did_match                                   ?bool
+	shared_single_constructed_sheet_style_cache ?&StyleCache
 
 	critical_subresources   []&CSSRule
 	pending_image_values    []&dom.StyleValue
@@ -2189,7 +2190,22 @@ fn apply_style_sheet_shadow_root_effects(host &dom.Element, shadow_root &dom.Sha
 
 fn (mut sheet CSSStyleSheet) invalidate_owners_with_previous_effects(reason dom.StyleInvalidationReason, previous_sheet_effects ?ShadowRootStylesheetEffects) {
 	sheet.did_match = none
+	sheet.invalidate_shared_style_cache()
 	invalidate_style_for_style_sheet_owners(sheet, reason, .yes, previous_sheet_effects)
+}
+
+pub fn (mut sheet CSSStyleSheet) shared_single_constructed_sheet_style_cache(mut style_scope StyleScope) &StyleCache {
+	assert sheet.constructed
+	if cache := sheet.shared_single_constructed_sheet_style_cache {
+		return cache
+	}
+	cache := style_scope.populate_new_rule_cache()
+	sheet.shared_single_constructed_sheet_style_cache = cache
+	return cache
+}
+
+pub fn (mut sheet CSSStyleSheet) invalidate_shared_style_cache() {
+	sheet.shared_single_constructed_sheet_style_cache = none
 }
 
 fn invalidate_style_for_style_sheet_owners(sheet &CSSStyleSheet, reason dom.StyleInvalidationReason, should_invalidate_rule_cache ShouldInvalidateRuleCache, previous_sheet_effects ?ShadowRootStylesheetEffects) {
@@ -2304,6 +2320,9 @@ pub fn (mut sheet CSSStyleSheet) evaluate_media_queries(document &dom.Document) 
 	}
 
 	sheet.did_match = now_matches
+	if any_media_queries_changed_match_state {
+		sheet.invalidate_shared_style_cache()
+	}
 
 	return any_media_queries_changed_match_state
 }
@@ -2334,6 +2353,7 @@ pub fn (sheet &CSSStyleSheet) namespace_uri(namespace_prefix string) ?string {
 }
 
 pub fn (mut sheet CSSStyleSheet) recalculate_rule_caches() {
+	sheet.invalidate_shared_style_cache()
 	sheet.default_namespace_rule = none
 	sheet.namespace_rules.clear()
 	sheet.import_rules.clear()

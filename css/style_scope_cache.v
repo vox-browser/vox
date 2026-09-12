@@ -348,11 +348,9 @@ pub fn (scope &StyleScope) has_candidate_rule_for_pseudo_element(abstract_elemen
 }
 
 pub fn StyleScope.new(node &dom.Node) &StyleScope {
-	mut scope := &StyleScope{
+	return &StyleScope{
 		node: node
 	}
-	scope.qualified_layer_names_in_order << ''
-	return scope
 }
 
 pub fn (scope &StyleScope) node_ref() ?&dom.Node {
@@ -381,10 +379,21 @@ pub fn (scope &StyleScope) user_agent_rule_caches() ?&RuleCaches {
 }
 
 pub fn (scope &StyleScope) has_valid_rule_cache() bool {
-	return scope.author_rule_cache != none
+	return scope.rule_cache != none
 }
 
-pub fn (mut scope StyleScope) build_rule_cache() {
+fn (mut scope StyleScope) adopt_style_cache(cache &StyleCache) {
+	scope.rule_cache = cache
+	scope.qualified_layer_names_in_order = cache.qualified_layer_names_in_order.clone()
+	scope.selector_insights = cache.selector_insights
+	scope.pseudo_class_rule_cache = cache.pseudo_class_rule_cache.clone()
+	scope.style_invalidation_data = cache.style_invalidation_data
+	scope.author_rule_cache = cache.author_rule_cache
+	scope.user_rule_cache = cache.user_rule_cache
+	scope.user_agent_rule_cache = cache.user_agent_rule_cache
+}
+
+pub fn (mut scope StyleScope) populate_new_rule_cache() &StyleCache {
 	scope.author_rule_cache = RuleCaches.new()
 	scope.user_rule_cache = RuleCaches.new()
 	scope.user_agent_rule_cache = RuleCaches.new()
@@ -406,10 +415,40 @@ pub fn (mut scope StyleScope) build_rule_cache() {
 		scope.make_rule_cache_for_cascade_origin(.user, insights)
 		scope.make_rule_cache_for_cascade_origin(.user_agent, insights)
 	}
+
+	cache := &StyleCache{
+		qualified_layer_names_in_order: scope.qualified_layer_names_in_order.clone()
+		selector_insights: scope.selector_insights or { &SelectorInsights{} }
+		pseudo_class_rule_cache: scope.pseudo_class_rule_cache.clone()
+		style_invalidation_data: scope.style_invalidation_data or { StyleInvalidationData.new() }
+		author_rule_cache: scope.author_rule_cache or { RuleCaches.new() }
+		user_rule_cache: scope.user_rule_cache or { RuleCaches.new() }
+		user_agent_rule_cache: scope.user_agent_rule_cache or { RuleCaches.new() }
+	}
+	scope.rule_cache = cache
+	return cache
+}
+
+pub fn (mut scope StyleScope) build_rule_cache() {
+	if node := scope.node {
+		if node.as_shadow_root() != none {
+			active_author_sheets := scope.stylesheets_for_cascade_origin(.author)
+			document_scope := css_style_scope_for_document(node.document())
+			if active_author_sheets.len == 1 && active_author_sheets[0].constructed
+				&& document_scope.user_style_source == none {
+				mut constructed_sheet := unsafe { &CSSStyleSheet(active_author_sheets[0]) }
+				cache := constructed_sheet.shared_single_constructed_sheet_style_cache(mut scope)
+				scope.adopt_style_cache(cache)
+				return
+			}
+		}
+	}
+	scope.populate_new_rule_cache()
 }
 
 pub fn (mut scope StyleScope) invalidate_rule_cache() {
 	scope.invalidate_counter_style_cache()
+	scope.rule_cache = none
 	scope.author_rule_cache = none
 
 	// NOTE: We could be smarter about keeping the user rule cache, and style sheet.

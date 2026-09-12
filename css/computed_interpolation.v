@@ -9690,6 +9690,7 @@ pub enum ComputeStyleMode {
 
 pub struct StyleScope {
 pub mut:
+	rule_cache                                                  ?&StyleCache
 	qualified_layer_names_in_order                              []string
 	selector_insights                                           ?&SelectorInsights
 	pseudo_class_rule_cache                                     map[PseudoClass]&RuleCache
@@ -9707,6 +9708,20 @@ pub mut:
 	registered_counter_styles           map[string]CounterStyle
 	needs_counter_style_cache_update    bool = true
 	is_doing_counter_style_cache_update bool
+}
+
+// A complete set of selector and cascade caches that can be shared by style
+// scopes whose only author sheet is the same constructed stylesheet.
+@[heap]
+pub struct StyleCache {
+pub mut:
+	qualified_layer_names_in_order []string
+	selector_insights              &SelectorInsights = unsafe { nil }
+	pseudo_class_rule_cache        map[PseudoClass]&RuleCache
+	style_invalidation_data        &StyleInvalidationData = unsafe { nil }
+	author_rule_cache              &RuleCaches = unsafe { nil }
+	user_rule_cache                &RuleCaches = unsafe { nil }
+	user_agent_rule_cache          &RuleCaches = unsafe { nil }
 }
 
 pub struct LogicalAliasMappingContext {
