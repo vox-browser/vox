@@ -402,6 +402,26 @@ pub fn (mut form HTMLFormElementModel) item_value(index usize) ?&dom.Element {
 	return form.elements().item(int(index))
 }
 
+pub fn (form &HTMLFormElementModel) is_supported_property_name(name string) bool {
+	// This is the allocation-free membership form of supported_property_names().
+	for candidate in form.element.associated_elements_ {
+		if !html_form_element_is_form_control(form, candidate) && candidate.local_name() != 'img' {
+			continue
+		}
+		if id := candidate.id() {
+			if id == name {
+				return true
+			}
+		}
+		if candidate_name := candidate.get_attribute('name') {
+			if candidate_name == name {
+				return true
+			}
+		}
+	}
+	return name in form.past_names_map_
+}
+
 enum FormSupportedNameSource {
 	id
 	name
