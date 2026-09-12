@@ -124,6 +124,27 @@ fn test_cascaded_properties_cache_retains_unresolved_shorthand_ids() {
 	assert cascaded.property(.margin) == none
 }
 
+fn test_cascaded_properties_refresh_source_on_same_priority_replacement() {
+	mut cascaded := CascadedProperties.new()
+	first_value := &dom.StyleValue{
+		css_text: 'red'
+	}
+	second_value := &dom.StyleValue{
+		css_text: 'blue'
+	}
+	first_source := &dom.StyleValue{
+		css_text: 'first source'
+	}
+	second_source := &dom.StyleValue{
+		css_text: 'second source'
+	}
+	cascaded.set_property(.color, first_value, .no, .author, none, voidptr(first_source))
+	cascaded.set_property(.color, second_value, .no, .author, none, voidptr(second_source))
+
+	assert cascaded.property(.color)? == second_value
+	assert cascaded.property_source(.color) == voidptr(second_source)
+}
+
 fn test_selection_resolves_var_in_shorthand_before_filtering_longhands() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	add_document_author_style_sheet(doc, 'div {

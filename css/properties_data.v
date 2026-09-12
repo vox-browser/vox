@@ -286,6 +286,7 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 				property_id: property_id
 				value: unsafe { value }
 			}
+			entry.source = source
 			entries[index] = entry
 			c.properties_[property_id] = entries
 			return
