@@ -34,11 +34,27 @@ fn initialize_option_selectedness(option &dom.HTMLOptionElement) {
 	if option.selectedness_initialized_ {
 		return
 	}
+	mut option_node_ := option_node(option)
+	option_node_.set_lifecycle_hook(dom.NodeLifecycleHook{
+		target: option
+		removed_from: html_option_node_removed_from
+		moved_from: html_option_node_moved_from
+	})
 	mut mutable_option := unsafe { &dom.HTMLOptionElement(option) }
 	mutable_option.selectedness_initialized_ = true
 	if option_dom_element(option).has_attribute('selected') {
 		html_option_element_set_selected_internal(option, true)
 	}
+}
+
+fn html_option_node_removed_from(target voidptr, _ dom.NodeIsSubtreeRoot, _ ?&dom.Node, _ &dom.Node) {
+	option := unsafe { &dom.HTMLOptionElement(target) }
+	html_option_element_update_nearest_select_element(option)
+}
+
+fn html_option_node_moved_from(target voidptr, _ dom.NodeIsSubtreeRoot, _ ?&dom.Node) {
+	option := unsafe { &dom.HTMLOptionElement(target) }
+	html_option_element_update_nearest_select_element(option)
 }
 
 pub fn html_option_element_selected(option &dom.HTMLOptionElement) bool {
@@ -289,6 +305,11 @@ pub fn html_option_element_inserted(option &dom.HTMLOptionElement) {
 }
 
 pub fn html_option_element_removed_from(option &dom.HTMLOptionElement, _ ?&dom.Node, _ &dom.Node) {
+	html_option_element_update_nearest_select_element(option)
+}
+
+// https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element:html-element-moving-steps
+pub fn html_option_element_moved_from(option &dom.HTMLOptionElement, _ dom.NodeIsSubtreeRoot, _ ?&dom.Node) {
 	html_option_element_update_nearest_select_element(option)
 }
 

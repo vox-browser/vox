@@ -342,3 +342,31 @@ fn test_select_fallback_button_text_follows_every_selectedness_change() {
 	html_select_element_update_selectedness(select_control)
 	assert inner.as_node().child_text_content() == 'Beta'
 }
+
+fn test_option_moving_steps_update_old_and_new_select_elements() {
+	document := parse_document('<main><select id="old"><option id="moved" selected>Moved</option><option>Old fallback</option></select><select id="new" multiple><option>New</option></select></main>')
+	old_element := document.get_element_by_id('old') or { panic('missing old select') }
+	new_element := document.get_element_by_id('new') or { panic('missing new select') }
+	moved_element := document.get_element_by_id('moved') or { panic('missing moved option') }
+	old_select := unsafe { &dom.HTMLSelectElement(old_element) }
+	new_select := unsafe { &dom.HTMLSelectElement(new_element) }
+	moved_option := unsafe { &dom.HTMLOptionElement(moved_element) }
+	mut old_model := HTMLSelectElementModel.create(old_select)
+	mut new_model := HTMLSelectElementModel.create(new_select)
+	old_model.form_associated_element_was_inserted()
+	new_model.form_associated_element_was_inserted()
+	html_option_element_inserted(moved_option)
+	assert html_option_element_nearest_select_element(moved_option)? == old_select
+
+	mut moved_node := moved_element.as_node()
+	mut new_select_node := new_element.as_node()
+	moved_node.move_node(mut new_select_node, none)!
+	assert html_option_element_nearest_select_element(moved_option)? == new_select
+	assert html_select_element_value(old_select) == 'Old fallback'
+	assert old_model.inner_text_element_?.as_node().child_text_content() == 'Old fallback'
+	assert new_model.inner_text_element_?.as_node().child_text_content() == 'Moved'
+
+	moved_node.remove(false)
+	assert html_option_element_nearest_select_element(moved_option) == none
+	assert new_model.inner_text_element_?.as_node().child_text_content() == ''
+}
