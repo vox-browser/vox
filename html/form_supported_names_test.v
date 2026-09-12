@@ -1,0 +1,32 @@
+module html
+
+import dom
+
+fn form_supported_names_find_element(node &dom.Node, local_name string) ?&dom.Element {
+	for child in node.children {
+		if element := child.as_element() {
+			if element.local_name() == local_name {
+				return element
+			}
+		}
+		if element := form_supported_names_find_element(child, local_name) {
+			return element
+		}
+	}
+	return none
+}
+
+fn test_form_supported_property_names_follow_tree_order() {
+	document := parse_document('<form><input id="first" name="shared"><input id="second" name="shared"></form>')
+	form_element := form_supported_names_find_element(document.as_node(), 'form') or {
+		panic('missing form')
+	}
+	first := document.get_element_by_id('first') or { panic('missing first input') }
+	second := document.get_element_by_id('second') or { panic('missing second input') }
+	mut form := unsafe { &dom.HTMLFormElement(form_element) }
+	// Association order can differ from current tree order after DOM moves.
+	form.associated_elements_ = [second, first]
+	model := HTMLFormElementModel.create(form)
+
+	assert model.supported_property_names() == ['first', 'shared', 'second']
+}

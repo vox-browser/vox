@@ -102,6 +102,7 @@ pub fn (mut form HTMLFormElementModel) remove_associated_element(control &FormAs
 	for name, element in form.past_names_map_.clone() {
 		if voidptr(element) == voidptr(control.element) {
 			form.past_names_map_.delete(name)
+			form.past_names_age_.delete(name)
 		}
 	}
 }
@@ -401,21 +402,87 @@ pub fn (mut form HTMLFormElementModel) item_value(index usize) ?&dom.Element {
 	return form.elements().item(int(index))
 }
 
+enum FormSupportedNameSource {
+	id
+	name
+	past
+}
+
+struct FormSupportedName {
+	name    string
+	element &dom.Element
+	source  FormSupportedNameSource
+	age     u64
+}
+
+fn form_supported_name_less_than(left FormSupportedName, right FormSupportedName) bool {
+	if voidptr(left.element) != voidptr(right.element) {
+		return left.element.as_node().is_preceding(right.element.as_node())
+	}
+	if left.source != right.source {
+		return int(left.source) < int(right.source)
+	}
+	return left.age < right.age
+}
+
+fn sort_form_supported_names(mut names []FormSupportedName) {
+	for i := 1; i < names.len; i++ {
+		mut j := i
+		for j > 0 && form_supported_name_less_than(names[j], names[j - 1]) {
+			names[j], names[j - 1] = names[j - 1], names[j]
+			j--
+		}
+	}
+}
+
+fn (mut form HTMLFormElementModel) remember_past_name(name string, element &dom.Element) {
+	existing_is_same := if existing := form.past_names_map_[name] {
+		voidptr(existing) == voidptr(element)
+	} else {
+		false
+	}
+	if !existing_is_same {
+		form.past_names_age_[name] = form.next_past_name_age_
+		form.next_past_name_age_++
+	}
+	form.past_names_map_[name] = element
+}
+
 pub fn (form &HTMLFormElementModel) supported_property_names() []string {
-	mut names := []string{}
+	mut sourced_names := []FormSupportedName{}
 	for element in form.element.associated_elements_ {
 		if !html_form_element_is_form_control(form, element) && element.local_name() != 'img' {
 			continue
 		}
-		for value in [element.id() or { '' }, element.get_attribute('name') or { '' }] {
-			if value != '' && value !in names {
-				names << value
+		if id := element.id() {
+			sourced_names << FormSupportedName{
+				name: id
+				element: element
+				source: .id
+			}
+		}
+		if name := element.get_attribute('name') {
+			sourced_names << FormSupportedName{
+				name: name
+				element: element
+				source: .name
 			}
 		}
 	}
-	for name, _ in form.past_names_map_ {
-		if name != '' && name !in names {
-			names << name
+	for name, element in form.past_names_map_ {
+		sourced_names << FormSupportedName{
+			name: name
+			element: element
+			source: .past
+			age: form.past_names_age_[name]
+		}
+	}
+	sort_form_supported_names(mut sourced_names)
+
+	mut names := []string{}
+	for entry in sourced_names {
+		if entry.name != '' && entry.name !in names {
+			names << entry.name
 		}
 	}
 	return names
@@ -428,7 +495,7 @@ pub fn (mut form HTMLFormElementModel) named_item_value(name string) HTMLFormCon
 	result := form.elements().named_item_or_radio_node_list(name)
 	if result !is HTMLFormControlsCollectionEmpty {
 		if result is HTMLFormControlsCollectionElement {
-			form.past_names_map_[name] = result.element
+			form.remember_past_name(name, result.element)
 		}
 		return result
 	}
@@ -443,7 +510,7 @@ pub fn (mut form HTMLFormElementModel) named_item_value(name string) HTMLFormCon
 	if images.length() == 1 {
 		node := images.item(0) or { return HTMLFormControlsCollectionEmpty{} }
 		element := node.as_element() or { return HTMLFormControlsCollectionEmpty{} }
-		form.past_names_map_[name] = element
+		form.remember_past_name(name, element)
 		return HTMLFormControlsCollectionElement{ element: element }
 	}
 	if element := form.past_names_map_[name] {

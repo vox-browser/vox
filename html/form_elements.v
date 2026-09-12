@@ -494,6 +494,8 @@ mut:
 	elements_                 ?&HTMLFormControlsCollection
 	rel_list_                 ?&dom.DOMTokenList
 	past_names_map_           map[string]&dom.Element
+	past_names_age_           map[string]u64
+	next_past_name_age_       u64
 	constructing_entry_list_  bool
 	firing_submission_events_ bool
 	locked_for_reset_         bool
