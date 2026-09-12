@@ -1407,6 +1407,9 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 fn style_scope_for_node(node &Node) &StyleScope {
 	root := node.root()
 	if shadow_root := root.as_shadow_root() {
+		if shadow_root.uses_document_style_sheets() {
+			return node.document().style_scope()
+		}
 		return shadow_root.style_scope()
 	}
 	return node.document().style_scope()

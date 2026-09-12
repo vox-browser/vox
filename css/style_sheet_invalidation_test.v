@@ -89,6 +89,28 @@ fn test_inserted_character_data_schedules_has_ancestor_invalidation() {
 	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has[0] == parent.as_node()
 }
 
+fn test_user_agent_shadow_tree_mutations_use_document_style_scope() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(document, 'div:has(.flag) { color: blue }')
+	mut document_node := unsafe { &dom.Node(document) }
+	mut host := style_sheet_invalidation_test_element(document, 'div')
+	document_node.append_child(host.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .closed }) or { panic(err) }
+	mut mutable_shadow_root := unsafe { &dom.ShadowRoot(shadow_root) }
+	mutable_shadow_root.set_uses_document_style_sheets(true)
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut wrapper := style_sheet_invalidation_test_element(document, 'div')
+	shadow_node.append_child(wrapper.as_node()) or { panic(err) }
+	_ := css_style_computer_for(document)
+	mut document_scope := css_style_scope_for_document(document)
+	document_scope.build_rule_cache_if_needed()
+	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	clear_style_sheet_invalidation_test_flags(document_node, host.as_node(), shadow_node, wrapper.as_node())
+
+	wrapper.set_attribute_value('class', 'flag')
+	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+}
+
 fn test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }
