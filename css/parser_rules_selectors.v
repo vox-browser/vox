@@ -1585,7 +1585,12 @@ fn (mut parser RuleSelectorParser) convert_to_keyframes_rule(rule AtRule) ?&CSSR
 		}
 	}
 
-	return CSSRule.create_keyframes(name_token.to_string(), CSSRuleList.create(keyframes))
+	name := if name_token.is(.string) {
+		name_token.token().string_value()
+	} else {
+		name_token.token().ident()
+	}
+	return CSSRule.create_keyframes(name, CSSRuleList.create(keyframes))
 }
 
 fn (mut parser RuleSelectorParser) convert_to_keyframe_rules(qualified_rule QualifiedRule) []&CSSRule {

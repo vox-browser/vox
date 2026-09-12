@@ -615,13 +615,15 @@ fn test_style_rules_nest_inside_style_rules() {
 		'a {\n  @media screen {\n  & b { color: red; }\n}\n}'
 }
 
-// CSSKeyframesRule::serialized() writes `@keyframes "{}"` with the name inserted
-// verbatim rather than through "serialize a string".
-fn test_keyframes_name_is_not_string_escaped() {
-	assert css_text_of('@keyframes a { from { opacity: 0 } }')? ==
-		'@keyframes "a" { 0% { opacity: 0; } }'
-	assert css_text_of('@keyframes \\31 a { from { opacity: 0 } }')? ==
-		'@keyframes "\\31 a" { 0% { opacity: 0; } }'
+// Keyframe names retain their logical identifier or string value. The rule
+// serializer then inserts that name verbatim inside quotes.
+fn test_keyframes_name_uses_logical_token_value() {
+	assert css_text_of('@keyframes a { from { opacity: 0 } }')? == '@keyframes "a" { 0% { opacity: 0; } }'
+	assert css_text_of('@keyframes \\31 a { from { opacity: 0 } }')? == '@keyframes "1a" { 0% { opacity: 0; } }'
+	quoted := parse_css_stylesheet_with_parser('@keyframes "123fade" { from { opacity: 0 } }', none)
+	quoted_rule := quoted.css_rules().item(0) or { panic('missing quoted keyframes rule') }
+	assert quoted_rule.keyframes_name() == '123fade'
+	assert quoted_rule.css_text() == '@keyframes "123fade" { 0% { opacity: 0; } }'
 }
 
 fn test_keyframes_reject_css_animations_level_one_properties() {
