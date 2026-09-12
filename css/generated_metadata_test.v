@@ -1538,6 +1538,24 @@ fn test_custom_property_interpolation_matches_css_animation_rules() {
 	assert interpolate_test_property(element, .filter, 'drop-shadow(0px 0px red)', 'drop-shadow(10px 20px blue)', 0.5) == 'drop-shadow(rgb(128, 0, 128) 5px 10px)'
 }
 
+fn test_stroke_dasharray_interpolation_repeats_patterns_and_handles_none_discretely() {
+	doc := dom.Document.create(dom.url_about_blank())
+	element := doc.create_element_ns('http://www.w3.org/2000/svg', 'path') or { panic('${err}') }
+	assert interpolate_test_property(element, .stroke_dasharray, '10px 20px', '20px 40px 60px',
+		0.5) == '15px, 30px, 35px, 20px, 25px, 40px'
+
+	none_value := dom_style_value_from_value_logic(parse_css_value_logic(.stroke_dasharray,
+		'none') or { panic('could not parse none stroke dasharray') })
+	list_value := dom_style_value_from_value_logic(parse_css_value_logic(.stroke_dasharray,
+		'10px 20px') or { panic('could not parse stroke dasharray list') })
+	assert interpolate_property(element, .stroke_dasharray, none_value, list_value, 0.25,
+		.no) == none
+	assert (interpolate_property(element, .stroke_dasharray, none_value, list_value, 0.25,
+		.yes) or { panic('could not discretely interpolate stroke dasharray') }).css_text == 'none'
+	assert (interpolate_property(element, .stroke_dasharray, none_value, list_value, 0.75,
+		.yes) or { panic('could not discretely interpolate stroke dasharray') }).css_text == '10px, 20px'
+}
+
 fn test_nested_style_value_interpolation_uses_component_fallback() {
 	doc := dom.Document.create(dom.url_about_blank())
 	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }

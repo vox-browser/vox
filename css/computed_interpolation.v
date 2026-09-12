@@ -5792,6 +5792,24 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 				}
 				return interpolate_discrete(from, to, delta, allow_discrete)
 			}
+			if property_id == .stroke_dasharray {
+				// SVG dash patterns are repeatable lists. `none` and any other
+				// non-list endpoint combine discretely instead.
+				from_value := style_value_logic_from_dom(property_id, from) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+				to_value := style_value_logic_from_dom(property_id, to) or {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+				if from_value !is StyleValueList || to_value !is StyleValueList {
+					return interpolate_discrete(from, to, delta, allow_discrete)
+				}
+				if result := interpolate_repeatable_list(element, calculation_context, from,
+					to, delta, allow_discrete) {
+					return result
+				}
+				return interpolate_discrete(from, to, delta, allow_discrete)
+			}
 			if property_id == .visibility {
 				// https://drafts.csswg.org/web-animations-1/#animating-visibility
 				// For the visibility property, visible is interpolated as a discrete step where values of p between 0 and 1 map to visible and other values of p map to the closer endpoint.
