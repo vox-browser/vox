@@ -273,10 +273,12 @@ fn test_composition_focus_input_text_and_wheel_events() {
 	input := InputEvent.create_from_platform_event('beforeinput', InputEventInit{
 		data:       'x'
 		input_type: input_type_insert_text
-	}, [range])
+	}, [range], 123.5)
 	assert input.is_trusted()
 	assert input.bubbles()
 	assert input.cancelable()
+	assert input.composed()
+	assert input.time_stamp() == 123.5
 	assert input.data() or { '' } == 'x'
 	assert input.input_type() == 'insertText'
 	mut returned_ranges := input.get_target_ranges()
@@ -300,6 +302,72 @@ fn test_composition_focus_input_text_and_wheel_events() {
 	assert wheel.delta_y() == -3
 	assert wheel.delta_z() == 4
 	assert wheel.delta_mode() == dom_delta_line
+}
+
+fn test_post_march_ui_event_constructor_boundaries() {
+	target := &EventTarget{}
+	options := mouse_event_options_from_bindings(MouseEventInit{
+		client_x:       9.75
+		client_y:       -2.25
+		ctrl_key:       true
+		related_target: target
+	})
+	assert options.client_x == 9.75
+	assert options.ctrl_key
+	assert options.related_target? == target
+
+	mouse := MouseEvent.create_for_constructor('click', MouseEventInit{
+		client_x: 9.75
+		client_y: -2.25
+	}, 42.25) or { panic(err) }
+	assert !mouse.is_trusted()
+	assert mouse.time_stamp() == 42.25
+	assert mouse.page_x_ == 9.75 && mouse.offset_y_ == -2.25
+
+	copied_mouse := MouseEvent.create_from_mouse_event(mouse, 84.5)
+	assert !copied_mouse.is_trusted()
+	assert copied_mouse.time_stamp() == 84.5
+	assert copied_mouse.client_x_ == 9.75 && copied_mouse.page_x_ == 9.75
+
+	pointer := PointerEvent.create_for_constructor('pointermove', PointerEventInit{
+		client_x:    3.5
+		pointer_id:  17
+		pointer_type: pointer_type_pen
+	}, 126.75) or { panic(err) }
+	assert !pointer.is_trusted()
+	assert pointer.time_stamp() == 126.75
+	assert pointer.pointer_id() == 17
+	assert pointer.page_x_ == 3.5 && pointer.offset_x_ == 3.5
+
+	mut data_transfer_byte := u8(7)
+	data_transfer_token := &data_transfer_byte
+	document := Document.create(url_about_blank())
+	text := document.create_text_node('x')
+	static_range := StaticRange.new(text.as_node(), 0, text.as_node(), 1)
+	input := InputEvent.construct_impl('input', InputEventInit{
+		data_transfer: voidptr(data_transfer_token)
+		target_ranges: [static_range]
+	}) or { panic(err) }
+	assert input.data_transfer() == voidptr(data_transfer_token)
+	assert InputEvent.data_transfer_offset() > 0
+	assert input.get_target_ranges().len == 1
+	assert input.time_stamp() == 0
+
+	wheel := WheelEvent.create_for_constructor('wheel', WheelEventInit{
+		client_x:      5.5
+		delta_x:       2.5
+		delta_y:       -3.6
+		wheel_delta_x: 120
+	}, 168.25)
+	assert !wheel.is_trusted()
+	assert wheel.time_stamp() == 168.25
+	assert wheel.page_x_ == 5.5 && wheel.offset_x_ == 5.5
+	assert wheel.wheel_delta_x() == 120
+	assert wheel.wheel_delta_y() == 4
+	assert wheel.wheel_delta() == 4
+	assert legacy_wheel_delta_from_delta(2.5) == -2
+	assert legacy_wheel_delta_from_delta(-1e30) == 2147483647
+	assert legacy_wheel_delta_from_delta(1e30) == -2147483648
 }
 
 fn test_key_code_and_keyboard_platform_translation() {

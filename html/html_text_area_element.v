@@ -277,8 +277,7 @@ pub fn (mut model HTMLTextAreaElementModel) queue_firing_input_event() {
 		mut input_event := dom.InputEvent.create_from_platform_event('input', dom.InputEventInit{
 			data: mutable_model.pending_input_event_data
 			input_type: mutable_model.pending_input_event_type
-		}, [])
-		input_event.set_composed(true)
+		}, [], dom.current_event_timestamp())
 		base_event := unsafe { &dom.Event(input_event) }
 		unsafe { &dom.EventTarget(textarea_element(mutable_model).as_node()) }
 		.dispatch_event(base_event)

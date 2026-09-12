@@ -174,6 +174,16 @@ pub mut:
 	related_target ?&EventTarget
 }
 
+// Ladybird keeps the internal MouseEventOptions separate from the WebIDL
+// MouseEventInit dictionary. The V binding dictionary already has the exact
+// value representation needed by the event implementation, so the translated
+// options type can share it while retaining the conversion boundary.
+pub type MouseEventOptions = MouseEventInit
+
+pub fn mouse_event_options_from_bindings(event_init MouseEventInit) MouseEventInit {
+	return event_init
+}
+
 @[heap]
 pub struct MouseEvent {
 	UIEvent
@@ -254,13 +264,60 @@ pub fn MouseEvent.create(event_name string, init MouseEventInit) &MouseEvent {
 }
 
 pub fn MouseEvent.construct_impl(event_name string, init MouseEventInit) !&MouseEvent {
-	mut event := MouseEvent.create(event_name, init)
+	return MouseEvent.create_for_constructor(event_name, init, current_event_timestamp())
+}
+
+pub fn MouseEvent.create_for_constructor(event_name string, event_init MouseEventInit, time_stamp DOMHighResTimeStamp) !&MouseEvent {
+	options := mouse_event_options_from_bindings(event_init)
+	mut event := MouseEvent.create(event_name, options)
 	event.is_trusted_ = false
+	event.set_time_stamp(time_stamp)
 	// CSSOM View constructor defaults page/offset coordinates to client coordinates.
-	event.page_x_ = init.client_x
-	event.page_y_ = init.client_y
-	event.offset_x_ = init.client_x
-	event.offset_y_ = init.client_y
+	event.page_x_ = event_init.client_x
+	event.page_y_ = event_init.client_y
+	event.offset_x_ = event_init.client_x
+	event.offset_y_ = event_init.client_y
+	return event
+}
+
+pub fn MouseEvent.create_from_mouse_event(mouse_event &MouseEvent, time_stamp DOMHighResTimeStamp) &MouseEvent {
+	mut event := MouseEvent.create(mouse_event.type_name(), MouseEventInit{
+		EventModifierInit: EventModifierInit{
+			UIEventInit: UIEventInit{
+				detail: mouse_event.detail_
+				view:   mouse_event.view_
+			}
+			ctrl_key:             mouse_event.ctrl_key_
+			shift_key:            mouse_event.shift_key_
+			alt_key:              mouse_event.alt_key_
+			meta_key:             mouse_event.meta_key_
+			modifier_alt_graph:   mouse_event.modifier_alt_graph_
+			modifier_caps_lock:   mouse_event.modifier_caps_lock_
+			modifier_fn:          mouse_event.modifier_fn_
+			modifier_fn_lock:     mouse_event.modifier_fn_lock_
+			modifier_hyper:       mouse_event.modifier_hyper_
+			modifier_num_lock:    mouse_event.modifier_num_lock_
+			modifier_scroll_lock: mouse_event.modifier_scroll_lock_
+			modifier_super:       mouse_event.modifier_super_
+			modifier_symbol:      mouse_event.modifier_symbol_
+			modifier_symbol_lock: mouse_event.modifier_symbol_lock_
+		}
+		screen_x:          mouse_event.screen_x_
+		screen_y:          mouse_event.screen_y_
+		client_x:          mouse_event.client_x_
+		client_y:          mouse_event.client_y_
+		page_x:            mouse_event.page_x_
+		page_y:            mouse_event.page_y_
+		offset_x:          mouse_event.offset_x_
+		offset_y:          mouse_event.offset_y_
+		movement_x:        mouse_event.movement_x_
+		movement_y:        mouse_event.movement_y_
+		button:            mouse_event.button_
+		buttons:           mouse_event.buttons_
+		related_target:    mouse_event.related_target__
+	})
+	event.is_trusted_ = false
+	event.set_time_stamp(time_stamp)
 	return event
 }
 
@@ -786,12 +843,17 @@ pub fn PointerEvent.create(event_name string, init PointerEventInit) &PointerEve
 }
 
 pub fn PointerEvent.construct_impl(event_name string, init PointerEventInit) !&PointerEvent {
-	mut event := PointerEvent.create(event_name, init)
+	return PointerEvent.create_for_constructor(event_name, init, current_event_timestamp())
+}
+
+pub fn PointerEvent.create_for_constructor(event_name string, event_init PointerEventInit, time_stamp DOMHighResTimeStamp) !&PointerEvent {
+	mut event := PointerEvent.create(event_name, event_init)
 	event.is_trusted_ = false
-	event.page_x_ = init.client_x
-	event.page_y_ = init.client_y
-	event.offset_x_ = init.client_x
-	event.offset_y_ = init.client_y
+	event.set_time_stamp(time_stamp)
+	event.page_x_ = event_init.client_x
+	event.page_y_ = event_init.client_y
+	event.offset_x_ = event_init.client_x
+	event.offset_y_ = event_init.client_y
 	return event
 }
 
@@ -826,6 +888,8 @@ pub fn PointerEvent.create_from_platform_event(view voidptr, event_name string, 
 			button:            mouse_button_to_button_code(button)
 			buttons:           buttons
 		}
+		pointer_type: pointer_type_mouse
+		is_primary:   true
 	})
 }
 
@@ -1099,9 +1163,13 @@ pub fn FocusEvent.construct_impl(event_name string, init FocusEventInit) !&Focus
 pub struct InputEventInit {
 	UIEventInit
 pub mut:
-	data         ?string
-	is_composing bool
-	input_type   string
+	data          ?string
+	is_composing  bool
+	input_type    string
+	// HTML::DataTransfer cannot be imported into dom without forming a module
+	// cycle, so retain the nullable GC edge as an opaque pointer.
+	data_transfer voidptr = unsafe { nil }
+	target_ranges []&StaticRange
 }
 
 @[heap]
@@ -1111,10 +1179,11 @@ pub mut:
 	data_          ?string
 	is_composing_  bool
 	input_type_    string
+	data_transfer_ voidptr = unsafe { nil }
 	target_ranges_ []&StaticRange
 }
 
-fn new_input_event(event_name string, init InputEventInit, target_ranges []&StaticRange, trusted bool) &InputEvent {
+fn new_input_event(event_name string, init InputEventInit, target_ranges []&StaticRange, trusted bool, time_stamp DOMHighResTimeStamp) &InputEvent {
 	return &InputEvent{
 		UIEvent:        UIEvent{
 			Event:   Event{
@@ -1125,7 +1194,7 @@ fn new_input_event(event_name string, init InputEventInit, target_ranges []&Stat
 				composed_:    init.composed
 				initialized_: true
 				is_trusted_:  trusted
-				time_stamp_:  current_event_timestamp()
+				time_stamp_:  time_stamp
 			}
 			detail_: init.detail
 			view_:   init.view
@@ -1133,21 +1202,27 @@ fn new_input_event(event_name string, init InputEventInit, target_ranges []&Stat
 		data_:          init.data
 		is_composing_:  init.is_composing
 		input_type_:    init.input_type
+		data_transfer_: init.data_transfer
 		target_ranges_: target_ranges.clone()
 	}
 }
 
-pub fn InputEvent.create_from_platform_event(event_name string, init InputEventInit, target_ranges []&StaticRange) &InputEvent {
+pub fn InputEvent.create(event_name string, event_init InputEventInit, target_ranges []&StaticRange, time_stamp DOMHighResTimeStamp) &InputEvent {
+	return new_input_event(event_name, event_init, target_ranges, false, time_stamp)
+}
+
+pub fn InputEvent.create_from_platform_event(event_name string, init InputEventInit, target_ranges []&StaticRange, time_stamp DOMHighResTimeStamp) &InputEvent {
 	mut platform_init := init
 	platform_init.bubbles = true
+	platform_init.composed = true
 	if event_name == 'beforeinput' {
 		platform_init.cancelable = true
 	}
-	return new_input_event(event_name, platform_init, target_ranges, true)
+	return new_input_event(event_name, platform_init, target_ranges, true, time_stamp)
 }
 
 pub fn InputEvent.construct_impl(event_name string, init InputEventInit) !&InputEvent {
-	return new_input_event(event_name, init, [], false)
+	return new_input_event(event_name, init, init.target_ranges, false, 0)
 }
 
 pub fn (e &InputEvent) data() ?string {
@@ -1160,6 +1235,14 @@ pub fn (e &InputEvent) is_composing() bool {
 
 pub fn (e &InputEvent) input_type() string {
 	return e.input_type_
+}
+
+pub fn (e &InputEvent) data_transfer() voidptr {
+	return e.data_transfer_
+}
+
+pub fn InputEvent.data_transfer_offset() usize {
+	return usize(__offsetof(InputEvent, data_transfer_))
 }
 
 pub fn (e &InputEvent) get_target_ranges() []&StaticRange {
@@ -1209,20 +1292,38 @@ pub const dom_delta_page = u32(2)
 pub struct WheelEventInit {
 	MouseEventInit
 pub mut:
-	delta_x    f64
-	delta_y    f64
-	delta_z    f64
-	delta_mode u32
+	delta_x       f64
+	delta_y       f64
+	delta_z       f64
+	delta_mode    u32
+	wheel_delta_x i32
+	wheel_delta_y i32
 }
 
 @[heap]
 pub struct WheelEvent {
 	MouseEvent
 pub mut:
-	delta_x_    f64
-	delta_y_    f64
-	delta_z_    f64
-	delta_mode_ u32
+	delta_x_       f64
+	delta_y_       f64
+	delta_z_       f64
+	delta_mode_    u32
+	wheel_delta_x_ i32
+	wheel_delta_y_ i32
+}
+
+fn legacy_wheel_delta_from_delta(delta f64) i32 {
+	legacy_delta := -delta
+	if legacy_delta >= 2147483647.0 {
+		return i32(2147483647)
+	}
+	if legacy_delta <= -2147483648.0 {
+		return i32(-2147483647 - 1)
+	}
+	if math.is_nan(legacy_delta) {
+		return 0
+	}
+	return i32(math.round_to_even(legacy_delta))
 }
 
 fn new_wheel_event(event_name string, init WheelEventInit, trusted bool) &WheelEvent {
@@ -1274,6 +1375,16 @@ fn new_wheel_event(event_name string, init WheelEventInit, trusted bool) &WheelE
 		delta_y_:    init.delta_y
 		delta_z_:    init.delta_z
 		delta_mode_: init.delta_mode
+		wheel_delta_x_: if init.wheel_delta_x != 0 {
+			init.wheel_delta_x
+		} else {
+			legacy_wheel_delta_from_delta(init.delta_x)
+		}
+		wheel_delta_y_: if init.wheel_delta_y != 0 {
+			init.wheel_delta_y
+		} else {
+			legacy_wheel_delta_from_delta(init.delta_y)
+		}
 	}
 }
 
@@ -1282,11 +1393,16 @@ pub fn WheelEvent.create(event_name string, init WheelEventInit) &WheelEvent {
 }
 
 pub fn WheelEvent.construct_impl(event_name string, init WheelEventInit) !&WheelEvent {
-	mut event := new_wheel_event(event_name, init, false)
-	event.page_x_ = init.client_x
-	event.page_y_ = init.client_y
-	event.offset_x_ = init.client_x
-	event.offset_y_ = init.client_y
+	return WheelEvent.create_for_constructor(event_name, init, current_event_timestamp())
+}
+
+pub fn WheelEvent.create_for_constructor(event_name string, event_init WheelEventInit, time_stamp DOMHighResTimeStamp) &WheelEvent {
+	mut event := new_wheel_event(event_name, event_init, false)
+	event.set_time_stamp(time_stamp)
+	event.page_x_ = event_init.client_x
+	event.page_y_ = event_init.client_y
+	event.offset_x_ = event_init.client_x
+	event.offset_y_ = event_init.client_y
 	return event
 }
 
@@ -1339,6 +1455,18 @@ pub fn (e &WheelEvent) delta_z() f64 {
 
 pub fn (e &WheelEvent) delta_mode() u32 {
 	return e.delta_mode_
+}
+
+pub fn (e &WheelEvent) wheel_delta_x() i32 {
+	return e.wheel_delta_x_
+}
+
+pub fn (e &WheelEvent) wheel_delta_y() i32 {
+	return e.wheel_delta_y_
+}
+
+pub fn (e &WheelEvent) wheel_delta() i32 {
+	return if e.wheel_delta_y_ != 0 { e.wheel_delta_y_ } else { e.wheel_delta_x_ }
 }
 
 pub const input_type_delete_content_backward = 'deleteContentBackward'
