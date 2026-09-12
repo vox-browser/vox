@@ -1,8 +1,7 @@
 // Copyright (c) 2026, Ladybird contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Translation of IntersectionObserver/IntersectionObserver.{h,cpp,idl} and
-// IntersectionObserverRegistration.h.
+// Translation of IntersectionObserver/IntersectionObserver.{h,cpp,idl}.
 module intersectionobserver
 
 import dom
@@ -175,33 +174,26 @@ mut:
 	observation_targets_   []ObservationTarget
 }
 
-fn dom_observer_observation_targets(target voidptr) []&dom.Element {
+fn dom_observer_observation_targets(target voidptr) []dom.IntersectionObserverObservationTarget {
 	observer := unsafe { &IntersectionObserver(target) }
-	return observer.observation_targets()
-}
-
-fn dom_observer_target_state(target voidptr, element &dom.Element) ?dom.IntersectionObserverTargetState {
-	observer := unsafe { &IntersectionObserver(target) }
+	mut targets := []dom.IntersectionObserverObservationTarget{cap: observer.observation_targets_.len}
 	for observed_target in observer.observation_targets_ {
-		if voidptr(observed_target.target) == voidptr(element) {
-			return dom.IntersectionObserverTargetState{
-				previous_threshold_index: observed_target.previous_threshold_index
-				previous_is_intersecting: observed_target.previous_is_intersecting
-			}
+		targets << dom.IntersectionObserverObservationTarget{
+			target: observed_target.target
+			previous_threshold_index: observed_target.previous_threshold_index
+			previous_is_intersecting: observed_target.previous_is_intersecting
 		}
 	}
-	return none
+	return targets
 }
 
-fn dom_observer_update_target_state(target voidptr, element &dom.Element, threshold_index usize, is_intersecting bool) {
+fn dom_observer_update_target_state(target voidptr, observed_target_index usize, threshold_index usize, is_intersecting bool) {
 	mut observer := unsafe { &IntersectionObserver(target) }
-	for index, observed_target in observer.observation_targets_ {
-		if voidptr(observed_target.target) == voidptr(element) {
-			observer.observation_targets_[index].previous_threshold_index = threshold_index
-			observer.observation_targets_[index].previous_is_intersecting = is_intersecting
-			return
-		}
+	if observed_target_index >= usize(observer.observation_targets_.len) {
+		return
 	}
+	observer.observation_targets_[observed_target_index].previous_threshold_index = threshold_index
+	observer.observation_targets_[observed_target_index].previous_is_intersecting = is_intersecting
 }
 
 fn dom_observer_observe(target voidptr, element &dom.Element) {
@@ -394,7 +386,6 @@ fn IntersectionObserver.create_internal(callback IntersectionObserverCallback, o
 			root_is_element: dom_observer_root_is_element
 			thresholds: dom_observer_thresholds
 			scroll_margins: dom_observer_scroll_margins
-			target_state: dom_observer_target_state
 			update_target_state: dom_observer_update_target_state
 		}
 		observer.document_registration_ = registration
@@ -496,9 +487,7 @@ pub fn (mut observer IntersectionObserver) observe(target &dom.Element) {
 		}
 	}
 	mut mutable_target := target
-	mutable_target.register_intersection_observer(dom.IntersectionObserverRegistration_{
-		observer: voidptr(observer)
-	})
+	mutable_target.register_intersection_observer(voidptr(observer))
 	observer.observation_targets_ << ObservationTarget{
 		target: target
 	}
@@ -531,13 +520,6 @@ pub fn (mut observer IntersectionObserver) take_records() []&IntersectionObserve
 	queue := observer.queued_entries_.clone()
 	observer.queued_entries_.clear()
 	return queue
-}
-
-pub struct IntersectionObserverRegistration {
-pub:
-	observer                 &IntersectionObserver
-	previous_threshold_index ?usize
-	previous_is_intersecting bool
 }
 
 pub struct RootGeometry {

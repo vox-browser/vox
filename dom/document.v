@@ -2141,7 +2141,14 @@ pub enum TextAffinity {
 // imports DOM. These callbacks are the cycle-breaking equivalent of the typed
 // C++ references kept by Document: the registration still owns exactly one
 // observer identity and forwards every operation to that translated object.
-pub type IntersectionObserverObservationTargetsCallback = fn (voidptr) []&Element
+pub struct IntersectionObserverObservationTarget {
+pub:
+	target                   &Element
+	previous_threshold_index ?usize
+	previous_is_intersecting bool
+}
+
+pub type IntersectionObserverObservationTargetsCallback = fn (voidptr) []IntersectionObserverObservationTarget
 
 pub type IntersectionObserverObserveCallback = fn (voidptr, &Element)
 
@@ -2165,15 +2172,7 @@ pub:
 
 pub type IntersectionObserverMarginsCallback = fn (voidptr) []IntersectionObserverMarginValue
 
-pub struct IntersectionObserverTargetState {
-pub:
-	previous_threshold_index ?usize
-	previous_is_intersecting bool
-}
-
-pub type IntersectionObserverTargetStateCallback = fn (voidptr, &Element) ?IntersectionObserverTargetState
-
-pub type IntersectionObserverUpdateTargetStateCallback = fn (voidptr, &Element, usize, bool)
+pub type IntersectionObserverUpdateTargetStateCallback = fn (voidptr, usize, usize, bool)
 
 @[heap]
 pub struct IntersectionObserver {
@@ -2190,7 +2189,6 @@ pub:
 	root_is_element      IntersectionObserverBoolCallback = unsafe { nil }
 	thresholds           IntersectionObserverThresholdsCallback = unsafe { nil }
 	scroll_margins       IntersectionObserverMarginsCallback = unsafe { nil }
-	target_state         IntersectionObserverTargetStateCallback = unsafe { nil }
 	update_target_state  IntersectionObserverUpdateTargetStateCallback = unsafe { nil }
 }
 
@@ -3377,7 +3375,7 @@ pub fn (dl &DisplayList) dump() string {
 }
 
 // IntersectionObserver methods
-pub fn (io &IntersectionObserver) observation_targets() []&Element {
+pub fn (io &IntersectionObserver) observation_targets() []IntersectionObserverObservationTarget {
 	if io.observation_targets_ == unsafe { nil } {
 		return []
 	}
@@ -8443,7 +8441,8 @@ pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64)
 		thresholds := observer.thresholds(observer.target)
 
 		// 2. Process targets in the order observe() appended them.
-		for target in observer.observation_targets() {
+		for target_index, observed_target in observer.observation_targets() {
+			target := observed_target.target
 			mut threshold_index := usize(0)
 			mut is_intersecting := false
 			mut target_rect := Rect{}
@@ -8487,20 +8486,19 @@ pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64)
 				is_intersecting = threshold_index > 0
 			}
 
-			if observer.target_state == unsafe { nil }
-				|| observer.update_target_state == unsafe { nil } {
+			if observer.update_target_state == unsafe { nil } {
 				continue
 			}
-			state := observer.target_state(observer.target, target) or { continue }
-			threshold_changed := if previous := state.previous_threshold_index {
+			threshold_changed := if previous := observed_target.previous_threshold_index {
 				previous != threshold_index
 			} else {
 				true
 			}
-			if threshold_changed || state.previous_is_intersecting != is_intersecting {
+			if threshold_changed || observed_target.previous_is_intersecting != is_intersecting {
 				d.queue_an_intersection_observer_entry(observer, time, root_bounds, target_rect, intersection, is_intersecting, intersection_ratio, target)
 			}
-			observer.update_target_state(observer.target, target, threshold_index, is_intersecting)
+			observer.update_target_state(observer.target, usize(target_index), threshold_index,
+				is_intersecting)
 		}
 	}
 }

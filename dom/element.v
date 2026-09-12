@@ -1047,13 +1047,6 @@ fn css_pixel_rect_intersects_rect(rect CSSPixelRect_, other Rect) bool {
 	return rect.x_ < other.x + other.width && rect.x_ + rect.width_ > other.x && rect.y_ < other.y + other.height && rect.y_ + rect.height_ > other.y
 }
 
-pub struct IntersectionObserverRegistration_ {
-pub mut:
-	observer                 voidptr
-	previous_threshold_index ?usize
-	previous_is_intersecting bool
-}
-
 pub enum Dir {
 	ltr
 	rtl
@@ -1359,7 +1352,7 @@ pub mut:
 	custom_state_set_             ?&CustomStateSet
 	popover_target_element_       ?&Element
 
-	registered_intersection_observers []IntersectionObserverRegistration_
+	registered_intersection_observers []voidptr
 	computed_style_map_cache_         ?&StylePropertyMapReadOnly_
 
 	scroll_offset_ CSSPixelPoint_
@@ -3896,23 +3889,16 @@ pub fn (e &Element) check_visibility(options ?CheckVisibilityOptions) bool {
 }
 
 // --- Intersection observers ---
-pub fn (mut e Element) register_intersection_observer(registration IntersectionObserverRegistration_) {
-	e.registered_intersection_observers << registration
+pub fn (mut e Element) register_intersection_observer(observer voidptr) {
+	e.registered_intersection_observers << observer
 }
 
 pub fn (mut e Element) unregister_intersection_observer(observer voidptr) {
-	e.registered_intersection_observers = e.registered_intersection_observers.filter(it.observer != observer)
+	e.registered_intersection_observers = e.registered_intersection_observers.filter(it != observer)
 }
 
-// Mirrors the C++ Element::get_intersection_observer_registration accessor used
-// from Document during intersection observer notification dispatch.
-pub fn (mut e Element) get_intersection_observer_registration(observer voidptr) ?&IntersectionObserverRegistration_ {
-	for i := 0; i < e.registered_intersection_observers.len; i++ {
-		if e.registered_intersection_observers[i].observer == observer {
-			return unsafe { &e.registered_intersection_observers[i] }
-		}
-	}
-	return none
+pub fn (e &Element) has_registered_intersection_observer(observer voidptr) bool {
+	return observer in e.registered_intersection_observers
 }
 
 // --- Custom elements ---

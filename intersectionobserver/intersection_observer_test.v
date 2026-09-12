@@ -138,15 +138,15 @@ fn test_observe_unobserve_disconnect_and_take_records() {
 	assert observer.observation_targets().len == 2
 	mut registered_a := target_a
 	mut registered_b := target_b
-	assert registered_a.get_intersection_observer_registration(voidptr(observer)) != none
-	assert registered_b.get_intersection_observer_registration(voidptr(observer)) != none
+	assert registered_a.has_registered_intersection_observer(voidptr(observer))
+	assert registered_b.has_registered_intersection_observer(voidptr(observer))
 	observer.unobserve(target_a)
 	assert observer.observation_targets() == [target_b]
-	assert registered_a.get_intersection_observer_registration(voidptr(observer)) == none
-	assert registered_b.get_intersection_observer_registration(voidptr(observer)) != none
+	assert !registered_a.has_registered_intersection_observer(voidptr(observer))
+	assert registered_b.has_registered_intersection_observer(voidptr(observer))
 	observer.disconnect()
 	assert observer.observation_targets().len == 0
-	assert registered_b.get_intersection_observer_registration(voidptr(observer)) == none
+	assert !registered_b.has_registered_intersection_observer(voidptr(observer))
 
 	entry := IntersectionObserverEntry.construct(IntersectionObserverEntryInit{
 		target: target_a
