@@ -654,6 +654,16 @@ fn resolve_cascade_declaration_value(abstract_element dom.AbstractElement, prope
 	return unsafe { value }
 }
 
+fn opaque_is_unresolved(value &dom.StyleValue) bool {
+	typed := typed_style_value_logic_from_dom(value) or { return false }
+	return typed is UnresolvedStyleValue
+}
+
+fn opaque_is_pending_substitution(value &dom.StyleValue) bool {
+	typed := typed_style_value_logic_from_dom(value) or { return false }
+	return typed is PendingSubstitutionStyleValue
+}
+
 // Cascade one declaration block into `cascaded_properties` — the inner `cascade_style_declaration`
 // lambda of Ladybird's StyleComputer::cascade_declarations. For each property (of the requested
 // importance / supported by the pseudo-element / in `properties_to_cascade` when non-empty), expand
@@ -681,19 +691,28 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 			continue
 		}
 		if pe := pseudo_element {
-			if !pseudo_element_supports_property(pe, property.property_id) {
+			// An unresolved shorthand must survive this first filter so var()/env()
+			// can be substituted and the resulting longhands can be checked below.
+			if !pseudo_element_supports_property(pe, property.property_id)
+				&& !opaque_is_unresolved(property.value) {
 				continue
 			}
 		}
-		resolved_property_value := resolve_cascade_declaration_value(abstract_element, property.property_id, property.value)
-		property_value_is_pending := if typed := typed_style_value_logic_from_dom(resolved_property_value) {
-			typed is PendingSubstitutionStyleValue
-		} else {
-			false
+		// Pending-substitution longhands are placeholders for an unresolved
+		// shorthand. The resolved shorthand itself supplies their real values.
+		if opaque_is_pending_substitution(property.value) {
+			continue
 		}
+		resolved_property_value := resolve_cascade_declaration_value(abstract_element, property.property_id, property.value)
 		if computed_interpolation_is_longhand_property(property.property_id) {
 			longhand_id := property.property_id
-			if seen_properties[int(longhand_id)] != 0 && property_value_is_pending {
+			if pe := pseudo_element {
+				if !pseudo_element_supports_property(pe, longhand_id) {
+					continue
+				}
+			}
+			if seen_properties[int(longhand_id)] != 0
+				&& opaque_is_pending_substitution(resolved_property_value) {
 				continue
 			}
 			seen_properties[int(longhand_id)] = 1
@@ -717,10 +736,16 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 			continue
 		}
 		for longhand in expand_property_longhands(property.property_id, resolved_property_value) {
+			if pe := pseudo_element {
+				if !pseudo_element_supports_property(pe, longhand.id) {
+					continue
+				}
+			}
 			if properties_to_cascade.len > 0 && longhand.id !in properties_to_cascade {
 				continue
 			}
-			if seen_properties[int(longhand.id)] != 0 && property_value_is_pending {
+			if seen_properties[int(longhand.id)] != 0
+				&& opaque_is_pending_substitution(resolved_property_value) {
 				continue
 			}
 			seen_properties[int(longhand.id)] = 1

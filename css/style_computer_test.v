@@ -124,6 +124,30 @@ fn test_cascaded_properties_cache_retains_unresolved_shorthand_ids() {
 	assert cascaded.property(.margin) == none
 }
 
+fn test_selection_resolves_var_in_shorthand_before_filtering_longhands() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(doc, 'div {
+		--selection-bg: lightblue;
+	}
+	div::selection {
+		background: var(--selection-bg);
+	}')
+	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut doc_node := unsafe { &dom.Node(doc) }
+	doc_node.append_child(element.as_node()) or { panic('${err}') }
+
+	computer := StyleComputer.new(doc)
+	mut element_abstract := dom.AbstractElement.new(element, none)
+	computer.recompute_style(mut element_abstract)
+	selection := computer.compute_pseudo_element_style_if_needed(dom.AbstractElement.new(element, .selection)) or { panic('::selection style was not generated') }
+	background_color := selection.property(.background_color, .no) or {
+		panic('::selection background-color missing')
+	}
+	assert background_color.css_text == 'rgb(173, 216, 230)'
+}
+
 // compute_properties turns cascaded values into computed values and runs the tail adjustments; here the
 // effective-overflow rule applies: overflow-y: scroll forces overflow-x: visible to compute to auto.
 fn test_compute_properties_resolves_effective_overflow() {
