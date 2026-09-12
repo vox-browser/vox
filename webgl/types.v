@@ -16,6 +16,8 @@ pub type GLintptr = i64
 
 pub type GLsizeiptr = i64
 
+pub type WebGLObjectId = u32
+
 pub struct WebGLDataSpan {
 pub:
 	offset u32
