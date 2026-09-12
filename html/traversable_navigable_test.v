@@ -90,9 +90,32 @@ fn test_traversable_clear_forward_and_finalize_navigation() {
 	assert !traversable.can_go_forward()
 
 	replacement := traversal_entry(99, 'https://example.test/replaced', document)
+	traversable.active_session_history_entry_ = replacement
 	finalize_a_same_document_navigation(mut traversable, replacement, one, .replace, .none_)
 	assert traversable.current_session_history_step() == 1
 	assert traversable.active_session_history_entry()? == replacement
+}
+
+fn test_superseded_same_document_navigation_retains_replacement_without_becoming_active() {
+	mut traversable := TraversableNavigable.create_a_fresh_top_level_traversable(dom.URL{
+		value: 'https://example.test/zero'
+	}, EmptyDocumentResource{})!
+	document := traversable.active_document() or { panic('missing document') }
+	replaced := traversable.active_session_history_entry() or { panic('missing entry') }
+	superseded := traversal_entry(99, 'https://example.test/replaced', document)
+	newer := traversal_entry(1, 'https://example.test/newer', document)
+	traversable.append_session_history_entry(newer)
+	traversable.active_session_history_entry_ = newer
+
+	finalize_a_same_document_navigation(mut traversable, superseded, replaced, .replace, .none_)
+
+	entries := traversable.session_history_entries()
+	assert entries.len == 2
+	assert entries[0] == superseded
+	assert session_history_entry_step(superseded)? == 0
+	assert entries[1] == newer
+	assert traversable.current_session_history_step() == 0
+	assert traversable.active_session_history_entry()? == newer
 }
 
 fn cancel_traversable_before_unload(documents []&dom.Document) CheckIfUnloadingIsCanceledResult {

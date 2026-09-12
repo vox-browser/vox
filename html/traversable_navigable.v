@@ -858,6 +858,31 @@ pub fn finalize_a_same_document_navigation(mut traversable TraversableNavigable,
 	if traversable.has_been_destroyed_ {
 		return
 	}
+	active_entry := traversable.active_session_history_entry_ or {
+		if replaced := entry_to_replace {
+			index := traversable.session_history_entries_.index(replaced)
+			if index >= 0 {
+				mut mutable_target := unsafe { &SessionHistoryEntry(target_entry) }
+				mutable_target.step = replaced.step
+				traversable.session_history_entries_[index] = target_entry
+			}
+		}
+		return
+	}
+	// A later navigation can become active before this queued navigation is
+	// finalized. Retain a requested replacement in the history list, but do not
+	// let the superseded entry become active.
+	if voidptr(active_entry) != voidptr(target_entry) {
+		if replaced := entry_to_replace {
+			index := traversable.session_history_entries_.index(replaced)
+			if index >= 0 {
+				mut mutable_target := unsafe { &SessionHistoryEntry(target_entry) }
+				mutable_target.step = replaced.step
+				traversable.session_history_entries_[index] = target_entry
+			}
+		}
+		return
+	}
 	mut target_step := traversable.current_session_history_step_
 	if replaced := entry_to_replace {
 		index := traversable.session_history_entries_.index(replaced)
