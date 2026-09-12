@@ -392,9 +392,7 @@ pub fn (mut scope StyleScope) build_rule_cache() {
 	scope.selector_insights = &SelectorInsights{}
 	scope.style_invalidation_data = StyleInvalidationData.new()
 
-	if user_style_source := scope.user_style_source {
-		scope.user_style_sheet = parse_css_stylesheet_with_parser(user_style_source, none)
-	}
+	scope.build_user_style_sheet_if_needed()
 
 	scope.build_qualified_layer_names_cache()
 
@@ -411,6 +409,9 @@ pub fn (mut scope StyleScope) build_rule_cache() {
 }
 
 pub fn (mut scope StyleScope) invalidate_rule_cache() {
+	if document := scope.document() {
+		invalidate_registered_counter_styles_for_document(document)
+	}
 	scope.author_rule_cache = none
 
 	// NOTE: We could be smarter about keeping the user rule cache, and style sheet.
@@ -425,6 +426,15 @@ pub fn (mut scope StyleScope) invalidate_rule_cache() {
 
 	scope.pseudo_class_rule_cache = map[PseudoClass]&RuleCache{}
 	scope.style_invalidation_data = none
+}
+
+pub fn (mut scope StyleScope) build_user_style_sheet_if_needed() {
+	if scope.user_style_sheet != none {
+		return
+	}
+	if user_style_source := scope.user_style_source {
+		scope.user_style_sheet = parse_css_stylesheet_with_parser(user_style_source, none)
+	}
 }
 
 pub fn (scope &StyleScope) build_rule_cache_if_needed() {
@@ -468,7 +478,9 @@ pub fn (scope &StyleScope) stylesheets_for_cascade_origin(cascade_origin Cascade
 			}
 		}
 		.user {
-			if sheet := scope.user_style_sheet {
+			mut mutable_scope := unsafe { &StyleScope(scope) }
+			mutable_scope.build_user_style_sheet_if_needed()
+			if sheet := mutable_scope.user_style_sheet {
 				sheets << sheet
 			}
 		}
