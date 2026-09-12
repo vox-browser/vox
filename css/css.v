@@ -3485,6 +3485,35 @@ pub fn Size.make_none() Size {
 	return Size.new(.none_, none)
 }
 
+pub fn Size.from_style_value(value StyleValue) Size {
+	return match value {
+		KeywordStyleValue {
+			match value.keyword() {
+				.auto { Size.make_auto() }
+				.min_content { Size.make_min_content() }
+				.max_content { Size.make_max_content() }
+				.none_ { Size.make_none() }
+				else { Size.make_auto() }
+			}
+		}
+		FitContentStyleValue {
+			if available_space := value.length_percentage() {
+				Size.make_fit_content(LengthPercentage.from_style_value_logic(available_space))
+			} else {
+				Size.make_fit_content_without_available_space()
+			}
+		}
+		CalculatedStyleValue { Size.make_calculated(value) }
+		PercentageStyleValue { Size.make_percentage(value.percentage()) }
+		LengthStyleValue { Size.make_length(value.length()) }
+		AnchorSizeStyleValue {
+			// FIXME: Resolve anchor-size() once anchor positioning is available.
+			Size.make_none()
+		}
+		else { Size.make_auto() }
+	}
+}
+
 pub fn (s Size) is_auto() bool {
 	return s.type_ == .auto_
 }

@@ -2002,38 +2002,7 @@ pub fn (c &ComputedProperties) gap_value(property_id PropertyID) GapValue {
 pub fn (c &ComputedProperties) size_value(property_id PropertyID) Size {
 	value := c.property(property_id, .yes) or { return Size.make_auto() }
 	parsed := style_value_logic_from_dom(property_id, value) or { return Size.make_auto() }
-	keyword := parsed.to_keyword()
-	match keyword {
-		.auto {
-			return Size.make_auto()
-		}
-		.none_ {
-			return Size.make_none()
-		}
-		else {}
-	}
-	if parsed.serialize(.normal) == 'min-content' {
-		return Size.make_min_content()
-	}
-	if parsed.serialize(.normal) == 'max-content' {
-		return Size.make_max_content()
-	}
-	if parsed is CalculatedStyleValue {
-		return Size.make_calculated(parsed)
-	}
-	if parsed is PercentageStyleValue {
-		return Size.make_percentage(parsed.percentage())
-	}
-	if parsed is LengthStyleValue {
-		return Size.make_length(parsed.length())
-	}
-	if parsed is FitContentStyleValue {
-		if available_space := parsed.length_percentage() {
-			return Size.make_fit_content(LengthPercentage.from_style_value_logic(available_space))
-		}
-		return Size.make_fit_content_without_available_space()
-	}
-	return Size.make_auto()
+	return Size.from_style_value(parsed)
 }
 
 pub fn (c &ComputedProperties) length(property_id PropertyID) Length {
