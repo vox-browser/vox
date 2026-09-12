@@ -51,6 +51,7 @@ pub struct LaterState {
             (),
         )
 
+
     def test_multi_field_mapping_requires_every_component(self) -> None:
         complete = {
             ("svg_viewbox_transform_", "UsedValues"),
@@ -72,6 +73,32 @@ pub struct LaterState {
                 {("svg_viewbox_transform_", "UsedValues")},
             ),
             (),
+        )
+
+
+class ConsolidatedOwnerTests(unittest.TestCase):
+    def test_filtered_response_methods_use_unified_response_owner(self) -> None:
+        functions = {
+            ("navigation_timing_allow_values_list", "Response"),
+            ("fetch_response_redirect_taint", "Response"),
+            ("request_server_request", "Response"),
+        }
+
+        self.assertEqual(
+            audit.candidate_names(
+                "navigation_timing_allow_values_list", "FilteredResponse", functions
+            ),
+            ("navigation_timing_allow_values_list",),
+        )
+        self.assertEqual(
+            audit.candidate_names("redirect_taint", "FilteredResponse", functions),
+            ("fetch_response_redirect_taint",),
+        )
+        self.assertEqual(
+            audit.candidate_names(
+                "request_server_request", "FilteredResponse", functions
+            ),
+            ("request_server_request",),
         )
 
 

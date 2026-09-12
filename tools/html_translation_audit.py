@@ -107,6 +107,10 @@ V_KEYWORD_METHODS = {"type": "type_", "is": "is_", "match": "match_"}
 # deliberately keeps one context record so validation and GL state cannot
 # diverge between those layers.
 CONSOLIDATED_OWNER_ALIASES: dict[str, tuple[str, ...]] = {
+    # Fetch's filtered response subclasses only constrain which fields are
+    # visible. The V port keeps those views in one Response record so cloned
+    # metadata and delivery state remain shared with the internal response.
+    "FilteredResponse": ("Response",),
     # LayoutState specializes the generic C++ page store for UsedValues. The V
     # port names that concrete specialization explicitly while preserving the
     # same sparse two-level allocation and traversal algorithms.
