@@ -11,17 +11,15 @@ import dom
 import fetch
 import time
 
-pub type TimerCallback = fn([]dom.JSValue)
-
-pub type TimerScriptEvaluator = fn(string) !
+pub type TimerScriptEvaluator = fn (string) !
 
 pub struct TimerHandler {
 pub:
-	callback ?TimerCallback
+	callback ?&dom.CallbackType
 	source   ?string
 }
 
-pub fn timer_callback_handler(callback TimerCallback) TimerHandler {
+pub fn timer_callback_handler(callback &dom.CallbackType) TimerHandler {
 	return TimerHandler{
 		callback: callback
 	}
@@ -241,7 +239,9 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) process_timers(now_ms i64) {
 		}
 		scope.currently_running_timer_nesting = timer.nesting_level
 		if callback := timer.handler.callback {
-			callback(timer.arguments)
+			if call := callback.call_with_arguments {
+				_ = call(timer.arguments)
+			}
 		} else if source := timer.handler.source {
 			if evaluator := scope.timer_script_evaluator_ {
 				evaluator(source) or { scope.report_error(dom.js_string(err.msg())) }
@@ -580,8 +580,12 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) run_steps_after_a_timeout_impl
 	normalized_timeout := i64(if timeout < 0 { 0 } else { timeout })
 	scope.active_timers_[id] = GlobalScopeTimer{
 		id: id
-		handler: timer_callback_handler(fn [completion_step] (_ []dom.JSValue) {
-			completion_step()})
+		handler: timer_callback_handler(&dom.CallbackType{
+			call_with_arguments: fn [completion_step] (_ []dom.JSValue) dom.JSValue {
+				completion_step()
+				return dom.js_undefined()
+			}
+		})
 		timeout_ms: normalized_timeout
 		due_time_ms: global_scope_now_ms() + normalized_timeout
 		repeat: repeat

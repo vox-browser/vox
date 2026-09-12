@@ -2518,10 +2518,11 @@ pub mut:
 @[heap]
 pub struct CallbackType {
 pub mut:
-	handle_event      ?fn (&Event, ?&EventTarget) JSValue
-	call_no_args      ?fn () JSValue
-	accept_node       ?fn (&Node) int
-	mutation_callback ?fn ([]&MutationRecord, &MutationObserver)
+	handle_event        ?fn (&Event, ?&EventTarget) JSValue
+	call_no_args        ?fn () JSValue
+	call_with_arguments ?fn ([]JSValue) JSValue
+	accept_node         ?fn (&Node) int
+	mutation_callback   ?fn ([]&MutationRecord, &MutationObserver)
 	// The callback object's associated Realm global. DOM cannot import HTML's
 	// WindowOrWorkerGlobalScope mixin, but Window itself is a DOM bridge type and
 	// is sufficient for EventDispatcher's current-event bookkeeping.

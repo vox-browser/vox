@@ -10,13 +10,14 @@ __global (
 	global_scope_timeout_completed bool
 )
 
-fn global_scope_timer_callback(arguments []dom.JSValue) {
+fn global_scope_timer_callback(arguments []dom.JSValue) dom.JSValue {
 	unsafe {
 		global_scope_timer_calls++
 		if arguments.len > 0 {
 			global_scope_timer_arg = arguments[0].number_data
 		}
 	}
+	return dom.js_undefined()
 }
 
 fn global_scope_observer_callback(entries []PerformanceEntry) {
@@ -43,10 +44,13 @@ fn test_global_scope_identity_timers_and_singletons() {
 		global_scope_timer_calls = 0
 		global_scope_timer_arg = 0
 	}
-	timeout_id := scope.set_timeout(timer_callback_handler(global_scope_timer_callback), 0, [
+	callback := &dom.CallbackType{
+		call_with_arguments: global_scope_timer_callback
+	}
+	timeout_id := scope.set_timeout(timer_callback_handler(callback), 0, [
 		dom.js_number(17),
 	])
-	interval_id := scope.set_interval(timer_callback_handler(global_scope_timer_callback), 0, [])
+	interval_id := scope.set_interval(timer_callback_handler(callback), 0, [])
 	assert timeout_id != interval_id
 	scope.run_all_timers()
 	unsafe {
