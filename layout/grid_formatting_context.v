@@ -468,8 +468,7 @@ fn resolved_grid_line_number(placement css.GridTrackPlacement, explicit_line_cou
 	if !placement.has_line_number() {
 		return none
 	}
-	line := placement.line_number()
-	resolved := line.resolved(css.CalculationResolutionContext{}) or { return none }
+	resolved := css.int_from_style_value(placement.line_number())
 	if resolved == 0 {
 		return none
 	}
@@ -504,8 +503,7 @@ fn grid_span_value(placement css.GridTrackPlacement) ?int {
 	if !placement.is_span() {
 		return none
 	}
-	span := placement.span()
-	resolved := span.resolved(css.CalculationResolutionContext{}) or { return none }
+	resolved := css.int_from_style_value(placement.span())
 	if resolved <= 0 {
 		return none
 	}
@@ -517,12 +515,12 @@ fn grid_span_value(placement css.GridTrackPlacement) ?int {
 fn resolve_grid_axis_position(start css.GridTrackPlacement, end css.GridTrackPlacement, explicit_line_count int, lines [][]string) GridAxisPlacement {
 	mut result := GridAxisPlacement{}
 	start_line_number := if start.has_line_number() {
-		int(start.line_number().resolved(css.CalculationResolutionContext{}) or { i64(1) })
+		int(css.int_from_style_value(start.line_number()))
 	} else {
 		1
 	}
 	end_line_number := if end.has_line_number() {
-		int(end.line_number().resolved(css.CalculationResolutionContext{}) or { i64(1) })
+		int(css.int_from_style_value(end.line_number()))
 	} else {
 		1
 	}

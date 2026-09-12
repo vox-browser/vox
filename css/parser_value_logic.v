@@ -7242,7 +7242,7 @@ fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStrea
 
 	mut is_span := false
 	mut parsed_custom_ident := ?string(none)
-	mut parsed_integer := ?IntegerOrCalculated(none)
+	mut parsed_integer := ?StyleValue(none)
 
 	for transaction.has_more_tokens() {
 		peek := transaction.peek() or { break }
@@ -7280,13 +7280,7 @@ fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStrea
 			if parsed_integer != none {
 				return none
 			}
-			if integer_value is IntegerStyleValue {
-				parsed_integer = IntegerOrCalculated.from_integer(integer_value.integer())
-			} else if integer_value is CalculatedStyleValue {
-				parsed_integer = IntegerOrCalculated.from_calculated(integer_value)
-			} else {
-				return none
-			}
+			parsed_integer = integer_value
 			int_attempt.consume_whitespace()
 			transaction = int_attempt
 			continue
@@ -7299,7 +7293,7 @@ fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStrea
 	if !is_span && (parsed_integer != none || parsed_custom_ident != none) {
 		mut valid := true
 		if integer := parsed_integer {
-			if !integer.is_calculated() && integer.value() == 0 {
+			if integer.is_integer() && integer.as_integer().integer() == 0 {
 				valid = false
 			}
 		}
@@ -7313,13 +7307,13 @@ fn (mut parser Parser) parse_grid_track_placement(mut tokens ComponentValueStrea
 	if is_span && (parsed_integer != none || parsed_custom_ident != none) {
 		mut valid := true
 		if integer := parsed_integer {
-			if !integer.is_calculated() && integer.value() <= 0 {
+			if integer.is_integer() && integer.as_integer().integer() <= 0 {
 				valid = false
 			}
 		}
 		if valid {
 			// If the <integer> is omitted, it defaults to 1.
-			span_value := parsed_integer or { IntegerOrCalculated.from_integer(1) }
+			span_value := parsed_integer or { StyleValue(IntegerStyleValue.create(1)) }
 			tokens = transaction
 			return StyleValue(GridTrackPlacementStyleValue.create(GridTrackPlacement.make_span(span_value, parsed_custom_ident)))
 		}

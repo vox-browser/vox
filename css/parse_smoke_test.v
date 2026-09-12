@@ -624,6 +624,24 @@ fn test_numeric_value_parsing_includes_upstream_tree_counting_functions() {
 	assert keyword_tokens.index == keyword_start
 }
 
+fn test_grid_track_placement_preserves_tree_counting_style_values() {
+	line := parse_css_value_logic(.grid_row_start, 'sibling-count()') or {
+		panic('tree-counting grid line did not parse')
+	}
+	assert line is GridTrackPlacementStyleValue
+	line_placement := (line as GridTrackPlacementStyleValue).grid_track_placement()
+	assert line_placement.line_number() is TreeCountingFunctionStyleValue
+	assert line.serialize(.normal) == 'sibling-count()'
+
+	span := parse_css_value_logic(.grid_row_start, 'span sibling-count()') or {
+		panic('tree-counting grid span did not parse')
+	}
+	assert span is GridTrackPlacementStyleValue
+	span_placement := (span as GridTrackPlacementStyleValue).grid_track_placement()
+	assert span_placement.span() is TreeCountingFunctionStyleValue
+	assert span.serialize(.normal) == 'span sibling-count()'
+}
+
 fn test_dom_style_value_retains_typed_css_value() {
 	value := parse_css_value(ParsingParams{}, '42px', .width) or {
 		panic('width did not parse')

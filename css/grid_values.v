@@ -23,13 +23,13 @@ pub struct GridTrackPlacementAuto {}
 
 pub struct GridTrackPlacementAreaOrLine {
 pub mut:
-	line_number ?IntegerOrCalculated
+	line_number ?StyleValue
 	name        ?string
 }
 
 pub struct GridTrackPlacementSpan {
 pub mut:
-	value IntegerOrCalculated
+	value StyleValue
 	name  ?string
 }
 
@@ -48,20 +48,20 @@ pub fn GridTrackPlacement.make_auto() GridTrackPlacement {
 	}
 }
 
-pub fn GridTrackPlacement.make_line(line_number ?IntegerOrCalculated, name ?string) GridTrackPlacement {
+pub fn GridTrackPlacement.make_line(line_number ?StyleValue, name ?string) GridTrackPlacement {
 	return GridTrackPlacement{
 		value_: GridTrackPlacementAreaOrLine{
 			line_number: line_number
-			name:        name
+			name: name
 		}
 	}
 }
 
-pub fn GridTrackPlacement.make_span(value IntegerOrCalculated, name ?string) GridTrackPlacement {
+pub fn GridTrackPlacement.make_span(value StyleValue, name ?string) GridTrackPlacement {
 	return GridTrackPlacement{
 		value_: GridTrackPlacementSpan{
 			value: value
-			name:  name
+			name: name
 		}
 	}
 }
@@ -120,7 +120,7 @@ pub fn (placement GridTrackPlacement) identifier() string {
 	panic('VERIFY_NOT_REACHED')
 }
 
-pub fn (placement GridTrackPlacement) line_number() IntegerOrCalculated {
+pub fn (placement GridTrackPlacement) line_number() StyleValue {
 	value := placement.value_
 	if value is GridTrackPlacementAreaOrLine {
 		if line_number := value.line_number {
@@ -130,7 +130,7 @@ pub fn (placement GridTrackPlacement) line_number() IntegerOrCalculated {
 	panic('VERIFY_NOT_REACHED')
 }
 
-pub fn (placement GridTrackPlacement) span() IntegerOrCalculated {
+pub fn (placement GridTrackPlacement) span() StyleValue {
 	value := placement.value_
 	if value is GridTrackPlacementSpan {
 		return value.value
@@ -160,7 +160,8 @@ pub fn (placement GridTrackPlacement) serialize(mode SerializationMode) string {
 		GridTrackPlacementSpan {
 			mut serialized := 'span'
 
-			if value.name == none || value.value.is_calculated() || value.value.value() != 1 {
+			if value.name == none || !value.value.is_integer()
+				|| value.value.as_integer().integer() != 1 {
 				serialized += ' ${value.value.serialize(mode)}'
 			}
 
@@ -181,15 +182,6 @@ pub fn (placement GridTrackPlacement) to_string_with_mode(mode SerializationMode
 	return placement.serialize(mode)
 }
 
-fn absolutize_integer_or_calculated(integer_or_calculated IntegerOrCalculated, context ComputationContext) IntegerOrCalculated {
-	if !integer_or_calculated.is_calculated() {
-		return integer_or_calculated
-	}
-
-	absolutized := grid_absolutize_calculated(integer_or_calculated.calculated(), context)
-	return IntegerOrCalculated.from_calculated(absolutized)
-}
-
 pub fn (placement GridTrackPlacement) absolutized(context ComputationContext) GridTrackPlacement {
 	value := placement.value_
 	return match value {
@@ -198,22 +190,22 @@ pub fn (placement GridTrackPlacement) absolutized(context ComputationContext) Gr
 		}
 		GridTrackPlacementAreaOrLine {
 			absolutized_line_number := if existing_line_number := value.line_number {
-				?IntegerOrCalculated(absolutize_integer_or_calculated(existing_line_number, context))
+				?StyleValue(existing_line_number.absolutized(context))
 			} else {
-				?IntegerOrCalculated(none)
+				?StyleValue(none)
 			}
 			GridTrackPlacement{
 				value_: GridTrackPlacementAreaOrLine{
 					line_number: absolutized_line_number
-					name:        value.name
+					name: value.name
 				}
 			}
 		}
 		GridTrackPlacementSpan {
 			GridTrackPlacement{
 				value_: GridTrackPlacementSpan{
-					value: absolutize_integer_or_calculated(value.value, context)
-					name:  value.name
+					value: value.value.absolutized(context)
+					name: value.name
 				}
 			}
 		}
