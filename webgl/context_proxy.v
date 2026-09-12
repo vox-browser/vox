@@ -17,6 +17,8 @@ pub const webgl_command_tex_image2d_from_bitmap = WebGLCommandType(172)
 pub const webgl_command_tex_sub_image2d_from_bitmap = WebGLCommandType(173)
 pub const webgl_command_tex_image3d_from_bitmap = WebGLCommandType(174)
 pub const webgl_command_tex_sub_image3d_from_bitmap = WebGLCommandType(175)
+pub const webgl_command_shader_source = WebGLCommandType(176)
+pub const webgl_command_transform_feedback_varyings = WebGLCommandType(177)
 
 pub struct WebGLIntSize {
 pub:
@@ -498,4 +500,34 @@ pub fn (mut proxy WebGLContextProxyBase) tex_sub_image3d_from_bitmap(target GLen
 	proxy_append_u32(mut payload, type_)
 	proxy_append_bitmap_options(mut payload, bitmap_index, destination_size, flip_y, premultiply_alpha)
 	proxy.record_bytes(webgl_command_tex_sub_image3d_from_bitmap, payload, []u8{})!
+}
+
+pub fn (mut proxy WebGLContextProxyBase) shader_source(shader GLuint, source string) ! {
+	mut source_bytes := source.bytes()
+	source_bytes << u8(0)
+	mut payload := []u8{cap: 12}
+	proxy_append_u32(mut payload, shader)
+	proxy_append_u32(mut payload, WebGLCommandList.first_inline_data_offset(12))
+	proxy_append_u32(mut payload, u32(source_bytes.len))
+	proxy.record_bytes(webgl_command_shader_source, payload, source_bytes)!
+}
+
+pub fn pack_strings(strings []string) []u8 {
+	mut bytes := []u8{}
+	for string_ in strings {
+		bytes << string_.bytes()
+		bytes << u8(0)
+	}
+	return bytes
+}
+
+pub fn (mut proxy WebGLContextProxyBase) transform_feedback_varyings(program GLuint, varyings []string, buffer_mode GLenum) ! {
+	varyings_bytes := pack_strings(varyings)
+	mut payload := []u8{cap: 20}
+	proxy_append_u32(mut payload, program)
+	proxy_append_i32(mut payload, varyings.len)
+	proxy_append_u32(mut payload, WebGLCommandList.first_inline_data_offset(20))
+	proxy_append_u32(mut payload, u32(varyings_bytes.len))
+	proxy_append_u32(mut payload, buffer_mode)
+	proxy.record_bytes(webgl_command_transform_feedback_varyings, payload, varyings_bytes)!
 }
