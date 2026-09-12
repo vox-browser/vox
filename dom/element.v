@@ -5238,6 +5238,19 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 			pl.associated_attribute_changed(value_or_empty)
 		}
 		e.set_needs_style_update(true)
+	} else if local_name == 'exportparts' {
+		if shadow_root := e.shadow_root() {
+			shadow_node := unsafe { &Node(shadow_root) }
+			shadow_node.for_each_in_subtree(fn (node &Node) TraversalDecision {
+				if element := node.as_element() {
+					if element.parts.len > 0 {
+						mut mutable_element := unsafe { &Element(element) }
+						mutable_element.set_needs_style_update(true)
+					}
+				}
+				return .@continue
+			})
+		}
 	}
 
 	if local_name == 'name' && e.local_name() == 'slot' {
