@@ -1,6 +1,7 @@
 module animations
 
 import dom
+import html
 
 fn test_time_value_units_and_arithmetic() {
 	time := TimeValue.milliseconds(250)
@@ -55,4 +56,63 @@ fn test_document_updates_every_associated_timeline_and_honors_disassociation() {
 	document.update_animations_and_send_events(200)
 	assert first.current_time()!.value == 190
 	assert second.current_time()!.value == 130
+}
+
+fn test_timeline_style_sampling_override_preserves_underlying_time() {
+	mut timeline := AnimationTimeline.new()
+	timeline.set_current_time(TimeValue.milliseconds(25))
+	assert timeline.effective_current_time()!.value == 25
+
+	timeline.set_current_time_override_for_style_sampling(TimeValue.milliseconds(80))
+	assert timeline.current_time()!.value == 80
+	timeline.set_current_time_override_for_style_sampling(none)
+	assert timeline.is_inactive()
+	timeline.clear_current_time_override_for_style_sampling()
+	assert timeline.current_time()!.value == 25
+}
+
+fn test_timeline_current_time_observation_is_stable_within_a_task() {
+	mut timeline := new_document_timeline(none, 25, 100)
+	timeline.set_document_active(true)
+	mut effect := KeyframeEffect.create()
+	effect.set_is_compositor_driven(true)
+	_ = Animation.create(effect.as_animation_effect(), timeline)
+
+	mut event_loop := html.main_thread_event_loop()
+	event_loop.process()
+	first := timeline.current_time_for_observation() or {
+		assert false
+		return
+	}
+	timeline.monotonic_timestamp_offset_ -= 1000
+	second := timeline.current_time_for_observation() or {
+		assert false
+		return
+	}
+	assert second == first
+
+	event_loop.process()
+	third := timeline.current_time_for_observation() or {
+		assert false
+		return
+	}
+	assert third.value > first.value + 900
+}
+
+fn test_timeline_time_update_updates_associated_animations() {
+	mut timeline := AnimationTimeline.new()
+	timeline.set_current_time(TimeValue.milliseconds(100))
+	timeline.monotonic_ = true
+	mut effect := AnimationEffect.new()
+	effect.update_timing(OptionalEffectTiming{
+		fill: .both
+		duration: IterationDuration(1000.0)
+	})!
+	mut animation := Animation.create(effect, timeline)
+	animation.play()!
+	assert animation.pending()
+
+	timeline.set_current_time(TimeValue.milliseconds(200))
+	assert !animation.pending()
+	assert animation.play_state() == .running
 }

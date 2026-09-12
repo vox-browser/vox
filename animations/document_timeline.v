@@ -29,10 +29,15 @@ pub fn (timeline &DocumentTimeline) duration() ?TimeValue {
 }
 
 pub fn (mut timeline DocumentTimeline) update_current_time(timestamp f64) {
-	timeline.set_current_time(TimeValue.milliseconds(timestamp - timeline.origin_time_))
-	if !timeline.monotonic_ && !timeline.is_inactive() {
-		timeline.monotonic_ = true
-	}
+	timeline.update_document_current_time(timestamp)
+}
+
+pub fn (timeline &DocumentTimeline) current_time_at_timestamp(timestamp f64) ?TimeValue {
+	return unsafe { &AnimationTimeline(timeline) }.current_time_at_timestamp(timestamp)
+}
+
+pub fn (_ &DocumentTimeline) can_sample_current_time_at_timestamp() bool {
+	return true
 }
 
 pub fn (timeline &DocumentTimeline) is_inactive() bool {
