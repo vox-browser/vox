@@ -152,8 +152,12 @@ pub fn (mut controller FetchController) abort(reason ?string) {
 	controller.serialized_abort_reason_ = reason or { 'AbortError' }
 }
 
-pub fn (controller &FetchController) deserialize_a_serialized_abort_reason() string {
+pub fn deserialize_serialized_abort_reason(controller &FetchController) string {
 	return controller.serialized_abort_reason_ or { 'AbortError' }
+}
+
+pub fn (controller &FetchController) deserialize_a_serialized_abort_reason() string {
+	return deserialize_serialized_abort_reason(controller)
 }
 
 pub fn (mut controller FetchController) terminate() {

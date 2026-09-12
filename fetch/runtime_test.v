@@ -17,6 +17,7 @@ fn resolve_fetched_data_promise() {
 fn test_fetch_controller_params_tasks_and_timing() {
 	mut controller := FetchController.create()
 	assert controller.state() == .ongoing
+	assert deserialize_serialized_abort_reason(controller) == 'AbortError'
 	id := controller.next_fetch_task_id()
 	controller.fetch_task_queued(id, 9)
 	assert controller.ongoing_task_count() == 1
@@ -24,6 +25,7 @@ fn test_fetch_controller_params_tasks_and_timing() {
 	assert controller.ongoing_task_count() == 0
 	controller.abort('stop')
 	assert controller.state() == .aborted
+	assert deserialize_serialized_abort_reason(controller) == 'stop'
 	assert controller.deserialize_a_serialized_abort_reason() == 'stop'
 	mut request := Request.create()
 	params := FetchParams.create(request, FetchTimingInfo.create())
