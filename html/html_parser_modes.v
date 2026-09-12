@@ -953,6 +953,19 @@ fn (mut p HTMLParser) handle_text(mut token HTMLToken) {
 		if element := current {
 			if token.tag_name == 'script' && element.local_name() == 'script' {
 				p.prepare_and_execute_parser_inserted_script(element)
+				if pending := p.document_.pending_parsing_blocking_script() {
+					if p.document_.has_a_style_sheet_that_is_blocking_scripts()
+						|| !html_script_element_is_ready_to_be_parser_executed(pending) {
+						p.parser_pause_flag = true
+						p.schedule_resume_check()
+						return
+					}
+					mut document := unsafe { &dom.Document(p.document_) }
+					the_script := document.take_pending_parsing_blocking_script()
+					p.increment_script_nesting_level()
+					html_script_element_parser_execute_ready_script(the_script)
+					p.decrement_script_nesting_level()
+				}
 			}
 		}
 		return

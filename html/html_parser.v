@@ -94,6 +94,9 @@ pub mut:
 	foster_parenting                   bool
 	stop_parsing                       bool
 	aborted                            bool
+	parser_pause_flag                  bool
+	resume_check_pending               bool
+	finish_loading_after_parse         bool
 	the_end_started                    bool
 	context_element                    ?&dom.Element
 	script_nesting_level               usize
@@ -131,6 +134,9 @@ pub fn HTMLParser.create_with_scripting_mode(document &dom.Document, input strin
 		scripting_mode: scripting_mode
 	}
 	parser.tokenizer.set_parser(parser)
+	if scripting_mode != .fragment {
+		doc.set_parser(make_dom_html_parser_handle(parser))
+	}
 	parser.stack_of_open_elements.set_on_element_popped(fn [parser] (element &dom.Element) {
 		mut mutable_parser := unsafe { &HTMLParser(parser) }
 		mutable_parser.handle_element_popped(element)
@@ -153,6 +159,10 @@ pub fn (p &HTMLParser) aborted() bool {
 
 pub fn (p &HTMLParser) stopped() bool {
 	return p.stop_parsing
+}
+
+pub fn (p &HTMLParser) paused() bool {
+	return p.parser_pause_flag
 }
 
 fn (mut p HTMLParser) stop_parsing() {
@@ -266,8 +276,11 @@ fn (mut p HTMLParser) prepare_and_execute_parser_inserted_script(element &dom.El
 	}
 	p.increment_script_nesting_level()
 	script.prepare_script(p.document_)
-	script.parser_execute_ready_script()
 	p.decrement_script_nesting_level()
+	if script.is_ready_to_be_parser_executed() {
+		mut document := unsafe { &dom.Document(p.document_) }
+		document.set_pending_parsing_blocking_script(unsafe { &dom.HTMLScriptElement(element) })
+	}
 }
 
 fn same_node(a &dom.Node, b &dom.Node) bool {
@@ -291,6 +304,9 @@ fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point S
 	p.stop_parsing = false
 	mut reached_end_of_file := false
 	for {
+		if p.parser_pause_flag {
+			break
+		}
 		mut token := p.tokenizer.next_token_impl(stop_at_insertion_point) or { break }
 
 		if p.next_line_feed_can_be_ignored {
@@ -324,6 +340,50 @@ fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point S
 		&& (!p.tokenizer.is_insertion_point_defined() || p.tokenizer.is_eof_inserted()) {
 		p.the_end_started = true
 		HTMLParser.the_end(p.document_, p)
+	}
+}
+
+pub fn (mut p HTMLParser) schedule_resume_check() {
+	if p.resume_check_pending || !p.parser_pause_flag {
+		return
+	}
+	p.resume_check_pending = true
+	parser_pointer := voidptr(p)
+	queue_a_task(.unspecified, main_thread_event_loop(), none, fn [parser_pointer] () {
+		perform_a_microtask_checkpoint()
+		mut mutable_parser := unsafe { &HTMLParser(parser_pointer) }
+		mutable_parser.resume_check_pending = false
+		mutable_parser.resume_after_parser_blocking_script()
+	})
+}
+
+fn (mut p HTMLParser) resume_after_parser_blocking_script() {
+	if !p.parser_pause_flag || p.aborted || p.stop_parsing {
+		return
+	}
+	pending := p.document_.pending_parsing_blocking_script() or { return }
+	if p.document_.has_a_style_sheet_that_is_blocking_scripts()
+		|| !html_script_element_is_ready_to_be_parser_executed(pending) {
+		return
+	}
+
+	mut document := unsafe { &dom.Document(p.document_) }
+	the_script := document.take_pending_parsing_blocking_script()
+	p.tokenizer.update_insertion_point()
+	assert p.script_nesting_level == 0
+	p.increment_script_nesting_level()
+	html_script_element_parser_execute_ready_script(the_script)
+	p.decrement_script_nesting_level()
+	assert p.script_nesting_level == 0
+	p.parser_pause_flag = false
+	p.tokenizer.undefine_insertion_point()
+	p.run()
+	if p.parser_pause_flag {
+		return
+	}
+	if p.finish_loading_after_parse {
+		p.finish_loading_after_parse = false
+		document.completely_finish_loading()
 	}
 }
 

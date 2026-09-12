@@ -121,6 +121,40 @@ fn test_parser_inserted_inline_script_is_prepared_and_executed() {
 	assert parser.current_script_nesting_level() == 0
 }
 
+fn test_parser_blocking_stylesheet_resumes_parser_asynchronously() {
+	unsafe {
+		executed_scripts.clear()
+	}
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	document.set_ready_to_run_scripts()
+	mut blocking_style := document.create_element('style') or { panic(err) }
+	document.script_blocking_style_sheet_set << blocking_style
+	mut parser := HTMLParser.create(document, '<script>blocked()</script><p>after</p>')
+	parser.scripting_mode = .normal
+	parser.set_script_hooks(none, script_test_execute)
+	parser.run()
+	assert parser.paused()
+	assert resource_test_element(unsafe { &dom.Node(document) }, 'p') == none
+	unsafe {
+		assert executed_scripts.len == 0
+	}
+
+	document.script_blocking_style_sheet_set.clear()
+	document.schedule_html_parser_end_check()
+	mut event_loop := main_thread_event_loop()
+	for _ in 0 .. 8 {
+		if !parser.paused() {
+			break
+		}
+		event_loop.process()
+	}
+	assert !parser.paused()
+	assert resource_test_element(unsafe { &dom.Node(document) }, 'p') != none
+	unsafe {
+		assert executed_scripts == ['classic:blocked():https://example.test/page']
+	}
+}
+
 fn test_script_dom_receiver_lifecycle_and_text_idl_algorithms() {
 	executed_scripts = []
 	mut document := parse_document('<body><script></script></body>')

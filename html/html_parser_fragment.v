@@ -64,6 +64,16 @@ fn dom_html_parser_insert_eof_callback(target voidptr) {
 	parser.tokenizer.insert_eof()
 }
 
+fn dom_html_parser_schedule_resume_check_callback(target voidptr) {
+	mut parser := unsafe { &HTMLParser(target) }
+	parser.schedule_resume_check()
+}
+
+fn dom_html_parser_finish_loading_after_parse_callback(target voidptr) {
+	mut parser := unsafe { &HTMLParser(target) }
+	parser.finish_loading_after_parse = true
+}
+
 fn make_dom_html_parser_handle(parser &HTMLParser) &dom.HTMLParser {
 	return &dom.HTMLParser{
 		target: voidptr(parser)
@@ -75,6 +85,8 @@ fn make_dom_html_parser_handle(parser &HTMLParser) &dom.HTMLParser {
 		update_insertion_point_callback: dom_html_parser_update_insertion_point_callback
 		insert_input_callback: dom_html_parser_insert_input_callback
 		insert_eof_callback: dom_html_parser_insert_eof_callback
+		schedule_resume_check_callback: dom_html_parser_schedule_resume_check_callback
+		finish_loading_after_parse_callback: dom_html_parser_finish_loading_after_parse_callback
 	}
 }
 

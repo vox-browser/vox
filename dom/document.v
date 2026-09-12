@@ -1934,6 +1934,8 @@ pub:
 	update_insertion_point_callback     HTMLParserVoidCallback = unsafe { nil }
 	insert_input_callback               HTMLParserFeedCallback = unsafe { nil }
 	insert_eof_callback                 HTMLParserVoidCallback = unsafe { nil }
+	schedule_resume_check_callback      HTMLParserVoidCallback = unsafe { nil }
+	finish_loading_after_parse_callback HTMLParserVoidCallback = unsafe { nil }
 }
 
 @[heap]
@@ -3134,6 +3136,12 @@ pub fn (p &HTMLParser) insert_input_at_insertion_point(input string) {
 pub fn (p &HTMLParser) insert_eof() {
 	if p.insert_eof_callback != unsafe { nil } {
 		p.insert_eof_callback(p.target)
+	}
+}
+
+pub fn (p &HTMLParser) finish_loading_after_parse() {
+	if p.finish_loading_after_parse_callback != unsafe { nil } {
+		p.finish_loading_after_parse_callback(p.target)
 	}
 }
 
@@ -7085,12 +7093,17 @@ pub fn (mut d Document) close() ! {
 
 	// 5. If there is a pending parsing-blocking script, then return.
 	if d.pending_parsing_blocking_script != unsafe { nil } {
+		d.parser.finish_loading_after_parse()
 		return
 	}
 
 	// 6. Run the tokenizer, processing resulting tokens as they are emitted, and stopping when the tokenizer reaches
-	// the explicit "EOF" character or spins the event loop.
+	// the explicit "EOF" character or pauses for a parser-blocking script.
 	d.parser.run()
+	if d.pending_parsing_blocking_script != unsafe { nil } {
+		d.parser.finish_loading_after_parse()
+		return
+	}
 
 	// AD-HOC: This ensures that a load event is fired if the node navigable's container is an iframe.
 	d.completely_finish_loading()
@@ -7304,6 +7317,7 @@ pub fn (mut d Document) completely_finish_loading() {
 	} else {
 		// fire load event at container
 	}
+	container.document().schedule_html_parser_end_check()
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#completely-loaded
@@ -7527,11 +7541,13 @@ pub fn (d &Document) html_parser_end_state() voidptr {
 }
 
 pub fn (d &Document) schedule_html_parser_end_check() {
-	if d.html_parser_end_state_target == unsafe { nil }
-		|| d.html_parser_end_state_schedule_callback == unsafe { nil } {
-		return
+	if d.html_parser_end_state_target != unsafe { nil }
+		&& d.html_parser_end_state_schedule_callback != unsafe { nil } {
+		d.html_parser_end_state_schedule_callback(d.html_parser_end_state_target)
 	}
-	d.html_parser_end_state_schedule_callback(d.html_parser_end_state_target)
+	if d.parser != unsafe { nil } && d.parser.schedule_resume_check_callback != unsafe { nil } {
+		d.parser.schedule_resume_check_callback(d.parser.target)
+	}
 }
 
 pub fn (mut d Document) detach_parser() {
