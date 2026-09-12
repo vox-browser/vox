@@ -10,14 +10,14 @@ pub enum CryptoKeyHandleKind {
 	json_web_key
 }
 
-// Structured serialization copies these four internal slots. Ladybird leaves
-// [[handle]] out pending a backend-specific serialization strategy.
 pub struct SerializedCryptoKey {
 pub:
-	type_       KeyType
-	extractable bool
-	algorithm   CryptoKeyAlgorithm
-	usages      []KeyUsage
+	type_          KeyType
+	extractable    bool
+	algorithm      CryptoKeyAlgorithm
+	algorithm_data []u8
+	usages         []KeyUsage
+	handle         []u8
 }
 
 @[heap]
@@ -28,18 +28,31 @@ pub mut:
 	algorithm   CryptoKeyAlgorithm
 	usages      []KeyUsage
 mut:
-	handle_     []u8
-	jwk_handle_ ?JsonWebKey
-	destroyed_  bool
+	handle_          []u8
+	jwk_handle_      ?JsonWebKey
+	internal_handle_ CryptoKeyInternalHandle = ByteBufferKeyHandle{}
+	destroyed_       bool
 }
 
 pub fn CryptoKey.create(type_ KeyType, extractable bool, algorithm CryptoKeyAlgorithm, usages []KeyUsage, handle []u8) &CryptoKey {
 	return &CryptoKey{
-		type_:       type_
+		type_: type_
 		extractable: extractable
-		algorithm:   clone_key_algorithm(algorithm)
-		usages:      usages.clone()
-		handle_:     handle.clone()
+		algorithm: clone_key_algorithm(algorithm)
+		usages: usages.clone()
+		handle_: handle.clone()
+		internal_handle_: ByteBufferKeyHandle{ bytes: handle.clone() }
+	}
+}
+
+pub fn CryptoKey.create_with_internal_handle(type_ KeyType, extractable bool, algorithm CryptoKeyAlgorithm, usages []KeyUsage, handle CryptoKeyInternalHandle) &CryptoKey {
+	return &CryptoKey{
+		type_: type_
+		extractable: extractable
+		algorithm: clone_key_algorithm(algorithm)
+		usages: usages.clone()
+		handle_: raw_bytes_for_internal_handle(handle)
+		internal_handle_: clone_internal_handle(handle)
 	}
 }
 
@@ -144,6 +157,10 @@ pub fn (key &CryptoKey) handle_kind() CryptoKeyHandleKind {
 	return if key.jwk_handle_ != none { .json_web_key } else { .bytes }
 }
 
+pub fn (key &CryptoKey) internal_handle() CryptoKeyInternalHandle {
+	return key.internal_handle_
+}
+
 pub fn (key &CryptoKey) algorithm_name() string {
 	return key.algorithm.name()
 }
@@ -158,10 +175,12 @@ pub fn (key &CryptoKey) permits(usage KeyUsage) bool {
 
 pub fn (key &CryptoKey) serialization_steps() SerializedCryptoKey {
 	return SerializedCryptoKey{
-		type_:       key.type_
+		type_: key.type_
 		extractable: key.extractable
-		algorithm:   clone_key_algorithm(key.algorithm)
-		usages:      key.usages.clone()
+		algorithm: clone_key_algorithm(key.algorithm)
+		algorithm_data: serialize_algorithm(key.algorithm)
+		usages: key.usages.clone()
+		handle: serialize_handle(key.internal_handle_)
 	}
 }
 
@@ -169,22 +188,31 @@ pub fn (key &CryptoKey) serialize() SerializedCryptoKey {
 	return key.serialization_steps()
 }
 
-pub fn CryptoKey.deserialize(serialized SerializedCryptoKey) &CryptoKey {
-	// CryptoKey.cpp likewise creates an empty handle because step 5 remains a
-	// FIXME upstream.
-	return CryptoKey.create(serialized.type_, serialized.extractable, serialized.algorithm,
-		serialized.usages, []u8{})
+pub fn CryptoKey.deserialize(serialized SerializedCryptoKey) !&CryptoKey {
+	mut key := CryptoKey.create_empty()
+	key.deserialization_steps(serialized)!
+	return key
 }
 
-pub fn (mut key CryptoKey) deserialization_steps(serialized SerializedCryptoKey) {
+pub fn (mut key CryptoKey) deserialization_steps(serialized SerializedCryptoKey) ! {
 	key.type_ = serialized.type_
 	key.extractable = serialized.extractable
-	key.algorithm = clone_key_algorithm(serialized.algorithm)
+	key.algorithm = if serialized.algorithm_data.len > 0 {
+		deserialize_algorithm(serialized.algorithm_data)!
+	} else {
+		clone_key_algorithm(serialized.algorithm)
+	}
 	key.usages = serialized.usages.clone()
 	for mut byte in key.handle_ {
 		byte = 0
 	}
-	key.handle_.clear()
+	secure_zero_internal_handle(mut key.internal_handle_)
+	key.internal_handle_ = if serialized.handle.len > 0 {
+		deserialize_handle(serialized.handle)!
+	} else {
+		CryptoKeyInternalHandle(ByteBufferKeyHandle{})
+	}
+	key.handle_ = raw_bytes_for_internal_handle(key.internal_handle_)
 	key.jwk_handle_ = none
 	key.destroyed_ = false
 }
@@ -194,7 +222,8 @@ pub fn (key &CryptoKey) clone_key() &CryptoKey {
 		return CryptoKey.create_from_json_web_key(key.type_, key.extractable, key.algorithm,
 			key.usages, handle)
 	}
-	return CryptoKey.create(key.type_, key.extractable, key.algorithm, key.usages, key.handle_)
+	return CryptoKey.create_with_internal_handle(key.type_, key.extractable, key.algorithm, key.usages,
+		key.internal_handle_)
 }
 
 // V does not expose a per-object finalizer. Embedders call destroy when a key
@@ -207,6 +236,8 @@ pub fn (mut key CryptoKey) destroy() {
 		byte = 0
 	}
 	key.handle_.clear()
+	secure_zero_internal_handle(mut key.internal_handle_)
+	key.internal_handle_ = ByteBufferKeyHandle{}
 	key.jwk_handle_ = none
 	key.destroyed_ = true
 }

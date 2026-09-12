@@ -270,7 +270,7 @@ fn test_crypto_key_slots_usage_order_clone_and_pair() {
 	assert pair.private_key_value() == private_key
 }
 
-fn test_crypto_key_structured_serialization_omits_handle_and_destroy_wipes() {
+fn test_crypto_key_structured_serialization_preserves_handle_and_destroy_wipes() {
 	mut key := CryptoKey.create(.private_key, false, RsaKeyAlgorithm{
 		name:            'RSA-PSS'
 		modulus_length:  2048
@@ -280,10 +280,10 @@ fn test_crypto_key_structured_serialization_omits_handle_and_destroy_wipes() {
 	assert serialized.type_ == .private_key
 	assert !serialized.extractable
 	assert serialized.usages == [.sign, .sign]
-	restored := CryptoKey.deserialize(serialized)
+	restored := CryptoKey.deserialize(serialized)!
 	assert restored.algorithm_name() == 'RSA-PSS'
 	assert restored.internal_usages() == [.sign, .sign]
-	assert restored.handle().len == 0
+	assert restored.handle() == [u8(0xde), 0xad, 0xbe, 0xef]
 
 	key.destroy()
 	assert key.destroyed()
@@ -305,5 +305,6 @@ fn test_crypto_key_json_handle_is_cloned_and_not_structured_serialized() {
 	handle := key.json_web_key_handle() or { panic('missing JWK handle') }
 	assert handle.key_ops? == ['sign']
 	assert key.handle_kind() == .json_web_key
-	assert CryptoKey.deserialize(key.serialize()).json_web_key_handle() == none
+	restored := CryptoKey.deserialize(key.serialize())!
+	assert restored.json_web_key_handle() == none
 }
