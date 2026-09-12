@@ -1370,6 +1370,8 @@ pub mut:
 	style_uses_tree_counting_function                                               bool
 	style_uses_if_css_function                                                      bool
 	style_uses_inherit_css_function                                                 bool
+	style_depends_on_size_container_query_                                          bool
+	is_size_query_container_                                                        bool
 	child_style_uses_tree_counting_function                                         bool
 	affected_by_has_pseudo_class_in_subject_position                                bool
 	affected_by_has_pseudo_class_in_non_subject_position                            bool
@@ -2318,6 +2320,7 @@ pub fn (mut e Element) reset_style_dependency_flags() {
 	e.style_uses_tree_counting_function = false
 	e.style_uses_if_css_function = false
 	e.style_uses_inherit_css_function = false
+	e.style_depends_on_size_container_query_ = false
 }
 
 pub fn (mut e Element) set_style_uses_attr_css_function() {
@@ -2334,6 +2337,22 @@ pub fn (mut e Element) set_style_uses_if_css_function() {
 
 pub fn (mut e Element) set_style_uses_inherit_css_function() {
 	e.style_uses_inherit_css_function = true
+}
+
+pub fn (e &Element) style_depends_on_size_container_query() bool {
+	return e.style_depends_on_size_container_query_
+}
+
+pub fn (mut e Element) set_style_depends_on_size_container_query() {
+	e.style_depends_on_size_container_query_ = true
+}
+
+pub fn (e &Element) is_size_query_container() bool {
+	return e.is_size_query_container_
+}
+
+pub fn (mut e Element) set_is_size_query_container() {
+	e.is_size_query_container_ = true
 }
 
 pub fn (e &Element) style_uses_attr_css_function() bool {

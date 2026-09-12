@@ -35,6 +35,11 @@ fn length_resolution_context_from_layout_node(layout_node &dom.LayoutNode) ?Leng
 		context.font_metrics = computed_interpolation_font_metrics_for_size(computed.font_size())
 		context.font_metrics.line_height = computed.line_height()
 		context.font_metrics_depend_on_viewport_metrics = computed.font_metrics_depend_on_viewport_metrics()
+		context.subject_inline_axis_is_horizontal = inline_axis_is_horizontal(computed.writing_mode())
+	}
+	if subject := dom_node.as_element() {
+		context.subject_element = subject
+		context.query_container_cache = &LengthQueryContainerCache{}
 	}
 	if root := dom_node.document().document_element() {
 		root_abstract := dom.AbstractElement.new(root, none)
@@ -65,12 +70,15 @@ fn document_from_layout_node(layout_node &dom.LayoutNode) ?&dom.Document {
 
 pub fn LengthResolutionContext.for_element(element &dom.AbstractElement) LengthResolutionContext {
 	mut context := length_resolution_context_from_document(element.document())
+	context.subject_element = element.element()
+	context.query_container_cache = &LengthQueryContainerCache{}
 	if dom_computed := element.computed_properties() {
 		if computed := computed_properties_from_dom(dom_computed) {
 			context.font_metrics =
 				computed_interpolation_font_metrics_for_size(computed.font_size())
 			context.font_metrics.line_height = computed.line_height()
 			context.font_metrics_depend_on_viewport_metrics = computed.font_metrics_depend_on_viewport_metrics()
+			context.subject_inline_axis_is_horizontal = inline_axis_is_horizontal(computed.writing_mode())
 		}
 	}
 	if root := element.document().document_element() {
@@ -109,13 +117,7 @@ pub fn (length Length) to_px_slow_case_for_layout_node(layout_node &dom.LayoutNo
 	context := length_resolution_context_from_layout_node(layout_node) or {
 		length_resolution_context_from_document(document)
 	}
-	if length.is_font_relative() {
-		return length.font_relative_length_to_px(context.font_metrics, context.root_font_metrics)
-	}
-	if length.is_viewport_relative() {
-		return length.viewport_relative_length_to_px(context.viewport_rect)
-	}
-	panic('VERIFY_NOT_REACHED')
+	return length.to_px(context)
 }
 
 // StyleValue-backed equivalents of Angle::from_style_value(),

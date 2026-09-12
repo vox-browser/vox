@@ -1465,6 +1465,7 @@ pub mut:
 	root_font_size_px_   f64 = 16.0
 	root_line_height_px_ f64 = 19.2
 	root_font_metrics_depend_on_viewport_metrics_ bool
+	subject_element_ ?&dom.Element
 
 	// Layout::NodeWithStyle resolves these values once in apply_style(). Keeping
 	// the translated ComputedValues slots on the retained object avoids decoding
@@ -1705,6 +1706,7 @@ pub fn (c &ComputedProperties) clone_for_anonymous_block() &ComputedProperties {
 	clone.root_font_size_px_ = c.root_font_size_px_
 	clone.root_line_height_px_ = c.root_line_height_px_
 	clone.root_font_metrics_depend_on_viewport_metrics_ = c.root_font_metrics_depend_on_viewport_metrics_
+	clone.subject_element_ = c.subject_element_
 	ensure_computed_interpolation_inherited_cache()
 	for index, inherited in computed_interpolation_inherited_cache {
 		if inherited == 0 {
@@ -10172,6 +10174,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	properties.root_font_size_px_ = s.root_element_font_metrics.font_size.to_double()
 	properties.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
 	properties.root_font_metrics_depend_on_viewport_metrics_ = s.root_element_font_metrics_depend_on_viewport_metrics
+	properties.subject_element_ = abstract_element.element()
 	mut recascaded_font_size_depends_on_viewport_metrics := false
 	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut cascaded_properties,
 		&recascaded_font_size_depends_on_viewport_metrics)
@@ -11424,7 +11427,8 @@ pub fn StyleComputer.compute_font_size(absolutized_value &dom.StyleValue, comput
 	}
 	if parsed_value is LengthStyleValue {
 		length := parsed_value.length()
-		if length.is_absolute() || length.is_font_relative() || length.is_viewport_relative() {
+		if length.is_absolute() || length.is_font_relative() || length.is_container_relative()
+			|| length.is_viewport_relative() {
 			font_size := length.to_px(context)
 			return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_css_px(font_size))))
 		}
@@ -13577,6 +13581,17 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 					} else { false }
 				} else { false }
 				root_font_metrics_depend_on_viewport_metrics: s.root_element_font_metrics_depend_on_viewport_metrics
+				subject_inline_axis_is_horizontal: computed_properties.writing_mode() == .horizontal_tb
+				subject_element: if current := abstract_element {
+					?&dom.Element(current.element())
+				} else {
+					?&dom.Element(none)
+				}
+				query_container_cache: if _ := abstract_element {
+					?&LengthQueryContainerCache(&LengthQueryContainerCache{})
+				} else {
+					?&LengthQueryContainerCache(none)
+				}
 			}
 			abstract_element: abstract_element
 		}
@@ -13648,6 +13663,17 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 				}
 			} else {
 				s.root_element_font_metrics_depend_on_viewport_metrics
+			}
+			subject_inline_axis_is_horizontal: computed_properties.writing_mode() == .horizontal_tb
+			subject_element: if current := abstract_element {
+				?&dom.Element(current.element())
+			} else {
+				?&dom.Element(none)
+			}
+			query_container_cache: if _ := abstract_element {
+				?&LengthQueryContainerCache(&LengthQueryContainerCache{})
+			} else {
+				?&LengthQueryContainerCache(none)
 			}
 		}
 		abstract_element: abstract_element

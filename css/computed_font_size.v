@@ -21,7 +21,8 @@ fn resolve_font_size_px(specified string, parent_px f64, root_px f64, viewport d
 	}
 	if value is LengthStyleValue {
 		length := value.length()
-		if length.is_absolute() || length.is_font_relative() || length.is_viewport_relative() {
+		if length.is_absolute() || length.is_font_relative() || length.is_container_relative()
+			|| length.is_viewport_relative() {
 			return length.to_px(context).to_double()
 		}
 	}

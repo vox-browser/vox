@@ -145,6 +145,13 @@ pub fn LengthResolutionContext.for_computed_properties(values &ComputedPropertie
 		root_font_metrics: root_font_metrics
 		font_metrics_depend_on_viewport_metrics: values.font_metrics_depend_on_viewport_metrics()
 		root_font_metrics_depend_on_viewport_metrics: values.root_font_metrics_depend_on_viewport_metrics_
+		subject_inline_axis_is_horizontal: values.writing_mode() == .horizontal_tb
+		subject_element: values.subject_element_
+		query_container_cache: if _ := values.subject_element_ {
+			?&LengthQueryContainerCache(&LengthQueryContainerCache{})
+		} else {
+			?&LengthQueryContainerCache(none)
+		}
 	}
 }
 
@@ -893,6 +900,9 @@ pub fn (values &ComputedValues) length_percentage_to_px(property_id PropertyID, 
 		}
 		if length.is_viewport_relative() {
 			return length.viewport_relative_length_to_px(values.viewport_rect_).to_double()
+		}
+		if length.is_container_relative() {
+			return length.to_px(ComputedProperties(*values).length_resolution_context()).to_double()
 		}
 	}
 	context := ComputedProperties(*values).length_resolution_context()

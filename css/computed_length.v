@@ -29,7 +29,8 @@ pub fn computed_length_px(element &dom.Element, property_id PropertyID, author_r
 	}
 	length := value.as_length().length()
 	context := calc_resolution_context(element, none, author_rules).length_resolution_context
-	if length.is_absolute() || length.is_font_relative() || length.is_viewport_relative() {
+	if length.is_absolute() || length.is_font_relative() || length.is_container_relative()
+		|| length.is_viewport_relative() {
 		return length.to_px(context).to_double()
 	}
 	return none
@@ -141,6 +142,11 @@ pub fn (c &ComputedProperties) length_resolution_context() LengthResolutionConte
 	context.root_font_metrics = computed_interpolation_font_metrics_for_size(root_font_px)
 	context.root_font_metrics.line_height = CSSPixels.nearest_value_for(c.root_line_height_px_)
 	context.root_font_metrics_depend_on_viewport_metrics = c.root_font_metrics_depend_on_viewport_metrics_
+	if subject := c.subject_element_ {
+		context.subject_element = subject
+		context.subject_inline_axis_is_horizontal = c.writing_mode() == .horizontal_tb
+		context.query_container_cache = &LengthQueryContainerCache{}
+	}
 	return context
 }
 
@@ -219,6 +225,14 @@ fn calc_resolution_context(element &dom.Element, percentage_basis_px ?f64, autho
 	length_context.viewport_rect = css_pixel_rect_from_dom_rect(element.document().viewport_rect())
 	length_context.font_metrics = font_metrics
 	length_context.root_font_metrics = root_font_metrics
+	length_context.subject_element = element
+	length_context.query_container_cache = &LengthQueryContainerCache{}
+	abstract_element := dom.AbstractElement.new(element, none)
+	if dom_computed := abstract_element.computed_properties() {
+		if computed := computed_properties_from_dom(dom_computed) {
+			length_context.subject_inline_axis_is_horizontal = computed.writing_mode() == .horizontal_tb
+		}
+	}
 	mut context := CalculationResolutionContext{
 		length_resolution_context: length_context
 	}

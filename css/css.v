@@ -744,6 +744,12 @@ pub enum LengthUnit {
 	cap
 	ch
 	cm
+	cqb
+	cqh
+	cqi
+	cqmax
+	cqmin
+	cqw
 	dvb
 	dvh
 	dvi
@@ -829,6 +835,12 @@ pub fn length_unit_name(unit LengthUnit) string {
 		.cap { 'cap' }
 		.ch { 'ch' }
 		.cm { 'cm' }
+		.cqb { 'cqb' }
+		.cqh { 'cqh' }
+		.cqi { 'cqi' }
+		.cqmax { 'cqmax' }
+		.cqmin { 'cqmin' }
+		.cqw { 'cqw' }
 		.dvb { 'dvb' }
 		.dvh { 'dvh' }
 		.dvi { 'dvi' }
@@ -931,6 +943,10 @@ pub fn is_font_relative_length_unit(unit LengthUnit) bool {
 	return unit in [.cap, .ch, .em, .ex, .ic, .lh, .rcap, .rch, .rem, .rex, .ric, .rlh]
 }
 
+pub fn is_container_relative_length_unit(unit LengthUnit) bool {
+	return unit in [.cqb, .cqh, .cqi, .cqmax, .cqmin, .cqw]
+}
+
 pub fn is_viewport_relative_length_unit(unit LengthUnit) bool {
 	return unit in [
 		.dvb,
@@ -961,7 +977,8 @@ pub fn is_viewport_relative_length_unit(unit LengthUnit) bool {
 }
 
 pub fn is_relative_length_unit(unit LengthUnit) bool {
-	return is_font_relative_length_unit(unit) || is_viewport_relative_length_unit(unit)
+	return is_font_relative_length_unit(unit) || is_container_relative_length_unit(unit)
+		|| is_viewport_relative_length_unit(unit)
 }
 
 pub fn angle_units_are_compatible(a AngleUnit, b AngleUnit) bool {
@@ -1791,6 +1808,18 @@ pub mut:
 	font_metrics_depend_on_viewport_metrics      bool
 	root_font_metrics_depend_on_viewport_metrics bool
 	did_resolve_viewport_relative_length         ?&bool
+	subject_inline_axis_is_horizontal            bool = true
+	subject_element                              ?&dom.Element
+	query_container_cache                        ?&LengthQueryContainerCache
+}
+
+@[heap]
+pub struct LengthQueryContainerCache {
+pub mut:
+	width_was_computed  bool
+	height_was_computed bool
+	width_container     ?&dom.Element
+	height_container    ?&dom.Element
 }
 
 pub fn LengthResolutionContext.default() LengthResolutionContext {
@@ -1884,6 +1913,10 @@ pub fn (l Length) is_viewport_relative() bool {
 	return is_viewport_relative_length_unit(l.unit_)
 }
 
+pub fn (l Length) is_container_relative() bool {
+	return is_container_relative_length_unit(l.unit_)
+}
+
 pub fn (l Length) is_relative() bool {
 	return is_relative_length_unit(l.unit_)
 }
@@ -1916,6 +1949,9 @@ pub fn (l Length) to_px_without_rounding(context LengthResolutionContext) f64 {
 		context.record_viewport_relative_length_resolution()
 		return l.viewport_relative_length_to_px_without_rounding(context.viewport_rect)
 	}
+	if l.is_container_relative() {
+		return l.container_relative_length_to_px_without_rounding(context)
+	}
 	panic('VERIFY_NOT_REACHED')
 }
 
@@ -1928,6 +1964,13 @@ pub fn (l Length) to_px_with_values(viewport_rect CSSPixelRect, font_metrics Len
 	}
 	if l.is_viewport_relative() {
 		return l.viewport_relative_length_to_px(viewport_rect)
+	}
+	if l.is_container_relative() {
+		return CSSPixels.nearest_value_for(l.container_relative_length_to_px_without_rounding(LengthResolutionContext{
+			viewport_rect: viewport_rect
+			font_metrics: font_metrics
+			root_font_metrics: root_font_metrics
+		}))
 	}
 	panic('VERIFY_NOT_REACHED')
 }
@@ -2021,6 +2064,147 @@ pub fn (l Length) viewport_relative_length_to_px_without_rounding(viewport_rect 
 		else {
 			panic('VERIFY_NOT_REACHED')
 		}
+	}
+}
+
+enum ContainerRelativeAxis {
+	width
+	height
+}
+
+fn inline_axis_is_horizontal(writing_mode WritingMode) bool {
+	return writing_mode == .horizontal_tb
+}
+
+fn logical_axis_to_physical_axis(inline_axis_horizontal bool, logical_axis ContainerRelativeAxis) ContainerRelativeAxis {
+	if inline_axis_horizontal {
+		return logical_axis
+	}
+	return if logical_axis == .width {
+		ContainerRelativeAxis.height
+	} else {
+		ContainerRelativeAxis.width
+	}
+}
+
+fn query_container_is_eligible_for_axis(container &dom.Element, axis ContainerRelativeAxis) bool {
+	dom_style := container.el_computed_properties() or { return false }
+	style := computed_properties_from_dom(dom_style) or { return false }
+	container_type := style.container_type()
+	container_inline_axis_is_horizontal := inline_axis_is_horizontal(style.writing_mode())
+	if axis == .width {
+		if container_inline_axis_is_horizontal {
+			return container_type.is_size_container || container_type.is_inline_size_container
+		}
+		return container_type.is_size_container
+	}
+	if container_inline_axis_is_horizontal {
+		return container_type.is_size_container
+	}
+	return container_type.is_size_container || container_type.is_inline_size_container
+}
+
+fn nearest_query_container_for_axis(subject &dom.Element, axis ContainerRelativeAxis) ?&dom.Element {
+	mut candidate := subject.as_node().flat_tree_parent_element()
+	for candidate != none {
+		container := candidate or { break }
+		if query_container_is_eligible_for_axis(container, axis) {
+			return container
+		}
+		candidate = container.as_node().flat_tree_parent_element()
+	}
+	return none
+}
+
+fn cached_query_container_for_axis(context LengthResolutionContext, axis ContainerRelativeAxis) (?&dom.Element, bool) {
+	cache := context.query_container_cache or { return ?&dom.Element(none), false }
+	if axis == .width {
+		return cache.width_container, cache.width_was_computed
+	}
+	return cache.height_container, cache.height_was_computed
+}
+
+fn get_or_compute_query_container_for_axis(context LengthResolutionContext, axis ContainerRelativeAxis) ?&dom.Element {
+	cached, was_computed := cached_query_container_for_axis(context, axis)
+	if was_computed {
+		return cached
+	}
+	computed := if subject := context.subject_element {
+		nearest_query_container_for_axis(subject, axis)
+	} else {
+		?&dom.Element(none)
+	}
+	if cache := context.query_container_cache {
+		mut mutable_cache := unsafe { &LengthQueryContainerCache(cache) }
+		if axis == .width {
+			mutable_cache.width_container = computed
+			mutable_cache.width_was_computed = true
+		} else {
+			mutable_cache.height_container = computed
+			mutable_cache.height_was_computed = true
+		}
+	}
+	return computed
+}
+
+fn container_relative_basis_length(context LengthResolutionContext, physical_axis ContainerRelativeAxis) f64 {
+	if context.subject_element == none {
+		context.record_viewport_relative_length_resolution()
+		return if physical_axis == .width {
+			context.viewport_rect.width_value()
+		} else {
+			context.viewport_rect.height_value()
+		}
+	}
+	subject := context.subject_element or { return 0 }
+	mut mutable_subject := unsafe { &dom.Element(subject) }
+	mutable_subject.set_style_depends_on_size_container_query()
+	query_container := get_or_compute_query_container_for_axis(context, physical_axis) or {
+		context.record_viewport_relative_length_resolution()
+		return if physical_axis == .width {
+			context.viewport_rect.width_value()
+		} else {
+			context.viewport_rect.height_value()
+		}
+	}
+	mut mutable_container := unsafe { &dom.Element(query_container) }
+	mutable_container.set_is_size_query_container()
+	layout_node := query_container.as_node().unsafe_layout_node() or {
+		mut document := unsafe { &dom.Document(subject.document()) }
+		if !document.layout_is_up_to_date() || document.is_running_update_layout() {
+			document.set_needs_container_query_evaluation_after_layout(query_container)
+		}
+		return 0
+	}
+	if !layout_node.has_geometry_ {
+		mut document := unsafe { &dom.Document(subject.document()) }
+		if !document.layout_is_up_to_date() || document.is_running_update_layout() {
+			document.set_needs_container_query_evaluation_after_layout(query_container)
+		}
+		return 0
+	}
+	return if physical_axis == .width {
+		layout_node.content_width_
+	} else {
+		layout_node.content_height_
+	}
+}
+
+pub fn (l Length) container_relative_length_to_px_without_rounding(context LengthResolutionContext) f64 {
+	physical_width := logical_axis_to_physical_axis(context.subject_inline_axis_is_horizontal, .width)
+	physical_height := logical_axis_to_physical_axis(context.subject_inline_axis_is_horizontal, .height)
+	return match l.unit_ {
+		.cqw { container_relative_basis_length(context, .width) * l.value_ / 100.0 }
+		.cqh { container_relative_basis_length(context, .height) * l.value_ / 100.0 }
+		.cqi { container_relative_basis_length(context, physical_width) * l.value_ / 100.0 }
+		.cqb { container_relative_basis_length(context, physical_height) * l.value_ / 100.0 }
+		.cqmin {
+			math.min(container_relative_basis_length(context, physical_width), container_relative_basis_length(context, physical_height)) * l.value_ / 100.0
+		}
+		.cqmax {
+			math.max(container_relative_basis_length(context, physical_width), container_relative_basis_length(context, physical_height)) * l.value_ / 100.0
+		}
+		else { panic('VERIFY_NOT_REACHED') }
 	}
 }
 

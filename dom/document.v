@@ -4095,7 +4095,8 @@ pub mut:
 	author_style_sheets_handle                     voidptr = unsafe { nil }
 	needs_full_style_update                        bool
 	needs_full_layout_tree_update                  bool
-	is_running_update_layout                       bool
+	is_running_update_layout_                      bool
+	query_containers_needing_container_query_evaluation_after_layout []&Element
 	needs_animated_style_update                    bool
 	needs_accumulated_visual_contexts_update       bool
 	needs_invalidation_of_elements_affected_by_has bool
@@ -5767,10 +5768,10 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 
 	// Upstream treats re-entering layout as an invariant violation. `defer`
 	// mirrors its ScopeGuard, including every early-return path below.
-	assert !d.is_running_update_layout
-	d.is_running_update_layout = true
+	assert !d.is_running_update_layout_
+	d.is_running_update_layout_ = true
 	defer {
-		d.is_running_update_layout = false
+		d.is_running_update_layout_ = false
 	}
 
 	d.update_style()
@@ -5944,6 +5945,28 @@ pub fn (d &Document) layout_is_up_to_date() bool {
 		}
 	}
 	return !document_node.needs_layout_tree_update_() && !document_node.child_needs_layout_tree_update_() && !d.needs_full_layout_tree_update && d.svg_roots_needing_relayout.len == 0
+}
+
+pub fn (d &Document) is_running_update_layout() bool {
+	return d.is_running_update_layout_
+}
+
+pub fn (mut d Document) set_needs_container_query_evaluation_after_layout(query_container &Element) {
+	for existing in d.query_containers_needing_container_query_evaluation_after_layout {
+		if voidptr(existing) == voidptr(query_container) {
+			return
+		}
+	}
+	d.query_containers_needing_container_query_evaluation_after_layout << query_container
+}
+
+pub fn (d &Document) needs_container_query_evaluation_after_layout(query_container &Element) bool {
+	for existing in d.query_containers_needing_container_query_evaluation_after_layout {
+		if voidptr(existing) == voidptr(query_container) {
+			return true
+		}
+	}
+	return false
 }
 
 pub fn (mut d Document) invalidate_layout_tree(reason InvalidateLayoutTreeReason) {

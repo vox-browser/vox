@@ -403,6 +403,12 @@ pub fn string_to_length_unit(unit string) ?LengthUnit {
 		'cap' { LengthUnit.cap }
 		'ch' { LengthUnit.ch }
 		'cm' { LengthUnit.cm }
+		'cqb' { LengthUnit.cqb }
+		'cqh' { LengthUnit.cqh }
+		'cqi' { LengthUnit.cqi }
+		'cqmax' { LengthUnit.cqmax }
+		'cqmin' { LengthUnit.cqmin }
+		'cqw' { LengthUnit.cqw }
 		'dvb' { LengthUnit.dvb }
 		'dvh' { LengthUnit.dvh }
 		'dvi' { LengthUnit.dvi }

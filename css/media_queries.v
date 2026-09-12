@@ -1560,7 +1560,8 @@ fn media_feature_length_resolution_context(document ?&dom.Document) LengthResolu
 }
 
 fn media_feature_length_to_px(length Length, context LengthResolutionContext) ?f64 {
-	if !length.is_absolute() && !length.is_font_relative() && !length.is_viewport_relative() {
+	if !length.is_absolute() && !length.is_font_relative() && !length.is_container_relative()
+		&& !length.is_viewport_relative() {
 		return none
 	}
 	return length.to_px_without_rounding(context)
