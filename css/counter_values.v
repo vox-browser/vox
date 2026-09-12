@@ -1329,6 +1329,14 @@ pub fn (mut counters_set CountersSet) increment_a_counter(name string, element C
 	counters_set.counters_[counters_set.counters_.len - 1].value = saturating_add_counter_value(current_value, amount)
 }
 
+pub fn (mut counters_set CountersSet) counter_value_for_use(name string, element CounterOriginatingElement) CounterValue {
+	if existing_index := counters_set.last_counter_with_name_index(name) {
+		return counters_set.counters_[existing_index].value or { CounterValue(0) }
+	}
+	counters_set.instantiate_a_counter(name, element, false, 0)
+	return CounterValue(0)
+}
+
 pub fn (counters_set CountersSet) last_counter_with_name_index(name string) ?int {
 	for i := counters_set.counters_.len - 1; i >= 0; i-- {
 		if counters_set.counters_[i].name == name {
@@ -1367,6 +1375,125 @@ pub fn (counters_set CountersSet) counters() []Counter {
 
 pub fn (counters_set CountersSet) is_empty() bool {
 	return counters_set.counters_.len == 0
+}
+
+pub fn list_item_counter_name() string {
+	return 'list-item'
+}
+
+fn style_has_implicit_list_item_increment(style &ComputedProperties) bool {
+	if !style.display().is_list_item() {
+		return false
+	}
+	for counter in unsafe { &ComputedValues(style) }.counter_increment() {
+		if counter.name == list_item_counter_name() {
+			return false
+		}
+	}
+	return true
+}
+
+enum ReversedScopeWalkDecision {
+	@continue
+	stop
+}
+
+struct ReversedScopeWalkState {
+mut:
+	name                           string
+	name_is_list_item              bool
+	num                            i64
+	last_nonzero_increment_negated i64
+}
+
+fn apply_reversed_counter_contribution(mut state ReversedScopeWalkState, style &ComputedProperties) ReversedScopeWalkDecision {
+	computed_values := unsafe { &ComputedValues(style) }
+	mut increment := i64(0)
+	for counter in computed_values.counter_increment() {
+		if counter.name == state.name {
+			increment += i64(counter.value or { 0 })
+		}
+	}
+	if state.name_is_list_item && style_has_implicit_list_item_increment(style) {
+		increment = -1
+	}
+
+	increment_negated := -increment
+	if increment_negated != 0 {
+		state.last_nonzero_increment_negated = increment_negated
+	}
+	for counter in computed_values.counter_set() {
+		if counter.name == state.name {
+			state.num += i64(counter.value or { 0 })
+			return .stop
+		}
+	}
+	state.num += increment_negated
+	return .@continue
+}
+
+fn first_element_child(element &dom.Element) ?&dom.Element {
+	for child in element.as_node().children_as_vector() {
+		if child_element := child.as_element() {
+			return child_element
+		}
+	}
+	return none
+}
+
+fn walk_reversed_counter_sibling_run(mut state ReversedScopeWalkState, first ?&dom.Element) ReversedScopeWalkDecision {
+	mut current := first
+	for current != none {
+		element := current or { break }
+		current = element.as_node().next_element_sibling()
+		style := computed_properties_for_element(element) or { continue }
+		if style.display().is_none() {
+			continue
+		}
+		mut resets_name := false
+		for counter in unsafe { &ComputedValues(style) }.counter_reset() {
+			if counter.name == state.name {
+				resets_name = true
+				break
+			}
+		}
+		if resets_name {
+			break
+		}
+		if apply_reversed_counter_contribution(mut state, style) == .stop {
+			return .stop
+		}
+		if walk_reversed_counter_sibling_run(mut state, first_element_child(element)) == .stop {
+			return .stop
+		}
+	}
+	return .@continue
+}
+
+fn clamp_reversed_counter_value(value i64) CounterValue {
+	if value > 2147483647 {
+		return CounterValue(2147483647)
+	}
+	if value < -2147483648 {
+		return CounterValue(-2147483648)
+	}
+	return CounterValue(value)
+}
+
+fn reversed_counter_start_value(name string, originating_element &dom.AbstractElement, originating_style &ComputedProperties) CounterValue {
+	mut state := ReversedScopeWalkState{
+		name: name
+		name_is_list_item: name == list_item_counter_name()
+	}
+	mut decision := apply_reversed_counter_contribution(mut state, originating_style)
+	if decision == .@continue && originating_element.pseudo_element() == none {
+		element := originating_element.element()
+		decision = walk_reversed_counter_sibling_run(mut state, first_element_child(element))
+		if decision == .@continue {
+			walk_reversed_counter_sibling_run(mut state, element.as_node().next_element_sibling())
+		}
+	}
+	return clamp_reversed_counter_value(state.num + state.last_nonzero_increment_negated)
 }
 
 fn counters_set_from_dom(wrapper &dom.CSSCountersSet_) ?&CountersSet {
@@ -1426,10 +1553,14 @@ pub fn resolve_counters_for_layout(mut abstract_element dom.AbstractElement, com
 	mut reset := []CounterOperation{}
 	computed_values := unsafe { &ComputedValues(computed) }
 	for counter in computed_values.counter_reset() {
+		mut value := counter.value
+		if counter.is_reversed && value == none {
+			value = reversed_counter_start_value(counter.name, &abstract_element, computed)
+		}
 		reset << CounterOperation{
 			name: counter.name
 			is_reversed: counter.is_reversed
-			value: counter.value
+			value: value
 		}
 	}
 	mut increment := []CounterOperation{}
@@ -1455,6 +1586,7 @@ pub fn resolve_counters_for_layout(mut abstract_element dom.AbstractElement, com
 		counter_reset: reset
 		counter_increment: increment
 		counter_set: set
+		is_list_item: computed.display().is_list_item()
 		has_parent_element: has_parent_element
 	})
 	set_counters_set_for_abstract_element(mut abstract_element, resolved.counters_set)
@@ -1473,6 +1605,7 @@ pub mut:
 	counter_reset                  []CounterOperation
 	counter_increment              []CounterOperation
 	counter_set                    []CounterOperation
+	is_list_item                   bool
 	has_parent_element             bool
 }
 
@@ -1511,6 +1644,25 @@ pub fn resolve_counters(element CounterElement) CounterElement {
 		mut counters := element_reference.ensure_counters_set()
 		counters.increment_a_counter(counter.name, element_reference.origin, counter.value or {
 			CounterValue(0)
+		})
+		element_reference.counters_set = counters
+	}
+
+	mut has_implicit_list_item_increment := element_reference.is_list_item
+	for counter in element_reference.counter_increment {
+		if counter.name == list_item_counter_name() {
+			has_implicit_list_item_increment = false
+			break
+		}
+	}
+	if has_implicit_list_item_increment {
+		mut counters := element_reference.ensure_counters_set()
+		innermost := counters.last_counter_with_name(list_item_counter_name())
+		reversed := if counter := innermost { counter.reversed } else { false }
+		counters.increment_a_counter(list_item_counter_name(), element_reference.origin, if reversed {
+			CounterValue(-1)
+		} else {
+			CounterValue(1)
 		})
 		element_reference.counters_set = counters
 	}
@@ -2003,9 +2155,7 @@ pub mut:
 pub fn (style_value CounterStyleValue) resolve(mut context CounterStyleResolutionContext) string {
 	// "If no counter named <counter-name> exists on an element where counter() or counters() is used,
 	// one is first instantiated with a starting value of 0."
-	if context.counters_set.last_counter_with_name(style_value.counter_name_) == none {
-		context.counters_set.instantiate_a_counter(style_value.counter_name_, context.originating_element, false, 0)
-	}
+	_ = context.counters_set.counter_value_for_use(style_value.counter_name_, context.originating_element)
 
 	// counter( <counter-name>, <counter-style>? )
 	// "Represents the value of the innermost counter in the element’s CSS counters set named <counter-name>
