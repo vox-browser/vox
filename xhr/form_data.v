@@ -6,6 +6,7 @@
 module xhr
 
 import fileapi
+import html
 import time
 
 pub struct FormDataFile {
@@ -14,6 +15,12 @@ pub:
 }
 
 pub type FormDataEntryValue = FormDataFile | string
+
+// Binding conversion is explicit upstream now that the internal entry value
+// and the Web IDL union have independent representations.
+pub fn form_data_entry_value_for_bindings(value FormDataEntryValue) FormDataEntryValue {
+	return value
+}
 
 pub struct FormDataBlob {
 pub:
@@ -42,6 +49,38 @@ pub fn FormData.construct_impl(entries ?[]FormDataEntry) &FormData {
 	return &FormData{
 		entries: (entries or { []FormDataEntry{} }).clone()
 	}
+}
+
+// https://xhr.spec.whatwg.org/#dom-formdata
+pub fn FormData.create_from_form(form &html.HTMLFormElementModel, submitter ?&html.FormAssociatedElement) !&FormData {
+	if control := submitter {
+		if !control.is_submit_button() {
+			return error('TypeError: submitter is not a valid submit button')
+		}
+		if owner := control.form() {
+			if voidptr(owner) != voidptr(form.element) {
+				return error('NotFoundError: submitter does not belong to the provided form')
+			}
+		}
+	}
+	entries := form.construct_entry_list(submitter)
+	mut converted := []FormDataEntry{cap: entries.len}
+	for entry in entries {
+		value := match entry.value {
+			html.FormDataFile {
+				FormDataEntryValue(FormDataFile{
+					file: fileapi.File.create(entry.value.bytes.clone(), entry.value.name,
+						entry.value.mime_type, time.now().unix_milli())
+				})
+			}
+			string { FormDataEntryValue(entry.value) }
+		}
+		converted << FormDataEntry{
+			name: entry.name
+			value: value
+		}
+	}
+	return FormData.construct_impl(converted)
 }
 
 pub fn FormData.from_query_entries(entries [][2]string) &FormData {
@@ -113,7 +152,7 @@ pub fn (data &FormData) entry_list() []FormDataEntry {
 pub fn (data &FormData) get(name string) ?FormDataEntryValue {
 	for entry in data.entries {
 		if entry.name == name {
-			return entry.value
+			return form_data_entry_value_for_bindings(entry.value)
 		}
 	}
 	return none
@@ -123,7 +162,7 @@ pub fn (data &FormData) get_all(name string) []FormDataEntryValue {
 	mut result := []FormDataEntryValue{}
 	for entry in data.entries {
 		if entry.name == name {
-			result << entry.value
+			result << form_data_entry_value_for_bindings(entry.value)
 		}
 	}
 	return result
@@ -167,11 +206,18 @@ pub fn (mut data FormData) set_file(name string, file &fileapi.File, filename ?s
 
 // The callback receives (value, key), matching the iterable WebIDL forEach
 // callback order. The loop observes entries appended by the callback.
-pub fn (data &FormData) for_each(callback fn (FormDataEntryValue, string)) {
+pub enum IterationDecision {
+	continue_
+	break_
+}
+
+pub fn (data &FormData) for_each(callback fn (FormDataEntryValue, string) IterationDecision) {
 	mut index := 0
 	for index < data.entries.len {
 		entry := data.entries[index]
-		callback(entry.value, entry.name)
+		if callback(form_data_entry_value_for_bindings(entry.value), entry.name) == .break_ {
+			break
+		}
 		index++
 	}
 }
@@ -213,6 +259,8 @@ pub:
 pub struct FormDataIterator {
 	data &FormData
 	kind IteratorKind
+pub mut:
+	prototype_initialized bool
 mut:
 	index int
 }
@@ -222,10 +270,20 @@ pub fn (data &FormData) iterator(kind IteratorKind) FormDataIterator {
 }
 
 pub fn FormDataIterator.create(data &FormData, kind IteratorKind) FormDataIterator {
-	return FormDataIterator{
+	mut iterator := FormDataIterator{
 		data: data
 		kind: kind
 	}
+	set_form_data_iterator_prototype(mut iterator)
+	return iterator
+}
+
+fn set_form_data_iterator_prototype(mut iterator FormDataIterator) {
+	iterator.prototype_initialized = true
+}
+
+fn form_data_entry_value(value FormDataEntryValue) FormDataEntryValue {
+	return form_data_entry_value_for_bindings(value)
 }
 
 pub fn (mut iterator FormDataIterator) next() FormDataIteratorResult {
@@ -235,6 +293,7 @@ pub fn (mut iterator FormDataIterator) next() FormDataIteratorResult {
 		}
 	}
 	entry := iterator.data.entries[iterator.index]
+	value := form_data_entry_value(entry.value)
 	iterator.index++
 	return match iterator.kind {
 		.key {
@@ -246,7 +305,7 @@ pub fn (mut iterator FormDataIterator) next() FormDataIteratorResult {
 		.value {
 			FormDataIteratorResult{
 				has_value: true
-				value:     entry.value
+				value:     value
 			}
 		}
 		.key_value {
@@ -254,7 +313,7 @@ pub fn (mut iterator FormDataIterator) next() FormDataIteratorResult {
 				has_key:   true
 				has_value: true
 				key:       entry.name
-				value:     entry.value
+				value:     value
 			}
 		}
 	}

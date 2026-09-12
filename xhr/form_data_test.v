@@ -1,7 +1,15 @@
 module xhr
 
 import fileapi
+import dom
+import html
 import time
+
+@[heap]
+struct FormDataVisitLog {
+mut:
+	names []string
+}
 
 fn test_form_data_append_get_all_delete_set_and_blob_files() {
 	mut data := FormData.create()
@@ -36,6 +44,7 @@ fn test_form_data_append_get_all_delete_set_and_blob_files() {
 fn test_form_data_iterator_kinds_and_live_entry_list() {
 	mut data := FormData.from_query_entries([['x', '1']!, ['y', '2']!])
 	mut entries := data.iterator(.key_value)
+	assert entries.prototype_initialized
 	first := entries.next()
 	assert first.has_key && first.has_value
 	assert first.key == 'x'
@@ -44,6 +53,59 @@ fn test_form_data_iterator_kinds_and_live_entry_list() {
 	assert entries.next().key == 'y'
 	assert entries.next().key == 'z'
 	assert entries.next().done
+}
+
+fn test_form_data_for_each_can_stop_iteration() {
+	mut data := FormData.from_query_entries([['a', '1']!, ['b', '2']!])
+	mut log := &FormDataVisitLog{}
+	data.for_each(fn [mut log] (_ FormDataEntryValue, name string) IterationDecision {
+		log.names << name
+		return .break_
+	})
+	assert log.names == ['a']
+}
+
+fn test_form_data_create_from_form_validates_submitter_and_converts_entries() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	form_node := document.create_element_ns('http://www.w3.org/1999/xhtml', 'form')!
+	form_element := unsafe { &dom.HTMLFormElement(form_node) }
+	mut form := html.HTMLFormElementModel.create(form_element)
+	mut input_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'input')!
+	input_element.set_attribute_value('name', 'field')
+	mut input := html.FormAssociatedElement.create(input_element)
+	input.value_ = 'value'
+	form.add_control(mut input)
+	data := FormData.create_from_form(form, none)!
+	assert data.get('field')? == FormDataEntryValue('value')
+
+	mut button_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'button')!
+	button_element.set_attribute_value('name', 'send')
+	mut button := html.FormAssociatedElement.create(button_element)
+	button.value_ = 'yes'
+	form.add_control(mut button)
+	with_submitter := FormData.create_from_form(form, button)!
+	assert with_submitter.get('send')? == FormDataEntryValue('yes')
+
+	mut non_submit_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'input')!
+	non_submit_element.set_attribute_value('type', 'text')
+	non_submit := html.FormAssociatedElement.create(non_submit_element)
+	if _ := FormData.create_from_form(form, non_submit) {
+		assert false
+	} else {
+		assert err.msg().starts_with('TypeError:')
+	}
+
+	other_form_node := document.create_element_ns('http://www.w3.org/1999/xhtml', 'form')!
+	other_form_element := unsafe { &dom.HTMLFormElement(other_form_node) }
+	mut other_form := html.HTMLFormElementModel.create(other_form_element)
+	foreign_button_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'button')!
+	mut foreign_button := html.FormAssociatedElement.create(foreign_button_element)
+	other_form.add_control(mut foreign_button)
+	if _ := FormData.create_from_form(form, foreign_button) {
+		assert false
+	} else {
+		assert err.msg().starts_with('NotFoundError:')
+	}
 }
 
 fn test_progress_event_inherits_event_init_members() {
