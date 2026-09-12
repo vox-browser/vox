@@ -54,20 +54,14 @@ pub fn (function &NativeFunction) call(arguments []dom.JSValue) !dom.JSValue {
 	return function.behavior(arguments)
 }
 
-fn undefined_native_function(_ []dom.JSValue) !dom.JSValue {
-	return dom.js_undefined()
-}
-
 @[heap]
 pub struct Intrinsics {
 pub:
 	realm &html.ScriptingRealm
 mut:
-	objects                      []&IntrinsicObject
-	namespace_indices            map[string]int
-	prototype_indices            map[string]int
-	constructor_indices          map[string]int
-	constructors                 []&NativeFunction
+	namespaces                   map[string]&IntrinsicObject
+	prototypes                   map[string]&InterfacePrototypeObject
+	constructors                 map[string]&InterfaceConstructor
 	unforgeable_function_indices map[string]int
 	unforgeable_functions        []&NativeFunction
 }
@@ -78,60 +72,76 @@ pub fn Intrinsics.create(realm &html.ScriptingRealm) &Intrinsics {
 	}
 }
 
-fn (mut intrinsics Intrinsics) ensure_object(name string, kind IntrinsicObjectKind) &IntrinsicObject {
-	indices := match kind {
-		.namespace_ { intrinsics.namespace_indices }
-		.prototype { intrinsics.prototype_indices }
-		.constructor { intrinsics.constructor_indices }
-	}
-	if index := indices[name] {
-		return intrinsics.objects[index]
-	}
-	object := &IntrinsicObject{
-		name: name
-		kind: kind
-	}
-	index := intrinsics.objects.len
-	intrinsics.objects << object
-	match kind {
-		.namespace_ { intrinsics.namespace_indices[name] = index }
-		.prototype { intrinsics.prototype_indices[name] = index }
-		.constructor { intrinsics.constructor_indices[name] = index }
-	}
-	return object
-}
-
 pub fn (mut intrinsics Intrinsics) ensure_web_namespace(namespace_name string) &IntrinsicObject {
-	return intrinsics.ensure_object(namespace_name, .namespace_)
+	if namespace_ := intrinsics.namespaces[namespace_name] {
+		return namespace_
+	}
+	namespace_ := &IntrinsicObject{
+		name: namespace_name
+		kind: .namespace_
+	}
+	intrinsics.namespaces[namespace_name] = namespace_
+	return namespace_
 }
 
-pub fn (mut intrinsics Intrinsics) ensure_web_prototype(class_name string) &IntrinsicObject {
-	prototype := intrinsics.ensure_object(class_name, .prototype)
-	if class_name !in intrinsics.constructor_indices {
-		constructor_object := intrinsics.ensure_object(class_name, .constructor)
-		_ = constructor_object
-		intrinsics.constructors << &NativeFunction{
-			name:     class_name
-			length:   0
-			behavior: undefined_native_function
-		}
+pub fn (mut intrinsics Intrinsics) ensure_web_prototype(class_name string) &InterfacePrototypeObject {
+	if prototype := intrinsics.prototypes[class_name] {
+		return prototype
 	}
+	return intrinsics.create_web_prototype_and_constructor(InterfaceObjectMetadata.create(class_name))
+}
+
+pub fn (mut intrinsics Intrinsics) ensure_web_prototype_with_metadata(metadata InterfaceObjectMetadata) &InterfacePrototypeObject {
+	key := metadata.utf16_namespaced_name
+	if prototype := intrinsics.prototypes[key] {
+		return prototype
+	}
+	return intrinsics.create_web_prototype_and_constructor(metadata)
+}
+
+pub fn (mut intrinsics Intrinsics) ensure_web_constructor(class_name string) &InterfaceConstructor {
+	if constructor := intrinsics.constructors[class_name] {
+		return constructor
+	}
+	_ = intrinsics.ensure_web_prototype(class_name)
+	return intrinsics.constructors[class_name] or { panic('interface constructor was not created') }
+}
+
+pub fn (intrinsics &Intrinsics) existing_web_prototype(class_name string) &InterfacePrototypeObject {
+	return intrinsics.prototypes[class_name] or { panic('interface prototype was not created') }
+}
+
+pub fn (mut intrinsics Intrinsics) create_web_prototype_and_constructor(metadata InterfaceObjectMetadata) &InterfacePrototypeObject {
+	key := metadata.utf16_namespaced_name
+	prototype := InterfacePrototypeObject.create(intrinsics.realm, metadata)
+	intrinsics.prototypes[key] = prototype
+	mut mutable_prototype := unsafe { &InterfacePrototypeObject(prototype) }
+	mutable_prototype.initialize()
+	intrinsics.create_web_constructor(metadata, mut mutable_prototype)
 	return prototype
 }
 
-pub fn (mut intrinsics Intrinsics) ensure_web_constructor(class_name string) &NativeFunction {
-	_ = intrinsics.ensure_web_prototype(class_name)
-	index := intrinsics.constructor_indices[class_name] or { 0 }
-	// Object and native-function vectors are deliberately separate. Constructor
-	// objects are appended in constructor creation order, so count preceding
-	// constructor entries to find the corresponding function.
-	mut function_index := 0
-	for object_index in 0 .. index {
-		if intrinsics.objects[object_index].kind == .constructor {
-			function_index++
+pub fn (mut intrinsics Intrinsics) create_web_constructor(metadata InterfaceObjectMetadata, mut prototype InterfacePrototypeObject) &InterfaceConstructor {
+	key := metadata.utf16_namespaced_name
+	mut constructor := InterfaceConstructor.create(intrinsics.realm, metadata)
+	intrinsics.constructors[key] = constructor
+	prototype.constructor_ = constructor
+	constructor.initialize(intrinsics)
+	return constructor
+}
+
+// https://webidl.spec.whatwg.org/#internally-create-a-new-object-implementing-the-interface
+pub fn set_prototype_from_new_target(target_realm &html.ScriptingRealm, prototype ?&PlatformObject, interface_name string, mut object PlatformObject) {
+	mut target_intrinsics := host_defined_intrinsics(target_realm)
+	installed_prototype := prototype or { target_intrinsics.ensure_web_prototype(interface_name).object }
+	object.set_prototype(installed_prototype)
+	mut wrapper_intrinsics := host_defined_intrinsics(object.realm())
+	interface_prototype := wrapper_intrinsics.ensure_web_prototype(interface_name).object
+	if voidptr(installed_prototype) != voidptr(interface_prototype) {
+		if mut wrappable := object.wrappable_impl() {
+			preserve_wrapper(mut wrappable, object)
 		}
 	}
-	return intrinsics.constructors[function_index]
 }
 
 pub fn (mut intrinsics Intrinsics) ensure_web_unforgeable_function(interface_name string, attribute_name string, behavior NativeFunctionBehavior, type_ UnforgeableFunctionType) &NativeFunction {
@@ -140,9 +150,9 @@ pub fn (mut intrinsics Intrinsics) ensure_web_unforgeable_function(interface_nam
 		return intrinsics.unforgeable_functions[index]
 	}
 	function := &NativeFunction{
-		name:     attribute_name
-		length:   if type_ == .setter { 1 } else { 0 }
-		prefix:   if type_ == .setter { 'set' } else { 'get' }
+		name: attribute_name
+		length: if type_ == .setter { 1 } else { 0 }
+		prefix: if type_ == .setter { 'set' } else { 'get' }
 		behavior: behavior
 	}
 	intrinsics.unforgeable_function_indices[key] = intrinsics.unforgeable_functions.len
@@ -151,15 +161,15 @@ pub fn (mut intrinsics Intrinsics) ensure_web_unforgeable_function(interface_nam
 }
 
 pub fn (intrinsics &Intrinsics) namespace_count() int {
-	return intrinsics.namespace_indices.len
+	return intrinsics.namespaces.len
 }
 
 pub fn (intrinsics &Intrinsics) prototype_count() int {
-	return intrinsics.prototype_indices.len
+	return intrinsics.prototypes.len
 }
 
 pub fn (intrinsics &Intrinsics) constructor_count() int {
-	return intrinsics.constructor_indices.len
+	return intrinsics.constructors.len
 }
 
 pub fn (intrinsics &Intrinsics) unforgeable_function_count() int {
