@@ -34,6 +34,13 @@ struct StyleSheetAnchorInvalidationRule {
 	style_sheet_for_rule ?&CSSStyleSheet
 }
 
+struct ShadowRootStylesheetEffects {
+mut:
+	may_match_shadow_host                 bool
+	may_match_light_dom_under_shadow_host bool
+	may_affect_assigned_nodes_via_slots   bool
+}
+
 fn selector_may_match_light_dom_under_shadow_host(selector Selector) bool {
 	if selector.is_slotted() {
 		return true
@@ -339,5 +346,188 @@ fn invalidate_owners_for_inserted_style_rule(mut style_sheet CSSStyleSheet, styl
 		mut scope := css_style_scope_for_node(owner)
 		scope.invalidate_rule_cache()
 		invalidate_root_for_style_sheet_change(owner, invalidation, reason, false)
+	}
+}
+
+fn for_each_tree_affected_by_shadow_root_style_sheet_change(root &dom.Node, include_host bool, include_light_dom_under_shadow_host bool, callback fn (&dom.Node)) {
+	callback(root)
+	if shadow_root := root.as_shadow_root() {
+		host := shadow_root.host() or { return }
+		if include_host && include_light_dom_under_shadow_host {
+			callback(host.as_node().root())
+		} else if include_host || include_light_dom_under_shadow_host {
+			callback(host.as_node())
+		}
+	}
+}
+
+fn style_value_references_animation_name(value StyleValue, animation_name string) bool {
+	if value is CustomIdentStyleValue {
+		return value.custom_ident() == animation_name
+	}
+	if value is StringStyleValue {
+		return value.string_value() == animation_name
+	}
+	if value !is StyleValueList {
+		return false
+	}
+	list := value as StyleValueList
+	for item in list.values() {
+		if item is CustomIdentStyleValue && item.custom_ident() == animation_name {
+			return true
+		}
+		if item is StringStyleValue && item.string_value() == animation_name {
+			return true
+		}
+	}
+	return false
+}
+
+fn computed_properties_reference_animation_name(computed &ComputedProperties, animation_name string) bool {
+	value := computed.property(.animation_name, .no) or { return false }
+	typed := style_value_logic_from_dom(.animation_name, value) or { return false }
+	return style_value_references_animation_name(typed, animation_name)
+}
+
+fn element_or_pseudo_references_animation_name(element &dom.Element, animation_name string) bool {
+	if placeholder := element.computed_properties_for_pseudo(none) {
+		if computed := computed_properties_from_dom(placeholder) {
+			if computed_properties_reference_animation_name(computed, animation_name) {
+				return true
+			}
+		}
+	}
+	for pseudo := 0; pseudo < int(dom.PseudoElement.known_pseudo_element_count); pseudo++ {
+		if placeholder := element.computed_properties_for_pseudo(pseudo) {
+			if computed := computed_properties_from_dom(placeholder) {
+				if computed_properties_reference_animation_name(computed, animation_name) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+fn invalidate_elements_affected_by_inserted_keyframes_rule(root &dom.Node, animation_name string) {
+	if root.is_document() {
+		root.for_each_shadow_including_inclusive_descendant(fn [animation_name] (node &dom.Node) dom.TraversalDecision {
+			if element := node.as_element() {
+				if element_or_pseudo_references_animation_name(element, animation_name) {
+					mark_style_sheet_invalidation_element(element)
+				}
+			}
+			return .@continue
+		})
+		return
+	}
+	root.for_each_in_inclusive_subtree(fn [animation_name] (node &dom.Node) dom.TraversalDecision {
+		if element := node.as_element() {
+			if element_or_pseudo_references_animation_name(element, animation_name) {
+				mark_style_sheet_invalidation_element(element)
+			}
+		}
+		return .@continue
+	})
+}
+
+fn determine_shadow_root_style_sheet_effects_for_sheet(style_sheet &CSSStyleSheet, shadow_root &dom.ShadowRoot) ShadowRootStylesheetEffects {
+	mut effects := ShadowRootStylesheetEffects{}
+	mut slots := []&dom.Element{}
+	slots_ptr := &slots
+	shadow_node := unsafe { &dom.Node(shadow_root) }
+	shadow_node.for_each_in_inclusive_subtree(fn [slots_ptr] (node &dom.Node) dom.TraversalDecision {
+		if node.is_html_slot_element() {
+			if element := node.as_element() {
+				unsafe {
+					mut current_slots := *slots_ptr
+					current_slots << element
+					*slots_ptr = current_slots
+				}
+			}
+		}
+		return .@continue
+	})
+	effects_ptr := &effects
+	style_sheet.for_each_effective_style_producing_rule(fn [effects_ptr, slots, style_sheet, shadow_root] (rule &CSSRule) {
+		unsafe {
+			mut current_effects := *effects_ptr
+			if current_effects.may_match_shadow_host
+				&& current_effects.may_match_light_dom_under_shadow_host
+				&& current_effects.may_affect_assigned_nodes_via_slots {
+				return
+			}
+			if rule.type_ != .style {
+				return
+			}
+			mut mutable_rule := &CSSRule(rule)
+			for selector in mutable_rule.absolutized_selectors().selectors {
+				current_effects.may_match_shadow_host = current_effects.may_match_shadow_host
+					|| selector.contains_pseudo_class(.host)
+				current_effects.may_match_light_dom_under_shadow_host = current_effects.may_match_light_dom_under_shadow_host
+					|| selector_may_match_light_dom_under_shadow_host(selector)
+				if !current_effects.may_affect_assigned_nodes_via_slots && slots.len > 0 {
+					for slot in slots {
+						mut context := MatchContext{}
+						context.style_sheet_for_rule = &CSSStyleSheet(style_sheet)
+						context.subject = &dom.Element(slot)
+						context.rule_shadow_root = &dom.ShadowRoot(shadow_root)
+						if matches(selector, slot, shadow_root.host(), mut context, none, none, .normal, none) {
+							current_effects.may_affect_assigned_nodes_via_slots = true
+							break
+						}
+					}
+				}
+				if current_effects.may_match_shadow_host
+					&& current_effects.may_match_light_dom_under_shadow_host
+					&& current_effects.may_affect_assigned_nodes_via_slots {
+					break
+				}
+			}
+			*effects_ptr = current_effects
+		}
+	})
+	return effects
+}
+
+fn determine_shadow_root_style_sheet_effects(shadow_root &dom.ShadowRoot) ShadowRootStylesheetEffects {
+	mut effects := ShadowRootStylesheetEffects{}
+	effects_ptr := &effects
+	scope := css_style_scope_for_shadow_root(shadow_root)
+	style_scope_for_each_active_css_style_sheet_boundary(scope, fn [effects_ptr, shadow_root] (style_sheet &CSSStyleSheet) {
+		sheet_effects := determine_shadow_root_style_sheet_effects_for_sheet(style_sheet, shadow_root)
+		unsafe {
+			mut current_effects := *effects_ptr
+			current_effects.may_match_shadow_host = current_effects.may_match_shadow_host
+				|| sheet_effects.may_match_shadow_host
+			current_effects.may_match_light_dom_under_shadow_host = current_effects.may_match_light_dom_under_shadow_host
+				|| sheet_effects.may_match_light_dom_under_shadow_host
+			current_effects.may_affect_assigned_nodes_via_slots = current_effects.may_affect_assigned_nodes_via_slots
+				|| sheet_effects.may_affect_assigned_nodes_via_slots
+			*effects_ptr = current_effects
+		}
+	})
+	return effects
+}
+
+fn invalidate_owners_for_inserted_keyframes_rule(mut style_sheet CSSStyleSheet, keyframes_rule &CSSRule) {
+	style_sheet.did_match = none
+	for owner in style_sheet.owning_documents_or_shadow_roots {
+		mut scope := css_style_scope_for_node(owner)
+		scope.invalidate_rule_cache()
+		if owner.as_shadow_root() == none && owner.entire_subtree_needs_style_update() {
+			continue
+		}
+		mut include_host := false
+		mut include_light_dom_under_shadow_host := false
+		if shadow_root := owner.as_shadow_root() {
+			effects := determine_shadow_root_style_sheet_effects(shadow_root)
+			include_host = effects.may_match_shadow_host
+			include_light_dom_under_shadow_host = effects.may_match_light_dom_under_shadow_host
+		}
+		animation_name := keyframes_rule.keyframes_name()
+		for_each_tree_affected_by_shadow_root_style_sheet_change(owner, include_host, include_light_dom_under_shadow_host, fn [animation_name] (affected_root &dom.Node) {
+			invalidate_elements_affected_by_inserted_keyframes_rule(affected_root, animation_name)
+		})
 	}
 }

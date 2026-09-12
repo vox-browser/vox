@@ -33,6 +33,16 @@ fn install_inline_style_sheet_for_invalidation_test(mut sheet CSSStyleSheet, own
 	}
 }
 
+fn set_style_sheet_invalidation_test_animation_name(mut element dom.Element, pseudo_element ?dom.PseudoElement, name string) {
+	mut computed := computed_properties_with_initial_values()
+	value := parse_css_value_logic(.animation_name, name) or {
+		panic('could not parse animation-name ${name}')
+	}
+	computed.set_property(.animation_name, dom_style_value_from_value_logic(value), .no, .no)
+	mut abstract_element := dom.AbstractElement.new(element, pseudo_element)
+	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
+}
+
 fn test_insert_rule_targets_matching_elements_in_inline_style_sheet() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }
@@ -134,7 +144,126 @@ fn test_insert_rule_targets_matching_elements_inside_shadow_root() {
 fn test_shadow_host_escape_selector_classification() {
 	assert selector_text_may_match_light_dom_under_shadow_host('::slotted(.item)')
 	assert selector_text_may_match_light_dom_under_shadow_host(':host > .item')
+	assert selector_text_may_match_light_dom_under_shadow_host(':host + .item')
+	assert selector_text_may_match_light_dom_under_shadow_host(':host ~ .item')
 	assert !selector_text_may_match_light_dom_under_shadow_host(':host')
+	assert !selector_text_may_match_light_dom_under_shadow_host(':host(.active)')
 	assert !selector_text_may_match_light_dom_under_shadow_host('.item')
 	assert !selector_text_may_match_light_dom_under_shadow_host('not[')
+}
+
+fn test_insert_keyframes_rule_targets_only_animation_name_users() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_invalidation_test_element(document, 'html')
+	mut style := style_sheet_invalidation_test_element(document, 'style')
+	mut target := style_sheet_invalidation_test_element(document, 'div')
+	mut pseudo_target := style_sheet_invalidation_test_element(document, 'div')
+	mut bystander := style_sheet_invalidation_test_element(document, 'div')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(style.as_node()) or { panic(err) }
+	root_node.append_child(target.as_node()) or { panic(err) }
+	root_node.append_child(pseudo_target.as_node()) or { panic(err) }
+	root_node.append_child(bystander.as_node()) or { panic(err) }
+	set_style_sheet_invalidation_test_animation_name(mut target, none, 'other, fade')
+	set_style_sheet_invalidation_test_animation_name(mut pseudo_target, dom.PseudoElement.before, 'fade')
+	set_style_sheet_invalidation_test_animation_name(mut bystander, none, 'other')
+
+	mut sheet := parse_css_stylesheet_with_parser('', none)
+	install_inline_style_sheet_for_invalidation_test(mut sheet, style, document_node)
+	clear_style_sheet_invalidation_test_flags(document_node, root.as_node(), style.as_node(), target.as_node(), pseudo_target.as_node(), bystander.as_node())
+	document.set_needs_full_style_update(false)
+	document.reset_style_invalidation_counters()
+
+	assert sheet.insert_rule('@keyframes fade { from { opacity: 0 } to { opacity: 1 } }', 0)! == 0
+	assert target.needs_style_update()
+	assert pseudo_target.needs_style_update()
+	assert !bystander.needs_style_update()
+	assert !document.needs_full_style_update()
+	counters := document.style_invalidation_counters()
+	assert counters.full_style_invalidations == 0
+	assert counters.style_invalidations == 2
+}
+
+fn test_document_keyframes_insertion_walks_existing_shadow_trees() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_invalidation_test_element(document, 'html')
+	mut style := style_sheet_invalidation_test_element(document, 'style')
+	mut host := style_sheet_invalidation_test_element(document, 'div')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(style.as_node()) or { panic(err) }
+	root_node.append_child(host.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut target := style_sheet_invalidation_test_element(document, 'span')
+	mut bystander := style_sheet_invalidation_test_element(document, 'span')
+	shadow_node.append_child(target.as_node()) or { panic(err) }
+	shadow_node.append_child(bystander.as_node()) or { panic(err) }
+	set_style_sheet_invalidation_test_animation_name(mut target, none, 'fade')
+	set_style_sheet_invalidation_test_animation_name(mut bystander, none, 'other')
+
+	mut sheet := parse_css_stylesheet_with_parser('', none)
+	install_inline_style_sheet_for_invalidation_test(mut sheet, style, document_node)
+	clear_style_sheet_invalidation_test_flags(document_node, root.as_node(), style.as_node(), host.as_node(), shadow_node, target.as_node(), bystander.as_node())
+	document.set_needs_full_style_update(false)
+
+	assert sheet.insert_rule('@keyframes fade { from { opacity: 0 } }', 0)! == 0
+	assert target.needs_style_update()
+	assert !bystander.needs_style_update()
+	assert !document.needs_full_style_update()
+}
+
+fn test_shadow_keyframes_insertion_reaches_host_without_document_bystanders() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_invalidation_test_element(document, 'html')
+	mut host := style_sheet_invalidation_test_element(document, 'div')
+	mut bystander := style_sheet_invalidation_test_element(document, 'div')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(host.as_node()) or { panic(err) }
+	root_node.append_child(bystander.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut style := style_sheet_invalidation_test_element(document, 'style')
+	shadow_node.append_child(style.as_node()) or { panic(err) }
+	set_style_sheet_invalidation_test_animation_name(mut host, none, 'fade')
+
+	mut sheet := parse_css_stylesheet_with_parser(':host { animation-name: fade }', none)
+	install_inline_style_sheet_for_invalidation_test(mut sheet, style, shadow_node)
+	effects := determine_shadow_root_style_sheet_effects(shadow_root)
+	assert effects.may_match_shadow_host
+	assert !effects.may_match_light_dom_under_shadow_host
+	clear_style_sheet_invalidation_test_flags(document_node, root.as_node(), host.as_node(), bystander.as_node(), shadow_node, style.as_node())
+	document.set_needs_full_style_update(false)
+	document.reset_style_invalidation_counters()
+
+	assert sheet.insert_rule('@keyframes fade { from { opacity: 0.25 } }', 1)! == 1
+	assert host.needs_style_update()
+	assert !bystander.needs_style_update()
+	assert !document.needs_full_style_update()
+	counters := document.style_invalidation_counters()
+	assert counters.full_style_invalidations == 0
+	assert counters.style_invalidations == 1
+}
+
+fn test_shadow_root_style_sheet_effects_include_hosts_light_dom_and_slots() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut host := style_sheet_invalidation_test_element(document, 'div')
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut style := style_sheet_invalidation_test_element(document, 'style')
+	mut slot := style_sheet_invalidation_test_element(document, 'slot')
+	shadow_node.append_child(style.as_node()) or { panic(err) }
+	shadow_node.append_child(slot.as_node()) or { panic(err) }
+
+	mut sheet := parse_css_stylesheet_with_parser(':host > .item {} slot {}', none)
+	install_inline_style_sheet_for_invalidation_test(mut sheet, style, shadow_node)
+	effects := determine_shadow_root_style_sheet_effects(shadow_root)
+	assert effects.may_match_shadow_host
+	assert effects.may_match_light_dom_under_shadow_host
+	assert effects.may_affect_assigned_nodes_via_slots
 }
