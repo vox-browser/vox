@@ -1126,13 +1126,13 @@ pub fn (style_value ColorInterpolationMethodStyleValue) serialize(mode Serializa
 pub struct ColorMixComponent {
 pub mut:
 	color      StyleValue
-	percentage ?PercentageOrCalculated
+	percentage ?StyleValue
 }
 
 pub struct ColorMixPercentageNormalizationResult {
 pub mut:
-	p1               Percentage
-	p2               Percentage
+	p1               StyleValue
+	p2               StyleValue
 	alpha_multiplier f64
 }
 
@@ -1171,13 +1171,14 @@ pub fn (style_value ColorMixStyleValue) serialize(mode SerializationMode) string
 	return result
 }
 
-fn serialize_first_color_mix_percentage(p1 ?PercentageOrCalculated, p2 ?PercentageOrCalculated, mode SerializationMode) string {
+fn serialize_first_color_mix_percentage(p1 ?StyleValue, p2 ?StyleValue, mode SerializationMode) string {
 	// if BOTH the first percentage p1 and second percentage p2 are specified:
 	if first := p1 {
 		if second := p2 {
 			// If both p1 equals 50% and p2 equals 50%, nothing is serialized.
-			if !first.is_calculated() && !second.is_calculated() && first.value().value() == 50
-				&& second.value().value() == 50 {
+			if first.is_percentage() && second.is_percentage()
+				&& first.as_percentage().percentage().value() == 50
+				&& second.as_percentage().percentage().value() == 50 {
 				return ''
 			}
 
@@ -1187,7 +1188,7 @@ fn serialize_first_color_mix_percentage(p1 ?PercentageOrCalculated, p2 ?Percenta
 
 		// else if ONLY the first percentage p1 is specified:
 		// If p1 is equal to 50%, nothing is serialized.
-		if !first.is_calculated() && first.value().value() == 50 {
+		if first.is_percentage() && first.as_percentage().percentage().value() == 50 {
 			return ''
 		}
 
@@ -1198,13 +1199,13 @@ fn serialize_first_color_mix_percentage(p1 ?PercentageOrCalculated, p2 ?Percenta
 	if second := p2 {
 		// else if ONLY the second percentage p2 is specified:
 		// if p2 equals 50%, nothing is serialized.
-		if !second.is_calculated() && second.value().value() == 50 {
+		if second.is_percentage() && second.as_percentage().percentage().value() == 50 {
 			return ''
 		}
 
 		// if p2 is not calc(), the value of 100% - p2 is serialized.
 		if !second.is_calculated() {
-			return ' ${serialize_a_number(100 - second.value().value())}%'
+			return ' ${serialize_a_number(100 - second.as_percentage().percentage().value())}%'
 		}
 	}
 
@@ -1212,12 +1213,12 @@ fn serialize_first_color_mix_percentage(p1 ?PercentageOrCalculated, p2 ?Percenta
 	return ''
 }
 
-fn serialize_second_color_mix_percentage(p1 ?PercentageOrCalculated, p2 ?PercentageOrCalculated, mode SerializationMode) string {
+fn serialize_second_color_mix_percentage(p1 ?StyleValue, p2 ?StyleValue, mode SerializationMode) string {
 	if first := p1 {
 		if second := p2 {
 			// If both p1 and p2 are specified, and neither p1 nor p2 is calc(), and p1 + p2 equals 100%, nothing is serialized.
-			if !first.is_calculated() && !second.is_calculated()
-				&& first.value().value() + second.value().value() == 100 {
+			if first.is_percentage() && second.is_percentage()
+				&& first.as_percentage().percentage().value() + second.as_percentage().percentage().value() == 100 {
 				return ''
 			}
 
@@ -1232,7 +1233,7 @@ fn serialize_second_color_mix_percentage(p1 ?PercentageOrCalculated, p2 ?Percent
 
 	if second := p2 {
 		// if p2 equals 50%, nothing is serialized.
-		if !second.is_calculated() && second.value().value() == 50 {
+		if second.is_percentage() && second.as_percentage().percentage().value() == 50 {
 			return ''
 		}
 
@@ -1250,12 +1251,9 @@ fn serialize_second_color_mix_percentage(p1 ?PercentageOrCalculated, p2 ?Percent
 
 // https://drafts.csswg.org/css-color-5/#color-mix-percent-norm
 pub fn (style_value ColorMixStyleValue) normalize_percentages() ColorMixPercentageNormalizationResult {
-	resolve_percentage := fn (percentage_or_calculated ?PercentageOrCalculated) ?Percentage {
-		percentage := percentage_or_calculated or { return none }
-		if !percentage.is_calculated() {
-			return percentage.value()
-		}
-		return percentage.resolved(CalculationResolutionContext{})
+	resolve_percentage := fn (percentage_style_value ?StyleValue) ?Percentage {
+		percentage := percentage_style_value or { return none }
+		return Percentage.from_style_value_logic(percentage)
 	}
 
 	// 1. Let p1 be the first percentage and p2 the second one.
@@ -1296,8 +1294,8 @@ pub fn (style_value ColorMixStyleValue) normalize_percentages() ColorMixPercenta
 	}
 
 	return ColorMixPercentageNormalizationResult{
-		p1: p1 or { Percentage.new(0) }
-		p2: p2 or { Percentage.new(0) }
+		p1: StyleValue(PercentageStyleValue.create(p1 or { Percentage.new(0) }))
+		p2: StyleValue(PercentageStyleValue.create(p2 or { Percentage.new(0) }))
 		alpha_multiplier: alpha_multiplier
 	}
 }
@@ -1309,7 +1307,7 @@ pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorR
 	normalized_percentages := style_value.normalize_percentages()
 	from_color := color_style_value_from_style_value(style_value.first_component.color, color_resolution_context) or { return none }
 	to_color := color_style_value_from_style_value(style_value.second_component.color, color_resolution_context) or { return none }
-	delta := normalized_percentages.p2.value() / 100
+	delta := Percentage.from_style_value_logic(normalized_percentages.p2).as_fraction()
 
 	interpolated := interpolate_color(ComputedColor.rgba(from_color.red(), from_color.green(), from_color.blue(), from_color.alpha()), ComputedColor.rgba(to_color.red(), to_color.green(), to_color.blue(), to_color.alpha()), delta, .modern)
 	return Color.rgba(interpolated.red(), interpolated.green(), interpolated.blue(), interpolated.alpha())
@@ -1337,7 +1335,7 @@ pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) 
 
 	from_color := absolutized_first_color.to_color(color_resolution_context)
 	to_color := absolutized_second_color.to_color(color_resolution_context)
-	delta := normalized_percentages.p2.value() / 100.0
+	delta := Percentage.from_style_value_logic(normalized_percentages.p2).as_fraction()
 
 	if from := from_color {
 		if to := to_color {
@@ -1350,10 +1348,10 @@ pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) 
 
 	return StyleValue(ColorMixStyleValue.create(absolutized_color_interpolation_method, ColorMixComponent{
 		color: absolutized_first_color
-		percentage: ?PercentageOrCalculated(PercentageOrCalculated.from_percentage(normalized_percentages.p1))
+		percentage: normalized_percentages.p1
 	}, ColorMixComponent{
 		color: absolutized_second_color
-		percentage: ?PercentageOrCalculated(PercentageOrCalculated.from_percentage(normalized_percentages.p2))
+		percentage: normalized_percentages.p2
 	}))
 }
 

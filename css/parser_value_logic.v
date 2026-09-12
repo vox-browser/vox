@@ -12544,22 +12544,18 @@ fn (mut parser Parser) parse_color_mix_component(mut tokens ComponentValueStream
 		}
 	}
 
-	mut percentage_or_calculated := ?PercentageOrCalculated(none)
 	if percentage_value := percentage_style_value {
 		if !percentage_value.is_calculated() {
 			percentage := percentage_value.as_percentage().percentage().value()
 			if percentage < 0 || percentage > 100 {
 				return none
 			}
-			percentage_or_calculated = PercentageOrCalculated.from_percentage(percentage_value.as_percentage().percentage())
-		} else {
-			percentage_or_calculated = PercentageOrCalculated.from_calculated(percentage_value.as_calculated())
 		}
 	}
 
 	return ColorMixComponent{
 		color: color_style_value
-		percentage: percentage_or_calculated
+		percentage: percentage_style_value
 	}
 }
 
@@ -12591,7 +12587,9 @@ fn (mut parser Parser) parse_color_mix_function(component_value ComponentValue) 
 
 	if first_percentage := first_component.percentage {
 		if second_percentage := second_component.percentage {
-			if !first_percentage.is_calculated() && !second_percentage.is_calculated() && first_percentage.value().value() == 0 && second_percentage.value().value() == 0 {
+			if first_percentage.is_percentage() && second_percentage.is_percentage()
+				&& first_percentage.as_percentage().percentage().value() == 0
+				&& second_percentage.as_percentage().percentage().value() == 0 {
 				return none
 			}
 		}
