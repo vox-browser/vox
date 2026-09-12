@@ -10349,7 +10349,7 @@ pub fn (d &Document) is_child_allowed(node &Node) bool {
 		.document_node, .text_node {
 			false
 		}
-		.comment_node {
+		.comment_node, .processing_instruction_node {
 			true
 		}
 		.document_type_node {

@@ -31,6 +31,18 @@ fn test_dom_parser_parses_namespaced_xml_and_entities() {
 	assert item.as_node().text_content() or { '' } == 'A & B <C> '
 }
 
+fn test_dom_parser_places_processing_instructions_at_their_parse_location() {
+	parser := DOMParser.create(dom.Document.create(dom.url_about_blank()))
+	document := parser.parse_from_string('<?before document?><!DOCTYPE root [<?ignored subset?>]><root><?inside element?></root><?after document?>', .text_xml) or { panic(err) }
+	children := unsafe { &dom.Node(document) }.children_as_vector()
+	assert children.len == 3
+	assert children[0].as_processing_instruction()?.target() == 'before'
+	root := children[1].as_element() or { panic('missing document element') }
+	inside := root.as_node().first_child() or { panic('missing element processing instruction') }
+	assert inside.as_processing_instruction()?.target() == 'inside'
+	assert children[2].as_processing_instruction()?.target() == 'after'
+}
+
 fn test_dom_parser_returns_parsererror_for_malformed_xml() {
 	associated := dom.Document.create(dom.url_about_blank())
 	parser := DOMParser.create(associated)
