@@ -100,6 +100,24 @@ pub fn (list &HeaderList) get_decode_and_split(name string) ?[]string {
 	return get_decode_and_split_header_value(value)
 }
 
+// https://fetch.spec.whatwg.org/#extract-header-list-values
+pub fn (list &HeaderList) extract_header_list_values(name string) ![]string {
+	if !list.contains(name) {
+		return []string{}
+	}
+	mut values := []string{}
+	for header in list.headers {
+		if !equals_ignoring_ascii_case(header.name, name) {
+			continue
+		}
+		extracted := header.extract_header_values() or {
+			return error('Failed to parse ${name} header values')
+		}
+		values << extracted
+	}
+	return values
+}
+
 // --- Header-value splitting (GenericLexer + collect an HTTP quoted string) ---
 
 struct Lexer {

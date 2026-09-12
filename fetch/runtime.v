@@ -14,6 +14,8 @@ import http
 import securecontexts
 import sri
 import streams
+import strconv
+import time
 
 struct FetchMemoryCacheEntry {
 	vary_key         string
@@ -712,6 +714,14 @@ pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 				request.response_tainting = .cors
 				make_preflight := request.use_cors_preflight || (request.unsafe_request && (!http.is_cors_safelisted_method(request.method) || get_cors_unsafe_header_names(request.header_list).len > 0))
 				response = http_fetch(params, host, make_preflight).response()
+				if make_preflight {
+					if cors_with_preflight_response := response {
+						if cors_with_preflight_response.is_network_error() {
+							mut preflight_cache := PreflightCache.the()
+							preflight_cache.clear_cache_entries(request)
+						}
+					}
+				}
 			}
 		}
 	}
@@ -924,10 +934,18 @@ pub fn nonstandard_resource_loader_file_or_http_network_fetch(params &FetchParam
 }
 
 pub fn cors_preflight_fetch(mut request Request, host &FetchHost) &PendingResponse {
-	mut preflight := request.clone()
+	mut preflight := Request.create()
 	preflight.method = 'OPTIONS'
-	preflight.body = RequestBody{}
-	preflight.header_list = http.HeaderList.create()
+	preflight.url_list = request.url_list.clone()
+	preflight.client = request.client
+	preflight.initiator = request.initiator
+	preflight.initiator_type = request.initiator_type
+	preflight.destination = request.destination
+	preflight.origin = request.origin
+	preflight.referrer = request.referrer
+	preflight.referrer_policy = request.referrer_policy
+	preflight.mode = .cors
+	preflight.response_tainting = .cors
 	preflight.header_list.append(http.Header{ name: 'Accept', value: '*/*' })
 	preflight.header_list.append(http.Header{
 		name: 'Access-Control-Request-Method'
@@ -941,15 +959,68 @@ pub fn cors_preflight_fetch(mut request Request, host &FetchHost) &PendingRespon
 		})
 	}
 	response := host.perform(preflight) or { Response.network_error(err.msg()) }
-	if response.is_network_error() || !cors_check(request, response) {
+	if response.is_network_error() || !cors_check(request, response) || !is_ok_status(response.status) {
 		return PendingResponse.create(mut request, Response.network_error('CORS-preflight check failed'))
+	}
+	mut methods := response.header_list.extract_header_list_values('Access-Control-Allow-Methods') or {
+		return PendingResponse.create(mut request, Response.network_error('The Access-Control-Allow-Methods in the CORS-preflight response is syntactically invalid'))
+	}
+	header_names := response.header_list.extract_header_list_values('Access-Control-Allow-Headers') or {
+		return PendingResponse.create(mut request, Response.network_error('The Access-Control-Allow-Headers in the CORS-preflight response is syntactically invalid'))
+	}
+	if methods.len == 0 && request.use_cors_preflight {
+		methods = [request.method]
+	}
+	if request.method !in methods && !http.is_cors_safelisted_method(request.method) {
+		if request.credentials_mode == .include || '*' !in methods {
+			return PendingResponse.create(mut request, Response.network_error("Non-CORS-safelisted method '${request.method}' was not allowed by the CORS-preflight response"))
+		}
+	}
+	for header in request.header_list.headers() {
+		if is_cors_non_wildcard_request_header_name(header.name)
+			&& !header_names.any(equals_ignoring_ascii_case(it, header.name)) {
+			return PendingResponse.create(mut request, Response.network_error("Header '${header.name}' was not allowed by the CORS-preflight response"))
+		}
+	}
+	for unsafe_name in unsafe_names {
+		if header_names.any(equals_ignoring_ascii_case(it, unsafe_name)) {
+			continue
+		}
+		if request.credentials_mode == .include || '*' !in header_names {
+			return PendingResponse.create(mut request, Response.network_error("CORS-unsafe header '${unsafe_name}' was not allowed by the CORS-preflight response"))
+		}
+	}
+	mut max_age := 5 * time.second
+	max_age_values := response.header_list.extract_header_list_values('Access-Control-Max-Age') or {
+		[]string{}
+	}
+	if max_age_values.len == 1 {
+		if seconds := strconv.atoi(max_age_values[0]) {
+			if seconds >= -2_147_483_648 && seconds <= 2_147_483_647 {
+				max_age = time.Duration(seconds) * time.second
+				if max_age > preflight_cache_max_age_limit {
+					max_age = preflight_cache_max_age_limit
+				}
+			}
+		}
+	}
+	mut preflight_cache := PreflightCache.the()
+	for method in methods {
+		preflight_cache.cache_method(request, method, max_age)
+	}
+	for header_name in header_names {
+		preflight_cache.cache_header_name(request, header_name, max_age)
 	}
 	return PendingResponse.create(mut request, response)
 }
 
 pub fn http_fetch(params &FetchParams, host &FetchHost, make_cors_preflight bool) &PendingResponse {
 	mut request := params.request
-	needs_preflight := make_cors_preflight && ((!http.is_cors_safelisted_method(request.method) || request.use_cors_preflight) || get_cors_unsafe_header_names(request.header_list).len > 0)
+	mut preflight_cache := PreflightCache.the()
+	method_needs_preflight := !preflight_cache.is_a_method_cache_entry_match(request, request.method) && (!http.is_cors_safelisted_method(request.method) || request.use_cors_preflight)
+	unsafe_names := get_cors_unsafe_header_names(request.header_list)
+	headers_need_preflight := unsafe_names.any(!preflight_cache.is_a_header_name_cache_entry_match(request, it))
+	needs_preflight := make_cors_preflight && (method_needs_preflight || headers_need_preflight)
 	if needs_preflight {
 		preflight_response := cors_preflight_fetch(mut request, host).response() or {
 			return PendingResponse.create(mut request, Response.network_error('CORS-preflight fetch produced no response'))
