@@ -91,6 +91,7 @@ mut:
 	dimension_attribute_source ?&dom.Element
 	last_seen_viewport_size_   [2]f64
 	form_control_              ?&FormAssociatedElement
+	load_event_delayer_        ?dom.DocumentLoadEventDelayer
 }
 
 pub fn HTMLImageElementModel.create(document &dom.Document, base_url dom.URL) &HTMLImageElementModel {
@@ -132,15 +133,33 @@ fn image_viewport_client(image &HTMLImageElementModel) dom.ViewportClient {
 	}
 }
 
+fn html_image_element_adopted_from_callback(target voidptr, old_document &dom.Document) {
+	mut image := unsafe { &HTMLImageElementModel(target) }
+	image.adopted_from(old_document)
+}
+
+fn attach_html_image_element_model(element &dom.HTMLImageElement, model &HTMLImageElementModel) {
+	mut mutable_model := unsafe { &HTMLImageElementModel(model) }
+	mutable_model.element_ = element
+	mut mutable_element := unsafe { &dom.HTMLImageElement(element) }
+	mutable_element.image_element_model_ = voidptr(model)
+	mut node := image_dom_element(element).as_node()
+	node.set_adopted_from_hook(dom.NodeAdoptedFromHook{
+		target: voidptr(model)
+		callback: html_image_element_adopted_from_callback
+	})
+}
+
 // Return the translated HTMLImageElement state associated with a concrete DOM
 // image, materializing the state on first use just as initialize() does in C++.
 pub fn html_image_element_model_for_dom_element(element &dom.HTMLImageElement) &HTMLImageElementModel {
 	if element.image_element_model_ != unsafe { nil } {
-		return unsafe { &HTMLImageElementModel(element.image_element_model_) }
+		model := unsafe { &HTMLImageElementModel(element.image_element_model_) }
+		attach_html_image_element_model(element, model)
+		return model
 	}
 	dom_element := image_dom_element(element)
 	mut model := HTMLImageElementModel.create(dom_element.document(), dom_element.document().base_url())
-	model.element_ = element
 	model.src_ = dom_element.get_attribute('src')
 	model.srcset_ = dom_element.get_attribute('srcset')
 	model.sizes_ = dom_element.get_attribute('sizes')
@@ -152,8 +171,7 @@ pub fn html_image_element_model_for_dom_element(element &dom.HTMLImageElement) &
 	}
 	model.cors_setting_ = cors_setting_attribute_from_keyword(dom_element.get_attribute('crossorigin'))
 	model.form_control_ = FormAssociatedElement.create(dom_element)
-	mut mutable_element := unsafe { &dom.HTMLImageElement(element) }
-	mutable_element.image_element_model_ = voidptr(model)
+	attach_html_image_element_model(element, model)
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.register_viewport_client(image_viewport_client(model))
 	return model
@@ -360,10 +378,14 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	request.set_current_pixel_density(f32(selection.pixel_density))
 	request.set_state(.partially_available)
 	image.pending_request_ = request
+	if image.loading_ == .eager {
+		image.begin_delaying_document_load_event()
+	}
 	fetch := image.fetch_hook_ or {
 		request.set_state(.broken)
 		image.pending_request_ = none
 		image.current_request_ = request
+		image.stop_delaying_document_load_event()
 		if !maybe_omit_events || previous_url != url.serialize() {
 			image.fire_event('error')
 		}
@@ -375,6 +397,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		image.pending_request_ = none
 		image.current_request_ = request
 		image.decoded_data_ = none
+		image.stop_delaying_document_load_event()
 		if !maybe_omit_events || previous_url != url.serialize() {
 			image.fire_event('error')
 		}
@@ -391,6 +414,7 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 	image.current_frame_index_ = 0
 	image.loops_completed_ = 0
 	image.animation_stopped_ = false
+	image.stop_delaying_document_load_event()
 	if restart_animations {
 		image.restart_the_animation()
 	}
@@ -625,6 +649,7 @@ pub fn (mut image HTMLImageElementModel) add_callbacks_to_image_request(image_re
 		image.current_frame_index_ = 0
 		image.loops_completed_ = 0
 		image.animation_stopped_ = false
+		image.stop_delaying_document_load_event()
 		if !maybe_omit_events || previous_url != url_string {
 			image.fire_event('load')
 		}
@@ -645,6 +670,7 @@ pub fn (mut image HTMLImageElementModel) add_callbacks_to_image_request(image_re
 	if pending_is_request {
 		image.upgrade_pending_request_to_current_request()
 	}
+	image.stop_delaying_document_load_event()
 	if !maybe_omit_events || previous_url != url_string {
 		image.handle_failed_fetch()
 	}
@@ -689,16 +715,38 @@ pub fn (mut image HTMLImageElementModel) adopted_from(old_document &dom.Document
 	}
 	mut document := unsafe { &dom.Document(image.document_) }
 	document.register_viewport_client(image_viewport_client(&image))
+	mut was_delaying := false
+	if mut delayer := image.load_event_delayer_ {
+		delayer.finish()
+		was_delaying = true
+	}
+	if was_delaying {
+		image.load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut document)
+	}
 	if mut form_control := image.form_control_ {
 		form_control.reset_form_owner()
 	}
 }
 
+fn (mut image HTMLImageElementModel) begin_delaying_document_load_event() {
+	if mut delayer := image.load_event_delayer_ {
+		delayer.finish()
+	}
+	mut document := unsafe { &dom.Document(image.document_) }
+	image.load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut document)
+}
+
+fn (mut image HTMLImageElementModel) stop_delaying_document_load_event() {
+	if mut delayer := image.load_event_delayer_ {
+		delayer.finish()
+	}
+	image.load_event_delayer_ = none
+}
+
 pub fn html_image_element_adopted_from(element &dom.HTMLImageElement, old_document &dom.Document) {
+	_ = html_image_element_model_for_dom_element(element)
 	mut node := unsafe { &dom.Node(image_dom_element(element).as_node()) }
 	node.adopted_from(old_document)
-	mut model := html_image_element_model_for_dom_element(element)
-	model.adopted_from(old_document)
 }
 
 pub fn html_image_element_alternative_text(element &dom.HTMLImageElement) ?string {
