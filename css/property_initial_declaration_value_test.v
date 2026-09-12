@@ -13,8 +13,10 @@ fn universal_property_registration_succeeds(initial_value string) bool {
 fn test_register_property_validates_universal_initial_value() {
 	assert universal_property_registration_succeeds('')
 	assert universal_property_registration_succeeds('plain tokens')
+	assert universal_property_registration_succeeds('(;!)')
 	assert !universal_property_registration_succeeds('whee!')
 	assert !universal_property_registration_succeeds(')')
+	assert !universal_property_registration_succeeds('([)]')
 }
 
 fn test_property_rule_validates_universal_initial_value_descriptor() {

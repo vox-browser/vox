@@ -3556,6 +3556,20 @@ fn parse_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenTy
 	mut declaration_value := []ComponentValue{}
 	for tokens.has_next_token() {
 		peek := tokens.next_token()
+		if peek.is_block() {
+			if !nested_declaration_value_contents_are_valid(peek.block().value) {
+				break
+			}
+			declaration_value << tokens.consume_a_token()
+			continue
+		}
+		if peek.is_function() {
+			if !nested_declaration_value_contents_are_valid(peek.function().value) {
+				break
+			}
+			declaration_value << tokens.consume_a_token()
+			continue
+		}
 		if !peek.is_token() {
 			declaration_value << tokens.consume_a_token()
 			continue
@@ -3586,6 +3600,33 @@ fn parse_declaration_value(mut tokens ParserTokenStream, end_token_type ?TokenTy
 		return none
 	}
 	return declaration_value
+}
+
+fn nested_declaration_value_contents_are_valid(values []ComponentValue) bool {
+	for value in values {
+		if value.is_block() {
+			if !nested_declaration_value_contents_are_valid(value.block().value) {
+				return false
+			}
+			continue
+		}
+		if value.is_function() {
+			if !nested_declaration_value_contents_are_valid(value.function().value) {
+				return false
+			}
+			continue
+		}
+		if !value.is_token() {
+			continue
+		}
+		if value.is(.invalid) || value.is(.end_of_file) || value.is(.bad_string)
+			|| value.is(.bad_url) || value.is(.function) || value.is(.open_curly)
+			|| value.is(.open_paren) || value.is(.open_square) || value.is(.close_curly)
+			|| value.is(.close_paren) || value.is(.close_square) {
+			return false
+		}
+	}
+	return true
 }
 
 fn is_valid_optional_declaration_value(values []ComponentValue) bool {

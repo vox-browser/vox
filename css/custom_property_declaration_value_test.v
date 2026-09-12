@@ -22,3 +22,16 @@ fn test_cssom_custom_property_write_rejects_invalid_declaration_value() {
 	declaration.set_property('--theme', 'whee!', '') or { panic('${err}') }
 	assert declaration.get_property_value('--theme') == 'green'
 }
+
+fn test_custom_property_declarations_validate_nested_contents() {
+	declaration := custom_property_declaration_for_test('a {
+		--valid: (;!);
+		--bad-square: (]);
+		--bad-paren: [)];
+		--bad-curly: (});
+	}')
+	assert declaration.get_property_value('--valid') == '(;!)'
+	assert declaration.get_property_value('--bad-square') == ''
+	assert declaration.get_property_value('--bad-paren') == ''
+	assert declaration.get_property_value('--bad-curly') == ''
+}
