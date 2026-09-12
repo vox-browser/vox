@@ -214,6 +214,8 @@ pub fn CanvasRenderingContext2D.create(element &dom.HTMLCanvasElement, surface &
 	// into the element-owned context.
 	context.OffscreenCanvasRenderingContext2D.CanvasPath.canvas_state_ = &context.OffscreenCanvasRenderingContext2D.CanvasState
 	context.OffscreenCanvasRenderingContext2D.CanvasState.set_reset_callback(voidptr(&context.OffscreenCanvasRenderingContext2D), offscreen_canvas_state_reset)
+	base_element := unsafe { &dom.Element(element) }
+	context.OffscreenCanvasRenderingContext2D.CanvasState.set_font_resolution_document(base_element.as_node().document())
 	mut mutable_surface := unsafe { &OffscreenCanvas(surface) }
 	mutable_surface.context_ = &context.OffscreenCanvasRenderingContext2D
 	return context

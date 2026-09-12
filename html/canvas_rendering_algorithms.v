@@ -597,11 +597,7 @@ pub fn (context &OffscreenCanvasRenderingContext2D) prepare_text(text string, ma
 		return PreparedCanvasText{}
 	}
 	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
-	mut font_size := 10.0
-	parts := context.drawing_state.font_string.split('px')
-	if parts.len > 0 && parts[0].f64() > 0 {
-		font_size = parts[0].f64()
-	}
+	font_size := context.drawing_state.font_size_px
 	mut width := f64(replaced.runes().len) * font_size * 0.5
 	if width > max_width {
 		width = max_width
@@ -789,6 +785,14 @@ pub fn (context &CanvasRenderingContext2D) clear_color() dom.Color {
 
 pub fn (context &CanvasRenderingContext2D) font_cascade_list() string {
 	return context.OffscreenCanvasRenderingContext2D.font_cascade_list()
+}
+
+pub fn (context &CanvasRenderingContext2D) font() string {
+	return context.OffscreenCanvasRenderingContext2D.font()
+}
+
+pub fn (mut context CanvasRenderingContext2D) set_font(font string) {
+	context.OffscreenCanvasRenderingContext2D.set_font(font)
 }
 
 pub fn (context &CanvasRenderingContext2D) prepare_text(text string, max_width f64) PreparedCanvasText {

@@ -80,3 +80,23 @@ fn test_canvas_attribute_change_and_external_content_source_follow_element_lifec
 	assert context.global_alpha() == 1.0
 	assert source.cleared
 }
+
+fn test_canvas_font_uses_detached_document_resolution_context() {
+	// A Document created directly has no Window or navigable, matching the
+	// createHTMLDocument() regression from upstream.
+	mut detached_document := dom.Document.create(dom.url_about_blank())
+	detached_document.set_viewport_rect(dom.Rect{ width: 500, height: 300 })
+	element := detached_document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas') or {
+		panic(err)
+	}
+	canvas := unsafe { &dom.HTMLCanvasElement(element) }
+	mut context := html_canvas_element_get_context(canvas, '2d', none) or { panic(err) }
+
+	context.set_font('10vw serif')
+	assert context.font() == '10vw serif'
+	assert context.drawing_state.font_size_px == 50
+	context.fill_text('a', 0, 50, none)
+	context.stroke_text('a', 0, 50, none)
+	metrics := context.measure_text('aa')
+	assert metrics.width() == 50
+}

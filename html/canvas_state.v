@@ -248,6 +248,7 @@ pub mut:
 	letter_spacing_px     f64
 	letter_spacing_string string = '0px'
 	font_string           string = '10px sans-serif'
+	font_size_px          f64 = 10.0
 	clip_paths            []CanvasClipPath
 	// Opaque Gfx handles (out of scope for this port): Gfx::Filter, CSS::StyleValue font,
 	// Gfx::FontCascadeList.
@@ -264,6 +265,9 @@ mut:
 	reset_callback      ?CanvasStateResetCallback
 	// https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-context-lost
 	context_lost_ bool
+	// The node document is available even when an element belongs to a detached
+	// document with no Window or navigable.
+	font_resolution_document_ ?&dom.Document
 }
 
 pub type CanvasStateResetCallback = fn(voidptr)
@@ -312,6 +316,14 @@ pub fn (state &CanvasState) is_context_lost() bool {
 
 pub fn (mut state CanvasState) set_context_lost(context_lost bool) {
 	state.context_lost_ = context_lost
+}
+
+pub fn (mut state CanvasState) set_font_resolution_document(document &dom.Document) {
+	state.font_resolution_document_ = document
+}
+
+pub fn (state &CanvasState) font_resolution_document() ?&dom.Document {
+	return state.font_resolution_document_
 }
 
 pub fn (mut state CanvasState) clear_drawing_state_stack() {

@@ -29,13 +29,49 @@ pub fn (styles &CanvasTextDrawingStyles) font() string {
 	return styles.state.drawing_state.font_string
 }
 
+fn canvas_font_size_in_css_pixels(font_value css.StyleValue, resolution_context css.LengthResolutionContext) ?f64 {
+	shorthand := if font_value is css.ShorthandStyleValue {
+		font_value
+	} else {
+		return none
+	}
+	font_size := shorthand.longhand(.font_size)?
+	return match font_size {
+		css.LengthStyleValue {
+			font_size.length().to_px(resolution_context).to_double()
+		}
+		css.CalculatedStyleValue {
+			length := font_size.resolve_length(css.CalculationResolutionContext{
+				length_resolution_context: resolution_context
+			})?
+			length.to_px(resolution_context).to_double()
+		}
+		css.PercentageStyleValue {
+			resolution_context.font_metrics.font_size.to_double() * font_size.percentage().as_fraction()
+		}
+		else {
+			return none
+		}
+	}
+}
+
 pub fn (mut styles CanvasTextDrawingStyles) set_font(font string) {
 	trimmed := font.trim_space()
 	if trimmed == '' || trimmed in ['inherit', 'initial', 'unset', 'revert', 'revert-layer'] {
 		return
 	}
-	if css.parse_css_value_logic(.font, trimmed) == none {
-		return
+	parsed := css.parse_css_value_logic(.font, trimmed) or { return }
+	// CanvasTextDrawingStyles.cpp uses ResolutionContext::for_document(), not
+	// for_window(): a canvas can have a valid node document without a Window.
+	resolution_context := if document := styles.state.font_resolution_document() {
+		css.LengthResolutionContext.for_document(document)
+	} else {
+		css.LengthResolutionContext.default()
+	}
+	if resolved_size := canvas_font_size_in_css_pixels(parsed, resolution_context) {
+		if resolved_size > 0 {
+			styles.state.drawing_state.font_size_px = resolved_size
+		}
 	}
 	styles.state.drawing_state.font_string = trimmed
 }
