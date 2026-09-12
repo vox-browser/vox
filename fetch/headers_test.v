@@ -1,5 +1,12 @@
 module fetch
 
+import http
+
+struct HeadersVisitLog {
+mut:
+	entries []string
+}
+
 fn test_headers_normalize_combine_set_delete_and_iteration() {
 	mut headers := Headers.construct([HeaderPair{ name: 'X-B', value: '  two  ' },
 		HeaderPair{ name: 'x-a', value: 'one' }, HeaderPair{ name: 'X-A', value: 'three' }])!
@@ -54,4 +61,25 @@ fn test_headers_request_no_cors_and_set_cookie_values() {
 	cookies.append('Set-Cookie', 'a=1')!
 	cookies.append('set-cookie', 'b=2')!
 	assert cookies.get_set_cookie() == ['a=1', 'b=2']
+}
+
+fn test_headers_create_from_init_and_breakable_iteration() {
+	list := http.HeaderList.create()
+	list.append(http.Header{ name: 'X-Original', value: 'one' })
+	created := Headers.create(list)
+	assert created.header_list() == list
+	assert created.guard() == .none
+
+	empty := Headers.create_from_init(none)!
+	assert empty.sorted_and_combined().len == 0
+	mut initialized := Headers.create_from_init([
+		HeaderPair{ name: 'X-B', value: 'two' },
+		HeaderPair{ name: 'X-A', value: 'one' },
+	])!
+	mut visited := &HeadersVisitLog{}
+	initialized.for_each(fn [mut visited] (name string, value string) IterationDecision {
+		visited.entries << '${name}:${value}'
+		return .break_
+	})
+	assert visited.entries == ['x-a:one']
 }

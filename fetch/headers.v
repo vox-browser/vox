@@ -28,12 +28,22 @@ mut:
 	guard_       HeadersGuard     = .none
 }
 
-pub fn Headers.construct(init []HeaderPair) !&Headers {
-	mut headers := &Headers{}
-	for pair in init {
-		headers.append(pair.name, pair.value)!
+pub fn Headers.create(header_list &http.HeaderList) &Headers {
+	return &Headers{
+		header_list_: header_list
+	}
+}
+
+pub fn Headers.create_from_init(init ?[]HeaderPair) !&Headers {
+	mut headers := Headers.create(http.HeaderList.create())
+	if pairs := init {
+		headers.fill(pairs)!
 	}
 	return headers
+}
+
+pub fn Headers.construct(init []HeaderPair) !&Headers {
+	return Headers.create_from_init(init)
 }
 
 pub fn Headers.construct_impl(init []HeaderPair) !&Headers {
@@ -41,10 +51,9 @@ pub fn Headers.construct_impl(init []HeaderPair) !&Headers {
 }
 
 pub fn Headers.from_header_list(list &http.HeaderList, guard HeadersGuard) &Headers {
-	return &Headers{
-		header_list_: list
-		guard_:       guard
-	}
+	mut headers := Headers.create(list)
+	headers.guard_ = guard
+	return headers
 }
 
 pub fn (headers &Headers) header_list() &http.HeaderList {
@@ -214,14 +223,22 @@ pub fn (headers &Headers) sorted_and_combined() []HeaderPair {
 	return pairs
 }
 
-pub fn (headers &Headers) for_each(callback fn (string, string) !) ! {
+pub enum IterationDecision {
+	continue_
+	break_
+}
+
+pub fn (headers &Headers) for_each(callback fn (string, string) IterationDecision) {
 	mut index := 0
 	for {
 		pairs := headers.sorted_and_combined()
-		if index >= pairs.len { break
-		 }
+		if index >= pairs.len {
+			break
+		}
 		pair := pairs[index]
-		callback(pair.value, pair.name)!
+		if callback(pair.name, pair.value) == .break_ {
+			break
+		}
 		index++
 	}
 }
