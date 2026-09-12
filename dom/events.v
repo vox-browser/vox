@@ -1762,6 +1762,11 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 	mut should_dispatch := is_activation_event
 	if !should_dispatch {
 		should_dispatch = should_dispatch_non_activation_event(target, event.type_)
+		if !should_dispatch && event.is_trusted() {
+			if legacy_event_type := legacy_prefixed_animation_or_transition_event_type(event.type_) {
+				should_dispatch = should_dispatch_non_activation_event(target, legacy_event_type)
+			}
+		}
 	}
 
 	// 6. If target is not relatedTarget or target is event's relatedTarget, then:
