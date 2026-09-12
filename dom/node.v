@@ -1434,13 +1434,30 @@ fn style_scope_for_node(node &Node) &StyleScope {
 	return node.document().style_scope()
 }
 
-fn shadow_style_scope_for_node(node &Node) ?&StyleScope {
-	element := node.as_element() or { return none }
-	if !element.is_shadow_host() {
-		return none
+fn add_additional_style_scope(mut scopes []&StyleScope, scope &StyleScope, style_scope &StyleScope) {
+	if scope == style_scope || scope in scopes {
+		return
 	}
-	shadow_root := element.shadow_root() or { return none }
-	return shadow_root.style_scope()
+	scopes << scope
+}
+
+fn additional_style_scopes_for_node(node &Node, style_scope &StyleScope) []&StyleScope {
+	mut additional_scopes := []&StyleScope{cap: 4}
+	if element := node.as_element() {
+		if shadow_root := element.shadow_root() {
+			add_additional_style_scope(mut additional_scopes, shadow_root.style_scope(), style_scope)
+		}
+	}
+	for ancestor := node.parent_or_shadow_host(); ancestor != none;  {
+		current := ancestor or { break }
+		if element := current.as_element() {
+			if shadow_root := element.shadow_root() {
+				add_additional_style_scope(mut additional_scopes, shadow_root.style_scope(), style_scope)
+			}
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
+	return additional_scopes
 }
 
 pub fn (d &Document) style_computer() &StyleComputer {
@@ -1633,20 +1650,24 @@ pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationRea
 		return
 	}
 	style_scope := style_scope_for_node(&n)
-	shadow_style_scope := shadow_style_scope_for_node(&n)
+	additional_scopes := additional_style_scopes_for_node(&n, style_scope)
 	mut properties_used_in_has_selectors := false
 	for property in properties {
-		properties_used_in_has_selectors = properties_used_in_has_selectors || doc.style_computer().invalidation_property_used_in_has_selector(property, style_scope)
-		if shadow_scope := shadow_style_scope {
-			properties_used_in_has_selectors = properties_used_in_has_selectors || doc.style_computer().invalidation_property_used_in_has_selector(property, shadow_scope)
+		if doc.style_computer().invalidation_property_used_in_has_selector(property, style_scope) {
+			properties_used_in_has_selectors = true
+		}
+		for additional_scope in additional_scopes {
+			if doc.style_computer().invalidation_property_used_in_has_selector(property, additional_scope) {
+				properties_used_in_has_selectors = true
+			}
 		}
 	}
 	if properties_used_in_has_selectors {
 		mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
 		mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
-		if shadow_scope := shadow_style_scope {
-			mut mutable_shadow_scope := unsafe { &StyleScope(shadow_scope) }
-			mutable_shadow_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
+		for additional_scope in additional_scopes {
+			mut mutable_additional_scope := unsafe { &StyleScope(additional_scope) }
+			mutable_additional_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
 		}
 	}
 	if options.invalidate_self {
@@ -1658,9 +1679,11 @@ pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationRea
 	if invalidator.enqueue_invalidation_plan(&n, reason, *plan) {
 		return
 	}
-	if shadow_scope := shadow_style_scope {
-		shadow_plan := doc.style_computer().invalidation_plan_for_properties(properties, shadow_scope)
-		invalidator.enqueue_invalidation_plan(&n, reason, *shadow_plan)
+	for additional_scope in additional_scopes {
+		additional_plan := doc.style_computer().invalidation_plan_for_properties(properties, additional_scope)
+		if invalidator.enqueue_invalidation_plan(&n, reason, *additional_plan) {
+			return
+		}
 	}
 }
 

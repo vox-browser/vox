@@ -135,6 +135,30 @@ fn test_light_dom_insert_schedules_has_invalidation_in_host_shadow_scope() {
 	assert shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
 }
 
+fn test_light_dom_attribute_change_schedules_has_invalidation_in_host_shadow_scope() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut host := style_sheet_invalidation_test_element(document, 'div')
+	document_node.append_child(host.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut style := style_sheet_invalidation_test_element(document, 'style')
+	shadow_node.append_child(style.as_node()) or { panic(err) }
+	mut sheet := parse_css_stylesheet_with_parser(':host(:has(.flag)) { color: red }', none)
+	install_inline_style_sheet_for_invalidation_test(mut sheet, style, shadow_node)
+	mut light_child := style_sheet_invalidation_test_element(document, 'span')
+	mut host_node := host.as_node()
+	host_node.append_child(light_child.as_node()) or { panic(err) }
+	_ := css_style_computer_for(document)
+	mut shadow_scope := css_style_scope_for_shadow_root(shadow_root)
+	shadow_scope.build_rule_cache_if_needed()
+	assert shadow_scope.may_have_has_selectors()
+	shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+
+	light_child.set_attribute_value('class', 'flag')
+	assert shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+}
+
 fn test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }
