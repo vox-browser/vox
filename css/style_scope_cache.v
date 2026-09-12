@@ -660,7 +660,13 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 				} else {
 					typed
 				}
-				resolved_keyframe.easing = EasingFunction.from_css_style_value(first)
+				if first is EasingStyleValue || first is KeywordStyleValue {
+					resolved_keyframe.easing = ResolvedKeyframeEasing(EasingFunction.from_css_style_value(first))
+				} else {
+					resolved_keyframe.easing = ResolvedKeyframeEasing(UnresolvedKeyframeEasing{
+						value: dom_style_value_from_value_logic(first)
+					})
+				}
 				continue
 			}
 			if property_id == .animation_composition {

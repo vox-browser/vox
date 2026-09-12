@@ -10117,6 +10117,30 @@ fn (s &StyleComputer) compute_keyframe_values(abstract_element dom.AbstractEleme
 	return result
 }
 
+fn resolve_keyframe_easing(style_value &dom.StyleValue, abstract_element dom.AbstractElement) ?EasingFunction {
+	mut resolved := unsafe { style_value }
+	typed := style_value_logic_from_dom(.animation_timing_function, resolved) or { return none }
+	if typed is UnresolvedStyleValue {
+		resolved = resolve_unresolved_style_value_for_property(abstract_element, .animation_timing_function, typed)
+	}
+	mut resolved_typed := style_value_logic_from_dom(.animation_timing_function, resolved) or {
+		return none
+	}
+	if resolved_typed is GuaranteedInvalidStyleValue {
+		return none
+	}
+	if resolved_typed is StyleValueList {
+		if resolved_typed.size() == 0 {
+			return none
+		}
+		resolved_typed = resolved_typed.value_at(0, false)
+	}
+	if resolved_typed is EasingStyleValue || resolved_typed is KeywordStyleValue {
+		return EasingFunction.from_css_style_value(resolved_typed)
+	}
+	return none
+}
+
 pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractElement, animation voidptr, mut computed_properties ComputedProperties) {
 	if animation == unsafe { nil } {
 		return
@@ -10149,7 +10173,17 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 	start_keyframe := key_frame_set.keyframes_by_key[start_key] or { return }
 	end_keyframe := key_frame_set.keyframes_by_key[end_key] or { return }
 	mut interval_progress := (progress - f64(start_key)) / f64(end_key - start_key)
-	interval_progress = (start_keyframe.easing or { effect.default_easing }).evaluate_at(interval_progress, false)
+	keyframe_easing := if easing := start_keyframe.easing {
+		match easing {
+			EasingFunction { easing }
+			UnresolvedKeyframeEasing {
+				resolve_keyframe_easing(easing.value, abstract_element) or { effect.default_easing }
+			}
+		}
+	} else {
+		effect.default_easing
+	}
+	interval_progress = keyframe_easing.evaluate_at(interval_progress, false)
 
 	start_values := s.compute_keyframe_values(abstract_element, start_keyframe, computed_properties)
 	end_values := s.compute_keyframe_values(abstract_element, end_keyframe, computed_properties)

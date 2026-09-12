@@ -1143,6 +1143,54 @@ fn test_css_animation_definitions_are_stored_and_sampled() {
 	assert opacity.css_text == '0.5'
 }
 
+fn test_keyframe_animation_timing_function_resolves_custom_properties_when_sampled() {
+	doc := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(doc, '@keyframes resolved-easing {
+		from { opacity: 0; animation-timing-function: var(--keyframe-easing); }
+		to { opacity: 1; }
+	}
+	@keyframes fallback-easing {
+		from { opacity: 0; animation-timing-function: var(--missing-easing, linear); }
+		to { opacity: 1; }
+	}
+	.resolved { --keyframe-easing: linear; animation: resolved-easing 1s ease both; }
+	.fallback { animation: fallback-easing 1s ease both; }')
+	mut resolved_element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	resolved_element.set_attribute_value('class', 'resolved')
+	mut fallback_element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	fallback_element.set_attribute_value('class', 'fallback')
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(root.as_node()) or { panic('${err}') }
+	mut root_node := root.as_node()
+	root_node.append_child(resolved_element.as_node()) or { panic('${err}') }
+	root_node.append_child(fallback_element.as_node()) or { panic('${err}') }
+
+	mut computer := StyleComputer.new(doc)
+	mut resolved_abstract := dom.AbstractElement.new(resolved_element, none)
+	resolved_initial := computer.compute_style(resolved_abstract)
+	resolved_abstract.set_computed_properties(computed_properties_to_dom(resolved_initial))
+	mut fallback_abstract := dom.AbstractElement.new(fallback_element, none)
+	fallback_initial := computer.compute_style(fallback_abstract)
+	fallback_abstract.set_computed_properties(computed_properties_to_dom(fallback_initial))
+
+	computer.set_animation_time_ms(500)
+	resolved_midpoint := computer.compute_style(resolved_abstract)
+	fallback_midpoint := computer.compute_style(fallback_abstract)
+	assert (resolved_midpoint.property(.opacity, .yes) or {
+		panic('resolved opacity missing')
+	}).css_text == '0.5'
+	assert (fallback_midpoint.property(.opacity, .yes) or {
+		panic('fallback opacity missing')
+	}).css_text == '0.5'
+}
+
 fn test_css_animation_sampling_holds_paused_progress_and_applies_direction_at_boundaries() {
 	mut animation := CSSAnimation.create()
 	mut effect := KeyframeEffect.create()

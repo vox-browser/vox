@@ -485,12 +485,26 @@ pub enum WebAnimationPlayState {
 	finished
 }
 
+pub struct UnresolvedKeyframeEasing {
+pub:
+	value &dom.StyleValue
+}
+
+pub type ResolvedKeyframeEasing = EasingFunction | UnresolvedKeyframeEasing
+
+pub fn (easing ResolvedKeyframeEasing) to_string() string {
+	return match easing {
+		EasingFunction { easing.to_string() }
+		UnresolvedKeyframeEasing { easing.value.css_text }
+	}
+}
+
 pub struct ResolvedKeyFrame {
 pub mut:
 	properties             map[PropertyID]&dom.StyleValue
 	use_initial_properties map[PropertyID]bool
 	composite              ?CompositeOperation
-	easing                 ?EasingFunction
+	easing                 ?ResolvedKeyframeEasing
 }
 
 @[heap]
