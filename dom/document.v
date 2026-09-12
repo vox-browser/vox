@@ -93,6 +93,25 @@ pub:
 	callback NodeAdoptedFromCallback = unsafe { nil }
 }
 
+pub enum NodeIsSubtreeRoot {
+	no
+	yes
+}
+
+pub type NodeRemovedFromCallback = fn (voidptr, NodeIsSubtreeRoot, ?&Node, &Node)
+
+pub type NodeMovedFromCallback = fn (voidptr, NodeIsSubtreeRoot, ?&Node)
+
+// HTML element subclasses own several removing and moving algorithms. This
+// hook preserves the DOM lifecycle arguments without introducing a DOM -> HTML
+// module dependency.
+pub struct NodeLifecycleHook {
+pub:
+	target       voidptr
+	removed_from NodeRemovedFromCallback = unsafe { nil }
+	moved_from   NodeMovedFromCallback = unsafe { nil }
+}
+
 pub const color_transparent = Color{0, 0, 0, 0}
 
 pub fn (c Color) alpha() u8 {
@@ -462,6 +481,7 @@ pub mut:
 	load_event_delay_hook_    ?NodeLoadEventDelayHook
 	active_window_proxy_hook_ ?NodeActiveWindowProxyHook
 	adopted_from_hook_        ?NodeAdoptedFromHook
+	lifecycle_hook_           ?NodeLifecycleHook
 }
 
 // Translation of the ParentNode mixin; its algorithms live in

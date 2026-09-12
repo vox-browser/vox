@@ -2177,10 +2177,10 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 		assign_slottables_for_a_tree(parent_root)
 		assign_slottables_for_a_tree(&n)
 	}
-	n.removed_from(parent, parent_root)
-	n.for_each_shadow_including_descendant(fn [parent_root] (descendant &Node) TraversalDecision {
+	n.removed_from_with_context(.yes, parent, parent_root)
+	n.for_each_shadow_including_descendant(fn [parent, parent_root] (descendant &Node) TraversalDecision {
 		mut mutable_descendant := unsafe { &Node(descendant) }
-		mutable_descendant.removed_from(none, parent_root)
+		mutable_descendant.removed_from_with_context(.no, parent, parent_root)
 		return .@continue
 	})
 	// For each inclusive ancestor of parent, copy subtree observers into transient observers on the removed node.
@@ -2373,9 +2373,9 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 	n.for_each_shadow_including_inclusive_descendant(fn [old_parent, moved_node] (inclusive_descendant &Node) TraversalDecision {
 		mut mutable_descendant := unsafe { &Node(inclusive_descendant) }
 		if inclusive_descendant == moved_node {
-			mutable_descendant.moved_from(old_parent)
+			mutable_descendant.moved_from_with_context(.yes, old_parent)
 		} else {
-			mutable_descendant.moved_from(none)
+			mutable_descendant.moved_from_with_context(.no, old_parent)
 		}
 		return .@continue
 	})
@@ -2807,28 +2807,35 @@ pub fn (mut n Node) inserted() {
 }
 
 pub fn (mut n Node) removed_from(old_parent ?&Node, old_root &Node) {
+	n.removed_from_with_context(.yes, old_parent, old_root)
+}
+
+pub fn (mut n Node) removed_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node, old_root &Node) {
 	n.is_connected_ = false
 	if element := n.as_element() {
 		mut mutable_element := unsafe { &Element(element) }
-		mutable_element.removed_from(old_parent, old_root)
+		mutable_element.removed_from_with_context(is_subtree_root, old_ancestor, old_root)
 		return
 	}
-	_ = old_parent
-	_ = old_root
 	n.in_editable_subtree_ = false
 	n.layout_node_ = unsafe { nil }
 	n.paintable_ = unsafe { nil }
+	n.run_removed_from_lifecycle_hook(is_subtree_root, old_ancestor, old_root)
 }
 
 // https://dom.spec.whatwg.org/#concept-node-move-ext
 pub fn (mut n Node) moved_from(old_parent ?&Node) {
+	n.moved_from_with_context(.yes, old_parent)
+}
+
+pub fn (mut n Node) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node) {
 	if element := n.as_element() {
 		mut mutable_element := unsafe { &Element(element) }
-		mutable_element.moved_from(old_parent)
+		mutable_element.moved_from_with_context(is_subtree_root, old_ancestor)
 		return
 	}
-	_ = old_parent
 	n.recompute_editable_subtree_flag()
+	n.run_moved_from_lifecycle_hook(is_subtree_root, old_ancestor)
 }
 
 pub fn (mut n Node) adopted_from(old_document &Document) {
@@ -2842,6 +2849,24 @@ pub fn (mut n Node) adopted_from(old_document &Document) {
 
 pub fn (mut n Node) set_adopted_from_hook(hook ?NodeAdoptedFromHook) {
 	n.adopted_from_hook_ = hook
+}
+
+pub fn (mut n Node) set_lifecycle_hook(hook ?NodeLifecycleHook) {
+	n.lifecycle_hook_ = hook
+}
+
+fn (n &Node) run_removed_from_lifecycle_hook(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node, old_root &Node) {
+	hook := n.lifecycle_hook_ or { return }
+	if hook.removed_from != unsafe { nil } {
+		hook.removed_from(hook.target, is_subtree_root, old_ancestor, old_root)
+	}
+}
+
+fn (n &Node) run_moved_from_lifecycle_hook(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node) {
+	hook := n.lifecycle_hook_ or { return }
+	if hook.moved_from != unsafe { nil } {
+		hook.moved_from(hook.target, is_subtree_root, old_ancestor)
+	}
 }
 
 pub fn (n &Node) parent_or_shadow_host() ?&Node {

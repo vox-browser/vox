@@ -5577,7 +5577,10 @@ pub fn (mut e Element) inserted() {
 }
 
 pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
-	_ = old_parent
+	e.removed_from_with_context(.yes, old_parent, old_root)
+}
+
+pub fn (mut e Element) removed_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node, old_root &Node) {
 	mut node := unsafe { &Node(e.as_node()) }
 	node.in_editable_subtree_ = false
 	node.layout_node_ = unsafe { nil }
@@ -5625,12 +5628,17 @@ pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
 		}
 		dialog.is_modal_ = false
 	}
+	node.run_removed_from_lifecycle_hook(is_subtree_root, old_ancestor, old_root)
 }
 
 pub fn (mut e Element) moved_from(old_parent ?&Node) {
-	_ = old_parent
+	e.moved_from_with_context(.yes, old_parent)
+}
+
+pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node) {
 	mut node := unsafe { &Node(e.as_node()) }
 	node.recompute_editable_subtree_flag()
+	node.run_moved_from_lifecycle_hook(is_subtree_root, old_ancestor)
 }
 
 pub fn (mut e Element) children_changed(metadata ChildrenChangedMetadata) {
