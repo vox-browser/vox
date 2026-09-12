@@ -10444,6 +10444,10 @@ pub fn html_frame_set_element_adjust_computed_style(mut properties ComputedPrope
 pub fn htmlbr_element_adjust_computed_style(mut properties ComputedProperties) {
 	if properties.display().is_contents() {
 		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_)))))
+	} else if !properties.display().is_none() {
+		// A <br> always produces a BreakNode when it generates a box. Prevent
+		// table, flex, grid, and other display values from selecting another box type.
+		properties.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.inline_)))))
 	}
 }
 

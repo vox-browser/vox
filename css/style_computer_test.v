@@ -189,6 +189,32 @@ fn test_textarea_adjusts_computed_display_for_internal_shadow_tree() {
 	assert contents_computed.display() == Display.from_short(.none_)
 }
 
+fn test_br_adjusts_non_none_computed_display_to_inline() {
+	doc := dom.Document.create(dom.url_about_blank())
+	computer := StyleComputer.new(doc)
+
+	for authored_display in ['table-cell', 'table-caption', 'flex', 'grid', 'block'] {
+		mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'br') or {
+			panic('${err}')
+		}
+		element.set_attribute_value('style', 'display: ${authored_display}')
+		computed := computer.compute_style(dom.AbstractElement.new(element, none))
+		assert computed.display() == Display.from_short(.inline_)
+	}
+
+	mut contents := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'br') or {
+		panic('${err}')
+	}
+	contents.set_attribute_value('style', 'display: contents')
+	assert computer.compute_style(dom.AbstractElement.new(contents, none)).display() == Display.from_short(.none_)
+
+	mut hidden := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'br') or {
+		panic('${err}')
+	}
+	hidden.set_attribute_value('style', 'display: none')
+	assert computer.compute_style(dom.AbstractElement.new(hidden, none)).display() == Display.from_short(.none_)
+}
+
 // compute_logical_alias_mapping_context cascades only writing-mode + direction and maps them to the
 // flow-relative context used for resolving logical property aliases.
 fn test_compute_logical_alias_mapping_context() {

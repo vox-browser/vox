@@ -402,6 +402,9 @@ pub fn legacy_element_adjusted_display(local_name string, display string) string
 	if display == 'contents' && local_name in ['br', 'frame', 'frameset'] {
 		return 'none'
 	}
+	if local_name == 'br' && display != 'none' {
+		return 'inline'
+	}
 	return display
 }
 

@@ -102,6 +102,9 @@ fn test_marquee_table_col_legend_and_display_algorithms() {
 	legend := unsafe { &dom.HTMLLegendElement(legend_element) }
 	assert html_legend_element_form(legend) != none
 	assert legacy_element_adjusted_display('br', 'contents') == 'none'
+	assert legacy_element_adjusted_display('br', 'table-cell') == 'inline'
+	assert legacy_element_adjusted_display('br', 'table-caption') == 'inline'
+	assert legacy_element_adjusted_display('br', 'none') == 'none'
 	assert legacy_element_adjusted_display('div', 'contents') == 'contents'
 	assert html_html_element_should_use_body_background(false, false, false, dom.color_transparent)
 }
