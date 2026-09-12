@@ -13,6 +13,37 @@ fn test_html_tokenizer_exact_transition_and_emit_hooks() {
 	assert token.attribute('id')? == 'first'
 }
 
+fn test_old_insertion_points_survive_reentrant_input_insertion() {
+	mut tokenizer := HTMLTokenizer.new('abcdef')
+	tokenizer.insertion_point = 4
+	tokenizer.store_old_insertion_point()
+	tokenizer.current_offset = 2
+	tokenizer.update_insertion_point()
+	tokenizer.store_old_insertion_point()
+
+	tokenizer.insert_input_at_insertion_point('XY')
+	assert tokenizer.insertion_point? == 4
+	assert tokenizer.decoded_input.string() == 'abXYcdef'
+
+	tokenizer.restore_old_insertion_point()
+	assert tokenizer.insertion_point? == 4
+	tokenizer.restore_old_insertion_point()
+	assert tokenizer.insertion_point? == 6
+}
+
+fn test_tokenizer_keeps_consumed_input_while_an_old_insertion_point_is_saved() {
+	mut tokenizer := HTMLTokenizer.new('done')
+	tokenizer.current_offset = tokenizer.decoded_input.len
+	tokenizer.insertion_point = none
+	tokenizer.store_old_insertion_point()
+	tokenizer.parser_did_run()
+	assert tokenizer.decoded_input.string() == 'done'
+
+	tokenizer.restore_old_insertion_point()
+	tokenizer.parser_did_run()
+	assert tokenizer.decoded_input.len == 0
+}
+
 // Runtime tests for the HTML tokenizer, translated from Tests/LibWeb/TestHTMLTokenizer.cpp.
 // (The file-based `regression` test case is omitted: it depends on an external fixture and a hash
 // tied to HTMLToken::to_string()'s exact format.)

@@ -952,7 +952,10 @@ fn (mut p HTMLParser) handle_text(mut token HTMLToken) {
 		p.insertion_mode = p.original_insertion_mode
 		if element := current {
 			if token.tag_name == 'script' && element.local_name() == 'script' {
+				p.tokenizer.store_old_insertion_point()
+				p.tokenizer.update_insertion_point()
 				p.prepare_and_execute_parser_inserted_script(element)
+				p.tokenizer.restore_old_insertion_point()
 				if pending := p.document_.pending_parsing_blocking_script() {
 					if p.document_.has_a_style_sheet_that_is_blocking_scripts()
 						|| !html_script_element_is_ready_to_be_parser_executed(pending) {

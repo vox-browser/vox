@@ -125,8 +125,8 @@ mut:
 	source        string
 	decoded_input []rune
 
-	insertion_point     ?int
-	old_insertion_point ?int
+	insertion_point      ?int
+	old_insertion_points []?int
 
 	current_offset int
 	prev_offset    int
@@ -528,18 +528,18 @@ pub fn (mut t HTMLTokenizer) update_insertion_point() {
 	t.insertion_point = t.current_offset
 }
 
-// HTMLTokenizer::undefine/store/restore_insertion_point().
+// HTMLTokenizer::undefine/store_old/restore_old_insertion_point().
 pub fn (mut t HTMLTokenizer) undefine_insertion_point() {
 	t.insertion_point = none
 }
 
-pub fn (mut t HTMLTokenizer) store_insertion_point() {
-	t.old_insertion_point = t.insertion_point
+pub fn (mut t HTMLTokenizer) store_old_insertion_point() {
+	t.old_insertion_points << t.insertion_point
 }
 
-pub fn (mut t HTMLTokenizer) restore_insertion_point() {
-	t.insertion_point = t.old_insertion_point
-	t.old_insertion_point = none
+pub fn (mut t HTMLTokenizer) restore_old_insertion_point() {
+	assert t.old_insertion_points.len > 0
+	t.insertion_point = t.old_insertion_points.pop()
 }
 
 // HTMLTokenizer::insert_input_at_insertion_point(). The insertion point is a
@@ -556,6 +556,13 @@ pub fn (mut t HTMLTokenizer) insert_input_at_insertion_point(input string) {
 	new_decoded_input << t.decoded_input[insertion_point..]
 	t.decoded_input = new_decoded_input
 	t.insertion_point = insertion_point + inserted.len
+	for index, old_insertion_point in t.old_insertion_points {
+		if value := old_insertion_point {
+			if insertion_point <= value {
+				t.old_insertion_points[index] = value + inserted.len
+			}
+		}
+	}
 }
 
 pub fn (mut t HTMLTokenizer) insert_eof() {
@@ -574,13 +581,8 @@ pub fn (mut t HTMLTokenizer) parser_did_run() {
 	} else {
 		true
 	}
-	old_insertion_point_is_at_start := if old_insertion_point := t.old_insertion_point {
-		old_insertion_point == 0
-	} else {
-		true
-	}
 	if t.current_offset > 0 && t.current_offset == t.decoded_input.len
-		&& insertion_point_is_at_start && old_insertion_point_is_at_start {
+		&& insertion_point_is_at_start && t.old_insertion_points.len == 0 {
 		t.decoded_input.clear()
 		t.current_offset = 0
 		t.prev_offset = 0

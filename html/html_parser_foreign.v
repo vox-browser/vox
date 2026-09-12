@@ -329,7 +329,7 @@ fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTML
 
 fn (mut p HTMLParser) process_svg_script_end_tag(element &dom.Element) {
 	p.stack_of_open_elements.pop()
-	p.tokenizer.store_insertion_point()
+	p.tokenizer.store_old_insertion_point()
 	p.tokenizer.update_insertion_point()
 	p.increment_script_nesting_level()
 	p.parser_pause_flag = true
@@ -343,7 +343,7 @@ fn (mut p HTMLParser) process_svg_script_end_tag(element &dom.Element) {
 	if p.script_nesting_level == 0 {
 		p.parser_pause_flag = false
 	}
-	p.tokenizer.restore_insertion_point()
+	p.tokenizer.restore_old_insertion_point()
 	if p.document_.pending_parsing_blocking_svg_script() != none {
 		p.parser_pause_flag = true
 		p.schedule_resume_check()
