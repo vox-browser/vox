@@ -1,8 +1,14 @@
 module webidl
 
-fn observe_set(value Value) ! {
+fn observe_set(_ int, value Value) ! {
 	if value.kind != .string_ {
 		return error('TypeError: expected string')
+	}
+}
+
+fn observe_expected_index(index int, value Value) ! {
+	if value.kind != .number || int(value.number_value) != index {
+		return error('InvalidStateError: callback received the wrong index')
 	}
 }
 
@@ -140,9 +146,11 @@ fn test_overload_resolution_sequence_and_missing_arguments() {
 
 fn test_observable_internal_operations_use_index_callbacks() {
 	mut array := ObservableArray.create()
-	array.set_on_set_an_indexed_value_callback(observe_set)
-	assert array.internal_set(0, string_value('value'))!
-	assert array.values[0].string_value == 'value'
+	array.set_on_set_an_indexed_value_callback(observe_expected_index)
+	assert array.internal_set(2, number_value(2))!
+	assert array.values[2].number_value == 2
+	array.append(number_value(3))!
+	assert array.values[3].number_value == 3
 	assert array.internal_delete(0)!
-	assert array.values.len == 0
+	assert array.values.len == 3
 }

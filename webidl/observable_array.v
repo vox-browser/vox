@@ -5,7 +5,7 @@
 // Translation of WebIDL/ObservableArray.{h,cpp}.
 module webidl
 
-pub type SetIndexedValueCallback = fn (Value) !
+pub type SetIndexedValueCallback = fn (int, Value) !
 
 pub type DeleteIndexedValueCallback = fn (Value) !
 
@@ -34,7 +34,7 @@ pub fn (mut array ObservableArray) set(index int, value Value) ! {
 		return error('RangeError: index cannot be negative')
 	}
 	if callback := array.on_set {
-		callback(value)!
+		callback(index, value)!
 	}
 	for array.values.len <= index {
 		array.values << undefined_value()
