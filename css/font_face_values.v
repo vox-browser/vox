@@ -2416,6 +2416,15 @@ fn (mut face FontFaceObject) begin_url_load() bool {
 	if mut rule := face.css_font_face_rule {
 		rule.set_loading_state(.loading)
 	}
+
+	// AD-HOC: URL-backed fonts must update their containing FontFaceSets just like
+	// BufferSource-backed fonts do while their load is in progress.
+	for mut font_face_set in face.containing_sets {
+		if font_face_set.loading_fonts_.len == 0 {
+			font_face_set.switch_to_loading()
+		}
+		font_face_set.loading_fonts_ << face
+	}
 	return true
 }
 

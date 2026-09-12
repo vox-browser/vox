@@ -65,3 +65,19 @@ fn test_font_face_set_event_handler_attributes_receive_load_events() {
 	set.set_onloading(none)
 	assert set.onloading() == none
 }
+
+fn test_font_face_load_switches_containing_set_to_loading() {
+	mut set := FontFaceSet.create()
+	face := FontFaceObject.construct_impl('MissingFace', FontFaceSource.from_string('url("missing-font.woff2")'), FontFaceDescriptors{})
+	set.add(face)!
+
+	mut mutable_face := unsafe { &FontFaceObject(face) }
+	mutable_face.load()
+
+	assert face.status() == .error
+	assert set.status() == .loading
+	assert set.loading_fonts().len == 0
+	assert set.failed_fonts().len == 1
+	assert set.fired_events.map(it.name) == ['loading']
+	assert set.is_stuck_on_the_environment
+}
