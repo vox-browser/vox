@@ -85,15 +85,15 @@
 
 All 78 translated LibWeb packages and all 1,193 current module-owned C++
 implementation units have audited V mappings. As of 2026-09-12, the module
-translations contain 334,949 implementation V LOC and 64,280 test V LOC.
+translations contain 335,950 implementation V LOC and 64,886 test V LOC.
 Physical LOC includes comments and blank lines. Root support code and browser
 integration code are excluded. `Selection` includes `dom/selection.v`, and
 `UIEvents` includes `dom/ui_events.v`.
 
 | Module | Implementation V LOC | Module | Implementation V LOC |
 | --- | ---: | --- | ---: |
-| ARIA | 2,535 | Animations | 3,047 |
-| Bindings | 2,675 | CSS | 101,884 |
+| ARIA | 2,535 | Animations | 3,972 |
+| Bindings | 2,675 | CSS | 101,960 |
 | Clipboard | 973 | Compositor | 2,403 |
 | Compression | 424 | ContentSecurityPolicy | 2,738 |
 | CookieStore | 859 | CredentialManagement | 418 |

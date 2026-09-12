@@ -90,9 +90,9 @@ from the current-module totals.
 | Upstream module | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
 | `ARIA` | 6 | 1,955 | 2,535 | 399 | Complete |
-| `Animations` | 10 | 5,187 | 3,047 | 493 | Complete |
+| `Animations` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 | `Bindings` | 11 | 2,501 | 2,675 | 918 | Complete |
-| `CSS` | 215 | 47,722 | 101,884 | 7,579 | Present |
+| `CSS` | 215 | 47,722 | 101,960 | 7,637 | Present |
 | `Clipboard` | 4 | 1,009 | 973 | 343 | Complete |
 | `Compositor` | 6 | 1,687 | 2,403 | 361 | Complete |
 | `Compression` | 2 | 348 | 424 | 138 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **334,949** | **64,280** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **335,950** | **64,886** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 

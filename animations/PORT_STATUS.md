@@ -2,8 +2,8 @@
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Animations`
 
-Translation workspace: `~/code/libweb_v/animations`
-Audited: 2026-09-08
+Translation workspace: `~/code/vox2/animations`
+Audited: 2026-09-12
 
 All ten upstream Animations `.cpp` implementation units have an audited V
 implementation mapping.
@@ -23,7 +23,7 @@ implementation mapping.
 
 | Upstream source area | `.cpp` files | Upstream `.cpp` LOC | Translated implementation `.v` LOC | Test `.v` LOC | Status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `Animations/` | 10 | 4,381 | 2,217 | 389 | Complete |
+| `Animations/` | 10 | 5,187 | 3,972 | 1,041 | Complete |
 
 The port covers unit-aware time arithmetic, document and scroll timelines,
 effect timing normalization and progress calculation, the animation playback
@@ -41,15 +41,21 @@ Document and scroll timelines register with their associated document through
 the cross-module handle boundary. A document snapshots and advances every
 registered timeline before its animation update callback, and reassociation or
 disassociation updates that registry exactly once.
+The 2026-09-11 refresh also covers compositor preparation and observation
+state, task-stable observation sampling, wrapper-valued animation promises,
+effect target ownership and CSS-cancellation disassociation, provisional
+effects, constructor realm selection, processed keyframe inputs, and scroll
+timeline staleness. The CSS-owned refresh bridge preserves animation updates
+for base `display: none` targets when the effect itself animates `display`.
 
 ## Verification
 
 Focused verification:
 
 ```text
-$ /Users/alex/code/v/v test animations
+$ /tmp/vox2-v-c3358d3.Qu9YHN/v -old-compiler -enable-globals test animations
 Summary for all V _test.v files: 5 passed, 5 total.
 
-$ /Users/alex/code/v/v test .
-Summary for all V _test.v files: 188 passed, 188 total.
+$ python3 tools/upstream_function_delta.py --base 1d025620e3344e3cc9aee26fe815d8675e4f9810 --head 963d46a829f3e1b79f44dba9d02afb70654300fa --json
+Animations unmatched definitions: 0
 ```
