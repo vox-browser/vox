@@ -74,18 +74,23 @@ fn test_reject_promise_with_exception_helpers() {
 }
 
 fn test_async_iterator_next_return_and_throw() {
-	mut iterator := AsyncIterator.create([string_value('a'), string_value('b')], .key_value)
+	mut iterator := AsyncIterator.create_in_realm([string_value('a'), string_value('b')], .key_value, 77)
+	assert iterator.promise_realm() == 77
 	first := iterator.next()
+	assert promise_realm(first) == 77
 	assert first.is_fulfilled()
 	assert first.result.object_value['done'].boolean_value == false
 	pair := first.result.object_value['value'].sequence_value
 	assert pair[0].number_value == 0
 	assert pair[1].string_value == 'a'
 	returned := iterator.return_(string_value('stop'))
+	assert promise_realm(returned) == 77
 	assert returned.result.object_value['done'].boolean_value
 	assert iterator.next().result.object_value['done'].boolean_value
-	mut throwing := AsyncIterator.create([]Value{}, .value)
-	assert throwing.throw_(string_value('boom')).is_rejected()
+	mut throwing := AsyncIterator.create_in_realm([]Value{}, .value, 88)
+	thrown := throwing.throw_(string_value('boom'))
+	assert thrown.is_rejected()
+	assert promise_realm(thrown) == 88
 }
 
 fn test_async_iterator_and_promise_named_algorithm_entries() {
