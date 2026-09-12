@@ -27,13 +27,14 @@ pub enum CSSRuleType {
 	nested_declarations
 	property
 	scope
+	function_rule
 }
 
 // The rule types whose C++ class derives from CSSGroupingRule, i.e. the rules
 // that may contain style rules: CSSStyleRule, CSSPageRule, CSSLayerBlockRule,
 // and the CSSConditionRule subclasses CSSMediaRule and CSSSupportsRule.
 pub const css_grouping_rule_types = [CSSRuleType.style, .page, .layer_block, .media, .supports,
-	.scope]
+	.scope, .function_rule]
 
 pub fn (t CSSRuleType) type_for_bindings() u16 {
 	// NOTE: Types that aren't defined in the spec must return 0.
@@ -51,7 +52,7 @@ pub fn (t CSSRuleType) type_for_bindings() u16 {
 		.counter_style { 11 }
 		.supports { 12 }
 		.font_feature_values { 14 }
-		.layer_block, .layer_statement, .nested_declarations, .property, .scope { 0 }
+		.layer_block, .layer_statement, .nested_declarations, .property, .scope, .function_rule { 0 }
 	}
 }
 
@@ -74,6 +75,7 @@ pub fn (t CSSRuleType) class_name() string {
 		.nested_declarations { 'CSSNestedDeclarations' }
 		.property { 'CSSPropertyRule' }
 		.scope { 'CSSScopeRule' }
+		.function_rule { 'CSSFunctionRule' }
 	}
 }
 
@@ -410,7 +412,7 @@ pub fn (rule_list &CSSRuleList) for_each_effective_rule(order TraversalOrder, ca
 					loaded_style_sheet.for_each_effective_rule(order, callback)
 				}
 			}
-			.layer_block, .media, .page, .scope, .style, .supports {
+			.function_rule, .layer_block, .media, .page, .scope, .style, .supports {
 				rule.for_each_effective_rule(order, callback)
 			}
 			.counter_style, .font_face, .font_feature_values, .keyframe, .keyframes, .layer_statement, .margin, .namespace_rule, .nested_declarations, .property {
@@ -437,6 +439,13 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 				}
 			}
 			.layer_block {
+				if mut child_rules := rule.rules {
+					if child_rules.evaluate_media_queries(document) {
+						any_media_queries_changed_match_state = true
+					}
+				}
+			}
+			.function_rule {
 				if mut child_rules := rule.rules {
 					if child_rules.evaluate_media_queries(document) {
 						any_media_queries_changed_match_state = true
@@ -574,6 +583,9 @@ pub mut:
 	property_rule_inherits            bool
 	property_rule_initial_value       ?string
 	property_rule_initial_style_value ?StyleValue
+	function_name                     string
+	function_parameters               []FunctionParameterInternal
+	function_return_type              SyntaxNode
 
 	font_face_rule           ?&CSSFontFaceRule
 	font_feature_values_rule ?&CSSFontFeatureValuesRule
@@ -613,6 +625,14 @@ pub fn CSSRule.create_scope(start_selectors ?SelectorList, end_selectors ?Select
 	mut rule := CSSRule.create_grouping(.scope, rules)
 	rule.scope_start_selectors = start_selectors
 	rule.scope_end_selectors = end_selectors
+	return rule
+}
+
+pub fn CSSRule.create_function(rules &CSSRuleList, name string, parameters []FunctionParameterInternal, return_type SyntaxNode) &CSSRule {
+	mut rule := CSSRule.create_grouping(.function_rule, rules)
+	rule.function_name = name
+	rule.function_parameters = parameters.clone()
+	rule.function_return_type = return_type
 	return rule
 }
 
@@ -924,6 +944,9 @@ pub fn (rule &CSSRule) serialized() string {
 		}
 		.scope {
 			rule.serialized_scope_rule()
+		}
+		.function_rule {
+			rule.serialized_function_rule()
 		}
 		.nested_declarations {
 			if declaration := rule.declaration {
@@ -2547,6 +2570,7 @@ pub enum RuleContext {
 	property
 	page
 	margin
+	function_rule
 }
 
 fn rule_context_type_for_rule(rule_type CSSRuleType) RuleContext {
@@ -2564,6 +2588,7 @@ fn rule_context_type_for_rule(rule_type CSSRuleType) RuleContext {
 		.property { .property }
 		.page { .page }
 		.margin { .margin }
+		.function_rule { .function_rule }
 		else { .unknown }
 	}
 }

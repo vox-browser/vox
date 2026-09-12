@@ -3045,7 +3045,7 @@ fn (parser RuleSelectorParser) is_valid_declaration_in_the_current_context(decla
 	last_context := parser.rule_context[parser.rule_context.len - 1]
 	return match last_context {
 		.unknown { false }
-		.style, .keyframe, .scope { true }
+		.style, .keyframe, .scope, .function_rule { true }
 		.layer, .media, .supports {
 			rule_context_contains(parser.rule_context, .style)
 				|| rule_context_contains(parser.rule_context, .scope)
@@ -3073,6 +3073,9 @@ fn (parser RuleSelectorParser) is_valid_at_rule_in_the_current_context(rule AtRu
 		}
 		.style {
 			false
+		}
+		.function_rule {
+			ascii_case_insensitive_name_is_one_of(rule.name, ['media', 'supports'])
 		}
 		.layer, .media, .scope, .supports {
 			!ascii_case_insensitive_name_is_one_of(rule.name, ['import', 'namespace'])
@@ -3115,7 +3118,7 @@ fn (parser RuleSelectorParser) is_valid_qualified_rule_in_the_current_context(ru
 		.supports_condition {
 			false
 		}
-		.counter_style, .font_face, .font_feature_values, .font_feature_value, .page, .property, .keyframe, .margin {
+		.counter_style, .font_face, .font_feature_values, .font_feature_value, .function_rule, .page, .property, .keyframe, .margin {
 			false
 		}
 	}
