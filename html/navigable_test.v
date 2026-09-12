@@ -15,6 +15,7 @@ __global (
 	navigable_test_paints               = 0
 	navigable_test_screenshots          = 0
 	navigable_test_fetches              = 0
+	navigable_test_destroy_during_fetch = &NavigableModel(unsafe { nil })
 )
 
 fn navigable_test_complete() {
@@ -66,6 +67,12 @@ fn navigable_test_fetch(request &fetch.Request) !&fetch.Response {
 		value: "sandbox allow-scripts; default-src 'self'"
 	})
 	return response
+}
+
+fn navigable_test_fetch_and_destroy(request &fetch.Request) !&fetch.Response {
+	mut model := navigable_test_destroy_during_fetch
+	model.set_has_been_destroyed()
+	return navigable_test_fetch(request)
 }
 
 fn navigable_test_top_level(url string, target_name string) !(&dom.Document, &WindowModel, &NavigableModel) {
@@ -345,4 +352,20 @@ fn test_navigable_fetch_redirect_policy_and_url_history_algorithms() {
 	srcdoc_params := create_navigation_params_from_a_srcdoc_resource(srcdoc_entry, model, TargetSnapshotParams{}, .none, none)!
 	assert srcdoc_params.response.fetch_response_body()?.bytes().bytestr() == '<p>srcdoc</p>'
 	assert srcdoc_params.response.header_list.get('Content-Type')? == 'text/html'
+}
+
+fn test_navigation_does_not_install_response_after_navigable_destruction() {
+	mut original_document, _, model_pointer := navigable_test_top_level('https://example.test/start', 'top')!
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	navigable_test_destroy_during_fetch = model
+	model.set_navigation_fetch_hook(navigable_test_fetch_and_destroy)
+	model.navigate(NavigableNavigateParams{
+		url: dom.URL{ value: 'https://example.test/fetched' }
+		source_document: original_document
+	})!
+	navigable_test_destroy_during_fetch = unsafe { nil }
+
+	assert model.has_been_destroyed()
+	assert model.active_document()? == original_document
+	assert model.get_session_history_entries().len == 1
 }

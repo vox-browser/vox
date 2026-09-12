@@ -1119,6 +1119,12 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 			model.set_ongoing_navigation(NavigableOngoingNavigation{})
 			return
 		}
+		// The fetch callback can spin the event loop and destroy this navigable before
+		// response bytes are ready. Do not install a document into a dead context.
+		if model.has_been_destroyed_ || model.active_browsing_context() == none {
+			model.set_ongoing_navigation(NavigableOngoingNavigation{})
+			return
+		}
 		if received_navigation_params.network_error != none {
 			model.set_ongoing_navigation(NavigableOngoingNavigation{})
 			return
