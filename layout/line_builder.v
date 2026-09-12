@@ -257,13 +257,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		}
 		fragment.set_baseline(fragment_baseline)
 		if vertical_align := fragment_computed.vertical_align_length_percentage() {
-			if vertical_align.is_length() {
-				fragment_baseline =
-					fragment_baseline.plus(vertical_align.length().to_px(layout_length_resolution_context(fragment.layout_node_)))
-			} else if vertical_align.is_percentage() {
-				fragment_baseline =
-					fragment_baseline.plus(fragment_computed.line_height().scaled(vertical_align.percentage().as_fraction()))
-			}
+			fragment_baseline = fragment_baseline.plus(vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height()))
 		}
 		if fragment_baseline.raw_value() > line_box_baseline.raw_value()
 			&& !fragment.layout_node_.is_text_node()
@@ -319,15 +313,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			else {}
 		}
 		if vertical_align := fragment_computed.vertical_align_length_percentage() {
-			if vertical_align.is_length() {
-				vertical_align_amount :=
-					vertical_align.length().to_px(layout_length_resolution_context(fragment.layout_node_))
-				fragment_block_offset = alphabetic_baseline.minus(vertical_align_amount)
-			} else if vertical_align.is_percentage() {
-				vertical_align_amount :=
-					computed.line_height().scaled(vertical_align.percentage().as_fraction())
-				fragment_block_offset = alphabetic_baseline.minus(vertical_align_amount)
-			}
+			vertical_align_amount := vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height())
+			fragment_block_offset = alphabetic_baseline.minus(vertical_align_amount)
 		}
 		fragment.set_inline_offset(fragment_inline_offset)
 		fragment.set_block_offset(css.css_pixels_floor(fragment_block_offset).plus(block_offset))
@@ -354,13 +341,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				fragment.block_offset().plus(fragment.baseline()).plus(descent).plus(half_leading)
 		}
 		if vertical_align := fragment_computed.vertical_align_length_percentage() {
-			if vertical_align.is_length() {
-				bottom_of_inline_box =
-					bottom_of_inline_box.plus(vertical_align.length().to_px(layout_length_resolution_context(fragment.layout_node_)))
-			} else if vertical_align.is_percentage() {
-				bottom_of_inline_box =
-					bottom_of_inline_box.plus(computed.line_height().scaled(vertical_align.percentage().as_fraction()))
-			}
+			bottom_of_inline_box = bottom_of_inline_box.plus(vertical_align.to_px(layout_length_resolution_context(fragment.layout_node_), fragment_computed.line_height()))
 		}
 		uppermost_box_top = css_pixels_min(uppermost_box_top, top_of_inline_box)
 		lowermost_box_bottom = css_pixels_max(lowermost_box_bottom, bottom_of_inline_box)

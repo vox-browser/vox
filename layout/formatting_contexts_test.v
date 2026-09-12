@@ -2360,6 +2360,23 @@ fn test_baseline_aligned_inline_block_keeps_the_containing_strut_descent() {
 	assert container.content_height().raw_value() == expected_height.raw_value()
 }
 
+fn test_atomic_inline_applies_calculated_vertical_align_offset() {
+	document := html.parse_document('<!doctype html><style>
+		* { margin:0; padding:0; font:16px SerenitySans }
+		body { line-height:5rem }
+		#icon { display:inline-block; width:16px; height:16px;
+			vertical-align:calc(0.5px + 0.3465em - 0.5rem) }
+	</style><body id="body">Get in touch<span id="icon"></span></body>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	body := used_for_id(result, 'body')
+	assert body.content_height().to_double() == 80
+	assert body.line_boxes.len == 1
+	fragments := body.line_boxes[0].fragments()
+	assert fragments.len == 2
+	assert fragments[1].is_atomic_inline()
+	assert fragments[1].block_offset().to_double() == 30
+}
+
 fn test_normal_heading_line_height_uses_selected_font_typo_metrics() {
 	document := html.parse_document('<!doctype html><style>h3 { font-family: SerenitySans }</style><h3 id="heading">heading</h3>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
