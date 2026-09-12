@@ -13,7 +13,7 @@ pub enum PromiseState {
 	rejected
 }
 
-pub type ReactionSteps = fn(Value) !Value
+pub type ReactionSteps = fn (Value) !Value
 
 struct PromiseReaction {
 	on_fulfilled     ReactionSteps = unsafe { nil }
@@ -31,19 +31,37 @@ struct PromiseObserver {
 @[heap]
 pub struct Promise {
 pub mut:
-	state      PromiseState
-	result     Value
-	is_handled bool
+	state                                  PromiseState
+	result                                 Value
+	is_handled                             bool
+	rejection_was_handled_after_settlement bool
 mut:
+	realm_id  u64
 	reactions []PromiseReaction
 	observers []PromiseObserver
 }
 
+// PromiseContext is the standalone boundary for the relevant Realm obtained
+// from an environment settings object, JS object, DOM node, or Window.
+pub struct PromiseContext {
+pub:
+	realm_id u64
+}
+
 pub fn create_promise() &Promise {
+	return create_promise_in_realm(0)
+}
+
+pub fn create_promise_in_realm(realm_id u64) &Promise {
 	return &Promise{
 		state: .pending
 		result: undefined_value()
+		realm_id: realm_id
 	}
+}
+
+pub fn create_promise_for(context PromiseContext) &Promise {
+	return create_promise_in_realm(context.realm_id)
 }
 
 pub fn create_resolved_promise(value Value) &Promise {
@@ -52,10 +70,34 @@ pub fn create_resolved_promise(value Value) &Promise {
 	return promise
 }
 
+pub fn create_resolved_promise_for(context PromiseContext, value Value) &Promise {
+	mut promise := create_promise_for(context)
+	promise.resolve(value)
+	return promise
+}
+
 pub fn create_rejected_promise(reason Value) &Promise {
 	mut promise := create_promise()
 	promise.reject(reason)
 	return promise
+}
+
+pub fn create_rejected_promise_for(context PromiseContext, reason Value) &Promise {
+	mut promise := create_promise_for(context)
+	promise.reject(reason)
+	return promise
+}
+
+pub fn promise_realm(promise &Promise) u64 {
+	return promise.realm_id
+}
+
+pub fn resolve_promise(mut promise Promise, value Value) {
+	promise.resolve(value)
+}
+
+pub fn reject_promise(mut promise Promise, reason Value) {
+	promise.reject(reason)
 }
 
 pub fn (mut promise Promise) resolve(value Value) {
@@ -151,6 +193,11 @@ fn (mut promise Promise) observe(on_fulfilled ReactionSteps, on_rejected Reactio
 }
 
 pub fn (mut promise Promise) mark_as_handled() {
+	if promise.state == .rejected && !promise.is_handled {
+		// This records the host rejection-tracker Handle operation performed by
+		// upstream when an already-rejected promise becomes handled.
+		promise.rejection_was_handled_after_settlement = true
+	}
 	promise.is_handled = true
 }
 
@@ -162,9 +209,9 @@ pub fn (promise &Promise) is_rejected() bool {
 	return promise.state == .rejected
 }
 
-pub type WaitSuccessSteps = fn([]Value)
+pub type WaitSuccessSteps = fn ([]Value)
 
-pub type WaitFailureSteps = fn(Value)
+pub type WaitFailureSteps = fn (Value)
 
 @[heap]
 struct WaitForAllState {
@@ -236,7 +283,7 @@ pub enum OperationReturnsPromise {
 	yes
 }
 
-pub type CallbackOperation = fn(Value, []Value) !Value
+pub type CallbackOperation = fn (Value, []Value) !Value
 
 pub struct CallbackType {
 pub:
@@ -269,6 +316,16 @@ pub fn create_rejected_promise_from_exception(exception SimpleException) &Promis
 	return create_rejected_promise(string_value(exception.message))
 }
 
+pub fn create_rejected_promise_from_exception_for(context PromiseContext, exception SimpleException) &Promise {
+	mut promise := create_promise_for(context)
+	reject_promise_with_exception(mut promise, exception)
+	return promise
+}
+
+pub fn reject_promise_with_exception(mut promise Promise, exception SimpleException) {
+	promise.reject(string_value(exception.message))
+}
+
 pub fn create_rejected_promise_from_dom_exception(exception DOMException) &Promise {
 	return create_rejected_promise(dom_exception_value(exception))
 }
@@ -298,7 +355,7 @@ pub fn property_to_callback(value Value, property_key string, operation_returns_
 	// property-conversion boundary.
 	return CallbackConversion{
 		callback: CallbackType{
-			callback:                  property_callback_stub
+			callback: property_callback_stub
 			operation_returns_promise: operation_returns_promise
 		}
 	}

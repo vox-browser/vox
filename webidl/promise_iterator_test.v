@@ -31,6 +31,46 @@ fn test_promise_settlement_reactions_and_handled_flag() {
 	assert failed_child.result.string_value.contains('callback rejected')
 	rejected.mark_as_handled()
 	assert rejected.is_handled
+	assert rejected.rejection_was_handled_after_settlement
+}
+
+fn test_relevant_context_promise_helpers_preserve_realm() {
+	context := PromiseContext{
+		realm_id: 42
+	}
+	mut pending := create_promise_for(context)
+	assert promise_realm(pending) == 42
+	resolve_promise(mut pending, number_value(7))
+	assert pending.is_fulfilled()
+	assert pending.result.number_value == 7
+
+	resolved := create_resolved_promise_for(context, string_value('ready'))
+	assert promise_realm(resolved) == 42
+	assert resolved.result.string_value == 'ready'
+	mut rejected := create_rejected_promise_for(context, string_value('reason'))
+	assert promise_realm(rejected) == 42
+	assert rejected.is_rejected()
+	reject_promise(mut rejected, string_value('ignored'))
+	assert rejected.result.string_value == 'reason'
+}
+
+fn test_reject_promise_with_exception_helpers() {
+	context := PromiseContext{
+		realm_id: 9
+	}
+	exception := SimpleException{
+		type_: .type_error
+		message: 'bad input'
+	}
+	rejected := create_rejected_promise_from_exception_for(context, exception)
+	assert promise_realm(rejected) == 9
+	assert rejected.is_rejected()
+	assert rejected.result.string_value == 'bad input'
+
+	mut pending := create_promise_for(context)
+	reject_promise_with_exception(mut pending, exception)
+	assert pending.is_rejected()
+	assert pending.result.string_value == 'bad input'
 }
 
 fn test_async_iterator_next_return_and_throw() {
