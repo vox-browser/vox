@@ -7,7 +7,7 @@ module animations
 
 import css
 
-pub fn pseudo_element_parsing(text string) !css.PseudoElementSelector {
+fn pseudo_element_parsing_impl(text string) !css.PseudoElementSelector {
 	list := css.parse_selector_with_parser(text, map[string]bool{}) or {
 		return error('Invalid pseudo-element selector: "${text}"')
 	}
@@ -27,4 +27,8 @@ pub fn pseudo_element_parsing(text string) !css.PseudoElementSelector {
 		return css.PseudoElementSelector.new(pseudo.type_)
 	}
 	return pseudo
+}
+
+pub fn pseudo_element_parsing(text string) !css.PseudoElementSelector {
+	return pseudo_element_parsing_impl(text)
 }
