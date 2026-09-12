@@ -201,10 +201,8 @@ fn test_file_load_reads_bytes_and_synthesizes_response_headers() {
 	assert (header_value(result.headers, 'Content-Type') or { panic('missing content type') }) == 'text/plain'
 }
 
-fn test_network_load_applies_proxy_and_finishes_active_counter() {
+fn test_network_load_returns_response_and_finishes_active_counter() {
 	mut resource_loader := ResourceLoader.create()
-	mut proxies := resource_loader.proxy_mappings()
-	proxies.set_mappings(['http://proxy.test:3128'], [ProxyMapping{'https://*', 0}])
 	resource_loader.register_network_response('https://example.test/data', NetworkResponse{
 		data:          'payload'.bytes()
 		headers:       [http.Header{'Content-Type', 'text/plain'}]
@@ -217,9 +215,6 @@ fn test_network_load_applies_proxy_and_finishes_active_counter() {
 	assert result.data.bytestr() == 'payload'
 	assert (result.status_code or { panic('missing status') }) == 206
 	assert (result.reason_phrase or { panic('missing reason phrase') }) == 'Partial Content'
-	proxy := result.proxy or { panic('proxy should be selected') }
-	assert proxy.host == 'proxy.test'
-	assert proxy.port == 3128
 	assert resource_loader.pending_loads() == 0
 
 	resource_loader.register_network_response('https://example.test/fail', NetworkResponse{

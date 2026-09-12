@@ -8,29 +8,6 @@ import referrerpolicy
 
 fn ignore_file_result(_ FileDescriptorResult) {}
 
-fn test_proxy_mappings_use_ordered_wildcards_and_skip_invalid_proxies() {
-	mut mappings := ProxyMappings.create()
-	mappings.set_mappings(['not-a-proxy', 'http://alice:secret@proxy.test:8080',
-		'socks5://socks.test'], [
-		ProxyMapping{'https://skip.example/*', 0},
-		ProxyMapping{'https://*.example/*', 1},
-		ProxyMapping{'*', 2},
-	])
-	proxy := mappings.proxy_for_url(dom.URL{'https://www.example/path'}) or {
-		panic('expected HTTP proxy')
-	}
-	assert proxy.type_ == .http
-	assert proxy.host == 'proxy.test'
-	assert proxy.port == 8080
-	assert proxy.username == 'alice'
-	assert proxy.password == 'secret'
-	fallback := mappings.proxy_for_url(dom.URL{'http://elsewhere.test/'}) or {
-		panic('expected fallback proxy')
-	}
-	assert fallback.type_ == .socks5
-	assert fallback.port == 1080
-}
-
 fn test_load_request_defaults_mutators_timer_and_file_request_surface() {
 	mut headers := http.HeaderList.create()
 	mut request := LoadRequest.create(headers)
@@ -77,7 +54,6 @@ fn test_load_request_defaults_mutators_timer_and_file_request_surface() {
 
 fn test_loader_singletons_are_stable() {
 	assert ContentBlocker.the() == ContentBlocker.the()
-	assert ProxyMappings.the() == ProxyMappings.the()
 }
 
 fn test_user_agent_and_platform_match_upstream_tokens() {

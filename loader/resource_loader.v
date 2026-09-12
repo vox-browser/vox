@@ -17,7 +17,6 @@ import url as liburl
 __global (
 	loader_global_resource_loader          &ResourceLoader
 	loader_global_content_blocker          &ContentBlocker
-	loader_global_proxy_mappings           &ProxyMappings
 )
 
 pub enum ConnectionPreparation {
@@ -53,7 +52,6 @@ pub:
 	reason_phrase ?string
 	error_message ?string
 	protocol      string
-	proxy         ?ProxyData
 }
 
 pub struct StoredResponseCookie {
@@ -73,7 +71,6 @@ pub:
 struct StartedNetworkRequest {
 	id       u64
 	response NetworkResponse
-	proxy    ?ProxyData
 }
 
 pub struct ResourceLoader {
@@ -87,7 +84,6 @@ mut:
 	site_compatibility_data_       SiteCompatibilityData
 	hsts_policies                  map[string]HSTSPolicy
 	preloaded_hsts_policies        map[string]bool
-	proxy_mappings                 &ProxyMappings
 	resources                      map[string]StoredResource
 	about_pages                    map[string][]u8
 	network_responses              map[string]NetworkResponse
@@ -101,7 +97,6 @@ pub fn ResourceLoader.create() &ResourceLoader {
 	return &ResourceLoader{
 		user_agent_:       default_user_agent()
 		platform_:         default_platform()
-		proxy_mappings:    ProxyMappings.create()
 		hsts_policies:     map[string]HSTSPolicy{}
 		preloaded_hsts_policies: map[string]bool{}
 		resources:         map[string]StoredResource{}
@@ -151,10 +146,6 @@ pub fn (resource_loader &ResourceLoader) request_client() voidptr {
 
 pub fn (resource_loader &ResourceLoader) pending_loads() int {
 	return resource_loader.pending_loads_
-}
-
-pub fn (resource_loader &ResourceLoader) proxy_mappings() &ProxyMappings {
-	return resource_loader.proxy_mappings
 }
 
 pub fn (resource_loader &ResourceLoader) user_agent() string {
@@ -549,11 +540,10 @@ pub fn (mut resource_loader ResourceLoader) load(mut request LoadRequest) LoadRe
 			resource_loader.finish_network_request(protocol_request)
 			if message := protocol_request.response.error_message {
 				_ := log_failure(request, message)
-				return LoadResult{
-					error_message: 'Request finished with error: ${message}'
-					protocol:      url.scheme()
-					proxy:         protocol_request.proxy
-				}
+		return LoadResult{
+				error_message: 'Request finished with error: ${message}'
+				protocol:      url.scheme()
+			}
 			}
 			_ := log_success(request)
 			return LoadResult{
@@ -561,10 +551,9 @@ pub fn (mut resource_loader ResourceLoader) load(mut request LoadRequest) LoadRe
 				data:          protocol_request.response.data.clone()
 				headers:       protocol_request.response.headers.clone()
 				status_code:   protocol_request.response.status_code
-				reason_phrase: protocol_request.response.reason_phrase
-				protocol:      url.scheme()
-				proxy:         protocol_request.proxy
-			}
+			reason_phrase: protocol_request.response.reason_phrase
+			protocol:      url.scheme()
+		}
 		}
 		else {
 			message := 'Protocol not implemented: ${url.scheme()}'
@@ -682,7 +671,6 @@ fn (mut resource_loader ResourceLoader) start_network_request(request &LoadReque
 	return StartedNetworkRequest{
 		id:       request_id
 		response: response
-		proxy:    resource_loader.proxy_mappings.proxy_for_url(url)
 	}
 }
 
