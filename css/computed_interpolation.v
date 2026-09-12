@@ -9133,6 +9133,7 @@ pub enum InvalidationSimpleSelectorType {
 	tag_name
 	attribute
 	pseudo_class
+	pseudo_element
 	other
 }
 
@@ -9141,6 +9142,7 @@ pub mut:
 	type_            InvalidationSimpleSelectorType
 	name             string
 	pseudo_class     CSSPseudoClass
+	pseudo_element   PseudoElement
 	nested_selectors []Selector
 }
 
@@ -9234,8 +9236,21 @@ fn simple_selector_for_invalidation(simple_selector SimpleSelector) Invalidation
 				nested_selectors: simple_selector.pseudo_class.argument_selector_list.selectors.clone()
 			}
 		}
+		.pseudo_element {
+			mut nested_selectors := []Selector{}
+			if simple_selector.pseudo_element.type_ == .slotted {
+				if argument_selector := simple_selector.pseudo_element.compound_selector {
+					nested_selectors << argument_selector
+				}
+			}
+			return InvalidationSimpleSelector{
+				type_: .pseudo_element
+				pseudo_element: simple_selector.pseudo_element.type_
+				nested_selectors: nested_selectors
+			}
+		}
 
-		// Boundary: pseudo-elements, nesting selectors, and parser-invalid pieces
+		// Boundary: nesting selectors and parser-invalid pieces
 		// are represented in selectors.v, but this translated invalidation subset
 		// has no property kind for them. Match the C++ default branch by ignoring
 		// them for property collection while keeping the compound non-empty.
@@ -9302,6 +9317,18 @@ fn collect_properties_used_in_has(selector InvalidationSimpleSelector, mut style
 				for group in selector_groups_for_invalidation(child_selector) {
 					for simple_selector in group.simple_selectors {
 						collect_properties_used_in_has(simple_selector, mut style_invalidation_data, in_has || selector.pseudo_class == .has)
+					}
+				}
+			}
+		}
+		.pseudo_element {
+			if selector.pseudo_element == .slotted {
+				for child_selector in selector.nested_selectors {
+					for group in selector_groups_for_invalidation(child_selector) {
+						for simple_selector in group.simple_selectors {
+							collect_properties_used_in_has(simple_selector, mut style_invalidation_data,
+								in_has)
+						}
 					}
 				}
 			}

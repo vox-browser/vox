@@ -42,6 +42,8 @@ fn test_slotted_argument_contributes_selector_insights() {
 	scope := build_scope_invalidation_cache('::slotted(.item:has(.flag)) { color: red }')
 	insights := scope.selector_insights or { panic('missing selector insights') }
 	assert insights.has_has_selectors
+	data := scope.style_invalidation_data or { panic('missing invalidation data') }
+	assert data.class_names_used_in_has_selectors['flag']
 }
 
 fn test_scope_root_class_change_invalidates_its_subtree() {
