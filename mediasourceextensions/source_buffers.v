@@ -148,6 +148,15 @@ pub fn (buffer &SourceBuffer) updating() bool {
 	return buffer.processor_.updating()
 }
 
+// https://w3c.github.io/media-source/#dom-sourcebuffer-buffered
+pub fn (buffer &SourceBuffer) buffered() &html.TimeRanges {
+	mut ranges := &html.TimeRanges{}
+	for range_ in buffer.processor_.buffered_time_ranges() {
+		ranges.add_range(range_.start, range_.end)
+	}
+	return ranges
+}
+
 pub fn (buffer &SourceBuffer) input_buffer_length() int {
 	return buffer.processor_.input_buffer_length()
 }

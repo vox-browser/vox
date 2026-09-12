@@ -281,6 +281,10 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	assert frame.data == [u8(1), 2]
 	assert frame.timestamp == 0
 	assert frame.duration > 0.033 && frame.duration < 0.034
+	buffered := buffer.buffered()
+	assert buffered.length() == 1
+	assert buffered.start(0)! == 0
+	assert buffered.end(0)! > 0.033 && buffered.end(0)! < 0.034
 	assert media.buffered().length() == 1
 	assert append_error.count == 0
 	assert update.count == 3
