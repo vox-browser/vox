@@ -6253,8 +6253,8 @@ pub fn (mut d Document) adopt_node(node &Node) {
 	}
 
 	// 3. If document is not oldDocument, then:
-	d_ptr := &d
-	if old_document != &d {
+	d_ptr := unsafe { &Document(d) }
+	if old_document != d_ptr {
 		// 1. For each inclusiveDescendant in node's shadow-including inclusive descendants:
 		node.for_each_shadow_including_inclusive_descendant(fn [d_ptr] (inclusive_descendant &Node) TraversalDecision {
 			// 1. Set inclusiveDescendant's node document to document.
