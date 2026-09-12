@@ -86,10 +86,9 @@ fn (mut database IDBDatabase) finish_close() {
 		return
 	}
 	database.state = .closed
-	if database.data.connections > 0 {
-		database.data.connections--
+	unsafe {
+		database.data.dissociate(&database)
 	}
-	database.data.associated_connections = database.data.associated_connections.filter(voidptr(it) != voidptr(&database))
 }
 
 pub struct IDBObjectStoreParameters {

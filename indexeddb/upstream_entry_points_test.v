@@ -79,6 +79,24 @@ fn test_database_registry_connections_and_transaction_handle_identity() {
 	DatabaseData.delete_for_key_and_name('storage', 'db')
 }
 
+fn test_database_registry_inventory_and_dissociation() {
+	DatabaseData.delete_for_key_and_name('registry-storage', 'registry-db')
+	mut data := DatabaseData.create_for_key_and_name('registry-storage', 'registry-db')
+	registry := idb_databases()
+	key := database_registry_key('registry-storage', 'registry-db')
+	assert key in registry
+	registered := registry[key] or { panic('database missing from registry') }
+	assert registered == data
+
+	mut connection := IDBDatabase.create(data)
+	assert data.connections == 1
+	data.dissociate(connection)
+	assert data.associated_connections.len == 0
+	assert data.connections == 0
+	connection.close()
+	DatabaseData.delete_for_key_and_name('registry-storage', 'registry-db')
+}
+
 fn test_request_events_algorithms_and_multi_entry_conversion() {
 	mut request := IDBRequest.create('store')
 	fire_a_success_event(mut request, .count)

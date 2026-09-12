@@ -15,6 +15,10 @@ fn database_registry_key(storage_key string, name string) string {
 	return '${storage_key}\n${name}'
 }
 
+pub fn idb_databases() map[string]&DatabaseData {
+	return indexeddb_database_registry.clone()
+}
+
 pub type DatabaseVisitor = fn (&DatabaseData)
 
 pub fn DatabaseData.for_each_database(visitor DatabaseVisitor) {
@@ -111,6 +115,11 @@ pub fn (mut database DatabaseData) associate(connection &IDBDatabase) {
 		database.associated_connections << connection
 		database.connections = database.associated_connections.len
 	}
+}
+
+pub fn (mut database DatabaseData) dissociate(connection &IDBDatabase) {
+	database.associated_connections = database.associated_connections.filter(voidptr(it) != voidptr(connection))
+	database.connections = database.associated_connections.len
 }
 
 pub fn (database &DatabaseData) object_stores() []&ObjectStoreData {
