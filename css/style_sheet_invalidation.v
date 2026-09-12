@@ -510,6 +510,25 @@ fn determine_shadow_root_style_sheet_effects(shadow_root &dom.ShadowRoot) Shadow
 	return effects
 }
 
+fn determine_shadow_root_style_sheet_effects_for_style_sheet(style_sheet &CSSStyleSheet) ShadowRootStylesheetEffects {
+	mut effects := ShadowRootStylesheetEffects{}
+	for owner in style_sheet.owning_documents_or_shadow_roots {
+		shadow_root := owner.as_shadow_root() or { continue }
+		sheet_effects := determine_shadow_root_style_sheet_effects_for_sheet(style_sheet, shadow_root)
+		effects.may_match_shadow_host = effects.may_match_shadow_host
+			|| sheet_effects.may_match_shadow_host
+		effects.may_match_light_dom_under_shadow_host = effects.may_match_light_dom_under_shadow_host
+			|| sheet_effects.may_match_light_dom_under_shadow_host
+		effects.may_affect_assigned_nodes_via_slots = effects.may_affect_assigned_nodes_via_slots
+			|| sheet_effects.may_affect_assigned_nodes_via_slots
+		if effects.may_match_shadow_host && effects.may_match_light_dom_under_shadow_host
+			&& effects.may_affect_assigned_nodes_via_slots {
+			break
+		}
+	}
+	return effects
+}
+
 fn invalidate_owners_for_inserted_keyframes_rule(mut style_sheet CSSStyleSheet, keyframes_rule &CSSRule) {
 	style_sheet.did_match = none
 	for owner in style_sheet.owning_documents_or_shadow_roots {

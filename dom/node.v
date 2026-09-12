@@ -139,6 +139,7 @@ pub enum StyleInvalidationReason {
 	node_set_text_content
 	settings_change
 	style_change
+	style_sheet_delete_rule
 	style_sheet_insert_rule
 	style_sheet_disabled_state_change
 	style_sheet_replace
@@ -169,6 +170,7 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 		.node_set_text_content { 'NodeSetTextContent' }
 		.settings_change { 'SettingsChange' }
 		.style_change { 'StyleChange' }
+		.style_sheet_delete_rule { 'StyleSheetDeleteRule' }
 		.style_sheet_insert_rule { 'StyleSheetInsertRule' }
 		.style_sheet_disabled_state_change { 'StyleSheetDisabledStateChange' }
 		.style_sheet_replace { 'StyleSheetReplace' }

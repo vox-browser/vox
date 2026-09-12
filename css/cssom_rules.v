@@ -1959,8 +1959,9 @@ pub fn (mut sheet CSSStyleSheet) delete_rule(index u32) ! {
 	}
 
 	// 3. Remove a CSS rule in the CSS rules at index.
+	previous_sheet_effects := determine_shadow_root_style_sheet_effects_for_style_sheet(sheet)
 	sheet.rules.remove_a_css_rule(index)!
-	sheet.invalidate_owners(dom.StyleInvalidationReason.style_change)
+	sheet.invalidate_owners_with_previous_effects(.style_sheet_delete_rule, previous_sheet_effects)
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssstylesheet-replace
@@ -1975,6 +1976,7 @@ pub fn (mut sheet CSSStyleSheet) replace(text string) !&CSSStyleSheet {
 	}
 
 	sheet.disallow_modification = true
+	previous_sheet_effects := determine_shadow_root_style_sheet_effects_for_style_sheet(sheet)
 	rules := parse_css_stylesheet_contents_with_params(sheet.make_parsing_params(), text)
 	mut rules_without_import := []&CSSRule{}
 	for parsed_rule in rules {
@@ -1986,7 +1988,7 @@ pub fn (mut sheet CSSStyleSheet) replace(text string) !&CSSStyleSheet {
 		parsed_rule.set_parent_style_sheet(sheet)
 	}
 	sheet.rules.set_rules(rules_without_import)
-	sheet.invalidate_owners(.style_sheet_replace)
+	sheet.invalidate_owners_with_previous_effects(.style_sheet_replace, previous_sheet_effects)
 	sheet.disallow_modification = false
 	return sheet
 }
@@ -2002,6 +2004,7 @@ pub fn (mut sheet CSSStyleSheet) replace_sync(text string) ! {
 	}
 
 	// 2. Let rules be the result of running parse a stylesheet's contents from text.
+	previous_sheet_effects := determine_shadow_root_style_sheet_effects_for_style_sheet(sheet)
 	rules := parse_css_stylesheet_contents_with_params(sheet.make_parsing_params(), text)
 
 	// 3. If rules contains one or more @import rules, remove those rules from rules.
@@ -2019,7 +2022,7 @@ pub fn (mut sheet CSSStyleSheet) replace_sync(text string) ! {
 
 	// 4. Set sheet's CSS rules to rules.
 	sheet.rules.set_rules(rules_without_import)
-	sheet.invalidate_owners(.style_sheet_replace)
+	sheet.invalidate_owners_with_previous_effects(.style_sheet_replace, previous_sheet_effects)
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssstylesheet-addrule
@@ -2155,14 +2158,49 @@ pub fn (mut sheet CSSStyleSheet) remove_owning_document_or_shadow_root(document_
 }
 
 pub fn (mut sheet CSSStyleSheet) invalidate_owners(reason dom.StyleInvalidationReason) {
+	sheet.invalidate_owners_with_previous_effects(reason, none)
+}
+
+fn apply_style_sheet_shadow_root_effects(host &dom.Element, shadow_root &dom.ShadowRoot, effects ShadowRootStylesheetEffects, reason dom.StyleInvalidationReason) bool {
+	if effects.may_match_light_dom_under_shadow_host && !effects.may_match_shadow_host {
+		mut host_node := host.as_node()
+		host_node.invalidate_style(reason)
+	} else if effects.may_match_light_dom_under_shadow_host {
+		mut host_root := unsafe { &dom.Node(host.as_node().root()) }
+		host_root.invalidate_style(reason)
+	} else if effects.may_affect_assigned_nodes_via_slots {
+		mut host_node := host.as_node()
+		host_node.invalidate_style(reason)
+	} else if effects.may_match_shadow_host {
+		mut host_node := host.as_node()
+		host_node.invalidate_style(reason)
+		mut shadow_node := unsafe { &dom.Node(shadow_root) }
+		shadow_node.set_needs_style_update(true)
+	} else {
+		return false
+	}
+	return true
+}
+
+fn (mut sheet CSSStyleSheet) invalidate_owners_with_previous_effects(reason dom.StyleInvalidationReason, previous_sheet_effects ?ShadowRootStylesheetEffects) {
 	sheet.did_match = none
-	sheet.for_each_owning_style_scope(fn [reason] (scope &StyleScope) {
-		owner := scope.node_ref() or { return }
-		mut mutable_owner := unsafe { &dom.Node(owner) }
+	for owner in sheet.owning_documents_or_shadow_roots {
+		mut scope := css_style_scope_for_node(owner)
+		scope.invalidate_rule_cache()
+		scope_owner := scope.node_ref() or { continue }
+		mut mutable_owner := unsafe { &dom.Node(scope_owner) }
 		mutable_owner.invalidate_style(reason)
-		mut mutable_scope := unsafe { &StyleScope(scope) }
-		mutable_scope.invalidate_rule_cache()
-	})
+
+		shadow_root := scope_owner.as_shadow_root() or { continue }
+		invalidate_assigned_elements_for_dirty_style_sheet_slots(shadow_root)
+		host := shadow_root.host() or { continue }
+		effects := determine_shadow_root_style_sheet_effects(shadow_root)
+		if !apply_style_sheet_shadow_root_effects(host, shadow_root, effects, reason) {
+			if previous := previous_sheet_effects {
+				apply_style_sheet_shadow_root_effects(host, shadow_root, previous, reason)
+			}
+		}
+	}
 }
 
 pub fn (sheet &CSSStyleSheet) for_each_owning_style_scope(callback fn (&StyleScope)) {
