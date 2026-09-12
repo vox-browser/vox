@@ -58,6 +58,23 @@ fn test_internal_index_order_uniqueness_and_referenced_values() {
 	assert index.referenced_value(record, store)?.text == 'one'
 }
 
+fn test_index_records_compare_by_index_key_then_primary_key() {
+	first := IndexRecord{ key: string_key('a'), primary_key: number_key(2) }
+	second := IndexRecord{ key: string_key('b'), primary_key: number_key(1) }
+	assert compare_index_records(first, second) < 0
+
+	shared_key_later_primary := IndexRecord{
+		key: string_key('a')
+		primary_key: number_key(3)
+	}
+	assert compare_index_records(first, shared_key_later_primary) < 0
+
+	mut index := IndexData.create('ordered', 'name', false, false)
+	index.store_a_record(shared_key_later_primary)!
+	index.store_a_record(first)!
+	assert index.records.map(it.primary_key.number) == [2.0, 3.0]
+}
+
 fn test_database_registry_connections_and_transaction_handle_identity() {
 	DatabaseData.delete_for_key_and_name('storage', 'db')
 	mut data := DatabaseData.create_for_key_and_name('storage', 'db')

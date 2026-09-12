@@ -97,12 +97,16 @@ fn sort_object_store_records(mut records []ObjectStoreRecord) {
 
 fn sort_index_records(mut records []IndexRecord) {
 	records.sort_with_compare(fn (a &IndexRecord, b &IndexRecord) int {
-		key_comparison := compare_two_keys(a.key, b.key) or { 0 }
-		if key_comparison != 0 {
-			return key_comparison
-		}
-		return compare_two_keys(a.primary_key, b.primary_key) or { 0 }
+		return compare_index_records(*a, *b)
 	})
+}
+
+pub fn compare_index_records(a IndexRecord, b IndexRecord) int {
+	key_comparison := compare_two_keys(a.key, b.key) or { return 0 }
+	if key_comparison != 0 {
+		return key_comparison
+	}
+	return compare_two_keys(a.primary_key, b.primary_key) or { 0 }
 }
 
 fn find_record(records []ObjectStoreRecord, key Key) int {
