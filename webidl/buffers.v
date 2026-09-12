@@ -18,26 +18,27 @@ pub enum BufferSourceKind {
 	uint32_array
 	bigint64_array
 	biguint64_array
+	float16_array
 	float32_array
 	float64_array
 }
 
 pub struct BufferSource {
 pub:
-	kind          BufferSourceKind
-	byte_offset   u32
-	byte_length   u32
-	detached      bool
-	out_of_bounds bool
-pub mut:
-	bytes []u8
+	kind BufferSourceKind
+mut:
+	byte_offset_   u32
+	byte_length_   u32
+	detached_      bool
+	out_of_bounds_ bool
+	bytes_         []u8
 }
 
 pub fn BufferSource.array_buffer(bytes []u8) BufferSource {
 	return BufferSource{
-		kind:        .array_buffer
-		byte_length: u32(bytes.len)
-		bytes:       bytes.clone()
+		kind: .array_buffer
+		byte_length_: u32(bytes.len)
+		bytes_: bytes.clone()
 	}
 }
 
@@ -53,151 +54,98 @@ pub fn BufferSource.view(kind BufferSourceKind, bytes []u8, offset u32, length u
 		return error('RangeError: typed-array byte offset and length must be element aligned')
 	}
 	return BufferSource{
-		kind:        kind
-		byte_offset: offset
-		byte_length: length
-		bytes:       bytes.clone()
+		kind: kind
+		byte_offset_: offset
+		byte_length_: length
+		bytes_: bytes.clone()
 	}
 }
 
-pub fn (source BufferSource) element_size() u32 {
+// from_object is the typed V boundary corresponding to conversion from a JS
+// ArrayBuffer, DataView, or TypedArray object.
+pub fn BufferSource.from_object(source BufferSource) BufferSource {
+	return source
+}
+
+pub fn (source &BufferSource) buffer_source() BufferSource {
+	return *source
+}
+
+pub fn (source &BufferSource) byte_length() u32 {
+	if source.out_of_bounds_ {
+		return 0
+	}
+	return source.byte_length_
+}
+
+pub fn (source &BufferSource) byte_offset() u32 {
+	return if source.kind == .array_buffer { u32(0) } else { source.byte_offset_ }
+}
+
+pub fn (source &BufferSource) element_size() u32 {
 	return element_size_for_kind(source.kind)
 }
 
 fn element_size_for_kind(kind BufferSourceKind) u32 {
 	return match kind {
-		.int16_array, .uint16_array { 2 }
+		.int16_array, .uint16_array, .float16_array { 2 }
 		.int32_array, .uint32_array, .float32_array { 4 }
 		.bigint64_array, .biguint64_array, .float64_array { 8 }
 		else { 1 }
 	}
 }
 
-pub fn (source BufferSource) is_array_buffer() bool {
+pub fn (source &BufferSource) viewed_array_buffer() BufferSource {
+	return BufferSource{
+		kind: .array_buffer
+		byte_length_: u32(source.bytes_.len)
+		detached_: source.detached_
+		out_of_bounds_: source.out_of_bounds_
+		bytes_: source.bytes_.clone()
+	}
+}
+
+pub fn (source &BufferSource) typed_array_base() ?BufferSource {
+	if source.is_typed_array() {
+		return *source
+	}
+	return none
+}
+
+pub fn (source &BufferSource) is_out_of_bounds() bool {
+	return source.out_of_bounds_
+}
+
+pub fn (source &BufferSource) is_array_buffer() bool {
 	return source.kind == .array_buffer
 }
 
-pub fn (source BufferSource) is_data_view() bool {
+pub fn (source &BufferSource) is_data_view() bool {
 	return source.kind == .data_view
 }
 
-pub fn (source BufferSource) is_typed_array() bool {
+pub fn (source &BufferSource) is_typed_array() bool {
 	return source.kind !in [.array_buffer, .data_view]
 }
 
-pub fn is_buffer_source_detached(value Value) bool {
+pub fn BufferSource.is_detached(value Value) bool {
 	if source := value.buffer_value {
-		return source.detached
+		return source.detached_
 	}
 	return false
 }
 
-// get_buffer_source_copy returns an empty byte sequence for detached or
-// out-of-bounds sources, exactly like the upstream operation.
-pub fn get_buffer_source_copy(source BufferSource) []u8 {
-	if source.detached || source.out_of_bounds {
-		return []u8{}
-	}
-	if source.kind == .array_buffer {
-		return source.bytes.clone()
-	}
-	start := int(source.byte_offset)
-	end := start + int(source.byte_length)
-	if start < 0 || end > source.bytes.len {
-		return []u8{}
-	}
-	return source.bytes[start..end].clone()
-}
-
-pub fn (mut source BufferSource) write(bytes []u8, starting_offset u32) ! {
-	if source.detached || source.out_of_bounds {
-		return error('InvalidStateError: cannot write a detached or out-of-bounds view')
-	}
-	if source.is_typed_array() && bytes.len % int(source.element_size()) != 0 {
-		return error('RangeError: byte count must be a multiple of the typed-array element size')
-	}
-	start := int(source.byte_offset + starting_offset)
-	view_end := int(source.byte_offset + source.byte_length)
-	if start < int(source.byte_offset) || start + bytes.len > view_end
-		|| start + bytes.len > source.bytes.len {
-		return error('RangeError: bytes do not fit in the view')
-	}
-	for index in 0 .. bytes.len {
-		source.bytes[start + index] = bytes[index]
-	}
-}
-
-// These wrappers retain the class surface used by generated bindings. The
-// contained BufferSource is the typed standalone representation of the raw JS
-// ArrayBuffer, DataView, or TypedArray object.
-pub struct BufferableObjectBase {
-mut:
-	bufferable_object_ BufferSource
-}
-
-pub fn BufferableObjectBase.create(object BufferSource) BufferableObjectBase {
-	return BufferableObjectBase{
-		bufferable_object_: object
-	}
-}
-
-pub fn (object &BufferableObjectBase) byte_length() u32 {
-	if object.bufferable_object_.out_of_bounds {
-		return 0
-	}
-	return object.bufferable_object_.byte_length
-}
-
-pub fn (object &BufferableObjectBase) byte_offset() u32 {
-	return if object.bufferable_object_.kind == .array_buffer {
-		u32(0)
-	} else {
-		object.bufferable_object_.byte_offset
-	}
-}
-
-pub fn (object &BufferableObjectBase) element_size() u32 {
-	return object.bufferable_object_.element_size()
-}
-
-pub fn (object &BufferableObjectBase) raw_object() BufferSource {
-	return object.bufferable_object_
-}
-
-pub fn (object &BufferableObjectBase) bufferable_object() BufferSource {
-	return object.bufferable_object_
-}
-
-pub fn (object &BufferableObjectBase) viewed_array_buffer() BufferSource {
-	source := object.bufferable_object_
-	return BufferSource{
-		kind:          .array_buffer
-		byte_length:   u32(source.bytes.len)
-		detached:      source.detached
-		out_of_bounds: source.out_of_bounds
-		bytes:         source.bytes.clone()
-	}
-}
-
-pub fn BufferableObjectBase.bufferable_object_from_raw_object(object BufferSource) BufferSource {
-	return object
-}
-
-pub fn (object &BufferableObjectBase) is_typed_array_base() bool {
-	return object.bufferable_object_.is_typed_array()
-}
-
-pub fn (object &BufferableObjectBase) is_data_view() bool {
-	return object.bufferable_object_.is_data_view()
-}
-
-pub fn (object &BufferableObjectBase) is_array_buffer() bool {
-	return object.bufferable_object_.is_array_buffer()
+pub fn is_buffer_source_detached(value Value) bool {
+	return BufferSource.is_detached(value)
 }
 
 pub struct ArrayBufferView {
 mut:
-	base BufferableObjectBase
+	array_buffer_view_ BufferSource
+}
+
+pub fn ArrayBufferView.from_object(source BufferSource) !ArrayBufferView {
+	return ArrayBufferView.create(source)
 }
 
 pub fn ArrayBufferView.create(source BufferSource) !ArrayBufferView {
@@ -205,14 +153,131 @@ pub fn ArrayBufferView.create(source BufferSource) !ArrayBufferView {
 		return error('TypeError: ArrayBufferView requires a DataView or TypedArray')
 	}
 	return ArrayBufferView{
-		base: BufferableObjectBase.create(source)
+		array_buffer_view_: source
+	}
+}
+
+pub fn (view &ArrayBufferView) array_buffer_view() BufferSource {
+	return view.array_buffer_view_
+}
+
+pub fn (view &ArrayBufferView) byte_length() u32 {
+	return view.array_buffer_view_.byte_length()
+}
+
+pub fn (view &ArrayBufferView) byte_offset() u32 {
+	return view.array_buffer_view_.byte_offset()
+}
+
+pub fn (view &ArrayBufferView) element_size() u32 {
+	return view.array_buffer_view_.element_size()
+}
+
+pub fn (view &ArrayBufferView) viewed_array_buffer() BufferSource {
+	return view.array_buffer_view_.viewed_array_buffer()
+}
+
+pub fn (view &ArrayBufferView) typed_array_base() ?BufferSource {
+	return view.array_buffer_view_.typed_array_base()
+}
+
+pub fn (view &ArrayBufferView) is_out_of_bounds() bool {
+	return view.array_buffer_view_.is_out_of_bounds()
+}
+
+pub fn (view &ArrayBufferView) is_data_view() bool {
+	return view.array_buffer_view_.is_data_view()
+}
+
+pub struct ValidatedBufferSource {
+pub:
+	buffer          BufferSource
+	byte_offset     usize
+	byte_length     usize
+	element_size    usize = 1
+	is_data_view    bool
+	is_array_buffer bool
+}
+
+fn validate_buffer_source_bounds(source BufferSource, byte_offset usize, byte_length usize, element_size usize, is_data_view bool, is_array_buffer bool) !ValidatedBufferSource {
+	if source.detached_ {
+		return error('InvalidStateError: buffer source is detached')
+	}
+	byte_end := u64(byte_offset) + u64(byte_length)
+	if byte_end < u64(byte_offset) || byte_end > u64(source.bytes_.len) {
+		return error('RangeError: buffer source is out of bounds')
+	}
+	return ValidatedBufferSource{
+		buffer: source.viewed_array_buffer()
+		byte_offset: byte_offset
+		byte_length: byte_length
+		element_size: element_size
+		is_data_view: is_data_view
+		is_array_buffer: is_array_buffer
+	}
+}
+
+pub fn validate_buffer_source(source BufferSource) !ValidatedBufferSource {
+	if source.is_out_of_bounds() {
+		return error('RangeError: buffer source is out of bounds')
+	}
+	return validate_buffer_source_bounds(source, usize(source.byte_offset()), usize(source.byte_length()), usize(source.element_size()), source.is_data_view(), source.is_array_buffer())
+}
+
+pub fn validate_array_buffer_view(view ArrayBufferView) !ValidatedBufferSource {
+	return validate_buffer_source(view.array_buffer_view_)
+}
+
+// https://webidl.spec.whatwg.org/#arraybufferview-write
+pub fn (mut view ArrayBufferView) write_checked(bytes []u8, starting_offset u32) ! {
+	view_byte_length := view.byte_length()
+	if starting_offset > view_byte_length || u64(bytes.len) > u64(view_byte_length - starting_offset) {
+		return error('RangeError: bytes do not fit in the view')
+	}
+	if !view.is_data_view() && bytes.len % int(view.element_size()) != 0 {
+		return error('RangeError: byte count must be a multiple of the typed-array element size')
+	}
+	if bytes.len == 0 {
+		return
+	}
+	validated := validate_array_buffer_view(view)!
+	write_offset := u64(validated.byte_offset) + u64(starting_offset)
+	if write_offset < u64(validated.byte_offset) || write_offset > u64(view.array_buffer_view_.bytes_.len)
+		|| u64(bytes.len) > u64(view.array_buffer_view_.bytes_.len) - write_offset {
+		return error('RangeError: bytes do not fit in the backing buffer')
+	}
+	for index, byte in bytes {
+		view.array_buffer_view_.bytes_[int(write_offset) + index] = byte
 	}
 }
 
 pub fn (mut view ArrayBufferView) write(bytes []u8, starting_offset u32) ! {
-	view.base.bufferable_object_.write(bytes, starting_offset)!
+	view.write_checked(bytes, starting_offset)!
 }
 
 pub fn (view &ArrayBufferView) raw_object() BufferSource {
-	return view.base.raw_object()
+	return view.array_buffer_view_
+}
+
+// get_buffer_source_copy returns an empty byte sequence for detached or
+// out-of-bounds sources, exactly like the upstream operation.
+pub fn get_buffer_source_copy(source BufferSource) []u8 {
+	validated := validate_buffer_source(source) or { return []u8{} }
+	start := int(validated.byte_offset)
+	end := start + int(validated.byte_length)
+	return source.bytes_[start..end].clone()
+}
+
+pub fn (mut source BufferSource) write(bytes []u8, starting_offset u32) ! {
+	if source.kind == .array_buffer {
+		mut view := ArrayBufferView{
+			array_buffer_view_: source
+		}
+		view.write_checked(bytes, starting_offset)!
+		source = view.array_buffer_view_
+		return
+	}
+	mut view := ArrayBufferView.create(source)!
+	view.write_checked(bytes, starting_offset)!
+	source = view.array_buffer_view_
 }
