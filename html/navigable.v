@@ -202,6 +202,18 @@ fn navigable_model_active_document_changed(target voidptr, document ?&dom.Docume
 	}
 }
 
+fn (model &NavigableModel) system_visibility_state() dom.VisibilityState {
+	if context := model.context_ {
+		if traversable := context.top_level_traversable() {
+			return traversable.system_visibility_state()
+		}
+	}
+	// Browsing contexts created directly by the translated host do not have the
+	// separate TraversableNavigable adapter installed. Preserve the host-visible
+	// state used by that path.
+	return .visible
+}
+
 fn connect_navigable_model_to_host(model &NavigableModel) {
 	mut host := unsafe { &dom.Navigable(model.host_) }
 	host.html_model_handle_ = voidptr(model)
@@ -340,6 +352,8 @@ pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentS
 		host.is_top_level_traversable_ = true
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
+	// 6. Set the initial visibility state from the navigable's traversable.
+	mutable_document.set_initial_visibility_state(model.system_visibility_state())
 	mutable_document.set_ready_to_run_scripts()
 }
 
@@ -489,6 +503,8 @@ pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryE
 	model.set_active_document(new_document)
 	mut document := unsafe { &dom.Document(new_document) }
 	document.make_active()
+	// 6. Set the initial visibility state from the navigable's traversable.
+	document.set_initial_visibility_state(model.system_visibility_state())
 	document.set_ready_to_run_scripts()
 	if document.document_ready_for_post_load_tasks() {
 		model.clear_navigation_load_event_guard()

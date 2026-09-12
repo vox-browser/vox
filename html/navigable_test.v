@@ -156,6 +156,33 @@ fn test_navigable_initialization_hierarchy_and_target_choice() {
 	assert blank_choice.window_type == .new_with_no_opener
 }
 
+fn test_nested_navigable_uses_the_top_level_traversable_visibility_state() {
+	_, parent_window, _ := navigable_test_top_level('https://example.test/', 'top')!
+	mut traversable := TraversableNavigable.create_a_new_top_level_traversable('')!
+	mut parent_context := unsafe { &BrowsingContextModel(parent_window.browsing_context()) }
+	parent_context.set_top_level_traversable(traversable)
+
+	mut child_document := dom.Document.create(dom.URL{ value: 'https://example.test/frame' })
+	child_document.set_origin(child_document.url.origin())
+	child_context := BrowsingContextModel.create(child_document, parent_window.browsing_context(), 'frame')
+	_ = WindowModel.create(child_document, child_context)!
+	assert child_document.visibility_state_value() == .hidden
+
+	traversable.set_system_visibility_state(.visible)
+	mut activated_document := dom.Document.create(dom.URL{ value: 'https://example.test/next' })
+	activated_document.set_origin(activated_document.url.origin())
+	entry := &SessionHistoryEntry{
+		url: activated_document.url
+		document_state: &DocumentState{
+			document_id_: activated_document.unique_id()
+		}
+	}
+	child_host := child_document.navigable() or { panic('missing child navigable') }
+	mut child_model := navigable_model_for_host(child_host) or { panic('missing child model') }
+	child_model.activate_history_entry(entry, activated_document)
+	assert activated_document.visibility_state_value() == .visible
+}
+
 fn test_top_level_target_snapshot_uses_popup_sandboxing_flags() {
 	_, window, model := navigable_test_top_level('https://example.test/', 'top')!
 	mut context := unsafe { &BrowsingContextModel(window.browsing_context()) }

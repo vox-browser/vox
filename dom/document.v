@@ -7204,6 +7204,12 @@ pub fn (mut d Document) update_the_visibility_state(state VisibilityState) {
 	d.dispatch_event_simple(event_visibilitychange_, true)
 }
 
+// https://html.spec.whatwg.org/multipage/interaction.html#set-the-initial-visibility-state
+pub fn (mut d Document) set_initial_visibility_state(state VisibilityState) {
+	// Initial visibility is installed without running the visibility-change steps.
+	d.visibility_state = state
+}
+
 // --- Media queries ---
 
 // https://drafts.csswg.org/cssom-view/#evaluate-media-queries-and-report-changes
@@ -7942,14 +7948,7 @@ pub fn (mut d Document) make_active() {
 		d.browsing_context.window_proxy().set_window(w)
 	}
 
-	// 3. Set document's visibility state to document's node navigable's traversable navigable's system visibility state.
-	if nav := d.navigable() {
-		if traversable := nav.traversable_navigable() {
-			d.visibility_state = traversable.system_visibility_state()
-		}
-	}
-
-	// 5. Set window's relevant settings object's execution ready flag.
+	// 3. Set window's relevant settings object's execution ready flag.
 	d.set_relevant_settings_object_execution_ready()
 
 	d.notify_each_document_observer_became_active()
