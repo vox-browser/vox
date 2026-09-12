@@ -1412,6 +1412,64 @@ fn test_display_change_cancels_and_restarts_css_defined_animations() {
 	assert animation.play_state() == .running
 }
 
+fn test_animation_refresh_can_override_base_display_none() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	target.set_attribute_value('style', 'display: none')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(target.as_node())!
+	mut computer := css_style_computer_for(document)
+	document.needs_full_style_update = true
+	document.update_style()
+	abstract_target := dom.AbstractElement.new(target, none)
+	assert is_in_display_none_subtree_ignoring_animations(abstract_target)
+
+	block_value := parse_css_value(ParsingParams{}, 'block', .display) or {
+		panic('failed to parse display keyframe')
+	}
+	mut keyframes := &KeyFrameSet{
+		keyframes_by_key: {
+			0:      ResolvedKeyFrame{
+				properties: {
+					PropertyID.display: block_value
+				}
+			}
+			100000: ResolvedKeyFrame{
+				properties: {
+					PropertyID.display: block_value
+				}
+			}
+		}
+	}
+	mut effect := KeyframeEffect.create()
+	effect.set_target(abstract_target)
+	effect.set_specified_iteration_duration(100)
+	effect.set_fill_mode(.both)
+	effect.set_key_frame_set(keyframes)
+	assert keyframe_effect_animates_property(effect, .display)
+
+	mut animation := CSSAnimation.create()
+	animation.set_animation_name('show')
+	animation.set_owning_element(abstract_target)
+	animation.set_effect(effect)
+	animation.set_timeline(computer.document_timeline_)
+	animation.play()!
+	computer.css_animation_storage_.set(abstract_target, 'show', animation)
+	computer.set_animation_time_ms(50)
+	document.update_animated_style_if_needed()
+
+	dom_computed := abstract_target.computed_properties() or { panic('missing computed style') }
+	computed := computed_properties_from_dom(dom_computed) or { panic('missing CSS style') }
+	assert computed.property(.display, .no)!.css_text == 'none'
+	assert computed.property(.display, .yes)!.css_text == 'block'
+	assert is_in_display_none_subtree_ignoring_animations(abstract_target)
+}
+
 fn test_document_rendering_update_dispatches_css_transition_phase_events() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_browsing_context(&dom.BrowsingContext{

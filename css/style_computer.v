@@ -1028,6 +1028,78 @@ fn (s &StyleComputer) recompute_inherited_style_for_animated_descendants(node &d
 	return invalidation
 }
 
+fn computed_display_is_none_ignoring_animations(computed &ComputedProperties) bool {
+	value := computed.property(.display, .no) or { return false }
+	typed := style_value_logic_from_dom(.display, value) or { return false }
+	if typed is DisplayStyleValue {
+		return typed.display().is_none()
+	}
+	return false
+}
+
+pub fn is_in_display_none_subtree_ignoring_animations(abstract_element dom.AbstractElement) bool {
+	if abstract_element.pseudo_element() != none {
+		if pseudo_style := abstract_element.computed_properties() {
+			if computed := computed_properties_from_dom(pseudo_style) {
+				if computed_display_is_none_ignoring_animations(computed) {
+					return true
+				}
+			}
+		}
+	}
+	mut ancestor := ?&dom.Node(abstract_element.element().as_node())
+	for ancestor != none {
+		current := ancestor or { break }
+		if element := current.as_element() {
+			if style := element.el_computed_properties() {
+				if computed := computed_properties_from_dom(style) {
+					if computed_display_is_none_ignoring_animations(computed) {
+						return true
+					}
+				}
+			}
+		}
+		ancestor = current.parent_or_shadow_host()
+	}
+	return false
+}
+
+fn keyframe_effect_animates_property(effect &KeyframeEffect, property_id PropertyID) bool {
+	key_frame_set := effect.key_frame_set or { return false }
+	for _, keyframe in key_frame_set.keyframes_by_key {
+		if property_id in keyframe.properties || property_id in keyframe.use_initial_properties {
+			return true
+		}
+	}
+	return false
+}
+
+pub fn (effect &KeyframeEffect) update_computed_properties_for_style(mut style_computer StyleComputer, abstract_element dom.AbstractElement, mut computed ComputedProperties) {
+	style_computer.collect_animation_into(abstract_element, voidptr(effect), mut computed)
+}
+
+fn (style_computer &StyleComputer) target_has_animation_for_property(abstract_element dom.AbstractElement, property_id PropertyID) bool {
+	if style_computer.css_animation_storage_ != unsafe { nil } {
+		for animation in style_computer.css_animation_storage_.animations_for(abstract_element) {
+			if effect := animation.effect() {
+				if keyframe_effect_animates_property(effect, property_id) {
+					return true
+				}
+			}
+		}
+	}
+	if style_computer.css_transition_storage_ != unsafe { nil } {
+		for transition in style_computer.css_transition_storage_.transitions_for(abstract_element) {
+			if effect := transition.effect() {
+				if keyframe_effect_animates_property(effect, property_id) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // Document::update_animated_style_if_needed() and AnimationUpdateContext's
 // destructor. Group active effects by target, reset non-inherited animated
 // values once, sample every CSS animation/transition, diff the animated
@@ -1063,7 +1135,11 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 
 	for target_element in targets {
 		target_node := target_element.element().as_node()
-		if !target_node.is_connected() || target_node.has_inclusive_ancestor_with_display_none() {
+		if !target_node.is_connected() {
+			continue
+		}
+		if is_in_display_none_subtree_ignoring_animations(target_element)
+			&& !style_computer.target_has_animation_for_property(target_element, .display) {
 			continue
 		}
 		dom_computed := target_element.computed_properties() or { continue }
@@ -1075,7 +1151,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			for existing in style_computer.css_animation_storage_.animations_for(target_element) {
 				mut animation := existing
 				if animation.sample_at(style_computer.animation_time_ms_) != none {
-					style_computer.collect_animation_into(target_element, voidptr(animation.effect_), mut computed)
+					animation.effect_.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
 				}
 			}
 		}
@@ -1083,7 +1159,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			for existing in style_computer.css_transition_storage_.transitions_for(target_element) {
 				mut transition := existing
 				if transition.sample_at(style_computer.animation_time_ms_) != none {
-					style_computer.collect_animation_into(target_element, voidptr(transition.keyframe_effect_), mut computed)
+					transition.keyframe_effect_.update_computed_properties_for_style(mut style_computer, target_element, mut computed)
 				}
 			}
 		}
