@@ -60,17 +60,14 @@ pub struct HTMLTextAreaElementModel {
 pub:
 	element &dom.HTMLTextAreaElement
 pub mut:
-	control                  &FormAssociatedElement
-	text                     &FormAssociatedTextControlElement
-	dirty_value              bool
-	user_validity            bool
-	placeholder_element_     ?&dom.Element
-	placeholder_text_node_   ?&dom.Text
-	inner_text_element_      ?&dom.Element
-	text_node_               ?&dom.Text
-	pending_input_event_type string
-	pending_input_event_data ?string
-	input_event_task_queued_ bool
+	control                &FormAssociatedElement
+	text                   &FormAssociatedTextControlElement
+	dirty_value            bool
+	user_validity          bool
+	placeholder_element_   ?&dom.Element
+	placeholder_text_node_ ?&dom.Text
+	inner_text_element_    ?&dom.Element
+	text_node_             ?&dom.Text
 }
 
 fn textarea_element(model &HTMLTextAreaElementModel) &dom.Element {

@@ -200,21 +200,21 @@ fn test_textarea_shadow_selection_lifecycle_editing_and_clone_algorithms() {
 	textarea.did_edit_text_node('insertText', 'y')
 	textarea.did_edit_text_node('insertText', 'z')
 	assert textarea.dirty_value
-	assert textarea.input_event_task_queued_
+	assert textarea_event_types.len == 0
 	drain_form_element_tasks()
-	assert textarea_event_types == ['input']
-	assert textarea_event_input_types == ['insertText']
-	assert textarea_event_data == ['z']
-	assert textarea_event_composed == [true]
+	assert textarea_event_types == ['input', 'input']
+	assert textarea_event_input_types == ['insertText', 'insertText']
+	assert textarea_event_data == ['y', 'z']
+	assert textarea_event_composed == [true, true]
 
 	textarea.handle_return_key('insertLineBreak')!
 	assert textarea.value().ends_with('\n')
 	drain_form_element_tasks()
-	assert textarea_event_types == ['input', 'input']
+	assert textarea_event_types == ['input', 'input', 'input']
 	textarea.did_receive_focus()
 	textarea.did_lose_focus()
 	drain_form_element_tasks()
-	assert textarea_event_types == ['input', 'input', 'change']
+	assert textarea_event_types == ['input', 'input', 'input', 'change']
 
 	textarea.form_associated_element_attribute_changed('placeholder', 'hint', 'other', none)
 	placeholder_text := textarea.placeholder_text_node_ or { panic('placeholder text') }

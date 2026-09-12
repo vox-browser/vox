@@ -149,7 +149,7 @@ pub fn (mut model HTMLTextAreaElementModel) clear_algorithm() {
 	model.sync_text_node_to_raw_value()
 	model.update_placeholder_visibility()
 	model.update_validity()
-	model.queue_firing_input_event()
+	model.queue_input_event('', none)
 }
 
 pub fn (model &HTMLTextAreaElementModel) cloned(mut copy HTMLTextAreaElementModel, _ bool) {
@@ -250,9 +250,7 @@ pub fn (mut model HTMLTextAreaElementModel) form_associated_element_attribute_ch
 pub fn (mut model HTMLTextAreaElementModel) did_edit_text_node(input_type string, data ?string) {
 	text_node := model.text_node_ or { return }
 	model.set_raw_value(text_node.data())
-	model.pending_input_event_type = input_type
-	model.pending_input_event_data = data
-	model.queue_firing_input_event()
+	model.queue_input_event(input_type, data)
 	model.dirty_value = true
 	model.text.dirty_value_flag = true
 	model.user_validity = true
@@ -264,23 +262,17 @@ pub fn (mut model HTMLTextAreaElementModel) handle_return_key(input_type string)
 	model.text.handle_insert(input_type, '\n')!
 }
 
-pub fn (mut model HTMLTextAreaElementModel) queue_firing_input_event() {
-	if model.input_event_task_queued_ {
-		return
-	}
-	model.input_event_task_queued_ = true
+fn (mut model HTMLTextAreaElementModel) queue_input_event(input_type string, data ?string) {
 	model_pointer := voidptr(&model)
 	document := textarea_element(&model).document()
-	queue_a_task(.user_interaction, main_thread_event_loop(), document, fn [model_pointer] () {
+	queue_a_task(.user_interaction, main_thread_event_loop(), document, fn [model_pointer, input_type, data] () {
 		mut mutable_model := unsafe { &HTMLTextAreaElementModel(model_pointer) }
-		mutable_model.input_event_task_queued_ = false
 		mut input_event := dom.InputEvent.create_from_platform_event('input', dom.InputEventInit{
-			data: mutable_model.pending_input_event_data
-			input_type: mutable_model.pending_input_event_type
+			data: data
+			input_type: input_type
 		}, [], dom.current_event_timestamp())
 		base_event := unsafe { &dom.Event(input_event) }
-		unsafe { &dom.EventTarget(textarea_element(mutable_model).as_node()) }
-		.dispatch_event(base_event)
+		unsafe { &dom.EventTarget(textarea_element(mutable_model).as_node()) }.dispatch_event(base_event)
 	})
 }
 
