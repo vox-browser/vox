@@ -33,3 +33,28 @@ fn test_compile_instantiate_and_streaming_mime_boundary() {
 		}
 	}
 }
+
+fn test_webassembly_response_body_is_copied_and_failures_propagate() {
+	mut bytes := streaming_module_bytes()
+	buffer := array_buffer_for_webassembly_response(StreamingResponse{
+		content_type: 'application/wasm'
+		body: bytes
+	})!
+	bytes[0] = 0xff
+	assert webidl.get_buffer_source_copy(buffer)[0] == 0
+
+	failed := StreamingResponse{
+		content_type: 'application/wasm'
+		body_error: 'network body read failed'
+	}
+	if _ := array_buffer_for_webassembly_response(failed) {
+		assert false
+	} else {
+		assert err.msg() == 'network body read failed'
+	}
+	if _ := compile_streaming(failed) {
+		assert false
+	} else {
+		assert err.msg() == 'network body read failed'
+	}
+}

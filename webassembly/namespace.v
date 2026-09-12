@@ -42,6 +42,14 @@ pub:
 	content_type string
 	body         []u8
 	ok           bool = true
+	body_error   ?string
+}
+
+pub fn array_buffer_for_webassembly_response(response StreamingResponse) !webidl.BufferSource {
+	if message := response.body_error {
+		return error(message)
+	}
+	return webidl.BufferSource.array_buffer(response.body)
 }
 
 pub fn compile_streaming(response StreamingResponse) !&Module {
@@ -51,7 +59,8 @@ pub fn compile_streaming(response StreamingResponse) !&Module {
 	if response.content_type.to_lower().split(';')[0].trim_space() != 'application/wasm' {
 		return error('TypeError: WebAssembly response has an unsupported MIME type')
 	}
-	return compile_a_webassembly_module(response.body)
+	buffer := array_buffer_for_webassembly_response(response)!
+	return compile_a_webassembly_module(webidl.get_buffer_source_copy(buffer))
 }
 
 pub fn instantiate_streaming(response StreamingResponse, imports ImportObject) !WebAssemblyInstantiatedSource {
