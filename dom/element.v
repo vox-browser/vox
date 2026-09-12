@@ -5109,22 +5109,10 @@ pub fn (mut e Element) invalidate_lang_value() {
 
 fn schedule_has_invalidation_for_inherited_attribute_change(element &Element) {
 	node := element.as_node()
-	mut style_scopes := []&StyleScope{cap: 4}
-	document_scope := element.document().style_scope()
-	style_scopes << document_scope
-	root_scope := style_scope_for_node(node)
-	if root_scope !in style_scopes {
-		style_scopes << root_scope
-	}
-	for scope in additional_style_scopes_for_node(node, root_scope) {
-		if scope !in style_scopes {
-			style_scopes << scope
-		}
-	}
-	for scope in style_scopes {
+	node.for_each_style_scope_which_may_observe_the_node(fn [node] (scope &StyleScope) {
 		mut mutable_scope := unsafe { &StyleScope(scope) }
 		mutable_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(node)
-	}
+	})
 }
 
 // --- is_connected ---

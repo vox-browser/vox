@@ -1093,11 +1093,14 @@ fn css_style_scope_for_shadow_root(shadow_root &dom.ShadowRoot) &StyleScope {
 }
 
 fn css_style_scope_for_node(node &dom.Node) &StyleScope {
+	mut dom_scope := node.style_scope()
 	root := node.root()
 	if shadow_root := root.as_shadow_root() {
-		return css_style_scope_for_shadow_root(shadow_root)
+		if !shadow_root.uses_document_style_sheets() {
+			return css_style_scope_from_dom(mut dom_scope, root)
+		}
 	}
-	return css_style_scope_for_document(root.document())
+	return css_style_scope_from_dom(mut dom_scope, unsafe { &dom.Node(root.document()) })
 }
 
 pub fn style_scope_for_dom_node(node &dom.Node) &StyleScope {

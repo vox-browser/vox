@@ -1330,37 +1330,17 @@ fn schedule_has_walk_for_parent(style_scope &StyleScope, parent &Node, reason St
 	}
 }
 
-fn schedule_has_walk_for_unique_scope(mut scheduled_scopes []&StyleScope, style_scope &StyleScope, parent &Node, reason StyleInvalidationReason) {
-	if style_scope in scheduled_scopes {
-		return
-	}
-	scheduled_scopes << style_scope
-	schedule_has_walk_for_parent(style_scope, parent, reason)
-}
-
 pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	doc := n.document()
 	if doc == unsafe { nil } {
 		return
 	}
-	style_scope := style_scope_for_node(&n)
+	style_scope := n.style_scope()
 	if reason == .node_remove || reason == .node_insert_before {
 		if parent := n.parent_or_shadow_host() {
-			mut scheduled_scopes := []&StyleScope{cap: 4}
-			schedule_has_walk_for_unique_scope(mut scheduled_scopes, style_scope, parent, reason)
-			for ancestor := ?&Node(parent); ancestor != none;  {
-				current := ancestor or { break }
-				schedule_has_walk_for_unique_scope(mut scheduled_scopes, style_scope_for_node(current),
-					parent, reason)
-				if element := current.as_element() {
-					if shadow_root := element.shadow_root() {
-						shadow_scope := shadow_root.style_scope()
-						schedule_has_walk_for_unique_scope(mut scheduled_scopes, shadow_scope,
-							parent, reason)
-					}
-				}
-				ancestor = current.parent_or_shadow_host()
-			}
+			parent.for_each_style_scope_which_may_observe_the_node(fn [parent, reason] (scope &StyleScope) {
+				schedule_has_walk_for_parent(scope, parent, reason)
+			})
 		}
 	} else if style_scope.may_have_has_selectors() && reason_may_affect_has_selectors(reason) {
 		mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
@@ -1433,7 +1413,7 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	}
 }
 
-fn style_scope_for_node(node &Node) &StyleScope {
+pub fn (node &Node) style_scope() &StyleScope {
 	root := node.root()
 	if shadow_root := root.as_shadow_root() {
 		if shadow_root.uses_document_style_sheets() {
@@ -1444,31 +1424,38 @@ fn style_scope_for_node(node &Node) &StyleScope {
 	return node.document().style_scope()
 }
 
-fn add_additional_style_scope(mut scopes []&StyleScope, scope &StyleScope, style_scope &StyleScope) {
-	if scope == style_scope || scope in scopes {
+fn add_observing_style_scope(mut scopes []&StyleScope, scope &StyleScope) {
+	if scope in scopes {
 		return
 	}
 	scopes << scope
 }
 
-fn additional_style_scopes_for_node(node &Node, style_scope &StyleScope) []&StyleScope {
-	mut additional_scopes := []&StyleScope{cap: 4}
+fn (node &Node) observing_style_scopes() []&StyleScope {
+	mut scopes := []&StyleScope{cap: 4}
+	add_observing_style_scope(mut scopes, node.style_scope())
 	if element := node.as_element() {
 		if shadow_root := element.shadow_root() {
-			add_additional_style_scope(mut additional_scopes, shadow_root.style_scope(), style_scope)
+			add_observing_style_scope(mut scopes, shadow_root.style_scope())
 		}
 	}
 	for ancestor := node.parent_or_shadow_host(); ancestor != none;  {
 		current := ancestor or { break }
-		add_additional_style_scope(mut additional_scopes, style_scope_for_node(current), style_scope)
+		add_observing_style_scope(mut scopes, current.style_scope())
 		if element := current.as_element() {
 			if shadow_root := element.shadow_root() {
-				add_additional_style_scope(mut additional_scopes, shadow_root.style_scope(), style_scope)
+				add_observing_style_scope(mut scopes, shadow_root.style_scope())
 			}
 		}
 		ancestor = current.parent_or_shadow_host()
 	}
-	return additional_scopes
+	return scopes
+}
+
+pub fn (node &Node) for_each_style_scope_which_may_observe_the_node(callback fn (&StyleScope)) {
+	for scope in node.observing_style_scopes() {
+		callback(scope)
+	}
 }
 
 pub fn (d &Document) style_computer() &StyleComputer {
@@ -1660,8 +1647,9 @@ pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationRea
 	if doc == unsafe { nil } {
 		return
 	}
-	style_scope := style_scope_for_node(&n)
-	additional_scopes := additional_style_scopes_for_node(&n, style_scope)
+	style_scopes := n.observing_style_scopes()
+	style_scope := style_scopes[0]
+	additional_scopes := style_scopes[1..]
 	mut properties_used_in_has_selectors := false
 	for property in properties {
 		if doc.style_computer().invalidation_property_used_in_has_selector(property, style_scope) {

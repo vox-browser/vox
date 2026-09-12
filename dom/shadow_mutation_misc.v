@@ -4450,14 +4450,7 @@ pub fn (abstract_element &AbstractElement) debug_description() string {
 }
 
 pub fn (abstract_element &AbstractElement) style_scope() &StyleScope {
-	root := abstract_element.element_.as_node().root()
-	if shadow_root := root.as_shadow_root() {
-		if shadow_root.uses_document_style_sheets() {
-			return shadow_root.document().style_scope()
-		}
-		return shadow_root.style_scope()
-	}
-	return root.document().style_scope()
+	return abstract_element.element_.as_node().style_scope()
 }
 
 pub fn (d &Document) style_scope() &StyleScope {
