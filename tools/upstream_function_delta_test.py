@@ -59,6 +59,19 @@ public:
         entries = delta.compare_definitions(old, current)
         self.assertEqual([(entry.kind, entry.name) for entry in entries], [("added", "added"), ("changed", "changed"), ("removed", "removed")])
 
+    def test_classifies_out_of_line_lifecycle_definitions(self) -> None:
+        entries = [
+            delta.DeltaEntry("added", "Example", "Thing.cpp", 1, "Thing", "Thing"),
+            delta.DeltaEntry("added", "Example", "Thing.cpp", 2, "Thing", "~Thing"),
+        ]
+
+        self.assertTrue(all(delta.is_language_lifecycle_definition(entry) for entry in entries))
+        self.assertFalse(
+            delta.is_language_lifecycle_definition(
+                delta.DeltaEntry("added", "Example", "Thing.cpp", 3, "Thing", "create")
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -355,6 +355,13 @@ def compare_definitions(old: list[Definition], current: list[Definition]) -> lis
     return sorted(entries, key=lambda item: (item.module, item.source, item.line, item.kind))
 
 
+def is_language_lifecycle_definition(entry: DeltaEntry) -> bool:
+    return entry.owner != "<namespace>" and entry.name in {
+        entry.owner,
+        f"~{entry.owner}",
+    }
+
+
 def join_v_dispositions(
     entries: list[DeltaEntry], ladybird: Path, translation: Path
 ) -> list[DeltaEntry]:
@@ -372,6 +379,16 @@ def join_v_dispositions(
     for entry in entries:
         if entry.kind == "removed":
             joined.append(entry)
+            continue
+        if is_language_lifecycle_definition(entry):
+            joined.append(
+                DeltaEntry(
+                    **{
+                        **asdict(entry),
+                        "disposition": "language-constructor-or-destructor",
+                    }
+                )
+            )
             continue
         candidates = current_inventory[(entry.module, entry.owner, entry.name)]
         exact_source = [candidate for candidate in candidates if candidate.source == entry.source]
