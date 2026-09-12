@@ -1183,6 +1183,28 @@ fn cached_table_grid_intrinsic_widths(table &Node, percentage_basis CSSPixels) ?
 	return widths
 }
 
+fn calculate_table_caption_minimum_width(mut state LayoutState, table &Node, containing_width CSSPixels) CSSPixels {
+	mut capmin := CSSPixels.new(0)
+	for child in table.children() {
+		if !child.display().is_table_caption() {
+			continue
+		}
+		caption := child.as_box() or { continue }
+		styled := child.as_node_with_style() or { continue }
+		mut caption_state := state.get_mutable(styled)
+		resolve_box_model_edges(styled.computed_values(), mut caption_state, containing_width.to_double())
+		edges := flex_or_grid_item_outer_inline_edges(caption_state)
+		mut contribution := calculate_min_content_width(mut state, caption).plus(edges)
+		preferred_width := styled.computed_values().size_value(.width)
+		if !preferred_width.is_auto() && !preferred_width.contains_percentage() {
+			preferred_inner_width := calculate_inner_width(mut state, caption, caption_state, AvailableSize.make_definite(containing_width), preferred_width)
+			contribution = css_pixels_max(contribution, preferred_inner_width.plus(edges))
+		}
+		capmin = css_pixels_max(capmin, contribution)
+	}
+	return capmin
+}
+
 fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, percentage_basis CSSPixels) &TableGridIntrinsicWidths {
 	if cached := cached_table_grid_intrinsic_widths(table, percentage_basis) {
 		return cached
@@ -1206,6 +1228,7 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 			column_count = definition.index + definition.span
 		}
 	}
+	capmin := calculate_table_caption_minimum_width(mut state, table, percentage_basis)
 	computed := table.computed_values()
 	resolve_collapsed_table_borders(mut state, table, rows, placements, column_definitions, column_count)
 	spacing := if computed.border_collapse() == .collapse {
@@ -1217,6 +1240,7 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 		return &TableGridIntrinsicWidths{
 			grid_min: spacing
 			grid_max: spacing
+			capmin: capmin
 			percentage_basis: percentage_basis
 			rows: rows
 			placements: placements
@@ -1296,16 +1320,6 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 		}
 		adjusted := undistributable_space.plus(CSSPixels.nearest_value_for(math.ceil(100.0 / cell_width.percentage().value() * cell_measures[placement_index].outer_max_width.to_double())))
 		percentage_adjusted_width = css_pixels_max(percentage_adjusted_width, adjusted)
-	}
-	mut capmin := CSSPixels.new(0)
-	for child in table.children() {
-		if !child.display().is_table_caption() {
-			continue
-		}
-		caption := child.as_box() or { continue }
-		// CAPMIN is the caption's min-content width, not its outer
-		// max-content contribution.
-		capmin = css_pixels_max(capmin, calculate_min_content_width(mut state, caption))
 	}
 	widths := &TableGridIntrinsicWidths{
 		grid_min: grid_min

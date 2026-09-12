@@ -2008,6 +2008,20 @@ fn test_table_caption_resolves_own_width_after_laying_out_descendants() {
 	assert inside.offset.x().to_double() == 0
 }
 
+fn test_table_caption_capmin_includes_outer_edges_and_definite_width() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		table { border-spacing:0 }
+		caption { width:120px; margin:0 3px; border:2px solid; padding:0 5px }
+	</style><table id="table"><caption id="caption"></caption></table>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	table := used_for_id(result, 'table')
+	caption := used_for_id(result, 'caption')
+	assert caption.content_width().to_double() == 120
+	assert caption.margin_box_width().to_double() == 140
+	assert table.content_width().to_double() == 140
+}
+
 fn test_fixed_table_layout_uses_first_row_widths_and_shares_unassigned_space() {
 	document := html.parse_document('<!doctype html><style>
 		table { width:600px; table-layout:fixed; border-spacing:0 } td { padding:0 }
