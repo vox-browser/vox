@@ -3253,22 +3253,6 @@ pub fn mime_type_from_essence(essence string) mimesniff.MimeType {
 	}
 }
 
-@[heap]
-pub struct SessionHistoryProcessingSignal {
-pub mut:
-	resolved bool
-}
-
-pub fn (mut signal SessionHistoryProcessingSignal) resolve() {
-	signal.resolved = true
-}
-
-fn resolve_session_history_processing_signal(signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal) {
-	if mut signal := signal_to_continue_session_history_processing {
-		signal.resolve()
-	}
-}
-
 // HTML::run_bom_sniff (Parser/HTMLEncodingDetection.cpp): detect an encoding from a byte-order mark.
 // Faithful to upstream, which only checks when at least 3 bytes are available.
 fn run_bom_sniff(input ByteBuffer) ?string {
@@ -3540,7 +3524,7 @@ pub fn build_xml_document(mut document Document, data ByteBuffer, content_encodi
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#navigate-html
-fn load_html_document(navigation_params &NavigationParams, signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal) !&Document {
+fn load_html_document(navigation_params &NavigationParams) !&Document {
 	// 1. Let document be the result of creating and initializing a Document object given "html", "text/html", and navigationParams.
 	mut document := Document.create_and_initialize(.html, 'text/html', navigation_params)!
 
@@ -3549,12 +3533,9 @@ fn load_html_document(navigation_params &NavigationParams, signal_to_continue_se
 	//        default to an "about:blank" url. Is this a spec bug?
 	if document.url_string() == 'about:blank' && navigation_params.response_body.len == 0 {
 		document.populate_with_html_head_and_body()!
-		// NB: Nothing else is added to the document, so mark it as loaded and resolve the signal_to_continue_session_history_processing.
-		resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
 		html_parser_the_end(document)
 	} else {
 		// FIXME: Parse as we receive the document data, instead of waiting for the whole document to be fetched first.
-		resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
 		mime := navigation_response_mime_type(navigation_params)
 		url := navigation_response_url(navigation_params)
 		if document.document_ready_to_run_scripts() {
@@ -3574,7 +3555,7 @@ fn load_html_document(navigation_params &NavigationParams, signal_to_continue_se
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml
-fn load_xml_document(navigation_params &NavigationParams, type_ mimesniff.MimeType, signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal) !&Document {
+fn load_xml_document(navigation_params &NavigationParams, type_ mimesniff.MimeType) !&Document {
 	// When faced with displaying an XML file inline, create and initialize a Document object document,
 	// given "xml", type, and navigationParams, and return that Document.
 	mut document := Document.create_and_initialize(.xml, type_.essence(), navigation_params)!
@@ -3588,8 +3569,6 @@ fn load_xml_document(navigation_params &NavigationParams, type_ mimesniff.MimeTy
 			'XML Document contains improperly-encoded characters')
 		// NB: This ensures that the `load` event gets fired for the frame loading this document.
 		document.completely_finish_loading()
-		// NB: If document is part of a session history entry's traversal, resolve the signal_to_continue_session_history_processing.
-		resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
 		return document
 	}
 
@@ -3597,13 +3576,9 @@ fn load_xml_document(navigation_params &NavigationParams, type_ mimesniff.MimeTy
 		convert_to_xml_error_document(mut document, 'Failed to decode XML document: ${err}')
 		// NB: This ensures that the `load` event gets fired for the frame loading this document.
 		document.completely_finish_loading()
-		// NB: If document is part of session history traversal, resolve the signal_to_continue_session_history_processing.
-		resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
 		return document
 	}
 
-	// NB: If document is part of session history traversal, resolve the signal_to_continue_session_history_processing.
-	resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
 	if document.document_ready_to_run_scripts() {
 		document.source = source
 		if !parse_xml_document_into(document, source) {
@@ -3624,7 +3599,7 @@ fn load_xml_document(navigation_params &NavigationParams, type_ mimesniff.MimeTy
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#navigate-text
-fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeType, signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal) !&Document {
+fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeType) !&Document {
 	// 1. Let document be the result of creating and initializing a Document object given "html", type, and navigationParams.
 	mut document := Document.create_and_initialize(.html, type_.essence(), navigation_params)!
 
@@ -3637,7 +3612,6 @@ fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeT
 	// 4. Create an HTML parser and associate it with the document. Act as if the tokenizer had emitted a start tag token
 	//    with the tag name "pre" followed by a single U+000A LINE FEED (LF) character, and switch the HTML parser's tokenizer
 	//    to the PLAINTEXT state.
-	resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
 	url := navigation_response_url(navigation_params)
 	if document.document_ready_to_run_scripts() {
 		encoding := html_parser_run_text_document(document, navigation_params.response_body, type_, url)
@@ -3659,7 +3633,7 @@ fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeT
 }
 
 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#navigate-media
-fn load_media_document(navigation_params &NavigationParams, type_ mimesniff.MimeType, signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal) !&Document {
+fn load_media_document(navigation_params &NavigationParams, type_ mimesniff.MimeType) !&Document {
 	// 1. Let document be the result of creating and initializing a Document object given "html", type, and navigationParams.
 	mut document := Document.create_and_initialize(.html, type_.essence(), navigation_params)!
 
@@ -3712,7 +3686,6 @@ fn load_media_document(navigation_params &NavigationParams, type_ mimesniff.Mime
 	// FIXME: We should not need to force the media file to load before saying that parsing has completed!
 	//        However, if we don't, then we get stuck in HTMLParser::the_end() waiting for the media file to load, which
 	//        never happens.
-	resolve_session_history_processing_signal(signal_to_continue_session_history_processing)
 	html_parser_the_end(document)
 
 	// 9. Return document.
@@ -3734,7 +3707,7 @@ pub fn can_load_document_with_type(type_ mimesniff.MimeType) bool {
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#loading-a-document
-pub fn load_document(navigation_params &NavigationParams, signal_to_continue_session_history_processing ?&SessionHistoryProcessingSignal, sniff_bytes ReadonlyBytes) ?&Document {
+pub fn load_document(navigation_params &NavigationParams, sniff_bytes ReadonlyBytes) ?&Document {
 	// 1. Let type be the computed type of navigationParams's response.
 	supplied_type := navigation_response_mime_type(navigation_params)
 	response_url := navigation_response_url(navigation_params).serialize()
@@ -3747,7 +3720,7 @@ pub fn load_document(navigation_params &NavigationParams, signal_to_continue_ses
 
 	// -> an HTML MIME type
 	if type_.is_html() {
-		return load_html_document(navigation_params, signal_to_continue_session_history_processing) or {
+		return load_html_document(navigation_params) or {
 			return none
 		}
 	}
@@ -3755,8 +3728,7 @@ pub fn load_document(navigation_params &NavigationParams, signal_to_continue_ses
 	// -> an XML MIME type that is not an explicitly supported XML MIME type
 	//    FIXME: that is not an explicitly supported XML MIME type
 	if type_.is_xml() {
-		return load_xml_document(navigation_params, type_,
-			signal_to_continue_session_history_processing) or { return none }
+		return load_xml_document(navigation_params, type_) or { return none }
 	}
 
 	// -> a JavaScript MIME type
@@ -3766,8 +3738,7 @@ pub fn load_document(navigation_params &NavigationParams, signal_to_continue_ses
 	// -> "text/vtt"
 	if type_.is_javascript() || type_.is_json()
 		|| type_.essence() in ['text/css', 'text/plain', 'text/vtt'] {
-		return load_text_document(navigation_params, type_,
-			signal_to_continue_session_history_processing) or { return none }
+		return load_text_document(navigation_params, type_) or { return none }
 	}
 
 	// -> "multipart/x-mixed-replace"
@@ -3778,8 +3749,7 @@ pub fn load_document(navigation_params &NavigationParams, signal_to_continue_ses
 
 	// -> a supported image, video, or audio type
 	if type_.is_image() || type_.is_audio_or_video() {
-		return load_media_document(navigation_params, type_,
-			signal_to_continue_session_history_processing) or { return none }
+		return load_media_document(navigation_params, type_) or { return none }
 	}
 
 	// -> "application/pdf"
