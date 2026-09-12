@@ -203,6 +203,29 @@ pub fn (mut buffer SourceBuffer) append_buffer(data []u8) ! {
 	})
 }
 
+// https://w3c.github.io/media-source/#dom-sourcebuffer-abort
+pub fn (mut buffer SourceBuffer) abort() ! {
+	media_source := buffer.media_source_ or {
+		return error('InvalidStateError: SourceBuffer has no MediaSource')
+	}
+	if !media_source.source_buffers().contains(buffer) {
+		return error('InvalidStateError: SourceBuffer has been removed')
+	}
+	if media_source.ready_state() != .open {
+		return error('InvalidStateError: MediaSource is not open')
+	}
+	if buffer.updating() {
+		buffer.processor_.set_updating(false)
+		media_source.queue_a_media_source_task(fn [buffer] () {
+			buffer.dispatch_event(dom.Event.create('abort', dom.EventInit{}))
+		})
+		media_source.queue_a_media_source_task(fn [buffer] () {
+			buffer.dispatch_event(dom.Event.create('updateend', dom.EventInit{}))
+		})
+	}
+	buffer.processor_.reset_parser_state()
+}
+
 fn (mut buffer SourceBuffer) run_buffer_append_algorithm() {
 	result := buffer.processor_.run_segment_parser_loop()
 	if !result.succeeded {
