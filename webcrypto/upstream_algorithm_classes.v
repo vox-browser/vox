@@ -175,8 +175,8 @@ pub fn (_ X448) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_una
 pub struct ED448 {}
 pub fn ED448.create() ED448 { return ED448{} }
 pub fn (_ ED448) generate_key(_ AlgorithmParams, _ bool, _ []KeyUsage) !GeneratedKey { return backend_unavailable[GeneratedKey]('Ed448', 'key generation') }
-pub fn (_ ED448) import_key(_ AlgorithmParams, _ KeyFormat, _ []u8, _ bool, _ []KeyUsage) !&CryptoKey { return backend_unavailable[&CryptoKey]('Ed448', 'key import') }
-pub fn (_ ED448) export_key(_ KeyFormat, _ &CryptoKey) ![]u8 { return backend_unavailable[[]u8]('Ed448', 'key export') }
+pub fn (_ ED448) import_key(_ AlgorithmParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey { return import_ed448_key(format, material, extractable, usages) }
+pub fn (_ ED448) export_key(format KeyFormat, key &CryptoKey) ![]u8 { return export_algorithm_key(format, key) }
 pub fn (_ ED448) sign(_ Ed448Params, _ &CryptoKey, _ []u8) ![]u8 { return backend_unavailable[[]u8]('Ed448', 'signing') }
 pub fn (_ ED448) verify(_ Ed448Params, _ &CryptoKey, _ []u8, _ []u8) !bool { return backend_unavailable[bool]('Ed448', 'verification') }
 

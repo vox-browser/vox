@@ -373,6 +373,9 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 		}
 		return import_ed25519_key(format, material, extractable, normalized_usages)
 	}
+	if normalized == 'Ed448' {
+		return import_ed448_key(format, material, extractable, normalized_usages)
+	}
 	if normalized_usages.len == 0 {
 		return error('SyntaxError: usages must not be empty')
 	}

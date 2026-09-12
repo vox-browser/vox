@@ -802,6 +802,23 @@ pub fn import_ed25519_key(format KeyFormat, material []u8, extractable bool, usa
 	}
 }
 
+pub fn import_ed448_key(format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
+	return match format {
+		.raw, .raw_public {
+			// Ed448 is named for its 448-bit prime field, but RFC 8032 encodes
+			// public keys using 456 bits.
+			if material.len != 57 {
+				return error('DataError: Ed448 public key must be 57 bytes')
+			}
+			validate_usages(usages, [KeyUsage.verify])!
+			CryptoKey.create(.public_key, extractable, KeyAlgorithm{ name: 'Ed448' }, usages, material)
+		}
+		else {
+			error('NotSupportedError: Ed448 format is not implemented')
+		}
+	}
+}
+
 pub fn ed25519_sign(key &CryptoKey, message []u8) ![]u8 {
 	if key.algorithm_name() != 'Ed25519' || key.type_ != .private_key {
 		return error('InvalidAccessError: An Ed25519 private key is required')
