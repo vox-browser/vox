@@ -57,6 +57,7 @@ pub mut:
 	reported_exceptions                     []ReportedScriptException
 	principal_realm_                        ?&ScriptingRealm
 	host_defined_handle                     voidptr
+	global_object_handle                    voidptr
 	module_map_                             ?&ModuleMap
 	skip_when_determining_incumbent_counter usize
 }

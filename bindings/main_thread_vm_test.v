@@ -24,6 +24,8 @@ fn test_main_thread_vm_agents_host_guards_jobs_and_realms() {
 	mut vm := initialize_main_thread_vm(.similar_origin_window) or { panic(err) }
 	assert vm.agent_type == .similar_origin_window
 	assert vm.agent.can_block == .no
+	window_agent := vm.window_agent or { panic('missing window agent') }
+	assert main_thread_similar_origin_window_agent() == window_agent
 	vm.host_ensure_can_add_private_element(.ordinary) or { panic(err) }
 	if _ := vm.host_ensure_can_add_private_element(.window_proxy) {
 		assert false
@@ -34,27 +36,30 @@ fn test_main_thread_vm_agents_host_guards_jobs_and_realms() {
 	assert vm.host_get_code_for_eval(TrustedScript{'trusted()'}) or { '' } == 'trusted()'
 	assert vm.host_get_code_for_eval(none) == none
 
-	mut realm := &html.ScriptingRealm{}
+	mut realm := create_a_principal_javascript_realm()
+	settings := principal_host_defined_environment_settings_object(realm)
+	stack_depth := vm.execution_context_stack_.len
 	script := html.ClassicScript.create('callback.js', '', realm, dom.URL{
 		value: 'https://example.test/callback.js'
 	}, 1, .no)
 	vm.set_active_script(unsafe { &html.Script(script) })
 	assert active_script() or { panic('missing active script') } == unsafe { &html.Script(script) }
-	callback := vm.host_make_job_callback(bindings_test_job_callback, realm)
+	callback := vm.host_make_job_callback(bindings_test_job_callback, settings)
 	result := vm.host_call_job_callback(callback, dom.js_undefined(), [
 		dom.js_string('called'),
 	]) or { panic(err) }
 	assert result.string_data == 'called'
 	assert realm.callback_execution_depth == 0
-	assert vm.execution_context_stack_.len == 0
+	assert vm.execution_context_stack_.len == stack_depth
 
 	context := create_a_new_javascript_realm(bindings_test_create_global,
 		bindings_test_create_global)
 	assert context.global_object == voidptr(context.realm)
 	assert context.global_this == voidptr(context.realm)
-	shadow := vm.host_initialize_shadow_realm(realm)
-	assert shadow.settings.principal_realm == realm
-	assert shadow.host_defined.is_synthetic_host_defined()
+	simple_realm := create_a_simple_javascript_realm()
+	assert host_defined_wrapper_world(simple_realm).type_() == .internal
+	assert html.principal_realm(simple_realm) != simple_realm
+	assert principal_host_defined_environment_settings_object(simple_realm).realm() == html.principal_realm(simple_realm)
 }
 
 fn test_main_thread_vm_promise_jobs_imports_and_buffers() {

@@ -36,7 +36,7 @@ fn test_intrinsics_lazily_cache_names_prototypes_constructors_and_unforgeables()
 	assert setter.call([dom.js_string('value')]) or { panic(err) }.string_data == 'value'
 }
 
-fn test_principal_and_synthetic_host_defined_keep_realm_state() {
+fn test_principal_and_internal_host_defined_keep_realm_state() {
 	document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
 	window := html.WindowModel.create_top_level(document, none, 'main') or { panic(err) }
 	mut realm := &html.ScriptingRealm{}
@@ -51,17 +51,11 @@ fn test_principal_and_synthetic_host_defined_keep_realm_state() {
 	assert host_defined_intrinsics(realm) == intrinsics
 	assert host_defined_wrapper_world(realm).is_main_world()
 
-	mut synthetic_realm := &html.ScriptingRealm{}
-	synthetic_settings := html.SyntheticRealmSettings{
-		execution_context: unsafe { nil }
-		principal_realm:   realm
-		module_map:        html.ModuleMap.create()
-	}
-	synthetic := SyntheticHostDefined.create(synthetic_settings, Intrinsics.create(synthetic_realm))
-	assert synthetic.is_synthetic_host_defined()
-	assert synthetic.synthetic_realm_settings.principal_realm == realm
-	install_host_defined(mut synthetic_realm, unsafe { &HostDefined(synthetic) })
-	assert host_defined_wrapper_world(synthetic_realm).type_() == .internal
-	assert principal_host_defined_environment_settings_object(synthetic_realm) == settings
-	assert principal_host_defined_page(synthetic_realm) == page
+	mut internal_realm := &html.ScriptingRealm{}
+	internal_world := WrapperWorld.create(.internal)
+	internal := HostDefined.create(Intrinsics.create(internal_realm), internal_world, realm, .no)
+	install_host_defined(mut internal_realm, internal)
+	assert host_defined_wrapper_world(internal_realm).type_() == .internal
+	assert principal_host_defined_environment_settings_object(internal_realm) == settings
+	assert principal_host_defined_page(internal_realm) == page
 }

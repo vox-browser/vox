@@ -12,20 +12,12 @@ module bindings
 import dom
 import html
 
-pub enum AgentType {
-	similar_origin_window
-	dedicated_worker
-	shared_worker
-	service_worker
-	worklet
-}
-
 struct AgentSelection {
 	agent        &html.Agent
 	window_agent ?&html.SimilarOriginWindowAgent
 }
 
-fn create_agent(type_ AgentType) !AgentSelection {
+fn create_agent(type_ html.AgentType) !AgentSelection {
 	return match type_ {
 		.similar_origin_window {
 			window_agent := html.relevant_similar_origin_window_agent()
@@ -81,7 +73,7 @@ pub:
 @[heap]
 pub struct WebEngineCustomJobCallbackData {
 pub:
-	incumbent_realm       &html.ScriptingRealm
+	incumbent_settings    &html.EnvironmentSettingsObject
 	active_script_context ?&WebExecutionContext
 }
 
@@ -95,7 +87,7 @@ pub:
 @[heap]
 pub struct MainThreadVM {
 pub:
-	agent_type   AgentType
+	agent_type   html.AgentType
 	agent        &html.Agent
 	window_agent ?&html.SimilarOriginWindowAgent
 pub mut:
@@ -105,30 +97,56 @@ pub mut:
 	unrecognized_date_strings       []string
 }
 
-__global bindings_main_thread_vm &MainThreadVM
+__global (
+	bindings_main_thread_vm_value                    &MainThreadVM
+	bindings_main_thread_similar_origin_window_agent &html.SimilarOriginWindowAgent
+	bindings_main_thread_principal_realm             &html.ScriptingRealm
+)
 
-pub fn initialize_main_thread_vm(type_ AgentType) !&MainThreadVM {
-	if bindings_main_thread_vm != unsafe { nil } {
+fn main_thread_vm_ptr() ?&MainThreadVM {
+	if bindings_main_thread_vm_value == unsafe { nil } {
+		return none
+	}
+	return bindings_main_thread_vm_value
+}
+
+fn main_thread_similar_origin_window_agent_ptr() ?&html.SimilarOriginWindowAgent {
+	if bindings_main_thread_similar_origin_window_agent == unsafe { nil } {
+		return none
+	}
+	return bindings_main_thread_similar_origin_window_agent
+}
+
+pub fn initialize_main_thread_vm(type_ html.AgentType) !&MainThreadVM {
+	if main_thread_vm_ptr() != none {
 		return error('MainThreadVM is already initialized')
 	}
 	selection := create_agent(type_)!
-	bindings_main_thread_vm = &MainThreadVM{
+	bindings_main_thread_vm_value = &MainThreadVM{
 		agent_type:   type_
 		agent:        selection.agent
 		window_agent: selection.window_agent
 	}
-	return bindings_main_thread_vm
+	if window_agent := selection.window_agent {
+		bindings_main_thread_similar_origin_window_agent = window_agent
+	}
+	return bindings_main_thread_vm_value
 }
 
 pub fn main_thread_vm() &MainThreadVM {
-	if bindings_main_thread_vm == unsafe { nil } {
-		panic('MainThreadVM is not initialized')
+	return main_thread_vm_ptr() or { panic('MainThreadVM is not initialized') }
+}
+
+pub fn main_thread_similar_origin_window_agent() &html.SimilarOriginWindowAgent {
+	return main_thread_similar_origin_window_agent_ptr() or {
+		panic('main thread does not have a similar-origin window agent')
 	}
-	return bindings_main_thread_vm
 }
 
 pub fn reset_main_thread_vm_for_testing() {
-	bindings_main_thread_vm = unsafe { nil }
+	bindings_main_thread_vm_value = unsafe { nil }
+	bindings_main_thread_similar_origin_window_agent = unsafe { nil }
+	bindings_main_thread_principal_realm = unsafe { nil }
 }
 
 pub fn (mut vm MainThreadVM) set_active_script(script ?&html.Script) {
@@ -137,10 +155,10 @@ pub fn (mut vm MainThreadVM) set_active_script(script ?&html.Script) {
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#active-script
 pub fn active_script() ?&html.Script {
-	if bindings_main_thread_vm == unsafe { nil } {
+	if main_thread_vm_ptr() == none {
 		return none
 	}
-	return bindings_main_thread_vm.active_script_
+	return bindings_main_thread_vm_value.active_script_
 }
 
 pub fn (mut vm MainThreadVM) note_unimplemented_property_access(class_name string, property_name string) {
@@ -197,7 +215,7 @@ pub fn (_ &MainThreadVM) host_promise_rejection_tracker(mut scope html.Universal
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#hostmakejobcallback
-pub fn (vm &MainThreadVM) host_make_job_callback(callback JobCallbackBehavior, incumbent_realm &html.ScriptingRealm) &JobCallback {
+pub fn (vm &MainThreadVM) host_make_job_callback(callback JobCallbackBehavior, incumbent_settings &html.EnvironmentSettingsObject) &JobCallback {
 	mut active_context := ?&WebExecutionContext(none)
 	if script := vm.active_script_ {
 		active_context = &WebExecutionContext{
@@ -206,9 +224,9 @@ pub fn (vm &MainThreadVM) host_make_job_callback(callback JobCallbackBehavior, i
 		}
 	}
 	return &JobCallback{
-		callback:    callback
+		callback: callback
 		custom_data: &WebEngineCustomJobCallbackData{
-			incumbent_realm:       incumbent_realm
+			incumbent_settings: incumbent_settings
 			active_script_context: active_context
 		}
 	}
@@ -218,13 +236,13 @@ fn (mut vm MainThreadVM) finish_job_callback(callback &JobCallback, pushed_conte
 	if pushed_context && vm.execution_context_stack_.len > 0 {
 		vm.execution_context_stack_.delete_last()
 	}
-	mut realm := unsafe { &html.ScriptingRealm(callback.custom_data.incumbent_realm) }
+	mut realm := unsafe { &html.ScriptingRealm(callback.custom_data.incumbent_settings.realm()) }
 	html.clean_up_after_running_callback(mut realm)
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#hostcalljobcallback
 pub fn (mut vm MainThreadVM) host_call_job_callback(callback &JobCallback, this_value dom.JSValue, arguments []dom.JSValue) !dom.JSValue {
-	mut realm := unsafe { &html.ScriptingRealm(callback.custom_data.incumbent_realm) }
+	mut realm := unsafe { &html.ScriptingRealm(callback.custom_data.incumbent_settings.realm()) }
 	html.prepare_to_run_callback(mut realm)
 	mut pushed_context := false
 	if context := callback.custom_data.active_script_context {
@@ -354,32 +372,6 @@ pub fn (_ &MainThreadVM) host_load_imported_module(request ModuleRequest, import
 	}
 }
 
-@[heap]
-pub struct ShadowRealmState {
-pub:
-	realm        &html.ScriptingRealm
-	settings     html.SyntheticRealmSettings
-	host_defined &SyntheticHostDefined
-}
-
-// https://html.spec.whatwg.org/multipage/webappapis.html#hostinitializeshadowrealm
-pub fn (_ &MainThreadVM) host_initialize_shadow_realm(principal_realm &html.ScriptingRealm) &ShadowRealmState {
-	realm := &html.ScriptingRealm{}
-	module_map := html.ModuleMap.create()
-	settings := html.SyntheticRealmSettings{
-		execution_context: unsafe { nil }
-		principal_realm:   principal_realm
-		module_map:        module_map
-	}
-	intrinsics := Intrinsics.create(realm)
-	host_defined := SyntheticHostDefined.create(settings, intrinsics)
-	return &ShadowRealmState{
-		realm:        realm
-		settings:     settings
-		host_defined: host_defined
-	}
-}
-
 pub fn (mut vm MainThreadVM) host_unrecognized_date_string(date string) {
 	vm.unrecognized_date_strings << date
 }
@@ -442,12 +434,79 @@ pub:
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#creating-a-new-javascript-realm
 pub fn create_a_new_javascript_realm(create_global_object CreateGlobalObject, create_global_this_value CreateGlobalObject) &WebRealmExecutionContext {
-	realm := &html.ScriptingRealm{}
+	mut realm := &html.ScriptingRealm{}
+	global_object := create_global_object(realm)
+	realm.global_object_handle = global_object
 	return &WebRealmExecutionContext{
-		realm:         realm
-		global_object: create_global_object(realm)
-		global_this:   create_global_this_value(realm)
+		realm: realm
+		global_object: global_object
+		global_this: create_global_this_value(realm)
 	}
+}
+
+// Test and tooling callers may use these helpers before the browser process
+// has installed its normal main-thread VM.
+fn ensure_main_thread_vm_initialized() &MainThreadVM {
+	if vm := main_thread_vm_ptr() {
+		return vm
+	}
+	return initialize_main_thread_vm(.similar_origin_window) or { panic(err) }
+}
+
+fn create_window_backed_realm() (&WebRealmExecutionContext, &Wrappable, &PlatformObject) {
+	mut realm := &html.ScriptingRealm{}
+	mut implementation := Wrappable.create('Window', ['EventTarget'])
+	wrapper := create_global_object_wrapper(realm, mut implementation)
+	realm.global_object_handle = voidptr(wrapper)
+	context := &WebRealmExecutionContext{
+		realm: realm
+		global_object: voidptr(wrapper)
+		global_this: voidptr(wrapper)
+	}
+	return context, implementation, wrapper
+}
+
+// Creates a principal realm backed by a Page and window environment settings object.
+pub fn create_a_principal_javascript_realm() &html.ScriptingRealm {
+	mut vm := ensure_main_thread_vm_initialized()
+	context, _, _ := create_window_backed_realm()
+	mut realm := unsafe { &html.ScriptingRealm(context.realm) }
+	page := &dom.Page{}
+	mut document := dom.Document.create(dom.URL{ value: 'about:blank' })
+	document.set_page(page)
+	window := html.WindowModel.create_top_level(document, none, '') or { panic(err) }
+	settings := html.WindowEnvironmentSettingsObject.setup(window, document.url, mut realm, none, document.url, document.origin()).settings
+	intrinsics := Intrinsics.create(realm)
+	create_principal_host_defined(settings, intrinsics, page)
+	cache_global_object_wrapper(realm)
+	vm.execution_context_stack_ << &WebExecutionContext{
+		realm: realm
+	}
+	return realm
+}
+
+// Creates a bare Window-backed internal realm whose principal state resolves
+// through one lazily-created principal realm.
+pub fn create_a_simple_javascript_realm() &html.ScriptingRealm {
+	mut vm := ensure_main_thread_vm_initialized()
+	if bindings_main_thread_principal_realm == unsafe { nil } {
+		depth := vm.execution_context_stack_.len
+		bindings_main_thread_principal_realm = create_a_principal_javascript_realm()
+		for vm.execution_context_stack_.len > depth {
+			vm.execution_context_stack_.delete_last()
+		}
+	}
+	context, _, _ := create_window_backed_realm()
+	mut realm := unsafe { &html.ScriptingRealm(context.realm) }
+	intrinsics := Intrinsics.create(realm)
+	wrapper_world := WrapperWorld.create(.internal)
+	host_defined := HostDefined.create(intrinsics, wrapper_world, bindings_main_thread_principal_realm, .no)
+	install_host_defined(mut realm, host_defined)
+	cache_global_object_wrapper(realm)
+	vm.execution_context_stack_ << &WebExecutionContext{
+		realm: realm
+	}
+	return realm
 }
 
 pub type InvokeCustomElementCallback = fn (&dom.Element, dom.CustomElementCallbackReaction) !

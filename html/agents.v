@@ -9,6 +9,14 @@ module html
 
 import dom
 
+pub enum AgentType {
+	similar_origin_window
+	dedicated_worker
+	shared_worker
+	service_worker
+	worklet
+}
+
 pub enum CanBlock {
 	no
 	yes

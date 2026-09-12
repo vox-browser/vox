@@ -443,7 +443,11 @@ pub fn (mut wrappable Wrappable) clear_preserved_wrappers(world &WrapperWorld) {
 	wrappable.has_non_main_world_preserved_wrappers_ = wrappable.non_main_world_preserved_wrappers_.len > 0
 }
 
-pub fn cache_global_object_wrapper(realm &html.ScriptingRealm, mut wrapper PlatformObject) {
+pub fn cache_global_object_wrapper(realm &html.ScriptingRealm) {
+	if realm.global_object_handle == unsafe { nil } {
+		panic('realm has no global object wrapper')
+	}
+	wrapper := unsafe { &PlatformObject(realm.global_object_handle) }
 	mut wrappable := wrapper.wrappable_impl() or { panic('global wrapper has no implementation') }
 	mut world := host_defined_wrapper_world(realm)
 	world.set_wrapper(mut wrappable, wrapper)
