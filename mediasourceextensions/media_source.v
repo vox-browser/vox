@@ -60,11 +60,13 @@ mut:
 	ready_state_               ReadyState
 	has_ever_been_attached_    bool
 	media_element_assigned_to_ ?&html.HTMLMediaElement
+	source_buffers_            &SourceBufferList = unsafe { nil }
 }
 
 pub fn MediaSource.create() &MediaSource {
 	return &MediaSource{
 		EventTarget: dom.EventTarget{}
+		source_buffers_: SourceBufferList.create_internal()
 	}
 }
 
@@ -86,6 +88,27 @@ pub fn (source &MediaSource) has_ever_been_attached() bool {
 
 pub fn (source &MediaSource) media_element_assigned_to() ?&html.HTMLMediaElement {
 	return source.media_element_assigned_to_
+}
+
+pub fn (source &MediaSource) source_buffers() &SourceBufferList {
+	return source.source_buffers_
+}
+
+// https://w3c.github.io/media-source/#addsourcebuffer-method
+pub fn (mut source MediaSource) add_source_buffer(type_ string) !&SourceBuffer {
+	if type_.len == 0 {
+		return error('TypeError: SourceBuffer type must not be empty')
+	}
+	if !MediaSource.is_type_supported(type_) {
+		return error('NotSupportedError: Unsupported MIME type')
+	}
+	if source.ready_state_ != .open {
+		return error('InvalidStateError: MediaSource is not open')
+	}
+	buffer := SourceBuffer.create_internal()
+	mut buffers := source.source_buffers_
+	buffers.append(buffer)
+	return buffer
 }
 
 pub fn (source &MediaSource) queue_a_media_source_task(task fn ()) {

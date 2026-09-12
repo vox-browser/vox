@@ -105,12 +105,30 @@ pub fn (buffer &ManagedSourceBuffer) onbufferedchange() ?&dom.CallbackType {
 @[heap]
 pub struct SourceBufferList {
 	dom.EventTarget
+mut:
+	buffers_ []&SourceBuffer
 }
 
 pub fn SourceBufferList.create_internal() &SourceBufferList {
 	return &SourceBufferList{
 		EventTarget: dom.EventTarget{}
 	}
+}
+
+pub fn (mut list SourceBufferList) append(buffer &SourceBuffer) {
+	list.buffers_ << buffer
+	list.dispatch_event(dom.Event.create('addsourcebuffer', dom.EventInit{}))
+}
+
+pub fn (list &SourceBufferList) length() u32 {
+	return u32(list.buffers_.len)
+}
+
+pub fn (list &SourceBufferList) item(index u32) ?&SourceBuffer {
+	if index >= u32(list.buffers_.len) {
+		return none
+	}
+	return list.buffers_[index]
 }
 
 pub fn (list &SourceBufferList) set_onaddsourcebuffer(handler ?&dom.CallbackType) {

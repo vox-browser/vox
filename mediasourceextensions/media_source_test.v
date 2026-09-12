@@ -115,6 +115,31 @@ fn test_media_source_blob_url_loads_as_a_local_resource() {
 	assert source.media_element_assigned_to()? == media
 }
 
+fn test_media_source_add_source_buffer_and_indexed_source_buffer_list() {
+	mut source := MediaSource.create()
+	source.add_source_buffer('') or {
+		assert err.msg() == 'TypeError: SourceBuffer type must not be empty'
+	}
+	source.add_source_buffer('video/mp4; codecs="avc1"') or {
+		assert err.msg() == 'NotSupportedError: Unsupported MIME type'
+	}
+	source.add_source_buffer('video/webm; codecs="vp9"') or {
+		assert err.msg() == 'InvalidStateError: MediaSource is not open'
+	}
+
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	observation := &EventObservation{}
+	source.source_buffers().set_onaddsourcebuffer(observer_callback(observation))
+	buffer := source.add_source_buffer('video/webm; codecs="vp9,opus"')!
+	assert source.source_buffers() == source.source_buffers()
+	assert source.source_buffers().length() == 1
+	assert source.source_buffers().item(0)? == buffer
+	assert source.source_buffers().item(1) == none
+	assert observation.count == 1
+	assert observation.interface_ == .event
+}
+
 fn test_buffered_change_event_preserves_base_init_and_identity() {
 	mut added := &html.TimeRanges{}
 	added.add_range(1, 2)
