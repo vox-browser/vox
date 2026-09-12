@@ -41,3 +41,13 @@ fn test_window_returns_its_documents_custom_element_registry() {
 	mutable_document.set_custom_element_registry(voidptr(replacement))
 	assert window.custom_elements() == replacement
 }
+
+fn test_element_retains_custom_element_registry_identity() {
+	document := dom.Document.create(dom.url_about_blank())
+	registry := CustomElementRegistry.create(document)
+	mut element := dom.create_element(document, 'x-widget', 'http://www.w3.org/1999/xhtml', none, none, false)!
+	assert element.custom_element_registry() == voidptr(0)
+
+	element.set_custom_element_registry(voidptr(registry))
+	assert element.custom_element_registry() == voidptr(registry)
+}

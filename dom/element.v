@@ -1347,6 +1347,7 @@ pub mut:
 	name_ ?string
 
 	custom_element_reaction_queue []CustomElementReaction
+	custom_element_registry_      voidptr = unsafe { nil }
 	custom_element_definition_    ?&CustomElementDefinition
 	is_value                      ?string
 	custom_state_set_             ?&CustomStateSet
@@ -3915,6 +3916,15 @@ pub fn (mut e Element) ensure_custom_state_set() &CustomStateSet {
 
 pub fn (e &Element) custom_element_definition() ?&CustomElementDefinition {
 	return e.custom_element_definition_
+}
+
+// https://dom.spec.whatwg.org/#element-custom-element-registry
+pub fn (e &Element) custom_element_registry() voidptr {
+	return e.custom_element_registry_
+}
+
+pub fn (mut e Element) set_custom_element_registry(registry voidptr) {
+	e.custom_element_registry_ = registry
 }
 
 pub fn (mut e Element) set_custom_element_definition(definition ?&CustomElementDefinition) {
