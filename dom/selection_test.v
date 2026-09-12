@@ -77,10 +77,91 @@ fn test_selection_nullable_collapse_and_foreign_extend_ordering() {
 	assert selection.is_empty()
 }
 
-fn test_selection_modify_unimplemented_granularity_is_noop() {
+fn test_selection_modify_moves_by_line() {
 	document, text := selection_test_document_with_text('one\ntwo')
 	mut selection := Selection.create(document)
 	selection.collapse(text.as_node(), 1) or { panic(err) }
 	selection.modify('move', 'forward', 'line') or { panic(err) }
+	assert selection.focus_offset() == 5
+}
+
+fn selection_test_editing_host() (&Document, &Element) {
+	mut document := Document.create(url_about_blank())
+	mut document_node := unsafe { &Node(document) }
+	host := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
+	mut mutable_host := unsafe { &Element(host) }
+	mutable_host.set_attribute_value('contenteditable', 'true')
+	document_node.append_child(host.as_node()) or { panic(err) }
+	return document, host
+}
+
+fn test_caret_navigator_crosses_split_text_and_atomic_inline_content() {
+	document, host := selection_test_editing_host()
+	first := document.create_text_node('one')
+	image := document.create_element_ns('http://www.w3.org/1999/xhtml', 'img') or { panic(err) }
+	second := document.create_text_node('two')
+	mut host_node := host.as_node()
+	host_node.append_child(first.as_node()) or { panic(err) }
+	host_node.append_child(image.as_node()) or { panic(err) }
+	host_node.append_child(second.as_node()) or { panic(err) }
+	assert first.as_node().is_editable()
+	navigator := CaretNavigator.new(document)
+	after_image := navigator.move(CaretLocation{ node: first.as_node(), offset: 3 }, .move,
+		.forward, .character, none) or { panic('missing atomic-inline destination') }
+	assert after_image.node == host.as_node()
+	assert after_image.offset == 2
+	before_image := navigator.move(after_image, .extend, .backward, .character, none) or {
+		panic('missing reverse atomic-inline destination')
+	}
+	assert before_image.node == host.as_node()
+	assert before_image.offset == 1
+
+	end := navigator.move(CaretLocation{ node: first.as_node(), offset: 1 }, .move, .forward,
+		.document_boundary, none) or { panic('missing editing-host end') }
+	assert end.node == second.as_node()
+	assert end.offset == 3
+	start := navigator.move(end, .move, .backward, .document_boundary, none) or {
+		panic('missing editing-host start')
+	}
+	assert start.node == first.as_node()
+	assert start.offset == 0
+}
+
+fn test_selection_modifier_applies_one_cross_node_mutation_and_select_all() {
+	document, host := selection_test_editing_host()
+	first := document.create_text_node('one ')
+	second := document.create_text_node('two')
+	mut host_node := host.as_node()
+	host_node.append_child(first.as_node()) or { panic(err) }
+	host_node.append_child(second.as_node()) or { panic(err) }
+	mut selection := Selection.create(document)
+	selection.collapse(first.as_node(), first.length()) or { panic(err) }
+	modifier := SelectionModifier.new(selection)
+	modifier.modify(.move, .forward, .character)
+	assert selection.focus_node()? == second.as_node()
 	assert selection.focus_offset() == 1
+	selection.set_focus_affinity(.upstream)
+	assert selection.focus_affinity() == .upstream
+	selection.collapse(second.as_node(), 1) or { panic(err) }
+	assert selection.focus_affinity() == .downstream
+
+	modifier.select_all()
+	assert selection.anchor_node()? == first.as_node()
+	assert selection.anchor_offset() == 0
+	assert selection.focus_node()? == second.as_node()
+	assert selection.focus_offset() == second.length()
+}
+
+fn test_word_segment_kinds_and_line_boundaries() {
+	assert word_segment_kind(' ') == .separator
+	assert word_segment_kind('!') == .punctuation
+	assert word_segment_kind('word') == .word
+	document, text := selection_test_document_with_text('abc\ndef')
+	navigator := CaretNavigator.new(document)
+	line_end := navigator.move(CaretLocation{ node: text.as_node(), offset: 1 }, .move, .forward,
+		.line_boundary, none) or { panic('line end') }
+	assert line_end.offset == 3
+	line_start := navigator.move(CaretLocation{ node: text.as_node(), offset: 6 }, .move,
+		.backward, .line_boundary, none) or { panic('line start') }
+	assert line_start.offset == 4
 }

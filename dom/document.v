@@ -2080,15 +2080,22 @@ pub struct PaintConfig {}
 @[heap]
 pub struct Selection {
 pub mut:
-	document_  &Document = unsafe { nil }
-	range_     &Range = unsafe { nil }
-	direction_ SelectionDirection = .directionless
+	document_                   &Document = unsafe { nil }
+	range_                      &Range = unsafe { nil }
+	direction_                  SelectionDirection = .directionless
+	focus_affinity_             TextAffinity = .downstream
+	preferred_inline_coordinate_ ?f64
 }
 
 pub enum SelectionDirection {
 	forwards
 	backwards
 	directionless
+}
+
+pub enum TextAffinity {
+	downstream
+	upstream
 }
 
 // IntersectionObserver is implemented in the intersectionobserver module, which

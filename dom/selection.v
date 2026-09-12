@@ -5,12 +5,583 @@
 // Translated from Libraries/LibWeb/Selection/Selection.{h,cpp}.
 module dom
 
+import encoding.utf8
+
 fn selection_same_node(a &Node, b &Node) bool {
 	return voidptr(a) == voidptr(b)
 }
 
 fn selection_same_range(a &Range, b &Range) bool {
 	return voidptr(a) == voidptr(b)
+}
+
+pub enum SelectionAlteration {
+	move
+	extend
+}
+
+pub enum CaretNavigationDirection {
+	forward
+	backward
+}
+
+pub enum SelectionGranularity {
+	character
+	word
+	line
+	page
+	line_boundary
+	document_boundary
+}
+
+pub struct CaretLocation {
+pub:
+	node     &Node
+	offset   int
+	affinity TextAffinity = .downstream
+}
+
+enum WordSegmentKind {
+	word
+	punctuation
+	separator
+}
+
+fn word_segment_kind(segment string) WordSegmentKind {
+	runes := segment.runes()
+	if runes.len > 0 && runes.all(utf8.is_space(it)) {
+		return .separator
+	}
+	if runes.len > 0 && runes.all(utf8.is_rune_global_punct(it)) {
+		return .punctuation
+	}
+	return .word
+}
+
+fn text_node_has_rendered_text(text &Text) bool {
+	return text.data().len > 0
+}
+
+fn is_empty_line_break(node &Node) bool {
+	element := node.as_element() or { return false }
+	return element.local_name() == 'br' && node.is_editable()
+}
+
+fn is_atomic_inline_caret_host(node &Node) bool {
+	element := node.as_element() or { return false }
+	return node.parent() != none && node.is_editable()
+		&& element.local_name() in ['img', 'input', 'textarea', 'select', 'canvas', 'iframe',
+		'video', 'audio', 'object', 'embed']
+}
+
+fn is_empty_line_host(node &Node) bool {
+	if node.as_element() == none || !node.is_editable_or_editing_host() {
+		return false
+	}
+	mut descendant := node.next_in_pre_order(node)
+	for descendant != none {
+		current := descendant or { break }
+		if current.is_text() && text_node_has_rendered_text(unsafe { &Text(current) }) {
+			return false
+		}
+		if is_atomic_inline_caret_host(current) {
+			return false
+		}
+		descendant = current.next_in_pre_order(node)
+	}
+	return true
+}
+
+fn boundary_visual_lines_share_line(before &Text, after &Text) bool {
+	before_host := before.as_node().editing_host() or { return false }
+	after_host := after.as_node().editing_host() or { return false }
+	return selection_same_node(before_host, after_host) && !before.data().ends_with('\n')
+		&& !after.data().starts_with('\n')
+}
+
+fn boundary_visual_lines_share_inline_context(before &Text, after &Text) bool {
+	before_host := before.as_node().editing_host() or { return false }
+	after_host := after.as_node().editing_host() or { return false }
+	return selection_same_node(before_host, after_host)
+}
+
+fn canonical_location_at_outer_edge_of_inline_content(text &Text, block &Node, direction CaretNavigationDirection) CaretLocation {
+	mut node := text.as_node()
+	for {
+		parent := node.parent() or { break }
+		offset := if direction == .forward { node.index() } else { node.index() + 1 }
+		if selection_same_node(parent, block) {
+			return CaretLocation{ node: parent, offset: offset }
+		}
+		node = parent
+	}
+	return CaretLocation{
+		node: text.as_node()
+		offset: if direction == .forward { 0 } else { text.length() }
+	}
+}
+
+pub struct CaretNavigator {
+pub:
+	document &Document
+}
+
+pub fn CaretNavigator.new(document &Document) CaretNavigator {
+	return CaretNavigator{document}
+}
+
+fn (navigator &CaretNavigator) adjacent_caret_host(from &Node, editing_host &Node, direction CaretNavigationDirection) ?&Node {
+	_ = navigator
+	mut node := ?&Node(from)
+	for node != none {
+		current := node or { break }
+		node = if direction == .forward {
+			current.next_in_pre_order(editing_host)
+		} else {
+			current.previous_in_pre_order()
+		}
+		candidate := node or { return none }
+		if selection_same_node(candidate, editing_host)
+			|| !editing_host.is_inclusive_ancestor_of(candidate) {
+			return none
+		}
+		if candidate.is_inclusive_ancestor_of(from) {
+			continue
+		}
+		if candidate.is_text() && candidate.is_editable()
+			&& text_node_has_rendered_text(unsafe { &Text(candidate) }) {
+			return candidate
+		}
+		if is_atomic_inline_caret_host(candidate) || is_empty_line_host(candidate)
+			|| is_empty_line_break(candidate) {
+			return candidate
+		}
+	}
+	return none
+}
+
+fn CaretNavigator.navigation_origin(location CaretLocation, direction CaretNavigationDirection) &Node {
+	if direction == .forward && location.offset > 0 {
+		if child_before := location.node.child_at_index(location.offset - 1) {
+			return child_before
+		}
+	}
+	if direction == .backward {
+		if child_after := location.node.child_at_index(location.offset) {
+			return child_after
+		}
+	}
+	return location.node
+}
+
+pub fn (navigator &CaretNavigator) inline_coordinate(location CaretLocation) ?f64 {
+	_ = navigator
+	if location.node.is_text() {
+		text := unsafe { &Text(location.node) }
+		line_start := find_line_start(text.data(), location.offset)
+		return f64(location.offset - line_start)
+	}
+	return f64(location.offset)
+}
+
+fn (navigator &CaretNavigator) move_to_adjacent_caret_host(location CaretLocation, direction CaretNavigationDirection) ?CaretLocation {
+	editing_host := location.node.editing_host() or { return none }
+	origin := CaretNavigator.navigation_origin(location, direction)
+	mut target := ?&Node(none)
+	mut adjacent_child := ?&Node(none)
+	if direction == .forward {
+		adjacent_child = location.node.child_at_index(location.offset)
+	} else if location.offset > 0 {
+		adjacent_child = location.node.child_at_index(location.offset - 1)
+	}
+	if child := adjacent_child {
+		if child.is_text() || is_atomic_inline_caret_host(child) || is_empty_line_host(child)
+			|| is_empty_line_break(child) {
+			target = child
+		}
+	}
+	if target == none {
+		target = navigator.adjacent_caret_host(origin, editing_host, direction)
+	}
+	candidate := target or { return none }
+	if is_atomic_inline_caret_host(candidate) {
+		parent := candidate.parent() or { return none }
+		return CaretLocation{
+			node: parent
+			offset: candidate.index() + if direction == .forward { 1 } else { 0 }
+		}
+	}
+	if is_empty_line_break(candidate) {
+		parent := candidate.parent() or { return none }
+		return CaretLocation{ node: parent, offset: candidate.index() }
+	}
+	if candidate.is_text() {
+		text := unsafe { &Text(candidate) }
+		return CaretLocation{
+			node: candidate
+			offset: if direction == .forward { 0 } else { text.length() }
+		}
+	}
+	return CaretLocation{ node: candidate, offset: 0 }
+}
+
+pub fn (navigator &CaretNavigator) canonical_location_for_editing(location CaretLocation) CaretLocation {
+	_ = navigator
+	mut node := location.node
+	mut offset := location.offset
+	if node.is_comment() || node.type_() == .processing_instruction_node {
+		parent := node.parent() or { return location }
+		offset = node.index()
+		node = parent
+	} else if !node.is_element() {
+		return location
+	}
+	for node.is_element() {
+		mut before := ?&Node(none)
+		if offset > 0 {
+			before = node.child_at_index(offset - 1)
+		}
+		after := node.child_at_index(offset)
+		if candidate := after {
+			if candidate.is_editable() && (candidate.is_text() || candidate.has_children()) {
+				node = candidate
+				offset = 0
+				continue
+			}
+		}
+		if candidate := before {
+			if candidate.is_editable() && (candidate.is_text() || candidate.has_children()) {
+				node = candidate
+				offset = candidate.length()
+				continue
+			}
+		}
+		break
+	}
+	return CaretLocation{ node: node, offset: offset, affinity: location.affinity }
+}
+
+pub fn (navigator &CaretNavigator) upstream_equivalent_location(location CaretLocation) CaretLocation {
+	return navigator.canonical_location_for_extension(location, .backward) or { location }
+}
+
+pub fn (navigator &CaretNavigator) canonical_location_for_extension(location CaretLocation, direction CaretNavigationDirection) ?CaretLocation {
+	if !location.node.is_text() {
+		return none
+	}
+	text := unsafe { &Text(location.node) }
+	if (direction == .forward && location.offset != text.length())
+		|| (direction == .backward && location.offset != 0) {
+		return none
+	}
+	editing_host := location.node.editing_host() or { return none }
+	target := navigator.adjacent_caret_host(location.node, editing_host, direction) or { return none }
+	if is_atomic_inline_caret_host(target) {
+		parent := target.parent() or { return none }
+		return CaretLocation{
+			node: parent
+			offset: target.index() + if direction == .backward { 1 } else { 0 }
+		}
+	}
+	if !target.is_text() {
+		return none
+	}
+	target_text := unsafe { &Text(target) }
+	shares_line := if direction == .forward {
+		boundary_visual_lines_share_line(text, target_text)
+	} else {
+		boundary_visual_lines_share_line(target_text, text)
+	}
+	if !shares_line {
+		return none
+	}
+	return CaretLocation{
+		node: target
+		offset: if direction == .forward { 0 } else { target_text.length() }
+	}
+}
+
+fn (_ &CaretNavigator) location_after_atomic_inline(atomic_inline &Node) ?CaretLocation {
+	parent := atomic_inline.parent() or { return none }
+	return CaretLocation{ node: parent, offset: atomic_inline.index() + 1 }
+}
+
+fn (navigator &CaretNavigator) location_before_atomic_inline(atomic_inline &Node, alteration SelectionAlteration) ?CaretLocation {
+	parent := atomic_inline.parent() or { return none }
+	if alteration == .extend {
+		return CaretLocation{ node: parent, offset: atomic_inline.index() }
+	}
+	editing_host := atomic_inline.editing_host() or {
+		return CaretLocation{ node: parent, offset: atomic_inline.index() }
+	}
+	previous := navigator.adjacent_caret_host(atomic_inline, editing_host, .backward) or {
+		return CaretLocation{ node: parent, offset: atomic_inline.index() }
+	}
+	if previous.is_text() {
+		return CaretLocation{ node: previous, offset: previous.length() }
+	}
+	return CaretLocation{ node: parent, offset: atomic_inline.index() }
+}
+
+fn (navigator &CaretNavigator) canonicalize_backward_word_location(location CaretLocation, alteration SelectionAlteration) ?CaretLocation {
+	if alteration == .extend || location.offset != 0 || !location.node.is_text() {
+		return location
+	}
+	text := unsafe { &Text(location.node) }
+	editing_host := location.node.editing_host() or { return location }
+	previous := navigator.adjacent_caret_host(location.node, editing_host, .backward) or {
+		return location
+	}
+	if !previous.is_text() {
+		return location
+	}
+	previous_text := unsafe { &Text(previous) }
+	if !boundary_visual_lines_share_inline_context(previous_text, text) {
+		return location
+	}
+	return CaretLocation{ node: previous, offset: previous.length() }
+}
+
+fn (navigator &CaretNavigator) move_by_word(initial_location CaretLocation, alteration SelectionAlteration, direction CaretNavigationDirection) ?CaretLocation {
+	mut location := initial_location
+	if !location.node.is_text() {
+		return navigator.move_to_adjacent_caret_host(location, direction)
+	}
+	mut text := unsafe { &Text(location.node) }
+	for {
+		next_offset := if direction == .forward {
+			text.word_segmenter().next_boundary(location.offset)
+		} else {
+			text.word_segmenter().previous_boundary(location.offset)
+		}
+		if offset := next_offset {
+			segment := if direction == .forward {
+				selection_utf16_substring(text.data(), location.offset, offset)
+			} else {
+				selection_utf16_substring(text.data(), offset, location.offset)
+			}
+			location = CaretLocation{ node: text.as_node(), offset: offset }
+			if word_segment_kind(segment) != .separator {
+				if direction == .backward {
+					return navigator.canonicalize_backward_word_location(location, alteration)
+				}
+				return location
+			}
+			continue
+		}
+		editing_host := text.as_node().editing_host() or { return location }
+		adjacent := navigator.adjacent_caret_host(text.as_node(), editing_host, direction) or {
+			return location
+		}
+		if is_atomic_inline_caret_host(adjacent) {
+			if direction == .forward {
+				return navigator.location_after_atomic_inline(adjacent)
+			}
+			return navigator.location_before_atomic_inline(adjacent, alteration)
+		}
+		if !adjacent.is_text() {
+			return location
+		}
+		adjacent_text := unsafe { &Text(adjacent) }
+		if !boundary_visual_lines_share_inline_context(text, adjacent_text) {
+			return location
+		}
+		text = adjacent_text
+		location = CaretLocation{
+			node: adjacent
+			offset: if direction == .forward { 0 } else { adjacent.length() }
+		}
+	}
+	return none
+}
+
+fn (navigator &CaretNavigator) move_to_editing_host_boundary(location CaretLocation, direction CaretNavigationDirection) ?CaretLocation {
+	editing_host := location.node.editing_host() or { return none }
+	mut target := navigator.adjacent_caret_host(editing_host, editing_host, .forward) or {
+		return none
+	}
+	if direction == .forward {
+		for {
+			next := navigator.adjacent_caret_host(target, editing_host, .forward) or { break }
+			target = next
+		}
+	}
+	if target.is_text() {
+		return CaretLocation{
+			node: target
+			offset: if direction == .forward { target.length() } else { 0 }
+		}
+	}
+	if is_atomic_inline_caret_host(target) {
+		parent := target.parent() or { return none }
+		return CaretLocation{
+			node: parent
+			offset: target.index() + if direction == .forward { 1 } else { 0 }
+		}
+	}
+	return CaretLocation{ node: target, offset: 0 }
+}
+
+fn (navigator &CaretNavigator) move_by_page(location CaretLocation, direction CaretNavigationDirection, inline_coordinate f64) ?CaretLocation {
+	mut current := location
+	mut moved := false
+	for _ in 0 .. 10 {
+		next := navigator.move(current, .move, direction, .line, inline_coordinate) or { break }
+		if selection_same_node(next.node, current.node) && next.offset == current.offset {
+			break
+		}
+		current = next
+		moved = true
+	}
+	if moved {
+		return current
+	}
+	return none
+}
+
+pub fn (navigator &CaretNavigator) move(location CaretLocation, alteration SelectionAlteration, direction CaretNavigationDirection, granularity SelectionGranularity, preferred_inline_coordinate ?f64) ?CaretLocation {
+	if granularity == .document_boundary {
+		return navigator.move_to_editing_host_boundary(location, direction)
+	}
+	if granularity == .page {
+		coordinate := preferred_inline_coordinate or { return none }
+		return navigator.move_by_page(location, direction, coordinate)
+	}
+	if granularity == .word {
+		return navigator.move_by_word(location, alteration, direction)
+	}
+	if granularity == .line_boundary && location.node.is_text() {
+		text := unsafe { &Text(location.node) }
+		return CaretLocation{
+			node: location.node
+			offset: if direction == .forward {
+				find_line_end(text.data(), location.offset)
+			} else {
+				find_line_start(text.data(), location.offset)
+			}
+		}
+	}
+	if granularity == .line && location.node.is_text() {
+		text := unsafe { &Text(location.node) }
+		offset := if direction == .forward {
+			compute_cursor_position_on_next_line(text.data(), location.offset)
+		} else {
+			compute_cursor_position_on_previous_line(text.data(), location.offset)
+		}
+		if destination := offset {
+			if destination != location.offset {
+				return CaretLocation{ node: location.node, offset: destination }
+			}
+		}
+		return navigator.move_to_adjacent_caret_host(location, direction)
+	}
+	if granularity == .character && location.node.is_text() {
+		text := unsafe { &Text(location.node) }
+		offset := if direction == .forward {
+			text.grapheme_segmenter().next_boundary(location.offset)
+		} else {
+			text.grapheme_segmenter().previous_boundary(location.offset)
+		}
+		if destination := offset {
+			return CaretLocation{ node: location.node, offset: destination }
+		}
+	}
+	adjacent := navigator.move_to_adjacent_caret_host(location, direction) or { return none }
+	if granularity == .character && location.node.is_text() && adjacent.node.is_text() {
+		origin_text := unsafe { &Text(location.node) }
+		adjacent_text := unsafe { &Text(adjacent.node) }
+		shares_line := if direction == .forward {
+			boundary_visual_lines_share_line(origin_text, adjacent_text)
+		} else {
+			boundary_visual_lines_share_line(adjacent_text, origin_text)
+		}
+		if shares_line {
+			offset := if direction == .forward {
+				adjacent_text.grapheme_segmenter().next_boundary(adjacent.offset)
+			} else {
+				adjacent_text.grapheme_segmenter().previous_boundary(adjacent.offset)
+			}
+			if destination := offset {
+				return CaretLocation{ node: adjacent.node, offset: destination }
+			}
+		}
+	}
+	return adjacent
+}
+
+pub struct SelectionModifier {
+pub:
+	selection &Selection
+}
+
+pub fn SelectionModifier.new(selection &Selection) SelectionModifier {
+	return SelectionModifier{selection}
+}
+
+pub fn (modifier &SelectionModifier) modify(alteration SelectionAlteration, direction CaretNavigationDirection, granularity SelectionGranularity) {
+	mut selection := unsafe { &Selection(modifier.selection) }
+	range := selection.range() or { return }
+	focus := selection.focus_node() or { return }
+	origin := CaretLocation{
+		node: focus
+		offset: selection.focus_offset()
+		affinity: selection.focus_affinity()
+	}
+	vertical := granularity in [.line, .page]
+	mut preferred := selection.preferred_inline_coordinate_
+	navigator := CaretNavigator.new(selection.document())
+	if vertical && preferred == none {
+		preferred = navigator.inline_coordinate(origin)
+	} else if !vertical {
+		selection.preferred_inline_coordinate_ = none
+	}
+
+	mut destination := ?CaretLocation(none)
+	mut canonical_anchor := ?CaretLocation(none)
+	if alteration == .move && granularity == .character && !selection.is_collapsed() {
+		boundary := if direction == .forward { range.end() } else { range.start() }
+		destination = CaretLocation{ node: boundary.node, offset: boundary.offset }
+	} else {
+		if alteration == .extend && selection.is_collapsed() {
+			canonical_anchor = navigator.canonical_location_for_extension(origin, direction)
+		}
+		destination = navigator.move(origin, alteration, direction, granularity, preferred)
+	}
+	target := destination or { return }
+	if alteration == .move {
+		selection.collapse(target.node, target.offset) or { return }
+		selection.reset_cursor_blink_cycle()
+	} else {
+		anchor := canonical_anchor or {
+			anchor_node := selection.anchor_node() or { return }
+			CaretLocation{ node: anchor_node, offset: selection.anchor_offset() }
+		}
+		selection.set_base_and_extent(anchor.node, anchor.offset, target.node, target.offset) or {
+			return
+		}
+	}
+	selection.set_focus_affinity(target.affinity)
+	if vertical {
+		selection.preferred_inline_coordinate_ = preferred
+	}
+	selection.scroll_focus_into_view()
+}
+
+pub fn (modifier &SelectionModifier) select_all() {
+	mut selection := unsafe { &Selection(modifier.selection) }
+	focus := selection.focus_node() or { return }
+	origin := CaretLocation{
+		node: focus
+		offset: selection.focus_offset()
+		affinity: selection.focus_affinity()
+	}
+	navigator := CaretNavigator.new(selection.document())
+	start := navigator.move(origin, .move, .backward, .document_boundary, none) or { return }
+	end := navigator.move(origin, .move, .forward, .document_boundary, none) or { return }
+	selection.set_base_and_extent(start.node, start.offset, end.node, end.offset) or { return }
+	selection.preferred_inline_coordinate_ = none
+	selection.reset_cursor_blink_cycle()
+	selection.scroll_focus_into_view()
 }
 
 pub fn Selection.create(document &Document) &Selection {
@@ -270,10 +841,6 @@ pub fn (mut selection Selection) select_all_children(node &Node) ! {
 }
 
 pub fn (mut selection Selection) modify(alter ?string, direction ?string, granularity ?string) ! {
-	anchor := selection.anchor_node() or { return }
-	if !anchor.is_text() {
-		return
-	}
 	alter_value := alter or { return }.to_lower()
 	direction_value := direction or { return }.to_lower()
 	granularity_value := granularity or { return }.to_lower()
@@ -290,8 +857,14 @@ pub fn (mut selection Selection) modify(alter ?string, direction ?string, granul
 	if selection.is_empty() {
 		return
 	}
-	text_node := unsafe { &Text(anchor) }
-	text_direction := text_node.directionality() or { Directionality.ltr }
+	focus := selection.focus_node() or { return }
+	text_direction := if focus.is_text() {
+		unsafe { &Text(focus) }.directionality() or { Directionality.ltr }
+	} else if element := focus.as_element() {
+		element.directionality()
+	} else {
+		Directionality.ltr
+	}
 	mut forwards := direction_value == 'forward'
 	if direction_value == 'right' && text_direction == .ltr {
 		forwards = true
@@ -299,19 +872,19 @@ pub fn (mut selection Selection) modify(alter ?string, direction ?string, granul
 	if direction_value == 'left' && text_direction == .rtl {
 		forwards = true
 	}
-	collapse_selection := alter_value == 'move'
-	if forwards {
-		match granularity_value {
-			'character' { selection.move_offset_to_next_character(collapse_selection) }
-			'word' { selection.move_offset_to_next_word(collapse_selection) }
-			else {}
-		}
-	} else {
-		match granularity_value {
-			'character' { selection.move_offset_to_previous_character(collapse_selection) }
-			'word' { selection.move_offset_to_previous_word(collapse_selection) }
-			else {}
-		}
+	selection.direction_ = if forwards { .forwards } else { .backwards }
+	mut granularity_kind := ?SelectionGranularity(none)
+	match granularity_value {
+		'character' { granularity_kind = .character }
+		'word' { granularity_kind = .word }
+		'line' { granularity_kind = .line }
+		'lineboundary' { granularity_kind = .line_boundary }
+		else {}
+	}
+	if kind := granularity_kind {
+		modifier := SelectionModifier.new(&selection)
+		modifier.modify(if alter_value == 'move' { .move } else { .extend },
+			if forwards { .forward } else { .backward }, kind)
 	}
 }
 
@@ -324,6 +897,10 @@ pub fn (mut selection Selection) delete_from_document() ! {
 
 pub fn (selection &Selection) contains_node(node &Node, allow_partial_containment bool) bool {
 	if selection.range_ == unsafe { nil } || selection.document_ == unsafe { nil } || !selection_same_node(node.root(), unsafe { &Node(selection.document_) }) {
+		return false
+	}
+	if !selection_same_node(selection.range_.start_container().shadow_including_root(),
+		unsafe { &Node(selection.document_) }) {
 		return false
 	}
 	if !allow_partial_containment {
@@ -378,6 +955,14 @@ pub fn (selection &Selection) range() ?&Range {
 	return selection.range_
 }
 
+pub fn (selection &Selection) focus_affinity() TextAffinity {
+	return selection.focus_affinity_
+}
+
+pub fn (mut selection Selection) set_focus_affinity(affinity TextAffinity) {
+	selection.focus_affinity_ = affinity
+}
+
 pub fn (mut selection Selection) set_range(range ?&Range) {
 	new_range := range or { unsafe { &Range(nil) } }
 	if (selection.range_ == unsafe { nil } && new_range == unsafe { nil }) || (selection.range_ != unsafe { nil } && new_range != unsafe { nil } && selection_same_range(selection.range_, new_range)) {
@@ -388,6 +973,8 @@ pub fn (mut selection Selection) set_range(range ?&Range) {
 		old_range.set_associated_selection(none)
 	}
 	selection.range_ = new_range
+	selection.focus_affinity_ = .downstream
+	selection.preferred_inline_coordinate_ = none
 	if new_range != unsafe { nil } {
 		mut mutable_range := unsafe { &Range(new_range) }
 		mutable_range.set_associated_selection(&selection)
@@ -426,105 +1013,33 @@ fn selection_utf16_substring(text string, start int, end int) string {
 }
 
 pub fn (mut selection Selection) move_offset_to_next_character(collapse_selection bool) {
-	anchor := selection.anchor_node() or { return }
-	if !anchor.is_text() {
-		return
-	}
-	text_node := unsafe { &Text(anchor) }
-	if collapse_selection && !selection.is_collapsed() {
-		anchor_offset := selection.anchor_offset()
-		focus_offset := selection.focus_offset()
-		selection.collapse(anchor, if anchor_offset > focus_offset {
-			anchor_offset
-		} else {
-			focus_offset
-		}) or { return }
-		selection.reset_cursor_blink_cycle()
-	} else if offset := text_node.grapheme_segmenter().next_boundary(selection.focus_offset()) {
-		selection.move_focus_with_optional_collapse(anchor, offset, collapse_selection)
-	}
-	selection.scroll_focus_into_view()
+	SelectionModifier.new(&selection).modify(if collapse_selection { .move } else { .extend },
+		.forward, .character)
 }
 
 pub fn (mut selection Selection) move_offset_to_previous_character(collapse_selection bool) {
-	anchor := selection.anchor_node() or { return }
-	if !anchor.is_text() {
-		return
-	}
-	text_node := unsafe { &Text(anchor) }
-	if collapse_selection && !selection.is_collapsed() {
-		anchor_offset := selection.anchor_offset()
-		focus_offset := selection.focus_offset()
-		selection.collapse(anchor, if anchor_offset < focus_offset {
-			anchor_offset
-		} else {
-			focus_offset
-		}) or { return }
-		selection.reset_cursor_blink_cycle()
-	} else if offset := text_node.grapheme_segmenter().previous_boundary(selection.focus_offset()) {
-		selection.move_focus_with_optional_collapse(anchor, offset, collapse_selection)
-	}
-	selection.scroll_focus_into_view()
+	SelectionModifier.new(&selection).modify(if collapse_selection { .move } else { .extend },
+		.backward, .character)
 }
 
 pub fn (mut selection Selection) move_offset_to_next_word(collapse_selection bool) {
-	anchor := selection.anchor_node() or { return }
-	if !anchor.is_text() {
-		return
-	}
-	text_node := unsafe { &Text(anchor) }
-	for selection.focus_offset() < text_node.length() {
-		old_offset := selection.focus_offset()
-		offset := text_node.word_segmenter().next_boundary(old_offset) or { break }
-		selection.move_focus_with_optional_collapse(anchor, offset, collapse_selection)
-		word := selection_utf16_substring(text_node.data(), old_offset, offset)
-		if !segmenter_should_continue_beyond_word(word) {
-			break
-		}
-	}
-	selection.scroll_focus_into_view()
+	SelectionModifier.new(&selection).modify(if collapse_selection { .move } else { .extend },
+		.forward, .word)
 }
 
 pub fn (mut selection Selection) move_offset_to_previous_word(collapse_selection bool) {
-	anchor := selection.anchor_node() or { return }
-	if !anchor.is_text() {
-		return
-	}
-	text_node := unsafe { &Text(anchor) }
-	for selection.focus_offset() > 0 {
-		old_offset := selection.focus_offset()
-		offset := text_node.word_segmenter().previous_boundary(old_offset) or { break }
-		selection.move_focus_with_optional_collapse(anchor, offset, collapse_selection)
-		word := selection_utf16_substring(text_node.data(), offset, old_offset)
-		if !segmenter_should_continue_beyond_word(word) {
-			break
-		}
-	}
-	selection.scroll_focus_into_view()
+	SelectionModifier.new(&selection).modify(if collapse_selection { .move } else { .extend },
+		.backward, .word)
 }
 
 pub fn (mut selection Selection) move_offset_to_next_line(collapse_selection bool) {
-	anchor := selection.anchor_node() or { return }
-	if !anchor.is_text() {
-		return
-	}
-	text_node := unsafe { &Text(anchor) }
-	new_offset := compute_cursor_position_on_next_line(text_node.data(), selection.focus_offset()) or {
-		return
-	}
-	selection.move_focus_with_optional_collapse(anchor, new_offset, collapse_selection)
-	selection.scroll_focus_into_view()
+	SelectionModifier.new(&selection).modify(if collapse_selection { .move } else { .extend },
+		.forward, .line)
 }
 
 pub fn (mut selection Selection) move_offset_to_previous_line(collapse_selection bool) {
-	anchor := selection.anchor_node() or { return }
-	if !anchor.is_text() {
-		return
-	}
-	text_node := unsafe { &Text(anchor) }
-	new_offset := compute_cursor_position_on_previous_line(text_node.data(), selection.focus_offset()) or { return }
-	selection.move_focus_with_optional_collapse(anchor, new_offset, collapse_selection)
-	selection.scroll_focus_into_view()
+	SelectionModifier.new(&selection).modify(if collapse_selection { .move } else { .extend },
+		.backward, .line)
 }
 
 fn (mut selection Selection) move_focus_with_optional_collapse(node &Node, offset int, collapse_selection bool) {
