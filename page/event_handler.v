@@ -27,6 +27,7 @@ pub:
 	is_link            bool
 	cancel_pointer     bool
 	cancel_mouse       bool
+	cancel_drag_start  bool
 	cancel_keyboard    bool
 	has_scrollable_box bool
 }
@@ -52,7 +53,9 @@ mut:
 	paint_root_available                 bool = true
 	selection_mode_                      SelectionMode
 	mousedown_target_                    string
+	mousedown_visual_viewport_position_  ?PixelPoint
 	mousedown_click_count                int
+	mousedown_target_is_drag_candidate_  bool
 	prevent_mouse_event                  bool
 	previous_screen                      ?PixelPoint
 	focused_target_                      string
@@ -94,7 +97,9 @@ pub fn (mut handler EventHandler) stop_updating_selection() {
 
 pub fn (mut handler EventHandler) clear_mousedown_tracking() {
 	handler.mousedown_target_ = ''
+	handler.mousedown_visual_viewport_position_ = none
 	handler.mousedown_click_count = 0
+	handler.mousedown_target_is_drag_candidate_ = false
 }
 
 fn (handler &EventHandler) should_ignore_device_input_event() bool {
@@ -138,9 +143,25 @@ pub fn (mut handler EventHandler) handle_mousedown(target ?InputTarget, click_co
 }
 
 pub fn (mut handler EventHandler) handle_mousedown_with_button(target ?InputTarget, position PixelPoint, button u32, click_count int, enable_autoscroll bool) EventResult {
+	return handler.handle_mousedown_with_button_and_modifiers(target, position, button, 0, click_count, enable_autoscroll)
+}
+
+pub fn (mut handler EventHandler) handle_mousedown_with_button_and_modifiers(target ?InputTarget, position PixelPoint, button u32, modifiers u32, click_count int, enable_autoscroll bool) EventResult {
+	if button == 0 {
+		handler.clear_mousedown_tracking()
+	}
 	result := handler.handle_mousedown(target, click_count)
 	if result != .handled {
 		return result
+	}
+	handler.mousedown_visual_viewport_position_ = position
+	mut is_context_menu_trigger := button == 2
+	$if macos {
+		is_context_menu_trigger = is_context_menu_trigger
+			|| (button == 0 && modifiers & dom.modifier_ctrl != 0)
+	}
+	if !is_context_menu_trigger {
+		handler.mousedown_target_is_drag_candidate_ = button == 0
 	}
 	if handler.middle_button_scroll_handler_ != none {
 		handler.middle_button_scroll_handler_ = none
@@ -177,6 +198,13 @@ pub fn (mut handler EventHandler) handle_mouseup_with_button(target ?InputTarget
 			handler.middle_button_scroll_handler_ = none
 		}
 	}
+	if handler.drag_and_drop.has_ongoing_drag_and_drop_operation()
+		&& handler.mousedown_target_is_drag_candidate_ {
+		if !handler.active_document || !handler.paint_root_available {
+			return .dropped
+		}
+		return handler.drag_and_drop.handle_drag_end(false, false, .none)
+	}
 	if handler.should_ignore_device_input_event() || !handler.paint_root_available {
 		return .dropped
 	}
@@ -212,6 +240,13 @@ pub fn (mut handler EventHandler) handle_mouseup_with_button(target ?InputTarget
 }
 
 pub fn (mut handler EventHandler) handle_mousemove(target ?InputTarget, screen PixelPoint) EventResult {
+	if handler.drag_and_drop.has_ongoing_drag_and_drop_operation()
+		&& handler.mousedown_target_is_drag_candidate_ {
+		if !handler.active_document || !handler.paint_root_available {
+			return .dropped
+		}
+		return handler.drag_and_drop.handle_drag_move(input_target_to_drag_target(target), false, false, false, .none)
+	}
 	if handler.should_ignore_device_input_event() || !handler.paint_root_available || target == none {
 		return .dropped
 	}
@@ -220,6 +255,22 @@ pub fn (mut handler EventHandler) handle_mousemove(target ?InputTarget, screen P
 		middle.update_mouse_position(screen)
 	}
 	value := target or { return .dropped }
+	if handler.mousedown_target_is_drag_candidate_ {
+		if origin := handler.mousedown_visual_viewport_position_ {
+			delta_x := screen.x - origin.x
+			delta_y := screen.y - origin.y
+			if delta_x <= -5 || delta_x >= 5 || delta_y <= -5 || delta_y >= 5 {
+				result := handler.drag_and_drop.handle_drag_start([], value.cancel_drag_start, .all)
+				if result == .handled {
+					handler.stop_updating_selection()
+					return .handled
+				}
+				if result == .cancelled {
+					handler.mousedown_target_is_drag_candidate_ = false
+				}
+			}
+		}
+	}
 	handler.log('pointermove', value)
 	if value.cancel_pointer {
 		return .cancelled
@@ -230,7 +281,19 @@ pub fn (mut handler EventHandler) handle_mousemove(target ?InputTarget, screen P
 	return if value.cancel_mouse { .cancelled } else { .handled }
 }
 
+fn input_target_to_drag_target(target ?InputTarget) ?DragTarget {
+	value := target or { return none }
+	return DragTarget{
+		id: value.id
+		allows_text_drop: value.is_editable
+	}
+}
+
 pub fn (mut handler EventHandler) handle_mouseleave() EventResult {
+	if handler.drag_and_drop.has_ongoing_drag_and_drop_operation()
+		&& handler.mousedown_target_is_drag_candidate_ {
+		return handler.drag_and_drop.handle_drag_end(true, false, .none)
+	}
 	if handler.should_ignore_device_input_event() || !handler.paint_root_available {
 		return .dropped
 	}

@@ -244,6 +244,63 @@ fn test_event_handler_pointer_cancellation_and_mouseup_cleanup_match_upstream() 
 	assert handler.event_log.map(it.name) == ['pointerdown', 'mousedown']
 }
 
+fn test_prevented_mouse_events_and_dragstart_stop_drag_candidate_tracking() {
+	origin := PixelPoint{ x: 10, y: 10 }
+	drag_position := PixelPoint{ x: 16, y: 10 }
+
+	mut cancelled_mousedown := EventHandler{}
+	assert cancelled_mousedown.handle_mousedown_with_button(InputTarget{
+		id: 'cancelled-mousedown'
+		cancel_mouse: true
+	}, origin, 0, 1, false) == .cancelled
+	assert cancelled_mousedown.handle_mousemove(InputTarget{
+		id: 'cancelled-mousedown'
+	}, drag_position) == .handled
+	assert cancelled_mousedown.drag_and_drop.event_log.len == 0
+
+	mut cancelled_dragstart := EventHandler{}
+	drag_source := InputTarget{
+		id: 'cancelled-dragstart'
+		cancel_drag_start: true
+	}
+	assert cancelled_dragstart.handle_mousedown_with_button(drag_source, origin, 0, 1, false) == .handled
+	assert cancelled_dragstart.handle_mousemove(drag_source, drag_position) == .handled
+	assert cancelled_dragstart.drag_and_drop.event_log.map(it.name) == ['dragstart']
+	assert cancelled_dragstart.handle_mousemove(drag_source, PixelPoint{ x: 20, y: 10 }) == .handled
+	assert cancelled_dragstart.drag_and_drop.event_log.map(it.name) == ['dragstart']
+}
+
+fn test_primary_press_starts_drag_only_after_threshold_and_ends_on_mouseup() {
+	mut handler := EventHandler{}
+	drag_source := InputTarget{
+		id: 'drag-source'
+		is_editable: true
+	}
+	assert handler.handle_mousedown_with_button(drag_source, PixelPoint{ x: 10, y: 10 }, 0, 1, false) == .handled
+	assert handler.handle_mousemove(drag_source, PixelPoint{ x: 14, y: 14 }) == .handled
+	assert handler.drag_and_drop.event_log.len == 0
+	assert handler.handle_mousemove(drag_source, PixelPoint{ x: 15, y: 14 }) == .handled
+	assert handler.drag_and_drop.event_log.map(it.name) == ['dragstart']
+	assert handler.handle_mousemove(drag_source, PixelPoint{ x: 16, y: 14 }) == .handled
+	assert handler.drag_and_drop.event_log.map(it.name) == ['dragstart', 'drag', 'dragenter',
+		'dragover']
+	assert handler.handle_mouseup_with_button(drag_source, 0) == .cancelled
+	assert handler.drag_and_drop.event_log.map(it.name) == ['dragstart', 'drag', 'dragenter',
+		'dragover', 'dragleave', 'dragend']
+	assert !handler.drag_and_drop.has_ongoing_drag_and_drop_operation()
+
+	mut secondary := EventHandler{}
+	assert secondary.handle_mousedown_with_button(drag_source, PixelPoint{}, 2, 1, false) == .handled
+	assert secondary.handle_mousemove(drag_source, PixelPoint{ x: 20 }) == .handled
+	assert secondary.drag_and_drop.event_log.len == 0
+
+	mut leaving := EventHandler{}
+	assert leaving.handle_mousedown_with_button(drag_source, PixelPoint{}, 0, 1, false) == .handled
+	assert leaving.handle_mousemove(drag_source, PixelPoint{ x: 5 }) == .handled
+	assert leaving.handle_mouseleave() == .cancelled
+	assert leaving.drag_and_drop.event_log.map(it.name) == ['dragstart', 'dragend']
+}
+
 fn test_event_handler_focus_traversal_starts_at_the_correct_end_and_honors_document_state() {
 	candidates := [
 		InputTarget{ id: 'ignored' },
