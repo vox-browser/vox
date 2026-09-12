@@ -15,13 +15,23 @@ pub:
 	raw    string
 }
 
+struct PendingClientRequest {
+	method_text string
+	path        string
+	body        string
+	headers     map[string]string
+}
+
 @[heap]
 pub struct Client {
 pub mut:
-	alive             bool = true
-	remaining_request string
-	responses         []ClientResponse
-	response_log      []string
+	alive                      bool = true
+	remaining_request          string
+	responses                  []ClientResponse
+	response_log               []string
+	pending_requests           []PendingClientRequest
+	processing_pending_request bool
+	current_request_keep_alive bool
 }
 
 pub fn Client.new() &Client {
@@ -29,7 +39,20 @@ pub fn Client.new() &Client {
 }
 
 pub fn (mut client Client) die() {
+	if !client.alive {
+		return
+	}
 	client.alive = false
+	client.pending_requests.clear()
+}
+
+pub fn is_keep_alive_request(headers map[string]string) bool {
+	for name, value in headers {
+		if name.to_lower() == 'connection' {
+			return value.trim_space().to_lower() == 'keep-alive'
+		}
+	}
+	return false
 }
 
 fn http_method_from_string(value string) ?HttpMethod {
@@ -53,43 +76,82 @@ pub fn (mut client Client) on_ready_to_read(data string) ! {
 		return error('WebDriver client is closed')
 	}
 	client.remaining_request += data
-	header_end := client.remaining_request.index('\r\n\r\n') or { return }
-	header_text := client.remaining_request[..header_end]
-	lines := header_text.split('\r\n')
-	if lines.len == 0 {
-		return error('HTTP request is empty')
-	}
-	request_parts := lines[0].split(' ')
-	if request_parts.len < 2 {
-		return error('HTTP request line is invalid')
-	}
-	mut content_length := 0
-	for line in lines[1..] {
-		separator := line.index(':') or { continue }
-		if line[..separator].trim_space().to_lower() == 'content-length' {
-			content_length = line[separator + 1..].trim_space().int()
+	for {
+		header_end := client.remaining_request.index('\r\n\r\n') or { break }
+		header_text := client.remaining_request[..header_end]
+		lines := header_text.split('\r\n')
+		if lines.len == 0 {
+			return error('HTTP request is empty')
+		}
+		request_parts := lines[0].split(' ')
+		if request_parts.len < 2 {
+			return error('HTTP request line is invalid')
+		}
+		mut content_length := 0
+		mut headers := map[string]string{}
+		for line in lines[1..] {
+			separator := line.index(':') or { continue }
+			name := line[..separator].trim_space()
+			value := line[separator + 1..].trim_space()
+			headers[name] = value
+			if name.to_lower() == 'content-length' {
+				content_length = value.int()
+			}
+		}
+		body_start := header_end + 4
+		if client.remaining_request.len < body_start + content_length {
+			break
+		}
+		body_text := client.remaining_request[body_start..body_start + content_length]
+		client.remaining_request = client.remaining_request[body_start + content_length..].clone()
+		client.pending_requests << PendingClientRequest{
+			method_text: request_parts[0]
+			path:        request_parts[1]
+			body:        body_text
+			headers:     headers
 		}
 	}
-	body_start := header_end + 4
-	if client.remaining_request.len < body_start + content_length {
+	client.process_next_pending_request()
+}
+
+pub fn (mut client Client) process_next_pending_request() {
+	if !client.alive || client.processing_pending_request || client.pending_requests.len == 0 {
 		return
 	}
-	body_text := client.remaining_request[body_start..body_start + content_length]
-	client.remaining_request = client.remaining_request[body_start + content_length..].clone()
-	method := http_method_from_string(request_parts[0]) or {
+	client.processing_pending_request = true
+	pending := client.pending_requests[0]
+	client.current_request_keep_alive = is_keep_alive_request(pending.headers)
+	method := http_method_from_string(pending.method_text) or {
 		error_ := WebDriverError.from_code(.unknown_method, 'The HTTP method is unsupported')
-		client.handle_error(request_parts[0], request_parts[1], error_)
+		client.handle_error(pending.method_text, pending.path, error_)
+		client.dequeue_current_pending_request()
 		return
 	}
-	body := client.read_body_as_json(body_text) or {
+	body := client.read_body_as_json(pending.body) or {
 		error_ := WebDriverError.from_code(.invalid_argument, err.msg())
-		client.handle_error(request_parts[0], request_parts[1], error_)
+		client.handle_error(pending.method_text, pending.path, error_)
+		client.dequeue_current_pending_request()
 		return
 	}
-	client.handle_request(method, request_parts[1], body) or {
+	client.handle_request(method, pending.path, body) or {
 		error_ := WebDriverError.from_code(.unknown_error, err.msg())
-		client.handle_error(request_parts[0], request_parts[1], error_)
+		client.handle_error(pending.method_text, pending.path, error_)
+		client.dequeue_current_pending_request()
 		return
+	}
+	client.dequeue_current_pending_request()
+}
+
+pub fn (mut client Client) dequeue_current_pending_request() {
+	client.processing_pending_request = false
+	if !client.alive {
+		return
+	}
+	if client.pending_requests.len > 0 {
+		client.pending_requests.delete(0)
+	}
+	if client.pending_requests.len > 0 {
+		client.process_next_pending_request()
 	}
 }
 
@@ -124,10 +186,9 @@ fn (mut client Client) finish_request(method HttpMethod, path string, response R
 pub fn (mut client Client) handle_error(method string, path string, error_ WebDriverError) {
 	parsed_method := http_method_from_string(method) or { HttpMethod.post }
 	client.send_error_response(parsed_method, path, error_)
-	client.die()
 }
 
-fn http_response_text(status u32, body json2.Any) string {
+fn http_response_text(status u32, body json2.Any, keep_alive bool) string {
 	content := body.json_str()
 	reason := match status {
 		200 { 'OK' }
@@ -136,7 +197,8 @@ fn http_response_text(status u32, body json2.Any) string {
 		405 { 'Method Not Allowed' }
 		else { 'Internal Server Error' }
 	}
-	return 'HTTP/1.1 ${status} ${reason}\r\nCache-Control: no-cache\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: ${content.len}\r\n\r\n${content}'
+	connection := if keep_alive { 'Connection: keep-alive\r\n' } else { '' }
+	return 'HTTP/1.1 ${status} ${reason}\r\n${connection}Cache-Control: no-cache\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: ${content.len}\r\n\r\n${content}'
 }
 
 pub fn (mut client Client) send_success_response(method HttpMethod, path string, result json2.Any) {
@@ -144,9 +206,12 @@ pub fn (mut client Client) send_success_response(method HttpMethod, path string,
 	client.responses << ClientResponse{
 		status: 200
 		body:   body
-		raw:    http_response_text(200, body)
+		raw:    http_response_text(200, body, client.current_request_keep_alive)
 	}
 	client.log_response(method, path, 200)
+	if !client.current_request_keep_alive {
+		client.die()
+	}
 }
 
 pub fn (mut client Client) send_error_response(method HttpMethod, path string, error_ WebDriverError) {
@@ -163,9 +228,12 @@ pub fn (mut client Client) send_error_response(method HttpMethod, path string, e
 	client.responses << ClientResponse{
 		status: error_.http_status
 		body:   body
-		raw:    http_response_text(error_.http_status, body)
+		raw:    http_response_text(error_.http_status, body, client.current_request_keep_alive)
 	}
 	client.log_response(method, path, error_.http_status)
+	if !client.current_request_keep_alive {
+		client.die()
+	}
 }
 
 pub fn (mut client Client) log_response(method HttpMethod, path string, code u32) {

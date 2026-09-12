@@ -63,14 +63,26 @@ fn test_screenshot_paints_from_origin_to_viewport_edge_and_rejects_empty_canvas(
 
 fn test_upstream_client_entry_points_parse_route_and_frame_response() {
 	mut client := Client.new()
-	client.on_ready_to_read('GET /status HTTP/1.1\r\nHost: localhost\r\n\r\n')!
-	assert client.responses.len == 1
+	client.on_ready_to_read('GET /status HTTP/1.1\r\nHost: localhost\r\nConnection: keep-alive\r\n\r\nGET /status HTTP/1.1\r\nHost: localhost\r\nConnection: keep-alive\r\n\r\n')!
+	assert client.responses.len == 2
 	assert client.responses[0].status == 200
 	assert client.responses[0].raw.starts_with('HTTP/1.1 200 OK')
+	assert client.responses[0].raw.contains('Connection: keep-alive')
 	assert client.response_log.last().contains('GET /status')
 	assert client.alive
-	client.die()
+	assert client.pending_requests.len == 0
+	client.on_ready_to_read('GET /status HTTP/1.1\r\nHost: localhost\r\n\r\n')!
+	assert client.responses.len == 3
 	assert !client.alive
+}
+
+fn test_keep_alive_request_is_ascii_case_insensitive_and_trimmed() {
+	assert is_keep_alive_request({
+		'cOnNeCtIoN': '  Keep-Alive  '
+	})
+	assert !is_keep_alive_request({
+		'Connection': 'close'
+	})
 }
 
 fn test_upstream_script_completion_helpers_observe_timeout() {
