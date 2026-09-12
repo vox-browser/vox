@@ -295,8 +295,12 @@ pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
 
 	// The delaying flag belongs to the media element's current node document,
 	// so transfer its load-event delay when the element is adopted.
+	mut was_delaying := false
 	if mut delayer := element.delaying_load_event_ {
 		delayer.finish()
+		was_delaying = true
+	}
+	if was_delaying {
 		element.delaying_load_event_ = dom.DocumentLoadEventDelayer.new(mut new_document)
 	}
 

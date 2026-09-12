@@ -52,3 +52,20 @@ fn test_media_adoption_resumes_selection_and_retargets_document_lifecycle() {
 	assert media.paused()
 	assert media.document_observer_?.document()?.url.serialize() == 'https://old.example/'
 }
+
+fn test_media_adoption_retains_an_in_flight_load_event_delay() {
+	mut old_document := dom.Document.create(dom.URL{ value: 'https://old.example/' })
+	mut new_document := dom.Document.create(dom.URL{ value: 'https://new.example/' })
+	video_element := old_document.create_element_ns(dom.namespace_html_uri, 'video')!
+	mut media := html_media_element_for_dom_element(video_element) or { panic('missing media state') }
+	media.resource_fetch_started_ = true
+	media.begin_delaying_load_event()
+	assert old_document.anything_is_delaying_the_load_event()
+
+	new_document.adopt_node(video_element.as_node())
+	assert !old_document.anything_is_delaying_the_load_event()
+	assert new_document.anything_is_delaying_the_load_event()
+
+	media.finish_delaying_load_event()
+	assert !new_document.anything_is_delaying_the_load_event()
+}
