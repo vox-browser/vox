@@ -16,6 +16,12 @@ pub type GLintptr = i64
 
 pub type GLsizeiptr = i64
 
+pub struct WebGLDataSpan {
+pub:
+	offset u32
+	size   u32
+}
+
 pub const no_error = GLenum(0)
 pub const invalid_enum = GLenum(0x0500)
 pub const invalid_value = GLenum(0x0501)
