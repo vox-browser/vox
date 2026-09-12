@@ -775,7 +775,7 @@ pub fn (style_value LCHColorStyleValue) serialize(mode SerializationMode) string
 	mut result := 'lch('
 	result += serialize_color_component(style_value.l_, mode, 100, 0, 100)
 	result += ' '
-	result += serialize_color_component(style_value.c_, mode, 150, 0, 230)
+	result += serialize_color_component(style_value.c_, mode, 150, 0, none)
 	result += ' '
 	result += serialize_hue_component(style_value.h_, mode)
 	if alpha_needs_serialization(style_value.alpha_) {
@@ -811,7 +811,7 @@ pub fn (style_value OKLCHColorStyleValue) serialize(mode SerializationMode) stri
 	mut result := 'oklch('
 	result += serialize_color_component(style_value.l_, mode, 1.0, 0, 1)
 	result += ' '
-	result += serialize_color_component(style_value.c_, mode, 0.4, 0, 2.3)
+	result += serialize_color_component(style_value.c_, mode, 0.4, 0, none)
 	result += ' '
 	result += serialize_hue_component(style_value.h_, mode)
 	if alpha_needs_serialization(style_value.alpha_) {

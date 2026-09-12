@@ -164,6 +164,8 @@ fn test_link_system_colors_resolve_without_a_document_palette() {
 fn test_lch_and_oklch_hues_drop_trailing_zeros() {
 	assert parse_css_value(ParsingParams{}, 'lch(50% 40 30deg)', PropertyID.color)?.css_text == 'lch(50 40 30)'
 	assert parse_css_value(ParsingParams{}, 'oklch(0.5 0.1 30)', PropertyID.color)?.css_text == 'oklch(0.5 0.1 30)'
+	assert parse_css_value(ParsingParams{}, 'lch(50 300 30)', PropertyID.color)?.css_text == 'lch(50 300 30)'
+	assert parse_css_value(ParsingParams{}, 'oklch(0.5 3 30)', PropertyID.color)?.css_text == 'oklch(0.5 3 30)'
 	assert parse_css_value(ParsingParams{}, 'lch(50% 40 30.5deg)', PropertyID.color)?.css_text == 'lch(50 40 30.5)'
 	assert parse_css_value(ParsingParams{}, 'lch(50% 40 12.75deg)', PropertyID.color)?.css_text == 'lch(50 40 12.75)'
 	// Still rounded to four decimals, and a hue below that resolution is zero.
