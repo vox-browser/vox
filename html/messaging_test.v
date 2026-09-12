@@ -1,6 +1,13 @@
 module html
 
 import dom
+import os
+
+__global forwarded_broadcast_messages = []BroadcastChannelMessage{}
+
+fn record_forwarded_broadcast_message(message BroadcastChannelMessage) {
+	forwarded_broadcast_messages << message
+}
 
 struct MessageRecorder {
 mut:
@@ -225,4 +232,62 @@ fn test_broadcast_channel_repository_exact_registration_api() {
 	repository.unregister_channel(channel)
 	assert repository.registered_channels_for_key('repository-key').len == 0
 	mutable_channel.close()
+}
+
+fn test_broadcast_channel_message_ipc_round_trip() {
+	origin := dom.origin_create_opaque()
+	message := BroadcastChannelMessage{
+		storage_key: 'partition-a'
+		channel_name: 'updates'
+		source_origin: origin
+		serialized_message: structured_serialize(dom.js_string('hello')) or { panic(err) }
+		source_process_id: -1
+		source_channel_id: 42
+	}
+	encoded := encode_broadcast_channel_message(message)
+	decoded := decode_broadcast_channel_message(encoded) or { panic(err) }
+	assert decoded.storage_key == message.storage_key
+	assert decoded.channel_name == message.channel_name
+	assert decoded.source_origin.is_same_origin(origin)
+	assert decoded.serialized_message.data == message.serialized_message.data
+	assert decoded.source_process_id == -1
+	assert decoded.source_channel_id == 42
+	if _ := decode_broadcast_channel_message(encoded[..encoded.len - 1]) {
+		assert false
+	}
+}
+
+fn test_broadcast_channel_forwards_messages_and_accepts_remote_channel_id_collisions() {
+	forwarded_broadcast_messages.clear()
+	set_broadcast_channel_message_forwarder(record_forwarded_broadcast_message)
+	source := BroadcastChannel.construct_impl('cross-process')
+	target := BroadcastChannel.construct_impl('cross-process')
+	mut mutable_source := source
+	mut mutable_target := target
+	origin := dom.Origin{ value: 'https://example.test' }
+	mutable_source.set_messaging_environment(origin, 'shared-partition', true)
+	mutable_target.set_messaging_environment(origin, 'shared-partition', true)
+	mut recorder := &MessageRecorder{}
+	target.set_onmessage(message_recorder_callback(mut recorder))
+	source.post_message(dom.js_string('local')) or { panic(err) }
+	drain_messaging_tasks()
+	assert recorder.data == ['local']
+	assert forwarded_broadcast_messages.len == 1
+	assert forwarded_broadcast_messages[0].source_channel_id == source.channel_id()
+
+	remote_message := BroadcastChannelMessage{
+		storage_key: 'shared-partition'
+		channel_name: 'cross-process'
+		source_origin: origin
+		serialized_message: structured_serialize(dom.js_string('remote')) or { panic(err) }
+		source_process_id: os.getpid() + 1
+		source_channel_id: target.channel_id()
+	}
+	BroadcastChannel.deliver_message_locally(remote_message)
+	drain_messaging_tasks()
+	assert recorder.data == ['local', 'remote']
+
+	set_broadcast_channel_message_forwarder(none)
+	mutable_source.close()
+	mutable_target.close()
 }

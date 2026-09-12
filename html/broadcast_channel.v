@@ -8,6 +8,7 @@
 module html
 
 import dom
+import os
 
 __global (
 	html_broadcast_channels = []&BroadcastChannel{}
@@ -16,7 +17,13 @@ __global (
 @[heap]
 pub struct BroadcastChannelRepository {
 mut:
-	channels map[string][]&BroadcastChannel
+	channels         map[string][]&BroadcastChannel
+	next_channel_id_ u64
+}
+
+fn (mut repository BroadcastChannelRepository) next_channel_id() u64 {
+	repository.next_channel_id_++
+	return repository.next_channel_id_
 }
 
 pub fn BroadcastChannelRepository.create() &BroadcastChannelRepository {
@@ -58,13 +65,19 @@ pub fn (repository &BroadcastChannelRepository) registered_channels_for_key(key 
 	return channels.clone()
 }
 
-__global html_broadcast_channel_repository &BroadcastChannelRepository
+pub type BroadcastChannelMessageForwarder = fn (BroadcastChannelMessage)
+
+__global (
+	html_broadcast_channel_repository   &BroadcastChannelRepository
+	broadcast_channel_message_forwarder ?BroadcastChannelMessageForwarder
+)
 
 @[heap]
 pub struct BroadcastChannel {
 	dom.EventTarget
 mut:
 	channel_name_ string
+	channel_id_   u64
 	closed_flag_  bool
 	eligible_     bool = true
 	origin_       dom.Origin
@@ -72,21 +85,26 @@ mut:
 }
 
 pub fn BroadcastChannel.construct_impl(name string) &BroadcastChannel {
+	mut repository := html_broadcast_channel_repository
 	channel := &BroadcastChannel{
 		channel_name_: name
-		origin_:       dom.Origin{
+		channel_id_: repository.next_channel_id()
+		origin_: dom.Origin{
 			value: 'opaque'
 		}
-		storage_key_:  'default'
+		storage_key_: 'default'
 	}
 	html_broadcast_channels << channel
-	mut repository := html_broadcast_channel_repository
 	repository.register_channel(channel)
 	return channel
 }
 
 pub fn (channel &BroadcastChannel) name() string {
 	return channel.channel_name_
+}
+
+pub fn (channel &BroadcastChannel) channel_id() u64 {
+	return channel.channel_id_
 }
 
 pub fn (channel &BroadcastChannel) is_closed() bool {
@@ -108,6 +126,10 @@ pub fn (mut channel BroadcastChannel) set_messaging_environment(origin dom.Origi
 	repository.register_channel(&channel)
 }
 
+pub fn set_broadcast_channel_message_forwarder(forwarder ?BroadcastChannelMessageForwarder) {
+	broadcast_channel_message_forwarder = forwarder
+}
+
 pub fn (channel &BroadcastChannel) post_message(message dom.JSValue) ! {
 	if !channel.is_eligible_for_messaging() {
 		return
@@ -116,16 +138,33 @@ pub fn (channel &BroadcastChannel) post_message(message dom.JSValue) ! {
 		return error('InvalidStateError: BroadcastChannel.postMessage() on a closed channel')
 	}
 	serialized := structured_serialize(message)!
+	message_to_send := BroadcastChannelMessage{
+		storage_key: channel.storage_key_
+		channel_name: channel.channel_name_
+		source_origin: channel.origin_
+		serialized_message: serialized
+		source_process_id: os.getpid()
+		source_channel_id: channel.channel_id_
+	}
+	BroadcastChannel.deliver_message_locally(message_to_send)
+	if forwarder := broadcast_channel_message_forwarder {
+		forwarder(message_to_send)
+	}
+}
+
+pub fn BroadcastChannel.deliver_message_locally(message BroadcastChannelMessage) {
 	repository := html_broadcast_channel_repository
-	for candidate in repository.registered_channels_for_key(channel.storage_key_) {
-		if voidptr(candidate) == voidptr(channel) || candidate.closed_flag_
+	for candidate in repository.registered_channels_for_key(message.storage_key) {
+		if (message.source_process_id == os.getpid()
+			&& candidate.channel_id_ == message.source_channel_id) || candidate.closed_flag_
 			|| !candidate.is_eligible_for_messaging()
-			|| candidate.channel_name_ != channel.channel_name_
-			|| candidate.storage_key_ != channel.storage_key_ {
+			|| candidate.channel_name_ != message.channel_name
+			|| candidate.storage_key_ != message.storage_key {
 			continue
 		}
 		destination := candidate
-		source_origin := channel.origin_
+		source_origin := message.source_origin
+		serialized := message.serialized_message
 		queue_a_task(.dom_manipulation, main_thread_event_loop(), none, fn [destination, source_origin, serialized] () {
 			if destination.closed_flag_ {
 				return
