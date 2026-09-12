@@ -9709,14 +9709,15 @@ pub mut:
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
 	initial_timeline_time := document.last_animation_frame_timestamp_value() or { 0.0 }
+	font_computer := FontComputer.create()
 	return &StyleComputer{
 		document_: unsafe { document }
 		viewport_rect_: css_pixel_rect_from_dom_rect(document.viewport_rect())
 		css_animation_storage_: &CSSAnimationStorage{}
 		css_transition_storage_: &CSSTransitionStorage{}
 		document_timeline_: AnimationTimeline.document_timeline(document, 0.0, initial_timeline_time)
-		font_computer_: FontComputer.create()
-		font_face_set_: FontFaceSet.create()
+		font_computer_: font_computer
+		font_face_set_: FontFaceSet.create_for_font_computer(font_computer)
 	}
 }
 

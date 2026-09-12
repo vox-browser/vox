@@ -1418,12 +1418,24 @@ pub fn (mut rule CSSFontFaceRule) handle_descriptor_change(property string) {
 
 	if property.to_lower() == 'src' {
 		rule.handle_src_descriptor_change()
+		return
 	}
 
 	// https://drafts.csswg.org/css-font-loading/#font-face-css-connection
 	// any change made to a @font-face descriptor is immediately reflected in the corresponding FontFace attribute
 	if mut font_face := rule.css_connected_font_face {
+		was_registered := font_face.should_be_registered_with_font_computer()
+		if was_registered {
+			if mut computer := font_face.font_computer() {
+				computer.unregister_font_face(font_face)
+			}
+		}
 		font_face.reparse_connected_css_font_face_rule_descriptors()
+		if was_registered {
+			if mut computer := font_face.font_computer() {
+				computer.register_font_face(font_face)
+			}
+		}
 	}
 }
 
@@ -2061,6 +2073,31 @@ pub fn (face &FontFaceObject) is_css_connected() bool {
 	return face.css_font_face_rule != none
 }
 
+pub fn (face &FontFaceObject) should_be_registered_with_font_computer() bool {
+	return face.is_css_connected() || face.status() == .loaded
+}
+
+fn (face &FontFaceObject) font_computer() ?&FontComputer {
+	for set in face.containing_sets {
+		if computer := set.font_computer_ {
+			return computer
+		}
+	}
+	return none
+}
+
+fn (face &FontFaceObject) font_with_point_size(point_size f32, variations FontVariationSettings, shape_features ShapeFeatures) ?FontCascadeList {
+	typeface := face.parsed_font or { return none }
+	mut font_list := FontCascadeList.create()
+	font_list.add(PlatformFont{
+		typeface: typeface
+		point_size: point_size
+		variations: variations
+		features: shape_features
+	}, face.unicode_ranges_)
+	return font_list
+}
+
 pub fn (mut face FontFaceObject) disconnect_from_css_rule() {
 	face.css_font_face_rule = none
 }
@@ -2084,8 +2121,20 @@ pub fn (mut face FontFaceObject) set_family(value string) ! {
 	if mut rule := face.css_font_face_rule {
 		mut descriptors := unsafe { &CSSFontFaceDescriptors(rule.descriptors()) }
 		descriptors.set_font_family(value)!
+		return
+	}
+	was_registered := face.should_be_registered_with_font_computer()
+	if was_registered {
+		if mut computer := face.font_computer() {
+			computer.unregister_font_face(face)
+		}
 	}
 	face.family_ = string_from_style_value(parsed)
+	if was_registered {
+		if mut computer := face.font_computer() {
+			computer.register_font_face(face)
+		}
+	}
 }
 
 pub fn (mut face FontFaceObject) set_family_impl(value string) {
@@ -2099,8 +2148,20 @@ pub fn (mut face FontFaceObject) set_style(value string) ! {
 	if mut rule := face.css_font_face_rule {
 		mut descriptors := unsafe { &CSSFontFaceDescriptors(rule.descriptors()) }
 		descriptors.set_font_style(value)!
+		return
+	}
+	was_registered := face.should_be_registered_with_font_computer()
+	if was_registered {
+		if mut computer := face.font_computer() {
+			computer.unregister_font_face(face)
+		}
 	}
 	face.set_style_impl(parsed)
+	if was_registered {
+		if mut computer := face.font_computer() {
+			computer.register_font_face(face)
+		}
+	}
 }
 
 pub fn (mut face FontFaceObject) set_style_impl(value string) {
@@ -2114,8 +2175,20 @@ pub fn (mut face FontFaceObject) set_weight(value string) ! {
 	if mut rule := face.css_font_face_rule {
 		mut descriptors := unsafe { &CSSFontFaceDescriptors(rule.descriptors()) }
 		descriptors.set_font_weight(value)!
+		return
+	}
+	was_registered := face.should_be_registered_with_font_computer()
+	if was_registered {
+		if mut computer := face.font_computer() {
+			computer.unregister_font_face(face)
+		}
 	}
 	face.set_weight_impl(parsed)
+	if was_registered {
+		if mut computer := face.font_computer() {
+			computer.register_font_face(face)
+		}
+	}
 }
 
 pub fn (mut face FontFaceObject) set_weight_impl(value string) {
@@ -2130,8 +2203,14 @@ pub fn (mut face FontFaceObject) set_stretch(value string) ! {
 	if mut rule := face.css_font_face_rule {
 		mut descriptors := unsafe { &CSSFontFaceDescriptors(rule.descriptors()) }
 		descriptors.set_font_width(value)!
+		return
 	}
 	face.set_stretch_impl(parsed)
+	if face.should_be_registered_with_font_computer() {
+		if mut computer := face.font_computer() {
+			computer.did_load_font(face.family_)
+		}
+	}
 }
 
 pub fn (mut face FontFaceObject) set_stretch_impl(value string) {
@@ -2145,8 +2224,14 @@ pub fn (mut face FontFaceObject) set_unicode_range(value string) ! {
 	if mut rule := face.css_font_face_rule {
 		mut descriptors := unsafe { &CSSFontFaceDescriptors(rule.descriptors()) }
 		descriptors.set_unicode_range(value)!
+		return
 	}
 	face.set_unicode_range_impl(parsed)
+	if face.should_be_registered_with_font_computer() {
+		if mut computer := face.font_computer() {
+			computer.did_load_font(face.family_)
+		}
+	}
 }
 
 pub fn (mut face FontFaceObject) set_unicode_range_impl(value string) {
@@ -2258,7 +2343,11 @@ pub fn (mut face FontFaceObject) load() &webidl.Promise {
 	//    and continue executing the rest of this algorithm asynchronously.
 	// Boundary: C++ defers the URL load through the platform event loop and later queues a font-loading task for
 	// completion. The V port runs the boundary synchronously while preserving status, promise, and set-list effects.
-	face.finish_loading_from_typeface(face.load_first_available_url())
+	if mut computer := face.font_computer() {
+		face.continue_url_load_with_font_computer(mut computer)
+	} else {
+		face.finish_loading_from_typeface(face.load_first_available_url())
+	}
 	return face.loaded()
 }
 
@@ -2268,15 +2357,19 @@ pub fn (mut face FontFaceObject) load_with_font_computer(font_computer &FontComp
 	}
 
 	mut mutable_computer := unsafe { &FontComputer(font_computer) }
-	loader := mutable_computer.load_font_face(face.parsed_font_face(), none) or {
+	face.continue_url_load_with_font_computer(mut mutable_computer)
+	return face.loaded()
+}
+
+fn (mut face FontFaceObject) continue_url_load_with_font_computer(mut font_computer FontComputer) {
+	loader := font_computer.load_font_face(face.parsed_font_face(), none) or {
 		face.finish_loading_from_typeface(none)
-		return face.loaded()
+		return
 	}
 
 	mut mutable_loader := unsafe { &FontLoader(loader) }
 	mutable_loader.start_loading_next_url()
 	face.finish_loading_from_typeface(mutable_loader.typeface)
-	return face.loaded()
 }
 
 pub fn (mut face FontFaceObject) add_to_set(set &FontFaceSet) {
@@ -2349,6 +2442,9 @@ fn (mut face FontFaceObject) finish_loading_from_typeface(maybe_typeface ?Platfo
 		face.font_status_promise.resolve(webidl.platform_object_value())
 		if mut rule := face.css_font_face_rule {
 			rule.set_loading_state(.loaded)
+		}
+		if mut computer := face.font_computer() {
+			computer.register_font_face(face)
 		}
 
 		// For each FontFaceSet font face is in:
@@ -2456,7 +2552,8 @@ pub enum FontFaceSetLoadStatus {
 pub struct FontFaceSet {
 	dom.EventTarget
 pub mut:
-	set_entries_ []&FontFaceObject
+	set_entries_   []&FontFaceObject
+	font_computer_ ?&FontComputer
 
 	ready_promise &webidl.Promise = unsafe { nil }
 
@@ -2484,6 +2581,16 @@ pub fn FontFaceSet.create() &FontFaceSet {
 	}
 	set.initialize()
 	return set
+}
+
+pub fn FontFaceSet.create_for_font_computer(font_computer &FontComputer) &FontFaceSet {
+	mut set := FontFaceSet.create()
+	set.font_computer_ = font_computer
+	return set
+}
+
+pub fn (mut set FontFaceSet) associate_font_computer(font_computer &FontComputer) {
+	set.font_computer_ = font_computer
 }
 
 pub fn (mut set FontFaceSet) initialize() {
@@ -2583,6 +2690,11 @@ pub fn (mut set FontFaceSet) add_css_connected_font(face &FontFaceObject) {
 	}
 	mut mutable_face := unsafe { &FontFaceObject(face) }
 	mutable_face.add_to_set(set)
+	if face.should_be_registered_with_font_computer() {
+		if mut computer := set.font_computer_ {
+			computer.register_font_face(face)
+		}
+	}
 
 	// 4. If font's status attribute is "loading"
 	if face.status() == .loading {
@@ -2601,6 +2713,11 @@ pub fn (mut set FontFaceSet) delete_(face &FontFaceObject) bool {
 	// 1. If font is CSS-connected, return false and exit this algorithm immediately.
 	if face.is_css_connected() {
 		return false
+	}
+	if face.should_be_registered_with_font_computer() {
+		if mut computer := set.font_computer_ {
+			computer.unregister_font_face(face)
+		}
 	}
 
 	// 2. Let deleted be the result of removing font from the FontFaceSet's set entries.
@@ -2632,6 +2749,11 @@ pub fn (mut set FontFaceSet) clear() {
 		if face.is_css_connected() {
 			kept_entries << face
 		} else {
+			if face.should_be_registered_with_font_computer() {
+				if mut computer := set.font_computer_ {
+					computer.unregister_font_face(face)
+				}
+			}
 			mut mutable_face := unsafe { &FontFaceObject(face) }
 			mutable_face.remove_from_set(set)
 		}
@@ -3202,7 +3324,7 @@ fn (mut loader FontLoader) font_did_load_or_fail(typeface ?PlatformTypeface) {
 
 struct MatchingFontCandidate {
 	key              FontFaceKey
-	loader_list      []&FontLoader
+	font_faces       []&FontFaceObject
 	typeface         ?PlatformTypeface
 	is_platform_font bool
 }
@@ -3210,30 +3332,34 @@ struct MatchingFontCandidate {
 fn (mut candidate MatchingFontCandidate) font_with_point_size(point_size f32, variations FontVariationSettings, font_feature_data FontFeatureData, font_feature_values map[string][]u32) ?FontCascadeList {
 	shape_features := font_feature_data.to_shape_features(font_feature_values)
 
-	mut font_list := FontCascadeList.create()
-	if !candidate.is_platform_font {
-		for mut loader in candidate.loader_list {
-			if font := loader.font_with_point_size(point_size, variations, shape_features) {
-				font_list.add(font, loader.unicode_ranges())
-			}
-		}
+	if candidate.is_platform_font {
+		typeface := candidate.typeface or { return none }
+		mut font_list := FontCascadeList.create()
+		font_list.add(PlatformFont{
+			typeface: typeface
+			point_size: point_size
+			variations: variations
+			features: shape_features
+		}, [])
 		return font_list
 	}
 
-	typeface := candidate.typeface or { return none }
-	font_list.add(PlatformFont{
-		typeface: typeface
-		point_size: point_size
-		variations: variations
-		features: shape_features
-	}, [])
+	mut font_list := FontCascadeList.create()
+	for face in candidate.font_faces {
+		if face_fonts := face.font_with_point_size(point_size, variations, shape_features) {
+			font_list.extend(face_fonts)
+		}
+	}
+	if font_list.is_empty() {
+		return none
+	}
 	return font_list
 }
 
 @[heap]
 pub struct FontComputer {
 pub mut:
-	loaded_fonts              map[string][]&FontLoader
+	font_faces                map[string][]&FontFaceObject
 	computed_font_cache       map[string]FontCascadeList
 	font_feature_values_cache map[string]map[string][]u32
 	font_feature_values_rules []&CSSFontFeatureValuesRule
@@ -3241,7 +3367,7 @@ pub mut:
 
 pub fn FontComputer.create() &FontComputer {
 	return &FontComputer{
-		loaded_fonts: map[string][]&FontLoader{}
+		font_faces: map[string][]&FontFaceObject{}
 		computed_font_cache: map[string]FontCascadeList{}
 		font_feature_values_cache: map[string]map[string][]u32{}
 	}
@@ -3285,6 +3411,36 @@ pub fn (mut computer FontComputer) clear_computed_font_cache(family_name string)
 	// integration is not present here.
 }
 
+pub fn (mut computer FontComputer) did_load_font(family_name string) {
+	computer.clear_computed_font_cache(family_name)
+}
+
+pub fn (mut computer FontComputer) register_font_face(face &FontFaceObject) {
+	if !face.should_be_registered_with_font_computer() {
+		return
+	}
+	key := font_face_key_for_parsed_font_face(face.parsed_font_face())
+	mut faces := computer.font_faces[key.id()] or { []&FontFaceObject{} }
+	if !font_face_object_array_contains(faces, face) {
+		faces << face
+		computer.font_faces[key.id()] = faces
+	}
+	computer.did_load_font(key.family_name)
+}
+
+pub fn (mut computer FontComputer) unregister_font_face(face &FontFaceObject) {
+	key := font_face_key_for_parsed_font_face(face.parsed_font_face())
+	if faces := computer.font_faces[key.id()] {
+		kept := font_face_object_array_without(faces, face)
+		if kept.len == 0 {
+			computer.font_faces.delete(key.id())
+		} else {
+			computer.font_faces[key.id()] = kept
+		}
+	}
+	computer.did_load_font(key.family_name)
+}
+
 pub fn (mut computer FontComputer) clear_font_feature_values_cache(family_name string) {
 	computer.font_feature_values_cache.delete(family_name)
 }
@@ -3296,8 +3452,6 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 		}
 		return none
 	}
-
-	key := font_face_key_for_parsed_font_face(font_face)
 
 	// FIXME: Handle local() font sources.
 	mut urls := []URL{}
@@ -3317,13 +3471,12 @@ pub fn (mut computer FontComputer) load_font_face(font_face ParsedFontFace, on_l
 	}
 
 	loader := FontLoader.create(computer, font_face.font_family(), font_face.unicode_ranges(), urls, on_load)
-	mut loaders := computer.loaded_fonts[key.id()] or { []&FontLoader{} }
-	loaders << loader
-	computer.loaded_fonts[key.id()] = loaders
 	return loader
 }
 
 pub fn (mut computer FontComputer) load_fonts_from_font_face_rules(rules []&CSSFontFaceRule, font_face_set &FontFaceSet) {
+	mut associated_set := unsafe { &FontFaceSet(font_face_set) }
+	associated_set.associate_font_computer(computer)
 	// FIXME: Handle @font-face and @font-feature-values within grouping rules (@media, @supports, etc)
 	for rule in rules {
 		if !rule.is_valid() {
@@ -3344,6 +3497,8 @@ pub fn (mut computer FontComputer) load_fonts_from_font_face_rules(rules []&CSSF
 }
 
 pub fn (mut computer FontComputer) load_fonts_from_css_rules(rules []&CSSRule, font_face_set &FontFaceSet) {
+	mut associated_set := unsafe { &FontFaceSet(font_face_set) }
+	associated_set.associate_font_computer(computer)
 	// FIXME: Handle @font-face and @font-feature-values within grouping rules (@media, @supports, etc)
 	for rule in rules {
 		if font_face_rule := rule.font_face_rule_ref() {
@@ -3376,7 +3531,9 @@ pub fn (mut computer FontComputer) unload_fonts_from_font_face_rules(rules []&CS
 	// If a @font-face rule is removed from the document, its connected FontFace object is no longer CSS-connected.
 	for rule in rules {
 		if rule.is_valid() {
-			computer.loaded_fonts.delete(font_face_key_for_parsed_font_face(rule.font_face()).id())
+			if face := rule.css_connected_font_face_ref() {
+				computer.unregister_font_face(face)
+			}
 		}
 		mut mutable_rule := unsafe { &CSSFontFaceRule(rule) }
 		mutable_rule.disconnect_font_face()
@@ -3388,7 +3545,9 @@ pub fn (mut computer FontComputer) unload_fonts_from_css_rules(rules []&CSSRule)
 	for rule in rules {
 		if font_face_rule := rule.font_face_rule_ref() {
 			if font_face_rule.is_valid() {
-				computer.loaded_fonts.delete(font_face_key_for_parsed_font_face(font_face_rule.font_face()).id())
+				if face := font_face_rule.css_connected_font_face_ref() {
+					computer.unregister_font_face(face)
+				}
 			}
 			mut mutable_rule := unsafe { &CSSFontFaceRule(font_face_rule) }
 			mutable_rule.disconnect_font_face()
@@ -3502,16 +3661,17 @@ fn (mut computer FontComputer) find_font(family string, weight int, slope int, f
 		}
 		slope: slope
 	}
-	if loaders := computer.loaded_fonts[key.id()] {
+	if faces := computer.font_faces[key.id()] {
 		mut result := FontCascadeList.create()
-		for loader in loaders {
-			mut mutable_loader := unsafe { &FontLoader(loader) }
-			shape_features := font_feature_data.to_shape_features(font_feature_values)
-			if found_font := mutable_loader.font_with_point_size(font_size_in_pt, variation, shape_features) {
-				result.add(found_font, loader.unicode_ranges())
+		shape_features := font_feature_data.to_shape_features(font_feature_values)
+		for face in faces {
+			if face_fonts := face.font_with_point_size(font_size_in_pt, variation, shape_features) {
+				result.extend(face_fonts)
 			}
 		}
-		return result
+		if !result.is_empty() {
+			return result
+		}
 	}
 
 	if found_font := computer.font_matching_algorithm(family, weight, slope, font_size_in_pt, variation, font_feature_data, font_feature_values) {
@@ -3528,12 +3688,12 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 	// If a font family match occurs, the user agent assembles the set of font faces in that family and then
 	// narrows the set to a single face using other font properties in the order given below.
 	mut matching_family_fonts := []MatchingFontCandidate{}
-	for key_string, loaders in computer.loaded_fonts {
+	for key_string, faces in computer.font_faces {
 		key := font_face_key_from_id(key_string)
 		if key.family_name.to_lower() == family_name.to_lower() {
 			matching_family_fonts << MatchingFontCandidate{
 				key: key
-				loader_list: loaders.clone()
+				font_faces: faces.clone()
 			}
 		}
 	}
