@@ -81,3 +81,30 @@ fn test_constructed_style_sheet_replacement_and_disabled_state_invalidate_owners
 	sheet.set_disabled(true)
 	assert !document.needs_full_style_update()
 }
+
+fn test_disabled_adopted_style_sheet_delays_font_and_image_activation() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document_node := unsafe { &dom.Node(document) }
+	mut sheet := css_style_sheet_construct(CSSStyleSheetInit{
+		disabled: true
+	}, document)!
+	sheet.replace_sync('@font-face { font-family: Delayed; src: url(delayed.ttf); }')!
+	mut pending_image := &dom.StyleValue{
+		css_text: 'url(delayed.png)'
+	}
+	sheet.register_pending_image_value(pending_image)
+	mut list := create_adopted_style_sheets_list(document_node)
+	list.append(sheet)!
+
+	font_rule := sheet.css_rules().item(0) or { panic('missing font-face rule') }
+	font_face_rule := font_rule.font_face_rule_ref() or { panic('not a font-face rule') }
+	assert font_face_rule.css_connected_font_face_ref() == none
+	assert sheet.pending_image_values.len == 1
+
+	sheet.set_disabled(false)
+	assert font_face_rule.css_connected_font_face_ref() != none
+	assert sheet.pending_image_values.len == 0
+
+	sheet.set_disabled(true)
+	assert font_face_rule.css_connected_font_face_ref() == none
+}

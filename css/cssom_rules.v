@@ -2107,10 +2107,10 @@ pub fn (mut sheet CSSStyleSheet) add_owning_document_or_shadow_root(document_or_
 	}
 	sheet.owning_documents_or_shadow_roots << document_or_shadow_root
 
-	// All owning documents or shadow roots must be part of the same document so Ladybird only needs to load this style
-	// sheet's fonts against the document of the first.
-	if sheet.owning_documents_or_shadow_roots.len == 1 {
-		// Boundary: FontComputer lives outside this CSSOM rule translation.
+	// All owning documents or shadow roots must be part of the same document, so activate fonts only when the first
+	// owner is added. Disabled sheets delay activation until they are enabled.
+	if !sheet.base.disabled && sheet.owning_documents_or_shadow_roots.len == 1 {
+		sheet.load_fonts_for_document(document_or_shadow_root.document())
 	}
 
 	for import_rule in sheet.import_rules {
@@ -2121,6 +2121,7 @@ pub fn (mut sheet CSSStyleSheet) add_owning_document_or_shadow_root(document_or_
 }
 
 pub fn (mut sheet CSSStyleSheet) remove_owning_document_or_shadow_root(document_or_shadow_root &dom.Node) {
+	document := document_or_shadow_root.document()
 	mut kept := []&dom.Node{}
 	for existing in sheet.owning_documents_or_shadow_roots {
 		if existing != document_or_shadow_root {
@@ -2132,7 +2133,7 @@ pub fn (mut sheet CSSStyleSheet) remove_owning_document_or_shadow_root(document_
 	// All owning documents or shadow roots must be part of the same document so Ladybird only unloads this style
 	// sheet's fonts once none remain.
 	if sheet.owning_documents_or_shadow_roots.len == 0 {
-		// Boundary: FontComputer lives outside this CSSOM rule translation.
+		sheet.unload_fonts_for_document(document)
 	}
 
 	for import_rule in sheet.import_rules {
@@ -2163,8 +2164,31 @@ pub fn (mut sheet CSSStyleSheet) set_disabled(disabled bool) {
 	if sheet.base.disabled == disabled {
 		return
 	}
+	document := sheet.owning_document()
+	sheet.did_match = none
 	sheet.base.set_disabled(disabled)
 	sheet.invalidate_owners(.style_sheet_disabled_state_change)
+	if !disabled {
+		if owner_document := document {
+			sheet.evaluate_media_queries(owner_document)
+			sheet.load_fonts_for_document(owner_document)
+			sheet.load_pending_image_resources(owner_document)
+		}
+	} else if owner_document := document {
+		sheet.unload_fonts_for_document(owner_document)
+	}
+}
+
+fn (mut sheet CSSStyleSheet) load_fonts_for_document(document &dom.Document) {
+	style_computer := css_style_computer_for(document)
+	mut font_computer := unsafe { &FontComputer(style_computer.font_computer_) }
+	font_computer.load_fonts_from_css_rules(sheet.rules.rules, style_computer.font_face_set_)
+}
+
+fn (mut sheet CSSStyleSheet) unload_fonts_for_document(document &dom.Document) {
+	style_computer := css_style_computer_for(document)
+	mut font_computer := unsafe { &FontComputer(style_computer.font_computer_) }
+	font_computer.unload_fonts_from_css_rules(sheet.rules.rules)
 }
 
 pub fn (sheet &CSSStyleSheet) owning_document() ?&dom.Document {
@@ -2198,6 +2222,9 @@ pub fn (sheet &CSSStyleSheet) has_associated_font_loader(font_loader &FontLoader
 
 pub fn (mut sheet CSSStyleSheet) load_pending_image_resources(document &dom.Document) {
 	_ = document
+	if sheet.base.disabled {
+		return
+	}
 	// Boundary: ImageStyleValue::load_any_resources requires DOM/Fetch resource loading.
 	sheet.pending_image_values.clear()
 }
