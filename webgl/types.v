@@ -185,7 +185,34 @@ pub const vertex_attrib_array_divisor = GLenum(0x88fe)
 pub const transform_feedback_buffer_mode = GLenum(0x8c7f)
 pub const transform_feedback_varyings = GLenum(0x8c83)
 pub const active_uniform_blocks = GLenum(0x8a36)
+pub const gl_byte = GLenum(0x1400)
+pub const unsigned_byte = GLenum(0x1401)
+pub const gl_short = GLenum(0x1402)
+pub const unsigned_short = GLenum(0x1403)
+pub const gl_int = GLenum(0x1404)
+pub const unsigned_int = GLenum(0x1405)
 pub const gl_float = GLenum(0x1406)
+pub const half_float = GLenum(0x140b)
+pub const depth_component = GLenum(0x1902)
+pub const red = GLenum(0x1903)
+pub const alpha = GLenum(0x1906)
+pub const rgb = GLenum(0x1907)
+pub const rgba = GLenum(0x1908)
+pub const luminance = GLenum(0x1909)
+pub const luminance_alpha = GLenum(0x190a)
+pub const unsigned_short_4_4_4_4 = GLenum(0x8033)
+pub const unsigned_short_5_5_5_1 = GLenum(0x8034)
+pub const unsigned_short_5_6_5 = GLenum(0x8363)
+pub const unsigned_int_2_10_10_10_rev = GLenum(0x8368)
+pub const unsigned_int_24_8 = GLenum(0x84fa)
+pub const red_integer = GLenum(0x8d94)
+pub const rgb_integer = GLenum(0x8d98)
+pub const rgba_integer = GLenum(0x8d99)
+pub const float_32_unsigned_int_24_8_rev = GLenum(0x8dad)
+pub const rg = GLenum(0x8227)
+pub const rg_integer = GLenum(0x8228)
+pub const unsigned_int_10f_11f_11f_rev = GLenum(0x8c3b)
+pub const unsigned_int_5_9_9_9_rev = GLenum(0x8c3e)
 pub const texture_2d = GLenum(0x0de1)
 pub const texture_cube_map = GLenum(0x8513)
 pub const texture_3d = GLenum(0x806f)
@@ -271,6 +298,17 @@ pub:
 	fail_if_major_performance_caveat ?bool
 	desynchronized                   ?bool
 	xr_compatible                    ?bool
+}
+
+// PixelUnpackState mirrors the byte-addressing fields used by WebGL's 2D
+// ArrayBufferView texture uploads. WebGL-only flip and premultiplication flags
+// are applied when a DOM image source is converted, not while sizing a view.
+pub struct PixelUnpackState {
+pub:
+	alignment   u64 = 4
+	row_length  u64
+	skip_pixels u64
+	skip_rows   u64
 }
 
 // convert_value_to_context_attributes_dictionary preserves WebIDL defaults

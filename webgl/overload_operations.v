@@ -30,6 +30,19 @@ pub fn (_ &WebGLRenderingContext) read_and_pixel_convert_texture_image_source(by
 	return read_and_pixel_convert_texture_image_source(bytes, flip_y, premultiply_alpha)
 }
 
+pub fn (context &WebGLRenderingContext) texture_data_for_2d_upload(bytes []u8, width GLsizei, height GLsizei, format GLenum, type_ GLenum) ![]u8 {
+	if !is_valid_2d_pixel_unpack_state(width, context.unpack_state_) {
+		return error('invalid 2D pixel unpack state')
+	}
+	required_size := required_2d_texture_data_size(width, height, format, type_, context.unpack_state_) or {
+		return bytes
+	}
+	if required_size <= u64(bytes.len) {
+		return bytes[..int(required_size)]
+	}
+	return bytes
+}
+
 pub fn (mut context WebGLRenderingContext) compressed_tex_image2d(target GLenum, level int, internal_format GLenum, width int, height int, border int, data []u8) {
 	if internal_format !in context.enabled_compressed_texture_formats_ {
 		context.set_error(invalid_enum)
@@ -59,6 +72,10 @@ pub fn (mut context WebGLRenderingContext) tex_image2d(target GLenum, level int,
 		context.set_error(invalid_value)
 		return
 	}
+	texture_data := context.texture_data_for_2d_upload(pixels, width, height, format, type_) or {
+		context.set_error(invalid_operation)
+		return
+	}
 	if handle := context.bound_textures[target] {
 		mut texture := context.textures[handle] or { return }
 		texture.width_ = width
@@ -66,7 +83,7 @@ pub fn (mut context WebGLRenderingContext) tex_image2d(target GLenum, level int,
 		texture.depth_ = 1
 		texture.internal_format_ = internal_format
 	}
-	context.command('tex_image2d', target, level, internal_format, width, height, border, format, type_, pixels.len)
+	context.command('tex_image2d', target, level, internal_format, width, height, border, format, type_, texture_data.len)
 }
 
 pub fn (mut context WebGLRenderingContext) tex_sub_image2d(target GLenum, level int, x_offset int, y_offset int, width int, height int, format GLenum, type_ GLenum, pixels []u8) {
@@ -78,7 +95,11 @@ pub fn (mut context WebGLRenderingContext) tex_sub_image2d(target GLenum, level 
 		context.set_error(invalid_operation)
 		return
 	}
-	context.command('tex_sub_image2d', target, level, x_offset, y_offset, width, height, format, type_, pixels.len)
+	texture_data := context.texture_data_for_2d_upload(pixels, width, height, format, type_) or {
+		context.set_error(invalid_operation)
+		return
+	}
+	context.command('tex_sub_image2d', target, level, x_offset, y_offset, width, height, format, type_, texture_data.len)
 }
 
 pub fn (mut context WebGLRenderingContext) read_pixels(x int, y int, width int, height int, format GLenum, type_ GLenum) []u8 {

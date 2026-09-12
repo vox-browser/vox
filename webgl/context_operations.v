@@ -226,10 +226,10 @@ pub fn read_and_pixel_convert_texture_image_source(bytes []u8, flip_y bool, prem
 	mut result := bytes.clone()
 	if premultiply_alpha {
 		for offset := 0; offset + 3 < result.len; offset += 4 {
-			alpha := u16(result[offset + 3])
-			result[offset] = u8((u16(result[offset]) * alpha + 127) / 255)
-			result[offset + 1] = u8((u16(result[offset + 1]) * alpha + 127) / 255)
-			result[offset + 2] = u8((u16(result[offset + 2]) * alpha + 127) / 255)
+			alpha_value := u16(result[offset + 3])
+			result[offset] = u8((u16(result[offset]) * alpha_value + 127) / 255)
+			result[offset + 1] = u8((u16(result[offset + 1]) * alpha_value + 127) / 255)
+			result[offset + 2] = u8((u16(result[offset + 2]) * alpha_value + 127) / 255)
 		}
 	}
 	if flip_y {

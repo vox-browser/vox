@@ -59,6 +59,7 @@ mut:
 	depth_range_                        [2]f64 = [f64(0), 1]!
 	pack_alignment_                     int = 4
 	unpack_alignment_                   int = 4
+	unpack_state_                       PixelUnpackState = PixelUnpackState{}
 	generic_parameters_                 map[GLenum]WebGLParameterValue
 	uniform_values_                     map[GLuint][]f32
 	vertex_attrib_values_               map[GLuint][]f32
@@ -181,6 +182,7 @@ pub fn (mut context WebGLRenderingContext) reset_to_default_state() {
 	context.active_texture_ = texture0
 	context.pack_alignment_ = 4
 	context.unpack_alignment_ = 4
+	context.unpack_state_ = PixelUnpackState{}
 	context.blend_color_ = [f32(0), 0, 0, 0]!
 	context.line_width_ = 1
 	context.depth_range_ = [f64(0), 1]!
@@ -524,6 +526,10 @@ pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter 
 				context.pack_alignment_ = parameter
 			} else {
 				context.unpack_alignment_ = parameter
+				context.unpack_state_ = PixelUnpackState{
+					...context.unpack_state_
+					alignment: u64(parameter)
+				}
 			}
 			context.native.dispatch('pixel_storei', pname, parameter)
 		}
@@ -550,6 +556,27 @@ pub fn (mut context WebGLRenderingContext) pixel_storei(pname GLenum, parameter 
 				return
 			}
 			context.generic_parameters_[pname] = integer_parameter(parameter)
+			match pname {
+				unpack_row_length {
+					context.unpack_state_ = PixelUnpackState{
+						...context.unpack_state_
+						row_length: u64(parameter)
+					}
+				}
+				unpack_skip_rows {
+					context.unpack_state_ = PixelUnpackState{
+						...context.unpack_state_
+						skip_rows: u64(parameter)
+					}
+				}
+				unpack_skip_pixels {
+					context.unpack_state_ = PixelUnpackState{
+						...context.unpack_state_
+						skip_pixels: u64(parameter)
+					}
+				}
+				else {}
+			}
 			context.native.dispatch('pixel_storei', pname, parameter)
 		}
 		else {
