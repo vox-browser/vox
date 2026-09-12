@@ -145,3 +145,14 @@ fn test_color_mix_without_an_explicit_method_defaults_to_oklab() {
 	assert color.green() == 163
 	assert color.blue() == 255
 }
+
+fn test_color_mix_applies_its_alpha_multiplier_before_color_conversion() {
+	mix := parsed_interpolation_test_color_mix('color-mix(in oklab, red 12.5%, blue 37.5%)')
+	absolutized := mix.absolutized(ComputationContext{})
+	assert absolutized is OKLabColorStyleValue
+	assert_interpolation_component_close((absolutized as OKLabColorStyleValue).alpha_, 0.5)
+	color := mix.to_color(ColorResolutionContext{}) or {
+		panic('alpha-multiplied color-mix did not resolve')
+	}
+	assert color.alpha() == 128
+}

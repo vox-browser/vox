@@ -79,8 +79,10 @@ mut:
 }
 
 pub struct InterpolatedColor {
-pub:
+pub mut:
 	components InterpolationColorComponents
+
+pub:
 	missing    MissingColorComponents
 mut:
 	policy ColorInterpolationPolicy

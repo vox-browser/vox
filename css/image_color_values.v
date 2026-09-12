@@ -1332,12 +1332,15 @@ pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorR
 	} else {
 		?ColorInterpolationMethod(RectangularColorSpace.oklab)
 	}
-	interpolated := interpolate_style_values_color(style_value.first_component.color,
+	mut interpolated := perform_color_interpolation(style_value.first_component.color,
 		style_value.second_component.color, normalized.p2.as_fraction(),
 		color_interpolation_method, color_resolution_context) or { return none }
-	result := interpolated.to_color(color_resolution_context) or { return none }
-	return Color.rgba(result.red(), result.green(), result.blue(), u8(f64(result.alpha()) *
-		normalized.alpha_multiplier))
+	if normalized.alpha_multiplier < 1 {
+		interpolated.components.set_alpha(interpolated.components.alpha() *
+			normalized.alpha_multiplier)
+	}
+	result := style_value_for_interpolated_color(interpolated)
+	return result.to_color(color_resolution_context)
 }
 
 pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) StyleValue {
@@ -1357,20 +1360,25 @@ pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) 
 	} else {
 		?ColorInterpolationMethodStyleValue(none)
 	}
-	absolutized_first_color := style_value.first_component.color.absolutized(context)
-	absolutized_second_color := style_value.second_component.color.absolutized(context)
-
 	delta := Percentage.from_style_value_logic(normalized_percentages.p2).as_fraction()
 	color_interpolation_method := if method := absolutized_color_interpolation_method {
 		?ColorInterpolationMethod(method.color_interpolation_method())
 	} else {
 		?ColorInterpolationMethod(RectangularColorSpace.oklab)
 	}
-	if interpolated := interpolate_style_values_color(absolutized_first_color,
-		absolutized_second_color, delta, color_interpolation_method, color_resolution_context) {
-		return interpolated
+	if initial_interpolation := perform_color_interpolation(style_value.first_component.color,
+		style_value.second_component.color, delta, color_interpolation_method,
+		color_resolution_context) {
+		mut interpolated := initial_interpolation
+		if normalized_percentages.alpha_multiplier < 1 {
+			interpolated.components.set_alpha(interpolated.components.alpha() *
+				normalized_percentages.alpha_multiplier)
+		}
+		return style_value_for_interpolated_color(interpolated)
 	}
 
+	absolutized_first_color := style_value.first_component.color.absolutized(context)
+	absolutized_second_color := style_value.second_component.color.absolutized(context)
 	return StyleValue(ColorMixStyleValue.create(absolutized_color_interpolation_method, ColorMixComponent{
 		color: absolutized_first_color
 		percentage: normalized_percentages.p1
