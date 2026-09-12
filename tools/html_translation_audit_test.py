@@ -142,6 +142,20 @@ class ConsolidatedFunctionTests(unittest.TestCase):
             (("utf16_string_from_gl_string", None),),
         )
 
+    def test_nested_length_context_methods_map_to_the_v_context_type(self) -> None:
+        for method_name in (
+            "set_did_resolve_viewport_relative_length",
+            "viewport_metric_dependency_flag",
+            "record_viewport_relative_length_resolution",
+            "record_font_relative_length_resolution",
+        ):
+            self.assertEqual(
+                audit.CONSOLIDATED_METHOD_MAPPINGS[
+                    ("ResolutionContext", method_name)
+                ],
+                ((method_name, "LengthResolutionContext"),),
+            )
+
     def test_nullable_webgl_wrapper_is_a_language_binding_artifact(self) -> None:
         self.assertIn(
             ("BindingsGlue.h", "webgl_wrappable"),

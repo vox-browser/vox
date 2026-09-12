@@ -2338,6 +2338,18 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
     ("ResolutionContext", "for_layout_node"): (
         ("for_layout_node", "LengthResolutionContext"),
     ),
+    ("ResolutionContext", "set_did_resolve_viewport_relative_length"): (
+        ("set_did_resolve_viewport_relative_length", "LengthResolutionContext"),
+    ),
+    ("ResolutionContext", "viewport_metric_dependency_flag"): (
+        ("viewport_metric_dependency_flag", "LengthResolutionContext"),
+    ),
+    ("ResolutionContext", "record_viewport_relative_length_resolution"): (
+        ("record_viewport_relative_length_resolution", "LengthResolutionContext"),
+    ),
+    ("ResolutionContext", "record_font_relative_length_resolution"): (
+        ("record_font_relative_length_resolution", "LengthResolutionContext"),
+    ),
     ("Length", "to_px_slow_case"): (("to_px_slow_case_for_layout_node", "Length"),),
     ("CountingBloomFilter", "bucket1"): (("hash1", "CountingBloomFilter"),),
     ("CountingBloomFilter", "bucket2"): (("hash2", "CountingBloomFilter"),),
