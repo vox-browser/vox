@@ -42,7 +42,8 @@ fn test_upstream_texture_renderbuffer_and_framebuffer_state() {
 	mut framebuffer_object := WebGLFramebuffer.create(mut context)
 	context.bind_framebuffer(framebuffer, framebuffer_object)
 	context.framebuffer_texture2d(framebuffer, 0x8ce0, texture_2d, texture, 0)
-	assert framebuffer_object.attachments[0x8ce0] == texture.object.handle_
+	attachment := framebuffer_object.attachment(color_attachment0) or { panic('attachment') }
+	assert attachment.texture or { panic('texture attachment') } == texture
 	assert context.check_framebuffer_status(framebuffer) == GLenum(0x8cd5)
 
 	context.delete_texture(texture)

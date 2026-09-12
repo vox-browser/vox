@@ -124,7 +124,41 @@ pub struct WebGLFramebuffer {
 pub mut:
 	object WebGLObject
 mut:
-	attachments map[GLenum]GLuint
+	attachments map[GLenum]WebGLFramebufferAttachment
+}
+
+pub struct WebGLFramebufferAttachment {
+pub:
+	texture        ?&WebGLTexture
+	renderbuffer   ?&WebGLRenderbuffer
+	texture_target GLenum
+	texture_level  GLint
+}
+
+pub fn (framebuffer_object &WebGLFramebuffer) attachment(attachment GLenum) ?WebGLFramebufferAttachment {
+	return framebuffer_object.attachments[attachment] or { none }
+}
+
+pub fn (mut framebuffer_object WebGLFramebuffer) set_renderbuffer_attachment(attachment GLenum, renderbuffer_object ?&WebGLRenderbuffer) {
+	if renderbuffer := renderbuffer_object {
+		framebuffer_object.attachments[attachment] = WebGLFramebufferAttachment{
+			renderbuffer: renderbuffer
+		}
+	} else {
+		framebuffer_object.attachments.delete(attachment)
+	}
+}
+
+pub fn (mut framebuffer_object WebGLFramebuffer) set_texture_attachment(attachment GLenum, texture_object ?&WebGLTexture, texture_target GLenum, level GLint) {
+	if texture_value := texture_object {
+		framebuffer_object.attachments[attachment] = WebGLFramebufferAttachment{
+			texture: texture_value
+			texture_target: texture_target
+			texture_level: level
+		}
+	} else {
+		framebuffer_object.attachments.delete(attachment)
+	}
 }
 
 @[heap]

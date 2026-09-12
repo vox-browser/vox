@@ -119,6 +119,30 @@ fn incompatible_constant_blend_factors(source GLenum, destination GLenum) bool {
 		|| (uses_constant_alpha(source) && uses_constant_color(destination))
 }
 
+fn is_valid_framebuffer_binding_target(version WebGLVersion, target GLenum) bool {
+	return target == framebuffer
+		|| (version == .webgl2 && target in [read_framebuffer, draw_framebuffer])
+}
+
+fn is_valid_framebuffer_attachment(version WebGLVersion, draw_buffers_extension_enabled bool, attachment GLenum) bool {
+	if attachment in [color_attachment0, depth_attachment, stencil_attachment,
+		depth_stencil_attachment] {
+		return true
+	}
+	return (version == .webgl2 || draw_buffers_extension_enabled)
+		&& attachment > color_attachment0 && attachment <= color_attachment0 + 15
+}
+
+fn is_valid_framebuffer_texture_2d_target(target GLenum) bool {
+	return target in [texture_2d, texture_cube_map_positive_x, texture_cube_map_negative_x,
+		texture_cube_map_positive_y, texture_cube_map_negative_y, texture_cube_map_positive_z,
+		texture_cube_map_negative_z]
+}
+
+fn is_cube_map_face(target GLenum) bool {
+	return target >= texture_cube_map_positive_x && target <= texture_cube_map_negative_z
+}
+
 pub enum WebGLExportFormat {
 	bgra8
 	rgba8
@@ -254,6 +278,10 @@ pub fn (mut context WebGLRenderingContext) bind_attrib_location(program &WebGLPr
 }
 
 pub fn (mut context WebGLRenderingContext) bind_framebuffer(target GLenum, framebuffer_object ?&WebGLFramebuffer) {
+	if !is_valid_framebuffer_binding_target(context.version, target) {
+		context.set_error(invalid_enum)
+		return
+	}
 	handle := if value := framebuffer_object {
 		if !context.owns(&value.object) {
 			context.set_error(invalid_operation)
@@ -557,6 +585,16 @@ pub fn (mut context WebGLRenderingContext) hint(target GLenum, mode GLenum) {
 }
 
 pub fn (mut context WebGLRenderingContext) framebuffer_renderbuffer(target GLenum, attachment GLenum, renderbuffer_target GLenum, object ?&WebGLRenderbuffer) {
+	if !is_valid_framebuffer_binding_target(context.version, target)
+		|| !is_valid_framebuffer_attachment(context.version, context.extension_enabled('WEBGL_draw_buffers'), attachment)
+		|| renderbuffer_target != renderbuffer {
+		context.set_error(invalid_enum)
+		return
+	}
+	if context.bound_framebuffer == 0 {
+		context.set_error(invalid_operation)
+		return
+	}
 	handle := if value := object {
 		if !context.owns(&value.object) {
 			context.set_error(invalid_operation)
@@ -568,16 +606,26 @@ pub fn (mut context WebGLRenderingContext) framebuffer_renderbuffer(target GLenu
 	}
 	if framebuffer_object := context.framebuffers[context.bound_framebuffer] {
 		mut mutable := unsafe { &WebGLFramebuffer(framebuffer_object) }
-		if handle == 0 {
-			mutable.attachments.delete(attachment)
-		} else {
-			mutable.attachments[attachment] = handle
-		}
+		mutable.set_renderbuffer_attachment(attachment, object)
 	}
 	context.command('framebuffer_renderbuffer', target, attachment, renderbuffer_target, handle)
 }
 
 pub fn (mut context WebGLRenderingContext) framebuffer_texture2d(target GLenum, attachment GLenum, texture_target GLenum, object ?&WebGLTexture, level int) {
+	if !is_valid_framebuffer_binding_target(context.version, target)
+		|| !is_valid_framebuffer_attachment(context.version, context.extension_enabled('WEBGL_draw_buffers'), attachment)
+		|| !is_valid_framebuffer_texture_2d_target(texture_target) {
+		context.set_error(invalid_enum)
+		return
+	}
+	if level < 0 || (context.version == .webgl1 && level != 0) {
+		context.set_error(invalid_value)
+		return
+	}
+	if context.bound_framebuffer == 0 {
+		context.set_error(invalid_operation)
+		return
+	}
 	handle := if value := object {
 		if !context.owns(&value.object) {
 			context.set_error(invalid_operation)
@@ -589,13 +637,83 @@ pub fn (mut context WebGLRenderingContext) framebuffer_texture2d(target GLenum, 
 	}
 	if framebuffer_object := context.framebuffers[context.bound_framebuffer] {
 		mut mutable := unsafe { &WebGLFramebuffer(framebuffer_object) }
-		if handle == 0 {
-			mutable.attachments.delete(attachment)
-		} else {
-			mutable.attachments[attachment] = handle
-		}
+		mutable.set_texture_attachment(attachment, object, texture_target, level)
 	}
 	context.command('framebuffer_texture2d', target, attachment, texture_target, handle, level)
+}
+
+pub fn (mut context WebGLRenderingContext) get_framebuffer_attachment_parameter(target GLenum, attachment GLenum, pname GLenum) WebGLParameterValue {
+	if !is_valid_framebuffer_binding_target(context.version, target) {
+		context.set_error(invalid_enum)
+		return WebGLParameterValue{}
+	}
+	if context.bound_framebuffer == 0 {
+		context.set_error(invalid_operation)
+		return WebGLParameterValue{}
+	}
+	if !is_valid_framebuffer_attachment(context.version, context.extension_enabled('WEBGL_draw_buffers'), attachment) {
+		context.set_error(invalid_enum)
+		return WebGLParameterValue{}
+	}
+
+	framebuffer_object := context.framebuffers[context.bound_framebuffer] or {
+		context.set_error(invalid_operation)
+		return WebGLParameterValue{}
+	}
+	framebuffer_attachment := framebuffer_object.attachment(attachment) or {
+		if pname == framebuffer_attachment_object_type {
+			return integer_parameter(0)
+		}
+		if pname != framebuffer_attachment_object_name || context.version == .webgl1 {
+			context.set_error(if context.version == .webgl2 {
+				invalid_operation
+			} else {
+				invalid_enum
+			})
+		}
+		return WebGLParameterValue{}
+	}
+
+	match pname {
+		framebuffer_attachment_object_type {
+			return integer_parameter(if framebuffer_attachment.texture != none {
+				gl_texture
+			} else {
+				renderbuffer
+			})
+		}
+		framebuffer_attachment_object_name {
+			if texture_object := framebuffer_attachment.texture {
+				return WebGLParameterValue{
+					kind: .object
+					object: texture_object.object.handle_
+				}
+			}
+			if renderbuffer_object := framebuffer_attachment.renderbuffer {
+				return WebGLParameterValue{
+					kind: .object
+					object: renderbuffer_object.object.handle_
+				}
+			}
+		}
+		framebuffer_attachment_texture_level {
+			if framebuffer_attachment.texture != none {
+				return integer_parameter(framebuffer_attachment.texture_level)
+			}
+		}
+		framebuffer_attachment_texture_cube_map_face {
+			if framebuffer_attachment.texture != none {
+				return integer_parameter(if is_cube_map_face(framebuffer_attachment.texture_target) {
+					framebuffer_attachment.texture_target
+				} else {
+					0
+				})
+			}
+		}
+		else {}
+	}
+	context.set_error(invalid_enum)
+	return WebGLParameterValue{}
 }
 
 pub fn (context &WebGLRenderingContext) get_attached_shaders(program &WebGLProgram) []&WebGLShader {
