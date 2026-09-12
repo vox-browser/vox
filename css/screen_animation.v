@@ -784,7 +784,8 @@ fn should_update_timeline(old_timeline ?&AnimationTimeline, new_timeline ?&Anima
 	if old.kind == .scroll && new.kind == .scroll {
 		old_source := old.anonymous_source or { return true }
 		new_source := new.anonymous_source or { return true }
-		return old_source != new_source
+		return old_source != new_source || old.scroll_scroller != new.scroll_scroller
+			|| old.scroll_axis != new.scroll_axis
 	}
 
 	return true

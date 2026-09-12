@@ -1108,6 +1108,8 @@ pub struct AnimationTimeline {
 pub mut:
 	kind                AnimationTimelineKind
 	anonymous_source    ?string
+	scroll_scroller     Scroller = .nearest
+	scroll_axis         Axis = .block
 	current_time_ms_    ?f64
 	origin_time_ms_     f64
 	monotonic_          bool
@@ -4526,12 +4528,45 @@ fn computed_interpolation_animation_timeline_from_style_value(value &dom.StyleVa
 		//        the timeline-scope property. Otherwise the animation is not associated with a timeline.
 	}
 
-	if serialized.starts_with('scroll(') {
+	parsed_value := style_value_logic_from_dom(.animation_timeline, value) or {
+		return none
+	}
+	typed_value := if parsed_value is StyleValueList && parsed_value.size() == 1 {
+		parsed_value.value_at(0, false)
+	} else {
+		parsed_value
+	}
+	if typed_value is FunctionStyleValue && typed_value.name() == 'scroll' {
 		// <scroll()>
 		// Use the scroll progress timeline indicated by the given scroll() function. See Scroll-driven Animations
 		// § 2.2.1 The scroll() notation.
+		arguments_value := typed_value.value()
+		arguments := match arguments_value {
+			TupleStyleValue { arguments_value.tuple() }
+			else {
+				return none
+			}
+		}
+		if arguments.len != 2 {
+			return none
+		}
+		mut scroller := Scroller.nearest
+		mut axis := Axis.block
+		if scroller_value := arguments[tuple_scroll_function_scroller_index] {
+			scroller = scroller_from_identifier_for_value_logic(scroller_value.serialize(.normal)) or {
+				return none
+			}
+		}
+		if axis_value := arguments[tuple_scroll_function_axis_index] {
+			axis = axis_from_identifier_for_value_logic(axis_value.serialize(.normal)) or {
+				return none
+			}
+		}
 		return &AnimationTimeline{
 			kind: .scroll
+			anonymous_source: '${voidptr(abstract_element.element())}:${scroller_to_string(scroller)}'
+			scroll_scroller: scroller
+			scroll_axis: axis
 		}
 	}
 

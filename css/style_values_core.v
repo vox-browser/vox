@@ -3846,7 +3846,6 @@ pub enum StyleValueType {
 	resolution
 	scrollbar_color
 	scrollbar_gutter
-	scroll_function
 	shadow
 	shorthand
 	string
@@ -3932,7 +3931,6 @@ pub type StyleValue = KeywordStyleValue
 	| RepeatStyleStyleValue
 	| ResolutionStyleValue
 	| RGBColorStyleValue
-	| ScrollFunctionStyleValue
 	| ScrollbarColorStyleValue
 	| ScrollbarGutterStyleValue
 	| ShadowStyleValue
@@ -4044,7 +4042,6 @@ pub fn (style_value StyleValue) type_() StyleValueType {
 		RepeatStyleStyleValue { .repeat_style }
 		ResolutionStyleValue { .resolution }
 		RGBColorStyleValue { .color }
-		ScrollFunctionStyleValue { .scroll_function }
 		ScrollbarColorStyleValue { .scrollbar_color }
 		ScrollbarGutterStyleValue { .scrollbar_gutter }
 		ShadowStyleValue { .shadow }
@@ -4425,7 +4422,6 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		RepeatStyleStyleValue { style_value.serialize(mode) }
 		ResolutionStyleValue { style_value.serialize(mode) }
 		RGBColorStyleValue { style_value.serialize(mode) }
-		ScrollFunctionStyleValue { style_value.serialize(mode) }
 		ScrollbarColorStyleValue { style_value.serialize(mode) }
 		ScrollbarGutterStyleValue { style_value.serialize(mode) }
 		ShadowStyleValue { style_value.serialize(mode) }

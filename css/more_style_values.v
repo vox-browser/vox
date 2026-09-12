@@ -2150,55 +2150,6 @@ pub fn (style_value RepeatStyleStyleValue) properties_equal(other RepeatStyleSty
 	return style_value == other
 }
 
-// --- ScrollFunctionStyleValue ---
-pub struct ScrollFunctionStyleValue {
-pub mut:
-	scroller_ Scroller
-	axis_     Axis
-}
-
-pub fn ScrollFunctionStyleValue.create(scroller Scroller, axis Axis) ScrollFunctionStyleValue {
-	return ScrollFunctionStyleValue{
-		scroller_: scroller
-		axis_: axis
-	}
-}
-
-pub fn (style_value ScrollFunctionStyleValue) scroller() Scroller {
-	return style_value.scroller_
-}
-
-pub fn (style_value ScrollFunctionStyleValue) axis() Axis {
-	return style_value.axis_
-}
-
-pub fn (style_value ScrollFunctionStyleValue) serialize(mode SerializationMode) string {
-	_ = mode
-	mut serialized := 'scroll('
-
-	if style_value.scroller_ != .nearest {
-		serialized += scroller_to_string(style_value.scroller_)
-	}
-
-	if style_value.axis_ != .block {
-		if style_value.scroller_ != .nearest {
-			serialized += ' '
-		}
-		serialized += axis_to_string(style_value.axis_)
-	}
-
-	serialized += ')'
-	return serialized
-}
-
-pub fn (style_value ScrollFunctionStyleValue) to_string() string {
-	return style_value.serialize(.normal)
-}
-
-pub fn (style_value ScrollFunctionStyleValue) properties_equal(other ScrollFunctionStyleValue) bool {
-	return style_value == other
-}
-
 // --- ScrollbarColorStyleValue ---
 pub struct ScrollbarColorStyleValue {
 pub mut:
@@ -3816,6 +3767,9 @@ pub fn (style_value TreeCountingFunctionStyleValue) properties_equal(other TreeC
 }
 
 // --- TupleStyleValue ---
+const tuple_scroll_function_scroller_index = 0
+const tuple_scroll_function_axis_index = 1
+
 pub struct TupleStyleValue {
 pub mut:
 	tuple_ []?StyleValue

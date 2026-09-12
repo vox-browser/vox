@@ -10748,14 +10748,15 @@ fn scroller_from_identifier_for_value_logic(value string) ?Scroller {
 	}
 }
 
-fn (mut parser Parser) parse_scroll_function_value(component_value ComponentValue) ?ScrollFunctionStyleValue {
+fn (mut parser Parser) parse_scroll_function_value(component_value ComponentValue) ?FunctionStyleValue {
 	// <scroll()> = scroll( [ <scroller> || <axis> ]? )
 	if !component_value.is_function_named('scroll') {
 		return none
 	}
 	mut argument_tokens := ComponentValueStream.new(component_value.function().value)
-	mut scroller := ?Scroller(none)
-	mut axis := ?Axis(none)
+	mut arguments := [?StyleValue(none), ?StyleValue(none)]
+	mut has_scroller := false
+	mut has_axis := false
 	for argument_tokens.has_more_tokens() {
 		argument_tokens.consume_whitespace()
 		token := argument_tokens.consume() or { break }
@@ -10764,25 +10765,31 @@ fn (mut parser Parser) parse_scroll_function_value(component_value ComponentValu
 		}
 		ident := token.token().ident()
 		if maybe_scroller := scroller_from_identifier_for_value_logic(ident) {
-			if _ := scroller {
+			if has_scroller {
 				return none
 			}
-			scroller = maybe_scroller
+			if maybe_scroller != .nearest {
+				keyword := keyword_from_string(to_ascii_lowercase(ident)) or { return none }
+				arguments[tuple_scroll_function_scroller_index] = StyleValue(KeywordStyleValue.create(keyword))
+			}
+			has_scroller = true
 			continue
 		}
 		if maybe_axis := axis_from_identifier_for_value_logic(ident) {
-			if _ := axis {
+			if has_axis {
 				return none
 			}
-			axis = maybe_axis
+			if maybe_axis != .block {
+				keyword := keyword_from_string(to_ascii_lowercase(ident)) or { return none }
+				arguments[tuple_scroll_function_axis_index] = StyleValue(KeywordStyleValue.create(keyword))
+			}
+			has_axis = true
 			continue
 		}
 		return none
 	}
 
-	resolved_scroller := scroller or { Scroller.nearest }
-	resolved_axis := axis or { Axis.block }
-	return ScrollFunctionStyleValue.create(resolved_scroller, resolved_axis)
+	return FunctionStyleValue.create('scroll', StyleValue(TupleStyleValue.create(arguments)))
 }
 
 fn (mut parser Parser) parse_view_timeline_inset_value(mut tokens ComponentValueStream) ?StyleValue {
