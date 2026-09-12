@@ -46,6 +46,7 @@ mut:
 	current_transform_feedback          ?&WebGLTransformFeedback
 	current_vertex_array                ?&WebGLVertexArrayObject
 	current_vertex_array_oes            ?&WebGLVertexArrayObjectOES
+	current_vertex_array_binding_       ?&WebGLObject
 	enabled_capabilities                map[GLenum]bool
 	enabled_vertex_attributes           map[GLuint]bool
 	clear_color_                        [4]f32
@@ -291,11 +292,29 @@ pub fn (mut context WebGLRenderingContext) reset_to_default_state() {
 pub fn (mut context WebGLRenderingContext) reset_context_state_after_loss() {
 	context.context_generation_++
 	context.reset_to_default_state()
-	context.current_queries.clear()
+	context.reset_client_side_webgl_state()
 	context.bound_samplers.clear()
 	context.current_transform_feedback = none
+}
+
+pub fn (mut context WebGLRenderingContext) reset_client_side_webgl_state() {
+	context.bound_buffers.clear()
+	context.bound_framebuffer = 0
+	context.bound_renderbuffer = 0
+	context.bound_textures.clear()
+	context.current_program = none
+	context.current_queries.clear()
 	context.current_vertex_array = none
 	context.current_vertex_array_oes = none
+	context.current_vertex_array_binding_ = none
+}
+
+pub fn (context &WebGLRenderingContext) current_vertex_array_binding() ?&WebGLObject {
+	return context.current_vertex_array_binding_
+}
+
+pub fn (mut context WebGLRenderingContext) set_current_vertex_array_binding(vertex_array ?&WebGLObject) {
+	context.current_vertex_array_binding_ = vertex_array
 }
 
 pub fn (mut context WebGLRenderingContext) create_buffer() &WebGLBuffer {

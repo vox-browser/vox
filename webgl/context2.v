@@ -448,6 +448,11 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array(array ?&WebGLVertex
 		}
 	}
 	context.current_vertex_array = array
+	if value := array {
+		context.set_current_vertex_array_binding(&value.object)
+	} else {
+		context.set_current_vertex_array_binding(none)
+	}
 	context.native.dispatch('bind_vertex_array', if value := array {
 		value.object.handle_
 	} else {
@@ -475,6 +480,7 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array(mut array ?&WebGL
 		if current := context.current_vertex_array {
 			if current == value {
 				context.current_vertex_array = none
+				context.set_current_vertex_array_binding(none)
 			}
 		}
 		context.native.dispatch('delete_vertex_array', handle)
@@ -501,6 +507,11 @@ pub fn (mut context WebGLRenderingContext) bind_vertex_array_oes(array ?&WebGLVe
 		}
 	}
 	context.current_vertex_array_oes = array
+	if value := array {
+		context.set_current_vertex_array_binding(&value.object)
+	} else {
+		context.set_current_vertex_array_binding(none)
+	}
 	context.native.dispatch('bind_vertex_array_oes', if value := array {
 		value.object.handle_
 	} else {
@@ -533,6 +544,7 @@ pub fn (mut context WebGLRenderingContext) delete_vertex_array_oes(array ?&WebGL
 		if current := context.current_vertex_array_oes {
 			if current == value {
 				context.current_vertex_array_oes = none
+				context.set_current_vertex_array_binding(none)
 			}
 		}
 		context.native.dispatch('delete_vertex_array_oes', handle)
