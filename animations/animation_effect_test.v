@@ -1,5 +1,7 @@
 module animations
 
+import dom
+import html
 import math
 
 fn test_animation_effect_timing_validation_and_computed_timing() {
@@ -93,4 +95,27 @@ fn test_progress_timeline_normalizes_timing_to_percentages() {
 	assert effect.start_delay_.value == 10
 	assert effect.iteration_duration_.value == 40
 	assert effect.end_delay_.value == 10
+}
+
+fn test_animation_effect_forwards_realm_and_style_updates_to_its_animation() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	_ := html.WindowModel.create_top_level(document, none, 'effect-global')!
+	target := document.create_element('div')!
+	mut effect := KeyframeEffect.create()
+	effect.set_target(target)
+	preparation_generation := effect.animation_preparation_generation()
+	mut timeline := new_document_timeline(document, 0, 0)
+	mut animation := Animation.create(effect.as_animation_effect(), timeline)
+	animation.set_owning_element(dom.AbstractElement.new(target, none))
+	assert effect.animation_preparation_generation() > preparation_generation
+
+	global_object := effect.AnimationEffect.relevant_global_impl() or {
+		panic('missing relevant global')
+	}
+	assert global_object == (animation.relevant_global_impl() or { panic('missing animation global') })
+	document.set_needs_animated_style_update()
+	assert document.element_needs_style_update(target)
+	effect.AnimationEffect.update_style_if_needed()
+	assert !document.element_needs_style_update(target)
 }

@@ -380,7 +380,22 @@ pub fn (effect &AnimationEffect) is_keyframe_effect() bool {
 
 pub fn (mut effect AnimationEffect) set_associated_animation(animation ?&Animation) {
 	effect.associated_animation_ = animation
+	if effect.is_keyframe_effect_ {
+		mut keyframe_effect := unsafe { &KeyframeEffect(&effect) }
+		keyframe_effect.invalidate_animation_preparation()
+	}
 	effect.normalize_specified_timing()
+}
+
+pub fn (effect &AnimationEffect) relevant_global_impl() ?&dom.EventTarget {
+	animation := effect.associated_animation_ or { return none }
+	return animation.relevant_global_impl()
+}
+
+pub fn (effect &AnimationEffect) update_style_if_needed() {
+	if animation := effect.associated_animation_ {
+		animation.update_style_if_needed()
+	}
 }
 
 pub fn (effect &AnimationEffect) animation_direction() AnimationDirection {
