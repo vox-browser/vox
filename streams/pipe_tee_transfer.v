@@ -765,27 +765,9 @@ pub fn pack_and_post_message_handling_error(mut port MessagePort, type_ string, 
 }
 
 pub fn (mut source ReadableStream) transfer() !&ReadableStream {
-	if source.locked() {
-		return error('DataCloneError: Cannot transfer a locked ReadableStream')
-	}
-	mut port := MessagePort.create()
-	mut writable_endpoint := &WritableStream{}
-	set_up_cross_realm_transform_writable(mut writable_endpoint, mut port)
-	mut proxy := &ReadableStream{}
-	set_up_cross_realm_transform_readable(mut proxy, mut port)
-	_ = source.pipe_to(mut writable_endpoint, StreamPipeOptions{})
-	return proxy
+	return source.transfer_in_realm(source.realm_)
 }
 
 pub fn (mut destination WritableStream) transfer() !&WritableStream {
-	if destination.locked() {
-		return error('DataCloneError: Cannot transfer a locked WritableStream')
-	}
-	mut port := MessagePort.create()
-	mut readable_endpoint := &ReadableStream{}
-	set_up_cross_realm_transform_readable(mut readable_endpoint, mut port)
-	mut proxy := &WritableStream{}
-	set_up_cross_realm_transform_writable(mut proxy, mut port)
-	_ = readable_endpoint.pipe_to(mut destination, StreamPipeOptions{})
-	return proxy
+	return destination.transfer_in_realm(destination.realm_)
 }

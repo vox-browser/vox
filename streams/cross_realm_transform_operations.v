@@ -66,4 +66,14 @@ pub fn set_up_cross_realm_transform_writable(mut stream WritableStream, mut port
 	stream.message_port_ = &port
 	stream.message_backpressure_ = false
 	port.writable_target_ = &stream
+	// MessagePort queues messages until its receiving endpoint starts. Transfer
+	// receiving steps may therefore observe a pull posted during serialization.
+	for message in port.messages_ {
+		if message.type_ == 'pull' {
+			stream.message_backpressure_ = true
+		}
+	}
+	if stream.message_backpressure_ {
+		stream.process_queue()
+	}
 }
