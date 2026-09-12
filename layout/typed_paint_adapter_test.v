@@ -2481,6 +2481,9 @@ fn test_url_svg_clip_path_is_a_retained_alpha_mask_not_a_painted_child_or_hit_te
 	clip := mask_begins[0].mask_clip
 	assert clip.is_svg_mask
 	assert clip.path_components.len == 1
+	// SVGMaskable::get_svg_clip_area() derives this from the transformed
+	// descendant geometry; the <clipPath> resource box itself has no bounds.
+	assert clip.rect == LayoutRect{25, 15, 70, 70}
 	component := clip.path_components[0]
 	assert component.path_even_odd
 	assert component.path_data.len == 5 * compatibility_clip_path_segment_stride
@@ -2523,6 +2526,18 @@ fn test_object_bounding_box_svg_clip_retains_every_component_for_union_mask() {
 	assert clip.path_components.len == 2
 	assert clip.path_components.all(it.transform == [f64(200), 0, 0, 160, 20, 10]!)
 	assert clip.cache_key != 0
+}
+
+fn test_svg_clip_path_bounds_ignore_invisible_descendant_geometry() {
+	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="200" height="160"><defs><clipPath id="cut"><g visibility="hidden"><rect x="0" y="0" width="200" height="160"/></g><rect x="30" y="40" width="50" height="60"/></clipPath></defs><rect width="200" height="160" fill="red" clip-path="url(#cut)"/></svg>')
+	_ = layout_document_typed_in_viewport(document, 220, 180)
+	mut mutable_document := unsafe { &dom.Document(document) }
+	display_list := mutable_document.record_display_list() or { panic('missing display list') }
+	mask_begins := display_list_commands(display_list).filter(it.kind == 'begin_svg_mask_layer')
+	assert mask_begins.len == 1
+	clip := mask_begins[0].mask_clip
+	assert clip.path_components.len == 1
+	assert clip.rect == LayoutRect{30, 40, 50, 60}
 }
 
 fn test_empty_url_svg_clip_path_fully_clips_the_target() {

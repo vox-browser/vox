@@ -2559,6 +2559,12 @@ fn collect_svg_clip_path_components(node &Node, state &LayoutState,
 		return
 	}
 	if styled := node.as_node_with_style() {
+		// SVGPaintable::contributes_to_clip_path(): an invisible resource node
+		// contributes neither its own geometry nor any descendant geometry to the
+		// union used for the clip mask and its masking area.
+		if styled.computed_values().visibility() != .visible || node.display().is_none() {
+			return
+		}
 		if used := state.try_get(styled) {
 			if svg_path := used.computed_svg_path() {
 				position := paint_cumulative_offset(node, state, used)
