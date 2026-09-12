@@ -710,37 +710,94 @@ pub fn html_source_element_inserted_into_media(mut media HTMLMediaElement, paren
 	}
 }
 
+fn update_image_children_of_picture(picture &dom.Node) {
+	for child in picture.children_as_vector() {
+		element := child.as_element() or { continue }
+		if element.local_name() != 'img' {
+			continue
+		}
+		mut image := html_image_element_model_for_dom_element(unsafe {
+			&dom.HTMLImageElement(element)
+		})
+		image.update_the_image_data(true, false)
+	}
+}
+
 pub fn html_source_element_inserted(source &dom.HTMLSourceElement) {
 	mut element := unsafe { &dom.Element(source) }
 	element.inserted()
 	parent := element.as_node().parent_element() or { return }
-	mut media := html_media_element_for_dom_element(parent) or { return }
-	if !parent.has_attribute('src') && media.network_state() == .empty {
-		mut candidates := []string{}
-		for child in parent.as_node().children_as_vector() {
-			if source_candidate := child.as_element() {
-				if source_candidate.local_name() == 'source' {
-					candidates << source_candidate.get_attribute_value('src')
+	if mut media := html_media_element_for_dom_element(parent) {
+		if !parent.has_attribute('src') && media.network_state() == .empty {
+			mut candidates := []string{}
+			for child in parent.as_node().children_as_vector() {
+				if source_candidate := child.as_element() {
+					if source_candidate.local_name() == 'source' {
+						candidates << source_candidate.get_attribute_value('src')
+					}
 				}
 			}
+			media.set_source_candidates(candidates)
+			media.select_resource() or {}
 		}
-		media.set_source_candidates(candidates)
-		media.select_resource() or {}
 	}
-	// Picture-element relevant mutations are handled by the image update path
-	// once concrete HTMLImageElement state is attached to DOM image elements.
+	if parent.local_name() == 'picture' {
+		update_image_children_of_picture(parent.as_node())
+	}
 }
 
 pub fn html_source_element_moved_from(source &dom.HTMLSourceElement, old_parent ?&dom.Node) {
 	mut element := unsafe { &dom.Element(source) }
 	element.moved_from(old_parent)
-	// The upstream picture-child relevant-mutation step is still marked FIXME.
+	if old_parent_node := old_parent {
+		if old_parent_element := old_parent_node.as_element() {
+			if old_parent_element.local_name() == 'picture' {
+				update_image_children_of_picture(old_parent_node)
+			}
+		}
+	}
+	if parent := element.as_node().parent_element() {
+		if parent.local_name() == 'picture' {
+			update_image_children_of_picture(parent.as_node())
+		}
+	}
 }
 
 pub fn html_source_element_removed_from(source &dom.HTMLSourceElement, old_parent ?&dom.Node, old_root &dom.Node) {
 	mut element := unsafe { &dom.Element(source) }
 	element.removed_from(old_parent, old_root)
-	// The upstream picture-child relevant-mutation step is still marked FIXME.
+	if old_parent_node := old_parent {
+		if old_parent_element := old_parent_node.as_element() {
+			if old_parent_element.local_name() == 'picture' {
+				update_image_children_of_picture(old_parent_node)
+			}
+		}
+	}
+}
+
+pub fn html_source_element_attribute_changed(source &dom.HTMLSourceElement, name string, old_value ?string, value ?string, namespace_ ?string) {
+	mut element := unsafe { &dom.Element(source) }
+	element.attribute_changed(name, old_value, value, namespace_)
+	if name !in ['srcset', 'sizes', 'media', 'type', 'width', 'height'] {
+		return
+	}
+	parent := element.as_node().parent_element() or { return }
+	if parent.local_name() != 'picture' {
+		return
+	}
+	mut sibling := element.as_node().next_sibling()
+	for sibling != none {
+		current := sibling or { break }
+		if image_element := current.as_element() {
+			if image_element.local_name() == 'img' {
+				mut image := html_image_element_model_for_dom_element(unsafe {
+					&dom.HTMLImageElement(image_element)
+				})
+				image.update_the_image_data(true, false)
+			}
+		}
+		sibling = current.next_sibling()
+	}
 }
 
 fn relation_tokens(value string) []string {

@@ -243,6 +243,12 @@ fn test_concrete_area_base_meta_source_and_style_element_algorithms() {
 			panic('source')
 		})
 	}
+	mut navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
 	html_source_element_inserted(source)
 	parent := unsafe { &dom.Element(source) }.as_node().parent_element() or { panic('audio') }
 	media := html_media_element_for_dom_element(parent) or { panic('media state') }
