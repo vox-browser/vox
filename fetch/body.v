@@ -30,7 +30,7 @@ pub enum BodySourceKind {
 
 @[heap]
 pub struct Body {
-pub:
+pub mut:
 	source_kind BodySourceKind
 	length      ?u64
 mut:
@@ -69,6 +69,12 @@ pub fn Body.streaming() &Body {
 
 pub fn (body &Body) bytes() []u8 {
 	return body.source_bytes_.clone()
+}
+
+pub fn (mut body Body) set_source(source []u8, length ?u64) {
+	body.source_kind = .bytes
+	body.source_bytes_ = source.clone()
+	body.length = length
 }
 
 pub fn (body &Body) stream_locked() bool {
@@ -162,13 +168,15 @@ pub fn (mut body Body) fully_read() ![]u8 {
 	return reader.read_all_bytes()
 }
 
-pub fn (mut body Body) incrementally_read(process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {
+pub fn (mut body Body) incrementally_read(process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) &streams.ReadableStreamDefaultReader {
 	mut stream := body.stream_
-	mut reader := stream.get_default_reader() or {
-		process_error(err.msg())
-		return
-	}
+	mut reader := stream.get_default_reader() or { panic(err) }
 	body.incrementally_read_loop(mut reader, process_chunk, process_end, process_error)
+	return reader
+}
+
+pub fn cancel_incremental_read(mut reader streams.ReadableStreamDefaultReader) {
+	reader.cancel(streams.undefined_value())
 }
 
 pub fn (mut body Body) incrementally_read_loop(mut reader streams.ReadableStreamDefaultReader, process_chunk BodyChunkCallback, process_end BodyEndCallback, process_error BodyErrorCallback) {

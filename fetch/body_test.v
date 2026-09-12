@@ -2,6 +2,12 @@ module fetch
 
 import mimesniff
 
+fn ignore_body_chunk(_ []u8) {}
+
+fn ignore_body_end() {}
+
+fn ignore_body_error(_ string) {}
+
 fn test_extract_body_types_and_keepalive_stream_rejection() {
 	string_body := extract_body(BodyInit{ kind: .string_, text: 'hello' }, false)!
 	assert string_body.body.bytes() == 'hello'.bytes()
@@ -29,6 +35,22 @@ fn test_streaming_sniff_callback_and_limit() {
 	mut body := Body.streaming()
 	body.append_sniff_bytes([]u8{len: 1600, init: u8(7)})
 	assert body.sniff_bytes_if_available()?.len == 1445
+}
+
+fn test_body_source_replacement_and_incremental_read_cancellation() {
+	mut sourced_body := Body.streaming()
+	sourced_body.set_source('immutable source'.bytes(), 16)
+	assert sourced_body.body_source() == .bytes
+	assert sourced_body.body_length()? == 16
+	assert sourced_body.bytes() == 'immutable source'.bytes()
+	assert sourced_body.sniff_bytes_if_available()? == 'immutable source'.bytes()
+
+	mut streaming_body := Body.streaming()
+	mut reader := streaming_body.incrementally_read(ignore_body_chunk, ignore_body_end, ignore_body_error)
+	assert streaming_body.stream_locked()
+	cancel_incremental_read(mut reader)
+	assert streaming_body.disturbed()
+	assert streaming_body.stream().state() == .closed
 }
 
 fn test_multipart_form_data_parser() {
