@@ -100,3 +100,21 @@ fn test_canvas_font_uses_detached_document_resolution_context() {
 	metrics := context.measure_text('aa')
 	assert metrics.width() == 50
 }
+
+fn test_canvas_text_preparation_preserves_non_ascii_code_points() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'canvas') or {
+		panic(err)
+	}
+	canvas := unsafe { &dom.HTMLCanvasElement(element) }
+	context := html_canvas_element_get_context(canvas, '2d', none) or { panic(err) }
+
+	decomposed_text := 'o' + rune(0x301).str()
+	precomposed := context.prepare_text('ó', 100)
+	decomposed := context.prepare_text(decomposed_text, 100)
+	assert precomposed.text == 'ó'
+	assert decomposed.text == decomposed_text
+	assert context.measure_text('ó').width() > 0
+	assert context.measure_text('ó').width() == context.measure_text(decomposed_text).width()
+	assert context.measure_text('Kraków').width() > context.measure_text('Krakw').width()
+}

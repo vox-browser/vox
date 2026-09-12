@@ -33,6 +33,24 @@ fn resolved_letter_spacing(drawing_state DrawingState) f64 {
 	return drawing_state.letter_spacing_px
 }
 
+// Combining marks are shaped with their preceding base glyph and do not add a
+// separate advance. Keep the compact canvas metrics model Unicode-safe while
+// matching that part of the native text shaper's behavior.
+fn canvas_approximate_glyph_count(text string) int {
+	mut count := 0
+	for code_point in text.runes() {
+		if (code_point >= `\u0300` && code_point <= `\u036f`)
+			|| (code_point >= `\u1ab0` && code_point <= `\u1aff`)
+			|| (code_point >= `\u1dc0` && code_point <= `\u1dff`)
+			|| (code_point >= `\u20d0` && code_point <= `\u20ff`)
+			|| (code_point >= `\ufe20` && code_point <= `\ufe2f`) {
+			continue
+		}
+		count++
+	}
+	return count
+}
+
 // The compact bitmap renderer uses the binding enums as its native cap and join values.
 fn to_gfx_cap(cap_style CanvasLineCap) CanvasLineCap {
 	return cap_style
@@ -598,7 +616,7 @@ pub fn (context &OffscreenCanvasRenderingContext2D) prepare_text(text string, ma
 	}
 	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
 	font_size := context.drawing_state.font_size_px
-	mut width := f64(replaced.runes().len) * font_size * 0.5
+	mut width := f64(canvas_approximate_glyph_count(replaced)) * font_size * 0.5
 	if width > max_width {
 		width = max_width
 	}
