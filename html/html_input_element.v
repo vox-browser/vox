@@ -876,6 +876,7 @@ pub fn (mut model HTMLInputElementModel) create_text_input_shadow_tree() {
 		append_input_shadow_child(mut container_node, down.as_node())
 		model.up_button_element_ = up
 		model.down_button_element_ = down
+		model.install_number_input_ua_event_handlers(up, down)
 	}
 	mut shadow_node := unsafe { &dom.Node(shadow) }
 	append_input_shadow_child(mut shadow_node, container.as_node())
@@ -938,6 +939,151 @@ pub fn (mut model HTMLInputElementModel) update_file_input_shadow_tree() {
 	replace_element_text(label, label_text)
 }
 
+fn html_input_event_client_x(event &dom.Event) ?f64 {
+	client_x := match event.interface_ {
+		.mouse_event, .wheel_event { unsafe { &dom.MouseEvent(event) }.client_x() }
+		.pointer_event { unsafe { &dom.PointerEvent(event) }.client_x() }
+		else {
+			return none
+		}
+	}
+	if math.is_nan(client_x) || math.is_inf(client_x, 0) {
+		return none
+	}
+	return client_x
+}
+
+fn (mut model HTMLInputElementModel) handle_number_step_button(down bool) {
+	if model.type_state_ != .number || !model.is_mutable()
+		|| model.allowed_value_step() == none {
+		return
+	}
+	if down {
+		model.step_down(1) or { return }
+	} else {
+		model.step_up(1) or { return }
+	}
+	model.user_interaction_did_change_input_value('', none)
+}
+
+fn (mut model HTMLInputElementModel) handle_range_keydown_event(event &dom.Event) {
+	if model.type_state_ != .range || model.allowed_value_step() == none
+		|| event.interface_ != .keyboard_event {
+		return
+	}
+	key := unsafe { &dom.KeyboardEvent(event) }.key()
+	if key in ['ArrowLeft', 'ArrowDown'] {
+		model.step_down(1) or { return }
+	}
+	if key == 'PageDown' {
+		model.step_down(10) or { return }
+	}
+	if key in ['ArrowRight', 'ArrowUp'] {
+		model.step_up(1) or { return }
+	}
+	if key == 'PageUp' {
+		model.step_up(10) or { return }
+	}
+	model.user_interaction_did_change_input_value('', none)
+}
+
+fn (mut model HTMLInputElementModel) handle_range_wheel_event(event &dom.Event) {
+	if model.type_state_ != .range || model.allowed_value_step() == none
+		|| event.interface_ != .wheel_event {
+		return
+	}
+	delta_y := unsafe { &dom.WheelEvent(event) }.delta_y()
+	if math.is_nan(delta_y) || math.is_inf(delta_y, 0) {
+		return
+	}
+	if delta_y > 0 {
+		model.step_down(1) or { return }
+	} else {
+		model.step_up(1) or { return }
+	}
+	model.user_interaction_did_change_input_value('', none)
+}
+
+fn (mut model HTMLInputElementModel) handle_range_mouse_event(event &dom.Event) {
+	if model.type_state_ != .range {
+		return
+	}
+	client_x := html_input_event_client_x(event) or { return }
+	rect := input_element(&model).get_bounding_client_rect()
+	if rect.width <= 0 {
+		return
+	}
+	minimum := model.min() or { return }
+	maximum := model.max() or { return }
+	if minimum > maximum {
+		return
+	}
+	position := math.round(((client_x - rect.x) / rect.width) * (maximum - minimum) + minimum)
+	value := math.max(minimum, math.min(position, maximum))
+	model.set_value_as_number(value) or { return }
+	model.user_interaction_did_change_input_value('', none)
+}
+
+fn (mut model HTMLInputElementModel) install_number_input_ua_event_handlers(up &dom.Element, down &dom.Element) {
+	model_target := voidptr(&model)
+	up_callback := &dom.CallbackType{
+		handle_event: fn [model_target] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut mutable_model := unsafe { &HTMLInputElementModel(model_target) }
+			mutable_model.handle_number_step_button(false)
+			return dom.js_undefined()
+		}
+	}
+	down_callback := &dom.CallbackType{
+		handle_event: fn [model_target] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut mutable_model := unsafe { &HTMLInputElementModel(model_target) }
+			mutable_model.handle_number_step_button(true)
+			return dom.js_undefined()
+		}
+	}
+	mouseup_callback := &dom.CallbackType{
+		handle_event: fn [model_target] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut mutable_model := unsafe { &HTMLInputElementModel(model_target) }
+			mutable_model.commit_pending_changes()
+			return dom.js_undefined()
+		}
+	}
+	up_target := unsafe { &dom.EventTarget(up.as_node()) }
+	down_target := unsafe { &dom.EventTarget(down.as_node()) }
+	up_target.add_event_listener_without_options('mousedown', dom.IDLEventListener.create(up_callback))
+	down_target.add_event_listener_without_options('mousedown', dom.IDLEventListener.create(down_callback))
+	up_target.add_event_listener_without_options('mouseup', dom.IDLEventListener.create(mouseup_callback))
+	down_target.add_event_listener_without_options('mouseup', dom.IDLEventListener.create(mouseup_callback))
+}
+
+fn (mut model HTMLInputElementModel) install_range_input_ua_event_handlers() {
+	model_target := voidptr(&model)
+	target := unsafe { &dom.EventTarget(input_element(&model).as_node()) }
+	keydown_callback := &dom.CallbackType{
+		handle_event: fn [model_target] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut mutable_model := unsafe { &HTMLInputElementModel(model_target) }
+			mutable_model.handle_range_keydown_event(event)
+			return dom.js_undefined()
+		}
+	}
+	wheel_callback := &dom.CallbackType{
+		handle_event: fn [model_target] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut mutable_model := unsafe { &HTMLInputElementModel(model_target) }
+			mutable_model.handle_range_wheel_event(event)
+			return dom.js_undefined()
+		}
+	}
+	mousedown_callback := &dom.CallbackType{
+		handle_event: fn [model_target] (event &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut mutable_model := unsafe { &HTMLInputElementModel(model_target) }
+			mutable_model.handle_range_mouse_event(event)
+			return dom.js_undefined()
+		}
+	}
+	target.add_event_listener_without_options('keydown', dom.IDLEventListener.create(keydown_callback))
+	target.add_event_listener_without_options('wheel', dom.IDLEventListener.create(wheel_callback))
+	target.add_event_listener_without_options('mousedown', dom.IDLEventListener.create(mousedown_callback))
+}
+
 pub fn (mut model HTMLInputElementModel) create_range_input_shadow_tree() {
 	mut element := input_element(&model)
 	shadow := element.attach_a_user_agent_shadow_root(.named)
@@ -952,6 +1098,7 @@ pub fn (mut model HTMLInputElementModel) create_range_input_shadow_tree() {
 	model.slider_progress_element_ = progress
 	model.slider_thumb_ = thumb
 	model.update_slider_shadow_tree_elements()
+	model.install_range_input_ua_event_handlers()
 }
 
 pub fn (mut model HTMLInputElementModel) update_slider_shadow_tree_elements() {

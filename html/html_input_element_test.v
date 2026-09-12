@@ -43,6 +43,95 @@ fn test_input_type_sanitization_number_range_and_stepping() {
 	assert color.value() == '#aabbcc'
 }
 
+fn dispatch_input_ua_event(element &dom.Element, event &dom.Event) {
+	target := unsafe { &dom.EventTarget(element.as_node()) }
+	target.dispatch_event(event)
+}
+
+fn test_range_ua_event_handlers_reject_invalid_event_shapes_and_steps() {
+	element := input_test_elements('<input type="range" value="50" step="any">')[0]
+	mut model := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+	dispatch_input_ua_event(element, dom.Event.new('mousedown'))
+	dispatch_input_ua_event(element, dom.Event.new('wheel'))
+	dispatch_input_ua_event(element, dom.Event.new('keydown'))
+	dispatch_input_ua_event(element, unsafe {
+		&dom.Event(dom.KeyboardEvent.create('keydown', dom.KeyboardEventInit{ key: 'ArrowLeft' }))
+	})
+	dispatch_input_ua_event(element, unsafe {
+		&dom.Event(dom.WheelEvent.create('wheel', dom.WheelEventInit{ delta_y: 1 }))
+	})
+	assert model.value_as_number() == 50
+	assert model.event_count('input') == 0
+
+	value_before_type_change := model.value()
+	model.set_type('text')
+	dispatch_input_ua_event(element, unsafe {
+		&dom.Event(dom.MouseEvent.create('mousedown', dom.MouseEventInit{ client_x: 50 }))
+	})
+	dispatch_input_ua_event(element, unsafe {
+		&dom.Event(dom.KeyboardEvent.create('keydown', dom.KeyboardEventInit{ key: 'ArrowLeft' }))
+	})
+	assert model.value() == value_before_type_change
+	assert model.event_count('input') == 0
+}
+
+fn test_range_ua_event_handlers_guard_geometry_and_ordered_bounds() {
+	elements := input_test_elements('<input type="range" value="50"><input type="range" min="200" max="100">')
+	mut hidden := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[0]) })
+	dispatch_input_ua_event(elements[0], unsafe {
+		&dom.Event(dom.MouseEvent.create('mousedown', dom.MouseEventInit{ client_x: 50 }))
+	})
+	assert hidden.value_as_number() == 50
+	assert hidden.event_count('input') == 0
+	mut hidden_node := elements[0].as_node()
+	hidden_node.set_layout_node(&dom.LayoutNode{
+		dom_node_: elements[0].as_node()
+		has_geometry_: true
+		border_box_: dom.Rect{
+			width: 100
+			height: 20
+		}
+	})
+	dispatch_input_ua_event(elements[0], unsafe {
+		&dom.Event(dom.MouseEvent.create('mousedown', dom.MouseEventInit{ client_x: 75 }))
+	})
+	assert hidden.value_as_number() == 75
+	assert hidden.event_count('input') == 1
+
+	mut reversed := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[1]) })
+	dispatch_input_ua_event(elements[1], unsafe {
+		&dom.Event(dom.MouseEvent.create('mousedown', dom.MouseEventInit{ client_x: 50 }))
+	})
+	assert reversed.value_as_number() == 200
+	assert reversed.event_count('input') == 0
+}
+
+fn test_range_and_number_ua_event_handlers_apply_valid_steps() {
+	elements := input_test_elements('<input type="range" min="0" max="20" step="5" value="10"><input type="number" step="any" value="5">')
+	mut range := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[0]) })
+	dispatch_input_ua_event(elements[0], unsafe {
+		&dom.Event(dom.KeyboardEvent.create('keydown', dom.KeyboardEventInit{ key: 'ArrowRight' }))
+	})
+	assert range.value_as_number() == 15
+	dispatch_input_ua_event(elements[0], unsafe {
+		&dom.Event(dom.WheelEvent.create('wheel', dom.WheelEventInit{ delta_y: 1 }))
+	})
+	assert range.value_as_number() == 10
+	assert range.event_count('input') == 2
+
+	mut number := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[1]) })
+	up_button := number.up_button_element_ or { panic('missing number up button') }
+	up_target := unsafe { &dom.EventTarget(up_button.as_node()) }
+	up_target.dispatch_event(dom.Event.new('mousedown'))
+	assert number.value_as_number() == 5
+	assert number.event_count('input') == 0
+	value_before_type_change := number.value()
+	number.set_type('text')
+	up_target.dispatch_event(dom.Event.new('mousedown'))
+	assert number.value() == value_before_type_change
+	assert number.event_count('input') == 0
+}
+
 fn test_input_text_email_selection_required_and_reset() {
 	elements := input_test_elements('<input type="email" required multiple value="a@example.com"><input type="text" value="base" minlength="3">')
 	mut email := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[0]) })
