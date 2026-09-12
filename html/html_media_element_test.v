@@ -5,9 +5,26 @@ import dom
 import math
 
 __global media_test_seek_modes = []MediaPlaybackSeekMode{}
+__global media_test_audio_track_enabled = false
+__global media_test_video_track_selected = false
 
 fn media_test_seek(_ f64, mode MediaPlaybackSeekMode) {
 	media_test_seek_modes << mode
+}
+
+fn media_test_set_audio_track(_ &AudioTrack, enabled bool) {
+	media_test_audio_track_enabled = enabled
+}
+
+fn media_test_set_video_track(track ?&VideoTrack) {
+	media_test_video_track_selected = track != none
+}
+
+fn media_test_selected_track_buffered_ranges() []MediaBufferedRange {
+	if !media_test_audio_track_enabled || !media_test_video_track_selected {
+		return []
+	}
+	return [MediaBufferedRange{ start: 0, end: 10 }]
 }
 
 fn media_test_fetch(url dom.URL, offset u64) !MediaResourceResponse {
@@ -195,6 +212,34 @@ fn test_media_element_throttles_ready_state_monitoring_with_time_updates() {
 	media.time_marches_on(.normal_playback)
 	assert media.ready_state() == .have_metadata
 	assert media.event_count('timeupdate') == 2
+}
+
+fn test_media_element_updates_ready_state_after_enabling_tracks() {
+	media_test_audio_track_enabled = false
+	media_test_video_track_selected = false
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
+		set_audio_track: media_test_set_audio_track
+		set_video_track: media_test_set_video_track
+		buffered_ranges: media_test_selected_track_buffered_ranges
+	})
+	media.set_up_playback_manager()
+	audio_track := media.on_audio_track_added(MediaTrackMetadata{ identifier: 1 })
+	video_track := media.on_video_track_added(MediaTrackMetadata{ identifier: 2 })
+	mut mutable_audio_track := unsafe { &AudioTrack(audio_track) }
+	mutable_audio_track.enabled = false
+	mut mutable_video_track := unsafe { &VideoTrack(video_track) }
+	mutable_video_track.selected = false
+	media.selected_video_track_ = none
+	media_test_audio_track_enabled = false
+	media_test_video_track_selected = false
+	media.playback_has_future_data_ = true
+
+	media.on_metadata_parsed(10)
+
+	assert audio_track.enabled
+	assert video_track.selected
+	assert media.ready_state() == .have_enough_data
 }
 
 fn test_media_element_exposes_playback_manager_buffered_ranges() {

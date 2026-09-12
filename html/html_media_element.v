@@ -883,6 +883,12 @@ pub fn (element &HTMLMediaElement) last_fetch_offset() u64 {
 
 fn (mut element HTMLMediaElement) process_media_response(response MediaResourceResponse) {
 	element.set_up_playback_manager()
+	for metadata in response.audio_tracks {
+		element.on_audio_track_added(metadata)
+	}
+	for metadata in response.video_tracks {
+		element.on_video_track_added(metadata)
+	}
 	element.on_metadata_parsed(response.duration)
 	element.fire_event('loadedmetadata')
 	if response.buffered_end > 0 {
@@ -894,12 +900,6 @@ fn (mut element HTMLMediaElement) process_media_response(response MediaResourceR
 		})
 		element.playback_has_future_data_ = true
 		element.update_ready_state()
-	}
-	for metadata in response.audio_tracks {
-		element.on_audio_track_added(metadata)
-	}
-	for metadata in response.video_tracks {
-		element.on_video_track_added(metadata)
 	}
 	element.process_media_data(.complete)
 	if element.is_eligible_for_autoplay() {
@@ -1449,11 +1449,25 @@ pub fn (mut element HTMLMediaElement) on_metadata_parsed(duration f64) {
 	element.official_playback_position_ = 0
 	element.set_duration(duration)
 	element.set_ready_state(.have_metadata)
-	element.update_ready_state()
 	if element.default_playback_start_ > 0 {
 		element.seek_element(element.default_playback_start_, .accurate)
 	}
 	element.default_playback_start_ = 0
+	if !element.audio_tracks_.has_enabled_track() {
+		if track := element.audio_tracks_.item(0) {
+			mut mutable_track := unsafe { &AudioTrack(track) }
+			mutable_track.set_enabled(true)
+			element.set_audio_track_enabled(track, true)
+		}
+	}
+	if element.video_tracks_.selected_index() == -1 {
+		if track := element.video_tracks_.item(0) {
+			mut mutable_track := unsafe { &VideoTrack(track) }
+			mutable_track.set_selected(true)
+			element.set_selected_video_track(track)
+		}
+	}
+	element.update_ready_state()
 }
 
 pub fn (mut element HTMLMediaElement) set_up_playback_manager() {
