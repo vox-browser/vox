@@ -2308,6 +2308,10 @@ pub fn (style_value ScrollbarColorStyleValue) track_color() StyleValue {
 	return style_value.track_color_
 }
 
+pub fn (style_value ScrollbarColorStyleValue) absolutized(context ComputationContext) StyleValue {
+	return StyleValue(ScrollbarColorStyleValue.create(style_value.thumb_color_.absolutized(context), style_value.track_color_.absolutized(context)))
+}
+
 pub fn (style_value ScrollbarColorStyleValue) serialize(mode SerializationMode) string {
 	return '${style_value.thumb_color_.serialize(mode)} ${style_value.track_color_.serialize(mode)}'
 }

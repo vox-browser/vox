@@ -55,3 +55,12 @@ fn test_shadow_absolutizes_color_mix_color() {
 	resolved_shadow := absolutized as ShadowStyleValue
 	assert resolved_shadow.color() !is ColorMixStyleValue
 }
+
+fn test_scrollbar_colors_absolutize_color_mix_values() {
+	value := ScrollbarColorStyleValue.create(StyleValue(parsed_color_mix('color-mix(in srgb, red, blue)')), StyleValue(parsed_color_mix('color-mix(in srgb, white, black)')))
+	absolutized := value.absolutized(ComputationContext{})
+	assert absolutized is ScrollbarColorStyleValue
+	resolved_colors := absolutized as ScrollbarColorStyleValue
+	assert resolved_colors.thumb_color() !is ColorMixStyleValue
+	assert resolved_colors.track_color() !is ColorMixStyleValue
+}

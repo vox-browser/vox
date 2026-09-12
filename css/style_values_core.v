@@ -4313,6 +4313,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		RandomValueSharingStyleValue { style_value.absolutized(context) }
 		RectStyleValue { style_value.absolutized(context) }
 		RGBColorStyleValue { StyleValue(style_value.absolutized(context)) }
+		ScrollbarColorStyleValue { style_value.absolutized(context) }
 		ShadowStyleValue { style_value.absolutized(context) }
 		StyleValueList { style_value.absolutized(context) }
 		SuperellipseStyleValue { style_value.absolutized(context) }
