@@ -277,7 +277,7 @@ fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTML
 				// classic script with href/xlink:href as its external source.
 				mut script := HTMLScriptElementModel.create(p.document_.base_url())
 				script.set_parser_document(p.document_)
-				script.set_scripting_enabled(p.scripting_enabled)
+				script.set_scripting_enabled(p.scripting_mode != .disabled)
 				mut source := token.attribute('href')
 				if source == none {
 					source = token.attribute('xlink:href')

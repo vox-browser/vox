@@ -2567,10 +2567,10 @@ pub fn (mut e Element) insert_adjacent_html(position string, text string) ! {
 	}
 }
 
-fn html_parser_parse_html_fragment(context_element &Element, markup string, allow_declarative_shadow_roots AllowDeclarativeShadowRoots) ![]&Node {
+fn html_parser_parse_html_fragment(context_element &Element, markup string, allow_declarative_shadow_roots AllowDeclarativeShadowRoots, scripting_mode ParserScriptingMode) ![]&Node {
 	if hook := context_element.document().html_fragment_parsing_hook() {
 		if hook.parse_fragment != unsafe { nil } {
-			return hook.parse_fragment(hook.target, context_element, markup, allow_declarative_shadow_roots)
+			return hook.parse_fragment(hook.target, context_element, markup, allow_declarative_shadow_roots, scripting_mode)
 		}
 	}
 	// DOM can be used without importing the html module. In that configuration there is no HTML
@@ -2581,10 +2581,10 @@ fn html_parser_parse_html_fragment(context_element &Element, markup string, allo
 	return [new_text_node(context_element.document(), markup).as_node()]
 }
 
-fn xml_fragment_parser_parse_xml_fragment(context_element &Element, markup string, allow_declarative_shadow_roots AllowDeclarativeShadowRoots) ![]&Node {
+fn xml_fragment_parser_parse_xml_fragment(context_element &Element, markup string, allow_declarative_shadow_roots AllowDeclarativeShadowRoots, scripting_mode ParserScriptingMode) ![]&Node {
 	if hook := context_element.document().html_fragment_parsing_hook() {
 		if hook.parse_xml_fragment != unsafe { nil } {
-			return hook.parse_xml_fragment(hook.target, context_element, markup, allow_declarative_shadow_roots)
+			return hook.parse_xml_fragment(hook.target, context_element, markup, allow_declarative_shadow_roots, scripting_mode)
 		}
 	}
 	return error('InvalidStateError: the XML fragment parser hook is not installed for this document')
@@ -2601,12 +2601,16 @@ fn append_nodes_to_new_fragment(document &Document, new_children []&Node) !&Docu
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#fragment-parsing-algorithm-steps
 pub fn (e &Element) parse_fragment(markup string) !&DocumentFragment {
+	return e.parse_fragment_with_scripting_mode(markup, .inert)
+}
+
+pub fn (e &Element) parse_fragment_with_scripting_mode(markup string, scripting_mode ParserScriptingMode) !&DocumentFragment {
 	// 1. Let algorithm be the HTML fragment parsing algorithm.
 	// 2. If context's node document is an XML document, then set algorithm to the XML fragment parsing algorithm.
 	new_children := if e.document().is_xml_document() {
-		xml_fragment_parser_parse_xml_fragment(e, markup, .no)!
+		xml_fragment_parser_parse_xml_fragment(e, markup, .no, scripting_mode)!
 	} else {
-		html_parser_parse_html_fragment(e, markup, .no)!
+		html_parser_parse_html_fragment(e, markup, .no, scripting_mode)!
 	}
 
 	// 4. Let fragment be a new DocumentFragment whose node document is context's node document.

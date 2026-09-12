@@ -202,6 +202,10 @@ pub fn (script &HTMLScriptElementModel) is_parser_inserted() bool {
 	return script.parser_document_ != none
 }
 
+pub fn (script &HTMLScriptElementModel) has_already_started() bool {
+	return script.already_started_
+}
+
 pub fn (script &HTMLScriptElementModel) async_() bool {
 	return script.force_async_ || script.async_attribute_
 }

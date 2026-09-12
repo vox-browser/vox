@@ -1710,9 +1710,14 @@ pub:
 	contains_named_namespace DocumentSelectorQueryContainsNamedNamespaceCallback = unsafe { nil }
 }
 
-pub type DocumentHTMLFragmentParseCallback = fn (voidptr, &Element, string, AllowDeclarativeShadowRoots) ![]&Node
+pub enum ParserScriptingMode {
+	normal
+	disabled
+	inert
+	fragment
+}
 
-pub type DocumentFragmentScriptPreparationCallback = fn (voidptr, &Node)
+pub type DocumentHTMLFragmentParseCallback = fn (voidptr, &Element, string, AllowDeclarativeShadowRoots, ParserScriptingMode) ![]&Node
 
 pub type DocumentFormControlSelectedTextCallback = fn (&Element) ?string
 
@@ -1751,7 +1756,6 @@ pub:
 	target                      voidptr = unsafe { nil }
 	parse_fragment              DocumentHTMLFragmentParseCallback = unsafe { nil }
 	parse_xml_fragment          DocumentHTMLFragmentParseCallback = unsafe { nil }
-	prepare_script_descendants  DocumentFragmentScriptPreparationCallback = unsafe { nil }
 	parse_document              DocumentHTMLDocumentParseCallback = unsafe { nil }
 	create_parser_for_scripting DocumentHTMLParserCreateForScriptingCallback = unsafe { nil }
 	sniff_encoding              DocumentEncodingSniffCallback = unsafe { nil }

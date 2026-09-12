@@ -3238,7 +3238,7 @@ pub fn (n &Node) serialize_fragment(require_well_formed RequireWellFormed, fragm
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#unsafely-set-html
 pub fn (mut n Node) unsafely_set_html(context_element &Element, html string) ! {
 	// 1. Let newChildren be the result of the HTML fragment parsing algorithm given contextElement, html, and true.
-	new_children := html_parser_parse_html_fragment(context_element, html, .yes)!
+	new_children := html_parser_parse_html_fragment(context_element, html, .yes, .inert)!
 
 	// 2. Let fragment be a new DocumentFragment whose node document is contextElement's node document.
 	fragment := new_document_fragment(context_element.document())

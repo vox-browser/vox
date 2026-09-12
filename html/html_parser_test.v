@@ -390,6 +390,45 @@ fn test_fragment_textarea_context_is_rcdata() {
 	assert repr_nodes(nodes) == '"a<b>c"'
 }
 
+fn test_fragment_scripting_modes_set_script_parser_state_during_parsing() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.html)
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	context := document.create_element_ns(ns_html, 'div') or { panic(err) }
+	inert_nodes := parse_html_fragment_with_options(context, '<script>inert()</script>', .no, .inert)
+	inert_element := inert_nodes[0].as_element() or { panic('missing inert script') }
+	inert_script := unsafe { &dom.HTMLScriptElement(inert_element) }
+	inert_model := html_script_element_model_for_dom_element(inert_script)
+	assert inert_model.has_already_started()
+	assert inert_model.is_parser_inserted()
+
+	fragment_nodes := parse_html_fragment_with_options(context, '<script>active()</script>', .no, .fragment)
+	fragment_element := fragment_nodes[0].as_element() or { panic('missing fragment script') }
+	fragment_script := unsafe { &dom.HTMLScriptElement(fragment_element) }
+	fragment_model := html_script_element_model_for_dom_element(fragment_script)
+	assert !fragment_model.has_already_started()
+	assert !fragment_model.is_parser_inserted()
+}
+
+fn test_fragment_scripting_mode_is_disabled_by_the_context_document() {
+	mut enabled_document := dom.Document.create(dom.url_about_blank())
+	enabled_document.set_document_type(.html)
+	enabled_document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: enabled_document
+	})
+	enabled_context := enabled_document.create_element_ns(ns_html, 'div') or { panic(err) }
+	enabled_nodes := parse_html_fragment_with_options(enabled_context, '<noscript><b>fallback</b></noscript>', .no, .inert)
+	assert repr_nodes(enabled_nodes) == 'noscript("<b>fallback</b>")'
+
+	mut disabled_document := dom.Document.create(dom.url_about_blank())
+	disabled_document.set_document_type(.html)
+	disabled_context := disabled_document.create_element_ns(ns_html, 'div') or { panic(err) }
+	disabled_nodes := parse_html_fragment_with_options(disabled_context, '<noscript><b>fallback</b></noscript>', .no, .fragment)
+	assert repr_nodes(disabled_nodes) == 'noscript(b("fallback"))'
+}
+
 fn test_parse_document_end_to_end() {
 	// The one-call entry point produces a full html document.
 	doc := parse_document('<!DOCTYPE html><title>T</title><p>hi</p>')

@@ -154,14 +154,14 @@ fn (mut p HTMLParser) handle_in_head(mut token HTMLToken) {
 		p.insertion_mode = .text
 		return
 	}
-	if token.is_start_tag() && ((token.tag_name == 'noscript' && p.scripting_enabled) || token.tag_name in [
+	if token.is_start_tag() && ((token.tag_name == 'noscript' && p.scripting_mode != .disabled) || token.tag_name in [
 		'noframes',
 		'style',
 	]) {
 		p.parse_generic_raw_text_element(token)
 		return
 	}
-	if token.is_start_tag() && token.tag_name == 'noscript' && !p.scripting_enabled {
+	if token.is_start_tag() && token.tag_name == 'noscript' && p.scripting_mode == .disabled {
 		p.insert_html_element(token)
 		p.insertion_mode = .in_head_noscript
 		return
@@ -733,7 +733,8 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		p.parse_generic_raw_text_element(token)
 		return
 	}
-	if token.is_start_tag() && (token.tag_name == 'noembed' || (token.tag_name == 'noscript' && p.scripting_enabled)) {
+	if token.is_start_tag() && (token.tag_name == 'noembed'
+		|| (token.tag_name == 'noscript' && p.scripting_mode != .disabled)) {
 		p.parse_generic_raw_text_element(token)
 		return
 	}

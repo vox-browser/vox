@@ -3291,15 +3291,8 @@ pub fn (r &Range) create_contextual_fragment(fragment string) !&DocumentFragment
 		return error('InvalidStateError: Could not determine a context element')
 	}
 
-	// 7. Let fragment node be the result of invoking the fragment parsing algorithm steps with element and compliantString.
-	fragment_node := parse_fragment_fallback(context_element, compliant_string)!
-	// 8. Reset every script descendant so scripts inserted from the contextual fragment can run.
-	if hook := context_element.document().html_fragment_parsing_hook() {
-		if hook.prepare_script_descendants != unsafe { nil } {
-			hook.prepare_script_descendants(hook.target, fragment_node.as_node())
-		}
-	}
-	return fragment_node
+	// 7. Parse in Fragment mode so script elements are not marked parser-inserted or already started.
+	return context_element.parse_fragment_with_scripting_mode(compliant_string, .fragment)
 }
 
 pub fn (r &Range) for_each_contained(callback fn(&Node) TraversalDecision) {

@@ -89,19 +89,17 @@ pub mut:
 	form_element                       ?&dom.Element
 	frameset_ok                        bool = true
 	parsing_fragment                   bool
-	// Scripting is disabled: this port has no JS engine, so <noscript> content is parsed as normal
-	// markup (the "scripting flag is disabled" branches).
-	scripting_enabled             bool
-	next_line_feed_can_be_ignored bool
-	foster_parenting              bool
-	stop_parsing                  bool
-	aborted                       bool
-	the_end_started               bool
-	context_element               ?&dom.Element
-	script_nesting_level          usize
-	script_models                 map[i64]&HTMLScriptElementModel
-	script_fetch_hook             ?ScriptElementFetchHook
-	script_execute_hook           ?ScriptElementExecuteHook
+	scripting_mode                     dom.ParserScriptingMode
+	next_line_feed_can_be_ignored      bool
+	foster_parenting                   bool
+	stop_parsing                       bool
+	aborted                            bool
+	the_end_started                    bool
+	context_element                    ?&dom.Element
+	script_nesting_level               usize
+	script_models                      map[i64]&HTMLScriptElementModel
+	script_fetch_hook                  ?ScriptElementFetchHook
+	script_execute_hook                ?ScriptElementExecuteHook
 
 	character_insertion_node    ?&dom.Text
 	character_insertion_builder []rune
@@ -112,16 +110,25 @@ pub mut:
 // Parse `input` into `document`. The document is marked as an HTML document so that HTML-namespaced
 // elements report uppercase tag names, matching a real parse.
 pub fn HTMLParser.create(document &dom.Document, input string) &HTMLParser {
+	mode := if unsafe { &dom.Node(document) }.is_scripting_enabled() {
+		dom.ParserScriptingMode.normal
+	} else {
+		dom.ParserScriptingMode.disabled
+	}
+	return HTMLParser.create_with_scripting_mode(document, input, mode)
+}
+
+pub fn HTMLParser.create_with_scripting_mode(document &dom.Document, input string, scripting_mode dom.ParserScriptingMode) &HTMLParser {
 	mut doc := document
 	doc.set_document_type(.html)
 	realm := &ScriptingRealm{
-		scripting_enabled: unsafe { &dom.Node(document) }.is_scripting_enabled()
+		scripting_enabled: scripting_mode != .disabled
 	}
 	mut parser := &HTMLParser{
 		document_: document
 		realm_: realm
 		tokenizer: HTMLTokenizer.new(input)
-		scripting_enabled: realm.scripting_enabled
+		scripting_mode: scripting_mode
 	}
 	parser.tokenizer.set_parser(parser)
 	parser.stack_of_open_elements.set_on_element_popped(fn [parser] (element &dom.Element) {
@@ -231,8 +238,13 @@ fn (mut p HTMLParser) register_parser_inserted_script(element &dom.Element, toke
 	mut script := HTMLScriptElementModel.create(p.document_.base_url())
 	script_element := unsafe { &dom.HTMLScriptElement(element) }
 	attach_html_script_element_model(script_element, script)
-	script.set_parser_document(p.document_)
-	script.set_scripting_enabled(p.scripting_enabled)
+	if p.scripting_mode != .fragment {
+		script.set_parser_document(p.document_)
+	}
+	if p.scripting_mode == .inert {
+		script.set_already_started(true)
+	}
+	script.set_scripting_enabled(p.scripting_mode != .disabled)
 	script.set_src(token.attribute('src'))
 	script.set_type(token.attribute('type'))
 	script.set_language(token.attribute('language'))
@@ -246,6 +258,12 @@ fn (mut p HTMLParser) register_parser_inserted_script(element &dom.Element, toke
 fn (mut p HTMLParser) prepare_and_execute_parser_inserted_script(element &dom.Element) {
 	mut script := p.script_models[element.as_node().unique_id().value()] or { return }
 	script.set_text(element.as_node().descendant_text_content())
+	// The translated DOM attaches the script model after inserting the node in
+	// the temporary fragment document. Defer preparation in Fragment mode so
+	// insertion into the destination document performs it, as upstream does.
+	if p.scripting_mode == .fragment {
+		return
+	}
 	p.increment_script_nesting_level()
 	script.prepare_script(p.document_)
 	script.parser_execute_ready_script()

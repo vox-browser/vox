@@ -114,7 +114,7 @@ fn test_parser_inserted_inline_script_is_prepared_and_executed() {
 	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
 	document.set_ready_to_run_scripts()
 	mut parser := HTMLParser.create(document, '<script>parser_inline()</script><p>after</p>')
-	parser.scripting_enabled = true
+	parser.scripting_mode = .normal
 	parser.set_script_hooks(none, script_test_execute)
 	parser.run()
 	assert executed_scripts == ['classic:parser_inline():https://example.test/page']
@@ -169,7 +169,10 @@ fn test_script_dom_receiver_lifecycle_and_text_idl_algorithms() {
 }
 
 fn test_contextual_fragment_resets_script_parser_state() {
-	document := parse_document('<body><div id="context"></div></body>')
+	mut document := parse_document('<body><div id="context"></div></body>')
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
 	context := document.get_element_by_id('context') or { panic('missing context') }
 	mut range := dom.Range.create(document)
 	range.set_start(context.as_node(), 0)!

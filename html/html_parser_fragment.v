@@ -4,29 +4,14 @@ import dom
 import editing
 import encoding
 
-fn dom_html_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots) ![]&dom.Node {
+fn dom_html_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots, scripting_mode dom.ParserScriptingMode) ![]&dom.Node {
 	_ = target
-	return parse_html_fragment_with_options(context_element, markup, allow_declarative_shadow_roots)
+	return parse_html_fragment_with_options(context_element, markup, allow_declarative_shadow_roots, scripting_mode)
 }
 
-fn dom_xml_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots) ![]&dom.Node {
+fn dom_xml_fragment_parse_callback(target voidptr, context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots, _ dom.ParserScriptingMode) ![]&dom.Node {
 	_ = target
 	return parse_xml_fragment_with_options(context_element, markup, allow_declarative_shadow_roots == .yes)
-}
-
-fn dom_fragment_prepare_script_descendants_callback(target voidptr, root &dom.Node) {
-	_ = target
-	root.for_each_in_subtree(fn (node &dom.Node) dom.TraversalDecision {
-		element := node.as_element() or { return .@continue }
-		if !element.is_html_element() || element.local_name() != 'script' {
-			return .@continue
-		}
-		script_element := unsafe { &dom.HTMLScriptElement(element) }
-		mut script := unsafe { &HTMLScriptElementModel(html_script_element_model_for_dom_element(script_element)) }
-		script.unmark_as_already_started()
-		script.unmark_as_parser_inserted()
-		return .@continue
-	})
 }
 
 fn dom_html_document_parse_callback(target voidptr, document &dom.Document, markup string) {
@@ -141,7 +126,6 @@ pub fn install_document_fragment_parsing_hook(document &dom.Document) {
 	mutable_document.set_html_fragment_parsing_hook(dom.DocumentHTMLFragmentParsingHook{
 		parse_fragment: dom_html_fragment_parse_callback
 		parse_xml_fragment: dom_xml_fragment_parse_callback
-		prepare_script_descendants: dom_fragment_prepare_script_descendants_callback
 		parse_document: dom_html_document_parse_callback
 		create_parser_for_scripting: dom_html_parser_create_for_scripting_callback
 		sniff_encoding: dom_encoding_sniff_callback
@@ -156,10 +140,13 @@ pub fn install_document_fragment_parsing_hook(document &dom.Document) {
 // Parses `markup` as if it were the contents of `context_element`, returning the parsed nodes (in
 // tree order) which the caller inserts into the real tree.
 pub fn parse_html_fragment(context_element &dom.Element, markup string) []&dom.Node {
-	return parse_html_fragment_with_options(context_element, markup, .no)
+	return parse_html_fragment_with_options(context_element, markup, .no, .inert)
 }
 
-pub fn parse_html_fragment_with_options(context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots) []&dom.Node {
+pub fn parse_html_fragment_with_options(context_element &dom.Element, markup string, allow_declarative_shadow_roots dom.AllowDeclarativeShadowRoots, requested_scripting_mode dom.ParserScriptingMode) []&dom.Node {
+	if requested_scripting_mode !in [.inert, .fragment] {
+		panic('HTML fragment parsing requires Inert or Fragment scripting mode')
+	}
 	install_document_fragment_parsing_hook(context_element.document())
 	// 1. Let document be a Document node whose type is "html".
 	mut temp_document := dom.Document.create_for_fragment_parsing()
@@ -177,7 +164,12 @@ pub fn parse_html_fragment_with_options(context_element &dom.Element, markup str
 	}
 
 	// 5. Create the parser and associate it with the temporary document.
-	mut parser := HTMLParser.create(temp_document, markup)
+	scripting_mode := if context_document.is_scripting_disabled() {
+		dom.ParserScriptingMode.disabled
+	} else {
+		requested_scripting_mode
+	}
+	mut parser := HTMLParser.create_with_scripting_mode(temp_document, markup, scripting_mode)
 	parser.context_element = context_element
 	parser.parsing_fragment = true
 
@@ -190,7 +182,9 @@ pub fn parse_html_fragment_with_options(context_element &dom.Element, markup str
 	} else if context_name == 'script' {
 		parser.tokenizer.switch_to(.script_data)
 	} else if context_name == 'noscript' {
-		// Scripting is disabled in this port, so leave the tokenizer in the data state.
+		if scripting_mode != .disabled {
+			parser.tokenizer.switch_to(.rawtext)
+		}
 	} else if context_name == 'plaintext' {
 		parser.tokenizer.switch_to(.plaintext)
 	}
