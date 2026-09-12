@@ -134,7 +134,7 @@ pub fn (mut intrinsics Intrinsics) create_web_constructor(metadata InterfaceObje
 pub fn set_prototype_from_new_target(target_realm &html.ScriptingRealm, prototype ?&PlatformObject, interface_name string, mut object PlatformObject) {
 	mut target_intrinsics := host_defined_intrinsics(target_realm)
 	installed_prototype := prototype or { target_intrinsics.ensure_web_prototype(interface_name).object }
-	object.set_prototype(installed_prototype)
+	object.internal_set_prototype_of(installed_prototype)
 	mut wrapper_intrinsics := host_defined_intrinsics(object.realm())
 	interface_prototype := wrapper_intrinsics.ensure_web_prototype(interface_name).object
 	if voidptr(installed_prototype) != voidptr(interface_prototype) {

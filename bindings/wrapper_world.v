@@ -127,6 +127,10 @@ pub fn (mut wrappable Wrappable) clear_cached_main_world_wrapper(wrapper &Platfo
 
 pub fn (mut wrappable Wrappable) create_wrapper(realm &html.ScriptingRealm) &PlatformObject {
 	mut wrapper := PlatformObject.create(realm)
+	if host_defined_for_realm(realm) != none {
+		mut intrinsics := host_defined_intrinsics(realm)
+		wrapper.set_prototype(intrinsics.ensure_web_prototype(wrappable.interface_name_).object)
+	}
 	wrapper.set_wrappable_impl(wrappable)
 	return wrapper
 }
