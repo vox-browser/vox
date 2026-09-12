@@ -33,6 +33,17 @@ pub:
 	transition_behavior css.TransitionBehavior
 }
 
+pub fn get_animations_options_from_bindings(options GetAnimationsOptions) !GetAnimationsOptions {
+	if pseudo_element := options.pseudo_element {
+		_ = pseudo_element_parsing(pseudo_element)!
+	}
+	return options
+}
+
+pub fn keyframe_animation_options_from_bindings(options KeyframeAnimationOptions) !KeyframeAnimationOptions {
+	return options
+}
+
 struct AnimatableTransition {
 mut:
 	attribute_indices      map[css.PropertyID]int
@@ -47,7 +58,7 @@ pub mut:
 	associated_animations_        []&Animation
 	is_sorted_by_composite_order_ bool = true
 	has_css_defined_animations_   bool
-	css_defined_animations_       map[string]&css.CSSAnimation
+	css_defined_animations_       map[int][]&css.CSSAnimation
 	transitions_                  map[int]&AnimatableTransition
 	descendants_                  []&Animatable
 	next_animation_order_         u64
@@ -66,15 +77,19 @@ pub fn Animatable.new(target ?&dom.Element) &Animatable {
 		mut mutable_element := unsafe { &dom.Element(element) }
 		mutable_element.animations_animatable_handle_ = voidptr(animatable)
 		mut document := unsafe { &dom.Document(element.document()) }
-		document.set_animations_hook(dom.DocumentAnimationsHook{
-			target:                   voidptr(document)
-			calculate_get_animations: calculate_get_animations_for_dom_root
-			update_animations:        update_animations_for_dom_root
-			remove_replaced_animations: remove_replaced_animations_for_dom_root
-			compare_animations:       compare_dom_animations
-		})
+		install_document_animations_hook(mut document)
 	}
 	return animatable
+}
+
+fn install_document_animations_hook(mut document dom.Document) {
+	document.set_animations_hook(dom.DocumentAnimationsHook{
+		target: voidptr(document)
+		calculate_get_animations: calculate_get_animations_for_dom_root
+		update_animations: update_animations_for_dom_root
+		remove_replaced_animations: remove_replaced_animations_for_dom_root
+		compare_animations: compare_dom_animations
+	})
 }
 
 fn append_all_animations_for_dom_subtree(node &dom.Node, mut result []&Animation) {
@@ -103,16 +118,34 @@ fn compare_animations(a &Animation, b &Animation) int {
 	if !a_effect.is_keyframe_effect_ || !b_effect.is_keyframe_effect_ {
 		return 0
 	}
-	return keyframe_effect_composite_order(unsafe { &KeyframeEffect(a_effect) },
-		unsafe { &KeyframeEffect(b_effect) })
+	return keyframe_effect_composite_order(unsafe { &KeyframeEffect(a_effect) }, unsafe { &KeyframeEffect(b_effect) })
+}
+
+fn compare_associated_animations(a &Animation, b &Animation) int {
+	a_effect := a.effect_
+	b_effect := b.effect_
+	a_is_keyframe_effect := if effect := a_effect { effect.is_keyframe_effect_ } else { false }
+	b_is_keyframe_effect := if effect := b_effect { effect.is_keyframe_effect_ } else { false }
+	if a_is_keyframe_effect && b_is_keyframe_effect {
+		return compare_animations(a, b)
+	}
+	if a_is_keyframe_effect != b_is_keyframe_effect {
+		return if a_is_keyframe_effect { 1 } else { -1 }
+	}
+	if a.global_animation_list_order() < b.global_animation_list_order() {
+		return -1
+	}
+	if a.global_animation_list_order() > b.global_animation_list_order() {
+		return 1
+	}
+	return 0
 }
 
 fn compare_dom_animations(_ voidptr, a &dom.Animation, b &dom.Animation) int {
 	if a.concrete_handle_ == unsafe { nil } || b.concrete_handle_ == unsafe { nil } {
 		return 0
 	}
-	return compare_animations(unsafe { &Animation(a.concrete_handle_) },
-		unsafe { &Animation(b.concrete_handle_) })
+	return compare_animations(unsafe { &Animation(a.concrete_handle_) }, unsafe { &Animation(b.concrete_handle_) })
 }
 
 fn update_animations_for_dom_root(_ voidptr, root &dom.Node, _timestamp f64) {
@@ -157,16 +190,24 @@ fn remove_replaced_animations_for_dom_root(_ voidptr, root &dom.Node) {
 		animation.set_replace_state(.removed)
 		timeline := animation.timeline_ or { continue }
 		remove_event := AnimationPlaybackEvent.create('remove', AnimationPlaybackEventInit{
-			current_time:  if value := animation.current_time() { value.as_css_numberish() } else { none }
-			timeline_time: if value := timeline.current_time() { value.as_css_numberish() } else { none }
+			current_time: if value := animation.current_time() {
+				value.as_css_numberish()
+			} else {
+				none
+			}
+			timeline_time: if value := timeline.current_time() {
+				value.as_css_numberish()
+			} else {
+				none
+			}
 		})
 		animation.emitted_events_ << remove_event
 		if document := animation.document_for_timing() {
 			mut mutable_document := unsafe { &dom.Document(document) }
 			mutable_document.append_pending_animation_event(dom.PendingAnimationEvent{
-				event:                unsafe { &dom.Event(remove_event) }
-				animation:            unsafe { &dom.Animation(animation) }
-				target:               &animation.EventTarget
+				event: unsafe { &dom.Event(remove_event) }
+				animation: unsafe { &dom.Animation(animation) }
+				target: &animation.EventTarget
 				scheduled_event_time: timeline.convert_a_timeline_time_to_an_origin_relative_time(timeline.current_time())
 			})
 		} else {
@@ -225,8 +266,7 @@ fn calculate_get_animations_for_dom_root(_ voidptr, root &dom.Node) ![]&dom.Anim
 }
 
 pub fn (mut animatable Animatable) animate(keyframes []BaseKeyframe, options KeyframeAnimationOptions) !&Animation {
-	effect := KeyframeEffect.construct_impl(animatable.target_, keyframes,
-		options.KeyframeEffectOptions)!
+	effect := KeyframeEffect.construct_impl(animatable.target_, keyframes, options.KeyframeEffectOptions)!
 	mut timeline := options.timeline or {
 		default_timeline_for_animatable(animatable)
 	}
@@ -270,12 +310,12 @@ pub fn (mut animatable Animatable) get_animations_internal(sorted bool, options 
 	if sorted {
 		for i := 0; i < result.len; i++ {
 			for j := i + 1; j < result.len; j++ {
-			a_effect := result[i].effect_ or { continue }
-			b_effect := result[j].effect_ or { continue }
-			if !a_effect.is_keyframe_effect_ || !b_effect.is_keyframe_effect_ { continue
+				a_effect := result[i].effect_ or { continue }
+				b_effect := result[j].effect_ or { continue }
+				if !a_effect.is_keyframe_effect_ || !b_effect.is_keyframe_effect_ {
+					continue
 				}
-				order := keyframe_effect_composite_order(unsafe { &KeyframeEffect(a_effect) },
-					unsafe { &KeyframeEffect(b_effect) })
+				order := keyframe_effect_composite_order(unsafe { &KeyframeEffect(a_effect) }, unsafe { &KeyframeEffect(b_effect) })
 				if order > 0 {
 					temporary := result[i]
 					result[i] = result[j]
@@ -285,6 +325,33 @@ pub fn (mut animatable Animatable) get_animations_internal(sorted bool, options 
 		}
 	}
 	return result
+}
+
+pub fn (mut animatable Animatable) associated_animations_in_composite_order() []&Animation {
+	if !animatable.is_sorted_by_composite_order_ {
+		animatable.associated_animations_.sort_with_compare(fn (a &&Animation, b &&Animation) int {
+			return compare_associated_animations(*a, *b)
+		})
+		animatable.is_sorted_by_composite_order_ = true
+	}
+	return animatable.associated_animations_.clone()
+}
+
+pub fn (mut animatable Animatable) invalidate_associated_animation_composite_order() {
+	animatable.is_sorted_by_composite_order_ = false
+}
+
+pub fn (animatable &Animatable) has_associated_animations() bool {
+	return animatable.associated_animations_.len > 0
+}
+
+pub fn (animatable &Animatable) has_relevant_animations() bool {
+	for animation in animatable.associated_animations_ {
+		if animation.is_relevant() {
+			return true
+		}
+	}
+	return false
 }
 
 // The C++ object lazily allocates a separate Impl. This representation stores
@@ -299,7 +366,9 @@ pub fn (mut animatable Animatable) add_descendant(value &Animatable) {
 
 pub fn (mut animatable Animatable) associate_with_animation(animation &Animation) {
 	for existing in animatable.associated_animations_ {
-		if existing == animation { return }
+		if voidptr(existing) == voidptr(animation) {
+			return
+		}
 	}
 	animatable.associated_animations_ << animation
 	animatable.is_sorted_by_composite_order_ = false
@@ -307,22 +376,53 @@ pub fn (mut animatable Animatable) associate_with_animation(animation &Animation
 
 pub fn (mut animatable Animatable) disassociate_with_animation(animation &Animation) {
 	for index, existing in animatable.associated_animations_ {
-		if existing == animation {
+		if voidptr(existing) == voidptr(animation) {
 			animatable.associated_animations_.delete(index)
+			animatable.invalidate_associated_animation_composite_order()
 			return
 		}
 	}
 }
 
+pub fn (mut animatable Animatable) on_document_changed(_ &dom.Document, new_document &dom.Document) {
+	mut mutable_document := unsafe { &dom.Document(new_document) }
+	install_document_animations_hook(mut mutable_document)
+}
+
+pub fn (mut animatable Animatable) cancel_css_animations_and_transitions() {
+	for _, css_animations in animatable.css_defined_animations_ {
+		for animation in css_animations {
+			mut mutable_animation := unsafe { &css.CSSAnimation(animation) }
+			mutable_animation.cancel()
+		}
+	}
+	animatable.css_defined_animations_.clear()
+	for _, transition in animatable.transitions_ {
+		mut mutable_transition := unsafe { &AnimatableTransition(transition) }
+		for _, animation in mutable_transition.associated_transitions {
+			mut mutable_animation := unsafe { &css.CSSTransition(animation) }
+			mutable_animation.cancel()
+		}
+		mutable_transition.associated_transitions.clear()
+		mutable_transition.attribute_indices.clear()
+		mutable_transition.attributes.clear()
+	}
+	animatable.has_css_defined_animations_ = false
+}
+
 fn pseudo_index(pseudo ?css.PseudoElement) ?int {
 	value := pseudo or { return 0 }
-	if !css.is_known_pseudo_element_type(value) { return none }
+	if !css.is_known_pseudo_element_type(value) {
+		return none
+	}
 	return int(value) + 1
 }
 
 fn (mut animatable Animatable) ensure_transition(pseudo ?css.PseudoElement) ?&AnimatableTransition {
 	index := pseudo_index(pseudo) or { return none }
-	if existing := animatable.transitions_[index] { return existing }
+	if existing := animatable.transitions_[index] {
+		return existing
+	}
 	transition := &AnimatableTransition{}
 	unsafe {
 		animatable.transitions_[index] = transition
@@ -335,9 +435,9 @@ pub fn (mut animatable Animatable) add_transitioned_properties(pseudo ?css.Pseud
 	for transition in transitions {
 		index := bucket.attributes.len
 		bucket.attributes << TransitionAttributes{
-			delay:               transition.delay
-			duration:            transition.duration
-			timing_function:     transition.timing_function
+			delay: transition.delay
+			duration: transition.duration
+			timing_function: transition.timing_function
 			transition_behavior: transition.transition_behavior
 		}
 		for property in transition.properties {
@@ -393,29 +493,47 @@ pub fn (animatable &Animatable) has_css_defined_animations() bool {
 	return animatable.has_css_defined_animations_
 }
 
+pub fn (animatable &Animatable) has_css_animations_or_transitions() bool {
+	if animatable.has_css_defined_animations_ {
+		return true
+	}
+	for _, transition in animatable.transitions_ {
+		if transition.associated_transitions.len > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 pub fn (mut animatable Animatable) add_css_animation(name string, pseudo ?css.PseudoElement, animation &css.CSSAnimation) {
 	index := pseudo_index(pseudo) or { return }
-	unsafe {
-		animatable.css_defined_animations_['${index}:${name}'] = animation
+	mut css_animations := animatable.css_defined_animations_[index] or { []&css.CSSAnimation{} }
+	for existing in css_animations {
+		if existing.animation_name() == name && voidptr(existing) == voidptr(animation) {
+			return
+		}
 	}
+	css_animations << animation
+	animatable.css_defined_animations_[index] = css_animations
 	animatable.has_css_defined_animations_ = true
 }
 
 pub fn (mut animatable Animatable) remove_css_animation(name string, pseudo ?css.PseudoElement) {
 	index := pseudo_index(pseudo) or { return }
-	animatable.css_defined_animations_.delete('${index}:${name}')
+	css_animations := animatable.css_defined_animations_[index] or { return }
+	animatable.css_defined_animations_[index] = css_animations.filter(it.animation_name() != name)
 }
 
-pub fn (animatable &Animatable) css_defined_animations(pseudo ?css.PseudoElement) map[string]&css.CSSAnimation {
-	index := pseudo_index(pseudo) or { return map[string]&css.CSSAnimation{} }
-	mut result := map[string]&css.CSSAnimation{}
-	prefix := '${index}:'
-	for key, animation in animatable.css_defined_animations_ {
-		if key.starts_with(prefix) {
-			unsafe {
-				result[key[prefix.len..]] = animation
-			}
-		}
+pub fn (animatable &Animatable) css_defined_animations(pseudo ?css.PseudoElement) []&css.CSSAnimation {
+	index := pseudo_index(pseudo) or { return [] }
+	css_animations := animatable.css_defined_animations_[index] or { return [] }
+	return css_animations.clone()
+}
+
+pub fn (mut animatable Animatable) set_css_defined_animations(pseudo ?css.PseudoElement, css_animations []&css.CSSAnimation) {
+	index := pseudo_index(pseudo) or { return }
+	if css_animations.len > 0 {
+		animatable.has_css_defined_animations_ = true
 	}
-	return result
+	animatable.css_defined_animations_[index] = css_animations.clone()
 }
