@@ -235,23 +235,28 @@ pub fn (mut queue TaskQueue) remove_tasks_matching(predicate fn(&Task) bool) {
 	}
 }
 
-pub fn (mut queue TaskQueue) take_tasks_matching(predicate fn(&Task) bool) []&Task {
-	mut matching_tasks := []&Task{}
+pub fn (mut queue TaskQueue) take_first_runnable_matching(predicate fn(&Task) bool) ?&Task {
+	if queue.event_loop.execution_paused {
+		return none
+	}
 	mut index := 0
 	for index < queue.tasks.len {
 		task := queue.tasks[index]
+		if queue.event_loop.running_rendering_task && task.source == .rendering {
+			index++
+			continue
+		}
+		if task.is_runnable() && predicate(task) {
+			queue.tasks.delete(index)
+			return task
+		}
 		if task.is_permanently_unrunnable() {
 			queue.tasks.delete(index)
 			continue
 		}
-		if predicate(task) {
-			matching_tasks << task
-			queue.tasks.delete(index)
-		} else {
-			index++
-		}
+		index++
 	}
-	return matching_tasks
+	return none
 }
 
 pub fn (queue &TaskQueue) last_added_task() ?&Task {
@@ -391,16 +396,14 @@ pub fn (mut event_loop EventLoop) spin_processing_tasks_with_source_until(source
 	event_loop.skip_event_loop_processing_steps = true
 	for !goal_condition() {
 		mut queue := event_loop.task_queue_
-		tasks := queue.take_tasks_matching(fn [source] (task &Task) bool {
-			return task.source == source && task.is_runnable()
-		})
-		if tasks.len == 0 {
+		task := queue.take_first_runnable_matching(fn [source] (candidate &Task) bool {
+			return candidate.source == source
+		}) or { break }
+		event_loop.currently_running_task_ = task
+		task.execute()
+		event_loop.currently_running_task_ = none
+		if goal_condition() {
 			break
-		}
-		for task in tasks {
-			event_loop.currently_running_task_ = task
-			task.execute()
-			event_loop.currently_running_task_ = none
 		}
 	}
 	event_loop.skip_event_loop_processing_steps = old_skip

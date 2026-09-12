@@ -91,7 +91,7 @@ fn test_microtask_checkpoint_after_task() {
 	assert calls.values == ['task', 'microtask']
 }
 
-fn test_remove_and_take_tasks_matching() {
+fn test_remove_and_take_first_runnable_matching() {
 	mut event_loop := EventLoop.create(.window)
 	mut queue := event_loop.task_queue()
 	queue.add(Task.create(.networking, none, fn () {}))
@@ -100,10 +100,41 @@ fn test_remove_and_take_tasks_matching() {
 	queue.remove_tasks_matching(fn (task &Task) bool {
 		return task.source == .dom_manipulation
 	})
-	matching := queue.take_tasks_matching(fn (task &Task) bool {
+	first := queue.take_first_runnable_matching(fn (task &Task) bool {
 		return task.source == .networking
+	}) or { panic('missing first networking task') }
+	second := queue.take_first_runnable_matching(fn (task &Task) bool {
+		return task.source == .networking
+	}) or { panic('missing second networking task') }
+	assert first.id() < second.id()
+	assert queue.is_empty()
+}
+
+fn test_source_spin_rechecks_runnability_after_each_task() {
+	mut event_loop := EventLoop.create(.window)
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
+	mut navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
+	assert document.is_fully_active()
+
+	mut calls := &EventLoopTestCalls{}
+	mut queue := event_loop.task_queue()
+	queue.add(Task.create(.networking, none, fn [mut calls, mut document] () {
+		calls.values << 'destroy'
+		document.destroy()
+		document.set_cached_navigable(none)
+	}))
+	queue.add(Task.create(.networking, document, fn [mut calls] () {
+		calls.values << 'stale'
+	}))
+	event_loop.spin_processing_tasks_with_source_until(.networking, fn () bool {
+		return false
 	})
-	assert matching.len == 2
+	assert calls.values == ['destroy']
 	assert queue.is_empty()
 }
 
