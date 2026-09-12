@@ -56,6 +56,34 @@ fn test_image_source_selection_load_dimensions_and_decode() {
 	assert image.height() == 25
 }
 
+fn test_image_decode_waits_for_completely_available_state() {
+	document := dom.Document.create(dom.URL{ value: 'https://example.test/decode-test' })
+	mut image := HTMLImageElementModel.create(document, document.base_url())
+	mut request := image.current_request()
+	request.set_current_url('https://example.test/async-image.png')
+	request.set_state(.partially_available)
+	image.add_callbacks_to_image_request(request, false, request.current_url(), '', 0)
+	promise := image.decode()
+	assert promise.state() == .pending
+	assert image.natural_width() == 0
+
+	mut shared_request := request.shared_resource_request() or { panic('missing shared request') }
+	decoded := image_test_fetch(dom.URL{ value: request.current_url() }) or { panic(err) }
+	shared_request.handle_successful_resource_load(decoded)
+	assert request.state() == .partially_available
+	assert promise.state() == .pending
+
+	mut event_loop := main_thread_event_loop()
+	event_loop.process()
+	assert request.state() == .completely_available
+	assert image.natural_width() == 200
+	assert image.natural_height() == 100
+	assert promise.state() == .pending
+
+	event_loop.process()
+	assert promise.state() == .fulfilled
+}
+
 fn test_image_failure_empty_lazy_sizes_and_animation() {
 	document := dom.Document.create(dom.URL{ value: 'https://example.test/' })
 	mut empty := HTMLImageElementModel.create(document, document.base_url())

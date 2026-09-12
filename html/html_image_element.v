@@ -489,11 +489,57 @@ pub fn (image &HTMLImageElementModel) y() int {
 	return html_image_element_y(element)
 }
 
+fn queue_image_decode_resolution(promise &dom.Promise) {
+	queue_a_task(.dom_manipulation, main_thread_event_loop(), none, fn [promise] () {
+		mut mutable_promise := unsafe { &dom.Promise(promise) }
+		mutable_promise.resolve(dom.js_undefined())
+	})
+}
+
+fn queue_image_decode_rejection(promise &dom.Promise, message string) {
+	queue_a_task(.dom_manipulation, main_thread_event_loop(), none, fn [promise, message] () {
+		mut mutable_promise := unsafe { &dom.Promise(promise) }
+		mutable_promise.reject(dom.js_string('EncodingError: ${message}'))
+	})
+}
+
 pub fn (image &HTMLImageElementModel) decode() &dom.Promise {
 	if image.current_request_.state() == .completely_available && image.decoded_data_ != none {
 		return dom.Promise.resolved(dom.js_undefined())
 	}
-	return dom.Promise.rejected(dom.js_string('EncodingError: image data is not available'))
+	if image.current_request_.state() == .broken {
+		return dom.Promise.rejected(dom.js_string('EncodingError: current request state is broken'))
+	}
+
+	promise := dom.Promise.create()
+	expected_request := image.current_request_
+	image_pointer := image
+	mut request := unsafe { &ImageRequest(expected_request) }
+	request.add_callbacks(fn [image_pointer, expected_request, promise] () {
+		mut dispatcher := batching_dispatcher()
+		dispatcher.enqueue(fn [image_pointer, expected_request, promise] () {
+			if image_pointer.current_request_ != expected_request {
+				queue_image_decode_rejection(promise, 'current request changed or was mutated')
+				return
+			}
+			if image_pointer.current_request_.state() != .completely_available
+				|| image_pointer.decoded_data_ == none {
+				queue_image_decode_rejection(promise, 'current request is not completely available')
+				return
+			}
+			queue_image_decode_resolution(promise)
+		})
+	}, fn [image_pointer, expected_request, promise] () {
+		if image_pointer.current_request_ != expected_request {
+			queue_image_decode_rejection(promise, 'current request changed or was mutated')
+			return
+		}
+		queue_image_decode_rejection(promise, 'current request state is broken')
+	}) or {
+		mut mutable_promise := unsafe { &dom.Promise(promise) }
+		mutable_promise.reject(dom.js_string('EncodingError: image data is not available'))
+	}
+	return promise
 }
 
 pub fn (mut image HTMLImageElementModel) restart_the_animation() {
@@ -628,8 +674,8 @@ pub fn (mut image HTMLImageElementModel) handle_failed_fetch() {
 
 // This is the translated completion boundary used by asynchronous hosts. The
 // compact host hook completes synchronously, while SharedResourceRequest users
-// can call this after their callbacks have populated image_request.
-pub fn (mut image HTMLImageElementModel) add_callbacks_to_image_request(image_request &ImageRequest, maybe_omit_events bool, url_string string, previous_url string, update_the_image_data_count u64) {
+// register this callback before starting the fetch.
+fn (mut image HTMLImageElementModel) image_request_finished(image_request &ImageRequest, maybe_omit_events bool, url_string string, previous_url string, update_the_image_data_count u64) {
 	if update_the_image_data_count != image.update_count_ {
 		return
 	}
@@ -674,6 +720,29 @@ pub fn (mut image HTMLImageElementModel) add_callbacks_to_image_request(image_re
 	image.stop_delaying_document_load_event()
 	if !maybe_omit_events || previous_url != url_string {
 		image.handle_failed_fetch()
+	}
+}
+
+pub fn (mut image HTMLImageElementModel) add_callbacks_to_image_request(image_request &ImageRequest, maybe_omit_events bool, url_string string, previous_url string, update_the_image_data_count u64) {
+	image_pointer := image
+	mut request := unsafe { &ImageRequest(image_request) }
+	request.add_callbacks(fn [image_pointer, image_request, maybe_omit_events, url_string, previous_url, update_the_image_data_count] () {
+		if shared_request := image_request.shared_resource_request() {
+			if data := shared_request.image_data() {
+				mut mutable_request := unsafe { &ImageRequest(image_request) }
+				mutable_request.set_image_data(data)
+			}
+		}
+		mut dispatcher := batching_dispatcher()
+		dispatcher.enqueue(fn [image_pointer, image_request, maybe_omit_events, url_string, previous_url, update_the_image_data_count] () {
+			mut mutable_image := unsafe { &HTMLImageElementModel(image_pointer) }
+			mutable_image.image_request_finished(image_request, maybe_omit_events, url_string, previous_url, update_the_image_data_count)
+		})
+	}, fn [image_pointer, image_request, maybe_omit_events, url_string, previous_url, update_the_image_data_count] () {
+		mut mutable_image := unsafe { &HTMLImageElementModel(image_pointer) }
+		mutable_image.image_request_finished(image_request, maybe_omit_events, url_string, previous_url, update_the_image_data_count)
+	}) or {
+		image.image_request_finished(image_request, maybe_omit_events, url_string, previous_url, update_the_image_data_count)
 	}
 }
 
