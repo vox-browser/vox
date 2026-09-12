@@ -527,6 +527,7 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 					rule_index: rule_index
 					specificity: selector.specificity()
 					cascade_origin: cascade_origin
+					scope_rule: rule.parent_scope_rule()
 				}
 
 				qualified_layer_name := matching_rule.qualified_layer_name()
@@ -974,9 +975,40 @@ fn style_scope_absolutized_selectors_for_rule(rule &CSSRule) SelectorList {
 		return mutable_rule.absolutized_selectors()
 	}
 	if rule.type_ == .nested_declarations {
-		parent_style_rule := rule.parent_style_rule() or { return SelectorList{} }
-		mut mutable_parent := unsafe { &CSSRule(parent_style_rule) }
-		return mutable_parent.absolutized_selectors()
+		mut ancestor := rule.parent_rule
+		for {
+			parent := ancestor or { break }
+			if parent.type_ == .style {
+				mut mutable_parent := unsafe { &CSSRule(parent) }
+				return mutable_parent.absolutized_selectors()
+			}
+			if parent.type_ == .scope {
+				mut mutable_scope := unsafe { &CSSRule(parent) }
+				root_selectors := mutable_scope.scope_start_selectors_for_matching() or {
+					SelectorList{
+						selectors: [selector_from_compound_selectors([CompoundSelector{
+							combinator: .no_combinator
+							simple_selectors: [SimpleSelector{
+								type_: .nesting
+							}]
+						}])]
+					}
+				}
+				return SelectorList{
+					selectors: [selector_from_compound_selectors([CompoundSelector{
+						combinator: .no_combinator
+						simple_selectors: [SimpleSelector{
+							type_: .pseudo_class
+							pseudo_class: PseudoClassSelector{
+								type_: .where
+								argument_selector_list: root_selectors
+							}
+						}]
+					}])]
+				}
+			}
+			ancestor = parent.parent_rule
+		}
 	}
 	return SelectorList{}
 }
@@ -1277,6 +1309,122 @@ fn style_scope_flat_tree_ancestor_shadow_roots(node &dom.Node) []&dom.ShadowRoot
 	return roots
 }
 
+fn style_scope_elements_equal(left &dom.Element, right &dom.Element) bool {
+	return voidptr(left) == voidptr(right)
+}
+
+fn style_scope_selector_list_matches_element(selectors SelectorList, element &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element, scope_root ?&dom.Element) bool {
+	mut mutable_sheet := ?&CSSStyleSheet(none)
+	if style_sheet := sheet {
+		mutable_sheet = unsafe { &CSSStyleSheet(style_sheet) }
+	}
+	mut context := MatchContext{
+		style_sheet_for_rule: mutable_sheet
+		subject: unsafe { &dom.Element(element) }
+	}
+	mut scoping_root := ?&dom.ParentNode(none)
+	if root := scope_root {
+		scoping_root = unsafe { &dom.ParentNode(root) }
+	}
+	for selector in selectors.selectors {
+		if matches(selector, element, shadow_host, mut context, none, scoping_root, .normal, none) {
+			return true
+		}
+	}
+	return false
+}
+
+fn style_scope_implicit_root(target &dom.Element, sheet ?&CSSStyleSheet) ?&dom.Element {
+	if style_sheet := sheet {
+		if owner := style_sheet.base.owner_node {
+			if parent := owner.as_node().parent_element() {
+				return parent
+			}
+		}
+	}
+	root_node := target.as_node().root()
+	if document := root_node.as_document() {
+		return document.document_element()
+	}
+	if shadow_root := root_node.as_shadow_root() {
+		return shadow_root.host()
+	}
+	return none
+}
+
+fn style_scope_find_root(scope_rule &CSSRule, target &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element) ?&dom.Element {
+	mut parent_scope_root := ?&dom.Element(none)
+	if parent_scope_rule := scope_rule.parent_scope_rule() {
+		parent_scope_root = style_scope_find_root(parent_scope_rule, target, sheet, shadow_host)
+		parent_root := parent_scope_root or { return none }
+		if style_scope_scope_limit_matches(parent_scope_rule, parent_root, target, sheet, shadow_host) {
+			return none
+		}
+	}
+
+	mut mutable_scope_rule := unsafe { &CSSRule(scope_rule) }
+	start_selectors := mutable_scope_rule.scope_start_selectors_for_matching() or {
+		if parent_root := parent_scope_root {
+			return parent_root
+		}
+		return style_scope_implicit_root(target, sheet)
+	}
+	mut candidate := ?&dom.Element(target)
+	for {
+		current := candidate or { break }
+		if style_scope_selector_list_matches_element(start_selectors, current, sheet, shadow_host, parent_scope_root) {
+			return current
+		}
+		if parent_root := parent_scope_root {
+			if style_scope_elements_equal(current, parent_root) {
+				break
+			}
+		}
+		candidate = current.as_node().parent_element()
+	}
+	return none
+}
+
+fn style_scope_scope_limit_matches(scope_rule &CSSRule, scope_root &dom.Element, target &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element) bool {
+	mut mutable_scope_rule := unsafe { &CSSRule(scope_rule) }
+	end_selectors := mutable_scope_rule.scope_end_selectors_for_matching() or { return false }
+	mut candidate := ?&dom.Element(target)
+	for {
+		current := candidate or { break }
+		if style_scope_selector_list_matches_element(end_selectors, current, sheet, shadow_host, scope_root) {
+			return true
+		}
+		if style_scope_elements_equal(current, scope_root) {
+			break
+		}
+		candidate = current.as_node().parent_element()
+	}
+	return false
+}
+
+fn style_scope_root_for_matching_rule(rule &MatchingRule, target &dom.Element, shadow_host ?&dom.Element) ?&dom.Element {
+	scope_rule := rule.scope_rule or { return none }
+	root := style_scope_find_root(scope_rule, target, rule.sheet, shadow_host) or { return none }
+	if style_scope_scope_limit_matches(scope_rule, root, target, rule.sheet, shadow_host) {
+		return none
+	}
+	return root
+}
+
+fn style_scope_proximity(target &dom.Element, root &dom.Element) int {
+	mut proximity := 0
+	mut candidate := ?&dom.Element(target)
+	for {
+		current := candidate or { return int(0x3fffffff) }
+		if style_scope_elements_equal(current, root) {
+			return proximity
+		}
+		proximity++
+		candidate = current.as_node().parent_element()
+	}
+	return int(0x3fffffff)
+}
+
 pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string, scope &StyleScope) []&MatchingRule {
 	scope.build_rule_cache_if_needed()
 
@@ -1347,6 +1495,13 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 			collect_per_element_selector_involvement_metadata: true
 			has_result_cache: style_scope_has_result_cache_boundary(style_computer)
 		}
+		mut selector_scope := ?&dom.ParentNode(none)
+		mut resolved_scope_root := ?&dom.Element(none)
+		if rule_to_run.scope_rule != none {
+			scope_root := style_scope_root_for_matching_rule(rule_to_run, abstract_element.element(), shadow_host_to_use) or { continue }
+			resolved_scope_root = unsafe { &dom.Element(scope_root) }
+			selector_scope = unsafe { &dom.ParentNode(scope_root) }
+		}
 
 		mut did_match := false
 		if selector.is_slotted() {
@@ -1379,15 +1534,22 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 				if slot_shadow_root := style_scope_slot_node(actual_slot).root().as_shadow_root() {
 					slot_shadow_host = slot_shadow_root.host()
 				}
-				did_match = matches(selector, matching_slot_element, slot_shadow_host, mut context, PseudoElement.slotted, none, .normal, none)
+				did_match = matches(selector, matching_slot_element, slot_shadow_host, mut context, PseudoElement.slotted, selector_scope, .normal, none)
 			}
 		} else {
-			did_match = matches(selector, abstract_element.element(), shadow_host_to_use, mut context, style_scope_pseudo_element_from_abstract_element(abstract_element), none, .normal, none)
+			did_match = matches(selector, abstract_element.element(), shadow_host_to_use, mut context, style_scope_pseudo_element_from_abstract_element(abstract_element), selector_scope, .normal, none)
 		}
 
 		style_scope_merge_attempted_pseudo_class_matches(mut attempted_pseudo_class_matches, context)
 		style_scope_store_has_result_cache_boundary(style_computer, context.has_result_cache)
 		if did_match {
+			mut mutable_rule := unsafe { &MatchingRule(rule_to_run) }
+			mutable_rule.resolved_scope_root = resolved_scope_root
+			if root := resolved_scope_root {
+				mutable_rule.scope_proximity = style_scope_proximity(abstract_element.element(), root)
+			} else {
+				mutable_rule.scope_proximity = int(0x3fffffff)
+			}
 			matching_rules << rule_to_run
 		}
 	}
@@ -1404,6 +1566,9 @@ fn matching_rule_less_than(left &MatchingRule, right &MatchingRule) bool {
 	left_specificity := left.selector.specificity()
 	right_specificity := right.selector.specificity()
 	if left_specificity == right_specificity {
+		if left.scope_proximity != right.scope_proximity {
+			return left.scope_proximity > right.scope_proximity
+		}
 		if left.style_sheet_index == right.style_sheet_index {
 			return left.rule_index < right.rule_index
 		}

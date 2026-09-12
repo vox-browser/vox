@@ -1406,6 +1406,29 @@ pub fn adapt_nested_relative_selector_list(selectors SelectorList) SelectorList 
 	return new_list
 }
 
+pub fn adapt_scope_relative_selector_list(selectors SelectorList) SelectorList {
+	mut new_list := SelectorList{}
+	for selector in selectors.selectors {
+		compound_selectors := selector.compound_selectors()
+		if compound_selectors.len == 0 {
+			continue
+		}
+		first_combinator := compound_selectors[0].combinator
+		if first_combinator !in [.no_combinator, .descendant] {
+			new_list.selectors << selector.relative_to(SimpleSelector{
+				type_: .nesting
+			})
+		} else if first_combinator == .descendant {
+			mut copied := compound_selectors.clone()
+			copied[0].combinator = .no_combinator
+			new_list.selectors << selector_from_compound_selectors(copied)
+		} else {
+			new_list.selectors << selector
+		}
+	}
+	return new_list
+}
+
 pub fn selector_matches(selector Selector, element &dom.Element) bool {
 	mut context := MatchContext{}
 	return matches(selector, element, none, mut context, none, none, .normal, none)

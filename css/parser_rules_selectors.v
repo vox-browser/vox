@@ -1130,6 +1130,8 @@ fn (mut parser RuleSelectorParser) convert_to_style_rule(qualified_rule Qualifie
 	mut selectors := maybe_selectors
 	if nested == .yes {
 		selectors = adapt_nested_relative_selector_list(selectors)
+	} else if nested == .scope {
+		selectors = adapt_scope_relative_selector_list(selectors)
 	}
 
 	declaration := parser.convert_to_style_declaration(qualified_rule.declarations)
@@ -1334,6 +1336,8 @@ fn (mut parser RuleSelectorParser) convert_to_scope_rule(rule AtRule, nested Par
 		}
 		if nested == .yes {
 			parsed_start = adapt_nested_relative_selector_list(parsed_start)
+		} else if nested == .scope {
+			parsed_start = adapt_scope_relative_selector_list(parsed_start)
 		}
 		start_selectors = parsed_start
 		prelude_stream.discard_whitespace()

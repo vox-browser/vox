@@ -9569,6 +9569,9 @@ pub mut:
 	pseudo_element               ?PseudoElement
 	slotted                      bool
 	contains_part_pseudo_element bool
+	scope_rule                   ?&CSSRule
+	resolved_scope_root          ?&dom.Element
+	scope_proximity              int = int(0x3fffffff)
 }
 
 pub struct LayerMatchingRules {

@@ -35,7 +35,7 @@ fn test_scope_rule_preserves_scoped_relative_style_rules() {
 	rule := parse_scope_rule('@scope (.root) { > .child { color: red } }') or {
 		panic('relative style rule in @scope did not parse')
 	}
-	assert rule.css_text() == '@scope (.root) {\n  > .child { color: red; }\n}'
+	assert rule.css_text() == '@scope (.root) {\n  & > .child { color: red; }\n}'
 }
 
 fn test_scope_rule_accepts_direct_declarations() {

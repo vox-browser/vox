@@ -540,6 +540,8 @@ pub mut:
 	cached_absolutized_selectors ?SelectorList
 	scope_start_selectors        ?SelectorList
 	scope_end_selectors          ?SelectorList
+	cached_scope_start_selectors ?SelectorList
+	cached_scope_end_selectors   ?SelectorList
 	declaration                  ?&CSSStyleProperties
 	style_map_cache              ?&CSSOMStylePropertyMap
 
@@ -781,6 +783,10 @@ pub fn (mut rule CSSRule) clear_caches() {
 	if rule.type_ == .style {
 		rule.cached_absolutized_selectors = none
 	}
+	if rule.type_ == .scope {
+		rule.cached_scope_start_selectors = none
+		rule.cached_scope_end_selectors = none
+	}
 	if child_rules := rule.rules {
 		mut mutable_child_rules := unsafe { &CSSRuleList(child_rules) }
 		for mut child_rule in mutable_child_rules.rules {
@@ -917,6 +923,76 @@ pub fn (rule &CSSRule) scope_start() ?string {
 pub fn (rule &CSSRule) scope_end() ?string {
 	selectors := rule.scope_end_selectors or { return none }
 	return serialize_a_group_of_selectors(selectors)
+}
+
+pub fn (rule &CSSRule) parent_scope_rule() ?&CSSRule {
+	mut current_parent := rule.parent_rule
+	for {
+		parent := current_parent or { break }
+		if parent.type_ == .scope {
+			return parent
+		}
+		current_parent = parent.parent_rule
+	}
+	return none
+}
+
+pub fn (mut rule CSSRule) scope_start_selectors_for_matching() ?SelectorList {
+	selectors := rule.scope_start_selectors or { return none }
+	if cached := rule.cached_scope_start_selectors {
+		return cached
+	}
+	mut matching_selectors := selectors
+	if parent_style_rule := rule.parent_style_rule() {
+		mut mutable_parent := unsafe { &CSSRule(parent_style_rule) }
+		selector_for_nesting := SimpleSelector{
+			type_: .pseudo_class
+			pseudo_class: PseudoClassSelector{
+				type_: .is_
+				argument_selector_list: mutable_parent.absolutized_selectors()
+			}
+		}
+		matching_selectors = SelectorList{}
+		for selector in selectors.selectors {
+			if absolutized := selector.absolutized(selector_for_nesting) {
+				matching_selectors.selectors << absolutized
+			}
+		}
+	}
+	rule.cached_scope_start_selectors = matching_selectors
+	return matching_selectors
+}
+
+pub fn (mut rule CSSRule) scope_end_selectors_for_matching() ?SelectorList {
+	selectors := rule.scope_end_selectors or { return none }
+	if cached := rule.cached_scope_end_selectors {
+		return cached
+	}
+	mut matching_selectors := SelectorList{}
+	for selector in selectors.selectors {
+		compound_selectors := selector.compound_selectors()
+		if compound_selectors.len == 0 {
+			continue
+		}
+		first_combinator := compound_selectors[0].combinator
+		if first_combinator !in [.no_combinator, .descendant] || (!selector.contains_the_nesting_selector()
+			&& !selector.contains_pseudo_class(.scope)) {
+			matching_selectors.selectors << selector.relative_to(SimpleSelector{
+				type_: .pseudo_class
+				pseudo_class: PseudoClassSelector{
+					type_: .scope
+				}
+			})
+		} else if first_combinator == .descendant {
+			mut copied := compound_selectors.clone()
+			copied[0].combinator = .no_combinator
+			matching_selectors.selectors << selector_from_compound_selectors(copied)
+		} else {
+			matching_selectors.selectors << selector
+		}
+	}
+	rule.cached_scope_end_selectors = matching_selectors
+	return matching_selectors
 }
 
 fn (rule &CSSRule) serialized_scope_rule() string {
