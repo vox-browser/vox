@@ -94,3 +94,19 @@ fn test_font_face_set_ready_settles_when_all_faces_are_deferred() {
 	assert set.status() == .loaded
 	assert set.ready().state == .fulfilled
 }
+
+fn test_font_face_set_load_filters_faces_by_text_unicode_range() {
+	mut set := FontFaceSet.create()
+	face_a := FontFaceObject.construct_impl('MultiFace', FontFaceSource.from_string('url("missing-a.woff2")'), FontFaceDescriptors{
+		unicode_range: 'U+41'
+	})
+	face_b := FontFaceObject.construct_impl('MultiFace', FontFaceSource.from_string('url("missing-b.woff2")'), FontFaceDescriptors{
+		unicode_range: 'U+42'
+	})
+	set.add(face_a)!
+	set.add(face_b)!
+
+	set.load('16px MultiFace', 'A')!
+	assert face_a.status() == .error
+	assert face_b.status() == .unloaded
+}

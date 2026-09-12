@@ -1913,7 +1913,8 @@ pub fn FontFaceObject.construct_impl(family string, source FontFaceSource, descr
 	font_face.weight_ = font_face_try_parse_descriptor(mut font_face, .font_weight, descriptors.weight)
 	stretch := font_face_try_parse_descriptor(mut font_face, .font_width, descriptors.stretch)
 	font_face.set_stretch_impl(stretch)
-	font_face.unicode_range_ = font_face_try_parse_descriptor(mut font_face, .unicode_range, descriptors.unicode_range)
+	unicode_range := font_face_try_parse_descriptor(mut font_face, .unicode_range, descriptors.unicode_range)
+	font_face.set_unicode_range_impl(unicode_range)
 	font_face.feature_settings_ = font_face_try_parse_descriptor(mut font_face, .font_feature_settings, descriptors.feature_settings)
 	font_face.variation_settings_ = font_face_try_parse_descriptor(mut font_face, .font_variation_settings, descriptors.variation_settings)
 	font_face.display_ = font_face_try_parse_descriptor(mut font_face, .font_display, descriptors.display)
@@ -2819,7 +2820,6 @@ pub fn (mut set FontFaceSet) clear() {
 
 // https://drafts.csswg.org/css-font-loading/#find-the-matching-font-faces
 fn find_matching_font_faces(font_face_set &FontFaceSet, font string, text string) ![]&FontFaceObject {
-	_ = text
 	// 1. Parse font using the CSS value syntax of the font property. If a syntax error occurs, return a syntax error.
 	font_family_list := parse_font_shorthand_family_list(font) or {
 		return error('SyntaxError: Unable to parse font')
@@ -2854,17 +2854,36 @@ fn find_matching_font_faces(font_face_set &FontFaceSet, font string, text string
 	}
 
 	// FIXME: 7. If matched font faces is empty, set the found faces flag to false. Otherwise, set it to true.
-	// FIXME: 8. For each font face in matched font faces, if its defined unicode-range does not include the codepoint of at
-	//           least one character in text, remove it from the list.
+
+	// 8. Remove faces whose unicode-range does not contain any code point in text.
+	mut matching_text_faces := []&FontFaceObject{}
+	for font_face in matched_font_faces {
+		mut includes_text_code_point := false
+		for code_point in text.runes() {
+			for unicode_range in font_face.unicode_ranges_ {
+				if unicode_range.start <= u32(code_point) && u32(code_point) <= unicode_range.end {
+					includes_text_code_point = true
+					break
+				}
+			}
+			if includes_text_code_point {
+				break
+			}
+		}
+		if includes_text_code_point {
+			matching_text_faces << font_face
+		}
+	}
 
 	// 9. Return matched font faces and the found faces flag.
-	return matched_font_faces
+	return matching_text_faces
 }
 
 // https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-load
-pub fn (mut set FontFaceSet) load(font string, text string) !&webidl.Promise {
+pub fn (mut set FontFaceSet) load(font string, text_arguments ...string) !&webidl.Promise {
 	// 1. Let font face set be the FontFaceSet object this method was called on. Let promise be a newly-created promise object.
 	mut promise := webidl.create_promise()
+	text := if text_arguments.len > 0 { text_arguments[0] } else { ' ' }
 
 	// 3. Find the matching font faces from font face set using the font and text arguments passed to the function,
 	//    and let font face list be the return value (ignoring the found faces flag). If a syntax error was returned,
@@ -2897,10 +2916,11 @@ pub fn (mut set FontFaceSet) load(font string, text string) !&webidl.Promise {
 }
 
 // https://drafts.csswg.org/css-font-loading/#dom-fontfaceset-check
-pub fn (set &FontFaceSet) check(font string, text string) !bool {
+pub fn (set &FontFaceSet) check(font string, text_arguments ...string) !bool {
 	// Find matching FontFace entries without initiating a load. System fonts are
 	// represented by an empty result in this translation boundary and therefore
 	// satisfy the check immediately.
+	text := if text_arguments.len > 0 { text_arguments[0] } else { ' ' }
 	matched_font_faces := find_matching_font_faces(set, font, text)!
 	for font_face in matched_font_faces {
 		if font_face.status() != .loaded {
