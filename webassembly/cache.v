@@ -14,7 +14,11 @@ pub type HostEnsureCanCompileWasmBytesHook = fn () !
 
 __global (
 	webassembly_global_cache                 &WebAssemblyCache
-	host_ensure_can_compile_wasm_bytes_hook_ HostEnsureCanCompileWasmBytesHook = unsafe { nil }
+	host_ensure_can_compile_wasm_bytes_hook_ ?HostEnsureCanCompileWasmBytesHook
+)
+__global (
+	webassembly_realm_caches = map[string]&WebAssemblyCache{}
+	webassembly_live_caches_ = []&WebAssemblyCache{}
 )
 
 pub struct AbstractMachine {
@@ -33,7 +37,7 @@ mut:
 
 pub fn ExportedWasmFunction.create(name string, exported_address u64) &ExportedWasmFunction {
 	return &ExportedWasmFunction{
-		name:              name
+		name: name
 		exported_address_: exported_address
 	}
 }
@@ -47,7 +51,7 @@ pub struct WebAssemblyCache {
 mut:
 	function_instances_ map[u64]&ExportedWasmFunction
 	extern_values_      map[u64]webidl.Value
-	inverse_extern_      map[string]u64
+	inverse_extern_     map[string]u64
 	global_instances_   map[u64]&Global
 	memory_instances_   map[u64]&Memory
 	compiled_modules_   []&Module
@@ -56,20 +60,35 @@ mut:
 }
 
 pub fn WebAssemblyCache.create() &WebAssemblyCache {
-	return &WebAssemblyCache{
+	cache := &WebAssemblyCache{
 		function_instances_: map[u64]&ExportedWasmFunction{}
-		extern_values_:      map[u64]webidl.Value{}
-		inverse_extern_:      map[string]u64{}
-		global_instances_:   map[u64]&Global{}
-		memory_instances_:   map[u64]&Memory{}
+		extern_values_: map[u64]webidl.Value{}
+		inverse_extern_: map[string]u64{}
+		global_instances_: map[u64]&Global{}
+		memory_instances_: map[u64]&Memory{}
 	}
+	webassembly_live_caches_ << cache
+	return cache
 }
 
 pub fn get_cache() &WebAssemblyCache {
-	if webassembly_global_cache == unsafe { nil } {
-		webassembly_global_cache = WebAssemblyCache.create()
+	return get_cache_for_realm('default')
+}
+
+pub fn get_cache_for_realm(realm string) &WebAssemblyCache {
+	if cache := webassembly_realm_caches[realm] {
+		return cache
 	}
-	return webassembly_global_cache
+	mut cache := WebAssemblyCache.create()
+	webassembly_realm_caches[realm] = cache
+	if realm == 'default' {
+		webassembly_global_cache = cache
+	}
+	return cache
+}
+
+pub fn live_caches() []&WebAssemblyCache {
+	return webassembly_live_caches_.clone()
 }
 
 pub fn (mut cache WebAssemblyCache) add_compiled_module(module_ &Module) {
@@ -185,13 +204,13 @@ pub fn host_ensure_can_compile_wasm_bytes() ! {
 	// The native implementation asks the current Realm's CSP policy. The V
 	// runtime exposes that realm lookup as a host hook while keeping the actual
 	// allow/deny decision on every compilation path in this module.
-	if host_ensure_can_compile_wasm_bytes_hook_ != unsafe { nil } {
-		host_ensure_can_compile_wasm_bytes_hook_()!
+	if hook := host_ensure_can_compile_wasm_bytes_hook_ {
+		hook()!
 	}
 }
 
 pub fn set_host_ensure_can_compile_wasm_bytes_hook(hook ?HostEnsureCanCompileWasmBytesHook) {
-	host_ensure_can_compile_wasm_bytes_hook_ = hook or { unsafe { nil } }
+	host_ensure_can_compile_wasm_bytes_hook_ = hook
 }
 
 pub fn asynchronously_compile_webassembly_module(bytes []u8) !&Module {
@@ -207,7 +226,7 @@ pub fn asynchronously_instantiate_webassembly_module(module_ &Module, imports Im
 pub fn instantiate_promise_of_module(module_ &Module, imports ImportObject) !WebAssemblyInstantiatedSource {
 	instance := asynchronously_instantiate_webassembly_module(module_, imports)!
 	return WebAssemblyInstantiatedSource{
-		module:   module_
+		module: module_
 		instance: instance
 	}
 }
