@@ -2765,6 +2765,9 @@ fn (b &BlockBox) flat_paint_commands_for_entries(entries []PaintOrderEntry, sele
 		}
 		if nested_viewport_paintable := box.nested_viewport_paintable {
 			if hosted_document := box.nested_viewport_document {
+				if hosted_document.is_render_blocked() {
+					continue
+				}
 				nested_rect := nested_viewport_paintable.nested_rect or {
 					nested_viewport_paintable.viewport_rect
 				}

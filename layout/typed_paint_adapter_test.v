@@ -2422,8 +2422,20 @@ fn test_video_uses_the_paintable_representation_switch() {
 }
 
 fn test_iframe_replays_the_hosted_document_as_a_nested_display_list() {
-	document := html.parse_document('<!doctype html><style>html,body{margin:0}iframe{display:block;width:120px;height:60px;border:4px solid red;border-radius:12px}</style><iframe srcdoc="<style>html,body{margin:0}body{background:rgb(12 34 56)}</style><p>nested</p>"></iframe>')
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}iframe{display:block;width:120px;height:60px;border:4px solid red;border-radius:12px}</style><iframe id="frame" srcdoc="<style>html,body{margin:0}body{background:rgb(12 34 56)}</style><p>nested</p>"></iframe>')
 	root := layout_document_typed_in_viewport(document, 240, 140)
+	iframe_element := document.get_element_by_id('frame') or { panic('missing iframe') }
+	iframe_box := root.find_box(i64(iframe_element.as_node().unique_id())) or {
+		panic('missing iframe paint box')
+	}
+	mut hosted_document := iframe_box.nested_viewport_document or {
+		panic('missing hosted document')
+	}
+	blocker := hosted_document.create_element('style') or { panic(err) }
+	hosted_document.add_render_blocking_element(blocker)
+	assert root.paint_commands().all(it.kind != 'paint_nested_display_list')
+	hosted_document.remove_render_blocking_element(blocker)
+
 	commands := root.paint_commands().filter(it.kind == 'paint_nested_display_list')
 	assert commands.len == 1
 	command := commands[0]
