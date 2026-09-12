@@ -49,11 +49,11 @@ of 20. Exact comparisons remain exact. All 24 new cases pass this bounded
 workflow. The complete refresh run also covers the three default smoke cases
 and five modified SVG cases: all 32 invocations pass (31 distinct fixtures).
 
-The current semantic audit below reports 6,055 unmatched C++ spellings. That
-is a structural review queue rather than a count of missing behaviors: active V
+The current base-to-head semantic delta audit reports 5,848 unmatched changed
+C++ spellings. That is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
-and that queue is empty.
+and the refreshed current-tree audit has 18 candidates awaiting body review.
 
 The earlier inventory mapped every upstream implementation filename to V code,
 but filename and symbol-name coverage did not establish behavioral parity. A
@@ -156,7 +156,7 @@ from the current-module totals.
 | `WebAssembly` | 7 | 3,441 | 2,065 | 702 | Complete |
 | `WebAudio` | 47 | 8,256 | 2,649 | 444 | Complete |
 | `WebDriver` | 16 | 5,321 | 3,447 | 638 | Complete |
-| `WebGL` | 42 | 7,846 | 4,183 | 538 | Complete |
+| `WebGL` | 42 | 7,846 | 6,205 | 1,470 | Complete |
 | `WebIDL` | 10 | 2,466 | 2,162 | 613 | Complete |
 | `WebLocks` | 5 | 647 | 701 | 169 | Complete |
 | `WebSockets` | 1 | 476 | 316 | 115 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **335,950** | **64,886** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **337,972** | **65,818** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -180,23 +180,23 @@ upstream modules: 76
 upstream .cpp files: 1193
 upstream implementations: 21401
 quarantined name-only coverage shims: 0 files / 0 functions
-explicit semantic-divergence markers: 8
-reviewed upstream-equivalent trivial implementations: 551
-suspicious empty/default-return implementations: 0
-  candidate-name-match: 12444
-  unmatched: 6183
+explicit semantic-divergence markers: 9
+reviewed upstream-equivalent trivial implementations: 529
+suspicious empty/default-return implementations: 18
+  candidate-name-match: 12726
+  unmatched: 5895
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 628
-  consolidated-name-match: 383
+  consolidated-name-match: 388
   namespace-template-specialization: 177
   language-operator: 124
-  language-template-trait: 62
+  language-template-trait: 63
   value-record-field-match: 17
 
 largest unmatched modules:
 
   1853 CSS
-  1357 HTML
+  1356 HTML
    705 DOM
    440 Painting
    338 WebAudio
@@ -220,14 +220,16 @@ $ ./compare_screenshots.sh <24-new-cases> inline-node ordered-list \
 32 passed, 32 total (31 distinct fixtures)
 ```
 
-The 2026-09-08 default-body pass exhausted the suspicious-stub queue and then
+The 2026-09-08 default-body pass exhausted the suspicious-stub queue at that
+checkpoint and then
 closed the ten unmatched symbols outside CSS, Layout, and Painting. It added
 document-owned animation-timeline updates, the observable constructed-sheet
 adoption callbacks, and live SVG `use` shadow trees. Consequently every
 remaining unmatched symbol at that checkpoint was contained in the three large
 modules already under structural and differential audit. The refreshed
-September source introduced and reorganized spellings across many modules; the
-current structural count above is not a claim that every one lacks behavior.
+September source introduced and reorganized spellings and 18 new trivial-body
+review candidates across many modules; the current structural count above is
+not a claim that every one lacks behavior.
 
 The Painting state pass then reduced that module from 230 to 146 unmatched
 implementations without adding class-shaped facades. It tied `PaintableBox`
