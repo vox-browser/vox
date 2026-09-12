@@ -51,3 +51,9 @@ fn test_supports_at_rule_composes_and_serializes() {
 	assert parse_supports_at_rule_condition('not at-rule(@unknown)').matches_condition()
 	assert parse_supports_at_rule_condition('(color: red) or at-rule(@unknown)').matches_condition()
 }
+
+fn test_supports_at_rule_recognizes_scope_rules() {
+	condition := parse_supports_at_rule_condition('at-rule(@ScOpE)')
+	assert condition.matches_condition()
+	assert condition.to_string() == 'at-rule(@ScOpE)'
+}

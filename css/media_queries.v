@@ -237,6 +237,7 @@ fn at_rule_is_supported(name string) bool {
 		'namespace',
 		'page',
 		'property',
+		'scope',
 		'supports',
 	]) {
 		return true
