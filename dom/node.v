@@ -137,6 +137,7 @@ pub enum StyleInvalidationReason {
 	style_change
 	media_query_changed_match_state
 	counter_style_cache_invalidated
+	other
 }
 
 pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) string {
@@ -163,6 +164,7 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 		.style_change { 'StyleChange' }
 		.media_query_changed_match_state { 'MediaQueryChangedMatchState' }
 		.counter_style_cache_invalidated { 'CounterStyleCacheInvalidated' }
+		.other { 'Other' }
 	}
 }
 

@@ -4635,6 +4635,14 @@ pub fn (mut e Element) invalidate_style_if_affected_by_has() {
 	if e.affected_by_has_pseudo_class_in_subject_position {
 		e.set_needs_style_update(true)
 	}
+	if e.affected_by_has_pseudo_class_in_subject_position
+		|| e.affected_by_has_pseudo_class_in_non_subject_position {
+		mut node := unsafe { &Node(&e) }
+		node.invalidate_style_with_properties(.other, [InvalidationProperty{
+			type_: .pseudo_class
+			pseudo_class_name: 'has'
+		}], StyleInvalidationOptions{})
+	}
 }
 
 pub fn (mut e Element) set_needs_style_update(v bool) {

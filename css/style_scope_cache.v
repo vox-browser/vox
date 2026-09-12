@@ -514,6 +514,9 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 				for selector in absolutized_selectors.selectors {
 					mutable_invalidation_data.build_invalidation_sets_for_selector(selector)
 				}
+				if scope_rule := rule.parent_scope_rule() {
+					style_scope_collect_boundary_selector_dependencies(scope_rule, mut mutable_invalidation_data, mut mutable_insights)
+				}
 			}
 
 			for selector in absolutized_selectors.selectors {
@@ -589,6 +592,27 @@ pub fn (mut scope StyleScope) make_rule_cache_for_cascade_origin(cascade_origin 
 			style_scope_add_keyframes_rule_to_cache(mut rule_caches.main, rule)
 		})
 		style_sheet_index++
+	}
+}
+
+fn style_scope_collect_boundary_selector_dependencies(scope_rule &CSSRule, mut invalidation_data StyleInvalidationData, mut insights SelectorInsights) {
+	mut current_scope_rule := ?&CSSRule(scope_rule)
+	for {
+		current := current_scope_rule or { break }
+		mut mutable_current := unsafe { &CSSRule(current) }
+		if start_selectors := mutable_current.scope_start_selectors_for_matching() {
+			for selector in start_selectors.selectors {
+				invalidation_data.build_invalidation_sets_for_scope_boundary_selector(selector)
+				StyleScope.collect_selector_insights(selector, mut insights)
+			}
+		}
+		if end_selectors := mutable_current.scope_end_selectors_for_matching() {
+			for selector in end_selectors.selectors {
+				invalidation_data.build_invalidation_sets_for_scope_boundary_selector(selector)
+				StyleScope.collect_selector_insights(selector, mut insights)
+			}
+		}
+		current_scope_rule = current.parent_scope_rule()
 	}
 }
 
@@ -1313,14 +1337,15 @@ fn style_scope_elements_equal(left &dom.Element, right &dom.Element) bool {
 	return voidptr(left) == voidptr(right)
 }
 
-fn style_scope_selector_list_matches_element(selectors SelectorList, element &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element, scope_root ?&dom.Element) bool {
+fn style_scope_selector_list_matches_element(selectors SelectorList, element &dom.Element, subject &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element, scope_root ?&dom.Element) bool {
 	mut mutable_sheet := ?&CSSStyleSheet(none)
 	if style_sheet := sheet {
 		mutable_sheet = unsafe { &CSSStyleSheet(style_sheet) }
 	}
 	mut context := MatchContext{
 		style_sheet_for_rule: mutable_sheet
-		subject: unsafe { &dom.Element(element) }
+		subject: unsafe { &dom.Element(subject) }
+		collect_per_element_selector_involvement_metadata: true
 	}
 	mut scoping_root := ?&dom.ParentNode(none)
 	if root := scope_root {
@@ -1377,7 +1402,7 @@ fn style_scope_find_root(scope_rule &CSSRule, target &dom.Element, sheet ?&CSSSt
 	mut candidate := ?&dom.Element(target)
 	for {
 		current := candidate or { break }
-		if style_scope_selector_list_matches_element(start_selectors, current, scope_style_sheet, shadow_host, parent_scope_root) {
+		if style_scope_selector_list_matches_element(start_selectors, current, target, scope_style_sheet, shadow_host, parent_scope_root) {
 			return current
 		}
 		if parent_root := parent_scope_root {
@@ -1401,7 +1426,7 @@ fn style_scope_scope_limit_matches(scope_rule &CSSRule, scope_root &dom.Element,
 	mut candidate := ?&dom.Element(target)
 	for {
 		current := candidate or { break }
-		if style_scope_selector_list_matches_element(end_selectors, current, scope_style_sheet, shadow_host, scope_root) {
+		if style_scope_selector_list_matches_element(end_selectors, current, target, scope_style_sheet, shadow_host, scope_root) {
 			return true
 		}
 		if style_scope_elements_equal(current, scope_root) {

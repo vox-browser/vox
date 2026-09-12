@@ -9054,7 +9054,11 @@ pub fn (s &StyleInvalidationData) plan_for_property(property InvalidationPropert
 }
 
 pub fn (mut s StyleInvalidationData) build_invalidation_sets_for_selector(selector Selector) {
-	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no)
+	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no, make_invalidate_self_invalidation())
+}
+
+pub fn (mut s StyleInvalidationData) build_invalidation_sets_for_scope_boundary_selector(selector Selector) {
+	_ = build_invalidation_sets_for_selector_impl(mut s, selector, .no, make_invalidate_whole_subtree_invalidation())
 }
 
 fn should_register_invalidation_property(property InvalidationProperty) bool {
@@ -9071,6 +9075,15 @@ fn make_invalidate_whole_subtree_invalidation() &InvalidationPlan {
 	mut invalidation := InvalidationPlan.create()
 	invalidation.invalidate_whole_subtree = true
 	return invalidation
+}
+
+fn copy_invalidation_plan(plan &InvalidationPlan) &InvalidationPlan {
+	return &InvalidationPlan{
+		invalidate_self: plan.invalidate_self
+		invalidate_whole_subtree: plan.invalidate_whole_subtree
+		descendant_rules: plan.descendant_rules.clone()
+		sibling_rules: plan.sibling_rules.clone()
+	}
 }
 
 fn add_invalidation_plan_for_properties(mut style_invalidation_data StyleInvalidationData, invalidation_properties InvalidationSet, plan &InvalidationPlan) {
@@ -9285,10 +9298,10 @@ fn collect_properties_used_in_has(selector InvalidationSimpleSelector, mut style
 	}
 }
 
-fn build_invalidation_set_for_simple_selectors(simple_selectors []InvalidationSimpleSelector, exclude_properties_nested_in_not_pseudo_class ExcludePropertiesNestedInNotPseudoClass, mut style_invalidation_data StyleInvalidationData, inside_nth_child_pseudo_class InsideNthChildPseudoClass) InvalidationSet {
+fn build_invalidation_set_for_simple_selectors(simple_selectors []InvalidationSimpleSelector, exclude_properties_nested_in_not_pseudo_class ExcludePropertiesNestedInNotPseudoClass, mut style_invalidation_data StyleInvalidationData, inside_nth_child_pseudo_class InsideNthChildPseudoClass, root_invalidation_plan &InvalidationPlan) InvalidationSet {
 	mut invalidation_set := InvalidationSet{}
 	for simple_selector in simple_selectors {
-		build_invalidation_sets_for_simple_selector(simple_selector, mut invalidation_set, exclude_properties_nested_in_not_pseudo_class, mut style_invalidation_data, inside_nth_child_pseudo_class)
+		build_invalidation_sets_for_simple_selector_impl(simple_selector, mut invalidation_set, exclude_properties_nested_in_not_pseudo_class, mut style_invalidation_data, inside_nth_child_pseudo_class, root_invalidation_plan)
 	}
 	return invalidation_set
 }
@@ -9335,7 +9348,7 @@ fn build_invalidation_for_combinator(combinator SelectorCombinator, righthand Se
 	return invalidation
 }
 
-pub fn build_invalidation_sets_for_simple_selector(selector InvalidationSimpleSelector, mut invalidation_set InvalidationSet, exclude_properties_nested_in_not_pseudo_class ExcludePropertiesNestedInNotPseudoClass, mut style_invalidation_data StyleInvalidationData, inside_nth_child_selector InsideNthChildPseudoClass) {
+fn build_invalidation_sets_for_simple_selector_impl(selector InvalidationSimpleSelector, mut invalidation_set InvalidationSet, exclude_properties_nested_in_not_pseudo_class ExcludePropertiesNestedInNotPseudoClass, mut style_invalidation_data StyleInvalidationData, inside_nth_child_selector InsideNthChildPseudoClass, root_invalidation_plan &InvalidationPlan) {
 	match selector.type_ {
 		.class {
 			invalidation_set.set_needs_invalidate_class(selector.name)
@@ -9377,7 +9390,7 @@ pub fn build_invalidation_sets_for_simple_selector(selector InvalidationSimpleSe
 				inside_nested = .yes
 			}
 			for nested_selector in selector.nested_selectors {
-				rightmost_set := build_invalidation_sets_for_selector_impl(mut style_invalidation_data, nested_selector, inside_nested)
+				rightmost_set := build_invalidation_sets_for_selector_impl(mut style_invalidation_data, nested_selector, inside_nested, root_invalidation_plan)
 				invalidation_set.include_all_from(rightmost_set)
 
 				if selector_contains_pseudo_class(nested_selector, .has) {
@@ -9392,6 +9405,10 @@ pub fn build_invalidation_sets_for_simple_selector(selector InvalidationSimpleSe
 		}
 		else {}
 	}
+}
+
+pub fn build_invalidation_sets_for_simple_selector(selector InvalidationSimpleSelector, mut invalidation_set InvalidationSet, exclude_properties_nested_in_not_pseudo_class ExcludePropertiesNestedInNotPseudoClass, mut style_invalidation_data StyleInvalidationData, inside_nth_child_selector InsideNthChildPseudoClass) {
+	build_invalidation_sets_for_simple_selector_impl(selector, mut invalidation_set, exclude_properties_nested_in_not_pseudo_class, mut style_invalidation_data, inside_nth_child_selector, make_invalidate_self_invalidation())
 }
 
 fn selector_contains_pseudo_class(selector Selector, pseudo_class CSSPseudoClass) bool {
@@ -9418,7 +9435,7 @@ fn add_whole_subtree_invalidation_for_non_subject_complex_selector_properties(se
 			continue
 		}
 
-		invalidation_set := build_invalidation_set_for_simple_selectors(group.simple_selectors, .no, mut style_invalidation_data, .no)
+		invalidation_set := build_invalidation_set_for_simple_selectors(group.simple_selectors, .no, mut style_invalidation_data, .no, make_invalidate_self_invalidation())
 		add_invalidation_plan_for_properties(mut style_invalidation_data, invalidation_set, make_invalidate_whole_subtree_invalidation())
 	}
 }
@@ -9444,7 +9461,7 @@ fn add_invalidation_sets_to_cover_scope_leakage_of_relative_selector_in_has_pseu
 	}
 }
 
-fn build_invalidation_sets_for_selector_impl(mut style_invalidation_data StyleInvalidationData, selector Selector, inside_nth_child_pseudo_class InsideNthChildPseudoClass) InvalidationSet {
+fn build_invalidation_sets_for_selector_impl(mut style_invalidation_data StyleInvalidationData, selector Selector, inside_nth_child_pseudo_class InsideNthChildPseudoClass, root_invalidation_plan &InvalidationPlan) InvalidationSet {
 	groups := selector_groups_for_invalidation(selector)
 	if groups.len == 0 {
 		return InvalidationSet{}
@@ -9461,12 +9478,12 @@ fn build_invalidation_sets_for_selector_impl(mut style_invalidation_data StyleIn
 			collect_properties_used_in_has(simple_selector, mut style_invalidation_data, in_has)
 		}
 
-		invalidation_properties := build_invalidation_set_for_simple_selectors(group.simple_selectors, .no, mut style_invalidation_data, inside_nth_child_pseudo_class)
-		mut subject_match_set := build_invalidation_set_for_simple_selectors(group.simple_selectors, .yes, mut style_invalidation_data, inside_nth_child_pseudo_class)
+		invalidation_properties := build_invalidation_set_for_simple_selectors(group.simple_selectors, .no, mut style_invalidation_data, inside_nth_child_pseudo_class, root_invalidation_plan)
+		mut subject_match_set := build_invalidation_set_for_simple_selectors(group.simple_selectors, .yes, mut style_invalidation_data, inside_nth_child_pseudo_class, root_invalidation_plan)
 		subject_matches_any := subject_match_set.is_empty() && simple_selector_group_matches_any(group.simple_selectors)
 
 		if is_rightmost {
-			mut root_plan := make_invalidate_self_invalidation()
+			mut root_plan := copy_invalidation_plan(root_invalidation_plan)
 			if inside_nth_child_pseudo_class == .yes {
 				// When invalidation property is nested in nth-child selector like
 				// p:nth-child(even of #t1, #t2, #t3), we need to make sure all affected siblings are invalidated.
