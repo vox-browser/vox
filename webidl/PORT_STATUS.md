@@ -1,37 +1,43 @@
 # WebIDL port status
 
-Audit snapshot: Ladybird `Libraries/LibWeb/WebIDL` on 2026-08-17.
+Audit snapshot: Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa`
+`Libraries/LibWeb/WebIDL` on 2026-09-12.
 
 ## Inventory
 
-- Upstream: 10 `.cpp` files, 2,110 implementation LOC; 13 headers; 3 IDLs.
-- V: 8 implementation files, 1,139 LOC; 4 test files, 279 LOC, 13 tests.
+- Upstream: 10 `.cpp` files, 2,466 implementation LOC; 14 headers; 4 IDLs.
+- V: 10 implementation files, 2,162 LOC; 5 test files, 613 LOC, 28 tests.
+- The upstream delta from the 2026-03-24 baseline has no unmatched added
+  WebIDL functions after this refresh.
 
 ## Source mapping
 
 | Upstream source | LOC | V translation |
 | --- | ---: | --- |
-| `AbstractOperations.cpp`, `AbstractOperations.h`, `Types.h` | 573 | `value.v` |
-| `AsyncIterator.cpp`, `AsyncIterator.h` | 217 | `async_iterator.v` |
-| `Buffers.cpp`, `Buffers.h` | 156 | `buffers.v` |
-| `CachedAttribute.h` | — | `async_iterator.v` |
-| `CallbackType.cpp`, `CallbackType.h`, `Function.idl` | 45 | `promise.v` |
-| `DOMException.cpp`, `DOMException.h`, `DOMException.idl` | 77 | `exceptions.v` |
-| `ExceptionOr.h` | — | V result/error types and `exceptions.v` |
-| `ObservableArray.cpp`, `ObservableArray.h` | 78 | `observable_array.v` |
-| `OverloadResolution.cpp`, `OverloadResolution.h` | 465 | `overload_resolution.v` |
-| `Promise.cpp`, `Promise.h` | 336 | `promise.v` |
-| `QuotaExceededError.cpp`, `QuotaExceededError.h`, `QuotaExceededError.idl` | 109 | `exceptions.v` |
-| `Tracing.cpp`, `Tracing.h` | 54 | `tracing.v` |
+| `AbstractOperations.cpp`, `AbstractOperations.h`, `Types.h` | 702 | `abstract_operations.v`, `value.v` |
+| `AsyncIterator.cpp`, `AsyncIterator.h` | 341 | `async_iterator.v` |
+| `Buffers.cpp`, `Buffers.h`, `Buffers.idl` | 397 | `buffers.v` |
+| `CachedAttribute.h` | 18 | `async_iterator.v` |
+| `CallbackType.cpp`, `CallbackType.h`, `Function.idl` | 97 | `promise.v` |
+| `DOMException.cpp`, `DOMException.h`, `DOMException.idl` | 328 | `exceptions.v` |
+| `ExceptionOr.h`, `ExceptionOrUtils.h` | 300 | V result/error types and `exceptions.v` |
+| `ObservableArray.cpp`, `ObservableArray.h` | 138 | `observable_array.v` |
+| `OverloadResolution.cpp`, `OverloadResolution.h` | 511 | `overload_resolution.v` |
+| `OverloadTypes.cpp`, `OverloadTypes.h` | 286 | `overload_types.v` |
+| `Promise.cpp`, `Promise.h` | 539 | `promise.v` |
+| `QuotaExceededError.cpp`, `QuotaExceededError.h`, `QuotaExceededError.idl` | 169 | `exceptions.v` |
+| Removed upstream `Tracing.cpp`, `Tracing.h` | — | retained compatibility in `tracing.v` |
 
 All current `.cpp`, header and IDL files are accounted for.
 
 ## Coverage and boundaries
 
-Portable behavior includes DOM exception legacy codes and serialization, quota
-validation, buffer/view bounds and alignment, observable-array mutation hooks,
-distinguishing-overload precedence, promise reactions and pending `wait_for_all`,
-async iteration, callback invocation, cached attributes and trace formatting.
+Portable behavior includes DOM exception wrapper reporting, legacy codes and
+serialization; quota validation; typed buffer/view bounds, validation records
+and checked writes; indexed observable-array mutation hooks; recursive Web IDL
+type/union classification and distinguishing-overload precedence; relevant-realm
+promise helpers, reactions and pending `wait_for_all`; relevant-realm async
+iteration; callback invocation; cached attributes; and trace formatting.
 
 `webidl.Value` is the explicit boundary for LibJS values, realms, prototypes,
 property access and GC roots. It deliberately implements only the conversions

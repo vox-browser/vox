@@ -49,7 +49,7 @@ of 20. Exact comparisons remain exact. All 24 new cases pass this bounded
 workflow. The complete refresh run also covers the three default smoke cases
 and five modified SVG cases: all 32 invocations pass (31 distinct fixtures).
 
-The current semantic audit below reports 6,529 unmatched C++ spellings. That
+The current semantic audit below reports 6,183 unmatched C++ spellings. That
 is a structural review queue rather than a count of missing behaviors: active V
 implementations often consolidate C++ class hierarchies and overloads under a
 single typed path. Empty/default-return implementations are checked separately,
@@ -157,7 +157,7 @@ from the current-module totals.
 | `WebAudio` | 47 | 8,256 | 2,649 | 444 | Complete |
 | `WebDriver` | 16 | 5,321 | 3,447 | 638 | Complete |
 | `WebGL` | 42 | 7,846 | 4,183 | 538 | Complete |
-| `WebIDL` | 10 | 2,466 | 1,564 | 381 | Complete |
+| `WebIDL` | 10 | 2,466 | 2,162 | 613 | Complete |
 | `WebLocks` | 5 | 647 | 701 | 169 | Complete |
 | `WebSockets` | 1 | 476 | 316 | 115 | Complete |
 | `WebVTT` | 2 | 378 | 464 | 232 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **333,407** | **63,685** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **334,005** | **63,917** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
@@ -183,8 +183,8 @@ quarantined name-only coverage shims: 0 files / 0 functions
 explicit semantic-divergence markers: 8
 reviewed upstream-equivalent trivial implementations: 551
 suspicious empty/default-return implementations: 0
-  candidate-name-match: 12098
-  unmatched: 6529
+  candidate-name-match: 12444
+  unmatched: 6183
   language-constructor-or-destructor: 1383
   gc-or-binding-runtime: 628
   consolidated-name-match: 383
