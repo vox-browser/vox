@@ -271,6 +271,7 @@ mut:
 	task_queue_                           &TaskQueue = unsafe { nil }
 	microtask_queue                       []&Task
 	currently_running_task_               ?&Task
+	task_generation_                      u64
 	reached_step_1_tasks                  []fn()
 	performing_a_microtask_checkpoint     bool
 	documents_                            []&dom.Document
@@ -341,6 +342,10 @@ pub fn (event_loop &EventLoop) currently_running_task() ?&Task {
 	return event_loop.currently_running_task_
 }
 
+pub fn (event_loop &EventLoop) task_generation() u64 {
+	return event_loop.task_generation_
+}
+
 fn unsafe_shared_current_time_ms() f64 {
 	return f64(time.sys_mono_now()) / 1_000_000.0
 }
@@ -407,6 +412,7 @@ pub fn (mut event_loop EventLoop) process() {
 	if event_loop.skip_event_loop_processing_steps {
 		return
 	}
+	event_loop.task_generation_++
 	event_loop.scheduled = false
 	reached_step_1_tasks := event_loop.reached_step_1_tasks.clone()
 	event_loop.reached_step_1_tasks.clear()

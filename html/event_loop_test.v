@@ -62,6 +62,19 @@ fn test_task_ids_are_unique_and_monotonic() {
 	assert second.id() == first.id() + 1
 }
 
+fn test_event_loop_task_generation_advances_once_per_processing_turn() {
+	mut event_loop := EventLoop.create(.window)
+	assert event_loop.task_generation() == 0
+	event_loop.process()
+	assert event_loop.task_generation() == 1
+	event_loop.process()
+	assert event_loop.task_generation() == 2
+
+	event_loop.skip_event_loop_processing_steps = true
+	event_loop.process()
+	assert event_loop.task_generation() == 2
+}
+
 fn test_microtask_checkpoint_after_task() {
 	mut event_loop := EventLoop.create(.window)
 	mut calls := &EventLoopTestCalls{}
