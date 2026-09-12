@@ -626,6 +626,19 @@ fn (mut state ApplyHistoryStepState) start() {
 	state.phase = .waiting_for_document_population
 	state.changing = state.traversable.get_all_navigables_whose_current_session_history_entry_will_change_or_reload(state.used_step).len > 0
 	state.non_changing = state.traversable.get_all_navigables_that_only_need_history_object_length_index_update(state.used_step).len > 0
+	if state.changing && state.synchronous_navigation == .yes {
+		if host := state.traversable.host_navigable_ {
+			if model := navigable_model_for_host(host) {
+				// A synchronous same-document history step must not steal a
+				// navigable that a fresh cross-document navigation has claimed.
+				// Doing so would abort its navigate event and strand its deferred
+				// navigation work.
+				if model.ongoing_navigation().kind == .navigation {
+					state.changing = false
+				}
+			}
+		}
+	}
 	if !state.changing {
 		state.phase = .waiting_for_non_changing_jobs
 		state.enter_waiting_for_non_changing_jobs()

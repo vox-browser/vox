@@ -110,6 +110,35 @@ fn test_synchronous_navigation_steps_jump_the_queue_while_history_application_is
 	assert completion.result == .applied
 }
 
+fn test_synchronous_history_step_does_not_strand_a_fresh_navigation() {
+	mut traversable := TraversableNavigable.create_a_fresh_top_level_traversable(dom.URL{
+		value: 'https://example.test/current'
+	}, EmptyDocumentResource{})!
+	current := traversable.active_session_history_entry() or { panic('missing current entry') }
+	target := traversal_entry(1, 'https://example.test/replaced', traversable.active_document() or {
+		panic('missing active document')
+	})
+	traversable.append_session_history_entry(target)
+	host := traversable.host_navigable_ or { panic('missing host navigable') }
+	mut model := NavigableModel.create(host, none)!
+	model.set_ongoing_navigation(NavigableOngoingNavigation{
+		kind: .navigation
+		id: 'fresh-navigation'
+	})
+	mut completion := &HistoryStepObservation{}
+	traversable.apply_the_push_or_replace_history_step(1, .replace, .none_, .yes, fn [mut completion] (result HistoryStepResult) {
+		completion.complete(result)
+	})
+
+	assert completion.completed
+	assert completion.result == .applied
+	assert model.ongoing_navigation() == NavigableOngoingNavigation{
+		kind: .navigation
+		id: 'fresh-navigation'
+	}
+	assert traversable.active_session_history_entry()? == current
+}
+
 fn test_traversable_clear_forward_and_finalize_navigation() {
 	mut traversable := TraversableNavigable.create_a_fresh_top_level_traversable(dom.URL{
 		value: 'https://example.test/zero'
