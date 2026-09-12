@@ -268,6 +268,41 @@ fn test_inherited_style_update_reuses_cascade_and_recomputes_font_relative_value
 	assert child.client_width() == 40
 }
 
+fn test_inherited_style_update_reaches_descendants_without_layout_nodes() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	mut root := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html')!
+	mut hidden := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
+	mut intermediary := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
+	mut target := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'em')!
+	root.set_attribute_value('style', 'color: red')
+	hidden.set_attribute_value('style', 'display: none')
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(root.as_node())!
+	mut root_node := root.as_node()
+	root_node.append_child(hidden.as_node())!
+	mut hidden_node := hidden.as_node()
+	hidden_node.append_child(intermediary.as_node())!
+	mut intermediary_node := intermediary.as_node()
+	intermediary_node.append_child(target.as_node())!
+
+	install_document_layout_hook(doc)
+	doc.set_cached_navigable(&dom.Navigable{
+		active_document_: doc
+	})
+	doc.needs_full_layout_tree_update = true
+	doc.update_layout(.debugging)
+	assert hidden.as_node().layout_node() == none
+	assert target.as_node().layout_node() == none
+	initial := css.computed_properties_for_element(target) or { panic('missing target style') }
+	assert (initial.property(.color, .no) or { panic('missing initial color') }).css_text == 'rgb(255, 0, 0)'
+
+	root.set_attribute_value('style', 'color: blue')
+	doc.update_style()
+	updated := css.computed_properties_for_element(target) or { panic('missing updated style') }
+	assert (updated.property(.color, .no) or { panic('missing updated color') }).css_text == 'rgb(0, 0, 255)'
+}
+
 fn test_document_animated_style_update_samples_retained_transition() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	doc.set_browsing_context(&dom.BrowsingContext{})

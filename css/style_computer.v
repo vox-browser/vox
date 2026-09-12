@@ -997,9 +997,6 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	mut computed := computed_properties_from_dom(dom_computed) or {
 		return RequiredInvalidationAfterStyleChange{}
 	}
-	layout_node := abstract_element.unsafe_layout_node() or {
-		return RequiredInvalidationAfterStyleChange{}
-	}
 
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	mut values_affected_by_inherited_style := map[PropertyID]&dom.StyleValue{}
@@ -1053,10 +1050,12 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	}
 
 	// Refresh the DOM-side mirror after mutating the retained ComputedProperties
-	// and apply the same object to the retained Layout::Node.
+	// and apply the same object to a retained Layout::Node, if one exists.
 	computed_dom_mirror := computed_properties_to_dom(computed)
 	abstract_element.set_computed_properties(computed_dom_mirror)
-	layout_node.apply_style(computed_dom_mirror)
+	if layout_node := abstract_element.unsafe_layout_node() {
+		layout_node.apply_style(computed_dom_mirror)
+	}
 	return invalidation
 }
 
