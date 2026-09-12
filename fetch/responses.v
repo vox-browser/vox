@@ -42,6 +42,23 @@ pub mut:
 	content_type string
 }
 
+pub type RequestServerAction = fn ()
+
+pub type RequestServerResumeUpTo = fn (usize)
+
+pub type RequestServerSetBodyDeliveryPaused = fn (bool)
+
+pub struct RequestServerRequest {
+pub:
+	client_id                  int = -1
+	request_id                 u64
+	release_transfer_lease     ?RequestServerAction
+	resume_body_delivery       ?RequestServerAction
+	resume_body_delivery_up_to ?RequestServerResumeUpTo
+	set_body_delivery_paused   ?RequestServerSetBodyDeliveryPaused
+	stop                       ?RequestServerAction
+}
+
 // https://fetch.spec.whatwg.org/#concept-response
 @[heap]
 pub struct Response {
@@ -78,8 +95,9 @@ pub mut:
 	method                  string
 	monotonic_response_time i64
 	// https://fetch.spec.whatwg.org/#concept-network-error (the network error message).
-	network_error_message ?string
-	internal_response     ?&Response
+	network_error_message   ?string
+	internal_response       ?&Response
+	request_server_request_ ?RequestServerRequest
 }
 
 // https://fetch.spec.whatwg.org/#concept-response-clone (allocation only).
@@ -196,7 +214,64 @@ pub fn (response &Response) clone() &Response {
 		request_includes_credentials: response.request_includes_credentials
 		timing_allow_passed: response.timing_allow_passed
 		body_info: response.body_info
+		request_server_request_: response.request_server_request_
 		monotonic_response_time: i64(time.sys_mono_now())
+	}
+}
+
+pub fn (response &Response) request_server_request() ?RequestServerRequest {
+	if internal := response.internal_response {
+		return internal.request_server_request()
+	}
+	return response.request_server_request_
+}
+
+pub fn (mut response Response) set_request_server_request(request RequestServerRequest) {
+	if mut internal := response.internal_response {
+		internal.set_request_server_request(request)
+		return
+	}
+	response.request_server_request_ = request
+}
+
+pub fn (response &Response) release_request_transfer_lease() {
+	if internal := response.internal_response {
+		internal.release_request_transfer_lease()
+		return
+	}
+	request := response.request_server_request_ or { return }
+	if release := request.release_transfer_lease {
+		release()
+	}
+}
+
+pub fn (response &Response) resume_body_delivery() {
+	if internal := response.internal_response {
+		internal.resume_body_delivery()
+		return
+	}
+	response.release_request_transfer_lease()
+	request := response.request_server_request_ or { return }
+	if resume := request.resume_body_delivery {
+		resume()
+	}
+}
+
+pub fn (response &Response) resume_body_delivery_up_to(byte_count usize) {
+	if internal := response.internal_response {
+		internal.resume_body_delivery_up_to(byte_count)
+		return
+	}
+	request := response.request_server_request_ or { return }
+	if resume := request.resume_body_delivery_up_to {
+		resume(byte_count)
+	}
+}
+
+fn (response &Response) stop_request_server_request() {
+	request := response.request_server_request() or { return }
+	if stop := request.stop {
+		stop()
 	}
 }
 

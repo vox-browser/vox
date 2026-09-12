@@ -221,6 +221,14 @@ pub fn (mut params FetchParams) set_algorithms(algorithms &FetchAlgorithms) {
 	params.algorithms = algorithms
 }
 
+pub fn (params &FetchParams) has_response_body_transfer_lease() bool {
+	return params.has_response_body_transfer_lease
+}
+
+pub fn (mut params FetchParams) set_has_response_body_transfer_lease(value bool) {
+	params.has_response_body_transfer_lease = value
+}
+
 pub fn (params &FetchParams) fetch_params_task_destination() string {
 	return params.task_destination
 }

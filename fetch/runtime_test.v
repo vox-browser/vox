@@ -7,6 +7,9 @@ import http
 __global (
 	fetched_data_promise_resolutions int
 	preload_host_calls               int
+	transfer_pause_notifications     int
+	redirect_transfer_releases       int
+	redirect_request_stops           int
 )
 
 fn controller_test_process_response(_ &Response) {}
@@ -18,6 +21,28 @@ fn resolve_fetched_data_promise() {
 fn preload_tracking_host(_ &Request) !&Response {
 	preload_host_calls++
 	return Response.create()
+}
+
+fn note_transfer_pause(paused bool) {
+	if paused {
+		transfer_pause_notifications++
+	}
+}
+
+fn note_redirect_transfer_release() {
+	redirect_transfer_releases++
+}
+
+fn note_redirect_request_stop() {
+	redirect_request_stops++
+}
+
+fn transfer_lease_host(_ &Request) !&Response {
+	mut response := Response.create()
+	response.set_request_server_request(RequestServerRequest{
+		set_body_delivery_paused: note_transfer_pause
+	})
+	return response
 }
 
 fn test_fetch_controller_params_tasks_and_timing() {
@@ -86,6 +111,33 @@ fn test_fetch_controller_tracks_started_font_network_request() {
 	assert params.controller.has_started_request()
 	assert params.controller.requires_network()
 	assert params.controller.pending_request_ == none
+}
+
+fn test_fetch_params_and_fetch_propagate_response_body_transfer_lease() {
+	mut request := Request.create()
+	request.url_list = [dom.URL{'https://example.test/leased'}]
+	request.cache_mode = .no_store
+	mut params := FetchParams.create(request, FetchTimingInfo.create())
+	assert !params.has_response_body_transfer_lease()
+	params.set_has_response_body_transfer_lease(true)
+	assert params.copy().has_response_body_transfer_lease()
+	transfer_pause_notifications = 0
+	response := http_network_or_cache_fetch(params, FetchHost{
+		perform: transfer_lease_host
+	}).response()?
+	assert !response.is_network_error()
+	assert transfer_pause_notifications == 1
+
+	mut blank_request := Request.create()
+	blank_request.url_list = [dom.URL{'about:blank'}]
+	blank_request.origin = RequestOrigin{
+		is_client: false
+		origin: dom.Origin{ value: 'opaque' }
+	}
+	controller := fetch(blank_request, FetchAlgorithms.create(FetchAlgorithmsInput{}), FetchHost{
+		perform: preload_tracking_host
+	}, .yes)
+	assert controller.fetch_params_?.has_response_body_transfer_lease()
 }
 
 fn test_fetch_controller_matches_upstream_state_transitions_and_cleanup() {
@@ -317,6 +369,12 @@ fn test_http_redirect_and_cors_preflight_boundaries() {
 	redirect.status = 303
 	redirect.url_list = request.url_list.clone()
 	redirect.header_list.append(http.Header{ name: 'Location', value: '/next' })
+	redirect_transfer_releases = 0
+	redirect_request_stops = 0
+	redirect.set_request_server_request(RequestServerRequest{
+		release_transfer_lease: note_redirect_transfer_release
+		stop: note_redirect_request_stop
+	})
 	host := FetchHost{
 		perform: redirect_host
 	}
@@ -325,4 +383,6 @@ fn test_http_redirect_and_cors_preflight_boundaries() {
 	assert request.method == 'GET'
 	assert request.current_url().serialize() == 'https://example.test/next'
 	assert result.fetch_response_body()?.bytes().bytestr() == 'https://example.test/next'
+	assert redirect_transfer_releases == 1
+	assert redirect_request_stops == 1
 }

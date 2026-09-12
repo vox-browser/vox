@@ -251,7 +251,7 @@ pub fn fetch_a_style_resource(url_value StyleResourceURL, css_rule_or_declaratio
 	algorithms := fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{
 		process_response_consume_body: process_response
 	})
-	return fetch.fetch(fetch_request, algorithms, host)
+	return fetch.fetch(fetch_request, algorithms, host, .no)
 }
 
 // https://drafts.csswg.org/css-images-4/#fetch-an-external-image-for-a-stylesheet

@@ -85,6 +85,11 @@ pub enum FetchControllerState {
 	stopped
 }
 
+pub enum CreateResponseBodyTransferLease {
+	no
+	yes
+}
+
 pub type ReportTimingSteps = fn (&FetchTimingInfo)
 
 pub type ManualRedirectSteps = fn ()
@@ -274,14 +279,15 @@ pub:
 @[heap]
 pub struct FetchParams {
 pub mut:
-	request                      &Request = unsafe { nil }
-	algorithms                   &FetchAlgorithms = unsafe { nil }
-	controller                   &FetchController = unsafe { nil }
-	timing_info                  &FetchTimingInfo = unsafe { nil }
-	task_destination             string
-	cross_origin_isolated        bool
-	preloaded_response_candidate PreloadedResponseCandidateKind
-	preloaded_response           ?&Response
+	request                          &Request = unsafe { nil }
+	algorithms                       &FetchAlgorithms = unsafe { nil }
+	controller                       &FetchController = unsafe { nil }
+	timing_info                      &FetchTimingInfo = unsafe { nil }
+	task_destination                 string
+	cross_origin_isolated            bool
+	preloaded_response_candidate     PreloadedResponseCandidateKind
+	preloaded_response               ?&Response
+	has_response_body_transfer_lease bool
 }
 
 pub fn FetchParams.create(request &Request, timing_info &FetchTimingInfo) &FetchParams {
@@ -306,6 +312,7 @@ pub fn (params &FetchParams) copy() &FetchParams {
 		cross_origin_isolated: params.cross_origin_isolated
 		preloaded_response_candidate: params.preloaded_response_candidate
 		preloaded_response: params.preloaded_response
+		has_response_body_transfer_lease: params.has_response_body_transfer_lease
 	}
 }
 
@@ -941,6 +948,13 @@ pub fn http_network_or_cache_fetch(params &FetchParams, host &FetchHost) &Pendin
 		mut forward_response := host.perform(http_request) or {
 			Response.network_error(err.msg())
 		}
+		if params.has_response_body_transfer_lease {
+			if request_server_request := forward_response.request_server_request() {
+				if set_paused := request_server_request.set_body_delivery_paused {
+					set_paused(true)
+				}
+			}
+		}
 		controller.set_pending_request(none)
 		response = forward_response
 		store_response_in_cache(http_request, forward_response)
@@ -1105,9 +1119,13 @@ pub fn http_redirect_fetch(params &FetchParams, response &Response, host &FetchH
 	mut request := params.request
 	internal := response.unsafe_response()
 	location_result := internal.location_url(request.current_url().fragment()) or {
+		internal.release_request_transfer_lease()
+		internal.stop_request_server_request()
 		return PendingResponse.create(mut request, Response.network_error(err.msg()))
 	}
 	mut location := location_result.url or { return PendingResponse.create(mut request, response) }
+	internal.release_request_transfer_lease()
+	internal.stop_request_server_request()
 	if location.scheme() !in ['http', 'https'] {
 		return PendingResponse.create(mut request, Response.network_error('Request redirect URL must have HTTP or HTTPS scheme'))
 	}
@@ -1178,7 +1196,7 @@ pub fn (request &IncrementalReadLoopReadRequest) on_error(reason string) {
 	request.process_error(reason)
 }
 
-pub fn fetch(request &Request, algorithms &FetchAlgorithms, host &FetchHost) &FetchController {
+pub fn fetch(request &Request, algorithms &FetchAlgorithms, host &FetchHost, create_response_body_transfer_lease CreateResponseBodyTransferLease) &FetchController {
 	assert request.mode == .navigate || algorithms.input.process_early_hints_response == none
 	mut mutable_request := request
 	populate_request_from_client(mut mutable_request)
@@ -1195,6 +1213,7 @@ pub fn fetch(request &Request, algorithms &FetchAlgorithms, host &FetchHost) &Fe
 	mut params := FetchParams.create(mutable_request, timing)
 	params.algorithms = algorithms
 	params.cross_origin_isolated = cross_origin_isolated
+	params.has_response_body_transfer_lease = create_response_body_transfer_lease == .yes
 	if !mutable_request.header_list.contains('Accept') {
 		mut value := '*/*'
 		is_prefetch := if initiator := mutable_request.initiator {

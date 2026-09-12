@@ -3,6 +3,14 @@ module fetch
 import dom
 import http
 
+struct RequestServerActionLog {
+mut:
+	releases      int
+	resumes       int
+	resumed_up_to []usize
+	stops         int
+}
+
 fn test_response_defaults() {
 	response := Response.create()
 	assert response.response_type == .default
@@ -98,4 +106,36 @@ fn test_filtered_responses_hide_headers_and_unsafe_response() {
 	assert opaque.status == 0 && opaque.body == none
 	assert opaque.unsafe_response() == internal
 	assert opaque.is_cors_cross_origin()
+}
+
+fn test_response_transfer_lease_actions_delegate_through_filtered_responses() {
+	mut log := &RequestServerActionLog{}
+	mut response := Response.create()
+	response.set_request_server_request(RequestServerRequest{
+		client_id: 4
+		request_id: 99
+		release_transfer_lease: fn [mut log] () {
+			log.releases++
+		}
+		resume_body_delivery: fn [mut log] () {
+			log.resumes++
+		}
+		resume_body_delivery_up_to: fn [mut log] (byte_count usize) {
+			log.resumed_up_to << byte_count
+		}
+		stop: fn [mut log] () {
+			log.stops++
+		}
+	})
+	filtered := filtered_response(response, .basic)
+	assert filtered.request_server_request()?.client_id == 4
+	filtered.resume_body_delivery()
+	filtered.resume_body_delivery_up_to(128)
+	filtered.release_request_transfer_lease()
+	filtered.stop_request_server_request()
+	assert log.releases == 2
+	assert log.resumes == 1
+	assert log.resumed_up_to == [usize(128)]
+	assert log.stops == 1
+	assert response.clone().request_server_request()?.request_id == 99
 }
