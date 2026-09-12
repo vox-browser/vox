@@ -1988,49 +1988,7 @@ pub fn (l Length) font_relative_length_to_px(font_metrics LengthFontMetrics, roo
 }
 
 pub fn (l Length) font_relative_length_to_px_without_rounding(font_metrics LengthFontMetrics, root_font_metrics LengthFontMetrics) f64 {
-	return match l.unit_ {
-		.em {
-			l.value_ * font_metrics.font_size.to_double()
-		}
-		.rem {
-			l.value_ * root_font_metrics.font_size.to_double()
-		}
-		.ex {
-			l.value_ * font_metrics.x_height.to_double()
-		}
-		.rex {
-			l.value_ * root_font_metrics.x_height.to_double()
-		}
-		.cap {
-			l.value_ * font_metrics.cap_height.to_double()
-		}
-		.rcap {
-			l.value_ * root_font_metrics.cap_height.to_double()
-		}
-		.ch {
-			l.value_ * font_metrics.zero_advance.to_double()
-		}
-		.rch {
-			l.value_ * root_font_metrics.zero_advance.to_double()
-		}
-		.ic {
-			// FIXME: Use the advance measure of the CJK water ideograph, U+6C34.
-			l.value_ * font_metrics.font_size.to_double()
-		}
-		.ric {
-			// FIXME: Use the advance measure of the CJK water ideograph, U+6C34.
-			l.value_ * root_font_metrics.font_size.to_double()
-		}
-		.lh {
-			l.value_ * font_metrics.line_height.to_double()
-		}
-		.rlh {
-			l.value_ * root_font_metrics.line_height.to_double()
-		}
-		else {
-			panic('VERIFY_NOT_REACHED')
-		}
-	}
+	return ratio_between_font_relative_unit_and_px(l.unit_, font_metrics, root_font_metrics) * l.value_
 }
 
 pub fn (l Length) viewport_relative_length_to_px(viewport_rect CSSPixelRect) CSSPixels {
@@ -2038,28 +1996,56 @@ pub fn (l Length) viewport_relative_length_to_px(viewport_rect CSSPixelRect) CSS
 }
 
 pub fn (l Length) viewport_relative_length_to_px_without_rounding(viewport_rect CSSPixelRect) f64 {
+	return ratio_between_viewport_relative_unit_and_px(l.unit_, viewport_rect) * l.value_
+}
+
+pub fn ratio_between_font_relative_unit_and_px(unit LengthUnit, font_metrics LengthFontMetrics, root_font_metrics LengthFontMetrics) f64 {
+	return match unit {
+		.em { font_metrics.font_size.to_double() }
+		.rem { root_font_metrics.font_size.to_double() }
+		.ex { font_metrics.x_height.to_double() }
+		.rex { root_font_metrics.x_height.to_double() }
+		.cap { font_metrics.cap_height.to_double() }
+		.rcap { root_font_metrics.cap_height.to_double() }
+		.ch { font_metrics.zero_advance.to_double() }
+		.rch { root_font_metrics.zero_advance.to_double() }
+		.ic {
+			// FIXME: Use the advance measure of the CJK water ideograph, U+6C34.
+			font_metrics.font_size.to_double()
+		}
+		.ric {
+			// FIXME: Use the advance measure of the CJK water ideograph, U+6C34.
+			root_font_metrics.font_size.to_double()
+		}
+		.lh { font_metrics.line_height.to_double() }
+		.rlh { root_font_metrics.line_height.to_double() }
+		else { panic('VERIFY_NOT_REACHED') }
+	}
+}
+
+pub fn ratio_between_viewport_relative_unit_and_px(unit LengthUnit, viewport_rect CSSPixelRect) f64 {
 	width := viewport_rect.width_value()
 	height := viewport_rect.height_value()
-	return match l.unit_ {
+	return match unit {
 		.vw, .svw, .lvw, .dvw {
-			width * l.value_ / 100.0
+			width / 100.0
 		}
 		.vh, .svh, .lvh, .dvh {
-			height * l.value_ / 100.0
+			height / 100.0
 		}
 		.vi, .svi, .lvi, .dvi {
 			// FIXME: Select the width or height based on which is the inline axis.
-			width * l.value_ / 100.0
+			width / 100.0
 		}
 		.vb, .svb, .lvb, .dvb {
 			// FIXME: Select the width or height based on which is the block axis.
-			height * l.value_ / 100.0
+			height / 100.0
 		}
 		.vmin, .svmin, .lvmin, .dvmin {
-			math.min(width, height) * l.value_ / 100.0
+			math.min(width, height) / 100.0
 		}
 		.vmax, .svmax, .lvmax, .dvmax {
-			math.max(width, height) * l.value_ / 100.0
+			math.max(width, height) / 100.0
 		}
 		else {
 			panic('VERIFY_NOT_REACHED')
