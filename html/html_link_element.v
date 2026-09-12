@@ -474,6 +474,19 @@ fn translate_preload_destination(destination string) ?string {
 	return if lower == 'fetch' { '' } else { lower }
 }
 
+fn request_destination_from_preload_destination(destination ?string) ?RequestDestination {
+	value := destination or { return none }
+	return match value {
+		'audio' { RequestDestination.audio }
+		'font' { RequestDestination.font }
+		'image' { RequestDestination.image }
+		'script' { RequestDestination.script }
+		'style' { RequestDestination.style }
+		'track' { RequestDestination.track }
+		else { none }
+	}
+}
+
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_preload_resource() {
 	mut options := link.create_link_options()
 	destination := translate_preload_destination(link.as_) or { return }
@@ -527,10 +540,19 @@ pub fn (mut link HTMLLinkElementModel) preload(mut options LinkProcessingOptions
 		link.fire_event('error')
 		return
 	}
+	potential_request := create_potential_cors_request(request.url, request_destination_from_preload_destination(options.destination), options.crossorigin, .no)
+	key := create_a_preload_key(potential_request)
+	mut entry := &PreloadEntry{
+		integrity_metadata: options.integrity
+	}
+	if document := options.document {
+		store_preloaded_resource(document, key, entry)
+	}
 	response := fetch(request.url, .preload, request.crossorigin) or {
 		link.fire_event('error')
 		return
 	}
+	entry.set_response(response)
 	if response.status < 200 || response.status >= 300 {
 		link.fire_event('error')
 		return

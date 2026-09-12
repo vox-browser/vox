@@ -4479,6 +4479,7 @@ pub mut:
 	// Misc
 	shared_resource_requests_               map[string]&SharedResourceRequest
 	speculative_fetch_urls_                 map[string]bool
+	preloaded_resource_entries_             map[string]voidptr
 	adopted_style_sheets                    []&CSSStyleSheet
 	adopted_css_style_sheets_handle         voidptr = unsafe { nil }
 	console_client_                         &ConsoleClient = unsafe { nil }
@@ -10249,6 +10250,22 @@ pub fn (d &Document) has_speculative_fetch_url(url URL) bool {
 
 pub fn (mut d Document) add_speculative_fetch_url(url URL) {
 	d.speculative_fetch_urls_[url.serialize()] = true
+}
+
+// HTML owns PreloadEntry, so DOM retains document-lifetime entries through an
+// opaque handle and a serialized PreloadKey to avoid a DOM -> HTML cycle.
+pub fn (mut d Document) set_preloaded_resource_entry(key string, entry voidptr) {
+	d.preloaded_resource_entries_[key] = entry
+}
+
+pub fn (mut d Document) take_preloaded_resource_entry(key string) ?voidptr {
+	entry := d.preloaded_resource_entries_[key] or { return none }
+	d.preloaded_resource_entries_.delete(key)
+	return entry
+}
+
+pub fn (d &Document) preloaded_resource_entry_count() int {
+	return d.preloaded_resource_entries_.len
 }
 
 // --- Shared resource requests ---
