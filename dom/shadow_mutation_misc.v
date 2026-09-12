@@ -3764,6 +3764,26 @@ pub fn (mut observer DocumentObserver) set_document(mut document Document) {
 	document.register_document_observer(observer)
 }
 
+pub fn (mut observer DocumentObserver) retarget_for_adoption(mut new_document Document) {
+	was_fully_active := observer.document_ != unsafe { nil }
+		&& observer.document_.is_fully_active()
+	observer.set_document(mut new_document)
+	is_fully_active := new_document.is_fully_active()
+
+	// Moving the observed element between active and inactive documents must
+	// look like the corresponding document lifecycle transition to observers.
+	if was_fully_active == is_fully_active {
+		return
+	}
+	if is_fully_active {
+		if callback := observer.document_became_active_ {
+			callback()
+		}
+	} else if callback := observer.document_became_inactive_ {
+		callback()
+	}
+}
+
 pub fn (observer &DocumentObserver) document() ?&Document {
 	if observer.document_ == unsafe { nil } {
 		return none
