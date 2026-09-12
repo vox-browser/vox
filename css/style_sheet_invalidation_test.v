@@ -159,6 +159,36 @@ fn test_light_dom_attribute_change_schedules_has_invalidation_in_host_shadow_sco
 	assert shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
 }
 
+fn test_shadow_tree_mutations_schedule_has_invalidation_in_outer_document_scope() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(document, 'x-host::part(container):has(.flag) { color: red }')
+	mut document_node := unsafe { &dom.Node(document) }
+	mut host := style_sheet_invalidation_test_element(document, 'x-host')
+	document_node.append_child(host.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	mut container := style_sheet_invalidation_test_element(document, 'div')
+	container.set_attribute_value('part', 'container')
+	shadow_node.append_child(container.as_node()) or { panic(err) }
+	mut existing_child := style_sheet_invalidation_test_element(document, 'span')
+	mut container_node := container.as_node()
+	container_node.append_child(existing_child.as_node()) or { panic(err) }
+	_ := css_style_computer_for(document)
+	mut document_scope := css_style_scope_for_document(document)
+	document_scope.build_rule_cache_if_needed()
+	assert document_scope.may_have_has_selectors()
+	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+
+	existing_child.set_attribute_value('class', 'flag')
+	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+
+	mut inserted_child := style_sheet_invalidation_test_element(document, 'span')
+	inserted_child.set_attribute_value('class', 'flag')
+	container_node.append_child(inserted_child.as_node()) or { panic(err) }
+	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+}
+
 fn test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }

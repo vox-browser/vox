@@ -1330,6 +1330,14 @@ fn schedule_has_walk_for_parent(style_scope &StyleScope, parent &Node, reason St
 	}
 }
 
+fn schedule_has_walk_for_unique_scope(mut scheduled_scopes []&StyleScope, style_scope &StyleScope, parent &Node, reason StyleInvalidationReason) {
+	if style_scope in scheduled_scopes {
+		return
+	}
+	scheduled_scopes << style_scope
+	schedule_has_walk_for_parent(style_scope, parent, reason)
+}
+
 pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	doc := n.document()
 	if doc == unsafe { nil } {
@@ -1338,15 +1346,17 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	style_scope := style_scope_for_node(&n)
 	if reason == .node_remove || reason == .node_insert_before {
 		if parent := n.parent_or_shadow_host() {
-			schedule_has_walk_for_parent(style_scope, parent, reason)
+			mut scheduled_scopes := []&StyleScope{cap: 4}
+			schedule_has_walk_for_unique_scope(mut scheduled_scopes, style_scope, parent, reason)
 			for ancestor := ?&Node(parent); ancestor != none;  {
 				current := ancestor or { break }
+				schedule_has_walk_for_unique_scope(mut scheduled_scopes, style_scope_for_node(current),
+					parent, reason)
 				if element := current.as_element() {
 					if shadow_root := element.shadow_root() {
 						shadow_scope := shadow_root.style_scope()
-						if shadow_scope != style_scope {
-							schedule_has_walk_for_parent(shadow_scope, parent, reason)
-						}
+						schedule_has_walk_for_unique_scope(mut scheduled_scopes, shadow_scope,
+							parent, reason)
 					}
 				}
 				ancestor = current.parent_or_shadow_host()
@@ -1450,6 +1460,7 @@ fn additional_style_scopes_for_node(node &Node, style_scope &StyleScope) []&Styl
 	}
 	for ancestor := node.parent_or_shadow_host(); ancestor != none;  {
 		current := ancestor or { break }
+		add_additional_style_scope(mut additional_scopes, style_scope_for_node(current), style_scope)
 		if element := current.as_element() {
 			if shadow_root := element.shadow_root() {
 				add_additional_style_scope(mut additional_scopes, shadow_root.style_scope(), style_scope)
