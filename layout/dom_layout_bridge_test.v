@@ -140,6 +140,60 @@ fn test_document_update_layout_runs_registered_layout_engine() {
 	assert child.client_width() == 170
 }
 
+fn test_document_layout_stabilizes_container_relative_lengths_after_geometry_commit() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	doc.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+	mut html_element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic('${err}')
+	}
+	mut container := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	mut child := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	container.set_attribute_value('style', 'container-type: size; width: 400px; height: 100px')
+	child.set_attribute_value('style', 'width: 25cqw; height: 10px')
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(html_element.as_node())!
+	mut html_node := html_element.as_node()
+	html_node.append_child(container.as_node())!
+	mut container_node := container.as_node()
+	container_node.append_child(child.as_node())!
+
+	install_document_layout_hook(doc)
+	doc.set_cached_navigable(&dom.Navigable{
+		active_document_: doc
+	})
+	doc.needs_full_layout_tree_update = true
+	doc.update_style()
+	provisional_container := css.computed_properties_for_element(container) or {
+		panic('missing provisional container style')
+	}
+	assert provisional_container.container_type().is_size_container
+	provisional_child := css.computed_properties_for_element(child) or {
+		panic('missing provisional child style')
+	}
+	assert (provisional_child.property(.width, .no) or { panic('missing provisional width') }).css_text == '0px'
+	assert doc.needs_container_query_evaluation_after_layout(container)
+	doc.update_layout(.debugging)
+
+	container_computed := css.computed_properties_for_element(container) or {
+		panic('missing container style')
+	}
+	assert container_computed.container_type().is_size_container
+	assert container.client_width() == 400
+	child_computed := css.computed_properties_for_element(child) or { panic('missing child style') }
+	assert voidptr(child_computed.subject_element_ or { panic('missing subject') }) == voidptr(child)
+	assert (child_computed.property(.width, .no) or { panic('missing width') }).css_text == '100px'
+	assert child_computed.length_percentage_to_px(.width, 800) or { -1 } == 100
+	assert child.client_width() == 100
+	assert child.style_depends_on_size_container_query()
+	assert container.is_size_query_container()
+	assert !doc.needs_container_query_evaluation_after_layout(container)
+}
+
 fn test_computed_cssom_uses_translated_layout_used_values() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	doc.set_browsing_context(&dom.BrowsingContext{})

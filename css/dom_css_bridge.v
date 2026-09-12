@@ -649,6 +649,10 @@ fn document_get_style_sheet_source_callback(target voidptr, identifier &dom.Styl
 	}
 }
 
+fn document_size_query_invalidation_callback(_ voidptr, query_container &dom.Element) {
+	invalidate_descendant_styles_depending_on_size_container_query(query_container)
+}
+
 // DOM::Document::build_registered_properties_cache(). The concrete CSS rules
 // remain CSS-owned, while the compact registration records are mirrored onto
 // Document for custom-property computation.
@@ -1027,6 +1031,7 @@ pub fn install_document_style_hook(document &dom.Document) {
 		target:                      voidptr(document)
 		callback:                    document_style_update_callback
 		invalidate_for_pseudo_class: document_pseudo_class_invalidation_callback
+		invalidate_size_dependents:  document_size_query_invalidation_callback
 		evaluate_media_rules:        document_evaluate_media_rules_callback
 		get_style_sheet_source:      document_get_style_sheet_source_callback
 	})

@@ -1457,11 +1457,14 @@ pub type DocumentEvaluateMediaRulesCallback = fn (voidptr)
 
 pub type DocumentGetStyleSheetSourceCallback = fn (voidptr, &StyleSheetIdentifier) ?string
 
+pub type DocumentSizeQueryInvalidationCallback = fn (voidptr, &Element)
+
 pub struct DocumentStyleUpdateHook {
 pub:
 	target                      voidptr = unsafe { nil }
 	callback                    DocumentStyleUpdateCallback = unsafe { nil }
 	invalidate_for_pseudo_class DocumentPseudoClassInvalidationCallback = unsafe { nil }
+	invalidate_size_dependents  DocumentSizeQueryInvalidationCallback = unsafe { nil }
 	evaluate_media_rules        DocumentEvaluateMediaRulesCallback = unsafe { nil }
 	get_style_sheet_source      DocumentGetStyleSheetSourceCallback = unsafe { nil }
 }
@@ -5755,6 +5758,45 @@ pub fn (mut d Document) update_paint_and_hit_testing_properties_if_needed() {
 }
 
 // --- Layout ---
+fn layout_stabilization_element_count(node &Node) int {
+	mut count := if node.is_element() { 1 } else { 0 }
+	if element := node.as_element() {
+		if shadow_root := element.shadow_root() {
+			count += layout_stabilization_element_count(unsafe { &Node(shadow_root) })
+		}
+	}
+	for child in node.children {
+		count += layout_stabilization_element_count(child)
+	}
+	return count
+}
+
+fn (d &Document) needs_style_update_after_layout() bool {
+	if d.query_containers_needing_container_query_evaluation_after_layout.len > 0
+		|| d.needs_animated_style_update {
+		return true
+	}
+	document_node := unsafe { &Node(d) }
+	return document_node.needs_style_update() || document_node.child_needs_style_update()
+}
+
+fn (mut d Document) invalidate_pending_size_query_dependents() {
+	if d.query_containers_needing_container_query_evaluation_after_layout.len == 0 {
+		return
+	}
+	query_containers := d.query_containers_needing_container_query_evaluation_after_layout.clone()
+	d.query_containers_needing_container_query_evaluation_after_layout.clear()
+	hook := d.style_update_hook_ or { return }
+	if hook.invalidate_size_dependents == unsafe { nil } {
+		return
+	}
+	for query_container in query_containers {
+		if query_container.is_connected() {
+			hook.invalidate_size_dependents(hook.target, query_container)
+		}
+	}
+}
+
 pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 	_ = reason
 
@@ -5774,79 +5816,97 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 		d.is_running_update_layout_ = false
 	}
 
-	d.update_style()
-	if d.layout_is_up_to_date() {
-		return
-	}
-
-	// move(m_svg_roots_needing_relayout)
-	svg_roots_to_relayout := d.svg_roots_needing_relayout.clone()
-	d.svg_roots_needing_relayout.clear()
-
-	// Documents which only host <template> contents never get a layout tree.
-	if d.created_for_appropriate_template_contents {
-		return
-	}
-
 	document_node := unsafe { &Node(&d) }
-	needs_layout_tree_rebuild := d.layout_engine_handle_ == unsafe { nil } || document_node.needs_layout_tree_update_() || document_node.child_needs_layout_tree_update_() || d.needs_full_layout_tree_update
-
-	// Current upstream can relayout isolated SVG roots without rebuilding the
-	// document tree. The translated SVG box owns the same narrow callback at
-	// the dom/layout module boundary.
-	root_needs_layout := if layout_node := document_node.unsafe_layout_node() {
-		layout_node.needs_layout_update()
-	} else {
-		false
-	}
-	if !needs_layout_tree_rebuild && svg_roots_to_relayout.len > 0 && !root_needs_layout {
-		for svg_root in svg_roots_to_relayout {
-			relayout_svg_root(svg_root)
+	// A size-query dependency points from a descendant to an ancestor, so one
+	// pass per connected element is a conservative exact bound for nested query
+	// containers, in addition to Ladybird's ordinary stabilization allowance.
+	layout_pass_limit := 9 + layout_stabilization_element_count(document_node)
+	for _ in 0 .. layout_pass_limit {
+		d.update_style()
+		if d.layout_is_up_to_date() {
+			d.invalidate_pending_size_query_dependents()
+			if d.needs_style_update_after_layout() {
+				continue
+			}
+			return
 		}
-		d.invalidate_stacking_context_tree()
+
+		// move(m_svg_roots_needing_relayout)
+		svg_roots_to_relayout := d.svg_roots_needing_relayout.clone()
+		d.svg_roots_needing_relayout.clear()
+
+		// Documents which only host <template> contents never get a layout tree.
+		if d.created_for_appropriate_template_contents {
+			return
+		}
+
+		needs_layout_tree_rebuild := d.layout_engine_handle_ == unsafe { nil } || document_node.needs_layout_tree_update_() || document_node.child_needs_layout_tree_update_() || d.needs_full_layout_tree_update
+
+		// Current upstream can relayout isolated SVG roots without rebuilding the
+		// document tree. The translated SVG box owns the same narrow callback at
+		// the dom/layout module boundary.
+		root_needs_layout := if layout_node := document_node.unsafe_layout_node() {
+			layout_node.needs_layout_update()
+		} else {
+			false
+		}
+		if !needs_layout_tree_rebuild && svg_roots_to_relayout.len > 0 && !root_needs_layout {
+			for svg_root in svg_roots_to_relayout {
+				relayout_svg_root(svg_root)
+			}
+			d.invalidate_stacking_context_tree()
+			d.invalidate_display_list()
+			d.needs_accumulated_visual_contexts_update = true
+			d.update_paint_and_hit_testing_properties_if_needed()
+			d.set_needs_repaint()
+			return
+		}
+
 		d.invalidate_display_list()
+
+		// Layout::TreeBuilder, formatting-context layout and LayoutState::commit
+		// live in the layout module. This callback returns its retained root/state
+		// handle; no alternate DOM-side layout algorithm is used here.
+		hook := d.layout_update_hook_ or { return }
+		if hook.callback == unsafe { nil } {
+			return
+		}
+		viewport := d.viewport_rect()
+		new_layout := hook.callback(hook.target, &d, viewport.width, viewport.height, needs_layout_tree_rebuild)
+		if new_layout == unsafe { nil } {
+			// Keep every invalidation bit set when the layout boundary cannot
+			// produce a tree, so a later call retries instead of declaring the
+			// document clean.
+			return
+		}
+		d.layout_engine_handle_ = new_layout
+
+		// TreeBuilder consumes these DOM invalidations while rebuilding the tree.
+		document_node.for_each_shadow_including_inclusive_descendant(fn (node &Node) TraversalDecision {
+			mut mutable_node := unsafe { &Node(node) }
+			mutable_node.set_needs_layout_tree_update(false, .style_change)
+			mutable_node.set_child_needs_layout_tree_update(false)
+			return .@continue
+		})
+		d.needs_full_layout_tree_update = false
+
+		d.set_needs_repaint()
 		d.needs_accumulated_visual_contexts_update = true
 		d.update_paint_and_hit_testing_properties_if_needed()
-		d.set_needs_repaint()
-		return
-	}
-
-	d.invalidate_display_list()
-
-	// Layout::TreeBuilder, formatting-context layout and LayoutState::commit
-	// live in the layout module. This callback returns its retained root/state
-	// handle; no alternate DOM-side layout algorithm is used here.
-	hook := d.layout_update_hook_ or { return }
-	if hook.callback == unsafe { nil } {
-		return
-	}
-	viewport := d.viewport_rect()
-	new_layout := hook.callback(hook.target, &d, viewport.width, viewport.height, needs_layout_tree_rebuild)
-	if new_layout == unsafe { nil } {
-		// Keep every invalidation bit set when the layout boundary cannot
-		// produce a tree, so a later call retries instead of declaring the
-		// document clean.
-		return
-	}
-	d.layout_engine_handle_ = new_layout
-
-	// TreeBuilder consumes these DOM invalidations while rebuilding the tree.
-	document_node.for_each_shadow_including_inclusive_descendant(fn (node &Node) TraversalDecision {
-		mut mutable_node := unsafe { &Node(node) }
-		mutable_node.set_needs_layout_tree_update(false, .style_change)
-		mutable_node.set_child_needs_layout_tree_update(false)
-		return .@continue
-	})
-	d.needs_full_layout_tree_update = false
-
-	d.set_needs_repaint()
-	d.needs_accumulated_visual_contexts_update = true
-	d.update_paint_and_hit_testing_properties_if_needed()
-	if d.selection_ != unsafe { nil } && d.selection_.range_ != unsafe { nil } {
-		if paintable := d.unsafe_paintable() {
-			paintable.recompute_selection_states(d.selection_.range_)
+		if d.selection_ != unsafe { nil } && d.selection_.range_ != unsafe { nil } {
+			if paintable := d.unsafe_paintable() {
+				paintable.recompute_selection_states(d.selection_.range_)
+			}
 		}
+
+		d.invalidate_pending_size_query_dependents()
+		if d.needs_style_update_after_layout() {
+			continue
+		}
+		return
 	}
+
+	assert !d.needs_style_update_after_layout() && d.layout_is_up_to_date()
 }
 
 pub fn (mut d Document) set_layout_update_hook(hook DocumentLayoutUpdateHook) {

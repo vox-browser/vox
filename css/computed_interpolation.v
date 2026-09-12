@@ -9775,6 +9775,7 @@ pub fn (s &StyleComputer) create_document_style() &ComputedProperties {
 	style.set_property_without_modifying_flags(.width, dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(s.viewport_rect_.width_value())))))
 	style.set_property_without_modifying_flags(.height, dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(Length.make_px(s.viewport_rect_.height_value())))))
 	style.set_property_without_modifying_flags(.display, dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.block)))))
+	s.clear_computation_context_caches()
 	return style
 }
 
