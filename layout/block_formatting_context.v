@@ -859,13 +859,13 @@ fn (bfc &BlockFormattingContext) clearance_y(clear css.Clear, direction css.Dire
 		return current_y
 	}
 	mut y := current_y
-	for current_boxes in [bfc.left_floats.current_boxes, bfc.right_floats.current_boxes] {
-		for floating in current_boxes {
-			local_bottom := floating.bottom.minus(container_root_y)
-			if clear_applies_to_float(clear, floating.side, direction)
-				&& local_bottom.raw_value() > y.raw_value() {
-				y = local_bottom
-			}
+	// Per-side current boxes can be reset as floats move to a lower placement
+	// band. Clearance still has to pass every preceding float in this context.
+	for floating in bfc.floating_boxes {
+		local_bottom := floating.bottom.minus(container_root_y)
+		if clear_applies_to_float(clear, floating.side, direction)
+			&& local_bottom.raw_value() > y.raw_value() {
+			y = local_bottom
 		}
 	}
 	return y

@@ -2546,6 +2546,22 @@ fn test_floats_are_positioned_at_available_edges_and_clearance_moves_blocks_belo
 	assert cleared.offset.y().to_double() == 40
 }
 
+fn test_clearance_moves_past_every_stacked_float() {
+	document := html.parse_document('<!doctype html><style>
+		#container { width:200px }
+		#first { float:left; width:200px; height:80px }
+		#second { float:left; width:200px; height:40px }
+		#cleared { clear:left; height:10px }
+	</style><div id="container"><div id="first"></div><div id="second"></div><div id="cleared"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	first := used_for_id(result, 'first')
+	second := used_for_id(result, 'second')
+	cleared := used_for_id(result, 'cleared')
+	assert first.offset.y().to_double() == 0
+	assert second.offset.y().to_double() == 80
+	assert cleared.offset.y().to_double() == 120
+}
+
 fn test_auto_width_float_is_clamped_by_max_width() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
