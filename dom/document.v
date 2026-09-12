@@ -2412,6 +2412,7 @@ pub mut:
 	element_by_id_                  &ElementByIdMap = unsafe { nil }
 	onslotchange_                   ?&CallbackType
 	slot_registry_                  &SlotRegistry = unsafe { nil }
+	custom_element_registry_        voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -4058,6 +4059,7 @@ pub mut:
 	origin_                    Origin = origin_create_opaque()
 	referrer                   string
 	custom_element_definitions []&CustomElementDefinition
+	custom_element_registry_   voidptr = unsafe { nil }
 	source                     string
 
 	// Version tracking
@@ -10224,6 +10226,15 @@ pub fn (mut d Document) check_favicon_after_loading_link_resource() {
 			return
 		}
 	}
+}
+
+// https://dom.spec.whatwg.org/#dom-documentorshadowroot-customelementregistry
+pub fn (d &Document) custom_element_registry() voidptr {
+	return d.custom_element_registry_
+}
+
+pub fn (mut d Document) set_custom_element_registry(registry voidptr) {
+	d.custom_element_registry_ = registry
 }
 
 // --- lookup_custom_element_definition ---

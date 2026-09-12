@@ -1380,6 +1380,9 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 	mut navigation := Navigation.create(document)
 	history.set_navigation(navigation)
 	close_watcher_manager := CloseWatcherManager.create()
+	custom_element_registry := CustomElementRegistry.create(document)
+	mut document_with_registry := unsafe { &dom.Document(document) }
+	document_with_registry.set_custom_element_registry(voidptr(custom_element_registry))
 	mut window := &WindowModel{
 		Window: dom.Window{
 			associated_document_: document
@@ -1390,7 +1393,7 @@ pub fn WindowModel.create(document &dom.Document, context &BrowsingContextModel)
 		history_: history
 		navigation_: navigation
 		navigator_: Navigator.create(NavigatorHostConfiguration{})
-		custom_elements_: CustomElementRegistry.create(document)
+		custom_elements_: custom_element_registry
 		animation_driver_: &AnimationFrameCallbackDriver{}
 		close_watcher_manager_model_: close_watcher_manager
 		global_scope_: WindowOrWorkerGlobalScopeMixin.create(document.origin(), false, false)

@@ -2409,6 +2409,7 @@ pub fn (n &Node) clone_single_node(document &Document) !&Node {
 		document_copy.set_document_type(source_document.document_type())
 		document_copy.set_quirks_mode(source_document.mode())
 		document_copy.set_allow_declarative_shadow_roots(source_document.allow_declarative_shadow_roots())
+		document_copy.set_custom_element_registry(source_document.custom_element_registry())
 		copy = unsafe { &Node(document_copy) }
 	} else if document_type := n.as_document_type() {
 		mut document_type_copy := DocumentType.new(document)
@@ -4475,6 +4476,15 @@ pub fn (sr &ShadowRoot) delegates_focus() bool {
 
 pub fn (sr &ShadowRoot) slot_assignment() SlotAssignmentMode {
 	return sr.slot_assignment_
+}
+
+// https://dom.spec.whatwg.org/#dom-documentorshadowroot-customelementregistry
+pub fn (sr &ShadowRoot) custom_element_registry() voidptr {
+	return sr.custom_element_registry_
+}
+
+pub fn (mut sr ShadowRoot) set_custom_element_registry(registry voidptr) {
+	sr.custom_element_registry_ = registry
 }
 
 pub fn (mut sr ShadowRoot) set_declarative(declarative bool) {
