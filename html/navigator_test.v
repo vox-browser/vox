@@ -23,7 +23,11 @@ fn test_navigator_lazily_creates_singletons_and_plugins() {
 	assert navigator.mime_types().length() == 2
 	assert voidptr(navigator.clipboard()) == voidptr(navigator.clipboard())
 	assert voidptr(navigator.service_worker()) == voidptr(navigator.service_worker())
-	assert navigator.get_battery().rejected
+	battery := navigator.get_battery()
+	assert battery.rejected
+	assert battery.exception_name == 'NotAllowedError'
+	assert battery.reason == 'Battery Status API is not yet implemented'
+	assert voidptr(battery) == voidptr(navigator.get_battery())
 
 	mut worker := WorkerNavigator.create()
 	assert voidptr(worker.serial()) == voidptr(worker.serial())

@@ -42,8 +42,9 @@ pub:
 @[heap]
 pub struct NavigatorBatteryPromise {
 pub:
-	rejected bool   = true
-	reason   string = 'Battery Status API is not yet implemented'
+	rejected       bool = true
+	exception_name string = 'NotAllowedError'
+	reason         string = 'Battery Status API is not yet implemented'
 }
 
 @[heap]
