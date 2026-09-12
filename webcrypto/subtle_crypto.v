@@ -528,19 +528,39 @@ pub fn (subtle_crypto &SubtleCrypto) derive_key(params DeriveParams, base_key &C
 		normalize_key_usages_for_operation(usages), '')
 }
 
+fn (subtle_crypto &SubtleCrypto) export_key_bytes_for_wrapping(format KeyFormat, key &CryptoKey) ![]u8 {
+	if format == .jwk {
+		return subtle_crypto.export_jwk(key)!.to_json().bytes()
+	}
+	if !key_format_expects_buffer_source(format) {
+		return error('NotSupportedError: Unsupported wrapped key format')
+	}
+	return subtle_crypto.export_key(format, key)
+}
+
+fn (subtle_crypto &SubtleCrypto) import_unwrapped_key(format KeyFormat, bytes []u8, algorithm string, extractable bool, usages []KeyUsage, hash_name string) !&CryptoKey {
+	if format == .jwk {
+		return subtle_crypto.import_jwk(JsonWebKey.parse(bytes)!, algorithm, extractable, usages, hash_name)
+	}
+	if !key_format_expects_buffer_source(format) {
+		return error('NotSupportedError: Unsupported unwrapped key format')
+	}
+	return subtle_crypto.import_key(format, bytes, algorithm, extractable, usages, hash_name)
+}
+
 pub fn (subtle_crypto &SubtleCrypto) wrap_key(format KeyFormat, key &CryptoKey, wrapping_key &CryptoKey, algorithm string) ![]u8 {
 	normalized := normalize_an_algorithm(algorithm, 'wrapKey')!
 	validate_operation_key(wrapping_key, normalized, .wrap_key)!
-	plain_key := subtle_crypto.export_key(format, key)!
+	plain_key := subtle_crypto.export_key_bytes_for_wrapping(format, key)!
 	return aes_key_wrap(wrapping_key, plain_key)
 }
 
 pub fn (subtle_crypto &SubtleCrypto) unwrap_key(format KeyFormat, wrapped_key []u8, unwrapping_key &CryptoKey, algorithm string, unwrapped_algorithm string, extractable bool, usages []KeyUsage, hash_name string) !&CryptoKey {
 	normalized := normalize_an_algorithm(algorithm, 'unwrapKey')!
+	normalize_an_algorithm(unwrapped_algorithm, 'importKey')!
 	validate_operation_key(unwrapping_key, normalized, .unwrap_key)!
 	plain_key := aes_key_unwrap(unwrapping_key, wrapped_key)!
-	return subtle_crypto.import_key(format, plain_key, unwrapped_algorithm, extractable,
-		normalize_key_usages_for_operation(usages), hash_name)
+	return subtle_crypto.import_unwrapped_key(format, plain_key, unwrapped_algorithm, extractable, normalize_key_usages_for_operation(usages), hash_name)
 }
 
 pub fn (subtle_crypto &SubtleCrypto) encapsulate_bits(algorithm string, key &CryptoKey) !EncapsulatedBits {

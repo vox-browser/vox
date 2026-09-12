@@ -215,3 +215,30 @@ fn test_aes_kw_rfc_3394_vector_and_integrity_check() {
 		assert err.msg().contains('integrity')
 	}
 }
+
+fn test_wrap_key_converts_jwk_data_and_normalizes_import_before_unwrapping() {
+	subtle_crypto := SubtleCrypto.create()
+	key := subtle_crypto.import_key(.raw, []u8{len: 16, init: 0x5a}, 'AES-GCM', true, [
+		.encrypt,
+	], '')!
+	exported_bytes := subtle_crypto.export_key_bytes_for_wrapping(.jwk, key)!
+	exported_jwk := JsonWebKey.parse(exported_bytes)!
+	assert exported_jwk.kty? == 'oct'
+	assert base64url_decode(exported_jwk.k?)! == key.handle()
+	imported := subtle_crypto.import_unwrapped_key(.jwk, exported_bytes, 'AES-GCM', true, [
+		.encrypt,
+	], '')!
+	assert imported.handle() == key.handle()
+
+	wrapping_key := subtle_crypto.import_key(.raw, []u8{len: 16}, 'AES-KW', false, [
+		.wrap_key,
+		.unwrap_key,
+	], '')!
+	if _ := subtle_crypto.unwrap_key(.raw, []u8{len: 24}, wrapping_key, 'AES-KW', 'unsupported', true, [
+		.encrypt,
+	], '') {
+		assert false
+	} else {
+		assert err.msg().starts_with('NotSupportedError:')
+	}
+}
