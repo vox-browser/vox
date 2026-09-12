@@ -1080,6 +1080,38 @@ fn test_rule_cache_retains_resolved_keyframes_and_endpoint_markers() {
 	assert (initial.easing or { panic('keyframe easing missing') }).to_string() == 'linear'
 }
 
+fn test_rule_cache_merges_duplicate_keyframe_offsets_in_source_order() {
+	doc := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(doc, '@keyframes merged {
+		0% { opacity: 0.1; animation-timing-function: ease; animation-composition: add; }
+		from { transform: translateX(10px); opacity: 0.5; animation-timing-function: linear; animation-composition: accumulate; }
+		50% { background-color: green; animation-timing-function: ease-in; animation-composition: add; }
+		50% { transform: translateX(20px); }
+	}')
+	element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic('${err}') }
+	scope := css_style_scope_for(dom.AbstractElement.new(element, none))
+	cache := scope.rule_cache_for_cascade_origin(.author, none) or {
+		panic('author rule cache missing')
+	}
+	keyframes := cache.rules_by_animation_keyframes['merged'] or {
+		panic('merged @keyframes missing from rule cache')
+	}
+
+	initial := keyframes.keyframes_by_key[0] or { panic('initial keyframe missing') }
+	assert (initial.properties[.opacity] or { panic('initial opacity missing') }).css_text == '0.5'
+	assert (initial.properties[.transform] or { panic('initial transform missing') }).css_text == 'translateX(10px)'
+	assert (initial.easing or { panic('initial easing missing') }).to_string() == 'linear'
+	assert initial.composite or { panic('initial composite missing') } == .accumulate
+
+	middle := keyframes.keyframes_by_key[50 * animation_key_frame_key_scale_factor] or {
+		panic('middle keyframe missing')
+	}
+	assert (middle.properties[.background_color] or { panic('middle background missing') }).css_text == 'green'
+	assert (middle.properties[.transform] or { panic('middle transform missing') }).css_text == 'translateX(20px)'
+	assert (middle.easing or { panic('middle easing missing') }).to_string() == 'ease-in'
+	assert middle.composite or { panic('middle composite missing') } == .add
+}
+
 fn test_css_animation_definitions_are_stored_and_sampled() {
 	doc := dom.Document.create(dom.url_about_blank())
 	add_document_author_style_sheet(doc, '@keyframes fade {

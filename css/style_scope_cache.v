@@ -690,7 +690,19 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 			}
 		}
 
-		if key !in keyframe_set.keyframes_by_key {
+		if existing_keyframe := keyframe_set.keyframes_by_key[key] {
+			mut merged_keyframe := existing_keyframe
+			for property_id, value in resolved_keyframe.properties {
+				merged_keyframe.properties[property_id] = unsafe { value }
+			}
+			if easing := resolved_keyframe.easing {
+				merged_keyframe.easing = easing
+			}
+			if composite := resolved_keyframe.composite {
+				merged_keyframe.composite = composite
+			}
+			keyframe_set.keyframes_by_key[key] = merged_keyframe
+		} else {
 			keyframe_set.keyframes_by_key[key] = resolved_keyframe
 		}
 	}
