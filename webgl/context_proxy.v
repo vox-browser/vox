@@ -6,9 +6,47 @@
 // flush sequencing rules used across WebContent and the compositor.
 module webgl
 
+import encoding.binary
+
 pub const webgl_max_pending_command_bytes = 4 * 1024 * 1024
 pub const webgl_max_bitmap_attachments_per_message = 15
 pub const webgl_reserved_bitmap_command_size = 256
+pub const webgl_command_set_drawing_buffer_size = WebGLCommandType(170)
+pub const webgl_command_read_pixels_into_pixel_pack_buffer = WebGLCommandType(171)
+
+pub struct WebGLIntSize {
+pub:
+	width  int
+	height int
+}
+
+pub struct WebGLIntRect {
+pub:
+	x      int
+	y      int
+	width  int
+	height int
+}
+
+pub struct WebGLBitmap {
+pub:
+	width  int
+	height int
+	pixels []u8
+}
+
+pub struct WebGLReadPixelsResult {
+pub:
+	length  int
+	columns int
+	rows    int
+}
+
+pub struct WebGLReadPixelsOutput {
+	WebGLReadPixelsResult
+pub:
+	pixels []u8
+}
 
 pub struct WebGLTransportBatch {
 pub:
@@ -38,6 +76,13 @@ mut:
 	pending_local_error_           GLenum
 	wait_for_execution_succeeds_   bool = true
 	next_sync_reply_               []u8
+	drawing_buffer_size_           WebGLIntSize
+	presentation_requests_         []bool
+	next_readback_bitmap_          ?WebGLBitmap
+	next_read_pixels_result_       WebGLReadPixelsResult
+	next_read_pixels_bytes_        []u8
+	next_buffer_sub_data_          []u8
+	read_buffer_sub_data_succeeds_ bool = true
 }
 
 pub fn WebGLContextProxyBase.new(version WebGLVersion, supported_extensions []string, data_region_capacity int) !&WebGLContextProxyBase {
@@ -251,4 +296,127 @@ pub fn (mut proxy WebGLContextProxyBase) take_pending_local_error() GLenum {
 	error_value := proxy.pending_local_error_
 	proxy.pending_local_error_ = no_error
 	return error_value
+}
+
+fn proxy_append_i32(mut payload []u8, value int) {
+	payload << binary.little_endian_get_u32(u32(i32(value)))
+}
+
+fn proxy_append_u32(mut payload []u8, value u32) {
+	payload << binary.little_endian_get_u32(value)
+}
+
+fn proxy_append_i64(mut payload []u8, value i64) {
+	payload << binary.little_endian_get_u64(u64(value))
+}
+
+pub fn (mut proxy WebGLContextProxyBase) read_pixels_robust_angle_into_shared_buffer(x int, y int, width int, height int, format GLenum, type_ GLenum, buf_size int, mut pixels []u8) WebGLReadPixelsResult {
+	proxy.flush_commands()
+	if proxy.lost_ || buf_size < 0 || pixels.len < buf_size {
+		return WebGLReadPixelsResult{}
+	}
+	result := proxy.next_read_pixels_result_
+	if result.length < 0 || result.length > buf_size || result.length > proxy.next_read_pixels_bytes_.len {
+		proxy.set_lost()
+		return WebGLReadPixelsResult{}
+	}
+	if result.length > 0 {
+		copy(mut pixels[..result.length], proxy.next_read_pixels_bytes_[..result.length])
+	}
+	_ = x
+	_ = y
+	_ = width
+	_ = height
+	_ = format
+	_ = type_
+	return result
+}
+
+pub fn (mut proxy WebGLContextProxyBase) set_next_read_pixels_response(result WebGLReadPixelsResult, pixels []u8) {
+	proxy.next_read_pixels_result_ = result
+	proxy.next_read_pixels_bytes_ = pixels.clone()
+}
+
+pub fn (mut proxy WebGLContextProxyBase) read_pixels_robust_angle(x int, y int, width int, height int, format GLenum, type_ GLenum, buf_size int) WebGLReadPixelsOutput {
+	if proxy.lost_ || buf_size < 0 {
+		return WebGLReadPixelsOutput{}
+	}
+	mut pixels := []u8{len: buf_size}
+	result := proxy.read_pixels_robust_angle_into_shared_buffer(x, y, width, height, format, type_, buf_size, mut pixels)
+	if proxy.lost_ || result.length <= 0 {
+		return WebGLReadPixelsOutput{ WebGLReadPixelsResult: result }
+	}
+	return WebGLReadPixelsOutput{
+		WebGLReadPixelsResult: result
+		pixels: pixels[..result.length].clone()
+	}
+}
+
+pub fn (mut proxy WebGLContextProxyBase) set_size(size WebGLIntSize) ! {
+	mut payload := []u8{cap: 8}
+	proxy_append_i32(mut payload, size.width)
+	proxy_append_i32(mut payload, size.height)
+	proxy.record_bytes(webgl_command_set_drawing_buffer_size, payload, []u8{})!
+	proxy.drawing_buffer_size_ = size
+}
+
+pub fn (mut proxy WebGLContextProxyBase) present_canvas_for_compositing(preserve_drawing_buffer bool) {
+	if proxy.lost_ {
+		return
+	}
+	proxy.flush_commands()
+	proxy.presentation_requests_ << preserve_drawing_buffer
+}
+
+pub fn (mut proxy WebGLContextProxyBase) set_next_readback_bitmap(bitmap WebGLBitmap) {
+	proxy.next_readback_bitmap_ = bitmap
+}
+
+pub fn (mut proxy WebGLContextProxyBase) read_back_drawing_buffer(_ WebGLIntRect) ?WebGLBitmap {
+	if proxy.lost_ {
+		return none
+	}
+	proxy.flush_commands()
+	bitmap := proxy.next_readback_bitmap_ or { return none }
+	if bitmap.width <= 0 || bitmap.height <= 0
+		|| u64(bitmap.width) * u64(bitmap.height) * 4 > u64(bitmap.pixels.len) {
+		return none
+	}
+	return WebGLBitmap{
+		width: bitmap.width
+		height: bitmap.height
+		pixels: bitmap.pixels.clone()
+	}
+}
+
+pub fn (mut proxy WebGLContextProxyBase) read_pixels_into_pixel_pack_buffer(x int, y int, width int, height int, format GLenum, type_ GLenum, offset i64) ! {
+	mut payload := []u8{cap: 32}
+	proxy_append_i32(mut payload, x)
+	proxy_append_i32(mut payload, y)
+	proxy_append_i32(mut payload, width)
+	proxy_append_i32(mut payload, height)
+	proxy_append_u32(mut payload, format)
+	proxy_append_u32(mut payload, type_)
+	proxy_append_i64(mut payload, offset)
+	proxy.record_bytes(webgl_command_read_pixels_into_pixel_pack_buffer, payload, []u8{})!
+}
+
+pub fn (mut proxy WebGLContextProxyBase) set_next_buffer_sub_data(data []u8, succeeds bool) {
+	proxy.next_buffer_sub_data_ = data.clone()
+	proxy.read_buffer_sub_data_succeeds_ = succeeds
+}
+
+pub fn (mut proxy WebGLContextProxyBase) read_buffer_sub_data(_ GLenum, _ i64, mut destination []u8) bool {
+	if proxy.lost_ {
+		return false
+	}
+	if destination.len == 0 {
+		return true
+	}
+	proxy.flush_commands()
+	if !proxy.read_buffer_sub_data_succeeds_ || proxy.next_buffer_sub_data_.len < destination.len {
+		return false
+	}
+	copy(mut destination, proxy.next_buffer_sub_data_[..destination.len])
+	return !proxy.lost_
 }
