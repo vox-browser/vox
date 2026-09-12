@@ -4635,8 +4635,11 @@ pub fn (style_value DimensionStyleValue) unit_name() string {
 }
 
 pub fn (style_value DimensionStyleValue) tokenize() []ComponentValue {
+	if style_value is PercentageStyleValue {
+		return [ComponentValue.from_token(Token.create_percentage(Number.with_type(.number, style_value.raw_value()), ''))]
+	}
 	return [
-		component_value_from_text('${serialize_a_number(style_value.raw_value())}${style_value.unit_name()}'),
+		ComponentValue.from_token(Token.create_dimension_from_double(style_value.raw_value(), style_value.unit_name(), '')),
 	]
 }
 
