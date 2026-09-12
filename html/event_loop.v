@@ -387,29 +387,6 @@ pub fn (mut event_loop EventLoop) spin_until(goal_condition fn() bool) {
 	event_loop.schedule()
 }
 
-// Run tasks from one task source while the embedding platform waits for the
-// supplied goal condition. In the standalone V runtime, exhausting the source
-// queue yields to the caller instead of entering a host event-loop wait.
-pub fn (mut event_loop EventLoop) spin_processing_tasks_with_source_until(source TaskSource, goal_condition fn() bool) {
-	event_loop.perform_a_microtask_checkpoint()
-	old_skip := event_loop.skip_event_loop_processing_steps
-	event_loop.skip_event_loop_processing_steps = true
-	for !goal_condition() {
-		mut queue := event_loop.task_queue_
-		task := queue.take_first_runnable_matching(fn [source] (candidate &Task) bool {
-			return candidate.source == source
-		}) or { break }
-		event_loop.currently_running_task_ = task
-		task.execute()
-		event_loop.currently_running_task_ = none
-		if goal_condition() {
-			break
-		}
-	}
-	event_loop.skip_event_loop_processing_steps = old_skip
-	event_loop.schedule()
-}
-
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model
 pub fn (mut event_loop EventLoop) process() {
 	if event_loop.skip_event_loop_processing_steps {
