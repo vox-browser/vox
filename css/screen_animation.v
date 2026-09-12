@@ -1047,6 +1047,7 @@ pub mut:
 	current_phase_               CSSTransitionPhase = .idle
 	timeline_                    ?&AnimationTimeline
 	play_state_                  WebAnimationPlayState
+	is_provisional_              bool
 }
 
 // This is designed to be created from AnimationEffect::Phase.
@@ -1056,6 +1057,11 @@ pub enum CSSTransitionPhase {
 	after
 	idle
 	pending
+}
+
+pub enum CSSTransitionPublication {
+	committed
+	provisional
 }
 
 pub struct CSSTransitionStorageEntry {
@@ -1328,6 +1334,11 @@ pub fn CSSTransition.start_a_transition(abstract_element dom.AbstractElement, pr
 	return CSSTransition.new(abstract_element, property_id, transition_generation, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor)
 }
 
+pub fn CSSTransition.start_a_provisional_transition(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
+	transition_attributes := transition_timing_attributes_for_property(abstract_element, property_id)
+	return CSSTransition.new_with_timing_attributes_and_publication(abstract_element, property_id, transition_generation, transition_attributes, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor, .provisional)
+}
+
 pub fn CSSTransition.new(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
 	transition_attributes := transition_timing_attributes_for_property(abstract_element, property_id)
 	transition := CSSTransition.new_with_timing_attributes(abstract_element, property_id, transition_generation, transition_attributes, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor)
@@ -1342,6 +1353,10 @@ pub fn CSSTransition.start_a_transition_for_storage(mut storage CSSTransitionSto
 }
 
 pub fn CSSTransition.new_with_timing_attributes(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, transition_attributes TransitionTimingAttributes, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64) &CSSTransition {
+	return CSSTransition.new_with_timing_attributes_and_publication(abstract_element, property_id, transition_generation, transition_attributes, delay, start_time, end_time, start_value, end_value, reversing_adjusted_start_value, reversing_shortening_factor, .committed)
+}
+
+fn CSSTransition.new_with_timing_attributes_and_publication(abstract_element dom.AbstractElement, property_id PropertyID, transition_generation int, transition_attributes TransitionTimingAttributes, delay f64, start_time f64, end_time f64, start_value &dom.StyleValue, end_value &dom.StyleValue, reversing_adjusted_start_value &dom.StyleValue, reversing_shortening_factor f64, publication CSSTransitionPublication) &CSSTransition {
 	mut transition := &CSSTransition{
 		transition_property_: property_id
 		transition_generation_: transition_generation
@@ -1352,6 +1367,7 @@ pub fn CSSTransition.new_with_timing_attributes(abstract_element dom.AbstractEle
 		reversing_adjusted_start_value_: reversing_adjusted_start_value
 		reversing_shortening_factor_: reversing_shortening_factor
 		keyframe_effect_: KeyframeEffect.create()
+		is_provisional_: publication == .provisional
 	}
 	transition.Animation.concrete_handle_ = voidptr(transition)
 	transition.Animation.concrete_kind_ = .css_transition
@@ -1625,7 +1641,9 @@ pub fn (mut transition CSSTransition) visit_edges(mut visitor dom.CellVisitor) {
 	if cached_declaration := transition.cached_declaration {
 		visitor.visit(cached_declaration)
 	}
-	visitor.visit(transition.keyframe_effect_)
+	if transition.keyframe_effect_ != unsafe { nil } {
+		visitor.visit(transition.keyframe_effect_)
+	}
 }
 
 pub fn (transition &CSSTransition) transition_property() string {
@@ -1664,7 +1682,9 @@ pub fn (mut transition CSSTransition) play() ! {
 pub fn (mut transition CSSTransition) cancel() {
 	transition.play_state_ = .idle
 	transition.current_phase_ = .idle
-	transition.keyframe_effect_.set_output_progress(none)
+	if transition.keyframe_effect_ != unsafe { nil } {
+		transition.keyframe_effect_.set_output_progress(none)
+	}
 }
 
 pub fn (mut transition CSSTransition) sample_at(timeline_time f64) ?f64 {
@@ -1704,6 +1724,32 @@ pub fn (transition &CSSTransition) effect() ?&KeyframeEffect {
 		return none
 	}
 	return transition.keyframe_effect_
+}
+
+pub fn (transition &CSSTransition) is_provisional() bool {
+	return transition.is_provisional_
+}
+
+pub fn (mut transition CSSTransition) commit_provisional_transition() {
+	if !transition.is_provisional_ {
+		panic('Cannot commit a non-provisional CSS transition')
+	}
+	owner := transition.owning_element() or {
+		panic('A provisional CSS transition must have an owning element')
+	}
+	set_transition_on_element(owner, transition.transition_property_, unsafe {
+		&CSSTransition(transition)
+	})
+	transition.is_provisional_ = false
+}
+
+pub fn (mut transition CSSTransition) discard_provisional_transition() {
+	if !transition.is_provisional_ {
+		panic('Cannot discard a non-provisional CSS transition')
+	}
+	transition.set_timeline(none)
+	transition.keyframe_effect_ = unsafe { nil }
+	transition.is_provisional_ = false
 }
 
 pub fn (transition &CSSTransition) class_specific_composite_order(other &CSSTransition) int {

@@ -40,3 +40,38 @@ fn test_css_transition_timing_output_uses_nonzero_duration_progress() {
 
 	assert transition.timing_function_output_at_time(25.0) == 0.25
 }
+
+fn test_provisional_css_transition_is_published_only_when_committed() {
+	target := transition_timing_test_target()
+	start_value := &dom.StyleValue{ css_text: '0' }
+	end_value := &dom.StyleValue{ css_text: '1' }
+	mut transition := CSSTransition.start_a_provisional_transition(target, .opacity, 1, 0.0, 0.0, 100.0, start_value, end_value, start_value, 1.0)
+	computer := css_style_computer_for(target.document())
+
+	assert transition.is_provisional()
+	assert transition.effect() != none
+	assert computer.css_transition_storage_.property_transition(target, .opacity) == none
+
+	transition.commit_provisional_transition()
+	published := computer.css_transition_storage_.property_transition(target, .opacity) or {
+		panic('committed transition was not published')
+	}
+	assert voidptr(published) == voidptr(transition)
+	assert !transition.is_provisional()
+	assert transition.effect() != none
+}
+
+fn test_discarded_provisional_css_transition_releases_effect_and_timeline() {
+	target := transition_timing_test_target()
+	start_value := &dom.StyleValue{ css_text: '0' }
+	end_value := &dom.StyleValue{ css_text: '1' }
+	mut transition := CSSTransition.start_a_provisional_transition(target, .opacity, 1, 0.0, 0.0, 100.0, start_value, end_value, start_value, 1.0)
+	computer := css_style_computer_for(target.document())
+
+	transition.discard_provisional_transition()
+
+	assert !transition.is_provisional()
+	assert transition.effect() == none
+	assert transition.timeline_ == none
+	assert computer.css_transition_storage_.property_transition(target, .opacity) == none
+}
