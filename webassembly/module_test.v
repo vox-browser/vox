@@ -49,6 +49,28 @@ fn wasm_module_bytes() []u8 {
 	]
 }
 
+fn wasm_export_only_bytes(name string, kind u8) []u8 {
+	mut payload := [u8(1), u8(name.len)]
+	payload << name.bytes()
+	payload << kind
+	payload << u8(0)
+	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 7, u8(payload.len)]
+	bytes << payload
+	return bytes
+}
+
+fn wasm_import_only_bytes(module_name string, name string, kind u8) []u8 {
+	mut payload := [u8(1), u8(module_name.len)]
+	payload << module_name.bytes()
+	payload << u8(name.len)
+	payload << name.bytes()
+	payload << kind
+	payload << u8(0)
+	mut bytes := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 2, u8(payload.len)]
+	bytes << payload
+	return bytes
+}
+
 fn deny_wasm_byte_compilation() ! {
 	return error('WebAssembly.CompileError: Blocked by Content Security Policy')
 }
@@ -174,6 +196,74 @@ fn test_instance_resolves_exported_wrapper_objects_through_its_cache() {
 	assert voidptr(instance.table_instance(exports[2].address)) == voidptr(instance.cache().get_table_instance(exports[2].address) or {
 		panic('missing table wrapper')
 	})
+}
+
+fn test_webassembly_module_record_parses_resolves_and_executes() {
+	mut record := WebAssemblyModule.parse(wasm_module_bytes(), 'module-record-realm', 'example.wasm')!
+	assert record.requested_modules == ['env']
+	assert record.export_name_list() == ['f']
+	assert record.get_exported_names() == ['f']
+	resolution := record.resolve_export('f')
+	assert resolution.valid
+	assert resolution.binding_name == 'f'
+	assert voidptr(resolution.module) == voidptr(record)
+	assert !record.resolve_export('missing').valid
+	assert voidptr(record.module_record()) == voidptr(record)
+
+	record.initialize_environment()!
+	mut environment := record.environment() or { panic('missing module environment') }
+	if _ := environment.get_binding_value('f') {
+		assert false
+	} else {
+		assert err.msg().starts_with('ReferenceError:')
+	}
+	record.link_javascript_module('env', {
+		'f': ExternalValue{
+			kind: .function_
+			value: webidl.callback_value()
+		}
+	})
+	record.execute_module()!
+	instance := record.instance() or { panic('module was not instantiated') }
+	assert voidptr(instance.cache()) == voidptr(get_cache_for_realm('module-record-realm'))
+	assert environment.get_binding_value('f')!.value.kind == .callback
+}
+
+fn test_webassembly_module_record_rejects_reserved_names() {
+	for bytes in [
+		wasm_import_only_bytes('wasm-js:', 'f', 0),
+		wasm_import_only_bytes('env', 'wasm:f', 0),
+		wasm_export_only_bytes('wasm:f', 0),
+	] {
+		if _ := WebAssemblyModule.parse(bytes, 'reserved-name-realm', '') {
+			assert false
+		} else {
+			assert err.msg().starts_with('LinkError:')
+		}
+	}
+}
+
+fn test_webassembly_module_record_links_wasm_module_exports() {
+	dependency_source := &Module{
+		export_entries: [ModuleExportDescriptor{ name: 'f', kind: .function_ }]
+	}
+	mut dependency := WebAssemblyModule.create('dependency-realm', 'dependency.wasm', dependency_source)
+	mut importer := WebAssemblyModule.create('importer-realm', 'importer.wasm', &Module{
+		import_entries: [ModuleImportDescriptor{
+			module: 'dependency'
+			name: 'f'
+			kind: .function_
+		}]
+	})
+	importer.link_webassembly_module('dependency', dependency)
+	if _ := importer.execute_module() {
+		assert false
+	} else {
+		assert err.msg().contains('has not been instantiated')
+	}
+	dependency.execute_module()!
+	importer.execute_module()!
+	assert importer.instance() != none
 }
 
 fn test_data_count_section_precedes_code_despite_numeric_identifier() {
