@@ -74,10 +74,18 @@ pub fn MediaSource.is_type_supported(value string) bool {
 	if value.len == 0 {
 		return false
 	}
-	_ := mimesniff.MimeType.parse(value) or { return false }
-	// Media subtype, codec, and combination support checks remain FIXME in the
-	// current upstream implementation.
-	return false
+	mime_type := mimesniff.MimeType.parse(value) or { return false }
+	if mime_type.type_() !in ['video', 'audio'] || mime_type.subtype() != 'webm' {
+		return false
+	}
+	parameters := mime_type.parameters()
+	codecs := parameters['codecs'] or { return false }
+	for codec in codecs.split(',') {
+		if !codec.starts_with('vp9') && !codec.starts_with('vp09') && !codec.starts_with('opus') {
+			return false
+		}
+	}
+	return true
 }
 
 pub fn (source &MediaSource) set_onsourceopen(handler ?&dom.CallbackType) {

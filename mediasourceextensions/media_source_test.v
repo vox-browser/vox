@@ -40,6 +40,12 @@ fn test_media_source_type_support_and_worker_flag() {
 	assert !MediaSource.is_type_supported('not a mime')
 	assert !MediaSource.is_type_supported('video/mp4; codecs="avc1"')
 	assert !MediaSource.is_type_supported('application/future-media')
+	assert MediaSource.is_type_supported('video/webm; codecs="vp9,opus"')
+	assert MediaSource.is_type_supported('video/webm; codecs="vp09.00.10.08"')
+	assert MediaSource.is_type_supported('audio/webm; codecs="opus"')
+	assert !MediaSource.is_type_supported('video/webm')
+	assert !MediaSource.is_type_supported('video/webm; codecs="vp8"')
+	assert !MediaSource.is_type_supported('audio/webm; codecs="vorbis"')
 }
 
 fn test_media_source_handlers_participate_in_dispatch() {
