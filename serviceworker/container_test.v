@@ -46,7 +46,7 @@ fn test_ready_is_same_pending_promise_until_active_worker_exists() {
 	assert voidptr(first.registration or { panic('missing') }) == voidptr(registration)
 }
 
-fn test_event_attributes_global_cookie_store_and_cache_rejections() {
+fn test_event_attributes_global_cookie_store_and_cache_storage() {
 	mut agent := ServiceWorkerAgent.create()
 	mut container := ServiceWorkerContainer.create(client(), agent)
 	container.set_event_handler('message', true)
@@ -66,11 +66,11 @@ fn test_event_attributes_global_cookie_store_and_cache_rejections() {
 	assert voidptr(first) == voidptr(second)
 	assert first.page_client_id == 42
 
-	storage := CacheStorage{}
-	assert storage.open('v1').state == .rejected
+	mut storage := CacheStorage{}
+	assert storage.open('v1').state == .fulfilled
 	has := storage.has('v1')
-	assert has.state == .rejected
-	assert has.value or { true } == false
+	assert has.state == .fulfilled
+	assert has.value or { false }
 }
 
 fn test_container_exact_start_register_entry_point() {
