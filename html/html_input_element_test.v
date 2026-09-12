@@ -116,7 +116,7 @@ fn test_input_radio_group_uses_live_tree_and_form_owner_boundaries() {
 }
 
 fn test_input_date_time_value_as_number() {
-	elements := input_test_elements('<input type="date"><input type="time"><input type="month">')
+	elements := input_test_elements('<input type="date"><input type="time"><input type="month"><input type="week"><input type="datetime-local">')
 	mut date := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[0]) })
 	date.set_value('1970-01-02')!
 	assert date.value_as_number() == 86400000
@@ -128,6 +128,18 @@ fn test_input_date_time_value_as_number() {
 	mut month := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[2]) })
 	month.set_value('1971-01')!
 	assert month.value_as_number() == 12
+	mut week := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(elements[3]) })
+	week.set_value('1970-W01')!
+	assert week.value_as_number() == -259200000
+	assert week.convert_number_to_string(2.734333707189448e26) == ''
+	week.set_value_as_number(2.734333707189448e26)!
+	assert week.value() == ''
+	mut local_date_time := HTMLInputElementModel.create(unsafe {
+		&dom.HTMLInputElement(elements[4])
+	})
+	assert local_date_time.convert_number_to_string(2.734333707189448e26) == ''
+	local_date_time.set_value_as_number(2.734333707189448e26)!
+	assert local_date_time.value() == ''
 }
 
 fn input_test_image_fetch(_ dom.URL) !DecodedImageData {

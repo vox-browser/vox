@@ -14,6 +14,8 @@ import dom
 import math
 import regex
 
+const max_ecmascript_time_value = 8.64e15
+
 pub enum HTMLInputTypeState {
 	hidden
 	text
@@ -1570,6 +1572,10 @@ fn numeric_input_string(model &HTMLInputElementModel, value f64) string {
 			return '${year:04d}-${month:02d}'
 		}
 		.week {
+			if math.is_nan(value) || math.is_inf(value, 0)
+				|| math.abs(value) > max_ecmascript_time_value {
+				return ''
+			}
 			days := i64(math.floor(value / 86400000.0))
 			year, week := iso_week_from_days(days)
 			return '${year:04d}-W${week:02d}'
@@ -1593,6 +1599,10 @@ fn numeric_input_string(model &HTMLInputElementModel, value f64) string {
 			return '${year:04d}-${month:02d}-${day:02d}'
 		}
 		.local_date_and_time {
+			if math.is_nan(value) || math.is_inf(value, 0)
+				|| math.abs(value) > max_ecmascript_time_value {
+				return ''
+			}
 			days := i64(math.floor(value / 86400000.0))
 			year, month, day := civil_from_days(days)
 			remaining := i64(value) - days * 86400000
@@ -1854,7 +1864,7 @@ pub fn (model &HTMLInputElementModel) value_as_date_applies() bool {
 }
 
 pub fn (model &HTMLInputElementModel) value_as_number_applies() bool {
-	return model.type_state_ in [.date, .month, .time, .local_date_and_time, .number, .range]
+	return model.type_state_ in [.date, .month, .week, .time, .local_date_and_time, .number, .range]
 }
 
 pub fn (model &HTMLInputElementModel) step_applies() bool {
