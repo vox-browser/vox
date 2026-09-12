@@ -44,6 +44,10 @@ pub fn InitialValues.inset() LengthBox {
 	return LengthBox.new()
 }
 
+pub fn InitialValues.position_anchor() ?string {
+	return none
+}
+
 pub fn InitialValues.margin() LengthBox {
 	return initial_zero_length_box()
 }
@@ -194,6 +198,14 @@ fn computed_values_column_count(style &ComputedProperties) ?int {
 		return int(parsed.integer())
 	}
 	return none
+}
+
+fn computed_values_position_anchor(style &ComputedProperties) ?string {
+	value := style.typed_property_value(.position_anchor) or { return InitialValues.position_anchor() }
+	if value is CustomIdentStyleValue {
+		return value.custom_ident()
+	}
+	return InitialValues.position_anchor()
 }
 
 // NodeWithStyle::apply_style() materializes border geometry once. In
@@ -441,6 +453,7 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_display(style.display())
 	values.set_display_before_box_type_transformation(style.display_before_box_type_transformation())
 	values.set_position(style.position())
+	values.set_position_anchor(computed_values_position_anchor(style))
 	values.set_float(style.float_())
 	values.set_clear(style.clear())
 	values.set_direction(style.direction())
@@ -613,6 +626,10 @@ pub fn (values &ComputedValues) display_before_box_type_transformation() Display
 
 pub fn (values &ComputedValues) position() Positioning {
 	return values.computed_values_position_
+}
+
+pub fn (values &ComputedValues) position_anchor() ?string {
+	return values.computed_values_position_anchor_
 }
 
 pub fn (values &ComputedValues) float_() Float {
@@ -1619,6 +1636,10 @@ pub fn (mut values MutableComputedValues) set_display_before_box_type_transforma
 
 pub fn (mut values MutableComputedValues) set_position(value Positioning) {
 	values.computed_values_position_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_position_anchor(value ?string) {
+	values.computed_values_position_anchor_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_float(value Float) {

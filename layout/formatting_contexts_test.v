@@ -2190,6 +2190,73 @@ fn test_absolute_positioning_solves_inset_equations() {
 	assert right.offset.y().to_double() == 5
 }
 
+fn test_css_anchor_positioning_resolves_names_sides_and_fallbacks() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#container { position:relative; width:300px; height:200px }
+		#a1 { anchor-name:--a1; position:absolute; left:100px; top:50px; width:80px; height:40px }
+		#a2 { anchor-name:--a2; position:absolute; left:220px; top:120px; width:50px; height:30px }
+		#bordered-anchor { anchor-name:--bordered; position:absolute; left:20px; top:10px; width:40px; height:20px; padding:5px; border:3px solid }
+		.target { position:absolute; width:10px; height:10px; position-anchor:--a1 }
+		#default { left:anchor(right); top:anchor(bottom) }
+		#explicit { left:anchor(--a2 left); top:anchor(--a2 top) }
+		#bordered { left:anchor(--bordered right); top:anchor(--bordered bottom) }
+		#wrong-axis { left:anchor(top, 17px); top:anchor(left, 19px) }
+		#chain { left:anchor(--missing center, anchor(--a1 center)); top:anchor(--missing center, anchor(--also-missing center, 33px)) }
+	</style><div id="container"><div id="a1"></div><div id="a2"></div><div id="bordered-anchor"></div>
+		<div id="default" class="target"></div><div id="explicit" class="target"></div>
+		<div id="bordered" class="target"></div><div id="wrong-axis" class="target"></div>
+		<div id="chain" class="target"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	default_target := used_for_id(result, 'default')
+	explicit := used_for_id(result, 'explicit')
+	bordered := used_for_id(result, 'bordered')
+	wrong_axis := used_for_id(result, 'wrong-axis')
+	chain := used_for_id(result, 'chain')
+	assert default_target.offset.x().to_double() == 180
+	assert default_target.offset.y().to_double() == 90
+	assert explicit.offset.x().to_double() == 220
+	assert explicit.offset.y().to_double() == 120
+	assert bordered.offset.x().to_double() == 76
+	assert bordered.offset.y().to_double() == 46
+	assert wrong_axis.offset.x().to_double() == 17
+	assert wrong_axis.offset.y().to_double() == 19
+	assert chain.offset.x().to_double() == 140
+	assert chain.offset.y().to_double() == 33
+}
+
+fn test_css_anchor_positioning_resolves_logical_inside_and_percentage_sides() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#container { position:relative; direction:rtl; width:300px; height:200px }
+		#anchor { anchor-name:--a; position:absolute; left:100px; top:50px; width:80px; height:40px }
+		.target { position:absolute; position-anchor:--a; direction:ltr; width:10px; height:10px }
+		#start { left:anchor(start); top:anchor(end) }
+		#self-start { left:anchor(self-start); top:anchor(self-start) }
+		#inside-end { right:anchor(inside); bottom:anchor(inside) }
+		#outside { left:anchor(outside); top:anchor(outside) }
+		#percentage { left:anchor(25%); top:anchor(25%) }
+	</style><div id="container"><div id="anchor"></div><div id="start" class="target"></div>
+		<div id="self-start" class="target"></div><div id="inside-end" class="target"></div>
+		<div id="outside" class="target"></div><div id="percentage" class="target"></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	start := used_for_id(result, 'start')
+	self_start := used_for_id(result, 'self-start')
+	inside_end := used_for_id(result, 'inside-end')
+	outside := used_for_id(result, 'outside')
+	percentage := used_for_id(result, 'percentage')
+	assert start.offset.x().to_double() == 180
+	assert start.offset.y().to_double() == 90
+	assert self_start.offset.x().to_double() == 100
+	assert self_start.offset.y().to_double() == 50
+	assert inside_end.offset.x().to_double() == 170
+	assert inside_end.offset.y().to_double() == 80
+	assert outside.offset.x().to_double() == 180
+	assert outside.offset.y().to_double() == 90
+	assert percentage.offset.x().to_double() == 160
+	assert percentage.offset.y().to_double() == 60
+}
+
 fn test_absolute_positioning_resolves_border_box_sizes_to_content_box() {
 	document := html.parse_document('<!doctype html><style>
 		#container { position:relative; width:300px; height:200px }

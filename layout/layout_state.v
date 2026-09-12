@@ -530,6 +530,14 @@ pub fn (u &UsedValues) border_box_height() CSSPixels {
 	return css_pixels_sum([u.border_box_top(), u.content_height_, u.border_box_bottom()])
 }
 
+pub fn (u &UsedValues) padding_box_width() CSSPixels {
+	return css_pixels_sum([u.padding_left, u.content_width_, u.padding_right])
+}
+
+pub fn (u &UsedValues) padding_box_height() CSSPixels {
+	return css_pixels_sum([u.padding_top, u.content_height_, u.padding_bottom])
+}
+
 // --- LayoutState ---
 
 // Sparse, index-based two-level page table from LayoutState.h. Layout state is

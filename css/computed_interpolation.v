@@ -1480,6 +1480,7 @@ pub mut:
 	computed_values_display_                       Display = Display.new()
 	computed_values_display_before_transformation_ Display = Display.new()
 	computed_values_position_                      Positioning
+	computed_values_position_anchor_               ?string
 	computed_values_float_                         Float
 	computed_values_clear_                         Clear
 	computed_values_direction_                     Direction
@@ -1816,8 +1817,8 @@ pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedP
 		Display.from_short(.flow_root)
 	}
 	mut wrapper := c.clone_for_anonymous_with_display(wrapper_display)
-	for property_id in [PropertyID.position, .top, .right, .bottom, .left, .float_, .clear,
-		.margin_top, .margin_right, .margin_bottom, .margin_left, .z_index] {
+	for property_id in [PropertyID.position, .position_anchor, .top, .right, .bottom, .left, .float_,
+		.clear, .margin_top, .margin_right, .margin_bottom, .margin_left, .z_index] {
 		if value := c.property(property_id, .no) {
 			wrapper.set_property_without_modifying_flags(property_id, value)
 		}

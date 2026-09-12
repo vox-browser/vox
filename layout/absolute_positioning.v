@@ -6,6 +6,133 @@ module layout
 
 import css
 
+fn anchor_style_value_for_inset(computed &css.ComputedValues, property_id css.PropertyID) ?css.AnchorStyleValue {
+	value := unsafe { &css.ComputedProperties(computed) }.typed_property_value(property_id) or {
+		return none
+	}
+	if value is css.AnchorStyleValue {
+		return value
+	}
+	return none
+}
+
+// https://drafts.csswg.org/css-anchor-position-1/#resolving-anchor
+fn resolve_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValues, anchor css.AnchorStyleValue) ?css.CSSPixelRect {
+	styled := box.as_node_with_style() or { return none }
+	name := anchor.anchor_name() or { styled.computed_values().position_anchor() or { return none } }
+	dom_node := box.dom_node() or { return none }
+	element := dom_node.as_element() or { return none }
+	anchor_element := box.document().element_by_anchor_name(name, element.as_node()) or { return none }
+	dom_anchor_layout_node := anchor_element.as_node().unsafe_layout_node() or { return none }
+	if dom_anchor_layout_node.real_layout_handle() == unsafe { nil } {
+		return none
+	}
+	anchor_layout_node := unsafe { &Node(dom_anchor_layout_node.real_layout_handle()) }
+	if anchor_layout_node.as_box() == none {
+		return none
+	}
+	anchor_styled := anchor_layout_node.as_node_with_style() or { return none }
+	anchor_state := state.try_get(anchor_styled) or { return none }
+	anchor_border_box_origin := anchor_state.cumulative_offset().minus(css.CSSPixelPoint.new(anchor_state.border_box_left(), anchor_state.border_box_top()))
+	containing_block_padding_box_origin := containing_state.cumulative_offset().minus(css.CSSPixelPoint.new(containing_state.padding_left, containing_state.padding_top))
+	origin := anchor_border_box_origin.minus(containing_block_padding_box_origin)
+	return css.CSSPixelRect{
+		x: origin.x()
+		y: origin.y()
+		width: anchor_state.border_box_width()
+		height: anchor_state.border_box_height()
+	}
+}
+
+fn resolve_anchor_side(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, anchor css.AnchorStyleValue, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
+	rect := resolve_anchor_rect(state, box, containing_state, anchor) or {
+		return none
+	}
+	side := anchor.anchor_side()
+	if side.is_keyword() {
+		return match side.to_keyword() {
+			.top {
+				if is_horizontal_axis { none } else { rect.top() }
+			}
+			.bottom {
+				if is_horizontal_axis { none } else { rect.bottom() }
+			}
+			.left {
+				if is_horizontal_axis { rect.left() } else { none }
+			}
+			.right {
+				if is_horizontal_axis { rect.right() } else { none }
+			}
+			.center {
+				if is_horizontal_axis {
+					rect.left().plus(rect.width.divided_by_float(2))
+				} else {
+					rect.top().plus(rect.height.divided_by_float(2))
+				}
+			}
+			.start, .end_ {
+				is_start := side.to_keyword() == .start
+				if is_horizontal_axis {
+					use_left := (containing_box.computed_values().direction() == .ltr) == is_start
+					if use_left { rect.left() } else { rect.right() }
+				} else if is_start {
+					rect.top()
+				} else {
+					rect.bottom()
+				}
+			}
+			.self_start, .self_end {
+				is_start := side.to_keyword() == .self_start
+				if is_horizontal_axis {
+					use_left := (box.computed_values().direction() == .ltr) == is_start
+					if use_left { rect.left() } else { rect.right() }
+				} else if is_start {
+					rect.top()
+				} else {
+					rect.bottom()
+				}
+			}
+			.inside, .outside {
+				same_side := side.to_keyword() == .inside
+				if is_horizontal_axis {
+					if is_from_end == same_side { rect.right() } else { rect.left() }
+				} else if is_from_end == same_side {
+					rect.bottom()
+				} else {
+					rect.top()
+				}
+			}
+			else { none }
+		}
+	}
+	if side.is_percentage() {
+		percentage := side.as_percentage().percentage().as_fraction()
+		if is_horizontal_axis {
+			if containing_box.computed_values().direction() == .ltr {
+				return rect.left().plus(rect.width.times_float(percentage))
+			}
+			return rect.right().minus(rect.width.times_float(percentage))
+		}
+		return rect.top().plus(rect.height.times_float(percentage))
+	}
+	return none
+}
+
+// https://drafts.csswg.org/css-anchor-position-1/#anchor-pos
+fn resolve_anchor_for_inset(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, containing_extent CSSPixels, anchor css.AnchorStyleValue, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
+	if side := resolve_anchor_side(state, box, containing_box, containing_state, anchor, is_from_end, is_horizontal_axis) {
+		if is_from_end {
+			return containing_extent.minus(side)
+		}
+		return side
+	}
+	fallback := anchor.fallback_value() or { return none }
+	if fallback is css.AnchorStyleValue {
+		return resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_extent, fallback, is_from_end, is_horizontal_axis)
+	}
+	return resolve_layout_size(box, css.Size.from_style_value(fallback), containing_extent)
+}
+
 // FormattingContext::compute_inline_containing_block_rect(). The returned
 // padding-box rectangle is expressed in the coordinate system of the Box that
 // the rest of layout stores as the abspos containing block.
@@ -134,10 +261,26 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	containing_height := containing_rect.height
 	resolve_box_model_edges(computed, mut box_state, containing_width.to_double())
 
-	left := resolved_inset(box, .left, containing_width)
-	right := resolved_inset(box, .right, containing_width)
-	top := resolved_inset(box, .top, containing_height)
-	bottom := resolved_inset(box, .bottom, containing_height)
+	left := if anchor := anchor_style_value_for_inset(computed, .left) {
+		resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_width, anchor, false, true)
+	} else {
+		resolved_inset(box, .left, containing_width)
+	}
+	right := if anchor := anchor_style_value_for_inset(computed, .right) {
+		resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_width, anchor, true, true)
+	} else {
+		resolved_inset(box, .right, containing_width)
+	}
+	top := if anchor := anchor_style_value_for_inset(computed, .top) {
+		resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_height, anchor, false, false)
+	} else {
+		resolved_inset(box, .top, containing_height)
+	}
+	bottom := if anchor := anchor_style_value_for_inset(computed, .bottom) {
+		resolve_anchor_for_inset(state, box, containing_box, containing_state, containing_height, anchor, true, false)
+	} else {
+		resolved_inset(box, .bottom, containing_height)
+	}
 	mut forced_width := resolve_layout_content_size(box, computed.size_value(.width),
 		containing_width, box_state, true)
 	mut forced_height := resolve_layout_content_size(box, computed.size_value(.height),
