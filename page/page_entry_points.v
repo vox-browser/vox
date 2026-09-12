@@ -60,7 +60,7 @@ pub fn (mut p Page) handle_mouseup(target ?InputTarget, _ PixelPoint, button u32
 
 pub fn (mut p Page) handle_mousedown(target ?InputTarget, position PixelPoint, button u32, _ u32,
 	_ u32, click_count int) EventResult {
-	return p.event_handler.handle_mousedown_with_button(target, position, button, click_count, true)
+	return p.event_handler.handle_mousedown_with_button(target, position, button, click_count, p.enable_autoscroll())
 }
 
 pub fn (mut p Page) handle_mousemove(target ?InputTarget, screen PixelPoint, _ u32,

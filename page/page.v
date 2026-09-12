@@ -126,6 +126,7 @@ mut:
 	history_delta_                 int
 	is_scripting_enabled_          bool = true
 	should_block_pop_ups_          bool = true
+	enable_autoscroll_             bool = true
 	is_webdriver_active_           bool
 	is_hovering_link_              bool
 	is_in_tooltip_area_            bool
@@ -206,6 +207,14 @@ pub fn Page.create(device_scale f64) !&Page {
 		preferred_color_scheme_callback: page_preferred_color_scheme_callback
 	}
 	return model
+}
+
+pub fn (p &Page) enable_autoscroll() bool {
+	return p.enable_autoscroll_
+}
+
+pub fn (mut p Page) set_enable_autoscroll(value bool) {
+	p.enable_autoscroll_ = value
 }
 
 pub fn (mut p Page) set_top_level_traversable(id string) ! {

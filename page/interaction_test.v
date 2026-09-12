@@ -114,6 +114,21 @@ fn test_middle_button_autoscroll_activation_dead_zone_and_cancellation() {
 	assert handler.middle_button_scroll_handler() == none
 }
 
+fn test_page_autoscroll_setting_controls_middle_button_activation() {
+	mut model := Page.create(1)!
+	target := InputTarget{ id: 'scroller', has_scrollable_box: true }
+	model.set_enable_autoscroll(false)
+	assert !model.enable_autoscroll()
+	model.handle_mousedown(target, PixelPoint{ x: 20, y: 20 }, 1, 1, 0, 1)
+	assert model.event_handler.middle_button_scroll_handler() == none
+	model.handle_mouseup(target, PixelPoint{}, 1, 0, 0)
+
+	model.set_enable_autoscroll(true)
+	assert model.enable_autoscroll()
+	model.handle_mousedown(target, PixelPoint{ x: 20, y: 20 }, 1, 1, 0, 1)
+	assert model.event_handler.middle_button_scroll_handler() != none
+}
+
 fn test_resize_axes_writing_mode_constraints_and_content_box() {
 	action := ElementResizeAction{
 		pointer_down_origin: PixelPoint{
