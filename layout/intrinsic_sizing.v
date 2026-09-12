@@ -200,6 +200,8 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 			// their combined width. This is what lets an auto-width abspos menu made
 			// entirely of floated list items shrink-wrap to the whole menu rather
 			// than to its widest item.
+			// Keep the resulting float width separate from the line width: a line
+			// after a short float does not overlap it and must not inherit its width.
 			mut automatic_width := result.automatic_content_width
 			mut left_floating_width := CSSPixels.new(0)
 			mut right_floating_width := CSSPixels.new(0)

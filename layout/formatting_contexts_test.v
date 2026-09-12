@@ -2577,6 +2577,22 @@ fn test_float_is_lowered_past_an_opposite_side_blocker() {
 	assert right.offset.y().to_double() == 40
 }
 
+fn test_intrinsic_width_ignores_a_float_that_does_not_overlap_the_widest_line() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#outer { float:left }
+		#inner { float:left; width:100px; height:20px }
+		#late { display:inline-block; width:130px; height:20px }
+	</style><div id="outer"><div id="inner"></div>x<br><span id="late"></span></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	outer := used_for_id(result, 'outer')
+	inner := used_for_id(result, 'inner')
+	late := used_for_id(result, 'late')
+	assert inner.content_width().to_double() == 100
+	assert late.content_width().to_double() == 130
+	assert outer.content_width().to_double() == 130
+}
+
 fn test_auto_width_float_is_clamped_by_max_width() {
 	document := html.parse_document('<!doctype html><style>
 		body { margin:0 }
