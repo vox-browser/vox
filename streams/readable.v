@@ -99,6 +99,7 @@ mut:
 	tee_clone_branch2_  bool
 	pipe_destination_   &WritableStream = unsafe { nil }
 	pipe_promise_       &VoidPromise = unsafe { nil }
+	pipe_operation_     &ReadableStreamPipeTo = unsafe { nil }
 	pipe_read_request_  &ReadPromise = unsafe { nil }
 	pipe_pumping_       bool
 	pipe_options_       StreamPipeOptions
@@ -613,7 +614,7 @@ mut:
 	stream_            &ReadableStream = unsafe { nil }
 	closed_            &VoidPromise = unsafe { nil }
 	released_          bool
-	pipe_to_operation_ voidptr
+	pipe_to_operation_ &ReadableStreamPipeTo = unsafe { nil }
 }
 
 pub fn ReadableStreamDefaultReader.construct_impl(mut stream ReadableStream) !&ReadableStreamDefaultReader {
@@ -625,7 +626,8 @@ pub fn (reader &ReadableStreamDefaultReader) closed() &VoidPromise {
 }
 
 pub fn (reader &ReadableStreamDefaultReader) closed_promise_realm() StreamRealm {
-	return reader.closed_.realm()
+	mixin := ReadableStreamGenericReaderMixin.from_promise(reader.closed_)
+	return mixin.closed_promise_realm()
 }
 
 pub fn (mut reader ReadableStreamDefaultReader) read() &ReadPromise {

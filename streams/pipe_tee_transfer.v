@@ -54,6 +54,7 @@ fn unlock_pipe(mut source ReadableStream, mut destination WritableStream) {
 		writer.release_lock()
 	}
 	source.pipe_destination_ = unsafe { nil }
+	source.pipe_operation_ = unsafe { nil }
 	destination.pipe_source_ = unsafe { nil }
 }
 
@@ -237,6 +238,8 @@ pub fn (mut source ReadableStream) pipe_to(mut destination WritableStream, optio
 	destination.pipe_source_ = &source
 	source.pipe_options_ = options
 	source.pipe_promise_ = VoidPromise.pending_in(source.realm_)
+	source.pipe_operation_ = ReadableStreamPipeTo.from_promise(source.pipe_promise_)
+	reader.set_readable_stream_pipe_to_operation(source.pipe_operation_)
 	if mut signal := options.signal {
 		signal.pipes_ << &source
 	}
@@ -653,6 +656,18 @@ fn cancel_tee_branch(mut branch ReadableStream, reason Value) &VoidPromise {
 	branch.close_internal()
 	branch.tee_cancel_promise_ = VoidPromise.pending_in(branch.realm_)
 	mut source := branch.tee_source_
+	// The concrete request class depends on which reader the byte tee currently
+	// uses. Constructing it here keeps queued tee work tied to the cancel
+	// promise's realm just like the upstream request objects.
+	if source.byte_stream_ {
+		if source.reader_kind_ == .byob {
+			_ = ReadableByteStreamTeeBYOBReadRequest.from_promise(branch.tee_cancel_promise_)
+		} else {
+			_ = ReadableByteStreamTeeDefaultReadRequest.from_promise(branch.tee_cancel_promise_)
+		}
+	} else {
+		_ = ReadableStreamTeeReadRequest.from_promise(branch.tee_cancel_promise_)
+	}
 	mut other := &ReadableStream(unsafe { nil })
 	for mut candidate in source.tee_branches_ {
 		if candidate.tee_branch_index_ != branch.tee_branch_index_ {

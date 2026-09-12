@@ -114,7 +114,7 @@ pub fn (mut reader ReadableStreamDefaultReader) read_all_bytes_deprecated() &Rea
 	return ReadPromise.fulfilled(bytes_value(bytes), false)
 }
 
-pub fn (mut reader ReadableStreamDefaultReader) set_readable_stream_pipe_to_operation(operation voidptr) {
+pub fn (mut reader ReadableStreamDefaultReader) set_readable_stream_pipe_to_operation(operation &ReadableStreamPipeTo) {
 	reader.pipe_to_operation_ = operation
 }
 

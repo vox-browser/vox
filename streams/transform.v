@@ -103,7 +103,7 @@ pub fn (stream &TransformStream) backpressure() bool {
 }
 
 pub fn (stream &TransformStream) backpressure_change_promise_realm() StreamRealm {
-	return stream.backpressure_change_promise_.realm()
+	return promise_realm(stream.backpressure_change_promise_)
 }
 
 fn (mut stream TransformStream) update_backpressure() {

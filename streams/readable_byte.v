@@ -412,7 +412,8 @@ pub fn (reader &ReadableStreamBYOBReader) closed() &VoidPromise {
 }
 
 pub fn (reader &ReadableStreamBYOBReader) closed_promise_realm() StreamRealm {
-	return reader.closed_.realm()
+	mixin := ReadableStreamGenericReaderMixin.from_promise(reader.closed_)
+	return mixin.closed_promise_realm()
 }
 
 pub fn (mut reader ReadableStreamBYOBReader) read(view_length int, minimum int) &BYOBReadPromise {

@@ -437,6 +437,12 @@ pub fn (controller &WritableStreamDefaultController) signal() &AbortSignal {
 	return controller.signal_
 }
 
+// Generated bindings address this first exposed controller slot by offset. V
+// exposes the corresponding logical slot index instead of a C++ byte offset.
+pub fn WritableStreamDefaultController.signal_offset() int {
+	return 0
+}
+
 pub fn (mut controller WritableStreamDefaultController) error(reason string) {
 	writable_stream_default_controller_error_if_needed(mut controller, string_value(reason))
 }
