@@ -121,10 +121,13 @@ fn test_run_a_dedicated_worker_installs_and_starts_parent_agent() {
 	window := WindowModel.create_top_level(document, none, 'worker-run-test')!
 	mut realm := &ScriptingRealm{}
 	settings := WindowEnvironmentSettingsObject.setup(window, document.url, mut realm, none, document.url, document.origin()).settings
-	worker := Worker.construct_impl('/worker.js', settings, WorkerOptions{})!
+	mut worker := Worker.construct_impl('/worker.js', settings, WorkerOptions{})!
 	agent := worker.agent_ or { panic('missing worker agent') }
 	assert agent.started
 	assert agent.ipc_callbacks_configured_
+	assert settings.worker_startup_keep_alive_count() == 1
+	worker.terminate()
+	assert settings.worker_startup_keep_alive_count() == 0
 }
 
 fn test_worker_agent_parent_callbacks_and_shadow_realm_interfaces() {
@@ -139,7 +142,25 @@ fn test_worker_agent_parent_callbacks_and_shadow_realm_interfaces() {
 	assert parent.started
 	assert parent.ipc_callbacks_configured_
 	assert parent.message_port != none
+	assert settings.worker_startup_keep_alive_count() == 1
 	parent.worker_script_load_failure()
+	assert settings.worker_startup_keep_alive_count() == 0
+
+	mut successful_parent := WorkerAgentParent.create(dom.URL{
+		value: 'https://example.test/success.js'
+	}, WorkerOptions{}, settings, MessagePort.create(), dom.EventTarget.new())
+	successful_parent.initialize()!
+	assert settings.worker_startup_keep_alive_count() == 1
+	successful_parent.worker_script_load_success()
+	assert settings.worker_startup_keep_alive_count() == 0
+
+	mut closing_parent := WorkerAgentParent.create(dom.URL{
+		value: 'https://example.test/closing.js'
+	}, WorkerOptions{}, settings, MessagePort.create(), dom.EventTarget.new())
+	closing_parent.initialize()!
+	assert settings.worker_startup_keep_alive_count() == 1
+	closing_parent.worker_close()
+	assert settings.worker_startup_keep_alive_count() == 0
 
 	mut realm := &ScriptingRealm{}
 	mut shadow := ShadowRealmGlobalScope.create(realm)

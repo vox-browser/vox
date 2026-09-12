@@ -116,6 +116,7 @@ mut:
 	resolved_module_set_                 []ResolvedModuleRecord
 	service_worker_registration_objects_ map[string]&ServiceWorkerRegistrationObjectModel
 	service_worker_objects_              map[string]&ServiceWorkerObjectModel
+	worker_agents_starting_              []&WorkerAgentParent
 	fetch_group_                         FetchGroup
 	script_fetch_hook_                   ?PerformTheFetchHook
 	script_compile_hook_                 ?ScriptParseHook
@@ -186,6 +187,20 @@ pub fn (settings &EnvironmentSettingsObject) responsible_event_loop() &EventLoop
 
 pub fn (settings &EnvironmentSettingsObject) fetch_group() &FetchGroup {
 	return &settings.fetch_group_
+}
+
+pub fn (mut settings EnvironmentSettingsObject) keep_worker_agent_alive_while_starting(agent &WorkerAgentParent) {
+	if agent !in settings.worker_agents_starting_ {
+		settings.worker_agents_starting_ << agent
+	}
+}
+
+pub fn (mut settings EnvironmentSettingsObject) release_worker_agent_from_startup_keep_alive(agent &WorkerAgentParent) {
+	settings.worker_agents_starting_ = settings.worker_agents_starting_.filter(voidptr(it) != voidptr(agent))
+}
+
+pub fn (settings &EnvironmentSettingsObject) worker_startup_keep_alive_count() int {
+	return settings.worker_agents_starting_.len
 }
 
 // Platform fetching remains a host boundary in the V translation. Script

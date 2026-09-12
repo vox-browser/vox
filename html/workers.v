@@ -424,6 +424,9 @@ pub fn (mut worker Worker) terminate() {
 		return
 	}
 	worker.terminated_ = true
+	if agent := worker.agent_ {
+		agent.worker_close()
+	}
 	if mut port := worker.outside_port_ { port.close() }
 	if mut scope := worker.scope_ { scope.close() }
 }
@@ -599,6 +602,8 @@ pub fn WorkerAgentParent.create(url dom.URL, options WorkerOptions, outside_sett
 }
 
 pub fn (mut parent WorkerAgentParent) initialize() ! {
+	mut outside_settings := unsafe { &EnvironmentSettingsObject(parent.outside_settings) }
+	outside_settings.keep_worker_agent_alive_while_starting(parent)
 	mut port := MessagePort.create()
 	port.entangle_with(parent.outside_port)
 	parent.message_port = port
@@ -645,10 +650,24 @@ pub fn (parent &WorkerAgentParent) worker_exception(message string, filename str
 pub fn (parent &WorkerAgentParent) worker_script_load_failure() {
 	if callback := parent.worker_script_load_failure_callback_ {
 		callback()
-		return
+	} else {
+		event := dom.Event.create('error', dom.EventInit{})
+		parent.worker_event_target.dispatch_event(event)
 	}
-	event := dom.Event.create('error', dom.EventInit{})
-	parent.worker_event_target.dispatch_event(event)
+	parent.release_startup_keep_alive()
+}
+
+pub fn (parent &WorkerAgentParent) worker_script_load_success() {
+	parent.release_startup_keep_alive()
+}
+
+pub fn (parent &WorkerAgentParent) worker_close() {
+	parent.release_startup_keep_alive()
+}
+
+fn (parent &WorkerAgentParent) release_startup_keep_alive() {
+	mut outside_settings := unsafe { &EnvironmentSettingsObject(parent.outside_settings) }
+	outside_settings.release_worker_agent_from_startup_keep_alive(parent)
 }
 
 pub enum WorkerConsoleLogLevel {
