@@ -76,8 +76,10 @@ pub fn Animatable.new(target ?&dom.Element) &Animatable {
 	if element := target {
 		mut mutable_element := unsafe { &dom.Element(element) }
 		mutable_element.animations_animatable_handle_ = voidptr(animatable)
-		mut document := unsafe { &dom.Document(element.document()) }
-		install_document_animations_hook(mut document)
+		if element.document() != unsafe { nil } {
+			mut document := unsafe { &dom.Document(element.document()) }
+			install_document_animations_hook(mut document)
+		}
 	}
 	return animatable
 }
@@ -153,6 +155,9 @@ fn update_animations_for_dom_root(_ voidptr, root &dom.Node, _timestamp f64) {
 	for animation in collected_animations {
 		mut mutable_animation := unsafe { &Animation(animation) }
 		mutable_animation.update()
+		if mutable_animation.css_cancellation_disassociation_pending() {
+			mutable_animation.disassociate_from_target_after_css_cancellation()
+		}
 	}
 }
 

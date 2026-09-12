@@ -7,6 +7,7 @@ module animations
 
 import css
 import dom
+import html
 import math
 
 __global animation_list_order_counter u64
@@ -36,36 +37,44 @@ pub struct Animation {
 	dom.Animation
 	dom.EventTarget
 pub mut:
-	id_                          string
-	global_animation_list_order_ u64
-	effect_                      ?&AnimationEffect
-	timeline_                    ?&AnimationTimeline
-	start_time_                  ?TimeValue
-	auto_align_start_time_       bool
-	hold_time_                   ?TimeValue
-	previous_current_time_       ?TimeValue
-	playback_rate_               f64 = 1.0
-	pending_playback_rate_       ?f64
-	replace_state_               AnimationReplaceState = .active
-	current_ready_promise_       &dom.Promise          = dom.Promise.resolved(dom.js_undefined())
-	current_finished_promise_    &dom.Promise          = dom.Promise.create()
-	is_finished_                 bool
-	pending_play_task_           bool
-	pending_pause_task_          bool
-	emitted_events_              []&AnimationPlaybackEvent
-	animation_class_             AnimationClass = .none_
-	class_composite_order_       int
-	owning_element_              ?dom.AbstractElement
-	saved_cancel_time_           ?TimeValue
-	last_css_animation_play_state_ ?css.AnimationPlayState
-	effect_invalidated_          bool
+	id_                                      string
+	global_animation_list_order_             u64
+	effect_                                  ?&AnimationEffect
+	timeline_                                ?&AnimationTimeline
+	start_time_                              ?TimeValue
+	auto_align_start_time_                   bool
+	hold_time_                               ?TimeValue
+	previous_current_time_                   ?TimeValue
+	playback_rate_                           f64 = 1.0
+	pending_playback_rate_                   ?f64
+	replace_state_                           AnimationReplaceState = .active
+	current_ready_promise_                   &dom.Promise = dom.Promise.resolved(dom.js_undefined())
+	current_finished_promise_                &dom.Promise = dom.Promise.create()
+	is_finished_                             bool
+	pending_play_task_                       bool
+	pending_pause_task_                      bool
+	emitted_events_                          []&AnimationPlaybackEvent
+	animation_class_                         AnimationClass = .none_
+	class_composite_order_                   int
+	owning_element_                          ?dom.AbstractElement
+	saved_cancel_time_                       ?TimeValue
+	last_css_animation_play_state_           ?css.AnimationPlayState
+	effect_invalidated_                      bool
+	environment_                             ?&html.EnvironmentSettingsObject
+	css_cancellation_disassociation_pending_ bool
+	needs_target_reassociation_              bool
 }
 
 pub fn Animation.create(effect ?&AnimationEffect, timeline ?&AnimationTimeline) &Animation {
+	return Animation.create_with_environment(none, effect, timeline)
+}
+
+pub fn Animation.create_with_environment(environment ?&html.EnvironmentSettingsObject, effect ?&AnimationEffect, timeline ?&AnimationTimeline) &Animation {
 	order := animation_list_order_counter
 	animation_list_order_counter++
 	mut animation := &Animation{
 		global_animation_list_order_: order
+		environment_: environment
 	}
 	animation.Animation.concrete_handle_ = voidptr(animation)
 	animation.current_ready_promise_ = create_resolved_animation_promise(animation)
@@ -76,6 +85,39 @@ pub fn Animation.create(effect ?&AnimationEffect, timeline ?&AnimationTimeline) 
 
 pub fn Animation.construct_impl(effect ?&AnimationEffect, timeline ?&AnimationTimeline) !&Animation {
 	return Animation.create(effect, timeline)
+}
+
+pub fn Animation.effect_offset() usize {
+	return usize(__offsetof(Animation, effect_))
+}
+
+fn optional_element_identity_equal(left ?&dom.Element, right ?&dom.Element) bool {
+	if left_element := left {
+		right_element := right or { return false }
+		return voidptr(left_element) == voidptr(right_element)
+	}
+	return right == none
+}
+
+fn animation_effect_target(effect ?&AnimationEffect) ?&dom.Element {
+	value := effect or { return none }
+	if !value.is_keyframe_effect_ {
+		return none
+	}
+	return unsafe { &KeyframeEffect(value) }.target()
+}
+
+fn associate_animation_with_target(target &dom.Element, animation &Animation) {
+	mut animatable := Animatable.new(target)
+	animatable.associate_with_animation(animation)
+}
+
+fn disassociate_animation_from_target(target &dom.Element, animation &Animation) {
+	if target.animations_animatable_handle_ == unsafe { nil } {
+		return
+	}
+	mut animatable := unsafe { &Animatable(target.animations_animatable_handle_) }
+	animatable.disassociate_with_animation(animation)
 }
 
 pub fn animation_wrapper_value(animation &Animation) dom.JSValue {
@@ -99,13 +141,48 @@ pub fn construct_animation(effect ?&AnimationEffect, timeline ?&AnimationTimelin
 }
 
 pub fn (mut animation Animation) set_effect(new_effect ?&AnimationEffect) {
-	if mut old := animation.effect_ {
-		old.set_associated_animation(none)
+	old_effect := animation.effect_
+	if old_effect == none && new_effect == none {
+		return
 	}
-	animation.effect_ = new_effect
+	if old := old_effect {
+		if replacement := new_effect {
+			if voidptr(old) == voidptr(replacement) {
+				return
+			}
+		}
+	}
+	if replacement := new_effect {
+		if previous_animation := replacement.associated_animation_ {
+			if voidptr(previous_animation) != voidptr(animation) {
+				mut mutable_previous_animation := unsafe { &Animation(previous_animation) }
+				mutable_previous_animation.set_effect(none)
+			}
+		}
+	}
+	old_target := animation_effect_target(old_effect)
+	new_target := animation_effect_target(new_effect)
+	if !optional_element_identity_equal(old_target, new_target) {
+		if target := old_target {
+			disassociate_animation_from_target(target, animation)
+		}
+		if target := new_target {
+			associate_animation_with_target(target, animation)
+		}
+	}
 	if mut effect := new_effect {
 		effect.set_associated_animation(animation)
 	}
+	if mut old := old_effect {
+		old.set_associated_animation(none)
+		if old.is_keyframe_effect_ {
+			mut old_keyframe_effect := unsafe { &KeyframeEffect(old) }
+			old_keyframe_effect.invalidate_effect()
+		}
+	}
+	animation.effect_ = new_effect
+	animation.update_finished_state(false)
+	animation.invalidate_effect()
 }
 
 pub fn (mut animation Animation) set_timeline(new_timeline ?&AnimationTimeline) {
@@ -493,12 +570,20 @@ pub fn (animation &Animation) is_replaceable() bool {
 
 pub fn (mut animation Animation) set_replace_state(value AnimationReplaceState) {
 	if animation.replace_state_ == value { return }
-	animation.replace_state_ = value
 	if value == .removed {
+		if target := animation_effect_target(animation.effect_) {
+			disassociate_animation_from_target(target, animation)
+		}
 		if mut timeline := animation.timeline_ { timeline.disassociate_with_animation(animation) }
-	} else if mut timeline := animation.timeline_ {
-		timeline.associate_with_animation(animation)
+	} else if value == .persisted && animation.replace_state_ == .removed {
+		if target := animation_effect_target(animation.effect_) {
+			associate_animation_with_target(target, animation)
+		}
+		if mut timeline := animation.timeline_ {
+			timeline.associate_with_animation(animation)
+		}
 	}
+	animation.replace_state_ = value
 }
 
 pub fn (mut animation Animation) cancel() {
@@ -546,6 +631,13 @@ pub fn (mut animation Animation) play() ! {
 }
 
 pub fn (mut animation Animation) play_an_animation(auto_rewind bool) ! {
+	animation.css_cancellation_disassociation_pending_ = false
+	if animation.needs_target_reassociation_ {
+		if target := animation_effect_target(animation.effect_) {
+			associate_animation_with_target(target, animation)
+		}
+		animation.needs_target_reassociation_ = false
+	}
 	aborted_pause := animation.pending_pause_task_
 	mut has_pending_ready := false
 	has_finite_timeline := if timeline := animation.timeline_ {
@@ -807,9 +899,59 @@ pub fn (animation &Animation) current_finished_promise() &dom.Promise {
 	return animation.current_finished_promise_
 }
 
+pub fn (animation &Animation) relevant_settings_object() ?&html.EnvironmentSettingsObject {
+	if environment := animation.environment_ {
+		return environment
+	}
+	document := animation.document_for_timing() or {
+		owner := animation.owning_element_ or { return none }
+		owner.element().document()
+	}
+	if document == unsafe { nil } {
+		return none
+	}
+	settings := document.relevant_settings_object()
+	if settings == unsafe { nil } {
+		return none
+	}
+	return unsafe { &html.EnvironmentSettingsObject(settings) }
+}
+
+pub fn (animation &Animation) relevant_global_object() ?&dom.EventTarget {
+	settings := animation.relevant_settings_object() or { return none }
+	return settings.global_object()
+}
+
+pub fn (animation &Animation) relevant_global_impl() ?&dom.EventTarget {
+	return animation.relevant_global_object()
+}
+
+pub fn (mut animation Animation) set_provisional_effect(effect &AnimationEffect) {
+	if animation.effect_ != none || effect.associated_animation_ != none {
+		panic('A provisional effect must be unassociated')
+	}
+	mut mutable_effect := unsafe { &AnimationEffect(effect) }
+	mutable_effect.set_associated_animation(animation)
+	animation.effect_ = effect
+}
+
+pub fn (mut animation Animation) discard_provisional_effect() {
+	mut effect := animation.effect_ or { panic('Missing provisional effect') }
+	associated_animation := effect.associated_animation_ or {
+		panic('Provisional effect is not associated')
+	}
+	if voidptr(associated_animation) != voidptr(animation) {
+		panic('Provisional effect belongs to another animation')
+	}
+	effect.set_associated_animation(none)
+	animation.effect_ = none
+}
+
 pub fn (mut animation Animation) invalidate_effect() {
-	if animation.effect_ == none {
-		return
+	effect := animation.effect_ or { return }
+	if effect.is_keyframe_effect_ {
+		mut keyframe_effect := unsafe { &KeyframeEffect(effect) }
+		keyframe_effect.invalidate_effect()
 	}
 	animation.effect_invalidated_ = true
 	if owner := animation.owning_element_ {
@@ -833,6 +975,21 @@ pub fn (animation &Animation) owning_element() ?dom.AbstractElement {
 
 pub fn (mut animation Animation) set_owning_element(value ?dom.AbstractElement) {
 	animation.owning_element_ = value
+}
+
+pub fn (mut animation Animation) schedule_disassociation_from_target_after_css_cancellation() {
+	animation.css_cancellation_disassociation_pending_ = true
+}
+
+pub fn (animation &Animation) css_cancellation_disassociation_pending() bool {
+	return animation.css_cancellation_disassociation_pending_
+}
+
+pub fn (mut animation Animation) disassociate_from_target_after_css_cancellation() {
+	animation.css_cancellation_disassociation_pending_ = false
+	target := animation_effect_target(animation.effect_) or { return }
+	disassociate_animation_from_target(target, animation)
+	animation.needs_target_reassociation_ = true
 }
 
 pub fn (animation &Animation) animation_class() AnimationClass {

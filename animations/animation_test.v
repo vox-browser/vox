@@ -92,8 +92,8 @@ fn test_finished_binding_synchronizes_an_observed_skipped_animation() {
 	effect.AnimationEffect.update_timing(OptionalEffectTiming{
 		duration: IterationDuration(10.0)
 	})!
-	effect.set_is_compositor_driven(true)
 	mut animation := Animation.create(effect.as_animation_effect(), timeline)
+	effect.set_is_compositor_driven(true)
 	animation.start_time_ = TimeValue.milliseconds(0)
 	assert animation.play_state() == .running
 	assert animation.finished().state() == .pending
@@ -105,6 +105,98 @@ fn test_finished_binding_synchronizes_an_observed_skipped_animation() {
 	assert promise.state() == .fulfilled
 	assert promise.result().object_data == voidptr(animation)
 	assert animation.is_finished()
+}
+
+fn test_animation_effect_replacement_moves_target_association() {
+	document := dom.Document.create(dom.url_about_blank())
+	first_target := document.create_element('div')!
+	second_target := document.create_element('div')!
+	mut first_effect := KeyframeEffect.create()
+	first_effect.set_target(first_target)
+	mut second_effect := KeyframeEffect.create()
+	second_effect.set_target(second_target)
+	mut animation := Animation.create(first_effect.as_animation_effect(), none)
+
+	mut first_animatable := Animatable.new(first_target)
+	assert first_animatable.associated_animations_in_composite_order() == [animation]
+	first_effect.set_is_compositor_driven(true)
+	second_effect.set_is_compositor_driven(true)
+	animation.set_effect(second_effect.as_animation_effect())
+	assert !first_animatable.has_associated_animations()
+	mut second_animatable := Animatable.new(second_target)
+	assert second_animatable.associated_animations_in_composite_order() == [animation]
+	assert first_effect.associated_animation_ == none
+	assert second_effect.associated_animation_ != none
+	assert !first_effect.is_compositor_driven()
+	assert !second_effect.is_compositor_driven()
+}
+
+fn test_animation_replace_state_moves_target_and_timeline_associations() {
+	document := dom.Document.create(dom.url_about_blank())
+	target := document.create_element('div')!
+	mut effect := KeyframeEffect.create()
+	effect.set_target(target)
+	mut timeline := AnimationTimeline.new()
+	mut animation := Animation.create(effect.as_animation_effect(), timeline)
+	mut animatable := Animatable.new(target)
+	assert animatable.has_associated_animations()
+	assert timeline.associated_animations_.len == 1
+
+	animation.set_replace_state(.removed)
+	assert !animatable.has_associated_animations()
+	assert timeline.associated_animations_.len == 0
+	animation.set_replace_state(.persisted)
+	assert animatable.associated_animations_in_composite_order() == [animation]
+	assert timeline.associated_animations_ == [animation]
+}
+
+fn test_animation_css_cancellation_disassociates_until_replayed() {
+	document := dom.Document.create(dom.url_about_blank())
+	target := document.create_element('div')!
+	mut effect := KeyframeEffect.create()
+	effect.set_target(target)
+	mut animation := Animation.create(effect.as_animation_effect(), none)
+	mut animatable := Animatable.new(target)
+	assert animatable.has_associated_animations()
+
+	animation.schedule_disassociation_from_target_after_css_cancellation()
+	assert animation.css_cancellation_disassociation_pending()
+	animation.disassociate_from_target_after_css_cancellation()
+	assert !animation.css_cancellation_disassociation_pending()
+	assert !animatable.has_associated_animations()
+	animation.play_an_animation(true)!
+	assert animatable.associated_animations_in_composite_order() == [animation]
+}
+
+fn test_animation_provisional_effect_can_be_discarded_without_target_exposure() {
+	mut animation := Animation.create(none, none)
+	mut effect := AnimationEffect.new()
+	animation.set_provisional_effect(effect)
+	installed_effect := animation.effect_ or { panic('missing provisional effect') }
+	assert installed_effect == effect
+	associated := effect.associated_animation_ or { panic('missing association') }
+	assert associated == animation
+
+	animation.discard_provisional_effect()
+	assert animation.effect_ == none
+	assert effect.associated_animation_ == none
+}
+
+fn test_animation_recovers_relevant_settings_from_its_timeline_document() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	_ := html.WindowModel.create_top_level(document, none, 'animation-global')!
+	mut timeline := new_document_timeline(document, 0, 0)
+	timeline.set_document_active(true)
+	animation := Animation.create(none, timeline)
+	settings := animation.relevant_settings_object() or { panic('missing settings') }
+	assert settings == unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	explicit_animation := Animation.create_with_environment(settings, none, none)
+	assert (explicit_animation.relevant_settings_object() or { panic('missing explicit settings') }) == settings
+	global_object := animation.relevant_global_object() or { panic('missing global') }
+	assert global_object == settings.global_object()
+	global_impl := animation.relevant_global_impl() or { panic('missing global implementation') }
+	assert global_impl == global_object
+	assert Animation.effect_offset() == usize(__offsetof(Animation, effect_))
 }
 
 fn test_animation_numberish_validation_and_reverse() {

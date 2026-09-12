@@ -75,8 +75,8 @@ fn test_timeline_current_time_observation_is_stable_within_a_task() {
 	mut timeline := new_document_timeline(none, 25, 100)
 	timeline.set_document_active(true)
 	mut effect := KeyframeEffect.create()
-	effect.set_is_compositor_driven(true)
 	_ = Animation.create(effect.as_animation_effect(), timeline)
+	effect.set_is_compositor_driven(true)
 
 	mut event_loop := html.main_thread_event_loop()
 	event_loop.process()
