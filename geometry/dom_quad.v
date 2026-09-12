@@ -30,13 +30,21 @@ mut:
 	p4_ &DOMPoint
 }
 
+pub fn point_from_init(point DOMPointInit) &DOMPoint {
+	return DOMPoint.construct(point.x, point.y, point.z, point.w)
+}
+
+pub fn point_from_coordinates(x f64, y f64) &DOMPoint {
+	return DOMPoint.construct(x, y, 0, 1)
+}
+
 // The DOMQuad(p1, p2, p3, p4) constructor: each DOMPointInit becomes a DOMPoint.
 pub fn DOMQuad.construct(p1 DOMPointInit, p2 DOMPointInit, p3 DOMPointInit, p4 DOMPointInit) &DOMQuad {
 	return &DOMQuad{
-		p1_: DOMPoint.from_point(p1)
-		p2_: DOMPoint.from_point(p2)
-		p3_: DOMPoint.from_point(p3)
-		p4_: DOMPoint.from_point(p4)
+		p1_: point_from_init(p1)
+		p2_: point_from_init(p2)
+		p3_: point_from_init(p3)
+		p4_: point_from_init(p4)
 	}
 }
 
@@ -56,21 +64,41 @@ pub fn DOMQuad.create() &DOMQuad {
 
 // https://drafts.fxtf.org/geometry/#dom-domquad-fromrect — a DOMQuad from a rectangle's four corners.
 pub fn DOMQuad.from_rect(other DOMRectInit) &DOMQuad {
-	return DOMQuad.construct(DOMPointInit{ x: other.x, y: other.y }, DOMPointInit{
-		x: other.x + other.width
-		y: other.y
-	}, DOMPointInit{
-		x: other.x + other.width
-		y: other.y + other.height
-	}, DOMPointInit{
-		x: other.x
-		y: other.y + other.height
-	})
+	return DOMQuad.dom_quad_from_rect(other)
+}
+
+pub fn DOMQuad.dom_quad_from_rect(other DOMRectInit) &DOMQuad {
+	return &DOMQuad{
+		p1_: point_from_coordinates(other.x, other.y)
+		p2_: point_from_coordinates(other.x + other.width, other.y)
+		p3_: point_from_coordinates(other.x + other.width, other.y + other.height)
+		p4_: point_from_coordinates(other.x, other.y + other.height)
+	}
 }
 
 // https://drafts.fxtf.org/geometry/#dom-domquad-fromquad
 pub fn DOMQuad.from_quad(other DOMQuadInit) &DOMQuad {
+	return DOMQuad.dom_quad_from_quad(other)
+}
+
+pub fn DOMQuad.dom_quad_from_quad(other DOMQuadInit) &DOMQuad {
 	return DOMQuad.construct(other.p1, other.p2, other.p3, other.p4)
+}
+
+pub fn DOMQuad.p1_offset() usize {
+	return usize(__offsetof(DOMQuad, p1_))
+}
+
+pub fn DOMQuad.p2_offset() usize {
+	return usize(__offsetof(DOMQuad, p2_))
+}
+
+pub fn DOMQuad.p3_offset() usize {
+	return usize(__offsetof(DOMQuad, p3_))
+}
+
+pub fn DOMQuad.p4_offset() usize {
+	return usize(__offsetof(DOMQuad, p4_))
 }
 
 pub fn (quad &DOMQuad) p1() &DOMPoint {

@@ -95,11 +95,19 @@ pub fn DOMMatrix.construct(init ?[]f64) !&DOMMatrix {
 }
 
 pub fn DOMMatrix.construct_impl(init ?DOMMatrixConstructorInit, is_window bool) !&DOMMatrix {
+	return DOMMatrix.create_for_constructor(is_window, init)
+}
+
+pub fn DOMMatrix.create_from_constructor(init ?DOMMatrixConstructorInit, string_context DOMMatrixStringContext) !&DOMMatrix {
 	value := init or { return DOMMatrix.create() }
 	return match value {
 		[]f64 { DOMMatrix.construct(value) }
-		string { DOMMatrix.construct_from_string(value, is_window) }
+		string { DOMMatrix.construct_from_string(value, string_context == .window) }
 	}
+}
+
+pub fn DOMMatrix.create_for_constructor(is_window bool, init ?DOMMatrixConstructorInit) !&DOMMatrix {
+	return DOMMatrix.create_from_constructor(init, dom_matrix_string_context(is_window))
 }
 
 pub fn DOMMatrix.create_from_dom_matrix_2d_init(mut init DOMMatrix2DInit) !&DOMMatrix {
@@ -285,8 +293,7 @@ pub fn (mut matrix DOMMatrix) pre_multiply_self(mut other DOMMatrixInit) !&DOMMa
 // https://drafts.fxtf.org/geometry/#dom-dommatrix-translateself — post-multiply a translation.
 pub fn (mut matrix DOMMatrix) translate_self(tx ?f64, ty ?f64, tz ?f64) &DOMMatrix {
 	z := tz or { 0.0 }
-	matrix.apply_rows(mat4_multiply(matrix.to_rows(), translation_rows(tx or { 0.0 },
-		ty or { 0.0 }, z)))
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), translation_rows(tx or { 0.0 }, ty or { 0.0 }, z)))
 	// If tz is specified and non-zero, the matrix is no longer 2D.
 	if tz != none && z != 0.0 {
 		matrix.is_2d_ = false
@@ -479,8 +486,7 @@ pub fn (mut matrix DOMMatrix) rotate_axis_angle_self(x ?f64, y ?f64, z ?f64, ang
 	az := z or { 0.0 }
 	// 1. Post-multiply a rotation about the normalized axis by `angle` degrees.
 	length := math.sqrt(ax * ax + ay * ay + az * az)
-	matrix.apply_rows(mat4_multiply(matrix.to_rows(), rotation_rows(ax / length, ay / length,
-		az / length, to_radians(angle or { 0.0 }))))
+	matrix.apply_rows(mat4_multiply(matrix.to_rows(), rotation_rows(ax / length, ay / length, az / length, to_radians(angle or { 0.0 }))))
 	// 2. An x or y axis component makes the matrix 3D.
 	if ax != 0.0 || ay != 0.0 {
 		matrix.is_2d_ = false

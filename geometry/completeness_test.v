@@ -19,8 +19,7 @@ fn test_matrix_typed_array_factories_and_stringifier() {
 	assert matrix.to_string()! == 'matrix(1, 2, 3, 4, 5, 6)'
 	large := DOMMatrixReadOnly.construct([1e20, 0, 0, 1, 0, 0])!
 	assert large.to_string()! == 'matrix(100000000000000000000, 0, 0, 1, 0, 0)'
-	three_d := DOMMatrix.from_float64_array([1.0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 10, 20, 30,
-		1])!
+	three_d := DOMMatrix.from_float64_array([1.0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 10, 20, 30, 1])!
 	assert !three_d.is_2d()
 	assert three_d.to_string()!.starts_with('matrix3d(1, 0, 0, 0, 0, 1')
 	if _ := DOMMatrixReadOnly.from_float32_array([f32(1), 2]) {
@@ -77,12 +76,11 @@ fn test_geometry_serialization_and_json_records_round_trip() {
 	quad_copy := DOMQuad.deserialize(quad.serialization_steps())
 	assert quad_copy.to_json() == quad.to_json()
 	if _ := DOMMatrixReadOnly.deserialize(SerializedDOMMatrix{
-		is_2d:    true
+		is_2d: true
 		elements: [
 			1.0,
 		]
-	})
-	{
+	}) {
 		assert false, 'malformed clone records must be rejected'
 	}
 }
@@ -90,12 +88,17 @@ fn test_geometry_serialization_and_json_records_round_trip() {
 fn test_exact_geometry_constructor_initialization_and_deserialization_entry_points() {
 	read_only_identity := DOMMatrixReadOnly.construct_impl(none, true)!
 	assert read_only_identity.is2d()
-	read_only_sequence := DOMMatrixReadOnly.construct_impl(DOMMatrixConstructorInit([2.0,
-		0.0, 0.0, 3.0, 4.0, 5.0]), true)!
+	read_only_sequence := DOMMatrixReadOnly.construct_impl(DOMMatrixConstructorInit([
+		2.0,
+		0.0,
+		0.0,
+		3.0,
+		4.0,
+		5.0,
+	]), true)!
 	assert read_only_sequence.a() == 2
 	assert read_only_sequence.f() == 5
-	mutable_string := DOMMatrix.construct_impl(DOMMatrixConstructorInit('matrix(1, 0, 0, 1, 7, 8)'),
-		true)!
+	mutable_string := DOMMatrix.construct_impl(DOMMatrixConstructorInit('matrix(1, 0, 0, 1, 7, 8)'), true)!
 	assert mutable_string.e() == 7
 	assert mutable_string.f() == 8
 	mut matrix_2d_init := DOMMatrix2DInit{
@@ -107,8 +110,7 @@ fn test_exact_geometry_constructor_initialization_and_deserialization_entry_poin
 	assert mutable_2d.d() == 3
 
 	mut initialized := DOMMatrixReadOnly.create()
-	initialized.initialize_from_create_3d_matrix(1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-		11, 12, 13, 14, 15, 16)
+	initialized.initialize_from_create_3d_matrix(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
 	assert !initialized.is2d()
 	assert initialized.m43() == 15
 	initialized.initialize_from_create_2d_matrix(1, 2, 3, 4, 5, 6)
@@ -123,7 +125,7 @@ fn test_exact_geometry_constructor_initialization_and_deserialization_entry_poin
 	assert rect.to_json().width == 3
 	mut matrix := DOMMatrixReadOnly.create()
 	matrix.deserialization_steps(SerializedDOMMatrix{
-		is_2d:    true
+		is_2d: true
 		elements: [2.0, 0.0, 0.0, 3.0, 4.0, 5.0]
 	})!
 	assert matrix.a() == 2
@@ -139,6 +141,37 @@ fn test_exact_geometry_constructor_initialization_and_deserialization_entry_poin
 	assert DOMPointReadOnly.construct_impl(1, 2, 3, 4).w() == 4
 	assert DOMPoint.construct_impl(1, 2, 3, 4).z() == 3
 	assert DOMRectReadOnly.construct_impl(1, 2, 3, 4).height() == 4
-	assert DOMQuad.construct_impl(DOMPointInit{}, DOMPointInit{}, DOMPointInit{},
-		DOMPointInit{}).p1().w() == 1
+	assert DOMQuad.construct_impl(DOMPointInit{}, DOMPointInit{}, DOMPointInit{}, DOMPointInit{}).p1().w() == 1
+}
+
+fn test_new_binding_constructor_and_dictionary_entry_points() {
+	assert dom_matrix_string_context(true) == .window
+	assert dom_matrix_string_context(false) == .worker
+	read_only := DOMMatrixReadOnly.create_from_constructor(DOMMatrixConstructorInit('matrix(1, 0, 0, 1, 3, 4)'), .window)!
+	assert read_only.m41() == 3
+	mutable := DOMMatrix.create_for_constructor(true, DOMMatrixConstructorInit([1.0, 0, 0, 1, 5,
+		6]))!
+	assert mutable.m42() == 6
+	if _ := DOMMatrixReadOnly.create_from_constructor(DOMMatrixConstructorInit('none'), .worker) {
+		assert false
+	} else {
+		assert err.msg().contains('Window')
+	}
+
+	point_init := DOMPointInit{ x: 1, y: 2, z: 3, w: 4 }
+	assert DOMPoint.dom_point_from_point(point_init).z() == 3
+	assert DOMPointReadOnly.dom_point_read_only_from_point(point_init).w() == 4
+	assert point_from_init(point_init).x() == 1
+	assert point_from_coordinates(7, 8).w() == 1
+
+	rect_init := DOMRectInit{ x: 2, y: 3, width: 4, height: 5 }
+	assert DOMRect.dom_rect_from_rect(rect_init).right() == 6
+	assert DOMRectReadOnly.dom_rect_read_only_from_rect(rect_init).bottom() == 8
+	quad := DOMQuad.dom_quad_from_rect(rect_init)
+	assert quad.p3().x() == 6
+	assert DOMQuad.dom_quad_from_quad(DOMQuadInit{ p1: point_init }).p1().w() == 4
+	assert DOMQuad.p1_offset() == 0
+	assert DOMQuad.p2_offset() > DOMQuad.p1_offset()
+	assert DOMQuad.p3_offset() > DOMQuad.p2_offset()
+	assert DOMQuad.p4_offset() > DOMQuad.p3_offset()
 }

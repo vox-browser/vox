@@ -52,6 +52,10 @@ pub fn DOMPointReadOnly.create() &DOMPointReadOnly {
 
 // https://drafts.fxtf.org/geometry/#dom-dompointreadonly-frompoint
 pub fn DOMPointReadOnly.from_point(other DOMPointInit) &DOMPointReadOnly {
+	return DOMPointReadOnly.dom_point_read_only_from_point(other)
+}
+
+pub fn DOMPointReadOnly.dom_point_read_only_from_point(other DOMPointInit) &DOMPointReadOnly {
 	return DOMPointReadOnly.construct(other.x, other.y, other.z, other.w)
 }
 
@@ -108,6 +112,10 @@ pub fn DOMPoint.create() &DOMPoint {
 
 // https://drafts.fxtf.org/geometry/#dom-dompoint-frompoint
 pub fn DOMPoint.from_point(other DOMPointInit) &DOMPoint {
+	return DOMPoint.dom_point_from_point(other)
+}
+
+pub fn DOMPoint.dom_point_from_point(other DOMPointInit) &DOMPoint {
 	return DOMPoint.construct(other.x, other.y, other.z, other.w)
 }
 

@@ -39,9 +39,9 @@ mut:
 // The DOMRectReadOnly(x, y, width, height) constructor.
 pub fn DOMRectReadOnly.construct(x f64, y f64, width f64, height f64) &DOMRectReadOnly {
 	return &DOMRectReadOnly{
-		x_:      x
-		y_:      y
-		width_:  width
+		x_: x
+		y_: y
+		width_: width
 		height_: height
 	}
 }
@@ -57,6 +57,10 @@ pub fn DOMRectReadOnly.create() &DOMRectReadOnly {
 
 // https://drafts.fxtf.org/geometry/#create-a-domrect-from-the-dictionary
 pub fn DOMRectReadOnly.from_rect(other DOMRectInit) &DOMRectReadOnly {
+	return DOMRectReadOnly.dom_rect_read_only_from_rect(other)
+}
+
+pub fn DOMRectReadOnly.dom_rect_read_only_from_rect(other DOMRectInit) &DOMRectReadOnly {
 	return DOMRectReadOnly.construct(other.x, other.y, other.width, other.height)
 }
 
@@ -122,9 +126,9 @@ pub struct DOMRect {
 pub fn DOMRect.construct(x f64, y f64, width f64, height f64) &DOMRect {
 	return &DOMRect{
 		DOMRectReadOnly: DOMRectReadOnly{
-			x_:      x
-			y_:      y
-			width_:  width
+			x_: x
+			y_: y
+			width_: width
 			height_: height
 		}
 	}
@@ -137,6 +141,10 @@ pub fn DOMRect.create() &DOMRect {
 
 // https://drafts.fxtf.org/geometry/#create-a-domrect-from-the-dictionary
 pub fn DOMRect.from_rect(other DOMRectInit) &DOMRect {
+	return DOMRect.dom_rect_from_rect(other)
+}
+
+pub fn DOMRect.dom_rect_from_rect(other DOMRectInit) &DOMRect {
 	return DOMRect.construct(other.x, other.y, other.width, other.height)
 }
 

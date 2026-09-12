@@ -23,6 +23,15 @@ import math
 
 pub type DOMMatrixConstructorInit = []f64 | string
 
+pub enum DOMMatrixStringContext {
+	window
+	worker
+}
+
+pub fn dom_matrix_string_context(is_window bool) DOMMatrixStringContext {
+	return if is_window { .window } else { .worker }
+}
+
 // https://drafts.fxtf.org/geometry/#dictdef-dommatrix2dinit — every member is optional.
 pub struct DOMMatrix2DInit {
 pub mut:
@@ -92,8 +101,7 @@ fn DOMMatrixReadOnly.create_2d(m11 f64, m12 f64, m21 f64, m22 f64, m41 f64, m42 
 // https://drafts.fxtf.org/geometry/#create-a-3d-matrix — all sixteen components; is2D is false.
 fn DOMMatrixReadOnly.create_3d(m11 f64, m12 f64, m13 f64, m14 f64, m21 f64, m22 f64, m23 f64, m24 f64, m31 f64, m32 f64, m33 f64, m34 f64, m41 f64, m42 f64, m43 f64, m44 f64) &DOMMatrixReadOnly {
 	mut matrix := &DOMMatrixReadOnly{}
-	matrix.initialize_from_create_3d_matrix(m11, m12, m13, m14, m21, m22, m23,
-		m24, m31, m32, m33, m34, m41, m42, m43, m44)
+	matrix.initialize_from_create_3d_matrix(m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34, m41, m42, m43, m44)
 	return matrix
 }
 
@@ -148,23 +156,28 @@ pub fn DOMMatrixReadOnly.create() &DOMMatrixReadOnly {
 pub fn DOMMatrixReadOnly.construct(init ?[]f64) !&DOMMatrixReadOnly {
 	numbers := init or { return DOMMatrixReadOnly.create() }
 	if numbers.len == 6 {
-		return DOMMatrixReadOnly.create_2d(numbers[0], numbers[1], numbers[2], numbers[3],
-			numbers[4], numbers[5])
+		return DOMMatrixReadOnly.create_2d(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5])
 	}
 	if numbers.len == 16 {
-		return DOMMatrixReadOnly.create_3d(numbers[0], numbers[1], numbers[2], numbers[3],
-			numbers[4], numbers[5], numbers[6], numbers[7], numbers[8], numbers[9], numbers[10],
-			numbers[11], numbers[12], numbers[13], numbers[14], numbers[15])
+		return DOMMatrixReadOnly.create_3d(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5], numbers[6], numbers[7], numbers[8], numbers[9], numbers[10], numbers[11], numbers[12], numbers[13], numbers[14], numbers[15])
 	}
 	return error('Sequence must contain exactly 6 or 16 elements, got ${numbers.len} element(s)')
 }
 
 pub fn DOMMatrixReadOnly.construct_impl(init ?DOMMatrixConstructorInit, is_window bool) !&DOMMatrixReadOnly {
+	return DOMMatrixReadOnly.create_for_constructor(is_window, init)
+}
+
+pub fn DOMMatrixReadOnly.create_from_constructor(init ?DOMMatrixConstructorInit, string_context DOMMatrixStringContext) !&DOMMatrixReadOnly {
 	value := init or { return DOMMatrixReadOnly.create() }
 	return match value {
 		[]f64 { DOMMatrixReadOnly.construct(value) }
-		string { DOMMatrixReadOnly.construct_from_string(value, is_window) }
+		string { DOMMatrixReadOnly.construct_from_string(value, string_context == .window) }
 	}
+}
+
+pub fn DOMMatrixReadOnly.create_for_constructor(is_window bool, init ?DOMMatrixConstructorInit) !&DOMMatrixReadOnly {
+	return DOMMatrixReadOnly.create_from_constructor(init, dom_matrix_string_context(is_window))
 }
 
 // https://drafts.fxtf.org/geometry/#create-a-dommatrixreadonly-from-the-2d-dictionary
@@ -331,9 +344,9 @@ pub fn (matrix &DOMMatrixReadOnly) to_float32_array() []f32 {
 // https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-tofloat64array — the 16 elements m11..m44 in
 // column-major order as a raw f64 sequence.
 pub fn (matrix &DOMMatrixReadOnly) to_float64_array() []f64 {
-	return [matrix.m11_, matrix.m12_, matrix.m13_, matrix.m14_, matrix.m21_, matrix.m22_, matrix.m23_,
-		matrix.m24_, matrix.m31_, matrix.m32_, matrix.m33_, matrix.m34_, matrix.m41_, matrix.m42_,
-		matrix.m43_, matrix.m44_]
+	return [matrix.m11_, matrix.m12_, matrix.m13_, matrix.m14_, matrix.m21_, matrix.m22_,
+		matrix.m23_, matrix.m24_, matrix.m31_, matrix.m32_, matrix.m33_, matrix.m34_, matrix.m41_,
+		matrix.m42_, matrix.m43_, matrix.m44_]
 }
 
 // --- transform a point (https://drafts.fxtf.org/geometry/#transform-a-point-with-a-matrix) ---
@@ -341,11 +354,7 @@ pub fn (matrix &DOMMatrixReadOnly) to_float64_array() []f64 {
 // Multiply the matrix by the column vector (x, y, z, w) and return the resulting DOMPoint. With the
 // spec's column-major storage this is result[row] = sum over columns of m<column><row> * vector.
 fn (matrix &DOMMatrixReadOnly) transform_coordinates(x f64, y f64, z f64, w f64) &DOMPoint {
-	return DOMPoint.construct(matrix.m11_ * x + matrix.m21_ * y + matrix.m31_ * z + matrix.m41_ * w,
-
-		matrix.m12_ * x + matrix.m22_ * y + matrix.m32_ * z + matrix.m42_ * w, matrix.m13_ * x +
-		matrix.m23_ * y + matrix.m33_ * z + matrix.m43_ * w, matrix.m14_ * x + matrix.m24_ * y +
-		matrix.m34_ * z + matrix.m44_ * w)
+	return DOMPoint.construct(matrix.m11_ * x + matrix.m21_ * y + matrix.m31_ * z + matrix.m41_ * w, matrix.m12_ * x + matrix.m22_ * y + matrix.m32_ * z + matrix.m42_ * w, matrix.m13_ * x + matrix.m23_ * y + matrix.m33_ * z + matrix.m43_ * w, matrix.m14_ * x + matrix.m24_ * y + matrix.m34_ * z + matrix.m44_ * w)
 }
 
 // https://drafts.fxtf.org/geometry/#dom-dommatrixreadonly-transformpoint — transform an existing point.
