@@ -95,14 +95,6 @@ pub fn LengthResolutionContext.for_element(element &dom.AbstractElement) LengthR
 	return context
 }
 
-// Translates Length::ResolutionContext::for_window(). The current Window stub
-// can be created without an associated document, so fall back to the default
-// zero viewport in that case.
-pub fn LengthResolutionContext.for_window(window &dom.Window) LengthResolutionContext {
-	document := window.associated_document() or { return LengthResolutionContext.default() }
-	return length_resolution_context_from_document(document)
-}
-
 // Translates Length::to_px_slow_case(Layout::Node const&). Font pixel metrics
 // that require the platform font engine use the translated metric estimates,
 // while font size, line height, root metrics, and viewport come from the node.
