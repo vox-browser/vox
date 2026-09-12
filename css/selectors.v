@@ -27,6 +27,7 @@ pub mut:
 	slotted_element                                   ?&dom.Element // Only set when matching a ::slotted() pseudo-element
 	part_owning_parent                                ?&dom.Element // Only set temporarily when matching a ::part() pseudo-element
 	rule_shadow_root                                  ?&dom.ShadowRoot // Shadow root the matched rule belongs to
+	for_host_part_matching                            bool
 	collect_per_element_selector_involvement_metadata bool
 	attempted_pseudo_class_matches                    PseudoClassBitmap
 	has_result_cache                                  map[string]HasMatchResult
@@ -1470,6 +1471,13 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 		return false
 	}
 	compound_selector := compound_selectors[component_list_index]
+	saved_for_host_part_matching := context.for_host_part_matching
+	defer {
+		context.for_host_part_matching = saved_for_host_part_matching
+	}
+	if context.rule_shadow_root != none && compound_selector_contains_host_for_part_matching(compound_selector) {
+		context.for_host_part_matching = true
+	}
 	mut element_for_compound_matching := initial_element
 	for i := compound_selector.simple_selectors.len - 1; i >= 0; i-- {
 		simple_selector := compound_selector.simple_selectors[i]
@@ -1564,6 +1572,41 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 	}
 }
 
+fn compound_selector_contains_host_for_part_matching(compound_selector CompoundSelector) bool {
+	for simple_selector in compound_selector.simple_selectors {
+		if simple_selector.type_ != .pseudo_class {
+			continue
+		}
+		if simple_selector.pseudo_class.type_ == .host {
+			return true
+		}
+		if simple_selector.pseudo_class.type_ != .is_ {
+			continue
+		}
+		for argument in simple_selector.pseudo_class.argument_selector_list.selectors {
+			for argument_compound in argument.compound_selectors() {
+				for argument_simple in argument_compound.simple_selectors {
+					if argument_simple.type_ == .pseudo_class
+						&& argument_simple.pseudo_class.type_ == .host {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+fn part_element_map_contains(part_map map[string][]dom.AbstractElement, name string, element &dom.Element) bool {
+	entries := part_map[name] or { return false }
+	for entry in entries {
+		if voidptr(entry.element()) == voidptr(element) && entry.pseudo_element() == none {
+			return true
+		}
+	}
+	return false
+}
+
 fn matches_simple(component SimpleSelector, element &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode, selector_kind SelectorKind, anchor ?&dom.Element) bool {
 	_ = anchor
 	if should_block_shadow_host_matching(component, shadow_host, element) {
@@ -1613,14 +1656,35 @@ fn matches_simple(component SimpleSelector, element &dom.Element, shadow_host ?&
 				return matches(compound_selector, slotted_element, shadow_host, mut context, none, none, .normal, none)
 			}
 			if component.pseudo_element.type_ == .part {
-				// All part names need to match the [pseudo-]element.
-				// FIXME: Support matching pseudo-elements.
-				for part_name in component.pseudo_element.ident_list {
-					if part_name !in element.parts {
-						return false
+				// ::part() only consults maps owned by a host in the rule's direct
+				// child scope, except for :host::part() in the rule's own root.
+				mut ancestor_shadow_root := element.as_node().containing_shadow_root()
+				for ancestor_shadow_root != none {
+					root := ancestor_shadow_root or { break }
+					host := root.host() or { break }
+					is_direct_child_scope := style_scope_optional_shadow_root_equal(host.as_node().containing_shadow_root(), context.rule_shadow_root)
+					is_host_part_own_scope := if rule_root := context.rule_shadow_root {
+						voidptr(root) == voidptr(rule_root) && context.for_host_part_matching
+					} else {
+						false
 					}
+					if is_direct_child_scope || is_host_part_own_scope {
+						part_element_map := root.part_element_map()
+						mut all_part_names_match := true
+						for part_name in component.pseudo_element.ident_list {
+							if !part_element_map_contains(part_element_map, part_name, element) {
+								all_part_names_match = false
+								break
+							}
+						}
+						if all_part_names_match {
+							context.part_owning_parent = host
+							return true
+						}
+					}
+					ancestor_shadow_root = host.as_node().containing_shadow_root()
 				}
-				return true
+				return false
 			}
 			// Other pseudo-element matching/not-matching is handled in the top level matches().
 			return true
