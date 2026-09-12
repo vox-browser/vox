@@ -26,12 +26,14 @@ pub enum CSSRuleType {
 	layer_statement
 	nested_declarations
 	property
+	scope
 }
 
 // The rule types whose C++ class derives from CSSGroupingRule, i.e. the rules
 // that may contain style rules: CSSStyleRule, CSSPageRule, CSSLayerBlockRule,
 // and the CSSConditionRule subclasses CSSMediaRule and CSSSupportsRule.
-pub const css_grouping_rule_types = [CSSRuleType.style, .page, .layer_block, .media, .supports]
+pub const css_grouping_rule_types = [CSSRuleType.style, .page, .layer_block, .media, .supports,
+	.scope]
 
 pub fn (t CSSRuleType) type_for_bindings() u16 {
 	// NOTE: Types that aren't defined in the spec must return 0.
@@ -49,7 +51,7 @@ pub fn (t CSSRuleType) type_for_bindings() u16 {
 		.counter_style { 11 }
 		.supports { 12 }
 		.font_feature_values { 14 }
-		.layer_block, .layer_statement, .nested_declarations, .property { 0 }
+		.layer_block, .layer_statement, .nested_declarations, .property, .scope { 0 }
 	}
 }
 
@@ -71,6 +73,7 @@ pub fn (t CSSRuleType) class_name() string {
 		.layer_statement { 'CSSLayerStatementRule' }
 		.nested_declarations { 'CSSNestedDeclarations' }
 		.property { 'CSSPropertyRule' }
+		.scope { 'CSSScopeRule' }
 	}
 }
 
@@ -389,7 +392,7 @@ pub fn (rule_list &CSSRuleList) for_each_effective_rule(order TraversalOrder, ca
 					loaded_style_sheet.for_each_effective_rule(order, callback)
 				}
 			}
-			.layer_block, .media, .page, .style, .supports {
+			.layer_block, .media, .page, .scope, .style, .supports {
 				rule.for_each_effective_rule(order, callback)
 			}
 			.counter_style, .font_face, .font_feature_values, .keyframe, .keyframes, .layer_statement, .margin, .namespace_rule, .nested_declarations, .property {
@@ -442,6 +445,13 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 						if child_rules.evaluate_media_queries(document) {
 							any_media_queries_changed_match_state = true
 						}
+					}
+				}
+			}
+			.scope {
+				if mut child_rules := rule.rules {
+					if child_rules.evaluate_media_queries(document) {
+						any_media_queries_changed_match_state = true
 					}
 				}
 			}
@@ -528,6 +538,8 @@ pub mut:
 
 	selectors                    SelectorList
 	cached_absolutized_selectors ?SelectorList
+	scope_start_selectors        ?SelectorList
+	scope_end_selectors          ?SelectorList
 	declaration                  ?&CSSStyleProperties
 	style_map_cache              ?&CSSOMStylePropertyMap
 
@@ -573,6 +585,13 @@ pub fn CSSRule.create_media(media &MediaList, rules &CSSRuleList) &CSSRule {
 pub fn CSSRule.create_supports(supports &Supports, rules &CSSRuleList) &CSSRule {
 	mut rule := CSSRule.create_grouping(.supports, rules)
 	rule.supports = supports
+	return rule
+}
+
+pub fn CSSRule.create_scope(start_selectors ?SelectorList, end_selectors ?SelectorList, rules &CSSRuleList) &CSSRule {
+	mut rule := CSSRule.create_grouping(.scope, rules)
+	rule.scope_start_selectors = start_selectors
+	rule.scope_end_selectors = end_selectors
 	return rule
 }
 
@@ -873,6 +892,9 @@ pub fn (rule &CSSRule) serialized() string {
 		.property {
 			rule.serialized_property_rule()
 		}
+		.scope {
+			rule.serialized_scope_rule()
+		}
 		.nested_declarations {
 			if declaration := rule.declaration {
 				declaration.serialized()
@@ -885,6 +907,39 @@ pub fn (rule &CSSRule) serialized() string {
 
 pub fn (rule &CSSRule) css_rules() ?&CSSRuleList {
 	return rule.rules
+}
+
+pub fn (rule &CSSRule) scope_start() ?string {
+	selectors := rule.scope_start_selectors or { return none }
+	return serialize_a_group_of_selectors(selectors)
+}
+
+pub fn (rule &CSSRule) scope_end() ?string {
+	selectors := rule.scope_end_selectors or { return none }
+	return serialize_a_group_of_selectors(selectors)
+}
+
+fn (rule &CSSRule) serialized_scope_rule() string {
+	mut builder := strings.new_builder(128)
+	builder.write_string('@scope')
+	if start := rule.scope_start() {
+		builder.write_string(' (${start})')
+	}
+	if end := rule.scope_end() {
+		builder.write_string(' to (${end})')
+	}
+	builder.write_string(' {\n')
+	if rules := rule.rules {
+		for child_rule in rules.rules {
+			result := child_rule.css_text()
+			if result.len == 0 {
+				continue
+			}
+			builder.write_string('  ${result}\n')
+		}
+	}
+	builder.write_u8(`}`)
+	return builder.str()
 }
 
 // https://drafts.csswg.org/cssom/#dom-cssgroupingrule-insertrule
@@ -2295,6 +2350,7 @@ pub enum RuleContext {
 	keyframes
 	keyframe
 	supports
+	scope
 	supports_condition
 	layer
 	property
@@ -2312,6 +2368,7 @@ fn rule_context_type_for_rule(rule_type CSSRuleType) RuleContext {
 		.keyframes { .keyframes }
 		.keyframe { .keyframe }
 		.supports { .supports }
+		.scope { .scope }
 		.layer_block { .layer }
 		.property { .property }
 		.page { .page }
