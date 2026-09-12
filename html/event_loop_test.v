@@ -69,10 +69,6 @@ fn test_event_loop_task_generation_advances_once_per_processing_turn() {
 	assert event_loop.task_generation() == 1
 	event_loop.process()
 	assert event_loop.task_generation() == 2
-
-	event_loop.skip_event_loop_processing_steps = true
-	event_loop.process()
-	assert event_loop.task_generation() == 2
 }
 
 fn test_microtask_checkpoint_after_task() {

@@ -285,7 +285,6 @@ mut:
 	last_render_opportunity_time_         f64
 	last_idle_period_start_time_          f64
 	execution_paused                      bool
-	skip_event_loop_processing_steps      bool
 	running_rendering_task                bool
 	scheduled                             bool
 	input_events_hook_                    ?EventLoopInputEventsHook
@@ -389,9 +388,6 @@ pub fn (mut event_loop EventLoop) spin_until(goal_condition fn() bool) {
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model
 pub fn (mut event_loop EventLoop) process() {
-	if event_loop.skip_event_loop_processing_steps {
-		return
-	}
 	event_loop.task_generation_++
 	event_loop.scheduled = false
 	reached_step_1_tasks := event_loop.reached_step_1_tasks.clone()
