@@ -2201,17 +2201,6 @@ pub fn (block SimpleBlock) original_source_text() string {
 	return builder.str()
 }
 
-pub fn (block SimpleBlock) contains_arbitrary_substitution_function(mut presence SubstitutionFunctionsPresence) {
-	for component_value in block.value {
-		if component_value.is_function() {
-			component_value.function().contains_arbitrary_substitution_function(mut presence)
-		}
-		if component_value.is_block() {
-			component_value.block().contains_arbitrary_substitution_function(mut presence)
-		}
-	}
-}
-
 // https://drafts.csswg.org/css-syntax/#function
 pub struct Function {
 pub mut:
@@ -2242,28 +2231,6 @@ pub fn (function Function) original_source_text() string {
 	}
 	builder.write_string(function.end_token.original_source_text())
 	return builder.str()
-}
-
-pub fn (function Function) contains_arbitrary_substitution_function(mut presence SubstitutionFunctionsPresence) {
-	if equals_ignoring_ascii_case(function.name, 'attr') {
-		presence.attr = true
-	} else if equals_ignoring_ascii_case(function.name, 'env') {
-		presence.env = true
-	} else if equals_ignoring_ascii_case(function.name, 'if') {
-		presence.if_ = true
-	} else if equals_ignoring_ascii_case(function.name, 'inherit') {
-		presence.inherit = true
-	} else if equals_ignoring_ascii_case(function.name, 'var') {
-		presence.var = true
-	}
-	for component_value in function.value {
-		if component_value.is_function() {
-			component_value.function().contains_arbitrary_substitution_function(mut presence)
-		}
-		if component_value.is_block() {
-			component_value.block().contains_arbitrary_substitution_function(mut presence)
-		}
-	}
 }
 
 // https://drafts.csswg.org/css-variables/#guaranteed-invalid-value

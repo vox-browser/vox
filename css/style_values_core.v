@@ -5289,14 +5289,7 @@ pub fn UnresolvedStyleValue.create(tokens []ComponentValue) UnresolvedStyleValue
 
 pub fn UnresolvedStyleValue.create_with_original_source_text(tokens []ComponentValue, original_source_text ?string) UnresolvedStyleValue {
 	mut presence := SubstitutionFunctionsPresence{}
-	for token in tokens {
-		if token.is_function() {
-			token.function().contains_arbitrary_substitution_function(mut presence)
-		}
-		if token.is_block() {
-			token.block().contains_arbitrary_substitution_function(mut presence)
-		}
-	}
+	collect_arbitrary_substitution_function_presence(tokens, mut presence)
 	return UnresolvedStyleValue{
 		tokens: tokens
 		substitution_functions_presence: presence

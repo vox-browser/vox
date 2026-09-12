@@ -3739,6 +3739,43 @@ pub fn to_arbitrary_substitution_function(name string) ?ArbitrarySubstitutionFun
 	return none
 }
 
+// Parser::collect_arbitrary_substitution_function_presence(). Keeping this on
+// the parser boundary gives properties, descriptors, syntax parsing, and Typed
+// OM one recursive implementation for inspecting component values.
+pub fn collect_arbitrary_substitution_function_presence(values []ComponentValue, mut presence SubstitutionFunctionsPresence) {
+	for value in values {
+		collect_arbitrary_substitution_function_presence_from_component(value, mut presence)
+	}
+}
+
+fn collect_arbitrary_substitution_function_presence_from_component(value ComponentValue, mut presence SubstitutionFunctionsPresence) {
+	if value.is_function() {
+		function := value.function()
+		if substitution_function := to_arbitrary_substitution_function(function.name) {
+			match substitution_function {
+				.attr {
+					presence.attr = true
+				}
+				.env {
+					presence.env = true
+				}
+				.if_ {
+					presence.if_ = true
+				}
+				.inherit {
+					presence.inherit = true
+				}
+				.var_ {
+					presence.var = true
+				}
+			}
+		}
+		collect_arbitrary_substitution_function_presence(function.value, mut presence)
+	} else if value.is_block() {
+		collect_arbitrary_substitution_function_presence(value.block().value, mut presence)
+	}
+}
+
 pub fn contains_guaranteed_invalid_value(values []ComponentValue) bool {
 	for value in values {
 		if value.contains_guaranteed_invalid_value() {
