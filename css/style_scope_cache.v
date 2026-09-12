@@ -1336,7 +1336,7 @@ fn style_scope_elements_equal(left &dom.Element, right &dom.Element) bool {
 	return voidptr(left) == voidptr(right)
 }
 
-fn style_scope_selector_list_matches_element(selectors SelectorList, element &dom.Element, subject &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element, scope_root ?&dom.Element) bool {
+fn style_scope_selector_list_matches_element(selectors SelectorList, element &dom.Element, subject &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element, rule_root ?&dom.ShadowRoot, scope_root ?&dom.Element) bool {
 	mut mutable_sheet := ?&CSSStyleSheet(none)
 	if style_sheet := sheet {
 		mutable_sheet = unsafe { &CSSStyleSheet(style_sheet) }
@@ -1345,6 +1345,9 @@ fn style_scope_selector_list_matches_element(selectors SelectorList, element &do
 		style_sheet_for_rule: mutable_sheet
 		subject: unsafe { &dom.Element(subject) }
 		collect_per_element_selector_involvement_metadata: true
+	}
+	if root := rule_root {
+		context.rule_shadow_root = unsafe { &dom.ShadowRoot(root) }
 	}
 	mut scoping_root := ?&dom.ParentNode(none)
 	if root := scope_root {
@@ -1358,12 +1361,18 @@ fn style_scope_selector_list_matches_element(selectors SelectorList, element &do
 	return false
 }
 
-fn style_scope_implicit_root(target &dom.Element, sheet ?&CSSStyleSheet) ?&dom.Element {
+fn style_scope_implicit_root(target &dom.Element, sheet ?&CSSStyleSheet, rule_root ?&dom.ShadowRoot) ?&dom.Element {
 	if style_sheet := sheet {
 		if owner := style_sheet.base.owner_node {
 			if parent := owner.as_node().parent_element() {
 				return parent
 			}
+		}
+		if root := rule_root {
+			return root.host()
+		}
+		if document := style_sheet.owning_document() {
+			return document.document_element()
 		}
 	}
 	root_node := target.as_node().root()
@@ -1376,7 +1385,7 @@ fn style_scope_implicit_root(target &dom.Element, sheet ?&CSSStyleSheet) ?&dom.E
 	return none
 }
 
-fn style_scope_find_root(scope_rule &CSSRule, target &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element) ?&dom.Element {
+fn style_scope_find_root(scope_rule &CSSRule, target &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element, rule_root ?&dom.ShadowRoot) ?&dom.Element {
 	scope_style_sheet := if descriptor_sheet := scope_rule.parent_style_sheet {
 		?&CSSStyleSheet(descriptor_sheet)
 	} else {
@@ -1384,37 +1393,46 @@ fn style_scope_find_root(scope_rule &CSSRule, target &dom.Element, sheet ?&CSSSt
 	}
 	mut parent_scope_root := ?&dom.Element(none)
 	if parent_scope_rule := scope_rule.parent_scope_rule() {
-		parent_scope_root = style_scope_find_root(parent_scope_rule, target, sheet, shadow_host)
-		parent_root := parent_scope_root or { return none }
-		if style_scope_scope_limit_matches(parent_scope_rule, parent_root, target, sheet, shadow_host) {
+		parent_scope_root = style_scope_find_root(parent_scope_rule, target, sheet, shadow_host, rule_root)
+		if parent_scope_root == none {
 			return none
 		}
 	}
 
 	mut mutable_scope_rule := unsafe { &CSSRule(scope_rule) }
 	start_selectors := mutable_scope_rule.scope_start_selectors_for_matching() or {
-		if parent_root := parent_scope_root {
-			return parent_root
+		root := style_scope_implicit_root(target, scope_style_sheet, rule_root) or { return none }
+		if !root.as_node().is_shadow_including_inclusive_ancestor_of(target.as_node()) {
+			return none
 		}
-		return style_scope_implicit_root(target, scope_style_sheet)
+		if parent_root := parent_scope_root {
+			if !parent_root.as_node().is_shadow_including_inclusive_ancestor_of(root.as_node()) {
+				return none
+			}
+		}
+		if style_scope_scope_limit_matches(scope_rule, root, target, scope_style_sheet, shadow_host, rule_root) {
+			return none
+		}
+		return root
 	}
 	mut candidate := ?&dom.Element(target)
 	for {
 		current := candidate or { break }
-		if style_scope_selector_list_matches_element(start_selectors, current, target, scope_style_sheet, shadow_host, parent_scope_root) {
-			return current
-		}
 		if parent_root := parent_scope_root {
-			if style_scope_elements_equal(current, parent_root) {
+			if !parent_root.as_node().is_shadow_including_inclusive_ancestor_of(current.as_node()) {
 				break
 			}
 		}
-		candidate = current.as_node().parent_element()
+		if style_scope_selector_list_matches_element(start_selectors, current, target, scope_style_sheet, shadow_host, rule_root, parent_scope_root)
+			&& !style_scope_scope_limit_matches(scope_rule, current, target, scope_style_sheet, shadow_host, rule_root) {
+			return current
+		}
+		candidate = current.as_node().parent_or_shadow_host_element()
 	}
 	return none
 }
 
-fn style_scope_scope_limit_matches(scope_rule &CSSRule, scope_root &dom.Element, target &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element) bool {
+fn style_scope_scope_limit_matches(scope_rule &CSSRule, scope_root &dom.Element, target &dom.Element, sheet ?&CSSStyleSheet, shadow_host ?&dom.Element, rule_root ?&dom.ShadowRoot) bool {
 	scope_style_sheet := if descriptor_sheet := scope_rule.parent_style_sheet {
 		?&CSSStyleSheet(descriptor_sheet)
 	} else {
@@ -1425,24 +1443,20 @@ fn style_scope_scope_limit_matches(scope_rule &CSSRule, scope_root &dom.Element,
 	mut candidate := ?&dom.Element(target)
 	for {
 		current := candidate or { break }
-		if style_scope_selector_list_matches_element(end_selectors, current, target, scope_style_sheet, shadow_host, scope_root) {
+		if style_scope_selector_list_matches_element(end_selectors, current, target, scope_style_sheet, shadow_host, rule_root, scope_root) {
 			return true
 		}
 		if style_scope_elements_equal(current, scope_root) {
 			break
 		}
-		candidate = current.as_node().parent_element()
+		candidate = current.as_node().parent_or_shadow_host_element()
 	}
 	return false
 }
 
 fn style_scope_root_for_matching_rule(rule &MatchingRule, target &dom.Element, shadow_host ?&dom.Element) ?&dom.Element {
 	scope_rule := rule.scope_rule or { return none }
-	root := style_scope_find_root(scope_rule, target, rule.sheet, shadow_host) or { return none }
-	if style_scope_scope_limit_matches(scope_rule, root, target, rule.sheet, shadow_host) {
-		return none
-	}
-	return root
+	return style_scope_find_root(scope_rule, target, rule.sheet, shadow_host, rule.shadow_root)
 }
 
 fn style_scope_proximity(target &dom.Element, root &dom.Element) int {
@@ -1454,7 +1468,7 @@ fn style_scope_proximity(target &dom.Element, root &dom.Element) int {
 			return proximity
 		}
 		proximity++
-		candidate = current.as_node().parent_element()
+		candidate = current.as_node().parent_or_shadow_host_element()
 	}
 	return int(0x3fffffff)
 }
@@ -1535,6 +1549,11 @@ pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleCompu
 			scope_root := style_scope_root_for_matching_rule(rule_to_run, abstract_element.element(), shadow_host_to_use) or { continue }
 			resolved_scope_root = unsafe { &dom.Element(scope_root) }
 			selector_scope = unsafe { &dom.ParentNode(scope_root) }
+			if style_scope_elements_equal(scope_root, abstract_element.element())
+				&& !selector.contains_pseudo_class(.scope)
+				&& !selector.contains_the_nesting_selector() {
+				continue
+			}
 		}
 
 		mut did_match := false

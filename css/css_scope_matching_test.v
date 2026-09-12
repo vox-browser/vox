@@ -112,6 +112,60 @@ fn test_scope_direct_declarations_are_matched_through_scope_pseudo() {
 	assert selectors.selectors[0].serialize() == ':where(:scope)'
 }
 
+fn test_scope_does_not_match_its_root_without_scope_or_nesting_selector() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut html := scope_matching_element(document, 'html', 'root')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(html.as_node()) or { panic(err) }
+	add_document_author_style_sheet(document, '.root { color: blue } @scope (.root) { .root { color: red } }')
+	assert scope_matching_color(document, html) == 'rgb(0, 0, 255)'
+}
+
+fn test_scope_searches_past_a_limited_nearest_root() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut html := scope_matching_element(document, 'html', '')
+	mut outer := scope_matching_element(document, 'section', 'root')
+	mut inner := scope_matching_element(document, 'div', 'root')
+	mut limit := scope_matching_element(document, 'div', 'limit')
+	target := scope_matching_element(document, 'span', 'target')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(html.as_node()) or { panic(err) }
+	mut html_node := html.as_node()
+	html_node.append_child(outer.as_node()) or { panic(err) }
+	mut outer_node := outer.as_node()
+	outer_node.append_child(inner.as_node()) or { panic(err) }
+	mut inner_node := inner.as_node()
+	inner_node.append_child(limit.as_node()) or { panic(err) }
+	mut limit_node := limit.as_node()
+	limit_node.append_child(target.as_node()) or { panic(err) }
+	add_document_author_style_sheet(document, '.target { color: blue } @scope (.root) to (:scope > .limit) { .target { color: red } }')
+	assert scope_matching_color(document, target) == 'rgb(255, 0, 0)'
+}
+
+fn test_explicit_scope_root_can_be_a_shadow_host() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut host := scope_matching_element(document, 'div', 'explicit-scope')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(host.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{
+		mode: .open
+	}) or { panic(err) }
+	target := scope_matching_element(document, 'span', 'target')
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+	shadow_node.append_child(target.as_node()) or { panic(err) }
+	add_shadow_root_author_style_sheet(shadow_root, '.target { color: blue } @scope (:host(.explicit-scope)) { .target { color: red } }')
+	assert scope_matching_color(document, target) == 'rgb(255, 0, 0)'
+}
+
+fn test_implicit_scope_root_only_matches_through_scope_pseudo() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut html := scope_matching_element(document, 'html', '')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(html.as_node()) or { panic(err) }
+	add_document_author_style_sheet(document, 'html { color: blue } @scope { html { color: red } :scope { color: green } }')
+	assert scope_matching_color(document, html) == 'rgb(0, 128, 0)'
+}
+
 fn test_scope_proximity_wins_before_source_order() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut html := scope_matching_element(document, 'html', '')
