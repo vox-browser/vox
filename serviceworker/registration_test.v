@@ -54,6 +54,27 @@ fn test_registration_exact_static_map_entry_points() {
 	assert registration.is_unregistered(store)
 }
 
+fn test_registrations_for_storage_key_preserve_registry_order() {
+	mut store := RegistrationStore.create()
+	first := store.set('key', 'https://example.test/first/', .imports)
+	store.set('other', 'https://example.test/foreign/', .imports)
+	second := store.set('key', 'https://example.test/second/', .all)
+	registrations := Registration.for_storage_key(store, 'key')
+	assert registrations.len == 2
+	assert voidptr(registrations[0]) == voidptr(first)
+	assert voidptr(registrations[1]) == voidptr(second)
+
+	// Replacing an ordered-map value retains its position but changes identity.
+	replacement := store.set('key', 'https://example.test/first/#new', .none)
+	replaced := store.for_storage_key('key')
+	assert voidptr(replaced[0]) == voidptr(replacement)
+	assert voidptr(replaced[1]) == voidptr(second)
+	assert registration_map(store).len == 3
+
+	store.remove('key', 'https://example.test/first/')
+	assert store.for_storage_key('key').len == 1
+}
+
 fn test_platform_objects_snapshot_records_and_handler_identity() {
 	mut record := &ServiceWorkerRecord{
 		script_url: 'https://example.test/sw.js'
@@ -80,4 +101,6 @@ fn test_platform_objects_snapshot_records_and_handler_identity() {
 	object_mut.set_waiting(replacement)
 	object_mut.set_active(replacement)
 	assert voidptr(object.installing() or { panic('missing') }) == voidptr(replacement)
+	assert ServiceWorkerRegistration.installing_offset() < ServiceWorkerRegistration.waiting_offset()
+	assert ServiceWorkerRegistration.waiting_offset() < ServiceWorkerRegistration.active_offset()
 }

@@ -66,6 +66,10 @@ pub fn Registration.match_(store &RegistrationStore, storage_key string, client_
 	return store.match_client(storage_key, client_url)
 }
 
+pub fn Registration.for_storage_key(store &RegistrationStore, storage_key string) []&Registration {
+	return store.for_storage_key(storage_key)
+}
+
 pub fn Registration.remove(mut store RegistrationStore, storage_key string, scope string) {
 	store.remove(storage_key, scope)
 }
@@ -108,6 +112,7 @@ pub fn (mut registration Registration) set_active_worker(worker ?&ServiceWorkerR
 pub struct RegistrationStore {
 mut:
 	registrations_ map[string]&Registration
+	registration_order_ []string
 }
 
 pub fn RegistrationStore.create() &RegistrationStore {
@@ -124,6 +129,7 @@ pub fn (store &RegistrationStore) get(storage_key string, scope ?string) ?&Regis
 }
 
 pub fn (mut store RegistrationStore) set(storage_key string, scope string, update_via_cache ServiceWorkerUpdateViaCache) &Registration {
+	key := registration_key(storage_key, scope)
 	registration := &Registration{
 		storage_key_: storage_key
 		// Registration.cpp excludes the fragment from the map key, but retains
@@ -131,7 +137,10 @@ pub fn (mut store RegistrationStore) set(storage_key string, scope string, updat
 		scope_url_:        scope
 		update_via_cache_: update_via_cache
 	}
-	store.registrations_[registration_key(storage_key, scope)] = registration
+	if key !in store.registrations_ {
+		store.registration_order_ << key
+	}
+	store.registrations_[key] = registration
 	return registration
 }
 
@@ -154,10 +163,33 @@ pub fn (store &RegistrationStore) match_client(storage_key string, client_url st
 }
 
 pub fn (mut store RegistrationStore) remove(storage_key string, scope string) {
-	store.registrations_.delete(registration_key(storage_key, scope))
+	key := registration_key(storage_key, scope)
+	store.registrations_.delete(key)
+	store.registration_order_ = store.registration_order_.filter(it != key)
 }
 
 pub fn (store &RegistrationStore) is_unregistered(registration &Registration) bool {
 	stored := store.get(registration.storage_key_, registration.scope_url_) or { return true }
 	return voidptr(stored) != voidptr(registration)
+}
+
+pub fn (store &RegistrationStore) for_storage_key(storage_key string) []&Registration {
+	mut registrations := []&Registration{}
+	prefix := '${storage_key}\x00'
+	for key in store.registration_order_ {
+		if !key.starts_with(prefix) {
+			continue
+		}
+		if registration := store.registrations_[key] {
+			registrations << registration
+		}
+	}
+	return registrations
+}
+
+// Upstream stores this map at user-agent scope. The V job host deliberately
+// injects an agent-owned store, so this accessor retains that ownership while
+// exposing the same registration-map boundary.
+pub fn registration_map(store &RegistrationStore) map[string]&Registration {
+	return store.registrations_.clone()
 }
