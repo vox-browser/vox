@@ -8,11 +8,12 @@ module indexeddb
 
 pub struct IDBIndex {
 pub mut:
-	transaction &IDBTransaction
-	store_name  string
-	name_       string
-	store_      ?&ObjectStoreData
-	index_      ?&IndexData
+	transaction          &IDBTransaction
+	store_name           string
+	name_                string
+	store_               ?&ObjectStoreData
+	index_               ?&IndexData
+	object_store_handle_ IDBObjectStore
 }
 
 fn (index &IDBIndex) load() !(&ObjectStoreData, &IndexData) {
@@ -61,6 +62,14 @@ pub fn (index &IDBIndex) key_path() !KeyPath {
 	return clone_key_path(data.key_path)
 }
 
+pub fn (index &IDBIndex) key_path_value() !Value {
+	return convert_a_key_path_to_a_value(index.key_path()!)
+}
+
+pub fn IDBIndex.object_store_handle_offset() usize {
+	return usize(__offsetof(IDBIndex, object_store_handle_))
+}
+
 pub fn (mut index IDBIndex) rename(name string) ! {
 	index.transaction.require_versionchange_active()!
 	mut store, mut data := index.load()!
@@ -77,7 +86,8 @@ pub fn (mut index IDBIndex) rename(name string) ! {
 }
 
 fn (mut index IDBIndex) new_request() &IDBRequest {
-	mut request := IDBRequest.create(index.name_)
+	mut request := IDBRequest.create_for_global_scope(index.relevant_global_object(), index.name_)
+	request.transaction_ = index.transaction
 	index.transaction.requests << request
 	return request
 }

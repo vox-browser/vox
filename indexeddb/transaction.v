@@ -69,6 +69,14 @@ pub fn IDBTransaction.create(database &IDBDatabase, mode IDBTransactionMode, dur
 	return transaction
 }
 
+pub fn IDBTransaction.connection_offset() usize {
+	return usize(__offsetof(IDBTransaction, database))
+}
+
+pub fn IDBTransaction.error_offset() usize {
+	return usize(__offsetof(IDBTransaction, error_message))
+}
+
 pub fn (transaction &IDBTransaction) object_store_names() []string {
 	mut names := transaction.scope_names.clone()
 	sort_name_list(mut names)

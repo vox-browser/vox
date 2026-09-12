@@ -29,6 +29,7 @@ pub type IDBEventHandler = fn ()
 pub struct IDBRequest {
 pub mut:
 	source_name   string
+	global_scope  &IndexedDBGlobalScope
 	ready_state   IDBRequestReadyState = .pending
 	result_kind   RequestResultKind
 	value         Value
@@ -50,9 +51,18 @@ pub mut:
 }
 
 pub fn IDBRequest.create(source_name string) &IDBRequest {
+	return IDBRequest.create_for_global_scope(IndexedDBGlobalScope.create(''), source_name)
+}
+
+pub fn IDBRequest.create_for_global_scope(global_scope &IndexedDBGlobalScope, source_name string) &IDBRequest {
 	return &IDBRequest{
 		source_name: source_name
+		global_scope: global_scope
 	}
+}
+
+pub fn IDBRequest.transaction_offset() usize {
+	return usize(__offsetof(IDBRequest, transaction_))
 }
 
 pub fn (request &IDBRequest) result() !RequestResultKind {

@@ -414,12 +414,14 @@ pub fn (mut store IDBObjectStore) update_index_set(indexes map[string]&IndexData
 
 pub fn IDBIndex.create(transaction &IDBTransaction, store_name string, name string) IDBIndex {
 	store := transaction.database.data.stores[store_name] or { unsafe { nil } }
+	object_store_handle := IDBObjectStore.create(transaction, store_name)
 	return IDBIndex{
 		transaction: transaction
 		store_name: store_name
 		name_: name
 		store_: if isnil(store) { none } else { store }
 		index_: if isnil(store) { none } else { store.indexes[name] or { none } }
+		object_store_handle_: object_store_handle
 	}
 }
 
@@ -432,7 +434,7 @@ pub fn (mut index IDBIndex) open_key_cursor(range ?IDBKeyRange, direction IDBCur
 }
 
 pub fn (index &IDBIndex) object_store() IDBObjectStore {
-	return IDBObjectStore.create(index.transaction, index.store_name)
+	return index.object_store_handle_
 }
 
 pub fn (index &IDBIndex) index_transaction() &IDBTransaction {

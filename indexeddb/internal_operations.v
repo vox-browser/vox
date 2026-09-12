@@ -122,6 +122,25 @@ pub fn (mut database DatabaseData) dissociate(connection &IDBDatabase) {
 	database.connections = database.associated_connections.len
 }
 
+// Database is the direct spelling of upstream's internal Database class.
+// DatabaseData remains the storage representation used throughout the V port.
+pub struct Database {
+pub mut:
+	data &DatabaseData
+}
+
+pub fn Database.from_data(data &DatabaseData) Database {
+	return Database{
+		data: data
+	}
+}
+
+pub fn (mut database Database) dissociate(connection &IDBDatabase) {
+	unsafe {
+		database.data.dissociate(connection)
+	}
+}
+
 pub fn (database &DatabaseData) object_stores() []&ObjectStoreData {
 	return database.stores.values()
 }

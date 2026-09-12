@@ -30,6 +30,7 @@ pub mut:
 pub struct IDBDatabase {
 pub mut:
 	data                   &DatabaseData
+	global_scope           &IndexedDBGlobalScope
 	state                  ConnectionState = .open
 	upgrade_active         bool
 	transactions           []&IDBTransaction
@@ -45,11 +46,16 @@ pub mut:
 }
 
 fn new_connection(data &DatabaseData) &IDBDatabase {
+	return new_connection_for_global_scope(data, IndexedDBGlobalScope.create(data.storage_key))
+}
+
+fn new_connection_for_global_scope(data &DatabaseData, global_scope &IndexedDBGlobalScope) &IDBDatabase {
 	unsafe {
 		data.connections++
 	}
 	mut connection := &IDBDatabase{
 		data: data
+		global_scope: global_scope
 	}
 	unsafe {
 		data.associated_connections << connection

@@ -19,6 +19,24 @@ pub:
 	value       Value
 }
 
+pub struct IDBCursorWithValue {
+pub:
+	cursor &IDBCursor
+}
+
+pub fn IDBCursorWithValue.from_cursor(cursor &IDBCursor) !IDBCursorWithValue {
+	if !cursor.with_value {
+		return error('InvalidStateError: cursor does not expose values')
+	}
+	return IDBCursorWithValue{
+		cursor: cursor
+	}
+}
+
+pub fn (cursor &IDBCursorWithValue) current_value() ?Value {
+	return cursor.cursor.current_value()
+}
+
 @[heap]
 pub struct IDBCursor {
 pub:
@@ -73,6 +91,23 @@ pub fn (cursor &IDBCursor) value() !Value {
 		return error('InvalidStateError: cursor has no value')
 	}
 	entry := cursor.current_entry or { return error('InvalidStateError: cursor has no value') }
+	return entry.value.clone()
+}
+
+pub fn IDBCursor.request_offset() usize {
+	return usize(__offsetof(IDBCursor, request))
+}
+
+pub fn (cursor &IDBCursor) current_key() ?Key {
+	entry := cursor.current_entry or { return none }
+	return entry.key.clone()
+}
+
+pub fn (cursor &IDBCursor) current_value() ?Value {
+	if !cursor.with_value {
+		return none
+	}
+	entry := cursor.current_entry or { return none }
 	return entry.value.clone()
 }
 

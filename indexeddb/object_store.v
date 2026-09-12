@@ -53,6 +53,11 @@ pub fn (store &IDBObjectStore) key_path() ?KeyPath {
 	return data.key_path
 }
 
+pub fn (store &IDBObjectStore) key_path_value() Value {
+	key_path := store.key_path() or { return null_value() }
+	return convert_a_key_path_to_a_value(key_path)
+}
+
 pub fn (store &IDBObjectStore) auto_increment() bool {
 	return store.load() or { return false }.auto_increment
 }
@@ -182,7 +187,8 @@ fn completed_error_request(mut store IDBObjectStore, message string) &IDBRequest
 }
 
 fn (mut store IDBObjectStore) new_request() &IDBRequest {
-	mut request := IDBRequest.create(store.name_)
+	mut request := IDBRequest.create_for_global_scope(store.relevant_global_object(), store.name_)
+	request.transaction_ = store.transaction
 	store.transaction.requests << request
 	return request
 }
@@ -351,6 +357,7 @@ pub fn (mut store IDBObjectStore) create_index(name string, key_path KeyPath, pa
 		name_: name
 		store_: data
 		index_: stored_index
+		object_store_handle_: *store
 	}
 }
 
@@ -365,6 +372,7 @@ pub fn (store &IDBObjectStore) index(name string) !IDBIndex {
 		name_: name
 		store_: data
 		index_: data.indexes[name] or { return error('NotFoundError: index does not exist') }
+		object_store_handle_: *store
 	}
 }
 

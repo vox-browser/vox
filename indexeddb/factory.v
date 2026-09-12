@@ -16,19 +16,14 @@ pub:
 @[heap]
 pub struct IDBFactory {
 pub:
-	storage_key string
+	storage_key  string
+	global_scope &IndexedDBGlobalScope
 pub mut:
 	databases map[string]&DatabaseData
 }
 
 pub fn IDBFactory.create(storage_key string) !&IDBFactory {
-	if storage_key == '' {
-		return error('SecurityError: failed to obtain a storage key')
-	}
-	return &IDBFactory{
-		storage_key: storage_key
-		databases: map[string]&DatabaseData{}
-	}
+	return IDBFactory.create_for_global_scope(IndexedDBGlobalScope.create(storage_key))
 }
 
 // https://w3c.github.io/IndexedDB/#dom-idbfactory-cmp
@@ -48,7 +43,7 @@ pub fn (mut factory IDBFactory) open(name string, requested_version ?u64) !&IDBO
 		}
 	}
 	mut request := &IDBOpenDBRequest{
-		request: IDBRequest.create('factory')
+		request: IDBRequest.create_for_global_scope(factory.global_scope, 'factory')
 		factory: &factory
 		database_name: name
 	}
@@ -60,7 +55,7 @@ pub fn (mut factory IDBFactory) open(name string, requested_version ?u64) !&IDBO
 	if name !in factory.databases {
 		mut data := DatabaseData.create_for_key_and_name(factory.storage_key, name)
 		factory.databases[name] = data
-		mut connection := new_connection(data)
+		mut connection := new_connection_for_global_scope(data, factory.global_scope)
 		request.connection = connection
 		request.old_version = 0
 		target := requested_version or { u64(1) }
@@ -80,7 +75,7 @@ pub fn (mut factory IDBFactory) open(name string, requested_version ?u64) !&IDBO
 		request.request.fail('VersionError: requested version is lower than database version')
 		return request
 	}
-	mut connection := new_connection(data)
+	mut connection := new_connection_for_global_scope(data, factory.global_scope)
 	request.connection = connection
 	request.old_version = old_version
 	request.new_version = target
@@ -129,7 +124,7 @@ pub fn (mut request IDBOpenDBRequest) abort_upgrade(reason string) ! {
 
 pub fn (mut factory IDBFactory) delete_database(name string) &IDBOpenDBRequest {
 	mut request := &IDBOpenDBRequest{
-		request: IDBRequest.create('factory')
+		request: IDBRequest.create_for_global_scope(factory.global_scope, 'factory')
 		factory: &factory
 		database_name: name
 	}
