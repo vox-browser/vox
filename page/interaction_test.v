@@ -72,6 +72,48 @@ fn test_auto_scroll_edges_speed_fraction_and_text_control_constraint() {
 	assert !handler.is_active()
 }
 
+fn test_middle_button_autoscroll_activation_dead_zone_and_cancellation() {
+	mut handler := EventHandler{}
+	target := InputTarget{ id: 'scroller', has_scrollable_box: true }
+	origin := PixelPoint{ x: 50, y: 50 }
+	assert handler.handle_mousedown_with_button(target, origin, 1, 1, true) == .handled
+	assert handler.middle_button_scroll_handler() != none
+	assert handler.handle_mouseup_with_button(target, 1) == .handled
+	assert handler.middle_button_scroll_handler() != none
+	assert handler.event_log.map(it.name).last() == 'click'
+
+	// A second press toggles autoscroll off.
+	assert handler.handle_mousedown_with_button(target, origin, 1, 1, true) == .handled
+	assert handler.middle_button_scroll_handler() == none
+	handler.handle_mouseup_with_button(target, 1)
+
+	handler.event_log.clear()
+	handler.handle_mousedown_with_button(target, origin, 1, 1, true)
+	handler.handle_mousemove(target, PixelPoint{ x: 75, y: 50 })
+	tick := handler.process_auto_scroll(PixelRect{}, PixelRect{}, false, false, false) or {
+		panic('expected middle-button scroll tick')
+	}
+	assert tick.delta_x == 2
+	assert tick.delta_y == 0
+	assert handler.middle_button_scroll_handler()?.mouse_has_moved_beyond_dead_zone()
+	handler.handle_mouseup_with_button(target, 1)
+	assert handler.middle_button_scroll_handler() == none
+	assert 'click' !in handler.event_log.map(it.name)
+
+	handler.handle_mousedown_with_button(target, origin, 1, 1, true)
+	assert handler.middle_button_scroll_handler() != none
+	assert handler.handle_keydown(27, 0, 0, false, false) == .handled
+	assert handler.middle_button_scroll_handler() == none
+	assert handler.handle_mousedown_with_button(target, origin, 1, 1, false) == .handled
+	assert handler.middle_button_scroll_handler() == none
+	assert handler.handle_mousedown_with_button(InputTarget{
+		id: 'link'
+		is_link: true
+		has_scrollable_box: true
+	}, origin, 1, 1, true) == .handled
+	assert handler.middle_button_scroll_handler() == none
+}
+
 fn test_resize_axes_writing_mode_constraints_and_content_box() {
 	action := ElementResizeAction{
 		pointer_down_origin: PixelPoint{

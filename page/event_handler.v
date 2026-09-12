@@ -47,6 +47,7 @@ pub mut:
 	auto_scroll   AutoScrollHandler
 	event_log     []InputDispatch
 mut:
+	middle_button_scroll_handler_        ?&MiddleButtonScrollHandler
 	active_document                      bool = true
 	paint_root_available                 bool = true
 	selection_mode_                      SelectionMode
@@ -74,6 +75,10 @@ pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root
 
 pub fn (handler &EventHandler) is_handling_mouse_selection() bool {
 	return handler.selection_mode_ != .none
+}
+
+pub fn (handler &EventHandler) middle_button_scroll_handler() ?&MiddleButtonScrollHandler {
+	return handler.middle_button_scroll_handler_
 }
 
 pub fn (mut handler EventHandler) start_selection(mode SelectionMode) {
@@ -132,12 +137,45 @@ pub fn (mut handler EventHandler) handle_mousedown(target ?InputTarget, click_co
 	return .handled
 }
 
+pub fn (mut handler EventHandler) handle_mousedown_with_button(target ?InputTarget, position PixelPoint, button u32, click_count int, enable_autoscroll bool) EventResult {
+	result := handler.handle_mousedown(target, click_count)
+	if result != .handled {
+		return result
+	}
+	if handler.middle_button_scroll_handler_ != none {
+		handler.middle_button_scroll_handler_ = none
+		return result
+	}
+	if button != 1 || !enable_autoscroll {
+		return result
+	}
+	value := target or { return result }
+	if value.is_editable || value.is_link {
+		return result
+	}
+	container := find_middle_button_scrollable_ancestor([value]) or { return result }
+	handler.middle_button_scroll_handler_ = MiddleButtonScrollHandler.create(container, position)
+	return result
+}
+
 pub fn (mut handler EventHandler) handle_mouseup(target ?InputTarget) EventResult {
+	return handler.handle_mouseup_with_button(target, 0)
+}
+
+pub fn (mut handler EventHandler) handle_mouseup_with_button(target ?InputTarget, button u32) EventResult {
+	middle_button_autoscrolled := if middle := handler.middle_button_scroll_handler_ {
+		middle.mouse_has_moved_beyond_dead_zone()
+	} else {
+		false
+	}
 	// The C++ ScopeGuard clears press/selection state on every exit, including
 	// missing documents, paint roots and hit targets.
 	defer {
 		handler.clear_mousedown_tracking()
 		handler.stop_updating_selection()
+		if middle_button_autoscrolled && button == 1 {
+			handler.middle_button_scroll_handler_ = none
+		}
 	}
 	if handler.should_ignore_device_input_event() || !handler.paint_root_available {
 		return .dropped
@@ -164,7 +202,7 @@ pub fn (mut handler EventHandler) handle_mouseup(target ?InputTarget) EventResul
 	if !handler.prevent_mouse_event {
 		handler.log('mouseup', value)
 	}
-	if handler.mousedown_target_ == value.id {
+	if handler.mousedown_target_ == value.id && !middle_button_autoscrolled {
 		handler.log('click', value)
 	}
 	handler.prevent_mouse_event = false
@@ -178,6 +216,9 @@ pub fn (mut handler EventHandler) handle_mousemove(target ?InputTarget, screen P
 		return .dropped
 	}
 	handler.previous_screen = screen
+	if mut middle := handler.middle_button_scroll_handler_ {
+		middle.update_mouse_position(screen)
+	}
 	value := target or { return .dropped }
 	handler.log('pointermove', value)
 	if value.cancel_pointer {
@@ -227,6 +268,10 @@ pub fn (mut handler EventHandler) handle_keydown(key int, code_point u32, modifi
 	handler.log('keydown', target)
 	if cancelled {
 		return .cancelled
+	}
+	if key == 27 && handler.middle_button_scroll_handler_ != none {
+		handler.middle_button_scroll_handler_ = none
+		return .handled
 	}
 	if produces_character_value(key, code_point)
 		|| is_enter_key_or_interoperable_enter_key_combo(key, modifiers) {

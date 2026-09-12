@@ -180,6 +180,11 @@ pub fn copy_send_right(mut store SharedBackingStore) ![]u8 {
 
 pub fn (mut handler EventHandler) process_auto_scroll(scrollport PixelRect, viewport PixelRect,
 	selecting bool, paintable bool, is_text_control bool) ?ScrollTick {
+	if mut middle := handler.middle_button_scroll_handler_ {
+		if tick := middle.perform_tick() {
+			return tick
+		}
+	}
 	return handler.auto_scroll.perform_tick(scrollport, viewport, selecting, paintable, is_text_control)
 }
 

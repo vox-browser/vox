@@ -53,14 +53,14 @@ pub fn (p &Page) chrome_metrics() painting.ChromeMetrics {
 	return painting.new_chrome_metrics(p.client_.zoom_level()) or { panic(err) }
 }
 
-pub fn (mut p Page) handle_mouseup(target ?InputTarget, _ PixelPoint, _ u32, _ u32,
+pub fn (mut p Page) handle_mouseup(target ?InputTarget, _ PixelPoint, button u32, _ u32,
 	_ u32) EventResult {
-	return p.event_handler.handle_mouseup(target)
+	return p.event_handler.handle_mouseup_with_button(target, button)
 }
 
-pub fn (mut p Page) handle_mousedown(target ?InputTarget, _ PixelPoint, _ u32, _ u32,
+pub fn (mut p Page) handle_mousedown(target ?InputTarget, position PixelPoint, button u32, _ u32,
 	_ u32, click_count int) EventResult {
-	return p.event_handler.handle_mousedown(target, click_count)
+	return p.event_handler.handle_mousedown_with_button(target, position, button, click_count, true)
 }
 
 pub fn (mut p Page) handle_mousemove(target ?InputTarget, screen PixelPoint, _ u32,
