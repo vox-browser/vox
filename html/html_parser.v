@@ -339,9 +339,17 @@ fn materialize_declarative_shadow_roots(node &dom.Node) {
 		}
 		mut host := node.as_element() or { continue }
 		mode := if mode_name == 'closed' { dom.ShadowRootMode.closed } else { .open }
-		host.attach_a_shadow_root(mode, template_element.has_attribute('shadowrootclonable'), template_element.has_attribute('shadowrootserializable'), template_element.has_attribute('shadowrootdelegatesfocus'), .named) or { continue }
+		keeps_registry_null := template_element.has_attribute('shadowrootcustomelementregistry')
+		mut registry := voidptr(0)
+		if !keeps_registry_null {
+			registry = host.document().custom_element_registry()
+		}
+		host.attach_a_shadow_root_with_registry(mode, template_element.has_attribute('shadowrootclonable'), template_element.has_attribute('shadowrootserializable'), template_element.has_attribute('shadowrootdelegatesfocus'), .named, registry) or {
+			continue
+		}
 		mut shadow_root := host.shadow_root() or { continue }
 		shadow_root.set_declarative(true)
+		shadow_root.set_keep_custom_element_registry_null(keeps_registry_null)
 		template := unsafe { &dom.HTMLTemplateElement(template_element) }
 		mut content := template.content().as_node()
 		mut shadow_node := unsafe { &dom.Node(shadow_root) }
@@ -589,13 +597,14 @@ fn (mut p HTMLParser) create_element_for(token &HTMLToken, namespace_ ?string, i
 	document := intended_parent.document()
 	local_name := token.tag_name
 	is_value := token.attribute('is')
-	definition := document.lookup_custom_element_definition(namespace_, local_name, is_value)
+	registry := dom.look_up_custom_element_registry(intended_parent)
+	definition := dom.look_up_custom_element_definition(registry, namespace_, local_name, is_value)
 	will_execute_script := definition != none && !p.parsing_fragment
 	mut mutable_document := unsafe { &dom.Document(document) }
 	if will_execute_script {
 		mutable_document.increment_throw_on_dynamic_markup_insertion_counter()
 	}
-	mut element := dom.create_element(document, local_name, namespace_, none, is_value, will_execute_script) or {
+	mut element := dom.create_element_with_registry(document, local_name, namespace_, none, is_value, will_execute_script, registry) or {
 		if will_execute_script {
 			mutable_document.decrement_throw_on_dynamic_markup_insertion_counter()
 		}

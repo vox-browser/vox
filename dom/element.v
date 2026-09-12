@@ -178,11 +178,12 @@ pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, 
 
 pub struct ShadowRootInit {
 pub mut:
-	mode            ShadowRootMode
-	delegates_focus bool
-	slot_assignment SlotAssignmentMode = .named
-	clonable        bool
-	serializable    bool
+	mode                    ShadowRootMode
+	delegates_focus         bool
+	slot_assignment         SlotAssignmentMode = .named
+	clonable                bool
+	serializable            bool
+	custom_element_registry ?voidptr
 }
 
 pub enum ShadowRootMode {
@@ -1857,6 +1858,10 @@ fn is_valid_shadow_host_name(name string) bool {
 
 // https://dom.spec.whatwg.org/#concept-attach-a-shadow-root
 pub fn (mut e Element) attach_a_shadow_root(mode ShadowRootMode, clonable bool, serializable bool, delegates_focus bool, slot_assignment SlotAssignmentMode) ! {
+	e.attach_a_shadow_root_with_registry(mode, clonable, serializable, delegates_focus, slot_assignment, e.document().custom_element_registry())!
+}
+
+pub fn (mut e Element) attach_a_shadow_root_with_registry(mode ShadowRootMode, clonable bool, serializable bool, delegates_focus bool, slot_assignment SlotAssignmentMode, registry voidptr) ! {
 	ns := e.namespace_uri() or { return error('NotSupportedError: Element namespace is not HTML') }
 	if ns != namespace_html_uri {
 		return error('NotSupportedError: Element namespace is not HTML')
@@ -1865,7 +1870,7 @@ pub fn (mut e Element) attach_a_shadow_root(mode ShadowRootMode, clonable bool, 
 		return error('NotSupportedError: Element local name is not a valid shadow host name')
 	}
 	if is_valid_custom_element_name(e.local_name()) || e.is_value != none {
-		if def := e.custom_element_definition_ {
+		if def := look_up_custom_element_definition(e.custom_element_registry(), e.namespace_uri(), e.local_name(), e.is_value) {
 			if def.disable_shadow() {
 				return error('NotSupportedError: Custom element definition disables shadow roots')
 			}
@@ -1900,6 +1905,7 @@ pub fn (mut e Element) attach_a_shadow_root(mode ShadowRootMode, clonable bool, 
 		serializable_: serializable
 		delegates_focus_: delegates_focus
 		slot_assignment_: slot_assignment
+		custom_element_registry_: registry
 	})
 	e.shadow_root_ = shadow
 }
@@ -1932,7 +1938,15 @@ pub fn (mut e Element) attach_a_user_agent_shadow_root(slot_assignment SlotAssig
 
 // https://dom.spec.whatwg.org/#dom-element-attachshadow
 pub fn (mut e Element) attach_shadow(init ShadowRootInit) !&ShadowRoot {
-	e.attach_a_shadow_root(init.mode, init.clonable, init.serializable, init.delegates_focus, init.slot_assignment)!
+	mut registry := e.document().custom_element_registry()
+	if init.custom_element_registry != none {
+		registry = init.custom_element_registry or { unsafe { nil } }
+	}
+	if registry != unsafe { nil } && !custom_element_registry_is_scoped(registry)
+		&& registry != e.document().custom_element_registry() {
+		return error("NotSupportedError: registry must be scoped or the document's registry")
+	}
+	e.attach_a_shadow_root_with_registry(init.mode, init.clonable, init.serializable, init.delegates_focus, init.slot_assignment, registry)!
 	return e.shadow_root_ or { return error('Shadow root not set') }
 }
 
@@ -2468,8 +2482,12 @@ pub fn (mut e Element) set_html_unsafe(html string) ! {
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-gethtml
 pub fn (e &Element) get_html(options GetHTMLOptions) !string {
-	_ = options
-	return e.as_node().serialize_fragment(.yes, .inner)
+	serializable_shadow_roots := if options.serializable_shadow_roots {
+		SerializableShadowRoots.yes
+	} else {
+		.no
+	}
+	return html_parser_serialize_html_fragment(e.as_node(), serializable_shadow_roots, []&ShadowRoot{}, .inner)
 }
 
 // https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#the-insertadjacenthtml()-method
@@ -2705,6 +2723,13 @@ fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowR
 				}
 				if shadow_root.clonable() {
 					builder.write_string(' shadowrootclonable=""')
+				}
+				document_registry := shadow_root.document().custom_element_registry()
+				shadow_registry := shadow_root.custom_element_registry()
+				if !((document_registry == unsafe { nil } && shadow_registry == unsafe { nil })
+					|| (is_a_global_custom_element_registry(document_registry)
+						&& is_a_global_custom_element_registry(shadow_registry))) {
+					builder.write_string(' shadowrootcustomelementregistry=""')
 				}
 				builder.write_string('>')
 				builder.write_string(serialize_html_node(shadow_root_as_node(shadow_root), serializable_shadow_roots, shadow_roots, .inner))
@@ -4076,7 +4101,7 @@ pub fn (mut e Element) upgrade_element(definition &CustomElementDefinition) ! {
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#concept-try-upgrade
 pub fn (mut e Element) try_to_upgrade() {
-	definition := e.document().lookup_custom_element_definition(e.namespace_uri(), e.local_name(), e.is_value) or { return }
+	definition := look_up_custom_element_definition(e.custom_element_registry(), e.namespace_uri(), e.local_name(), e.is_value) or { return }
 	e.enqueue_a_custom_element_upgrade_reaction(definition)
 }
 
@@ -5483,6 +5508,16 @@ pub fn (mut e Element) inserted() {
 		}
 		if e.name_ != none {
 			doc.element_with_name_was_added(e)
+		}
+		if e.custom_element_registry() != unsafe { nil } {
+			if custom_element_registry_is_scoped(e.custom_element_registry()) {
+				custom_element_registry_append_document(e.custom_element_registry(), e.document())
+			}
+			if e.is_custom() {
+				e.enqueue_a_custom_element_callback_reaction('connectedCallback', [])
+			} else {
+				e.try_to_upgrade()
+			}
 		}
 	}
 

@@ -2238,10 +2238,14 @@ pub fn (mut n Node) replace_child(node &Node, child &Node) !&Node {
 
 // https://dom.spec.whatwg.org/#concept-node-clone
 pub fn (n &Node) clone_node(document ?&Document, subtree bool, parent ?&Node) !&Node {
+	return n.clone_node_with_registry(document, subtree, parent, unsafe { nil })
+}
+
+pub fn (n &Node) clone_node_with_registry(document ?&Document, subtree bool, parent ?&Node, fallback_registry voidptr) !&Node {
 	// To clone a node given a node node and an optional document document (default node's node document),
 	// boolean subtree (default false), and node-or-null parent (default null):
 	doc := document or { n.document() }
-	copy := n.clone_single_node(doc)!
+	copy := n.clone_single_node_with_registry(doc, fallback_registry)!
 	n.cloned(copy, subtree)!
 	if parent_node := parent {
 		mut mutable_parent := unsafe { &Node(parent_node) }
@@ -2249,7 +2253,7 @@ pub fn (n &Node) clone_node(document ?&Document, subtree bool, parent ?&Node) !&
 	}
 	if subtree {
 		for child in n.children {
-			child.clone_node(doc, subtree, copy)!
+			child.clone_node_with_registry(doc, subtree, copy, fallback_registry)!
 		}
 	}
 	if element := n.as_element() {
@@ -2258,14 +2262,19 @@ pub fn (n &Node) clone_node(document ?&Document, subtree bool, parent ?&Node) !&
 				mut copy_element := copy.as_element() or {
 					return error('InvalidStateError: Element clone did not produce an element')
 				}
-				copy_element.attach_a_shadow_root(shadow_root.mode_(), true, shadow_root.serializable(), shadow_root.delegates_focus(), shadow_root.slot_assignment())!
+				mut shadow_root_registry := shadow_root.custom_element_registry()
+				if is_a_global_custom_element_registry(shadow_root_registry) {
+					shadow_root_registry = doc.effective_global_custom_element_registry()
+				}
+				copy_element.attach_a_shadow_root_with_registry(shadow_root.mode_(), true, shadow_root.serializable(), shadow_root.delegates_focus(), shadow_root.slot_assignment(), shadow_root_registry)!
 				mut copy_shadow_root := copy_element.shadow_root() or {
 					return error('InvalidStateError: Cloned shadow root was not attached')
 				}
 				copy_shadow_root.set_declarative(shadow_root.declarative)
+				copy_shadow_root.set_keep_custom_element_registry_null(shadow_root.keep_custom_element_registry_null())
 				copy_shadow_root_node := unsafe { &Node(copy_shadow_root) }
 				for child in shadow_root_as_node(shadow_root).children {
-					child.clone_node(doc, subtree, copy_shadow_root_node)!
+					child.clone_node_with_registry(doc, subtree, copy_shadow_root_node, unsafe { nil })!
 				}
 			}
 		}
@@ -2382,11 +2391,22 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 
 // https://dom.spec.whatwg.org/#clone-a-single-node
 pub fn (n &Node) clone_single_node(document &Document) !&Node {
+	return n.clone_single_node_with_registry(document, unsafe { nil })
+}
+
+pub fn (n &Node) clone_single_node_with_registry(document &Document, fallback_registry voidptr) !&Node {
 	// To clone a single node given a node node and document document:
 	mut copy := unsafe { &Node(nil) }
 	if element := n.as_element() {
-		// 2. If node is an element, create an element with the same local name, namespace, prefix, and is value.
-		mut element_copy := create_element(document, element.local_name(), element.namespace_uri(), element.prefix(), element.is_value, false)!
+		mut registry := element.custom_element_registry()
+		if registry == unsafe { nil } {
+			registry = fallback_registry
+		}
+		if is_a_global_custom_element_registry(registry) {
+			registry = document.effective_global_custom_element_registry()
+		}
+		// 2. If node is an element, create an element with the same local name, namespace, prefix, is value, and registry.
+		mut element_copy := create_element_with_registry(document, element.local_name(), element.namespace_uri(), element.prefix(), element.is_value, false, registry)!
 		if attrs := element.attributes_ {
 			for attr in attrs.attrs {
 				element_copy.append_attribute(&Attr_{
@@ -2409,7 +2429,9 @@ pub fn (n &Node) clone_single_node(document &Document) !&Node {
 		document_copy.set_document_type(source_document.document_type())
 		document_copy.set_quirks_mode(source_document.mode())
 		document_copy.set_allow_declarative_shadow_roots(source_document.allow_declarative_shadow_roots())
-		document_copy.set_custom_element_registry(source_document.custom_element_registry())
+		if custom_element_registry_is_scoped(source_document.custom_element_registry()) {
+			document_copy.set_custom_element_registry(source_document.custom_element_registry())
+		}
 		copy = unsafe { &Node(document_copy) }
 	} else if document_type := n.as_document_type() {
 		mut document_type_copy := DocumentType.new(document)
@@ -2753,6 +2775,12 @@ pub fn (mut n Node) inserted() {
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.inserted()
 		return
+	}
+	if shadow_root := n.as_shadow_root() {
+		registry := shadow_root.custom_element_registry()
+		if n.is_connected() && custom_element_registry_is_scoped(registry) {
+			custom_element_registry_append_document(registry, n.document())
+		}
 	}
 	n.recompute_editable_subtree_flag()
 	n.set_needs_style_update(true)
@@ -4485,6 +4513,14 @@ pub fn (sr &ShadowRoot) custom_element_registry() voidptr {
 
 pub fn (mut sr ShadowRoot) set_custom_element_registry(registry voidptr) {
 	sr.custom_element_registry_ = registry
+}
+
+pub fn (sr &ShadowRoot) keep_custom_element_registry_null() bool {
+	return sr.keep_custom_element_registry_null_
+}
+
+pub fn (mut sr ShadowRoot) set_keep_custom_element_registry_null(value bool) {
+	sr.keep_custom_element_registry_null_ = value
 }
 
 pub fn (mut sr ShadowRoot) set_declarative(declarative bool) {

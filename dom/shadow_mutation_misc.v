@@ -2851,11 +2851,15 @@ fn create_mathml_element(document &Document, qualified_name QualifiedName) &Elem
 
 // https://dom.spec.whatwg.org/#concept-create-element
 pub fn create_element(document &Document, local_name string, namespace_ ?string, prefix ?string, is_value ?string, synchronous_custom_elements_flag bool) !&Element {
+	return create_element_with_registry(document, local_name, namespace_, prefix, is_value, synchronous_custom_elements_flag, document.custom_element_registry())
+}
+
+pub fn create_element_with_registry(document &Document, local_name string, namespace_ ?string, prefix ?string, is_value ?string, synchronous_custom_elements_flag bool, initial_registry voidptr) !&Element {
 	// 1. Let result be null.
 	// NOTE: We collapse this into just returning an element where necessary.
 
 	// 2. If registry is "default", then set registry to the result of looking up a custom element registry given document.
-	registry := document.custom_element_registry()
+	registry := initial_registry
 
 	// 3. Let definition be the result of looking up a custom element definition given registry, namespace, localName, and is.
 	if definition := look_up_custom_element_definition(registry, namespace_, local_name, is_value) {

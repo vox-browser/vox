@@ -25,7 +25,7 @@ fn custom_registry_find(node &dom.Node, name string) ?&dom.Element {
 fn test_custom_element_registry_define_get_when_defined_and_upgrade() {
 	mut document :=
 		parse_document('<x-widget observed="yes"></x-widget><button is="x-button"></button>')
-	mut registry := CustomElementRegistry.create(document)
+	mut registry := unsafe { &CustomElementRegistry(document.custom_element_registry()) }
 	pending := registry.when_defined('x-widget')
 	assert pending.state() == .pending
 	registry.define('x-widget', CustomElementConstructor{

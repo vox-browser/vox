@@ -24,6 +24,10 @@ pub type XPathEvaluateCallback = fn (string, &Node, ?&XPathNSResolver, u16, ?&XP
 
 pub type CustomElementDefinitionLookupCallback = fn (voidptr, ?string, string, ?string) ?&CustomElementDefinition
 
+pub type CustomElementRegistryIsScopedCallback = fn (voidptr) bool
+
+pub type CustomElementRegistryAppendDocumentCallback = fn (voidptr, &Document)
+
 pub struct XPathBridge {
 pub:
 	create_expression XPathCreateExpressionCallback = unsafe { nil }
@@ -31,10 +35,12 @@ pub:
 }
 
 __global (
-	dom_all_navigables   = []&Navigable{}
-	dom_url_record_cache = map[string]liburl.URL{}
-	dom_xpath_bridge     &XPathBridge
-	dom_custom_element_definition_lookup CustomElementDefinitionLookupCallback
+	dom_all_navigables                          = []&Navigable{}
+	dom_url_record_cache                        = map[string]liburl.URL{}
+	dom_xpath_bridge                            &XPathBridge
+	dom_custom_element_definition_lookup        CustomElementDefinitionLookupCallback
+	dom_custom_element_registry_is_scoped       CustomElementRegistryIsScopedCallback
+	dom_custom_element_registry_append_document CustomElementRegistryAppendDocumentCallback
 )
 
 // Simple color representation
@@ -2399,23 +2405,24 @@ pub mut:
 pub struct ShadowRoot {
 	DocumentFragment
 pub mut:
-	mode                            ShadowRootMode
-	declarative                     bool
-	clonable_                       bool
-	serializable_                   bool
-	delegates_focus_                bool
-	available_to_element_internals_ bool
-	user_agent_internal_            bool
-	uses_document_style_sheets_     bool
-	slot_assignment_                SlotAssignmentMode = .named
-	style_scope_                    StyleScope
-	adopted_style_sheets_           []&CSSStyleSheet
-	adopted_css_style_sheets_handle voidptr = unsafe { nil }
-	style_sheets_                   &StyleSheetList = unsafe { nil }
-	element_by_id_                  &ElementByIdMap = unsafe { nil }
-	onslotchange_                   ?&CallbackType
-	slot_registry_                  &SlotRegistry = unsafe { nil }
-	custom_element_registry_        voidptr = unsafe { nil }
+	mode                               ShadowRootMode
+	declarative                        bool
+	clonable_                          bool
+	serializable_                      bool
+	delegates_focus_                   bool
+	available_to_element_internals_    bool
+	user_agent_internal_               bool
+	uses_document_style_sheets_        bool
+	slot_assignment_                   SlotAssignmentMode = .named
+	style_scope_                       StyleScope
+	adopted_style_sheets_              []&CSSStyleSheet
+	adopted_css_style_sheets_handle    voidptr = unsafe { nil }
+	style_sheets_                      &StyleSheetList = unsafe { nil }
+	element_by_id_                     &ElementByIdMap = unsafe { nil }
+	onslotchange_                      ?&CallbackType
+	slot_registry_                     &SlotRegistry = unsafe { nil }
+	custom_element_registry_           voidptr = unsafe { nil }
+	keep_custom_element_registry_null_ bool
 }
 
 @[heap]
@@ -4000,7 +4007,19 @@ pub mut:
 
 pub struct ElementCreationOptions {
 pub mut:
-	is_ ?string
+	custom_element_registry ?voidptr
+	is_                     ?string
+}
+
+struct RegistryAndIs {
+	registry voidptr = unsafe { nil }
+	is_value ?string
+}
+
+pub struct ImportNodeOptions {
+pub mut:
+	custom_element_registry voidptr = unsafe { nil }
+	self_only               bool
 }
 
 pub struct PendingFullscreenEvent {
@@ -6067,6 +6086,23 @@ pub fn (mut d Document) tear_down_layout_tree() {
 
 // https://dom.spec.whatwg.org/#dom-document-createelement
 pub fn (d &Document) create_element(local_name string) !&Element {
+	if !is_valid_element_local_name(local_name) {
+		return error('InvalidCharacterError: Invalid character in tag name')
+	}
+	local_name_lower := if d.document_type() == .html {
+		to_ascii_lowercase(local_name)
+	} else {
+		local_name
+	}
+	namespace_ := if d.document_type() == .html || d.content_type == 'application/xhtml+xml' {
+		?string(namespace_html_)
+	} else {
+		?string(none)
+	}
+	return create_element_with_registry(d, local_name_lower, namespace_, none, none, true, d.custom_element_registry())!
+}
+
+pub fn (d &Document) create_element_with_options(local_name string, options ElementCreationOptions) !&Element {
 	// 1. If localName is not a valid element local name, then throw an "InvalidCharacterError" DOMException.
 	if !is_valid_element_local_name(local_name) {
 		return error('InvalidCharacterError: Invalid character in tag name')
@@ -6079,9 +6115,8 @@ pub fn (d &Document) create_element(local_name string) !&Element {
 		local_name
 	}
 
-	// 3. Let is be null.
-	// 4. If options is a dictionary and options["is"] exists, then set is to it.
-	// NOTE: This V binding does not expose ElementCreationOptions yet.
+	// 3. Let registry and is be the result of flattening element creation options.
+	registry_and_is := d.flatten_element_creation_options(options)!
 
 	// 5. Let namespace be the HTML namespace, if this is an HTML document or this's content type is "application/xhtml+xml"; otherwise null.
 	namespace_ := if d.document_type() == .html || d.content_type == 'application/xhtml+xml' {
@@ -6091,20 +6126,44 @@ pub fn (d &Document) create_element(local_name string) !&Element {
 	}
 
 	// 6. Return the result of creating an element given this, localName, namespace, null, is, and with the synchronous custom elements flag set.
-	return create_element(d, local_name_lower, namespace_, none, none, true)!
+	return create_element_with_registry(d, local_name_lower, namespace_, none, registry_and_is.is_value, true, registry_and_is.registry)!
 }
 
 // https://dom.spec.whatwg.org/#internal-createelementns-steps
 pub fn (d &Document) create_element_ns(namespace_ ?string, qualified_name string) !&Element {
+	extracted_qualified_name := validate_and_extract(namespace_, qualified_name, .element)!
+	return create_element_with_registry(d, extracted_qualified_name.local_name, extracted_qualified_name.namespace_, extracted_qualified_name.prefix_, none, true, d.custom_element_registry())!
+}
+
+pub fn (d &Document) create_element_ns_with_options(namespace_ ?string, qualified_name string, options ElementCreationOptions) !&Element {
 	// 1. Let (namespace, prefix, localName) be the result of validating and extracting namespace and qualifiedName given "element".
 	extracted_qualified_name := validate_and_extract(namespace_, qualified_name, .element)!
 
-	// 2. Let is be null.
-	// 3. If options is a dictionary and options["is"] exists, then set is to it.
-	// NOTE: This V binding does not expose ElementCreationOptions yet.
+	// 2. Let registry and is be the result of flattening element creation options.
+	registry_and_is := d.flatten_element_creation_options(options)!
 
-	// 4. Return the result of creating an element given document, localName, namespace, prefix, is, and with the synchronous custom elements flag set.
-	return create_element(d, extracted_qualified_name.local_name, extracted_qualified_name.namespace_, extracted_qualified_name.prefix_, none, true)!
+	// 3. Return the result of creating an element with the synchronous custom elements flag and registry.
+	return create_element_with_registry(d, extracted_qualified_name.local_name, extracted_qualified_name.namespace_, extracted_qualified_name.prefix_, registry_and_is.is_value, true, registry_and_is.registry)!
+}
+
+// https://dom.spec.whatwg.org/#flatten-element-creation-options
+fn (d &Document) flatten_element_creation_options(options ElementCreationOptions) !RegistryAndIs {
+	mut registry := d.custom_element_registry()
+	is_value := options.is_
+	if options.custom_element_registry != none {
+		if is_value != none {
+			return error("NotSupportedError: cannot specify both 'is' and 'customElementRegistry'")
+		}
+		registry = options.custom_element_registry or { unsafe { nil } }
+	}
+	if registry != unsafe { nil } && !custom_element_registry_is_scoped(registry)
+		&& registry != d.custom_element_registry() {
+		return error("NotSupportedError: registry must be scoped or the document's registry")
+	}
+	return RegistryAndIs{
+		registry: registry
+		is_value: is_value
+	}
 }
 
 pub fn (d &Document) create_document_fragment() &DocumentFragment {
@@ -6237,13 +6296,24 @@ pub fn (d &Document) create_range() &Range {
 
 // https://dom.spec.whatwg.org/#dom-document-importnode
 pub fn (d &Document) import_node(node &Node, deep bool) !&Node {
+	return d.import_node_with_options(node, ImportNodeOptions{ self_only: !deep })
+}
+
+pub fn (d &Document) import_node_with_options(node &Node, options ImportNodeOptions) !&Node {
 	// 1. If node is a document or shadow root, then throw a "NotSupportedError" DOMException.
 	if node.is_document() || node.is_shadow_root() {
 		return error('NotSupportedError: Cannot import a document or shadow root')
 	}
 
-	// 2. Return a clone of node, with this and the clone children flag set if deep is true.
-	return node.clone_node(d, deep, none)!
+	mut registry := options.custom_element_registry
+	if registry != unsafe { nil } && !custom_element_registry_is_scoped(registry)
+		&& registry != d.custom_element_registry() {
+		return error("NotSupportedError: registry must be scoped or the document's registry")
+	}
+	if registry == unsafe { nil } {
+		registry = look_up_custom_element_registry(d.as_node())
+	}
+	return node.clone_node_with_registry(d, !options.self_only, none, registry)!
 }
 
 // https://dom.spec.whatwg.org/#concept-node-adopt
@@ -6266,7 +6336,21 @@ pub fn (mut d Document) adopt_node(node &Node) {
 			mut mutable_descendant := unsafe { &Node(inclusive_descendant) }
 			mutable_descendant.set_document(d_ptr)
 
-			// 2. If inclusiveDescendant is an element, then set the node document of each attribute in inclusiveDescendant's attribute list to document.
+			if shadow_root := inclusive_descendant.as_shadow_root() {
+				registry := shadow_root.custom_element_registry()
+				if (registry == unsafe { nil } && !shadow_root.keep_custom_element_registry_null())
+					|| is_a_global_custom_element_registry(registry) {
+					mut mutable_shadow_root := unsafe { &ShadowRoot(shadow_root) }
+					mutable_shadow_root.set_custom_element_registry(d_ptr.effective_global_custom_element_registry())
+				}
+			} else if element := inclusive_descendant.as_element() {
+				registry := element.custom_element_registry()
+				if registry == unsafe { nil } || is_a_global_custom_element_registry(registry) {
+					mut mutable_element := unsafe { &Element(element) }
+					mutable_element.set_custom_element_registry(d_ptr.effective_global_custom_element_registry())
+				}
+			}
+
 			// Element attributes in this V port are not Node-backed yet.
 			return .@continue
 		})
@@ -10246,6 +10330,40 @@ pub fn install_custom_element_definition_lookup(callback CustomElementDefinition
 	dom_custom_element_definition_lookup = callback
 }
 
+pub fn install_custom_element_registry_hooks(is_scoped CustomElementRegistryIsScopedCallback, append_document CustomElementRegistryAppendDocumentCallback) {
+	dom_custom_element_registry_is_scoped = is_scoped
+	dom_custom_element_registry_append_document = append_document
+}
+
+pub fn custom_element_registry_is_scoped(registry voidptr) bool {
+	return registry != unsafe { nil } && dom_custom_element_registry_is_scoped != unsafe { nil }
+		&& dom_custom_element_registry_is_scoped(registry)
+}
+
+pub fn is_a_global_custom_element_registry(registry voidptr) bool {
+	return registry != unsafe { nil } && !custom_element_registry_is_scoped(registry)
+}
+
+pub fn custom_element_registry_append_document(registry voidptr, document &Document) {
+	if registry != unsafe { nil } && dom_custom_element_registry_append_document != unsafe { nil } {
+		dom_custom_element_registry_append_document(registry, document)
+	}
+}
+
+// https://html.spec.whatwg.org/multipage/custom-elements.html#look-up-a-custom-element-registry
+pub fn look_up_custom_element_registry(node &Node) voidptr {
+	if element := node.as_element() {
+		return element.custom_element_registry()
+	}
+	if shadow_root := node.as_shadow_root() {
+		return shadow_root.custom_element_registry()
+	}
+	if document := node.as_document() {
+		return document.custom_element_registry()
+	}
+	return unsafe { nil }
+}
+
 // https://html.spec.whatwg.org/multipage/custom-elements.html#look-up-a-custom-element-definition
 pub fn look_up_custom_element_definition(registry voidptr, namespace_ ?string, local_name string, is_ ?string) ?&CustomElementDefinition {
 	if registry == unsafe { nil } || dom_custom_element_definition_lookup == unsafe { nil } {
@@ -10257,6 +10375,14 @@ pub fn look_up_custom_element_definition(registry voidptr, namespace_ ?string, l
 // https://html.spec.whatwg.org/multipage/custom-elements.html#look-up-a-custom-element-definition
 pub fn (d &Document) lookup_custom_element_definition(namespace_ ?string, local_name string, is_ ?string) ?&CustomElementDefinition {
 	return look_up_custom_element_definition(d.custom_element_registry(), namespace_, local_name, is_)
+}
+
+// https://dom.spec.whatwg.org/#effective-global-custom-element-registry
+pub fn (d &Document) effective_global_custom_element_registry() voidptr {
+	if is_a_global_custom_element_registry(d.custom_element_registry()) {
+		return d.custom_element_registry()
+	}
+	return unsafe { nil }
 }
 
 pub fn (mut d Document) register_custom_element_definition(definition &CustomElementDefinition) {

@@ -196,7 +196,7 @@ pub fn parse_html_fragment_with_options(context_element &dom.Element, markup str
 	}
 
 	// 7/8. Create the root <html> element and append it to the temporary document.
-	root := dom.create_element(temp_document, 'html', ns_html, none, none, false) or {
+	root := dom.create_element_with_registry(context_element.document(), 'html', ns_html, none, none, false, context_element.custom_element_registry()) or {
 		panic('fragment root: ${err}')
 	}
 	mut temp_document_node := unsafe { &dom.Node(temp_document) }

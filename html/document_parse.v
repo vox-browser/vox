@@ -18,6 +18,8 @@ pub fn parse_html_from_a_string(document &dom.Document, markup string) {
 // Convenience: parse an HTML string into a fresh (about:blank) html Document and return it.
 pub fn parse_document(markup string) &dom.Document {
 	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.html)
+	_ = CustomElementRegistry.create(document)
 	// Documents created by navigation allow declarative shadow roots. This
 	// convenience entry point is the browser/navigation parse path.
 	document.set_allow_declarative_shadow_roots(true)

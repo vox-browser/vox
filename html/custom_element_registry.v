@@ -58,6 +58,8 @@ pub:
 pub struct CustomElementRegistry {
 mut:
 	document_                     &dom.Document = unsafe { nil }
+	is_scoped_                    bool
+	scoped_documents_             []&dom.Document
 	definitions_                  []&CustomElementRegistration
 	when_defined_promise_map_     map[string]&dom.Promise
 	element_definition_is_running bool
@@ -75,11 +77,56 @@ fn custom_element_definition_lookup(registry_handle voidptr, namespace_ ?string,
 	return registry.get_definition_with_name_and_local_name(is_value, local_name)
 }
 
-pub fn CustomElementRegistry.create(document &dom.Document) &CustomElementRegistry {
+fn custom_element_registry_is_scoped(registry_handle voidptr) bool {
+	return unsafe { &CustomElementRegistry(registry_handle) }.is_scoped_
+}
+
+fn custom_element_registry_append_document(registry_handle voidptr, document &dom.Document) {
+	mut registry := unsafe { &CustomElementRegistry(registry_handle) }
+	registry.append_scoped_document(document)
+}
+
+fn install_custom_element_registry_dom_hooks() {
 	dom.install_custom_element_definition_lookup(custom_element_definition_lookup)
-	return &CustomElementRegistry{
+	dom.install_custom_element_registry_hooks(custom_element_registry_is_scoped, custom_element_registry_append_document)
+}
+
+pub fn CustomElementRegistry.create(document &dom.Document) &CustomElementRegistry {
+	install_custom_element_registry_dom_hooks()
+	registry := &CustomElementRegistry{
 		document_: document
 	}
+	if document.custom_element_registry() == unsafe { nil } {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.set_custom_element_registry(voidptr(registry))
+		registry.initialize_global_document(document)
+	}
+	return registry
+}
+
+// https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry
+pub fn CustomElementRegistry.construct(document &dom.Document) &CustomElementRegistry {
+	install_custom_element_registry_dom_hooks()
+	return &CustomElementRegistry{
+		document_: document
+		is_scoped_: true
+	}
+}
+
+pub fn (registry &CustomElementRegistry) is_scoped() bool {
+	return registry.is_scoped_
+}
+
+pub fn (mut registry CustomElementRegistry) append_scoped_document(document &dom.Document) {
+	if !registry.is_scoped_ {
+		return
+	}
+	for existing in registry.scoped_documents_ {
+		if existing == document {
+			return
+		}
+	}
+	registry.scoped_documents_ << document
 }
 
 fn (registry &CustomElementRegistry) registration_with_name(name string) ?&CustomElementRegistration {
@@ -114,19 +161,38 @@ fn candidate_matches_custom_definition(element &dom.Element, registration &Custo
 	return true
 }
 
-fn enqueue_upgrade_candidates(node &dom.Node, registration &CustomElementRegistration) {
+fn enqueue_upgrade_candidates(node &dom.Node, registry &CustomElementRegistry, registration &CustomElementRegistration) {
 	if element := node.as_element() {
-		if candidate_matches_custom_definition(element, registration) {
+		if element.custom_element_registry() == voidptr(registry)
+			&& candidate_matches_custom_definition(element, registration) {
 			mut candidate := element
 			candidate.enqueue_a_custom_element_upgrade_reaction(registration.definition)
 		}
 		if shadow_root := element.shadow_root() {
-			enqueue_upgrade_candidates(unsafe { &dom.Node(shadow_root) }, registration)
+			enqueue_upgrade_candidates(unsafe { &dom.Node(shadow_root) }, registry, registration)
 		}
 	}
 	for child in node.children_as_vector() {
-		enqueue_upgrade_candidates(child, registration)
+		enqueue_upgrade_candidates(child, registry, registration)
 	}
+}
+
+fn (registry &CustomElementRegistry) initialize_global_document(document &dom.Document) {
+	document.as_node().for_each_shadow_including_inclusive_descendant(fn [registry] (node &dom.Node) dom.TraversalDecision {
+		if element := node.as_element() {
+			if element.custom_element_registry() == unsafe { nil } {
+				mut mutable_element := unsafe { &dom.Element(element) }
+				mutable_element.set_custom_element_registry(voidptr(registry))
+			}
+		} else if shadow_root := node.as_shadow_root() {
+			if shadow_root.custom_element_registry() == unsafe { nil }
+				&& !shadow_root.keep_custom_element_registry_null() {
+				mut mutable_shadow_root := unsafe { &dom.ShadowRoot(shadow_root) }
+				mutable_shadow_root.set_custom_element_registry(voidptr(registry))
+			}
+		}
+		return .@continue
+	})
 }
 
 // https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-define
@@ -145,6 +211,9 @@ pub fn (mut registry CustomElementRegistry) define(name string, constructor Cust
 	}
 	mut local_name := name
 	if extends := options.extends {
+		if registry.is_scoped_ {
+			return error('NotSupportedError: scoped registries cannot define customized built-in elements')
+		}
 		if is_valid_custom_element_name(extends) {
 			return error('NotSupportedError: custom element names cannot be extended')
 		}
@@ -188,9 +257,13 @@ pub fn (mut registry CustomElementRegistry) define(name string, constructor Cust
 		lifecycle_callbacks: lifecycle_callbacks
 	}
 	registry.definitions_ << registration
-	mut document := registry.document_
-	document.register_custom_element_definition(definition)
-	enqueue_upgrade_candidates(unsafe { &dom.Node(registry.document_) }, registration)
+	if registry.is_scoped_ {
+		for document in registry.scoped_documents_ {
+			enqueue_upgrade_candidates(unsafe { &dom.Node(document) }, registry, registration)
+		}
+	} else {
+		enqueue_upgrade_candidates(unsafe { &dom.Node(registry.document_) }, registry, registration)
+	}
 	if promise := registry.when_defined_promise_map_[name] {
 		mut pending := promise
 		pending.resolve(dom.js_number(f64(constructor.id)))
@@ -226,11 +299,13 @@ pub fn (mut registry CustomElementRegistry) when_defined(name string) &dom.Promi
 
 fn registry_upgrade_node(node &dom.Node, registry &CustomElementRegistry) {
 	if element := node.as_element() {
-		for registration in registry.definitions_ {
-			if candidate_matches_custom_definition(element, registration) {
-				mut candidate := element
-				candidate.enqueue_a_custom_element_upgrade_reaction(registration.definition)
-				break
+		if element.custom_element_registry() == voidptr(registry) {
+			for registration in registry.definitions_ {
+				if candidate_matches_custom_definition(element, registration) {
+					mut candidate := element
+					candidate.enqueue_a_custom_element_upgrade_reaction(registration.definition)
+					break
+				}
 			}
 		}
 		if shadow_root := element.shadow_root() {
@@ -244,6 +319,42 @@ fn registry_upgrade_node(node &dom.Node, registry &CustomElementRegistry) {
 
 pub fn (registry &CustomElementRegistry) upgrade(root &dom.Node) {
 	registry_upgrade_node(root, registry)
+}
+
+// https://html.spec.whatwg.org/multipage/custom-elements.html#dom-customelementregistry-initialize
+pub fn (mut registry CustomElementRegistry) initialize(root &dom.Node) ! {
+	if !registry.is_scoped_
+		&& (root.is_document() || root.document().custom_element_registry() != voidptr(registry)) {
+		return error("NotSupportedError: registry must be scoped or the document's registry")
+	}
+	if document := root.as_document() {
+		if document.custom_element_registry() == unsafe { nil } {
+			mut mutable_document := unsafe { &dom.Document(document) }
+			mutable_document.set_custom_element_registry(voidptr(registry))
+		}
+	} else if shadow_root := root.as_shadow_root() {
+		if shadow_root.custom_element_registry() == unsafe { nil } {
+			mut mutable_shadow_root := unsafe { &dom.ShadowRoot(shadow_root) }
+			mutable_shadow_root.set_custom_element_registry(voidptr(registry))
+		}
+	}
+	registry_handle := voidptr(&registry)
+	registry_is_scoped := registry.is_scoped_
+	root.for_each_in_inclusive_subtree(fn [registry_handle, registry_is_scoped] (node &dom.Node) dom.TraversalDecision {
+		if element := node.as_element() {
+			mut mutable_element := unsafe { &dom.Element(element) }
+			if element.custom_element_registry() == unsafe { nil } {
+				mutable_element.set_custom_element_registry(registry_handle)
+				if registry_is_scoped {
+					dom.custom_element_registry_append_document(registry_handle, element.document())
+				}
+			}
+			if element.custom_element_registry() == registry_handle {
+				mutable_element.try_to_upgrade()
+			}
+		}
+		return .@continue
+	})
 }
 
 pub fn (registry &CustomElementRegistry) get_definition_with_name_and_local_name(name string, local_name string) ?&dom.CustomElementDefinition {
