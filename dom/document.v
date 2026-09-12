@@ -8149,6 +8149,10 @@ pub fn (mut d Document) unload() {
 	// 14. Decrease eventLoop's termination nesting level by 1.
 	d.decrement_termination_nesting_level()
 
+	// 18. Run any unloading document cleanup steps defined by HTML and other
+	// applicable specifications before deciding whether to destroy the document.
+	d.run_unloading_cleanup_steps()
+
 	// 19. If document's salvageable state is false, then destroy document.
 	if !d.salvageable {
 		d.destroy()
