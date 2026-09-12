@@ -11,9 +11,9 @@ translation-specific documentation belong in this repository. See
 
 ## Translation footprint
 
-As of 2026-09-12, tracked V sources contain **339,815 implementation LOC** and
-**65,617 test LOC**. The current module-owned translation subset contains
-**328,924 implementation LOC** and **61,779 test LOC**; the difference is root
+As of 2026-09-12, tracked V sources contain **340,625 implementation LOC** and
+**65,932 test LOC**. The current module-owned translation subset contains
+**329,734 implementation LOC** and **62,094 test LOC**; the difference is root
 support, browser integration, and translation tooling. See the canonical
 current table in [`PORT_STATUS.md`](PORT_STATUS.md).
 

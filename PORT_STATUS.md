@@ -121,7 +121,7 @@ from the current-module totals.
 | `Internals` | 7 | 2,583 | 854 | 230 | Complete |
 | `IntersectionObserver` | 2 | 528 | 569 | 327 | Complete |
 | `Layout` | 9 | 4,001 | 40,601 | 15,060 | Present |
-| `Loader` | 6 | 1,291 | 1,111 | 349 | Complete |
+| `Loader` | 6 | 1,291 | 1,921 | 664 | Complete |
 | `MathML` | 6 | 369 | 411 | 97 | Complete |
 | `MediaCapabilitiesAPI` | 1 | 345 | 676 | 117 | Complete |
 | `MediaCapture` | 5 | 1,475 | 1,205 | 205 | Complete |
@@ -167,7 +167,7 @@ from the current-module totals.
 | `XLink` | 1 | 16 | 13 | 10 | Complete |
 | `XML` | 2 | 556 | 477 | 164 | Complete |
 | `XPath` | 5 | 435 | 613 | 189 | Complete |
-| **Total** | **1,193** | **329,970** | **328,924** | **61,779** | **75 complete, 3 present, 0 untranslated** |
+| **Total** | **1,193** | **329,970** | **329,734** | **62,094** | **75 complete, 3 present, 0 untranslated** |
 
 ## Verification
 
