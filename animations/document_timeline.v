@@ -7,6 +7,8 @@
 module animations
 
 import dom
+import highresolutiontime
+import html
 
 pub struct DocumentTimelineOptions {
 pub:
@@ -21,6 +23,22 @@ pub fn DocumentTimeline.create(document ?&dom.Document, origin_time f64, timesta
 }
 
 pub fn DocumentTimeline.construct_impl(document ?&dom.Document, options DocumentTimelineOptions, timestamp f64) !&DocumentTimeline {
+	return DocumentTimeline.create(document, options.origin_time, timestamp)
+}
+
+pub fn DocumentTimeline.create_for_constructor(document &dom.Document, options DocumentTimelineOptions) &DocumentTimeline {
+	timestamp := document.last_animation_frame_timestamp_value() or {
+		settings_pointer := document.relevant_settings_object()
+		if settings_pointer == unsafe { nil } {
+			0.0
+		} else {
+			settings := unsafe { &html.EnvironmentSettingsObject(settings_pointer) }
+			highresolutiontime.relative_high_resolution_time(settings.time_origin(), highresolutiontime.TimeOriginContext{
+				time_origin: settings.time_origin()
+				cross_origin_isolated_capability: settings.cross_origin_isolated_capability() == .yes
+			})
+		}
+	}
 	return DocumentTimeline.create(document, options.origin_time, timestamp)
 }
 

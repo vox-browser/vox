@@ -116,3 +116,16 @@ fn test_timeline_time_update_updates_associated_animations() {
 	assert !animation.pending()
 	assert animation.play_state() == .running
 }
+
+fn test_document_timeline_constructor_uses_the_latest_animation_frame() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{
+		active_document_: document
+	})
+	document.update_animations_and_send_events(250)
+	timeline := DocumentTimeline.create_for_constructor(document, DocumentTimelineOptions{
+		origin_time: 25
+	})
+	assert timeline.current_time()!.value == 225
+	assert timeline.is_monotonically_increasing()
+}
