@@ -63,6 +63,24 @@ fn test_request_object_constructor_guards_and_getters() {
 	assert clone.method() == 'POST'
 }
 
+fn test_request_wrappable_constructor_entry_points_use_relevant_settings() {
+	client := &ConstructionTestClient{
+		base_url: dom.URL{'https://settings.test/base/'}
+		origin_: dom.Origin{ value: 'https://settings.test' }
+	}
+	constructed := Request.create_for_constructor(RequestInput{
+		url: dom.URL{'https://example.test/data'}
+	}, RequestInit{})!
+	assert constructed.url() == 'https://example.test/data'
+	with_settings := Request.create_with_settings(client, RequestInput{
+		url: dom.URL{'https://example.test/data'}
+	}, RequestInit{
+		referrer: '../source'
+	})!
+	assert with_settings.internal_request().client != none
+	assert with_settings.referrer() == 'https://settings.test/source'
+}
+
 fn test_request_object_rejects_invalid_combinations() {
 	if _ := RequestObject.construct(RequestInput{ url: dom.URL{'https://example.test/'} }, RequestInit{
 		method: 'TRACE'
@@ -193,6 +211,23 @@ fn test_response_object_constructor_factories_and_clone() {
 	json_object := ResponseObject.json(json_value, ResponseInit{})!
 	assert json_object.headers().get('Content-Type')? == 'application/json'
 	assert json_object.body_mixin().text()! == '{"ok":true}'
+}
+
+fn test_response_wrappable_constructor_entry_points() {
+	body := Body.from_bytes('direct'.bytes(), .bytes)
+	direct := Response.create_with_body(ResponseInit{ status: 202 }, BodyWithType{
+		body: body
+		type_: 'text/custom'
+	})!
+	assert direct.status() == 202
+	assert direct.headers().get('Content-Type')? == 'text/custom'
+	assert direct.body_mixin().text()! == 'direct'
+
+	constructed := Response.create_for_constructor(BodyInit{
+		kind: .string_
+		text: 'constructor'
+	}, ResponseInit{})!
+	assert constructed.body_mixin().text()! == 'constructor'
 }
 
 fn test_response_url_excludes_fragment() {

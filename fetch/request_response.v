@@ -63,6 +63,18 @@ mut:
 	signal_  &dom.AbortSignal = unsafe { nil }
 }
 
+pub fn Request.create_for_constructor(input RequestInput, init RequestInit) !&RequestObject {
+	return RequestObject.construct(input, init)
+}
+
+pub fn Request.create_with_settings(environment RequestClient, input RequestInput, init RequestInit) !&RequestObject {
+	return RequestObject.construct(RequestInput{
+		url: input.url
+		request: input.request
+		environment: environment
+	}, init)
+}
+
 pub fn RequestObject.construct(input RequestInput, init RequestInit) !&RequestObject {
 	if init.window_non_null {
 		return error('TypeError: RequestInit.window must be null')
@@ -395,18 +407,26 @@ mut:
 	headers_  &Headers = unsafe { nil }
 }
 
-pub fn ResponseObject.construct(body_init ?BodyInit, init ResponseInit) !&ResponseObject {
+pub fn Response.create_with_body(init ResponseInit, body_with_type ?BodyWithType) !&ResponseObject {
 	mut response := Response.create()
 	mut object := &ResponseObject{
 		response_: response
 		headers_: Headers.from_header_list(response.header_list, .response)
 	}
+	object.initialize_response(init, body_with_type)!
+	return object
+}
+
+pub fn Response.create_for_constructor(body_init ?BodyInit, init ResponseInit) !&ResponseObject {
 	mut body_with_type := ?BodyWithType(none)
 	if init_body := body_init {
 		body_with_type = extract_body(init_body, false)!
 	}
-	object.initialize_response(init, body_with_type)!
-	return object
+	return Response.create_with_body(init, body_with_type)
+}
+
+pub fn ResponseObject.construct(body_init ?BodyInit, init ResponseInit) !&ResponseObject {
+	return Response.create_for_constructor(body_init, init)
 }
 
 pub fn ResponseObject.error() &ResponseObject {
@@ -436,16 +456,10 @@ pub fn ResponseObject.redirect(url string, status u16, api_base_url dom.URL) !&R
 pub fn ResponseObject.json(data infra.JSONValue, init ResponseInit) !&ResponseObject {
 	bytes := infra.serialize_javascript_value_to_json_bytes(data)!
 	extracted := extract_body(BodyInit{ kind: .bytes, bytes: bytes }, false)!
-	mut response := Response.create()
-	mut object := &ResponseObject{
-		response_: response
-		headers_: Headers.from_header_list(response.header_list, .response)
-	}
-	object.initialize_response(init, BodyWithType{
+	return Response.create_with_body(init, BodyWithType{
 		body: extracted.body
 		type_: 'application/json'
-	})!
-	return object
+	})
 }
 
 pub fn (object &ResponseObject) type_() ResponseType {
