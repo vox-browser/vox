@@ -166,6 +166,16 @@ fn test_resolve_percentage_against_basis() {
 	assert resolved_px('calc(100% - 10px)', CalculationResolutionContext{}) == none
 }
 
+fn test_percentage_from_literal_and_calculated_style_values() {
+	literal := StyleValue(PercentageStyleValue.create(Percentage.new(25)))
+	assert Percentage.from_style_value_logic(literal).value() == 25
+
+	calculated := parse_calc_style_value('calc(50% / 2)') or {
+		panic('percentage calculation did not parse')
+	}
+	assert Percentage.from_style_value_logic(StyleValue(calculated)).value() == 25
+}
+
 fn test_absolutized_uses_computation_context_and_preserves_typed_tree() {
 	value := parse_calc_style_value('calc(1em + 2px)')?
 	font_size := CSSPixels.new(20)

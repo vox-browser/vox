@@ -1228,6 +1228,18 @@ pub fn Percentage.new(value f64) Percentage {
 	}
 }
 
+pub fn Percentage.from_style_value_logic(style_value StyleValue) Percentage {
+	if style_value is PercentageStyleValue {
+		return style_value.percentage()
+	}
+	if style_value is CalculatedStyleValue {
+		return style_value.resolve_percentage(CalculationResolutionContext{}) or {
+			panic('VERIFY_NOT_REACHED')
+		}
+	}
+	panic('VERIFY_NOT_REACHED')
+}
+
 pub fn (p Percentage) value() f64 {
 	return p.value_
 }

@@ -1022,20 +1022,6 @@ pub fn EasingFunction.ease() EasingFunction {
 	}
 }
 
-fn easing_resolve_percentage(style_value StyleValue) f64 {
-	if style_value.is_percentage() {
-		return style_value.as_percentage().percentage().as_fraction()
-	}
-
-	if style_value.is_calculated() {
-		return (style_value.as_calculated().resolve_percentage(CalculationResolutionContext{}) or {
-			panic('VERIFY_NOT_REACHED')
-		}).as_fraction()
-	}
-
-	panic('VERIFY_NOT_REACHED')
-}
-
 pub fn EasingFunction.from_css_style_value(style_value StyleValue) EasingFunction {
 	if style_value is EasingStyleValue {
 		function := style_value.function()
@@ -1046,7 +1032,7 @@ pub fn EasingFunction.from_css_style_value(style_value StyleValue) EasingFunctio
 					output := number_from_style_value(control_point.output, none)
 
 					input := if existing_input := control_point.input {
-						?f64(easing_resolve_percentage(existing_input))
+						?f64(Percentage.from_style_value_logic(existing_input).as_fraction())
 					} else {
 						?f64(none)
 					}
