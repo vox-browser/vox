@@ -1316,10 +1316,6 @@ pub fn (style_value ColorMixStyleValue) normalize_percentages(context Computatio
 
 // https://drafts.csswg.org/css-color-5/#color-mix-result
 pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
-	// FIXME: Take the color space and hue interpolation method into account.
-	// The current implementation only uses oklab interpolation.
-	from_color := color_style_value_from_style_value(style_value.first_component.color, color_resolution_context) or { return none }
-	to_color := color_style_value_from_style_value(style_value.second_component.color, color_resolution_context) or { return none }
 	first_percentage := if percentage := style_value.first_component.percentage {
 		?Percentage(Percentage.from_style_value_logic(percentage))
 	} else {
@@ -1331,9 +1327,17 @@ pub fn (style_value ColorMixStyleValue) to_color(color_resolution_context ColorR
 		?Percentage(none)
 	}
 	normalized := normalize_color_mix_percentage_pair(first_percentage, second_percentage)
-
-	interpolated := interpolate_color(ComputedColor.rgba(from_color.red(), from_color.green(), from_color.blue(), from_color.alpha()), ComputedColor.rgba(to_color.red(), to_color.green(), to_color.blue(), to_color.alpha()), normalized.p2.as_fraction(), .modern)
-	return Color.rgba(interpolated.red(), interpolated.green(), interpolated.blue(), u8(f64(interpolated.alpha()) * normalized.alpha_multiplier))
+	color_interpolation_method := if method := style_value.color_interpolation_method {
+		?ColorInterpolationMethod(method.color_interpolation_method())
+	} else {
+		?ColorInterpolationMethod(none)
+	}
+	interpolated := interpolate_style_values_color(style_value.first_component.color,
+		style_value.second_component.color, normalized.p2.as_fraction(),
+		color_interpolation_method, color_resolution_context) or { return none }
+	result := interpolated.to_color(color_resolution_context) or { return none }
+	return Color.rgba(result.red(), result.green(), result.blue(), u8(f64(result.alpha()) *
+		normalized.alpha_multiplier))
 }
 
 pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) StyleValue {
@@ -1356,17 +1360,15 @@ pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) 
 	absolutized_first_color := style_value.first_component.color.absolutized(context)
 	absolutized_second_color := style_value.second_component.color.absolutized(context)
 
-	from_color := absolutized_first_color.to_color(color_resolution_context)
-	to_color := absolutized_second_color.to_color(color_resolution_context)
 	delta := Percentage.from_style_value_logic(normalized_percentages.p2).as_fraction()
-
-	if from := from_color {
-		if to := to_color {
-			// FIXME: Interpolation should produce a StyleValue of some kind instead of a Color,
-			// and use the interpolation color space.
-			interpolated_color := interpolate_color(ComputedColor.rgba(from.red(), from.green(), from.blue(), from.alpha()), ComputedColor.rgba(to.red(), to.green(), to.blue(), to.alpha()), delta, .modern)
-			return StyleValue(ColorFunctionStyleValue.create('srgb', StyleValue(NumberStyleValue.create(f64(interpolated_color.red()) / 255.0)), StyleValue(NumberStyleValue.create(f64(interpolated_color.green()) / 255.0)), StyleValue(NumberStyleValue.create(f64(interpolated_color.blue()) / 255.0)), StyleValue(NumberStyleValue.create(f64(interpolated_color.alpha()) / 255.0))))
-		}
+	color_interpolation_method := if method := absolutized_color_interpolation_method {
+		?ColorInterpolationMethod(method.color_interpolation_method())
+	} else {
+		?ColorInterpolationMethod(none)
+	}
+	if interpolated := interpolate_style_values_color(absolutized_first_color,
+		absolutized_second_color, delta, color_interpolation_method, color_resolution_context) {
+		return interpolated
 	}
 
 	return StyleValue(ColorMixStyleValue.create(absolutized_color_interpolation_method, ColorMixComponent{

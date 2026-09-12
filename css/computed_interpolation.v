@@ -6136,35 +6136,6 @@ pub fn interpolate_discrete_style_value(from StyleValue, to StyleValue, delta f6
 	return from
 }
 
-pub fn interpolate_css_color(from Color, to Color, delta f64, syntax ColorSyntax) Color {
-	// https://drafts.csswg.org/css-color/#interpolation
-	// FIXME: Handle all interpolation methods.
-	// FIXME: Handle "analogous", "missing", and "powerless" components, somehow.
-	// FIXME: Remove duplicated code with Color::mixed_with(Color other, float weight)
-	from_alpha := f64(from.alpha()) / 255.0
-	to_alpha := f64(to.alpha()) / 255.0
-	interpolated_alpha := interpolate_raw(from_alpha, to_alpha, delta, none)
-	clamped_alpha := clamp_f64(interpolated_alpha, 0.0, 1.0)
-	if clamped_alpha == 0 {
-		return Color.rgba(0, 0, 0, 0)
-	}
-
-	if syntax == .modern {
-		from_oklab := from.to_premultiplied_oklab()
-		to_oklab := to.to_premultiplied_oklab()
-		return Color.from_oklab(interpolate_raw(from_oklab.l, to_oklab.l, delta, none) / clamped_alpha, interpolate_raw(from_oklab.a, to_oklab.a, delta, none) / clamped_alpha, interpolate_raw(from_oklab.b, to_oklab.b, delta, none) / clamped_alpha, clamped_alpha)
-	}
-
-	premultiply_interpolate_unpremultiply := fn [delta, clamped_alpha, from_alpha, to_alpha] (from_channel u8, to_channel u8) u8 {
-		pre_from := f64(from_channel) * from_alpha
-		pre_to := f64(to_channel) * to_alpha
-		interpolated := interpolate_raw(pre_from, pre_to, delta, none)
-		return u8(clamp_f64(math.round(interpolated / clamped_alpha), 0, 255))
-	}
-
-	return Color.rgba(premultiply_interpolate_unpremultiply(from.red(), to.red()), premultiply_interpolate_unpremultiply(from.green(), to.green()), premultiply_interpolate_unpremultiply(from.blue(), to.blue()), u8(math.round(clamped_alpha * 255.0)))
-}
-
 fn interpolate_raw_i64(from i64, to i64, delta f64, accepted_type_range ?AcceptedTypeRange) i64 {
 	min := if range := accepted_type_range { range.min } else { f64(-9223372036854775808) }
 	max := if range := accepted_type_range { range.max } else { f64(9223372036854775807) }
@@ -6249,21 +6220,11 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		color_resolution_context := calculation_context.color_resolution or {
 			ColorResolutionContext{}
 		}
-		color_syntax := if interpolation_color_syntax(from) == .modern
-			|| interpolation_color_syntax(to) == .modern {
-			ColorSyntax.modern
-		} else {
-			ColorSyntax.legacy
+		if interpolated := interpolate_style_values_color(from, to, delta, none,
+			color_resolution_context) {
+			return interpolated
 		}
-		from_color := from.to_color(color_resolution_context)
-		to_color := to.to_color(color_resolution_context)
-		mut interpolated_color := Color.black()
-		if resolved_from_color := from_color {
-			if resolved_to_color := to_color {
-				interpolated_color = interpolate_css_color(resolved_from_color, resolved_to_color, delta, color_syntax)
-			}
-		}
-		return StyleValue(ColorStyleValue.create_from_color(interpolated_color, .modern, none))
+		return StyleValue(ColorStyleValue.create_from_color(Color.black(), .modern, none))
 	}
 
 	return match from {
@@ -7464,17 +7425,10 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 				transparent := StyleValue(ColorStyleValue.create(Color.rgba(0, 0, 0, 0)))
 				from_color_value := from.color or { transparent }
 				to_color_value := to.color or { transparent }
-				from_color := from_color_value.to_color(color_context) or {
-					Color.rgba(0, 0, 0, 0)
-				}
-				to_color := to_color_value.to_color(color_context) or {
-					Color.rgba(0, 0, 0, 0)
-				}
-				color_syntax := if interpolation_color_syntax(from_color_value) == .modern
-					|| interpolation_color_syntax(to_color_value) == .modern {
-					ColorSyntax.modern
-				} else {
-					ColorSyntax.legacy
+				interpolated_color_value := interpolate_style_values_color(from_color_value,
+					to_color_value, delta, none, color_context) or {
+					StyleValue(ColorStyleValue.create_from_color(Color.black(), .modern,
+						none))
 				}
 				FilterStyleValue(FilterOperationDropShadow{
 					offset_x: x
@@ -7484,7 +7438,7 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 					} else {
 						none
 					}
-					color: StyleValue(ColorStyleValue.create_from_color(interpolate_css_color(from_color, to_color, delta, color_syntax), .modern, none))
+					color: interpolated_color_value
 				})
 			} else {
 				none
@@ -7493,16 +7447,6 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 		URL {
 			none
 		}
-	}
-}
-
-fn interpolation_color_syntax(value StyleValue) ColorSyntax {
-	return match value {
-		RGBColorStyleValue { value.color_syntax_ }
-		HSLColorStyleValue { value.color_syntax_ }
-		HWBColorStyleValue { value.color_syntax_ }
-		KeywordStyleValue, ColorStyleValue { .legacy }
-		else { .modern }
 	}
 }
 
@@ -7570,24 +7514,14 @@ pub fn interpolate_box_shadow(element &dom.Element, calculation_context Interpol
 			return none
 		}
 
-		from_color_value := from_shadow.color()
-		to_color_value := to_shadow.color()
-		from_color := from_color_value.to_color(color_context)
-		to_color := to_color_value.to_color(color_context)
-		mut color := Color.black()
-		if resolved_from := from_color {
-			if resolved_to := to_color {
-				color_syntax := if interpolation_color_syntax(from_color_value) == .modern
-					|| interpolation_color_syntax(to_color_value) == .modern {
-					ColorSyntax.modern
-				} else {
-					ColorSyntax.legacy
-				}
-				color = interpolate_css_color(resolved_from, resolved_to, delta, color_syntax)
-			}
+		interpolated_color_value := interpolate_style_values_color(from_shadow.color(),
+			to_shadow.color(), delta, none, color_context) or {
+			StyleValue(ColorStyleValue.create_from_color(Color.black(), .modern, none))
 		}
 		placement := if delta >= 0.5 { to_shadow.placement() } else { from_shadow.placement() }
-		result << StyleValue(ShadowStyleValue.create(from_shadow.shadow_type(), StyleValue(ColorStyleValue.create_from_color(color, .modern, none)), offset_x, offset_y, blur_radius, spread_distance, placement))
+		result << StyleValue(ShadowStyleValue.create(from_shadow.shadow_type(),
+			interpolated_color_value, offset_x, offset_y, blur_radius, spread_distance,
+			placement))
 	}
 
 	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(result, .comma, .yes)))
@@ -7844,36 +7778,6 @@ fn interpolation_convert_to_3d_primitive(original_transform TransformationStyleV
 			TransformationStyleValue.create(.transform, .matrix3d, matrix_to_style_value_vector(matrix))
 		}
 	}
-}
-
-pub fn interpolate_color(from ComputedColor, to ComputedColor, delta f64, syntax ColorSyntax) ComputedColor {
-	// https://drafts.csswg.org/css-color/#interpolation
-	// FIXME: Handle all interpolation methods.
-	// FIXME: Handle "analogous", "missing", and "powerless" components, somehow.
-	// FIXME: Remove duplicated code with Color::mixed_with(Color other, float weight)
-	from_alpha := f64(from.alpha()) / 255.0
-	to_alpha := f64(to.alpha()) / 255.0
-	interpolated_alpha := interpolate_raw(from_alpha, to_alpha, delta, none)
-	clamped_alpha := clamp_f64(interpolated_alpha, 0.0, 1.0)
-	if clamped_alpha == 0 {
-		return ComputedColor.transparent()
-	}
-
-	if syntax == .modern {
-		from_oklab := Color.rgba(from.red(), from.green(), from.blue(), from.alpha()).to_premultiplied_oklab()
-		to_oklab := Color.rgba(to.red(), to.green(), to.blue(), to.alpha()).to_premultiplied_oklab()
-		interpolated := Color.from_oklab(interpolate_raw(from_oklab.l, to_oklab.l, delta, none) / clamped_alpha, interpolate_raw(from_oklab.a, to_oklab.a, delta, none) / clamped_alpha, interpolate_raw(from_oklab.b, to_oklab.b, delta, none) / clamped_alpha, clamped_alpha)
-		return ComputedColor.rgba(interpolated.red(), interpolated.green(), interpolated.blue(), interpolated.alpha())
-	}
-
-	premultiply_interpolate_unpremultiply := fn [delta, clamped_alpha, from_alpha, to_alpha] (from_channel u8, to_channel u8) u8 {
-		pre_from := f64(from_channel) * from_alpha
-		pre_to := f64(to_channel) * to_alpha
-		interpolated := interpolate_raw(pre_from, pre_to, delta, none)
-		return u8(clamp_f64(math.round(interpolated / clamped_alpha), 0, 255))
-	}
-
-	return ComputedColor.rgba(premultiply_interpolate_unpremultiply(from.red(), to.red()), premultiply_interpolate_unpremultiply(from.green(), to.green()), premultiply_interpolate_unpremultiply(from.blue(), to.blue()), u8(math.round(clamped_alpha * 255.0)))
 }
 
 fn filter_style_value_zero_length() StyleValue {

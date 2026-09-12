@@ -1512,7 +1512,7 @@ fn test_custom_property_interpolation_matches_css_animation_rules() {
 		panic('interpolated color did not round-trip')
 	}
 	assert interpolated_color_value is RGBColorStyleValue
-	assert (interpolated_color_value as RGBColorStyleValue).color_syntax() == .modern
+	assert (interpolated_color_value as RGBColorStyleValue).color_syntax() == .legacy
 	assert interpolate_test_property(element, .opacity, '0.2', '0.8', 2) == '1'
 	assert interpolate_test_property(element, .width, '10px', '20px', -2) == '0px'
 	assert interpolate_test_property(element, .margin_left, '10px', '20px', -2) == '-10px'
@@ -1583,7 +1583,7 @@ fn test_color_interpolation_uses_the_elements_color_resolution_context() {
 	mut node := element.as_node()
 	node.set_layout_node(layout_node)
 
-	assert interpolate_test_property(element, .background_color, 'light-dark(red, green)', 'light-dark(blue, white)', 0) == 'rgb(0, 128, 0)'
+	assert interpolate_test_property(element, .background_color, 'light-dark(red, green)', 'light-dark(blue, white)', 0) == 'oklab(0.519752 -0.140302 0.107676)'
 }
 
 fn test_animation_keyword_resolution_matches_upstream_boundaries() {
