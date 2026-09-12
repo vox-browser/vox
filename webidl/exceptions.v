@@ -44,6 +44,10 @@ pub fn DOMException.construct_impl(message string, name string) DOMException {
 	return DOMException.construct(message, name)
 }
 
+pub fn DOMException.create_for_constructor(message string, name string) DOMException {
+	return DOMException.create(name, message)
+}
+
 pub fn (exception DOMException) name() string {
 	return exception.name_
 }
@@ -91,11 +95,38 @@ pub fn (exception DOMException) str() string {
 pub fn dom_exception_value(exception DOMException) Value {
 	return Value{
 		kind: .platform_object
+		platform_interfaces: ['DOMException']
 		object_value: {
 			'name':    string_value(exception.name())
 			'message': string_value(exception.message())
 			'code':    number_value(exception.code())
 		}
+	}
+}
+
+pub struct DOMExceptionReportDetails {
+pub:
+	name    string
+	message string
+}
+
+pub fn dom_exception_from_object(object Value) ?DOMException {
+	if object.kind != .platform_object || 'DOMException' !in object.platform_interfaces {
+		return none
+	}
+	name := object.object_value['name'] or { return none }
+	message := object.object_value['message'] or { return none }
+	if name.kind != .string_ || message.kind != .string_ {
+		return none
+	}
+	return DOMException.create(name.string_value, message.string_value)
+}
+
+pub fn dom_exception_report_details(object Value) ?DOMExceptionReportDetails {
+	exception := dom_exception_from_object(object) or { return none }
+	return DOMExceptionReportDetails{
+		name: exception.name()
+		message: exception.message()
 	}
 }
 

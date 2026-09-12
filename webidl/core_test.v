@@ -16,6 +16,16 @@ fn test_dom_exception_legacy_codes_and_serialization() {
 	constructed := DOMException.construct('first', 'Second')
 	assert constructed.name() == 'Second'
 	assert constructed.message() == 'first'
+	constructed_for_bindings := DOMException.create_for_constructor('binding message', 'AbortError')
+	assert constructed_for_bindings.name() == 'AbortError'
+	assert constructed_for_bindings.message() == 'binding message'
+	details := dom_exception_report_details(dom_exception_value(constructed_for_bindings)) or {
+		assert false
+		return
+	}
+	assert details.name == 'AbortError'
+	assert details.message == 'binding message'
+	assert dom_exception_from_object(object_value(map[string]Value{})) == none
 }
 
 fn test_quota_exceeded_error_validation_and_round_trip() {
