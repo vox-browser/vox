@@ -68,6 +68,26 @@ pub mut:
 	seen_node_references map[string][]string
 }
 
+// https://w3c.github.io/webdriver/#dfn-browsing-context-group-node-map
+pub fn browsing_context_group_node_map(store ReferenceStore) map[string][]string {
+	mut groups := map[string][]string{}
+	for reference, group_id in store.reference_groups {
+		mut references := groups[group_id] or { []string{} }
+		references << reference
+		groups[group_id] = references
+	}
+	return groups
+}
+
+// https://w3c.github.io/webdriver/#dfn-navigable-seen-nodes-map
+pub fn navigable_seen_nodes_map(store ReferenceStore) map[string][]string {
+	mut navigables := map[string][]string{}
+	for key, references in store.seen_node_references {
+		navigables[key] = references.clone()
+	}
+	return navigables
+}
+
 fn reference_node_key(context BrowsingContext, node_id string) string {
 	return '${context.group_id}\x1f${node_id}'
 }

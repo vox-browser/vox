@@ -15,6 +15,11 @@ __global webdriver_has_proxy_configuration = true
 __global webdriver_user_prompt_state UserPromptState
 __global webdriver_input_states = map[string]&InputState{}
 
+// https://w3c.github.io/webdriver/#dfn-browsing-context-input-state-map
+pub fn browsing_context_input_state_map() map[string]&InputState {
+	return webdriver_input_states.clone()
+}
+
 pub fn page_load_strategy_from_string(value string) ?PageLoadStrategy {
 	return match value {
 		'none' { .none }

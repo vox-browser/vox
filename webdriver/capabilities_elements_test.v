@@ -176,6 +176,8 @@ fn test_node_references_are_scoped_by_group_and_seen_navigable() {
 	reference := get_or_create_a_node_reference(mut store, context, element)
 	assert node_reference_is_known(store, context, reference)
 	assert get_node(store, context, reference) != none
+	assert reference in browsing_context_group_node_map(store)['group-a']
+	assert reference in navigable_seen_nodes_map(store)['group-a\x1fwindow-a']
 	assert !node_reference_is_known(store, BrowsingContext{
 		handle: 'window-b'
 		group_id: 'group-a'
@@ -186,6 +188,17 @@ fn test_node_references_are_scoped_by_group_and_seen_navigable() {
 		group_id: 'group-b'
 		document_id: 'doc-a'
 	}, reference) == none
+}
+
+fn test_protocol_storage_accessors_share_current_state() {
+	context := BrowsingContext{ handle: 'storage-window' }
+	mut state := get_input_state(context)
+	state.actions_queue << 'pending'
+	input_states := browsing_context_input_state_map()
+	assert 'storage-window' in input_states
+	stored_state := input_states['storage-window'] or { panic('missing input state') }
+	assert stored_state.actions_queue == ['pending']
+	reset_input_state(context)
 }
 
 fn test_pointer_interactable_tree_uses_target_center_and_paint_order() {
