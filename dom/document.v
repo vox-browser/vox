@@ -4135,6 +4135,19 @@ pub mut:
 
 pub struct TopOfTheDocument {}
 
+pub struct StyleInvalidationCounters {
+pub mut:
+	has_ancestor_walk_invocations         u64
+	has_ancestor_walk_visits              u64
+	has_ancestor_sibling_element_checks   u64
+	has_invalidation_metadata_candidates  u64
+	has_match_invocations                 u64
+	has_result_cache_hits                 u64
+	has_result_cache_misses               u64
+	full_style_invalidations              u64
+	style_invalidations                   u64
+}
+
 // --- Main Document struct ---
 @[heap]
 pub struct Document {
@@ -4207,6 +4220,7 @@ pub mut:
 	needs_accumulated_visual_contexts_update       bool
 	needs_invalidation_of_elements_affected_by_has bool
 	should_invalidate_styles_on_attribute_changes  bool = true
+	style_invalidation_counters_                   StyleInvalidationCounters
 	layout_update_hook_                            ?DocumentLayoutUpdateHook
 	rendered_text_hook_                            ?DocumentRenderedTextHook
 	accessibility_role_hook_                       ?DocumentAccessibilityRoleHook
@@ -7563,6 +7577,22 @@ pub fn (mut d Document) unregister_document_observer(observer &DocumentObserver)
 // --- Style update flags ---
 pub fn (d &Document) needs_full_style_update() bool {
 	return d.needs_full_style_update
+}
+
+pub fn (d &Document) style_invalidation_counters() StyleInvalidationCounters {
+	return d.style_invalidation_counters_
+}
+
+pub fn (mut d Document) record_full_style_invalidation() {
+	d.style_invalidation_counters_.full_style_invalidations++
+}
+
+pub fn (mut d Document) record_style_invalidation() {
+	d.style_invalidation_counters_.style_invalidations++
+}
+
+pub fn (mut d Document) reset_style_invalidation_counters() {
+	d.style_invalidation_counters_ = StyleInvalidationCounters{}
 }
 
 pub fn (mut d Document) set_needs_full_style_update(b bool) {

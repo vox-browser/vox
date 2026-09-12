@@ -138,3 +138,26 @@ fn test_computed_accessibility_values_and_form_clear_algorithm() {
 	api.clear_element(mut element)
 	assert element.as_node().text_content() or { '' } == 'Save'
 }
+
+fn test_style_invalidation_counters_include_full_document_invalidations() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut platform := &PlatformState{
+		associated_document: document
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	mut api := Internals.create(platform, navigator)
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.invalidate_style(.other)
+	document_node.invalidate_style(.settings_change)
+
+	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
+	mut element_node := element.as_node()
+	element_node.set_needs_style_update_internal(false)
+	element_node.set_needs_style_update(true)
+
+	counters := api.get_style_invalidation_counters()
+	assert counters.full_style_invalidations == 2
+	assert counters.style_invalidations == 1
+	api.reset_style_invalidation_counters()
+	assert api.get_style_invalidation_counters() == dom.StyleInvalidationCounters{}
+}

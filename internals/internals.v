@@ -401,6 +401,17 @@ pub fn (api &Internals) get_computed_aria_level(element &dom.Element) string {
 	return level.str()
 }
 
+pub fn (api &Internals) get_style_invalidation_counters() dom.StyleInvalidationCounters {
+	document := api.platform.associated_document or { return dom.StyleInvalidationCounters{} }
+	return document.style_invalidation_counters()
+}
+
+pub fn (mut api Internals) reset_style_invalidation_counters() {
+	document := api.platform.associated_document or { return }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.reset_style_invalidation_counters()
+}
+
 pub fn (api &Internals) get_echo_server_port() u16 {
 	return api.platform.echo_server_port
 }

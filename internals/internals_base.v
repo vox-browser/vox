@@ -69,6 +69,7 @@ pub mut:
 	gc_graph_dump             string
 	highlighted_node          ?&dom.Node
 	hit_test_result           ?HitTestResult
+	associated_document       ?&dom.Document
 	sdl_input_event_pumps     int
 	garbage_collections       int
 }

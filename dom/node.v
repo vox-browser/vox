@@ -1334,6 +1334,7 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	}
 	if n.is_document() {
 		mut mutable_doc := unsafe { &Document(doc) }
+		mutable_doc.record_full_style_invalidation()
 		mutable_doc.set_needs_full_style_update(true)
 		return
 	}
@@ -2759,6 +2760,11 @@ pub fn (mut n Node) set_needs_style_update(value bool) {
 	}
 	n.needs_style_update_ = value
 	if n.needs_style_update_ {
+		doc := n.document()
+		if doc != unsafe { nil } {
+			mut mutable_document := unsafe { &Document(doc) }
+			mutable_document.record_style_invalidation()
+		}
 		for ancestor := n.parent_or_shadow_host(); ancestor != none;  {
 			mut current := unsafe { &Node(ancestor or { break }) }
 			if current.child_needs_style_update_ {
