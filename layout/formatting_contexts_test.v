@@ -998,6 +998,18 @@ fn test_intrinsic_min_and_max_width_constraints_clamp_used_width() {
 	assert minimum.content_width().to_double() > 1
 }
 
+fn test_min_content_width_does_not_collapse_at_zero_minimum_descendant() {
+	document := html.parse_document('<!doctype html><style>
+		#bubble { width:min-content }
+		#inner { min-width:0 }
+		#child { width:300px; height:20px }
+	</style><div id="bubble"><div id="inner"><div id="child"></div></div></div>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	assert used_for_id(result, 'bubble').content_width().to_double() == 300
+	assert used_for_id(result, 'inner').content_width().to_double() == 300
+	assert used_for_id(result, 'child').content_width().to_double() == 300
+}
+
 fn test_grid_formatting_context_sizes_fr_tracks_and_gap() {
 	document := html.parse_document('<!doctype html><style>
 		#grid { display:grid; width:300px; grid-template-columns:1fr 2fr; gap:10px }
