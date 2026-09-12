@@ -6,12 +6,18 @@ import http
 
 __global (
 	fetched_data_promise_resolutions int
+	preload_host_calls               int
 )
 
 fn controller_test_process_response(_ &Response) {}
 
 fn resolve_fetched_data_promise() {
 	fetched_data_promise_resolutions++
+}
+
+fn preload_tracking_host(_ &Request) !&Response {
+	preload_host_calls++
+	return Response.create()
 }
 
 fn test_fetch_controller_params_tasks_and_timing() {
@@ -30,6 +36,8 @@ fn test_fetch_controller_params_tasks_and_timing() {
 	mut request := Request.create()
 	params := FetchParams.create(request, FetchTimingInfo.create())
 	assert !params.is_canceled()
+	assert controller.timing_info() == none
+	assert params.controller.timing_info()? == params.timing_info
 	opaque := create_opaque_timing_info(&FetchTimingInfo{
 		start_time: 1
 		redirect_start_time: 2
@@ -38,6 +46,46 @@ fn test_fetch_controller_params_tasks_and_timing() {
 	assert opaque.start_time == 1
 	assert opaque.post_redirect_start_time == 1
 	assert opaque.redirect_start_time == 0 && opaque.end_time == 0
+}
+
+fn test_fetch_controller_parks_and_resolves_pending_preloaded_response() {
+	mut request := Request.create()
+	request.url_list = [dom.URL{'https://example.test/preloaded'}]
+	mut params := FetchParams.create(request, FetchTimingInfo.create())
+	params.set_preloaded_response_candidate(PreloadedResponseCandidate{ kind: .pending })
+	preload_host_calls = 0
+	first := main_fetch(params, FetchHost{ perform: preload_tracking_host })
+	second := main_fetch(params, FetchHost{ perform: preload_tracking_host })
+	assert first == second
+	assert !first.is_resolved()
+	assert params.controller.pending_preloaded_response()? == first
+	assert preload_host_calls == 0
+
+	mut preloaded := Response.create()
+	preloaded.status = 203
+	params.set_preloaded_response_candidate(PreloadedResponseCandidate{
+		kind: .response
+		response: preloaded
+	})
+	assert params.controller.pending_preloaded_response() == none
+	assert first.response()?.status == 203
+}
+
+fn test_fetch_controller_tracks_started_font_network_request() {
+	mut request := Request.create()
+	request.url_list = [dom.URL{'https://example.test/font.woff2'}]
+	request.destination = .font
+	request.cache_mode = .no_store
+	params := FetchParams.create(request, FetchTimingInfo.create())
+	assert !params.controller.has_started_request()
+	assert !params.controller.requires_network()
+	response := http_network_or_cache_fetch(params, FetchHost{
+		perform: preload_tracking_host
+	}).response()?
+	assert !response.is_network_error()
+	assert params.controller.has_started_request()
+	assert params.controller.requires_network()
+	assert params.controller.pending_request_ == none
 }
 
 fn test_fetch_controller_matches_upstream_state_transitions_and_cleanup() {

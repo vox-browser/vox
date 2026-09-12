@@ -42,6 +42,28 @@ pub fn (mut controller FetchController) set_fetch_params(params &FetchParams) {
 
 pub fn (mut controller FetchController) set_pending_request(request ?&Request) {
 	controller.pending_request_ = request
+	controller.has_started_request_ = controller.has_started_request_ || request != none
+}
+
+pub fn (controller &FetchController) timing_info() ?&FetchTimingInfo {
+	params := controller.fetch_params_ or { return none }
+	return params.timing_info
+}
+
+pub fn (controller &FetchController) pending_preloaded_response() ?&PendingResponse {
+	return controller.pending_preloaded_response_
+}
+
+pub fn (mut controller FetchController) set_pending_preloaded_response(response ?&PendingResponse) {
+	controller.pending_preloaded_response_ = response
+}
+
+pub fn (controller &FetchController) requires_network() bool {
+	return controller.requires_network_
+}
+
+pub fn (controller &FetchController) has_started_request() bool {
+	return controller.has_started_request_
 }
 
 @[heap]
@@ -225,6 +247,15 @@ pub fn (params &FetchParams) fetch_params_preloaded_response_candidate() Preload
 pub fn (mut params FetchParams) set_preloaded_response_candidate(candidate PreloadedResponseCandidate) {
 	params.preloaded_response_candidate = candidate.kind
 	params.preloaded_response = candidate.response
+	if candidate.kind == .response {
+		if response := candidate.response {
+			mut controller := params.controller
+			if mut pending := controller.pending_preloaded_response() {
+				controller.set_pending_preloaded_response(none)
+				pending.resolve(response)
+			}
+		}
+	}
 }
 
 pub fn (record &FetchRecord) fetch_record_request() &Request {

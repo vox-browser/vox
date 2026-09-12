@@ -102,6 +102,9 @@ mut:
 	next_fetch_task_id_         u64
 	fetch_params_               ?&FetchParams
 	pending_request_            ?&Request
+	pending_preloaded_response_ ?&PendingResponse
+	requires_network_           bool
+	has_started_request_        bool
 }
 
 pub fn FetchController.create() &FetchController {
@@ -152,8 +155,12 @@ pub fn (mut controller FetchController) abort(reason ?string) {
 	controller.serialized_abort_reason_ = reason or { 'AbortError' }
 }
 
+pub fn (controller &FetchController) serialized_abort_reason() ?string {
+	return controller.serialized_abort_reason_
+}
+
 pub fn deserialize_serialized_abort_reason(controller &FetchController) string {
-	return controller.serialized_abort_reason_ or { 'AbortError' }
+	return controller.serialized_abort_reason() or { 'AbortError' }
 }
 
 pub fn (controller &FetchController) deserialize_a_serialized_abort_reason() string {
@@ -677,6 +684,15 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 
 pub fn main_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 	mut request := params.request
+	if params.preloaded_response_candidate == .pending {
+		mut controller := params.controller
+		if pending := controller.pending_preloaded_response() {
+			return pending
+		}
+		pending := PendingResponse.create(mut request, none)
+		controller.set_pending_preloaded_response(pending)
+		return pending
+	}
 	mut response := ?&Response(none)
 	if request.local_urls_only && !is_local_url(request.current_url()) {
 		response = Response.network_error('Request with local-URLs-only flag must have a local URL')
@@ -915,9 +931,17 @@ pub fn http_network_or_cache_fetch(params &FetchParams, host &FetchHost) &Pendin
 	if mut stored_response := response {
 		stored_response.cache_state = .local
 	} else {
+		mut controller := params.controller
+		controller.set_pending_request(http_request)
+		if destination := request.destination {
+			if destination == .font {
+				controller.requires_network_ = true
+			}
+		}
 		mut forward_response := host.perform(http_request) or {
 			Response.network_error(err.msg())
 		}
+		controller.set_pending_request(none)
 		response = forward_response
 		store_response_in_cache(http_request, forward_response)
 		finalize_response_in_cache(http_request, forward_response)
