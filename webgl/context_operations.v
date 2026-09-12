@@ -891,6 +891,20 @@ pub fn (mut context WebGLRenderingContext) get_parameter(pname GLenum) WebGLPara
 		unpack_colorspace_conversion_webgl {
 			return WebGLParameterValue{ kind: .integer, integer: context.unpack_colorspace_conversion_ }
 		}
+		unmasked_vendor_webgl, unmasked_renderer_webgl {
+			if !context.extension_enabled('WEBGL_debug_renderer_info') {
+				context.set_error(invalid_enum)
+				return WebGLParameterValue{}
+			}
+			return WebGLParameterValue{
+				kind: .string_
+				text: if pname == unmasked_vendor_webgl {
+					context.native.vendor()
+				} else {
+					context.native.renderer()
+				}
+			}
+		}
 		else {}
 	}
 	if context.version == .webgl2 {

@@ -260,6 +260,8 @@ pub const unpack_flip_y_webgl = GLenum(0x9240)
 pub const unpack_premultiply_alpha_webgl = GLenum(0x9241)
 pub const unpack_colorspace_conversion_webgl = GLenum(0x9243)
 pub const browser_default_webgl = GLenum(0x9244)
+pub const unmasked_vendor_webgl = GLenum(0x9245)
+pub const unmasked_renderer_webgl = GLenum(0x9246)
 pub const max_client_wait_timeout_webgl = GLenum(0x9247)
 
 pub const query_result = GLenum(0x8866)

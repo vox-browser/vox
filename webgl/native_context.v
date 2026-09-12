@@ -36,6 +36,8 @@ mut:
 	requested_extensions_ []string
 	record_native_calls_  bool
 	native_calls_         []NativeCall
+	vendor_               string = 'Ladybird'
+	renderer_             string = 'Ladybird V WebGL'
 }
 
 pub fn OpenGLContext.new(version WebGLVersion, options DrawingBufferOptions, supported []string) &OpenGLContext {
@@ -139,6 +141,14 @@ pub fn (context &OpenGLContext) surface_allocated() bool {
 
 pub fn (context &OpenGLContext) get_supported_opengl_extensions() []string {
 	return context.supported_extensions_.clone()
+}
+
+pub fn (context &OpenGLContext) vendor() string {
+	return context.vendor_
+}
+
+pub fn (context &OpenGLContext) renderer() string {
+	return context.renderer_
 }
 
 pub fn (mut context OpenGLContext) request_extension(extension string) {

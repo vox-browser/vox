@@ -261,7 +261,8 @@ const available_extensions = [
 		version:         WebGLVersion.webgl2
 	},
 	ExtensionDescriptor{
-		name: 'WEBGL_debug_renderer_info'
+		name:        'WEBGL_debug_renderer_info'
+		implemented: true
 	},
 	ExtensionDescriptor{
 		name: 'WEBGL_debug_shaders'
@@ -274,8 +275,25 @@ const available_extensions = [
 @[heap]
 pub struct WebGLExtension {
 pub:
-	name       string
-	context_id u64
+	name                string
+	context_id          u64
+	debug_renderer_info ?&WebGLDebugRendererInfo
+}
+
+@[heap]
+pub struct WebGLDebugRendererInfo {
+mut:
+	context &WebGLRenderingContext
+}
+
+pub fn WebGLDebugRendererInfo.create(context &WebGLRenderingContext) &WebGLDebugRendererInfo {
+	return &WebGLDebugRendererInfo{
+		context: context
+	}
+}
+
+pub fn (extension &WebGLDebugRendererInfo) context_identity() u64 {
+	return extension.context.identity()
 }
 
 fn find_extension_descriptor(name string) ?ExtensionDescriptor {
@@ -323,9 +341,14 @@ pub fn (mut context WebGLRenderingContext) get_extension(name string, experiment
 	for format in descriptor.compressed_formats {
 		context.enable_compressed_texture_format(format)
 	}
+	mut debug_renderer_info := ?&WebGLDebugRendererInfo(none)
+	if canonical == 'webgl_debug_renderer_info' {
+		debug_renderer_info = WebGLDebugRendererInfo.create(context)
+	}
 	extension := &WebGLExtension{
-		name:       descriptor.name
+		name: descriptor.name
 		context_id: context.identity()
+		debug_renderer_info: debug_renderer_info
 	}
 	unsafe {
 		context.enabled_extensions[canonical] = extension
