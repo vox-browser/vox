@@ -2,6 +2,25 @@ module webassembly
 
 import webidl
 
+fn host_add_one(arguments []webidl.Value) !webidl.Value {
+	return webidl.number_value(arguments[0].number_value + 1)
+}
+
+fn host_pair(arguments []webidl.Value) !webidl.Value {
+	return webidl.sequence_value([
+		webidl.number_value(arguments[0].number_value),
+		webidl.bigint_value(arguments[1].bigint_value),
+	])
+}
+
+fn host_wrong_result_count(_ []webidl.Value) !webidl.Value {
+	return webidl.sequence_value([webidl.number_value(1)])
+}
+
+fn host_trap(_ []webidl.Value) !webidl.Value {
+	return error('host callback trapped')
+}
+
 fn test_global_value_types_defaults_mutability_and_conversion() {
 	mut global := Global.construct(GlobalDescriptor{ value: .i32, mutable_: true },
 		webidl.number_value(4))!
@@ -164,4 +183,53 @@ fn test_cache_identity_conversions_and_constructor_entry_points() {
 	assert memory.buffer_object().bytes.len == page_size
 	assert memory.create_a_fixed_length_memory_buffer().resizable == false
 	assert memory.create_a_resizable_memory_buffer(u64(2 * page_size))!.resizable
+}
+
+fn test_host_function_converts_single_and_multiple_values() {
+	single := create_host_function('host-function-realm', host_add_one, FunctionType{
+		parameters: [.i32]
+		results: [.i32]
+	}, 4)
+	assert single.realm == 'host-function-realm'
+	assert single.function_index == 4
+	single_result := single.invoke([WasmValue{ type_: .i32, i32_value: 6 }])!
+	assert single_result.len == 1
+	assert single_result[0].i32_value == 7
+
+	multiple := create_host_function('host-function-realm', host_pair, FunctionType{
+		parameters: [.f64, .i64]
+		results: [.f64, .i64]
+	}, 5)
+	multiple_result := multiple.invoke([
+		WasmValue{ type_: .f64, f64_value: 1.5 },
+		WasmValue{ type_: .i64, i64_value: 9 },
+	])!
+	assert multiple_result.len == 2
+	assert multiple_result[0].f64_value == 1.5
+	assert multiple_result[1].i64_value == 9
+}
+
+fn test_host_function_reports_conversion_and_callback_traps() {
+	wrong_count := create_host_function('', host_wrong_result_count, FunctionType{
+		results: [.i32, .i32]
+	}, 0)
+	if _ := wrong_count.invoke([]WasmValue{}) {
+		assert false
+	} else {
+		assert err.msg().contains('Invalid number of return values')
+	}
+	trapping := create_host_function('', host_trap, FunctionType{}, 1)
+	if _ := trapping.invoke([]WasmValue{}) {
+		assert false
+	} else {
+		assert err.msg() == 'host callback trapped'
+	}
+	if _ := create_host_function('', host_add_one, FunctionType{
+		parameters: [.i32]
+		results: [.i32]
+	}, 2).invoke([]WasmValue{}) {
+		assert false
+	} else {
+		assert err.msg().contains('expected 1 arguments')
+	}
 }

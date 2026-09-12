@@ -12,6 +12,62 @@ import webidl
 
 pub type HostEnsureCanCompileWasmBytesHook = fn () !
 
+pub type HostCallable = fn ([]webidl.Value) !webidl.Value
+
+pub struct FunctionType {
+pub:
+	parameters []ValueType
+	results    []ValueType
+}
+
+pub struct HostFunction {
+pub:
+	realm          string
+	type_          FunctionType
+	function_index usize
+	callable       HostCallable @[required]
+}
+
+pub fn (function HostFunction) invoke(arguments []WasmValue) ![]WasmValue {
+	if arguments.len != function.type_.parameters.len {
+		return error('RuntimeError: Host function expected ${function.type_.parameters.len} arguments, got ${arguments.len}')
+	}
+	mut argument_values := []webidl.Value{cap: arguments.len}
+	for index, argument in arguments {
+		if argument.type_ != function.type_.parameters[index] {
+			return error('TypeError: Host function argument ${index} has the wrong WebAssembly type')
+		}
+		argument_values << to_js_value(argument)!
+	}
+	result := function.callable(argument_values)!
+	if function.type_.results.len == 0 {
+		return []WasmValue{}
+	}
+	if function.type_.results.len == 1 {
+		return [to_webassembly_value(result, function.type_.results[0])!]
+	}
+	if result.kind != .sequence {
+		return error('TypeError: Multi-value WebAssembly host function result is not iterable')
+	}
+	if result.sequence_value.len != function.type_.results.len {
+		return error('TypeError: Invalid number of return values for multi-value WebAssembly return: expected ${function.type_.results.len}, got ${result.sequence_value.len}')
+	}
+	mut values := []WasmValue{cap: result.sequence_value.len}
+	for index, value in result.sequence_value {
+		values << to_webassembly_value(value, function.type_.results[index])!
+	}
+	return values
+}
+
+pub fn create_host_function(realm string, callable HostCallable, type_ FunctionType, function_index usize) HostFunction {
+	return HostFunction{
+		realm: realm
+		type_: type_
+		function_index: function_index
+		callable: callable
+	}
+}
+
 __global (
 	webassembly_global_cache                 &WebAssemblyCache
 	host_ensure_can_compile_wasm_bytes_hook_ ?HostEnsureCanCompileWasmBytesHook
