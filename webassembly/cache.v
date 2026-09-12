@@ -30,14 +30,20 @@ pub mut:
 @[heap]
 pub struct ExportedWasmFunction {
 pub:
-	name string
+	name  string
+	realm string
 mut:
 	exported_address_ u64
 }
 
 pub fn ExportedWasmFunction.create(name string, exported_address u64) &ExportedWasmFunction {
+	return ExportedWasmFunction.create_for_realm('default', name, exported_address)
+}
+
+pub fn ExportedWasmFunction.create_for_realm(realm string, name string, exported_address u64) &ExportedWasmFunction {
 	return &ExportedWasmFunction{
 		name: name
+		realm: realm
 		exported_address_: exported_address
 	}
 }
@@ -201,12 +207,17 @@ pub fn compile_a_webassembly_module(bytes []u8) !&Module {
 }
 
 pub fn create_native_function(address u64, name string) &ExportedWasmFunction {
-	mut cache := get_cache()
+	return create_native_function_with_cache(get_cache(), 'default', address, name)
+}
+
+fn create_native_function_with_cache(cache &WebAssemblyCache, realm string, address u64, name string) &ExportedWasmFunction {
 	if function := cache.get_function_instance(address) {
 		return function
 	}
-	function := ExportedWasmFunction.create(name, address)
-	cache.add_function_instance(address, function)
+	function := ExportedWasmFunction.create_for_realm(realm, name, address)
+	unsafe {
+		cache.add_function_instance(address, function)
+	}
 	return function
 }
 

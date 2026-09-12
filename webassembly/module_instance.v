@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of WebAssembly/Module.{h,cpp} and Instance.{h,cpp}.
+@[has_globals]
 module webassembly
 
 import webidl
@@ -337,15 +338,49 @@ pub:
 
 pub type ImportObject = map[string]map[string]ExternalValue
 
+pub struct InstanceExport {
+pub:
+	name    string
+	kind    ImportExportKind
+	address u64
+	value   ExternalValue
+}
+
+@[heap]
+pub struct ModuleInstance {
+pub:
+	module &Module
+pub mut:
+	exports_ []InstanceExport
+}
+
+pub fn (instance &ModuleInstance) exports() []InstanceExport {
+	return instance.exports_.clone()
+}
+
 @[heap]
 pub struct Instance {
 pub:
-	module &Module
+	module           &Module
+	cache_           &WebAssemblyCache
+	module_instance_ &ModuleInstance
 mut:
 	exports_ map[string]ExternalValue
 }
 
 pub fn Instance.construct(compiled &Module, imports ImportObject) !&Instance {
+	return Instance.create(compiled, imports)
+}
+
+pub fn Instance.create(compiled &Module, imports ImportObject) !&Instance {
+	return instance_create_with_cache(get_cache(), compiled, imports)
+}
+
+pub fn Instance.create_for_realm(realm string, compiled &Module, imports ImportObject) !&Instance {
+	return instance_create_with_cache(get_cache_for_realm(realm), compiled, imports)
+}
+
+fn instance_create_with_cache(cache &WebAssemblyCache, compiled &Module, imports ImportObject) !&Instance {
 	for required in compiled.import_entries {
 		if required.module !in imports {
 			return error('LinkError: Import module=${required.module} is not an object')
@@ -358,17 +393,50 @@ pub fn Instance.construct(compiled &Module, imports ImportObject) !&Instance {
 			return error('LinkError: Import ${required.module}.${required.name} has the wrong kind')
 		}
 	}
+	mut module_instance := &ModuleInstance{
+		module: compiled
+	}
 	mut exports := map[string]ExternalValue{}
-	for descriptor in compiled.export_entries {
-		exports[descriptor.name] = ExternalValue{
+	for index, descriptor in compiled.export_entries {
+		mut address := u64(voidptr(module_instance)) + u64(index + 1)
+		value := match descriptor.kind {
+			.function_ {
+				webidl.callback_value()
+			}
+			.global {
+				global := global_create_with_cache(cache, GlobalDescriptor{ value: .i32 }, WasmValue{ type_: .i32 })!
+				address = global.address()
+				webidl.platform_object_value()
+			}
+			.memory {
+				memory := memory_create_with_cache(cache, MemoryDescriptor{})!
+				address = memory.address()
+				webidl.platform_object_value()
+			}
+			.table {
+				table_ := table_construct_with_cache(cache, TableDescriptor{
+					element: .externref
+				}, none)!
+				address = table_.address()
+				webidl.platform_object_value()
+			}
+		}
+		external := ExternalValue{
 			kind: descriptor.kind
-			value: if descriptor.kind == .function_ {
-				webidl.callback_value()} else {
-				webidl.platform_object_value()}
+			value: value
+		}
+		exports[descriptor.name] = external
+		module_instance.exports_ << InstanceExport{
+			name: descriptor.name
+			kind: descriptor.kind
+			address: address
+			value: external
 		}
 	}
 	return &Instance{
-		module:   compiled
+		module: compiled
+		cache_: cache
+		module_instance_: module_instance
 		exports_: exports
 	}
 }
@@ -377,6 +445,197 @@ pub fn Instance.construct_impl(compiled &Module, imports ImportObject) !&Instanc
 	return Instance.construct(compiled, imports)
 }
 
+pub fn (instance &Instance) module_instance() &ModuleInstance {
+	return instance.module_instance_
+}
+
+pub fn (instance &Instance) cache() &WebAssemblyCache {
+	return instance.cache_
+}
+
+pub fn (instance &Instance) global_instance(address u64) &Global {
+	if global := instance.cache_.get_global_instance(address) {
+		return global
+	}
+	global := global_create_with_cache(instance.cache_, GlobalDescriptor{ value: .i32 }, WasmValue{ type_: .i32 }) or { panic(err) }
+	mut cache := instance.cache_
+	unsafe {
+		cache.add_global_instance(address, global)
+	}
+	return global
+}
+
+pub fn (instance &Instance) memory_instance(address u64) &Memory {
+	if memory := instance.cache_.get_memory_instance(address) {
+		return memory
+	}
+	memory := memory_create_with_cache(instance.cache_, MemoryDescriptor{}) or { panic(err) }
+	mut cache := instance.cache_
+	unsafe {
+		cache.add_memory_instance(address, memory)
+	}
+	return memory
+}
+
+pub fn (instance &Instance) table_instance(address u64) &Table {
+	if table_ := instance.cache_.get_table_instance(address) {
+		return table_
+	}
+	table_ := table_construct_with_cache(instance.cache_, TableDescriptor{
+		element: .externref
+	}, none) or { panic(err) }
+	mut cache := instance.cache_
+	unsafe {
+		cache.add_table_instance(address, table_)
+	}
+	return table_
+}
+
 pub fn (instance &Instance) exports() map[string]ExternalValue {
 	return instance.exports_.clone()
+}
+
+pub fn construct_instance(realm string, compiled &Module, imports ImportObject) !&Instance {
+	return Instance.create_for_realm(realm, compiled, imports)
+}
+
+@[heap]
+pub struct InstanceExportsObject {
+pub:
+	realm            string
+	values           map[string]ExternalValue
+	function_objects map[string]&ExportedWasmFunction
+	global_objects   map[string]&Global
+	memory_objects   map[string]&Memory
+	table_objects    map[string]&Table
+	frozen           bool
+}
+
+@[heap]
+pub struct InstanceExportsCache {
+pub:
+	instance &Instance
+pub mut:
+	primary_exports     &InstanceExportsObject = unsafe { nil }
+	live_export_objects map[string]&InstanceExportsObject
+	function_instances  map[u64]&ExportedWasmFunction
+}
+
+__global instance_exports_caches_ = map[u64]&InstanceExportsCache{}
+
+pub fn instance_exports_caches() map[u64]&InstanceExportsCache {
+	return instance_exports_caches_.clone()
+}
+
+pub fn prune_instance_exports_cache(mut cache InstanceExportsCache) {
+	for realm, exports in cache.live_export_objects {
+		if isnil(exports) {
+			cache.live_export_objects.delete(realm)
+		}
+	}
+}
+
+pub fn prune_instance_exports_caches() {
+	for address, cache in instance_exports_caches_ {
+		if isnil(cache.instance) {
+			instance_exports_caches_.delete(address)
+		}
+	}
+}
+
+pub fn instance_exports_cache_for(instance &Instance) &InstanceExportsCache {
+	prune_instance_exports_caches()
+	address := u64(voidptr(instance))
+	if cache := instance_exports_caches_[address] {
+		return cache
+	}
+	cache := &InstanceExportsCache{
+		instance: instance
+		live_export_objects: map[string]&InstanceExportsObject{}
+		function_instances: map[u64]&ExportedWasmFunction{}
+	}
+	instance_exports_caches_[address] = cache
+	return cache
+}
+
+pub fn create_native_function_for_instance_realm(realm string, address u64, instance &Instance) &ExportedWasmFunction {
+	for export_ in instance.module_instance_.exports_ {
+		if export_.kind == .function_ && export_.address == address {
+			return ExportedWasmFunction.create_for_realm(realm, export_.name, address)
+		}
+	}
+	return ExportedWasmFunction.create_for_realm(realm, '', address)
+}
+
+pub fn create_exports_object(realm string, instance &Instance, cache_function_exports bool) &InstanceExportsObject {
+	mut values := map[string]ExternalValue{}
+	mut functions := map[string]&ExportedWasmFunction{}
+	mut globals := map[string]&Global{}
+	mut memories := map[string]&Memory{}
+	mut tables := map[string]&Table{}
+	for export_ in instance.module_instance_.exports_ {
+		values[export_.name] = export_.value
+		match export_.kind {
+			.function_ {
+				mut function := unsafe { nil }
+				if cache_function_exports {
+					mut cache := instance_exports_cache_for(instance)
+					if cached := cache.function_instances[export_.address] {
+						function = cached
+					} else {
+						function = create_native_function_with_cache(instance.cache_, realm, export_.address, export_.name)
+						cache.function_instances[export_.address] = function
+					}
+				} else {
+					function = create_native_function_for_instance_realm(realm, export_.address, instance)
+				}
+				functions[export_.name] = function
+			}
+			.global {
+				globals[export_.name] = instance.global_instance(export_.address)
+			}
+			.memory {
+				memories[export_.name] = instance.memory_instance(export_.address)
+			}
+			.table {
+				tables[export_.name] = instance.table_instance(export_.address)
+			}
+		}
+	}
+	return &InstanceExportsObject{
+		realm: realm
+		values: values
+		function_objects: functions
+		global_objects: globals
+		memory_objects: memories
+		table_objects: tables
+		frozen: true
+	}
+}
+
+pub fn (instance &Instance) exports_for_realm(realm string) &InstanceExportsObject {
+	mut cache := instance_exports_cache_for(instance)
+	if isnil(cache.primary_exports) {
+		exports := create_exports_object(realm, instance, true)
+		cache.primary_exports = exports
+		return exports
+	}
+	if cache.primary_exports.realm == realm {
+		return cache.primary_exports
+	}
+	prune_instance_exports_cache(mut cache)
+	if exports := cache.live_export_objects[realm] {
+		return exports
+	}
+	exports := create_exports_object(realm, instance, false)
+	cache.live_export_objects[realm] = exports
+	return exports
+}
+
+pub fn initialize_webassembly_export_binding(realm string, mut environment map[string]ExternalValue, name string, instance &Instance) ! {
+	exports := instance.exports_for_realm(realm)
+	value := exports.values[name] or {
+		return error('LinkError: WebAssembly export ${name} is missing')
+	}
+	environment[name] = value
 }
