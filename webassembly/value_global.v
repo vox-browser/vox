@@ -134,11 +134,16 @@ pub struct Global {
 pub:
 	type_    ValueType
 	mutable_ bool
+	cache_   &WebAssemblyCache
 mut:
 	stored WasmValue
 }
 
 pub fn Global.create(descriptor GlobalDescriptor, value WasmValue) !&Global {
+	return global_create_with_cache(get_cache(), descriptor, value)
+}
+
+fn global_create_with_cache(cache &WebAssemblyCache, descriptor GlobalDescriptor, value WasmValue) !&Global {
 	if descriptor.value == .v128 {
 		return error('TypeError: V128 is not supported as a global value type')
 	}
@@ -148,14 +153,20 @@ pub fn Global.create(descriptor GlobalDescriptor, value WasmValue) !&Global {
 	global := &Global{
 		type_: descriptor.value
 		mutable_: descriptor.mutable_
+		cache_: cache
 		stored: value
 	}
-	mut cache := get_cache()
-	cache.add_global_instance(global.address(), global)
+	unsafe {
+		cache.add_global_instance(global.address(), global)
+	}
 	return global
 }
 
 pub fn Global.construct(descriptor GlobalDescriptor, initial ?webidl.Value) !&Global {
+	return global_construct_with_cache(get_cache(), descriptor, initial)
+}
+
+fn global_construct_with_cache(cache &WebAssemblyCache, descriptor GlobalDescriptor, initial ?webidl.Value) !&Global {
 	if descriptor.value == .v128 {
 		return error('TypeError: V128 is not supported as a global value type')
 	}
@@ -164,7 +175,7 @@ pub fn Global.construct(descriptor GlobalDescriptor, initial ?webidl.Value) !&Gl
 	} else {
 		default_webassembly_value(descriptor.value)!
 	}
-	return Global.create(descriptor, stored)
+	return global_create_with_cache(cache, descriptor, stored)
 }
 
 pub fn Global.construct_impl(descriptor GlobalDescriptor, initial ?webidl.Value) !&Global {
@@ -176,8 +187,7 @@ pub fn (global &Global) address() u64 {
 }
 
 pub fn (global &Global) cache() &WebAssemblyCache {
-	_ = global
-	return get_cache()
+	return global.cache_
 }
 
 pub fn (global &Global) type() GlobalType {
@@ -200,6 +210,10 @@ pub fn global_descriptor_from_bindings(descriptor GlobalDescriptor) GlobalDescri
 
 pub fn construct_global(descriptor GlobalDescriptor, value ?webidl.Value) !&Global {
 	return Global.construct(global_descriptor_from_bindings(descriptor), value)
+}
+
+pub fn construct_global_for_realm(realm string, descriptor GlobalDescriptor, value ?webidl.Value) !&Global {
+	return global_construct_with_cache(get_cache_for_realm(realm), global_descriptor_from_bindings(descriptor), value)
 }
 
 pub fn get_global_value(global &Global) !webidl.Value {

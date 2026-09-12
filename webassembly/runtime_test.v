@@ -47,6 +47,18 @@ fn test_global_creation_exposes_type_and_cache_metadata() {
 	}
 }
 
+fn test_global_keeps_the_cache_that_owns_its_address() {
+	global := construct_global_for_realm('global-owner-realm', GlobalDescriptor{
+		value: .i32
+	}, webidl.number_value(42))!
+	owner_cache := get_cache_for_realm('global-owner-realm')
+	assert voidptr(global.cache()) == voidptr(owner_cache)
+	assert voidptr(global.cache()) != voidptr(get_cache_for_realm('global-other-realm'))
+	assert voidptr(owner_cache.get_global_instance(global.address()) or {
+		panic('global was not registered in its owner cache')
+	}) == voidptr(global)
+}
+
 fn test_i64_uses_bigint_and_externref_defaults_to_undefined() {
 	global := Global.construct(GlobalDescriptor{ value: .i64 }, webidl.bigint_value(-42))!
 	assert global.value()!.kind == .bigint
