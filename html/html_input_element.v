@@ -130,6 +130,7 @@ pub mut:
 	previously_checked_radio_        ?&HTMLInputElementModel
 	last_src_value_                  string
 	resource_request_                ?&SharedResourceRequest
+	load_event_delayer_              ?dom.DocumentLoadEventDelayer
 	image_fetch_hook_                ?HTMLImageFetchHook
 	visible_in_viewport_             bool = true
 	form_action_hook_                ?InputFormActionHook
@@ -179,6 +180,21 @@ fn is_allowed_to_have_placeholder(state HTMLInputTypeState) bool {
 
 fn input_element(model &HTMLInputElementModel) &dom.Element {
 	return unsafe { &dom.Element(model.element) }
+}
+
+fn html_input_element_adopted_from_callback(target voidptr, old_document &dom.Document) {
+	mut model := unsafe { &HTMLInputElementModel(target) }
+	model.adopted_from(old_document)
+}
+
+fn attach_html_input_element_model(element &dom.HTMLInputElement, model &HTMLInputElementModel) {
+	mut mutable_element := unsafe { &dom.HTMLInputElement(element) }
+	mutable_element.input_element_model_ = voidptr(model)
+	mut node := unsafe { &dom.Element(element) }.as_node()
+	node.set_adopted_from_hook(dom.NodeAdoptedFromHook{
+		target: voidptr(model)
+		callback: html_input_element_adopted_from_callback
+	})
 }
 
 pub fn parse_html_input_type(value string) HTMLInputTypeState {
@@ -237,7 +253,9 @@ fn html_input_type_name(state HTMLInputTypeState) string {
 
 pub fn HTMLInputElementModel.create(element &dom.HTMLInputElement) &HTMLInputElementModel {
 	if element.input_element_model_ != unsafe { nil } {
-		return unsafe { &HTMLInputElementModel(element.input_element_model_) }
+		model := unsafe { &HTMLInputElementModel(element.input_element_model_) }
+		attach_html_input_element_model(element, model)
+		return model
 	}
 	dom_element := unsafe { &dom.Element(element) }
 	mut mutable_input := unsafe { &dom.HTMLInputElement(element) }
@@ -256,8 +274,7 @@ pub fn HTMLInputElementModel.create(element &dom.HTMLInputElement) &HTMLInputEle
 	// Install the model identity before initialization below. Radio-group
 	// algorithms walk the live DOM tree, and creating a sibling model may query
 	// this element again while that sibling is initialized.
-	mut mutable_element := unsafe { &dom.HTMLInputElement(element) }
-	mutable_element.input_element_model_ = voidptr(model)
+	attach_html_input_element_model(element, model)
 	model.control.reset_form_owner()
 	model.value_ = model.sanitize_value(dom_element.get_attribute_value('value'))
 	model.text_control.did_edit_target_ = voidptr(model)
@@ -1290,6 +1307,34 @@ pub fn (mut model HTMLInputElementModel) set_image_fetch_hook(hook ?HTMLImageFet
 	model.image_fetch_hook_ = hook
 }
 
+fn (mut model HTMLInputElementModel) begin_delaying_document_load_event() {
+	if mut delayer := model.load_event_delayer_ {
+		delayer.finish()
+	}
+	mut document := unsafe { &dom.Document(input_element(&model).document()) }
+	model.load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut document)
+}
+
+fn (mut model HTMLInputElementModel) stop_delaying_document_load_event() {
+	if mut delayer := model.load_event_delayer_ {
+		delayer.finish()
+	}
+	model.load_event_delayer_ = none
+}
+
+pub fn (mut model HTMLInputElementModel) adopted_from(_ &dom.Document) {
+	new_document := input_element(&model).document()
+	mut was_delaying := false
+	if mut delayer := model.load_event_delayer_ {
+		delayer.finish()
+		was_delaying = true
+	}
+	if was_delaying {
+		mut mutable_new_document := unsafe { &dom.Document(new_document) }
+		model.load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut mutable_new_document)
+	}
+}
+
 // https://html.spec.whatwg.org/multipage/input.html#attr-input-src
 pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
 	if model.type_state_ != .image_button {
@@ -1308,13 +1353,16 @@ pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
 		return
 	}
 	fetch := model.image_fetch_hook_ or { return }
+	model.begin_delaying_document_load_event()
 	decoded := fetch(url) or {
 		request.handle_failed_fetch()
 		model.fire_event('error')
+		model.stop_delaying_document_load_event()
 		return
 	}
 	request.handle_successful_resource_load(decoded)
 	model.fire_event('load')
+	model.stop_delaying_document_load_event()
 	mut node := input_element(&model).as_node()
 	node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
 }
