@@ -16,13 +16,12 @@ pub:
 	page                        &dom.Page
 }
 
-pub fn PrincipalHostDefined.create(environment_settings_object &html.EnvironmentSettingsObject, intrinsics &Intrinsics, page &dom.Page) &PrincipalHostDefined {
+pub fn PrincipalHostDefined.create(environment_settings_object &html.EnvironmentSettingsObject, intrinsics &Intrinsics, wrapper_world &WrapperWorld, page &dom.Page) &PrincipalHostDefined {
+	base := HostDefined.create(intrinsics, wrapper_world, environment_settings_object.realm(), .yes)
 	return &PrincipalHostDefined{
-		HostDefined:                 HostDefined{
-			intrinsics: intrinsics
-		}
+		HostDefined: *base
 		environment_settings_object: environment_settings_object
-		page:                        page
+		page: page
 	}
 }
 
@@ -30,10 +29,26 @@ pub fn (_ &PrincipalHostDefined) is_principal_host_defined() bool {
 	return true
 }
 
-pub fn principal_host_defined_environment_settings_object(host_defined &PrincipalHostDefined) &html.EnvironmentSettingsObject {
-	return host_defined.environment_settings_object
+pub fn create_principal_host_defined(environment_settings_object &html.EnvironmentSettingsObject, intrinsics &Intrinsics, page &dom.Page) &PrincipalHostDefined {
+	wrapper_world := main_wrapper_world_for_agent(html.relevant_agent())
+	host_defined := PrincipalHostDefined.create(environment_settings_object, intrinsics, wrapper_world, page)
+	mut realm := unsafe { &html.ScriptingRealm(environment_settings_object.realm()) }
+	install_host_defined(mut realm, unsafe { &HostDefined(host_defined) })
+	return host_defined
 }
 
-pub fn principal_host_defined_page(host_defined &PrincipalHostDefined) &dom.Page {
-	return host_defined.page
+fn principal_host_defined_for_realm(realm &html.ScriptingRealm) &PrincipalHostDefined {
+	host_defined := host_defined_for_realm(realm) or { panic('realm has no HostDefined state') }
+	if host_defined.is_principal_host_defined() {
+		return unsafe { &PrincipalHostDefined(host_defined) }
+	}
+	return principal_host_defined_for_realm(host_defined.principal_realm)
+}
+
+pub fn principal_host_defined_environment_settings_object(realm &html.ScriptingRealm) &html.EnvironmentSettingsObject {
+	return principal_host_defined_for_realm(realm).environment_settings_object
+}
+
+pub fn principal_host_defined_page(realm &html.ScriptingRealm) &dom.Page {
+	return principal_host_defined_for_realm(realm).page
 }

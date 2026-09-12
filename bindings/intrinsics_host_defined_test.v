@@ -44,13 +44,14 @@ fn test_principal_and_synthetic_host_defined_keep_realm_state() {
 		document.url, document.origin()).settings
 	intrinsics := Intrinsics.create(realm)
 	page := &dom.Page{}
-	principal := PrincipalHostDefined.create(settings, intrinsics, page)
+	principal := create_principal_host_defined(settings, intrinsics, page)
 	assert principal.is_principal_host_defined()
-	assert principal_host_defined_environment_settings_object(principal) == settings
-	assert principal_host_defined_page(principal) == page
-	assert host_defined_intrinsics(unsafe { &HostDefined(principal) }) == intrinsics
+	assert principal_host_defined_environment_settings_object(realm) == settings
+	assert principal_host_defined_page(realm) == page
+	assert host_defined_intrinsics(realm) == intrinsics
+	assert host_defined_wrapper_world(realm).is_main_world()
 
-	synthetic_realm := &html.ScriptingRealm{}
+	mut synthetic_realm := &html.ScriptingRealm{}
 	synthetic_settings := html.SyntheticRealmSettings{
 		execution_context: unsafe { nil }
 		principal_realm:   realm
@@ -59,4 +60,8 @@ fn test_principal_and_synthetic_host_defined_keep_realm_state() {
 	synthetic := SyntheticHostDefined.create(synthetic_settings, Intrinsics.create(synthetic_realm))
 	assert synthetic.is_synthetic_host_defined()
 	assert synthetic.synthetic_realm_settings.principal_realm == realm
+	install_host_defined(mut synthetic_realm, unsafe { &HostDefined(synthetic) })
+	assert host_defined_wrapper_world(synthetic_realm).type_() == .internal
+	assert principal_host_defined_environment_settings_object(synthetic_realm) == settings
+	assert principal_host_defined_page(synthetic_realm) == page
 }

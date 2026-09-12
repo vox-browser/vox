@@ -9,7 +9,8 @@ import dom
 import html
 
 __global (
-	realm_wrapper_worlds = map[u64]&WrapperWorld{}
+	realm_wrapper_worlds      = map[u64]&WrapperWorld{}
+	agent_main_wrapper_worlds = map[u64]&WrapperWorld{}
 )
 
 pub enum WrapperWorldType {
@@ -200,9 +201,24 @@ pub fn register_wrapper_world_for_realm(realm &html.ScriptingRealm, world &Wrapp
 }
 
 pub fn host_defined_wrapper_world(realm &html.ScriptingRealm) &WrapperWorld {
+	if host_defined := host_defined_for_realm(realm) {
+		return host_defined.wrapper_world
+	}
 	return realm_wrapper_worlds[u64(voidptr(realm))] or {
 		panic('realm has no registered WrapperWorld')
 	}
+}
+
+pub fn main_wrapper_world_for_agent(agent &html.Agent) &WrapperWorld {
+	key := u64(voidptr(agent))
+	if world := agent_main_wrapper_worlds[key] {
+		return world
+	}
+	world := WrapperWorld.create(.main)
+	unsafe {
+		agent_main_wrapper_worlds[key] = world
+	}
+	return world
 }
 
 pub fn (mut world WrapperWorld) register_preserved_wrappable(wrappable &Wrappable) {

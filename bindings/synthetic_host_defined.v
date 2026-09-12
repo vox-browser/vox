@@ -16,8 +16,10 @@ pub:
 
 pub fn SyntheticHostDefined.create(settings html.SyntheticRealmSettings, intrinsics &Intrinsics) &SyntheticHostDefined {
 	return &SyntheticHostDefined{
-		HostDefined:              HostDefined{
+		HostDefined: HostDefined{
 			intrinsics: intrinsics
+			wrapper_world: WrapperWorld.create(.internal)
+			principal_realm: settings.principal_realm
 		}
 		synthetic_realm_settings: settings
 	}
