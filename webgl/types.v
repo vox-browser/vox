@@ -375,6 +375,8 @@ pub struct WebGLContextEvent {
 pub:
 	type_          string
 	status_message string
+mut:
+	time_stamp_ f64
 }
 
 pub fn WebGLContextEvent.new(type_ string, init WebGLContextEventInit) WebGLContextEvent {

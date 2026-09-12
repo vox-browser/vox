@@ -123,14 +123,26 @@ pub fn (format &WebGLShaderPrecisionFormat) precision() int {
 	return format.precision
 }
 
-pub fn WebGLContextEvent.create(type_ string, init WebGLContextEventInit) WebGLContextEvent {
-	return WebGLContextEvent.new(type_, init)
+pub fn WebGLContextEvent.create(type_ string, init WebGLContextEventInit, time_stamp f64) WebGLContextEvent {
+	return WebGLContextEvent{
+		type_: type_
+		status_message: init.status_message
+		time_stamp_: time_stamp
+	}
+}
+
+pub fn WebGLContextEvent.create_for_constructor(type_ string, init WebGLContextEventInit, time_stamp f64) WebGLContextEvent {
+	return WebGLContextEvent.create(type_, init, time_stamp)
 }
 
 pub fn WebGLContextEvent.construct_impl(type_ string, init WebGLContextEventInit) WebGLContextEvent {
-	return WebGLContextEvent.new(type_, init)
+	return WebGLContextEvent.create_for_constructor(type_, init, 0)
 }
 
 pub fn (event &WebGLContextEvent) status_message() string {
 	return event.status_message
+}
+
+pub fn (event &WebGLContextEvent) time_stamp() f64 {
+	return event.time_stamp_
 }

@@ -23,6 +23,13 @@ fn test_upstream_value_factories_and_native_surface_slots() {
 		status_message: 'lost'
 	})
 	assert event.status_message() == 'lost'
+	assert event.time_stamp() == 0
+	constructed_event := WebGLContextEvent.create_for_constructor('webglcontextrestored', WebGLContextEventInit{
+		status_message: 'restored'
+	}, 42.25)
+	assert constructed_event.type_ == 'webglcontextrestored'
+	assert constructed_event.status_message() == 'restored'
+	assert constructed_event.time_stamp() == 42.25
 }
 
 fn test_upstream_texture_renderbuffer_and_framebuffer_state() {
