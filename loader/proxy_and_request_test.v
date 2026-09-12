@@ -76,7 +76,7 @@ fn test_load_request_defaults_mutators_timer_and_file_request_surface() {
 }
 
 fn test_loader_singletons_are_stable() {
-	assert ContentFilter.the() == ContentFilter.the()
+	assert ContentBlocker.the() == ContentBlocker.the()
 	assert ProxyMappings.the() == ProxyMappings.the()
 }
 

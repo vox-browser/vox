@@ -14,7 +14,7 @@ import url as liburl
 
 __global (
 	loader_global_resource_loader          &ResourceLoader
-	loader_global_content_filter           &ContentFilter
+	loader_global_content_blocker          &ContentBlocker
 	loader_global_proxy_mappings           &ProxyMappings
 	loader_browser_process_command_line    string
 	loader_browser_process_executable_path string
@@ -77,7 +77,7 @@ mut:
 	preferred_languages_          []string                   = ['en-US']
 	navigator_compatibility_mode_ NavigatorCompatibilityMode = .chrome
 	enable_global_privacy_control_ bool
-	content_filter                 &ContentFilter
+	content_blocker                &ContentBlocker
 	proxy_mappings                 &ProxyMappings
 	resources                      map[string]StoredResource
 	about_pages                    map[string][]u8
@@ -92,7 +92,7 @@ pub fn ResourceLoader.create() &ResourceLoader {
 	return &ResourceLoader{
 		user_agent_:       default_user_agent()
 		platform_:         default_platform()
-		content_filter:    ContentFilter.create()
+		content_blocker:   ContentBlocker.create()
 		proxy_mappings:    ProxyMappings.create()
 		resources:         map[string]StoredResource{}
 		about_pages:       map[string][]u8{}
@@ -139,8 +139,8 @@ pub fn (resource_loader &ResourceLoader) pending_loads() int {
 	return resource_loader.pending_loads_
 }
 
-pub fn (resource_loader &ResourceLoader) content_filter() &ContentFilter {
-	return resource_loader.content_filter
+pub fn (resource_loader &ResourceLoader) content_blocker() &ContentBlocker {
+	return resource_loader.content_blocker
 }
 
 pub fn (resource_loader &ResourceLoader) proxy_mappings() &ProxyMappings {
@@ -207,7 +207,7 @@ pub fn (mut resource_loader ResourceLoader) register_network_response(url string
 }
 
 pub fn (resource_loader &ResourceLoader) prepare_connection(url dom.URL, preconnect bool) ConnectionPreparation {
-	if url.scheme() in ['file', 'data'] || resource_loader.content_filter.is_filtered(url) {
+	if url.scheme() in ['file', 'data'] || resource_loader.content_blocker.is_filtered(url) {
 		return .none
 	}
 	return if preconnect { .create_connection } else { .resolve_only }
@@ -240,7 +240,7 @@ fn port_or_default(url dom.URL) u16 {
 pub fn (resource_loader &ResourceLoader) should_block_request(request &LoadRequest) bool {
 	url := request.url() or { return true }
 	return port_or_default(url) in blocked_loader_ports
-		|| resource_loader.content_filter.is_filtered(url)
+		|| resource_loader.content_blocker.is_filtered(url)
 }
 
 pub fn sanitized_url_for_logging(url dom.URL) string {

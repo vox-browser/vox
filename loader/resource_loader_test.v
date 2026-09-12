@@ -55,7 +55,7 @@ fn test_connection_preparation_and_request_blocking() {
 	assert resource_loader.prepare_connection(dom.URL{'https://example.test/'}, true) == .create_connection
 	assert resource_loader.prefetch_dns(dom.URL{'https://example.test/'}) == .resolve_only
 	assert resource_loader.preconnect(dom.URL{'https://example.test/'}) == .create_connection
-	mut filter := resource_loader.content_filter()
+	mut filter := resource_loader.content_blocker()
 	filter.set_patterns(['blocked.test']) or { panic(err) }
 	assert resource_loader.prepare_connection(dom.URL{'https://blocked.test/'}, true) == .none
 	assert resource_loader.should_block_request(load_request_for('http://example.test:22/'))
@@ -104,7 +104,7 @@ fn test_load_dispatches_about_resource_and_unsupported_protocols() {
 
 fn test_load_blocks_filtered_and_bad_port_requests_before_dispatch() {
 	mut resource_loader := ResourceLoader.create()
-	mut filter := resource_loader.content_filter()
+	mut filter := resource_loader.content_blocker()
 	filter.set_patterns(['blocked.test']) or { panic(err) }
 	for value in ['https://blocked.test/a', 'http://example.test:6379/a'] {
 		mut request := load_request_for(value)
