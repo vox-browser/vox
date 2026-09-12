@@ -12022,6 +12022,11 @@ fn set_custom_properties_changed(did_change &bool) {
 	}
 }
 
+fn inheritable_custom_property_data(abstract_element dom.AbstractElement) ?&dom.CSSCustomPropertyData_ {
+	data := abstract_element.custom_property_data() or { return none }
+	return data.inheritable(abstract_element.document())
+}
+
 fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, matching_rule_set MatchingRuleSet) {
 	mut cascaded_all := map[string]dom.CSSCustomProperty_{}
 	for layer in matching_rule_set.author_rules {
@@ -12030,7 +12035,7 @@ fn install_custom_property_data_for_style(abstract_element dom.AbstractElement, 
 
 	mut parent_data := ?&dom.CSSCustomPropertyData_(none)
 	if parent := abstract_element.element_to_inherit_style_from() {
-		parent_data = parent.custom_property_data()
+		parent_data = inheritable_custom_property_data(parent)
 	}
 
 	// Build own_values with only declarations whose retained StyleValue differs
@@ -13232,7 +13237,7 @@ pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties Comp
 	_ = computed_properties
 	data := abstract_element.custom_property_data() or { return }
 	if inherit_from := abstract_element.element_to_inherit_style_from() {
-		if parent_data := inherit_from.custom_property_data() {
+		if parent_data := inheritable_custom_property_data(inherit_from) {
 			if data == parent_data {
 				return
 			}
@@ -13244,7 +13249,7 @@ pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties Comp
 
 	mut parent_data := ?&dom.CSSCustomPropertyData_(none)
 	if inherit_from := abstract_element.element_to_inherit_style_from() {
-		parent_data = inherit_from.custom_property_data()
+		parent_data = inheritable_custom_property_data(inherit_from)
 	}
 	mut resolved_own := map[string]dom.CSSCustomProperty_{}
 	for name, property in data.own_values {

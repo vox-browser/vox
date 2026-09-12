@@ -4426,6 +4426,7 @@ pub mut:
 	// Registered properties
 	registered_property_set                              map[string]CustomPropertyRegistration
 	cached_registered_properties_from_css_property_rules map[string]CustomPropertyRegistration
+	custom_property_registration_generation_             u64
 	registered_counter_styles                            map[string]&CounterStyle
 
 	// CSS random caching
@@ -11593,11 +11594,48 @@ pub fn (d &Document) custom_property_initial_value(name string) ?string {
 	return none
 }
 
+pub fn (d &Document) custom_property_registration_generation() u64 {
+	return d.custom_property_registration_generation_
+}
+
+pub fn (mut d Document) did_change_custom_property_registrations() {
+	d.custom_property_registration_generation_++
+	mut document_node := unsafe { &Node(&d) }
+	document_node.invalidate_style(.other)
+}
+
+fn custom_property_registration_initial_values_equal(left ?string, right ?string) bool {
+	if left_value := left {
+		right_value := right or { return false }
+		return left_value == right_value
+	}
+	return right == none
+}
+
+fn custom_property_registration_maps_equal(left map[string]CustomPropertyRegistration, right map[string]CustomPropertyRegistration) bool {
+	if left.len != right.len {
+		return false
+	}
+	for name, left_registration in left {
+		right_registration := right[name] or { return false }
+		if left_registration.syntax != right_registration.syntax
+			|| left_registration.inherits != right_registration.inherits
+			|| !custom_property_registration_initial_values_equal(left_registration.initial_value, right_registration.initial_value) {
+			return false
+		}
+	}
+	return true
+}
+
 // C++: void Document::build_registered_properties_cache()
 pub fn (mut d Document) build_registered_properties_cache() {
+	previous := d.cached_registered_properties_from_css_property_rules.clone()
 	d.cached_registered_properties_from_css_property_rules.clear()
 	if d.style_computer != unsafe { nil } && d.style_computer.build_registered_properties_cache_callback != unsafe { nil } {
 		d.style_computer.build_registered_properties_cache_callback(d.style_computer.css_handle)
+	}
+	if !custom_property_registration_maps_equal(previous, d.cached_registered_properties_from_css_property_rules) {
+		d.did_change_custom_property_registrations()
 	}
 }
 

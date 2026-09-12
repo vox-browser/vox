@@ -655,9 +655,13 @@ pub:
 @[heap]
 pub struct CSSCustomPropertyData_ {
 pub mut:
-	own_values     map[string]CSSCustomProperty_
-	parent         ?&CSSCustomPropertyData_
-	ancestor_count u8
+	own_values                           map[string]CSSCustomProperty_
+	parent                               ?&CSSCustomPropertyData_
+	ancestor_count                       u8
+	cached_inheritable_document_identity voidptr = unsafe { nil }
+	cached_inheritable_generation        u64 = max_u64
+	cached_inheritable_data              ?&CSSCustomPropertyData_
+	cached_inheritable_is_self           bool
 }
 
 pub fn (data &CSSCustomPropertyData_) get(name string) ?&CSSStyleValue_ {
@@ -697,6 +701,61 @@ pub fn (data &CSSCustomPropertyData_) is_empty() bool {
 		return parent.is_empty()
 	}
 	return true
+}
+
+fn optional_custom_property_data_identical(left ?&CSSCustomPropertyData_, right ?&CSSCustomPropertyData_) bool {
+	if left_data := left {
+		right_data := right or { return false }
+		return voidptr(left_data) == voidptr(right_data)
+	}
+	return right == none
+}
+
+pub fn (data &CSSCustomPropertyData_) inheritable(document &Document) ?&CSSCustomPropertyData_ {
+	document_identity := voidptr(document)
+	generation := document.custom_property_registration_generation()
+	if data.cached_inheritable_document_identity == document_identity
+		&& data.cached_inheritable_generation == generation {
+		if data.cached_inheritable_is_self {
+			return data
+		}
+		return data.cached_inheritable_data
+	}
+
+	mut inheritable_parent := ?&CSSCustomPropertyData_(none)
+	if parent := data.parent {
+		inheritable_parent = parent.inheritable(document)
+	}
+	mut inheritable_own_values := map[string]CSSCustomProperty_{}
+	mut filtered_any_own_values := false
+	for name, property in data.own_values {
+		if registration := document.get_registered_custom_property(name) {
+			if !registration.inherits {
+				filtered_any_own_values = true
+				continue
+			}
+		}
+		inheritable_own_values[name] = property
+	}
+
+	mut mutable_data := unsafe { &CSSCustomPropertyData_(data) }
+	mutable_data.cached_inheritable_document_identity = document_identity
+	mutable_data.cached_inheritable_generation = generation
+	if !filtered_any_own_values
+		&& optional_custom_property_data_identical(inheritable_parent, data.parent) {
+		mutable_data.cached_inheritable_data = none
+		mutable_data.cached_inheritable_is_self = true
+		return data
+	}
+
+	mutable_data.cached_inheritable_is_self = false
+	if inheritable_own_values.len == 0 && inheritable_parent == none {
+		mutable_data.cached_inheritable_data = none
+		return none
+	}
+	result := CSSCustomPropertyData_.create(inheritable_own_values, inheritable_parent)
+	mutable_data.cached_inheritable_data = result
+	return result
 }
 
 // CustomPropertyData::create (LibWeb/CSS/CustomPropertyData.cpp). Keep shallow

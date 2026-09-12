@@ -28,9 +28,13 @@ pub type StylePropertyMap = map[string]StyleProperty
 @[heap]
 pub struct CustomPropertyData {
 pub mut:
-	own_values_     StylePropertyMap
-	parent_         ?&CustomPropertyData
-	ancestor_count_ u8
+	own_values_                          StylePropertyMap
+	parent_                              ?&CustomPropertyData
+	ancestor_count_                      u8
+	cached_inheritable_document_identity voidptr = unsafe { nil }
+	cached_inheritable_generation        u64 = max_u64
+	cached_inheritable_data              ?&CustomPropertyData
+	cached_inheritable_is_self           bool
 }
 
 pub fn CustomPropertyData.create(own_values StylePropertyMap, parent ?&CustomPropertyData) &CustomPropertyData {
@@ -121,6 +125,60 @@ pub fn (c &CustomPropertyData) is_empty() bool {
 		return parent.is_empty()
 	}
 	return true
+}
+
+fn optional_custom_property_data_equal(left ?&CustomPropertyData, right ?&CustomPropertyData) bool {
+	if left_data := left {
+		right_data := right or { return false }
+		return voidptr(left_data) == voidptr(right_data)
+	}
+	return right == none
+}
+
+pub fn (c &CustomPropertyData) inheritable(document &dom.Document) ?&CustomPropertyData {
+	document_identity := voidptr(document)
+	generation := document.custom_property_registration_generation()
+	if c.cached_inheritable_document_identity == document_identity
+		&& c.cached_inheritable_generation == generation {
+		if c.cached_inheritable_is_self {
+			return c
+		}
+		return c.cached_inheritable_data
+	}
+
+	mut inheritable_parent := ?&CustomPropertyData(none)
+	if parent := c.parent_ {
+		inheritable_parent = parent.inheritable(document)
+	}
+	mut inheritable_own_values := StylePropertyMap{}
+	mut filtered_any_own_values := false
+	for name, property in c.own_values_ {
+		if registration := document.get_registered_custom_property(name) {
+			if !registration.inherits {
+				filtered_any_own_values = true
+				continue
+			}
+		}
+		inheritable_own_values[name] = property
+	}
+
+	mut mutable_data := unsafe { &CustomPropertyData(c) }
+	mutable_data.cached_inheritable_document_identity = document_identity
+	mutable_data.cached_inheritable_generation = generation
+	if !filtered_any_own_values && optional_custom_property_data_equal(inheritable_parent, c.parent_) {
+		mutable_data.cached_inheritable_data = none
+		mutable_data.cached_inheritable_is_self = true
+		return c
+	}
+
+	mutable_data.cached_inheritable_is_self = false
+	if inheritable_own_values.len == 0 && inheritable_parent == none {
+		mutable_data.cached_inheritable_data = none
+		return none
+	}
+	result := CustomPropertyData.create(inheritable_own_values, inheritable_parent)
+	mutable_data.cached_inheritable_data = result
+	return result
 }
 
 // --- CascadedProperties ---

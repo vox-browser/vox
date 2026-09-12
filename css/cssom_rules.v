@@ -2708,6 +2708,12 @@ pub mut:
 	initial_value ?string
 }
 
+pub fn (registration CustomPropertyRegistration) equals(other CustomPropertyRegistration) bool {
+	return registration.property_name == other.property_name && registration.syntax == other.syntax
+		&& registration.inherit == other.inherit
+		&& option_string_equal(registration.initial_value, other.initial_value)
+}
+
 // https://www.w3.org/TR/cssom-1/#dom-css-escape
 pub fn escape(identifier string) string {
 	// The escape(ident) operation must return the result of invoking serialize an identifier of ident.
@@ -2846,6 +2852,7 @@ pub fn register_property_for_document(mut document dom.Document, definition Prop
 		syntax: registration.syntax
 		inherits: registration.inherit
 	}
+	document.did_change_custom_property_registrations()
 
 	return registration
 }
