@@ -11,27 +11,31 @@ module streams
 pub fn (mut controller ReadableStreamDefaultController) cancel_steps(reason Value) &VoidPromise {
 	mut stream := controller.stream_
 	stream.queue_.reset()
-	mut result := VoidPromise.fulfilled()
+	mut result := VoidPromise.fulfilled_in(stream.realm_)
 	if algorithm := stream.cancel_algorithm_ {
-		algorithm(reason) or { result = VoidPromise.rejected(err.msg()) }
+		algorithm(reason) or { result = VoidPromise.rejected_in(stream.realm_, err.msg()) }
 	}
 	readable_stream_default_controller_clear_algorithms(mut controller)
 	return result
 }
 
 pub fn (mut controller ReadableStreamDefaultController) pull_steps() &ReadPromise {
+	return controller.pull_steps_in(controller.stream_.realm_)
+}
+
+fn (mut controller ReadableStreamDefaultController) pull_steps_in(promise_realm StreamRealm) &ReadPromise {
 	mut stream := controller.stream_
 	if !stream.queue_.is_empty() {
-		value := stream.queue_.dequeue_value() or { return ReadPromise.rejected(err.msg()) }
+		value := stream.queue_.dequeue_value() or { return ReadPromise.rejected_in(promise_realm, stream.result_realm_, err.msg()) }
 		if stream.close_requested_ && stream.queue_.is_empty() {
 			readable_stream_default_controller_clear_algorithms(mut controller)
 			stream.close_internal()
 		} else {
 			readable_stream_default_controller_call_pull_if_needed(mut controller)
 		}
-		return ReadPromise.fulfilled(value, false)
+		return ReadPromise.fulfilled_in(promise_realm, stream.result_realm_, value, false)
 	}
-	promise := ReadPromise.pending()
+	promise := ReadPromise.pending_in(promise_realm, stream.result_realm_)
 	readable_stream_add_read_request(mut stream, promise)
 	readable_stream_default_controller_call_pull_if_needed(mut controller)
 	return promise
@@ -127,17 +131,21 @@ pub fn (mut controller ReadableByteStreamController) cancel_steps(reason Value) 
 	mut stream := controller.stream_
 	readable_byte_stream_controller_clear_pending_pull_intos(mut controller)
 	controller.reset_byte_queue()
-	mut result := VoidPromise.fulfilled()
+	mut result := VoidPromise.fulfilled_in(stream.realm_)
 	if algorithm := stream.cancel_algorithm_ {
-		algorithm(reason) or { result = VoidPromise.rejected(err.msg()) }
+		algorithm(reason) or { result = VoidPromise.rejected_in(stream.realm_, err.msg()) }
 	}
 	readable_byte_stream_controller_clear_algorithms(mut controller)
 	return result
 }
 
 pub fn (mut controller ReadableByteStreamController) pull_steps() &ReadPromise {
+	return controller.pull_steps_in(controller.stream_.realm_)
+}
+
+fn (mut controller ReadableByteStreamController) pull_steps_in(promise_realm StreamRealm) &ReadPromise {
 	mut stream := controller.stream_
-	return stream.byte_controller_pull_steps()
+	return stream.byte_controller_pull_steps_in(promise_realm)
 }
 
 pub fn (mut controller ReadableByteStreamController) release_steps() {

@@ -246,7 +246,7 @@ pub fn is_writable_stream_locked(stream &WritableStream) bool {
 }
 
 pub fn set_up_writable_stream_default_writer(mut writer WritableStreamDefaultWriter, mut stream WritableStream) ! {
-	created := stream.get_writer()!
+	created := WritableStreamDefaultWriter.create(stream.realm_, mut stream)!
 	writer = *created
 }
 
@@ -259,7 +259,7 @@ pub fn writable_stream_close(mut stream WritableStream) &VoidPromise {
 }
 
 pub fn writable_stream_add_write_request(mut stream WritableStream) &VoidPromise {
-	request := VoidPromise.pending()
+	request := VoidPromise.pending_in(stream.realm_)
 	stream.write_requests_.append(request)
 	return request
 }
@@ -369,7 +369,7 @@ pub fn writable_stream_update_backpressure(mut stream WritableStream, backpressu
 	if !isnil(stream.writer_) && changed {
 		mut writer := stream.writer_
 		if backpressure {
-			writer.ready_ = VoidPromise.pending()
+			writer.ready_ = VoidPromise.pending_in(writer.ready_promise_realm())
 		} else {
 			mut ready := writer.ready_
 			ready.resolve()
@@ -408,7 +408,7 @@ pub fn writable_stream_default_writer_ensure_closed_promise_rejected(mut writer 
 		mut closed := writer.closed_
 		closed.reject(reason.description())
 	} else {
-		writer.closed_ = VoidPromise.rejected(reason.description())
+		writer.closed_ = VoidPromise.rejected_in(writer.closed_promise_realm(), reason.description())
 	}
 }
 
@@ -417,7 +417,7 @@ pub fn writable_stream_default_writer_ensure_ready_promise_rejected(mut writer W
 		mut ready := writer.ready_
 		ready.reject(reason.description())
 	} else {
-		writer.ready_ = VoidPromise.rejected(reason.description())
+		writer.ready_ = VoidPromise.rejected_in(writer.ready_promise_realm(), reason.description())
 	}
 }
 

@@ -60,6 +60,8 @@ pub:
 @[heap]
 pub struct ReadableStream {
 mut:
+	realm_              StreamRealm
+	result_realm_       ?StreamRealm
 	state_              ReadableStreamState
 	stored_error_       string
 	disturbed_          bool
@@ -108,12 +110,22 @@ mut:
 }
 
 pub fn ReadableStream.construct_impl(source UnderlyingSource, strategy QueuingStrategy) !&ReadableStream {
+	return ReadableStream.create(StreamRealm{}, source, strategy)
+}
+
+pub fn ReadableStream.create_for_constructor(realm StreamRealm, source UnderlyingSource, strategy QueuingStrategy) !&ReadableStream {
+	return ReadableStream.create(realm, source, strategy)
+}
+
+pub fn ReadableStream.create(realm StreamRealm, source UnderlyingSource, strategy QueuingStrategy) !&ReadableStream {
 	if source.type_ == .bytes && strategy.size != none {
 		return error('RangeError: A byte stream cannot have a size function')
 	}
 	default_hwm := if source.type_ == .bytes { 0.0 } else { 1.0 }
 	high_water_mark := extract_high_water_mark(strategy, default_hwm)!
-	mut stream := &ReadableStream{}
+	mut stream := &ReadableStream{
+		realm_: realm
+	}
 	initialize_readable_stream(mut stream)
 	if source.type_ == .bytes {
 		set_up_readable_byte_stream_controller_from_underlying_source(mut stream, source, high_water_mark)!
@@ -124,7 +136,11 @@ pub fn ReadableStream.construct_impl(source UnderlyingSource, strategy QueuingSt
 }
 
 pub fn ReadableStream.from(values []Value) !&ReadableStream {
-	mut stream := ReadableStream.construct_impl(UnderlyingSource{}, QueuingStrategy{
+	return ReadableStream.from_in_realm(StreamRealm{}, values)
+}
+
+pub fn ReadableStream.from_in_realm(realm StreamRealm, values []Value) !&ReadableStream {
+	mut stream := ReadableStream.create(realm, UnderlyingSource{}, QueuingStrategy{
 		high_water_mark: 0
 	})!
 	stream.owner_kind_ = .iterable
@@ -133,6 +149,22 @@ pub fn ReadableStream.from(values []Value) !&ReadableStream {
 	// storage instead of eagerly cloning every value.
 	stream.from_values_ = unsafe { values }
 	return stream
+}
+
+pub fn (stream &ReadableStream) realm() StreamRealm {
+	return stream.realm_
+}
+
+pub fn (mut stream ReadableStream) set_realm(realm StreamRealm) {
+	stream.realm_ = realm
+}
+
+pub fn (stream &ReadableStream) result_realm() ?StreamRealm {
+	return stream.result_realm_
+}
+
+pub fn (mut stream ReadableStream) set_result_realm(realm StreamRealm) {
+	stream.result_realm_ = realm
 }
 
 fn pump_readable_from_iterable(mut stream ReadableStream) {
@@ -299,6 +331,10 @@ pub fn (mut stream ReadableStream) piped_through(mut transform TransformStream, 
 	return transform.readable_
 }
 
+pub fn (mut stream ReadableStream) values(options ReadableStreamIteratorOptions) !&ReadableStreamAsyncIterator {
+	return ReadableStreamAsyncIterator.create(mut stream, options)
+}
+
 fn (mut stream ReadableStream) call_pull_if_needed() {
 	if !stream.started_ || stream.state_ != .readable || stream.close_requested_ {
 		return
@@ -454,10 +490,10 @@ pub fn (mut stream ReadableStream) error(reason string) {
 fn (mut stream ReadableStream) cancel_internal(reason Value) &VoidPromise {
 	stream.disturbed_ = true
 	if stream.state_ == .closed {
-		return VoidPromise.fulfilled()
+		return VoidPromise.fulfilled_in(stream.realm_)
 	}
 	if stream.state_ == .errored {
-		return VoidPromise.rejected(stream.stored_error_)
+		return VoidPromise.rejected_in(stream.realm_, stream.stored_error_)
 	}
 	if !isnil(stream.tee_source_) {
 		return cancel_tee_branch(mut stream, reason)
@@ -480,10 +516,10 @@ fn (mut stream ReadableStream) cancel_internal(reason Value) &VoidPromise {
 		mut port := stream.message_port_
 		pack_and_post_message(mut port, 'error', reason) or {
 			port.close()
-			return VoidPromise.rejected(err.msg())
+			return VoidPromise.rejected_in(stream.realm_, err.msg())
 		}
 		port.close()
-		return VoidPromise.fulfilled()
+		return VoidPromise.fulfilled_in(stream.realm_)
 	}
 	if stream.byte_stream_ {
 		mut controller := stream.byte_controller_
@@ -495,32 +531,40 @@ fn (mut stream ReadableStream) cancel_internal(reason Value) &VoidPromise {
 
 pub fn (mut stream ReadableStream) cancel(reason Value) &VoidPromise {
 	if stream.locked() {
-		return VoidPromise.rejected('TypeError: Cannot cancel a locked ReadableStream')
+		return VoidPromise.rejected_in(stream.realm_, 'TypeError: Cannot cancel a locked ReadableStream')
 	}
 	return stream.cancel_internal(reason)
 }
 
 fn (mut stream ReadableStream) read_internal() &ReadPromise {
+	return stream.read_internal_in(stream.realm_)
+}
+
+fn (mut stream ReadableStream) read_internal_in(promise_realm StreamRealm) &ReadPromise {
 	stream.disturbed_ = true
 	if stream.state_ == .closed {
-		return ReadPromise.fulfilled(undefined_value(), true)
+		return ReadPromise.fulfilled_in(promise_realm, stream.result_realm_, undefined_value(), true)
 	}
 	if stream.state_ == .errored {
-		return ReadPromise.rejected(stream.stored_error_)
+		return ReadPromise.rejected_in(promise_realm, stream.result_realm_, stream.stored_error_)
 	}
 	if stream.byte_stream_ {
 		mut controller := stream.byte_controller_
-		return controller.pull_steps()
+		return controller.pull_steps_in(promise_realm)
 	}
 	mut controller := stream.default_controller_
-	return controller.pull_steps()
+	return controller.pull_steps_in(promise_realm)
 }
 
 pub fn (mut stream ReadableStream) get_default_reader() !&ReadableStreamDefaultReader {
+	return ReadableStreamDefaultReader.create(stream.realm_, mut stream)
+}
+
+pub fn ReadableStreamDefaultReader.create(realm StreamRealm, mut stream ReadableStream) !&ReadableStreamDefaultReader {
 	if stream.locked() {
 		return error('TypeError: ReadableStream is already locked')
 	}
-	mut closed := VoidPromise.pending()
+	mut closed := VoidPromise.pending_in(realm)
 	if stream.state_ == .closed {
 		closed.resolve()
 	} else if stream.state_ == .errored {
@@ -573,24 +617,28 @@ mut:
 }
 
 pub fn ReadableStreamDefaultReader.construct_impl(mut stream ReadableStream) !&ReadableStreamDefaultReader {
-	return stream.get_default_reader()
+	return ReadableStreamDefaultReader.create(stream.realm_, mut stream)
 }
 
 pub fn (reader &ReadableStreamDefaultReader) closed() &VoidPromise {
 	return reader.closed_
 }
 
+pub fn (reader &ReadableStreamDefaultReader) closed_promise_realm() StreamRealm {
+	return reader.closed_.realm()
+}
+
 pub fn (mut reader ReadableStreamDefaultReader) read() &ReadPromise {
 	if reader.released_ || isnil(reader.stream_) {
-		return ReadPromise.rejected('TypeError: Reader has no associated stream')
+		return ReadPromise.rejected_in(reader.closed_promise_realm(), none, 'TypeError: Reader has no associated stream')
 	}
 	mut stream := reader.stream_
-	return stream.read_internal()
+	return stream.read_internal_in(reader.closed_promise_realm())
 }
 
 pub fn (mut reader ReadableStreamDefaultReader) cancel(reason Value) &VoidPromise {
 	if reader.released_ || isnil(reader.stream_) {
-		return VoidPromise.rejected('TypeError: Reader has no associated stream')
+		return VoidPromise.rejected_in(reader.closed_promise_realm(), 'TypeError: Reader has no associated stream')
 	}
 	mut stream := reader.stream_
 	return stream.cancel_internal(reason)
@@ -617,7 +665,7 @@ fn readable_stream_default_reader_generic_release(mut reader ReadableStreamDefau
 		mut closed := reader.closed_
 		closed.reject('TypeError: Reader has been released')
 	} else {
-		reader.closed_ = VoidPromise.rejected('TypeError: Reader has been released')
+		reader.closed_ = VoidPromise.rejected_in(reader.closed_promise_realm(), 'TypeError: Reader has been released')
 	}
 	if stream.byte_stream_ && !isnil(stream.byte_controller_) {
 		mut controller := stream.byte_controller_
@@ -665,19 +713,30 @@ mut:
 	reader_         &ReadableStreamDefaultReader = unsafe { nil }
 	prevent_cancel_ bool
 	finished_       bool
+	prototype_set_  bool
 }
 
 pub fn ReadableStreamAsyncIterator.create(mut stream ReadableStream, options ReadableStreamIteratorOptions) !&ReadableStreamAsyncIterator {
 	reader := stream.get_default_reader()!
-	return &ReadableStreamAsyncIterator{
+	mut iterator := &ReadableStreamAsyncIterator{
 		reader_: reader
 		prevent_cancel_: options.prevent_cancel
 	}
+	set_readable_stream_async_iterator_prototype(mut iterator)
+	return iterator
+}
+
+pub fn set_readable_stream_async_iterator_prototype(mut iterator ReadableStreamAsyncIterator) {
+	iterator.prototype_set_ = true
+}
+
+pub fn (iterator &ReadableStreamAsyncIterator) prototype_is_set() bool {
+	return iterator.prototype_set_
 }
 
 pub fn (mut iterator ReadableStreamAsyncIterator) next_iteration_result() &ReadPromise {
 	if iterator.finished_ {
-		return ReadPromise.fulfilled(undefined_value(), true)
+		return ReadPromise.fulfilled_in(iterator.reader_.closed_promise_realm(), none, undefined_value(), true)
 	}
 	promise := iterator.reader_.read()
 	if promise.state() == .fulfilled && promise.result().done {
@@ -689,7 +748,7 @@ pub fn (mut iterator ReadableStreamAsyncIterator) next_iteration_result() &ReadP
 
 pub fn (mut iterator ReadableStreamAsyncIterator) iterator_return(reason Value) &VoidPromise {
 	iterator.finished_ = true
-	mut result := VoidPromise.fulfilled()
+	mut result := VoidPromise.fulfilled_in(iterator.reader_.closed_promise_realm())
 	if !iterator.prevent_cancel_ {
 		result = iterator.reader_.cancel(reason)
 	}

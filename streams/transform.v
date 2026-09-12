@@ -19,6 +19,7 @@ pub:
 @[heap]
 pub struct TransformStream {
 mut:
+	realm_                       StreamRealm
 	readable_                    &ReadableStream = unsafe { nil }
 	writable_                    &WritableStream = unsafe { nil }
 	controller_                  &TransformStreamDefaultController = unsafe { nil }
@@ -29,6 +30,7 @@ mut:
 	backpressure_change_promise_ &VoidPromise = unsafe { nil }
 	stored_error_                string
 	terminated_                  bool
+	wrappers_prepared_           bool
 }
 
 pub fn TransformStream.construct_impl(transformer Transformer, writable_strategy QueuingStrategy, readable_strategy QueuingStrategy) !&TransformStream {
@@ -38,15 +40,50 @@ pub fn TransformStream.construct_impl(transformer Transformer, writable_strategy
 	if type_ := transformer.writable_type {
 		return error('RangeError: Unsupported transformer writableType ${type_}')
 	}
+	return TransformStream.create(StreamRealm{}, transformer, writable_strategy, readable_strategy)
+}
+
+pub fn TransformStream.create_for_constructor(realm StreamRealm, transformer Transformer, writable_strategy QueuingStrategy, readable_strategy QueuingStrategy) !&TransformStream {
+	if transformer.readable_type != none {
+		return error("RangeError: Invalid use of reserved key 'readableType'")
+	}
+	if transformer.writable_type != none {
+		return error("RangeError: Invalid use of reserved key 'writableType'")
+	}
+	return TransformStream.create(realm, transformer, writable_strategy, readable_strategy)
+}
+
+pub fn TransformStream.create(realm StreamRealm, transformer Transformer, writable_strategy QueuingStrategy, readable_strategy QueuingStrategy) !&TransformStream {
 	readable_high_water_mark := extract_high_water_mark(readable_strategy, 0)!
 	writable_high_water_mark := extract_high_water_mark(writable_strategy, 1)!
-	mut transform := &TransformStream{}
+	mut transform := &TransformStream{
+		realm_: realm
+	}
 	initialize_transform_stream(mut transform, writable_high_water_mark, extract_size_algorithm(writable_strategy), readable_high_water_mark, extract_size_algorithm(readable_strategy))!
+	prepare_transform_stream_readable_writable_wrappers(mut transform)
 	set_up_transform_stream_default_controller_from_transformer(mut transform, transformer)
 	if start := transformer.start {
 		start()!
 	}
 	return transform
+}
+
+// The C++ offsets are consumed by generated wrappers. V exposes the same stable
+// ordering as logical wrapper slots rather than raw byte offsets.
+pub fn TransformStream.readable_offset() int {
+	return 0
+}
+
+pub fn TransformStream.writable_offset() int {
+	return 1
+}
+
+pub fn prepare_transform_stream_readable_writable_wrappers(mut stream TransformStream) {
+	stream.wrappers_prepared_ = true
+}
+
+pub fn (stream &TransformStream) wrappers_are_prepared() bool {
+	return stream.wrappers_prepared_
 }
 
 pub fn (stream &TransformStream) readable() &ReadableStream {
@@ -65,6 +102,10 @@ pub fn (stream &TransformStream) backpressure() bool {
 	return stream.backpressure_
 }
 
+pub fn (stream &TransformStream) backpressure_change_promise_realm() StreamRealm {
+	return stream.backpressure_change_promise_.realm()
+}
+
 fn (mut stream TransformStream) update_backpressure() {
 	desired := stream.readable_.desired_size() or { 0.0 }
 	new_backpressure := desired <= 0
@@ -73,7 +114,7 @@ fn (mut stream TransformStream) update_backpressure() {
 			mut changed := stream.backpressure_change_promise_
 			changed.resolve()
 		}
-		stream.backpressure_change_promise_ = VoidPromise.pending()
+		stream.backpressure_change_promise_ = VoidPromise.pending_in(stream.realm_)
 		stream.backpressure_ = new_backpressure
 	}
 }
@@ -113,7 +154,7 @@ fn (mut stream TransformStream) close_writable() &VoidPromise {
 	if !isnil(controller.finish_promise_) {
 		return controller.finish_promise_
 	}
-	controller.finish_promise_ = VoidPromise.pending()
+	controller.finish_promise_ = VoidPromise.pending_in(stream.realm_)
 	mut finish_promise := controller.finish_promise_
 	mut outputs := []Value{}
 	if algorithm := stream.flush_algorithm_ {
@@ -158,7 +199,7 @@ fn (mut stream TransformStream) abort_writable(reason Value) &VoidPromise {
 	if !isnil(controller.finish_promise_) {
 		return controller.finish_promise_
 	}
-	controller.finish_promise_ = VoidPromise.pending()
+	controller.finish_promise_ = VoidPromise.pending_in(stream.realm_)
 	mut finish_promise := controller.finish_promise_
 	if algorithm := stream.cancel_algorithm_ {
 		algorithm(reason) or {
@@ -187,7 +228,7 @@ fn (mut stream TransformStream) cancel_readable(reason Value) &VoidPromise {
 	if !isnil(controller.finish_promise_) {
 		return controller.finish_promise_
 	}
-	controller.finish_promise_ = VoidPromise.pending()
+	controller.finish_promise_ = VoidPromise.pending_in(stream.realm_)
 	mut finish_promise := controller.finish_promise_
 	if algorithm := stream.cancel_algorithm_ {
 		algorithm(reason) or {

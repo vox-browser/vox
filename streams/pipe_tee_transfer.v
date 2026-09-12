@@ -216,25 +216,27 @@ fn pump_readable_pipe(mut source ReadableStream) {
 
 pub fn (mut source ReadableStream) pipe_to(mut destination WritableStream, options StreamPipeOptions) &VoidPromise {
 	if source.locked() {
-		return VoidPromise.rejected('TypeError: Source ReadableStream is locked')
+		return VoidPromise.rejected_in(source.realm_, 'TypeError: Source ReadableStream is locked')
 	}
 	if destination.locked() {
-		return VoidPromise.rejected('TypeError: Destination WritableStream is locked')
+		return VoidPromise.rejected_in(source.realm_, 'TypeError: Destination WritableStream is locked')
 	}
 	if voidptr(&source) == voidptr(&destination) {
-		return VoidPromise.rejected('TypeError: A stream cannot be piped to itself')
+		return VoidPromise.rejected_in(source.realm_, 'TypeError: A stream cannot be piped to itself')
 	}
-	mut reader := source.get_default_reader() or { return VoidPromise.rejected(err.msg()) }
-	writer := destination.get_writer() or {
+	mut reader := ReadableStreamDefaultReader.create(source.realm_, mut source) or {
+		return VoidPromise.rejected_in(source.realm_, err.msg())
+	}
+	writer := WritableStreamDefaultWriter.create(source.realm_, mut destination) or {
 		reader.release_lock() or {}
-		return VoidPromise.rejected(err.msg())
+		return VoidPromise.rejected_in(source.realm_, err.msg())
 	}
 	_ = writer
 	source.disturbed_ = true
 	source.pipe_destination_ = &destination
 	destination.pipe_source_ = &source
 	source.pipe_options_ = options
-	source.pipe_promise_ = VoidPromise.pending()
+	source.pipe_promise_ = VoidPromise.pending_in(source.realm_)
 	if mut signal := options.signal {
 		signal.pipes_ << &source
 	}
@@ -612,10 +614,10 @@ fn (mut source ReadableStream) tee_with_clone(clone_for_branch2 bool) !ReadableS
 	} else {
 		UnderlyingSourceType.default_source
 	}
-	mut branch1 := ReadableStream.construct_impl(UnderlyingSource{
+	mut branch1 := ReadableStream.create(source.realm_, UnderlyingSource{
 		type_: type_
 	}, QueuingStrategy{})!
-	mut branch2 := ReadableStream.construct_impl(UnderlyingSource{
+	mut branch2 := ReadableStream.create(source.realm_, UnderlyingSource{
 		type_: type_
 	}, QueuingStrategy{})!
 	branch1.tee_source_ = &source
@@ -649,7 +651,7 @@ fn cancel_tee_branch(mut branch ReadableStream, reason Value) &VoidPromise {
 	branch.tee_cancel_reason_ = reason
 	branch.queue_.reset()
 	branch.close_internal()
-	branch.tee_cancel_promise_ = VoidPromise.pending()
+	branch.tee_cancel_promise_ = VoidPromise.pending_in(branch.realm_)
 	mut source := branch.tee_source_
 	mut other := &ReadableStream(unsafe { nil })
 	for mut candidate in source.tee_branches_ {

@@ -58,7 +58,7 @@ pub fn (mut stream TransformStream) set_backpressure(value bool) {
 		mut changed := stream.backpressure_change_promise_
 		changed.resolve()
 	}
-	stream.backpressure_change_promise_ = VoidPromise.pending()
+	stream.backpressure_change_promise_ = VoidPromise.pending_in(stream.realm_)
 	stream.backpressure_ = value
 	if value && !isnil(stream.readable_) && stream.readable_.pulling_ {
 		mut readable := stream.readable_
@@ -140,13 +140,13 @@ pub fn initialize_transform_stream(mut stream TransformStream, writable_high_wat
 	stream.transform_algorithm_ = none
 	stream.flush_algorithm_ = none
 	stream.cancel_algorithm_ = none
-	stream.writable_ = WritableStream.construct_impl(UnderlyingSink{}, QueuingStrategy{
+	stream.writable_ = WritableStream.create(stream.realm_, UnderlyingSink{}, QueuingStrategy{
 		high_water_mark: writable_high_water_mark
 		size: writable_size
 	})!
 	stream.writable_.owner_kind_ = .transform
 	stream.writable_.owner_ = voidptr(&stream)
-	stream.readable_ = ReadableStream.construct_impl(UnderlyingSource{}, QueuingStrategy{
+	stream.readable_ = ReadableStream.create(stream.realm_, UnderlyingSource{}, QueuingStrategy{
 		high_water_mark: readable_high_water_mark
 		size: readable_size
 	})!

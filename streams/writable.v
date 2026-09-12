@@ -31,6 +31,7 @@ enum WritableOwnerKind {
 @[heap]
 pub struct WritableStream {
 mut:
+	realm_                   StreamRealm
 	state_                   WritableStreamState
 	stored_error_            string
 	writer_                  &WritableStreamDefaultWriter = unsafe { nil }
@@ -62,12 +63,29 @@ pub fn WritableStream.construct_impl(sink UnderlyingSink, strategy QueuingStrate
 	if type_ := sink.type_ {
 		return error('RangeError: Unsupported underlying sink type ${type_}')
 	}
+	return WritableStream.create(StreamRealm{}, sink, strategy)
+}
+
+pub fn WritableStream.create_for_constructor(realm StreamRealm, sink UnderlyingSink, strategy QueuingStrategy) !&WritableStream {
+	if type_ := sink.type_ {
+		return error("RangeError: Invalid use of reserved key 'type' (${type_})")
+	}
+	return WritableStream.create(realm, sink, strategy)
+}
+
+pub fn WritableStream.create(realm StreamRealm, sink UnderlyingSink, strategy QueuingStrategy) !&WritableStream {
 	size_algorithm := extract_size_algorithm(strategy)
 	high_water_mark := extract_high_water_mark(strategy, 1.0)!
-	mut stream := &WritableStream{}
+	mut stream := &WritableStream{
+		realm_: realm
+	}
 	initialize_writable_stream(mut stream)
 	set_up_writable_stream_default_controller_from_underlying_sink(mut stream, sink, high_water_mark, size_algorithm)!
 	return stream
+}
+
+pub fn (stream &WritableStream) realm() StreamRealm {
+	return stream.realm_
 }
 
 pub fn (stream &WritableStream) state() WritableStreamState {
@@ -127,11 +145,11 @@ fn (mut stream WritableStream) start_erroring(reason string) {
 	stream.stored_error_ = reason
 	if !isnil(stream.writer_) {
 		mut writer := stream.writer_
-		if writer.ready_.state() == .pending {
+			if writer.ready_.state() == .pending {
 			mut ready := writer.ready_
 			ready.reject(reason)
-		} else {
-			writer.ready_ = VoidPromise.rejected(reason)
+			} else {
+				writer.ready_ = VoidPromise.rejected_in(writer.ready_promise_realm(), reason)
 		}
 	}
 	if !writable_stream_has_operation_marked_in_flight(stream) && stream.started_ {
@@ -213,7 +231,7 @@ fn (mut stream WritableStream) perform_close() &VoidPromise {
 	match stream.owner_kind_ {
 		.regular {
 			if algorithm := stream.close_algorithm_ {
-				algorithm() or { return VoidPromise.rejected(err.msg()) }
+				algorithm() or { return VoidPromise.rejected_in(stream.realm_, err.msg()) }
 			}
 		}
 		.transform {
@@ -224,19 +242,19 @@ fn (mut stream WritableStream) perform_close() &VoidPromise {
 			if !isnil(stream.message_port_) {
 				mut port := stream.message_port_
 				pack_and_post_message(mut port, 'close', undefined_value()) or {
-					return VoidPromise.rejected(err.msg())
+					return VoidPromise.rejected_in(stream.realm_, err.msg())
 				}
 			}
 		}
 	}
-	return VoidPromise.fulfilled()
+	return VoidPromise.fulfilled_in(stream.realm_)
 }
 
 fn (mut stream WritableStream) perform_abort(reason Value) &VoidPromise {
 	match stream.owner_kind_ {
 		.regular {
 			if algorithm := stream.abort_algorithm_ {
-				algorithm(reason) or { return VoidPromise.rejected(err.msg()) }
+				algorithm(reason) or { return VoidPromise.rejected_in(stream.realm_, err.msg()) }
 			}
 		}
 		.transform {
@@ -247,12 +265,12 @@ fn (mut stream WritableStream) perform_abort(reason Value) &VoidPromise {
 			if !isnil(stream.message_port_) {
 				mut port := stream.message_port_
 				pack_and_post_message(mut port, 'error', reason) or {
-					return VoidPromise.rejected(err.msg())
+					return VoidPromise.rejected_in(stream.realm_, err.msg())
 				}
 			}
 		}
 	}
-	return VoidPromise.fulfilled()
+	return VoidPromise.fulfilled_in(stream.realm_)
 }
 
 fn (mut stream WritableStream) process_queue() {
@@ -286,17 +304,21 @@ fn (mut stream WritableStream) process_queue() {
 }
 
 fn (mut stream WritableStream) write_internal(value Value) &VoidPromise {
+	return stream.write_internal_in(value, stream.realm_)
+}
+
+fn (mut stream WritableStream) write_internal_in(value Value, promise_realm StreamRealm) &VoidPromise {
 	mut controller := stream.controller_
 	chunk_size := writable_stream_default_controller_get_chunk_size(mut controller, value) or {
-		return VoidPromise.rejected(err.msg())
+		return VoidPromise.rejected_in(promise_realm, err.msg())
 	}
 	if stream.state_ == .errored || stream.state_ == .erroring {
-		return VoidPromise.rejected(stream.stored_error_)
+		return VoidPromise.rejected_in(promise_realm, stream.stored_error_)
 	}
 	if stream.state_ == .closed || writable_stream_close_queued_or_in_flight(stream) {
-		return VoidPromise.rejected('TypeError: WritableStream is closing or closed')
+		return VoidPromise.rejected_in(promise_realm, 'TypeError: WritableStream is closing or closed')
 	}
-	mut request := VoidPromise.pending()
+	mut request := VoidPromise.pending_in(promise_realm)
 	stream.write_requests_.append(request)
 	writable_stream_default_controller_write(mut controller, value, chunk_size) or {
 		if request.state() == .pending {
@@ -307,16 +329,20 @@ fn (mut stream WritableStream) write_internal(value Value) &VoidPromise {
 }
 
 fn (mut stream WritableStream) close_internal() &VoidPromise {
+	return stream.close_internal_in(stream.realm_)
+}
+
+fn (mut stream WritableStream) close_internal_in(promise_realm StreamRealm) &VoidPromise {
 	if stream.state_ == .closed {
-		return VoidPromise.rejected('TypeError: WritableStream is already closed')
+		return VoidPromise.rejected_in(promise_realm, 'TypeError: WritableStream is already closed')
 	}
 	if stream.state_ == .errored || stream.state_ == .erroring {
-		return VoidPromise.rejected(stream.stored_error_)
+		return VoidPromise.rejected_in(promise_realm, stream.stored_error_)
 	}
 	if writable_stream_close_queued_or_in_flight(stream) {
-		return VoidPromise.rejected('TypeError: WritableStream is already closing')
+		return VoidPromise.rejected_in(promise_realm, 'TypeError: WritableStream is already closing')
 	}
-	request := VoidPromise.pending()
+	request := VoidPromise.pending_in(promise_realm)
 	stream.close_request_ = request
 	if !isnil(stream.writer_) && stream.backpressure_ && stream.state_ == .writable {
 		mut ready := stream.writer_.ready_
@@ -328,8 +354,12 @@ fn (mut stream WritableStream) close_internal() &VoidPromise {
 }
 
 fn (mut stream WritableStream) abort_internal(reason Value) &VoidPromise {
+	return stream.abort_internal_in(reason, stream.realm_)
+}
+
+fn (mut stream WritableStream) abort_internal_in(reason Value, promise_realm StreamRealm) &VoidPromise {
 	if stream.state_ in [.closed, .errored] {
-		return VoidPromise.fulfilled()
+		return VoidPromise.fulfilled_in(promise_realm)
 	}
 	mut signal := stream.controller_.signal_
 	signal.abort(reason)
@@ -337,7 +367,7 @@ fn (mut stream WritableStream) abort_internal(reason Value) &VoidPromise {
 		return stream.pending_abort_request_
 	}
 	was_already_erroring := stream.state_ == .erroring
-	request := VoidPromise.pending()
+	request := VoidPromise.pending_in(promise_realm)
 	stream.pending_abort_request_ = request
 	stream.pending_abort_reason_ = if was_already_erroring {
 		undefined_value()
@@ -355,33 +385,37 @@ fn (mut stream WritableStream) abort_internal(reason Value) &VoidPromise {
 
 pub fn (mut stream WritableStream) close() &VoidPromise {
 	if stream.locked() {
-		return VoidPromise.rejected('TypeError: Cannot close a locked WritableStream')
+		return VoidPromise.rejected_in(stream.realm_, 'TypeError: Cannot close a locked WritableStream')
 	}
 	return stream.close_internal()
 }
 
 pub fn (mut stream WritableStream) abort(reason Value) &VoidPromise {
 	if stream.locked() {
-		return VoidPromise.rejected('TypeError: Cannot abort a locked WritableStream')
+		return VoidPromise.rejected_in(stream.realm_, 'TypeError: Cannot abort a locked WritableStream')
 	}
 	return stream.abort_internal(reason)
 }
 
 pub fn (mut stream WritableStream) get_writer() !&WritableStreamDefaultWriter {
+	return WritableStreamDefaultWriter.create(stream.realm_, mut stream)
+}
+
+pub fn WritableStreamDefaultWriter.create(realm StreamRealm, mut stream WritableStream) !&WritableStreamDefaultWriter {
 	if stream.locked() {
 		return error('TypeError: WritableStream is already locked')
 	}
-	mut closed := VoidPromise.pending()
-	mut ready := VoidPromise.fulfilled()
+	mut closed := VoidPromise.pending_in(realm)
+	mut ready := VoidPromise.fulfilled_in(realm)
 	if stream.state_ == .closed {
 		closed.resolve()
 	} else if stream.state_ == .erroring {
-		ready = VoidPromise.rejected(stream.stored_error_)
+		ready = VoidPromise.rejected_in(realm, stream.stored_error_)
 	} else if stream.state_ == .errored {
 		closed.reject(stream.stored_error_)
-		ready = VoidPromise.rejected(stream.stored_error_)
+		ready = VoidPromise.rejected_in(realm, stream.stored_error_)
 	} else if stream.backpressure_ {
-		ready = VoidPromise.pending()
+		ready = VoidPromise.pending_in(realm)
 	}
 	writer := &WritableStreamDefaultWriter{
 		stream_: &stream
@@ -417,7 +451,7 @@ mut:
 }
 
 pub fn WritableStreamDefaultWriter.construct_impl(mut stream WritableStream) !&WritableStreamDefaultWriter {
-	return stream.get_writer()
+	return WritableStreamDefaultWriter.create(stream.realm_, mut stream)
 }
 
 pub fn (writer &WritableStreamDefaultWriter) closed() &VoidPromise {
@@ -435,28 +469,36 @@ pub fn (writer &WritableStreamDefaultWriter) ready() &VoidPromise {
 	return writer.ready_
 }
 
+pub fn (writer &WritableStreamDefaultWriter) closed_promise_realm() StreamRealm {
+	return writer.closed_.realm()
+}
+
+pub fn (writer &WritableStreamDefaultWriter) ready_promise_realm() StreamRealm {
+	return writer.ready_.realm()
+}
+
 pub fn (mut writer WritableStreamDefaultWriter) write(value Value) &VoidPromise {
 	if writer.released_ || isnil(writer.stream_) {
-		return VoidPromise.rejected('TypeError: Writer has no associated stream')
+		return VoidPromise.rejected_in(writer.ready_promise_realm(), 'TypeError: Writer has no associated stream')
 	}
 	mut stream := writer.stream_
-	return stream.write_internal(value)
+	return stream.write_internal_in(value, writer.ready_promise_realm())
 }
 
 pub fn (mut writer WritableStreamDefaultWriter) close() &VoidPromise {
 	if writer.released_ || isnil(writer.stream_) {
-		return VoidPromise.rejected('TypeError: Writer has no associated stream')
+		return VoidPromise.rejected_in(writer.closed_promise_realm(), 'TypeError: Writer has no associated stream')
 	}
 	mut stream := writer.stream_
-	return stream.close_internal()
+	return stream.close_internal_in(writer.closed_promise_realm())
 }
 
 pub fn (mut writer WritableStreamDefaultWriter) abort(reason Value) &VoidPromise {
 	if writer.released_ || isnil(writer.stream_) {
-		return VoidPromise.rejected('TypeError: Writer has no associated stream')
+		return VoidPromise.rejected_in(writer.closed_promise_realm(), 'TypeError: Writer has no associated stream')
 	}
 	mut stream := writer.stream_
-	return stream.abort_internal(reason)
+	return stream.abort_internal_in(reason, writer.closed_promise_realm())
 }
 
 pub fn (mut writer WritableStreamDefaultWriter) release_lock() {
@@ -471,12 +513,12 @@ pub fn (mut writer WritableStreamDefaultWriter) release_lock() {
 		mut ready := writer.ready_
 		ready.reject('TypeError: Writer was released')
 	} else {
-		writer.ready_ = VoidPromise.rejected('TypeError: Writer was released')
+		writer.ready_ = VoidPromise.rejected_in(writer.ready_promise_realm(), 'TypeError: Writer was released')
 	}
 	if writer.closed_.state() == .pending {
 		mut closed := writer.closed_
 		closed.reject('TypeError: Writer was released')
 	} else {
-		writer.closed_ = VoidPromise.rejected('TypeError: Writer was released')
+		writer.closed_ = VoidPromise.rejected_in(writer.closed_promise_realm(), 'TypeError: Writer was released')
 	}
 }

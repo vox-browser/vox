@@ -379,7 +379,7 @@ pub fn set_up_readable_stream_byob_reader(mut reader ReadableStreamBYOBReader, m
 	if stream.locked() || !stream.byte_stream_ {
 		return error('TypeError: Cannot set up a BYOB reader for this stream')
 	}
-	created := stream.get_byob_reader()!
+	created := ReadableStreamBYOBReader.create(stream.realm_, mut stream)!
 	reader = *created
 }
 
@@ -387,6 +387,6 @@ pub fn set_up_readable_stream_default_reader(mut reader ReadableStreamDefaultRea
 	if stream.locked() {
 		return error('TypeError: Cannot set up a reader for a locked stream')
 	}
-	created := stream.get_default_reader()!
+	created := ReadableStreamDefaultReader.create(stream.realm_, mut stream)!
 	reader = *created
 }

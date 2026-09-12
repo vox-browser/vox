@@ -284,21 +284,25 @@ fn (mut stream ReadableStream) invalidate_byob_request() {
 }
 
 fn (mut stream ReadableStream) byte_controller_pull_steps() &ReadPromise {
+	return stream.byte_controller_pull_steps_in(stream.realm_)
+}
+
+fn (mut stream ReadableStream) byte_controller_pull_steps_in(promise_realm StreamRealm) &ReadPromise {
 	mut controller := stream.byte_controller_
 	if controller.queue_total_size_ > 0 {
 		entry := controller.take_first_byte_queue_entry() or {
-			return ReadPromise.rejected(err.msg())
+			return ReadPromise.rejected_in(promise_realm, stream.result_realm_, err.msg())
 		}
 		value := bytes_value(unsafe {
 			entry.buffer.data_[entry.byte_offset..entry.byte_offset + entry.byte_length]
 		})
 		readable_byte_stream_controller_handle_queue_drain(mut controller)
-		return ReadPromise.fulfilled(value, false)
+		return ReadPromise.fulfilled_in(promise_realm, stream.result_realm_, value, false)
 	}
 	if size := stream.auto_allocate_size_ {
 		controller.pending_pull_intos_.append(new_pull_into_descriptor(int(size), 1, 1, .default_reader))
 	}
-	promise := ReadPromise.pending()
+	promise := ReadPromise.pending_in(promise_realm, stream.result_realm_)
 	stream.pending_reads_.append(promise)
 	readable_byte_stream_controller_call_pull_if_needed(mut controller)
 	return promise
@@ -346,12 +350,12 @@ fn readable_byte_stream_controller_pull_into_request(mut controller ReadableByte
 
 fn (mut reader ReadableStreamBYOBReader) read_into_existing_view(view []u8, minimum int) &BYOBReadPromise {
 	if view.len == 0 || minimum <= 0 || minimum > view.len {
-		return BYOBReadPromise.rejected('RangeError: Invalid BYOB tee view')
+		return BYOBReadPromise.rejected_in(reader.closed_promise_realm(), 'RangeError: Invalid BYOB tee view')
 	}
 	if reader.released_ || isnil(reader.stream_) {
-		return BYOBReadPromise.rejected('TypeError: Cannot read from an empty stream')
+		return BYOBReadPromise.rejected_in(reader.closed_promise_realm(), 'TypeError: Cannot read from an empty stream')
 	}
-	mut promise := BYOBReadPromise.pending()
+	mut promise := BYOBReadPromise.pending_in(reader.closed_promise_realm())
 	mut stream := reader.stream_
 	stream.disturbed_ = true
 	if stream.state_ == .errored {
@@ -365,13 +369,17 @@ fn (mut reader ReadableStreamBYOBReader) read_into_existing_view(view []u8, mini
 }
 
 pub fn (mut stream ReadableStream) get_byob_reader() !&ReadableStreamBYOBReader {
+	return ReadableStreamBYOBReader.create(stream.realm_, mut stream)
+}
+
+pub fn ReadableStreamBYOBReader.create(realm StreamRealm, mut stream ReadableStream) !&ReadableStreamBYOBReader {
 	if !stream.byte_stream_ {
 		return error('TypeError: BYOB readers require a readable byte stream')
 	}
 	if stream.locked() {
 		return error('TypeError: ReadableStream is already locked')
 	}
-	mut closed := VoidPromise.pending()
+	mut closed := VoidPromise.pending_in(realm)
 	if stream.state_ == .closed {
 		closed.resolve()
 	} else if stream.state_ == .errored {
@@ -396,28 +404,32 @@ mut:
 }
 
 pub fn ReadableStreamBYOBReader.construct_impl(mut stream ReadableStream) !&ReadableStreamBYOBReader {
-	return stream.get_byob_reader()
+	return ReadableStreamBYOBReader.create(stream.realm_, mut stream)
 }
 
 pub fn (reader &ReadableStreamBYOBReader) closed() &VoidPromise {
 	return reader.closed_
 }
 
+pub fn (reader &ReadableStreamBYOBReader) closed_promise_realm() StreamRealm {
+	return reader.closed_.realm()
+}
+
 pub fn (mut reader ReadableStreamBYOBReader) read(view_length int, minimum int) &BYOBReadPromise {
 	// ReadableStreamBYOBReader::read, adapted to the V byte-view model.
 	if view_length <= 0 {
-		return BYOBReadPromise.rejected('TypeError: Cannot read in an empty buffer')
+		return BYOBReadPromise.rejected_in(reader.closed_promise_realm(), 'TypeError: Cannot read in an empty buffer')
 	}
 	if minimum <= 0 {
-		return BYOBReadPromise.rejected('TypeError: options["min"] cannot have a value of 0')
+		return BYOBReadPromise.rejected_in(reader.closed_promise_realm(), 'TypeError: options["min"] cannot have a value of 0')
 	}
 	if minimum > view_length {
-		return BYOBReadPromise.rejected('RangeError: minimum exceeds the length of the view')
+		return BYOBReadPromise.rejected_in(reader.closed_promise_realm(), 'RangeError: minimum exceeds the length of the view')
 	}
 	if reader.released_ || isnil(reader.stream_) {
-		return BYOBReadPromise.rejected('TypeError: Cannot read from an empty stream')
+		return BYOBReadPromise.rejected_in(reader.closed_promise_realm(), 'TypeError: Cannot read from an empty stream')
 	}
-	mut promise := BYOBReadPromise.pending()
+	mut promise := BYOBReadPromise.pending_in(reader.closed_promise_realm())
 	mut stream := reader.stream_
 	stream.disturbed_ = true
 	if stream.state_ == .errored {
@@ -431,7 +443,7 @@ pub fn (mut reader ReadableStreamBYOBReader) read(view_length int, minimum int) 
 
 pub fn (mut reader ReadableStreamBYOBReader) cancel(reason Value) &VoidPromise {
 	if reader.released_ || isnil(reader.stream_) {
-		return VoidPromise.rejected('TypeError: Reader has no associated stream')
+		return VoidPromise.rejected_in(reader.closed_promise_realm(), 'TypeError: Reader has no associated stream')
 	}
 	mut stream := reader.stream_
 	return stream.cancel_internal(reason)
@@ -454,7 +466,7 @@ fn readable_stream_byob_reader_generic_release(mut reader ReadableStreamBYOBRead
 		mut closed := reader.closed_
 		closed.reject('TypeError: Reader has been released')
 	} else {
-		reader.closed_ = VoidPromise.rejected('TypeError: Reader has been released')
+		reader.closed_ = VoidPromise.rejected_in(reader.closed_promise_realm(), 'TypeError: Reader has been released')
 	}
 	mut controller := stream.byte_controller_
 	controller.release_steps()

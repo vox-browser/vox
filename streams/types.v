@@ -109,27 +109,60 @@ pub enum PromiseState {
 	rejected
 }
 
+// Streams which are exposed in different JavaScript realms can outlive the
+// wrapper which created them. Ladybird therefore carries the realm alongside
+// the stream or promise instead of recovering it from a PlatformObject. The V
+// translation uses a small, embeddable identity because it deliberately does
+// not depend on LibJS.
+pub struct StreamRealm {
+pub:
+	id u64
+}
+
+pub fn StreamRealm.create(id u64) StreamRealm {
+	return StreamRealm{
+		id: id
+	}
+}
+
 @[heap]
 pub struct VoidPromise {
 pub mut:
 	state_  PromiseState
 	reason_ string
+	realm_  StreamRealm
 }
 
 pub fn VoidPromise.pending() &VoidPromise {
-	return &VoidPromise{}
+	return VoidPromise.pending_in(StreamRealm{})
+}
+
+pub fn VoidPromise.pending_in(realm StreamRealm) &VoidPromise {
+	return &VoidPromise{
+		realm_: realm
+	}
 }
 
 pub fn VoidPromise.fulfilled() &VoidPromise {
+	return VoidPromise.fulfilled_in(StreamRealm{})
+}
+
+pub fn VoidPromise.fulfilled_in(realm StreamRealm) &VoidPromise {
 	return &VoidPromise{
 		state_: .fulfilled
+		realm_: realm
 	}
 }
 
 pub fn VoidPromise.rejected(reason string) &VoidPromise {
+	return VoidPromise.rejected_in(StreamRealm{}, reason)
+}
+
+pub fn VoidPromise.rejected_in(realm StreamRealm, reason string) &VoidPromise {
 	return &VoidPromise{
 		state_: .rejected
 		reason_: reason
+		realm_: realm
 	}
 }
 
@@ -139,6 +172,10 @@ pub fn (promise &VoidPromise) state() PromiseState {
 
 pub fn (promise &VoidPromise) reason() string {
 	return promise.reason_
+}
+
+pub fn (promise &VoidPromise) realm() StreamRealm {
+	return promise.realm_
 }
 
 pub fn (mut promise VoidPromise) resolve() {
@@ -223,18 +260,33 @@ pub:
 @[heap]
 pub struct ReadPromise {
 pub mut:
-	state_  PromiseState
-	result_ ReadResult
-	reason_ string
+	state_        PromiseState
+	result_       ReadResult
+	reason_       string
+	realm_        StreamRealm
+	result_realm_ ?StreamRealm
 }
 
 pub fn ReadPromise.pending() &ReadPromise {
-	return &ReadPromise{}
+	return ReadPromise.pending_in(StreamRealm{}, none)
+}
+
+pub fn ReadPromise.pending_in(realm StreamRealm, result_realm ?StreamRealm) &ReadPromise {
+	return &ReadPromise{
+		realm_: realm
+		result_realm_: result_realm
+	}
 }
 
 pub fn ReadPromise.fulfilled(value Value, done bool) &ReadPromise {
+	return ReadPromise.fulfilled_in(StreamRealm{}, none, value, done)
+}
+
+pub fn ReadPromise.fulfilled_in(realm StreamRealm, result_realm ?StreamRealm, value Value, done bool) &ReadPromise {
 	return &ReadPromise{
 		state_: .fulfilled
+		realm_: realm
+		result_realm_: result_realm
 		result_: ReadResult{
 			value: value
 			done: done
@@ -243,9 +295,15 @@ pub fn ReadPromise.fulfilled(value Value, done bool) &ReadPromise {
 }
 
 pub fn ReadPromise.rejected(reason string) &ReadPromise {
+	return ReadPromise.rejected_in(StreamRealm{}, none, reason)
+}
+
+pub fn ReadPromise.rejected_in(realm StreamRealm, result_realm ?StreamRealm, reason string) &ReadPromise {
 	return &ReadPromise{
 		state_: .rejected
 		reason_: reason
+		realm_: realm
+		result_realm_: result_realm
 	}
 }
 
@@ -259,6 +317,14 @@ pub fn (promise &ReadPromise) result() ReadResult {
 
 pub fn (promise &ReadPromise) reason() string {
 	return promise.reason_
+}
+
+pub fn (promise &ReadPromise) realm() StreamRealm {
+	return promise.realm_
+}
+
+pub fn (promise &ReadPromise) result_realm() ?StreamRealm {
+	return promise.result_realm_
 }
 
 fn (mut promise ReadPromise) resolve(value Value, done bool) {
@@ -374,15 +440,27 @@ pub mut:
 	state_  PromiseState
 	result_ BYOBReadResult
 	reason_ string
+	realm_  StreamRealm
 }
 
 pub fn BYOBReadPromise.pending() &BYOBReadPromise {
-	return &BYOBReadPromise{}
+	return BYOBReadPromise.pending_in(StreamRealm{})
+}
+
+pub fn BYOBReadPromise.pending_in(realm StreamRealm) &BYOBReadPromise {
+	return &BYOBReadPromise{
+		realm_: realm
+	}
 }
 
 pub fn BYOBReadPromise.fulfilled(value []u8, done bool) &BYOBReadPromise {
+	return BYOBReadPromise.fulfilled_in(StreamRealm{}, value, done)
+}
+
+pub fn BYOBReadPromise.fulfilled_in(realm StreamRealm, value []u8, done bool) &BYOBReadPromise {
 	return &BYOBReadPromise{
 		state_: .fulfilled
+		realm_: realm
 		result_: BYOBReadResult{
 			value: value
 			done: done
@@ -391,9 +469,14 @@ pub fn BYOBReadPromise.fulfilled(value []u8, done bool) &BYOBReadPromise {
 }
 
 pub fn BYOBReadPromise.rejected(reason string) &BYOBReadPromise {
+	return BYOBReadPromise.rejected_in(StreamRealm{}, reason)
+}
+
+pub fn BYOBReadPromise.rejected_in(realm StreamRealm, reason string) &BYOBReadPromise {
 	return &BYOBReadPromise{
 		state_: .rejected
 		reason_: reason
+		realm_: realm
 	}
 }
 
@@ -407,6 +490,10 @@ pub fn (promise &BYOBReadPromise) result() BYOBReadResult {
 
 pub fn (promise &BYOBReadPromise) reason() string {
 	return promise.reason_
+}
+
+pub fn (promise &BYOBReadPromise) realm() StreamRealm {
+	return promise.realm_
 }
 
 fn (mut promise BYOBReadPromise) resolve(value []u8, done bool) {
