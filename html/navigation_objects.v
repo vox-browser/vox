@@ -54,12 +54,15 @@ pub fn (entry &NavigationHistoryEntry) url() ?string {
 		return ''
 	}
 	associated_document := entry.associated_document_ or { return '' }
-	if history_document := entry.session_history_entry_.document() {
-		if voidptr(history_document) != voidptr(associated_document) {
-			if state := entry.session_history_entry_.document_state {
-				if state.request_referrer_policy in [.no_referrer, .origin] {
-					return none
-				}
+	if state := entry.session_history_entry_.document_state {
+		is_associated_document := if document_id := state.document_id() {
+			document_id == associated_document.unique_id()
+		} else {
+			false
+		}
+		if !is_associated_document {
+			if state.request_referrer_policy in [.no_referrer, .origin] {
+				return none
 			}
 		}
 	}
@@ -97,8 +100,9 @@ pub fn (entry &NavigationHistoryEntry) same_document() bool {
 		return false
 	}
 	associated_document := entry.associated_document_ or { return false }
-	history_document := entry.session_history_entry_.document() or { return false }
-	return voidptr(history_document) == voidptr(associated_document)
+	state := entry.session_history_entry_.document_state or { return false }
+	document_id := state.document_id() or { return false }
+	return document_id == associated_document.unique_id()
 }
 
 pub fn (entry &NavigationHistoryEntry) get_state() !dom.JSValue {

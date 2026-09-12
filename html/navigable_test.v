@@ -220,7 +220,7 @@ fn test_cross_document_navigation_completion_runs_for_destroyed_navigables() {
 		}
 	}
 	mut observation := &NavigableHistoryStepObservation{}
-	finalize_a_cross_document_navigation(model, .replace, .none, entry, fn [mut observation] (result HistoryStepResult) {
+	finalize_a_cross_document_navigation(model, .replace, .none, entry, document, fn [mut observation] (result HistoryStepResult) {
 		observation.complete(result)
 	})
 	assert observation.completed
@@ -237,12 +237,14 @@ fn test_activating_an_entry_replays_deferred_complete_loading() {
 	entry := &SessionHistoryEntry{
 		url: deferred_document.url
 		document_state: &DocumentState{
-			document: deferred_document
+			document_id_: deferred_document.unique_id()
 		}
 	}
 
-	model.activate_history_entry(entry)
+	model.activate_history_entry(entry, deferred_document)
 	assert model.active_document()? == deferred_document
+	assert entry.document() == none
+	assert entry.document_state()?.document_id()? == deferred_document.unique_id()
 	assert !deferred_document.document_completely_loaded_deferred()
 }
 

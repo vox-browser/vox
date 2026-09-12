@@ -126,6 +126,7 @@ pub fn TraversableNavigable.create_a_new_top_level_traversable(target_name strin
 	document.set_origin(dom.origin_create_opaque())
 	state := &DocumentState{
 		document: document
+		document_id_: document.unique_id()
 		origin: document.origin()
 	}
 	entry := &SessionHistoryEntry{
@@ -154,6 +155,7 @@ pub fn TraversableNavigable.create_a_fresh_top_level_traversable(initial_navigat
 	document.set_origin(initial_navigation_url.origin())
 	state := &DocumentState{
 		document: document
+		document_id_: document.unique_id()
 		origin: document.origin()
 		resource: initial_resource
 		ever_populated: true
@@ -195,6 +197,11 @@ pub fn (traversable &TraversableNavigable) active_session_history_entry() ?&Sess
 
 pub fn (traversable &TraversableNavigable) active_document() ?&dom.Document {
 	return traversable.active_document_
+}
+
+pub fn (traversable &TraversableNavigable) active_document_id() ?dom.UniqueNodeID {
+	document := traversable.active_document_ or { return none }
+	return document.unique_id()
 }
 
 pub fn (traversable &TraversableNavigable) running_nested_apply_history_step() bool {
@@ -335,7 +342,10 @@ pub fn (traversable &TraversableNavigable) get_all_navigables_that_might_experie
 		return []&dom.Navigable{}
 	}
 	reload_pending := if state := target.document_state { state.reload_pending } else { false }
-	if target.document() != traversable.active_document_ || reload_pending {
+	target_state := target.document_state or { return [host] }
+	target_document_id := target_state.document_id() or { return [host] }
+	active_document_id := traversable.active_document_id() or { return [host] }
+	if target_document_id != active_document_id || reload_pending {
 		return [host]
 	}
 	return []&dom.Navigable{}
@@ -654,7 +664,7 @@ fn (mut state ApplyHistoryStepState) populate_target_document_if_needed() {
 	}
 	mut mutable_document_state := unsafe { &DocumentState(document_state) }
 	if mutable_document_state.reload_pending {
-		mutable_document_state.document = none
+		mutable_document_state.set_document(none)
 	}
 	mutable_document_state.reload_pending = false
 	if host := state.traversable.host_navigable_ {
@@ -695,7 +705,7 @@ fn (mut state ApplyHistoryStepState) populate_target_document_if_needed() {
 			document.populate_with_html_head_and_body() or {}
 		}
 	}
-	mutable_document_state.document = document
+	mutable_document_state.set_document(document)
 	mutable_document_state.ever_populated = true
 	state.document_population_completed()
 }
@@ -757,22 +767,25 @@ fn (mut state ApplyHistoryStepState) commit_change_job_after_potential_unloads()
 		return
 	}
 	mut traversable := unsafe { &TraversableNavigable(state.traversable) }
+	resolved_document := state.target.document()
 	traversable.active_session_history_entry_ = state.target
-	traversable.active_document_ = state.target.document()
+	traversable.active_document_ = resolved_document
 	if mut host := traversable.host_navigable_ {
 		if model := navigable_model_for_host(host) {
 			mut mutable_model := unsafe { &NavigableModel(model) }
 			mutable_model.set_ongoing_navigation(NavigableOngoingNavigation{})
-			mutable_model.activate_history_entry(state.target)
+			if document := resolved_document {
+				mutable_model.activate_history_entry(state.target, document)
+			}
 		} else {
-			host.active_document_ = state.target.document()
+			host.active_document_ = resolved_document
 		}
 	}
 	if document_state := state.target.document_state {
 		mut mutable_document_state := unsafe { &DocumentState(document_state) }
 		mutable_document_state.reload_pending = false
 	}
-	if document := state.target.document() {
+	if document := resolved_document {
 		position := traversable.get_the_history_object_length_and_index(state.used_step) or {
 			HistoryObjectLengthAndIndex{}
 		}

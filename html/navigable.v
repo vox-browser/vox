@@ -241,11 +241,12 @@ pub fn NavigableModel.create(host &dom.Navigable, context ?&BrowsingContextModel
 	model.is_svg_page_ = document.get_content_type() == 'image/svg+xml'
 	state := &DocumentState{
 		document: document
+		document_id_: document.unique_id()
 		origin: document.origin()
 		navigable_target_name: if value := context { value.target_name() } else { '' }
 		ever_populated: true
 	}
-	model.initialize_navigable(state, parent_model)!
+	model.initialize_navigable(state, parent_model, document)!
 	return model
 }
 
@@ -299,10 +300,7 @@ pub fn (model &NavigableModel) is_svg_page() bool {
 }
 
 // https://html.spec.whatwg.org/multipage/document-sequences.html#initialize-the-navigable
-pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentState, parent ?&NavigableModel) ! {
-	document := document_state.document or {
-		return error('initialize_navigable requires a document state with a document')
-	}
+pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentState, parent ?&NavigableModel, document &dom.Document) ! {
 	model.id_ = '${html_next_navigable_id}'
 	html_next_navigable_id++
 	mut entry := &SessionHistoryEntry{
@@ -319,6 +317,8 @@ pub fn (mut model NavigableModel) initialize_navigable(document_state &DocumentS
 	model.has_session_history_entry_and_ready_ = parent == none
 	mut host := unsafe { &dom.Navigable(model.host_) }
 	host.active_document_ = document
+	mut mutable_document_state := unsafe { &DocumentState(document_state) }
+	mutable_document_state.set_document_id(document.unique_id())
 	if parent_model := parent {
 		host.parent_ = parent_model.host_
 		host.traversable_navigable_ = parent_model.host_.traversable_navigable()
@@ -479,12 +479,10 @@ pub fn (model &NavigableModel) get_the_target_history_entry(target_step int) ?&S
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#activate-history-entry
-pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryEntry) {
+pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryEntry, new_document &dom.Document) {
 	value := entry or { return }
-	new_document := value.document() or { return }
 	model.active_session_history_entry_ = value
-	mut host := unsafe { &dom.Navigable(model.host_) }
-	host.active_document_ = new_document
+	model.set_active_document(new_document)
 	mut document := unsafe { &dom.Document(new_document) }
 	document.set_cached_navigable(model.host_)
 	document.make_active()
@@ -507,8 +505,23 @@ pub fn (mut model NavigableModel) activate_history_entry(entry ?&SessionHistoryE
 }
 
 pub fn (model &NavigableModel) active_document() ?&dom.Document {
-	entry := model.active_session_history_entry_ or { return model.host_.active_document() }
-	return entry.document()
+	return model.host_.active_document()
+}
+
+pub fn (model &NavigableModel) active_document_id() ?dom.UniqueNodeID {
+	document := model.active_document() or { return none }
+	return document.unique_id()
+}
+
+pub fn (mut model NavigableModel) set_active_document(document ?&dom.Document) {
+	mut host := unsafe { &dom.Navigable(model.host_) }
+	host.active_document_ = document
+	if entry := model.active_session_history_entry_ {
+		if state := entry.document_state {
+			mut mutable_state := unsafe { &DocumentState(state) }
+			mutable_state.set_document_id(if value := document { value.unique_id() } else { none })
+		}
+	}
 }
 
 pub fn (model &NavigableModel) active_browsing_context() ?&BrowsingContextModel {
@@ -981,7 +994,7 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		if params := navigation_params {
 			document.set_active_sandboxing_flag_bits(params.final_sandboxing_flags.bits)
 		}
-		state.document = document
+		state.set_document(document)
 		document.set_cached_navigable(model.host_)
 		if context := model.context_ {
 			if document.get_browsing_context() == none {
@@ -1164,7 +1177,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 			return
 		}
 		if non_fetch := received_navigation_params.non_fetch_params {
-			state.document = attempt_to_create_a_non_fetch_scheme_document(non_fetch)
+			state.set_document(attempt_to_create_a_non_fetch_scheme_document(non_fetch))
 			if state.document == none {
 				model.set_ongoing_navigation(NavigableOngoingNavigation{})
 				return
@@ -1180,14 +1193,14 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 	}
 	model.populate_session_history_entry_document(entry, source_snapshot_params, model.snapshot_target_snapshot_params(), params.user_involvement, navigation_id, received_navigation_params.navigation_params, none)
 	finalize_session_history_entry(entry, received_navigation_params, true, none)
-	finalize_a_cross_document_navigation(&model, history_handling, params.user_involvement, entry, none)
-}
-
-fn (mut model NavigableModel) commit_navigation_entry(entry &SessionHistoryEntry, history_handling HistoryHandlingBehavior) {
-	if entry.document() == none {
+	new_document := entry.document() or {
 		model.set_ongoing_navigation(NavigableOngoingNavigation{})
 		return
 	}
+	finalize_a_cross_document_navigation(&model, history_handling, params.user_involvement, entry, new_document, none)
+}
+
+fn (mut model NavigableModel) commit_navigation_entry(entry &SessionHistoryEntry, history_handling HistoryHandlingBehavior, document &dom.Document) {
 	mut next_step := 0
 	for existing in model.session_history_entries_ {
 		if existing.step is int {
@@ -1217,13 +1230,13 @@ fn (mut model NavigableModel) commit_navigation_entry(entry &SessionHistoryEntry
 	}
 	model.current_session_history_entry_ = entry
 	model.set_ongoing_navigation(NavigableOngoingNavigation{})
-	model.activate_history_entry(entry)
+	model.activate_history_entry(entry, document)
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#finalize-a-cross-document-navigation
-pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_handling HistoryHandlingBehavior, user_involvement dom.UserNavigationInvolvement, history_entry &SessionHistoryEntry, on_complete ?TraversableHistoryStepCompletion) {
+pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_handling HistoryHandlingBehavior, user_involvement dom.UserNavigationInvolvement, history_entry &SessionHistoryEntry, pending_document ?&dom.Document, on_complete ?TraversableHistoryStepCompletion) {
 	_ = user_involvement
-	if navigable.has_been_destroyed_ || history_entry.document() == none {
+	if navigable.has_been_destroyed_ {
 		complete_history_step(on_complete, .applied)
 		return
 	}
@@ -1232,7 +1245,7 @@ pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_h
 		model.set_navigation_load_event_guard(parent_document)
 	}
 	model.set_delaying_load_events(false)
-	new_document := history_entry.document() or {
+	new_document := pending_document or {
 		complete_history_step(on_complete, .applied)
 		return
 	}
@@ -1285,7 +1298,7 @@ pub fn finalize_a_cross_document_navigation(navigable &NavigableModel, history_h
 			}
 		}
 	}
-	model.commit_navigation_entry(history_entry, history_handling)
+	model.commit_navigation_entry(history_entry, history_handling, new_document)
 	if container := model.container() {
 		mut node := unsafe { &dom.Node(container.as_node()) }
 		node.set_needs_layout_update(.finalize_a_cross_document_navigation)
@@ -1326,7 +1339,10 @@ pub fn perform_url_and_history_update_steps(document &dom.Document, new_url dom.
 			data: new_entry.classic_history_api_state.data.clone()
 		}
 	})
-	model.commit_navigation_entry(new_entry, history_handling)
+	active_document := model.active_document() or {
+		return error('InvalidStateError: navigable has no active document')
+	}
+	model.commit_navigation_entry(new_entry, history_handling, active_document)
 	if mut window := model.active_window() {
 		mut navigation := unsafe { &Navigation(window.navigation()) }
 		navigation.update_the_navigation_api_entries_for_a_same_document_navigation(new_entry, if history_handling == .push {
@@ -1353,12 +1369,16 @@ fn (mut model NavigableModel) navigate_to_a_fragment(url dom.URL, history_handli
 	entry.url = url
 	if state := entry.document_state {
 		mut mutable_state := unsafe { &DocumentState(state) }
-		mutable_state.document = model.active_document()
+		mutable_state.set_document(model.active_document())
 	}
 	if value := navigation_api_state {
 		entry.navigation_api_state = value
 	}
-	model.commit_navigation_entry(entry, history_handling)
+	active_document := model.active_document() or {
+		model.set_ongoing_navigation(NavigableOngoingNavigation{})
+		return
+	}
+	model.commit_navigation_entry(entry, history_handling, active_document)
 	if mut document := model.active_document() {
 		document.set_url(url)
 		document.try_to_scroll_to_the_fragment()
@@ -1392,6 +1412,7 @@ fn (mut model NavigableModel) navigate_to_a_javascript_url(url dom.URL, history_
 	}
 	state := &DocumentState{
 		document: document
+		document_id_: document.unique_id()
 		origin: initiator_origin
 		ever_populated: true
 		navigable_target_name: model.target_name()
@@ -1400,7 +1421,7 @@ fn (mut model NavigableModel) navigate_to_a_javascript_url(url dom.URL, history_
 		url: document.url
 		document_state: state
 	}
-	model.commit_navigation_entry(entry, history_handling)
+	model.commit_navigation_entry(entry, history_handling, document)
 }
 
 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#reload
@@ -1410,7 +1431,7 @@ pub fn (mut model NavigableModel) reload(navigation_api_state ?SerializationReco
 	if state := entry.document_state {
 		mut mutable_state := unsafe { &DocumentState(state) }
 		mutable_state.reload_pending = true
-		mutable_state.document = none
+		mutable_state.set_document(none)
 	}
 	if value := navigation_api_state {
 		entry.navigation_api_state = value
@@ -1422,7 +1443,11 @@ pub fn (mut model NavigableModel) reload(navigation_api_state ?SerializationReco
 	active_document := model.active_document() or { return }
 	source_snapshot_params := snapshot_source_snapshot_params(active_document)
 	model.populate_session_history_entry_document(entry, source_snapshot_params, model.snapshot_target_snapshot_params(), user_involvement, model.ongoing_navigation_.id, none, none)
-	model.commit_navigation_entry(entry, .replace)
+	document := entry.document() or {
+		model.set_ongoing_navigation(NavigableOngoingNavigation{})
+		return
+	}
+	model.commit_navigation_entry(entry, .replace, document)
 }
 
 pub fn (model &NavigableModel) allowed_by_sandboxing_to_navigate(target &NavigableModel, source_snapshot_params SourceSnapshotParams) bool {

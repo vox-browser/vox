@@ -636,8 +636,12 @@ pub fn (mut navigation Navigation) fire_a_traverse_navigate_event(destination_se
 	}
 	document := navigation.associated_document_
 	destination.set_is_same_document(if associated := document {
-		if history_document := destination_session_entry.document() {
-			history_document == associated
+		if state := destination_session_entry.document_state {
+			if document_id := state.document_id() {
+				document_id == associated.unique_id()
+			} else {
+				false
+			}
 		} else {
 			false
 		}

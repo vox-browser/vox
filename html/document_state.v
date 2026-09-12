@@ -55,6 +55,7 @@ pub:
 pub struct DocumentState {
 pub mut:
 	document                 ?&dom.Document
+	document_id_             ?dom.UniqueNodeID
 	history_policy_container HistoryPolicyContainer = DocumentStateClient.client
 	request_referrer         RequestReferrer = RequestReferrerClient.client
 	request_referrer_policy  ReferrerPolicy = .strict_origin_when_cross_origin
@@ -78,6 +79,7 @@ pub fn (state &DocumentState) clone() &DocumentState {
 	}
 	return &DocumentState{
 		document: state.document
+		document_id_: state.document_id()
 		history_policy_container: state.history_policy_container
 		request_referrer: state.request_referrer
 		request_referrer_policy: state.request_referrer_policy
@@ -98,6 +100,24 @@ pub fn (state &DocumentState) document() ?&dom.Document {
 
 pub fn (mut state DocumentState) set_document(document ?&dom.Document) {
 	state.document = document
+	state.document_id_ = if value := document { value.unique_id() } else { none }
+}
+
+// Document state is decoupled from a live document's lifetime. The stable node
+// identity is used for history comparisons; `document` is only the V host's
+// non-owning process-local pointer for an entry that is currently populated.
+pub fn (state &DocumentState) document_id() ?dom.UniqueNodeID {
+	if id := state.document_id_ {
+		return id
+	}
+	if document := state.document {
+		return document.unique_id()
+	}
+	return none
+}
+
+pub fn (mut state DocumentState) set_document_id(document_id ?dom.UniqueNodeID) {
+	state.document_id_ = document_id
 }
 
 pub fn (state &DocumentState) history_policy_container() HistoryPolicyContainer {
