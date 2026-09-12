@@ -16,6 +16,10 @@ fn (_ &CacheTestClient) fetch_request_client_is_window() bool {
 	return false
 }
 
+fn (_ &CacheTestClient) fetch_request_client_is_top_level_window() bool {
+	return false
+}
+
 fn (client &CacheTestClient) fetch_request_client_origin() dom.Origin {
 	return client.top_level_origin
 }

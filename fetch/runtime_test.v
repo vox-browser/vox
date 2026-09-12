@@ -2,6 +2,7 @@
 module fetch
 
 import dom
+import fileapi
 import http
 
 __global (
@@ -277,6 +278,146 @@ fn host_fetch(request &Request) !&Response {
 	response.status = 200
 	response.set_body_bytes('ok'.bytes())
 	return response
+}
+
+struct BlobFetchTestClient {
+	creation_url     dom.URL
+	origin           dom.Origin
+	top_level_origin dom.Origin
+	is_top_level     bool
+}
+
+struct BlobFetchTestEnvironment {
+	creation_url dom.URL
+}
+
+fn (environment &BlobFetchTestEnvironment) fetch_request_environment_creation_url() dom.URL {
+	return environment.creation_url
+}
+
+fn (_ &BlobFetchTestEnvironment) fetch_request_environment_top_level_origin() ?dom.Origin {
+	return none
+}
+
+fn (_ &BlobFetchTestEnvironment) fetch_request_environment_top_level_creation_url() ?dom.URL {
+	return none
+}
+
+fn (client &BlobFetchTestClient) fetch_request_client_api_base_url() dom.URL {
+	return client.creation_url
+}
+
+fn (_ &BlobFetchTestClient) fetch_request_client_is_window() bool {
+	return true
+}
+
+fn (client &BlobFetchTestClient) fetch_request_client_is_top_level_window() bool {
+	return client.is_top_level
+}
+
+fn (client &BlobFetchTestClient) fetch_request_client_origin() dom.Origin {
+	return client.origin
+}
+
+fn (client &BlobFetchTestClient) fetch_request_client_document_url() ?dom.URL {
+	return client.creation_url
+}
+
+fn (client &BlobFetchTestClient) fetch_request_client_creation_url() dom.URL {
+	return client.creation_url
+}
+
+fn (_ &BlobFetchTestClient) fetch_request_client_embedder_policy_credentialless() bool {
+	return false
+}
+
+fn (client &BlobFetchTestClient) fetch_request_client_top_level_origin() ?dom.Origin {
+	return client.top_level_origin
+}
+
+fn (client &BlobFetchTestClient) fetch_request_client_top_level_creation_url() ?dom.URL {
+	return client.creation_url
+}
+
+fn (_ &BlobFetchTestClient) fetch_request_client_cross_origin_isolated_capability() bool {
+	return false
+}
+
+fn test_blob_scheme_fetch_authorizes_navigation_partition_and_top_level_self_fetch() {
+	owner_origin := dom.Origin{ value: 'https://owner.test' }
+	blob := fileapi.Blob.create('blob payload'.bytes(), 'text/plain')
+	blob_url := fileapi.add_entry_to_blob_url_store(fileapi.BlobURLObject.from_blob(blob), fileapi.BlobURLEnvironment{
+		id: 'blob-fetch-test'
+		origin: owner_origin.serialize()
+		storage_key: owner_origin.serialize_for_ipc()
+	})!
+	defer {
+		fileapi.remove_entry_from_blob_url_store(blob_url)
+	}
+	host := FetchHost{ perform: host_fetch }
+
+	mut navigation_request := Request.create()
+	navigation_request.url_list = [dom.URL{blob_url}]
+	navigation_request.destination = .document
+	navigation_response := scheme_fetch(FetchParams.create(navigation_request, FetchTimingInfo.create()), host).response()?
+	assert !navigation_response.is_network_error()
+	assert navigation_response.body?.bytes() == 'blob payload'.bytes()
+	assert navigation_response.header_list.get('Content-Length')? == '12'
+	assert navigation_response.header_list.get('Content-Type')? == 'text/plain'
+
+	mut reserved_environment_request := Request.create()
+	reserved_environment_request.url_list = [dom.URL{blob_url}]
+	reserved_environment_request.set_reserved_client(&BlobFetchTestEnvironment{
+		creation_url: dom.URL{'https://owner.test/environment'}
+	})
+	reserved_environment_response := scheme_fetch(FetchParams.create(reserved_environment_request, FetchTimingInfo.create()), host).response()?
+	assert !reserved_environment_response.is_network_error()
+	assert reserved_environment_response.body?.bytes() == 'blob payload'.bytes()
+
+	mut partitioned_client_request := Request.create()
+	partitioned_client_request.url_list = [dom.URL{blob_url}]
+	partitioned_client_request.destination = .image
+	partitioned_client_request.set_client(&BlobFetchTestClient{
+		creation_url: dom.URL{'https://owner.test/frame'}
+		origin: owner_origin
+		top_level_origin: dom.Origin{ value: 'https://top-level.test' }
+	})
+	partitioned_client_response := scheme_fetch(FetchParams.create(partitioned_client_request, FetchTimingInfo.create()), host).response()?
+	assert !partitioned_client_response.is_network_error()
+
+	mut range_request := Request.create()
+	range_request.url_list = [dom.URL{blob_url}]
+	range_request.destination = .document
+	range_request.header_list.append(http.Header{ name: 'Range', value: 'bytes=5-' })
+	range_response := scheme_fetch(FetchParams.create(range_request, FetchTimingInfo.create()), host).response()?
+	assert range_response.status == 206
+	assert range_response.range_requested
+	assert range_response.body?.bytes() == 'payload'.bytes()
+	assert range_response.header_list.get('Content-Range')? == 'bytes 5-11/12'
+
+	foreign_origin := dom.Origin{ value: 'https://foreign.test' }
+	mut nested_request := Request.create()
+	nested_request.url_list = [dom.URL{blob_url}]
+	nested_request.destination = .image
+	nested_request.set_client(&BlobFetchTestClient{
+		creation_url: dom.URL{'https://foreign.test/frame'}
+		origin: foreign_origin
+		top_level_origin: foreign_origin
+	})
+	assert scheme_fetch(FetchParams.create(nested_request, FetchTimingInfo.create()), host).response()?.is_network_error()
+
+	mut self_fetch_request := Request.create()
+	self_fetch_request.url_list = [dom.URL{blob_url}]
+	self_fetch_request.destination = .image
+	self_fetch_request.set_client(&BlobFetchTestClient{
+		creation_url: dom.URL{blob_url}
+		origin: foreign_origin
+		top_level_origin: foreign_origin
+		is_top_level: true
+	})
+	self_fetch_response := scheme_fetch(FetchParams.create(self_fetch_request, FetchTimingInfo.create()), host).response()?
+	assert !self_fetch_response.is_network_error()
+	assert self_fetch_response.body?.bytes() == 'blob payload'.bytes()
 }
 
 fn cors_host_fetch(request &Request) !&Response {

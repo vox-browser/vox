@@ -23,6 +23,10 @@ fn (_ &PreflightCacheTestClient) fetch_request_client_is_window() bool {
 	return false
 }
 
+fn (_ &PreflightCacheTestClient) fetch_request_client_is_top_level_window() bool {
+	return false
+}
+
 fn (client &PreflightCacheTestClient) fetch_request_client_origin() dom.Origin {
 	return client.origin
 }

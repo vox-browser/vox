@@ -102,10 +102,16 @@ pub fn check_for_same_partition_blob_url_usage(entry BlobURLEntry, environment B
 	return entry.environment.storage_key == environment.storage_key
 }
 
+pub struct TopLevelNavigation {}
+
+pub struct TopLevelSelfFetch {}
+
+pub type BlobURLObtainEnvironment = BlobURLEnvironment | TopLevelNavigation | TopLevelSelfFetch
+
 // https://www.w3.org/TR/FileAPI/#blob-url-obtain-object
-pub fn obtain_a_blob_object(entry BlobURLEntry, environment ?BlobURLEnvironment, navigation bool) ?BlobURLObject {
-	if !navigation {
-		requested_environment := environment or { return none }
+pub fn obtain_a_blob_object(entry BlobURLEntry, environment BlobURLObtainEnvironment) ?BlobURLObject {
+	if environment is BlobURLEnvironment {
+		requested_environment := environment as BlobURLEnvironment
 		if !check_for_same_partition_blob_url_usage(entry, requested_environment) {
 			return none
 		}

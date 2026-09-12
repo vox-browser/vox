@@ -9,6 +9,7 @@
 module fetch
 
 import dom
+import fileapi
 import highresolutiontime
 import http
 import securecontexts
@@ -703,10 +704,109 @@ pub fn scheme_fetch(params &FetchParams, host &FetchHost) &PendingResponse {
 		})
 		return PendingResponse.create(mut request, response)
 	}
+	if scheme == 'blob' {
+		entry := fileapi.resolve_a_blob_url(request.current_url().serialize()) or {
+			return PendingResponse.create(mut request, Response.network_error("Request has an invalid 'blob:' URL"))
+		}
+		if request.method != 'GET' {
+			return PendingResponse.create(mut request, Response.network_error("Request has an invalid 'blob:' URL"))
+		}
+
+		is_document_navigation := if destination := request.destination {
+			destination == .document
+		} else {
+			false
+		}
+		is_creation_url_self_fetch := if creation_url := request.client_creation_url {
+			creation_url == request.current_url()
+		} else {
+			false
+		}
+		access := if is_document_navigation {
+			fileapi.BlobURLObtainEnvironment(fileapi.TopLevelNavigation{})
+		} else if request.client_present && request.client_is_window
+			&& request.client_is_top_level_window
+			&& is_creation_url_self_fetch {
+			fileapi.BlobURLObtainEnvironment(fileapi.TopLevelSelfFetch{})
+		} else {
+			mut environment := fileapi.BlobURLEnvironment{}
+			if reserved_client := request.reserved_client {
+				creation_url := reserved_client.fetch_request_environment_creation_url()
+				environment = fileapi.BlobURLEnvironment{
+					id: creation_url.serialize()
+					origin: creation_url.origin().serialize()
+					storage_key: creation_url.origin().serialize_for_ipc()
+				}
+			} else if client := request.client {
+				origin := client.fetch_request_client_origin()
+				environment = fileapi.BlobURLEnvironment{
+					id: client.fetch_request_client_creation_url().serialize()
+					origin: origin.serialize()
+					storage_key: origin.serialize_for_ipc()
+				}
+			} else {
+				return PendingResponse.create(mut request, Response.network_error('Request is missing fetch client'))
+			}
+			fileapi.BlobURLObtainEnvironment(environment)
+		}
+		object := fileapi.obtain_a_blob_object(entry, access) or {
+			return PendingResponse.create(mut request, Response.network_error("Failed to obtain a Blob object from 'blob:' URL"))
+		}
+		blob := object.blob or {
+			return PendingResponse.create(mut request, Response.network_error("Failed to obtain a Blob object from 'blob:' URL"))
+		}
+		mut response := Response.create()
+		bytes := blob.raw_bytes()
+		if range_header := request.header_list.get('Range') {
+			range_value := parse_single_range_header_value(range_header, true) or {
+				return PendingResponse.create(mut request, Response.network_error('Failed to parse single range header value'))
+			}
+			full_length := u64(bytes.len)
+			mut range_start := range_value.start
+			mut range_end := range_value.end
+			if start := range_start {
+				if start >= full_length {
+					return PendingResponse.create(mut request, Response.network_error('rangeStart is greater than or equal to fullLength'))
+				}
+				if end := range_end {
+					if end >= full_length {
+						range_end = full_length - 1
+					}
+				} else {
+					range_end = full_length - 1
+				}
+			} else {
+				suffix_length := range_end or {
+					return PendingResponse.create(mut request, Response.network_error('Invalid empty byte range'))
+				}
+				range_start = if suffix_length >= full_length {
+					u64(0)
+				} else {
+					full_length - suffix_length
+				}
+				range_end = full_length - 1
+			}
+			start := range_start or { u64(0) }
+			end := range_end or { full_length - 1 }
+			response.set_body_bytes(bytes[int(start)..int(end + 1)])
+			response.status = 206
+			response.status_message = 'Partial Content'
+			response.range_requested = true
+			response.header_list.append(http.Header{ name: 'Content-Length', value: '${end - start + 1}' })
+			response.header_list.append(http.Header{ name: 'Content-Type', value: blob.type_() })
+			response.header_list.append(http.Header{ name: 'Content-Range', value: 'bytes ${start}-${end}/${full_length}' })
+		} else {
+			response.status_message = 'OK'
+			response.set_body_bytes(bytes)
+			response.header_list.append(http.Header{ name: 'Content-Length', value: '${bytes.len}' })
+			response.header_list.append(http.Header{ name: 'Content-Type', value: blob.type_() })
+		}
+		return PendingResponse.create(mut request, response)
+	}
 	if scheme in ['http', 'https'] {
 		return http_fetch(params, host, false)
 	}
-	if scheme in ['about', 'blob', 'file', 'resource'] {
+	if scheme in ['about', 'file', 'resource'] {
 		return nonstandard_resource_loader_file_or_http_network_fetch(params, host)
 	}
 	message := if scheme == 'about' {
@@ -845,6 +945,7 @@ pub fn populate_request_from_client(mut request Request) {
 	if client := request.client {
 		request.client_present = true
 		request.client_is_window = client.fetch_request_client_is_window()
+		request.client_is_top_level_window = client.fetch_request_client_is_top_level_window()
 		request.client_origin_opaque = client.fetch_request_client_origin().value == 'opaque'
 		request.client_document_url = client.fetch_request_client_document_url()
 		request.client_creation_url = client.fetch_request_client_creation_url()

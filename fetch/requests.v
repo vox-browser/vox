@@ -183,6 +183,7 @@ pub mut:
 pub interface RequestClient {
 	fetch_request_client_api_base_url() dom.URL
 	fetch_request_client_is_window() bool
+	fetch_request_client_is_top_level_window() bool
 	fetch_request_client_origin() dom.Origin
 	fetch_request_client_document_url() ?dom.URL
 	fetch_request_client_creation_url() dom.URL
@@ -195,6 +196,7 @@ pub interface RequestClient {
 // Infrastructure::Request::ReservedClientType is HTML::Environment, distinct
 // from the EnvironmentSettingsObject stored in client.
 pub interface RequestReservedClient {
+	fetch_request_environment_creation_url() dom.URL
 	fetch_request_environment_top_level_origin() ?dom.Origin
 	fetch_request_environment_top_level_creation_url() ?dom.URL
 }
@@ -218,6 +220,7 @@ pub mut:
 	// Typed observable projection of the environment used by ReferrerPolicy.
 	// A Window client uses document_url; other clients use creation_url.
 	client_is_window               bool
+	client_is_top_level_window     bool
 	client_origin_opaque           bool
 	client_document_url            ?dom.URL
 	client_creation_url            ?dom.URL
@@ -286,6 +289,7 @@ pub fn (mut request Request) set_client(client RequestClient) {
 	request.client = client
 	request.client_present = true
 	request.client_is_window = client.fetch_request_client_is_window()
+	request.client_is_top_level_window = client.fetch_request_client_is_top_level_window()
 	request.client_origin_opaque = client.fetch_request_client_origin().value == 'opaque'
 	request.client_document_url = client.fetch_request_client_document_url()
 	request.client_creation_url = client.fetch_request_client_creation_url()
@@ -296,6 +300,7 @@ pub fn (mut request Request) clear_client() {
 	request.client = none
 	request.client_present = false
 	request.client_is_window = false
+	request.client_is_top_level_window = false
 	request.client_origin_opaque = false
 	request.client_document_url = none
 	request.client_creation_url = none
@@ -421,6 +426,7 @@ pub fn (request &Request) clone() &Request {
 		}
 		client: request.client
 		client_is_window: request.client_is_window
+		client_is_top_level_window: request.client_is_top_level_window
 		client_origin_opaque: request.client_origin_opaque
 		client_document_url: request.client_document_url
 		client_creation_url: request.client_creation_url

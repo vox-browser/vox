@@ -18,10 +18,11 @@ fn test_blob_url_store_add_resolve_partition_and_remove() {
 	entry := store.resolve('${url}#fragment') or { panic('missing blob URL') }
 	assert entry.object.kind == .blob
 	assert voidptr(entry.object.blob or { panic('missing blob') }) == voidptr(blob)
-	assert obtain_a_blob_object(entry, owner, false) != none
+	assert obtain_a_blob_object(entry, owner) != none
 	other_partition := blob_url_environment('other', 'https://example.com', 'partition-b')
-	assert obtain_a_blob_object(entry, other_partition, false) == none
-	assert obtain_a_blob_object(entry, none, true) != none
+	assert obtain_a_blob_object(entry, other_partition) == none
+	assert obtain_a_blob_object(entry, TopLevelNavigation{}) != none
+	assert obtain_a_blob_object(entry, TopLevelSelfFetch{}) != none
 	store.remove_entry('${url}#ignored')
 	assert store.resolve(url) == none
 }
