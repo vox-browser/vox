@@ -194,8 +194,6 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 					if item.can_break_before && !is_whitespace {
 						line_builder.break_if_needed(item.border_box_width())
 					}
-				} else {
-					apply_text_overflow_ellipsis(text_node, item, available_space)
 				}
 				glyph_run := item.glyph_run or { continue }
 				line_builder.append_text_chunk(text_node, item.offset_in_node, item.length_in_node,
@@ -209,6 +207,7 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	for index in 0 .. containing_block_used_values.line_boxes.len {
 		containing_block_used_values.line_boxes[index].trim_trailing_whitespace()
 	}
+	apply_text_overflow_ellipsis(containing_block, mut containing_block_used_values.line_boxes)
 	line_builder.remove_last_line_if_empty()
 	if containing_block.computed_values().text_align() == .justify {
 		line_count := containing_block_used_values.line_boxes.len
@@ -253,49 +252,87 @@ fn run_inline_formatting_context_internal(mut state LayoutState, containing_bloc
 	}
 }
 
-fn apply_text_overflow_ellipsis(text_node &TextNode, item InlineLevelItem, available_space AvailableSpace) {
-	computed := text_node.Node.computed_values()
-	if computed.text_overflow() != .ellipsis || computed.overflow_x() == .visible {
+// https://drafts.csswg.org/css-overflow-4/#text-overflow
+fn apply_text_overflow_ellipsis(containing_block &BlockContainer, mut line_boxes []LineBox) {
+	block_node := unsafe { &Node(containing_block) }
+	block_values := if block_node.is_anonymous() {
+		block := block_node.non_anonymous_containing_block() or { return }
+		block.computed_values()
+	} else {
+		containing_block.computed_values()
+	}
+	if block_values.text_overflow() != .ellipsis || block_values.overflow_x() == .visible {
 		return
 	}
-	run_pointer := item.glyph_run or { return }
-	mut width_without_trailing_whitespace := item.width.to_double()
-	if computed.white_space_collapse() in [.collapse, .preserve_breaks] {
-		units := utf16_code_units_for_line_box(text_node.text_for_rendering())
-		mut length := units.len
-		for length > 0 {
-			length--
-			if !is_ascii_space_code_unit(units[length]) {
-				break
-			}
-			width_without_trailing_whitespace -= f64(run_pointer.font().glyph_width(units[length]))
-		}
-	}
-	available_width := available_space.width.to_px_or_zero().to_double()
-	if width_without_trailing_whitespace <= available_width {
-		return
-	}
+
 	ellipsis_code_point := u32(0x2026)
-	ellipsis_width := run_pointer.font().glyph_width(ellipsis_code_point)
-	max_text_width := f32(available_width) - ellipsis_width
-	mut last_glyph_index := 0
-	mut last_position := platform.GlyphPosition{}
-	for glyph in run_pointer.glyphs_ {
-		if glyph.position.x > max_text_width {
-			break
+	for line_index in 0 .. line_boxes.len {
+		mut line_box := unsafe { &line_boxes[line_index] }
+		if !line_box.original_available_width().is_definite() {
+			continue
 		}
-		last_glyph_index++
-		last_position = glyph.position
-	}
-	if last_glyph_index > 1 {
-		mut run := unsafe { &platform.GlyphRun(run_pointer) }
-		run.invalidate_replay_data()
-		run.glyphs_ = run.glyphs_[..last_glyph_index - 1].clone()
-		run.glyphs_ << platform.Glyph{
-			code_point:           ellipsis_code_point
-			position:             last_position
-			advance:              ellipsis_width
-			length_in_code_units: 1
+		available_width := line_box.original_available_width().to_px_or_zero()
+		if line_box.inline_length().raw_value() <= available_width.raw_value()
+			|| line_box.fragments_.len == 0 {
+			continue
+		}
+
+		mut line_has_visible_content := false
+		for fragment_index in 0 .. line_box.fragments_.len {
+			mut fragment := &line_box.fragments_[fragment_index]
+			fragment_start := fragment.inline_offset()
+			fragment_end := fragment_start.plus(fragment.inline_length())
+			if fragment_end.raw_value() <= available_width.raw_value() {
+				line_has_visible_content = true
+				continue
+			}
+
+			run_pointer := fragment.glyph_run() or {
+				// Hiding an overflowing atomic inline to make room for the ellipsis is
+				// not implemented upstream either; continue to the next text fragment.
+				continue
+			}
+			font := run_pointer.font()
+			ellipsis_width := font.glyph_width(ellipsis_code_point)
+			available_in_fragment := f32(available_width.minus(fragment_start).to_double())
+			max_text_width := available_in_fragment - ellipsis_width
+			mut keep_count := 0
+			mut last_kept_end := f32(0)
+			mut glyph_block_offset := f32(0)
+			for glyph in run_pointer.glyphs_ {
+				glyph_end := glyph.position.x + glyph.advance
+				if glyph_end > max_text_width && (keep_count > 0 || line_has_visible_content) {
+					break
+				}
+				keep_count++
+				last_kept_end = glyph_end
+				glyph_block_offset = glyph.position.y
+			}
+
+			mut run := unsafe { &platform.GlyphRun(run_pointer) }
+			run.invalidate_replay_data()
+			run.glyphs_ = run.glyphs_[..keep_count].clone()
+			ellipsis_run := platform.shape_text(0, 0, '…', font, .common)
+			if ellipsis_run.glyphs_.len > 0 {
+				mut ellipsis_glyph := ellipsis_run.glyphs_[0]
+				ellipsis_glyph.code_point = ellipsis_code_point
+				ellipsis_glyph.position = platform.GlyphPosition{
+					x: last_kept_end
+					y: glyph_block_offset
+				}
+				ellipsis_glyph.advance = ellipsis_width
+				ellipsis_glyph.length_in_code_units = 1
+				run.glyphs_ << ellipsis_glyph
+			}
+			run.width_ = last_kept_end + ellipsis_width
+			fragment.set_inline_length(CSSPixels.nearest_value_for(f64(run.width_)))
+
+			if fragment_index + 1 < line_box.fragments_.len {
+				line_box.fragments_.delete_many(fragment_index + 1,
+					line_box.fragments_.len - fragment_index - 1)
+			}
+			line_box.inline_length_ = available_width
+			break
 		}
 	}
 }
