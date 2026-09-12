@@ -624,6 +624,25 @@ fn test_keyframes_name_is_not_string_escaped() {
 		'@keyframes "\\31 a" { 0% { opacity: 0; } }'
 }
 
+fn test_keyframes_reject_css_animations_level_one_properties() {
+	assert css_text_of('@keyframes allowed {
+		from {
+			margin-top: 10px;
+			animation-timing-function: ease;
+			animation-composition: add;
+			animation: ignored 1s;
+			animation-name: ignored;
+			animation-duration: 1s;
+			animation-iteration-count: 2;
+			animation-direction: reverse;
+			animation-play-state: paused;
+			animation-delay: 1s;
+			animation-fill-mode: both;
+			animation-timeline: auto;
+		}
+	}')? == '@keyframes "allowed" { 0% { margin-top: 10px; animation-timing-function: ease; animation-composition: add; } }'
+}
+
 // CSSImportRule::serialized() performs "serialize a URL" on the rule's location,
 // which wraps it in `url(...)` with the URL serialized as a string.
 fn test_import_rule_serializes_its_url() {

@@ -3272,7 +3272,14 @@ fn (parser RuleSelectorParser) is_valid_declaration_in_the_current_context(decla
 	last_context := parser.rule_context[parser.rule_context.len - 1]
 	return match last_context {
 		.unknown { false }
-		.style, .keyframe, .scope, .function_rule { true }
+		.style, .scope, .function_rule { true }
+		.keyframe {
+			property := PropertyNameAndID.from_name(declaration.name) or { return true }
+			property_id := property.id() or { return true }
+			property_id !in [.animation, .animation_delay, .animation_direction, .animation_duration,
+				.animation_fill_mode, .animation_iteration_count, .animation_name,
+				.animation_play_state, .animation_timeline]
+		}
 		.container_rule, .layer, .media, .supports {
 			rule_context_contains(parser.rule_context, .style)
 				|| rule_context_contains(parser.rule_context, .scope)
