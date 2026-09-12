@@ -128,3 +128,34 @@ fn test_data_count_section_precedes_code_despite_numeric_identifier() {
 	bad_order := [u8(0), 0x61, 0x73, 0x6d, 1, 0, 0, 0, 10, 1, 0, 12, 1, 0]
 	assert !validate(webidl.BufferSource.array_buffer(bad_order))
 }
+
+fn test_module_structured_serialization_round_trips_original_bytes() {
+	module_ := Module.create(webidl.BufferSource.array_buffer(wasm_module_bytes()))!
+	serialized := module_.serialization_steps(false)!
+	assert serialized.bytes == wasm_module_bytes()
+
+	mut restored := Module.create_for_serialization()
+	restored.deserialization_steps(serialized)!
+	assert restored.bytes == wasm_module_bytes()
+	assert restored.imports() == module_.imports()
+	assert restored.exports() == module_.exports()
+	assert restored.custom_sections('x') == [[u8(1), 2]]
+}
+
+fn test_module_serialization_for_storage_and_corrupt_deserialization_fail() {
+	module_ := Module.create(webidl.BufferSource.array_buffer(wasm_module_bytes()))!
+	if _ := module_.serialization_steps(true) {
+		assert false
+	} else {
+		assert err.msg().starts_with('DataCloneError:')
+	}
+
+	mut restored := Module.create_for_serialization()
+	if _ := restored.deserialization_steps(SerializedModule{
+		bytes: [u8(0), 1, 2]
+	}) {
+		assert false
+	} else {
+		assert err.msg().starts_with('CompileError:')
+	}
+}

@@ -45,11 +45,24 @@ pub:
 
 @[heap]
 pub struct Module {
-pub:
+pub mut:
 	bytes            []u8
 	import_entries   []ModuleImportDescriptor
 	export_entries   []ModuleExportDescriptor
 	custom_sections_ []CustomSection
+}
+
+pub struct SerializedModule {
+pub:
+	bytes []u8
+}
+
+pub fn Module.create(source webidl.BufferSource) !&Module {
+	return compile_a_webassembly_module(webidl.get_buffer_source_copy(source))
+}
+
+pub fn Module.create_for_serialization() &Module {
+	return &Module{}
 }
 
 pub fn Module.construct(source webidl.BufferSource) !&Module {
@@ -80,6 +93,23 @@ pub fn (compiled &Module) custom_sections(name string) [][]u8 {
 		}
 	}
 	return result
+}
+
+pub fn (compiled &Module) serialization_steps(for_storage bool) !SerializedModule {
+	if for_storage {
+		return error('DataCloneError: WebAssembly Module instances may not be serialized for storage')
+	}
+	return SerializedModule{
+		bytes: compiled.bytes.clone()
+	}
+}
+
+pub fn (mut compiled Module) deserialization_steps(serialized SerializedModule) ! {
+	restored := compile_a_webassembly_module(serialized.bytes)!
+	compiled.bytes = restored.bytes.clone()
+	compiled.import_entries = restored.import_entries.clone()
+	compiled.export_entries = restored.export_entries.clone()
+	compiled.custom_sections_ = restored.custom_sections_.clone()
 }
 
 struct Decoder {
