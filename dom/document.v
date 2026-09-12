@@ -4161,6 +4161,7 @@ pub mut:
 	element_style_noop_recomputations           u64
 	element_inherited_style_recomputations      u64
 	element_inherited_style_noop_recomputations u64
+	previous_sibling_invalidation_walk_visits  u64
 }
 
 // --- Main Document struct ---
@@ -7635,6 +7636,10 @@ pub fn (mut d Document) record_element_inherited_style_recomputation() {
 
 pub fn (mut d Document) record_element_inherited_style_noop_recomputation() {
 	d.style_invalidation_counters_.element_inherited_style_noop_recomputations++
+}
+
+pub fn (mut d Document) record_previous_sibling_invalidation_walk_visit() {
+	d.style_invalidation_counters_.previous_sibling_invalidation_walk_visits++
 }
 
 pub fn (mut d Document) reset_style_invalidation_counters() {

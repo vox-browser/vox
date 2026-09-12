@@ -1377,6 +1377,8 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	if reason == .node_insert_before || reason == .node_remove {
 		for sibling := n.previous_sibling(); sibling != none;  {
 			current := sibling or { break }
+			mut mutable_document := unsafe { &Document(doc) }
+			mutable_document.record_previous_sibling_invalidation_walk_visit()
 			if element := current.as_element() {
 				if element.affected_by_backward_structural_changes() {
 					mut mutable_current := unsafe { &Node(current) }

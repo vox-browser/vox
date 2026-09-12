@@ -163,3 +163,28 @@ fn test_style_invalidation_counters_include_full_document_invalidations() {
 	api.reset_style_invalidation_counters()
 	assert api.get_style_invalidation_counters() == dom.StyleInvalidationCounters{}
 }
+
+fn test_style_invalidation_counters_count_previous_sibling_walks() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut platform := &PlatformState{
+		associated_document: document
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	api := Internals.create(platform, navigator)
+	mut parent := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
+	mut first := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
+	mut second := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
+	mut third := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
+	mut parent_node := parent.as_node()
+	parent_node.append_child(first.as_node())!
+	parent_node.append_child(second.as_node())!
+	parent_node.append_child(third.as_node())!
+	parent_node.set_entire_subtree_needs_style_update(false)
+	mut third_node := third.as_node()
+	third_node.set_entire_subtree_needs_style_update(false)
+	document.set_needs_full_style_update(false)
+	document.reset_style_invalidation_counters()
+
+	third_node.invalidate_style(.node_remove)
+	assert api.get_style_invalidation_counters().previous_sibling_invalidation_walk_visits == 2
+}
