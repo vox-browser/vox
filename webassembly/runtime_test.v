@@ -22,6 +22,31 @@ fn test_global_value_types_defaults_mutability_and_conversion() {
 	}
 }
 
+fn test_global_creation_exposes_type_and_cache_metadata() {
+	descriptor := global_descriptor_from_bindings(GlobalDescriptor{
+		value: .i64
+		mutable_: true
+	})
+	mut global := construct_global(descriptor, webidl.bigint_value(12))!
+	assert global.type() == GlobalType{
+		value_type: .i64
+		mutable_: true
+	}
+	assert global.value_type()! == .i64
+	assert global.cache().get_global_instance(global.address())? == global
+
+	direct := Global.create(GlobalDescriptor{ value: .i32 }, WasmValue{
+		type_: .i32
+		i32_value: 7
+	})!
+	assert direct.value()!.number_value == 7
+	if _ := Global.create(GlobalDescriptor{ value: .f64 }, WasmValue{ type_: .i32 }) {
+		assert false
+	} else {
+		assert err.msg().contains('does not match')
+	}
+}
+
 fn test_i64_uses_bigint_and_externref_defaults_to_undefined() {
 	global := Global.construct(GlobalDescriptor{ value: .i64 }, webidl.bigint_value(-42))!
 	assert global.value()!.kind == .bigint
