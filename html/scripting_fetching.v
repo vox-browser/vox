@@ -237,8 +237,7 @@ pub fn fetch_classic_worker_script(url dom.URL, fetch_client &EnvironmentSetting
 	request.set_client(fetch_client)
 	request.destination = destination
 	request.initiator_type = .other
-	// Match the current upstream compatibility workaround.
-	request.mode = .no_cors
+	request.mode = .same_origin
 	request.credentials_mode = .same_origin
 	request.parser_metadata = .not_parser_inserted
 	request.use_url_credentials = true

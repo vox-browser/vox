@@ -11,6 +11,7 @@ __global (
 	scripting_fetching_last_destination fetch.Destination
 	scripting_fetching_last_nonce       string
 	scripting_fetching_last_top_level   TopLevelModule
+	scripting_fetching_last_mode        fetch.Mode
 	scripting_fetching_parsed           ParsedProgram
 	scripting_fetching_parsed_source    string
 )
@@ -48,6 +49,7 @@ fn scripting_fetching_host(request &fetch.Request, is_top_level TopLevelModule) 
 	}
 	scripting_fetching_last_nonce = request.cryptographic_nonce_metadata
 	scripting_fetching_last_top_level = is_top_level
+	scripting_fetching_last_mode = request.mode
 	mut response := fetch.Response.create()
 	response.url_list = request.url_list.clone()
 	mut content_type := 'text/javascript'
@@ -183,6 +185,7 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	worker := unsafe { &ClassicScript(scripting_fetching_completed_script) }
 	assert worker.source == 'worker source'
 	assert scripting_fetching_last_top_level == .yes
+	assert scripting_fetching_last_mode == .same_origin
 
 	imported := fetch_a_classic_worker_imported_script(dom.URL{
 		value: 'https://example.test/app/worker.js'
