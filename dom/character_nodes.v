@@ -349,7 +349,13 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 		mut current := unsafe { &Element(ancestor or { break }) }
 		if direction := current.dir() {
 			if direction == .auto_ {
-				current.set_needs_style_update(true)
+				current.as_node().for_each_shadow_including_inclusive_descendant(fn (descendant &Node) TraversalDecision {
+					if element := descendant.as_element() {
+						mut mutable_element := unsafe { &Element(element) }
+						mutable_element.set_needs_style_update(true)
+					}
+					return .@continue
+				})
 				schedule_has_invalidation_for_inherited_attribute_change(current)
 			}
 		}

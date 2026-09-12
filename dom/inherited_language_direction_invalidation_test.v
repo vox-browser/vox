@@ -53,8 +53,17 @@ fn test_character_data_change_invalidates_dir_auto_ancestors() {
 	mut text := document.create_text_node('abc')
 	mut parent_node := auto_parent.as_node()
 	parent_node.append_child(text.as_node()) or { panic(err) }
-	clear_inherited_invalidation_test_flags(document_node, auto_parent.as_node(), text.as_node())
+	mut descendant := inherited_invalidation_test_element(document, 'span')
+	parent_node.append_child(descendant.as_node()) or { panic(err) }
+	shadow_root := auto_parent.attach_shadow(ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &Node(shadow_root) }
+	mut shadow_descendant := inherited_invalidation_test_element(document, 'span')
+	shadow_node.append_child(shadow_descendant.as_node()) or { panic(err) }
+	clear_inherited_invalidation_test_flags(document_node, auto_parent.as_node(), text.as_node(),
+		descendant.as_node(), shadow_node, shadow_descendant.as_node())
 
 	text.replace_data(0, text.length(), '\u05d0\u05d1\u05d2') or { panic(err) }
 	assert auto_parent.needs_style_update()
+	assert descendant.needs_style_update()
+	assert shadow_descendant.needs_style_update()
 }
