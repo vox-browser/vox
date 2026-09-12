@@ -3796,6 +3796,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				decoration: text_decoration_string(computed.text_decoration_line())
 				decoration_color: decoration_color
 				decoration_color_set: true
+				decoration_skip_ink: computed.text_decoration_skip_ink() != .none_
 				decoration_style: decoration_style
 				decoration_thickness: decoration_thickness
 				baseline: fragment.baseline().to_double()

@@ -1599,6 +1599,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.text_decoration_line {
 			return parser.parse_text_decoration_line_value(mut tokens)
 		}
+		.text_decoration_skip_ink {
+			return parse_property_keyword_value(mut tokens, ['all', 'auto', 'none'])
+		}
 		.text_decoration_style {
 			return parser.parse_text_decoration_style_value(mut tokens)
 		}

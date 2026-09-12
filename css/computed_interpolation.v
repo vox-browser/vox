@@ -453,6 +453,12 @@ pub enum TextDecorationLine {
 	grammar_error
 }
 
+pub enum TextDecorationSkipInk {
+	auto
+	all
+	none_
+}
+
 pub enum TextDecorationStyle {
 	solid
 	double_
@@ -1587,6 +1593,7 @@ pub mut:
 	computed_values_background_layers_             []BackgroundLayerData
 	computed_values_tab_size_                      TabSize
 	computed_values_text_decoration_line_          []TextDecorationLine
+	computed_values_text_decoration_skip_ink_      TextDecorationSkipInk
 	computed_values_text_decoration_thickness_     TextDecorationThickness
 	computed_values_text_decoration_style_         TextDecorationStyle
 	computed_values_text_decoration_color_         Color = Color{0, 0, 0, 255}
@@ -2963,6 +2970,16 @@ pub fn (c &ComputedProperties) text_decoration_line() []TextDecorationLine {
 	}
 
 	return []TextDecorationLine{}
+}
+
+pub fn (c &ComputedProperties) text_decoration_skip_ink() TextDecorationSkipInk {
+	value := c.property(.text_decoration_skip_ink, .yes) or { return .auto }
+	keyword := computed_interpolation_style_value_keyword(value) or { return .auto }
+	return match keyword {
+		.all { TextDecorationSkipInk.all }
+		.none_ { TextDecorationSkipInk.none_ }
+		else { TextDecorationSkipInk.auto }
+	}
 }
 
 fn keyword_to_text_decoration_style_for_computed_properties(keyword Keyword) ?TextDecorationStyle {

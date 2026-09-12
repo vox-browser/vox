@@ -2919,6 +2919,26 @@ fn test_text_decoration_color_style_and_thickness() {
 	assert dashes[0].stroke_width == 3.0
 }
 
+fn test_text_decoration_skip_ink_value_reaches_paint_fragments() {
+	document := dom.Document.create(dom.url_about_blank())
+	none_root := styled(document, 'div', 'width: 500px; text-decoration-line: underline; text-decoration-skip-ink: none')
+	mut none_node := none_root.as_node()
+	none_node.append_child(document.create_text_node('glyphs').as_node()) or { panic('${err}') }
+	none_box := layout_block(none_root, 0, 0, 800, []&css.CSSRule{})
+	assert !none_box.lines[0].fragments[0].decoration_skip_ink
+
+	auto_root := styled(document, 'div', 'width: 500px; text-decoration-line: underline; text-decoration-skip-ink: auto')
+	mut auto_node := auto_root.as_node()
+	auto_node.append_child(document.create_text_node('glyphs').as_node()) or { panic('${err}') }
+	auto_box := layout_block(auto_root, 0, 0, 800, []&css.CSSRule{})
+	assert auto_box.lines[0].fragments[0].decoration_skip_ink
+
+	segments := text_decoration_skip_ink_segments(TextFragment{
+		decoration_skip_ink: false
+	}, 'underline', 4, 24, 10, 2)
+	assert segments == [TextDecorationSegment{4, 24}]
+}
+
 fn test_double_and_dotted_text_decoration_emit_their_distinct_geometry() {
 	double_fragment := TextFragment{
 		x: 0

@@ -548,6 +548,7 @@ pub fn resolve_computed_values(style &ComputedProperties) &ComputedValues {
 	values.set_background_layers(style.background_layers())
 	values.set_tab_size(style.tab_size())
 	values.set_text_decoration_line(style.text_decoration_line())
+	values.set_text_decoration_skip_ink(style.text_decoration_skip_ink())
 	values.set_text_decoration_thickness(style.text_decoration_thickness())
 	values.set_text_decoration_style(style.text_decoration_style())
 	values.set_text_indent(style.text_indent())
@@ -1262,6 +1263,10 @@ pub fn (values &ComputedValues) tab_size() TabSize {
 
 pub fn (values &ComputedValues) text_decoration_line() []TextDecorationLine {
 	return values.computed_values_text_decoration_line_
+}
+
+pub fn (values &ComputedValues) text_decoration_skip_ink() TextDecorationSkipInk {
+	return values.computed_values_text_decoration_skip_ink_
 }
 
 pub fn (values &ComputedValues) text_decoration_thickness() TextDecorationThickness {
@@ -2095,6 +2100,10 @@ pub fn (mut values MutableComputedValues) set_tab_size(value TabSize) {
 
 pub fn (mut values MutableComputedValues) set_text_decoration_line(value []TextDecorationLine) {
 	values.computed_values_text_decoration_line_ = value
+}
+
+pub fn (mut values MutableComputedValues) set_text_decoration_skip_ink(value TextDecorationSkipInk) {
+	values.computed_values_text_decoration_skip_ink_ = value
 }
 
 pub fn (mut values MutableComputedValues) set_text_decoration_thickness(value TextDecorationThickness) {

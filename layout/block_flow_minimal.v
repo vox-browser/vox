@@ -189,6 +189,7 @@ pub:
 	decoration           string = 'none'
 	decoration_color     css.Color
 	decoration_color_set bool
+	decoration_skip_ink  bool = true
 	decoration_style     string = 'solid'
 	decoration_thickness f64
 	// PaintableFragment retains the line builder's baseline rather than
@@ -271,6 +272,7 @@ fn translate_line(line TextLine, dx f64, dy f64) TextLine {
 			decoration: it.decoration
 			decoration_color: it.decoration_color
 			decoration_color_set: it.decoration_color_set
+			decoration_skip_ink: it.decoration_skip_ink
 			decoration_style: it.decoration_style
 			decoration_thickness: it.decoration_thickness
 			baseline: it.baseline
@@ -4114,7 +4116,7 @@ struct TextDecorationSegment {
 // CSS Text Decoration 4 skip-ink. LibGfx returns one horizontal ink interval per shaped glyph;
 // dilating those intervals creates the visible gaps around descenders and overline intersections.
 fn text_decoration_skip_ink_segments(fragment TextFragment, line string, start_x int, end_x int, line_y int, thickness int) []TextDecorationSegment {
-	if line !in ['underline', 'overline'] {
+	if !fragment.decoration_skip_ink || line !in ['underline', 'overline'] {
 		return [TextDecorationSegment{
 			start_x: start_x
 			end_x: end_x
@@ -8613,6 +8615,7 @@ struct InlineWord {
 	decoration           string = 'none' // this word's computed text-decoration-line
 	decoration_color     css.Color
 	decoration_color_set bool
+	decoration_skip_ink  bool = true
 	decoration_style     string = 'solid'
 	decoration_thickness f64
 	text_run_id          i64
@@ -8744,6 +8747,7 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, preserve_sp
 		color
 	}
 	decoration_style := css.cascaded_value_with_ua(element, .text_decoration_style, author_rules)
+	decoration_skip_ink := css.cascaded_value_with_ua(element, .text_decoration_skip_ink, author_rules) != 'none'
 	decoration_thickness := resolve_text_decoration_thickness(element, font_size, author_rules)
 	// `letter-spacing`/`word-spacing` (both inherited, `normal` = 0): letter-spacing widens each glyph
 	// advance; word-spacing widens the inter-word gap.
@@ -8867,6 +8871,7 @@ fn append_inline_words(element &dom.Element, preserve_newlines bool, preserve_sp
 						decoration: decoration
 						decoration_color: decoration_color
 						decoration_color_set: true
+						decoration_skip_ink: decoration_skip_ink
 						decoration_style: decoration_style
 						decoration_thickness: decoration_thickness
 					}
@@ -9222,6 +9227,7 @@ fn layout_inline_lines(element &dom.Element, content_x f64, content_width f64, f
 						decoration: segment[k].decoration
 						decoration_color: segment[k].decoration_color
 						decoration_color_set: segment[k].decoration_color_set
+						decoration_skip_ink: segment[k].decoration_skip_ink
 						decoration_style: segment[k].decoration_style
 						decoration_thickness: segment[k].decoration_thickness
 					}

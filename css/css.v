@@ -397,6 +397,7 @@ pub enum PropertyID {
 	shape_outside
 	content
 	font_variant_alternates
+	text_decoration_skip_ink
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
 	gap

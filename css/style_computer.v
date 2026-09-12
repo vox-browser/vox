@@ -504,7 +504,7 @@ fn is_pseudo_inline_typesetting_property(name string) bool {
 
 fn is_pseudo_text_decoration_property(name string) bool {
 	return name in ['text-decoration', 'text-decoration-color', 'text-decoration-line',
-		'text-decoration-style', 'text-decoration-thickness']
+		'text-decoration-skip-ink', 'text-decoration-style', 'text-decoration-thickness']
 }
 
 fn is_pseudo_inline_layout_property(name string) bool {
