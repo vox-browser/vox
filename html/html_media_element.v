@@ -8,6 +8,7 @@
 module html
 
 import dom
+import fileapi
 import math
 
 pub enum MediaSeekMode {
@@ -131,6 +132,37 @@ pub:
 	offset u64
 }
 
+pub enum MediaProviderKind {
+	blob
+	media_source
+}
+
+// HTML and MediaSourceExtensions mutually depend on one another upstream. V
+// packages cannot form import cycles, so the MediaSource attachment operation
+// crosses this small typed callback boundary while Blob remains fully typed.
+pub struct MediaProviderObject {
+pub:
+	kind                MediaProviderKind
+	blob                ?&fileapi.Blob
+	media_source_handle voidptr
+	media_source_attach ?fileapi.BlobURLMediaSourceAttachHook
+}
+
+pub fn MediaProviderObject.from_blob(blob &fileapi.Blob) MediaProviderObject {
+	return MediaProviderObject{
+		kind: .blob
+		blob: blob
+	}
+}
+
+pub fn MediaProviderObject.from_media_source(handle voidptr, attach fileapi.BlobURLMediaSourceAttachHook) MediaProviderObject {
+	return MediaProviderObject{
+		kind: .media_source
+		media_source_handle: handle
+		media_source_attach: attach
+	}
+}
+
 fn media_element_noop_change_task() {}
 
 fn media_element_noop_audio_enabled(track &AudioTrack, enabled bool) {
@@ -199,6 +231,7 @@ mut:
 	delaying_load_event_        ?dom.DocumentLoadEventDelayer
 	resource_selection_pending_ bool
 	resource_fetch_started_     bool
+	assigned_media_provider_    ?MediaProviderObject
 }
 
 pub fn HTMLMediaElement.create(element ?&dom.HTMLElement, base_url dom.URL) &HTMLMediaElement {
@@ -343,6 +376,10 @@ fn (mut element HTMLMediaElement) finish_delaying_load_event() {
 	}
 }
 
+pub fn (mut element HTMLMediaElement) media_source_attachment_did_open() {
+	element.finish_delaying_load_event()
+}
+
 pub fn (mut element HTMLMediaElement) toggle_fullscreen() {
 	html_element := element.associated_element_ or { return }
 	mut dom_element := unsafe { &dom.Element(html_element) }
@@ -388,6 +425,17 @@ pub fn (element &HTMLMediaElement) error() ?&MediaError {
 
 pub fn (element &HTMLMediaElement) current_src() string {
 	return element.current_src_
+}
+
+// https://html.spec.whatwg.org/multipage/media.html#dom-media-srcobject
+pub fn (element &HTMLMediaElement) src_object() ?MediaProviderObject {
+	return element.assigned_media_provider_
+}
+
+// https://html.spec.whatwg.org/multipage/media.html#dom-media-srcobject
+pub fn (mut element HTMLMediaElement) set_src_object(provider ?MediaProviderObject) ! {
+	element.assigned_media_provider_ = provider
+	element.load_element()!
 }
 
 pub fn (element &HTMLMediaElement) network_state() MediaNetworkState {
@@ -611,6 +659,16 @@ pub fn (mut element HTMLMediaElement) select_resource() ! {
 	defer {
 		element.finish_delaying_load_event()
 	}
+	if provider := element.assigned_media_provider_ {
+		element.network_state_ = .loading
+		element.fire_event('loadstart')
+		element.current_src_ = ''
+		element.load_local_resource(provider) or {
+			promises := element.take_pending_play_promises()
+			element.handle_media_source_failure(promises, err.msg())
+		}
+		return
+	}
 	mut candidates := []string{}
 	if source := element.source_ {
 		if source.trim_space() != '' {
@@ -624,20 +682,22 @@ pub fn (mut element HTMLMediaElement) select_resource() ! {
 	}
 	element.network_state_ = .loading
 	element.fire_event('loadstart')
-	hook := element.fetch_hook_ or {
-		element.network_state_ = .no_source
-		element.error_ = &MediaError{
-			code: .src_not_supported
-			message: 'No media fetch hook'
-		}
-		element.fire_event('error')
-		return error('NotSupportedError: no media fetch hook')
-	}
-
 	mut last_error := 'No supported media source'
 	for candidate in candidates {
 		url := dom.dom_url_parse(candidate, element.base_url_, 'UTF-8') or {
 			last_error = 'Invalid media URL'
+			continue
+		}
+		element.current_src_ = url.serialize()
+		loaded_media_source := element.load_media_source_from_blob_url(url) or {
+			last_error = err.msg()
+			continue
+		}
+		if loaded_media_source {
+			return
+		}
+		hook := element.fetch_hook_ or {
+			last_error = 'No media fetch hook'
 			continue
 		}
 		element.resource_fetch_started_ = true
@@ -653,7 +713,6 @@ pub fn (mut element HTMLMediaElement) select_resource() ! {
 			last_error = 'Unsupported media response'
 			continue
 		}
-		element.current_src_ = url.serialize()
 		element.accepts_byte_ranges_ = response.accepts_byte_ranges
 		element.last_fetch_offset_ = 0
 		element.process_media_response(response)
@@ -669,11 +728,68 @@ pub fn (mut element HTMLMediaElement) select_resource() ! {
 	return error('NotSupportedError: ${last_error}')
 }
 
-// HTMLMediaElement::fetch_resource(URL, failure_callback). The host hook owns
+fn (mut element HTMLMediaElement) load_local_resource(provider MediaProviderObject) ! {
+	if provider.kind != .media_source {
+		return error('File objects are not supported')
+	}
+	attach := provider.media_source_attach or {
+		return error('MediaSource cannot be attached')
+	}
+	attach(provider.media_source_handle, voidptr(element))!
+}
+
+fn (mut element HTMLMediaElement) load_media_source_from_blob_url(url dom.URL) !bool {
+	if url.scheme() != 'blob' {
+		return false
+	}
+	entry := fileapi.resolve_a_blob_url(url.serialize()) or { return false }
+	if entry.object.kind != .media_source {
+		return false
+	}
+
+	mut access := fileapi.BlobURLObtainEnvironment(fileapi.BlobURLEnvironment{})
+	if html_element := element.associated_element_ {
+		document := unsafe { &dom.Element(html_element) }.document()
+		document_url := dom.URL{document.url_string()}
+		is_top_level_self_fetch := if navigable := document.navigable() {
+			navigable.parent() == none && document_url == url
+		} else {
+			false
+		}
+		if is_top_level_self_fetch {
+			access = fileapi.BlobURLObtainEnvironment(fileapi.TopLevelSelfFetch{})
+		} else {
+			origin := document.origin()
+			access = fileapi.BlobURLObtainEnvironment(fileapi.BlobURLEnvironment{
+				id: document_url.serialize()
+				origin: origin.serialize()
+				storage_key: origin.serialize_for_ipc()
+			})
+		}
+	} else {
+		origin := element.base_url_.origin()
+		access = fileapi.BlobURLObtainEnvironment(fileapi.BlobURLEnvironment{
+			id: element.base_url_.serialize()
+			origin: origin.serialize()
+			storage_key: origin.serialize_for_ipc()
+		})
+	}
+	object := fileapi.obtain_a_blob_object(entry, access) or {
+		return error('MediaSource blob URL is not authorized for this document')
+	}
+	attach := object.media_source_attach or { return error('MediaSource blob URL is detached') }
+	element.load_local_resource(MediaProviderObject.from_media_source(object.media_source_handle, attach))!
+	return true
+}
+
+// HTMLMediaElement::load_url_resource(URL, failure_callback). The host hook owns
 // the transport; this method preserves the media state-machine transition and
 // failure callback around it.
-pub fn (mut element HTMLMediaElement) fetch_resource(url_record dom.URL, failure_callback ?MediaResourceFailureCallback) ! {
+pub fn (mut element HTMLMediaElement) load_url_resource(url_record dom.URL, failure_callback ?MediaResourceFailureCallback) ! {
 	element.current_src_ = url_record.serialize()
+	if element.load_media_source_from_blob_url(url_record)! {
+		return
+	}
 	element.network_state_ = .loading
 	element.last_fetch_offset_ = 0
 	hook := element.fetch_hook_ or {
@@ -699,6 +815,10 @@ pub fn (mut element HTMLMediaElement) fetch_resource(url_record dom.URL, failure
 	}
 	element.accepts_byte_ranges_ = response.accepts_byte_ranges
 	element.process_media_response(response)
+}
+
+pub fn (mut element HTMLMediaElement) fetch_resource(url_record dom.URL, failure_callback ?MediaResourceFailureCallback) ! {
+	element.load_url_resource(url_record, failure_callback)!
 }
 
 // HTMLMediaElement::fetch_resource(ByteRange). V cannot overload method names,

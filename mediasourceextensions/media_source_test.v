@@ -1,6 +1,7 @@
 module mediasourceextensions
 
 import dom
+import fileapi
 import html
 
 @[heap]
@@ -58,6 +59,60 @@ fn test_media_source_handlers_participate_in_dispatch() {
 	assert observation.count == 1
 	source.set_onsourceopen(none)
 	assert source.onsourceopen() == none
+}
+
+fn test_media_source_can_be_assigned_to_media_element_src_object() {
+	mut source := MediaSource.create()
+	observation := &EventObservation{}
+	source.set_onsourceopen(observer_callback(observation))
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_source('/remote.webm')
+	media.set_src_object(source.as_media_provider())!
+
+	provider := media.src_object() or { panic('missing assigned media provider') }
+	assert provider.kind == .media_source
+	assert provider.media_source_handle == voidptr(source)
+	assert media.current_src() == ''
+	assert media.network_state() == .loading
+	assert source.ready_state() == .open
+	assert source.has_ever_been_attached()
+	assert source.media_element_assigned_to()? == media
+	assert observation.count == 1
+
+	mut second_media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	second_media.set_src_object(source.as_media_provider())!
+	assert second_media.network_state() == .no_source
+	assert second_media.error()?.message == 'MediaSource is not closed'
+}
+
+fn test_media_source_blob_url_loads_as_a_local_resource() {
+	mut document := dom.Document.create(dom.URL{'https://example.test/page'})
+	mut navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+	}
+	navigable.traversable_navigable_ = navigable
+	document.set_cached_navigable(navigable)
+	video_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'video')!
+	mut media := html.html_media_element_for_dom_element(video_element) or {
+		panic('missing media element model')
+	}
+	mut source := MediaSource.create()
+	origin := document.origin()
+	blob_url := fileapi.add_entry_to_blob_url_store(source.blob_url_object('media-source-url'), fileapi.BlobURLEnvironment{
+		id: document.url_string()
+		origin: origin.serialize()
+		storage_key: origin.serialize_for_ipc()
+	})!
+	defer {
+		fileapi.remove_entry_from_blob_url_store(blob_url)
+	}
+
+	media.set_source(blob_url)
+	media.load()!
+	assert media.current_src() == blob_url
+	assert source.ready_state() == .open
+	assert source.media_element_assigned_to()? == media
 }
 
 fn test_buffered_change_event_preserves_base_init_and_identity() {

@@ -16,11 +16,15 @@ pub enum BlobURLObjectKind {
 	media_source
 }
 
+pub type BlobURLMediaSourceAttachHook = fn (voidptr, voidptr) !
+
 pub struct BlobURLObject {
 pub:
-	kind            BlobURLObjectKind
-	blob            ?&Blob
-	media_source_id string
+	kind                BlobURLObjectKind
+	blob                ?&Blob
+	media_source_id     string
+	media_source_handle voidptr
+	media_source_attach ?BlobURLMediaSourceAttachHook
 }
 
 pub fn BlobURLObject.from_blob(blob &Blob) BlobURLObject {
@@ -31,11 +35,21 @@ pub fn BlobURLObject.from_blob(blob &Blob) BlobURLObject {
 }
 
 // MediaSource is owned by the MediaSourceExtensions module. Its stable host
-// identity is sufficient for the File API store algorithms.
+// identity and attachment callback preserve the object without introducing a
+// FileAPI/HTML/MediaSourceExtensions import cycle.
 pub fn BlobURLObject.from_media_source(id string) BlobURLObject {
 	return BlobURLObject{
 		kind:            .media_source
 		media_source_id: id
+	}
+}
+
+pub fn BlobURLObject.from_media_source_object(id string, handle voidptr, attach BlobURLMediaSourceAttachHook) BlobURLObject {
+	return BlobURLObject{
+		kind: .media_source
+		media_source_id: id
+		media_source_handle: handle
+		media_source_attach: attach
 	}
 }
 

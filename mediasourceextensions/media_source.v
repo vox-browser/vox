@@ -6,6 +6,8 @@
 module mediasourceextensions
 
 import dom
+import fileapi
+import html
 import mimesniff
 
 pub enum ReadyState {
@@ -54,6 +56,10 @@ pub fn end_of_stream_error_from_webidl(value string) !EndOfStreamError {
 @[heap]
 pub struct MediaSource {
 	dom.EventTarget
+mut:
+	ready_state_               ReadyState
+	has_ever_been_attached_    bool
+	media_element_assigned_to_ ?&html.HTMLMediaElement
 }
 
 pub fn MediaSource.create() &MediaSource {
@@ -64,6 +70,59 @@ pub fn MediaSource.create() &MediaSource {
 
 pub fn MediaSource.construct_impl() !&MediaSource {
 	return MediaSource.create()
+}
+
+pub fn (source &MediaSource) ready_state() ReadyState {
+	return source.ready_state_
+}
+
+pub fn (source &MediaSource) ready_state_is_closed() bool {
+	return source.ready_state_ == .closed
+}
+
+pub fn (source &MediaSource) has_ever_been_attached() bool {
+	return source.has_ever_been_attached_
+}
+
+pub fn (source &MediaSource) media_element_assigned_to() ?&html.HTMLMediaElement {
+	return source.media_element_assigned_to_
+}
+
+pub fn (source &MediaSource) queue_a_media_source_task(task fn ()) {
+	_ = source
+	// The V event-loop boundary drains this task source synchronously.
+	task()
+}
+
+pub fn (mut source MediaSource) set_ready_state_to_open_and_fire_sourceopen_event() {
+	source.ready_state_ = .open
+	source.queue_a_media_source_task(fn [source] () {
+		source.dispatch_event(dom.Event.create('sourceopen', dom.EventInit{}))
+	})
+}
+
+pub fn (mut source MediaSource) unassign_from_media_element() {
+	source.media_element_assigned_to_ = none
+}
+
+fn attach_media_source_provider(source_handle voidptr, media_element_handle voidptr) ! {
+	mut source := unsafe { &MediaSource(source_handle) }
+	if !source.ready_state_is_closed() {
+		return error('MediaSource is not closed')
+	}
+	mut media_element := unsafe { &html.HTMLMediaElement(media_element_handle) }
+	source.has_ever_been_attached_ = true
+	media_element.media_source_attachment_did_open()
+	source.media_element_assigned_to_ = media_element
+	source.set_ready_state_to_open_and_fire_sourceopen_event()
+}
+
+pub fn (source &MediaSource) as_media_provider() html.MediaProviderObject {
+	return html.MediaProviderObject.from_media_source(voidptr(source), attach_media_source_provider)
+}
+
+pub fn (source &MediaSource) blob_url_object(id string) fileapi.BlobURLObject {
+	return fileapi.BlobURLObject.from_media_source_object(id, voidptr(source), attach_media_source_provider)
 }
 
 pub fn MediaSource.can_construct_in_dedicated_worker() bool {
