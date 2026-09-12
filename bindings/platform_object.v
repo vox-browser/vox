@@ -143,6 +143,7 @@ pub:
 pub struct PlatformObject {
 mut:
 	realm_                   &html.ScriptingRealm
+	wrappable_impl_          ?&Wrappable
 	prototype_               ?&PlatformObject
 	interface_name_          string
 	implemented_interfaces_  []string
@@ -169,6 +170,14 @@ pub fn PlatformObject.create_with_prototype(prototype &PlatformObject) &Platform
 
 pub fn (object &PlatformObject) realm() &html.ScriptingRealm {
 	return object.realm_
+}
+
+pub fn (mut object PlatformObject) set_wrappable_impl(implementation &Wrappable) {
+	object.wrappable_impl_ = implementation
+}
+
+pub fn (object &PlatformObject) wrappable_impl() ?&Wrappable {
+	return object.wrappable_impl_
 }
 
 pub fn (mut object PlatformObject) set_prototype(prototype ?&PlatformObject) {
