@@ -4,10 +4,20 @@ fn test_upstream_value_factories_and_native_surface_slots() {
 	mut context := WebGLRenderingContext.create(.webgl2, WebGLContextAttributes{}, [])
 	assert context.context().webgl_version() == .webgl2
 	context.set_size(8, 6)
+	assert context.native.viewport() == [0, 0, 0, 0]!
 	context.allocate_painting_surface_if_needed()
 	assert context.surface()
+	assert context.native.viewport() == [0, 0, 8, 6]!
 	assert context.native.default_framebuffer() == 1
 	assert context.native.default_renderbuffer() == 2
+	context.viewport(1, 2, 3, 4)
+	context.allocate_painting_surface_if_needed()
+	assert context.native.viewport() == [1, 2, 3, 4]!
+	context.set_size(13, 7)
+	assert !context.surface()
+	assert context.native.viewport() == [1, 2, 3, 4]!
+	context.allocate_painting_surface_if_needed()
+	assert context.native.viewport() == [0, 0, 13, 7]!
 	context.native.free_surface_resources()
 	assert !context.surface()
 

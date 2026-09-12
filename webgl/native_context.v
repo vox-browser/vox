@@ -36,6 +36,7 @@ mut:
 	requested_extensions_ []string
 	record_native_calls_  bool
 	native_calls_         []NativeCall
+	viewport_             [4]int
 	vendor_               string = 'Ladybird'
 	renderer_             string = 'Ladybird V WebGL'
 }
@@ -74,6 +75,7 @@ pub fn (mut context OpenGLContext) restore(supported []string) {
 	context.supported_extensions_ = supported.clone()
 	context.requested_extensions_.clear()
 	context.native_calls_.clear()
+	context.viewport_ = [0, 0, 0, 0]!
 }
 
 pub fn (mut context OpenGLContext) set_pending_local_error(error_value GLenum) {
@@ -105,9 +107,15 @@ pub fn (context &OpenGLContext) size() (int, int) {
 }
 
 pub fn (mut context OpenGLContext) allocate_painting_surface_if_needed() {
-	if !context.lost_ && context.width_ > 0 && context.height_ > 0 {
-		context.surface_allocated_ = true
+	if context.lost_ || context.surface_allocated_ || context.width_ <= 0 || context.height_ <= 0 {
+		return
 	}
+	context.surface_allocated_ = true
+	context.viewport_ = [0, 0, context.width_, context.height_]!
+}
+
+pub fn (context &OpenGLContext) viewport() [4]int {
+	return context.viewport_
 }
 
 pub fn (mut context OpenGLContext) notify_content_will_change() {
@@ -162,6 +170,9 @@ pub fn (mut context OpenGLContext) dispatch(name string, args ...i64) {
 		return
 	}
 	context.make_current()
+	if name == 'viewport' && args.len == 4 {
+		context.viewport_ = [int(args[0]), int(args[1]), int(args[2]), int(args[3])]!
+	}
 	if context.record_native_calls_ {
 		context.native_calls_ << NativeCall{
 			name: name
