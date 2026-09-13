@@ -74,6 +74,7 @@ pub enum NodeKind {
 	compressor
 	gain
 	media_element_source
+	media_stream_source
 	oscillator
 	panner
 	script_processor
@@ -291,6 +292,7 @@ pub:
 pub struct AudioGraphState {
 pub mut:
 	current_time       f64
+	sample_rate        f32
 	input_connections  map[u64][]AudioNodeConnection
 	output_connections map[u64][]AudioNodeConnection
 	param_connections  map[u64][]AudioParamConnection

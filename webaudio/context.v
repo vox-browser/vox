@@ -113,7 +113,9 @@ pub fn verify_audio_options(number_of_channels u32, length u32, sample_rate f32)
 fn make_base_context(id u64, sample_rate f32, destination_channels u32,
 	offline bool) !BaseAudioContext {
 	verify_sample_rate(sample_rate)!
-	mut graph := &AudioGraphState{}
+	mut graph := &AudioGraphState{
+		sample_rate: sample_rate
+	}
 	mut destination := AudioNode{
 		id: 1
 		context_id: id

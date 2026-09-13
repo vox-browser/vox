@@ -202,6 +202,7 @@ pub fn (context BaseAudioContext) state() AudioContextState {
 
 pub fn (mut context BaseAudioContext) set_sample_rate(value f32) {
 	context.sample_rate = value
+	context.graph.sample_rate = value
 }
 
 pub fn (mut context BaseAudioContext) set_control_state(value AudioContextState) {
