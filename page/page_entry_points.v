@@ -5,6 +5,7 @@
 // page.v and event_handler.v.
 module page
 
+import dom
 import painting
 
 pub enum PageDragEventType {
@@ -62,16 +63,29 @@ pub fn (p &Page) chrome_metrics() painting.ChromeMetrics {
 
 pub fn (mut p Page) handle_mouseup(target ?InputTarget, _ PixelPoint, button u32, _ u32,
 	_ u32) EventResult {
+	defer {
+		if navigable := p.mouse_event_tracking_navigable_ {
+			navigable.reset_mouse_input_tracking()
+			p.mouse_event_tracking_navigable_ = none
+		}
+	}
 	return p.event_handler.handle_mouseup_with_button(target, button)
 }
 
 pub fn (mut p Page) handle_mousedown(target ?InputTarget, position PixelPoint, button u32, _ u32,
 	modifiers u32, click_count int) EventResult {
+	if button == 0 {
+		if navigable := p.mouse_event_tracking_navigable_ {
+			navigable.reset_mouse_input_tracking()
+		}
+		p.mouse_event_tracking_navigable_ = none
+	}
 	return p.event_handler.handle_mousedown_with_button_and_modifiers(target, position, button, modifiers, click_count, p.enable_autoscroll())
 }
 
 pub fn (mut p Page) handle_mousemove(target ?InputTarget, screen PixelPoint, _ u32,
 	_ u32) EventResult {
+	p.event_handler.record_last_known_mouse_position(screen, screen, 0, 0)
 	return p.event_handler.handle_mousemove(target, screen)
 }
 
@@ -79,9 +93,25 @@ pub fn (mut p Page) handle_mouseleave() EventResult {
 	return p.event_handler.handle_mouseleave()
 }
 
-pub fn (mut p Page) handle_mousewheel(target ?InputTarget, _ PixelPoint, _ u32, _ u32,
-	_ u32, _ f64, _ f64) EventResult {
+pub fn (mut p Page) handle_mousewheel(target ?InputTarget, screen PixelPoint, _ u32, buttons u32,
+	modifiers u32, _ f64, _ f64) EventResult {
+	p.event_handler.record_last_known_mouse_position(screen, screen, buttons, modifiers)
 	return p.event_handler.handle_mousewheel(target)
+}
+
+pub fn (p &Page) node_id_at_position(position PixelPoint) dom.UniqueNodeID {
+	root := p.local_root_navigable_ or { return dom.UniqueNodeID(0) }
+	document := root.active_document() or { return dom.UniqueNodeID(0) }
+	node := p.event_handler.target_node_for_mouse_position(document, p.device_to_css_point(position)) or {
+		return dom.UniqueNodeID(0)
+	}
+	return node.unique_id()
+}
+
+pub fn (mut p Page) select_word_for_dictionary_lookup(position PixelPoint) bool {
+	root := p.local_root_navigable_ or { return false }
+	document := root.active_document() or { return false }
+	return p.event_handler.select_word_for_dictionary_lookup(document, p.device_to_css_point(position))
 }
 
 pub fn (mut p Page) handle_drag_and_drop_event(type_ PageDragEventType, target ?DragTarget,

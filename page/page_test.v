@@ -11,6 +11,25 @@ mut:
 	bytes         []u8
 }
 
+struct PageInputBridgeHarness {
+	node &dom.Node
+mut:
+	reset_count int
+}
+
+fn page_input_bridge_reset(target voidptr) {
+	mut harness := unsafe { &PageInputBridgeHarness(target) }
+	harness.reset_count++
+}
+
+fn page_input_bridge_hit_test(target voidptr, _ f64, _ f64, _ dom.HitTestType) ?dom.HitTestResult {
+	harness := unsafe { &PageInputBridgeHarness(target) }
+	return dom.HitTestResult{
+		node: harness.node
+		index_in_node: 2
+	}
+}
+
 fn page_screenshot_set_needs_repaint(target voidptr) {
 	mut harness := unsafe { &PageScreenshotHarness(target) }
 	harness.repaint_count++
@@ -341,6 +360,37 @@ fn test_page_screenshot_queue_renders_valid_targets_and_reports_failures() {
 	assert client.screenshots == [[u8(1), 2, 3, 4], []u8{}, [u8(1), 2, 3, 4]]
 	p.process_screenshot_requests()
 	assert harness.render_count == 2
+}
+
+fn test_page_point_queries_and_cross_navigable_mouse_tracking() {
+	mut p := Page.create(2)!
+	mut document := dom.Document.create_for_fragment_parsing()
+	text := document.create_text_node('hello world')
+	document.set_layout_viewport(&dom.LayoutViewport{
+		root_node: &dom.LayoutNode{}
+	})
+	mut harness := &PageInputBridgeHarness{
+		node: text.as_node()
+	}
+	document.set_viewport_paintable(&dom.ViewportPaintable{
+		target: voidptr(harness)
+		hit_test_callback: page_input_bridge_hit_test
+	})
+	mut navigable := &dom.Navigable{
+		html_model_handle_: voidptr(harness)
+		reset_mouse_input_tracking_callback_: page_input_bridge_reset
+	}
+	navigable.set_active_document(document)
+	p.set_local_root_navigable(navigable)!
+
+	assert p.node_id_at_position(PixelPoint{8, 10}) == text.as_node().unique_id()
+	assert p.select_word_for_dictionary_lookup(PixelPoint{8, 10})
+	p.set_mouse_event_tracking_navigable(navigable)
+	p.handle_mousedown(none, PixelPoint{}, 0, 0, 0, 1)
+	assert harness.reset_count == 1
+	p.set_mouse_event_tracking_navigable(navigable)
+	p.handle_mouseup(none, PixelPoint{}, 0, 0, 0)
+	assert harness.reset_count == 2
 }
 
 fn test_find_navigation_resets_on_document_url_change_but_not_fragment_change() {

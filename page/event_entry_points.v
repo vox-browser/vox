@@ -442,6 +442,106 @@ pub fn (_ &EventHandler) target_for_mouse_position(position PixelPoint,
 	return none
 }
 
+pub fn (_ &EventHandler) target_node_for_mouse_position(document &dom.Document,
+	position PixelPoint) ?&dom.Node {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.update_layout(.event_handler_handle_mouse_down)
+	mutable_document.update_paint_and_hit_testing_properties_if_needed()
+	paintable := document.paintable() or { return none }
+	hit := paintable.hit_test(position.x, position.y, .exact) or { return none }
+	if hit.node != unsafe { nil } {
+		return hit.node
+	}
+	if hit.element != unsafe { nil } {
+		return hit.element.as_node()
+	}
+	return none
+}
+
+pub fn (handler &EventHandler) has_committed_root_box(document &dom.Document) bool {
+	viewport := document.layout_node() or { return false }
+	return viewport.root_layout_node() != none && document.paintable() != none
+}
+
+fn dictionary_word_range(text string, index int) ?SelectionRange {
+	if text.len == 0 {
+		return none
+	}
+	mut offset := if index < 0 { 0 } else if index >= text.len { text.len - 1 } else { index }
+	if !(text[offset].is_alnum() || text[offset] == `_`) && offset > 0
+		&& (text[offset - 1].is_alnum() || text[offset - 1] == `_`) {
+		offset--
+	}
+	if !(text[offset].is_alnum() || text[offset] == `_`) {
+		return none
+	}
+	mut start := offset
+	for start > 0 && (text[start - 1].is_alnum() || text[start - 1] == `_`) {
+		start--
+	}
+	mut end := offset + 1
+	for end < text.len && (text[end].is_alnum() || text[end] == `_`) {
+		end++
+	}
+	return SelectionRange{start: start, end: end}
+}
+
+pub fn (mut handler EventHandler) select_word_at_position(document &dom.Document,
+	position PixelPoint) bool {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.update_layout(.event_handler_handle_mouse_down)
+	if !handler.has_committed_root_box(document) {
+		return false
+	}
+	paintable := document.paintable() or { return false }
+	hit := paintable.hit_test(position.x, position.y, .exact) or { return false }
+	node := if hit.node != unsafe { nil } {
+		hit.node
+	} else if hit.element != unsafe { nil } {
+		hit.element.as_node()
+	} else {
+		return false
+	}
+	text := node.text_content() or { return false }
+	range := dictionary_word_range(text, hit.index_in_node) or { return false }
+	handler.input_selection_range_ = range
+	handler.selection_mode_ = .word
+	handler.log('dictionary-selection', InputTarget{id: node.unique_id().value().str()})
+	return true
+}
+
+pub fn (mut handler EventHandler) select_word_for_dictionary_lookup(document &dom.Document,
+	position PixelPoint) bool {
+	return handler.select_word_at_position(document, position)
+}
+
+pub fn (mut handler EventHandler) reset_mouse_input_tracking() {
+	handler.clear_mousedown_tracking()
+	handler.stop_updating_selection()
+}
+
+pub fn (mut handler EventHandler) record_last_known_mouse_position(visual_viewport_position PixelPoint,
+	screen_position PixelPoint, buttons u32, modifiers u32) {
+	handler.last_known_mouse_visual_position_ = visual_viewport_position
+	handler.last_known_mouse_screen_position_ = screen_position
+	handler.last_known_mouse_buttons_ = buttons
+	handler.last_known_mouse_modifiers_ = modifiers
+}
+
+pub fn (mut handler EventHandler) clear_per_test_input_state() {
+	handler.reset_mouse_input_tracking()
+	handler.clear_middle_button_scroll_handler()
+	handler.prevent_mouse_event = false
+	handler.update_hovered_chrome_widget('')
+	handler.captured_chrome_widget = ''
+	handler.drag_and_drop.reset()
+	handler.previous_screen = none
+	handler.last_known_mouse_visual_position_ = none
+	handler.last_known_mouse_screen_position_ = none
+	handler.last_known_mouse_buttons_ = 0
+	handler.last_known_mouse_modifiers_ = 0
+}
+
 pub fn (_ &EventHandler) word_segmenter() string {
 	return 'unicode-word-segmenter'
 }

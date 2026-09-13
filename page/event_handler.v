@@ -71,6 +71,10 @@ mut:
 	selection_anchor                     PixelPoint
 	selection_extent                     PixelPoint
 	input_selection_range_               ?SelectionRange
+	last_known_mouse_visual_position_    ?PixelPoint
+	last_known_mouse_screen_position_    ?PixelPoint
+	last_known_mouse_buttons_            u32
+	last_known_mouse_modifiers_          u32
 }
 
 pub fn (mut handler EventHandler) set_document_state(active bool, has_paint_root bool) {

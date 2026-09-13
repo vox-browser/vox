@@ -2098,6 +2098,8 @@ pub type NavigableSetNeedsRepaintCallback = fn (voidptr)
 
 pub type NavigableRenderScreenshotCallback = fn (voidptr, PaintConfig, ?UniqueNodeID) []u8
 
+pub type NavigableResetMouseInputTrackingCallback = fn (voidptr)
+
 @[heap]
 pub struct Navigable {
 pub mut:
@@ -2112,9 +2114,10 @@ pub mut:
 	viewport_scroll_callback_   NavigableViewportScrollCallback = unsafe { nil }
 	perform_scroll_callback_    NavigablePerformScrollCallback = unsafe { nil }
 	is_focused_callback_        NavigableIsFocusedCallback = unsafe { nil }
-	active_document_changed_    NavigableActiveDocumentChangedCallback = unsafe { nil }
-	set_needs_repaint_callback_ NavigableSetNeedsRepaintCallback = unsafe { nil }
-	render_screenshot_callback_ NavigableRenderScreenshotCallback = unsafe { nil }
+	active_document_changed_              NavigableActiveDocumentChangedCallback = unsafe { nil }
+	set_needs_repaint_callback_           NavigableSetNeedsRepaintCallback = unsafe { nil }
+	render_screenshot_callback_           NavigableRenderScreenshotCallback = unsafe { nil }
+	reset_mouse_input_tracking_callback_ NavigableResetMouseInputTrackingCallback = unsafe { nil }
 }
 
 pub fn (n &Navigable) perform_scroll_of_viewport_scrolling_box(position CSSPixelPoint_) {
@@ -3084,6 +3087,13 @@ pub fn (n &Navigable) render_screenshot(config PaintConfig, node_id ?UniqueNodeI
 		return n.render_screenshot_callback_(n.html_model_handle_, config, node_id)
 	}
 	return []
+}
+
+pub fn (n &Navigable) reset_mouse_input_tracking() {
+	if n.html_model_handle_ != unsafe { nil }
+		&& n.reset_mouse_input_tracking_callback_ != unsafe { nil } {
+		n.reset_mouse_input_tracking_callback_(n.html_model_handle_)
+	}
 }
 
 pub fn (n &Navigable) active_document_id() ?UniqueNodeID {

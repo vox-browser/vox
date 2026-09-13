@@ -181,6 +181,7 @@ mut:
 	wheel_event_listener_state_generation_       u64
 	needs_beforeunload_check_                    bool = true
 	local_root_navigable_                        ?&dom.Navigable
+	mouse_event_tracking_navigable_              ?&dom.Navigable
 	compositor_context_                          ?&compositor.CompositorContextHandle
 	last_find_query_                             ?FindInPageQuery
 	last_find_url_                               string
@@ -394,6 +395,10 @@ pub fn (p &Page) has_local_root_navigable() bool {
 
 pub fn (p &Page) local_root_navigable() &dom.Navigable {
 	return p.local_root_navigable_ or { panic('Page has no local root navigable') }
+}
+
+pub fn (mut p Page) set_mouse_event_tracking_navigable(navigable &dom.Navigable) {
+	p.mouse_event_tracking_navigable_ = navigable
 }
 
 pub fn (mut p Page) queue_screenshot_task(node_id ?dom.UniqueNodeID) {

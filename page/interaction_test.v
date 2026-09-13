@@ -9,6 +9,18 @@ mut:
 	hover_events   []string
 }
 
+struct EventHandlerHitTestHarness {
+	node &dom.Node
+}
+
+fn event_handler_hit_test(target voidptr, _ f64, _ f64, _ dom.HitTestType) ?dom.HitTestResult {
+	harness := unsafe { &EventHandlerHitTestHarness(target) }
+	return dom.HitTestResult{
+		node: harness.node
+		index_in_node: 8
+	}
+}
+
 fn chrome_widget_test_pointer_callback(target voidptr, widget string, event_type string,
 	_ int, _ PixelPoint) painting.MouseAction {
 	mut state := unsafe { &TestChromeWidgetCallbacks(target) }
@@ -498,4 +510,40 @@ fn test_event_handler_cancelled_pointermove_suppresses_compatibility_mousemove()
 	target := InputTarget{ id: 'target', cancel_pointer: true }
 	assert handler.handle_mousemove(target, PixelPoint{ x: 4, y: 5 }) == .cancelled
 	assert handler.event_log.map(it.name) == ['pointermove']
+}
+
+fn test_event_handler_document_hit_testing_dictionary_selection_and_reset() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	text := document.create_text_node('hello translated world')
+	document.set_layout_viewport(&dom.LayoutViewport{
+		root_node: &dom.LayoutNode{}
+	})
+	harness := &EventHandlerHitTestHarness{
+		node: text.as_node()
+	}
+	document.set_viewport_paintable(&dom.ViewportPaintable{
+		target: voidptr(harness)
+		hit_test_callback: event_handler_hit_test
+	})
+
+	mut handler := EventHandler{}
+	assert voidptr(handler.target_node_for_mouse_position(document, PixelPoint{2, 3})?) == voidptr(text.as_node())
+	assert handler.has_committed_root_box(document)
+	assert handler.select_word_for_dictionary_lookup(document, PixelPoint{2, 3})
+	assert handler.input_selection_range_? == SelectionRange{start: 6, end: 16}
+	assert handler.selection_mode_ == .word
+	assert handler.event_log.last().name == 'dictionary-selection'
+
+	handler.record_last_known_mouse_position(PixelPoint{1, 2}, PixelPoint{3, 4}, 5, 6)
+	handler.mousedown_target_ = 'pressed'
+	handler.prevent_mouse_event = true
+	assert handler.drag_and_drop.handle_drag_start([], false, .all) == .handled
+	handler.clear_per_test_input_state()
+	assert handler.mousedown_target_ == ''
+	assert !handler.prevent_mouse_event
+	assert !handler.drag_and_drop.has_ongoing_drag_and_drop_operation()
+	assert handler.last_known_mouse_visual_position_ == none
+	assert handler.last_known_mouse_screen_position_ == none
+	assert handler.last_known_mouse_buttons_ == 0
+	assert handler.last_known_mouse_modifiers_ == 0
 }

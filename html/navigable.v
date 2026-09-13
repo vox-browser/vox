@@ -220,6 +220,12 @@ fn navigable_model_render_screenshot(target voidptr, config dom.PaintConfig, _ ?
 	return []
 }
 
+fn navigable_model_reset_mouse_input_tracking(target voidptr) {
+	mut model := unsafe { &NavigableModel(target) }
+	mut event_handler := model.event_handler_
+	event_handler.reset_mouse_input_tracking()
+}
+
 fn (model &NavigableModel) system_visibility_state() dom.VisibilityState {
 	if context := model.context_ {
 		if traversable := context.top_level_traversable() {
@@ -241,6 +247,7 @@ fn connect_navigable_model_to_host(model &NavigableModel) {
 	host.active_document_changed_ = navigable_model_active_document_changed
 	host.set_needs_repaint_callback_ = navigable_model_set_needs_repaint
 	host.render_screenshot_callback_ = navigable_model_render_screenshot
+	host.reset_mouse_input_tracking_callback_ = navigable_model_reset_mouse_input_tracking
 }
 
 // Binds the DOM identity created by Document/Window to the translated HTML
