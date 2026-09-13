@@ -48,7 +48,10 @@ def replace_logical_aliases(
     for group_name, raw_group in logical_property_groups.items():
         if not isinstance(raw_group, dict) or not raw_group:
             raise SystemExit(f"invalid logical property group: {group_name}")
-        first_property_in_group[group_name] = str(next(iter(raw_group.values())))
+        physical_properties = raw_group.get("physical")
+        if not isinstance(physical_properties, dict) or not physical_properties:
+            raise SystemExit(f"logical property group has no physical properties: {group_name}")
+        first_property_in_group[group_name] = str(next(iter(physical_properties.values())))
 
     for name, raw_property in properties.items():
         if not isinstance(raw_property, dict):
