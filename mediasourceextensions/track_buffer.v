@@ -17,19 +17,46 @@ pub:
 	decode_timestamp f64
 }
 
+struct FrameRun {
+mut:
+	frames             []DemuxedCodedFrame
+	presentation_start f64
+	presentation_end   f64
+}
+
+fn (mut run FrameRun) recalculate_bounds() {
+	if run.frames.len == 0 {
+		run.presentation_start = 0
+		run.presentation_end = 0
+		return
+	}
+	run.presentation_start = run.frames[0].timestamp
+	run.presentation_end = run.frames[0].timestamp + run.frames[0].duration
+	for frame in run.frames[1..] {
+		if frame.timestamp < run.presentation_start {
+			run.presentation_start = frame.timestamp
+		}
+		if frame.timestamp + frame.duration > run.presentation_end {
+			run.presentation_end = frame.timestamp + frame.duration
+		}
+	}
+}
+
 @[heap]
 pub struct TrackBufferDemuxer {
 pub:
 	track WebMTrackInfo
 mut:
-	coded_frames_            []DemuxedCodedFrame
-	read_position_           int
-	reached_end_of_stream_   bool
-	aborted_                 bool
-	last_returned_timestamp_ ?f64
-	last_appended_timestamp_ ?f64
-	maximum_frame_duration_  f64
-	total_bytes_             int
+	runs_                           []FrameRun
+	current_run_                    int
+	current_frame_                  int
+	cursor_presentation_timestamp_ ?f64
+	needs_reanchoring_              bool
+	reached_end_of_stream_          bool
+	aborted_                        bool
+	last_appended_decode_timestamp_ ?f64
+	maximum_frame_duration_         f64
+	total_bytes_                    int
 }
 
 pub fn TrackBufferDemuxer.create(track WebMTrackInfo) &TrackBufferDemuxer {
@@ -38,43 +65,89 @@ pub fn TrackBufferDemuxer.create(track WebMTrackInfo) &TrackBufferDemuxer {
 	}
 }
 
+pub fn (demuxer &TrackBufferDemuxer) run_count() int {
+	return demuxer.runs_.len
+}
+
 pub fn (demuxer &TrackBufferDemuxer) coded_frame_count() int {
-	return demuxer.coded_frames_.len
+	mut count := 0
+	for run in demuxer.runs_ {
+		count += run.frames.len
+	}
+	return count
 }
 
 pub fn (demuxer &TrackBufferDemuxer) coded_frames() []DemuxedCodedFrame {
-	return demuxer.coded_frames_.clone()
+	mut frames := []DemuxedCodedFrame{cap: demuxer.coded_frame_count()}
+	for run in demuxer.runs_ {
+		frames << run.frames
+	}
+	frames.sort_with_compare(fn (a &DemuxedCodedFrame, b &DemuxedCodedFrame) int {
+		return if a.timestamp < b.timestamp { -1 } else if a.timestamp > b.timestamp { 1 } else { 0 }
+	})
+	return frames
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(frame DemuxedCodedFrame) {
-	mut insertion_index := 0
-	for insertion_index < demuxer.coded_frames_.len
-		&& demuxer.coded_frames_[insertion_index].timestamp < frame.timestamp {
-		insertion_index++
+	// Coded-frame processing replaces an existing frame at the same
+	// presentation timestamp. Keep the run representation free of duplicate
+	// presentation samples while preserving decode order for every other frame.
+	for run_index := demuxer.runs_.len - 1; run_index >= 0; run_index-- {
+		mut run := demuxer.runs_[run_index]
+		for frame_index := run.frames.len - 1; frame_index >= 0; frame_index-- {
+			if run.frames[frame_index].timestamp != frame.timestamp {
+				continue
+			}
+			demuxer.total_bytes_ -= run.frames[frame_index].data.len
+			run.frames.delete(frame_index)
+			if run.frames.len == 0 {
+				demuxer.runs_.delete(run_index)
+				if demuxer.current_run_ > run_index {
+					demuxer.current_run_--
+				}
+			} else {
+				run.recalculate_bounds()
+				demuxer.runs_[run_index] = run
+			}
+			break
+		}
 	}
-	if insertion_index < demuxer.coded_frames_.len
-		&& demuxer.coded_frames_[insertion_index].timestamp == frame.timestamp {
-		demuxer.total_bytes_ -= demuxer.coded_frames_[insertion_index].data.len
-		demuxer.coded_frames_[insertion_index] = frame
-		demuxer.total_bytes_ += frame.data.len
-		demuxer.last_appended_timestamp_ = frame.timestamp
-		demuxer.recalculate_maximum_frame_duration()
+	mut run_to_continue := -1
+	for index := demuxer.runs_.len - 1; index >= 0; index-- {
+		last_decode := demuxer.runs_[index].frames.last().decoding_timestamp()
+		delta := frame.decoding_timestamp() - last_decode
+		if delta > 0 && delta <= demuxer.maximum_time_range_gap() {
+			run_to_continue = index
+			break
+		}
+	}
+	if run_to_continue < 0 && !frame.is_keyframe {
 		return
 	}
-	if insertion_index > 0 && demuxer.coded_frames_[insertion_index - 1].duration <= 0 {
-		mut previous := demuxer.coded_frames_[insertion_index - 1]
-		previous.duration = frame.timestamp - previous.timestamp
-		demuxer.coded_frames_[insertion_index - 1] = previous
-	}
-	demuxer.coded_frames_.insert(insertion_index, frame)
 	demuxer.total_bytes_ += frame.data.len
-	demuxer.last_appended_timestamp_ = frame.timestamp
-	demuxer.recalculate_maximum_frame_duration()
-	if insertion_index <= demuxer.read_position_ {
-		if last := demuxer.last_returned_timestamp_ {
-			if last > frame.timestamp {
-				demuxer.read_position_++
-			}
+	demuxer.last_appended_decode_timestamp_ = frame.decoding_timestamp()
+	if frame.duration > demuxer.maximum_frame_duration_ {
+		demuxer.maximum_frame_duration_ = frame.duration
+	}
+	if run_to_continue >= 0 {
+		demuxer.runs_[run_to_continue].frames << frame
+		demuxer.runs_[run_to_continue].recalculate_bounds()
+		return
+	}
+	mut run := FrameRun{
+		frames: [frame]
+	}
+	run.recalculate_bounds()
+	mut insertion_index := 0
+	for insertion_index < demuxer.runs_.len
+		&& demuxer.runs_[insertion_index].presentation_start < run.presentation_start {
+		insertion_index++
+	}
+	demuxer.runs_.insert(insertion_index, run)
+	if demuxer.runs_.len > 1 && insertion_index <= demuxer.current_run_ {
+		demuxer.current_run_++
+		if demuxer.current_run_ >= demuxer.runs_.len {
+			demuxer.current_run_ = demuxer.runs_.len - 1
 		}
 	}
 }
@@ -84,50 +157,93 @@ pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_ra
 		end, none)
 }
 
-pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_range_returning_timestamp(start f64, end f64, last_decode_timestamp ?f64) ?f64 {
-	mut remove_start := 0
-	for remove_start < demuxer.coded_frames_.len
-		&& demuxer.coded_frames_[remove_start].timestamp < start {
-		remove_start++
+fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, first_frame int, minimum_count int) int {
+	mut run := demuxer.runs_[run_index]
+	mut count := minimum_count
+	for first_frame + count < run.frames.len && !run.frames[first_frame + count].is_keyframe {
+		count++
 	}
-	mut remove_end := remove_start
-	for remove_end < demuxer.coded_frames_.len
-		&& demuxer.coded_frames_[remove_end].timestamp < end {
-		remove_end++
+	mut bytes := 0
+	for frame in run.frames[first_frame..first_frame + count] {
+		bytes += frame.data.len
 	}
-	if remove_end <= remove_start {
-		return none
-	}
-	for remove_end < demuxer.coded_frames_.len && !demuxer.coded_frames_[remove_end].is_keyframe {
-		remove_end++
-	}
-	mut removed_last_decode_timestamp := ?f64(none)
-	for frame in demuxer.coded_frames_[remove_start..remove_end] {
-		demuxer.total_bytes_ -= frame.data.len
-		if last_decode := last_decode_timestamp {
-			if frame.timestamp == last_decode {
-				removed_last_decode_timestamp = frame.timestamp
-			}
-		}
-		if last_appended := demuxer.last_appended_timestamp_ {
-			if frame.timestamp == last_appended {
-				demuxer.last_appended_timestamp_ = none
-			}
+	demuxer.total_bytes_ -= bytes
+	run.frames.delete_many(first_frame, count)
+	if demuxer.current_run_ == run_index {
+		if demuxer.current_frame_ >= first_frame + count {
+			demuxer.current_frame_ -= count
+		} else if demuxer.current_frame_ >= first_frame {
+			demuxer.current_frame_ = first_frame
 		}
 	}
-	demuxer.coded_frames_.delete_many(remove_start, remove_end - remove_start)
+	if run.frames.len == 0 {
+		demuxer.runs_.delete(run_index)
+		if demuxer.current_run_ > run_index {
+			demuxer.current_run_--
+		} else if demuxer.current_run_ == run_index {
+			demuxer.needs_reanchoring_ = true
+		}
+	} else if first_frame > 0 && first_frame < run.frames.len {
+		mut tail := FrameRun{
+			frames: run.frames[first_frame..].clone()
+		}
+		run.frames = run.frames[..first_frame].clone()
+		run.recalculate_bounds()
+		tail.recalculate_bounds()
+		demuxer.runs_[run_index] = run
+		mut insertion_index := run_index + 1
+		for insertion_index < demuxer.runs_.len
+			&& demuxer.runs_[insertion_index].presentation_start < tail.presentation_start {
+			insertion_index++
+		}
+		demuxer.runs_.insert(insertion_index, tail)
+	} else {
+		run.recalculate_bounds()
+		demuxer.runs_[run_index] = run
+	}
 	demuxer.recalculate_maximum_frame_duration()
-	if demuxer.read_position_ >= remove_end {
-		demuxer.read_position_ -= remove_end - remove_start
-	} else if demuxer.read_position_ > remove_start {
-		demuxer.read_position_ = if remove_start > 0 { remove_start - 1 } else { 0 }
-		for demuxer.read_position_ > 0
-			&& !demuxer.coded_frames_[demuxer.read_position_].is_keyframe {
-			demuxer.read_position_--
+	return bytes
+}
+
+pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_range_returning_timestamp(start f64, end f64, last_decode_timestamp ?f64) ?f64 {
+	mut removed_presentation_timestamp := ?f64(none)
+	for run_index := demuxer.runs_.len - 1; run_index >= 0; run_index-- {
+		run := demuxer.runs_[run_index]
+		if run.presentation_end <= start || run.presentation_start >= end {
+			continue
 		}
-			demuxer.last_returned_timestamp_ = none
+		mut first := -1
+		mut last := -1
+		for index, frame in run.frames {
+			if frame.timestamp >= start && frame.timestamp < end {
+				if first < 0 {
+					first = index
+				}
+				last = index
+			}
+		}
+		if first < 0 {
+			continue
+		}
+		mut removal_end := last + 1
+		for removal_end < run.frames.len && !run.frames[removal_end].is_keyframe {
+			removal_end++
+		}
+		for frame in run.frames[first..removal_end] {
+			if expected := last_decode_timestamp {
+				if frame.decoding_timestamp() == expected {
+					removed_presentation_timestamp = frame.timestamp
+				}
+			}
+			if appended := demuxer.last_appended_decode_timestamp_ {
+				if frame.decoding_timestamp() == appended {
+					demuxer.last_appended_decode_timestamp_ = none
+				}
+			}
+		}
+		demuxer.erase_frames_and_dependants(run_index, first, removal_end - first)
 	}
-	return removed_last_decode_timestamp
+	return removed_presentation_timestamp
 }
 
 pub fn (demuxer &TrackBufferDemuxer) total_bytes() int {
@@ -137,7 +253,7 @@ pub fn (demuxer &TrackBufferDemuxer) total_bytes() int {
 fn (demuxer &TrackBufferDemuxer) frame_is_evictable(frame DemuxedCodedFrame, current_time f64) bool {
 	mut protected_start := current_time
 	mut protected_end := current_time
-	if cursor_time := demuxer.last_returned_timestamp_ {
+	if cursor_time := demuxer.cursor_presentation_timestamp_ {
 		if cursor_time < protected_start {
 			protected_start = cursor_time
 		}
@@ -148,12 +264,18 @@ fn (demuxer &TrackBufferDemuxer) frame_is_evictable(frame DemuxedCodedFrame, cur
 	return frame.timestamp < protected_start || frame.timestamp > protected_end
 }
 
+fn (demuxer &TrackBufferDemuxer) run_ends_at_last_appended_frame(run FrameRun) bool {
+	last_appended := demuxer.last_appended_decode_timestamp_ or { return false }
+	return run.frames.last().decoding_timestamp() == last_appended
+}
+
 pub fn (demuxer &TrackBufferDemuxer) earliest_evictable_frame_timestamp(current_time f64) ?f64 {
-	if demuxer.coded_frames_.len == 0 {
+	if demuxer.runs_.len == 0 {
 		return none
 	}
+	run := demuxer.runs_[0]
 	mut frame_count := 0
-	for frame in demuxer.coded_frames_ {
+	for frame in run.frames {
 		if frame_count > 0 && frame.is_keyframe {
 			break
 		}
@@ -162,51 +284,28 @@ pub fn (demuxer &TrackBufferDemuxer) earliest_evictable_frame_timestamp(current_
 		}
 		frame_count++
 	}
-	if frame_count == demuxer.coded_frames_.len {
-		if last_appended := demuxer.last_appended_timestamp_ {
-			if demuxer.coded_frames_.last().timestamp == last_appended {
-				return none
-			}
-		}
+	if frame_count == run.frames.len && demuxer.run_ends_at_last_appended_frame(run) {
+		return none
 	}
-	return demuxer.coded_frames_[0].timestamp
+	return run.frames[0].timestamp
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) take_earliest_frame_and_dependants() int {
-	if demuxer.coded_frames_.len == 0 || demuxer.reached_end_of_stream_ {
+	if demuxer.runs_.len == 0 || demuxer.reached_end_of_stream_ {
 		return 0
 	}
-	mut remove_end := 1
-	for remove_end < demuxer.coded_frames_.len
-		&& !demuxer.coded_frames_[remove_end].is_keyframe {
-		remove_end++
-	}
-	mut bytes := 0
-	for frame in demuxer.coded_frames_[..remove_end] {
-		bytes += frame.data.len
-	}
-	demuxer.total_bytes_ -= bytes
-	demuxer.coded_frames_.delete_many(0, remove_end)
-	demuxer.recalculate_maximum_frame_duration()
-	if demuxer.read_position_ >= remove_end {
-		demuxer.read_position_ -= remove_end
-	} else {
-		demuxer.read_position_ = 0
-		demuxer.last_returned_timestamp_ = none
-	}
-	return bytes
+	return demuxer.erase_frames_and_dependants(0, 0, 1)
 }
 
 pub fn (demuxer &TrackBufferDemuxer) latest_evictable_frame_timestamp(current_time f64) ?f64 {
-	if demuxer.coded_frames_.len == 0 {
+	if demuxer.runs_.len == 0 {
 		return none
 	}
-	frame := demuxer.coded_frames_.last()
-	if last_appended := demuxer.last_appended_timestamp_ {
-		if frame.timestamp == last_appended {
-			return none
-		}
+	run := demuxer.runs_.last()
+	if demuxer.run_ends_at_last_appended_frame(run) {
+		return none
 	}
+	frame := run.frames.last()
 	if !demuxer.frame_is_evictable(frame, current_time) {
 		return none
 	}
@@ -214,34 +313,26 @@ pub fn (demuxer &TrackBufferDemuxer) latest_evictable_frame_timestamp(current_ti
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) take_latest_frame() RemovedCodedFrame {
-	if demuxer.coded_frames_.len == 0 || demuxer.reached_end_of_stream_ {
+	if demuxer.runs_.len == 0 || demuxer.reached_end_of_stream_ {
 		return RemovedCodedFrame{}
 	}
-	frame := demuxer.coded_frames_.pop()
-	demuxer.total_bytes_ -= frame.data.len
-	demuxer.recalculate_maximum_frame_duration()
-	if demuxer.read_position_ > demuxer.coded_frames_.len {
-		demuxer.read_position_ = demuxer.coded_frames_.len
-		demuxer.last_returned_timestamp_ = none
+	run_index := demuxer.runs_.len - 1
+	frame_index := demuxer.runs_[run_index].frames.len - 1
+	frame := demuxer.runs_[run_index].frames[frame_index]
+	removed := RemovedCodedFrame{
+		byte_size: frame.data.len
+		decode_timestamp: frame.decoding_timestamp()
 	}
-	return RemovedCodedFrame{
-		byte_size:        frame.data.len
-		decode_timestamp: frame.timestamp
-	}
+	demuxer.erase_frames_and_dependants(run_index, frame_index, 1)
+	return removed
 }
 
 pub fn (demuxer &TrackBufferDemuxer) buffered_time_ranges() []MediaSourceTimeRange {
+	frames := demuxer.coded_frames()
 	mut ranges := []MediaSourceTimeRange{}
-	for index, frame in demuxer.coded_frames_ {
+	for frame in frames {
 		start := frame.timestamp
-		duration := if frame.duration > 0 {
-			frame.duration
-		} else if index + 1 < demuxer.coded_frames_.len {
-			demuxer.coded_frames_[index + 1].timestamp - frame.timestamp
-		} else {
-			demuxer.maximum_frame_duration_
-		}
-		end := frame.timestamp + duration
+		end := frame.timestamp + frame.duration
 		if ranges.len == 0 || start > ranges.last().end + demuxer.maximum_time_range_gap() {
 			ranges << MediaSourceTimeRange{ start: start, end: end }
 		} else if end > ranges.last().end {
@@ -258,31 +349,91 @@ fn (demuxer &TrackBufferDemuxer) maximum_time_range_gap() f64 {
 
 fn (mut demuxer TrackBufferDemuxer) recalculate_maximum_frame_duration() {
 	demuxer.maximum_frame_duration_ = 0
-	for frame in demuxer.coded_frames_ {
-		if frame.duration > demuxer.maximum_frame_duration_ {
-			demuxer.maximum_frame_duration_ = frame.duration
+	for run in demuxer.runs_ {
+		for frame in run.frames {
+			if frame.duration > demuxer.maximum_frame_duration_ {
+				demuxer.maximum_frame_duration_ = frame.duration
+			}
 		}
 	}
+}
+
+fn (demuxer &TrackBufferDemuxer) find_run_to_play_from(timestamp f64) ?int {
+	if demuxer.runs_.len == 0 {
+		return none
+	}
+	for index, run in demuxer.runs_ {
+		if run.presentation_start > timestamp {
+			if index > 0
+				&& run.presentation_start - demuxer.runs_[index - 1].presentation_end <= demuxer.maximum_time_range_gap() {
+				return index - 1
+			}
+			if run.presentation_start - timestamp <= demuxer.maximum_time_range_gap() {
+				return index
+			}
+			return none
+		}
+		if timestamp < run.presentation_end {
+			return index
+		}
+	}
+	if demuxer.reached_end_of_stream_ {
+		return demuxer.runs_.len - 1
+	}
+	return none
+}
+
+pub fn (mut demuxer TrackBufferDemuxer) seek_to_most_recent_keyframe(timestamp f64) ! {
+	run_index := demuxer.find_run_to_play_from(timestamp) or { return error('NeedMoreData') }
+	run := demuxer.runs_[run_index]
+	mut keyframe_index := 0
+	for index in 1 .. run.frames.len {
+		frame := run.frames[index]
+		if frame.is_keyframe && frame.timestamp <= timestamp
+			&& frame.timestamp >= run.frames[keyframe_index].timestamp {
+			keyframe_index = index
+		}
+	}
+	demuxer.current_run_ = run_index
+	demuxer.current_frame_ = keyframe_index
+	demuxer.cursor_presentation_timestamp_ = run.frames[keyframe_index].timestamp
+	demuxer.needs_reanchoring_ = false
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) next_frame() !DemuxedCodedFrame {
 	if demuxer.aborted_ {
 		return error('Aborted: Read aborted')
 	}
-	if demuxer.read_position_ >= demuxer.coded_frames_.len {
+	if demuxer.needs_reanchoring_ {
+		anchor := demuxer.cursor_presentation_timestamp_ or { f64(0) }
+		demuxer.seek_to_most_recent_keyframe(anchor) or {
+			if demuxer.reached_end_of_stream_ { return error('EndOfStream') }
+			return error('NeedMoreData')
+		}
+	}
+	for demuxer.current_run_ < demuxer.runs_.len
+		&& demuxer.current_frame_ >= demuxer.runs_[demuxer.current_run_].frames.len {
+		if demuxer.current_run_ + 1 >= demuxer.runs_.len {
+			break
+		}
+		current := demuxer.runs_[demuxer.current_run_]
+		next := demuxer.runs_[demuxer.current_run_ + 1]
+		if next.presentation_start - current.presentation_end > demuxer.maximum_time_range_gap() {
+			break
+		}
+		demuxer.current_run_++
+		demuxer.current_frame_ = 0
+	}
+	if demuxer.current_run_ >= demuxer.runs_.len
+		|| demuxer.current_frame_ >= demuxer.runs_[demuxer.current_run_].frames.len {
 		if demuxer.reached_end_of_stream_ {
 			return error('EndOfStream')
 		}
 		return error('NeedMoreData')
 	}
-	frame := demuxer.coded_frames_[demuxer.read_position_]
-	if last := demuxer.last_returned_timestamp_ {
-		if frame.timestamp - last > demuxer.maximum_time_range_gap() {
-			return error('NeedMoreData: next frame is in a gap')
-		}
-	}
-	demuxer.read_position_++
-	demuxer.last_returned_timestamp_ = frame.timestamp
+	frame := demuxer.runs_[demuxer.current_run_].frames[demuxer.current_frame_]
+	demuxer.current_frame_++
+	demuxer.cursor_presentation_timestamp_ = frame.timestamp
 	return frame
 }
 

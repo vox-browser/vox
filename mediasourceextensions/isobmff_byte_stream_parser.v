@@ -572,6 +572,7 @@ pub fn (mut parser ISOBMFFByteStreamParser) parse_media_segment(bytes []u8) !Web
 		frames << DemuxedCodedFrame{
 			track_number: sample.track_id
 			timestamp: sample.presentation_timestamp
+			decode_timestamp: sample.decode_timestamp
 			duration: sample.duration
 			is_keyframe: sample.is_keyframe
 			data: bytes[sample.data_position..sample.data_position + sample.data_size].clone()

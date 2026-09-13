@@ -60,8 +60,13 @@ pub:
 	is_keyframe  bool
 	data         []u8
 pub mut:
-	timestamp f64
-	duration  f64
+	timestamp        f64
+	decode_timestamp ?f64
+	duration         f64
+}
+
+pub fn (frame &DemuxedCodedFrame) decoding_timestamp() f64 {
+	return frame.decode_timestamp or { frame.timestamp }
 }
 
 pub struct WebMInitializationSegmentResult {
@@ -378,6 +383,7 @@ fn parse_webm_block(bytes []u8, element EBMLElementHeader, cluster_timecode i64,
 	return DemuxedCodedFrame{
 		track_number: number
 		timestamp: f64(cluster_timecode + i64(relative_timecode)) * f64(timestamp_scale) / 1_000_000_000.0
+		decode_timestamp: f64(cluster_timecode + i64(relative_timecode)) * f64(timestamp_scale) / 1_000_000_000.0
 		duration: duration
 		is_keyframe: keyframe || (flags & 0x80 != 0)
 		data: bytes[after_track + 3..element.data_end].clone()

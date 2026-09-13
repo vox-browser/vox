@@ -302,15 +302,17 @@ pub fn (mut processor SourceBufferProcessor) reset_parser_state() {
 fn (mut processor SourceBufferProcessor) run_coded_frame_processing(frames []DemuxedCodedFrame) {
 	for input_frame in frames {
 		mut frame := input_frame
+		decode_timestamp := frame.decoding_timestamp()
 		frame.timestamp += processor.timestamp_offset_
+		frame.decode_timestamp = decode_timestamp + processor.timestamp_offset_
 		mut track_buffer := processor.track_buffers_[frame.track_number] or { continue }
 		if last := track_buffer.last_decode_timestamp_ {
 			last_duration := track_buffer.last_frame_duration_ or { f64(0) }
-			if frame.duration <= 0 && frame.timestamp > last {
-				frame.duration = frame.timestamp - last
+			if frame.duration <= 0 && frame.decoding_timestamp() > last {
+				frame.duration = frame.decoding_timestamp() - last
 			}
-			if frame.timestamp < last || (last_duration > 0
-				&& frame.timestamp - last > 2 * last_duration) {
+			if frame.decoding_timestamp() < last || (last_duration > 0
+				&& frame.decoding_timestamp() - last > 2 * last_duration) {
 				if processor.mode_ == .segments {
 					processor.group_end_timestamp_ = frame.timestamp
 				} else {
@@ -338,7 +340,7 @@ fn (mut processor SourceBufferProcessor) run_coded_frame_processing(frames []Dem
 			demuxer.remove_coded_frames_and_dependants_in_range(frame.timestamp, frame_end)
 		}
 		demuxer.add_coded_frame(frame)
-		track_buffer.last_decode_timestamp_ = frame.timestamp
+		track_buffer.last_decode_timestamp_ = frame.decoding_timestamp()
 		track_buffer.last_frame_duration_ = frame.duration
 		if highest := track_buffer.highest_end_timestamp_ {
 			if frame_end > highest {
