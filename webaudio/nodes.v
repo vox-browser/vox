@@ -203,13 +203,28 @@ pub mut:
 
 pub fn (mut context BaseAudioContext) create_biquad_filter(options BiquadFilterOptions) !BiquadFilterNode {
 	node := context.allocate_node(.biquad, 1, 1, options.node, 2, .max, .speakers)!
+	frequency := context.allocate_param(options.frequency, 0, context.nyquist_frequency(), .a_rate, false)
+	detune := context.allocate_param(options.detune, -detune_limit(), detune_limit(), .a_rate, false)
+	q := context.allocate_param(options.q, float_lowest, float_highest, .a_rate, false)
+	gain := context.allocate_param(options.gain, float_lowest, biquad_gain_limit(), .a_rate, false)
+	node.queue_render_node_creation(BiquadFilterRenderNode.create(node.id, int(render_quantum_size), frequency.render_param(), detune.render_param(), q.render_param(), gain.render_param()).render_node())
+	if options.type_ != .lowpass {
+		node.enqueue_control_message(ControlMessage{
+			kind: .node_message
+			node_message: NodeMessage{
+				node_id: node.id
+				kind: .set_biquad_filter_type
+				biquad_type: options.type_
+			}
+		})
+	}
 	return BiquadFilterNode{
 		node: node
 		type_: options.type_
-		frequency: context.allocate_param(options.frequency, 0, context.nyquist_frequency(), .a_rate, false)
-		detune: context.allocate_param(options.detune, -detune_limit(), detune_limit(), .a_rate, false)
-		q: context.allocate_param(options.q, float_lowest, float_highest, .a_rate, false)
-		gain: context.allocate_param(options.gain, float_lowest, biquad_gain_limit(), .a_rate, false)
+		frequency: frequency
+		detune: detune
+		q: q
+		gain: gain
 	}
 }
 

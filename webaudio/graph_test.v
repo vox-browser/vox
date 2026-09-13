@@ -218,3 +218,27 @@ fn test_channel_splitter_factory_queues_its_multi_output_render_node() {
 	assert render_node.channel_count() == 4
 	assert render_node.channel_interpretation() == .discrete
 }
+
+fn test_biquad_factory_type_message_renders_through_the_context_destination() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut source := context.base.create_constant_source(1, AudioNodeOptions{}) or { panic(err) }
+	mut filter := context.base.create_biquad_filter(BiquadFilterOptions{
+		type_: .highpass
+		frequency: 12_000
+		q: 0
+	}) or { panic(err) }
+	mut destination := context.base.destination.AudioNode
+	connect_nodes(mut source.node, mut filter.node, 0, 0) or { panic(err) }
+	connect_nodes(mut filter.node, mut destination, 0, 0) or { panic(err) }
+	start_scheduled_source(mut context.base, mut source.node, 0) or { panic(err) }
+	mut graph := RenderGraph.create()
+	graph.apply_control_messages(context.base.control_messages.drain())
+	graph.set_destination(destination.id)
+	graph.render_quantum(RenderContext{
+		sample_rate: 48_000
+		quantum_size: int(render_quantum_size)
+	})
+	output := graph.destination() or { panic('missing destination') }
+	assert math.abs(output.output(0).channel(0)[0] - f32(1.0 / 3.0)) < 0.00001
+	assert math.abs(output.output(0).channel(0)[1] + f32(1.0 / 3.0)) < 0.00001
+}

@@ -499,6 +499,14 @@ pub fn BiquadFilterNode.construct_impl(mut context BaseAudioContext,
 
 pub fn (mut node BiquadFilterNode) set_type(value BiquadFilterType) {
 	node.type_ = value
+	node.node.enqueue_control_message(ControlMessage{
+		kind: .node_message
+		node_message: NodeMessage{
+			node_id: node.node.id
+			kind: .set_biquad_filter_type
+			biquad_type: value
+		}
+	})
 }
 
 pub fn (node BiquadFilterNode) type_() BiquadFilterType {
