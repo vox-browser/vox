@@ -94,10 +94,10 @@ pub fn (mut client PageClient) request_new_process_for_navigation(url string) { 
 pub fn (mut client PageClient) page_did_change_title(value string) { client.record('change-title', value) }
 pub fn (mut client PageClient) page_did_change_url(value string) { client.record('change-url', value) }
 pub fn (mut client PageClient) page_did_request_refresh() { client.record('request-refresh', '') }
-pub fn (mut client PageClient) page_did_request_resize_window(value PixelSize) { client.record('request-resize-window', '${value.width},${value.height}') }
-pub fn (mut client PageClient) page_did_request_reposition_window(value PixelPoint) { client.record('request-reposition-window', '${value.x},${value.y}') }
+pub fn (mut client PageClient) page_did_request_resize_window(value PixelSize, completion_ids ...u64) { client.record('request-resize-window', '${value.width},${value.height}${window_request_completion_suffix(completion_ids)}') }
+pub fn (mut client PageClient) page_did_request_reposition_window(value PixelPoint, completion_ids ...u64) { client.record('request-reposition-window', '${value.x},${value.y}${window_request_completion_suffix(completion_ids)}') }
 pub fn (mut client PageClient) page_did_request_restore_window() { client.record('request-restore-window', '') }
-pub fn (mut client PageClient) page_did_request_maximize_window() { client.record('request-maximize-window', '') }
+pub fn (mut client PageClient) page_did_request_maximize_window(completion_ids ...u64) { client.record('request-maximize-window', window_request_completion_text(completion_ids)) }
 pub fn (mut client PageClient) page_did_request_minimize_window() { client.record('request-minimize-window', '') }
 pub fn (mut client PageClient) page_did_request_fullscreen_window() { client.record('request-fullscreen-window', '') }
 pub fn (mut client PageClient) page_did_request_exit_fullscreen() { client.record('request-exit-fullscreen', '') }

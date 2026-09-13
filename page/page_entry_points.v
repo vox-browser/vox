@@ -160,6 +160,17 @@ pub fn (mut p Page) did_update_window_rect() {
 	}
 }
 
+pub fn (mut p Page) did_complete_window_rect_request(completion_id u64) {
+	if observer := p.window_rect_completion_observer_ {
+		observer(PixelRect{
+			x: p.window_position_.x
+			y: p.window_position_.y
+			width: p.window_size_.width
+			height: p.window_size_.height
+		}, completion_id)
+	}
+}
+
 pub fn (mut p Page) did_request_alert(message string) bool {
 	if !p.request_dialog(.alert, message, '') {
 		return false
@@ -414,6 +425,10 @@ pub fn (mut p Page) set_window_size(value PixelSize) {
 
 pub fn (mut p Page) set_window_rect_observer(observer ?fn (PixelRect)) {
 	p.window_rect_observer_ = observer
+}
+
+pub fn (mut p Page) set_window_rect_completion_observer(observer ?fn (PixelRect, u64)) {
+	p.window_rect_completion_observer_ = observer
 }
 
 pub fn (p &Page) has_pending_dialog() bool {

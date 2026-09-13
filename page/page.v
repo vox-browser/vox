@@ -196,6 +196,7 @@ mut:
 	window_position_                             PixelPoint
 	window_size_                                 PixelSize
 	window_rect_observer_                        ?fn (PixelRect)
+	window_rect_completion_observer_             ?fn (PixelRect, u64)
 	pending_dialog_                              PendingDialog
 	pending_dialog_text_                         ?string
 	pending_dialog_default_                      string
