@@ -8827,6 +8827,14 @@ pub enum CSSPseudoClass {
 	nth_last_child
 	nth_of_type
 	nth_last_of_type
+	hover
+	focus
+	focus_visible
+	focus_within
+	active
+	target
+	host
+	root
 	other
 }
 
@@ -8854,6 +8862,14 @@ pub fn pseudo_class_name(pseudo_class CSSPseudoClass) string {
 		.nth_last_child { 'nth-last-child' }
 		.nth_of_type { 'nth-of-type' }
 		.nth_last_of_type { 'nth-last-of-type' }
+		.hover { 'hover' }
+		.focus { 'focus' }
+		.focus_visible { 'focus-visible' }
+		.focus_within { 'focus-within' }
+		.active { 'active' }
+		.target { 'target' }
+		.host { 'host' }
+		.root { 'root' }
 		.other { 'other' }
 	}
 }
@@ -8882,6 +8898,14 @@ fn pseudo_class_from_name(name string) CSSPseudoClass {
 		'nth-last-child' { .nth_last_child }
 		'nth-of-type' { .nth_of_type }
 		'nth-last-of-type' { .nth_last_of_type }
+		'hover' { .hover }
+		'focus' { .focus }
+		'focus-visible' { .focus_visible }
+		'focus-within' { .focus_within }
+		'active' { .active }
+		'target' { .target }
+		'host' { .host }
+		'root' { .root }
 		else { .other }
 	}
 }
@@ -9283,6 +9307,14 @@ fn css_pseudo_class_from_selector_pseudo_class(pseudo_class PseudoClass) CSSPseu
 		.nth_last_child { .nth_last_child }
 		.nth_of_type { .nth_of_type }
 		.nth_last_of_type { .nth_last_of_type }
+		.hover { .hover }
+		.focus { .focus }
+		.focus_visible { .focus_visible }
+		.focus_within { .focus_within }
+		.active { .active }
+		.target { .target }
+		.host { .host }
+		.root { .root }
 		// Boundary: the local invalidation property enum only contains pseudo
 		// classes that StyleInvalidationData.cpp uses for invalidation tracking.
 		else { .other }
@@ -9556,7 +9588,7 @@ fn build_invalidation_sets_for_simple_selector_impl(selector InvalidationSimpleS
 					}
 					invalidation_set.set_needs_invalidate_pseudo_class(pseudo_class)
 				}
-				.link, .any_link, .local_link, .required, .optional {
+				.link, .any_link, .local_link, .required, .optional, .hover, .focus, .focus_visible, .focus_within, .active, .target, .host, .root {
 					invalidation_set.set_needs_invalidate_pseudo_class(pseudo_class)
 				}
 				else {}

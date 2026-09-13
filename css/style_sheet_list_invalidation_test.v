@@ -185,6 +185,44 @@ fn test_keyframes_sheet_add_and_remove_target_animation_name_users() {
 	assert !document.needs_full_style_update()
 }
 
+fn test_root_and_hover_sheet_add_target_current_pseudo_matches() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_list_invalidation_element(document, 'html')
+	mut hovered := style_sheet_list_invalidation_element(document, 'div')
+	mut hover_child := style_sheet_list_invalidation_element(document, 'span')
+	mut bystander := style_sheet_list_invalidation_element(document, 'aside')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(hovered.as_node()) or { panic(err) }
+	mut hovered_node := hovered.as_node()
+	hovered_node.append_child(hover_child.as_node()) or { panic(err) }
+	root_node.append_child(bystander.as_node()) or { panic(err) }
+	mut list := StyleSheetList.create(document_node)
+
+	root_sheet := parse_css_stylesheet_with_parser(':root { color: red }', none)
+	assert !build_invalidation_set_for_stylesheet(root_sheet).invalidation_set.needs_invalidate_whole_subtree()
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), hovered.as_node(), hover_child.as_node(), bystander.as_node())
+	document.set_needs_full_style_update(false)
+	list.add_sheet(root_sheet)
+	assert root.needs_style_update()
+	assert !hovered.needs_style_update()
+	assert !bystander.needs_style_update()
+	assert !document.needs_full_style_update()
+
+	document.set_hovered_node(hover_child.as_node())
+	hover_sheet := parse_css_stylesheet_with_parser(':hover { color: blue }', none)
+	assert !build_invalidation_set_for_stylesheet(hover_sheet).invalidation_set.needs_invalidate_whole_subtree()
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), hovered.as_node(), hover_child.as_node(), bystander.as_node())
+	document.set_needs_full_style_update(false)
+	list.add_sheet(hover_sheet)
+	assert root.needs_style_update()
+	assert hovered.needs_style_update()
+	assert hover_child.needs_style_update()
+	assert !bystander.needs_style_update()
+	assert !document.needs_full_style_update()
+}
+
 fn test_shadow_keyframes_sheet_add_reaches_animation_name_on_host() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }
@@ -217,7 +255,7 @@ fn test_shadow_keyframes_sheet_add_reaches_animation_name_on_host() {
 	assert !document.needs_full_style_update()
 }
 
-fn test_broad_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_reach() {
+fn test_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_reach() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }
 	mut root := style_sheet_list_invalidation_element(document, 'html')
@@ -239,7 +277,9 @@ fn test_broad_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_r
 	document.set_needs_full_style_update(false)
 	document.reset_style_invalidation_counters()
 	list.add_sheet(contained_sheet)
-	assert host.as_node().entire_subtree_needs_style_update()
+	assert !host.as_node().entire_subtree_needs_style_update()
+	assert child.needs_style_update()
+	assert !sibling.needs_style_update()
 	assert !document.needs_full_style_update()
 	assert document.style_invalidation_counters().full_style_invalidations == 0
 
@@ -249,6 +289,9 @@ fn test_broad_shadow_sheet_invalidation_distinguishes_host_subtree_and_sibling_r
 	document.reset_style_invalidation_counters()
 	sibling_sheet := parse_css_stylesheet_with_parser('@keyframes sibling { from { opacity: 1 } } :host + * { color: red }', none)
 	list.add_sheet(sibling_sheet)
-	assert document.needs_full_style_update()
-	assert document.style_invalidation_counters().full_style_invalidations > 0
+	assert sibling.needs_style_update()
+	assert !host.needs_style_update()
+	assert !child.needs_style_update()
+	assert !document.needs_full_style_update()
+	assert document.style_invalidation_counters().full_style_invalidations == 0
 }

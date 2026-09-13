@@ -4814,6 +4814,20 @@ fn (e &Element) matches_invalidation_pseudo_class(name string) bool {
 		'optional' { e.matches_optional_pseudo_class() }
 		'link', 'any-link' { e.matches_link_pseudo_class() }
 		'local-link' { e.matches_local_link_pseudo_class() }
+		'root' { e.is_html_element() && e.local_name() == 'html' }
+		'host' { e.is_shadow_host() }
+		'hover' {
+			hovered := e.document().get_hovered_node() or { return false }
+			e.as_node() == hovered || e.as_node().is_shadow_including_ancestor_of(hovered)
+		}
+		'focus' { e.is_focused() }
+		'focus-visible' { e.is_focused() && e.should_indicate_focus() }
+		'focus-within' {
+			focused := e.document().focused_area() or { return false }
+			e.as_node().is_inclusive_ancestor_of(focused)
+		}
+		'active' { e.is_being_activated() }
+		'target' { e.document().target_element() or { return false } == e }
 		else { false }
 	}
 }
