@@ -4,6 +4,7 @@
 // Rendering-side immutable PeriodicWave snapshot and constructor helpers.
 module webaudio
 
+@[heap]
 pub struct PeriodicWaveData {
 pub:
 	real      []f32

@@ -44,6 +44,13 @@ pub:
 	when            f64
 	oscillator_type OscillatorType = .sine
 	periodic_wave   ?&PeriodicWaveData
+	offset          f64
+	duration        ?f64
+	buffer          ?&AudioBufferContents
+	loop_           bool
+	loop_start      f64
+	loop_end        f64
+	update_buffer   bool
 }
 
 pub fn node_message_target(message NodeMessage) u64 {

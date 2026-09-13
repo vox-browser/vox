@@ -4,6 +4,7 @@
 // Translation of Rendering/AudioData's AudioBufferContents.
 module webaudio
 
+@[heap]
 pub struct AudioBufferContents {
 pub:
 	channels    [][]f32
