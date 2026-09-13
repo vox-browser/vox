@@ -916,7 +916,11 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 	if previous := old_style {
 		had_list_marker = previous.display().is_list_item()
 	}
-	old_display_is_none := if previous := old_style { previous.display().is_none() } else { true }
+	old_non_animated_display_is_none := if previous := old_style {
+		computed_display_is_none_ignoring_animations(previous)
+	} else {
+		true
+	}
 	computed := s.compute_style_tracking_custom_property_changes(abstract_element, did_change_custom_properties)
 	mut invalidation := if previous := old_style {
 		compute_required_invalidation(previous, computed, s.font_computer(), abstract_element.unsafe_layout_node(), &abstract_element)
@@ -924,8 +928,8 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		required_invalidation_after_style_change_full()
 	}
 	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
-	new_display_is_none := computed.display().is_none()
-	if old_display_is_none != new_display_is_none {
+	new_non_animated_display_is_none := computed_display_is_none_ignoring_animations(computed)
+	if old_non_animated_display_is_none != new_non_animated_display_is_none {
 		element.as_node().for_each_shadow_including_inclusive_descendant(fn (node &dom.Node) dom.TraversalDecision {
 			if node.is_element() {
 				mut descendant := unsafe { &dom.Element(node) }

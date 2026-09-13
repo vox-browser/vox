@@ -46,6 +46,7 @@ fn computed_properties_to_dom(computed &ComputedProperties) &dom.CSSComputedProp
 			is_table_column_: display.is_table_column()
 			is_table_column_group_: display.is_table_column_group()
 		}
+		non_animated_display_is_none_:   computed_display_is_none_ignoring_animations(computed)
 		overflow_x_:                     overflow_to_dom(computed.overflow_x())
 		overflow_y_:                     overflow_to_dom(computed.overflow_y())
 		content_visibility_:             content_visibility_to_dom(computed.content_visibility())

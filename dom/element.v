@@ -454,6 +454,7 @@ fn create_element_inline_style(element &Element) &CSSStyleProperties_ {
 pub struct CSSComputedProperties_ {
 pub mut:
 	display_                        CSSDisplay_ = CSSDisplay_{}
+	non_animated_display_is_none_   bool
 	overflow_x_                     CSSOverflow_ = .visible
 	overflow_y_                     CSSOverflow_ = .visible
 	content_visibility_             CSSContentVisibility_ = .visible
@@ -474,6 +475,16 @@ pub mut:
 
 pub fn (c &CSSComputedProperties_) display() CSSDisplay_ {
 	return c.display_
+}
+
+pub fn (c &CSSComputedProperties_) display_is_none_ignoring_animations() bool {
+	// DOM-only callers can construct a placeholder without the opaque CSS
+	// handle. For those values, the mirrored display is necessarily the base
+	// display as well.
+	if c.css_handle == unsafe { nil } {
+		return c.display_.is_none()
+	}
+	return c.non_animated_display_is_none_
 }
 
 pub fn (c &CSSComputedProperties_) overflow_x() CSSOverflow_ {
@@ -5045,9 +5056,10 @@ pub fn (mut e Element) play_or_cancel_animations_after_display_property_change()
 		return
 	}
 
-	// Setting display:none terminates running CSS animations. Restoring display
+	// If display computes to none when ignoring animation and transition cascade
+	// origins, terminate running animations. Restoring the underlying display
 	// resumes each animation according to its last CSS animation-play-state.
-	has_display_none_inclusive_ancestor := e.as_node().has_inclusive_ancestor_with_display_none()
+	has_display_none_inclusive_ancestor := e.as_node().has_inclusive_ancestor_with_display_none_ignoring_animations()
 	for _, animations in e.css_defined_animations_ {
 		for _, animation in animations {
 			if has_display_none_inclusive_ancestor {

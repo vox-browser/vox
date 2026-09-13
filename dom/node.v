@@ -4376,12 +4376,12 @@ pub fn (mut n Node) add_registered_observer(registered_observer &RegisteredObser
 	n.registered_observer_list_ << registered_observer
 }
 
-pub fn (n &Node) has_inclusive_ancestor_with_display_none() bool {
+pub fn (n &Node) has_inclusive_ancestor_with_display_none_ignoring_animations() bool {
 	for ancestor := ?&Node(n); ancestor != none;  {
 		current := ancestor or { break }
 		if element := current.as_element() {
 			if props := element.el_computed_properties() {
-				if props.display().is_none() {
+				if props.display_is_none_ignoring_animations() {
 					return true
 				}
 			}

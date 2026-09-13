@@ -1848,6 +1848,26 @@ fn test_display_change_cancels_and_restarts_css_defined_animations() {
 	target.set_attribute_value('style', 'display: block; animation-name: fade; animation-duration: 1s; animation-play-state: running')
 	computer.recompute_style(mut abstract_target)
 	assert animation.play_state() == .running
+
+	// An animated display:none must not cancel the animation while the
+	// underlying display remains non-none.
+	mut computed := computed_properties_from_dom(abstract_target.computed_properties() or {
+		panic('missing computed style')
+	}) or { panic('missing CSS style') }
+	none_display := dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.none_))))
+	block_display := dom_style_value_from_value_logic(StyleValue(DisplayStyleValue.create(Display.from_short(.block))))
+	computed.set_animated_property(.display, none_display, .no, .no)
+	abstract_target.set_computed_properties(computed_properties_to_dom(computed))
+	target.play_or_cancel_animations_after_display_property_change()
+	assert animation.play_state() == .running
+
+	// Conversely, an animated non-none value cannot keep the animation alive
+	// when the underlying display is none.
+	computed.set_property(.display, none_display, .no, .no)
+	computed.set_animated_property(.display, block_display, .no, .no)
+	abstract_target.set_computed_properties(computed_properties_to_dom(computed))
+	target.play_or_cancel_animations_after_display_property_change()
+	assert animation.play_state() == .idle
 }
 
 fn test_animation_refresh_can_override_base_display_none() {
