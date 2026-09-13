@@ -204,3 +204,17 @@ fn test_channel_merger_factory_queues_its_multi_input_render_node() {
 	assert render_node.input_count() == 4
 	assert render_node.output(0).channel_count() == 4
 }
+
+fn test_channel_splitter_factory_queues_its_multi_output_render_node() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	context.base.control_messages.drain()
+	splitter := context.base.create_channel_splitter(4, AudioNodeOptions{}) or { panic(err) }
+	messages := context.base.control_messages.drain()
+	add_messages := messages.filter(it.kind == .add_node)
+	assert add_messages.len == 1
+	render_node := add_messages[0].render_node or { panic('missing splitter render node') }
+	assert render_node.node_id() == splitter.node.id
+	assert render_node.output_count() == 4
+	assert render_node.channel_count() == 4
+	assert render_node.channel_interpretation() == .discrete
+}

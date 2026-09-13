@@ -302,6 +302,7 @@ pub fn (mut context BaseAudioContext) create_channel_splitter(number_of_outputs 
 	if interpretation := options.channel_interpretation {
 		splitter.set_channel_interpretation(interpretation)!
 	}
+	node.queue_render_node_creation(ChannelSplitterRenderNode.create(node.id, int(render_quantum_size), int(number_of_outputs)).render_node())
 	return splitter
 }
 
@@ -317,6 +318,7 @@ pub fn (mut splitter ChannelSplitterNode) set_channel_count_mode(mode ChannelCou
 		return error("InvalidStateError: Channel count mode must be 'explicit'")
 	}
 	splitter.node.channel_count_mode = mode
+	splitter.node.queue_channel_config_update()
 }
 
 pub fn (mut splitter ChannelSplitterNode) set_channel_interpretation(value ChannelInterpretation) ! {
@@ -324,6 +326,7 @@ pub fn (mut splitter ChannelSplitterNode) set_channel_interpretation(value Chann
 		return error("InvalidStateError: Channel interpretation must be 'discrete'")
 	}
 	splitter.node.channel_interpretation = value
+	splitter.node.queue_channel_config_update()
 }
 
 pub struct StereoPannerNode {
