@@ -2837,6 +2837,39 @@ pub fn (c CalculatedStyleValue) resolve_value(resolution_context CalculationReso
 	return c.resolve_value_internal(resolution_context, true)
 }
 
+pub fn (c CalculatedStyleValue) resolve_as_style_value(context CalculationResolutionContext) ?StyleValue {
+	result := c.resolve_value(context) or { return none }
+	resolved_type := result.type_ or { return none }
+	if resolved_type.matches_number(c.calculation_context.percentages_resolve_as) {
+		if c.calculation_context.resolve_numbers_as_integers {
+			return StyleValue(IntegerStyleValue.create(round_to_nearest_integer(result.value)))
+		}
+		return StyleValue(NumberStyleValue.create(result.value))
+	}
+	if resolved_type.matches_angle(c.calculation_context.percentages_resolve_as) {
+		return StyleValue(AngleStyleValue.create(Angle.make_degrees(result.value)))
+	}
+	if resolved_type.matches_flex(c.calculation_context.percentages_resolve_as) {
+		return StyleValue(FlexStyleValue.create(Flex.make_fr(result.value)))
+	}
+	if resolved_type.matches_frequency(c.calculation_context.percentages_resolve_as) {
+		return StyleValue(FrequencyStyleValue.create(Frequency.make_hertz(result.value)))
+	}
+	if resolved_type.matches_length(c.calculation_context.percentages_resolve_as) {
+		return StyleValue(LengthStyleValue.create(Length.make_px(result.value)))
+	}
+	if resolved_type.matches_percentage() {
+		return StyleValue(PercentageStyleValue.create(Percentage.new(result.value)))
+	}
+	if resolved_type.matches_resolution(c.calculation_context.percentages_resolve_as) {
+		return StyleValue(ResolutionStyleValue.create(Resolution.make_dots_per_pixel(result.value)))
+	}
+	if resolved_type.matches_time(c.calculation_context.percentages_resolve_as) {
+		return StyleValue(TimeStyleValue.create(Time.make_seconds(result.value)))
+	}
+	return none
+}
+
 pub fn (c CalculatedStyleValue) resolve_raw_length(context CalculationResolutionContext) ?f64 {
 	result := c.resolve_value_internal(context, false) or { return none }
 	resolved_type := result.type_ or { return none }

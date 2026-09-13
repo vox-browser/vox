@@ -146,3 +146,30 @@ fn test_if_style_query_cycle_makes_the_custom_property_invalid() {
 	}')
 	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 128, 0)'
 }
+
+fn test_style_features_compare_calculated_registered_values() {
+	mut document, _, target := style_query_test_tree('.target {
+		--number: calc(1 + 2);
+		--length: calc(1em + 14px);
+		font-size: 16px;
+	}')
+	register_property_for_document(mut document, PropertyDefinition{
+		name:          '--number'
+		syntax:        '<number>'
+		inherits:      false
+		initial_value: '0'
+	}) or { panic('${err}') }
+	register_property_for_document(mut document, PropertyDefinition{
+		name:          '--length'
+		syntax:        '<length>'
+		inherits:      false
+		initial_value: '0px'
+	}) or { panic('${err}') }
+	document.needs_full_style_update = true
+	document.update_style()
+
+	assert evaluate_parsed_style_query(parsed_style_query('--number: 3'), target) == .true_
+	assert evaluate_parsed_style_query(parsed_style_query('--number: calc(1 + 2)'), target) == .true_
+	assert evaluate_parsed_style_query(parsed_style_query('--length: 30px'), target) == .true_
+	assert evaluate_parsed_style_query(parsed_style_query('--length: calc(10px + 20px)'), target) == .true_
+}

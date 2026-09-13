@@ -386,6 +386,27 @@ fn style_query_values_are_equal(left StyleValue, right StyleValue, computation_c
 	if left_color != none || right_color != none {
 		return left_color == right_color
 	}
+
+	calculation_resolution_context := CalculationResolutionContext.from_computation_context(computation_context,
+		none)
+	mut comparable_left := left_absolutized
+	mut comparable_right := right_absolutized
+	mut resolved_calculation := false
+	if left_absolutized is CalculatedStyleValue {
+		if resolved := left_absolutized.resolve_as_style_value(calculation_resolution_context) {
+			comparable_left = resolved
+			resolved_calculation = true
+		}
+	}
+	if right_absolutized is CalculatedStyleValue {
+		if resolved := right_absolutized.resolve_as_style_value(calculation_resolution_context) {
+			comparable_right = resolved
+			resolved_calculation = true
+		}
+	}
+	if resolved_calculation {
+		return comparable_left.equals(comparable_right)
+	}
 	return left_absolutized.equals(right_absolutized)
 }
 
