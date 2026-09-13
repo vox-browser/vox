@@ -64,6 +64,18 @@ fn test_realtime_context_stops_renderer_when_document_becomes_inactive() {
 	assert context.resume().state == .rejected
 }
 
+fn test_realtime_context_dispatches_ended_from_the_renderer() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut source := context.base.create_constant_source(1, AudioNodeOptions{}) or { panic(err) }
+	mut destination := context.base.destination.AudioNode
+	connect_nodes(mut source.node, mut destination, 0, 0) or { panic(err) }
+	source.node.start(0) or { panic(err) }
+	source.node.stop(0.001) or { panic(err) }
+	mut output := []f32{len: 64}
+	context.fill_output_buffer(mut output)
+	assert source.node.ended_event_count() == 1
+}
+
 fn test_listener_decode_and_media_element_boundaries() {
 	mut context := new_audio_context(1, 44100, true) or { panic(err) }
 	context.base.listener.set_position(1, 2, 3) or { panic(err) }

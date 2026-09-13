@@ -333,7 +333,11 @@ pub fn (context AudioContext) current_time() f64 {
 
 pub fn (mut context AudioContext) set_renderer_callbacks() {
 	if mut renderer := context.renderer {
-		renderer.set_on_sources_ended(fn (_ []u64) {})
+		graph := context.base.graph
+		renderer.set_on_sources_ended(fn [graph] (ended_nodes []u64) {
+			mut mutable_graph := unsafe { &AudioGraphState(graph) }
+			mutable_graph.handle_ended_sources(ended_nodes)
+		})
 	}
 }
 

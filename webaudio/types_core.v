@@ -309,6 +309,9 @@ pub mut:
 	input_connections  map[u64][]AudioNodeConnection
 	output_connections map[u64][]AudioNodeConnection
 	param_connections  map[u64][]AudioParamConnection
+	playing_sources    map[u64]bool
+	ended_event_counts map[u64]u32
+	onended_handlers   map[u64]bool
 mut:
 	control_messages_ ?&ControlMessageQueue
 	render_params_    map[u64]&RenderAudioParam
@@ -570,6 +573,12 @@ pub fn (mut node AudioNode) start(when f64) ! {
 		return error('RangeError: when must not be negative')
 	}
 	node.source_started = true
+	node.graph.playing_sources[node.id] = true
+	node.enqueue_control_message(ControlMessage{
+		kind: .start_source
+		node_id: node.id
+		when: when
+	})
 }
 
 pub fn (node AudioNode) stop(when f64) ! {
@@ -579,6 +588,11 @@ pub fn (node AudioNode) stop(when f64) ! {
 	if when < 0 {
 		return error('RangeError: when must not be negative')
 	}
+	node.enqueue_control_message(ControlMessage{
+		kind: .stop_source
+		node_id: node.id
+		when: when
+	})
 }
 
 pub enum ControlMessageKind {
@@ -623,19 +637,26 @@ pub fn (mut queue ControlMessageQueue) drain() []ControlMessage {
 // These helpers retain the context association that is implicit in upstream's
 // GC-backed AudioScheduledSourceNode and enqueue the same control messages.
 pub fn start_scheduled_source(mut context BaseAudioContext, mut node AudioNode, when f64) ! {
+	has_node_queue := node.graph.control_messages_ != none
 	node.start(when)!
-	context.control_messages.enqueue(ControlMessage{
-		kind: .start_source
-		node_id: node.id
-		when: when
-	})
+	if !has_node_queue {
+		context.control_messages.enqueue(ControlMessage{
+			kind: .start_source
+			node_id: node.id
+			when: when
+		})
+	}
+	context.add_playing_source(node)
 }
 
 pub fn stop_scheduled_source(mut context BaseAudioContext, node AudioNode, when f64) ! {
+	has_node_queue := node.graph.control_messages_ != none
 	node.stop(when)!
-	context.control_messages.enqueue(ControlMessage{
-		kind: .stop_source
-		node_id: node.id
-		when: when
-	})
+	if !has_node_queue {
+		context.control_messages.enqueue(ControlMessage{
+			kind: .stop_source
+			node_id: node.id
+			when: when
+		})
+	}
 }

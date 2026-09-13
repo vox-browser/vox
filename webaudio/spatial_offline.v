@@ -257,6 +257,11 @@ pub fn (mut context OfflineAudioContext) start_rendering() OfflineRenderResult {
 	mut renderer := OfflineAudioRenderer.create(context.base.control_messages,
 		context.base.destination.id, int(context.number_of_channels), int(context.length),
 		context.base.sample_rate, int(render_quantum_size))
+	graph := context.base.graph
+	renderer.set_on_sources_ended(fn [graph] (ended_nodes []u64) {
+		mut mutable_graph := unsafe { &AudioGraphState(graph) }
+		mutable_graph.handle_ended_sources(ended_nodes)
+	})
 	for frame, _ in context.suspend_frames {
 		renderer.request_suspend(frame)
 	}

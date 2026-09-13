@@ -581,6 +581,7 @@ pub fn (mut source AudioBufferSourceNode) start(when ?f64, offset ?f64, duration
 		}
 	}
 	source.node.source_started = true
+	source.node.graph.playing_sources[source.node.id] = true
 	source.node.enqueue_control_message(ControlMessage{
 		kind: .node_message
 		node_message: NodeMessage{

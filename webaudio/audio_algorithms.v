@@ -122,11 +122,16 @@ pub fn (node AudioNode) node_id() u64 {
 }
 
 pub fn (node AudioNode) onended() bool {
-	return node.onended
+	return node.graph.onended_handlers[node.id] or { node.onended }
 }
 
 pub fn (mut node AudioNode) set_onended(value bool) {
 	node.onended = value
+	node.graph.onended_handlers[node.id] = value
+}
+
+pub fn (node AudioNode) ended_event_count() u32 {
+	return node.graph.ended_event_counts[node.id] or { 0 }
 }
 
 pub fn (node AudioNode) source_started() bool {
@@ -171,6 +176,27 @@ pub fn (mut context BaseAudioContext) queue_a_media_element_task(task fn ()) {
 
 pub fn (mut context BaseAudioContext) queue_control_message(message ControlMessage) {
 	context.control_messages.enqueue(message)
+}
+
+pub fn (mut context BaseAudioContext) add_playing_source(node AudioNode) {
+	context.graph.playing_sources[node.id] = true
+}
+
+pub fn (mut context BaseAudioContext) handle_ended_sources(ended_nodes []u64) {
+	context.media_element_tasks += u32(context.graph.handle_ended_sources(ended_nodes))
+}
+
+fn (mut graph AudioGraphState) handle_ended_sources(ended_nodes []u64) int {
+	mut handled := 0
+	for node_id in ended_nodes {
+		if node_id !in graph.playing_sources {
+			continue
+		}
+		graph.playing_sources.delete(node_id)
+		graph.ended_event_counts[node_id] = (graph.ended_event_counts[node_id] or { 0 }) + 1
+		handled++
+	}
+	return handled
 }
 
 pub fn (mut context BaseAudioContext) queue_a_decoding_operation(audio_data []u8,

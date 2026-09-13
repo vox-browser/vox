@@ -69,6 +69,24 @@ fn test_scheduled_source_enforces_one_shot_lifecycle() {
 	assert false
 }
 
+fn test_scheduled_source_tracks_playing_lifetime_and_dispatches_ended_once() {
+	mut context := new_audio_context(1, 44_100, true) or { panic(err) }
+	mut node := context.base.allocate_node(.oscillator, 0, 1, AudioNodeOptions{}, 2,
+		.max, .speakers) or { panic(err) }
+	context.base.control_messages.drain()
+	node.set_onended(true)
+	node.start(0.25) or { panic(err) }
+	assert context.base.control_messages.drain().map(it.kind) == [.start_source]
+	assert node.id in context.base.graph.playing_sources
+	context.base.handle_ended_sources([node.id, u64(999)])
+	assert node.ended_event_count() == 1
+	assert node.id !in context.base.graph.playing_sources
+	assert context.base.media_element_tasks == 1
+	context.base.handle_ended_sources([node.id])
+	assert node.ended_event_count() == 1
+	assert context.base.media_element_tasks == 1
+}
+
 fn test_audio_context_queues_its_destination_render_node_first() {
 	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
 	messages := context.base.control_messages.drain()
