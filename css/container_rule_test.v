@@ -189,6 +189,15 @@ fn test_container_rule_parser_preserves_names_and_general_enclosed_queries() {
 	assert child.type_ == .style
 }
 
+fn test_unsupported_container_features_evaluate_to_unknown() {
+	rule := parse_css_rule_with_params(ParsingParams{}, '@container (future-feature: enabled) {}') or {
+		panic('container rule did not parse')
+	}
+	query := rule.container_conditions[0].container_query or { panic('missing container query') }
+	assert query.condition.evaluate(BooleanExpressionEvaluationContext{}) == .unknown
+	assert query.feature_requirements.has_unknown_or_unsupported_feature
+}
+
 fn test_container_rule_parser_accepts_name_only_and_query_only_conditions() {
 	name_rule := parse_css_rule_with_params(ParsingParams{}, '@container --card {}') or {
 		panic('name-only container rule did not parse')

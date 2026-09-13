@@ -179,7 +179,7 @@ pub fn (query &ContainerQuery) to_string() string {
 }
 
 fn (mut parser Parser) parse_container_query_condition(mut tokens SupportsTokenStream) ?&BooleanExpression {
-	return parser.parse_boolean_expression(mut tokens, .false_, .container_query_feature)
+	return parser.parse_boolean_expression(mut tokens, .unknown, .container_query_feature)
 }
 
 fn (mut parser Parser) parse_container_query_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
