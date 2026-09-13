@@ -1,58 +1,82 @@
-# WebAudio module V translation — upstream algorithm coverage reviewed
+# WebAudio V translation status
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebAudio`
 
-Translation workspace: `~/code/libweb_v/webaudio`
-Audited: 2026-09-01
+Translation workspace: `~/code/vox2/webaudio`
 
-All 26 upstream implementation units, all 28 headers, and all 25 IDL files were
-cross-audited and are represented. Audio device access, decoding, rendering threads, event-loop task
-delivery, and media-element ownership remain explicit platform boundaries.
+Audited: 2026-09-13 against Ladybird
+`963d46a829f3e1b79f44dba9d02afb70654300fa`.
 
-| Upstream implementation | V implementation |
-| --- | --- |
-| `AudioNode.cpp`, `AudioParam.cpp`, `AudioScheduledSourceNode.cpp`, `ControlMessageQueue.cpp`, `ControlMessage.h`, `Types.h` | `types_core.v` |
-| `BaseAudioContext.cpp`, `AudioContext.cpp`, `AudioDestinationNode.cpp`, `AudioListener.cpp`, `MediaElementAudioSourceNode.cpp` | `context.v` |
-| `AudioBuffer.cpp`, `AnalyserNode.cpp` | `buffer_analyser.v` |
-| `AudioBufferSourceNode.cpp`, `BiquadFilterNode.cpp`, `ChannelMergerNode.cpp`, `ChannelSplitterNode.cpp`, `ConstantSourceNode.cpp`, `DelayNode.cpp`, `DynamicsCompressorNode.cpp`, `GainNode.cpp`, `OscillatorNode.cpp`, `PeriodicWave.cpp`, `ScriptProcessorNode.cpp`, `StereoPannerNode.cpp` | `nodes.v` |
-| `PannerNode.cpp`, `OfflineAudioContext.cpp`, `OfflineAudioCompletionEvent.cpp` | `spatial_offline.v` |
-| public/inline constructor, accessor, overload, and internal algorithm surface | `audio_algorithms.v` |
-| all 25 `*.idl` files | typed enums, option dictionaries, attributes, methods, event state, and constructors across the files above |
+The current WebAudio tree is translated and symbol-audited. All 47 upstream
+implementation units, 52 headers, and 32 IDL files have active V mappings; the
+module contains 33 implementation V units (8,682 physical lines) and 31 test V
+units (3,247 physical lines).
 
-| Upstream source area | `.cpp` files / LOC | `.h` files / LOC | `.idl` files / LOC | Implementation `.v` files / LOC | Test `.v` files / LOC | Status |
-| --- | ---: | ---: | ---: | ---: | ---: | --- |
-| `WebAudio/` | 26 / 3,649 | 28 / 1,656 | 25 / 570 | 6 implementation units | 6 test units | Reviewed; host boundaries below |
+| Source area | Upstream files / LOC | V implementation |
+| --- | ---: | --- |
+| Core graph, node/parameter state, control messages | included below | `types_core.v`, `audio_algorithms.v` |
+| Buffers, arrays, parameter maps and automation | included below | `buffer_analyser.v`, `audio_buffer_contents.v`, `audio_array.v`, `audio_param_map.v`, `audio_param_timeline.v` |
+| Contexts, listeners, spatial and media-stream nodes | included below | `context.v`, `spatial_offline.v`, `media_stream_audio_source.v`, `media_stream_audio_destination.v` |
+| Node factories and DSP inputs | included below | `nodes.v`, `biquad_coefficients.v`, `periodic_wave_render_data.v` |
+| Audio worklets and their fixed ring transport | included below | `audio_worklet.v`, `audio_worklet_node.v`, `audio_worklet_pipe.v` |
+| Render graph, render nodes, offline/realtime drivers | included below | `render_*.v` |
+| Audio decoding host bridge and portable WAVE path | included below | `audio_decode.c.v`, `audio_decode_bridge.h` |
+| **All `*.cpp`** | **47 / 8,256** | **33 V units / 8,682 LOC** |
+| All `*.h` | 52 / 3,776 | typed records and the implementation units above |
+| All `*.idl` | 32 / 562 | typed enums, option dictionaries, events, attributes, and constructors |
 
-The symbol-level audit accounts for all 341 implementations: 266 direct V
-owner/name matches, 7 documented language or shared-base consolidations, 45
-GC/binding-runtime hooks, and 23 constructors/destructors supplied by V object
-construction. There are no unmatched WebAudio symbols.
+The translated render path includes control-message application, connection
+rebuilding and input summing; k-rate and a-rate parameter automation; scheduled
+sources; constant, oscillator, buffer-source, gain, delay, splitter, merger,
+stereo/spatial panner, biquad, analyser, destination, and current upstream
+compressor passthrough nodes; offline quantum rendering with suspend/resume;
+and realtime device-buffer filling with sample-rate conversion. AudioWorklet
+registration, processor construction, parameter blocks, fixed-capacity input
+and output rings, priming, wakeups, underrun/drop accounting, and shutdown are
+also represented.
 
-The port covers nominal sample/channel ranges, PCM buffer identity and partial
-copies, graph connection uniqueness and overload-specific disconnection,
-cross-context checks, channel configuration constraints, fixed automation
-rates and clamped parameter values, every implemented concrete node factory,
-derived-node constructor constraints, scheduled-source one-shot rules and
-control messages, periodic-wave presence/normalization inputs, analyser
-FFT/decibel/time-domain surfaces, listener and panner state, realtime context
-state transitions and observable event counts, decode completion, offline
-single-use rendering and its completion event, ScriptProcessor's special zero
-input/default-buffer behavior, and FIFO control-message draining.
+The public/control path covers constructor validation before allocation,
+sample rates from 3,000 through 768,000 Hz, AudioBuffer snapshot acquisition,
+automation cancellation and ramp edge cases, scheduled-source lifetime and
+ended delivery, media-stream source/destination transport, listener and panner
+updates, context lifecycle, output timestamps, and real audio decoding. Native
+browser builds decode through FFmpeg and resample to the context rate; portable
+builds retain PCM/integer/float WAVE decoding for deterministic operation.
 
-Upstream FIXMEs remain visible instead of being invented: parameter automation
-methods are fluent no-ops, biquad response is a no-op, analyser input/Fourier
-data is the current silent placeholder, output timestamps are zeroed, decoding
-produces the current placeholder buffer, and offline resume/suspend reject as
-unsupported. V nodes are values rather than upstream GC identities, so graph
-operations that need reverse-edge mutation accept both endpoints (for example,
-`connect_nodes` and `disconnect_nodes`); device/render-thread ownership and
-event-loop scheduling remain typed deterministic boundaries. Those boundaries
-are not claims that audio device access, asynchronous HTML task delivery, or a
-rendering thread exists in the standalone V runtime.
+## Reviewed representation boundaries
+
+The V engine is single-threaded. Offline control-thread posts run synchronously,
+and the host explicitly supplies realtime output buffers; the translated graph
+and ring state retain the upstream ordering at those boundaries. JavaScript
+realm lookup, WebIDL callback/promise wrapping, GC visitation, weak per-realm
+`Float32Array` caches, ArrayBuffer detachment, and generated JIT member-offset
+helpers belong to the embedding runtime. V uses typed slices, maps, pointers,
+and direct record fields for the corresponding state. AudioBuffer acquisition
+still establishes the required copy-on-write playback snapshot.
+
+The fail-open semantic audit accounts for all 684 upstream implementations:
+
+```text
+  candidate-name-match: 540
+  consolidated-name-match: 9
+  gc-or-binding-runtime: 45
+  language-constructor-or-destructor: 59
+  value-record-field-match: 31
+  unmatched: 0
+```
+
+Four intentionally small V bodies were compared directly with upstream: the
+allocator-only `AudioParamMap.create`, default `RenderGraph.create`, and the
+constant zero input/output arities on the two media-stream endpoint nodes.
+There are no unreviewed trivial WebAudio bodies.
 
 ## Verification
 
 ```text
-$ /Users/alex/code/v/v -enable-globals test webaudio
-Summary for all V _test.v files: 6 passed, 6 total.
+$ V_C_ERROR_BUG_REPORT_DISABLED=1 \
+    /tmp/vox2-v-c3358d3.Qu9YHN/v1_fallback -enable-globals test webaudio
+Summary for all V _test.v files: 31 passed, 31 total.
+
+$ V_BIN=/tmp/vox2-v-c3358d3.Qu9YHN/v1_fallback ./build_ladybird.sh
+Built production Ladybird V app: ~/code/vox2/Build/v/Ladybird.app
 ```
