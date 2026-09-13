@@ -39,19 +39,27 @@ pub enum NodeMessageKind {
 
 pub struct NodeMessage {
 pub:
-	node_id         u64
-	kind            NodeMessageKind
-	when            f64
-	oscillator_type OscillatorType = .sine
-	periodic_wave   ?&PeriodicWaveData
-	offset          f64
-	duration        ?f64
-	buffer          ?&AudioBufferContents
-	loop_           bool
-	loop_start      f64
-	loop_end        f64
-	update_buffer   bool
-	biquad_type     BiquadFilterType = .lowpass
+	node_id          u64
+	kind             NodeMessageKind
+	when             f64
+	oscillator_type  OscillatorType = .sine
+	periodic_wave    ?&PeriodicWaveData
+	offset           f64
+	duration         ?f64
+	buffer           ?&AudioBufferContents
+	loop_            bool
+	loop_start       f64
+	loop_end         f64
+	update_buffer    bool
+	biquad_type      BiquadFilterType = .lowpass
+	panning_model    PanningModelType = .equalpower
+	distance_model   DistanceModelType = .inverse
+	ref_distance     f64 = 1
+	max_distance     f64 = 10_000
+	rolloff_factor   f64 = 1
+	cone_inner_angle f64 = 360
+	cone_outer_angle f64 = 360
+	cone_outer_gain  f64
 }
 
 pub fn node_message_target(message NodeMessage) u64 {
