@@ -279,6 +279,8 @@ fn test_style_container_features_parse_serialize_and_collect_requirements() {
 	assert escaped_plain.to_string() == r'style(--\{foo: bar)'
 	escaped_range := parsed_single_container_query(r'style(100px > --\{foo > 10px)')
 	assert escaped_range.to_string() == r'style(100px > --\{foo > 10px)'
+	assert parsed_single_container_query('style(--foo:bar   baz)').to_string() == 'style(--foo: bar   baz)'
+	assert parsed_single_container_query('style(--foo:2.100  )').to_string() == 'style(--foo: 2.100)'
 
 	for invalid_operand in ['style(10px < 10em !)', 'style(10px ! < 10em)'] {
 		query := parsed_single_container_query(invalid_operand)

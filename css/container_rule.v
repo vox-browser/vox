@@ -396,7 +396,12 @@ fn (mut parser Parser) parse_style_feature(mut tokens SupportsTokenStream) ?&Boo
 				}
 				transaction.index = transaction.values.len
 				tokens = transaction
-				return BooleanExpression.create_style_feature(property, declaration.value)
+				mut original_value_text := ?string(none)
+				if property.is_custom_property() {
+					original_value_text = parser_component_values_original_text(declaration.value)
+				}
+				return BooleanExpression.create_style_feature(property, declaration.value,
+					original_value_text)
 			}
 		}
 	}
@@ -415,7 +420,7 @@ fn (mut parser Parser) parse_style_feature(mut tokens SupportsTokenStream) ?&Boo
 	}
 	property := PropertyNameAndID.from_name(boolean_name_token.token().ident()) or { return none }
 	tokens = transaction
-	return BooleanExpression.create_style_feature(property, none)
+	return BooleanExpression.create_style_feature(property, none, none)
 }
 
 fn single_style_query_css_wide_keyword(value []ComponentValue) ?Keyword {

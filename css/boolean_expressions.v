@@ -130,16 +130,17 @@ pub mut:
 	media_feature_comparison       ?MediaFeatureComparison
 	media_feature_right_comparison ?MediaFeatureComparison
 	media_feature_right_value      ?MediaFeatureValueLocal
-	style_feature_property         ?PropertyNameAndID
-	style_feature_has_value        bool
-	style_feature_value            []ComponentValue
-	style_feature_is_range         bool
-	style_range_left               StyleRangeValue
-	style_range_left_comparison    MediaFeatureComparison
-	style_range_middle             StyleRangeValue
-	style_range_has_right          bool
-	style_range_right_comparison   MediaFeatureComparison
-	style_range_right              StyleRangeValue
+	style_feature_property            ?PropertyNameAndID
+	style_feature_has_value           bool
+	style_feature_value               []ComponentValue
+	style_feature_original_value_text ?string
+	style_feature_is_range            bool
+	style_range_left                  StyleRangeValue
+	style_range_left_comparison       MediaFeatureComparison
+	style_range_middle                StyleRangeValue
+	style_range_has_right             bool
+	style_range_right_comparison      MediaFeatureComparison
+	style_range_right                 StyleRangeValue
 }
 
 pub fn BooleanExpression.create_general_enclosed(serialized_contents string, matches MatchResult) &BooleanExpression {
@@ -178,14 +179,18 @@ fn BooleanExpression.create_size_feature(serialized_contents string, feature_nam
 	}
 }
 
-fn BooleanExpression.create_style_feature(property PropertyNameAndID, value ?[]ComponentValue) &BooleanExpression {
+fn BooleanExpression.create_style_feature(property PropertyNameAndID, value ?[]ComponentValue, original_value_text ?string) &BooleanExpression {
 	if feature_value := value {
+		serialized_value := original_value_text or {
+			serialize_a_series_of_component_values(feature_value)
+		}
 		return &BooleanExpression{
-			kind:                    .general_enclosed
-			text:                    '${serialize_an_identifier(property.name())}: ${serialize_a_series_of_component_values(feature_value)}'
-			style_feature_property:  property
-			style_feature_has_value: true
-			style_feature_value:     feature_value
+			kind:                              .general_enclosed
+			text:                              '${serialize_an_identifier(property.name())}: ${serialized_value}'
+			style_feature_property:            property
+			style_feature_has_value:           true
+			style_feature_value:               feature_value
+			style_feature_original_value_text: original_value_text
 		}
 	}
 	return &BooleanExpression{
