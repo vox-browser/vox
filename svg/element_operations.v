@@ -623,7 +623,7 @@ pub fn (element &Element) start_offset_for_path_length(path_length f64) f64 {
 
 // https://w3c.github.io/svgwg/svg2-draft/text.html#__svg__SVGTextPathElement__startOffset
 pub fn (element &Element) start_offset() AnimatedLength {
-	return AnimatedLength.create(SvgLength.create_reflected_attribute(*element, 'startOffset', .horizontal, SvgLengthValue.number(0), false))
+	return element.svg_animated_length_for_attribute('startOffset', .horizontal, SvgLengthValue.number(0))
 }
 
 pub fn (element &Element) is_svg_a_element() bool {
@@ -714,6 +714,10 @@ pub fn (element &Element) should_include_in_accessibility_tree() bool {
 
 pub fn (element &Element) requires_svg_container() bool {
 	return element.tag != 'svg'
+}
+
+pub fn (element &Element) svg_animated_length_for_attribute(name string, directionality SvgLengthDirectionality, default_value SvgLengthValue) AnimatedLength {
+	return AnimatedLength.create(SvgLength.create_reflected_attribute(*element, name, directionality, default_value, false))
 }
 
 pub fn (_ &Element) svg_animated_length_for_property(value NumberPercentage) AnimatedLength {

@@ -154,3 +154,14 @@ fn test_animated_svg_length_retains_reflection_source_and_context() {
 	assert animated.base_val().resolved_value()! == 60
 	assert animated.anim_val().resolved_value()! == 60
 }
+
+fn test_element_animated_length_factory_creates_live_base_and_read_only_anim_values() {
+	mut element := new_element('rect')
+	element.attributes['_viewport_width'] = '200'
+	element.attributes['width'] = '25%'
+	animated := element.svg_animated_length_for_attribute('width', .horizontal, SvgLengthValue.number(0))
+	assert animated.base_val().resolved_value()! == 50
+	assert animated.anim_val().resolved_value()! == 50
+	assert !animated.base_val().read_only()
+	assert animated.anim_val().read_only()
+}
