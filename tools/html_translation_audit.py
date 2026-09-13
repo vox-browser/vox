@@ -421,6 +421,27 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     # C++ serializes each primitive into an opaque Rust sink. V's direct graph
     # lowering returns the equivalent typed FilterGraph without an ABI sink.
     ("SVGFilterElement", "push_primitives"): (("gfx_filter", "Element"),),
+    # SVGUseElement's C++ registry is replaced by live document traversal in
+    # V. Creation installs the UA shadow root, document completion refreshes
+    # deferred forward references, and mutation/removal traversals notify the
+    # matching use elements without retaining document-specific list nodes.
+    ("SVGUseElement", "initialize_element"): (
+        ("attach_a_user_agent_shadow_root", "Element"),
+        ("refresh_svg_use_shadow_trees", "Document"),
+    ),
+    ("SVGUseElement", "register_for_referenced_element_changes"): (
+        ("update_use_elements_that_reference_this", "Element"),
+    ),
+    ("SVGUseElement", "unregister_for_referenced_element_changes"): (
+        ("remove_from_use_element_that_reference_this", "Element"),
+    ),
+    ("SVGUseElement", "href_value"): (("svg_use_href", "Element"),),
+    ("SVGUseElement", "additional_element_transform"): (
+        ("svg_transform_element_model", None),
+    ),
+    ("SVGUseElement", "svg_element_changed_before_document_complete"): (
+        ("refresh_svg_use_shadow_trees", "Document"),
+    ),
     # Primitive calculated-value resolution receives Layout's already-derived
     # length context explicitly in V, avoiding a CSS -> Layout module cycle.
     ("Angle", "resolve_calculated"): (("resolve_calculated_with_context", "Angle"),),
