@@ -390,6 +390,11 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("SVGLengthValue", "to_utf16_string"): (("to_string", "SvgLengthValue"),),
     ("SVGLengthValue", "to_length"): (("to_string", "SvgLengthValue"),),
     ("SVGLengthValue", "to_percentage"): (("to_string", "SvgLengthValue"),),
+    # V keeps the per-use SVG image color scheme on its isolated Document,
+    # beside the media-query and style invalidation state that consumes it.
+    ("SVGDecodedImageData", "color_scheme"): (
+        ("svg_image_color_scheme", "Document"),
+    ),
     ("Paintable", "paint_inspector_overlay"): (
         ("paint_inspector_overlay", "BlockBox"),
     ),

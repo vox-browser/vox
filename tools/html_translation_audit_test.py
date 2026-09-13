@@ -182,6 +182,14 @@ class ConsolidatedFunctionTests(unittest.TestCase):
             (("kind", "SvgLengthValue"),),
         )
 
+    def test_svg_image_color_scheme_maps_to_the_isolated_document(self) -> None:
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("SVGDecodedImageData", "color_scheme")
+            ],
+            (("svg_image_color_scheme", "Document"),),
+        )
+
     def test_animation_overlay_adapter_maps_to_the_css_update_callback(self) -> None:
         self.assertEqual(
             audit.CONSOLIDATED_FUNCTION_MAPPINGS[
