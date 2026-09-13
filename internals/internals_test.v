@@ -11,6 +11,28 @@ import loader
 import painting
 import xhr
 
+@[heap]
+struct InternalsHitTestFixture {
+pub mut:
+	node       &dom.Node = unsafe { nil }
+	x          f64
+	y          f64
+	type_      dom.HitTestType
+	call_count int
+}
+
+fn internals_hit_test_callback(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.HitTestResult {
+	mut fixture := unsafe { &InternalsHitTestFixture(target) }
+	fixture.x = x
+	fixture.y = y
+	fixture.type_ = type_
+	fixture.call_count++
+	return dom.HitTestResult{
+		node: fixture.node
+		index_in_node: 4
+	}
+}
+
 fn test_metadata_settings_and_platform_facade() {
 	mut platform := &PlatformState{
 		headless_: true
@@ -700,6 +722,30 @@ fn test_dom_helpers_dumps_hit_testing_and_timeline() {
 	assert event.is_trusted()
 	api.handle_sdl_input_events()
 	assert platform.sdl_input_event_pumps == 1
+}
+
+fn test_hit_test_result_uses_the_document_viewport_paintable() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	text := document.create_text_node('target')
+	mut fixture := &InternalsHitTestFixture{
+		node: text.as_node()
+	}
+	document.set_viewport_paintable(&dom.ViewportPaintable{
+		target: voidptr(fixture)
+		hit_test_callback: internals_hit_test_callback
+	})
+	mut platform := &PlatformState{
+		associated_document: document
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	api := Internals.create(platform, navigator)
+	result := api.hit_test_result(12.5, 24.25) or { panic('expected hit') }
+	assert voidptr(result.node or { panic('expected exact DOM node') }) == voidptr(text.as_node())
+	assert result.index_in_node == 4
+	assert fixture.x == 12.5
+	assert fixture.y == 24.25
+	assert fixture.type_ == .exact
+	assert fixture.call_count == 1
 }
 
 fn test_computed_accessibility_values_and_form_clear_algorithm() {

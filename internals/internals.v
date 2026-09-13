@@ -670,12 +670,32 @@ pub fn (mut api Internals) update_style() {
 	api.platform.style_update_requests++
 }
 
-pub fn (api &Internals) hit_test(_ f64, _ f64) ?HitTestObject {
+fn create_hit_testing_result(result dom.HitTestResult) HitTestObject {
+	return HitTestObject{
+		node: result.node
+		index_in_node: result.index_in_node
+	}
+}
+
+pub fn (api &Internals) hit_test(x f64, y f64) ?HitTestObject {
+	if document := api.platform.associated_document {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.update_layout(.internals_hit_test)
+		if paintable := document.paintable_box() {
+			if result := paintable.hit_test(x, y, .exact) {
+				return create_hit_testing_result(result)
+			}
+		}
+	}
 	result := api.platform.hit_test_result or { return none }
 	return HitTestObject{
 		node: result.node
 		index_in_node: result.index_in_node
 	}
+}
+
+pub fn (api &Internals) hit_test_result(x f64, y f64) ?HitTestObject {
+	return api.hit_test(x, y)
 }
 
 struct WebDriverKeyData {
