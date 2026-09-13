@@ -1686,6 +1686,16 @@ pub:
 
 __global css_computed_values_total_instances u64
 
+__global css_longhand_wrappers_minted u64
+
+pub fn longhand_wrappers_minted() u64 {
+	return css_longhand_wrappers_minted
+}
+
+pub fn reset_longhand_wrappers_minted() {
+	css_longhand_wrappers_minted = 0
+}
+
 fn note_computed_values_created() {
 	css_computed_values_total_instances++
 }

@@ -4238,6 +4238,65 @@ pub struct TopOfTheDocument {}
 
 pub struct StyleInvalidationCounters {
 pub mut:
+	style_engine_reaction_batch_runs                    u64
+	style_engine_reaction_elements                      u64
+	style_engine_published_reactions                    u64
+	style_engine_record_deltas_applied                  u64
+	style_engine_materialized_gaps                      u64
+	unchanged_style_record_deltas                       u64
+	style_record_property_diffs_skipped                 u64
+	style_record_property_damage_cache_hits             u64
+	element_computed_style_changes                      u64
+	committed_style_observer_consequences               u64
+	element_style_shared_computations                   u64
+	element_style_input_changed_by_parent_style         u64
+	element_style_input_changed_by_parent_custom_properties u64
+	element_style_input_reused                          u64
+	engine_computed_style_records                       u64
+	animated_style_reconstruction_fallbacks             u64
+	animated_style_overlay_builds                       u64
+	animated_style_full_builds                          u64
+	animation_frame_pump_requests                       u64
+	animation_style_skip_cache_hits                     u64
+	animation_style_skip_cache_misses                   u64
+	animation_timeline_synchronizations                 u64
+	animation_timeline_associated_animation_updates     u64
+	compositor_visual_animation_updates                 u64
+	compositor_visual_animation_timing_anchor_updates   u64
+	compositor_keyframe_value_resolutions               u64
+	base_style_partial_builds                           u64
+	base_style_full_builds                              u64
+	computed_longhand_evaluations                       u64
+	style_stabilization_epochs                          u64
+	style_stabilization_feedback_epochs                 u64
+	provisional_style_passes                            u64
+	style_stabilization_round_guard_hits                u64
+	style_update_pass_guard_hits                        u64
+	exact_stabilization_passes                          u64
+	style_stabilization_bound_failures                  u64
+	provisional_animation_events                        u64
+	committed_animation_events                          u64
+	provisional_transition_decisions                    u64
+	superseded_provisional_transition_decisions         u64
+	committed_transition_actions                        u64
+	committed_transitions_started                       u64
+	media_rule_evaluations                              u64
+	registered_properties_cache_rebuilds                u64
+	scope_rule_cache_builds                             u64
+	style_engine_transaction_setups                     u64
+	style_engine_transaction_setup_microseconds         u64
+	style_engine_planning_microseconds                  u64
+	relayouts_performed                                 u64
+	style_update_microseconds                           u64
+	style_recompute_microseconds                        u64
+	custom_property_resolutions                         u64
+	custom_property_elements                            u64
+	custom_property_value_computations                  u64
+	custom_property_overlay_hits                        u64
+	custom_property_cycle_participants                  u64
+	style_cascade_microseconds                          u64
+	style_values_microseconds                           u64
+	scrollable_overflow_recalculations                  u64
 	has_ancestor_walk_invocations               u64
 	has_ancestor_walk_visits                    u64
 	has_ancestor_sibling_element_checks         u64
@@ -4276,6 +4335,7 @@ pub mut:
 	dom_tree_version                         u64
 	character_data_version                   u64
 	option_selectedness_update_index_counter u64
+	style_environment_version_               u64
 
 	// Readiness
 	readiness                 DocumentReadyState = .complete
@@ -7806,6 +7866,14 @@ pub fn (d &Document) needs_full_style_update() bool {
 
 pub fn (d &Document) style_invalidation_counters() StyleInvalidationCounters {
 	return d.style_invalidation_counters_
+}
+
+pub fn (d &Document) style_environment_version() u64 {
+	return d.style_environment_version_
+}
+
+pub fn (mut d Document) bump_style_environment_version() {
+	d.style_environment_version_++
 }
 
 pub fn (mut d Document) record_full_style_invalidation() {

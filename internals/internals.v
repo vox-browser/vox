@@ -1263,6 +1263,58 @@ pub fn (mut api Internals) reset_style_invalidation_counters() {
 	document := api.platform.associated_document or { return }
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.reset_style_invalidation_counters()
+	css.reset_longhand_wrappers_minted()
+}
+
+pub struct StyleInvalidationCountersObject {
+	dom.StyleInvalidationCounters
+pub:
+	style_environment_version                        u64
+	associated_animations                            usize
+	compositor_visual_animations                     usize
+	compositor_visual_animation_local_time_at_anchor ?f64
+	compositor_visual_animations_share_timing_anchor bool = true
+	compositor_visual_animation_targets_are_valid    bool = true
+	document_timeline_current_time                   ?f64
+	compositor_animation_wakeup_timer_active         bool
+	compositor_animation_observation_timer_active    bool
+	longhand_wrappers_minted                         u64
+}
+
+pub fn (api &Internals) style_invalidation_counters_object() StyleInvalidationCountersObject {
+	document := api.platform.associated_document or {
+		return StyleInvalidationCountersObject{
+			compositor_visual_animation_targets_are_valid: api.platform.compositor_visual_animation_targets_are_valid
+		}
+	}
+	visual_animations := api.platform.compositor_visual_animations
+	mut local_time_at_anchor := ?f64(none)
+	mut share_timing_anchor := true
+	if visual_animations.len > 0 {
+		first := visual_animations[0]
+		local_time_at_anchor = first.local_time_at_anchor_ms
+		for animation in visual_animations[1..] {
+			if animation.monotonic_time_at_anchor_ns != first.monotonic_time_at_anchor_ns
+				|| animation.local_time_at_anchor_ms != first.local_time_at_anchor_ms {
+				share_timing_anchor = false
+				break
+			}
+		}
+	}
+	associated_animations := document.get_animations() or { []&dom.Animation{} }
+	return StyleInvalidationCountersObject{
+		StyleInvalidationCounters: document.style_invalidation_counters()
+		style_environment_version: document.style_environment_version()
+		associated_animations: usize(associated_animations.len)
+		compositor_visual_animations: usize(visual_animations.len)
+		compositor_visual_animation_local_time_at_anchor: local_time_at_anchor
+		compositor_visual_animations_share_timing_anchor: share_timing_anchor
+		compositor_visual_animation_targets_are_valid: api.platform.compositor_visual_animation_targets_are_valid
+		document_timeline_current_time: api.platform.document_timeline_current_time
+		compositor_animation_wakeup_timer_active: api.platform.compositor_animation_wakeup_timer_active
+		compositor_animation_observation_timer_active: api.platform.compositor_animation_observation_timer_active
+		longhand_wrappers_minted: css.longhand_wrappers_minted()
+	}
 }
 
 pub fn (api &Internals) get_echo_server_port() u16 {

@@ -243,6 +243,11 @@ pub mut:
 	async_scrolling_visual_context_tree                     ?&compositor.VisualContextTree
 	async_scrolling_scroll_state_snapshot                   compositor.CompositorScrollStateSnapshot
 	recorded_async_scrolling_display_list                   ?&compositor.CompositorDisplayList
+	compositor_visual_animations                            []compositor.VisualAnimation
+	compositor_visual_animation_targets_are_valid           bool = true
+	document_timeline_current_time                           ?f64
+	compositor_animation_wakeup_timer_active                bool
+	compositor_animation_observation_timer_active           bool
 }
 
 @[heap]

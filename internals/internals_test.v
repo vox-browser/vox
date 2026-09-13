@@ -820,6 +820,37 @@ fn test_style_invalidation_counters_include_full_document_invalidations() {
 	assert api.get_style_invalidation_counters() == dom.StyleInvalidationCounters{}
 }
 
+fn test_style_invalidation_counters_object_combines_document_and_compositor_state() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	document.bump_style_environment_version()
+	document.record_element_style_recomputation()
+	mut platform := &PlatformState{
+		associated_document: document
+		compositor_visual_animations: [compositor.VisualAnimation{
+			monotonic_time_at_anchor_ns: 10
+			local_time_at_anchor_ms: 20
+		}, compositor.VisualAnimation{
+			monotonic_time_at_anchor_ns: 11
+			local_time_at_anchor_ms: 20
+		}]
+		compositor_visual_animation_targets_are_valid: false
+		document_timeline_current_time: 42.5
+		compositor_animation_wakeup_timer_active: true
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	api := Internals.create(platform, navigator)
+	object := api.style_invalidation_counters_object()
+	assert object.style_environment_version == 1
+	assert object.element_style_recomputations == 1
+	assert object.compositor_visual_animations == 2
+	assert object.compositor_visual_animation_local_time_at_anchor? == 20
+	assert !object.compositor_visual_animations_share_timing_anchor
+	assert !object.compositor_visual_animation_targets_are_valid
+	assert object.document_timeline_current_time? == 42.5
+	assert object.compositor_animation_wakeup_timer_active
+	assert !object.compositor_animation_observation_timer_active
+}
+
 fn test_style_invalidation_counters_count_previous_sibling_walks() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut platform := &PlatformState{
