@@ -48,6 +48,8 @@ pub mut:
 	rendering_opportunity_for_update_  bool
 	last_rendering_frame_time_ns_      i64
 	last_rendering_frame_interval_ms_  f64
+	downloads_                         map[u64]DownloadState
+	next_download_id_                  u64 = 1
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }
