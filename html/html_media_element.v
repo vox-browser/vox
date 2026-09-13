@@ -76,6 +76,8 @@ pub type MediaPlaybackCurrentTimeHook = fn() f64
 
 pub type MediaPlaybackCurrentFrameHook = fn () ?&painting.MediaVideoFrame
 
+pub type MediaPlaybackStartTimeRealtimeHook = fn () ?i64
+
 pub struct MediaBufferedRange {
 pub:
 	start f64
@@ -98,6 +100,7 @@ pub:
 	current_time        ?MediaPlaybackCurrentTimeHook
 	current_video_frame ?MediaPlaybackCurrentFrameHook
 	buffered_ranges     ?MediaPlaybackBufferedRangesHook
+	start_time_realtime ?MediaPlaybackStartTimeRealtimeHook
 }
 
 pub struct MediaResourceResponse {
@@ -110,6 +113,20 @@ pub:
 	audio_tracks        []MediaTrackMetadata
 	video_tracks        []MediaTrackMetadata
 	accepts_byte_ranges bool
+	// FFmpeg exposes AVFormatContext::start_time_realtime in microseconds.
+	start_time_realtime_microseconds ?i64
+}
+
+// JS::Date-compatible value returned by HTMLMediaElement.getStartDate(). A
+// fresh object is allocated for every call, including the invalid-date case.
+@[heap]
+pub struct MediaStartDate {
+mut:
+	time_value_ f64
+}
+
+pub fn (date &MediaStartDate) get_time() f64 {
+	return date.time_value_
 }
 
 pub type MediaResourceFetchHook = fn(dom.URL, u64) !MediaResourceResponse
@@ -183,6 +200,8 @@ mut:
 	default_playback_start_     f64
 	show_poster_                bool = true
 	duration_                   f64 = math.nan()
+	playback_start_time_realtime_microseconds_ ?i64
+	timeline_offset_microseconds_               ?i64
 	pending_play_promises_      []&dom.Promise
 	paused_                     bool = true
 	ended_                      bool
@@ -470,6 +489,18 @@ pub fn (element &HTMLMediaElement) duration() f64 {
 	return element.duration_
 }
 
+// https://html.spec.whatwg.org/multipage/media.html#dom-media-getstartdate
+pub fn (element &HTMLMediaElement) get_start_date() &MediaStartDate {
+	date_value := if timeline_offset := element.timeline_offset_microseconds_ {
+		f64(timeline_offset / 1000)
+	} else {
+		math.nan()
+	}
+	return &MediaStartDate{
+		time_value_: date_value
+	}
+}
+
 pub fn (element &HTMLMediaElement) volume() f64 {
 	return element.volume_
 }
@@ -642,6 +673,8 @@ pub fn (mut element HTMLMediaElement) load_element() ! {
 		element.dispatch_time_update_event()
 	}
 	element.official_playback_position_ = 0
+	element.playback_start_time_realtime_microseconds_ = none
+	element.timeline_offset_microseconds_ = none
 	element.set_duration(math.nan())
 	element.set_ended(false)
 	element.set_show_poster(true)
@@ -867,6 +900,7 @@ pub fn (element &HTMLMediaElement) last_fetch_offset() u64 {
 
 fn (mut element HTMLMediaElement) process_media_response(response MediaResourceResponse) {
 	element.set_up_playback_manager()
+	element.playback_start_time_realtime_microseconds_ = response.start_time_realtime_microseconds
 	for metadata in response.audio_tracks {
 		element.on_audio_track_added(metadata)
 	}
@@ -1464,6 +1498,11 @@ pub fn (mut element HTMLMediaElement) on_video_track_added(metadata MediaTrackMe
 
 pub fn (mut element HTMLMediaElement) on_metadata_parsed(duration f64) {
 	element.update_volume()
+	if start_time_realtime := element.playback_hooks_.start_time_realtime {
+		element.timeline_offset_microseconds_ = start_time_realtime()
+	} else {
+		element.timeline_offset_microseconds_ = element.playback_start_time_realtime_microseconds_
+	}
 	element.current_playback_position_ = 0
 	element.official_playback_position_ = 0
 	element.set_duration(duration)

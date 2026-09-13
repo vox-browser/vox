@@ -1,5 +1,6 @@
 module main
 
+import browserjs
 import css
 import dom
 import html
@@ -13,6 +14,21 @@ fn test_parse_launch_options_keeps_interactive_defaults() {
 	assert options.source == 'https://example.com'
 	assert options.width == initial_width
 	assert options.height == initial_height
+}
+
+fn test_javascript_bridge_exposes_media_start_date_as_a_date_object() {
+	$if darwin {
+		document := html.parse_document('<!doctype html>')
+		mut runtime := browserjs.Runtime.create()
+		defer {
+			runtime.close()
+		}
+		mut messages := []string{}
+		run_document_javascript(document, 'about:blank', [
+			'const video = document.createElement("video"); console.log(video.getStartDate() instanceof Date); console.log(isNaN(video.getStartDate().getTime()));',
+		], runtime, mut messages)
+		assert messages == ['true', 'true']
+	}
 }
 
 fn test_parse_launch_options_accepts_explicit_window_dimensions() {

@@ -36,6 +36,7 @@ fn media_test_fetch(url dom.URL, offset u64) !MediaResourceResponse {
 	return MediaResourceResponse{
 		mime_type: 'video/mp4; codecs="avc1"'
 		duration: 10
+		start_time_realtime_microseconds: 1_704_067_200_123_456
 		total_length: 1000
 		buffered_end: 10
 		audio_tracks: [MediaTrackMetadata{ identifier: 1, name: 'Audio' }]
@@ -73,6 +74,10 @@ fn media_test_current_video_frame() ?&painting.MediaVideoFrame {
 	}
 }
 
+fn media_test_start_time_realtime() ?i64 {
+	return 1_725_084_800_987_654
+}
+
 fn test_media_element_resource_selection_metadata_and_tracks() {
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/page' })
 	media.set_fetch_hook(media_test_fetch)
@@ -82,6 +87,10 @@ fn test_media_element_resource_selection_metadata_and_tracks() {
 	assert media.network_state() == .idle
 	assert media.ready_state() == .have_enough_data
 	assert media.duration() == 10
+	first_start_date := media.get_start_date()
+	second_start_date := media.get_start_date()
+	assert first_start_date.get_time() == 1_704_067_200_123
+	assert voidptr(first_start_date) != voidptr(second_start_date)
 	assert media.buffered().start(0)! == 0
 	assert media.buffered().end(0)! == 10
 	assert media.seekable().end(0)! == 10
@@ -91,6 +100,20 @@ fn test_media_element_resource_selection_metadata_and_tracks() {
 	assert media.can_play_type('video/mp4') == .maybe
 	assert media.can_play_type('video/mp4; codecs="avc1"') == .probably
 	assert media.can_play_type('application/json') == .empty
+}
+
+fn test_media_element_start_date_uses_playback_metadata_and_load_clears_it() {
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	assert math.is_nan(media.get_start_date().get_time())
+	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
+		start_time_realtime: media_test_start_time_realtime
+	})
+	media.on_metadata_parsed(10)
+	assert media.get_start_date().get_time() == 1_725_084_800_987
+	media.set_source(none)
+	media.set_source_candidates([])
+	media.load()!
+	assert math.is_nan(media.get_start_date().get_time())
 }
 
 fn test_media_element_publishes_the_current_queued_video_frame() {
