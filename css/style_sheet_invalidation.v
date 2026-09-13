@@ -73,6 +73,18 @@ fn style_sheet_compound_is_pseudo_element_only(compound CompoundSelector) bool {
 	return compound.simple_selectors.all(it.type_ == .pseudo_element)
 }
 
+// :has() in the rightmost set filters by an element's previously recorded affected-by-:has() flags. Those flags
+// are not set for a brand-new rule, so :has() alone cannot safely narrow stylesheet invalidation.
+fn rightmost_set_has_targetable_features(rightmost_set InvalidationSet) bool {
+	for property in rightmost_set.properties() {
+		if property.type_ == .pseudo_class && property.pseudo_class == .has {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
 fn try_build_style_sheet_anchor_for_leading_compounds(compounds []CompoundSelector, mut throwaway_data StyleInvalidationData, style_sheet_for_rule ?&CSSStyleSheet) ?StyleSheetAnchorInvalidationRule {
 	if compounds.len < 2 {
 		return none
@@ -115,7 +127,7 @@ fn extend_style_sheet_invalidation_set_with_style_rule(mut result StyleSheetInva
 		for simple in rightmost.simple_selectors {
 			build_invalidation_sets_for_simple_selector(simple_selector_for_invalidation(simple), mut rightmost_set, .no, mut throwaway_data, .no)
 		}
-		if rightmost_set.has_properties() {
+		if rightmost_set_has_targetable_features(rightmost_set) {
 			result.invalidation_set.include_all_from(rightmost_set)
 			continue
 		}

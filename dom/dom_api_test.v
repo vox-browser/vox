@@ -522,6 +522,27 @@ fn test_style_invalidator_whole_subtree_plan_short_circuits() {
 	assert root_node.entire_subtree_needs_style_update()
 }
 
+fn test_empty_pseudo_class_invalidation_property_matches_current_contents() {
+	doc := Document.create(url_about_blank())
+	mut element := mk(doc, 'div')
+	set := StyleInvalidationSet{
+		properties: [InvalidationProperty{
+			type_: .pseudo_class
+			pseudo_class_name: 'empty'
+		}]
+	}
+	assert element.includes_properties_from_invalidation_set(set)
+
+	mut empty_text := doc.create_text_node('')
+	mut element_node := element.as_node()
+	append(mut element_node, empty_text.as_node())
+	assert element.includes_properties_from_invalidation_set(set)
+
+	mut text := doc.create_text_node('content')
+	append(mut element_node, text.as_node())
+	assert !element.includes_properties_from_invalidation_set(set)
+}
+
 fn test_hidden_state_uses_layout_visibility_and_aria_ancestors() {
 	doc := Document.create(url_about_blank())
 	mut parent := mk(doc, 'div')

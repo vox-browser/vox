@@ -72,6 +72,23 @@ fn test_insert_rule_targets_matching_elements_in_inline_style_sheet() {
 	assert counters.style_invalidations == 1
 }
 
+fn test_insert_rule_with_only_has_feature_invalidates_whole_tree() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_invalidation_test_element(document, 'html')
+	mut style := style_sheet_invalidation_test_element(document, 'style')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(style.as_node()) or { panic(err) }
+	mut sheet := parse_css_stylesheet_with_parser('', none)
+	install_inline_style_sheet_for_invalidation_test(mut sheet, style, document_node)
+	clear_style_sheet_invalidation_test_flags(document_node, root.as_node(), style.as_node())
+	document.set_needs_full_style_update(false)
+
+	assert sheet.insert_rule(':has(.flag) { color: red }', 0)! == 0
+	assert document.needs_full_style_update()
+}
+
 fn test_style_rule_declaration_mutation_keeps_and_uses_rule_cache() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }
@@ -158,6 +175,49 @@ fn test_featureless_has_argument_keeps_structural_invalidation_conservative() {
 	mut subject_node := subject.as_node()
 	subject_node.append_child(child.as_node()) or { panic(err) }
 	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 1
+}
+
+fn test_has_descendant_fanout_ignores_rules_for_other_anchors() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	add_document_author_style_sheet(document, '.outer:has(.watched) .target { color: red } .other:has(.unrelated) { color: blue }')
+	mut outer := style_sheet_invalidation_test_element(document, 'section')
+	mut container := style_sheet_invalidation_test_element(document, 'div')
+	mut watched := style_sheet_invalidation_test_element(document, 'span')
+	mut target := style_sheet_invalidation_test_element(document, 'p')
+	mut unrelated := style_sheet_invalidation_test_element(document, 'i')
+	mut another_watched := style_sheet_invalidation_test_element(document, 'b')
+	outer.set_attribute_value('class', 'outer')
+	watched.set_attribute_value('class', 'watched')
+	target.set_attribute_value('class', 'target')
+	unrelated.set_attribute_value('class', 'unrelated')
+	another_watched.set_attribute_value('class', 'watched')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(outer.as_node()) or { panic(err) }
+	mut outer_node := outer.as_node()
+	outer_node.append_child(container.as_node()) or { panic(err) }
+	mut container_node := container.as_node()
+	container_node.append_child(watched.as_node()) or { panic(err) }
+	outer_node.append_child(target.as_node()) or { panic(err) }
+
+	_ := css_style_computer_for(document)
+	document.needs_full_style_update = true
+	document.update_style()
+	assert outer.affected_by_has_pseudo_class_in_non_subject_position
+	assert container.in_has_scope
+	mut scope := css_style_scope_for_document(document)
+	mut invalidator := document.style_invalidator()
+	assert invalidator.pending_invalidations.len == 0
+
+	container_node.append_child(unrelated.as_node()) or { panic(err) }
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+	scope.invalidate_style_of_elements_affected_by_has()
+	assert invalidator.pending_invalidations.len == 0
+
+	container_node.append_child(another_watched.as_node()) or { panic(err) }
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+	scope.invalidate_style_of_elements_affected_by_has()
+	assert invalidator.pending_invalidations.len > 0
 }
 
 fn test_user_agent_shadow_tree_mutations_use_document_style_scope() {

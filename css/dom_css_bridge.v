@@ -360,6 +360,17 @@ fn style_scope_subtree_may_affect_has_callback(target voidptr, node &dom.Node) b
 	return subtree_has_feature_used_in_has_selector(node, data)
 }
 
+fn style_scope_record_has_mutation_callback(target voidptr, node &dom.Node, mutation_root &dom.Node, includes_descendants bool) {
+	mut scope := unsafe { &StyleScope(target) }
+	scope.record_pending_has_invalidation_mutation_features(node, mutation_root, includes_descendants)
+}
+
+fn style_scope_record_has_mutation_properties_callback(target voidptr, node &dom.Node, properties []dom.InvalidationProperty) {
+	mut scope := unsafe { &StyleScope(target) }
+	css_properties := properties.map(invalidation_property_from_dom(it))
+	scope.record_pending_has_invalidation_mutation_properties(node, css_properties)
+}
+
 fn style_scope_schedule_has_invalidation_callback(target voidptr, node &dom.Node) {
 	mut scope := unsafe { &StyleScope(target) }
 	scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(node)
@@ -1113,6 +1124,8 @@ fn css_style_scope_from_dom(mut dom_scope dom.StyleScope, node &dom.Node) &Style
 	dom_scope.may_have_has_selectors_callback = style_scope_may_have_has_selectors_callback
 	dom_scope.may_have_sibling_has_callback = style_scope_may_have_sibling_has_selectors_callback
 	dom_scope.subtree_may_affect_has_callback = style_scope_subtree_may_affect_has_callback
+	dom_scope.record_has_mutation_callback = style_scope_record_has_mutation_callback
+	dom_scope.record_has_properties_callback = style_scope_record_has_mutation_properties_callback
 	dom_scope.schedule_has_invalidation_callback = style_scope_schedule_has_invalidation_callback
 	return scope
 }

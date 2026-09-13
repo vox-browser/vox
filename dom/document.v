@@ -1621,6 +1621,10 @@ pub type StyleScopeMayHaveSiblingHasSelectorsCallback = fn (voidptr) bool
 
 pub type StyleScopeSubtreeMayAffectHasCallback = fn (voidptr, &Node) bool
 
+pub type StyleScopeRecordHasMutationCallback = fn (voidptr, &Node, &Node, bool)
+
+pub type StyleScopeRecordHasMutationPropertiesCallback = fn (voidptr, &Node, []InvalidationProperty)
+
 pub type StyleScopeScheduleHasInvalidationCallback = fn (voidptr, &Node)
 
 pub type DocumentThemeColorParseCallback = fn (voidptr, string) ?string
@@ -1851,6 +1855,8 @@ pub mut:
 	may_have_has_selectors_callback    StyleScopeMayHaveHasSelectorsCallback = unsafe { nil }
 	may_have_sibling_has_callback      StyleScopeMayHaveSiblingHasSelectorsCallback = unsafe { nil }
 	subtree_may_affect_has_callback    StyleScopeSubtreeMayAffectHasCallback = unsafe { nil }
+	record_has_mutation_callback       StyleScopeRecordHasMutationCallback = unsafe { nil }
+	record_has_properties_callback     StyleScopeRecordHasMutationPropertiesCallback = unsafe { nil }
 	schedule_has_invalidation_callback StyleScopeScheduleHasInvalidationCallback = unsafe { nil }
 }
 
@@ -7669,6 +7675,18 @@ pub fn (mut d Document) record_element_inherited_style_noop_recomputation() {
 
 pub fn (mut d Document) record_previous_sibling_invalidation_walk_visit() {
 	d.style_invalidation_counters_.previous_sibling_invalidation_walk_visits++
+}
+
+pub fn (mut d Document) record_has_ancestor_walk_invocation() {
+	d.style_invalidation_counters_.has_ancestor_walk_invocations++
+}
+
+pub fn (mut d Document) record_has_ancestor_walk_visit() {
+	d.style_invalidation_counters_.has_ancestor_walk_visits++
+}
+
+pub fn (mut d Document) record_has_ancestor_sibling_element_check() {
+	d.style_invalidation_counters_.has_ancestor_sibling_element_checks++
 }
 
 pub fn (mut d Document) reset_style_invalidation_counters() {

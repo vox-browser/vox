@@ -8738,6 +8738,7 @@ pub enum CSSPseudoClass {
 	defined
 	placeholder_shown
 	checked
+	empty
 	required
 	optional
 	link
@@ -8762,6 +8763,7 @@ pub fn pseudo_class_name(pseudo_class CSSPseudoClass) string {
 		.defined { 'defined' }
 		.placeholder_shown { 'placeholder-shown' }
 		.checked { 'checked' }
+		.empty { 'empty' }
 		.required { 'required' }
 		.optional { 'optional' }
 		.link { 'link' }
@@ -8787,6 +8789,7 @@ fn pseudo_class_from_name(name string) CSSPseudoClass {
 		'defined' { .defined }
 		'placeholder-shown' { .placeholder_shown }
 		'checked' { .checked }
+		'empty' { .empty }
 		'required' { .required }
 		'optional' { .optional }
 		'link' { .link }
@@ -9185,6 +9188,7 @@ fn css_pseudo_class_from_selector_pseudo_class(pseudo_class PseudoClass) CSSPseu
 		.defined { .defined }
 		.placeholder_shown { .placeholder_shown }
 		.checked { .checked }
+		.empty { .empty }
 		.required { .required }
 		.optional { .optional }
 		.link { .link }
@@ -9464,7 +9468,7 @@ fn build_invalidation_sets_for_simple_selector_impl(selector InvalidationSimpleS
 		.pseudo_class {
 			pseudo_class := selector.pseudo_class
 			match pseudo_class {
-				.enabled, .defined, .disabled, .placeholder_shown, .checked, .has {
+				.enabled, .defined, .disabled, .empty, .placeholder_shown, .checked, .has {
 					if pseudo_class == .has {
 						for nested_selector in selector.nested_selectors {
 							add_invalidation_sets_to_cover_scope_leakage_of_relative_selector_in_has_pseudo_class(nested_selector, mut style_invalidation_data)
@@ -9730,6 +9734,25 @@ pub enum ComputeStyleMode {
 	create_pseudo_element_style_if_needed
 }
 
+@[heap]
+pub struct PendingHasInvalidationMutationFeatures {
+pub mut:
+	is_conservative bool
+	tag_names       map[string]bool
+	ids             map[string]bool
+	class_names     map[string]bool
+	attribute_names map[string]bool
+}
+
+pub fn PendingHasInvalidationMutationFeatures.new() &PendingHasInvalidationMutationFeatures {
+	return &PendingHasInvalidationMutationFeatures{
+		tag_names: map[string]bool{}
+		ids: map[string]bool{}
+		class_names: map[string]bool{}
+		attribute_names: map[string]bool{}
+	}
+}
+
 pub struct StyleScope {
 pub mut:
 	rule_cache                                                  ?&StyleCache
@@ -9743,6 +9766,7 @@ pub mut:
 	user_style_sheet                                            ?&CSSStyleSheet
 	user_style_source                                           ?string
 	pending_nodes_for_style_invalidation_due_to_presence_of_has []&dom.Node
+	pending_has_invalidation_features                            map[i64]&PendingHasInvalidationMutationFeatures
 	node                                                        ?&dom.Node
 	// CSS-owned sheets for a shadow-root scope. Document sheets keep their
 	// existing document holder for compatibility with the HTML bridge.

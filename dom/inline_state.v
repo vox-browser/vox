@@ -81,6 +81,14 @@ pub fn (mut e Element) set_affected_by_has_pseudo_class_with_relative_selector_t
 	e.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator = value
 }
 
+pub fn (mut e Element) set_in_subtree_of_has_pseudo_class_relative_selector_with_sibling_combinator(value bool) {
+	e.in_subtree_of_has_pseudo_class_relative_selector_with_sibling_combinator = value
+}
+
+pub fn (mut e Element) set_in_has_scope(value bool) {
+	e.in_has_scope = value
+}
+
 pub fn (e &Element) element_affected_by_direct_sibling_combinator() bool {
 	return e.affected_by_direct_sibling_combinator
 }

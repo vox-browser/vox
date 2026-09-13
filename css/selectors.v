@@ -29,6 +29,7 @@ pub mut:
 	rule_shadow_root                                  ?&dom.ShadowRoot // Shadow root the matched rule belongs to
 	for_host_part_matching                            bool
 	collect_per_element_selector_involvement_metadata bool
+	inside_has_argument_match                         bool
 	attempted_pseudo_class_matches                    PseudoClassBitmap
 	has_result_cache                                  map[string]HasMatchResult
 }
@@ -1532,6 +1533,11 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 							return false
 						}
 					}
+					if context.inside_has_argument_match
+						&& context.collect_per_element_selector_involvement_metadata {
+						mut mutable_ancestor := unsafe { &dom.Element(ancestor_element) }
+						mutable_ancestor.set_in_has_scope(true)
+					}
 					if matches_selector_at(selector, component_list_index - 1, ancestor_element, shadow_host, mut context, scope, selector_kind, anchor) {
 						return true
 					}
@@ -1546,6 +1552,11 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 			}
 			parent := traverse_up(element.as_node(), shadow_host) or { return false }
 			parent_element := parent.as_element() or { return false }
+			if context.inside_has_argument_match
+				&& context.collect_per_element_selector_involvement_metadata {
+				mut mutable_parent := unsafe { &dom.Element(parent_element) }
+				mutable_parent.set_in_has_scope(true)
+			}
 			return matches_selector_at(selector, component_list_index - 1, parent_element, shadow_host, mut context, scope, selector_kind, anchor)
 		}
 		.next_sibling {
@@ -1568,6 +1579,11 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 				return false
 			}
 			if sibling := previous_element_sibling(element) {
+				if context.inside_has_argument_match
+					&& context.collect_per_element_selector_involvement_metadata {
+					mut mutable_sibling := unsafe { &dom.Element(sibling) }
+					mutable_sibling.set_in_has_scope(true)
+				}
 				return matches_selector_at(selector, component_list_index - 1, sibling, shadow_host, mut context, scope, selector_kind, anchor)
 			}
 			return false
@@ -1590,6 +1606,11 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 			mut sibling := previous_element_sibling(element)
 			for sibling != none {
 				sibling_element := sibling or { break }
+				if context.inside_has_argument_match
+					&& context.collect_per_element_selector_involvement_metadata {
+					mut mutable_sibling := unsafe { &dom.Element(sibling_element) }
+					mutable_sibling.set_in_has_scope(true)
+				}
 				if matches_selector_at(selector, component_list_index - 1, sibling_element, shadow_host, mut context, scope, selector_kind, anchor) {
 					return true
 				}
@@ -3393,6 +3414,11 @@ fn matches_relative_selector(selector Selector, compound_index int, element &dom
 			mut has := false
 			for child in element.as_node().children {
 				child_element := child.as_element() or { continue }
+				if context.inside_has_argument_match
+					&& context.collect_per_element_selector_involvement_metadata {
+					mut mutable_child := unsafe { &dom.Element(child_element) }
+					mutable_child.set_in_has_scope(true)
+				}
 				if !matches_selector_at(selector, compound_index, child_element, shadow_host, mut context, scope, .relative, anchor) {
 					continue
 				}
@@ -3409,6 +3435,12 @@ fn matches_relative_selector(selector Selector, compound_index int, element &dom
 				mutable_anchor.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator = true
 			}
 			sibling := next_element_sibling(element) or { return false }
+			if context.inside_has_argument_match
+				&& context.collect_per_element_selector_involvement_metadata {
+				mut mutable_sibling := unsafe { &dom.Element(sibling) }
+				mutable_sibling.set_in_has_scope(true)
+				mutable_sibling.set_in_subtree_of_has_pseudo_class_relative_selector_with_sibling_combinator(true)
+			}
 			if !matches_selector_at(selector, compound_index, sibling, shadow_host, mut context, scope, .relative, anchor) {
 				return false
 			}
@@ -3422,6 +3454,12 @@ fn matches_relative_selector(selector Selector, compound_index int, element &dom
 			mut sibling := next_element_sibling(element)
 			for sibling != none {
 				sibling_element := sibling or { break }
+				if context.inside_has_argument_match
+					&& context.collect_per_element_selector_involvement_metadata {
+					mut mutable_sibling := unsafe { &dom.Element(sibling_element) }
+					mutable_sibling.set_in_has_scope(true)
+					mutable_sibling.set_in_subtree_of_has_pseudo_class_relative_selector_with_sibling_combinator(true)
+				}
 				if matches_selector_at(selector, compound_index, sibling_element, shadow_host, mut context, scope, .relative, anchor) && matches_relative_selector(selector, compound_index + 1, sibling_element, shadow_host, mut context, anchor, scope) {
 					return true
 				}
@@ -3439,6 +3477,11 @@ fn matches_relative_selector(selector Selector, compound_index int, element &dom
 fn has_matching_descendant_for_relative(selector Selector, node &dom.Node, shadow_host ?&dom.Element, mut context MatchContext, anchor &dom.Element, scope ?&dom.ParentNode) bool {
 	for child in node.children {
 		if descendant_element := child.as_element() {
+			if context.inside_has_argument_match
+				&& context.collect_per_element_selector_involvement_metadata {
+				mut mutable_descendant := unsafe { &dom.Element(descendant_element) }
+				mutable_descendant.set_in_has_scope(true)
+			}
 			if matches(selector, descendant_element, shadow_host, mut context, none, scope, .relative, anchor) {
 				return true
 			}
@@ -3461,7 +3504,10 @@ fn matches_has_pseudo_class(selector Selector, anchor &dom.Element, shadow_host 
 		return cached == .matched
 	}
 
+	saved_inside_has := context.inside_has_argument_match
+	context.inside_has_argument_match = true
 	result := matches_relative_selector(selector, 0, anchor, shadow_host, mut context, anchor, scope)
+	context.inside_has_argument_match = saved_inside_has
 	context.has_result_cache[cache_key] = if result {
 		HasMatchResult.matched
 	} else {

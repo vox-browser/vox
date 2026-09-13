@@ -1444,6 +1444,8 @@ pub mut:
 	affected_by_structural_pseudo_class_in_non_subject_position                     bool
 	affected_by_sibling_combinator_in_non_subject_position                          bool
 	affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator bool
+	in_subtree_of_has_pseudo_class_relative_selector_with_sibling_combinator        bool
+	in_has_scope                                                                    bool
 	fullscreen_flag                                                                 bool
 
 	sibling_invalidation_distance int
@@ -4732,6 +4734,30 @@ fn (e &Element) matches_invalidation_pseudo_class(name string) bool {
 		'defined' { e.is_defined() }
 		'placeholder-shown' { e.matches_placeholder_shown_pseudo_class() }
 		'checked' { e.matches_checked_pseudo_class() }
+		'has' {
+			e.affected_by_has_pseudo_class_in_subject_position
+				|| e.affected_by_has_pseudo_class_in_non_subject_position
+		}
+		'empty' {
+			if !e.as_node().has_children() {
+				true
+			} else {
+				mut is_empty := true
+				for child in e.as_node().children {
+					if child.is_element() {
+						is_empty = false
+						break
+					}
+					if character_data := child.character_data() {
+						if character_data.data().len != 0 {
+							is_empty = false
+							break
+						}
+					}
+				}
+				is_empty
+			}
+		}
 		'required' { e.matches_required_pseudo_class() }
 		'optional' { e.matches_optional_pseudo_class() }
 		'link', 'any-link' { e.matches_link_pseudo_class() }

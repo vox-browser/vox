@@ -351,6 +351,7 @@ pub fn (scope &StyleScope) has_candidate_rule_for_pseudo_element(abstract_elemen
 pub fn StyleScope.new(node &dom.Node) &StyleScope {
 	return &StyleScope{
 		node: node
+		pending_has_invalidation_features: map[i64]&PendingHasInvalidationMutationFeatures{}
 	}
 }
 
@@ -998,20 +999,326 @@ pub fn (scope &StyleScope) for_each_active_css_style_sheet(callback fn(&CSSStyle
 	style_scope_for_each_active_css_style_sheet_boundary(scope, callback)
 }
 
-pub fn (mut scope StyleScope) schedule_ancestors_style_invalidation_due_to_presence_of_has(node &dom.Node) {
+fn merge_pending_has_invalidation_mutation_features(mut target PendingHasInvalidationMutationFeatures, source &PendingHasInvalidationMutationFeatures) {
+	target.is_conservative = target.is_conservative || source.is_conservative
+	for tag_name, _ in source.tag_names {
+		target.tag_names[tag_name] = true
+	}
+	for id, _ in source.ids {
+		target.ids[id] = true
+	}
+	for class_name, _ in source.class_names {
+		target.class_names[class_name] = true
+	}
+	for attribute_name, _ in source.attribute_names {
+		target.attribute_names[attribute_name] = true
+	}
+}
+
+fn collect_pending_has_invalidation_features_from_element(mut features PendingHasInvalidationMutationFeatures, element &dom.Element) {
+	features.tag_names[element.local_name()] = true
+	if (element.namespace_uri() or { '' }) != 'http://www.w3.org/1999/xhtml' {
+		features.tag_names[element.lowercased_local_name()] = true
+	}
+	if id := element.id() {
+		features.ids[id] = true
+	}
+	for class_name in element.class_names() {
+		features.class_names[class_name] = true
+	}
+	if attributes := element.attribute_list() {
+		for index := 0; index < attributes.length(); index++ {
+			attribute := attributes.item(index) or { continue }
+			name := attribute.local_name()
+			features.attribute_names[name] = true
+			if (element.namespace_uri() or { '' }) != 'http://www.w3.org/1999/xhtml' {
+				features.attribute_names[name.to_lower()] = true
+			}
+		}
+	}
+}
+
+fn collect_pending_has_invalidation_features_from_subtree(mut features PendingHasInvalidationMutationFeatures, node &dom.Node) {
+	if element := node.as_element() {
+		collect_pending_has_invalidation_features_from_element(mut features, element)
+	}
+	for child in node.children {
+		collect_pending_has_invalidation_features_from_subtree(mut features, child)
+	}
+}
+
+fn collect_pending_has_invalidation_mutation_features(mutation_root &dom.Node, includes_descendants bool) &PendingHasInvalidationMutationFeatures {
+	mut features := PendingHasInvalidationMutationFeatures.new()
+	if includes_descendants {
+		collect_pending_has_invalidation_features_from_subtree(mut features, mutation_root)
+	} else if element := mutation_root.as_element() {
+		collect_pending_has_invalidation_features_from_element(mut features, element)
+	}
+	return features
+}
+
+fn collect_pending_has_invalidation_mutation_features_from_properties(properties []InvalidationProperty) &PendingHasInvalidationMutationFeatures {
+	mut features := PendingHasInvalidationMutationFeatures.new()
+	for property in properties {
+		match property.type_ {
+			.class { features.class_names[property.name()] = true }
+			.id { features.ids[property.name()] = true }
+			.tag_name { features.tag_names[property.name()] = true }
+			.attribute { features.attribute_names[property.name()] = true }
+			.invalidate_self, .invalidate_whole_subtree, .pseudo_class {
+				features.is_conservative = true
+			}
+		}
+	}
+	return features
+}
+
+fn (mut scope StyleScope) record_pending_has_invalidation_features(node &dom.Node, features &PendingHasInvalidationMutationFeatures) {
 	node_id := node.unique_id().value()
 	for existing in scope.pending_nodes_for_style_invalidation_due_to_presence_of_has {
 		if existing.unique_id().value() == node_id {
-			if document := scope.document() {
-				style_scope_set_needs_invalidation_of_elements_affected_by_has(document)
+			mut stored := scope.pending_has_invalidation_features[node_id] or {
+				PendingHasInvalidationMutationFeatures.new()
 			}
+			merge_pending_has_invalidation_mutation_features(mut stored, features)
+			scope.pending_has_invalidation_features[node_id] = stored
 			return
 		}
 	}
 	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has << node
+	scope.pending_has_invalidation_features[node_id] = features
 	if document := scope.document() {
 		style_scope_set_needs_invalidation_of_elements_affected_by_has(document)
 	}
+}
+
+pub fn (mut scope StyleScope) record_pending_has_invalidation_mutation_features(node &dom.Node, mutation_root &dom.Node, includes_descendants bool) {
+	features := collect_pending_has_invalidation_mutation_features(mutation_root, includes_descendants)
+	scope.record_pending_has_invalidation_features(node, features)
+}
+
+pub fn (mut scope StyleScope) record_pending_has_invalidation_mutation_properties(node &dom.Node, properties []InvalidationProperty) {
+	features := collect_pending_has_invalidation_mutation_features_from_properties(properties)
+	scope.record_pending_has_invalidation_features(node, features)
+}
+
+pub fn (mut scope StyleScope) schedule_ancestors_style_invalidation_due_to_presence_of_has(node &dom.Node) {
+	node_id := node.unique_id().value()
+	for existing in scope.pending_nodes_for_style_invalidation_due_to_presence_of_has {
+		if existing.unique_id().value() == node_id {
+			return
+		}
+	}
+	mut features := PendingHasInvalidationMutationFeatures.new()
+	features.is_conservative = true
+	scope.record_pending_has_invalidation_features(node, features)
+}
+
+fn selector_may_match_pending_has_mutation_features(selector Selector, features &PendingHasInvalidationMutationFeatures) bool {
+	if features.is_conservative {
+		return true
+	}
+	mut saw_concrete_feature := false
+	mut concrete_feature_found := false
+	mut must_be_conservative := false
+	for compound_selector in selector.compound_selectors() {
+		if compound_selector.combinator in [.next_sibling, .subsequent_sibling]
+			|| compound_selector.simple_selectors.len == 0 {
+			must_be_conservative = true
+			continue
+		}
+		for simple_selector in compound_selector.simple_selectors {
+			match simple_selector.type_ {
+				.universal, .nesting, .invalid, .pseudo_element {
+					must_be_conservative = true
+				}
+				.tag_name {
+					saw_concrete_feature = true
+					concrete_feature_found = concrete_feature_found
+						|| features.tag_names[simple_selector.qualified_name.name.lowercase_name]
+				}
+				.id {
+					saw_concrete_feature = true
+					concrete_feature_found = concrete_feature_found
+						|| features.ids[simple_selector.name.name]
+				}
+				.class {
+					saw_concrete_feature = true
+					concrete_feature_found = concrete_feature_found
+						|| features.class_names[simple_selector.name.name]
+				}
+				.attribute {
+					saw_concrete_feature = true
+					concrete_feature_found = concrete_feature_found
+						|| features.attribute_names[simple_selector.attribute.qualified_name.name.lowercase_name]
+				}
+				.pseudo_class {
+					pseudo_class := simple_selector.pseudo_class
+					if pseudo_class.type_ in [.is_, .where] {
+						saw_concrete_feature = true
+						for argument_selector in pseudo_class.argument_selector_list.selectors {
+							if selector_may_match_pending_has_mutation_features(argument_selector, features) {
+								concrete_feature_found = true
+								break
+							}
+						}
+					} else {
+						must_be_conservative = true
+					}
+				}
+			}
+		}
+	}
+	if must_be_conservative {
+		return true
+	}
+	return !saw_concrete_feature || concrete_feature_found
+}
+
+fn compound_may_match_has_anchor_ignoring_has(compound_selector CompoundSelector, anchor &dom.Element) bool {
+	for simple_selector in compound_selector.simple_selectors {
+		match simple_selector.type_ {
+			.universal {}
+			.nesting, .invalid, .pseudo_element {
+				return true
+			}
+			.tag_name {
+				if anchor.local_name() != simple_selector.qualified_name.name.lowercase_name {
+					return false
+				}
+			}
+			.id {
+				if anchor.id() or { '' } != simple_selector.name.name {
+					return false
+				}
+			}
+			.class {
+				if !anchor.has_class(simple_selector.name.name) {
+					return false
+				}
+			}
+			.attribute {
+				mut has_attribute := false
+				if attributes := anchor.attribute_list() {
+					for index := 0; index < attributes.length(); index++ {
+						attribute := attributes.item(index) or { continue }
+						if attribute.local_name() == simple_selector.attribute.qualified_name.name.lowercase_name {
+							has_attribute = true
+							break
+						}
+					}
+				}
+				if !has_attribute {
+					return false
+				}
+			}
+			.pseudo_class {
+				if simple_selector.pseudo_class.type_ == .has {
+					continue
+				}
+				if simple_selector.pseudo_class.type_ == .root {
+					document_element := anchor.document().document_element() or { return false }
+					if anchor != document_element {
+						return false
+					}
+					continue
+				}
+				return true
+			}
+		}
+	}
+	return true
+}
+
+fn selector_has_rule_may_be_affected_by_mutation(selector Selector, anchor &dom.Element, features &PendingHasInvalidationMutationFeatures) (bool, bool) {
+	mut found_has_rule := false
+	for compound_selector in selector.compound_selectors() {
+		for simple_selector in compound_selector.simple_selectors {
+			if simple_selector.type_ != .pseudo_class {
+				continue
+			}
+			pseudo_class := simple_selector.pseudo_class
+			if pseudo_class.type_ == .has
+				&& compound_may_match_has_anchor_ignoring_has(compound_selector, anchor) {
+				found_has_rule = true
+				for argument_selector in pseudo_class.argument_selector_list.selectors {
+					if selector_may_match_pending_has_mutation_features(argument_selector, features) {
+						return true, true
+					}
+				}
+			}
+			for argument_selector in pseudo_class.argument_selector_list.selectors {
+				nested_found, nested_affected := selector_has_rule_may_be_affected_by_mutation(argument_selector,
+					anchor, features)
+				found_has_rule = found_has_rule || nested_found
+				if nested_affected {
+					return found_has_rule, true
+				}
+			}
+		}
+	}
+	return found_has_rule, false
+}
+
+fn matching_rule_vector_has_rule_may_be_affected(rules []&MatchingRule, anchor &dom.Element, features &PendingHasInvalidationMutationFeatures) (bool, bool) {
+	mut found_has_rule := false
+	for rule in rules {
+		found, affected := selector_has_rule_may_be_affected_by_mutation(rule.selector, anchor,
+			features)
+		found_has_rule = found_has_rule || found
+		if affected {
+			return found_has_rule, true
+		}
+	}
+	return found_has_rule, false
+}
+
+fn has_rule_that_may_be_affected_by_mutation(scope &StyleScope, anchor &dom.Element, features &PendingHasInvalidationMutationFeatures) bool {
+	cache := scope.get_pseudo_class_rule_cache(.has) or { return true }
+	mut found_has_rule := false
+	for _, rules in cache.rules_by_id {
+		found, affected := matching_rule_vector_has_rule_may_be_affected(rules, anchor, features)
+		found_has_rule = found_has_rule || found
+		if affected {
+			return true
+		}
+	}
+	for _, rules in cache.rules_by_class {
+		found, affected := matching_rule_vector_has_rule_may_be_affected(rules, anchor, features)
+		found_has_rule = found_has_rule || found
+		if affected {
+			return true
+		}
+	}
+	for _, rules in cache.rules_by_tag_name {
+		found, affected := matching_rule_vector_has_rule_may_be_affected(rules, anchor, features)
+		found_has_rule = found_has_rule || found
+		if affected {
+			return true
+		}
+	}
+	for _, rules in cache.rules_by_attribute_name {
+		found, affected := matching_rule_vector_has_rule_may_be_affected(rules, anchor, features)
+		found_has_rule = found_has_rule || found
+		if affected {
+			return true
+		}
+	}
+	for _, rules in cache.rules_by_pseudo_element {
+		found, affected := matching_rule_vector_has_rule_may_be_affected(rules, anchor, features)
+		found_has_rule = found_has_rule || found
+		if affected {
+			return true
+		}
+	}
+	for rules in [cache.root_rules, cache.slotted_rules, cache.part_rules, cache.other_rules] {
+		found, affected := matching_rule_vector_has_rule_may_be_affected(rules, anchor, features)
+		found_has_rule = found_has_rule || found
+		if affected {
+			return true
+		}
+	}
+	return !found_has_rule
 }
 
 pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
@@ -1020,7 +1327,9 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 	}
 
 	nodes := scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clone()
+	features_by_node := scope.pending_has_invalidation_features.clone()
 	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	scope.pending_has_invalidation_features.clear()
 
 	// It's ok to call have_has_selectors() instead of may_have_has_selectors()
 	// here and force rule cache build, because it's going to be built soon
@@ -1029,8 +1338,19 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 		return
 	}
 
+	document := scope.document() or { return }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.record_has_ancestor_walk_invocation()
+	should_scan_ancestor_siblings := scope.may_have_has_selectors_with_relative_selector_that_has_sibling_combinator()
 	mut elements_already_invalidated_for_has := map[i64]bool{}
 	for node in nodes {
+		features := features_by_node[node.unique_id().value()] or {
+			mut conservative := PendingHasInvalidationMutationFeatures.new()
+			conservative.is_conservative = true
+			conservative
+		}
+		mut has_scope_ancestors := []&dom.Element{}
+		mut should_delay_ancestor_sibling_scans := false
 		mut ancestor := ?&dom.Node(node)
 		for {
 			current := ancestor or { break }
@@ -1042,23 +1362,52 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 				ancestor = current.parent_or_shadow_host()
 				continue
 			}
-
-			element_id := element.as_node().unique_id().value()
-			if elements_already_invalidated_for_has[element_id] {
+			is_in_has_scope := element.in_has_scope
+				|| element.affected_by_has_pseudo_class_in_subject_position
+				|| element.affected_by_has_pseudo_class_in_non_subject_position
+			if !is_in_has_scope {
 				break
 			}
+			has_scope_ancestors << element
+			should_delay_ancestor_sibling_scans = should_delay_ancestor_sibling_scans
+				|| element.in_subtree_of_has_pseudo_class_relative_selector_with_sibling_combinator
+				|| element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator
+			ancestor = current.parent_or_shadow_host()
+		}
+
+		for element in has_scope_ancestors {
+			element_id := element.as_node().unique_id().value()
+			if elements_already_invalidated_for_has[element_id] {
+				continue
+			}
 			elements_already_invalidated_for_has[element_id] = true
+			mutable_document.record_has_ancestor_walk_visit()
 
-			mut mutable_element := unsafe { &dom.Element(element) }
-			mutable_element.invalidate_style_if_affected_by_has()
+			can_skip_unchanged_has_fanout := element.as_node().root().as_shadow_root() == none
+				&& element.as_node().assigned_slot_internal() == none && !element.is_shadow_host()
+			if !element.affected_by_has_pseudo_class_in_non_subject_position
+				|| !can_skip_unchanged_has_fanout
+				|| has_rule_that_may_be_affected_by_mutation(scope, element, features) {
+				mut mutable_element := unsafe { &dom.Element(element) }
+				mutable_element.invalidate_style_if_affected_by_has()
+			}
 
-			parent := current.parent_or_shadow_host() or { return }
+			parent := element.as_node().parent_or_shadow_host() or { return }
 
 			// If any ancestor's sibling was tested against selectors like
 			// ".a:has(+ .b)" or ".a:has(~ .b)" its style might be affected by
 			// the change in descendant node.
+			if !should_scan_ancestor_siblings {
+				continue
+			}
+			is_in_sibling_subtree := element.in_subtree_of_has_pseudo_class_relative_selector_with_sibling_combinator
+				|| element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator
+			if should_delay_ancestor_sibling_scans && !is_in_sibling_subtree {
+				continue
+			}
 			for child in parent.children {
 				ancestor_sibling_element := child.as_element() or { continue }
+				mutable_document.record_has_ancestor_sibling_element_check()
 				if ancestor_sibling_element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator {
 					sibling_id := ancestor_sibling_element.as_node().unique_id().value()
 					if elements_already_invalidated_for_has[sibling_id] {
@@ -1069,14 +1418,12 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 					mutable_sibling.invalidate_style_if_affected_by_has()
 				}
 			}
-
-			ancestor = current.parent_or_shadow_host()
 		}
 	}
 }
 
 fn style_scope_pseudo_classes_with_rule_cache() []PseudoClass {
-	return [.hover, .active, .focus, .focus_within, .focus_visible, .target]
+	return [.hover, .active, .focus, .focus_within, .focus_visible, .has, .target]
 }
 
 fn style_scope_absolutized_selectors_for_rule(rule &CSSRule) SelectorList {

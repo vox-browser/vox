@@ -1330,6 +1330,8 @@ fn schedule_has_walk_for_parent(mutated_node &Node, style_scope &StyleScope, par
 	}
 
 	mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
+	mutable_style_scope.record_pending_has_invalidation_mutation_features(parent, mutated_node,
+		true)
 	mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(parent)
 	if !has_sibling_combinator_has_selectors {
 		return
@@ -1458,6 +1460,8 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 		}
 	} else if style_scope.may_have_has_selectors() && reason_may_affect_has_selectors(reason) {
 		mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
+		mutable_style_scope.record_pending_has_invalidation_mutation_features(unsafe { &Node(n) },
+			unsafe { &Node(n) }, false)
 		mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
 	}
 	// Character data has no style of its own. Its observable :has() ancestor
@@ -1742,9 +1746,13 @@ pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationRea
 	}
 	if properties_used_in_has_selectors {
 		mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
+		mutable_style_scope.record_pending_has_invalidation_mutation_properties(unsafe { &Node(n) },
+			properties)
 		mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
 		for additional_scope in additional_scopes {
 			mut mutable_additional_scope := unsafe { &StyleScope(additional_scope) }
+			mutable_additional_scope.record_pending_has_invalidation_mutation_properties(unsafe { &Node(n) },
+				properties)
 			mutable_additional_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(&n)
 		}
 	}
@@ -4781,6 +4789,18 @@ pub fn (ss &StyleScope) subtree_may_affect_has_selectors(node &Node) bool {
 		return ss.subtree_may_affect_has_callback(ss.css_handle, node)
 	}
 	return true
+}
+
+pub fn (mut ss StyleScope) record_pending_has_invalidation_mutation_features(node &Node, mutation_root &Node, includes_descendants bool) {
+	if ss.record_has_mutation_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
+		ss.record_has_mutation_callback(ss.css_handle, node, mutation_root, includes_descendants)
+	}
+}
+
+pub fn (mut ss StyleScope) record_pending_has_invalidation_mutation_properties(node &Node, properties []InvalidationProperty) {
+	if ss.record_has_properties_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
+		ss.record_has_properties_callback(ss.css_handle, node, properties)
+	}
 }
 
 pub fn (mut ss StyleScope) schedule_ancestors_style_invalidation_due_to_presence_of_has(node &Node) {
