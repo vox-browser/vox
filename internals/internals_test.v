@@ -1,10 +1,13 @@
 module internals
 
 import animations
+import bindings
+import css
 import dom
 import gamepad
 import html
 import loader
+import xhr
 
 fn test_metadata_settings_and_platform_facade() {
 	mut platform := &PlatformState{
@@ -125,6 +128,63 @@ fn test_metadata_settings_and_platform_facade() {
 	if _ := api.spoof_current_url('relative/path') {
 		assert false
 	}
+}
+
+fn test_runtime_gc_paint_wrapper_and_activity_diagnostics() {
+	mut platform := &PlatformState{
+		has_completed_initial_paint_: true
+		initial_paint_had_pending_fonts_: true
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	mut api := Internals.create(platform, navigator)
+	promise := dom.Promise.create()
+	api.gc_async(promise)
+	assert platform.garbage_collections == 0
+	mut event_loop := html.main_thread_event_loop()
+	event_loop.spin_until(fn [promise] () bool {
+		return promise.state() != .pending
+	})
+	assert promise.state() == .fulfilled
+	assert platform.garbage_collections == 1
+	assert api.has_completed_initial_paint()
+	assert api.initial_paint_had_pending_fonts()
+
+	request := xhr.XMLHttpRequest.construct(.window, 'https://example.test/')
+	platform.javascript_bindings['request'] = dom.js_object(voidptr(request))
+	api.mark_as_garbage('request')!
+	assert 'request' !in platform.javascript_bindings
+	assert platform.garbage_binding_names == ['request']
+	platform.javascript_bindings['number'] = dom.js_number(1)
+	if _ := api.mark_as_garbage('number') {
+		assert false
+	}
+	if _ := api.mark_as_garbage('missing') {
+		assert false
+	}
+
+	face := css.FontFaceObject.construct_impl('InternalsFace',
+		css.FontFaceSource.from_string('local(InternalsFace)'), css.FontFaceDescriptors{})
+	api.set_font_display_time(face, 250)
+	assert face.font_display_time_for_testing()? == 250
+
+	realm := &html.ScriptingRealm{}
+	mut world := bindings.WrapperWorld.create(.main)
+	bindings.register_wrapper_world_for_realm(realm, world)
+	mut implementation := bindings.Wrappable.create('Element', ['Node'])
+	wrapper := bindings.wrap(mut world, realm, mut implementation)
+	assert !api.wrapper_is_preserved(wrapper)
+	bindings.preserve_wrapper(mut implementation, wrapper)
+	assert api.wrapper_is_preserved(wrapper)
+
+	mut activity_request := xhr.XMLHttpRequest.construct(.window, 'https://activity.test/')
+	activity_request.activity_root_ = true
+	assert api.has_activity_root(activity_request)
+	activity_request.activity_root_ = false
+	assert !api.has_activity_root(activity_request)
+	mut document := dom.Document.create(dom.URL{'https://xhr-document.test/path'})
+	document_request := api.create_xml_http_request_for_document(document)
+	assert document_request.global_kind == .window
+	assert document_request.base_url == 'https://xhr-document.test/path'
 }
 
 fn test_content_and_site_compatibility_controls_update_runtime_services() {

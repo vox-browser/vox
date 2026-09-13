@@ -124,6 +124,10 @@ pub mut:
 	associated_document       ?&dom.Document
 	sdl_input_event_pumps     int
 	garbage_collections       int
+	javascript_bindings       map[string]dom.JSValue = map[string]dom.JSValue{}
+	garbage_binding_names     []string
+	has_completed_initial_paint_       bool
+	initial_paint_had_pending_fonts_   bool
 	force_dark_enabled        bool
 	show_line_box_borders     bool
 	force_dark_foreground     i32

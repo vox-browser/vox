@@ -1876,9 +1876,18 @@ pub mut:
 	urls                []ParsedFontFaceSource
 	binary_data         []u8
 	parsed_font         ?PlatformTypeface
+	font_display_time_for_testing_ ?u32
 
 	css_font_face_rule ?&CSSFontFaceRule
 	containing_sets    []&FontFaceSet
+}
+
+pub fn (mut face FontFaceObject) set_font_display_time_for_testing(milliseconds u32) {
+	face.font_display_time_for_testing_ = milliseconds
+}
+
+pub fn (face &FontFaceObject) font_display_time_for_testing() ?u32 {
+	return face.font_display_time_for_testing_
 }
 
 // https://drafts.csswg.org/css-font-loading/#font-face-constructor

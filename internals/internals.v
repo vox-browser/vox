@@ -6,10 +6,13 @@
 module internals
 
 import aria
+import bindings
+import css
 import dom
 import gamepad
 import html
 import loader
+import xhr
 import x.json2
 
 pub const mod_none = u16(0)
@@ -180,6 +183,57 @@ pub fn (mut api Internals) set_time_zone(time_zone string) !string {
 
 pub fn (mut api Internals) gc() {
 	api.platform.garbage_collections++
+}
+
+pub fn (api &Internals) gc_async(promise &dom.Promise) {
+	platform_pointer := api.platform
+	promise_pointer := promise
+	html.queue_a_task(.unspecified, html.main_thread_event_loop(), none, fn [platform_pointer, promise_pointer] () {
+		mut platform := unsafe { &PlatformState(platform_pointer) }
+		platform.garbage_collections++
+		mut mutable_promise := unsafe { &dom.Promise(promise_pointer) }
+		mutable_promise.resolve(dom.js_undefined())
+	})
+}
+
+pub fn (mut api Internals) mark_as_garbage(variable_name string) ! {
+	value := api.platform.javascript_bindings[variable_name] or {
+		return error('ReferenceError: unknown identifier ${variable_name}')
+	}
+	if value.kind != .object {
+		return error('TypeError: value cannot be held weakly')
+	}
+	api.platform.javascript_bindings.delete(variable_name)
+	api.platform.garbage_binding_names << variable_name
+}
+
+pub fn (api &Internals) has_completed_initial_paint() bool {
+	return api.platform.has_completed_initial_paint_
+}
+
+pub fn (api &Internals) initial_paint_had_pending_fonts() bool {
+	return api.platform.initial_paint_had_pending_fonts_
+}
+
+pub fn (api &Internals) set_font_display_time(font_face &css.FontFaceObject, milliseconds u32) {
+	mut mutable_font_face := unsafe { &css.FontFaceObject(font_face) }
+	mutable_font_face.set_font_display_time_for_testing(milliseconds)
+}
+
+pub fn (api &Internals) wrapper_is_preserved(object &bindings.PlatformObject) bool {
+	return bindings.wrapper_is_preserved(object)
+}
+
+pub interface ActivityRootObject {
+	has_activity_root() bool
+}
+
+pub fn (api &Internals) has_activity_root(object ActivityRootObject) bool {
+	return object.has_activity_root()
+}
+
+pub fn (api &Internals) create_xml_http_request_for_document(document &dom.Document) &xhr.XMLHttpRequest {
+	return xhr.XMLHttpRequest.construct(.window, document.url_string())
 }
 
 pub fn (api &Internals) hit_test(_ f64, _ f64) ?HitTestObject {
