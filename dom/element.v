@@ -1482,6 +1482,7 @@ pub mut:
 	computed_style_map_cache_                 ?&StylePropertyMapReadOnly_
 	removed_attributes_for_style_invalidation []string
 	svg_resource_box_referencing_elements_    []&Element
+	svg_paint_resource_referencing_elements_  []&Element
 
 	scroll_offset_ CSSPixelPoint_
 
@@ -5489,6 +5490,7 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 			e.mark_svg_resource_box_referencing_elements_for_layout_update()
 		}
 		e.update_use_elements_that_reference_this()
+		e.note_svg_paint_resource_description_may_have_changed()
 	}
 }
 
@@ -5869,6 +5871,7 @@ pub fn (mut e Element) inserted() {
 	e.play_or_cancel_animations_after_display_property_change()
 	if e.is_svg_element() {
 		e.update_use_elements_that_reference_this()
+		e.note_svg_paint_resource_description_may_have_changed()
 		if e.local_name() == 'use' && e.document().is_completely_loaded() {
 			e.svg_use_process_the_url()
 		}
@@ -5908,6 +5911,16 @@ pub fn (mut e Element) removed_from_with_context(is_subtree_root NodeIsSubtreeRo
 	e.play_or_cancel_animations_after_display_property_change()
 	e.exit_fullscreen_on_element_removal()
 	if e.is_svg_element() {
+		mut old_ancestor_described_paint_resource := false
+		if old_ancestor_node := old_ancestor {
+			if old_ancestor_element := old_ancestor_node.as_element() {
+				old_ancestor_described_paint_resource = old_ancestor_element.describes_svg_paint_resource()
+			}
+		}
+		if e.describes_svg_paint_resource() || old_ancestor_described_paint_resource {
+			mut document := unsafe { &Document(e.document()) }
+			document.note_svg_paint_resources_changed()
+		}
 		old_root_is_use_shadow_tree := svg_root_is_use_element_shadow_root(old_root)
 		current_root_is_use_shadow_tree := svg_root_is_use_element_shadow_root(e.as_node().root())
 		if !old_root_is_use_shadow_tree && !current_root_is_use_shadow_tree {
@@ -5942,6 +5955,18 @@ pub fn (mut e Element) moved_from(old_parent ?&Node) {
 pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node) {
 	mut node := unsafe { &Node(e.as_node()) }
 	node.recompute_editable_subtree_flag()
+	if e.is_svg_element() {
+		mut old_ancestor_described_paint_resource := false
+		if old_ancestor_node := old_ancestor {
+			if old_ancestor_element := old_ancestor_node.as_element() {
+				old_ancestor_described_paint_resource = old_ancestor_element.describes_svg_paint_resource()
+			}
+		}
+		if e.describes_svg_paint_resource() || old_ancestor_described_paint_resource {
+			mut document := unsafe { &Document(e.document()) }
+			document.note_svg_paint_resources_changed()
+		}
+	}
 	node.run_moved_from_lifecycle_hook(is_subtree_root, old_ancestor)
 }
 
@@ -5961,6 +5986,7 @@ pub fn (mut e Element) children_changed(metadata ChildrenChangedMetadata) {
 	}
 	if e.is_svg_element() {
 		e.update_use_elements_that_reference_this()
+		e.note_svg_paint_resource_description_may_have_changed()
 	}
 }
 
@@ -6386,6 +6412,57 @@ pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_layout_upd
 	for referencing_element in e.svg_resource_box_referencing_elements_ {
 		mut node := unsafe { &Node(referencing_element.as_node()) }
 		node.set_needs_layout_update(.svg_resource_element_attribute_change)
+	}
+}
+
+pub fn (mut e Element) register_svg_paint_resource_referencing_element(referencing_element &Element) {
+	for existing in e.svg_paint_resource_referencing_elements_ {
+		if voidptr(existing) == voidptr(referencing_element) {
+			return
+		}
+	}
+	e.svg_paint_resource_referencing_elements_ << referencing_element
+}
+
+fn (mut e Element) mark_svg_paint_resource_referencing_elements_for_repaint() {
+	for referencing_element in e.svg_paint_resource_referencing_elements_ {
+		mut node := unsafe { &Node(referencing_element.as_node()) }
+		node.set_needs_repaint(.yes)
+	}
+}
+
+fn (e &Element) svg_paint_resource_element() ?&Element {
+	if !e.is_svg_element() {
+		return none
+	}
+	if e.local_name() in ['linearGradient', 'radialGradient', 'pattern', 'filter'] {
+		return e
+	}
+	parent := e.as_node().parent_element() or { return none }
+	return parent.svg_paint_resource_element()
+}
+
+pub fn (e &Element) describes_svg_paint_resource() bool {
+	return e.svg_paint_resource_element() != none
+}
+
+pub fn (e &Element) note_svg_paint_resource_description_may_have_changed() {
+	resource := e.svg_paint_resource_element() or { return }
+	mut mutable_resource := unsafe { &Element(resource) }
+	mutable_resource.mark_svg_paint_resource_referencing_elements_for_repaint()
+	mut document := unsafe { &Document(e.document()) }
+	document.note_svg_paint_resources_changed()
+}
+
+pub fn (mut d Document) note_svg_paint_resources_changed() {
+	// Before the first committed layout there is no retained resource
+	// description or display list to invalidate.
+	if d.layout_engine_handle() != unsafe { nil } {
+		// Ladybird republishes the resource descriptions in its visual-context
+		// arena. V embeds those descriptions in the renderer paint tree, so
+		// rebuild that transport from the retained DOM/layout state.
+		d.set_needs_full_layout_tree_update(true)
+		d.set_needs_repaint()
 	}
 }
 

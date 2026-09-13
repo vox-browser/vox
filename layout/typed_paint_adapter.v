@@ -897,6 +897,8 @@ fn resolved_svg_filter(element &dom.Element, reference string) ?painting.GfxFilt
 	if !filter_element.is_svg_element() || filter_element.local_name() != 'filter' {
 		return none
 	}
+	mut mutable_filter := unsafe { &dom.Element(filter_element) }
+	mutable_filter.register_svg_paint_resource_referencing_element(element)
 	return painting_filter_from_svg_graph(svg_element_model(filter_element).gfx_filter())
 }
 
@@ -1604,6 +1606,22 @@ fn linked_svg_gradient(element &dom.Element, mut seen map[i64]bool) ?&dom.Elemen
 	return linked
 }
 
+fn register_svg_gradient_paint_resource_chain(element &dom.Element,
+	referencing_element &dom.Element) {
+	mut current := element
+	mut seen := map[i64]bool{}
+	for {
+		identity := current.as_node().unique_id().value()
+		if seen[identity] {
+			return
+		}
+		seen[identity] = true
+		mut mutable_current := unsafe { &dom.Element(current) }
+		mutable_current.register_svg_paint_resource_referencing_element(referencing_element)
+		current = linked_svg_gradient(current, mut seen) or { return }
+	}
+}
+
 fn svg_gradient_units(element &dom.Element, mut seen map[i64]bool) svg.Units {
 	identity := element.as_node().unique_id().value()
 	if seen[identity] {
@@ -1860,6 +1878,7 @@ fn resolve_svg_linear_gradient_paint_style(node &Node, state &LayoutState,
 	if !element.is_svg_element() || element.local_name() != 'linearGradient' {
 		return none
 	}
+	register_svg_gradient_paint_resource_chain(element, dom_node.as_element() or { return none })
 	bounds := painting_clip_path_bounds(path) or { return none }
 	viewport := svg_paint_viewport_size(node, state)
 	mut seen := map[i64]bool{}
@@ -1919,6 +1938,7 @@ fn resolve_svg_radial_gradient_paint_style(node &Node, state &LayoutState,
 	if !element.is_svg_element() || element.local_name() != 'radialGradient' {
 		return none
 	}
+	register_svg_gradient_paint_resource_chain(element, dom_node.as_element() or { return none })
 	bounds := painting_clip_path_bounds(path) or { return none }
 	viewport := svg_paint_viewport_size(node, state)
 	mut seen := map[i64]bool{}
@@ -1996,6 +2016,22 @@ fn svg_pattern_units(element &dom.Element, name string, fallback svg.Units,
 		return svg_pattern_units(linked, name, fallback, mut seen)
 	}
 	return fallback
+}
+
+fn register_svg_pattern_paint_resource_chain(element &dom.Element,
+	referencing_element &dom.Element) {
+	mut current := element
+	mut seen := map[i64]bool{}
+	for {
+		identity := current.as_node().unique_id().value()
+		if seen[identity] {
+			return
+		}
+		seen[identity] = true
+		mut mutable_current := unsafe { &dom.Element(current) }
+		mutable_current.register_svg_paint_resource_referencing_element(referencing_element)
+		current = linked_svg_pattern(current, mut seen) or { return }
+	}
 }
 
 fn svg_pattern_coordinate(element &dom.Element, name string, mut seen map[i64]bool) svg.NumberPercentage {
@@ -2092,6 +2128,7 @@ fn resolve_svg_pattern_paint_style(node &Node, state &LayoutState, paint css.SVG
 	if !element.is_svg_element() || element.local_name() != 'pattern' {
 		return none
 	}
+	register_svg_pattern_paint_resource_chain(element, dom_node.as_element() or { return none })
 	content_element := svg_pattern_content_element(element) or { return none }
 	content_identity := content_element.as_node().unique_id().value()
 	mut pattern_box := ?&Node(none)
