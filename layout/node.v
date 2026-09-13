@@ -925,6 +925,7 @@ pub struct NodeWithStyle {
 pub mut:
 	computed_values_  &css.ComputedValues = unsafe { nil }
 	list_style_image_ ?css.StyleValue
+	image_observers_  []css.ImageStyleValue
 	layout_index_     u32
 }
 
@@ -958,6 +959,7 @@ pub fn NodeWithStyle.new(document &dom.Document, dom_node ?&dom.Node, computed_v
 			document_: document
 			dom_node_: dom_node
 			has_style_: true
+			is_body_: if node := dom_node { node.is_html_body_element() } else { false }
 		}
 		computed_values_: values
 		list_style_image_: materialize_list_style_image(computed_values, document)
@@ -1002,6 +1004,91 @@ pub fn (mut n NodeWithStyle) apply_style(computed_style &css.ComputedProperties)
 	n.propagate_style_to_anonymous_wrappers()
 	if metrics := unsafe { &Node(n) }.as_node_with_style_and_box_model_metrics() {
 		metrics.propagate_style_along_continuation(computed_style)
+	}
+	n.rebuild_image_observers()
+}
+
+fn image_style_value_layout_did_update(target voidptr) {
+	mut owner := unsafe { &NodeWithStyle(target) }
+	owner.image_style_value_did_update()
+}
+
+fn (mut n NodeWithStyle) image_style_value_did_update() {
+	if dom_node := n.dom_node_ {
+		mut mutable_node := unsafe { &dom.Node(dom_node) }
+		mutable_node.set_needs_repaint(.yes)
+	}
+	if !n.is_body_ || !n.body_background_is_propagated_to_root() {
+		return
+	}
+	html_element := n.document_.html_element() or { return }
+	mut html_node := html_element.as_node()
+	html_node.set_needs_repaint(.yes)
+}
+
+fn (n &NodeWithStyle) body_background_is_propagated_to_root() bool {
+	html_element := n.document_.html_element() or { return false }
+	html_layout_node := html_element.as_node().unsafe_layout_node() or { return false }
+	if html_layout_node.real_layout_handle() == unsafe { nil } {
+		return false
+	}
+	html_node := unsafe { &Node(html_layout_node.real_layout_handle()) }
+	html_styled := html_node.as_node_with_style() or { return false }
+	return html_styled.computed_values().contain().is_empty()
+		&& n.computed_values().contain().is_empty()
+		&& html_styled.computed_values().background_layers().len == 0
+		&& html_styled.computed_values().background_color().a == 0
+}
+
+fn (mut n NodeWithStyle) add_image_observer(image css.ImageStyleValue) {
+	image.register_client(css.ImageStyleValueClient{
+		target: voidptr(n)
+		did_update: image_style_value_layout_did_update
+	})
+	n.image_observers_ << image
+}
+
+fn (mut n NodeWithStyle) add_image_observer_for_style_value(value css.StyleValue) {
+	match value {
+		css.ImageStyleValue {
+			n.add_image_observer(value)
+		}
+		css.ImageSetStyleValue {
+			selected := value.selected_image() or { return }
+			if selected is css.ImageStyleValue {
+				n.add_image_observer(selected)
+			}
+		}
+		else {}
+	}
+}
+
+fn (mut n NodeWithStyle) rebuild_image_observers() {
+	for image in n.image_observers_ {
+		image.unregister_client(voidptr(n))
+	}
+	n.image_observers_.clear()
+
+	if background := n.computed_values_.typed_property_value(.background_image) {
+		if list := background.as_value_list() {
+			for value in list.values() {
+				n.add_image_observer_for_style_value(value)
+			}
+		} else {
+			n.add_image_observer_for_style_value(background)
+		}
+	}
+	if list_style_image := n.list_style_image_ {
+		n.add_image_observer_for_style_value(list_style_image)
+	}
+	if mask := n.computed_values_.typed_property_value(.mask_image) {
+		if list := mask.as_value_list() {
+			for value in list.values() {
+				n.add_image_observer_for_style_value(value)
+			}
+		} else {
+			n.add_image_observer_for_style_value(mask)
+		}
 	}
 }
 

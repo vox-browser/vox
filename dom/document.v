@@ -9737,15 +9737,6 @@ pub fn (mut d Document) set_cached_navigable(navigable ?&Navigable) {
 	d.set_navigable(navigable)
 }
 
-// --- Repaint ---
-pub fn (mut d Document) notify_css_background_image_loaded() {
-	// Invalidate paint caches on all paintable boxes
-	if paintable := d.unsafe_paintable() {
-		paintable.invalidate_all_paint_caches()
-	}
-	d.set_needs_repaint()
-}
-
 pub fn (mut d Document) invalidate_display_list() {
 	d.cached_display_list_ = unsafe { nil }
 }
@@ -10401,8 +10392,6 @@ pub fn (mut request SharedResourceRequest) handle_successful_resource_load(image
 	request.image_data_ = SharedResourceImageData{ data: image_data }
 	request.state_ = .finished
 	request.load_event_delay = false
-	mut document := unsafe { &Document(request.document) }
-	document.notify_css_background_image_loaded()
 	for callbacks in request.callbacks {
 		if callback := callbacks.on_finish {
 			callback()

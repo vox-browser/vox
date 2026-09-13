@@ -142,6 +142,11 @@ fn test_css_image_reads_decoded_data_from_shared_resource_request() {
 	decoded := &StyleValueTestDecodedImageData{bitmap_: bitmap}
 	mut document := dom.Document{}
 	mut image := ImageStyleValue.create_from_url_string('https://example.test/image.png')
+	mut recorder := &ImageStyleValueClientRecorder{}
+	image.register_client(ImageStyleValueClient{
+		target: voidptr(recorder)
+		did_update: record_image_style_value_update
+	})
 	image.load_any_resources(mut document)
 	request := image.resource_request_ or {
 		assert false, 'CSS image should create a shared resource request'
@@ -153,6 +158,7 @@ fn test_css_image_reads_decoded_data_from_shared_resource_request() {
 	assert image.is_paintable()
 	assert image.natural_width()?.to_double() == 3
 	assert image.natural_height()?.to_double() == 5
+	assert recorder.updates == 1
 }
 
 fn test_color_function_uses_color_resolution_calculation_context() {

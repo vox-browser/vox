@@ -151,6 +151,71 @@ fn test_node_with_style_resolves_computed_values_once_per_style_application() {
 	assert inherited.width().is_auto()
 }
 
+fn attach_test_paintable(mut node dom.Node, layout_node &Node) &dom.Paintable {
+	paintable := &dom.Paintable{
+		layout_handle: voidptr(layout_node)
+	}
+	node.set_layout_node(&dom.LayoutNode{
+		layout_handle: voidptr(layout_node)
+		dom_node_: node
+		paintables_: [paintable]
+	})
+	return paintable
+}
+
+fn test_css_image_updates_only_observing_layout_nodes() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut target_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	mut other_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	mut target_style := css.ComputedProperties.new()
+	target_style.set_property_without_modifying_flags(.background_image, &dom.StyleValue{
+		css_text: 'url("target.png")'
+	})
+	mut target := NodeWithStyle.new(document, target_element.as_node(), target_style)
+	other := NodeWithStyle.new(document, other_element.as_node(), css.ComputedProperties.new())
+	mut target_dom_node := target_element.as_node()
+	mut other_dom_node := other_element.as_node()
+	target_paintable := attach_test_paintable(mut target_dom_node, unsafe { &Node(target) })
+	other_paintable := attach_test_paintable(mut other_dom_node, unsafe { &Node(other) })
+
+	target.apply_style(target_style)
+	assert target.image_observers_.len == 1
+	image := target.image_observers_[0]
+	image.notify_clients()
+	assert target_paintable.needs_repaint
+	assert !other_paintable.needs_repaint
+}
+
+fn test_body_image_update_repaints_propagated_root_background() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut html_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html') or {
+		panic(err)
+	}
+	mut body_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'body') or {
+		panic(err)
+	}
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(html_element.as_node()) or { panic(err) }
+	mut html_dom_node := html_element.as_node()
+	html_dom_node.append_child(body_element.as_node()) or { panic(err) }
+
+	html_node := NodeWithStyle.new(document, html_element.as_node(), css.ComputedProperties.new())
+	mut body_node := NodeWithStyle.new(document, body_element.as_node(), css.ComputedProperties.new())
+	mut body_dom_node := body_element.as_node()
+	html_paintable := attach_test_paintable(mut html_dom_node, unsafe { &Node(html_node) })
+	body_paintable := attach_test_paintable(mut body_dom_node, unsafe { &Node(body_node) })
+
+	image := css.ImageStyleValue.create_from_url_string('body.png')
+	body_node.add_image_observer(image)
+	image.notify_clients()
+	assert body_paintable.needs_repaint
+	assert html_paintable.needs_repaint
+}
+
 fn test_node_has_css_transform_includes_individual_transform_properties() {
 	document := dom.Document.create(dom.url_about_blank())
 	mut node := NodeWithStyle.new(document, none, css.ComputedProperties.new())

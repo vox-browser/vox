@@ -1558,7 +1558,14 @@ pub:
 @[heap]
 struct ImageStyleValueClientState {
 mut:
-	clients []ImageStyleValueClient
+	clients             []ImageStyleValueClient
+	callback_registered bool
+}
+
+fn (state &ImageStyleValueClientState) notify_clients() {
+	for client in state.clients.clone() {
+		client.did_update(client.target)
+	}
 }
 
 pub struct ImageStyleValue {
@@ -1817,8 +1824,17 @@ pub fn (mut style_value ImageStyleValue) load_any_resources(mut document dom.Doc
 
 	style_value.resource_request_ = fetch_an_external_image_for_a_stylesheet(StyleResourceURL(style_value.url_), rule_or_declaration, mut document)
 	style_value.did_request_resource = style_value.resource_request_ != none
-	// Boundary: Upstream attaches resource callbacks and animation timers here. Those depend on
-	// GC/timer/image-decoder APIs that are outside this V StyleValue translation.
+	if mut resource_request := style_value.resource_request_ {
+		mut client_state := style_value.client_state_
+		if !client_state.callback_registered {
+			client_state.callback_registered = true
+			resource_request.add_callbacks(fn [client_state] () {
+				client_state.notify_clients()
+			}, none)
+		}
+	}
+	// Boundary: Animated-image timers depend on platform timer APIs that are
+	// outside this V StyleValue translation.
 }
 
 pub fn (mut style_value ImageStyleValue) animate() {
@@ -1969,9 +1985,7 @@ pub fn (style_value ImageStyleValue) unregister_client(client voidptr) {
 }
 
 pub fn (style_value ImageStyleValue) notify_clients() {
-	for client in style_value.client_state_.clients.clone() {
-		client.did_update(client.target)
-	}
+	style_value.client_state_.notify_clients()
 }
 
 pub type CSSImageSourceStyleValue = ConicGradientStyleValue
