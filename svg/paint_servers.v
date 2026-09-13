@@ -59,7 +59,7 @@ fn resolve_linear_gradient_inner(id string, gradients map[string]LinearGradient,
 	}
 	seen[id] = true
 	gradient := gradients[id] or { return none }
-	parent_id := gradient.href.trim_left('#')
+	parent_id := local_fragment_identifier(gradient.href) or { '' }
 	parent := if parent_id.len > 0 {
 		resolve_linear_gradient_inner(parent_id, gradients, mut seen)
 	} else {
@@ -155,7 +155,7 @@ fn resolve_radial_gradient_inner(id string, gradients map[string]LinkedRadialGra
 	}
 	seen[id] = true
 	gradient := gradients[id] or { return none }
-	parent_id := gradient.href.trim_left('#')
+	parent_id := local_fragment_identifier(gradient.href) or { '' }
 	parent := if parent_id.len > 0 {
 		resolve_radial_gradient_inner(parent_id, gradients, mut seen)
 	} else {
@@ -238,7 +238,7 @@ pub fn pattern_content_id(id string, patterns map[string]Pattern) ?string {
 		if pattern.has_children {
 			return current
 		}
-		current = pattern.href.trim_left('#')
+		current = local_fragment_identifier(pattern.href) or { '' }
 	}
 	return none
 }
@@ -267,7 +267,7 @@ fn resolve_pattern_inner(id string, patterns map[string]Pattern, mut seen map[st
 	}
 	seen[id] = true
 	pattern := patterns[id] or { return none }
-	parent_id := pattern.href.trim_left('#')
+	parent_id := local_fragment_identifier(pattern.href) or { '' }
 	parent := if parent_id.len > 0 {
 		resolve_pattern_inner(parent_id, patterns, mut seen)
 	} else {

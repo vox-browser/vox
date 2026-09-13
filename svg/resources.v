@@ -61,7 +61,7 @@ pub fn (mut reference UseReference) process_url(href string, document map[string
 		return
 	}
 	if href.starts_with('#') {
-		reference.target_id = href[1..]
+		reference.target_id = decode_fragment_identifier(href[1..])
 		target := document[reference.target_id] or {
 			reference.state = .failed
 			return
@@ -96,8 +96,10 @@ fn use_target_has_cycle(id string, document map[string]Element, mut visiting map
 fn element_has_use_cycle(element Element, document map[string]Element, mut visiting map[string]bool) bool {
 	if element.tag == 'use' {
 		href := element.href()
-		if href.starts_with('#') && use_target_has_cycle(href[1..], document, mut visiting) {
-			return true
+		if id := local_fragment_identifier(href) {
+			if use_target_has_cycle(id, document, mut visiting) {
+				return true
+			}
 		}
 	}
 	for child in element.children {
@@ -114,13 +116,13 @@ pub fn clone_element_tree(element Element) Element {
 		cloned_children << clone_element_tree(child)
 	}
 	return Element{
-		tag:                      element.tag
-		attributes:               element.attributes.clone()
-		children:                 cloned_children
-		text:                     element.text
-		image_resource:           element.image_resource
-		decoded_image_data_:       element.decoded_image_data_
-		current_frame_index_:      element.current_frame_index_
+		tag: element.tag
+		attributes: element.attributes.clone()
+		children: cloned_children
+		text: element.text
+		image_resource: element.image_resource
+		decoded_image_data_: element.decoded_image_data_
+		current_frame_index_: element.current_frame_index_
 		image_fetch_decode_hook_: element.image_fetch_decode_hook_
 	}
 }
@@ -184,9 +186,9 @@ pub fn (image DecodedImageData) frame(_ int, width int, height int) ?&dom.Decode
 		return none
 	}
 	return dom.DecodedImageFrame_.create(&dom.Bitmap_{
-		width:  width
+		width: width
 		height: height
-		pitch:  width * 4
-		data:   image.surface_bytes.clone()
+		pitch: width * 4
+		data: image.surface_bytes.clone()
 	})
 }

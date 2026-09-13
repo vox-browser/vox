@@ -222,7 +222,7 @@ pub fn (pattern &Pattern) pattern_content_element_impl(patterns map[string]Patte
 }
 
 pub fn (element &Element) linked_gradient() string {
-	return element.href().trim_left('#')
+	return local_fragment_identifier(element.href()) or { '' }
 }
 
 pub fn (element &Element) gradient_units() Units {

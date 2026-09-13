@@ -92,10 +92,8 @@ pub fn (element Element) number_of_chars() int {
 }
 
 pub fn resolve_geometry_reference(href string, document map[string]Element) ?Element {
-	if !href.starts_with('#') {
-		return none
-	}
-	target := document[href[1..]] or { return none }
+	id := local_fragment_identifier(href) or { return none }
+	target := document[id] or { return none }
 	if target.tag !in ['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect'] {
 		return none
 	}

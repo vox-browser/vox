@@ -320,7 +320,11 @@ fn url_reference(value string) ?string {
 }
 
 pub fn (element &Element) resolve_url_to_element(url string, document map[string]Element) ?Element {
-	id := url_reference(url) or { url.trim_left('#') }
+	id := if raw_id := url_reference(url) {
+		decode_fragment_identifier(raw_id)
+	} else {
+		local_fragment_identifier(url) or { return none }
+	}
 	return document[id] or { none }
 }
 
@@ -763,7 +767,8 @@ pub fn (element &Element) is_referenced_element_same_document() bool {
 }
 
 pub fn (element &Element) referenced_element(document map[string]Element) ?Element {
-	return document[element.href().trim_left('#')] or { none }
+	id := local_fragment_identifier(element.href()) or { return none }
+	return document[id] or { none }
 }
 
 pub fn (element &Element) instance_root(document map[string]Element) ?Element {
