@@ -186,6 +186,14 @@ pub mut:
 	page_muted                                 bool
 	page_media_elements                       []&html.HTMLMediaElement
 	geolocation_emulated_position             html.EmulatedPositionData
+	manual_rendering_opportunities             bool
+	last_injected_rendering_opportunity_ms     f64
+	compositor_animation_updates               u64
+	empty_animation_style_update_result        bool
+	compositor_animation_timer_arms            u64
+	compositor_animation_wakeup_frame_time_ms  f64
+	force_visual_context_rebuild_on_animation  bool
+	reentrant_animation_style_flush_node       ?&dom.Node
 }
 
 @[heap]

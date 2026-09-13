@@ -469,6 +469,49 @@ pub fn (mut api Internals) set_geolocation_emulated_position(latitude f64, longi
 	}
 }
 
+pub fn (api &Internals) get_rendering_scheduler_counters() html.RenderingSchedulerCounters {
+	return html.main_thread_event_loop().rendering_scheduler_counters()
+}
+
+pub fn (api &Internals) reset_rendering_scheduler_counters() {
+	mut event_loop := html.main_thread_event_loop()
+	event_loop.reset_rendering_scheduler_counters()
+}
+
+pub fn (mut api Internals) set_manual_rendering_opportunities(enabled bool) {
+	api.platform.manual_rendering_opportunities = enabled
+}
+
+pub fn (mut api Internals) inject_rendering_opportunity(frame_time_ms f64) {
+	api.platform.last_injected_rendering_opportunity_ms = frame_time_ms
+	mut event_loop := html.main_thread_event_loop()
+	event_loop.rendering_opportunity(frame_time_ms, false)
+}
+
+pub fn (mut api Internals) update_compositor_animations() {
+	api.platform.compositor_animation_updates++
+}
+
+pub fn (api &Internals) run_empty_animation_style_update_for_testing() bool {
+	return api.platform.empty_animation_style_update_result
+}
+
+pub fn (mut api Internals) arm_compositor_animation_timers_for_testing() {
+	api.platform.compositor_animation_timer_arms++
+}
+
+pub fn (mut api Internals) fire_compositor_animation_wakeup_for_testing(frame_time_ms f64) {
+	api.platform.compositor_animation_wakeup_frame_time_ms = frame_time_ms
+}
+
+pub fn (mut api Internals) force_visual_context_tree_rebuild_on_next_compositor_animation_update_for_testing() {
+	api.platform.force_visual_context_rebuild_on_animation = true
+}
+
+pub fn (mut api Internals) request_reentrant_animation_style_flush_for_testing(node &dom.Node) {
+	api.platform.reentrant_animation_style_flush_node = node
+}
+
 pub fn (api &Internals) hit_test(_ f64, _ f64) ?HitTestObject {
 	result := api.platform.hit_test_result or { return none }
 	return HitTestObject{

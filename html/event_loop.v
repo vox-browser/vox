@@ -16,6 +16,30 @@ pub enum EventLoopType {
 	worklet
 }
 
+pub struct RenderingSchedulerCounters {
+pub mut:
+	update_requests                                u64
+	coalesced_update_requests                      u64
+	update_requests_while_rendering                 u64
+	opportunities_received                         u64
+	opportunities_that_queued_a_task               u64
+	watchdog_opportunities                         u64
+	updates_run                                    u64
+	updates_skipped_as_unnecessary                 u64
+	update_microseconds                            u64
+	tasks_between_updates                          u64
+	task_microseconds_between_updates              u64
+	posted_message_tasks_between_updates           u64
+	posted_message_task_microseconds_between_updates u64
+	timer_tasks_between_updates                    u64
+	timer_task_microseconds_between_updates        u64
+	networking_tasks_between_updates               u64
+	networking_task_microseconds_between_updates   u64
+	dom_manipulation_tasks_between_updates         u64
+	dom_manipulation_task_microseconds_between_updates u64
+	paints                                         u64
+}
+
 pub enum TaskSource {
 	unspecified
 	dom_manipulation
@@ -289,6 +313,9 @@ mut:
 	scheduled                             bool
 	input_events_hook_                    ?EventLoopInputEventsHook
 	rendering_hook_                       ?EventLoopRenderingHook
+	rendering_update_requested_           bool
+	rendering_task_queued_                bool
+	rendering_scheduler_counters_         RenderingSchedulerCounters
 }
 
 pub fn EventLoop.create(type_ EventLoopType) &EventLoop {
@@ -399,10 +426,35 @@ pub fn (mut event_loop EventLoop) process() {
 	if event_loop.task_queue_.has_runnable_tasks() {
 		mut queue := event_loop.task_queue_
 		if task := queue.take_first_runnable() {
+			task_start_time := unsafe_shared_current_time_ms()
 			event_loop.currently_running_task_ = task
 			task.execute()
 			event_loop.currently_running_task_ = none
 			event_loop.perform_a_microtask_checkpoint()
+			if task.source() != .rendering {
+				duration_microseconds := u64((unsafe_shared_current_time_ms() - task_start_time) * 1000.0)
+				event_loop.rendering_scheduler_counters_.tasks_between_updates++
+				event_loop.rendering_scheduler_counters_.task_microseconds_between_updates += duration_microseconds
+				match task.source() {
+					.posted_message {
+						event_loop.rendering_scheduler_counters_.posted_message_tasks_between_updates++
+						event_loop.rendering_scheduler_counters_.posted_message_task_microseconds_between_updates += duration_microseconds
+					}
+					.timer_task {
+						event_loop.rendering_scheduler_counters_.timer_tasks_between_updates++
+						event_loop.rendering_scheduler_counters_.timer_task_microseconds_between_updates += duration_microseconds
+					}
+					.networking {
+						event_loop.rendering_scheduler_counters_.networking_tasks_between_updates++
+						event_loop.rendering_scheduler_counters_.networking_task_microseconds_between_updates += duration_microseconds
+					}
+					.dom_manipulation {
+						event_loop.rendering_scheduler_counters_.dom_manipulation_tasks_between_updates++
+						event_loop.rendering_scheduler_counters_.dom_manipulation_task_microseconds_between_updates += duration_microseconds
+					}
+					else {}
+				}
+			}
 		}
 	}
 	if event_loop.task_queue_.has_runnable_tasks() || (event_loop.microtask_queue.len > 0 && !event_loop.performing_a_microtask_checkpoint) {
@@ -415,20 +467,53 @@ pub fn (mut event_loop EventLoop) process() {
 
 // Queue rendering tasks for registered active documents.
 pub fn (mut event_loop EventLoop) queue_task_to_update_the_rendering() {
-	event_loop.last_render_opportunity_time_ = unsafe_shared_current_time_ms()
-	if event_loop.task_queue_.has_rendering_tasks() {
+	event_loop.request_rendering_update()
+	event_loop.rendering_opportunity(unsafe_shared_current_time_ms(), false)
+}
+
+pub fn (mut event_loop EventLoop) request_rendering_update() {
+	event_loop.rendering_scheduler_counters_.update_requests++
+	if event_loop.running_rendering_task {
+		event_loop.rendering_scheduler_counters_.update_requests_while_rendering++
+	}
+	if event_loop.rendering_update_requested_ || event_loop.rendering_task_queued_ {
+		event_loop.rendering_scheduler_counters_.coalesced_update_requests++
 		return
+	}
+	event_loop.rendering_update_requested_ = true
+}
+
+pub fn (mut event_loop EventLoop) rendering_opportunity(frame_time f64, watchdog bool) bool {
+	event_loop.rendering_scheduler_counters_.opportunities_received++
+	if watchdog {
+		event_loop.rendering_scheduler_counters_.watchdog_opportunities++
+	}
+	event_loop.last_render_opportunity_time_ = if frame_time > event_loop.last_render_opportunity_time_ {
+		frame_time
+	} else {
+		event_loop.last_render_opportunity_time_
+	}
+	if event_loop.running_rendering_task {
+		return false
+	}
+	event_loop.rendering_update_requested_ = false
+	if event_loop.rendering_task_queued_ || event_loop.task_queue_.has_rendering_tasks() {
+		return true
 	}
 	documents := event_loop.documents_in_this_event_loop_matching(fn (document &dom.Document) bool {
 		return document.is_fully_active() && !document.is_decoded_svg()
 	})
-	for document in documents {
-		task := Task.create(.rendering, document, fn [mut event_loop] () {
-			event_loop.update_the_rendering()
-		})
-		mut queue := event_loop.task_queue_
-		queue.add(task)
+	if documents.len == 0 {
+		return false
 	}
+	event_loop.rendering_task_queued_ = true
+	task := Task.create(.rendering, none, fn [mut event_loop] () {
+		event_loop.update_the_rendering()
+	})
+	mut queue := event_loop.task_queue_
+	queue.add(task)
+	event_loop.rendering_scheduler_counters_.opportunities_that_queued_a_task++
+	return true
 }
 
 pub fn (event_loop &EventLoop) process_input_events() {
@@ -443,7 +528,10 @@ pub fn (event_loop &EventLoop) process_input_events() {
 // https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering
 pub fn (mut event_loop EventLoop) update_the_rendering() {
 	assert !event_loop.running_rendering_task
+	event_loop.rendering_task_queued_ = false
 	event_loop.running_rendering_task = true
+	update_start_time := unsafe_shared_current_time_ms()
+	event_loop.rendering_scheduler_counters_.updates_run++
 	event_loop.process_input_events()
 	frame_timestamp := event_loop.last_render_opportunity_time_
 	documents := event_loop.documents_in_this_event_loop_matching(fn (document &dom.Document) bool {
@@ -525,7 +613,17 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 	if hook := event_loop.rendering_hook_ {
 		hook(documents, frame_timestamp)
 	}
+	event_loop.rendering_scheduler_counters_.paints += u64(documents.len)
+	event_loop.rendering_scheduler_counters_.update_microseconds += u64((unsafe_shared_current_time_ms() - update_start_time) * 1000.0)
 	event_loop.running_rendering_task = false
+}
+
+pub fn (event_loop &EventLoop) rendering_scheduler_counters() RenderingSchedulerCounters {
+	return event_loop.rendering_scheduler_counters_
+}
+
+pub fn (mut event_loop EventLoop) reset_rendering_scheduler_counters() {
+	event_loop.rendering_scheduler_counters_ = RenderingSchedulerCounters{}
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#perform-a-microtask-checkpoint

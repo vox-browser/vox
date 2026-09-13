@@ -252,6 +252,33 @@ fn test_media_element_state_controls_use_live_media_model() {
 	assert platform.geolocation_emulated_position.accuracy == 4.25
 }
 
+fn test_rendering_and_compositor_test_controls() {
+	mut platform := &PlatformState{
+		empty_animation_style_update_result: true
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	mut api := Internals.create(platform, navigator)
+	api.reset_rendering_scheduler_counters()
+	api.set_manual_rendering_opportunities(true)
+	api.inject_rendering_opportunity(123.5)
+	assert platform.manual_rendering_opportunities
+	assert platform.last_injected_rendering_opportunity_ms == 123.5
+	assert api.get_rendering_scheduler_counters().opportunities_received == 1
+	api.update_compositor_animations()
+	assert platform.compositor_animation_updates == 1
+	assert api.run_empty_animation_style_update_for_testing()
+	api.arm_compositor_animation_timers_for_testing()
+	api.fire_compositor_animation_wakeup_for_testing(125)
+	api.force_visual_context_tree_rebuild_on_next_compositor_animation_update_for_testing()
+	mut document := dom.Document.create_for_fragment_parsing()
+	node := document.create_element('div')!.as_node()
+	api.request_reentrant_animation_style_flush_for_testing(node)
+	assert platform.compositor_animation_timer_arms == 1
+	assert platform.compositor_animation_wakeup_frame_time_ms == 125
+	assert platform.force_visual_context_rebuild_on_animation
+	assert platform.reentrant_animation_style_flush_node? == node
+}
+
 fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	mut platform := &PlatformState{}
 	navigator := gamepad.NavigatorGamepadPartial.new()

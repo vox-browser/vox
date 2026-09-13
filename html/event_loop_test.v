@@ -56,6 +56,27 @@ fn test_task_queue_runs_runnable_tasks_in_order() {
 	assert queue.is_empty()
 }
 
+fn test_rendering_scheduler_counters_track_tasks_requests_and_updates() {
+	mut event_loop := EventLoop.create(.window)
+	event_loop.request_rendering_update()
+	event_loop.request_rendering_update()
+	assert event_loop.rendering_scheduler_counters().update_requests == 2
+	assert event_loop.rendering_scheduler_counters().coalesced_update_requests == 1
+	assert !event_loop.rendering_opportunity(10, true)
+	counters_after_opportunity := event_loop.rendering_scheduler_counters()
+	assert counters_after_opportunity.opportunities_received == 1
+	assert counters_after_opportunity.watchdog_opportunities == 1
+	mut queue := event_loop.task_queue()
+	queue.add(Task.create(.posted_message, none, fn () {}))
+	event_loop.process()
+	assert event_loop.rendering_scheduler_counters().tasks_between_updates == 1
+	assert event_loop.rendering_scheduler_counters().posted_message_tasks_between_updates == 1
+	event_loop.update_the_rendering()
+	assert event_loop.rendering_scheduler_counters().updates_run == 1
+	event_loop.reset_rendering_scheduler_counters()
+	assert event_loop.rendering_scheduler_counters() == RenderingSchedulerCounters{}
+}
+
 fn test_task_ids_are_unique_and_monotonic() {
 	first := Task.create(.unspecified, none, fn () {})
 	second := Task.create(.unspecified, none, fn () {})
