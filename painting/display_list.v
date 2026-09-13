@@ -1020,6 +1020,7 @@ fn (mut planner PlaybackPlanner) apply_context(index int) {
 	kind := match node.data {
 		EffectsVisualData { 'ApplyEffects' }
 		PerspectiveVisualData { 'ApplyPerspective' }
+		ScrollCompensationVisualData { 'ApplyScrollCompensation' }
 		ScrollVisualData { 'ApplyScroll' }
 		TransformVisualData { 'ApplyTransform' }
 		ClipVisualData { 'ApplyClip' }
@@ -1031,6 +1032,10 @@ fn (mut planner PlaybackPlanner) apply_context(index int) {
 		ScrollVisualData {
 			offset := planner.snapshot.device_offset_for_index(node.data.scroll_frame_index)
 			IntPoint{int(offset.x), int(offset.y)}
+		}
+		ScrollCompensationVisualData {
+			offset := planner.snapshot.device_offset_for_index(node.data.scroll_frame_index)
+			IntPoint{int(-offset.x), int(-offset.y)}
 		}
 		else {
 			IntPoint{}

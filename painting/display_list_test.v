@@ -245,6 +245,31 @@ fn test_playback_switches_sibling_contexts_through_their_common_ancestor() {
 	assert actions[6].delta == IntPoint{3, 4}
 }
 
+fn test_scroll_compensation_negates_scroll_visual_context_offset() {
+	mut tree := AccumulatedVisualContextTree.create()
+	scroll := tree.append(ScrollVisualData{ scroll_frame_index: 1 }, 0)
+	compensation := tree.append(ScrollCompensationVisualData{ scroll_frame_index: 1 }, scroll)
+	snapshot := ScrollStateSnapshot{
+		device_offsets: [Point{}, Point{7, -11}]
+	}
+
+	point := Point{20, 30}
+	assert tree.transform_point_for_hit_test(compensation, point, snapshot)? == point
+	rect := Rect{10, 20, 30, 40}
+	assert tree.transform_rect_to_viewport(compensation, rect, snapshot) == rect
+	assert tree.dump(compensation) == 'scroll_compensation(frame_id=1)'
+
+	mut list := DisplayList{
+		visual_context_tree: tree
+	}
+	assert list.append(FillRect{IntRect{0, 0, 5, 5}, Color{ r: 1 }}, compensation)
+	actions := list.playback_plan(snapshot, IntRect{0, 0, 100, 100})
+	assert actions.map(it.kind) == ['ApplyScroll', 'ApplyScrollCompensation', 'FillRect',
+		'RestoreContext', 'RestoreContext']
+	assert actions[0].delta == IntPoint{7, -11}
+	assert actions[1].delta == IntPoint{-7, 11}
+}
+
 fn test_playback_culling_does_not_tear_down_an_active_effect() {
 	mut tree := AccumulatedVisualContextTree.create()
 	effect := tree.append(EffectsVisualData{ opacity: 0.5 }, 0)

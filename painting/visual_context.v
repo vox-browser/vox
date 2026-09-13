@@ -8,6 +8,13 @@ pub:
 	is_sticky          bool
 }
 
+// Negates a scroll frame's offset during display-list replay so content such as a fixed background
+// remains stationary relative to the viewport.
+pub struct ScrollCompensationVisualData {
+pub:
+	scroll_frame_index int
+}
+
 pub struct ClipVisualData {
 pub:
 	rect         IntRect
@@ -211,6 +218,7 @@ pub type VisualContextData = ClipPathVisualData
 	| ClipVisualData
 	| EffectsVisualData
 	| PerspectiveVisualData
+	| ScrollCompensationVisualData
 	| ScrollVisualData
 	| SVGClipVisualData
 	| SVGMaskVisualData
@@ -326,6 +334,9 @@ fn (tree AccumulatedVisualContextTree) transform_point_for_hit_test_through_node
 		}
 		ScrollVisualData {
 			point.subtract(snapshot.device_offset_for_index(node.data.scroll_frame_index))
+		}
+		ScrollCompensationVisualData {
+			point.add(snapshot.device_offset_for_index(node.data.scroll_frame_index))
 		}
 		TransformVisualData {
 			inverse_map_about_origin(point, node.data.matrix, node.data.origin)
@@ -454,6 +465,9 @@ pub fn (tree AccumulatedVisualContextTree) transform_rect_to_viewport(index int,
 				rect =
 					rect.translated(snapshot.device_offset_for_index(node.data.scroll_frame_index))
 			}
+			ScrollCompensationVisualData {
+				rect = rect.translated(snapshot.device_offset_for_index(node.data.scroll_frame_index).scale(-1))
+			}
 			else {}
 		}
 		current = node.parent_index
@@ -475,6 +489,9 @@ pub fn (tree AccumulatedVisualContextTree) dump(index int) string {
 			} else {
 				''
 			}
+		}
+		ScrollCompensationVisualData {
+			'scroll_compensation(frame_id=${tree.nodes[index].data.scroll_frame_index})'
 		}
 		TransformVisualData {
 			'transform origin=(${tree.nodes[index].data.origin.x},${tree.nodes[index].data.origin.y})'

@@ -1151,6 +1151,10 @@ fn apply_compatibility_visual_context_chain(tree &painting.AccumulatedVisualCont
 			offset := snapshot.device_offset_for_index(node.data.scroll_frame_index)
 			flattened.transform = multiply_affine(flattened.transform, translated_affine(offset.x, offset.y))
 		}
+		painting.ScrollCompensationVisualData {
+			offset := snapshot.device_offset_for_index(node.data.scroll_frame_index)
+			flattened.transform = multiply_affine(flattened.transform, translated_affine(-offset.x, -offset.y))
+		}
 		painting.ClipVisualData {
 			local_clip := LayoutRect{
 				x: node.data.rect.x
