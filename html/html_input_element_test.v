@@ -238,10 +238,10 @@ fn test_input_date_time_value_as_number() {
 fn input_test_image_fetch(_ dom.URL) !DecodedImageData {
 	return BitmapDecodedImageData.create([
 		BitmapDecodedImageFrame{
-			bitmap: &dom.ImmutableBitmap_{
+			frame: dom.DecodedImageFrame_.create(&dom.ImmutableBitmap_{
 				width: 40
 				height: 30
-			}
+			})
 		},
 	], 0, false)
 }

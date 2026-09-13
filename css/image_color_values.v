@@ -1913,13 +1913,19 @@ pub fn (mut style_value ImageStyleValue) set_image_data(image_data dom.SharedDec
 	style_value.image_data_ = image_data
 }
 
-pub fn (style_value ImageStyleValue) current_frame_bitmap() ?&dom.ImmutableBitmap_ {
+pub fn (style_value ImageStyleValue) current_frame() ?&dom.DecodedImageFrame_ {
 	image_data := style_value.image_data() or { return none }
-	return image_data.bitmap(style_value.current_frame_index_)
+	return image_data.frame(style_value.current_frame_index_)
+}
+
+pub fn (style_value ImageStyleValue) current_frame_bitmap() ?&dom.ImmutableBitmap_ {
+	frame := style_value.current_frame() or { return none }
+	return frame.bitmap()
 }
 
 pub fn (style_value ImageStyleValue) color_if_single_pixel_bitmap() ?Color {
-	bitmap := style_value.current_frame_bitmap() or { return none }
+	frame := style_value.current_frame() or { return none }
+	bitmap := frame.bitmap()
 	if bitmap.width == 1 && bitmap.height == 1 && bitmap.data.len >= 4 {
 		return Color.rgba(bitmap.data[0], bitmap.data[1], bitmap.data[2], bitmap.data[3])
 	}

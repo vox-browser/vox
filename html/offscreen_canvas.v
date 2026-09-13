@@ -613,7 +613,8 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(reque
 	if check_usability_of_image(request.image) == .bad {
 		return error('InvalidStateError: image source is not usable')
 	}
-	source := canvas_image_source_bitmap(request.image) or { return }
+	source_frame := canvas_image_source_frame(request.image) or { return }
+	source := source_frame.bitmap()
 	destination := context.canvas_.bitmap() or { return }
 	if request.source_width == 0 || request.source_height == 0 || request.destination_width == 0 || request.destination_height == 0 {
 		return

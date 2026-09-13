@@ -6,8 +6,8 @@ struct StyleValueTestDecodedImageData {
 	bitmap_ &dom.ImmutableBitmap_
 }
 
-fn (data &StyleValueTestDecodedImageData) bitmap(_ usize) ?&dom.ImmutableBitmap_ {
-	return data.bitmap_
+fn (data &StyleValueTestDecodedImageData) frame(_ usize) ?&dom.DecodedImageFrame_ {
+	return dom.DecodedImageFrame_.create(data.bitmap_)
 }
 
 fn (_ &StyleValueTestDecodedImageData) frame_duration(_ usize) int {

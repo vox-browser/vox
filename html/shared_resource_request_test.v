@@ -25,7 +25,7 @@ fn shared_resource_test_fetch_success(request &SharedResourceRequest, _ dom.URL)
 		height: 3
 	}
 	mutable_request.handle_successful_resource_load(BitmapDecodedImageData.create([
-		BitmapDecodedImageFrame{ bitmap: bitmap },
+		BitmapDecodedImageFrame{ frame: dom.DecodedImageFrame_.create(bitmap) },
 	], 0, false))
 }
 
@@ -42,11 +42,11 @@ fn shared_resource_test_decode(url dom.URL, mime_type string, bytes []u8) !Decod
 	}
 	return BitmapDecodedImageData.create([
 		BitmapDecodedImageFrame{
-			bitmap: &dom.ImmutableBitmap_{
+			frame: dom.DecodedImageFrame_.create(&dom.ImmutableBitmap_{
 				width:  4
 				height: 5
 				data:   bytes.clone()
-			}
+			})
 		}
 	], 0, false)
 }

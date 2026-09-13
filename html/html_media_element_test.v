@@ -95,7 +95,7 @@ fn test_media_element_resource_selection_metadata_and_tracks() {
 
 fn test_media_element_publishes_the_current_queued_video_frame() {
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
-	video := HTMLVideoElementModel.create(media, dom.url_about_blank())
+	mut video := HTMLVideoElementModel.create(media, dom.url_about_blank())
 	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
 		current_video_frame: media_test_current_video_frame
 	})
@@ -108,6 +108,12 @@ fn test_media_element_publishes_the_current_queued_video_frame() {
 	bitmap := frame.to_immutable_bitmap() or { panic(err) }
 	assert bitmap.data == [u8(0), 0, 0, 255, 255, 255, 255, 255]
 	assert video.natural_media_size()? == VideoDimensions{2, 1}
+	video.set_current_video_frame(&painting.MediaVideoFrame{
+		width:               2
+		height:              1
+		decoded_color_space: .display_p3
+	})
+	assert video.current_frame_color_space()? == .display_p3
 }
 
 fn test_media_element_play_pause_seek_end_and_loop() {

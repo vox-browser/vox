@@ -43,7 +43,7 @@ pub fn check_usability_of_image(image CanvasImageSource) CanvasImageSourceUsabil
 		}
 		DecodedImageCanvasSource {
 			source := image as DecodedImageCanvasSource
-			if source.value.bitmap(source.frame_index) == none {
+			if source.value.frame(source.frame_index) == none {
 				CanvasImageSourceUsability.bad
 			} else {
 				CanvasImageSourceUsability.good
@@ -52,16 +52,22 @@ pub fn check_usability_of_image(image CanvasImageSource) CanvasImageSourceUsabil
 	}
 }
 
-pub fn canvas_image_source_bitmap(image CanvasImageSource) ?&dom.ImmutableBitmap_ {
+pub fn canvas_image_source_frame(image CanvasImageSource) ?&dom.DecodedImageFrame_ {
 	return match image {
 		ImageBitmapCanvasSource {
-			(image as ImageBitmapCanvasSource).value.bitmap()
+			bitmap := (image as ImageBitmapCanvasSource).value.bitmap() or { return none }
+			dom.DecodedImageFrame_.create(bitmap)
 		}
 		DecodedImageCanvasSource {
 			source := image as DecodedImageCanvasSource
-			source.value.bitmap(source.frame_index)
+			source.value.frame(source.frame_index)
 		}
 	}
+}
+
+pub fn canvas_image_source_bitmap(image CanvasImageSource) ?&dom.ImmutableBitmap_ {
+	frame := canvas_image_source_frame(image) or { return none }
+	return frame.bitmap()
 }
 
 pub struct CanvasImageSourceDimensions {
@@ -71,10 +77,10 @@ pub:
 }
 
 pub fn canvas_image_source_dimensions(image CanvasImageSource) CanvasImageSourceDimensions {
-	bitmap := canvas_image_source_bitmap(image) or { return CanvasImageSourceDimensions{} }
+	frame := canvas_image_source_frame(image) or { return CanvasImageSourceDimensions{} }
 	return CanvasImageSourceDimensions{
-		width:  bitmap.width
-		height: bitmap.height
+		width:  frame.width()
+		height: frame.height()
 	}
 }
 
@@ -88,7 +94,7 @@ pub enum CanvasPatternRepetition {
 @[heap]
 pub struct CanvasPattern {
 mut:
-	bitmap_     &dom.ImmutableBitmap_
+	frame_      &dom.DecodedImageFrame_
 	repetition_ CanvasPatternRepetition
 	transform_  CanvasAffineTransform
 }
@@ -109,10 +115,10 @@ pub fn CanvasPattern.create(image CanvasImageSource, repetition_input string) !C
 		'no-repeat' { CanvasPatternRepetition.no_repeat }
 		else { return error('SyntaxError: repetition value is not valid') }
 	}
-	bitmap := canvas_image_source_bitmap(image) or { return CanvasPatternCreateResult{} }
+	frame := canvas_image_source_frame(image) or { return CanvasPatternCreateResult{} }
 	return CanvasPatternCreateResult{
 		pattern: &CanvasPattern{
-			bitmap_:     bitmap
+			frame_:      frame
 			repetition_: repetition
 			transform_:  CanvasAffineTransform{}
 		}
@@ -120,7 +126,11 @@ pub fn CanvasPattern.create(image CanvasImageSource, repetition_input string) !C
 }
 
 pub fn (pattern &CanvasPattern) bitmap() &dom.ImmutableBitmap_ {
-	return pattern.bitmap_
+	return pattern.frame_.bitmap()
+}
+
+pub fn (pattern &CanvasPattern) frame() &dom.DecodedImageFrame_ {
+	return pattern.frame_
 }
 
 pub fn (pattern &CanvasPattern) repetition() CanvasPatternRepetition {

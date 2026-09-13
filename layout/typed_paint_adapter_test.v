@@ -2447,7 +2447,7 @@ fn test_video_uses_the_paintable_representation_switch() {
 	poster_result := (poster_command.video_paintable or { panic('missing poster VideoPaintable') }).paint(poster_command.video_representation, 'poster', painting.IntSize{poster_bitmap.width, poster_bitmap.height}, none, painting.new_device_pixel_converter(1) or { panic(err) }) or {
 		panic('missing poster paint result')
 	}
-	assert poster_result.content is painting.DrawScaledBitmap
+	assert poster_result.content is painting.DrawScaledDecodedImageFrame
 
 	blank_command := commands.filter(it.video_representation == .transparent_black)[0]
 	assert blank_command.video_bitmap == none

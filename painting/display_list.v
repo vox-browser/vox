@@ -1,5 +1,6 @@
 module painting
 
+import dom
 import math
 import platform
 
@@ -60,18 +61,20 @@ pub:
 	color Color
 }
 
-pub struct DrawScaledBitmap {
+pub struct DrawScaledDecodedImageFrame {
 pub:
 	destination IntRect
 	clip_rect   IntRect
+	frame       ?&dom.DecodedImageFrame_
 	bitmap_id   string
 	scaling     ScalingMode
 }
 
-pub struct DrawRepeatedBitmap {
+pub struct DrawRepeatedDecodedImageFrame {
 pub:
 	destination IntRect
 	clip_rect   IntRect
+	frame       ?&dom.DecodedImageFrame_
 	bitmap_id   string
 	scaling     ScalingMode
 	repeat_x    bool
@@ -305,19 +308,19 @@ pub fn (command FillRect) dump() string {
 	return ' rect=${command.rect} color=${command.color}'
 }
 
-pub fn (command DrawScaledBitmap) bounding_rect() IntRect {
+pub fn (command DrawScaledDecodedImageFrame) bounding_rect() IntRect {
 	return command.clip_rect
 }
 
-pub fn (command DrawScaledBitmap) dump() string {
+pub fn (command DrawScaledDecodedImageFrame) dump() string {
 	return ' dst_rect=${command.destination} clip_rect=${command.clip_rect}'
 }
 
-pub fn (command DrawRepeatedBitmap) bounding_rect() IntRect {
+pub fn (command DrawRepeatedDecodedImageFrame) bounding_rect() IntRect {
 	return command.clip_rect
 }
 
-pub fn (command DrawRepeatedBitmap) dump() string {
+pub fn (command DrawRepeatedDecodedImageFrame) dump() string {
 	return ' dst_rect=${command.destination} clip_rect=${command.clip_rect}'
 }
 
@@ -498,8 +501,8 @@ pub type DisplayListCommand = AddClipRect
 	| DrawGlyphRun
 	| DrawLine
 	| DrawRect
-	| DrawRepeatedBitmap
-	| DrawScaledBitmap
+	| DrawRepeatedDecodedImageFrame
+	| DrawScaledDecodedImageFrame
 	| DrawVideoFrameSource
 	| FillEllipse
 	| FillPath
@@ -530,8 +533,8 @@ pub fn command_name(command DisplayListCommand) string {
 		DrawGlyphRun { 'DrawGlyphRun' }
 		DrawLine { 'DrawLine' }
 		DrawRect { 'DrawRect' }
-		DrawRepeatedBitmap { 'DrawRepeatedImmutableBitmap' }
-		DrawScaledBitmap { 'DrawScaledImmutableBitmap' }
+		DrawRepeatedDecodedImageFrame { 'DrawRepeatedDecodedImageFrame' }
+		DrawScaledDecodedImageFrame { 'DrawScaledDecodedImageFrame' }
 		DrawVideoFrameSource { 'DrawVideoFrameSource' }
 		FillEllipse { 'FillEllipse' }
 		FillPath { 'FillPath' }
@@ -564,8 +567,8 @@ pub fn command_dump(command DisplayListCommand) string {
 		DrawGlyphRun { command.dump() }
 		DrawLine { command.dump() }
 		DrawRect { command.dump() }
-		DrawRepeatedBitmap { command.dump() }
-		DrawScaledBitmap { command.dump() }
+		DrawRepeatedDecodedImageFrame { command.dump() }
+		DrawScaledDecodedImageFrame { command.dump() }
 		DrawVideoFrameSource { command.dump() }
 		FillEllipse { command.dump() }
 		FillPath { command.dump() }
@@ -613,10 +616,10 @@ pub fn command_bounding_rect(command DisplayListCommand) ?IntRect {
 		DrawRect {
 			command.bounding_rect()
 		}
-		DrawRepeatedBitmap {
+		DrawRepeatedDecodedImageFrame {
 			command.bounding_rect()
 		}
-		DrawScaledBitmap {
+		DrawScaledDecodedImageFrame {
 			command.bounding_rect()
 		}
 		DrawVideoFrameSource {
@@ -855,11 +858,11 @@ pub fn (mut recorder DisplayListRecorder) draw_video_frame_source(command DrawVi
 	return if command.destination.is_empty() { false } else { recorder.append(command) }
 }
 
-pub fn (mut recorder DisplayListRecorder) draw_scaled_immutable_bitmap(command DrawScaledBitmap) bool {
+pub fn (mut recorder DisplayListRecorder) draw_scaled_decoded_image_frame(command DrawScaledDecodedImageFrame) bool {
 	return if command.destination.is_empty() { false } else { recorder.append(command) }
 }
 
-pub fn (mut recorder DisplayListRecorder) draw_repeated_immutable_bitmap(command DrawRepeatedBitmap) bool {
+pub fn (mut recorder DisplayListRecorder) draw_repeated_decoded_image_frame(command DrawRepeatedDecodedImageFrame) bool {
 	return recorder.append(command)
 }
 

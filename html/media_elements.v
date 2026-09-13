@@ -262,6 +262,18 @@ pub fn (video &HTMLVideoElementModel) bitmap() ?&dom.ImmutableBitmap_ {
 	}
 }
 
+// The canvas and texture-upload paths preserve the current decoded frame's
+// color space when wrapping a legacy video bitmap in a DecodedImageFrame.
+pub fn (video &HTMLVideoElementModel) current_frame_color_space() ?dom.DecodedImageColorSpace {
+	frame := if source := video.media.video_frame_source_ {
+		source.current_frame()
+	} else {
+		video.current_frame_
+	}
+	current_frame := frame or { return none }
+	return current_frame.decoded_color_space
+}
+
 @[heap]
 pub struct HTMLAudioElementModel {
 pub:

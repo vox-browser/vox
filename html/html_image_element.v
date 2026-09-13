@@ -437,8 +437,13 @@ pub fn (image &HTMLImageElementModel) decoded_image_data() ?DecodedImageData {
 }
 
 pub fn (image &HTMLImageElementModel) current_bitmap() ?&dom.ImmutableBitmap_ {
+	frame := image.current_image_frame() or { return none }
+	return frame.bitmap()
+}
+
+pub fn (image &HTMLImageElementModel) current_image_frame() ?&dom.DecodedImageFrame_ {
 	data := image.decoded_data_ or { return none }
-	return data.data.bitmap(image.current_frame_index_)
+	return data.data.frame(image.current_frame_index_)
 }
 
 pub fn (image &HTMLImageElementModel) natural_width() u32 {
@@ -622,8 +627,13 @@ pub fn (image &HTMLImageElementModel) immutable_bitmap() ?&dom.ImmutableBitmap_ 
 }
 
 pub fn (image &HTMLImageElementModel) default_image_bitmap_sized(_ int, _ int) ?&dom.ImmutableBitmap_ {
+	frame := image.default_image_frame_sized(0, 0) or { return none }
+	return frame.bitmap()
+}
+
+pub fn (image &HTMLImageElementModel) default_image_frame_sized(_ int, _ int) ?&dom.DecodedImageFrame_ {
 	data := image.current_request_.image_data() or { return none }
-	return data.data.bitmap(0)
+	return data.data.frame(0)
 }
 
 pub fn (image &HTMLImageElementModel) is_image_available() bool {
@@ -646,8 +656,13 @@ pub fn (image &HTMLImageElementModel) intrinsic_aspect_ratio() ?f64 {
 }
 
 pub fn (image &HTMLImageElementModel) current_image_bitmap_sized(_ int, _ int) ?&dom.ImmutableBitmap_ {
+	frame := image.current_image_frame_sized(0, 0) or { return none }
+	return frame.bitmap()
+}
+
+pub fn (image &HTMLImageElementModel) current_image_frame_sized(_ int, _ int) ?&dom.DecodedImageFrame_ {
 	data := image.current_request_.image_data() or { return none }
-	return data.data.bitmap(image.current_frame_index_)
+	return data.data.frame(image.current_frame_index_)
 }
 
 // https://html.spec.whatwg.org/multipage/images.html#upgrade-the-pending-request-to-the-current-request
@@ -887,6 +902,10 @@ pub fn html_image_element_intrinsic_aspect_ratio(element &dom.HTMLImageElement) 
 
 pub fn html_image_element_current_image_bitmap_sized(element &dom.HTMLImageElement, width int, height int) ?&dom.ImmutableBitmap_ {
 	return html_image_element_model_for_dom_element(element).current_image_bitmap_sized(width, height)
+}
+
+pub fn html_image_element_current_image_frame_sized(element &dom.HTMLImageElement, width int, height int) ?&dom.DecodedImageFrame_ {
+	return html_image_element_model_for_dom_element(element).current_image_frame_sized(width, height)
 }
 
 pub fn html_image_element_set_visible_in_viewport(element &dom.HTMLImageElement, visible bool) {

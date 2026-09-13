@@ -38,6 +38,7 @@ pub:
 	height      u32
 	bit_depth   u8 = 8
 	color_space MediaVideoColorSpace = .bt709
+	decoded_color_space dom.DecodedImageColorSpace = .srgb
 	yuv_data    ?MediaVideoYUVData
 	rgba_bitmap ?&dom.ImmutableBitmap_
 }
@@ -47,6 +48,15 @@ pub fn MediaVideoFrame.from_bitmap(bitmap &dom.ImmutableBitmap_) &MediaVideoFram
 		width: u32(bitmap.width)
 		height: u32(bitmap.height)
 		rgba_bitmap: bitmap
+	}
+}
+
+pub fn MediaVideoFrame.from_bitmap_with_color_space(bitmap &dom.ImmutableBitmap_, color_space dom.DecodedImageColorSpace) &MediaVideoFrame {
+	return &MediaVideoFrame{
+		width:               u32(bitmap.width)
+		height:              u32(bitmap.height)
+		decoded_color_space: color_space
+		rgba_bitmap:         bitmap
 	}
 }
 

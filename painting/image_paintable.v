@@ -26,7 +26,7 @@ pub:
 
 pub struct ImagePaintResult {
 pub:
-	bitmap     DrawScaledBitmap
+	bitmap     DrawScaledDecodedImageFrame
 	clip_radii CornerRadii
 }
 
@@ -101,7 +101,7 @@ pub fn (paintable ImagePaintable) paint(bitmap_id string, bitmap_rect IntRect,
 	mut clip_radii := paintable.border_radii
 	clip_radii.shrink(paintable.border_widths.top, paintable.border_widths.right, paintable.border_widths.bottom, paintable.border_widths.left)
 	return ImagePaintResult{
-		bitmap: DrawScaledBitmap{
+		bitmap: DrawScaledDecodedImageFrame{
 			destination: draw_rect
 			clip_rect: image_rect_device_pixels
 			bitmap_id: bitmap_id

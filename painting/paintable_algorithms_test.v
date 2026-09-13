@@ -602,8 +602,8 @@ fn test_video_paintable_switches_between_video_source_poster_and_transparent_con
 	poster := paintable.paint(.poster_frame, 'poster', IntSize{200, 100}, none, converter) or {
 		panic('expected poster paint')
 	}
-	assert poster.content is DrawScaledBitmap
-	poster_content := poster.content as DrawScaledBitmap
+	assert poster.content is DrawScaledDecodedImageFrame
+	poster_content := poster.content as DrawScaledDecodedImageFrame
 	assert poster_content.destination == IntRect{5, 7, 100, 50}
 	assert poster_content.clip_rect == poster_content.destination
 	assert poster_content.scaling == .bilinear_mipmap

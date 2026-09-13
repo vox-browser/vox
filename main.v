@@ -3949,7 +3949,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 					destination = result.content.destination
 					scaling = result.content.scaling
 				}
-				painting.DrawScaledBitmap {
+				painting.DrawScaledDecodedImageFrame {
 					destination = result.content.destination
 					scaling = result.content.scaling
 				}

@@ -58,7 +58,7 @@ pub fn (paintable VideoPaintable) paint(representation VideoRepresentation, bitm
 		.poster_frame {
 			source_size := bitmap_size or { return none }
 			destination := get_replaced_box_painting_area(paintable.video_rect, Size{f64(source_size.width), f64(source_size.height)}, paintable.object_fit, paintable.object_position, paintable.resolution_context, converter) or { return none }
-			DisplayListCommand(DrawScaledBitmap{
+			DisplayListCommand(DrawScaledDecodedImageFrame{
 				destination: destination
 				clip_rect: video_rect
 				bitmap_id: bitmap_id

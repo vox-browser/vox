@@ -31,6 +31,8 @@ fn test_canvas_pattern_creation_and_transform() {
 	mut pattern := result.pattern or { panic('missing pattern') }
 	assert pattern.repetition() == .repeat
 	assert pattern.bitmap().width == 3
+	assert pattern.frame().bitmap() == pattern.bitmap()
+	assert pattern.frame().color_space() == .srgb
 	mut transform := geometry.DOMMatrix2DInit{
 		a: 2
 		d: 3
@@ -54,6 +56,20 @@ fn test_canvas_pattern_creation_and_transform() {
 		return
 	}
 	assert false
+}
+
+fn test_canvas_pattern_retains_decoded_frame_color_space() {
+	bitmap := &dom.ImmutableBitmap_{ width: 2, height: 1 }
+	frame := dom.DecodedImageFrame_.create_with_color_space(bitmap, .display_p3)
+	data := BitmapDecodedImageData.create([
+		BitmapDecodedImageFrame{ frame: frame },
+	], 0, false)
+	result := CanvasPattern.create(CanvasImageSource(DecodedImageCanvasSource{
+		value: data
+	}), 'no-repeat') or { panic(err) }
+	pattern := result.pattern or { panic('missing pattern') }
+	assert pattern.frame() == frame
+	assert pattern.frame().color_space() == .display_p3
 }
 
 fn test_canvas_text_drawing_styles_validate_and_store_values() {

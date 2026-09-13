@@ -44,7 +44,7 @@ fn test_eager_image_fetch_delays_load_event_until_completion() {
 			data: [u8(0), 0, 0, 255]
 		}
 		return BitmapDecodedImageData.create([
-			BitmapDecodedImageFrame{ bitmap: bitmap },
+			BitmapDecodedImageFrame{ frame: dom.DecodedImageFrame_.create(bitmap) },
 		], 0, false)
 	})
 

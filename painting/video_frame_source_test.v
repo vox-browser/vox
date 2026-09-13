@@ -47,6 +47,13 @@ fn test_video_frame_source_preserves_rgba_fallback_identity() {
 	assert frame.to_immutable_bitmap() or { panic(err) } == bitmap
 }
 
+fn test_media_video_frame_retains_decoded_color_space() {
+	bitmap := &dom.ImmutableBitmap_{ width: 2, height: 1 }
+	frame := MediaVideoFrame.from_bitmap_with_color_space(bitmap, .display_p3)
+	assert frame.rgba_bitmap? == bitmap
+	assert frame.decoded_color_space == .display_p3
+}
+
 fn test_video_frame_conversion_rejects_truncated_planes() {
 	frame := &MediaVideoFrame{
 		width: 2

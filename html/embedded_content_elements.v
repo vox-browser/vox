@@ -772,7 +772,7 @@ pub fn (object &HTMLObjectElementModel) current_frame_index() usize {
 pub fn (object &HTMLObjectElementModel) decoded_image_data() ?DecodedImageData {
 	bitmap := object.image_data_ or { return none }
 	return BitmapDecodedImageData.create([
-		BitmapDecodedImageFrame{ bitmap: bitmap },
+		BitmapDecodedImageFrame{ frame: dom.DecodedImageFrame_.create(bitmap) },
 	], 0, false)
 }
 

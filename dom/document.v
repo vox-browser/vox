@@ -2020,7 +2020,7 @@ pub:
 // decoder. HTML's decoded image implementations satisfy this interface
 // structurally, matching the C++ forward-declared DecodedImageData boundary.
 pub interface SharedDecodedImageData {
-	bitmap(frame_index usize) ?&ImmutableBitmap_
+	frame(frame_index usize) ?&DecodedImageFrame_
 	frame_duration(frame_index usize) int
 	frame_count() usize
 	loop_count() usize

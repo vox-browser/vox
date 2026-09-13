@@ -30,8 +30,14 @@ fn image_test_fetch(url dom.URL) !DecodedImageData {
 		data: []u8{len: 200 * 100 * 4}
 	}
 	return BitmapDecodedImageData.create([
-		BitmapDecodedImageFrame{ bitmap: bitmap, duration: 10 },
-		BitmapDecodedImageFrame{ bitmap: bitmap, duration: 10 },
+		BitmapDecodedImageFrame{
+			frame: dom.DecodedImageFrame_.create(bitmap)
+			duration: 10
+		},
+		BitmapDecodedImageFrame{
+			frame: dom.DecodedImageFrame_.create(bitmap)
+			duration: 10
+		},
 	], 1, true)
 }
 

@@ -1543,7 +1543,8 @@ pub fn (model &HTMLInputElementModel) intrinsic_aspect_ratio() ?f64 {
 
 pub fn (model &HTMLInputElementModel) current_image_bitmap_sized(_ int, _ int) ?&dom.ImmutableBitmap_ {
 	data := model.image_data() or { return none }
-	return data.bitmap(0)
+	frame := data.frame(0) or { return none }
+	return frame.bitmap()
 }
 
 pub fn (mut model HTMLInputElementModel) set_visible_in_viewport(visible bool) {

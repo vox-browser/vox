@@ -1,6 +1,7 @@
 module painting
 
 import css
+import dom
 import platform
 
 fn test_display_list_recording_context_translates_device_and_css_geometry() {
@@ -123,6 +124,10 @@ fn test_cached_command_replay_bypasses_active_capture() {
 
 fn test_recorder_source_shaped_entry_points_and_nesting_updates() {
 	mut recorder := new_display_list_recorder(new_accumulated_visual_context_tree())
+	frame := dom.DecodedImageFrame_.create(&dom.ImmutableBitmap_{
+		width: 2
+		height: 3
+	})
 	assert !recorder.fill_rect_with_linear_gradient(PaintLinearGradient{})
 	assert recorder.fill_rect_with_linear_gradient(PaintLinearGradient{
 		rect: IntRect{1, 2, 3, 4}
@@ -133,12 +138,19 @@ fn test_recorder_source_shaped_entry_points_and_nesting_updates() {
 	assert recorder.fill_rect_with_conic_gradient(PaintConicGradient{
 		rect: IntRect{3, 4, 5, 6}
 	})
-	assert !recorder.draw_scaled_immutable_bitmap(DrawScaledBitmap{})
-	assert recorder.draw_scaled_immutable_bitmap(DrawScaledBitmap{
+	assert !recorder.draw_scaled_decoded_image_frame(DrawScaledDecodedImageFrame{})
+	assert recorder.draw_scaled_decoded_image_frame(DrawScaledDecodedImageFrame{
 		destination: IntRect{4, 5, 6, 7}
+		frame: frame
 	})
 	// The C++ repeated-bitmap entry point deliberately has no empty-rect guard.
-	assert recorder.draw_repeated_immutable_bitmap(DrawRepeatedBitmap{})
+	assert recorder.draw_repeated_decoded_image_frame(DrawRepeatedDecodedImageFrame{
+		frame: frame
+	})
+	repeated_frame := (recorder.display_list.commands.last().command as DrawRepeatedDecodedImageFrame).frame or {
+		panic('missing retained decoded frame')
+	}
+	assert repeated_frame == frame
 	font := &platform.Font{ point_size: 16 }
 	glyph_run := platform.shape_text(0, 0, 'abc', font, .ltr)
 	assert !recorder.draw_glyph_run(Point{}, glyph_run, transparent, IntRect{0, 0, 20, 20}, 1, .horizontal)

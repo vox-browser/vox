@@ -1029,6 +1029,68 @@ pub mut:
 	data       []u8
 }
 
+pub enum DecodedImageColorSpace {
+	srgb
+	display_p3
+}
+
+// Gfx::DecodedImageFrame keeps immutable decoded pixels and their color space
+// together. ImmutableBitmap_ remains the V host's raw bitmap storage until the
+// following upstream removal commit migrates its remaining legacy boundaries.
+@[heap]
+pub struct DecodedImageFrame_ {
+pub:
+	bitmap_      &ImmutableBitmap_ = unsafe { nil }
+	color_space_ DecodedImageColorSpace
+}
+
+pub fn DecodedImageFrame_.create(bitmap &ImmutableBitmap_) &DecodedImageFrame_ {
+	return &DecodedImageFrame_{
+		bitmap_: bitmap
+	}
+}
+
+pub fn DecodedImageFrame_.create_with_color_space(bitmap &ImmutableBitmap_, color_space DecodedImageColorSpace) &DecodedImageFrame_ {
+	return &DecodedImageFrame_{
+		bitmap_: bitmap
+		color_space_: color_space
+	}
+}
+
+// Gfx::DecodedImageFrame's alpha-type overload keeps the source bitmap when it
+// already has the requested interpretation and clones it before changing the
+// interpretation otherwise.
+pub fn DecodedImageFrame_.create_with_alpha_type(bitmap &ImmutableBitmap_, alpha_type u8, color_space DecodedImageColorSpace) &DecodedImageFrame_ {
+	if bitmap.alpha_type == alpha_type {
+		return DecodedImageFrame_.create_with_color_space(bitmap, color_space)
+	}
+	converted := &ImmutableBitmap_{
+		width:      bitmap.width
+		height:     bitmap.height
+		pitch:      bitmap.pitch
+		format:     bitmap.format
+		alpha_type: alpha_type
+		data:       bitmap.data.clone()
+	}
+	return DecodedImageFrame_.create_with_color_space(converted, color_space)
+}
+
+pub fn (frame &DecodedImageFrame_) bitmap() &ImmutableBitmap_ {
+	return frame.bitmap_
+}
+
+pub fn (frame &DecodedImageFrame_) color_space() DecodedImageColorSpace {
+	return frame.color_space_
+}
+
+pub fn (frame &DecodedImageFrame_) width() int {
+	return frame.bitmap_.width
+}
+
+pub fn (frame &DecodedImageFrame_) height() int {
+	return frame.bitmap_.height
+}
+
 pub fn (a &CSSAnimation_) cancel() {
 	if a.target != unsafe { nil } && a.cancel_callback != unsafe { nil } {
 		a.cancel_callback(a.target)

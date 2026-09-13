@@ -22,7 +22,7 @@ fn input_image_adoption_fetch(context &InputImageAdoptionContext, _ dom.URL) !De
 		data: [u8(0), 0, 0, 255]
 	}
 	return BitmapDecodedImageData.create([
-		BitmapDecodedImageFrame{ bitmap: bitmap },
+		BitmapDecodedImageFrame{ frame: dom.DecodedImageFrame_.create(bitmap) },
 	], 0, false)
 }
 
