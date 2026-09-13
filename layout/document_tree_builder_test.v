@@ -80,6 +80,25 @@ fn test_build_layout_tree() {
 	assert div_box.is_block_container()
 }
 
+fn test_svg_resource_mutation_invalidates_referencing_layout_subtrees() {
+	document := html.parse_document('<!doctype html><svg><defs><mask id="mask"><rect width="1" height="1"/></mask><pattern id="pattern" width="1" height="1"><rect width="1" height="1"/></pattern></defs><rect id="masked" width="10" height="10" mask="url(#mask)"/><rect id="patterned" y="20" width="10" height="10" fill="url(#pattern)"/></svg>')
+	_ := run_document_layout(document, 200, 100) or { panic('layout failed') }
+	masked := document.get_element_by_id('masked') or { panic('missing masked element') }
+	masked_layout := masked.as_node().unsafe_layout_node() or { panic('missing masked layout node') }
+	assert !masked_layout.needs_layout_update()
+
+	mut mask := document.get_element_by_id('mask') or { panic('missing mask') }
+	mask.set_attribute_value('maskUnits', 'userSpaceOnUse')
+	assert masked_layout.needs_layout_update()
+
+	patterned := document.get_element_by_id('patterned') or { panic('missing patterned element') }
+	assert !patterned.as_node().needs_layout_tree_update_()
+	mut pattern := document.get_element_by_id('pattern') or { panic('missing pattern') }
+	mut pattern_parent := pattern.as_node().parent_node() or { panic('missing pattern parent') }
+	pattern_parent.remove_child(pattern.as_node()) or { panic('failed to remove pattern') }
+	assert patterned.as_node().needs_layout_tree_update_()
+}
+
 // run_document_layout packages tree-building + block layout into one document entry point.
 fn test_run_document_layout() {
 	mut doc := dom.Document.create(dom.url_about_blank())

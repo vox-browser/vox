@@ -1030,6 +1030,10 @@ fn attach_referenced_svg_resource(mut owner Node, document &dom.Document, style_
 	}
 	resource := build_layout_box_for_element_with_svg_resource_kind(document, target, style_computer, mut builder_state, resource_kind) or { return }
 	owner.append_child(resource)
+	owner_dom_node := owner.dom_node() or { return }
+	referencing_element := owner_dom_node.as_element() or { return }
+	mut mutable_target := unsafe { &dom.Element(target) }
+	mutable_target.register_svg_resource_box_referencing_element(referencing_element)
 }
 
 fn node_can_reference_svg_resources(node &Node) bool {
@@ -1057,6 +1061,16 @@ fn attach_referenced_svg_resources_in_subtree(mut node Node, document &dom.Docum
 			if !seen_patterns[content_id] && !layout_node_has_dom_ancestor(node, content_element) {
 				if resource := build_layout_box_for_element_with_svg_resource_kind(document, content_element, style_computer, mut builder_state, .pattern) {
 					node.append_child(resource)
+					if owner_dom_node := node.dom_node() {
+						if referencing_element := owner_dom_node.as_element() {
+							mut mutable_content := unsafe { &dom.Element(content_element) }
+							mutable_content.register_svg_resource_box_referencing_element(referencing_element)
+							if voidptr(content_element) != voidptr(target) {
+								mut mutable_pattern := unsafe { &dom.Element(target) }
+								mutable_pattern.register_svg_resource_box_referencing_element(referencing_element)
+							}
+						}
+					}
 					seen_patterns[content_id] = true
 				}
 			}

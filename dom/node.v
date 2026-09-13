@@ -55,6 +55,7 @@ pub enum SetNeedsLayoutReason {
 	svg_graphics_element_transform_change
 	svg_image_element_fetch_the_document
 	svg_image_filter_fetch
+	svg_resource_element_attribute_change
 	svg_view_box_change
 	style_change
 }
@@ -79,6 +80,7 @@ pub fn set_needs_layout_reason_to_string(reason SetNeedsLayoutReason) string {
 		.svg_graphics_element_transform_change { 'SVGGraphicsElementTransformChange' }
 		.svg_image_element_fetch_the_document { 'SVGImageElementFetchTheDocument' }
 		.svg_image_filter_fetch { 'SVGImageFilterFetch' }
+		.svg_resource_element_attribute_change { 'SVGResourceElementAttributeChange' }
 		.svg_view_box_change { 'SVGViewBoxChange' }
 		.style_change { 'StyleChange' }
 	}
@@ -99,6 +101,7 @@ pub enum SetNeedsLayoutTreeUpdateReason {
 	none
 	shadow_root_set_inner_html
 	style_change
+	svg_resource_element_removed
 }
 
 pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUpdateReason) string {
@@ -119,6 +122,7 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 		.none { 'None' }
 		.shadow_root_set_inner_html { 'ShadowRootSetInnerHTML' }
 		.style_change { 'StyleChange' }
+		.svg_resource_element_removed { 'SVGResourceElementRemoved' }
 	}
 }
 

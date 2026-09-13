@@ -1481,6 +1481,7 @@ pub mut:
 	registered_intersection_observers         []voidptr
 	computed_style_map_cache_                 ?&StylePropertyMapReadOnly_
 	removed_attributes_for_style_invalidation []string
+	svg_resource_box_referencing_elements_    []&Element
 
 	scroll_offset_ CSSPixelPoint_
 
@@ -5482,6 +5483,11 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		if e.local_name() == 'use' && local_name in ['href', 'xlink:href'] {
 			e.svg_use_process_the_url()
 		}
+		if (e.local_name() == 'clipPath' && local_name == 'clipPathUnits')
+			|| (e.local_name() == 'mask'
+				&& local_name in ['maskUnits', 'maskContentUnits', 'x', 'y', 'width', 'height']) {
+			e.mark_svg_resource_box_referencing_elements_for_layout_update()
+		}
 		e.update_use_elements_that_reference_this()
 	}
 }
@@ -5906,6 +5912,11 @@ pub fn (mut e Element) removed_from_with_context(is_subtree_root NodeIsSubtreeRo
 		current_root_is_use_shadow_tree := svg_root_is_use_element_shadow_root(e.as_node().root())
 		if !old_root_is_use_shadow_tree && !current_root_is_use_shadow_tree {
 			e.remove_from_use_element_that_reference_this()
+			e.mark_svg_resource_box_referencing_elements_for_layout_tree_update()
+			if e.id() != none {
+				mut document := unsafe { &Document(e.document()) }
+				document.set_needs_repaint()
+			}
 		}
 	}
 
@@ -6349,6 +6360,33 @@ pub fn (mut d Document) refresh_svg_use_shadow_trees() {
 		}
 		return .@continue
 	})
+}
+
+// Resource boxes for masks, clip paths, and patterns are attached to the
+// referencing element's layout subtree. Keep the reverse edge so mutations of
+// the resource invalidate every independently built resource subtree.
+pub fn (mut e Element) register_svg_resource_box_referencing_element(referencing_element &Element) {
+	for existing in e.svg_resource_box_referencing_elements_ {
+		if voidptr(existing) == voidptr(referencing_element) {
+			return
+		}
+	}
+	e.svg_resource_box_referencing_elements_ << referencing_element
+}
+
+pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_layout_tree_update() {
+	for referencing_element in e.svg_resource_box_referencing_elements_ {
+		mut node := unsafe { &Node(referencing_element.as_node()) }
+		node.set_needs_layout_tree_update(true, .svg_resource_element_removed)
+	}
+	e.svg_resource_box_referencing_elements_.clear()
+}
+
+pub fn (mut e Element) mark_svg_resource_box_referencing_elements_for_layout_update() {
+	for referencing_element in e.svg_resource_box_referencing_elements_ {
+		mut node := unsafe { &Node(referencing_element.as_node()) }
+		node.set_needs_layout_update(.svg_resource_element_attribute_change)
+	}
 }
 
 // https://svgwg.org/svg2-draft/types.html#__svg__SVGElement__ownerSVGElement
