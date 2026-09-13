@@ -94,6 +94,32 @@ fn test_insert_eof_closes_the_tokenizer_input_stream() {
 	assert tokenizer.next_token()?.type_ == .end_of_file
 }
 
+fn test_open_stream_can_pause_in_named_character_reference() {
+	mut tokenizer := HTMLTokenizer.create()
+	tokenizer.append_to_input_stream('&not')
+	assert tokenizer.next_token() == none
+
+	tokenizer.append_to_input_stream('in;X')
+	token := tokenizer.next_token() or { panic('missing streamed character reference') }
+	assert token.is_character()
+	assert token.code_point == rune(0x2209)
+	next := tokenizer.next_token() or { panic('missing character after streamed reference') }
+	assert next.is_character() && next.code_point == `X`
+	assert tokenizer.next_token() == none
+	tokenizer.close_input_stream()
+	assert tokenizer.next_token()?.type_ == .end_of_file
+}
+
+fn test_open_stream_can_pause_during_fixed_lookahead() {
+	mut tokenizer := HTMLTokenizer.create()
+	tokenizer.append_to_input_stream('<!DOC')
+	assert tokenizer.next_token() == none
+	tokenizer.append_to_input_stream('TYPE html>')
+	token := tokenizer.next_token() or { panic('missing streamed doctype') }
+	assert token.type_ == .doctype
+	assert token.doctype.name == 'html'
+}
+
 // Runtime tests for the HTML tokenizer, translated from Tests/LibWeb/TestHTMLTokenizer.cpp.
 // (The file-based `regression` test case is omitted: it depends on an external fixture and a hash
 // tied to HTMLToken::to_string()'s exact format.)

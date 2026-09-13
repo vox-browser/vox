@@ -350,7 +350,7 @@ fn (t &HTMLTokenizer) nth_last_position(n int) Position {
 fn (mut t HTMLTokenizer) consume_next_if_match(s string, stop StopAtInsertionPoint, case_sensitivity CaseSensitivity) ConsumeNextResult {
 	for i in 0 .. s.len {
 		code_point := t.peek_code_point(i, stop) or {
-			if stop == .yes {
+			if t.can_run_out_of_characters(stop) {
 				return .ran_out_of_characters
 			}
 			return .not_consumed
@@ -531,6 +531,10 @@ fn (t &HTMLTokenizer) should_pause_before_next_input_character(stop StopAtInsert
 	// A network chunk can also end between the CR and LF of a CRLF pair.
 	return t.decoded_input[t.current_offset] == `\r`
 		&& t.current_offset + 1 >= t.decoded_input.len
+}
+
+fn (t &HTMLTokenizer) can_run_out_of_characters(stop StopAtInsertionPoint) bool {
+	return (stop == .yes && t.insertion_point != none) || !t.input_stream_closed
 }
 
 pub fn (t &HTMLTokenizer) is_blocked() bool {
@@ -1689,7 +1693,7 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 					continue start_of_function
 				}
 				.named_character_reference {
-					if stop == .yes && t.is_insertion_point_defined() {
+					if t.can_run_out_of_characters(stop) {
 						if c := current {
 							if t.matcher.try_consume_code_point(c) {
 								t.temporary_buffer << c
