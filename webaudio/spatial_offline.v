@@ -5,6 +5,8 @@
 // OfflineAudioCompletionEvent.
 module webaudio
 
+import math
+
 pub struct PannerOptions {
 pub:
 	panning_model    PanningModelType  = .equalpower
@@ -192,6 +194,8 @@ pub mut:
 	oncomplete         bool
 	fully_active       bool = true
 	detached           bool
+	renderer           ?&OfflineAudioRenderer
+	suspend_frames     map[u64]bool
 }
 
 pub struct OfflineAudioContextOptions {
@@ -224,48 +228,144 @@ pub:
 }
 
 pub fn (mut context OfflineAudioContext) start_rendering() OfflineRenderResult {
-	if !context.fully_active || context.detached { return OfflineRenderResult{
+	if !context.fully_active || context.detached {
+		return OfflineRenderResult{
 			promise: AudioPromise{
-				state:   .rejected
+				state: .rejected
 				message: 'InvalidStateError: Document is not fully active'
 			}
-		} }
-	if context.rendering_started { return OfflineRenderResult{
+		}
+	}
+	if context.rendering_started {
+		return OfflineRenderResult{
 			promise: AudioPromise{
-				state:   .rejected
+				state: .rejected
 				message: 'InvalidStateError: Rendering is already started'
 			}
-		} }
+		}
+	}
 	context.rendering_started = true
 	buffer := new_audio_buffer(context.number_of_channels, context.length, context.base.sample_rate) or {
 		return OfflineRenderResult{
 			promise: AudioPromise{
-				state:   .rejected
+				state: .rejected
 				message: err.msg()
 			}
 		}
 	}
 	context.rendered_buffer = buffer
-	context.oncomplete_count++
-	event := OfflineAudioCompletionEvent{
-		event_type:      'complete'
-		rendered_buffer: buffer
+	mut renderer := OfflineAudioRenderer.create(context.base.control_messages,
+		context.base.destination.id, int(context.number_of_channels), int(context.length),
+		context.base.sample_rate, int(render_quantum_size))
+	for frame, _ in context.suspend_frames {
+		renderer.request_suspend(frame)
 	}
+	context.renderer = renderer
+	context.base.state = .running
+	context.base.rendering_state = .running
+	context.queue_a_statechange_event()
+	renderer.start_rendering()
+	event := context.synchronize_renderer_state()
+	if renderer.is_suspended() {
+		return OfflineRenderResult{
+			promise: AudioPromise{ state: .pending }
+		}
+	}
+	completed_buffer := context.rendered_buffer or { buffer }
 	return OfflineRenderResult{
 		promise: AudioPromise{
 			state: .fulfilled
 		}
-		buffer:  buffer
-		event:   event
+		buffer: completed_buffer
+		event: event
 	}
 }
 
-pub fn (_ OfflineAudioContext) resume() ! {
-	return error('NotSupportedError: FIXME: Implement OfflineAudioContext::resume')
+fn (mut context OfflineAudioContext) synchronize_renderer_state() ?OfflineAudioCompletionEvent {
+	mut renderer := context.renderer or { return none }
+	context.base.set_current_time(f64(renderer.frames_rendered()) / f64(context.base.sample_rate))
+	if renderer.is_suspended() {
+		context.handle_suspended()
+		return none
+	}
+	if !renderer.is_complete() {
+		return none
+	}
+	return context.finish_rendering()
 }
 
-pub fn (_ OfflineAudioContext) suspend(_ f64) ! {
-	return error('NotSupportedError: FIXME: Implement OfflineAudioContext::suspend')
+fn (mut context OfflineAudioContext) finish_rendering() OfflineAudioCompletionEvent {
+	mut renderer := context.renderer or { panic('offline renderer is missing') }
+	mut buffer := context.rendered_buffer or { panic('offline rendered buffer is missing') }
+	buffer.channels = renderer.rendered_channels()
+	context.rendered_buffer = buffer
+	context.base.set_current_time(f64(renderer.frames_rendered()) / f64(context.base.sample_rate))
+	context.base.state = .closed
+	context.base.rendering_state = .closed
+	context.queue_a_statechange_event()
+	renderer.clear_callbacks()
+	context.oncomplete_count++
+	return OfflineAudioCompletionEvent{
+		event_type: 'complete'
+		rendered_buffer: buffer
+	}
+}
+
+fn (mut context OfflineAudioContext) handle_suspended() {
+	if renderer := context.renderer {
+		context.suspend_frames.delete(renderer.frames_rendered())
+	}
+	context.base.state = .suspended
+	context.base.rendering_state = .suspended
+	context.queue_a_statechange_event()
+}
+
+fn (mut context OfflineAudioContext) queue_a_statechange_event() {
+	context.base.onstatechange_count++
+}
+
+pub fn (mut context OfflineAudioContext) resume() ! {
+	mut renderer := context.renderer or {
+		return error('InvalidStateError: The OfflineAudioContext is not suspended')
+	}
+	if context.base.state != .suspended || !renderer.is_suspended() {
+		return error('InvalidStateError: The OfflineAudioContext is not suspended')
+	}
+	context.base.state = .running
+	context.base.rendering_state = .running
+	context.queue_a_statechange_event()
+	renderer.resume()
+	context.synchronize_renderer_state()
+}
+
+pub fn (mut context OfflineAudioContext) suspend(suspend_time f64) ! {
+	if math.is_nan(suspend_time) || math.is_inf(suspend_time, 0) || suspend_time < 0 {
+		return error('RangeError: Suspend time must be a finite, non-negative number')
+	}
+	mut frame := u64(math.round(suspend_time * f64(context.base.sample_rate)))
+	quantum_size := u64(render_quantum_size)
+	frame = ((frame + quantum_size - 1) / quantum_size) * quantum_size
+	if frame >= u64(context.length) {
+		return error('RangeError: Suspend time must be less than the duration of the context')
+	}
+	if frame in context.suspend_frames {
+		return error('InvalidStateError: A suspension is already scheduled at this time')
+	}
+	context.suspend_frames[frame] = true
+	if mut renderer := context.renderer {
+		if !renderer.request_suspend(frame) {
+			context.suspend_frames.delete(frame)
+			return error('InvalidStateError: The rendering thread has already passed the requested suspend time')
+		}
+	}
+}
+
+pub fn (mut context OfflineAudioContext) document_became_inactive() {
+	context.fully_active = false
+	if mut renderer := context.renderer {
+		renderer.stop()
+		renderer.clear_callbacks()
+	}
 }
 
 pub struct OfflineAudioCompletionEvent {

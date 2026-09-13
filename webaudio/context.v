@@ -175,6 +175,7 @@ fn (mut context BaseAudioContext) allocate_param(default_value f32, min_value f3
 }
 
 pub enum PromiseState {
+	pending
 	fulfilled
 	rejected
 }
