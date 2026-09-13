@@ -676,6 +676,51 @@ VERIFIED_TRIVIAL_IMPLEMENTATIONS: frozenset[tuple[str, str | None, str]] = froze
             "MediaSource",
             "can_construct_in_dedicated_worker",
         ),
+        # The MSE parser factories mirror default construction. Parser reset
+        # is empty because incomplete V parses leave the input wholly
+        # unconsumed instead of retaining a separate cursor/segment object.
+        (
+            "mediasourceextensions/isobmff_byte_stream_parser.v",
+            "ISOBMFFByteStreamParser",
+            "create",
+        ),
+        (
+            "mediasourceextensions/isobmff_byte_stream_parser.v",
+            "ISOBMFFByteStreamParser",
+            "reset_parser_state",
+        ),
+        (
+            "mediasourceextensions/source_buffer_processor.v",
+            "SourceBufferProcessor",
+            "create",
+        ),
+        (
+            "mediasourceextensions/webm_byte_stream_parser.v",
+            "WebMByteStreamParser",
+            "create",
+        ),
+        (
+            "mediasourceextensions/webm_byte_stream_parser.v",
+            "WebMByteStreamParser",
+            "reset_parser_state",
+        ),
+        # These three demuxer methods are explicit successful/zero defaults in
+        # upstream because one TrackBufferDemuxer exposes exactly one track.
+        (
+            "mediasourceextensions/track_buffer.v",
+            "TrackBufferDemuxer",
+            "create_context_for_track",
+        ),
+        (
+            "mediasourceextensions/track_buffer.v",
+            "TrackBufferDemuxer",
+            "duration_of_track",
+        ),
+        (
+            "mediasourceextensions/track_buffer.v",
+            "TrackBufferDemuxer",
+            "total_duration",
+        ),
         ("notificationsapi/notification.v", "Notification", "max_actions"),
         ("painting/svg_painting.v", "SVGPaintable", "is_svg_paintable"),
         ("serviceworker/container.v", "ServiceWorkerContainer", "controller"),
