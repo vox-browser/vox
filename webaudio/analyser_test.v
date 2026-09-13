@@ -69,14 +69,14 @@ fn test_analyser_render_node_passes_through_and_records_recent_mono_input() {
 		panic(err)
 	}
 	mut graph := RenderGraph.create()
-	mut source := RenderNode.create(1, 0, 1, int(render_quantum_size), 1)
+	mut source := RenderNode.create(99, 0, 1, int(render_quantum_size), 1)
 	source.set_process_callback(analyser_render_test_source)
 	graph.apply_control_messages([
+		...context.base.control_messages.drain(),
 		ControlMessage{ kind: .add_node, render_node: source },
-		ControlMessage{ kind: .add_node, render_node: analyser.render_node().render_node() },
 		ControlMessage{
 			kind: .replace_connections
-			node_id: 1
+			node_id: 99
 			node_connections: [OutgoingNodeConnection{
 				destination: analyser.node.id
 			}]

@@ -176,6 +176,7 @@ pub fn (mut context BaseAudioContext) create_analyser(options AnalyserOptions) !
 		history_: []f32{len: 32768}
 	}
 	analyser.set_fft_size(options.fft_size)!
+	node.queue_render_node_creation(analyser.render_node_.render_node())
 	return analyser
 }
 
