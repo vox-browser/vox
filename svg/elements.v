@@ -235,7 +235,7 @@ fn rect_path(attributes map[string]string, viewport_width f64, viewport_height f
 	y := attribute_number_percentage(attributes, 'y').resolve_relative_to(viewport_height)
 	width := attribute_number_percentage(attributes, 'width').resolve_relative_to(viewport_width)
 	height := attribute_number_percentage(attributes, 'height').resolve_relative_to(viewport_height)
-	if width == 0 || height == 0 {
+	if width <= 0 || height <= 0 {
 		return Path{}
 	}
 	rx_value := parse_number_percentage(attributes['rx'] or { '' })

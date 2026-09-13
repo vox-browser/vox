@@ -2717,6 +2717,34 @@ fn test_svg_path_d_uses_the_css_cascade_and_presentation_attribute_syntax() {
 	assert none_path.instructions.len == 0
 }
 
+fn test_svg_rect_uses_computed_geometry_and_used_corner_radii() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#styled { x:5px; y:6px; width:40px; height:20px; rx:25% }
+		#paired { x:10px; y:10px; width:80px; height:20px; rx:25%; ry:25% }
+		#hidden { width:auto; height:20px }
+	</style><svg width="200" height="100">
+		<rect id="styled" x="1" y="2" width="3" height="4"/>
+		<rect id="paired"/>
+		<rect id="hidden" width="30"/>
+	</svg>')
+	result := run_document_layout(document, 200, 100) or { panic('layout failed') }
+	styled := used_for_id(result, 'styled')
+	assert styled.offset.x().to_double() == 5
+	assert styled.offset.y().to_double() == 6
+	assert styled.content_width().to_double() == 40
+	assert styled.content_height().to_double() == 20
+	styled_path := styled.computed_svg_path() or { panic('styled rect path missing') }
+	assert styled_path.instructions[0].data == [15.0, 6.0]
+	assert styled_path.instructions[2].data[..2] == [10.0, 10.0]
+	paired_path := used_for_id(result, 'paired').computed_svg_path() or {
+		panic('paired rect path missing')
+	}
+	assert paired_path.instructions[0].data == [30.0, 10.0]
+	assert paired_path.instructions[2].data[..2] == [20.0, 5.0]
+	assert (used_for_id(result, 'hidden').computed_svg_path() or { svg.Path{} }).instructions.len == 0
+}
+
 fn test_relative_positioning_does_not_move_following_flow_content() {
 	document := html.parse_document('<!doctype html><style>
 		#one { position:relative; top:20px; left:5px; height:10px }

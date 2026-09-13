@@ -54,6 +54,13 @@ fn test_rect_corner_radius_defaulting_and_clamping() {
 	assert path.instructions[0].data == [60.0, 20.0]
 	assert path.instructions[1].data == [60.0]
 	assert path.instructions.last().type_ == .close_path
+	assert geometry_path(Element{
+		tag: 'rect'
+		attributes: {
+			'width':  '-10'
+			'height': '20'
+		}
+	}, 100, 100).instructions.len == 0
 }
 
 fn test_base_element_behavior_and_use_transform() {

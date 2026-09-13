@@ -922,31 +922,64 @@ fn visible_svg_stroke_width(graphics_box &Node, viewport_size CSSPixelSize) f64 
 // values. Author CSS therefore overrides their presentation attributes.
 fn svg_geometry_element_model(graphics_box &Node, element &dom.Element, viewport_size CSSPixelSize) svg.Element {
 	mut model := svg_element_model(element)
-	if element.local_name() == 'path' {
-		computed := graphics_box.computed_values()
-		value := computed.typed_property_value(.d) or {
+	computed := graphics_box.computed_values()
+	match element.local_name() {
+		'path' {
+			value := computed.typed_property_value(.d) or {
+				model.attributes.delete('d')
+				return model
+			}
+			if value is css.BasicShapeStyleValue {
+				shape := value.basic_shape()
+				if shape is css.BasicShapePath {
+					model.attributes['d'] = shape.path_instructions
+					return model
+				}
+			}
 			model.attributes.delete('d')
 			return model
 		}
-		if value is css.BasicShapeStyleValue {
-			shape := value.basic_shape()
-			if shape is css.BasicShapePath {
-				model.attributes['d'] = shape.path_instructions
-				return model
-			}
+		'circle' {
+			diagonal := math.sqrt((viewport_size.width().to_double() * viewport_size.width().to_double() + viewport_size.height().to_double() * viewport_size.height().to_double()) / 2.0)
+			model.attributes['cx'] = '${computed.length_percentage_to_px(.cx, viewport_size.width().to_double()) or { 0.0 }}'
+			model.attributes['cy'] = '${computed.length_percentage_to_px(.cy, viewport_size.height().to_double()) or { 0.0 }}'
+			model.attributes['r'] = '${computed.length_percentage_to_px(.r, diagonal) or { 0.0 }}'
+			return model
 		}
-		model.attributes.delete('d')
-		return model
+		'rect' {
+			width := computed.length_percentage_to_px(.width, viewport_size.width().to_double()) or {
+				0.0
+			}
+			height := computed.length_percentage_to_px(.height, viewport_size.height().to_double()) or {
+				0.0
+			}
+			model.attributes['x'] = '${computed.length_percentage_to_px(.x, viewport_size.width().to_double()) or { 0.0 }}'
+			model.attributes['y'] = '${computed.length_percentage_to_px(.y, viewport_size.height().to_double()) or { 0.0 }}'
+			model.attributes['width'] = '${width}'
+			model.attributes['height'] = '${height}'
+			rx_is_auto := computed.rx().is_auto()
+			ry_is_auto := computed.ry().is_auto()
+			if rx_is_auto && ry_is_auto {
+				model.attributes.delete('rx')
+				model.attributes.delete('ry')
+			} else if !rx_is_auto && ry_is_auto {
+				used_rx := computed.length_percentage_to_px(.rx, width) or { 0.0 }
+				model.attributes['rx'] = '${used_rx}'
+				model.attributes['ry'] = '${used_rx}'
+			} else if rx_is_auto && !ry_is_auto {
+				used_ry := computed.length_percentage_to_px(.ry, height) or { 0.0 }
+				model.attributes['rx'] = '${used_ry}'
+				model.attributes['ry'] = '${used_ry}'
+			} else {
+				model.attributes['rx'] = '${computed.length_percentage_to_px(.rx, width) or { 0.0 }}'
+				model.attributes['ry'] = '${computed.length_percentage_to_px(.ry, height) or { 0.0 }}'
+			}
+			return model
+		}
+		else {
+			return model
+		}
 	}
-	if element.local_name() != 'circle' {
-		return model
-	}
-	computed := graphics_box.computed_values()
-	diagonal := math.sqrt((viewport_size.width().to_double() * viewport_size.width().to_double() + viewport_size.height().to_double() * viewport_size.height().to_double()) / 2.0)
-	model.attributes['cx'] = '${computed.length_percentage_to_px(.cx, viewport_size.width().to_double()) or { 0.0 }}'
-	model.attributes['cy'] = '${computed.length_percentage_to_px(.cy, viewport_size.height().to_double()) or { 0.0 }}'
-	model.attributes['r'] = '${computed.length_percentage_to_px(.r, diagonal) or { 0.0 }}'
-	return model
 }
 
 fn set_used_values_rect(mut state UsedValues, rect svg.Rect) {
