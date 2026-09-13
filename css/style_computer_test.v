@@ -1171,6 +1171,71 @@ fn test_same_parent_move_invalidates_subtree_for_non_subject_structural_selector
 	assert moved_node.entire_subtree_needs_style_update()
 }
 
+fn test_sibling_structural_invalidation_only_marks_subject_root() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'main') or { panic(err) }
+	mut item := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'section') or { panic(err) }
+	mut descendant := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic(err)
+	}
+	item.set_attribute_value('class', 'item')
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(parent.as_node()) or { panic(err) }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(item.as_node()) or { panic(err) }
+	mut item_node := item.as_node()
+	item_node.append_child(descendant.as_node()) or { panic(err) }
+
+	add_document_author_style_sheet(doc, '.item:first-child { color: red }')
+	css_style_computer_for(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+	assert item.affected_by_first_child_pseudo_class
+	assert !item.affected_by_structural_pseudo_class_in_non_subject_position
+	item_node.set_needs_style_update_internal(false)
+	item_node.set_entire_subtree_needs_style_update(false)
+	mut descendant_node := descendant.as_node()
+	descendant_node.set_needs_style_update_internal(false)
+	descendant_node.set_entire_subtree_needs_style_update(false)
+
+	lead := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
+	parent_node.insert_before(lead.as_node(), item.as_node(), false)
+	assert item_node.needs_style_update()
+	assert !item_node.entire_subtree_needs_style_update()
+	assert !descendant_node.needs_style_update()
+	assert !descendant_node.entire_subtree_needs_style_update()
+}
+
+fn test_sibling_structural_invalidation_marks_subtree_for_non_subject_selector() {
+	mut doc := dom.Document.create(dom.url_about_blank())
+	doc.set_browsing_context(&dom.BrowsingContext{})
+	mut parent := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'main') or { panic(err) }
+	mut item := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'section') or { panic(err) }
+	mut descendant := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic(err)
+	}
+	item.set_attribute_value('class', 'item')
+	descendant.set_attribute_value('class', 'target')
+	mut document_node := unsafe { &dom.Node(doc) }
+	document_node.append_child(parent.as_node()) or { panic(err) }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(item.as_node()) or { panic(err) }
+	mut item_node := item.as_node()
+	item_node.append_child(descendant.as_node()) or { panic(err) }
+
+	add_document_author_style_sheet(doc, '.item:first-child .target { color: red }')
+	css_style_computer_for(doc)
+	doc.needs_full_style_update = true
+	doc.update_style()
+	assert item.affected_by_structural_pseudo_class_in_non_subject_position
+	item_node.set_entire_subtree_needs_style_update(false)
+
+	lead := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
+	parent_node.insert_before(lead.as_node(), item.as_node(), false)
+	assert item_node.entire_subtree_needs_style_update()
+}
+
 fn test_computed_style_records_attempted_pseudo_class_matches() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	doc.set_browsing_context(&dom.BrowsingContext{})

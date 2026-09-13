@@ -1364,8 +1364,7 @@ fn invalidate_structurally_affected_siblings(node &Node, reason StyleInvalidatio
 					mutable_document.record_previous_sibling_invalidation_walk_visit()
 					if element := current.as_element() {
 						if element.affected_by_backward_structural_changes() {
-							mut mutable_current := unsafe { &Node(current) }
-							mutable_current.set_entire_subtree_needs_style_update(true)
+							mark_sibling_for_style_update(element)
 						}
 					}
 					sibling = current.previous_sibling()
@@ -1393,13 +1392,34 @@ fn invalidate_structurally_affected_siblings(node &Node, reason StyleInvalidatio
 				needs_to_invalidate = true
 			}
 			if needs_to_invalidate {
-				mut mutable_current := unsafe { &Node(current) }
-				mutable_current.set_entire_subtree_needs_style_update(true)
+				mark_sibling_for_style_update(element)
 			}
 			current_sibling_distance++
 		}
 		sibling = current.next_sibling()
 	}
+}
+
+fn mark_descendant_shadow_roots_for_style_update(element &Element) {
+	element.as_node().for_each_shadow_including_inclusive_descendant(fn (inclusive_descendant &Node) TraversalDecision {
+		descendant_element := inclusive_descendant.as_element() or { return .@continue }
+		shadow_root := descendant_element.shadow_root() or { return .@continue }
+		mut shadow_node := unsafe { &Node(shadow_root) }
+		shadow_node.set_entire_subtree_needs_style_update(true)
+		shadow_node.set_needs_style_update(true)
+		return .@continue
+	})
+}
+
+fn mark_sibling_for_style_update(element &Element) {
+	mut node := element.as_node()
+	if element.affected_by_structural_pseudo_class_in_non_subject_position
+		|| element.affected_by_sibling_combinator_in_non_subject_position {
+		node.set_entire_subtree_needs_style_update(true)
+		return
+	}
+	node.set_needs_style_update(true)
+	mark_descendant_shadow_roots_for_style_update(element)
 }
 
 fn mark_ancestors_as_having_child_needing_style_update(node &Node) {
