@@ -85,7 +85,7 @@ pub mut:
 	destination         AudioDestinationNode
 	listener            AudioListener
 	next_id             u64 = 10
-	control_messages    ControlMessageQueue
+	control_messages    &ControlMessageQueue
 	onstatechange_count u32
 	onstatechange       bool
 	media_element_tasks u32
@@ -114,6 +114,7 @@ pub fn verify_audio_options(number_of_channels u32, length u32, sample_rate f32)
 fn make_base_context(id u64, sample_rate f32, destination_channels u32,
 	offline bool) !BaseAudioContext {
 	verify_sample_rate(sample_rate)!
+	mut control_messages := &ControlMessageQueue{}
 	mut graph := &AudioGraphState{
 		sample_rate: sample_rate
 	}
@@ -127,6 +128,7 @@ fn make_base_context(id u64, sample_rate f32, destination_channels u32,
 	}
 	destination.set_channel_count(destination_channels)!
 	destination.channel_count_mode = .explicit
+	graph.control_messages_ = control_messages
 	destination_node := AudioDestinationNode{
 		AudioNode: destination
 		offline: offline
@@ -140,6 +142,7 @@ fn make_base_context(id u64, sample_rate f32, destination_channels u32,
 		destination: destination_node
 		listener: listener
 		next_id: 10
+		control_messages: control_messages
 	}
 }
 

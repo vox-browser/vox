@@ -97,6 +97,7 @@ pub fn (mut source AudioNode) parameter_output_disconnect(parameter AudioParam, 
 
 pub fn (mut node AudioNode) set_channel_count_mode(mode ChannelCountMode) ! {
 	node.channel_count_mode = mode
+	node.queue_channel_config_update()
 }
 
 pub fn (node AudioNode) channel_count_mode() ChannelCountMode {
@@ -105,6 +106,7 @@ pub fn (node AudioNode) channel_count_mode() ChannelCountMode {
 
 pub fn (mut node AudioNode) set_channel_interpretation(value ChannelInterpretation) ! {
 	node.channel_interpretation = value
+	node.queue_channel_config_update()
 }
 
 pub fn (node AudioNode) channel_interpretation() ChannelInterpretation {

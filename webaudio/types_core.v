@@ -110,6 +110,9 @@ pub mut:
 pub fn new_audio_param(id u64, context_id u64, graph &AudioGraphState, default_value f32,
 	min_value f32, max_value f32, rate AutomationRate, fixed bool) AudioParam {
 	timeline := AudioParamTimeline.create(default_value)
+	render_param := RenderAudioParam.create(timeline, min_value, max_value, rate)
+	mut mutable_graph := unsafe { &AudioGraphState(graph) }
+	mutable_graph.render_params_[id] = render_param
 	return AudioParam{
 		id: id
 		context_id: context_id
@@ -121,7 +124,7 @@ pub fn new_audio_param(id u64, context_id u64, graph &AudioGraphState, default_v
 		fixed_rate: fixed
 		graph: graph
 		timeline: timeline
-		render_param_: RenderAudioParam.create(timeline, min_value, max_value, rate)
+		render_param_: render_param
 	}
 }
 
@@ -306,6 +309,9 @@ pub mut:
 	input_connections  map[u64][]AudioNodeConnection
 	output_connections map[u64][]AudioNodeConnection
 	param_connections  map[u64][]AudioParamConnection
+mut:
+	control_messages_ ?&ControlMessageQueue
+	render_params_    map[u64]&RenderAudioParam
 }
 
 pub struct AudioNode {
@@ -341,6 +347,7 @@ pub fn (mut node AudioNode) set_channel_count(count u32) ! {
 		return error('NotSupportedError: Invalid channel count')
 	}
 	node.channel_count = count
+	node.queue_channel_config_update()
 }
 
 pub fn (node AudioNode) channel_count() u32 {
@@ -351,6 +358,62 @@ pub fn (mut node AudioNode) initialize_options(options AudioNodeOptions, default
 	node.set_channel_count(options.channel_count or { default_count })!
 	node.channel_count_mode = options.channel_count_mode or { default_mode }
 	node.channel_interpretation = options.channel_interpretation or { default_interpretation }
+	node.queue_channel_config_update()
+}
+
+fn (node AudioNode) enqueue_control_message(message ControlMessage) {
+	queue := node.graph.control_messages_ or { return }
+	mut mutable_queue := unsafe { &ControlMessageQueue(queue) }
+	mutable_queue.enqueue(message)
+}
+
+pub fn (node AudioNode) queue_render_node_creation(render_node &RenderNode) {
+	node.enqueue_control_message(ControlMessage{
+		kind: .add_node
+		render_node: render_node
+	})
+}
+
+pub fn (node AudioNode) queue_connection_update() {
+	mut node_connections := []OutgoingNodeConnection{cap: node.output_connection_records().len}
+	for connection in node.output_connection_records() {
+		node_connections << OutgoingNodeConnection{
+			destination: connection.destination_id
+			output_index: int(connection.output)
+			input_index: int(connection.input)
+		}
+	}
+	mut param_connections := []OutgoingParamConnection{cap: node.param_connection_records().len}
+	for connection in node.param_connection_records() {
+		parameter := node.graph.render_params_[connection.parameter_id] or { continue }
+		param_connections << OutgoingParamConnection{
+			destination: parameter
+			output_index: int(connection.output)
+		}
+	}
+	node.enqueue_control_message(ControlMessage{
+		kind: .replace_connections
+		node_id: node.id
+		node_connections: node_connections
+		param_connections: param_connections
+	})
+}
+
+pub fn (node AudioNode) queue_channel_config_update() {
+	node.enqueue_control_message(ControlMessage{
+		kind: .set_channel_config
+		node_id: node.id
+		channel_count: int(node.channel_count)
+		channel_count_mode: node.channel_count_mode
+		channel_interpretation: node.channel_interpretation
+	})
+}
+
+pub fn (node AudioNode) queue_render_node_removal() {
+	node.enqueue_control_message(ControlMessage{
+		kind: .remove_node
+		node_id: node.id
+	})
 }
 
 pub fn connect_nodes(mut source AudioNode, mut destination AudioNode, output u32, input u32) ! {
@@ -378,6 +441,7 @@ pub fn connect_nodes(mut source AudioNode, mut destination AudioNode, output u32
 	mut input_connections := destination.input_connection_records()
 	input_connections << connection
 	destination.graph.input_connections[destination.id] = input_connections
+	source.queue_connection_update()
 }
 
 pub fn connect_param(mut source AudioNode, parameter AudioParam, output u32) ! {
@@ -398,6 +462,7 @@ pub fn connect_param(mut source AudioNode, parameter AudioParam, output u32) ! {
 	}
 	param_connections << connection
 	source.graph.param_connections[source.id] = param_connections
+	source.queue_connection_update()
 }
 
 pub fn (mut node AudioNode) disconnect_all() {
@@ -410,6 +475,7 @@ pub fn (mut node AudioNode) disconnect_all() {
 	}
 	node.graph.output_connections[node.id] = []
 	node.graph.param_connections[node.id] = []
+	node.queue_connection_update()
 }
 
 pub fn (mut node AudioNode) disconnect_output(output u32) ! {
@@ -430,6 +496,7 @@ pub fn (mut node AudioNode) disconnect_output(output u32) ! {
 	output_connections = output_connections.filter(it.output != output)
 	node.graph.output_connections[node.id] = output_connections
 	node.graph.param_connections[node.id] = node.param_connection_records().filter(it.output != output)
+	node.queue_connection_update()
 }
 
 pub fn (mut node AudioNode) disconnect_destination(destination_id u64, output ?u32, input ?u32) ! {
@@ -457,6 +524,7 @@ pub fn (mut node AudioNode) disconnect_destination(destination_id u64, output ?u
 		reverse_connections = reverse_connections.filter(!(it.source_id == node.id && it.output == connection.output && it.input == connection.input))
 	}
 	node.graph.input_connections[destination_id] = reverse_connections
+	node.queue_connection_update()
 }
 
 // Faithful two-sided form of the AudioNode destination overload. Callers that
@@ -491,6 +559,7 @@ pub fn (mut node AudioNode) disconnect_parameter(parameter_id u64, output ?u32) 
 		return error('InvalidAccessError: No matching AudioParam connection')
 	}
 	node.graph.param_connections[node.id] = connections
+	node.queue_connection_update()
 }
 
 pub fn (mut node AudioNode) start(when f64) ! {

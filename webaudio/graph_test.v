@@ -59,3 +59,38 @@ fn test_scheduled_source_enforces_one_shot_lifecycle() {
 	}
 	assert false
 }
+
+fn test_audio_node_queues_render_graph_creation_and_configuration() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut node := context.base.allocate_node(.gain, 1, 1, AudioNodeOptions{}, 2, .max, .speakers) or { panic(err) }
+	context.base.control_messages.drain()
+	render_node := RenderNode.create(node.id, 1, 1, int(render_quantum_size), 1)
+	node.queue_render_node_creation(render_node)
+	node.set_channel_count(1) or { panic(err) }
+	messages := context.base.control_messages.drain()
+	assert messages.map(it.kind) == [.add_node, .set_channel_config]
+	assert messages[0].render_node or { panic('missing render node') } == render_node
+	assert messages[1].node_id == node.id
+	assert messages[1].channel_count == 1
+}
+
+fn test_audio_node_queues_render_graph_connection_snapshots() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut source := context.base.create_gain(1, AudioNodeOptions{}) or { panic(err) }
+	mut destination := context.base.create_gain(1, AudioNodeOptions{}) or { panic(err) }
+	context.base.control_messages.drain()
+	connect_nodes(mut source.node, mut destination.node, 0, 0) or { panic(err) }
+	connect_param(mut source.node, destination.gain, 0) or { panic(err) }
+	messages := context.base.control_messages.drain()
+	assert messages.len == 2
+	assert messages[0].kind == .replace_connections
+	assert messages[0].node_connections == [OutgoingNodeConnection{
+		destination: destination.node.id
+	}]
+	assert messages[1].param_connections.len == 1
+	assert messages[1].param_connections[0].destination == destination.gain.render_param()
+	source.node.disconnect_all()
+	disconnect_message := context.base.control_messages.drain()[0]
+	assert disconnect_message.node_connections.len == 0
+	assert disconnect_message.param_connections.len == 0
+}
