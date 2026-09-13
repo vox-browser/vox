@@ -271,6 +271,20 @@ pub fn ClassicScript.create_from_pre_compiled(filename string, source_code strin
 	}
 }
 
+pub fn ClassicScript.create_from_bytecode_cache(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, bytecode_cache []u8, materializer ScriptBytecodeCacheMaterializeHook, muted_errors MutedErrors) &ClassicScript {
+	executable := materializer(bytecode_cache, source_code, filename, 1, .script) or {
+		mut script := ClassicScript.create(filename, source_code, realm, base_url, 1, muted_errors)
+		script.parse_error = err.msg()
+		script.error_to_rethrow = err.msg()
+		return script
+	}
+	return ClassicScript.create_from_pre_compiled(filename, source_code, realm, base_url, CompiledProgram{
+		program_type: .script
+		line_number_offset: 1
+		executable: executable
+	}, muted_errors)
+}
+
 pub fn (mut script ClassicScript) set_evaluator(evaluator ScriptEvaluationHook) {
 	script.evaluator = evaluator
 }
@@ -407,6 +421,19 @@ pub fn JavaScriptModuleScript.create_from_pre_compiled(filename string, source_c
 		compiled_program: compiled
 		requested_modules: parse_module_requests(actual_source)
 	}
+}
+
+pub fn JavaScriptModuleScript.create_from_bytecode_cache(filename string, source_code string, realm &ScriptingRealm, base_url dom.URL, bytecode_cache []u8, materializer ScriptBytecodeCacheMaterializeHook) &JavaScriptModuleScript {
+	executable := materializer(bytecode_cache, source_code, filename, 0, .module) or {
+		mut script := JavaScriptModuleScript.create(filename, source_code, realm, base_url)
+		script.parse_error = err.msg()
+		return script
+	}
+	return JavaScriptModuleScript.create_from_pre_compiled(filename, source_code, realm, base_url, CompiledProgram{
+		program_type: .module
+		line_number_offset: 0
+		executable: executable
+	})
 }
 
 pub fn (mut script JavaScriptModuleScript) set_evaluator(evaluator ScriptEvaluationHook) {

@@ -122,6 +122,7 @@ mut:
 	script_compile_hook_                 ?ScriptCompileHook
 	script_function_compile_hook_        ?ScriptFunctionCompileHook
 	script_bytecode_cache_compile_hook_  ?ScriptBytecodeCacheCompileHook
+	script_bytecode_materialize_hook_    ?ScriptBytecodeCacheMaterializeHook
 	script_bytecode_cache_store_hook_    ?ScriptBytecodeCacheStoreHook
 }
 
@@ -239,6 +240,14 @@ pub fn (mut settings EnvironmentSettingsObject) set_script_bytecode_cache_compil
 
 pub fn (settings &EnvironmentSettingsObject) script_bytecode_cache_compile_hook() ?ScriptBytecodeCacheCompileHook {
 	return settings.script_bytecode_cache_compile_hook_
+}
+
+pub fn (mut settings EnvironmentSettingsObject) set_script_bytecode_cache_materialize_hook(hook ?ScriptBytecodeCacheMaterializeHook) {
+	settings.script_bytecode_materialize_hook_ = hook
+}
+
+pub fn (settings &EnvironmentSettingsObject) script_bytecode_cache_materialize_hook() ?ScriptBytecodeCacheMaterializeHook {
+	return settings.script_bytecode_materialize_hook_
 }
 
 pub fn (mut settings EnvironmentSettingsObject) set_script_bytecode_cache_store_hook(hook ?ScriptBytecodeCacheStoreHook) {

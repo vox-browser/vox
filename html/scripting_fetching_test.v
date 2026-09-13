@@ -26,6 +26,11 @@ __global (
 	scripting_fetching_cache_types      []ScriptProgramType
 	scripting_fetching_cache_urls       []string
 	scripting_fetching_cache_methods    []string
+	scripting_fetching_cache_vary_keys  []u64
+	scripting_fetching_cached_responses map[string][]u8
+	scripting_fetching_materialized     [][]u8
+	scripting_fetching_material_types   []ScriptProgramType
+	scripting_fetching_compile_count    int
 )
 
 struct ScriptingFetchingFixture {
@@ -74,6 +79,16 @@ fn scripting_fetching_host(request &fetch.Request, is_top_level TopLevelModule) 
 		"import './dep.js'\nexport const root = true".bytes()
 	} else if url.serialize().ends_with('/dep.js') {
 		'export const dependency = true'.bytes()
+	} else if url.serialize().ends_with('/warm-classic.js') {
+		'const warm = true'.bytes()
+	} else if url.serialize().ends_with('/corrupt-classic.js') {
+		'const corrupt = true'.bytes()
+	} else if url.serialize().ends_with('/stale-classic.js') {
+		'const stale = true'.bytes()
+	} else if url.serialize().ends_with('/warm-module.js') {
+		'export const warm = true'.bytes()
+	} else if url.serialize().ends_with('/rejected-filtered-module.js') {
+		'export const rejected = true'.bytes()
 	} else if url.serialize().ends_with('/bad.js') {
 		content_type = 'text/plain'
 		'not javascript'.bytes()
@@ -85,6 +100,18 @@ fn scripting_fetching_host(request &fetch.Request, is_top_level TopLevelModule) 
 		name: 'Content-Type'
 		value: content_type
 	})
+	response.set_javascript_bytecode_cache_vary_key(u64(73))
+	if cached := scripting_fetching_cached_responses[url.serialize()] {
+		response.set_javascript_bytecode_cache(cached)
+	}
+	if url.serialize().ends_with('/warm-module.js')
+		|| url.serialize().ends_with('/rejected-filtered-module.js') {
+		mut filtered := fetch.Response.create_cors_filtered_response(response)
+		if url.serialize().ends_with('/rejected-filtered-module.js') {
+			filtered.status = 500
+		}
+		return filtered
+	}
 	return response
 }
 
@@ -104,6 +131,7 @@ fn scripting_fetching_parser(source string, filename string, line usize) ! {
 }
 
 fn scripting_fetching_compiler(source string, filename string, line usize, program_type ScriptProgramType) !&ScriptExecutable {
+	scripting_fetching_compile_count++
 	scripting_fetching_parser(source, filename, line)!
 	mut shared_function_data := []&SharedFunctionInstanceData{}
 	if source == 'é' {
@@ -140,10 +168,20 @@ fn scripting_fetching_bytecode_cache_compiler(source string, filename string, pr
 	return '${filename}:${line_number_offset}:${source}'.bytes()
 }
 
-fn scripting_fetching_bytecode_cache_store(url dom.URL, method string, _ &http.HeaderList, blob []u8) ! {
+fn scripting_fetching_bytecode_cache_materializer(bytecode []u8, _ string, _ string, _ usize, program_type ScriptProgramType) !&ScriptExecutable {
+	scripting_fetching_materialized << bytecode.clone()
+	scripting_fetching_material_types << program_type
+	if bytecode == [u8(0xff)] {
+		return error('cached bytecode is corrupt')
+	}
+	return &ScriptExecutable{}
+}
+
+fn scripting_fetching_bytecode_cache_store(url dom.URL, method string, _ &http.HeaderList, vary_key u64, blob []u8) ! {
 	scripting_fetching_cache_events << 'store-cache'
 	scripting_fetching_cache_urls << url.serialize()
 	scripting_fetching_cache_methods << method
+	scripting_fetching_cache_vary_keys << vary_key
 	scripting_fetching_cache_blobs << blob.clone()
 }
 
@@ -265,6 +303,88 @@ fn test_bytecode_cache_blob_is_bound_to_source_and_program_type() {
 	assert decode_bytecode_cache_blob([u8(1), 2, 3], .script, source) == none
 }
 
+fn test_cached_bytecode_materialization_and_source_compile_fallbacks() {
+	fixture := scripting_fetching_fixture()!
+	mut settings := fixture.settings
+	settings.set_script_compile_hook(scripting_fetching_compiler)
+	settings.set_script_bytecode_cache_materialize_hook(scripting_fetching_bytecode_cache_materializer)
+	scripting_fetching_cached_responses = map[string][]u8{}
+	scripting_fetching_materialized = []
+	scripting_fetching_material_types = []
+	scripting_fetching_compile_count = 0
+	element := HTMLScriptElementModel.create(dom.URL{ value: 'https://example.test/app/' })
+	warm_url := dom.URL{ value: 'https://example.test/app/warm-classic.js' }
+	scripting_fetching_cached_responses[warm_url.serialize()] = serialize_compiled_program_for_bytecode_cache([
+		u8(0x2a),
+	], .script, 'const warm = true')
+	fetch_classic_script(element, warm_url, fixture.settings, default_script_fetch_options(), .anonymous, 'utf-8', scripting_fetching_complete)
+	warm := unsafe { &ClassicScript(scripting_fetching_completed_script) }
+	assert warm.compiled_program?.program_type == .script
+	assert scripting_fetching_materialized == [[u8(0x2a)]]
+	assert scripting_fetching_material_types == [.script]
+	assert scripting_fetching_compile_count == 0
+
+	corrupt_url := dom.URL{ value: 'https://example.test/app/corrupt-classic.js' }
+	scripting_fetching_cached_responses[corrupt_url.serialize()] = serialize_compiled_program_for_bytecode_cache([
+		u8(0xff),
+	], .script, 'const corrupt = true')
+	scripting_fetching_materialized = []
+	scripting_fetching_compile_count = 0
+	fetch_classic_script(element, corrupt_url, fixture.settings, default_script_fetch_options(), .anonymous, 'utf-8', scripting_fetching_complete)
+	corrupt_fallback := unsafe { &ClassicScript(scripting_fetching_completed_script) }
+	assert corrupt_fallback.parse_error == none
+	assert corrupt_fallback.compiled_program?.program_type == .script
+	assert scripting_fetching_materialized == [[u8(0xff)]]
+	assert scripting_fetching_compile_count == 1
+
+	stale_url := dom.URL{ value: 'https://example.test/app/stale-classic.js' }
+	scripting_fetching_cached_responses[stale_url.serialize()] = serialize_compiled_program_for_bytecode_cache([
+		u8(0x33),
+	], .script, 'different source')
+	scripting_fetching_materialized = []
+	scripting_fetching_compile_count = 0
+	fetch_classic_script(element, stale_url, fixture.settings, default_script_fetch_options(), .anonymous, 'utf-8', scripting_fetching_complete)
+	stale_fallback := unsafe { &ClassicScript(scripting_fetching_completed_script) }
+	assert stale_fallback.compiled_program?.program_type == .script
+	assert scripting_fetching_materialized.len == 0
+	assert scripting_fetching_compile_count == 1
+	scripting_fetching_cached_responses = map[string][]u8{}
+}
+
+fn test_module_uses_internal_response_bytecode_without_unfiltering_response_checks() {
+	fixture := scripting_fetching_fixture()!
+	mut settings := fixture.settings
+	settings.set_script_compile_hook(scripting_fetching_compiler)
+	settings.set_script_bytecode_cache_materialize_hook(scripting_fetching_bytecode_cache_materializer)
+	warm_url := dom.URL{ value: 'https://example.test/app/warm-module.js' }
+	scripting_fetching_cached_responses = {
+		warm_url.serialize(): serialize_compiled_program_for_bytecode_cache([u8(0x44)], .module, 'export const warm = true')
+	}
+	scripting_fetching_materialized = []
+	scripting_fetching_material_types = []
+	scripting_fetching_compile_count = 0
+	scripting_fetching_completed_script = unsafe { &Script(nil) }
+	fetch_external_module_script_graph(fixture.realm, warm_url, fixture.settings, default_script_fetch_options(), scripting_fetching_complete)
+	assert scripting_fetching_completed_script != unsafe { nil }
+	warm := unsafe { &JavaScriptModuleScript(scripting_fetching_completed_script) }
+	assert warm.is_linked()
+	assert warm.compiled_program?.program_type == .module
+	assert scripting_fetching_materialized == [[u8(0x44)]]
+	assert scripting_fetching_material_types == [.module]
+	assert scripting_fetching_compile_count == 0
+
+	rejected_url := dom.URL{ value: 'https://example.test/app/rejected-filtered-module.js' }
+	scripting_fetching_cached_responses[rejected_url.serialize()] = serialize_compiled_program_for_bytecode_cache([
+		u8(0x55),
+	], .module, 'export const rejected = true')
+	scripting_fetching_materialized = []
+	scripting_fetching_completed_script = unsafe { &Script(nil) }
+	fetch_external_module_script_graph(fixture.realm, rejected_url, fixture.settings, default_script_fetch_options(), scripting_fetching_complete)
+	assert scripting_fetching_completed_script == unsafe { nil }
+	assert scripting_fetching_materialized.len == 0
+	scripting_fetching_cached_responses = map[string][]u8{}
+}
+
 fn test_descendant_options_resolve_import_map_integrity() {
 	fixture := scripting_fetching_fixture()!
 	module_url := dom.URL{ value: 'https://example.test/app/dep.js' }
@@ -301,6 +421,8 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	scripting_fetching_cache_types = []
 	scripting_fetching_cache_urls = []
 	scripting_fetching_cache_methods = []
+	scripting_fetching_cache_vary_keys = []
+	scripting_fetching_cached_responses = map[string][]u8{}
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	scripting_fetching_request_urls = []
 	options := ScriptFetchOptions{
@@ -318,6 +440,7 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	assert scripting_fetching_cache_types == [.script]
 	assert scripting_fetching_cache_urls == ['https://example.test/app/classic.js']
 	assert scripting_fetching_cache_methods == ['GET']
+	assert scripting_fetching_cache_vary_keys == [u64(73)]
 	assert decode_bytecode_cache_blob(scripting_fetching_cache_blobs[0], .script, 'é')? == 'https://example.test/app/classic.js:1:é'.bytes()
 	assert scripting_fetching_last_destination == .script
 	assert scripting_fetching_last_nonce == 'classic-nonce'
@@ -367,6 +490,8 @@ fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	scripting_fetching_cache_types = []
 	scripting_fetching_cache_urls = []
 	scripting_fetching_cache_methods = []
+	scripting_fetching_cache_vary_keys = []
+	scripting_fetching_cached_responses = map[string][]u8{}
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	scripting_fetching_request_urls = []
 	fetch_external_module_script_graph(fixture.realm, dom.URL{
