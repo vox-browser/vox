@@ -122,7 +122,7 @@ pub fn (query &ContainerQuery) evaluate(element dom.AbstractElement, container_n
 		return .unknown
 	}
 
-	mut candidate := element.element().as_node().flat_tree_parent_element()
+	mut candidate := element.flat_tree_parent_element()
 	for candidate != none {
 		container := candidate or { break }
 		if container_name_matches(container, container_name)
@@ -151,7 +151,7 @@ pub fn (query &ContainerQuery) evaluate(element dom.AbstractElement, container_n
 }
 
 fn has_ancestor_container_with_name(element dom.AbstractElement, container_name string) bool {
-	mut candidate := element.element().as_node().flat_tree_parent_element()
+	mut candidate := element.flat_tree_parent_element()
 	for candidate != none {
 		container := candidate or { break }
 		if container_name_matches(container, container_name) {

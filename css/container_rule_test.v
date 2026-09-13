@@ -307,6 +307,21 @@ fn test_style_container_features_evaluate_selected_ancestor_style() {
 		none) == .false_
 }
 
+fn test_pseudo_element_queries_include_the_originating_element_as_an_ancestor_container() {
+	_, container, _ := size_query_test_tree('container-name: --target; --state: target',
+		0, 0, false)
+	pseudo_element := dom.AbstractElement.new(container, .before)
+	query_parent := pseudo_element.flat_tree_parent_element() or { panic('missing query parent') }
+	assert query_parent == container
+	assert parsed_single_container_query('style(--state: target)').evaluate(pseudo_element,
+		none) == .true_
+
+	rule := parse_css_rule_with_params(ParsingParams{}, '@container --target {}') or {
+		panic('named container rule did not parse')
+	}
+	assert rule.container_conditions_match(pseudo_element)
+}
+
 fn test_style_container_query_dependents_recompute_when_container_style_changes() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	document.set_browsing_context(&dom.BrowsingContext{

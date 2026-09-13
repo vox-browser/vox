@@ -4281,6 +4281,13 @@ pub fn (abstract_element &AbstractElement) parent_element() ?&Element {
 	return abstract_element.element_.as_node().parent_element()
 }
 
+pub fn (abstract_element &AbstractElement) flat_tree_parent_element() ?&Element {
+	if abstract_element.pseudo_element_ != none {
+		return abstract_element.element_
+	}
+	return abstract_element.element_.as_node().flat_tree_parent_element()
+}
+
 pub fn (abstract_element &AbstractElement) element_to_inherit_style_from() ?AbstractElement {
 	if override := abstract_element.inheritance_override {
 		return AbstractElement.new(override, none)
