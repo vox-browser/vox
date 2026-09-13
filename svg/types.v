@@ -291,22 +291,93 @@ pub enum LengthUnit {
 	inches
 	pt
 	pc
+	// CSS length units which do not have dedicated SVGLength unitType values.
+	// They are retained so valueAsString and value conversion can still follow
+	// the current upstream SVGLength implementation.
+	q
+	cap
+	ch
+	cqb
+	cqh
+	cqi
+	cqmax
+	cqmin
+	cqw
+	dvb
+	dvh
+	dvi
+	dvmax
+	dvmin
+	dvw
+	ic
+	lh
+	lvb
+	lvh
+	lvi
+	lvmax
+	lvmin
+	lvw
+	rcap
+	rch
+	rem
+	rex
+	ric
+	rlh
+	svb
+	svh
+	svi
+	svmax
+	svmin
+	svw
+	vb
+	vh
+	vi
+	vmax
+	vmin
+	vw
+}
+
+pub enum SvgLengthDirectionality {
+	horizontal
+	vertical
+	unspecified
+}
+
+pub enum SvgLengthSource {
+	detached
+	reflected_attribute
+}
+
+pub struct SvgLengthResolutionContext {
+pub:
+	has_associated_element bool
+	viewport_width         f64 = 100
+	viewport_height        f64 = 100
+	container_width        f64
+	container_height       f64
+	font_size              f64 = 16
+	root_font_size         f64 = 16
+	x_height               f64 = 8
+	zero_advance           f64 = 8
+	line_height            f64 = 19.2
+	root_x_height          f64 = 8
+	root_zero_advance      f64 = 8
+	root_line_height       f64 = 19.2
 }
 
 pub struct SvgLength {
 pub mut:
-	value f64
-	unit  LengthUnit
+	value                f64
+	unit                 LengthUnit
+	non_scalar_value     string
+	reflected_attributes map[string]string
+	resolution_context   SvgLengthResolutionContext
 pub:
-	read_only bool
-}
-
-pub fn (mut length SvgLength) set_value(value f64) ! {
-	if length.read_only {
-		return error('Cannot modify value of read-only SVGLength')
-	}
-	length.value = value
-	length.unit = .number
+	read_only      bool
+	source         SvgLengthSource
+	reflected_name string
+	default_value  SvgLengthValue = SvgLengthValue.number(0)
+	directionality SvgLengthDirectionality
 }
 
 pub struct SvgNumber {

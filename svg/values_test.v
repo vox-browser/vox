@@ -21,7 +21,9 @@ fn test_number_and_length_read_only_rules() {
 	}
 	length.set_value(5)!
 	assert length.value == 5
-	assert length.unit == .number
+	// Current Ladybird preserves a scalar SVGLength's existing unit when the
+	// absolute `value` property is assigned.
+	assert length.unit == .px
 	animated := AnimatedLength.create(SvgLength{ value: 8, unit: .px })
 	assert animated.base_val() != animated.anim_val()
 	assert animated.anim_val().read_only

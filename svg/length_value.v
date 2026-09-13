@@ -65,5 +65,46 @@ fn length_unit_name(unit LengthUnit) string {
 		.inches { 'in' }
 		.pt { 'pt' }
 		.pc { 'pc' }
+		.q { 'Q' }
+		.cap { 'cap' }
+		.ch { 'ch' }
+		.cqb { 'cqb' }
+		.cqh { 'cqh' }
+		.cqi { 'cqi' }
+		.cqmax { 'cqmax' }
+		.cqmin { 'cqmin' }
+		.cqw { 'cqw' }
+		.dvb { 'dvb' }
+		.dvh { 'dvh' }
+		.dvi { 'dvi' }
+		.dvmax { 'dvmax' }
+		.dvmin { 'dvmin' }
+		.dvw { 'dvw' }
+		.ic { 'ic' }
+		.lh { 'lh' }
+		.lvb { 'lvb' }
+		.lvh { 'lvh' }
+		.lvi { 'lvi' }
+		.lvmax { 'lvmax' }
+		.lvmin { 'lvmin' }
+		.lvw { 'lvw' }
+		.rcap { 'rcap' }
+		.rch { 'rch' }
+		.rem { 'rem' }
+		.rex { 'rex' }
+		.ric { 'ric' }
+		.rlh { 'rlh' }
+		.svb { 'svb' }
+		.svh { 'svh' }
+		.svi { 'svi' }
+		.svmax { 'svmax' }
+		.svmin { 'svmin' }
+		.svw { 'svw' }
+		.vb { 'vb' }
+		.vh { 'vh' }
+		.vi { 'vi' }
+		.vmax { 'vmax' }
+		.vmin { 'vmin' }
+		.vw { 'vw' }
 	}
 }

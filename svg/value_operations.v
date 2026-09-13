@@ -35,10 +35,6 @@ pub fn (length &SvgLength) read_only() bool {
 	return length.read_only
 }
 
-pub fn (length &SvgLength) unit_type() LengthUnit {
-	return length.unit
-}
-
 pub fn SvgNumber.create(value f64, read_only bool) SvgNumber {
 	return SvgNumber{
 		value: value
@@ -125,12 +121,26 @@ pub fn AnimatedLength.create(value SvgLength) AnimatedLength {
 	base_value := &SvgLength{
 		value: value.value
 		unit: value.unit
+		non_scalar_value: value.non_scalar_value
+		reflected_attributes: value.reflected_attributes
+		resolution_context: value.resolution_context
 		read_only: value.read_only
+		source: value.source
+		reflected_name: value.reflected_name
+		default_value: value.default_value
+		directionality: value.directionality
 	}
 	anim_value := &SvgLength{
 		value: value.value
 		unit: value.unit
+		non_scalar_value: value.non_scalar_value
+		reflected_attributes: value.reflected_attributes
+		resolution_context: value.resolution_context
 		read_only: true
+		source: value.source
+		reflected_name: value.reflected_name
+		default_value: value.default_value
+		directionality: value.directionality
 	}
 	return AnimatedLength{ base_value: base_value, anim_value: anim_value }
 }
