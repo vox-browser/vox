@@ -56,6 +56,20 @@ fn test_track_buffer_dispatches_scan_state_changes() {
 	assert !demuxer.scan_state().tracks[0].reached_end_of_stream
 }
 
+fn test_track_buffer_exposes_its_single_streaming_track() {
+	demuxer := scan_state_test_demuxer()
+	demuxer.create_context_for_track(demuxer.track)!
+
+	video_tracks := demuxer.get_tracks_for_type(.video)
+	assert video_tracks.len == 1
+	assert video_tracks[0].number == 7
+	assert demuxer.get_tracks_for_type(.audio).len == 0
+	assert demuxer.get_preferred_track_for_type(.video)?.number == 7
+	assert demuxer.get_preferred_track_for_type(.audio) == none
+	assert demuxer.duration_of_track(demuxer.track) == 0
+	assert demuxer.total_duration() == 0
+}
+
 fn test_track_buffer_reports_blocked_and_unblocked_reads() {
 	track_buffer_read_blocked_changes = []TrackBufferReadBlocked{}
 	mut demuxer := scan_state_test_demuxer()

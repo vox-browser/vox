@@ -122,6 +122,31 @@ pub fn (demuxer &TrackBufferDemuxer) coded_frames() []DemuxedCodedFrame {
 	return frames
 }
 
+pub fn (demuxer &TrackBufferDemuxer) create_context_for_track(_ WebMTrackInfo) ! {
+}
+
+pub fn (demuxer &TrackBufferDemuxer) get_tracks_for_type(type_ MediaSourceTrackType) []WebMTrackInfo {
+	if demuxer.track.type_ == type_ {
+		return [demuxer.track]
+	}
+	return []
+}
+
+pub fn (demuxer &TrackBufferDemuxer) get_preferred_track_for_type(type_ MediaSourceTrackType) ?WebMTrackInfo {
+	if demuxer.track.type_ == type_ {
+		return demuxer.track
+	}
+	return none
+}
+
+pub fn (demuxer &TrackBufferDemuxer) duration_of_track(_ WebMTrackInfo) f64 {
+	return 0
+}
+
+pub fn (demuxer &TrackBufferDemuxer) total_duration() f64 {
+	return 0
+}
+
 fn (mut demuxer TrackBufferDemuxer) dispatch_scan_state_change() {
 	demuxer.scan_state_ = TrackBufferScanState{
 		tracks: [TrackBufferTrackScanState{
