@@ -40,6 +40,7 @@ pub struct SelectorInsights {
 pub mut:
 	has_has_selectors                                                    bool
 	has_has_selectors_with_relative_selector_that_has_sibling_combinator bool
+	has_local_link_selectors                                             bool
 }
 
 pub fn StyleInvalidationData.new() &StyleInvalidationData {
@@ -848,6 +849,9 @@ pub fn StyleScope.collect_selector_insights(selector Selector, mut insights Sele
 	for compound_selector in selector.compound_selectors() {
 		for simple_selector in compound_selector.simple_selectors {
 			if simple_selector.type_ == .pseudo_class {
+				if simple_selector.pseudo_class.type_ == .local_link {
+					insights.has_local_link_selectors = true
+				}
 				if simple_selector.pseudo_class.type_ == .has {
 					insights.has_has_selectors = true
 					for argument_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
@@ -978,6 +982,12 @@ pub fn (scope &StyleScope) have_has_selectors() bool {
 	scope.build_rule_cache_if_needed()
 	insights := scope.selector_insights or { return false }
 	return insights.has_has_selectors
+}
+
+pub fn (scope &StyleScope) have_local_link_selectors() bool {
+	scope.build_rule_cache_if_needed()
+	insights := scope.selector_insights or { return false }
+	return insights.has_local_link_selectors
 }
 
 pub fn (scope &StyleScope) may_have_has_selectors_with_relative_selector_that_has_sibling_combinator() bool {

@@ -4866,6 +4866,14 @@ pub fn (ss &StyleScope) may_have_has_selectors_with_relative_selector_that_has_s
 	return true
 }
 
+pub fn (ss &StyleScope) have_local_link_selectors() bool {
+	if ss.have_local_link_selectors_callback != unsafe { nil }
+		&& ss.css_handle != unsafe { nil } {
+		return ss.have_local_link_selectors_callback(ss.css_handle)
+	}
+	return false
+}
+
 pub fn (ss &StyleScope) subtree_may_affect_has_selectors(node &Node) bool {
 	if ss.subtree_may_affect_has_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
 		return ss.subtree_may_affect_has_callback(ss.css_handle, node)

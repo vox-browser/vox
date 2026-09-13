@@ -279,6 +279,11 @@ fn style_scope_may_have_sibling_has_selectors_callback(target voidptr) bool {
 	return scope.may_have_has_selectors_with_relative_selector_that_has_sibling_combinator()
 }
 
+fn style_scope_have_local_link_selectors_callback(target voidptr) bool {
+	scope := unsafe { &StyleScope(target) }
+	return scope.have_local_link_selectors()
+}
+
 fn element_has_feature_used_in_has_selector(element &dom.Element, data &StyleInvalidationData) bool {
 	if data.tag_names_used_in_has_selectors[element.local_name()]
 		|| ((element.namespace_uri() or { '' }) != 'http://www.w3.org/1999/xhtml'
@@ -1124,6 +1129,7 @@ fn css_style_scope_from_dom(mut dom_scope dom.StyleScope, node &dom.Node) &Style
 	dom_scope.css_handle = voidptr(scope)
 	dom_scope.may_have_has_selectors_callback = style_scope_may_have_has_selectors_callback
 	dom_scope.may_have_sibling_has_callback = style_scope_may_have_sibling_has_selectors_callback
+	dom_scope.have_local_link_selectors_callback = style_scope_have_local_link_selectors_callback
 	dom_scope.subtree_may_affect_has_callback = style_scope_subtree_may_affect_has_callback
 	dom_scope.pending_has_covers_child_list = style_scope_pending_has_invalidation_covers_child_list_callback
 	dom_scope.has_featureless_sensitive_callback = style_scope_has_featureless_sensitive_has_selectors_callback

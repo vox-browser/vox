@@ -1623,6 +1623,8 @@ pub type StyleScopeMayHaveHasSelectorsCallback = fn (voidptr) bool
 
 pub type StyleScopeMayHaveSiblingHasSelectorsCallback = fn (voidptr) bool
 
+pub type StyleScopeHaveLocalLinkSelectorsCallback = fn (voidptr) bool
+
 pub type StyleScopeSubtreeMayAffectHasCallback = fn (voidptr, &Node) bool
 
 pub type StyleScopePendingHasInvalidationCoversChildListCallback = fn (voidptr, &Node) bool
@@ -1864,6 +1866,7 @@ pub mut:
 	css_handle                         voidptr = unsafe { nil }
 	may_have_has_selectors_callback    StyleScopeMayHaveHasSelectorsCallback = unsafe { nil }
 	may_have_sibling_has_callback      StyleScopeMayHaveSiblingHasSelectorsCallback = unsafe { nil }
+	have_local_link_selectors_callback StyleScopeHaveLocalLinkSelectorsCallback = unsafe { nil }
 	subtree_may_affect_has_callback    StyleScopeSubtreeMayAffectHasCallback = unsafe { nil }
 	pending_has_covers_child_list      StyleScopePendingHasInvalidationCoversChildListCallback = unsafe { nil }
 	has_featureless_sensitive_callback StyleScopeHasFeaturelessSensitiveHasSelectorsCallback = unsafe { nil }
@@ -5043,6 +5046,25 @@ fn local_link_target_matches_document(target_url ?URL, document_url URL) bool {
 
 // https://html.spec.whatwg.org/multipage/urls-and-fetching.html#respond-to-base-url-changes
 pub fn (mut d Document) respond_to_base_url_changes(old_document_url URL, old_base_url URL) {
+	// Until visited-link tracking exists, only :local-link can change when the
+	// document/base URL changes. Avoid even walking links when no active style
+	// scope observes that pseudo-class.
+	mut any_scope_has_local_link := d.style_scope().have_local_link_selectors()
+	if !any_scope_has_local_link {
+		search_result := d.for_each_shadow_including_descendant(fn (node &Node) TraversalDecision {
+			element := node.as_element() or { return .@continue }
+			shadow_root := element.shadow_root() or { return .@continue }
+			if shadow_root.style_scope().have_local_link_selectors() {
+				return .@break
+			}
+			return .@continue
+		})
+		any_scope_has_local_link = search_result == .@break
+	}
+	if !any_scope_has_local_link {
+		return
+	}
+
 	new_document_url := d.url
 	new_base_url := d.base_url()
 	base_url_unchanged := old_base_url == new_base_url

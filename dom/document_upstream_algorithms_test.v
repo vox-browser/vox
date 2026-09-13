@@ -74,6 +74,10 @@ fn test_respond_to_base_url_changes_only_invalidates_links_whose_local_state_fli
 			}
 		}
 	}
+	document.style_scope_.css_handle = voidptr(document)
+	document.style_scope_.have_local_link_selectors_callback = fn (_ voidptr) bool {
+		return true
+	}
 	mut local := document.create_element_ns(namespace_html_uri, 'a') or { panic(err) }
 	local.set_attribute_value('href', '#target')
 	mut unrelated := document.create_element_ns(namespace_html_uri, 'a') or { panic(err) }
@@ -104,6 +108,69 @@ fn test_respond_to_base_url_changes_only_invalidates_links_whose_local_state_fli
 	assert local.needs_style_update()
 	assert !unrelated.needs_style_update()
 	assert !document.needs_full_style_update()
+}
+
+fn test_respond_to_base_url_changes_skips_documents_without_local_link_selectors() {
+	mut document := Document.create(URL{ value: 'https://example.test/page#old' })
+	document.style_computer = &StyleComputer{
+		css_handle: voidptr(document)
+		invalidation_plan_callback: fn (_ voidptr, properties []InvalidationProperty, _ &StyleScope) InvalidationPlan {
+			return InvalidationPlan{
+				invalidate_self: properties.any(it.type_ == .pseudo_class
+					&& it.pseudo_class_name == 'local-link')
+			}
+		}
+	}
+	mut local := document.create_element_ns(namespace_html_uri, 'a') or { panic(err) }
+	local.set_attribute_value('href', '#target')
+	mut root := document.create_element_ns(namespace_html_uri, 'html') or { panic(err) }
+	mut document_node := unsafe { &Node(document) }
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := unsafe { &Node(root.as_node()) }
+	root_node.append_child(local.as_node()) or { panic(err) }
+	mut local_node := unsafe { &Node(local.as_node()) }
+	local_node.set_needs_style_update(false)
+	local_node.set_entire_subtree_needs_style_update(false)
+
+	document.set_url(URL{ value: 'https://example.test/page#target' })
+
+	assert !local.needs_style_update()
+}
+
+fn test_respond_to_base_url_changes_observes_local_link_selectors_in_shadow_scopes() {
+	mut document := Document.create(URL{ value: 'https://example.test/page#old' })
+	document.style_computer = &StyleComputer{
+		css_handle: voidptr(document)
+		invalidation_plan_callback: fn (_ voidptr, properties []InvalidationProperty, _ &StyleScope) InvalidationPlan {
+			return InvalidationPlan{
+				invalidate_self: properties.any(it.type_ == .pseudo_class
+					&& it.pseudo_class_name == 'local-link')
+			}
+		}
+	}
+	mut root := document.create_element_ns(namespace_html_uri, 'html') or { panic(err) }
+	mut host := document.create_element_ns(namespace_html_uri, 'div') or { panic(err) }
+	mut document_node := unsafe { &Node(document) }
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := unsafe { &Node(root.as_node()) }
+	root_node.append_child(host.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut mutable_shadow_root := unsafe { &ShadowRoot(shadow_root) }
+	mutable_shadow_root.style_scope_.css_handle = voidptr(document)
+	mutable_shadow_root.style_scope_.have_local_link_selectors_callback = fn (_ voidptr) bool {
+		return true
+	}
+	mut local := document.create_element_ns(namespace_html_uri, 'a') or { panic(err) }
+	local.set_attribute_value('href', '#target')
+	mut shadow_node := unsafe { &Node(shadow_root) }
+	shadow_node.append_child(local.as_node()) or { panic(err) }
+	mut local_node := unsafe { &Node(local.as_node()) }
+	local_node.set_needs_style_update(false)
+	local_node.set_entire_subtree_needs_style_update(false)
+
+	document.set_url(URL{ value: 'https://example.test/page#target' })
+
+	assert local.needs_style_update()
 }
 
 struct ViewTransitionCallbackObservation {

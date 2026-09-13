@@ -38,6 +38,13 @@ fn test_scope_boundary_selectors_contribute_selector_insights() {
 	assert data.class_names_used_in_has_selectors['flag']
 }
 
+fn test_local_link_selectors_contribute_selector_insights() {
+	local_scope := build_scope_invalidation_cache(':is(a:local-link) { color: green }')
+	assert local_scope.have_local_link_selectors()
+	ordinary_scope := build_scope_invalidation_cache('a:hover { color: blue }')
+	assert !ordinary_scope.have_local_link_selectors()
+}
+
 fn test_slotted_argument_contributes_selector_insights() {
 	scope := build_scope_invalidation_cache('::slotted(.item:has(.flag)) { color: red }')
 	insights := scope.selector_insights or { panic('missing selector insights') }
