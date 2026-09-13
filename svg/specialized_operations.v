@@ -523,6 +523,11 @@ pub fn (_ &SvgViewport) get_enclosure_list(_ Rect, _ []Element) []Element {
 	return []
 }
 
+// https://w3c.github.io/svgwg/svg2-draft/struct.html#__svg__SVGSVGElement__createSVGNumber
+pub fn (_ &SvgViewport) create_svg_number() SvgNumber {
+	return SvgNumber.create(0, false)
+}
+
 pub fn (_ &SvgViewport) create_svg_length() SvgLength {
 	return SvgLength.create(0, .number, false)
 }

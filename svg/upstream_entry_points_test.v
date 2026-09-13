@@ -109,6 +109,13 @@ fn test_upstream_root_viewport_page_client_and_decoded_image() {
 	assert metrics.aspect_ratio? == 4.0 / 3.0
 	assert !viewport.check_intersection(Rect{ width: 10, height: 10 }, Rect{ x: 5, y: 5, width: 10, height: 10 })
 	assert viewport.create_svg_transform().type_() == .unknown
+	mut first_number := viewport.create_svg_number()
+	second_number := viewport.create_svg_number()
+	assert first_number.value == 0
+	first_number.set_value(12.5)!
+	assert first_number.value == 12.5
+	assert second_number.value == 0
+	assert !first_number.read_only()
 
 	mut client := SVGPageClient.create(7, true)
 	assert client.is_svg_page_client()
