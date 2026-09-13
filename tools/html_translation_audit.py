@@ -3070,6 +3070,15 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    # SVGLength keeps the reflected attribute's viewport/font context in its
+    # portable value object. The C++ free helpers become the context builder
+    # and the percentage-basis method that consume that retained state.
+    ("SVGLength.cpp", "percentage_resolution_basis_for_attribute_reflecting_length"): (
+        "percentage_resolution_basis",
+    ),
+    ("SVGLength.cpp", "length_resolution_context_for_element"): (
+        "svg_length_context_from_element",
+    ),
     # V checks the name/element restrictions while collecting the live SVG
     # attribute set, so it needs neither a pointer lookup table nor a separate
     # property-id probe.

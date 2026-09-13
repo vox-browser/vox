@@ -213,6 +213,20 @@ class ConsolidatedFunctionTests(unittest.TestCase):
                 ("collect_svg_presentational_hints",),
             )
 
+    def test_svg_length_context_helpers_map_to_retained_resolution_state(self) -> None:
+        self.assertEqual(
+            audit.CONSOLIDATED_FUNCTION_MAPPINGS[
+                ("SVGLength.cpp", "percentage_resolution_basis_for_attribute_reflecting_length")
+            ],
+            ("percentage_resolution_basis",),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_FUNCTION_MAPPINGS[
+                ("SVGLength.cpp", "length_resolution_context_for_element")
+            ],
+            ("svg_length_context_from_element",),
+        )
+
     def test_animation_overlay_adapter_maps_to_the_css_update_callback(self) -> None:
         self.assertEqual(
             audit.CONSOLIDATED_FUNCTION_MAPPINGS[
