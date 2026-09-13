@@ -65,10 +65,24 @@ pub:
 
 pub type OffThreadParseComplete = fn (ParsedProgram, string)
 
+@[heap]
+pub struct SharedFunctionInstanceData {
+pub mut:
+	executable        ?&ScriptExecutable
+	rust_function_ast ?string
+}
+
+@[heap]
+pub struct ScriptExecutable {
+pub mut:
+	shared_function_data []&SharedFunctionInstanceData
+}
+
 pub struct CompiledProgram {
 pub:
 	program_type       ScriptProgramType
 	line_number_offset usize
+	executable         ?&ScriptExecutable
 }
 
 pub struct OffThreadCompiledProgram {
@@ -78,6 +92,13 @@ pub:
 }
 
 pub type OffThreadCompileComplete = fn (OffThreadCompiledProgram, string)
+
+// Runtime-neutral boundaries for LibJS top-level and lazy-function bytecode
+// compilation. ScriptExecutable preserves the ownership graph needed to install
+// completed lazy functions on the main event loop.
+pub type ScriptCompileHook = fn (string, string, usize, ScriptProgramType) !&ScriptExecutable
+
+pub type ScriptFunctionCompileHook = fn (string, usize) !&ScriptExecutable
 
 // V's runtime-neutral parser is a host hook. Invoke it outside the script
 // execution context, then deliver completion and drain queued microtasks just
@@ -93,8 +114,8 @@ pub fn parse_off_thread(source_code string, program_type ScriptProgramType, line
 	perform_a_microtask_checkpoint()
 }
 
-fn compile_source_off_thread(source_code string, program_type ScriptProgramType, line_number_offset usize, compiler ScriptParseHook) OffThreadCompiledProgram {
-	compiler(source_code, '', line_number_offset) or {
+fn compile_source_off_thread(source_code string, program_type ScriptProgramType, line_number_offset usize, compiler ScriptCompileHook) OffThreadCompiledProgram {
+	executable := compiler(source_code, '', line_number_offset, program_type) or {
 		return OffThreadCompiledProgram{
 			parsed: ParsedProgram{
 				program_type: program_type
@@ -107,6 +128,7 @@ fn compile_source_off_thread(source_code string, program_type ScriptProgramType,
 		compiled: CompiledProgram{
 			program_type: program_type
 			line_number_offset: line_number_offset
+			executable: executable
 		}
 	}
 }
@@ -114,10 +136,82 @@ fn compile_source_off_thread(source_code string, program_type ScriptProgramType,
 // LibJS owns the real bytecode artifact in Ladybird. The V host compiler
 // validates and compiles outside the script execution context, represented by
 // CompiledProgram, before completion materializes the script on the main loop.
-pub fn compile_off_thread(source_code string, program_type ScriptProgramType, line_number_offset usize, compiler ScriptParseHook, on_compiled OffThreadCompileComplete) {
+pub fn compile_off_thread(source_code string, program_type ScriptProgramType, line_number_offset usize, compiler ScriptCompileHook, on_compiled OffThreadCompileComplete) {
 	result := compile_source_off_thread(source_code, program_type, line_number_offset, compiler)
 	on_compiled(result, source_code)
 	perform_a_microtask_checkpoint()
+}
+
+struct CompiledFunctionResult {
+	executable ?&ScriptExecutable
+}
+
+fn scripting_source_length_in_code_units(source string) usize {
+	mut length := usize(0)
+	for code_point in source.runes() {
+		length += if code_point > 0xffff { usize(2) } else { usize(1) }
+	}
+	return length
+}
+
+// After top-level bytecode is handed back to the main event loop, compile all
+// remaining lazy function payloads away from script execution. Completed
+// bytecode is installed only while the shared function is still lazy. If the
+// main thread compiled it first, discard the stale result and scan that newer
+// executable so its nested lazy functions are still compiled.
+pub fn compile_remaining_functions_off_thread(mut executable ScriptExecutable, source_code string, compiler ScriptFunctionCompileHook) {
+	mut shared_data_roots := []&SharedFunctionInstanceData{}
+	mut function_asts := []string{}
+	for shared_data in executable.shared_function_data {
+		if shared_data.executable != none {
+			continue
+		}
+		function_ast := shared_data.rust_function_ast or { continue }
+		shared_data_roots << shared_data
+		function_asts << function_ast.clone()
+	}
+	if function_asts.len == 0 {
+		return
+	}
+
+	source_length := scripting_source_length_in_code_units(source_code)
+	mut compiled_functions := []CompiledFunctionResult{cap: function_asts.len}
+	for function_ast in function_asts {
+		compiled := compiler(function_ast, source_length) or {
+			compiled_functions << CompiledFunctionResult{}
+			continue
+		}
+		compiled_functions << CompiledFunctionResult{
+			executable: compiled
+		}
+	}
+
+	assert compiled_functions.len == shared_data_roots.len
+	for i, result in compiled_functions {
+		compiled := result.executable or { continue }
+		mut shared_data := unsafe { &SharedFunctionInstanceData(shared_data_roots[i]) }
+		if existing := shared_data.executable {
+			mut mutable_existing := unsafe { &ScriptExecutable(existing) }
+			compile_remaining_functions_off_thread(mut mutable_existing, source_code, compiler)
+			continue
+		}
+		shared_data.executable = compiled
+		shared_data.rust_function_ast = none
+	}
+}
+
+fn compile_remaining_classic_script_functions_off_thread(script &ClassicScript, source_code string, compiler ScriptFunctionCompileHook) {
+	compiled_program := script.compiled_program or { return }
+	executable := compiled_program.executable or { return }
+	mut mutable_executable := unsafe { &ScriptExecutable(executable) }
+	compile_remaining_functions_off_thread(mut mutable_executable, source_code, compiler)
+}
+
+fn compile_remaining_module_functions_off_thread(script &JavaScriptModuleScript, source_code string, compiler ScriptFunctionCompileHook) {
+	compiled_program := script.compiled_program or { return }
+	executable := compiled_program.executable or { return }
+	mut mutable_executable := unsafe { &ScriptExecutable(executable) }
+	compile_remaining_functions_off_thread(mut mutable_executable, source_code, compiler)
 }
 
 pub fn create_on_fetch_script_complete(function OnFetchScriptComplete) OnFetchScriptComplete {
@@ -280,6 +374,9 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 		} else if parsed := result.parsed {
 			script = ClassicScript.create_from_parsed_program(response_url.serialize(), source_text, settings_object.realm(), response_url, parsed, muted_errors)
 		}
+		if function_compiler := settings_object.script_function_compile_hook() {
+			compile_remaining_classic_script_functions_off_thread(script, source_text, function_compiler)
+		}
 	}
 	on_complete(script_pointer(script))
 }
@@ -411,6 +508,9 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 					javascript_module = JavaScriptModuleScript.create_from_pre_compiled(url.serialize(), source_text, module_map_realm, response_url, compiled)
 				} else if parsed := result.parsed {
 					javascript_module = JavaScriptModuleScript.create_from_parsed_program(url.serialize(), source_text, module_map_realm, response_url, parsed)
+				}
+				if function_compiler := fetch_client.script_function_compile_hook() {
+					compile_remaining_module_functions_off_thread(javascript_module, source_text, function_compiler)
 				}
 			}
 			module_script = &javascript_module.ModuleScript

@@ -16,6 +16,10 @@ __global (
 	scripting_fetching_parsed_source    string
 	scripting_fetching_compiled         OffThreadCompiledProgram
 	scripting_fetching_compiled_source  string
+	scripting_fetching_function_asts    []string
+	scripting_fetching_function_lengths []usize
+	scripting_fetching_stale_shared     &SharedFunctionInstanceData
+	scripting_fetching_stale_executable &ScriptExecutable
 )
 
 struct ScriptingFetchingFixture {
@@ -90,6 +94,37 @@ fn scripting_fetching_parser(source string, filename string, line usize) ! {
 	}
 }
 
+fn scripting_fetching_compiler(source string, filename string, line usize, program_type ScriptProgramType) !&ScriptExecutable {
+	scripting_fetching_parser(source, filename, line)!
+	mut shared_function_data := []&SharedFunctionInstanceData{}
+	if source == 'é' {
+		shared_function_data << &SharedFunctionInstanceData{
+			rust_function_ast: 'classic-function'
+		}
+	} else if source.contains('export const root') {
+		shared_function_data << &SharedFunctionInstanceData{
+			rust_function_ast: 'module-function'
+		}
+	}
+	_ = program_type
+	return &ScriptExecutable{
+		shared_function_data: shared_function_data
+	}
+}
+
+fn scripting_fetching_function_compiler(function_ast string, source_length usize) !&ScriptExecutable {
+	scripting_fetching_function_asts << function_ast
+	scripting_fetching_function_lengths << source_length
+	if function_ast == 'failed' {
+		return error('function compile failed')
+	}
+	if function_ast == 'stale' {
+		mut stale_shared := scripting_fetching_stale_shared
+		stale_shared.executable = scripting_fetching_stale_executable
+	}
+	return &ScriptExecutable{}
+}
+
 fn scripting_fetching_parsed_callback(parsed ParsedProgram, source string) {
 	scripting_fetching_parsed = parsed
 	scripting_fetching_parsed_source = source
@@ -151,14 +186,51 @@ fn test_script_fetch_options_module_requests_and_off_thread_parse() {
 	assert scripting_fetching_parsed.error? == 'syntax error'
 	assert scripting_fetching_parsed_source == 'invalid'
 
-	compile_off_thread('valid', .script, 1, scripting_fetching_parser, scripting_fetching_compiled_callback)
+	compile_off_thread('valid', .script, 1, scripting_fetching_compiler, scripting_fetching_compiled_callback)
 	assert scripting_fetching_compiled.compiled?.program_type == .script
 	assert scripting_fetching_compiled.compiled?.line_number_offset == 1
 	assert scripting_fetching_compiled.parsed == none
 	assert scripting_fetching_compiled_source == 'valid'
-	compile_off_thread('invalid', .module, 0, scripting_fetching_parser, scripting_fetching_compiled_callback)
+	compile_off_thread('invalid', .module, 0, scripting_fetching_compiler, scripting_fetching_compiled_callback)
 	assert scripting_fetching_compiled.compiled == none
 	assert scripting_fetching_compiled.parsed?.error? == 'syntax error'
+}
+
+fn test_remaining_lazy_functions_compile_and_discard_stale_results() {
+	direct := &SharedFunctionInstanceData{
+		rust_function_ast: 'direct'
+	}
+	failed := &SharedFunctionInstanceData{
+		rust_function_ast: 'failed'
+	}
+	nested := &SharedFunctionInstanceData{
+		rust_function_ast: 'nested'
+	}
+	stale := &SharedFunctionInstanceData{
+		rust_function_ast: 'stale'
+	}
+	stale_executable := &ScriptExecutable{
+		shared_function_data: [nested]
+	}
+	scripting_fetching_stale_shared = stale
+	scripting_fetching_stale_executable = stale_executable
+	scripting_fetching_function_asts = []
+	scripting_fetching_function_lengths = []
+	mut executable := ScriptExecutable{
+		shared_function_data: [direct, failed, stale]
+	}
+	compile_remaining_functions_off_thread(mut executable, 'A😀B', scripting_fetching_function_compiler)
+
+	assert scripting_fetching_function_asts == ['direct', 'failed', 'stale', 'nested']
+	assert scripting_fetching_function_lengths == [usize(4), 4, 4, 4]
+	assert direct.executable != none
+	assert direct.rust_function_ast == none
+	assert failed.executable == none
+	assert failed.rust_function_ast? == 'failed'
+	assert stale.executable? == stale_executable
+	assert stale.rust_function_ast? == 'stale'
+	assert nested.executable != none
+	assert nested.rust_function_ast == none
 }
 
 fn test_descendant_options_resolve_import_map_integrity() {
@@ -185,7 +257,10 @@ fn test_descendant_options_resolve_import_map_integrity() {
 fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	fixture := scripting_fetching_fixture()!
 	mut settings := fixture.settings
-	settings.set_script_compile_hook(scripting_fetching_parser)
+	settings.set_script_compile_hook(scripting_fetching_compiler)
+	settings.set_script_function_compile_hook(scripting_fetching_function_compiler)
+	scripting_fetching_function_asts = []
+	scripting_fetching_function_lengths = []
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	scripting_fetching_request_urls = []
 	options := ScriptFetchOptions{
@@ -197,6 +272,8 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	classic := unsafe { &ClassicScript(scripting_fetching_completed_script) }
 	assert classic.source == 'é'
 	assert classic.compiled_program?.program_type == .script
+	assert scripting_fetching_function_asts == ['classic-function']
+	assert scripting_fetching_function_lengths == [usize(1)]
 	assert scripting_fetching_last_destination == .script
 	assert scripting_fetching_last_nonce == 'classic-nonce'
 
@@ -231,7 +308,10 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	fixture := scripting_fetching_fixture()!
 	mut settings := fixture.settings
-	settings.set_script_compile_hook(scripting_fetching_parser)
+	settings.set_script_compile_hook(scripting_fetching_compiler)
+	settings.set_script_function_compile_hook(scripting_fetching_function_compiler)
+	scripting_fetching_function_asts = []
+	scripting_fetching_function_lengths = []
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	scripting_fetching_request_urls = []
 	fetch_external_module_script_graph(fixture.realm, dom.URL{
@@ -242,6 +322,7 @@ fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	assert root.is_linked()
 	assert root.compiled_program?.program_type == .module
 	assert root.compiled_program?.line_number_offset == 0
+	assert 'module-function' in scripting_fetching_function_asts
 	assert root.requested_modules().len == 1
 	assert scripting_fetching_request_urls == [
 		'https://example.test/app/root.js',

@@ -119,7 +119,8 @@ mut:
 	worker_agents_starting_              []&WorkerAgentParent
 	fetch_group_                         FetchGroup
 	script_fetch_hook_                   ?PerformTheFetchHook
-	script_compile_hook_                 ?ScriptParseHook
+	script_compile_hook_                 ?ScriptCompileHook
+	script_function_compile_hook_        ?ScriptFunctionCompileHook
 }
 
 fn create_environment_settings(realm &ScriptingRealm, environment &Environment, kind EnvironmentGlobalKind, event_loop &EventLoop) &EnvironmentSettingsObject {
@@ -214,12 +215,20 @@ pub fn (settings &EnvironmentSettingsObject) script_fetch_hook() ?PerformTheFetc
 }
 
 // Runtime-neutral host boundary for parsing and top-level code generation.
-pub fn (mut settings EnvironmentSettingsObject) set_script_compile_hook(hook ?ScriptParseHook) {
+pub fn (mut settings EnvironmentSettingsObject) set_script_compile_hook(hook ?ScriptCompileHook) {
 	settings.script_compile_hook_ = hook
 }
 
-pub fn (settings &EnvironmentSettingsObject) script_compile_hook() ?ScriptParseHook {
+pub fn (settings &EnvironmentSettingsObject) script_compile_hook() ?ScriptCompileHook {
 	return settings.script_compile_hook_
+}
+
+pub fn (mut settings EnvironmentSettingsObject) set_script_function_compile_hook(hook ?ScriptFunctionCompileHook) {
+	settings.script_function_compile_hook_ = hook
+}
+
+pub fn (settings &EnvironmentSettingsObject) script_function_compile_hook() ?ScriptFunctionCompileHook {
+	return settings.script_function_compile_hook_
 }
 
 pub fn (settings &EnvironmentSettingsObject) responsible_document() ?&dom.Document {
