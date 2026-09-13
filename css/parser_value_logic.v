@@ -11544,7 +11544,9 @@ fn (mut parser Parser) parse_as_sizes_attribute(element &dom.Element, rendered_a
 		mut condition_tokens := ComponentValueStream.new(unparsed_size)
 		condition := parser.parse_media_condition(mut condition_tokens) or { continue }
 		condition_tokens.consume_whitespace()
-		if condition_tokens.has_more_tokens() || !condition.evaluate_to_boolean(element.document()) {
+		if condition_tokens.has_more_tokens() || !condition.evaluate_to_boolean(BooleanExpressionEvaluationContext{
+			document: element.document()
+		}) {
 			continue
 		}
 		if !size.has_auto() {

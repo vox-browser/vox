@@ -4366,7 +4366,9 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 		condition := condition_parser.parse_if_condition(mut condition_tokens) or {
 			continue
 		}
-		condition_result := condition.evaluate(evaluation_document)
+		condition_result := condition.evaluate(BooleanExpressionEvaluationContext{
+			document: evaluation_document
+		})
 		if condition_result == .false_ {
 			continue
 		}

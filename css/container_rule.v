@@ -13,7 +13,7 @@ pub:
 pub fn ContainerQuery.create(condition &BooleanExpression) &ContainerQuery {
 	return &ContainerQuery{
 		condition: condition
-		matches_: condition.evaluate_to_boolean(none)
+		matches_: condition.evaluate_to_boolean(BooleanExpressionEvaluationContext{})
 	}
 }
 

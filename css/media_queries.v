@@ -15,7 +15,7 @@ pub mut:
 pub fn Supports.create(condition &BooleanExpression) &Supports {
 	return &Supports{
 		condition: condition
-		matches: condition.evaluate_to_boolean(none)
+		matches: condition.evaluate_to_boolean(BooleanExpressionEvaluationContext{})
 	}
 }
 
@@ -515,7 +515,9 @@ pub fn (media_query &MediaQuery) evaluate(doc ?&dom.Document) bool {
 	mut result := media_query_matches_media_type(media_query.media_type)
 	if result != .false_ {
 		if condition := media_query.media_condition {
-			result = match_result_and(result, condition.evaluate(doc))
+			result = match_result_and(result, condition.evaluate(BooleanExpressionEvaluationContext{
+				document: doc
+			}))
 		}
 	}
 	if media_query.negated {

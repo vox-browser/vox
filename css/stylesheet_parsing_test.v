@@ -447,7 +447,7 @@ fn test_if_condition_uses_shared_boolean_expression_parser() {
 	mut tokens := SupportsTokenStream.from_values(parser.component_values)
 	condition := parser.parse_if_condition(mut tokens) or { panic('valid if() condition') }
 	assert condition.kind == .and
-	assert condition.evaluate_to_boolean(none)
+	assert condition.evaluate_to_boolean(BooleanExpressionEvaluationContext{})
 	assert !tokens.has_next_token()
 
 	mut else_parser := Parser.from_css_text('else')
@@ -456,7 +456,7 @@ fn test_if_condition_uses_shared_boolean_expression_parser() {
 		panic('else condition')
 	}
 	assert else_condition.kind == .constant
-	assert else_condition.evaluate_to_boolean(none)
+	assert else_condition.evaluate_to_boolean(BooleanExpressionEvaluationContext{})
 
 	mut mixed_parser := Parser.from_css_text('supports(display: grid) and media(width) or supports(color: red)')
 	mut mixed_tokens := SupportsTokenStream.from_values(mixed_parser.component_values)

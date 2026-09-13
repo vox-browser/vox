@@ -60,6 +60,12 @@ pub fn negate_match_result(value MatchResult) MatchResult {
 	}
 }
 
+pub struct BooleanExpressionEvaluationContext {
+pub:
+	document        ?&dom.Document
+	query_container ?&dom.Element
+}
+
 pub fn (result MatchResult) to_string() string {
 	return match result {
 		.false_ { 'false' }
@@ -206,8 +212,8 @@ pub fn BooleanExpression.create_supports_at_rule(name string, matches bool) &Boo
 	}
 }
 
-pub fn (expression &BooleanExpression) evaluate_to_boolean(document ?&dom.Document) bool {
-	return expression.evaluate(document) == .true_
+pub fn (expression &BooleanExpression) evaluate_to_boolean(context BooleanExpressionEvaluationContext) bool {
+	return expression.evaluate(context) == .true_
 }
 
 pub fn boolean_expression_indent(levels int) string {
@@ -218,7 +224,7 @@ pub fn boolean_expression_indent(levels int) string {
 	return builder.str()
 }
 
-pub fn (expression &BooleanExpression) evaluate(document ?&dom.Document) MatchResult {
+pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluationContext) MatchResult {
 	match expression.kind {
 		.general_enclosed, .constant, .supports_declaration, .supports_selector,
 		.supports_font_tech, .supports_font_format, .supports_env, .supports_at_rule {
@@ -226,7 +232,7 @@ pub fn (expression &BooleanExpression) evaluate(document ?&dom.Document) MatchRe
 				return evaluate_media_feature(expression.media_feature_name,
 					expression.media_feature_kind, expression.media_feature_value,
 					expression.media_feature_comparison, expression.media_feature_right_comparison,
-					expression.media_feature_right_value, document)
+					 expression.media_feature_right_value, context.document)
 			}
 			return expression.matches
 		}
@@ -236,13 +242,13 @@ pub fn (expression &BooleanExpression) evaluate(document ?&dom.Document) MatchRe
 			if expression.children.len == 0 {
 				return .unknown
 			}
-			return negate_match_result(expression.children[0].evaluate(document))
+			return negate_match_result(expression.children[0].evaluate(context))
 		}
 		.in_parens {
 			if expression.children.len == 0 {
 				return .unknown
 			}
-			return expression.children[0].evaluate(document)
+			return expression.children[0].evaluate(context)
 		}
 		.and {
 			// https://drafts.csswg.org/css-values-5/#boolean-logic
@@ -250,7 +256,7 @@ pub fn (expression &BooleanExpression) evaluate(document ?&dom.Document) MatchRe
 			// false, and unknown otherwise (i.e. if at least one unknown, but no false).
 			mut true_results := 0
 			for child in expression.children {
-				child_match := child.evaluate(document)
+				child_match := child.evaluate(context)
 				if child_match == .false_ {
 					return .false_
 				}
@@ -269,7 +275,7 @@ pub fn (expression &BooleanExpression) evaluate(document ?&dom.Document) MatchRe
 			// false, and unknown otherwise (i.e. at least one unknown, but no true).
 			mut false_results := 0
 			for child in expression.children {
-				child_match := child.evaluate(document)
+				child_match := child.evaluate(context)
 				if child_match == .true_ {
 					return .true_
 				}
