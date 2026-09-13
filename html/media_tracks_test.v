@@ -55,6 +55,8 @@ fn test_media_track_base_metadata() {
 		parsed_bcp47_language: 'und'
 	}).language == ''
 	assert MediaTrackBase.create(MediaTrackMetadata{}).language == ''
+	assert MediaTrackBase.create(MediaTrackMetadata{ kind: '' }).kind == ''
+	assert MediaTrackBase.create(MediaTrackMetadata{ kind: 'commentary' }).kind == 'commentary'
 }
 
 fn test_audio_track_enabled_and_list_algorithms() {

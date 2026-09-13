@@ -19,6 +19,7 @@ pub:
 	playback_track_handle voidptr
 	pixel_width           u32
 	pixel_height          u32
+	kind                  ?string
 }
 
 pub struct MediaTrackBase {
@@ -47,6 +48,7 @@ pub fn MediaTrackBase.create(metadata MediaTrackMetadata) MediaTrackBase {
 		language: language
 		pixel_width: metadata.pixel_width
 		pixel_height: metadata.pixel_height
+		kind: metadata.kind or { '' }
 	}
 }
 

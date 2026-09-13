@@ -385,6 +385,7 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	assert buffer.input_buffer_length() == 0
 	assert buffer.video_tracks().length() == 1
 	assert media.video_tracks().length() == 1
+	assert media.video_tracks().item(0)?.base.kind() == 'main'
 	assert source.active_source_buffers().item(0)? == buffer
 	assert source.duration() == 2
 	assert media.ready_state() == .have_metadata
@@ -407,6 +408,32 @@ fn test_webm_initialization_and_media_segments_create_tracks_and_coded_frames() 
 	assert media.buffered().length() == 1
 	assert append_error.count == 0
 	assert update.count == 3
+}
+
+fn test_webm_track_metadata_preserves_bcp47_language_and_kind() {
+	track_number := ebml_test_element([u8(0xd7)], [u8(9)])
+	track_type := ebml_test_element([u8(0x83)], [u8(17)])
+	codec := ebml_test_element([u8(0x86)], 'D_WEBVTT/captions'.bytes())
+	language := ebml_test_element([u8(0x22), 0xb5, 0x9c], 'de'.bytes())
+	language_bcp47 := ebml_test_element([u8(0x22), 0xb5, 0x9d], 'fr-CA'.bytes())
+	flag_default := ebml_test_element([u8(0x88)], [u8(0)])
+	mut payload := track_number.clone()
+	payload << track_type
+	payload << codec
+	payload << language_bcp47
+	payload << language
+	payload << flag_default
+	entry_bytes := ebml_test_element([u8(0xae)], payload)
+	entry := read_ebml_element_header(entry_bytes, 0)!
+	track := parse_webm_track_entry(entry_bytes, entry)!
+
+	assert track.language == 'fr-CA'
+	assert !track.is_default
+	assert webm_track_kind(track, true) == .captions
+	assert media_track_kind_to_text_track_kind(.captions) == .captions
+	assert media_track_kind_to_text_track_kind(.subtitles) == .subtitles
+	assert media_track_kind_to_text_track_kind(.descriptions) == .descriptions
+	assert media_track_kind_to_text_track_kind(.main) == .metadata
 }
 
 fn test_webm_rejects_an_unsupported_initialization_segment_codec() {

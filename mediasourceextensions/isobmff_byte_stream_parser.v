@@ -330,6 +330,13 @@ fn parse_iso_track(bytes []u8, trak ISOBoxHeader) !ISOTrackContext {
 	}
 }
 
+fn iso_track_kind(type_ MediaSourceTrackType, is_first_of_type bool) MediaSourceTrackKind {
+	if type_ == .text {
+		return .metadata
+	}
+	return if is_first_of_type { .main } else { .translation }
+}
+
 @[heap]
 pub struct ISOBMFFByteStreamParser {
 mut:
@@ -439,10 +446,18 @@ pub fn (mut parser ISOBMFFByteStreamParser) parse_initialization_segment(bytes [
 	parser.duration_ = duration
 	parser.track_contexts = contexts.clone()
 	parser.active_sample_descriptions.clear()
+	mut tracks := []WebMTrackInfo{cap: contexts.len}
+	for _, context in contexts {
+		is_first_of_type := !tracks.any(it.type_ == context.track.type_)
+		tracks << WebMTrackInfo{
+			...context.track
+			kind: iso_track_kind(context.track.type_, is_first_of_type)
+		}
+	}
 	return WebMInitializationSegmentResult{
 		consumed: movie.end
 		duration: duration
-		tracks: contexts.values().map(it.track)
+		tracks: tracks
 	}
 }
 

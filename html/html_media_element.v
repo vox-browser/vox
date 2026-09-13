@@ -1498,7 +1498,9 @@ pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMe
 		mutable_track.set_enabled(true)
 		element.set_audio_track_enabled(track, true)
 	}
-	mutable_track.base.kind = if enable { 'main' } else { 'translation' }
+	if metadata.kind == none {
+		mutable_track.base.kind = if enable { 'main' } else { 'translation' }
+	}
 	element.fire_event('addtrack')
 	return track
 }
@@ -1512,7 +1514,9 @@ pub fn (mut element HTMLMediaElement) on_video_track_added(metadata MediaTrackMe
 		mutable_track.set_selected(true)
 		element.set_selected_video_track(track)
 	}
-	mutable_track.base.kind = if should_select { 'main' } else { 'translation' }
+	if metadata.kind == none {
+		mutable_track.base.kind = if should_select { 'main' } else { 'translation' }
+	}
 	element.fire_event('addtrack')
 	return track
 }

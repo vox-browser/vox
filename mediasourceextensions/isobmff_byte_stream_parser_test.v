@@ -138,6 +138,7 @@ fn test_isobmff_initialization_and_media_segments_create_tracks_and_frames() {
 	parsed_initialization := parser.parse_initialization_segment(initialization)!
 	assert parsed_initialization.consumed == initialization.len
 	assert parsed_initialization.tracks.len == 1
+	assert parsed_initialization.tracks[0].kind == .main
 
 	mut source := MediaSource.create()
 	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})

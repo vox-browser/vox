@@ -29,8 +29,10 @@ const track_type_id = u64(0x83)
 const codec_id_id = u64(0x86)
 const codec_private_id = u64(0x63a2)
 const track_language_id = u64(0x22b59c)
+const track_language_bcp47_id = u64(0x22b59d)
 const track_name_id = u64(0x536e)
 const default_duration_id = u64(0x23e383)
+const track_flag_default_id = u64(0x88)
 
 pub enum SegmentType {
 	incomplete
@@ -45,6 +47,36 @@ pub enum MediaSourceTrackType {
 	text
 }
 
+pub enum MediaSourceTrackKind {
+	none
+	alternative
+	captions
+	descriptions
+	main
+	main_desc
+	metadata
+	sign
+	subtitles
+	translation
+	commentary
+}
+
+pub fn (kind MediaSourceTrackKind) name() string {
+	return match kind {
+		.none { '' }
+		.alternative { 'alternative' }
+		.captions { 'captions' }
+		.descriptions { 'descriptions' }
+		.main { 'main' }
+		.main_desc { 'maindesc' }
+		.metadata { 'metadata' }
+		.sign { 'sign' }
+		.subtitles { 'subtitles' }
+		.translation { 'translation' }
+		.commentary { 'commentary' }
+	}
+}
+
 pub struct WebMTrackInfo {
 pub:
 	number           u64
@@ -54,6 +86,8 @@ pub:
 	language         string
 	label            string
 	default_duration f64
+	kind             MediaSourceTrackKind
+	is_default       bool = true
 }
 
 fn webm_track_codec_is_supported(track WebMTrackInfo) bool {
@@ -217,8 +251,10 @@ fn parse_webm_track_entry(bytes []u8, entry EBMLElementHeader) !WebMTrackInfo {
 	mut codec_id := ''
 	mut codec_private := []u8{}
 	mut language := ''
+	mut language_bcp47 := ?string(none)
 	mut label := ''
 	mut default_duration := f64(0)
+	mut is_default := true
 	for position < entry.data_end {
 		child := read_ebml_element_header(bytes, position)!
 		require_complete_element(bytes, child)!
@@ -238,11 +274,17 @@ fn parse_webm_track_entry(bytes []u8, entry EBMLElementHeader) !WebMTrackInfo {
 			track_language_id {
 				language = read_ebml_string(bytes, child)!
 			}
+			track_language_bcp47_id {
+				language_bcp47 = read_ebml_string(bytes, child)!
+			}
 			track_name_id {
 				label = read_ebml_string(bytes, child)!
 			}
 			default_duration_id {
 				default_duration = f64(read_ebml_uint(bytes, child)!) / 1_000_000_000.0
+			}
+			track_flag_default_id {
+				is_default = read_ebml_uint(bytes, child)! != 0
 			}
 			else {}
 		}
@@ -264,10 +306,33 @@ fn parse_webm_track_entry(bytes []u8, entry EBMLElementHeader) !WebMTrackInfo {
 		type_: type_
 		codec_id: codec_id
 		codec_private: codec_private
-		language: if language == 'und' { '' } else { language }
+		language: if preferred := language_bcp47 {
+			if preferred == 'und' { '' } else { preferred }
+		} else if language == 'und' { '' } else { language }
 		label: label
 		default_duration: default_duration
+		is_default: is_default
 	}
+}
+
+fn webm_track_kind(track WebMTrackInfo, is_first_of_type bool) MediaSourceTrackKind {
+	if track.type_ == .text {
+		return match track.codec_id {
+			'D_WEBVTT/captions' { .captions }
+			'D_WEBVTT/subtitles' { .subtitles }
+			'D_WEBVTT/descriptions' { .descriptions }
+			else {
+				if track.codec_id.starts_with('D_WEBVTT/') { .metadata } else { .subtitles }
+			}
+		}
+	}
+	if track.is_default {
+		return .main
+	}
+	if !is_first_of_type {
+		return .translation
+	}
+	return .none
 }
 
 @[heap]
@@ -355,7 +420,12 @@ pub fn (mut parser WebMByteStreamParser) parse_initialization_segment(bytes []u8
 				entry := read_ebml_element_header(bytes, track_position)!
 				require_complete_element(bytes, entry)!
 				if entry.id == track_entry_id {
-					track := parse_webm_track_entry(bytes, entry)!
+					parsed_track := parse_webm_track_entry(bytes, entry)!
+					is_first_of_type := !tracks.values().any(it.type_ == parsed_track.type_)
+					track := WebMTrackInfo{
+						...parsed_track
+						kind: webm_track_kind(parsed_track, is_first_of_type)
+					}
 					if track.number in tracks {
 						return error('Duplicate WebM track number ${track.number}')
 					}

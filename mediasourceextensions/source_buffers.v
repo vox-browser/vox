@@ -11,6 +11,15 @@ import html
 import math
 import mimesniff
 
+fn media_track_kind_to_text_track_kind(kind MediaSourceTrackKind) html.TextTrackKind {
+	return match kind {
+		.captions { .captions }
+		.descriptions { .descriptions }
+		.subtitles { .subtitles }
+		else { .metadata }
+	}
+}
+
 pub enum AppendMode {
 	segments
 	sequence
@@ -396,6 +405,7 @@ fn (mut buffer SourceBuffer) on_first_initialization_segment_processed(duration 
 			name: track.label
 			parsed_bcp47_language: if track.language == '' { none } else { track.language }
 			playback_track_handle: voidptr(track_buffer.demuxer)
+			kind: track.kind.name()
 		}
 		match track.type_ {
 			.audio {
@@ -415,7 +425,7 @@ fn (mut buffer SourceBuffer) on_first_initialization_segment_processed(duration 
 				text_track.set_id(metadata.identifier.str())
 				text_track.set_language(track.language)
 				text_track.set_label(track.label)
-				text_track.set_kind(.metadata)
+				text_track.set_kind(media_track_kind_to_text_track_kind(track.kind))
 				mut source_list := buffer.text_tracks_
 				source_list.add_track(text_track)
 				mut element_list := media_element.text_tracks()
