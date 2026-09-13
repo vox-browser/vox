@@ -16,11 +16,19 @@ const maximum_canvas_area = u64(16384 * 16384)
 @[heap]
 pub struct CanvasExternalContentSource {
 pub mut:
-	cleared bool
+	frame ?&dom.DecodedImageFrame_
 }
 
 pub fn (mut source CanvasExternalContentSource) clear() {
-	source.cleared = true
+	source.frame = none
+}
+
+pub fn (mut source CanvasExternalContentSource) update(frame ?&dom.DecodedImageFrame_) {
+	source.frame = frame
+}
+
+pub fn (source &CanvasExternalContentSource) current_frame() ?&dom.DecodedImageFrame_ {
+	return source.frame
 }
 
 @[heap]
@@ -175,19 +183,19 @@ pub fn html_canvas_element_bitmap_size_for_canvas(element &dom.HTMLCanvasElement
 	return html_canvas_element_dimensions(element)
 }
 
-pub fn html_canvas_element_get_bitmap_from_surface(element &dom.HTMLCanvasElement) ?&dom.ImmutableBitmap_ {
+pub fn html_canvas_element_get_bitmap_from_surface(element &dom.HTMLCanvasElement) ?&dom.Bitmap_ {
 	state := ensure_html_canvas_element_state(element) or { return none }
 	return state.surface.bitmap()
 }
 
-pub fn html_canvas_element_surface(element &dom.HTMLCanvasElement) ?&dom.ImmutableBitmap_ {
+pub fn html_canvas_element_surface(element &dom.HTMLCanvasElement) ?&dom.Bitmap_ {
 	return html_canvas_element_get_bitmap_from_surface(element)
 }
 
 // CanvasPaintable::paint() only presents a surface which already exists; a
 // layout/paint pass must not allocate a default 300x150 bitmap for a canvas
 // whose context has never been requested.
-pub fn html_canvas_element_present_existing_surface(element &dom.HTMLCanvasElement) ?&dom.ImmutableBitmap_ {
+pub fn html_canvas_element_present_existing_surface(element &dom.HTMLCanvasElement) ?&dom.Bitmap_ {
 	state := html_canvas_element_states[html_canvas_element_key(element)] or { return none }
 	html_canvas_element_present(element)
 	return state.surface.bitmap()
@@ -229,7 +237,7 @@ pub fn (context &CanvasRenderingContext2D) get_context_attributes() CanvasRender
 	return context.OffscreenCanvasRenderingContext2D.get_context_attributes()
 }
 
-pub fn (context &CanvasRenderingContext2D) surface() ?&dom.ImmutableBitmap_ {
+pub fn (context &CanvasRenderingContext2D) surface() ?&dom.Bitmap_ {
 	return context.OffscreenCanvasRenderingContext2D.canvas_.bitmap()
 }
 
@@ -264,7 +272,7 @@ pub fn html_canvas_element_get_context(element &dom.HTMLCanvasElement, type_ str
 	return context
 }
 
-pub fn html_canvas_element_bitmap(element &dom.HTMLCanvasElement) !&dom.ImmutableBitmap_ {
+pub fn html_canvas_element_bitmap(element &dom.HTMLCanvasElement) !&dom.Bitmap_ {
 	mut state := ensure_html_canvas_element_state(element)!
 	return state.surface.bitmap() or { unsafe { nil } }
 }
@@ -282,6 +290,14 @@ pub fn html_canvas_element_is_dirty(element &dom.HTMLCanvasElement) bool {
 pub fn html_canvas_element_present(element &dom.HTMLCanvasElement) {
 	if state := html_canvas_element_states[html_canvas_element_key(element)] {
 		mut mutable_state := unsafe { &HTMLCanvasElementState(state) }
+		if source := state.external_content_source {
+			mut mutable_source := unsafe { &CanvasExternalContentSource(source) }
+			if bitmap := state.surface.bitmap() {
+				mutable_source.update(dom.DecodedImageFrame_.create(bitmap.clone()))
+			} else {
+				mutable_source.clear()
+			}
+		}
 		mutable_state.dirty = false
 	}
 }

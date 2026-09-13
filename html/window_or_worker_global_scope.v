@@ -91,7 +91,7 @@ pub struct GlobalScopeTrustedTypePolicyFactory {}
 
 pub struct ImageBitmapSource {
 pub:
-	bitmap           ?&dom.ImmutableBitmap_
+	bitmap           ?&dom.Bitmap_
 	image_bitmap     ?&ImageBitmap
 	image_data       ?&ImageData
 	offscreen_canvas ?&OffscreenCanvas
@@ -260,7 +260,7 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) run_all_timers() {
 	scope.process_timers(max_i64)
 }
 
-fn image_bitmap_source_bitmap(source ImageBitmapSource) !&dom.ImmutableBitmap_ {
+fn image_bitmap_source_bitmap(source ImageBitmapSource) !&dom.Bitmap_ {
 	if bitmap := source.bitmap {
 		return bitmap
 	}
@@ -272,7 +272,7 @@ fn image_bitmap_source_bitmap(source ImageBitmapSource) !&dom.ImmutableBitmap_ {
 	}
 	if image_data := source.image_data {
 		bitmap := image_data.bitmap()
-		return &dom.ImmutableBitmap_{
+		return &dom.Bitmap_{
 			width: int(bitmap.width)
 			height: int(bitmap.height)
 			pitch: int(bitmap.width) * 4
@@ -285,7 +285,7 @@ fn image_bitmap_source_bitmap(source ImageBitmapSource) !&dom.ImmutableBitmap_ {
 	return error('InvalidStateError: image source has no image data')
 }
 
-fn create_image_bitmap_pixels(source &dom.ImmutableBitmap_, sx i32, sy i32, sw i32, sh i32, options ImageBitmapOptions) !&dom.ImmutableBitmap_ {
+fn create_image_bitmap_pixels(source &dom.Bitmap_, sx i32, sy i32, sw i32, sh i32, options ImageBitmapOptions) !&dom.Bitmap_ {
 	if sw == 0 || sh == 0 {
 		return error('RangeError: source rectangle width and height must be nonzero')
 	}
@@ -336,7 +336,7 @@ fn create_image_bitmap_pixels(source &dom.ImmutableBitmap_, sx i32, sy i32, sw i
 			}
 		}
 	}
-	return &dom.ImmutableBitmap_{
+	return &dom.Bitmap_{
 		width: int(resize_width)
 		height: int(resize_height)
 		pitch: int(resize_width) * 4
@@ -346,7 +346,7 @@ fn create_image_bitmap_pixels(source &dom.ImmutableBitmap_, sx i32, sy i32, sw i
 	}
 }
 
-fn crop_to_the_source_rectangle_with_formatting(input &dom.ImmutableBitmap_, sx ?i32, sy ?i32, sw ?i32, sh ?i32, options ?ImageBitmapOptions) !&dom.ImmutableBitmap_ {
+fn crop_to_the_source_rectangle_with_formatting(input &dom.Bitmap_, sx ?i32, sy ?i32, sw ?i32, sh ?i32, options ?ImageBitmapOptions) !&dom.Bitmap_ {
 	return create_image_bitmap_pixels(input, sx or { 0 }, sy or { 0 }, sw or { i32(input.width) }, sh or { i32(input.height) }, options or { ImageBitmapOptions{} })
 }
 

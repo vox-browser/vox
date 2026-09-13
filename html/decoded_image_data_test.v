@@ -18,7 +18,7 @@ fn record_decoded_image_stop(session_id i64) {
 }
 
 fn test_bitmap_decoded_image_data_accessors() {
-	bitmap := &dom.ImmutableBitmap_{
+	bitmap := &dom.Bitmap_{
 		width:  320
 		height: 200
 	}
@@ -51,11 +51,11 @@ fn test_bitmap_decoded_image_data_accessors() {
 fn test_animated_decoded_image_data_pool_progression_and_delivery() {
 	decoded_image_requests = []
 	decoded_image_stops = []
-	frame0 := &dom.ImmutableBitmap_{
+	frame0 := &dom.Bitmap_{
 		width:  64
 		height: 32
 	}
-	frame1 := &dom.ImmutableBitmap_{
+	frame1 := &dom.Bitmap_{
 		width:  64
 		height: 32
 	}

@@ -3,11 +3,11 @@ module html
 
 import dom
 
-fn html_canvas_test_png(bitmap &dom.ImmutableBitmap_) ![]u8 {
+fn html_canvas_test_png(bitmap &dom.Bitmap_) ![]u8 {
 	return bitmap.data.clone()
 }
 
-fn html_canvas_test_jpeg(bitmap &dom.ImmutableBitmap_, quality ?int) ![]u8 {
+fn html_canvas_test_jpeg(bitmap &dom.Bitmap_, quality ?int) ![]u8 {
 	_ = quality
 	return bitmap.data.clone()
 }
@@ -73,12 +73,18 @@ fn test_canvas_attribute_change_and_external_content_source_follow_element_lifec
 	mut context := html_canvas_element_get_context(canvas, '2d', none) or { panic(err) }
 	context.set_global_alpha(0.25)
 	source := html_canvas_element_ensure_external_content_source(canvas)
-	assert !source.cleared
+	assert source.current_frame() == none
+	html_canvas_element_present(canvas)
+	presented := source.current_frame() or { panic('missing presented canvas frame') }
+	assert presented.width() == 300
+	assert presented.height() == 150
+	surface := html_canvas_element_surface(canvas) or { panic('missing canvas surface') }
+	assert voidptr(presented.bitmap()) != voidptr(surface)
 	element.set_attribute_value('width', '24')
 	html_canvas_element_attribute_changed(canvas, 'width', none, '24', none)
 	assert html_canvas_element_width(canvas) == 24
 	assert context.global_alpha() == 1.0
-	assert source.cleared
+	assert source.current_frame() == none
 }
 
 fn test_canvas_font_uses_detached_document_resolution_context() {

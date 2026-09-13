@@ -24,7 +24,7 @@ fn test_canvas_fill_and_stroke_styles() {
 
 fn test_canvas_pattern_creation_and_transform() {
 	mut image := ImageBitmap.create()
-	image.set_bitmap(&dom.ImmutableBitmap_{ width: 3, height: 4, data: [u8(1)] })
+	image.set_bitmap(&dom.Bitmap_{ width: 3, height: 4, data: [u8(1)] })
 	result := CanvasPattern.create(CanvasImageSource(ImageBitmapCanvasSource{ value: image }), '') or {
 		panic(err)
 	}
@@ -59,7 +59,7 @@ fn test_canvas_pattern_creation_and_transform() {
 }
 
 fn test_canvas_pattern_retains_decoded_frame_color_space() {
-	bitmap := &dom.ImmutableBitmap_{ width: 2, height: 1 }
+	bitmap := &dom.Bitmap_{ width: 2, height: 1 }
 	frame := dom.DecodedImageFrame_.create_with_color_space(bitmap, .display_p3)
 	data := BitmapDecodedImageData.create([
 		BitmapDecodedImageFrame{ frame: frame },

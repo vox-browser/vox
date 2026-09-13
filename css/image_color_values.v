@@ -1918,11 +1918,6 @@ pub fn (style_value ImageStyleValue) current_frame() ?&dom.DecodedImageFrame_ {
 	return image_data.frame(style_value.current_frame_index_)
 }
 
-pub fn (style_value ImageStyleValue) current_frame_bitmap() ?&dom.ImmutableBitmap_ {
-	frame := style_value.current_frame() or { return none }
-	return frame.bitmap()
-}
-
 pub fn (style_value ImageStyleValue) color_if_single_pixel_bitmap() ?Color {
 	frame := style_value.current_frame() or { return none }
 	bitmap := frame.bitmap()

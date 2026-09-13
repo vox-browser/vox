@@ -18,7 +18,7 @@ pub enum VideoRepresentation {
 	transparent_black
 }
 
-pub type PosterFrameFetchHook = fn(dom.URL) !&dom.ImmutableBitmap_
+pub type PosterFrameFetchHook = fn(dom.URL) !&dom.Bitmap_
 
 pub struct VideoDimensions {
 pub:
@@ -33,7 +33,7 @@ pub:
 mut:
 	base_url_                   dom.URL
 	poster_                     ?string
-	poster_frame_               ?&dom.ImmutableBitmap_
+	poster_frame_               ?&dom.Bitmap_
 	current_frame_              ?&painting.MediaVideoFrame
 	intrinsic_video_dimensions_ ?VideoDimensions
 	natural_dimensions_         ?VideoDimensions
@@ -157,7 +157,7 @@ pub fn (video &HTMLVideoElementModel) video_height() u32 {
 	return if dimensions := video.intrinsic_video_dimensions_ { dimensions.height } else { 0 }
 }
 
-pub fn (mut video HTMLVideoElementModel) set_current_frame(frame ?&dom.ImmutableBitmap_) {
+pub fn (mut video HTMLVideoElementModel) set_current_frame(frame ?&dom.Bitmap_) {
 	video.set_current_video_frame(if bitmap := frame {
 		?&painting.MediaVideoFrame(painting.MediaVideoFrame.from_bitmap(bitmap))
 	} else {
@@ -229,7 +229,7 @@ pub fn (video &HTMLVideoElementModel) natural_element_size() ?VideoDimensions {
 	return video.natural_dimensions_
 }
 
-pub fn (video &HTMLVideoElementModel) poster_frame() ?&dom.ImmutableBitmap_ {
+pub fn (video &HTMLVideoElementModel) poster_frame() ?&dom.Bitmap_ {
 	return video.poster_frame_
 }
 
@@ -243,35 +243,15 @@ pub fn (video &HTMLVideoElementModel) current_representation() VideoRepresentati
 	return .video_frame
 }
 
-pub fn (video &HTMLVideoElementModel) bitmap() ?&dom.ImmutableBitmap_ {
-	return match video.current_representation() {
-		.poster_frame { video.poster_frame_ }
-		.video_frame, .first_video_frame {
-			frame := if source := video.media.video_frame_source_ {
-				source.current_frame()
-			} else {
-				video.current_frame_
-			}
-			if current_frame := frame {
-				current_frame.to_immutable_bitmap() or { none }
-			} else {
-				?&dom.ImmutableBitmap_(none)
-			}
-		}
-		.transparent_black { ?&dom.ImmutableBitmap_(none) }
-	}
-}
-
-// The canvas and texture-upload paths preserve the current decoded frame's
-// color space when wrapping a legacy video bitmap in a DecodedImageFrame.
-pub fn (video &HTMLVideoElementModel) current_frame_color_space() ?dom.DecodedImageColorSpace {
+pub fn (video &HTMLVideoElementModel) current_decoded_image_frame() ?&dom.DecodedImageFrame_ {
 	frame := if source := video.media.video_frame_source_ {
 		source.current_frame()
 	} else {
 		video.current_frame_
 	}
 	current_frame := frame or { return none }
-	return current_frame.decoded_color_space
+	bitmap := current_frame.to_bitmap() or { return none }
+	return dom.DecodedImageFrame_.create_with_color_space(bitmap, current_frame.decoded_color_space)
 }
 
 @[heap]

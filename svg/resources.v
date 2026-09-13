@@ -1,5 +1,7 @@
 module svg
 
+import dom
+
 pub type ImageFetchDecodeHook = fn (string) !DecodedImageData
 
 pub enum ResourceState {
@@ -175,4 +177,16 @@ pub fn (image DecodedImageData) intrinsic_aspect_ratio() ?f64 {
 		}
 	}
 	return none
+}
+
+pub fn (image DecodedImageData) frame(_ int, width int, height int) ?&dom.DecodedImageFrame_ {
+	if width <= 0 || height <= 0 || image.surface_bytes.len == 0 {
+		return none
+	}
+	return dom.DecodedImageFrame_.create(&dom.Bitmap_{
+		width:  width
+		height: height
+		pitch:  width * 4
+		data:   image.surface_bytes.clone()
+	})
 }

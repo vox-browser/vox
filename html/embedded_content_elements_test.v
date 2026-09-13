@@ -13,7 +13,7 @@ fn embedded_object_fetch(url dom.URL) !ObjectResourceResponse {
 	if url.serialize().ends_with('.png') {
 		return ObjectResourceResponse{
 			content_type: 'image/png'
-			bitmap:       &dom.ImmutableBitmap_{
+			bitmap:       &dom.Bitmap_{
 				width:  20
 				height: 10
 				pitch:  80
@@ -235,7 +235,7 @@ fn test_concrete_object_element_representation_form_lifecycle_and_image_provider
 	assert html_object_element_intrinsic_width(object)? == 20
 	assert html_object_element_intrinsic_height(object)? == 10
 	assert html_object_element_intrinsic_aspect_ratio(object)? == 2.0
-	assert html_object_element_current_image_bitmap_sized(object, 40, 20)?.width == 20
+	assert html_object_element_current_image_frame_sized(object, 40, 20)?.width() == 20
 	assert html_object_element_default_tab_index_value(object) == 0
 	assert object_dom.tab_index() == 0
 	assert model.event_count('load') == 1

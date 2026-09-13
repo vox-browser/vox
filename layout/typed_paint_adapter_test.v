@@ -37,8 +37,8 @@ fn typed_video_paint_fetch(_ dom.URL, _ u64) !html.MediaResourceResponse {
 	}
 }
 
-fn typed_video_poster_fetch(_ dom.URL) !&dom.ImmutableBitmap_ {
-	return &dom.ImmutableBitmap_{
+fn typed_video_poster_fetch(_ dom.URL) !&dom.Bitmap_ {
+	return &dom.Bitmap_{
 		width: 30
 		height: 15
 		pitch: 120
@@ -2404,7 +2404,7 @@ fn test_video_uses_the_paintable_representation_switch() {
 	assert frame_media.ready_state() != .have_nothing
 	assert frame_media.video_tracks().length() == 1
 	frame_media.set_current_playback_position(1)
-	frame_model.set_current_frame(&dom.ImmutableBitmap_{
+	frame_model.set_current_frame(&dom.Bitmap_{
 		width: 20
 		height: 10
 		pitch: 80
@@ -2434,7 +2434,7 @@ fn test_video_uses_the_paintable_representation_switch() {
 	assert frame_result.content is painting.DrawVideoFrameSource
 	assert (frame_result.content as painting.DrawVideoFrameSource).scaling == .nearest_neighbor
 	assert frame_result.clip_radii.top_left == painting.CornerRadius{8, 8}
-	frame_model.set_current_frame(&dom.ImmutableBitmap_{
+	frame_model.set_current_frame(&dom.Bitmap_{
 		width: 40
 		height: 20
 		pitch: 160

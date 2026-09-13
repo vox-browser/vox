@@ -485,7 +485,7 @@ fn apply_bridge_state(document &dom.Document, encoded string) ! {
 							continue
 						}
 						bitmap := context.surface() or { continue }
-						mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+						mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
 						mutable_bitmap.data = pixels.clone()
 						mutable_bitmap.pitch = width * 4
 						context.did_draw(html.CanvasFloatRect{0, 0, f64(width), f64(height)})

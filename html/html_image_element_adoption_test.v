@@ -37,7 +37,7 @@ fn test_eager_image_fetch_delays_load_event_until_completion() {
 	image.set_src('/image.png')
 	image.set_fetch_hook(fn [document] (_ dom.URL) !DecodedImageData {
 		assert document.anything_is_delaying_the_load_event()
-		bitmap := &dom.ImmutableBitmap_{
+		bitmap := &dom.Bitmap_{
 			width: 1
 			height: 1
 			pitch: 4

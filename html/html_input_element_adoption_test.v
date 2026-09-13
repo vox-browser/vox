@@ -15,7 +15,7 @@ fn input_image_adoption_fetch(context &InputImageAdoptionContext, _ dom.URL) !De
 	new_document.adopt_node(context.element.as_node())
 	assert !context.old_document.anything_is_delaying_the_load_event()
 	assert context.new_document.anything_is_delaying_the_load_event()
-	bitmap := &dom.ImmutableBitmap_{
+	bitmap := &dom.Bitmap_{
 		width: 1
 		height: 1
 		pitch: 4

@@ -105,15 +105,15 @@ fn test_media_element_publishes_the_current_queued_video_frame() {
 	frame := media.ensure_video_frame_source().current_frame() or { panic('frame was not published') }
 	assert frame.width == 2
 	assert frame.height == 1
-	bitmap := frame.to_immutable_bitmap() or { panic(err) }
+	bitmap := frame.to_bitmap() or { panic(err) }
 	assert bitmap.data == [u8(0), 0, 0, 255, 255, 255, 255, 255]
 	assert video.natural_media_size()? == VideoDimensions{2, 1}
-	video.set_current_video_frame(&painting.MediaVideoFrame{
-		width:               2
-		height:              1
-		decoded_color_space: .display_p3
-	})
-	assert video.current_frame_color_space()? == .display_p3
+	color_bitmap := &dom.Bitmap_{ width: 2, height: 1, pitch: 8, data: []u8{len: 8} }
+	video.set_current_video_frame(painting.MediaVideoFrame.from_bitmap_with_color_space(color_bitmap,
+		.display_p3))
+	decoded_frame := video.current_decoded_image_frame() or { panic('missing decoded video frame') }
+	assert decoded_frame.bitmap() == color_bitmap
+	assert decoded_frame.color_space() == .display_p3
 }
 
 fn test_media_element_play_pause_seek_end_and_loop() {

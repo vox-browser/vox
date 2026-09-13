@@ -3,7 +3,7 @@ module html
 import dom
 
 fn test_image_bitmap_dimensions_close_and_serialization() {
-	bitmap_data := &dom.ImmutableBitmap_{
+	bitmap_data := &dom.Bitmap_{
 		width:      2
 		height:     3
 		pitch:      8
@@ -28,7 +28,7 @@ fn test_image_bitmap_dimensions_close_and_serialization() {
 
 fn test_image_bitmap_transfer_detaches_sender() {
 	mut sender := ImageBitmap.create()
-	sender.set_bitmap(&dom.ImmutableBitmap_{
+	sender.set_bitmap(&dom.Bitmap_{
 		width:  4
 		height: 5
 		pitch:  16

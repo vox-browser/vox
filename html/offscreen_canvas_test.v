@@ -3,11 +3,11 @@ module html
 import dom
 import math
 
-fn offscreen_test_png(bitmap &dom.ImmutableBitmap_) ![]u8 {
+fn offscreen_test_png(bitmap &dom.Bitmap_) ![]u8 {
 	return [u8(bitmap.width), u8(bitmap.height)]
 }
 
-fn offscreen_test_jpeg(bitmap &dom.ImmutableBitmap_, quality ?int) ![]u8 {
+fn offscreen_test_jpeg(bitmap &dom.Bitmap_, quality ?int) ![]u8 {
 	return [u8(bitmap.width), u8(quality or { 0 })]
 }
 
@@ -39,7 +39,7 @@ fn test_offscreen_canvas_2d_pixels_resize_and_transfer() {
 }
 
 fn test_offscreen_canvas_image_data_draw_image_blob_and_transfer() {
-	mut source_pixels := &dom.ImmutableBitmap_{
+	mut source_pixels := &dom.Bitmap_{
 		width: 1
 		height: 1
 		pitch: 4
@@ -80,7 +80,7 @@ fn test_offscreen_canvas_draw_image_snapshots_an_overlapping_self_source() {
 	mut canvas := OffscreenCanvas.create(4, 1) or { panic(err) }
 	mut context := canvas.get_context(.canvas_2d, none) or { panic(err) }
 	bitmap := canvas.bitmap() or { panic('missing bitmap') }
-	mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
 	mutable_bitmap.data = [
 		u8(255),
 		0,

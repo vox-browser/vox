@@ -385,7 +385,7 @@ following behavioral mismatches and added focused regressions:
   The native image command resolves in CSS coordinates before applying the
   accumulated transform and clips with the layer's exact shrunken elliptical
   radii. Repeat and round layers without `space` gaps use one device-rounded
-  Quartz tiled-image command, mirroring `DrawRepeatedImmutableBitmap` instead of
+  Quartz tiled-image command, mirroring `DrawRepeatedDecodedImageFrame` instead of
   materializing and crossing the native boundary once per tile. Compatibility
   tile materialization remains bounded before allocation. On a four-mode
   fractional repeat/round differential fixture, this reduced MAE against the

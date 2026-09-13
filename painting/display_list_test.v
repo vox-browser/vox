@@ -124,7 +124,7 @@ fn test_cached_command_replay_bypasses_active_capture() {
 
 fn test_recorder_source_shaped_entry_points_and_nesting_updates() {
 	mut recorder := new_display_list_recorder(new_accumulated_visual_context_tree())
-	frame := dom.DecodedImageFrame_.create(&dom.ImmutableBitmap_{
+	frame := dom.DecodedImageFrame_.create(&dom.Bitmap_{
 		width: 2
 		height: 3
 	})
@@ -310,15 +310,19 @@ fn test_display_list_commands_own_upstream_bounds_and_diagnostics() {
 	assert command_dump(StrokePath{}) == ''
 }
 
-fn test_external_content_source_replaces_and_clears_bitmap() {
+fn test_external_content_source_replaces_and_clears_decoded_frame() {
 	mut source := ExternalContentSource{}
-	assert source.bitmap_id == none
-	source.update('frame-1')
-	assert source.bitmap_id or { panic('expected bitmap') } == 'frame-1'
-	source.update('frame-2')
-	assert source.bitmap_id or { panic('expected bitmap') } == 'frame-2'
+	assert source.current_frame() == none
+	first := dom.DecodedImageFrame_.create(&dom.Bitmap_{ width: 1, height: 1 })
+	second := dom.DecodedImageFrame_.create_with_color_space(&dom.Bitmap_{ width: 2, height: 1 },
+		.display_p3)
+	source.update(first)
+	assert source.current_frame() or { panic('expected frame') } == first
+	source.update(second)
+	assert source.current_frame() or { panic('expected frame') } == second
+	assert source.current_frame()?.color_space() == .display_p3
 	source.clear()
-	assert source.bitmap_id == none
+	assert source.current_frame() == none
 }
 
 fn test_video_frame_source_command_retains_the_live_source() {

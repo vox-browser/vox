@@ -21,7 +21,7 @@ fn test_video_frame_source_retains_planar_frames_until_playback() {
 	retained := source.current_frame() or { panic('frame was not retained') }
 	assert retained == first
 	assert retained.timestamp == 1.25
-	bitmap := retained.to_immutable_bitmap() or { panic(err) }
+	bitmap := retained.to_bitmap() or { panic(err) }
 	assert bitmap.data == [u8(0), 0, 0, 255, 255, 255, 255, 255]
 
 	second := &MediaVideoFrame{
@@ -35,7 +35,7 @@ fn test_video_frame_source_retains_planar_frames_until_playback() {
 }
 
 fn test_video_frame_source_preserves_rgba_fallback_identity() {
-	bitmap := &dom.ImmutableBitmap_{
+	bitmap := &dom.Bitmap_{
 		width: 1
 		height: 1
 		pitch: 4
@@ -44,11 +44,11 @@ fn test_video_frame_source_preserves_rgba_fallback_identity() {
 	frame := MediaVideoFrame.from_bitmap(bitmap)
 	assert frame.width == 1
 	assert frame.height == 1
-	assert frame.to_immutable_bitmap() or { panic(err) } == bitmap
+	assert frame.to_bitmap() or { panic(err) } == bitmap
 }
 
 fn test_media_video_frame_retains_decoded_color_space() {
-	bitmap := &dom.ImmutableBitmap_{ width: 2, height: 1 }
+	bitmap := &dom.Bitmap_{ width: 2, height: 1 }
 	frame := MediaVideoFrame.from_bitmap_with_color_space(bitmap, .display_p3)
 	assert frame.rgba_bitmap? == bitmap
 	assert frame.decoded_color_space == .display_p3
@@ -64,7 +64,7 @@ fn test_video_frame_conversion_rejects_truncated_planes() {
 			v_plane: [u8(128)]
 		}
 	}
-	if _ := frame.to_immutable_bitmap() {
+	if _ := frame.to_bitmap() {
 		assert false, 'truncated luma plane should fail conversion'
 	} else {
 		assert err.msg().contains('luma plane is truncated')

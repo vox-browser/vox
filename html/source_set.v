@@ -327,7 +327,7 @@ fn rendered_auto_width_for_sizes_attribute(image ?&dom.HTMLImageElement) ?f64 {
 	mut rendered_auto_width := ?f64(none)
 	if image_element := image {
 		model := html_image_element_model_for_dom_element(image_element)
-		if model.immutable_bitmap() != none && model.allows_auto_sizes() {
+		if model.current_image_frame() != none && model.allows_auto_sizes() {
 			natural_width := model.intrinsic_width()
 			natural_height := model.intrinsic_height()
 			natural_aspect_ratio := model.intrinsic_aspect_ratio()

@@ -34,14 +34,14 @@ pub struct OffscreenCanvas {
 mut:
 	width_             u32
 	height_            u32
-	bitmap_            ?&dom.ImmutableBitmap_
+	bitmap_            ?&dom.Bitmap_
 	context_           ?&OffscreenCanvasRenderingContext2D
 	detached           bool
 	oncontextlost_     ?&dom.CallbackType
 	oncontextrestored_ ?&dom.CallbackType
 }
 
-fn create_transparent_canvas_bitmap(width u32, height u32) !&dom.ImmutableBitmap_ {
+fn create_transparent_canvas_bitmap(width u32, height u32) !&dom.Bitmap_ {
 	if width == 0 || height == 0 {
 		return error('zero-sized canvases do not have a bitmap')
 	}
@@ -49,7 +49,7 @@ fn create_transparent_canvas_bitmap(width u32, height u32) !&dom.ImmutableBitmap
 	if byte_length > u64(max_int) {
 		return error('InvalidStateError: canvas bitmap is too large')
 	}
-	return &dom.ImmutableBitmap_{
+	return &dom.Bitmap_{
 		width: int(width)
 		height: int(height)
 		pitch: int(width) * 4
@@ -60,7 +60,7 @@ fn create_transparent_canvas_bitmap(width u32, height u32) !&dom.ImmutableBitmap
 }
 
 pub fn OffscreenCanvas.create(width u32, height u32) !&OffscreenCanvas {
-	mut bitmap := ?&dom.ImmutableBitmap_(none)
+	mut bitmap := ?&dom.Bitmap_(none)
 	if width > 0 && height > 0 {
 		bitmap = create_transparent_canvas_bitmap(width, height)!
 	}
@@ -83,7 +83,7 @@ pub fn (canvas &OffscreenCanvas) height() u32 {
 	return canvas.height_
 }
 
-pub fn (canvas &OffscreenCanvas) bitmap() ?&dom.ImmutableBitmap_ {
+pub fn (canvas &OffscreenCanvas) bitmap() ?&dom.Bitmap_ {
 	return canvas.bitmap_
 }
 
@@ -477,7 +477,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_rectangle(x f64, y f64,
 	mapped_start := context.drawing_state.transform.map(FloatPoint{x, y})
 	mapped_end := context.drawing_state.transform.map(FloatPoint{x + width, y + height})
 	left, top, right, bottom := canvas_clamped_rectangle(mapped_start.x, mapped_start.y, mapped_end.x - mapped_start.x, mapped_end.y - mapped_start.y, bitmap.width, bitmap.height)
-	mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
 	for row := top; row < bottom; row++ {
 		for column := left; column < right; column++ {
 			offset := row * mutable_bitmap.pitch + column * 4
@@ -510,7 +510,7 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) clear_rect(x f64, y f64, 
 	path := context.rect_path(x, y, width, height).copy_transformed(context.drawing_state.transform)
 	bounds := canvas_path_bounds(path) or { return }
 	left, top, right, bottom := canvas_clamped_rectangle(bounds.x, bounds.y, bounds.width, bounds.height, bitmap.width, bitmap.height)
-	mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
 	for row := top; row < bottom; row++ {
 		for column := left; column < right; column++ {
 			point := FloatPoint{f64(column) + 0.5, f64(row) + 0.5}
@@ -590,7 +590,7 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) put_image_data(image_data
 
 pub fn (mut context OffscreenCanvasRenderingContext2D) put_image_data_dirty(image_data &ImageData, x int, y int, dirty_x int, dirty_y int, dirty_width int, dirty_height int) {
 	bitmap := context.canvas_.bitmap() or { return }
-	mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
 	source := image_data.data()
 	left, top, right, bottom := canvas_clamped_rectangle(f64(dirty_x), f64(dirty_y), f64(dirty_width), f64(dirty_height), int(image_data.width()), int(image_data.height()))
 	for source_y := top; source_y < bottom; source_y++ {
@@ -619,7 +619,7 @@ pub fn (mut context OffscreenCanvasRenderingContext2D) draw_image_internal(reque
 	if request.source_width == 0 || request.source_height == 0 || request.destination_width == 0 || request.destination_height == 0 {
 		return
 	}
-	mut mutable_destination := unsafe { &dom.ImmutableBitmap_(destination) }
+	mut mutable_destination := unsafe { &dom.Bitmap_(destination) }
 	// CanvasDrawImage resolves the source at draw time. Snapshot the bytes so
 	// self-draws and overlapping source/destination rectangles cannot observe
 	// pixels written earlier in the same operation.

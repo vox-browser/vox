@@ -6,6 +6,7 @@
 // subclasses reflect through WebIDL wrappers.
 module svg
 
+import dom
 import math
 
 pub struct SvgPaintStyle {
@@ -475,15 +476,6 @@ pub fn (element &Element) content_rect() ?Rect {
 	return Rect{ width: width, height: height }
 }
 
-pub fn (element &Element) current_image_bitmap() ?string {
-	if !element.is_image_available() {
-		return none
-	}
-	// The standalone SVG layer identifies decoded bitmaps by their source URL;
-	// raster bytes are exposed by current_image_bitmap_sized().
-	return element.image_resource.href
-}
-
 pub fn (mut element Element) process_href() {
 	element.process_the_url()
 }
@@ -712,13 +704,20 @@ pub fn (element &Element) decoded_image_data() ?DecodedImageData {
 	return element.decoded_image_data_
 }
 
-pub fn (element &Element) current_image_bitmap_sized(_ int, _ int) []u8 {
-	data := element.decoded_image_data_ or { return [] }
-	return data.surface()
+pub fn (element &Element) current_image_frame_sized(width int, height int) ?&dom.DecodedImageFrame_ {
+	data := element.decoded_image_data_ or { return none }
+	return data.frame(element.current_frame_index_, width, height)
 }
 
-pub fn (element &Element) default_image_bitmap_sized(width int, height int) []u8 {
-	return element.current_image_bitmap_sized(width, height)
+pub fn (element &Element) current_image_frame() ?&dom.DecodedImageFrame_ {
+	width := int(element.intrinsic_width() or { return none })
+	height := int(element.intrinsic_height() or { return none })
+	return element.current_image_frame_sized(width, height)
+}
+
+pub fn (element &Element) default_image_frame_sized(width int, height int) ?&dom.DecodedImageFrame_ {
+	data := element.decoded_image_data_ or { return none }
+	return data.frame(0, width, height)
 }
 
 pub fn (mut element Element) fetch_the_document() {

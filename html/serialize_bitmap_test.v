@@ -2,16 +2,16 @@ module html
 
 import dom
 
-fn fake_png_encoder(bitmap &dom.ImmutableBitmap_) ![]u8 {
+fn fake_png_encoder(bitmap &dom.Bitmap_) ![]u8 {
 	return [u8(0x50), u8(bitmap.width), u8(bitmap.height)]
 }
 
-fn fake_jpeg_encoder(bitmap &dom.ImmutableBitmap_, quality ?int) ![]u8 {
+fn fake_jpeg_encoder(bitmap &dom.Bitmap_, quality ?int) ![]u8 {
 	return [u8(0x4a), u8(quality or { 75 }), u8(bitmap.width)]
 }
 
 fn test_serialize_bitmap_selects_codec_and_quality() {
-	bitmap := &dom.ImmutableBitmap_{
+	bitmap := &dom.Bitmap_{
 		width:  10
 		height: 20
 	}

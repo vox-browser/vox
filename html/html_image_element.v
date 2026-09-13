@@ -436,11 +436,6 @@ pub fn (image &HTMLImageElementModel) decoded_image_data() ?DecodedImageData {
 	return data.data
 }
 
-pub fn (image &HTMLImageElementModel) current_bitmap() ?&dom.ImmutableBitmap_ {
-	frame := image.current_image_frame() or { return none }
-	return frame.bitmap()
-}
-
 pub fn (image &HTMLImageElementModel) current_image_frame() ?&dom.DecodedImageFrame_ {
 	data := image.decoded_data_ or { return none }
 	return data.data.frame(image.current_frame_index_)
@@ -622,18 +617,13 @@ pub fn (mut image HTMLImageElementModel) set_source_set(source_set SourceSet) {
 	image.source_set_ = source_set
 }
 
-pub fn (image &HTMLImageElementModel) immutable_bitmap() ?&dom.ImmutableBitmap_ {
-	return image.current_bitmap()
-}
-
-pub fn (image &HTMLImageElementModel) default_image_bitmap_sized(_ int, _ int) ?&dom.ImmutableBitmap_ {
-	frame := image.default_image_frame_sized(0, 0) or { return none }
-	return frame.bitmap()
-}
-
 pub fn (image &HTMLImageElementModel) default_image_frame_sized(_ int, _ int) ?&dom.DecodedImageFrame_ {
 	data := image.current_request_.image_data() or { return none }
 	return data.data.frame(0)
+}
+
+pub fn (image &HTMLImageElementModel) default_image_frame() ?&dom.DecodedImageFrame_ {
+	return image.default_image_frame_sized(0, 0)
 }
 
 pub fn (image &HTMLImageElementModel) is_image_available() bool {
@@ -653,11 +643,6 @@ pub fn (image &HTMLImageElementModel) intrinsic_height() ?f64 {
 pub fn (image &HTMLImageElementModel) intrinsic_aspect_ratio() ?f64 {
 	data := image.current_request_.image_data() or { return none }
 	return data.data.intrinsic_aspect_ratio()
-}
-
-pub fn (image &HTMLImageElementModel) current_image_bitmap_sized(_ int, _ int) ?&dom.ImmutableBitmap_ {
-	frame := image.current_image_frame_sized(0, 0) or { return none }
-	return frame.bitmap()
 }
 
 pub fn (image &HTMLImageElementModel) current_image_frame_sized(_ int, _ int) ?&dom.DecodedImageFrame_ {
@@ -876,12 +861,8 @@ pub fn html_image_element_set_dimension_attribute_source(element &dom.HTMLImageE
 	model.set_dimension_attribute_source(source)
 }
 
-pub fn html_image_element_immutable_bitmap(element &dom.HTMLImageElement) ?&dom.ImmutableBitmap_ {
-	return html_image_element_model_for_dom_element(element).immutable_bitmap()
-}
-
-pub fn html_image_element_default_image_bitmap_sized(element &dom.HTMLImageElement, width int, height int) ?&dom.ImmutableBitmap_ {
-	return html_image_element_model_for_dom_element(element).default_image_bitmap_sized(width, height)
+pub fn html_image_element_default_image_frame_sized(element &dom.HTMLImageElement, width int, height int) ?&dom.DecodedImageFrame_ {
+	return html_image_element_model_for_dom_element(element).default_image_frame_sized(width, height)
 }
 
 pub fn html_image_element_is_image_available(element &dom.HTMLImageElement) bool {
@@ -898,10 +879,6 @@ pub fn html_image_element_intrinsic_height(element &dom.HTMLImageElement) ?f64 {
 
 pub fn html_image_element_intrinsic_aspect_ratio(element &dom.HTMLImageElement) ?f64 {
 	return html_image_element_model_for_dom_element(element).intrinsic_aspect_ratio()
-}
-
-pub fn html_image_element_current_image_bitmap_sized(element &dom.HTMLImageElement, width int, height int) ?&dom.ImmutableBitmap_ {
-	return html_image_element_model_for_dom_element(element).current_image_bitmap_sized(width, height)
 }
 
 pub fn html_image_element_current_image_frame_sized(element &dom.HTMLImageElement, width int, height int) ?&dom.DecodedImageFrame_ {

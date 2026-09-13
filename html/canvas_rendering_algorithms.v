@@ -439,7 +439,7 @@ pub fn (context &OffscreenCanvasRenderingContext2D) canvas_element() &OffscreenC
 	return context.canvas_
 }
 
-pub fn (context &OffscreenCanvasRenderingContext2D) painter() ?&dom.ImmutableBitmap_ {
+pub fn (context &OffscreenCanvasRenderingContext2D) painter() ?&dom.Bitmap_ {
 	return context.canvas_.bitmap()
 }
 
@@ -490,7 +490,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_path_fill(path CanvasGf
 	bitmap := context.canvas_.bitmap() or { return }
 	transformed_path := path.copy_transformed(context.drawing_state.transform)
 	bounds := canvas_path_bounds(transformed_path) or { return }
-	mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
 	left := int(math.max(0.0, math.floor(bounds.x)))
 	top := int(math.max(0.0, math.floor(bounds.y)))
 	right := int(math.min(f64(bitmap.width), math.ceil(bounds.x + bounds.width)))
@@ -518,7 +518,7 @@ fn canvas_distance_to_segment(point FloatPoint, start FloatPoint, end FloatPoint
 
 fn (mut context OffscreenCanvasRenderingContext2D) paint_path_stroke(path CanvasGfxPath, color dom.Color) {
 	bitmap := context.canvas_.bitmap() or { return }
-	mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+	mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
 	half_width := context.drawing_state.line_width / 2.0
 	if half_width <= 0 {
 		return
@@ -707,7 +707,7 @@ pub fn (mut context CanvasRenderingContext2D) did_draw(rect CanvasFloatRect) {
 	html_canvas_element_set_canvas_content_dirty(context.element) or {}
 }
 
-pub fn (context &CanvasRenderingContext2D) painter() ?&dom.ImmutableBitmap_ {
+pub fn (context &CanvasRenderingContext2D) painter() ?&dom.Bitmap_ {
 	return context.OffscreenCanvasRenderingContext2D.painter()
 }
 

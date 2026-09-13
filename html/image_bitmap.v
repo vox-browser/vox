@@ -57,7 +57,7 @@ pub struct ImageBitmap {
 mut:
 	width_    u32
 	height_   u32
-	bitmap_   ?&dom.ImmutableBitmap_
+	bitmap_   ?&dom.Bitmap_
 	detached_ bool
 }
 
@@ -82,7 +82,7 @@ pub fn (mut bitmap ImageBitmap) close() {
 	bitmap.bitmap_ = none
 }
 
-pub fn (mut bitmap ImageBitmap) set_bitmap(value ?&dom.ImmutableBitmap_) {
+pub fn (mut bitmap ImageBitmap) set_bitmap(value ?&dom.Bitmap_) {
 	bitmap.bitmap_ = value
 	if actual := value {
 		bitmap.width_ = u32(actual.width)
@@ -93,7 +93,7 @@ pub fn (mut bitmap ImageBitmap) set_bitmap(value ?&dom.ImmutableBitmap_) {
 	}
 }
 
-pub fn (bitmap &ImageBitmap) bitmap() ?&dom.ImmutableBitmap_ {
+pub fn (bitmap &ImageBitmap) bitmap() ?&dom.Bitmap_ {
 	return bitmap.bitmap_
 }
 
@@ -104,7 +104,7 @@ fn image_bitmap_append_u32(mut output []u8, value u32) {
 	output << u8(value >> 24)
 }
 
-fn image_bitmap_serialize_bitmap(bitmap ?&dom.ImmutableBitmap_) []u8 {
+fn image_bitmap_serialize_bitmap(bitmap ?&dom.Bitmap_) []u8 {
 	mut output := []u8{}
 	value := bitmap or {
 		image_bitmap_append_u32(mut output, 0)
@@ -143,7 +143,7 @@ fn (mut decoder ImageBitmapDecoder) read_u32() !u32 {
 }
 
 struct DecodedImageBitmapData {
-	bitmap ?&dom.ImmutableBitmap_
+	bitmap ?&dom.Bitmap_
 }
 
 fn (mut decoder ImageBitmapDecoder) read_bitmap() !DecodedImageBitmapData {
@@ -160,7 +160,7 @@ fn (mut decoder ImageBitmapDecoder) read_bitmap() !DecodedImageBitmapData {
 	data := decoder.data[decoder.offset..decoder.offset + length].clone()
 	decoder.offset += length
 	return DecodedImageBitmapData{
-		bitmap: &dom.ImmutableBitmap_{
+		bitmap: &dom.Bitmap_{
 			width:      int(width)
 			height:     int(height)
 			pitch:      int(pitch)

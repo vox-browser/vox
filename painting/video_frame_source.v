@@ -40,10 +40,10 @@ pub:
 	color_space MediaVideoColorSpace = .bt709
 	decoded_color_space dom.DecodedImageColorSpace = .srgb
 	yuv_data    ?MediaVideoYUVData
-	rgba_bitmap ?&dom.ImmutableBitmap_
+	rgba_bitmap ?&dom.Bitmap_
 }
 
-pub fn MediaVideoFrame.from_bitmap(bitmap &dom.ImmutableBitmap_) &MediaVideoFrame {
+pub fn MediaVideoFrame.from_bitmap(bitmap &dom.Bitmap_) &MediaVideoFrame {
 	return &MediaVideoFrame{
 		width: u32(bitmap.width)
 		height: u32(bitmap.height)
@@ -51,7 +51,7 @@ pub fn MediaVideoFrame.from_bitmap(bitmap &dom.ImmutableBitmap_) &MediaVideoFram
 	}
 }
 
-pub fn MediaVideoFrame.from_bitmap_with_color_space(bitmap &dom.ImmutableBitmap_, color_space dom.DecodedImageColorSpace) &MediaVideoFrame {
+pub fn MediaVideoFrame.from_bitmap_with_color_space(bitmap &dom.Bitmap_, color_space dom.DecodedImageColorSpace) &MediaVideoFrame {
 	return &MediaVideoFrame{
 		width:               u32(bitmap.width)
 		height:              u32(bitmap.height)
@@ -72,7 +72,7 @@ fn media_video_clamp_channel(value int) u8 {
 
 // CPU conversion is the fallback used when the display-list backend cannot
 // import the planar frame directly as a GPU image.
-pub fn (frame &MediaVideoFrame) to_immutable_bitmap() !&dom.ImmutableBitmap_ {
+pub fn (frame &MediaVideoFrame) to_bitmap() !&dom.Bitmap_ {
 	if bitmap := frame.rgba_bitmap {
 		return bitmap
 	}
@@ -153,7 +153,7 @@ pub fn (frame &MediaVideoFrame) to_immutable_bitmap() !&dom.ImmutableBitmap_ {
 			pixels[offset + 3] = 255
 		}
 	}
-	return &dom.ImmutableBitmap_{
+	return &dom.Bitmap_{
 		width: width
 		height: height
 		pitch: width * 4

@@ -396,9 +396,9 @@ pub mut:
 	replaced_image_position_y string
 	replaced_image_rendering  css.ImageRendering
 	replaced_image_paintable  ?painting.ImagePaintable
-	canvas_bitmap             ?&dom.ImmutableBitmap_
+	canvas_bitmap             ?&dom.Bitmap_
 	canvas_paintable          ?painting.CanvasPaintable
-	video_bitmap              ?&dom.ImmutableBitmap_
+	video_bitmap              ?&dom.Bitmap_
 	video_frame_source        ?&painting.VideoFrameSource
 	video_representation      painting.VideoRepresentation
 	video_paintable           ?painting.VideoPaintable
@@ -1516,11 +1516,11 @@ pub mut:
 	// images leave this empty and continue through BackgroundPainting.
 	image_paintable ?painting.ImagePaintable
 	// CanvasPaintable publishes its current RGBA surface as external content.
-	canvas_bitmap    ?&dom.ImmutableBitmap_
+	canvas_bitmap    ?&dom.Bitmap_
 	canvas_paintable ?painting.CanvasPaintable
 	// VideoPaintable retains the representation switch separately from the
 	// optional poster/current-frame bitmap.
-	video_bitmap         ?&dom.ImmutableBitmap_
+	video_bitmap         ?&dom.Bitmap_
 	video_frame_source   ?&painting.VideoFrameSource
 	video_representation painting.VideoRepresentation
 	video_paintable      ?painting.VideoPaintable

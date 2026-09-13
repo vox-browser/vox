@@ -23,7 +23,7 @@ fn image_test_fetch(url dom.URL) !DecodedImageData {
 	if url.serialize().contains('broken') {
 		return error('decode failed')
 	}
-	bitmap := &dom.ImmutableBitmap_{
+	bitmap := &dom.Bitmap_{
 		width: 200
 		height: 100
 		pitch: 800
@@ -52,6 +52,10 @@ fn test_image_source_selection_load_dimensions_and_decode() {
 	assert image.current_src() == 'https://example.test/one.png'
 	assert image.natural_width() == 200
 	assert image.natural_height() == 100
+	current_frame := image.current_image_frame() or { panic('missing current decoded frame') }
+	assert current_frame.width() == 200
+	default_frame := image.default_image_frame() or { panic('missing default decoded frame') }
+	assert default_frame == current_frame
 	assert image.width() == 200
 	assert image.height() == 100
 	assert image.event_count('load') == 1

@@ -65,7 +65,7 @@ pub fn canvas_image_source_frame(image CanvasImageSource) ?&dom.DecodedImageFram
 	}
 }
 
-pub fn canvas_image_source_bitmap(image CanvasImageSource) ?&dom.ImmutableBitmap_ {
+pub fn canvas_image_source_bitmap(image CanvasImageSource) ?&dom.Bitmap_ {
 	frame := canvas_image_source_frame(image) or { return none }
 	return frame.bitmap()
 }
@@ -125,7 +125,7 @@ pub fn CanvasPattern.create(image CanvasImageSource, repetition_input string) !C
 	}
 }
 
-pub fn (pattern &CanvasPattern) bitmap() &dom.ImmutableBitmap_ {
+pub fn (pattern &CanvasPattern) bitmap() &dom.Bitmap_ {
 	return pattern.frame_.bitmap()
 }
 

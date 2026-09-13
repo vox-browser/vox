@@ -16,8 +16,8 @@ fn media_elements_fetch(url dom.URL, _ u64) !MediaResourceResponse {
 	}
 }
 
-fn poster_test_fetch(_ dom.URL) !&dom.ImmutableBitmap_ {
-	return &dom.ImmutableBitmap_{
+fn poster_test_fetch(_ dom.URL) !&dom.Bitmap_ {
+	return &dom.Bitmap_{
 		width: 320
 		height: 180
 		pitch: 1280
@@ -39,7 +39,7 @@ fn test_video_representation_dimensions_poster_and_controls() {
 	video.set_poster_fetch_hook(poster_test_fetch)
 	video.set_poster('/poster.png')
 	assert video.current_representation() == .poster_frame
-	assert video.bitmap()?.width == 320
+	assert video.poster_frame()?.width == 320
 	assert video.natural_element_size()? == VideoDimensions{320, 180}
 	video.set_video_dimensions(1920, 1080)
 	assert video.video_width() == 0

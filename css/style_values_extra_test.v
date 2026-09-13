@@ -3,7 +3,7 @@ module css
 import dom
 
 struct StyleValueTestDecodedImageData {
-	bitmap_ &dom.ImmutableBitmap_
+	bitmap_ &dom.Bitmap_
 }
 
 fn (data &StyleValueTestDecodedImageData) frame(_ usize) ?&dom.DecodedImageFrame_ {
@@ -70,7 +70,7 @@ fn test_basic_shape_inset_builds_upstream_rounded_path_geometry() {
 }
 
 fn test_cursor_retains_typed_image_and_uses_default_sizing_algorithm() {
-	bitmap := &dom.ImmutableBitmap_{
+	bitmap := &dom.Bitmap_{
 		width: 10
 		height: 20
 		data: []u8{len: 10 * 20 * 4}
@@ -94,7 +94,7 @@ fn test_cursor_retains_typed_image_and_uses_default_sizing_algorithm() {
 }
 
 fn test_image_style_value_reads_single_pixel_from_real_decoded_image_contract() {
-	bitmap := &dom.ImmutableBitmap_{
+	bitmap := &dom.Bitmap_{
 		width: 1
 		height: 1
 		data: [u8(12), 34, 56, 78]
@@ -134,7 +134,7 @@ fn test_image_style_value_copies_share_const_client_registration() {
 }
 
 fn test_css_image_reads_decoded_data_from_shared_resource_request() {
-	bitmap := &dom.ImmutableBitmap_{
+	bitmap := &dom.Bitmap_{
 		width: 3
 		height: 5
 		data: []u8{len: 3 * 5 * 4}

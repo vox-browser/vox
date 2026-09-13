@@ -1019,7 +1019,7 @@ fn layout_node_ancestor_path(node &LayoutNode) []&LayoutNode {
 }
 
 @[heap]
-pub struct ImmutableBitmap_ {
+pub struct Bitmap_ {
 pub mut:
 	width      int = 1
 	height     int = 1
@@ -1029,28 +1029,38 @@ pub mut:
 	data       []u8
 }
 
+pub fn (bitmap &Bitmap_) clone() &Bitmap_ {
+	return &Bitmap_{
+		width:      bitmap.width
+		height:     bitmap.height
+		pitch:      bitmap.pitch
+		format:     bitmap.format
+		alpha_type: bitmap.alpha_type
+		data:       bitmap.data.clone()
+	}
+}
+
 pub enum DecodedImageColorSpace {
 	srgb
 	display_p3
 }
 
-// Gfx::DecodedImageFrame keeps immutable decoded pixels and their color space
-// together. ImmutableBitmap_ remains the V host's raw bitmap storage until the
-// following upstream removal commit migrates its remaining legacy boundaries.
+// Gfx::DecodedImageFrame keeps decoded pixels and their color space together.
+// Bitmap_ is the V host's raw pixel storage, matching Gfx::Bitmap.
 @[heap]
 pub struct DecodedImageFrame_ {
 pub:
-	bitmap_      &ImmutableBitmap_ = unsafe { nil }
+	bitmap_      &Bitmap_ = unsafe { nil }
 	color_space_ DecodedImageColorSpace
 }
 
-pub fn DecodedImageFrame_.create(bitmap &ImmutableBitmap_) &DecodedImageFrame_ {
+pub fn DecodedImageFrame_.create(bitmap &Bitmap_) &DecodedImageFrame_ {
 	return &DecodedImageFrame_{
 		bitmap_: bitmap
 	}
 }
 
-pub fn DecodedImageFrame_.create_with_color_space(bitmap &ImmutableBitmap_, color_space DecodedImageColorSpace) &DecodedImageFrame_ {
+pub fn DecodedImageFrame_.create_with_color_space(bitmap &Bitmap_, color_space DecodedImageColorSpace) &DecodedImageFrame_ {
 	return &DecodedImageFrame_{
 		bitmap_: bitmap
 		color_space_: color_space
@@ -1060,11 +1070,11 @@ pub fn DecodedImageFrame_.create_with_color_space(bitmap &ImmutableBitmap_, colo
 // Gfx::DecodedImageFrame's alpha-type overload keeps the source bitmap when it
 // already has the requested interpretation and clones it before changing the
 // interpretation otherwise.
-pub fn DecodedImageFrame_.create_with_alpha_type(bitmap &ImmutableBitmap_, alpha_type u8, color_space DecodedImageColorSpace) &DecodedImageFrame_ {
+pub fn DecodedImageFrame_.create_with_alpha_type(bitmap &Bitmap_, alpha_type u8, color_space DecodedImageColorSpace) &DecodedImageFrame_ {
 	if bitmap.alpha_type == alpha_type {
 		return DecodedImageFrame_.create_with_color_space(bitmap, color_space)
 	}
-	converted := &ImmutableBitmap_{
+	converted := &Bitmap_{
 		width:      bitmap.width
 		height:     bitmap.height
 		pitch:      bitmap.pitch
@@ -1075,7 +1085,7 @@ pub fn DecodedImageFrame_.create_with_alpha_type(bitmap &ImmutableBitmap_, alpha
 	return DecodedImageFrame_.create_with_color_space(converted, color_space)
 }
 
-pub fn (frame &DecodedImageFrame_) bitmap() &ImmutableBitmap_ {
+pub fn (frame &DecodedImageFrame_) bitmap() &Bitmap_ {
 	return frame.bitmap_
 }
 
@@ -5051,10 +5061,10 @@ pub fn (mut e Element) ordinal_value() int {
 // --- View transition ---
 
 // https://drafts.csswg.org/css-view-transitions-1/#capture-the-image
-pub fn (e &Element) capture_the_image() &ImmutableBitmap_ {
+pub fn (e &Element) capture_the_image() &DecodedImageFrame_ {
 	_ = e
-	// FIXME: Actually implement this. Matches the C++ placeholder with a 1x1 bitmap.
-	return &ImmutableBitmap_{}
+	// FIXME: Actually implement this. Matches the C++ placeholder with a 1x1 frame.
+	return DecodedImageFrame_.create(&Bitmap_{})
 }
 
 pub fn (e &Element) captured_in_a_view_transition() bool {

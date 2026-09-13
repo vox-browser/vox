@@ -3020,9 +3020,9 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 	mut replaced_image_renders_as_alt_text := false
 	mut replaced_image_alt_text := ''
 	mut replaced_image_paintable := ?painting.ImagePaintable(none)
-	mut canvas_bitmap := ?&dom.ImmutableBitmap_(none)
+	mut canvas_bitmap := ?&dom.Bitmap_(none)
 	mut canvas_paintable := ?painting.CanvasPaintable(none)
-	mut video_bitmap := ?&dom.ImmutableBitmap_(none)
+	mut video_bitmap := ?&dom.Bitmap_(none)
 	mut video_frame_source := ?&painting.VideoFrameSource(none)
 	mut video_representation := painting.VideoRepresentation.transparent_black
 	mut video_paintable := ?painting.VideoPaintable(none)

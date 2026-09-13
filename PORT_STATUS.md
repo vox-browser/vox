@@ -699,7 +699,7 @@ Background sizing and repeat positioning now remain fixed-point `CSSPixels`
 through contain/cover scaling, `round` correction, aspect restoration, and the
 source's exact first-visible-tile calculation. Ordinary repeat and round layers
 without `space` gaps replay as one device-rounded native tiled-image operation,
-matching `DrawRepeatedImmutableBitmap` instead of allocating up to 4,096 tile
+matching `DrawRepeatedDecodedImageFrame` instead of allocating up to 4,096 tile
 rectangles and crossing the renderer boundary once per tile.
 Typed linear, radial, and conic gradients now travel through that same ordered
 background-image list instead of a separate first-gradient shortcut. Each

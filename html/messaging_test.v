@@ -156,7 +156,7 @@ fn test_message_port_transfer_reentangles_the_received_port() {
 
 fn test_image_bitmap_transfer_detaches_source_and_reconstructs_pixels() {
 	mut source := ImageBitmap.create()
-	source.set_bitmap(&dom.ImmutableBitmap_{
+	source.set_bitmap(&dom.Bitmap_{
 		width:      2
 		height:     1
 		pitch:      8

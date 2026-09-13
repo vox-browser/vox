@@ -1388,8 +1388,8 @@ pub fn (model &HTMLInputElementModel) height() u32 {
 			}
 		}
 	}
-	bitmap := model.current_image_bitmap_sized(0, 0) or { return 0 }
-	return u32(bitmap.height)
+	frame := model.current_image_frame_sized(0, 0) or { return 0 }
+	return u32(frame.height())
 }
 
 pub fn (mut model HTMLInputElementModel) set_height(value u64) {
@@ -1409,8 +1409,8 @@ pub fn (model &HTMLInputElementModel) width() u32 {
 			}
 		}
 	}
-	bitmap := model.current_image_bitmap_sized(0, 0) or { return 0 }
-	return u32(bitmap.width)
+	frame := model.current_image_frame_sized(0, 0) or { return 0 }
+	return u32(frame.width())
 }
 
 pub fn (mut model HTMLInputElementModel) set_width(value u64) {
@@ -1541,10 +1541,9 @@ pub fn (model &HTMLInputElementModel) intrinsic_aspect_ratio() ?f64 {
 	return data.intrinsic_aspect_ratio()
 }
 
-pub fn (model &HTMLInputElementModel) current_image_bitmap_sized(_ int, _ int) ?&dom.ImmutableBitmap_ {
+pub fn (model &HTMLInputElementModel) current_image_frame_sized(_ int, _ int) ?&dom.DecodedImageFrame_ {
 	data := model.image_data() or { return none }
-	frame := data.frame(0) or { return none }
-	return frame.bitmap()
+	return data.frame(0)
 }
 
 pub fn (mut model HTMLInputElementModel) set_visible_in_viewport(visible bool) {

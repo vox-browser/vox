@@ -20,7 +20,7 @@ fn shared_resource_test_on_fail() {
 
 fn shared_resource_test_fetch_success(request &SharedResourceRequest, _ dom.URL) {
 	mut mutable_request := unsafe { &SharedResourceRequest(request) }
-	bitmap := &dom.ImmutableBitmap_{
+	bitmap := &dom.Bitmap_{
 		width:  2
 		height: 3
 	}
@@ -42,7 +42,7 @@ fn shared_resource_test_decode(url dom.URL, mime_type string, bytes []u8) !Decod
 	}
 	return BitmapDecodedImageData.create([
 		BitmapDecodedImageFrame{
-			frame: dom.DecodedImageFrame_.create(&dom.ImmutableBitmap_{
+			frame: dom.DecodedImageFrame_.create(&dom.Bitmap_{
 				width:  4
 				height: 5
 				data:   bytes.clone()

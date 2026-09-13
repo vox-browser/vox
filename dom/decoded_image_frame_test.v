@@ -1,7 +1,7 @@
 module dom
 
 fn test_decoded_image_frame_retains_bitmap_geometry_and_color_space() {
-	bitmap := &ImmutableBitmap_{
+	bitmap := &Bitmap_{
 		width:      3
 		height:     2
 		pitch:      12
@@ -17,7 +17,7 @@ fn test_decoded_image_frame_retains_bitmap_geometry_and_color_space() {
 }
 
 fn test_decoded_image_frame_clones_only_for_alpha_type_conversion() {
-	bitmap := &ImmutableBitmap_{
+	bitmap := &Bitmap_{
 		width:      1
 		height:     1
 		pitch:      4
@@ -34,4 +34,12 @@ fn test_decoded_image_frame_clones_only_for_alpha_type_conversion() {
 	assert converted.bitmap().format == 7
 	assert converted.bitmap().data == bitmap.data
 	assert converted.color_space() == .display_p3
+}
+
+fn test_capture_the_image_returns_a_decoded_frame() {
+	element := &Element{}
+	frame := element.capture_the_image()
+	assert frame.width() == 1
+	assert frame.height() == 1
+	assert frame.color_space() == .srgb
 }

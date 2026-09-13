@@ -14,7 +14,7 @@ fn record_canvas_draw_image(request CanvasDrawImageRequest) ! {
 fn test_canvas_draw_image_overloads_supply_spec_defaults() {
 	canvas_draw_image_requests.clear()
 	mut image_bitmap := ImageBitmap.create()
-	image_bitmap.set_bitmap(&dom.ImmutableBitmap_{ width: 20, height: 10 })
+	image_bitmap.set_bitmap(&dom.Bitmap_{ width: 20, height: 10 })
 	source := CanvasImageSource(ImageBitmapCanvasSource{
 		value: image_bitmap
 	})

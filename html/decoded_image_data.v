@@ -186,7 +186,7 @@ pub fn AnimatedDecodedImageData.install_frame_delivery_callback() {
 	html_animated_frame_delivery_callback_installed = true
 }
 
-pub fn AnimatedDecodedImageData.create(session_id i64, frame_count u32, loop_count u32, width int, height int, color_space dom.DecodedImageColorSpace, durations []u32, initial_bitmaps []&dom.ImmutableBitmap_, request_frames ?AnimationFrameRequestCallback, stop_animation_decode ?AnimationStopCallback) &AnimatedDecodedImageData {
+pub fn AnimatedDecodedImageData.create(session_id i64, frame_count u32, loop_count u32, width int, height int, color_space dom.DecodedImageColorSpace, durations []u32, initial_bitmaps []&dom.Bitmap_, request_frames ?AnimationFrameRequestCallback, stop_animation_decode ?AnimationStopCallback) &AnimatedDecodedImageData {
 	mut data := &AnimatedDecodedImageData{
 		session_id:            session_id
 		frame_count_:          frame_count
@@ -319,7 +319,7 @@ pub fn (data &AnimatedDecodedImageData) paint(mut recorder painting.DisplayListR
 	})
 }
 
-pub fn (mut data AnimatedDecodedImageData) receive_frames(bitmaps []&dom.ImmutableBitmap_, start_frame_index u32) {
+pub fn (mut data AnimatedDecodedImageData) receive_frames(bitmaps []&dom.Bitmap_, start_frame_index u32) {
 	data.request_in_flight = false
 	for offset, bitmap in bitmaps {
 		frame_index := start_frame_index + u32(offset)
@@ -339,11 +339,11 @@ pub fn (mut data AnimatedDecodedImageData) receive_frames(bitmaps []&dom.Immutab
 	}
 }
 
-pub fn animated_decoded_image_deliver_frames_for_session(session_id i64, bitmaps []&dom.ImmutableBitmap_) {
+pub fn animated_decoded_image_deliver_frames_for_session(session_id i64, bitmaps []&dom.Bitmap_) {
 	AnimatedDecodedImageData.deliver_frames_for_session(session_id, bitmaps)
 }
 
-pub fn AnimatedDecodedImageData.deliver_frames_for_session(session_id i64, bitmaps []&dom.ImmutableBitmap_) {
+pub fn AnimatedDecodedImageData.deliver_frames_for_session(session_id i64, bitmaps []&dom.Bitmap_) {
 	if data := html_animated_image_sessions[session_id] {
 		mut mutable_data := data
 		mutable_data.receive_frames(bitmaps, data.last_requested_start_frame)

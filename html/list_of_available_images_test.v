@@ -24,7 +24,7 @@ fn test_list_of_available_images_key_and_storage_algorithms() {
 
 	first_image := BitmapDecodedImageData.create([
 		BitmapDecodedImageFrame{
-			frame: dom.DecodedImageFrame_.create(&dom.ImmutableBitmap_{
+			frame: dom.DecodedImageFrame_.create(&dom.Bitmap_{
 				width:  1
 				height: 1
 			})
@@ -32,7 +32,7 @@ fn test_list_of_available_images_key_and_storage_algorithms() {
 	], 0, false)
 	second_image := BitmapDecodedImageData.create([
 		BitmapDecodedImageFrame{
-			frame: dom.DecodedImageFrame_.create(&dom.ImmutableBitmap_{
+			frame: dom.DecodedImageFrame_.create(&dom.Bitmap_{
 				width:  2
 				height: 1
 			})

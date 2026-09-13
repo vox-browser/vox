@@ -1144,17 +1144,21 @@ pub fn (list DisplayList) playback_plan(snapshot ScrollStateSnapshot, visible_cl
 	return planner.actions
 }
 
-// ExternalContentSource is the renderer-thread handoff. The translation keeps
-// immutable bitmap identity and replacement semantics without binding to Skia.
+// ExternalContentSource is the renderer-thread handoff. Decoded frames keep
+// the source pixels and color-space metadata alive until playback.
 pub struct ExternalContentSource {
 pub mut:
-	bitmap_id ?string
+	frame ?&dom.DecodedImageFrame_
 }
 
-pub fn (mut source ExternalContentSource) update(bitmap_id string) {
-	source.bitmap_id = bitmap_id
+pub fn (mut source ExternalContentSource) update(frame ?&dom.DecodedImageFrame_) {
+	source.frame = frame
 }
 
 pub fn (mut source ExternalContentSource) clear() {
-	source.bitmap_id = none
+	source.frame = none
+}
+
+pub fn (source &ExternalContentSource) current_frame() ?&dom.DecodedImageFrame_ {
+	return source.frame
 }

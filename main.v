@@ -1102,7 +1102,7 @@ fn requested_video_frame_time(markup string) f64 {
 	return if last_five > last_zero { 5.0 } else { 0.0 }
 }
 
-fn decode_local_video_frame(resolved_url string, seconds f64) ?&dom.ImmutableBitmap_ {
+fn decode_local_video_frame(resolved_url string, seconds f64) ?&dom.Bitmap_ {
 	path := if resolved_url.starts_with('file://') {
 		url.percent_decode(resolved_url['file://'.len..]).bytestr()
 	} else if !resolved_url.contains('://') {
@@ -1127,7 +1127,7 @@ fn decode_local_video_frame(resolved_url string, seconds f64) ?&dom.ImmutableBit
 	unsafe {
 		vmemcpy(data.data, pixels, data.len)
 	}
-	return &dom.ImmutableBitmap_{
+	return &dom.Bitmap_{
 		width: width
 		height: height
 		pitch: pitch
@@ -1142,7 +1142,7 @@ fn decode_local_video_frame(resolved_url string, seconds f64) ?&dom.ImmutableBit
 fn install_local_video_frames(document &dom.Document, base_url string, markup string) {
 	root := unsafe { &dom.Node(document) }
 	seconds := requested_video_frame_time(markup)
-	mut decoded := map[string]&dom.ImmutableBitmap_{}
+	mut decoded := map[string]&dom.Bitmap_{}
 	for element in css.query_selector_all(root, 'video') {
 		mut source := element.get_attribute_value('src')
 		if source == '' {
@@ -1177,7 +1177,7 @@ fn install_local_video_frames(document &dom.Document, base_url string, markup st
 	}
 }
 
-fn bitmap_javascript_state(bitmap &dom.ImmutableBitmap_) map[string]json2.Any {
+fn bitmap_javascript_state(bitmap &dom.Bitmap_) map[string]json2.Any {
 	mut packed := bitmap.data.clone()
 	if bitmap.pitch != bitmap.width * 4 {
 		packed = []u8{len: bitmap.width * bitmap.height * 4}
@@ -1260,7 +1260,8 @@ fn javascript_initial_state(document &dom.Document, current_url string, scripts 
 		if element.local_name() == 'video' {
 			video := unsafe { &dom.HTMLVideoElement(element) }
 			model := html.html_video_element_model_for_dom_element(video)
-			if bitmap := model.bitmap() {
+			if frame := model.current_decoded_image_frame() {
+				bitmap := frame.bitmap()
 				frame_state := bitmap_javascript_state(bitmap)
 				state['readyState'] = json2.Any(2)
 				state['videoWidth'] = frame_state['width'] or { json2.Any(0) }
@@ -1459,7 +1460,8 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 							if source_element.local_name() == 'video' {
 								video := unsafe { &dom.HTMLVideoElement(source_element) }
 								model := html.html_video_element_model_for_dom_element(video)
-								if source_bitmap := model.bitmap() {
+								if source_frame := model.current_decoded_image_frame() {
+									source_bitmap := source_frame.bitmap()
 									if source_bitmap.width == width && source_bitmap.height == height {
 										pixels = source_bitmap.data.clone()
 									}
@@ -1481,7 +1483,7 @@ fn apply_javascript_state(document &dom.Document, encoded string, mut messages [
 						continue
 					}
 					bitmap := context.surface() or { continue }
-					mut mutable_bitmap := unsafe { &dom.ImmutableBitmap_(bitmap) }
+					mut mutable_bitmap := unsafe { &dom.Bitmap_(bitmap) }
 					mutable_bitmap.data = pixels.clone()
 					mutable_bitmap.pitch = width * 4
 					context.did_draw(html.CanvasFloatRect{0, 0, f64(width), f64(height)})
@@ -3927,7 +3929,7 @@ fn (mut app BrowserApp) draw_command(source_command layout.PaintCommand, page_x 
 			mut video_bitmap := command.video_bitmap
 			if source := command.video_frame_source {
 				if frame := source.current_frame() {
-					if bitmap := frame.to_immutable_bitmap() {
+					if bitmap := frame.to_bitmap() {
 						video_bitmap = bitmap
 					} else {
 						video_bitmap = none

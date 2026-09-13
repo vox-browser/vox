@@ -26,9 +26,9 @@ fn test_image_element_resource_pipeline_uses_decoded_state() {
 	assert image.intrinsic_height()? == 20
 	assert image.intrinsic_aspect_ratio()? == 2
 	assert image.content_rect()? == Rect{ width: 40, height: 20 }
-	assert image.current_image_bitmap()? == 'picture.svg'
-	assert image.current_image_bitmap_sized(10, 10) == [u8(1), 2, 3, 4]
-	assert image.default_image_bitmap_sized(10, 10) == [u8(1), 2, 3, 4]
+	assert image.current_image_frame()?.width() == 40
+	assert image.current_image_frame_sized(10, 10)?.bitmap().data == [u8(1), 2, 3, 4]
+	assert image.default_image_frame_sized(10, 10)?.bitmap().data == [u8(1), 2, 3, 4]
 	assert image.decoded_image_data()?.record_display_list() == ['save', 'paint', 'restore']
 	assert image.decoded_image_data()?.paint() == [u8(1), 2, 3, 4]
 

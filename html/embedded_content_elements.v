@@ -639,7 +639,7 @@ pub:
 	status       u16 = 200
 	content_type string
 	body         []u8
-	bitmap       ?&dom.ImmutableBitmap_
+	bitmap       ?&dom.Bitmap_
 }
 
 pub type ObjectResourceFetchHook = fn(dom.URL) !ObjectResourceResponse
@@ -657,7 +657,7 @@ mut:
 	fully_active_        bool = true
 	blocked_by_ancestor_ bool
 	representation_      ObjectRepresentation = .unknown
-	image_data_          ?&dom.ImmutableBitmap_
+	image_data_          ?&dom.Bitmap_
 	fetch_hook_          ?ObjectResourceFetchHook
 	event_target_        &dom.EventTarget = unsafe { nil }
 	event_counts_        map[string]int
@@ -743,7 +743,7 @@ pub fn (object &HTMLObjectElementModel) representation() ObjectRepresentation {
 	return object.representation_
 }
 
-pub fn (object &HTMLObjectElementModel) image_data() ?&dom.ImmutableBitmap_ {
+pub fn (object &HTMLObjectElementModel) image_data() ?&dom.Bitmap_ {
 	return object.image_data_
 }
 
@@ -998,8 +998,9 @@ pub fn (object &HTMLObjectElementModel) intrinsic_aspect_ratio() ?f64 {
 	return f64(bitmap.width) / f64(bitmap.height)
 }
 
-pub fn (object &HTMLObjectElementModel) current_image_bitmap_sized(_ int, _ int) ?&dom.ImmutableBitmap_ {
-	return object.image_data_
+pub fn (object &HTMLObjectElementModel) current_image_frame_sized(_ int, _ int) ?&dom.DecodedImageFrame_ {
+	bitmap := object.image_data_ or { return none }
+	return dom.DecodedImageFrame_.create(bitmap)
 }
 
 pub fn (mut object HTMLObjectElementModel) set_visible_in_viewport(visible bool) {
@@ -1110,7 +1111,7 @@ pub fn html_object_element_default_tab_index_value(_ &dom.HTMLObjectElement) int
 	return 0
 }
 
-pub fn html_object_element_image_data(element &dom.HTMLObjectElement) ?&dom.ImmutableBitmap_ {
+pub fn html_object_element_image_data(element &dom.HTMLObjectElement) ?&dom.Bitmap_ {
 	return html_object_element_model_for_dom_element(element).image_data()
 }
 
@@ -1130,8 +1131,8 @@ pub fn html_object_element_intrinsic_aspect_ratio(element &dom.HTMLObjectElement
 	return html_object_element_model_for_dom_element(element).intrinsic_aspect_ratio()
 }
 
-pub fn html_object_element_current_image_bitmap_sized(element &dom.HTMLObjectElement, width int, height int) ?&dom.ImmutableBitmap_ {
-	return html_object_element_model_for_dom_element(element).current_image_bitmap_sized(width, height)
+pub fn html_object_element_current_image_frame_sized(element &dom.HTMLObjectElement, width int, height int) ?&dom.DecodedImageFrame_ {
+	return html_object_element_model_for_dom_element(element).current_image_frame_sized(width, height)
 }
 
 pub fn html_object_element_set_visible_in_viewport(element &dom.HTMLObjectElement, visible bool) {

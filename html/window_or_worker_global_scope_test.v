@@ -97,7 +97,7 @@ fn test_global_scope_create_image_bitmap_crop_resize_flip() {
 }
 
 fn test_crop_source_rectangle_infers_aspect_ratio_with_ceiling() {
-	input := &dom.ImmutableBitmap_{
+	input := &dom.Bitmap_{
 		width: 3
 		height: 2
 		pitch: 12
