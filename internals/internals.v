@@ -1365,3 +1365,67 @@ pub fn (mut api Internals) set_environments_top_level_url(url string) ! {
 	parsed := parse_absolute_url(url) or { return error('invalid absolute URL') }
 	api.platform.top_level_url = parsed.serialize()
 }
+
+// Page appearance and focus controls used by the layout test harness. The
+// translated PlatformState is the PageClient boundary, while document-owned
+// effects are applied to the live associated document as well.
+pub fn (mut api Internals) set_user_style(source string) {
+	api.platform.user_style_source = source
+	api.platform.user_style_invalidations++
+	if document := api.platform.associated_document {
+		css.set_document_user_style_sheet(document, source)
+		mut document_node := unsafe { &dom.Node(document) }
+		document_node.invalidate_style(.settings_change)
+	}
+}
+
+pub fn (mut api Internals) set_preferred_color_scheme(color_scheme string) {
+	preferred := css.preferred_color_scheme_from_string(color_scheme)
+	api.platform.preferred_color_scheme_override = match preferred {
+		.auto_ { none }
+		else { css.preferred_color_scheme_to_string(preferred) }
+	}
+	api.platform.user_style_invalidations++
+	if document := api.platform.associated_document {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.set_needs_media_query_evaluation()
+		mut document_node := unsafe { &dom.Node(document) }
+		document_node.invalidate_style(.settings_change)
+	}
+}
+
+pub fn (mut api Internals) set_page_focus(has_focus bool) {
+	api.platform.page_has_focus = has_focus
+}
+
+pub fn (mut api Internals) set_system_visibility_state(state string) {
+	visibility_state := if state == 'hidden' {
+		dom.VisibilityState.hidden
+	} else {
+		dom.VisibilityState.visible
+	}
+	api.platform.system_visibility_state = visibility_state
+	if document := api.platform.associated_document {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.update_the_visibility_state(visibility_state)
+	}
+}
+
+pub fn (mut api Internals) set_hidden_document_timer_wake_up_interval(milliseconds f64) {
+	api.platform.hidden_document_timer_wake_up_interval_ms = milliseconds
+}
+
+pub fn (mut api Internals) set_hidden_document_intensive_timer_throttling(wake_up_interval f64, grace_period_once_loaded f64, grace_period_while_loading f64) {
+	api.platform.hidden_document_intensive_wake_up_interval_ms = wake_up_interval
+	api.platform.hidden_document_intensive_grace_period_once_loaded_ms = grace_period_once_loaded
+	api.platform.hidden_document_intensive_grace_period_while_loading_ms = grace_period_while_loading
+}
+
+pub fn (api &Internals) canvas_color_scheme() string {
+	if override := api.platform.preferred_color_scheme_override {
+		return override
+	}
+	document := api.platform.associated_document or { return 'light' }
+	preferred := css.preferred_color_scheme_from_string(document.preferred_color_scheme())
+	return if preferred == .dark { 'dark' } else { 'light' }
+}

@@ -344,6 +344,44 @@ fn test_layout_and_style_engine_diagnostics_use_live_identities() {
 	assert platform.style_update_requests == 1
 }
 
+fn test_page_appearance_visibility_and_timer_controls() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	mut platform := &PlatformState{
+		associated_document: document
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	mut api := Internals.create(platform, navigator)
+
+	api.set_user_style('body { color: green; }')
+	assert platform.user_style_source == 'body { color: green; }'
+	assert platform.user_style_invalidations == 1
+	assert document.needs_full_style_update()
+
+	api.set_preferred_color_scheme('dark')
+	assert platform.preferred_color_scheme_override? == 'dark'
+	assert api.canvas_color_scheme() == 'dark'
+	assert platform.user_style_invalidations == 2
+	api.set_preferred_color_scheme('auto')
+	assert platform.preferred_color_scheme_override == none
+	assert api.canvas_color_scheme() == 'light'
+
+	api.set_page_focus(true)
+	assert platform.page_has_focus
+	api.set_system_visibility_state('hidden')
+	assert platform.system_visibility_state == .hidden
+	assert document.hidden()
+	api.set_system_visibility_state('anything-else')
+	assert platform.system_visibility_state == .visible
+	assert !document.hidden()
+
+	api.set_hidden_document_timer_wake_up_interval(250)
+	api.set_hidden_document_intensive_timer_throttling(1000, 5000, 7000)
+	assert platform.hidden_document_timer_wake_up_interval_ms == 250
+	assert platform.hidden_document_intensive_wake_up_interval_ms == 1000
+	assert platform.hidden_document_intensive_grace_period_once_loaded_ms == 5000
+	assert platform.hidden_document_intensive_grace_period_while_loading_ms == 7000
+}
+
 fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	mut platform := &PlatformState{}
 	navigator := gamepad.NavigatorGamepadPartial.new()

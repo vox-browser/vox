@@ -195,6 +195,14 @@ pub mut:
 	content_blockers_source                    string
 	content_blocking_enabled                   bool = true
 	user_style_invalidations                   u64
+	user_style_source                          string
+	preferred_color_scheme_override            ?string
+	page_has_focus                             bool
+	system_visibility_state                    dom.VisibilityState = .visible
+	hidden_document_timer_wake_up_interval_ms   f64
+	hidden_document_intensive_wake_up_interval_ms f64
+	hidden_document_intensive_grace_period_once_loaded_ms f64
+	hidden_document_intensive_grace_period_while_loading_ms f64
 	site_compatibility_source                  string
 	experimental_interfaces_exposed            bool
 	autoplay_policy                            string = 'block-audio'
