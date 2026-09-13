@@ -393,12 +393,6 @@ pub fn cascaded_value_with_ua(element &dom.Element, property_id PropertyID, auth
 // layout decide whether a physical box edge that was never set should defer to its CSS logical
 // equivalent (e.g. an unset `margin-top` deferring to a declared `margin-block-start`).
 pub fn is_property_specified(element &dom.Element, property_id PropertyID, author_rules []&CSSRule) bool {
-	abstract_element := dom.AbstractElement.new(element, none)
-	if dom_cascaded := abstract_element.cascaded_properties() {
-		if cascaded := cascaded_properties_from_dom(dom_cascaded) {
-			return cascaded.property(property_id) != none
-		}
-	}
 	name := string_from_property_id(property_id)
 	if _ := specified_value_on(element, name, author_rules, user_agent_rules()) {
 		return true

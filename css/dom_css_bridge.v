@@ -8,7 +8,7 @@ import os
 // The DOM module cannot import css (css already imports dom; the reverse would be a module cycle). So the
 // DOM stores this port's real style objects (css.ComputedProperties / css.CascadedProperties /
 // css.StyleScope) as opaque `voidptr` handles embedded in placeholder structs (dom.CSSComputedProperties_,
-// dom.CSSCascadedProperties_, dom.StyleScope). These helpers wrap a css object into its DOM placeholder
+// dom.CSSComputedProperties_ and dom.StyleScope). These helpers wrap a css object into its DOM placeholder
 // and cast a placeholder's handle back to the css type.
 //
 // Lifetime: V's default GC is conservative, so a handle stored in a reachable DOM placeholder keeps its
@@ -140,21 +140,6 @@ fn parent_computed_properties(abstract_element dom.AbstractElement) ?&ComputedPr
 	inherit_from := abstract_element.element_to_inherit_style_from() or { return none }
 	dom_computed := inherit_from.computed_properties() or { return none }
 	return computed_properties_from_dom(dom_computed)
-}
-
-// --- CascadedProperties ---
-
-fn cascaded_properties_to_dom(cascaded &CascadedProperties) &dom.CSSCascadedProperties_ {
-	return &dom.CSSCascadedProperties_{
-		css_handle: voidptr(cascaded)
-	}
-}
-
-fn cascaded_properties_from_dom(placeholder &dom.CSSCascadedProperties_) ?&CascadedProperties {
-	if placeholder.css_handle == unsafe { nil } {
-		return none
-	}
-	return unsafe { &CascadedProperties(placeholder.css_handle) }
 }
 
 // --- StyleScope ---

@@ -649,14 +649,6 @@ pub enum CSSMathStyle_ {
 }
 
 @[heap]
-pub struct CSSCascadedProperties_ {
-
-	// dom<->css bridge: opaque handle to the real css.CascadedProperties. See css/dom_css_bridge.v.
-pub mut:
-	css_handle voidptr = unsafe { nil }
-}
-
-@[heap]
 pub struct CSSCustomProperty_ {
 pub:
 	important bool
@@ -864,7 +856,6 @@ pub struct PseudoElement_ {
 pub mut:
 	layout_node_     ?&LayoutNodeWithStyle_
 	computed_props   ?&CSSComputedProperties_
-	cascaded_props   ?&CSSCascadedProperties_
 	custom_prop_data ?&CSSCustomPropertyData_
 	counters_set_    ?&CSSCountersSet_
 	scroll_offset_   CSSPixelPoint_
@@ -884,14 +875,6 @@ pub fn (p &PseudoElement_) computed_properties() ?&CSSComputedProperties_ {
 
 pub fn (mut p PseudoElement_) set_computed_properties(props ?&CSSComputedProperties_) {
 	p.computed_props = props
-}
-
-pub fn (p &PseudoElement_) cascaded_properties() ?&CSSCascadedProperties_ {
-	return p.cascaded_props
-}
-
-pub fn (mut p PseudoElement_) set_cascaded_properties(props ?&CSSCascadedProperties_) {
-	p.cascaded_props = props
 }
 
 pub fn (p &PseudoElement_) custom_property_data() ?&CSSCustomPropertyData_ {
@@ -1399,7 +1382,6 @@ pub mut:
 	shadow_root_         ?&ShadowRoot
 	part_list_           ?&DOMTokenList
 
-	cascaded_properties_    ?&CSSCascadedProperties_
 	computed_properties_    ?&CSSComputedProperties_
 	layout_node_with_style_ ?&LayoutNodeWithStyle_
 	custom_property_data_   ?&CSSCustomPropertyData_
@@ -1537,9 +1519,6 @@ pub fn (mut e Element) visit_edges(mut visitor CellVisitor) {
 	}
 	if ced := e.custom_element_definition_ {
 		visitor.visit(ced)
-	}
-	if cp := e.cascaded_properties_ {
-		visitor.visit(cp)
 	}
 	if cp := e.computed_properties_ {
 		visitor.visit(cp)
@@ -2269,31 +2248,6 @@ pub fn (mut e Element) set_computed_properties(pseudo_element ?int, style ?&CSSC
 		update_anchor_name_map_for_root(e.as_node().root(), old_names, new_names, &e)
 	}
 	e.computed_properties_ = style
-}
-
-pub fn (e &Element) el_cascaded_properties(pseudo_element ?int) ?&CSSCascadedProperties_ {
-	if pe := pseudo_element {
-		if pseudo := e.get_pseudo_element(pe) {
-			return pseudo.cascaded_properties()
-		}
-		return none
-	}
-	return e.cascaded_properties_
-}
-
-pub fn (mut e Element) set_cascaded_properties(pseudo_element ?int, cascaded ?&CSSCascadedProperties_) {
-	if pe := pseudo_element {
-		if c := cascaded {
-			mut pseudo := e.ensure_pseudo_element(pe)
-			pseudo.set_cascaded_properties(c)
-		} else if existing := e.get_pseudo_element(pe) {
-			unsafe {
-				existing.cascaded_props = none
-			}
-		}
-		return
-	}
-	e.cascaded_properties_ = cascaded
 }
 
 pub fn (e &Element) get_pseudo_element(typ int) ?&PseudoElement_ {

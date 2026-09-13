@@ -28,9 +28,6 @@ pub fn (e &Element) is_presentational_hint(_ string) bool {
 	return false
 }
 
-pub fn (e &Element) apply_presentational_hints(_ &CSSCascadedProperties_) {
-}
-
 pub fn (e &Element) element_child_style_uses_tree_counting_function() bool {
 	return e.child_style_uses_tree_counting_function
 }

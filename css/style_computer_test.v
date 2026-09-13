@@ -333,11 +333,6 @@ fn test_dom_css_bridge_round_trip() {
 	}
 	assert voidptr(round_tripped) == voidptr(computed)
 
-	mut cascaded := CascadedProperties.new()
-	c_placeholder := cascaded_properties_to_dom(cascaded)
-	c_round := cascaded_properties_from_dom(c_placeholder) or { panic('cascaded handle missing') }
-	assert voidptr(c_round) == voidptr(cascaded)
-
 	empty := &dom.CSSComputedProperties_{}
 	if _ := computed_properties_from_dom(empty) {
 		panic('empty placeholder should not resolve to a css object')
@@ -521,7 +516,6 @@ fn test_inheritance_dependent_specified_values_survive_the_cascade_pass() {
 
 	parent.set_attribute_value('style', 'font-size: 10px')
 	computer.recompute_style(mut parent_abstract)
-	child_abstract.set_cascaded_properties(none)
 	computer.recompute_inherited_style_with_invalidation(mut child_abstract)
 	updated_child := computed_properties_from_dom(child_abstract.computed_properties() or {
 		panic('updated child style missing')

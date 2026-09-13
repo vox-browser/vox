@@ -12378,8 +12378,6 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 			}
 
 			mut style := s.compute_style(pseudo_abstract_element)
-			mut mutable_abstract_element := abstract_element
-			mutable_abstract_element.set_cascaded_properties(pseudo_abstract_element.cascaded_properties())
 
 			// Internal shadow-tree nodes may still carry inline declarations. Merge
 			// those after the pseudo-element style, as upstream does.
@@ -12447,11 +12445,7 @@ pub fn (s &StyleComputer) compute_style_impl(abstract_element dom.AbstractElemen
 		}
 	}
 
-	// Store the cascaded properties on the element (bridged) so descendants can inherit through it.
-	mut mutable_abstract_element := abstract_element
-	mutable_abstract_element.set_cascaded_properties(cascaded_properties_to_dom(cascaded_properties))
-
-	mut computed_properties := s.compute_properties(mutable_abstract_element, mut cascaded_properties)
+	mut computed_properties := s.compute_properties(abstract_element, mut cascaded_properties)
 	_, compute_elapsed := css_style_profile_checkpoint(profile_checkpoint)
 	css_style_profile_compute_ns += compute_elapsed
 	computed_properties.set_attempted_pseudo_class_matches(attempted_pseudo_class_matches)

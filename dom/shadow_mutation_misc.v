@@ -4120,9 +4120,6 @@ pub fn (mut pseudo PseudoElement_) visit_edges(mut visitor CellVisitor) {
 	if layout := pseudo.layout_node_ {
 		visitor.visit(layout)
 	}
-	if cascaded := pseudo.cascaded_props {
-		visitor.visit(cascaded)
-	}
 	if computed := pseudo.computed_props {
 		visitor.visit(computed)
 	}
@@ -4353,17 +4350,6 @@ pub fn (mut abstract_element AbstractElement) set_custom_property_data(data ?&CS
 pub fn (abstract_element &AbstractElement) get_custom_property(name string) ?&CSSStyleValue_ {
 	data := abstract_element.custom_property_data() or { return none }
 	return data.get(name)
-}
-
-pub fn (abstract_element &AbstractElement) cascaded_properties() ?&CSSCascadedProperties_ {
-	pseudo := if p := abstract_element.pseudo_element_ { int(p) } else { none }
-	return abstract_element.element_.el_cascaded_properties(pseudo)
-}
-
-pub fn (mut abstract_element AbstractElement) set_cascaded_properties(cascaded_properties ?&CSSCascadedProperties_) {
-	pseudo := if p := abstract_element.pseudo_element_ { int(p) } else { none }
-	mut element := unsafe { &Element(abstract_element.element_) }
-	element.set_cascaded_properties(pseudo, cascaded_properties)
 }
 
 pub fn (abstract_element &AbstractElement) has_non_empty_counters_set() bool {
