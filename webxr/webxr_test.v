@@ -106,11 +106,7 @@ fn test_exact_session_event_and_system_entry_points() {
 }
 
 fn webxr_test_context() &webgl.WebGLRenderingContext {
-	return &webgl.WebGLRenderingContext{
-		version: .webgl1
-		attributes: webgl.WebGLContextAttributes{}
-		native: unsafe { nil }
-	}
+	return webgl.WebGLRenderingContext.new(.webgl1, webgl.WebGLContextAttributes{}, [])
 }
 
 fn test_webgl_layer_validates_session_and_context_state() {
