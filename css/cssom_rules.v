@@ -466,9 +466,10 @@ pub fn (mut rule_list CSSRuleList) evaluate_media_queries(document &dom.Document
 				}
 			}
 			.media {
+				was_first_evaluation := !rule.did_evaluate
 				did_match := rule.condition_matches()
 				now_matches := rule.evaluate_media(document)
-				if did_match != now_matches {
+				if !was_first_evaluation && did_match != now_matches {
 					any_media_queries_changed_match_state = true
 				}
 				if now_matches {
@@ -564,6 +565,7 @@ pub mut:
 	rules ?&CSSRuleList
 
 	media                ?&MediaList
+	did_evaluate         bool
 	supports             ?&Supports
 	container_conditions []ContainerRuleCondition
 
@@ -1195,6 +1197,7 @@ pub fn (rule &CSSRule) condition_matches() bool {
 }
 
 pub fn (mut rule CSSRule) evaluate_media(document &dom.Document) bool {
+	rule.did_evaluate = true
 	if mut media := rule.media {
 		return media.evaluate(document)
 	}
