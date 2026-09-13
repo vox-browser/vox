@@ -232,6 +232,28 @@ fn test_spatial_panner_setters_queue_complete_render_configuration() {
 	assert last.cone_outer_angle == 180
 }
 
+fn test_dynamics_compressor_factory_queues_upstream_passthrough_renderer() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut source := context.base.create_constant_source(0.75, AudioNodeOptions{}) or { panic(err) }
+	mut compressor := context.base.create_dynamics_compressor(DynamicsCompressorOptions{}) or {
+		panic(err)
+	}
+	mut destination := context.base.destination.AudioNode
+	connect_nodes(mut source.node, mut compressor.node, 0, 0) or { panic(err) }
+	connect_nodes(mut compressor.node, mut destination, 0, 0) or { panic(err) }
+	start_scheduled_source(mut context.base, mut source.node, 0) or { panic(err) }
+	mut graph := RenderGraph.create()
+	graph.apply_control_messages(context.base.control_messages.drain())
+	graph.set_destination(destination.id)
+	graph.render_quantum(RenderContext{
+		sample_rate: 48_000
+		quantum_size: int(render_quantum_size)
+	})
+	output := graph.destination() or { panic('missing destination') }
+	assert output.output(0).channel(0) == []f32{len: int(render_quantum_size), init: 0.75}
+	assert output.output(0).channel(1) == []f32{len: int(render_quantum_size), init: 0.75}
+}
+
 fn test_channel_merger_factory_queues_its_multi_input_render_node() {
 	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
 	context.base.control_messages.drain()

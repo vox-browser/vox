@@ -164,6 +164,8 @@ pub fn (mut context BaseAudioContext) create_dynamics_compressor(options Dynamic
 	}
 	if count := options.node.channel_count { compressor.set_channel_count(count)! }
 	if mode := options.node.channel_count_mode { compressor.set_channel_count_mode(mode)! }
+	compressor.node.queue_render_node_creation(PassthroughRenderNode.create(node.id,
+		int(render_quantum_size)).render_node())
 	return compressor
 }
 
@@ -171,7 +173,7 @@ pub fn (mut compressor DynamicsCompressorNode) set_channel_count_mode(mode Chann
 	if mode == .max {
 		return error("NotSupportedError: DynamicsCompressorNode does not support 'max'")
 	}
-	compressor.node.channel_count_mode = mode
+	compressor.node.set_channel_count_mode(mode)!
 }
 
 pub fn (mut compressor DynamicsCompressorNode) set_channel_count(count u32) ! {
