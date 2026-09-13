@@ -196,6 +196,50 @@ fn test_fragment_index_and_selection_offsets_cover_all_selection_states() {
 	assert retained.range_rect(.start_and_end, 3, 4) == Rect{10, 4, 13, 10}
 }
 
+fn test_fragment_splits_ligatures_for_hit_testing_and_selection() {
+	font := &platform.Font{ point_size: 16 }
+	ligature_run := platform.GlyphRun.new(font, .ltr, [
+		platform.Glyph{ advance: 10, length_in_code_units: 1 },
+		platform.Glyph{ advance: 0, length_in_code_units: 1 },
+		platform.Glyph{ advance: 30, length_in_code_units: 3 },
+		platform.Glyph{ advance: 10, length_in_code_units: 1 },
+		platform.Glyph{ advance: 10, length_in_code_units: 1 },
+	])
+	fragment := PaintableFragment{
+		text_value: 'office'
+		offset: Point{5, 8}
+		size: Size{60, 12}
+		length_in_code_units: 6
+		glyph_run: ligature_run
+	}
+	assert fragment.index_in_node_for_point(Point{7.5, 8}) == 0
+	assert fragment.index_in_node_for_point(Point{17.5, 8}) == 1
+	assert fragment.index_in_node_for_point(Point{27.5, 8}) == 2
+	assert fragment.index_in_node_for_point(Point{37.5, 8}) == 3
+	assert fragment.index_in_node_for_point(Point{47.5, 8}) == 4
+	assert fragment.index_in_node_for_point(Point{57.5, 8}) == 5
+	assert fragment.range_rect(.start_and_end, 1, 2) == Rect{15, 8, 10, 12}
+	assert fragment.range_rect(.start_and_end, 2, 3) == Rect{25, 8, 10, 12}
+	assert fragment.range_rect(.start_and_end, 3, 4) == Rect{35, 8, 10, 12}
+}
+
+fn test_fragment_hit_testing_keeps_combining_graphemes_together() {
+	font := &platform.Font{ point_size: 16 }
+	run := platform.GlyphRun.new(font, .ltr, [
+		platform.Glyph{ advance: 20, length_in_code_units: 2 },
+		platform.Glyph{ advance: 10, length_in_code_units: 1 },
+	])
+	fragment := PaintableFragment{
+		text_value: 'áb'
+		size: Size{30, 10}
+		length_in_code_units: 3
+		glyph_run: run
+	}
+	assert fragment.index_in_node_for_point(Point{4, 0}) == 0
+	assert fragment.index_in_node_for_point(Point{11, 0}) == 2
+	assert fragment.index_in_node_for_point(Point{24, 0}) == 2
+}
+
 fn test_paintable_tree_hit_testing_uses_reverse_stacking_order() {
 	tree := PaintableTree{
 		nodes: [

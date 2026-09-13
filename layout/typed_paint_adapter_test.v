@@ -1172,6 +1172,7 @@ fn test_paintable_with_lines_hit_testing_returns_text_node_and_utf16_cursor_inde
 		2,
 		2,
 	]
+	assert target_box.lines[0].fragments.all(it.paintable_fragment.text_value == 'a😀bc')
 	fragment := target_box.lines[0].fragments[1]
 	fragment_rect := fragment.paintable_fragment.absolute_rect()
 	inside_point := painting.Point{fragment_rect.x + fragment_rect.width / 2, fragment_rect.y + fragment_rect.height / 2}

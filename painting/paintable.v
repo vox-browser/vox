@@ -80,6 +80,95 @@ pub mut:
 	decoration_thickness    f64
 }
 
+struct GlyphRunCluster {
+	start int
+	end   int
+	width f64
+}
+
+struct GlyphRunClusterIterator {
+	glyphs          []platform.Glyph
+	fragment_length int
+mut:
+	glyph_index int
+	cursor      int
+}
+
+fn (mut iterator GlyphRunClusterIterator) next() ?GlyphRunCluster {
+	for iterator.glyph_index < iterator.glyphs.len {
+		glyph := iterator.glyphs[iterator.glyph_index]
+		iterator.glyph_index++
+		if glyph.advance == 0 {
+			continue
+		}
+		cluster_start := iterator.cursor
+		cluster_end := min_int(iterator.cursor + glyph.length_in_code_units, iterator.fragment_length)
+		iterator.cursor = cluster_end
+		if cluster_end <= cluster_start {
+			continue
+		}
+		return GlyphRunCluster{cluster_start, cluster_end, f64(glyph.advance)}
+	}
+	return none
+}
+
+struct FragmentGraphemeEdgeTracker {
+	target_width f64
+mut:
+	left_edge           int
+	right_edge          int
+	width_to_left_edge  f64
+	width_to_right_edge f64
+}
+
+fn (mut tracker FragmentGraphemeEdgeTracker) update(length_in_code_units int, width f64) bool {
+	if width == 0 {
+		return false
+	}
+	tracker.right_edge += length_in_code_units
+	tracker.width_to_right_edge += width
+	if tracker.width_to_right_edge >= tracker.target_width {
+		return true
+	}
+	tracker.left_edge = tracker.right_edge
+	tracker.width_to_left_edge = tracker.width_to_right_edge
+	return false
+}
+
+fn (tracker FragmentGraphemeEdgeTracker) resolve() int {
+	if tracker.target_width - tracker.width_to_left_edge < tracker.width_to_right_edge - tracker.target_width {
+		return tracker.left_edge
+	}
+	return tracker.right_edge
+}
+
+fn fragment_utf16_length(text string) int {
+	mut length := 0
+	for code_point in text.runes() {
+		length += if code_point > 0xffff { 2 } else { 1 }
+	}
+	return length
+}
+
+fn fragment_grapheme_boundaries(text string) []int {
+	mut boundaries := [0]
+	mut code_units := 0
+	for grapheme in text.graphemes() {
+		code_units += fragment_utf16_length(grapheme)
+		boundaries << code_units
+	}
+	return boundaries
+}
+
+fn next_fragment_grapheme_boundary(boundaries []int, offset int) ?int {
+	for boundary in boundaries {
+		if boundary > offset {
+			return boundary
+		}
+	}
+	return none
+}
+
 pub fn (fragment PaintableFragment) absolute_rect() Rect {
 	return Rect{fragment.offset.x + fragment.containing_block_offset.x, fragment.offset.y + fragment.containing_block_offset.y, fragment.size.width, fragment.size.height}
 }
@@ -94,21 +183,36 @@ pub fn (fragment PaintableFragment) index_in_node_for_point(position Point) int 
 	if relative < 0 {
 		return 0
 	}
-	mut consumed_width := f64(0)
-	mut consumed_units := 0
 	if run := fragment.glyph_run {
-		for glyph in run.glyphs() {
-			width := f64(glyph.advance)
-			if relative < consumed_width + width / 2.0 {
-				break
-			}
-			consumed_width += width
-			consumed_units += glyph.length_in_code_units
-			if relative < consumed_width {
-				break
+		mut tracker := FragmentGraphemeEdgeTracker{
+			target_width: relative
+		}
+		boundaries := fragment_grapheme_boundaries(fragment.text_value)
+		mut clusters := GlyphRunClusterIterator{
+			glyphs: run.glyphs()
+			fragment_length: fragment.length_in_code_units
+		}
+		for {
+			cluster := clusters.next() or { break }
+			per_unit_advance := cluster.width / f64(cluster.end - cluster.start)
+			mut grapheme_start := fragment.start_offset + cluster.start
+			cluster_absolute_end := fragment.start_offset + cluster.end
+			for grapheme_start < cluster_absolute_end {
+				grapheme_end := min_int(next_fragment_grapheme_boundary(boundaries, grapheme_start) or { cluster_absolute_end }, cluster_absolute_end)
+				if grapheme_end <= grapheme_start {
+					break
+				}
+				grapheme_units := grapheme_end - grapheme_start
+				if tracker.update(grapheme_units, per_unit_advance * f64(grapheme_units)) {
+					return fragment.start_offset + tracker.resolve()
+				}
+				grapheme_start = grapheme_end
 			}
 		}
+		return fragment.start_offset + min_int(tracker.resolve(), fragment.length_in_code_units)
 	} else {
+		mut consumed_width := f64(0)
+		mut consumed_units := 0
 		for glyph in fragment.glyphs {
 			if relative < consumed_width + glyph.width / 2.0 {
 				break
@@ -119,8 +223,8 @@ pub fn (fragment PaintableFragment) index_in_node_for_point(position Point) int 
 				break
 			}
 		}
+		return fragment.start_offset + min_int(consumed_units, fragment.length_in_code_units)
 	}
-	return fragment.start_offset + min_int(consumed_units, fragment.length_in_code_units)
 }
 
 pub fn (fragment PaintableFragment) compute_selection_offsets(state SelectionState,
@@ -173,17 +277,30 @@ pub fn (fragment PaintableFragment) range_rect(state SelectionState, start_offse
 	if offsets.start == 0 && offsets.end == fragment.length_in_code_units && fragment.length_in_code_units > 0 {
 		pixel_width = if fragment.orientation == .horizontal { rect.width } else { rect.height }
 	} else {
-		mut units_seen := 0
 		if run := fragment.glyph_run {
-			for glyph in run.glyphs() {
-				if units_seen < offsets.start {
-					pixel_offset += f64(glyph.advance)
-				} else if units_seen < offsets.end {
-					pixel_width += f64(glyph.advance)
+			mut clusters := GlyphRunClusterIterator{
+				glyphs: run.glyphs()
+				fragment_length: fragment.length_in_code_units
+			}
+			for {
+				cluster := clusters.next() or { break }
+				if cluster.end <= offsets.start {
+					pixel_offset += cluster.width
+					continue
 				}
-				units_seen += glyph.length_in_code_units
+				if cluster.start >= offsets.end {
+					continue
+				}
+				per_unit_advance := cluster.width / f64(cluster.end - cluster.start)
+				if cluster.start < offsets.start {
+					pixel_offset += per_unit_advance * f64(offsets.start - cluster.start)
+				}
+				in_selection_start := max_int(cluster.start, offsets.start)
+				in_selection_end := min_int(cluster.end, offsets.end)
+				pixel_width += per_unit_advance * f64(in_selection_end - in_selection_start)
 			}
 		} else {
+			mut units_seen := 0
 			for glyph in fragment.glyphs {
 				if units_seen < offsets.start {
 					pixel_offset += glyph.width

@@ -3801,6 +3801,11 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 			} else {
 				painting.Orientation.vertical
 			}
+			fragment_text_for_rendering := if text_node := fragment.layout_node_.as_text_node() {
+				text_node.text_for_rendering()
+			} else {
+				text
+			}
 			transport_fragment := TextFragment{
 				x: absolute_x
 				y: absolute_y
@@ -3851,6 +3856,7 @@ fn text_lines_from_typed_layout(container &Node, used &UsedValues, state &Layout
 				text_underline_position: text_underline_position
 				layout_handle: voidptr(fragment.layout_node_)
 				paintable_fragment: painting.PaintableFragment{
+					text_value: fragment_text_for_rendering
 					offset: painting.Point{absolute_x, absolute_y}
 					size: painting.Size{fragment.width().to_double(), fragment.height().to_double()}
 					start_offset: fragment.start()
