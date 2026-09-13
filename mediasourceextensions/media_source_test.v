@@ -41,6 +41,8 @@ fn test_media_source_type_support_and_worker_flag() {
 	assert !MediaSource.is_type_supported('')
 	assert !MediaSource.is_type_supported('not a mime')
 	assert !MediaSource.is_type_supported('video/mp4; codecs="avc1"')
+	assert MediaSource.is_type_supported('video/mp4; codecs="av01.0.00M.08,mp4a.40.2"')
+	assert MediaSource.is_type_supported('video/mp4; codecs="avc1.640028"')
 	assert !MediaSource.is_type_supported('application/future-media')
 	assert MediaSource.is_type_supported('video/webm; codecs="vp9,opus"')
 	assert MediaSource.is_type_supported('video/webm; codecs="vp09.00.10.08"')

@@ -275,13 +275,21 @@ pub fn MediaSource.is_type_supported(value string) bool {
 		return false
 	}
 	mime_type := mimesniff.MimeType.parse(value) or { return false }
-	if mime_type.type_() !in ['video', 'audio'] || mime_type.subtype() != 'webm' {
+	if mime_type.type_() !in ['video', 'audio'] || mime_type.subtype() !in ['webm', 'mp4'] {
 		return false
 	}
 	parameters := mime_type.parameters()
 	codecs := parameters['codecs'] or { return false }
-	for codec in codecs.split(',') {
-		if !codec.starts_with('vp9') && !codec.starts_with('vp09') && !codec.starts_with('opus') {
+	for untrimmed_codec in codecs.split(',') {
+		codec := untrimmed_codec.trim_space()
+		supported := if mime_type.subtype() == 'webm' {
+			codec.starts_with('vp9') || codec.starts_with('vp09') || codec.starts_with('opus')
+		} else {
+			codec.starts_with('av01.') || codec.starts_with('avc1.') || codec.starts_with('avc3.')
+				|| codec.starts_with('mp4a.') || codec == 'Opus'
+				|| codec.starts_with('fLaC')
+		}
+		if codec == '' || !supported {
 			return false
 		}
 	}

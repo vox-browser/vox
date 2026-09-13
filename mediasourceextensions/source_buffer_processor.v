@@ -33,7 +33,7 @@ mut:
 	append_state_                                   AppendState
 	mode_                                           AppendMode
 	buffer_full_flag_                               bool
-	parser_                                         &WebMByteStreamParser = unsafe { nil }
+	parser_                                         &ByteStreamParser = unsafe { nil }
 	track_buffers_                                  map[u64]&TrackBuffer
 	generate_timestamps_flag_                       bool
 	group_start_timestamp_                          ?f64
@@ -48,7 +48,11 @@ pub fn SourceBufferProcessor.create() &SourceBufferProcessor {
 }
 
 pub fn (mut processor SourceBufferProcessor) set_webm_parser() {
-	processor.parser_ = WebMByteStreamParser.create()
+	processor.parser_ = ByteStreamParser.create_webm()
+}
+
+pub fn (mut processor SourceBufferProcessor) set_isobmff_parser() {
+	processor.parser_ = ByteStreamParser.create_isobmff()
 }
 
 pub fn (processor &SourceBufferProcessor) updating() bool {
@@ -178,8 +182,8 @@ fn (mut processor SourceBufferProcessor) drop_input_prefix(length int) {
 	processor.input_buffer_ = processor.input_buffer_[length..].clone()
 }
 
-fn is_incomplete_webm_error(err IError) bool {
-	return err.msg() == 'incomplete WebM element'
+fn is_incomplete_byte_stream_error(err IError) bool {
+	return err.msg() in ['incomplete WebM element', 'incomplete ISO BMFF box']
 }
 
 fn completed_processor_append(first_initialization bool, processed_frames bool, duration ?f64, tracks []WebMTrackInfo) ProcessorAppendResult {
@@ -219,7 +223,7 @@ pub fn (mut processor SourceBufferProcessor) run_segment_parser_loop() Processor
 				}
 				.unknown {
 					ignored := processor.parser_.ignored_element_length(processor.input_buffer_) or {
-						if is_incomplete_webm_error(err) {
+						if is_incomplete_byte_stream_error(err) {
 							return completed_processor_append(first_initialization, processed_frames, parsed_duration, initialization_tracks)
 						}
 						return ProcessorAppendResult{}
@@ -234,7 +238,7 @@ pub fn (mut processor SourceBufferProcessor) run_segment_parser_loop() Processor
 		}
 		if processor.append_state_ == .parsing_init_segment {
 			result := processor.parser_.parse_initialization_segment(processor.input_buffer_) or {
-				if is_incomplete_webm_error(err) {
+				if is_incomplete_byte_stream_error(err) {
 					return completed_processor_append(first_initialization, processed_frames, parsed_duration, initialization_tracks)
 				}
 				return ProcessorAppendResult{}
@@ -264,7 +268,7 @@ pub fn (mut processor SourceBufferProcessor) run_segment_parser_loop() Processor
 				return ProcessorAppendResult{}
 			}
 			result := processor.parser_.parse_media_segment(processor.input_buffer_) or {
-				if is_incomplete_webm_error(err) {
+				if is_incomplete_byte_stream_error(err) {
 					return completed_processor_append(first_initialization, processed_frames, parsed_duration, initialization_tracks)
 				}
 				return ProcessorAppendResult{}

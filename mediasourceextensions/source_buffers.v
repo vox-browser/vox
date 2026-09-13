@@ -70,11 +70,12 @@ pub fn SourceBuffer.create_internal_for_media_source(media_source &MediaSource) 
 
 pub fn (mut buffer SourceBuffer) set_content_type(type_ string) ! {
 	mime_type := mimesniff.MimeType.parse(type_) or { return error('Invalid media MIME type') }
-	if mime_type.subtype() != 'webm' {
-		return error('Unsupported media byte-stream format')
-	}
 	buffer.content_type_ = type_
-	buffer.processor_.set_webm_parser()
+	match mime_type.subtype() {
+		'webm' { buffer.processor_.set_webm_parser() }
+		'mp4' { buffer.processor_.set_isobmff_parser() }
+		else { return error('Unsupported media byte-stream format') }
+	}
 }
 
 pub fn (buffer &SourceBuffer) mode() AppendMode {
