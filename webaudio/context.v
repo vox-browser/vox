@@ -38,12 +38,12 @@ pub:
 	max_channel_count u32
 }
 
-fn new_audio_listener(context_id u64, first_id u64) AudioListener {
+fn new_audio_listener(context_id u64, first_id u64, graph &AudioGraphState) AudioListener {
 	mut next_id := first_id
 	mut values := []AudioParam{}
 	for value in [f32(0), 0, -1, 0, 0, 0, 0, 1, 0] {
 		next_id++
-		values << new_audio_param(next_id, context_id, value, -3.402823e38, 3.402823e38, .a_rate, false)
+		values << new_audio_param(next_id, context_id, graph, value, -3.402823e38, 3.402823e38, .a_rate, false)
 	}
 	return AudioListener{
 		forward_x: values[0]
@@ -58,28 +58,28 @@ fn new_audio_listener(context_id u64, first_id u64) AudioListener {
 	}
 }
 
-pub fn (mut listener AudioListener) set_position(x f32, y f32, z f32) {
-	listener.position_x.set_value(x)
-	listener.position_y.set_value(y)
-	listener.position_z.set_value(z)
+pub fn (mut listener AudioListener) set_position(x f32, y f32, z f32) ! {
+	listener.position_x.set_value(x)!
+	listener.position_y.set_value(y)!
+	listener.position_z.set_value(z)!
 }
 
-pub fn (mut listener AudioListener) set_orientation(x f32, y f32, z f32, up_x f32, up_y f32, up_z f32) {
-	listener.forward_x.set_value(x)
-	listener.forward_y.set_value(y)
-	listener.forward_z.set_value(z)
-	listener.up_x.set_value(up_x)
-	listener.up_y.set_value(up_y)
-	listener.up_z.set_value(up_z)
+pub fn (mut listener AudioListener) set_orientation(x f32, y f32, z f32, up_x f32,
+	up_y f32, up_z f32) ! {
+	listener.forward_x.set_value(x)!
+	listener.forward_y.set_value(y)!
+	listener.forward_z.set_value(z)!
+	listener.up_x.set_value(up_x)!
+	listener.up_y.set_value(up_y)!
+	listener.up_z.set_value(up_z)!
 }
 
 pub struct BaseAudioContext {
 pub:
-	id    u64
-	graph &AudioGraphState
+	id u64
 pub mut:
+	graph               &AudioGraphState
 	sample_rate         f32
-	current_time        f64
 	state               AudioContextState = .suspended
 	rendering_state     AudioContextState = .suspended
 	destination         AudioDestinationNode
@@ -129,7 +129,7 @@ fn make_base_context(id u64, sample_rate f32, destination_channels u32,
 		offline: offline
 		max_channel_count: 2
 	}
-	listener := new_audio_listener(id, 1)
+	listener := new_audio_listener(id, 1, graph)
 	return BaseAudioContext{
 		id: id
 		graph: graph
@@ -164,7 +164,7 @@ fn (mut context BaseAudioContext) allocate_node(kind NodeKind, inputs u32, outpu
 
 fn (mut context BaseAudioContext) allocate_param(default_value f32, min_value f32, max_value f32, rate AutomationRate, fixed bool) AudioParam {
 	context.next_id++
-	return new_audio_param(context.next_id, context.id, default_value, min_value, max_value, rate, fixed)
+	return new_audio_param(context.next_id, context.id, context.graph, default_value, min_value, max_value, rate, fixed)
 }
 
 pub enum PromiseState {

@@ -101,15 +101,15 @@ pub fn (mut panner PannerNode) set_cone_outer_gain(value f64) ! {
 }
 
 pub fn (mut panner PannerNode) set_position(x f32, y f32, z f32) {
-	panner.position_x.set_value(x)
-	panner.position_y.set_value(y)
-	panner.position_z.set_value(z)
+	panner.position_x.set_value(x) or {}
+	panner.position_y.set_value(y) or {}
+	panner.position_z.set_value(z) or {}
 }
 
 pub fn (mut panner PannerNode) set_orientation(x f32, y f32, z f32) {
-	panner.orientation_x.set_value(x)
-	panner.orientation_y.set_value(y)
-	panner.orientation_z.set_value(z)
+	panner.orientation_x.set_value(x) or {}
+	panner.orientation_y.set_value(y) or {}
+	panner.orientation_z.set_value(z) or {}
 }
 
 pub fn (mut panner PannerNode) set_channel_count_mode(mode ChannelCountMode) ! {

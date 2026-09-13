@@ -24,7 +24,7 @@ fn test_realtime_context_state_transitions_and_destination_constraints() {
 
 fn test_listener_decode_and_media_element_boundaries() {
 	mut context := new_audio_context(1, 44100, true) or { panic(err) }
-	context.base.listener.set_position(1, 2, 3)
+	context.base.listener.set_position(1, 2, 3) or { panic(err) }
 	assert context.base.listener.position_z.value() == 3
 	decoded := context.base.decode_audio_data([u8(1), 2], true)
 	assert decoded.promise.state == .fulfilled

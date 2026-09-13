@@ -30,9 +30,9 @@ fn test_audio_node_connections_are_unique_validated_and_disconnectable() {
 }
 
 fn test_audio_param_clamps_visible_value_and_fixed_rate() {
-	mut parameter := new_audio_param(1, 1, 2, -1, 1, .k_rate, true)
+	mut parameter := new_audio_param(1, 1, &AudioGraphState{}, 2, -1, 1, .k_rate, true)
 	assert parameter.value() == 1
-	parameter.set_value(-4)
+	parameter.set_value(-4)!
 	assert parameter.value() == -1
 	parameter.set_automation_rate(.a_rate) or {
 		assert err.msg().contains('cannot be changed')

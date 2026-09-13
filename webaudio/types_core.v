@@ -97,11 +97,14 @@ pub:
 	max_value     f32
 	fixed_rate    bool
 pub mut:
+	graph           &AudioGraphState
+	timeline        &AudioParamTimeline
 	current_value   f32
 	automation_rate AutomationRate
 }
 
-pub fn new_audio_param(id u64, context_id u64, default_value f32, min_value f32, max_value f32, rate AutomationRate, fixed bool) AudioParam {
+pub fn new_audio_param(id u64, context_id u64, graph &AudioGraphState, default_value f32,
+	min_value f32, max_value f32, rate AutomationRate, fixed bool) AudioParam {
 	return AudioParam{
 		id: id
 		context_id: context_id
@@ -111,21 +114,29 @@ pub fn new_audio_param(id u64, context_id u64, default_value f32, min_value f32,
 		current_value: default_value
 		automation_rate: rate
 		fixed_rate: fixed
+		graph: graph
+		timeline: AudioParamTimeline.create(default_value)
 	}
 }
 
 pub fn (parameter AudioParam) value() f32 {
-	if parameter.current_value < parameter.min_value {
+	value := if parameter.timeline.has_events() {
+		parameter.timeline.value_at_time(parameter.graph.current_time)
+	} else {
+		parameter.current_value
+	}
+	if value < parameter.min_value {
 		return parameter.min_value
 	}
-	if parameter.current_value > parameter.max_value {
+	if value > parameter.max_value {
 		return parameter.max_value
 	}
-	return parameter.current_value
+	return value
 }
 
-pub fn (mut parameter AudioParam) set_value(value f32) {
+pub fn (mut parameter AudioParam) set_value(value f32) ! {
 	parameter.current_value = value
+	parameter.map_insert_result(parameter.timeline.set_value_at_time(value, parameter.graph.current_time))!
 }
 
 pub fn (mut parameter AudioParam) set_automation_rate(rate AutomationRate) ! {
@@ -139,33 +150,125 @@ pub fn (parameter AudioParam) automation_rate() AutomationRate {
 	return parameter.automation_rate
 }
 
-// Automation scheduling is not yet implemented upstream. These fluent calls
-// deliberately preserve its no-op/self-return behavior.
-pub fn (mut parameter AudioParam) set_value_at_time(_ f32, _ f64) &AudioParam {
+fn (parameter AudioParam) map_insert_result(result AudioParamTimelineInsertResult) ! {
+	match result {
+		.success {
+			return
+		}
+		.event_contained_in_value_curve {
+			return error('NotSupportedError: Cannot schedule an automation event during a value curve')
+		}
+		.value_curve_overlaps_event {
+			return error('NotSupportedError: Cannot schedule a value curve containing an automation event')
+		}
+	}
+}
+
+pub fn (parameter AudioParam) intrinsic_value_at_time(time f64) f32 {
+	return parameter.timeline.value_at_time(time)
+}
+
+pub fn (parameter AudioParam) timeline() &AudioParamTimeline {
+	return parameter.timeline
+}
+
+pub fn (mut parameter AudioParam) set_value_at_time(value f32, start_time f64) !&AudioParam {
+	if start_time < 0 {
+		return error('RangeError: startTime must not be negative')
+	}
+	clamped_time := if start_time < parameter.graph.current_time {
+		parameter.graph.current_time
+	} else {
+		start_time
+	}
+	parameter.map_insert_result(parameter.timeline.set_value_at_time(value, clamped_time))!
 	return &parameter
 }
 
-pub fn (mut parameter AudioParam) linear_ramp_to_value_at_time(_ f32, _ f64) &AudioParam {
+pub fn (mut parameter AudioParam) linear_ramp_to_value_at_time(value f32, end_time f64) !&AudioParam {
+	if end_time < 0 {
+		return error('RangeError: endTime must not be negative')
+	}
+	current_time := parameter.graph.current_time
+	clamped_time := if end_time < current_time { current_time } else { end_time }
+	parameter.map_insert_result(parameter.timeline.linear_ramp_to_value_at_time(value, clamped_time, current_time, parameter.current_value))!
 	return &parameter
 }
 
-pub fn (mut parameter AudioParam) exponential_ramp_to_value_at_time(_ f32, _ f64) &AudioParam {
+pub fn (mut parameter AudioParam) exponential_ramp_to_value_at_time(value f32,
+	end_time f64) !&AudioParam {
+	if value == 0 {
+		return error('RangeError: value must not be zero')
+	}
+	if end_time < 0 {
+		return error('RangeError: endTime must not be negative')
+	}
+	current_time := parameter.graph.current_time
+	clamped_time := if end_time < current_time { current_time } else { end_time }
+	parameter.map_insert_result(parameter.timeline.exponential_ramp_to_value_at_time(value, clamped_time, current_time, parameter.current_value))!
 	return &parameter
 }
 
-pub fn (mut parameter AudioParam) set_target_at_time(_ f32, _ f64, _ f32) &AudioParam {
+pub fn (mut parameter AudioParam) set_target_at_time(target f32, start_time f64,
+	time_constant f32) !&AudioParam {
+	if start_time < 0 {
+		return error('RangeError: startTime must not be negative')
+	}
+	if time_constant < 0 {
+		return error('RangeError: timeConstant must not be negative')
+	}
+	clamped_time := if start_time < parameter.graph.current_time {
+		parameter.graph.current_time
+	} else {
+		start_time
+	}
+	parameter.map_insert_result(parameter.timeline.set_target_at_time(target, clamped_time, time_constant))!
 	return &parameter
 }
 
-pub fn (mut parameter AudioParam) set_value_curve_at_time(_ []f32, _ f64, _ f64) &AudioParam {
+pub fn (mut parameter AudioParam) set_value_curve_at_time(values []f32, start_time f64,
+	duration f64) !&AudioParam {
+	if values.len < 2 {
+		return error('InvalidStateError: values must contain at least two elements')
+	}
+	if start_time < 0 {
+		return error('RangeError: startTime must not be negative')
+	}
+	if duration <= 0 {
+		return error('RangeError: duration must be positive')
+	}
+	clamped_time := if start_time < parameter.graph.current_time {
+		parameter.graph.current_time
+	} else {
+		start_time
+	}
+	parameter.map_insert_result(parameter.timeline.set_value_curve_at_time(values, clamped_time, duration))!
 	return &parameter
 }
 
-pub fn (mut parameter AudioParam) cancel_scheduled_values(_ f64) &AudioParam {
+pub fn (mut parameter AudioParam) cancel_scheduled_values(cancel_time f64) !&AudioParam {
+	if cancel_time < 0 {
+		return error('RangeError: cancelTime must not be negative')
+	}
+	clamped_time := if cancel_time < parameter.graph.current_time {
+		parameter.graph.current_time
+	} else {
+		cancel_time
+	}
+	parameter.timeline.cancel_scheduled_values(clamped_time)
 	return &parameter
 }
 
-pub fn (mut parameter AudioParam) cancel_and_hold_at_time(_ f64) &AudioParam {
+pub fn (mut parameter AudioParam) cancel_and_hold_at_time(cancel_time f64) !&AudioParam {
+	if cancel_time < 0 {
+		return error('RangeError: cancelTime must not be negative')
+	}
+	clamped_time := if cancel_time < parameter.graph.current_time {
+		parameter.graph.current_time
+	} else {
+		cancel_time
+	}
+	parameter.timeline.cancel_and_hold_at_time(clamped_time)
 	return &parameter
 }
 
@@ -187,6 +290,7 @@ pub:
 @[heap]
 pub struct AudioGraphState {
 pub mut:
+	current_time       f64
 	input_connections  map[u64][]AudioNodeConnection
 	output_connections map[u64][]AudioNodeConnection
 	param_connections  map[u64][]AudioParamConnection

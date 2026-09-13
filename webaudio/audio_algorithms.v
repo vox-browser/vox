@@ -185,7 +185,11 @@ pub fn (context BaseAudioContext) sample_rate() f32 {
 }
 
 pub fn (context BaseAudioContext) current_time() f64 {
-	return context.current_time
+	return context.graph.current_time
+}
+
+pub fn (mut context BaseAudioContext) set_current_time(value f64) {
+	context.graph.current_time = value
 }
 
 pub fn (context BaseAudioContext) listener() AudioListener {
@@ -235,7 +239,7 @@ pub fn (context AudioContext) output_latency() f64 {
 
 // AudioListener
 pub fn AudioListener.create(mut context BaseAudioContext) AudioListener {
-	listener := new_audio_listener(context.id, context.next_id)
+	listener := new_audio_listener(context.id, context.next_id, context.graph)
 	context.next_id += 9
 	return listener
 }
