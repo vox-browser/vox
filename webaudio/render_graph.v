@@ -433,7 +433,20 @@ pub fn (mut graph RenderGraph) apply_control_messages(messages []ControlMessage)
 					mutable_target.handle_message(node_message)
 				}
 			}
-			else {}
+			.start_source, .stop_source {
+				if target := graph.nodes_[message.node_id] {
+					mut mutable_target := unsafe { &RenderNode(target) }
+					mutable_target.handle_message(NodeMessage{
+						node_id: message.node_id
+						kind: if message.kind == .start_source {
+							NodeMessageKind.start_source
+						} else {
+							NodeMessageKind.stop_source
+						}
+						when: message.when
+					})
+				}
+			}
 		}
 	}
 }

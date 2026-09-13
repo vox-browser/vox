@@ -92,9 +92,11 @@ pub fn (mut context BaseAudioContext) create_constant_source(value f32, _ AudioN
 		number_of_outputs: 1
 		graph: context.graph
 	}
+	offset := context.allocate_param(value, float_lowest, float_highest, .a_rate, false)
+	node.queue_render_node_creation(ConstantSourceRenderNode.create(node.id, int(render_quantum_size), offset.render_param()).render_node())
 	return ConstantSourceNode{
 		node: node
-		offset: context.allocate_param(value, float_lowest, float_highest, .a_rate, false)
+		offset: offset
 	}
 }
 
