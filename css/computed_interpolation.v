@@ -8738,7 +8738,9 @@ pub enum CSSPseudoClass {
 	defined
 	placeholder_shown
 	checked
+	dir
 	empty
+	lang
 	required
 	optional
 	link
@@ -8763,7 +8765,9 @@ pub fn pseudo_class_name(pseudo_class CSSPseudoClass) string {
 		.defined { 'defined' }
 		.placeholder_shown { 'placeholder-shown' }
 		.checked { 'checked' }
+		.dir { 'dir' }
 		.empty { 'empty' }
+		.lang { 'lang' }
 		.required { 'required' }
 		.optional { 'optional' }
 		.link { 'link' }
@@ -8789,7 +8793,9 @@ fn pseudo_class_from_name(name string) CSSPseudoClass {
 		'defined' { .defined }
 		'placeholder-shown' { .placeholder_shown }
 		'checked' { .checked }
+		'dir' { .dir }
 		'empty' { .empty }
+		'lang' { .lang }
 		'required' { .required }
 		'optional' { .optional }
 		'link' { .link }
@@ -9188,7 +9194,9 @@ fn css_pseudo_class_from_selector_pseudo_class(pseudo_class PseudoClass) CSSPseu
 		.defined { .defined }
 		.placeholder_shown { .placeholder_shown }
 		.checked { .checked }
+		.dir { .dir }
 		.empty { .empty }
+		.lang { .lang }
 		.required { .required }
 		.optional { .optional }
 		.link { .link }
@@ -9737,11 +9745,14 @@ pub enum ComputeStyleMode {
 @[heap]
 pub struct PendingHasInvalidationMutationFeatures {
 pub mut:
-	is_conservative bool
-	tag_names       map[string]bool
-	ids             map[string]bool
-	class_names     map[string]bool
-	attribute_names map[string]bool
+	is_conservative                  bool
+	may_affect_sibling_relationships bool
+	may_affect_pseudo_classes        bool
+	tag_names                        map[string]bool
+	ids                              map[string]bool
+	class_names                      map[string]bool
+	attribute_names                  map[string]bool
+	pseudo_classes                   map[CSSPseudoClass]bool
 }
 
 pub fn PendingHasInvalidationMutationFeatures.new() &PendingHasInvalidationMutationFeatures {
@@ -9750,6 +9761,7 @@ pub fn PendingHasInvalidationMutationFeatures.new() &PendingHasInvalidationMutat
 		ids: map[string]bool{}
 		class_names: map[string]bool{}
 		attribute_names: map[string]bool{}
+		pseudo_classes: map[CSSPseudoClass]bool{}
 	}
 }
 

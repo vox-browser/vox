@@ -5141,10 +5141,16 @@ pub fn (mut e Element) invalidate_lang_value() {
 	}
 }
 
-fn schedule_has_invalidation_for_inherited_attribute_change(element &Element) {
+fn schedule_has_invalidation_for_inherited_attribute_change(element &Element, pseudo_class_name string) {
 	node := element.as_node()
-	node.for_each_style_scope_which_may_observe_the_node(fn [node] (scope &StyleScope) {
+	node.for_each_style_scope_which_may_observe_the_node(fn [node, pseudo_class_name] (scope &StyleScope) {
 		mut mutable_scope := unsafe { &StyleScope(scope) }
+		mutable_scope.record_pending_has_invalidation_mutation_properties(node, [
+			InvalidationProperty{
+				type_: .pseudo_class
+				pseudo_class_name: pseudo_class_name
+			},
+		])
 		mutable_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(node)
 	})
 }
@@ -5268,7 +5274,11 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 			}
 			return .@continue
 		})
-		schedule_has_invalidation_for_inherited_attribute_change(&e)
+		schedule_has_invalidation_for_inherited_attribute_change(&e, if is_dir {
+			'dir'
+		} else {
+			'lang'
+		})
 	} else if local_name == 'part' {
 		e.parts.clear()
 		if value_or_empty.len > 0 {

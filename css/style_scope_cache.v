@@ -1001,6 +1001,10 @@ pub fn (scope &StyleScope) for_each_active_css_style_sheet(callback fn(&CSSStyle
 
 fn merge_pending_has_invalidation_mutation_features(mut target PendingHasInvalidationMutationFeatures, source &PendingHasInvalidationMutationFeatures) {
 	target.is_conservative = target.is_conservative || source.is_conservative
+	target.may_affect_sibling_relationships = target.may_affect_sibling_relationships
+		|| source.may_affect_sibling_relationships
+	target.may_affect_pseudo_classes = target.may_affect_pseudo_classes
+		|| source.may_affect_pseudo_classes
 	for tag_name, _ in source.tag_names {
 		target.tag_names[tag_name] = true
 	}
@@ -1012,6 +1016,9 @@ fn merge_pending_has_invalidation_mutation_features(mut target PendingHasInvalid
 	}
 	for attribute_name, _ in source.attribute_names {
 		target.attribute_names[attribute_name] = true
+	}
+	for pseudo_class, _ in source.pseudo_classes {
+		target.pseudo_classes[pseudo_class] = true
 	}
 }
 
@@ -1049,6 +1056,8 @@ fn collect_pending_has_invalidation_features_from_subtree(mut features PendingHa
 
 fn collect_pending_has_invalidation_mutation_features(mutation_root &dom.Node, includes_descendants bool) &PendingHasInvalidationMutationFeatures {
 	mut features := PendingHasInvalidationMutationFeatures.new()
+	features.may_affect_sibling_relationships = includes_descendants
+	features.may_affect_pseudo_classes = true
 	if includes_descendants {
 		collect_pending_has_invalidation_features_from_subtree(mut features, mutation_root)
 	} else if element := mutation_root.as_element() {
@@ -1065,9 +1074,10 @@ fn collect_pending_has_invalidation_mutation_features_from_properties(properties
 			.id { features.ids[property.name()] = true }
 			.tag_name { features.tag_names[property.name()] = true }
 			.attribute { features.attribute_names[property.name()] = true }
-			.invalidate_self, .invalidate_whole_subtree, .pseudo_class {
+			.invalidate_self, .invalidate_whole_subtree {
 				features.is_conservative = true
 			}
+			.pseudo_class { features.pseudo_classes[property.pseudo_class] = true }
 		}
 	}
 	return features
@@ -1122,7 +1132,10 @@ fn selector_may_match_pending_has_mutation_features(selector Selector, features 
 	mut must_be_conservative := false
 	for compound_selector in selector.compound_selectors() {
 		if compound_selector.combinator in [.next_sibling, .subsequent_sibling]
-			|| compound_selector.simple_selectors.len == 0 {
+			&& features.may_affect_sibling_relationships {
+			must_be_conservative = true
+		}
+		if compound_selector.simple_selectors.len == 0 {
 			must_be_conservative = true
 			continue
 		}
@@ -1161,6 +1174,14 @@ fn selector_may_match_pending_has_mutation_features(selector Selector, features 
 								break
 							}
 						}
+					} else if pseudo_class.type_ in [.enabled, .defined, .disabled, .empty,
+						.placeholder_shown, .checked, .dir, .lang, .link, .any_link, .local_link,
+						.required, .optional] {
+						saw_concrete_feature = true
+						css_pseudo_class := css_pseudo_class_from_selector_pseudo_class(pseudo_class.type_)
+						concrete_feature_found = concrete_feature_found
+							|| features.may_affect_pseudo_classes
+							|| features.pseudo_classes[css_pseudo_class]
 					} else {
 						must_be_conservative = true
 					}
@@ -1342,6 +1363,7 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 	should_scan_ancestor_siblings := scope.may_have_has_selectors_with_relative_selector_that_has_sibling_combinator()
 	mut elements_already_invalidated_for_has := map[i64]bool{}
 	for node in nodes {
+		mut elements_skipped_by_has_feature_filter := map[i64]bool{}
 		features := features_by_node[node.unique_id().value()] or {
 			mut conservative := PendingHasInvalidationMutationFeatures.new()
 			conservative.is_conservative = true
@@ -1378,16 +1400,22 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 			if elements_already_invalidated_for_has[element_id] {
 				continue
 			}
-			elements_already_invalidated_for_has[element_id] = true
 			mutable_document.record_has_ancestor_walk_visit()
 
 			can_skip_unchanged_has_fanout := element.as_node().root().as_shadow_root() == none
 				&& element.as_node().assigned_slot_internal() == none && !element.is_shadow_host()
-			if !element.affected_by_has_pseudo_class_in_non_subject_position
-				|| !can_skip_unchanged_has_fanout
-				|| has_rule_that_may_be_affected_by_mutation(scope, element, features) {
+			mut should_invalidate_element := true
+			if element.affected_by_has_pseudo_class_in_non_subject_position
+				&& can_skip_unchanged_has_fanout {
+				should_invalidate_element = has_rule_that_may_be_affected_by_mutation(scope,
+					element, features)
+			}
+			if should_invalidate_element {
+				elements_already_invalidated_for_has[element_id] = true
 				mut mutable_element := unsafe { &dom.Element(element) }
 				mutable_element.invalidate_style_if_affected_by_has()
+			} else {
+				elements_skipped_by_has_feature_filter[element_id] = true
 			}
 
 			parent := element.as_node().parent_or_shadow_host() or { return }
@@ -1408,6 +1436,9 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 				mutable_document.record_has_ancestor_sibling_element_check()
 				if ancestor_sibling_element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator {
 					sibling_id := ancestor_sibling_element.as_node().unique_id().value()
+					if elements_skipped_by_has_feature_filter[sibling_id] {
+						continue
+					}
 					if elements_already_invalidated_for_has[sibling_id] {
 						continue
 					}

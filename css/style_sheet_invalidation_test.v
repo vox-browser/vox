@@ -220,6 +220,40 @@ fn test_has_descendant_fanout_ignores_rules_for_other_anchors() {
 	assert invalidator.pending_invalidations.len > 0
 }
 
+fn test_has_sibling_scan_preserves_a_feature_filtered_anchor_skip() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	add_document_author_style_sheet(document, '.subgrid:has(+ .right) .target { color: red } .decoy:has(.unrelated) { color: blue }')
+	mut parent := style_sheet_invalidation_test_element(document, 'section')
+	mut subgrid := style_sheet_invalidation_test_element(document, 'div')
+	mut right := style_sheet_invalidation_test_element(document, 'div')
+	subgrid.set_attribute_value('class', 'subgrid')
+	right.set_attribute_value('class', 'right')
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(parent.as_node()) or { panic(err) }
+	mut parent_node := parent.as_node()
+	parent_node.append_child(subgrid.as_node()) or { panic(err) }
+	parent_node.append_child(right.as_node()) or { panic(err) }
+	// Reproduce the selector-involvement metadata established when this
+	// non-subject :has() anchor matches a descendant selector.
+	subgrid.affected_by_has_pseudo_class_in_non_subject_position = true
+	subgrid.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator = true
+	_ := css_style_computer_for(document)
+	mut scope := css_style_scope_for_document(document)
+	scope.build_rule_cache_if_needed()
+	mut invalidator := document.style_invalidator()
+	scope.clear_pending_has_invalidations()
+	invalidator.pending_invalidations.clear()
+	clear_style_sheet_invalidation_test_flags(subgrid.as_node())
+
+	scope.record_pending_has_invalidation_mutation_properties(subgrid.as_node(), [
+		InvalidationProperty.class('unrelated'),
+	])
+	scope.invalidate_style_of_elements_affected_by_has()
+	assert invalidator.pending_invalidations.len == 0
+	assert !subgrid.needs_style_update()
+}
+
 fn test_user_agent_shadow_tree_mutations_use_document_style_scope() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	add_document_author_style_sheet(document, 'div:has(.flag) { color: blue }')
@@ -346,12 +380,22 @@ fn test_dir_and_lang_changes_schedule_has_invalidation_across_shadow_scopes() {
 	light_child.set_attribute_value('dir', 'rtl')
 	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
 	assert shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+	dir_features := document_scope.pending_has_invalidation_features[light_child.as_node().unique_id().value()] or {
+		panic('missing directionality mutation features')
+	}
+	assert dir_features.pseudo_classes[.dir]
+	assert !dir_features.is_conservative
 	document_scope.clear_pending_has_invalidations()
 	shadow_scope.clear_pending_has_invalidations()
 
 	light_child.set_attribute_value('lang', 'fr')
 	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
 	assert shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+	lang_features := document_scope.pending_has_invalidation_features[light_child.as_node().unique_id().value()] or {
+		panic('missing language mutation features')
+	}
+	assert lang_features.pseudo_classes[.lang]
+	assert !lang_features.is_conservative
 }
 
 fn test_dir_auto_text_change_schedules_has_invalidation() {
@@ -375,6 +419,12 @@ fn test_dir_auto_text_change_schedules_has_invalidation() {
 	text.replace_data(0, text.length(), '\u05d0\u05d1\u05d2') or { panic(err) }
 	assert auto_parent.needs_style_update()
 	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
+	features := document_scope.pending_has_invalidation_features[auto_parent.as_node().unique_id().value()] or {
+		panic('missing text directionality mutation features')
+	}
+	assert features.pseudo_classes[.dir]
+	assert features.pseudo_classes[.empty]
+	assert !features.is_conservative
 }
 
 fn test_insert_rule_uses_leading_anchor_for_trailing_universal_and_pseudo_element() {

@@ -110,6 +110,34 @@ fn test_pending_has_invalidations_deduplicate_by_node_without_changing_order() {
 	assert root_features.is_conservative
 }
 
+fn test_pending_has_mutation_features_track_pseudo_classes_and_sibling_relationships() {
+	document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	pseudo_class_features := collect_pending_has_invalidation_mutation_features_from_properties([
+		InvalidationProperty.pseudo_class(.checked),
+	])
+	assert pseudo_class_features.pseudo_classes[.checked]
+	assert selector_may_match_pending_has_mutation_features(selector_from_text(':checked'), pseudo_class_features)
+	assert !selector_may_match_pending_has_mutation_features(selector_from_text(':empty'), pseudo_class_features)
+	// Stateful pseudo-classes that cannot be represented as concrete mutation
+	// features retain conservative invalidation.
+	assert selector_may_match_pending_has_mutation_features(selector_from_text(':hover'), pseudo_class_features)
+
+	mut class_features := collect_pending_has_invalidation_mutation_features_from_properties([
+		InvalidationProperty.class('unrelated'),
+	])
+	sibling_selector := selector_from_text('.left + .right')
+	assert !selector_may_match_pending_has_mutation_features(sibling_selector, class_features)
+	class_features.may_affect_sibling_relationships = true
+	assert selector_may_match_pending_has_mutation_features(sibling_selector, class_features)
+
+	structural_features := collect_pending_has_invalidation_mutation_features(element.as_node(), true)
+	assert structural_features.may_affect_sibling_relationships
+	assert structural_features.may_affect_pseudo_classes
+}
+
 fn test_slotted_argument_builds_invalidation_sets() {
 	scope := build_scope_invalidation_cache('::slotted(.item[data-state]) { color: red }')
 	data := scope.style_invalidation_data or { panic('missing invalidation data') }

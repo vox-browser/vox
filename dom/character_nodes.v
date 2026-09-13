@@ -356,7 +356,21 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 					}
 					return .@continue
 				})
-				schedule_has_invalidation_for_inherited_attribute_change(current)
+				auto_direction_element_node := current.as_node()
+				auto_direction_element_node.for_each_style_scope_which_may_observe_the_node(fn [auto_direction_element_node] (scope &StyleScope) {
+					mut mutable_scope := unsafe { &StyleScope(scope) }
+					mutable_scope.record_pending_has_invalidation_mutation_properties(auto_direction_element_node, [
+						InvalidationProperty{
+							type_: .pseudo_class
+							pseudo_class_name: 'dir'
+						},
+						InvalidationProperty{
+							type_: .pseudo_class
+							pseudo_class_name: 'empty'
+						},
+					])
+				})
+				schedule_has_invalidation_for_inherited_attribute_change(current, 'dir')
 			}
 		}
 		ancestor = current.as_node().parent_element()
