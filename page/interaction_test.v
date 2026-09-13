@@ -198,6 +198,20 @@ fn test_drag_and_drop_modes_effect_negotiation_and_reset() {
 		'dragend']
 }
 
+fn test_drag_cancel_runs_the_failed_drop_cleanup_path() {
+	mut handler := DragAndDropEventHandler{}
+	assert handler.handle_drag_start([], false, .all) == .handled
+	target := DragTarget{
+		id: 'drop-target'
+	}
+	assert handler.handle_drag_move(target, false, false, false, .none) == .handled
+	assert handler.handle_drag_cancel() == .cancelled
+	assert !handler.has_ongoing_drag_and_drop_operation()
+	assert handler.current_operation() == .none
+	assert handler.event_log.map(it.name) == ['dragstart', 'drag', 'dragenter', 'dragover',
+		'dragleave', 'dragend']
+}
+
 fn test_event_handler_drops_input_during_drag_and_orders_pointer_mouse_click() {
 	mut handler := EventHandler{}
 	target := InputTarget{

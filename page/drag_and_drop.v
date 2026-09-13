@@ -245,6 +245,10 @@ pub fn (mut handler DragAndDropEventHandler) handle_drag_end(cancelled bool, dro
 	return result
 }
 
+pub fn (mut handler DragAndDropEventHandler) handle_drag_cancel() EventResult {
+	return handler.handle_drag_end(true, false, .none)
+}
+
 pub fn (mut handler DragAndDropEventHandler) reset() {
 	handler.ongoing_ = false
 	handler.mode_ = .protected_
