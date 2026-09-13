@@ -1372,7 +1372,19 @@ fn invalidate_children_affected_by_has_sibling_combinators(parent &Node) {
 }
 
 fn invalidate_structurally_affected_siblings(node &Node, reason StyleInvalidationReason) {
-	if reason == .node_insert_before || reason == .node_remove {
+	is_insertion_or_removal := reason == .node_insert_before || reason == .node_remove
+	mut last_child_transition_target := ?&Element(none)
+	mut first_child_transition_target := ?&Element(none)
+	if is_insertion_or_removal {
+		previous_element := node.previous_element_sibling()
+		next_element := node.next_element_sibling()
+		if next_element == none {
+			last_child_transition_target = previous_element
+		}
+		if previous_element == none {
+			first_child_transition_target = next_element
+		}
+
 		if parent := node.parent() {
 			if parent.has_child_affected_by_backward_structural_changes() {
 				for sibling := node.previous_sibling(); sibling != none;  {
@@ -1380,7 +1392,15 @@ fn invalidate_structurally_affected_siblings(node &Node, reason StyleInvalidatio
 					mut mutable_document := unsafe { &Document(node.document()) }
 					mutable_document.record_previous_sibling_invalidation_walk_visit()
 					if element := current.as_element() {
-						if element.affected_by_backward_structural_changes() {
+						is_last_child_transition_target := if target := last_child_transition_target {
+							element == target
+						} else {
+							false
+						}
+						needs_mark := element.affected_by_backward_positional_pseudo_class
+							|| (element.affected_by_last_child_pseudo_class
+								&& is_last_child_transition_target)
+						if needs_mark {
 							mark_sibling_for_style_update(element)
 						}
 					}
@@ -1395,14 +1415,26 @@ fn invalidate_structurally_affected_siblings(node &Node, reason StyleInvalidatio
 		current := sibling or { break }
 		if element := current.as_element() {
 			mut needs_to_invalidate := false
-			if reason == .node_insert_before || reason == .node_remove {
-				needs_to_invalidate = element.affected_by_indirect_sibling_combinator
-					|| element.affected_by_first_child_pseudo_class
-					|| element.affected_by_forward_positional_pseudo_class
-					|| (element.affected_by_direct_sibling_combinator
-					&& current_sibling_distance <= element.sibling_invalidation_distance)
-			} else if element.affected_by_indirect_sibling_combinator
-				|| element.affected_by_forward_positional_pseudo_class {
+			is_first_child_transition_target := if target := first_child_transition_target {
+				element == target
+			} else {
+				false
+			}
+			if is_insertion_or_removal {
+				if element.affected_by_indirect_sibling_combinator {
+					needs_to_invalidate = true
+				} else if element.affected_by_forward_positional_pseudo_class {
+					needs_to_invalidate = true
+				} else if element.affected_by_first_child_pseudo_class
+					&& is_first_child_transition_target {
+					needs_to_invalidate = true
+				} else if element.affected_by_direct_sibling_combinator
+					&& current_sibling_distance <= element.sibling_invalidation_distance {
+					needs_to_invalidate = true
+				}
+			} else if element.affected_by_indirect_sibling_combinator {
+				needs_to_invalidate = true
+			} else if element.affected_by_forward_positional_pseudo_class {
 				needs_to_invalidate = true
 			} else if element.affected_by_direct_sibling_combinator
 				&& current_sibling_distance <= element.sibling_invalidation_distance {
