@@ -3927,10 +3927,20 @@ pub enum EventResult {
 	dropped
 }
 
+fn editing_host_manager_handle_delete_callback(target voidptr, input_type string) {
+	mut manager := unsafe { &EditingHostManager(target) }
+	manager.handle_delete(input_type)
+}
+
 pub fn EditingHostManager.create(mut document Document) &EditingHostManager {
-	return &EditingHostManager{
+	mut manager := &EditingHostManager{
 		document_: document
 	}
+	manager.InputEventsTarget = InputEventsTarget{
+		target: voidptr(manager)
+		handle_delete_callback: editing_host_manager_handle_delete_callback
+	}
+	return manager
 }
 
 pub fn (mut manager EditingHostManager) visit_edges(mut visitor CellVisitor) {

@@ -1646,8 +1646,28 @@ pub fn (model &NavigableModel) selected_text() string {
 	mut document := model.active_document() or { return '' }
 	document.update_layout(.navigable_selected_text)
 	selection := document.get_selection() or { return '' }
+	if active_element := document.active_element() {
+		if active_element.local_name() == 'input'
+			&& form_element_input_type(active_element) == 'password' {
+			return ''
+		}
+	}
+	if form_text := selection.try_form_control_selected_text_for_stringifier() {
+		return form_text
+	}
 	range := selection.range() or { return '' }
 	return visible_text_in_range(range)
+}
+
+pub fn (model &NavigableModel) cut_selected_text() string {
+	document := model.active_document() or { return '' }
+	target := document.active_input_events_target(none) or { return '' }
+	text := model.selected_text()
+	if text == '' {
+		return ''
+	}
+	target.handle_delete(dom.input_type_delete_by_cut)
+	return text
 }
 
 // This is Range stringification with DOM text nodes that have no corresponding

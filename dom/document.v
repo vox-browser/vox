@@ -2528,11 +2528,14 @@ pub mut:
 
 pub type InputEventsTargetCursorPositionCallback = fn (voidptr) ?&Position
 
+pub type InputEventsTargetHandleDeleteCallback = fn (voidptr, string)
+
 @[heap]
 pub struct InputEventsTarget {
 pub:
 	target                   voidptr = unsafe { nil }
 	cursor_position_callback InputEventsTargetCursorPositionCallback = unsafe { nil }
+	handle_delete_callback   InputEventsTargetHandleDeleteCallback = unsafe { nil }
 }
 
 pub fn (target &InputEventsTarget) cursor_position() ?&Position {
@@ -2540,6 +2543,13 @@ pub fn (target &InputEventsTarget) cursor_position() ?&Position {
 		return none
 	}
 	return target.cursor_position_callback(target.target)
+}
+
+pub fn (target &InputEventsTarget) handle_delete(input_type string) {
+	if target.target == unsafe { nil } || target.handle_delete_callback == unsafe { nil } {
+		return
+	}
+	target.handle_delete_callback(target.target, input_type)
 }
 
 @[heap]

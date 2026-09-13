@@ -1469,6 +1469,7 @@ pub fn (e &WheelEvent) wheel_delta() i32 {
 	return if e.wheel_delta_y_ != 0 { e.wheel_delta_y_ } else { e.wheel_delta_x_ }
 }
 
+pub const input_type_delete_by_cut = 'deleteByCut'
 pub const input_type_delete_content_backward = 'deleteContentBackward'
 pub const input_type_delete_content_forward = 'deleteContentForward'
 pub const input_type_insert_from_paste = 'insertFromPaste'

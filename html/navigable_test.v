@@ -380,6 +380,30 @@ fn test_navigable_sandbox_viewport_selection_observers_and_rendering() {
 	assert model.has_a_rendering_opportunity()
 }
 
+fn test_navigable_cut_returns_and_deletes_focused_text_control_selection() {
+	mut document, _, model_pointer := navigable_test_top_level('https://example.test/', 'top')!
+	mut model := unsafe { &NavigableModel(model_pointer) }
+	mut textarea_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'textarea')!
+	body := document.body() or { panic('missing body') }
+	mut body_node := unsafe { &dom.Node(body) }
+	body_node.append_child(textarea_element.as_node())!
+	mut textarea := HTMLTextAreaElementModel.create(unsafe {
+		&dom.HTMLTextAreaElement(textarea_element)
+	})
+	textarea.create_shadow_tree_if_needed()
+	textarea.set_value('Ladybird')
+	textarea.text.set_selection_range(1, 5, 'forward')!
+	document.set_focused_area(textarea_element.as_node())
+	assert model.selected_text() == 'adyb'
+	assert model.cut_selected_text() == 'adyb'
+	assert textarea.value() == 'Lird'
+	assert textarea.text.selection_start() == 1
+	assert textarea.text.selection_end() == 1
+	assert model.cut_selected_text() == ''
+	assert textarea.value() == 'Lird'
+	assert dom.input_type_delete_by_cut == 'deleteByCut'
+}
+
 fn test_navigable_viewport_resize_grows_then_shrinks_device_backing_stores() {
 	mut document := dom.Document.create(dom.URL{'https://example.test/'})
 	document.set_origin(document.url.origin())
