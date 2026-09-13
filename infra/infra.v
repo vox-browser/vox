@@ -28,6 +28,21 @@ pub type Unsigned64BitInteger = u64
 
 pub type Unsigned8BitInteger = u8
 
+// URL serialization emits ASCII. V strings already store that byte sequence,
+// so the current upstream UTF-16 construction helpers reduce to allocation-free
+// identity and concatenation operations at this boundary.
+pub fn utf16_string_from_url_ascii(value string) string {
+	return value
+}
+
+pub fn utf16_string_from_url_ascii_with_prefix(prefix u8, value string) string {
+	return [prefix].bytestr() + value
+}
+
+pub fn utf16_string_from_url_ascii_host_and_port(host string, port u16) string {
+	return '${host}:${port}'
+}
+
 // V 0.5 does not expose a native u128 on every backend. This exact two-limb
 // representation still spans Infra's complete 0...2^128-1 domain.
 pub struct Unsigned128BitInteger {

@@ -61,3 +61,10 @@ fn test_unsigned_128_bit_integer_preserves_both_limbs() {
 	assert maximum.high == u64(0xffff_ffff_ffff_ffff)
 	assert maximum.low == u64(0xffff_ffff_ffff_ffff)
 }
+
+fn test_serialized_url_ascii_helpers() {
+	assert utf16_string_from_url_ascii('xn--fa-hia.de') == 'xn--fa-hia.de'
+	assert utf16_string_from_url_ascii_with_prefix(u8(`/`), 'path') == '/path'
+	assert utf16_string_from_url_ascii_host_and_port('[2001:db8::1]', u16(8443)) ==
+		'[2001:db8::1]:8443'
+}
