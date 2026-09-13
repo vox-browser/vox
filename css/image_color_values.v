@@ -1547,6 +1547,20 @@ pub fn serialize_color_stop_list(color_stop_list []ColorStopListElement, mode Se
 	return parts.join(', ')
 }
 
+pub type ImageStyleValueClientCallback = fn (voidptr)
+
+pub struct ImageStyleValueClient {
+pub:
+	target     voidptr
+	did_update ImageStyleValueClientCallback
+}
+
+@[heap]
+struct ImageStyleValueClientState {
+mut:
+	clients []ImageStyleValueClient
+}
+
 pub struct ImageStyleValue {
 pub mut:
 	resource_request_    ?&dom.SharedResourceRequest
@@ -1557,7 +1571,8 @@ pub mut:
 	loops_completed_     usize
 	image_data_          ?dom.SharedDecodedImageData
 	did_request_resource bool
-	clients_             []voidptr
+mut:
+	client_state_ &ImageStyleValueClientState = &ImageStyleValueClientState{}
 }
 
 pub type ImageSetImageStyleValue = ConicGradientStyleValue
@@ -1932,23 +1947,31 @@ pub fn (style_value ImageStyleValue) absolutized(context ComputationContext) Ima
 	return style_value
 }
 
-pub fn (mut style_value ImageStyleValue) register_client(client voidptr) {
-	for existing in style_value.clients_ {
-		if existing == client {
+pub fn (style_value ImageStyleValue) register_client(client ImageStyleValueClient) {
+	mut state := style_value.client_state_
+	for existing in state.clients {
+		if existing.target == client.target {
 			return
 		}
 	}
-	style_value.clients_ << client
+	state.clients << client
 }
 
-pub fn (mut style_value ImageStyleValue) unregister_client(client voidptr) {
-	mut kept := []voidptr{}
-	for existing in style_value.clients_ {
-		if existing != client {
+pub fn (style_value ImageStyleValue) unregister_client(client voidptr) {
+	mut state := style_value.client_state_
+	mut kept := []ImageStyleValueClient{}
+	for existing in state.clients {
+		if existing.target != client {
 			kept << existing
 		}
 	}
-	style_value.clients_ = kept
+	state.clients = kept
+}
+
+pub fn (style_value ImageStyleValue) notify_clients() {
+	for client in style_value.client_state_.clients.clone() {
+		client.did_update(client.target)
+	}
 }
 
 pub type CSSImageSourceStyleValue = ConicGradientStyleValue

@@ -106,6 +106,33 @@ fn test_image_style_value_reads_single_pixel_from_real_decoded_image_contract() 
 	assert image.color_if_single_pixel_bitmap()? == Color.rgba(12, 34, 56, 78)
 }
 
+@[heap]
+struct ImageStyleValueClientRecorder {
+mut:
+	updates int
+}
+
+fn record_image_style_value_update(target voidptr) {
+	mut recorder := unsafe { &ImageStyleValueClientRecorder(target) }
+	recorder.updates++
+}
+
+fn test_image_style_value_copies_share_const_client_registration() {
+	image := ImageStyleValue.create_from_url_string('shared.png')
+	copy := image
+	mut recorder := &ImageStyleValueClientRecorder{}
+	image.register_client(ImageStyleValueClient{
+		target: voidptr(recorder)
+		did_update: record_image_style_value_update
+	})
+
+	copy.notify_clients()
+	assert recorder.updates == 1
+	copy.unregister_client(voidptr(recorder))
+	image.notify_clients()
+	assert recorder.updates == 1
+}
+
 fn test_css_image_reads_decoded_data_from_shared_resource_request() {
 	bitmap := &dom.ImmutableBitmap_{
 		width: 3
