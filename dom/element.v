@@ -1500,6 +1500,7 @@ pub mut:
 	style_depends_on_size_container_query_                                          bool
 	style_depends_on_style_container_query_                                         bool
 	is_size_query_container_                                                        bool
+	is_style_query_container_                                                       bool
 	child_style_uses_tree_counting_function                                         bool
 	affected_by_has_pseudo_class_in_subject_position                                bool
 	affected_by_has_pseudo_class_in_non_subject_position                            bool
@@ -2495,6 +2496,11 @@ pub fn (mut e Element) set_style_depends_on_style_container_query() {
 }
 
 pub fn (mut e Element) invalidate_descendant_styles_depending_on_style_container_query() {
+	if !e.is_style_query_container_ {
+		return
+	}
+	mut document := unsafe { &Document(e.document()) }
+	document.record_style_query_container_scan()
 	e.as_node().for_each_shadow_including_descendant(fn (node &Node) TraversalDecision {
 		if element := node.as_element() {
 			if element.style_depends_on_style_container_query() {
@@ -2504,6 +2510,14 @@ pub fn (mut e Element) invalidate_descendant_styles_depending_on_style_container
 		}
 		return .@continue
 	})
+}
+
+pub fn (e &Element) is_style_query_container() bool {
+	return e.is_style_query_container_
+}
+
+pub fn (mut e Element) set_is_style_query_container() {
+	e.is_style_query_container_ = true
 }
 
 pub fn (mut e Element) refresh_inherited_custom_property_data() bool {

@@ -286,6 +286,10 @@ fn test_style_container_features_evaluate_selected_ancestor_style() {
 	abstract_subject := dom.AbstractElement.new(subject, none)
 	assert parsed_single_container_query('style(--theme: dark)').evaluate(abstract_subject,
 		none) == .true_
+	container := subject.as_node().parent_element() or { panic('missing query container') }
+	assert container.is_style_query_container()
+	root := subject.document().document_element() or { panic('missing document element') }
+	assert root.is_style_query_container()
 	assert parsed_single_container_query('style(--theme: light)').evaluate(abstract_subject,
 		none) == .false_
 	assert parsed_single_container_query('style(3 < --level <= 5)').evaluate(abstract_subject,

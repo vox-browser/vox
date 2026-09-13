@@ -95,9 +95,17 @@ fn test_style_container_invalidation_marks_only_dependent_shadow_including_desce
 	light_child.set_style_depends_on_style_container_query()
 	shadow_dependent.set_style_depends_on_style_container_query()
 	container.invalidate_descendant_styles_depending_on_style_container_query()
+	assert !dependent.needs_style_update()
+	assert !light_child.needs_style_update()
+	assert !shadow_dependent.needs_style_update()
+	assert document.style_invalidation_counters().style_query_container_scans == 0
+
+	container.set_is_style_query_container()
+	container.invalidate_descendant_styles_depending_on_style_container_query()
 
 	assert dependent.needs_style_update()
 	assert light_child.needs_style_update()
 	assert shadow_dependent.needs_style_update()
 	assert !unrelated.needs_style_update()
+	assert document.style_invalidation_counters().style_query_container_scans == 1
 }

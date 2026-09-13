@@ -131,6 +131,14 @@ pub fn (query &ContainerQuery) evaluate(element dom.AbstractElement, container_n
 				mut mutable_container := unsafe { &dom.Element(container) }
 				mutable_container.set_is_size_query_container()
 			}
+			if query.contains_style_feature() {
+				mut mutable_container := unsafe { &dom.Element(container) }
+				mutable_container.set_is_style_query_container()
+				if root := element.document().document_element() {
+					mut mutable_root := unsafe { &dom.Element(root) }
+					mutable_root.set_is_style_query_container()
+				}
+			}
 			return query.condition.evaluate(BooleanExpressionEvaluationContext{
 				document:            element.document()
 				query_container:     container

@@ -4250,6 +4250,7 @@ pub mut:
 	element_inherited_style_recomputations      u64
 	element_inherited_style_noop_recomputations u64
 	previous_sibling_invalidation_walk_visits  u64
+	style_query_container_scans                u64
 }
 
 // --- Main Document struct ---
@@ -7812,6 +7813,10 @@ pub fn (mut d Document) record_element_inherited_style_noop_recomputation() {
 
 pub fn (mut d Document) record_previous_sibling_invalidation_walk_visit() {
 	d.style_invalidation_counters_.previous_sibling_invalidation_walk_visits++
+}
+
+pub fn (mut d Document) record_style_query_container_scan() {
+	d.style_invalidation_counters_.style_query_container_scans++
 }
 
 pub fn (mut d Document) record_has_ancestor_walk_invocation() {
