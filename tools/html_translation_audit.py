@@ -370,6 +370,18 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("SVGFilterPrimitiveStandardAttributes", "svg_animated_length_for_attribute"): (
         ("svg_animated_length_for_attribute", "Element"),
     ),
+    # Resource boxes are attached below their referencing graphics elements.
+    # The DOM-owned V element keeps the same reverse dependency and exposes
+    # explicit SVG-prefixed invalidation entry points to the layout builder.
+    ("SVGElement", "register_resource_box_referencing_element"): (
+        ("register_svg_resource_box_referencing_element", "Element"),
+    ),
+    ("SVGElement", "mark_resource_box_referencing_elements_for_layout_tree_update"): (
+        ("mark_svg_resource_box_referencing_elements_for_layout_tree_update", "Element"),
+    ),
+    ("SVGElement", "mark_resource_box_referencing_elements_for_layout_update"): (
+        ("mark_svg_resource_box_referencing_elements_for_layout_update", "Element"),
+    ),
     # The C++ layout FFI pushes gradient/pattern records incrementally. V's
     # paint adapter resolves the same inherited resource state directly into
     # renderer-independent paint-style records.
