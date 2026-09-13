@@ -1317,6 +1317,10 @@ pub fn (api &Internals) style_invalidation_counters_object() StyleInvalidationCo
 	}
 }
 
+pub fn (api &Internals) has_html_parser_end_state(document &dom.Document) bool {
+	return document.has_html_parser_end_state()
+}
+
 pub fn (api &Internals) get_echo_server_port() u16 {
 	return api.platform.echo_server_port
 }

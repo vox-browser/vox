@@ -34,6 +34,8 @@ fn internals_hit_test_callback(target voidptr, x f64, y f64, type_ dom.HitTestTy
 	}
 }
 
+fn internals_parser_end_schedule_callback(_ voidptr) {}
+
 fn test_metadata_settings_and_platform_facade() {
 	mut platform := &PlatformState{
 		headless_: true
@@ -849,6 +851,18 @@ fn test_style_invalidation_counters_object_combines_document_and_compositor_stat
 	assert object.document_timeline_current_time? == 42.5
 	assert object.compositor_animation_wakeup_timer_active
 	assert !object.compositor_animation_observation_timer_active
+}
+
+fn test_has_html_parser_end_state_uses_the_supplied_document() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	mut platform := &PlatformState{}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	api := Internals.create(platform, navigator)
+	assert !api.has_html_parser_end_state(document)
+	document.set_html_parser_end_state(voidptr(&document), internals_parser_end_schedule_callback)
+	assert api.has_html_parser_end_state(document)
+	document.clear_html_parser_end_state(voidptr(&document))
+	assert !api.has_html_parser_end_state(document)
 }
 
 fn test_style_invalidation_counters_count_previous_sibling_walks() {
