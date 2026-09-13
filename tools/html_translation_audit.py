@@ -390,6 +390,12 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("SVGLengthValue", "to_utf16_string"): (("to_string", "SvgLengthValue"),),
     ("SVGLengthValue", "to_length"): (("to_string", "SvgLengthValue"),),
     ("SVGLengthValue", "to_percentage"): (("to_string", "SvgLengthValue"),),
+    # SVGLength stores scalar and canonical non-scalar forms separately in V;
+    # reading its internal tagged value is therefore split across two helpers.
+    ("SVGLength", "internal_value"): (
+        ("svg_length_scalar", None),
+        ("svg_length_non_scalar", None),
+    ),
     # V keeps the per-use SVG image color scheme on its isolated Document,
     # beside the media-query and style invalidation state that consumes it.
     ("SVGDecodedImageData", "color_scheme"): (
@@ -3078,6 +3084,16 @@ CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
     ),
     ("SVGLength.cpp", "length_resolution_context_for_element"): (
         "svg_length_context_from_element",
+    ),
+    ("SVGLength.cpp", "parse_css_length_value"): (
+        "parse_svg_length_scalar",
+        "is_supported_non_scalar_svg_length",
+    ),
+    ("SVGLength.cpp", "convert_px_to_specified_units"): (
+        "px_to_unit",
+    ),
+    ("SVGLength.cpp", "svg_length_type_to_css_length_unit"): (
+        "length_unit_from_type",
     ),
     # V checks the name/element restrictions while collecting the live SVG
     # attribute set, so it needs neither a pointer lookup table nor a separate

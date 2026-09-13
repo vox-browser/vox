@@ -227,6 +227,24 @@ class ConsolidatedFunctionTests(unittest.TestCase):
             ("svg_length_context_from_element",),
         )
 
+    def test_svg_length_internal_value_and_conversion_helpers_are_consolidated(self) -> None:
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[("SVGLength", "internal_value")],
+            (("svg_length_scalar", None), ("svg_length_non_scalar", None)),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_FUNCTION_MAPPINGS[("SVGLength.cpp", "parse_css_length_value")],
+            ("parse_svg_length_scalar", "is_supported_non_scalar_svg_length"),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_FUNCTION_MAPPINGS[("SVGLength.cpp", "convert_px_to_specified_units")],
+            ("px_to_unit",),
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_FUNCTION_MAPPINGS[("SVGLength.cpp", "svg_length_type_to_css_length_unit")],
+            ("length_unit_from_type",),
+        )
+
     def test_animation_overlay_adapter_maps_to_the_css_update_callback(self) -> None:
         self.assertEqual(
             audit.CONSOLIDATED_FUNCTION_MAPPINGS[
