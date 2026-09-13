@@ -66,6 +66,27 @@ pub:
 	query_container ?&dom.Element
 }
 
+pub struct ContainerQueryFeatureRequirements {
+pub mut:
+	requires_width_container           bool
+	requires_height_container          bool
+	requires_inline_size_container     bool
+	requires_block_size_container      bool
+	requires_style_container           bool
+	requires_scroll_state_container    bool
+	has_unknown_or_unsupported_feature bool
+}
+
+pub fn (requirements ContainerQueryFeatureRequirements) contains_size_feature() bool {
+	return requirements.requires_width_container || requirements.requires_height_container
+		|| requirements.requires_inline_size_container
+		|| requirements.requires_block_size_container
+}
+
+pub fn (requirements ContainerQueryFeatureRequirements) contains_style_feature() bool {
+	return requirements.requires_style_container
+}
+
 pub fn (result MatchResult) to_string() string {
 	return match result {
 		.false_ { 'false' }
@@ -232,7 +253,7 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 				return evaluate_media_feature(expression.media_feature_name,
 					expression.media_feature_kind, expression.media_feature_value,
 					expression.media_feature_comparison, expression.media_feature_right_comparison,
-					 expression.media_feature_right_value, context.document)
+					expression.media_feature_right_value, context.document)
 			}
 			return expression.matches
 		}
@@ -288,6 +309,20 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 			}
 			return .unknown
 		}
+	}
+}
+
+pub fn (expression &BooleanExpression) collect_container_query_feature_requirements(mut requirements ContainerQueryFeatureRequirements) {
+	match expression.kind {
+		.general_enclosed {
+			requirements.has_unknown_or_unsupported_feature = true
+		}
+		.not, .in_parens, .and, .or {
+			for child in expression.children {
+				child.collect_container_query_feature_requirements(mut requirements)
+			}
+		}
+		else {}
 	}
 }
 

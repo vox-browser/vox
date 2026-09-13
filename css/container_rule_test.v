@@ -26,6 +26,19 @@ fn test_container_rule_cssom_condition_accessors_and_serialization() {
 	assert rule.css_text() == '@container card (width > 10px) {\n  @keyframes "" { }\n}'
 }
 
+fn test_container_query_collects_unknown_feature_requirements_recursively() {
+	unknown := BooleanExpression.create_general_enclosed('(future-feature: enabled)', .false_)
+	condition := BooleanExpression.create_not(BooleanExpression.create_in_parens(unknown))
+	query := ContainerQuery.create(condition)
+
+	assert query.feature_requirements.has_unknown_or_unsupported_feature
+	assert !query.contains_size_feature()
+	assert !query.contains_style_feature()
+
+	known_constant := ContainerQuery.create(BooleanExpression.create_constant(.true_))
+	assert !known_constant.feature_requirements.has_unknown_or_unsupported_feature
+}
+
 fn test_multiple_container_conditions_hide_legacy_singular_accessors() {
 	rule := CSSRule.create_container([
 		ContainerRuleCondition{ container_name: 'one' },

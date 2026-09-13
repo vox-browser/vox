@@ -6,15 +6,27 @@ import strings
 @[heap]
 pub struct ContainerQuery {
 pub:
-	condition &BooleanExpression
-	matches_  bool
+	condition            &BooleanExpression
+	feature_requirements ContainerQueryFeatureRequirements
+	matches_             bool
 }
 
 pub fn ContainerQuery.create(condition &BooleanExpression) &ContainerQuery {
+	mut feature_requirements := ContainerQueryFeatureRequirements{}
+	condition.collect_container_query_feature_requirements(mut feature_requirements)
 	return &ContainerQuery{
-		condition: condition
-		matches_: condition.evaluate_to_boolean(BooleanExpressionEvaluationContext{})
+		condition:            condition
+		feature_requirements: feature_requirements
+		matches_:             condition.evaluate_to_boolean(BooleanExpressionEvaluationContext{})
 	}
+}
+
+pub fn (query &ContainerQuery) contains_size_feature() bool {
+	return query.feature_requirements.contains_size_feature()
+}
+
+pub fn (query &ContainerQuery) contains_style_feature() bool {
+	return query.feature_requirements.contains_style_feature()
 }
 
 pub fn (query &ContainerQuery) matches() bool {
