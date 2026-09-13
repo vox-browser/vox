@@ -81,6 +81,7 @@ pub mut:
 	next_worker_agent_id_              u64 = 1
 	listen_for_dom_mutations_          bool
 	pending_dom_mutations_             []ClientEvent
+	history_executor_                  &HistoryExecutor = &HistoryExecutor{}
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }

@@ -232,6 +232,7 @@ mut:
 	pending_fullscreen_operations_               []PendingFullscreenOperation
 	fullscreen_elements_                         map[string]string
 	screenshot_tasks_                            []ScreenshotTask
+	history_executor_                            &HistoryExecutor = &HistoryExecutor{}
 }
 
 fn page_did_create_document_callback(target voidptr, document &dom.Document) {
@@ -284,6 +285,7 @@ pub fn Page.create(device_scale f64) !&Page {
 	mut model := &Page{
 		device_scale: device_scale
 	}
+	model.client_.history_executor_ = model.history_executor_
 	model.Page = dom.Page{
 		target: voidptr(model)
 		did_create_document_callback: page_did_create_document_callback
@@ -296,6 +298,10 @@ pub fn Page.create(device_scale f64) !&Page {
 		request_frame_callback: page_request_frame_callback
 	}
 	return model
+}
+
+pub fn (p &Page) history_executor() &HistoryExecutor {
+	return p.history_executor_
 }
 
 pub fn (p &Page) enable_autoscroll() bool {
