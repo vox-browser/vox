@@ -35,6 +35,9 @@ fn test_dom_layout_bridge() {
 		panic('viewport layout node has no dom node')
 	}
 	assert viewport_dom.is_document()
+	// CSS Overflow 3 propagates the root element's visible overflow to auto on
+	// the layout viewport. Internals reads this same committed layout value.
+	assert html_layout_parent.overflow_x() == .auto_
 
 	// The div's layout node parent is the html layout node.
 	div_layout := div.as_node().layout_node() or { panic('div has no layout node') }

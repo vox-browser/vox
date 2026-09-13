@@ -1615,3 +1615,18 @@ pub fn (api &Internals) recorded_async_scrolling_state_object() AsyncScrollingSt
 	}
 	return async_scrolling_state_to_object(compositor.async_scrolling_state_from_display_list(*display_list))
 }
+
+pub fn (api &Internals) viewport_overflow_x() string {
+	document := api.platform.associated_document or { return 'visible' }
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.update_layout(.debugging)
+	viewport := document.unsafe_layout_node() or { return 'visible' }
+	overflow := (viewport.root_layout_node() or { return 'visible' }).overflow_x()
+	return match overflow {
+		.auto_ { 'auto' }
+		.clip { 'clip' }
+		.hidden { 'hidden' }
+		.scroll { 'scroll' }
+		.visible { 'visible' }
+	}
+}

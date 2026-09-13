@@ -494,6 +494,21 @@ fn test_async_scrolling_diagnostics_use_compositor_admission_logic() {
 	assert api.recorded_async_scrolling_state_object().scroll_node_count == 1
 }
 
+fn test_viewport_overflow_x_reads_the_committed_layout_viewport() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	document.set_layout_viewport(&dom.LayoutViewport{
+		root_node: &dom.LayoutNode{
+			overflow_x_: .scroll
+		}
+	})
+	mut platform := &PlatformState{
+		associated_document: document
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	api := Internals.create(platform, navigator)
+	assert api.viewport_overflow_x() == 'scroll'
+}
+
 fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	mut platform := &PlatformState{}
 	navigator := gamepad.NavigatorGamepadPartial.new()

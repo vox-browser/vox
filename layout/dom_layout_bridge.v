@@ -23,9 +23,11 @@ pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.L
 fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, mut placeholders map[u64]&dom.LayoutNode) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
+	mut overflow_x := dom.CSSOverflow_.visible
 	if styled := box.as_node_with_style() {
 		visibility = visibility_to_dom_for_layout(styled.computed_values().visibility())
 		content_visibility = content_visibility_to_dom_for_layout(styled.computed_values().content_visibility())
+		overflow_x = overflow_to_dom_for_layout(styled.computed_values().overflow_x())
 	}
 	mut placeholder := &dom.LayoutNode{
 		dom_node_: box.dom_node()
@@ -41,6 +43,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		is_fixed_position_: box.is_fixed_position()
 		is_scroll_container_: box.is_scroll_container()
 		establishes_fixed_positioning_containing_block_: box.establishes_a_fixed_positioning_containing_block()
+		overflow_x_: overflow_x
 		visibility_: visibility
 		content_visibility_: content_visibility
 		layout_handle: voidptr(box)
@@ -296,6 +299,16 @@ fn content_visibility_to_dom_for_layout(value css.ContentVisibility) dom.CSSCont
 	return match value {
 		.visible { .visible }
 		.hidden { .hidden }
+		.auto_ { .auto_ }
+	}
+}
+
+fn overflow_to_dom_for_layout(value css.Overflow) dom.CSSOverflow_ {
+	return match value {
+		.visible { .visible }
+		.hidden { .hidden }
+		.clip { .clip }
+		.scroll { .scroll }
 		.auto_ { .auto_ }
 	}
 }

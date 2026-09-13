@@ -1677,6 +1677,10 @@ pub fn (ln &LayoutNode) is_text_node() bool {
 	return ln.is_text_node_
 }
 
+pub fn (ln &LayoutNode) overflow_x() CSSOverflow_ {
+	return ln.overflow_x_
+}
+
 pub fn (ln &LayoutNode) real_layout_handle() voidptr {
 	return ln.layout_handle
 }

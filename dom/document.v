@@ -1319,6 +1319,7 @@ pub mut:
 	is_fixed_position_                              bool
 	is_scroll_container_                            bool
 	establishes_fixed_positioning_containing_block_ bool
+	overflow_x_                                     CSSOverflow_ = .visible
 	visibility_                                     CSSVisibility_ = .visible
 	content_visibility_                             CSSContentVisibility_ = .visible
 	needs_layout_update_                            bool
