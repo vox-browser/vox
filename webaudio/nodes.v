@@ -117,10 +117,12 @@ pub fn (mut context BaseAudioContext) create_delay(max_delay_time f64, delay_tim
 		return error('NotSupportedError: Max delay time must be between 0 and 180 seconds exclusive')
 	}
 	node := context.allocate_node(.delay, 1, 1, options, 2, .max, .speakers)!
+	delay_parameter := context.allocate_param(f32(delay_time), 0, f32(max_delay_time), .a_rate, false)
+	node.queue_render_node_creation(DelayRenderNode.create(node.id, int(render_quantum_size), delay_parameter.render_param(), max_delay_time).render_node())
 	return DelayNode{
 		node: node
 		max_delay_time: max_delay_time
-		delay_time: context.allocate_param(f32(delay_time), 0, f32(max_delay_time), .a_rate, false)
+		delay_time: delay_parameter
 	}
 }
 
