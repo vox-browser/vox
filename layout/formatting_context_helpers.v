@@ -371,8 +371,10 @@ fn layout_box_baseline(state &LayoutState, box &Node) CSSPixels {
 
 	display := box.display()
 	has_visible_overflow := computed.overflow_x() == .visible && computed.overflow_y() == .visible
-	always_derive_from_content := display.is_flex_inside() || display.is_grid_inside()
-		|| has_visible_overflow
+	is_flex_or_grid_container := display.is_flex_inside() || display.is_grid_inside()
+	is_inline_flex_or_grid_container := display.is_inline_outside()
+		&& is_flex_or_grid_container
+	always_derive_from_content := is_flex_or_grid_container || has_visible_overflow
 	if always_derive_from_content && box_state.line_boxes.len > 0 {
 		last_line := box_state.line_boxes.last()
 		last_line_top := last_line.bottom().minus(last_line.block_length())
@@ -391,6 +393,17 @@ fn layout_box_baseline(state &LayoutState, box &Node) CSSPixels {
 			child_state := state.try_get(child_styled) or { return box_state.margin_box_height() }
 			child_offset_from_margin_edge :=
 				child_state.offset.y().minus(child_state.margin_box_top())
+			// Inline flex/grid containers generate their baseline from the
+			// alignment baseline of the selected item. Use that item's first line
+			// directly so wrapped content cannot pull the container down to the
+			// child's generic last-line baseline.
+			if is_inline_flex_or_grid_container && child_state.line_boxes.len > 0
+				&& !child_state.line_boxes.first().is_empty() {
+				first_line := child_state.line_boxes.first()
+				first_line_top := first_line.bottom().minus(first_line.block_length())
+				child_first_line_baseline := child_state.margin_box_top().plus(first_line_top).plus(first_line.baseline())
+				return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(child_first_line_baseline)
+			}
 			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline(state, child))
 		}
 	}

@@ -768,6 +768,26 @@ fn test_row_flex_baseline_alignment_uses_each_items_last_line_baseline() {
 	assert two.offset.y().to_double() > 0
 }
 
+fn test_inline_flex_baseline_uses_its_wrapped_childs_first_line() {
+	document := html.parse_document('<!doctype html><style>
+		#icon { display:inline-flex; width:18px; height:18px; margin-left:4px }
+		#label { width:64px }
+	</style><p>foo <a>bar<span id="icon"><span id="label">baz baz baz baz</span></span></a> qux</p>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	icon_node := layout_node_with_id(result.root, 'icon') or { panic('missing #icon') }
+	label_node := layout_node_with_id(result.root, 'label') or { panic('missing #label') }
+	icon := used_for_id(result, 'icon')
+	label := used_for_id(result, 'label')
+	assert icon_node.display().is_inline_outside()
+	assert icon_node.display().is_flex_inside()
+	assert label.line_boxes.len > 1
+	first_line := label.line_boxes.first()
+	first_line_top := first_line.bottom().minus(first_line.block_length())
+	expected := icon.margin_box_top().plus(label.offset.y().minus(label.margin_box_top())).plus(label.margin_box_top()).plus(first_line_top).plus(first_line.baseline())
+	assert layout_box_baseline(result.state, icon_node).raw_value() == expected.raw_value()
+	assert layout_box_baseline(result.state, icon_node).raw_value() != icon.margin_box_top().plus(label.offset.y().minus(label.margin_box_top())).plus(layout_box_baseline(result.state, label_node)).raw_value()
+}
+
 fn test_relative_insets_resolve_against_the_containing_block_without_changing_flow_offsets() {
 	document := html.parse_document('<!doctype html><style>
 		#parent { width:200px }
