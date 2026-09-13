@@ -76,6 +76,18 @@ fn test_decode_support_matches_html_media_subtype_registry() {
 		MediaConfiguration: base
 		type_: .webrtc
 	}) == none
+	assert !is_able_to_decode_media(MediaDecodingConfiguration{
+		MediaConfiguration: MediaConfiguration{
+			video: video('video/mp4; codecs="avc1"', 24)
+		}
+		type_: .media_source
+	})
+	assert is_able_to_decode_media(MediaDecodingConfiguration{
+		MediaConfiguration: MediaConfiguration{
+			video: video('video/webm; codecs="vp8,vorbis"', 24)
+		}
+		type_: .media_source
+	})
 }
 
 fn test_decoding_info_rejects_invalid_and_resolves_on_media_task() {

@@ -9,6 +9,7 @@ import dom
 import encryptedmediaextensions
 import html
 import math
+import mediasourceextensions
 import mimesniff
 
 enum MediaTrackType {
@@ -523,33 +524,13 @@ fn file_decoding_capabilities(content_type string) ?DecoderCapabilities {
 }
 
 fn media_source_decoding_capabilities(content_type string) ?DecoderCapabilities {
-	mime_type := mimesniff.MimeType.parse(content_type) or { return none }
-	if mime_type.type_() !in ['audio', 'video'] || mime_type.subtype() !in ['webm', 'mp4'] {
+	capabilities := mediasourceextensions.MediaSource.decoder_capabilities_for_type(content_type) or {
 		return none
 	}
-	parameters := mime_type.parameters()
-	if 'codecs' !in parameters {
-		return none
+	return DecoderCapabilities{
+		smooth: capabilities.smooth
+		power_efficient: capabilities.power_efficient
 	}
-	container := if mime_type.subtype() == 'webm' {
-		MediaContainer.webm
-	} else {
-		MediaContainer.isobmff
-	}
-	codec_strings := parameters['codecs'].split(',')
-	if codec_strings.len == 0 {
-		return none
-	}
-	for codec_string in codec_strings {
-		codec := parse_media_codec(codec_string.trim_space()) or { return none }
-		if !codec.fully_specified || !codec_supported_in_container(container, codec.kind) {
-			return none
-		}
-		if mime_type.type_() == 'audio' && codec_track_type(codec.kind) != .audio {
-			return none
-		}
-	}
-	return DecoderCapabilities{ smooth: true, power_efficient: false }
 }
 
 fn check_mime_type_support(content_type string, decoding_type MediaDecodingType) ?DecoderCapabilities {

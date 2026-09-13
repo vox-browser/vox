@@ -48,8 +48,75 @@ fn test_media_source_type_support_and_worker_flag() {
 	assert MediaSource.is_type_supported('video/webm; codecs="vp09.00.10.08"')
 	assert MediaSource.is_type_supported('audio/webm; codecs="opus"')
 	assert !MediaSource.is_type_supported('video/webm')
-	assert !MediaSource.is_type_supported('video/webm; codecs="vp8"')
-	assert !MediaSource.is_type_supported('audio/webm; codecs="vorbis"')
+	for type_ in [
+		'video/webm; codecs="vp8"',
+		'video/webm; codecs="vorbis"',
+		'video/webm; codecs="vp8,vorbis"',
+		'video/webm; codecs="vorbis, vp8"',
+		'audio/webm; codecs="vorbis"',
+		'AUDIO/WEBM; CODECS="vorbis"',
+		'audio/webm; codecs=vorbis; test="6"',
+		'video/webm; codecs="opus"',
+	] {
+		assert MediaSource.is_type_supported(type_)
+	}
+	for type_ in [
+		'video/mp4; codecs="avc1.4d001e"',
+		'video/mp4; codecs="avc1.42001e"',
+		'audio/mp4; codecs="mp4a.40.2"',
+		'audio/mp4; codecs="mp4a.40.5"',
+		'audio/mp4; codecs="mp4a.67"',
+		'video/mp4; codecs="mp4a.40.2"',
+		'video/mp4; codecs="avc1.4d001e,mp4a.40.2"',
+		'video/mp4; codecs="mp4a.40.2 , avc1.4d001e "',
+		'audio/mp4; codecs="Opus"',
+		'video/mp4; codecs="fLaC"',
+		'video/mp4; codecs="hvc1.1.6.L93.B0"',
+		'video/mp4; codecs="hev1.A12.80000000.H255.90.12.34.56.78.9a"',
+		'video/mp4; codecs="vp09.00.00.08"',
+		'video/mp4; codecs="vp09.01.41.08.03.22.18.14.00"',
+		'video/mp4; codecs="av01.0.31M.08"',
+		'video/mp4; codecs="av01.1.08H.10.0.000.01.01.00.1"',
+	] {
+		assert MediaSource.is_type_supported(type_)
+	}
+	for type_ in [
+		'audio/webm; codecs="vp8"',
+		'audio/mp4; codecs="avc1.4d001e"',
+		'audio/mp4; codecs="vorbis"',
+		'audio/webm; codecs="mp4a.40.2"',
+		'video/mp4; codecs="vp8"',
+		'video/mp4; codecs="vorbis"',
+		'video/webm; codecs="mp4a.40.2"',
+		'audio/mp4; codecs="mp4a"',
+		'audio/mp4; codecs="mp4a.40"',
+		'audio/mp4; codecs="mp4a.40."',
+		'audio/mp4; codecs="mp4a.67.3"',
+		'video/mp4; codecs="avc1.nothex"',
+		'video/webm; codecs="vp09.00.99.08"',
+		'video/mp4; codecs="av01.0.00M"',
+		'video/mp4; codecs="vp09.00.41.10"',
+		'video/mp4; codecs="vp09.01.41.08.01.01.01.01.00"',
+		'video/mp4; codecs="vp09.01.41.08.03.03.01.01.00"',
+		'video/mp4; codecs="vp09.01.41.08.02.01.01.00.00"',
+		'video/mp4; codecs="av01.3.05M.08"',
+		'video/mp4; codecs="av01.0.24M.08"',
+		'video/mp4; codecs="av01.0.05H.08"',
+		'video/mp4; codecs="av01.0.05M.12"',
+		'video/mp4; codecs="av01.2.08M.12.0.010.01.01.01.0"',
+		'video/mp4; codecs="av01.0.08M.10.0.110.03.01.01.0"',
+		'video/mp4; codecs="hvc1.32.6.L93.B0"',
+		'video/mp4; codecs="hvc1.1.6.L256.B0"',
+		'video/mp4; codecs="hvc1.1.6.L93.B0.00.00.00.00.00.00"',
+	] {
+		assert !MediaSource.is_type_supported(type_), 'unexpectedly supported ${type_}'
+	}
+	capabilities := MediaSource.decoder_capabilities_for_type('video/mp4; codecs="avc1.640028"') or {
+		panic('expected decoder capabilities')
+	}
+	assert capabilities.smooth
+	assert !capabilities.power_efficient
+	assert MediaSource.decoder_capabilities_for_type('video/mp4; codecs="avc1"') == none
 }
 
 fn test_media_source_handlers_participate_in_dispatch() {
