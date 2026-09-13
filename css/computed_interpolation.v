@@ -5,6 +5,7 @@ import dom
 import os
 import platform
 import strconv
+import svg
 import time
 
 // Translated scaffolding from:
@@ -13583,6 +13584,10 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 			if tag_name !in geometry_only[lower_name] {
 				continue
 			}
+		} else if lower_name == 'transform'
+			&& tag_name in ['linearGradient', 'radialGradient', 'pattern'] {
+			// These elements expose gradientTransform/patternTransform instead.
+			continue
 		} else if lower_name in ['height', 'width', 'x', 'y'] {
 			if tag_name !in sizing_only {
 				continue
@@ -13595,7 +13600,7 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 			'shape-rendering', 'stop-color', 'stop-opacity', 'stroke', 'stroke-dasharray',
 			'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit',
 			'stroke-opacity', 'stroke-width', 'text-anchor', 'text-decoration', 'text-rendering',
-			'text-overflow', 'gradienttransform', 'patterntransform', 'transform-origin',
+			'text-overflow', 'transform', 'gradienttransform', 'patterntransform', 'transform-origin',
 			'unicode-bidi', 'visibility', 'white-space', 'word-spacing', 'writing-mode'] {
 			continue
 		}
@@ -13620,6 +13625,24 @@ fn collect_svg_presentational_hints(mut properties []StyleProperty, element &dom
 }
 
 fn parse_svg_presentation_attribute_value(document &dom.Document, property_id PropertyID, source string) ?StyleValue {
+	// SVG transform attributes use the transform-list grammar: unitless
+	// translations, optional commas, and three-argument rotate(). Re-express
+	// that grammar as the single matrix() value used by the CSS cascade.
+	if property_id == .transform {
+		transforms := svg.parse_transform(source) or { return none }
+		matrix := svg.compose_transforms(transforms)
+		parameters := [
+			StyleValue(NumberStyleValue.create(matrix.a)),
+			StyleValue(NumberStyleValue.create(matrix.b)),
+			StyleValue(NumberStyleValue.create(matrix.c)),
+			StyleValue(NumberStyleValue.create(matrix.d)),
+			StyleValue(NumberStyleValue.create(matrix.e)),
+			StyleValue(NumberStyleValue.create(matrix.f)),
+		]
+		return StyleValue(StyleValueList.create([
+			StyleValue(TransformationStyleValue.create(.transform, .matrix, parameters)),
+		], .space, .yes))
+	}
 	mut parser := Parser.with_context(ParsingParams{
 		document: document
 		mode: .svg_presentation_attribute

@@ -8,15 +8,16 @@ import math
 
 pub fn attribute_style_properties() []string {
 	return ['fill', 'clip-path', 'clip-rule', 'color', 'color-interpolation', 'cursor', 'cx', 'cy',
-		'direction', 'display', 'dominant-baseline', 'fill-opacity', 'fill-rule', 'filter',
+		'd', 'direction', 'display', 'dominant-baseline', 'fill-opacity', 'fill-rule', 'filter',
 		'flood-color', 'flood-opacity', 'font-family', 'font-size', 'font-style', 'font-variant',
 		'font-weight', 'font-stretch', 'height', 'image-rendering', 'letter-spacing', 'mask',
 		'mask-type', 'opacity', 'overflow', 'paint-order', 'pointer-events', 'r', 'rx', 'ry',
 		'shape-rendering', 'stop-color', 'stop-opacity', 'stroke', 'stroke-dasharray',
 		'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit',
 		'stroke-opacity', 'stroke-width', 'text-anchor', 'text-decoration', 'text-rendering',
-		'text-overflow', 'gradientTransform', 'patternTransform', 'transform-origin', 'unicode-bidi',
-		'visibility', 'white-space', 'width', 'word-spacing', 'writing-mode', 'x', 'y']
+		'text-overflow', 'transform', 'gradientTransform', 'patternTransform', 'transform-origin',
+		'unicode-bidi', 'visibility', 'white-space', 'width', 'word-spacing', 'writing-mode', 'x',
+		'y']
 }
 
 pub fn normalized_diagonal_length(width f64, height f64) f64 {

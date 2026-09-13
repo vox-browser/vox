@@ -33,6 +33,7 @@ mut:
 	computed_svg_path_            ?svg.Path
 	has_computed_svg_transforms   bool
 	svg_viewbox_transform_        svg.AffineTransform
+	svg_local_transform_          svg.AffineTransform
 	svg_transform_                svg.AffineTransform
 	svg_viewport_transform_       ?svg.AffineTransform
 	svg_rendering_disabled_       bool
@@ -53,6 +54,7 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		computed_svg_path_: rare.computed_svg_path_
 		has_computed_svg_transforms: rare.has_computed_svg_transforms
 		svg_viewbox_transform_: rare.svg_viewbox_transform_
+		svg_local_transform_: rare.svg_local_transform_
 		svg_transform_: rare.svg_transform_
 		svg_viewport_transform_: rare.svg_viewport_transform_
 		svg_rendering_disabled_: rare.svg_rendering_disabled_
@@ -500,10 +502,11 @@ pub fn (u &UsedValues) computed_svg_path() ?svg.Path {
 	return rare.computed_svg_path_
 }
 
-pub fn (mut u UsedValues) set_computed_svg_transforms(viewbox_transform svg.AffineTransform, svg_transform svg.AffineTransform) {
+pub fn (mut u UsedValues) set_computed_svg_transforms(viewbox_transform svg.AffineTransform, local_transform svg.AffineTransform, svg_transform svg.AffineTransform) {
 	mut rare := u.ensure_rare_data()
 	rare.has_computed_svg_transforms = true
 	rare.svg_viewbox_transform_ = viewbox_transform
+	rare.svg_local_transform_ = local_transform
 	rare.svg_transform_ = svg_transform
 }
 
@@ -515,6 +518,11 @@ pub fn (u &UsedValues) has_computed_svg_transforms() bool {
 pub fn (u &UsedValues) svg_viewbox_transform() svg.AffineTransform {
 	rare := u.rare_ or { return svg.AffineTransform{} }
 	return rare.svg_viewbox_transform_
+}
+
+pub fn (u &UsedValues) svg_local_transform() svg.AffineTransform {
+	rare := u.rare_ or { return svg.AffineTransform{} }
+	return rare.svg_local_transform_
 }
 
 pub fn (u &UsedValues) svg_transform() svg.AffineTransform {

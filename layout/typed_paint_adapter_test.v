@@ -2107,6 +2107,17 @@ fn test_svg_path_hit_testing_rejects_stroke_inflation_outside_transformed_path_b
 	assert mutable_document.elements_from_point(45, 25).all(it.as_node().unique_id() != target.as_node().unique_id())
 }
 
+fn test_author_css_replaces_an_svg_transform_presentation_attribute_once() {
+	document := html.parse_document('<!doctype html><style>html,body,svg{margin:0;display:block}#target{transform:translate(7px, 8px)}</style><svg width="100" height="100"><rect id="target" transform="translate(40 50)" width="10" height="10" fill="red"/></svg>')
+	root := layout_document_typed_in_viewport(document, 120, 120)
+	target := document.get_element_by_id('target') or { panic('missing SVG transform target') }
+	target_box := root.find_box(i64(target.as_node().unique_id())) or {
+		panic('missing SVG transform paint box')
+	}
+	assert target_box.svg_transform == [f64(1), 0, 0, 1, 7, 8]!
+	assert target_box.own_paint_transform == [6]f64{}
+}
+
 fn test_nested_svg_viewport_and_element_transforms_are_interleaved_at_paint_time() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 }</style><svg width="200" height="200" viewBox="0 0 10 10"><g transform="translate(1 0)"><svg x="2" width="4" height="4" viewBox="0 0 2 2"><rect id="target" x=".5" y=".5" width="1" height="1"/></svg></g></svg>')
 	result := run_document_layout(document, 240, 240) or { panic('layout failed') }

@@ -291,8 +291,9 @@ fn (mut context SVGFormattingContext) layout_graphics_element(graphics_box &Node
 	mut graphics_state := context.state.get_mutable(styled)
 	element := svg_element_for_layout_node(graphics_box) or { return }
 	parent_svg_transform := context.parent_svg_transform(graphics_box)
-	svg_transform := parent_svg_transform.multiply(svg.element_transform(svg_transform_element_model(graphics_box, element, context.viewport_size)))
-	graphics_state.set_computed_svg_transforms(context.current_viewbox_transform, svg_transform)
+	local_transform := svg.element_transform(svg_transform_element_model(graphics_box, element, context.viewport_size))
+	svg_transform := parent_svg_transform.multiply(local_transform)
+	graphics_state.set_computed_svg_transforms(context.current_viewbox_transform, local_transform, svg_transform)
 
 	if is_svg_container_element(element) {
 		context.layout_container_element(graphics_box)
@@ -911,10 +912,17 @@ fn visible_svg_stroke_width(graphics_box &Node, viewport_size CSSPixelSize) f64 
 
 fn svg_transform_element_model(graphics_box &Node, element &dom.Element, viewport_size CSSPixelSize) svg.Element {
 	mut model := svg_element_model(element)
+	computed := graphics_box.computed_values()
+	if !element.has_attribute('transform') || computed_transform_is_none(computed) {
+		model.attributes.delete('transform')
+	} else if matrix := css.resolve_computed_transform_2d_matrix(computed, viewport_size.width().to_double(), viewport_size.height().to_double()) {
+		model.attributes['transform'] = 'matrix(${matrix[0]} ${matrix[1]} ${matrix[2]} ${matrix[3]} ${matrix[4]} ${matrix[5]})'
+	} else {
+		model.attributes.delete('transform')
+	}
 	if element.local_name() != 'use' {
 		return model
 	}
-	computed := graphics_box.computed_values()
 	model.attributes['x'] = '${computed.length_percentage_to_px(.x, viewport_size.width().to_double()) or { 0.0 }}'
 	model.attributes['y'] = '${computed.length_percentage_to_px(.y, viewport_size.height().to_double()) or { 0.0 }}'
 	return model

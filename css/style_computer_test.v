@@ -1,6 +1,7 @@
 module css
 
 import dom
+import math
 import svg
 
 struct CSSAnimationEventObservation {
@@ -1808,6 +1809,37 @@ fn test_svg_presentation_attributes_participate_at_the_correct_cascade_position(
 		panic('overridden fill is not a color')
 	}
 	assert overridden_color.serialize() == 'rgb(0 0 255)'
+}
+
+fn test_svg_transform_presentation_attributes_use_the_svg_transform_grammar() {
+	doc := dom.Document.create(dom.url_about_blank())
+	computer := StyleComputer.new(doc)
+	mut rect := doc.create_element_ns('http://www.w3.org/2000/svg', 'rect') or {
+		panic('${err}')
+	}
+	rect.set_attribute_value('transform', 'translate(10 20) rotate(90 5 5)')
+	computed := computer.compute_style(dom.AbstractElement.new(rect, none))
+	matrix := resolve_computed_transform_2d_matrix(computed, 100, 100) or {
+		panic('SVG transform presentation attribute did not compute')
+	}
+	assert math.abs(matrix[0]) < 0.00001
+	assert math.abs(matrix[1] - 1) < 0.00001
+	assert math.abs(matrix[2] + 1) < 0.00001
+	assert math.abs(matrix[3]) < 0.00001
+	assert math.abs(matrix[4] - 20) < 0.00001
+	assert math.abs(matrix[5] - 20) < 0.00001
+
+	mut gradient := doc.create_element_ns('http://www.w3.org/2000/svg', 'linearGradient') or {
+		panic('${err}')
+	}
+	gradient.set_attribute_value('transform', 'translate(99 99)')
+	gradient.set_attribute_value('gradientTransform', 'translate(3 4)')
+	gradient_computed := computer.compute_style(dom.AbstractElement.new(gradient, none))
+	gradient_matrix := resolve_computed_transform_2d_matrix(gradient_computed, 100, 100) or {
+		panic('gradientTransform presentation attribute did not compute')
+	}
+	assert gradient_matrix[4] == 3
+	assert gradient_matrix[5] == 4
 }
 
 fn test_svg_presentational_hint_with_undefined_var_uses_initial_value() {

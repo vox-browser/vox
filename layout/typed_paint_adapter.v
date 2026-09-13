@@ -108,7 +108,9 @@ fn svg_path_transform_to_page(node &Node, state &LayoutState) svg.AffineTransfor
 		part := chain[index]
 		part_styled := part.as_node_with_style() or { continue }
 		part_used := state.try_get(part_styled) or { continue }
-		if element := svg_element_for_layout_node(part) {
+		if part_used.has_computed_svg_transforms() {
+			transform = transform.multiply(part_used.svg_local_transform())
+		} else if element := svg_element_for_layout_node(part) {
 			transform = transform.multiply(svg.element_transform(svg_element_model(element)))
 		}
 		if viewport_transform := part_used.svg_viewport_transform() {
@@ -146,7 +148,9 @@ fn svg_box_visual_bounds_to_page(node &Node, state &LayoutState, used &UsedValue
 		part := chain[index]
 		part_styled := part.as_node_with_style() or { continue }
 		part_used := state.try_get(part_styled) or { continue }
-		if element := svg_element_for_layout_node(part) {
+		if part_used.has_computed_svg_transforms() {
+			transform = transform.multiply(part_used.svg_local_transform())
+		} else if element := svg_element_for_layout_node(part) {
 			transform = transform.multiply(svg.element_transform(svg_element_model(element)))
 		}
 		if viewport_transform := part_used.svg_viewport_transform() {
@@ -3099,7 +3103,13 @@ fn block_box_from_typed_layout_with_ancestor(node &Node, state &LayoutState, anc
 				z_index_auto = false
 			}
 		}
-		if !computed_transform_is_none(computed) {
+		// A transform presentation attribute is already part of the SVG
+		// user-space CTM. CSS-only transforms still use the ordinary paint
+		// transform path; when CSS overrides an attribute, its computed matrix
+		// replaces that attribute in the SVG CTM above.
+		has_svg_transform_attribute := node.is_svg_graphics_box()
+			&& styled_element.has_attribute('transform')
+		if !has_svg_transform_attribute && !computed_transform_is_none(computed) {
 			reference_box := paintable_box_transform_reference_box(node, computed, used, position, state)
 			paint_transform = resolved_computed_transform_matrix(computed, reference_box.x, reference_box.y, reference_box.width, reference_box.height)
 		}
