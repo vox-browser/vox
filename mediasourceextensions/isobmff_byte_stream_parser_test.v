@@ -177,6 +177,16 @@ fn test_isobmff_ignores_complete_top_level_boxes_but_retains_split_ones() {
 	assert parser.ignored_element_length(event_message)! == event_message.len
 }
 
+fn test_isobmff_rejects_boxes_that_are_not_valid_at_the_top_level() {
+	parser := ISOBMFFByteStreamParser.create()
+	invalid := iso_test_box('traf', []u8{})
+	parser.ignored_element_length(invalid) or {
+		assert err.msg() == 'Found a traf box that is not valid at the top level'
+		return
+	}
+	assert false
+}
+
 fn test_isobmff_rejects_an_unknown_initialization_segment_codec() {
 	initialization := minimal_isobmff_initialization_segment_with_sample_entry(iso_test_box('zzzz',
 		[]u8{}), 1)

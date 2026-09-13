@@ -7,6 +7,16 @@
 module mediasourceextensions
 
 const iso_segment_box_types = ['ftyp', 'moov', 'styp', 'moof', 'mdat']
+const iso_top_level_box_types = ['ftyp', 'styp', 'mdat', 'free', 'skip', 'uuid', 'pdin',
+	'sidx', 'ssix', 'prft', 'meta', 'meco', 'mfra', 'emsg', 'bloc', 'moov', 'moof']
+
+fn box_begins_a_segment(type_ string) bool {
+	return type_ in iso_segment_box_types
+}
+
+fn is_ignorable_top_level_box(type_ string) bool {
+	return type_ in iso_top_level_box_types && !box_begins_a_segment(type_)
+}
 
 struct ISOBoxHeader {
 	type_         string
@@ -345,8 +355,11 @@ pub fn (parser &ISOBMFFByteStreamParser) sniff_segment_type(bytes []u8) SegmentT
 pub fn (parser &ISOBMFFByteStreamParser) ignored_element_length(bytes []u8) !int {
 	_ = parser
 	header := read_iso_box_header(bytes, 0, bytes.len, true)!
-	if header.type_ in iso_segment_box_types {
+	if box_begins_a_segment(header.type_) {
 		return 0
+	}
+	if !is_ignorable_top_level_box(header.type_) {
+		return error('Found a ${header.type_} box that is not valid at the top level')
 	}
 	return header.end
 }
@@ -364,7 +377,7 @@ pub fn (mut parser ISOBMFFByteStreamParser) parse_initialization_segment(bytes [
 			movie = header
 			break
 		}
-		if header.type_ in iso_segment_box_types {
+		if !is_ignorable_top_level_box(header.type_) {
 			return error('Found ${header.type_} where the Movie box was expected')
 		}
 		position = header.end
@@ -587,7 +600,7 @@ pub fn (mut parser ISOBMFFByteStreamParser) parse_media_segment(bytes []u8) !Web
 		header = read_iso_box_header(bytes, position, bytes.len, true)!
 	}
 	for header.type_ != 'moof' {
-		if header.type_ in iso_segment_box_types {
+		if !is_ignorable_top_level_box(header.type_) {
 			return error('Found ${header.type_} where the Movie Fragment box was expected')
 		}
 		position = header.end
