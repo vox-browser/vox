@@ -3971,7 +3971,6 @@ pub enum InvalidateLayoutTreeReason {
 	document_request_an_element_to_be_removed_from_the_top_layer
 	document_immediately_remove_element_from_the_top_layer
 	document_pending_top_layer_removals_processed
-	shadow_root_set_inner_html
 }
 
 pub enum UpdateLayoutReason {
@@ -10880,9 +10879,6 @@ pub fn invalidate_layout_tree_reason_to_string(reason InvalidateLayoutTreeReason
 		}
 		.document_pending_top_layer_removals_processed {
 			'DocumentPendingTopLayerRemovalsProcessed'
-		}
-		.shadow_root_set_inner_html {
-			'ShadowRootSetInnerHTML'
 		}
 	}
 }

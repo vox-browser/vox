@@ -97,6 +97,7 @@ pub enum SetNeedsLayoutTreeUpdateReason {
 	node_remove
 	node_set_text_content
 	none
+	shadow_root_set_inner_html
 	style_change
 }
 
@@ -116,6 +117,7 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 		.node_remove { 'NodeRemove' }
 		.node_set_text_content { 'NodeSetTextContent' }
 		.none { 'None' }
+		.shadow_root_set_inner_html { 'ShadowRootSetInnerHTML' }
 		.style_change { 'StyleChange' }
 	}
 }

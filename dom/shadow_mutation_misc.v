@@ -436,8 +436,7 @@ pub fn (mut shadow_root ShadowRoot) set_inner_html(value string) ! {
 	// NOTE: We do not have HTMLTemplateElement in the current V DOM yet.
 	node.set_needs_style_update(true)
 	if node.is_connected() {
-		mut document := unsafe { &Document(node.document()) }
-		document.invalidate_layout_tree(.shadow_root_set_inner_html)
+		node.set_needs_layout_tree_update(true, .shadow_root_set_inner_html)
 	}
 }
 

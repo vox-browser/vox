@@ -565,6 +565,36 @@ fn test_set_inner_html_replaces_children() {
 	assert (div.outer_html() or { panic('${err}') }) == '<div><em>through DOM</em></div>'
 }
 
+fn test_shadow_root_inner_html_invalidates_only_its_layout_subtree() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.html)
+	install_document_fragment_parsing_hook(document)
+	mut host := document.create_element_ns(ns_html, 'div') or { panic('host') }
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(host.as_node()) or { panic('${err}') }
+	mut shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or {
+		panic('${err}')
+	}
+
+	// Discard invalidation caused by connecting the host and attaching the root.
+	mut host_node := host.as_node()
+	mut shadow_node := dom.shadow_root_as_node(shadow_root)
+	document.set_needs_full_layout_tree_update(false)
+	document_node.set_needs_layout_tree_update(false, .style_change)
+	document_node.set_child_needs_layout_tree_update(false)
+	host_node.set_needs_layout_tree_update(false, .style_change)
+	host_node.set_child_needs_layout_tree_update(false)
+	shadow_node.set_needs_layout_tree_update(false, .style_change)
+	shadow_node.set_child_needs_layout_tree_update(false)
+
+	shadow_root.set_inner_html('<span>updated</span>')!
+
+	assert !document.needs_full_layout_tree_update()
+	assert shadow_node.needs_layout_tree_update_()
+	assert host_node.needs_layout_tree_update_()
+	assert dom.set_needs_layout_tree_update_reason_to_string(.shadow_root_set_inner_html) == 'ShadowRootSetInnerHTML'
+}
+
 fn test_html_fragment_serialization_node_kinds_and_raw_text() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	doc.set_document_type(.html)
