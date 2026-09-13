@@ -91,10 +91,37 @@ fn test_base_element_behavior_and_use_transform() {
 
 fn test_mask_and_text_helpers() {
 	area := resolve_masking_area(Rect{ x: 10, y: 20, width: 100, height: 50 })
-	assert math.abs(area.x - -10) < 0.00001
-	assert math.abs(area.y - 10) < 0.00001
-	assert math.abs(area.width - 140) < 0.00001
-	assert math.abs(area.height - 70) < 0.00001
+	assert math.abs(area.x - 0) < 0.00001
+	assert math.abs(area.y - 15) < 0.00001
+	assert math.abs(area.width - 120) < 0.00001
+	assert math.abs(area.height - 60) < 0.00001
+	mask := Element{
+		tag: 'mask'
+		attributes: {
+			'maskUnits': 'userSpaceOnUse'
+			'x':         '10%'
+			'y':         '20%'
+			'width':     '50%'
+			'height':    '40%'
+		}
+	}
+	assert mask.mask_x() == percentage(10)
+	assert mask.mask_y() == percentage(20)
+	assert mask.mask_width() == percentage(50)
+	assert mask.mask_height() == percentage(40)
+	assert mask.resolve_masking_area(Rect{}, Point{ x: 200, y: 100 }, AffineTransform{
+		a: 2
+		d: 3
+		e: 5
+		f: 7
+	}) == Rect{ x: 45, y: 67, width: 200, height: 120 }
+	invalid := Element{
+		tag: 'mask'
+		attributes: {
+			'width': '0'
+		}
+	}
+	assert invalid.resolve_masking_area(Rect{ width: 10, height: 10 }, Point{}, AffineTransform{}) == Rect{}
 	assert text_anchor('middle') or { TextAnchor.start } == .middle
 	assert text_anchor('invalid') == none
 }

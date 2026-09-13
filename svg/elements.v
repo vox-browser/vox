@@ -334,12 +334,7 @@ pub fn element_transform(element Element) AffineTransform {
 }
 
 pub fn resolve_masking_area(target Rect) Rect {
-	return Rect{
-		x: target.x - target.width * 0.2
-		y: target.y - target.height * 0.2
-		width: target.width * 1.4
-		height: target.height * 1.4
-	}
+	return new_element('mask').resolve_masking_area(target, Point{}, AffineTransform{})
 }
 
 pub fn text_anchor(value string) ?TextAnchor {

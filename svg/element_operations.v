@@ -531,8 +531,50 @@ pub fn (element &Element) mask_content_units() Units {
 	return parse_units(element.attributes['maskContentUnits'] or { '' }) or { Units.user_space_on_use }
 }
 
-pub fn (element &Element) resolve_masking_area(target Rect) Rect {
-	return svg.resolve_masking_area(target)
+pub fn (element &Element) mask_x() NumberPercentage {
+	return parse_number_percentage(element.attributes['x'] or { '' }) or { percentage(-10) }
+}
+
+pub fn (element &Element) mask_y() NumberPercentage {
+	return parse_number_percentage(element.attributes['y'] or { '' }) or { percentage(-10) }
+}
+
+pub fn (element &Element) mask_width() NumberPercentage {
+	return parse_number_percentage(element.attributes['width'] or { '' }) or { percentage(120) }
+}
+
+pub fn (element &Element) mask_height() NumberPercentage {
+	return parse_number_percentage(element.attributes['height'] or { '' }) or { percentage(120) }
+}
+
+pub fn (element &Element) masking_area_in_user_space(target Rect, viewport_size Point) Rect {
+	if element.mask_units() == .object_bounding_box {
+		return Rect{
+			x: target.x + element.mask_x().value * target.width
+			y: target.y + element.mask_y().value * target.height
+			width: element.mask_width().value * target.width
+			height: element.mask_height().value * target.height
+		}
+	}
+	return Rect{
+		x: element.mask_x().resolve_relative_to(viewport_size.x)
+		y: element.mask_y().resolve_relative_to(viewport_size.y)
+		width: element.mask_width().resolve_relative_to(viewport_size.x)
+		height: element.mask_height().resolve_relative_to(viewport_size.y)
+	}
+}
+
+pub fn (element &Element) resolve_masking_area(target Rect, viewport_size Point,
+	user_space_to_css_pixels AffineTransform) Rect {
+	area := element.masking_area_in_user_space(target, viewport_size)
+	if area.width <= 0 || area.height <= 0 {
+		return Rect{}
+	}
+	mapped := user_space_to_css_pixels.map_rect(area)
+	if mapped.width <= 0 || mapped.height <= 0 {
+		return Rect{}
+	}
+	return mapped
 }
 
 pub fn (element &Element) clip_path_units() Units {

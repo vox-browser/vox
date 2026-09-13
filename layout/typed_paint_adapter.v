@@ -2881,34 +2881,10 @@ fn svg_target_user_space_object_bounding_box(target_used &UsedValues) svg.Rect {
 
 fn resolve_svg_masking_area(mask_element &dom.Element, target_bounds svg.Rect,
 	viewport painting.Size) svg.Rect {
-	mask_x := svg.parse_number_percentage(mask_element.get_attribute_value('x')) or {
-		svg.percentage(-10)
-	}
-	mask_y := svg.parse_number_percentage(mask_element.get_attribute_value('y')) or {
-		svg.percentage(-10)
-	}
-	mask_width := svg.parse_number_percentage(mask_element.get_attribute_value('width')) or {
-		svg.percentage(120)
-	}
-	mask_height := svg.parse_number_percentage(mask_element.get_attribute_value('height')) or {
-		svg.percentage(120)
-	}
-	if svg.parse_units(mask_element.get_attribute_value('maskUnits')) or {
-		svg.Units.object_bounding_box
-	} == .object_bounding_box {
-		return svg.Rect{
-			x: target_bounds.x + mask_x.value * target_bounds.width
-			y: target_bounds.y + mask_y.value * target_bounds.height
-			width: mask_width.value * target_bounds.width
-			height: mask_height.value * target_bounds.height
-		}
-	}
-	return svg.Rect{
-		x: mask_x.resolve_relative_to(viewport.width)
-		y: mask_y.resolve_relative_to(viewport.height)
-		width: mask_width.resolve_relative_to(viewport.width)
-		height: mask_height.resolve_relative_to(viewport.height)
-	}
+	return svg_element_model(mask_element).masking_area_in_user_space(target_bounds, svg.Point{
+		x: viewport.width
+		y: viewport.height
+	})
 }
 
 // SVGMaskable::get_svg_mask_area()/calculate_svg_mask_display_list(): retain
