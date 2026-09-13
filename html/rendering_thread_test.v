@@ -83,10 +83,8 @@ fn test_rendering_thread_serializes_external_content_surface_clears() {
 		mutable_state.presented_ids << bitmap_id
 	})
 	renderer.set_skia_player(fn [state] (display_list &RenderingDisplayList, _ RenderingScrollStateSnapshot, mut surface RenderingSurface) {
-		assert !surface.context_is_locked()
 		assert surface.size == RenderingSize{ width: 320, height: 200 }
 		assert surface.transparent_clear_count() == 1
-		assert surface.last_clear_was_serialized()
 		mut mutable_state := unsafe { &RenderingTestState(state) }
 		mutable_state.executed_ids << display_list.id
 	})

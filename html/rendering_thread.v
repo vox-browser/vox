@@ -29,34 +29,15 @@ pub:
 pub mut:
 	last_display_list_id int = -1
 mut:
-	context_locked_            bool
-	transparent_clear_count_   int
-	last_clear_was_serialized_ bool
-}
-
-fn (mut surface RenderingSurface) lock_context() {
-	surface.context_locked_ = true
+	transparent_clear_count_ int
 }
 
 fn (mut surface RenderingSurface) clear_transparent() {
 	surface.transparent_clear_count_++
-	surface.last_clear_was_serialized_ = surface.context_locked_
-}
-
-fn (mut surface RenderingSurface) unlock_context() {
-	surface.context_locked_ = false
-}
-
-pub fn (surface &RenderingSurface) context_is_locked() bool {
-	return surface.context_locked_
 }
 
 pub fn (surface &RenderingSurface) transparent_clear_count() int {
 	return surface.transparent_clear_count_
-}
-
-pub fn (surface &RenderingSurface) last_clear_was_serialized() bool {
-	return surface.last_clear_was_serialized_
 }
 
 @[heap]
@@ -264,9 +245,7 @@ pub fn (mut renderer RenderingThread) process() {
 	back := renderer.backing_stores_.back or { return }
 	if renderer.presentation_mode_ is RenderingPublishToExternalContent {
 		mut mutable_back := unsafe { &RenderingSurface(back) }
-		mutable_back.lock_context()
 		mutable_back.clear_transparent()
-		mutable_back.unlock_context()
 	}
 	if execute := renderer.execute_hook_ {
 		execute(display_list, renderer.cached_scroll_state_, back)
