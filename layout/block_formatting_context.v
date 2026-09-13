@@ -756,21 +756,27 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 		marker_distance =
 			CSSPixels.nearest_value_for(0.5 * marker.computed_values().resolved_font_size_px())
 	}
-	if marker.list_style_position() == .inside {
-		shift := marker_state.content_width().plus(marker_distance)
-		list_item_state.set_content_x(list_item_state.offset.x().plus(shift))
-		// Upstream keeps the non-text marker distance outside the content-width
-		// reduction: it shifts by marker width + distance, but subtracts only the
-		// marker's own width.
-		list_item_state.set_content_width(list_item_state.content_width().minus(marker_state.content_width()))
-	}
 	offset_y := css.css_pixels_round(css_pixels_max(CSSPixels.new(0), marker.computed_values().line_height().minus(marker_state.content_height()).divided_by_float(2)))
-	// Reserve the same left-side float intrusion that the following inline
-	// formatting pass will use. This keeps an outside marker immediately before
-	// the intruded list text instead of leaving it behind under the float.
-	left_intrusion, _, _ := bfc.float_boundaries_at(offset_y, marker_state.content_height(), list_item_state.content_width(), list_item.computed_values().direction(), list_item_state.cumulative_offset())
-	offset_x :=
-		css.css_pixels_round(left_intrusion.minus(marker_distance).minus(marker_state.content_width()))
+	// Capture both inline-side float intrusions before laying out list-item
+	// descendants. In particular, floats inside the item must not displace its
+	// marker away from the first line's original inline edge.
+	direction := list_item.computed_values().direction()
+	content_width_before_marker := list_item_state.content_width()
+	left_boundary, right_boundary, _ := bfc.float_boundaries_at(offset_y, marker_state.content_height(), content_width_before_marker, direction, list_item_state.cumulative_offset())
+	right_intrusion := content_width_before_marker.minus(right_boundary)
+	marker_offset_x := if direction == .ltr {
+		left_boundary.minus(marker_distance).minus(marker_state.content_width())
+	} else {
+		content_width_before_marker.minus(right_intrusion.minus(marker_distance))
+	}
+	if marker.list_style_position() == .inside {
+		marker_inline_size := marker_state.content_width().plus(marker_distance)
+		if direction == .ltr {
+			list_item_state.set_content_x(list_item_state.offset.x().plus(marker_inline_size))
+		}
+		list_item_state.set_content_width(list_item_state.content_width().minus(marker_inline_size))
+	}
+	offset_x := css.css_pixels_round(marker_offset_x)
 	marker_state.set_content_offset(css.CSSPixelPoint.new(offset_x, offset_y))
 }
 

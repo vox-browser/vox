@@ -664,6 +664,23 @@ fn test_normal_list_marker_is_created_and_laid_out() {
 	assert marker_used.offset.x().to_double() < 0
 }
 
+fn test_right_to_left_list_marker_is_positioned_after_the_inline_end_edge() {
+	document := html.parse_document('<!doctype html><ul dir="rtl"><li id="item">___________</li></ul>')
+	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
+	item_node := tree_builder_node_with_id(result.root, 'item') or { panic('no list item') }
+	list_item := item_node.as_list_item_box() or { panic('item is not ListItemBox') }
+	marker_node := list_item.marker() or { panic('list item has no marker') }
+	item_used := result.used_values_for(item_node.as_node_with_style() or {
+		panic('item has no style')
+	}) or { panic('item was not laid out') }
+	marker_used := result.used_values_for(marker_node.as_node_with_style() or {
+		panic('marker has no style')
+	}) or { panic('marker was not laid out') }
+	assert item_node.computed_values().direction() == .rtl
+	assert marker_used.offset.x().raw_value() >= item_used.content_width().raw_value()
+	assert marker_used.cumulative_offset().x().raw_value() >= item_used.cumulative_offset().x().plus(item_used.content_width()).raw_value()
+}
+
 fn test_predefined_symbol_marker_uses_geometric_marker_size() {
 	document := html.parse_document('<!doctype html><ul><li id="item">item</li></ul>')
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
