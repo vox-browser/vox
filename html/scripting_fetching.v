@@ -7,6 +7,7 @@
 // map state, graph traversal, and completion ordering are implemented here.
 module html
 
+import crypto.sha256
 import dom
 import encoding
 import fetch
@@ -147,11 +148,59 @@ struct CompiledFunctionResult {
 }
 
 fn scripting_source_length_in_code_units(source string) usize {
-	mut length := usize(0)
+	return usize(scripting_source_utf16_bytes(source).len / 2)
+}
+
+fn scripting_source_utf16_bytes(source string) []u8 {
+	mut bytes := []u8{cap: source.len * 2}
 	for code_point in source.runes() {
-		length += if code_point > 0xffff { usize(2) } else { usize(1) }
+		if code_point <= 0xffff {
+			unit := u16(code_point)
+			bytes << u8(unit & 0xff)
+			bytes << u8(unit >> 8)
+			continue
+		}
+		value := u32(code_point) - 0x10000
+		high := u16(0xd800 + (value >> 10))
+		low := u16(0xdc00 + (value & 0x3ff))
+		bytes << u8(high & 0xff)
+		bytes << u8(high >> 8)
+		bytes << u8(low & 0xff)
+		bytes << u8(low >> 8)
 	}
-	return length
+	return bytes
+}
+
+const scripting_bytecode_cache_magic = 'VOX2BC01'
+
+pub fn bytecode_cache_source_hash(source_code string) []u8 {
+	return sha256.sum(scripting_source_utf16_bytes(source_code))
+}
+
+pub fn serialize_compiled_program_for_bytecode_cache(bytecode []u8, program_type ScriptProgramType, source_code string) []u8 {
+	mut blob := scripting_bytecode_cache_magic.bytes()
+	blob << if program_type == .script { u8(0) } else { u8(1) }
+	blob << bytecode_cache_source_hash(source_code)
+	blob << bytecode
+	return blob
+}
+
+pub fn decode_bytecode_cache_blob(blob []u8, program_type ScriptProgramType, source_code string) ?[]u8 {
+	header_length := scripting_bytecode_cache_magic.len + 1 + sha256.size
+	if blob.len < header_length
+		|| blob[..scripting_bytecode_cache_magic.len].bytestr() != scripting_bytecode_cache_magic {
+		return none
+	}
+	expected_program_type := if program_type == .script { u8(0) } else { u8(1) }
+	if blob[scripting_bytecode_cache_magic.len] != expected_program_type {
+		return none
+	}
+	hash_start := scripting_bytecode_cache_magic.len + 1
+	hash_end := hash_start + sha256.size
+	if blob[hash_start..hash_end] != bytecode_cache_source_hash(source_code) {
+		return none
+	}
+	return blob[header_length..].clone()
 }
 
 // After top-level bytecode is handed back to the main event loop, compile all

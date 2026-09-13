@@ -233,6 +233,16 @@ fn test_remaining_lazy_functions_compile_and_discard_stale_results() {
 	assert nested.rust_function_ast == none
 }
 
+fn test_bytecode_cache_blob_is_bound_to_source_and_program_type() {
+	bytecode := [u8(0xde), 0xad, 0xbe, 0xef]
+	source := 'const emoji = "😀";'
+	blob := serialize_compiled_program_for_bytecode_cache(bytecode, .script, source)
+	assert decode_bytecode_cache_blob(blob, .script, source)? == bytecode
+	assert decode_bytecode_cache_blob(blob, .script, 'const emoji = "😃";') == none
+	assert decode_bytecode_cache_blob(blob, .module, source) == none
+	assert decode_bytecode_cache_blob([u8(1), 2, 3], .script, source) == none
+}
+
 fn test_descendant_options_resolve_import_map_integrity() {
 	fixture := scripting_fetching_fixture()!
 	module_url := dom.URL{ value: 'https://example.test/app/dep.js' }
