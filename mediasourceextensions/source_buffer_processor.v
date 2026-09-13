@@ -103,6 +103,14 @@ pub fn (mut processor SourceBufferProcessor) set_pending_initialization_segment_
 	processor.pending_initialization_segment_for_change_type_ = value
 }
 
+pub fn (processor &SourceBufferProcessor) first_initialization_segment_received_flag() bool {
+	return processor.first_initialization_segment_received_
+}
+
+pub fn (mut processor SourceBufferProcessor) set_first_initialization_segment_received_flag(value bool) {
+	processor.first_initialization_segment_received_ = value
+}
+
 pub fn (processor &SourceBufferProcessor) is_buffer_full() bool {
 	return processor.buffer_full_flag_
 }
@@ -272,12 +280,12 @@ pub fn (mut processor SourceBufferProcessor) run_segment_parser_loop() Processor
 				return ProcessorAppendResult{}
 			}
 			parsed_duration = result.duration
-			if !processor.first_initialization_segment_received_ {
+			if !processor.first_initialization_segment_received_flag() {
 				for track in result.tracks {
 					processor.track_buffers_[track.number] = TrackBuffer.create(track)
 				}
 				initialization_tracks = result.tracks.clone()
-				processor.first_initialization_segment_received_ = true
+				processor.set_first_initialization_segment_received_flag(true)
 				first_initialization = true
 			} else {
 				if !processor.repeated_initialization_tracks_match(result.tracks) {
@@ -291,7 +299,7 @@ pub fn (mut processor SourceBufferProcessor) run_segment_parser_loop() Processor
 			continue
 		}
 		if processor.append_state_ == .parsing_media_segment {
-			if !processor.first_initialization_segment_received_
+			if !processor.first_initialization_segment_received_flag()
 				|| processor.pending_initialization_segment_for_change_type_ {
 				return ProcessorAppendResult{}
 			}

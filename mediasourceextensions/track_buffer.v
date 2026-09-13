@@ -682,10 +682,46 @@ pub fn TrackBuffer.create(track WebMTrackInfo) &TrackBuffer {
 	}
 }
 
-pub fn (mut buffer TrackBuffer) unset_timestamps() {
+pub fn (buffer &TrackBuffer) last_decode_timestamp() ?f64 {
+	return buffer.last_decode_timestamp_
+}
+
+pub fn (mut buffer TrackBuffer) set_last_decode_timestamp(timestamp f64) {
+	buffer.last_decode_timestamp_ = timestamp
+}
+
+pub fn (mut buffer TrackBuffer) unset_last_decode_timestamp() {
 	buffer.last_decode_timestamp_ = none
+}
+
+pub fn (buffer &TrackBuffer) last_frame_duration() ?f64 {
+	return buffer.last_frame_duration_
+}
+
+pub fn (mut buffer TrackBuffer) set_last_frame_duration(duration f64) {
+	buffer.last_frame_duration_ = duration
+}
+
+pub fn (mut buffer TrackBuffer) unset_last_frame_duration() {
 	buffer.last_frame_duration_ = none
+}
+
+pub fn (buffer &TrackBuffer) highest_end_timestamp() ?f64 {
+	return buffer.highest_end_timestamp_
+}
+
+pub fn (mut buffer TrackBuffer) set_highest_end_timestamp(timestamp f64) {
+	buffer.highest_end_timestamp_ = timestamp
+}
+
+pub fn (mut buffer TrackBuffer) unset_highest_end_timestamp() {
 	buffer.highest_end_timestamp_ = none
+}
+
+pub fn (mut buffer TrackBuffer) unset_timestamps() {
+	buffer.unset_last_decode_timestamp()
+	buffer.unset_last_frame_duration()
+	buffer.unset_highest_end_timestamp()
 }
 
 pub fn (mut buffer TrackBuffer) set_need_random_access_point_flag(value bool) {

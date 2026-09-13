@@ -32,3 +32,28 @@ fn test_coded_frame_processing_preserves_overlapping_frames_before_highest_end()
 
 	assert demuxer.coded_frames().map(it.timestamp) == [f64(5), 5.5, 10]
 }
+
+fn test_source_buffer_processor_and_track_buffer_state_accessors() {
+	mut processor := SourceBufferProcessor.create()
+	assert !processor.first_initialization_segment_received_flag()
+	processor.set_first_initialization_segment_received_flag(true)
+	assert processor.first_initialization_segment_received_flag()
+
+	mut track_buffer := TrackBuffer.create(WebMTrackInfo{
+		number: 1
+		type_:  .video
+	})
+	assert track_buffer.last_decode_timestamp() == none
+	assert track_buffer.last_frame_duration() == none
+	assert track_buffer.highest_end_timestamp() == none
+	track_buffer.set_last_decode_timestamp(3)
+	track_buffer.set_last_frame_duration(0.04)
+	track_buffer.set_highest_end_timestamp(3.04)
+	assert track_buffer.last_decode_timestamp()? == 3
+	assert track_buffer.last_frame_duration()? == 0.04
+	assert track_buffer.highest_end_timestamp()? == 3.04
+	track_buffer.unset_timestamps()
+	assert track_buffer.last_decode_timestamp() == none
+	assert track_buffer.last_frame_duration() == none
+	assert track_buffer.highest_end_timestamp() == none
+}
