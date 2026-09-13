@@ -446,13 +446,34 @@ pub fn (mut context BaseAudioContext) create_oscillator(options OscillatorOption
 		return error("InvalidStateError: Oscillator type 'custom' requires PeriodicWave")
 	}
 	node := context.allocate_node(.oscillator, 0, 1, options.node, 2, .max, .speakers)!
-	return OscillatorNode{
+	frequency := context.allocate_param(options.frequency, -context.nyquist_frequency(), context.nyquist_frequency(), .a_rate, false)
+	detune := context.allocate_param(options.detune, -detune_limit(), detune_limit(), .a_rate, false)
+	node.queue_render_node_creation(OscillatorRenderNode.create(node.id, int(render_quantum_size), frequency.render_param(), detune.render_param()).render_node())
+	mut oscillator := OscillatorNode{
 		node: node
 		type_: options.type_
-		frequency: context.allocate_param(options.frequency, -context.nyquist_frequency(), context.nyquist_frequency(), .a_rate, false)
-		detune: context.allocate_param(options.detune, -detune_limit(), detune_limit(), .a_rate, false)
+		frequency: frequency
+		detune: detune
 		periodic_wave: options.periodic_wave
 	}
+	oscillator.queue_waveform_update()
+	return oscillator
+}
+
+pub fn (oscillator OscillatorNode) queue_waveform_update() {
+	mut periodic_wave := ?&PeriodicWaveData(none)
+	if wave := oscillator.periodic_wave {
+		periodic_wave = wave.render_data()
+	}
+	oscillator.node.enqueue_control_message(ControlMessage{
+		kind: .node_message
+		node_message: NodeMessage{
+			node_id: oscillator.node.id
+			kind: .set_oscillator_waveform
+			oscillator_type: oscillator.type_
+			periodic_wave: periodic_wave
+		}
+	})
 }
 
 pub fn (mut oscillator OscillatorNode) set_type(value OscillatorType) ! {
@@ -461,11 +482,13 @@ pub fn (mut oscillator OscillatorNode) set_type(value OscillatorType) ! {
 	}
 	oscillator.type_ = value
 	oscillator.periodic_wave = none
+	oscillator.queue_waveform_update()
 }
 
 pub fn (mut oscillator OscillatorNode) set_periodic_wave(wave PeriodicWave) {
 	oscillator.periodic_wave = wave
 	oscillator.type_ = .custom
+	oscillator.queue_waveform_update()
 }
 
 pub struct AudioBufferSourceOptions {
