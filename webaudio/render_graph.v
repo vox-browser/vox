@@ -51,6 +51,7 @@ pub:
 	loop_start      f64
 	loop_end        f64
 	update_buffer   bool
+	biquad_type     BiquadFilterType = .lowpass
 }
 
 pub fn node_message_target(message NodeMessage) u64 {
