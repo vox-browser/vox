@@ -66,6 +66,10 @@ pub fn SharedResourceRequest.get_or_create(document &dom.Document, url dom.URL) 
 	return request
 }
 
+pub fn shared_resource_request_for_document_and_url(document &dom.Document, url dom.URL) ?&SharedResourceRequest {
+	return html_shared_resource_requests[shared_resource_request_key(document, url)] or { none }
+}
+
 pub fn (mut request SharedResourceRequest) finalize() {
 	html_shared_resource_requests.delete(shared_resource_request_key(request.document, request.url))
 }

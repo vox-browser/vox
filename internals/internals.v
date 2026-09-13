@@ -1429,3 +1429,34 @@ pub fn (api &Internals) canvas_color_scheme() string {
 	preferred := css.preferred_color_scheme_from_string(document.preferred_color_scheme())
 	return if preferred == .dark { 'dark' } else { 'light' }
 }
+
+pub fn (api &Internals) image_animation_state_for_url(url string) !html.AnimatedImageDebugState {
+	document := api.platform.associated_document or {
+		return error('URL does not have an associated document: \'${url}\'')
+	}
+	parsed_url := document.encoding_parse_url(url) or {
+		return error('Invalid URL: \'${url}\'')
+	}
+
+	if request := html.shared_resource_request_for_document_and_url(document, parsed_url) {
+		image_data := request.image_data() or {
+			return error('URL\'s shared resource request does not have any associated image data: \'${url}\'')
+		}
+		state := html.decoded_image_animation_state(image_data.data) or {
+			return error('URL\'s associated image is not an animated bitmap: \'${url}\'')
+		}
+		return state
+	}
+
+	requests := document.shared_resource_requests()
+	request := requests[parsed_url.to_string()] or {
+		return error('URL does not have any associated shared resource requests: \'${url}\'')
+	}
+	image_data := request.image_data() or {
+		return error('URL\'s shared resource request does not have any associated image data: \'${url}\'')
+	}
+	if image_data.data is html.AnimatedDecodedImageData {
+		return image_data.data.debug_state()
+	}
+	return error('URL\'s associated image is not an animated bitmap: \'${url}\'')
+}

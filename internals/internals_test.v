@@ -382,6 +382,44 @@ fn test_page_appearance_visibility_and_timer_controls() {
 	assert platform.hidden_document_intensive_grace_period_while_loading_ms == 7000
 }
 
+fn test_image_animation_state_for_url_uses_shared_decoded_data() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/page' })
+	mut platform := &PlatformState{
+		associated_document: document
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	api := Internals.create(platform, navigator)
+	url := document.encoding_parse_url('/animated.png') or { panic('failed to parse URL') }
+	mut request := html.SharedResourceRequest.get_or_create(document, url)
+	bitmap := &dom.Bitmap_{ width: 2, height: 1 }
+	mut data := html.AnimatedDecodedImageData.create(91, 2, 4, 2, 1, .srgb, [u32(10), 20], [bitmap,
+		bitmap], none, none)
+	data.register_client(3, fn () {})
+	request.handle_successful_resource_load(data)
+
+	state := api.image_animation_state_for_url('/animated.png')!
+	assert state.timer_active
+	assert state.session_id == 91
+	assert state.frame_index == 0
+	assert state.frame_count == 2
+	assert state.loops_completed == 0
+	assert state.loop_count == 4
+	assert state.client_count == 1
+
+	if _ := api.image_animation_state_for_url('http://[') {
+		assert false
+	} else {
+		assert err.msg().contains('Invalid URL')
+	}
+	if _ := api.image_animation_state_for_url('/missing.png') {
+		assert false
+	} else {
+		assert err.msg().contains('does not have any associated shared resource requests')
+	}
+	request.finalize()
+	data.finalize()
+}
+
 fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	mut platform := &PlatformState{}
 	navigator := gamepad.NavigatorGamepadPartial.new()
