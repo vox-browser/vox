@@ -336,8 +336,14 @@ pub fn (_ &Element) resolve_relative_to_viewport_size(value NumberPercentage, vi
 	return value.resolve_relative_to(viewport)
 }
 
-pub fn (_ &Element) get_total_length() f64 {
-	return 0
+pub fn (element &Element) get_total_length() f64 {
+	viewport_width := parse_length(element.attributes['_viewport_width'] or { '' }) or { 100 }
+	viewport_height := parse_length(element.attributes['_viewport_height'] or { '' }) or { 100 }
+	return element.get_total_length_for_viewport(viewport_width, viewport_height)
+}
+
+pub fn (element &Element) get_total_length_for_viewport(viewport_width f64, viewport_height f64) f64 {
+	return geometry_path(*element, viewport_width, viewport_height).length()
 }
 
 pub fn (_ &Element) get_point_at_length(_ f64) Point {
