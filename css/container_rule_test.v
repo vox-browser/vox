@@ -279,6 +279,13 @@ fn test_style_container_features_parse_serialize_and_collect_requirements() {
 	assert escaped_plain.to_string() == r'style(--\{foo: bar)'
 	escaped_range := parsed_single_container_query(r'style(100px > --\{foo > 10px)')
 	assert escaped_range.to_string() == r'style(100px > --\{foo > 10px)'
+
+	for invalid_operand in ['style(10px < 10em !)', 'style(10px ! < 10em)'] {
+		query := parsed_single_container_query(invalid_operand)
+		assert query.to_string() == invalid_operand
+		assert query.evaluate(dom.AbstractElement{}, none) == .unknown
+		assert query.feature_requirements.has_unknown_or_unsupported_feature
+	}
 }
 
 fn test_style_container_features_evaluate_selected_ancestor_style() {

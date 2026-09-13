@@ -287,8 +287,6 @@ fn test_style_ranges_evaluate_numeric_values_and_custom_properties() {
 
 	for query in [
 		'0 = 0%',
-		'5 > 3 !invalid',
-		'5 !invalid > 3',
 		'3px > 3',
 		'3em > 3deg',
 		'1px >= 1%',

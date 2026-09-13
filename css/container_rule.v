@@ -311,6 +311,9 @@ fn parse_style_range_value(values []ComponentValue) ?StyleRangeValue {
 		property := PropertyNameAndID.from_name(trimmed[0].token().ident()) or { return none }
 		return StyleRangeValue.from_property(property)
 	}
+	if !is_valid_optional_declaration_value(trimmed) {
+		return none
+	}
 	return StyleRangeValue.from_value(trimmed)
 }
 
