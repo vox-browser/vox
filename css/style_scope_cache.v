@@ -38,7 +38,8 @@ pub fn (mut caches RuleCaches) visit_edges() {
 
 pub struct SelectorInsights {
 pub mut:
-	has_has_selectors bool
+	has_has_selectors                                                    bool
+	has_has_selectors_with_relative_selector_that_has_sibling_combinator bool
 }
 
 pub fn StyleInvalidationData.new() &StyleInvalidationData {
@@ -848,6 +849,14 @@ pub fn StyleScope.collect_selector_insights(selector Selector, mut insights Sele
 			if simple_selector.type_ == .pseudo_class {
 				if simple_selector.pseudo_class.type_ == .has {
 					insights.has_has_selectors = true
+					for argument_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
+						for relative_compound_selector in argument_selector.compound_selectors() {
+							if relative_compound_selector.combinator in [.next_sibling, .subsequent_sibling] {
+								insights.has_has_selectors_with_relative_selector_that_has_sibling_combinator = true
+								break
+							}
+						}
+					}
 				}
 				for argument_selector in simple_selector.pseudo_class.argument_selector_list.selectors {
 					StyleScope.collect_selector_insights(argument_selector, mut insights)
@@ -968,6 +977,16 @@ pub fn (scope &StyleScope) have_has_selectors() bool {
 	scope.build_rule_cache_if_needed()
 	insights := scope.selector_insights or { return false }
 	return insights.has_has_selectors
+}
+
+pub fn (scope &StyleScope) may_have_has_selectors_with_relative_selector_that_has_sibling_combinator() bool {
+	if !scope.has_valid_rule_cache() {
+		return true
+	}
+
+	scope.build_rule_cache_if_needed()
+	insights := scope.selector_insights or { return false }
+	return insights.has_has_selectors_with_relative_selector_that_has_sibling_combinator
 }
 
 pub fn (scope &StyleScope) get_pseudo_class_rule_cache(pseudo_class PseudoClass) ?&RuleCache {

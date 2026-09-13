@@ -118,6 +118,48 @@ fn test_inserted_character_data_schedules_has_ancestor_invalidation() {
 	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has[0] == parent.as_node()
 }
 
+fn test_structural_has_invalidation_filters_unrelated_inserted_subtrees() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(document, 'section:has(.flag) { color: red }')
+	mut document_node := unsafe { &dom.Node(document) }
+	mut subject := style_sheet_invalidation_test_element(document, 'section')
+	document_node.append_child(subject.as_node()) or { panic(err) }
+	mut scope := css_style_scope_for_document(document)
+	scope.build_rule_cache_if_needed()
+	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+
+	mut unrelated := style_sheet_invalidation_test_element(document, 'span')
+	mut subject_node := subject.as_node()
+	subject_node.append_child(unrelated.as_node()) or { panic(err) }
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 0
+
+	mut matching_subtree := style_sheet_invalidation_test_element(document, 'div')
+	mut flag := style_sheet_invalidation_test_element(document, 'span')
+	flag.set_attribute_value('class', 'flag')
+	mut matching_subtree_node := matching_subtree.as_node()
+	matching_subtree_node.append_child(flag.as_node()) or { panic(err) }
+	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	subject_node.append_child(matching_subtree.as_node()) or { panic(err) }
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 1
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has[0] == subject.as_node()
+}
+
+fn test_featureless_has_argument_keeps_structural_invalidation_conservative() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	add_document_author_style_sheet(document, 'section:has(*) { color: red }')
+	mut document_node := unsafe { &dom.Node(document) }
+	mut subject := style_sheet_invalidation_test_element(document, 'section')
+	document_node.append_child(subject.as_node()) or { panic(err) }
+	mut scope := css_style_scope_for_document(document)
+	scope.build_rule_cache_if_needed()
+	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+
+	mut child := style_sheet_invalidation_test_element(document, 'span')
+	mut subject_node := subject.as_node()
+	subject_node.append_child(child.as_node()) or { panic(err) }
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 1
+}
+
 fn test_user_agent_shadow_tree_mutations_use_document_style_scope() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	add_document_author_style_sheet(document, 'div:has(.flag) { color: blue }')

@@ -1617,6 +1617,10 @@ pub type StyleComputerBuildCacheCallback = fn (voidptr)
 
 pub type StyleScopeMayHaveHasSelectorsCallback = fn (voidptr) bool
 
+pub type StyleScopeMayHaveSiblingHasSelectorsCallback = fn (voidptr) bool
+
+pub type StyleScopeSubtreeMayAffectHasCallback = fn (voidptr, &Node) bool
+
 pub type StyleScopeScheduleHasInvalidationCallback = fn (voidptr, &Node)
 
 pub type DocumentThemeColorParseCallback = fn (voidptr, string) ?string
@@ -1845,6 +1849,8 @@ pub struct StyleScope {
 pub mut:
 	css_handle                         voidptr = unsafe { nil }
 	may_have_has_selectors_callback    StyleScopeMayHaveHasSelectorsCallback = unsafe { nil }
+	may_have_sibling_has_callback      StyleScopeMayHaveSiblingHasSelectorsCallback = unsafe { nil }
+	subtree_may_affect_has_callback    StyleScopeSubtreeMayAffectHasCallback = unsafe { nil }
 	schedule_has_invalidation_callback StyleScopeScheduleHasInvalidationCallback = unsafe { nil }
 }
 

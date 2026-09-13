@@ -4726,6 +4726,8 @@ fn (e &Element) matches_invalidation_pseudo_class(name string) bool {
 		'defined' { e.is_defined() }
 		'placeholder-shown' { e.matches_placeholder_shown_pseudo_class() }
 		'checked' { e.matches_checked_pseudo_class() }
+		'required' { e.matches_required_pseudo_class() }
+		'optional' { e.matches_optional_pseudo_class() }
 		'link', 'any-link' { e.matches_link_pseudo_class() }
 		'local-link' { e.matches_local_link_pseudo_class() }
 		else { false }

@@ -1312,19 +1312,33 @@ fn reason_may_affect_has_selectors(reason StyleInvalidationReason) bool {
 		.settings_change, .style_sheet_disabled_state_change, .style_sheet_replace]
 }
 
-fn schedule_has_walk_for_parent(style_scope &StyleScope, parent &Node, reason StyleInvalidationReason) {
+fn schedule_has_walk_for_parent(mutated_node &Node, style_scope &StyleScope, parent &Node, reason StyleInvalidationReason) {
 	if !style_scope.may_have_has_selectors() {
 		return
 	}
+	is_child_list_mutation := reason == .node_remove || reason == .node_insert_before
+	has_sibling_combinator_has_selectors := is_child_list_mutation
+		&& style_scope.may_have_has_selectors_with_relative_selector_that_has_sibling_combinator()
+
+	// Sibling-combinator :has() selectors are sensitive to featureless insertions/removals because a plain node can
+	// still change adjacency and following-sibling relationships.
+	may_affect_has_match := mutated_node.is_character_data()
+		|| style_scope.subtree_may_affect_has_selectors(mutated_node)
+		|| has_sibling_combinator_has_selectors
+	if !may_affect_has_match {
+		return
+	}
+
 	mut mutable_style_scope := unsafe { &StyleScope(style_scope) }
 	mutable_style_scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(parent)
-	if reason == .node_remove || reason == .node_insert_before {
-		for child in parent.children {
-			if element := child.as_element() {
-				if element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator {
-					mut mutable_element := unsafe { &Element(element) }
-					mutable_element.invalidate_style_if_affected_by_has()
-				}
+	if !has_sibling_combinator_has_selectors {
+		return
+	}
+	for child in parent.children {
+		if element := child.as_element() {
+			if element.affected_by_has_pseudo_class_with_relative_selector_that_has_sibling_combinator {
+				mut mutable_element := unsafe { &Element(element) }
+				mutable_element.invalidate_style_if_affected_by_has()
 			}
 		}
 	}
@@ -1338,8 +1352,9 @@ pub fn (mut n Node) invalidate_style(reason StyleInvalidationReason) {
 	style_scope := n.style_scope()
 	if reason == .node_remove || reason == .node_insert_before {
 		if parent := n.parent_or_shadow_host() {
-			parent.for_each_style_scope_which_may_observe_the_node(fn [parent, reason] (scope &StyleScope) {
-				schedule_has_walk_for_parent(scope, parent, reason)
+			mutated_node := unsafe { &Node(n) }
+			parent.for_each_style_scope_which_may_observe_the_node(fn [mutated_node, parent, reason] (scope &StyleScope) {
+				schedule_has_walk_for_parent(mutated_node, scope, parent, reason)
 			})
 		}
 	} else if style_scope.may_have_has_selectors() && reason_may_affect_has_selectors(reason) {
@@ -4685,6 +4700,20 @@ pub fn (ss &StyleScope) may_have_has_selectors() bool {
 		return ss.may_have_has_selectors_callback(ss.css_handle)
 	}
 	return false
+}
+
+pub fn (ss &StyleScope) may_have_has_selectors_with_relative_selector_that_has_sibling_combinator() bool {
+	if ss.may_have_sibling_has_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
+		return ss.may_have_sibling_has_callback(ss.css_handle)
+	}
+	return true
+}
+
+pub fn (ss &StyleScope) subtree_may_affect_has_selectors(node &Node) bool {
+	if ss.subtree_may_affect_has_callback != unsafe { nil } && ss.css_handle != unsafe { nil } {
+		return ss.subtree_may_affect_has_callback(ss.css_handle, node)
+	}
+	return true
 }
 
 pub fn (mut ss StyleScope) schedule_ancestors_style_invalidation_due_to_presence_of_has(node &Node) {

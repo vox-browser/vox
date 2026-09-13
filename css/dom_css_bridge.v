@@ -288,6 +288,78 @@ fn style_scope_may_have_has_selectors_callback(target voidptr) bool {
 	return scope.may_have_has_selectors()
 }
 
+fn style_scope_may_have_sibling_has_selectors_callback(target voidptr) bool {
+	scope := unsafe { &StyleScope(target) }
+	return scope.may_have_has_selectors_with_relative_selector_that_has_sibling_combinator()
+}
+
+fn element_has_feature_used_in_has_selector(element &dom.Element, data &StyleInvalidationData) bool {
+	if data.tag_names_used_in_has_selectors[element.local_name()]
+		|| ((element.namespace_uri() or { '' }) != 'http://www.w3.org/1999/xhtml'
+		&& data.tag_names_used_in_has_selectors[element.lowercased_local_name()])
+		|| (element.id() or { '' }) in data.ids_used_in_has_selectors {
+		return true
+	}
+	for class_name in element.class_names() {
+		if data.class_names_used_in_has_selectors[class_name] {
+			return true
+		}
+	}
+	if attributes := element.attribute_list() {
+		for index := 0; index < attributes.length(); index++ {
+			attribute := attributes.item(index) or { continue }
+			name := attribute.local_name()
+			if data.attribute_names_used_in_has_selectors[name]
+				|| ((element.namespace_uri() or { '' }) != 'http://www.w3.org/1999/xhtml'
+				&& data.attribute_names_used_in_has_selectors[name.to_lower()]) {
+				return true
+			}
+		}
+	}
+	for pseudo_class, _ in data.pseudo_classes_used_in_has_selectors {
+		set := dom.StyleInvalidationSet{
+			properties: [invalidation_property_to_dom(InvalidationProperty.pseudo_class(pseudo_class))]
+		}
+		if element.includes_properties_from_invalidation_set(set) {
+			return true
+		}
+	}
+	return false
+}
+
+fn subtree_has_feature_used_in_has_selector(node &dom.Node, data &StyleInvalidationData) bool {
+	if node.is_character_data() {
+		return true
+	}
+	if element := node.as_element() {
+		if element_has_feature_used_in_has_selector(element, data) {
+			return true
+		}
+	}
+	for child in node.children {
+		if subtree_has_feature_used_in_has_selector(child, data) {
+			return true
+		}
+	}
+	return false
+}
+
+fn style_scope_subtree_may_affect_has_callback(target voidptr, node &dom.Node) bool {
+	scope := unsafe { &StyleScope(target) }
+	data := scope.style_invalidation_data or { return true }
+	if data.ids_used_in_has_selectors.len == 0 && data.class_names_used_in_has_selectors.len == 0
+		&& data.attribute_names_used_in_has_selectors.len == 0
+		&& data.tag_names_used_in_has_selectors.len == 0
+		&& data.pseudo_classes_used_in_has_selectors.len == 0
+		&& !data.has_selectors_sensitive_to_featureless_subtree_changes {
+		return true
+	}
+	if data.has_selectors_sensitive_to_featureless_subtree_changes {
+		return true
+	}
+	return subtree_has_feature_used_in_has_selector(node, data)
+}
+
 fn style_scope_schedule_has_invalidation_callback(target voidptr, node &dom.Node) {
 	mut scope := unsafe { &StyleScope(target) }
 	scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(node)
@@ -1039,6 +1111,8 @@ fn css_style_scope_from_dom(mut dom_scope dom.StyleScope, node &dom.Node) &Style
 	scope := StyleScope.new(node)
 	dom_scope.css_handle = voidptr(scope)
 	dom_scope.may_have_has_selectors_callback = style_scope_may_have_has_selectors_callback
+	dom_scope.may_have_sibling_has_callback = style_scope_may_have_sibling_has_selectors_callback
+	dom_scope.subtree_may_affect_has_callback = style_scope_subtree_may_affect_has_callback
 	dom_scope.schedule_has_invalidation_callback = style_scope_schedule_has_invalidation_callback
 	return scope
 }

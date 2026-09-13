@@ -46,6 +46,28 @@ fn test_slotted_argument_contributes_selector_insights() {
 	assert data.class_names_used_in_has_selectors['flag']
 }
 
+fn test_has_invalidation_tracks_featureless_and_sibling_sensitive_arguments() {
+	filtered_scope := build_scope_invalidation_cache('section:has(.flag) { color: red }')
+	filtered_data := filtered_scope.style_invalidation_data or { panic('missing invalidation data') }
+	assert filtered_data.class_names_used_in_has_selectors['flag']
+	assert !filtered_data.has_selectors_sensitive_to_featureless_subtree_changes
+
+	universal_scope := build_scope_invalidation_cache('section:has(*) { color: red }')
+	universal_data := universal_scope.style_invalidation_data or {
+		panic('missing universal invalidation data')
+	}
+	assert universal_data.has_selectors_sensitive_to_featureless_subtree_changes
+
+	state_scope := build_scope_invalidation_cache('section:has(:default) { color: red }')
+	state_data := state_scope.style_invalidation_data or { panic('missing state invalidation data') }
+	assert CSSPseudoClass.default_ !in state_data.pseudo_classes_used_in_has_selectors
+	assert state_data.has_selectors_sensitive_to_featureless_subtree_changes
+
+	sibling_scope := build_scope_invalidation_cache('.anchor:has(+ .peer) { color: red }')
+	sibling_insights := sibling_scope.selector_insights or { panic('missing selector insights') }
+	assert sibling_insights.has_has_selectors_with_relative_selector_that_has_sibling_combinator
+}
+
 fn test_slotted_argument_builds_invalidation_sets() {
 	scope := build_scope_invalidation_cache('::slotted(.item[data-state]) { color: red }')
 	data := scope.style_invalidation_data or { panic('missing invalidation data') }

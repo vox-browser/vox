@@ -9070,13 +9070,14 @@ pub fn (mut p InvalidationPlan) include_all_from(other &InvalidationPlan) {
 
 pub struct StyleInvalidationData {
 pub mut:
-	invalidation_plans                    map[string]&InvalidationPlan
-	invalidation_plan_properties          map[string]InvalidationProperty
-	ids_used_in_has_selectors             map[string]bool
-	class_names_used_in_has_selectors     map[string]bool
-	attribute_names_used_in_has_selectors map[string]bool
-	tag_names_used_in_has_selectors       map[string]bool
-	pseudo_classes_used_in_has_selectors  map[CSSPseudoClass]bool
+	invalidation_plans                                     map[string]&InvalidationPlan
+	invalidation_plan_properties                           map[string]InvalidationProperty
+	ids_used_in_has_selectors                              map[string]bool
+	class_names_used_in_has_selectors                      map[string]bool
+	attribute_names_used_in_has_selectors                  map[string]bool
+	tag_names_used_in_has_selectors                        map[string]bool
+	pseudo_classes_used_in_has_selectors                   map[CSSPseudoClass]bool
+	has_selectors_sensitive_to_featureless_subtree_changes bool
 }
 
 pub fn (s &StyleInvalidationData) plan_for_property(property InvalidationProperty) ?&InvalidationPlan {
@@ -9328,10 +9329,18 @@ fn collect_properties_used_in_has(selector InvalidationSimpleSelector, mut style
 		}
 		.pseudo_class {
 			if in_has && selector.pseudo_class in [.enabled, .disabled, .defined, .placeholder_shown,
-				.checked, .required, .optional, .link, .any_link, .local_link, .default_] {
+				.checked, .required, .optional, .link, .any_link, .local_link] {
 				style_invalidation_data.pseudo_classes_used_in_has_selectors[selector.pseudo_class] = true
+			} else if in_has && selector.pseudo_class !in [.has, .is_, .where] {
+				// The structural subtree filter can only compare concrete features and the pseudo-classes above.
+				// Stateful and validation pseudo-classes must retain the conservative ancestor walk.
+				style_invalidation_data.has_selectors_sensitive_to_featureless_subtree_changes = true
 			}
 			for child_selector in selector.nested_selectors {
+				if selector.pseudo_class == .has
+					&& selector_contains_featureless_subtree_sensitive_selector(child_selector) {
+					style_invalidation_data.has_selectors_sensitive_to_featureless_subtree_changes = true
+				}
 				for group in selector_groups_for_invalidation(child_selector) {
 					for simple_selector in group.simple_selectors {
 						collect_properties_used_in_has(simple_selector, mut style_invalidation_data, in_has || selector.pseudo_class == .has)
@@ -9353,6 +9362,39 @@ fn collect_properties_used_in_has(selector InvalidationSimpleSelector, mut style
 		}
 		else {}
 	}
+}
+
+fn simple_selector_is_featureless_subtree_sensitive(selector InvalidationSimpleSelector) bool {
+	if selector.type_ == .universal {
+		return true
+	}
+	if selector.type_ != .pseudo_class {
+		return false
+	}
+	if selector.name in ['not', 'empty', 'first-child', 'last-child', 'only-child',
+		'first-of-type', 'last-of-type', 'only-of-type', 'nth-child', 'nth-last-child',
+		'nth-of-type', 'nth-last-of-type'] {
+		return true
+	}
+	if selector.pseudo_class in [.is_, .where] {
+		for child_selector in selector.nested_selectors {
+			if selector_contains_featureless_subtree_sensitive_selector(child_selector) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+fn selector_contains_featureless_subtree_sensitive_selector(selector Selector) bool {
+	for group in selector_groups_for_invalidation(selector) {
+		for simple_selector in group.simple_selectors {
+			if simple_selector_is_featureless_subtree_sensitive(simple_selector) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 fn build_invalidation_set_for_simple_selectors(simple_selectors []InvalidationSimpleSelector, exclude_properties_nested_in_not_pseudo_class ExcludePropertiesNestedInNotPseudoClass, mut style_invalidation_data StyleInvalidationData, inside_nth_child_pseudo_class InsideNthChildPseudoClass, root_invalidation_plan &InvalidationPlan) InvalidationSet {
