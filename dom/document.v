@@ -1003,6 +1003,11 @@ pub struct SVGElement {
 }
 
 @[heap]
+pub struct SVGAnimationElement {
+	SVGElement
+}
+
+@[heap]
 pub struct SVGSVGElement {
 	SVGElement
 }
