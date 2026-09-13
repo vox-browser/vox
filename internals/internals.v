@@ -600,6 +600,31 @@ pub fn (mut api Internals) set_autoplay_policy(policy string) {
 	api.platform.autoplay_policy = policy
 }
 
+pub fn (mut api Internals) set_hsts_policy(domain string, max_age u64, include_sub_domains bool) ! {
+	url := parse_absolute_url('https://${domain}/') or { return }
+	clamped_max_age := if max_age > u64(9223372036854775807) {
+		u64(9223372036854775807)
+	} else {
+		max_age
+	}
+	mut header := 'max-age=${clamped_max_age}'
+	if include_sub_domains {
+		header += '; includeSubDomains'
+	}
+	mut resource_loader := internals_resource_loader()
+	resource_loader.try_store_hsts_policy_for_url(url, header)
+}
+
+pub fn (mut api Internals) ingest_hsts_header(url string, header_value string) ! {
+	parsed := parse_absolute_url(url) or { return }
+	mut resource_loader := internals_resource_loader()
+	resource_loader.try_store_hsts_policy_for_url(parsed, header_value)
+}
+
+pub fn (api &Internals) is_known_hsts_host(domain string) !bool {
+	return internals_resource_loader().is_known_hsts_host(domain)
+}
+
 fn internals_default_role(element &dom.Element) ?aria.Role {
 	if !element.is_html_element() {
 		return none

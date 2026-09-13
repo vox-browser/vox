@@ -172,6 +172,29 @@ fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	api.set_autoplay_policy('block-audio')
 }
 
+fn test_hsts_controls_use_resource_loader_policy_storage() {
+	mut platform := &PlatformState{}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	mut api := Internals.create(platform, navigator)
+	api.set_hsts_policy('internals-hsts.test', 120, true)!
+	assert api.is_known_hsts_host('internals-hsts.test')!
+	assert api.is_known_hsts_host('asset.internals-hsts.test')!
+	policy := loader.ResourceLoader.the().hsts_policy_for_host('internals-hsts.test') or {
+		panic('missing HSTS policy')
+	}
+	assert policy.max_age_seconds == 120
+	assert policy.include_sub_domains
+	api.set_hsts_policy('internals-hsts.test', 0, false)!
+	assert !api.is_known_hsts_host('internals-hsts.test')!
+
+	api.ingest_hsts_header('https://header-hsts.test/', 'max-age=45')!
+	assert api.is_known_hsts_host('header-hsts.test')!
+	assert !api.is_known_hsts_host('child.header-hsts.test')!
+	api.ingest_hsts_header('not a URL', 'max-age=99')!
+	api.ingest_hsts_header('https://header-hsts.test/', 'max-age=0')!
+	assert !api.is_known_hsts_host('header-hsts.test')!
+}
+
 fn test_input_methods_record_exact_actions() {
 	mut platform := &PlatformState{
 		browser_zoom: 2
