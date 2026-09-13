@@ -96,6 +96,32 @@ pub:
 	needs_compositor_background_frame bool
 }
 
+pub struct LayoutTreeBuildStats {
+pub:
+	builds                           u64
+	last_build_rebuilt_subtree_roots u64
+	last_build_escaped_rebuild_roots u64
+}
+
+pub struct LayoutTreeComparison {
+pub:
+	matches     bool
+	incremental string
+	full        string
+}
+
+pub struct StyleEngineTransactionReactions {
+pub:
+	whole_document bool
+	elements       []string
+}
+
+pub struct StyleGroupSharingState {
+pub:
+	shared_with_parent bool
+	is_default         bool
+}
+
 @[heap]
 pub struct PlatformState {
 pub mut:
@@ -194,6 +220,16 @@ pub mut:
 	compositor_animation_wakeup_frame_time_ms  f64
 	force_visual_context_rebuild_on_animation  bool
 	reentrant_animation_style_flush_node       ?&dom.Node
+	layout_tree_build_stats_                    LayoutTreeBuildStats
+	incremental_layout_tree_dump                string
+	full_rebuild_layout_tree_dump               string
+	style_ffi_counters_                         map[string]u64 = map[string]u64{}
+	style_engine_counters_                      map[string]u64 = map[string]u64{}
+	style_engine_transaction_reactions_         StyleEngineTransactionReactions
+	style_engine_document_match_count           f64 = -1
+	style_engine_matched_rules_dump              string
+	style_ffi_counters_enabled                  bool
+	style_update_requests                       u64
 }
 
 @[heap]

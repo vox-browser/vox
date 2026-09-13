@@ -1678,7 +1678,30 @@ pub type ImmutableComputedValues = ComputedValues
 
 pub type MutableComputedValues = ComputedValues
 
+pub struct ComputedValuesStatistics {
+pub:
+	live_instance_count     u64
+	total_instances_created u64
+}
+
+__global css_computed_values_total_instances u64
+
+fn note_computed_values_created() {
+	css_computed_values_total_instances++
+}
+
+pub fn computed_values_statistics() ComputedValuesStatistics {
+	// Computed values are GC-managed in V; every allocated instance remains live
+	// until the collector's next reachability pass, for which no destructor hook
+	// is exposed. The allocation count is therefore the observable live count.
+	return ComputedValuesStatistics{
+		live_instance_count: css_computed_values_total_instances
+		total_instances_created: css_computed_values_total_instances
+	}
+}
+
 pub fn ComputedProperties.new() &ComputedProperties {
+	note_computed_values_created()
 	return &ComputedProperties{
 		property_values_: []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
 		animated_property_values_: map[PropertyID]&dom.StyleValue{}
@@ -1707,6 +1730,7 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 		}
 		computed_interpolation_initial_values_complete = true
 	}
+	note_computed_values_created()
 	return &ComputedProperties{
 		property_values_: computed_interpolation_initial_value_cache.clone()
 		animated_property_values_: map[PropertyID]&dom.StyleValue{}

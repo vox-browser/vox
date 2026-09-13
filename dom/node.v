@@ -2878,7 +2878,9 @@ pub fn (mut n Node) set_layout_node(layout_node &LayoutNode) {
 	n.layout_node_ = layout_node
 	if element := n.as_element() {
 		unsafe {
-			element.layout_node_with_style_ = layout_node_with_style(layout_node)
+			mut styled_node := layout_node_with_style(layout_node)
+			styled_node.applied_properties_ = element.el_computed_properties()
+			element.layout_node_with_style_ = styled_node
 		}
 	}
 }

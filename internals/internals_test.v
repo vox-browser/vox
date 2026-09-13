@@ -279,6 +279,71 @@ fn test_rendering_and_compositor_test_controls() {
 	assert platform.reentrant_animation_style_flush_node? == node
 }
 
+fn test_layout_and_style_engine_diagnostics_use_live_identities() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml', 'main')!
+	mut child := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span')!
+	document.append_child(root)
+	root.append_child(child)
+	style := &dom.CSSComputedProperties_{}
+	root.set_computed_properties(none, style)
+	child.set_computed_properties(none, style)
+	root_layout := &dom.LayoutNode{
+		dom_node_: root.as_node()
+		children_: [&dom.LayoutNode{}, &dom.LayoutNode{ dom_node_: child.as_node() }]
+	}
+	mut root_node := root.as_node()
+	root_node.set_layout_node(root_layout)
+	mut child_node := child.as_node()
+	child_node.set_layout_node(root_layout.children_[1])
+	document.set_layout_viewport(&dom.LayoutViewport{ root_node: root_layout })
+	mut platform := &PlatformState{
+		associated_document: document
+		layout_tree_build_stats_: LayoutTreeBuildStats{3, 2, 1}
+		incremental_layout_tree_dump: 'incremental'
+		full_rebuild_layout_tree_dump: 'full'
+		style_ffi_counters_: { 'parse': u64(4) }
+		style_engine_counters_: { 'match': u64(7) }
+		style_engine_transaction_reactions_: StyleEngineTransactionReactions{
+			whole_document: false
+			elements: ['main', 'span']
+		}
+		style_engine_document_match_count: 2
+		style_engine_matched_rules_dump: 'main: .root\n'
+	}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	mut api := Internals.create(platform, navigator)
+	assert api.layout_tree_build_stats().builds == 3
+	comparison := api.compare_layout_tree_with_full_rebuild()
+	assert !comparison.matches
+	assert comparison.incremental == 'incremental' && comparison.full == 'full'
+	assert api.style_ffi_counters()['parse'] == 4
+	assert api.style_engine_counters()['match'] == 7
+	assert api.style_record_identity(root) == u64(voidptr(style))
+	assert api.layout_style_record_identity(root) == api.style_record_identity(root)
+	assert api.layout_node_identity(root.as_node()) == u64(voidptr(root_layout))
+	assert api.layout_arena_live_slot_count() == 3
+	assert api.layout_arena_shell_count() == 1
+	assert !api.style_engine_transaction_reactions().whole_document
+	assert api.style_engine_match_document() == 2
+	assert api.style_engine_matched_rules() == 'main: .root\n'
+	sharing := api.style_group_sharing_info(child)
+	assert sharing['computedValues'].shared_with_parent
+	before_stats := api.computed_values_stats()
+	_ = css.ComputedProperties.new()
+	after_stats := api.computed_values_stats()
+	assert after_stats.total_instances_created == before_stats.total_instances_created + 1
+	mut names := map[u64]string{}
+	rule := &css.CSSRule{ type_: .font_face }
+	collect_style_engine_rule_names([rule], mut names)
+	assert names[u64(voidptr(rule))].starts_with('<rule ')
+	api.reset_style_ffi_counters()
+	assert platform.style_ffi_counters_enabled
+	assert api.style_ffi_counters().len == 0
+	api.update_style()
+	assert platform.style_update_requests == 1
+}
+
 fn test_content_and_site_compatibility_controls_update_runtime_services() {
 	mut platform := &PlatformState{}
 	navigator := gamepad.NavigatorGamepadPartial.new()

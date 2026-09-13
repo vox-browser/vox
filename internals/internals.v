@@ -512,6 +512,162 @@ pub fn (mut api Internals) request_reentrant_animation_style_flush_for_testing(n
 	api.platform.reentrant_animation_style_flush_node = node
 }
 
+pub fn (api &Internals) layout_tree_build_stats() LayoutTreeBuildStats {
+	return api.platform.layout_tree_build_stats_
+}
+
+pub fn (api &Internals) compare_layout_tree_with_full_rebuild() LayoutTreeComparison {
+	incremental := api.platform.incremental_layout_tree_dump
+	full := api.platform.full_rebuild_layout_tree_dump
+	return LayoutTreeComparison{
+		matches: incremental == full
+		incremental: if incremental == full { '' } else { incremental }
+		full: if incremental == full { '' } else { full }
+	}
+}
+
+pub fn (api &Internals) style_ffi_counters() map[string]u64 {
+	return api.platform.style_ffi_counters_.clone()
+}
+
+pub fn (api &Internals) style_engine_counters() map[string]u64 {
+	return api.platform.style_engine_counters_.clone()
+}
+
+fn computed_style_record_identity(style &dom.CSSComputedProperties_) u64 {
+	if style.css_handle != unsafe { nil } {
+		return u64(style.css_handle)
+	}
+	return u64(voidptr(style))
+}
+
+pub fn (api &Internals) style_record_identity(element &dom.Element) u64 {
+	style := element.el_computed_properties() or { return 0 }
+	return computed_style_record_identity(style)
+}
+
+pub fn (api &Internals) layout_style_record_identity(element &dom.Element) u64 {
+	layout_node := element.el_layout_node() or { return 0 }
+	style := layout_node.applied_properties_ or { return 0 }
+	return computed_style_record_identity(style)
+}
+
+pub fn (api &Internals) before_style_record_identity(element &dom.Element) u64 {
+	style := element.computed_properties_for_pseudo(int(dom.PseudoElement.before)) or { return 0 }
+	return computed_style_record_identity(style)
+}
+
+pub fn (api &Internals) before_layout_style_record_identity(element &dom.Element) u64 {
+	layout_node := element.get_pseudo_element_node(int(dom.PseudoElement.before)) or { return 0 }
+	style := layout_node.applied_properties_ or { return 0 }
+	return computed_style_record_identity(style)
+}
+
+pub fn (api &Internals) paint_style_record_identity(element &dom.Element) u64 {
+	if element.paintable_box() == none {
+		return 0
+	}
+	return api.layout_style_record_identity(element)
+}
+
+pub fn (api &Internals) layout_node_identity(node &dom.Node) u64 {
+	layout_node := node.layout_node() or { return 0 }
+	return u64(voidptr(layout_node))
+}
+
+fn count_layout_arena_nodes(node &dom.LayoutNode) (u64, u64) {
+	mut live := u64(1)
+	mut shells := if node.dom_node_ == none { u64(1) } else { u64(0) }
+	for child in node.children_ {
+		child_live, child_shells := count_layout_arena_nodes(child)
+		live += child_live
+		shells += child_shells
+	}
+	return live, shells
+}
+
+fn layout_arena_counts(document &dom.Document) (u64, u64) {
+	viewport := document.layout_node() or { return u64(0), u64(0) }
+	root := viewport.root_layout_node() or { return u64(0), u64(0) }
+	return count_layout_arena_nodes(root)
+}
+
+pub fn (api &Internals) layout_arena_live_slot_count() u64 {
+	document := api.platform.associated_document or { return 0 }
+	live, _ := layout_arena_counts(document)
+	return live
+}
+
+pub fn (api &Internals) layout_arena_shell_count() u64 {
+	document := api.platform.associated_document or { return 0 }
+	_, shells := layout_arena_counts(document)
+	return shells
+}
+
+pub fn (api &Internals) style_engine_transaction_reactions() StyleEngineTransactionReactions {
+	return api.platform.style_engine_transaction_reactions_
+}
+
+pub fn (api &Internals) style_engine_match_document() f64 {
+	return api.platform.style_engine_document_match_count
+}
+
+pub fn collect_style_engine_rule_names(rules []&css.CSSRule, mut names map[u64]string) {
+	for rule in rules {
+		identity := u64(voidptr(rule))
+		names[identity] = if rule.type_ == .style {
+			rule.selector_text()
+		} else {
+			'<rule ${identity}>'
+		}
+		if nested := rule.css_rules() {
+			collect_style_engine_rule_names(nested.rules, mut names)
+		}
+		if imported := rule.loaded_style_sheet {
+			collect_style_engine_rule_names(imported.css_rules().rules, mut names)
+		}
+	}
+}
+
+pub fn (api &Internals) style_engine_matched_rules() string {
+	return api.platform.style_engine_matched_rules_dump
+}
+
+pub fn (mut api Internals) reset_style_ffi_counters() {
+	api.platform.style_ffi_counters_enabled = true
+	api.platform.style_ffi_counters_.clear()
+}
+
+pub fn (api &Internals) style_group_sharing_info(element &dom.Element) map[string]StyleGroupSharingState {
+	style := element.el_computed_properties() or { return map[string]StyleGroupSharingState{} }
+	mut parent_style := ?&dom.CSSComputedProperties_(none)
+	if parent := element.parent_element() {
+		parent_style = parent.el_computed_properties()
+	}
+	return {
+		'computedValues': StyleGroupSharingState{
+			shared_with_parent: if parent := parent_style {
+				computed_style_record_identity(parent) == computed_style_record_identity(style)
+			} else {
+				false
+			}
+			is_default: style.css_handle == unsafe { nil }
+		}
+	}
+}
+
+pub fn (api &Internals) computed_values_stats() css.ComputedValuesStatistics {
+	return css.computed_values_statistics()
+}
+
+pub fn (mut api Internals) update_style() {
+	if document := api.platform.associated_document {
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.update_style()
+	}
+	api.platform.style_update_requests++
+}
+
 pub fn (api &Internals) hit_test(_ f64, _ f64) ?HitTestObject {
 	result := api.platform.hit_test_result or { return none }
 	return HitTestObject{
