@@ -39,9 +39,11 @@ pub enum NodeMessageKind {
 
 pub struct NodeMessage {
 pub:
-	node_id u64
-	kind    NodeMessageKind
-	when    f64
+	node_id         u64
+	kind            NodeMessageKind
+	when            f64
+	oscillator_type OscillatorType = .sine
+	periodic_wave   ?&PeriodicWaveData
 }
 
 pub fn node_message_target(message NodeMessage) u64 {
