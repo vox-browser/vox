@@ -4965,8 +4965,10 @@ pub fn (mut d Document) set_url(url URL) {
 		return
 	}
 	d.ensure_cookie_version_index(url)
+	old_document_url := d.url
+	old_base_url := d.base_url()
 	d.url = url
-	d.respond_to_base_url_changes()
+	d.respond_to_base_url_changes(old_document_url, old_base_url)
 }
 
 // fallback_base_url - https://html.spec.whatwg.org/multipage/urls-and-fetching.html#fallback-base-url
@@ -5027,10 +5029,50 @@ pub fn (d &Document) encoding_parse_and_serialize_url(url string) ?string {
 	return parsed.serialize()
 }
 
+fn local_link_target_matches_document(target_url ?URL, document_url URL) bool {
+	target := target_url or { return false }
+	if target.fragment() != none {
+		return target == document_url
+	}
+	mut target_without_fragment := target
+	mut document_without_fragment := document_url
+	target_without_fragment.set_fragment(none)
+	document_without_fragment.set_fragment(none)
+	return target_without_fragment == document_without_fragment
+}
+
 // https://html.spec.whatwg.org/multipage/urls-and-fetching.html#respond-to-base-url-changes
-pub fn (mut d Document) respond_to_base_url_changes() {
-	// Ensure that CSS :link/:visited pseudo-classes are updated.
-	css_invalidate_style(d, .base_url_changed)
+pub fn (mut d Document) respond_to_base_url_changes(old_document_url URL, old_base_url URL) {
+	new_document_url := d.url
+	new_base_url := d.base_url()
+	base_url_unchanged := old_base_url == new_base_url
+	if base_url_unchanged && old_document_url == new_document_url {
+		return
+	}
+	encoding := d.encoding_or_default()
+	d.for_each_shadow_including_descendant(fn [old_document_url, old_base_url, new_document_url, new_base_url, base_url_unchanged, encoding] (node &Node) TraversalDecision {
+		element := node.as_element() or { return .@continue }
+		if !element.matches_link_pseudo_class() {
+			return .@continue
+		}
+		href := element.get_attribute_value('href')
+		old_target_url := dom_url_parse(href, old_base_url, encoding)
+		new_target_url := if base_url_unchanged {
+			old_target_url
+		} else {
+			dom_url_parse(href, new_base_url, encoding)
+		}
+		if local_link_target_matches_document(old_target_url, old_document_url) != local_link_target_matches_document(new_target_url, new_document_url) {
+			mut element_node := unsafe { &Node(element.as_node()) }
+			element_node.invalidate_style_with_properties(.base_url_changed, [
+				InvalidationProperty{
+					type_: .pseudo_class
+					pseudo_class_name: 'local-link'
+				},
+			], StyleInvalidationOptions{})
+		}
+		return .@continue
+	})
 }
 
 pub fn (mut d Document) update_base_element() {

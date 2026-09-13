@@ -63,13 +63,47 @@ fn test_relayout_svg_root_delegates_to_layout_implementation() {
 	assert root.relayout_callback == unsafe { nil }
 }
 
-fn test_respond_to_base_url_changes_invalidates_document_style() {
-	mut document := Document.create(url_about_blank())
+fn test_respond_to_base_url_changes_only_invalidates_links_whose_local_state_flips() {
+	mut document := Document.create(URL{ value: 'https://example.test/page#old' })
+	document.style_computer = &StyleComputer{
+		css_handle: voidptr(document)
+		invalidation_plan_callback: fn (_ voidptr, properties []InvalidationProperty, _ &StyleScope) InvalidationPlan {
+			return InvalidationPlan{
+				invalidate_self: properties.any(it.type_ == .pseudo_class
+					&& it.pseudo_class_name == 'local-link')
+			}
+		}
+	}
+	mut local := document.create_element_ns(namespace_html_uri, 'a') or { panic(err) }
+	local.set_attribute_value('href', '#target')
+	mut unrelated := document.create_element_ns(namespace_html_uri, 'a') or { panic(err) }
+	unrelated.set_attribute_value('href', 'https://elsewhere.test/')
+	mut root := document.create_element_ns(namespace_html_uri, 'html') or { panic(err) }
+	mut document_node := unsafe { &Node(document) }
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := unsafe { &Node(root.as_node()) }
+	root_node.append_child(local.as_node()) or { panic(err) }
+	root_node.append_child(unrelated.as_node()) or { panic(err) }
+	mut local_node := unsafe { &Node(local.as_node()) }
+	mut unrelated_node := unsafe { &Node(unrelated.as_node()) }
+	local_node.set_needs_style_update(false)
+	local_node.set_entire_subtree_needs_style_update(false)
+	unrelated_node.set_needs_style_update(false)
+	unrelated_node.set_entire_subtree_needs_style_update(false)
 	document.set_needs_full_style_update(false)
 
-	document.respond_to_base_url_changes()
+	old_document_url := document.url
+	old_base_url := document.base_url()
+	new_document_url := URL{ value: 'https://example.test/page#target' }
+	old_target := dom_url_parse('#target', old_base_url, document.encoding_or_default())
+	new_target := dom_url_parse('#target', new_document_url, document.encoding_or_default())
+	assert !local_link_target_matches_document(old_target, old_document_url)
+	assert local_link_target_matches_document(new_target, new_document_url)
+	document.set_url(new_document_url)
 
-	assert document.needs_full_style_update()
+	assert local.needs_style_update()
+	assert !unrelated.needs_style_update()
+	assert !document.needs_full_style_update()
 }
 
 struct ViewTransitionCallbackObservation {
