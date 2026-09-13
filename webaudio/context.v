@@ -40,6 +40,27 @@ pub:
 	max_channel_count u32
 }
 
+pub fn AudioDestinationNode.create(context_id u64, graph &AudioGraphState,
+	channel_count u32, offline bool) !AudioDestinationNode {
+	mut mutable_graph := unsafe { &AudioGraphState(graph) }
+	mut node := AudioNode{
+		id: 1
+		context_id: context_id
+		kind: .destination
+		number_of_inputs: 1
+		number_of_outputs: 1
+		graph: mutable_graph
+	}
+	node.set_channel_count(channel_count)!
+	node.channel_count_mode = .explicit
+	node.queue_render_node_creation(DestinationRenderNode.create(node.id, int(channel_count), int(render_quantum_size)).render_node())
+	return AudioDestinationNode{
+		AudioNode: node
+		offline: offline
+		max_channel_count: if offline { channel_count } else { 2 }
+	}
+}
+
 fn new_audio_listener(context_id u64, first_id u64, graph &AudioGraphState) AudioListener {
 	mut next_id := first_id
 	mut values := []AudioParam{}
@@ -120,23 +141,8 @@ fn make_base_context(id u64, sample_rate f32, destination_channels u32,
 	mut graph := &AudioGraphState{
 		sample_rate: sample_rate
 	}
-	mut destination := AudioNode{
-		id: 1
-		context_id: id
-		kind: .destination
-		number_of_inputs: 1
-		number_of_outputs: 1
-		graph: graph
-	}
-	destination.set_channel_count(destination_channels)!
-	destination.channel_count_mode = .explicit
 	graph.control_messages_ = control_messages
-	destination.queue_render_node_creation(DestinationRenderNode.create(1, int(destination_channels), int(render_quantum_size)).render_node())
-	destination_node := AudioDestinationNode{
-		AudioNode: destination
-		offline: offline
-		max_channel_count: 2
-	}
+	destination_node := AudioDestinationNode.create(id, graph, destination_channels, offline)!
 	listener := new_audio_listener(id, 1, graph)
 	return BaseAudioContext{
 		id: id

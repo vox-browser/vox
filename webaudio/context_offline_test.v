@@ -15,6 +15,15 @@ fn test_audio_context_supports_the_full_nominal_sample_rate_range() {
 	assert false
 }
 
+fn test_offline_destination_max_channel_count_matches_its_fixed_width() {
+	context := new_offline_audio_context(91, 6, 128, 48_000) or { panic(err) }
+	assert context.base.destination.channel_count == 6
+	assert context.base.destination.max_channel_count() == 6
+
+	realtime := new_audio_context(92, 48_000, true) or { panic(err) }
+	assert realtime.base.destination.max_channel_count() == 2
+}
+
 fn test_realtime_context_state_transitions_and_destination_constraints() {
 	mut context := new_audio_context(1, none, true) or { panic(err) }
 	assert context.base.sample_rate == 44100

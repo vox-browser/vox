@@ -828,21 +828,7 @@ pub fn (_ ScriptProcessorNode) number_of_outputs() u32 {
 // AudioDestinationNode and MediaElementAudioSourceNode
 pub fn AudioDestinationNode.construct_impl(context_id u64, channel_count u32,
 	offline bool) !AudioDestinationNode {
-	mut node := AudioNode{
-		id: 1
-		context_id: context_id
-		kind: .destination
-		number_of_inputs: 1
-		number_of_outputs: 1
-		graph: &AudioGraphState{}
-	}
-	node.set_channel_count(channel_count)!
-	node.channel_count_mode = .explicit
-	return AudioDestinationNode{
-		AudioNode: node
-		offline: offline
-		max_channel_count: 2
-	}
+	return AudioDestinationNode.create(context_id, &AudioGraphState{}, channel_count, offline)
 }
 
 pub fn (destination AudioDestinationNode) max_channel_count() u32 {
