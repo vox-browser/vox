@@ -262,6 +262,7 @@ pub fn (mut context BaseAudioContext) create_channel_merger(number_of_inputs u32
 	}
 	if count := options.channel_count { merger.set_channel_count(count)! }
 	if mode := options.channel_count_mode { merger.set_channel_count_mode(mode)! }
+	node.queue_render_node_creation(ChannelMergerRenderNode.create(node.id, int(render_quantum_size), int(number_of_inputs)).render_node())
 	return merger
 }
 
@@ -277,6 +278,7 @@ pub fn (mut merger ChannelMergerNode) set_channel_count_mode(mode ChannelCountMo
 		return error('InvalidStateError: Channel count mode cannot be changed')
 	}
 	merger.node.channel_count_mode = mode
+	merger.node.queue_channel_config_update()
 }
 
 pub struct ChannelSplitterNode {

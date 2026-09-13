@@ -191,3 +191,16 @@ fn test_stereo_panner_factory_messages_render_through_the_context_destination() 
 	}
 	assert output.output(0).channel(1) == []f32{len: int(render_quantum_size), init: 0.5}
 }
+
+fn test_channel_merger_factory_queues_its_multi_input_render_node() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	context.base.control_messages.drain()
+	merger := context.base.create_channel_merger(4, AudioNodeOptions{}) or { panic(err) }
+	messages := context.base.control_messages.drain()
+	add_messages := messages.filter(it.kind == .add_node)
+	assert add_messages.len == 1
+	render_node := add_messages[0].render_node or { panic('missing merger render node') }
+	assert render_node.node_id() == merger.node.id
+	assert render_node.input_count() == 4
+	assert render_node.output(0).channel_count() == 4
+}
