@@ -796,12 +796,13 @@ pub fn (media_list &MediaList) media_text() string {
 
 // https://www.w3.org/TR/cssom-1/#dom-medialist-mediatext
 pub fn (mut media_list MediaList) set_media_text(text string) {
+	previous_sheet_effects := media_list.associated_style_sheet_effects()
 	media_list.media.clear()
 	if text.trim_space().len != 0 {
 		media_list.media =
 			media_query_entries_from_queries(parse_css_media_query_list_value_logic(text))
 	}
-	media_list.invalidate_associated_style_sheet()
+	media_list.invalidate_associated_style_sheet(.media_list_set_media_text, previous_sheet_effects)
 }
 
 pub fn (media_list &MediaList) length() int {
@@ -831,9 +832,11 @@ pub fn (mut media_list MediaList) append_medium(medium string) {
 		}
 	}
 
+	previous_sheet_effects := media_list.associated_style_sheet_effects()
+
 	// 4. Append m to the collection of media queries.
 	media_list.media << parsed
-	media_list.invalidate_associated_style_sheet()
+	media_list.invalidate_associated_style_sheet(.media_list_append_medium, previous_sheet_effects)
 }
 
 // https://www.w3.org/TR/cssom-1/#dom-medialist-deletemedium
@@ -843,6 +846,7 @@ pub fn (mut media_list MediaList) delete_medium(medium string) ! {
 
 	// 2. If m is null, then return.
 	serialized := parsed.text
+	previous_sheet_effects := media_list.associated_style_sheet_effects()
 
 	// 3. Remove any media query from the collection of media queries for which comparing the media query with m
 	//    returns true. If nothing was removed, then throw a NotFoundError exception.
@@ -860,7 +864,7 @@ pub fn (mut media_list MediaList) delete_medium(medium string) ! {
 	}
 
 	media_list.media = kept
-	media_list.invalidate_associated_style_sheet()
+	media_list.invalidate_associated_style_sheet(.media_list_delete_medium, previous_sheet_effects)
 }
 
 pub fn (mut media_list MediaList) evaluate(document &dom.Document) bool {
@@ -889,10 +893,18 @@ pub fn (mut media_list MediaList) set_associated_style_sheet(style_sheet &CSSSty
 	}
 }
 
-fn (media_list &MediaList) invalidate_associated_style_sheet() {
+fn (media_list &MediaList) associated_style_sheet_effects() ?ShadowRootStylesheetEffects {
+	if sheet := media_list.associated_style_sheet {
+		return determine_shadow_root_style_sheet_effects_for_style_sheet(sheet)
+	}
+	return none
+}
+
+fn (media_list &MediaList) invalidate_associated_style_sheet(reason dom.StyleInvalidationReason,
+	previous_sheet_effects ?ShadowRootStylesheetEffects) {
 	if sheet := media_list.associated_style_sheet {
 		mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
-		mutable_sheet.invalidate_owners(dom.StyleInvalidationReason.style_change)
+		mutable_sheet.invalidate_owners_with_previous_effects(reason, previous_sheet_effects)
 	}
 }
 

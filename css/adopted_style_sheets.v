@@ -80,13 +80,16 @@ fn (mut list AdoptedStyleSheetsList) validate_and_adopt(sheet &CSSStyleSheet) ! 
 	mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
 	mutable_sheet.add_owning_document_or_shadow_root(list.document_or_shadow_root)
 	mutable_sheet.load_pending_image_resources(list.document_or_shadow_root.document())
+	// The next rule-cache build must see current outer and nested media matches,
+	// even when it happens before Document's regular media-rule pass.
+	mutable_sheet.evaluate_media_queries(list.document_or_shadow_root.document())
 	list.invalidate_style()
 }
 
 fn (list &AdoptedStyleSheetsList) invalidate_style() {
 	invalidate_css_style_scope_for_node(list.document_or_shadow_root)
 	mut mutable_root := unsafe { &dom.Node(list.document_or_shadow_root) }
-	mutable_root.invalidate_style(.style_change)
+	mutable_root.invalidate_style(.adopted_style_sheets_list)
 }
 
 pub fn (mut list AdoptedStyleSheetsList) append(sheet &CSSStyleSheet) ! {

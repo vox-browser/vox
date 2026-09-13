@@ -2191,6 +2191,11 @@ fn apply_style_sheet_shadow_root_effects(host &dom.Element, shadow_root &dom.Sha
 fn (mut sheet CSSStyleSheet) invalidate_owners_with_previous_effects(reason dom.StyleInvalidationReason, previous_sheet_effects ?ShadowRootStylesheetEffects) {
 	sheet.did_match = none
 	sheet.invalidate_shared_style_cache()
+	// MediaList mutation changes which rules are effective. Refresh that state before
+	// owner invalidation inspects the new shadow-root effects or rebuilds a rule cache.
+	if document := sheet.owning_document() {
+		sheet.evaluate_media_queries(document)
+	}
 	invalidate_style_for_style_sheet_owners(sheet, reason, .yes, previous_sheet_effects)
 }
 
@@ -2312,8 +2317,10 @@ pub fn (mut sheet CSSStyleSheet) evaluate_media_queries(document &dom.Document) 
 
 	mut media := unsafe { &MediaList(sheet.base.media) }
 	now_matches := media.evaluate(document)
-	if sheet.did_match == none || sheet.did_match or { false } != now_matches {
-		any_media_queries_changed_match_state = true
+	if previous_match := sheet.did_match {
+		if previous_match != now_matches {
+			any_media_queries_changed_match_state = true
+		}
 	}
 	if now_matches && sheet.rules.evaluate_media_queries(document) {
 		any_media_queries_changed_match_state = true

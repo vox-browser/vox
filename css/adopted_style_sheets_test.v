@@ -55,6 +55,40 @@ fn test_adopted_style_sheet_participates_in_shadow_root_cascade() {
 	assert sheet.owning_documents_or_shadow_roots[0] == shadow_node
 }
 
+fn test_adopted_style_sheet_evaluates_media_before_rule_cache_build() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+	mut document_node := unsafe { &dom.Node(document) }
+	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
+	target.set_attribute_value('class', 'target')
+	document_node.append_child(target.as_node())!
+
+	mut sheet := css_style_sheet_construct(CSSStyleSheetInit{
+		media: '(min-width: 600px)'
+	}, document)!
+	sheet.replace_sync('.target { color: red; }')!
+	mut list := create_adopted_style_sheets_list(document_node)
+	list.append(sheet)!
+
+	computed := StyleComputer.new(document).compute_style(dom.AbstractElement.new(target, none))
+	assert (computed.property(.color, .no) or { panic('adopted color missing') }).css_text == 'rgb(255, 0, 0)'
+}
+
+fn test_first_style_sheet_media_evaluation_establishes_a_baseline() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
+	mut sheet := css_style_sheet_construct(CSSStyleSheetInit{
+		media: '(min-width: 600px)'
+	}, document)!
+
+	assert !sheet.evaluate_media_queries(document)
+	document.set_viewport_rect(dom.Rect{0, 0, 500, 600})
+	assert sheet.evaluate_media_queries(document)
+	assert !sheet.evaluate_media_queries(document)
+}
+
 fn test_single_constructed_sheet_cache_is_shared_across_shadow_scopes() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	mut document_node := unsafe { &dom.Node(document) }

@@ -719,3 +719,29 @@ fn test_shadow_sheet_disabled_toggle_preserves_host_reach_invalidation() {
 	assert host.as_node().entire_subtree_needs_style_update()
 	assert !document.needs_full_style_update()
 }
+
+fn test_shadow_media_list_mutation_uses_pre_mutation_host_reach() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut document_node := unsafe { &dom.Node(document) }
+	mut root := style_sheet_invalidation_test_element(document, 'html')
+	mut host := style_sheet_invalidation_test_element(document, 'div')
+	document_node.append_child(root.as_node()) or { panic(err) }
+	mut root_node := root.as_node()
+	root_node.append_child(host.as_node()) or { panic(err) }
+	shadow_root := host.attach_shadow(dom.ShadowRootInit{ mode: .open }) or { panic(err) }
+	mut shadow_node := unsafe { &dom.Node(shadow_root) }
+
+	mut sheet := css_style_sheet_construct(none, document) or { panic(err) }
+	sheet.replace_sync(':host { color: blue }') or { panic(err) }
+	mut adopted := create_adopted_style_sheets_list(shadow_node)
+	adopted.append(sheet) or { panic(err) }
+	clear_style_sheet_invalidation_test_flags(document_node, root.as_node(), host.as_node(), shadow_node)
+	document.set_needs_full_style_update(false)
+
+	mut media := unsafe { &MediaList(sheet.base.media) }
+	media.set_media_text('not all')
+	assert host.as_node().entire_subtree_needs_style_update()
+	assert !document.needs_full_style_update()
+	assert sheet.did_match or { true } == false
+}

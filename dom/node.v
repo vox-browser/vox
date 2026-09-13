@@ -121,6 +121,7 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 }
 
 pub enum StyleInvalidationReason {
+	adopted_style_sheets_list
 	base_url_changed
 	css_font_loaded
 	element_attribute_change
@@ -146,12 +147,16 @@ pub enum StyleInvalidationReason {
 	style_sheet_disabled_state_change
 	style_sheet_replace
 	media_query_changed_match_state
+	media_list_set_media_text
+	media_list_append_medium
+	media_list_delete_medium
 	counter_style_cache_invalidated
 	other
 }
 
 pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) string {
 	return match reason {
+		.adopted_style_sheets_list { 'AdoptedStyleSheetsList' }
 		.base_url_changed { 'BaseURLChanged' }
 		.css_font_loaded { 'CSSFontLoaded' }
 		.element_attribute_change { 'ElementAttributeChange' }
@@ -179,6 +184,9 @@ pub fn style_invalidation_reason_to_string(reason StyleInvalidationReason) strin
 		.style_sheet_disabled_state_change { 'StyleSheetDisabledStateChange' }
 		.style_sheet_replace { 'StyleSheetReplace' }
 		.media_query_changed_match_state { 'MediaQueryChangedMatchState' }
+		.media_list_set_media_text { 'MediaListSetMediaText' }
+		.media_list_append_medium { 'MediaListAppendMedium' }
+		.media_list_delete_medium { 'MediaListDeleteMedium' }
 		.counter_style_cache_invalidated { 'CounterStyleCacheInvalidated' }
 		.other { 'Other' }
 	}
