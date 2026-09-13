@@ -444,3 +444,16 @@ fn test_exact_mouse_pointer_and_wheel_entry_points() {
 	assert wheel.delta_mode() == dom_delta_pixel
 	assert wheel.alt_key()
 }
+
+fn test_inline_event_handler_source_uses_on_prefixed_function_name() {
+	mut document := Document.create(url_about_blank())
+	document.browsing_context = &BrowsingContext{}
+	mut element := document.create_element('button')!
+	event_target := unsafe { &EventTarget(element.as_node()) }
+	event_target.element_event_handler_attribute_changed('click', 'return 42;')
+
+	callback := event_target.get_current_value_of_event_handler('click') or {
+		panic('inline event handler did not compile')
+	}
+	assert callback.compiled_source_text_ == 'function onclick(event) {\nreturn 42;\n}'
+}

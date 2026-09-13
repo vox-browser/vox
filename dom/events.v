@@ -1204,18 +1204,26 @@ fn compile_raw_event_handler(event_target &EventTarget, name string, body string
 
 	// 3. Let body be the uncompiled script body in eventHandler's value.
 	// FIXME: 4. Let location be the location where the script body originated, as given by eventHandler's value.
-	// FIXME: 5-12. Compile body as a dynamic function with the document/form/element scope chain and store
-	// a Web IDL EventHandler callback. The JS compiler/runtime is outside this DOM-only port.
-	_ = name
-	_ = body
+	// 5-12. Preserve the dynamic function source text at the runtime boundary.
+	// The JS compiler/runtime is outside this DOM-only port, but the synthesized
+	// name is observable through Function.prototype.toString().
+	compiled_source_text := inline_event_handler_function_source(event_target, name, body)
 	return &CallbackType{
 		associated_window: event_target_relevant_window(event_target)
+		compiled_source_text_: compiled_source_text
 		handle_event: fn (event &Event, current_target ?&EventTarget) JSValue {
 			_ = event
 			_ = current_target
 			return js_undefined()
 		}
 	}
+}
+
+fn inline_event_handler_function_source(event_target &EventTarget, name string, body string) string {
+	if name == 'error' && event_target_as_window(event_target) != none {
+		return 'function on${name}(event, source, lineno, colno, error) {\n${body}\n}'
+	}
+	return 'function on${name}(event) {\n${body}\n}'
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-attributes:event-handler-idl-attributes-3
