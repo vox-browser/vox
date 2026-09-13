@@ -296,6 +296,12 @@ pub fn AnalyserNode.create(mut context BaseAudioContext, options AnalyserOptions
 
 pub fn AnalyserNode.construct_impl(mut context BaseAudioContext,
 	options AnalyserOptions) !AnalyserNode {
+	return AnalyserNode.create_for_constructor(mut context, options)
+}
+
+pub fn AnalyserNode.create_for_constructor(mut context BaseAudioContext,
+	options AnalyserOptions) !AnalyserNode {
+	AnalyserNode.validate_options(options)!
 	return context.create_analyser(options)
 }
 
@@ -309,9 +315,20 @@ pub fn apply_a_fourier_transform(input []f32) []f32 {
 	}
 	mut real := input.clone()
 	mut imaginary := []f32{len: input.len}
+	radix2_fft(mut real, mut imaginary)
+	mut magnitudes := []f32{len: input.len / 2}
+	inverse_length := f32(1.0 / f64(input.len))
+	for index in 0 .. magnitudes.len {
+		magnitudes[index] = f32(math.sqrt(f64(real[index] * real[index] + imaginary[index] * imaginary[index]))) * inverse_length
+	}
+	return magnitudes
+}
+
+pub fn radix2_fft(mut real []f32, mut imaginary []f32) {
+	assert real.len == imaginary.len
 	mut j := 0
-	for i := 1; i < input.len; i++ {
-		mut bit := input.len >> 1
+	for i := 1; i < real.len; i++ {
+		mut bit := real.len >> 1
 		for j & bit != 0 {
 			j ^= bit
 			bit >>= 1
@@ -323,12 +340,12 @@ pub fn apply_a_fourier_transform(input []f32) []f32 {
 		}
 	}
 	mut length := 2
-	for length <= input.len {
+	for length <= real.len {
 		half := length >> 1
 		angle := -2.0 * math.pi / f64(length)
 		root_real := math.cos(angle)
 		root_imaginary := math.sin(angle)
-		for start := 0; start < input.len; start += length {
+		for start := 0; start < real.len; start += length {
 			mut weight_real := 1.0
 			mut weight_imaginary := 0.0
 			for offset in 0 .. half {
@@ -347,12 +364,6 @@ pub fn apply_a_fourier_transform(input []f32) []f32 {
 		}
 		length <<= 1
 	}
-	mut magnitudes := []f32{len: input.len / 2}
-	inverse_length := f32(1.0 / f64(input.len))
-	for index in 0 .. magnitudes.len {
-		magnitudes[index] = f32(math.sqrt(f64(real[index] * real[index] + imaginary[index] * imaginary[index]))) * inverse_length
-	}
-	return magnitudes
 }
 
 pub fn (mut analyser AnalyserNode) smoothing_over_time(current_block []f32) []f32 {

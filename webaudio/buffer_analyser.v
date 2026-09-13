@@ -157,13 +157,21 @@ mut:
 	frequency_data_cache_time_ ?f64
 }
 
-pub fn (mut context BaseAudioContext) create_analyser(options AnalyserOptions) !AnalyserNode {
+pub fn AnalyserNode.validate_options(options AnalyserOptions) ! {
 	if options.min_decibels >= options.max_decibels {
 		return error('IndexSizeError: Analyser node minDecibels greater than maxDecibels')
 	}
 	if options.smoothing_time_constant < 0 || options.smoothing_time_constant > 1 {
 		return error('IndexSizeError: smoothingTimeConstant not between 0 and 1')
 	}
+	if options.fft_size < 32 || options.fft_size > 32768
+		|| options.fft_size & (options.fft_size - 1) != 0 {
+		return error('IndexSizeError: fftSize is not a power of 2 between 32 and 32768')
+	}
+}
+
+pub fn (mut context BaseAudioContext) create_analyser(options AnalyserOptions) !AnalyserNode {
+	AnalyserNode.validate_options(options)!
 	node := context.allocate_node(.analyser, 1, 1, options.node, 2, .max, .speakers)!
 	mut time_domain_ring := new_media_stream_audio_ring(32768, 1)
 	mut analyser := AnalyserNode{
@@ -204,6 +212,10 @@ pub fn (mut analyser AnalyserNode) set_fft_size(size u32) ! {
 	if size < 32 || size > 32768 || size & (size - 1) != 0 {
 		return error('IndexSizeError: fftSize is not a power of 2 between 32 and 32768')
 	}
+	analyser.set_fft_size_without_validation(size)
+}
+
+pub fn (mut analyser AnalyserNode) set_fft_size_without_validation(size u32) {
 	analyser.fft_size = size
 	analyser.previous_block = []f32{len: int(size / 2)}
 	analyser.frequency_data_cache_time_ = none

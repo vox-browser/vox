@@ -36,6 +36,17 @@ fn test_analyser_decibel_and_smoothing_setters_are_transactional() {
 	assert false
 }
 
+fn test_analyser_constructor_validates_before_allocating_graph_state() {
+	mut context := new_audio_context(1, 44_100, true) or { panic(err) }
+	first_available_id := context.base.next_id
+	AnalyserNode.create_for_constructor(mut context.base, AnalyserOptions{ fft_size: 30 }) or {
+		assert err.msg().contains('power of 2')
+		assert context.base.next_id == first_available_id
+		return
+	}
+	assert false
+}
+
 fn test_analyser_fft_uses_radix_two_transform_and_db_conversion() {
 	mut impulse := []f32{len: 32}
 	impulse[0] = 1
@@ -53,6 +64,14 @@ fn test_analyser_fft_uses_radix_two_transform_and_db_conversion() {
 	assert decibels[0] == 0
 	assert math.abs(decibels[1] + 20) < 0.00001
 	assert math.is_inf(decibels[2], -1)
+}
+
+fn test_radix_two_fft_operates_on_real_and_imaginary_arrays_in_place() {
+	mut real := [f32(1), 0, 0, 0]
+	mut imaginary := []f32{len: 4}
+	radix2_fft(mut real, mut imaginary)
+	assert real == [f32(1), 1, 1, 1]
+	assert imaginary == []f32{len: 4}
 }
 
 fn analyser_render_test_source(mut node RenderNode, _ mut RenderGraph,
