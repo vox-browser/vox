@@ -9,6 +9,8 @@ import aria
 import dom
 import gamepad
 import html
+import loader
+import x.json2
 
 pub const mod_none = u16(0)
 pub const mod_alt = u16(1)
@@ -528,6 +530,67 @@ pub fn (mut api Internals) simulate_request_server_connection_loss() {
 
 pub fn (mut api Internals) simulate_worker_request_server_connection_loss() {
 	api.platform.worker_request_server_connection_losses++
+}
+
+pub fn (mut api Internals) set_content_blockers(patterns_source string) ! {
+	mut lines := []string{}
+	for raw_line in patterns_source.split_into_lines() {
+		line := raw_line.trim_right('\r')
+		if line != '' {
+			lines << line
+		}
+	}
+	mut normalized := lines.join('\n')
+	if normalized != '' {
+		normalized += '\n'
+	}
+	mut blocker := loader.ContentBlocker.the()
+	had_cosmetic_rules := blocker.has_cosmetic_rules()
+	blocker.set_rules_from_bytes(normalized.bytes()) or {
+		return error('Could not set content blockers: ${err}')
+	}
+	api.platform.content_blockers_source = normalized
+	if had_cosmetic_rules || blocker.has_cosmetic_rules() {
+		api.platform.user_style_invalidations++
+	}
+}
+
+fn internals_resource_loader() &loader.ResourceLoader {
+	if !loader.is_initialized() {
+		return loader.initialize()
+	}
+	return loader.ResourceLoader.the()
+}
+
+pub fn (mut api Internals) set_site_compatibility_data(source string) ! {
+	json := json2.decode[json2.Any](source) or {
+		return error('Could not parse site compatibility data')
+	}
+	data := loader.SiteCompatibilityData.from_json(json) or {
+		return error('Could not set site compatibility data: ${err}')
+	}
+	mut resource_loader := internals_resource_loader()
+	resource_loader.set_site_compatibility_data(data)
+	api.platform.site_compatibility_source = source
+}
+
+pub fn (mut api Internals) set_experimental_interfaces_exposed(exposed bool) {
+	html.set_experimental_interfaces_exposed(exposed)
+	api.platform.experimental_interfaces_exposed = exposed
+}
+
+pub fn (mut api Internals) set_content_blocking_enabled(enabled bool) {
+	mut blocker := loader.ContentBlocker.the()
+	if blocker.filtering_enabled() == enabled {
+		api.platform.content_blocking_enabled = enabled
+		return
+	}
+	has_cosmetic_rules := blocker.has_cosmetic_rules()
+	blocker.set_filtering_enabled(enabled)
+	api.platform.content_blocking_enabled = enabled
+	if has_cosmetic_rules {
+		api.platform.user_style_invalidations++
+	}
 }
 
 fn internals_default_role(element &dom.Element) ?aria.Role {

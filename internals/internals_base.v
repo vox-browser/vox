@@ -161,6 +161,11 @@ pub mut:
 	loaded_urls                                 []string
 	request_server_connection_losses           u64
 	worker_request_server_connection_losses    u64
+	content_blockers_source                    string
+	content_blocking_enabled                   bool = true
+	user_style_invalidations                   u64
+	site_compatibility_source                  string
+	experimental_interfaces_exposed            bool
 }
 
 @[heap]

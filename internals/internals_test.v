@@ -3,6 +3,8 @@ module internals
 import animations
 import dom
 import gamepad
+import html
+import loader
 
 fn test_metadata_settings_and_platform_facade() {
 	mut platform := &PlatformState{
@@ -123,6 +125,45 @@ fn test_metadata_settings_and_platform_facade() {
 	if _ := api.spoof_current_url('relative/path') {
 		assert false
 	}
+}
+
+fn test_content_and_site_compatibility_controls_update_runtime_services() {
+	mut platform := &PlatformState{}
+	navigator := gamepad.NavigatorGamepadPartial.new()
+	mut api := Internals.create(platform, navigator)
+	api.set_content_blockers('||ads.example^\r\n\nexample.com##.advert\r\n')!
+	blocker := loader.ContentBlocker.the()
+	assert blocker.has_rules()
+	assert blocker.has_cosmetic_rules()
+	assert platform.content_blockers_source == '||ads.example^\nexample.com##.advert\n'
+	assert platform.user_style_invalidations == 1
+	api.set_content_blocking_enabled(false)
+	assert !blocker.filtering_enabled()
+	assert !platform.content_blocking_enabled
+	assert platform.user_style_invalidations == 2
+	api.set_content_blocking_enabled(false)
+	assert platform.user_style_invalidations == 2
+
+	compatibility := '[{"matches":["https://example.test/*"],"user_agent":["hide_Ladybird"],"expose_experimental_interfaces":["PressureObserver"]}]'
+	api.set_site_compatibility_data(compatibility)!
+	resource_loader := loader.ResourceLoader.the()
+	url := dom.URL{'https://example.test/page'}
+	assert !resource_loader.user_agent_for_url(url).contains('Ladybird/')
+	assert resource_loader.site_compatibility_exposes_experimental_interface(url,
+		'PressureObserver')
+	assert platform.site_compatibility_source == compatibility
+	if _ := api.set_site_compatibility_data('{broken') {
+		assert false
+	}
+
+	api.set_experimental_interfaces_exposed(true)
+	assert html.expose_experimental_interfaces()
+	assert platform.experimental_interfaces_exposed
+
+	// Restore process-global test services for any later cases in this binary.
+	api.set_content_blockers('')!
+	api.set_content_blocking_enabled(true)
+	api.set_experimental_interfaces_exposed(false)
 }
 
 fn test_input_methods_record_exact_actions() {
