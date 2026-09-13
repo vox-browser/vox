@@ -624,3 +624,16 @@ fn test_media_source_handle_is_opaque_and_transferable() {
 	handle := MediaSourceHandle.create_internal()
 	assert handle.is_transferable()
 }
+
+fn test_media_source_attachment_state_and_associated_events() {
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	assert !source.has_ever_been_attached()
+	source.set_has_ever_been_attached()
+	source.set_assigned_to_media_element(media)
+	assert source.has_ever_been_attached()
+	assert source.media_element_assigned_to()? == media
+	event := source.create_associated_event('sourceopen')
+	assert event.type_ == 'sourceopen'
+	assert event.is_trusted()
+}

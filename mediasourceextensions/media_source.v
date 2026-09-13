@@ -95,6 +95,19 @@ pub fn (source &MediaSource) media_element_assigned_to() ?&html.HTMLMediaElement
 	return source.media_element_assigned_to_
 }
 
+pub fn (mut source MediaSource) set_has_ever_been_attached() {
+	source.has_ever_been_attached_ = true
+}
+
+pub fn (mut source MediaSource) set_assigned_to_media_element(media_element &html.HTMLMediaElement) {
+	source.media_element_assigned_to_ = media_element
+}
+
+pub fn (source &MediaSource) create_associated_event(event_name string) &dom.Event {
+	_ = source
+	return dom.Event.create(event_name, dom.EventInit{})
+}
+
 pub fn (source &MediaSource) source_buffers() &SourceBufferList {
 	return source.source_buffers_
 }
@@ -178,7 +191,7 @@ pub fn (mut source MediaSource) end_of_stream(error_ ?EndOfStreamError) ! {
 pub fn (mut source MediaSource) run_end_of_stream_algorithm(error_ ?EndOfStreamError) {
 	source.ready_state_ = .ended
 	source.queue_a_media_source_task(fn [source] () {
-		source.dispatch_event(dom.Event.create('sourceended', dom.EventInit{}))
+		source.dispatch_event(source.create_associated_event('sourceended'))
 	})
 	for index in 0 .. source.source_buffers_.length() {
 		if mut buffer := source.source_buffers_.item(index) {
@@ -204,7 +217,7 @@ pub fn (mut source MediaSource) set_ready_state_to_open_and_fire_sourceopen_even
 		}
 	}
 	source.queue_a_media_source_task(fn [source] () {
-		source.dispatch_event(dom.Event.create('sourceopen', dom.EventInit{}))
+		source.dispatch_event(source.create_associated_event('sourceopen'))
 	})
 }
 
@@ -232,7 +245,7 @@ pub fn (mut source MediaSource) detach_from_media_element() {
 		source_buffers.dispatch_event(dom.Event.create('removesourcebuffer', dom.EventInit{}))
 	})
 	source.queue_a_media_source_task(fn [source] () {
-		source.dispatch_event(dom.Event.create('sourceclose', dom.EventInit{}))
+		source.dispatch_event(source.create_associated_event('sourceclose'))
 	})
 	source.media_element_assigned_to_ = none
 }
@@ -252,9 +265,9 @@ fn attach_media_source_provider(source_handle voidptr, media_element_handle void
 		return error('MediaSource is not closed')
 	}
 	mut media_element := unsafe { &html.HTMLMediaElement(media_element_handle) }
-	source.has_ever_been_attached_ = true
+	source.set_has_ever_been_attached()
 	media_element.media_source_attachment_did_open(source_handle, detach_media_source_provider)
-	source.media_element_assigned_to_ = media_element
+	source.set_assigned_to_media_element(media_element)
 	source.set_ready_state_to_open_and_fire_sourceopen_event()
 }
 
