@@ -158,6 +158,9 @@ pub fn (d Display) to_string() string {
 			if d == Display.from_short(.inline_table) {
 				return 'inline-table'
 			}
+			if d == Display.from_short(.math) {
+				return 'math'
+			}
 
 			mut parts := []string{}
 			if !(d.outside_ == .block && d.inside_ == .flow_root) {
@@ -235,9 +238,9 @@ pub fn Display.from_short(short_ DisplayShort) Display {
 		}
 		.math {
 			// NOTE: The spec ( https://w3c.github.io/mathml-core/#new-display-math-value ) does not
-			//       mention what the outside value for `display: math` should be.
-			//       The UA stylesheet does `* { display: block math; }` so let's go with that.
-			Display.from_outside_inside(.block, .math)
+			//       mention what the outside value for `display: math` should be but other browsers
+			//       use `inline` so let's go with that.
+			Display.from_outside_inside(.inline_, .math)
 		}
 	}
 }
