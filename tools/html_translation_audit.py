@@ -382,6 +382,17 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("SVGElement", "mark_resource_box_referencing_elements_for_layout_update"): (
         ("mark_svg_resource_box_referencing_elements_for_layout_update", "Element"),
     ),
+    # Paint-server URL resolution is shared by the typed gradient/pattern
+    # lowering path. Its fragment helper preserves the document lookup and
+    # containing-use-shadow fallback from SVGGraphicsElement.
+    ("SVGGraphicsElement", "paint_server_element"): (
+        ("resolve_svg_linear_gradient_paint_style", None),
+        ("resolve_svg_radial_gradient_paint_style", None),
+        ("resolve_svg_pattern_paint_style", None),
+    ),
+    ("SVGGraphicsElement", "resolve_fragment_identifier_to_element"): (
+        ("resolve_svg_fragment_identifier_to_element", None),
+    ),
     # The C++ layout FFI pushes gradient/pattern records incrementally. V's
     # paint adapter resolves the same inherited resource state directly into
     # renderer-independent paint-style records.
