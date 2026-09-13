@@ -22,6 +22,28 @@ pub enum TrackBufferSeekMode {
 	fast_after
 }
 
+pub enum TrackBufferReadBlocked {
+	no
+	yes
+}
+
+pub struct TrackBufferTrackScanState {
+pub:
+	track                 WebMTrackInfo
+	buffered_ranges       []MediaSourceTimeRange
+	reached_end_of_stream bool
+}
+
+pub struct TrackBufferScanState {
+pub:
+	tracks   []TrackBufferTrackScanState
+	duration f64
+}
+
+pub type TrackBufferScanStateChangeHandler = fn ()
+
+pub type TrackBufferReadBlockedChangeHandler = fn (TrackBufferReadBlocked)
+
 struct FrameRun {
 mut:
 	frames             []DemuxedCodedFrame
@@ -65,6 +87,10 @@ mut:
 	cursor_jumped_                  bool
 	maximum_frame_duration_         f64
 	total_bytes_                    int
+	scan_state_                     TrackBufferScanState
+	scan_state_change_handler_      ?TrackBufferScanStateChangeHandler
+	read_blocked_                   TrackBufferReadBlocked
+	read_blocked_change_handler_    ?TrackBufferReadBlockedChangeHandler
 }
 
 pub fn TrackBufferDemuxer.create(track WebMTrackInfo) &TrackBufferDemuxer {
@@ -94,6 +120,29 @@ pub fn (demuxer &TrackBufferDemuxer) coded_frames() []DemuxedCodedFrame {
 		return if a.timestamp < b.timestamp { -1 } else if a.timestamp > b.timestamp { 1 } else { 0 }
 	})
 	return frames
+}
+
+fn (mut demuxer TrackBufferDemuxer) dispatch_scan_state_change() {
+	demuxer.scan_state_ = TrackBufferScanState{
+		tracks: [TrackBufferTrackScanState{
+			track: demuxer.track
+			buffered_ranges: demuxer.buffered_time_ranges()
+			reached_end_of_stream: demuxer.reached_end_of_stream_
+		}]
+	}
+	if handler := demuxer.scan_state_change_handler_ {
+		handler()
+	}
+}
+
+fn (mut demuxer TrackBufferDemuxer) update_read_blocked(value TrackBufferReadBlocked) {
+	if value == demuxer.read_blocked_ {
+		return
+	}
+	demuxer.read_blocked_ = value
+	if handler := demuxer.read_blocked_change_handler_ {
+		handler(value)
+	}
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(input_frame DemuxedCodedFrame) {
@@ -144,6 +193,7 @@ pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(input_frame DemuxedCoded
 	if run_to_continue >= 0 {
 		demuxer.runs_[run_to_continue].frames << frame
 		demuxer.runs_[run_to_continue].recalculate_bounds()
+		demuxer.dispatch_scan_state_change()
 		return
 	}
 	if frame.new_codec_configuration == none {
@@ -167,6 +217,7 @@ pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(input_frame DemuxedCoded
 			demuxer.current_run_ = demuxer.runs_.len - 1
 		}
 	}
+	demuxer.dispatch_scan_state_change()
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_range(start f64, end f64) {
@@ -275,6 +326,7 @@ pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_ra
 		}
 		demuxer.erase_frames_and_dependants(run_index, first, removal_end - first)
 	}
+	demuxer.dispatch_scan_state_change()
 	return removed_presentation_timestamp
 }
 
@@ -326,7 +378,9 @@ pub fn (mut demuxer TrackBufferDemuxer) take_earliest_frame_and_dependants() int
 	if demuxer.runs_.len == 0 || demuxer.reached_end_of_stream_ {
 		return 0
 	}
-	return demuxer.erase_frames_and_dependants(0, 0, 1)
+	bytes := demuxer.erase_frames_and_dependants(0, 0, 1)
+	demuxer.dispatch_scan_state_change()
+	return bytes
 }
 
 pub fn (demuxer &TrackBufferDemuxer) latest_evictable_frame_timestamp(current_time f64) ?f64 {
@@ -356,6 +410,7 @@ pub fn (mut demuxer TrackBufferDemuxer) take_latest_frame() RemovedCodedFrame {
 		decode_timestamp: frame.decoding_timestamp()
 	}
 	demuxer.erase_frames_and_dependants(run_index, frame_index, 1)
+	demuxer.dispatch_scan_state_change()
 	return removed
 }
 
@@ -503,10 +558,13 @@ pub fn (mut demuxer TrackBufferDemuxer) next_frame() !DemuxedCodedFrame {
 	if demuxer.current_run_ >= demuxer.runs_.len
 		|| demuxer.current_frame_ >= demuxer.runs_[demuxer.current_run_].frames.len {
 		if demuxer.reached_end_of_stream_ {
+			demuxer.update_read_blocked(.no)
 			return error('EndOfStream')
 		}
+		demuxer.update_read_blocked(.yes)
 		return error('NeedMoreData')
 	}
+	demuxer.update_read_blocked(.no)
 	mut frame := demuxer.runs_[demuxer.current_run_].frames[demuxer.current_frame_]
 	if demuxer.cursor_jumped_ {
 		configuration := codec_configuration_after_frame_prefix(demuxer.runs_[demuxer.current_run_],
@@ -536,14 +594,37 @@ pub fn (mut demuxer TrackBufferDemuxer) next_frame() !DemuxedCodedFrame {
 
 pub fn (mut demuxer TrackBufferDemuxer) set_reached_end_of_stream() {
 	demuxer.reached_end_of_stream_ = true
+	demuxer.dispatch_scan_state_change()
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) clear_reached_end_of_stream() {
 	demuxer.reached_end_of_stream_ = false
+	demuxer.dispatch_scan_state_change()
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) set_blocking_reads_aborted(value bool) {
 	demuxer.aborted_ = value
+}
+
+pub fn (demuxer &TrackBufferDemuxer) scan_state() TrackBufferScanState {
+	return demuxer.scan_state_
+}
+
+pub fn (mut demuxer TrackBufferDemuxer) set_scan_state_change_handler(handler TrackBufferScanStateChangeHandler) {
+	demuxer.scan_state_change_handler_ = handler
+	demuxer.dispatch_scan_state_change()
+}
+
+pub fn (mut demuxer TrackBufferDemuxer) set_blocking_reads_aborted_for_track() {
+	demuxer.aborted_ = true
+}
+
+pub fn (mut demuxer TrackBufferDemuxer) reset_blocking_reads_aborted_for_track() {
+	demuxer.aborted_ = false
+}
+
+pub fn (mut demuxer TrackBufferDemuxer) set_read_blocked_change_handler_for_track(handler TrackBufferReadBlockedChangeHandler) {
+	demuxer.read_blocked_change_handler_ = handler
 }
 
 @[heap]
