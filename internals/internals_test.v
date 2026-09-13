@@ -197,6 +197,7 @@ fn test_session_history_dumps_and_embedder_operations() {
 	}
 	navigator := gamepad.NavigatorGamepadPartial.new()
 	mut api := Internals.create(platform, navigator)
+	assert api.parser_non_append_insertions() == html.parser_non_append_insertions()
 	assert api.dump_accessibility_tree() == '{"role":"document"}'
 	assert api.dump_session_history() == '  step 0 first.html\n  step 1 second.html?q=1#target (current)\n'
 	assert api.dump_ui_process_session_history() == history

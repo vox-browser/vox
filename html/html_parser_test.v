@@ -224,9 +224,11 @@ fn test_table_colgroup() {
 
 fn test_table_foster_parenting() {
 	// Non-whitespace text directly inside <table> is foster-parented out, before the table.
+	before := parser_non_append_insertions()
 	doc := parse('<table>foo<tr><td>x</td></tr></table>')
 	body := nth_child(html_element(doc), 1)
 	assert tree_repr(body) == 'body("foo",table(tbody(tr(td("x")))))'
+	assert parser_non_append_insertions() > before
 }
 
 fn test_void_elements_in_body() {

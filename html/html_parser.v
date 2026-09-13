@@ -1,7 +1,20 @@
+@[has_globals]
 module html
 
 import dom
 import encoding
+
+__global html_parser_non_append_insertions u64
+
+pub fn parser_non_append_insertions() u64 {
+	return html_parser_non_append_insertions
+}
+
+fn record_parser_insertion_location(location AdjustedInsertionLocation) {
+	if location.insert_before_sibling != none {
+		html_parser_non_append_insertions++
+	}
+}
 
 // Public identifier prefixes which select quirks mode. Kept in the same order as
 // HTMLParser.cpp's s_quirks_public_ids.
@@ -970,6 +983,7 @@ fn (mut p HTMLParser) insert_html_element(token &HTMLToken) &dom.Element {
 fn (mut p HTMLParser) insert_an_element_at_the_adjusted_insertion_location(element &dom.Element) {
 	location := p.find_appropriate_place_for_inserting_node()
 	mut parent := location.parent or { return }
+	record_parser_insertion_location(location)
 	parent.insert_before(element.as_node(), location.insert_before_sibling, false)
 }
 
@@ -977,6 +991,7 @@ fn (mut p HTMLParser) insert_comment(token &HTMLToken) {
 	location := p.find_appropriate_place_for_inserting_node()
 	mut parent := location.parent or { return }
 	comment := p.document_.create_comment(token.comment())
+	record_parser_insertion_location(location)
 	parent.insert_before(comment.as_node(), location.insert_before_sibling, false)
 }
 
@@ -990,6 +1005,7 @@ fn (mut p HTMLParser) find_character_insertion_node() ?&dom.Text {
 			}
 		}
 		new_text := p.document_.create_text_node('')
+		record_parser_insertion_location(location)
 		parent.insert_before(new_text.as_node(), sibling, false)
 		return new_text
 	}
@@ -1299,6 +1315,7 @@ fn (mut p HTMLParser) run_the_adoption_agency_algorithm(token &HTMLToken) Adopti
 		// 14. Insert lastNode at the appropriate place with commonAncestor as override target.
 		adjusted_location := p.find_appropriate_place_for_inserting_node_with_override(common_ancestor)
 		mut adjusted_parent := adjusted_location.parent or { return .do_nothing }
+		record_parser_insertion_location(adjusted_location)
 		adjusted_parent.insert_before(last_node.as_node(), adjusted_location.insert_before_sibling, false)
 
 		// 15. Create a new element for formattingElement's token, with furthestBlock as intended parent.

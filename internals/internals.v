@@ -418,6 +418,10 @@ pub fn (mut api Internals) flush_session_history_traversal_queue() &dom.Promise 
 	return dom.Promise.resolved(dom.js_undefined())
 }
 
+pub fn (api &Internals) parser_non_append_insertions() u64 {
+	return html.parser_non_append_insertions()
+}
+
 pub fn (api &Internals) hit_test(_ f64, _ f64) ?HitTestObject {
 	result := api.platform.hit_test_result or { return none }
 	return HitTestObject{
