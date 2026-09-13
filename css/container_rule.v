@@ -203,6 +203,308 @@ fn (mut parser Parser) parse_container_query_condition(mut tokens SupportsTokenS
 	return parser.parse_boolean_expression(mut tokens, .unknown, .container_query_feature)
 }
 
+fn (mut parser Parser) parse_style_query(mut tokens SupportsTokenStream, result_for_general_enclosed MatchResult) ?&BooleanExpression {
+	return parser.parse_boolean_expression(mut tokens, result_for_general_enclosed, .style_feature)
+}
+
+// https://drafts.csswg.org/css-conditional-5/#typedef-style-feature
+fn (mut parser Parser) parse_style_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
+	_ = parser
+
+	// <style-feature-plain> = <style-feature-name> : <style-feature-value>
+	mut transaction := tokens
+	transaction.discard_whitespace()
+	name_token := transaction.consume_a_token() or { return none }
+	if name_token.is(.ident) {
+		property := PropertyNameAndID.from_name(name_token.token().ident()) or { return none }
+		transaction.discard_whitespace()
+		if colon := transaction.consume_a_token() {
+			if colon.is(.colon) {
+				transaction.discard_whitespace()
+				mut declaration := Declaration{
+					name:  property.name()
+					value: transaction.values[transaction.index..].clone()
+				}
+				parser_strip_important(mut declaration)
+				for declaration.value.len > 0
+					&& declaration.value[declaration.value.len - 1].is(.whitespace) {
+					declaration.value.delete(declaration.value.len - 1)
+				}
+				if declaration.important == .yes
+					|| !is_valid_optional_declaration_value(declaration.value) {
+					return none
+				}
+				transaction.index = transaction.values.len
+				tokens = transaction
+				return BooleanExpression.create_style_feature(property, declaration.value)
+			}
+		}
+	}
+
+	// <style-feature-boolean> = <style-feature-name>
+	transaction = SupportsTokenStream{
+		values:              tokens.values.clone()
+		index:               tokens.index
+		declared_namespaces: tokens.declared_namespaces.clone()
+	}
+	transaction.discard_whitespace()
+	boolean_name_token := transaction.consume_a_token() or { return none }
+	transaction.discard_whitespace()
+	if transaction.has_next_token() || !boolean_name_token.is(.ident) {
+		return none
+	}
+	property := PropertyNameAndID.from_name(boolean_name_token.token().ident()) or { return none }
+	tokens = transaction
+	return BooleanExpression.create_style_feature(property, none)
+}
+
+fn single_style_query_css_wide_keyword(value []ComponentValue) ?Keyword {
+	mut tokens := SupportsTokenStream.from_values(value)
+	tokens.discard_whitespace()
+	token := tokens.consume_a_token() or { return none }
+	tokens.discard_whitespace()
+	if tokens.has_next_token() || !token.is(.ident) {
+		return none
+	}
+	keyword := keyword_from_string(token.token().ident()) or { return none }
+	if keyword in [.initial, .inherit, .unset, .revert, .revert_layer] {
+		return keyword
+	}
+	return none
+}
+
+fn style_query_computation_context(element dom.AbstractElement) ComputationContext {
+	style_computer := css_style_computer_for(element.document())
+	if dom_computed := element.computed_properties() {
+		if computed := computed_properties_from_dom(dom_computed) {
+			return style_computer.get_computation_context_for_property(.color, computed,
+				element)
+		}
+	}
+	if parent := element.element_to_inherit_style_from() {
+		if dom_computed := parent.computed_properties() {
+			if computed := computed_properties_from_dom(dom_computed) {
+				return style_computer.get_computation_context_for_property(.color, computed,
+					element)
+			}
+		}
+	}
+	return ComputationContext{
+		length_resolution_context: LengthResolutionContext.for_element(&element)
+		abstract_element:          element
+	}
+}
+
+fn style_query_color_resolution_context(element dom.AbstractElement, computation_context ComputationContext) ColorResolutionContext {
+	if dom_computed := element.computed_properties() {
+		if computed := computed_properties_from_dom(dom_computed) {
+			return color_resolution_context_for_computed_properties(computed,
+				element.document(), CalculationResolutionContext{
+					length_resolution_context: computation_context.length_resolution_context
+					abstract_element:          element
+				})
+		}
+	}
+	if parent := element.element_to_inherit_style_from() {
+		if dom_computed := parent.computed_properties() {
+			if computed := computed_properties_from_dom(dom_computed) {
+				return color_resolution_context_for_computed_properties(computed,
+					element.document(), CalculationResolutionContext{
+						length_resolution_context: computation_context.length_resolution_context
+						abstract_element:          element
+					})
+			}
+		}
+	}
+	return ColorResolutionContext{
+		document:                       element.document()
+		calculation_resolution_context: CalculationResolutionContext{
+			length_resolution_context: computation_context.length_resolution_context
+			abstract_element:          element
+		}
+	}
+}
+
+fn style_query_typed_value(value &dom.StyleValue) StyleValue {
+	return typed_style_value_logic_from_dom(value) or {
+		typed_style_value_logic_from_dom(parse_custom_property_value(value.css_text)) or {
+			StyleValue(GuaranteedInvalidStyleValue.create())
+		}
+	}
+}
+
+fn style_query_registration_syntax(registration dom.CustomPropertyRegistration) ?SyntaxNode {
+	return parse_as_syntax_with_ident_limit(
+		parse_component_values_for_value_logic(registration.syntax), .yes)
+}
+
+fn style_query_comparable_custom_property_value(value &dom.StyleValue, registration ?dom.CustomPropertyRegistration, computation_context ComputationContext) StyleValue {
+	mut typed := style_query_typed_value(value)
+	if registered := registration {
+		syntax := style_query_registration_syntax(registered) or { return typed }
+		if syntax.type() != .universal && typed is UnresolvedStyleValue {
+			typed = parse_with_a_syntax(typed.tokenize(), syntax)
+		}
+		if typed !is GuaranteedInvalidStyleValue && syntax.type() != .universal {
+			typed = typed.absolutized(computation_context)
+		}
+	}
+	return typed
+}
+
+fn style_query_initial_custom_property_value(document &dom.Document, property_name string, registration ?dom.CustomPropertyRegistration, computation_context ComputationContext) StyleValue {
+	initial_text := document.custom_property_initial_value(property_name) or {
+		return StyleValue(GuaranteedInvalidStyleValue.create())
+	}
+	initial_dom_value := parse_custom_property_value(initial_text)
+	return style_query_comparable_custom_property_value(initial_dom_value, registration,
+		computation_context)
+}
+
+fn style_query_inherited_custom_property_value(element dom.AbstractElement, property_name string, registration ?dom.CustomPropertyRegistration, computation_context ComputationContext, mut guarded_contexts GuardedSubstitutionContexts) StyleValue {
+	if parent := element.element_to_inherit_style_from() {
+		value := compute_value_of_custom_property_with_guarded_contexts(parent, property_name,
+			mut guarded_contexts)
+		return style_query_comparable_custom_property_value(value, registration,
+			computation_context)
+	}
+	return style_query_initial_custom_property_value(element.document(), property_name,
+		registration, computation_context)
+}
+
+fn style_query_values_are_equal(left StyleValue, right StyleValue, computation_context ComputationContext, color_resolution_context ColorResolutionContext) bool {
+	left_is_invalid := left is GuaranteedInvalidStyleValue
+	right_is_invalid := right is GuaranteedInvalidStyleValue
+	if left_is_invalid || right_is_invalid {
+		return left_is_invalid && right_is_invalid
+	}
+
+	left_absolutized := left.absolutized(computation_context)
+	right_absolutized := right.absolutized(computation_context)
+	left_color := left_absolutized.to_color(color_resolution_context)
+	right_color := right_absolutized.to_color(color_resolution_context)
+	if left_color != none || right_color != none {
+		return left_color == right_color
+	}
+	return left_absolutized.equals(right_absolutized)
+}
+
+fn evaluate_style_feature_with_guarded_contexts(property PropertyNameAndID, has_value bool, query_value []ComponentValue, context BooleanExpressionEvaluationContext, mut guarded_contexts GuardedSubstitutionContexts) MatchResult {
+	element := context.style_query_element or { return .unknown }
+	if !property.is_custom_property() {
+		// if() is evaluated before the element's own non-custom computed values exist.
+		return .false_
+	}
+
+	property_name := property.name()
+	if guarded_contexts.mark_existing_as_cyclic(SubstitutionContext{
+		dependency_type: .property
+		first:           property_name
+	}) {
+		return .false_
+	}
+
+	mut query_css_wide_keyword := ?Keyword(none)
+	if has_value {
+		if contains_guaranteed_invalid_value(query_value) {
+			return .false_
+		}
+		if keyword := single_style_query_css_wide_keyword(query_value) {
+			if keyword in [.revert, .revert_layer] {
+				return .false_
+			}
+			query_css_wide_keyword = keyword
+		}
+	}
+
+	document := context.document or { element.document() }
+	computed_dom_value := compute_value_of_custom_property_with_guarded_contexts(element,
+		property_name, mut guarded_contexts)
+	computed_tokens := style_query_typed_value(computed_dom_value).tokenize()
+	if context.did_evaluate_attr_tainted_style_query != none {
+		taint_flag := context.did_evaluate_attr_tainted_style_query or { return .false_ }
+		if contains_attr_tainted_value(computed_tokens) {
+			unsafe {
+				*taint_flag = true
+			}
+		}
+	}
+	registration := document.get_registered_custom_property(property_name)
+	computation_context := style_query_computation_context(element)
+	color_resolution_context := style_query_color_resolution_context(element,
+		computation_context)
+	computed_value := style_query_comparable_custom_property_value(computed_dom_value,
+		registration, computation_context)
+
+	if !has_value {
+		initial_value := style_query_initial_custom_property_value(document, property_name,
+			registration, computation_context)
+		return as_match_result(!style_query_values_are_equal(computed_value, initial_value,
+			computation_context, color_resolution_context))
+	}
+
+	if keyword := query_css_wide_keyword {
+		expected_value := match keyword {
+			.initial {
+				style_query_initial_custom_property_value(document, property_name, registration,
+					computation_context)
+			}
+			.inherit {
+				style_query_inherited_custom_property_value(element, property_name, registration,
+					computation_context, mut guarded_contexts)
+			}
+			.unset {
+				if registered := registration {
+					if registered.inherits {
+						style_query_inherited_custom_property_value(element, property_name,
+							registration, computation_context, mut guarded_contexts)
+					} else {
+						style_query_initial_custom_property_value(document, property_name,
+							registration, computation_context)
+					}
+				} else {
+					style_query_inherited_custom_property_value(element, property_name,
+						registration, computation_context, mut guarded_contexts)
+				}
+			}
+			else { return .false_ }
+		}
+		return as_match_result(style_query_values_are_equal(computed_value, expected_value,
+			computation_context, color_resolution_context))
+	}
+
+	if computed_value is GuaranteedInvalidStyleValue {
+		return .false_
+	}
+	if registered := registration {
+		syntax := style_query_registration_syntax(registered) or { return .false_ }
+		mut parsed_query_value := parse_with_a_syntax(query_value, syntax)
+		if parsed_query_value is GuaranteedInvalidStyleValue {
+			return .false_
+		}
+		if syntax.type() != .universal {
+			parsed_query_value = parsed_query_value.absolutized(computation_context)
+		}
+		return as_match_result(style_query_values_are_equal(computed_value,
+			parsed_query_value, computation_context, color_resolution_context))
+	}
+
+	computed_value_string := serialize_a_series_of_component_values(computed_tokens).trim_space()
+	query_value_string := serialize_a_series_of_component_values(query_value).trim_space()
+	return as_match_result(computed_value_string == query_value_string)
+}
+
+// https://drafts.csswg.org/css-conditional-5/#style-container
+fn evaluate_style_feature(property PropertyNameAndID, has_value bool, query_value []ComponentValue, context BooleanExpressionEvaluationContext) MatchResult {
+	if mut guarded_contexts := context.guarded_contexts {
+		return evaluate_style_feature_with_guarded_contexts(property, has_value, query_value,
+			context, mut guarded_contexts)
+	}
+	mut guarded_contexts := GuardedSubstitutionContexts{}
+	return evaluate_style_feature_with_guarded_contexts(property, has_value, query_value,
+		context, mut guarded_contexts)
+}
+
 fn (mut parser Parser) parse_container_query_feature(mut tokens SupportsTokenStream) ?&BooleanExpression {
 	mut transaction := tokens
 	transaction.discard_whitespace()

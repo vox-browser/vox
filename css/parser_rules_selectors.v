@@ -3720,6 +3720,18 @@ pub fn (mut contexts GuardedSubstitutionContexts) unguard(context SubstitutionCo
 	}
 }
 
+fn (mut contexts GuardedSubstitutionContexts) mark_existing_as_cyclic(context SubstitutionContext) bool {
+	for mut existing_context in contexts.contexts {
+		if existing_context.dependency_type == context.dependency_type
+			&& existing_context.first == context.first
+			&& option_string_equal(existing_context.second, context.second) {
+			existing_context.is_cyclic = true
+			return true
+		}
+	}
+	return false
+}
+
 fn (contexts GuardedSubstitutionContexts) is_marked_cyclic(context SubstitutionContext) bool {
 	for existing_context in contexts.contexts {
 		if existing_context.dependency_type == context.dependency_type

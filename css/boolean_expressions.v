@@ -62,8 +62,11 @@ pub fn negate_match_result(value MatchResult) MatchResult {
 
 pub struct BooleanExpressionEvaluationContext {
 pub:
-	document        ?&dom.Document
-	query_container ?&dom.Element
+	document                              ?&dom.Document
+	query_container                       ?&dom.Element
+	style_query_element                   ?dom.AbstractElement
+	guarded_contexts                      ?&GuardedSubstitutionContexts
+	did_evaluate_attr_tainted_style_query ?&bool
 }
 
 pub struct ContainerQueryFeatureRequirements {
@@ -126,6 +129,9 @@ pub mut:
 	media_feature_comparison       ?MediaFeatureComparison
 	media_feature_right_comparison ?MediaFeatureComparison
 	media_feature_right_value      ?MediaFeatureValueLocal
+	style_feature_property         ?PropertyNameAndID
+	style_feature_has_value        bool
+	style_feature_value            []ComponentValue
 }
 
 pub fn BooleanExpression.create_general_enclosed(serialized_contents string, matches MatchResult) &BooleanExpression {
@@ -161,6 +167,23 @@ fn BooleanExpression.create_size_feature(serialized_contents string, feature_nam
 		media_feature_comparison:       comparison
 		media_feature_right_comparison: right_comparison
 		media_feature_right_value:      right_value
+	}
+}
+
+fn BooleanExpression.create_style_feature(property PropertyNameAndID, value ?[]ComponentValue) &BooleanExpression {
+	if feature_value := value {
+		return &BooleanExpression{
+			kind:                    .general_enclosed
+			text:                    '${property.name()}: ${serialize_a_series_of_component_values(feature_value)}'
+			style_feature_property:  property
+			style_feature_has_value: true
+			style_feature_value:     feature_value
+		}
+	}
+	return &BooleanExpression{
+		kind:                   .general_enclosed
+		text:                   property.name()
+		style_feature_property: property
 	}
 }
 
@@ -263,6 +286,10 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 	match expression.kind {
 		.general_enclosed, .constant, .supports_declaration, .supports_selector,
 		.supports_font_tech, .supports_font_format, .supports_env, .supports_at_rule {
+			if property := expression.style_feature_property {
+				return evaluate_style_feature(property, expression.style_feature_has_value,
+					expression.style_feature_value, context)
+			}
 			if expression.kind == .general_enclosed && expression.size_feature_name.len > 0 {
 				return evaluate_size_feature(expression.size_feature_name,
 					expression.media_feature_kind, expression.media_feature_value,
@@ -335,7 +362,9 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 pub fn (expression &BooleanExpression) collect_container_query_feature_requirements(mut requirements ContainerQueryFeatureRequirements) {
 	match expression.kind {
 		.general_enclosed {
-			if expression.size_feature_name.len > 0 {
+			if _ := expression.style_feature_property {
+				requirements.requires_style_container = true
+			} else if expression.size_feature_name.len > 0 {
 				collect_size_feature_requirements(expression.size_feature_name, mut requirements)
 			} else {
 				requirements.has_unknown_or_unsupported_feature = true
