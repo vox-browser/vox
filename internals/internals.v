@@ -463,6 +463,57 @@ pub fn (mut api Internals) expire_cookies_with_time_offset(seconds i64) {
 	api.platform.cookie_expiry_offset = seconds
 }
 
+pub fn (mut api Internals) delete_all_cookies() &dom.Promise {
+	api.platform.cookies.clear()
+	return dom.Promise.resolved(dom.js_undefined())
+}
+
+fn cookie_domain_matches(cookie PlatformCookie, url dom.URL) bool {
+	host := url.serialized_host().trim_right('.').to_lower()
+	mut domain := cookie.domain.trim_left('.').trim_right('.').to_lower()
+	if domain == '' {
+		domain = cookie.url.serialized_host().trim_right('.').to_lower()
+	}
+	if host == '' || domain == '' {
+		return cookie.url.serialize() == url.serialize()
+	}
+	if cookie.host_only {
+		return host == domain
+	}
+	return host == domain || host.ends_with('.${domain}')
+}
+
+fn cookie_path_matches(cookie_path string, request_path string) bool {
+	path := if cookie_path.starts_with('/') { cookie_path } else { '/' }
+	if request_path == path {
+		return true
+	}
+	if !request_path.starts_with(path) {
+		return false
+	}
+	return path.ends_with('/') || (request_path.len > path.len && request_path[path.len] == `/`)
+}
+
+pub fn (api &Internals) has_cookie_for_url(url string, name string, value string) !bool {
+	parsed := parse_absolute_url(url) or { return error('Invalid URL: ${url}') }
+	for cookie in api.platform.cookies {
+		if cookie.name != name || cookie.value != value {
+			continue
+		}
+		if cookie.secure && parsed.scheme() != 'https' {
+			continue
+		}
+		if !cookie_domain_matches(cookie, parsed) {
+			continue
+		}
+		if !cookie_path_matches(cookie.path, parsed.serialize_path()) {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
 pub fn (mut api Internals) set_http_memory_cache_enabled(enabled bool) bool {
 	previous := api.platform.http_memory_cache_enabled
 	api.platform.http_memory_cache_enabled = enabled

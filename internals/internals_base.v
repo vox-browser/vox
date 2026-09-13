@@ -46,6 +46,19 @@ pub:
 	data      string
 }
 
+// Cookie storage is owned by PageClient upstream. Keep its observable test
+// representation at the translated embedder boundary as well.
+pub struct PlatformCookie {
+pub:
+	url       dom.URL
+	name      string
+	value     string
+	domain    string
+	path      string = '/'
+	secure    bool
+	host_only bool = true
+}
+
 pub struct InputAction {
 pub:
 	kind        InputActionKind
@@ -98,6 +111,7 @@ pub mut:
 	ref_metadata_json         string
 	test_variants_json        string
 	cookie_expiry_offset      i64
+	cookies                   []PlatformCookie
 	http_memory_cache_enabled bool = true
 	browser_zoom              f64  = 1.0
 	device_pixel_ratio        f64  = 1.0

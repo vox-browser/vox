@@ -92,6 +92,22 @@ fn test_metadata_settings_and_platform_facade() {
 	assert !platform.http_memory_cache_enabled
 	api.expire_cookies_with_time_offset(60)
 	assert platform.cookie_expiry_offset == 60
+	platform.cookies << PlatformCookie{
+		url: dom.URL{'https://example.test/account'}
+		name: 'session'
+		value: 'abc'
+		path: '/account'
+		secure: true
+	}
+	assert api.has_cookie_for_url('https://example.test/account/settings', 'session', 'abc')!
+	assert !api.has_cookie_for_url('http://example.test/account/settings', 'session', 'abc')!
+	assert !api.has_cookie_for_url('https://sub.example.test/account/settings', 'session', 'abc')!
+	promise := api.delete_all_cookies()
+	assert promise.state() == .fulfilled
+	assert platform.cookies.len == 0
+	if _ := api.has_cookie_for_url('relative/path', 'session', 'abc') {
+		assert false
+	}
 	api.spoof_current_url('https://example.test/a')!
 	api.set_environments_top_level_url('https://example.test/')!
 	assert platform.current_url.ends_with('/a')
