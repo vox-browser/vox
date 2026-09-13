@@ -479,6 +479,16 @@ fn test_parser_creation_with_uncertain_encoding_decodes_sniffed_bytes() {
 	assert doc.body()?.as_node().descendant_text_content() == '€'
 }
 
+fn test_run_until_completion_processes_eof_and_finishes_the_document() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut parser := HTMLParser.create(doc, '<title>Complete</title><main>done</main>')
+	parser.run_until_completion()
+	assert parser.stopped()
+	assert doc.ready_state() == 'complete'
+	assert doc.title() == 'Complete'
+	assert doc.body()?.as_node().descendant_text_content() == 'done'
+}
+
 fn test_option_pop_updates_selectedcontent_after_buffered_text_flush() {
 	mut doc := parse('<select><button><selectedcontent></selectedcontent></button><option selected><b>Chosen</b></option></select>')
 	selectedcontent := doc.get_elements_by_tag_name('selectedcontent').item(0) or {

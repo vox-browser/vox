@@ -337,6 +337,13 @@ pub fn (mut p HTMLParser) run() {
 	p.run_with_stop_at_insertion_point(.no)
 }
 
+// HTMLParser::run_until_completion(). The V parser performs the upstream
+// post-parse action when the run loop consumes EOF, so this entry point shares
+// that loop while making the completion intent explicit for streaming users.
+pub fn (mut p HTMLParser) run_until_completion() {
+	p.run_with_stop_at_insertion_point(.no)
+}
+
 pub fn (mut p HTMLParser) run_until_insertion_point() {
 	p.run_with_stop_at_insertion_point(.yes)
 }
