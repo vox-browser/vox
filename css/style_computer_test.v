@@ -1,6 +1,7 @@
 module css
 
 import dom
+import svg
 
 struct CSSAnimationEventObservation {
 mut:
@@ -1821,6 +1822,47 @@ fn test_svg_presentational_hint_with_undefined_var_uses_initial_value() {
 	values := resolve_computed_values_for_document(computed, doc)
 
 	assert values.stop_color() == InitialValues.stop_color()
+}
+
+fn test_svg_style_element_disabled_controls_its_sheet() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	mut svg_root := document.create_element_ns('http://www.w3.org/2000/svg', 'svg') or {
+		panic('${err}')
+	}
+	mut style_element := document.create_element_ns('http://www.w3.org/2000/svg', 'style') or {
+		panic('${err}')
+	}
+	mut target := document.create_element_ns('http://www.w3.org/2000/svg', 'rect') or {
+		panic('${err}')
+	}
+	mut style_node := style_element.as_node()
+	style_node.append_child(document.create_text_node('rect { fill: green; }').as_node()) or {
+		panic('${err}')
+	}
+	mut root_node := svg_root.as_node()
+	root_node.append_child(style_element.as_node()) or { panic('${err}') }
+	root_node.append_child(target.as_node()) or { panic('${err}') }
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(svg_root.as_node()) or { panic('${err}') }
+	style := unsafe { &dom.SVGStyleElement(style_element) }
+
+	computer := css_style_computer_for(document)
+	sync_document_style_elements(document)
+	initial_style := computer.compute_style(dom.AbstractElement.new(target, none))
+	initial_fill := initial_style.property(.fill, .yes) or { panic('missing initial fill') }
+	assert parse_color_string(initial_fill.css_text)?.serialize() == 'rgb(0 128 0)'
+	assert !svg.svg_style_element_disabled(style)
+	svg.set_svg_style_element_disabled(style, true)
+	assert svg.svg_style_element_disabled(style)
+	sync_document_style_elements(document)
+	disabled_style := computer.compute_style(dom.AbstractElement.new(target, none))
+	disabled_fill := disabled_style.property(.fill, .yes) or { panic('missing disabled fill') }
+	assert parse_color_string(disabled_fill.css_text)?.serialize() == 'rgb(0 0 0)'
+	svg.set_svg_style_element_disabled(style, false)
+	sync_document_style_elements(document)
+	enabled_style := computer.compute_style(dom.AbstractElement.new(target, none))
+	enabled_fill := enabled_style.property(.fill, .yes) or { panic('missing enabled fill') }
+	assert parse_color_string(enabled_fill.css_text)?.serialize() == 'rgb(0 128 0)'
 }
 
 fn test_dir_pseudo_class_ua_direction_and_inheritance() {

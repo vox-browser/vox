@@ -549,8 +549,7 @@ pub fn sync_document_style_elements(document &dom.Document) {
 			if type_.len > 0 && type_ != 'text/css' {
 				continue
 			}
-			active, selected_title := document_style_sheet_is_active(element.get_attribute_value('title'),
-				false, false, preferred_title)
+			active, selected_title := document_style_sheet_is_active(element.get_attribute_value('title'), false, element.style_element_disabled(), preferred_title)
 			preferred_title = selected_title
 			if !active {
 				continue

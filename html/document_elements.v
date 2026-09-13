@@ -588,6 +588,8 @@ pub fn html_style_element_disabled(style &dom.HTMLStyleElement) bool {
 }
 
 pub fn set_html_style_element_disabled(style &dom.HTMLStyleElement, disabled bool) {
+	mut element := unsafe { &dom.Element(style) }
+	element.set_style_element_disabled(disabled)
 	mut sheet := html_style_element_base(style).sheet() or { return }
 	sheet.disabled = disabled
 }

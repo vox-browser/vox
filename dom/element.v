@@ -1478,8 +1478,8 @@ pub mut:
 	custom_state_set_             ?&CustomStateSet
 	popover_target_element_       ?&Element
 
-	registered_intersection_observers []voidptr
-	computed_style_map_cache_         ?&StylePropertyMapReadOnly_
+	registered_intersection_observers         []voidptr
+	computed_style_map_cache_                 ?&StylePropertyMapReadOnly_
 	removed_attributes_for_style_invalidation []string
 
 	scroll_offset_ CSSPixelPoint_
@@ -1528,6 +1528,7 @@ pub mut:
 	proximity_to_the_viewport_                  ProximityToTheViewport = .not_determined
 	captured_in_a_view_transition               bool
 	is_contained_in_list_subtree                bool
+	style_element_disabled_                     bool
 
 	element_specific_css_random_base_value_cache map[string]f64
 
@@ -5799,6 +5800,22 @@ pub fn (e &Element) is_focusable() bool {
 // --- Tokenization flag ---
 pub fn (mut e Element) set_had_duplicate_attribute_during_tokenization() {
 	e.had_duplicate_attribute_during_tokenization = true
+}
+
+// HTMLStyleElement and SVGStyleElement share this non-reflected state. The
+// concrete bindings live in their owning modules, while the stylesheet bridge
+// reads it here without depending on either module.
+pub fn (e &Element) style_element_disabled() bool {
+	return e.local_name() == 'style' && e.style_element_disabled_
+}
+
+pub fn (mut e Element) set_style_element_disabled(disabled bool) {
+	if e.local_name() != 'style' || e.style_element_disabled_ == disabled {
+		return
+	}
+	e.style_element_disabled_ = disabled
+	mut document := unsafe { &Document(e.document()) }
+	document.set_needs_full_style_update(true)
 }
 
 // --- Style tracking ---
