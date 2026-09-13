@@ -20,6 +20,60 @@ pub:
 	primary_key Key
 }
 
+struct RecordRange {
+	start int
+	end   int
+}
+
+fn first_record_index_with_key_at_or_after[T](records []T, key Key, open bool) int {
+	mut low := 0
+	mut high := records.len
+	for low < high {
+		middle := low + (high - low) / 2
+		comparison := compare_two_keys(records[middle].key, key) or {
+			panic('invalid key in sorted IndexedDB records')
+		}
+		if comparison < 0 || (comparison == 0 && open) {
+			low = middle + 1
+		} else {
+			high = middle
+		}
+	}
+	return low
+}
+
+fn first_record_index_with_key_after[T](records []T, key Key, open bool, start int) int {
+	mut low := start
+	mut high := records.len
+	for low < high {
+		middle := low + (high - low) / 2
+		comparison := compare_two_keys(records[middle].key, key) or {
+			panic('invalid key in sorted IndexedDB records')
+		}
+		if comparison < 0 || (comparison == 0 && !open) {
+			low = middle + 1
+		} else {
+			high = middle
+		}
+	}
+	return low
+}
+
+fn record_range_for_key_range[T](records []T, range IDBKeyRange) RecordRange {
+	mut start := 0
+	mut end := records.len
+	if lower := range.lower {
+		start = first_record_index_with_key_at_or_after(records, lower, range.lower_open)
+	}
+	if upper := range.upper {
+		end = first_record_index_with_key_after(records, upper, range.upper_open, start)
+	}
+	return RecordRange{
+		start: start
+		end: end
+	}
+}
+
 pub struct IDBRecord {
 pub:
 	key         Key

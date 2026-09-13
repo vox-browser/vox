@@ -193,41 +193,16 @@ pub fn (mut store ObjectStoreData) remove_records_in_range(range IDBKeyRange) []
 	if store.records.len == 0 {
 		return []ObjectStoreRecord{}
 	}
-	mut first := 0
-	if lower := range.lower {
-		mut high := store.records.len
-		for first < high {
-			middle := first + (high - first) / 2
-			comparison := compare_two_keys(store.records[middle].key, lower) or { break }
-			if comparison < 0 || (comparison == 0 && range.lower_open) {
-				first = middle + 1
-			} else {
-				high = middle
-			}
-		}
-	}
-	mut end := store.records.len
-	if upper := range.upper {
-		mut low := first
-		for low < end {
-			middle := low + (end - low) / 2
-			comparison := compare_two_keys(store.records[middle].key, upper) or { break }
-			if comparison < 0 || (comparison == 0 && !range.upper_open) {
-				low = middle + 1
-			} else {
-				end = middle
-			}
-		}
-	}
+	record_range := record_range_for_key_range(store.records, range)
 	mut removed := []ObjectStoreRecord{}
-	for i := first; i < end; i++ {
+	for i := record_range.start; i < record_range.end; i++ {
 		removed << store.records[i]
 	}
 	if removed.len > 0 {
 		if mut log := store.mutation_log_ {
 			log.note_records_deleted(removed)
 		}
-		store.records.delete_many(first, end - first)
+		store.records.delete_many(record_range.start, record_range.end - record_range.start)
 	}
 	return removed
 }
@@ -250,33 +225,24 @@ pub fn (mut store ObjectStoreData) store_a_record(record ObjectStoreRecord) ! {
 	if mut log := store.mutation_log_ {
 		log.note_record_stored(record.key)
 	}
-	mut low := 0
-	mut high := store.records.len
-	for low < high {
-		middle := low + (high - low) / 2
-		if (compare_two_keys(store.records[middle].key, record.key) or { 0 }) < 0 {
-			low = middle + 1
-		} else {
-			high = middle
-		}
-	}
-	store.records.insert(low, ObjectStoreRecord{
+	position := first_record_index_with_key_at_or_after(store.records, record.key, false)
+	store.records.insert(position, ObjectStoreRecord{
 		key: record.key
 		value: record.value
 	})
 }
 
 pub fn (store &ObjectStoreData) count_records_in_range(range IDBKeyRange) u64 {
-	return u64(store.records.count(range.includes(it.key) or { false }))
+	record_range := record_range_for_key_range(store.records, range)
+	return u64(record_range.end - record_range.start)
 }
 
 pub fn (store &ObjectStoreData) first_in_range(range IDBKeyRange) ?ObjectStoreRecord {
-	for record in store.records {
-		if range.includes(record.key) or { false } {
-			return record
-		}
+	record_range := record_range_for_key_range(store.records, range)
+	if record_range.start == record_range.end {
+		return none
 	}
-	return none
+	return store.records[record_range.start]
 }
 
 pub fn (mut store ObjectStoreData) clear_records() {
@@ -309,12 +275,11 @@ pub fn (store &ObjectStoreData) first_n_in_range(range IDBKeyRange, count ?u32) 
 	requested := int(count or { u32(store.records.len) })
 	limit := if requested == 0 { store.records.len } else { requested }
 	mut result := []ObjectStoreRecord{}
-	for record in store.records {
-		if range.includes(record.key) or { false } {
-			result << record
-			if result.len == limit {
-				break
-			}
+	record_range := record_range_for_key_range(store.records, range)
+	for i := record_range.start; i < record_range.end; i++ {
+		result << store.records[i]
+		if result.len == limit {
+			break
 		}
 	}
 	return result
@@ -324,11 +289,9 @@ pub fn (store &ObjectStoreData) last_n_in_range(range IDBKeyRange, count ?u32) [
 	requested := int(count or { u32(store.records.len) })
 	limit := if requested == 0 { store.records.len } else { requested }
 	mut result := []ObjectStoreRecord{}
-	for i := store.records.len - 1; i >= 0 && result.len < limit; i-- {
-		record := store.records[i]
-		if range.includes(record.key) or { false } {
-			result << record
-		}
+	record_range := record_range_for_key_range(store.records, range)
+	for i := record_range.end - 1; i >= record_range.start && result.len < limit; i-- {
+		result << store.records[i]
 	}
 	return result
 }
@@ -422,24 +385,22 @@ pub fn (mut index IndexData) clear_records() {
 }
 
 pub fn (index &IndexData) first_in_range(range IDBKeyRange) ?IndexRecord {
-	for record in index.records {
-		if range.includes(record.key) or { false } {
-			return record
-		}
+	record_range := record_range_for_key_range(index.records, range)
+	if record_range.start == record_range.end {
+		return none
 	}
-	return none
+	return index.records[record_range.start]
 }
 
 pub fn (index &IndexData) first_n_in_range(range IDBKeyRange, count ?u32) []IndexRecord {
 	requested := int(count or { u32(index.records.len) })
 	limit := if requested == 0 { index.records.len } else { requested }
 	mut result := []IndexRecord{}
-	for record in index.records {
-		if range.includes(record.key) or { false } {
-			result << record
-			if result.len == limit {
-				break
-			}
+	record_range := record_range_for_key_range(index.records, range)
+	for i := record_range.start; i < record_range.end; i++ {
+		result << index.records[i]
+		if result.len == limit {
+			break
 		}
 	}
 	return result
@@ -449,14 +410,16 @@ pub fn (index &IndexData) last_n_in_range(range IDBKeyRange, count ?u32) []Index
 	requested := int(count or { u32(index.records.len) })
 	limit := if requested == 0 { index.records.len } else { requested }
 	mut result := []IndexRecord{}
-	for i := index.records.len - 1; i >= 0 && result.len < limit; i-- {
-		if range.includes(index.records[i].key) or { false } { result << index.records[i] }
+	record_range := record_range_for_key_range(index.records, range)
+	for i := record_range.end - 1; i >= record_range.start && result.len < limit; i-- {
+		result << index.records[i]
 	}
 	return result
 }
 
 pub fn (index &IndexData) count_records_in_range(range IDBKeyRange) u64 {
-	return u64(index.records.count(range.includes(it.key) or { false }))
+	record_range := record_range_for_key_range(index.records, range)
+	return u64(record_range.end - record_range.start)
 }
 
 pub fn (mut index IndexData) store_a_record(record IndexRecord) ! {
