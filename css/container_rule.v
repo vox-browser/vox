@@ -40,7 +40,7 @@ struct StyleRangeComparableValue {
 
 fn (value StyleRangeValue) to_string() string {
 	if value.is_property {
-		return (value.property or { return '' }).name()
+		return serialize_an_identifier((value.property or { return '' }).name())
 	}
 	return serialize_a_series_of_component_values(value.value)
 }
@@ -132,8 +132,9 @@ pub fn (query &ContainerQuery) evaluate(element dom.AbstractElement, container_n
 				mutable_container.set_is_size_query_container()
 			}
 			return query.condition.evaluate(BooleanExpressionEvaluationContext{
-				document: element.document()
-				query_container: container
+				document:            element.document()
+				query_container:     container
+				style_query_element: dom.AbstractElement.new(container, none)
 			})
 		}
 		candidate = container.as_node().flat_tree_parent_element()
@@ -850,20 +851,35 @@ fn (mut parser Parser) parse_container_query_feature(mut tokens SupportsTokenStr
 	mut transaction := tokens
 	transaction.discard_whitespace()
 	first_token := transaction.next_token() or { return none }
-	if !(first_token.is_block() && first_token.block().is_paren()) {
-		return none
-	}
-	transaction.discard_a_token()
 
-	mut inner_tokens := SupportsTokenStream.from_values(first_token.block().value)
-	feature := parser.parse_size_feature(mut inner_tokens) or { return none }
-	inner_tokens.discard_whitespace()
-	if inner_tokens.has_next_token() {
-		return none
+	// `style( <style-query> )`
+	if first_token.is_function() && first_token.function().name.to_lower() == 'style' {
+		function := first_token.function()
+		transaction.discard_a_token()
+		mut inner_tokens := SupportsTokenStream.from_values(function.value)
+		style_query := parser.parse_style_query(mut inner_tokens, .unknown) or { return none }
+		inner_tokens.discard_whitespace()
+		if inner_tokens.has_next_token() {
+			return none
+		}
+		tokens = transaction
+		return BooleanExpression.create_style_query_function(style_query)
 	}
 
-	tokens = transaction
-	return feature
+	if first_token.is_block() && first_token.block().is_paren() {
+		transaction.discard_a_token()
+
+		mut inner_tokens := SupportsTokenStream.from_values(first_token.block().value)
+		feature := parser.parse_size_feature(mut inner_tokens) or { return none }
+		inner_tokens.discard_whitespace()
+		if inner_tokens.has_next_token() {
+			return none
+		}
+
+		tokens = transaction
+		return feature
+	}
+	return none
 }
 
 fn size_feature_is_known(name string) bool {

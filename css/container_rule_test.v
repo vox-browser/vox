@@ -259,6 +259,41 @@ fn test_size_container_features_parse_serialize_and_collect_axis_requirements() 
 	assert range.to_string() == '(100px < width <= 400px)'
 }
 
+fn test_style_container_features_parse_serialize_and_collect_requirements() {
+	plain := parsed_single_container_query('style(--theme: dark)')
+	assert plain.to_string() == 'style(--theme: dark)'
+	assert plain.contains_style_feature()
+	assert !plain.contains_size_feature()
+	assert !plain.feature_requirements.has_unknown_or_unsupported_feature
+
+	logical := parsed_single_container_query('style(--theme: dark) and style(3 < --level <= 5)')
+	assert logical.to_string() == 'style(--theme: dark) and style(3 < --level <= 5)'
+	assert logical.contains_style_feature()
+	assert !logical.feature_requirements.has_unknown_or_unsupported_feature
+
+	unknown := parsed_single_container_query('style(future-style-feature)')
+	assert unknown.to_string() == 'style(future-style-feature)'
+	assert unknown.feature_requirements.has_unknown_or_unsupported_feature
+
+	escaped_plain := parsed_single_container_query(r'style(--\{foo: bar)')
+	assert escaped_plain.to_string() == r'style(--\{foo: bar)'
+	escaped_range := parsed_single_container_query(r'style(100px > --\{foo > 10px)')
+	assert escaped_range.to_string() == r'style(100px > --\{foo > 10px)'
+}
+
+fn test_style_container_features_evaluate_selected_ancestor_style() {
+	_, _, subject := size_query_test_tree('--theme: dark; --level: 5', 0, 0, false)
+	abstract_subject := dom.AbstractElement.new(subject, none)
+	assert parsed_single_container_query('style(--theme: dark)').evaluate(abstract_subject,
+		none) == .true_
+	assert parsed_single_container_query('style(--theme: light)').evaluate(abstract_subject,
+		none) == .false_
+	assert parsed_single_container_query('style(3 < --level <= 5)').evaluate(abstract_subject,
+		none) == .true_
+	assert parsed_single_container_query('style(--level > 5)').evaluate(abstract_subject,
+		none) == .false_
+}
+
 fn test_size_container_features_select_eligible_ancestors_and_evaluate_geometry() {
 	_, container, subject := size_query_test_tree('container-type: size; font-size: 16px', 320,
 		180, true)

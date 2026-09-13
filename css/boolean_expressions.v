@@ -113,6 +113,7 @@ pub enum BooleanExpressionKind {
 	supports_font_format
 	supports_env
 	supports_at_rule
+	style_query_function
 }
 
 @[heap]
@@ -181,7 +182,7 @@ fn BooleanExpression.create_style_feature(property PropertyNameAndID, value ?[]C
 	if feature_value := value {
 		return &BooleanExpression{
 			kind:                    .general_enclosed
-			text:                    '${property.name()}: ${serialize_a_series_of_component_values(feature_value)}'
+			text:                    '${serialize_an_identifier(property.name())}: ${serialize_a_series_of_component_values(feature_value)}'
 			style_feature_property:  property
 			style_feature_has_value: true
 			style_feature_value:     feature_value
@@ -189,7 +190,7 @@ fn BooleanExpression.create_style_feature(property PropertyNameAndID, value ?[]C
 	}
 	return &BooleanExpression{
 		kind:                   .general_enclosed
-		text:                   property.name()
+		text:                   serialize_an_identifier(property.name())
 		style_feature_property: property
 	}
 }
@@ -230,6 +231,13 @@ pub fn BooleanExpression.create_in_parens(child &BooleanExpression) &BooleanExpr
 	return &BooleanExpression{
 		kind:     .in_parens
 		children: [child]
+	}
+}
+
+fn BooleanExpression.create_style_query_function(query &BooleanExpression) &BooleanExpression {
+	return &BooleanExpression{
+		kind:     .style_query_function
+		children: [query]
 	}
 }
 
@@ -391,6 +399,12 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 			}
 			return .unknown
 		}
+		.style_query_function {
+			if expression.children.len == 0 {
+				return .unknown
+			}
+			return expression.children[0].evaluate(context)
+		}
 	}
 }
 
@@ -407,7 +421,7 @@ pub fn (expression &BooleanExpression) collect_container_query_feature_requireme
 				requirements.has_unknown_or_unsupported_feature = true
 			}
 		}
-		.not, .in_parens, .and, .or {
+		.not, .in_parens, .and, .or, .style_query_function {
 			for child in expression.children {
 				child.collect_container_query_feature_requirements(mut requirements)
 			}
@@ -440,6 +454,13 @@ pub fn (expression &BooleanExpression) to_string() string {
 		}
 		.or {
 			boolean_expression_children_to_string(expression.children, ' or ')
+		}
+		.style_query_function {
+			if expression.children.len == 0 {
+				'style()'
+			} else {
+				'style(${expression.children[0].to_string()})'
+			}
 		}
 		.constant {
 			expression.matches.to_string()
@@ -501,6 +522,12 @@ pub fn (expression &BooleanExpression) dump(indent_levels int) string {
 		}
 		.or {
 			builder.write_string('${indent}OR:\n')
+			for child in expression.children {
+				builder.write_string(child.dump(indent_levels + 1))
+			}
+		}
+		.style_query_function {
+			builder.write_string('${indent}StyleQueryFunction:\n')
 			for child in expression.children {
 				builder.write_string(child.dump(indent_levels + 1))
 			}
