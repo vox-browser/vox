@@ -20,6 +20,12 @@ __global (
 	scripting_fetching_function_lengths []usize
 	scripting_fetching_stale_shared     &SharedFunctionInstanceData
 	scripting_fetching_stale_executable &ScriptExecutable
+	scripting_fetching_track_cache      bool
+	scripting_fetching_cache_events     []string
+	scripting_fetching_cache_blobs      [][]u8
+	scripting_fetching_cache_types      []ScriptProgramType
+	scripting_fetching_cache_urls       []string
+	scripting_fetching_cache_methods    []string
 )
 
 struct ScriptingFetchingFixture {
@@ -84,6 +90,9 @@ fn scripting_fetching_host(request &fetch.Request, is_top_level TopLevelModule) 
 
 fn scripting_fetching_complete(script ?&Script) {
 	scripting_fetching_completed_script = script or { unsafe { &Script(nil) } }
+	if scripting_fetching_track_cache {
+		scripting_fetching_cache_events << 'complete'
+	}
 }
 
 fn scripting_fetching_parser(source string, filename string, line usize) ! {
@@ -123,6 +132,19 @@ fn scripting_fetching_function_compiler(function_ast string, source_length usize
 		stale_shared.executable = scripting_fetching_stale_executable
 	}
 	return &ScriptExecutable{}
+}
+
+fn scripting_fetching_bytecode_cache_compiler(source string, filename string, program_type ScriptProgramType, line_number_offset usize) ![]u8 {
+	scripting_fetching_cache_events << 'compile-cache'
+	scripting_fetching_cache_types << program_type
+	return '${filename}:${line_number_offset}:${source}'.bytes()
+}
+
+fn scripting_fetching_bytecode_cache_store(url dom.URL, method string, _ &http.HeaderList, blob []u8) ! {
+	scripting_fetching_cache_events << 'store-cache'
+	scripting_fetching_cache_urls << url.serialize()
+	scripting_fetching_cache_methods << method
+	scripting_fetching_cache_blobs << blob.clone()
 }
 
 fn scripting_fetching_parsed_callback(parsed ParsedProgram, source string) {
@@ -269,8 +291,16 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	mut settings := fixture.settings
 	settings.set_script_compile_hook(scripting_fetching_compiler)
 	settings.set_script_function_compile_hook(scripting_fetching_function_compiler)
+	settings.set_script_bytecode_cache_compile_hook(scripting_fetching_bytecode_cache_compiler)
+	settings.set_script_bytecode_cache_store_hook(scripting_fetching_bytecode_cache_store)
 	scripting_fetching_function_asts = []
 	scripting_fetching_function_lengths = []
+	scripting_fetching_track_cache = true
+	scripting_fetching_cache_events = []
+	scripting_fetching_cache_blobs = []
+	scripting_fetching_cache_types = []
+	scripting_fetching_cache_urls = []
+	scripting_fetching_cache_methods = []
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	scripting_fetching_request_urls = []
 	options := ScriptFetchOptions{
@@ -284,6 +314,11 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	assert classic.compiled_program?.program_type == .script
 	assert scripting_fetching_function_asts == ['classic-function']
 	assert scripting_fetching_function_lengths == [usize(1)]
+	assert scripting_fetching_cache_events == ['complete', 'compile-cache', 'store-cache']
+	assert scripting_fetching_cache_types == [.script]
+	assert scripting_fetching_cache_urls == ['https://example.test/app/classic.js']
+	assert scripting_fetching_cache_methods == ['GET']
+	assert decode_bytecode_cache_blob(scripting_fetching_cache_blobs[0], .script, 'é')? == 'https://example.test/app/classic.js:1:é'.bytes()
 	assert scripting_fetching_last_destination == .script
 	assert scripting_fetching_last_nonce == 'classic-nonce'
 
@@ -293,6 +328,8 @@ fn test_classic_and_worker_script_fetching_decode_and_validate_responses() {
 	assert broken.compiled_program == none
 	assert broken.parse_error? == 'syntax error'
 	assert broken.error_to_rethrow? == 'syntax error'
+	assert scripting_fetching_cache_events == ['complete', 'compile-cache', 'store-cache', 'complete']
+	scripting_fetching_track_cache = false
 
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	fetch_classic_worker_script(dom.URL{ value: 'https://example.test/app/worker.js' }, fixture.settings, .worker, fixture.settings, none, scripting_fetching_complete)!
@@ -320,8 +357,16 @@ fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	mut settings := fixture.settings
 	settings.set_script_compile_hook(scripting_fetching_compiler)
 	settings.set_script_function_compile_hook(scripting_fetching_function_compiler)
+	settings.set_script_bytecode_cache_compile_hook(scripting_fetching_bytecode_cache_compiler)
+	settings.set_script_bytecode_cache_store_hook(scripting_fetching_bytecode_cache_store)
 	scripting_fetching_function_asts = []
 	scripting_fetching_function_lengths = []
+	scripting_fetching_track_cache = false
+	scripting_fetching_cache_events = []
+	scripting_fetching_cache_blobs = []
+	scripting_fetching_cache_types = []
+	scripting_fetching_cache_urls = []
+	scripting_fetching_cache_methods = []
 	scripting_fetching_completed_script = unsafe { &Script(nil) }
 	scripting_fetching_request_urls = []
 	fetch_external_module_script_graph(fixture.realm, dom.URL{
@@ -333,6 +378,13 @@ fn test_external_module_graph_fetches_descendants_caches_and_links() {
 	assert root.compiled_program?.program_type == .module
 	assert root.compiled_program?.line_number_offset == 0
 	assert 'module-function' in scripting_fetching_function_asts
+	assert scripting_fetching_cache_blobs.len == 2
+	assert scripting_fetching_cache_types == [.module, .module]
+	assert scripting_fetching_cache_urls == [
+		'https://example.test/app/root.js',
+		'https://example.test/app/dep.js',
+	]
+	assert decode_bytecode_cache_blob(scripting_fetching_cache_blobs[0], .module, "import './dep.js'\nexport const root = true")? == "https://example.test/app/root.js:0:import './dep.js'\nexport const root = true".bytes()
 	assert root.requested_modules().len == 1
 	assert scripting_fetching_request_urls == [
 		'https://example.test/app/root.js',

@@ -52,6 +52,12 @@ struct ModuleScriptFetchResult {
 	module_script ?&ModuleScript
 }
 
+struct BytecodeCacheContext {
+	url             dom.URL
+	method          string
+	request_headers &http.HeaderList
+}
+
 pub enum ScriptProgramType {
 	script
 	module
@@ -100,6 +106,10 @@ pub type OffThreadCompileComplete = fn (OffThreadCompiledProgram, string)
 pub type ScriptCompileHook = fn (string, string, usize, ScriptProgramType) !&ScriptExecutable
 
 pub type ScriptFunctionCompileHook = fn (string, usize) !&ScriptExecutable
+
+pub type ScriptBytecodeCacheCompileHook = fn (string, string, ScriptProgramType, usize) ![]u8
+
+pub type ScriptBytecodeCacheStoreHook = fn (dom.URL, string, &http.HeaderList, []u8) !
 
 // V's runtime-neutral parser is a host hook. Invoke it outside the script
 // execution context, then deliver completion and drain queued microtasks just
@@ -201,6 +211,43 @@ pub fn decode_bytecode_cache_blob(blob []u8, program_type ScriptProgramType, sou
 		return none
 	}
 	return blob[header_length..].clone()
+}
+
+fn scripting_clone_header_list(source &http.HeaderList) &http.HeaderList {
+	mut cloned := http.HeaderList.create()
+	for header in source.headers() {
+		cloned.append(header)
+	}
+	return cloned
+}
+
+fn bytecode_cache_context_for_request(request &fetch.Request, response_url dom.URL, settings &EnvironmentSettingsObject) ?BytecodeCacheContext {
+	if !fetch.is_http_or_https_scheme(response_url.scheme()) {
+		return none
+	}
+	if settings.script_bytecode_cache_store_hook() == none {
+		return none
+	}
+	return BytecodeCacheContext{
+		url: response_url
+		method: request.method
+		request_headers: scripting_clone_header_list(request.header_list)
+	}
+}
+
+// Reparse and fully compile solely for cache generation. The execution path
+// already owns its latency-trimmed artifact, so failure here never changes the
+// script delivered to the caller.
+fn schedule_bytecode_cache_generation(source_code string, filename string, program_type ScriptProgramType, line_number_offset usize, context BytecodeCacheContext, settings &EnvironmentSettingsObject) {
+	compiler := settings.script_bytecode_cache_compile_hook() or { return }
+	bytecode := compiler(source_code, filename, program_type, line_number_offset) or { return }
+	if bytecode.len == 0 {
+		return
+	}
+	blob := serialize_compiled_program_for_bytecode_cache(bytecode, program_type, source_code)
+	if store := settings.script_bytecode_cache_store_hook() {
+		store(context.url, context.method, context.request_headers, blob) or {}
+	}
 }
 
 // After top-level bytecode is handed back to the main event loop, compile all
@@ -406,11 +453,13 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 		return
 	}
 	response_url := unsafe_response.url() or { url }
+	bytecode_cache_context := bytecode_cache_context_for_request(request, response_url, settings_object)
 	mut script := ClassicScript.create(response_url.serialize(), source_text, settings_object.realm(), response_url, 1, if unsafe_response.is_cors_cross_origin() {
 		.yes
 	} else {
 		.no
 	})
+	mut compiled_off_thread := false
 	if compiler := settings_object.script_compile_hook() {
 		muted_errors := if unsafe_response.is_cors_cross_origin() {
 			MutedErrors.yes
@@ -420,6 +469,7 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 		result := compile_source_off_thread(source_text, .script, 1, compiler)
 		if compiled := result.compiled {
 			script = ClassicScript.create_from_pre_compiled(response_url.serialize(), source_text, settings_object.realm(), response_url, compiled, muted_errors)
+			compiled_off_thread = true
 		} else if parsed := result.parsed {
 			script = ClassicScript.create_from_parsed_program(response_url.serialize(), source_text, settings_object.realm(), response_url, parsed, muted_errors)
 		}
@@ -428,6 +478,11 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 		}
 	}
 	on_complete(script_pointer(script))
+	if compiled_off_thread {
+		if context := bytecode_cache_context {
+			schedule_bytecode_cache_generation(source_text, response_url.serialize(), .script, 1, context, settings_object)
+		}
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-classic-worker-script
@@ -547,14 +602,19 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 	}
 	mime_type := fetch.extract_mime_type(unsafe_response.header_list)
 	mut module_script := ?&ModuleScript(none)
+	mut cache_context := ?BytecodeCacheContext(none)
+	mut should_generate_bytecode_cache := false
 	if mime := mime_type {
 		if mime.is_javascript() && module_type == 'javascript' {
 			response_url := unsafe_response.url() or { url }
+			cache_context = bytecode_cache_context_for_request(request, response_url, fetch_client)
 			mut javascript_module := JavaScriptModuleScript.create(url.serialize(), source_text, module_map_realm, response_url)
+			mut compiled_off_thread := false
 			if compiler := fetch_client.script_compile_hook() {
 				result := compile_source_off_thread(source_text, .module, 0, compiler)
 				if compiled := result.compiled {
 					javascript_module = JavaScriptModuleScript.create_from_pre_compiled(url.serialize(), source_text, module_map_realm, response_url, compiled)
+					compiled_off_thread = true
 				} else if parsed := result.parsed {
 					javascript_module = JavaScriptModuleScript.create_from_parsed_program(url.serialize(), source_text, module_map_realm, response_url, parsed)
 				}
@@ -563,6 +623,7 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 				}
 			}
 			module_script = &javascript_module.ModuleScript
+			should_generate_bytecode_cache = compiled_off_thread
 		}
 	}
 	if script := module_script {
@@ -570,6 +631,11 @@ fn fetch_single_module_script_result(url dom.URL, fetch_client &EnvironmentSetti
 			type_: .module_script
 			module_script: script
 		})!
+		if should_generate_bytecode_cache {
+			if context := cache_context {
+				schedule_bytecode_cache_generation(source_text, url.serialize(), .module, 0, context, fetch_client)
+			}
+		}
 		return ModuleScriptFetchResult{
 			module_script: script
 		}

@@ -121,6 +121,8 @@ mut:
 	script_fetch_hook_                   ?PerformTheFetchHook
 	script_compile_hook_                 ?ScriptCompileHook
 	script_function_compile_hook_        ?ScriptFunctionCompileHook
+	script_bytecode_cache_compile_hook_  ?ScriptBytecodeCacheCompileHook
+	script_bytecode_cache_store_hook_    ?ScriptBytecodeCacheStoreHook
 }
 
 fn create_environment_settings(realm &ScriptingRealm, environment &Environment, kind EnvironmentGlobalKind, event_loop &EventLoop) &EnvironmentSettingsObject {
@@ -229,6 +231,22 @@ pub fn (mut settings EnvironmentSettingsObject) set_script_function_compile_hook
 
 pub fn (settings &EnvironmentSettingsObject) script_function_compile_hook() ?ScriptFunctionCompileHook {
 	return settings.script_function_compile_hook_
+}
+
+pub fn (mut settings EnvironmentSettingsObject) set_script_bytecode_cache_compile_hook(hook ?ScriptBytecodeCacheCompileHook) {
+	settings.script_bytecode_cache_compile_hook_ = hook
+}
+
+pub fn (settings &EnvironmentSettingsObject) script_bytecode_cache_compile_hook() ?ScriptBytecodeCacheCompileHook {
+	return settings.script_bytecode_cache_compile_hook_
+}
+
+pub fn (mut settings EnvironmentSettingsObject) set_script_bytecode_cache_store_hook(hook ?ScriptBytecodeCacheStoreHook) {
+	settings.script_bytecode_cache_store_hook_ = hook
+}
+
+pub fn (settings &EnvironmentSettingsObject) script_bytecode_cache_store_hook() ?ScriptBytecodeCacheStoreHook {
+	return settings.script_bytecode_cache_store_hook_
 }
 
 pub fn (settings &EnvironmentSettingsObject) responsible_document() ?&dom.Document {
