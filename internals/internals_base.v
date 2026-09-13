@@ -159,6 +159,8 @@ pub mut:
 	clipboard_file                              ?ClipboardFile
 	current_caret_rect_                         ?dom.Rect
 	loaded_urls                                 []string
+	request_server_connection_losses           u64
+	worker_request_server_connection_losses    u64
 }
 
 @[heap]

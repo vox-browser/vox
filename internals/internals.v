@@ -520,6 +520,16 @@ pub fn (mut api Internals) set_http_memory_cache_enabled(enabled bool) bool {
 	return previous
 }
 
+pub fn (mut api Internals) simulate_request_server_connection_loss() {
+	// ResourceLoader's request client is an embedder-owned IPC endpoint. The
+	// translated host observes the loss and synchronously installs its replacement.
+	api.platform.request_server_connection_losses++
+}
+
+pub fn (mut api Internals) simulate_worker_request_server_connection_loss() {
+	api.platform.worker_request_server_connection_losses++
+}
+
 fn internals_default_role(element &dom.Element) ?aria.Role {
 	if !element.is_html_element() {
 		return none

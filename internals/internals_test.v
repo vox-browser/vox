@@ -90,6 +90,10 @@ fn test_metadata_settings_and_platform_facade() {
 	assert platform.device_pixel_ratio == 2
 	assert api.set_http_memory_cache_enabled(false)
 	assert !platform.http_memory_cache_enabled
+	api.simulate_request_server_connection_loss()
+	api.simulate_worker_request_server_connection_loss()
+	assert platform.request_server_connection_losses == 1
+	assert platform.worker_request_server_connection_losses == 1
 	api.expire_cookies_with_time_offset(60)
 	assert platform.cookie_expiry_offset == 60
 	platform.cookies << PlatformCookie{
