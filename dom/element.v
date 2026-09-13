@@ -5970,6 +5970,16 @@ pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot
 	node.run_moved_from_lifecycle_hook(is_subtree_root, old_ancestor)
 }
 
+// SVGUseElement::adopted_from(). URL parsing is document-relative, so an
+// adopted use element must resolve and clone its target from its new owner
+// document. The V implementation observes referenced elements by walking the
+// live document instead of retaining a document-specific observer/registry.
+pub fn (mut e Element) adopted_from(_ &Document) {
+	if e.is_svg_element() && e.local_name() == 'use' {
+		e.svg_use_process_the_url()
+	}
+}
+
 pub fn (mut e Element) children_changed(metadata ChildrenChangedMetadata) {
 	_ = metadata
 	e.set_needs_style_update(true)

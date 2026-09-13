@@ -73,3 +73,41 @@ fn test_svg_use_rejects_circular_reference_and_applies_dimensions_to_instance_ro
 	use_element.svg_use_process_the_url()
 	assert unsafe { &Node(shadow_root) }.children_as_vector().len == 0
 }
+
+fn test_svg_use_adoption_reclones_a_same_document_reference_from_the_new_document() {
+	mut old_document := Document.create(URL{ value: 'https://old.example/image.svg' })
+	mut new_document := Document.create(URL{ value: 'https://new.example/image.svg' })
+	old_document.completely_loaded_time = true
+	new_document.completely_loaded_time = true
+
+	mut old_root := svg_use_test_element(mut old_document, 'svg')
+	mut old_target := svg_use_test_element(mut old_document, 'g')
+	old_target.set_attribute_value('id', 'shape')
+	old_target.set_attribute_value('data-owner', 'old')
+	mut use_element := svg_use_test_element(mut old_document, 'use')
+	use_element.set_attribute_value('href', '#shape')
+	mut old_document_node := unsafe { &Node(old_document) }
+	old_document_node.append_child(old_root.as_node())!
+	mut old_root_node := old_root.as_node()
+	old_root_node.append_child(old_target.as_node())!
+	old_root_node.append_child(use_element.as_node())!
+	use_element.svg_use_process_the_url()
+
+	mut new_root := svg_use_test_element(mut new_document, 'svg')
+	mut new_target := svg_use_test_element(mut new_document, 'g')
+	new_target.set_attribute_value('id', 'shape')
+	new_target.set_attribute_value('data-owner', 'new')
+	mut new_document_node := unsafe { &Node(new_document) }
+	new_document_node.append_child(new_root.as_node())!
+	mut new_root_node := new_root.as_node()
+	new_root_node.append_child(new_target.as_node())!
+
+	shadow_root := use_element.shadow_root() or { panic('use shadow root missing') }
+	old_clone := unsafe { &Node(shadow_root) }.first_child() or { panic('old clone missing') }
+	assert old_clone.as_element()?.get_attribute_value('data-owner') == 'old'
+
+	new_document.adopt_node(use_element.as_node())
+	new_clone := unsafe { &Node(shadow_root) }.first_child() or { panic('new clone missing') }
+	assert voidptr(use_element.document()) == voidptr(new_document)
+	assert new_clone.as_element()?.get_attribute_value('data-owner') == 'new'
+}

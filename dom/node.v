@@ -3101,6 +3101,10 @@ pub fn (mut n Node) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot, o
 
 pub fn (mut n Node) adopted_from(old_document &Document) {
 	n.recompute_editable_subtree_flag()
+	if element := n.as_element() {
+		mut mutable_element := unsafe { &Element(element) }
+		mutable_element.adopted_from(old_document)
+	}
 	if hook := n.adopted_from_hook_ {
 		if hook.callback != unsafe { nil } {
 			hook.callback(hook.target, old_document)
