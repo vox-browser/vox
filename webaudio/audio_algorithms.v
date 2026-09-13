@@ -837,6 +837,7 @@ pub fn (node PannerNode) panning_model() PanningModelType {
 
 pub fn (mut node PannerNode) set_panning_model(value PanningModelType) {
 	node.panning_model = value
+	node.queue_panner_parameters_update()
 }
 
 pub fn (node PannerNode) distance_model() DistanceModelType {
@@ -845,6 +846,7 @@ pub fn (node PannerNode) distance_model() DistanceModelType {
 
 pub fn (mut node PannerNode) set_distance_model(value DistanceModelType) {
 	node.distance_model = value
+	node.queue_panner_parameters_update()
 }
 
 pub fn (node PannerNode) cone_inner_angle() f64 {
@@ -853,6 +855,7 @@ pub fn (node PannerNode) cone_inner_angle() f64 {
 
 pub fn (mut node PannerNode) set_cone_inner_angle(value f64) {
 	node.cone_inner_angle = value
+	node.queue_panner_parameters_update()
 }
 
 pub fn (node PannerNode) cone_outer_angle() f64 {
@@ -861,6 +864,7 @@ pub fn (node PannerNode) cone_outer_angle() f64 {
 
 pub fn (mut node PannerNode) set_cone_outer_angle(value f64) {
 	node.cone_outer_angle = value
+	node.queue_panner_parameters_update()
 }
 
 pub fn (node PannerNode) ref_distance() f64 {

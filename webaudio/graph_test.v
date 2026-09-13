@@ -192,6 +192,46 @@ fn test_stereo_panner_factory_messages_render_through_the_context_destination() 
 	assert output.output(0).channel(1) == []f32{len: int(render_quantum_size), init: 0.5}
 }
 
+fn test_spatial_panner_factory_messages_render_through_the_context_destination() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut source := context.base.create_constant_source(0.5, AudioNodeOptions{}) or { panic(err) }
+	mut panner := context.base.create_panner(PannerOptions{ position_x: 1 }) or { panic(err) }
+	mut destination := context.base.destination.AudioNode
+	connect_nodes(mut source.node, mut panner.node, 0, 0) or { panic(err) }
+	connect_nodes(mut panner.node, mut destination, 0, 0) or { panic(err) }
+	start_scheduled_source(mut context.base, mut source.node, 0) or { panic(err) }
+	mut graph := RenderGraph.create()
+	graph.apply_control_messages(context.base.control_messages.drain())
+	graph.set_destination(destination.id)
+	graph.render_quantum(RenderContext{
+		sample_rate: 48_000
+		quantum_size: int(render_quantum_size)
+	})
+	output := graph.destination() or { panic('missing destination') }
+	for sample in output.output(0).channel(0) {
+		assert math.abs(sample) < 0.00001
+	}
+	assert output.output(0).channel(1) == []f32{len: int(render_quantum_size), init: 0.5}
+}
+
+fn test_spatial_panner_setters_queue_complete_render_configuration() {
+	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
+	mut panner := context.base.create_panner(PannerOptions{}) or { panic(err) }
+	context.base.control_messages.drain()
+	panner.set_distance_model(.linear)
+	panner.set_ref_distance(2) or { panic(err) }
+	panner.set_max_distance(20) or { panic(err) }
+	panner.set_cone_outer_angle(180)
+	messages := context.base.control_messages.drain()
+	assert messages.len == 4
+	last := messages.last().node_message or { panic('missing panner parameters') }
+	assert last.kind == .set_panner_parameters
+	assert last.distance_model == .linear
+	assert last.ref_distance == 2
+	assert last.max_distance == 20
+	assert last.cone_outer_angle == 180
+}
+
 fn test_channel_merger_factory_queues_its_multi_input_render_node() {
 	mut context := new_audio_context(1, 48_000, true) or { panic(err) }
 	context.base.control_messages.drain()

@@ -44,10 +44,15 @@ pub mut:
 }
 
 pub fn (mut context BaseAudioContext) create_panner(options PannerOptions) !PannerNode {
-	if options.ref_distance < 0 { return error('RangeError: refDistance cannot be negative') }
-	if options.rolloff_factor < 0 { return error('RangeError: rolloffFactor cannot be negative') }
-	// Mirrors the current upstream comparison (< 0), despite its spec comment saying non-positive.
-	if options.max_distance < 0 { return error('RangeError: maxDistance cannot be negative') }
+	if options.ref_distance < 0 {
+		return error('RangeError: refDistance cannot be negative')
+	}
+	if options.rolloff_factor < 0 {
+		return error('RangeError: rolloffFactor cannot be negative')
+	}
+	if options.max_distance <= 0 {
+		return error('RangeError: maxDistance must be positive')
+	}
 	if options.cone_outer_gain < 0 || options.cone_outer_gain > 1 {
 		return error('InvalidStateError: coneOuterGain must be in [0, 1]')
 	}
@@ -77,44 +82,96 @@ pub fn (mut context BaseAudioContext) create_panner(options PannerOptions) !Pann
 	}
 	if count := options.node.channel_count { panner.set_channel_count(count)! }
 	if mode := options.node.channel_count_mode { panner.set_channel_count_mode(mode)! }
+	panner.node.queue_render_node_creation(PannerRenderNode.create(node.id, int(render_quantum_size),
+		PannerRenderParams{
+			position_x: panner.position_x.render_param()
+			position_y: panner.position_y.render_param()
+			position_z: panner.position_z.render_param()
+			orientation_x: panner.orientation_x.render_param()
+			orientation_y: panner.orientation_y.render_param()
+			orientation_z: panner.orientation_z.render_param()
+		}, PannerListenerRenderParams{
+			position_x: context.listener.position_x.render_param()
+			position_y: context.listener.position_y.render_param()
+			position_z: context.listener.position_z.render_param()
+			forward_x: context.listener.forward_x.render_param()
+			forward_y: context.listener.forward_y.render_param()
+			forward_z: context.listener.forward_z.render_param()
+			up_x: context.listener.up_x.render_param()
+			up_y: context.listener.up_y.render_param()
+			up_z: context.listener.up_z.render_param()
+		}).render_node())
+	panner.queue_panner_parameters_update()
 	return panner
 }
 
+pub fn (panner PannerNode) queue_panner_parameters_update() {
+	panner.node.enqueue_control_message(ControlMessage{
+		kind: .node_message
+		node_message: NodeMessage{
+			node_id: panner.node.id
+			kind: .set_panner_parameters
+			panning_model: panner.panning_model
+			distance_model: panner.distance_model
+			ref_distance: panner.ref_distance
+			max_distance: panner.max_distance
+			rolloff_factor: panner.rolloff_factor
+			cone_inner_angle: panner.cone_inner_angle
+			cone_outer_angle: panner.cone_outer_angle
+			cone_outer_gain: panner.cone_outer_gain
+		}
+	})
+}
+
 pub fn (mut panner PannerNode) set_ref_distance(value f64) ! {
-	if value < 0 { return error('RangeError: refDistance cannot be negative') }
+	if value < 0 {
+		return error('RangeError: refDistance cannot be negative')
+	}
 	panner.ref_distance = value
+	panner.queue_panner_parameters_update()
 }
 
 pub fn (mut panner PannerNode) set_max_distance(value f64) ! {
-	if value < 0 { return error('RangeError: maxDistance cannot be negative') }
+	if value <= 0 {
+		return error('RangeError: maxDistance must be positive')
+	}
 	panner.max_distance = value
+	panner.queue_panner_parameters_update()
 }
 
 pub fn (mut panner PannerNode) set_rolloff_factor(value f64) ! {
-	if value < 0 { return error('RangeError: rolloffFactor cannot be negative') }
+	if value < 0 {
+		return error('RangeError: rolloffFactor cannot be negative')
+	}
 	panner.rolloff_factor = value
+	panner.queue_panner_parameters_update()
 }
 
 pub fn (mut panner PannerNode) set_cone_outer_gain(value f64) ! {
-	if value < 0 || value > 1 { return error('InvalidStateError: coneOuterGain must be in [0, 1]') }
+	if value < 0 || value > 1 {
+		return error('InvalidStateError: coneOuterGain must be in [0, 1]')
+	}
 	panner.cone_outer_gain = value
+	panner.queue_panner_parameters_update()
 }
 
-pub fn (mut panner PannerNode) set_position(x f32, y f32, z f32) {
-	panner.position_x.set_value(x) or {}
-	panner.position_y.set_value(y) or {}
-	panner.position_z.set_value(z) or {}
+pub fn (mut panner PannerNode) set_position(x f32, y f32, z f32) ! {
+	panner.position_x.set_value(x)!
+	panner.position_y.set_value(y)!
+	panner.position_z.set_value(z)!
 }
 
-pub fn (mut panner PannerNode) set_orientation(x f32, y f32, z f32) {
-	panner.orientation_x.set_value(x) or {}
-	panner.orientation_y.set_value(y) or {}
-	panner.orientation_z.set_value(z) or {}
+pub fn (mut panner PannerNode) set_orientation(x f32, y f32, z f32) ! {
+	panner.orientation_x.set_value(x)!
+	panner.orientation_y.set_value(y)!
+	panner.orientation_z.set_value(z)!
 }
 
 pub fn (mut panner PannerNode) set_channel_count_mode(mode ChannelCountMode) ! {
-	if mode == .max { return error("NotSupportedError: PannerNode does not support 'max'") }
-	panner.node.channel_count_mode = mode
+	if mode == .max {
+		return error("NotSupportedError: PannerNode does not support 'max'")
+	}
+	panner.node.set_channel_count_mode(mode)!
 }
 
 pub fn (mut panner PannerNode) set_channel_count(count u32) ! {

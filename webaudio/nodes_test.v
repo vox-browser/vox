@@ -104,6 +104,15 @@ fn test_spatial_panner_constructor_rejects_max_channel_mode() {
 	assert false
 }
 
+fn test_spatial_panner_rejects_non_positive_max_distance() {
+	mut context := new_audio_context(1, 44_100, true) or { panic(err) }
+	context.base.create_panner(PannerOptions{ max_distance: 0 }) or {
+		assert err.msg().contains('must be positive')
+		return
+	}
+	assert false
+}
+
 fn test_periodic_wave_distinguishes_absent_and_present_empty_arrays() {
 	new_periodic_wave(PeriodicWaveOptions{ real: []f32{} }) or {
 		assert err.msg().contains('at least 2')
