@@ -51,6 +51,38 @@ pub struct LaterState {
             (),
         )
 
+    def test_webaudio_offset_mapping_requires_the_typed_member(self) -> None:
+        self.assertEqual(
+            audit.mapped_field_candidate_names(
+                "position_x_offset",
+                "AudioListener",
+                {("position_x", "AudioListener")},
+            ),
+            ("AudioListener.position_x",),
+        )
+        self.assertEqual(
+            audit.mapped_field_candidate_names(
+                "position_x_offset", "AudioListener", set()
+            ),
+            (),
+        )
+
+    def test_webaudio_runtime_and_flattened_config_mappings_are_explicit(self) -> None:
+        self.assertIn(
+            ("AudioBuffer.cpp", "audio_buffer_channel_data_caches"),
+            audit.RUNTIME_ONLY_FREE_FUNCTIONS,
+        )
+        self.assertIn(
+            ("OfflineAudioRenderer", "post_to_control_thread"),
+            audit.BINDING_RUNTIME_METHODS,
+        )
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("Config", "ring_sizing_for_device_latency")
+            ],
+            (("ring_sizing_for_device_latency", "AudioWorkletPipeConfig"),),
+        )
+
 
     def test_multi_field_mapping_requires_every_component(self) -> None:
         complete = {

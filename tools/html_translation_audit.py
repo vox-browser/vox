@@ -78,6 +78,19 @@ BINDING_RUNTIME_METHODS = {
     ("Parser", "realm"),
     ("Screen", "window"),
     ("Client", "image_style_value_finalize"),
+
+    # WebAudio keeps its typed graph independent of the JS realm and DOM event
+    # wrappers. These accessors and dispatch bridges exist only to recover the
+    # owning JS/Window objects in the C++ embedding.
+    ("AudioNode", "relevant_global_object"),
+    ("BaseAudioContext", "relevant_settings_object"),
+    ("BaseAudioContext", "relevant_global_object"),
+    ("BaseAudioContext", "relevant_global_event_target"),
+    ("BaseAudioContext", "create_associated_event"),
+    ("BaseAudioContext", "relevant_window"),
+    # V's offline renderer executes on the deterministic engine thread, so its
+    # completion/suspension callbacks need no cross-thread event-loop hop.
+    ("OfflineAudioRenderer", "post_to_control_thread"),
     # ComputedFilterView retains a Rust-owned StyleValue handle while lowering
     # the FFI record. V stores the typed FilterStyleValue sum directly.
     ("ComputedFilterView", "retained_style_value"),
@@ -86,6 +99,20 @@ RUNTIME_ONLY_FREE_FUNCTIONS = {
     # The standalone parser has no process-global internal JS realm; its
     # parsing document and URL context are carried by ParsingParams instead.
     ("Parser/Helpers.cpp", "internal_css_realm"),
+    # AudioBuffer channel views are native V slices. C++ needs weak JS caches
+    # to preserve SameObject per realm and detach ArrayBuffers on acquisition;
+    # V preserves the playback snapshot directly in AudioBufferContents.
+    ("AudioBuffer.cpp", "audio_buffer_channel_data_caches"),
+    ("AudioBuffer.cpp", "prune_audio_buffer_channel_data_caches"),
+    ("AudioBuffer.cpp", "cache_for"),
+    ("AudioBuffer.cpp", "prune_live_channel_views"),
+    # These helpers only wrap typed AudioBuffer/AudioParam values for JS and
+    # invoke WebIDL callbacks/promises in the relevant realm.
+    ("AudioParamMap.cpp", "wrapped_param"),
+    ("BaseAudioContext.cpp", "audio_buffer"),
+    ("BaseAudioContext.cpp", "invoke_audio_buffer_callback"),
+    ("BaseAudioContext.cpp", "invoke_error_callback"),
+    ("BaseAudioContext.cpp", "resolve_audio_buffer_promise"),
 }
 LANGUAGE_ARTIFACT_FREE_FUNCTIONS = {
     # V string literals already have their runtime representation; this C++
@@ -276,6 +303,16 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     # they map to the equivalent tagged-value operations.
     ("StyleValue", "__ENUMERATE_CSS_STYLE_VALUE_TYPE"): (("type_", "StyleValue"),),
     ("ComponentValue", "Token"): (("from_token", "ComponentValue"),),
+    # The C++ base owns a virtual inactive-document hook. V keeps the two
+    # concrete context lifecycles explicit so neither renderer can be omitted.
+    ("BaseAudioContext", "document_became_inactive"): (
+        ("document_became_inactive", "AudioContext"),
+        ("document_became_inactive", "OfflineAudioContext"),
+    ),
+    # V flattens AudioWorkletPipe::Config into a module-level typed config.
+    ("Config", "ring_sizing_for_device_latency"): (
+        ("ring_sizing_for_device_latency", "AudioWorkletPipeConfig"),
+    ),
     # WebGL's template helpers are free functions in V because BufferSource and
     # string conversion do not require context state after type narrowing.
     ("WebGLRenderingContextBase", "with_buffer_source_bytes"): (
@@ -2622,6 +2659,48 @@ CONSOLIDATED_METHOD_MAPPINGS.update({
 CONSOLIDATED_FIELD_MAPPINGS: dict[
     tuple[str, str], tuple[tuple[str, str], ...]
 ] = {
+    # WebAudio's C++ offset helpers expose GC member locations to generated
+    # bindings. V's typed records access those members directly; requiring the
+    # concrete field keeps this disposition tied to real translated state.
+    ("BaseAudioContext", "destination_offset"): (("destination", "BaseAudioContext"),),
+    ("BaseAudioContext", "control_message_queue"): (
+        ("control_messages", "BaseAudioContext"),
+    ),
+    ("BaseAudioContext", "set_listener"): (("listener", "BaseAudioContext"),),
+    ("AudioListener", "position_x_offset"): (("position_x", "AudioListener"),),
+    ("AudioListener", "position_y_offset"): (("position_y", "AudioListener"),),
+    ("AudioListener", "position_z_offset"): (("position_z", "AudioListener"),),
+    ("AudioListener", "forward_x_offset"): (("forward_x", "AudioListener"),),
+    ("AudioListener", "forward_y_offset"): (("forward_y", "AudioListener"),),
+    ("AudioListener", "forward_z_offset"): (("forward_z", "AudioListener"),),
+    ("AudioListener", "up_x_offset"): (("up_x", "AudioListener"),),
+    ("AudioListener", "up_y_offset"): (("up_y", "AudioListener"),),
+    ("AudioListener", "up_z_offset"): (("up_z", "AudioListener"),),
+    ("ConstantSourceNode", "offset_offset"): (("offset", "ConstantSourceNode"),),
+    ("DelayNode", "delay_time_offset"): (("delay_time", "DelayNode"),),
+    ("DynamicsCompressorNode", "threshold_offset"): (
+        ("threshold", "DynamicsCompressorNode"),
+    ),
+    ("DynamicsCompressorNode", "knee_offset"): (("knee", "DynamicsCompressorNode"),),
+    ("DynamicsCompressorNode", "ratio_offset"): (("ratio", "DynamicsCompressorNode"),),
+    ("DynamicsCompressorNode", "attack_offset"): (("attack", "DynamicsCompressorNode"),),
+    ("DynamicsCompressorNode", "release_offset"): (("release", "DynamicsCompressorNode"),),
+    ("GainNode", "gain_offset"): (("gain", "GainNode"),),
+    ("MediaElementAudioSourceNode", "media_element_offset"): (
+        ("media_element_id", "MediaElementAudioSourceNode"),
+    ),
+    ("OfflineAudioCompletionEvent", "rendered_buffer_offset"): (
+        ("rendered_buffer", "OfflineAudioCompletionEvent"),
+    ),
+    ("OscillatorNode", "frequency_offset"): (("frequency", "OscillatorNode"),),
+    ("OscillatorNode", "detune_offset"): (("detune", "OscillatorNode"),),
+    ("PannerNode", "position_x_offset"): (("position_x", "PannerNode"),),
+    ("PannerNode", "position_y_offset"): (("position_y", "PannerNode"),),
+    ("PannerNode", "position_z_offset"): (("position_z", "PannerNode"),),
+    ("PannerNode", "orientation_x_offset"): (("orientation_x", "PannerNode"),),
+    ("PannerNode", "orientation_y_offset"): (("orientation_y", "PannerNode"),),
+    ("PannerNode", "orientation_z_offset"): (("orientation_z", "PannerNode"),),
+    ("StereoPannerNode", "pan_offset"): (("pan", "StereoPannerNode"),),
     # MediaFeature's C++ tagged union is flattened onto BooleanExpression, and
     # MediaFeatureValue's variant discriminator is explicit in its active local
     # value record. Each predicate remains a checked read of that discriminator.
