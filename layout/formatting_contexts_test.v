@@ -2792,6 +2792,22 @@ fn test_svg_image_uses_computed_geometry_and_default_sizing() {
 	assert default_image.content_height().to_double() == 150
 }
 
+fn test_svg_use_translation_uses_computed_x_and_y() {
+	document := html.parse_document('<!doctype html><style>
+		body { margin:0 }
+		#copy { x:25%; y:10% }
+	</style><svg width="200" height="100">
+		<defs><rect id="source" width="10" height="10"/></defs>
+		<use id="copy" href="#source" x="1" y="2" transform="scale(2)"/>
+	</svg>')
+	result := run_document_layout(document, 200, 100) or { panic('layout failed') }
+	transform := used_for_id(result, 'copy').svg_transform()
+	assert transform.a == 2
+	assert transform.d == 2
+	assert transform.e == 100
+	assert transform.f == 20
+}
+
 fn test_relative_positioning_does_not_move_following_flow_content() {
 	document := html.parse_document('<!doctype html><style>
 		#one { position:relative; top:20px; left:5px; height:10px }

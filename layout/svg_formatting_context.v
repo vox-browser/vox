@@ -291,8 +291,7 @@ fn (mut context SVGFormattingContext) layout_graphics_element(graphics_box &Node
 	mut graphics_state := context.state.get_mutable(styled)
 	element := svg_element_for_layout_node(graphics_box) or { return }
 	parent_svg_transform := context.parent_svg_transform(graphics_box)
-	svg_transform :=
-		parent_svg_transform.multiply(svg.element_transform(svg_element_model(element)))
+	svg_transform := parent_svg_transform.multiply(svg.element_transform(svg_transform_element_model(graphics_box, element, context.viewport_size)))
 	graphics_state.set_computed_svg_transforms(context.current_viewbox_transform, svg_transform)
 
 	if is_svg_container_element(element) {
@@ -908,6 +907,17 @@ fn visible_svg_stroke_width(graphics_box &Node, viewport_size CSSPixelSize) f64 
 	}
 	scaled_viewport_size := (viewport_size.width().to_double() + viewport_size.height().to_double()) * 0.5
 	return computed.length_percentage_to_px(.stroke_width, scaled_viewport_size) or { 1.0 }
+}
+
+fn svg_transform_element_model(graphics_box &Node, element &dom.Element, viewport_size CSSPixelSize) svg.Element {
+	mut model := svg_element_model(element)
+	if element.local_name() != 'use' {
+		return model
+	}
+	computed := graphics_box.computed_values()
+	model.attributes['x'] = '${computed.length_percentage_to_px(.x, viewport_size.width().to_double()) or { 0.0 }}'
+	model.attributes['y'] = '${computed.length_percentage_to_px(.y, viewport_size.height().to_double()) or { 0.0 }}'
+	return model
 }
 
 // Materialize geometry properties that current LibWeb obtains from computed
