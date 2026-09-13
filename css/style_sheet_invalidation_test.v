@@ -126,7 +126,7 @@ fn test_inserted_character_data_schedules_has_ancestor_invalidation() {
 	document_node.append_child(parent.as_node()) or { panic(err) }
 	mut scope := css_style_scope_for_document(document)
 	assert scope.may_have_has_selectors()
-	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	scope.clear_pending_has_invalidations()
 
 	text := document.create_text_node('content').as_node()
 	mut parent_node := parent.as_node()
@@ -143,7 +143,7 @@ fn test_structural_has_invalidation_filters_unrelated_inserted_subtrees() {
 	document_node.append_child(subject.as_node()) or { panic(err) }
 	mut scope := css_style_scope_for_document(document)
 	scope.build_rule_cache_if_needed()
-	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	scope.clear_pending_has_invalidations()
 
 	mut unrelated := style_sheet_invalidation_test_element(document, 'span')
 	mut subject_node := subject.as_node()
@@ -155,7 +155,7 @@ fn test_structural_has_invalidation_filters_unrelated_inserted_subtrees() {
 	flag.set_attribute_value('class', 'flag')
 	mut matching_subtree_node := matching_subtree.as_node()
 	matching_subtree_node.append_child(flag.as_node()) or { panic(err) }
-	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	scope.clear_pending_has_invalidations()
 	subject_node.append_child(matching_subtree.as_node()) or { panic(err) }
 	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 1
 	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has[0] == subject.as_node()
@@ -169,7 +169,7 @@ fn test_featureless_has_argument_keeps_structural_invalidation_conservative() {
 	document_node.append_child(subject.as_node()) or { panic(err) }
 	mut scope := css_style_scope_for_document(document)
 	scope.build_rule_cache_if_needed()
-	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	scope.clear_pending_has_invalidations()
 
 	mut child := style_sheet_invalidation_test_element(document, 'span')
 	mut subject_node := subject.as_node()
@@ -235,7 +235,7 @@ fn test_user_agent_shadow_tree_mutations_use_document_style_scope() {
 	_ := css_style_computer_for(document)
 	mut document_scope := css_style_scope_for_document(document)
 	document_scope.build_rule_cache_if_needed()
-	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	document_scope.clear_pending_has_invalidations()
 	clear_style_sheet_invalidation_test_flags(document_node, host.as_node(), shadow_node, wrapper.as_node())
 
 	wrapper.set_attribute_value('class', 'flag')
@@ -257,7 +257,7 @@ fn test_light_dom_insert_schedules_has_invalidation_in_host_shadow_scope() {
 	mut shadow_scope := css_style_scope_for_shadow_root(shadow_root)
 	shadow_scope.build_rule_cache_if_needed()
 	assert shadow_scope.may_have_has_selectors()
-	shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	shadow_scope.clear_pending_has_invalidations()
 
 	mut flag := style_sheet_invalidation_test_element(document, 'span')
 	flag.set_attribute_value('class', 'flag')
@@ -284,7 +284,7 @@ fn test_light_dom_attribute_change_schedules_has_invalidation_in_host_shadow_sco
 	mut shadow_scope := css_style_scope_for_shadow_root(shadow_root)
 	shadow_scope.build_rule_cache_if_needed()
 	assert shadow_scope.may_have_has_selectors()
-	shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	shadow_scope.clear_pending_has_invalidations()
 
 	light_child.set_attribute_value('class', 'flag')
 	assert shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
@@ -308,11 +308,11 @@ fn test_shadow_tree_mutations_schedule_has_invalidation_in_outer_document_scope(
 	mut document_scope := css_style_scope_for_document(document)
 	document_scope.build_rule_cache_if_needed()
 	assert document_scope.may_have_has_selectors()
-	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	document_scope.clear_pending_has_invalidations()
 
 	existing_child.set_attribute_value('class', 'flag')
 	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
-	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	document_scope.clear_pending_has_invalidations()
 
 	mut inserted_child := style_sheet_invalidation_test_element(document, 'span')
 	inserted_child.set_attribute_value('class', 'flag')
@@ -340,14 +340,14 @@ fn test_dir_and_lang_changes_schedule_has_invalidation_across_shadow_scopes() {
 	mut shadow_scope := css_style_scope_for_shadow_root(shadow_root)
 	document_scope.build_rule_cache_if_needed()
 	shadow_scope.build_rule_cache_if_needed()
-	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
-	shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	document_scope.clear_pending_has_invalidations()
+	shadow_scope.clear_pending_has_invalidations()
 
 	light_child.set_attribute_value('dir', 'rtl')
 	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
 	assert shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
-	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
-	shadow_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	document_scope.clear_pending_has_invalidations()
+	shadow_scope.clear_pending_has_invalidations()
 
 	light_child.set_attribute_value('lang', 'fr')
 	assert document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len > 0
@@ -370,7 +370,7 @@ fn test_dir_auto_text_change_schedules_has_invalidation() {
 	_ := css_style_computer_for(document)
 	mut document_scope := css_style_scope_for_document(document)
 	document_scope.build_rule_cache_if_needed()
-	document_scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	document_scope.clear_pending_has_invalidations()
 
 	text.replace_data(0, text.length(), '\u05d0\u05d1\u05d2') or { panic(err) }
 	assert auto_parent.needs_style_update()

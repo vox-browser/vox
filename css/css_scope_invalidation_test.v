@@ -68,6 +68,48 @@ fn test_has_invalidation_tracks_featureless_and_sibling_sensitive_arguments() {
 	assert sibling_insights.has_has_selectors_with_relative_selector_that_has_sibling_combinator
 }
 
+fn test_pending_has_invalidations_deduplicate_by_node_without_changing_order() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut first := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	mut second := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic(err)
+	}
+	mut scope := StyleScope.new(unsafe { &dom.Node(document) })
+	scope.record_pending_has_invalidation_mutation_properties(first.as_node(), [
+		InvalidationProperty.class('first'),
+	])
+	scope.record_pending_has_invalidation_mutation_properties(second.as_node(), [
+		InvalidationProperty.id('second'),
+	])
+	scope.record_pending_has_invalidation_mutation_properties(first.as_node(), [
+		InvalidationProperty.attribute('data-state'),
+	])
+
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 2
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has[0].unique_id() == first.as_node().unique_id()
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has[1].unique_id() == second.as_node().unique_id()
+	first_features := scope.pending_has_invalidation_features[first.as_node().unique_id().value()] or {
+		panic('missing first invalidation')
+	}
+	assert first_features.class_names['first']
+	assert first_features.attribute_names['data-state']
+	assert !first_features.is_conservative
+
+	// A later conservative scheduler observes the existing entry without
+	// replacing the precise mutation features.
+	scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(first.as_node())
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 2
+	assert !first_features.is_conservative
+	scope.schedule_ancestors_style_invalidation_due_to_presence_of_has(document.as_node())
+	assert scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.len == 3
+	root_features := scope.pending_has_invalidation_features[document.as_node().unique_id().value()] or {
+		panic('missing document invalidation')
+	}
+	assert root_features.is_conservative
+}
+
 fn test_slotted_argument_builds_invalidation_sets() {
 	scope := build_scope_invalidation_cache('::slotted(.item[data-state]) { color: red }')
 	data := scope.style_invalidation_data or { panic('missing invalidation data') }

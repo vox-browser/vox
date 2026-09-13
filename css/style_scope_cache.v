@@ -1075,15 +1075,11 @@ fn collect_pending_has_invalidation_mutation_features_from_properties(properties
 
 fn (mut scope StyleScope) record_pending_has_invalidation_features(node &dom.Node, features &PendingHasInvalidationMutationFeatures) {
 	node_id := node.unique_id().value()
-	for existing in scope.pending_nodes_for_style_invalidation_due_to_presence_of_has {
-		if existing.unique_id().value() == node_id {
-			mut stored := scope.pending_has_invalidation_features[node_id] or {
-				PendingHasInvalidationMutationFeatures.new()
-			}
-			merge_pending_has_invalidation_mutation_features(mut stored, features)
-			scope.pending_has_invalidation_features[node_id] = stored
-			return
-		}
+	if existing := scope.pending_has_invalidation_features[node_id] {
+		mut stored := existing
+		merge_pending_has_invalidation_mutation_features(mut stored, features)
+		scope.pending_has_invalidation_features[node_id] = stored
+		return
 	}
 	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has << node
 	scope.pending_has_invalidation_features[node_id] = features
@@ -1104,14 +1100,17 @@ pub fn (mut scope StyleScope) record_pending_has_invalidation_mutation_propertie
 
 pub fn (mut scope StyleScope) schedule_ancestors_style_invalidation_due_to_presence_of_has(node &dom.Node) {
 	node_id := node.unique_id().value()
-	for existing in scope.pending_nodes_for_style_invalidation_due_to_presence_of_has {
-		if existing.unique_id().value() == node_id {
-			return
-		}
+	if node_id in scope.pending_has_invalidation_features {
+		return
 	}
 	mut features := PendingHasInvalidationMutationFeatures.new()
 	features.is_conservative = true
 	scope.record_pending_has_invalidation_features(node, features)
+}
+
+fn (mut scope StyleScope) clear_pending_has_invalidations() {
+	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
+	scope.pending_has_invalidation_features.clear()
 }
 
 fn selector_may_match_pending_has_mutation_features(selector Selector, features &PendingHasInvalidationMutationFeatures) bool {
@@ -1328,8 +1327,7 @@ pub fn (mut scope StyleScope) invalidate_style_of_elements_affected_by_has() {
 
 	nodes := scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clone()
 	features_by_node := scope.pending_has_invalidation_features.clone()
-	scope.pending_nodes_for_style_invalidation_due_to_presence_of_has.clear()
-	scope.pending_has_invalidation_features.clear()
+	scope.clear_pending_has_invalidations()
 
 	// It's ok to call have_has_selectors() instead of may_have_has_selectors()
 	// here and force rule cache build, because it's going to be built soon
