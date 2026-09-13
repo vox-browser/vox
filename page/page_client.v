@@ -67,6 +67,13 @@ pub mut:
 	child_navigable_unload_requests_   []u64
 	child_frames_                      map[u64]ChildFrameState
 	navigation_population_failures_    []NavigationPopulationFailure
+	editing_history_can_undo_          bool
+	editing_history_can_redo_          bool
+	background_color_                  string
+	clipboard_items_                   []ClipboardItem
+	primary_paste_request_count_       u64
+	paste_action_completion_count_     u64
+	primary_selection_                 string
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }
