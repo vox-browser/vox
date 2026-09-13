@@ -50,6 +50,13 @@ pub mut:
 	last_rendering_frame_interval_ms_  f64
 	downloads_                         map[u64]DownloadState
 	next_download_id_                  u64 = 1
+	external_url_requests_             []ExternalURLRequest
+	request_server_connection_lost_    bool
+	worker_request_server_loss_count_  u64
+	hsts_policies_                     map[string]HSTSPolicy
+	storage_usage_                     map[string]u64
+	storage_changes_                   []StorageChange
+	indexed_database_updates_          []IndexedDatabaseUpdate
 }
 
 pub fn PageClient.create() &PageClient { return &PageClient{} }
