@@ -176,6 +176,7 @@ mut:
 	attached_documents_                          []&dom.Document
 	wheel_event_listener_state_generation_       u64
 	needs_beforeunload_check_                    bool = true
+	local_root_navigable_                        ?&dom.Navigable
 	compositor_context_                          ?&compositor.CompositorContextHandle
 	last_find_query_                             ?FindInPageQuery
 	last_find_url_                               string
@@ -333,10 +334,33 @@ pub fn (p &Page) needs_beforeunload_check() bool {
 }
 
 pub fn (mut p Page) update_needs_beforeunload_check() {
-	mut needs_check := true
-	if p.top_level_traversable_is_initialized() && p.attached_documents_.len > 0 {
-		needs_check = false
-		for document in p.attached_documents_ {
+	mut needs_check := false
+	root := p.local_root_navigable_ or {
+		needs_check = true
+		if p.needs_beforeunload_check_ != needs_check {
+			p.needs_beforeunload_check_ = needs_check
+			p.client_.page_did_change_needs_beforeunload_check(needs_check)
+		}
+		return
+	}
+	active_document := root.active_document() or {
+		needs_check = true
+		if p.needs_beforeunload_check_ != needs_check {
+			p.needs_beforeunload_check_ = needs_check
+			p.client_.page_did_change_needs_beforeunload_check(needs_check)
+		}
+		return
+	}
+	if active_navigable := active_document.navigable() {
+		if voidptr(active_navigable) != voidptr(root) {
+			needs_check = true
+		}
+	} else {
+		needs_check = true
+	}
+	if !needs_check {
+		for navigable in active_document.inclusive_descendant_navigables() {
+			document := navigable.active_document() or { continue }
 			window := document.get_window() or { continue }
 			if unsafe { &dom.EventTarget(window) }.has_event_listener('beforeunload') {
 				needs_check = true
@@ -349,6 +373,22 @@ pub fn (mut p Page) update_needs_beforeunload_check() {
 	}
 	p.needs_beforeunload_check_ = needs_check
 	p.client_.page_did_change_needs_beforeunload_check(needs_check)
+}
+
+pub fn (mut p Page) set_local_root_navigable(navigable &dom.Navigable) ! {
+	if p.local_root_navigable_ != none {
+		return error('local root navigable replacement is not allowed')
+	}
+	p.local_root_navigable_ = navigable
+	p.update_needs_beforeunload_check()
+}
+
+pub fn (p &Page) has_local_root_navigable() bool {
+	return p.local_root_navigable_ != none
+}
+
+pub fn (p &Page) local_root_navigable() &dom.Navigable {
+	return p.local_root_navigable_ or { panic('Page has no local root navigable') }
 }
 
 pub fn (p &Page) top_level_traversable_is_initialized() bool {

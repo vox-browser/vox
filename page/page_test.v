@@ -248,10 +248,16 @@ fn test_page_beforeunload_check_tracks_attached_window_listeners() {
 	mut document := dom.Document.create_for_fragment_parsing()
 	mut window := &dom.Window{}
 	document.set_window(window)
+	mut navigable := &dom.Navigable{
+		is_top_level_traversable_: true
+	}
+	navigable.set_active_document(document)
 	document.set_page(unsafe { &dom.Page(p) })
 	assert p.needs_beforeunload_check()
 
-	p.set_top_level_traversable('root')!
+	p.set_local_root_navigable(navigable)!
+	assert p.has_local_root_navigable()
+	assert voidptr(p.local_root_navigable()) == voidptr(navigable)
 	assert !p.needs_beforeunload_check()
 	assert p.client().events.last().name == 'change-needs-beforeunload-check'
 	assert p.client().events.last().text == 'false'
@@ -266,6 +272,12 @@ fn test_page_beforeunload_check_tracks_attached_window_listeners() {
 	p.update_needs_beforeunload_check()
 	assert p.needs_beforeunload_check()
 	assert p.client().events.last().text == 'true'
+
+	mut replacement_rejected := false
+	p.set_local_root_navigable(&dom.Navigable{}) or {
+		replacement_rejected = true
+	}
+	assert replacement_rejected
 }
 
 fn test_find_navigation_resets_on_document_url_change_but_not_fragment_change() {
