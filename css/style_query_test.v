@@ -128,3 +128,21 @@ fn test_style_feature_marks_an_existing_property_substitution_context_cyclic() {
 	assert result == .false_
 	assert guarded_contexts.is_marked_cyclic(outer_context)
 }
+
+fn test_if_function_evaluates_style_queries_for_the_styled_element() {
+	_, _, target := style_query_test_tree('.target {
+		--theme: dark;
+		color: if(style(--theme: dark): red; else: blue);
+		width: if(style(--missing): 10px; else: 20px);
+	}')
+	assert computed_value_for(target, .color) or { '' } == 'rgb(255, 0, 0)'
+	assert computed_value_for(target, .width) or { '' } == '20px'
+}
+
+fn test_if_style_query_cycle_makes_the_custom_property_invalid() {
+	_, _, target := style_query_test_tree('.target {
+		--theme: if(style(--theme: dark): red; else: blue);
+		color: var(--theme, green);
+	}')
+	assert computed_value_for(target, .color) or { '' } == 'rgb(0, 128, 0)'
+}

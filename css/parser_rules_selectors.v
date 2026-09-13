@@ -4350,7 +4350,17 @@ fn (mut parser Parser) parse_if_test(mut tokens SupportsTokenStream) ?&BooleanEx
 		return none
 	}
 
-	// FIXME: Support style().
+	// style( <style-query> )
+	if function_name == 'style' {
+		mut style_tokens := SupportsTokenStream.from_values(function.value)
+		if style_query := parser.parse_style_query(mut style_tokens, .false_) {
+			style_tokens.discard_whitespace()
+			if !style_tokens.has_next_token() {
+				tokens = transaction
+				return style_query
+			}
+		}
+	}
 	return none
 }
 
@@ -4370,6 +4380,7 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 		}
 		evaluation_document = document
 	}
+	mut did_evaluate_attr_tainted_condition := false
 
 	for branch in if_args.branches {
 		substituted_condition := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, branch.condition, none)
@@ -4378,15 +4389,21 @@ fn replace_an_if_function(element ?dom.AbstractElement, mut guarded_contexts Gua
 		condition := condition_parser.parse_if_condition(mut condition_tokens) or {
 			continue
 		}
+		mut did_evaluate_attr_tainted_style_query := false
 		condition_result := condition.evaluate(BooleanExpressionEvaluationContext{
-			document: evaluation_document
+			document:                              evaluation_document
+			style_query_element:                   element
+			guarded_contexts:                      &guarded_contexts
+			did_evaluate_attr_tainted_style_query: &did_evaluate_attr_tainted_style_query
 		})
+		did_evaluate_attr_tainted_condition = did_evaluate_attr_tainted_condition
+			|| condition_is_attr_tainted || did_evaluate_attr_tainted_style_query
 		if condition_result == .false_ {
 			continue
 		}
 		value := branch.value or { return []ComponentValue{} }
 		result := substitute_arbitrary_substitution_functions_with_optional_element(element, mut guarded_contexts, value, none)
-		if condition_is_attr_tainted {
+		if did_evaluate_attr_tainted_condition {
 			return mark_as_attr_tainted(result)
 		}
 		return result
