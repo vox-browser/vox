@@ -31,6 +31,12 @@ fn test_upstream_element_geometry_paint_and_filter_reflection() {
 	switch_element := new_element('switch')
 	assert switch_element.is_svg_switch_element()
 	assert switch_element.is_svg_graphics_element()
+	assert new_element('clipPath').is_svg_clip_path_element()
+	assert new_element('linearGradient').is_svg_gradient_element()
+	assert new_element('radialGradient').is_svg_gradient_element()
+	assert !new_element('stop').is_svg_gradient_element()
+	assert new_element('image').is_svg_image_element()
+	assert new_element('pattern').is_svg_pattern_element()
 
 	mut rect := new_element('rect')
 	rect.attributes['x'] = '10'

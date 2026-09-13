@@ -634,12 +634,28 @@ pub fn (element &Element) is_svg_circle_element() bool {
 	return element.tag == 'circle'
 }
 
+pub fn (element &Element) is_svg_clip_path_element() bool {
+	return element.tag == 'clipPath'
+}
+
 pub fn (element &Element) is_svg_foreign_object_element() bool {
 	return element.tag == 'foreignObject'
 }
 
 pub fn (element &Element) is_svg_g_element() bool {
 	return element.tag == 'g'
+}
+
+pub fn (element &Element) is_svg_gradient_element() bool {
+	return element.tag in ['linearGradient', 'radialGradient']
+}
+
+pub fn (element &Element) is_svg_image_element() bool {
+	return element.tag == 'image'
+}
+
+pub fn (element &Element) is_svg_pattern_element() bool {
+	return element.tag == 'pattern'
 }
 
 pub fn (element &Element) is_svg_switch_element() bool {
