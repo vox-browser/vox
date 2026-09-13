@@ -72,6 +72,42 @@ fn test_auto_scroll_edges_speed_fraction_and_text_control_constraint() {
 	assert !handler.is_active()
 }
 
+fn test_auto_scroll_layout_node_uses_viewport_for_the_scrolling_element() {
+	mut document := dom.Document.create_for_fragment_parsing()
+	mut html_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html')!
+	mut document_node := unsafe { &dom.Node(document) }
+	document_node.append_child(html_element.as_node())!
+	element_layout := &dom.LayoutNode{
+		paintables_: [&dom.Paintable{}]
+	}
+	mut html_node := html_element.as_node()
+	html_node.set_layout_node(element_layout)
+	viewport_layout := &dom.LayoutNode{
+		is_viewport_: true
+		paintables_: [&dom.Paintable{}]
+	}
+	document.set_layout_viewport(&dom.LayoutViewport{
+		root_node: viewport_layout
+	})
+	resolved := AutoScrollHandler.auto_scroll_layout_node(html_element) or {
+		panic('missing viewport layout node')
+	}
+	assert voidptr(resolved) == voidptr(viewport_layout)
+
+	child := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
+	child_layout := &dom.LayoutNode{
+		paintables_: [&dom.Paintable{}]
+	}
+	mut child_node := child.as_node()
+	child_node.set_layout_node(child_layout)
+	resolved_child := AutoScrollHandler.auto_scroll_layout_node(child) or {
+		panic('missing child layout node')
+	}
+	assert voidptr(resolved_child) == voidptr(child_layout)
+	child_node.set_layout_node(&dom.LayoutNode{})
+	assert AutoScrollHandler.auto_scroll_layout_node(child) == none
+}
+
 fn test_middle_button_autoscroll_activation_dead_zone_and_cancellation() {
 	mut handler := EventHandler{}
 	target := InputTarget{ id: 'scroller', has_scrollable_box: true }

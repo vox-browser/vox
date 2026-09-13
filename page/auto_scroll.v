@@ -4,6 +4,7 @@
 // Translation of Page/AutoScrollHandler.{h,cpp}.
 module page
 
+import dom
 import math
 
 const auto_scroll_interval_seconds = 0.016
@@ -35,6 +36,24 @@ pub fn auto_scroll_speed(mouse PixelPoint, edge PixelRect) PixelPoint {
 		x: axis_speed(mouse.x, edge.x, edge.right())
 		y: axis_speed(mouse.y, edge.y, edge.bottom())
 	}
+}
+
+// Returns the committed layout node which owns an element's auto-scroll
+// scrollport. The document scrolling element is represented by the viewport
+// node, not by the element's own layout node.
+pub fn AutoScrollHandler.auto_scroll_layout_node(element &dom.Element) ?&dom.LayoutNode {
+	mut layout_node := element.as_node().unsafe_layout_node()
+	if scrolling_element := element.document().scrolling_element() {
+		if voidptr(scrolling_element) == voidptr(element) {
+			viewport := element.document().unsafe_layout_node() or { return none }
+			layout_node = viewport.root_layout_node()
+		}
+	}
+	committed := layout_node or { return none }
+	if committed.paintables().len == 0 {
+		return none
+	}
+	return committed
 }
 
 @[heap]
