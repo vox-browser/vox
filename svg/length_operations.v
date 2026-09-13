@@ -46,8 +46,9 @@ pub fn SvgLength.create_reflected_attribute(element Element, name string, direct
 }
 
 fn svg_length_context_from_element(element Element) SvgLengthResolutionContext {
-	viewport_width := parse_length(element.attributes['_viewport_width'] or { '' }) or { 100 }
-	viewport_height := parse_length(element.attributes['_viewport_height'] or { '' }) or { 100 }
+	viewport_size := element.viewport_size_for_percentage_resolution()
+	viewport_width := viewport_size.width
+	viewport_height := viewport_size.height
 	font_size := parse_length(element.attributes['font-size'] or { '' }) or { 16 }
 	return SvgLengthResolutionContext{
 		has_associated_element: true
@@ -63,6 +64,17 @@ fn svg_length_context_from_element(element Element) SvgLengthResolutionContext {
 		root_x_height: parse_length(element.attributes['_root_x_height'] or { '' }) or { 8 }
 		root_zero_advance: parse_length(element.attributes['_root_zero_advance'] or { '' }) or { 8 }
 		root_line_height: parse_length(element.attributes['_root_line_height'] or { '' }) or { 19.2 }
+	}
+}
+
+// The DOM/layout adapter annotates portable SVG element records with the
+// viewport that owns their user coordinate system. Reflected SVGLength values
+// and geometry APIs share this basis, including the normalized diagonal used
+// by directionless percentages.
+pub fn (element &Element) viewport_size_for_percentage_resolution() ViewportSize {
+	return ViewportSize{
+		width: parse_length(element.attributes['_viewport_width'] or { '' }) or { 100 }
+		height: parse_length(element.attributes['_viewport_height'] or { '' }) or { 100 }
 	}
 }
 

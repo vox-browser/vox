@@ -70,6 +70,12 @@ pub:
 	height f64
 }
 
+pub struct ViewportSize {
+pub:
+	width  f64
+	height f64
+}
+
 pub struct NumberPercentage {
 pub:
 	value         f64

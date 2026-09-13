@@ -112,6 +112,21 @@ fn test_svg_length_reflected_attribute_is_live_and_reserializes() {
 	assert reflected.value_as_string() == '0'
 }
 
+fn test_svg_viewport_size_is_shared_by_geometry_and_reflected_lengths() {
+	mut element := new_element('rect')
+	element.attributes['_viewport_width'] = '300'
+	element.attributes['_viewport_height'] = '120'
+	element.attributes['width'] = '25%'
+	viewport := element.viewport_size_for_percentage_resolution()
+	assert viewport == ViewportSize{300, 120}
+	horizontal := SvgLength.create_reflected_attribute(element, 'width', .horizontal, SvgLengthValue.number(0), false)
+	assert horizontal.resolved_value()! == 75
+
+	element.attributes['width'] = '50%'
+	directionless := SvgLength.create_reflected_attribute(element, 'width', .unspecified, SvgLengthValue.number(0), false)
+	assert_svg_length_close(directionless.resolved_value()!, math.sqrt((300.0 * 300.0 + 120.0 * 120.0) / 2.0) / 2.0)
+}
+
 fn test_animated_svg_length_retains_reflection_source_and_context() {
 	mut element := new_element('rect')
 	element.attributes['height'] = '50%'

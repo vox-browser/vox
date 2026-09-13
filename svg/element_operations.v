@@ -337,9 +337,8 @@ pub fn (_ &Element) resolve_relative_to_viewport_size(value NumberPercentage, vi
 }
 
 pub fn (element &Element) get_total_length() f64 {
-	viewport_width := parse_length(element.attributes['_viewport_width'] or { '' }) or { 100 }
-	viewport_height := parse_length(element.attributes['_viewport_height'] or { '' }) or { 100 }
-	return element.get_total_length_for_viewport(viewport_width, viewport_height)
+	viewport_size := element.viewport_size_for_percentage_resolution()
+	return element.get_total_length_for_viewport(viewport_size.width, viewport_size.height)
 }
 
 pub fn (element &Element) get_total_length_for_viewport(viewport_width f64, viewport_height f64) f64 {
