@@ -78,3 +78,33 @@ fn test_external_svg_script_fetch_pauses_and_resumes_the_html_parser() {
 	assert !document.anything_is_delaying_the_load_event()
 	assert document.get_elements_by_tag_name('p').length() == 1
 }
+
+fn test_svg_script_adoption_transfers_an_in_flight_load_event_delay() {
+	mut old_document := dom.Document.create(dom.URL{ value: 'https://old.example/page.svg' })
+	mut new_document := dom.Document.create(dom.URL{ value: 'https://new.example/adopted.svg' })
+	_ = WindowModel.create_top_level(old_document, none, 'old-svg-script')!
+	_ = WindowModel.create_top_level(new_document, none, 'new-svg-script')!
+	mut script_element := old_document.create_element_ns(dom.namespace_svg_uri, 'script')!
+	script_element.set_attribute_value('href', '/pending.js')
+	old_document.append_child(script_element)
+	script := unsafe { &dom.SVGScriptElement(script_element) }
+	mut model := unsafe {
+		&SVGScriptElementModel(svg_script_element_model_for_dom_element(script))
+	}
+	model.process_the_script_element()
+
+	assert old_document.anything_is_delaying_the_load_event()
+	assert !new_document.anything_is_delaying_the_load_event()
+
+	new_document.adopt_node(script_element.as_node())
+	assert voidptr(model.document_) == voidptr(new_document)
+	assert model.base_url_.serialize() == 'https://new.example/adopted.svg'
+	assert !old_document.anything_is_delaying_the_load_event()
+	assert new_document.anything_is_delaying_the_load_event()
+
+	mut event_loop := main_thread_event_loop()
+	for event_loop.task_queue().has_runnable_tasks() {
+		event_loop.process()
+	}
+	assert !new_document.anything_is_delaying_the_load_event()
+}

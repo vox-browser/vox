@@ -30,9 +30,19 @@ fn svg_script_dom_element(element &dom.SVGScriptElement) &dom.Element {
 	return unsafe { &dom.Element(element) }
 }
 
+fn svg_script_element_adopted_from_callback(target voidptr, old_document &dom.Document) {
+	mut model := unsafe { &SVGScriptElementModel(target) }
+	model.adopted_from(old_document)
+}
+
 fn attach_svg_script_element_model(element &dom.SVGScriptElement, model &SVGScriptElementModel) {
 	mut mutable_element := unsafe { &dom.SVGScriptElement(element) }
 	mutable_element.script_element_model_ = voidptr(model)
+	mut node := svg_script_dom_element(element).as_node()
+	node.set_adopted_from_hook(dom.NodeAdoptedFromHook{
+		target: voidptr(model)
+		callback: svg_script_element_adopted_from_callback
+	})
 }
 
 pub fn svg_script_element_model_for_dom_element(element &dom.SVGScriptElement) &SVGScriptElementModel {
@@ -52,6 +62,23 @@ pub fn svg_script_element_model_for_dom_element(element &dom.SVGScriptElement) &
 	}
 	attach_svg_script_element_model(element, model)
 	return model
+}
+
+// SVGScriptElement::adopted_from(). An in-flight external script continues to
+// delay the load event of its new owner document, not the document it left.
+pub fn (mut script SVGScriptElementModel) adopted_from(_ &dom.Document) {
+	new_document := svg_script_dom_element(script.element_).document()
+	script.document_ = new_document
+	script.base_url_ = new_document.base_url()
+	mut was_delaying_load := false
+	if mut delayer := script.document_load_event_delayer_ {
+		delayer.finish()
+		was_delaying_load = true
+	}
+	if was_delaying_load {
+		mut mutable_new_document := unsafe { &dom.Document(new_document) }
+		script.document_load_event_delayer_ = dom.DocumentLoadEventDelayer.new(mut mutable_new_document)
+	}
 }
 
 pub fn (mut script SVGScriptElementModel) set_parser_inserted() {
