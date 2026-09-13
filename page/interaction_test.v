@@ -276,6 +276,31 @@ fn test_drag_cancel_runs_the_failed_drop_cleanup_path() {
 		'dragleave', 'dragend']
 }
 
+fn test_event_handler_drag_cancel_restores_cursor_press_and_selection_state() {
+	mut handler := EventHandler{}
+	assert handler.drag_and_drop.handle_drag_start([], false, .all) == .handled
+	assert handler.drag_and_drop.handle_drag_move(DragTarget{id: 'drop-target'}, false, false,
+		false, .none) == .handled
+	handler.mousedown_target_ = 'drag-source'
+	handler.mousedown_visual_viewport_position_ = PixelPoint{x: 10, y: 20}
+	handler.start_selection(.character)
+	handler.update_cursor('grabbing')
+	assert handler.cancel_drag_and_drop_event() == .cancelled
+	assert !handler.drag_and_drop.has_ongoing_drag_and_drop_operation()
+	assert handler.drag_and_drop.event_log.map(it.name).last() == 'dragend'
+	assert handler.current_cursor == 'arrow'
+	assert handler.mousedown_target_ == ''
+	assert handler.mousedown_visual_viewport_position_ == none
+	assert !handler.is_handling_mouse_selection()
+
+	assert handler.drag_and_drop.handle_drag_start([], false, .all) == .handled
+	handler.set_document_state(false, true)
+	assert handler.cancel_drag_and_drop_event() == .dropped
+	assert handler.drag_and_drop.has_ongoing_drag_and_drop_operation()
+	handler.set_document_state(true, true)
+	assert handler.cancel_drag_and_drop_event() == .cancelled
+}
+
 fn test_event_handler_drops_input_during_drag_and_orders_pointer_mouse_click() {
 	mut handler := EventHandler{}
 	target := InputTarget{

@@ -337,6 +337,19 @@ pub fn (mut handler EventHandler) handle_mouseleave() EventResult {
 	return .handled
 }
 
+// Platform drag cancellation bypasses ordinary device-input suppression. It
+// terminates the HTML drag operation and restores all pointer-selection state.
+pub fn (mut handler EventHandler) cancel_drag_and_drop_event() EventResult {
+	if !handler.active_document {
+		return .dropped
+	}
+	result := handler.drag_and_drop.handle_drag_cancel()
+	handler.update_cursor('arrow')
+	handler.clear_mousedown_tracking()
+	handler.stop_updating_selection()
+	return result
+}
+
 pub fn (mut handler EventHandler) handle_mousewheel(target ?InputTarget) EventResult {
 	if handler.should_ignore_device_input_event() || !handler.paint_root_available || target == none {
 		return .dropped
