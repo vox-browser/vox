@@ -190,6 +190,29 @@ class ConsolidatedFunctionTests(unittest.TestCase):
             (("svg_image_color_scheme", "Document"),),
         )
 
+    def test_svg_presentation_attribute_cache_maps_to_live_cascade_collection(self) -> None:
+        for method_name in ("apply_presentational_hints", "presentation_attribute_style"):
+            self.assertEqual(
+                audit.CONSOLIDATED_METHOD_MAPPINGS[("SVGElement", method_name)],
+                (("collect_svg_presentational_hints", None),),
+            )
+        self.assertEqual(
+            audit.CONSOLIDATED_METHOD_MAPPINGS[
+                ("SVGElement", "parse_presentation_attribute")
+            ],
+            (("parse_svg_presentation_attribute_value", None),),
+        )
+        for function_name in (
+            "attribute_style_properties_by_name",
+            "property_id_for_presentational_attribute",
+        ):
+            self.assertEqual(
+                audit.CONSOLIDATED_FUNCTION_MAPPINGS[
+                    ("SVGElement.cpp", function_name)
+                ],
+                ("collect_svg_presentational_hints",),
+            )
+
     def test_animation_overlay_adapter_maps_to_the_css_update_callback(self) -> None:
         self.assertEqual(
             audit.CONSOLIDATED_FUNCTION_MAPPINGS[

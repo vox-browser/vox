@@ -395,6 +395,27 @@ CONSOLIDATED_METHOD_MAPPINGS: dict[tuple[str, str], tuple[tuple[str, str | None]
     ("SVGDecodedImageData", "color_scheme"): (
         ("svg_image_color_scheme", "Document"),
     ),
+    # SVG presentation attributes are recomputed directly into the V cascade
+    # instead of retaining a per-element parsed-property cache. Attribute
+    # mutation invalidates style, and the next cascade collects and parses the
+    # current attribute set through these concrete functions.
+    ("SVGElement", "apply_presentational_hints"): (
+        ("collect_svg_presentational_hints", None),
+    ),
+    ("SVGElement", "presentation_attribute_style"): (
+        ("collect_svg_presentational_hints", None),
+    ),
+    ("SVGElement", "parse_presentation_attribute"): (
+        ("parse_svg_presentation_attribute_value", None),
+    ),
+    ("SVGElement", "update_presentation_attribute_style"): (
+        ("attribute_changed", "Element"),
+        ("collect_svg_presentational_hints", None),
+    ),
+    ("SVGElement", "publish_presentation_attribute_style"): (
+        ("compute_cascaded_values", "StyleComputer"),
+        ("collect_svg_presentational_hints", None),
+    ),
     ("Paintable", "paint_inspector_overlay"): (
         ("paint_inspector_overlay", "BlockBox"),
     ),
@@ -3049,6 +3070,15 @@ CONSOLIDATED_FIELD_MAPPINGS: dict[
 # V target still exists, so they cannot silently turn stale documentation into
 # coverage.
 CONSOLIDATED_FUNCTION_MAPPINGS: dict[tuple[str, str], tuple[str, ...]] = {
+    # V checks the name/element restrictions while collecting the live SVG
+    # attribute set, so it needs neither a pointer lookup table nor a separate
+    # property-id probe.
+    ("SVGElement.cpp", "attribute_style_properties_by_name"): (
+        "collect_svg_presentational_hints",
+    ),
+    ("SVGElement.cpp", "property_id_for_presentational_attribute"): (
+        "collect_svg_presentational_hints",
+    ),
     # AnimationUpdateContext teardown is folded into the CSS-owned callback in
     # V to avoid the css -> animations import cycle. That callback directly
     # reads and compares the translated animated property maps, so the small
