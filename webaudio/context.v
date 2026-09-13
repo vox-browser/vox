@@ -89,6 +89,7 @@ pub mut:
 	onstatechange_count u32
 	onstatechange       bool
 	media_element_tasks u32
+	audio_worklet_      ?&AudioWorklet
 }
 
 pub fn verify_sample_rate(sample_rate f32) ! {
@@ -284,6 +285,7 @@ pub fn (mut context AudioContext) close() AudioPromise {
 			message: 'InvalidStateError: Audio context is already closed'
 		}
 	}
+	context.base.shutdown_audio_worklet()
 	context.base.rendering_state = .suspended
 	context.base.state = .closed
 	context.base.onstatechange_count++
