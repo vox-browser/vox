@@ -5,10 +5,12 @@ fn test_generated_html_name_tables_match_upstream_counts_and_spellings() {
 	events := html_event_names()
 	tags := html_tag_names()
 	assert attributes.len == 314
-	assert events.len == 138
+	assert events.len == 140
 	assert tags.len == 146
 	assert 'accept-charset' in attributes
 	assert 'DOMContentLoaded' in events
+	assert 'begin' in events
+	assert 'repeat' in events
 	assert 'selectedcontent' in tags
 	assert 'template' in tags
 }
