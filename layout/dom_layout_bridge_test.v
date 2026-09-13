@@ -194,6 +194,21 @@ fn test_document_layout_stabilizes_container_relative_lengths_after_geometry_com
 	assert !doc.needs_container_query_evaluation_after_layout(container)
 }
 
+fn test_inline_geometry_skips_inline_block_descendant_fragments() {
+	document := html.parse_document('<!doctype html><style>
+		html, body { margin: 0 }
+		i { display: inline-block }
+		i::before { content: "X" }
+	</style><body><a><i></i></a></body>')
+	_ = layout_document_typed_in_viewport(document, 320, 200)
+	anchor := document.query_selector('a') or { panic('missing anchor') }
+	inline_block := document.query_selector('i') or { panic('missing inline block') }
+	anchor_rect := anchor.get_bounding_client_rect()
+	inline_block_rect := inline_block.get_bounding_client_rect()
+	assert anchor_rect.x == inline_block_rect.x
+	assert anchor_rect.width == inline_block_rect.width
+}
+
 fn test_computed_cssom_uses_translated_layout_used_values() {
 	mut doc := dom.Document.create(dom.url_about_blank())
 	doc.set_browsing_context(&dom.BrowsingContext{})

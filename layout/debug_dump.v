@@ -316,7 +316,10 @@ fn layout_debug_fragment_is_in_inline_subtree(fragment_node &Node, inline_node &
 	mut ancestor := fragment_node.parent()
 	for ancestor != none {
 		current := ancestor or { break }
-		if current.is_atomic_inline() {
+		// LayoutState::commit() skips the complete BlockContainer paintable
+		// subtree while sizing an inline paintable. Its internal line fragments
+		// use a different containing block and must not enlarge the outer inline.
+		if current.is_block_container() || current.is_atomic_inline() {
 			return false
 		}
 		if layout_nodes_same(current, inline_node) {
