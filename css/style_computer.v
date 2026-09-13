@@ -664,20 +664,16 @@ fn opaque_is_pending_substitution(value &dom.StyleValue) bool {
 	return typed is PendingSubstitutionStyleValue
 }
 
-// Cascade one declaration block into `cascaded_properties` — the inner `cascade_style_declaration`
-// lambda of Ladybird's StyleComputer::cascade_declarations. For each property (of the requested
-// importance / supported by the pseudo-element / in `properties_to_cascade` when non-empty), expand
-// shorthands and, per longhand, map a logical alias to its physical property and either revert it or
-// set it in the cascade.
+// Apply an arbitrary property list to `cascaded_properties`. For each property
+// (of the requested importance / supported by the pseudo-element / in
+// `properties_to_cascade` when non-empty), expand shorthands and, per longhand,
+// map a logical alias to its physical property and either revert it or set it
+// in the cascade. Keeping this independent of CSSStyleProperties lets HTML,
+// SVG, and MathML presentational hints use the same cascade pipeline.
 // Unresolved var()/env() values are resolved before shorthand expansion by
 // resolve_cascade_declaration_value(); CascadedProperties performs the final custom-property pass.
-fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, declaration &CSSStyleProperties, source_shadow_root ?&dom.ShadowRoot, cascade_origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
+fn apply_property_list_to_cascade(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, properties []StyleProperty, cascade_origin CascadeOrigin, important Important, layer_name ?string, source voidptr, source_shadow_root ?&dom.ShadowRoot, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
 	pseudo_element := abstract_element.pseudo_element()
-	properties := declaration_style_properties(declaration)
-	importance_bit := if important == .yes { u8(2) } else { u8(1) }
-	if declaration.typed_importance_mask_ & importance_bit == 0 {
-		return
-	}
 	// CSSStyleProperties retains an unresolved shorthand and pending-substitution
 	// placeholders for its longhands. Once the shorthand has resolved and set a
 	// longhand, a later placeholder must not overwrite that real value.
@@ -727,7 +723,7 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 			} else if opaque_is_revert_layer(longhand_id, resolved_property_value) {
 				cascaded_properties.revert_layer_property(physical_property_id, important, layer_name)
 			} else {
-				cascaded_properties.set_property(physical_property_id, resolved_property_value, important, cascade_origin, layer_name, voidptr(declaration), source_shadow_root)
+				cascaded_properties.set_property(physical_property_id, resolved_property_value, important, cascade_origin, layer_name, source, source_shadow_root)
 			}
 			continue
 		}
@@ -756,10 +752,19 @@ fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_
 			} else if opaque_is_revert_layer(longhand.id, longhand.value) {
 				cascaded_properties.revert_layer_property(physical_property_id, important, layer_name)
 			} else {
-				cascaded_properties.set_property(physical_property_id, longhand.value, important, cascade_origin, layer_name, voidptr(declaration), source_shadow_root)
+				cascaded_properties.set_property(physical_property_id, longhand.value, important, cascade_origin, layer_name, source, source_shadow_root)
 			}
 		}
 	}
+}
+
+fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, declaration &CSSStyleProperties, source_shadow_root ?&dom.ShadowRoot, cascade_origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
+	properties := declaration_style_properties(declaration)
+	importance_bit := if important == .yes { u8(2) } else { u8(1) }
+	if declaration.typed_importance_mask_ & importance_bit == 0 {
+		return
+	}
+	apply_property_list_to_cascade(mut cascaded_properties, abstract_element, properties, cascade_origin, important, layer_name, voidptr(declaration), source_shadow_root, logical_alias_mapping_context, properties_to_cascade)
 }
 
 // NOTE: the outer `cascade_declarations` (StyleComputer.cpp:476, the matching-rules + inline-style

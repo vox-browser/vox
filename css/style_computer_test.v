@@ -111,6 +111,24 @@ fn test_cascade_declarations_inline_style() {
 	assert padding_top.css_text == '10px'
 }
 
+fn test_apply_arbitrary_property_list_to_cascade() {
+	doc := dom.Document.create(dom.url_about_blank())
+	mut element := doc.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic('${err}')
+	}
+	value := dom_style_value_from_value_logic(parse_css_value_logic(.color, 'tomato') or {
+		panic('color did not parse')
+	})
+	properties := [StyleProperty{
+		property_id: .color
+		value: value
+	}]
+	mut cascaded := CascadedProperties.new()
+	apply_property_list_to_cascade(mut cascaded, dom.AbstractElement.new(element, none), properties, .author, .no, none, unsafe { nil }, none, none, [])
+	assert cascaded.property(.color)?.css_text == 'tomato'
+	assert cascaded.property_source(.color) == unsafe { nil }
+}
+
 fn test_cascaded_properties_cache_retains_unresolved_shorthand_ids() {
 	mut cascaded := CascadedProperties.new()
 	unresolved := dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create(parse_component_values_for_value_logic('var(--spacing)'))))
