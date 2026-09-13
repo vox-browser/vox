@@ -12,6 +12,8 @@ pub:
 	length      u32
 pub mut:
 	channels [][]f32
+mut:
+	contents_ ?&AudioBufferContents
 }
 
 pub struct AudioBufferOptions {
@@ -23,6 +25,10 @@ pub:
 
 pub fn AudioBuffer.from_options(options AudioBufferOptions) !AudioBuffer {
 	return new_audio_buffer(options.number_of_channels, options.length, options.sample_rate)
+}
+
+pub fn AudioBuffer.create_for_constructor(options AudioBufferOptions) !AudioBuffer {
+	return AudioBuffer.from_options(options)
 }
 
 pub fn new_audio_buffer(number_of_channels u32, length u32, sample_rate f32) !AudioBuffer {
@@ -84,6 +90,44 @@ pub fn (mut buffer AudioBuffer) copy_to_channel(source []f32, channel_number u32
 	for index in 0 .. count {
 		buffer.channels[channel_number][int(buffer_offset) + index] = source[index]
 	}
+}
+
+// https://webaudio.github.io/web-audio-api/#acquire-the-content
+pub fn (mut buffer AudioBuffer) acquire_contents() &AudioBufferContents {
+	if contents := buffer.contents_ {
+		return contents
+	}
+	mut channels := [][]f32{cap: buffer.channels.len}
+	for channel in buffer.channels {
+		channels << channel.clone()
+	}
+	contents := &AudioBufferContents{
+		channels: channels
+		sample_rate: buffer.sample_rate
+	}
+	buffer.contents_ = contents
+	return contents
+}
+
+// V slices do not expose JavaScript ArrayBuffer detachment. This explicit
+// completion of acquisition still preserves the important copy-on-write
+// boundary: subsequent channel writes cannot mutate the playback snapshot.
+pub fn (mut buffer AudioBuffer) attach_acquired_channels() {
+	contents := buffer.contents_ or { return }
+	mut channels := [][]f32{cap: contents.channels.len}
+	for channel in contents.channels {
+		channels << channel.clone()
+	}
+	buffer.channels = channels
+	buffer.contents_ = none
+}
+
+pub fn (buffer AudioBuffer) external_memory_size() int {
+	mut size := 0
+	for channel in buffer.channels {
+		size += channel.cap * int(sizeof(f32))
+	}
+	return size
 }
 
 pub struct AnalyserOptions {
