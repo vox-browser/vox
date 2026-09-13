@@ -1006,12 +1006,6 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 // place, preserving the cascaded-property and computed-style objects exactly as
 // upstream does.
 fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_element dom.AbstractElement) RequiredInvalidationAfterStyleChange {
-	dom_cascaded := abstract_element.cascaded_properties() or {
-		return RequiredInvalidationAfterStyleChange{}
-	}
-	cascaded := cascaded_properties_from_dom(dom_cascaded) or {
-		return RequiredInvalidationAfterStyleChange{}
-	}
 	dom_computed := abstract_element.computed_properties() or {
 		return RequiredInvalidationAfterStyleChange{}
 	}
@@ -1023,25 +1017,15 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 
 	mut invalidation := RequiredInvalidationAfterStyleChange{}
 	mut values_affected_by_inherited_style := map[PropertyID]&dom.StyleValue{}
+	for property_id, specified_value in computed.inheritance_dependent_specified_values() {
+		if old_value := computed.property(property_id, .no) {
+			values_affected_by_inherited_style[property_id] = old_value
+		}
+		computed.set_property_without_modifying_flags(property_id, specified_value)
+	}
 	animated_values := computed.animated_property_values()
 	for property_id in computed_interpolation_longhand_property_ids() {
-		preabsolutized_value := cascaded.property(property_id)
 		old_value := computed.property(property_id, .no)
-
-		if preabsolutized := preabsolutized_value {
-			if typed := typed_style_value_logic_from_dom(preabsolutized) {
-				keyword := typed.to_keyword()
-				needs_updating := (typed is LengthStyleValue && typed.length().is_font_relative())
-					|| (property_id == .font_weight && keyword in [.bolder, .lighter])
-					|| (property_id == .font_size && keyword in [.larger, .smaller])
-				if needs_updating {
-					computed.set_property_without_modifying_flags(property_id, preabsolutized)
-					if old := old_value {
-						values_affected_by_inherited_style[property_id] = old
-					}
-				}
-			}
-		}
 
 		if !computed.is_property_inherited(property_id) {
 			continue

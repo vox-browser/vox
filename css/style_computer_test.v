@@ -495,6 +495,40 @@ fn test_style_recomputation_counters_track_full_inherited_and_noop_work() {
 	assert counters.element_inherited_style_noop_recomputations == 1
 }
 
+fn test_inheritance_dependent_specified_values_survive_the_cascade_pass() {
+	document := dom.Document.create(dom.url_about_blank())
+	mut parent := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or {
+		panic(err)
+	}
+	parent.set_attribute_value('style', 'font-size: 20px')
+	mut child := document.create_element_ns('http://www.w3.org/1999/xhtml', 'span') or {
+		panic(err)
+	}
+	child.set_attribute_value('style', 'font-size: 2em')
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node()) or { panic(err) }
+
+	computer := StyleComputer.new(document)
+	mut parent_abstract := dom.AbstractElement.new(parent, none)
+	mut child_abstract := dom.AbstractElement.new(child, none)
+	computer.recompute_style(mut parent_abstract)
+	computer.recompute_style(mut child_abstract)
+	child_computed := computed_properties_from_dom(child_abstract.computed_properties() or {
+		panic('child style missing')
+	}) or { panic('child computed properties missing') }
+	assert child_computed.font_size().to_double() == 40
+	assert child_computed.inheritance_dependent_specified_values()[.font_size].css_text == '2em'
+
+	parent.set_attribute_value('style', 'font-size: 10px')
+	computer.recompute_style(mut parent_abstract)
+	child_abstract.set_cascaded_properties(none)
+	computer.recompute_inherited_style_with_invalidation(mut child_abstract)
+	updated_child := computed_properties_from_dom(child_abstract.computed_properties() or {
+		panic('updated child style missing')
+	}) or { panic('updated child computed properties missing') }
+	assert updated_child.font_size().to_double() == 20
+}
+
 // recompute_style_for_subtree styles a whole tree top-down in one pass, so an inherited property flows
 // down multiple levels (grandparent -> parent -> grandchild) via each element's stored computed style.
 fn test_recompute_style_for_subtree_inherits_down_levels() {

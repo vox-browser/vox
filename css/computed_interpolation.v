@@ -1464,6 +1464,8 @@ pub mut:
 	cached_first_available_computed_font_   ?&PlatformFont
 	line_height_                            ?CSSPixels
 	attempted_pseudo_class_matches_         PseudoClassBitmap
+	inheritance_dependent_specified_values_ map[PropertyID]&dom.StyleValue
+	raw_cascaded_font_size_                 ?&dom.StyleValue
 	depends_on_viewport_metrics_            bool
 	font_metrics_depend_on_viewport_metrics_ bool
 	// Lengths whose computed value remains viewport- or root-font-relative
@@ -1673,6 +1675,7 @@ pub fn ComputedProperties.new() &ComputedProperties {
 	return &ComputedProperties{
 		property_values_: []&dom.StyleValue{len: number_of_longhand_properties, init: unsafe { nil }}
 		animated_property_values_: map[PropertyID]&dom.StyleValue{}
+		inheritance_dependent_specified_values_: map[PropertyID]&dom.StyleValue{}
 	}
 }
 
@@ -1700,6 +1703,7 @@ fn computed_properties_with_initial_values() &ComputedProperties {
 	return &ComputedProperties{
 		property_values_: computed_interpolation_initial_value_cache.clone()
 		animated_property_values_: map[PropertyID]&dom.StyleValue{}
+		inheritance_dependent_specified_values_: map[PropertyID]&dom.StyleValue{}
 	}
 }
 
@@ -1861,6 +1865,22 @@ pub fn (c &ComputedProperties) anchor_names() []string {
 
 pub fn (c &ComputedProperties) animated_property_values() map[PropertyID]&dom.StyleValue {
 	return c.animated_property_values_.clone()
+}
+
+pub fn (c &ComputedProperties) inheritance_dependent_specified_values() map[PropertyID]&dom.StyleValue {
+	return c.inheritance_dependent_specified_values_.clone()
+}
+
+pub fn (mut c ComputedProperties) add_inheritance_dependent_specified_value(property_id PropertyID, value &dom.StyleValue) {
+	c.inheritance_dependent_specified_values_[property_id] = unsafe { value }
+}
+
+pub fn (c &ComputedProperties) raw_cascaded_font_size() ?&dom.StyleValue {
+	return c.raw_cascaded_font_size_
+}
+
+pub fn (mut c ComputedProperties) set_raw_cascaded_font_size(value &dom.StyleValue) {
+	c.raw_cascaded_font_size_ = unsafe { value }
 }
 
 pub fn (mut c ComputedProperties) reset_non_inherited_animated_properties() {
@@ -10139,9 +10159,9 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 	mut current_size_depends_on_viewport_metrics := false
 	for index := ancestors.len - 1; index >= 0; index-- {
 		ancestor := ancestors[index]
-		dom_cascaded := ancestor.cascaded_properties() or { continue }
-		ancestor_cascaded := cascaded_properties_from_dom(dom_cascaded) or { continue }
-		font_size_value := ancestor_cascaded.property(.font_size) or { continue }
+		ancestor_dom_computed := ancestor.computed_properties() or { continue }
+		ancestor_computed := computed_properties_from_dom(ancestor_dom_computed) or { continue }
+		font_size_value := ancestor_computed.raw_cascaded_font_size() or { continue }
 		keyword := computed_interpolation_style_value_keyword(font_size_value) or {
 			Keyword.invalid
 		}
@@ -10466,6 +10486,9 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			}
 			value = active_cascaded_property.value
 			requires_computation = property_requires_computation_with_cascaded_value(property_id)
+			if property_id == .font_size {
+				properties.set_raw_cascaded_font_size(active_cascaded_property.value)
+			}
 		}
 		if property_id == .font_size && value == none && recascaded_font_size != none {
 			continue
@@ -10519,6 +10542,16 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		}
 
 		style_value := value or { continue }
+		keyword := computed_interpolation_style_value_keyword(style_value) or { Keyword.invalid }
+		mut depends_on_inherited_info := (property_id == .font_weight
+			&& keyword in [.bolder, .lighter])
+			|| (property_id == .font_size && keyword in [.larger, .smaller])
+		if length := computed_interpolation_length_from_dom_style_value(style_value) {
+			depends_on_inherited_info = depends_on_inherited_info || length.is_font_relative()
+		}
+		if depends_on_inherited_info {
+			properties.add_inheritance_dependent_specified_value(property_id, style_value)
+		}
 		mut computation_context := s.get_computation_context_for_property(property_id,
 			properties, abstract_element)
 		computation_context.reset_viewport_metric_dependency_tracking()

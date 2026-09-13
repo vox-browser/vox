@@ -134,6 +134,8 @@ fn test_computed_font_size_and_line_height_use_parent_metrics() {
 	mut parent_abstract := dom.AbstractElement.new(parent, none)
 	parent_computed := s.compute_style(parent_abstract)
 	parent_abstract.set_computed_properties(computed_properties_to_dom(parent_computed))
+	assert parent_computed.raw_cascaded_font_size()?.css_text == '20px'
+	parent_abstract.set_cascaded_properties(none)
 	child_computed := s.compute_style(dom.AbstractElement.new(child, none))
 
 	assert parent_computed.font_size().to_double() == 20.0
