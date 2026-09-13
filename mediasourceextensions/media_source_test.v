@@ -353,6 +353,28 @@ fn test_source_buffer_keeps_a_split_ignored_webm_element_until_it_is_complete() 
 	assert track_buffer.demuxer.coded_frame_count() == 1
 }
 
+fn test_source_buffer_ignores_webm_elements_after_a_repeated_initialization_segment() {
+	mut source := MediaSource.create()
+	mut media := html.HTMLMediaElement.create(none, dom.URL{'https://example.test/'})
+	media.set_src_object(source.as_media_provider())!
+	mut buffer := source.add_source_buffer('video/webm; codecs="vp9"')!
+	initialization := minimal_webm_initialization_segment()
+	media_segment := minimal_webm_media_segment()
+
+	buffer.append_buffer(initialization)!
+	buffer.append_buffer(media_segment)!
+	buffer.append_buffer(initialization)!
+	// Matroska muxers commonly emit Tags after Tracks. It remains an accepted
+	// ignored element even when this initialization segment follows a Cluster.
+	tags := ebml_test_element([u8(0x12), 0x54, 0xc3, 0x67], []u8{})
+	buffer.append_buffer(tags)!
+	buffer.append_buffer(media_segment)!
+
+	assert buffer.input_buffer_length() == 0
+	track_buffer := buffer.processor_.track_buffers()[1] or { panic('missing track buffer') }
+	assert track_buffer.demuxer.coded_frame_count() == 1
+}
+
 fn test_buffered_change_event_preserves_base_init_and_identity() {
 	mut added := &html.TimeRanges{}
 	added.add_range(1, 2)
