@@ -36,7 +36,8 @@ pub:
 
 pub struct TargetSnapshotParams {
 pub:
-	sandboxing_flags SandboxingFlagSet
+	sandboxing_flags                SandboxingFlagSet
+	iframe_element_referrer_policy ReferrerPolicy = .empty_string
 }
 
 pub struct ChosenNavigable {
