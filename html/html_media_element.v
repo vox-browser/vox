@@ -73,7 +73,14 @@ pub type MediaPlaybackSeekHook = fn(f64, MediaPlaybackSeekMode)
 
 pub type MediaPlaybackCurrentTimeHook = fn() f64
 
-pub type MediaPlaybackCurrentFrameHook = fn() ?&dom.ImmutableBitmap_
+@[heap]
+pub struct MediaVideoFrame {
+pub:
+	timestamp f64
+	bitmap    &dom.ImmutableBitmap_
+}
+
+pub type MediaPlaybackCurrentFrameHook = fn () ?&MediaVideoFrame
 
 pub struct MediaBufferedRange {
 pub:
@@ -1427,12 +1434,12 @@ pub fn (mut element HTMLMediaElement) update_video_frame_and_timeline() {
 	if frame_hook := element.playback_hooks_.current_video_frame {
 		frame := frame_hook()
 		mut source := element.ensure_external_content_source()
-		source.update(frame)
+		source.update(if current_frame := frame { current_frame.bitmap } else { none })
 		if current_frame := frame {
 			if mut video := element.video_element_model_ {
 				video.set_intrinsic_video_dimensions(VideoDimensions{
-					width: u32(current_frame.width)
-					height: u32(current_frame.height)
+					width: u32(current_frame.bitmap.width)
+					height: u32(current_frame.bitmap.height)
 				})
 			}
 		}

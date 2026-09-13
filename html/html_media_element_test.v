@@ -56,6 +56,18 @@ fn media_test_buffered_ranges() []MediaBufferedRange {
 	return [MediaBufferedRange{ start: 1, end: 7 }, MediaBufferedRange{ start: 9, end: 12 }]
 }
 
+fn media_test_current_video_frame() ?&MediaVideoFrame {
+	return &MediaVideoFrame{
+		timestamp: 1.25
+		bitmap: &dom.ImmutableBitmap_{
+			width: 2
+			height: 1
+			pitch: 8
+			data: [u8(1), 2, 3, 255, 4, 5, 6, 255]
+		}
+	}
+}
+
 fn test_media_element_resource_selection_metadata_and_tracks() {
 	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/page' })
 	media.set_fetch_hook(media_test_fetch)
@@ -74,6 +86,21 @@ fn test_media_element_resource_selection_metadata_and_tracks() {
 	assert media.can_play_type('video/mp4') == .maybe
 	assert media.can_play_type('video/mp4; codecs="avc1"') == .probably
 	assert media.can_play_type('application/json') == .empty
+}
+
+fn test_media_element_publishes_the_current_queued_video_frame() {
+	mut media := HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+	video := HTMLVideoElementModel.create(media, dom.url_about_blank())
+	media.set_playback_manager_hooks(MediaPlaybackManagerHooks{
+		current_video_frame: media_test_current_video_frame
+	})
+	media.set_up_playback_manager()
+	media.update_video_frame_and_timeline()
+
+	frame := media.ensure_external_content_source().frame() or { panic('frame was not published') }
+	assert frame.width == 2
+	assert frame.height == 1
+	assert video.natural_media_size()? == VideoDimensions{2, 1}
 }
 
 fn test_media_element_play_pause_seek_end_and_loop() {
