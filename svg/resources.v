@@ -1,8 +1,15 @@
+@[has_globals]
 module svg
 
 import dom
 
-pub type ImageFetchDecodeHook = fn (string) !DecodedImageData
+pub type ImageFetchDecodeHook = fn (string) !&DecodedImageData
+
+pub type DecodedImageUpdateHook = fn (u64)
+
+__global (
+	svg_next_vector_content_identity u64
+)
 
 pub enum ResourceState {
 	unavailable
@@ -147,6 +154,7 @@ pub fn (mut script ScriptResource) process() ?string {
 	return script.text
 }
 
+@[heap]
 pub struct DecodedImageData {
 pub:
 	viewbox               ?ViewBox
@@ -155,6 +163,32 @@ pub:
 	surface_bytes         []u8
 	display_list_commands []string
 	frame_count           int = 1
+mut:
+	vector_content_identity_             u64
+	cached_rendered_frames               map[string]&dom.DecodedImageFrame_
+	is_recording_display_list_           bool
+	has_pending_client_notification_     bool
+	notification_hook_                   ?DecodedImageUpdateHook
+	delivered_client_notification_count_ u64
+}
+
+pub fn DecodedImageData.next_vector_content_identity() u64 {
+	if svg_next_vector_content_identity == 0 {
+		svg_next_vector_content_identity = 1
+	}
+	identity := svg_next_vector_content_identity
+	svg_next_vector_content_identity++
+	return identity
+}
+
+fn (mut image DecodedImageData) ensure_vector_content_identity() {
+	if image.vector_content_identity_ == 0 {
+		image.vector_content_identity_ = DecodedImageData.next_vector_content_identity()
+	}
+}
+
+pub fn (image &DecodedImageData) vector_content_identity() u64 {
+	return image.vector_content_identity_
 }
 
 pub fn (image DecodedImageData) intrinsic_width() ?f64 {
@@ -181,14 +215,99 @@ pub fn (image DecodedImageData) intrinsic_aspect_ratio() ?f64 {
 	return none
 }
 
-pub fn (image DecodedImageData) frame(_ int, width int, height int) ?&dom.DecodedImageFrame_ {
+pub fn (mut image DecodedImageData) frame(_ int, width int, height int) ?&dom.DecodedImageFrame_ {
 	if width <= 0 || height <= 0 || image.surface_bytes.len == 0 {
 		return none
 	}
-	return dom.DecodedImageFrame_.create(&dom.Bitmap_{
+	key := '${width}x${height}'
+	if frame := image.cached_rendered_frames[key] {
+		return frame
+	}
+	if image.cached_rendered_frames.len > 10 {
+		for cached_key, _ in image.cached_rendered_frames {
+			image.cached_rendered_frames.delete(cached_key)
+			break
+		}
+	}
+	frame := dom.DecodedImageFrame_.create(&dom.Bitmap_{
 		width: width
 		height: height
 		pitch: width * 4
 		data: image.surface_bytes.clone()
 	})
+	image.cached_rendered_frames[key] = frame
+	return frame
+}
+
+pub fn (mut image DecodedImageData) current_frame(width int, height int) ?&dom.DecodedImageFrame_ {
+	return image.frame(0, width, height)
+}
+
+pub fn (mut image DecodedImageData) default_frame(width int, height int) ?&dom.DecodedImageFrame_ {
+	// Animated SVG is not supported yet, matching upstream's current fallback.
+	return image.current_frame(width, height)
+}
+
+pub fn (image &DecodedImageData) external_memory_size() usize {
+	mut size := usize(image.surface_bytes.len)
+	for _, frame in image.cached_rendered_frames {
+		frame_size := usize(frame.bitmap().data.len)
+		if usize(-1) - size < frame_size {
+			return usize(-1)
+		}
+		size += frame_size
+	}
+	return size
+}
+
+pub fn (image &DecodedImageData) has_active_view_box() bool {
+	return image.viewbox != none
+}
+
+pub fn (mut image DecodedImageData) begin_recording_display_list() {
+	image.is_recording_display_list_ = true
+}
+
+pub fn (mut image DecodedImageData) end_recording_display_list() {
+	image.is_recording_display_list_ = false
+}
+
+pub fn (mut image DecodedImageData) invalidate_cached_rendering() {
+	image.vector_content_identity_ = DecodedImageData.next_vector_content_identity()
+	image.cached_rendered_frames.clear()
+}
+
+pub fn (mut image DecodedImageData) did_request_frame() {
+	if image.is_recording_display_list_ {
+		return
+	}
+	image.invalidate_cached_rendering()
+	image.has_pending_client_notification_ = true
+}
+
+pub fn (mut image DecodedImageData) set_notification_hook(hook DecodedImageUpdateHook) {
+	image.notification_hook_ = hook
+}
+
+// Ladybird dispatches this on the next event-loop turn. The portable SVG layer
+// exposes the same coalesced pending state so its host can deliver it at its
+// event-loop boundary.
+pub fn (mut image DecodedImageData) deliver_pending_client_notification() bool {
+	if !image.has_pending_client_notification_ {
+		return false
+	}
+	image.has_pending_client_notification_ = false
+	image.delivered_client_notification_count_++
+	if hook := image.notification_hook_ {
+		hook(image.vector_content_identity_)
+	}
+	return true
+}
+
+pub fn (image &DecodedImageData) has_pending_client_notification() bool {
+	return image.has_pending_client_notification_
+}
+
+pub fn (image &DecodedImageData) delivered_client_notification_count() u64 {
+	return image.delivered_client_notification_count_
 }

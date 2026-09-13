@@ -10,7 +10,7 @@ pub mut:
 	children                 []Element
 	text                     string
 	image_resource           ImageResource
-	decoded_image_data_      ?DecodedImageData
+	decoded_image_data_      ?&DecodedImageData
 	current_frame_index_     int
 	image_fetch_decode_hook_ ?ImageFetchDecodeHook
 }

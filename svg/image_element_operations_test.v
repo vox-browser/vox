@@ -1,15 +1,15 @@
 module svg
 
-fn decode_test_svg_image(url string) !DecodedImageData {
+fn decode_test_svg_image(url string) !&DecodedImageData {
 	if url == 'broken.svg' {
 		return error('decode failed')
 	}
-	return DecodedImageData{
-		width:                 40
-		height:                20
-		surface_bytes:         [u8(1), 2, 3, 4]
+	return &DecodedImageData{
+		width: 40
+		height: 20
+		surface_bytes: [u8(1), 2, 3, 4]
 		display_list_commands: ['save', 'paint', 'restore']
-		frame_count:           2
+		frame_count: 2
 	}
 }
 

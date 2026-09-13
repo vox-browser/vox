@@ -769,13 +769,13 @@ pub fn (mut element Element) animate() {
 	element.current_frame_index_ = (element.current_frame_index_ + 1) % data.frame_count
 }
 
-pub fn (element &Element) decoded_image_data() ?DecodedImageData {
+pub fn (element &Element) decoded_image_data() ?&DecodedImageData {
 	return element.decoded_image_data_
 }
 
 pub fn (element &Element) current_image_frame_sized(width int, height int) ?&dom.DecodedImageFrame_ {
-	data := element.decoded_image_data_ or { return none }
-	return data.frame(element.current_frame_index_, width, height)
+	mut data := element.decoded_image_data_ or { return none }
+	return data.current_frame(width, height)
 }
 
 pub fn (element &Element) current_image_frame() ?&dom.DecodedImageFrame_ {
@@ -785,17 +785,17 @@ pub fn (element &Element) current_image_frame() ?&dom.DecodedImageFrame_ {
 }
 
 pub fn (element &Element) default_image_frame_sized(width int, height int) ?&dom.DecodedImageFrame_ {
-	data := element.decoded_image_data_ or { return none }
-	return data.frame(0, width, height)
+	mut data := element.decoded_image_data_ or { return none }
+	return data.default_frame(width, height)
 }
 
 pub fn (mut element Element) fetch_the_document() {
 	hook := element.image_fetch_decode_hook_ or { return }
-	data := hook(element.image_resource.href) or {
+	mut data := hook(element.image_resource.href) or {
 		element.image_resource.state = .failed
 		return
 	}
-	element.set_decoded_image_data(data)
+	element.set_decoded_image_data(mut data)
 }
 
 pub fn (mut element Element) process_the_url() {
@@ -807,7 +807,8 @@ pub fn (mut element Element) process_the_url() {
 	}
 }
 
-pub fn (mut element Element) set_decoded_image_data(data DecodedImageData) {
+pub fn (mut element Element) set_decoded_image_data(mut data DecodedImageData) {
+	data.ensure_vector_content_identity()
 	element.decoded_image_data_ = data
 	element.current_frame_index_ = 0
 	element.image_resource.intrinsic_width = data.intrinsic_width()

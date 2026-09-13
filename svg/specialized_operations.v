@@ -304,7 +304,12 @@ pub fn (transfer &ComponentTransfer) type_from_attribute() ComponentTransferType
 }
 
 pub fn DecodedImageData.create(viewbox ?ViewBox, width ?f64, height ?f64) DecodedImageData {
-	return DecodedImageData{ viewbox: viewbox, width: width, height: height }
+	return DecodedImageData{
+		viewbox: viewbox
+		width: width
+		height: height
+		vector_content_identity_: DecodedImageData.next_vector_content_identity()
+	}
 }
 
 // The host renderer stores the resulting raster and retained display list on
@@ -338,6 +343,15 @@ pub struct SVGPageClient {
 pub:
 	id_       u64
 	headless_ bool
+mut:
+	device_pixels_per_css_pixel_     f64 = 1
+	registered_svg_image_data_       []&DecodedImageData
+	current_svg_image_data_          ?&DecodedImageData
+	frame_request_suppression_count_ usize
+	display_list_recording_count_    usize
+	has_pending_resource_prune_      bool
+	completed_resource_prune_count_  u64
+	next_cross_process_id_           u64 = 1
 }
 
 pub fn SVGPageClient.create(id u64, headless bool) &SVGPageClient {
@@ -364,8 +378,12 @@ pub fn (_ &SVGPageClient) device_pixel_ratio() f64 {
 	return 1
 }
 
-pub fn (_ &SVGPageClient) device_pixels_per_css_pixel() f64 {
-	return 1
+pub fn (client &SVGPageClient) device_pixels_per_css_pixel() f64 {
+	return client.device_pixels_per_css_pixel_
+}
+
+pub fn (mut client SVGPageClient) set_device_pixels_per_css_pixel(value f64) {
+	client.device_pixels_per_css_pixel_ = value
 }
 
 pub fn (_ &SVGPageClient) zoom_level() f64 {
@@ -412,6 +430,92 @@ pub fn (mut _ SVGPageClient) report_finished_handling_input_event(_ u64) {}
 
 pub fn (_ &SVGPageClient) request_file(_ string) ?string {
 	return none
+}
+
+pub fn (mut client SVGPageClient) allocate_cross_process_id() u64 {
+	result := client.next_cross_process_id_
+	client.next_cross_process_id_++
+	return result
+}
+
+pub fn (mut client SVGPageClient) allocate_navigable_id() u64 {
+	return client.allocate_cross_process_id()
+}
+
+pub fn (mut client SVGPageClient) register_svg_image_data(mut image DecodedImageData) {
+	image.ensure_vector_content_identity()
+	for registered in client.registered_svg_image_data_ {
+		if registered == &image {
+			return
+		}
+	}
+	client.registered_svg_image_data_ << &image
+}
+
+pub fn (client &SVGPageClient) registered_svg_image_count() int {
+	return client.registered_svg_image_data_.len
+}
+
+pub fn (mut client SVGPageClient) set_current_svg_image_data(image ?&DecodedImageData) {
+	client.current_svg_image_data_ = image
+}
+
+pub fn (client &SVGPageClient) current_svg_image_data() ?&DecodedImageData {
+	return client.current_svg_image_data_
+}
+
+pub fn (mut client SVGPageClient) suppress_frame_requests() {
+	client.frame_request_suppression_count_++
+}
+
+pub fn (mut client SVGPageClient) unsuppress_frame_requests() {
+	assert client.frame_request_suppression_count_ > 0
+	client.frame_request_suppression_count_--
+}
+
+pub fn (mut client SVGPageClient) request_frame() {
+	if client.frame_request_suppression_count_ > 0 {
+		return
+	}
+	if current := client.current_svg_image_data_ {
+		mut image := current
+		image.did_request_frame()
+		return
+	}
+	for registered in client.registered_svg_image_data_ {
+		mut image := registered
+		image.did_request_frame()
+	}
+}
+
+pub fn (mut client SVGPageClient) begin_recording_display_list() {
+	client.display_list_recording_count_++
+}
+
+pub fn (mut client SVGPageClient) prune_cached_display_list_resources() {
+	if client.display_list_recording_count_ > 0 {
+		client.has_pending_resource_prune_ = true
+		return
+	}
+	client.prune_cached_display_list_resources_now()
+}
+
+pub fn (mut client SVGPageClient) prune_cached_display_list_resources_now() {
+	client.completed_resource_prune_count_++
+}
+
+pub fn (mut client SVGPageClient) end_recording_display_list() {
+	assert client.display_list_recording_count_ > 0
+	client.display_list_recording_count_--
+	if client.display_list_recording_count_ > 0 || !client.has_pending_resource_prune_ {
+		return
+	}
+	client.has_pending_resource_prune_ = false
+	client.prune_cached_display_list_resources_now()
+}
+
+pub fn (client &SVGPageClient) completed_resource_prune_count() u64 {
+	return client.completed_resource_prune_count_
 }
 
 pub fn (_ &SvgViewport) current_scale() f64 {
